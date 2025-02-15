@@ -94,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 
 // 引入 lucide-vue-next 图标
@@ -117,4 +117,18 @@ const toggleSidebar = () => {
 // 计算当前页面标题
 const route = useRoute();
 const pageTitle = computed(() => route.meta.title || "主页");
+
+watch(
+    () => route.meta.title,
+    (newTitle) => {
+      document.title = newTitle ? `${newTitle} | Haruki 工具箱` : 'Haruki 工具箱';
+    },
+    { immediate: true }
+);
+
+// 确保页面加载时也设置标题
+onMounted(() => {
+  document.title = route.meta.title ? `${route.meta.title} | Haruki 工具箱` : 'Haruki 工具箱';
+});
+
 </script>
