@@ -1,15 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Layout from '@/components/Layout.vue';
+import WebLayout from '@/components/WebLayout.vue';
 
 const routes = [
     {
         path: '/',
-        component: Layout,
+        component: WebLayout,
         children: [
-            { path: '', component: () => import('@/pages/Home.vue'), meta: { title: '首页' } },
-            { path: 'tool1', component: () => import('@/pages/Tool1.vue'), meta: { title: '工具 1' } },
-            { path: 'tool2', component: () => import('@/pages/Tool2.vue'), meta: { title: '工具 2' } },
-            { path: 'tool3', component: () => import('@/pages/Tool3.vue'), meta: { title: '工具 3' } },
+            { path: '', component: () => import('@/components/Home.vue'), meta: { title: '主页' } },
+            { path: 'navigation', component: () => import('@/components/pages/Navigation.vue'), meta: { title: '导航' } },
+            { path: 'about', component: () => import('@/components/pages/About.vue'), meta: { title: '关于' } },
+            { path: 'upload_suite', component: () => import('@/components/pages/UploadMySekai.vue'), meta: { title: '上传Suite数据' } },
+            { path: 'upload_mysekai', component: () => import('@/components/pages/UploadMySekai.vue'), meta: { title: '上传MySekai数据' } },
         ],
     },
 ];

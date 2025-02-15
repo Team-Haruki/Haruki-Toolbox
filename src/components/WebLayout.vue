@@ -5,7 +5,7 @@
       <!-- 网站 Logo、标题和折叠按钮 -->
       <div class="flex items-center justify-between mb-4">
         <img v-if="!isSidebarCollapsed" src="@/assets/haruki.ico" alt="Logo" class="w-10 h-10" />
-        <span v-if="!isSidebarCollapsed" class="ml-2 text-lg font-semibold">Haruki 工具箱</span>
+        <span v-if="!isSidebarCollapsed" class="ml-2 text-lg font-semibold">Haruki工具箱</span>
 
         <!-- 折叠按钮（始终可见） -->
         <button class="btn btn-sm btn-square btn-outline" @click="toggleSidebar">
@@ -31,13 +31,13 @@
               </summary>
               <ul>
                 <li>
-                  <router-link to="/tool1" class="flex items-center">
+                  <router-link to="/navigation" class="flex items-center">
                     <LucideMap class="w-5 h-5" />
                     <span v-if="!isSidebarCollapsed" class="ml-2">导航</span>
                   </router-link>
                 </li>
                 <li>
-                  <router-link to="/tool2" class="flex items-center">
+                  <router-link to="/about" class="flex items-center">
                     <LucideInfo class="w-5 h-5" />
                     <span v-if="!isSidebarCollapsed" class="ml-2">关于</span>
                   </router-link>
@@ -53,15 +53,15 @@
               </summary>
               <ul>
                 <li>
-                  <router-link to="/tool3" class="flex items-center">
+                  <router-link to="/upload_suite" class="flex items-center">
                     <LucideUpload class="w-5 h-5" />
-                    <span v-if="!isSidebarCollapsed" class="ml-2">上传 Suite</span>
+                    <span v-if="!isSidebarCollapsed" class="ml-2">上传Suite数据</span>
                   </router-link>
                 </li>
                 <li>
-                  <router-link to="/tool4" class="flex items-center">
+                  <router-link to="/upload_mysekai" class="flex items-center">
                     <LucideUploadCloud class="w-5 h-5" />
-                    <span v-if="!isSidebarCollapsed" class="ml-2">上传 MySekai</span>
+                    <span v-if="!isSidebarCollapsed" class="ml-2">上传MySekai数据</span>
                   </router-link>
                 </li>
               </ul>
@@ -75,7 +75,7 @@
     <div class="flex-1 flex flex-col">
       <!-- 顶部栏 -->
       <header class="bg-cyan-950 text-white p-4 flex items-center shadow">
-        <h1 class="text-xl font-bold">Haruki 工具箱</h1>
+        <h1 class="text-xl font-bold">Haruki工具箱</h1>
         <span class="mx-2 text-gray-200">/</span>
         <span class="text-lg">{{ pageTitle }}</span>
       </header>
@@ -116,5 +116,5 @@ const toggleSidebar = () => {
 
 // 计算当前页面标题
 const route = useRoute();
-const pageTitle = computed(() => route.meta.title || "首页");
+const pageTitle = computed(() => route.meta.title || "主页");
 </script>
