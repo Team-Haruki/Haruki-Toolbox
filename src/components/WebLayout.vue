@@ -6,7 +6,7 @@
         'bg-base-200 p-4 flex flex-col transition-all duration-300 ease-in-out',
         isMobile
           ? (isSidebarCollapsed ? 'absolute left-[-100%] top-0 w-64 h-full z-50 shadow-lg' : 'absolute left-0 top-0 w-64 h-full z-50 shadow-lg')
-          : (isSidebarCollapsed ? 'w-16' : 'w-64')
+          : (isSidebarCollapsed ? 'w-20' : 'w-64')
       ]"
     >
       <!-- 网站 Logo、标题和折叠按钮 -->
@@ -16,35 +16,45 @@
 
         <!-- 折叠/展开按钮（移动端始终可见） -->
         <button class="btn btn-sm btn-square btn-outline" @click="toggleSidebar">
-          <span v-if="isSidebarCollapsed">☰</span>
-          <span v-else>✖</span>
+          <span v-if="isSidebarCollapsed"><LucideMenu class="w-4 h-4" /></span>
+          <span v-else><LucideArrowLeftToLine class="w-4 h-4" /></span>
         </button>
       </div>
 
       <!-- 侧边栏菜单 -->
       <nav>
-        <ul class="menu">
+        <ul class="menu w-full" :class="{
+          'p-0': isSidebarCollapsed
+        }">
           <li>
-            <router-link to="/" class="flex items-center">
+            <router-link to="/" :class="{
+              'ps-2  pe-2 w-fit': isSidebarCollapsed
+            }">
               <LucideHome class="w-5 h-5" />
               <span v-if="!isSidebarCollapsed" class="ml-2">首页</span>
             </router-link>
           </li>
           <li>
             <details>
-              <summary class="flex items-center">
+              <summary :class="{
+                'ps-2  pe-2 w-fit': isSidebarCollapsed
+              }">
                 <LucideNavigation class="w-5 h-5" />
                 <span v-if="!isSidebarCollapsed" class="ml-2">导航</span>
               </summary>
               <ul>
                 <li>
-                  <router-link to="/navigation" class="flex items-center">
+                  <router-link to="/navigation" :class="{
+                    'ps-2  pe-2 w-fit': isSidebarCollapsed
+                  }">
                     <LucideMap class="w-5 h-5" />
                     <span v-if="!isSidebarCollapsed" class="ml-2">导航</span>
                   </router-link>
                 </li>
                 <li>
-                  <router-link to="/about" class="flex items-center">
+                  <router-link to="/about" :class="{
+                    'ps-2  pe-2 w-fit': isSidebarCollapsed
+                  }">
                     <LucideInfo class="w-5 h-5" />
                     <span v-if="!isSidebarCollapsed" class="ml-2">关于</span>
                   </router-link>
@@ -54,19 +64,25 @@
           </li>
           <li>
             <details>
-              <summary class="flex items-center">
+              <summary :class="{
+                'ps-2  pe-2 w-fit': isSidebarCollapsed
+              }">
                 <LucideWrench class="w-5 h-5" />
                 <span v-if="!isSidebarCollapsed" class="ml-2">工具</span>
               </summary>
               <ul>
                 <li>
-                  <router-link to="/upload_suite" class="flex items-center">
+                  <router-link to="/upload_suite" :class="{
+                    'ps-2  pe-2 w-fit': isSidebarCollapsed
+                  }">
                     <LucideUpload class="w-5 h-5" />
                     <span v-if="!isSidebarCollapsed" class="ml-2">上传Suite数据</span>
                   </router-link>
                 </li>
                 <li>
-                  <router-link to="/upload_mysekai" class="flex items-center">
+                  <router-link to="/upload_mysekai" :class="{
+                    'ps-2  pe-2 w-fit': isSidebarCollapsed
+                  }">
                     <LucideUploadCloud class="w-5 h-5" />
                     <span v-if="!isSidebarCollapsed" class="ml-2">上传MySekai数据</span>
                   </router-link>
@@ -122,7 +138,9 @@ import {
   LucideInfo,
   LucideWrench,
   LucideUpload,
-  LucideUploadCloud
+  LucideUploadCloud,
+  LucideMenu,
+  LucideArrowLeftToLine
 } from 'lucide-vue-next';
 
 // 控制侧边栏是否折叠
