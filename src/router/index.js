@@ -6,6 +6,7 @@ const routes = [
         path: '/',
         component: Layout,
         children: [
+            { path: '', component: () => import('@/pages/Home.vue'), meta: { title: '首页' } },
             { path: 'tool1', component: () => import('@/pages/Tool1.vue'), meta: { title: '工具 1' } },
             { path: 'tool2', component: () => import('@/pages/Tool2.vue'), meta: { title: '工具 2' } },
             { path: 'tool3', component: () => import('@/pages/Tool3.vue'), meta: { title: '工具 3' } },
