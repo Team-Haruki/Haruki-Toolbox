@@ -1,13 +1,20 @@
 <template>
   <div class="flex h-screen">
     <!-- 侧边栏 -->
-    <aside :class="['bg-base-200 p-4 flex flex-col transition-all duration-300', isSidebarCollapsed ? 'w-16' : 'w-64']">
+    <aside
+        :class="[
+        'bg-base-200 p-4 flex flex-col transition-all duration-300 ease-in-out',
+        isMobile
+          ? (isSidebarCollapsed ? 'absolute left-[-100%] top-0 w-64 h-full z-50 shadow-lg' : 'absolute left-0 top-0 w-64 h-full z-50 shadow-lg')
+          : (isSidebarCollapsed ? 'w-16' : 'w-64')
+      ]"
+    >
       <!-- 网站 Logo、标题和折叠按钮 -->
       <div class="flex items-center justify-between mb-4">
         <img v-if="!isSidebarCollapsed" src="@/assets/haruki.ico" alt="Logo" class="w-10 h-10" />
         <span v-if="!isSidebarCollapsed" class="ml-2 text-lg font-semibold">Haruki工具箱</span>
 
-        <!-- 折叠按钮（始终可见） -->
+        <!-- 折叠/展开按钮（移动端始终可见） -->
         <button class="btn btn-sm btn-square btn-outline" @click="toggleSidebar">
           <span v-if="isSidebarCollapsed">☰</span>
           <span v-else>✖</span>
@@ -71,10 +78,20 @@
       </nav>
     </aside>
 
+    <!-- 背景遮罩（移动端显示侧边栏时生效） -->
+    <div
+        v-if="isMobile && !isSidebarCollapsed"
+        class="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
+        @click="isSidebarCollapsed = true"
+    ></div>
+
     <!-- 主要内容 -->
     <div class="flex-1 flex flex-col">
-      <!-- 顶部栏 -->
-      <header class="bg-cyan-950 text-white p-4 flex items-center shadow">
+      <!-- 顶部栏（移动端显示展开按钮） -->
+      <header class="bg-cyan-950 text-white p-4 flex items-center shadow relative">
+        <button v-if="isMobile" class="btn btn-sm btn-square btn-outline mr-2" @click="toggleSidebar">
+          ☰
+        </button>
         <h1 class="text-xl font-bold">Haruki工具箱</h1>
         <span class="mx-2 text-gray-200">|</span>
         <span class="text-lg">{{ pageTitle }}</span>
@@ -109,7 +126,21 @@ import {
 } from 'lucide-vue-next';
 
 // 控制侧边栏是否折叠
-const isSidebarCollapsed = ref(false);
+const isSidebarCollapsed = ref(true);
+const isMobile = ref(window.innerWidth <= 768);
+
+// 监听窗口变化，自动调整 `isMobile`
+const updateMobileView = () => {
+  isMobile.value = window.innerWidth <= 768;
+  if (isMobile.value) {
+    isSidebarCollapsed.value = true; // 在移动端默认隐藏侧边栏
+  }
+};
+
+// 监听页面尺寸变化
+window.addEventListener('resize', updateMobileView);
+
+// 侧边栏切换
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value;
 };
@@ -118,6 +149,7 @@ const toggleSidebar = () => {
 const route = useRoute();
 const pageTitle = computed(() => route.meta.title || "主页");
 
+// 监听 `meta.title` 变化，更新网页标题
 watch(
     () => route.meta.title,
     (newTitle) => {
@@ -130,5 +162,4 @@ watch(
 onMounted(() => {
   document.title = route.meta.title ? `${route.meta.title} | Haruki 工具箱` : 'Haruki 工具箱';
 });
-
 </script>
