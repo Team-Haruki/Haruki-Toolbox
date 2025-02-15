@@ -76,7 +76,7 @@
       <!-- 顶部栏 -->
       <header class="bg-cyan-950 text-white p-4 flex items-center shadow">
         <h1 class="text-xl font-bold">Haruki工具箱</h1>
-        <span class="mx-2 text-gray-200">/</span>
+        <span class="mx-2 text-gray-200">|</span>
         <span class="text-lg">{{ pageTitle }}</span>
       </header>
 
@@ -87,7 +87,7 @@
 
       <!-- 底部 -->
       <footer class="bg-base-200 p-4 text-center">
-        &copy; © 2025 Haruki Toolbox. All rights reserved.
+        &copy; 2025 Haruki Toolbox. All rights reserved.
       </footer>
     </div>
   </div>
