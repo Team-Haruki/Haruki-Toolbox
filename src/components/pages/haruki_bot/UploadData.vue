@@ -49,7 +49,7 @@ import {
 
 const fileServer = ref("jp");
 const dataType = ref("suite");
-const mysekaiUserId = ref(0);
+const mysekaiUserId = ref("0");
 const selectedFile = ref<File | null>(null)
 const inheritServer = ref("jp");
 const inheritId = ref("");
@@ -223,8 +223,8 @@ async function submitInheritUpload() {
                   </Select>
                 </div>
                 <div v-if="dataType === 'mysekai'" class="flex flex-col space-y-1.5">
-                  <Label for="mysekai-user-id">Mysekai 用户ID</Label>
-                  <Input id="mysekai-user-id" type="number" v-model="mysekaiUserId" placeholder="请输入MySekai用户ID"/>
+                  <Label for="mysekai-user-id">MySekai 用户ID</Label>
+                  <Input id="mysekai-user-id" type="text" v-model="mysekaiUserId" placeholder="请输入MySekai用户ID"/>
                 </div>
               </div>
             </form>
