@@ -1,5 +1,26 @@
-# Vue 3 + TypeScript + Vite
+# Haruki Toolbox Frontend
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+**Haruki Toolbox Frontend** is a companion project for [HarukiBot](https://github.com/Team-Haruki)
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## Requirements
++ `Bun >=v1.2`
+
+## How to Dev
+
+1. Install [Bun](https://bun.com/) to manage and install project dependencies.
+2. Run the following command to install dependencies:
+   ```bash
+   bun i
+   ```
+3. Run the following command to start dev server:
+   ```bash
+   bun run dev
+   ```
+4. Run the following command to build:
+   ```bash
+   bun run build
+   ```
+   
+## License
+
+This project is licensed under the MIT License.
