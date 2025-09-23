@@ -27,7 +27,7 @@ const routes = [
             },
             {
                 path: '/pt-calculator',
-                component: () => import("@/components/pages/haruki_bot/UploadData.vue"),
+                component: () => import("@/components/pages/haruki_bot/PointCalculator.vue"),
                 meta: {title: '活动Pt计算器'}
             },
             {
