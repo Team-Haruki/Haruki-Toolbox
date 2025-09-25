@@ -40,6 +40,26 @@ const routes = [
                 component: () => import("@/components/pages/haruki_bot/IOSModules.vue"),
                 meta: {title: 'iOS模块快速安装'}
             },
+            {
+                path: '/user/login',
+                component: () => import("@/components/users/Login.vue"),
+                meta: {title: '登录'}
+            },
+            {
+                path: '/user/register',
+                component: () => import("@/components/users/Register.vue"),
+                meta: {title: '注册账号'}
+            },
+            {
+                path: '/user/settings',
+                component: () => import("@/components/users/Settings.vue"),
+                meta: {title: '账号设置'}
+            },
+            {
+                path: '/user/game-account-binding',
+                component: () => import("@/components/users/GameAccountBinding.vue"),
+                meta: {title: '绑定游戏账号'}
+            },
         ]
     }
 ]

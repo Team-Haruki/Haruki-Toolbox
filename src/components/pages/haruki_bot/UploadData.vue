@@ -329,9 +329,5 @@ async function submitInheritUpload() {
         </Card>
       </TabsContent>
     </Tabs>
-    <Toaster
-        position="bottom-right"
-        richColors
-    />
   </div>
 </template>
