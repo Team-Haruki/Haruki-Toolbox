@@ -20,7 +20,7 @@ import {
   SidebarHeader,
   SidebarTrigger,
   SidebarMenuSub,
-    SidebarContent,
+  SidebarContent,
   SidebarProvider,
   SidebarMenuItem,
   SidebarGroupLabel,
