@@ -21,6 +21,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog"
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Checkbox } from "@/components/ui/checkbox"
 import {Label} from "@/components/ui/label"
 import {Switch} from "@/components/ui/switch"
 import {MoreHorizontal} from "lucide-vue-next"
@@ -31,10 +40,18 @@ interface GameAccount {
   server: string
   uid: string
   verified: boolean
-  allowApi: boolean
-  allow8823: boolean
-  allowSakura: boolean
-  allowResona: boolean
+  suite: {
+    allowPublicApi: boolean
+    allow8823: boolean
+    allowSakura: boolean
+    allowResona: boolean
+  }
+  mysekai: {
+    allowPublicApi: boolean
+    allowFixtureApi: boolean
+    allow8823: boolean
+    allowResona: boolean
+  }
 }
 
 const showVerifyDialog = ref(false)
@@ -51,27 +68,43 @@ const data = ref<GameAccount[]>([
     server: "日服",
     uid: "114514",
     verified: false,
-    allowApi: true,
-    allow8823: false,
-    allowSakura: false,
-    allowResona: true,
+    suite: {
+      allowPublicApi: true,
+      allow8823: false,
+      allowSakura: false,
+      allowResona: true,
+    },
+    mysekai: {
+      allowPublicApi: false,
+      allowFixtureApi: true,
+      allow8823: false,
+      allowResona: false,
+    },
   },
   {
     id: "2",
     server: "国服",
     uid: "1919810",
     verified: true,
-    allowApi: true,
-    allow8823: true,
-    allowSakura: false,
-    allowResona: false,
+    suite: {
+      allowPublicApi: true,
+      allow8823: true,
+      allowSakura: false,
+      allowResona: false,
+    },
+    mysekai: {
+      allowPublicApi: true,
+      allowFixtureApi: true,
+      allow8823: false,
+      allowResona: false,
+    },
   },
 ])
 
 async function submitVerification() {
   verifying.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000)) // 模拟请求
+    await new Promise(resolve => setTimeout(resolve, 1000))
     verifySuccess.value = true
   } catch (e) {
     verifySuccess.value = false
@@ -191,13 +224,13 @@ const table = useVueTable({
     </Card>
 
     <Dialog v-model:open="showEditDialog">
-      <DialogContent class="sm:max-w-[600px]">
+      <DialogContent class="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>编辑账号</DialogTitle>
         </DialogHeader>
         <div class="grid gap-6 py-4">
-          <div>
-            <h3 class="font-semibold mb-2">账号基本信息</h3>
+          <Card class="p-4">
+            <h3 class="font-semibold mb-1">账号基本信息</h3>
             <div class="grid gap-3">
               <div class="flex items-center gap-4">
                 <Label class="w-24">ID</Label>
@@ -219,45 +252,100 @@ const table = useVueTable({
                 </div>
               </div>
             </div>
-          </div>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <Card class="p-3">
-              <div class="flex items-center gap-3">
-                <Switch v-model:checked="editTarget!.allowApi"/>
-                <div class="flex-1">
-                  <Label class="font-semibold">公开API访问</Label>
-                  <p class="text-sm text-muted-foreground">允许Haruki工具箱公开API访问</p>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Suite数据设置</CardTitle>
+              <CardDescription>
+                管理您上传的游戏账号的Suite数据设置
+              </CardDescription>
+            </CardHeader>
+            <CardContent class="grid gap-4 sm:grid-cols-2">
+              <Card class="p-3">
+                <div class="flex items-center gap-3">
+                  <Switch v-model="editTarget!.suite.allowPublicApi"/>
+                  <div class="flex-1">
+                    <Label class="font-semibold">允许公开API访问</Label>
+                    <p class="text-sm text-muted-foreground">允许Suite数据通过Haruki工具箱公开API访问</p>
+                  </div>
                 </div>
-              </div>
-            </Card>
-            <Card class="p-3">
-              <div class="flex items-center gap-3">
-                <Switch v-model:checked="editTarget!.allow8823"/>
-                <div class="flex-1">
-                  <Label class="font-semibold">上传至烤森Bot</Label>
-                  <p class="text-sm text-muted-foreground">允许上传数据到烤森Bot</p>
+              </Card>
+              <Card class="p-3">
+                <div class="flex items-center gap-3">
+                  <Switch v-model="editTarget!.suite.allowFixtureApi"/>
+                  <div class="flex-1">
+                    <Label class="font-semibold">允许上传至SakuraBot</Label>
+                    <p class="text-sm text-muted-foreground">允许Suite数据上传到SakuraBot</p>
+                  </div>
                 </div>
-              </div>
-            </Card>
-            <Card class="p-3">
-              <div class="flex items-center gap-3">
-                <Switch v-model:checked="editTarget!.allowSakura"/>
-                <div class="flex-1">
-                  <Label class="font-semibold">上传至SakuraBot</Label>
-                  <p class="text-sm text-muted-foreground">允许上传数据到SakuraBot</p>
+              </Card>
+              <Card class="p-3">
+                <div class="flex items-center gap-3">
+                  <Switch v-model="editTarget!.suite.allow8823"/>
+                  <div class="flex-1">
+                    <Label class="font-semibold">允许上传至烤森Bot</Label>
+                    <p class="text-sm text-muted-foreground">允许Suite数据上传到烤森Bot</p>
+                  </div>
                 </div>
-              </div>
-            </Card>
-            <Card class="p-3">
-              <div class="flex items-center gap-3">
-                <Switch v-model:checked="editTarget!.allowResona"/>
-                <div class="flex-1">
-                  <Label class="font-semibold">上传至ResonaBot</Label>
-                  <p class="text-sm text-muted-foreground">允许上传数据到ResonaBot</p>
+              </Card>
+              <Card class="p-3">
+                <div class="flex items-center gap-3">
+                  <Switch v-model="editTarget!.suite.allowResona"/>
+                  <div class="flex-1">
+                    <Label class="font-semibold">允许上传至ResonaBot</Label>
+                    <p class="text-sm text-muted-foreground">允许Suite数据上传到ResonaBot</p>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          </div>
+              </Card>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>MySekai数据设置</CardTitle>
+              <CardDescription>
+                管理您上传的游戏账号的MySekai数据设置
+              </CardDescription>
+            </CardHeader>
+            <CardContent class="grid gap-4 sm:grid-cols-2">
+              <Card class="p-3">
+                <div class="flex items-center gap-3">
+                  <Switch v-model="editTarget!.mysekai.allowPublicApi"/>
+                  <div class="flex-1">
+                    <Label class="font-semibold">允许公开API访问</Label>
+                    <p class="text-sm text-muted-foreground">允许Suite数据通过Haruki工具箱公开API访问</p>
+                  </div>
+                </div>
+              </Card>
+              <Card class="p-3">
+                <div class="flex items-center gap-3">
+                  <Switch v-model="editTarget!.mysekai.allowFixtureApi"/>
+                  <div class="flex-1">
+                    <Label class="font-semibold">允许家具共享API</Label>
+                    <p class="text-sm text-muted-foreground">允许MySekai账号UID出现在家具共享API</p>
+                  </div>
+                </div>
+              </Card>
+              <Card class="p-3">
+                <div class="flex items-center gap-3">
+                  <Switch v-model="editTarget!.mysekai.allow8823"/>
+                  <div class="flex-1">
+                    <Label class="font-semibold">允许上传至烤森Bot</Label>
+                    <p class="text-sm text-muted-foreground">允许MySekai数据上传到烤森Bot</p>
+                  </div>
+                </div>
+              </Card>
+              <Card class="p-3">
+                <div class="flex items-center gap-3">
+                  <Switch v-model="editTarget!.mysekai.allowResona"/>
+                  <div class="flex-1">
+                    <Label class="font-semibold">允许上传至ResonaBot</Label>
+                    <p class="text-sm text-muted-foreground">允许MySekai数据上传到ResonaBot</p>
+                  </div>
+                </div>
+              </Card>
+            </CardContent>
+          </Card>
         </div>
         <DialogFooter>
           <DialogClose as-child>
