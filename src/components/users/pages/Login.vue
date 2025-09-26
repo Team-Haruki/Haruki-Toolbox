@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from "vue"
+import { toast } from "vue-sonner";
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -10,6 +12,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+  DialogTrigger
+} from "@/components/ui/dialog"
+
+
+const resetEmail = ref("")
+function handleResetPassword() {
+  if (!resetEmail.value) {
+    toast.error("请输入邮箱地址")
+    return
+  }
+  toast.success(`重置密码邮件已发送到 ${resetEmail.value}`)
+}
+
 </script>
 
 <template>
@@ -38,12 +61,34 @@ import {
             <div class="grid gap-2">
               <div class="flex items-center">
                 <Label html-for="password">密码</Label>
-                <a
-                    href="#"
-                    class="ml-auto text-sm underline-offset-4 hover:underline"
-                >
-                  忘记密码？
-                </a>
+                <Dialog>
+                  <DialogTrigger as-child>
+                    <a href="javascript:void(0)" class="ml-auto text-sm underline-offset-4 hover:underline">
+                      忘记密码？
+                    </a>
+                  </DialogTrigger>
+                  <DialogContent class="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>重置密码</DialogTitle>
+                      <DialogDescription>请输入您的邮箱地址以重置密码</DialogDescription>
+                    </DialogHeader>
+                    <div class="py-4">
+                      <Label for="reset-email">邮箱</Label>
+                      <Input
+                          id="reset-email"
+                          type="email"
+                          placeholder="you@example.com"
+                          v-model="resetEmail"
+                      />
+                    </div>
+                    <DialogFooter>
+                      <DialogClose as-child>
+                        <Button variant="outline">取消</Button>
+                      </DialogClose>
+                      <Button @click="handleResetPassword">确定</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
               <Input id="password" type="password" required />
             </div>

@@ -60,6 +60,15 @@ const routes = [
                 component: () => import("@/components/users/pages/GameAccountBinding.vue"),
                 meta: {title: '绑定游戏账号'}
             },
+            {
+                path: "/user/reset-password/:verifyHash",
+                name: "reset-password",
+                component: () => import("@/components/users/pages/ResetPassword.vue"),
+                props: (route) => ({
+                    verifyHash: route.params.verifyHash,
+                    email: route.query.email,
+                }),
+            },
         ]
     }
 ]
