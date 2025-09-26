@@ -113,7 +113,7 @@ function goAccountSettings() {
           <DropdownMenuSeparator v-if="isLoggedIn" />
 
           <DropdownMenuItem v-if="isLoggedIn" @click="handleLogout">
-            <LogOut class="mr-2 h-4 w-4" /> 登出
+            <LogOut class="mr-2 h-4 w-4" /> 注销
           </DropdownMenuItem>
           <DropdownMenuItem v-else @click="handleLogin">
             <LogIn class="mr-2 h-4 w-4" /> 登录

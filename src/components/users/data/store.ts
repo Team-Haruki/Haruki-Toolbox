@@ -1,28 +1,11 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
-
-export type SekaiRegion = "jp" | "en" | "tw" | "kr" | "cn"
-export interface EmailInfo {
-    email: string
-    verified: boolean
-}
-export interface SocialPlatformInfo {
-    platform: string
-    userId: string
-    verified: boolean
-}
-export interface AuthorizeSocialPlatformInfo {
-    id: number
-    platform: string
-    userId: string
-    commit: string
-}
-export interface GameAccountBinding {
-    id: number
-    server: SekaiRegion
-    userId: number
-    verified: boolean
-}
+import {
+    EmailInfo,
+    GameAccountBinding,
+    SocialPlatformInfo,
+    AuthorizeSocialPlatformInfo,
+} from "@/components/users/data/types/store";
 
 export const useUserStore = defineStore("user", () => {
     const name = ref<string>("未登录")
