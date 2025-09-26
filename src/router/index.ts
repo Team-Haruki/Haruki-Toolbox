@@ -42,22 +42,22 @@ const routes = [
             },
             {
                 path: '/user/login',
-                component: () => import("@/components/users/Login.vue"),
+                component: () => import("@/components/users/pages/Login.vue"),
                 meta: {title: '登录'}
             },
             {
                 path: '/user/register',
-                component: () => import("@/components/users/Register.vue"),
+                component: () => import("@/components/users/pages/Register.vue"),
                 meta: {title: '注册账号'}
             },
             {
                 path: '/user/settings',
-                component: () => import("@/components/users/Settings.vue"),
+                component: () => import("@/components/users/pages/Settings.vue"),
                 meta: {title: '账号设置'}
             },
             {
                 path: '/user/game-account-binding',
-                component: () => import("@/components/users/GameAccountBinding.vue"),
+                component: () => import("@/components/users/pages/GameAccountBinding.vue"),
                 meta: {title: '绑定游戏账号'}
             },
         ]
