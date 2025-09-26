@@ -48,25 +48,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 
 
 
 const showEditDialog = ref(false)
-const editTarget = ref<QQAuth | null>(null)
+const editTarget = ref<SocialAuth | null>(null)
 const showDeleteDialog = ref(false)
-const deleteTarget = ref<QQAuth | null>(null)
-const data = ref<QQAuth[]>([
-  { id: "1", qq: "123456789", remark: "主账号" },
-  { id: "2", qq: "987654321", remark: "小号" },
+const deleteTarget = ref<SocialAuth | null>(null)
+const data = ref<SocialAuth[]>([
+  { id: "1", platform: "QQ", userId: "1234111111111111111111111111111111156789", remark: "主QQ账号" },
+  { id: "2", platform: "Discord", userId: "987654321", remark: "主Discord" },
 ])
 
-export interface QQAuth {
+export interface SocialAuth {
   id: string
-  qq: string
+  platform: "qq" | "qqbot" | "discord" | "telegram"
+  userId: string
   remark: string
 }
 
-function startEdit(row: QQAuth) {
+function startEdit(row: SocialAuth) {
   editTarget.value = reactive({ ...row })
   showEditDialog.value = true
 }
@@ -81,7 +83,7 @@ function handleEditSave() {
   }
 }
 
-function confirmDelete(row: QQAuth) {
+function confirmDelete(row: SocialAuth) {
   deleteTarget.value = row
   showDeleteDialog.value = true
 }
@@ -93,16 +95,21 @@ function handleDelete() {
   }
 }
 
-const columns: ColumnDef<QQAuth>[] = [
+const columns: ColumnDef<SocialAuth>[] = [
   {
     accessorKey: "id",
     header: "ID",
     cell: ({ row }) => row.getValue("id"),
   },
   {
-    accessorKey: "qq",
-    header: "QQ号",
-    cell: ({ row }) => row.getValue("qq"),
+    accessorKey: "platform",
+    header: "平台",
+    cell: ({ row }) => row.getValue("platform"),
+  },
+  {
+    accessorKey: "userId",
+    header: "账号",
+    cell: ({ row }) => row.getValue("userId"),
   },
   {
     accessorKey: "remark",
@@ -141,9 +148,9 @@ const table = useVueTable({
 <template>
   <Card class="w-full max-w-md">
     <CardHeader>
-      <CardTitle>授权QQ查询</CardTitle>
+      <CardTitle>授权社交平台查询</CardTitle>
       <CardDescription>
-        管理您的Haruki工具箱账号授权可查询游戏账号信息的QQ号
+        管理您的Haruki工具箱账号授权可查询游戏账号信息的社交平台
       </CardDescription>
     </CardHeader>
     <CardContent>
@@ -195,8 +202,8 @@ const table = useVueTable({
   <Dialog v-model:open="showEditDialog">
     <DialogContent class="sm:max-w-[425px]">
       <DialogHeader>
-        <DialogTitle>编辑 QQ 授权</DialogTitle>
-        <DialogDescription>修改 QQ 信息，ID 不可更改</DialogDescription>
+        <DialogTitle>编辑社交平台授权</DialogTitle>
+        <DialogDescription>修改授权可查询信息的社交平台账号</DialogDescription>
       </DialogHeader>
       <div class="grid gap-4 py-4">
         <div class="grid grid-cols-4 items-center gap-4">
@@ -204,8 +211,25 @@ const table = useVueTable({
           <Input id="id" v-model="editTarget.id" class="col-span-3" disabled />
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
-          <Label for="qq" class="text-right">QQ号</Label>
-          <Input id="qq" v-model="editTarget.qq" class="col-span-3" />
+          <Label for="platform" class="text-right">平台</Label>
+          <Select v-model="editTarget.platform">
+            <SelectTrigger
+                id="platform"
+                class="col-span-3 flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <SelectValue placeholder="请选择社交平台" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="qq">QQ</SelectItem>
+              <SelectItem value="qqbot">QQ官方Bot</SelectItem>
+              <SelectItem value="discord">Discord</SelectItem>
+              <SelectItem value="telegram">Telegram</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <Label for="account" class="text-right">账号</Label>
+          <Input id="account" v-model="editTarget.userId" class="col-span-3" />
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="remark" class="text-right">备注</Label>
@@ -226,12 +250,12 @@ const table = useVueTable({
       <AlertDialogHeader>
         <AlertDialogTitle>确认删除</AlertDialogTitle>
         <AlertDialogDescription>
-          确认删除 QQ {{ deleteTarget?.qq }} 吗？此操作无法撤销。
+          确认删除 {{ deleteTarget?.platform }} {{ deleteTarget?.userId }} 吗？此操作无法撤销。
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>取消</AlertDialogCancel>
-        <AlertDialogAction @click="handleDelete">删除</AlertDialogAction>
+        <AlertDialogAction class="bg-destructive text-foreground" @click="handleDelete">删除</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>

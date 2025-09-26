@@ -1,11 +1,9 @@
 <script setup lang='ts'>
 import {ref} from 'vue'
 import axios from 'axios'
-import 'vue-sonner/style.css'
 import {toast} from "vue-sonner"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
-import {Toaster} from '@/components/ui/sonner'
 import {Checkbox} from "@/components/ui/checkbox"
 import {Progress} from "@/components/ui/progress"
 

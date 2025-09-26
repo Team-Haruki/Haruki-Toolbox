@@ -50,7 +50,7 @@ function onAvatarChange(event: Event) {
       </div>
     </CardContent>
     <CardFooter>
-      <Button class="w-full">保存修改</Button>
+      <Button class="w-full bg-primary">保存修改</Button>
     </CardFooter>
   </Card>
 </template>

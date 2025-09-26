@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import 'vue-sonner/style.css'
 import {useRoute} from 'vue-router'
-import SidebarUser from "@/components/SidebarUser.vue";
 import {useColorMode} from '@vueuse/core'
 import harukiLogo from "@/assets/haruki.ico"
 import {computed, watch, onMounted} from 'vue'
+import {Toaster} from '@/components/ui/sonner'
 import {Separator} from '@/components/ui/separator'
+import SidebarUser from "@/components/SidebarUser.vue";
 import type {SidebarProps} from '@/components/ui/sidebar'
+
 
 import {
   Sidebar,
@@ -52,7 +55,6 @@ import {
   SelectTrigger,
   SelectContent,
 } from '@/components/ui/select'
-import {Toaster} from "@/components/ui/sonner";
 
 const route = useRoute()
 const mode = useColorMode()
@@ -249,11 +251,12 @@ const data: { navMain: NavItem[] } = {
               <component :is="Component"/>
             </Transition>
           </router-view>
+          <Toaster
+              position="bottom-right"
+              richColors
+          />
         </div>
-        <Toaster
-            position="bottom-right"
-            richColors
-        />
+
       </main>
 
       <SidebarFooter class="border-t p-2 text-center text-sm text-muted-foreground bg-fuchsia-50 dark:bg-gray-800">

@@ -273,12 +273,12 @@ const table = useVueTable({
         <AlertDialogHeader>
           <AlertDialogTitle>确认删除</AlertDialogTitle>
           <AlertDialogDescription>
-            确认删除区服 {{ deleteTarget?.server }} 的 UID {{ deleteTarget?.uid }} 吗？此操作无法撤销。
+            确认删除{{ deleteTarget?.server }}的UID{{ deleteTarget?.uid }} 吗？此操作无法撤销。
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>取消</AlertDialogCancel>
-          <AlertDialogAction @click="handleDelete">删除</AlertDialogAction>
+          <AlertDialogAction class="bg-destructive text-foreground" @click="handleDelete">删除</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
