@@ -26,6 +26,18 @@ const routes = [
                 meta: {title: '友情链接'}
             },
             {
+                path: '/pt_calc',
+                redirect: '/pt-calculator'
+            },
+            {
+                path: '/upload_suite',
+                redirect: '/upload-data'
+            },
+            {
+                path: '/upload_mysekai',
+                redirect: '/upload-data'
+            },
+            {
                 path: '/pt-calculator',
                 component: () => import("@/components/pages/haruki_bot/PointCalculator.vue"),
                 meta: {title: '活动Pt计算器'}
