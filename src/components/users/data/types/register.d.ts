@@ -2,6 +2,8 @@ export interface RegisterPayload {
     name: string
     email: string
     password: string
+    oneTimePassword: string
+    challengeToken: string
 }
 
 export interface RegisterSuccessResponse {
@@ -15,9 +17,4 @@ export interface RegisterSuccessResponse {
         gameAccountBindings?: GameAccountBinding[] | null
         sessionToken: string
     }
-}
-
-export interface RegisterErrorResponse {
-    status: number
-    message: string
 }

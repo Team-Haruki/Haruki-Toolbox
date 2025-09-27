@@ -1,26 +1,24 @@
 import {callApi} from "@/components/users/data/api/call-api"
 import {
-    verifyEmailPayload,
-    EmailVerificationResponse,
-    SendEmailVerificationPayload
+    APIResponse,
+    SocialPlatform,
+    AuthorizeSocialPlatformInfo,
+    AddAuthorizeSocialPlatformAccountPayload
 } from "@/components/users/data/types";
 
-export async function sendQQMailVerificationCode(qq: string) {
-    const payload: SendEmailVerificationPayload = {
-        email: `${qq}@qq.com`,
-    }
-    return await callApi<EmailVerificationResponse>(
-        "/api/user/email/send",
-        "POST",
+
+export async function addAuthorizeSocialPlatformAccount(id: int, platform: SocialPlatform, userId: string, comment: string): Promise<APIResponse<AuthorizeSocialPlatformInfo[]>> {
+    const payload: AddAuthorizeSocialPlatformAccountPayload = {id, platform, userId, comment}
+    return await callApi<AuthorizeSocialPlatformInfo[]>(
+        `/api/user/authorize-social-platform/${id}`,
+        "PUT",
         payload
     )
 }
 
-export async function verifyQQ(oneTimePassword: string) {
-    const payload: verifyEmailPayload = {oneTimePassword}
-    return await callApi<EmailVerificationResponse>(
-        "/api/user/email/verify",
-        "POST",
-        payload
+export async function removeAuthorizeSocialPlatformAccount(id: int): Promise<APIResponse<AuthorizeSocialPlatformInfo[]>> {
+    return await callApi<AuthorizeSocialPlatformInfo[]>(
+        `/api/user/authorize-social-platform/${id}`,
+        "DELETE",
     )
 }

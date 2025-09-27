@@ -6,9 +6,9 @@ import type {
     LoginResponse,
 } from "@/components/users/data/types";
 
-export async function login(email: string, password: string): Promise<LoginResult> {
+export async function login(email: string, password: string, challengeToken: string): Promise<LoginResult> {
     try {
-        const payload: LoginRequest = {email, password}
+        const payload: LoginRequest = {email, password, challengeToken}
         const response = await callApi<LoginResponse>("/api/user/login", "POST", payload)
         if (response.status === 200 && response.userData) {
             const userStore = useUserStore()

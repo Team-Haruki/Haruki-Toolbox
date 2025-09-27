@@ -15,7 +15,7 @@ export interface AuthorizeSocialPlatformInfo {
     id: number
     platform: string
     userId: string
-    commit: string
+    comment: string
 }
 
 export interface SuiteDataPrivacySettings {

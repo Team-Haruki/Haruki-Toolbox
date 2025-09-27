@@ -8,6 +8,7 @@ import {
 export interface LoginRequest {
     email: string
     password: string
+    challengeToken: string
 }
 
 export interface LoginResponse {

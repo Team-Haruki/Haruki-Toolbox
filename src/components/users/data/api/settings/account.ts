@@ -1,8 +1,8 @@
 import {toast} from "vue-sonner";
 import {callApi} from "@/components/users/data/api/call-api"
 import {
-    UpdateUserProfilePayload,
-    UpdateUserProfileResponse
+    APIResponse,
+    UpdateUserProfilePayload
 } from "@/components/users/data/types";
 
 
@@ -15,12 +15,12 @@ function fileToBase64(file: File): Promise<string> {
     })
 }
 
-export async function updateUserProfile(name: string, avatar: File) {
+export async function updateUserProfile(name: string, avatar: File): Promise<APIResponse<{ name: string; avatarPath: string }>> {
     try {
         const avatarBase64 = await fileToBase64(avatar)
         const payload: UpdateUserProfilePayload = {name, avatarBase64}
-        return await callApi<UpdateUserProfileResponse>(
-            "/api/user/profile",
+        return await callApi<{ name: string; avatarPath: string }>(
+            "/api/user/{toolboxUserId}/profile",
             "PUT",
             payload
         )

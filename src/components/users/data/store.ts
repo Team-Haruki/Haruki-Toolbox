@@ -9,6 +9,7 @@ import {
 
 export const useUserStore = defineStore("user", () => {
     const name = ref<string>("未登录")
+    const userId = ref<string | null>(null)
     const avatarPath = ref<string>("")
     const emailInfo = ref<EmailInfo | null>(null)
     const socialPlatformInfo = ref<SocialPlatformInfo | null>(null)
@@ -19,6 +20,7 @@ export const useUserStore = defineStore("user", () => {
 
     function setUser(payload: {
         name: string
+        userId: string
         avatarPath: string
         emailInfo: EmailInfo
         socialPlatformInfo?: SocialPlatformInfo | null
@@ -27,6 +29,7 @@ export const useUserStore = defineStore("user", () => {
         sessionToken: string
     }) {
         name.value = payload.name
+        userId.value = payload.userId
         avatarPath.value = payload.avatarPath
         emailInfo.value = payload.emailInfo
         socialPlatformInfo.value = payload.socialPlatformInfo ?? null
@@ -36,8 +39,33 @@ export const useUserStore = defineStore("user", () => {
         localStorage.setItem("user", JSON.stringify(payload))
     }
 
+    function updateUser(partial: Partial<{
+        name: string
+        userId: string
+        avatarPath: string
+        emailInfo: EmailInfo
+        socialPlatformInfo?: SocialPlatformInfo | null
+        authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
+        gameAccountBindings?: GameAccountBinding[] | null
+        sessionToken: string
+    }>) {
+        if (partial.name !== undefined) name.value = partial.name
+        if (partial.avatarPath !== undefined) avatarPath.value = partial.avatarPath
+        if (partial.emailInfo !== undefined) emailInfo.value = partial.emailInfo
+        if (partial.socialPlatformInfo !== undefined) socialPlatformInfo.value = partial.socialPlatformInfo
+        if (partial.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = partial.authorizeSocialPlatformInfo
+        if (partial.gameAccountBindings !== undefined) gameAccountBindings.value = partial.gameAccountBindings
+        if (partial.sessionToken !== undefined) sessionToken.value = partial.sessionToken
+
+        const stored = localStorage.getItem("user")
+        const current = stored ? JSON.parse(stored) : {}
+        const updated = { ...current, ...partial }
+        localStorage.setItem("user", JSON.stringify(updated))
+    }
+
     function clearUser() {
         name.value = "未登录"
+        userId.value = null
         avatarPath.value = ""
         emailInfo.value = null
         socialPlatformInfo.value = null
@@ -57,6 +85,7 @@ export const useUserStore = defineStore("user", () => {
 
     return {
         name,
+        userId,
         avatarPath,
         emailInfo,
         socialPlatformInfo,
@@ -66,6 +95,7 @@ export const useUserStore = defineStore("user", () => {
         isLoggedIn,
         setUser,
         clearUser,
+        updateUser,
         restoreUser,
     }
 })

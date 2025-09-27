@@ -9,9 +9,9 @@ import type {
 } from "@/components/users/data/types"
 
 
-export async function sendResetPasswordEmail(email: string) {
+export async function sendResetPasswordEmail(email: string, challengeToken: string): Promise<SendResetPasswordEmailResponse> {
     try {
-        const payload: SendResetPasswordEmailPayload = {email}
+        const payload: SendResetPasswordEmailPayload = {email, challengeToken}
         return await callApi<SendResetPasswordEmailResponse>(
             "/api/user/reset-password/send",
             "POST",
@@ -23,7 +23,7 @@ export async function sendResetPasswordEmail(email: string) {
     }
 }
 
-export async function resetPassword(email: string, oneTimeSecret: string, password: string) {
+export async function resetPassword(email: string, oneTimeSecret: string, password: string): Promise<SendResetPasswordEmailResponse> {
     try {
         const payload: ResetPasswordPayload = {email, oneTimeSecret, password}
         const response = await callApi<ResetPasswordResponse>(

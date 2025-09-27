@@ -1,10 +1,10 @@
 import {useUserStore} from "@/components/users/data/store"
 import {callApi} from "@/components/users/data/api/call-api"
-import type {RegisterErrorResponse, RegisterPayload, RegisterSuccessResponse,} from "@/components/users/data/types"
+import type {RegisterErrorResponse, RegisterPayload, RegisterSuccessResponse} from "@/components/users/data/types"
 
-export async function registerUser(name: string, email: string, password: string) {
+export async function registerUser(name: string, email: string, password: string, emailOneTimePassword: string, challengeToken: string): Promise<RegisterSuccessResponse> {
     try {
-        const payload: RegisterPayload = {name, email, password}
+        const payload: RegisterPayload = {name, email, password, oneTimePassword}
         const response = await callApi<RegisterSuccessResponse>(
             "/api/user/register",
             "POST",

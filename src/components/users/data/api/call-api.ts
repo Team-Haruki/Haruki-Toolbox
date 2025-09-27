@@ -16,17 +16,21 @@ apiClient.interceptors.request.use((config) => {
             Authorization: `Bearer ${userStore.sessionToken}`,
         }
     }
+    if (config.url && userStore.userId) {
+        config.url = config.url.replace(`/api/user/{toolboxUserId}`, `/api/user/${userStore.userId}`)
+    }
     return config
 })
 
-export async function callApi<T = any>(
+
+export async function callApi<T = unknown>(
     endpoint: string,
     method: Method = "GET",
     data?: any,
     config?: AxiosRequestConfig
-): Promise<T> {
+): Promise<APIResponse<T>> {
     try {
-        const response = await apiClient.request<T>({
+        const response = await apiClient.request<APIResponse<T>>({
             url: endpoint,
             method,
             data,
