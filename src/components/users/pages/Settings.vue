@@ -7,7 +7,7 @@ import ImAuthorization from "@/components/users/pages/settings/IMAuthorization.v
 </script>
 
 <template>
-  <div class="w-full flex-1 flex flex-col items-center justify-start gap-6 px-0 py-4">
+  <div class="w-full flex-1 flex flex-col items-center justify-center gap-6 px-0 py-4">
     <AccountSettings />
     <EmailSettings />
     <PasswordSettings />

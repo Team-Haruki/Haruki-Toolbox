@@ -1,5 +1,5 @@
-import { defineStore } from "pinia"
-import { ref, computed } from "vue"
+import {defineStore} from "pinia"
+import {ref, computed} from "vue"
 import {
     EmailInfo,
     GameAccountBinding,
@@ -19,24 +19,34 @@ export const useUserStore = defineStore("user", () => {
     const isLoggedIn = computed(() => !!sessionToken.value)
 
     function setUser(payload: {
-        name: string
-        userId: string
-        avatarPath: string
-        emailInfo: EmailInfo
+        name?: string
+        userId?: string
+        avatarPath?: string
+        emailInfo?: EmailInfo
         socialPlatformInfo?: SocialPlatformInfo | null
         authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
         gameAccountBindings?: GameAccountBinding[] | null
-        sessionToken: string
+        sessionToken?: string
     }) {
-        name.value = payload.name
-        userId.value = payload.userId
-        avatarPath.value = payload.avatarPath
-        emailInfo.value = payload.emailInfo
-        socialPlatformInfo.value = payload.socialPlatformInfo ?? null
-        authorizeSocialPlatformInfo.value = payload.authorizeSocialPlatformInfo ?? null
-        gameAccountBindings.value = payload.gameAccountBindings ?? null
-        sessionToken.value = payload.sessionToken
-        localStorage.setItem("user", JSON.stringify(payload))
+        if (payload.name !== undefined) name.value = payload.name
+        if (payload.userId !== undefined) userId.value = payload.userId
+        if (payload.avatarPath !== undefined) avatarPath.value = payload.avatarPath
+        if (payload.emailInfo !== undefined) emailInfo.value = payload.emailInfo
+        if (payload.socialPlatformInfo !== undefined) socialPlatformInfo.value = payload.socialPlatformInfo
+        if (payload.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = payload.authorizeSocialPlatformInfo
+        if (payload.gameAccountBindings !== undefined) gameAccountBindings.value = payload.gameAccountBindings
+        if (payload.sessionToken !== undefined) sessionToken.value = payload.sessionToken
+
+        localStorage.setItem("user", JSON.stringify({
+            name: name.value,
+            userId: userId.value,
+            avatarPath: avatarPath.value,
+            emailInfo: emailInfo.value,
+            socialPlatformInfo: socialPlatformInfo.value,
+            authorizeSocialPlatformInfo: authorizeSocialPlatformInfo.value,
+            gameAccountBindings: gameAccountBindings.value,
+            sessionToken: sessionToken.value,
+        }))
     }
 
     function updateUser(partial: Partial<{
@@ -44,9 +54,9 @@ export const useUserStore = defineStore("user", () => {
         userId: string
         avatarPath: string
         emailInfo: EmailInfo
-        socialPlatformInfo?: SocialPlatformInfo | null
-        authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
-        gameAccountBindings?: GameAccountBinding[] | null
+        socialPlatformInfo: SocialPlatformInfo | null
+        authorizeSocialPlatformInfo: AuthorizeSocialPlatformInfo[] | null
+        gameAccountBindings: GameAccountBinding[] | null
         sessionToken: string
     }>) {
         if (partial.name !== undefined) name.value = partial.name
@@ -59,7 +69,7 @@ export const useUserStore = defineStore("user", () => {
 
         const stored = localStorage.getItem("user")
         const current = stored ? JSON.parse(stored) : {}
-        const updated = { ...current, ...partial }
+        const updated = {...current, ...partial}
         localStorage.setItem("user", JSON.stringify(updated))
     }
 

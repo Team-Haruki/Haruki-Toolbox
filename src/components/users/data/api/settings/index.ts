@@ -1,6 +1,5 @@
 export * from "./email"
 export * from "./im-auth"
 export * from "./account"
-export * from "./password"
 export * from "./im-binding"
 export * from "./game-account"

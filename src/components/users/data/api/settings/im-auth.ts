@@ -7,18 +7,18 @@ import {
 } from "@/components/users/data/types";
 
 
-export async function addAuthorizeSocialPlatformAccount(id: int, platform: SocialPlatform, userId: string, comment: string): Promise<APIResponse<AuthorizeSocialPlatformInfo[]>> {
-    const payload: AddAuthorizeSocialPlatformAccountPayload = {id, platform, userId, comment}
+export async function addAuthorizeSocialPlatformAccount(id: number, platform: SocialPlatform, userId: string, comment: string): Promise<APIResponse<AuthorizeSocialPlatformInfo[]>> {
+    const payload: AddAuthorizeSocialPlatformAccountPayload = {platform, userId, comment}
     return await callApi<AuthorizeSocialPlatformInfo[]>(
-        `/api/user/authorize-social-platform/${id}`,
+        `/api/user/{toolboxUserId}/authorize-social-platform/${id}`,
         "PUT",
         payload
     )
 }
 
-export async function removeAuthorizeSocialPlatformAccount(id: int): Promise<APIResponse<AuthorizeSocialPlatformInfo[]>> {
+export async function removeAuthorizeSocialPlatformAccount(id: number): Promise<APIResponse<AuthorizeSocialPlatformInfo[]>> {
     return await callApi<AuthorizeSocialPlatformInfo[]>(
-        `/api/user/authorize-social-platform/${id}`,
+        `/api/user/{toolboxUserId}/authorize-social-platform/${id}`,
         "DELETE",
     )
 }

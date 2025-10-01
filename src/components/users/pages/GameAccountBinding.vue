@@ -21,15 +21,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog"
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Checkbox } from "@/components/ui/checkbox"
 import {Label} from "@/components/ui/label"
 import {Switch} from "@/components/ui/switch"
 import {MoreHorizontal} from "lucide-vue-next"
@@ -313,7 +304,7 @@ const table = useVueTable({
                   <Switch v-model="editTarget!.mysekai.allowPublicApi"/>
                   <div class="flex-1">
                     <Label class="font-semibold">允许公开API访问</Label>
-                    <p class="text-sm text-muted-foreground">允许Suite数据通过Haruki工具箱公开API访问</p>
+                    <p class="text-sm text-muted-foreground">允许MySekai数据通过Haruki工具箱公开API访问</p>
                   </div>
                 </div>
               </Card>

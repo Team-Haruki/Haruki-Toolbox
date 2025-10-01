@@ -8,13 +8,15 @@ export interface RegisterPayload {
 
 export interface RegisterSuccessResponse {
     status: number
+    message: string
     userData: {
-        name: string
-        avatarPath: string
-        emailInfo: EmailInfo
+        name?: string
+        userId?: string
+        avatarPath?: string
+        emailInfo?: EmailInfo
         socialPlatformInfo?: SocialPlatformInfo | null
         authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
         gameAccountBindings?: GameAccountBinding[] | null
-        sessionToken: string
+        sessionToken?: string
     }
 }

@@ -3,7 +3,8 @@ import {
     APIResponse,
     SocialPlatformInfo,
     verifyEmailPayload,
-    SendQQMailVerificationPayload
+    SendQQMailVerificationPayload, SocialPlatform, GenerateSocialPlatformVerificationCodeResponse,
+    SocialPlatformVerificationRequestPayload
 } from "@/components/users/data/types";
 
 export async function sendQQMailVerificationCode(qq: string, challengeToken: string): Promise<APIResponse<null>> {
@@ -24,10 +25,12 @@ export async function verifyQQ(oneTimePassword: string): Promise<APIResponse<Soc
     )
 }
 
-export async function generateSocialPlatformVerificationCode(): Promise<APIResponse<null>> {
-    return await callApi<null>(
+export async function generateSocialPlatformVerificationCode(platform: SocialPlatform, userId: string): Promise<APIResponse<GenerateSocialPlatformVerificationCodeResponse>> {
+    const payload: SocialPlatformVerificationRequestPayload = {platform, userId}
+    return await callApi<GenerateSocialPlatformVerificationCodeResponse>(
         "/api/user/{toolboxUserId}/social-platform/generate-verification-code",
         "POST",
+        payload
     )
 }
 
@@ -35,5 +38,12 @@ export async function getSocialPlatformVerificationStatus(statusToken: string): 
     return await callApi<SocialPlatformInfo>(
         `/api/user/{toolboxUserId}/social-platform/verification-status/${statusToken}`,
         "GET",
+    )
+}
+
+export async function clearSocialPlatformBinding(): Promise<APIResponse<null>> {
+    return await callApi<null>(
+        "/api/user/{toolboxUserId}/social-platform/clear",
+        "DELETE"
     )
 }

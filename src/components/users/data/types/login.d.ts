@@ -13,19 +13,15 @@ export interface LoginRequest {
 
 export interface LoginResponse {
     status: number
+    message: string
     userData: {
-        name: string
-        avatarPath: string
-        emailInfo: EmailInfo
+        name?: string
+        userId?: string
+        avatarPath?: string
+        emailInfo?: EmailInfo
         socialPlatformInfo?: SocialPlatformInfo | null
         authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
         gameAccountBindings?: GameAccountBinding[] | null
         sessionToken: string
     }
-}
-
-export interface LoginResult {
-    success: boolean
-    data?: LoginResponse["userData"]
-    message?: string
 }

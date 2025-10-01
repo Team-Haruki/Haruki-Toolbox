@@ -53,34 +53,40 @@ const routes = [
                 meta: {title: 'iOS模块快速安装'}
             },
             {
-                path: '/user/login',
-                component: () => import("@/components/users/pages/Login.vue"),
-                meta: {title: '登录'}
-            },
-            {
-                path: '/user/register',
-                component: () => import("@/components/users/pages/Register.vue"),
-                meta: {title: '注册账号'}
-            },
-            {
-                path: '/user/settings',
-                component: () => import("@/components/users/pages/Settings.vue"),
-                meta: {title: '账号设置'}
-            },
-            {
-                path: '/user/game-account-binding',
-                component: () => import("@/components/users/pages/GameAccountBinding.vue"),
-                meta: {title: '绑定游戏账号'}
-            },
-            {
-                path: "/user/reset-password/:verifyHash",
-                name: "reset-password",
-                component: () => import("@/components/users/pages/ResetPassword.vue"),
-                props: (route) => ({
-                    verifyHash: route.params.verifyHash,
-                    email: route.query.email,
-                }),
-            },
+                path: '/user',
+                component: () => import('@/components/users/UserLayout.vue'),
+                children: [
+                    {
+                        path: 'login',
+                        component: () => import('@/components/users/pages/Login.vue'),
+                        meta: { title: '登录' }
+                    },
+                    {
+                        path: 'register',
+                        component: () => import('@/components/users/pages/Register.vue'),
+                        meta: { title: '注册账号' }
+                    },
+                    {
+                        path: 'settings',
+                        component: () => import('@/components/users/pages/Settings.vue'),
+                        meta: { title: '账号设置' }
+                    },
+                    {
+                        path: 'game-account-bindings',
+                        component: () => import('@/components/users/pages/GameAccountBinding.vue'),
+                        meta: { title: '绑定游戏账号' }
+                    },
+                    {
+                        path: 'reset-password/:verifyHash',
+                        name: 'reset-password',
+                        component: () => import('@/components/users/pages/ResetPassword.vue'),
+                        props: route => ({
+                            verifyHash: route.params.verifyHash,
+                            email: route.query.email,
+                        }),
+                    },
+                ]
+            }
         ]
     }
 ]

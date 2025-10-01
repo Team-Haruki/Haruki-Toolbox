@@ -2,6 +2,7 @@ import {toast} from "vue-sonner";
 import {callApi} from "@/components/users/data/api/call-api"
 import {
     APIResponse,
+    ChangePasswordPayload,
     UpdateUserProfilePayload
 } from "@/components/users/data/types";
 
@@ -25,7 +26,16 @@ export async function updateUserProfile(name: string, avatar: File): Promise<API
             payload
         )
     } catch (error) {
-        toast.error("更新用户资料失败:", error)
+        toast.error(`更新用户资料失败: ${String(error)}`)
         throw error
     }
+}
+
+export async function changePassword(password: string): Promise<APIResponse<null>> {
+    const payload: ChangePasswordPayload = {password}
+    return await callApi<null>(
+        "/api/user/{toolboxUserId}/change-password",
+        "PUT",
+        payload
+    )
 }

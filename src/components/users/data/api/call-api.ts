@@ -1,7 +1,7 @@
-import axios, { AxiosRequestConfig, Method } from "axios"
-import { useUserStore } from "@/stores/user"
+import axios, {AxiosRequestConfig, Method} from "axios"
+import {useUserStore} from "@/stores/user"
 
-const apiClient = axios.create({
+export const apiClient = axios.create({
     baseURL: import.meta.env.VITE_HARUKI_TOOLBOX_USER_BASE_URL,
     timeout: 10000,
     headers: {
@@ -22,31 +22,31 @@ apiClient.interceptors.request.use((config) => {
     return config
 })
 
+function isApiResponse<T>(data: any): data is APIResponse<T> {
+    return (
+        typeof data === "object" &&
+        data !== null &&
+        "status" in data &&
+        "message" in data
+    )
+}
 
 export async function callApi<T = unknown>(
     endpoint: string,
     method: Method = "GET",
     data?: any,
     config?: AxiosRequestConfig
-): Promise<APIResponse<T>> {
-    try {
-        const response = await apiClient.request<APIResponse<T>>({
-            url: endpoint,
-            method,
-            data,
-            ...config,
-        })
-        return response.data
-    } catch (error: any) {
-        if (error.response) {
-            console.error("API Error:", error.response.data)
-            throw new Error(error.response.data?.message || "API request failed")
-        } else if (error.request) {
-            console.error("No response from API:", error.request)
-            throw new Error("No response from API")
-        } else {
-            console.error("API setup error:", error.message)
-            throw new Error(error.message)
-        }
+): Promise<T> {
+    const response = await apiClient.request<T>({
+        url: endpoint,
+        method,
+        data,
+        ...config,
+    })
+
+    if (isApiResponse<T>(response.data)) {
+        return response.data as unknown as T
     }
+
+    return response.data
 }

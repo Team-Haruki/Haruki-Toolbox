@@ -15,8 +15,8 @@ export async function sendEmailVerificationCode(email: string, challengeToken: s
     )
 }
 
-export async function verifyEmail(oneTimePassword: string): Promise<APIResponse<EmailInfo>> {
-    const payload: verifyEmailPayload = {oneTimePassword}
+export async function verifyEmail(email: string, oneTimePassword: string): Promise<APIResponse<EmailInfo>> {
+    const payload: verifyEmailPayload = {email, oneTimePassword}
     return await callApi<EmailInfo>(
         "/api/email/verify",
         "POST",

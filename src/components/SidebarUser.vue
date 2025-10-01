@@ -107,9 +107,16 @@ function goAccountSettings() {
           </DropdownMenuLabel>
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem @click="goAccountSettings" v-if="isLoggedIn">
-            <Settings class="mr-2 h-4 w-4" /> 帐号设置
-          </DropdownMenuItem>
+          <RouterLink v-if="isLoggedIn" to="/user/settings" custom v-slot="{ navigate, href }">
+            <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
+              <Settings class="mr-2 h-4 w-4" /> 帐号设置
+            </DropdownMenuItem>
+          </RouterLink>
+          <RouterLink v-if="isLoggedIn" to="/user/game-account-bindings" custom v-slot="{ navigate, href }">
+            <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
+              <Settings class="mr-2 h-4 w-4" /> 游戏账号管理
+            </DropdownMenuItem>
+          </RouterLink>
           <DropdownMenuSeparator v-if="isLoggedIn" />
 
           <DropdownMenuItem v-if="isLoggedIn" @click="handleLogout">
