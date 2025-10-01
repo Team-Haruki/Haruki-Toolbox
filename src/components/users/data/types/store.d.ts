@@ -33,10 +33,10 @@ export interface MysekaiDataPrivacySettings {
 }
 
 export interface GameAccountBinding {
-    id: number
     server: SekaiRegion
     userId: number
     verified: boolean
     suite?: SuiteDataPrivacySettings | null
     mysekai?: MysekaiDataPrivacySettings | null
 }
+

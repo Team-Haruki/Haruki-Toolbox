@@ -1,5 +1,5 @@
 import axios, {AxiosRequestConfig, Method} from "axios"
-import {useUserStore} from "@/stores/user"
+import {useUserStore} from "@/components/users/data/store"
 
 export const apiClient = axios.create({
     baseURL: import.meta.env.VITE_HARUKI_TOOLBOX_USER_BASE_URL,

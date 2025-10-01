@@ -1,12 +1,12 @@
 import {toast} from "vue-sonner";
-import {useUserStore} from "@/stores/user"
-import { useRouter } from "vue-router";
+import {useRouter} from "vue-router";
+import {useUserStore} from "@/components/users/data/store";
 
-const userStore = useUserStore()
-const router = useRouter()
+export async function logout() {
+    const userStore = useUserStore();
+    const router = useRouter();
 
-export async function Logout() {
-    userStore.clearUser()
-    toast.success("注销成功")
-    await router.push("/user/login")
+    userStore.clearUser();
+    toast.success("注销成功");
+    await router.push("/user/login");
 }

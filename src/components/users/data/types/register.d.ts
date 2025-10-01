@@ -13,6 +13,7 @@ export interface RegisterSuccessResponse {
         name?: string
         userId?: string
         avatarPath?: string
+        allowCNMysekai?: boolean
         emailInfo?: EmailInfo
         socialPlatformInfo?: SocialPlatformInfo | null
         authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null

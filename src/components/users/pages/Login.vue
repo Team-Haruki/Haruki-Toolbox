@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import { toast } from "vue-sonner";
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
+import {ref} from "vue"
+import {toast} from "vue-sonner";
+import {Input} from "@/components/ui/input"
+import {Label} from "@/components/ui/label"
+import {Button} from "@/components/ui/button"
+import {useRouter} from "vue-router"
+import { isAxiosError } from "axios"
 
 import {
   Card,
@@ -22,15 +24,80 @@ import {
   DialogClose,
   DialogTrigger
 } from "@/components/ui/dialog"
+import Turnstile from "@/components/Turnstile.vue";
+import {login, sendResetPasswordEmail} from "@/components/users/data/api";
+import {onMounted} from "vue"
 
+const router = useRouter()
+
+const email = ref("")
+const password = ref("")
+const challengeToken = ref<string | null>(null)
+
+onMounted(() => {
+  const storedToken = localStorage.getItem("turnstile_token");
+  if (storedToken) {
+    challengeToken.value = storedToken;
+  }
+})
+
+function onTurnstileVerified(token: string) {
+  console.log("Callback success")
+  challengeToken.value = token;
+  console.log(challengeToken.value)
+  localStorage.setItem("turnstile_token", token);
+}
 
 const resetEmail = ref("")
-function handleResetPassword() {
+
+async function handleResetPassword() {
   if (!resetEmail.value) {
     toast.error("请输入邮箱地址")
     return
   }
-  toast.success(`重置密码邮件已发送到 ${resetEmail.value}`)
+  if (!challengeToken.value) {
+    toast.error("请先完成验证码验证")
+    return
+  }
+  try {
+    await sendResetPasswordEmail(resetEmail.value, challengeToken.value)
+    toast.success(`重置密码邮件已发送到 ${resetEmail.value}`)
+  } catch (err: unknown) {
+    let message = "网络错误，请检查连接"
+    if (isAxiosError(err)) {
+      message = (err.response?.data as any)?.message || err.message
+    } else if (err instanceof Error) {
+      message = err.message
+    }
+    toast.error(`重置密码失败：${message}`)
+  }
+}
+
+async function handleLogin() {
+  if (!challengeToken.value) {
+    toast.error("请先完成验证码验证")
+    return
+  }
+  try {
+    const response = await login(email.value, password.value, challengeToken.value)
+
+    if (response.status === 200) {
+      toast.success("登录成功")
+      localStorage.removeItem("turnstile_token")
+      challengeToken.value = null
+      router.push("/")
+    } else {
+      toast.error(response.message || "登录失败，请稍后再试")
+    }
+  } catch (err: unknown) {
+    let message = "网络错误，请检查连接"
+    if (isAxiosError(err)) {
+      message = (err.response?.data as any)?.message || err.message
+    } else if (err instanceof Error) {
+      message = err.message
+    }
+    toast.error(`登录失败：${message}`)
+  }
 }
 
 </script>
@@ -47,15 +114,16 @@ function handleResetPassword() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form>
+        <form @submit.prevent="handleLogin">
           <div class="grid gap-6">
             <div class="grid gap-2">
               <Label html-for="email">邮箱</Label>
               <Input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="请输入您的邮箱"
                   required
+                  v-model="email"
               />
             </div>
             <div class="grid gap-2">
@@ -80,6 +148,7 @@ function handleResetPassword() {
                           placeholder="you@example.com"
                           v-model="resetEmail"
                       />
+                      <Turnstile :callback="onTurnstileVerified"/>
                     </div>
                     <DialogFooter>
                       <DialogClose as-child>
@@ -90,7 +159,8 @@ function handleResetPassword() {
                   </DialogContent>
                 </Dialog>
               </div>
-              <Input id="password" type="password" required />
+              <Input id="password" type="password" placeholder="请输入您的密码" required v-model="password"/>
+              <Turnstile :callback="onTurnstileVerified"/>
             </div>
             <Button type="submit" class="w-full">
               登录

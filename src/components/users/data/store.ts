@@ -11,6 +11,7 @@ export const useUserStore = defineStore("user", () => {
     const name = ref<string>("未登录")
     const userId = ref<string | null>(null)
     const avatarPath = ref<string>("")
+    const allowCNMysekai = ref<boolean | null>(null)
     const emailInfo = ref<EmailInfo | null>(null)
     const socialPlatformInfo = ref<SocialPlatformInfo | null>(null)
     const authorizeSocialPlatformInfo = ref<AuthorizeSocialPlatformInfo[] | null>(null)
@@ -22,6 +23,7 @@ export const useUserStore = defineStore("user", () => {
         name?: string
         userId?: string
         avatarPath?: string
+        allowCNMysekai?: boolean
         emailInfo?: EmailInfo
         socialPlatformInfo?: SocialPlatformInfo | null
         authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
@@ -31,6 +33,7 @@ export const useUserStore = defineStore("user", () => {
         if (payload.name !== undefined) name.value = payload.name
         if (payload.userId !== undefined) userId.value = payload.userId
         if (payload.avatarPath !== undefined) avatarPath.value = payload.avatarPath
+        if (payload.allowCNMysekai !== undefined) allowCNMysekai.value = payload.allowCNMysekai
         if (payload.emailInfo !== undefined) emailInfo.value = payload.emailInfo
         if (payload.socialPlatformInfo !== undefined) socialPlatformInfo.value = payload.socialPlatformInfo
         if (payload.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = payload.authorizeSocialPlatformInfo
@@ -53,6 +56,7 @@ export const useUserStore = defineStore("user", () => {
         name: string
         userId: string
         avatarPath: string
+        allowCNMysekai: boolean
         emailInfo: EmailInfo
         socialPlatformInfo: SocialPlatformInfo | null
         authorizeSocialPlatformInfo: AuthorizeSocialPlatformInfo[] | null
@@ -61,6 +65,7 @@ export const useUserStore = defineStore("user", () => {
     }>) {
         if (partial.name !== undefined) name.value = partial.name
         if (partial.avatarPath !== undefined) avatarPath.value = partial.avatarPath
+        if (partial.allowCNMysekai !== undefined) allowCNMysekai.value = partial.allowCNMysekai
         if (partial.emailInfo !== undefined) emailInfo.value = partial.emailInfo
         if (partial.socialPlatformInfo !== undefined) socialPlatformInfo.value = partial.socialPlatformInfo
         if (partial.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = partial.authorizeSocialPlatformInfo
@@ -98,6 +103,7 @@ export const useUserStore = defineStore("user", () => {
         userId,
         avatarPath,
         emailInfo,
+        allowCNMysekai,
         socialPlatformInfo,
         authorizeSocialPlatformInfo,
         gameAccountBindings,

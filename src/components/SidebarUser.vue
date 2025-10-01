@@ -25,39 +25,18 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import harukiIcon from "@/assets/haruki.ico";
-import { ref } from "vue"
+import { logout } from "@/components/users/data/api";
+import { useUserStore } from "@/components/users/data/store";
 
-const isLoggedIn = ref(true)
-const user = ref({
-  name: "KGB",
-  email: "no-reply@seiunx.com",
-  avatar: harukiIcon,
-})
+const userStore = useUserStore();
 
 const { isMobile } = useSidebar()
 
-function handleLogin() {
-  isLoggedIn.value = true
-  user.value = {
-    name: "Haruki",
-    email: "user@example.com",
-    avatar: "https://github.com/unovue.png",
-  }
-}
 
 function handleLogout() {
-  isLoggedIn.value = false
-  user.value = {
-    name: "未登录",
-    email: "",
-    avatar: "",
-  }
+  logout();
 }
 
-function goAccountSettings() {
-  alert("跳转到帐号设置页面")
-}
 </script>
 
 <template>
@@ -70,14 +49,18 @@ function goAccountSettings() {
               class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             <Avatar class="h-8 w-8 rounded-lg">
-              <AvatarImage v-if="user.avatar" :src="user.avatar" :alt="user.name" />
+              <AvatarImage
+                  v-if="userStore.isLoggedIn && userStore.avatarPath"
+                  :src="userStore.avatarPath"
+                  :alt="userStore.name ?? ''"
+              />
               <AvatarFallback class="rounded-lg">
-                {{ user.name.charAt(0) }}
+                {{ userStore.isLoggedIn ? userStore.name?.charAt(0) : "未" }}
               </AvatarFallback>
             </Avatar>
             <div class="grid flex-1 text-left text-sm leading-tight">
-              <span class="truncate font-semibold">{{ user.name }}</span>
-              <span v-if="user.email" class="truncate text-xs">{{ user.email }}</span>
+              <span class="truncate font-semibold">{{ userStore.name }}</span>
+              <span v-if="userStore.emailInfo" class="truncate text-xs">{{ userStore.emailInfo.email }}</span>
             </div>
             <ChevronsUpDown class="ml-auto size-4" />
           </SidebarMenuButton>
@@ -90,41 +73,43 @@ function goAccountSettings() {
           <DropdownMenuLabel class="p-0 font-normal">
             <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
               <Avatar class="h-8 w-8 rounded-lg">
-                <AvatarImage v-if="isLoggedIn && user.avatar" :src="user.avatar" :alt="user.name" />
+                <AvatarImage v-if="userStore.isLoggedIn && userStore.avatarPath" :src="userStore.avatarPath" :alt="userStore.name ?? ''" />
                 <AvatarFallback class="rounded-lg">
-                  {{ isLoggedIn ? user.name.charAt(0) : "未" }}
+                  {{ userStore.isLoggedIn ? userStore.name?.charAt(0) : "未" }}
                 </AvatarFallback>
               </Avatar>
               <div class="grid flex-1 text-left text-sm leading-tight">
         <span class="truncate font-semibold">
-          {{ isLoggedIn ? user.name : "未登录" }}
+          {{ userStore.isLoggedIn ? userStore.name : "未登录" }}
         </span>
-                <span v-if="isLoggedIn && user.email" class="truncate text-xs">
-          {{ user.email }}
+                <span v-if="userStore.isLoggedIn && userStore.emailInfo.email" class="truncate text-xs">
+          {{ userStore.emailInfo.email }}
         </span>
               </div>
             </div>
           </DropdownMenuLabel>
 
           <DropdownMenuSeparator />
-          <RouterLink v-if="isLoggedIn" to="/user/settings" custom v-slot="{ navigate, href }">
+          <RouterLink v-if="userStore.isLoggedIn" to="/user/settings" custom v-slot="{ navigate, href }">
             <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
               <Settings class="mr-2 h-4 w-4" /> 帐号设置
             </DropdownMenuItem>
           </RouterLink>
-          <RouterLink v-if="isLoggedIn" to="/user/game-account-bindings" custom v-slot="{ navigate, href }">
+          <RouterLink v-if="userStore.isLoggedIn" to="/user/game-account-bindings" custom v-slot="{ navigate, href }">
             <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
               <Settings class="mr-2 h-4 w-4" /> 游戏账号管理
             </DropdownMenuItem>
           </RouterLink>
-          <DropdownMenuSeparator v-if="isLoggedIn" />
+          <DropdownMenuSeparator v-if="userStore.isLoggedIn" />
 
-          <DropdownMenuItem v-if="isLoggedIn" @click="handleLogout">
+          <DropdownMenuItem v-if="userStore.isLoggedIn" @click="handleLogout">
             <LogOut class="mr-2 h-4 w-4" /> 注销
           </DropdownMenuItem>
-          <DropdownMenuItem v-else @click="handleLogin">
-            <LogIn class="mr-2 h-4 w-4" /> 登录
-          </DropdownMenuItem>
+          <RouterLink v-else to="/user/login" custom v-slot="{ navigate, href }">
+            <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
+              <LogIn class="mr-2 h-4 w-4" /> 登录
+            </DropdownMenuItem>
+          </RouterLink>
         </DropdownMenuContent>
       </DropdownMenu>
     </SidebarMenuItem>
