@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, reactive, h} from "vue"
+import {ref, reactive, h, computed, onMounted} from "vue"
 import type {ColumnDef} from "@tanstack/vue-table"
 import {
   FlexRender,
@@ -10,7 +10,7 @@ import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu"
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose} from "@/components/ui/dialog"
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,11 +25,14 @@ import {Label} from "@/components/ui/label"
 import {Switch} from "@/components/ui/switch"
 import {MoreHorizontal} from "lucide-vue-next"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import { useUserStore } from "@/components/users/data/store";
+import { useRouter } from "vue-router"
+import { logout } from "@/components/users/data/api"
+import {toast} from "vue-sonner";
 
 interface GameAccount {
-  id: string
   server: string
-  uid: string
+  userId: number
   verified: boolean
   suite: {
     allowPublicApi: boolean
@@ -45,6 +48,30 @@ interface GameAccount {
   }
 }
 
+const userStore = useUserStore()
+const router = useRouter()
+
+onMounted(() => {
+  if (!userStore.isLoggedIn) {
+    toast.warning("请先登录")
+    logout().finally(() => {
+      router.push("/user/login")
+    })
+  }
+})
+
+import { watch } from "vue"
+watch(
+  () => userStore.isLoggedIn,
+  (isLoggedIn) => {
+    if (!isLoggedIn) {
+      logout().finally(() => {
+        router.push("/user/login")
+      })
+    }
+  }
+)
+
 const showVerifyDialog = ref(false)
 const generatedCode = ref("")
 const showEditDialog = ref(false)
@@ -53,44 +80,7 @@ const verifying = ref(false)
 const verifySuccess = ref<null | boolean>(null)
 const showDeleteDialog = ref(false)
 const deleteTarget = ref<GameAccount | null>(null)
-const data = ref<GameAccount[]>([
-  {
-    id: "1",
-    server: "日服",
-    uid: "114514",
-    verified: false,
-    suite: {
-      allowPublicApi: true,
-      allow8823: false,
-      allowSakura: false,
-      allowResona: true,
-    },
-    mysekai: {
-      allowPublicApi: false,
-      allowFixtureApi: true,
-      allow8823: false,
-      allowResona: false,
-    },
-  },
-  {
-    id: "2",
-    server: "国服",
-    uid: "1919810",
-    verified: true,
-    suite: {
-      allowPublicApi: true,
-      allow8823: true,
-      allowSakura: false,
-      allowResona: false,
-    },
-    mysekai: {
-      allowPublicApi: true,
-      allowFixtureApi: true,
-      allow8823: false,
-      allowResona: false,
-    },
-  },
-])
+const data = computed(() => userStore.gameAccountBindings ?? [])
 
 async function submitVerification() {
   verifying.value = true
@@ -106,15 +96,15 @@ async function submitVerification() {
 
 function handleEditSave() {
   if (editTarget.value) {
-    const idx = data.value.findIndex(d => d.id === editTarget.value!.id)
-    if (idx !== -1) data.value[idx] = {...editTarget.value}
+    const idx = data.value.findIndex(d => d.userId === editTarget.value!.userId)
+    if (idx !== -1) userStore.updateGameAccountBinding(idx, {...editTarget.value})
     showEditDialog.value = false
   }
 }
 
 function handleDelete() {
   if (deleteTarget.value) {
-    data.value = data.value.filter(d => d.id !== deleteTarget.value!.id)
+    userStore.removeGameAccountBinding(deleteTarget.value!.userId)
     showDeleteDialog.value = false
   }
 }
@@ -135,9 +125,8 @@ function handleVerify() {
 }
 
 const columns: ColumnDef<GameAccount>[] = [
-  {accessorKey: "id", header: "ID"},
   {accessorKey: "server", header: "区服"},
-  {accessorKey: "uid", header: "UID"},
+  {accessorKey: "userId", header: "游戏UID", cell: ({row}) => row.original.userId},
   {
     accessorKey: "verified",
     header: "验证状态",
@@ -224,16 +213,17 @@ const table = useVueTable({
             <h3 class="font-semibold mb-1">账号基本信息</h3>
             <div class="grid gap-3">
               <div class="flex items-center gap-4">
-                <Label class="w-24">ID</Label>
-                <Input v-model="editTarget!.id" disabled class="flex-1"/>
-              </div>
-              <div class="flex items-center gap-4">
                 <Label class="w-24">区服</Label>
                 <Input v-model="editTarget!.server" :disabled="editTarget?.verified" class="flex-1"/>
               </div>
               <div class="flex items-center gap-4">
-                <Label class="w-24">UID</Label>
-                <Input v-model="editTarget!.uid" :disabled="editTarget?.verified" class="flex-1"/>
+                <Label class="w-24">游戏UID</Label>
+                <Input
+                    v-model.number="editTarget!.userId"
+                    :disabled="editTarget?.verified"
+                    class="flex-1"
+                    type="number"
+                />
               </div>
               <div class="flex items-center gap-4">
                 <Label class="w-24">验证状态</Label>
@@ -291,52 +281,54 @@ const table = useVueTable({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>MySekai数据设置</CardTitle>
-              <CardDescription>
-                管理您上传的游戏账号的MySekai数据设置
-              </CardDescription>
-            </CardHeader>
-            <CardContent class="grid gap-4 sm:grid-cols-2">
-              <Card class="p-3">
-                <div class="flex items-center gap-3">
-                  <Switch v-model="editTarget!.mysekai.allowPublicApi"/>
-                  <div class="flex-1">
-                    <Label class="font-semibold">允许公开API访问</Label>
-                    <p class="text-sm text-muted-foreground">允许MySekai数据通过Haruki工具箱公开API访问</p>
+          <template v-if="userStore.allowCNMysekai || editTarget?.server !== 'cn'">
+            <Card>
+              <CardHeader>
+                <CardTitle>MySekai数据设置</CardTitle>
+                <CardDescription>
+                  管理您上传的游戏账号的MySekai数据设置
+                </CardDescription>
+              </CardHeader>
+              <CardContent class="grid gap-4 sm:grid-cols-2">
+                <Card class="p-3">
+                  <div class="flex items-center gap-3">
+                    <Switch v-model="editTarget!.mysekai.allowPublicApi"/>
+                    <div class="flex-1">
+                      <Label class="font-semibold">允许公开API访问</Label>
+                      <p class="text-sm text-muted-foreground">允许MySekai数据通过Haruki工具箱公开API访问</p>
+                    </div>
                   </div>
-                </div>
-              </Card>
-              <Card class="p-3">
-                <div class="flex items-center gap-3">
-                  <Switch v-model="editTarget!.mysekai.allowFixtureApi"/>
-                  <div class="flex-1">
-                    <Label class="font-semibold">允许家具共享API</Label>
-                    <p class="text-sm text-muted-foreground">允许MySekai账号UID出现在家具共享API</p>
+                </Card>
+                <Card class="p-3">
+                  <div class="flex items-center gap-3">
+                    <Switch v-model="editTarget!.mysekai.allowFixtureApi"/>
+                    <div class="flex-1">
+                      <Label class="font-semibold">允许家具共享API</Label>
+                      <p class="text-sm text-muted-foreground">允许MySekai账号UID出现在家具共享API</p>
+                    </div>
                   </div>
-                </div>
-              </Card>
-              <Card class="p-3">
-                <div class="flex items-center gap-3">
-                  <Switch v-model="editTarget!.mysekai.allow8823"/>
-                  <div class="flex-1">
-                    <Label class="font-semibold">允许上传至烤森Bot</Label>
-                    <p class="text-sm text-muted-foreground">允许MySekai数据上传到烤森Bot</p>
+                </Card>
+                <Card class="p-3">
+                  <div class="flex items-center gap-3">
+                    <Switch v-model="editTarget!.mysekai.allow8823"/>
+                    <div class="flex-1">
+                      <Label class="font-semibold">允许上传至烤森Bot</Label>
+                      <p class="text-sm text-muted-foreground">允许MySekai数据上传到烤森Bot</p>
+                    </div>
                   </div>
-                </div>
-              </Card>
-              <Card class="p-3">
-                <div class="flex items-center gap-3">
-                  <Switch v-model="editTarget!.mysekai.allowResona"/>
-                  <div class="flex-1">
-                    <Label class="font-semibold">允许上传至ResonaBot</Label>
-                    <p class="text-sm text-muted-foreground">允许MySekai数据上传到ResonaBot</p>
+                </Card>
+                <Card class="p-3">
+                  <div class="flex items-center gap-3">
+                    <Switch v-model="editTarget!.mysekai.allowResona"/>
+                    <div class="flex-1">
+                      <Label class="font-semibold">允许上传至ResonaBot</Label>
+                      <p class="text-sm text-muted-foreground">允许MySekai数据上传到ResonaBot</p>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            </CardContent>
-          </Card>
+                </Card>
+              </CardContent>
+            </Card>
+          </template>
         </div>
         <DialogFooter>
           <DialogClose as-child>
@@ -352,7 +344,7 @@ const table = useVueTable({
         <AlertDialogHeader>
           <AlertDialogTitle>确认删除</AlertDialogTitle>
           <AlertDialogDescription>
-            确认删除{{ deleteTarget?.server }}的UID{{ deleteTarget?.uid }} 吗？此操作无法撤销。
+            确认删除{{ deleteTarget?.server }}的User ID{{ deleteTarget?.userId }} 吗？此操作无法撤销。
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
