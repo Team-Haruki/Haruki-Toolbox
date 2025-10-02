@@ -245,6 +245,10 @@ async function handleEditSave() {
 
 async function handleVerify() {
   const uidStr = userIdInput.value?.trim()
+  if (!/^\d+$/.test(uidStr || "")) {
+    toast.error("无法生成验证码", {description: "游戏UID必须是纯数字"})
+    return
+  }
   if (!editTarget.value?.server || !uidStr) {
     toast.error("无法生成验证码", {description: "请先选择区服并填写游戏UID"})
     return
@@ -396,7 +400,6 @@ const table = useVueTable({
                     :disabled="editTarget?.verified"
                     class="flex-1"
                     type="text"
-                    inputmode="numeric"
                     pattern="\\d*"
                 />
               </div>
