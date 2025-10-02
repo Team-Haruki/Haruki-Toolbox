@@ -48,9 +48,9 @@ onMounted(() => {
 })
 
 function onTurnstileVerified(token: string) {
-  console.log("Callback success")
+  console.debug("Callback success")
   challengeToken.value = token;
-  console.log(challengeToken.value)
+  console.debug(challengeToken.value)
   localStorage.setItem("turnstile_token", token);
 }
 

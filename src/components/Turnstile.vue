@@ -48,7 +48,7 @@ function renderTurnstile() {
     sitekey: props.sitekey ?? "0x4AAAAAAB3p7JESUfJ98K3S",
     callback: handleVerify,
     theme: props.theme,
-    size: props.size,
+    size: props.size || "flexible",
     action: props.action,
     "expired-callback": handleExpired,
     "error-callback": handleError,
@@ -102,5 +102,22 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="container"></div>
+  <div class="turnstile-container">
+    <div class="turnstile" ref="container"></div>
+  </div>
 </template>
+
+<style scoped>
+.turnstile-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+
+  @media (max-width: 380px) {
+    .turnstile {
+      max-width: 275px;
+      overflow: hidden;
+    }
+  }
+}
+</style>
