@@ -5,7 +5,7 @@ import type { APIResponse } from "../types"
 
 export const apiClient = axios.create({
     baseURL: import.meta.env.VITE_HARUKI_TOOLBOX_USER_BASE_URL,
-    timeout: 10000,
+    timeout: 30000,
     headers: {
         "Content-Type": "application/json",
     },
