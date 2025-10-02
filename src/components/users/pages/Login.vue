@@ -9,7 +9,6 @@ import Turnstile from "@/components/Turnstile.vue";
 
 import {
   ref,
-  onMounted
 } from "vue"
 import {
   Card,
@@ -38,20 +37,15 @@ const router = useRouter()
 const email = ref("")
 const password = ref("")
 const resetEmail = ref("")
-const challengeToken = ref<string | null>(null)
+const loginChallengeToken = ref<string | null>(null)
+const resetChallengeToken = ref<string | null>(null)
 
-onMounted(() => {
-  const storedToken = localStorage.getItem("turnstile_token");
-  if (storedToken) {
-    challengeToken.value = storedToken;
-  }
-})
+function onLoginTurnstileVerified(token: string) {
+  loginChallengeToken.value = token;
+}
 
-function onTurnstileVerified(token: string) {
-  console.debug("Callback success")
-  challengeToken.value = token;
-  console.debug(challengeToken.value)
-  localStorage.setItem("turnstile_token", token);
+function onResetTurnstileVerified(token: string) {
+  resetChallengeToken.value = token;
 }
 
 async function handleResetPassword() {
@@ -59,13 +53,14 @@ async function handleResetPassword() {
     toast.error("请输入邮箱地址")
     return
   }
-  if (!challengeToken.value) {
+  if (!resetChallengeToken.value) {
     toast.error("请先完成人机验证")
     return
   }
   try {
-    await sendResetPasswordEmail(resetEmail.value, challengeToken.value)
+    await sendResetPasswordEmail(resetEmail.value, resetChallengeToken.value)
     toast.success("重置密码邮件已发送", {description: `邮件已发送到 ${resetEmail.value}`})
+    resetChallengeToken.value = null
   } catch (err: unknown) {
     let message = "网络错误，请检查连接"
     if (isAxiosError(err)) {
@@ -78,17 +73,16 @@ async function handleResetPassword() {
 }
 
 async function handleLogin() {
-  if (!challengeToken.value) {
+  if (!loginChallengeToken.value) {
     toast.error("请先完成验证码验证")
     return
   }
   try {
-    const response = await login(email.value, password.value, challengeToken.value)
+    const response = await login(email.value, password.value, loginChallengeToken.value)
 
     if (response.status === 200) {
       toast.success("登录成功")
-      localStorage.removeItem("turnstile_token")
-      challengeToken.value = null
+      loginChallengeToken.value = null
       await router.push("/")
     } else {
       toast.error("登录失败", {description: response.message || "请稍后再试"})
@@ -100,7 +94,7 @@ async function handleLogin() {
     } else if (err instanceof Error) {
       message = err.message
     }
-    toast.error("重置密码失败", {description: message})
+    toast.error("登录失败", {description: message})
   }
 }
 
@@ -152,7 +146,7 @@ async function handleLogin() {
                           placeholder="you@example.com"
                           v-model="resetEmail"
                       />
-                      <Turnstile :callback="onTurnstileVerified"/>
+                      <Turnstile :callback="onResetTurnstileVerified"/>
                     </div>
                     <DialogFooter>
                       <DialogClose as-child>
@@ -164,7 +158,7 @@ async function handleLogin() {
                 </Dialog>
               </div>
               <Input id="password" type="password" placeholder="请输入您的密码" required v-model="password"/>
-              <Turnstile :callback="onTurnstileVerified"/>
+              <Turnstile :callback="onLoginTurnstileVerified"/>
             </div>
             <Button type="submit" class="w-full">
               登录
