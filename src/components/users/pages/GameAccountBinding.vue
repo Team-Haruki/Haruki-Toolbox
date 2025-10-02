@@ -541,7 +541,7 @@ const table = useVueTable({
           <DialogTitle>验证码生成成功</DialogTitle>
           <DialogDescription>请在游戏内的个性签名中输入以下验证码完成验证</DialogDescription>
         </DialogHeader>
-        <div class="text-center text-2xl font-bold py-4">
+        <div class="text-center text-2xl font-bold py-4 select-all">
           {{ generatedCode }}
         </div>
         <DialogDescription>请务必完整输入进个性签名，不要移除斜杠</DialogDescription>
