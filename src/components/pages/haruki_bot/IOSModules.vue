@@ -3,7 +3,6 @@ import {toast} from "vue-sonner";
 import {Label} from "@/components/ui/label"
 import {PackageCheck} from 'lucide-vue-next'
 import {Button} from "@/components/ui/button"
-import {Checkbox} from "@/components/ui/checkbox"
 
 import {
   ref,
@@ -29,7 +28,6 @@ import {
 const selectedModule = ref<string>('suite')
 const selectedServer = ref<string>('jp')
 const selectedClient = ref<string>('shadowrocket')
-const isPublic = ref<boolean>(true)
 
 const basePath = 'https://public.assets.haruki.seiunx.com'
 
@@ -49,25 +47,25 @@ const moduleMap: Record<string, Record<string, string>> = {
     stash: 'unlocker/unlocker.stoverride'
   },
   mysekai: {
-    shadowrocket: 'mysekai/<server>_mysekai_<<PUBLIC>>.sgmodule',
-    surge: 'mysekai/<server>_mysekai_<<PUBLIC>>.sgmodule',
-    qx: 'mysekai/<server>_mysekai_<<PUBLIC>>.conf',
-    loon: 'mysekai/<server>_mysekai_<<PUBLIC>>.lnplugin',
-    stash: 'mysekai/<server>_mysekai_<<PUBLIC>>.stoverride'
+    shadowrocket: 'mysekai/<server>_mysekai.sgmodule',
+    surge: 'mysekai/<server>_mysekai.sgmodule',
+    qx: 'mysekai/<server>_mysekai.conf',
+    loon: 'mysekai/<server>_mysekai.lnplugin',
+    stash: 'mysekai/<server>_mysekai.stoverride'
   },
   mysekai_force: {
-    shadowrocket: 'mysekai_force/<server>_mysekai_<<PUBLIC>>.sgmodule',
-    surge: 'mysekai_force/<server>_mysekai_<<PUBLIC>>.sgmodule',
-    qx: 'mysekai_force/<server>_mysekai_<<PUBLIC>>.conf',
-    loon: 'mysekai_force/<server>_mysekai_<<PUBLIC>>.lnplugin',
-    stash: 'mysekai_force/<server>_mysekai_<<PUBLIC>>.stoverride'
+    shadowrocket: 'mysekai_force/<server>_mysekai.sgmodule',
+    surge: 'mysekai_force/<server>_mysekai.sgmodule',
+    qx: 'mysekai_force/<server>_mysekai.conf',
+    loon: 'mysekai_force/<server>_mysekai.lnplugin',
+    stash: 'mysekai_force/<server>_mysekai.stoverride'
   },
   suite: {
-    shadowrocket: 'suite/<server>_suite_<<PUBLIC>>.sgmodule',
-    surge: 'suite/<server>_suite_<<PUBLIC>>.sgmodule',
-    qx: 'suite/<server>_suite_<<PUBLIC>>.conf',
-    loon: 'suite/<server>_suite_<<PUBLIC>>.lnplugin',
-    stash: 'suite/<server>_suite_<<PUBLIC>>.stoverride'
+    shadowrocket: 'suite/<server>_suite.sgmodule',
+    surge: 'suite/<server>_suite.sgmodule',
+    qx: 'suite/<server>_suite.conf',
+    loon: 'suite/<server>_suite.lnplugin',
+    stash: 'suite/<server>_suite.stoverride'
   }
 }
 
@@ -89,9 +87,8 @@ async function installModule() {
     toast.warning('模块或平台不支持')
     return
   }
-  if (path.includes('<<PUBLIC>>')) {
-    const tag = isPublic.value ? 'public' : 'private'
-    path = path.replace('<server>', selectedServer.value).replace('<<PUBLIC>>', tag)
+  if (path.includes('<server>')) {
+    path = path.replace('<server>', selectedServer.value)
   }
   const rawUrl = `${basePath}/${path}`
   const uri = uriSchemes[selectedClient.value](rawUrl)
@@ -152,11 +149,7 @@ async function installModule() {
             </SelectContent>
           </Select>
         </div>
-        <div class="flex items-center gap-2">
-          <Checkbox id="public-checkbox" v-model="isPublic"/>
-          <Label for="public-checkbox">允许Haruki工具箱公开API访问我的数据</Label>
-        </div>
-        <p v-if="isCnRestricted" class="text-red-600">由于相关法律法规限制，本站不提过该区服的该功能的安装。</p>
+        <p v-if="isCnRestricted" class="text-red-600">由于相关法律法规限制，本站不提供该区服的该功能的安装。</p>
       </CardContent>
       <CardFooter>
         <Button class="w-full flex items-center justify-center gap-2" :disabled="isCnRestricted" @click="installModule">

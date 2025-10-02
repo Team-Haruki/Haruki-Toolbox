@@ -1,13 +1,49 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import {ref} from "vue"
+import {Input} from "@/components/ui/input"
+import {Label} from "@/components/ui/label"
+import {Button} from "@/components/ui/button"
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog"
+import {useUserStore} from "@/components/users/data/store";
+import {changePassword} from "@/components/users/data/api"
+import {toast} from "vue-sonner";
+import {useRouter} from "vue-router"
 
 const newPassword = ref("")
+const userStore = useUserStore()
+const router = useRouter()
+
+const handleChangePassword = async () => {
+  try {
+    await changePassword(newPassword.value)
+    toast.success("密码修改成功", { description: "请重新登录" })
+    userStore.clearUser()
+    await router.push("/user/login")
+  } catch (error) {
+    toast.error("密码修改失败", { description: error?.message || "请稍后重试" })
+  }
+}
 </script>
 
 <template>
@@ -47,7 +83,7 @@ const newPassword = ref("")
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction>确认</AlertDialogAction>
+                  <AlertDialogAction @click="handleChangePassword">确认</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

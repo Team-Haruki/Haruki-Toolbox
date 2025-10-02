@@ -16,10 +16,15 @@ function fileToBase64(file: File): Promise<string> {
     })
 }
 
-export async function updateUserProfile(name: string, avatar: File): Promise<APIResponse<{ name: string; avatarPath: string }>> {
+export async function updateUserProfile(name: string, avatar: File | null): Promise<APIResponse<{ name: string; avatarPath: string }>> {
     try {
-        const avatarBase64 = await fileToBase64(avatar)
-        const payload: UpdateUserProfilePayload = {name, avatarBase64}
+        let payload: UpdateUserProfilePayload;
+        if (avatar) {
+            const avatarBase64 = await fileToBase64(avatar)
+            payload = {name, avatarBase64}
+        } else {
+            payload = {name}
+        }
         return await callApi<{ name: string; avatarPath: string }>(
             "/api/user/{toolboxUserId}/profile",
             "PUT",

@@ -16,7 +16,7 @@ export interface MysekaiDataPrivacySettings {
 
 export interface GameAccountBindingPayload {
     server: SekaiRegion
-    userId: number
+    userId: string
     suite?: SuiteDataPrivacySettings | null
     mysekai?: MysekaiDataPrivacySettings | null
 }

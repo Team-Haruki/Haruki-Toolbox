@@ -6,10 +6,10 @@ export async function registerUser(
     name: string,
     email: string,
     password: string,
-    emailOneTimePassword: string,
+    oneTimePassword: string,
     challengeToken: string
 ): Promise<RegisterSuccessResponse> {
-    const payload: RegisterPayload = {name, email, password, emailOneTimePassword, challengeToken}
+    const payload: RegisterPayload = {name, email, password, oneTimePassword, challengeToken}
     const response = await callApi<RegisterSuccessResponse>(
         "/api/user/register",
         "POST",

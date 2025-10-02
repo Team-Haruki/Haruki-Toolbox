@@ -13,7 +13,7 @@ apiClient.interceptors.request.use((config) => {
     if (userStore.sessionToken) {
         config.headers = {
             ...config.headers,
-            Authorization: `Bearer ${userStore.sessionToken}`,
+            Authorization: `${userStore.sessionToken}`,
         }
     }
     if (config.url && userStore.userId) {

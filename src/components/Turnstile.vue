@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, defineProps, defineEmits, defineExpose } from "vue"
+import { onMounted, onUnmounted, ref, defineProps, defineEmits, defineExpose } from "vue"
 
 const props = defineProps<{
   sitekey?: string
@@ -16,14 +16,13 @@ const emit = defineEmits<{
 const token = ref<string | null>(null)
 const container = ref<HTMLDivElement | null>(null)
 let widgetId: number | null = null
+let interval: number | null = null
 
 function handleVerify(res: string) {
   token.value = res
   localStorage.setItem("turnstile_token", res)
   emit("verify", res)
-  if (props.callback) {
-    props.callback(res)
-  }
+  props.callback?.(res)
 }
 
 function handleExpired() {
@@ -37,7 +36,8 @@ function handleError() {
 }
 
 function renderTurnstile() {
-  widgetId = (window as any).turnstile.render(container.value!, {
+  if (!container.value || widgetId !== null) return
+  widgetId = (window as any).turnstile.render(container.value, {
     sitekey: props.sitekey ?? "0x4AAAAAAB3p7JESUfJ98K3S",
     callback: handleVerify,
     theme: props.theme,
@@ -67,20 +67,29 @@ defineExpose({
 })
 
 onMounted(() => {
-  localStorage.removeItem("turnstile_token")
-  token.value = null
+  token.value = localStorage.getItem("turnstile_token")
 
   if (container.value) {
     if ((window as any).turnstile) {
       renderTurnstile()
     } else {
-      const interval = setInterval(() => {
+      interval = window.setInterval(() => {
         if ((window as any).turnstile) {
           renderTurnstile()
-          clearInterval(interval)
+          if (interval) {
+            clearInterval(interval)
+            interval = null
+          }
         }
       }, 200)
     }
+  }
+})
+
+onUnmounted(() => {
+  if (interval) {
+    clearInterval(interval)
+    interval = null
   }
 })
 </script>

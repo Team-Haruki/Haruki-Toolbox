@@ -1,6 +1,7 @@
 import {callApi} from "@/components/users/data/api/call-api"
 import {
     APIResponse,
+    verifyQQPayload,
     SocialPlatformInfo,
     verifyEmailPayload,
     SendQQMailVerificationPayload, SocialPlatform, GenerateSocialPlatformVerificationCodeResponse,
@@ -10,16 +11,16 @@ import {
 export async function sendQQMailVerificationCode(qq: string, challengeToken: string): Promise<APIResponse<null>> {
     const payload: SendQQMailVerificationPayload = {qq, challengeToken}
     return await callApi<null>(
-        "/api/user/{toolboxUserId}/email/send-qq-mail",
+        "/api/user/{toolboxUserId}/social-platform/send-qq-mail",
         "POST",
         payload
     )
 }
 
-export async function verifyQQ(oneTimePassword: string): Promise<APIResponse<SocialPlatformInfo>> {
-    const payload: verifyEmailPayload = {oneTimePassword}
+export async function verifyQQ(qq: string, oneTimePassword: string): Promise<APIResponse<SocialPlatformInfo>> {
+    const payload: verifyQQPayload = {qq, oneTimePassword}
     return await callApi<SocialPlatformInfo>(
-        "/api/user/{toolboxUserId}/email/verify-qq-mail",
+        "/api/user/{toolboxUserId}/social-platform/verify-qq-mail",
         "POST",
         payload
     )

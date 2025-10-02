@@ -51,7 +51,7 @@ function handleLogout() {
             <Avatar class="h-8 w-8 rounded-lg">
               <AvatarImage
                   v-if="userStore.isLoggedIn && userStore.avatarPath"
-                  :src="userStore.avatarPath"
+                  :src="userStore.avatarPath ? 'http://127.0.0.1:8000/' + userStore.avatarPath : ''"
                   :alt="userStore.name ?? ''"
               />
               <AvatarFallback class="rounded-lg">
@@ -73,7 +73,7 @@ function handleLogout() {
           <DropdownMenuLabel class="p-0 font-normal">
             <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
               <Avatar class="h-8 w-8 rounded-lg">
-                <AvatarImage v-if="userStore.isLoggedIn && userStore.avatarPath" :src="userStore.avatarPath" :alt="userStore.name ?? ''" />
+                <AvatarImage v-if="userStore.isLoggedIn && userStore.avatarPath" :src="userStore.avatarPath ? 'http://127.0.0.1:8000/' + userStore.avatarPath : ''" :alt="userStore.name ?? ''" />
                 <AvatarFallback class="rounded-lg">
                   {{ userStore.isLoggedIn ? userStore.name?.charAt(0) : "未" }}
                 </AvatarFallback>

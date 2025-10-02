@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import { Button } from "@/components/ui/button"
-import { login } from "@/components/users/data/api";
+import { sendEmailVerificationCode, registerUser } from "@/components/users/data/api"
 import {
   Card,
   CardContent,
@@ -11,18 +11,74 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { toast } from "vue-sonner"
+import { useRouter } from "vue-router"
+import { useUserStore } from "@/components/users/data/store"
+import Turnstile from "@/components/Turnstile.vue"
 
 const username = ref("")
 const email = ref("")
 const password = ref("")
+const emailCode = ref("")
+const challengeToken = ref<string | null>(null)
+const isSending = ref(false)
+const countdown = ref(0)
+let countdownInterval: ReturnType<typeof setInterval> | null = null
+const router = useRouter()
+const userStore = useUserStore()
 
-function handleRegister() {
-  console.log("注册信息:", {
-    username: username.value,
-    email: email.value,
-    password: password.value,
-  })
-  alert("注册成功！")
+async function handleSendCode() {
+  if (!email.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+    toast.error("请输入有效的邮箱地址")
+    return
+  }
+  if (!challengeToken.value) {
+    toast.error("请先完成人机验证")
+    return
+  }
+  try {
+    isSending.value = true
+    await sendEmailVerificationCode(email.value, challengeToken.value)
+    toast.success("邮件已发送", { description: `邮件已发送到 ${email.value}` })
+    countdown.value = 60
+    if (countdownInterval) {
+      clearInterval(countdownInterval)
+    }
+    countdownInterval = setInterval(() => {
+      if (countdown.value > 0) {
+        countdown.value -= 1
+      }
+      if (countdown.value === 0 && countdownInterval) {
+        clearInterval(countdownInterval)
+        countdownInterval = null
+      }
+    }, 1000)
+  } catch (err) {
+    toast.error("发送验证码失败", { description: String(err) })
+  } finally {
+    isSending.value = false
+  }
+}
+
+async function handleRegister() {
+  if (!challengeToken.value) {
+    toast.error("请先完成验证码验证")
+    return
+  }
+  try {
+    const response = await registerUser(
+        username.value,
+        email.value,
+        password.value,
+        emailCode.value,
+        challengeToken.value
+    )
+    toast.success("注册成功", { description: "欢迎使用Haruki工具箱" })
+    userStore.setUser(response.userData)
+    await router.push("/")
+  } catch (err) {
+    toast.error("注册失败", { description: String(err) })
+  }
 }
 </script>
 
@@ -47,11 +103,32 @@ function handleRegister() {
           </div>
           <div class="grid gap-2">
             <Label for="email">邮箱</Label>
+            <div class="flex gap-2">
+              <Input
+                  id="email"
+                  v-model="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  required
+              />
+              <Button
+                type="button"
+                :disabled="isSending || countdown > 0"
+                @click="handleSendCode"
+              >
+                <template v-if="isSending">发送中...</template>
+                <template v-else-if="countdown > 0">{{ countdown }} 秒后重试</template>
+                <template v-else>发送验证码</template>
+              </Button>
+            </div>
+          </div>
+          <div class="grid gap-2">
+            <Label for="emailCode">邮箱验证码</Label>
             <Input
-                id="email"
-                v-model="email"
-                type="email"
-                placeholder="you@example.com"
+                id="emailCode"
+                v-model="emailCode"
+                type="text"
+                placeholder="请输入收到的验证码"
                 required
             />
           </div>
@@ -65,6 +142,7 @@ function handleRegister() {
                 required
             />
           </div>
+          <Turnstile @verify="(t) => (challengeToken = t)" class="md-2" />
           <Button type="submit" class="w-full"> 注册 </Button>
           <div class="text-center text-sm">
             已有账号？
@@ -77,6 +155,3 @@ function handleRegister() {
     </Card>
   </div>
 </template>
-
-<style scoped>
-</style>

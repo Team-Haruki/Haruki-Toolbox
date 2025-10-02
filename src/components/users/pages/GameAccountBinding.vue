@@ -8,6 +8,15 @@ import {
 } from "@tanstack/vue-table"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu"
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription} from "@/components/ui/dialog"
@@ -29,6 +38,7 @@ import { useUserStore } from "@/components/users/data/store";
 import { useRouter } from "vue-router"
 import { logout } from "@/components/users/data/api"
 import {toast} from "vue-sonner";
+import { addOrUpdateGameAccount, removeGameAccount, generateGameAccountVerificationCode } from "@/components/users/data/api"
 
 interface GameAccount {
   server: string
@@ -47,6 +57,21 @@ interface GameAccount {
     allowResona: boolean
   }
 }
+
+const regionLabels: Record<string, string> = {
+  jp: "日服",
+  en: "国际服",
+  tw: "台服",
+  kr: "韩服",
+  cn: "国服",
+}
+const regionOptions = [
+  { value: "jp", label: regionLabels.jp },
+  { value: "en", label: regionLabels.en },
+  { value: "tw", label: regionLabels.tw },
+  { value: "kr", label: regionLabels.kr },
+  { value: "cn", label: regionLabels.cn },
+]
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -76,41 +101,126 @@ const showVerifyDialog = ref(false)
 const generatedCode = ref("")
 const showEditDialog = ref(false)
 const editTarget = ref<GameAccount | null>(null)
-const verifying = ref(false)
-const verifySuccess = ref<null | boolean>(null)
 const showDeleteDialog = ref(false)
 const deleteTarget = ref<GameAccount | null>(null)
-const data = computed(() => userStore.gameAccountBindings ?? [])
+const userIdInput = ref<string>("")
+const isCreating = ref(false)
+const verificationTriggered = ref(false)
+const verificationAcknowledged = ref(false)
 
-async function submitVerification() {
-  verifying.value = true
+function startAdd() {
+  isCreating.value = true
+  verificationTriggered.value = false
+  verificationAcknowledged.value = false
+  generatedCode.value = ""
+  editTarget.value = reactive({
+    server: "jp",
+    userId: 0,
+    verified: false,
+    suite: {
+      allowPublicApi: false,
+      allowSakura: false,
+      allow8823: false,
+      allowResona: false,
+    },
+    mysekai: {
+      allowPublicApi: false,
+      allowFixtureApi: false,
+      allow8823: false,
+      allowResona: false,
+    },
+  })
+  userIdInput.value = ""
+  showEditDialog.value = true
+}
+
+const data = computed(() => Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : [])
+
+async function handleDelete() {
+  if (!deleteTarget.value) return
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    verifySuccess.value = true
-  } catch (e) {
-    verifySuccess.value = false
+    const resp = await removeGameAccount(deleteTarget.value.server as any, String(deleteTarget.value.userId))
+    const updated = (resp as any)?.updatedData?.gameAccountBindings
+    if (Array.isArray(updated)) {
+      userStore.updateUser({ gameAccountBindings: updated })
+    }
+    toast.success("删除成功", { description: "账号已解除绑定" })
+  } catch (e:any) {
+    toast.error("删除失败", { description: e?.message ?? String(e) })
   } finally {
-    verifying.value = false
-  }
-}
-
-function handleEditSave() {
-  if (editTarget.value) {
-    const idx = data.value.findIndex(d => d.userId === editTarget.value!.userId)
-    if (idx !== -1) userStore.updateGameAccountBinding(idx, {...editTarget.value})
-    showEditDialog.value = false
-  }
-}
-
-function handleDelete() {
-  if (deleteTarget.value) {
-    userStore.removeGameAccountBinding(deleteTarget.value!.userId)
     showDeleteDialog.value = false
   }
 }
 
+async function handleEditSave() {
+  if (!editTarget.value) return
+  if (isCreating.value && !verificationTriggered.value) {
+    toast.error("保存失败", { description: "新增账号前请先点击“验证”生成验证码，并在游戏内完成设置。" })
+    return
+  }
+  try {
+    const server = editTarget.value.server as any
+    const gameUidStr = userIdInput.value?.trim() ?? ""
+    if (!/^\d+$/.test(gameUidStr)) {
+      toast.error("保存失败", { description: "游戏UID必须是纯数字" })
+      return
+    }
+
+    // If CN and not allowed, force-hide MySekai in payload (all false)
+    const mysekaiPayload = (server === 'cn' && userStore.allowCNMysekai === false)
+      ? { allowPublicApi: false, allowFixtureApi: false, allow8823: false, allowResona: false }
+      : editTarget.value.mysekai ?? { allowPublicApi: false, allowFixtureApi: false, allow8823: false, allowResona: false }
+
+    const suitePayload = editTarget.value.suite ?? { allowPublicApi: false, allowSakura: false, allow8823: false, allowResona: false }
+
+    const resp = await (addOrUpdateGameAccount as any)(
+      server,
+      gameUidStr,
+      gameUidStr,
+      {
+        suite: suitePayload as any,
+        mysekai: mysekaiPayload as any,
+      }
+    )
+
+    const updated = (resp as any)?.updatedData?.gameAccountBindings
+    if (Array.isArray(updated)) {
+      userStore.updateUser({ gameAccountBindings: updated })
+    }
+    toast.success("保存成功", { description: "账号设置已更新" })
+    showEditDialog.value = false
+  } catch (e:any) {
+    toast.error("保存失败", { description: e?.message ?? String(e) })
+  }
+}
+
+async function handleVerify() {
+  const uidStr = userIdInput.value?.trim()
+  if (!editTarget.value?.server || !uidStr) {
+    toast.error("无法生成验证码", { description: "请先选择区服并填写游戏UID" })
+    return
+  }
+  try {
+    const resp = await generateGameAccountVerificationCode(editTarget.value.server as any, uidStr)
+    generatedCode.value = (resp as any)?.oneTimePassword ?? ""
+    if (!generatedCode.value) {
+      toast.error("生成失败", { description: "未返回验证码" })
+      return
+    }
+    showVerifyDialog.value = true
+    verificationTriggered.value = true
+  } catch (e:any) {
+    toast.error("生成失败", { description: e?.message ?? String(e) })
+  }
+}
+
 function startEdit(row: GameAccount) {
-  editTarget.value = reactive({...row})
+  isCreating.value = false
+  verificationTriggered.value = false
+  verificationAcknowledged.value = false
+  generatedCode.value = ""
+  editTarget.value = reactive({ ...row })
+  userIdInput.value = String(row.userId)
   showEditDialog.value = true
 }
 
@@ -119,13 +229,8 @@ function confirmDelete(row: GameAccount) {
   showDeleteDialog.value = true
 }
 
-function handleVerify() {
-  generatedCode.value = "123456"
-  showVerifyDialog.value = true
-}
-
 const columns: ColumnDef<GameAccount>[] = [
-  {accessorKey: "server", header: "区服"},
+  {accessorKey: "server", header: "区服", cell: ({row}) => regionLabels[row.original.server] ?? row.original.server},
   {accessorKey: "userId", header: "游戏UID", cell: ({row}) => row.original.userId},
   {
     accessorKey: "verified",
@@ -165,10 +270,15 @@ const table = useVueTable({
   <div class="w-full flex-1 flex flex-col items-center justify-center px-0 py-4">
     <Card class="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>游戏账号绑定</CardTitle>
-        <CardDescription>
-          管理您的 Haruki 工具箱账号绑定的《世界计划: 缤纷舞台 feat. 初音未来》游戏账号
-        </CardDescription>
+        <div class="flex items-center justify-between">
+          <div>
+            <CardTitle>游戏账号绑定</CardTitle>
+            <CardDescription>
+              管理您的 Haruki 工具箱账号绑定的《世界计划: 缤纷舞台 feat. 初音未来》游戏账号
+            </CardDescription>
+          </div>
+          <Button @click="startAdd">绑定新账号</Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div class="w-full rounded-md border">
@@ -214,21 +324,40 @@ const table = useVueTable({
             <div class="grid gap-3">
               <div class="flex items-center gap-4">
                 <Label class="w-24">区服</Label>
-                <Input v-model="editTarget!.server" :disabled="editTarget?.verified" class="flex-1"/>
+                <div class="flex-1">
+                  <Select v-model="editTarget!.server">
+                    <SelectTrigger class="w-full" :disabled="editTarget?.verified">
+                      <SelectValue placeholder="选择区服" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>区服</SelectLabel>
+                        <SelectItem v-for="opt in regionOptions" :key="opt.value" :value="opt.value">
+                          {{ opt.label }}
+                        </SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div class="flex items-center gap-4">
                 <Label class="w-24">游戏UID</Label>
                 <Input
-                    v-model.number="editTarget!.userId"
+                    v-model="userIdInput"
                     :disabled="editTarget?.verified"
                     class="flex-1"
-                    type="number"
+                    type="text"
+                    inputmode="numeric"
+                    pattern="\\d*"
                 />
               </div>
               <div class="flex items-center gap-4">
                 <Label class="w-24">验证状态</Label>
                 <div class="flex-1">
-                  <span v-if="editTarget?.verified" class="block text-green-600">已验证</span>
+                  <span
+                      v-if="editTarget?.verified"
+                      class="px-2 py-1 rounded text-xs bg-green-100 text-green-700"
+                  >已验证</span>
                   <Button v-else variant="outline" @click="handleVerify">验证</Button>
                 </div>
               </div>
@@ -253,7 +382,7 @@ const table = useVueTable({
               </Card>
               <Card class="p-3">
                 <div class="flex items-center gap-3">
-                  <Switch v-model="editTarget!.suite.allowFixtureApi"/>
+                  <Switch v-model="editTarget!.suite.allowSakura"/>
                   <div class="flex-1">
                     <Label class="font-semibold">允许上传至SakuraBot</Label>
                     <p class="text-sm text-muted-foreground">允许Suite数据上传到SakuraBot</p>
@@ -334,7 +463,7 @@ const table = useVueTable({
           <DialogClose as-child>
             <Button variant="outline">取消</Button>
           </DialogClose>
-          <Button @click="handleEditSave">保存</Button>
+          <Button @click="handleEditSave" :disabled="isCreating && !verificationTriggered">保存</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -358,25 +487,17 @@ const table = useVueTable({
       <DialogContent class="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>验证码生成成功</DialogTitle>
-          <DialogDescription>请在游戏内输入以下验证码完成验证</DialogDescription>
+          <DialogDescription>请在游戏内的个性签名中输入以下验证码完成验证</DialogDescription>
         </DialogHeader>
         <div class="text-center text-2xl font-bold py-4">
           {{ generatedCode }}
         </div>
-        <DialogFooter class="flex justify-between">
+        <DialogDescription>请务必完整输入进个性签名，不要移除斜杠</DialogDescription>
+        <DialogFooter>
           <DialogClose as-child>
-            <Button variant="outline">取消</Button>
+            <Button @click="verificationAcknowledged = true">我已输入，确定</Button>
           </DialogClose>
-          <Button :disabled="verifying" @click="submitVerification">
-            {{ verifying ? "验证中..." : "验证" }}
-          </Button>
         </DialogFooter>
-        <p v-if="verifySuccess === true" class="text-green-600 text-center mt-2">
-          绑定成功！
-        </p>
-        <p v-else-if="verifySuccess === false" class="text-red-600 text-center mt-2">
-          验证失败，请重试
-        </p>
       </DialogContent>
     </Dialog>
   </div>

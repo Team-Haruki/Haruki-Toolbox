@@ -6,7 +6,7 @@ import {
     GameAccountBindingPayload,
     MysekaiDataPrivacySettings,
     GameAccountBindingsUpdatedData,
-    GenerateGameAccountCodeResponse
+    GenerateGameAccountCodeResponse, GenerateGameAccountCodePayload
 } from "@/components/users/data/types"
 
 
@@ -46,7 +46,7 @@ export async function generateGameAccountVerificationCode(
     server: SekaiRegion,
     userId: string
 ): Promise<GenerateGameAccountCodeResponse> {
-    const payload = {server, userId}
+    const payload: GenerateGameAccountCodePayload = {server, userId}
     return await callApi<GenerateGameAccountCodeResponse>(
         "/api/user/{toolboxUserId}/game-account/generate-verification-code",
         "POST",

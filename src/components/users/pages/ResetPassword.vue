@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import { useRoute, useRouter } from "vue-router"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
+import {ref} from "vue"
+import {useRoute, useRouter} from "vue-router"
+import {Input} from "@/components/ui/input"
+import {Label} from "@/components/ui/label"
+import {Button} from "@/components/ui/button"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
-import { toast } from "vue-sonner"
+import {toast} from "vue-sonner"
+import {resetPassword} from "@/components/users/data/api"
 
 const route = useRoute()
 const router = useRouter()
@@ -28,10 +29,13 @@ async function handleSubmit() {
   }
 
   try {
-    toast.success("密码重置成功，请重新登录")
-    router.push("/login")
+    await resetPassword(email.value, verifyHash, newPassword.value)
+    toast.success("密码重置成功", {
+      description: "请重新登录"
+    })
+    await router.push("/user/login")
   } catch (err) {
-    toast.error("重置失败，请重试")
+    toast.error("重置失败: " + String(err))
   }
 }
 </script>

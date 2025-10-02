@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-
-const userInfo = ref({
-  nickname: "Haruki",
-  avatar: "https://github.com/unovue.png",
-})
+import {ref} from "vue"
+import {updateUserProfile} from "@/components/users/data/api"
+import {toast} from "vue-sonner"
+import {Input} from "@/components/ui/input"
+import {Label} from "@/components/ui/label"
+import {Button} from "@/components/ui/button"
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
+import {Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter} from "@/components/ui/card"
+import {useUserStore} from "@/components/users/data/store";
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const selectedFile = ref<File | null>(null)
+const previewAvatar = ref<string | null>(null)
+const userStore = useUserStore();
 
 function triggerFileInput() {
   fileInputRef.value?.click()
@@ -20,11 +21,46 @@ function triggerFileInput() {
 function onAvatarChange(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (file) {
+    selectedFile.value = file
     const reader = new FileReader()
     reader.onload = () => {
-      userInfo.value.avatar = reader.result as string
+      previewAvatar.value = reader.result as string
     }
     reader.readAsDataURL(file)
+  }
+}
+
+async function saveChanges() {
+  try {
+    let avatarPath = userStore.avatarPath
+    if (selectedFile.value) {
+      const result = await updateUserProfile(userStore.name, selectedFile.value)
+      if (result && result.updatedData.avatarPath) {
+        avatarPath = result.updatedData.avatarPath
+        previewAvatar.value = null
+        userStore.avatarPath = avatarPath
+      }
+      userStore.updateUser && userStore.updateUser({
+        name: userStore.name,
+        avatarPath: avatarPath,
+      })
+      toast.success("资料已保存", {
+        description: "用户资料更新成功",
+      })
+    } else {
+      await updateUserProfile(userStore.name, null)
+      userStore.updateUser && userStore.updateUser({
+        name: userStore.name,
+        avatarPath: avatarPath,
+      })
+      toast.success("资料已保存", {
+        description: "用户资料更新成功",
+      })
+    }
+  } catch (e) {
+    toast.error("保存失败", {
+      description: String(e) || "请重试",
+    })
   }
 }
 </script>
@@ -38,19 +74,19 @@ function onAvatarChange(event: Event) {
     <CardContent class="space-y-4">
       <div class="flex items-center gap-4">
         <Avatar class="h-16 w-16">
-          <AvatarImage :src="userInfo.avatar" />
-          <AvatarFallback>{{ userInfo.nickname.charAt(0) }}</AvatarFallback>
+          <AvatarImage :src="previewAvatar || `http://127.0.0.1:8000/${userStore.avatarPath}`"/>
+          <AvatarFallback>{{ userStore.name.charAt(0) }}</AvatarFallback>
         </Avatar>
-        <input type="file" accept="image/*" ref="fileInputRef" class="hidden" @change="onAvatarChange" />
+        <input type="file" accept="image/*" ref="fileInputRef" class="hidden" @change="onAvatarChange"/>
         <Button variant="outline" @click="triggerFileInput">更换头像</Button>
       </div>
       <div class="grid gap-2">
         <Label for="nickname">昵称</Label>
-        <Input id="nickname" v-model="userInfo.nickname" />
+        <Input id="nickname" v-model="userStore.name"/>
       </div>
     </CardContent>
     <CardFooter>
-      <Button class="w-full bg-primary">保存修改</Button>
+      <Button class="w-full bg-primary" @click="saveChanges">保存修改</Button>
     </CardFooter>
   </Card>
 </template>

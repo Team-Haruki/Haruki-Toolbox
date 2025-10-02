@@ -56,12 +56,12 @@ async function handleResetPassword() {
     return
   }
   if (!challengeToken.value) {
-    toast.error("请先完成验证码验证")
+    toast.error("请先完成人机验证")
     return
   }
   try {
     await sendResetPasswordEmail(resetEmail.value, challengeToken.value)
-    toast.success(`重置密码邮件已发送到 ${resetEmail.value}`)
+    toast.success("重置密码邮件已发送", { description: `邮件已发送到 ${resetEmail.value}` })
   } catch (err: unknown) {
     let message = "网络错误，请检查连接"
     if (isAxiosError(err)) {
@@ -69,7 +69,7 @@ async function handleResetPassword() {
     } else if (err instanceof Error) {
       message = err.message
     }
-    toast.error(`重置密码失败：${message}`)
+    toast.error("重置密码失败", { description: message })
   }
 }
 
@@ -85,9 +85,9 @@ async function handleLogin() {
       toast.success("登录成功")
       localStorage.removeItem("turnstile_token")
       challengeToken.value = null
-      router.push("/")
+      await router.push("/")
     } else {
-      toast.error(response.message || "登录失败，请稍后再试")
+      toast.error("登录失败", { description: response.message || "请稍后再试" })
     }
   } catch (err: unknown) {
     let message = "网络错误，请检查连接"
@@ -96,7 +96,7 @@ async function handleLogin() {
     } else if (err instanceof Error) {
       message = err.message
     }
-    toast.error(`登录失败：${message}`)
+    toast.error("重置密码失败", { description: message })
   }
 }
 

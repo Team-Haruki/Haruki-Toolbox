@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, h, reactive } from "vue"
+import { ref, h, reactive, computed, onMounted } from "vue"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog"
 import type { ColumnDef } from "@tanstack/vue-table"
@@ -50,22 +49,66 @@ import {
 } from "@/components/ui/alert-dialog"
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 
+import { useUserStore } from "@/components/users/data/store"
+import { storeToRefs } from "pinia"
+import { toast } from "vue-sonner"
+import { useRouter } from "vue-router"
+import { addAuthorizeSocialPlatformAccount, removeAuthorizeSocialPlatformAccount } from "@/components/users/data/api"
+
 
 
 const showEditDialog = ref(false)
 const editTarget = ref<SocialAuth | null>(null)
 const showDeleteDialog = ref(false)
 const deleteTarget = ref<SocialAuth | null>(null)
-const data = ref<SocialAuth[]>([
-  { id: "1", platform: "QQ", userId: "1234111111111111111111111111111111156789", remark: "主QQ账号" },
-  { id: "2", platform: "Discord", userId: "987654321", remark: "主Discord" },
-])
+
+type SocialPlatform = "qq" | "qqbot" | "discord" | "telegram"
 
 export interface SocialAuth {
   id: string
-  platform: "qq" | "qqbot" | "discord" | "telegram"
+  platform: SocialPlatform
   userId: string
-  remark: string
+  comment: string
+}
+
+const platformLabel: Record<SocialPlatform, string> = {
+  qq: "QQ",
+  qqbot: "QQ官方Bot",
+  discord: "Discord",
+  telegram: "Telegram",
+}
+
+const userStore = useUserStore()
+const router = useRouter()
+const { authorizeSocialPlatformInfo, isLoggedIn } = storeToRefs(userStore)
+
+const tableData = computed<SocialAuth[]>(() => {
+  const src: any = authorizeSocialPlatformInfo.value
+  const arr: any[] = Array.isArray(src) ? src : []
+  return arr.map((item: any) => ({
+    id: String(item.id),
+    platform: item.platform,
+    userId: item.userId,
+    comment: item.comment ?? item.remark ?? "",
+  }))
+})
+
+
+function nextId(): number {
+  const src: any = authorizeSocialPlatformInfo.value
+  const list: any[] = Array.isArray(src) ? src : []
+  if (!list.length) return 1
+  const set = new Set<number>(list.map((i: any) => Number(i.id)))
+  let i = 1
+  while (set.has(i)) i++
+  return i
+}
+
+function extractAuthorizeList(resp: any): any[] {
+  const root = (resp as any) ?? {}
+  const updated = root.updatedData ?? root.data?.updatedData ?? root.data ?? root
+  const list = updated?.authorizeSocialPlatformInfo ?? updated?.authorize_social_platform_info ?? updated
+  return Array.isArray(list) ? list : []
 }
 
 function startEdit(row: SocialAuth) {
@@ -73,13 +116,34 @@ function startEdit(row: SocialAuth) {
   showEditDialog.value = true
 }
 
-function handleEditSave() {
-  if (editTarget.value) {
-    const index = data.value.findIndex((d) => d.id === editTarget.value?.id)
-    if (index !== -1) {
-      data.value[index] = { ...editTarget.value }
-    }
+function startAdd() {
+  const id = nextId()
+  editTarget.value = reactive({
+    id: String(id),
+    platform: "qq",
+    userId: "",
+    comment: "",
+  })
+  showEditDialog.value = true
+}
+
+async function handleEditSave() {
+  if (!editTarget.value) return
+  try {
+    const idNum = Number(editTarget.value.id)
+    const resp = await addAuthorizeSocialPlatformAccount(
+      idNum,
+      editTarget.value.platform,
+      editTarget.value.userId,
+      editTarget.value.comment
+    )
+
+    const normalized = extractAuthorizeList(resp)
+    userStore.updateUser({ authorizeSocialPlatformInfo: normalized })
+    toast.success("已保存授权", { description: "社交平台账号授权信息已更新" })
     showEditDialog.value = false
+  } catch (e: any) {
+    toast.error("保存失败", { description: e?.message || String(e) })
   }
 }
 
@@ -88,23 +152,25 @@ function confirmDelete(row: SocialAuth) {
   showDeleteDialog.value = true
 }
 
-function handleDelete() {
-  if (deleteTarget.value) {
-    data.value = data.value.filter((d) => d.id !== deleteTarget.value?.id)
+async function handleDelete() {
+  if (!deleteTarget.value) return
+  try {
+    const idNum = Number(deleteTarget.value.id)
+    const resp = await removeAuthorizeSocialPlatformAccount(idNum)
+    const normalized = extractAuthorizeList(resp)
+    userStore.updateUser({ authorizeSocialPlatformInfo: normalized })
+    toast.success("已删除授权", { description: "该社交平台账号授权已移除" })
     showDeleteDialog.value = false
+  } catch (e: any) {
+    toast.error("删除失败", { description: e?.message || String(e) })
   }
 }
 
 const columns: ColumnDef<SocialAuth>[] = [
   {
-    accessorKey: "id",
-    header: "ID",
-    cell: ({ row }) => row.getValue("id"),
-  },
-  {
     accessorKey: "platform",
     header: "平台",
-    cell: ({ row }) => row.getValue("platform"),
+    cell: ({ row }) => platformLabel[row.getValue("platform") as SocialPlatform] ?? row.getValue("platform"),
   },
   {
     accessorKey: "userId",
@@ -112,9 +178,9 @@ const columns: ColumnDef<SocialAuth>[] = [
     cell: ({ row }) => row.getValue("userId"),
   },
   {
-    accessorKey: "remark",
+    accessorKey: "comment",
     header: "备注",
-    cell: ({ row }) => row.getValue("remark"),
+    cell: ({ row }) => row.getValue("comment"),
   },
   {
     id: "actions",
@@ -138,20 +204,29 @@ const columns: ColumnDef<SocialAuth>[] = [
 
 const table = useVueTable({
   get data() {
-    return data.value
+    return tableData.value
   },
   columns,
   getCoreRowModel: getCoreRowModel(),
+})
+
+onMounted(() => {
+  if (!isLoggedIn.value) {
+    router.push("/user/login")
+  }
 })
 </script>
 
 <template>
   <Card class="w-full max-w-md">
     <CardHeader>
-      <CardTitle>授权社交平台查询</CardTitle>
-      <CardDescription>
-        管理您的Haruki工具箱账号授权可查询游戏账号信息的社交平台
-      </CardDescription>
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <CardTitle>授权社交平台查询</CardTitle>
+          <CardDescription>管理您的Haruki工具箱账号授权可查询游戏账号信息的社交平台</CardDescription>
+        </div>
+        <Button size="sm" @click="startAdd">新增授权</Button>
+      </div>
     </CardHeader>
     <CardContent>
       <div class="w-full flex justify-center">
@@ -207,10 +282,6 @@ const table = useVueTable({
       </DialogHeader>
       <div class="grid gap-4 py-4">
         <div class="grid grid-cols-4 items-center gap-4">
-          <Label for="id" class="text-right">ID</Label>
-          <Input id="id" v-model="editTarget.id" class="col-span-3" disabled />
-        </div>
-        <div class="grid grid-cols-4 items-center gap-4">
           <Label for="platform" class="text-right">平台</Label>
           <Select v-model="editTarget.platform">
             <SelectTrigger
@@ -233,7 +304,7 @@ const table = useVueTable({
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="remark" class="text-right">备注</Label>
-          <Input id="remark" v-model="editTarget.remark" class="col-span-3" />
+          <Input id="remark" v-model="editTarget.comment" class="col-span-3" />
         </div>
       </div>
       <DialogFooter>
@@ -255,7 +326,7 @@ const table = useVueTable({
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>取消</AlertDialogCancel>
-        <AlertDialogAction class="bg-destructive text-foreground" @click="handleDelete">删除</AlertDialogAction>
+        <AlertDialogAction class="bg-destructive" @click="handleDelete">删除</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
