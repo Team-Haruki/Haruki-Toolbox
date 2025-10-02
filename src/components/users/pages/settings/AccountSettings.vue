@@ -86,7 +86,7 @@ async function saveChanges() {
     <CardContent class="space-y-4">
       <div class="flex items-center gap-4">
         <Avatar class="h-16 w-16">
-          <AvatarImage :src="previewAvatar || `http://127.0.0.1:8000/${userStore.avatarPath}`"/>
+          <AvatarImage :src="previewAvatar || `${userStore.avatarPath}`"/>
           <AvatarFallback>{{ userStore.name.charAt(0) }}</AvatarFallback>
         </Avatar>
         <input type="file" accept="image/*" ref="fileInputRef" class="hidden" @change="onAvatarChange"/>
