@@ -137,7 +137,7 @@ async function submitFileUpload() {
   uploadStatus.value = `正在上传您的${dataType.value === 'suite' ? 'Suite' : 'MySekai'}数据...`
   try {
     const resp = await uploadManualData(
-      selectedAccount.value.server,
+      selectedAccount.value.server!,
       String(selectedAccount.value.uid),
       dataType.value,
       file,
