@@ -45,13 +45,13 @@ export async function callApi<T = unknown>(
 
     if (isApiResponse<T>(response.data)) {
         if (response.data.status !== 200) {
-            toast.error(`API请求失败，状态码: ${response.data.status}，信息: ${response.data.message}`)
+            toast.error("API请求失败", {description: `状态码: ${response.data.status}，信息: ${response.data.message}`})
             throw response.data
         }
         return response.data
     }
 
-    toast.error(`API请求失败，无效的响应格式`)
+    toast.error("API请求失败", {description: `无效的响应格式`})
 
     throw {
         status: 500,
