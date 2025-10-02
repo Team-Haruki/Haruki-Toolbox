@@ -1,4 +1,4 @@
-import axios, {AxiosRequestConfig, Method} from "axios"
+import axios, {type AxiosRequestConfig, type Method} from "axios"
 import {useUserStore} from "@/components/users/data/store"
 
 export const apiClient = axios.create({

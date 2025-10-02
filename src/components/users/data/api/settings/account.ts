@@ -1,6 +1,6 @@
 import {toast} from "vue-sonner";
 import {callApi} from "@/components/users/data/api/call-api"
-import {
+import type {
     APIResponse,
     ChangePasswordPayload,
     UpdateUserProfilePayload

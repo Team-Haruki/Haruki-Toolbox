@@ -3,7 +3,7 @@ import {
     SocialPlatformInfo,
     GameAccountBinding,
     AuthorizeSocialPlatformInfo,
-} from "@/components/users/data/types/store";
+} from "@/components/users/data/types/store.ts";
 
 export interface LoginRequest {
     email: string

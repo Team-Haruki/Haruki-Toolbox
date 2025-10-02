@@ -1,11 +1,12 @@
 import {callApi} from "@/components/users/data/api/call-api"
-import {
+import type {
     APIResponse,
+    SocialPlatform,
     verifyQQPayload,
     SocialPlatformInfo,
-    verifyEmailPayload,
-    SendQQMailVerificationPayload, SocialPlatform, GenerateSocialPlatformVerificationCodeResponse,
-    SocialPlatformVerificationRequestPayload
+    SendQQMailVerificationPayload,
+    SocialPlatformVerificationRequestPayload,
+    GenerateSocialPlatformVerificationCodeResponse
 } from "@/components/users/data/types";
 
 export async function sendQQMailVerificationCode(qq: string, challengeToken: string): Promise<APIResponse<null>> {

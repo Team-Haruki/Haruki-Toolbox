@@ -1,6 +1,6 @@
 import {defineStore} from "pinia"
 import {ref, computed} from "vue"
-import {
+import type {
     EmailInfo,
     GameAccountBinding,
     SocialPlatformInfo,

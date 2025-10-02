@@ -1,5 +1,5 @@
 import {callApi} from "@/components/users/data/api/call-api";
-import {APIResponse, SekaiRegion} from "@/components/users/data/types";
+import type {APIResponse, SekaiRegion} from "@/components/users/data/types";
 
 export async function submitInherit(
     server: SekaiRegion,

@@ -1,12 +1,13 @@
 import {callApi} from "@/components/users/data/api/call-api"
-import {
+import type {
     SekaiRegion,
     APIResponse,
     SuiteDataPrivacySettings,
     GameAccountBindingPayload,
     MysekaiDataPrivacySettings,
+    GenerateGameAccountCodePayload,
     GameAccountBindingsUpdatedData,
-    GenerateGameAccountCodeResponse, GenerateGameAccountCodePayload
+    GenerateGameAccountCodeResponse
 } from "@/components/users/data/types"
 
 

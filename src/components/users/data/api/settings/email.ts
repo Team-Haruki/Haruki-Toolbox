@@ -1,5 +1,5 @@
 import {callApi} from "@/components/users/data/api/call-api"
-import {
+import type {
     EmailInfo,
     APIResponse,
     verifyEmailPayload,

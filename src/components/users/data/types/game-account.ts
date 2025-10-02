@@ -1,4 +1,4 @@
-import {SekaiRegion} from "@/components/users/data/types/store";
+import {SekaiRegion} from "@/components/users/data/types/store.ts";
 
 export interface SuiteDataPrivacySettings {
     allowPublicApi: boolean

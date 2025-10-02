@@ -1,6 +1,6 @@
 import {useUserStore} from "@/components/users/data/store"
 import {apiClient} from "@/components/users/data/api/call-api"
-import {APIResponse} from "@/components/users/data/types";
+import type {APIResponse} from "@/components/users/data/types";
 
 export async function uploadManualData(
     server: string,

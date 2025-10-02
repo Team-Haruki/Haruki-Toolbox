@@ -1,6 +1,6 @@
 import {useUserStore} from "@/components/users/data/store"
 import {callApi} from "@/components/users/data/api/call-api"
-import type {RegisterErrorResponse, RegisterPayload, RegisterSuccessResponse} from "@/components/users/data/types"
+import type {RegisterPayload, RegisterSuccessResponse} from "@/components/users/data/types"
 
 export async function registerUser(
     name: string,
