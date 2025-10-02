@@ -1,21 +1,30 @@
 <script setup lang="ts">
 import {ref} from "vue"
-import {useRoute, useRouter} from "vue-router"
+import {toast} from "vue-sonner"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
-import {toast} from "vue-sonner"
 import {resetPassword} from "@/components/users/data/api"
+
+import {
+  useRoute,
+  useRouter
+} from "vue-router"
+import {
+  Card,
+  CardTitle,
+  CardHeader,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card"
 
 const route = useRoute()
 const router = useRouter()
-
+const newPassword = ref("")
+const confirmPassword = ref("")
 const verifyHash = route.params.verifyHash as string
 const email = ref((route.query.email as string) || "")
 
-const newPassword = ref("")
-const confirmPassword = ref("")
 
 async function handleSubmit() {
   if (!newPassword.value || !confirmPassword.value) {

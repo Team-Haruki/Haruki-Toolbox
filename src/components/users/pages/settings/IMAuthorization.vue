@@ -1,9 +1,26 @@
 <script setup lang="ts">
-import { ref, h, reactive, computed, onMounted } from "vue"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { MoreHorizontal } from "lucide-vue-next"
+import {toast} from "vue-sonner"
+import {storeToRefs} from "pinia"
+import {useRouter} from "vue-router"
+import {Input} from "@/components/ui/input"
+import {Label} from "@/components/ui/label"
+import {Button} from "@/components/ui/button"
+import {MoreHorizontal} from "lucide-vue-next"
+import type {ColumnDef} from "@tanstack/vue-table"
+import {useUserStore} from "@/components/users/data/store"
+
+import {
+  h,
+  ref,
+  reactive,
+  computed,
+  onMounted
+} from "vue"
+import {
+  FlexRender,
+  useVueTable,
+  getCoreRowModel,
+} from "@tanstack/vue-table"
 import {
   Card,
   CardContent,
@@ -20,48 +37,49 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog"
-import type { ColumnDef } from "@tanstack/vue-table"
-import { FlexRender, getCoreRowModel, useVueTable } from "@tanstack/vue-table"
 
 import {
+  Select,
+  SelectItem,
+  SelectValue,
+  SelectContent,
+  SelectTrigger
+} from "@/components/ui/select";
+import {
   Table,
+  TableRow,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
 } from "@/components/ui/table"
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuContent,
 } from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
+  AlertDialogTitle,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialogContent,
+  AlertDialogDescription,
 } from "@/components/ui/alert-dialog"
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {
+  addAuthorizeSocialPlatformAccount,
+  removeAuthorizeSocialPlatformAccount
+} from "@/components/users/data/api"
 
-import { useUserStore } from "@/components/users/data/store"
-import { storeToRefs } from "pinia"
-import { toast } from "vue-sonner"
-import { useRouter } from "vue-router"
-import { addAuthorizeSocialPlatformAccount, removeAuthorizeSocialPlatformAccount } from "@/components/users/data/api"
-
-
-
+const router = useRouter()
+const userStore = useUserStore()
 const showEditDialog = ref(false)
 const editTarget = ref<SocialAuth | null>(null)
 const showDeleteDialog = ref(false)
 const deleteTarget = ref<SocialAuth | null>(null)
-
 type SocialPlatform = "qq" | "qqbot" | "discord" | "telegram"
 
 export interface SocialAuth {
@@ -78,9 +96,7 @@ const platformLabel: Record<SocialPlatform, string> = {
   telegram: "Telegram",
 }
 
-const userStore = useUserStore()
-const router = useRouter()
-const { authorizeSocialPlatformInfo, isLoggedIn } = storeToRefs(userStore)
+const {authorizeSocialPlatformInfo, isLoggedIn} = storeToRefs(userStore)
 
 const tableData = computed<SocialAuth[]>(() => {
   const src: any = authorizeSocialPlatformInfo.value
@@ -112,7 +128,7 @@ function extractAuthorizeList(resp: any): any[] {
 }
 
 function startEdit(row: SocialAuth) {
-  editTarget.value = reactive({ ...row })
+  editTarget.value = reactive({...row})
   showEditDialog.value = true
 }
 
@@ -132,18 +148,18 @@ async function handleEditSave() {
   try {
     const idNum = Number(editTarget.value.id)
     const resp = await addAuthorizeSocialPlatformAccount(
-      idNum,
-      editTarget.value.platform,
-      editTarget.value.userId,
-      editTarget.value.comment
+        idNum,
+        editTarget.value.platform,
+        editTarget.value.userId,
+        editTarget.value.comment
     )
 
     const normalized = extractAuthorizeList(resp)
-    userStore.updateUser({ authorizeSocialPlatformInfo: normalized })
-    toast.success("已保存授权", { description: "社交平台账号授权信息已更新" })
+    userStore.updateUser({authorizeSocialPlatformInfo: normalized})
+    toast.success("已保存授权", {description: "社交平台账号授权信息已更新"})
     showEditDialog.value = false
   } catch (e: any) {
-    toast.error("保存失败", { description: e?.message || String(e) })
+    toast.error("保存失败", {description: e?.message || String(e)})
   }
 }
 
@@ -158,11 +174,11 @@ async function handleDelete() {
     const idNum = Number(deleteTarget.value.id)
     const resp = await removeAuthorizeSocialPlatformAccount(idNum)
     const normalized = extractAuthorizeList(resp)
-    userStore.updateUser({ authorizeSocialPlatformInfo: normalized })
-    toast.success("已删除授权", { description: "该社交平台账号授权已移除" })
+    userStore.updateUser({authorizeSocialPlatformInfo: normalized})
+    toast.success("已删除授权", {description: "该社交平台账号授权已移除"})
     showDeleteDialog.value = false
   } catch (e: any) {
-    toast.error("删除失败", { description: e?.message || String(e) })
+    toast.error("删除失败", {description: e?.message || String(e)})
   }
 }
 
@@ -170,32 +186,32 @@ const columns: ColumnDef<SocialAuth>[] = [
   {
     accessorKey: "platform",
     header: "平台",
-    cell: ({ row }) => platformLabel[row.getValue("platform") as SocialPlatform] ?? row.getValue("platform"),
+    cell: ({row}) => platformLabel[row.getValue("platform") as SocialPlatform] ?? row.getValue("platform"),
   },
   {
     accessorKey: "userId",
     header: "账号",
-    cell: ({ row }) => row.getValue("userId"),
+    cell: ({row}) => row.getValue("userId"),
   },
   {
     accessorKey: "comment",
     header: "备注",
-    cell: ({ row }) => row.getValue("comment"),
+    cell: ({row}) => row.getValue("comment"),
   },
   {
     id: "actions",
     header: "操作",
-    cell: ({ row }) =>
+    cell: ({row}) =>
         h(DropdownMenu, null, {
           default: () => [
-            h(DropdownMenuTrigger, { asChild: true }, () =>
-                h(Button, { variant: "ghost", size: "icon" }, () =>
-                    h(MoreHorizontal, { class: "h-4 w-4" })
+            h(DropdownMenuTrigger, {asChild: true}, () =>
+                h(Button, {variant: "ghost", size: "icon"}, () =>
+                    h(MoreHorizontal, {class: "h-4 w-4"})
                 )
             ),
-            h(DropdownMenuContent, { align: "end" }, () => [
-              h(DropdownMenuItem, { onClick: () => startEdit(row.original) }, () => "编辑"),
-              h(DropdownMenuItem, { onClick: () => confirmDelete(row.original) }, () => "删除"),
+            h(DropdownMenuContent, {align: "end"}, () => [
+              h(DropdownMenuItem, {onClick: () => startEdit(row.original)}, () => "编辑"),
+              h(DropdownMenuItem, {onClick: () => confirmDelete(row.original)}, () => "删除"),
             ]),
           ],
         }),
@@ -288,7 +304,7 @@ onMounted(() => {
                 id="platform"
                 class="col-span-3 flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             >
-              <SelectValue placeholder="请选择社交平台" />
+              <SelectValue placeholder="请选择社交平台"/>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="qq">QQ</SelectItem>
@@ -300,11 +316,11 @@ onMounted(() => {
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="account" class="text-right">账号</Label>
-          <Input id="account" v-model="editTarget.userId" class="col-span-3" />
+          <Input id="account" v-model="editTarget.userId" class="col-span-3"/>
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="remark" class="text-right">备注</Label>
-          <Input id="remark" v-model="editTarget.comment" class="col-span-3" />
+          <Input id="remark" v-model="editTarget.comment" class="col-span-3"/>
         </div>
       </div>
       <DialogFooter>

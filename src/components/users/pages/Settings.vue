@@ -1,9 +1,26 @@
 <script setup lang="ts">
-import AccountSettings from "@/components/users/pages/settings/AccountSettings.vue"
+import { watch } from "vue"
+import { useRouter } from "vue-router"
+import { useUserStore } from "@/components/users/data/store"
 import EmailSettings from "@/components/users/pages/settings/EmailSettings.vue"
+import AccountSettings from "@/components/users/pages/settings/AccountSettings.vue"
+import ImAuthorization from "@/components/users/pages/settings/IMAuthorization.vue"
 import PasswordSettings from "@/components/users/pages/settings/PasswordSettings.vue"
 import ImBindingSettings from "@/components/users/pages/settings/IMBindingSettings.vue"
-import ImAuthorization from "@/components/users/pages/settings/IMAuthorization.vue"
+
+const router = useRouter()
+const userStore = useUserStore()
+watch(
+  () => userStore.sessionToken,
+  (token) => {
+    if (!token) {
+      if (router.currentRoute.value.path !== "/user/login") {
+        router.push("/user/login")
+      }
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>

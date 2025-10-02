@@ -9,6 +9,29 @@ import {Separator} from '@/components/ui/separator'
 import SidebarUser from "@/components/SidebarUser.vue";
 import type {SidebarProps} from '@/components/ui/sidebar'
 
+import {
+  LucideMap,
+  LucideInfo,
+  LucideHome,
+  LucideWrench,
+  LucideCalculator,
+  LucideNavigation,
+  LucideUploadCloud,
+  LucideChevronRight,
+  LucideArrowDownToLine
+} from 'lucide-vue-next'
+import {
+  Select,
+  SelectItem,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+} from '@/components/ui/select'
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback
+} from "@/components/ui/avatar"
 
 import {
   Sidebar,
@@ -29,32 +52,11 @@ import {
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar'
 import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback } from "@/components/ui/avatar"
-import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
 } from '@/components/ui/collapsible'
-import {
-  LucideMap,
-  LucideInfo,
-  LucideHome,
-  LucideWrench,
-  LucideCalculator,
-  LucideNavigation,
-  LucideUploadCloud,
-  LucideChevronRight,
-  LucideArrowDownToLine
-} from 'lucide-vue-next'
-import {
-  Select,
-  SelectItem,
-  SelectValue,
-  SelectTrigger,
-  SelectContent,
-} from '@/components/ui/select'
+
 
 const route = useRoute()
 const mode = useColorMode()
@@ -78,6 +80,7 @@ interface NavSubItem {
   icon?: any
   url: string
 }
+
 interface NavItem {
   title: string
   icon?: any
@@ -234,7 +237,7 @@ const data: { navMain: NavItem[] } = {
         <div class="flex-1 min-w-0"></div>
         <Select v-model="mode" class="flex-shrink-0">
           <SelectTrigger class="w-[105px] ml-auto">
-            <SelectValue placeholder="主题模式" />
+            <SelectValue placeholder="主题模式"/>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="light">浅色主题</SelectItem>

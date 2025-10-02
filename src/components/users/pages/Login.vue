@@ -1,37 +1,43 @@
 <script setup lang="ts">
-import {ref} from "vue"
 import {toast} from "vue-sonner";
+import {isAxiosError} from "axios"
+import {useRouter} from "vue-router"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
-import {useRouter} from "vue-router"
-import { isAxiosError } from "axios"
+import Turnstile from "@/components/Turnstile.vue";
 
 import {
+  ref,
+  onMounted
+} from "vue"
+import {
   Card,
+  CardTitle,
+  CardHeader,
   CardContent,
   CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import {
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
   DialogClose,
-  DialogTrigger
+  DialogFooter,
+  DialogHeader,
+  DialogTrigger,
+  DialogContent,
+  DialogDescription,
 } from "@/components/ui/dialog"
-import Turnstile from "@/components/Turnstile.vue";
-import {login, sendResetPasswordEmail} from "@/components/users/data/api";
-import {onMounted} from "vue"
+
+import {
+  login,
+  sendResetPasswordEmail
+} from "@/components/users/data/api";
 
 const router = useRouter()
-
 const email = ref("")
 const password = ref("")
+const resetEmail = ref("")
 const challengeToken = ref<string | null>(null)
 
 onMounted(() => {
@@ -48,8 +54,6 @@ function onTurnstileVerified(token: string) {
   localStorage.setItem("turnstile_token", token);
 }
 
-const resetEmail = ref("")
-
 async function handleResetPassword() {
   if (!resetEmail.value) {
     toast.error("请输入邮箱地址")
@@ -61,7 +65,7 @@ async function handleResetPassword() {
   }
   try {
     await sendResetPasswordEmail(resetEmail.value, challengeToken.value)
-    toast.success("重置密码邮件已发送", { description: `邮件已发送到 ${resetEmail.value}` })
+    toast.success("重置密码邮件已发送", {description: `邮件已发送到 ${resetEmail.value}`})
   } catch (err: unknown) {
     let message = "网络错误，请检查连接"
     if (isAxiosError(err)) {
@@ -69,7 +73,7 @@ async function handleResetPassword() {
     } else if (err instanceof Error) {
       message = err.message
     }
-    toast.error("重置密码失败", { description: message })
+    toast.error("重置密码失败", {description: message})
   }
 }
 
@@ -87,7 +91,7 @@ async function handleLogin() {
       challengeToken.value = null
       await router.push("/")
     } else {
-      toast.error("登录失败", { description: response.message || "请稍后再试" })
+      toast.error("登录失败", {description: response.message || "请稍后再试"})
     }
   } catch (err: unknown) {
     let message = "网络错误，请检查连接"
@@ -96,7 +100,7 @@ async function handleLogin() {
     } else if (err instanceof Error) {
       message = err.message
     }
-    toast.error("重置密码失败", { description: message })
+    toast.error("重置密码失败", {description: message})
   }
 }
 

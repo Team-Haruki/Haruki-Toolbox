@@ -1,50 +1,74 @@
 <script setup lang="ts">
-import { ref, computed } from "vue"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "vue-sonner"
+import {toast} from "vue-sonner"
+import {Input} from "@/components/ui/input"
+import {Button} from "@/components/ui/button"
+import Turnstile from "@/components/Turnstile.vue"
+import {useUserStore} from "@/components/users/data/store"
+
+import {
+  ref,
+  computed
+} from "vue"
+import {
+  Card,
+  CardTitle,
+  CardHeader,
+  CardContent,
+  CardDescription
+} from "@/components/ui/card"
+import {
+  Dialog,
+  DialogTitle,
+  DialogClose,
+  DialogFooter,
+  DialogHeader,
+  DialogContent,
+  DialogDescription,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectItem,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+} from "@/components/ui/select"
 import {
   AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
+  AlertDialogHeader,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogDescription,
 } from "@/components/ui/alert-dialog"
-import Turnstile from "@/components/Turnstile.vue"
-import { useUserStore } from "@/components/users/data/store"
 import {
-  sendQQMailVerificationCode,
   verifyQQ,
-  generateSocialPlatformVerificationCode,
-  getSocialPlatformVerificationStatus,
   clearSocialPlatformBinding,
+  sendQQMailVerificationCode,
+  getSocialPlatformVerificationStatus,
+  generateSocialPlatformVerificationCode,
 } from "@/components/users/data/api"
 
 const userStore = useUserStore()
 const current = computed(() => userStore.socialPlatformInfo)
-const platform = ref<string>("qq")
-const account = ref<string>("")
 const sending = ref(false)
-const verifying = ref(false)
 const clearing = ref(false)
-const showCodeDialog = ref(false)
-const dialogMode = ref<"qq" | "other">("other")
-const generatedCode = ref("")
-const statusToken = ref<string | null>(null)
 const qqInputCode = ref("")
+const verifying = ref(false)
+const generatedCode = ref("")
+const account = ref<string>("")
+const showCodeDialog = ref(false)
+const platform = ref<string>("qq")
+const statusToken = ref<string | null>(null)
+const dialogMode = ref<"qq" | "other">("other")
 const turnstileToken = ref<string | null>(null)
 const turnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
+
 function onTurnstileVerify(token: string) {
   turnstileToken.value = token
 }
-
 
 function extractUpdatedSocial(resp: any) {
   const root = resp ?? {}
@@ -66,23 +90,26 @@ function extractGenResult(resp: any) {
 async function handleVerify() {
   if (platform.value === "qq") {
     if (!account.value.trim()) {
-      toast.error("发送失败", { description: "请先填写 QQ 号" })
+      toast.error("发送失败", {description: "请先填写 QQ 号"})
       return
     }
     if (!turnstileToken.value) {
-      toast.error("发送失败", { description: "请先完成验证码验证" })
-      try { turnstileRef.value?.execute?.() } catch {}
+      toast.error("发送失败", {description: "请先完成验证码验证"})
+      try {
+        turnstileRef.value?.execute?.()
+      } catch {
+      }
       return
     }
     try {
       sending.value = true
       await sendQQMailVerificationCode(account.value.trim(), turnstileToken.value)
-      toast.success("验证码已发送", { description: `请前往QQ ${account.value.trim()} 的邮箱查收` })
+      toast.success("验证码已发送", {description: `请前往QQ ${account.value.trim()} 的邮箱查收`})
       dialogMode.value = "qq"
       qqInputCode.value = ""
       showCodeDialog.value = true
     } catch (e: any) {
-      toast.error("发送失败", { description: e?.message || String(e) })
+      toast.error("发送失败", {description: e?.message || String(e)})
     } finally {
       sending.value = false
     }
@@ -90,15 +117,15 @@ async function handleVerify() {
   }
 
   if (!account.value.trim()) {
-    toast.error("生成失败", { description: "请填写需要绑定的账号 ID" })
+    toast.error("生成失败", {description: "请填写需要绑定的账号 ID"})
     return
   }
   try {
     sending.value = true
     const resp = await generateSocialPlatformVerificationCode(platform.value as any, account.value.trim())
-    const { statusToken: token, oneTimePassword } = extractGenResult(resp)
+    const {statusToken: token, oneTimePassword} = extractGenResult(resp)
     if (!token || !oneTimePassword) {
-      toast.error("生成失败", { description: "返回数据不完整" })
+      toast.error("生成失败", {description: "返回数据不完整"})
       return
     }
     statusToken.value = token
@@ -107,7 +134,7 @@ async function handleVerify() {
     showCodeDialog.value = true
     toast.success("验证码已生成")
   } catch (e: any) {
-    toast.error("生成失败", { description: e?.message || String(e) })
+    toast.error("生成失败", {description: e?.message || String(e)})
   } finally {
     sending.value = false
   }
@@ -118,47 +145,50 @@ async function handleDialogVerify() {
     verifying.value = true
     if (dialogMode.value === "qq") {
       if (!qqInputCode.value.trim()) {
-        toast.error("验证失败", { description: "请输入邮件中的验证码" })
+        toast.error("验证失败", {description: "请输入邮件中的验证码"})
         return
       }
       const resp = await verifyQQ(account.value.trim(), qqInputCode.value.trim())
       const updated = extractUpdatedSocial(resp)
       if (updated) {
-        userStore.updateUser({ socialPlatformInfo: updated })
+        userStore.updateUser({socialPlatformInfo: updated})
       }
-      toast.success("验证成功", { description: resp?.message || "已完成绑定" })
+      toast.success("验证成功", {description: resp?.message || "已完成绑定"})
       showCodeDialog.value = false
-      try { turnstileRef.value?.reset?.() } catch {}
+      try {
+        turnstileRef.value?.reset?.()
+      } catch {
+      }
       turnstileToken.value = null
       return
     }
     if (!statusToken.value) {
-      toast.error("验证失败", { description: "缺少状态令牌，请重新生成验证码" })
+      toast.error("验证失败", {description: "缺少状态令牌，请重新生成验证码"})
       return
     }
     const resp = await getSocialPlatformVerificationStatus(statusToken.value)
     const respStatus = resp?.status ?? resp?.data?.status
     const respMessage = resp?.message ?? resp?.data?.message
     if (respStatus === 400 && String(respMessage).toLowerCase() === "you have not verified yet") {
-      toast.error("未完成验证", { description: "您还没有完成验证" })
+      toast.error("未完成验证", {description: "您还没有完成验证"})
       return
     }
 
     const updated = extractUpdatedSocial(resp)
     if (updated) {
-      userStore.updateUser({ socialPlatformInfo: updated })
-      toast.success("验证成功", { description: respMessage || "已完成绑定" })
+      userStore.updateUser({socialPlatformInfo: updated})
+      toast.success("验证成功", {description: respMessage || "已完成绑定"})
       showCodeDialog.value = false
     } else {
       const desc = respMessage || "请在社交平台完成验证后再试"
       if (String(respMessage).toLowerCase().includes("not verified")) {
-        toast.error("未完成验证", { description: "您还没有完成验证" })
+        toast.error("未完成验证", {description: "您还没有完成验证"})
       } else {
-        toast.error("未完成验证", { description: desc })
+        toast.error("未完成验证", {description: desc})
       }
     }
   } catch (e: any) {
-    toast.error("验证失败", { description: e?.message || String(e) })
+    toast.error("验证失败", {description: e?.message || String(e)})
   } finally {
     verifying.value = false
   }
@@ -168,10 +198,10 @@ async function handleUnbind() {
   try {
     clearing.value = true
     const resp = await clearSocialPlatformBinding()
-    userStore.updateUser({ socialPlatformInfo: null })
-    toast.success("已取消绑定", { description: resp?.message || "该社交平台账号已与当前账号解绑" })
+    userStore.updateUser({socialPlatformInfo: null})
+    toast.success("已取消绑定", {description: resp?.message || "该社交平台账号已与当前账号解绑"})
   } catch (e: any) {
-    toast.error("操作失败", { description: e?.message || String(e) })
+    toast.error("操作失败", {description: e?.message || String(e)})
   } finally {
     clearing.value = false
   }
@@ -240,7 +270,7 @@ async function handleUnbind() {
             <label class="text-sm font-medium">选择平台</label>
             <Select v-model="platform">
               <SelectTrigger class="w-full">
-                <SelectValue placeholder="选择平台" />
+                <SelectValue placeholder="选择平台"/>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="qq">QQ</SelectItem>
@@ -252,13 +282,13 @@ async function handleUnbind() {
           </div>
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">账号</label>
-            <Input v-model="account" placeholder="请输入账号 ID" />
+            <Input v-model="account" placeholder="请输入账号 ID"/>
           </div>
         </div>
 
         <div v-if="platform === 'qq'" class="space-y-2">
           <p class="text-xs text-muted-foreground">为防止滥用，请先通过下方验证码再发送邮件验证码。</p>
-          <Turnstile ref="turnstileRef" @verify="onTurnstileVerify" />
+          <Turnstile ref="turnstileRef" @verify="onTurnstileVerify"/>
         </div>
 
         <Button class="w-full" :disabled="sending" @click="handleVerify">
@@ -278,7 +308,7 @@ async function handleUnbind() {
 
           <div class="py-4 text-center font-mono text-lg">
             <template v-if="dialogMode === 'qq'">
-              <Input v-model="qqInputCode" placeholder="请输入邮件验证码" />
+              <Input v-model="qqInputCode" placeholder="请输入邮件验证码"/>
             </template>
             <template v-else>
               {{ generatedCode }}

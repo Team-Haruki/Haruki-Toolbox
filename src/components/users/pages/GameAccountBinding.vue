@@ -1,44 +1,84 @@
 <script setup lang="ts">
-import {ref, reactive, h, computed, onMounted} from "vue"
-import type {ColumnDef} from "@tanstack/vue-table"
-import {
-  FlexRender,
-  getCoreRowModel,
-  useVueTable,
-} from "@tanstack/vue-table"
-import {Button} from "@/components/ui/button"
+import {toast} from "vue-sonner";
+import {useRouter} from "vue-router"
 import {Input} from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table"
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu"
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription} from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from "@/components/ui/alert-dialog"
 import {Label} from "@/components/ui/label"
+import {Button} from "@/components/ui/button"
 import {Switch} from "@/components/ui/switch"
 import {MoreHorizontal} from "lucide-vue-next"
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import { useUserStore } from "@/components/users/data/store";
-import { useRouter } from "vue-router"
-import { logout } from "@/components/users/data/api"
-import {toast} from "vue-sonner";
-import { addOrUpdateGameAccount, removeGameAccount, generateGameAccountVerificationCode } from "@/components/users/data/api"
+import type {ColumnDef} from "@tanstack/vue-table"
+import {logout} from "@/components/users/data/api"
+import {useUserStore} from "@/components/users/data/store";
+
+import {
+  h,
+  ref,
+  watch,
+  computed,
+  reactive,
+  onMounted
+} from "vue"
+import {
+  FlexRender,
+  useVueTable,
+  getCoreRowModel,
+} from "@tanstack/vue-table"
+import {
+  Select,
+  SelectItem,
+  SelectLabel,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableRow,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader
+} from "@/components/ui/table"
+import {
+  Card,
+  CardTitle,
+  CardHeader,
+  CardContent,
+  CardDescription
+} from "@/components/ui/card";
+
+import {
+  Dialog,
+  DialogTitle,
+  DialogClose,
+  DialogFooter,
+  DialogHeader,
+  DialogContent,
+  DialogDescription
+} from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+} from "@/components/ui/dropdown-menu"
+
+import {
+  AlertDialog,
+  AlertDialogTitle,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogDescription,
+} from "@/components/ui/alert-dialog"
+import {
+  removeGameAccount,
+  addOrUpdateGameAccount,
+  generateGameAccountVerificationCode
+} from "@/components/users/data/api"
 
 interface GameAccount {
   server: string
@@ -58,6 +98,18 @@ interface GameAccount {
   }
 }
 
+const router = useRouter()
+const userStore = useUserStore()
+const isCreating = ref(false)
+const generatedCode = ref("")
+const showEditDialog = ref(false)
+const showVerifyDialog = ref(false)
+const showDeleteDialog = ref(false)
+const userIdInput = ref<string>("")
+const verificationTriggered = ref(false)
+const verificationAcknowledged = ref(false)
+const editTarget = ref<GameAccount | null>(null)
+const deleteTarget = ref<GameAccount | null>(null)
 const regionLabels: Record<string, string> = {
   jp: "日服",
   en: "国际服",
@@ -66,15 +118,13 @@ const regionLabels: Record<string, string> = {
   cn: "国服",
 }
 const regionOptions = [
-  { value: "jp", label: regionLabels.jp },
-  { value: "en", label: regionLabels.en },
-  { value: "tw", label: regionLabels.tw },
-  { value: "kr", label: regionLabels.kr },
-  { value: "cn", label: regionLabels.cn },
+  {value: "jp", label: regionLabels.jp},
+  {value: "en", label: regionLabels.en},
+  {value: "tw", label: regionLabels.tw},
+  {value: "kr", label: regionLabels.kr},
+  {value: "cn", label: regionLabels.cn},
 ]
 
-const userStore = useUserStore()
-const router = useRouter()
 
 onMounted(() => {
   if (!userStore.isLoggedIn) {
@@ -85,28 +135,17 @@ onMounted(() => {
   }
 })
 
-import { watch } from "vue"
 watch(
-  () => userStore.isLoggedIn,
-  (isLoggedIn) => {
-    if (!isLoggedIn) {
-      logout().finally(() => {
-        router.push("/user/login")
-      })
+    () => userStore.isLoggedIn,
+    (isLoggedIn) => {
+      if (!isLoggedIn) {
+        logout().finally(() => {
+          router.push("/user/login")
+        })
+      }
     }
-  }
 )
 
-const showVerifyDialog = ref(false)
-const generatedCode = ref("")
-const showEditDialog = ref(false)
-const editTarget = ref<GameAccount | null>(null)
-const showDeleteDialog = ref(false)
-const deleteTarget = ref<GameAccount | null>(null)
-const userIdInput = ref<string>("")
-const isCreating = ref(false)
-const verificationTriggered = ref(false)
-const verificationAcknowledged = ref(false)
 
 function startAdd() {
   isCreating.value = true
@@ -142,11 +181,11 @@ async function handleDelete() {
     const resp = await removeGameAccount(deleteTarget.value.server as any, String(deleteTarget.value.userId))
     const updated = (resp as any)?.updatedData?.gameAccountBindings
     if (Array.isArray(updated)) {
-      userStore.updateUser({ gameAccountBindings: updated })
+      userStore.updateUser({gameAccountBindings: updated})
     }
-    toast.success("删除成功", { description: "账号已解除绑定" })
-  } catch (e:any) {
-    toast.error("删除失败", { description: e?.message ?? String(e) })
+    toast.success("删除成功", {description: "账号已解除绑定"})
+  } catch (e: any) {
+    toast.error("删除失败", {description: e?.message ?? String(e)})
   } finally {
     showDeleteDialog.value = false
   }
@@ -155,62 +194,72 @@ async function handleDelete() {
 async function handleEditSave() {
   if (!editTarget.value) return
   if (isCreating.value && !verificationTriggered.value) {
-    toast.error("保存失败", { description: "新增账号前请先点击“验证”生成验证码，并在游戏内完成设置。" })
+    toast.error("保存失败", {description: "新增账号前请先点击“验证”生成验证码，并在游戏内完成设置。"})
     return
   }
   try {
     const server = editTarget.value.server as any
     const gameUidStr = userIdInput.value?.trim() ?? ""
     if (!/^\d+$/.test(gameUidStr)) {
-      toast.error("保存失败", { description: "游戏UID必须是纯数字" })
+      toast.error("保存失败", {description: "游戏UID必须是纯数字"})
       return
     }
 
     // If CN and not allowed, force-hide MySekai in payload (all false)
     const mysekaiPayload = (server === 'cn' && userStore.allowCNMysekai === false)
-      ? { allowPublicApi: false, allowFixtureApi: false, allow8823: false, allowResona: false }
-      : editTarget.value.mysekai ?? { allowPublicApi: false, allowFixtureApi: false, allow8823: false, allowResona: false }
+        ? {allowPublicApi: false, allowFixtureApi: false, allow8823: false, allowResona: false}
+        : editTarget.value.mysekai ?? {
+      allowPublicApi: false,
+      allowFixtureApi: false,
+      allow8823: false,
+      allowResona: false
+    }
 
-    const suitePayload = editTarget.value.suite ?? { allowPublicApi: false, allowSakura: false, allow8823: false, allowResona: false }
+    const suitePayload = editTarget.value.suite ?? {
+      allowPublicApi: false,
+      allowSakura: false,
+      allow8823: false,
+      allowResona: false
+    }
 
     const resp = await (addOrUpdateGameAccount as any)(
-      server,
-      gameUidStr,
-      gameUidStr,
-      {
-        suite: suitePayload as any,
-        mysekai: mysekaiPayload as any,
-      }
+        server,
+        gameUidStr,
+        gameUidStr,
+        {
+          suite: suitePayload as any,
+          mysekai: mysekaiPayload as any,
+        }
     )
 
     const updated = (resp as any)?.updatedData?.gameAccountBindings
     if (Array.isArray(updated)) {
-      userStore.updateUser({ gameAccountBindings: updated })
+      userStore.updateUser({gameAccountBindings: updated})
     }
-    toast.success("保存成功", { description: "账号设置已更新" })
+    toast.success("保存成功", {description: "账号设置已更新"})
     showEditDialog.value = false
-  } catch (e:any) {
-    toast.error("保存失败", { description: e?.message ?? String(e) })
+  } catch (e: any) {
+    toast.error("保存失败", {description: e?.message ?? String(e)})
   }
 }
 
 async function handleVerify() {
   const uidStr = userIdInput.value?.trim()
   if (!editTarget.value?.server || !uidStr) {
-    toast.error("无法生成验证码", { description: "请先选择区服并填写游戏UID" })
+    toast.error("无法生成验证码", {description: "请先选择区服并填写游戏UID"})
     return
   }
   try {
     const resp = await generateGameAccountVerificationCode(editTarget.value.server as any, uidStr)
     generatedCode.value = (resp as any)?.oneTimePassword ?? ""
     if (!generatedCode.value) {
-      toast.error("生成失败", { description: "未返回验证码" })
+      toast.error("生成失败", {description: "未返回验证码"})
       return
     }
     showVerifyDialog.value = true
     verificationTriggered.value = true
-  } catch (e:any) {
-    toast.error("生成失败", { description: e?.message ?? String(e) })
+  } catch (e: any) {
+    toast.error("生成失败", {description: e?.message ?? String(e)})
   }
 }
 
@@ -219,7 +268,7 @@ function startEdit(row: GameAccount) {
   verificationTriggered.value = false
   verificationAcknowledged.value = false
   generatedCode.value = ""
-  editTarget.value = reactive({ ...row })
+  editTarget.value = reactive({...row})
   userIdInput.value = String(row.userId)
   showEditDialog.value = true
 }
@@ -327,7 +376,7 @@ const table = useVueTable({
                 <div class="flex-1">
                   <Select v-model="editTarget!.server">
                     <SelectTrigger class="w-full" :disabled="editTarget?.verified">
-                      <SelectValue placeholder="选择区服" />
+                      <SelectValue placeholder="选择区服"/>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>

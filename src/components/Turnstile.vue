@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, defineProps, defineEmits, defineExpose } from "vue"
+import {
+  ref,
+  onMounted,
+  onUnmounted,
+  defineProps,
+  defineEmits,
+  defineExpose
+} from "vue"
 
 const props = defineProps<{
   sitekey?: string

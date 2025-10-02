@@ -1,31 +1,36 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import { Button } from "@/components/ui/button"
-import { sendEmailVerificationCode, registerUser } from "@/components/users/data/api"
+import {ref} from "vue"
+import {toast} from "vue-sonner"
+import {useRouter} from "vue-router"
+import {Input} from "@/components/ui/input"
+import {Label} from "@/components/ui/label"
+import {Button} from "@/components/ui/button"
+import Turnstile from "@/components/Turnstile.vue"
+import {useUserStore} from "@/components/users/data/store"
+
 import {
   Card,
+  CardTitle,
+  CardHeader,
   CardContent,
   CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { toast } from "vue-sonner"
-import { useRouter } from "vue-router"
-import { useUserStore } from "@/components/users/data/store"
-import Turnstile from "@/components/Turnstile.vue"
+import {
+  registerUser,
+  sendEmailVerificationCode,
+} from "@/components/users/data/api"
 
-const username = ref("")
+const router = useRouter()
 const email = ref("")
+const username = ref("")
+const countdown = ref(0)
 const password = ref("")
 const emailCode = ref("")
-const challengeToken = ref<string | null>(null)
-const isSending = ref(false)
-const countdown = ref(0)
-let countdownInterval: ReturnType<typeof setInterval> | null = null
-const router = useRouter()
 const userStore = useUserStore()
+const isSending = ref(false)
+const challengeToken = ref<string | null>(null)
+let countdownInterval: ReturnType<typeof setInterval> | null = null
+
 
 async function handleSendCode() {
   if (!email.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
@@ -39,7 +44,7 @@ async function handleSendCode() {
   try {
     isSending.value = true
     await sendEmailVerificationCode(email.value, challengeToken.value)
-    toast.success("邮件已发送", { description: `邮件已发送到 ${email.value}` })
+    toast.success("邮件已发送", {description: `邮件已发送到 ${email.value}`})
     countdown.value = 60
     if (countdownInterval) {
       clearInterval(countdownInterval)
@@ -54,7 +59,7 @@ async function handleSendCode() {
       }
     }, 1000)
   } catch (err) {
-    toast.error("发送验证码失败", { description: String(err) })
+    toast.error("发送验证码失败", {description: String(err)})
   } finally {
     isSending.value = false
   }
@@ -73,11 +78,11 @@ async function handleRegister() {
         emailCode.value,
         challengeToken.value
     )
-    toast.success("注册成功", { description: "欢迎使用Haruki工具箱" })
+    toast.success("注册成功", {description: "欢迎使用Haruki工具箱"})
     userStore.setUser(response.userData)
     await router.push("/")
   } catch (err) {
-    toast.error("注册失败", { description: String(err) })
+    toast.error("注册失败", {description: String(err)})
   }
 }
 </script>
@@ -112,9 +117,9 @@ async function handleRegister() {
                   required
               />
               <Button
-                type="button"
-                :disabled="isSending || countdown > 0"
-                @click="handleSendCode"
+                  type="button"
+                  :disabled="isSending || countdown > 0"
+                  @click="handleSendCode"
               >
                 <template v-if="isSending">发送中...</template>
                 <template v-else-if="countdown > 0">{{ countdown }} 秒后重试</template>
@@ -142,8 +147,8 @@ async function handleRegister() {
                 required
             />
           </div>
-          <Turnstile @verify="(t) => (challengeToken = t)" class="md-2" />
-          <Button type="submit" class="w-full"> 注册 </Button>
+          <Turnstile @verify="(t) => (challengeToken = t)" class="md-2"/>
+          <Button type="submit" class="w-full"> 注册</Button>
           <div class="text-center text-sm">
             已有账号？
             <router-link to="/user/login" class="underline underline-offset-4">

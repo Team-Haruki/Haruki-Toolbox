@@ -1,18 +1,30 @@
 <script setup lang="ts">
 import {ref} from "vue"
-import {updateUserProfile} from "@/components/users/data/api"
 import {toast} from "vue-sonner"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
-import {Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter} from "@/components/ui/card"
 import {useUserStore} from "@/components/users/data/store";
+import {updateUserProfile} from "@/components/users/data/api"
 
-const fileInputRef = ref<HTMLInputElement | null>(null)
+import {
+  Card,
+  CardTitle,
+  CardHeader,
+  CardFooter,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card"
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@/components/ui/avatar"
+
+const userStore = useUserStore();
 const selectedFile = ref<File | null>(null)
 const previewAvatar = ref<string | null>(null)
-const userStore = useUserStore();
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 function triggerFileInput() {
   fileInputRef.value?.click()
