@@ -1,13 +1,13 @@
 <script setup lang='ts'>
-import {ref} from 'vue'
-import axios from 'axios'
-import 'vue-sonner/style.css'
+import { ref, computed } from 'vue'
 import {toast} from "vue-sonner"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
-import {Toaster} from '@/components/ui/sonner'
-import {Checkbox} from "@/components/ui/checkbox"
 import {Progress} from "@/components/ui/progress"
+
+import { submitInherit, uploadManualData } from "@/components/users/data/api"
+import { useUserStore } from "@/components/users/data/store"
+import type { SekaiRegion } from "@/components/users/data/types"
 
 import {
   Card,
@@ -47,19 +47,54 @@ import {
   LucideAlertTriangle
 } from "lucide-vue-next";
 
-const fileServer = ref("jp");
 const dataType = ref("suite");
-const mysekaiUserId = ref("0");
 const selectedFile = ref<File | null>(null)
 const inheritServer = ref("jp");
 const inheritId = ref("");
 const inheritPassword = ref("");
-const isPublicFile = ref(false);
-const isPublicInherit = ref(false);
 const isSubmittingFile = ref(false);
 const isSubmittingInherit = ref(false);
 const uploadProgress = ref(0);
 const uploadStatus = ref("");
+
+const userStore = useUserStore()
+const isLoggedIn = computed(() => userStore.isLoggedIn)
+
+const boundAccounts = computed(() => {
+  const raw = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
+  const nameMap: Record<string, string> = { jp: '日服', en: '国际服', tw: '台服', kr: '韩服', cn: '国服' }
+  return raw.map(acc => {
+    const server = String((acc as any).server)
+    const uid = String((acc as any).userId)
+    return {
+      key: `${server}:${uid}`,
+      server,
+      uid,
+      label: `${nameMap[server] ?? server} / UID ${uid}`,
+    }
+  })
+})
+
+const selectedAccountKey = ref<string | null>(null)
+const selectedAccount = computed(() => {
+  if (!selectedAccountKey.value) return null
+  const [server, uid] = selectedAccountKey.value.split(":")
+  return { server, uid }
+})
+
+const disabledReason = computed(() => {
+  if (!isLoggedIn.value) return '请先登录再使用此功能'
+  if ((boundAccounts.value?.length ?? 0) === 0) return '您还没有绑定任何账号，请先绑定账号'
+  return null
+})
+
+const isCNMySekaiForbidden = computed(() => {
+  return (
+    selectedAccount.value?.server === 'cn' &&
+    userStore.allowCNMysekai === false &&
+    dataType.value === 'mysekai'
+  )
+})
 
 const savedInherit = localStorage.getItem("haruki_inherit");
 if (savedInherit) {
@@ -79,77 +114,64 @@ function onFileChange(e: Event) {
   selectedFile.value = target.files?.[0] ?? null;
 }
 
-function getFileUploadUrl() {
-  const policy = isPublicFile.value ? 'public' : 'private';
-  if (dataType.value === 'suite') {
-    return `https://suite-api.haruki.seiunx.com/general/${fileServer.value}/suite/${policy}/upload`;
-  } else if (dataType.value === 'mysekai') {
-    if (!mysekaiUserId.value) return '';
-    return `https://suite-api.haruki.seiunx.com/general/${fileServer.value}/mysekai/${policy}/${mysekaiUserId.value}/upload`;
-  }
-  return '';
-}
-
-function getInheritUploadUrl() {
-  const policy = isPublicInherit.value ? 'public' : 'private';
-  const type = dataType.value === 'mysekai' ? 'mysekai' : 'suite';
-  return `https://suite-api.haruki.seiunx.com/general/${inheritServer.value}/${type}/${policy}/submit_inherit`;
-}
-
 async function submitFileUpload() {
-  const file = selectedFile.value;
+  if (disabledReason.value) {
+    toast.warning(disabledReason.value)
+    return
+  }
+  if (!selectedAccount.value) {
+    toast.warning('请选择一个账号')
+    return
+  }
+  const file = selectedFile.value
   if (!file) {
-    toast.warning('请选择一个文件');
-    return;
+    toast.warning('请选择一个文件')
+    return
   }
-  const url = getFileUploadUrl();
-  if (!url) {
-    toast.warning('请填写完整的上传信息');
-    return;
+  if (isCNMySekaiForbidden.value) {
+    toast.error('提交被禁止', { description: '由于相关法律法规限制，不允许进行此操作' })
+    return
   }
-  isSubmittingFile.value = true;
-  uploadProgress.value = 0;
-  uploadStatus.value = `正在上传您的${dataType.value === 'suite' ? 'Suite' : 'MySekai'}数据...`;
+  isSubmittingFile.value = true
+  uploadProgress.value = 0
+  uploadStatus.value = `正在上传您的${dataType.value === 'suite' ? 'Suite' : 'MySekai'}数据...`
   try {
-    const response = await axios.post(url, file, {
-      headers: {
-        'Content-Type': 'application/octet-stream',
-      },
-      onUploadProgress: (progressEvent) => {
-        if (progressEvent.total) {
-          uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        }
-      },
-    });
-    uploadStatus.value = "上传成功";
-    toast.success("上传成功", {
-      description: response?.data?.message || "文件已上传",
-    });
-  } catch (e) {
-    console.error(e);
-    uploadStatus.value = "上传失败";
-    toast.error("上传失败", {
-      description: (e as any).response?.data?.message || (e as any).message,
-    });
+    const resp = await uploadManualData(
+      selectedAccount.value.server!,
+      String(selectedAccount.value.uid),
+      dataType.value,
+      file,
+      (p) => (uploadProgress.value = p)
+    )
+    uploadStatus.value = '上传成功'
+    toast.success('上传成功', { description: resp?.message || '文件已上传' })
+  } catch (e: any) {
+    console.error(e)
+    uploadStatus.value = '上传失败'
+    const desc = e?.response?.data?.message || e?.message
+    toast.error('上传失败', { description: desc })
   } finally {
-    isSubmittingFile.value = false;
+    isSubmittingFile.value = false
   }
 }
 
 async function submitInheritUpload() {
-  const url = getInheritUploadUrl();
+  if (!inheritId.value || !inheritPassword.value) {
+    toast.warning("请填写完整的继承信息", {
+      description: "继承ID和继承密码均为必填项",
+    });
+    return;
+  }
   isSubmittingInherit.value = true;
   try {
-    const response = await axios.post(url, {
-      inherit_id: inheritId.value,
-      inherit_password: inheritPassword.value,
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await submitInherit(
+      inheritServer.value as SekaiRegion,
+      dataType.value,
+      inheritId.value.trim(),
+      inheritPassword.value.trim(),
+    );
     toast.success("上传成功", {
-      description: response?.data?.message || "继承码已上传",
+      description: response?.message || "继承码已上传",
     });
     localStorage.setItem("haruki_inherit", JSON.stringify({
       inherit_id: inheritId.value,
@@ -161,7 +183,7 @@ async function submitInheritUpload() {
   } catch (e) {
     console.error(e);
     toast.error("上传失败", {
-      description: (e as any).response?.data?.message || (e as any).message,
+      description: (e as any)?.response?.data?.message || (e as any)?.message,
     });
   } finally {
     isSubmittingInherit.value = false;
@@ -189,30 +211,38 @@ async function submitInheritUpload() {
             <CardDescription>此选项可以手动上传你捕获的数据</CardDescription>
           </CardHeader>
           <CardContent>
+            <Alert v-if="disabledReason" variant="destructive" class="mb-3">
+              <LucideAlertTriangle class="h-5 w-5" />
+              <AlertTitle>无法使用</AlertTitle>
+              <AlertDescription>{{ disabledReason }}</AlertDescription>
+            </Alert>
+            <Alert v-else-if="isCNMySekaiForbidden" variant="destructive" class="mb-3">
+              <LucideShieldAlert class="h-5 w-5" />
+              <AlertTitle>操作已被禁止</AlertTitle>
+              <AlertDescription>由于相关法律法规限制，不允许进行此操作</AlertDescription>
+            </Alert>
             <form>
               <div class="grid gap-4">
                 <div class="flex flex-col space-y-1.5">
                   <Label for="file-upload">上传文件</Label>
-                  <Input id="file-upload" type="file" class="w-full" @change="onFileChange"/>
+                  <Input id="file-upload" type="file" class="w-full" @change="onFileChange" :disabled="!!disabledReason"/>
                 </div>
                 <div class="flex flex-col space-y-1.5">
-                  <Label for="region-select">选择区服</Label>
-                  <Select id="region-select" v-model=fileServer>
+                  <Label for="account-select">选择账号（区服 / UID）</Label>
+                  <Select id="account-select" v-model="selectedAccountKey" :disabled="!!disabledReason">
                     <SelectTrigger class="w-full">
-                      <SelectValue placeholder="请选择区服"/>
+                      <SelectValue placeholder="请选择已绑定的账号" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="jp">日服</SelectItem>
-                      <SelectItem value="en">国际服</SelectItem>
-                      <SelectItem value="tw">台服</SelectItem>
-                      <SelectItem value="kr">韩服</SelectItem>
-                      <SelectItem value="cn">国服</SelectItem>
+                      <SelectItem v-for="acc in boundAccounts" :key="acc.key" :value="acc.key">
+                        {{ acc.label }}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div class="flex flex-col space-y-1.5">
                   <Label for="data-type-select">选择数据类型</Label>
-                  <Select id="data-type-select" v-model="dataType">
+                  <Select id="data-type-select" v-model="dataType" :disabled="!!disabledReason">
                     <SelectTrigger class="w-full">
                       <SelectValue placeholder="请选择数据类型"/>
                     </SelectTrigger>
@@ -222,19 +252,11 @@ async function submitInheritUpload() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div v-if="dataType === 'mysekai'" class="flex flex-col space-y-1.5">
-                  <Label for="mysekai-user-id">MySekai 用户ID</Label>
-                  <Input id="mysekai-user-id" type="text" v-model="mysekaiUserId" placeholder="请输入MySekai用户ID"/>
-                </div>
               </div>
             </form>
           </CardContent>
-          <CardFooter class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <Checkbox id="public-file" v-model="isPublicFile"/>
-              <Label for="public-file">允许Haruki工具箱公开API访问</Label>
-            </div>
-            <Button variant="default" :disabled="isSubmittingFile" @click.prevent="submitFileUpload">
+          <CardFooter class="flex items-center justify-end">
+            <Button variant="default" :disabled="isSubmittingFile || !!disabledReason || isCNMySekaiForbidden" @click.prevent="submitFileUpload">
               {{ isSubmittingFile ? '提交中...' : '提交' }}
             </Button>
           </CardFooter>
@@ -317,11 +339,7 @@ async function submitInheritUpload() {
               </div>
             </form>
           </CardContent>
-          <CardFooter class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <Checkbox id="public-inherit" v-model="isPublicInherit"/>
-              <Label for="public-inherit">允许Haruki工具箱公开API访问</Label>
-            </div>
+          <CardFooter class="flex items-center justify-end">
             <Button :disabled="isSubmittingInherit" @click.prevent="submitInheritUpload">
               {{ isSubmittingInherit ? '提交中...' : '提交' }}
             </Button>
@@ -329,9 +347,5 @@ async function submitInheritUpload() {
         </Card>
       </TabsContent>
     </Tabs>
-    <Toaster
-        position="bottom-right"
-        richColors
-    />
   </div>
 </template>

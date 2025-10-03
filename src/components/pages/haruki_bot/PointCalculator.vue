@@ -28,15 +28,15 @@ import {
 } from "lucide-vue-next";
 
 
-const inputPt = ref<number | null>(null);
+const inputPt = ref<number | undefined>(undefined);
 const isCalculating = ref<boolean>(false);
 const results = ref<any[]>([]);
 const calculatedOnce = ref<boolean>(false);
 const boostRateTable = [1, 5, 10, 15, 20, 25, 27, 29, 31, 33, 35];
 const musicRate = 1;
 const boostIndex = ref<number>(0);
-const maxResults = ref<number>(10);
-const deckBonusCap = ref<number>(435);
+const maxResults = ref<number | undefined>(10);
+const deckBonusCap = ref<number | undefined>(435);
 
 function calcResult(): void {
   results.value = [];
@@ -57,10 +57,10 @@ function calcResult(): void {
         const selfMin = 20000 * k;
         if (selfMin > 2700000) break;
 
-        for (let bonusPct = 0; bonusPct <= deckBonusCap.value; bonusPct++) {
+        for (let bonusPct = 0; bonusPct <= (deckBonusCap.value ?? 0); bonusPct++) {
           const deckR = 1 + bonusPct / 100;
           const raw = Math.floor(baseScore * musicRate * deckR);
-          const ptPrime = raw * boost;
+          const ptPrime = raw * (boost ?? 1);
 
           if (ptPrime === pt) {
             results.value.push({
@@ -68,7 +68,7 @@ function calcResult(): void {
               selfScoreMax: 20000 * (k + 1) - 1,
               deckBonus: bonusPct,
             });
-            if (results.value.length >= maxResults.value) break outerLoop;
+            if (results.value.length >= (maxResults.value ?? 0)) break outerLoop;
             break;
           }
         }

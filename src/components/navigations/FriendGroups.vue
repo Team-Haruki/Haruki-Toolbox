@@ -23,7 +23,7 @@ async function fetchGroupData() {
     const data = response.data
     groupData.value = data
     activeIdx.value = data.map(() => null)
-    openGroups.value = data.map(g => g.group)
+    openGroups.value = data.map((g: any) => g.group)
   } catch (error) {
     console.error('Failed to fetch group data:', error)
   }
@@ -67,9 +67,3 @@ onMounted(() => {
     </AccordionItem>
   </Accordion>
 </template>
-
-<style scoped>
-.group:hover .group-hover\:block {
-  display: block;
-}
-</style>
