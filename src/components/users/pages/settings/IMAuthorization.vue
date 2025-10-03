@@ -294,7 +294,7 @@ onMounted(() => {
     <DialogContent class="sm:max-w-[425px]">
       <DialogHeader>
         <DialogTitle>编辑社交平台授权</DialogTitle>
-        <DialogDescription>修改授权可查询信息的社交平台账号</DialogDescription>
+        <DialogDescription>修改授权可查询信息的社交平台账号<br>你需要先完成账号绑定设置才能使用此功能</DialogDescription>
       </DialogHeader>
       <div class="grid gap-4 py-4">
         <div class="grid grid-cols-4 items-center gap-4">

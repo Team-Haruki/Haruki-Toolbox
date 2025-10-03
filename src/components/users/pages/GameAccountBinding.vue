@@ -181,9 +181,7 @@ async function handleDelete() {
   try {
     const resp = await removeGameAccount(deleteTarget.value.server as any, String(deleteTarget.value.userId))
     const updated = (resp as any)?.updatedData?.gameAccountBindings
-    if (Array.isArray(updated)) {
-      userStore.updateUser({gameAccountBindings: updated})
-    }
+    userStore.updateUser({gameAccountBindings: updated})
     toast.success("删除成功", {description: "账号已解除绑定"})
   } catch (e: any) {
     toast.error("删除失败", {description: e?.message ?? String(e)})
