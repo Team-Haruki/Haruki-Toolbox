@@ -1,5 +1,5 @@
 import {useUserStore} from "@/components/users/data/store"
-import {callApi} from "@/components/users/data/api/call-api"
+import {callApiRaw} from "@/components/users/data/api/call-api"
 import type {RegisterPayload, RegisterSuccessResponse} from "@/components/users/data/types"
 
 export async function registerUser(
@@ -10,7 +10,7 @@ export async function registerUser(
     challengeToken: string
 ): Promise<RegisterSuccessResponse> {
     const payload: RegisterPayload = {name, email, password, oneTimePassword, challengeToken}
-    const response = await callApi<RegisterSuccessResponse>(
+    const response = await callApiRaw<RegisterSuccessResponse>(
         "/api/user/register",
         "POST",
         payload

@@ -47,8 +47,8 @@ async function saveChanges() {
     let avatarPath = userStore.avatarPath
     if (selectedFile.value) {
       const result = await updateUserProfile(userStore.name, selectedFile.value)
-      if (result && result.updatedData.avatarPath) {
-        avatarPath = result.updatedData.avatarPath
+      if (result && result.updatedData?.avatarPath) {
+        avatarPath = result.updatedData?.avatarPath
         previewAvatar.value = null
         userStore.avatarPath = avatarPath
       }

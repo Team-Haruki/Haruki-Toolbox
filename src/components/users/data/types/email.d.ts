@@ -14,6 +14,6 @@ export interface verifyEmailPayload {
 }
 
 export interface verifyQQPayload {
-    email: string
+    qq: string
     oneTimePassword: string
 }

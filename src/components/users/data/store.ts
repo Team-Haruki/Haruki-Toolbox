@@ -94,6 +94,10 @@ export const useUserStore = defineStore("user", () => {
         const stored = localStorage.getItem("user")
         if (stored) {
             const parsed = JSON.parse(stored)
+            if (parsed.exp && Date.now() / 1000 > parsed.exp) {
+                clearUser()
+                return
+            }
             setUser(parsed)
         }
     }

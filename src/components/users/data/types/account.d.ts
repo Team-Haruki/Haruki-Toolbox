@@ -1,6 +1,6 @@
 export interface UpdateUserProfilePayload {
-    name: string
-    avatarBase64: string
+    name?: string
+    avatarBase64?: string
 }
 
 export interface ChangePasswordPayload {

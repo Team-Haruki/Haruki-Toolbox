@@ -1,4 +1,4 @@
-import {callApi} from "@/components/users/data/api/call-api";
+import {callApiResponse} from "@/components/users/data/api/call-api";
 import type {APIResponse, SekaiRegion} from "@/components/users/data/types";
 
 export async function submitInherit(
@@ -8,7 +8,7 @@ export async function submitInherit(
     inherit_password: string,
 ): Promise<APIResponse<null>> {
     const payload = {inherit_id, inherit_password}
-    return await callApi<null>(
+    return await callApiResponse<null>(
         `/inherit/${server}/${dataType}/submit`,
         "POST",
         payload

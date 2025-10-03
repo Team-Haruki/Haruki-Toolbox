@@ -167,8 +167,8 @@ async function handleDialogVerify() {
       return
     }
     const resp = await getSocialPlatformVerificationStatus(statusToken.value)
-    const respStatus = resp?.status ?? resp?.data?.status
-    const respMessage = resp?.message ?? resp?.data?.message
+    const respStatus = resp?.status ?? resp?.status
+    const respMessage = resp?.message ?? resp?.message
     if (respStatus === 400 && String(respMessage).toLowerCase() === "you have not verified yet") {
       toast.error("未完成验证", {description: "您还没有完成验证"})
       return
@@ -274,9 +274,11 @@ async function handleUnbind() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="qq">QQ</SelectItem>
+                <!--
                 <SelectItem value="qqbot">QQBot</SelectItem>
                 <SelectItem value="discord">Discord</SelectItem>
                 <SelectItem value="telegram">Telegram</SelectItem>
+                -->
               </SelectContent>
             </Select>
           </div>

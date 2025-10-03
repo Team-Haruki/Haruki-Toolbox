@@ -1,5 +1,5 @@
 import {useUserStore} from "@/components/users/data/store"
-import {callApi} from "@/components/users/data/api/call-api"
+import {callApiResponse} from "@/components/users/data/api/call-api"
 import type {
     APIResponse,
     ResetPasswordPayload,
@@ -7,18 +7,18 @@ import type {
 } from "@/components/users/data/types"
 
 
-export async function sendResetPasswordEmail(email: string, challengeToken: string): Promise<APIResponse<string>> {
+export async function sendResetPasswordEmail(email: string, challengeToken: string): Promise<APIResponse<null>> {
     const payload: SendResetPasswordEmailPayload = {email, challengeToken}
-    return await callApi<string>(
+    return await callApiResponse<null>(
         "/api/user/reset-password/send",
         "POST",
         payload
     )
 }
 
-export async function resetPassword(email: string, oneTimeSecret: string, password: string): Promise<APIResponse<string>> {
+export async function resetPassword(email: string, oneTimeSecret: string, password: string): Promise<APIResponse<null>> {
     const payload: ResetPasswordPayload = {email, oneTimeSecret, password}
-    const response = await callApi<string>(
+    const response = await callApiResponse<null>(
         "/api/user/reset-password",
         "POST",
         payload

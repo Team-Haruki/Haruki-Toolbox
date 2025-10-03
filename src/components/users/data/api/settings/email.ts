@@ -1,4 +1,4 @@
-import {callApi} from "@/components/users/data/api/call-api"
+import {callApiResponse} from "@/components/users/data/api/call-api"
 import type {
     EmailInfo,
     APIResponse,
@@ -8,7 +8,7 @@ import type {
 
 export async function sendEmailVerificationCode(email: string, challengeToken: string): Promise<APIResponse<null>> {
     const payload: SendEmailVerificationPayload = {email, challengeToken};
-    return await callApi<null>(
+    return await callApiResponse<null>(
         "/api/email/send",
         "POST",
         payload
@@ -17,7 +17,7 @@ export async function sendEmailVerificationCode(email: string, challengeToken: s
 
 export async function verifyEmail(email: string, oneTimePassword: string): Promise<APIResponse<EmailInfo>> {
     const payload: verifyEmailPayload = {email, oneTimePassword}
-    return await callApi<EmailInfo>(
+    return await callApiResponse<EmailInfo>(
         "/api/email/verify",
         "POST",
         payload

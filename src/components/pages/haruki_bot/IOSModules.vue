@@ -91,7 +91,12 @@ async function installModule() {
     path = path.replace('<server>', selectedServer.value)
   }
   const rawUrl = `${basePath}/${path}`
-  const uri = uriSchemes[selectedClient.value](rawUrl)
+  const schemeFn = uriSchemes[selectedClient.value]
+  if (!schemeFn) {
+    toast.warning('不支持的客户端')
+    return
+  }
+  const uri = schemeFn(rawUrl)
   await nextTick()
   window.location.href = uri
 }

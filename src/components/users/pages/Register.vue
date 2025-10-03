@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref} from "vue"
+import {onMounted, ref} from "vue"
 import {toast} from "vue-sonner"
 import {useRouter} from "vue-router"
 import {Input} from "@/components/ui/input"
@@ -40,6 +40,12 @@ const registerChallengeToken = ref<string>("")
 const isDialogOpen = ref(false)
 let countdownInterval: ReturnType<typeof setInterval> | null = null
 
+onMounted(() => {
+  if (userStore.sessionToken) {
+    toast.warning("您已登录", {description: "已返回上一个路径"})
+    router.back()
+  }
+})
 
 async function handleSendCode() {
   if (!email.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {

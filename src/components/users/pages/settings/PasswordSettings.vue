@@ -47,7 +47,7 @@ const handleChangePassword = async () => {
     toast.success("密码修改成功", {description: "请重新登录"})
     userStore.clearUser()
     await router.push("/user/login")
-  } catch (error) {
+  } catch (error: any) {
     toast.error("密码修改失败", {description: error?.message || "请稍后重试"})
   }
 }

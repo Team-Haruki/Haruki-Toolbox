@@ -1,7 +1,8 @@
 import {toast} from "vue-sonner"
 import axios, {type AxiosRequestConfig, type Method} from "axios"
 import {useUserStore} from "@/components/users/data/store"
-import type { APIResponse } from "../types"
+import type {APIResponse} from "../types"
+import router from "@/router"
 
 export const apiClient = axios.create({
     baseURL: import.meta.env.VITE_HARUKI_TOOLBOX_USER_BASE_URL,
@@ -21,16 +22,7 @@ apiClient.interceptors.request.use((config) => {
     return config
 })
 
-function isApiResponse<T>(data: any): data is APIResponse<T> {
-    return (
-        typeof data === "object" &&
-        data !== null &&
-        "status" in data &&
-        "message" in data
-    )
-}
-
-export async function callApi<T = unknown>(
+export async function callApiResponse<T = unknown>(
     endpoint: string,
     method: Method = "GET",
     data?: any,
@@ -43,18 +35,36 @@ export async function callApi<T = unknown>(
         ...config,
     })
 
-    if (isApiResponse<T>(response.data)) {
-        if (response.data.status !== 200) {
-            toast.error("API请求失败", {description: `状态码: ${response.data.status}，信息: ${response.data.message}`})
-            throw response.data
-        }
-        return response.data
+    if (response.data.status === 401) {
+        toast.error("会话已过期", {description: "请重新登录"})
+        await router.push("/user/login")
+        throw response.data
     }
 
-    toast.error("API请求失败", {description: `无效的响应格式`})
-
-    throw {
-        status: 500,
-        message: "Invalid API response format",
+    if (response.data.status !== 200) {
+        toast.error("API请求失败", {
+            description: `状态码: ${response.data.status}，信息: ${response.data.message}`,
+        })
+        throw response.data
     }
+
+    return response.data
+}
+
+export async function callApiRaw<T = unknown>(
+    endpoint: string,
+    method: Method = "GET",
+    data?: any,
+    config?: AxiosRequestConfig
+): Promise<T> {
+    const res = await apiClient.request<T>({url: endpoint, method, data, ...config})
+
+    if (res.status === 401) {
+        toast.error("会话已过期", {description: "请重新登录"})
+        await router.push("/user/login")
+        throw res
+    }
+
+    return res.data
+
 }

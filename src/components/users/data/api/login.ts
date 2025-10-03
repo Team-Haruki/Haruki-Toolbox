@@ -1,5 +1,5 @@
 import {useUserStore} from "@/components/users/data/store"
-import {callApi} from "@/components/users/data/api/call-api"
+import {callApiRaw} from "@/components/users/data/api/call-api"
 import type {
     LoginRequest,
     LoginResponse
@@ -11,7 +11,7 @@ export async function login(
     challengeToken: string
 ): Promise<LoginResponse> {
     const payload: LoginRequest = { email, password, challengeToken }
-    const response = await callApi<LoginResponse>("/api/user/login", "POST", payload)
+    const response = await callApiRaw<LoginResponse>("/api/user/login", "POST", payload)
 
     if (response.status === 200 && response.userData) {
         const userStore = useUserStore()

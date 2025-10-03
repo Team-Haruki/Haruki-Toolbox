@@ -4,30 +4,31 @@ import {logout} from "@/components/users/data/api";
 import {useUserStore} from "@/components/users/data/store";
 
 import {
-  ChevronsUpDown,
-  LogOut,
   LogIn,
+  LogOut,
   Settings,
-  Gamepad2
+  Gamepad2,
+  UserPlus,
+  ChevronsUpDown
 } from "lucide-vue-next"
 import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   useSidebar,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
 } from "@/components/ui/sidebar"
 import {
   Avatar,
-  AvatarFallback,
   AvatarImage,
+  AvatarFallback,
 } from "@/components/ui/avatar"
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
+  DropdownMenuContent,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 
 const userStore = useUserStore();
@@ -42,7 +43,7 @@ const maskedEmail = computed(() => {
   if (!email) return ""
   const [local, domain] = email.split("@")
   if (!domain) return email
-  const maskedLocal = local.length > 1 ? local[0] + "*".repeat(local.length - 1) : local
+  const maskedLocal = local && local.length > 1 ? local[0] + "*".repeat(local.length - 1) : (local || "")
   return `${maskedLocal}@${domain}`
 })
 
@@ -119,12 +120,23 @@ const maskedEmail = computed(() => {
             <LogOut class="mr-2 h-4 w-4"/>
             注销
           </DropdownMenuItem>
-          <RouterLink v-else to="/user/login" custom v-slot="{ navigate, href }">
-            <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
-              <LogIn class="mr-2 h-4 w-4"/>
-              登录
-            </DropdownMenuItem>
-          </RouterLink>
+
+          <template v-else>
+            <RouterLink to="/user/register" custom v-slot="{ navigate, href }">
+              <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
+                <UserPlus class="mr-2 h-4 w-4"/>
+                注册
+              </DropdownMenuItem>
+            </RouterLink>
+
+            <RouterLink to="/user/login" custom v-slot="{ navigate, href }">
+              <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
+                <LogIn class="mr-2 h-4 w-4"/>
+                登录
+              </DropdownMenuItem>
+            </RouterLink>
+          </template>
+
         </DropdownMenuContent>
       </DropdownMenu>
     </SidebarMenuItem>

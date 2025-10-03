@@ -7,6 +7,9 @@ import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue";
 
+import {useUserStore} from "@/components/users/data/store"
+import {onMounted} from "vue"
+
 import {
   ref,
 } from "vue"
@@ -39,6 +42,14 @@ const password = ref("")
 const resetEmail = ref("")
 const loginChallengeToken = ref<string | null>(null)
 const resetChallengeToken = ref<string | null>(null)
+const userStore = useUserStore()
+
+onMounted(() => {
+  if (userStore.sessionToken) {
+    toast.warning("您已登录", {description: "已返回上一个路径"})
+    router.back()
+  }
+})
 
 function onLoginTurnstileVerified(token: string) {
   loginChallengeToken.value = token;
@@ -79,7 +90,6 @@ async function handleLogin() {
   }
   try {
     const response = await login(email.value, password.value, loginChallengeToken.value)
-
     if (response.status === 200) {
       toast.success("登录成功")
       loginChallengeToken.value = null

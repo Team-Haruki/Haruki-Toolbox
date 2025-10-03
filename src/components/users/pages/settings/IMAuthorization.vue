@@ -136,7 +136,7 @@ function startAdd() {
   const id = nextId()
   editTarget.value = reactive({
     id: String(id),
-    platform: "qq",
+    platform: "qq" as SocialPlatform,
     userId: "",
     comment: "",
   })
@@ -299,7 +299,7 @@ onMounted(() => {
       <div class="grid gap-4 py-4">
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="platform" class="text-right">平台</Label>
-          <Select v-model="editTarget.platform">
+          <Select v-model="editTarget!.platform">
             <SelectTrigger
                 id="platform"
                 class="col-span-3 flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -308,19 +308,21 @@ onMounted(() => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="qq">QQ</SelectItem>
+              <!--
               <SelectItem value="qqbot">QQ官方Bot</SelectItem>
               <SelectItem value="discord">Discord</SelectItem>
               <SelectItem value="telegram">Telegram</SelectItem>
+              -->
             </SelectContent>
           </Select>
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="account" class="text-right">账号</Label>
-          <Input id="account" v-model="editTarget.userId" class="col-span-3"/>
+          <Input id="account" v-model="editTarget!.userId" class="col-span-3"/>
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="remark" class="text-right">备注</Label>
-          <Input id="remark" v-model="editTarget.comment" class="col-span-3"/>
+          <Input id="remark" v-model="editTarget!.comment" class="col-span-3"/>
         </div>
       </div>
       <DialogFooter>

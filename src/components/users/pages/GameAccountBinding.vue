@@ -75,8 +75,9 @@ import {
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog"
 import {
+  addGameAccount,
+  updateGameAccount,
   removeGameAccount,
-  addOrUpdateGameAccount,
   generateGameAccountVerificationCode
 } from "@/components/users/data/api"
 
@@ -84,18 +85,18 @@ interface GameAccount {
   server: string
   userId: number
   verified: boolean
-  suite: {
+  suite?: {
     allowPublicApi: boolean
     allow8823: boolean
     allowSakura: boolean
     allowResona: boolean
-  }
-  mysekai: {
+  } | null
+  mysekai?: {
     allowPublicApi: boolean
     allowFixtureApi: boolean
     allow8823: boolean
     allowResona: boolean
-  }
+  } | null
 }
 
 const router = useRouter()
@@ -205,7 +206,6 @@ async function handleEditSave() {
       return
     }
 
-    // If CN and not allowed, force-hide MySekai in payload (all false)
     const mysekaiPayload = (server === 'cn' && userStore.allowCNMysekai === false)
         ? {allowPublicApi: false, allowFixtureApi: false, allow8823: false, allowResona: false}
         : editTarget.value.mysekai ?? {
@@ -222,7 +222,9 @@ async function handleEditSave() {
       allowResona: false
     }
 
-    const resp = await (addOrUpdateGameAccount as any)(
+    let resp;
+    if (isCreating.value) {
+      resp = await (addGameAccount as any)(
         server,
         gameUidStr,
         gameUidStr,
@@ -230,7 +232,18 @@ async function handleEditSave() {
           suite: suitePayload as any,
           mysekai: mysekaiPayload as any,
         }
-    )
+      )
+    } else {
+      resp = await (updateGameAccount as any)(
+        server,
+        gameUidStr,
+        gameUidStr,
+        {
+          suite: suitePayload as any,
+          mysekai: mysekaiPayload as any,
+        }
+      )
+    }
 
     const updated = (resp as any)?.updatedData?.gameAccountBindings
     if (Array.isArray(updated)) {
@@ -264,6 +277,22 @@ async function handleVerify() {
     verificationTriggered.value = true
   } catch (e: any) {
     toast.error("生成失败", {description: e?.message ?? String(e)})
+  }
+}
+
+async function copyCodeToClipboard() {
+  const text = generatedCode.value
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.success("复制成功",{description: "已成功复制验证码，请前往游戏内填写您的验证码"})
+  } catch (err) {
+    const ta = document.createElement("textarea")
+    ta.value = text
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand("copy")
+    document.body.removeChild(ta)
+    toast.success("复制成功(兼容模式)",{description: "已成功复制验证码，请前往游戏内填写您的验证码"})
   }
 }
 
@@ -425,7 +454,10 @@ const table = useVueTable({
             <CardContent class="grid gap-4 sm:grid-cols-2">
               <Card class="p-3">
                 <div class="flex items-center gap-3">
-                  <Switch v-model="editTarget!.suite.allowPublicApi"/>
+                  <Switch
+                    :model-value="editTarget!.suite?.allowPublicApi"
+                    @update:model-value="val => { if(editTarget!.suite) editTarget!.suite.allowPublicApi = val }"
+                  />
                   <div class="flex-1">
                     <Label class="font-semibold">允许公开API访问</Label>
                     <p class="text-sm text-muted-foreground">允许Suite数据通过Haruki工具箱公开API访问</p>
@@ -434,7 +466,10 @@ const table = useVueTable({
               </Card>
               <Card class="p-3">
                 <div class="flex items-center gap-3">
-                  <Switch v-model="editTarget!.suite.allowSakura"/>
+                  <Switch
+                    :model-value="editTarget!.suite?.allowSakura"
+                    @update:model-value="val => { if(editTarget!.suite) editTarget!.suite.allowSakura = val }"
+                  />
                   <div class="flex-1">
                     <Label class="font-semibold">允许上传至SakuraBot</Label>
                     <p class="text-sm text-muted-foreground">允许Suite数据上传到SakuraBot</p>
@@ -443,7 +478,10 @@ const table = useVueTable({
               </Card>
               <Card class="p-3">
                 <div class="flex items-center gap-3">
-                  <Switch v-model="editTarget!.suite.allow8823"/>
+                  <Switch
+                    :model-value="editTarget!.suite?.allow8823"
+                    @update:model-value="val => { if(editTarget!.suite) editTarget!.suite.allow8823 = val }"
+                  />
                   <div class="flex-1">
                     <Label class="font-semibold">允许上传至烤森Bot</Label>
                     <p class="text-sm text-muted-foreground">允许Suite数据上传到烤森Bot</p>
@@ -452,7 +490,10 @@ const table = useVueTable({
               </Card>
               <Card class="p-3">
                 <div class="flex items-center gap-3">
-                  <Switch v-model="editTarget!.suite.allowResona"/>
+                  <Switch
+                    :model-value="editTarget!.suite?.allowResona"
+                    @update:model-value="val => { if(editTarget!.suite) editTarget!.suite.allowResona = val }"
+                  />
                   <div class="flex-1">
                     <Label class="font-semibold">允许上传至ResonaBot</Label>
                     <p class="text-sm text-muted-foreground">允许Suite数据上传到ResonaBot</p>
@@ -473,7 +514,10 @@ const table = useVueTable({
               <CardContent class="grid gap-4 sm:grid-cols-2">
                 <Card class="p-3">
                   <div class="flex items-center gap-3">
-                    <Switch v-model="editTarget!.mysekai.allowPublicApi"/>
+                    <Switch
+                      :model-value="editTarget!.mysekai?.allowPublicApi"
+                      @update:model-value="val => { if(editTarget!.mysekai) editTarget!.mysekai.allowPublicApi = val }"
+                    />
                     <div class="flex-1">
                       <Label class="font-semibold">允许公开API访问</Label>
                       <p class="text-sm text-muted-foreground">允许MySekai数据通过Haruki工具箱公开API访问</p>
@@ -482,7 +526,10 @@ const table = useVueTable({
                 </Card>
                 <Card class="p-3">
                   <div class="flex items-center gap-3">
-                    <Switch v-model="editTarget!.mysekai.allowFixtureApi"/>
+                    <Switch
+                      :model-value="editTarget!.mysekai?.allowFixtureApi"
+                      @update:model-value="val => { if(editTarget!.mysekai) editTarget!.mysekai.allowFixtureApi = val }"
+                    />
                     <div class="flex-1">
                       <Label class="font-semibold">允许家具共享API</Label>
                       <p class="text-sm text-muted-foreground">允许MySekai账号UID出现在家具共享API</p>
@@ -491,7 +538,10 @@ const table = useVueTable({
                 </Card>
                 <Card class="p-3">
                   <div class="flex items-center gap-3">
-                    <Switch v-model="editTarget!.mysekai.allow8823"/>
+                    <Switch
+                      :model-value="editTarget!.mysekai?.allow8823"
+                      @update:model-value="val => { if(editTarget!.mysekai) editTarget!.mysekai.allow8823 = val }"
+                    />
                     <div class="flex-1">
                       <Label class="font-semibold">允许上传至烤森Bot</Label>
                       <p class="text-sm text-muted-foreground">允许MySekai数据上传到烤森Bot</p>
@@ -500,7 +550,10 @@ const table = useVueTable({
                 </Card>
                 <Card class="p-3">
                   <div class="flex items-center gap-3">
-                    <Switch v-model="editTarget!.mysekai.allowResona"/>
+                    <Switch
+                      :model-value="editTarget!.mysekai?.allowResona"
+                      @update:model-value="val => { if(editTarget!.mysekai) editTarget!.mysekai.allowResona = val }"
+                    />
                     <div class="flex-1">
                       <Label class="font-semibold">允许上传至ResonaBot</Label>
                       <p class="text-sm text-muted-foreground">允许MySekai数据上传到ResonaBot</p>
@@ -539,15 +592,18 @@ const table = useVueTable({
       <DialogContent class="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>验证码生成成功</DialogTitle>
-          <DialogDescription>请在游戏内的个性签名中输入以下验证码完成验证</DialogDescription>
+          <DialogDescription>请在游戏内的个性签名中输入以下验证码完成验证<br>点击下方验证码即可一键复制到剪切板</DialogDescription>
         </DialogHeader>
-        <div class="text-center text-2xl font-bold py-4 select-all">
+        <div
+          class="text-center text-2xl font-bold py-4 select-all cursor-pointer"
+          @click="copyCodeToClipboard"
+        >
           {{ generatedCode }}
         </div>
-        <DialogDescription>请务必完整输入进个性签名，不要移除斜杠</DialogDescription>
+        <DialogDescription>请务必完整输入进个性签名，不要移除斜杠<br>在游戏中完成验证码输入之后，请务必退回到主页确保验证码成功保存，再继续添加账号</DialogDescription>
         <DialogFooter>
           <DialogClose as-child>
-            <Button @click="verificationAcknowledged = true">我已输入，确定</Button>
+            <Button @click="verificationAcknowledged = true">我已输入，下一步</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

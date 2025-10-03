@@ -9,6 +9,10 @@ import {
   CardContent
 } from "@/components/ui/card"
 import {
+  LogIn,
+  Settings,
+  Gamepad2,
+  UserPlus,
   LucideBot,
   LucideInfo,
   LucideNavigation,
@@ -24,7 +28,7 @@ import {
       <h1 class="text-4xl font-bold">欢迎使用 Haruki 工具箱</h1>
       <p class="text-lg text-muted-foreground mt-2">请选择您需要的功能</p>
     </div>
-    <Card class="max-w-lg mx-auto w-full">
+    <Card class="max-w-md mx-auto w-full">
       <CardHeader>
         <CardTitle>推荐与关于</CardTitle>
       </CardHeader>
@@ -50,7 +54,39 @@ import {
       </CardContent>
     </Card>
 
-    <Card class="max-w-lg mx-auto w-full">
+    <Card class="max-w-md mx-auto w-full">
+      <CardHeader>
+        <CardTitle>Haruki工具箱账号系统管理</CardTitle>
+      </CardHeader>
+      <CardContent class="grid grid-cols-2 gap-4">
+        <router-link to="/user/register">
+          <Button variant="outline" class="w-full flex items-center gap-2 truncate text-sm">
+            <UserPlus class="w-5 h-5"/>
+            <span class="whitespace-normal">注册</span>
+          </Button>
+        </router-link>
+        <router-link to="/user/login">
+          <Button variant="outline" class="w-full flex items-center gap-2 truncate text-sm">
+            <LogIn class="w-5 h-5"/>
+            <span class="whitespace-normal">登录</span>
+          </Button>
+        </router-link>
+        <router-link to="/user/settings">
+          <Button variant="outline" class="w-full flex items-center gap-2 truncate text-sm">
+            <Settings class="w-5 h-5"/>
+            <span class="whitespace-normal">账号设置</span>
+          </Button>
+        </router-link>
+        <router-link to="/user/game-account-bindings">
+          <Button variant="outline" class="w-full flex items-center gap-2 truncate text-sm">
+            <Gamepad2 class="w-5 h-5"/>
+            <span class="whitespace-normal">游戏账号管理</span>
+          </Button>
+        </router-link>
+      </CardContent>
+    </Card>
+
+    <Card class="max-w-md mx-auto w-full">
       <CardHeader>
         <CardTitle>Haruki工具箱工具</CardTitle>
       </CardHeader>
@@ -76,7 +112,7 @@ import {
       </CardContent>
     </Card>
 
-    <Card class="max-w-lg mx-auto w-full">
+    <Card class="max-w-md mx-auto w-full">
       <CardHeader>
         <CardTitle>站外链接</CardTitle>
       </CardHeader>

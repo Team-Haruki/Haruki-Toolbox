@@ -1,5 +1,5 @@
 import {toast} from "vue-sonner";
-import {callApi} from "@/components/users/data/api/call-api"
+import {callApiResponse} from "@/components/users/data/api/call-api"
 import type {
     APIResponse,
     ChangePasswordPayload,
@@ -25,7 +25,7 @@ export async function updateUserProfile(name: string, avatar: File | null): Prom
         } else {
             payload = {name}
         }
-        return await callApi<{ name: string; avatarPath: string }>(
+        return await callApiResponse<{ name: string; avatarPath: string }>(
             "/api/user/{toolboxUserId}/profile",
             "PUT",
             payload
@@ -38,7 +38,7 @@ export async function updateUserProfile(name: string, avatar: File | null): Prom
 
 export async function changePassword(password: string): Promise<APIResponse<null>> {
     const payload: ChangePasswordPayload = {password}
-    return await callApi<null>(
+    return await callApiResponse<null>(
         "/api/user/{toolboxUserId}/change-password",
         "PUT",
         payload

@@ -70,7 +70,8 @@ onMounted(() => {
 })
 
 const showPageTitle = computed(() => {
-  return pageTitle.value.length <= 10
+  const title = String(pageTitle.value || "")
+  return title.length <= 10
 })
 
 const props = defineProps<SidebarProps>()
