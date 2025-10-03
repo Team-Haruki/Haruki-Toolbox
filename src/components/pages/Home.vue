@@ -56,7 +56,7 @@ import {
 
     <Card class="max-w-md mx-auto w-full">
       <CardHeader>
-        <CardTitle>Haruki工具箱账号系统管理</CardTitle>
+        <CardTitle>账号与账号设置</CardTitle>
       </CardHeader>
       <CardContent class="grid grid-cols-2 gap-4">
         <router-link to="/user/register">
@@ -88,7 +88,7 @@ import {
 
     <Card class="max-w-md mx-auto w-full">
       <CardHeader>
-        <CardTitle>Haruki工具箱工具</CardTitle>
+        <CardTitle>工具</CardTitle>
       </CardHeader>
       <CardContent class="grid grid-cols-2 gap-4">
         <router-link to="/pt-calculator">
