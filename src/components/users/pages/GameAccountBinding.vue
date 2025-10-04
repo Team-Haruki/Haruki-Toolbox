@@ -111,6 +111,7 @@ const verificationTriggered = ref(false)
 const verificationAcknowledged = ref(false)
 const editTarget = ref<GameAccount | null>(null)
 const deleteTarget = ref<GameAccount | null>(null)
+const isSaving = ref(false)
 const regionLabels: Record<string, string> = {
   jp: "日服",
   en: "国际服",
@@ -204,6 +205,7 @@ async function handleEditSave() {
     toast.error("保存失败", {description: "新增账号前请先点击“验证”生成验证码，并在游戏内完成设置。"})
     return
   }
+  isSaving.value = true
   try {
     const server = editTarget.value.server as any
     const gameUidStr = userIdInput.value?.trim() ?? ""
@@ -259,6 +261,8 @@ async function handleEditSave() {
     showEditDialog.value = false
   } catch (e: any) {
     toast.error("保存失败", {description: e?.message ?? String(e)})
+  } finally {
+    isSaving.value = false
   }
 }
 
@@ -574,7 +578,7 @@ const table = useVueTable({
           <DialogClose as-child>
             <Button variant="outline">取消</Button>
           </DialogClose>
-          <Button @click="handleEditSave" :disabled="isCreating && !verificationTriggered">保存</Button>
+          <Button @click="handleEditSave" :disabled="isSaving || (isCreating && !verificationTriggered)">保存</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

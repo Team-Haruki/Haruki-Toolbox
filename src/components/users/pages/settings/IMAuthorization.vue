@@ -80,6 +80,7 @@ const showEditDialog = ref(false)
 const editTarget = ref<SocialAuth | null>(null)
 const showDeleteDialog = ref(false)
 const deleteTarget = ref<SocialAuth | null>(null)
+const isSaving = ref(false)
 type SocialPlatform = "qq" | "qqbot" | "discord" | "telegram"
 
 export interface SocialAuth {
@@ -145,6 +146,7 @@ function startAdd() {
 
 async function handleEditSave() {
   if (!editTarget.value) return
+  isSaving.value = true
   try {
     const idNum = Number(editTarget.value.id)
     const resp = await addAuthorizeSocialPlatformAccount(
@@ -160,6 +162,8 @@ async function handleEditSave() {
     showEditDialog.value = false
   } catch (e: any) {
     toast.error("保存失败", {description: e?.message || String(e)})
+  } finally {
+    isSaving.value = false
   }
 }
 
@@ -329,7 +333,7 @@ onMounted(() => {
         <DialogClose as-child>
           <Button variant="outline">取消</Button>
         </DialogClose>
-        <Button @click="handleEditSave">保存</Button>
+        <Button @click="handleEditSave" :disabled="isSaving">保存</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
