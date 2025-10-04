@@ -7,7 +7,7 @@ import {useRouter} from "vue-router"
 
 export const apiClient = axios.create({
     baseURL: import.meta.env.VITE_HARUKI_TOOLBOX_USER_BASE_URL,
-    timeout: 30000,
+    timeout: 60000,
     headers: {
         "Content-Type": "application/json",
     },

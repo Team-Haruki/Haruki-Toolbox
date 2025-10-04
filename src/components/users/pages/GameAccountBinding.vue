@@ -598,10 +598,10 @@ const table = useVueTable({
         >
           {{ generatedCode }}
         </div>
-        <DialogDescription>请务必完整输入进个性签名，不要移除斜杠<br>在游戏中完成验证码输入之后，请务必退回到主页确保验证码成功保存，再继续添加账号</DialogDescription>
+        <DialogDescription>请务必完整输入进个性签名，不要移除斜杠<br>在游戏中完成验证码输入之后，请务必退回到主页确保验证码成功保存，再继续添加账号<br>输入验证码之后，直接关闭此窗口，点击保存按钮，即可进行账号验证</DialogDescription>
         <DialogFooter>
           <DialogClose as-child>
-            <Button @click="verificationAcknowledged = true">我已输入，下一步</Button>
+            <Button @click="verificationAcknowledged = true">我已输入，关闭此窗口</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
