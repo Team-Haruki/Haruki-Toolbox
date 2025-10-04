@@ -136,6 +136,14 @@ onMounted(() => {
   }
 })
 
+onMounted(() => {
+  const info = userStore.socialPlatformInfo
+  if (!info || !info.verified) {
+    toast.warning("请先完成社交平台账号绑定")
+    await router.push("/user/settings")
+  }
+})
+
 watch(
     () => userStore.isLoggedIn,
     (isLoggedIn) => {

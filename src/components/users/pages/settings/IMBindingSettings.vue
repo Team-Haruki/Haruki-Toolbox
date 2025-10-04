@@ -211,7 +211,7 @@ async function handleUnbind() {
 <template>
   <Card class="w-full max-w-md">
     <CardHeader>
-      <CardTitle>账号绑定设置</CardTitle>
+      <CardTitle>社交平台账号绑定设置</CardTitle>
       <CardDescription>管理您的Haruki工具箱账号的社交平台账号绑定信息</CardDescription>
     </CardHeader>
 
