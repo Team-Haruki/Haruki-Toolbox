@@ -36,7 +36,9 @@ const emailCode = ref("")
 const userStore = useUserStore()
 const isSending = ref(false)
 const sendCodeChallengeToken = ref<string>("")
+const sendCodeRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const registerChallengeToken = ref<string>("")
+const registerTurnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const isDialogOpen = ref(false)
 let countdownInterval: ReturnType<typeof setInterval> | null = null
 
@@ -77,6 +79,7 @@ async function handleSendCode() {
     return true
   } catch (err) {
     toast.error("发送验证码失败", {description: String(err)})
+    sendCodeRef.value?.reset()
     return false
   } finally {
     isSending.value = false
@@ -102,6 +105,7 @@ async function handleRegister() {
     await router.push("/")
   } catch (err) {
     toast.error("注册失败", {description: String(err)})
+    registerTurnstileRef.value?.reset()
   }
 }
 </script>
@@ -151,7 +155,7 @@ async function handleRegister() {
                   <DialogTitle>发送邮件前人机验证</DialogTitle>
                   <DialogDescription>请完成人机验证以发送您的注册邮件</DialogDescription>
                   <div class="mb-4">
-                    <Turnstile @verify="(t: string) => { sendCodeChallengeToken = t }" />
+                    <Turnstile @verify="(t: string) => { sendCodeChallengeToken = t }" ref="sendCodeRef" />
                   </div>
                     <DialogFooter>
                       <DialogClose as-child>
@@ -190,7 +194,7 @@ async function handleRegister() {
                 required
             />
           </div>
-          <Turnstile @verify="(t: string) => { registerChallengeToken = t }" class="md-2"/>
+          <Turnstile @verify="(t: string) => { registerChallengeToken = t }" class="md-2" ref="registerTurnstileRef"/>
           <Button type="submit" class="w-full"> 注册</Button>
           <div class="text-center text-sm">
             已有账号？

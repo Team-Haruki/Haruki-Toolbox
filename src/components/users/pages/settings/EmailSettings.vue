@@ -42,6 +42,7 @@ const emailCode = ref("")
 const changing = ref(false)
 const sendCooldown = ref(0)
 const challengeToken = ref("")
+const turnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const sendingCode = ref(false)
 let sendTimer: ReturnType<typeof setInterval> | null = null
 
@@ -79,6 +80,7 @@ async function handleSendCode() {
     startCooldown()
   } catch (e: any) {
     toast.error("发送验证码失败", {description: e?.message || "请稍后再试"})
+    turnstileRef.value?.reset()
   } finally {
     sendingCode.value = false
   }
@@ -107,6 +109,7 @@ async function handleChangeEmail() {
     await router.push("/user/login")
   } catch (e: any) {
     toast.error("更换邮箱失败", {description: e?.message || "请稍后重试"})
+    turnstileRef.value?.reset()
   } finally {
     changing.value = false
   }
@@ -156,7 +159,7 @@ onUnmounted(() => {
 
           <div class="grid gap-4 py-4">
             <Input placeholder="新的邮箱地址" v-model="newEmail"/>
-            <Turnstile @verify="val => (challengeToken = val)" class="mb-2"/>
+            <Turnstile @verify="val => (challengeToken = val)" class="mb-2" ref="turnstileRef"/>
             <div class="flex gap-2">
               <Input placeholder="邮箱验证码" v-model="emailCode" class="flex-1"/>
               <Button
