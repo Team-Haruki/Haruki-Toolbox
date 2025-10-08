@@ -17,7 +17,7 @@ const routes = [
             },
             {
                 path: '/friend-groups',
-                component: () => import("@/components/navigations/FriendGroups.vue"),
+                component: () => import("@/components/pages/navigations/FriendGroups.vue"),
                 meta: {title: '推荐群聊'}
             },
             {
@@ -39,47 +39,47 @@ const routes = [
             },
             {
                 path: '/pt-calculator',
-                component: () => import("@/components/pages/haruki_bot/PointCalculator.vue"),
+                component: () => import("@/components/pages/tools/PointCalculator.vue"),
                 meta: {title: '活动Pt计算器'}
             },
             {
                 path: '/upload-data',
-                component: () => import("@/components/pages/haruki_bot/UploadData.vue"),
+                component: () => import("@/components/pages/tools/UploadData.vue"),
                 meta: {title: '上传数据'}
             },
             {
                 path: '/ios-modules',
-                component: () => import("@/components/pages/haruki_bot/IOSModules.vue"),
+                component: () => import("@/components/pages/tools/IOSModules.vue"),
                 meta: {title: 'iOS模块快速安装'}
             },
             {
                 path: '/user',
-                component: () => import('@/components/users/UserLayout.vue'),
+                component: () => import('@/components/pages/users/UserLayout.vue'),
                 children: [
                     {
                         path: 'login',
-                        component: () => import('@/components/users/pages/Login.vue'),
+                        component: () => import('@/components/pages/users/Login.vue'),
                         meta: { title: '登录' }
                     },
                     {
                         path: 'register',
-                        component: () => import('@/components/users/pages/Register.vue'),
+                        component: () => import('@/components/pages/users/Register.vue'),
                         meta: { title: '注册账号' }
                     },
                     {
                         path: 'settings',
-                        component: () => import('@/components/users/pages/Settings.vue'),
+                        component: () => import('@/components/pages/users/Settings.vue'),
                         meta: { title: '账号设置' }
                     },
                     {
                         path: 'game-account-bindings',
-                        component: () => import('@/components/users/pages/GameAccountBinding.vue'),
+                        component: () => import('@/components/pages/users/GameAccountBinding.vue'),
                         meta: { title: '绑定游戏账号' }
                     },
                     {
                         path: 'reset-password/:verifyHash',
                         name: 'reset-password',
-                        component: () => import('@/components/users/pages/ResetPassword.vue'),
+                        component: () => import('@/components/pages/users/ResetPassword.vue'),
                         props: route => ({
                             verifyHash: route.params.verifyHash,
                             email: route.query.email,

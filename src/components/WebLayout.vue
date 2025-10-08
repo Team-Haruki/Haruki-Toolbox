@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import 'vue-sonner/style.css'
 import {useRoute} from 'vue-router'
 import {useColorMode} from '@vueuse/core'
 import harukiLogo from "@/assets/haruki.ico"
 import {computed, watch, onMounted} from 'vue'
 import {Toaster} from '@/components/ui/sonner'
 import {Separator} from '@/components/ui/separator'
-import SidebarUser from "@/components/SidebarUser.vue";
 import type {SidebarProps} from '@/components/ui/sidebar'
+import SidebarUser from "@/components/pages/users/SidebarUser.vue";
 
 import {
   LucideMap,
@@ -255,10 +254,6 @@ const data: { navMain: NavItem[] } = {
               <component :is="Component"/>
             </Transition>
           </router-view>
-          <Toaster
-              position="bottom-right"
-              richColors
-          />
         </div>
 
       </main>

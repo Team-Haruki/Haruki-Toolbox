@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const token = ref<string | null>(null)
 const container = ref<HTMLDivElement | null>(null)
-let widgetId: number | null = null
+let widgetId: string | null = null
 let interval: number | null = null
 
 function handleVerify(res: string) {
@@ -56,9 +56,17 @@ function renderTurnstile() {
 }
 
 function reset() {
-  if (widgetId !== null && (window as any).turnstile) {
-    (window as any).turnstile.reset(widgetId)
-    handleExpired()
+  console.log("[Turnstile] reset called, widgetId:", widgetId)
+  if (widgetId && (window as any).turnstile) {
+    try {
+      (window as any).turnstile.reset(widgetId)
+    } catch {
+      widgetId = null
+      if (container.value) {
+        container.value.innerHTML = ""
+        renderTurnstile()
+      }
+    }
   }
 }
 
