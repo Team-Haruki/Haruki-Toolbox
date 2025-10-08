@@ -462,7 +462,7 @@ const table = useVueTable({
               </CardDescription>
             </CardHeader>
             <CardContent class="grid gap-4 sm:grid-cols-2">
-              <Card class="p-3">
+              <Card class="flex justify-center p-3">
                 <div class="flex items-center gap-3">
                   <Switch
                     :model-value="editTarget!.suite?.allowPublicApi"
@@ -474,7 +474,7 @@ const table = useVueTable({
                   </div>
                 </div>
               </Card>
-              <Card class="p-3">
+              <Card class="flex justify-center p-3">
                 <div class="flex items-center gap-3">
                   <Switch
                     :model-value="editTarget!.suite?.allowSakura"
@@ -486,7 +486,7 @@ const table = useVueTable({
                   </div>
                 </div>
               </Card>
-              <Card class="p-3">
+              <Card class="flex justify-center p-3">
                 <div class="flex items-center gap-3">
                   <Switch
                     :model-value="editTarget!.suite?.allow8823"
@@ -498,7 +498,7 @@ const table = useVueTable({
                   </div>
                 </div>
               </Card>
-              <Card class="p-3">
+              <Card class="flex justify-center p-3">
                 <div class="flex items-center gap-3">
                   <Switch
                     :model-value="editTarget!.suite?.allowResona"
@@ -522,7 +522,7 @@ const table = useVueTable({
                 </CardDescription>
               </CardHeader>
               <CardContent class="grid gap-4 sm:grid-cols-2">
-                <Card class="p-3">
+                <Card class="flex justify-center p-3">
                   <div class="flex items-center gap-3">
                     <Switch
                       :model-value="editTarget!.mysekai?.allowPublicApi"
@@ -534,7 +534,7 @@ const table = useVueTable({
                     </div>
                   </div>
                 </Card>
-                <Card class="p-3">
+                <Card class="flex justify-center p-3">
                   <div class="flex items-center gap-3">
                     <Switch
                       :model-value="editTarget!.mysekai?.allowFixtureApi"
@@ -546,7 +546,7 @@ const table = useVueTable({
                     </div>
                   </div>
                 </Card>
-                <Card class="p-3">
+                <Card class="flex justify-center p-3">
                   <div class="flex items-center gap-3">
                     <Switch
                       :model-value="editTarget!.mysekai?.allow8823"
@@ -558,7 +558,7 @@ const table = useVueTable({
                     </div>
                   </div>
                 </Card>
-                <Card class="p-3">
+                <Card class="flex justify-center p-3">
                   <div class="flex items-center gap-3">
                     <Switch
                       :model-value="editTarget!.mysekai?.allowResona"

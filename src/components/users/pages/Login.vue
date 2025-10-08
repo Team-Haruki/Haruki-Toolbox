@@ -41,7 +41,9 @@ const email = ref("")
 const password = ref("")
 const resetEmail = ref("")
 const loginChallengeToken = ref<string | null>(null)
+const loginTurnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const resetChallengeToken = ref<string | null>(null)
+const resetTurnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const userStore = useUserStore()
 
 onMounted(() => {
@@ -80,6 +82,7 @@ async function handleResetPassword() {
       message = err.message
     }
     toast.error("重置密码失败", {description: message})
+    resetTurnstileRef.value?.reset()
   }
 }
 
@@ -105,6 +108,7 @@ async function handleLogin() {
       message = err.message
     }
     toast.error("登录失败", {description: message})
+    loginTurnstileRef.value?.reset()
   }
 }
 
@@ -156,7 +160,7 @@ async function handleLogin() {
                           placeholder="you@example.com"
                           v-model="resetEmail"
                       />
-                      <Turnstile :callback="onResetTurnstileVerified"/>
+                      <Turnstile :callback="onResetTurnstileVerified" ref="resetTurnstileRef" />
                     </div>
                     <DialogFooter>
                       <DialogClose as-child>
@@ -168,7 +172,7 @@ async function handleLogin() {
                 </Dialog>
               </div>
               <Input id="password" type="password" placeholder="请输入您的密码" required v-model="password"/>
-              <Turnstile :callback="onLoginTurnstileVerified"/>
+              <Turnstile :callback="onLoginTurnstileVerified" ref="loginTurnstileRef" />
             </div>
             <Button type="submit" class="w-full">
               登录
