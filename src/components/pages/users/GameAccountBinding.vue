@@ -91,12 +91,14 @@ interface GameAccount {
     allow8823: boolean
     allowSakura: boolean
     allowResona: boolean
+    allowLuna: boolean
   } | null
   mysekai?: {
     allowPublicApi: boolean
     allowFixtureApi: boolean
     allow8823: boolean
     allowResona: boolean
+    allowLuna: boolean
   } | null
 }
 
@@ -172,12 +174,14 @@ function startAdd() {
       allowSakura: false,
       allow8823: false,
       allowResona: false,
+      allowLuna: false,
     },
     mysekai: {
       allowPublicApi: false,
       allowFixtureApi: false,
       allow8823: false,
       allowResona: false,
+      allowLuna: false,
     },
   })
   userIdInput.value = ""
@@ -221,14 +225,16 @@ async function handleEditSave() {
       allowPublicApi: false,
       allowFixtureApi: false,
       allow8823: false,
-      allowResona: false
+      allowResona: false,
+      allowLuna: false,
     }
 
     const suitePayload = editTarget.value.suite ?? {
       allowPublicApi: false,
       allowSakura: false,
       allow8823: false,
-      allowResona: false
+      allowResona: false,
+      allowLuna: false,
     }
 
     let resp;
@@ -483,7 +489,7 @@ const table = useVueTable({
                   />
                   <div class="flex-1">
                     <Label class="font-semibold">允许上传至SakuraBot</Label>
-                    <p class="text-sm text-muted-foreground">允许Suite数据上传到SakuraBot</p>
+                    <p class="text-sm text-muted-foreground">允许Suite数据上传至SakuraBot</p>
                   </div>
                 </div>
               </Card>
@@ -495,7 +501,7 @@ const table = useVueTable({
                   />
                   <div class="flex-1">
                     <Label class="font-semibold">允许上传至烤森Bot</Label>
-                    <p class="text-sm text-muted-foreground">允许Suite数据上传到烤森Bot</p>
+                    <p class="text-sm text-muted-foreground">允许Suite数据上传至烤森Bot</p>
                   </div>
                 </div>
               </Card>
@@ -507,7 +513,19 @@ const table = useVueTable({
                   />
                   <div class="flex-1">
                     <Label class="font-semibold">允许上传至ResonaBot</Label>
-                    <p class="text-sm text-muted-foreground">允许Suite数据上传到ResonaBot</p>
+                    <p class="text-sm text-muted-foreground">允许Suite数据上传至ResonaBot</p>
+                  </div>
+                </div>
+              </Card>
+              <Card class="flex justify-center p-3">
+                <div class="flex items-center gap-3">
+                  <Switch
+                      :model-value="editTarget!.suite?.allowLuna"
+                      @update:model-value="val => { if(editTarget!.suite) editTarget!.suite.allowLuna = val }"
+                  />
+                  <div class="flex-1">
+                    <Label class="font-semibold">允许上传至LunaBot</Label>
+                    <p class="text-sm text-muted-foreground">允许Suite数据上传至LunaBot</p>
                   </div>
                 </div>
               </Card>
@@ -555,7 +573,7 @@ const table = useVueTable({
                     />
                     <div class="flex-1">
                       <Label class="font-semibold">允许上传至烤森Bot</Label>
-                      <p class="text-sm text-muted-foreground">允许MySekai数据上传到烤森Bot</p>
+                      <p class="text-sm text-muted-foreground">允许MySekai数据上传至烤森Bot</p>
                     </div>
                   </div>
                 </Card>
@@ -567,7 +585,19 @@ const table = useVueTable({
                     />
                     <div class="flex-1">
                       <Label class="font-semibold">允许上传至ResonaBot</Label>
-                      <p class="text-sm text-muted-foreground">允许MySekai数据上传到ResonaBot</p>
+                      <p class="text-sm text-muted-foreground">允许MySekai数据上传至ResonaBot</p>
+                    </div>
+                  </div>
+                </Card>
+                <Card class="flex justify-center p-3">
+                  <div class="flex items-center gap-3">
+                    <Switch
+                        :model-value="editTarget!.mysekai?.allowLuna"
+                        @update:model-value="val => { if(editTarget!.mysekai) editTarget!.mysekai.allowLuna = val }"
+                    />
+                    <div class="flex-1">
+                      <Label class="font-semibold">允许上传至LunaBot</Label>
+                      <p class="text-sm text-muted-foreground">允许MySekai数据上传至LunaBot</p>
                     </div>
                   </div>
                 </Card>
