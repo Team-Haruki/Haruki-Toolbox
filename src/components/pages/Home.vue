@@ -61,7 +61,7 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 
     <Card class="max-w-md mx-auto w-full">
       <CardHeader>
-        <CardTitle>账号与账号设置</CardTitle>
+        <CardTitle>账号与设置</CardTitle>
       </CardHeader>
       <CardContent class="grid grid-cols-2 gap-4 items-stretch">
         <router-link v-if="!isLoggedIn" to="/user/register" class="flex">
