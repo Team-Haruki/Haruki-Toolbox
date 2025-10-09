@@ -81,6 +81,7 @@ async function handleResetPassword() {
       message = err.message
     }
     toast.error("重置密码失败", {description: message})
+  } finally {
     resetTurnstileRef.value?.reset()
   }
 }
@@ -107,6 +108,7 @@ async function handleLogin() {
       message = err.message
     }
     toast.error("登录失败", {description: message})
+  } finally {
     loginTurnstileRef.value?.reset()
   }
 }
