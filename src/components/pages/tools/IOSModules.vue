@@ -60,6 +60,13 @@ const moduleMap: Record<string, Record<string, string>> = {
     loon: 'mysekai_force/<server>_mysekai.lnplugin',
     stash: 'mysekai_force/<server>_mysekai.stoverride'
   },
+  mysekai_birthday_party: {
+    shadowrocket: 'mysekai_birthday_party/<server>_mysekai_birthday_party.sgmodule',
+    surge: 'mysekai_birthday_party/<server>_mysekai_birthday_party.sgmodule',
+    qx: 'mysekai_birthday_party/<server>_mysekai_birthday_party.conf',
+    loon: 'mysekai_birthday_party/<server>_mysekai_birthday_party.lnplugin',
+    stash: 'mysekai_birthday_party/<server>_mysekai_birthday_party.stoverride'
+  },
   suite: {
     shadowrocket: 'suite/<server>_suite.sgmodule',
     surge: 'suite/<server>_suite.sgmodule',
@@ -120,6 +127,7 @@ async function installModule() {
               <SelectItem value="unlocker">解锁日服登录IP限制</SelectItem>
               <SelectItem value="mysekai">MySekai</SelectItem>
               <SelectItem value="mysekai_force">MySekai强制刷新</SelectItem>
+              <SelectItem value="mysekai_birthday_party">MySekai生日双叶地图刷新小助手</SelectItem>
               <SelectItem value="suite">Suite</SelectItem>
             </SelectContent>
           </Select>
@@ -132,10 +140,10 @@ async function installModule() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="jp">日服</SelectItem>
-              <SelectItem value="en">国际服</SelectItem>
-              <SelectItem value="tw">台服</SelectItem>
-              <SelectItem value="kr">韩服</SelectItem>
-              <SelectItem value="cn">国服</SelectItem>
+              <SelectItem value="en" v-if="selectedModule == 'suite'">国际服</SelectItem>
+              <SelectItem value="tw" v-if="selectedModule != 'mysekai_birthday_party'">台服</SelectItem>
+              <SelectItem value="kr" v-if="selectedModule != 'mysekai_birthday_party'">韩服</SelectItem>
+              <SelectItem value="cn" v-if="selectedModule != 'mysekai_birthday_party'">国服</SelectItem>
             </SelectContent>
           </Select>
         </div>
