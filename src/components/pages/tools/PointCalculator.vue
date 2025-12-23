@@ -58,8 +58,8 @@ function calcResult(): void {
         if (selfMin > 2700000) break;
 
         for (let bonusPct = 0; bonusPct <= (deckBonusCap.value ?? 0); bonusPct++) {
-          const deckR = 1 + bonusPct / 100;
-          const raw = Math.floor(baseScore * musicRate * deckR);
+          const deckR = 100 + bonusPct;
+          const raw = Math.floor(baseScore * musicRate * deckR / 100);
           const ptPrime = raw * (boost ?? 1);
 
           if (ptPrime === pt) {
