@@ -377,7 +377,16 @@ const columns: ColumnDef<GameAccount>[] = [
   {
     accessorKey: "verified",
     header: "验证状态",
-    cell: ({row}) => row.original.verified ? "已验证" : "未验证",
+    cell: ({row}) =>
+        h(
+            "span",
+            {
+              class: row.original.verified
+                  ? "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-500 text-white hover:bg-green-600"
+                  : "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+            },
+            row.original.verified ? "已验证" : "未验证"
+        ),
   },
   {
     id: "actions",
