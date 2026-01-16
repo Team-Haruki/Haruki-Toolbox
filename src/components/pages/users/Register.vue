@@ -117,7 +117,7 @@ async function handleRegister() {
         registerChallengeToken.value,
         { skipErrorToast: true }
     )
-    toast.success("注册成功", {description: "欢迎使用Haruki工具箱"})
+    toast.success("注册成功", {description: "欢迎来到Haruki工具箱"})
     userStore.setUser(response.userData)
     registerChallengeToken.value = ""
     await router.push("/")

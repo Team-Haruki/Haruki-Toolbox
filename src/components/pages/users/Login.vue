@@ -104,7 +104,7 @@ async function handleLogin() {
       if (response.userData) {
         userStore.setUser(response.userData)
       }
-      toast.success("登录成功")
+      toast.success("登录成功", {description: "欢迎回到Haruki工具箱"})
       loginChallengeToken.value = null
       await router.push("/")
     } else {

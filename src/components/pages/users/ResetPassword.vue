@@ -47,7 +47,7 @@ isSubmitting.value = true
     })
     await router.push("/user/login")
   } catch (err) {
-    toast.error("重置失败: " + String(err))
+    toast.error("重置失败", {description: String(err)})
   } finally {
     isSubmitting.value = false
   }
