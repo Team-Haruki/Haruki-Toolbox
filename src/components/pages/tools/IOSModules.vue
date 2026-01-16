@@ -140,7 +140,7 @@ async function installModule() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="jp">日服</SelectItem>
-              <SelectItem value="en" v-if="selectedModule == 'suite'">国际服</SelectItem>
+              <SelectItem value="en" v-if="selectedModule != 'mysekai_birthday_party'">国际服</SelectItem>
               <SelectItem value="tw" v-if="selectedModule != 'mysekai_birthday_party'">台服</SelectItem>
               <SelectItem value="kr" v-if="selectedModule != 'mysekai_birthday_party'">韩服</SelectItem>
               <SelectItem value="cn" v-if="selectedModule != 'mysekai_birthday_party'">国服</SelectItem>
