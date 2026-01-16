@@ -7,6 +7,7 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue";
+import type { ApiErrorResponse } from "@/types/response";
 
 import {
   ref,
@@ -70,13 +71,13 @@ async function handleResetPassword() {
     return
   }
   try {
-    await sendResetPasswordEmail(resetEmail.value, resetChallengeToken.value)
+    await sendResetPasswordEmail(resetEmail.value, resetChallengeToken.value, { skipErrorToast: true })
     toast.success("重置密码邮件已发送", {description: `邮件已发送到 ${resetEmail.value}`})
     resetChallengeToken.value = null
   } catch (err: unknown) {
     let message = "网络错误，请检查连接"
     if (isAxiosError(err)) {
-      message = (err.response?.data as any)?.message || err.message
+      message = (err.response?.data as ApiErrorResponse)?.message || err.message
     } else if (err instanceof Error) {
       message = err.message
     }
@@ -92,8 +93,11 @@ async function handleLogin() {
     return
   }
   try {
-    const response = await login(email.value, password.value, loginChallengeToken.value)
+    const response = await login(email.value, password.value, loginChallengeToken.value, { skipErrorToast: true })
     if (response.status === 200) {
+      if (response.userData) {
+        userStore.setUser(response.userData)
+      }
       toast.success("登录成功")
       loginChallengeToken.value = null
       await router.push("/")
@@ -103,7 +107,7 @@ async function handleLogin() {
   } catch (err: unknown) {
     let message = "网络错误，请检查连接"
     if (isAxiosError(err)) {
-      message = (err.response?.data as any)?.message || err.message
+      message = (err.response?.data as ApiErrorResponse)?.message || err.message
     } else if (err instanceof Error) {
       message = err.message
     }

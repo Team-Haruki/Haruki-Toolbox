@@ -1,13 +1,15 @@
 import {useUserStore} from "@/store"
 import {apiClient} from "@/api/call-api"
 import type {APIResponse} from "@/types";
+import type { AxiosRequestConfig } from "axios";
 
 export async function uploadManualData(
     server: string,
     gameUserId: string,
     dataType: string,
     file: Blob,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
+    options?: AxiosRequestConfig
 ): Promise<APIResponse<null>> {
     const userStore = useUserStore()
     if (!userStore.userId) {
@@ -26,6 +28,7 @@ export async function uploadManualData(
                 onProgress(percent)
             }
         },
+        ...options
     })
 
     return resp.data

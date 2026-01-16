@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from 'axios'
-import FriendGroupCard from "@/components/pages/navigations/FriendGroupCard.vue"
+import FriendGroupCard, { type FriendGroupItem } from "@/components/pages/navigations/FriendGroupCard.vue"
 
 import {
   ref,
@@ -13,17 +13,22 @@ import {
   AccordionContent
 } from "@/components/ui/accordion"
 
-const groupData = ref<Array<any>>([])
+interface FriendGroupData {
+  group: string
+  group_list: FriendGroupItem[]
+}
+
+const groupData = ref<FriendGroupData[]>([])
 const activeIdx = ref<Array<number | null>>([])
 const openGroups = ref<string[]>([]) // 👈 用来控制展开的分组
 
 async function fetchGroupData() {
   try {
     const response = await axios.get('https://suite-api.haruki.seiunx.com/misc/friend_groups')
-    const data = response.data
+    const data: FriendGroupData[] = response.data
     groupData.value = data
     activeIdx.value = data.map(() => null)
-    openGroups.value = data.map((g: any) => g.group)
+    openGroups.value = data.map((g) => g.group)
   } catch (error) {
     console.error('Failed to fetch group data:', error)
   }

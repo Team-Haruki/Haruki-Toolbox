@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {logout} from "@/api"
 import {toast} from "vue-sonner"
+import {isAxiosError} from "axios"
 import {useUserStore} from "@/store"
 import {useRouter} from "vue-router"
 import {Input} from "@/components/ui/input"
@@ -9,6 +10,7 @@ import {Button} from "@/components/ui/button"
 import {Switch} from "@/components/ui/switch"
 import {MoreHorizontal} from "lucide-vue-next"
 import type {ColumnDef} from "@tanstack/vue-table"
+import type {ApiErrorResponse} from "@/types/response"
 
 
 import {
@@ -192,13 +194,28 @@ const data = computed(() => Array.isArray(userStore.gameAccountBindings) ? userS
 
 async function handleDelete() {
   if (!deleteTarget.value) return
+  if (!userStore.userId) {
+    toast.error("删除失败", {description: "用户信息缺失，请重新登录"})
+    return
+  }
   try {
-    const resp = await removeGameAccount(deleteTarget.value.server as any, String(deleteTarget.value.userId))
+    const resp = await removeGameAccount(
+        deleteTarget.value.server as any, 
+        String(deleteTarget.value.userId),
+        userStore.userId,
+        { skipErrorToast: true }
+    )
     const updated = (resp as any)?.updatedData?.gameAccountBindings
     userStore.updateUser({gameAccountBindings: updated})
     toast.success("删除成功", {description: "账号已解除绑定"})
-  } catch (e: any) {
-    toast.error("删除失败", {description: e?.message ?? String(e)})
+  } catch (err: unknown) {
+    let message = "删除失败"
+    if (isAxiosError(err)) {
+        message = (err.response?.data as ApiErrorResponse)?.message || err.message
+    } else if (err instanceof Error) {
+        message = err.message
+    }
+    toast.error("删除失败", {description: message})
   } finally {
     showDeleteDialog.value = false
   }
@@ -208,6 +225,10 @@ async function handleEditSave() {
   if (!editTarget.value) return
   if (isCreating.value && !verificationTriggered.value) {
     toast.error("保存失败", {description: "新增账号前请先点击“验证”生成验证码，并在游戏内完成设置。"})
+    return
+  }
+  if (!userStore.userId) {
+    toast.error("保存失败", {description: "用户信息缺失，请重新登录"})
     return
   }
   isSaving.value = true
@@ -220,7 +241,7 @@ async function handleEditSave() {
     }
 
     const mysekaiPayload = (server === 'cn' && userStore.allowCNMysekai === false)
-        ? {allowPublicApi: false, allowFixtureApi: false, allow8823: false, allowResona: false}
+        ? {allowPublicApi: false, allowFixtureApi: false, allow8823: false, allowResona: false, allowLuna: false}
         : editTarget.value.mysekai ?? {
       allowPublicApi: false,
       allowFixtureApi: false,
@@ -238,25 +259,27 @@ async function handleEditSave() {
     }
 
     let resp;
+    const options = {
+        suite: suitePayload,
+        mysekai: mysekaiPayload,
+    }
+    const axiosOptions = { skipErrorToast: true }
+
     if (isCreating.value) {
-      resp = await (addGameAccount as any)(
+      resp = await addGameAccount(
         server,
         gameUidStr,
-        gameUidStr,
-        {
-          suite: suitePayload as any,
-          mysekai: mysekaiPayload as any,
-        }
+        userStore.userId,
+        options,
+        axiosOptions
       )
     } else {
-      resp = await (updateGameAccount as any)(
+      resp = await updateGameAccount(
         server,
         gameUidStr,
-        gameUidStr,
-        {
-          suite: suitePayload as any,
-          mysekai: mysekaiPayload as any,
-        }
+        userStore.userId,
+        options,
+        axiosOptions
       )
     }
 
@@ -266,8 +289,14 @@ async function handleEditSave() {
     }
     toast.success("保存成功", {description: "账号设置已更新"})
     showEditDialog.value = false
-  } catch (e: any) {
-    toast.error("保存失败", {description: e?.message ?? String(e)})
+  } catch (err: unknown) {
+    let message = "保存失败"
+    if (isAxiosError(err)) {
+        message = (err.response?.data as ApiErrorResponse)?.message || err.message
+    } else if (err instanceof Error) {
+        message = err.message
+    }
+    toast.error("保存失败", {description: message})
   } finally {
     isSaving.value = false
   }
@@ -283,8 +312,16 @@ async function handleVerify() {
     toast.error("无法生成验证码", {description: "请先选择区服并填写游戏UID"})
     return
   }
+  if (!userStore.userId) {
+    toast.error("无法生成验证码", {description: "用户信息缺失，请重新登录"})
+    return
+  }
   try {
-    const resp = await generateGameAccountVerificationCode(editTarget.value.server as any, uidStr)
+    const resp = await generateGameAccountVerificationCode(
+        editTarget.value.server as any, 
+        userStore.userId,
+        { skipErrorToast: true }
+    )
     generatedCode.value = (resp as any)?.oneTimePassword ?? ""
     if (!generatedCode.value) {
       toast.error("生成失败", {description: "未返回验证码"})
@@ -292,8 +329,14 @@ async function handleVerify() {
     }
     showVerifyDialog.value = true
     verificationTriggered.value = true
-  } catch (e: any) {
-    toast.error("生成失败", {description: e?.message ?? String(e)})
+  } catch (err: unknown) {
+    let message = "生成失败"
+    if (isAxiosError(err)) {
+        message = (err.response?.data as ApiErrorResponse)?.message || err.message
+    } else if (err instanceof Error) {
+        message = err.message
+    }
+    toast.error("生成失败", {description: message})
   }
 }
 

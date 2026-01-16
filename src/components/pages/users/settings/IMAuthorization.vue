@@ -8,6 +8,8 @@ import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {MoreHorizontal} from "lucide-vue-next"
 import type {ColumnDef} from "@tanstack/vue-table"
+import {isAxiosError} from "axios"
+import type {ApiErrorResponse} from "@/types/response"
 
 
 import {
@@ -74,6 +76,7 @@ import {
   addAuthorizeSocialPlatformAccount,
   removeAuthorizeSocialPlatformAccount
 } from "@/api"
+import type {AuthorizeSocialPlatformInfo} from "@/types/store";
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -101,32 +104,25 @@ const platformLabel: Record<SocialPlatform, string> = {
 const {authorizeSocialPlatformInfo, isLoggedIn} = storeToRefs(userStore)
 
 const tableData = computed<SocialAuth[]>(() => {
-  const src: any = authorizeSocialPlatformInfo.value
-  const arr: any[] = Array.isArray(src) ? src : []
-  return arr.map((item: any) => ({
+  const src = authorizeSocialPlatformInfo.value
+  const arr = Array.isArray(src) ? src : []
+  return arr.map((item) => ({
     id: String(item.id),
-    platform: item.platform,
+    platform: item.platform as SocialPlatform,
     userId: item.userId,
-    comment: item.comment ?? item.remark ?? "",
+    comment: item.comment ?? "",
   }))
 })
 
 
 function nextId(): number {
-  const src: any = authorizeSocialPlatformInfo.value
-  const list: any[] = Array.isArray(src) ? src : []
+  const src = authorizeSocialPlatformInfo.value
+  const list = Array.isArray(src) ? src : []
   if (!list.length) return 1
-  const set = new Set<number>(list.map((i: any) => Number(i.id)))
+  const set = new Set<number>(list.map((i) => Number(i.id)))
   let i = 1
   while (set.has(i)) i++
   return i
-}
-
-function extractAuthorizeList(resp: any): any[] {
-  const root = (resp as any) ?? {}
-  const updated = root.updatedData ?? root.data?.updatedData ?? root.data ?? root
-  const list = updated?.authorizeSocialPlatformInfo ?? updated?.authorize_social_platform_info ?? updated
-  return Array.isArray(list) ? list : []
 }
 
 function startEdit(row: SocialAuth) {
@@ -147,22 +143,36 @@ function startAdd() {
 
 async function handleEditSave() {
   if (!editTarget.value) return
+  if (!userStore.userId) {
+      toast.error("操作失败", {description: "用户信息缺失，请重新登录"})
+      return
+  }
   isSaving.value = true
   try {
     const idNum = Number(editTarget.value.id)
     const resp = await addAuthorizeSocialPlatformAccount(
+        userStore.userId,
         idNum,
         editTarget.value.platform,
         editTarget.value.userId,
-        editTarget.value.comment
+        editTarget.value.comment,
+        { skipErrorToast: true }
     )
 
-    const normalized = extractAuthorizeList(resp)
-    userStore.updateUser({authorizeSocialPlatformInfo: normalized})
+    const normalized = resp.updatedData
+    if (normalized) {
+        userStore.updateUser({authorizeSocialPlatformInfo: normalized})
+    }
     toast.success("已保存授权", {description: "社交平台账号授权信息已更新"})
     showEditDialog.value = false
-  } catch (e: any) {
-    toast.error("保存失败", {description: e?.message || String(e)})
+  } catch (e: unknown) {
+      let message = "保存失败"
+      if (isAxiosError(e)) {
+          message = (e.response?.data as ApiErrorResponse)?.message || e.message
+      } else if (e instanceof Error) {
+          message = e.message
+      }
+      toast.error("保存失败", {description: message})
   } finally {
     isSaving.value = false
   }
@@ -175,15 +185,31 @@ function confirmDelete(row: SocialAuth) {
 
 async function handleDelete() {
   if (!deleteTarget.value) return
+  if (!userStore.userId) {
+      toast.error("操作失败", {description: "用户信息缺失，请重新登录"})
+      return
+  }
   try {
     const idNum = Number(deleteTarget.value.id)
-    const resp = await removeAuthorizeSocialPlatformAccount(idNum)
-    const normalized = extractAuthorizeList(resp)
-    userStore.updateUser({authorizeSocialPlatformInfo: normalized})
+    const resp = await removeAuthorizeSocialPlatformAccount(
+        userStore.userId,
+        idNum,
+        { skipErrorToast: true }
+    )
+    const normalized = resp.updatedData
+    if (normalized) {
+        userStore.updateUser({authorizeSocialPlatformInfo: normalized})
+    }
     toast.success("已删除授权", {description: "该社交平台账号授权已移除"})
     showDeleteDialog.value = false
-  } catch (e: any) {
-    toast.error("删除失败", {description: e?.message || String(e)})
+  } catch (e: unknown) {
+      let message = "删除失败"
+      if (isAxiosError(e)) {
+          message = (e.response?.data as ApiErrorResponse)?.message || e.message
+      } else if (e instanceof Error) {
+          message = e.message
+      }
+      toast.error("删除失败", {description: message})
   }
 }
 

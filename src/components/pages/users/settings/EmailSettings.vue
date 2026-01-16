@@ -5,6 +5,8 @@ import {useUserStore} from "@/store"
 import {Input} from "@/components/ui/input"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
+import {isAxiosError} from "axios"
+import type {ApiErrorResponse} from "@/types/response"
 
 
 import {
@@ -76,11 +78,17 @@ async function handleSendCode() {
 
   sendingCode.value = true
   try {
-    await sendEmailVerificationCode(newEmail.value, challengeToken.value)
+    await sendEmailVerificationCode(newEmail.value, challengeToken.value, { skipErrorToast: true })
     toast.success("验证码已发送", {description: `已发送到 ${newEmail.value}，请注意查收`})
     startCooldown()
-  } catch (e: any) {
-    toast.error("发送验证码失败", {description: e?.message || "请稍后再试"})
+  } catch (e: unknown) {
+      let message = "发送验证码失败"
+      if (isAxiosError(e)) {
+          message = (e.response?.data as ApiErrorResponse)?.message || e.message
+      } else if (e instanceof Error) {
+          message = e.message
+      }
+    toast.error("发送验证码失败", {description: message})
     turnstileRef.value?.reset()
   } finally {
     sendingCode.value = false
@@ -99,8 +107,13 @@ async function handleChangeEmail() {
 
   changing.value = true
   try {
-    const response = await verifyEmail(newEmail.value, emailCode.value)
-    const updatedEmailInfo = (response as any)?.updatedData?.emailInfo ?? (response as any)?.updatedData
+    const response = await verifyEmail(newEmail.value, emailCode.value, { skipErrorToast: true })
+    
+    // The API response type is APIResponse<EmailInfo>, so updatedData is EmailInfo.
+    // However, considering the previous code was defensive, we can check.
+    // But let's trust the type first.
+    const updatedEmailInfo = response.updatedData
+    
     if (updatedEmailInfo) {
       userStore.updateUser({emailInfo: updatedEmailInfo})
     }
@@ -108,8 +121,14 @@ async function handleChangeEmail() {
     toast.success("更换邮箱成功", {description: "请重新登录以生效"})
     userStore.clearUser()
     await router.push("/user/login")
-  } catch (e: any) {
-    toast.error("更换邮箱失败", {description: e?.message || "请稍后重试"})
+  } catch (e: unknown) {
+      let message = "更换邮箱失败"
+      if (isAxiosError(e)) {
+          message = (e.response?.data as ApiErrorResponse)?.message || e.message
+      } else if (e instanceof Error) {
+          message = e.message
+      }
+    toast.error("更换邮箱失败", {description: message})
     turnstileRef.value?.reset()
   } finally {
     changing.value = false

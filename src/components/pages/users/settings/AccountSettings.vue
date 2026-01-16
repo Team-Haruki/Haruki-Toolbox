@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import {ref} from "vue"
 import {toast} from "vue-sonner"
+import {isAxiosError} from "axios"
 import {useUserStore} from "@/store";
 import {updateUserProfile} from "@/api"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
+import type {ApiErrorResponse} from "@/types/response"
 
 
 import {
@@ -44,35 +46,45 @@ function onAvatarChange(event: Event) {
 }
 
 async function saveChanges() {
+  if (!userStore.userId) {
+    toast.error("错误", { description: "无法获取用户信息，请重新登录" })
+    return
+  }
+
   try {
     let avatarPath = userStore.avatarPath
-    if (selectedFile.value) {
-      const result = await updateUserProfile(userStore.name, selectedFile.value)
-      if (result && result.updatedData?.avatarPath) {
+    // Always call API with skipErrorToast: true to handle errors here
+    const result = await updateUserProfile(
+        userStore.userId, 
+        userStore.name, 
+        selectedFile.value,
+        { skipErrorToast: true }
+    )
+
+    if (result && result.updatedData?.avatarPath) {
         avatarPath = result.updatedData?.avatarPath
         previewAvatar.value = null
-        userStore.avatarPath = avatarPath
-      }
-      userStore.updateUser && userStore.updateUser({
-        name: userStore.name,
-        avatarPath: avatarPath,
-      })
-      toast.success("资料已保存", {
-        description: "用户资料更新成功",
-      })
-    } else {
-      await updateUserProfile(userStore.name, null)
-      userStore.updateUser && userStore.updateUser({
-        name: userStore.name,
-        avatarPath: avatarPath,
-      })
-      toast.success("资料已保存", {
-        description: "用户资料更新成功",
-      })
     }
-  } catch (e) {
+
+    // Update store
+    userStore.updateUser({
+        name: userStore.name,
+        avatarPath: avatarPath,
+    })
+    
+    toast.success("资料已保存", {
+        description: "用户资料更新成功",
+    })
+    
+  } catch (err) {
+    let message = "保存失败"
+    if (isAxiosError(err)) {
+        message = (err.response?.data as ApiErrorResponse)?.message || err.message
+    } else if (err instanceof Error) {
+        message = err.message
+    }
     toast.error("保存失败", {
-      description: String(e) || "请重试",
+      description: message,
     })
   }
 }

@@ -43,8 +43,8 @@ function handleError() {
 }
 
 function renderTurnstile() {
-  if (!container.value || widgetId !== null) return
-  widgetId = (window as any).turnstile.render(container.value, {
+  if (!container.value || widgetId !== null || !window.turnstile) return
+  widgetId = window.turnstile.render(container.value, {
     sitekey: props.sitekey ?? "0x4AAAAAAB3p7JESUfJ98K3S",
     callback: handleVerify,
     theme: props.theme,
@@ -56,10 +56,9 @@ function renderTurnstile() {
 }
 
 function reset() {
-  console.log("[Turnstile] reset called, widgetId:", widgetId)
-  if (widgetId && (window as any).turnstile) {
+  if (widgetId && window.turnstile) {
     try {
-      (window as any).turnstile.reset(widgetId)
+      window.turnstile.reset(widgetId)
     } catch {
       widgetId = null
       if (container.value) {
@@ -71,8 +70,8 @@ function reset() {
 }
 
 function execute() {
-  if (widgetId !== null && (window as any).turnstile) {
-    (window as any).turnstile.execute(widgetId)
+  if (widgetId !== null && window.turnstile) {
+    window.turnstile.execute(widgetId)
   }
 }
 
@@ -85,11 +84,11 @@ onMounted(() => {
   token.value = localStorage.getItem("turnstile_token")
 
   if (container.value) {
-    if ((window as any).turnstile) {
+    if (window.turnstile) {
       renderTurnstile()
     } else {
       interval = window.setInterval(() => {
-        if ((window as any).turnstile) {
+        if (window.turnstile) {
           renderTurnstile()
           if (interval) {
             clearInterval(interval)

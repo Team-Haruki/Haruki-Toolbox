@@ -7,6 +7,8 @@ import {changePassword} from "@/api"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
+import {isAxiosError} from "axios"
+import type {ApiErrorResponse} from "@/types/response"
 
 
 import {
@@ -43,13 +45,24 @@ const userStore = useUserStore()
 const newPassword = ref("")
 
 const handleChangePassword = async () => {
+  if (!userStore.userId) {
+    toast.error("操作失败", {description: "用户信息缺失，请重新登录"})
+    return
+  }
+
   try {
-    await changePassword(newPassword.value)
+    await changePassword(userStore.userId, newPassword.value, { skipErrorToast: true })
     toast.success("密码修改成功", {description: "请重新登录"})
     userStore.clearUser()
     await router.push("/user/login")
-  } catch (error: any) {
-    toast.error("密码修改失败", {description: error?.message || "请稍后重试"})
+  } catch (error: unknown) {
+    let message = "密码修改失败"
+    if (isAxiosError(error)) {
+        message = (error.response?.data as ApiErrorResponse)?.message || error.message
+    } else if (error instanceof Error) {
+        message = error.message
+    }
+    toast.error("密码修改失败", {description: message})
   }
 }
 </script>

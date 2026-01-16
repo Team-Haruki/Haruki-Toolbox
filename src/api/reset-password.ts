@@ -1,5 +1,6 @@
 import {useUserStore} from "@/store"
-import {callApiResponse} from "@/api/call-api"
+import {request} from "@/api/call-api"
+import type { AxiosRequestConfig } from "axios"
 import type {
     APIResponse,
     ResetPasswordPayload,
@@ -7,21 +8,30 @@ import type {
 } from "@/types"
 
 
-export async function sendResetPasswordEmail(email: string, challengeToken: string): Promise<APIResponse<null>> {
+export async function sendResetPasswordEmail(
+    email: string,
+    challengeToken: string,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<null>> {
     const payload: SendResetPasswordEmailPayload = {email, challengeToken}
-    return await callApiResponse<null>(
+    return await request<APIResponse<null>>(
         "/api/user/reset-password/send",
-        "POST",
-        payload
+        {
+            method: "POST",
+            data: payload,
+            ...options
+        }
     )
 }
 
 export async function resetPassword(email: string, oneTimeSecret: string, password: string): Promise<APIResponse<null>> {
     const payload: ResetPasswordPayload = {email, oneTimeSecret, password}
-    const response = await callApiResponse<null>(
+    const response = await request<APIResponse<null>>(
         "/api/user/reset-password",
-        "POST",
-        payload
+        {
+            method: "POST",
+            data: payload
+        }
     )
     const userStore = useUserStore()
     userStore.clearUser()

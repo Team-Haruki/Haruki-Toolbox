@@ -1,4 +1,4 @@
-import {callApiRaw, callApiResponse} from "@/api/call-api"
+import {request} from "@/api/call-api"
 import type {
     APIResponse,
     SocialPlatform,
@@ -9,43 +9,53 @@ import type {
     GenerateSocialPlatformVerificationCodeResponse
 } from "@/types";
 
-export async function sendQQMailVerificationCode(qq: string, challengeToken: string): Promise<APIResponse<null>> {
+export async function sendQQMailVerificationCode(userId: string, qq: string, challengeToken: string): Promise<APIResponse<null>> {
     const payload: SendQQMailVerificationPayload = {qq, challengeToken}
-    return await callApiResponse<null>(
-        "/api/user/{toolboxUserId}/social-platform/send-qq-mail",
-        "POST",
-        payload
+    return await request<APIResponse<null>>(
+        `/api/user/${userId}/social-platform/send-qq-mail`,
+        {
+            method: "POST",
+            data: payload
+        }
     )
 }
 
-export async function verifyQQ(qq: string, oneTimePassword: string): Promise<APIResponse<SocialPlatformInfo>> {
+export async function verifyQQ(userId: string, qq: string, oneTimePassword: string): Promise<APIResponse<SocialPlatformInfo>> {
     const payload: verifyQQPayload = {qq, oneTimePassword}
-    return await callApiResponse<SocialPlatformInfo>(
-        "/api/user/{toolboxUserId}/social-platform/verify-qq-mail",
-        "POST",
-        payload
+    return await request<APIResponse<SocialPlatformInfo>>(
+        `/api/user/${userId}/social-platform/verify-qq-mail`,
+        {
+            method: "POST",
+            data: payload
+        }
     )
 }
 
-export async function generateSocialPlatformVerificationCode(platform: SocialPlatform, userId: string): Promise<GenerateSocialPlatformVerificationCodeResponse> {
-    const payload: SocialPlatformVerificationRequestPayload = {platform, userId}
-    return await callApiRaw<GenerateSocialPlatformVerificationCodeResponse>(
-        "/api/user/{toolboxUserId}/social-platform/generate-verification-code",
-        "POST",
-        payload
+export async function generateSocialPlatformVerificationCode(toolboxUserId: string, platform: SocialPlatform, platformUserId: string): Promise<GenerateSocialPlatformVerificationCodeResponse> {
+    const payload: SocialPlatformVerificationRequestPayload = {platform, userId: platformUserId}
+    return await request<GenerateSocialPlatformVerificationCodeResponse>(
+        `/api/user/${toolboxUserId}/social-platform/generate-verification-code`,
+        {
+            method: "POST",
+            data: payload
+        }
     )
 }
 
-export async function getSocialPlatformVerificationStatus(statusToken: string): Promise<APIResponse<SocialPlatformInfo>> {
-    return await callApiResponse<SocialPlatformInfo>(
-        `/api/user/{toolboxUserId}/social-platform/verification-status/${statusToken}`,
-        "GET",
+export async function getSocialPlatformVerificationStatus(userId: string, statusToken: string): Promise<APIResponse<SocialPlatformInfo>> {
+    return await request<APIResponse<SocialPlatformInfo>>(
+        `/api/user/${userId}/social-platform/verification-status/${statusToken}`,
+        {
+            method: "GET"
+        }
     )
 }
 
-export async function clearSocialPlatformBinding(): Promise<APIResponse<null>> {
-    return await callApiResponse<null>(
-        "/api/user/{toolboxUserId}/social-platform/clear",
-        "DELETE"
+export async function clearSocialPlatformBinding(userId: string): Promise<APIResponse<null>> {
+    return await request<APIResponse<null>>(
+        `/api/user/${userId}/social-platform/clear`,
+        {
+            method: "DELETE"
+        }
     )
 }

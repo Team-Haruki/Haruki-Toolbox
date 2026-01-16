@@ -9,7 +9,7 @@ import {
   AvatarFallback
 } from '@/components/ui/avatar'
 
-interface FriendGroupItem {
+export interface FriendGroupItem {
   name: string
   avatar: string
   bg: string

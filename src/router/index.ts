@@ -1,4 +1,4 @@
-import {createRouter, createWebHistory} from 'vue-router';
+import {createRouter, createWebHistory, type RouteLocationNormalized} from 'vue-router';
 
 const routes = [
     {
@@ -80,7 +80,7 @@ const routes = [
                         path: 'reset-password/:verifyHash',
                         name: 'reset-password',
                         component: () => import('@/components/pages/users/ResetPassword.vue'),
-                        props: route => ({
+                        props: (route: RouteLocationNormalized) => ({
                             verifyHash: route.params.verifyHash,
                             email: route.query.email,
                         }),

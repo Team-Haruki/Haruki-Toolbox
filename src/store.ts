@@ -18,6 +18,8 @@ export const useUserStore = defineStore("user", () => {
     const authorizeSocialPlatformInfo = ref<AuthorizeSocialPlatformInfo[] | null>(null)
     const gameAccountBindings = ref<GameAccountBinding[] | null>(null)
     const sessionToken = ref<string | null>(null)
+    const tokenExpiration = ref<number | null>(null)
+
     const isLoggedIn = computed(() => !!sessionToken.value)
 
     function setUser(payload: {
@@ -39,18 +41,12 @@ export const useUserStore = defineStore("user", () => {
         if (payload.socialPlatformInfo !== undefined) socialPlatformInfo.value = payload.socialPlatformInfo
         if (payload.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = payload.authorizeSocialPlatformInfo
         if (payload.gameAccountBindings !== undefined) gameAccountBindings.value = payload.gameAccountBindings
-        if (payload.sessionToken !== undefined) sessionToken.value = payload.sessionToken
-
-        localStorage.setItem("user", JSON.stringify({
-            name: name.value,
-            userId: userId.value,
-            avatarPath: avatarPath.value,
-            emailInfo: emailInfo.value,
-            socialPlatformInfo: socialPlatformInfo.value,
-            authorizeSocialPlatformInfo: authorizeSocialPlatformInfo.value,
-            gameAccountBindings: gameAccountBindings.value,
-            sessionToken: sessionToken.value,
-        }))
+        
+        if (payload.sessionToken !== undefined) {
+            sessionToken.value = payload.sessionToken
+            // Set expiration to 7 days from now
+            tokenExpiration.value = payload.sessionToken ? Date.now() / 1000 + 7 * 24 * 60 * 60 : null
+        }
     }
 
     function updateUser(partial: Partial<{
@@ -65,41 +61,40 @@ export const useUserStore = defineStore("user", () => {
         sessionToken: string
     }>) {
         if (partial.name !== undefined) name.value = partial.name
+        if (partial.userId !== undefined) userId.value = partial.userId
         if (partial.avatarPath !== undefined) avatarPath.value = partial.avatarPath
         if (partial.allowCNMysekai !== undefined) allowCNMysekai.value = partial.allowCNMysekai
         if (partial.emailInfo !== undefined) emailInfo.value = partial.emailInfo
         if (partial.socialPlatformInfo !== undefined) socialPlatformInfo.value = partial.socialPlatformInfo
         if (partial.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = partial.authorizeSocialPlatformInfo
         if (partial.gameAccountBindings !== undefined) gameAccountBindings.value = partial.gameAccountBindings
-        if (partial.sessionToken !== undefined) sessionToken.value = partial.sessionToken
-
-        const stored = localStorage.getItem("user")
-        const current = stored ? JSON.parse(stored) : {}
-        const updated = {...current, ...partial}
-        localStorage.setItem("user", JSON.stringify(updated))
+        
+        if (partial.sessionToken !== undefined) {
+            sessionToken.value = partial.sessionToken
+            // Preserve existing expiration if just updating token (rare) or reset? 
+            // The original logic was: "Preserve existing exp or update if sessionToken changes".
+            // Since we are setting a new token, we should probably reset expiration or keep it.
+            // Original logic: "if (partial.sessionToken) updated.exp = Date.now() ... "
+            tokenExpiration.value = Date.now() / 1000 + 7 * 24 * 60 * 60
+        }
     }
 
     function clearUser() {
         name.value = "未登录"
         userId.value = null
         avatarPath.value = ""
+        allowCNMysekai.value = null
         emailInfo.value = null
         socialPlatformInfo.value = null
         authorizeSocialPlatformInfo.value = null
         gameAccountBindings.value = null
         sessionToken.value = null
-        localStorage.removeItem("user")
+        tokenExpiration.value = null
     }
 
-    function restoreUser() {
-        const stored = localStorage.getItem("user")
-        if (stored) {
-            const parsed = JSON.parse(stored)
-            if (parsed.exp && Date.now() / 1000 > parsed.exp) {
-                clearUser()
-                return
-            }
-            setUser(parsed)
+    function checkExpiration() {
+        if (tokenExpiration.value && Date.now() / 1000 > tokenExpiration.value) {
+            clearUser()
         }
     }
 
@@ -113,10 +108,13 @@ export const useUserStore = defineStore("user", () => {
         authorizeSocialPlatformInfo,
         gameAccountBindings,
         sessionToken,
+        tokenExpiration,
         isLoggedIn,
         setUser,
         clearUser,
         updateUser,
-        restoreUser,
+        checkExpiration
     }
+}, {
+    persist: true
 })

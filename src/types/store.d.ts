@@ -23,6 +23,7 @@ export interface SuiteDataPrivacySettings {
     allowSakura: boolean,
     allow8823: boolean,
     allowResona: boolean,
+    allowLuna: boolean,
 }
 
 export interface MysekaiDataPrivacySettings {
@@ -30,6 +31,7 @@ export interface MysekaiDataPrivacySettings {
     allowFixtureApi: boolean,
     allow8823: boolean,
     allowResona: boolean,
+    allowLuna: boolean,
 }
 
 export interface GameAccountBinding {
@@ -39,4 +41,3 @@ export interface GameAccountBinding {
     suite?: SuiteDataPrivacySettings | null
     mysekai?: MysekaiDataPrivacySettings | null
 }
-

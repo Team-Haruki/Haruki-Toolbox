@@ -6,6 +6,8 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
+import {isAxiosError} from "axios"
+import type {ApiErrorResponse} from "@/types/response"
 import {
   Dialog,
   DialogClose,
@@ -66,7 +68,7 @@ async function handleSendCode() {
   }
   try {
     isSending.value = true
-    await sendEmailVerificationCode(email.value, sendCodeChallengeToken.value)
+    await sendEmailVerificationCode(email.value, sendCodeChallengeToken.value, { skipErrorToast: true })
     toast.success("邮件已发送", {description: `邮件已发送到 ${email.value}`})
     countdown.value = 60
     sendCodeChallengeToken.value = ""
@@ -84,7 +86,13 @@ async function handleSendCode() {
     }, 1000)
     return true
   } catch (err) {
-    toast.error("发送验证码失败", {description: String(err)})
+    let message = "发送失败"
+    if (isAxiosError(err)) {
+        message = (err.response?.data as ApiErrorResponse)?.message || err.message
+    } else if (err instanceof Error) {
+        message = err.message
+    }
+    toast.error("发送验证码失败", {description: message})
     sendCodeRef.value?.reset()
     return false
   } finally {
@@ -103,14 +111,21 @@ async function handleRegister() {
         email.value,
         password.value,
         emailCode.value,
-        registerChallengeToken.value
+        registerChallengeToken.value,
+        { skipErrorToast: true }
     )
     toast.success("注册成功", {description: "欢迎使用Haruki工具箱"})
     userStore.setUser(response.userData)
     registerChallengeToken.value = ""
     await router.push("/")
   } catch (err) {
-    toast.error("注册失败", {description: String(err)})
+    let message = "注册失败"
+    if (isAxiosError(err)) {
+        message = (err.response?.data as ApiErrorResponse)?.message || err.message
+    } else if (err instanceof Error) {
+        message = err.message
+    }
+    toast.error("注册失败", {description: message})
     registerTurnstileRef.value?.reset()
   }
 }

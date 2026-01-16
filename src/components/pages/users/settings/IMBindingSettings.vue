@@ -4,6 +4,8 @@ import {useUserStore} from "@/store"
 import {Input} from "@/components/ui/input"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
+import {isAxiosError} from "axios"
+import type {ApiErrorResponse} from "@/types/response"
 
 import {
   ref,
@@ -88,6 +90,11 @@ function extractGenResult(resp: any) {
 }
 
 async function handleVerify() {
+  if (!userStore.userId) {
+    toast.error("操作失败", {description: "用户信息缺失，请重新登录"})
+    return
+  }
+
   if (platform.value === "qq") {
     if (!account.value.trim()) {
       toast.error("发送失败", {description: "请先填写 QQ 号"})
@@ -103,13 +110,19 @@ async function handleVerify() {
     }
     try {
       sending.value = true
-      await sendQQMailVerificationCode(account.value.trim(), turnstileToken.value)
+      await sendQQMailVerificationCode(userStore.userId, account.value.trim(), turnstileToken.value)
       toast.success("验证码已发送", {description: `请前往QQ ${account.value.trim()} 的邮箱查收`})
       dialogMode.value = "qq"
       qqInputCode.value = ""
       showCodeDialog.value = true
-    } catch (e: any) {
-      toast.error("发送失败", {description: e?.message || String(e)})
+    } catch (e: unknown) {
+      let message = "发送失败"
+      if (isAxiosError(e)) {
+          message = (e.response?.data as ApiErrorResponse)?.message || e.message
+      } else if (e instanceof Error) {
+          message = e.message
+      }
+      toast.error("发送失败", {description: message})
     } finally {
       sending.value = false
     }
@@ -122,7 +135,7 @@ async function handleVerify() {
   }
   try {
     sending.value = true
-    const resp = await generateSocialPlatformVerificationCode(platform.value as any, account.value.trim())
+    const resp = await generateSocialPlatformVerificationCode(userStore.userId, platform.value as any, account.value.trim())
     const {statusToken: token, oneTimePassword} = extractGenResult(resp)
     if (!token || !oneTimePassword) {
       toast.error("生成失败", {description: "返回数据不完整"})
@@ -133,14 +146,24 @@ async function handleVerify() {
     dialogMode.value = "other"
     showCodeDialog.value = true
     toast.success("验证码已生成")
-  } catch (e: any) {
-    toast.error("生成失败", {description: e?.message || String(e)})
+  } catch (e: unknown) {
+      let message = "生成失败"
+      if (isAxiosError(e)) {
+          message = (e.response?.data as ApiErrorResponse)?.message || e.message
+      } else if (e instanceof Error) {
+          message = e.message
+      }
+      toast.error("生成失败", {description: message})
   } finally {
     sending.value = false
   }
 }
 
 async function handleDialogVerify() {
+  if (!userStore.userId) {
+    toast.error("操作失败", {description: "用户信息缺失，请重新登录"})
+    return
+  }
   try {
     verifying.value = true
     if (dialogMode.value === "qq") {
@@ -148,7 +171,7 @@ async function handleDialogVerify() {
         toast.error("验证失败", {description: "请输入邮件中的验证码"})
         return
       }
-      const resp = await verifyQQ(account.value.trim(), qqInputCode.value.trim())
+      const resp = await verifyQQ(userStore.userId, account.value.trim(), qqInputCode.value.trim())
       const updated = extractUpdatedSocial(resp)
       if (updated) {
         userStore.updateUser({socialPlatformInfo: updated})
@@ -166,7 +189,7 @@ async function handleDialogVerify() {
       toast.error("验证失败", {description: "缺少状态令牌，请重新生成验证码"})
       return
     }
-    const resp = await getSocialPlatformVerificationStatus(statusToken.value)
+    const resp = await getSocialPlatformVerificationStatus(userStore.userId, statusToken.value)
     const respStatus = resp?.status ?? resp?.status
     const respMessage = resp?.message ?? resp?.message
     if (respStatus === 400 && String(respMessage).toLowerCase() === "you have not verified yet") {
@@ -187,21 +210,37 @@ async function handleDialogVerify() {
         toast.error("未完成验证", {description: desc})
       }
     }
-  } catch (e: any) {
-    toast.error("验证失败", {description: e?.message || String(e)})
+  } catch (e: unknown) {
+      let message = "验证失败"
+      if (isAxiosError(e)) {
+          message = (e.response?.data as ApiErrorResponse)?.message || e.message
+      } else if (e instanceof Error) {
+          message = e.message
+      }
+      toast.error("验证失败", {description: message})
   } finally {
     verifying.value = false
   }
 }
 
 async function handleUnbind() {
+  if (!userStore.userId) {
+    toast.error("操作失败", {description: "用户信息缺失，请重新登录"})
+    return
+  }
   try {
     clearing.value = true
-    const resp = await clearSocialPlatformBinding()
+    const resp = await clearSocialPlatformBinding(userStore.userId)
     userStore.updateUser({socialPlatformInfo: null})
     toast.success("已取消绑定", {description: resp?.message || "该社交平台账号已与当前账号解绑"})
-  } catch (e: any) {
-    toast.error("操作失败", {description: e?.message || String(e)})
+  } catch (e: unknown) {
+      let message = "操作失败"
+      if (isAxiosError(e)) {
+          message = (e.response?.data as ApiErrorResponse)?.message || e.message
+      } else if (e instanceof Error) {
+          message = e.message
+      }
+      toast.error("操作失败", {description: message})
   } finally {
     clearing.value = false
   }
