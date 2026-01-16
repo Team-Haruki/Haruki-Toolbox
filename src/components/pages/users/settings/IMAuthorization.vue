@@ -33,12 +33,12 @@ import {
 } from "@/components/ui/card"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogClose,
+  DialogScrollContent
 } from "@/components/ui/dialog"
 
 import {
@@ -76,7 +76,6 @@ import {
   addAuthorizeSocialPlatformAccount,
   removeAuthorizeSocialPlatformAccount
 } from "@/api"
-import type {AuthorizeSocialPlatformInfo} from "@/types/store";
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -322,7 +321,7 @@ onMounted(() => {
   </Card>
 
   <Dialog v-model:open="showEditDialog">
-    <DialogContent class="sm:max-w-[425px]">
+    <DialogScrollContent class="sm:max-w-[425px]">
       <DialogHeader>
         <DialogTitle>编辑社交平台授权</DialogTitle>
         <DialogDescription>修改授权可查询信息的社交平台账号<br>你需要先完成账号绑定设置才能使用此功能</DialogDescription>
@@ -362,7 +361,7 @@ onMounted(() => {
         </DialogClose>
         <Button @click="handleEditSave" :disabled="isSaving">保存</Button>
       </DialogFooter>
-    </DialogContent>
+    </DialogScrollContent>
   </Dialog>
 
   <AlertDialog v-model:open="showDeleteDialog">

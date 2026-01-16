@@ -8,14 +8,15 @@ import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
 import {isAxiosError} from "axios"
 import type {ApiErrorResponse} from "@/types/response"
+import { Loader2 } from 'lucide-vue-next'
 import {
   Dialog,
   DialogClose,
   DialogTitle,
   DialogFooter,
   DialogTrigger,
-  DialogContent,
-  DialogDescription
+  DialogDescription,
+  DialogScrollContent
 } from "@/components/ui/dialog"
 
 
@@ -43,6 +44,7 @@ const password = ref("")
 const emailCode = ref("")
 const userStore = useUserStore()
 const isSending = ref(false)
+const isRegistering = ref(false)
 const sendCodeChallengeToken = ref<string>("")
 const sendCodeRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const registerChallengeToken = ref<string>("")
@@ -105,6 +107,7 @@ async function handleRegister() {
     toast.error("请先完成验证码验证")
     return
   }
+  isRegistering.value = true
   try {
     const response = await registerUser(
         username.value,
@@ -118,7 +121,7 @@ async function handleRegister() {
     userStore.setUser(response.userData)
     registerChallengeToken.value = ""
     await router.push("/")
-  } catch (err) {
+  } catch (err: any) {
     let message = "注册失败"
     if (isAxiosError(err)) {
         message = (err.response?.data as ApiErrorResponse)?.message || err.message
@@ -127,6 +130,8 @@ async function handleRegister() {
     }
     toast.error("注册失败", {description: message})
     registerTurnstileRef.value?.reset()
+  } finally {
+    isRegistering.value = false
   }
 }
 </script>
@@ -164,15 +169,15 @@ async function handleRegister() {
 
                 <DialogTrigger as-child>
                   <Button
-                      type="button"
                       :disabled="isSending || countdown > 0"
                   >
+                    <Loader2 v-if="isSending" class="mr-2 h-4 w-4 animate-spin" />
                     <template v-if="isSending">发送中...</template>
                     <template v-else-if="countdown > 0">{{ countdown }} 秒后重试</template>
                     <template v-else>发送验证码</template>
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogScrollContent>
                   <DialogTitle>发送邮件前人机验证</DialogTitle>
                   <DialogDescription>请完成人机验证以发送您的注册邮件</DialogDescription>
                   <div class="mb-4">
@@ -184,14 +189,15 @@ async function handleRegister() {
                       </DialogClose>
                       <Button
                         type="button"
-                        :disabled="!sendCodeChallengeToken || isSending"
+                        :disabled="isSending"
                         @click="async () => { if(await handleSendCode()) { isDialogOpen = false } }"
                       >
-                        <template v-if="isSending">发送中...</template>
-                        <template v-else>确认发送</template>
+                        <Loader2 v-if="isSending" class="mr-2 h-4 w-4 animate-spin" />
+                        <span v-if="isSending">发送中...</span>
+                        <span v-else>确认发送</span>
                       </Button>
                     </DialogFooter>
-                </DialogContent>
+                </DialogScrollContent>
               </Dialog>
             </div>
           </div>
@@ -216,7 +222,10 @@ async function handleRegister() {
             />
           </div>
           <Turnstile @verify="(t: string) => { registerChallengeToken = t }" class="md-2" ref="registerTurnstileRef"/>
-          <Button type="submit" class="w-full"> 注册</Button>
+          <Button type="submit" class="w-full" :disabled="isRegistering">
+            <Loader2 v-if="isRegistering" class="mr-2 h-4 w-4 animate-spin" />
+            注册
+          </Button>
           <div class="text-center text-sm">
             已有账号？
             <router-link to="/user/login" class="underline underline-offset-4">

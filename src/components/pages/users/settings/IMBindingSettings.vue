@@ -6,6 +6,7 @@ import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
 import {isAxiosError} from "axios"
 import type {ApiErrorResponse} from "@/types/response"
+import {Loader2} from "lucide-vue-next"
 
 import {
   ref,
@@ -24,8 +25,8 @@ import {
   DialogClose,
   DialogFooter,
   DialogHeader,
-  DialogContent,
   DialogDescription,
+  DialogScrollContent
 } from "@/components/ui/dialog"
 import {
   Select,
@@ -283,7 +284,8 @@ async function handleUnbind() {
         <AlertDialog>
           <AlertDialogTrigger as-child>
             <Button :disabled="clearing" variant="destructive" class="w-full mt-4">
-              {{ clearing ? '处理中…' : '取消绑定' }}
+              <Loader2 v-if="clearing" class="mr-2 h-4 w-4 animate-spin" />
+              取消绑定
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -333,12 +335,13 @@ async function handleUnbind() {
         </div>
 
         <Button class="w-full" :disabled="sending" @click="handleVerify">
-          {{ sending ? '处理中…' : (platform === 'qq' ? '发送邮件验证码' : '生成验证码') }}
+          <Loader2 v-if="sending" class="mr-2 h-4 w-4 animate-spin" />
+          <span v-else>{{ platform === 'qq' ? '发送邮件验证码' : '生成验证码' }}</span>
         </Button>
       </template>
 
       <Dialog v-model:open="showCodeDialog">
-        <DialogContent class="sm:max-w-[425px]">
+        <DialogScrollContent class="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>绑定社交平台验证</DialogTitle>
             <DialogDescription>
@@ -360,11 +363,12 @@ async function handleUnbind() {
             <DialogClose as-child>
               <Button variant="outline">取消</Button>
             </DialogClose>
-            <Button :disabled="verifying" type="button" @click="handleDialogVerify">
-              {{ verifying ? '验证中…' : '验证' }}
+            <Button :disabled="verifying" @click="handleDialogVerify">
+              <Loader2 v-if="verifying" class="mr-2 h-4 w-4 animate-spin" />
+              <span>验证</span>
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </DialogScrollContent>
       </Dialog>
     </CardContent>
   </Card>

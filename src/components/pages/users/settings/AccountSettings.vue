@@ -8,6 +8,7 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import type {ApiErrorResponse} from "@/types/response"
+import {Loader2} from "lucide-vue-next"
 
 
 import {
@@ -28,6 +29,7 @@ const userStore = useUserStore();
 const selectedFile = ref<File | null>(null)
 const previewAvatar = ref<string | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const isSaving = ref(false)
 
 function triggerFileInput() {
   fileInputRef.value?.click()
@@ -50,7 +52,8 @@ async function saveChanges() {
     toast.error("错误", { description: "无法获取用户信息，请重新登录" })
     return
   }
-
+isSaving.value = true
+  
   try {
     let avatarPath = userStore.avatarPath
     // Always call API with skipErrorToast: true to handle errors here
@@ -86,6 +89,8 @@ async function saveChanges() {
     toast.error("保存失败", {
       description: message,
     })
+  } finally {
+    isSaving.value = false
   }
 }
 </script>
@@ -111,7 +116,10 @@ async function saveChanges() {
       </div>
     </CardContent>
     <CardFooter>
-      <Button class="w-full bg-primary" @click="saveChanges">保存修改</Button>
+      <Button class="w-full bg-primary" :disabled="isSaving" @click="saveChanges">
+        <Loader2 v-if="isSaving" class="mr-2 h-4 w-4 animate-spin" />
+        保存修改
+      </Button>
     </CardFooter>
   </Card>
 </template>

@@ -57,8 +57,8 @@ import {
   DialogClose,
   DialogFooter,
   DialogHeader,
-  DialogContent,
-  DialogDescription
+  DialogDescription,
+  DialogScrollContent
 } from "@/components/ui/dialog"
 import {
   DropdownMenu,
@@ -456,7 +456,7 @@ const table = useVueTable({
     </Card>
 
     <Dialog v-model:open="showEditDialog">
-      <DialogContent class="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent class="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>编辑账号</DialogTitle>
         </DialogHeader>
@@ -654,7 +654,7 @@ const table = useVueTable({
           </DialogClose>
           <Button @click="handleEditSave" :disabled="isSaving || (isCreating && !verificationTriggered)">保存</Button>
         </DialogFooter>
-      </DialogContent>
+      </DialogScrollContent>
     </Dialog>
 
     <AlertDialog v-model:open="showDeleteDialog">
@@ -673,7 +673,7 @@ const table = useVueTable({
     </AlertDialog>
 
     <Dialog v-model:open="showVerifyDialog">
-      <DialogContent class="sm:max-w-[400px]">
+      <DialogScrollContent class="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>验证码生成成功</DialogTitle>
           <DialogDescription>请在游戏内的个性签名中输入以下验证码完成验证<br>点击下方验证码即可一键复制到剪切板</DialogDescription>
@@ -690,7 +690,7 @@ const table = useVueTable({
             <Button @click="verificationAcknowledged = true">我已输入，关闭此窗口</Button>
           </DialogClose>
         </DialogFooter>
-      </DialogContent>
+      </DialogScrollContent>
     </Dialog>
   </div>
 

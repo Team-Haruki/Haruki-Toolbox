@@ -14,7 +14,7 @@
     "@tanstack/vue-table": "^8.21.3",
     "@vee-validate/zod": "^4.15.1",
     "@vueuse/core": "^13.9.0",
-    "axios": "^1.12.2",
+    "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-vue-next": "^0.544.0",
@@ -29,7 +29,7 @@
     "vue-router": "4",
     "vue-sonner": "^2.0.8",
     "vue3-simple-icons": "^15.6.0",
-    "zod": "^4.1.11"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@iconify-json/radix-icons": "^1.2.5",

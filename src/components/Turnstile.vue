@@ -2,10 +2,7 @@
 import {
   ref,
   onMounted,
-  onUnmounted,
-  defineProps,
-  defineEmits,
-  defineExpose
+  onUnmounted
 } from "vue"
 
 const props = defineProps<{
@@ -116,14 +113,14 @@ onUnmounted(() => {
 
 <style scoped>
 .turnstile-container {
-  width: 100%;
+  inline-size: 100%;
   display: flex;
   justify-content: center;
 
-  @media (max-width: 380px) {
+  @media (max-inline-size: 380px) {
     .turnstile {
-      max-width: 275px;
-      overflow: hidden;
+      transform: scale(0.85);
+      transform-origin: center;
     }
   }
 }

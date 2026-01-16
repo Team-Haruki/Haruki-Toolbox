@@ -9,6 +9,7 @@ import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {isAxiosError} from "axios"
 import type {ApiErrorResponse} from "@/types/response"
+import {Loader2} from "lucide-vue-next"
 
 
 import {
@@ -20,36 +21,26 @@ import {
 } from "@/components/ui/card"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose
+  DialogScrollContent
 } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogTitle,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogTrigger,
-  AlertDialogDescription
-} from "@/components/ui/alert-dialog"
 
 const router = useRouter()
 const userStore = useUserStore()
 const newPassword = ref("")
+const isSubmitting = ref(false)
 
 const handleChangePassword = async () => {
   if (!userStore.userId) {
     toast.error("操作失败", {description: "用户信息缺失，请重新登录"})
     return
   }
-
+isSubmitting.value = true
+  
   try {
     await changePassword(userStore.userId, newPassword.value, { skipErrorToast: true })
     toast.success("密码修改成功", {description: "请重新登录"})
@@ -63,6 +54,8 @@ const handleChangePassword = async () => {
         message = error.message
     }
     toast.error("密码修改失败", {description: message})
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
@@ -78,7 +71,7 @@ const handleChangePassword = async () => {
         <DialogTrigger as-child>
           <Button class="w-full">更换密码</Button>
         </DialogTrigger>
-        <DialogContent class="sm:max-w-[425px]">
+        <DialogScrollContent class="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>更换密码</DialogTitle>
             <DialogDescription>请输入新的密码</DialogDescription>
@@ -90,26 +83,12 @@ const handleChangePassword = async () => {
             </div>
           </div>
           <DialogFooter>
-            <DialogClose as-child>
-              <Button variant="outline">取消</Button>
-            </DialogClose>
-            <AlertDialog>
-              <AlertDialogTrigger as-child>
-                <Button type="button">提交</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>确认提交？</AlertDialogTitle>
-                  <AlertDialogDescription>你确定要更新密码吗？</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction @click="handleChangePassword">确认</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button type="button" :disabled="isSubmitting" @click="handleChangePassword">
+              <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
+              提交
+            </Button>
           </DialogFooter>
-        </DialogContent>
+        </DialogScrollContent>
       </Dialog>
     </CardContent>
   </Card>
