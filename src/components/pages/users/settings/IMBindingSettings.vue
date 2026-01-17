@@ -175,7 +175,7 @@ async function handleDialogVerify() {
       const resp = await verifyQQ(userStore.userId, account.value.trim(), qqInputCode.value.trim())
       const updated = extractUpdatedSocial(resp)
       if (updated) {
-        userStore.updateUser({socialPlatformInfo: updated})
+        userStore.setUser({socialPlatformInfo: updated})
       }
       toast.success("验证成功", {description: resp?.message || "已完成绑定"})
       showCodeDialog.value = false
@@ -200,7 +200,7 @@ async function handleDialogVerify() {
 
     const updated = extractUpdatedSocial(resp)
     if (updated) {
-      userStore.updateUser({socialPlatformInfo: updated})
+      userStore.setUser({socialPlatformInfo: updated})
       toast.success("验证成功", {description: respMessage || "已完成绑定"})
       showCodeDialog.value = false
     } else {
@@ -232,7 +232,7 @@ async function handleUnbind() {
   try {
     clearing.value = true
     const resp = await clearSocialPlatformBinding(userStore.userId)
-    userStore.updateUser({socialPlatformInfo: null})
+    userStore.setUser({socialPlatformInfo: null})
     toast.success("已取消绑定", {description: resp?.message || "该社交平台账号已与当前账号解绑"})
   } catch (e: unknown) {
       let message = "操作失败"

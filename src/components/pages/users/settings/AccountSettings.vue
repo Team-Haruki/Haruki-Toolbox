@@ -70,7 +70,7 @@ isSaving.value = true
     }
 
     // Update store
-    userStore.updateUser({
+    userStore.setUser({
         name: userStore.name,
         avatarPath: avatarPath,
     })

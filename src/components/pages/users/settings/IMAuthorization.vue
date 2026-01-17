@@ -160,7 +160,7 @@ async function handleEditSave() {
 
     const normalized = resp.updatedData
     if (normalized) {
-        userStore.updateUser({authorizeSocialPlatformInfo: normalized})
+        userStore.setUser({authorizeSocialPlatformInfo: normalized})
     }
     toast.success("已保存授权", {description: "社交平台账号授权信息已更新"})
     showEditDialog.value = false
@@ -197,7 +197,7 @@ async function handleDelete() {
     )
     const normalized = resp.updatedData
     if (normalized) {
-        userStore.updateUser({authorizeSocialPlatformInfo: normalized})
+        userStore.setUser({authorizeSocialPlatformInfo: normalized})
     }
     toast.success("已删除授权", {description: "该社交平台账号授权已移除"})
     showDeleteDialog.value = false

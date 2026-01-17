@@ -112,7 +112,7 @@ async function handleChangeEmail() {
     const updatedEmailInfo = response.updatedData
     
     if (updatedEmailInfo) {
-      userStore.updateUser({emailInfo: updatedEmailInfo})
+      userStore.setUser({emailInfo: updatedEmailInfo})
     }
 
     toast.success("更换邮箱成功", {description: "请重新登录以生效"})

@@ -206,7 +206,7 @@ async function handleDelete() {
         { skipErrorToast: true }
     )
     const updated = (resp as any)?.updatedData?.gameAccountBindings
-    userStore.updateUser({gameAccountBindings: updated})
+    userStore.setUser({gameAccountBindings: updated})
     toast.success("删除成功", {description: "账号已解除绑定"})
   } catch (err: unknown) {
     toast.error("删除失败", {description: extractErrorMessage(err, "删除失败")})
@@ -279,7 +279,7 @@ async function handleEditSave() {
 
     const updated = (resp as any)?.updatedData?.gameAccountBindings
     if (Array.isArray(updated)) {
-      userStore.updateUser({gameAccountBindings: updated})
+      userStore.setUser({gameAccountBindings: updated})
     }
     toast.success("保存成功", {description: "账号设置已更新"})
     showEditDialog.value = false
