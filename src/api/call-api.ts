@@ -13,7 +13,6 @@ declare module 'axios' {
 }
 
 export const apiClient: AxiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_HARUKI_TOOLBOX_USER_BASE_URL,
     timeout: 60000,
     headers: {
         "Content-Type": "application/json",

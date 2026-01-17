@@ -194,5 +194,3 @@ function calcResult(): void {
     </div>
   </div>
 </template>
-
-<style scoped></style>

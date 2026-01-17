@@ -134,6 +134,3 @@ onMounted(() => {
     </Card>
   </div>
 </template>
-
-<style scoped>
-</style>

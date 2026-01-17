@@ -9,6 +9,7 @@ import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue";
 import type { ApiErrorResponse } from "@/types/response";
+import { extractErrorMessage } from "@/lib/error-utils"
 import { Loader2 } from 'lucide-vue-next'
 
 import {
@@ -81,13 +82,7 @@ async function handleResetPassword() {
     toast.success("重置密码邮件已发送", {description: `邮件已发送到 ${resetEmail.value}`})
     resetChallengeToken.value = null
   } catch (err: unknown) {
-    let message = "网络错误，请检查连接"
-    if (isAxiosError(err)) {
-      message = (err.response?.data as ApiErrorResponse)?.message || err.message
-    } else if (err instanceof Error) {
-      message = err.message
-    }
-    toast.error("重置密码失败", {description: message})
+    toast.error("重置密码失败", {description: extractErrorMessage(err, "网络错误，请检查连接")})
   } finally {
     isSendingResetEmail.value = false
     resetTurnstileRef.value?.reset()

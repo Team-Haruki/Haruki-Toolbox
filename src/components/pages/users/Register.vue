@@ -7,8 +7,7 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
-import {isAxiosError} from "axios"
-import type {ApiErrorResponse} from "@/types/response"
+import { extractErrorMessage } from "@/lib/error-utils"
 import { Loader2 } from 'lucide-vue-next'
 import {
   Dialog,
@@ -89,14 +88,8 @@ async function handleSendCode() {
       }
     }, 1000)
     return true
-  } catch (err) {
-    let message = "发送失败"
-    if (isAxiosError(err)) {
-        message = (err.response?.data as ApiErrorResponse)?.message || err.message
-    } else if (err instanceof Error) {
-        message = err.message
-    }
-    toast.error("发送验证码失败", {description: message})
+  } catch (err: unknown) {
+    toast.error("发送验证码失败", {description: extractErrorMessage(err, "发送失败")})
     sendCodeRef.value?.reset()
     return false
   } finally {
@@ -127,14 +120,8 @@ async function handleRegister() {
     }
     registerChallengeToken.value = ""
     await router.push("/")
-  } catch (err: any) {
-    let message = "注册失败"
-    if (isAxiosError(err)) {
-        message = (err.response?.data as ApiErrorResponse)?.message || err.message
-    } else if (err instanceof Error) {
-        message = err.message
-    }
-    toast.error("注册失败", {description: message})
+  } catch (err: unknown) {
+    toast.error("注册失败", {description: extractErrorMessage(err, "注册失败")})
     registerTurnstileRef.value?.reset()
   } finally {
     isRegistering.value = false

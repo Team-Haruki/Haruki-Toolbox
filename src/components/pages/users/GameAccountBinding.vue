@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {logout} from "@/api"
 import {toast} from "vue-sonner"
-import {isAxiosError} from "axios"
 import {useUserStore} from "@/store"
 import {useRouter} from "vue-router"
 import {Input} from "@/components/ui/input"
@@ -10,7 +9,7 @@ import {Button} from "@/components/ui/button"
 import {Switch} from "@/components/ui/switch"
 import {MoreHorizontal} from "lucide-vue-next"
 import type {ColumnDef} from "@tanstack/vue-table"
-import type {ApiErrorResponse} from "@/types/response"
+import { extractErrorMessage } from "@/lib/error-utils"
 
 
 import {
@@ -134,15 +133,16 @@ const regionOptions = [
 
 
 onMounted(() => {
+  // Check login status first
   if (!userStore.isLoggedIn) {
     toast.warning("请先登录", {description: "该操作需要先登录到Haruki工具箱"})
     logout().finally(() => {
       router.push("/user/login")
     })
+    return
   }
-})
-
-onMounted(() => {
+  
+  // Then check social platform binding
   const info = userStore.socialPlatformInfo
   if (!info || !info.verified) {
     toast.warning("请先完成社交平台账号绑定", {description: "该功能需要先完成社交平台绑定"})
@@ -209,13 +209,7 @@ async function handleDelete() {
     userStore.updateUser({gameAccountBindings: updated})
     toast.success("删除成功", {description: "账号已解除绑定"})
   } catch (err: unknown) {
-    let message = "删除失败"
-    if (isAxiosError(err)) {
-        message = (err.response?.data as ApiErrorResponse)?.message || err.message
-    } else if (err instanceof Error) {
-        message = err.message
-    }
-    toast.error("删除失败", {description: message})
+    toast.error("删除失败", {description: extractErrorMessage(err, "删除失败")})
   } finally {
     showDeleteDialog.value = false
   }
@@ -290,13 +284,7 @@ async function handleEditSave() {
     toast.success("保存成功", {description: "账号设置已更新"})
     showEditDialog.value = false
   } catch (err: unknown) {
-    let message = "保存失败"
-    if (isAxiosError(err)) {
-        message = (err.response?.data as ApiErrorResponse)?.message || err.message
-    } else if (err instanceof Error) {
-        message = err.message
-    }
-    toast.error("保存失败", {description: message})
+    toast.error("保存失败", {description: extractErrorMessage(err, "保存失败")})
   } finally {
     isSaving.value = false
   }
@@ -330,13 +318,7 @@ async function handleVerify() {
     showVerifyDialog.value = true
     verificationTriggered.value = true
   } catch (err: unknown) {
-    let message = "生成失败"
-    if (isAxiosError(err)) {
-        message = (err.response?.data as ApiErrorResponse)?.message || err.message
-    } else if (err instanceof Error) {
-        message = err.message
-    }
-    toast.error("生成失败", {description: message})
+    toast.error("生成失败", {description: extractErrorMessage(err, "生成失败")})
   }
 }
 

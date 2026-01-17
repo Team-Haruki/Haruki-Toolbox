@@ -458,6 +458,3 @@ watch(selectedSoftware, (newSoftware) => {
     </Card>
   </div>
 </template>
-
-<style scoped>
-</style>

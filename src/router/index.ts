@@ -85,6 +85,7 @@ const routes = [
                         path: 'reset-password/:verifyHash',
                         name: 'reset-password',
                         component: () => import('@/components/pages/users/ResetPassword.vue'),
+                        meta: { title: '重置密码' },
                         props: (route: RouteLocationNormalized) => ({
                             verifyHash: route.params.verifyHash,
                             email: route.query.email,
@@ -99,8 +100,7 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(),
     routes,
-    scrollBehavior(to, from, savedPosition) {
-        console.debug(to, from, savedPosition);
+    scrollBehavior() {
         return { top: 0, behavior: 'smooth' };
     },
 });

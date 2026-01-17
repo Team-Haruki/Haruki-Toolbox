@@ -1,5 +1,5 @@
-import {defineStore} from "pinia"
-import {ref, computed} from "vue"
+import { defineStore } from "pinia"
+import { ref, computed } from "vue"
 
 import type {
     EmailInfo,
@@ -22,6 +22,13 @@ export const useUserStore = defineStore("user", () => {
 
     const isLoggedIn = computed(() => !!sessionToken.value)
 
+    /**
+     * Set or update user data.
+     * @param payload - User data to set
+     * @param options
+     * @param options.resetExpiration - If true (default), resets token expiration when sessionToken is provided.
+     *                                  Set to false to preserve existing expiration.
+     */
     function setUser(payload: {
         name?: string
         userId?: string
@@ -32,7 +39,7 @@ export const useUserStore = defineStore("user", () => {
         authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
         gameAccountBindings?: GameAccountBinding[] | null
         sessionToken?: string
-    }) {
+    }, options: { resetExpiration?: boolean } = { resetExpiration: true }) {
         if (payload.name !== undefined) name.value = payload.name
         if (payload.userId !== undefined) userId.value = payload.userId
         if (payload.avatarPath !== undefined) avatarPath.value = payload.avatarPath
@@ -41,41 +48,13 @@ export const useUserStore = defineStore("user", () => {
         if (payload.socialPlatformInfo !== undefined) socialPlatformInfo.value = payload.socialPlatformInfo
         if (payload.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = payload.authorizeSocialPlatformInfo
         if (payload.gameAccountBindings !== undefined) gameAccountBindings.value = payload.gameAccountBindings
-        
+
         if (payload.sessionToken !== undefined) {
             sessionToken.value = payload.sessionToken
-            // Set expiration to 7 days from now
-            tokenExpiration.value = payload.sessionToken ? Date.now() / 1000 + 7 * 24 * 60 * 60 : null
-        }
-    }
-
-    function updateUser(partial: Partial<{
-        name: string
-        userId: string
-        avatarPath: string
-        allowCNMysekai: boolean
-        emailInfo: EmailInfo
-        socialPlatformInfo: SocialPlatformInfo | null
-        authorizeSocialPlatformInfo: AuthorizeSocialPlatformInfo[] | null
-        gameAccountBindings: GameAccountBinding[] | null
-        sessionToken: string
-    }>) {
-        if (partial.name !== undefined) name.value = partial.name
-        if (partial.userId !== undefined) userId.value = partial.userId
-        if (partial.avatarPath !== undefined) avatarPath.value = partial.avatarPath
-        if (partial.allowCNMysekai !== undefined) allowCNMysekai.value = partial.allowCNMysekai
-        if (partial.emailInfo !== undefined) emailInfo.value = partial.emailInfo
-        if (partial.socialPlatformInfo !== undefined) socialPlatformInfo.value = partial.socialPlatformInfo
-        if (partial.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = partial.authorizeSocialPlatformInfo
-        if (partial.gameAccountBindings !== undefined) gameAccountBindings.value = partial.gameAccountBindings
-        
-        if (partial.sessionToken !== undefined) {
-            sessionToken.value = partial.sessionToken
-            // Preserve existing expiration if just updating token (rare) or reset? 
-            // The original logic was: "Preserve existing exp or update if sessionToken changes".
-            // Since we are setting a new token, we should probably reset expiration or keep it.
-            // Original logic: "if (partial.sessionToken) updated.exp = Date.now() ... "
-            tokenExpiration.value = Date.now() / 1000 + 7 * 24 * 60 * 60
+            // Set expiration to 7 days from now if resetExpiration is true
+            if (options.resetExpiration !== false) {
+                tokenExpiration.value = payload.sessionToken ? Date.now() / 1000 + 7 * 24 * 60 * 60 : null
+            }
         }
     }
 
@@ -112,7 +91,6 @@ export const useUserStore = defineStore("user", () => {
         isLoggedIn,
         setUser,
         clearUser,
-        updateUser,
         checkExpiration
     }
 }, {

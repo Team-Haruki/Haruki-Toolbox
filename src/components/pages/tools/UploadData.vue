@@ -6,8 +6,7 @@ import type { SekaiRegion } from "@/types"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {Progress} from "@/components/ui/progress"
-import {isAxiosError} from "axios"
-import type {ApiErrorResponse} from "@/types/response"
+import { extractErrorMessage } from "@/lib/error-utils"
 
 import {
   submitInherit,
@@ -155,13 +154,7 @@ async function submitFileUpload() {
   } catch (e: unknown) {
     console.error(e)
     uploadStatus.value = '上传失败'
-    let message = "上传失败"
-    if (isAxiosError(e)) {
-        message = (e.response?.data as ApiErrorResponse)?.message || e.message
-    } else if (e instanceof Error) {
-        message = e.message
-    }
-    toast.error('上传失败', { description: message })
+    toast.error('上传失败', { description: extractErrorMessage(e, "上传失败") })
   } finally {
     isSubmittingFile.value = false
   }
@@ -195,14 +188,8 @@ async function submitInheritUpload() {
     }));
   } catch (e: unknown) {
     console.error(e);
-    let message = "上传失败"
-    if (isAxiosError(e)) {
-        message = (e.response?.data as ApiErrorResponse)?.message || e.message
-    } else if (e instanceof Error) {
-        message = e.message
-    }
     toast.error("上传失败", {
-      description: message,
+      description: extractErrorMessage(e, "上传失败"),
     });
   } finally {
     isSubmittingInherit.value = false;

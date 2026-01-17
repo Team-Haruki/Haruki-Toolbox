@@ -45,15 +45,21 @@ export const useSettingsStore = defineStore("settings", () => {
         }
     }
 
+    // Track if theme listener has been initialized
+    let themeListenerInitialized = false
+
     // Initialize theme on store creation
     function initTheme() {
         applyTheme(theme.value)
-        // Listen for system theme changes
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            if (theme.value === 'system') {
-                applyTheme('system')
-            }
-        })
+        // Listen for system theme changes (only add listener once)
+        if (!themeListenerInitialized) {
+            themeListenerInitialized = true
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (theme.value === 'system') {
+                    applyTheme('system')
+                }
+            })
+        }
     }
 
     return {
