@@ -1,4 +1,4 @@
-import {createRouter, createWebHistory, type RouteLocationNormalized} from 'vue-router';
+import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router';
 
 const routes = [
     {
@@ -8,22 +8,22 @@ const routes = [
             {
                 path: '',
                 component: () => import("@/components/pages/Home.vue"),
-                meta: {title: '主页'}
+                meta: { title: '主页' }
             },
             {
                 path: '/about',
                 component: () => import("@/components/Maintenance.vue"),
-                meta: {title: '关于'}
+                meta: { title: '关于' }
             },
             {
                 path: '/friend-groups',
                 component: () => import("@/components/pages/navigations/FriendGroups.vue"),
-                meta: {title: '推荐群聊'}
+                meta: { title: '推荐群聊' }
             },
             {
                 path: '/friend-links',
                 component: () => import("@/components/Maintenance.vue"),
-                meta: {title: '友情链接'}
+                meta: { title: '友情链接' }
             },
             {
                 path: '/pt_calc',
@@ -40,17 +40,22 @@ const routes = [
             {
                 path: '/pt-calculator',
                 component: () => import("@/components/pages/tools/PointCalculator.vue"),
-                meta: {title: '活动Pt计算器'}
+                meta: { title: '活动Pt计算器' }
             },
             {
                 path: '/upload-data',
                 component: () => import("@/components/pages/tools/UploadData.vue"),
-                meta: {title: '上传数据'}
+                meta: { title: '上传数据' }
             },
             {
                 path: '/ios-modules',
                 component: () => import("@/components/pages/tools/IOSModules.vue"),
-                meta: {title: 'iOS模块快速安装'}
+                meta: { title: 'iOS模块生成器' }
+            },
+            {
+                path: '/settings',
+                component: () => import("@/components/pages/Settings.vue"),
+                meta: { title: '设置' }
             },
             {
                 path: '/user',
@@ -96,7 +101,7 @@ const router = createRouter({
     routes,
     scrollBehavior(to, from, savedPosition) {
         console.debug(to, from, savedPosition);
-        return {top: 0, behavior: 'smooth'};
+        return { top: 0, behavior: 'smooth' };
     },
 });
 

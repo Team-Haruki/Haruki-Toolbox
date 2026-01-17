@@ -1,4 +1,4 @@
-import {request} from "@/api/call-api"
+import { request } from "@/api/call-api"
 import type {
     APIResponse,
     ChangePasswordPayload,
@@ -25,9 +25,9 @@ export async function updateUserProfile(
     let payload: UpdateUserProfilePayload;
     if (avatar) {
         const avatarBase64 = await fileToBase64(avatar)
-        payload = {name, avatarBase64}
+        payload = { name, avatarBase64 }
     } else {
-        payload = {name}
+        payload = { name }
     }
     return await request<APIResponse<{ name: string; avatarPath: string }>>(
         `/api/user/${userId}/profile`,
@@ -41,10 +41,11 @@ export async function updateUserProfile(
 
 export async function changePassword(
     userId: string,
+    oldPassword: string,
     password: string,
     options?: AxiosRequestConfig
 ): Promise<APIResponse<null>> {
-    const payload: ChangePasswordPayload = {password}
+    const payload: ChangePasswordPayload = { oldPassword, password }
     return await request<APIResponse<null>>(
         `/api/user/${userId}/change-password`,
         {

@@ -2,6 +2,7 @@
 import {toast} from "vue-sonner"
 import {isAxiosError} from "axios"
 import {useUserStore} from "@/store"
+import {useSettingsStore} from "@/settingsStore"
 import {useRouter} from "vue-router"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
@@ -46,6 +47,7 @@ const loginTurnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const resetChallengeToken = ref<string | null>(null)
 const resetTurnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const userStore = useUserStore()
+const settingsStore = useSettingsStore()
 const isLoggingIn = ref(false)
 const isSendingResetEmail = ref(false)
 
@@ -103,6 +105,10 @@ async function handleLogin() {
     if (response.status === 200) {
       if (response.userData) {
         userStore.setUser(response.userData)
+        // Store iosUploadCode from backend response
+        if (response.userData.iosUploadCode) {
+          settingsStore.setIOSUploadCode(response.userData.iosUploadCode)
+        }
       }
       toast.success("登录成功", {description: "欢迎回到Haruki工具箱"})
       loginChallengeToken.value = null
@@ -111,13 +117,22 @@ async function handleLogin() {
       toast.error("登录失败", {description: response.message || "请稍后再试"})
     }
   } catch (err: unknown) {
+    let title = "登录失败"
     let message = "网络错误，请检查连接"
     if (isAxiosError(err)) {
-      message = (err.response?.data as ApiErrorResponse)?.message || err.message
+      const status = err.response?.status
+      const responseMessage = (err.response?.data as ApiErrorResponse)?.message || err.message
+      
+      if (status === 403) {
+        title = "账号已被封禁"
+        message = responseMessage
+      } else {
+        message = responseMessage
+      }
     } else if (err instanceof Error) {
       message = err.message
     }
-    toast.error("登录失败", {description: message})
+    toast.error(title, {description: message})
   } finally {
     isLoggingIn.value = false
     loginTurnstileRef.value?.reset()

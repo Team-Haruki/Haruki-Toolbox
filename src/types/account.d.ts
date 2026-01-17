@@ -4,6 +4,7 @@ export interface UpdateUserProfilePayload {
 }
 
 export interface ChangePasswordPayload {
+    oldPassword: string
     password: string
 }
 
