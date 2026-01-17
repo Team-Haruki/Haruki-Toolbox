@@ -52,7 +52,7 @@ export const useUserStore = defineStore("user", () => {
         if (payload.sessionToken !== undefined) {
             sessionToken.value = payload.sessionToken
             // Set expiration to 7 days from now if resetExpiration is true
-            if (options.resetExpiration !== false) {
+            if (options.resetExpiration) {
                 tokenExpiration.value = payload.sessionToken ? Date.now() / 1000 + 7 * 24 * 60 * 60 : null
             }
         }
