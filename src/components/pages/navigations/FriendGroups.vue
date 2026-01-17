@@ -15,7 +15,7 @@ import {
 
 interface FriendGroupData {
   group: string
-  group_list: FriendGroupItem[]
+  groupList: FriendGroupItem[]
 }
 
 const groupData = ref<FriendGroupData[]>([])
@@ -59,7 +59,7 @@ onMounted(() => {
       <AccordionContent>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
           <FriendGroupCard
-              v-for="(item, idx) in group.group_list"
+              v-for="(item, idx) in group.groupList"
               :key="item.name"
               :item="item"
               :active="activeIdx[groupIdx] === idx"
