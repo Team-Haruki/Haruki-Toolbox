@@ -53,7 +53,7 @@ export const useUserStore = defineStore("user", () => {
             sessionToken.value = payload.sessionToken
             // Set expiration to 7 days from now if resetExpiration is true
             if (options.resetExpiration) {
-                tokenExpiration.value = payload.sessionToken ? Date.now() / 1000 + 7 * 24 * 60 * 60 : null
+                tokenExpiration.value = payload.sessionToken ? Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 : null
             }
         }
     }
@@ -72,7 +72,7 @@ export const useUserStore = defineStore("user", () => {
     }
 
     function checkExpiration() {
-        if (tokenExpiration.value && Date.now() / 1000 > tokenExpiration.value) {
+        if (tokenExpiration.value && Math.floor(Date.now() / 1000) > tokenExpiration.value) {
             clearUser()
         }
     }

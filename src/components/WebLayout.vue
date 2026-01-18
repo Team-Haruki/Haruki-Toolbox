@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useRoute} from 'vue-router'
-const harukiLogo = "/assets/haruki.ico"
+import harukiLogo from '@/assets/haruki.ico'
 import {computed, watch, onMounted, type Component} from 'vue'
 import {Separator} from '@/components/ui/separator'
 import type {SidebarProps} from '@/components/ui/sidebar'

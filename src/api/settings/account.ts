@@ -42,10 +42,10 @@ export async function updateUserProfile(
 export async function changePassword(
     userId: string,
     oldPassword: string,
-    password: string,
+    newPassword: string,
     options?: AxiosRequestConfig
 ): Promise<APIResponse<null>> {
-    const payload: ChangePasswordPayload = { oldPassword, password }
+    const payload: ChangePasswordPayload = { oldPassword, password: newPassword }
     return await request<APIResponse<null>>(
         `/api/user/${userId}/change-password`,
         {

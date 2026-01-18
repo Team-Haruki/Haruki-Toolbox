@@ -6,5 +6,8 @@ export async function generateIOSUploadCode(userId: string): Promise<string> {
         `/user/${userId}/ios/generate-upload-code`,
         { method: "POST" }
     )
-    return response.updatedData!
+    if (response.updatedData == null) {
+        throw new Error("Failed to generate iOS upload code: missing updatedData in response")
+    }
+    return response.updatedData
 }
