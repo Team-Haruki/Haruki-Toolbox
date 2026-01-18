@@ -28,7 +28,7 @@ export function setupInterceptors(router: Router) {
         config.baseURL = settingsStore.currentEndpoint
 
         if (userStore.sessionToken) {
-            config.headers.set('Authorization', 'Bearer ' + userStore.sessionToken)
+            config.headers.set('Authorization', `Bearer ${userStore.sessionToken}`)
         }
         return config
     })

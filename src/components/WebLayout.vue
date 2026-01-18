@@ -65,6 +65,12 @@ const showPageTitle = computed(() => {
   return title.length <= 10
 })
 
+const copyrightYear = computed(() => {
+  const startYear = 2024
+  const currentYear = new Date().getFullYear()
+  return currentYear > startYear ? `${startYear}-${currentYear}` : String(startYear)
+})
+
 const props = defineProps<SidebarProps>()
 
 interface NavSubItem {
@@ -248,7 +254,7 @@ const data: { navMain: NavItem[] } = {
       </main>
 
       <SidebarFooter class="border-t p-2 text-center text-sm text-muted-foreground bg-fuchsia-50 dark:bg-gray-800">
-        &copy; 2024-{{ new Date().getFullYear() }} Haruki Dev Team. All rights reserved.
+        &copy; {{ copyrightYear }} Haruki Dev Team. All rights reserved.
       </SidebarFooter>
     </SidebarInset>
   </SidebarProvider>

@@ -147,6 +147,7 @@ onMounted(() => {
   if (!info || !info.verified) {
     toast.warning("请先完成社交平台账号绑定", {description: "该功能需要先完成社交平台绑定"})
     router.push("/user/settings")
+    return
   }
 })
 

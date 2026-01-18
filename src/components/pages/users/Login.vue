@@ -116,14 +116,11 @@ async function handleLogin() {
     let message = "网络错误，请检查连接"
     if (isAxiosError(err)) {
       const status = err.response?.status
-      const responseMessage = (err.response?.data as ApiErrorResponse)?.message || err.message
-      
+      // 403 由全局拦截器统一处理（包含封禁提示与重定向），此处不再重复弹出 Toast
       if (status === 403) {
-        title = "账号已被封禁"
-        message = responseMessage
-      } else {
-        message = responseMessage
+        return
       }
+      message = (err.response?.data as ApiErrorResponse)?.message || err.message
     } else if (err instanceof Error) {
       message = err.message
     }

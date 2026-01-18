@@ -40,6 +40,10 @@ async function handleSubmit() {
     toast.error("两次密码输入不一致")
     return
   }
+  if (newPassword.value.length < 8) {
+    toast.error("密码长度至少为8位")
+    return
+  }
   isSubmitting.value = true
   try {
     await resetPassword(email.value, verifyHash, newPassword.value)

@@ -152,16 +152,26 @@ async function generateCode() {
     const code = await generateIOSUploadCode(userStore.userId)
     settingsStore.setIOSUploadCode(code)
     toast.success('上传码生成成功')
-  } catch (error) {
-    toast.error('生成上传码失败')
+  } catch (error: unknown) {
+    console.error('Failed to generate iOS upload code:', error)
+    const message = error instanceof Error && error.message ? error.message : '未知错误'
+    toast.error(`生成上传码失败：${message}`)
   } finally {
     isGeneratingCode.value = false
   }
 }
 
-function copyToClipboard(text: string, label: string) {
-  navigator.clipboard.writeText(text)
-  toast.success(`${label}已复制到剪贴板`)
+async function copyToClipboard(text: string, label: string) {
+  if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
+    toast.error('当前环境不支持剪贴板操作')
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.success(`${label}已复制到剪贴板`)
+  } catch (error) {
+    toast.error('复制到剪贴板失败，请检查浏览器权限设置')
+  }
 }
 
 function toggleRegion(region: string) {
