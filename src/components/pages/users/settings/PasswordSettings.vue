@@ -57,8 +57,8 @@ const handleChangePassword = async () => {
     return
   }
   
-  if (newPassword.value.length < 6) {
-    toast.error("验证失败", {description: "新密码长度至少为6位"})
+  if (newPassword.value.length < 8) {
+    toast.error("验证失败", {description: "新密码长度至少为8位"})
     return
   }
   
