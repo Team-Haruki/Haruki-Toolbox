@@ -2,7 +2,6 @@
 import {toast} from "vue-sonner"
 import {isAxiosError} from "axios"
 import {useUserStore} from "@/store"
-import {useSettingsStore} from "@/settingsStore"
 import {useRouter} from "vue-router"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
@@ -48,7 +47,6 @@ const loginTurnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const resetChallengeToken = ref<string | null>(null)
 const resetTurnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const userStore = useUserStore()
-const settingsStore = useSettingsStore()
 const isLoggingIn = ref(false)
 const isSendingResetEmail = ref(false)
 
@@ -100,10 +98,6 @@ async function handleLogin() {
     if (response.status === 200) {
       if (response.userData) {
         userStore.setUser(response.userData)
-        // Store iosUploadCode from backend response
-        if (response.userData.iosUploadCode) {
-          settingsStore.setIOSUploadCode(response.userData.iosUploadCode)
-        }
       }
       toast.success("登录成功", {description: "欢迎回到Haruki工具箱"})
       loginChallengeToken.value = null
@@ -118,7 +112,6 @@ async function handleLogin() {
     
     if (isAxiosError(err)) {
       const status = err.response?.status
-      // 403 由全局拦截器统一处理（包含封禁提示与重定向），此处不再重复弹出 Toast
       if (status === 403) {
         showToast = false
       } else {

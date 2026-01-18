@@ -5,7 +5,6 @@ import { useSettingsStore } from "@/settingsStore"
 import type { Router } from "vue-router"
 import type { ApiErrorResponse } from "@/types/response"
 
-// Extend AxiosRequestConfig to include our custom property
 declare module 'axios' {
     export interface AxiosRequestConfig {
         skipErrorToast?: boolean
@@ -23,21 +22,16 @@ export function setupInterceptors(router: Router) {
     apiClient.interceptors.request.use((config) => {
         const userStore = useUserStore()
         const settingsStore = useSettingsStore()
-
-        // Dynamically set baseURL based on preferred endpoint
         config.baseURL = settingsStore.currentEndpoint
-
         if (userStore.sessionToken) {
             config.headers.set('Authorization', `Bearer ${userStore.sessionToken}`)
         }
         return config
     })
-
     apiClient.interceptors.response.use(
         (response) => response,
         async (error) => {
             const userStore = useUserStore()
-
             if (error.response?.status === 401) {
                 if (userStore.sessionToken) {
                     toast.error("会话已过期", { description: "请重新登录" })
@@ -47,7 +41,6 @@ export function setupInterceptors(router: Router) {
                     }
                 }
             } else if (error.response?.status === 403) {
-                // User is banned - clear state and redirect
                 const data = error.response.data as ApiErrorResponse
                 const banMessage = data?.message || "您的账号已被封禁"
                 toast.error("账号已被封禁", { description: banMessage })
@@ -67,9 +60,6 @@ export function setupInterceptors(router: Router) {
     )
 }
 
-/**
- * Generic request wrapper that returns the response data directly.
- */
 export async function request<T = unknown>(
     url: string,
     options: AxiosRequestConfig = {}

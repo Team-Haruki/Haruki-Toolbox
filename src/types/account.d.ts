@@ -5,7 +5,7 @@ export interface UpdateUserProfilePayload {
 
 export interface ChangePasswordPayload {
     oldPassword: string
-    password: string
+    newPassword: string
 }
 
 export interface SendResetPasswordEmailPayload {

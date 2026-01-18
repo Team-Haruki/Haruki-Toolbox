@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {toast} from "vue-sonner"
 import {useUserStore} from "@/store"
-import {useSettingsStore} from "@/settingsStore"
 import {useRouter} from "vue-router"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
@@ -43,7 +42,6 @@ const countdown = ref(0)
 const password = ref("")
 const emailCode = ref("")
 const userStore = useUserStore()
-const settingsStore = useSettingsStore()
 const isSending = ref(false)
 const isRegistering = ref(false)
 const sendCodeChallengeToken = ref<string>("")
@@ -114,10 +112,6 @@ async function handleRegister() {
     )
     toast.success("注册成功", {description: "欢迎来到Haruki工具箱"})
     userStore.setUser(response.userData)
-    // Store iosUploadCode from backend response
-    if (response.userData.iosUploadCode) {
-      settingsStore.setIOSUploadCode(response.userData.iosUploadCode)
-    }
     registerChallengeToken.value = ""
     await router.push("/")
   } catch (err: unknown) {

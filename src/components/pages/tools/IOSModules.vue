@@ -12,11 +12,8 @@ import {useUserStore} from "@/store"
 import {useSettingsStore} from "@/settingsStore"
 import {generateIOSUploadCode} from "@/api/settings/ios-upload-code"
 
-// Stores
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
-
-// State
 const selectedSoftware = ref<string>('surge')
 const selectedEndpoint = ref<string>('direct')
 const selectedMode = ref<string>('script') // 默认脚本上传
@@ -25,7 +22,6 @@ const selectedDataTypes = ref<string[]>(['suite'])
 const chunkSize = ref<number>(1)
 const isGeneratingCode = ref<boolean>(false)
 
-// Software options (shadowrocket uses surge)
 const softwareOptions = [
   { value: 'surge', label: 'Surge' },
   { value: 'shadowrocket', label: 'Shadowrocket' },
@@ -34,19 +30,16 @@ const softwareOptions = [
   { value: 'stash', label: 'Stash' },
 ]
 
-// Endpoint options
 const endpointOptions = [
   { value: 'direct', label: 'Direct (直连)' },
   { value: 'cdn', label: 'CDN (加速)' },
 ]
 
-// Mode options
 const modeOptions = [
   { value: 'proxy', label: '307 代理' },
   { value: 'script', label: '脚本上传' },
 ]
 
-// Region options
 const regionOptions = [
   { value: 'jp', label: '日服' },
   { value: 'en', label: '国际服' },
@@ -55,7 +48,6 @@ const regionOptions = [
   { value: 'cn', label: '国服' },
 ]
 
-// Data type options with descriptions
 const dataTypeOptionsWithDesc = [
   { value: 'suite', label: 'Suite', desc: '上传你的游戏账号的完整数据' },
   { value: 'mysekai', label: 'MySekai', desc: '上传你的游戏账号的MySekai数据' },
@@ -63,7 +55,6 @@ const dataTypeOptionsWithDesc = [
   { value: 'mysekai_birthday_party', label: 'MySekai生日派对', desc: '上传MySekai生日派对双叶地图数据' },
 ]
 
-// Extension mapping
 const extensionMap: Record<string, string> = {
   surge: 'sgmodule',
   shadowrocket: 'sgmodule',
@@ -72,7 +63,6 @@ const extensionMap: Record<string, string> = {
   stash: 'stoverride',
 }
 
-// URI schemes for quick install
 const uriSchemes: Record<string, (url: string) => string> = {
   shadowrocket: url => `shadowrocket://install?module=${encodeURIComponent(url)}`,
   surge: url => `surge:///install-module?url=${encodeURIComponent(url)}`,
@@ -81,9 +71,7 @@ const uriSchemes: Record<string, (url: string) => string> = {
   stash: url => `https://link.stash.ws/install-override/${url.replace(/^https?:\/\//, '')}`,
 }
 
-// Computed
-const hasUploadCode = computed(() => !!settingsStore.iosUploadCode)
-
+const hasUploadCode = computed(() => !!userStore.iosUploadCode)
 const isCnRestricted = computed(() => {
   const hasMysekaiType = selectedDataTypes.value.some(dt => 
     ['mysekai', 'mysekai_force', 'mysekai_birthday_party'].includes(dt)
@@ -91,45 +79,34 @@ const isCnRestricted = computed(() => {
   const hasCn = selectedRegions.value.includes('cn')
   return hasMysekaiType && hasCn && !userStore.allowCNMysekai
 })
-
 const isQxScriptWarning = computed(() => {
   return selectedSoftware.value === 'qx' && selectedMode.value === 'script'
 })
-
-// finalDataTypes is now just selectedDataTypes (no transformation needed)
 const finalDataTypes = computed(() => selectedDataTypes.value)
-
 const moduleUrl = computed(() => {
   if (!hasUploadCode.value || selectedRegions.value.length === 0 || finalDataTypes.value.length === 0) {
     return null
   }
-  
   const baseUrl = selectedEndpoint.value === 'cdn' 
     ? settingsStore.cdnEndpoint 
     : settingsStore.directEndpoint
-  
   const regions = selectedRegions.value.join('-')
   const dataTypes = finalDataTypes.value.join('-')
   const ext = extensionMap[selectedSoftware.value]
-  
-  let url = `${baseUrl}/ios/module/${settingsStore.iosUploadCode}/${regions}-haruki-toolbox-${dataTypes}.${ext}`
+  let url = `${baseUrl}/ios/module/${userStore.iosUploadCode}/${regions}-haruki-toolbox-${dataTypes}.${ext}`
   url += `?mode=${selectedMode.value}&endpoint=${selectedEndpoint.value}`
-  
   if (selectedMode.value === 'script') {
     url += `&chunk=${chunkSize.value}`
   }
-  
   return url
 })
 
 const scriptUrl = computed(() => {
   if (!hasUploadCode.value) return null
-  
   const baseUrl = selectedEndpoint.value === 'cdn' 
     ? settingsStore.cdnEndpoint 
     : settingsStore.directEndpoint
-  
-  return `${baseUrl}/ios/script/${settingsStore.iosUploadCode}/haruki-toolbox.js?chunk=${chunkSize.value}&endpoint=${selectedEndpoint.value}`
+  return `${baseUrl}/ios/script/${userStore.iosUploadCode}/haruki-toolbox.js?chunk=${chunkSize.value}&endpoint=${selectedEndpoint.value}`
 })
 
 const canInstall = computed(() => {
@@ -139,18 +116,15 @@ const canInstall = computed(() => {
          !isCnRestricted.value &&
          !isQxScriptWarning.value
 })
-
-// Methods
 async function generateCode() {
   if (!userStore.userId) {
     toast.warning('请先登录')
     return
   }
-  
   isGeneratingCode.value = true
   try {
     const code = await generateIOSUploadCode(userStore.userId)
-    settingsStore.setIOSUploadCode(code)
+    userStore.setIOSUploadCode(code)
     toast.success('上传码生成成功')
   } catch (error: unknown) {
     console.error('Failed to generate iOS upload code:', error)
@@ -186,7 +160,6 @@ function toggleDataType(dataType: string) {
   if (selectedDataTypes.value.includes(dataType)) {
     selectedDataTypes.value = selectedDataTypes.value.filter(d => d !== dataType)
   } else {
-    // Handle mutual exclusion between mysekai and mysekai_force
     let newTypes = [...selectedDataTypes.value]
     if (dataType === 'mysekai') {
       newTypes = newTypes.filter(d => d !== 'mysekai_force')
@@ -200,17 +173,14 @@ function toggleDataType(dataType: string) {
 
 async function installModule() {
   if (!canInstall.value || !moduleUrl.value) return
-  
   const schemeFn = uriSchemes[selectedSoftware.value]
   if (!schemeFn) {
     toast.warning('不支持的客户端')
     return
   }
-
   window.location.href = schemeFn(moduleUrl.value)
 }
 
-// Watch for software changes - QX doesn't support script mode
 watch(selectedSoftware, (newSoftware) => {
   if (newSoftware === 'qx' && selectedMode.value === 'script') {
     selectedMode.value = 'proxy'
@@ -231,7 +201,6 @@ watch(selectedSoftware, (newSoftware) => {
       </CardHeader>
       
       <CardContent class="space-y-4">
-        <!-- Upload Code Section -->
         <Card>
           <CardHeader class="pb-1">
             <CardTitle class="text-base">上传码</CardTitle>
@@ -240,11 +209,11 @@ watch(selectedSoftware, (newSoftware) => {
           <CardContent>
             <div v-if="hasUploadCode" class="flex items-center gap-2">
               <Input 
-                :model-value="settingsStore.iosUploadCode ?? ''" 
+                :model-value="userStore.iosUploadCode ?? ''" 
                 readonly 
                 class="font-mono text-sm"
               />
-              <Button variant="outline" size="icon" @click="copyToClipboard(settingsStore.iosUploadCode!, '上传码')">
+              <Button variant="outline" size="icon" @click="copyToClipboard(userStore.iosUploadCode!, '上传码')">
                 <Copy class="w-4 h-4" />
               </Button>
               <Button 
@@ -268,8 +237,6 @@ watch(selectedSoftware, (newSoftware) => {
             </div>
           </CardContent>
         </Card>
-
-        <!-- Software Selection -->
         <Card>
           <CardHeader class="pb-1">
             <CardTitle class="text-base">选择软件</CardTitle>
@@ -288,8 +255,6 @@ watch(selectedSoftware, (newSoftware) => {
             </Select>
           </CardContent>
         </Card>
-
-        <!-- Endpoint Selection -->
         <Card>
           <CardHeader class="pb-1">
             <CardTitle class="text-base">选择工具箱域名</CardTitle>
@@ -310,8 +275,6 @@ watch(selectedSoftware, (newSoftware) => {
             </Select>
           </CardContent>
         </Card>
-
-        <!-- Upload Mode Selection -->
         <Card>
           <CardHeader class="pb-1">
             <CardTitle class="text-base">选择上传数据方式</CardTitle>
@@ -340,8 +303,6 @@ watch(selectedSoftware, (newSoftware) => {
             </p>
           </CardContent>
         </Card>
-
-        <!-- Chunk Size (for script mode) -->
         <Card v-if="selectedMode === 'script'">
           <CardHeader class="pb-1">
             <CardTitle class="text-base">文件分片大小</CardTitle>
@@ -361,8 +322,6 @@ watch(selectedSoftware, (newSoftware) => {
             </div>
           </CardContent>
         </Card>
-
-        <!-- Region Selection -->
         <Card>
           <CardHeader class="pb-1">
             <CardTitle class="text-base">选择区服</CardTitle>
@@ -387,8 +346,6 @@ watch(selectedSoftware, (newSoftware) => {
             </div>
           </CardContent>
         </Card>
-
-        <!-- Data Type Selection -->
         <Card>
           <CardHeader class="pb-1">
             <CardTitle class="text-base">选择数据类型</CardTitle>
@@ -416,13 +373,9 @@ watch(selectedSoftware, (newSoftware) => {
             </div>
           </CardContent>
         </Card>
-
-        <!-- Warnings -->
         <p v-if="isCnRestricted" class="text-red-600 p-3 bg-red-50 dark:bg-red-950 rounded-lg">
           由于相关法律法规限制，本站不提供国服的MySekai功能的安装。
         </p>
-
-        <!-- Generated URLs -->
         <Card v-if="moduleUrl">
           <CardHeader class="pb-1">
             <CardTitle class="text-base">生成的 URL</CardTitle>
@@ -438,7 +391,6 @@ watch(selectedSoftware, (newSoftware) => {
                 </Button>
               </div>
             </div>
-            
             <div v-if="selectedMode === 'script' && scriptUrl">
               <Label class="text-sm font-medium">脚本 URL</Label>
               <div class="flex items-center gap-2 mt-1">

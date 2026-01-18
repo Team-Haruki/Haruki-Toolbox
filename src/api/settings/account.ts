@@ -45,7 +45,7 @@ export async function changePassword(
     newPassword: string,
     options?: AxiosRequestConfig
 ): Promise<APIResponse<null>> {
-    const payload: ChangePasswordPayload = { oldPassword, password: newPassword }
+    const payload: ChangePasswordPayload = { oldPassword, newPassword }
     return await request<APIResponse<null>>(
         `/api/user/${userId}/change-password`,
         {

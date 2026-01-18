@@ -17,18 +17,11 @@ export const useUserStore = defineStore("user", () => {
     const socialPlatformInfo = ref<SocialPlatformInfo | null>(null)
     const authorizeSocialPlatformInfo = ref<AuthorizeSocialPlatformInfo[] | null>(null)
     const gameAccountBindings = ref<GameAccountBinding[] | null>(null)
+    const iosUploadCode = ref<string | null>(null)
     const sessionToken = ref<string | null>(null)
     const tokenExpiration = ref<number | null>(null)
-
     const isLoggedIn = computed(() => !!sessionToken.value)
 
-    /**
-     * Set or update user data.
-     * @param payload - User data to set
-     * @param options
-     * @param options.resetExpiration - If true (default), resets token expiration when sessionToken is provided.
-     *                                  Set to false to preserve existing expiration.
-     */
     function setUser(payload: {
         name?: string
         userId?: string
@@ -38,6 +31,7 @@ export const useUserStore = defineStore("user", () => {
         socialPlatformInfo?: SocialPlatformInfo | null
         authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
         gameAccountBindings?: GameAccountBinding[] | null
+        iosUploadCode?: string | null
         sessionToken?: string
     }, options: { resetExpiration?: boolean } = { resetExpiration: true }) {
         if (payload.name !== undefined) name.value = payload.name
@@ -48,10 +42,10 @@ export const useUserStore = defineStore("user", () => {
         if (payload.socialPlatformInfo !== undefined) socialPlatformInfo.value = payload.socialPlatformInfo
         if (payload.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = payload.authorizeSocialPlatformInfo
         if (payload.gameAccountBindings !== undefined) gameAccountBindings.value = payload.gameAccountBindings
+        if (payload.iosUploadCode !== undefined) iosUploadCode.value = payload.iosUploadCode
 
         if (payload.sessionToken !== undefined) {
             sessionToken.value = payload.sessionToken
-            // Set expiration to 7 days from now if resetExpiration is true
             if (options.resetExpiration) {
                 tokenExpiration.value = payload.sessionToken ? Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 : null
             }
@@ -67,8 +61,13 @@ export const useUserStore = defineStore("user", () => {
         socialPlatformInfo.value = null
         authorizeSocialPlatformInfo.value = null
         gameAccountBindings.value = null
+        iosUploadCode.value = null
         sessionToken.value = null
         tokenExpiration.value = null
+    }
+
+    function setIOSUploadCode(code: string | null) {
+        iosUploadCode.value = code
     }
 
     function checkExpiration() {
@@ -86,10 +85,12 @@ export const useUserStore = defineStore("user", () => {
         socialPlatformInfo,
         authorizeSocialPlatformInfo,
         gameAccountBindings,
+        iosUploadCode,
         sessionToken,
         tokenExpiration,
         isLoggedIn,
         setUser,
+        setIOSUploadCode,
         clearUser,
         checkExpiration
     }

@@ -133,7 +133,6 @@ const regionOptions = [
 
 
 onMounted(() => {
-  // Check login status first
   if (!userStore.isLoggedIn) {
     toast.warning("请先登录", {description: "该操作需要先登录到Haruki工具箱"})
     logout().finally(() => {
@@ -141,8 +140,6 @@ onMounted(() => {
     })
     return
   }
-  
-  // Then check social platform binding
   const info = userStore.socialPlatformInfo
   if (!info || !info.verified) {
     toast.warning("请先完成社交平台账号绑定", {description: "该功能需要先完成社交平台绑定"})

@@ -53,28 +53,22 @@ async function saveChanges() {
     return
   }
 isSaving.value = true
-  
   try {
     let avatarPath = userStore.avatarPath
-    // Always call API with skipErrorToast: true to handle errors here
     const result = await updateUserProfile(
         userStore.userId, 
         userStore.name, 
         selectedFile.value,
         { skipErrorToast: true }
     )
-
     if (result && result.updatedData?.avatarPath) {
         avatarPath = result.updatedData?.avatarPath
         previewAvatar.value = null
     }
-
-    // Update store
     userStore.setUser({
         name: userStore.name,
         avatarPath: avatarPath,
     })
-    
     toast.success("资料已保存", {
         description: "用户资料更新成功",
     })

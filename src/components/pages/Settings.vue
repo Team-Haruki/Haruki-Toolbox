@@ -21,31 +21,22 @@ import {
 import { useSettingsStore, type ThemeType, type EndpointType } from "@/settingsStore"
 
 const settingsStore = useSettingsStore()
-
-// Local state for editing
 const selectedEndpoint = ref<EndpointType>(settingsStore.preferredEndpoint)
 const selectedTheme = ref<ThemeType>(settingsStore.theme)
-
-// Endpoint options
 const endpointOptions = [
   { value: 'direct' as EndpointType, label: '直连', desc: '直接连接后端服务器' },
   { value: 'cdn' as EndpointType, label: 'CDN', desc: '通过CDN加速访问' },
 ]
-
-// Theme options
 const themeOptions = [
   { value: 'light' as ThemeType, label: '浅色', icon: Sun },
   { value: 'dark' as ThemeType, label: '深色', icon: Moon },
   { value: 'system' as ThemeType, label: '跟随系统', icon: Monitor },
 ]
-
-// Methods
 function saveSettings() {
   settingsStore.setPreferredEndpoint(selectedEndpoint.value)
   settingsStore.setTheme(selectedTheme.value)
   toast.success('设置已保存')
 }
-
 function resetSettings() {
   selectedEndpoint.value = 'direct'
   selectedTheme.value = 'system'
@@ -53,8 +44,6 @@ function resetSettings() {
   settingsStore.setTheme('system')
   toast.info('设置已重置为默认值')
 }
-
-// Initialize theme on mount
 onMounted(() => {
   settingsStore.initTheme()
 })
@@ -70,9 +59,7 @@ onMounted(() => {
           <CardDescription>配置Haruki工具箱的端点和外观等</CardDescription>
         </div>
       </CardHeader>
-      
       <CardContent class="space-y-6">
-        <!-- Endpoint Selection -->
         <div>
           <Label class="text-base font-medium">服务器端点</Label>
           <p class="text-sm text-muted-foreground mb-2">
@@ -92,8 +79,6 @@ onMounted(() => {
             </SelectContent>
           </Select>
         </div>
-
-        <!-- Theme Selection -->
         <div>
           <Label class="text-base font-medium">外观主题</Label>
           <p class="text-sm text-muted-foreground mb-2">选择您偏好的界面主题</p>
@@ -111,8 +96,6 @@ onMounted(() => {
             </SelectContent>
           </Select>
         </div>
-
-        <!-- Action Buttons -->
         <div class="flex gap-2 pt-2">
           <Button @click="saveSettings" class="flex-1">
             <Save class="w-4 h-4 mr-2" />
@@ -123,8 +106,6 @@ onMounted(() => {
             重置
           </Button>
         </div>
-
-        <!-- Tips -->
         <div class="p-3 bg-muted/50 rounded-lg">
           <p class="text-sm text-muted-foreground">
             <strong>提示：</strong>主题设置会立即生效，端点设置将在下次请求时生效。

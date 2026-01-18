@@ -20,7 +20,7 @@ interface FriendGroupData {
 
 const groupData = ref<FriendGroupData[]>([])
 const activeIdx = ref<Array<number | null>>([])
-const openGroups = ref<string[]>([]) // 👈 用来控制展开的分组
+const openGroups = ref<string[]>([])
 
 async function fetchGroupData() {
   try {
