@@ -240,7 +240,7 @@ watch(selectedSoftware, (newSoftware) => {
           <CardContent>
             <div v-if="hasUploadCode" class="flex items-center gap-2">
               <Input 
-                :value="settingsStore.iosUploadCode" 
+                :model-value="settingsStore.iosUploadCode ?? ''" 
                 readonly 
                 class="font-mono text-sm"
               />
@@ -432,7 +432,7 @@ watch(selectedSoftware, (newSoftware) => {
             <div>
               <Label class="text-sm font-medium">模块 URL</Label>
               <div class="flex items-center gap-2 mt-1">
-                <Input :value="moduleUrl" readonly class="font-mono text-xs" />
+                <Input :model-value="moduleUrl ?? ''" readonly class="font-mono text-xs" />
                 <Button variant="outline" size="icon" @click="copyToClipboard(moduleUrl, '模块URL')">
                   <Copy class="w-4 h-4" />
                 </Button>
@@ -442,7 +442,7 @@ watch(selectedSoftware, (newSoftware) => {
             <div v-if="selectedMode === 'script' && scriptUrl">
               <Label class="text-sm font-medium">脚本 URL</Label>
               <div class="flex items-center gap-2 mt-1">
-                <Input :value="scriptUrl" readonly class="font-mono text-xs" />
+                <Input :model-value="scriptUrl ?? ''" readonly class="font-mono text-xs" />
                 <Button variant="outline" size="icon" @click="copyToClipboard(scriptUrl, '脚本URL')">
                   <Copy class="w-4 h-4" />
                 </Button>
