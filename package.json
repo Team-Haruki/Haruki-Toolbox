@@ -1,7 +1,7 @@
 {
   "name": "haruki-toolbox",
   "private": true,
-  "version": "5.2.1",
+  "version": "6.0.0",
   "type": "module",
   "scripts": {
     "dev": "bunx --bun vite",
