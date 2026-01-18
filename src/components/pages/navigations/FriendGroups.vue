@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import axios from 'axios'
+import { apiClient } from '@/api/call-api'
 import FriendGroupCard, { type FriendGroupItem } from "@/components/pages/navigations/FriendGroupCard.vue"
 
 import {
@@ -24,7 +24,7 @@ const openGroups = ref<string[]>([]) // 👈 用来控制展开的分组
 
 async function fetchGroupData() {
   try {
-    const response = await axios.get('https://suite-api.haruki.seiunx.com/misc/friend_groups')
+    const response = await apiClient.get('/misc/friend_groups')
     const data: FriendGroupData[] = response.data
     groupData.value = data
     activeIdx.value = data.map(() => null)
