@@ -7,7 +7,7 @@ import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
 import { extractErrorMessage } from "@/lib/error-utils"
-import { Loader2 } from 'lucide-vue-next'
+import { Loader2, UserPlus, Mail, X } from 'lucide-vue-next'
 import {
   Dialog,
   DialogClose,
@@ -172,7 +172,10 @@ async function handleRegister() {
                   </div>
                     <DialogFooter>
                       <DialogClose as-child>
-                        <Button variant="secondary" type="button">取消</Button>
+                        <Button variant="secondary" type="button">
+                          <X class="h-4 w-4 mr-2" />
+                          取消
+                        </Button>
                       </DialogClose>
                       <Button
                         type="button"
@@ -180,6 +183,7 @@ async function handleRegister() {
                         @click="async () => { if(await handleSendCode()) { isDialogOpen = false } }"
                       >
                         <Loader2 v-if="isSending" class="mr-2 h-4 w-4 animate-spin" />
+                        <Mail v-else class="h-4 w-4 mr-2" />
                         <span v-if="isSending">发送中...</span>
                         <span v-else>确认发送</span>
                       </Button>
@@ -211,6 +215,7 @@ async function handleRegister() {
           <Turnstile @verify="(t: string) => { registerChallengeToken = t }" class="md-2" ref="registerTurnstileRef"/>
           <Button type="submit" class="w-full" :disabled="isRegistering">
             <Loader2 v-if="isRegistering" class="mr-2 h-4 w-4 animate-spin" />
+            <UserPlus v-else class="h-4 w-4 mr-2" />
             注册
           </Button>
           <div class="text-center text-sm">

@@ -9,7 +9,7 @@ import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue";
 import type { ApiErrorResponse } from "@/types/response";
 import { extractErrorMessage } from "@/lib/error-utils"
-import { Loader2 } from 'lucide-vue-next'
+import { Loader2, LogIn, Mail, X } from 'lucide-vue-next'
 
 import {
   ref,
@@ -182,11 +182,15 @@ async function handleLogin() {
                     </div>
                     <DialogFooter>
                       <DialogClose as-child>
-                        <Button variant="outline">取消</Button>
+                        <Button variant="outline">
+                          <X class="h-4 w-4 mr-2" />
+                          取消
+                        </Button>
                       </DialogClose>
                       <Button @click="handleResetPassword" :disabled="isSendingResetEmail">
                         <Loader2 v-if="isSendingResetEmail" class="mr-2 h-4 w-4 animate-spin" />
-                        确定
+                        <Mail v-else class="h-4 w-4 mr-2" />
+                        发送重置邮件
                       </Button>
                     </DialogFooter>
                   </DialogScrollContent>
@@ -197,6 +201,7 @@ async function handleLogin() {
             </div>
             <Button type="submit" class="w-full" :disabled="isLoggingIn">
               <Loader2 v-if="isLoggingIn" class="mr-2 h-4 w-4 animate-spin" />
+              <LogIn v-else class="h-4 w-4 mr-2" />
               登录
             </Button>
             <div class="text-center text-sm">

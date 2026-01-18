@@ -25,9 +25,7 @@ const openGroups = ref<string[]>([])
 async function fetchGroupData() {
   try {
     const response = await apiClient.get('/misc/friend_groups')
-    // API returns { status, message, updatedData: [...] }
     const rawData: FriendGroupData[] = response.data?.updatedData ?? response.data ?? []
-    // Filter out groups with null/empty groupList
     const data = rawData.filter(g => g.groupList && g.groupList.length > 0)
     groupData.value = data
     activeIdx.value = data.map(() => null)

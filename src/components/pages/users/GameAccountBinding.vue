@@ -7,7 +7,7 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {Switch} from "@/components/ui/switch"
-import {MoreHorizontal} from "lucide-vue-next"
+import {MoreHorizontal, Pencil, Trash2, Plus, Save, X, ShieldCheck, Check} from "lucide-vue-next"
 import type {ColumnDef} from "@tanstack/vue-table"
 import { extractErrorMessage } from "@/lib/error-utils"
 
@@ -380,8 +380,14 @@ const columns: ColumnDef<GameAccount>[] = [
                 )
             ),
             h(DropdownMenuContent, {align: "end"}, () => [
-              h(DropdownMenuItem, {onClick: () => startEdit(row.original)}, () => "编辑"),
-              h(DropdownMenuItem, {onClick: () => confirmDelete(row.original)}, () => "删除"),
+              h(DropdownMenuItem, {onClick: () => startEdit(row.original)}, () => [
+                h(Pencil, {class: "h-4 w-4 mr-2"}),
+                "编辑"
+              ]),
+              h(DropdownMenuItem, {onClick: () => confirmDelete(row.original), class: "text-destructive"}, () => [
+                h(Trash2, {class: "h-4 w-4 mr-2"}),
+                "删除"
+              ]),
             ]),
           ],
         }),
@@ -408,7 +414,10 @@ const table = useVueTable({
               管理您的 Haruki 工具箱账号绑定的《世界计划: 缤纷舞台 feat. 初音未来》游戏账号
             </CardDescription>
           </div>
-          <Button @click="startAdd">绑定新账号</Button>
+          <Button @click="startAdd">
+            <Plus class="h-4 w-4 mr-2" />
+            绑定新账号
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -488,7 +497,10 @@ const table = useVueTable({
                       v-if="editTarget?.verified"
                       class="px-2 py-1 rounded text-xs bg-green-100 text-green-700"
                   >已验证</span>
-                  <Button v-else variant="outline" @click="handleVerify">验证</Button>
+                  <Button v-else variant="outline" @click="handleVerify">
+                    <ShieldCheck class="h-4 w-4 mr-2" />
+                    验证
+                  </Button>
                 </div>
               </div>
             </div>
@@ -639,9 +651,15 @@ const table = useVueTable({
         </div>
         <DialogFooter>
           <DialogClose as-child>
-            <Button variant="outline">取消</Button>
+            <Button variant="outline">
+              <X class="h-4 w-4 mr-2" />
+              取消
+            </Button>
           </DialogClose>
-          <Button @click="handleEditSave" :disabled="isSaving || (isCreating && !verificationTriggered)">保存</Button>
+          <Button @click="handleEditSave" :disabled="isSaving || (isCreating && !verificationTriggered)">
+            <Save class="h-4 w-4 mr-2" />
+            保存
+          </Button>
         </DialogFooter>
       </DialogScrollContent>
     </Dialog>
@@ -655,8 +673,14 @@ const table = useVueTable({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>取消</AlertDialogCancel>
-          <AlertDialogAction class="bg-destructive text-foreground" @click="handleDelete">删除</AlertDialogAction>
+          <AlertDialogCancel>
+            <X class="h-4 w-4 mr-2" />
+            取消
+          </AlertDialogCancel>
+          <AlertDialogAction class="bg-destructive text-foreground" @click="handleDelete">
+            <Trash2 class="h-4 w-4 mr-2" />
+            删除
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -676,7 +700,10 @@ const table = useVueTable({
         <DialogDescription>请务必完整输入进个性签名，不要移除斜杠<br>在游戏中完成验证码输入之后，请务必退回到主页确保验证码成功保存，再继续添加账号<br>输入验证码之后，直接关闭此窗口，点击保存按钮，即可进行账号验证</DialogDescription>
         <DialogFooter>
           <DialogClose as-child>
-            <Button @click="verificationAcknowledged = true">我已输入，关闭此窗口</Button>
+            <Button @click="verificationAcknowledged = true">
+              <Check class="h-4 w-4 mr-2" />
+              我已输入，关闭此窗口
+            </Button>
           </DialogClose>
         </DialogFooter>
       </DialogScrollContent>

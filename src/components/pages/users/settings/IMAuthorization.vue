@@ -6,10 +6,9 @@ import {useUserStore} from "@/store"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
-import {MoreHorizontal} from "lucide-vue-next"
+import {MoreHorizontal, Pencil, Trash2, Plus, Save, X} from "lucide-vue-next"
 import type {ColumnDef} from "@tanstack/vue-table"
-import {isAxiosError} from "axios"
-import type {ApiErrorResponse} from "@/types/response"
+import { extractErrorMessage } from "@/lib/error-utils"
 
 
 import {
@@ -165,13 +164,7 @@ async function handleEditSave() {
     toast.success("已保存授权", {description: "社交平台账号授权信息已更新"})
     showEditDialog.value = false
   } catch (e: unknown) {
-      let message = "保存失败"
-      if (isAxiosError(e)) {
-          message = (e.response?.data as ApiErrorResponse)?.message || e.message
-      } else if (e instanceof Error) {
-          message = e.message
-      }
-      toast.error("保存失败", {description: message})
+      toast.error("保存失败", {description: extractErrorMessage(e, "保存失败")})
   } finally {
     isSaving.value = false
   }
@@ -202,13 +195,7 @@ async function handleDelete() {
     toast.success("已删除授权", {description: "该社交平台账号授权已移除"})
     showDeleteDialog.value = false
   } catch (e: unknown) {
-      let message = "删除失败"
-      if (isAxiosError(e)) {
-          message = (e.response?.data as ApiErrorResponse)?.message || e.message
-      } else if (e instanceof Error) {
-          message = e.message
-      }
-      toast.error("删除失败", {description: message})
+      toast.error("删除失败", {description: extractErrorMessage(e, "删除失败")})
   }
 }
 
@@ -240,8 +227,14 @@ const columns: ColumnDef<SocialAuth>[] = [
                 )
             ),
             h(DropdownMenuContent, {align: "end"}, () => [
-              h(DropdownMenuItem, {onClick: () => startEdit(row.original)}, () => "编辑"),
-              h(DropdownMenuItem, {onClick: () => confirmDelete(row.original)}, () => "删除"),
+              h(DropdownMenuItem, {onClick: () => startEdit(row.original)}, () => [
+                h(Pencil, {class: "h-4 w-4 mr-2"}),
+                "编辑"
+              ]),
+              h(DropdownMenuItem, {onClick: () => confirmDelete(row.original), class: "text-destructive"}, () => [
+                h(Trash2, {class: "h-4 w-4 mr-2"}),
+                "删除"
+              ]),
             ]),
           ],
         }),
@@ -271,7 +264,10 @@ onMounted(() => {
           <CardTitle>授权社交平台查询</CardTitle>
           <CardDescription>管理您的Haruki工具箱账号授权可查询游戏账号信息的社交平台</CardDescription>
         </div>
-        <Button size="sm" @click="startAdd">新增授权</Button>
+        <Button size="sm" @click="startAdd">
+          <Plus class="h-4 w-4 mr-2" />
+          新增授权
+        </Button>
       </div>
     </CardHeader>
     <CardContent>
@@ -357,9 +353,15 @@ onMounted(() => {
       </div>
       <DialogFooter>
         <DialogClose as-child>
-          <Button variant="outline">取消</Button>
+          <Button variant="outline">
+            <X class="h-4 w-4 mr-2" />
+            取消
+          </Button>
         </DialogClose>
-        <Button @click="handleEditSave" :disabled="isSaving">保存</Button>
+        <Button @click="handleEditSave" :disabled="isSaving">
+          <Save class="h-4 w-4 mr-2" />
+          保存
+        </Button>
       </DialogFooter>
     </DialogScrollContent>
   </Dialog>
@@ -373,8 +375,14 @@ onMounted(() => {
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>取消</AlertDialogCancel>
-        <AlertDialogAction class="bg-destructive" @click="handleDelete">删除</AlertDialogAction>
+        <AlertDialogCancel>
+          <X class="h-4 w-4 mr-2" />
+          取消
+        </AlertDialogCancel>
+        <AlertDialogAction class="bg-destructive" @click="handleDelete">
+          <Trash2 class="h-4 w-4 mr-2" />
+          删除
+        </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
