@@ -6,6 +6,7 @@ import type { SekaiRegion } from "@/types"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {Progress} from "@/components/ui/progress"
+import { extractErrorMessage } from "@/lib/error-utils"
 
 import {
   submitInherit,
@@ -68,8 +69,8 @@ const boundAccounts = computed(() => {
   const raw = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
   const nameMap: Record<string, string> = { jp: '日服', en: '国际服', tw: '台服', kr: '韩服', cn: '国服' }
   return raw.map(acc => {
-    const server = String((acc as any).server)
-    const uid = String((acc as any).userId)
+    const server = String(acc.server)
+    const uid = String(acc.userId)
     return {
       key: `${server}:${uid}`,
       server,
@@ -145,15 +146,15 @@ async function submitFileUpload() {
       String(selectedAccount.value.uid),
       dataType.value,
       file,
-      (p) => (uploadProgress.value = p)
+      (p) => (uploadProgress.value = p),
+      { skipErrorToast: true }
     )
     uploadStatus.value = '上传成功'
     toast.success('上传成功', { description: resp?.message || '文件已上传' })
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error(e)
     uploadStatus.value = '上传失败'
-    const desc = e?.response?.data?.message || e?.message
-    toast.error('上传失败', { description: desc })
+    toast.error('上传失败', { description: extractErrorMessage(e, "上传失败") })
   } finally {
     isSubmittingFile.value = false
   }
@@ -173,6 +174,7 @@ async function submitInheritUpload() {
       dataType.value,
       inheritId.value.trim(),
       inheritPassword.value.trim(),
+      { skipErrorToast: true }
     );
     toast.success("上传成功", {
       description: response?.message || "继承码已上传",
@@ -184,10 +186,10 @@ async function submitInheritUpload() {
       type: dataType.value,
       timestamp: Date.now()
     }));
-  } catch (e) {
+  } catch (e: unknown) {
     console.error(e);
     toast.error("上传失败", {
-      description: (e as any)?.response?.data?.message || (e as any)?.message,
+      description: extractErrorMessage(e, "上传失败"),
     });
   } finally {
     isSubmittingInherit.value = false;

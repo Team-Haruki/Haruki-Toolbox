@@ -1,10 +1,10 @@
-import {toast} from "vue-sonner";
-import {callApiResponse} from "@/api/call-api"
+import { request } from "@/api/call-api"
 import type {
     APIResponse,
     ChangePasswordPayload,
     UpdateUserProfilePayload
 } from "@/types";
+import type { AxiosRequestConfig } from "axios";
 
 
 function fileToBase64(file: File): Promise<string> {
@@ -16,31 +16,42 @@ function fileToBase64(file: File): Promise<string> {
     })
 }
 
-export async function updateUserProfile(name: string, avatar: File | null): Promise<APIResponse<{ name: string; avatarPath: string }>> {
-    try {
-        let payload: UpdateUserProfilePayload;
-        if (avatar) {
-            const avatarBase64 = await fileToBase64(avatar)
-            payload = {name, avatarBase64}
-        } else {
-            payload = {name}
-        }
-        return await callApiResponse<{ name: string; avatarPath: string }>(
-            "/api/user/{toolboxUserId}/profile",
-            "PUT",
-            payload
-        )
-    } catch (error) {
-        toast.error(`更新用户资料失败: ${String(error)}`)
-        throw error
+export async function updateUserProfile(
+    userId: string,
+    name: string,
+    avatar: File | null,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<{ name: string; avatarPath: string }>> {
+    let payload: UpdateUserProfilePayload;
+    if (avatar) {
+        const avatarBase64 = await fileToBase64(avatar)
+        payload = { name, avatarBase64 }
+    } else {
+        payload = { name }
     }
+    return await request<APIResponse<{ name: string; avatarPath: string }>>(
+        `/api/user/${userId}/profile`,
+        {
+            method: "PUT",
+            data: payload,
+            ...options
+        }
+    )
 }
 
-export async function changePassword(password: string): Promise<APIResponse<null>> {
-    const payload: ChangePasswordPayload = {password}
-    return await callApiResponse<null>(
-        "/api/user/{toolboxUserId}/change-password",
-        "PUT",
-        payload
+export async function changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<null>> {
+    const payload: ChangePasswordPayload = { oldPassword, newPassword }
+    return await request<APIResponse<null>>(
+        `/api/user/${userId}/change-password`,
+        {
+            method: "PUT",
+            data: payload,
+            ...options
+        }
     )
 }

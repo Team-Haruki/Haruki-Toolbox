@@ -9,11 +9,11 @@ import {
   AvatarFallback
 } from '@/components/ui/avatar'
 
-interface FriendGroupItem {
+export interface FriendGroupItem {
   name: string
   avatar: string
   bg: string
-  group_info: string
+  groupInfo: string
   detail: string
   url?: string
 }
@@ -70,7 +70,7 @@ onMounted(detectMobile)
         </Avatar>
         <div class="flex-1 ml-2">
           <div class="text-white font-bold text-base">{{ item.name }}</div>
-          <div class="text-gray-300 text-xs">{{ item.group_info }}</div>
+          <div class="text-gray-300 text-xs">{{ item.groupInfo }}</div>
         </div>
       </div>
       <div

@@ -1,31 +1,24 @@
 <script setup lang="ts">
 import {useRoute} from 'vue-router'
-import {useColorMode} from '@vueuse/core'
-import harukiLogo from "@/assets/haruki.ico"
-import {computed, watch, onMounted} from 'vue'
-import {Toaster} from '@/components/ui/sonner'
+import {computed, watch, onMounted, type Component} from 'vue'
 import {Separator} from '@/components/ui/separator'
 import type {SidebarProps} from '@/components/ui/sidebar'
 import SidebarUser from "@/components/pages/users/SidebarUser.vue";
+
+const harukiLogo = "/assets/haruki.ico"
 
 import {
   LucideMap,
   LucideInfo,
   LucideHome,
   LucideWrench,
+  LucideSettings,
   LucideCalculator,
   LucideNavigation,
   LucideUploadCloud,
   LucideChevronRight,
   LucideArrowDownToLine
 } from 'lucide-vue-next'
-import {
-  Select,
-  SelectItem,
-  SelectValue,
-  SelectTrigger,
-  SelectContent,
-} from '@/components/ui/select'
 import {
   Avatar,
   AvatarImage,
@@ -58,7 +51,6 @@ import {
 
 
 const route = useRoute()
-const mode = useColorMode()
 const pageTitle = computed(() => route.meta.title || '主页')
 watch(() => route.meta.title, (newTitle) => {
   document.title = newTitle ? `${newTitle} | Haruki工具箱` : 'Haruki工具箱'
@@ -73,17 +65,23 @@ const showPageTitle = computed(() => {
   return title.length <= 10
 })
 
+const copyrightYear = computed(() => {
+  const startYear = 2024
+  const currentYear = new Date().getFullYear()
+  return currentYear > startYear ? `${startYear}-${currentYear}` : String(startYear)
+})
+
 const props = defineProps<SidebarProps>()
 
 interface NavSubItem {
   title: string
-  icon?: any
+  icon?: Component
   url: string
 }
 
 interface NavItem {
   title: string
-  icon?: any
+  icon?: Component
   url?: string
   isActive?: boolean
   items?: NavSubItem[]
@@ -203,6 +201,14 @@ const data: { navMain: NavItem[] } = {
               </SidebarMenuItem>
             </Collapsible>
           </SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton as-child>
+              <router-link to="/settings" class="flex items-center gap-2">
+                <LucideSettings/>
+                <span>设置</span>
+              </router-link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
@@ -234,17 +240,6 @@ const data: { navMain: NavItem[] } = {
         >
           {{ pageTitle }}
         </div>
-        <div class="flex-1 min-w-0"></div>
-        <Select v-model="mode" class="flex-shrink-0">
-          <SelectTrigger class="w-[105px] ml-auto">
-            <SelectValue placeholder="主题模式"/>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="light">浅色主题</SelectItem>
-            <SelectItem value="dark">深色主题</SelectItem>
-            <SelectItem value="auto">自动主题</SelectItem>
-          </SelectContent>
-        </Select>
       </header>
 
       <main class="flex-1 auto">
@@ -259,7 +254,7 @@ const data: { navMain: NavItem[] } = {
       </main>
 
       <SidebarFooter class="border-t p-2 text-center text-sm text-muted-foreground bg-fuchsia-50 dark:bg-gray-800">
-        &copy; 2025 Haruki Dev Team. All rights reserved.
+        &copy; {{ copyrightYear }} Haruki Dev Team. All rights reserved.
       </SidebarFooter>
     </SidebarInset>
   </SidebarProvider>

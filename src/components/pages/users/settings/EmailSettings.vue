@@ -5,6 +5,9 @@ import {useUserStore} from "@/store"
 import {Input} from "@/components/ui/input"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
+import {isAxiosError} from "axios"
+import type {ApiErrorResponse} from "@/types/response"
+import { Loader2 } from 'lucide-vue-next'
 
 
 import {
@@ -25,9 +28,9 @@ import {
   DialogClose,
   DialogFooter,
   DialogHeader,
-  DialogContent,
   DialogTrigger,
-  DialogDescription
+  DialogDescription,
+  DialogScrollContent
 } from "@/components/ui/dialog"
 import {
   verifyEmail,
@@ -37,7 +40,6 @@ import {
 const router = useRouter()
 const userStore = useUserStore()
 const currentEmail = computed(() => userStore.emailInfo?.email ?? "未绑定")
-const isVerified = computed(() => !!userStore.emailInfo?.verified)
 const newEmail = ref("")
 const emailCode = ref("")
 const changing = ref(false)
@@ -76,11 +78,17 @@ async function handleSendCode() {
 
   sendingCode.value = true
   try {
-    await sendEmailVerificationCode(newEmail.value, challengeToken.value)
+    await sendEmailVerificationCode(newEmail.value, challengeToken.value, { skipErrorToast: true })
     toast.success("验证码已发送", {description: `已发送到 ${newEmail.value}，请注意查收`})
     startCooldown()
-  } catch (e: any) {
-    toast.error("发送验证码失败", {description: e?.message || "请稍后再试"})
+  } catch (e: unknown) {
+      let message = "发送验证码失败"
+      if (isAxiosError(e)) {
+          message = (e.response?.data as ApiErrorResponse)?.message || e.message
+      } else if (e instanceof Error) {
+          message = e.message
+      }
+    toast.error("发送验证码失败", {description: message})
     turnstileRef.value?.reset()
   } finally {
     sendingCode.value = false
@@ -99,17 +107,25 @@ async function handleChangeEmail() {
 
   changing.value = true
   try {
-    const response = await verifyEmail(newEmail.value, emailCode.value)
-    const updatedEmailInfo = (response as any)?.updatedData?.emailInfo ?? (response as any)?.updatedData
+    const response = await verifyEmail(newEmail.value, emailCode.value, { skipErrorToast: true })
+
+    const updatedEmailInfo = response.updatedData
+    
     if (updatedEmailInfo) {
-      userStore.updateUser({emailInfo: updatedEmailInfo})
+      userStore.setUser({emailInfo: updatedEmailInfo})
     }
 
     toast.success("更换邮箱成功", {description: "请重新登录以生效"})
     userStore.clearUser()
     await router.push("/user/login")
-  } catch (e: any) {
-    toast.error("更换邮箱失败", {description: e?.message || "请稍后重试"})
+  } catch (e: unknown) {
+      let message = "更换邮箱失败"
+      if (isAxiosError(e)) {
+          message = (e.response?.data as ApiErrorResponse)?.message || e.message
+      } else if (e instanceof Error) {
+          message = e.message
+      }
+    toast.error("更换邮箱失败", {description: message})
     turnstileRef.value?.reset()
   } finally {
     changing.value = false
@@ -136,23 +152,13 @@ onUnmounted(() => {
           <div class="text-sm text-muted-foreground">当前邮箱</div>
           <div class="text-base font-medium">{{ currentEmail }}</div>
         </div>
-        <div>
-          <span
-              v-if="isVerified"
-              class="px-2 py-1 rounded text-xs bg-green-100 text-green-700"
-          >已验证</span>
-          <span
-              v-else
-              class="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-700"
-          >未验证</span>
-        </div>
       </div>
 
       <Dialog>
         <DialogTrigger as-child>
           <Button class="w-full">更换邮箱</Button>
         </DialogTrigger>
-        <DialogContent class="sm:max-w-[425px]">
+        <DialogScrollContent class="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>更换邮箱</DialogTitle>
             <DialogDescription>输入新的邮箱，完成人机验证并发送验证码。</DialogDescription>
@@ -167,7 +173,8 @@ onUnmounted(() => {
                   :disabled="sendingCode || sendCooldown > 0 || !validateEmail(newEmail)"
                   @click="handleSendCode"
               >
-                <span v-if="sendCooldown > 0">{{ sendCooldown }}s</span>
+                <Loader2 v-if="sendingCode" class="mr-2 h-4 w-4 animate-spin" />
+                <span v-else-if="sendCooldown > 0">{{ sendCooldown }}s</span>
                 <span v-else>发送验证码</span>
               </Button>
             </div>
@@ -177,10 +184,14 @@ onUnmounted(() => {
             <DialogClose as-child>
               <Button variant="outline">取消</Button>
             </DialogClose>
-            <Button :loading="changing" @click="handleChangeEmail">确认更换</Button>
+            <Button :disabled="changing" @click="handleChangeEmail">
+              <Loader2 v-if="changing" class="mr-2 h-4 w-4 animate-spin" />
+              确认更换
+            </Button>
           </DialogFooter>
-        </DialogContent>
+        </DialogScrollContent>
       </Dialog>
     </CardContent>
   </Card>
 </template>
+            

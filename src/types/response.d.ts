@@ -3,3 +3,7 @@ export interface APIResponse<T = unknown> {
     message: string
     updatedData?: T
 }
+
+export interface ApiErrorResponse {
+    message: string
+}

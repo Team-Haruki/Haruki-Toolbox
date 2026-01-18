@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import {ref} from "vue"
 import {toast} from "vue-sonner"
+import {isAxiosError} from "axios"
 import {useUserStore} from "@/store";
 import {updateUserProfile} from "@/api"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
+import type {ApiErrorResponse} from "@/types/response"
+import {Loader2} from "lucide-vue-next"
 
 
 import {
@@ -26,6 +29,7 @@ const userStore = useUserStore();
 const selectedFile = ref<File | null>(null)
 const previewAvatar = ref<string | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const isSaving = ref(false)
 
 function triggerFileInput() {
   fileInputRef.value?.click()
@@ -44,36 +48,43 @@ function onAvatarChange(event: Event) {
 }
 
 async function saveChanges() {
+  if (!userStore.userId) {
+    toast.error("错误", { description: "无法获取用户信息，请重新登录" })
+    return
+  }
+isSaving.value = true
   try {
     let avatarPath = userStore.avatarPath
-    if (selectedFile.value) {
-      const result = await updateUserProfile(userStore.name, selectedFile.value)
-      if (result && result.updatedData?.avatarPath) {
+    const result = await updateUserProfile(
+        userStore.userId, 
+        userStore.name, 
+        selectedFile.value,
+        { skipErrorToast: true }
+    )
+    if (result && result.updatedData?.avatarPath) {
         avatarPath = result.updatedData?.avatarPath
         previewAvatar.value = null
-        userStore.avatarPath = avatarPath
-      }
-      userStore.updateUser && userStore.updateUser({
-        name: userStore.name,
-        avatarPath: avatarPath,
-      })
-      toast.success("资料已保存", {
-        description: "用户资料更新成功",
-      })
-    } else {
-      await updateUserProfile(userStore.name, null)
-      userStore.updateUser && userStore.updateUser({
-        name: userStore.name,
-        avatarPath: avatarPath,
-      })
-      toast.success("资料已保存", {
-        description: "用户资料更新成功",
-      })
     }
-  } catch (e) {
-    toast.error("保存失败", {
-      description: String(e) || "请重试",
+    userStore.setUser({
+        name: userStore.name,
+        avatarPath: avatarPath,
     })
+    toast.success("资料已保存", {
+        description: "用户资料更新成功",
+    })
+    
+  } catch (err) {
+    let message = "保存失败"
+    if (isAxiosError(err)) {
+        message = (err.response?.data as ApiErrorResponse)?.message || err.message
+    } else if (err instanceof Error) {
+        message = err.message
+    }
+    toast.error("保存失败", {
+      description: message,
+    })
+  } finally {
+    isSaving.value = false
   }
 }
 </script>
@@ -99,7 +110,10 @@ async function saveChanges() {
       </div>
     </CardContent>
     <CardFooter>
-      <Button class="w-full bg-primary" @click="saveChanges">保存修改</Button>
+      <Button class="w-full bg-primary" :disabled="isSaving" @click="saveChanges">
+        <Loader2 v-if="isSaving" class="mr-2 h-4 w-4 animate-spin" />
+        保存修改
+      </Button>
     </CardFooter>
   </Card>
 </template>

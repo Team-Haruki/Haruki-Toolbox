@@ -1,25 +1,40 @@
-import {callApiResponse} from "@/api/call-api"
+import {request} from "@/api/call-api"
 import type {
     EmailInfo,
     APIResponse,
     verifyEmailPayload,
     SendEmailVerificationPayload
 } from "@/types";
+import type { AxiosRequestConfig } from "axios";
 
-export async function sendEmailVerificationCode(email: string, challengeToken: string): Promise<APIResponse<null>> {
+export async function sendEmailVerificationCode(
+    email: string, 
+    challengeToken: string, 
+    options?: AxiosRequestConfig
+): Promise<APIResponse<null>> {
     const payload: SendEmailVerificationPayload = {email, challengeToken};
-    return await callApiResponse<null>(
+    return await request<APIResponse<null>>(
         "/api/email/send",
-        "POST",
-        payload
+        {
+            method: "POST",
+            data: payload,
+            ...options
+        }
     )
 }
 
-export async function verifyEmail(email: string, oneTimePassword: string): Promise<APIResponse<EmailInfo>> {
+export async function verifyEmail(
+    email: string, 
+    oneTimePassword: string,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<EmailInfo>> {
     const payload: verifyEmailPayload = {email, oneTimePassword}
-    return await callApiResponse<EmailInfo>(
+    return await request<APIResponse<EmailInfo>>(
         "/api/email/verify",
-        "POST",
-        payload
+        {
+            method: "POST",
+            data: payload,
+            ...options
+        }
     )
 }

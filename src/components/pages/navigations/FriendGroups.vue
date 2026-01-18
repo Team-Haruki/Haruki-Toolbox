@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import axios from 'axios'
-import FriendGroupCard from "@/components/pages/navigations/FriendGroupCard.vue"
+import { apiClient } from '@/api/call-api'
+import FriendGroupCard, { type FriendGroupItem } from "@/components/pages/navigations/FriendGroupCard.vue"
 
 import {
   ref,
@@ -13,17 +13,25 @@ import {
   AccordionContent
 } from "@/components/ui/accordion"
 
-const groupData = ref<Array<any>>([])
+interface FriendGroupData {
+  group: string
+  groupList: FriendGroupItem[]
+}
+
+const groupData = ref<FriendGroupData[]>([])
 const activeIdx = ref<Array<number | null>>([])
-const openGroups = ref<string[]>([]) // 👈 用来控制展开的分组
+const openGroups = ref<string[]>([])
 
 async function fetchGroupData() {
   try {
-    const response = await axios.get('https://suite-api.haruki.seiunx.com/misc/friend_groups')
-    const data = response.data
+    const response = await apiClient.get('/misc/friend_groups')
+    // API returns { status, message, updatedData: [...] }
+    const rawData: FriendGroupData[] = response.data?.updatedData ?? response.data ?? []
+    // Filter out groups with null/empty groupList
+    const data = rawData.filter(g => g.groupList && g.groupList.length > 0)
     groupData.value = data
     activeIdx.value = data.map(() => null)
-    openGroups.value = data.map((g: any) => g.group)
+    openGroups.value = data.map((g) => g.group)
   } catch (error) {
     console.error('Failed to fetch group data:', error)
   }
@@ -54,7 +62,7 @@ onMounted(() => {
       <AccordionContent>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
           <FriendGroupCard
-              v-for="(item, idx) in group.group_list"
+              v-for="(item, idx) in group.groupList"
               :key="item.name"
               :item="item"
               :active="activeIdx[groupIdx] === idx"

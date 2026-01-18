@@ -1,5 +1,5 @@
-import {useUserStore} from "@/store"
-import {callApiRaw} from "@/api/call-api"
+import {request} from "@/api/call-api"
+import type { AxiosRequestConfig } from "axios"
 import type {
     LoginRequest,
     LoginResponse
@@ -8,15 +8,15 @@ import type {
 export async function login(
     email: string,
     password: string,
-    challengeToken: string
+    challengeToken: string,
+    options?: AxiosRequestConfig
 ): Promise<LoginResponse> {
     const payload: LoginRequest = { email, password, challengeToken }
-    const response = await callApiRaw<LoginResponse>("/api/user/login", "POST", payload)
-
-    if (response.status === 200 && response.userData) {
-        const userStore = useUserStore()
-        userStore.setUser(response.userData)
-    }
+    const response = await request<LoginResponse>("/api/user/login", {
+        method: "POST",
+        data: payload,
+        ...options
+    })
 
     return response
 }

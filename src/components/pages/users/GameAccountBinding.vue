@@ -9,6 +9,7 @@ import {Button} from "@/components/ui/button"
 import {Switch} from "@/components/ui/switch"
 import {MoreHorizontal} from "lucide-vue-next"
 import type {ColumnDef} from "@tanstack/vue-table"
+import { extractErrorMessage } from "@/lib/error-utils"
 
 
 import {
@@ -55,8 +56,8 @@ import {
   DialogClose,
   DialogFooter,
   DialogHeader,
-  DialogContent,
-  DialogDescription
+  DialogDescription,
+  DialogScrollContent
 } from "@/components/ui/dialog"
 import {
   DropdownMenu,
@@ -133,18 +134,17 @@ const regionOptions = [
 
 onMounted(() => {
   if (!userStore.isLoggedIn) {
-    toast.warning("请先登录")
+    toast.warning("请先登录", {description: "该操作需要先登录到Haruki工具箱"})
     logout().finally(() => {
       router.push("/user/login")
     })
+    return
   }
-})
-
-onMounted(() => {
   const info = userStore.socialPlatformInfo
   if (!info || !info.verified) {
-    toast.warning("请先完成社交平台账号绑定")
+    toast.warning("请先完成社交平台账号绑定", {description: "该功能需要先完成社交平台绑定"})
     router.push("/user/settings")
+    return
   }
 })
 
@@ -192,13 +192,22 @@ const data = computed(() => Array.isArray(userStore.gameAccountBindings) ? userS
 
 async function handleDelete() {
   if (!deleteTarget.value) return
+  if (!userStore.userId) {
+    toast.error("删除失败", {description: "用户信息缺失，请重新登录"})
+    return
+  }
   try {
-    const resp = await removeGameAccount(deleteTarget.value.server as any, String(deleteTarget.value.userId))
+    const resp = await removeGameAccount(
+        deleteTarget.value.server as any, 
+        String(deleteTarget.value.userId),
+        userStore.userId,
+        { skipErrorToast: true }
+    )
     const updated = (resp as any)?.updatedData?.gameAccountBindings
-    userStore.updateUser({gameAccountBindings: updated})
+    userStore.setUser({gameAccountBindings: updated})
     toast.success("删除成功", {description: "账号已解除绑定"})
-  } catch (e: any) {
-    toast.error("删除失败", {description: e?.message ?? String(e)})
+  } catch (err: unknown) {
+    toast.error("删除失败", {description: extractErrorMessage(err, "删除失败")})
   } finally {
     showDeleteDialog.value = false
   }
@@ -208,6 +217,10 @@ async function handleEditSave() {
   if (!editTarget.value) return
   if (isCreating.value && !verificationTriggered.value) {
     toast.error("保存失败", {description: "新增账号前请先点击“验证”生成验证码，并在游戏内完成设置。"})
+    return
+  }
+  if (!userStore.userId) {
+    toast.error("保存失败", {description: "用户信息缺失，请重新登录"})
     return
   }
   isSaving.value = true
@@ -220,7 +233,7 @@ async function handleEditSave() {
     }
 
     const mysekaiPayload = (server === 'cn' && userStore.allowCNMysekai === false)
-        ? {allowPublicApi: false, allowFixtureApi: false, allow8823: false, allowResona: false}
+        ? {allowPublicApi: false, allowFixtureApi: false, allow8823: false, allowResona: false, allowLuna: false}
         : editTarget.value.mysekai ?? {
       allowPublicApi: false,
       allowFixtureApi: false,
@@ -238,36 +251,38 @@ async function handleEditSave() {
     }
 
     let resp;
+    const options = {
+        suite: suitePayload,
+        mysekai: mysekaiPayload,
+    }
+    const axiosOptions = { skipErrorToast: true }
+
     if (isCreating.value) {
-      resp = await (addGameAccount as any)(
+      resp = await addGameAccount(
         server,
         gameUidStr,
-        gameUidStr,
-        {
-          suite: suitePayload as any,
-          mysekai: mysekaiPayload as any,
-        }
+        userStore.userId,
+        options,
+        axiosOptions
       )
     } else {
-      resp = await (updateGameAccount as any)(
+      resp = await updateGameAccount(
         server,
         gameUidStr,
-        gameUidStr,
-        {
-          suite: suitePayload as any,
-          mysekai: mysekaiPayload as any,
-        }
+        userStore.userId,
+        options,
+        axiosOptions
       )
     }
 
     const updated = (resp as any)?.updatedData?.gameAccountBindings
     if (Array.isArray(updated)) {
-      userStore.updateUser({gameAccountBindings: updated})
+      userStore.setUser({gameAccountBindings: updated})
     }
     toast.success("保存成功", {description: "账号设置已更新"})
     showEditDialog.value = false
-  } catch (e: any) {
-    toast.error("保存失败", {description: e?.message ?? String(e)})
+  } catch (err: unknown) {
+    toast.error("保存失败", {description: extractErrorMessage(err, "保存失败")})
   } finally {
     isSaving.value = false
   }
@@ -283,8 +298,16 @@ async function handleVerify() {
     toast.error("无法生成验证码", {description: "请先选择区服并填写游戏UID"})
     return
   }
+  if (!userStore.userId) {
+    toast.error("无法生成验证码", {description: "用户信息缺失，请重新登录"})
+    return
+  }
   try {
-    const resp = await generateGameAccountVerificationCode(editTarget.value.server as any, uidStr)
+    const resp = await generateGameAccountVerificationCode(
+        editTarget.value.server as any, 
+        userStore.userId,
+        { skipErrorToast: true }
+    )
     generatedCode.value = (resp as any)?.oneTimePassword ?? ""
     if (!generatedCode.value) {
       toast.error("生成失败", {description: "未返回验证码"})
@@ -292,8 +315,8 @@ async function handleVerify() {
     }
     showVerifyDialog.value = true
     verificationTriggered.value = true
-  } catch (e: any) {
-    toast.error("生成失败", {description: e?.message ?? String(e)})
+  } catch (err: unknown) {
+    toast.error("生成失败", {description: extractErrorMessage(err, "生成失败")})
   }
 }
 
@@ -334,7 +357,16 @@ const columns: ColumnDef<GameAccount>[] = [
   {
     accessorKey: "verified",
     header: "验证状态",
-    cell: ({row}) => row.original.verified ? "已验证" : "未验证",
+    cell: ({row}) =>
+        h(
+            "span",
+            {
+              class: row.original.verified
+                  ? "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-500 text-white hover:bg-green-600"
+                  : "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+            },
+            row.original.verified ? "已验证" : "未验证"
+        ),
   },
   {
     id: "actions",
@@ -413,7 +445,7 @@ const table = useVueTable({
     </Card>
 
     <Dialog v-model:open="showEditDialog">
-      <DialogContent class="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent class="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>编辑账号</DialogTitle>
         </DialogHeader>
@@ -611,7 +643,7 @@ const table = useVueTable({
           </DialogClose>
           <Button @click="handleEditSave" :disabled="isSaving || (isCreating && !verificationTriggered)">保存</Button>
         </DialogFooter>
-      </DialogContent>
+      </DialogScrollContent>
     </Dialog>
 
     <AlertDialog v-model:open="showDeleteDialog">
@@ -630,7 +662,7 @@ const table = useVueTable({
     </AlertDialog>
 
     <Dialog v-model:open="showVerifyDialog">
-      <DialogContent class="sm:max-w-[400px]">
+      <DialogScrollContent class="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>验证码生成成功</DialogTitle>
           <DialogDescription>请在游戏内的个性签名中输入以下验证码完成验证<br>点击下方验证码即可一键复制到剪切板</DialogDescription>
@@ -647,7 +679,7 @@ const table = useVueTable({
             <Button @click="verificationAcknowledged = true">我已输入，关闭此窗口</Button>
           </DialogClose>
         </DialogFooter>
-      </DialogContent>
+      </DialogScrollContent>
     </Dialog>
   </div>
 

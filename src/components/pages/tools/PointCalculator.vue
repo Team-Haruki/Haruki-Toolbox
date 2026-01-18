@@ -27,14 +27,19 @@ import {
   LucideAlertCircle
 } from "lucide-vue-next"
 
+interface CalculationResult {
+  selfScoreMin: number
+  selfScoreMax: number
+  deckBonus: number
+}
 
 const inputPt = ref<number | undefined>(undefined);
 const isCalculating = ref<boolean>(false);
-const results = ref<any[]>([]);
+const results = ref<CalculationResult[]>([]);
 const calculatedOnce = ref<boolean>(false);
 const boostRateTable = [1, 5, 10, 15, 20, 25, 27, 29, 31, 33, 35];
 const musicRate = 1;
-const boostIndex = ref<number>(0);
+const boostIndex = ref<string>("0");
 const maxResults = ref<number | undefined>(10);
 const deckBonusCap = ref<number | undefined>(435);
 
@@ -49,7 +54,8 @@ function calcResult(): void {
     return;
   }
 
-  const boost = boostRateTable[boostIndex.value];
+  const index = Number(boostIndex.value);
+  const boost = boostRateTable[isNaN(index) ? 0 : index];
 
   outerLoop:
       for (let k = 0; k <= 100; k++) {
@@ -137,7 +143,7 @@ function calcResult(): void {
                     <SelectItem
                         v-for="(rate, index) in boostRateTable"
                         :key="index"
-                        :value="index"
+                        :value="String(index)"
                     >
                       {{ index }} ({{ rate }}倍)
                     </SelectItem>
@@ -188,5 +194,3 @@ function calcResult(): void {
     </div>
   </div>
 </template>
-
-<style scoped></style>

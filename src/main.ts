@@ -1,15 +1,24 @@
 import './style.css'
 import App from './App.vue'
 import router from './router'
-import {createApp} from 'vue'
-import {createPinia} from 'pinia'
-import {useUserStore} from "@/store";
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import { createPersistedState } from "pinia-plugin-persistedstate";
+import { useUserStore } from "@/store";
+import { useSettingsStore } from "@/settingsStore";
+import { setupInterceptors } from "@/api/call-api";
 
 
 const app = createApp(App)
-app.use(createPinia())
+const pinia = createPinia()
+pinia.use(createPersistedState())
+app.use(pinia)
 const userStore = useUserStore()
-userStore.restoreUser()
+userStore.checkExpiration()
+const settingsStore = useSettingsStore()
+settingsStore.initTheme()
 app.use(router)
+setupInterceptors(router)
 app.mount('#app')
+
 

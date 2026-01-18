@@ -138,7 +138,3 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
     </Card>
   </div>
 </template>
-
-<style scoped>
-
-</style>

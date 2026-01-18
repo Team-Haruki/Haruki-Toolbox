@@ -7,6 +7,9 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue";
+import type { ApiErrorResponse } from "@/types/response";
+import { extractErrorMessage } from "@/lib/error-utils"
+import { Loader2 } from 'lucide-vue-next'
 
 import {
   ref,
@@ -30,8 +33,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTrigger,
-  DialogContent,
-  DialogDescription
+  DialogDescription,
+  DialogScrollContent
 } from "@/components/ui/dialog"
 
 
@@ -44,6 +47,8 @@ const loginTurnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const resetChallengeToken = ref<string | null>(null)
 const resetTurnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const userStore = useUserStore()
+const isLoggingIn = ref(false)
+const isSendingResetEmail = ref(false)
 
 onMounted(() => {
   if (userStore.sessionToken) {
@@ -69,19 +74,15 @@ async function handleResetPassword() {
     toast.error("请先完成人机验证")
     return
   }
+  isSendingResetEmail.value = true
   try {
-    await sendResetPasswordEmail(resetEmail.value, resetChallengeToken.value)
+    await sendResetPasswordEmail(resetEmail.value, resetChallengeToken.value, { skipErrorToast: true })
     toast.success("重置密码邮件已发送", {description: `邮件已发送到 ${resetEmail.value}`})
     resetChallengeToken.value = null
   } catch (err: unknown) {
-    let message = "网络错误，请检查连接"
-    if (isAxiosError(err)) {
-      message = (err.response?.data as any)?.message || err.message
-    } else if (err instanceof Error) {
-      message = err.message
-    }
-    toast.error("重置密码失败", {description: message})
+    toast.error("重置密码失败", {description: extractErrorMessage(err, "网络错误，请检查连接")})
   } finally {
+    isSendingResetEmail.value = false
     resetTurnstileRef.value?.reset()
   }
 }
@@ -91,24 +92,40 @@ async function handleLogin() {
     toast.error("请先完成验证码验证")
     return
   }
+  isLoggingIn.value = true
   try {
-    const response = await login(email.value, password.value, loginChallengeToken.value)
+    const response = await login(email.value, password.value, loginChallengeToken.value, { skipErrorToast: true })
     if (response.status === 200) {
-      toast.success("登录成功")
+      if (response.userData) {
+        userStore.setUser(response.userData)
+      }
+      toast.success("登录成功", {description: "欢迎回到Haruki工具箱"})
       loginChallengeToken.value = null
       await router.push("/")
     } else {
       toast.error("登录失败", {description: response.message || "请稍后再试"})
     }
   } catch (err: unknown) {
+    let title = "登录失败"
     let message = "网络错误，请检查连接"
+    let showToast = true
+    
     if (isAxiosError(err)) {
-      message = (err.response?.data as any)?.message || err.message
+      const status = err.response?.status
+      if (status === 403) {
+        showToast = false
+      } else {
+        message = (err.response?.data as ApiErrorResponse)?.message || err.message
+      }
     } else if (err instanceof Error) {
       message = err.message
     }
-    toast.error("登录失败", {description: message})
+    
+    if (showToast) {
+      toast.error(title, {description: message})
+    }
   } finally {
+    isLoggingIn.value = false
     loginTurnstileRef.value?.reset()
   }
 }
@@ -148,7 +165,7 @@ async function handleLogin() {
                       忘记密码？
                     </a>
                   </DialogTrigger>
-                  <DialogContent class="sm:max-w-[425px]">
+                  <DialogScrollContent class="sm:max-w-[425px]">
                     <DialogHeader>
                       <DialogTitle>重置密码</DialogTitle>
                       <DialogDescription>请输入您的邮箱地址以重置密码</DialogDescription>
@@ -167,15 +184,19 @@ async function handleLogin() {
                       <DialogClose as-child>
                         <Button variant="outline">取消</Button>
                       </DialogClose>
-                      <Button @click="handleResetPassword">确定</Button>
+                      <Button @click="handleResetPassword" :disabled="isSendingResetEmail">
+                        <Loader2 v-if="isSendingResetEmail" class="mr-2 h-4 w-4 animate-spin" />
+                        确定
+                      </Button>
                     </DialogFooter>
-                  </DialogContent>
+                  </DialogScrollContent>
                 </Dialog>
               </div>
               <Input id="password" type="password" placeholder="请输入您的密码" required v-model="password"/>
               <Turnstile :callback="onLoginTurnstileVerified" ref="loginTurnstileRef" />
             </div>
-            <Button type="submit" class="w-full">
+            <Button type="submit" class="w-full" :disabled="isLoggingIn">
+              <Loader2 v-if="isLoggingIn" class="mr-2 h-4 w-4 animate-spin" />
               登录
             </Button>
             <div class="text-center text-sm">

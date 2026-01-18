@@ -1,5 +1,5 @@
-import {defineStore} from "pinia"
-import {ref, computed} from "vue"
+import { defineStore } from "pinia"
+import { ref, computed } from "vue"
 
 import type {
     EmailInfo,
@@ -17,7 +17,9 @@ export const useUserStore = defineStore("user", () => {
     const socialPlatformInfo = ref<SocialPlatformInfo | null>(null)
     const authorizeSocialPlatformInfo = ref<AuthorizeSocialPlatformInfo[] | null>(null)
     const gameAccountBindings = ref<GameAccountBinding[] | null>(null)
+    const iosUploadCode = ref<string | null>(null)
     const sessionToken = ref<string | null>(null)
+    const tokenExpiration = ref<number | null>(null)
     const isLoggedIn = computed(() => !!sessionToken.value)
 
     function setUser(payload: {
@@ -29,8 +31,9 @@ export const useUserStore = defineStore("user", () => {
         socialPlatformInfo?: SocialPlatformInfo | null
         authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
         gameAccountBindings?: GameAccountBinding[] | null
+        iosUploadCode?: string | null
         sessionToken?: string
-    }) {
+    }, options: { resetExpiration?: boolean } = { resetExpiration: true }) {
         if (payload.name !== undefined) name.value = payload.name
         if (payload.userId !== undefined) userId.value = payload.userId
         if (payload.avatarPath !== undefined) avatarPath.value = payload.avatarPath
@@ -39,67 +42,37 @@ export const useUserStore = defineStore("user", () => {
         if (payload.socialPlatformInfo !== undefined) socialPlatformInfo.value = payload.socialPlatformInfo
         if (payload.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = payload.authorizeSocialPlatformInfo
         if (payload.gameAccountBindings !== undefined) gameAccountBindings.value = payload.gameAccountBindings
-        if (payload.sessionToken !== undefined) sessionToken.value = payload.sessionToken
+        if (payload.iosUploadCode !== undefined) iosUploadCode.value = payload.iosUploadCode
 
-        localStorage.setItem("user", JSON.stringify({
-            name: name.value,
-            userId: userId.value,
-            avatarPath: avatarPath.value,
-            emailInfo: emailInfo.value,
-            socialPlatformInfo: socialPlatformInfo.value,
-            authorizeSocialPlatformInfo: authorizeSocialPlatformInfo.value,
-            gameAccountBindings: gameAccountBindings.value,
-            sessionToken: sessionToken.value,
-        }))
-    }
-
-    function updateUser(partial: Partial<{
-        name: string
-        userId: string
-        avatarPath: string
-        allowCNMysekai: boolean
-        emailInfo: EmailInfo
-        socialPlatformInfo: SocialPlatformInfo | null
-        authorizeSocialPlatformInfo: AuthorizeSocialPlatformInfo[] | null
-        gameAccountBindings: GameAccountBinding[] | null
-        sessionToken: string
-    }>) {
-        if (partial.name !== undefined) name.value = partial.name
-        if (partial.avatarPath !== undefined) avatarPath.value = partial.avatarPath
-        if (partial.allowCNMysekai !== undefined) allowCNMysekai.value = partial.allowCNMysekai
-        if (partial.emailInfo !== undefined) emailInfo.value = partial.emailInfo
-        if (partial.socialPlatformInfo !== undefined) socialPlatformInfo.value = partial.socialPlatformInfo
-        if (partial.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = partial.authorizeSocialPlatformInfo
-        if (partial.gameAccountBindings !== undefined) gameAccountBindings.value = partial.gameAccountBindings
-        if (partial.sessionToken !== undefined) sessionToken.value = partial.sessionToken
-
-        const stored = localStorage.getItem("user")
-        const current = stored ? JSON.parse(stored) : {}
-        const updated = {...current, ...partial}
-        localStorage.setItem("user", JSON.stringify(updated))
+        if (payload.sessionToken !== undefined) {
+            sessionToken.value = payload.sessionToken
+            if (options.resetExpiration) {
+                tokenExpiration.value = payload.sessionToken ? Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 : null
+            }
+        }
     }
 
     function clearUser() {
         name.value = "未登录"
         userId.value = null
         avatarPath.value = ""
+        allowCNMysekai.value = null
         emailInfo.value = null
         socialPlatformInfo.value = null
         authorizeSocialPlatformInfo.value = null
         gameAccountBindings.value = null
+        iosUploadCode.value = null
         sessionToken.value = null
-        localStorage.removeItem("user")
+        tokenExpiration.value = null
     }
 
-    function restoreUser() {
-        const stored = localStorage.getItem("user")
-        if (stored) {
-            const parsed = JSON.parse(stored)
-            if (parsed.exp && Date.now() / 1000 > parsed.exp) {
-                clearUser()
-                return
-            }
-            setUser(parsed)
+    function setIOSUploadCode(code: string | null) {
+        iosUploadCode.value = code
+    }
+
+    function checkExpiration() {
+        if (tokenExpiration.value && Math.floor(Date.now() / 1000) > tokenExpiration.value) {
+            clearUser()
         }
     }
 
@@ -112,11 +85,15 @@ export const useUserStore = defineStore("user", () => {
         socialPlatformInfo,
         authorizeSocialPlatformInfo,
         gameAccountBindings,
+        iosUploadCode,
         sessionToken,
+        tokenExpiration,
         isLoggedIn,
         setUser,
+        setIOSUploadCode,
         clearUser,
-        updateUser,
-        restoreUser,
+        checkExpiration
     }
+}, {
+    persist: true
 })

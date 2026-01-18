@@ -1,24 +1,42 @@
-import {callApiResponse} from "@/api/call-api"
+import {request} from "@/api/call-api"
 import type {
     APIResponse,
     SocialPlatform,
     AuthorizeSocialPlatformInfo,
     AddAuthorizeSocialPlatformAccountPayload
 } from "@/types";
+import type { AxiosRequestConfig } from "axios";
 
 
-export async function addAuthorizeSocialPlatformAccount(id: number, platform: SocialPlatform, userId: string, comment: string): Promise<APIResponse<AuthorizeSocialPlatformInfo[]>> {
+export async function addAuthorizeSocialPlatformAccount(
+    toolboxUserId: string,
+    id: number,
+    platform: SocialPlatform,
+    userId: string,
+    comment: string,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<AuthorizeSocialPlatformInfo[]>> {
     const payload: AddAuthorizeSocialPlatformAccountPayload = {platform, userId, comment}
-    return await callApiResponse<AuthorizeSocialPlatformInfo[]>(
-        `/api/user/{toolboxUserId}/authorize-social-platform/${id}`,
-        "PUT",
-        payload
+    return await request<APIResponse<AuthorizeSocialPlatformInfo[]>>(
+        `/api/user/${toolboxUserId}/authorize-social-platform/${id}`,
+        {
+            method: "PUT",
+            data: payload,
+            ...options
+        }
     )
 }
 
-export async function removeAuthorizeSocialPlatformAccount(id: number): Promise<APIResponse<AuthorizeSocialPlatformInfo[]>> {
-    return await callApiResponse<AuthorizeSocialPlatformInfo[]>(
-        `/api/user/{toolboxUserId}/authorize-social-platform/${id}`,
-        "DELETE",
+export async function removeAuthorizeSocialPlatformAccount(
+    toolboxUserId: string,
+    id: number,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<AuthorizeSocialPlatformInfo[]>> {
+    return await request<APIResponse<AuthorizeSocialPlatformInfo[]>>(
+        `/api/user/${toolboxUserId}/authorize-social-platform/${id}`,
+        {
+            method: "DELETE",
+            ...options
+        }
     )
 }
