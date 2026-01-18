@@ -5,8 +5,8 @@ export type EndpointType = 'direct' | 'cdn'
 export type ThemeType = 'light' | 'dark' | 'system'
 
 export const useSettingsStore = defineStore("settings", () => {
-    const directEndpoint = computed(() => import.meta.env.VITE_HARUKI_TOOLBOX_DIRECT_URL || 'https://toolbox-api-direct.haruki.seiunx.com')
-    const cdnEndpoint = computed(() => import.meta.env.VITE_HARUKI_TOOLBOX_CDN_URL || 'https://toolbox-api-cdn.haruki.seiunx.com')
+    const directEndpoint = computed(() => import.meta.env.VITE_HARUKI_TOOLBOX_DIRECT_URL)
+    const cdnEndpoint = computed(() => import.meta.env.VITE_HARUKI_TOOLBOX_CDN_URL)
     const preferredEndpoint = ref<EndpointType>('direct')
     const theme = ref<ThemeType>('system')
     const currentEndpoint = computed(() => {

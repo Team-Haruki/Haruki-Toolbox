@@ -26,6 +26,7 @@ onMounted(async () => {
         toast.success("同步设置成功", {description: "已成功同步当前账号的云端设置"})
       }
     } catch (e) {
+      console.error("Failed to sync settings:", e)
     }
   }
 })

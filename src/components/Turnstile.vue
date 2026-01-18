@@ -113,11 +113,11 @@ onUnmounted(() => {
 
 <style scoped>
 .turnstile-container {
-  inline-size: 100%;
+  width: 100%;
   display: flex;
   justify-content: center;
 
-  @media (max-inline-size: 380px) {
+  @media (max-width: 380px) {
     .turnstile {
       transform: scale(0.85);
       transform-origin: center;
