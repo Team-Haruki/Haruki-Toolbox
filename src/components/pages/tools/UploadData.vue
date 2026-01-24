@@ -49,7 +49,17 @@ import {
   LucideInfo,
   LucideFileKey,
   LucideShieldAlert,
-  LucideAlertTriangle
+  LucideAlertTriangle,
+  FileUp,
+  KeyRound,
+  Upload,
+  User,
+  Database,
+  UploadCloud,
+  ServerCog,
+  Lock,
+  Globe,
+  Loader2
 } from "lucide-vue-next"
 
 const dataType = ref("suite");
@@ -207,13 +217,22 @@ async function submitInheritUpload() {
         </div>
       </Alert>
       <TabsList class="grid w-full grid-cols-2">
-        <TabsTrigger value="file">文件上传</TabsTrigger>
-        <TabsTrigger value="inherit">继承码上传</TabsTrigger>
+        <TabsTrigger value="file" class="flex items-center gap-2">
+          <FileUp class="h-4 w-4" />
+          文件上传
+        </TabsTrigger>
+        <TabsTrigger value="inherit" class="flex items-center gap-2">
+          <KeyRound class="h-4 w-4" />
+          继承码上传
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="file">
         <Card class="dark:green">
           <CardHeader>
-            <CardTitle>手动上传文件</CardTitle>
+            <CardTitle class="flex items-center gap-2">
+              <Upload class="h-6 w-6" />
+              手动上传文件
+            </CardTitle>
             <CardDescription>此选项可以手动上传你捕获的数据</CardDescription>
           </CardHeader>
           <CardContent>
@@ -235,34 +254,46 @@ async function submitInheritUpload() {
                 </div>
                 <div class="flex flex-col space-y-1.5">
                   <Label for="account-select">选择账号（区服 / UID）</Label>
-                  <Select id="account-select" v-model="selectedAccountKey" :disabled="!!disabledReason">
-                    <SelectTrigger class="w-full">
-                      <SelectValue placeholder="请选择已绑定的账号" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="acc in boundAccounts" :key="acc.key" :value="acc.key">
-                        {{ acc.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div class="relative w-full items-center">
+                    <Select id="account-select" v-model="selectedAccountKey" :disabled="!!disabledReason">
+                      <SelectTrigger class="w-full pl-10">
+                        <SelectValue placeholder="请选择已绑定的账号" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="acc in boundAccounts" :key="acc.key" :value="acc.key">
+                          {{ acc.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
+                      <User class="size-4 text-muted-foreground" />
+                    </span>
+                  </div>
                 </div>
                 <div class="flex flex-col space-y-1.5">
                   <Label for="data-type-select">选择数据类型</Label>
-                  <Select id="data-type-select" v-model="dataType" :disabled="!!disabledReason">
-                    <SelectTrigger class="w-full">
-                      <SelectValue placeholder="请选择数据类型"/>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="suite">Suite</SelectItem>
-                      <SelectItem value="mysekai">MySekai</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div class="relative w-full items-center">
+                    <Select id="data-type-select" v-model="dataType" :disabled="!!disabledReason">
+                      <SelectTrigger class="w-full pl-10">
+                        <SelectValue placeholder="请选择数据类型"/>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="suite">Suite</SelectItem>
+                        <SelectItem value="mysekai">MySekai</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
+                      <Database class="size-4 text-muted-foreground" />
+                    </span>
+                  </div>
                 </div>
               </div>
             </form>
           </CardContent>
           <CardFooter class="flex items-center justify-end">
             <Button variant="default" :disabled="isSubmittingFile || !!disabledReason || isCNMySekaiForbidden" @click.prevent="submitFileUpload">
+              <Loader2 v-if="isSubmittingFile" class="mr-2 h-4 w-4 animate-spin" />
+              <UploadCloud v-else class="mr-2 h-4 w-4" />
               {{ isSubmittingFile ? '提交中...' : '提交' }}
             </Button>
           </CardFooter>
@@ -303,7 +334,10 @@ async function submitInheritUpload() {
 
         <Card>
           <CardHeader>
-            <CardTitle>继承码上传数据</CardTitle>
+            <CardTitle class="flex items-center gap-2">
+              <ServerCog class="h-6 w-6" />
+              继承码上传数据
+            </CardTitle>
             <CardDescription>此选项可以提交你的继承码到Haruki工具箱后端捕获你需要的数据</CardDescription>
           </CardHeader>
           <CardContent>
@@ -311,42 +345,64 @@ async function submitInheritUpload() {
               <div class="grid gap-4">
                 <div class="flex flex-col space-y-1.5">
                   <Label for="inherit-id">继承ID</Label>
-                  <Input id="inherit-id" placeholder="请输入继承ID" v-model="inheritId"/>
+                  <div class="relative w-full items-center">
+                    <Input id="inherit-id" class="pl-10" placeholder="请输入继承ID" v-model="inheritId"/>
+                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                      <User class="size-4 text-muted-foreground" />
+                    </span>
+                  </div>
                 </div>
                 <div class="flex flex-col space-y-1.5">
                   <Label for="inherit-password">继承密码</Label>
-                  <InputWithToggle type="password" class="w-full" placeholder="请输入继承密码"
-                                   v-model="inheritPassword"></InputWithToggle>
+                  <div class="relative w-full items-center">
+                    <InputWithToggle type="password" class="w-full pl-10" placeholder="请输入继承密码"
+                                     v-model="inheritPassword"></InputWithToggle>
+                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                      <Lock class="size-4 text-muted-foreground" />
+                    </span>
+                  </div>
                 </div>
                 <div class="flex flex-col space-y-1.5">
                   <Label for="inherit-server-select">选择区服</Label>
-                  <Select id="inherit-server-select" v-model="inheritServer">
-                    <SelectTrigger class="w-full">
-                      <SelectValue placeholder="请选择区服"/>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="jp">日服</SelectItem>
-                      <SelectItem value="en">国际服</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div class="relative w-full items-center">
+                    <Select id="inherit-server-select" v-model="inheritServer">
+                      <SelectTrigger class="w-full pl-10">
+                        <SelectValue placeholder="请选择区服"/>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="jp">日服</SelectItem>
+                        <SelectItem value="en">国际服</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
+                      <Globe class="size-4 text-muted-foreground" />
+                    </span>
+                  </div>
                 </div>
                 <div class="flex flex-col space-y-1.5">
                   <Label for="inherit-data-type-select">选择数据类型</Label>
-                  <Select id="inherit-data-type-select" v-model="dataType">
-                    <SelectTrigger class="w-full">
-                      <SelectValue placeholder="请选择数据类型"/>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="suite">Suite</SelectItem>
-                      <SelectItem value="mysekai">MySekai</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div class="relative w-full items-center">
+                    <Select id="inherit-data-type-select" v-model="dataType">
+                      <SelectTrigger class="w-full pl-10">
+                        <SelectValue placeholder="请选择数据类型"/>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="suite">Suite</SelectItem>
+                        <SelectItem value="mysekai">MySekai</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
+                      <Database class="size-4 text-muted-foreground" />
+                    </span>
+                  </div>
                 </div>
               </div>
             </form>
           </CardContent>
           <CardFooter class="flex items-center justify-end">
             <Button :disabled="isSubmittingInherit" @click.prevent="submitInheritUpload">
+              <Loader2 v-if="isSubmittingInherit" class="mr-2 h-4 w-4 animate-spin" />
+              <UploadCloud v-else class="mr-2 h-4 w-4" />
               {{ isSubmittingInherit ? '提交中...' : '提交' }}
             </Button>
           </CardFooter>

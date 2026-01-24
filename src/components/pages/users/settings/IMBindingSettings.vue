@@ -6,7 +6,7 @@ import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
 import {isAxiosError} from "axios"
 import type {ApiErrorResponse} from "@/types/response"
-import {Loader2} from "lucide-vue-next"
+import {Loader2, Link2, User, Send, Key, Unlink, ShieldCheck} from "lucide-vue-next"
 
 import {
   ref,
@@ -251,7 +251,10 @@ async function handleUnbind() {
 <template>
   <Card class="w-full max-w-md">
     <CardHeader>
-      <CardTitle>社交平台账号绑定设置</CardTitle>
+      <CardTitle class="flex items-center gap-2">
+        <Link2 class="h-6 w-6" />
+        社交平台账号绑定设置
+      </CardTitle>
       <CardDescription>管理您的Haruki工具箱账号的社交平台账号绑定信息</CardDescription>
     </CardHeader>
 
@@ -285,6 +288,7 @@ async function handleUnbind() {
           <AlertDialogTrigger as-child>
             <Button :disabled="clearing" variant="destructive" class="w-full mt-4">
               <Loader2 v-if="clearing" class="mr-2 h-4 w-4 animate-spin" />
+              <Unlink v-else class="mr-2 h-4 w-4" />
               取消绑定
             </Button>
           </AlertDialogTrigger>
@@ -325,7 +329,12 @@ async function handleUnbind() {
           </div>
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">账号</label>
-            <Input v-model="account" placeholder="请输入账号 ID"/>
+            <div class="relative w-full items-center">
+              <Input v-model="account" placeholder="请输入账号 ID" class="pl-10"/>
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <User class="size-4 text-muted-foreground" />
+              </span>
+            </div>
           </div>
         </div>
 
@@ -336,14 +345,26 @@ async function handleUnbind() {
 
         <Button class="w-full" :disabled="sending" @click="handleVerify">
           <Loader2 v-if="sending" class="mr-2 h-4 w-4 animate-spin" />
-          <span v-else>{{ platform === 'qq' ? '发送邮件验证码' : '生成验证码' }}</span>
+          <template v-else>
+            <span v-if="platform === 'qq'" class="flex items-center justify-center">
+              <Send class="h-4 w-4 mr-2" />
+              发送邮件验证码
+            </span>
+            <span v-else class="flex items-center justify-center">
+              <ShieldCheck class="h-4 w-4 mr-2" />
+              生成验证码
+            </span>
+          </template>
         </Button>
       </template>
 
       <Dialog v-model:open="showCodeDialog">
         <DialogScrollContent class="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>绑定社交平台验证</DialogTitle>
+            <DialogTitle class="flex items-center gap-2">
+              <ShieldCheck class="h-5 w-5" />
+              绑定社交平台验证
+            </DialogTitle>
             <DialogDescription>
               <span v-if="dialogMode === 'qq'">请输入邮件中的验证码完成绑定。</span>
               <span v-else>请在对应平台使用下方验证码完成绑定，然后点击“验证”刷新状态。</span>
@@ -352,7 +373,12 @@ async function handleUnbind() {
 
           <div class="py-4 text-center font-mono text-lg">
             <template v-if="dialogMode === 'qq'">
-              <Input v-model="qqInputCode" placeholder="请输入邮件验证码"/>
+              <div class="relative w-full items-center">
+                <Input v-model="qqInputCode" placeholder="请输入邮件验证码" class="pl-10 text-base"/>
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                  <Key class="size-4 text-muted-foreground" />
+                </span>
+              </div>
             </template>
             <template v-else>
               {{ generatedCode }}
@@ -365,6 +391,7 @@ async function handleUnbind() {
             </DialogClose>
             <Button :disabled="verifying" @click="handleDialogVerify">
               <Loader2 v-if="verifying" class="mr-2 h-4 w-4 animate-spin" />
+              <ShieldCheck v-else class="mr-2 h-4 w-4" />
               <span>验证</span>
             </Button>
           </DialogFooter>

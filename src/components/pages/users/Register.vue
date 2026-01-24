@@ -7,7 +7,7 @@ import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
 import { extractErrorMessage } from "@/lib/error-utils"
-import { Loader2, UserPlus, Mail, X } from 'lucide-vue-next'
+import { Loader2, UserPlus, Mail, X, User, Lock, Key, Send, ShieldCheck } from 'lucide-vue-next'
 import {
   Dialog,
   DialogClose,
@@ -127,31 +127,47 @@ async function handleRegister() {
   <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
     <Card class="w-full max-w-md">
       <CardHeader class="text-center">
-        <CardTitle class="text-xl">注册账号</CardTitle>
+        <CardTitle class="text-xl flex items-center justify-center gap-2">
+          <UserPlus class="h-6 w-6" />
+          注册账号
+        </CardTitle>
         <CardDescription>创建一个新的 Haruki 工具箱账号</CardDescription>
       </CardHeader>
       <CardContent>
         <form class="grid gap-6" @submit.prevent="handleRegister">
+
           <div class="grid gap-2">
             <Label for="username">用户名</Label>
-            <Input
-                id="username"
-                v-model="username"
-                type="text"
-                placeholder="请输入用户名"
-                required
-            />
+            <div class="relative w-full items-center">
+              <Input
+                  id="username"
+                  class="pl-10"
+                  v-model="username"
+                  type="text"
+                  placeholder="请输入用户名"
+                  required
+              />
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <User class="size-4 text-muted-foreground" />
+              </span>
+            </div>
           </div>
           <div class="grid gap-2">
             <Label for="email">邮箱</Label>
             <div class="flex gap-2 items-center">
-              <Input
-                  id="email"
-                  v-model="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  required
-              />
+              <div class="relative w-full items-center">
+                <Input
+                    id="email"
+                    v-model="email"
+                    class="pl-10"
+                    type="email"
+                    placeholder="you@example.com"
+                    required
+                />
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                  <Mail class="size-4 text-muted-foreground" />
+                </span>
+              </div>
               <Dialog v-model:open="isDialogOpen">
 
                 <DialogTrigger as-child>
@@ -161,11 +177,17 @@ async function handleRegister() {
                     <Loader2 v-if="isSending" class="mr-2 h-4 w-4 animate-spin" />
                     <template v-if="isSending">发送中...</template>
                     <template v-else-if="countdown > 0">{{ countdown }} 秒后重试</template>
-                    <template v-else>发送验证码</template>
+                    <template v-else>
+                      <Send class="h-4 w-4 mr-2" />
+                      发送验证码
+                    </template>
                   </Button>
                 </DialogTrigger>
                 <DialogScrollContent>
-                  <DialogTitle>发送邮件前人机验证</DialogTitle>
+                  <DialogTitle class="flex items-center gap-2">
+                    <ShieldCheck class="h-5 w-5" />
+                    发送邮件前人机验证
+                  </DialogTitle>
                   <DialogDescription>请完成人机验证以发送您的注册邮件</DialogDescription>
                   <div class="mb-4">
                     <Turnstile @verify="(t: string) => { sendCodeChallengeToken = t }" ref="sendCodeRef" />
@@ -194,23 +216,35 @@ async function handleRegister() {
           </div>
           <div class="grid gap-2">
             <Label for="emailCode">邮箱验证码</Label>
-            <Input
-                id="emailCode"
-                v-model="emailCode"
-                type="text"
-                placeholder="请输入收到的验证码"
-                required
-            />
+            <div class="relative w-full items-center">
+              <Input
+                  id="emailCode"
+                  class="pl-10"
+                  v-model="emailCode"
+                  type="text"
+                  placeholder="请输入收到的验证码"
+                  required
+              />
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <Key class="size-4 text-muted-foreground" />
+              </span>
+            </div>
           </div>
           <div class="grid gap-2">
             <Label for="password">密码</Label>
-            <Input
-                id="password"
-                v-model="password"
-                type="password"
-                placeholder="请输入密码"
-                required
-            />
+            <div class="relative w-full items-center">
+              <Input
+                  id="password"
+                  class="pl-10"
+                  v-model="password"
+                  type="password"
+                  placeholder="请输入密码"
+                  required
+              />
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <Lock class="size-4 text-muted-foreground" />
+              </span>
+            </div>
           </div>
           <Turnstile @verify="(t: string) => { registerChallengeToken = t }" class="md-2" ref="registerTurnstileRef"/>
           <Button type="submit" class="w-full" :disabled="isRegistering">

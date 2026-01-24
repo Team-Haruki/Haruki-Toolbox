@@ -9,7 +9,7 @@ import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {isAxiosError} from "axios"
 import type {ApiErrorResponse} from "@/types/response"
-import {Loader2} from "lucide-vue-next"
+import {Loader2, KeyRound, Lock, Save} from "lucide-vue-next"
 
 
 import {
@@ -86,36 +86,61 @@ const handleChangePassword = async () => {
 <template>
   <Card class="w-full max-w-md">
     <CardHeader>
-      <CardTitle>密码设置</CardTitle>
+      <CardTitle class="flex items-center gap-2">
+        <KeyRound class="h-6 w-6" />
+        密码设置
+      </CardTitle>
       <CardDescription>管理您的Haruki工具箱账号的密码</CardDescription>
     </CardHeader>
     <CardContent>
       <Dialog>
         <DialogTrigger as-child>
-          <Button class="w-full">更换密码</Button>
+          <Button class="w-full">
+            <KeyRound class="h-4 w-4 mr-2" />
+            更换密码
+          </Button>
         </DialogTrigger>
         <DialogScrollContent class="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>更换密码</DialogTitle>
+            <DialogTitle class="flex items-center gap-2">
+              <KeyRound class="h-5 w-5" />
+              更换密码
+            </DialogTitle>
             <DialogDescription>请输入当前密码和新密码</DialogDescription>
           </DialogHeader>
           <div class="grid gap-4 py-4">
             <div class="grid grid-cols-4 items-center gap-4">
               <Label for="old-password" class="text-right">当前密码</Label>
-              <Input id="old-password" type="password" v-model="oldPassword" class="col-span-3" placeholder="请输入当前密码"/>
+              <div class="col-span-3 relative w-full items-center">
+                <Input id="old-password" type="password" v-model="oldPassword" class="pl-10" placeholder="请输入当前密码"/>
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                  <Lock class="size-4 text-muted-foreground" />
+                </span>
+              </div>
             </div>
             <div class="grid grid-cols-4 items-center gap-4">
               <Label for="new-password" class="text-right">新密码</Label>
-              <Input id="new-password" type="password" v-model="newPassword" class="col-span-3" placeholder="请输入新密码"/>
+              <div class="col-span-3 relative w-full items-center">
+                <Input id="new-password" type="password" v-model="newPassword" class="pl-10" placeholder="请输入新密码"/>
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                  <Lock class="size-4 text-muted-foreground" />
+                </span>
+              </div>
             </div>
             <div class="grid grid-cols-4 items-center gap-4">
               <Label for="confirm-password" class="text-right">确认密码</Label>
-              <Input id="confirm-password" type="password" v-model="confirmPassword" class="col-span-3" placeholder="请再次输入新密码"/>
+              <div class="col-span-3 relative w-full items-center">
+                <Input id="confirm-password" type="password" v-model="confirmPassword" class="pl-10" placeholder="请再次输入新密码"/>
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                  <Lock class="size-4 text-muted-foreground" />
+                </span>
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button type="button" :disabled="isSubmitting" @click="handleChangePassword">
               <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
+              <Save v-else class="mr-2 h-4 w-4" />
               提交
             </Button>
           </DialogFooter>

@@ -5,7 +5,7 @@ import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {Checkbox} from "@/components/ui/checkbox"
 import {Input} from "@/components/ui/input"
-import {Copy, PackageCheck, RefreshCw} from 'lucide-vue-next'
+import {Copy, PackageCheck, RefreshCw, KeyRound, Smartphone, Server, Upload, FileText, Earth, Database, Link2} from 'lucide-vue-next'
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,} from '@/components/ui/card'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select"
 import {useUserStore} from "@/store"
@@ -203,7 +203,10 @@ watch(selectedSoftware, (newSoftware) => {
       <CardContent class="space-y-4">
         <Card>
           <CardHeader class="pb-1">
-            <CardTitle class="text-base">上传码</CardTitle>
+            <CardTitle class="text-base flex items-center gap-2">
+              <KeyRound class="h-4 w-4" />
+              上传码
+            </CardTitle>
             <CardDescription>用于验证模块和脚本的访问权限</CardDescription>
           </CardHeader>
           <CardContent>
@@ -239,7 +242,10 @@ watch(selectedSoftware, (newSoftware) => {
         </Card>
         <Card>
           <CardHeader class="pb-1">
-            <CardTitle class="text-base">选择软件</CardTitle>
+            <CardTitle class="text-base flex items-center gap-2">
+              <Smartphone class="h-4 w-4" />
+              选择软件
+            </CardTitle>
             <CardDescription>选择需要安装模块的代理工具</CardDescription>
           </CardHeader>
           <CardContent>
@@ -257,7 +263,10 @@ watch(selectedSoftware, (newSoftware) => {
         </Card>
         <Card>
           <CardHeader class="pb-1">
-            <CardTitle class="text-base">选择工具箱域名</CardTitle>
+            <CardTitle class="text-base flex items-center gap-2">
+              <Server class="h-4 w-4" />
+              选择工具箱域名
+            </CardTitle>
             <CardDescription class="whitespace-pre-line">选择要使用的工具箱服务端域名
               <br>默认情况下使用直连即可
               <br>如果你人不在中国大陆使用困难的话，选择CDN可能有改善</CardDescription>
@@ -277,7 +286,10 @@ watch(selectedSoftware, (newSoftware) => {
         </Card>
         <Card>
           <CardHeader class="pb-1">
-            <CardTitle class="text-base">选择上传数据方式</CardTitle>
+            <CardTitle class="text-base flex items-center gap-2">
+              <Upload class="h-4 w-4" />
+              选择上传数据方式
+            </CardTitle>
             <CardDescription class="whitespace-pre-line">
               脚本上传可以和其他Bot的模块共存，也不会受到工具箱服务端代理宕机的影响，但是不一定稳定
               <br>如果使用脚本上传不稳定，可以切换为307代理</CardDescription>
@@ -305,7 +317,10 @@ watch(selectedSoftware, (newSoftware) => {
         </Card>
         <Card v-if="selectedMode === 'script'">
           <CardHeader class="pb-1">
-            <CardTitle class="text-base">文件分片大小</CardTitle>
+            <CardTitle class="text-base flex items-center gap-2">
+              <FileText class="h-4 w-4" />
+              文件分片大小
+            </CardTitle>
             <CardDescription>分片大小越大，进游戏速度越快，但是有可能软件顶不住
               <br>除非你了解这个东西是做什么的，不然不需要更改</CardDescription>
           </CardHeader>
@@ -324,7 +339,10 @@ watch(selectedSoftware, (newSoftware) => {
         </Card>
         <Card>
           <CardHeader class="pb-1">
-            <CardTitle class="text-base">选择区服</CardTitle>
+            <CardTitle class="text-base flex items-center gap-2">
+              <Earth class="h-4 w-4" />
+              选择区服
+            </CardTitle>
             <CardDescription>选择需要上传数据的游戏服务器（可多选）</CardDescription>
           </CardHeader>
           <CardContent>
@@ -348,7 +366,10 @@ watch(selectedSoftware, (newSoftware) => {
         </Card>
         <Card>
           <CardHeader class="pb-1">
-            <CardTitle class="text-base">选择数据类型</CardTitle>
+            <CardTitle class="text-base flex items-center gap-2">
+              <Database class="h-4 w-4" />
+              选择数据类型
+            </CardTitle>
             <CardDescription>选择需要上传的数据类型（可多选）</CardDescription>
           </CardHeader>
           <CardContent class="space-y-3">
@@ -378,7 +399,10 @@ watch(selectedSoftware, (newSoftware) => {
         </p>
         <Card v-if="moduleUrl">
           <CardHeader class="pb-1">
-            <CardTitle class="text-base">生成的 URL</CardTitle>
+            <CardTitle class="text-base flex items-center gap-2">
+              <Link2 class="h-4 w-4" />
+              生成的 URL
+            </CardTitle>
             <CardDescription>可以复制 URL 手动安装，或点击下方按钮快速安装</CardDescription>
           </CardHeader>
           <CardContent class="space-y-3">

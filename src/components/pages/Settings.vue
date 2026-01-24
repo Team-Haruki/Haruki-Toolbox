@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { toast } from "vue-sonner"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Settings, Sun, Moon, Monitor, Save, RotateCcw } from 'lucide-vue-next'
+import { Settings, Sun, Moon, Monitor, Save, RotateCcw, Network, Palette, Link, CloudLightning, Info } from 'lucide-vue-next'
 import {
   Card,
   CardTitle,
@@ -24,8 +24,8 @@ const settingsStore = useSettingsStore()
 const selectedEndpoint = ref<EndpointType>(settingsStore.preferredEndpoint)
 const selectedTheme = ref<ThemeType>(settingsStore.theme)
 const endpointOptions = [
-  { value: 'direct' as EndpointType, label: '直连', desc: '直接连接后端服务器' },
-  { value: 'cdn' as EndpointType, label: 'CDN', desc: '通过CDN加速访问' },
+  { value: 'direct' as EndpointType, label: '直连', desc: '直接连接后端服务器', icon: Link },
+  { value: 'cdn' as EndpointType, label: 'CDN', desc: '通过CDN加速访问', icon: CloudLightning },
 ]
 const themeOptions = [
   { value: 'light' as ThemeType, label: '浅色', icon: Sun },
@@ -61,7 +61,10 @@ onMounted(() => {
       </CardHeader>
       <CardContent class="space-y-6">
         <div>
-          <Label class="text-base font-medium">服务器端点</Label>
+          <Label class="text-base font-medium flex items-center gap-2">
+            <Network class="w-4 h-4" />
+            服务器端点
+          </Label>
           <p class="text-sm text-muted-foreground mb-2">
             选择服务器连接方式，默认使用直连
             <br>如果你不在中国大陆且连接困难，可以尝试使用CDN加速
@@ -72,7 +75,8 @@ onMounted(() => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="opt in endpointOptions" :key="opt.value" :value="opt.value">
-                <div class="flex flex-col">
+                <div class="flex items-center gap-2">
+                  <component :is="opt.icon" class="w-4 h-4" />
                   <span>{{ opt.label }}</span>
                 </div>
               </SelectItem>
@@ -80,7 +84,10 @@ onMounted(() => {
           </Select>
         </div>
         <div>
-          <Label class="text-base font-medium">外观主题</Label>
+          <Label class="text-base font-medium flex items-center gap-2">
+            <Palette class="w-4 h-4" />
+            外观主题
+          </Label>
           <p class="text-sm text-muted-foreground mb-2">选择您偏好的界面主题</p>
           <Select v-model="selectedTheme">
             <SelectTrigger class="w-full">
@@ -107,8 +114,9 @@ onMounted(() => {
           </Button>
         </div>
         <div class="p-3 bg-muted/50 rounded-lg">
-          <p class="text-sm text-muted-foreground">
-            <strong>提示：</strong>主题设置会立即生效，端点设置将在下次请求时生效。
+          <p class="text-sm text-muted-foreground flex items-center gap-2">
+            <Info class="w-4 h-4" />
+            <span><strong>提示：</strong>主题设置会立即生效，端点设置将在下次请求时生效。</span>
           </p>
         </div>
       </CardContent>

@@ -9,7 +9,7 @@ import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue";
 import type { ApiErrorResponse } from "@/types/response";
 import { extractErrorMessage } from "@/lib/error-utils"
-import { Loader2, LogIn, Mail, X } from 'lucide-vue-next'
+import { Loader2, LogIn, Mail, X, Lock, KeyRound } from 'lucide-vue-next'
 
 import {
   ref,
@@ -136,7 +136,8 @@ async function handleLogin() {
   <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
     <Card class="w-full max-w-md">
       <CardHeader class="text-center">
-        <CardTitle class="text-xl">
+        <CardTitle class="text-xl flex items-center justify-center gap-2">
+          <LogIn class="h-6 w-6" />
           登录到 Haruki 工具箱
         </CardTitle>
         <CardDescription>
@@ -148,13 +149,19 @@ async function handleLogin() {
           <div class="grid gap-6">
             <div class="grid gap-2">
               <Label html-for="email">邮箱</Label>
-              <Input
-                  id="email"
-                  type="email"
-                  placeholder="请输入您的邮箱"
-                  required
-                  v-model="email"
-              />
+              <div class="relative w-full items-center">
+                <Input
+                    id="email"
+                    type="email"
+                    class="pl-10"
+                    placeholder="请输入您的邮箱"
+                    required
+                    v-model="email"
+                />
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                  <Mail class="size-4 text-muted-foreground" />
+                </span>
+              </div>
             </div>
             <div class="grid gap-2">
               <div class="flex items-center">
@@ -167,17 +174,26 @@ async function handleLogin() {
                   </DialogTrigger>
                   <DialogScrollContent class="sm:max-w-[425px]">
                     <DialogHeader>
-                      <DialogTitle>重置密码</DialogTitle>
+                      <DialogTitle class="flex items-center gap-2">
+                        <KeyRound class="h-5 w-5" />
+                        重置密码
+                      </DialogTitle>
                       <DialogDescription>请输入您的邮箱地址以重置密码</DialogDescription>
                     </DialogHeader>
                     <div class="py-4">
                       <Label for="reset-email">邮箱</Label>
-                      <Input
-                          id="reset-email"
-                          type="email"
-                          placeholder="you@example.com"
-                          v-model="resetEmail"
-                      />
+                      <div class="relative w-full items-center mt-2 mb-4">
+                        <Input
+                            id="reset-email"
+                            type="email"
+                            class="pl-10"
+                            placeholder="you@example.com"
+                            v-model="resetEmail"
+                        />
+                        <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                          <Mail class="size-4 text-muted-foreground" />
+                        </span>
+                      </div>
                       <Turnstile :callback="onResetTurnstileVerified" ref="resetTurnstileRef" />
                     </div>
                     <DialogFooter>
@@ -196,7 +212,12 @@ async function handleLogin() {
                   </DialogScrollContent>
                 </Dialog>
               </div>
-              <Input id="password" type="password" placeholder="请输入您的密码" required v-model="password"/>
+              <div class="relative w-full items-center">
+                <Input id="password" type="password" class="pl-10" placeholder="请输入您的密码" required v-model="password"/>
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                  <Lock class="size-4 text-muted-foreground" />
+                </span>
+              </div>
               <Turnstile :callback="onLoginTurnstileVerified" ref="loginTurnstileRef" />
             </div>
             <Button type="submit" class="w-full" :disabled="isLoggingIn">

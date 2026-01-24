@@ -5,7 +5,7 @@ import {resetPassword} from "@/api"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
-import {Loader2} from "lucide-vue-next"
+import {Loader2, Lock, Mail, Check, KeyRound} from "lucide-vue-next"
 import { extractErrorMessage } from "@/lib/error-utils"
 
 
@@ -63,38 +63,59 @@ async function handleSubmit() {
   <div class="w-full flex-1 flex flex-col items-center justify-center gap-6 px-0 py-4">
     <Card class="w-full max-w-md">
       <CardHeader>
-        <CardTitle>重置密码</CardTitle>
+        <CardTitle class="flex items-center gap-2">
+          <KeyRound class="h-6 w-6" />
+          重置密码
+        </CardTitle>
         <CardDescription>重置您的Haruki工具箱账号的密码</CardDescription>
       </CardHeader>
       <CardContent>
         <form @submit.prevent="handleSubmit" class="space-y-4">
           <div>
             <Label for="email">邮箱</Label>
-            <Input id="email" type="email" v-model="email" readonly disabled/>
+            <div class="relative w-full items-center">
+              <Input id="email" type="email" class="pl-10" v-model="email" readonly disabled/>
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <Mail class="size-4 text-muted-foreground" />
+              </span>
+            </div>
           </div>
 
           <div>
             <Label for="new-password">新密码</Label>
-            <Input
-                id="new-password"
-                type="password"
-                v-model="newPassword"
-                placeholder="请输入新密码"
-            />
+            <div class="relative w-full items-center">
+              <Input
+                  id="new-password"
+                  class="pl-10"
+                  type="password"
+                  v-model="newPassword"
+                  placeholder="请输入新密码"
+              />
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <Lock class="size-4 text-muted-foreground" />
+              </span>
+            </div>
           </div>
 
           <div>
             <Label for="confirm-password">确认密码</Label>
-            <Input
-                id="confirm-password"
-                type="password"
-                v-model="confirmPassword"
-                placeholder="请再次输入新密码"
-            />
+            <div class="relative w-full items-center">
+              <Input
+                  id="confirm-password"
+                  class="pl-10"
+                  type="password"
+                  v-model="confirmPassword"
+                  placeholder="请再次输入新密码"
+              />
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <Lock class="size-4 text-muted-foreground" />
+              </span>
+            </div>
           </div>
 
           <Button type="submit" class="w-full" :disabled="isSubmitting">
             <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
+            <Check v-else class="mr-2 h-4 w-4" />
             确认重置
           </Button>
         </form>

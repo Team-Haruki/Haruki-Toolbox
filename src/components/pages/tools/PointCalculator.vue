@@ -24,7 +24,11 @@ import {
 } from "@/components/ui/alert"
 import {
   LucideCalculator,
-  LucideAlertCircle
+  LucideAlertCircle,
+  Target,
+  Percent,
+  List,
+  Flame
 } from "lucide-vue-next"
 
 interface CalculationResult {
@@ -108,7 +112,7 @@ function calcResult(): void {
         <AlertTitle>小提示</AlertTitle>
         <AlertDescription>
           为World Link活动控分时，请不要用支援队！<br>
-          就算真的要用，也一定要点击加成详细确认加成为整数，完全没有小数点！
+          就算真的要用，也一定要点击加成详细确认加成为整数，确认完全没有小数点！
         </AlertDescription>
       </Alert>
       <Card class="w-full">
@@ -117,24 +121,39 @@ function calcResult(): void {
           <CardTitle>活动Pt计算器(仅支持孑然妒火)</CardTitle>
         </CardHeader>
         <div class="space-y-4 p-4">
-          <div>
+          <div class="grid gap-2">
             <Label for="inputPt">目标Pt</Label>
-            <Input id="inputPt" placeholder="请输入目标Pt" v-model.number="inputPt" type="number" min="0"/>
+            <div class="relative w-full items-center">
+              <Input id="inputPt" class="pl-10" placeholder="请输入目标Pt" v-model.number="inputPt" type="number" min="0"/>
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <Target class="size-4 text-muted-foreground" />
+              </span>
+            </div>
           </div>
-          <div>
+          <div class="grid gap-2">
             <Label for="deckBonusCap">卡组加成上限 (%)</Label>
-            <Input id="deckBonusCap" v-model.number="deckBonusCap" type="number" min="1" max="500"
-                   placeholder="请输入卡组加成上限"/>
+            <div class="relative w-full items-center">
+              <Input id="deckBonusCap" class="pl-10" v-model.number="deckBonusCap" type="number" min="1" max="500"
+                     placeholder="请输入卡组加成上限"/>
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <Percent class="size-4 text-muted-foreground" />
+              </span>
+            </div>
           </div>
-          <div>
+          <div class="grid gap-2">
             <Label for="maxResults">输出结果上限</Label>
-            <Input id="maxResults" v-model.number="maxResults" type="number" min="1" placeholder="请输入输出结果上限"/>
+            <div class="relative w-full items-center">
+              <Input id="maxResults" class="pl-10" v-model.number="maxResults" type="number" min="1" placeholder="请输入输出结果上限"/>
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <List class="size-4 text-muted-foreground" />
+              </span>
+            </div>
           </div>
-          <div>
+          <div class="grid gap-2">
             <Label for="boostIndex">体力消耗档位</Label>
-            <div class="w-full">
+            <div class="relative w-full items-center">
               <Select v-model="boostIndex">
-                <SelectTrigger class="w-full">
+                <SelectTrigger class="w-full pl-10">
                   <SelectValue placeholder="选择体力消耗档位"/>
                 </SelectTrigger>
                 <SelectContent>
@@ -150,6 +169,9 @@ function calcResult(): void {
                   </SelectGroup>
                 </SelectContent>
               </Select>
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
+                <Flame class="size-4 text-muted-foreground" />
+              </span>
             </div>
           </div>
 

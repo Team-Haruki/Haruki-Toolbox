@@ -7,7 +7,7 @@ import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
 import {isAxiosError} from "axios"
 import type {ApiErrorResponse} from "@/types/response"
-import { Loader2 } from 'lucide-vue-next'
+import { Loader2, Mail, ArrowRightLeft, Key, Send, Save } from 'lucide-vue-next'
 
 
 import {
@@ -143,7 +143,10 @@ onUnmounted(() => {
 <template>
   <Card class="w-full max-w-md">
     <CardHeader>
-      <CardTitle>邮箱设置</CardTitle>
+      <CardTitle class="flex items-center gap-2">
+        <Mail class="h-6 w-6" />
+        邮箱设置
+      </CardTitle>
       <CardDescription>管理您的邮箱绑定信息</CardDescription>
     </CardHeader>
     <CardContent class="space-y-4">
@@ -156,26 +159,45 @@ onUnmounted(() => {
 
       <Dialog>
         <DialogTrigger as-child>
-          <Button class="w-full">更换邮箱</Button>
+          <Button class="w-full">
+            <ArrowRightLeft class="h-4 w-4 mr-2" />
+            更换邮箱
+          </Button>
         </DialogTrigger>
         <DialogScrollContent class="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>更换邮箱</DialogTitle>
+            <DialogTitle class="flex items-center gap-2">
+              <Mail class="h-5 w-5" />
+              更换邮箱
+            </DialogTitle>
             <DialogDescription>输入新的邮箱，完成人机验证并发送验证码。</DialogDescription>
           </DialogHeader>
 
           <div class="grid gap-4 py-4">
-            <Input placeholder="新的邮箱地址" v-model="newEmail"/>
+            <div class="relative w-full items-center">
+              <Input placeholder="新的邮箱地址" v-model="newEmail" class="pl-10"/>
+              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <Mail class="size-4 text-muted-foreground" />
+              </span>
+            </div>
             <Turnstile @verify="val => (challengeToken = val)" class="mb-2" ref="turnstileRef"/>
             <div class="flex gap-2">
-              <Input placeholder="邮箱验证码" v-model="emailCode" class="flex-1"/>
+              <div class="relative flex-1 items-center">
+                <Input placeholder="邮箱验证码" v-model="emailCode" class="w-full pl-10"/>
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                  <Key class="size-4 text-muted-foreground" />
+                </span>
+              </div>
               <Button
                   :disabled="sendingCode || sendCooldown > 0 || !validateEmail(newEmail)"
                   @click="handleSendCode"
               >
                 <Loader2 v-if="sendingCode" class="mr-2 h-4 w-4 animate-spin" />
                 <span v-else-if="sendCooldown > 0">{{ sendCooldown }}s</span>
-                <span v-else>发送验证码</span>
+                <span v-else class="flex items-center">
+                  <Send class="h-4 w-4 mr-2" />
+                  发送验证码
+                </span>
               </Button>
             </div>
           </div>
@@ -186,6 +208,7 @@ onUnmounted(() => {
             </DialogClose>
             <Button :disabled="changing" @click="handleChangeEmail">
               <Loader2 v-if="changing" class="mr-2 h-4 w-4 animate-spin" />
+              <Save v-else class="mr-2 h-4 w-4" />
               确认更换
             </Button>
           </DialogFooter>

@@ -8,7 +8,7 @@ import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import type {ApiErrorResponse} from "@/types/response"
-import {Loader2} from "lucide-vue-next"
+import {Loader2, UserCog, User, Upload, Save} from "lucide-vue-next"
 
 
 import {
@@ -92,7 +92,10 @@ isSaving.value = true
 <template>
   <Card class="w-full max-w-md">
     <CardHeader>
-      <CardTitle>账号设置</CardTitle>
+      <CardTitle class="flex items-center gap-2">
+        <UserCog class="h-6 w-6" />
+        账号设置
+      </CardTitle>
       <CardDescription>管理您的Haruki工具箱个人信息</CardDescription>
     </CardHeader>
     <CardContent class="space-y-4">
@@ -102,16 +105,25 @@ isSaving.value = true
           <AvatarFallback>{{ userStore.name.charAt(0) }}</AvatarFallback>
         </Avatar>
         <input type="file" accept="image/*" ref="fileInputRef" class="hidden" @change="onAvatarChange"/>
-        <Button variant="outline" @click="triggerFileInput">更换头像</Button>
+        <Button variant="outline" @click="triggerFileInput">
+          <Upload class="h-4 w-4 mr-2" />
+          更换头像
+        </Button>
       </div>
       <div class="grid gap-2">
         <Label for="nickname">昵称</Label>
-        <Input id="nickname" v-model="userStore.name"/>
+        <div class="relative w-full items-center">
+          <Input id="nickname" v-model="userStore.name" class="pl-10"/>
+          <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+            <User class="size-4 text-muted-foreground" />
+          </span>
+        </div>
       </div>
     </CardContent>
     <CardFooter>
       <Button class="w-full bg-primary" :disabled="isSaving" @click="saveChanges">
         <Loader2 v-if="isSaving" class="mr-2 h-4 w-4 animate-spin" />
+        <Save v-else class="mr-2 h-4 w-4" />
         保存修改
       </Button>
     </CardFooter>

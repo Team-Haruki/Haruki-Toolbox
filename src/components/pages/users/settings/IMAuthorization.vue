@@ -6,7 +6,7 @@ import {useUserStore} from "@/store"
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
-import {MoreHorizontal, Pencil, Trash2, Plus, Save, X} from "lucide-vue-next"
+import {MoreHorizontal, Pencil, Trash2, Plus, Save, X, Shield} from "lucide-vue-next"
 import type {ColumnDef} from "@tanstack/vue-table"
 import { extractErrorMessage } from "@/lib/error-utils"
 
@@ -261,7 +261,10 @@ onMounted(() => {
     <CardHeader>
       <div class="flex items-center justify-between gap-2">
         <div>
-          <CardTitle>授权社交平台查询</CardTitle>
+          <CardTitle class="flex items-center gap-2">
+            <Shield class="h-6 w-6" />
+            授权社交平台查询
+          </CardTitle>
           <CardDescription>管理您的Haruki工具箱账号授权可查询游戏账号信息的社交平台</CardDescription>
         </div>
         <Button size="sm" @click="startAdd">
