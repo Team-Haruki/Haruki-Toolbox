@@ -304,7 +304,8 @@ async function handleVerify() {
   }
   try {
     const resp = await generateGameAccountVerificationCode(
-        editTarget.value.server as any, 
+        editTarget.value.server as any,
+        uidStr,
         userStore.userId,
         { skipErrorToast: true }
     )

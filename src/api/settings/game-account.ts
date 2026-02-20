@@ -1,11 +1,10 @@
-import {request} from "@/api/call-api"
+import { request } from "@/api/call-api"
 import type {
     SekaiRegion,
     APIResponse,
     SuiteDataPrivacySettings,
-    GameAccountBindingPayload,
+    CreateGameAccountBindingPayload,
     MysekaiDataPrivacySettings,
-    GenerateGameAccountCodePayload,
     GameAccountBindingsUpdatedData,
     GenerateGameAccountCodeResponse
 } from "@/types"
@@ -22,16 +21,14 @@ export async function addGameAccount(
     },
     axiosOptions?: AxiosRequestConfig
 ): Promise<APIResponse<GameAccountBindingsUpdatedData>> {
-    const payload: GameAccountBindingPayload = {
-        server,
-        userId,
+    const payload: CreateGameAccountBindingPayload = {
         suite: options?.suite ?? null,
         mysekai: options?.mysekai ?? null,
     }
     return await request<APIResponse<GameAccountBindingsUpdatedData>>(
         `/api/user/${userId}/game-account/${server}/${encodeURIComponent(gameUserId)}`,
         {
-            method: "POST",
+            method: "PUT",
             data: payload,
             ...axiosOptions
         }
@@ -48,16 +45,14 @@ export async function updateGameAccount(
     },
     axiosOptions?: AxiosRequestConfig
 ): Promise<APIResponse<GameAccountBindingsUpdatedData>> {
-    const payload: GameAccountBindingPayload = {
-        server,
-        userId,
+    const payload: CreateGameAccountBindingPayload = {
         suite: options?.suite ?? null,
         mysekai: options?.mysekai ?? null,
     }
     return await request<APIResponse<GameAccountBindingsUpdatedData>>(
         `/api/user/${userId}/game-account/${server}/${encodeURIComponent(gameUserId)}`,
         {
-            method: "PUT",
+            method: "PATCH",
             data: payload,
             ...axiosOptions
         }
@@ -81,15 +76,14 @@ export async function removeGameAccount(
 
 export async function generateGameAccountVerificationCode(
     server: SekaiRegion,
+    gameUserId: string,
     userId: string,
     axiosOptions?: AxiosRequestConfig
 ): Promise<GenerateGameAccountCodeResponse> {
-    const payload: GenerateGameAccountCodePayload = {server, userId}
     return await request<GenerateGameAccountCodeResponse>(
-        `/api/user/${userId}/game-account/generate-verification-code`,
+        `/api/user/${userId}/game-account/${server}/${encodeURIComponent(gameUserId)}`,
         {
             method: "POST",
-            data: payload,
             ...axiosOptions
         }
     )

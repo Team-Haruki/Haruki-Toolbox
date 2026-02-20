@@ -1,4 +1,4 @@
-import {SekaiRegion} from "@/types/store";
+import { SekaiRegion } from "@/types/store";
 
 export interface SuiteDataPrivacySettings {
     allowPublicApi: boolean
@@ -23,9 +23,10 @@ export interface GameAccountBindingPayload {
     mysekai?: MysekaiDataPrivacySettings | null
 }
 
-export interface GenerateGameAccountCodePayload {
-    server: SekaiRegion
-    userId: string
+// Used for create/update binding endpoints (server and game_user_id come from URL params)
+export interface CreateGameAccountBindingPayload {
+    suite?: SuiteDataPrivacySettings | null
+    mysekai?: MysekaiDataPrivacySettings | null
 }
 
 export interface GameAccountBinding {
