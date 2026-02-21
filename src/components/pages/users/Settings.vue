@@ -7,6 +7,7 @@ import AccountSettings from "@/components/pages/users/settings/AccountSettings.v
 import ImAuthorization from "@/components/pages/users/settings/IMAuthorization.vue"
 import PasswordSettings from "@/components/pages/users/settings/PasswordSettings.vue"
 import ImBindingSettings from "@/components/pages/users/settings/IMBindingSettings.vue"
+import OAuth2Authorizations from "@/components/pages/users/settings/OAuth2Authorizations.vue"
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -30,5 +31,6 @@ watch(
     <PasswordSettings />
     <ImBindingSettings />
     <ImAuthorization />
+    <OAuth2Authorizations />
   </div>
 </template>

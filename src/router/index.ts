@@ -58,6 +58,11 @@ const routes = [
                 meta: { title: '设置' }
             },
             {
+                path: '/oauth2/consent',
+                component: () => import('@/components/pages/users/OAuthConsent.vue'),
+                meta: { title: '授权第三方应用' }
+            },
+            {
                 path: '/user',
                 component: () => import('@/components/pages/users/UserLayout.vue'),
                 children: [
