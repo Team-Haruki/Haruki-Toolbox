@@ -101,7 +101,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="w-full flex-1 flex flex-col items-center justify-center py-8 px-4">
+  <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
     <Card class="w-full max-w-md" v-if="isValid">
       <CardHeader class="text-center">
         <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
