@@ -22,7 +22,7 @@ const routes = [
             },
             {
                 path: '/friend-links',
-                component: () => import("@/components/Maintenance.vue"),
+                component: () => import("@/components/pages/navigations/FriendLinks.vue"),
                 meta: { title: '友情链接' }
             },
             {
