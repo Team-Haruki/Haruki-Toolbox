@@ -33,7 +33,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="w-full flex-1 p-6 space-y-6">
+  <div class="w-full flex-1 px-0 py-4 space-y-6">
     <!-- 头部介绍区 -->
     <div class="space-y-2 max-w-5xl mx-auto">
       <h1 class="text-3xl font-bold tracking-tight">友情链接</h1>
