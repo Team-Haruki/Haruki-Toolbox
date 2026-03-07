@@ -62,7 +62,7 @@ import {
   Loader2
 } from "lucide-vue-next"
 
-const dataType = ref("suite");
+const dataType = ref("mysekai");
 const selectedFile = ref<File | null>(null)
 const inheritServer = ref("jp");
 const inheritId = ref("");
@@ -323,12 +323,24 @@ async function submitInheritUpload() {
             如果你认为这个风险你负担不起，请不要使用本功能。
           </AlertDescription>
         </Alert>
+
         <Alert class="mb-2 bg-green-300">
           <LucideFileKey class="h-5 w-5"/>
           <AlertTitle class="dark:text-black">提醒</AlertTitle>
           <AlertDescription class="dark:text-black">
             您的引继信息会在提交成功后保存在浏览器本地，以防您丢失引继信息。<br>
             因此强烈建议您不要使用无痕模式，避免意外丢失引继信息。
+          </AlertDescription>
+        </Alert>
+        <Alert class="mb-2 bg-green-300">
+          <LucideFileKey class="h-5 w-5"/>
+          <AlertTitle class="dark:text-black">提醒</AlertTitle>
+          <AlertDescription class="dark:text-black">
+            使用该功能虽然不需要登录Haruki工具箱账号<br>
+            但是如果你没有在Haruki工具箱绑定你要获取数据的游戏账号<br>
+            即使通知上传成功，也不会写入数据库<br>
+            请务必先在Haruki工具箱绑定你要获取数据的游戏账号
+            <router-link to="/user/game-account-bindings" class="text-blue-500 hover:underline">绑定游戏账号</router-link>
           </AlertDescription>
         </Alert>
 

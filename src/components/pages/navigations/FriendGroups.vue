@@ -19,7 +19,6 @@ interface FriendGroupData {
 }
 
 const groupData = ref<FriendGroupData[]>([])
-const activeIdx = ref<Array<number | null>>([])
 const openGroups = ref<string[]>([])
 
 async function fetchGroupData() {
@@ -28,16 +27,13 @@ async function fetchGroupData() {
     const rawData: FriendGroupData[] = response.data?.updatedData ?? response.data ?? []
     const data = rawData.filter(g => g.groupList && g.groupList.length > 0)
     groupData.value = data
-    activeIdx.value = data.map(() => null)
     openGroups.value = data.map((g) => g.group)
   } catch (error) {
     console.error('Failed to fetch group data:', error)
   }
 }
 
-function setActive(groupIdx: number, idx: number | null) {
-  activeIdx.value[groupIdx] = idx
-}
+
 
 onMounted(() => {
   fetchGroupData()
@@ -45,31 +41,37 @@ onMounted(() => {
 </script>
 
 <template>
-  <Accordion
-      v-model="openGroups"
-      type="multiple"
-      class="w-full max-w-5xl mx-auto"
-      collapsible
-  >
-    <AccordionItem
-        v-for="(group, groupIdx) in groupData"
-        :key="group.group"
-        :value="group.group"
+  <div class="w-full flex-1 p-6 space-y-6">
+    <!-- 头部介绍区 -->
+    <div class="space-y-2 max-w-5xl mx-auto">
+      <h1 class="text-3xl font-bold tracking-tight">推荐群聊</h1>
+      <p class="text-muted-foreground">
+        一些与pjsk相关的群聊推荐
+      </p>
+    </div>
+
+    <Accordion
+        v-model="openGroups"
+        type="multiple"
+        class="w-full max-w-5xl mx-auto"
+        collapsible
     >
+      <AccordionItem
+          v-for="group in groupData"
+          :key="group.group"
+          :value="group.group"
+      >
       <AccordionTrigger>{{ group.group }}</AccordionTrigger>
       <AccordionContent>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto p-4">
           <FriendGroupCard
-              v-for="(item, idx) in group.groupList"
+              v-for="item in group.groupList"
               :key="item.name"
               :item="item"
-              :active="activeIdx[groupIdx] === idx"
-              @activate="() => setActive(groupIdx, idx)"
-              @deactivate="() => setActive(groupIdx, null)"
-              :idx="idx"
-          />
-        </div>
-      </AccordionContent>
-    </AccordionItem>
-  </Accordion>
+            />
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  </div>
 </template>
