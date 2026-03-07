@@ -28,7 +28,7 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 </script>
 
 <template>
-  <div class="flex flex-col flex-grow gap-6 w-full p-6 max-w-5xl mx-auto justify-center">
+  <div class="flex flex-col flex-grow gap-6 w-full px-0 py-4 max-w-5xl mx-auto justify-center">
     <div class="text-center mb-8">
       <h1 class="text-4xl font-bold">欢迎使用 Haruki 工具箱</h1>
       <p class="text-lg text-muted-foreground mt-2">请选择您需要的功能</p>
