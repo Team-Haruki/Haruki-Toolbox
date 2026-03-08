@@ -42,7 +42,7 @@ function handleError() {
 function renderTurnstile() {
   if (!container.value || widgetId !== null || !window.turnstile) return
   widgetId = window.turnstile.render(container.value, {
-    sitekey: props.sitekey ?? "0x4AAAAAAB3p7JESUfJ98K3S",
+    sitekey: props.sitekey ?? "1x00000000000000000000AA",
     callback: handleVerify,
     theme: props.theme,
     size: props.size || "flexible",

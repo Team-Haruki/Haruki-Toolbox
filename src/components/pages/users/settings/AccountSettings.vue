@@ -52,7 +52,7 @@ async function saveChanges() {
     toast.error("错误", { description: "无法获取用户信息，请重新登录" })
     return
   }
-isSaving.value = true
+  isSaving.value = true
   try {
     let avatarPath = userStore.avatarPath
     const result = await updateUserProfile(

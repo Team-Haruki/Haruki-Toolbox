@@ -6,6 +6,7 @@ import {Button} from "@/components/ui/button"
 import Turnstile from "@/components/Turnstile.vue"
 import {isAxiosError} from "axios"
 import type {ApiErrorResponse} from "@/types/response"
+import type {SocialPlatform} from "@/types/social-platform"
 import {Loader2, Link2, User, Send, Key, Unlink, ShieldCheck} from "lucide-vue-next"
 
 import {
@@ -73,20 +74,57 @@ function onTurnstileVerify(token: string) {
   turnstileToken.value = token
 }
 
-function extractUpdatedSocial(resp: any) {
-  const root = resp ?? {}
-  const updated = root.updatedData ?? root.data?.updatedData ?? root.data ?? root
-  const sp = updated?.socialPlatformInfo ?? updated?.social_platform_info ?? updated
-  return sp && typeof sp === "object" && ("platform" in sp || "userId" in sp) ? sp : null
+interface SocialPlatformData {
+  platform: string
+  userId: string
+  verified: boolean
 }
 
-function extractGenResult(resp: any) {
-  const root = resp ?? {}
+interface SocialPlatformResponse {
+  status?: number
+  message?: string
+  updatedData?: {
+    socialPlatformInfo?: SocialPlatformData
+    social_platform_info?: SocialPlatformData
+  } | SocialPlatformData
+  data?: {
+    updatedData?: { socialPlatformInfo?: SocialPlatformData }
+  } | SocialPlatformData
+}
+
+interface GenCodeResponse {
+  status?: number
+  message?: string
+  updatedData?: {
+    statusToken?: string
+    oneTimePassword?: string
+    message?: string
+  }
+  data?: {
+    statusToken?: string
+    oneTimePassword?: string
+    message?: string
+  }
+}
+
+function extractUpdatedSocial(resp: SocialPlatformResponse | null): SocialPlatformData | null {
+  const root = resp ?? {} as SocialPlatformResponse
+  const updated = root.updatedData ?? (root.data as Record<string, unknown>)?.updatedData ?? root.data ?? root
+  const sp = (updated as Record<string, unknown>)?.socialPlatformInfo
+    ?? (updated as Record<string, unknown>)?.social_platform_info
+    ?? updated
+  return sp && typeof sp === "object" && ("platform" in (sp as object) || "userId" in (sp as object))
+    ? sp as SocialPlatformData
+    : null
+}
+
+function extractGenResult(resp: GenCodeResponse | null) {
+  const root = resp ?? {} as GenCodeResponse
   const data = root.updatedData ?? root.data ?? root
   return {
-    statusToken: data.statusToken as string,
-    oneTimePassword: data.oneTimePassword as string,
-    message: root.message ?? data.message,
+    statusToken: (data as Record<string, unknown>).statusToken as string | undefined,
+    oneTimePassword: (data as Record<string, unknown>).oneTimePassword as string | undefined,
+    message: root.message ?? (data as Record<string, unknown>).message as string | undefined,
   }
 }
 
@@ -136,7 +174,7 @@ async function handleVerify() {
   }
   try {
     sending.value = true
-    const resp = await generateSocialPlatformVerificationCode(userStore.userId, platform.value as any, account.value.trim())
+    const resp = await generateSocialPlatformVerificationCode(userStore.userId, platform.value as SocialPlatform, account.value.trim()) as GenCodeResponse
     const {statusToken: token, oneTimePassword} = extractGenResult(resp)
     if (!token || !oneTimePassword) {
       toast.error("生成失败", {description: "返回数据不完整"})

@@ -111,17 +111,39 @@ const isCNMySekaiForbidden = computed(() => {
   )
 })
 
-const savedInherit = localStorage.getItem("haruki_inherit");
-if (savedInherit) {
+interface InheritData {
+  inherit_id: string
+  inherit_password: string
+  server: string
+  type: string
+  timestamp?: number
+}
+
+const INHERIT_STORAGE_KEY = "haruki_inherit"
+
+function loadInheritFromStorage(): InheritData | null {
   try {
-    const parsed = JSON.parse(savedInherit);
-    inheritId.value = parsed.inherit_id || "";
-    inheritPassword.value = parsed.inherit_password || "";
-    inheritServer.value = parsed.server || "jp";
-    dataType.value = parsed.type || "suite";
-  } catch (e) {
-    console.error("Failed to parse saved inherit info", e);
+    const raw = localStorage.getItem(INHERIT_STORAGE_KEY)
+    return raw ? JSON.parse(raw) as InheritData : null
+  } catch {
+    return null
   }
+}
+
+function saveInheritToStorage(data: InheritData): void {
+  try {
+    localStorage.setItem(INHERIT_STORAGE_KEY, JSON.stringify({ ...data, timestamp: Date.now() }))
+  } catch {
+    console.warn("Failed to save inherit info to localStorage")
+  }
+}
+
+const savedInherit = loadInheritFromStorage()
+if (savedInherit) {
+  inheritId.value = savedInherit.inherit_id || ""
+  inheritPassword.value = savedInherit.inherit_password || ""
+  inheritServer.value = savedInherit.server || "jp"
+  dataType.value = savedInherit.type || "suite"
 }
 
 function onFileChange(e: Event) {
@@ -189,13 +211,12 @@ async function submitInheritUpload() {
     toast.success("上传成功", {
       description: response?.message || "继承码已上传",
     });
-    localStorage.setItem("haruki_inherit", JSON.stringify({
+    saveInheritToStorage({
       inherit_id: inheritId.value,
       inherit_password: inheritPassword.value,
       server: inheritServer.value,
       type: dataType.value,
-      timestamp: Date.now()
-    }));
+    });
   } catch (e: unknown) {
     console.error(e);
     toast.error("上传失败", {

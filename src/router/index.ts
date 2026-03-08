@@ -1,4 +1,14 @@
 import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router';
+import { useUserStore } from '@/store';
+import { toast } from 'vue-sonner';
+
+declare module 'vue-router' {
+    interface RouteMeta {
+        title?: string
+        requiresAdmin?: boolean
+        requiresSuperAdmin?: boolean
+    }
+}
 
 const routes = [
     {
@@ -97,7 +107,105 @@ const routes = [
                         }),
                     },
                 ]
-            }
+            },
+
+            // ===== 工单系统（用户侧） =====
+            {
+                path: '/tickets',
+                component: () => import('@/components/pages/tickets/TicketList.vue'),
+                meta: { title: '我的工单' }
+            },
+            {
+                path: '/tickets/new',
+                component: () => import('@/components/pages/tickets/TicketCreate.vue'),
+                meta: { title: '创建工单' }
+            },
+            {
+                path: '/tickets/:ticketId',
+                component: () => import('@/components/pages/tickets/TicketDetail.vue'),
+                meta: { title: '工单详情' },
+                props: true,
+            },
+
+            // ===== 管理后台 =====
+            {
+                path: '/admin',
+                component: () => import('@/components/pages/admin/AdminLayout.vue'),
+                meta: { title: '管理后台', requiresAdmin: true },
+                children: [
+                    {
+                        path: '',
+                        redirect: '/admin/dashboard',
+                    },
+                    {
+                        path: 'dashboard',
+                        component: () => import('@/components/pages/admin/Dashboard.vue'),
+                        meta: { title: '仪表盘', requiresAdmin: true },
+                    },
+                    {
+                        path: 'users',
+                        component: () => import('@/components/pages/admin/UserManagement.vue'),
+                        meta: { title: '用户管理', requiresAdmin: true },
+                    },
+                    {
+                        path: 'users/:userId',
+                        component: () => import('@/components/pages/admin/UserDetail.vue'),
+                        meta: { title: '用户详情', requiresAdmin: true },
+                        props: true,
+                    },
+                    {
+                        path: 'oauth-clients',
+                        component: () => import('@/components/pages/admin/OAuthClientManagement.vue'),
+                        meta: { title: 'OAuth客户端管理', requiresAdmin: true },
+                    },
+                    {
+                        path: 'logs',
+                        component: () => import('@/components/pages/admin/SystemLogs.vue'),
+                        meta: { title: '系统日志', requiresAdmin: true },
+                    },
+                    {
+                        path: 'upload-logs',
+                        component: () => import('@/components/pages/admin/UploadLogs.vue'),
+                        meta: { title: '上传日志', requiresAdmin: true },
+                    },
+                    {
+                        path: 'content',
+                        component: () => import('@/components/pages/admin/ContentManagement.vue'),
+                        meta: { title: '内容运营', requiresAdmin: true },
+                    },
+                    {
+                        path: 'config',
+                        component: () => import('@/components/pages/admin/SystemConfig.vue'),
+                        meta: { title: '系统配置', requiresAdmin: true, requiresSuperAdmin: true },
+                    },
+                    {
+                        path: 'game-bindings',
+                        component: () => import('@/components/pages/admin/GameAccountBindings.vue'),
+                        meta: { title: '游戏绑定管理', requiresAdmin: true },
+                    },
+                    {
+                        path: 'sessions',
+                        component: () => import('@/components/pages/admin/AdminSessions.vue'),
+                        meta: { title: '会话管理', requiresAdmin: true },
+                    },
+                    {
+                        path: 'risk',
+                        component: () => import('@/components/pages/admin/RiskManagement.vue'),
+                        meta: { title: '风控管理', requiresAdmin: true },
+                    },
+                    {
+                        path: 'tickets',
+                        component: () => import('@/components/pages/admin/tickets/AdminTicketList.vue'),
+                        meta: { title: '工单管理', requiresAdmin: true },
+                    },
+                    {
+                        path: 'tickets/:ticketId',
+                        component: () => import('@/components/pages/admin/tickets/AdminTicketDetail.vue'),
+                        meta: { title: '工单详情', requiresAdmin: true },
+                        props: true,
+                    },
+                ]
+            },
         ]
     }
 ]
@@ -112,5 +220,20 @@ const router = createRouter({
         return { top: 0, behavior: 'smooth' };
     },
 });
+
+// 权限守卫
+router.beforeEach((to) => {
+    const userStore = useUserStore()
+
+    if (to.meta.requiresSuperAdmin && !userStore.isSuperAdmin) {
+        toast.error("权限不足", { description: "需要超级管理员权限" })
+        return '/'
+    }
+
+    if (to.meta.requiresAdmin && !userStore.isAdmin) {
+        toast.error("权限不足", { description: "需要管理员权限" })
+        return '/'
+    }
+})
 
 export default router;

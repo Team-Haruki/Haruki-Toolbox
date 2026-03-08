@@ -9,6 +9,8 @@ import {Button} from "@/components/ui/button"
 import {Switch} from "@/components/ui/switch"
 import {MoreHorizontal, Pencil, Trash2, Plus, Save, X, ShieldCheck, Check} from "lucide-vue-next"
 import type {ColumnDef} from "@tanstack/vue-table"
+import type {SekaiRegion, GameAccountBinding as GameAccountBindingType} from "@/types/store"
+import type {APIResponse} from "@/types/response"
 import { extractErrorMessage } from "@/lib/error-utils"
 
 
@@ -198,12 +200,13 @@ async function handleDelete() {
   }
   try {
     const resp = await removeGameAccount(
-        deleteTarget.value.server as any, 
+        deleteTarget.value.server as SekaiRegion, 
         String(deleteTarget.value.userId),
         userStore.userId,
         { skipErrorToast: true }
     )
-    const updated = (resp as any)?.updatedData?.gameAccountBindings
+    const respData = resp as APIResponse<{ gameAccountBindings?: GameAccountBindingType[] }>
+    const updated = respData?.updatedData?.gameAccountBindings
     userStore.setUser({gameAccountBindings: updated})
     toast.success("删除成功", {description: "账号已解除绑定"})
   } catch (err: unknown) {
@@ -225,7 +228,7 @@ async function handleEditSave() {
   }
   isSaving.value = true
   try {
-    const server = editTarget.value.server as any
+    const server = editTarget.value.server as SekaiRegion
     const gameUidStr = userIdInput.value?.trim() ?? ""
     if (!/^\d+$/.test(gameUidStr)) {
       toast.error("保存失败", {description: "游戏UID必须是纯数字"})
@@ -275,7 +278,8 @@ async function handleEditSave() {
       )
     }
 
-    const updated = (resp as any)?.updatedData?.gameAccountBindings
+    const respData = resp as APIResponse<{ gameAccountBindings?: GameAccountBindingType[] }>
+    const updated = respData?.updatedData?.gameAccountBindings
     if (Array.isArray(updated)) {
       userStore.setUser({gameAccountBindings: updated})
     }
@@ -304,12 +308,13 @@ async function handleVerify() {
   }
   try {
     const resp = await generateGameAccountVerificationCode(
-        editTarget.value.server as any,
+        editTarget.value.server as SekaiRegion,
         uidStr,
         userStore.userId,
         { skipErrorToast: true }
     )
-    generatedCode.value = (resp as any)?.oneTimePassword ?? ""
+    const respData = resp as APIResponse<{ oneTimePassword?: string }>
+    generatedCode.value = respData?.updatedData?.oneTimePassword ?? ""
     if (!generatedCode.value) {
       toast.error("生成失败", {description: "未返回验证码"})
       return
@@ -326,14 +331,8 @@ async function copyCodeToClipboard() {
   try {
     await navigator.clipboard.writeText(text)
     toast.success("复制成功",{description: "已成功复制验证码，请前往游戏内填写您的验证码"})
-  } catch (err) {
-    const ta = document.createElement("textarea")
-    ta.value = text
-    document.body.appendChild(ta)
-    ta.select()
-    document.execCommand("copy")
-    document.body.removeChild(ta)
-    toast.success("复制成功(兼容模式)",{description: "已成功复制验证码，请前往游戏内填写您的验证码"})
+  } catch {
+    toast.error("复制失败", {description: "请手动选择并复制验证码"})
   }
 }
 

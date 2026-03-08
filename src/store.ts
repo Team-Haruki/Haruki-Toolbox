@@ -13,6 +13,7 @@ export const useUserStore = defineStore("user", () => {
     const userId = ref<string | null>(null)
     const avatarPath = ref<string>("")
     const allowCNMysekai = ref<boolean | null>(null)
+    const role = ref<'user' | 'admin' | 'super_admin'>('user')
     const emailInfo = ref<EmailInfo | null>(null)
     const socialPlatformInfo = ref<SocialPlatformInfo | null>(null)
     const authorizeSocialPlatformInfo = ref<AuthorizeSocialPlatformInfo[] | null>(null)
@@ -21,12 +22,15 @@ export const useUserStore = defineStore("user", () => {
     const sessionToken = ref<string | null>(null)
     const tokenExpiration = ref<number | null>(null)
     const isLoggedIn = computed(() => !!sessionToken.value)
+    const isAdmin = computed(() => role.value === 'admin' || role.value === 'super_admin')
+    const isSuperAdmin = computed(() => role.value === 'super_admin')
 
     function setUser(payload: {
         name?: string
         userId?: string
         avatarPath?: string
         allowCNMysekai?: boolean
+        role?: 'user' | 'admin' | 'super_admin'
         emailInfo?: EmailInfo
         socialPlatformInfo?: SocialPlatformInfo | null
         authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
@@ -38,6 +42,7 @@ export const useUserStore = defineStore("user", () => {
         if (payload.userId !== undefined) userId.value = payload.userId
         if (payload.avatarPath !== undefined) avatarPath.value = payload.avatarPath
         if (payload.allowCNMysekai !== undefined) allowCNMysekai.value = payload.allowCNMysekai
+        if (payload.role !== undefined) role.value = payload.role
         if (payload.emailInfo !== undefined) emailInfo.value = payload.emailInfo
         if (payload.socialPlatformInfo !== undefined) socialPlatformInfo.value = payload.socialPlatformInfo
         if (payload.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = payload.authorizeSocialPlatformInfo
@@ -57,6 +62,7 @@ export const useUserStore = defineStore("user", () => {
         userId.value = null
         avatarPath.value = ""
         allowCNMysekai.value = null
+        role.value = 'user'
         emailInfo.value = null
         socialPlatformInfo.value = null
         authorizeSocialPlatformInfo.value = null
@@ -82,6 +88,7 @@ export const useUserStore = defineStore("user", () => {
         avatarPath,
         emailInfo,
         allowCNMysekai,
+        role,
         socialPlatformInfo,
         authorizeSocialPlatformInfo,
         gameAccountBindings,
@@ -89,6 +96,8 @@ export const useUserStore = defineStore("user", () => {
         sessionToken,
         tokenExpiration,
         isLoggedIn,
+        isAdmin,
+        isSuperAdmin,
         setUser,
         setIOSUploadCode,
         clearUser,

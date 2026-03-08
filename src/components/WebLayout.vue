@@ -4,6 +4,7 @@ import {computed, watch, onMounted, type Component} from 'vue'
 import {Separator} from '@/components/ui/separator'
 import type {SidebarProps} from '@/components/ui/sidebar'
 import SidebarUser from "@/components/pages/users/SidebarUser.vue";
+import { useUserStore } from "@/store"
 
 const harukiLogo = "/assets/haruki.ico"
 
@@ -17,7 +18,9 @@ import {
   LucideNavigation,
   LucideUploadCloud,
   LucideChevronRight,
-  LucideArrowDownToLine
+  LucideArrowDownToLine,
+  LucideShieldCheck,
+  LucideTicket,
 } from 'lucide-vue-next'
 import {
   Avatar,
@@ -72,6 +75,7 @@ const copyrightYear = computed(() => {
 })
 
 const props = defineProps<SidebarProps>()
+const userStore = useUserStore()
 
 interface NavSubItem {
   title: string
@@ -201,6 +205,22 @@ const data: { navMain: NavItem[] } = {
               </SidebarMenuItem>
             </Collapsible>
           </SidebarMenu>
+          <SidebarMenuItem v-if="userStore.isAdmin">
+            <SidebarMenuButton as-child>
+              <router-link to="/admin" class="flex items-center gap-2">
+                <LucideShieldCheck/>
+                <span>管理后台</span>
+              </router-link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem v-if="userStore.isLoggedIn">
+            <SidebarMenuButton as-child>
+              <router-link to="/tickets" class="flex items-center gap-2">
+                <LucideTicket/>
+                <span>我的工单</span>
+              </router-link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton as-child>
               <router-link to="/settings" class="flex items-center gap-2">
