@@ -11,4 +11,16 @@ export default defineConfig({
             '@': path.resolve(__dirname, './src'),
         },
     },
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    "vendor-vue": ["vue", "vue-router", "pinia"],
+                    "vendor-ui": ["reka-ui", "@tanstack/vue-table", "lucide-vue-next"],
+                    "vendor-chart": ["@unovis/ts", "@unovis/vue"],
+                    "vendor-monaco": ["@guolao/vue-monaco-editor"],
+                },
+            },
+        },
+    },
 })

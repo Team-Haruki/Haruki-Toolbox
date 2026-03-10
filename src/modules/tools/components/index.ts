@@ -1,0 +1,5 @@
+export { default as IOSGeneratedUrlsCard } from "./IOSGeneratedUrlsCard.vue"
+export { default as IOSSelectCard } from "./IOSSelectCard.vue"
+export { default as IOSUploadCodeCard } from "./IOSUploadCodeCard.vue"
+export { default as UploadDataFileTab } from "./UploadDataFileTab.vue"
+export { default as UploadDataInheritTab } from "./UploadDataInheritTab.vue"

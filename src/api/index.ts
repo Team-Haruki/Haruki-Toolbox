@@ -1,5 +1,0 @@
-export * from "./login"
-export * from "./logout"
-export * from "./settings"
-export * from "./register"
-export * from "./reset-password"

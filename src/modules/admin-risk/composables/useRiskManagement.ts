@@ -1,0 +1,185 @@
+import { onMounted, ref } from "vue"
+import { toast } from "vue-sonner"
+import { useI18n } from "vue-i18n"
+import { useUserStore } from "@/shared/stores/user"
+import { runAsyncAction } from "@/composables/useAsyncAction"
+import { usePagedList } from "@/composables/usePagedList"
+import { createPageQuery } from "@/core/http/query"
+import {
+  createRiskEvent,
+  getRiskEvents,
+  resolveRiskEvent,
+} from "@/modules/admin-risk/api/event"
+import { getRiskRules, updateRiskRules } from "@/modules/admin-risk/api/rule"
+import type { RiskEvent, RiskRule } from "@/types/admin"
+import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
+
+export function useRiskManagement() {
+  const userStore = useUserStore()
+  const { t, locale } = useI18n()
+
+  const actionLoading = ref(false)
+  const {
+    loading: eventsLoading,
+    items: events,
+    total: totalEvents,
+    page: eventPage,
+    pageSize: eventPageSize,
+    totalPages,
+    load: loadEvents,
+    prevPage,
+    nextPage,
+  } = usePagedList<RiskEvent>({
+    initialPage: 1,
+    initialPageSize: 20,
+    fetchPage: ({ page, pageSize }) => getRiskEvents(createPageQuery(page, pageSize)),
+    onError: (error) => {
+      toastErrorWithExtractedMessage(
+        t("adminRisk.toast.loadEventsFailedTitle"),
+        error,
+        t("adminRisk.toast.loadFailedFallback")
+      )
+    },
+  })
+
+  const createOpen = ref(false)
+  const newSeverity = ref("medium")
+  const newSource = ref("dashboard")
+  const newAction = ref("")
+  const newReason = ref("")
+  const newTargetUserId = ref("")
+  const creating = ref(false)
+
+  const rulesLoading = ref(true)
+  const rules = ref<RiskRule[]>([])
+  const rulesJson = ref("")
+  const rulesSaving = ref(false)
+
+  async function loadRules() {
+    rulesLoading.value = true
+    try {
+      rules.value = await getRiskRules()
+      rulesJson.value = JSON.stringify(rules.value, null, 2)
+    } catch (error: unknown) {
+      toastErrorWithExtractedMessage(
+        t("adminRisk.toast.loadRulesFailedTitle"),
+        error,
+        t("adminRisk.toast.loadFailedFallback")
+      )
+    } finally {
+      rulesLoading.value = false
+    }
+  }
+
+  async function handleCreate() {
+    const action = newAction.value.trim()
+    const reason = newReason.value.trim()
+    if (!action || !reason) {
+      toast.error(t("adminRisk.toast.actionReasonRequired"))
+      return
+    }
+
+    await runAsyncAction(creating, () => createRiskEvent({
+        severity: newSeverity.value,
+        source: newSource.value.trim() || "dashboard",
+        action,
+        reason,
+        targetUserId: newTargetUserId.value.trim() || undefined,
+      }), {
+      successMessage: t("adminRisk.toast.createSuccess"),
+      errorTitle: t("adminRisk.toast.createFailedTitle"),
+      fallbackError: t("adminRisk.toast.createFailedFallback"),
+      onSuccess: async () => {
+        createOpen.value = false
+        newAction.value = ""
+        newReason.value = ""
+        newTargetUserId.value = ""
+        await loadEvents()
+      },
+    })
+  }
+
+  async function handleResolve(eventId: string) {
+    await runAsyncAction(actionLoading, () => resolveRiskEvent(eventId), {
+      successMessage: t("adminRisk.toast.resolveSuccess"),
+      errorTitle: t("adminRisk.toast.actionFailedTitle"),
+      fallbackError: t("adminRisk.toast.actionFailedFallback"),
+      onSuccess: loadEvents,
+    })
+  }
+
+  async function saveRules() {
+    rulesSaving.value = true
+    try {
+      const parsed = JSON.parse(rulesJson.value)
+      if (!Array.isArray(parsed)) {
+        toast.error(t("adminRisk.toast.saveFailedTitle"), {
+          description: t("adminRisk.toast.rulesMustBeJsonArray"),
+        })
+        return
+      }
+
+      await updateRiskRules(parsed)
+      toast.success(t("adminRisk.toast.rulesUpdated"))
+      rules.value = parsed
+      rulesJson.value = JSON.stringify(parsed, null, 2)
+    } catch (error: unknown) {
+      if (error instanceof SyntaxError) {
+        toast.error(t("adminRisk.toast.invalidJson"))
+      } else {
+        toastErrorWithExtractedMessage(
+          t("adminRisk.toast.saveFailedTitle"),
+          error,
+          t("adminRisk.toast.saveFailedFallback")
+        )
+      }
+    } finally {
+      rulesSaving.value = false
+    }
+  }
+
+  function eventTotalPages() {
+    return totalPages.value
+  }
+
+  function formatDate(value: string) {
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) {
+      return t("adminRisk.common.fallback")
+    }
+    return date.toLocaleString(locale.value)
+  }
+
+  onMounted(() => {
+    void loadEvents()
+    void loadRules()
+  })
+
+  return {
+    userStore,
+    eventsLoading,
+    events,
+    totalEvents,
+    eventPage,
+    eventPageSize,
+    actionLoading,
+    createOpen,
+    newSeverity,
+    newSource,
+    newAction,
+    newReason,
+    newTargetUserId,
+    creating,
+    rulesLoading,
+    rules,
+    rulesJson,
+    rulesSaving,
+    handleCreate,
+    handleResolve,
+    saveRules,
+    eventTotalPages,
+    prevPage,
+    nextPage,
+    formatDate,
+  }
+}

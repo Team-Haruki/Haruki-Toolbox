@@ -1,3 +1,5 @@
+import type { EntityId } from "@/types/common"
+
 export type SekaiRegion = "jp" | "en" | "tw" | "kr" | "cn"
 
 export interface EmailInfo {
@@ -12,7 +14,7 @@ export interface SocialPlatformInfo {
 }
 
 export interface AuthorizeSocialPlatformInfo {
-    id: number
+    id: EntityId
     platform: string
     userId: string
     comment: string
