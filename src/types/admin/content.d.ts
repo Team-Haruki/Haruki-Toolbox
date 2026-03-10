@@ -22,4 +22,5 @@ export interface AdminFriendGroupItem {
   bg: string
   groupInfo?: string
   detail?: string
+  url?: string
 }

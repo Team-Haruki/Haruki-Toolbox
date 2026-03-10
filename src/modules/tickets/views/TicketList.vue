@@ -76,7 +76,7 @@ function handleTicketCardKeydown(event: KeyboardEvent, ticketId: string) {
 
     <!-- Filters -->
     <div class="flex items-center gap-3">
-      <Select v-model="statusFilter">
+      <Select :key="locale" v-model="statusFilter">
         <SelectTrigger class="w-36">
           <SelectValue />
         </SelectTrigger>

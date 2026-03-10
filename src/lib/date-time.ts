@@ -1,3 +1,5 @@
+import { getI18nLocale } from "@/shared/i18n"
+
 export type DateInput = string | number | Date | null | undefined
 
 export function toValidDate(value: DateInput): Date | null {
@@ -15,7 +17,7 @@ export function formatDateTimeCN(value: DateInput, fallback = "—"): string {
         return fallback
     }
 
-    return date.toLocaleString("zh-CN")
+    return date.toLocaleString(getI18nLocale())
 }
 
 export function formatDateCN(
@@ -28,7 +30,7 @@ export function formatDateCN(
         return fallback
     }
 
-    return date.toLocaleString("zh-CN", options)
+    return date.toLocaleString(getI18nLocale(), options)
 }
 
 export function formatDateKey(value: DateInput): string {

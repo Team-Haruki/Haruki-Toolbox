@@ -1,4 +1,4 @@
-import { computed, nextTick, onMounted, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
@@ -51,13 +51,30 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
   const messageContainer = ref<HTMLElement | null>(null)
   const assigneeId = ref("")
   const adminUsers = ref<AdminUser[]>([])
+  const adminUsersLoading = ref(false)
+  const adminUsersLoadFailed = ref(false)
   const statusOptions = computed(() => getTicketStatusOptions(t))
   let latestLoadRequestId = 0
+  let actionGeneration = 0
   const resolveTicketId = () => resolveValue(ticketId).trim()
 
   type LoadTicketOptions = {
     silent?: boolean
     throwOnError?: boolean
+  }
+
+  function isActiveActionGeneration(generation: number) {
+    return actionGeneration === generation
+  }
+
+  function isCurrentActionContext(expectedTicketId: string) {
+    return resolveTicketId() === expectedTicketId
+  }
+
+  function invalidateActions() {
+    actionGeneration += 1
+    sending.value = false
+    actionLoading.value = false
   }
 
   async function loadAdminsByRole(role: AdminRoleFilter) {
@@ -80,6 +97,8 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
   }
 
   async function loadAdmins() {
+    adminUsersLoading.value = true
+    adminUsersLoadFailed.value = false
     try {
       const [admins, superAdmins] = await Promise.all([
         loadAdminsByRole("admin"),
@@ -87,9 +106,14 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
       ])
       const allAdmins = [...admins, ...superAdmins]
       adminUsers.value = dedupeAdmins(allAdmins)
-    } catch {
-      // Keep empty option list when fetch fails.
+    } catch (error: unknown) {
       adminUsers.value = []
+      adminUsersLoadFailed.value = true
+      toast.error(t("tickets.adminDetail.toast.loadAssigneesFailedTitle"), {
+        description: extractErrorMessage(error, t("tickets.adminDetail.toast.loadAssigneesFailedFallback")),
+      })
+    } finally {
+      adminUsersLoading.value = false
     }
   }
 
@@ -140,19 +164,23 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     const ticketIdValue = resolveTicketId()
     if (!message || !ticketIdValue || sending.value) return
 
+    const generation = actionGeneration
     sending.value = true
     try {
       await addAdminTicketMessage(ticketIdValue, {
         message,
         internal: isInternal.value,
       })
+      if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
       newMessage.value = ""
       await loadTicket()
     } catch (error: unknown) {
+      if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
       toast.error(t("tickets.adminDetail.toast.sendFailedTitle"), {
         description: extractErrorMessage(error, t("tickets.adminDetail.toast.sendFailedFallback")),
       })
     } finally {
+      if (!isActiveActionGeneration(generation)) return
       sending.value = false
     }
   }
@@ -162,27 +190,34 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     if (actionLoading.value) return
     const ticketIdValue = resolveTicketId()
     if (!ticketIdValue) return
+
+    const generation = actionGeneration
     const status = newStatus
     actionLoading.value = true
     try {
       await updateTicketStatus(ticketIdValue, { status })
+      if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
       try {
         await loadTicket({ silent: true, throwOnError: true })
+        if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
         toast.success(
           t("tickets.adminDetail.toast.statusUpdated", {
             status: ticketStatusLabel(status),
           })
         )
       } catch (error: unknown) {
+        if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
         toast.warning(t("common.postSuccessWarningTitle"), {
           description: extractErrorMessage(error, t("common.postSuccessWarningDescription")),
         })
       }
     } catch (error: unknown) {
+      if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
       toast.error(t("tickets.adminDetail.toast.updateStatusFailedTitle"), {
         description: extractErrorMessage(error, t("tickets.adminDetail.toast.updateStatusFailedFallback")),
       })
     } finally {
+      if (!isActiveActionGeneration(generation)) return
       actionLoading.value = false
     }
   }
@@ -191,23 +226,30 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     if (actionLoading.value) return
     const ticketIdValue = resolveTicketId()
     if (!ticketIdValue) return
+
+    const generation = actionGeneration
     actionLoading.value = true
     try {
       const realId = assigneeId.value === "__none__" ? "" : assigneeId.value
       await assignTicket(ticketIdValue, { assigneeAdminId: realId || undefined })
+      if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
       try {
         await loadTicket({ silent: true, throwOnError: true })
+        if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
         toast.success(realId ? t("tickets.adminDetail.toast.assigned") : t("tickets.adminDetail.toast.unassigned"))
       } catch (error: unknown) {
+        if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
         toast.warning(t("common.postSuccessWarningTitle"), {
           description: extractErrorMessage(error, t("common.postSuccessWarningDescription")),
         })
       }
     } catch (error: unknown) {
+      if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
       toast.error(t("tickets.adminDetail.toast.assignFailedTitle"), {
         description: extractErrorMessage(error, t("tickets.adminDetail.toast.assignFailedFallback")),
       })
     } finally {
+      if (!isActiveActionGeneration(generation)) return
       actionLoading.value = false
     }
   }
@@ -224,6 +266,7 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     () => resolveTicketId(),
     (nextTicketId, previousTicketId) => {
       if (nextTicketId === previousTicketId) return
+      invalidateActions()
       ticket.value = null
       newMessage.value = ""
       isInternal.value = false
@@ -237,6 +280,11 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     void loadAdmins()
   })
 
+  onBeforeUnmount(() => {
+    latestLoadRequestId += 1
+    invalidateActions()
+  })
+
   return {
     loading,
     ticket,
@@ -247,10 +295,13 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     messageContainer,
     assigneeId,
     adminUsers,
+    adminUsersLoading,
+    adminUsersLoadFailed,
     statusOptions,
     sendMessage,
     handleStatusChange,
     handleAssign,
+    loadAdmins,
     isAdmin,
     goBack,
   }

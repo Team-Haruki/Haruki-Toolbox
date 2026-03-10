@@ -462,6 +462,8 @@ export const zhCN = {
     friendGroups: {
       title: "推荐群聊",
       description: "一些与pjsk相关的群聊推荐",
+      loading: "载入中...",
+      empty: "暂无推荐群聊",
       toast: {
         loadFailedTitle: "加载推荐群聊失败",
       },
@@ -684,6 +686,9 @@ export const zhCN = {
       statusChangeLabel: "变更状态",
       assigneeLabel: "处理人",
       assigneePlaceholder: "选择处理人",
+      assigneeLoading: "正在加载处理人列表…",
+      assigneeLoadFailedHint: "处理人列表加载失败",
+      retryLoadAssignees: "重试",
       unassigned: "未分配",
       assignButton: "分配",
       adminSender: "管理员",
@@ -708,6 +713,8 @@ export const zhCN = {
         unassigned: "已取消分配",
         assignFailedTitle: "分配失败",
         assignFailedFallback: "分配失败",
+        loadAssigneesFailedTitle: "加载处理人列表失败",
+        loadAssigneesFailedFallback: "无法加载可分配的管理员列表",
       },
     },
   },
@@ -904,8 +911,8 @@ export const zhCN = {
           },
           reminder1: {
             title: "提醒",
-            line1: "您的引继信息会在提交成功后保存在浏览器本地，以防您丢失引继信息。",
-            line2: "因此强烈建议您不要使用无痕模式，避免意外丢失引继信息。",
+            line1: "仅在您主动勾选后，引继信息才会短期保存在当前浏览器本地。",
+            line2: "本地保存将在 24 小时后自动过期，取消勾选会立即清除已保存的信息。",
           },
           reminder2: {
             title: "提醒",
@@ -915,6 +922,10 @@ export const zhCN = {
             line4: "请务必先在Haruki工具箱绑定你要获取数据的游戏账号",
             bindLink: "绑定游戏账号",
           },
+        },
+        remember: {
+          label: "在当前设备短期记住引继信息",
+          description: "仅保存在本地浏览器，24 小时后自动过期；取消勾选会立即清除。",
         },
         submit: "提交",
         submitting: "提交中...",
@@ -1247,6 +1258,13 @@ export const zhCN = {
     },
     statsDialog: {
       title: "客户端统计",
+      from: "开始时间",
+      to: "结束时间",
+      bucket: "时间粒度",
+      hour: "按小时",
+      day: "按天",
+      apply: "应用筛选",
+      invalidTimeRange: "开始时间不能晚于结束时间",
       totalAuthorizations: "总授权",
       activeAuthorizations: "活跃授权",
       last30Days: "近30天",
@@ -1830,6 +1848,7 @@ export const zhCN = {
       placeholder: "请选择端点",
       direct: "直连",
       cdn: "CDN",
+      unavailable: "当前环境未配置可用端点。",
     },
     theme: {
       label: "外观主题",

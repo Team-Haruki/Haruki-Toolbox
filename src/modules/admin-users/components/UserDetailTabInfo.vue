@@ -64,7 +64,7 @@ const emit = defineEmits<{
     (e: "delete"): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 function handleRoleChange(value: unknown) {
     if (!isUserRole(value)) return
@@ -124,7 +124,7 @@ function handleRoleChange(value: unknown) {
 
       <div v-if="isSuperAdmin" class="flex items-center gap-3">
         <Label>{{ t("adminUsers.detail.info.changeRole") }}</Label>
-        <Select :model-value="user.userData.role" @update:model-value="handleRoleChange">
+        <Select :key="locale" :model-value="user.userData.role" @update:model-value="handleRoleChange">
           <SelectTrigger class="w-40">
             <SelectValue />
           </SelectTrigger>

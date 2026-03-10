@@ -98,8 +98,12 @@ export function useSystemLogs() {
       const anchor = document.createElement("a")
       anchor.href = url
       anchor.download = `system-logs-${formatDateKey(new Date())}.json`
+      document.body.appendChild(anchor)
       anchor.click()
-      URL.revokeObjectURL(url)
+      anchor.remove()
+      window.setTimeout(() => {
+        URL.revokeObjectURL(url)
+      }, 0)
       toast.success(t("adminStatistics.systemLogs.toast.exportSuccess"))
     } catch (error: unknown) {
       toastErrorWithExtractedMessage(

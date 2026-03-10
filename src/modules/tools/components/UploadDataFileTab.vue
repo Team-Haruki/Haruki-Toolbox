@@ -40,7 +40,7 @@ withDefaults(
   }
 )
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const emit = defineEmits<{
   (event: "update:dataType", value: UploadDataType): void
@@ -95,7 +95,7 @@ function handleDataTypeChange(value: string) {
           <div class="flex flex-col space-y-1.5">
             <Label for="account-select">{{ t("tools.uploadData.fileTab.fields.account") }}</Label>
             <div class="relative w-full items-center">
-              <Select
+              <Select :key="locale"
                 id="account-select"
                 :model-value="selectedAccountKey ?? ''"
                 :disabled="!!disabledReason"
@@ -118,7 +118,7 @@ function handleDataTypeChange(value: string) {
           <div class="flex flex-col space-y-1.5">
             <Label for="data-type-select">{{ t("tools.uploadData.fileTab.fields.dataType") }}</Label>
             <div class="relative w-full items-center">
-              <Select
+              <Select :key="locale"
                 id="data-type-select"
                 :model-value="dataType"
                 :disabled="!!disabledReason"

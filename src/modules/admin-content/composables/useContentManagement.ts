@@ -44,7 +44,7 @@ export function useContentManagement() {
     const itemDialogOpen = ref(false)
     const editingItem = ref<AdminFriendGroupItem | null>(null)
     const itemGroupId = ref("")
-    const itemForm = ref({ name: "", avatar: "", bg: "", groupInfo: "", detail: "" })
+    const itemForm = ref({ name: "", avatar: "", bg: "", groupInfo: "", detail: "", url: "" })
     const itemSaving = ref(false)
     let latestLinksRequestId = 0
     let latestGroupsRequestId = 0
@@ -203,7 +203,7 @@ export function useContentManagement() {
     function openCreateItem(groupId: number | string) {
         editingItem.value = null
         itemGroupId.value = String(groupId)
-        itemForm.value = { name: "", avatar: "", bg: "", groupInfo: "", detail: "" }
+        itemForm.value = { name: "", avatar: "", bg: "", groupInfo: "", detail: "", url: "" }
         itemDialogOpen.value = true
     }
 
@@ -216,6 +216,7 @@ export function useContentManagement() {
             bg: item.bg,
             groupInfo: item.groupInfo || "",
             detail: item.detail || "",
+            url: item.url || "",
         }
         itemDialogOpen.value = true
     }
@@ -226,12 +227,23 @@ export function useContentManagement() {
             return
         }
 
+        const normalizedUrl = itemForm.value.url.trim()
+            ? normalizeExternalHttpUrl(itemForm.value.url)
+            : undefined
+        if (itemForm.value.url.trim() && !normalizedUrl) {
+            toast.error(t("adminContent.toast.saveFailedTitle"), {
+                description: t("adminContent.toast.invalidLinkUrl"),
+            })
+            return
+        }
+
         const data = {
             name: itemForm.value.name.trim(),
             avatar: itemForm.value.avatar.trim(),
             bg: itemForm.value.bg.trim(),
             groupInfo: itemForm.value.groupInfo.trim() || undefined,
             detail: itemForm.value.detail.trim() || undefined,
+            url: normalizedUrl,
         }
         const editingItemId = editingItem.value?.id
 

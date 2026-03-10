@@ -28,6 +28,10 @@ export function setI18nLocale(locale: AppLocale) {
   i18n.global.locale.value = locale
 }
 
+export function getI18nLocale(): AppLocale {
+  return i18n.global.locale.value as AppLocale
+}
+
 export function translate(key: string, params?: Record<string, unknown>) {
   return i18n.global.t(key, params) as string
 }

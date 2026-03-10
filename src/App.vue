@@ -71,6 +71,8 @@ async function syncUserSettings(userId: string) {
 
   clearSyncRetryState(false)
   const requestId = ++latestSyncRequestId.value
+  const shouldNotifyRecovery = syncRetryCount.value > 0
+  userStore.setSettingsSyncState("loading")
   syncingUserId.value = userId
   try {
     const response = await getSettings(userId)
@@ -86,11 +88,14 @@ async function syncUserSettings(userId: string) {
     }
 
     userStore.setUser(response.updatedData)
+    userStore.setSettingsSyncState("synced")
     syncedUserId.value = userId
     clearSyncRetryState()
-    toast.success(t("core.sync.successTitle"), {
-      description: t("core.sync.successDescription"),
-    })
+    if (shouldNotifyRecovery) {
+      toast.success(t("core.sync.successTitle"), {
+        description: t("core.sync.successDescription"),
+      })
+    }
   } catch (e) {
     if (requestId !== latestSyncRequestId.value) return
     if (!userStore.isLoggedIn || userStore.userId !== userId) return
@@ -98,6 +103,7 @@ async function syncUserSettings(userId: string) {
     if (willRetry) {
       return
     }
+    userStore.setSettingsSyncState("failed")
     console.error("Failed to sync settings:", e)
     toast.warning(t("core.sync.failedTitle"), {
       description: extractErrorMessage(e, t("core.sync.failedDescription")),
@@ -120,6 +126,7 @@ watch(
       latestSyncRequestId.value += 1
       syncingUserId.value = null
       syncedUserId.value = null
+      userStore.setSettingsSyncState("idle")
       clearSyncRetryState()
     }
   },

@@ -59,7 +59,7 @@ export const IOS_URI_SCHEMES: Record<ClientSoftware, (url: string) => string> = 
   surge: (url) => `surge:///install-module?url=${encodeURIComponent(url)}`,
   qx: (url) => `quantumult-x:///add-resource?remote-resource={"rewrite_remote":["${encodeURIComponent(url)}"]}`,
   loon: (url) => `loon://import?plugin=${encodeURIComponent(url)}`,
-  stash: (url) => `https://link.stash.ws/install-override/${url.replace(/^https?:\/\//, "")}`,
+  stash: (url) => `https://link.stash.ws/install-override/${encodeURIComponent(url)}`,
 }
 
 export function isIOSUploadDataType(value: unknown): value is IOSUploadDataType {

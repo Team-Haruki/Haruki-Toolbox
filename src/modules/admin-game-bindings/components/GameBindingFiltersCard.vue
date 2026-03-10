@@ -36,7 +36,7 @@ defineProps<{
   servers: ReadonlyArray<FilterOption>
   sortOptions: ReadonlyArray<FilterOption>
 }>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const emit = defineEmits<{
   (e: "update:filterQ", value: string): void
@@ -92,7 +92,7 @@ const emit = defineEmits<{
         </div>
         <div class="flex flex-col gap-1.5">
           <Label class="text-sm">{{ t("adminGameBindings.filters.server") }}</Label>
-          <Select :model-value="filterServer" @update:model-value="emit('update:filterServer', String($event ?? ''))">
+          <Select :key="locale" :model-value="filterServer" @update:model-value="emit('update:filterServer', String($event ?? ''))">
             <SelectTrigger class="w-full">
               <SelectValue :placeholder="t('adminGameBindings.filters.allServers')" />
             </SelectTrigger>
@@ -105,7 +105,7 @@ const emit = defineEmits<{
         </div>
         <div class="flex flex-col gap-1.5">
           <Label class="text-sm">{{ t("adminGameBindings.filters.sort") }}</Label>
-          <Select :model-value="filterSort" @update:model-value="emit('update:filterSort', String($event ?? ''))">
+          <Select :key="locale" :model-value="filterSort" @update:model-value="emit('update:filterSort', String($event ?? ''))">
             <SelectTrigger class="w-full">
               <SelectValue :placeholder="t('adminGameBindings.filters.sortPlaceholder')" />
             </SelectTrigger>

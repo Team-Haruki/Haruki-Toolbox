@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/accordion"
 import { useFriendGroups } from "@/modules/navigation/composables/useFriendGroups"
 
-const { groupData, openGroups } = useFriendGroups()
+const { groupData, openGroups, loading } = useFriendGroups()
 const { t } = useI18n()
 </script>
 
@@ -23,7 +23,16 @@ const { t } = useI18n()
       </p>
     </div>
 
+    <div v-if="loading" class="max-w-5xl mx-auto text-center py-10 text-muted-foreground">
+      {{ t("navigationPages.friendGroups.loading") }}
+    </div>
+
+    <div v-else-if="groupData.length === 0" class="max-w-5xl mx-auto text-center py-10 text-muted-foreground">
+      {{ t("navigationPages.friendGroups.empty") }}
+    </div>
+
     <Accordion
+        v-else
         v-model="openGroups"
         type="multiple"
         class="w-full max-w-5xl mx-auto"

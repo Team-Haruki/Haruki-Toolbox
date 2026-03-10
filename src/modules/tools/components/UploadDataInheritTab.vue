@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { SekaiRegion, UploadDataType } from "@/types"
+import type { InheritServer, UploadDataType } from "@/types"
 import { useI18n } from "vue-i18n"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input, InputWithToggle } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -22,17 +23,19 @@ import {
 
 defineProps<{
   dataType: UploadDataType
-  inheritServer: SekaiRegion
+  inheritServer: InheritServer
   inheritId: string
   inheritPassword: string
+  rememberInherit: boolean
   isSubmittingInherit: boolean
 }>()
 
 const emit = defineEmits<{
   (event: "update:dataType", value: UploadDataType): void
-  (event: "update:inheritServer", value: SekaiRegion): void
+  (event: "update:inheritServer", value: InheritServer): void
   (event: "update:inheritId", value: string): void
   (event: "update:inheritPassword", value: string): void
+  (event: "update:rememberInherit", value: boolean): void
   (event: "submit"): void
 }>()
 
@@ -48,7 +51,7 @@ function handleServerChange(value: string) {
     }
   }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 </script>
 
 <template>
@@ -134,7 +137,7 @@ const { t } = useI18n()
           <div class="flex flex-col space-y-1.5">
             <Label for="inherit-server-select">{{ t("tools.uploadData.inheritTab.fields.server") }}</Label>
             <div class="relative w-full items-center">
-              <Select id="inherit-server-select" :model-value="inheritServer" @update:model-value="handleServerChange">
+              <Select :key="locale" id="inherit-server-select" :model-value="inheritServer" @update:model-value="handleServerChange">
                 <SelectTrigger class="w-full pl-10">
                   <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.serverPlaceholder')" />
                 </SelectTrigger>
@@ -151,7 +154,7 @@ const { t } = useI18n()
           <div class="flex flex-col space-y-1.5">
             <Label for="inherit-data-type-select">{{ t("tools.uploadData.inheritTab.fields.dataType") }}</Label>
             <div class="relative w-full items-center">
-              <Select id="inherit-data-type-select" :model-value="dataType" @update:model-value="handleDataTypeChange">
+              <Select :key="locale" id="inherit-data-type-select" :model-value="dataType" @update:model-value="handleDataTypeChange">
                 <SelectTrigger class="w-full pl-10">
                   <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.dataTypePlaceholder')" />
                 </SelectTrigger>
@@ -164,6 +167,17 @@ const { t } = useI18n()
                 <Database class="size-4 text-muted-foreground" />
               </span>
             </div>
+          </div>
+          <div class="flex items-start gap-3 rounded-md border p-3">
+            <Checkbox
+              id="remember-inherit"
+              :checked="rememberInherit"
+              @update:checked="value => emit('update:rememberInherit', Boolean(value))"
+            />
+            <label for="remember-inherit" class="flex flex-col gap-1 cursor-pointer">
+              <span class="text-sm font-medium">{{ t("tools.uploadData.inheritTab.remember.label") }}</span>
+              <span class="text-xs text-muted-foreground">{{ t("tools.uploadData.inheritTab.remember.description") }}</span>
+            </label>
           </div>
         </div>
       </form>

@@ -5,6 +5,7 @@ import { getPublicApiKeys, updatePublicApiKeys } from "@/modules/admin-config/ap
 import { getRuntimeConfig, updateRuntimeConfig } from "@/modules/admin-config/api/runtime"
 import type { PublicApiKeys, RuntimeConfig } from "@/types/admin"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
+import { asRecord } from "@/lib/record-utils"
 
 const EDITOR_OPTIONS = {
   minimap: { enabled: false },
@@ -61,12 +62,33 @@ export function useSystemConfig() {
     }
   }
 
+  function parseApiKeysJson(raw: string): PublicApiKeys | null {
+    const parsed = asRecord(JSON.parse(raw))
+    if (!parsed) return null
+
+    if (Object.values(parsed).some((value) => typeof value !== "string")) {
+      return null
+    }
+
+    return parsed as PublicApiKeys
+  }
+
+  function parseRuntimeJson(raw: string): RuntimeConfig | null {
+    return asRecord(JSON.parse(raw))
+  }
+
   async function saveApiKeys() {
     apiKeysSaving.value = true
     try {
-      const parsed = JSON.parse(apiKeysJson.value)
+      const parsed = parseApiKeysJson(apiKeysJson.value)
+      if (!parsed) {
+        toast.error(t("adminConfig.toast.invalidJson"))
+        return
+      }
+
       await updatePublicApiKeys(parsed)
       apiKeys.value = parsed
+      apiKeysJson.value = JSON.stringify(parsed, null, 2)
       toast.success(t("adminConfig.toast.apiKeysUpdated"))
     } catch (error: unknown) {
       if (error instanceof SyntaxError) {
@@ -86,9 +108,15 @@ export function useSystemConfig() {
   async function saveRuntimeConfig() {
     runtimeSaving.value = true
     try {
-      const parsed = JSON.parse(runtimeJson.value)
+      const parsed = parseRuntimeJson(runtimeJson.value)
+      if (!parsed) {
+        toast.error(t("adminConfig.toast.invalidJson"))
+        return
+      }
+
       await updateRuntimeConfig(parsed)
       runtimeConfig.value = parsed
+      runtimeJson.value = JSON.stringify(parsed, null, 2)
       toast.success(t("adminConfig.toast.runtimeUpdated"))
     } catch (error: unknown) {
       if (error instanceof SyntaxError) {

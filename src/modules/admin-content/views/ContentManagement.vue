@@ -144,6 +144,10 @@ const {
             <Input v-model="itemForm.bg" :placeholder="t('adminContent.itemDialog.placeholders.backgroundUrl')" />
           </div>
           <div class="flex flex-col gap-1.5">
+            <Label>{{ t("adminContent.linkDialog.fields.linkUrl") }}</Label>
+            <Input v-model="itemForm.url" :placeholder="t('adminContent.linkDialog.placeholders.linkUrl')" />
+          </div>
+          <div class="flex flex-col gap-1.5">
             <Label>{{ t("adminContent.itemDialog.fields.groupInfo") }}</Label>
             <Input v-model="itemForm.groupInfo" :placeholder="t('adminContent.itemDialog.placeholders.optional')" />
           </div>

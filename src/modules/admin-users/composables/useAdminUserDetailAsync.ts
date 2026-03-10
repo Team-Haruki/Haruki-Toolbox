@@ -21,6 +21,7 @@ export interface LoadOptions<T> {
 export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoading: Ref<boolean>) {
   const latestLoadRequestIds = new WeakMap<object, number>()
   let loadGeneration = 0
+  let actionGeneration = 0
 
   function nextLoadRequestId(loadRef: object) {
     const nextId = (latestLoadRequestIds.get(loadRef) ?? 0) + 1
@@ -40,21 +41,34 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
     loadGeneration += 1
   }
 
+  function isActiveActionGeneration(generation: number) {
+    return actionGeneration === generation
+  }
+
+  function invalidateActions() {
+    actionGeneration += 1
+    actionLoading.value = false
+    taskLoading.value = false
+  }
+
   async function executeTask<T>(
     errorTitle: string,
     task: () => Promise<T>,
-    options: ActionOptions<T> = {}
+    options: ActionOptions<T> = {},
+    generation: number
   ) {
     let result: T
     try {
       result = await task()
     } catch (error: unknown) {
+      if (!isActiveActionGeneration(generation)) return
       toast.error(errorTitle, {
         description: extractErrorMessage(error, translate("adminUsers.detail.toast.actionFailedFallback")),
       })
       return
     }
 
+    if (!isActiveActionGeneration(generation)) return
     const successAfterAfterSuccess = options.successAfterAfterSuccess ?? true
     if (!successAfterAfterSuccess && options.successMessage) {
       toast.success(options.successMessage)
@@ -65,6 +79,7 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
       try {
         await options.afterSuccess(result)
       } catch (error: unknown) {
+        if (!isActiveActionGeneration(generation)) return
         afterSuccessFailed = true
         console.error("[admin-user-detail] post-success callback failed:", error)
         toast.warning(translate("common.postSuccessWarningTitle"), {
@@ -73,6 +88,7 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
       }
     }
 
+    if (!isActiveActionGeneration(generation)) return
     if (successAfterAfterSuccess && options.successMessage && !afterSuccessFailed) {
       toast.success(options.successMessage)
     }
@@ -117,11 +133,13 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
     task: () => Promise<T>,
     options: ActionOptions<T> = {}
   ) {
+    const generation = actionGeneration
     if (taskLoading.value) return
     taskLoading.value = true
     try {
-      await executeTask(errorTitle, task, options)
+      await executeTask(errorTitle, task, options, generation)
     } finally {
+      if (!isActiveActionGeneration(generation)) return
       taskLoading.value = false
     }
   }
@@ -131,11 +149,13 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
     task: () => Promise<T>,
     options: ActionOptions<T> = {}
   ) {
+    const generation = actionGeneration
     if (actionLoading.value) return
     actionLoading.value = true
     try {
-      await executeTask(errorTitle, task, options)
+      await executeTask(errorTitle, task, options, generation)
     } finally {
+      if (!isActiveActionGeneration(generation)) return
       actionLoading.value = false
     }
   }
@@ -145,5 +165,6 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
     runTask,
     runAction,
     invalidateLoads,
+    invalidateActions,
   }
 }

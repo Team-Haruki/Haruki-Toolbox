@@ -55,7 +55,7 @@ const emit = defineEmits<{
   (e: "batchAllowCN"): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 </script>
 
 <template>
@@ -100,7 +100,7 @@ const { t } = useI18n()
       <PopoverContent class="w-64 p-4">
         <div class="space-y-4">
           <h4 class="font-medium leading-none mb-3">{{ t("adminUsers.management.batch.roleTitle") }}</h4>
-          <Select
+          <Select :key="locale"
             :model-value="batchRoleTarget"
             @update:model-value="emit('update:batchRoleTarget', $event as UserRole)"
           >
@@ -144,7 +144,7 @@ const { t } = useI18n()
       <PopoverContent class="w-64 p-4">
         <div class="space-y-4">
           <h4 class="font-medium leading-none mb-3">{{ t("adminUsers.management.batch.allowCNTitle") }}</h4>
-          <Select
+          <Select :key="locale"
             :model-value="batchAllowCnTarget"
             @update:model-value="emit('update:batchAllowCnTarget', $event as 'true' | 'false')"
           >

@@ -462,6 +462,8 @@ export const enUS = {
     friendGroups: {
       title: "Recommended groups",
       description: "Recommended chat groups related to pjsk",
+      loading: "Loading...",
+      empty: "No recommended groups",
       toast: {
         loadFailedTitle: "Failed to load recommended groups",
       },
@@ -684,6 +686,9 @@ export const enUS = {
       statusChangeLabel: "Change status",
       assigneeLabel: "Assignee",
       assigneePlaceholder: "Select assignee",
+      assigneeLoading: "Loading assignees…",
+      assigneeLoadFailedHint: "Failed to load assignees",
+      retryLoadAssignees: "Retry",
       unassigned: "Unassigned",
       assignButton: "Assign",
       adminSender: "Admin",
@@ -708,6 +713,8 @@ export const enUS = {
         unassigned: "Assignee cleared",
         assignFailedTitle: "Assign failed",
         assignFailedFallback: "Assign failed",
+        loadAssigneesFailedTitle: "Failed to load assignees",
+        loadAssigneesFailedFallback: "Unable to load assignable admins",
       },
     },
   },
@@ -904,8 +911,8 @@ export const enUS = {
           },
           reminder1: {
             title: "Reminder",
-            line1: "Your transfer info is saved locally in browser after successful submission to prevent loss.",
-            line2: "Do not use incognito mode to avoid accidental data loss.",
+            line1: "Transfer info is stored locally only when you explicitly opt in on this device.",
+            line2: "Local storage expires after 24 hours, and unchecking the option clears saved info immediately.",
           },
           reminder2: {
             title: "Reminder",
@@ -915,6 +922,10 @@ export const enUS = {
             line4: "Please bind your target game account first",
             bindLink: "Bind game account",
           },
+        },
+        remember: {
+          label: "Temporarily remember transfer info on this device",
+          description: "Stored only in this browser, expires after 24 hours, and is cleared immediately when unchecked.",
         },
         submit: "Submit",
         submitting: "Submitting...",
@@ -1247,6 +1258,13 @@ export const enUS = {
     },
     statsDialog: {
       title: "Client statistics",
+      from: "Start time",
+      to: "End time",
+      bucket: "Bucket",
+      hour: "Hour",
+      day: "Day",
+      apply: "Apply",
+      invalidTimeRange: "Start time cannot be later than end time",
       totalAuthorizations: "Total authorizations",
       activeAuthorizations: "Active authorizations",
       last30Days: "Last 30 days",
@@ -1830,6 +1848,7 @@ export const enUS = {
       placeholder: "Select endpoint",
       direct: "Direct",
       cdn: "CDN",
+      unavailable: "No available endpoints are configured in this environment.",
     },
     theme: {
       label: "Appearance",

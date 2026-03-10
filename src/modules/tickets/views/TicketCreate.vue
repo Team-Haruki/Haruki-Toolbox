@@ -27,7 +27,7 @@ import {
 } from "@/modules/tickets/lib/display"
 import { useTicketCreate } from "@/modules/tickets/composables/useTicketCreate"
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const {
   subject,
@@ -63,7 +63,7 @@ const {
         <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-2">
             <Label>{{ t("tickets.create.fields.category") }}</Label>
-            <Select v-model="category">
+            <Select :key="locale" v-model="category">
               <SelectTrigger class="h-10">
                 <SelectValue />
               </SelectTrigger>
@@ -76,7 +76,7 @@ const {
           </div>
           <div class="flex flex-col gap-2">
             <Label>{{ t("tickets.create.fields.priority") }}</Label>
-            <Select v-model="priority">
+            <Select :key="locale" v-model="priority">
               <SelectTrigger class="h-10">
                 <SelectValue />
               </SelectTrigger>

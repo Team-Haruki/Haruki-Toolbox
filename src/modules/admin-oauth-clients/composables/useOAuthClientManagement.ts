@@ -80,7 +80,18 @@ export function useOAuthClientManagement() {
     loadClients: refreshClientsStrict,
     onSecretGenerated: showSecret,
   })
-  const { statsOpen, statsLoading, statsClientId, stats, showStats } = useOAuthClientStats()
+  const {
+    statsOpen,
+    statsLoading,
+    statsClientId,
+    stats,
+    statsFrom,
+    statsTo,
+    statsBucket,
+    showStats,
+    applyStatsFilters,
+    resetStatsFilters,
+  } = useOAuthClientStats()
 
   onMounted(() => {
     void loadClients()
@@ -109,6 +120,9 @@ export function useOAuthClientManagement() {
     statsLoading,
     statsClientId,
     stats,
+    statsFrom,
+    statsTo,
+    statsBucket,
     secretDisplayOpen,
     displayedSecret,
     deleteConfirmOpen,
@@ -139,6 +153,8 @@ export function useOAuthClientManagement() {
     handleRestore,
     handleRevoke,
     showStats,
+    applyStatsFilters,
+    resetStatsFilters,
     copySecret,
   }
 }

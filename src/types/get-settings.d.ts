@@ -11,4 +11,5 @@ export interface UserSettings {
     authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
     gameAccountBindings?: GameAccountBinding[] | null
     sessionToken?: string
+    sessionExpiresAt?: string | number | null
 }

@@ -42,6 +42,8 @@ import {useIMBindingSettings} from "@/modules/user-settings/composables/useIMBin
 
 const {
   current,
+  canRetryCurrentVerification,
+  isCurrentQQBinding,
   sending,
   clearing,
   qqInputCode,
@@ -55,10 +57,11 @@ const {
   onTurnstileVerify,
   onTurnstileInvalid,
   handleVerify,
+  handleRetryCurrentVerification,
   handleDialogVerify,
   handleUnbind,
 } = useIMBindingSettings()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 </script>
 
 <template>
@@ -97,6 +100,25 @@ const { t } = useI18n()
           </div>
         </div>
 
+        <div v-if="canRetryCurrentVerification" class="space-y-2">
+          <p v-if="isCurrentQQBinding" class="text-xs text-muted-foreground">
+            {{ t("userSettings.imBinding.captchaHint") }}
+          </p>
+          <Turnstile
+            v-if="isCurrentQQBinding"
+            ref="turnstileRef"
+            @verify="onTurnstileVerify"
+            @invalid="onTurnstileInvalid"
+          />
+          <Button class="w-full" :disabled="sending" @click="handleRetryCurrentVerification">
+            <Loader2 v-if="sending" class="mr-2 h-4 w-4 animate-spin" />
+            <template v-else>
+              <ShieldCheck class="mr-2 h-4 w-4" />
+              {{ isCurrentQQBinding ? t("userSettings.imBinding.actions.sendEmailCode") : t("userSettings.imBinding.actions.generateCode") }}
+            </template>
+          </Button>
+        </div>
+
         <AlertDialog>
           <AlertDialogTrigger as-child>
             <Button :disabled="clearing" variant="destructive" class="w-full mt-4">
@@ -126,7 +148,7 @@ const { t } = useI18n()
         <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">{{ t("userSettings.imBinding.selectPlatformLabel") }}</label>
-            <Select v-model="platform">
+            <Select :key="locale" v-model="platform">
               <SelectTrigger class="w-full">
                 <SelectValue :placeholder="t('userSettings.imBinding.selectPlatformPlaceholder')"/>
               </SelectTrigger>

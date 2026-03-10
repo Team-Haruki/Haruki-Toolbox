@@ -68,6 +68,7 @@ export function usePagedList<TItem, TResponse = PagedData<TItem>>(
       if (options.onSuccess) {
         await options.onSuccess(response)
       }
+      return true
     } catch (error: unknown) {
       if (requestId !== latestRequestId) return
       if (notifyOnError && options.onError) {
@@ -76,6 +77,7 @@ export function usePagedList<TItem, TResponse = PagedData<TItem>>(
       if (loadOptions.throwOnError) {
         throw error
       }
+      return false
     } finally {
       if (requestId !== latestRequestId) return
       loading.value = false
@@ -83,15 +85,27 @@ export function usePagedList<TItem, TResponse = PagedData<TItem>>(
   }
 
   function prevPage() {
-    if (goPrevPage()) {
-      void load()
-    }
+    const previousPage = page.value
+    if (!goPrevPage()) return
+
+    const targetPage = page.value
+    void load().then((success) => {
+      if (success === false && page.value === targetPage) {
+        page.value = previousPage
+      }
+    })
   }
 
   function nextPage() {
-    if (goNextPage()) {
-      void load()
-    }
+    const previousPage = page.value
+    if (!goNextPage()) return
+
+    const targetPage = page.value
+    void load().then((success) => {
+      if (success === false && page.value === targetPage) {
+        page.value = previousPage
+      }
+    })
   }
 
   function reloadFromFirstPage() {

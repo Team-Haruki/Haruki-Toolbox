@@ -2,12 +2,16 @@ import { ref } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
-import type { SekaiRegion, UploadDataType } from "@/types"
+import type { InheritServer, UploadDataType } from "@/types"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { uploadManualData } from "@/modules/user-settings/api/file-upload"
 import { submitInherit } from "@/modules/user-settings/api/inherit"
 import { useUploadDataAccounts } from "@/modules/tools/composables/useUploadDataAccounts"
-import { loadInheritFromStorage, saveInheritToStorage } from "@/modules/tools/lib/inherit-storage"
+import {
+  clearInheritStorage,
+  loadInheritFromStorage,
+  saveInheritToStorage,
+} from "@/modules/tools/lib/inherit-storage"
 
 export function useUploadDataTool() {
   const { t } = useI18n()
@@ -15,9 +19,10 @@ export function useUploadDataTool() {
 
   const dataType = ref<UploadDataType>("mysekai")
   const selectedFile = ref<File | null>(null)
-  const inheritServer = ref<SekaiRegion>("jp")
+  const inheritServer = ref<InheritServer>("jp")
   const inheritId = ref("")
   const inheritPassword = ref("")
+  const rememberInherit = ref(false)
   const isSubmittingFile = ref(false)
   const isSubmittingInherit = ref(false)
   const uploadProgress = ref(0)
@@ -37,6 +42,14 @@ export function useUploadDataTool() {
     inheritPassword.value = savedInherit.inherit_password || ""
     inheritServer.value = savedInherit.server
     dataType.value = savedInherit.type
+    rememberInherit.value = true
+  }
+
+  function setRememberInherit(value: boolean) {
+    rememberInherit.value = value
+    if (!value) {
+      clearInheritStorage()
+    }
   }
 
   function onFileChange(event: Event) {
@@ -58,6 +71,7 @@ export function useUploadDataTool() {
   }
 
   async function submitFileUpload() {
+    if (isSubmittingFile.value) return
     if (disabledReason.value) {
       toast.warning(disabledReason.value)
       return
@@ -115,12 +129,20 @@ export function useUploadDataTool() {
   }
 
   async function submitInheritUpload() {
+    if (isSubmittingInherit.value) return
     const normalizedInheritId = inheritId.value.trim()
     const normalizedInheritPassword = inheritPassword.value.trim()
 
     if (!normalizedInheritId || !normalizedInheritPassword) {
       toast.warning(t("tools.uploadData.toast.inheritIncompleteTitle"), {
         description: t("tools.uploadData.toast.inheritIncompleteDescription"),
+      })
+      return
+    }
+
+    if (inheritServer.value === "cn" && dataType.value === "mysekai" && userStore.allowCNMysekai !== true) {
+      toast.error(t("tools.uploadData.toast.operationForbiddenTitle"), {
+        description: t("tools.uploadData.toast.operationForbiddenDescription"),
       })
       return
     }
@@ -139,12 +161,16 @@ export function useUploadDataTool() {
         description: response?.message || t("tools.uploadData.toast.uploadSuccessInheritFallback"),
       })
 
-      saveInheritToStorage({
-        inherit_id: normalizedInheritId,
-        inherit_password: normalizedInheritPassword,
-        server: inheritServer.value,
-        type: dataType.value,
-      })
+      if (rememberInherit.value) {
+        saveInheritToStorage({
+          inherit_id: normalizedInheritId,
+          inherit_password: normalizedInheritPassword,
+          server: inheritServer.value,
+          type: dataType.value,
+        })
+      } else {
+        clearInheritStorage()
+      }
     } catch (error: unknown) {
       toast.error(t("tools.uploadData.toast.uploadFailedTitle"), {
         description: extractErrorMessage(error, t("tools.uploadData.toast.uploadFailedFallback")),
@@ -159,6 +185,7 @@ export function useUploadDataTool() {
     inheritServer,
     inheritId,
     inheritPassword,
+    rememberInherit,
     isSubmittingFile,
     isSubmittingInherit,
     uploadProgress,
@@ -168,6 +195,7 @@ export function useUploadDataTool() {
     disabledReason,
     isCNMySekaiForbidden,
     onFileChange,
+    setRememberInherit,
     submitFileUpload,
     submitInheritUpload,
   }

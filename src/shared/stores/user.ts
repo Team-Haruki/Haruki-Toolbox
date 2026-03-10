@@ -9,6 +9,27 @@ import type {
     AuthorizeSocialPlatformInfo,
 } from "@/types/store";
 
+export type UserSettingsSyncState = "idle" | "loading" | "synced" | "failed"
+
+function normalizeTokenExpiration(value: string | number | null | undefined): number | null {
+    if (value == null) {
+        return null
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return Math.floor(value > 1_000_000_000_000 ? value / 1000 : value)
+    }
+
+    if (typeof value === "string" && value.trim()) {
+        const date = new Date(value)
+        if (!Number.isNaN(date.getTime())) {
+            return Math.floor(date.getTime() / 1000)
+        }
+    }
+
+    return null
+}
+
 export const useUserStore = defineStore("user", () => {
     const name = ref<string>("")
     const userId = ref<string | null>(null)
@@ -22,6 +43,7 @@ export const useUserStore = defineStore("user", () => {
     const iosUploadCode = ref<string | null>(null)
     const sessionToken = ref<string | null>(null)
     const tokenExpiration = ref<number | null>(null)
+    const settingsSyncState = ref<UserSettingsSyncState>("idle")
     const isLoggedIn = computed(() => !!sessionToken.value)
     const isAdmin = computed(() => role.value === 'admin' || role.value === 'super_admin')
     const isSuperAdmin = computed(() => role.value === 'super_admin')
@@ -38,6 +60,7 @@ export const useUserStore = defineStore("user", () => {
         gameAccountBindings?: GameAccountBinding[] | null
         iosUploadCode?: string | null
         sessionToken?: string
+        sessionExpiresAt?: string | number | null
     }, options: { resetExpiration?: boolean } = { resetExpiration: true }) {
         if (payload.name !== undefined) name.value = payload.name
         if (payload.userId !== undefined) userId.value = payload.userId
@@ -53,9 +76,21 @@ export const useUserStore = defineStore("user", () => {
         if (payload.sessionToken !== undefined) {
             sessionToken.value = payload.sessionToken
             if (options.resetExpiration) {
-                tokenExpiration.value = payload.sessionToken ? Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 : null
+                tokenExpiration.value = payload.sessionToken
+                    ? normalizeTokenExpiration(payload.sessionExpiresAt)
+                    : null
             }
         }
+
+        if (payload.sessionExpiresAt !== undefined && options.resetExpiration) {
+            tokenExpiration.value = sessionToken.value
+                ? normalizeTokenExpiration(payload.sessionExpiresAt)
+                : null
+        }
+    }
+
+    function setSettingsSyncState(state: UserSettingsSyncState) {
+        settingsSyncState.value = state
     }
 
     function clearUser() {
@@ -71,6 +106,7 @@ export const useUserStore = defineStore("user", () => {
         iosUploadCode.value = null
         sessionToken.value = null
         tokenExpiration.value = null
+        settingsSyncState.value = "idle"
     }
 
     function setIOSUploadCode(code: string | null) {
@@ -96,14 +132,31 @@ export const useUserStore = defineStore("user", () => {
         iosUploadCode,
         sessionToken,
         tokenExpiration,
+        settingsSyncState,
         isLoggedIn,
         isAdmin,
         isSuperAdmin,
         setUser,
+        setSettingsSyncState,
         setIOSUploadCode,
         clearUser,
         checkExpiration
     }
 }, {
-    persist: true
+    persist: {
+        pick: [
+            'name',
+            'userId',
+            'avatarPath',
+            'allowCNMysekai',
+            'role',
+            'emailInfo',
+            'socialPlatformInfo',
+            'authorizeSocialPlatformInfo',
+            'gameAccountBindings',
+            'iosUploadCode',
+            'sessionToken',
+            'tokenExpiration'
+        ]
+    }
 })

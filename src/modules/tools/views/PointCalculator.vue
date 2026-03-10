@@ -33,7 +33,7 @@ import {
 } from "lucide-vue-next"
 import { formatNumberCN } from "@/lib/number-format"
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 interface CalculationResult {
   selfScoreMin: number
@@ -156,7 +156,7 @@ function calcResult(): void {
           <div class="grid gap-2">
             <Label for="boostIndex">{{ t("tools.pointCalculator.fields.boostIndex") }}</Label>
             <div class="relative w-full items-center">
-              <Select v-model="boostIndex">
+              <Select :key="locale" v-model="boostIndex">
                 <SelectTrigger class="w-full pl-10">
                   <SelectValue :placeholder="t('tools.pointCalculator.fields.boostIndexPlaceholder')"/>
                 </SelectTrigger>

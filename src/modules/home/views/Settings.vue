@@ -25,6 +25,8 @@ const {
   selectedTheme,
   selectedLocale,
   endpointOptions,
+  endpointSelectionDisabled,
+  endpointUnavailable,
   themeOptions,
   localeOptions,
   selectedEndpointLabel,
@@ -56,7 +58,7 @@ const localeKey = computed(() => locale.value)
           <p class="text-sm text-muted-foreground mb-2">
             {{ t("homeSettings.endpoint.help") }}
           </p>
-          <Select v-model="selectedEndpoint" :key="`endpoint-${localeKey}`">
+          <Select v-model="selectedEndpoint" :key="`endpoint-${localeKey}`" :disabled="endpointSelectionDisabled || endpointUnavailable">
             <SelectTrigger class="w-full">
               <SelectValue :key="`endpoint-value-${localeKey}`" :placeholder="t('homeSettings.endpoint.placeholder')">
                 {{ selectedEndpointLabel }}
@@ -71,6 +73,9 @@ const localeKey = computed(() => locale.value)
               </SelectItem>
             </SelectContent>
           </Select>
+          <p v-if="endpointUnavailable" class="text-sm text-destructive mt-2">
+            {{ t("homeSettings.endpoint.unavailable") }}
+          </p>
         </div>
         <div>
           <Label class="text-base font-medium flex items-center gap-2">

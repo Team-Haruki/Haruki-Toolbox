@@ -54,7 +54,16 @@ function handleTouch() {
               <AvatarFallback>{{ item.name.charAt(0) }}</AvatarFallback>
             </Avatar>
             <div class="flex-1 min-w-0">
-              <div class="text-white font-bold text-lg truncate drop-shadow-md">{{ item.name }}</div>
+              <component
+                :is="item.url ? 'a' : 'div'"
+                :href="item.url || undefined"
+                :target="item.url ? '_blank' : undefined"
+                :rel="item.url ? 'noopener noreferrer' : undefined"
+                class="text-white font-bold text-lg truncate drop-shadow-md hover:underline"
+                @click.stop
+              >
+                {{ item.name }}
+              </component>
               <div class="text-white/80 text-xs truncate drop-shadow-sm">{{ item.groupInfo }}</div>
             </div>
           </div>

@@ -13,6 +13,7 @@ import {
 import { getRiskRules, updateRiskRules } from "@/modules/admin-risk/api/rule"
 import type { RiskEvent, RiskRule } from "@/types/admin"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
+import { asRecord } from "@/lib/record-utils"
 
 export function useRiskManagement() {
   const userStore = useUserStore()
@@ -54,6 +55,45 @@ export function useRiskManagement() {
   const rules = ref<RiskRule[]>([])
   const rulesJson = ref("")
   const rulesSaving = ref(false)
+
+  function parseRiskRules(raw: string): RiskRule[] | null {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) {
+      return null
+    }
+
+    const rules: RiskRule[] = []
+    for (const item of parsed) {
+      const record = asRecord(item)
+      if (!record) {
+        return null
+      }
+
+      const { id, name, description, enabled, config } = record
+      if (
+        typeof id !== "string" ||
+        typeof name !== "string" ||
+        typeof description !== "string" ||
+        typeof enabled !== "boolean"
+      ) {
+        return null
+      }
+
+      if (config !== undefined && config !== null && !asRecord(config)) {
+        return null
+      }
+
+      rules.push({
+        id,
+        name,
+        description,
+        enabled,
+        config: asRecord(config) ?? undefined,
+      })
+    }
+
+    return rules
+  }
 
   async function refreshEventsStrict() {
     await loadEvents({ throwOnError: true, notifyOnError: false })
@@ -117,11 +157,9 @@ export function useRiskManagement() {
   async function saveRules() {
     rulesSaving.value = true
     try {
-      const parsed = JSON.parse(rulesJson.value)
-      if (!Array.isArray(parsed)) {
-        toast.error(t("adminRisk.toast.saveFailedTitle"), {
-          description: t("adminRisk.toast.rulesMustBeJsonArray"),
-        })
+      const parsed = parseRiskRules(rulesJson.value)
+      if (!parsed) {
+        toast.error(t("adminRisk.toast.invalidJson"))
         return
       }
 

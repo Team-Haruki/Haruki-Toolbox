@@ -49,7 +49,7 @@ import {
 import {useIMAuthorizationSettings} from "@/modules/user-settings/composables/useIMAuthorizationSettings"
 import { useIMAuthorizationTable } from "@/modules/user-settings/composables/useIMAuthorizationTable"
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const {
   showEditDialog,
@@ -153,7 +153,7 @@ const { columns, table, FlexRender } = useIMAuthorizationTable({
       <div class="grid gap-4 py-4">
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="platform" class="text-right">{{ t("userSettings.imAuthorization.fields.platform") }}</Label>
-          <Select v-model="editTarget!.platform">
+          <Select :key="locale" v-model="editTarget!.platform">
             <SelectTrigger
                 id="platform"
                 class="col-span-3 flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"

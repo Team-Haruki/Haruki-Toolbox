@@ -1,6 +1,6 @@
 import { ref } from "vue"
 import { isAxiosError } from "axios"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
@@ -8,6 +8,7 @@ import { extractErrorMessage } from "@/lib/error-utils"
 import { isAccountBannedMessage } from "@/lib/account-status"
 import { login } from "@/modules/auth/api/login"
 import { sendResetPasswordEmail } from "@/modules/auth/api/reset-password"
+import { resolveSafeRedirectTarget } from "@/core/router/navigation"
 
 interface TurnstileExpose {
   reset: () => void
@@ -19,6 +20,7 @@ interface LoginErrorToast {
 }
 
 export function useLoginForm() {
+  const route = useRoute()
   const router = useRouter()
   const { t } = useI18n()
   const userStore = useUserStore()
@@ -134,7 +136,7 @@ export function useLoginForm() {
         description: t("auth.login.toast.loginSuccessDescription"),
       })
       loginChallengeToken.value = null
-      await router.push("/")
+      await router.push(resolveSafeRedirectTarget(route.query.redirect) ?? "/")
     } catch (error: unknown) {
       const { title, message } = resolveLoginError(error)
       toast.error(title, { description: message })

@@ -18,20 +18,15 @@ const emit = defineEmits<{
   (e: "invalid"): void
 }>()
 
-const token = ref<string | null>(null)
 const container = ref<HTMLDivElement | null>(null)
 let widgetId: string | null = null
 let interval: number | null = null
 
 function clearToken() {
-  token.value = null
-  localStorage.removeItem("turnstile_token")
   emit("invalid")
 }
 
 function handleVerify(res: string) {
-  token.value = res
-  localStorage.setItem("turnstile_token", res)
   emit("verify", res)
   props.callback?.(res)
 }
@@ -84,8 +79,6 @@ defineExpose({
 })
 
 onMounted(() => {
-  token.value = localStorage.getItem("turnstile_token")
-
   if (container.value) {
     if (window.turnstile) {
       renderTurnstile()
@@ -108,6 +101,14 @@ onUnmounted(() => {
     clearInterval(interval)
     interval = null
   }
+
+  if (widgetId && window.turnstile) {
+    try {
+      window.turnstile.remove(widgetId)
+    } catch {
+    }
+  }
+  widgetId = null
 })
 </script>
 

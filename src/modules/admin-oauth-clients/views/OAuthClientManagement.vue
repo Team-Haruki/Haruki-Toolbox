@@ -34,6 +34,9 @@ const {
   saving,
   statsOpen,
   statsLoading,
+  statsFrom,
+  statsTo,
+  statsBucket,
   stats,
   secretDisplayOpen,
   displayedSecret,
@@ -63,6 +66,8 @@ const {
   handleRestore,
   handleRevoke,
   showStats,
+  applyStatsFilters,
+  resetStatsFilters,
   copySecret,
 } = useOAuthClientManagement()
 </script>
@@ -112,7 +117,12 @@ const {
     <OAuthClientStatsDialog
       v-model:open="statsOpen"
       :loading="statsLoading"
+      v-model:stats-from="statsFrom"
+      v-model:stats-to="statsTo"
+      v-model:stats-bucket="statsBucket"
       :stats="stats"
+      @apply="applyStatsFilters"
+      @reset="resetStatsFilters"
     />
 
     <OAuthClientEditDialog

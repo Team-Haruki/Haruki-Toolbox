@@ -4,6 +4,23 @@ interface RedirectToLoginOptions {
     redirect?: string
 }
 
+export function resolveSafeRedirectTarget(value: unknown): string | null {
+    if (typeof value !== "string") {
+        return null
+    }
+
+    const normalized = value.trim()
+    if (!normalized.startsWith("/")) {
+        return null
+    }
+
+    if (normalized.startsWith("//")) {
+        return null
+    }
+
+    return normalized
+}
+
 export async function redirectToLogin(
     router: Router,
     options: RedirectToLoginOptions = {}
@@ -12,10 +29,12 @@ export async function redirectToLogin(
         return
     }
 
-    if (options.redirect) {
+    const redirect = resolveSafeRedirectTarget(options.redirect)
+
+    if (redirect) {
         await router.push({
             path: "/user/login",
-            query: { redirect: options.redirect },
+            query: { redirect },
         })
         return
     }

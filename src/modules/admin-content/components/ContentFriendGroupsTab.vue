@@ -29,6 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import {
+  LucideLink,
   LucideLoader2,
   LucidePencil,
   LucidePlus,
@@ -132,7 +133,10 @@ const emit = defineEmits<{
                   :key="item.id"
                   class="flex items-center justify-between p-2 border rounded-md"
                 >
-                  <span class="text-sm font-medium truncate">{{ item.name }}</span>
+                  <span class="flex items-center gap-1 text-sm font-medium truncate">
+                    <span class="truncate">{{ item.name }}</span>
+                    <LucideLink v-if="item.url" class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  </span>
                   <div class="flex gap-1 flex-shrink-0">
                     <Button variant="ghost" size="sm" @click="emit('editItem', String(group.id), item)">
                       <LucidePencil class="w-3.5 h-3.5" />

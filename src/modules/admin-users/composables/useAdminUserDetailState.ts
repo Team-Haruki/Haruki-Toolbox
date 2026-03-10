@@ -57,8 +57,11 @@ export function createAdminUserDetailState() {
     editEmail: ref(""),
 
     gameBindingDialogOpen: ref(false),
+    editGameIsEditMode: ref(false),
     editGameServer: ref<SekaiRegion>(INITIAL_GAME_SERVER),
     editGameUserId: ref(""),
+    editGameOriginalServer: ref<SekaiRegion>(INITIAL_GAME_SERVER),
+    editGameOriginalUserId: ref(""),
     editGameSuite: ref(createDefaultSuitePermissions()),
     editGameMysekai: ref(createDefaultMysekaiPermissions()),
 
@@ -92,8 +95,11 @@ export function createAdminUserDetailState() {
   }
 
   function resetGameBindingEditor() {
+    refs.editGameIsEditMode.value = false
     refs.editGameServer.value = INITIAL_GAME_SERVER
     refs.editGameUserId.value = ""
+    refs.editGameOriginalServer.value = INITIAL_GAME_SERVER
+    refs.editGameOriginalUserId.value = ""
     refs.editGameSuite.value = createDefaultSuitePermissions()
     refs.editGameMysekai.value = createDefaultMysekaiPermissions()
   }

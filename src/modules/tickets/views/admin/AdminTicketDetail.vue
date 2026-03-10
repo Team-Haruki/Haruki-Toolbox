@@ -48,10 +48,13 @@ const {
   messageContainer,
   assigneeId,
   adminUsers,
+  adminUsersLoading,
+  adminUsersLoadFailed,
   statusOptions,
   sendMessage,
   handleStatusChange,
   handleAssign,
+  loadAdmins,
   goBack,
   isAdmin,
 } = useAdminTicketDetail(() => props.ticketId)
@@ -121,7 +124,7 @@ function formatCategory(category: string) {
           <!-- Status change -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-xs">{{ t("tickets.adminDetail.statusChangeLabel") }}</Label>
-            <Select :model-value="ticket.status" @update:model-value="handleStatusChange" :disabled="actionLoading">
+            <Select :key="locale" :model-value="ticket.status" @update:model-value="handleStatusChange" :disabled="actionLoading">
               <SelectTrigger class="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -137,7 +140,11 @@ function formatCategory(category: string) {
           <div class="flex flex-col gap-1.5">
             <Label class="text-xs">{{ t("tickets.adminDetail.assigneeLabel") }}</Label>
             <div class="flex gap-2">
-              <Select v-model="assigneeId">
+              <Select
+                :key="locale"
+                v-model="assigneeId"
+                :disabled="adminUsersLoading || adminUsersLoadFailed || actionLoading"
+              >
                 <SelectTrigger class="w-48">
                   <SelectValue :placeholder="t('tickets.adminDetail.assigneePlaceholder')" />
                 </SelectTrigger>
@@ -148,8 +155,22 @@ function formatCategory(category: string) {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" :disabled="actionLoading" @click="handleAssign">
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="actionLoading || adminUsersLoading || adminUsersLoadFailed"
+                @click="handleAssign"
+              >
                 <LucideUserCog class="w-4 h-4 mr-1" /> {{ t("tickets.adminDetail.assignButton") }}
+              </Button>
+            </div>
+            <div v-if="adminUsersLoading" class="text-xs text-muted-foreground">
+              {{ t("tickets.adminDetail.assigneeLoading") }}
+            </div>
+            <div v-else-if="adminUsersLoadFailed" class="flex items-center gap-2 text-xs text-destructive">
+              <span>{{ t("tickets.adminDetail.assigneeLoadFailedHint") }}</span>
+              <Button variant="ghost" size="sm" class="h-auto px-2 py-1" @click="loadAdmins">
+                {{ t("tickets.adminDetail.retryLoadAssignees") }}
               </Button>
             </div>
           </div>

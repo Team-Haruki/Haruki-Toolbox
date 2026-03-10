@@ -13,6 +13,7 @@ interface Props {
   emailDialogOpen: boolean
   editEmail: string
   gameBindingDialogOpen: boolean
+  editGameIsEditMode: boolean
   editGameServer: SekaiRegion
   editGameUserId: string
   editGameSuite: SuiteDataPrivacySettings
@@ -67,6 +68,7 @@ const emit = defineEmits<{
 
   <UserDetailDialogGameBinding
     :open="props.gameBindingDialogOpen"
+    :is-edit-mode="props.editGameIsEditMode"
     :user-name="props.userName"
     :action-loading="props.actionLoading"
     :server="props.editGameServer"

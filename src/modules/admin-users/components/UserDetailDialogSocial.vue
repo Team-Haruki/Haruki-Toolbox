@@ -49,7 +49,7 @@ function handlePlatformChange(value: unknown) {
     emit("update:platform", value)
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const socialPlatformOptions = computed(() => getSocialPlatformOptions(t))
 </script>
 
@@ -67,7 +67,7 @@ const socialPlatformOptions = computed(() => getSocialPlatformOptions(t))
       <div class="flex flex-col gap-4 py-2">
         <div class="flex flex-col gap-1.5">
           <Label>{{ t("adminUsers.detail.dialog.social.platform") }}</Label>
-          <Select :model-value="platform" @update:model-value="handlePlatformChange">
+          <Select :key="locale" :model-value="platform" @update:model-value="handlePlatformChange">
             <SelectTrigger class="w-full">
               <SelectValue :placeholder="t('adminUsers.detail.dialog.social.platformPlaceholder')" />
             </SelectTrigger>

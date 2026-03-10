@@ -12,7 +12,7 @@ export interface BoundAccount {
 
 type UploadAccountStore = {
   isLoggedIn: boolean
-  allowCNMysekai: boolean
+  allowCNMysekai: boolean | null
   gameAccountBindings?: Array<{ server: SekaiRegion; userId: string | number }> | null
 }
 
@@ -68,7 +68,7 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
   })
 
   const isCNMySekaiForbidden = computed(() => {
-    return selectedAccount.value?.server === "cn" && userStore.allowCNMysekai === false && dataType.value === "mysekai"
+    return selectedAccount.value?.server === "cn" && userStore.allowCNMysekai !== true && dataType.value === "mysekai"
   })
 
   watch(

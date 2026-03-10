@@ -69,16 +69,26 @@ export function setOAuthClientActive(clientId: string, active: boolean) {
 }
 
 export async function rotateClientSecret(clientId: string) {
-    const res = await request<APIResponse<{ clientSecret: string }>>(`${BASE}/${encodePathSegment(clientId)}/rotate-secret`, { method: "POST" })
-    return res.updatedData
+    const res = await request<APIResponse<{ clientSecret: string }>>(`${BASE}/${encodePathSegment(clientId)}/rotate-secret`, {
+        method: "POST",
+    })
+    const updatedData = unwrapUpdatedData(res, translate("adminOAuthClients.toast.rotateFailedTitle"))
+    const clientSecret = typeof updatedData.clientSecret === "string" ? updatedData.clientSecret.trim() : ""
+    if (!clientSecret) {
+        throw new Error(translate("common.missingUpdatedData", { context: translate("adminOAuthClients.toast.rotateFailedTitle") }))
+    }
+    return clientSecret
 }
 
 export function deleteOAuthClient(clientId: string) {
     return request(`${BASE}/${encodePathSegment(clientId)}`, { method: "DELETE" })
 }
 
-export async function getOAuthClientStatistics(clientId: string) {
-    const res = await request<APIResponse<OAuthClientStatistics>>(`${BASE}/${encodePathSegment(clientId)}/statistics`, { method: "GET" })
+export async function getOAuthClientStatistics(clientId: string, params?: QueryParams) {
+    const res = await request<APIResponse<OAuthClientStatistics>>(`${BASE}/${encodePathSegment(clientId)}/statistics`, {
+        method: "GET",
+        params,
+    })
     return unwrapUpdatedData(res, translate("adminOAuthClients.toast.loadStatsFailedTitle"))
 }
 

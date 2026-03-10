@@ -26,7 +26,7 @@ const emit = defineEmits<{
   (e: "nextPage"): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 function handlePageSizeChange(value: unknown) {
   const pageSize = Number(value)
@@ -45,7 +45,7 @@ function handlePageSizeChange(value: unknown) {
         <span class="text-sm text-muted-foreground hidden sm:inline">
           {{ t("adminUsers.management.pagination.pageSize") }}
         </span>
-        <Select :model-value="String(pageSize)" @update:model-value="handlePageSizeChange">
+        <Select :key="locale" :model-value="String(pageSize)" @update:model-value="handlePageSizeChange">
           <SelectTrigger class="w-20 h-8">
             <SelectValue />
           </SelectTrigger>

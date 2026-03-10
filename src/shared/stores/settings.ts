@@ -5,17 +5,53 @@ import { DEFAULT_LOCALE, type AppLocale } from "@/shared/i18n"
 export type EndpointType = 'direct' | 'cdn'
 export type ThemeType = 'light' | 'dark' | 'system'
 
+function normalizeEndpointUrl(value: unknown): string {
+    if (typeof value !== 'string') {
+        return ''
+    }
+
+    return value.trim().replace(/\/+$/, '')
+}
+
 export const useSettingsStore = defineStore("settings", () => {
-    const directEndpoint = computed(() => import.meta.env.VITE_HARUKI_TOOLBOX_DIRECT_URL)
-    const cdnEndpoint = computed(() => import.meta.env.VITE_HARUKI_TOOLBOX_CDN_URL)
+    const directEndpoint = computed(() => normalizeEndpointUrl(import.meta.env.VITE_HARUKI_TOOLBOX_DIRECT_URL))
+    const cdnEndpoint = computed(() => normalizeEndpointUrl(import.meta.env.VITE_HARUKI_TOOLBOX_CDN_URL))
     const preferredEndpoint = ref<EndpointType>('direct')
     const theme = ref<ThemeType>('system')
     const locale = ref<AppLocale>(DEFAULT_LOCALE)
+    const hasDirectEndpoint = computed(() => directEndpoint.value !== '')
+    const hasCdnEndpoint = computed(() => cdnEndpoint.value !== '')
+
+    function resolveAvailableEndpoint(type: EndpointType): EndpointType {
+        if (type === 'cdn' && hasCdnEndpoint.value) {
+            return 'cdn'
+        }
+
+        if (hasDirectEndpoint.value) {
+            return 'direct'
+        }
+
+        if (hasCdnEndpoint.value) {
+            return 'cdn'
+        }
+
+        return type
+    }
+
+    function getEndpointUrl(type: EndpointType): string {
+        if (type === 'cdn') {
+            return cdnEndpoint.value
+        }
+        return directEndpoint.value
+    }
+
+    const resolvedPreferredEndpoint = computed(() => resolveAvailableEndpoint(preferredEndpoint.value))
     const currentEndpoint = computed(() => {
-        return preferredEndpoint.value === 'cdn' ? cdnEndpoint.value : directEndpoint.value
+        return getEndpointUrl(resolvedPreferredEndpoint.value)
     })
+
     function setPreferredEndpoint(type: EndpointType) {
-        preferredEndpoint.value = type
+        preferredEndpoint.value = resolveAvailableEndpoint(type)
     }
     function setTheme(newTheme: ThemeType) {
         theme.value = newTheme
@@ -48,10 +84,14 @@ export const useSettingsStore = defineStore("settings", () => {
     return {
         directEndpoint,
         cdnEndpoint,
+        hasDirectEndpoint,
+        hasCdnEndpoint,
         preferredEndpoint,
+        resolvedPreferredEndpoint,
         currentEndpoint,
         theme,
         locale,
+        getEndpointUrl,
         setPreferredEndpoint,
         setTheme,
         setLocale,

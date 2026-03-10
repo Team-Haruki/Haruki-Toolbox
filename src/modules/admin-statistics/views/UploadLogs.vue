@@ -10,6 +10,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import DateTimePicker24h from "@/components/ui/datetime-picker/DateTimePicker24h.vue"
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -18,6 +24,7 @@ import {
 } from "@/components/ui/select"
 import {
   LucideFilter,
+  LucideChevronDown,
   LucideRefreshCw,
   LucideSearch,
 } from "lucide-vue-next"
@@ -25,7 +32,7 @@ import { useI18n } from "vue-i18n"
 import { UploadLogsSummary, UploadLogsTable } from "@/modules/admin-statistics/components"
 import { useUploadLogs } from "@/modules/admin-statistics/composables/useUploadLogs"
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const {
   loading,
@@ -48,6 +55,12 @@ const {
   servers,
   sortOptions,
   successOptions,
+  toggleMethodFilter,
+  toggleDataTypeFilter,
+  toggleServerFilter,
+  filterMethodLabel,
+  filterDataTypeLabel,
+  filterServerLabel,
   applyFilters,
   resetFilters,
   prevPage,
@@ -97,46 +110,70 @@ const {
           </div>
           <div class="flex flex-col gap-1.5">
             <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.method") }}</Label>
-            <Select v-model="filterMethod">
-              <SelectTrigger class="w-full">
-                <SelectValue :placeholder="t('adminStatistics.uploadLogs.filters.allMethods')" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="opt in uploadMethods" :key="opt.value" :value="opt.value">
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button variant="outline" class="w-full justify-between font-normal">
+                  <span class="truncate">{{ filterMethodLabel }}</span>
+                  <LucideChevronDown class="w-4 h-4 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent class="w-64">
+                <DropdownMenuCheckboxItem
+                  v-for="opt in uploadMethods"
+                  :key="opt.value"
+                  :checked="filterMethod.includes(opt.value)"
+                  @update:checked="checked => toggleMethodFilter(opt.value, Boolean(checked))"
+                >
                   {{ opt.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div class="flex flex-col gap-1.5">
             <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.dataType") }}</Label>
-            <Select v-model="filterDataType">
-              <SelectTrigger class="w-full">
-                <SelectValue :placeholder="t('adminStatistics.uploadLogs.filters.allDataTypes')" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="opt in dataTypeOptions" :key="opt.value" :value="opt.value">
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button variant="outline" class="w-full justify-between font-normal">
+                  <span class="truncate">{{ filterDataTypeLabel }}</span>
+                  <LucideChevronDown class="w-4 h-4 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent class="w-64">
+                <DropdownMenuCheckboxItem
+                  v-for="opt in dataTypeOptions"
+                  :key="opt.value"
+                  :checked="filterDataType.includes(opt.value)"
+                  @update:checked="checked => toggleDataTypeFilter(opt.value, Boolean(checked))"
+                >
                   {{ opt.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div class="flex flex-col gap-1.5">
             <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.server") }}</Label>
-            <Select v-model="filterServer">
-              <SelectTrigger class="w-full">
-                <SelectValue :placeholder="t('adminStatistics.uploadLogs.filters.allServers')" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="opt in servers" :key="opt.value" :value="opt.value">
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button variant="outline" class="w-full justify-between font-normal">
+                  <span class="truncate">{{ filterServerLabel }}</span>
+                  <LucideChevronDown class="w-4 h-4 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent class="w-64">
+                <DropdownMenuCheckboxItem
+                  v-for="opt in servers"
+                  :key="opt.value"
+                  :checked="filterServer.includes(opt.value)"
+                  @update:checked="checked => toggleServerFilter(opt.value, Boolean(checked))"
+                >
                   {{ opt.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div class="flex flex-col gap-1.5">
             <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.status") }}</Label>
-            <Select v-model="filterSuccess">
+            <Select :key="locale" v-model="filterSuccess">
               <SelectTrigger class="w-full">
                 <SelectValue :placeholder="t('adminStatistics.uploadLogs.filters.allStatuses')" />
               </SelectTrigger>
@@ -149,7 +186,7 @@ const {
           </div>
           <div class="flex flex-col gap-1.5">
             <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.sort") }}</Label>
-            <Select v-model="filterSort">
+            <Select :key="locale" v-model="filterSort">
               <SelectTrigger class="w-full">
                 <SelectValue :placeholder="t('adminStatistics.uploadLogs.filters.sortPlaceholder')" />
               </SelectTrigger>

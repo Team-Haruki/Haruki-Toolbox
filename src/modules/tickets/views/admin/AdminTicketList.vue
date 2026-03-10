@@ -85,7 +85,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
             <LucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input v-model="search" :placeholder="t('tickets.adminList.searchPlaceholder')" class="pl-9" />
           </div>
-          <Select v-model="statusFilter">
+          <Select :key="locale" v-model="statusFilter">
             <SelectTrigger class="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -95,7 +95,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
               </SelectItem>
             </SelectContent>
           </Select>
-          <Select v-model="priorityFilter">
+          <Select :key="locale" v-model="priorityFilter">
             <SelectTrigger class="w-32">
               <SelectValue />
             </SelectTrigger>

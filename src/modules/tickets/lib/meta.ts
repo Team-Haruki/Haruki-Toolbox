@@ -18,7 +18,7 @@ const TICKET_PRIORITY_VALUES: readonly TicketPriority[] = ["low", "normal", "med
 const TICKET_CATEGORY_VALUES: readonly TicketCategory[] = ["upload", "account", "bug", "feature", "other"]
 const TICKET_STATUS_FILTER_VALUES: readonly TicketStatusFilter[] = ["all", ...TICKET_STATUS_VALUES]
 const TICKET_PRIORITY_FILTER_VALUES: readonly TicketPriorityFilter[] = ["all", ...TICKET_PRIORITY_VALUES]
-const ADMIN_TICKET_PRIORITY_FILTER_VALUES: readonly TicketPriorityFilter[] = ["all", "urgent", "high", "medium", "low"]
+const ADMIN_TICKET_PRIORITY_FILTER_VALUES: readonly TicketPriorityFilter[] = ["all", "urgent", "high", "medium", "normal", "low"]
 
 export function ticketStatusOptionLabel(status: TicketStatusFilter, localizer: TicketLocalizer = defaultLocalizer): string {
   switch (status) {

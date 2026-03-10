@@ -4,8 +4,8 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-export default defineConfig({
-    plugins: [vue(), tailwindcss(), vueDevTools()],
+export default defineConfig(({ command }) => ({
+    plugins: [vue(), tailwindcss(), command === 'serve' ? vueDevTools() : null].filter(Boolean),
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
@@ -23,4 +23,4 @@ export default defineConfig({
             },
         },
     },
-})
+}))

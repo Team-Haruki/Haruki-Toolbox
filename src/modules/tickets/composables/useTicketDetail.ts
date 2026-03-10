@@ -1,4 +1,4 @@
-import { computed, nextTick, onMounted, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
@@ -25,12 +25,27 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
   const closing = ref(false)
   const messageContainer = ref<HTMLElement | null>(null)
   let latestLoadRequestId = 0
+  let actionGeneration = 0
 
   const resolveTicketId = () => resolveValue(ticketId).trim()
 
   type LoadTicketOptions = {
     silent?: boolean
     throwOnError?: boolean
+  }
+
+  function isCurrentActionContext(expectedUserId: string | null, expectedTicketId: string) {
+    return userStore.userId === expectedUserId && resolveTicketId() === expectedTicketId
+  }
+
+  function isActiveActionGeneration(generation: number) {
+    return actionGeneration === generation
+  }
+
+  function invalidateActions() {
+    actionGeneration += 1
+    sending.value = false
+    closing.value = false
   }
 
   async function loadTicket(options: LoadTicketOptions = {}) {
@@ -80,16 +95,20 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
     const ticketIdValue = resolveTicketId()
     if (!message || !userId || !ticketIdValue || sending.value) return
 
+    const generation = actionGeneration
     sending.value = true
     try {
       await addUserTicketMessage(userId, ticketIdValue, { message })
+      if (!isActiveActionGeneration(generation) || !isCurrentActionContext(userId, ticketIdValue)) return
       newMessage.value = ""
       await loadTicket()
     } catch (error: unknown) {
+      if (!isActiveActionGeneration(generation) || !isCurrentActionContext(userId, ticketIdValue)) return
       toast.error(t("tickets.detail.toast.sendFailedTitle"), {
         description: extractErrorMessage(error, t("tickets.detail.toast.sendFailedFallback")),
       })
     } finally {
+      if (!isActiveActionGeneration(generation)) return
       sending.value = false
     }
   }
@@ -99,22 +118,28 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
     const ticketIdValue = resolveTicketId()
     if (!userId || !ticketIdValue || closing.value) return
 
+    const generation = actionGeneration
     closing.value = true
     try {
       await closeTicket(userId, ticketIdValue)
+      if (!isActiveActionGeneration(generation) || !isCurrentActionContext(userId, ticketIdValue)) return
       try {
         await loadTicket({ silent: true, throwOnError: true })
+        if (!isActiveActionGeneration(generation) || !isCurrentActionContext(userId, ticketIdValue)) return
         toast.success(t("tickets.detail.toast.closeSuccess"))
       } catch (error: unknown) {
+        if (!isActiveActionGeneration(generation) || !isCurrentActionContext(userId, ticketIdValue)) return
         toast.warning(t("common.postSuccessWarningTitle"), {
           description: extractErrorMessage(error, t("common.postSuccessWarningDescription")),
         })
       }
     } catch (error: unknown) {
+      if (!isActiveActionGeneration(generation) || !isCurrentActionContext(userId, ticketIdValue)) return
       toast.error(t("tickets.detail.toast.closeFailedTitle"), {
         description: extractErrorMessage(error, t("tickets.detail.toast.closeFailedFallback")),
       })
     } finally {
+      if (!isActiveActionGeneration(generation)) return
       closing.value = false
     }
   }
@@ -133,6 +158,7 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
     () => resolveTicketId(),
     (nextTicketId, previousTicketId) => {
       if (nextTicketId === previousTicketId) return
+      invalidateActions()
       ticket.value = null
       newMessage.value = ""
       void loadTicket()
@@ -141,6 +167,11 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
 
   onMounted(() => {
     void loadTicket()
+  })
+
+  onBeforeUnmount(() => {
+    latestLoadRequestId += 1
+    invalidateActions()
   })
 
   return {

@@ -1,4 +1,5 @@
-import { readUpdatedItems, readUpdatedTotal, request } from "@/core/http/call-api"
+import { readUpdatedItems, readUpdatedTotal, request, unwrapUpdatedData } from "@/core/http/call-api"
+import { translate } from "@/shared/i18n"
 import { encodePathSegment } from "@/core/http/url"
 import type { QueryParams } from "@/core/http/query"
 import {
@@ -72,7 +73,7 @@ export async function getGlobalGameBindings(params?: QueryParams) {
         method: "GET",
         params,
     })
-    const data = res.updatedData
+    const data = unwrapUpdatedData(res, translate("adminGameBindings.toast.loadFailedTitle"))
     const rawItems = readUpdatedItems(data)
     const items = rawItems
         .map((item) => normalizeGlobalGameBinding(item))

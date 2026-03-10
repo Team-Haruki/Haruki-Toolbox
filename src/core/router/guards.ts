@@ -2,6 +2,7 @@ import { toast } from "vue-sonner"
 import type { Router } from "vue-router"
 import { useUserStore } from "@/shared/stores/user"
 import { translate } from "@/shared/i18n"
+import { resolveSafeRedirectTarget } from "@/core/router/navigation"
 
 export function setupRouteGuards(router: Router) {
     router.beforeEach((to) => {
@@ -9,7 +10,7 @@ export function setupRouteGuards(router: Router) {
         userStore.checkExpiration()
 
         if (to.meta.guestOnly && userStore.isLoggedIn) {
-            return "/"
+            return resolveSafeRedirectTarget(to.query.redirect) ?? "/"
         }
 
         const requiresAuth = to.matched.some((record) =>

@@ -67,7 +67,7 @@ const emit = defineEmits<{
   (e: "save"): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 function cloneEditTarget(target: GameAccountBinding) {
   return {
@@ -141,8 +141,8 @@ const mysekaiPermissionOptions = computed(() =>
             <div class="flex items-center gap-4">
               <Label class="w-24">{{ t("userSettings.gameBinding.editDialog.fields.server") }}</Label>
               <div class="flex-1">
-                <Select :model-value="editTarget?.server" @update:model-value="handleServerChange">
-                  <SelectTrigger class="w-full" :disabled="editTarget?.verified">
+                <Select :key="locale" :model-value="editTarget?.server" @update:model-value="handleServerChange">
+                  <SelectTrigger class="w-full" :disabled="!isCreating || editTarget?.verified">
                     <SelectValue :placeholder="t('userSettings.gameBinding.editDialog.serverPlaceholder')" />
                   </SelectTrigger>
                   <SelectContent>
@@ -160,7 +160,7 @@ const mysekaiPermissionOptions = computed(() =>
               <Label class="w-24">{{ t("userSettings.gameBinding.editDialog.fields.userId") }}</Label>
               <Input
                 :model-value="userIdInput"
-                :disabled="editTarget?.verified"
+                :disabled="!isCreating || editTarget?.verified"
                 class="flex-1"
                 type="text"
                 pattern="\\d*"

@@ -48,6 +48,7 @@ const {
   emailDialogOpen,
   editEmail,
   gameBindingDialogOpen,
+  editGameIsEditMode,
   editGameServer,
   editGameUserId,
   editGameSuite,
@@ -204,6 +205,7 @@ const {
       v-model:email-dialog-open="emailDialogOpen"
       v-model:edit-email="editEmail"
       v-model:game-binding-dialog-open="gameBindingDialogOpen"
+      :edit-game-is-edit-mode="editGameIsEditMode"
       v-model:edit-game-server="editGameServer"
       v-model:edit-game-user-id="editGameUserId"
       v-model:edit-game-suite="editGameSuite"

@@ -1,4 +1,4 @@
-import { onMounted, ref, watch } from "vue"
+import { onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { createAdminUserDetailActions } from "@/modules/admin-users/composables/useAdminUserDetailActions"
 import { createAdminUserDetailAsync } from "@/modules/admin-users/composables/useAdminUserDetailAsync"
 import { createAdminUserDetailLoaders } from "@/modules/admin-users/composables/useAdminUserDetailLoaders"
@@ -28,7 +28,7 @@ export function useAdminUserDetail(userId: ValueOrGetter<string>) {
   const resolvedUserId = () => resolveValue(userId)
   let latestUserRouteRequestId = 0
 
-  const { runLoad, runTask, runAction, invalidateLoads } = createAdminUserDetailAsync(refs.actionLoading, refs.taskLoading)
+  const { runLoad, runTask, runAction, invalidateLoads, invalidateActions } = createAdminUserDetailAsync(refs.actionLoading, refs.taskLoading)
   const loaders = createAdminUserDetailLoaders({ userId: resolvedUserId, state, runLoad })
   const actions = createAdminUserDetailActions({
     userId: resolvedUserId,
@@ -49,6 +49,7 @@ export function useAdminUserDetail(userId: ValueOrGetter<string>) {
   async function loadUserForCurrentRoute() {
     const requestId = ++latestUserRouteRequestId
     invalidateLoads()
+    invalidateActions()
     state.resetForUserChange()
     await loaders.loadUser()
     if (requestId !== latestUserRouteRequestId) return
@@ -67,6 +68,12 @@ export function useAdminUserDetail(userId: ValueOrGetter<string>) {
 
   onMounted(() => {
     void loadUserForCurrentRoute()
+  })
+
+  onBeforeUnmount(() => {
+    latestUserRouteRequestId += 1
+    invalidateLoads()
+    invalidateActions()
   })
 
   return {

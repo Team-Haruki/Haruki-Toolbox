@@ -26,6 +26,8 @@ import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
 
 export function useUploadLogs() {
   const { t, locale } = useI18n()
+  type FilterOption = { value: string; label: string }
+
   const summary = ref<UploadLogsSummary | null>(null)
   const responseFrom = ref("")
   const responseTo = ref("")
@@ -33,9 +35,9 @@ export function useUploadLogs() {
 
   const filterFrom = ref<Date>()
   const filterTo = ref<Date>()
-  const filterMethod = ref("all")
-  const filterDataType = ref("all")
-  const filterServer = ref("all")
+  const filterMethod = ref<string[]>([])
+  const filterDataType = ref<string[]>([])
+  const filterServer = ref<string[]>([])
   const filterSuccess = ref("all")
   const filterSort = ref(DEFAULT_UPLOAD_LOG_SORT)
   const filterGameUserId = ref("")
@@ -72,11 +74,39 @@ export function useUploadLogs() {
     },
   })
 
-  const uploadMethods = computed(() => getUploadMethodOptions(t))
-  const dataTypeOptions = computed(() => getUploadDataTypeOptions(t))
-  const servers = computed(() => getUploadServerOptions(t))
+  const uploadMethods = computed(() => getUploadMethodOptions(t).filter((option) => option.value !== "all"))
+  const dataTypeOptions = computed(() => getUploadDataTypeOptions(t).filter((option) => option.value !== "all"))
+  const servers = computed(() => getUploadServerOptions(t).filter((option) => option.value !== "all"))
   const sortOptions = computed(() => getUploadSortOptions(t))
   const successOptions = computed(() => getUploadSuccessOptions(t))
+
+  function toggleMultiFilter(target: typeof filterMethod | typeof filterDataType | typeof filterServer, value: string, checked: boolean) {
+    const nextValues = checked
+      ? Array.from(new Set([...target.value, value]))
+      : target.value.filter((item) => item !== value)
+    target.value = nextValues
+  }
+
+  function resolveMultiFilterLabel(values: string[], options: readonly FilterOption[], fallback: string) {
+    if (values.length === 0) {
+      return fallback
+    }
+
+    const selected = options.filter((option) => values.includes(option.value))
+    if (selected.length === 0) {
+      return fallback
+    }
+
+    if (selected.length === 1) {
+      return selected[0].label
+    }
+
+    if (selected.length === 2) {
+      return `${selected[0].label}, ${selected[1].label}`
+    }
+
+    return `${selected[0].label} +${selected.length - 1}`
+  }
 
   function methodLabel(method?: string) {
     return resolveUploadMethodLabel(method, t)
@@ -107,9 +137,9 @@ export function useUploadLogs() {
     setQueryValue(params, "from", filterFrom.value?.toISOString())
     setQueryValue(params, "to", filterTo.value?.toISOString())
 
-    if (filterMethod.value !== "all") setQueryValue(params, "upload_method", filterMethod.value)
-    if (filterDataType.value !== "all") setQueryValue(params, "data_type", filterDataType.value)
-    if (filterServer.value !== "all") setQueryValue(params, "server", filterServer.value)
+    if (filterMethod.value.length > 0) setQueryValue(params, "upload_method", filterMethod.value.join(","))
+    if (filterDataType.value.length > 0) setQueryValue(params, "data_type", filterDataType.value.join(","))
+    if (filterServer.value.length > 0) setQueryValue(params, "server", filterServer.value.join(","))
     if (filterSuccess.value !== "all") setQueryValue(params, "success", filterSuccess.value)
 
     setTrimmedQueryValue(params, "game_user_id", filterGameUserId.value)
@@ -135,9 +165,9 @@ export function useUploadLogs() {
   function resetFilters() {
     filterFrom.value = undefined
     filterTo.value = undefined
-    filterMethod.value = "all"
-    filterDataType.value = "all"
-    filterServer.value = "all"
+    filterMethod.value = []
+    filterDataType.value = []
+    filterServer.value = []
     filterSuccess.value = "all"
     filterSort.value = DEFAULT_UPLOAD_LOG_SORT
     filterGameUserId.value = ""
@@ -229,6 +259,12 @@ export function useUploadLogs() {
     servers,
     sortOptions,
     successOptions,
+    toggleMethodFilter: (value: string, checked: boolean) => toggleMultiFilter(filterMethod, value, checked),
+    toggleDataTypeFilter: (value: string, checked: boolean) => toggleMultiFilter(filterDataType, value, checked),
+    toggleServerFilter: (value: string, checked: boolean) => toggleMultiFilter(filterServer, value, checked),
+    filterMethodLabel: computed(() => resolveMultiFilterLabel(filterMethod.value, uploadMethods.value, t("adminStatistics.uploadLogs.filters.allMethods"))),
+    filterDataTypeLabel: computed(() => resolveMultiFilterLabel(filterDataType.value, dataTypeOptions.value, t("adminStatistics.uploadLogs.filters.allDataTypes"))),
+    filterServerLabel: computed(() => resolveMultiFilterLabel(filterServer.value, servers.value, t("adminStatistics.uploadLogs.filters.allServers"))),
     applyFilters,
     resetFilters,
     prevPage,

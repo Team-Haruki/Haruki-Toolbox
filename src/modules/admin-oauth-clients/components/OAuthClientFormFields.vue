@@ -34,7 +34,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const emit = defineEmits<{
   (event: "update:name", value: string): void
   (event: "update:clientType", value: NonNullable<OAuthClient["clientType"]>): void
@@ -66,7 +66,7 @@ function handleClientTypeChange(value: unknown) {
     </div>
     <div class="flex flex-col gap-2">
       <Label>{{ t("adminOAuthClients.form.clientTypeLabel") }}</Label>
-      <Select :model-value="props.clientType" @update:model-value="handleClientTypeChange">
+      <Select :key="locale" :model-value="props.clientType" @update:model-value="handleClientTypeChange">
         <SelectTrigger>
           <SelectValue :placeholder="t('adminOAuthClients.form.clientTypePlaceholder')" />
         </SelectTrigger>

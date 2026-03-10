@@ -52,6 +52,7 @@ const {
   showPageTitle,
   copyrightYear,
   isNavGroupOpen,
+  setNavGroupOpen,
 } = useWebLayout()
 </script>
 
@@ -85,7 +86,8 @@ const {
                 v-for="item in WEB_NAV_ITEMS"
                 :key="item.titleKey"
                 as-child
-                :default-open="isNavGroupOpen(item)"
+                :open="isNavGroupOpen(item)"
+                @update:open="setNavGroupOpen(item, $event)"
                 class="group/collapsible"
             >
               <SidebarMenuItem>

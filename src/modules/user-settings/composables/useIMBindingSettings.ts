@@ -18,6 +18,7 @@ import {
   isNotVerifiedMessage,
 } from "@/modules/user-settings/lib/im-binding-response"
 import { useIMBindingTurnstile } from "@/modules/user-settings/composables/useIMBindingTurnstile"
+import { isSocialPlatform } from "@/lib/social-platform"
 
 type DialogMode = "qq" | "other"
 
@@ -28,6 +29,8 @@ export function useIMBindingSettings() {
   const userStore = useUserStore()
 
   const current = computed(() => userStore.socialPlatformInfo)
+  const canRetryCurrentVerification = computed(() => !!current.value && !current.value.verified)
+  const isCurrentQQBinding = computed(() => current.value?.platform === QQ_PLATFORM)
   const sending = ref(false)
   const clearing = ref(false)
   const qqInputCode = ref("")
@@ -131,6 +134,38 @@ export function useIMBindingSettings() {
       return
     }
 
+    await generateVerificationCode(userId, accountId)
+  }
+
+  async function handleRetryCurrentVerification() {
+    const userId = requireUserId()
+    const currentBinding = current.value
+    if (!userId || !currentBinding || currentBinding.verified) return
+
+    const accountId = currentBinding.userId.trim()
+    if (!accountId) {
+      toast.error(t("userSettings.imBinding.toast.verifyFailedTitle"), {
+        description: t("userSettings.imBinding.toast.missingAccountDescription"),
+      })
+      return
+    }
+
+    account.value = accountId
+
+    if (currentBinding.platform === QQ_PLATFORM) {
+      platform.value = QQ_PLATFORM
+      await sendQQVerificationCode(userId, accountId)
+      return
+    }
+
+    if (!isSocialPlatform(currentBinding.platform)) {
+      toast.error(t("userSettings.imBinding.toast.generateFailedTitle"), {
+        description: t("userSettings.imBinding.toast.missingAccountDescription"),
+      })
+      return
+    }
+
+    platform.value = currentBinding.platform
     await generateVerificationCode(userId, accountId)
   }
 
@@ -247,6 +282,8 @@ export function useIMBindingSettings() {
 
   return {
     current,
+    canRetryCurrentVerification,
+    isCurrentQQBinding,
     sending,
     clearing,
     qqInputCode,
@@ -262,6 +299,7 @@ export function useIMBindingSettings() {
     onTurnstileVerify,
     onTurnstileInvalid,
     handleVerify,
+    handleRetryCurrentVerification,
     handleDialogVerify,
     handleUnbind,
   }

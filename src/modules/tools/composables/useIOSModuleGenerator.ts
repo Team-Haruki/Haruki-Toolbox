@@ -31,7 +31,7 @@ export function useIOSModuleGenerator() {
   const settingsStore = useSettingsStore()
 
   const selectedSoftware = ref<ClientSoftware>("surge")
-  const selectedEndpoint = ref<EndpointType>("direct")
+  const selectedEndpoint = ref<EndpointType>(settingsStore.resolvedPreferredEndpoint)
   const selectedMode = ref<UploadMode>("script")
   const selectedRegions = ref<RegionType[]>(["jp"])
   const selectedDataTypes = ref<IOSUploadDataType[]>(["suite"])
@@ -46,12 +46,14 @@ export function useIOSModuleGenerator() {
   )
   const endpointOptions = computed(() =>
     [
-      { value: "direct", key: "direct" },
-      { value: "cdn", key: "cdn" },
-    ].map((option) => ({
-      value: option.value,
-      label: t(`tools.iosModules.endpointOptions.${option.key}`),
-    }))
+      settingsStore.hasDirectEndpoint ? { value: "direct" as const, key: "direct" } : null,
+      settingsStore.hasCdnEndpoint ? { value: "cdn" as const, key: "cdn" } : null,
+    ]
+      .filter((option): option is { value: EndpointType; key: EndpointType } => option !== null)
+      .map((option) => ({
+        value: option.value,
+        label: t(`tools.iosModules.endpointOptions.${option.key}`),
+      }))
   )
   const modeOptions = computed(() =>
     UPLOAD_MODE_OPTIONS.map((option) => ({
@@ -78,7 +80,7 @@ export function useIOSModuleGenerator() {
   const isCnRestricted = computed(() => {
     const hasMysekaiType = selectedDataTypes.value.some((item) => isMySekaiUploadType(item))
     const hasCn = selectedRegions.value.includes("cn")
-    return hasMysekaiType && hasCn && !userStore.allowCNMysekai
+    return hasMysekaiType && hasCn && userStore.allowCNMysekai !== true
   })
 
   const isQxScriptWarning = computed(() => selectedSoftware.value === "qx" && selectedMode.value === "script")
@@ -86,11 +88,14 @@ export function useIOSModuleGenerator() {
   const finalDataTypes = computed(() => selectedDataTypes.value)
 
   const moduleUrl = computed(() => {
-    if (!hasUploadCode.value || selectedRegions.value.length === 0 || finalDataTypes.value.length === 0) {
+    if (!hasUploadCode.value || selectedRegions.value.length === 0 || finalDataTypes.value.length === 0 || isCnRestricted.value) {
       return null
     }
 
-    const baseUrl = selectedEndpoint.value === "cdn" ? settingsStore.cdnEndpoint : settingsStore.directEndpoint
+    const baseUrl = settingsStore.getEndpointUrl(selectedEndpoint.value)
+    if (!baseUrl) {
+      return null
+    }
     const regions = selectedRegions.value.join("-")
     const dataTypes = finalDataTypes.value.join("-")
     const ext = IOS_MODULE_EXTENSION_MAP[selectedSoftware.value]
@@ -106,9 +111,10 @@ export function useIOSModuleGenerator() {
   })
 
   const scriptUrl = computed(() => {
-    if (!hasUploadCode.value) return null
+    if (!hasUploadCode.value || isCnRestricted.value) return null
 
-    const baseUrl = selectedEndpoint.value === "cdn" ? settingsStore.cdnEndpoint : settingsStore.directEndpoint
+    const baseUrl = settingsStore.getEndpointUrl(selectedEndpoint.value)
+    if (!baseUrl) return null
     return `${baseUrl}/ios/script/${userStore.iosUploadCode}/haruki-toolbox.js?chunk=${chunkSize.value}&endpoint=${selectedEndpoint.value}`
   })
 
@@ -227,6 +233,21 @@ export function useIOSModuleGenerator() {
   watch(selectedMode, () => {
     forceQxToProxyMode()
   })
+
+  watch(
+    endpointOptions,
+    (options) => {
+      if (options.some((option) => option.value === selectedEndpoint.value)) {
+        return
+      }
+
+      const fallback = options[0]?.value ?? settingsStore.resolvedPreferredEndpoint
+      if (fallback) {
+        selectedEndpoint.value = fallback
+      }
+    },
+    { immediate: true }
+  )
 
   return {
     userStore,

@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useRouter } from "vue-router"
@@ -31,7 +31,7 @@ export function useGameAccountBindingManagement() {
   const { t } = useI18n()
   const router = useRouter()
   const userStore = useUserStore()
-  const allowCNMysekai = computed(() => userStore.allowCNMysekai)
+  const allowCNMysekai = computed(() => userStore.allowCNMysekai === true)
   const regionLabels = computed<Record<SekaiRegion, string>>(() => ({
     jp: t("userSettings.gameBinding.region.jp"),
     en: t("userSettings.gameBinding.region.en"),
@@ -58,12 +58,18 @@ export function useGameAccountBindingManagement() {
   const isSaving = ref(false)
   const isDeleting = ref(false)
   const isVerifying = ref(false)
+  const editIdentitySnapshot = ref<{ server: SekaiRegion; userId: string } | null>(null)
+  const verifiedBindingSnapshot = ref<{ server: SekaiRegion; userId: string } | null>(null)
 
   const data = computed<GameAccountBinding[]>(() =>
     Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
   )
 
   function redirectWhenSocialAccountNotVerified() {
+    if (userStore.settingsSyncState !== "synced") {
+      return
+    }
+
     const info = userStore.socialPlatformInfo
     if (!info?.verified) {
       toast.warning(t("userSettings.gameBinding.toast.socialBindingRequiredTitle"), {
@@ -77,10 +83,16 @@ export function useGameAccountBindingManagement() {
     return resolveRequiredUserId(userStore.userId, errorTitle)
   }
 
-  function startAdd() {
-    isCreating.value = true
+  function clearVerificationState() {
     verificationTriggered.value = false
     generatedCode.value = ""
+    verifiedBindingSnapshot.value = null
+  }
+
+  function startAdd() {
+    isCreating.value = true
+    clearVerificationState()
+    editIdentitySnapshot.value = null
     editTarget.value = toEditableAccount()
     userIdInput.value = ""
     showEditDialog.value = true
@@ -88,8 +100,11 @@ export function useGameAccountBindingManagement() {
 
   function startEdit(account: GameAccountBinding) {
     isCreating.value = false
-    verificationTriggered.value = false
-    generatedCode.value = ""
+    clearVerificationState()
+    editIdentitySnapshot.value = {
+      server: account.server,
+      userId: String(account.userId),
+    }
     editTarget.value = toEditableAccount(account)
     userIdInput.value = String(account.userId)
     showEditDialog.value = true
@@ -146,9 +161,12 @@ export function useGameAccountBindingManagement() {
 
     isSaving.value = true
     try {
-      const server = editTarget.value.server
-      const gameUid = userIdInput.value.trim()
-      if (!/^\d+$/.test(gameUid)) {
+      const currentServer = editTarget.value.server
+      const currentGameUid = userIdInput.value.trim()
+      const identity = !isCreating.value ? editIdentitySnapshot.value : null
+      const server = identity?.server ?? currentServer
+      const gameUid = identity?.userId ?? currentGameUid
+      if (!/^\d+$/.test(currentGameUid)) {
         toast.error(t("userSettings.gameBinding.toast.saveFailedTitle"), {
           description: t("userSettings.gameBinding.toast.uidMustBeNumericDescription"),
         })
@@ -157,7 +175,7 @@ export function useGameAccountBindingManagement() {
 
       const suitePayload = normalizeSuitePermissions(editTarget.value.suite)
       const mysekaiPayload =
-        server === "cn" && userStore.allowCNMysekai === false
+        currentServer === "cn" && userStore.allowCNMysekai !== true
           ? normalizeMysekaiPermissions(null)
           : normalizeMysekaiPermissions(editTarget.value.mysekai)
 
@@ -222,6 +240,10 @@ export function useGameAccountBindingManagement() {
       }
 
       showVerifyDialog.value = true
+      verifiedBindingSnapshot.value = {
+        server: editTarget.value.server,
+        userId: uidStr,
+      }
       verificationTriggered.value = true
     } catch (error: unknown) {
       toast.error(t("userSettings.gameBinding.toast.generateCodeFailedTitle"), {
@@ -254,9 +276,27 @@ export function useGameAccountBindingManagement() {
     })
   }
 
-  onMounted(() => {
-    redirectWhenSocialAccountNotVerified()
-  })
+  watch(
+    [() => userStore.settingsSyncState, () => userStore.socialPlatformInfo?.verified],
+    () => {
+      redirectWhenSocialAccountNotVerified()
+    },
+    { immediate: true }
+  )
+
+  watch(
+    [isCreating, () => editTarget.value?.server, userIdInput],
+    ([creating, server, currentUserId]) => {
+      if (!creating || !verifiedBindingSnapshot.value || !server) {
+        return
+      }
+
+      const snapshot = verifiedBindingSnapshot.value
+      if (snapshot.server !== server || snapshot.userId !== currentUserId.trim()) {
+        clearVerificationState()
+      }
+    }
+  )
 
   return {
     data,

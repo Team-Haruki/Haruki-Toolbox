@@ -17,7 +17,7 @@ function normalizeTicketCategory(value: unknown): Ticket["category"] {
 }
 
 function normalizeTicketPriority(value: unknown): Ticket["priority"] {
-  return isTicketPriority(value) ? value : "medium"
+  return isTicketPriority(value) ? value : "normal"
 }
 
 function normalizeTicketStatus(value: unknown): Ticket["status"] {

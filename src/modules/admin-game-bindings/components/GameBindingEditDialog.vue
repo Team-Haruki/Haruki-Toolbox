@@ -47,7 +47,7 @@ defineProps<{
   editMysekai: Record<string, boolean>
   editServers: ReadonlyArray<ServerOption>
 }>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const emit = defineEmits<{
   (e: "update:open", value: boolean): void
@@ -112,8 +112,8 @@ const mysekaiPermissionOptions = computed(() =>
         </div>
         <div class="flex flex-col gap-1.5">
           <Label>{{ t("adminGameBindings.editDialog.server") }}</Label>
-          <Select :model-value="editServer" @update:model-value="handleServerChange">
-            <SelectTrigger class="w-full">
+          <Select :key="locale" :model-value="editServer" @update:model-value="handleServerChange">
+            <SelectTrigger class="w-full" :disabled="isEditMode">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

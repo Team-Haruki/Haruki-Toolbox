@@ -24,6 +24,8 @@ type UseGameBindingActionsOptions = {
   editTargetUserId: Ref<string>
   editServer: Ref<SekaiRegion>
   editGameUserId: Ref<string>
+  editOriginalServer: Ref<SekaiRegion>
+  editOriginalGameUserId: Ref<string>
   editSuite: Ref<SuiteDataPrivacySettings>
   editMysekai: Ref<MysekaiDataPrivacySettings>
   isEditMode: Ref<boolean>
@@ -131,12 +133,17 @@ export function useGameBindingActions(options: UseGameBindingActionsOptions) {
 
   async function handleSaveBinding() {
     const targetUserId = options.editTargetUserId.value.trim()
-    const gameUserId = options.editGameUserId.value.trim()
+    const gameUserId = (options.isEditMode.value
+      ? options.editOriginalGameUserId.value
+      : options.editGameUserId.value).trim()
+    const server = options.isEditMode.value
+      ? options.editOriginalServer.value
+      : options.editServer.value
     if (!targetUserId || !gameUserId) return
 
     await runAction(
       () =>
-        updateGameAccountBinding(targetUserId, options.editServer.value, gameUserId, {
+        updateGameAccountBinding(targetUserId, server, gameUserId, {
           suite: options.editSuite.value,
           mysekai: options.editMysekai.value,
         }),

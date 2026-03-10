@@ -9,6 +9,7 @@ import Turnstile from "@/shared/components/Turnstile.vue"
 import { Loader2, Mail, ArrowRightLeft, Key, Send, Save } from 'lucide-vue-next'
 import { extractErrorMessage } from "@/lib/error-utils"
 import { redirectToLogin } from "@/core/router/navigation"
+import { unwrapUpdatedData } from "@/core/http/call-api"
 
 
 import {
@@ -154,12 +155,8 @@ async function handleChangeEmail() {
   changing.value = true
   try {
     const response = await verifyEmail(newEmail.value, emailCode.value, { skipErrorToast: true })
-
-    const updatedEmailInfo = response.updatedData
-    
-    if (updatedEmailInfo) {
-      userStore.setUser({emailInfo: updatedEmailInfo})
-    }
+    const updatedEmailInfo = unwrapUpdatedData(response, t("userSettings.email.title"))
+    userStore.setUser({ emailInfo: updatedEmailInfo })
 
     toast.success(t("userSettings.email.toast.changeSuccessTitle"), {
       description: t("userSettings.email.toast.changeSuccessDescription"),

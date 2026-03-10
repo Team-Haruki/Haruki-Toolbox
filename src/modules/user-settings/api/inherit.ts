@@ -1,10 +1,10 @@
 import {request} from "@/core/http/call-api";
 import { encodePathSegment } from "@/core/http/url"
-import type {APIResponse, SekaiRegion, UploadDataType} from "@/types";
+import type {APIResponse, InheritServer, UploadDataType} from "@/types";
 import type { AxiosRequestConfig } from "axios";
 
 export async function submitInherit(
-    server: SekaiRegion,
+    server: InheritServer,
     dataType: UploadDataType,
     inherit_id: string,
     inherit_password: string,

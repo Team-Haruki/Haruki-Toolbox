@@ -31,6 +31,7 @@ import { resolveServerLabel } from "@/modules/admin-users/constants"
 
 defineProps<{
   open: boolean
+  isEditMode: boolean
   userName?: string
   actionLoading: boolean
   server: SekaiRegion
@@ -48,7 +49,7 @@ const emit = defineEmits<{
   (e: "save"): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const suitePermissionOptions = SUITE_PERMISSION_OPTIONS
 const mysekaiPermissionOptions = MYSEKAI_PERMISSION_OPTIONS
 
@@ -70,8 +71,8 @@ function handleServerChange(value: unknown) {
       <div class="flex flex-col gap-4 py-2">
         <div class="flex flex-col gap-1.5">
           <Label>{{ t("adminUsers.detail.dialog.gameBinding.server") }}</Label>
-          <Select :model-value="server" @update:model-value="handleServerChange">
-            <SelectTrigger class="w-full">
+          <Select :key="locale" :model-value="server" @update:model-value="handleServerChange">
+            <SelectTrigger class="w-full" :disabled="isEditMode">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -89,6 +90,7 @@ function handleServerChange(value: unknown) {
           <Label>{{ t("adminUsers.detail.dialog.gameBinding.gameUserId") }}</Label>
           <Input
             :model-value="gameUserId"
+            :disabled="isEditMode"
             :placeholder="t('adminUsers.detail.dialog.gameBinding.gameUserIdPlaceholder')"
             @update:model-value="emit('update:game-user-id', String($event ?? ''))"
           />

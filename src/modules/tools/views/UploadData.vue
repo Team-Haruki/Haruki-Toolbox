@@ -13,6 +13,7 @@ const {
   inheritServer,
   inheritId,
   inheritPassword,
+  rememberInherit,
   isSubmittingFile,
   isSubmittingInherit,
   uploadProgress,
@@ -22,6 +23,7 @@ const {
   disabledReason,
   isCNMySekaiForbidden,
   onFileChange,
+  setRememberInherit,
   submitFileUpload,
   submitInheritUpload,
 } = useUploadDataTool()
@@ -69,7 +71,9 @@ const {
           v-model:inherit-server="inheritServer"
           v-model:inherit-id="inheritId"
           v-model:inherit-password="inheritPassword"
+          v-model:remember-inherit="rememberInherit"
           :is-submitting-inherit="isSubmittingInherit"
+          @update:remember-inherit="setRememberInherit"
           @submit="submitInheritUpload"
         />
       </TabsContent>

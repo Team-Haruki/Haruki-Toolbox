@@ -8,19 +8,25 @@ export function useFriendGroups() {
   const { t } = useI18n()
   const groupData = ref<FriendGroupData[]>([])
   const openGroups = ref<string[]>([])
+  const loading = ref(true)
 
   async function fetchGroupData() {
+    loading.value = true
     try {
       const rawData = await getFriendGroups()
       const data = rawData.filter((group) => group.groupList.length > 0)
       groupData.value = data
       openGroups.value = data.map((group) => group.group)
     } catch (error: unknown) {
+      groupData.value = []
+      openGroups.value = []
       toastErrorWithExtractedMessage(
         t("navigationPages.friendGroups.toast.loadFailedTitle"),
         error,
         t("navigationPages.common.retryLater")
       )
+    } finally {
+      loading.value = false
     }
   }
 
@@ -31,5 +37,6 @@ export function useFriendGroups() {
   return {
     groupData,
     openGroups,
+    loading,
   }
 }

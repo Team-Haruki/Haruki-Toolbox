@@ -1,5 +1,4 @@
 import { ref } from "vue"
-import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
 import type { OAuthClient } from "@/types/admin"
@@ -55,23 +54,12 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
   }
 
   async function handleRotateSecret(clientId: string) {
-    await runAsyncAction(
-      actionLoading,
-      async () => {
-        const response = await rotateClientSecret(clientId)
-        return response?.clientSecret ?? ""
+    await runAsyncAction(actionLoading, () => rotateClientSecret(clientId), {
+      errorTitle: t("adminOAuthClients.toast.rotateFailedTitle"),
+      onSuccess: (rotatedSecret) => {
+        options.onSecretGenerated(rotatedSecret)
       },
-      {
-        errorTitle: t("adminOAuthClients.toast.rotateFailedTitle"),
-        onSuccess: (rotatedSecret) => {
-          if (rotatedSecret) {
-            options.onSecretGenerated(rotatedSecret)
-            return
-          }
-          toast.success(t("adminOAuthClients.toast.secretRotated"))
-        },
-      }
-    )
+    })
   }
 
   async function handleRestore(clientId: string) {

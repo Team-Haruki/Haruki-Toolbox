@@ -52,8 +52,11 @@ export function createAdminUserDetailGameActions({
   function openEditGameBinding(
     binding: Pick<AdminGameAccountBinding, "server" | "gameUserId" | "suite" | "mysekai">
   ) {
+    refs.editGameIsEditMode.value = true
     refs.editGameServer.value = binding.server
     refs.editGameUserId.value = binding.gameUserId
+    refs.editGameOriginalServer.value = binding.server
+    refs.editGameOriginalUserId.value = binding.gameUserId
     refs.editGameSuite.value = normalizeSuitePermissions(binding.suite)
     refs.editGameMysekai.value = normalizeMysekaiPermissions(binding.mysekai)
     refs.gameBindingDialogOpen.value = true
@@ -63,10 +66,17 @@ export function createAdminUserDetailGameActions({
     const gameUserId = refs.editGameUserId.value.trim()
     if (!gameUserId) return
 
+    const requestServer = refs.editGameIsEditMode.value
+      ? refs.editGameOriginalServer.value
+      : refs.editGameServer.value
+    const requestGameUserId = refs.editGameIsEditMode.value
+      ? refs.editGameOriginalUserId.value.trim()
+      : gameUserId
+
     await runAction(
       translate("adminUsers.detail.toast.saveGameBindingFailedTitle"),
       () =>
-        updateGameAccountBinding(userId(), refs.editGameServer.value, gameUserId, {
+        updateGameAccountBinding(userId(), requestServer, requestGameUserId, {
           suite: refs.editGameSuite.value,
           mysekai: refs.editGameMysekai.value,
         }),

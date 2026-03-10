@@ -27,7 +27,7 @@ export interface AdminUserDetail {
       email: string
       verified: boolean
     }
-    authorizeSocialPlatformInfo?: AuthorizedSocialPlatform | null
+    authorizeSocialPlatformInfo?: AuthorizedSocialPlatform[] | null
     gameAccountBindings?: AdminGameAccountBinding[] | null
     iosUploadCode?: string | null
   }

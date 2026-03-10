@@ -63,7 +63,7 @@ function normalizeFriendGroupItem(item: unknown): FriendGroupItem | null {
     avatar: readString(record, ["avatar"]),
     bg: readString(record, ["bg"]),
     groupInfo: readString(record, ["groupInfo", "group_info"]),
-    detail: readString(record, ["detail"]),
+    detail: readString(record, ["detail", "description"]),
     url: safeUrl,
   }
 }
@@ -74,12 +74,16 @@ export function normalizeFriendGroup(item: unknown): FriendGroupData | null {
     return null
   }
 
-  const group = readString(record, ["group"]).trim()
+  const group = readString(record, ["group", "name"]).trim()
   if (!group) {
     return null
   }
 
-  const groupListRaw = Array.isArray(record.groupList) ? record.groupList : []
+  const groupListRaw = Array.isArray(record.groupList)
+    ? record.groupList
+    : Array.isArray(record.group_list)
+      ? record.group_list
+      : []
   const groupList = groupListRaw
     .map((entry) => normalizeFriendGroupItem(entry))
     .filter((entry): entry is FriendGroupItem => entry !== null)

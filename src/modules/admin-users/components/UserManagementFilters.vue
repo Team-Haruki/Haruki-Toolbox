@@ -49,7 +49,7 @@ const emit = defineEmits<{
   (e: "update:createdTo", value: Date | undefined): void
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 function parseDate(value: unknown) {
   return value instanceof Date ? value : undefined
@@ -73,7 +73,7 @@ function parseDate(value: unknown) {
 
     <div class="flex flex-col gap-1.5">
       <Label class="text-xs">{{ t("adminUsers.management.filters.roleLabel") }}</Label>
-      <Select :model-value="roleFilter" @update:model-value="emit('update:roleFilter', $event as RoleFilter)">
+      <Select :key="locale" :model-value="roleFilter" @update:model-value="emit('update:roleFilter', $event as RoleFilter)">
         <SelectTrigger class="w-32">
           <SelectValue />
         </SelectTrigger>
@@ -103,7 +103,7 @@ function parseDate(value: unknown) {
 
     <div class="flex flex-col gap-1.5">
       <Label class="text-xs">{{ t("adminUsers.management.filters.statusLabel") }}</Label>
-      <Select :model-value="bannedFilter" @update:model-value="emit('update:bannedFilter', $event as BooleanFilter)">
+      <Select :key="locale" :model-value="bannedFilter" @update:model-value="emit('update:bannedFilter', $event as BooleanFilter)">
         <SelectTrigger class="w-32">
           <SelectValue />
         </SelectTrigger>
@@ -127,7 +127,7 @@ function parseDate(value: unknown) {
 
     <div class="flex flex-col gap-1.5">
       <Label class="text-xs">{{ t("adminUsers.management.filters.allowCNLabel") }}</Label>
-      <Select
+      <Select :key="locale"
         :model-value="allowCnMysekaiFilter"
         @update:model-value="emit('update:allowCnMysekaiFilter', $event as BooleanFilter)"
       >
@@ -154,7 +154,7 @@ function parseDate(value: unknown) {
 
     <div class="flex flex-col gap-1.5">
       <Label class="text-xs">{{ t("adminUsers.management.filters.sortLabel") }}</Label>
-      <Select :model-value="sortFilter" @update:model-value="emit('update:sortFilter', $event as SortFilter)">
+      <Select :key="locale" :model-value="sortFilter" @update:model-value="emit('update:sortFilter', $event as SortFilter)">
         <SelectTrigger class="w-36">
           <SelectValue />
         </SelectTrigger>
