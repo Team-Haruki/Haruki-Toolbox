@@ -1,6 +1,5 @@
 import { createI18n } from "vue-i18n"
 import { zhCN } from "@/shared/i18n/messages/zh-CN"
-import { enUS } from "@/shared/i18n/messages/en-US"
 
 export const SUPPORTED_LOCALES = ["zh-CN", "en-US"] as const
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number]
@@ -13,7 +12,13 @@ export function isAppLocale(value: unknown): value is AppLocale {
 
 const messages = {
   "zh-CN": zhCN,
-  "en-US": enUS,
+}
+
+const loadedLocales = new Set<AppLocale>(["zh-CN"])
+
+const localeLoaders: Record<AppLocale, () => Promise<Record<string, unknown>>> = {
+  "zh-CN": async () => zhCN,
+  "en-US": async () => (await import("@/shared/i18n/messages/en-US")).enUS,
 }
 
 export const i18n = createI18n({
@@ -24,7 +29,18 @@ export const i18n = createI18n({
   globalInjection: true,
 })
 
-export function setI18nLocale(locale: AppLocale) {
+export async function loadI18nLocale(locale: AppLocale) {
+  if (loadedLocales.has(locale)) {
+    return
+  }
+
+  const message = await localeLoaders[locale]()
+  i18n.global.setLocaleMessage(locale, message)
+  loadedLocales.add(locale)
+}
+
+export async function setI18nLocale(locale: AppLocale) {
+  await loadI18nLocale(locale)
   i18n.global.locale.value = locale
 }
 

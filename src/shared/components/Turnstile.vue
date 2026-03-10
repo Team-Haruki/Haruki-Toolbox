@@ -22,6 +22,9 @@ const container = ref<HTMLDivElement | null>(null)
 let widgetId: string | null = null
 let interval: number | null = null
 
+const TURNSTILE_POLL_INTERVAL_MS = 200
+const TURNSTILE_POLL_TIMEOUT_MS = 10_000
+
 function clearToken() {
   emit("invalid")
 }
@@ -83,6 +86,7 @@ onMounted(() => {
     if (window.turnstile) {
       renderTurnstile()
     } else {
+      const pollDeadline = Date.now() + TURNSTILE_POLL_TIMEOUT_MS
       interval = window.setInterval(() => {
         if (window.turnstile) {
           renderTurnstile()
@@ -90,8 +94,14 @@ onMounted(() => {
             clearInterval(interval)
             interval = null
           }
+          return
         }
-      }, 200)
+
+        if (Date.now() >= pollDeadline && interval) {
+          clearInterval(interval)
+          interval = null
+        }
+      }, TURNSTILE_POLL_INTERVAL_MS)
     }
   }
 })

@@ -1,4 +1,4 @@
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { copyTextToClipboard, isClipboardSupported } from "@/lib/clipboard"
@@ -7,6 +7,10 @@ export function useOAuthClientSecretDialog() {
   const { t } = useI18n()
   const secretDisplayOpen = ref(false)
   const displayedSecret = ref("")
+
+  function clearSecret() {
+    displayedSecret.value = ""
+  }
 
   function showSecret(secret: string) {
     const normalized = secret.trim()
@@ -38,6 +42,12 @@ export function useOAuthClientSecretDialog() {
 
     toast.error(t("adminOAuthClients.toast.copyFailedTitle"))
   }
+
+  watch(secretDisplayOpen, (open) => {
+    if (!open) {
+      clearSecret()
+    }
+  })
 
   return {
     secretDisplayOpen,

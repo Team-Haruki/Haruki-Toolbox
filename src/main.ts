@@ -20,16 +20,16 @@ userStore.checkExpiration()
 const settingsStore = useSettingsStore()
 settingsStore.initTheme()
 if (isAppLocale(settingsStore.locale)) {
-    setI18nLocale(settingsStore.locale)
+    await setI18nLocale(settingsStore.locale)
 }
 watch(
     () => settingsStore.locale,
     (locale) => {
         if (isAppLocale(locale)) {
-            setI18nLocale(locale)
+            void setI18nLocale(locale)
         }
     },
-    { immediate: true }
+    { immediate: false }
 )
 app.use(i18n)
 app.use(router)

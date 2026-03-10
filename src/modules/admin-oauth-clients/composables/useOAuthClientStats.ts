@@ -19,6 +19,12 @@ export function useOAuthClientStats() {
   const statsBucket = ref<StatsBucket>("hour")
   let latestStatsRequestId = 0
 
+  function resetFilters() {
+    statsFrom.value = undefined
+    statsTo.value = undefined
+    statsBucket.value = "hour"
+  }
+
   function hasInvalidTimeRange() {
     return !!statsFrom.value && !!statsTo.value && statsFrom.value.getTime() > statsTo.value.getTime()
   }
@@ -53,6 +59,9 @@ export function useOAuthClientStats() {
   }
 
   async function showStats(clientId: string) {
+    if (statsClientId.value !== clientId) {
+      resetFilters()
+    }
     statsOpen.value = true
     await loadStats(clientId)
   }
@@ -68,9 +77,7 @@ export function useOAuthClientStats() {
   }
 
   async function resetStatsFilters() {
-    statsFrom.value = undefined
-    statsTo.value = undefined
-    statsBucket.value = "hour"
+    resetFilters()
     if (!statsClientId.value) return
     await loadStats(statsClientId.value)
   }

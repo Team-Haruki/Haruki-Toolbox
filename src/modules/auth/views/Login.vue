@@ -60,7 +60,7 @@ const { t } = useI18n()
         <form @submit.prevent="handleLogin">
           <div class="grid gap-6">
           <div class="grid gap-2">
-              <Label html-for="email">{{ t("auth.login.emailLabel") }}</Label>
+              <Label for="email">{{ t("auth.login.emailLabel") }}</Label>
               <div class="relative w-full items-center">
                 <Input
                     id="email"
@@ -77,12 +77,12 @@ const { t } = useI18n()
             </div>
             <div class="grid gap-2">
               <div class="flex items-center">
-                <Label html-for="password">{{ t("auth.login.passwordLabel") }}</Label>
+                <Label for="password">{{ t("auth.login.passwordLabel") }}</Label>
                 <Dialog>
                   <DialogTrigger as-child>
-                    <a href="javascript:void(0)" class="ml-auto text-sm underline-offset-4 hover:underline">
+                    <button type="button" class="ml-auto text-sm underline-offset-4 hover:underline">
                       {{ t("auth.login.forgotPassword") }}
-                    </a>
+                    </button>
                   </DialogTrigger>
                   <DialogScrollContent class="sm:max-w-[425px]">
                     <DialogHeader>

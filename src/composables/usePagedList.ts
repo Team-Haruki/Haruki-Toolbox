@@ -63,8 +63,13 @@ export function usePagedList<TItem, TResponse = PagedData<TItem>>(
       })
       if (requestId !== latestRequestId) return
       const pagedData = mapResponse(response)
-      items.value = pagedData.items ?? []
       total.value = pagedData.total ?? 0
+      if (page.value > totalPages.value) {
+        page.value = totalPages.value
+        return await load(loadOptions)
+      }
+
+      items.value = pagedData.items ?? []
       if (options.onSuccess) {
         await options.onSuccess(response)
       }
