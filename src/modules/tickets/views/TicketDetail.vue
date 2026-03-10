@@ -51,7 +51,7 @@ const {
   handleClose,
   isMe,
   goBackToTicketList,
-} = useTicketDetail(props.ticketId)
+} = useTicketDetail(() => props.ticketId)
 
 function formatDateTime(value?: string) {
   if (!value) return t("tickets.common.dateFallback")

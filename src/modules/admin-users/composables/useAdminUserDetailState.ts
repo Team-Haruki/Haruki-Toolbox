@@ -98,11 +98,59 @@ export function createAdminUserDetailState() {
     refs.editGameMysekai.value = createDefaultMysekaiPermissions()
   }
 
+  function resetLazyTabs() {
+    lazyTabLoaded.value = {
+      activity: false,
+      oauth: false,
+      game: false,
+      social: false,
+      "auth-social": false,
+    }
+  }
+
+  function resetForUserChange() {
+    refs.loading.value = true
+    refs.user.value = null
+    refs.activities.value = []
+    refs.activityLoading.value = false
+    refs.oauthAuths.value = []
+    refs.oauthLoading.value = false
+    refs.gameBindings.value = []
+    refs.gameBindingLoading.value = false
+    refs.socialPlatform.value = null
+    refs.socialLoading.value = false
+    refs.authorizedSocials.value = []
+    refs.authSocialLoading.value = false
+    refs.iosUploadCode.value = null
+
+    refs.emailDialogOpen.value = false
+    refs.editEmail.value = ""
+
+    refs.gameBindingDialogOpen.value = false
+    resetGameBindingEditor()
+
+    refs.socialDialogOpen.value = false
+    refs.editSocialPlatform.value = DEFAULT_SOCIAL_PLATFORM
+    refs.editSocialUserId.value = ""
+    refs.editSocialVerified.value = false
+
+    refs.authSocialDialogOpen.value = false
+    refs.authSocialCreateMode.value = false
+    refs.editAuthSocialId.value = ""
+    refs.editAuthSocialPlatform.value = DEFAULT_SOCIAL_PLATFORM
+    refs.editAuthSocialUserId.value = ""
+    refs.editAuthSocialComment.value = ""
+
+    resetLazyTabs()
+  }
+
   return {
     refs,
     markTabLoaded,
     shouldLoadTab,
     resetGameBindingEditor,
+    resetLazyTabs,
+    resetForUserChange,
   }
 }
 

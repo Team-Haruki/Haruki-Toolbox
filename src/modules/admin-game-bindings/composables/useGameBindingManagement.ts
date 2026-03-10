@@ -68,6 +68,10 @@ export function useGameBindingManagement() {
     },
   })
 
+  async function refreshBindingsStrict() {
+    await loadBindings({ throwOnError: true, notifyOnError: false })
+  }
+
   function bindingKey(binding: GlobalGameBinding) {
     return toBindingKey(binding)
   }
@@ -99,7 +103,7 @@ export function useGameBindingManagement() {
     handleBatchDelete,
     handleSaveBinding,
   } = useGameBindingActions({
-    loadBindings,
+    loadBindings: refreshBindingsStrict,
     selected,
     parseSelectedBindings,
     editDialogOpen,

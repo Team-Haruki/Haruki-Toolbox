@@ -51,6 +51,7 @@ export function useSystemLogs() {
   const detailOpen = ref(false)
   const detailLog = ref<SystemLog | null>(null)
   const detailLoading = ref(false)
+  let latestDetailRequestId = 0
 
   async function loadSummary() {
     summaryLoading.value = true
@@ -68,17 +69,24 @@ export function useSystemLogs() {
   }
 
   async function showDetail(id: number | string) {
+    const requestId = ++latestDetailRequestId
     detailOpen.value = true
     detailLoading.value = true
+    detailLog.value = null
     try {
-      detailLog.value = await getSystemLogDetail(String(id))
+      const detail = await getSystemLogDetail(String(id))
+      if (requestId !== latestDetailRequestId) return
+      detailLog.value = detail
     } catch (error: unknown) {
+      if (requestId !== latestDetailRequestId) return
+      detailLog.value = null
       toastErrorWithExtractedMessage(
         t("adminStatistics.systemLogs.toast.loadDetailFailedTitle"),
         error,
         t("adminStatistics.systemLogs.toast.loadFailedFallback")
       )
     } finally {
+      if (requestId !== latestDetailRequestId) return
       detailLoading.value = false
     }
   }

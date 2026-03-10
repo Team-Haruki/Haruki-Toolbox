@@ -52,6 +52,7 @@ const props = defineProps<{
   isCreating: boolean
   verificationTriggered: boolean
   isSaving: boolean
+  isVerifying: boolean
   allowCNMysekai: boolean
   userIdInput: string
   editTarget: GameAccountBinding | null
@@ -173,7 +174,7 @@ const mysekaiPermissionOptions = computed(() =>
                   v-if="editTarget?.verified"
                   class="px-2 py-1 rounded text-xs bg-green-100 text-green-700"
                 >{{ t("userSettings.gameBinding.status.verified") }}</span>
-                <Button v-else variant="outline" @click="emit('verify')">
+                <Button v-else variant="outline" :disabled="isVerifying || isSaving" @click="emit('verify')">
                   <ShieldCheck class="h-4 w-4 mr-2" />
                   {{ t("userSettings.gameBinding.editDialog.verifyButton") }}
                 </Button>

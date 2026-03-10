@@ -25,6 +25,9 @@ export function useOAuthClientManagement() {
   )
 
   const { loading, clients, loadClients } = useOAuthClientList()
+  async function refreshClientsStrict() {
+    await loadClients({ throwOnError: true, notifyOnError: false })
+  }
   const { secretDisplayOpen, displayedSecret, showSecret, copySecret } = useOAuthClientSecretDialog()
   const {
     actionLoading,
@@ -37,7 +40,7 @@ export function useOAuthClientManagement() {
     handleRestore,
     handleRevoke,
   } = useOAuthClientRowActions({
-    loadClients,
+    loadClients: refreshClientsStrict,
     onSecretGenerated: showSecret,
   })
   const {
@@ -74,7 +77,7 @@ export function useOAuthClientManagement() {
     openEdit,
     handleSaveEdit,
   } = useOAuthClientForms({
-    loadClients,
+    loadClients: refreshClientsStrict,
     onSecretGenerated: showSecret,
   })
   const { statsOpen, statsLoading, statsClientId, stats, showStats } = useOAuthClientStats()

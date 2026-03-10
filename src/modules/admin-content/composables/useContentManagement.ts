@@ -18,6 +18,7 @@ import {
 } from "@/modules/admin-content/api/friend-group"
 import type { AdminFriendGroup, AdminFriendGroupItem, AdminFriendLink } from "@/types/admin"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
+import { normalizeExternalHttpUrl } from "@/lib/external-url"
 
 type LoadOptions = {
     throwOnError?: boolean
@@ -124,11 +125,19 @@ export function useContentManagement() {
             return
         }
 
+        const normalizedUrl = normalizeExternalHttpUrl(linkForm.value.url)
+        if (!normalizedUrl) {
+            toast.error(t("adminContent.toast.saveFailedTitle"), {
+                description: t("adminContent.toast.invalidLinkUrl"),
+            })
+            return
+        }
+
         const data = {
             name: linkForm.value.name.trim(),
             description: linkForm.value.description.trim(),
             avatar: linkForm.value.avatar.trim(),
-            url: linkForm.value.url.trim(),
+            url: normalizedUrl,
             tags: linkForm.value.tags.split(",").map((t) => t.trim()).filter(Boolean),
         }
         const editingId = editingLink.value?.id

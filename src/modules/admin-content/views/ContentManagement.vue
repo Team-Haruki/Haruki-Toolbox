@@ -103,11 +103,11 @@ const {
           </div>
           <div class="flex flex-col gap-1.5">
             <Label>{{ t("adminContent.linkDialog.fields.avatarUrl") }}</Label>
-            <Input v-model="linkForm.avatar" placeholder="https://..." />
+            <Input v-model="linkForm.avatar" :placeholder="t('adminContent.linkDialog.placeholders.avatarUrl')" />
           </div>
           <div class="flex flex-col gap-1.5">
             <Label>{{ t("adminContent.linkDialog.fields.linkUrl") }}</Label>
-            <Input v-model="linkForm.url" placeholder="https://..." />
+            <Input v-model="linkForm.url" :placeholder="t('adminContent.linkDialog.placeholders.linkUrl')" />
           </div>
           <div class="flex flex-col gap-1.5">
             <Label>{{ t("adminContent.linkDialog.fields.tags") }}</Label>
@@ -137,11 +137,11 @@ const {
           </div>
           <div class="flex flex-col gap-1.5">
             <Label>{{ t("adminContent.itemDialog.fields.avatarUrl") }}</Label>
-            <Input v-model="itemForm.avatar" placeholder="https://..." />
+            <Input v-model="itemForm.avatar" :placeholder="t('adminContent.itemDialog.placeholders.avatarUrl')" />
           </div>
           <div class="flex flex-col gap-1.5">
             <Label>{{ t("adminContent.itemDialog.fields.backgroundUrl") }}</Label>
-            <Input v-model="itemForm.bg" placeholder="https://..." />
+            <Input v-model="itemForm.bg" :placeholder="t('adminContent.itemDialog.placeholders.backgroundUrl')" />
           </div>
           <div class="flex flex-col gap-1.5">
             <Label>{{ t("adminContent.itemDialog.fields.groupInfo") }}</Label>

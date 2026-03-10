@@ -1,4 +1,4 @@
-import { computed, nextTick, onMounted, ref } from "vue"
+import { computed, nextTick, onMounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
@@ -33,8 +33,13 @@ function dedupeAdmins(admins: AdminUser[]): AdminUser[] {
 
 const ADMIN_PAGE_SIZE = 200
 type AdminRoleFilter = "admin" | "super_admin"
+type ValueOrGetter<T> = T | (() => T)
 
-export function useAdminTicketDetail(ticketId: string) {
+function resolveValue<T>(value: ValueOrGetter<T>): T {
+  return typeof value === "function" ? (value as () => T)() : value
+}
+
+export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
   const { t } = useI18n()
   const router = useRouter()
   const loading = ref(true)
@@ -48,6 +53,8 @@ export function useAdminTicketDetail(ticketId: string) {
   const adminUsers = ref<AdminUser[]>([])
   const statusOptions = computed(() => getTicketStatusOptions(t))
   let latestLoadRequestId = 0
+  const resolveTicketId = () => resolveValue(ticketId).trim()
+
   type LoadTicketOptions = {
     silent?: boolean
     throwOnError?: boolean
@@ -94,9 +101,17 @@ export function useAdminTicketDetail(ticketId: string) {
   async function loadTicket(options: LoadTicketOptions = {}) {
     const requestId = ++latestLoadRequestId
     const silent = options.silent ?? false
+    const ticketIdValue = resolveTicketId()
+    if (!ticketIdValue) {
+      if (requestId !== latestLoadRequestId) return
+      ticket.value = null
+      loading.value = false
+      return
+    }
+
     loading.value = true
     try {
-      const detail = await getAdminTicketDetail(ticketId)
+      const detail = await getAdminTicketDetail(ticketIdValue)
       if (requestId !== latestLoadRequestId) return
       normalizeCreatorInfo(detail)
       ticket.value = detail
@@ -122,11 +137,12 @@ export function useAdminTicketDetail(ticketId: string) {
 
   async function sendMessage() {
     const message = newMessage.value.trim()
-    if (!message || sending.value) return
+    const ticketIdValue = resolveTicketId()
+    if (!message || !ticketIdValue || sending.value) return
 
     sending.value = true
     try {
-      await addAdminTicketMessage(ticketId, {
+      await addAdminTicketMessage(ticketIdValue, {
         message,
         internal: isInternal.value,
       })
@@ -143,10 +159,13 @@ export function useAdminTicketDetail(ticketId: string) {
 
   async function handleStatusChange(newStatus: unknown) {
     if (!isTicketStatus(newStatus)) return
+    if (actionLoading.value) return
+    const ticketIdValue = resolveTicketId()
+    if (!ticketIdValue) return
     const status = newStatus
     actionLoading.value = true
     try {
-      await updateTicketStatus(ticketId, { status })
+      await updateTicketStatus(ticketIdValue, { status })
       try {
         await loadTicket({ silent: true, throwOnError: true })
         toast.success(
@@ -169,10 +188,13 @@ export function useAdminTicketDetail(ticketId: string) {
   }
 
   async function handleAssign() {
+    if (actionLoading.value) return
+    const ticketIdValue = resolveTicketId()
+    if (!ticketIdValue) return
     actionLoading.value = true
     try {
       const realId = assigneeId.value === "__none__" ? "" : assigneeId.value
-      await assignTicket(ticketId, { assigneeAdminId: realId || undefined })
+      await assignTicket(ticketIdValue, { assigneeAdminId: realId || undefined })
       try {
         await loadTicket({ silent: true, throwOnError: true })
         toast.success(realId ? t("tickets.adminDetail.toast.assigned") : t("tickets.adminDetail.toast.unassigned"))
@@ -197,6 +219,18 @@ export function useAdminTicketDetail(ticketId: string) {
   function goBack() {
     void router.push("/admin/tickets")
   }
+
+  watch(
+    () => resolveTicketId(),
+    (nextTicketId, previousTicketId) => {
+      if (nextTicketId === previousTicketId) return
+      ticket.value = null
+      newMessage.value = ""
+      isInternal.value = false
+      assigneeId.value = ""
+      void loadTicket()
+    }
+  )
 
   onMounted(() => {
     void loadTicket()

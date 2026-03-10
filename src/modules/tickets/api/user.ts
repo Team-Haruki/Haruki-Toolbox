@@ -27,7 +27,7 @@ export function createTicket(userId: string, data: CreateTicketRequest) {
 
 export async function getUserTicketDetail(userId: string, ticketId: string): Promise<TicketDetail> {
   const res = await request<APIResponse<UnknownRecord>>(buildUserApiPath(userId, "tickets", ticketId), { method: "GET" })
-  const updatedData = asRecord(res.updatedData) ?? {}
+  const updatedData = asRecord(unwrapUpdatedData(res, translate("tickets.detail.toast.loadFailedTitle"))) ?? {}
   const raw = asRecord(updatedData.ticket) ?? updatedData
   const ticket = normalizeTicket(raw)
 

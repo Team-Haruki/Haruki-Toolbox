@@ -1,5 +1,5 @@
 import type { EntityId } from "@/types/common"
-import type { ActionOptions } from "@/modules/admin-users/composables/useAdminUserDetailAsync"
+import type { ActionOptions, LoadOptions } from "@/modules/admin-users/composables/useAdminUserDetailAsync"
 import type { AdminUserDetailState } from "@/modules/admin-users/composables/useAdminUserDetailState"
 
 export type RunTaskFn = <T>(
@@ -14,16 +14,18 @@ export type RunActionFn = <T>(
   options?: ActionOptions<T>
 ) => Promise<void>
 
+export type LoaderRunOptions = Pick<LoadOptions<unknown>, "throwOnError" | "notifyOnError">
+
 export interface LoaderDeps {
-  loadUser: () => Promise<void>
-  loadOAuth: () => Promise<void>
-  loadGameBindings: () => Promise<void>
-  loadSocialPlatform: () => Promise<void>
-  loadAuthorizedSocials: () => Promise<void>
+  loadUser: (options?: LoaderRunOptions) => Promise<void>
+  loadOAuth: (options?: LoaderRunOptions) => Promise<void>
+  loadGameBindings: (options?: LoaderRunOptions) => Promise<void>
+  loadSocialPlatform: (options?: LoaderRunOptions) => Promise<void>
+  loadAuthorizedSocials: (options?: LoaderRunOptions) => Promise<void>
 }
 
 export interface CreateActionsParams {
-  userId: string
+  userId: () => string
   state: AdminUserDetailState
   runTask: RunTaskFn
   runAction: RunActionFn

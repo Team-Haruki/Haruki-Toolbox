@@ -1,5 +1,6 @@
-import { request } from "@/core/http/call-api"
+import { request, unwrapUpdatedData } from "@/core/http/call-api"
 import { userBase } from "@/modules/admin-users/api/shared"
+import { translate } from "@/shared/i18n"
 import type { UserSocialPlatform } from "@/types/admin"
 import type { SocialPlatform } from "@/types/social-platform"
 import type { APIResponse } from "@/types/response"
@@ -9,7 +10,8 @@ export async function getSocialPlatform(userId: string) {
     `${userBase(userId)}/social-platform`,
     { method: "GET" }
   )
-  return res.updatedData?.socialPlatform ?? null
+  const updatedData = unwrapUpdatedData(res, translate("adminUsers.detail.toast.loadSocialFailedTitle"))
+  return updatedData.socialPlatform ?? null
 }
 
 export function updateSocialPlatform(

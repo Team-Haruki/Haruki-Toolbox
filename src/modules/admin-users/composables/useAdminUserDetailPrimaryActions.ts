@@ -22,53 +22,54 @@ export function createAdminUserDetailPrimaryActions({
   loaders,
 }: CreateActionsParams) {
   const { refs } = state
+  const strictRefreshOptions = { throwOnError: true, notifyOnError: false } as const
 
   async function handleBan() {
-    await runAction(translate("adminUsers.detail.toast.banFailedTitle"), () => banUser(userId), {
+    await runAction(translate("adminUsers.detail.toast.banFailedTitle"), () => banUser(userId()), {
       successMessage: translate("adminUsers.detail.toast.banSuccess"),
-      afterSuccess: loaders.loadUser,
+      afterSuccess: () => loaders.loadUser(strictRefreshOptions),
     })
   }
 
   async function handleUnban() {
-    await runAction(translate("adminUsers.detail.toast.unbanFailedTitle"), () => unbanUser(userId), {
+    await runAction(translate("adminUsers.detail.toast.unbanFailedTitle"), () => unbanUser(userId()), {
       successMessage: translate("adminUsers.detail.toast.unbanSuccess"),
-      afterSuccess: loaders.loadUser,
+      afterSuccess: () => loaders.loadUser(strictRefreshOptions),
     })
   }
 
   async function handleForceLogout() {
-    await runAction(translate("adminUsers.detail.toast.forceLogoutFailedTitle"), () => forceLogout(userId), {
+    await runAction(translate("adminUsers.detail.toast.forceLogoutFailedTitle"), () => forceLogout(userId()), {
       successMessage: translate("adminUsers.detail.toast.forceLogoutSuccess"),
     })
   }
 
   async function handleDelete() {
-    await runAction(translate("adminUsers.detail.toast.deleteFailedTitle"), () => deleteUser(userId), {
+    await runAction(translate("adminUsers.detail.toast.deleteFailedTitle"), () => deleteUser(userId()), {
       successMessage: translate("adminUsers.detail.toast.deleteSuccess"),
-      afterSuccess: loaders.loadUser,
+      afterSuccess: () => loaders.loadUser(strictRefreshOptions),
     })
   }
 
   async function handleRestore() {
-    await runAction(translate("adminUsers.detail.toast.restoreFailedTitle"), () => restoreUser(userId), {
+    await runAction(translate("adminUsers.detail.toast.restoreFailedTitle"), () => restoreUser(userId()), {
       successMessage: translate("adminUsers.detail.toast.restoreSuccess"),
-      afterSuccess: loaders.loadUser,
+      afterSuccess: () => loaders.loadUser(strictRefreshOptions),
     })
   }
 
   async function handleResetPassword() {
-    await runAction(translate("adminUsers.detail.toast.resetPasswordFailedTitle"), () => resetPassword(userId), {
+    await runAction(translate("adminUsers.detail.toast.resetPasswordFailedTitle"), () => resetPassword(userId()), {
       successMessage: translate("adminUsers.detail.toast.resetPasswordSuccess"),
     })
   }
 
   async function handleRoleChange(role: UserRole) {
-    await runAction(translate("adminUsers.detail.toast.updateRoleFailedTitle"), () => updateUserRole(userId, role), {
+    await runAction(translate("adminUsers.detail.toast.updateRoleFailedTitle"), () => updateUserRole(userId(), role), {
       successMessage: translate("adminUsers.detail.toast.updateRoleSuccess", {
         role: roleLabel(role, translate),
       }),
-      afterSuccess: loaders.loadUser,
+      afterSuccess: () => loaders.loadUser(strictRefreshOptions),
     })
   }
 
@@ -81,19 +82,19 @@ export function createAdminUserDetailPrimaryActions({
   async function handleEmailUpdate() {
     const email = refs.editEmail.value.trim()
     if (!email) return
-    await runAction(translate("adminUsers.detail.toast.updateEmailFailedTitle"), () => updateUserEmail(userId, email), {
+    await runAction(translate("adminUsers.detail.toast.updateEmailFailedTitle"), () => updateUserEmail(userId(), email), {
       successMessage: translate("adminUsers.detail.toast.updateEmailSuccess"),
       afterSuccess: async () => {
         refs.emailDialogOpen.value = false
-        await loaders.loadUser()
+        await loaders.loadUser(strictRefreshOptions)
       },
     })
   }
 
   async function handleRevokeOAuth() {
-    await runTask(translate("adminUsers.detail.toast.revokeOAuthFailedTitle"), () => revokeUserOAuth(userId), {
+    await runTask(translate("adminUsers.detail.toast.revokeOAuthFailedTitle"), () => revokeUserOAuth(userId()), {
       successMessage: translate("adminUsers.detail.toast.revokeOAuthSuccess"),
-      afterSuccess: loaders.loadOAuth,
+      afterSuccess: () => loaders.loadOAuth(strictRefreshOptions),
     })
   }
 

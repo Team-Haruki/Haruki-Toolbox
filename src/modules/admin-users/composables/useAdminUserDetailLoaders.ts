@@ -4,6 +4,7 @@ import { getUserOAuthAuthorizations } from "@/modules/admin-users/api/oauth"
 import { getSocialPlatform } from "@/modules/admin-users/api/social"
 import { getUserActivity, getUserDetail } from "@/modules/admin-users/api/user"
 import { translate } from "@/shared/i18n"
+import type { LoaderRunOptions } from "./useAdminUserDetailActionTypes"
 import type { LoadOptions } from "./useAdminUserDetailAsync"
 import type { AdminUserDetailState } from "./useAdminUserDetailState"
 
@@ -14,13 +15,20 @@ type RunLoadFn = <T>(
 ) => Promise<void>
 
 interface CreateLoadersParams {
-  userId: string
+  userId: () => string
   state: AdminUserDetailState
   runLoad: RunLoadFn
 }
 
 export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateLoadersParams) {
   const { refs, markTabLoaded, shouldLoadTab } = state
+
+  function toLoadOptions(options?: LoaderRunOptions) {
+    return {
+      throwOnError: options?.throwOnError,
+      notifyOnError: options?.notifyOnError,
+    }
+  }
 
   function shouldTriggerTabLoad(tab: "activity" | "oauth" | "game" | "social" | "auth-social") {
     if (!shouldLoadTab(tab)) {
@@ -41,9 +49,10 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
     }
   }
 
-  async function loadUser() {
-    await runLoad(refs.loading, () => getUserDetail(userId), {
+  async function loadUser(options?: LoaderRunOptions) {
+    await runLoad(refs.loading, () => getUserDetail(userId()), {
       errorTitle: translate("adminUsers.detail.toast.loadUserFailedTitle"),
+      ...toLoadOptions(options),
       onSuccess: (data) => {
         refs.user.value = data
         refs.iosUploadCode.value = data.userData?.iosUploadCode ?? null
@@ -51,9 +60,10 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
     })
   }
 
-  async function loadActivities() {
-    await runLoad(refs.activityLoading, () => getUserActivity(userId), {
+  async function loadActivities(options?: LoaderRunOptions) {
+    await runLoad(refs.activityLoading, () => getUserActivity(userId()), {
       errorTitle: translate("adminUsers.detail.toast.loadActivityFailedTitle"),
+      ...toLoadOptions(options),
       onSuccess: (response) => {
         refs.activities.value = response.systemLogs ?? []
         markTabLoaded("activity")
@@ -61,9 +71,10 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
     })
   }
 
-  async function loadOAuth() {
-    await runLoad(refs.oauthLoading, () => getUserOAuthAuthorizations(userId), {
+  async function loadOAuth(options?: LoaderRunOptions) {
+    await runLoad(refs.oauthLoading, () => getUserOAuthAuthorizations(userId()), {
       errorTitle: translate("adminUsers.detail.toast.loadOAuthFailedTitle"),
+      ...toLoadOptions(options),
       onSuccess: (data) => {
         refs.oauthAuths.value = data
         markTabLoaded("oauth")
@@ -71,9 +82,10 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
     })
   }
 
-  async function loadGameBindings() {
-    await runLoad(refs.gameBindingLoading, () => getGameAccountBindings(userId), {
+  async function loadGameBindings(options?: LoaderRunOptions) {
+    await runLoad(refs.gameBindingLoading, () => getGameAccountBindings(userId()), {
       errorTitle: translate("adminUsers.detail.toast.loadGameBindingsFailedTitle"),
+      ...toLoadOptions(options),
       onSuccess: (data) => {
         refs.gameBindings.value = data
         markTabLoaded("game")
@@ -81,28 +93,24 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
     })
   }
 
-  async function loadSocialPlatform() {
-    await runLoad(refs.socialLoading, () => getSocialPlatform(userId), {
-      silent: true,
+  async function loadSocialPlatform(options?: LoaderRunOptions) {
+    await runLoad(refs.socialLoading, () => getSocialPlatform(userId()), {
+      errorTitle: translate("adminUsers.detail.toast.loadSocialFailedTitle"),
+      ...toLoadOptions(options),
       onSuccess: (data) => {
         refs.socialPlatform.value = data
         markTabLoaded("social")
       },
-      onError: () => {
-        refs.socialPlatform.value = null
-      },
     })
   }
 
-  async function loadAuthorizedSocials() {
-    await runLoad(refs.authSocialLoading, () => getAuthorizedSocialPlatforms(userId), {
-      silent: true,
+  async function loadAuthorizedSocials(options?: LoaderRunOptions) {
+    await runLoad(refs.authSocialLoading, () => getAuthorizedSocialPlatforms(userId()), {
+      errorTitle: translate("adminUsers.detail.toast.loadAuthSocialFailedTitle"),
+      ...toLoadOptions(options),
       onSuccess: (data) => {
         refs.authorizedSocials.value = data
         markTabLoaded("auth-social")
-      },
-      onError: () => {
-        refs.authorizedSocials.value = []
       },
     })
   }

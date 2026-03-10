@@ -1,5 +1,6 @@
-import { request } from "@/core/http/call-api"
+import { request, unwrapUpdatedData } from "@/core/http/call-api"
 import { encodePathSegment } from "@/core/http/url"
+import { translate } from "@/shared/i18n"
 import type { AdminFriendGroup, AdminFriendGroupItem } from "@/types/admin"
 import type { APIResponse } from "@/types/response"
 
@@ -7,7 +8,8 @@ const BASE = "/api/admin/content"
 
 export async function getFriendGroups() {
   const res = await request<APIResponse<{ items: AdminFriendGroup[] }>>(`${BASE}/friend-groups/`, { method: "GET" })
-  return res.updatedData?.items ?? []
+  const updatedData = unwrapUpdatedData(res, translate("adminContent.toast.loadGroupsFailedTitle"))
+  return updatedData.items ?? []
 }
 
 export function createFriendGroup(data: Omit<AdminFriendGroup, "id" | "groupList">) {

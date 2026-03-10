@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref} from "vue"
+import { ref, watch } from "vue"
 import {toast} from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import {useRouter} from "vue-router"
@@ -38,8 +38,22 @@ const oldPassword = ref("")
 const newPassword = ref("")
 const confirmPassword = ref("")
 const isSubmitting = ref(false)
+const dialogOpen = ref(false)
+
+function resetForm() {
+  oldPassword.value = ""
+  newPassword.value = ""
+  confirmPassword.value = ""
+}
+
+watch(dialogOpen, (open) => {
+  if (!open) {
+    resetForm()
+  }
+})
 
 const handleChangePassword = async () => {
+  if (isSubmitting.value) return
   const userId = resolveRequiredUserId(userStore.userId)
   if (!userId) return
   
@@ -78,6 +92,8 @@ const handleChangePassword = async () => {
     toast.success(t("userSettings.password.toast.changeSuccessTitle"), {
       description: t("userSettings.password.toast.changeSuccessDescription"),
     })
+    resetForm()
+    dialogOpen.value = false
     userStore.clearUser()
     await redirectToLogin(router)
   } catch (error: unknown) {
@@ -100,7 +116,7 @@ const handleChangePassword = async () => {
       <CardDescription>{{ t("userSettings.password.description") }}</CardDescription>
     </CardHeader>
     <CardContent>
-      <Dialog>
+      <Dialog v-model:open="dialogOpen">
         <DialogTrigger as-child>
           <Button class="w-full">
             <KeyRound class="h-4 w-4 mr-2" />

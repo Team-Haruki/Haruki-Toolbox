@@ -40,6 +40,7 @@ const isValid = computed(() =>
 )
 
 async function submitConsent(approved: boolean) {
+  if (isSubmitting.value) return
   isSubmitting.value = true
   try {
     const data = await submitOAuthConsent({

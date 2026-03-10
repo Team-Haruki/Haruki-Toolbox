@@ -19,6 +19,8 @@ const {
   editTarget,
   deleteTarget,
   isSaving,
+  isDeleting,
+  isVerifying,
   allowCNMysekai,
   regionLabels,
   regionOptions,
@@ -47,6 +49,7 @@ const {
       :is-creating="isCreating"
       :verification-triggered="verificationTriggered"
       :is-saving="isSaving"
+      :is-verifying="isVerifying"
       :allow-c-n-mysekai="allowCNMysekai"
       :user-id-input="userIdInput"
       :edit-target="editTarget"
@@ -61,6 +64,7 @@ const {
       v-model:open="showDeleteDialog"
       :delete-target="deleteTarget"
       :region-labels="regionLabels"
+      :is-deleting="isDeleting"
       @confirm="handleDelete"
     />
 

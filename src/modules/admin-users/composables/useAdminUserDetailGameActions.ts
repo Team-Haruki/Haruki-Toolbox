@@ -17,21 +17,22 @@ export function createAdminUserDetailGameActions({
   loaders,
 }: CreateActionsParams) {
   const { refs, resetGameBindingEditor } = state
+  const strictRefreshOptions = { throwOnError: true, notifyOnError: false } as const
 
   async function handleDeleteGameBinding(server: AdminGameAccountBinding["server"], gameUserId: string) {
     await runTask(
       translate("adminUsers.detail.toast.deleteGameBindingFailedTitle"),
-      () => deleteGameAccountBinding(userId, server, gameUserId),
+      () => deleteGameAccountBinding(userId(), server, gameUserId),
       {
       successMessage: translate("adminUsers.detail.toast.deleteGameBindingSuccess"),
-      afterSuccess: loaders.loadGameBindings,
+      afterSuccess: () => loaders.loadGameBindings(strictRefreshOptions),
       }
     )
   }
 
   async function handleToggleCNMysekai(value: boolean | "indeterminate") {
     if (!refs.user.value || value === "indeterminate") return
-    await runTask(translate("adminUsers.detail.toast.toggleCNFailedTitle"), () => updateAllowCNMysekai(userId, value), {
+    await runTask(translate("adminUsers.detail.toast.toggleCNFailedTitle"), () => updateAllowCNMysekai(userId(), value), {
       successMessage: value
         ? translate("adminUsers.detail.toast.cnEnabled")
         : translate("adminUsers.detail.toast.cnDisabled"),
@@ -65,7 +66,7 @@ export function createAdminUserDetailGameActions({
     await runAction(
       translate("adminUsers.detail.toast.saveGameBindingFailedTitle"),
       () =>
-        updateGameAccountBinding(userId, refs.editGameServer.value, gameUserId, {
+        updateGameAccountBinding(userId(), refs.editGameServer.value, gameUserId, {
           suite: refs.editGameSuite.value,
           mysekai: refs.editGameMysekai.value,
         }),
@@ -73,7 +74,7 @@ export function createAdminUserDetailGameActions({
         successMessage: translate("adminUsers.detail.toast.saveGameBindingSuccess"),
         afterSuccess: async () => {
           refs.gameBindingDialogOpen.value = false
-          await loaders.loadGameBindings()
+          await loaders.loadGameBindings(strictRefreshOptions)
         },
       }
     )
@@ -83,7 +84,7 @@ export function createAdminUserDetailGameActions({
     await runTask(
       translate("adminUsers.detail.toast.regenerateIOSFailedTitle"),
       async () => {
-        const response = await regenerateIOSUploadCode(userId)
+        const response = await regenerateIOSUploadCode(userId())
         const uploadCode = response?.uploadCode?.trim()
         if (!uploadCode) {
           throw new Error(translate("adminUsers.detail.toast.missingIOSCode"))
@@ -100,7 +101,7 @@ export function createAdminUserDetailGameActions({
   }
 
   async function handleDeleteIOS() {
-    await runTask(translate("adminUsers.detail.toast.deleteIOSFailedTitle"), () => deleteIOSUploadCode(userId), {
+    await runTask(translate("adminUsers.detail.toast.deleteIOSFailedTitle"), () => deleteIOSUploadCode(userId()), {
       successMessage: translate("adminUsers.detail.toast.deleteIOSSuccess"),
       afterSuccess: () => {
         refs.iosUploadCode.value = null

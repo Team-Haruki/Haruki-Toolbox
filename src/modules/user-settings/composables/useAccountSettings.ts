@@ -1,6 +1,7 @@
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
+import { unwrapUpdatedData } from "@/core/http/call-api"
 import { readFileAsDataUrl } from "@/lib/file-reader"
 import { useUserStore } from "@/shared/stores/user"
 import { updateUserProfile } from "@/modules/user-settings/api/account"
@@ -9,10 +10,19 @@ import { extractErrorMessage } from "@/lib/error-utils"
 export function useAccountSettings() {
   const { t } = useI18n()
   const userStore = useUserStore()
+  const nameDraft = ref("")
   const selectedFile = ref<File | null>(null)
   const previewAvatar = ref<string | null>(null)
   const fileInputRef = ref<HTMLInputElement | null>(null)
   const isSaving = ref(false)
+
+  watch(
+    () => userStore.name,
+    (name) => {
+      nameDraft.value = name
+    },
+    { immediate: true }
+  )
 
   function triggerFileInput() {
     fileInputRef.value?.click()
@@ -37,6 +47,7 @@ export function useAccountSettings() {
   }
 
   async function saveChanges() {
+    if (isSaving.value) return
     if (!userStore.userId) {
       toast.error(t("userSettings.common.actionFailedTitle"), {
         description: t("userSettings.common.missingUserDescription"),
@@ -46,23 +57,26 @@ export function useAccountSettings() {
 
     isSaving.value = true
     try {
+      const nextName = nameDraft.value.trim()
       let avatarPath = userStore.avatarPath
       const result = await updateUserProfile(
         userStore.userId,
-        userStore.name,
+        nextName,
         selectedFile.value,
         { skipErrorToast: true }
       )
+      const updatedData = unwrapUpdatedData(result, t("userSettings.account.title"))
 
-      if (result?.updatedData?.avatarPath) {
-        avatarPath = result.updatedData.avatarPath
+      if (Object.prototype.hasOwnProperty.call(updatedData, "avatarPath")) {
+        avatarPath = updatedData.avatarPath ?? ""
         previewAvatar.value = null
       }
 
       userStore.setUser({
-        name: userStore.name,
+        name: typeof updatedData.name === "string" ? updatedData.name : nextName,
         avatarPath,
       })
+      selectedFile.value = null
 
       toast.success(t("userSettings.account.toast.savedTitle"), {
         description: t("userSettings.account.toast.savedDescription"),
@@ -78,6 +92,7 @@ export function useAccountSettings() {
 
   return {
     userStore,
+    nameDraft,
     previewAvatar,
     fileInputRef,
     isSaving,

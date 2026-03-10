@@ -87,7 +87,7 @@ const {
   handleSaveAuthSocial,
   handleRegenerateIOS,
   handleDeleteIOS,
-} = useAdminUserDetail(props.userId)
+} = useAdminUserDetail(() => props.userId)
 </script>
 <template>
   <div class="w-full flex flex-col gap-4">

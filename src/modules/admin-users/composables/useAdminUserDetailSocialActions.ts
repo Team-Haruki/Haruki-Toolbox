@@ -17,9 +17,10 @@ export function createAdminUserDetailSocialActions({
   loaders,
 }: CreateActionsParams) {
   const { refs } = state
+  const strictRefreshOptions = { throwOnError: true, notifyOnError: false } as const
 
   async function handleDeleteSocial() {
-    await runTask(translate("adminUsers.detail.toast.deleteSocialFailedTitle"), () => deleteSocialPlatform(userId), {
+    await runTask(translate("adminUsers.detail.toast.deleteSocialFailedTitle"), () => deleteSocialPlatform(userId()), {
       successMessage: translate("adminUsers.detail.toast.deleteSocialSuccess"),
       afterSuccess: () => {
         refs.socialPlatform.value = null
@@ -43,7 +44,7 @@ export function createAdminUserDetailSocialActions({
     await runAction(
       translate("adminUsers.detail.toast.saveSocialFailedTitle"),
       () =>
-        updateSocialPlatform(userId, {
+        updateSocialPlatform(userId(), {
           platform,
           userId: socialUserId,
           verified: refs.editSocialVerified.value,
@@ -57,7 +58,7 @@ export function createAdminUserDetailSocialActions({
             userId: socialUserId,
             verified: refs.editSocialVerified.value,
           }
-          await loaders.loadSocialPlatform()
+          await loaders.loadSocialPlatform(strictRefreshOptions)
         },
       }
     )
@@ -65,9 +66,9 @@ export function createAdminUserDetailSocialActions({
 
   async function handleDeleteAuthSocial(platformId: EntityId) {
     await runTask(translate("adminUsers.detail.toast.deleteAuthSocialFailedTitle"), () =>
-      deleteAuthorizedSocialPlatform(userId, platformId), {
+      deleteAuthorizedSocialPlatform(userId(), platformId), {
       successMessage: translate("adminUsers.detail.toast.deleteAuthSocialSuccess"),
-      afterSuccess: loaders.loadAuthorizedSocials,
+      afterSuccess: () => loaders.loadAuthorizedSocials(strictRefreshOptions),
     })
   }
 
@@ -105,7 +106,7 @@ export function createAdminUserDetailSocialActions({
     await runAction(
       translate("adminUsers.detail.toast.saveAuthSocialFailedTitle"),
       () =>
-        updateAuthorizedSocialPlatform(userId, refs.editAuthSocialId.value, {
+        updateAuthorizedSocialPlatform(userId(), refs.editAuthSocialId.value, {
           platform: refs.editAuthSocialPlatform.value,
           userId: userIdValue,
           comment: refs.editAuthSocialComment.value.trim(),
@@ -114,7 +115,7 @@ export function createAdminUserDetailSocialActions({
         successMessage: translate("adminUsers.detail.toast.saveAuthSocialSuccess"),
         afterSuccess: async () => {
           refs.authSocialDialogOpen.value = false
-          await loaders.loadAuthorizedSocials()
+          await loaders.loadAuthorizedSocials(strictRefreshOptions)
         },
       }
     )

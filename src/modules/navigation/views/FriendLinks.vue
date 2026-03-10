@@ -29,6 +29,7 @@ const { t } = useI18n()
         :key="friend.id"
         :href="friend.url" 
         target="_blank" 
+        rel="noopener noreferrer"
         class="block group outline-none"
       >
         <Card class="h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer bg-card/50 backdrop-blur-sm">

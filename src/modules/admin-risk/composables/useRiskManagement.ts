@@ -55,6 +55,10 @@ export function useRiskManagement() {
   const rulesJson = ref("")
   const rulesSaving = ref(false)
 
+  async function refreshEventsStrict() {
+    await loadEvents({ throwOnError: true, notifyOnError: false })
+  }
+
   async function loadRules() {
     rulesLoading.value = true
     try {
@@ -95,7 +99,7 @@ export function useRiskManagement() {
         newAction.value = ""
         newReason.value = ""
         newTargetUserId.value = ""
-        await loadEvents()
+        await refreshEventsStrict()
       },
     })
   }
@@ -106,7 +110,7 @@ export function useRiskManagement() {
       successAfterOnSuccess: true,
       errorTitle: t("adminRisk.toast.actionFailedTitle"),
       fallbackError: t("adminRisk.toast.actionFailedFallback"),
-      onSuccess: loadEvents,
+      onSuccess: refreshEventsStrict,
     })
   }
 

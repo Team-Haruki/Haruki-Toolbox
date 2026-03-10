@@ -3,6 +3,7 @@ import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useRouter } from "vue-router"
 import { useUserStore } from "@/shared/stores/user"
+import { unwrapUpdatedData } from "@/core/http/call-api"
 import type { GameAccountBinding, SekaiRegion } from "@/types/store"
 import { copyTextToClipboard, isClipboardSupported } from "@/lib/clipboard"
 import { extractErrorMessage } from "@/lib/error-utils"
@@ -55,6 +56,8 @@ export function useGameAccountBindingManagement() {
   const editTarget = ref<GameAccountBinding | null>(null)
   const deleteTarget = ref<GameAccountBinding | null>(null)
   const isSaving = ref(false)
+  const isDeleting = ref(false)
+  const isVerifying = ref(false)
 
   const data = computed<GameAccountBinding[]>(() =>
     Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
@@ -98,11 +101,12 @@ export function useGameAccountBindingManagement() {
   }
 
   async function handleDelete() {
-    if (!deleteTarget.value) return
+    if (!deleteTarget.value || isDeleting.value) return
 
     const currentUserId = requireCurrentUserId(t("userSettings.gameBinding.toast.deleteFailedTitle"))
     if (!currentUserId) return
 
+    isDeleting.value = true
     try {
       const resp = await removeGameAccount(
         deleteTarget.value.server,
@@ -110,7 +114,8 @@ export function useGameAccountBindingManagement() {
         currentUserId,
         { skipErrorToast: true }
       )
-      const updated = resp.updatedData?.gameAccountBindings
+      const updatedData = unwrapUpdatedData(resp, t("userSettings.gameBinding.title"))
+      const updated = updatedData.gameAccountBindings
       userStore.setUser({ gameAccountBindings: updated })
       toast.success(t("userSettings.gameBinding.toast.deleteSuccessTitle"), {
         description: t("userSettings.gameBinding.toast.deleteSuccessDescription"),
@@ -120,12 +125,14 @@ export function useGameAccountBindingManagement() {
         description: extractErrorMessage(error, t("userSettings.gameBinding.toast.deleteFailedTitle")),
       })
     } finally {
+      isDeleting.value = false
       showDeleteDialog.value = false
+      deleteTarget.value = null
     }
   }
 
   async function handleEditSave() {
-    if (!editTarget.value) return
+    if (!editTarget.value || isSaving.value) return
 
     if (isCreating.value && !verificationTriggered.value) {
       toast.error(t("userSettings.gameBinding.toast.saveFailedTitle"), {
@@ -164,10 +171,9 @@ export function useGameAccountBindingManagement() {
         ? await addGameAccount(server, gameUid, currentUserId, payload, requestOptions)
         : await updateGameAccount(server, gameUid, currentUserId, payload, requestOptions)
 
-      const updated = resp.updatedData?.gameAccountBindings
-      if (Array.isArray(updated)) {
-        userStore.setUser({ gameAccountBindings: updated })
-      }
+      const updatedData = unwrapUpdatedData(resp, t("userSettings.gameBinding.title"))
+      const updated = updatedData.gameAccountBindings
+      userStore.setUser({ gameAccountBindings: updated })
 
       toast.success(t("userSettings.gameBinding.toast.saveSuccessTitle"), {
         description: t("userSettings.gameBinding.toast.saveSuccessDescription"),
@@ -183,6 +189,7 @@ export function useGameAccountBindingManagement() {
   }
 
   async function handleVerify() {
+    if (isVerifying.value) return
     const uidStr = userIdInput.value.trim()
     if (!/^\d+$/.test(uidStr)) {
       toast.error(t("userSettings.gameBinding.toast.generateCodeFailedTitle"), {
@@ -201,6 +208,7 @@ export function useGameAccountBindingManagement() {
     const currentUserId = requireCurrentUserId(t("userSettings.gameBinding.toast.generateCodeFailedTitle"))
     if (!currentUserId) return
 
+    isVerifying.value = true
     try {
       const resp = await generateGameAccountVerificationCode(editTarget.value.server, uidStr, currentUserId, {
         skipErrorToast: true,
@@ -219,6 +227,8 @@ export function useGameAccountBindingManagement() {
       toast.error(t("userSettings.gameBinding.toast.generateCodeFailedTitle"), {
         description: extractErrorMessage(error, t("userSettings.gameBinding.toast.generateCodeFailedTitle")),
       })
+    } finally {
+      isVerifying.value = false
     }
   }
 
@@ -260,6 +270,8 @@ export function useGameAccountBindingManagement() {
     editTarget,
     deleteTarget,
     isSaving,
+    isDeleting,
+    isVerifying,
     allowCNMysekai,
     regionLabels,
     regionOptions,

@@ -1,6 +1,7 @@
-import { readUpdatedItems, request } from "@/core/http/call-api"
+import { readUpdatedItems, request, unwrapUpdatedData } from "@/core/http/call-api"
 import { encodePathSegment } from "@/core/http/url"
 import { normalizeGameAccountBinding, userBase } from "@/modules/admin-users/api/shared"
+import { translate } from "@/shared/i18n"
 import type { AdminGameAccountBinding } from "@/types/admin"
 import type { MysekaiDataPrivacySettings, SekaiRegion, SuiteDataPrivacySettings } from "@/types/store"
 import type { APIResponse } from "@/types/response"
@@ -11,7 +12,8 @@ export async function getGameAccountBindings(userId: string) {
     `${userBase(userId)}/game-account-bindings`,
     { method: "GET" }
   )
-  const items = readUpdatedItems(res.updatedData)
+  const updatedData = unwrapUpdatedData(res, translate("adminUsers.detail.toast.loadGameBindingsFailedTitle"))
+  const items = readUpdatedItems(updatedData)
   return items
     .map((item) => normalizeGameAccountBinding(item))
     .filter((item): item is AdminGameAccountBinding => item !== null)

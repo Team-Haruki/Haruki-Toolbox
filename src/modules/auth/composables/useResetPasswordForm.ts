@@ -40,6 +40,7 @@ export function useResetPasswordForm() {
   }
 
   async function handleSubmit() {
+    if (isSubmitting.value) return
     const validationError = validateForm()
     if (validationError) {
       toast.error(validationError)

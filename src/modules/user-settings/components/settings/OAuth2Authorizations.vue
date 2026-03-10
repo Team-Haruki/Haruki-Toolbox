@@ -2,6 +2,7 @@
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
+import { unwrapUpdatedData } from "@/core/http/call-api"
 import { Button } from "@/components/ui/button"
 import { KeyRound, Trash2, X } from "lucide-vue-next"
 import { extractErrorMessage } from "@/lib/error-utils"
@@ -39,18 +40,28 @@ const isLoading = ref(false)
 const isRevoking = ref(false)
 const showRevokeDialog = ref(false)
 const revokeTarget = ref<OAuthAuthorization | null>(null)
+let latestFetchRequestId = 0
 
 async function fetchAuthorizations() {
-  if (!userStore.userId) return
+  const requestId = ++latestFetchRequestId
+  if (!userStore.userId) {
+    if (requestId !== latestFetchRequestId) return
+    authorizations.value = []
+    isLoading.value = false
+    return
+  }
   isLoading.value = true
   try {
     const resp = await listOAuthAuthorizations(userStore.userId, { skipErrorToast: true })
-    authorizations.value = resp.updatedData ?? []
+    if (requestId !== latestFetchRequestId) return
+    authorizations.value = unwrapUpdatedData(resp, t("userSettings.oauthAuthorizations.title"))
   } catch (e: unknown) {
+    if (requestId !== latestFetchRequestId) return
     toast.error(t("userSettings.oauthAuthorizations.toast.fetchFailedTitle"), {
       description: extractErrorMessage(e, t("userSettings.oauthAuthorizations.toast.fetchFailedFallback")),
     })
   } finally {
+    if (requestId !== latestFetchRequestId) return
     isLoading.value = false
   }
 }

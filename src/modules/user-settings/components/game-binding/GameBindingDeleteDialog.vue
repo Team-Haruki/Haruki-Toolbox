@@ -20,6 +20,7 @@ defineProps<{
   open: boolean
   deleteTarget: GameAccountBinding | null
   regionLabels: Record<SekaiRegion, string>
+  isDeleting: boolean
 }>()
 
 const emit = defineEmits<{
@@ -45,7 +46,7 @@ const emit = defineEmits<{
           <X class="h-4 w-4 mr-2" />
           {{ t("userSettings.common.cancel") }}
         </AlertDialogCancel>
-        <AlertDialogAction class="bg-destructive text-foreground" @click="emit('confirm')">
+        <AlertDialogAction class="bg-destructive text-foreground" :disabled="isDeleting" @click="emit('confirm')">
           <Trash2 class="h-4 w-4 mr-2" />
           {{ t("userSettings.gameBinding.actions.delete") }}
         </AlertDialogAction>

@@ -23,6 +23,7 @@ import {
 
 const {
   userStore,
+  nameDraft,
   previewAvatar,
   fileInputRef,
   isSaving,
@@ -57,7 +58,7 @@ const { t } = useI18n()
       <div class="grid gap-2">
         <Label for="nickname">{{ t("userSettings.account.nicknameLabel") }}</Label>
         <div class="relative w-full items-center">
-          <Input id="nickname" v-model="userStore.name" class="pl-10"/>
+          <Input id="nickname" v-model="nameDraft" class="pl-10"/>
           <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
             <User class="size-4 text-muted-foreground" />
           </span>

@@ -154,9 +154,13 @@ export function useIMBindingSettings() {
     if (!response) return
 
     const updated = extractUpdatedSocial(response)
-    if (updated) {
-      userStore.setUser({ socialPlatformInfo: updated })
+    if (!updated) {
+      toast.error(t("userSettings.imBinding.toast.verifyFailedTitle"), {
+        description: t("userSettings.imBinding.toast.incompleteResponseDescription"),
+      })
+      return
     }
+    userStore.setUser({ socialPlatformInfo: updated })
 
     toast.success(t("userSettings.imBinding.toast.verifySuccessTitle"), {
       description: response?.message || t("userSettings.imBinding.toast.verifySuccessDefaultDescription"),

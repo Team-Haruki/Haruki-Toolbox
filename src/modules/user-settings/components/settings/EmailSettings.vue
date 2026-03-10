@@ -14,6 +14,7 @@ import { redirectToLogin } from "@/core/router/navigation"
 import {
   ref,
   computed,
+  watch,
   onUnmounted
 } from "vue"
 import {
@@ -49,6 +50,7 @@ const sendCooldown = ref(0)
 const challengeToken = ref("")
 const turnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const sendingCode = ref(false)
+const emailDialogOpen = ref(false)
 let sendTimer: ReturnType<typeof setInterval> | null = null
 
 function onTurnstileVerify(token: string) {
@@ -61,7 +63,7 @@ function onTurnstileInvalid() {
 
 
 function validateEmail(val: string) {
-  return /^[\w\-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(val)
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)
 }
 
 function startCooldown() {
@@ -76,7 +78,32 @@ function startCooldown() {
   }, 1000)
 }
 
+function stopCooldown() {
+  if (sendTimer) {
+    clearInterval(sendTimer)
+    sendTimer = null
+  }
+  sendCooldown.value = 0
+}
+
+function resetDialogState() {
+  newEmail.value = ""
+  emailCode.value = ""
+  challengeToken.value = ""
+  sendingCode.value = false
+  changing.value = false
+  stopCooldown()
+  turnstileRef.value?.reset()
+}
+
+watch(emailDialogOpen, (open) => {
+  if (!open) {
+    resetDialogState()
+  }
+})
+
 async function handleSendCode() {
+  if (sendingCode.value) return
   if (!validateEmail(newEmail.value)) {
     toast.error(t("userSettings.email.toast.invalidNewEmailTitle"), {
       description: t("userSettings.email.toast.invalidNewEmailDescription"),
@@ -110,6 +137,7 @@ async function handleSendCode() {
 }
 
 async function handleChangeEmail() {
+  if (changing.value) return
   if (!validateEmail(newEmail.value)) {
     toast.error(t("userSettings.email.toast.invalidNewEmailTitle"), {
       description: t("userSettings.email.toast.invalidNewEmailDescription"),
@@ -136,6 +164,8 @@ async function handleChangeEmail() {
     toast.success(t("userSettings.email.toast.changeSuccessTitle"), {
       description: t("userSettings.email.toast.changeSuccessDescription"),
     })
+    emailDialogOpen.value = false
+    resetDialogState()
     userStore.clearUser()
     await redirectToLogin(router)
   } catch (e: unknown) {
@@ -149,10 +179,7 @@ async function handleChangeEmail() {
 }
 
 onUnmounted(() => {
-  if (sendTimer) {
-    clearInterval(sendTimer)
-    sendTimer = null
-  }
+  stopCooldown()
 })
 </script>
 
@@ -173,7 +200,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <Dialog>
+      <Dialog v-model:open="emailDialogOpen">
         <DialogTrigger as-child>
           <Button class="w-full">
             <ArrowRightLeft class="h-4 w-4 mr-2" />

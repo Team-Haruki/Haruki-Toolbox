@@ -1,6 +1,7 @@
-import { readUpdatedItems, request } from "@/core/http/call-api"
+import { readUpdatedItems, request, unwrapUpdatedData } from "@/core/http/call-api"
 import { encodePathSegment } from "@/core/http/url"
 import { normalizeAuthorizedSocialPlatform, userBase } from "@/modules/admin-users/api/shared"
+import { translate } from "@/shared/i18n"
 import type { EntityId } from "@/types/common"
 import type { SocialPlatform } from "@/types/social-platform"
 import type { APIResponse } from "@/types/response"
@@ -11,7 +12,8 @@ export async function getAuthorizedSocialPlatforms(userId: string) {
     `${userBase(userId)}/authorized-social-platforms`,
     { method: "GET" }
   )
-  const items = readUpdatedItems(res.updatedData)
+  const updatedData = unwrapUpdatedData(res, translate("adminUsers.detail.toast.loadAuthSocialFailedTitle"))
+  const items = readUpdatedItems(updatedData)
   return items.map((item) => normalizeAuthorizedSocialPlatform(item))
 }
 

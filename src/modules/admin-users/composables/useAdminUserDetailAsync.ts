@@ -12,12 +12,15 @@ export interface ActionOptions<T = void> {
 export interface LoadOptions<T> {
   errorTitle?: string
   silent?: boolean
+  throwOnError?: boolean
+  notifyOnError?: boolean
   onSuccess?: (result: T) => void | Promise<void>
   onError?: () => void | Promise<void>
 }
 
 export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoading: Ref<boolean>) {
   const latestLoadRequestIds = new WeakMap<object, number>()
+  let loadGeneration = 0
 
   function nextLoadRequestId(loadRef: object) {
     const nextId = (latestLoadRequestIds.get(loadRef) ?? 0) + 1
@@ -27,6 +30,14 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
 
   function isLatestLoadRequest(loadRef: object, requestId: number) {
     return latestLoadRequestIds.get(loadRef) === requestId
+  }
+
+  function isActiveLoadRequest(loadRef: object, requestId: number, generation: number) {
+    return loadGeneration === generation && isLatestLoadRequest(loadRef, requestId)
+  }
+
+  function invalidateLoads() {
+    loadGeneration += 1
   }
 
   async function executeTask<T>(
@@ -72,26 +83,31 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
     task: () => Promise<T>,
     options: LoadOptions<T> = {}
   ) {
+    const generation = loadGeneration
     const requestId = nextLoadRequestId(loadRef)
     loadRef.value = true
     try {
       const result = await task()
-      if (!isLatestLoadRequest(loadRef, requestId)) return
+      if (!isActiveLoadRequest(loadRef, requestId, generation)) return
       if (options.onSuccess) {
         await options.onSuccess(result)
       }
     } catch (error: unknown) {
-      if (!isLatestLoadRequest(loadRef, requestId)) return
+      if (!isActiveLoadRequest(loadRef, requestId, generation)) return
       if (options.onError) {
         await options.onError()
       }
-      if (!options.silent && options.errorTitle) {
+      const notifyOnError = options.notifyOnError ?? !options.silent
+      if (notifyOnError && options.errorTitle) {
         toast.error(options.errorTitle, {
           description: extractErrorMessage(error, translate("adminUsers.detail.toast.actionFailedFallback")),
         })
       }
+      if (options.throwOnError) {
+        throw error
+      }
     } finally {
-      if (!isLatestLoadRequest(loadRef, requestId)) return
+      if (!isActiveLoadRequest(loadRef, requestId, generation)) return
       loadRef.value = false
     }
   }
@@ -128,5 +144,6 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
     runLoad,
     runTask,
     runAction,
+    invalidateLoads,
   }
 }

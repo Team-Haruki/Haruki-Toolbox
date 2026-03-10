@@ -1,7 +1,8 @@
-import { readUpdatedItems, readUpdatedTotal, request } from "@/core/http/call-api"
+import { readUpdatedItems, readUpdatedTotal, request, unwrapUpdatedData } from "@/core/http/call-api"
 import { encodePathSegment } from "@/core/http/url"
 import type { QueryParams } from "@/core/http/query"
 import { asRecord, type UnknownRecord } from "@/lib/record-utils"
+import { translate } from "@/shared/i18n"
 import type { APIResponse } from "@/types/response"
 import type {
   TicketAssignRequest,
@@ -28,7 +29,7 @@ export async function getAdminTickets(params?: QueryParams) {
 export async function getAdminTicketDetail(ticketId: string) {
   const encodedTicketId = encodePathSegment(ticketId)
   const res = await request<APIResponse<UnknownRecord>>(`${ADMIN_BASE}/${encodedTicketId}`, { method: "GET" })
-  const updatedData = asRecord(res.updatedData) ?? {}
+  const updatedData = asRecord(unwrapUpdatedData(res, translate("tickets.adminDetail.toast.loadFailedTitle"))) ?? {}
   const raw = asRecord(updatedData.ticket) ?? updatedData
   const ticket = normalizeTicket(raw)
   const rawMessagesSource = Array.isArray(raw.messages)

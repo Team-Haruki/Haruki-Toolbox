@@ -2,6 +2,7 @@ import { computed, ref } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
+import { unwrapUpdatedData } from "@/core/http/call-api"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { asRecord, normalizeEntityId, readString } from "@/lib/record-utils"
 import { DEFAULT_SOCIAL_PLATFORM, isSocialPlatform } from "@/lib/social-platform"
@@ -100,7 +101,7 @@ export function useIMAuthorizationSettings() {
   }
 
   async function handleEditSave() {
-    if (!editTarget.value) return
+    if (!editTarget.value || isSaving.value) return
 
     const userId = requireUserId()
     if (!userId) return
@@ -125,10 +126,8 @@ export function useIMAuthorizationSettings() {
         editTarget.value.comment.trim(),
         { skipErrorToast: true }
       )
-
-      if (response.updatedData) {
-        userStore.setUser({ authorizeSocialPlatformInfo: response.updatedData })
-      }
+      const updatedData = unwrapUpdatedData(response, t("userSettings.imAuthorization.title"))
+      userStore.setUser({ authorizeSocialPlatformInfo: updatedData })
 
       toast.success(t("userSettings.imAuthorization.toast.saveSuccessTitle"), {
         description: t("userSettings.imAuthorization.toast.saveSuccessDescription"),
@@ -161,10 +160,8 @@ export function useIMAuthorizationSettings() {
       const response = await removeAuthorizeSocialPlatformAccount(userId, authId, {
         skipErrorToast: true,
       })
-
-      if (response.updatedData) {
-        userStore.setUser({ authorizeSocialPlatformInfo: response.updatedData })
-      }
+      const updatedData = unwrapUpdatedData(response, t("userSettings.imAuthorization.title"))
+      userStore.setUser({ authorizeSocialPlatformInfo: updatedData })
 
       toast.success(t("userSettings.imAuthorization.toast.deleteSuccessTitle"), {
         description: t("userSettings.imAuthorization.toast.deleteSuccessDescription"),

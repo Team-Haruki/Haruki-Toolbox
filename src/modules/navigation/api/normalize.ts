@@ -1,5 +1,6 @@
 import { asRecord, readOptionalString, readString, readStringArray } from "@/lib/record-utils"
 import type { FriendGroupData, FriendGroupItem, FriendLinkItem } from "@/modules/navigation/types"
+import { normalizeExternalHttpUrl } from "@/lib/external-url"
 
 function unwrapData(payload: unknown): unknown {
   const record = asRecord(payload)
@@ -28,7 +29,7 @@ export function normalizeFriendLink(item: unknown): FriendLinkItem | null {
 
   const id = record.id
   const name = readString(record, ["name"]).trim()
-  const url = readString(record, ["url"]).trim()
+  const url = normalizeExternalHttpUrl(readString(record, ["url"]))
   if (!name || !url || (typeof id !== "string" && typeof id !== "number")) {
     return null
   }
@@ -54,13 +55,16 @@ function normalizeFriendGroupItem(item: unknown): FriendGroupItem | null {
     return null
   }
 
+  const rawUrl = readOptionalString(record, ["url"])
+  const safeUrl = rawUrl ? normalizeExternalHttpUrl(rawUrl) : undefined
+
   return {
     name,
     avatar: readString(record, ["avatar"]),
     bg: readString(record, ["bg"]),
     groupInfo: readString(record, ["groupInfo", "group_info"]),
     detail: readString(record, ["detail"]),
-    url: readOptionalString(record, ["url"]),
+    url: safeUrl,
   }
 }
 
