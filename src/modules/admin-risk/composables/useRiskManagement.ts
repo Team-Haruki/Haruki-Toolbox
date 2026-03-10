@@ -87,6 +87,7 @@ export function useRiskManagement() {
         targetUserId: newTargetUserId.value.trim() || undefined,
       }), {
       successMessage: t("adminRisk.toast.createSuccess"),
+      successAfterOnSuccess: true,
       errorTitle: t("adminRisk.toast.createFailedTitle"),
       fallbackError: t("adminRisk.toast.createFailedFallback"),
       onSuccess: async () => {
@@ -102,6 +103,7 @@ export function useRiskManagement() {
   async function handleResolve(eventId: string) {
     await runAsyncAction(actionLoading, () => resolveRiskEvent(eventId), {
       successMessage: t("adminRisk.toast.resolveSuccess"),
+      successAfterOnSuccess: true,
       errorTitle: t("adminRisk.toast.actionFailedTitle"),
       fallbackError: t("adminRisk.toast.actionFailedFallback"),
       onSuccess: loadEvents,

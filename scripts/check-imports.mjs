@@ -18,6 +18,12 @@ const MODULE_API_BARREL_PATTERNS = [
     /import\(\s*["']@\/modules\/([a-z0-9-]+)\/api(?:\/index(?:\.[a-z]+)?|\/)?["']\s*\)/,
 ]
 
+const IMPORT_PATH_PATTERNS = [
+    /from\s+["']([^"']+)["']/,
+    /import\s+["']([^"']+)["']/,
+    /import\(\s*["']([^"']+)["']\s*\)/,
+]
+
 const BANNED_TOKENS = [
     { token: '@/components/pages/', message: 'Use module-local views/components paths instead of "@/components/pages/*".' },
     { token: '@/components/WebLayout.vue', message: 'Use "@/modules/web/views/WebLayout.vue".' },
@@ -67,9 +73,47 @@ function isModuleApiFile(filePath, moduleName) {
     return normalizedPath.includes(`/src/modules/${moduleName}/api/`)
 }
 
+function isModuleIndexFile(filePath, moduleName) {
+    const normalizedPath = normalizePath(filePath)
+    return new RegExp(`/src/modules/${moduleName}/index\\.[a-z]+$`).test(normalizedPath)
+}
+
+function stripKnownExtension(value) {
+    for (const extension of FILE_EXTENSIONS) {
+        if (value.endsWith(extension)) {
+            return value.slice(0, -extension.length)
+        }
+    }
+    return value
+}
+
+function normalizePath(value) {
+    return value.replaceAll(path.sep, "/")
+}
+
+function resolveImportTarget(filePath, importPath) {
+    return stripKnownExtension(normalizePath(path.resolve(path.dirname(filePath), importPath)))
+}
+
+function extractImportPaths(line) {
+    const paths = []
+    for (const pattern of IMPORT_PATH_PATTERNS) {
+        const match = line.match(pattern)
+        if (match?.[1]) {
+            paths.push(match[1])
+        }
+    }
+    return paths
+}
+
 function scanFile(filePath, content) {
     const currentModule = getModuleNameFromFilePath(filePath)
     const inCurrentModuleApiDir = currentModule ? isModuleApiFile(filePath, currentModule) : false
+    const isCurrentModuleIndex = currentModule ? isModuleIndexFile(filePath, currentModule) : false
+    const moduleRootPath = currentModule
+        ? normalizePath(path.join(ROOT, "src", "modules", currentModule))
+        : ""
+    const moduleApiRootPath = `${moduleRootPath}/api`
     const lines = content.split(/\r?\n/)
     const violations = []
     for (let i = 0; i < lines.length; i += 1) {
@@ -106,6 +150,40 @@ function scanFile(filePath, content) {
                 message: "Module internals must not import their own index barrel. Import concrete subpaths such as ./api, ./components, or ./composables.",
             })
             break
+        }
+
+        for (const importPath of extractImportPaths(line)) {
+            if (!importPath.startsWith(".")) {
+                continue
+            }
+
+            const normalizedTargetPath = resolveImportTarget(filePath, importPath)
+            if (normalizedTargetPath === moduleRootPath || normalizedTargetPath === `${moduleRootPath}/index`) {
+                violations.push({
+                    filePath,
+                    line: i + 1,
+                    token: importPath,
+                    message: "Module internals must not import their own index barrel via relative paths. Import concrete subpaths such as ./api/user or ./composables/list.",
+                })
+                break
+            }
+
+            if (inCurrentModuleApiDir) {
+                continue
+            }
+
+            if (
+                !isCurrentModuleIndex &&
+                (normalizedTargetPath === moduleApiRootPath || normalizedTargetPath === `${moduleApiRootPath}/index`)
+            ) {
+                violations.push({
+                    filePath,
+                    line: i + 1,
+                    token: importPath,
+                    message: "Module internals must not import their own api barrel via relative paths. Import concrete api files such as ./api/user or ./api/list.",
+                })
+                break
+            }
         }
 
         if (inCurrentModuleApiDir) {

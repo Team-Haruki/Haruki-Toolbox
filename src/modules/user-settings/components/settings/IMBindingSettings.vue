@@ -53,6 +53,7 @@ const {
   dialogMode,
   turnstileRef,
   onTurnstileVerify,
+  onTurnstileInvalid,
   handleVerify,
   handleDialogVerify,
   handleUnbind,
@@ -152,7 +153,11 @@ const { t } = useI18n()
 
         <div v-if="platform === 'qq'" class="space-y-2">
           <p class="text-xs text-muted-foreground">{{ t("userSettings.imBinding.captchaHint") }}</p>
-          <Turnstile ref="turnstileRef" @verify="onTurnstileVerify"/>
+          <Turnstile
+            ref="turnstileRef"
+            @verify="onTurnstileVerify"
+            @invalid="onTurnstileInvalid"
+          />
         </div>
 
         <Button class="w-full" :disabled="sending" @click="handleVerify">

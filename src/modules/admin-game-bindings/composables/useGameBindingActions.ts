@@ -48,6 +48,7 @@ export function useGameBindingActions(options: UseGameBindingActionsOptions) {
   async function runAction(task: () => Promise<void>, actionOptions: RunActionOptions) {
     await runAsyncAction(actionLoading, task, {
       successMessage: actionOptions.successMessage,
+      successAfterOnSuccess: true,
       errorTitle: actionOptions.errorTitle,
       fallbackError: actionOptions.errorTitle,
       onSuccess: async () => {

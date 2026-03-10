@@ -1,4 +1,3 @@
-import { toast } from "vue-sonner"
 import {
   deleteGameAccountBinding,
   updateAllowCNMysekai,
@@ -81,17 +80,23 @@ export function createAdminUserDetailGameActions({
   }
 
   async function handleRegenerateIOS() {
-    await runTask(translate("adminUsers.detail.toast.regenerateIOSFailedTitle"), () => regenerateIOSUploadCode(userId), {
-      afterSuccess: (response) => {
+    await runTask(
+      translate("adminUsers.detail.toast.regenerateIOSFailedTitle"),
+      async () => {
+        const response = await regenerateIOSUploadCode(userId)
         const uploadCode = response?.uploadCode?.trim()
         if (!uploadCode) {
           throw new Error(translate("adminUsers.detail.toast.missingIOSCode"))
         }
-
-        refs.iosUploadCode.value = uploadCode
-        toast.success(translate("adminUsers.detail.toast.regenerateIOSSuccess"))
+        return uploadCode
       },
-    })
+      {
+        successMessage: translate("adminUsers.detail.toast.regenerateIOSSuccess"),
+        afterSuccess: (uploadCode) => {
+          refs.iosUploadCode.value = uploadCode
+        },
+      }
+    )
   }
 
   async function handleDeleteIOS() {

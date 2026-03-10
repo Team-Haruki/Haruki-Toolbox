@@ -42,6 +42,7 @@ export function useIMBindingSettings() {
     turnstileToken,
     turnstileRef,
     onTurnstileVerify,
+    onTurnstileInvalid,
     resetTurnstileState,
     triggerTurnstile,
   } = useIMBindingTurnstile()
@@ -68,6 +69,7 @@ export function useIMBindingSettings() {
         fallbackError: t("userSettings.imBinding.toast.sendFailedTitle"),
       }
     )
+    resetTurnstileState()
     if (!response) return
 
     toast.success(t("userSettings.imBinding.toast.verificationCodeSentTitle"), {
@@ -254,6 +256,7 @@ export function useIMBindingSettings() {
     turnstileToken,
     turnstileRef,
     onTurnstileVerify,
+    onTurnstileInvalid,
     handleVerify,
     handleDialogVerify,
     handleUnbind,

@@ -42,7 +42,7 @@ const { t } = useI18n()
           <Label>{{ t("adminUsers.detail.dialog.email.newEmail") }}</Label>
           <Input
             :model-value="email"
-            placeholder="user@example.com"
+            :placeholder="t('adminUsers.detail.dialog.email.placeholder')"
             type="email"
             @update:model-value="emit('update:email', String($event ?? ''))"
           />

@@ -9,16 +9,22 @@ export function useOAuthClientList() {
   const { t } = useI18n()
   const loading = ref(true)
   const clients = ref<OAuthClient[]>([])
+  let latestLoadRequestId = 0
 
   async function loadClients() {
+    const requestId = ++latestLoadRequestId
     loading.value = true
     try {
-      clients.value = await getOAuthClients()
+      const data = await getOAuthClients()
+      if (requestId !== latestLoadRequestId) return
+      clients.value = data
     } catch (error: unknown) {
+      if (requestId !== latestLoadRequestId) return
       toast.error(t("adminOAuthClients.toast.loadClientsFailedTitle"), {
         description: extractErrorMessage(error, t("adminOAuthClients.toast.actionFailedFallback")),
       })
     } finally {
+      if (requestId !== latestLoadRequestId) return
       loading.value = false
     }
   }

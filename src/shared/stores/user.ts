@@ -1,6 +1,5 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
-import { translate } from "@/shared/i18n"
 
 import type { UserRole } from "@/types/common"
 import type {
@@ -10,12 +9,8 @@ import type {
     AuthorizeSocialPlatformInfo,
 } from "@/types/store";
 
-function guestName() {
-    return translate("common.guest")
-}
-
 export const useUserStore = defineStore("user", () => {
-    const name = ref<string>(guestName())
+    const name = ref<string>("")
     const userId = ref<string | null>(null)
     const avatarPath = ref<string>("")
     const allowCNMysekai = ref<boolean | null>(null)
@@ -64,7 +59,7 @@ export const useUserStore = defineStore("user", () => {
     }
 
     function clearUser() {
-        name.value = guestName()
+        name.value = ""
         userId.value = null
         avatarPath.value = ""
         allowCNMysekai.value = null

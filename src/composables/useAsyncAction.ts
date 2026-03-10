@@ -1,11 +1,13 @@
 import type { Ref } from "vue"
 import { toast } from "vue-sonner"
 import { extractErrorMessage } from "@/lib/error-utils"
+import { translate } from "@/shared/i18n"
 
 type LoadingRef = Ref<boolean> | { value: boolean }
 
 type AsyncActionOptions<TResult> = {
   successMessage?: string | ((result: TResult) => string | null | undefined)
+  successAfterOnSuccess?: boolean
   errorTitle: string
   fallbackError?: string
   onSuccess?: (result: TResult) => void | Promise<void>
@@ -30,24 +32,44 @@ export async function runAsyncAction<TResult>(
   loadingRef.value = true
 
   try {
-    const result = await task()
+    let result: TResult
+    try {
+      result = await task()
+    } catch (error: unknown) {
+      if (options.onError) {
+        await options.onError(error)
+      } else {
+        toast.error(options.errorTitle, {
+          description: extractErrorMessage(error, options.fallbackError ?? options.errorTitle),
+        })
+      }
+      return null
+    }
+
     const successMessage = resolveSuccessMessage(options.successMessage, result)
-    if (successMessage) {
+    const successAfterOnSuccess = options.successAfterOnSuccess ?? false
+    if (!successAfterOnSuccess && successMessage) {
       toast.success(successMessage)
     }
+
+    let onSuccessFailed = false
     if (options.onSuccess) {
-      await options.onSuccess(result)
+      try {
+        await options.onSuccess(result)
+      } catch (error: unknown) {
+        onSuccessFailed = true
+        console.error("[runAsyncAction] post-success callback failed:", error)
+        toast.warning(translate("common.postSuccessWarningTitle"), {
+          description: extractErrorMessage(error, translate("common.postSuccessWarningDescription")),
+        })
+      }
     }
+
+    if (successAfterOnSuccess && successMessage && !onSuccessFailed) {
+      toast.success(successMessage)
+    }
+
     return result
-  } catch (error: unknown) {
-    if (options.onError) {
-      await options.onError(error)
-    } else {
-      toast.error(options.errorTitle, {
-        description: extractErrorMessage(error, options.fallbackError ?? options.errorTitle),
-      })
-    }
-    return null
   } finally {
     loadingRef.value = false
     if (options.onFinally) {

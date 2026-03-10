@@ -19,9 +19,14 @@ export function useTicketDetail(ticketId: string) {
   const closing = ref(false)
   const messageContainer = ref<HTMLElement | null>(null)
   let latestLoadRequestId = 0
+  type LoadTicketOptions = {
+    silent?: boolean
+    throwOnError?: boolean
+  }
 
-  async function loadTicket() {
+  async function loadTicket(options: LoadTicketOptions = {}) {
     const requestId = ++latestLoadRequestId
+    const silent = options.silent ?? false
     const userId = userStore.userId
     if (!userId) {
       if (requestId !== latestLoadRequestId) return
@@ -40,9 +45,14 @@ export function useTicketDetail(ticketId: string) {
       scrollToBottom()
     } catch (error: unknown) {
       if (requestId !== latestLoadRequestId) return
-      toast.error(t("tickets.detail.toast.loadFailedTitle"), {
-        description: extractErrorMessage(error, t("tickets.detail.toast.loadFailedFallback")),
-      })
+      if (!silent) {
+        toast.error(t("tickets.detail.toast.loadFailedTitle"), {
+          description: extractErrorMessage(error, t("tickets.detail.toast.loadFailedFallback")),
+        })
+      }
+      if (options.throwOnError) {
+        throw error
+      }
     } finally {
       if (requestId !== latestLoadRequestId) return
       loading.value = false
@@ -80,8 +90,14 @@ export function useTicketDetail(ticketId: string) {
     closing.value = true
     try {
       await closeTicket(userId, ticketId)
-      toast.success(t("tickets.detail.toast.closeSuccess"))
-      await loadTicket()
+      try {
+        await loadTicket({ silent: true, throwOnError: true })
+        toast.success(t("tickets.detail.toast.closeSuccess"))
+      } catch (error: unknown) {
+        toast.warning(t("common.postSuccessWarningTitle"), {
+          description: extractErrorMessage(error, t("common.postSuccessWarningDescription")),
+        })
+      }
     } catch (error: unknown) {
       toast.error(t("tickets.detail.toast.closeFailedTitle"), {
         description: extractErrorMessage(error, t("tickets.detail.toast.closeFailedFallback")),

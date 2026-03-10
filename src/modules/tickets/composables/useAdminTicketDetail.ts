@@ -31,6 +31,9 @@ function dedupeAdmins(admins: AdminUser[]): AdminUser[] {
   return Array.from(map.values())
 }
 
+const ADMIN_PAGE_SIZE = 200
+type AdminRoleFilter = "admin" | "super_admin"
+
 export function useAdminTicketDetail(ticketId: string) {
   const { t } = useI18n()
   const router = useRouter()
@@ -45,14 +48,37 @@ export function useAdminTicketDetail(ticketId: string) {
   const adminUsers = ref<AdminUser[]>([])
   const statusOptions = computed(() => getTicketStatusOptions(t))
   let latestLoadRequestId = 0
+  type LoadTicketOptions = {
+    silent?: boolean
+    throwOnError?: boolean
+  }
+
+  async function loadAdminsByRole(role: AdminRoleFilter) {
+    const allAdmins: AdminUser[] = []
+    let page = 1
+    let totalPages = 1
+
+    while (page <= totalPages) {
+      const response = await getUsers({ role, page, page_size: ADMIN_PAGE_SIZE })
+      allAdmins.push(...(response.items ?? []))
+      totalPages = Math.max(response.totalPages ?? 1, 1)
+
+      if (!response.hasMore || page >= totalPages) {
+        break
+      }
+      page += 1
+    }
+
+    return allAdmins
+  }
 
   async function loadAdmins() {
     try {
       const [admins, superAdmins] = await Promise.all([
-        getUsers({ role: "admin", page_size: 100 }),
-        getUsers({ role: "super_admin", page_size: 100 }),
+        loadAdminsByRole("admin"),
+        loadAdminsByRole("super_admin"),
       ])
-      const allAdmins = [...(admins.items ?? []), ...(superAdmins.items ?? [])]
+      const allAdmins = [...admins, ...superAdmins]
       adminUsers.value = dedupeAdmins(allAdmins)
     } catch {
       // Keep empty option list when fetch fails.
@@ -65,8 +91,9 @@ export function useAdminTicketDetail(ticketId: string) {
     messageContainer.value.scrollTop = messageContainer.value.scrollHeight
   }
 
-  async function loadTicket() {
+  async function loadTicket(options: LoadTicketOptions = {}) {
     const requestId = ++latestLoadRequestId
+    const silent = options.silent ?? false
     loading.value = true
     try {
       const detail = await getAdminTicketDetail(ticketId)
@@ -79,9 +106,14 @@ export function useAdminTicketDetail(ticketId: string) {
       scrollToBottom()
     } catch (error: unknown) {
       if (requestId !== latestLoadRequestId) return
-      toast.error(t("tickets.adminDetail.toast.loadFailedTitle"), {
-        description: extractErrorMessage(error, t("tickets.adminDetail.toast.loadFailedFallback")),
-      })
+      if (!silent) {
+        toast.error(t("tickets.adminDetail.toast.loadFailedTitle"), {
+          description: extractErrorMessage(error, t("tickets.adminDetail.toast.loadFailedFallback")),
+        })
+      }
+      if (options.throwOnError) {
+        throw error
+      }
     } finally {
       if (requestId !== latestLoadRequestId) return
       loading.value = false
@@ -115,12 +147,18 @@ export function useAdminTicketDetail(ticketId: string) {
     actionLoading.value = true
     try {
       await updateTicketStatus(ticketId, { status })
-      toast.success(
-        t("tickets.adminDetail.toast.statusUpdated", {
-          status: ticketStatusLabel(status),
+      try {
+        await loadTicket({ silent: true, throwOnError: true })
+        toast.success(
+          t("tickets.adminDetail.toast.statusUpdated", {
+            status: ticketStatusLabel(status),
+          })
+        )
+      } catch (error: unknown) {
+        toast.warning(t("common.postSuccessWarningTitle"), {
+          description: extractErrorMessage(error, t("common.postSuccessWarningDescription")),
         })
-      )
-      await loadTicket()
+      }
     } catch (error: unknown) {
       toast.error(t("tickets.adminDetail.toast.updateStatusFailedTitle"), {
         description: extractErrorMessage(error, t("tickets.adminDetail.toast.updateStatusFailedFallback")),
@@ -135,8 +173,14 @@ export function useAdminTicketDetail(ticketId: string) {
     try {
       const realId = assigneeId.value === "__none__" ? "" : assigneeId.value
       await assignTicket(ticketId, { assigneeAdminId: realId || undefined })
-      toast.success(realId ? t("tickets.adminDetail.toast.assigned") : t("tickets.adminDetail.toast.unassigned"))
-      await loadTicket()
+      try {
+        await loadTicket({ silent: true, throwOnError: true })
+        toast.success(realId ? t("tickets.adminDetail.toast.assigned") : t("tickets.adminDetail.toast.unassigned"))
+      } catch (error: unknown) {
+        toast.warning(t("common.postSuccessWarningTitle"), {
+          description: extractErrorMessage(error, t("common.postSuccessWarningDescription")),
+        })
+      }
     } catch (error: unknown) {
       toast.error(t("tickets.adminDetail.toast.assignFailedTitle"), {
         description: extractErrorMessage(error, t("tickets.adminDetail.toast.assignFailedFallback")),

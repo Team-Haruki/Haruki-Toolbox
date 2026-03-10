@@ -7,6 +7,8 @@ export const enUS = {
     reset: "Reset",
     tip: "Tip",
     actionFailed: "Operation failed",
+    postSuccessWarningTitle: "Operation succeeded with warnings",
+    postSuccessWarningDescription: "Follow-up refresh failed. Please reload the page if data looks outdated.",
     guest: "Guest",
     apiResponse: "API response",
     missingUpdatedData: "{context} is missing updatedData",
@@ -1705,6 +1707,7 @@ export const enUS = {
           title: "Change email",
           description: "Update email address for user {name}.",
           newEmail: "New email address",
+          placeholder: "Enter email address",
           confirm: "Confirm",
         },
         gameBinding: {
@@ -1860,6 +1863,10 @@ export const enUS = {
     sync: {
       successTitle: "Settings synced",
       successDescription: "Cloud settings are synced for current account",
+      failedTitle: "Settings sync unavailable",
+      failedDescription: "Cloud settings could not be synced. Try again later.",
+      missingUpdatedDataDescription: "Cloud settings response is incomplete (missing updatedData).",
+      unexpectedStatusDescription: "Cloud settings request returned an unexpected status ({status}).",
     },
   },
 } as const

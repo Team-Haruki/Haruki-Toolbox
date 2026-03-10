@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,7 @@ const {
   resetSettings,
 } = useHomeSettings()
 const { t, locale } = useI18n()
+const localeKey = computed(() => locale.value)
 </script>
 
 <template>
@@ -54,9 +56,9 @@ const { t, locale } = useI18n()
           <p class="text-sm text-muted-foreground mb-2">
             {{ t("homeSettings.endpoint.help") }}
           </p>
-          <Select v-model="selectedEndpoint" :key="`endpoint-${locale}`">
+          <Select v-model="selectedEndpoint" :key="`endpoint-${localeKey}`">
             <SelectTrigger class="w-full">
-              <SelectValue :placeholder="t('homeSettings.endpoint.placeholder')">
+              <SelectValue :key="`endpoint-value-${localeKey}`" :placeholder="t('homeSettings.endpoint.placeholder')">
                 {{ selectedEndpointLabel }}
               </SelectValue>
             </SelectTrigger>
@@ -76,9 +78,9 @@ const { t, locale } = useI18n()
             {{ t("homeSettings.theme.label") }}
           </Label>
           <p class="text-sm text-muted-foreground mb-2">{{ t("homeSettings.theme.help") }}</p>
-          <Select v-model="selectedTheme" :key="`theme-${locale}`">
+          <Select v-model="selectedTheme" :key="`theme-${localeKey}`">
             <SelectTrigger class="w-full">
-              <SelectValue :placeholder="t('homeSettings.theme.placeholder')">
+              <SelectValue :key="`theme-value-${localeKey}`" :placeholder="t('homeSettings.theme.placeholder')">
                 {{ selectedThemeLabel }}
               </SelectValue>
             </SelectTrigger>
@@ -98,9 +100,9 @@ const { t, locale } = useI18n()
             {{ t("homeSettings.locale.label") }}
           </Label>
           <p class="text-sm text-muted-foreground mb-2">{{ t("homeSettings.locale.help") }}</p>
-          <Select v-model="selectedLocale" :key="`locale-${locale}`">
+          <Select v-model="selectedLocale" :key="`locale-${localeKey}`">
             <SelectTrigger class="w-full">
-              <SelectValue :placeholder="t('homeSettings.locale.placeholder')">
+              <SelectValue :key="`locale-value-${localeKey}`" :placeholder="t('homeSettings.locale.placeholder')">
                 {{ selectedLocaleLabel }}
               </SelectValue>
             </SelectTrigger>

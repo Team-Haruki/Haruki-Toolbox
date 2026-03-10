@@ -33,13 +33,14 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
 
     await runAsyncAction(actionLoading, () => deleteOAuthClient(targetClientId), {
       successMessage: t("adminOAuthClients.toast.deleted"),
+      successAfterOnSuccess: true,
       errorTitle: t("adminOAuthClients.toast.deleteFailedTitle"),
       onSuccess: async () => {
         await options.loadClients()
         deleteConfirmOpen.value = false
+        clientToDelete.value = null
       },
     })
-    clientToDelete.value = null
   }
 
   async function toggleActive(client: OAuthClient) {
@@ -47,6 +48,7 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
       successMessage: client.active
         ? t("adminOAuthClients.toast.disabled")
         : t("adminOAuthClients.toast.enabled"),
+      successAfterOnSuccess: true,
       errorTitle: t("adminOAuthClients.toast.actionFailedTitle"),
       onSuccess: options.loadClients,
     })
@@ -75,6 +77,7 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
   async function handleRestore(clientId: string) {
     await runAsyncAction(actionLoading, () => restoreOAuthClient(clientId), {
       successMessage: t("adminOAuthClients.toast.restored"),
+      successAfterOnSuccess: true,
       errorTitle: t("adminOAuthClients.toast.restoreFailedTitle"),
       onSuccess: options.loadClients,
     })

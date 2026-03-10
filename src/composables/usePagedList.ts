@@ -22,6 +22,11 @@ type UsePagedListOptions<TItem, TResponse> = {
   onError?: (error: unknown) => void | Promise<void>
 }
 
+type LoadOptions = {
+  throwOnError?: boolean
+  notifyOnError?: boolean
+}
+
 function defaultResponseMapper<TItem>(response: unknown): PagedData<TItem> {
   return response as PagedData<TItem>
 }
@@ -44,12 +49,13 @@ export function usePagedList<TItem, TResponse = PagedData<TItem>>(
   let latestRequestId = 0
   const mapResponse = options.mapResponse ?? defaultResponseMapper<TItem>
 
-  async function load() {
+  async function load(loadOptions: LoadOptions = {}) {
     const requestId = ++latestRequestId
+    const notifyOnError = loadOptions.notifyOnError ?? true
     loading.value = true
-    options.onBeforeLoad?.()
 
     try {
+      options.onBeforeLoad?.()
       const response = await options.fetchPage({
         page: page.value,
         pageSize: pageSize.value,
@@ -64,8 +70,11 @@ export function usePagedList<TItem, TResponse = PagedData<TItem>>(
       }
     } catch (error: unknown) {
       if (requestId !== latestRequestId) return
-      if (options.onError) {
+      if (notifyOnError && options.onError) {
         await options.onError(error)
+      }
+      if (loadOptions.throwOnError) {
+        throw error
       }
     } finally {
       if (requestId !== latestRequestId) return

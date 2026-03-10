@@ -135,14 +135,17 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
       {
         errorTitle: t("adminOAuthClients.toast.createFailedTitle"),
         onSuccess: async (createdSecret) => {
-          if (createdSecret) {
-            options.onSecretGenerated(createdSecret)
-          } else {
-            toast.success(t("adminOAuthClients.toast.clientCreated"))
-          }
           createOpen.value = false
           resetCreateForm()
+
+          if (createdSecret) {
+            options.onSecretGenerated(createdSecret)
+            await options.loadClients()
+            return
+          }
+
           await options.loadClients()
+          toast.success(t("adminOAuthClients.toast.clientCreated"))
         },
       }
     )
@@ -183,6 +186,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
         }),
       {
         successMessage: t("adminOAuthClients.toast.saved"),
+        successAfterOnSuccess: true,
         errorTitle: t("adminOAuthClients.toast.saveFailedTitle"),
         onSuccess: async () => {
           editOpen.value = false

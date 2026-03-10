@@ -5,24 +5,42 @@ import { reauthAdmin } from "@/modules/admin-sessions/api/reauth"
 import { deleteAdminSession, getAdminSessions } from "@/modules/admin-sessions/api/sessions"
 import type { AdminSession } from "@/types/admin"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
+import { extractErrorMessage } from "@/lib/error-utils"
+
+type LoadSessionsOptions = {
+  silent?: boolean
+  throwOnError?: boolean
+}
 
 export function useAdminSessions() {
   const { t, locale } = useI18n()
   const loading = ref(true)
   const sessions = ref<AdminSession[]>([])
   const actionLoading = ref(false)
+  let latestLoadRequestId = 0
 
-  async function loadSessions() {
+  async function loadSessions(options: LoadSessionsOptions = {}) {
+    const requestId = ++latestLoadRequestId
+    const silent = options.silent ?? false
     loading.value = true
     try {
-      sessions.value = await getAdminSessions()
+      const data = await getAdminSessions()
+      if (requestId !== latestLoadRequestId) return
+      sessions.value = data
     } catch (error: unknown) {
-      toastErrorWithExtractedMessage(
-        t("adminSessions.toast.loadFailedTitle"),
-        error,
-        t("adminSessions.toast.loadFailedFallback")
-      )
+      if (requestId !== latestLoadRequestId) return
+      if (!silent) {
+        toastErrorWithExtractedMessage(
+          t("adminSessions.toast.loadFailedTitle"),
+          error,
+          t("adminSessions.toast.loadFailedFallback")
+        )
+      }
+      if (options.throwOnError) {
+        throw error
+      }
     } finally {
+      if (requestId !== latestLoadRequestId) return
       loading.value = false
     }
   }
@@ -32,8 +50,14 @@ export function useAdminSessions() {
     actionLoading.value = true
     try {
       await deleteAdminSession(sessionTokenId)
-      toast.success(t("adminSessions.toast.deleteSuccess"))
-      await loadSessions()
+      try {
+        await loadSessions({ silent: true, throwOnError: true })
+        toast.success(t("adminSessions.toast.deleteSuccess"))
+      } catch (error: unknown) {
+        toast.warning(t("common.postSuccessWarningTitle"), {
+          description: extractErrorMessage(error, t("common.postSuccessWarningDescription")),
+        })
+      }
     } catch (error: unknown) {
       toastErrorWithExtractedMessage(
         t("adminSessions.toast.deleteFailedTitle"),

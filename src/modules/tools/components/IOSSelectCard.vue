@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -9,7 +10,8 @@ type SelectOption = {
   disabled?: boolean
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const localeKey = computed(() => locale.value)
 
 defineProps<{
   title: string
@@ -38,9 +40,12 @@ function onValueChange(value: string) {
       <CardDescription class="whitespace-pre-line">{{ description }}</CardDescription>
     </CardHeader>
     <CardContent class="space-y-4">
-      <Select :model-value="modelValue" @update:model-value="onValueChange">
+      <Select :key="`ios-select-${localeKey}`" :model-value="modelValue" @update:model-value="onValueChange">
         <SelectTrigger class="w-full">
-          <SelectValue :placeholder="placeholder || t('tools.iosModules.common.selectPlaceholder')" />
+          <SelectValue
+            :key="`ios-select-value-${localeKey}`"
+            :placeholder="placeholder || t('tools.iosModules.common.selectPlaceholder')"
+          />
         </SelectTrigger>
         <SelectContent>
           <SelectItem

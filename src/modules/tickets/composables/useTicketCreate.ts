@@ -25,6 +25,8 @@ export function useTicketCreate() {
   const priorities = computed(() => getTicketPriorityOptions(t))
 
   async function handleSubmit() {
+    if (submitting.value) return
+
     const userId = userStore.userId
     const normalizedSubject = subject.value.trim()
     const normalizedMessage = message.value.trim()

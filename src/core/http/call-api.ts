@@ -13,6 +13,8 @@ declare module 'axios' {
     export interface AxiosRequestConfig {
         skipErrorToast?: boolean
         retry?: number
+        retryAttempt?: number
+        retryMax?: number
     }
 }
 
@@ -69,6 +71,13 @@ export function setupInterceptors(router: Router) {
     apiClient.interceptors.response.use(
         (response) => response,
         async (error) => {
+            const retryAttempt = Number(error.config?.retryAttempt ?? 0)
+            const retryMax = Number(error.config?.retryMax ?? 0)
+            const willRetry = shouldRetry(error) && retryAttempt < retryMax
+            if (willRetry) {
+                return Promise.reject(error)
+            }
+
             const userStore = useUserStore()
             if (error.response?.status === 401) {
                 if (userStore.sessionToken) {
@@ -83,9 +92,9 @@ export function setupInterceptors(router: Router) {
                 const isBanned = isAccountBannedMessage(message)
 
                 if (isBanned) {
-                    if (!error.config?.skipErrorToast) {
-                        toast.error(translate("core.auth.accountBannedTitle"), { description: message })
-                    }
+                    // Always surface banned reason before forcing logout redirect.
+                    // This should not be suppressed by local skipErrorToast defaults.
+                    toast.error(translate("core.auth.accountBannedTitle"), { description: message })
                     if (userStore.sessionToken) {
                         userStore.clearUser()
                         await redirectToLogin(router)
@@ -112,7 +121,13 @@ export async function request<T = unknown>(
     options: AxiosRequestConfig = {}
 ): Promise<T> {
     const { retry, ...axiosOptions } = options
-    const method = (axiosOptions.method ?? "GET").toUpperCase()
+    const requestOptions: AxiosRequestConfig = {
+        ...axiosOptions,
+        // Most feature modules provide local error toasts. Default to local handling
+        // to avoid duplicate toasts from both interceptor and page-level catches.
+        skipErrorToast: axiosOptions.skipErrorToast ?? true,
+    }
+    const method = (requestOptions.method ?? "GET").toUpperCase()
     const maxRetries = retry ?? (isIdempotentMethod(method) ? 1 : 0)
     let attempt = 0
 
@@ -120,7 +135,9 @@ export async function request<T = unknown>(
         try {
             const response = await apiClient.request<T>({
                 url,
-                ...axiosOptions,
+                retryAttempt: attempt,
+                retryMax: maxRetries,
+                ...requestOptions,
             })
             return response.data
         } catch (error) {

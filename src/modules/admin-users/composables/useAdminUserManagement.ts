@@ -139,11 +139,12 @@ export function useAdminUserManagement() {
     const selectedCount = selectedIds.value.length
     await runAsyncAction(batchLoading, config.action, {
       successMessage: config.successMessage(selectedCount),
+      successAfterOnSuccess: true,
       errorTitle: config.errorTitle,
       fallbackError: config.fallbackError,
       onSuccess: async () => {
         selectedIds.value = []
-        await loadUsers()
+        await loadUsers({ throwOnError: true, notifyOnError: false })
       },
     })
   }

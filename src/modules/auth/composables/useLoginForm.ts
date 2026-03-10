@@ -63,8 +63,16 @@ export function useLoginForm() {
     loginChallengeToken.value = token
   }
 
+  function onLoginTurnstileInvalid() {
+    loginChallengeToken.value = null
+  }
+
   function onResetTurnstileVerified(token: string) {
     resetChallengeToken.value = token
+  }
+
+  function onResetTurnstileInvalid() {
+    resetChallengeToken.value = null
   }
 
   async function handleResetPassword() {
@@ -94,6 +102,7 @@ export function useLoginForm() {
       })
     } finally {
       isSendingResetEmail.value = false
+      resetChallengeToken.value = null
       resetTurnstileRef.value?.reset()
     }
   }
@@ -131,6 +140,7 @@ export function useLoginForm() {
       toast.error(title, { description: message })
     } finally {
       isLoggingIn.value = false
+      loginChallengeToken.value = null
       loginTurnstileRef.value?.reset()
     }
   }
@@ -144,7 +154,9 @@ export function useLoginForm() {
     isLoggingIn,
     isSendingResetEmail,
     onLoginTurnstileVerified,
+    onLoginTurnstileInvalid,
     onResetTurnstileVerified,
+    onResetTurnstileInvalid,
     handleResetPassword,
     handleLogin,
   }

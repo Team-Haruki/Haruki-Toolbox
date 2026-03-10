@@ -35,7 +35,9 @@ const {
   registerTurnstileRef,
   isDialogOpen,
   onSendCodeTurnstileVerified,
+  onSendCodeTurnstileInvalid,
   onRegisterTurnstileVerified,
+  onRegisterTurnstileInvalid,
   handleConfirmSendCode,
   handleRegister,
 } = useRegisterForm()
@@ -80,7 +82,7 @@ const { t } = useI18n()
                     v-model="email"
                     class="pl-10"
                     type="email"
-                    placeholder="you@example.com"
+                    :placeholder="t('auth.register.emailPlaceholder')"
                     required
                 />
                 <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
@@ -109,7 +111,11 @@ const { t } = useI18n()
                   </DialogTitle>
                   <DialogDescription>{{ t("auth.register.sendCodeDialog.description") }}</DialogDescription>
                   <div class="mb-4">
-                    <Turnstile @verify="onSendCodeTurnstileVerified" ref="sendCodeRef" />
+                    <Turnstile
+                      ref="sendCodeRef"
+                      @verify="onSendCodeTurnstileVerified"
+                      @invalid="onSendCodeTurnstileInvalid"
+                    />
                   </div>
                     <DialogFooter>
                       <DialogClose as-child>
@@ -165,7 +171,12 @@ const { t } = useI18n()
               </span>
             </div>
           </div>
-          <Turnstile @verify="onRegisterTurnstileVerified" class="md-2" ref="registerTurnstileRef"/>
+          <Turnstile
+            class="md-2"
+            ref="registerTurnstileRef"
+            @verify="onRegisterTurnstileVerified"
+            @invalid="onRegisterTurnstileInvalid"
+          />
           <Button type="submit" class="w-full" :disabled="isRegistering">
             <Loader2 v-if="isRegistering" class="mr-2 h-4 w-4 animate-spin" />
             <UserPlus v-else class="h-4 w-4 mr-2" />

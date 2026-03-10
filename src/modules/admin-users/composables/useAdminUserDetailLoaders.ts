@@ -22,6 +22,25 @@ interface CreateLoadersParams {
 export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateLoadersParams) {
   const { refs, markTabLoaded, shouldLoadTab } = state
 
+  function shouldTriggerTabLoad(tab: "activity" | "oauth" | "game" | "social" | "auth-social") {
+    if (!shouldLoadTab(tab)) {
+      return false
+    }
+
+    switch (tab) {
+      case "activity":
+        return !refs.activityLoading.value
+      case "oauth":
+        return !refs.oauthLoading.value
+      case "game":
+        return !refs.gameBindingLoading.value
+      case "social":
+        return !refs.socialLoading.value
+      case "auth-social":
+        return !refs.authSocialLoading.value
+    }
+  }
+
   async function loadUser() {
     await runLoad(refs.loading, () => getUserDetail(userId), {
       errorTitle: translate("adminUsers.detail.toast.loadUserFailedTitle"),
@@ -71,7 +90,6 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
       },
       onError: () => {
         refs.socialPlatform.value = null
-        markTabLoaded("social")
       },
     })
   }
@@ -85,18 +103,17 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
       },
       onError: () => {
         refs.authorizedSocials.value = []
-        markTabLoaded("auth-social")
       },
     })
   }
 
   function onTabChange(tab: string | number) {
     const value = String(tab)
-    if (value === "activity" && shouldLoadTab("activity")) void loadActivities()
-    if (value === "oauth" && shouldLoadTab("oauth")) void loadOAuth()
-    if (value === "game" && shouldLoadTab("game")) void loadGameBindings()
-    if (value === "social" && shouldLoadTab("social")) void loadSocialPlatform()
-    if (value === "auth-social" && shouldLoadTab("auth-social")) void loadAuthorizedSocials()
+    if (value === "activity" && shouldTriggerTabLoad("activity")) void loadActivities()
+    if (value === "oauth" && shouldTriggerTabLoad("oauth")) void loadOAuth()
+    if (value === "game" && shouldTriggerTabLoad("game")) void loadGameBindings()
+    if (value === "social" && shouldTriggerTabLoad("social")) void loadSocialPlatform()
+    if (value === "auth-social" && shouldTriggerTabLoad("auth-social")) void loadAuthorizedSocials()
   }
 
   return {

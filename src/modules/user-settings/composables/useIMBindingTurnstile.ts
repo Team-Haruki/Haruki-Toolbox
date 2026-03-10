@@ -13,6 +13,10 @@ export function useIMBindingTurnstile() {
     turnstileToken.value = token
   }
 
+  function onTurnstileInvalid() {
+    turnstileToken.value = null
+  }
+
   function resetTurnstileState() {
     try {
       turnstileRef.value?.reset?.()
@@ -32,6 +36,7 @@ export function useIMBindingTurnstile() {
     turnstileToken,
     turnstileRef,
     onTurnstileVerify,
+    onTurnstileInvalid,
     resetTurnstileState,
     triggerTurnstile,
   }

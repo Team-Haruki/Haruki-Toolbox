@@ -59,8 +59,16 @@ export function useRegisterForm() {
     sendCodeChallengeToken.value = token
   }
 
+  function onSendCodeTurnstileInvalid() {
+    sendCodeChallengeToken.value = ""
+  }
+
   function onRegisterTurnstileVerified(token: string) {
     registerChallengeToken.value = token
+  }
+
+  function onRegisterTurnstileInvalid() {
+    registerChallengeToken.value = ""
   }
 
   async function handleSendCode() {
@@ -91,9 +99,10 @@ export function useRegisterForm() {
       toast.error(t("auth.register.toast.sendCodeFailedTitle"), {
         description: extractErrorMessage(error, t("auth.register.toast.sendCodeFailedDescription")),
       })
-      sendCodeRef.value?.reset()
       return false
     } finally {
+      sendCodeChallengeToken.value = ""
+      sendCodeRef.value?.reset()
       isSending.value = false
     }
   }
@@ -141,8 +150,9 @@ export function useRegisterForm() {
       toast.error(t("auth.register.toast.registerFailedTitle"), {
         description: extractErrorMessage(error, t("auth.register.toast.registerFailedDescription")),
       })
-      registerTurnstileRef.value?.reset()
     } finally {
+      registerChallengeToken.value = ""
+      registerTurnstileRef.value?.reset()
       isRegistering.value = false
     }
   }
@@ -161,7 +171,9 @@ export function useRegisterForm() {
     registerTurnstileRef,
     isDialogOpen,
     onSendCodeTurnstileVerified,
+    onSendCodeTurnstileInvalid,
     onRegisterTurnstileVerified,
+    onRegisterTurnstileInvalid,
     handleConfirmSendCode,
     handleRegister,
   }

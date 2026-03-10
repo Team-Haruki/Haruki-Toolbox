@@ -7,6 +7,8 @@ export const zhCN = {
     reset: "重置",
     tip: "提示",
     actionFailed: "操作失败",
+    postSuccessWarningTitle: "操作成功，但有后续异常",
+    postSuccessWarningDescription: "后续刷新失败，如页面数据未更新请手动刷新。",
     guest: "未登录",
     apiResponse: "API响应",
     missingUpdatedData: "{context}缺少 updatedData",
@@ -1705,6 +1707,7 @@ export const zhCN = {
           title: "修改邮箱",
           description: "修改用户 {name} 的邮箱地址。",
           newEmail: "新邮箱地址",
+          placeholder: "请输入邮箱地址",
           confirm: "确认修改",
         },
         gameBinding: {
@@ -1860,6 +1863,10 @@ export const zhCN = {
     sync: {
       successTitle: "同步设置成功",
       successDescription: "已成功同步当前账号的云端设置",
+      failedTitle: "同步设置不可用",
+      failedDescription: "云端设置同步失败，请稍后重试。",
+      missingUpdatedDataDescription: "云端设置返回数据不完整（缺少 updatedData）。",
+      unexpectedStatusDescription: "云端设置请求返回了异常状态（{status}）。",
     },
   },
 } as const

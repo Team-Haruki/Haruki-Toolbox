@@ -15,12 +15,19 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "verify", token: string): void
+  (e: "invalid"): void
 }>()
 
 const token = ref<string | null>(null)
 const container = ref<HTMLDivElement | null>(null)
 let widgetId: string | null = null
 let interval: number | null = null
+
+function clearToken() {
+  token.value = null
+  localStorage.removeItem("turnstile_token")
+  emit("invalid")
+}
 
 function handleVerify(res: string) {
   token.value = res
@@ -30,13 +37,11 @@ function handleVerify(res: string) {
 }
 
 function handleExpired() {
-  token.value = null
-  localStorage.removeItem("turnstile_token")
+  clearToken()
 }
 
 function handleError() {
-  token.value = null
-  localStorage.removeItem("turnstile_token")
+  clearToken()
 }
 
 function renderTurnstile() {
@@ -53,6 +58,7 @@ function renderTurnstile() {
 }
 
 function reset() {
+  clearToken()
   if (widgetId && window.turnstile) {
     try {
       window.turnstile.reset(widgetId)

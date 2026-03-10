@@ -19,6 +19,11 @@ import {
 import type { AdminFriendGroup, AdminFriendGroupItem, AdminFriendLink } from "@/types/admin"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
 
+type LoadOptions = {
+    throwOnError?: boolean
+    notifyOnError?: boolean
+}
+
 export function useContentManagement() {
     const { t } = useI18n()
     const linksLoading = ref(true)
@@ -40,33 +45,57 @@ export function useContentManagement() {
     const itemGroupId = ref("")
     const itemForm = ref({ name: "", avatar: "", bg: "", groupInfo: "", detail: "" })
     const itemSaving = ref(false)
+    let latestLinksRequestId = 0
+    let latestGroupsRequestId = 0
 
-    async function loadLinks() {
+    async function loadLinks(options: LoadOptions = {}) {
+        const notifyOnError = options.notifyOnError ?? true
+        const requestId = ++latestLinksRequestId
         linksLoading.value = true
         try {
-            links.value = await getFriendLinks()
+            const data = await getFriendLinks()
+            if (requestId !== latestLinksRequestId) return
+            links.value = data
         } catch (e: unknown) {
-            toastErrorWithExtractedMessage(
-                t("adminContent.toast.loadLinksFailedTitle"),
-                e,
-                t("adminContent.toast.actionFailedFallback")
-            )
+            if (requestId !== latestLinksRequestId) return
+            if (notifyOnError) {
+                toastErrorWithExtractedMessage(
+                    t("adminContent.toast.loadLinksFailedTitle"),
+                    e,
+                    t("adminContent.toast.actionFailedFallback")
+                )
+            }
+            if (options.throwOnError) {
+                throw e
+            }
         } finally {
+            if (requestId !== latestLinksRequestId) return
             linksLoading.value = false
         }
     }
 
-    async function loadGroups() {
+    async function loadGroups(options: LoadOptions = {}) {
+        const notifyOnError = options.notifyOnError ?? true
+        const requestId = ++latestGroupsRequestId
         groupsLoading.value = true
         try {
-            groups.value = await getFriendGroups()
+            const data = await getFriendGroups()
+            if (requestId !== latestGroupsRequestId) return
+            groups.value = data
         } catch (e: unknown) {
-            toastErrorWithExtractedMessage(
-                t("adminContent.toast.loadGroupsFailedTitle"),
-                e,
-                t("adminContent.toast.actionFailedFallback")
-            )
+            if (requestId !== latestGroupsRequestId) return
+            if (notifyOnError) {
+                toastErrorWithExtractedMessage(
+                    t("adminContent.toast.loadGroupsFailedTitle"),
+                    e,
+                    t("adminContent.toast.actionFailedFallback")
+                )
+            }
+            if (options.throwOnError) {
+                throw e
+            }
         } finally {
+            if (requestId !== latestGroupsRequestId) return
             groupsLoading.value = false
         }
     }
@@ -112,12 +141,13 @@ export function useContentManagement() {
             await createFriendLink(data)
             return t("adminContent.toast.linkCreated")
         }, {
+            successMessage: (message) => message,
+            successAfterOnSuccess: true,
             errorTitle: t("adminContent.toast.saveFailedTitle"),
             fallbackError: t("adminContent.toast.actionFailedFallback"),
-            onSuccess: async (successMessage) => {
-                toast.success(successMessage)
+            onSuccess: async () => {
+                await loadLinks({ throwOnError: true, notifyOnError: false })
                 linkDialogOpen.value = false
-                await loadLinks()
             },
         })
     }
@@ -125,9 +155,10 @@ export function useContentManagement() {
     async function handleDeleteLink(id: string) {
         await runAsyncAction(actionLoading, () => deleteFriendLink(id), {
             successMessage: t("adminContent.toast.linkDeleted"),
+            successAfterOnSuccess: true,
             errorTitle: t("adminContent.toast.deleteFailedTitle"),
             fallbackError: t("adminContent.toast.actionFailedFallback"),
-            onSuccess: loadLinks,
+            onSuccess: () => loadLinks({ throwOnError: true, notifyOnError: false }),
         })
     }
 
@@ -139,12 +170,13 @@ export function useContentManagement() {
 
         await runAsyncAction(groupSaving, () => createFriendGroup({ group: groupName.value.trim() }), {
             successMessage: t("adminContent.toast.groupCreated"),
+            successAfterOnSuccess: true,
             errorTitle: t("adminContent.toast.createFailedTitle"),
             fallbackError: t("adminContent.toast.actionFailedFallback"),
             onSuccess: async () => {
+                await loadGroups({ throwOnError: true, notifyOnError: false })
                 groupDialogOpen.value = false
                 groupName.value = ""
-                await loadGroups()
             },
         })
     }
@@ -152,9 +184,10 @@ export function useContentManagement() {
     async function handleDeleteGroup(groupId: number | string) {
         await runAsyncAction(actionLoading, () => deleteFriendGroup(String(groupId)), {
             successMessage: t("adminContent.toast.groupDeleted"),
+            successAfterOnSuccess: true,
             errorTitle: t("adminContent.toast.deleteFailedTitle"),
             fallbackError: t("adminContent.toast.actionFailedFallback"),
-            onSuccess: loadGroups,
+            onSuccess: () => loadGroups({ throwOnError: true, notifyOnError: false }),
         })
     }
 
@@ -201,12 +234,13 @@ export function useContentManagement() {
             await createFriendGroupItem(itemGroupId.value, data)
             return t("adminContent.toast.itemCreated")
         }, {
+            successMessage: (message) => message,
+            successAfterOnSuccess: true,
             errorTitle: t("adminContent.toast.saveFailedTitle"),
             fallbackError: t("adminContent.toast.actionFailedFallback"),
-            onSuccess: async (successMessage) => {
-                toast.success(successMessage)
+            onSuccess: async () => {
+                await loadGroups({ throwOnError: true, notifyOnError: false })
                 itemDialogOpen.value = false
-                await loadGroups()
             },
         })
     }
@@ -214,9 +248,10 @@ export function useContentManagement() {
     async function handleDeleteItem(groupId: number | string, itemId: number | string) {
         await runAsyncAction(actionLoading, () => deleteFriendGroupItem(String(groupId), String(itemId)), {
             successMessage: t("adminContent.toast.itemDeleted"),
+            successAfterOnSuccess: true,
             errorTitle: t("adminContent.toast.deleteFailedTitle"),
             fallbackError: t("adminContent.toast.actionFailedFallback"),
-            onSuccess: loadGroups,
+            onSuccess: () => loadGroups({ throwOnError: true, notifyOnError: false }),
         })
     }
 

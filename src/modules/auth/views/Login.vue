@@ -34,7 +34,9 @@ const {
   isLoggingIn,
   isSendingResetEmail,
   onLoginTurnstileVerified,
+  onLoginTurnstileInvalid,
   onResetTurnstileVerified,
+  onResetTurnstileInvalid,
   handleResetPassword,
   handleLogin,
 } = useLoginForm()
@@ -97,14 +99,18 @@ const { t } = useI18n()
                             id="reset-email"
                             type="email"
                             class="pl-10"
-                            placeholder="you@example.com"
+                            :placeholder="t('auth.login.emailPlaceholder')"
                             v-model="resetEmail"
                         />
                         <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                           <Mail class="size-4 text-muted-foreground" />
                         </span>
                       </div>
-                      <Turnstile :callback="onResetTurnstileVerified" ref="resetTurnstileRef" />
+                      <Turnstile
+                        ref="resetTurnstileRef"
+                        @verify="onResetTurnstileVerified"
+                        @invalid="onResetTurnstileInvalid"
+                      />
                     </div>
                     <DialogFooter>
                       <DialogClose as-child>
@@ -128,7 +134,11 @@ const { t } = useI18n()
                   <Lock class="size-4 text-muted-foreground" />
                 </span>
               </div>
-              <Turnstile :callback="onLoginTurnstileVerified" ref="loginTurnstileRef" />
+              <Turnstile
+                ref="loginTurnstileRef"
+                @verify="onLoginTurnstileVerified"
+                @invalid="onLoginTurnstileInvalid"
+              />
             </div>
             <Button type="submit" class="w-full" :disabled="isLoggingIn">
               <Loader2 v-if="isLoggingIn" class="mr-2 h-4 w-4 animate-spin" />

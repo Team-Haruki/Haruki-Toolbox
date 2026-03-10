@@ -51,6 +51,14 @@ const turnstileRef = ref<InstanceType<typeof Turnstile> | null>(null)
 const sendingCode = ref(false)
 let sendTimer: ReturnType<typeof setInterval> | null = null
 
+function onTurnstileVerify(token: string) {
+  challengeToken.value = token
+}
+
+function onTurnstileInvalid() {
+  challengeToken.value = ""
+}
+
 
 function validateEmail(val: string) {
   return /^[\w\-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(val)
@@ -88,13 +96,15 @@ async function handleSendCode() {
     toast.success(t("userSettings.email.toast.codeSentTitle"), {
       description: t("userSettings.email.toast.codeSentDescription", { email: newEmail.value }),
     })
+    challengeToken.value = ""
     startCooldown()
   } catch (e: unknown) {
     toast.error(t("userSettings.email.toast.sendCodeFailedTitle"), {
       description: extractErrorMessage(e, t("userSettings.email.toast.sendCodeFailedDescription")),
     })
-    turnstileRef.value?.reset()
   } finally {
+    challengeToken.value = ""
+    turnstileRef.value?.reset()
     sendingCode.value = false
   }
 }
@@ -186,7 +196,12 @@ onUnmounted(() => {
                 <Mail class="size-4 text-muted-foreground" />
               </span>
             </div>
-            <Turnstile @verify="val => (challengeToken = val)" class="mb-2" ref="turnstileRef"/>
+            <Turnstile
+              ref="turnstileRef"
+              class="mb-2"
+              @verify="onTurnstileVerify"
+              @invalid="onTurnstileInvalid"
+            />
             <div class="flex gap-2">
               <div class="relative flex-1 items-center">
                 <Input :placeholder="t('userSettings.email.dialog.codePlaceholder')" v-model="emailCode" class="w-full pl-10"/>

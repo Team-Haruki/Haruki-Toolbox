@@ -36,6 +36,10 @@ const userStore = useUserStore();
 const {isMobile} = useSidebar()
 const { t } = useI18n()
 
+const displayName = computed(() => (
+  userStore.isLoggedIn ? userStore.name : t("sidebarUser.guestName")
+))
+
 function handleLogout() {
   logout();
 }
@@ -71,7 +75,7 @@ const maskedEmail = computed(() => {
               </AvatarFallback>
             </Avatar>
             <div class="grid flex-1 text-left text-sm leading-tight">
-              <span class="truncate font-semibold">{{ userStore.name }}</span>
+              <span class="truncate font-semibold">{{ displayName }}</span>
               <span v-if="userStore.emailInfo" class="truncate text-xs">{{ maskedEmail }}</span>
             </div>
             <ChevronsUpDown class="ml-auto size-4"/>
@@ -93,9 +97,7 @@ const maskedEmail = computed(() => {
                 </AvatarFallback>
               </Avatar>
               <div class="grid flex-1 text-left text-sm leading-tight">
-        <span class="truncate font-semibold">
-          {{ userStore.isLoggedIn ? userStore.name : t("sidebarUser.guestName") }}
-        </span>
+        <span class="truncate font-semibold">{{ displayName }}</span>
                 <span v-if="userStore.isLoggedIn && userStore.emailInfo?.email" class="truncate text-xs">
           {{ userStore.emailInfo.email }}
         </span>
