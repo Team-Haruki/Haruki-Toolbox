@@ -29,6 +29,21 @@ export const i18n = createI18n({
   globalInjection: true,
 })
 
+function readGlobalLocale(): AppLocale {
+  const globalLocale = i18n.global.locale
+  return (typeof globalLocale === "string" ? globalLocale : globalLocale.value) as AppLocale
+}
+
+function writeGlobalLocale(locale: AppLocale) {
+  const globalLocale = i18n.global.locale
+  if (typeof globalLocale === "string") {
+    ;(i18n.global as typeof i18n.global & { locale: AppLocale }).locale = locale
+    return
+  }
+
+  globalLocale.value = locale
+}
+
 export async function loadI18nLocale(locale: AppLocale) {
   if (loadedLocales.has(locale)) {
     return
@@ -41,11 +56,11 @@ export async function loadI18nLocale(locale: AppLocale) {
 
 export async function setI18nLocale(locale: AppLocale) {
   await loadI18nLocale(locale)
-  i18n.global.locale.value = locale
+  writeGlobalLocale(locale)
 }
 
 export function getI18nLocale(): AppLocale {
-  return i18n.global.locale.value as AppLocale
+  return readGlobalLocale()
 }
 
 export function translate(key: string, params?: Record<string, unknown>) {

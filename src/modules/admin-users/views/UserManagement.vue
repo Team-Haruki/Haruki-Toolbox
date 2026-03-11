@@ -48,7 +48,7 @@ const {
 } = useAdminUserManagement()
 
 function goToUser(userId: string) {
-  void router.push(`/admin/users/${userId}`)
+  void router.push({ name: "admin.userDetail", params: { userId } })
 }
 </script>
 

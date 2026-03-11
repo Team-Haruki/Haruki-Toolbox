@@ -93,6 +93,7 @@ const { t } = useI18n()
 
                 <DialogTrigger as-child>
                   <Button
+                      type="button"
                       :disabled="isSending || countdown > 0"
                   >
                     <Loader2 v-if="isSending" class="mr-2 h-4 w-4 animate-spin" />

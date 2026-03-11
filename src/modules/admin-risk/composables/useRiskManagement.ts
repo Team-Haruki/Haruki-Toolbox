@@ -5,19 +5,21 @@ import { useUserStore } from "@/shared/stores/user"
 import { runAsyncAction } from "@/composables/useAsyncAction"
 import { usePagedList } from "@/composables/usePagedList"
 import { createPageQuery } from "@/core/http/query"
+import { formatLocalizedDateTime } from "@/lib/date-time"
 import {
   createRiskEvent,
   getRiskEvents,
   resolveRiskEvent,
 } from "@/modules/admin-risk/api/event"
 import { getRiskRules, updateRiskRules } from "@/modules/admin-risk/api/rule"
+import { isJsonRecord } from "@/lib/json-utils"
 import type { RiskEvent, RiskRule } from "@/types/admin"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
 import { asRecord } from "@/lib/record-utils"
 
 export function useRiskManagement() {
   const userStore = useUserStore()
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
 
   const actionLoading = ref(false)
   const {
@@ -79,7 +81,7 @@ export function useRiskManagement() {
         return null
       }
 
-      if (config !== undefined && config !== null && !asRecord(config)) {
+      if (config !== undefined && config !== null && !isJsonRecord(config)) {
         return null
       }
 
@@ -88,7 +90,7 @@ export function useRiskManagement() {
         name,
         description,
         enabled,
-        config: asRecord(config) ?? undefined,
+        config: config ? config : undefined,
       })
     }
 
@@ -187,11 +189,7 @@ export function useRiskManagement() {
   }
 
   function formatDate(value: string) {
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) {
-      return t("adminRisk.common.fallback")
-    }
-    return date.toLocaleString(locale.value)
+    return formatLocalizedDateTime(value, undefined, t("adminRisk.common.fallback"))
   }
 
   onMounted(() => {

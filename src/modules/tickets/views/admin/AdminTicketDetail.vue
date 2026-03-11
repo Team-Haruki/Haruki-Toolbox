@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
+import { formatLocalizedDateTime } from "@/lib/date-time"
 import {
   Card,
   CardTitle,
@@ -37,7 +38,7 @@ import { isTicketCategory, ticketCategoryLabel } from "@/modules/tickets/lib/met
 import { useAdminTicketDetail } from "@/modules/tickets/composables/useAdminTicketDetail"
 
 const props = defineProps<{ ticketId: string }>()
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const {
   loading,
   ticket,
@@ -60,16 +61,13 @@ const {
 } = useAdminTicketDetail(() => props.ticketId)
 
 function formatDateTime(value?: string) {
-  if (!value) return t("tickets.common.dateFallback")
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return t("tickets.common.dateFallback")
-  return date.toLocaleString(locale.value, {
+  return formatLocalizedDateTime(value, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-  })
+  }, t("tickets.common.dateFallback"))
 }
 
 function formatCategory(category: string) {

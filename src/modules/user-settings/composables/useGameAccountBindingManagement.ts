@@ -75,7 +75,7 @@ export function useGameAccountBindingManagement() {
       toast.warning(t("userSettings.gameBinding.toast.socialBindingRequiredTitle"), {
         description: t("userSettings.gameBinding.toast.socialBindingRequiredDescription"),
       })
-      void router.push("/user/settings")
+      void router.push({ name: "user.settings" })
     }
   }
 

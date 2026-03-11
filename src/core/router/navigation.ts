@@ -25,7 +25,7 @@ export async function redirectToLogin(
     router: Router,
     options: RedirectToLoginOptions = {}
 ) {
-    if (router.currentRoute.value.path === "/user/login") {
+    if (router.currentRoute.value.name === "user.login" || router.currentRoute.value.path === "/user/login") {
         return
     }
 
@@ -33,11 +33,11 @@ export async function redirectToLogin(
 
     if (redirect) {
         await router.push({
-            path: "/user/login",
+            name: "user.login",
             query: { redirect },
         })
         return
     }
 
-    await router.push("/user/login")
+    await router.push({ name: "user.login" })
 }

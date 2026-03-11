@@ -150,10 +150,10 @@ const { columns, table, FlexRender } = useIMAuthorizationTable({
           {{ t("userSettings.imAuthorization.dialog.descriptionMain") }}<br>{{ t("userSettings.imAuthorization.dialog.descriptionHint") }}
         </DialogDescription>
       </DialogHeader>
-      <div class="grid gap-4 py-4">
+      <div v-if="editTarget" class="grid gap-4 py-4">
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="platform" class="text-right">{{ t("userSettings.imAuthorization.fields.platform") }}</Label>
-          <Select :key="locale" v-model="editTarget!.platform">
+          <Select :key="locale" v-model="editTarget.platform">
             <SelectTrigger
                 id="platform"
                 class="col-span-3 flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -172,11 +172,11 @@ const { columns, table, FlexRender } = useIMAuthorizationTable({
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="account" class="text-right">{{ t("userSettings.imAuthorization.fields.account") }}</Label>
-          <Input id="account" v-model="editTarget!.userId" class="col-span-3"/>
+          <Input id="account" v-model="editTarget.userId" class="col-span-3"/>
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="remark" class="text-right">{{ t("userSettings.imAuthorization.fields.remark") }}</Label>
-          <Input id="remark" v-model="editTarget!.comment" class="col-span-3"/>
+          <Input id="remark" v-model="editTarget.comment" class="col-span-3"/>
         </div>
       </div>
       <DialogFooter>

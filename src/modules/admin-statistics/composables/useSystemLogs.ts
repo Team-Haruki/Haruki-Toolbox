@@ -4,7 +4,7 @@ import { useI18n } from "vue-i18n"
 import { useDebouncedWatch } from "@/composables/useDebouncedWatch"
 import { usePagedList } from "@/composables/usePagedList"
 import { createPageQuery, setTrimmedQueryValue } from "@/core/http/query"
-import { formatDateKey } from "@/lib/date-time"
+import { formatDateKey, formatLocalizedDateTime } from "@/lib/date-time"
 import {
   exportSystemLogs,
   getSystemLogDetail,
@@ -15,7 +15,7 @@ import type { SystemLog, SystemLogSummary } from "@/types/admin"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
 
 export function useSystemLogs() {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const search = ref("")
   const {
     loading,
@@ -126,14 +126,7 @@ export function useSystemLogs() {
   }
 
   function formatTime(iso?: string) {
-    if (!iso) {
-      return t("adminStatistics.common.fallback")
-    }
-    const date = new Date(iso)
-    if (Number.isNaN(date.getTime())) {
-      return t("adminStatistics.common.fallback")
-    }
-    return date.toLocaleString(locale.value)
+    return formatLocalizedDateTime(iso, undefined, t("adminStatistics.common.fallback"))
   }
 
   useDebouncedWatch(

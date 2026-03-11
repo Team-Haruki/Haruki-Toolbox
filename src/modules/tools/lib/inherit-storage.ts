@@ -1,6 +1,9 @@
 import type { InheritServer, UploadDataType } from "@/types"
 import { asRecord, readString } from "@/lib/record-utils"
 import { isUploadDataType } from "@/lib/upload-data-type"
+import { createLogger } from "@/lib/logger"
+
+const logger = createLogger("inherit-storage")
 
 export interface InheritData {
   inherit_id: string
@@ -75,6 +78,6 @@ export function saveInheritToStorage(data: InheritData): void {
   try {
     window.localStorage.setItem(INHERIT_STORAGE_KEY, JSON.stringify({ ...data, timestamp: Date.now() }))
   } catch {
-    console.warn("Failed to save inherit info to localStorage")
+    logger.warn("Failed to save inherit info to localStorage")
   }
 }

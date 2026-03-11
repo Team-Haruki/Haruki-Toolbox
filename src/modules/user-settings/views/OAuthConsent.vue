@@ -137,7 +137,7 @@ async function submitConsent(approved: boolean) {
         </CardDescription>
       </CardHeader>
       <CardFooter class="justify-center">
-        <Button variant="outline" @click="router.push('/')">
+        <Button variant="outline" @click="router.push({ name: 'home' })">
           {{ t("oauth.consent.backHome") }}
         </Button>
       </CardFooter>

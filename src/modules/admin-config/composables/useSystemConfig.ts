@@ -3,9 +3,9 @@ import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { getPublicApiKeys, updatePublicApiKeys } from "@/modules/admin-config/api/public-api-keys"
 import { getRuntimeConfig, updateRuntimeConfig } from "@/modules/admin-config/api/runtime"
+import { isJsonRecord, isStringRecord } from "@/lib/json-utils"
 import type { PublicApiKeys, RuntimeConfig } from "@/types/admin"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
-import { asRecord } from "@/lib/record-utils"
 
 const EDITOR_OPTIONS = {
   minimap: { enabled: false },
@@ -63,18 +63,13 @@ export function useSystemConfig() {
   }
 
   function parseApiKeysJson(raw: string): PublicApiKeys | null {
-    const parsed = asRecord(JSON.parse(raw))
-    if (!parsed) return null
-
-    if (Object.values(parsed).some((value) => typeof value !== "string")) {
-      return null
-    }
-
-    return parsed as PublicApiKeys
+    const parsed = JSON.parse(raw)
+    return isStringRecord(parsed) ? parsed : null
   }
 
   function parseRuntimeJson(raw: string): RuntimeConfig | null {
-    return asRecord(JSON.parse(raw))
+    const parsed = JSON.parse(raw)
+    return isJsonRecord(parsed) ? parsed : null
   }
 
   async function saveApiKeys() {

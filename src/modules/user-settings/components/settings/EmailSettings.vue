@@ -8,6 +8,7 @@ import {Button} from "@/components/ui/button"
 import Turnstile from "@/shared/components/Turnstile.vue"
 import { Loader2, Mail, ArrowRightLeft, Key, Send, Save } from 'lucide-vue-next'
 import { extractErrorMessage } from "@/lib/error-utils"
+import { isValidEmail } from "@/lib/validation"
 import { redirectToLogin } from "@/core/router/navigation"
 import { unwrapUpdatedData } from "@/core/http/call-api"
 
@@ -64,7 +65,7 @@ function onTurnstileInvalid() {
 
 
 function validateEmail(val: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)
+  return isValidEmail(val)
 }
 
 function startCooldown() {

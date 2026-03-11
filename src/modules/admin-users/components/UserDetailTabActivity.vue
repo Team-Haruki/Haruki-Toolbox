@@ -30,7 +30,7 @@ defineProps<{
 const { t, locale } = useI18n()
 
 function formatActivityTime(value: string) {
-  return formatDateTime(value, locale.value)
+  return formatDateTime(value)
 }
 </script>
 

@@ -7,7 +7,7 @@ import { WEB_NAV_ITEMS, type NavItem } from "@/config/navigation"
 const APP_TITLE_KEY = "app.name"
 const DEFAULT_PAGE_TITLE_KEY = "route.home"
 const COPYRIGHT_START_YEAR = 2024
-const HARUKI_LOGO = "/assets/haruki.ico"
+const HARUKI_LOGO = `${import.meta.env.BASE_URL}assets/haruki.ico`
 
 export function useWebLayout() {
   const route = useRoute()

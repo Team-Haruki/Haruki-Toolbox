@@ -5,6 +5,8 @@ import { DEFAULT_LOCALE, type AppLocale } from "@/shared/i18n"
 export type EndpointType = 'direct' | 'cdn'
 export type ThemeType = 'light' | 'dark' | 'system'
 
+const SYSTEM_THEME_MEDIA_QUERY = '(prefers-color-scheme: dark)'
+
 function normalizeEndpointUrl(value: unknown): string {
     if (typeof value !== 'string') {
         return ''
@@ -63,22 +65,26 @@ export const useSettingsStore = defineStore("settings", () => {
     function applyTheme(themeValue: ThemeType) {
         const root = document.documentElement
         if (themeValue === 'system') {
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+            const prefersDark = window.matchMedia(SYSTEM_THEME_MEDIA_QUERY).matches
             root.classList.toggle('dark', prefersDark)
         } else {
             root.classList.toggle('dark', themeValue === 'dark')
         }
     }
     let themeListenerInitialized = false
+    let themeMediaQuery: MediaQueryList | null = null
+    const handleThemeChange = () => {
+        if (theme.value === 'system') {
+            applyTheme('system')
+        }
+    }
     function initTheme() {
         applyTheme(theme.value)
         if (!themeListenerInitialized) {
             themeListenerInitialized = true
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-                if (theme.value === 'system') {
-                    applyTheme('system')
-                }
-            })
+            themeMediaQuery = window.matchMedia(SYSTEM_THEME_MEDIA_QUERY)
+            themeMediaQuery.removeEventListener('change', handleThemeChange)
+            themeMediaQuery.addEventListener('change', handleThemeChange)
         }
     }
     return {

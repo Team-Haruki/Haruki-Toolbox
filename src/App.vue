@@ -10,6 +10,7 @@ import { useUserStore } from "@/shared/stores/user"
 import { getSettings } from "@/modules/user-settings/api/get-settings"
 import { useI18n } from "vue-i18n"
 import { extractErrorMessage } from "@/lib/error-utils"
+import { createLogger } from "@/lib/logger"
 import {
   computed,
   onBeforeUnmount,
@@ -28,6 +29,7 @@ const syncRetryUserId = ref<string | null>(null)
 const syncRetryCount = ref(0)
 const MAX_SYNC_RETRIES = 3
 const { t } = useI18n()
+const logger = createLogger("app-settings-sync")
 
 function clearSyncRetryState(resetCount = true) {
   if (syncRetryTimer.value !== null) {
@@ -104,7 +106,7 @@ async function syncUserSettings(userId: string) {
       return
     }
     userStore.setSettingsSyncState("failed")
-    console.error("Failed to sync settings:", e)
+    logger.error("Failed to sync settings", e)
     toast.warning(t("core.sync.failedTitle"), {
       description: extractErrorMessage(e, t("core.sync.failedDescription")),
     })

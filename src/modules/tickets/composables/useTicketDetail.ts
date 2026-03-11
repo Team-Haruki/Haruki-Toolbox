@@ -145,7 +145,7 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
   }
 
   function goBackToTicketList() {
-    void router.push("/tickets")
+    void router.push({ name: "tickets.list" })
   }
 
   function isMe(message: TicketMessage) {

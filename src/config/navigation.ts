@@ -57,6 +57,7 @@ export interface AdminNavItem {
   labelKey: string
   icon: Component
   segment: string
+  routeName: string
   titleKey: string
   superOnly?: boolean
 }
@@ -67,6 +68,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     labelKey: "admin.nav.dashboard",
     icon: LucideLayoutDashboard,
     segment: "dashboard",
+    routeName: "admin.dashboard",
     titleKey: "route.admin.dashboard",
   },
   {
@@ -74,6 +76,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     labelKey: "admin.nav.users",
     icon: LucideUsers,
     segment: "users",
+    routeName: "admin.users",
     titleKey: "route.admin.users",
   },
   {
@@ -81,6 +84,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     labelKey: "admin.nav.oauthClients",
     icon: LucideKeyRound,
     segment: "oauth-clients",
+    routeName: "admin.oauthClients",
     titleKey: "route.admin.oauthClients",
   },
   {
@@ -88,6 +92,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     labelKey: "admin.nav.logs",
     icon: LucideScrollText,
     segment: "logs",
+    routeName: "admin.logs",
     titleKey: "route.admin.logs",
   },
   {
@@ -95,6 +100,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     labelKey: "admin.nav.uploadLogs",
     icon: LucideCloudUpload,
     segment: "upload-logs",
+    routeName: "admin.uploadLogs",
     titleKey: "route.admin.uploadLogs",
   },
   {
@@ -102,6 +108,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     labelKey: "admin.nav.content",
     icon: LucideFileEdit,
     segment: "content",
+    routeName: "admin.content",
     titleKey: "route.admin.content",
   },
   {
@@ -109,6 +116,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     labelKey: "admin.nav.config",
     icon: LucideCog,
     segment: "config",
+    routeName: "admin.config",
     titleKey: "route.admin.config",
     superOnly: true,
   },
@@ -117,6 +125,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     labelKey: "admin.nav.gameBindings",
     icon: LucideGamepad2,
     segment: "game-bindings",
+    routeName: "admin.gameBindings",
     titleKey: "route.admin.gameBindings",
   },
   {
@@ -124,6 +133,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     labelKey: "admin.nav.sessions",
     icon: LucideMonitor,
     segment: "sessions",
+    routeName: "admin.sessions",
     titleKey: "route.admin.sessions",
   },
   {
@@ -131,6 +141,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     labelKey: "admin.nav.risk",
     icon: LucideShieldAlert,
     segment: "risk",
+    routeName: "admin.risk",
     titleKey: "route.admin.risk",
   },
   {
@@ -138,6 +149,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     labelKey: "admin.nav.tickets",
     icon: LucideTicket,
     segment: "tickets",
+    routeName: "admin.tickets",
     titleKey: "route.admin.tickets",
   },
 ]

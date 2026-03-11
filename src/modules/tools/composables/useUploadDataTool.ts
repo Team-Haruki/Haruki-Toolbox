@@ -17,7 +17,8 @@ export function useUploadDataTool() {
   const { t } = useI18n()
   const userStore = useUserStore()
 
-  const dataType = ref<UploadDataType>("mysekai")
+  const fileDataType = ref<UploadDataType>("mysekai")
+  const inheritDataType = ref<UploadDataType>("mysekai")
   const selectedFile = ref<File | null>(null)
   const inheritServer = ref<InheritServer>("jp")
   const inheritId = ref("")
@@ -27,6 +28,7 @@ export function useUploadDataTool() {
   const isSubmittingInherit = ref(false)
   const uploadProgress = ref(0)
   const uploadStatus = ref("")
+  const fileInputElement = ref<HTMLInputElement | null>(null)
 
   const {
     selectedAccountKey,
@@ -34,14 +36,14 @@ export function useUploadDataTool() {
     selectedAccount,
     disabledReason,
     isCNMySekaiForbidden,
-  } = useUploadDataAccounts(userStore, dataType)
+  } = useUploadDataAccounts(userStore, fileDataType)
 
   const savedInherit = loadInheritFromStorage()
   if (savedInherit) {
     inheritId.value = savedInherit.inherit_id || ""
     inheritPassword.value = savedInherit.inherit_password || ""
     inheritServer.value = savedInherit.server
-    dataType.value = savedInherit.type
+    inheritDataType.value = savedInherit.type
     rememberInherit.value = true
   }
 
@@ -55,9 +57,13 @@ export function useUploadDataTool() {
   function onFileChange(event: Event) {
     const target = event.target
     if (!(target instanceof HTMLInputElement)) {
+      fileInputElement.value = null
       selectedFile.value = null
       return
     }
+    fileInputElement.value = target
+    uploadProgress.value = 0
+    uploadStatus.value = ""
     selectedFile.value = target.files?.[0] ?? null
   }
 
@@ -99,14 +105,14 @@ export function useUploadDataTool() {
     isSubmittingFile.value = true
     uploadProgress.value = 0
     uploadStatus.value = t("tools.uploadData.uploadStatus.uploading", {
-      dataType: dataTypeLabel(dataType.value),
+      dataType: dataTypeLabel(fileDataType.value),
     })
 
     try {
       const response = await uploadManualData(
         account.server,
         String(account.uid),
-        dataType.value,
+        fileDataType.value,
         file,
         (progress) => {
           uploadProgress.value = progress
@@ -115,6 +121,11 @@ export function useUploadDataTool() {
       )
 
       uploadStatus.value = t("tools.uploadData.uploadStatus.success")
+      uploadProgress.value = 100
+      selectedFile.value = null
+      if (fileInputElement.value) {
+        fileInputElement.value.value = ""
+      }
       toast.success(t("tools.uploadData.toast.uploadSuccessTitle"), {
         description: response?.message || t("tools.uploadData.toast.uploadSuccessFileFallback"),
       })
@@ -140,7 +151,7 @@ export function useUploadDataTool() {
       return
     }
 
-    if (inheritServer.value === "cn" && dataType.value === "mysekai" && userStore.allowCNMysekai !== true) {
+    if (inheritServer.value === "cn" && inheritDataType.value === "mysekai" && userStore.allowCNMysekai !== true) {
       toast.error(t("tools.uploadData.toast.operationForbiddenTitle"), {
         description: t("tools.uploadData.toast.operationForbiddenDescription"),
       })
@@ -151,7 +162,7 @@ export function useUploadDataTool() {
     try {
       const response = await submitInherit(
         inheritServer.value,
-        dataType.value,
+        inheritDataType.value,
         normalizedInheritId,
         normalizedInheritPassword,
         { skipErrorToast: true }
@@ -166,7 +177,7 @@ export function useUploadDataTool() {
           inherit_id: normalizedInheritId,
           inherit_password: normalizedInheritPassword,
           server: inheritServer.value,
-          type: dataType.value,
+          type: inheritDataType.value,
         })
       } else {
         clearInheritStorage()
@@ -181,7 +192,8 @@ export function useUploadDataTool() {
   }
 
   return {
-    dataType,
+    fileDataType,
+    inheritDataType,
     inheritServer,
     inheritId,
     inheritPassword,

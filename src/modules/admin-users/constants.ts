@@ -2,7 +2,7 @@ import type { Component } from "vue"
 import type { AdminUser } from "@/types/admin"
 import type { UserRole } from "@/types/common"
 import type { SocialPlatform } from "@/types/social-platform"
-import { toValidDate } from "@/lib/date-time"
+import { formatLocalizedDate, formatLocalizedDateTime } from "@/lib/date-time"
 import { asRecord, readBoolean } from "@/lib/record-utils"
 import {
   SOCIAL_PLATFORM_VALUES,
@@ -39,8 +39,6 @@ const SOCIAL_PLATFORM_ICONS: Record<SocialPlatform, Component> = {
   discord: LucideMonitor,
   telegram: LucideSend,
 }
-
-const DATE_FALLBACK = "—"
 
 export const isSocialPlatform = isSharedSocialPlatform
 
@@ -79,21 +77,16 @@ export function getSocialPlatformOptions(t: TranslateFn): Array<[SocialPlatform,
   ])
 }
 
-export function formatDateTime(value: string, locale: string, fallback = DATE_FALLBACK) {
-  const date = toValidDate(value)
-  if (!date) return fallback
-  return date.toLocaleString(locale)
+export function formatDateTime(value: string, fallback = "—") {
+  return formatLocalizedDateTime(value, undefined, fallback)
 }
 
 export function formatDate(
   value: string | undefined,
-  locale: string,
   options?: Intl.DateTimeFormatOptions,
-  fallback = DATE_FALLBACK
+  fallback = "—"
 ) {
-  const date = toValidDate(value)
-  if (!date) return fallback
-  return date.toLocaleString(locale, options)
+  return formatLocalizedDate(value, options, fallback)
 }
 
 export function getAllowCNMysekai(user: AdminUser): boolean | undefined {

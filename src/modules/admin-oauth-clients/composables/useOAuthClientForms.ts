@@ -1,4 +1,4 @@
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
@@ -45,6 +45,14 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     newRedirectUris.value = [""]
   }
 
+  function resetEditForm() {
+    editClientId.value = ""
+    editName.value = ""
+    editClientType.value = DEFAULT_CLIENT_TYPE
+    editScopes.value = []
+    editRedirectUris.value = []
+  }
+
   function setCreateOpen(value: boolean) {
     createOpen.value = value
   }
@@ -52,6 +60,18 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
   function setEditOpen(value: boolean) {
     editOpen.value = value
   }
+
+  watch(createOpen, (open) => {
+    if (!open) {
+      resetCreateForm()
+    }
+  })
+
+  watch(editOpen, (open) => {
+    if (!open) {
+      resetEditForm()
+    }
+  })
 
   function updateNewClientId(value: string) {
     newClientId.value = value

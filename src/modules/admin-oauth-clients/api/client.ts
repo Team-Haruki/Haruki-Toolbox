@@ -73,7 +73,7 @@ export async function rotateClientSecret(clientId: string) {
         method: "POST",
     })
     const updatedData = unwrapUpdatedData(res, translate("adminOAuthClients.toast.rotateFailedTitle"))
-    const clientSecret = typeof updatedData.clientSecret === "string" ? updatedData.clientSecret.trim() : ""
+    const clientSecret = updatedData.clientSecret.trim()
     if (!clientSecret) {
         throw new Error(translate("common.missingUpdatedData", { context: translate("adminOAuthClients.toast.rotateFailedTitle") }))
     }
@@ -117,6 +117,6 @@ export async function getOAuthClientAuditLogs(clientId: string, params?: QueryPa
 }
 
 export async function getOAuthClientAuditSummary(clientId: string) {
-    const res = await request<APIResponse<unknown>>(`${BASE}/${encodePathSegment(clientId)}/audit-summary`, { method: "GET" })
+    const res = await request<APIResponse>(`${BASE}/${encodePathSegment(clientId)}/audit-summary`, { method: "GET" })
     return res.updatedData
 }

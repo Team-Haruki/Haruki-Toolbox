@@ -9,7 +9,8 @@ import { useUploadDataTool } from "@/modules/tools/composables/useUploadDataTool
 const { t } = useI18n()
 
 const {
-  dataType,
+  fileDataType,
+  inheritDataType,
   inheritServer,
   inheritId,
   inheritPassword,
@@ -52,7 +53,7 @@ const {
 
       <TabsContent value="file">
         <UploadDataFileTab
-          v-model:data-type="dataType"
+          v-model:data-type="fileDataType"
           v-model:selected-account-key="selectedAccountKey"
           :bound-accounts="boundAccounts"
           :disabled-reason="disabledReason"
@@ -67,11 +68,11 @@ const {
 
       <TabsContent value="inherit">
         <UploadDataInheritTab
-          v-model:data-type="dataType"
+          v-model:data-type="inheritDataType"
           v-model:inherit-server="inheritServer"
           v-model:inherit-id="inheritId"
           v-model:inherit-password="inheritPassword"
-          v-model:remember-inherit="rememberInherit"
+          :remember-inherit="rememberInherit"
           :is-submitting-inherit="isSubmittingInherit"
           @update:remember-inherit="setRememberInherit"
           @submit="submitInheritUpload"

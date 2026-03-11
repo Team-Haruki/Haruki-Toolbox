@@ -92,7 +92,7 @@ const {
 </script>
 <template>
   <div class="w-full flex flex-col gap-4">
-    <Button variant="ghost" size="sm" class="self-start" @click="router.push('/admin/users')">
+    <Button variant="ghost" size="sm" class="self-start" @click="router.push({ name: 'admin.users' })">
       <LucideArrowLeft class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.backToList") }}
     </Button>
 

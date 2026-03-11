@@ -26,7 +26,7 @@ const props = defineProps<{
   users: AdminUser[]
   selectedIds: string[]
 }>()
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const emit = defineEmits<{
   (e: "toggleSelectAll"): void
@@ -35,7 +35,7 @@ const emit = defineEmits<{
 }>()
 
 function formatCreatedAt(iso?: string) {
-  return formatDate(iso, locale.value, { year: "numeric", month: "2-digit", day: "2-digit" })
+  return formatDate(iso, { year: "numeric", month: "2-digit", day: "2-digit" })
 }
 
 function isSelected(userId: string) {

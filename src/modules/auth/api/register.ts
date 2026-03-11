@@ -11,7 +11,7 @@ export async function registerUser(
     options?: AxiosRequestConfig
 ): Promise<RegisterSuccessResponse> {
     const payload: RegisterPayload = {name, email, password, oneTimePassword, challengeToken}
-    const response = await request<RegisterSuccessResponse>(
+    return await request<RegisterSuccessResponse>(
         "/api/user/register",
         {
             method: "POST",
@@ -19,5 +19,4 @@ export async function registerUser(
             ...options
         }
     )
-    return response
 }

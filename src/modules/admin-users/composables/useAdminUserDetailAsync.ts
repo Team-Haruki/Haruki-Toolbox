@@ -1,7 +1,10 @@
 import { toast } from "vue-sonner"
 import type { Ref } from "vue"
 import { extractErrorMessage } from "@/lib/error-utils"
+import { createLogger } from "@/lib/logger"
 import { translate } from "@/shared/i18n"
+
+const logger = createLogger("admin-user-detail")
 
 export interface ActionOptions<T = void> {
   successMessage?: string
@@ -81,7 +84,7 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
       } catch (error: unknown) {
         if (!isActiveActionGeneration(generation)) return
         afterSuccessFailed = true
-        console.error("[admin-user-detail] post-success callback failed:", error)
+        logger.error("Post-success callback failed", error)
         toast.warning(translate("common.postSuccessWarningTitle"), {
           description: extractErrorMessage(error, translate("common.postSuccessWarningDescription")),
         })

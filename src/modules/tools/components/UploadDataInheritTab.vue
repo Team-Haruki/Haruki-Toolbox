@@ -102,7 +102,7 @@ const { t, locale } = useI18n()
       <CardDescription>{{ t("tools.uploadData.inheritTab.description") }}</CardDescription>
     </CardHeader>
     <CardContent>
-      <form>
+      <form id="upload-data-inherit-form" @submit.prevent="emit('submit')">
         <div class="grid gap-4">
           <div class="flex flex-col space-y-1.5">
             <Label for="inherit-id">{{ t("tools.uploadData.inheritTab.fields.inheritId") }}</Label>
@@ -183,7 +183,7 @@ const { t, locale } = useI18n()
       </form>
     </CardContent>
     <CardFooter class="flex items-center justify-end">
-      <Button :disabled="isSubmittingInherit" @click.prevent="emit('submit')">
+      <Button type="submit" form="upload-data-inherit-form" :disabled="isSubmittingInherit">
         <Loader2 v-if="isSubmittingInherit" class="mr-2 h-4 w-4 animate-spin" />
         <UploadCloud v-else class="mr-2 h-4 w-4" />
         {{ isSubmittingInherit ? t("tools.uploadData.inheritTab.submitting") : t("tools.uploadData.inheritTab.submit") }}

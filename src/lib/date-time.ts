@@ -11,16 +11,7 @@ export function toValidDate(value: DateInput): Date | null {
     return Number.isNaN(date.getTime()) ? null : date
 }
 
-export function formatDateTimeCN(value: DateInput, fallback = "—"): string {
-    const date = toValidDate(value)
-    if (!date) {
-        return fallback
-    }
-
-    return date.toLocaleString(getI18nLocale())
-}
-
-export function formatDateCN(
+export function formatLocalizedDateTime(
     value: DateInput,
     options?: Intl.DateTimeFormatOptions,
     fallback = "—"
@@ -31,6 +22,31 @@ export function formatDateCN(
     }
 
     return date.toLocaleString(getI18nLocale(), options)
+}
+
+export function formatLocalizedDate(
+    value: DateInput,
+    options?: Intl.DateTimeFormatOptions,
+    fallback = "—"
+): string {
+    const date = toValidDate(value)
+    if (!date) {
+        return fallback
+    }
+
+    return date.toLocaleDateString(getI18nLocale(), options)
+}
+
+export function formatDateTimeCN(value: DateInput, fallback = "—"): string {
+    return formatLocalizedDateTime(value, undefined, fallback)
+}
+
+export function formatDateCN(
+    value: DateInput,
+    options?: Intl.DateTimeFormatOptions,
+    fallback = "—"
+): string {
+    return formatLocalizedDate(value, options, fallback)
 }
 
 export function formatDateKey(value: DateInput): string {

@@ -4,9 +4,8 @@ import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { resetPassword } from "@/modules/auth/api/reset-password"
 import { extractErrorMessage } from "@/lib/error-utils"
+import { DEFAULT_MIN_PASSWORD_LENGTH, hasMinPasswordLength } from "@/lib/validation"
 import { redirectToLogin } from "@/core/router/navigation"
-
-const MIN_PASSWORD_LENGTH = 8
 
 export function useResetPasswordForm() {
   const route = useRoute()
@@ -40,8 +39,8 @@ export function useResetPasswordForm() {
       return t("auth.resetPassword.toast.passwordMismatch")
     }
 
-    if (newPassword.value.length < MIN_PASSWORD_LENGTH) {
-      return t("auth.resetPassword.toast.passwordMinLength", { min: MIN_PASSWORD_LENGTH })
+    if (!hasMinPasswordLength(newPassword.value, DEFAULT_MIN_PASSWORD_LENGTH)) {
+      return t("auth.resetPassword.toast.passwordMinLength", { min: DEFAULT_MIN_PASSWORD_LENGTH })
     }
 
     return null

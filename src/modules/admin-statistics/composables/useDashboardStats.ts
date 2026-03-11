@@ -7,12 +7,13 @@ import {
   LucideUploadCloud,
   LucideUsers,
 } from "lucide-vue-next"
+import { formatLocalizedDate } from "@/lib/date-time"
 import { getDashboard, getTimeseries } from "@/modules/admin-statistics/api/dashboard"
 import type { DashboardData, TimeseriesPoint } from "@/types/admin"
 import { extractErrorMessage } from "@/lib/error-utils"
 
 export function useDashboardStats() {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const loading = ref(true)
   const dashboard = ref<DashboardData | null>(null)
   const chartData = ref<TimeseriesPoint[]>([])
@@ -89,14 +90,7 @@ export function useDashboardStats() {
   }
 
   function formatShortDate(value?: string) {
-    if (!value) {
-      return ""
-    }
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) {
-      return ""
-    }
-    return date.toLocaleDateString(locale.value, { month: "short", day: "numeric" })
+    return formatLocalizedDate(value, { month: "short", day: "numeric" }, "")
   }
 
   function crosshairTemplate(point: TimeseriesPoint) {

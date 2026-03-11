@@ -8,18 +8,25 @@ export function useFriendLinks() {
   const { t } = useI18n()
   const friendLinks = ref<FriendLinkItem[]>([])
   const loading = ref(true)
+  let latestRequestId = 0
 
   async function fetchFriendLinks() {
+    const requestId = ++latestRequestId
     loading.value = true
     try {
-      friendLinks.value = await getFriendLinks()
+      const links = await getFriendLinks()
+      if (requestId !== latestRequestId) return
+      friendLinks.value = links
     } catch (error: unknown) {
+      if (requestId !== latestRequestId) return
+      friendLinks.value = []
       toastErrorWithExtractedMessage(
         t("navigationPages.friendLinks.toast.loadFailedTitle"),
         error,
         t("navigationPages.common.retryLater")
       )
     } finally {
+      if (requestId !== latestRequestId) return
       loading.value = false
     }
   }

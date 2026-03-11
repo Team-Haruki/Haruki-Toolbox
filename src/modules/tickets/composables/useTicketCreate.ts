@@ -53,7 +53,7 @@ export function useTicketCreate() {
         message: normalizedMessage,
       })
       toast.success(t("tickets.create.toast.createSuccess"))
-      void router.push("/tickets")
+      void router.push({ name: "tickets.list" })
     } catch (error: unknown) {
       toast.error(t("tickets.create.toast.createFailedTitle"), {
         description: extractErrorMessage(error, t("tickets.create.toast.createFailedFallback")),
@@ -64,7 +64,7 @@ export function useTicketCreate() {
   }
 
   function goBackToTicketList() {
-    void router.push("/tickets")
+    void router.push({ name: "tickets.list" })
   }
 
   return {

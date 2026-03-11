@@ -1,7 +1,10 @@
 import type { Ref } from "vue"
 import { toast } from "vue-sonner"
 import { extractErrorMessage } from "@/lib/error-utils"
+import { createLogger } from "@/lib/logger"
 import { translate } from "@/shared/i18n"
+
+const logger = createLogger("async-action")
 
 type LoadingRef = Ref<boolean> | { value: boolean }
 
@@ -58,7 +61,7 @@ export async function runAsyncAction<TResult>(
         await options.onSuccess(result)
       } catch (error: unknown) {
         onSuccessFailed = true
-        console.error("[runAsyncAction] post-success callback failed:", error)
+        logger.error("Post-success callback failed", error)
         toast.warning(translate("common.postSuccessWarningTitle"), {
           description: extractErrorMessage(error, translate("common.postSuccessWarningDescription")),
         })

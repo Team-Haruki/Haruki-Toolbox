@@ -10,6 +10,7 @@ import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
 import {Loader2, KeyRound, Lock, Save} from "lucide-vue-next"
 import { extractErrorMessage } from "@/lib/error-utils"
+import { DEFAULT_MIN_PASSWORD_LENGTH, hasMinPasswordLength } from "@/lib/validation"
 import { redirectToLogin } from "@/core/router/navigation"
 import { resolveRequiredUserId } from "@/modules/user-settings/lib/current-user"
 
@@ -78,7 +79,7 @@ const handleChangePassword = async () => {
     return
   }
   
-  if (newPassword.value.length < 8) {
+  if (!hasMinPasswordLength(newPassword.value, DEFAULT_MIN_PASSWORD_LENGTH)) {
     toast.error(t("userSettings.password.toast.validateFailedTitle"), {
       description: t("userSettings.password.toast.passwordMinLength"),
     })

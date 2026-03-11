@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  ref,
-  onMounted,
-  onUnmounted
-} from "vue"
+import { useTurnstileWidget } from "@/composables/useTurnstileWidget"
 
 const props = defineProps<{
   sitekey?: string
@@ -18,107 +14,19 @@ const emit = defineEmits<{
   (e: "invalid"): void
 }>()
 
-const container = ref<HTMLDivElement | null>(null)
-let widgetId: string | null = null
-let interval: number | null = null
-
-const TURNSTILE_POLL_INTERVAL_MS = 200
-const TURNSTILE_POLL_TIMEOUT_MS = 10_000
-
-function clearToken() {
-  emit("invalid")
-}
-
-function handleVerify(res: string) {
-  emit("verify", res)
-  props.callback?.(res)
-}
-
-function handleExpired() {
-  clearToken()
-}
-
-function handleError() {
-  clearToken()
-}
-
-function renderTurnstile() {
-  if (!container.value || widgetId !== null || !window.turnstile) return
-  widgetId = window.turnstile.render(container.value, {
-    sitekey: props.sitekey ?? "1x00000000000000000000AA",
-    callback: handleVerify,
-    theme: props.theme,
-    size: props.size || "flexible",
-    action: props.action,
-    "expired-callback": handleExpired,
-    "error-callback": handleError,
-  })
-}
-
-function reset() {
-  clearToken()
-  if (widgetId && window.turnstile) {
-    try {
-      window.turnstile.reset(widgetId)
-    } catch {
-      widgetId = null
-      if (container.value) {
-        container.value.innerHTML = ""
-        renderTurnstile()
-      }
-    }
-  }
-}
-
-function execute() {
-  if (widgetId !== null && window.turnstile) {
-    window.turnstile.execute(widgetId)
-  }
-}
+const { container, reset, execute } = useTurnstileWidget({
+  getSitekey: () => props.sitekey,
+  getCallback: () => props.callback,
+  getTheme: () => props.theme,
+  getSize: () => props.size,
+  getAction: () => props.action,
+  onVerify: (token) => emit("verify", token),
+  onInvalid: () => emit("invalid"),
+})
 
 defineExpose({
   reset,
   execute,
-})
-
-onMounted(() => {
-  if (container.value) {
-    if (window.turnstile) {
-      renderTurnstile()
-    } else {
-      const pollDeadline = Date.now() + TURNSTILE_POLL_TIMEOUT_MS
-      interval = window.setInterval(() => {
-        if (window.turnstile) {
-          renderTurnstile()
-          if (interval) {
-            clearInterval(interval)
-            interval = null
-          }
-          return
-        }
-
-        if (Date.now() >= pollDeadline && interval) {
-          clearInterval(interval)
-          interval = null
-        }
-      }, TURNSTILE_POLL_INTERVAL_MS)
-    }
-  }
-})
-
-onUnmounted(() => {
-  if (interval) {
-    clearInterval(interval)
-    interval = null
-  }
-
-  if (widgetId && window.turnstile) {
-    try {
-      window.turnstile.remove(widgetId)
-    } catch {
-    }
-  }
-  widgetId = null
 })
 </script>
 

@@ -114,12 +114,12 @@ const { t } = useI18n()
                     </div>
                     <DialogFooter>
                       <DialogClose as-child>
-                        <Button variant="outline">
+                        <Button type="button" variant="outline">
                           <X class="h-4 w-4 mr-2" />
                           {{ t("auth.common.cancel") }}
                         </Button>
                       </DialogClose>
-                      <Button @click="handleResetPassword" :disabled="isSendingResetEmail">
+                      <Button type="button" @click="handleResetPassword" :disabled="isSendingResetEmail">
                         <Loader2 v-if="isSendingResetEmail" class="mr-2 h-4 w-4 animate-spin" />
                         <Mail v-else class="h-4 w-4 mr-2" />
                         {{ t("auth.login.resetDialog.sendResetEmail") }}

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
+import { formatLocalizedDate } from "@/lib/date-time"
 import {
   Card,
   CardTitle,
@@ -39,13 +40,10 @@ import {
 } from "@/modules/tickets/lib/display"
 import { useAdminTicketList } from "@/modules/tickets/composables/useAdminTicketList"
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 function formatTicketDate(iso?: string) {
-  if (!iso) return t("tickets.common.dateFallback")
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return t("tickets.common.dateFallback")
-  return date.toLocaleDateString(locale.value, { year: "numeric", month: "2-digit", day: "2-digit" })
+  return formatLocalizedDate(iso, { year: "numeric", month: "2-digit", day: "2-digit" }, t("tickets.common.dateFallback"))
 }
 
 const {

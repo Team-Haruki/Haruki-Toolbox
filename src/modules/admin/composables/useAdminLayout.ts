@@ -21,7 +21,7 @@ export function useAdminLayout() {
   function onTabChange(value: string | number) {
     const target = visibleNavItems.value.find((item) => item.value === String(value))
     if (!target) return
-    void router.push(`/admin/${target.segment}`)
+    void router.push({ name: target.routeName })
   }
 
   return {

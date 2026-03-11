@@ -69,7 +69,7 @@ export function useAdminTicketList() {
   onMounted(loadTickets)
 
   function openTicket(ticketId: string) {
-    void router.push(`/admin/tickets/${ticketId}`)
+    void router.push({ name: "admin.ticketDetail", params: { ticketId } })
   }
 
   return {

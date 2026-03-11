@@ -90,12 +90,12 @@ export function useHomeSettings() {
   }
 
   function resetSettings() {
-    selectedEndpoint.value = settingsStore.resolvedPreferredEndpoint || DEFAULT_ENDPOINT
-    selectedTheme.value = DEFAULT_THEME
-    selectedLocale.value = DEFAULT_LOCALE
     settingsStore.setPreferredEndpoint(DEFAULT_ENDPOINT)
     settingsStore.setTheme(DEFAULT_THEME)
     settingsStore.setLocale(DEFAULT_LOCALE)
+    selectedEndpoint.value = settingsStore.resolvedPreferredEndpoint
+    selectedTheme.value = settingsStore.theme
+    selectedLocale.value = settingsStore.locale
     toast.info(t("homeSettings.toast.reset"))
   }
 

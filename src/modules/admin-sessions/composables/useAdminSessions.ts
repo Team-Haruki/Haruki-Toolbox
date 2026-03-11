@@ -3,6 +3,7 @@ import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { reauthAdmin } from "@/modules/admin-sessions/api/reauth"
 import { deleteAdminSession, getAdminSessions } from "@/modules/admin-sessions/api/sessions"
+import { formatLocalizedDateTime } from "@/lib/date-time"
 import type { AdminSession } from "@/types/admin"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
 import { extractErrorMessage } from "@/lib/error-utils"
@@ -13,7 +14,7 @@ type LoadSessionsOptions = {
 }
 
 export function useAdminSessions() {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const loading = ref(true)
   const sessions = ref<AdminSession[]>([])
   const actionLoading = ref(false)
@@ -87,11 +88,7 @@ export function useAdminSessions() {
   }
 
   function formatDate(value: string) {
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) {
-      return t("adminSessions.dateFallback")
-    }
-    return date.toLocaleString(locale.value)
+    return formatLocalizedDateTime(value, undefined, t("adminSessions.dateFallback"))
   }
 
   function formatTtl(ttlSeconds: number) {

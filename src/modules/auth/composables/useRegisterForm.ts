@@ -1,9 +1,10 @@
-import { onUnmounted, ref } from "vue"
+import { onUnmounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
 import { extractErrorMessage } from "@/lib/error-utils"
+import { DEFAULT_MIN_PASSWORD_LENGTH, hasMinPasswordLength, isValidEmail } from "@/lib/validation"
 import { registerUser } from "@/modules/auth/api/register"
 import { sendEmailVerificationCode } from "@/modules/user-settings/api/email"
 
@@ -12,8 +13,6 @@ interface TurnstileExpose {
 }
 
 const RESEND_SECONDS = 60
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
 export function useRegisterForm() {
   const router = useRouter()
   const { t } = useI18n()
@@ -32,6 +31,7 @@ export function useRegisterForm() {
   const registerChallengeToken = ref("")
   const registerTurnstileRef = ref<TurnstileExpose | null>(null)
   const isDialogOpen = ref(false)
+  const sentCodeEmail = ref("")
 
   let countdownInterval: ReturnType<typeof setInterval> | null = null
 
@@ -73,7 +73,7 @@ export function useRegisterForm() {
 
   async function handleSendCode() {
     const normalizedEmail = email.value.trim()
-    if (!normalizedEmail || !EMAIL_PATTERN.test(normalizedEmail)) {
+    if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
       toast.error(t("auth.register.toast.invalidEmail"))
       return false
     }
@@ -92,6 +92,7 @@ export function useRegisterForm() {
       toast.success(t("auth.register.toast.codeSentTitle"), {
         description: t("auth.register.toast.codeSentDescription", { email: normalizedEmail }),
       })
+      sentCodeEmail.value = normalizedEmail
       sendCodeChallengeToken.value = ""
       startCountdown()
       return true
@@ -130,6 +131,25 @@ export function useRegisterForm() {
       return
     }
 
+    if (!isValidEmail(normalizedEmail)) {
+      toast.error(t("auth.register.toast.invalidEmail"))
+      return
+    }
+
+    if (!hasMinPasswordLength(password.value, DEFAULT_MIN_PASSWORD_LENGTH)) {
+      toast.error(t("auth.register.toast.registerFailedTitle"), {
+        description: t("auth.register.toast.passwordMinLength", { min: DEFAULT_MIN_PASSWORD_LENGTH }),
+      })
+      return
+    }
+
+    if (sentCodeEmail.value !== normalizedEmail) {
+      toast.error(t("auth.register.toast.registerFailedTitle"), {
+        description: t("auth.register.toast.emailVerificationRequired"),
+      })
+      return
+    }
+
     isRegistering.value = true
     try {
       const response = await registerUser(
@@ -145,7 +165,7 @@ export function useRegisterForm() {
       })
       userStore.setUser(response.userData)
       registerChallengeToken.value = ""
-      await router.push("/")
+      await router.push({ name: "home" })
     } catch (error: unknown) {
       toast.error(t("auth.register.toast.registerFailedTitle"), {
         description: extractErrorMessage(error, t("auth.register.toast.registerFailedDescription")),
@@ -156,6 +176,12 @@ export function useRegisterForm() {
       isRegistering.value = false
     }
   }
+
+  watch(email, (nextEmail) => {
+    if (nextEmail.trim() !== sentCodeEmail.value) {
+      emailCode.value = ""
+    }
+  })
 
   onUnmounted(stopCountdown)
 

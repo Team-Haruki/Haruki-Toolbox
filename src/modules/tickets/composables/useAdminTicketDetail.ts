@@ -259,7 +259,7 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
   }
 
   function goBack() {
-    void router.push("/admin/tickets")
+    void router.push({ name: "admin.tickets" })
   }
 
   watch(

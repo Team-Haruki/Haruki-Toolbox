@@ -136,7 +136,12 @@ export function useLoginForm() {
         description: t("auth.login.toast.loginSuccessDescription"),
       })
       loginChallengeToken.value = null
-      await router.push(resolveSafeRedirectTarget(route.query.redirect) ?? "/")
+      const redirectTarget = resolveSafeRedirectTarget(route.query.redirect)
+      if (redirectTarget) {
+        await router.push(redirectTarget)
+      } else {
+        await router.push({ name: "home" })
+      }
     } catch (error: unknown) {
       const { title, message } = resolveLoginError(error)
       toast.error(title, { description: message })

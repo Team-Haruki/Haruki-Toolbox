@@ -65,11 +65,11 @@ export function useTicketList() {
   })
 
   function openCreateTicket() {
-    void router.push("/tickets/new")
+    void router.push({ name: "tickets.create" })
   }
 
   function openTicketDetail(ticketId: string) {
-    void router.push(`/tickets/${ticketId}`)
+    void router.push({ name: "tickets.detail", params: { ticketId } })
   }
 
   return {

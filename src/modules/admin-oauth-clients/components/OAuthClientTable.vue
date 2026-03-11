@@ -30,6 +30,7 @@ import {
   LucideUndo2,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import { formatLocalizedDate } from "@/lib/date-time"
 import type { OAuthClient } from "@/types/admin"
 
 interface Props {
@@ -40,7 +41,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const emit = defineEmits<{
   (event: "open-edit", client: OAuthClient): void
   (event: "show-stats", clientId: string): void
@@ -52,11 +53,7 @@ const emit = defineEmits<{
 }>()
 
 function formatCreatedDate(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return t("adminOAuthClients.common.fallback")
-  }
-  return date.toLocaleDateString(locale.value, { year: "numeric", month: "2-digit", day: "2-digit" })
+  return formatLocalizedDate(value, { year: "numeric", month: "2-digit", day: "2-digit" }, t("adminOAuthClients.common.fallback"))
 }
 
 function resolveClientStatus(client: OAuthClient) {

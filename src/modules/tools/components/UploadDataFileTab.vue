@@ -80,7 +80,7 @@ function handleDataTypeChange(value: string) {
         <AlertTitle>{{ t("tools.uploadData.fileTab.forbiddenTitle") }}</AlertTitle>
         <AlertDescription>{{ t("tools.uploadData.fileTab.forbiddenDescription") }}</AlertDescription>
       </Alert>
-      <form>
+      <form id="upload-data-file-form" @submit.prevent="emit('submit')">
         <div class="grid gap-4">
           <div class="flex flex-col space-y-1.5">
             <Label for="file-upload">{{ t("tools.uploadData.fileTab.fields.file") }}</Label>
@@ -142,9 +142,10 @@ function handleDataTypeChange(value: string) {
     </CardContent>
     <CardFooter class="flex items-center justify-end">
       <Button
+        type="submit"
+        form="upload-data-file-form"
         variant="default"
         :disabled="isSubmittingFile || !!disabledReason || isCnMySekaiForbidden"
-        @click.prevent="emit('submit')"
       >
         <Loader2 v-if="isSubmittingFile" class="mr-2 h-4 w-4 animate-spin" />
         <UploadCloud v-else class="mr-2 h-4 w-4" />

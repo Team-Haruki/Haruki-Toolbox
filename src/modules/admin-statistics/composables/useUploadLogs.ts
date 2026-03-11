@@ -1,14 +1,10 @@
-import { computed, onMounted, ref } from "vue"
-import { toast } from "vue-sonner"
-import { useI18n } from "vue-i18n"
-import { usePagedList } from "@/composables/usePagedList"
-import {
-  createPageQuery,
-  setQueryValue,
-  setTrimmedQueryValue,
-  type QueryParams,
-} from "@/core/http/query"
-import { getUploadLogs } from "@/modules/admin-statistics/api/upload-log"
+import {computed, onMounted, ref} from "vue"
+import {toast} from "vue-sonner"
+import {useI18n} from "vue-i18n"
+import {usePagedList} from "@/composables/usePagedList"
+import {createPageQuery, type QueryParams, setQueryValue, setTrimmedQueryValue,} from "@/core/http/query"
+import {formatLocalizedDateTime} from "@/lib/date-time"
+import {getUploadLogs} from "@/modules/admin-statistics/api/upload-log"
 import {
   CHART_COLORS,
   DEFAULT_UPLOAD_LOG_SORT,
@@ -21,11 +17,11 @@ import {
   resolveUploadMethodLabel,
   resolveUploadServerLabel,
 } from "@/modules/admin-statistics/lib/upload-log-meta"
-import type { UploadLog, UploadLogsResponse, UploadLogsSummary } from "@/types/admin"
-import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
+import type {UploadLog, UploadLogsResponse, UploadLogsSummary} from "@/types/admin"
+import {toastErrorWithExtractedMessage} from "@/lib/toast-utils"
 
 export function useUploadLogs() {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   type FilterOption = { value: string; label: string }
 
   const summary = ref<UploadLogsSummary | null>(null)
@@ -81,10 +77,9 @@ export function useUploadLogs() {
   const successOptions = computed(() => getUploadSuccessOptions(t))
 
   function toggleMultiFilter(target: typeof filterMethod | typeof filterDataType | typeof filterServer, value: string, checked: boolean) {
-    const nextValues = checked
-      ? Array.from(new Set([...target.value, value]))
-      : target.value.filter((item) => item !== value)
-    target.value = nextValues
+    target.value = checked
+        ? Array.from(new Set([...target.value, value]))
+        : target.value.filter((item) => item !== value)
   }
 
   function resolveMultiFilterLabel(values: string[], options: readonly FilterOption[], fallback: string) {
@@ -117,14 +112,7 @@ export function useUploadLogs() {
   }
 
   function formatTime(iso?: string) {
-    if (!iso) {
-      return t("adminStatistics.common.fallback")
-    }
-    const date = new Date(iso)
-    if (Number.isNaN(date.getTime())) {
-      return t("adminStatistics.common.fallback")
-    }
-    return date.toLocaleString(locale.value)
+    return formatLocalizedDateTime(iso, undefined, t("adminStatistics.common.fallback"))
   }
 
   function dataTypeLabel(type?: string) {

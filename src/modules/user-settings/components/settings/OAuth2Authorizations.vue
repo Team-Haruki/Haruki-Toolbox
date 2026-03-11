@@ -5,6 +5,7 @@ import { useUserStore } from "@/shared/stores/user"
 import { unwrapUpdatedData } from "@/core/http/call-api"
 import { Button } from "@/components/ui/button"
 import { KeyRound, Trash2, X } from "lucide-vue-next"
+import { formatLocalizedDateTime } from "@/lib/date-time"
 import { extractErrorMessage } from "@/lib/error-utils"
 
 import { ref, onMounted } from "vue"
@@ -33,7 +34,7 @@ import {
 } from "@/modules/user-settings/api/oauth2"
 
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const userStore = useUserStore()
 const authorizations = ref<OAuthAuthorization[]>([])
 const isLoading = ref(false)
@@ -94,15 +95,13 @@ async function handleRevoke() {
 }
 
 function formatDate(iso: string): string {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return iso
-  return date.toLocaleString(locale.value, {
+  return formatLocalizedDateTime(iso, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-  })
+  }, iso)
 }
 
 onMounted(() => {

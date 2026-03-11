@@ -7,6 +7,8 @@ import { useUserStore } from "@/shared/stores/user"
 import { updateUserProfile } from "@/modules/user-settings/api/account"
 import { extractErrorMessage } from "@/lib/error-utils"
 
+const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
+
 export function useAccountSettings() {
   const { t } = useI18n()
   const userStore = useUserStore()
@@ -35,14 +37,33 @@ export function useAccountSettings() {
     const file = target.files?.[0]
     if (!file) return
 
+    if (!file.type.startsWith("image/")) {
+      target.value = ""
+      toast.error(t("userSettings.account.toast.invalidAvatarTypeTitle"), {
+        description: t("userSettings.account.toast.invalidAvatarTypeDescription"),
+      })
+      return
+    }
+
+    if (file.size > MAX_AVATAR_SIZE_BYTES) {
+      target.value = ""
+      toast.error(t("userSettings.account.toast.avatarTooLargeTitle"), {
+        description: t("userSettings.account.toast.avatarTooLargeDescription", { sizeMb: 5 }),
+      })
+      return
+    }
+
     selectedFile.value = file
     try {
       previewAvatar.value = await readFileAsDataUrl(file)
     } catch {
+      selectedFile.value = null
       previewAvatar.value = null
       toast.error(t("userSettings.account.toast.previewFailedTitle"), {
         description: t("userSettings.account.toast.previewFailedDescription"),
       })
+    } finally {
+      target.value = ""
     }
   }
 
@@ -58,6 +79,13 @@ export function useAccountSettings() {
     isSaving.value = true
     try {
       const nextName = nameDraft.value.trim()
+      if (!nextName) {
+        toast.error(t("userSettings.account.toast.nameRequiredTitle"), {
+          description: t("userSettings.account.toast.nameRequiredDescription"),
+        })
+        return
+      }
+
       let avatarPath = userStore.avatarPath
       const result = await updateUserProfile(
         userStore.userId,
@@ -73,10 +101,13 @@ export function useAccountSettings() {
       }
 
       userStore.setUser({
-        name: typeof updatedData.name === "string" ? updatedData.name : nextName,
+        name: updatedData.name,
         avatarPath,
       })
       selectedFile.value = null
+      if (fileInputRef.value) {
+        fileInputRef.value.value = ""
+      }
 
       toast.success(t("userSettings.account.toast.savedTitle"), {
         description: t("userSettings.account.toast.savedDescription"),
