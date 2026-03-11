@@ -1,20 +1,9 @@
-import { SekaiRegion } from "@/types/store";
-
-export interface SuiteDataPrivacySettings {
-    allowPublicApi: boolean
-    allowSakura: boolean
-    allow8823: boolean
-    allowResona: boolean
-    allowLuna: boolean
-}
-
-export interface MysekaiDataPrivacySettings {
-    allowPublicApi: boolean
-    allowFixtureApi: boolean
-    allow8823: boolean
-    allowResona: boolean
-    allowLuna: boolean
-}
+import type {
+    GameAccountBinding as StoreGameAccountBinding,
+    MysekaiDataPrivacySettings,
+    SekaiRegion,
+    SuiteDataPrivacySettings,
+} from "@/types/store"
 
 export interface GameAccountBindingPayload {
     server: SekaiRegion
@@ -23,19 +12,17 @@ export interface GameAccountBindingPayload {
     mysekai?: MysekaiDataPrivacySettings | null
 }
 
+export type UploadDataType = "suite" | "mysekai"
+export type InheritServer = Extract<SekaiRegion, "jp" | "en">
+
 // Used for create/update binding endpoints (server and game_user_id come from URL params)
 export interface CreateGameAccountBindingPayload {
     suite?: SuiteDataPrivacySettings | null
     mysekai?: MysekaiDataPrivacySettings | null
 }
 
-export interface GameAccountBinding {
+export interface GameAccountBinding extends StoreGameAccountBinding {
     id: number
-    server: SekaiRegion
-    userId: number
-    verified: boolean
-    suite?: SuiteDataPrivacySettings | null
-    mysekai?: MysekaiDataPrivacySettings | null
 }
 
 export type GameAccountBindingsUpdatedData = {
@@ -45,5 +32,8 @@ export type GameAccountBindingsUpdatedData = {
 export type GenerateGameAccountCodeResponse = {
     status: number
     message: string
-    oneTimePassword: string
+    oneTimePassword?: string
+    updatedData?: {
+        oneTimePassword?: string
+    }
 }

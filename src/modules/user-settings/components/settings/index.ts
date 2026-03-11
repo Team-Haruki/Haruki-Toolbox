@@ -1,0 +1,6 @@
+export { default as AccountSettings } from "./AccountSettings.vue"
+export { default as EmailSettings } from "./EmailSettings.vue"
+export { default as IMAuthorization } from "./IMAuthorization.vue"
+export { default as IMBindingSettings } from "./IMBindingSettings.vue"
+export { default as OAuth2Authorizations } from "./OAuth2Authorizations.vue"
+export { default as PasswordSettings } from "./PasswordSettings.vue"
