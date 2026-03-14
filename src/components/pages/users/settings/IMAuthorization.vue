@@ -157,7 +157,7 @@ async function handleEditSave() {
         { skipErrorToast: true }
     )
 
-    const normalized = resp.updatedData
+    const normalized = resp.updatedData?.authorizeSocialPlatformInfo
     if (normalized) {
         userStore.setUser({authorizeSocialPlatformInfo: normalized})
     }
@@ -188,7 +188,7 @@ async function handleDelete() {
         idNum,
         { skipErrorToast: true }
     )
-    const normalized = resp.updatedData
+    const normalized = resp.updatedData?.authorizeSocialPlatformInfo
     if (normalized) {
         userStore.setUser({authorizeSocialPlatformInfo: normalized})
     }
