@@ -337,8 +337,8 @@ onMounted(() => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="qq">QQ</SelectItem>
-              <!--
               <SelectItem value="qqbot">QQ官方Bot</SelectItem>
+              <!--
               <SelectItem value="discord">Discord</SelectItem>
               <SelectItem value="telegram">Telegram</SelectItem>
               -->
