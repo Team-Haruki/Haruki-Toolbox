@@ -117,10 +117,9 @@ function nextId(): number {
   const src = authorizeSocialPlatformInfo.value
   const list = Array.isArray(src) ? src : []
   if (!list.length) return 1
-  const set = new Set<number>(list.map((i) => Number(i.id)))
-  let i = 1
-  while (set.has(i)) i++
-  return i
+  const ids = list.map((i) => Number(i.id)).filter((n) => !Number.isNaN(n))
+  if (!ids.length) return 1
+  return Math.max(...ids) + 1
 }
 
 function startEdit(row: SocialAuth) {
