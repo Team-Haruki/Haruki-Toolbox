@@ -105,7 +105,7 @@ const tableData = computed<SocialAuth[]>(() => {
   const src = authorizeSocialPlatformInfo.value
   const arr = Array.isArray(src) ? src : []
   return arr.map((item) => ({
-    id: String(item.id),
+    id: String(item.platformId),
     platform: item.platform as SocialPlatform,
     userId: item.userId,
     comment: item.comment ?? "",
@@ -117,7 +117,7 @@ function nextId(): number {
   const src = authorizeSocialPlatformInfo.value
   const list = Array.isArray(src) ? src : []
   if (!list.length) return 1
-  const ids = list.map((i) => Number(i.id)).filter((n) => !Number.isNaN(n))
+  const ids = list.map((i) => Number(i.platformId)).filter((n) => !Number.isNaN(n))
   if (!ids.length) return 1
   return Math.max(...ids) + 1
 }

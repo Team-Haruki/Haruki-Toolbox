@@ -12,7 +12,7 @@ export interface SocialPlatformInfo {
 }
 
 export interface AuthorizeSocialPlatformInfo {
-    id: number
+    platformId: number
     platform: string
     userId: string
     comment: string
