@@ -8,6 +8,24 @@ import type {
 import type { AxiosRequestConfig } from "axios";
 
 
+export async function createAuthorizeSocialPlatformAccount(
+    toolboxUserId: string,
+    platform: SocialPlatform,
+    userId: string,
+    comment: string,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<AuthorizeSocialPlatformUpdatedData>> {
+    const payload: AddAuthorizeSocialPlatformAccountPayload = {platform, userId, comment}
+    return await request<APIResponse<AuthorizeSocialPlatformUpdatedData>>(
+        `/api/user/${toolboxUserId}/authorize-social-platform`,
+        {
+            method: "POST",
+            data: payload,
+            ...options
+        }
+    )
+}
+
 export async function addAuthorizeSocialPlatformAccount(
     toolboxUserId: string,
     id: number,
