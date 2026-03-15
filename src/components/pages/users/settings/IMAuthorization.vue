@@ -73,6 +73,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import {
   addAuthorizeSocialPlatformAccount,
+  createAuthorizeSocialPlatformAccount,
   removeAuthorizeSocialPlatformAccount
 } from "@/api"
 
@@ -80,6 +81,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const showEditDialog = ref(false)
 const editTarget = ref<SocialAuth | null>(null)
+const isNewEntry = ref(false)
 const showDeleteDialog = ref(false)
 const deleteTarget = ref<SocialAuth | null>(null)
 const isSaving = ref(false)
@@ -113,24 +115,16 @@ const tableData = computed<SocialAuth[]>(() => {
 })
 
 
-function nextId(): number {
-  const src = authorizeSocialPlatformInfo.value
-  const list = Array.isArray(src) ? src : []
-  if (!list.length) return 1
-  const ids = list.map((i) => Number(i.platformId)).filter((n) => !Number.isNaN(n))
-  if (!ids.length) return 1
-  return Math.max(...ids) + 1
-}
-
 function startEdit(row: SocialAuth) {
+  isNewEntry.value = false
   editTarget.value = reactive({...row})
   showEditDialog.value = true
 }
 
 function startAdd() {
-  const id = nextId()
+  isNewEntry.value = true
   editTarget.value = reactive({
-    id: String(id),
+    id: "",
     platform: "qq" as SocialPlatform,
     userId: "",
     comment: "",
@@ -146,15 +140,26 @@ async function handleEditSave() {
   }
   isSaving.value = true
   try {
-    const idNum = Number(editTarget.value.id)
-    const resp = await addAuthorizeSocialPlatformAccount(
-        userStore.userId,
-        idNum,
-        editTarget.value.platform,
-        editTarget.value.userId,
-        editTarget.value.comment,
-        { skipErrorToast: true }
-    )
+    let resp
+    if (isNewEntry.value) {
+      resp = await createAuthorizeSocialPlatformAccount(
+          userStore.userId,
+          editTarget.value.platform,
+          editTarget.value.userId,
+          editTarget.value.comment,
+          { skipErrorToast: true }
+      )
+    } else {
+      const idNum = Number(editTarget.value.id)
+      resp = await addAuthorizeSocialPlatformAccount(
+          userStore.userId,
+          idNum,
+          editTarget.value.platform,
+          editTarget.value.userId,
+          editTarget.value.comment,
+          { skipErrorToast: true }
+      )
+    }
 
     const normalized = resp.updatedData?.authorizeSocialPlatformInfo
     if (normalized) {
