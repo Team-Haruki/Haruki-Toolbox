@@ -85,12 +85,10 @@ export function readRecord(
 
 export function normalizeEntityId(value: unknown): EntityId {
     if (typeof value === "number" && Number.isFinite(value)) return value
+    if (typeof value === "bigint") return value.toString()
 
     const text = String(value ?? "").trim()
     if (text === "") return ""
-
-    const numberValue = Number(text)
-    if (Number.isInteger(numberValue)) return numberValue
 
     return text
 }

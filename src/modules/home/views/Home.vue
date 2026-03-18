@@ -15,6 +15,8 @@ import {
   Gamepad2,
   UserPlus,
   LucideBot,
+  ShieldCheck,
+  FileText,
   LucideNavigation,
 } from "lucide-vue-next"
 
@@ -95,6 +97,26 @@ const { t } = useI18n()
             <span class="whitespace-normal">{{ t("home.harukiGithub") }}</span>
           </Button>
         </a>
+      </CardContent>
+    </Card>
+
+    <Card class="max-w-md mx-auto w-full">
+      <CardHeader>
+        <CardTitle>{{ t("home.legalLinks") }}</CardTitle>
+      </CardHeader>
+      <CardContent class="grid grid-cols-2 gap-4 items-stretch">
+        <router-link to="/privacy" class="flex">
+          <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
+            <ShieldCheck class="w-5 h-5"/>
+            <span class="whitespace-normal">{{ t("home.privacyPolicy") }}</span>
+          </Button>
+        </router-link>
+        <router-link to="/tos" class="flex">
+          <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
+            <FileText class="w-5 h-5"/>
+            <span class="whitespace-normal">{{ t("home.termsOfService") }}</span>
+          </Button>
+        </router-link>
       </CardContent>
     </Card>
   </div>

@@ -27,7 +27,7 @@ defineProps<{
     activities: UserActivity[]
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 function formatActivityTime(value: string) {
   return formatDateTime(value)

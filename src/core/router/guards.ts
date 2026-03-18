@@ -9,7 +9,10 @@ export function setupRouteGuards(router: Router) {
         const userStore = useUserStore()
         userStore.checkExpiration()
 
-        if (to.meta.guestOnly && userStore.isLoggedIn) {
+        const hasKratosFlow = typeof to.query.flow === "string" && to.query.flow.trim() !== ""
+        const allowGuestRouteForStepUp = to.name === "user.login" && hasKratosFlow
+
+        if (to.meta.guestOnly && userStore.isLoggedIn && !allowGuestRouteForStepUp) {
             return resolveSafeRedirectTarget(to.query.redirect) ?? "/"
         }
 

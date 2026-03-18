@@ -13,9 +13,16 @@ export const zhCN = {
     apiResponse: "API响应",
     missingUpdatedData: "{context}缺少 updatedData",
   },
+  turnstile: {
+    loading: "正在加载验证码组件...",
+    loadFailed: "验证码组件加载失败，请检查网络后重试。",
+    retry: "重试加载",
+  },
   auth: {
     common: {
       cancel: "取消",
+      loadingFlow: "正在加载身份流程...",
+      restartFlow: "重新开始流程",
     },
     toast: {
       networkError: "网络错误，请检查连接",
@@ -110,6 +117,23 @@ export const zhCN = {
         resetFailedDescription: "重置失败",
       },
     },
+    verification: {
+      title: "验证邮箱",
+      description: "完成身份验证流程以激活当前邮箱地址。",
+      submit: "提交验证",
+    },
+    error: {
+      title: "身份流程异常",
+      description: "身份服务返回了错误信息，请根据提示重新发起登录或注册流程。",
+      retry: "重新加载",
+      backToLogin: "返回登录",
+      missingIdDescription: "缺少错误 ID，无法查询身份服务的具体错误信息。",
+      loadFailedDescription: "加载身份错误详情失败，请稍后重试。",
+      fallbackDescription: "身份流程发生异常，请重新开始流程。",
+      errorIdLabel: "错误 ID",
+      statusCodeLabel: "状态码",
+      detailsLabel: "详细信息",
+    },
   },
   userSettings: {
     common: {
@@ -117,33 +141,63 @@ export const zhCN = {
       missingUserDescription: "用户信息缺失，请重新登录",
       cancel: "取消",
     },
+    sections: {
+      accountTitle: "账号设置",
+      accountDescription: "管理你的身份、登录与安全相关设置。",
+      toolboxTitle: "工具箱设置",
+      toolboxDescription: "管理 Haruki 工具箱功能相关偏好与集成。",
+    },
+    kratosFlow: {
+      title: "身份设置",
+      description: "此页面用于修改邮箱、密码和个人资料。",
+      toast: {
+        savedTitle: "设置已更新",
+        profileSavedDescription: "邮箱或昵称更新成功",
+        passwordSavedDescription: "密码设置已更新",
+        mfaSavedDescription: "多因素认证设置已更新",
+        socialSavedDescription: "社交登录设置已更新",
+        genericSavedDescription: "身份设置已更新",
+      },
+      groups: {
+        profile: "个人资料",
+        password: "密码",
+        oidc: "社交登录",
+        passkey: "通行密钥",
+        webauthn: "安全密钥",
+        totp: "身份验证器",
+        lookupSecret: "恢复码",
+      },
+    },
     account: {
-      title: "账号设置",
-      description: "管理您的Haruki工具箱个人信息",
+      title: "头像设置",
+      description: "管理您的 Haruki 工具箱头像",
       changeAvatar: "更换头像",
-      nicknameLabel: "昵称",
-      save: "保存修改",
+      uploading: "上传中...",
+      autoUploadHint: "选择头像后会自动裁剪为方形并压缩上传，无需再点击保存。",
       toast: {
         previewFailedTitle: "预览失败",
         previewFailedDescription: "头像文件读取失败，请重试",
-        nameRequiredTitle: "昵称不能为空",
-        nameRequiredDescription: "保存前请先输入昵称",
         invalidAvatarTypeTitle: "头像格式不支持",
         invalidAvatarTypeDescription: "请选择图片文件",
         avatarTooLargeTitle: "头像文件过大",
         avatarTooLargeDescription: "请选择小于 {sizeMb} MB 的图片",
-        savedTitle: "资料已保存",
-        savedDescription: "用户资料更新成功",
-        saveFailedTitle: "保存失败",
-        saveFailedDescription: "保存失败",
+        savedTitle: "头像已更新",
+        savedDescription: "头像上传成功",
+        saveFailedTitle: "头像上传失败",
+        saveFailedDescription: "头像上传失败，请稍后重试",
       },
     },
     email: {
       unbound: "未绑定",
       title: "邮箱设置",
       description: "管理您的邮箱绑定信息",
+      kratosManagedDescription: "邮箱变更与验证由身份中心统一处理。",
+      kratosManagedHint: "邮箱与昵称修改都在身份中心处理，完成后返回工具箱即可同步最新状态。",
       currentEmailLabel: "当前邮箱",
-      changeButton: "更换邮箱",
+      currentNicknameLabel: "当前昵称",
+      unsetNickname: "未设置",
+      changeButton: "管理邮箱和昵称",
+      verifyButton: "验证邮箱",
       dialog: {
         title: "更换邮箱",
         description: "输入新的邮箱，完成人机验证并发送验证码。",
@@ -173,6 +227,8 @@ export const zhCN = {
     password: {
       title: "密码设置",
       description: "管理您的Haruki工具箱账号的密码",
+      kratosManagedDescription: "密码修改由身份中心统一处理。",
+      kratosManagedHint: "点击下方按钮后会跳转到身份设置流程，完成密码修改后返回即可。",
       changeButton: "更换密码",
       dialog: {
         title: "更换密码",
@@ -195,6 +251,43 @@ export const zhCN = {
         changeSuccessDescription: "请重新登录",
         changeFailedTitle: "密码修改失败",
         changeFailedDescription: "密码修改失败",
+      },
+    },
+    mfa: {
+      title: "多因素认证",
+      description: "管理 TOTP、WebAuthn 与恢复码等安全认证方式。",
+      hint: "你可以在此页面绑定或更新 MFA 方式，提升账号安全性。",
+      manageButton: "管理 MFA",
+    },
+    social: {
+      title: "社交登录",
+      description: "管理 Google 等 OIDC 身份提供商绑定。",
+      hint: "你可以在此页面完成社交账号绑定或解绑。",
+      manageButton: "管理社交登录",
+    },
+    sessions: {
+      title: "会话管理",
+      description: "查看当前登录会话，并撤销不可信设备。",
+      hint: "你可以单独踢下线某台设备，也可以一次性下线其他会话。",
+      manageButton: "管理会话",
+      page: {
+        title: "会话管理",
+        description: "管理当前身份下的活跃会话。",
+        refresh: "刷新",
+        currentSession: "当前会话",
+        currentTag: "当前",
+        otherSessions: "其他活跃会话",
+        empty: "暂无其他活跃会话。",
+        unknownDevice: "未知设备",
+        issuedAt: "签发时间",
+        authenticatedAt: "认证时间",
+        expiresAt: "过期时间",
+        aal: "认证等级",
+        revokeOne: "下线该会话",
+        revokeOthers: "下线其他会话",
+        loadFailed: "加载会话失败。",
+        revokeFailed: "下线该会话失败。",
+        revokeOthersFailed: "下线其他会话失败。",
       },
     },
     imBinding: {
@@ -458,6 +551,7 @@ export const zhCN = {
     guestInitial: "未",
     guestName: "未登录",
     accountSettings: "帐号设置",
+    identitySettings: "用户身份设置",
     gameAccountManagement: "游戏账号管理",
     logout: "注销",
     register: "注册",
@@ -501,6 +595,9 @@ export const zhCN = {
     externalLinks: "站外链接",
     harukiBotDocs: "HarukiBot 帮助文档",
     harukiGithub: "Haruki GitHub",
+    legalLinks: "法律与合规",
+    privacyPolicy: "隐私政策",
+    termsOfService: "服务条款",
   },
   navigation: {
     groups: {
@@ -526,6 +623,8 @@ export const zhCN = {
     },
     footer: {
       copyright: "Haruki Dev Team. 保留所有权利。",
+      privacyPolicy: "隐私政策",
+      termsOfService: "服务条款",
     },
   },
   admin: {
@@ -546,6 +645,8 @@ export const zhCN = {
   route: {
     home: "主页",
     settings: "设置",
+    privacy: "隐私政策",
+    tos: "服务条款",
     about: "关于",
     friendGroups: "推荐群聊",
     friendLinks: "友情链接",
@@ -555,7 +656,14 @@ export const zhCN = {
     login: "登录",
     register: "注册账号",
     resetPassword: "重置密码",
+    error: "身份错误",
     userSettings: "账号设置",
+    userIdentitySettings: "用户身份设置",
+    userIdentityProfileSettings: "用户资料设置",
+    userIdentityPasswordSettings: "修改密码",
+    userIdentityMfaSettings: "多因素认证",
+    userIdentitySocialSettings: "社交登录设置",
+    userIdentitySessionSettings: "身份会话管理",
     gameAccountBindings: "绑定游戏账号",
     oauthConsent: "授权第三方应用",
     tickets: {
@@ -577,6 +685,74 @@ export const zhCN = {
       sessions: "会话管理",
       risk: "风控管理",
       tickets: "工单管理",
+    },
+  },
+  legal: {
+    privacy: {
+      title: "隐私政策",
+      lastUpdated: "最后更新：2026-03-18",
+      intro: "我们重视您的隐私。本政策说明 Haruki 工具箱如何收集、使用、保护和处理您的个人信息。",
+      sections: {
+        collection: {
+          title: "1. 我们收集的信息",
+          content: "当您注册、登录或使用服务时，我们可能收集账户标识信息、登录认证信息、设备信息和必要的操作日志。",
+        },
+        usage: {
+          title: "2. 信息用途",
+          content: "我们仅在提供服务、账号安全验证、问题排查、客服支持和法律合规所必需的范围内使用相关信息。",
+        },
+        sharing: {
+          title: "3. 信息共享",
+          content: "除法律法规要求或得到您的明确授权外，我们不会向无关第三方出售或披露您的个人信息。",
+        },
+        security: {
+          title: "4. 信息安全",
+          content: "我们采用访问控制、传输加密和最小权限等措施保护数据安全，并持续改进安全能力。",
+        },
+        rights: {
+          title: "5. 您的权利",
+          content: "您可以通过账号设置页面管理部分信息，并可联系我们申请查询、更正或删除在法律允许范围内的数据。",
+        },
+        contact: {
+          title: "6. 联系我们",
+          content: "若您对本政策有疑问，请通过项目公开渠道与 Haruki Dev Team 联系。",
+        },
+      },
+    },
+    tos: {
+      title: "服务条款",
+      lastUpdated: "最后更新：2026-03-18",
+      intro: "使用 Haruki 工具箱即表示您同意遵守本条款。若您不同意，请停止访问或使用本服务。",
+      sections: {
+        eligibility: {
+          title: "1. 适用范围",
+          content: "本条款适用于您访问和使用 Haruki 工具箱网站、页面及相关功能服务的全部行为。",
+        },
+        acceptableUse: {
+          title: "2. 使用规范",
+          content: "您不得利用本服务进行违法违规、滥用接口、破坏系统或侵害其他用户权益的行为。",
+        },
+        account: {
+          title: "3. 账号责任",
+          content: "您需妥善保管账号凭证并对账号下行为负责。如发现异常，请及时修改密码并联系我们。",
+        },
+        availability: {
+          title: "4. 服务变更",
+          content: "我们可基于维护、安全或产品更新对功能进行调整、限制或下线，并尽量提前公告。",
+        },
+        liability: {
+          title: "5. 责任限制",
+          content: "在法律允许范围内，我们不对因不可抗力、第三方服务异常或非我们可控原因导致的损失承担责任。",
+        },
+        changes: {
+          title: "6. 条款更新",
+          content: "我们可能不定期更新本条款。更新后继续使用服务即视为您接受修订版本。",
+        },
+        contact: {
+          title: "7. 联系方式",
+          content: "如对本条款有疑问，请通过项目公开渠道联系 Haruki Dev Team。",
+        },
+      },
     },
   },
   tickets: {

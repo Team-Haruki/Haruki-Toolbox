@@ -9,6 +9,7 @@ import { useUserStore } from "@/shared/stores/user";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { setupInterceptors } from "@/core/http/call-api";
 import { i18n, isAppLocale, setI18nLocale } from "@/shared/i18n";
+import { bootstrapUserSettingsFromKratosSession } from "@/modules/auth/lib/kratos";
 
 
 const app = createApp(App)
@@ -16,7 +17,6 @@ const pinia = createPinia()
 pinia.use(createPersistedState())
 app.use(pinia)
 const userStore = useUserStore()
-userStore.checkExpiration()
 const settingsStore = useSettingsStore()
 settingsStore.initTheme()
 if (isAppLocale(settingsStore.locale)) {
@@ -31,7 +31,27 @@ watch(
     },
     { immediate: false }
 )
+setupInterceptors(router)
+userStore.checkExpiration()
+try {
+    const { sessionUser, fullUser } = await bootstrapUserSettingsFromKratosSession()
+    if (sessionUser) {
+        userStore.setUser(sessionUser, { resetExpiration: false })
+        userStore.setSessionActive(true)
+        userStore.setSettingsSyncState(fullUser ? "synced" : "loading")
+    }
+
+    if (fullUser) {
+        userStore.setUser(fullUser)
+        userStore.setSettingsSyncState("synced")
+    } else if (!sessionUser && !userStore.userId) {
+        userStore.clearUser()
+    }
+} catch {
+    if (!userStore.userId) {
+        userStore.clearUser()
+    }
+}
 app.use(i18n)
 app.use(router)
-setupInterceptors(router)
 app.mount('#app')

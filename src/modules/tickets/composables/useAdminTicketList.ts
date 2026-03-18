@@ -27,7 +27,6 @@ export function useAdminTicketList() {
     loading,
     items: tickets,
     page,
-    pageSize,
     total,
     totalPages,
     resetPage,

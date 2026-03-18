@@ -2,6 +2,18 @@ import type { RouteRecordRaw } from "vue-router"
 
 export const navigationRoutes: RouteRecordRaw[] = [
     {
+        path: "/privacy",
+        name: "privacy",
+        component: () => import("@/modules/navigation/views/Privacy.vue"),
+        meta: { titleKey: "route.privacy" },
+    },
+    {
+        path: "/tos",
+        name: "tos",
+        component: () => import("@/modules/navigation/views/TermsOfService.vue"),
+        meta: { titleKey: "route.tos" },
+    },
+    {
         path: "/about",
         component: () => import("@/modules/navigation/views/Maintenance.vue"),
         meta: { titleKey: "route.about" },

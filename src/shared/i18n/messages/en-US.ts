@@ -13,9 +13,16 @@ export const enUS = {
     apiResponse: "API response",
     missingUpdatedData: "{context} is missing updatedData",
   },
+  turnstile: {
+    loading: "Loading CAPTCHA widget...",
+    loadFailed: "Failed to load CAPTCHA widget. Please check your connection and try again.",
+    retry: "Retry loading",
+  },
   auth: {
     common: {
       cancel: "Cancel",
+      loadingFlow: "Loading identity flow...",
+      restartFlow: "Restart flow",
     },
     toast: {
       networkError: "Network error, please check your connection",
@@ -110,6 +117,23 @@ export const enUS = {
         resetFailedDescription: "Reset failed",
       },
     },
+    verification: {
+      title: "Verify email",
+      description: "Complete the identity verification flow to activate your current email address.",
+      submit: "Submit verification",
+    },
+    error: {
+      title: "Identity flow error",
+      description: "The identity service returned an error. Review details below and restart the flow.",
+      retry: "Reload",
+      backToLogin: "Back to sign in",
+      missingIdDescription: "Missing error ID. Unable to query detailed identity error information.",
+      loadFailedDescription: "Failed to load identity error details. Please try again later.",
+      fallbackDescription: "The identity flow failed. Please restart the flow.",
+      errorIdLabel: "Error ID",
+      statusCodeLabel: "Status code",
+      detailsLabel: "Details",
+    },
   },
   userSettings: {
     common: {
@@ -117,33 +141,63 @@ export const enUS = {
       missingUserDescription: "Missing user information. Please sign in again.",
       cancel: "Cancel",
     },
+    sections: {
+      accountTitle: "Account settings",
+      accountDescription: "Identity and login security settings for your account.",
+      toolboxTitle: "Toolbox settings",
+      toolboxDescription: "Preferences and integrations for Haruki Toolbox features.",
+    },
+    kratosFlow: {
+      title: "Identity settings",
+      description: "Use this page to update your email, password, and profile traits.",
+      toast: {
+        savedTitle: "Settings updated",
+        profileSavedDescription: "Email or nickname updated successfully",
+        passwordSavedDescription: "Password settings updated successfully",
+        mfaSavedDescription: "Multi-factor authentication settings updated successfully",
+        socialSavedDescription: "Social sign-in settings updated successfully",
+        genericSavedDescription: "Identity settings updated successfully",
+      },
+      groups: {
+        profile: "Profile",
+        password: "Password",
+        oidc: "Social login",
+        passkey: "Passkeys",
+        webauthn: "Security keys",
+        totp: "Authenticator app",
+        lookupSecret: "Recovery codes",
+      },
+    },
     account: {
-      title: "Account settings",
-      description: "Manage your Haruki Toolbox profile",
+      title: "Avatar settings",
+      description: "Manage your Haruki Toolbox avatar",
       changeAvatar: "Change avatar",
-      nicknameLabel: "Nickname",
-      save: "Save changes",
+      uploading: "Uploading...",
+      autoUploadHint: "After selecting an avatar image, it is cropped to square and compressed before upload.",
       toast: {
         previewFailedTitle: "Preview failed",
         previewFailedDescription: "Failed to read avatar file. Please try again.",
-        nameRequiredTitle: "Nickname required",
-        nameRequiredDescription: "Please enter a nickname before saving.",
         invalidAvatarTypeTitle: "Unsupported avatar format",
         invalidAvatarTypeDescription: "Please choose an image file.",
         avatarTooLargeTitle: "Avatar file too large",
         avatarTooLargeDescription: "Please choose an image smaller than {sizeMb} MB.",
-        savedTitle: "Profile saved",
-        savedDescription: "Profile updated successfully",
-        saveFailedTitle: "Save failed",
-        saveFailedDescription: "Save failed",
+        savedTitle: "Avatar updated",
+        savedDescription: "Avatar uploaded successfully",
+        saveFailedTitle: "Avatar upload failed",
+        saveFailedDescription: "Avatar upload failed. Please try again later.",
       },
     },
     email: {
       unbound: "Unbound",
       title: "Email settings",
       description: "Manage your email binding",
+      kratosManagedDescription: "Email updates and verification are handled by the identity center.",
+      kratosManagedHint: "Email and nickname updates are handled in the identity center flow. Return here after completing it.",
       currentEmailLabel: "Current email",
-      changeButton: "Change email",
+      currentNicknameLabel: "Current nickname",
+      unsetNickname: "Not set",
+      changeButton: "Manage email & nickname",
+      verifyButton: "Verify email",
       dialog: {
         title: "Change email",
         description: "Enter a new email, complete CAPTCHA, and send verification code.",
@@ -173,6 +227,8 @@ export const enUS = {
     password: {
       title: "Password settings",
       description: "Manage your Haruki Toolbox account password",
+      kratosManagedDescription: "Password updates are handled by the identity center.",
+      kratosManagedHint: "Use the button below to continue in the identity settings flow, then return to the toolbox when finished.",
       changeButton: "Change password",
       dialog: {
         title: "Change password",
@@ -195,6 +251,43 @@ export const enUS = {
         changeSuccessDescription: "Please sign in again",
         changeFailedTitle: "Failed to change password",
         changeFailedDescription: "Failed to change password",
+      },
+    },
+    mfa: {
+      title: "Multi-factor authentication",
+      description: "Manage TOTP, WebAuthn, and recovery codes.",
+      hint: "Use this page to enroll or update MFA methods for stronger account security.",
+      manageButton: "Manage MFA",
+    },
+    social: {
+      title: "Social login",
+      description: "Manage Google and other OIDC identity providers.",
+      hint: "Use this page to link or unlink social providers from your account.",
+      manageButton: "Manage social providers",
+    },
+    sessions: {
+      title: "Session management",
+      description: "Review active sign-ins and revoke sessions you do not trust.",
+      hint: "You can sign out specific devices or sign out all other sessions at once.",
+      manageButton: "Manage sessions",
+      page: {
+        title: "Session management",
+        description: "Manage active sessions for your current identity.",
+        refresh: "Refresh",
+        currentSession: "Current session",
+        currentTag: "Current",
+        otherSessions: "Other active sessions",
+        empty: "No other active sessions.",
+        unknownDevice: "Unknown device",
+        issuedAt: "Issued at",
+        authenticatedAt: "Authenticated at",
+        expiresAt: "Expires at",
+        aal: "AAL",
+        revokeOne: "Revoke session",
+        revokeOthers: "Sign out other sessions",
+        loadFailed: "Failed to load sessions.",
+        revokeFailed: "Failed to revoke this session.",
+        revokeOthersFailed: "Failed to revoke other sessions.",
       },
     },
     imBinding: {
@@ -458,6 +551,7 @@ export const enUS = {
     guestInitial: "?",
     guestName: "Not signed in",
     accountSettings: "Account settings",
+    identitySettings: "Identity settings",
     gameAccountManagement: "Game account management",
     logout: "Sign out",
     register: "Register",
@@ -501,6 +595,9 @@ export const enUS = {
     externalLinks: "External links",
     harukiBotDocs: "HarukiBot docs",
     harukiGithub: "Haruki GitHub",
+    legalLinks: "Legal",
+    privacyPolicy: "Privacy Policy",
+    termsOfService: "Terms of Service",
   },
   navigation: {
     groups: {
@@ -526,6 +623,8 @@ export const enUS = {
     },
     footer: {
       copyright: "Haruki Dev Team. All rights reserved.",
+      privacyPolicy: "Privacy Policy",
+      termsOfService: "Terms of Service",
     },
   },
   admin: {
@@ -546,6 +645,8 @@ export const enUS = {
   route: {
     home: "Home",
     settings: "Settings",
+    privacy: "Privacy Policy",
+    tos: "Terms of Service",
     about: "About",
     friendGroups: "Recommended groups",
     friendLinks: "Friend links",
@@ -555,7 +656,14 @@ export const enUS = {
     login: "Sign in",
     register: "Register",
     resetPassword: "Reset password",
+    error: "Identity error",
     userSettings: "Account settings",
+    userIdentitySettings: "Identity settings",
+    userIdentityProfileSettings: "Profile settings",
+    userIdentityPasswordSettings: "Change password",
+    userIdentityMfaSettings: "MFA settings",
+    userIdentitySocialSettings: "Social login settings",
+    userIdentitySessionSettings: "Identity sessions",
     gameAccountBindings: "Game account bindings",
     oauthConsent: "Authorize app",
     tickets: {
@@ -577,6 +685,74 @@ export const enUS = {
       sessions: "Session management",
       risk: "Risk management",
       tickets: "Ticket management",
+    },
+  },
+  legal: {
+    privacy: {
+      title: "Privacy Policy",
+      lastUpdated: "Last updated: 2026-03-18",
+      intro: "We respect your privacy. This policy explains how Haruki Toolbox collects, uses, and protects your information.",
+      sections: {
+        collection: {
+          title: "1. Information we collect",
+          content: "When you register, sign in, or use our services, we may collect account identifiers, authentication data, device information, and required operation logs.",
+        },
+        usage: {
+          title: "2. How we use information",
+          content: "We use data only as needed to provide services, secure accounts, troubleshoot issues, support users, and meet legal obligations.",
+        },
+        sharing: {
+          title: "3. Information sharing",
+          content: "We do not sell or disclose personal information to unrelated third parties unless required by law or explicitly authorized by you.",
+        },
+        security: {
+          title: "4. Data security",
+          content: "We apply safeguards such as access controls, encrypted transport, and least-privilege practices, and we continuously improve security.",
+        },
+        rights: {
+          title: "5. Your rights",
+          content: "You can manage parts of your data in account settings and may request access, correction, or deletion where permitted by law.",
+        },
+        contact: {
+          title: "6. Contact",
+          content: "If you have privacy questions, please contact Haruki Dev Team through our public project channels.",
+        },
+      },
+    },
+    tos: {
+      title: "Terms of Service",
+      lastUpdated: "Last updated: 2026-03-18",
+      intro: "By using Haruki Toolbox, you agree to these terms. If you do not agree, please stop using the service.",
+      sections: {
+        eligibility: {
+          title: "1. Scope",
+          content: "These terms apply to your access and use of the Haruki Toolbox website, pages, and related features.",
+        },
+        acceptableUse: {
+          title: "2. Acceptable use",
+          content: "You must not use the service for illegal activities, abusive automation, system disruption, or actions that harm other users.",
+        },
+        account: {
+          title: "3. Account responsibility",
+          content: "You are responsible for safeguarding your account credentials and for activities under your account.",
+        },
+        availability: {
+          title: "4. Service changes",
+          content: "We may change, limit, or discontinue features for maintenance, security, or product updates, with notice when feasible.",
+        },
+        liability: {
+          title: "5. Limitation of liability",
+          content: "To the extent permitted by law, we are not liable for losses caused by force majeure, third-party failures, or factors outside our control.",
+        },
+        changes: {
+          title: "6. Terms updates",
+          content: "We may revise these terms from time to time. Continued use after updates means you accept the revised terms.",
+        },
+        contact: {
+          title: "7. Contact",
+          content: "If you have questions about these terms, please reach out through Haruki Dev Team public channels.",
+        },
+      },
     },
   },
   tickets: {

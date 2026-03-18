@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import {Input} from "@/components/ui/input"
-import {Label} from "@/components/ui/label"
-import {Button} from "@/components/ui/button"
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import {Loader2, Lock, Mail, Check, KeyRound} from "lucide-vue-next"
-import { useResetPasswordForm } from "@/modules/auth/composables/useResetPasswordForm"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Loader2, Lock, Mail, Check, KeyRound } from "lucide-vue-next"
 import {
   Card,
   CardTitle,
@@ -12,15 +12,39 @@ import {
   CardContent,
   CardDescription
 } from "@/components/ui/card"
+import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
+import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 
 const {
-  email,
-  newPassword,
-  confirmPassword,
-  isSubmitting,
-  handleSubmit,
-} = useResetPasswordForm()
+  loading,
+  loadError,
+  fieldValues,
+  generalMessages,
+  hiddenFields,
+  visibleFields,
+  buttonFields,
+  submitFields,
+  submitLabel,
+  action,
+  method,
+  invokeVisibleFieldAction,
+  restartFlow,
+} = useKratosBrowserFlow("recovery")
 const { t } = useI18n()
+
+function iconForField(name: string) {
+  if (name.endsWith("email")) {
+    return Mail
+  }
+
+  if (name.toLowerCase().includes("password")) {
+    return Lock
+  }
+
+  return KeyRound
+}
+
+const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
 </script>
 
 <template>
@@ -34,54 +58,100 @@ const { t } = useI18n()
         <CardDescription>{{ t("auth.resetPassword.description") }}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <div>
-            <Label for="email">{{ t("auth.resetPassword.emailLabel") }}</Label>
-            <div class="relative w-full items-center">
-              <Input id="email" type="email" class="pl-10" v-model="email" readonly disabled/>
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <Mail class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <Label for="new-password">{{ t("auth.resetPassword.newPasswordLabel") }}</Label>
-            <div class="relative w-full items-center">
-              <Input
-                  id="new-password"
-                  class="pl-10"
-                  type="password"
-                  v-model="newPassword"
-                  :placeholder="t('auth.resetPassword.newPasswordPlaceholder')"
-              />
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <Lock class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <Label for="confirm-password">{{ t("auth.resetPassword.confirmPasswordLabel") }}</Label>
-            <div class="relative w-full items-center">
-              <Input
-                  id="confirm-password"
-                  class="pl-10"
-                  type="password"
-                  v-model="confirmPassword"
-                  :placeholder="t('auth.resetPassword.confirmPasswordPlaceholder')"
-              />
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <Lock class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-          </div>
-
-          <Button type="submit" class="w-full" :disabled="isSubmitting">
-            <Loader2 v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
-            <Check v-else class="mr-2 h-4 w-4" />
-            {{ t("auth.resetPassword.submit") }}
+        <div v-if="loading" class="flex items-center justify-center py-12 text-muted-foreground">
+          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+          {{ t("auth.common.loadingFlow") }}
+        </div>
+        <div v-else-if="loadError" class="space-y-4">
+          <p class="text-sm text-destructive">{{ loadError }}</p>
+          <Button class="w-full" @click="restartFlow">
+            <Check class="mr-2 h-4 w-4" />
+            {{ t("auth.common.restartFlow") }}
           </Button>
+        </div>
+        <form v-else :action="action" :method="method" class="space-y-4" novalidate>
+          <input v-for="field in hiddenFields" :key="field.key" type="hidden" :name="field.name" :value="field.value" />
+
+          <KratosFlowMessages :messages="generalMessages" />
+
+          <div v-for="field in visibleFields" :key="field.key" class="grid gap-2">
+            <Label :for="field.key">{{ field.label }}</Label>
+            <div class="relative w-full items-center">
+              <template v-if="field.type === 'button'">
+                <Button
+                  type="button"
+                  variant="outline"
+                  class="w-full justify-start"
+                  :name="field.name"
+                  :value="field.value || undefined"
+                  :disabled="field.disabled"
+                  @click="invokeVisibleFieldAction(field)"
+                >
+                  <component :is="iconForField(field.name)" class="size-4 mr-2" />
+                  {{ field.label }}
+                </Button>
+              </template>
+              <template v-else>
+                <Input
+                  :id="field.key"
+                  :name="field.name"
+                  :type="field.type"
+                  :autocomplete="field.autocomplete || undefined"
+                  :required="field.required"
+                  :disabled="field.disabled"
+                  class="pl-10"
+                  v-model="fieldValues[field.name]"
+                />
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                  <component :is="iconForField(field.name)" class="size-4 text-muted-foreground" />
+                </span>
+              </template>
+            </div>
+            <KratosFlowMessages :messages="field.messages" />
+          </div>
+
+          <div v-if="buttonFields.length > 0" class="space-y-2">
+            <div v-for="field in buttonFields" :key="field.key" class="space-y-1">
+              <Button
+                type="button"
+                variant="outline"
+                class="w-full justify-start"
+                :name="field.name"
+                :value="field.value || undefined"
+                :disabled="field.disabled"
+                @click="invokeVisibleFieldAction(field)"
+              >
+                <component :is="iconForField(field.name)" class="size-4 mr-2" />
+                {{ field.label }}
+              </Button>
+              <KratosFlowMessages :messages="field.messages" />
+            </div>
+          </div>
+
+          <div v-if="submitFields.length > 0" class="space-y-2">
+            <div v-for="submit in submitFields" :key="submit.key" class="space-y-1">
+              <Button
+                type="submit"
+                class="w-full"
+                :name="submit.name || undefined"
+                :value="submit.value || undefined"
+                :disabled="!isReady || submit.disabled"
+              >
+                <Check class="mr-2 h-4 w-4" />
+                {{ submit.label }}
+              </Button>
+              <KratosFlowMessages :messages="submit.messages" />
+            </div>
+          </div>
+          <Button v-else type="submit" class="w-full" :disabled="!isReady">
+            <Check class="mr-2 h-4 w-4" />
+            {{ submitLabel || t("auth.resetPassword.submit") }}
+          </Button>
+          <div class="text-center text-sm">
+            <router-link to="/user/login" class="underline underline-offset-4">
+              {{ t("auth.register.goLogin") }}
+            </router-link>
+          </div>
         </form>
       </CardContent>
     </Card>

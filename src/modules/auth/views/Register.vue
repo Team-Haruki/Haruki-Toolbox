@@ -1,20 +1,10 @@
 <script setup lang="ts">
-import {Input} from "@/components/ui/input"
-import {Label} from "@/components/ui/label"
-import {Button} from "@/components/ui/button"
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import Turnstile from "@/shared/components/Turnstile.vue"
-import { Loader2, UserPlus, Mail, X, User, Lock, Key, Send, ShieldCheck } from 'lucide-vue-next'
-import {
-  Dialog,
-  DialogClose,
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger,
-  DialogDescription,
-  DialogScrollContent
-} from "@/components/ui/dialog"
-import { useRegisterForm } from "@/modules/auth/composables/useRegisterForm"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Loader2, UserPlus, Mail, User, Lock, KeyRound } from "lucide-vue-next"
 import {
   Card,
   CardTitle,
@@ -22,26 +12,43 @@ import {
   CardContent,
   CardDescription
 } from "@/components/ui/card"
+import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
+import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 
 const {
-  email,
-  username,
-  countdown,
-  password,
-  emailCode,
-  isSending,
-  isRegistering,
-  sendCodeRef,
-  registerTurnstileRef,
-  isDialogOpen,
-  onSendCodeTurnstileVerified,
-  onSendCodeTurnstileInvalid,
-  onRegisterTurnstileVerified,
-  onRegisterTurnstileInvalid,
-  handleConfirmSendCode,
-  handleRegister,
-} = useRegisterForm()
+  loading,
+  loadError,
+  fieldValues,
+  generalMessages,
+  hiddenFields,
+  visibleFields,
+  buttonFields,
+  submitFields,
+  submitLabel,
+  action,
+  method,
+  invokeVisibleFieldAction,
+  restartFlow,
+} = useKratosBrowserFlow("registration")
 const { t } = useI18n()
+
+function iconForField(name: string) {
+  if (name.endsWith("email")) {
+    return Mail
+  }
+
+  if (name.toLowerCase().includes("name")) {
+    return User
+  }
+
+  if (name.toLowerCase().includes("password")) {
+    return Lock
+  }
+
+  return KeyRound
+}
+
+const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
 </script>
 
 <template>
@@ -55,133 +62,94 @@ const { t } = useI18n()
         <CardDescription>{{ t("auth.register.description") }}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form class="grid gap-6" @submit.prevent="handleRegister">
+        <div v-if="loading" class="flex items-center justify-center py-12 text-muted-foreground">
+          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+          {{ t("auth.common.loadingFlow") }}
+        </div>
+        <div v-else-if="loadError" class="space-y-4">
+          <p class="text-sm text-destructive">{{ loadError }}</p>
+          <Button class="w-full" @click="restartFlow">
+            <UserPlus class="mr-2 h-4 w-4" />
+            {{ t("auth.common.restartFlow") }}
+          </Button>
+        </div>
+        <form v-else class="grid gap-6" :action="action" :method="method" novalidate>
+          <input v-for="field in hiddenFields" :key="field.key" type="hidden" :name="field.name" :value="field.value" />
 
-          <div class="grid gap-2">
-            <Label for="username">{{ t("auth.register.usernameLabel") }}</Label>
+          <KratosFlowMessages :messages="generalMessages" />
+
+          <div v-for="field in visibleFields" :key="field.key" class="grid gap-2">
+            <Label :for="field.key">{{ field.label }}</Label>
             <div class="relative w-full items-center">
-              <Input
-                  id="username"
-                  class="pl-10"
-                  v-model="username"
-                  type="text"
-                  :placeholder="t('auth.register.usernamePlaceholder')"
-                  required
-              />
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <User class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-          </div>
-          <div class="grid gap-2">
-            <Label for="email">{{ t("auth.register.emailLabel") }}</Label>
-            <div class="flex gap-2 items-center">
-              <div class="relative w-full items-center">
+              <template v-if="field.type === 'button'">
+                <Button
+                  type="button"
+                  variant="outline"
+                  class="w-full justify-start"
+                  :name="field.name"
+                  :value="field.value || undefined"
+                  :disabled="field.disabled"
+                  @click="invokeVisibleFieldAction(field)"
+                >
+                  <component :is="iconForField(field.name)" class="size-4 mr-2" />
+                  {{ field.label }}
+                </Button>
+              </template>
+              <template v-else>
                 <Input
-                    id="email"
-                    v-model="email"
-                    class="pl-10"
-                    type="email"
-                    :placeholder="t('auth.register.emailPlaceholder')"
-                    required
+                  :id="field.key"
+                  :name="field.name"
+                  :type="field.type"
+                  :autocomplete="field.autocomplete || undefined"
+                  :required="field.required"
+                  :disabled="field.disabled"
+                  class="pl-10"
+                  v-model="fieldValues[field.name]"
                 />
                 <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                  <Mail class="size-4 text-muted-foreground" />
+                  <component :is="iconForField(field.name)" class="size-4 text-muted-foreground" />
                 </span>
-              </div>
-              <Dialog v-model:open="isDialogOpen">
+              </template>
+            </div>
+            <KratosFlowMessages :messages="field.messages" />
+          </div>
 
-                <DialogTrigger as-child>
-                  <Button
-                      type="button"
-                      :disabled="isSending || countdown > 0"
-                  >
-                    <Loader2 v-if="isSending" class="mr-2 h-4 w-4 animate-spin" />
-                    <template v-if="isSending">{{ t("auth.register.sending") }}</template>
-                    <template v-else-if="countdown > 0">{{ t("auth.register.countdown", { seconds: countdown }) }}</template>
-                    <template v-else>
-                      <Send class="h-4 w-4 mr-2" />
-                      {{ t("auth.register.sendCode") }}
-                    </template>
-                  </Button>
-                </DialogTrigger>
-                <DialogScrollContent>
-                  <DialogTitle class="flex items-center gap-2">
-                    <ShieldCheck class="h-5 w-5" />
-                    {{ t("auth.register.sendCodeDialog.title") }}
-                  </DialogTitle>
-                  <DialogDescription>{{ t("auth.register.sendCodeDialog.description") }}</DialogDescription>
-                  <div class="mb-4">
-                    <Turnstile
-                      ref="sendCodeRef"
-                      @verify="onSendCodeTurnstileVerified"
-                      @invalid="onSendCodeTurnstileInvalid"
-                    />
-                  </div>
-                    <DialogFooter>
-                      <DialogClose as-child>
-                        <Button variant="secondary" type="button">
-                          <X class="h-4 w-4 mr-2" />
-                          {{ t("auth.common.cancel") }}
-                        </Button>
-                      </DialogClose>
-                      <Button
-                        type="button"
-                        :disabled="isSending"
-                        @click="handleConfirmSendCode"
-                      >
-                        <Loader2 v-if="isSending" class="mr-2 h-4 w-4 animate-spin" />
-                        <Mail v-else class="h-4 w-4 mr-2" />
-                        <span v-if="isSending">{{ t("auth.register.sending") }}</span>
-                        <span v-else>{{ t("auth.register.sendCodeDialog.confirmSend") }}</span>
-                      </Button>
-                    </DialogFooter>
-                </DialogScrollContent>
-              </Dialog>
+          <div v-if="buttonFields.length > 0" class="space-y-2">
+            <div v-for="field in buttonFields" :key="field.key" class="space-y-1">
+              <Button
+                type="button"
+                variant="outline"
+                class="w-full justify-start"
+                :name="field.name"
+                :value="field.value || undefined"
+                :disabled="field.disabled"
+                @click="invokeVisibleFieldAction(field)"
+              >
+                <component :is="iconForField(field.name)" class="size-4 mr-2" />
+                {{ field.label }}
+              </Button>
+              <KratosFlowMessages :messages="field.messages" />
             </div>
           </div>
-          <div class="grid gap-2">
-            <Label for="emailCode">{{ t("auth.register.emailCodeLabel") }}</Label>
-            <div class="relative w-full items-center">
-              <Input
-                  id="emailCode"
-                  class="pl-10"
-                  v-model="emailCode"
-                  type="text"
-                  :placeholder="t('auth.register.emailCodePlaceholder')"
-                  required
-              />
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <Key class="size-4 text-muted-foreground" />
-              </span>
+
+          <div v-if="submitFields.length > 0" class="space-y-2">
+            <div v-for="submit in submitFields" :key="submit.key" class="space-y-1">
+              <Button
+                type="submit"
+                class="w-full"
+                :name="submit.name || undefined"
+                :value="submit.value || undefined"
+                :disabled="!isReady || submit.disabled"
+              >
+                <UserPlus class="h-4 w-4 mr-2" />
+                {{ submit.label }}
+              </Button>
+              <KratosFlowMessages :messages="submit.messages" />
             </div>
           </div>
-          <div class="grid gap-2">
-            <Label for="password">{{ t("auth.register.passwordLabel") }}</Label>
-            <div class="relative w-full items-center">
-              <Input
-                  id="password"
-                  class="pl-10"
-                  v-model="password"
-                  type="password"
-                  :placeholder="t('auth.register.passwordPlaceholder')"
-                  required
-              />
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <Lock class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-          </div>
-          <Turnstile
-            class="md-2"
-            ref="registerTurnstileRef"
-            @verify="onRegisterTurnstileVerified"
-            @invalid="onRegisterTurnstileInvalid"
-          />
-          <Button type="submit" class="w-full" :disabled="isRegistering">
-            <Loader2 v-if="isRegistering" class="mr-2 h-4 w-4 animate-spin" />
-            <UserPlus v-else class="h-4 w-4 mr-2" />
-            {{ t("auth.register.submit") }}
+          <Button v-else type="submit" class="w-full" :disabled="!isReady">
+            <UserPlus class="h-4 w-4 mr-2" />
+            {{ submitLabel || t("auth.register.submit") }}
           </Button>
           <div class="text-center text-sm">
             {{ t("auth.register.hasAccount") }}

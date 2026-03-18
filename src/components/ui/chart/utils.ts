@@ -5,6 +5,7 @@ import { h, render } from "vue"
 
 // Simple cache using a Map to store serialized object keys
 const cache = new Map<string, string>()
+const MAX_TOOLTIP_CACHE_ENTRIES = 200
 
 // Convert object to a consistent string key
 function serializeKey(key: Record<string, any>): string {
@@ -38,7 +39,21 @@ export function componentToString<P>(config: ChartConfig, component: Constructor
     const vnode = h<unknown>(component, { ...props, payload: data, config, x })
     const div = document.createElement("div")
     render(vnode, div)
-    cache.set(serializedKey, div.innerHTML)
-    return div.innerHTML
+    const html = div.innerHTML
+    render(null, div)
+
+    if (cache.has(serializedKey)) {
+      cache.delete(serializedKey)
+    }
+    cache.set(serializedKey, html)
+
+    if (cache.size > MAX_TOOLTIP_CACHE_ENTRIES) {
+      const oldestKey = cache.keys().next().value
+      if (oldestKey) {
+        cache.delete(oldestKey)
+      }
+    }
+
+    return html
   }
 }

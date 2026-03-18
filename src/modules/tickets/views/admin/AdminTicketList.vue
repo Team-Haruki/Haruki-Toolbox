@@ -40,7 +40,7 @@ import {
 } from "@/modules/tickets/lib/display"
 import { useAdminTicketList } from "@/modules/tickets/composables/useAdminTicketList"
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 function formatTicketDate(iso?: string) {
   return formatLocalizedDate(iso, { year: "numeric", month: "2-digit", day: "2-digit" }, t("tickets.common.dateFallback"))

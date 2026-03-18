@@ -120,10 +120,23 @@ watch(
   [isLoggedIn, () => userStore.userId],
   ([loggedIn, userId]) => {
     if (loggedIn && userId) {
+      if (userStore.settingsSyncState === "synced" && syncedUserId.value === null) {
+        syncedUserId.value = userId
+        clearSyncRetryState()
+        return
+      }
       if (syncRetryUserId.value && syncRetryUserId.value !== userId) {
         clearSyncRetryState()
       }
       void syncUserSettings(userId)
+    } else if (loggedIn) {
+      latestSyncRequestId.value += 1
+      syncingUserId.value = null
+      syncedUserId.value = null
+      clearSyncRetryState()
+      if (userStore.settingsSyncState === "idle") {
+        userStore.setSettingsSyncState("loading")
+      }
     } else {
       latestSyncRequestId.value += 1
       syncingUserId.value = null

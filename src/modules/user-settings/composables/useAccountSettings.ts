@@ -1,36 +1,28 @@
-import { ref, watch } from "vue"
+import { ref } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { unwrapUpdatedData } from "@/core/http/call-api"
-import { readFileAsDataUrl } from "@/lib/file-reader"
 import { useUserStore } from "@/shared/stores/user"
 import { updateUserProfile } from "@/modules/user-settings/api/account"
 import { extractErrorMessage } from "@/lib/error-utils"
+import { prepareAvatarImageDataUrl } from "@/lib/avatar-image"
 
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
 
 export function useAccountSettings() {
   const { t } = useI18n()
   const userStore = useUserStore()
-  const nameDraft = ref("")
-  const selectedFile = ref<File | null>(null)
   const previewAvatar = ref<string | null>(null)
   const fileInputRef = ref<HTMLInputElement | null>(null)
   const isSaving = ref(false)
-
-  watch(
-    () => userStore.name,
-    (name) => {
-      nameDraft.value = name
-    },
-    { immediate: true }
-  )
 
   function triggerFileInput() {
     fileInputRef.value?.click()
   }
 
   async function onAvatarChange(event: Event) {
+    if (isSaving.value) return
+
     const target = event.target
     if (!(target instanceof HTMLInputElement)) return
 
@@ -53,21 +45,25 @@ export function useAccountSettings() {
       return
     }
 
-    selectedFile.value = file
     try {
-      previewAvatar.value = await readFileAsDataUrl(file)
+      previewAvatar.value = await prepareAvatarImageDataUrl(file)
     } catch {
-      selectedFile.value = null
       previewAvatar.value = null
       toast.error(t("userSettings.account.toast.previewFailedTitle"), {
         description: t("userSettings.account.toast.previewFailedDescription"),
       })
+      target.value = ""
+      return
+    }
+
+    try {
+      await uploadAvatar(previewAvatar.value)
     } finally {
       target.value = ""
     }
   }
 
-  async function saveChanges() {
+  async function uploadAvatar(avatarBase64: string | null) {
     if (isSaving.value) return
     if (!userStore.userId) {
       toast.error(t("userSettings.common.actionFailedTitle"), {
@@ -75,36 +71,31 @@ export function useAccountSettings() {
       })
       return
     }
+    if (!avatarBase64) {
+      toast.error(t("userSettings.account.toast.previewFailedTitle"), {
+        description: t("userSettings.account.toast.previewFailedDescription"),
+      })
+      return
+    }
 
     isSaving.value = true
     try {
-      const nextName = nameDraft.value.trim()
-      if (!nextName) {
-        toast.error(t("userSettings.account.toast.nameRequiredTitle"), {
-          description: t("userSettings.account.toast.nameRequiredDescription"),
-        })
-        return
-      }
-
-      let avatarPath = userStore.avatarPath
       const result = await updateUserProfile(
         userStore.userId,
-        nextName,
-        selectedFile.value,
+        avatarBase64,
         { skipErrorToast: true }
       )
       const updatedData = unwrapUpdatedData(result, t("userSettings.account.title"))
 
+      let avatarPath = userStore.avatarPath
       if (Object.prototype.hasOwnProperty.call(updatedData, "avatarPath")) {
         avatarPath = updatedData.avatarPath ?? ""
-        previewAvatar.value = null
       }
 
       userStore.setUser({
-        name: updatedData.name,
         avatarPath,
       })
-      selectedFile.value = null
+      previewAvatar.value = null
       if (fileInputRef.value) {
         fileInputRef.value.value = ""
       }
@@ -113,6 +104,7 @@ export function useAccountSettings() {
         description: t("userSettings.account.toast.savedDescription"),
       })
     } catch (error: unknown) {
+      previewAvatar.value = null
       toast.error(t("userSettings.account.toast.saveFailedTitle"), {
         description: extractErrorMessage(error, t("userSettings.account.toast.saveFailedDescription")),
       })
@@ -123,12 +115,10 @@ export function useAccountSettings() {
 
   return {
     userStore,
-    nameDraft,
     previewAvatar,
     fileInputRef,
     isSaving,
     triggerFileInput,
     onAvatarChange,
-    saveChanges,
   }
 }

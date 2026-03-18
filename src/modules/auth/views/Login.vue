@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import {Input} from "@/components/ui/input"
-import {Label} from "@/components/ui/label"
-import {Button} from "@/components/ui/button"
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { Loader2, LogIn, Mail, X, Lock, KeyRound } from 'lucide-vue-next'
-import Turnstile from "@/shared/components/Turnstile.vue"
-
-import { useLoginForm } from "@/modules/auth/composables/useLoginForm"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Loader2, LogIn, Mail, Lock, KeyRound } from "lucide-vue-next"
 import {
   Card,
   CardTitle,
@@ -14,34 +12,162 @@ import {
   CardContent,
   CardDescription
 } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogTitle,
-  DialogClose,
-  DialogFooter,
-  DialogHeader,
-  DialogTrigger,
-  DialogDescription,
-  DialogScrollContent
-} from "@/components/ui/dialog"
-
-const {
-  email,
-  password,
-  resetEmail,
-  loginTurnstileRef,
-  resetTurnstileRef,
-  isLoggingIn,
-  isSendingResetEmail,
-  onLoginTurnstileVerified,
-  onLoginTurnstileInvalid,
-  onResetTurnstileVerified,
-  onResetTurnstileInvalid,
-  handleResetPassword,
-  handleLogin,
-} = useLoginForm()
+import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
+import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 const { t } = useI18n()
 
+const {
+  loading,
+  loadError,
+  fieldValues,
+  generalMessages,
+  hiddenFields,
+  visibleFields,
+  buttonFields,
+  submitFields,
+  submitLabel,
+  action,
+  method,
+  invokeVisibleFieldAction,
+  restartFlow,
+} = useKratosBrowserFlow("login")
+
+type LoginActionKind = "submit" | "trigger"
+
+interface LoginAction {
+  key: string
+  group: string
+  name: string
+  value: string
+  label: string
+  disabled: boolean
+  kind: LoginActionKind
+  messages: {
+    key: string
+    text: string
+    tone: "info" | "success" | "error" | "warning"
+  }[]
+  onClickTrigger: string
+}
+
+function isSocialAction(action: { group: string; name: string }): boolean {
+  const group = action.group.trim().toLowerCase()
+  const name = action.name.trim().toLowerCase()
+  return group === "oidc" || group === "saml" || name === "provider"
+}
+
+function isPasskeyAction(action: { group: string; name: string; value: string }): boolean {
+  const signature = `${action.group} ${action.name} ${action.value}`.trim().toLowerCase()
+  return signature.includes("passkey") || signature.includes("webauthn")
+}
+
+function actionPriority(action: { group: string; name: string; value: string }): number {
+  if (isSocialAction(action)) {
+    return 30
+  }
+
+  if (isPasskeyAction(action)) {
+    return 8
+  }
+
+  const value = action.value.trim().toLowerCase()
+  if (
+    value === "password"
+    || value === "code"
+    || value === "totp"
+    || value === "lookup_secret"
+    || value === "passkey"
+    || value === "webauthn"
+  ) {
+    return 10
+  }
+
+  return 20
+}
+
+const orderedSubmitFields = computed(() =>
+  submitFields.value
+    .map((submit, index) => ({ submit, index }))
+    .sort((left, right) => {
+      const priorityDiff = actionPriority(left.submit) - actionPriority(right.submit)
+      if (priorityDiff !== 0) {
+        return priorityDiff
+      }
+
+      return left.index - right.index
+    })
+    .map((entry) => entry.submit)
+)
+
+const orderedLoginActions = computed<LoginAction[]>(() => {
+  const submitActions = orderedSubmitFields.value.map((submit) => ({
+    key: submit.key,
+    group: submit.group,
+    name: submit.name,
+    value: submit.value,
+    label: submit.label,
+    disabled: submit.disabled,
+    kind: "submit" as const,
+    messages: submit.messages,
+    onClickTrigger: "",
+  }))
+
+  const triggerActions = buttonFields.value.map((field) => ({
+    key: field.key,
+    group: field.group,
+    name: field.name,
+    value: field.value,
+    label: field.label,
+    disabled: field.disabled,
+    kind: "trigger" as const,
+    messages: field.messages,
+    onClickTrigger: field.onClickTrigger,
+  }))
+
+  return [...submitActions, ...triggerActions]
+    .map((action, index) => ({ action, index }))
+    .sort((left, right) => {
+      const priorityDiff = actionPriority(left.action) - actionPriority(right.action)
+      if (priorityDiff !== 0) {
+        return priorityDiff
+      }
+      return left.index - right.index
+    })
+    .map((entry) => entry.action)
+})
+
+function actionVariant(action: LoginAction): "default" | "outline" {
+  return isSocialAction(action) ? "outline" : "default"
+}
+
+function actionIcon(action: LoginAction) {
+  if (isPasskeyAction(action)) {
+    return KeyRound
+  }
+  return LogIn
+}
+
+function handleActionClick(action: LoginAction) {
+  if (action.kind !== "trigger") {
+    return
+  }
+
+  invokeVisibleFieldAction({ onClickTrigger: action.onClickTrigger })
+}
+
+function iconForField(name: string) {
+  if (name === "identifier" || name.endsWith("email")) {
+    return Mail
+  }
+
+  if (name.toLowerCase().includes("password")) {
+    return Lock
+  }
+
+  return KeyRound
+}
+
+const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
 </script>
 
 <template>
@@ -57,93 +183,88 @@ const { t } = useI18n()
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form @submit.prevent="handleLogin">
+        <div v-if="loading" class="flex items-center justify-center py-12 text-muted-foreground">
+          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+          {{ t("auth.common.loadingFlow") }}
+        </div>
+        <div v-else-if="loadError" class="space-y-4">
+          <p class="text-sm text-destructive">{{ loadError }}</p>
+          <Button class="w-full" @click="restartFlow">
+            <LogIn class="mr-2 h-4 w-4" />
+            {{ t("auth.common.restartFlow") }}
+          </Button>
+        </div>
+        <form v-else :action="action" :method="method" novalidate>
           <div class="grid gap-6">
-          <div class="grid gap-2">
-              <Label for="email">{{ t("auth.login.emailLabel") }}</Label>
-              <div class="relative w-full items-center">
-                <Input
-                    id="email"
-                    type="email"
-                    class="pl-10"
-                    :placeholder="t('auth.login.emailPlaceholder')"
-                    required
-                    v-model="email"
-                />
-                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                  <Mail class="size-4 text-muted-foreground" />
-                </span>
-              </div>
-            </div>
-            <div class="grid gap-2">
+            <input v-for="field in hiddenFields" :key="field.key" type="hidden" :name="field.name" :value="field.value" />
+
+            <KratosFlowMessages :messages="generalMessages" />
+
+            <div v-for="field in visibleFields" :key="field.key" class="grid gap-2">
               <div class="flex items-center">
-                <Label for="password">{{ t("auth.login.passwordLabel") }}</Label>
-                <Dialog>
-                  <DialogTrigger as-child>
-                    <button type="button" class="ml-auto text-sm underline-offset-4 hover:underline">
-                      {{ t("auth.login.forgotPassword") }}
-                    </button>
-                  </DialogTrigger>
-                  <DialogScrollContent class="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle class="flex items-center gap-2">
-                        <KeyRound class="h-5 w-5" />
-                        {{ t("auth.login.resetDialog.title") }}
-                      </DialogTitle>
-                      <DialogDescription>{{ t("auth.login.resetDialog.description") }}</DialogDescription>
-                    </DialogHeader>
-                    <div class="py-4">
-                      <Label for="reset-email">{{ t("auth.login.emailLabel") }}</Label>
-                      <div class="relative w-full items-center mt-2 mb-4">
-                        <Input
-                            id="reset-email"
-                            type="email"
-                            class="pl-10"
-                            :placeholder="t('auth.login.emailPlaceholder')"
-                            v-model="resetEmail"
-                        />
-                        <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                          <Mail class="size-4 text-muted-foreground" />
-                        </span>
-                      </div>
-                      <Turnstile
-                        ref="resetTurnstileRef"
-                        @verify="onResetTurnstileVerified"
-                        @invalid="onResetTurnstileInvalid"
-                      />
-                    </div>
-                    <DialogFooter>
-                      <DialogClose as-child>
-                        <Button type="button" variant="outline">
-                          <X class="h-4 w-4 mr-2" />
-                          {{ t("auth.common.cancel") }}
-                        </Button>
-                      </DialogClose>
-                      <Button type="button" @click="handleResetPassword" :disabled="isSendingResetEmail">
-                        <Loader2 v-if="isSendingResetEmail" class="mr-2 h-4 w-4 animate-spin" />
-                        <Mail v-else class="h-4 w-4 mr-2" />
-                        {{ t("auth.login.resetDialog.sendResetEmail") }}
-                      </Button>
-                    </DialogFooter>
-                  </DialogScrollContent>
-                </Dialog>
+                <Label :for="field.key">{{ field.label }}</Label>
+                <router-link
+                  v-if="field.name.toLowerCase().includes('password')"
+                  to="/user/recovery"
+                  class="ml-auto text-sm underline-offset-4 hover:underline"
+                >
+                  {{ t("auth.login.forgotPassword") }}
+                </router-link>
               </div>
               <div class="relative w-full items-center">
-                <Input id="password" type="password" class="pl-10" :placeholder="t('auth.login.passwordPlaceholder')" required v-model="password"/>
-                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                  <Lock class="size-4 text-muted-foreground" />
-                </span>
+                <template v-if="field.type === 'button'">
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="w-full justify-start"
+                    :name="field.name"
+                    :value="field.value || undefined"
+                    :disabled="field.disabled"
+                    @click="invokeVisibleFieldAction(field)"
+                  >
+                    <component :is="iconForField(field.name)" class="size-4 mr-2" />
+                    {{ field.label }}
+                  </Button>
+                </template>
+                <template v-else>
+                  <Input
+                    :id="field.key"
+                  :name="field.name"
+                  :type="field.type"
+                  :autocomplete="field.autocomplete || undefined"
+                  :required="field.required"
+                  :disabled="field.disabled"
+                    class="pl-10"
+                    v-model="fieldValues[field.name]"
+                  />
+                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                    <component :is="iconForField(field.name)" class="size-4 text-muted-foreground" />
+                  </span>
+                </template>
               </div>
-              <Turnstile
-                ref="loginTurnstileRef"
-                @verify="onLoginTurnstileVerified"
-                @invalid="onLoginTurnstileInvalid"
-              />
+              <KratosFlowMessages :messages="field.messages" />
             </div>
-            <Button type="submit" class="w-full" :disabled="isLoggingIn">
-              <Loader2 v-if="isLoggingIn" class="mr-2 h-4 w-4 animate-spin" />
-              <LogIn v-else class="h-4 w-4 mr-2" />
-              {{ t("auth.login.submit") }}
+
+            <div v-if="orderedLoginActions.length > 0" class="space-y-2">
+              <div v-for="actionItem in orderedLoginActions" :key="actionItem.key" class="space-y-1">
+                <Button
+                  :type="actionItem.kind === 'submit' ? 'submit' : 'button'"
+                  class="w-full"
+                  :variant="actionVariant(actionItem)"
+                  :name="actionItem.name || undefined"
+                  :value="actionItem.value || undefined"
+                  :disabled="!isReady || actionItem.disabled"
+                  @click="handleActionClick(actionItem)"
+                >
+                  <component :is="actionIcon(actionItem)" class="h-4 w-4 mr-2" />
+                  {{ actionItem.label }}
+                </Button>
+                <KratosFlowMessages :messages="actionItem.messages" />
+              </div>
+            </div>
+            <Button v-else type="submit" class="w-full" :disabled="!isReady">
+              <LogIn class="h-4 w-4 mr-2" />
+              {{ submitLabel || t("auth.login.submit") }}
             </Button>
             <div class="text-center text-sm">
               {{ t("auth.login.noAccount") }}

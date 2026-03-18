@@ -38,7 +38,7 @@ import { isTicketCategory, ticketCategoryLabel } from "@/modules/tickets/lib/met
 import { useAdminTicketDetail } from "@/modules/tickets/composables/useAdminTicketDetail"
 
 const props = defineProps<{ ticketId: string }>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const {
   loading,
   ticket,

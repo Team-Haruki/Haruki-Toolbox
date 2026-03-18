@@ -20,6 +20,7 @@ declare module 'axios' {
 
 export const apiClient: AxiosInstance = axios.create({
     timeout: 60000,
+    withCredentials: true,
     headers: {
         "Content-Type": "application/json",
     },
@@ -30,6 +31,18 @@ function generateRequestId(): string {
         return crypto.randomUUID()
     }
     return `${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+function isCrossOriginBrowserRequest(baseURL: string | undefined): boolean {
+    if (typeof window === "undefined" || !baseURL) {
+        return false
+    }
+
+    try {
+        return new URL(baseURL, window.location.href).origin !== window.location.origin
+    } catch {
+        return false
+    }
 }
 
 function isIdempotentMethod(method?: string): boolean {
@@ -57,14 +70,10 @@ async function retryDelay(attempt: number) {
 
 export function setupInterceptors(router: Router) {
     apiClient.interceptors.request.use((config) => {
-        const userStore = useUserStore()
         const settingsStore = useSettingsStore()
-        config.baseURL = settingsStore.currentEndpoint
-        if (!config.headers.get("X-Request-ID")) {
+        config.baseURL = settingsStore.directEndpoint || settingsStore.currentEndpoint
+        if (!isCrossOriginBrowserRequest(config.baseURL) && !config.headers.get("X-Request-ID")) {
             config.headers.set("X-Request-ID", generateRequestId())
-        }
-        if (userStore.sessionToken) {
-            config.headers.set('Authorization', `Bearer ${userStore.sessionToken}`)
         }
         return config
     })
@@ -80,7 +89,7 @@ export function setupInterceptors(router: Router) {
 
             const userStore = useUserStore()
             if (error.response?.status === 401) {
-                if (userStore.sessionToken) {
+                if (userStore.isLoggedIn) {
                     toast.error(translate("core.auth.sessionExpiredTitle"), {
                         description: translate("core.auth.sessionExpiredDescription"),
                     })
@@ -95,7 +104,7 @@ export function setupInterceptors(router: Router) {
                     // Always surface banned reason before forcing logout redirect.
                     // This should not be suppressed by local skipErrorToast defaults.
                     toast.error(translate("core.auth.accountBannedTitle"), { description: message })
-                    if (userStore.sessionToken) {
+                    if (userStore.isLoggedIn) {
                         userStore.clearUser()
                         await redirectToLogin(router)
                     }

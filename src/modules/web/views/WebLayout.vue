@@ -187,7 +187,17 @@ const {
       </main>
 
       <SidebarFooter class="border-t p-2 text-center text-sm text-muted-foreground bg-fuchsia-50 dark:bg-gray-800">
-        &copy; {{ copyrightYear }} {{ t("webLayout.footer.copyright") }}
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <span>&copy; {{ copyrightYear }} {{ t("webLayout.footer.copyright") }}</span>
+          <span aria-hidden="true">|</span>
+          <router-link to="/privacy" class="underline-offset-4 hover:underline">
+            {{ t("webLayout.footer.privacyPolicy") }}
+          </router-link>
+          <span aria-hidden="true">|</span>
+          <router-link to="/tos" class="underline-offset-4 hover:underline">
+            {{ t("webLayout.footer.termsOfService") }}
+          </router-link>
+        </div>
       </SidebarFooter>
     </SidebarInset>
   </SidebarProvider>

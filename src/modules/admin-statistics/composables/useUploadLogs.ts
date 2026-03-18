@@ -42,7 +42,6 @@ export function useUploadLogs() {
     items: logs,
     total,
     page,
-    pageSize,
     totalPages,
     resetPage,
     load: loadLogs,

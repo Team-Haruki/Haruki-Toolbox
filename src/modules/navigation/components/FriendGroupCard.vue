@@ -9,7 +9,7 @@ import {
   AvatarFallback
 } from '@/components/ui/avatar'
 
-const props = defineProps<{
+defineProps<{
   item: FriendGroupItem
 }>()
 

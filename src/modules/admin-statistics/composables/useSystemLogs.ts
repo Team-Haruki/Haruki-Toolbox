@@ -21,7 +21,6 @@ export function useSystemLogs() {
     loading,
     items: logs,
     page,
-    pageSize,
     total,
     totalPages,
     resetPage,

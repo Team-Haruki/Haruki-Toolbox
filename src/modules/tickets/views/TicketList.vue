@@ -30,7 +30,7 @@ import {
 import { isTicketCategory, ticketCategoryLabel } from "@/modules/tickets/lib/meta"
 import { useTicketList } from "@/modules/tickets/composables/useTicketList"
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 function formatTicketDate(iso?: string) {
   return formatLocalizedDate(iso, { year: "numeric", month: "2-digit", day: "2-digit" }, t("tickets.common.dateFallback"))
