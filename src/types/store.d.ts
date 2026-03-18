@@ -14,7 +14,8 @@ export interface SocialPlatformInfo {
 }
 
 export interface AuthorizeSocialPlatformInfo {
-    id: EntityId
+    platformId: number
+    id?: EntityId
     platform: string
     userId: string
     comment: string

@@ -1,3 +1,5 @@
+import type { AuthorizeSocialPlatformInfo } from "@/types/store"
+
 export type SocialPlatform = "qq" | "qqbot" | "discord" | "telegram"
 
 export interface GenerateSocialPlatformVerificationCodeResponse {
@@ -11,6 +13,10 @@ export interface AddAuthorizeSocialPlatformAccountPayload {
     platform: SocialPlatform,
     userId: string,
     comment: string
+}
+
+export type AuthorizeSocialPlatformUpdatedData = {
+    authorizeSocialPlatformInfo: AuthorizeSocialPlatformInfo[]
 }
 
 export interface SocialPlatformVerificationRequestPayload {

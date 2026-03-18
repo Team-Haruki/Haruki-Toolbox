@@ -33,7 +33,7 @@ function normalizeSocialAuthList(value: unknown): SocialAuth[] {
 
       const platformValue = readString(record, ["platform"])
       return {
-        id: normalizeEntityId(record.id ?? record.ID),
+        id: normalizeEntityId(record.id ?? record.ID ?? record.platformId),
         platform: isSocialPlatform(platformValue) ? platformValue : DEFAULT_SOCIAL_PLATFORM,
         userId: readString(record, ["userId", "user_id"]),
         comment: readString(record, ["comment"]),
