@@ -11,6 +11,7 @@ import { getSettings } from "@/modules/user-settings/api/get-settings"
 import { useI18n } from "vue-i18n"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { createLogger } from "@/lib/logger"
+import { useRoute, useRouter } from "vue-router"
 import {
   computed,
   onBeforeUnmount,
@@ -20,6 +21,8 @@ import {
 import {Toaster} from "@/components/ui/sonner";
 
 const userStore = useUserStore()
+const route = useRoute()
+const router = useRouter()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const syncingUserId = ref<string | null>(null)
 const syncedUserId = ref<string | null>(null)
@@ -30,6 +33,7 @@ const syncRetryCount = ref(0)
 const MAX_SYNC_RETRIES = 3
 const { t } = useI18n()
 const logger = createLogger("app-settings-sync")
+const hasLoginSuccessFlag = computed(() => route.query._login_success === "1")
 
 function clearSyncRetryState(resetCount = true) {
   if (syncRetryTimer.value !== null) {
@@ -144,6 +148,28 @@ watch(
       userStore.setSettingsSyncState("idle")
       clearSyncRetryState()
     }
+  },
+  { immediate: true }
+)
+
+watch(
+  hasLoginSuccessFlag,
+  (enabled) => {
+    if (!enabled || !userStore.isLoggedIn) {
+      return
+    }
+
+    toast.success(t("auth.login.toast.loginSuccessTitle"), {
+      description: t("auth.login.toast.loginSuccessDescription"),
+    })
+
+    const nextQuery = { ...route.query }
+    delete nextQuery._login_success
+    void router.replace({
+      path: route.path,
+      query: nextQuery,
+      hash: route.hash,
+    })
   },
   { immediate: true }
 )

@@ -10,6 +10,7 @@ import type { EntityId } from "@/types/common"
 import type { SocialPlatform as SocialPlatformType } from "@/types/social-platform"
 import { resolveRequiredUserId } from "@/modules/user-settings/lib/current-user"
 import {
+  createAuthorizeSocialPlatformAccount,
   addAuthorizeSocialPlatformAccount,
   removeAuthorizeSocialPlatformAccount,
 } from "@/modules/user-settings/api/im-auth"
@@ -42,6 +43,15 @@ function normalizeSocialAuthList(value: unknown): SocialAuth[] {
     .filter((item): item is SocialAuth => item !== null)
 }
 
+function resolveNumericId(id: EntityId): number | null {
+  if (typeof id === "number" && Number.isFinite(id)) return id
+  if (typeof id === "string" && id.trim() !== "") {
+    const parsed = Number(id)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return null
+}
+
 export function useIMAuthorizationSettings() {
   const { t } = useI18n()
   const userStore = useUserStore()
@@ -71,16 +81,12 @@ export function useIMAuthorizationSettings() {
     return resolveRequiredUserId(userStore.userId, actionTitle)
   }
 
-  function nextId(): EntityId {
-    const existingIds = new Set(tableData.value.map((item) => String(item.id)))
-    const baseId = `new-${Date.now()}`
-    let candidate = baseId
-    let suffix = 1
-    while (existingIds.has(candidate)) {
-      candidate = `${baseId}-${suffix}`
-      suffix += 1
-    }
-    return candidate
+  function nextPlatformId(): number {
+    const existingIds = tableData.value
+      .map((item) => resolveNumericId(item.id))
+      .filter((id): id is number => id != null)
+    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0
+    return maxId + 1
   }
 
   function startEdit(row: SocialAuth) {
@@ -91,7 +97,7 @@ export function useIMAuthorizationSettings() {
 
   function startAdd() {
     editTarget.value = {
-      id: nextId(),
+      id: nextPlatformId(),
       platform: DEFAULT_SOCIAL_PLATFORM,
       userId: "",
       comment: "",
@@ -102,11 +108,12 @@ export function useIMAuthorizationSettings() {
 
   async function handleEditSave() {
     if (!editTarget.value || isSaving.value) return
+    const target = editTarget.value
 
     const userId = requireUserId()
     if (!userId) return
 
-    const normalizedUserId = editTarget.value.userId.trim()
+    const normalizedUserId = target.userId.trim()
     if (!normalizedUserId) {
       toast.error(t("userSettings.imAuthorization.toast.saveFailedTitle"), {
         description: t("userSettings.imAuthorization.toast.accountRequiredDescription"),
@@ -114,18 +121,37 @@ export function useIMAuthorizationSettings() {
       return
     }
 
-    const authId = editTarget.value.id
-
     isSaving.value = true
     try {
-      const response = await addAuthorizeSocialPlatformAccount(
-        userId,
-        authId,
-        editTarget.value.platform,
-        normalizedUserId,
-        editTarget.value.comment.trim(),
-        { skipErrorToast: true }
-      )
+      const response = isCreateMode.value
+        ? await (async () => {
+            const platformId = resolveNumericId(target.id)
+            if (platformId == null) {
+              throw new Error(t("userSettings.imAuthorization.toast.saveFailedTitle"))
+            }
+            return await createAuthorizeSocialPlatformAccount(
+              userId,
+              platformId,
+              target.platform,
+              normalizedUserId,
+              target.comment.trim(),
+              { skipErrorToast: true }
+            )
+          })()
+        : await (async () => {
+            const authId = resolveNumericId(target.id)
+            if (authId == null) {
+              throw new Error(t("userSettings.imAuthorization.toast.saveFailedTitle"))
+            }
+            return await addAuthorizeSocialPlatformAccount(
+              userId,
+              authId,
+              target.platform,
+              normalizedUserId,
+              target.comment.trim(),
+              { skipErrorToast: true }
+            )
+          })()
       const updatedData = unwrapUpdatedData(response, t("userSettings.imAuthorization.title"))
       userStore.setUser({ authorizeSocialPlatformInfo: updatedData })
 
@@ -153,7 +179,13 @@ export function useIMAuthorizationSettings() {
     const userId = requireUserId()
     if (!userId) return
 
-    const authId = deleteTarget.value.id
+    const authId = resolveNumericId(deleteTarget.value.id)
+    if (authId == null) {
+      toast.error(t("userSettings.imAuthorization.toast.deleteFailedTitle"), {
+        description: t("userSettings.imAuthorization.toast.deleteFailedTitle"),
+      })
+      return
+    }
 
     isDeleting.value = true
     try {

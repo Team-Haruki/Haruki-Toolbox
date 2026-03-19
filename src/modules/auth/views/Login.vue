@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref, watch } from "vue"
+import { useRoute } from "vue-router"
+import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,8 +15,83 @@ import {
   CardDescription
 } from "@/components/ui/card"
 import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
+import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
+import { resolveSafeRedirectTarget } from "@/core/router/navigation"
+
+const route = useRoute()
 const { t } = useI18n()
+
+function resolveKratosOrigin(): string {
+  if (typeof window === "undefined") {
+    return ""
+  }
+
+  try {
+    return new URL(getKratosPublicUrl(), window.location.origin).origin
+  } catch {
+    return ""
+  }
+}
+
+function resolveLoginRedirectPath(): string {
+  return resolveSafeRedirectTarget(route.query.redirect) ?? "/"
+}
+
+function resolveLoginReturnTo(): string {
+  const redirectPath = resolveLoginRedirectPath()
+  if (typeof window === "undefined") {
+    return redirectPath
+  }
+
+  const url = new URL(redirectPath, window.location.origin)
+  url.searchParams.set("_login_success", "1")
+  return url.toString()
+}
+
+function parseReturnToUrl(value: string): URL | null {
+  if (typeof window === "undefined") {
+    return null
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  try {
+    return new URL(trimmed, window.location.origin)
+  } catch {
+    return null
+  }
+}
+
+function isAllowedFlowReturnTo(value: string, depth = 0): boolean {
+  if (typeof window === "undefined" || depth > 4) {
+    return false
+  }
+
+  const parsed = parseReturnToUrl(value)
+  if (!parsed) {
+    return false
+  }
+
+  if (parsed.origin === window.location.origin) {
+    return true
+  }
+
+  const kratosOrigin = resolveKratosOrigin()
+  if (
+    kratosOrigin !== ""
+    && parsed.origin === kratosOrigin
+    && parsed.pathname.startsWith("/self-service/")
+  ) {
+    const nested = parsed.searchParams.get("return_to")
+    return nested ? isAllowedFlowReturnTo(nested, depth + 1) : true
+  }
+
+  return false
+}
 
 const {
   loading,
@@ -27,10 +104,40 @@ const {
   submitFields,
   submitLabel,
   action,
+  flowReturnTo,
   method,
   invokeVisibleFieldAction,
   restartFlow,
-} = useKratosBrowserFlow("login")
+} = useKratosBrowserFlow("login", {
+  getReturnTo: () => resolveLoginReturnTo(),
+})
+
+const hasForcedSafeReturnTo = ref(false)
+
+watch(
+  [loading, loadError, flowReturnTo],
+  ([isLoading, error, returnTo]) => {
+    if (isLoading || error || hasForcedSafeReturnTo.value) {
+      return
+    }
+
+    const normalizedReturnTo = returnTo.trim()
+    if (!normalizedReturnTo) {
+      return
+    }
+
+    if (isAllowedFlowReturnTo(normalizedReturnTo)) {
+      return
+    }
+
+    hasForcedSafeReturnTo.value = true
+    toast.warning(t("auth.toast.invalidReturnToTitle"), {
+      description: t("auth.toast.invalidReturnToDescription"),
+    })
+    restartFlow()
+  },
+  { immediate: true }
+)
 
 type LoginActionKind = "submit" | "trigger"
 

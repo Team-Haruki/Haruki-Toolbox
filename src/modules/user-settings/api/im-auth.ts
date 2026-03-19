@@ -3,7 +3,6 @@ import { buildUserApiPath } from "@/core/http/path"
 import type {
   APIResponse,
   SocialPlatform,
-  EntityId,
   AddAuthorizeSocialPlatformAccountPayload,
   AuthorizeSocialPlatformUpdatedData,
 } from "@/types"
@@ -11,6 +10,7 @@ import type { AxiosRequestConfig } from "axios"
 
 export async function createAuthorizeSocialPlatformAccount(
   toolboxUserId: string,
+  id: number,
   platform: SocialPlatform,
   userId: string,
   comment: string,
@@ -18,7 +18,7 @@ export async function createAuthorizeSocialPlatformAccount(
 ): Promise<APIResponse<AuthorizeSocialPlatformUpdatedData>> {
   const payload: AddAuthorizeSocialPlatformAccountPayload = { platform, userId, comment }
   return await request<APIResponse<AuthorizeSocialPlatformUpdatedData>>(
-    buildUserApiPath(toolboxUserId, "authorize-social-platform"),
+    buildUserApiPath(toolboxUserId, "authorize-social-platform", id),
     {
       method: "POST",
       data: payload,
@@ -29,7 +29,7 @@ export async function createAuthorizeSocialPlatformAccount(
 
 export async function addAuthorizeSocialPlatformAccount(
   toolboxUserId: string,
-  id: EntityId,
+  id: number,
   platform: SocialPlatform,
   userId: string,
   comment: string,
@@ -48,7 +48,7 @@ export async function addAuthorizeSocialPlatformAccount(
 
 export async function removeAuthorizeSocialPlatformAccount(
   toolboxUserId: string,
-  id: EntityId,
+  id: number,
   options?: AxiosRequestConfig
 ): Promise<APIResponse<AuthorizeSocialPlatformUpdatedData>> {
   return await request<APIResponse<AuthorizeSocialPlatformUpdatedData>>(

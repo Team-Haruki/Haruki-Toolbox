@@ -3,6 +3,7 @@ import { computed, onMounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
+import { useUserStore } from "@/shared/stores/user"
 import {
   AccountSettings,
   EmailSettings,
@@ -16,9 +17,11 @@ import {
   KratosSettingsFlow,
 } from "@/modules/user-settings/components/settings"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
+import { getSettings } from "@/modules/user-settings/api/get-settings"
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 const { t } = useI18n()
 const hasKratosFlow = computed(() => typeof route.query.flow === "string" && route.query.flow.trim() !== "")
 const hasIdentitySavedFlag = computed(() => route.query._identity_saved === "1")
@@ -69,10 +72,31 @@ function isSettingsSubmitReferrer(): boolean {
   }
 }
 
+async function refreshCurrentUserSettings() {
+  const userId = userStore.userId
+  if (!userId) {
+    return
+  }
+
+  try {
+    const response = await getSettings(userId, { skipErrorToast: true })
+    if (response.status !== 200 || !response.updatedData) {
+      return
+    }
+
+    userStore.setUser(response.updatedData)
+    userStore.setSettingsSyncState("synced")
+  } catch {
+    // Ignore refresh errors here and keep the save success toast.
+  }
+}
+
 onMounted(() => {
   if (!hasIdentitySavedFlag.value && !isSettingsSubmitReferrer()) {
     return
   }
+
+  void refreshCurrentUserSettings()
 
   const section = activeSection.value
   let descriptionKey = "userSettings.kratosFlow.toast.genericSavedDescription"

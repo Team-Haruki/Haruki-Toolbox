@@ -29,6 +29,7 @@ export function useIMBindingSettings() {
   const userStore = useUserStore()
 
   const current = computed(() => userStore.socialPlatformInfo)
+  const isEmailVerified = computed(() => userStore.emailInfo?.verified === true)
   const canRetryCurrentVerification = computed(() => !!current.value && !current.value.verified)
   const isCurrentQQBinding = computed(() => current.value?.platform === QQ_PLATFORM)
   const sending = ref(false)
@@ -52,6 +53,17 @@ export function useIMBindingSettings() {
 
   function requireUserId(actionTitle = t("userSettings.common.actionFailedTitle")): string | null {
     return resolveRequiredUserId(userStore.userId, actionTitle)
+  }
+
+  function ensureEmailVerified(): boolean {
+    if (isEmailVerified.value) {
+      return true
+    }
+
+    toast.error(t("userSettings.imBinding.toast.emailNotVerifiedTitle"), {
+      description: t("userSettings.imBinding.toast.emailNotVerifiedDescription"),
+    })
+    return false
   }
 
   async function sendQQVerificationCode(userId: string, accountId: string) {
@@ -110,6 +122,8 @@ export function useIMBindingSettings() {
   }
 
   async function handleVerify() {
+    if (!ensureEmailVerified()) return
+
     const userId = requireUserId()
     if (!userId) return
 
@@ -138,6 +152,8 @@ export function useIMBindingSettings() {
   }
 
   async function handleRetryCurrentVerification() {
+    if (!ensureEmailVerified()) return
+
     const userId = requireUserId()
     const currentBinding = current.value
     if (!userId || !currentBinding || currentBinding.verified) return
@@ -253,6 +269,8 @@ export function useIMBindingSettings() {
   }
 
   async function handleDialogVerify() {
+    if (!ensureEmailVerified()) return
+
     const userId = requireUserId()
     if (!userId) return
 
@@ -265,6 +283,8 @@ export function useIMBindingSettings() {
   }
 
   async function handleUnbind() {
+    if (!ensureEmailVerified()) return
+
     const userId = requireUserId()
     if (!userId) return
 
@@ -282,6 +302,7 @@ export function useIMBindingSettings() {
 
   return {
     current,
+    isEmailVerified,
     canRetryCurrentVerification,
     isCurrentQQBinding,
     sending,

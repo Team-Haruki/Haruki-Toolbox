@@ -10,7 +10,6 @@ import {
   LucideKeyRound,
   LucideLayoutDashboard,
   LucideMap,
-  LucideMonitor,
   LucideNavigation,
   LucideScrollText,
   LucideShieldAlert,
@@ -127,14 +126,6 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     segment: "game-bindings",
     routeName: "admin.gameBindings",
     titleKey: "route.admin.gameBindings",
-  },
-  {
-    value: "sessions",
-    labelKey: "admin.nav.sessions",
-    icon: LucideMonitor,
-    segment: "sessions",
-    routeName: "admin.sessions",
-    titleKey: "route.admin.sessions",
   },
   {
     value: "risk",

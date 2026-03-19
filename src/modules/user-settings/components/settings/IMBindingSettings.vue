@@ -42,6 +42,7 @@ import {useIMBindingSettings} from "@/modules/user-settings/composables/useIMBin
 
 const {
   current,
+  isEmailVerified,
   canRetryCurrentVerification,
   isCurrentQQBinding,
   sending,
@@ -75,6 +76,13 @@ const { t, locale } = useI18n()
     </CardHeader>
 
     <CardContent class="space-y-4">
+      <div
+        v-if="!isEmailVerified"
+        class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-300"
+      >
+        {{ t("userSettings.imBinding.emailVerifyRequiredHint") }}
+      </div>
+
       <template v-if="current">
         <div class="space-y-2">
           <div class="flex justify-between items-center">
@@ -110,7 +118,7 @@ const { t, locale } = useI18n()
             @verify="onTurnstileVerify"
             @invalid="onTurnstileInvalid"
           />
-          <Button class="w-full" :disabled="sending" @click="handleRetryCurrentVerification">
+          <Button class="w-full" :disabled="sending || !isEmailVerified" @click="handleRetryCurrentVerification">
             <Loader2 v-if="sending" class="mr-2 h-4 w-4 animate-spin" />
             <template v-else>
               <ShieldCheck class="mr-2 h-4 w-4" />
@@ -121,7 +129,7 @@ const { t, locale } = useI18n()
 
         <AlertDialog>
           <AlertDialogTrigger as-child>
-            <Button :disabled="clearing" variant="destructive" class="w-full mt-4">
+            <Button :disabled="clearing || !isEmailVerified" variant="destructive" class="w-full mt-4">
               <Loader2 v-if="clearing" class="mr-2 h-4 w-4 animate-spin" />
               <Unlink v-else class="mr-2 h-4 w-4" />
               {{ t("userSettings.imBinding.unbindButton") }}
@@ -182,7 +190,7 @@ const { t, locale } = useI18n()
           />
         </div>
 
-        <Button class="w-full" :disabled="sending" @click="handleVerify">
+        <Button class="w-full" :disabled="sending || !isEmailVerified" @click="handleVerify">
           <Loader2 v-if="sending" class="mr-2 h-4 w-4 animate-spin" />
           <template v-else>
             <span v-if="platform === 'qq'" class="flex items-center justify-center">
@@ -228,7 +236,7 @@ const { t, locale } = useI18n()
             <DialogClose as-child>
               <Button variant="outline">{{ t("userSettings.common.cancel") }}</Button>
             </DialogClose>
-            <Button :disabled="verifying" @click="handleDialogVerify">
+            <Button :disabled="verifying || !isEmailVerified" @click="handleDialogVerify">
               <Loader2 v-if="verifying" class="mr-2 h-4 w-4 animate-spin" />
               <ShieldCheck v-else class="mr-2 h-4 w-4" />
               <span>{{ t("userSettings.imBinding.dialog.verifyButton") }}</span>
