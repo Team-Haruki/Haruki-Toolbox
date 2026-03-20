@@ -33,22 +33,25 @@ watch(
 )
 setupInterceptors(router)
 userStore.checkExpiration()
+const hadCachedUserContext = userStore.isLoggedIn || !!userStore.userId
 try {
     const { sessionUser, fullUser } = await bootstrapUserSettingsFromKratosSession()
-    if (sessionUser) {
+    if (fullUser) {
+        userStore.clearUser()
+        userStore.setUser(fullUser)
+        userStore.setSessionActive(true)
+        userStore.setSettingsSyncState("synced")
+    } else if (sessionUser) {
+        // The `whoami` fallback is intentionally partial, so keep cached toolbox fields
+        // until the post-login settings sync can refresh them.
         userStore.setUser(sessionUser, { resetExpiration: false })
         userStore.setSessionActive(true)
-        userStore.setSettingsSyncState(fullUser ? "synced" : "loading")
-    }
-
-    if (fullUser) {
-        userStore.setUser(fullUser)
-        userStore.setSettingsSyncState("synced")
-    } else if (!sessionUser && !userStore.userId) {
+        userStore.setSettingsSyncState("loading")
+    } else {
         userStore.clearUser()
     }
 } catch {
-    if (!userStore.userId) {
+    if (!hadCachedUserContext) {
         userStore.clearUser()
     }
 }

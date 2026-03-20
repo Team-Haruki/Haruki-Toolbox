@@ -28,7 +28,7 @@ const props = defineProps<{
 const route = useRoute()
 const initialSection = computed(() => normalizeSection(props.section))
 
-function resolveSectionPath(section: string): string {
+function resolveSectionPath(): string {
   return "/user/settings"
 }
 
@@ -69,7 +69,7 @@ function isKratosCandidate(url: URL, kratosOrigin: string): boolean {
   return kratosOrigin !== "" && url.origin === kratosOrigin
 }
 
-function resolveFrontendOrigin(section: string): string {
+function resolveFrontendOrigin(): string {
   if (typeof window === "undefined") {
     return ""
   }
@@ -119,8 +119,8 @@ const settingsReturnTo = computed(() => {
   }
 
   const section = normalizeSection(route.query.section) || initialSection.value
-  const safePath = resolveSectionPath(section)
-  const baseOrigin = resolveFrontendOrigin(section)
+  const safePath = resolveSectionPath()
+  const baseOrigin = resolveFrontendOrigin()
   const url = new URL(safePath, baseOrigin)
   if (section) {
     url.searchParams.set("section", section)

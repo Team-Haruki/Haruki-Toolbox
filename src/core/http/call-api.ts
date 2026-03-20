@@ -71,7 +71,7 @@ async function retryDelay(attempt: number) {
 export function setupInterceptors(router: Router) {
     apiClient.interceptors.request.use((config) => {
         const settingsStore = useSettingsStore()
-        config.baseURL = settingsStore.directEndpoint || settingsStore.currentEndpoint
+        config.baseURL = settingsStore.currentEndpoint
         if (!isCrossOriginBrowserRequest(config.baseURL) && !config.headers.get("X-Request-ID")) {
             config.headers.set("X-Request-ID", generateRequestId())
         }

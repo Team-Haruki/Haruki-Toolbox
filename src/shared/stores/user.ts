@@ -46,7 +46,7 @@ export const useUserStore = defineStore("user", () => {
     const tokenExpiration = ref<number | null>(null)
     const hasActiveSession = ref(false)
     const settingsSyncState = ref<UserSettingsSyncState>("idle")
-    const isLoggedIn = computed(() => hasActiveSession.value || !!sessionToken.value || !!userId.value)
+    const isLoggedIn = computed(() => hasActiveSession.value || !!sessionToken.value)
     const isAdmin = computed(() => role.value === 'admin' || role.value === 'super_admin')
     const isSuperAdmin = computed(() => role.value === 'super_admin')
 

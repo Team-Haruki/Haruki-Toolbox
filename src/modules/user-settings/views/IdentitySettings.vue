@@ -17,4 +17,6 @@ watchEffect(() => {
 })
 </script>
 
-<template />
+<template>
+  <div />
+</template>
