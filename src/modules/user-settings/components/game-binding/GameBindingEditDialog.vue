@@ -2,6 +2,7 @@
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
+import VerificationStatusBadge from "@/modules/user-settings/components/VerificationStatusBadge.vue"
 import {
   Card,
   CardContent,
@@ -169,12 +170,13 @@ const mysekaiPermissionOptions = computed(() =>
             </div>
             <div class="flex items-center gap-4">
               <Label class="w-24">{{ t("userSettings.gameBinding.editDialog.fields.verificationStatus") }}</Label>
-              <div class="flex-1">
-                <span
-                  v-if="editTarget?.verified"
-                  class="px-2 py-1 rounded text-xs bg-green-100 text-green-700"
-                >{{ t("userSettings.gameBinding.status.verified") }}</span>
-                <Button v-else variant="outline" :disabled="isVerifying || isSaving" @click="emit('verify')">
+              <div class="flex-1 flex flex-wrap items-center gap-2">
+                <VerificationStatusBadge
+                  :verified="editTarget?.verified === true"
+                  :verified-label="t('userSettings.gameBinding.status.verified')"
+                  :unverified-label="t('userSettings.gameBinding.status.unverified')"
+                />
+                <Button v-if="!editTarget?.verified" variant="outline" :disabled="isVerifying || isSaving" @click="emit('verify')">
                   <ShieldCheck class="h-4 w-4 mr-2" />
                   {{ t("userSettings.gameBinding.editDialog.verifyButton") }}
                 </Button>

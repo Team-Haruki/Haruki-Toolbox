@@ -1586,8 +1586,8 @@ export const enUS = {
         inherit: "Transfer code",
       },
       dataType: {
-        suite: "Basic data",
-        mysekai: "Enhanced data / MySekai",
+        suite: "Suite",
+        mysekai: "MySekai",
       },
       sort: {
         uploadTimeDesc: "Upload time ↓",

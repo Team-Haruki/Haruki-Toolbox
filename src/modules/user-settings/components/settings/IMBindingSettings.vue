@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n"
 import {Input} from "@/components/ui/input"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/shared/components/Turnstile.vue"
+import VerificationStatusBadge from "@/modules/user-settings/components/VerificationStatusBadge.vue"
 import {Loader2, Link2, User, Send, Key, Unlink, ShieldCheck} from "lucide-vue-next"
 import {
   Card,
@@ -96,16 +97,11 @@ const { t, locale } = useI18n()
           </div>
           <div class="flex justify-between items-center">
             <span class="text-sm font-medium">{{ t("userSettings.imBinding.fields.verificationStatus") }}</span>
-            <div>
-          <span
-              v-if="current.verified"
-              class="px-2 py-1 rounded text-xs bg-green-100 text-green-700"
-          >{{ t("userSettings.imBinding.status.verified") }}</span>
-              <span
-                  v-else
-                  class="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-700"
-              >{{ t("userSettings.imBinding.status.unverified") }}</span>
-            </div>
+            <VerificationStatusBadge
+              :verified="current.verified"
+              :verified-label="t('userSettings.imBinding.status.verified')"
+              :unverified-label="t('userSettings.imBinding.status.unverified')"
+            />
           </div>
         </div>
 

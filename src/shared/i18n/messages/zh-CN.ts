@@ -1586,8 +1586,8 @@ export const zhCN = {
         inherit: "继承码",
       },
       dataType: {
-        suite: "基础数据",
-        mysekai: "增强数据/MySekai",
+        suite: "Suite",
+        mysekai: "MySekai",
       },
       sort: {
         uploadTimeDesc: "上传时间 ↓",

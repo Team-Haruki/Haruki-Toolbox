@@ -8,7 +8,7 @@ import {
 const TEST_TRANSLATIONS: Record<string, string> = {
   "adminStatistics.uploadLogs.method.manual": "Manual upload",
   "userSettings.gameBinding.region.jp": "JP",
-  "adminStatistics.uploadLogs.dataType.suite": "Basic data",
+  "adminStatistics.uploadLogs.dataType.suite": "Suite",
   "adminStatistics.common.fallback": "—",
 }
 
@@ -20,7 +20,7 @@ describe("upload log meta helpers", () => {
   test("resolve known labels", () => {
     expect(resolveUploadMethodLabel("manual", t)).toBe("Manual upload")
     expect(resolveUploadServerLabel("jp", t)).toBe("JP")
-    expect(resolveUploadDataTypeLabel("suite", t)).toBe("Basic data")
+    expect(resolveUploadDataTypeLabel("suite", t)).toBe("Suite")
   })
 
   test("falls back to raw key when unknown", () => {

@@ -3,6 +3,7 @@ import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
 import { Button } from "@/components/ui/button"
+import VerificationStatusBadge from "@/modules/user-settings/components/VerificationStatusBadge.vue"
 import {
   Card,
   CardTitle,
@@ -10,7 +11,7 @@ import {
   CardHeader,
   CardDescription
 } from "@/components/ui/card"
-import { ArrowRightLeft, CheckCircle2, Mail, ShieldCheck } from "lucide-vue-next"
+import { ArrowRightLeft, Mail, ShieldCheck } from "lucide-vue-next"
 import { redirectToKratosBrowserFlow } from "@/modules/auth/lib/kratos"
 
 const userStore = useUserStore()
@@ -57,18 +58,11 @@ function openVerification() {
           <div class="text-sm text-muted-foreground">{{ t("userSettings.email.currentEmailLabel") }}</div>
           <div class="text-base font-medium break-all">{{ currentEmail }}</div>
         </div>
-        <span
-          :class="[
-            'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
-            emailVerified
-              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-          ]"
-        >
-          <CheckCircle2 v-if="emailVerified" class="h-3.5 w-3.5" />
-          <ShieldCheck v-else class="h-3.5 w-3.5" />
-          {{ emailVerified ? t("userSettings.imBinding.status.verified") : t("userSettings.imBinding.status.unverified") }}
-        </span>
+        <VerificationStatusBadge
+          :verified="emailVerified"
+          :verified-label="t('userSettings.imBinding.status.verified')"
+          :unverified-label="t('userSettings.imBinding.status.unverified')"
+        />
       </div>
 
       <div class="flex items-center justify-between gap-4">

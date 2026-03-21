@@ -9,6 +9,7 @@ import {
 import type { ColumnDef } from "@tanstack/vue-table"
 import type { GameAccountBinding, SekaiRegion } from "@/types/store"
 import { Button } from "@/components/ui/button"
+import VerificationStatusBadge from "@/modules/user-settings/components/VerificationStatusBadge.vue"
 import {
   Card,
   CardContent,
@@ -56,17 +57,11 @@ const columns: ColumnDef<GameAccountBinding>[] = [
     accessorKey: "verified",
     header: () => t("userSettings.gameBinding.table.verificationStatus"),
     cell: ({ row }) =>
-      h(
-        "span",
-        {
-          class: row.original.verified
-            ? "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-500 text-white hover:bg-green-600"
-            : "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        },
-        row.original.verified
-          ? t("userSettings.gameBinding.status.verified")
-          : t("userSettings.gameBinding.status.unverified")
-      ),
+      h(VerificationStatusBadge, {
+        verified: row.original.verified,
+        verifiedLabel: t("userSettings.gameBinding.status.verified"),
+        unverifiedLabel: t("userSettings.gameBinding.status.unverified"),
+      }),
   },
   {
     id: "actions",
