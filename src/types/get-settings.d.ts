@@ -3,6 +3,7 @@ import { AuthorizeSocialPlatformInfo, EmailInfo, GameAccountBinding, SocialPlatf
 export interface UserSettings {
     name?: string
     userId?: string
+    kratosIdentityId?: string | null
     avatarPath?: string
     allowCNMysekai?: boolean
     iosUploadCode?: string
@@ -11,4 +12,5 @@ export interface UserSettings {
     authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
     gameAccountBindings?: GameAccountBinding[] | null
     sessionToken?: string
+    sessionExpiresAt?: string | number | null
 }

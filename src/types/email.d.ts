@@ -5,15 +5,19 @@ export interface SendEmailVerificationPayload {
 
 export interface SendQQMailVerificationPayload {
     qq: string
-    challengeToken: string
+    challengeToken?: string
 }
 
-export interface verifyEmailPayload {
+export interface VerifyEmailPayload {
     email: string
     oneTimePassword: string
 }
 
-export interface verifyQQPayload {
+export interface VerifyQQPayload {
     qq: string
     oneTimePassword: string
 }
+
+// Backward-compatible aliases; prefer PascalCase names.
+export type verifyEmailPayload = VerifyEmailPayload
+export type verifyQQPayload = VerifyQQPayload
