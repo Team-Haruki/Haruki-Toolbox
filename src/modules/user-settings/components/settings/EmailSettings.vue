@@ -78,10 +78,6 @@ function openVerification() {
         </div>
       </div>
 
-      <div class="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-        {{ t("userSettings.email.kratosManagedHint") }}
-      </div>
-
       <div class="flex flex-col gap-2 sm:flex-row">
         <Button class="flex-1" @click="openIdentitySettings">
           <ArrowRightLeft class="mr-2 h-4 w-4" />

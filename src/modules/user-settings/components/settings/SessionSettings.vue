@@ -29,10 +29,6 @@ async function openSessionSettings() {
       <CardDescription>{{ t("userSettings.sessions.description") }}</CardDescription>
     </CardHeader>
     <CardContent class="space-y-4">
-      <div class="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-        {{ t("userSettings.sessions.hint") }}
-      </div>
-
       <Button class="w-full" @click="openSessionSettings">
         <ShieldCheck class="mr-2 h-4 w-4" />
         {{ t("userSettings.sessions.manageButton") }}

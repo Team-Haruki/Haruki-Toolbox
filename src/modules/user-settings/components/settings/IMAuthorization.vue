@@ -162,8 +162,8 @@ const { columns, table, FlexRender } = useIMAuthorizationTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="qq">{{ t("userSettings.imAuthorization.platforms.qq") }}</SelectItem>
-              <!--
               <SelectItem value="qqbot">{{ t("userSettings.imAuthorization.platforms.qqbot") }}</SelectItem>
+              <!--
               <SelectItem value="discord">{{ t("userSettings.imAuthorization.platforms.discord") }}</SelectItem>
               <SelectItem value="telegram">{{ t("userSettings.imAuthorization.platforms.telegram") }}</SelectItem>
               -->

@@ -41,10 +41,6 @@ function openMfaSettings() {
       <CardDescription>{{ t("userSettings.mfa.description") }}</CardDescription>
     </CardHeader>
     <CardContent class="space-y-4">
-      <div class="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-        {{ t("userSettings.mfa.hint") }}
-      </div>
-
       <Button class="w-full" @click="openMfaSettings">
         <ShieldCheck class="mr-2 h-4 w-4" />
         {{ t("userSettings.mfa.manageButton") }}

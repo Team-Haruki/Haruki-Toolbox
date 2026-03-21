@@ -51,9 +51,6 @@ const { t } = useI18n()
           {{ isSaving ? t("userSettings.account.uploading") : t("userSettings.account.changeAvatar") }}
         </Button>
       </div>
-      <div class="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-        {{ t("userSettings.account.autoUploadHint") }}
-      </div>
     </CardContent>
   </Card>
 </template>
