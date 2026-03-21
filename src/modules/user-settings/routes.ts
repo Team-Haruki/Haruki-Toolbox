@@ -51,7 +51,13 @@ export const userSettingsChildRoutes: RouteRecordRaw[] = [
     },
 ]
 
-export const oauthConsentRoutes: RouteRecordRaw[] = [
+export const oauthBrowserFlowRoutes: RouteRecordRaw[] = [
+    {
+        path: "/oauth2/login",
+        name: "oauth.login",
+        component: () => import("@/modules/user-settings/views/OAuthLogin.vue"),
+        meta: { titleKey: "route.oauthLogin" },
+    },
     {
         path: "/oauth2/consent",
         name: "oauth.consent",

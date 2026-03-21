@@ -1,9 +1,9 @@
 import type { RouteRecordRaw } from "vue-router"
 import { authUserChildRoutes } from "@/modules/auth/routes"
-import { oauthConsentRoutes, userSettingsChildRoutes } from "@/modules/user-settings/routes"
+import { oauthBrowserFlowRoutes, userSettingsChildRoutes } from "@/modules/user-settings/routes"
 
 export const userRoutes: RouteRecordRaw[] = [
-    ...oauthConsentRoutes,
+    ...oauthBrowserFlowRoutes,
     {
         path: "/user",
         component: () => import("@/modules/user/views/UserLayout.vue"),
