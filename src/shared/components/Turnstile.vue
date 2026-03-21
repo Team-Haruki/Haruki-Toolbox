@@ -2,6 +2,7 @@
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import { useTurnstileWidget } from "@/composables/useTurnstileWidget"
+import { CLOUDFLARE_TURNSTILE_ENABLED } from "@/config/turnstile"
 
 const props = defineProps<{
   sitekey?: string
@@ -16,6 +17,7 @@ const emit = defineEmits<{
   (e: "invalid"): void
 }>()
 const { t } = useI18n()
+const isTurnstileEnabled = CLOUDFLARE_TURNSTILE_ENABLED
 
 function resolveSitekey() {
   const propSitekey = props.sitekey?.trim()
@@ -32,6 +34,7 @@ function resolveSitekey() {
 }
 
 const { container, isLoading, isUnavailable, reset, execute, retry } = useTurnstileWidget({
+  enabled: isTurnstileEnabled,
   getSitekey: resolveSitekey,
   getCallback: () => props.callback,
   getTheme: () => props.theme,
@@ -42,14 +45,23 @@ const { container, isLoading, isUnavailable, reset, execute, retry } = useTurnst
 })
 
 defineExpose({
-  reset,
-  execute,
-  retry,
+  reset: () => {
+    if (!isTurnstileEnabled) return
+    reset()
+  },
+  execute: () => {
+    if (!isTurnstileEnabled) return
+    execute()
+  },
+  retry: () => {
+    if (!isTurnstileEnabled) return
+    retry()
+  },
 })
 </script>
 
 <template>
-  <div class="turnstile-container">
+  <div v-if="isTurnstileEnabled" class="turnstile-container">
     <div class="turnstile-shell">
       <div class="turnstile" ref="container"></div>
       <div v-if="isLoading && !isUnavailable" class="turnstile-status" aria-live="polite">

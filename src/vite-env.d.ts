@@ -1,9 +1,11 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  readonly ENABLE_CLOUDFLARE_TURNSTILE?: string
   readonly VITE_HARUKI_TOOLBOX_DIRECT_URL: string
   readonly VITE_HARUKI_TOOLBOX_CDN_URL: string
   readonly VITE_HARUKI_TOOLBOX_AUTH_URL?: string
+  readonly VITE_ENABLE_CLOUDFLARE_TURNSTILE?: string
   readonly VITE_HARUKI_TOOLBOX_WEB_URL?: string
   readonly VITE_TURNSTILE_SITE_KEY: string
 }

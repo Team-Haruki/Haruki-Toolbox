@@ -5,6 +5,7 @@ import { defineConfig } from 'vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 export default defineConfig(({ command }) => ({
+    envPrefix: ['VITE_', 'ENABLE_'],
     plugins: [vue(), tailwindcss(), command === 'serve' ? vueDevTools() : null].filter(Boolean),
     resolve: {
         alias: {

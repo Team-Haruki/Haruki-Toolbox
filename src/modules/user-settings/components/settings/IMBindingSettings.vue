@@ -42,6 +42,7 @@ import {useIMBindingSettings} from "@/modules/user-settings/composables/useIMBin
 
 const {
   current,
+  isTurnstileEnabled,
   isEmailVerified,
   canRetryCurrentVerification,
   isCurrentQQBinding,
@@ -109,11 +110,11 @@ const { t, locale } = useI18n()
         </div>
 
         <div v-if="canRetryCurrentVerification" class="space-y-2">
-          <p v-if="isCurrentQQBinding" class="text-xs text-muted-foreground">
+          <p v-if="isCurrentQQBinding && isTurnstileEnabled" class="text-xs text-muted-foreground">
             {{ t("userSettings.imBinding.captchaHint") }}
           </p>
           <Turnstile
-            v-if="isCurrentQQBinding"
+            v-if="isCurrentQQBinding && isTurnstileEnabled"
             ref="turnstileRef"
             @verify="onTurnstileVerify"
             @invalid="onTurnstileInvalid"
@@ -181,7 +182,7 @@ const { t, locale } = useI18n()
           </div>
         </div>
 
-        <div v-if="platform === 'qq'" class="space-y-2">
+        <div v-if="platform === 'qq' && isTurnstileEnabled" class="space-y-2">
           <p class="text-xs text-muted-foreground">{{ t("userSettings.imBinding.captchaHint") }}</p>
           <Turnstile
             ref="turnstileRef"

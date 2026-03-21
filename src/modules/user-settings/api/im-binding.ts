@@ -10,8 +10,8 @@ import type {
     GenerateSocialPlatformVerificationCodeResponse
 } from "@/types";
 
-export async function sendQQMailVerificationCode(userId: string, qq: string, challengeToken: string): Promise<APIResponse<null>> {
-    const payload: SendQQMailVerificationPayload = {qq, challengeToken}
+export async function sendQQMailVerificationCode(userId: string, qq: string, challengeToken?: string): Promise<APIResponse<null>> {
+    const payload: SendQQMailVerificationPayload = challengeToken ? {qq, challengeToken} : {qq}
     return await request<APIResponse<null>>(
         buildUserApiPath(userId, "social-platform", "send-qq-mail"),
         {

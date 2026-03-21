@@ -1,6 +1,7 @@
 import { onMounted, onUnmounted, ref } from "vue"
 
 interface UseTurnstileWidgetOptions {
+  enabled?: boolean
   getSitekey?: () => string | undefined
   getCallback?: () => ((token: string) => void) | undefined
   getTheme?: () => string | undefined
@@ -10,25 +11,71 @@ interface UseTurnstileWidgetOptions {
   onInvalid: () => void
 }
 
-const TURNSTILE_POLL_INTERVAL_MS = 200
-const TURNSTILE_POLL_TIMEOUT_MS = 10_000
+const TURNSTILE_SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js"
+
+let turnstileScriptPromise: Promise<void> | null = null
+
+function ensureTurnstileScript(): Promise<void> {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return Promise.reject(new Error("Turnstile requires a browser environment"))
+  }
+
+  if (window.turnstile) {
+    return Promise.resolve()
+  }
+
+  if (turnstileScriptPromise) {
+    return turnstileScriptPromise
+  }
+
+  turnstileScriptPromise = new Promise((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${TURNSTILE_SCRIPT_SRC}"]`)
+    const script = existingScript ?? document.createElement("script")
+
+    const cleanup = () => {
+      script.removeEventListener("load", handleLoad)
+      script.removeEventListener("error", handleError)
+    }
+
+    const handleLoad = () => {
+      cleanup()
+      if (window.turnstile) {
+        resolve()
+        return
+      }
+
+      turnstileScriptPromise = null
+      reject(new Error("Turnstile script loaded without exposing window.turnstile"))
+    }
+
+    const handleError = () => {
+      cleanup()
+      turnstileScriptPromise = null
+      reject(new Error("Failed to load Cloudflare Turnstile"))
+    }
+
+    script.addEventListener("load", handleLoad)
+    script.addEventListener("error", handleError)
+
+    if (!existingScript) {
+      script.src = TURNSTILE_SCRIPT_SRC
+      script.async = true
+      script.defer = true
+      document.head.appendChild(script)
+    }
+  })
+
+  return turnstileScriptPromise
+}
 
 export function useTurnstileWidget(options: UseTurnstileWidgetOptions) {
   const container = ref<HTMLDivElement | null>(null)
   const isLoading = ref(true)
   const isUnavailable = ref(false)
   let widgetId: string | null = null
-  let interval: number | null = null
 
   function clearToken() {
     options.onInvalid()
-  }
-
-  function clearPoller() {
-    if (interval !== null) {
-      clearInterval(interval)
-      interval = null
-    }
   }
 
   function markLoading() {
@@ -81,38 +128,35 @@ export function useTurnstileWidget(options: UseTurnstileWidgetOptions) {
     }
   }
 
-  function startLoading() {
+  async function startLoading() {
     if (!container.value) {
       markUnavailable()
       return
     }
 
-    clearPoller()
-    markLoading()
-
-    if (window.turnstile) {
-      renderTurnstile()
+    if (options.enabled === false) {
+      clearToken()
+      markReady()
       return
     }
 
-    const pollDeadline = Date.now() + TURNSTILE_POLL_TIMEOUT_MS
-    interval = window.setInterval(() => {
-      if (window.turnstile) {
-        clearPoller()
-        renderTurnstile()
-        return
-      }
+    markLoading()
 
-      if (Date.now() >= pollDeadline) {
-        clearPoller()
-        markUnavailable()
-      }
-    }, TURNSTILE_POLL_INTERVAL_MS)
+    try {
+      await ensureTurnstileScript()
+    } catch {
+      clearToken()
+      markUnavailable()
+      return
+    }
+
+    if (!renderTurnstile() && widgetId === null) {
+      markUnavailable()
+    }
   }
 
   function retry() {
     clearToken()
-    clearPoller()
 
     if (widgetId && window.turnstile) {
       try {
@@ -158,12 +202,10 @@ export function useTurnstileWidget(options: UseTurnstileWidgetOptions) {
   }
 
   onMounted(() => {
-    startLoading()
+    void startLoading()
   })
 
   onUnmounted(() => {
-    clearPoller()
-
     if (widgetId && window.turnstile) {
       try {
         window.turnstile.remove(widgetId)

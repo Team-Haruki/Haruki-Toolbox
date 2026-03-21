@@ -19,6 +19,7 @@ import {
 } from "@/modules/user-settings/lib/im-binding-response"
 import { useIMBindingTurnstile } from "@/modules/user-settings/composables/useIMBindingTurnstile"
 import { isSocialPlatform } from "@/lib/social-platform"
+import { CLOUDFLARE_TURNSTILE_ENABLED } from "@/config/turnstile"
 
 type DialogMode = "qq" | "other"
 
@@ -29,6 +30,7 @@ export function useIMBindingSettings() {
   const userStore = useUserStore()
 
   const current = computed(() => userStore.socialPlatformInfo)
+  const isTurnstileEnabled = CLOUDFLARE_TURNSTILE_ENABLED
   const isEmailVerified = computed(() => userStore.emailInfo?.verified === true)
   const canRetryCurrentVerification = computed(() => !!current.value && !current.value.verified)
   const isCurrentQQBinding = computed(() => current.value?.platform === QQ_PLATFORM)
@@ -67,7 +69,7 @@ export function useIMBindingSettings() {
   }
 
   async function sendQQVerificationCode(userId: string, accountId: string) {
-    if (!turnstileToken.value) {
+    if (isTurnstileEnabled && !turnstileToken.value) {
       toast.error(t("userSettings.imBinding.toast.sendFailedTitle"), {
         description: t("userSettings.imBinding.toast.completeCaptchaDescription"),
       })
@@ -75,7 +77,7 @@ export function useIMBindingSettings() {
       return
     }
 
-    const challengeToken = turnstileToken.value
+    const challengeToken = isTurnstileEnabled ? (turnstileToken.value ?? undefined) : undefined
     const response = await runAsyncAction(
       sending,
       () => sendQQMailVerificationCode(userId, accountId, challengeToken),
@@ -302,6 +304,7 @@ export function useIMBindingSettings() {
 
   return {
     current,
+    isTurnstileEnabled,
     isEmailVerified,
     canRetryCurrentVerification,
     isCurrentQQBinding,

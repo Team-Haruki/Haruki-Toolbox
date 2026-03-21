@@ -5,7 +5,7 @@ export interface SendEmailVerificationPayload {
 
 export interface SendQQMailVerificationPayload {
     qq: string
-    challengeToken: string
+    challengeToken?: string
 }
 
 export interface VerifyEmailPayload {
