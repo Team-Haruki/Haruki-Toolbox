@@ -14,7 +14,7 @@ import type {
 import { normalizeMessage, normalizeTicket } from "./normalize"
 
 export async function getUserTickets(userId: string, params?: QueryParams) {
-  const res = await request<APIResponse<PaginatedResponse<Ticket>>>(`${buildUserApiPath(userId, "tickets")}/`, {
+  const res = await request<APIResponse<PaginatedResponse<Ticket>>>(buildUserApiPath(userId, "tickets"), {
     method: "GET",
     params,
   })
@@ -22,7 +22,7 @@ export async function getUserTickets(userId: string, params?: QueryParams) {
 }
 
 export function createTicket(userId: string, data: CreateTicketRequest) {
-  return request(`${buildUserApiPath(userId, "tickets")}/`, { method: "POST", data })
+  return request(buildUserApiPath(userId, "tickets"), { method: "POST", data })
 }
 
 export async function getUserTicketDetail(userId: string, ticketId: string): Promise<TicketDetail> {

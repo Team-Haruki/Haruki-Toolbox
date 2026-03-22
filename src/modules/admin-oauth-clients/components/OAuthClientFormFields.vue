@@ -84,8 +84,8 @@ function handleClientTypeChange(value: unknown) {
       <div v-for="scope in props.availableScopes" :key="scope.id" class="flex items-center space-x-2">
         <Checkbox
           :id="`${props.scopeIdPrefix}-${scope.id}`"
-          :checked="props.scopes.includes(scope.id)"
-          @update:checked="checked => emit('toggle-scope', scope.id, Boolean(checked))"
+          :model-value="props.scopes.includes(scope.id)"
+          @update:model-value="checked => emit('toggle-scope', scope.id, checked === true)"
         />
         <label
           :for="`${props.scopeIdPrefix}-${scope.id}`"

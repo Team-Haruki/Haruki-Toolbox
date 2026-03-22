@@ -7,6 +7,7 @@ export const AVAILABLE_SCOPE_IDS = [
   "user:read",
   "bindings:read",
   "game-data:read",
+  "game-data:write",
 ] as const
 
 type ValidatePayloadParams = {

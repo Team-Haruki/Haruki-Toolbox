@@ -8,7 +8,7 @@ import type { UserActivity, PaginatedResponse } from "@/types/admin"
  * GET /api/user/:toolbox_user_id/activity-logs/
  */
 export function getUserActivityLogs(userId: string, params?: QueryParams) {
-    return request<PaginatedResponse<UserActivity>>(`${buildUserApiPath(userId, "activity-logs")}/`, {
+    return request<PaginatedResponse<UserActivity>>(buildUserApiPath(userId, "activity-logs"), {
         method: "GET",
         params,
     })

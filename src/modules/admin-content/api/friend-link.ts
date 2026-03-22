@@ -7,13 +7,13 @@ import type { APIResponse } from "@/types/response"
 const BASE = "/api/admin/content"
 
 export async function getFriendLinks() {
-  const res = await request<APIResponse<{ items: AdminFriendLink[] }>>(`${BASE}/friend-links/`, { method: "GET" })
+  const res = await request<APIResponse<{ items: AdminFriendLink[] }>>(`${BASE}/friend-links`, { method: "GET" })
   const updatedData = unwrapUpdatedData(res, translate("adminContent.toast.loadLinksFailedTitle"))
   return updatedData.items ?? []
 }
 
 export function createFriendLink(data: Omit<AdminFriendLink, "id">) {
-  return request(`${BASE}/friend-links/`, { method: "POST", data })
+  return request(`${BASE}/friend-links`, { method: "POST", data })
 }
 
 export function updateFriendLink(id: string, data: Partial<AdminFriendLink>) {

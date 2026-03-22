@@ -1351,6 +1351,7 @@ export const enUS = {
       userRead: "Basic profile (user:read)",
       bindingsRead: "Game bindings (bindings:read)",
       gameDataRead: "Game data (game-data:read)",
+      gameDataWrite: "Game upload (game-data:write)",
     },
     common: {
       fallback: "—",

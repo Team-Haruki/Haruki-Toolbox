@@ -57,8 +57,8 @@ function parseDate(value: unknown) {
 </script>
 
 <template>
-  <div class="flex flex-wrap gap-x-4 gap-y-3 items-end">
-    <div class="flex flex-col gap-1.5 grow max-w-sm">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:flex xl:flex-wrap gap-4 items-end">
+    <div class="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-3 xl:w-[320px] 2xl:w-[384px]">
       <Label class="text-xs">{{ t("adminUsers.management.filters.searchLabel") }}</Label>
       <div class="relative">
         <LucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -71,10 +71,10 @@ function parseDate(value: unknown) {
       </div>
     </div>
 
-    <div class="flex flex-col gap-1.5">
+    <div class="flex flex-col gap-1.5 xl:w-32">
       <Label class="text-xs">{{ t("adminUsers.management.filters.roleLabel") }}</Label>
       <Select :key="locale" :model-value="roleFilter" @update:model-value="emit('update:roleFilter', $event as RoleFilter)">
-        <SelectTrigger class="w-32">
+        <SelectTrigger class="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -101,10 +101,10 @@ function parseDate(value: unknown) {
       </Select>
     </div>
 
-    <div class="flex flex-col gap-1.5">
+    <div class="flex flex-col gap-1.5 xl:w-32">
       <Label class="text-xs">{{ t("adminUsers.management.filters.statusLabel") }}</Label>
       <Select :key="locale" :model-value="bannedFilter" @update:model-value="emit('update:bannedFilter', $event as BooleanFilter)">
-        <SelectTrigger class="w-32">
+        <SelectTrigger class="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -125,13 +125,13 @@ function parseDate(value: unknown) {
       </Select>
     </div>
 
-    <div class="flex flex-col gap-1.5">
+    <div class="flex flex-col gap-1.5 xl:w-32">
       <Label class="text-xs">{{ t("adminUsers.management.filters.allowCNLabel") }}</Label>
       <Select :key="locale"
         :model-value="allowCnMysekaiFilter"
         @update:model-value="emit('update:allowCnMysekaiFilter', $event as BooleanFilter)"
       >
-        <SelectTrigger class="w-32">
+        <SelectTrigger class="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -152,10 +152,10 @@ function parseDate(value: unknown) {
       </Select>
     </div>
 
-    <div class="flex flex-col gap-1.5">
+    <div class="flex flex-col gap-1.5 xl:w-36">
       <Label class="text-xs">{{ t("adminUsers.management.filters.sortLabel") }}</Label>
       <Select :key="locale" :model-value="sortFilter" @update:model-value="emit('update:sortFilter', $event as SortFilter)">
-        <SelectTrigger class="w-36">
+        <SelectTrigger class="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -169,9 +169,9 @@ function parseDate(value: unknown) {
       </Select>
     </div>
 
-    <div class="flex flex-col gap-1.5">
+    <div class="flex flex-col gap-1.5 xl:w-48">
       <Label class="text-xs">{{ t("adminUsers.management.filters.createdFromLabel") }}</Label>
-      <div class="w-48">
+      <div class="w-full">
         <DateTimePicker24h
           :model-value="createdFrom"
           :placeholder="t('adminUsers.management.filters.createdFromPlaceholder')"
@@ -180,9 +180,9 @@ function parseDate(value: unknown) {
       </div>
     </div>
 
-    <div class="flex flex-col gap-1.5">
+    <div class="flex flex-col gap-1.5 xl:w-48">
       <Label class="text-xs">{{ t("adminUsers.management.filters.createdToLabel") }}</Label>
-      <div class="w-48">
+      <div class="w-full">
         <DateTimePicker24h
           :model-value="createdTo"
           :placeholder="t('adminUsers.management.filters.createdToPlaceholder')"

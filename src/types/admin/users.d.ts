@@ -32,6 +32,7 @@ export interface AdminUserDetail {
     iosUploadCode?: string | null
   }
   banned: boolean
+  createdAt?: string
   activitySummary?: {
     windowHours: number
     from: string

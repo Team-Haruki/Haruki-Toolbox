@@ -44,7 +44,7 @@ import {
 } from "lucide-vue-next"
 import type { AdminUserDetail } from "@/types/admin"
 import type { UserRole } from "@/types/common"
-import { isUserRole, roleLabel } from "@/modules/admin-users/constants"
+import { formatDateTime, isUserRole, roleLabel } from "@/modules/admin-users/constants"
 
 defineProps<{
     user: AdminUserDetail
@@ -118,7 +118,9 @@ function handleRoleChange(value: unknown) {
         </div>
         <div class="bg-muted/30 p-4 rounded-xl border flex flex-col justify-center">
           <span class="text-muted-foreground text-xs mb-1">{{ t("adminUsers.detail.info.registeredAt") }}</span>
-          <div class="font-medium text-sm text-muted-foreground">{{ t("adminUsers.detail.info.comingSoon") }}</div>
+          <div class="font-medium text-sm text-muted-foreground">
+            {{ user.createdAt ? formatDateTime(user.createdAt) : "—" }}
+          </div>
         </div>
       </div>
 

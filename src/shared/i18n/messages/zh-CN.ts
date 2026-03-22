@@ -1351,6 +1351,7 @@ export const zhCN = {
       userRead: "基础信息 (user:read)",
       bindingsRead: "游戏绑定 (bindings:read)",
       gameDataRead: "游戏数据 (game-data:read)",
+      gameDataWrite: "游戏上传 (game-data:write)",
     },
     common: {
       fallback: "—",

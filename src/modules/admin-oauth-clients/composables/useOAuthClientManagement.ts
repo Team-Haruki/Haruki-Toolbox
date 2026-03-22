@@ -12,6 +12,7 @@ const SCOPE_LABEL_KEY: Record<(typeof AVAILABLE_SCOPE_IDS)[number], string> = {
   "user:read": "adminOAuthClients.scope.userRead",
   "bindings:read": "adminOAuthClients.scope.bindingsRead",
   "game-data:read": "adminOAuthClients.scope.gameDataRead",
+  "game-data:write": "adminOAuthClients.scope.gameDataWrite",
 }
 
 export function useOAuthClientManagement() {

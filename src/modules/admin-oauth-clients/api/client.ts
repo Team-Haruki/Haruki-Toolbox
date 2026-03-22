@@ -24,6 +24,28 @@ function normalizeOAuthClientType(value: unknown): OAuthClient["clientType"] {
     return value === "public" ? "public" : "confidential"
 }
 
+function normalizeScopeList(item: UnknownRecord): string[] {
+    const scopeList = readStringArray(item, ["scopes"])
+    if (scopeList.length > 0) {
+        return scopeList.flatMap((scope) =>
+            scope
+                .split(/[,\s]+/)
+                .map((entry) => entry.trim())
+                .filter(Boolean)
+        )
+    }
+
+    const scope = readOptionalString(item, ["scope"])
+    if (!scope) {
+        return []
+    }
+
+    return scope
+        .split(/[,\s]+/)
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+}
+
 function normalizeOAuthClient(item: UnknownRecord): OAuthClient {
     const redirectUris = readStringArray(item, ["redirectUris", "redirect_uris"])
     const redirectUri = readOptionalString(item, ["redirectUri", "redirect_uri"])
@@ -33,7 +55,7 @@ function normalizeOAuthClient(item: UnknownRecord): OAuthClient {
         clientSecret: readOptionalString(item, ["clientSecret", "client_secret"]),
         name: readString(item, ["name"]),
         clientType: normalizeOAuthClientType(item.clientType ?? item.client_type),
-        scopes: readStringArray(item, ["scopes"]),
+        scopes: normalizeScopeList(item),
         redirectUri: redirectUri ?? (redirectUris[0] ?? ""),
         redirectUris: redirectUris.length > 0 ? redirectUris : (redirectUri ? [redirectUri] : []),
         active: readBoolean(item, ["active"], true),
@@ -44,12 +66,12 @@ function normalizeOAuthClient(item: UnknownRecord): OAuthClient {
 }
 
 export async function createOAuthClient(data: Partial<OAuthClient>) {
-    const res = await request<APIResponse<OAuthClient>>(`${BASE}/`, { method: "POST", data })
+    const res = await request<APIResponse<OAuthClient>>(BASE, { method: "POST", data })
     return unwrapUpdatedData(res, translate("adminOAuthClients.toast.createFailedTitle"))
 }
 
 export async function getOAuthClients(params?: QueryParams) {
-    const res = await request<APIResponse<{ items?: UnknownRecord[]; total?: number }>>(`${BASE}/`, {
+    const res = await request<APIResponse<{ items?: UnknownRecord[]; total?: number }>>(BASE, {
         method: "GET",
         params,
     })

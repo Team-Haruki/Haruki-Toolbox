@@ -69,7 +69,7 @@ function normalizeGlobalGameBinding(item: UnknownRecord): GlobalGameBinding | nu
 // Queries
 
 export async function getGlobalGameBindings(params?: QueryParams) {
-    const res = await request<APIResponse<{ total?: number; items?: UnknownRecord[] }>>(`${BASE}/`, {
+    const res = await request<APIResponse<{ total?: number; items?: UnknownRecord[] }>>(BASE, {
         method: "GET",
         params,
     })

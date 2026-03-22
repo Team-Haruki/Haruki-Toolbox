@@ -14,7 +14,7 @@ import type { UserRole } from "@/types/common"
 import type { APIResponse } from "@/types/response"
 
 export async function getUsers(params?: QueryParams) {
-  const res = await request<APIResponse<PaginatedResponse<AdminUser>>>("/api/admin/users/", {
+  const res = await request<APIResponse<PaginatedResponse<AdminUser>>>("/api/admin/users", {
     method: "GET",
     params,
   })

@@ -49,7 +49,7 @@ function normalizeFriendGroup(group: unknown): AdminFriendGroup | null {
 }
 
 export async function getFriendGroups() {
-  const res = await request<APIResponse<{ items: AdminFriendGroup[] }>>(`${BASE}/friend-groups/`, { method: "GET" })
+  const res = await request<APIResponse<{ items: AdminFriendGroup[] }>>(`${BASE}/friend-groups`, { method: "GET" })
   const updatedData = unwrapUpdatedData(res, translate("adminContent.toast.loadGroupsFailedTitle"))
   const items = Array.isArray(updatedData.items) ? updatedData.items : []
   return items
@@ -58,7 +58,7 @@ export async function getFriendGroups() {
 }
 
 export function createFriendGroup(data: Omit<AdminFriendGroup, "id" | "groupList">) {
-  return request(`${BASE}/friend-groups/`, { method: "POST", data })
+  return request(`${BASE}/friend-groups`, { method: "POST", data })
 }
 
 export function deleteFriendGroup(groupId: string) {

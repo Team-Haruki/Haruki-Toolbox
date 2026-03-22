@@ -8,7 +8,7 @@ import type { APIResponse } from "@/types/response"
 const LOGS_BASE = "/api/admin/system-logs"
 
 export async function getSystemLogs(params?: QueryParams) {
-  const res = await request<APIResponse<PaginatedResponse<SystemLog>>>(`${LOGS_BASE}/`, {
+  const res = await request<APIResponse<PaginatedResponse<SystemLog>>>(LOGS_BASE, {
     method: "GET",
     params,
   })
