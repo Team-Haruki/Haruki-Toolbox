@@ -35,6 +35,7 @@ const {
   taskLoading,
   user,
   activities,
+  uploadLogs,
   activityLoading,
   oauthAuths,
   oauthLoading,
@@ -134,6 +135,7 @@ const {
           <UserDetailTabActivity
             :loading="activityLoading"
             :activities="activities"
+            :upload-logs="uploadLogs"
           />
         </TabsContent>
 

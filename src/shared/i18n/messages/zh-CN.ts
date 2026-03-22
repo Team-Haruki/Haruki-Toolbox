@@ -1682,8 +1682,15 @@ export const zhCN = {
         server: "区服",
         method: "方式",
         dataType: "数据类型",
+        error: "错误信息",
+        viewError: "查看错误",
         time: "时间",
         empty: "暂无上传日志",
+      },
+      errorDialog: {
+        title: "上传失败详情",
+        description: "查看这次上传失败时后端返回的错误信息。",
+        close: "关闭",
       },
       pagination: {
         total: "共 {total} 条记录",
@@ -1955,6 +1962,8 @@ export const zhCN = {
       },
       activity: {
         title: "活动记录",
+        uploadLogsTitle: "上传日志",
+        uploadLogsDescription: "该用户最近的上传记录，包括失败时后端返回的错误详情。",
         columns: {
           action: "操作",
           result: "结果",

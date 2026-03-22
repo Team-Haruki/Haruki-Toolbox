@@ -66,6 +66,7 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
       ...toLoadOptions(options),
       onSuccess: (response) => {
         refs.activities.value = response.systemLogs ?? []
+        refs.uploadLogs.value = response.uploadLogs ?? []
         markTabLoaded("activity")
       },
     })

@@ -1,9 +1,18 @@
 <script setup lang="ts">
+import { computed, ref } from "vue"
 import { RouterLink } from "vue-router"
-import { LucideCheckCircle, LucideChevronLeft, LucideChevronRight, LucideXCircle } from "lucide-vue-next"
+import { LucideCheckCircle, LucideChevronLeft, LucideChevronRight, LucideInfo, LucideXCircle } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogClose,
+  DialogFooter,
+  DialogHeader,
+  DialogScrollContent,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -26,14 +35,23 @@ interface Props {
   serverLabel: (server?: string) => string
   dataTypeLabel: (type?: string) => string
   formatTime: (iso?: string) => string
+  showPagination?: boolean
 }
 
 const props = defineProps<Props>()
 const { t } = useI18n()
+const shouldShowPagination = computed(() => props.showPagination !== false)
+const showFailureDialog = ref(false)
+const selectedFailureLog = ref<UploadLog | null>(null)
 const emit = defineEmits<{
   (event: "prev-page"): void
   (event: "next-page"): void
 }>()
+
+function openFailureDialog(log: UploadLog) {
+  selectedFailureLog.value = log
+  showFailureDialog.value = true
+}
 </script>
 
 <template>
@@ -53,6 +71,7 @@ const emit = defineEmits<{
               <TableHead class="hidden md:table-cell">{{ t("adminStatistics.uploadLogs.table.server") }}</TableHead>
               <TableHead class="hidden md:table-cell">{{ t("adminStatistics.uploadLogs.table.method") }}</TableHead>
               <TableHead class="hidden lg:table-cell">{{ t("adminStatistics.uploadLogs.table.dataType") }}</TableHead>
+              <TableHead class="hidden lg:table-cell">{{ t("adminStatistics.uploadLogs.table.error") }}</TableHead>
               <TableHead class="pr-6">{{ t("adminStatistics.uploadLogs.table.time") }}</TableHead>
             </TableRow>
           </TableHeader>
@@ -91,12 +110,26 @@ const emit = defineEmits<{
               <TableCell class="hidden lg:table-cell text-sm text-muted-foreground">
                 {{ props.dataTypeLabel(log.dataType) }}
               </TableCell>
+              <TableCell class="hidden lg:table-cell">
+                <Button
+                  v-if="!log.success && log.errorMessage"
+                  variant="outline"
+                  size="sm"
+                  @click="openFailureDialog(log)"
+                >
+                  <LucideInfo class="w-4 h-4 mr-1" />
+                  {{ t("adminStatistics.uploadLogs.table.viewError") }}
+                </Button>
+                <span v-else class="text-sm text-muted-foreground">
+                  {{ t("adminStatistics.common.fallback") }}
+                </span>
+              </TableCell>
               <TableCell class="text-sm text-muted-foreground whitespace-nowrap pr-6">
                 {{ props.formatTime(log.uploadTime) }}
               </TableCell>
             </TableRow>
             <TableRow v-if="props.logs.length === 0">
-              <TableCell :colspan="6" class="text-center py-8 text-muted-foreground">
+              <TableCell :colspan="7" class="text-center py-8 text-muted-foreground">
                 {{ t("adminStatistics.uploadLogs.table.empty") }}
               </TableCell>
             </TableRow>
@@ -106,7 +139,7 @@ const emit = defineEmits<{
     </CardContent>
   </Card>
 
-  <div class="flex items-center justify-between px-2">
+  <div v-if="shouldShowPagination" class="flex items-center justify-between px-2">
     <span class="text-sm text-muted-foreground">
       {{ t("adminStatistics.uploadLogs.pagination.total", { total: formatNumberCN(props.total, '0') }) }}
     </span>
@@ -120,4 +153,42 @@ const emit = defineEmits<{
       </Button>
     </div>
   </div>
+
+  <Dialog :open="showFailureDialog" @update:open="showFailureDialog = $event">
+    <DialogScrollContent class="sm:max-w-[560px]">
+      <DialogHeader>
+        <DialogTitle>{{ t("adminStatistics.uploadLogs.errorDialog.title") }}</DialogTitle>
+        <p class="text-sm text-muted-foreground">
+          {{ t("adminStatistics.uploadLogs.errorDialog.description") }}
+        </p>
+      </DialogHeader>
+
+      <div class="space-y-3">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div class="space-y-1">
+            <div class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.user") }}</div>
+            <div class="text-sm font-medium break-all">
+              {{ selectedFailureLog?.userName || selectedFailureLog?.userId || t("adminStatistics.common.fallback") }}
+            </div>
+          </div>
+          <div class="space-y-1">
+            <div class="text-xs text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.time") }}</div>
+            <div class="text-sm">
+              {{ props.formatTime(selectedFailureLog?.uploadTime) }}
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-md border bg-muted/20 px-3 py-3 text-sm whitespace-pre-wrap break-words">
+          {{ selectedFailureLog?.errorMessage || t("adminStatistics.common.fallback") }}
+        </div>
+      </div>
+
+      <DialogFooter>
+        <DialogClose as-child>
+          <Button>{{ t("adminStatistics.uploadLogs.errorDialog.close") }}</Button>
+        </DialogClose>
+      </DialogFooter>
+    </DialogScrollContent>
+  </Dialog>
 </template>

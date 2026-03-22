@@ -3,6 +3,7 @@ import type {
   AdminGameAccountBinding,
   AdminUserDetail,
   AuthorizedSocialPlatform,
+  UploadLog,
   UserActivity,
   UserSocialPlatform,
 } from "@/types/admin"
@@ -37,6 +38,7 @@ export function createAdminUserDetailState() {
     user: ref<AdminUserDetail | null>(null),
 
     activities: ref<UserActivity[]>([]),
+    uploadLogs: ref<UploadLog[]>([]),
     activityLoading: ref(false),
 
     oauthAuths: ref<UserOAuthAuthorization[]>([]),
@@ -118,6 +120,7 @@ export function createAdminUserDetailState() {
     refs.loading.value = true
     refs.user.value = null
     refs.activities.value = []
+    refs.uploadLogs.value = []
     refs.activityLoading.value = false
     refs.oauthAuths.value = []
     refs.oauthLoading.value = false

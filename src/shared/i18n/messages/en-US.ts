@@ -1682,8 +1682,15 @@ export const enUS = {
         server: "Server",
         method: "Method",
         dataType: "Data type",
+        error: "Error",
+        viewError: "View error",
         time: "Time",
         empty: "No upload logs",
+      },
+      errorDialog: {
+        title: "Upload failure detail",
+        description: "Review the backend error message returned for this failed upload.",
+        close: "Close",
       },
       pagination: {
         total: "{total} records in total",
@@ -1955,6 +1962,8 @@ export const enUS = {
       },
       activity: {
         title: "Activity logs",
+        uploadLogsTitle: "Upload logs",
+        uploadLogsDescription: "Recent upload attempts for this user, including backend failure details.",
         columns: {
           action: "Action",
           result: "Result",
