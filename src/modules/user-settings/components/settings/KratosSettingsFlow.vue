@@ -264,7 +264,7 @@ const activeGroup = computed(() => {
     }
   }
 
-  return submits[0].group
+  return submits[0]?.group ?? ""
 })
 
 const availableGroups = computed(() => {
@@ -644,14 +644,14 @@ watch(
                     <Button
                       type="button"
                       variant="outline"
-                      class="w-full justify-start"
+                      class="w-full justify-start h-auto whitespace-normal break-words text-left"
                       :name="field.name"
                       :value="field.value || undefined"
                       :disabled="field.disabled"
                       @click="invokeVisibleFieldAction(field)"
                     >
-                      <component :is="iconForField(field.name)" class="size-4 mr-2" />
-                      {{ field.label }}
+                      <component :is="iconForField(field.name)" class="size-4 mr-2 shrink-0" />
+                      <span class="break-words">{{ field.label }}</span>
                     </Button>
                   </template>
                   <template v-else>
@@ -678,14 +678,14 @@ watch(
                   <Button
                     type="button"
                     :variant="buttonFieldVariant(field)"
-                    class="w-full"
+                    class="w-full h-auto whitespace-normal break-words"
                     :name="field.name"
                     :value="field.value || undefined"
                     :disabled="field.disabled"
                     @click="invokeVisibleFieldAction(field)"
                   >
-                    <component :is="iconForField(field.name)" class="size-4 mr-2" />
-                    {{ field.label }}
+                    <component :is="iconForField(field.name)" class="size-4 mr-2 shrink-0" />
+                    <span class="break-words">{{ field.label }}</span>
                   </Button>
                   <KratosFlowMessages :messages="field.messages" />
                 </div>
@@ -695,14 +695,14 @@ watch(
                 <div v-for="submit in section.submitFields" :key="submit.key" class="space-y-1">
                   <Button
                     type="submit"
-                    class="w-full"
+                    class="w-full h-auto whitespace-normal break-words"
                     :variant="submitVariant(submit)"
                     :name="submit.name || undefined"
                     :value="submit.value || undefined"
                     :disabled="!isReady || submit.disabled"
                   >
-                    <Save class="mr-2 h-4 w-4" />
-                    {{ submit.label }}
+                    <Save class="mr-2 h-4 w-4 shrink-0" />
+                    <span class="break-words">{{ submit.label }}</span>
                   </Button>
                   <KratosFlowMessages :messages="submit.messages" />
                 </div>
@@ -711,9 +711,9 @@ watch(
           </div>
 
           <div v-if="!isMfaSection && displayedSubmitFields.length === 0">
-            <Button type="submit" class="w-full" :disabled="!isReady">
-              <Save class="mr-2 h-4 w-4" />
-              {{ submitLabel || t("common.save") }}
+            <Button type="submit" class="w-full h-auto whitespace-normal break-words" :disabled="!isReady">
+              <Save class="mr-2 h-4 w-4 shrink-0" />
+              <span class="break-words">{{ submitLabel || t("common.save") }}</span>
             </Button>
           </div>
         </form>
