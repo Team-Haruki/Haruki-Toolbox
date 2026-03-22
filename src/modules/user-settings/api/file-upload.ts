@@ -18,7 +18,7 @@ export async function uploadManualData(
         throw new Error(translate("userSettings.common.missingUserDescription"))
     }
 
-    const url = `/manual/${encodePathSegment(server)}/${encodePathSegment(gameUserId)}/${encodePathSegment(dataType)}/upload`
+    const url = `/api/manual/${encodePathSegment(server)}/${encodePathSegment(gameUserId)}/${encodePathSegment(dataType)}/upload`
 
     const resp = await apiClient.post<APIResponse<null>>(url, file, {
         headers: {

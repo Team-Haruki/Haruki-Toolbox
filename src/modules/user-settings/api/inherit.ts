@@ -12,7 +12,7 @@ export async function submitInherit(
 ): Promise<APIResponse<null>> {
     const payload = {inherit_id, inherit_password}
     return await request<APIResponse<null>>(
-        `/inherit/${encodePathSegment(server)}/${encodePathSegment(dataType)}/submit`,
+        `/api/inherit/${encodePathSegment(server)}/${encodePathSegment(dataType)}/submit`,
         {
             method: "POST",
             data: payload,
