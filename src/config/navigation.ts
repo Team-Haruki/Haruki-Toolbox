@@ -15,6 +15,7 @@ import {
   LucideShieldAlert,
   LucideTicket,
   LucideUsers,
+  LucideWebhook,
   LucideWrench,
 } from "lucide-vue-next"
 
@@ -85,6 +86,14 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     segment: "oauth-clients",
     routeName: "admin.oauthClients",
     titleKey: "route.admin.oauthClients",
+  },
+  {
+    value: "webhooks",
+    labelKey: "admin.nav.webhooks",
+    icon: LucideWebhook,
+    segment: "webhooks",
+    routeName: "admin.webhooks",
+    titleKey: "route.admin.webhooks",
   },
   {
     value: "logs",

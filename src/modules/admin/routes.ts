@@ -7,6 +7,7 @@ import { adminRiskRoutes } from "@/modules/admin-risk/routes"
 import { adminOAuthClientRoutes } from "@/modules/admin-oauth-clients/routes"
 import { adminConfigRoutes } from "@/modules/admin-config/routes"
 import { adminGameBindingRoutes } from "@/modules/admin-game-bindings/routes"
+import { adminWebhookRoutes } from "@/modules/admin-webhooks/routes"
 
 export const adminChildRoutes: RouteRecordRaw[] = [
     {
@@ -16,6 +17,7 @@ export const adminChildRoutes: RouteRecordRaw[] = [
     ...adminStatisticsRoutes,
     ...adminUserRoutes,
     ...adminOAuthClientRoutes,
+    ...adminWebhookRoutes,
     ...adminContentRoutes,
     ...adminConfigRoutes,
     ...adminGameBindingRoutes,
