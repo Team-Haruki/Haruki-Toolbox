@@ -6,7 +6,8 @@ import { useI18n } from "vue-i18n"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, LogIn, Mail, Lock, KeyRound } from "lucide-vue-next"
+import { Loader2, LogIn, Mail, Lock, KeyRound, LucideAlertTriangle } from "lucide-vue-next"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Card,
   CardTitle,
@@ -278,7 +279,18 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
 </script>
 
 <template>
-  <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
+  <div class="w-full flex-1 flex flex-col items-center justify-center gap-4 px-0 py-4">
+    <Alert variant="destructive" class="w-full max-w-md bg-destructive/10 text-destructive border-destructive/20">
+      <LucideAlertTriangle class="h-4 w-4 shrink-0 mt-0.5" />
+      <div class="space-y-1 w-full">
+        <AlertTitle>{{ t("auth.incidentAlert.title") }}</AlertTitle>
+        <AlertDescription class="space-y-1.5 leading-relaxed mt-2">
+          <p>{{ t("auth.incidentAlert.description1") }}</p>
+          <p>{{ t("auth.incidentAlert.description2") }}</p>
+        </AlertDescription>
+      </div>
+    </Alert>
+
     <Card class="w-full max-w-md">
       <CardHeader class="text-center">
         <CardTitle class="text-xl flex items-center justify-center gap-2">

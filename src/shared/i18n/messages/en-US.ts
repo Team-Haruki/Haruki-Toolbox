@@ -60,6 +60,11 @@ export const enUS = {
         loginSuccessTitle: "Sign-in successful",
         loginSuccessDescription: "Welcome back to Haruki Toolbox",
       },
+      incidentAlert: {
+        title: "Database Rollback Notice",
+        description1: "Due to unforeseen circumstances, all data changes (such as account registrations, password changes, etc.) made to the Haruki Toolbox main database between 2026-03-22 04:30 (UTC+8) and 2026-03-23 05:00 (UTC+8) have been lost.",
+        description2: "We apologize for the inconvenience caused."
+      },
     },
     register: {
       title: "Register account",
@@ -398,6 +403,7 @@ export const enUS = {
         deleteFailedTitle: "Delete failed",
       },
     },
+
     oauthAuthorizations: {
       title: "OAuth authorizations",
       description: "Manage third-party applications authorized to access your account data",
@@ -426,6 +432,16 @@ export const enUS = {
     gameBinding: {
       title: "Game account bindings",
       description: "Manage Project SEKAI accounts bound to your Haruki Toolbox account",
+      alert: {
+        title: "Notice",
+        line1: "The <b>same game ID</b> on the <b>same server</b> can only be bound to one Haruki Toolbox account.",
+        line2: "If you encounter a binding failure, please recall if you have previously asked someone else to fetch data for you.",
+        line3: "If you have asked someone to fetch data for you before, your game account may still be bound to their account.",
+        line4Before: "Please contact that person first to unbind the account. If they cannot be reached or refuse to unbind, please ",
+        line4Link: "submit a ticket",
+        line4After: ".",
+        line5: "Tickets will be processed within 24 hours."
+      },
       addButton: "Bind new account",
       empty: "No data",
       region: {
@@ -912,6 +928,13 @@ export const enUS = {
     iosModules: {
       title: "iOS Module Generator",
       description: "Generate custom iOS proxy modules",
+      tutorialAlert: {
+        title: "Tip",
+        textBefore: "This tutorial can be viewed by ",
+        linkText: "clicking here",
+        textAfter: ".",
+        nonZhWarning: "Please note that this tutorial is only available in Simplified Chinese."
+      },
       qxScriptWarning: "Quantumult X does not support script upload mode",
       cnRestriction: "Due to legal restrictions, CN MySekai module installation is not provided.",
       installButton: "Quick Install Module",

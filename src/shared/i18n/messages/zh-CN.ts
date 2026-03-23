@@ -60,6 +60,11 @@ export const zhCN = {
         loginSuccessTitle: "登录成功",
         loginSuccessDescription: "欢迎回到Haruki工具箱",
       },
+      incidentAlert: {
+        title: "数据回档通知",
+        description1: "由于一些意外，Haruki工具箱主数据库在北京时间2026年3月22日04:30到北京时间2026年3月23日05:00左右的时间发生的数据变动(如注册账号，更改密码等)全部发生丢失",
+        description2: "由此带来的不便敬请谅解"
+      },
     },
     register: {
       title: "注册账号",
@@ -398,6 +403,7 @@ export const zhCN = {
         deleteFailedTitle: "删除失败",
       },
     },
+
     oauthAuthorizations: {
       title: "第三方应用授权",
       description: "管理已授权访问您账号数据的第三方应用",
@@ -426,6 +432,16 @@ export const zhCN = {
     gameBinding: {
       title: "游戏账号绑定",
       description: "管理您的 Haruki 工具箱账号绑定的《世界计划: 缤纷舞台 feat. 初音未来》游戏账号",
+      alert: {
+        title: "注意",
+        line1: "<b>同一个区服</b>的<b>同一个游戏ID</b>在Haruki工具箱中仅限一个Haruki工具箱用户绑定",
+        line2: "如果你遇到绑定失败，请先回忆一下之前你是否委托过别人帮你代为抓取数据",
+        line3: "如果你以前找过人代为抓取数据，那么你的游戏账号可能还绑定在他的账号上",
+        line4Before: "请务必先联系那个人要求取消绑定，如果对方联系不上或者拒绝解除绑定，再通过",
+        line4Link: "提交工单",
+        line4After: "。",
+        line5: "工单会在24小时内进行受理"
+      },
       addButton: "绑定新账号",
       empty: "暂无数据",
       region: {
@@ -912,6 +928,13 @@ export const zhCN = {
     iosModules: {
       title: "iOS模块生成器",
       description: "生成自定义的iOS代理模块",
+      tutorialAlert: {
+        title: "提示",
+        textBefore: "本文教程可以",
+        linkText: "点击这里",
+        textAfter: "观看",
+        nonZhWarning: "本教程仅有简体中文版本"
+      },
       qxScriptWarning: "Quantumult X 不支持脚本上传模式",
       cnRestriction: "由于相关法律法规限制，本站不提供国服的MySekai功能的安装。",
       installButton: "快速安装模块",

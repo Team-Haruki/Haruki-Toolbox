@@ -5,12 +5,13 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Database, Earth, FileText, PackageCheck, Server, Smartphone, Upload } from "lucide-vue-next"
+import { Database, Earth, FileText, PackageCheck, Server, Smartphone, Upload, LucideInfo } from "lucide-vue-next"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { IOSGeneratedUrlsCard, IOSSelectCard, IOSUploadCodeCard } from "@/modules/tools/components"
 import { useIOSModuleGenerator } from "@/modules/tools/composables/useIOSModuleGenerator"
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const {
   userStore,
@@ -59,7 +60,26 @@ function handleCopyScriptUrl(value: string) {
 </script>
 
 <template>
-  <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
+  <div class="w-full flex-1 flex flex-col items-center justify-center gap-4 px-0 py-4">
+    <Alert class="w-full max-w-md bg-muted/20">
+      <LucideInfo class="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
+      <div class="space-y-1 w-full">
+        <AlertTitle>{{ t("tools.iosModules.tutorialAlert.title") }}</AlertTitle>
+        <AlertDescription class="space-y-1.5 leading-relaxed mt-2 text-muted-foreground">
+          <p>
+            {{ t("tools.iosModules.tutorialAlert.textBefore") }}
+            <a href="https://docs.haruki.seiunx.com/toolboxtutorial/ios-module.html" target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-4 text-primary hover:text-primary/80 transition-colors">
+              {{ t("tools.iosModules.tutorialAlert.linkText") }}
+            </a>
+            {{ t("tools.iosModules.tutorialAlert.textAfter") }}
+          </p>
+          <p v-if="locale !== 'zh-CN'" class="text-xs text-muted-foreground mt-1">
+            {{ t("tools.iosModules.tutorialAlert.nonZhWarning") }}
+          </p>
+        </AlertDescription>
+      </div>
+    </Alert>
+
     <Card class="w-full max-w-md space-y-3">
       <CardHeader class="flex flex-row items-center gap-2">
         <PackageCheck class="w-6 h-6 text-primary" />
