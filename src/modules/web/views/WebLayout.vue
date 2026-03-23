@@ -70,15 +70,17 @@ const {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarMenuItem>
-            <SidebarMenuButton as-child>
-              <router-link to="/" class="flex items-center gap-2">
-                <LucideHome/>
-                <span>{{ t("webLayout.nav.home") }}</span>
-              </router-link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+        <SidebarGroup class="flex-none">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <router-link to="/" class="flex items-center gap-2">
+                  <LucideHome></LucideHome>
+                  <span>{{ t("webLayout.nav.home") }}</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
 
           <SidebarGroupLabel>{{ t("webLayout.nav.harukiBotGroup") }}</SidebarGroupLabel>
           <SidebarMenu>
@@ -118,30 +120,33 @@ const {
               </SidebarMenuItem>
             </Collapsible>
           </SidebarMenu>
-          <SidebarMenuItem v-if="userStore.isAdmin">
-            <SidebarMenuButton as-child>
-              <router-link to="/admin" class="flex items-center gap-2">
-                <LucideShieldCheck/>
-                <span>{{ t("webLayout.nav.admin") }}</span>
-              </router-link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem v-if="userStore.isLoggedIn">
-            <SidebarMenuButton as-child>
-              <router-link to="/tickets" class="flex items-center gap-2">
-                <LucideTicket/>
-                <span>{{ t("webLayout.nav.myTickets") }}</span>
-              </router-link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton as-child>
-              <router-link to="/settings" class="flex items-center gap-2">
-                <LucideSettings/>
-                <span>{{ t("webLayout.nav.settings") }}</span>
-              </router-link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+
+          <SidebarMenu>
+            <SidebarMenuItem v-if="userStore.isAdmin">
+              <SidebarMenuButton as-child>
+                <router-link to="/admin" class="flex items-center gap-2">
+                  <LucideShieldCheck></LucideShieldCheck>
+                  <span>{{ t("webLayout.nav.admin") }}</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem v-if="userStore.isLoggedIn">
+              <SidebarMenuButton as-child>
+                <router-link to="/tickets" class="flex items-center gap-2">
+                  <LucideTicket></LucideTicket>
+                  <span>{{ t("webLayout.nav.myTickets") }}</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <router-link to="/settings" class="flex items-center gap-2">
+                  <LucideSettings></LucideSettings>
+                  <span>{{ t("webLayout.nav.settings") }}</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
