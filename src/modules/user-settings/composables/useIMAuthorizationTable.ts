@@ -39,7 +39,13 @@ export function useIMAuthorizationTable(options: UseIMAuthorizationTableOptions)
     {
       accessorKey: "userId",
       header: () => t("userSettings.imAuthorization.table.account"),
-      cell: ({ row }) => row.getValue("userId"),
+      cell: ({ row }) => {
+        const val = row.getValue("userId") as string
+        if (val && val.length > 12) {
+          return h("span", { title: val, class: "cursor-help" }, val.slice(0, 12) + "...")
+        }
+        return val
+      },
     },
     {
       accessorKey: "comment",

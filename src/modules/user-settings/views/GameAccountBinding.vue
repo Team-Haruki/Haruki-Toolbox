@@ -41,7 +41,7 @@ const { t } = useI18n()
 
 <template>
   <div class="w-full flex-1 flex flex-col items-center justify-center gap-4 px-0 py-4">
-    <Alert variant="default" class="flex items-start gap-2 w-full bg-muted/20">
+    <Alert variant="default" class="flex items-start gap-2 w-full max-w-2xl bg-muted/20">
       <LucideInfo class="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
       <div class="space-y-1 w-full">
         <AlertTitle>{{ t("userSettings.gameBinding.alert.title") }}</AlertTitle>

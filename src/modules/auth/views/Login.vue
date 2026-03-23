@@ -283,10 +283,10 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
     <Alert variant="destructive" class="w-full max-w-md bg-destructive/10 text-destructive border-destructive/20">
       <LucideAlertTriangle class="h-4 w-4 shrink-0 mt-0.5" />
       <div class="space-y-1 w-full">
-        <AlertTitle>{{ t("auth.incidentAlert.title") }}</AlertTitle>
+        <AlertTitle>{{ t("auth.login.incidentAlert.title") }}</AlertTitle>
         <AlertDescription class="space-y-1.5 leading-relaxed mt-2">
-          <p>{{ t("auth.incidentAlert.description1") }}</p>
-          <p>{{ t("auth.incidentAlert.description2") }}</p>
+          <p>{{ t("auth.login.incidentAlert.description1") }}</p>
+          <p>{{ t("auth.login.incidentAlert.description2") }}</p>
         </AlertDescription>
       </div>
     </Alert>
