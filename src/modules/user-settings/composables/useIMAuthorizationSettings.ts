@@ -4,7 +4,7 @@ import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
 import { unwrapUpdatedData } from "@/core/http/call-api"
 import { extractErrorMessage } from "@/lib/error-utils"
-import { asRecord, normalizeEntityId, readString } from "@/lib/record-utils"
+import { asRecord, normalizeEntityId, readString, readBoolean } from "@/lib/record-utils"
 import { DEFAULT_SOCIAL_PLATFORM, isSocialPlatform } from "@/lib/social-platform"
 import type { EntityId } from "@/types/common"
 import type { SocialPlatform as SocialPlatformType } from "@/types/social-platform"
@@ -22,6 +22,7 @@ export interface SocialAuth {
   platform: SocialPlatform
   userId: string
   comment: string
+  allowFastVerification: boolean
 }
 
 function normalizeSocialAuthList(value: unknown): SocialAuth[] {
@@ -38,6 +39,7 @@ function normalizeSocialAuthList(value: unknown): SocialAuth[] {
         platform: isSocialPlatform(platformValue) ? platformValue : DEFAULT_SOCIAL_PLATFORM,
         userId: readString(record, ["userId", "user_id"]),
         comment: readString(record, ["comment"]),
+        allowFastVerification: readBoolean(record, ["allowFastVerification"]),
       } satisfies SocialAuth
     })
     .filter((item): item is SocialAuth => item !== null)
@@ -101,6 +103,7 @@ export function useIMAuthorizationSettings() {
       platform: DEFAULT_SOCIAL_PLATFORM,
       userId: "",
       comment: "",
+      allowFastVerification: false,
     }
     isCreateMode.value = true
     showEditDialog.value = true
@@ -135,6 +138,7 @@ export function useIMAuthorizationSettings() {
               target.platform,
               normalizedUserId,
               target.comment.trim(),
+              target.allowFastVerification,
               { skipErrorToast: true }
             )
           })()
@@ -149,11 +153,12 @@ export function useIMAuthorizationSettings() {
               target.platform,
               normalizedUserId,
               target.comment.trim(),
+              target.allowFastVerification,
               { skipErrorToast: true }
             )
           })()
       const updatedData = unwrapUpdatedData(response, t("userSettings.imAuthorization.title"))
-      userStore.setUser({ authorizeSocialPlatformInfo: updatedData })
+      userStore.setUser({ authorizeSocialPlatformInfo: updatedData.authorizeSocialPlatformInfo })
 
       toast.success(t("userSettings.imAuthorization.toast.saveSuccessTitle"), {
         description: t("userSettings.imAuthorization.toast.saveSuccessDescription"),
@@ -193,7 +198,7 @@ export function useIMAuthorizationSettings() {
         skipErrorToast: true,
       })
       const updatedData = unwrapUpdatedData(response, t("userSettings.imAuthorization.title"))
-      userStore.setUser({ authorizeSocialPlatformInfo: updatedData })
+      userStore.setUser({ authorizeSocialPlatformInfo: updatedData.authorizeSocialPlatformInfo })
 
       toast.success(t("userSettings.imAuthorization.toast.deleteSuccessTitle"), {
         description: t("userSettings.imAuthorization.toast.deleteSuccessDescription"),

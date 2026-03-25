@@ -19,6 +19,7 @@ export interface AuthorizeSocialPlatformInfo {
     platform: string
     userId: string
     comment: string
+    allowFastVerification?: boolean
 }
 
 export interface SuiteDataPrivacySettings {

@@ -14,9 +14,10 @@ export async function createAuthorizeSocialPlatformAccount(
   platform: SocialPlatform,
   userId: string,
   comment: string,
+  allowFastVerification?: boolean,
   options?: AxiosRequestConfig
 ): Promise<APIResponse<AuthorizeSocialPlatformUpdatedData>> {
-  const payload: AddAuthorizeSocialPlatformAccountPayload = { platform, userId, comment }
+  const payload: AddAuthorizeSocialPlatformAccountPayload = { platform, userId, comment, allowFastVerification }
   return await request<APIResponse<AuthorizeSocialPlatformUpdatedData>>(
     buildUserApiPath(toolboxUserId, "authorize-social-platform", id),
     {
@@ -33,9 +34,10 @@ export async function addAuthorizeSocialPlatformAccount(
   platform: SocialPlatform,
   userId: string,
   comment: string,
+  allowFastVerification?: boolean,
   options?: AxiosRequestConfig
 ): Promise<APIResponse<AuthorizeSocialPlatformUpdatedData>> {
-  const payload: AddAuthorizeSocialPlatformAccountPayload = { platform, userId, comment }
+  const payload: AddAuthorizeSocialPlatformAccountPayload = { platform, userId, comment, allowFastVerification }
   return await request<APIResponse<AuthorizeSocialPlatformUpdatedData>>(
     buildUserApiPath(toolboxUserId, "authorize-social-platform", id),
     {

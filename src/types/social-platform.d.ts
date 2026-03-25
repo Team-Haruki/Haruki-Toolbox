@@ -12,7 +12,8 @@ export interface GenerateSocialPlatformVerificationCodeResponse {
 export interface AddAuthorizeSocialPlatformAccountPayload {
     platform: SocialPlatform,
     userId: string,
-    comment: string
+    comment: string,
+    allowFastVerification?: boolean
 }
 
 export type AuthorizeSocialPlatformUpdatedData = {

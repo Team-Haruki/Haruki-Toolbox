@@ -371,6 +371,8 @@ export const zhCN = {
         platform: "平台",
         account: "账号",
         remark: "备注",
+        allowFastVerification: "允许快速验证",
+        allowFastVerificationHint: "开启后，该用户可以在HarukiBot中快速通过账号验证",
       },
       table: {
         platform: "平台",

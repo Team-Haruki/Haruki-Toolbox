@@ -371,6 +371,8 @@ export const enUS = {
         platform: "Platform",
         account: "Account",
         remark: "Remark",
+        allowFastVerification: "Allow Fast Verification",
+        allowFastVerificationHint: "When enabled, this user can quickly pass account verification in HarukiBot",
       },
       table: {
         platform: "Platform",
