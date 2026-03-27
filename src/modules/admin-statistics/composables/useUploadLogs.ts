@@ -92,14 +92,14 @@ export function useUploadLogs() {
     }
 
     if (selected.length === 1) {
-      return selected[0].label
+      return selected[0]!.label
     }
 
     if (selected.length === 2) {
-      return `${selected[0].label}, ${selected[1].label}`
+      return `${selected[0]!.label}, ${selected[1]!.label}`
     }
 
-    return `${selected[0].label} +${selected.length - 1}`
+    return `${selected[0]!.label} +${selected.length - 1}`
   }
 
   function methodLabel(method?: string) {
@@ -201,7 +201,7 @@ export function useUploadLogs() {
       .map((item, index) => ({
         label: methodLabel(item.key),
         value: item.count,
-        color: CHART_COLORS[index % CHART_COLORS.length],
+        color: CHART_COLORS[index % CHART_COLORS.length] as string,
       }))
   })
 
@@ -215,7 +215,7 @@ export function useUploadLogs() {
       .map((item, index) => ({
         label: dataTypeLabel(item.key),
         value: item.count,
-        color: CHART_COLORS[index % CHART_COLORS.length],
+        color: CHART_COLORS[index % CHART_COLORS.length] as string,
       }))
   })
 

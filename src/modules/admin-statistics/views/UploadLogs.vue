@@ -121,8 +121,9 @@ const {
                 <DropdownMenuCheckboxItem
                   v-for="opt in uploadMethods"
                   :key="opt.value"
-                  :checked="filterMethod.includes(opt.value)"
-                  @update:checked="checked => toggleMethodFilter(opt.value, Boolean(checked))"
+                  :model-value="filterMethod.includes(opt.value)"
+                  @update:model-value="toggleMethodFilter(opt.value, !!$event)"
+                  @select.prevent
                 >
                   {{ opt.label }}
                 </DropdownMenuCheckboxItem>
@@ -142,8 +143,9 @@ const {
                 <DropdownMenuCheckboxItem
                   v-for="opt in dataTypeOptions"
                   :key="opt.value"
-                  :checked="filterDataType.includes(opt.value)"
-                  @update:checked="checked => toggleDataTypeFilter(opt.value, Boolean(checked))"
+                  :model-value="filterDataType.includes(opt.value)"
+                  @update:model-value="toggleDataTypeFilter(opt.value, !!$event)"
+                  @select.prevent
                 >
                   {{ opt.label }}
                 </DropdownMenuCheckboxItem>
@@ -163,8 +165,9 @@ const {
                 <DropdownMenuCheckboxItem
                   v-for="opt in servers"
                   :key="opt.value"
-                  :checked="filterServer.includes(opt.value)"
-                  @update:checked="checked => toggleServerFilter(opt.value, Boolean(checked))"
+                  :model-value="filterServer.includes(opt.value)"
+                  @update:model-value="toggleServerFilter(opt.value, !!$event)"
+                  @select.prevent
                 >
                   {{ opt.label }}
                 </DropdownMenuCheckboxItem>
