@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { normalizeRedirectUris, toggleScopeSelection, validateClientPayload } from "./form"
+import { AVAILABLE_SCOPE_IDS, normalizeRedirectUris, toggleScopeSelection, validateClientPayload } from "./form"
 
 describe("admin oauth form helpers", () => {
   test("toggleScopeSelection adds and removes scope ids", () => {
@@ -37,5 +37,9 @@ describe("admin oauth form helpers", () => {
     if ("normalizedUris" in valid) {
       expect(valid.normalizedUris).toEqual(["https://a.com/callback"])
     }
+  })
+
+  test("available scopes include offline access", () => {
+    expect(AVAILABLE_SCOPE_IDS).toContain("offline_access")
   })
 })

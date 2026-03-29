@@ -93,6 +93,7 @@ const scopeLabelKeys: Record<string, string> = {
     "bindings:read": "oauth.scope.bindingsRead",
     "game-data:read": "oauth.scope.gameDataRead",
     "game-data:write": "oauth.scope.gameDataWrite",
+    "offline_access": "oauth.scope.offlineAccess",
 }
 
 export function getScopeLabel(scope: string): string {

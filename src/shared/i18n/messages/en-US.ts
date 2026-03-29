@@ -1377,6 +1377,7 @@ export const enUS = {
       bindingsRead: "Game bindings (bindings:read)",
       gameDataRead: "Game data (game-data:read)",
       gameDataWrite: "Game upload (game-data:write)",
+      offlineAccess: "Offline access / refresh tokens (offline_access)",
     },
     common: {
       fallback: "—",
@@ -2129,6 +2130,7 @@ export const enUS = {
       bindingsRead: "Read linked accounts",
       gameDataRead: "Read game data",
       gameDataWrite: "Upload game data",
+      offlineAccess: "Maintain offline access and issue refresh tokens",
     },
     login: {
       unknownApp: "Unknown app",

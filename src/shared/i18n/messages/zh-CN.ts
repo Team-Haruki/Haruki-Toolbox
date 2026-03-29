@@ -1377,6 +1377,7 @@ export const zhCN = {
       bindingsRead: "游戏绑定 (bindings:read)",
       gameDataRead: "游戏数据 (game-data:read)",
       gameDataWrite: "游戏上传 (game-data:write)",
+      offlineAccess: "离线访问 / 刷新令牌 (offline_access)",
     },
     common: {
       fallback: "—",
@@ -2129,6 +2130,7 @@ export const zhCN = {
       bindingsRead: "读取绑定账号",
       gameDataRead: "读取游戏数据",
       gameDataWrite: "上传游戏数据",
+      offlineAccess: "保持离线访问并获取刷新令牌",
     },
     login: {
       unknownApp: "未知应用",
