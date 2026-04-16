@@ -70,8 +70,9 @@ All commits must follow `[Type] Short description`:
 - Allowed types: `[Feat]` (new feature), `[Fix]` (bug fix), `[Chore]` (maintenance, refactor, deps, build), `[Docs]` (docs-only).
 - Description must start with a capital letter.
 - Use imperative mood ("Add X", not "Added X").
-- Do not end with a period.
+- Do not end the subject line with a period.
 - Keep it short.
+- When an agent (Copilot, Claude Code, etc.) authors the commit, append a `Co-Authored-By:` trailer identifying the agent (blank line between subject and trailer).
 
 Examples (from this repo's history):
 
