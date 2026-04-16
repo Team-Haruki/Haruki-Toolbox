@@ -180,7 +180,7 @@ const { columns, table, FlexRender } = useIMAuthorizationTable({
           <Input id="remark" v-model="editTarget.comment" class="col-span-3"/>
         </div>
         <div class="flex items-center space-x-4 rounded-lg border p-4">
-          <Switch id="allowFastVerification" v-model:checked="editTarget.allowFastVerification" />
+          <Switch id="allowFastVerification" v-model="editTarget.allowFastVerification" />
           <div class="flex-1 space-y-1">
             <Label for="allowFastVerification">{{ t("userSettings.imAuthorization.fields.allowFastVerification") }}</Label>
             <p class="text-xs text-muted-foreground leading-snug">
