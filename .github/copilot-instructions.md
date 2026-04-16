@@ -62,3 +62,20 @@ Also consider:
 - `docs/ory-frontend-reference.md`
 
 Note: some docs in `docs/` contain backend-oriented architecture notes. Use them for integration context, not as frontend directory conventions.
+
+## Commit Message Format
+
+All commits must follow `[Type] Short description`:
+
+- Allowed types: `[Feat]` (new feature), `[Fix]` (bug fix), `[Chore]` (maintenance, refactor, deps, build), `[Docs]` (docs-only).
+- Description must start with a capital letter.
+- Use imperative mood ("Add X", not "Added X").
+- Do not end with a period.
+- Keep it short.
+
+Examples (from this repo's history):
+
+- `[Feat] Add hydra oauth2 flow`
+- `[Fix] Sidebar option big gap issue in Safari`
+- `[Chore] Add AGENTS.md and copilot-instructions.md`
+- `[Docs] Update CLAUDE.md with commit format`
