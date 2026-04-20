@@ -1,6 +1,8 @@
 import type { RouteRecordRaw } from "vue-router"
+import { botNeoRoutes } from "@/modules/haruki-bot-neo/routes"
 
 export const toolRoutes: RouteRecordRaw[] = [
+    ...botNeoRoutes,
     {
         path: "/pt_calc",
         redirect: "/pt-calculator",

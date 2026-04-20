@@ -16,6 +16,7 @@ import {
   LucideTicket,
   LucideUsers,
   LucideWebhook,
+  LucideBot,
   LucideWrench,
 } from "lucide-vue-next"
 
@@ -48,6 +49,7 @@ export const WEB_NAV_ITEMS: NavItem[] = [
       { titleKey: "navigation.items.ptCalculator", icon: LucideCalculator, url: "/pt-calculator" },
       { titleKey: "navigation.items.uploadData", icon: LucideCloudUpload, url: "/upload-data" },
       { titleKey: "navigation.items.iosModules", icon: LucideArrowDownToLine, url: "/ios-modules" },
+      { titleKey: "navigation.items.botNeoRegistration", icon: LucideBot, url: "/haruki-bot-neo" },
     ],
   },
 ]

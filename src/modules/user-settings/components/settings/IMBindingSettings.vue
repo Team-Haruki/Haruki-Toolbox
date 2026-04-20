@@ -150,7 +150,7 @@ const { t, locale } = useI18n()
       </template>
 
       <template v-else>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">{{ t("userSettings.imBinding.selectPlatformLabel") }}</label>
             <Select :key="locale" v-model="platform">
