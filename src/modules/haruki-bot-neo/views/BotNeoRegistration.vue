@@ -56,7 +56,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="w-full flex-1 flex flex-col items-center px-0 py-4">
+  <div class="w-full flex-1 flex items-center justify-center px-0 py-4">
     <Card class="w-full max-w-md">
       <CardHeader>
         <CardTitle class="flex items-center gap-2">
@@ -67,12 +67,9 @@ onMounted(() => {
       </CardHeader>
 
       <CardContent class="space-y-4">
-        <!-- Loading status -->
         <div v-if="statusLoading" class="flex items-center justify-center py-8">
           <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-
-        <!-- Registration disabled -->
         <template v-else-if="registrationEnabled === false">
           <Alert variant="destructive">
             <AlertTriangle class="h-4 w-4" />
@@ -84,8 +81,6 @@ onMounted(() => {
             {{ t("botNeo.disabled.retryButton") }}
           </Button>
         </template>
-
-        <!-- Step 1: Input QQ number -->
         <template v-else-if="step === 'input'">
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">{{ t("botNeo.input.qqLabel") }}</label>
@@ -122,8 +117,6 @@ onMounted(() => {
             </template>
           </Button>
         </template>
-
-        <!-- Step 2: Enter verification code -->
         <template v-else-if="step === 'verify'">
           <div
             class="rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-blue-700 dark:border-blue-700/60 dark:bg-blue-900/20 dark:text-blue-300"
@@ -185,8 +178,6 @@ onMounted(() => {
             </template>
           </Button>
         </template>
-
-        <!-- Step 3: Registration result -->
         <template v-else-if="step === 'result' && result">
           <Alert>
             <CheckCircle class="h-4 w-4" />
