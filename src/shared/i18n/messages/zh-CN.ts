@@ -634,7 +634,7 @@ export const zhCN = {
       ptCalculator: "活动Pt控分计算器",
       uploadData: "上传数据",
       iosModules: "iOS模块安装",
-      botNeoRegistration: "HarukiBot Neo 注册",
+      botNeoRegistration: "HarukiBot NEO 注册",
     },
   },
   webLayout: {
@@ -677,7 +677,7 @@ export const zhCN = {
     ptCalculator: "活动Pt计算器",
     uploadData: "上传数据",
     iosModules: "iOS模块生成器",
-    botNeoRegistration: "HarukiBot Neo 注册",
+    botNeoRegistration: "HarukiBot NEO 注册",
     login: "登录",
     register: "注册账号",
     resetPassword: "重置密码",
@@ -1184,11 +1184,11 @@ export const zhCN = {
     },
   },
   botNeo: {
-    title: "HarukiBot Neo 注册",
-    description: "注册 HarukiBot Neo 实例并获取 Bot 凭据",
+    title: "HarukiBot NEO 注册",
+    description: "注册 HarukiBot NEO 实例并获取 Bot 凭据",
     disabled: {
       title: "注册暂未开放",
-      description: "HarukiBot Neo 注册功能当前已关闭，请稍后再试。",
+      description: "HarukiBot NEO 注册功能当前已关闭，请稍后再试。",
       retryButton: "重试",
     },
     input: {
@@ -1209,7 +1209,7 @@ export const zhCN = {
     },
     result: {
       successTitle: "注册成功",
-      successDescription: "您的 HarukiBot Neo 实例已创建，请保存以下凭据信息。",
+      successDescription: "您的 HarukiBot NEO 实例已创建，请保存以下凭据信息。",
       botIdLabel: "Bot ID",
       credentialLabel: "凭据（JWT）",
       saveWarning: "凭据仅显示一次，请立即复制并安全保存，之后将无法再次获取。",

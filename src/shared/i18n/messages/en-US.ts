@@ -634,7 +634,7 @@ export const enUS = {
       ptCalculator: "Event Pt calculator",
       uploadData: "Upload data",
       iosModules: "iOS module install",
-      botNeoRegistration: "HarukiBot Neo registration",
+      botNeoRegistration: "HarukiBot NEO registration",
     },
   },
   webLayout: {
@@ -677,7 +677,7 @@ export const enUS = {
     ptCalculator: "Event Pt calculator",
     uploadData: "Upload data",
     iosModules: "iOS module generator",
-    botNeoRegistration: "HarukiBot Neo registration",
+    botNeoRegistration: "HarukiBot NEO registration",
     login: "Sign in",
     register: "Register",
     resetPassword: "Reset password",
@@ -1184,11 +1184,11 @@ export const enUS = {
     },
   },
   botNeo: {
-    title: "HarukiBot Neo Registration",
-    description: "Register a HarukiBot Neo instance and obtain your Bot credential",
+    title: "HarukiBot NEO Registration",
+    description: "Register a HarukiBot NEO instance and obtain your Bot credential",
     disabled: {
       title: "Registration unavailable",
-      description: "HarukiBot Neo registration is currently closed. Please try again later.",
+      description: "HarukiBot NEO registration is currently closed. Please try again later.",
       retryButton: "Retry",
     },
     input: {
@@ -1209,7 +1209,7 @@ export const enUS = {
     },
     result: {
       successTitle: "Registration successful",
-      successDescription: "Your HarukiBot Neo instance has been created. Please save the credentials below.",
+      successDescription: "Your HarukiBot NEO instance has been created. Please save the credentials below.",
       botIdLabel: "Bot ID",
       credentialLabel: "Credential (JWT)",
       saveWarning: "The credential is shown only once. Please copy and save it securely — it cannot be retrieved again.",
