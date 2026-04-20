@@ -1194,12 +1194,12 @@ export const enUS = {
     input: {
       qqLabel: "QQ number",
       qqPlaceholder: "Enter your QQ number",
-      hint: "A 6-digit verification code will be sent to your QQ mailbox ({qq}@qq.com). The code is valid for 10 minutes.",
+      hint: "A 6-digit verification code will be sent to your QQ mailbox ({qq}{'@'}qq.com). The code is valid for 10 minutes.",
       sendButton: "Send verification code",
       cooldownButton: "Retry in {seconds}s",
     },
     verify: {
-      codeSentHint: "A verification code has been sent to {qq}@qq.com. Please check your mailbox.",
+      codeSentHint: "A verification code has been sent to {qq}{'@'}qq.com. Please check your mailbox.",
       codeLabel: "Verification code",
       codePlaceholder: "Enter 6-digit code",
       backButton: "Back",

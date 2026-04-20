@@ -1194,12 +1194,12 @@ export const zhCN = {
     input: {
       qqLabel: "QQ 号",
       qqPlaceholder: "请输入 QQ 号",
-      hint: "验证码将发送至您的 QQ 邮箱（{qq}@qq.com），有效期 10 分钟。",
+      hint: "验证码将发送至您的 QQ 邮箱（{qq}{'@'}qq.com），有效期 10 分钟。",
       sendButton: "发送验证码",
       cooldownButton: "{seconds} 秒后可重试",
     },
     verify: {
-      codeSentHint: "验证码已发送至 {qq}@qq.com，请查收邮箱。",
+      codeSentHint: "验证码已发送至 {qq}{'@'}qq.com，请查收邮箱。",
       codeLabel: "验证码",
       codePlaceholder: "请输入 6 位验证码",
       backButton: "返回",
