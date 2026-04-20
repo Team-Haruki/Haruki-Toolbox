@@ -66,11 +66,11 @@ onMounted(() => {
         <CardDescription>{{ t("botNeo.description") }}</CardDescription>
       </CardHeader>
 
-      <CardContent class="space-y-4">
+      <CardContent>
         <div v-if="statusLoading" class="flex items-center justify-center py-8">
           <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-        <template v-else-if="registrationEnabled === false">
+        <div v-else-if="registrationEnabled === false" class="space-y-4">
           <Alert variant="destructive">
             <AlertTriangle class="h-4 w-4" />
             <AlertTitle>{{ t("botNeo.disabled.title") }}</AlertTitle>
@@ -80,8 +80,8 @@ onMounted(() => {
             <RotateCcw class="mr-2 h-4 w-4" />
             {{ t("botNeo.disabled.retryButton") }}
           </Button>
-        </template>
-        <template v-else-if="step === 'input'">
+        </div>
+        <div v-else-if="step === 'input'" class="space-y-4">
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">{{ t("botNeo.input.qqLabel") }}</label>
             <div class="relative w-full items-center">
@@ -116,8 +116,8 @@ onMounted(() => {
               <span v-else>{{ t("botNeo.input.sendButton") }}</span>
             </template>
           </Button>
-        </template>
-        <template v-else-if="step === 'verify'">
+        </div>
+        <div v-else-if="step === 'verify'" class="space-y-4">
           <div
             class="rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-blue-700 dark:border-blue-700/60 dark:bg-blue-900/20 dark:text-blue-300"
           >
@@ -177,8 +177,8 @@ onMounted(() => {
               <span v-else>{{ t("botNeo.verify.resendButton") }}</span>
             </template>
           </Button>
-        </template>
-        <template v-else-if="step === 'result' && result">
+        </div>
+        <div v-else-if="step === 'result' && result" class="space-y-4">
           <Alert>
             <CheckCircle class="h-4 w-4" />
             <AlertTitle>{{ t("botNeo.result.successTitle") }}</AlertTitle>
@@ -230,7 +230,7 @@ onMounted(() => {
             <RotateCcw class="mr-2 h-4 w-4" />
             {{ t("botNeo.result.registerAnotherButton") }}
           </Button>
-        </template>
+        </div>
       </CardContent>
     </Card>
   </div>
