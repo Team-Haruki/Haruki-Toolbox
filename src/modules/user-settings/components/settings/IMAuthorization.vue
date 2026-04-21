@@ -208,7 +208,7 @@ const { columns, table, FlexRender } = useIMAuthorizationTable({
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle>{{ t("userSettings.imAuthorization.deleteDialog.title") }}</AlertDialogTitle>
-        <AlertDialogDescription>
+        <AlertDialogDescription class="break-all">
           {{ t("userSettings.imAuthorization.deleteDialog.description", {
             platform: deleteTarget ? getPlatformLabel(deleteTarget.platform) : "",
             userId: deleteTarget?.userId ?? "",
