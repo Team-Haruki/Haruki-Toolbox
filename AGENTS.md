@@ -64,7 +64,7 @@ Important: some files under `docs/` describe backend or deployment topology. Use
 - Route definitions live with the owning feature and are assembled through the web route tree.
 - Use route `meta.titleKey` values for page titles when adding routes.
 - Respect `requiresAuth`, `requiresAdmin`, `requiresSuperAdmin`, and `guestOnly` semantics already handled by `src/core/router/guards.ts`.
-- If you change auth routing, read `docs/ory-frontend-reference.md` first.
+- If you change auth routing, review existing auth flow code in `src/modules/auth/` carefully first.
 
 ## UI and UX Expectations
 
@@ -98,21 +98,6 @@ Guidelines:
 - Consider Playwright coverage when changing routing, auth redirects, bootstrap behavior, or page-level flows.
 - `bun run build` is a good final confidence check for larger UI or type-heavy changes.
 
-## Working With Docs
-
-Useful frontend-facing references:
-
-- `docs/frontend-integration-api.md`
-- `docs/api-request-reference.md`
-- `docs/ory-frontend-reference.md`
-
-Be careful with:
-
-- `docs/architecture.md`
-- `docs/development.md`
-
-Those files currently include backend-oriented notes from the wider Haruki system. They are still useful context, but they are not a map of this frontend repo's source tree.
-
 ## Common Pitfalls
 
 - Do not hardcode auth or API origins when helpers/stores already resolve them.
@@ -142,6 +127,7 @@ All commits must follow `[Type] Short description`:
 - Do not end the subject line with a period.
 - Keep it short.
 - When an agent authors the commit, append a `Co-Authored-By:` trailer identifying the agent (blank line between subject and trailer).
+- Bump `version` in `package.json` with every commit: **patch** (+0.0.1) for `[Fix]`, **minor** (+0.1.0) for `[Feat]`, **major** (+1.0.0) for breaking changes.
 
 Examples (from this repo's history):
 

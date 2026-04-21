@@ -70,8 +70,6 @@ Always use `@/` aliases rather than deep relative paths.
 - Business APIs: use `request()` from `@/core/http/call-api`. Do not spin up new Axios instances or hardcode origins.
 - `request()` defaults `skipErrorToast: true`. Opt in to local, user-meaningful toasts (`vue-sonner`) at the call site when appropriate.
 - Kratos self-service flows live in `src/modules/auth/lib/kratos.ts` and the auth composables. Do not replace them with generic `request()` calls unless the auth layer is being intentionally redesigned.
-- See `docs/ory-frontend-reference.md` before changing auth routing. `docs/frontend-integration-api.md` and `docs/api-request-reference.md` are the canonical integration references.
-- `docs/architecture.md` and `docs/development.md` contain backend-oriented notes from the broader Haruki system — useful context, not a map of this repo's source tree.
 
 ## I18n
 
@@ -94,6 +92,7 @@ All commits must follow `[Type] Short description`:
 - Do **not** end the subject line with a period.
 - Keep it short.
 - When Claude Code authors the commit, append a `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>` trailer (blank line between subject and trailer).
+- Bump `version` in `package.json` with every commit: **patch** (+0.0.1) for `[Fix]`, **minor** (+0.1.0) for `[Feat]`, **major** (+1.0.0) for breaking changes.
 
 Examples (from this repo's history):
 - `[Feat] Add hydra oauth2 flow`

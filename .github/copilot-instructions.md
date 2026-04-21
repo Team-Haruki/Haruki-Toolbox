@@ -55,14 +55,6 @@ Also consider:
 - `bun run e2e` for routing, auth, bootstrap, or page-flow changes
 - `bun run build` for larger UI or integration changes
 
-## Helpful References
-
-- `docs/frontend-integration-api.md`
-- `docs/api-request-reference.md`
-- `docs/ory-frontend-reference.md`
-
-Note: some docs in `docs/` contain backend-oriented architecture notes. Use them for integration context, not as frontend directory conventions.
-
 ## Commit Message Format
 
 All commits must follow `[Type] Short description`:
@@ -73,6 +65,7 @@ All commits must follow `[Type] Short description`:
 - Do not end the subject line with a period.
 - Keep it short.
 - When an agent (Copilot, Claude Code, etc.) authors the commit, append a `Co-Authored-By:` trailer identifying the agent (blank line between subject and trailer).
+- Bump `version` in `package.json` with every commit: **patch** (+0.0.1) for `[Fix]`, **minor** (+0.1.0) for `[Feat]`, **major** (+1.0.0) for breaking changes.
 
 Examples (from this repo's history):
 
