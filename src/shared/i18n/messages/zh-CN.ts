@@ -1192,6 +1192,9 @@ export const zhCN = {
       retryButton: "重试",
     },
     input: {
+      warningTitle: "注意",
+      warningDescription: "请使用你本人正在使用的QQ大号（不是接入 HarukiBot NEO 作为 Bot 的QQ号）注册，否则将会被拒绝进入QQ群聊。",
+      warningGroup: "NEO 分布式QQ群: 111612548",
       qqLabel: "QQ 号",
       qqPlaceholder: "请输入 QQ 号",
       hint: "验证码将发送至您的 QQ 邮箱（{qq}{'@'}qq.com），有效期 10 分钟。",

@@ -82,6 +82,16 @@ onMounted(() => {
           </Button>
         </div>
         <div v-else-if="step === 'input'" class="space-y-4">
+          <Alert variant="destructive">
+            <AlertTriangle class="h-4 w-4" />
+            <AlertTitle>{{ t("botNeo.input.warningTitle") }}</AlertTitle>
+            <AlertDescription>
+              {{ t("botNeo.input.warningDescription") }}
+              <br />
+              {{ t("botNeo.input.warningGroup") }}
+            </AlertDescription>
+          </Alert>
+
           <div class="flex flex-col gap-2">
             <label class="text-sm font-medium">{{ t("botNeo.input.qqLabel") }}</label>
             <div class="relative w-full items-center">

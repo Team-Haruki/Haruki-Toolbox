@@ -1192,6 +1192,9 @@ export const enUS = {
       retryButton: "Retry",
     },
     input: {
+      warningTitle: "Warning",
+      warningDescription: "Please register with your personal QQ main account (not the QQ account used to connect HarukiBot NEO as a Bot), otherwise you will be denied access to the QQ group.",
+      warningGroup: "NEO Distributed QQ Group: 111612548",
       qqLabel: "QQ number",
       qqPlaceholder: "Enter your QQ number",
       hint: "A 6-digit verification code will be sent to your QQ mailbox ({qq}{'@'}qq.com). The code is valid for 10 minutes.",
