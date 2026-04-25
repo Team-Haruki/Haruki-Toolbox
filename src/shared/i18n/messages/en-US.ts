@@ -616,7 +616,7 @@ export const enUS = {
     accountSettings: "Account settings",
     gameAccountManagement: "Game account management",
     externalLinks: "External links",
-    harukiBotDocs: "HarukiBot docs",
+    harukiBotDocs: "HarukiBot NEO docs",
     harukiGithub: "Haruki GitHub",
     legalLinks: "Legal",
     privacyPolicy: "Privacy Policy",

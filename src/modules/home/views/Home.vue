@@ -85,7 +85,7 @@ const { t } = useI18n()
         <CardTitle>{{ t("home.externalLinks") }}</CardTitle>
       </CardHeader>
       <CardContent class="grid grid-cols-2 gap-4 items-stretch">
-        <a href="https://docs.haruki.seiunx.com" target="_blank" rel="noopener noreferrer" class="flex">
+        <a href="https://neo.haruki.seiunx.com" target="_blank" rel="noopener noreferrer" class="flex">
           <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
             <LucideBot class="w-5 h-5"/>
             <span class="whitespace-normal">{{ t("home.harukiBotDocs") }}</span>

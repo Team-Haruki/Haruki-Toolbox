@@ -616,7 +616,7 @@ export const zhCN = {
     accountSettings: "账号设置",
     gameAccountManagement: "游戏账号管理",
     externalLinks: "站外链接",
-    harukiBotDocs: "HarukiBot 帮助文档",
+    harukiBotDocs: "HarukiBot NEO帮助文档",
     harukiGithub: "Haruki GitHub",
     legalLinks: "法律与合规",
     privacyPolicy: "隐私政策",
