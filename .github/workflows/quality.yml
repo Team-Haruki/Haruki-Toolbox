@@ -1,4 +1,4 @@
-name: Quality
+name: CI
 
 on:
   pull_request:
@@ -6,10 +6,19 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -36,7 +45,9 @@ jobs:
         run: bun run build
 
   e2e:
+    needs: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -51,7 +62,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright browser
-        run: bun run e2e:install
+        run: bunx playwright install --with-deps chromium
 
       - name: Run E2E
         run: bun run e2e
