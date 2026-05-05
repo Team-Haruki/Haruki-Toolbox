@@ -1,7 +1,7 @@
 {
   "name": "haruki-toolbox",
   "private": true,
-  "version": "7.7.2",
+  "version": "7.7.3",
   "type": "module",
   "scripts": {
     "dev": "bunx --bun vite",
@@ -41,6 +41,9 @@
     "vue-sonner": "^2.0.9",
     "vue3-simple-icons": "^16.10.0",
     "zod": "^4.4.3"
+  },
+  "overrides": {
+    "dompurify": "3.4.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
