@@ -151,6 +151,13 @@ export function useUploadDataTool() {
       return
     }
 
+    if (!/^[a-zA-Z0-9]{16}$/.test(normalizedInheritId)) {
+      toast.warning(t("tools.uploadData.toast.inheritIdInvalidTitle"), {
+        description: t("tools.uploadData.toast.inheritIdInvalidDescription"),
+      })
+      return
+    }
+
     if (inheritServer.value === "cn" && inheritDataType.value === "mysekai" && userStore.allowCNMysekai !== true) {
       toast.error(t("tools.uploadData.toast.operationForbiddenTitle"), {
         description: t("tools.uploadData.toast.operationForbiddenDescription"),

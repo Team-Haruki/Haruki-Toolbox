@@ -60,11 +60,6 @@ export const enUS = {
         loginSuccessTitle: "Sign-in successful",
         loginSuccessDescription: "Welcome back to Haruki Toolbox",
       },
-      incidentAlert: {
-        title: "Database Rollback Notice",
-        description1: "Due to unforeseen circumstances, all data changes (such as account registrations, password changes, etc.) made to the Haruki Toolbox main database between 2026-03-22 04:30 (UTC+8) and 2026-03-23 05:00 (UTC+8) have been lost.",
-        description2: "We apologize for the inconvenience caused."
-      },
     },
     register: {
       title: "Register account",
@@ -1086,6 +1081,8 @@ export const enUS = {
         uploadFailedFallback: "Upload failed",
         inheritIncompleteTitle: "Please complete transfer-code info",
         inheritIncompleteDescription: "Transfer ID and password are both required",
+        inheritIdInvalidTitle: "Invalid transfer ID",
+        inheritIdInvalidDescription: "Transfer ID must be 16 alphanumeric characters (case-sensitive)",
       },
       fileTab: {
         title: "Manual file upload",

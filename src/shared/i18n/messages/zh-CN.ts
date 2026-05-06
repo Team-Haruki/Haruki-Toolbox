@@ -60,11 +60,6 @@ export const zhCN = {
         loginSuccessTitle: "登录成功",
         loginSuccessDescription: "欢迎回到Haruki工具箱",
       },
-      incidentAlert: {
-        title: "数据回档通知",
-        description1: "由于一些意外，Haruki工具箱主数据库在北京时间2026年3月22日04:30到北京时间2026年3月23日05:00左右的时间发生的数据变动(如注册账号，更改密码等)全部发生丢失",
-        description2: "由此带来的不便敬请谅解"
-      },
     },
     register: {
       title: "注册账号",
@@ -1086,6 +1081,8 @@ export const zhCN = {
         uploadFailedFallback: "上传失败",
         inheritIncompleteTitle: "请填写完整的继承信息",
         inheritIncompleteDescription: "继承ID和继承密码均为必填项",
+        inheritIdInvalidTitle: "继承ID格式不正确",
+        inheritIdInvalidDescription: "继承ID应为16位英文字母与数字的组合（区分大小写）",
       },
       fileTab: {
         title: "手动上传文件",
