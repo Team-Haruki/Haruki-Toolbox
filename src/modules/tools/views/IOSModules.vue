@@ -68,7 +68,7 @@ function handleCopyScriptUrl(value: string) {
         <AlertDescription class="space-y-1.5 leading-relaxed mt-2 text-muted-foreground">
           <p>
             {{ t("tools.iosModules.tutorialAlert.textBefore") }}
-            <a href="https://docs.haruki.seiunx.com/toolboxtutorial/ios-module.html" target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-4 text-primary hover:text-primary/80 transition-colors">
+            <a href="https://neo.haruki.seiunx.com/toolboxtutorial/ios-module.html" target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-4 text-primary hover:text-primary/80 transition-colors">
               {{ t("tools.iosModules.tutorialAlert.linkText") }}
             </a>
             {{ t("tools.iosModules.tutorialAlert.textAfter") }}
