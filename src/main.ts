@@ -19,6 +19,7 @@ app.use(pinia)
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
 settingsStore.initTheme()
+settingsStore.initVisualEffects()
 if (isAppLocale(settingsStore.locale)) {
     await setI18nLocale(settingsStore.locale)
 }

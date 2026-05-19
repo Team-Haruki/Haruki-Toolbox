@@ -14,7 +14,10 @@ const { t } = useI18n()
     </div>
 
     <Tabs :model-value="activeTab" @update:model-value="onTabChange" class="w-full">
-      <TabsList class="w-full flex overflow-x-auto overflow-y-hidden justify-start h-auto gap-1 bg-muted/50 p-1 rounded-lg [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+      <TabsList
+        data-glass-surface="admin-tabs"
+        class="w-full flex overflow-x-auto overflow-y-hidden justify-start h-auto gap-1 rounded-lg border border-white/55 bg-white/58 p-1 shadow-[0_14px_38px_-34px_rgba(15,23,42,0.8)] backdrop-blur-md supports-[backdrop-filter]:bg-white/42 dark:border-white/10 dark:bg-slate-950/48 dark:supports-[backdrop-filter]:bg-slate-950/34 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
+      >
         <TabsTrigger
           v-for="item in visibleNavItems"
           :key="item.value"

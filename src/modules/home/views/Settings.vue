@@ -3,6 +3,7 @@ import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
 import { Settings, Save, RotateCcw, Network, Palette, Info } from 'lucide-vue-next'
 import {
   Card,
@@ -24,6 +25,7 @@ const {
   selectedEndpoint,
   selectedTheme,
   selectedLocale,
+  selectedReducedVisualEffects,
   endpointOptions,
   endpointSelectionDisabled,
   endpointUnavailable,
@@ -32,6 +34,7 @@ const {
   selectedEndpointLabel,
   selectedThemeLabel,
   selectedLocaleLabel,
+  visualEffectsIcon,
   saveSettings,
   resetSettings,
 } = useHomeSettings()
@@ -117,6 +120,16 @@ const localeKey = computed(() => locale.value)
               </SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <Label for="reduced-visual-effects" class="text-base font-medium flex items-center gap-2">
+              <component :is="visualEffectsIcon" class="w-4 h-4" />
+              {{ t("homeSettings.visualEffects.label") }}
+            </Label>
+            <p class="text-sm text-muted-foreground">{{ t("homeSettings.visualEffects.help") }}</p>
+          </div>
+          <Switch id="reduced-visual-effects" v-model="selectedReducedVisualEffects" class="mt-1 shrink-0" />
         </div>
         <div class="flex gap-2 pt-2">
           <Button @click="saveSettings" class="flex-1">

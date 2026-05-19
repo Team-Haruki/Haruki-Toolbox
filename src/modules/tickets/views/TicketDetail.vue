@@ -159,7 +159,11 @@ function formatCategory(category: string) {
           </div>
 
           <!-- Input area -->
-          <div v-if="isOpen" class="border-t p-3 flex gap-2 items-stretch">
+          <div
+            v-if="isOpen"
+            data-glass-surface="compose-bar"
+            class="sticky bottom-0 flex items-stretch gap-2 border-t border-white/55 bg-background/82 p-3 shadow-[0_-14px_34px_-28px_rgba(15,23,42,0.8)] backdrop-blur-md supports-[backdrop-filter]:bg-background/68 dark:border-white/10 dark:bg-slate-950/70 dark:supports-[backdrop-filter]:bg-slate-950/56"
+          >
             <textarea
               v-model="newMessage"
               :placeholder="t('tickets.detail.inputPlaceholder')"
@@ -177,7 +181,11 @@ function formatCategory(category: string) {
               <span class="text-xs tracking-widest">{{ t("tickets.detail.sendButton") }}</span>
             </Button>
           </div>
-          <div v-else class="border-t p-3 text-center text-sm text-muted-foreground">
+          <div
+            v-else
+            data-glass-surface="compose-bar"
+            class="sticky bottom-0 border-t border-white/55 bg-background/82 p-3 text-center text-sm text-muted-foreground shadow-[0_-14px_34px_-28px_rgba(15,23,42,0.8)] backdrop-blur-md supports-[backdrop-filter]:bg-background/68 dark:border-white/10 dark:bg-slate-950/70 dark:supports-[backdrop-filter]:bg-slate-950/56"
+          >
             {{ t("tickets.detail.closedHint") }}
           </div>
         </CardContent>

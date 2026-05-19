@@ -2,7 +2,7 @@ import { computed, onMounted, ref, watch } from "vue"
 import type { Component } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
-import { CloudLightning, Link, Monitor, Moon, Sun } from "lucide-vue-next"
+import { CloudLightning, Gauge, Link, Monitor, Moon, Sun } from "lucide-vue-next"
 import { useSettingsStore, type EndpointType, type ThemeType } from "@/shared/stores/settings"
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type AppLocale } from "@/shared/i18n"
 
@@ -25,6 +25,7 @@ interface LocaleOption {
 
 const DEFAULT_ENDPOINT: EndpointType = "direct"
 const DEFAULT_THEME: ThemeType = "system"
+const DEFAULT_REDUCED_VISUAL_EFFECTS = false
 
 export function useHomeSettings() {
   const { t } = useI18n()
@@ -33,6 +34,7 @@ export function useHomeSettings() {
   const selectedEndpoint = ref<EndpointType>(settingsStore.resolvedPreferredEndpoint)
   const selectedTheme = ref<ThemeType>(settingsStore.theme)
   const selectedLocale = ref<AppLocale>(settingsStore.locale)
+  const selectedReducedVisualEffects = ref(settingsStore.reducedVisualEffects)
 
   const endpointOptions = computed<ReadonlyArray<EndpointOption>>(() => [
     settingsStore.hasDirectEndpoint
@@ -86,6 +88,7 @@ export function useHomeSettings() {
     settingsStore.setPreferredEndpoint(selectedEndpoint.value)
     settingsStore.setTheme(selectedTheme.value)
     settingsStore.setLocale(selectedLocale.value)
+    settingsStore.setReducedVisualEffects(selectedReducedVisualEffects.value)
     toast.success(t("homeSettings.toast.saved"))
   }
 
@@ -93,14 +96,17 @@ export function useHomeSettings() {
     settingsStore.setPreferredEndpoint(DEFAULT_ENDPOINT)
     settingsStore.setTheme(DEFAULT_THEME)
     settingsStore.setLocale(DEFAULT_LOCALE)
+    settingsStore.setReducedVisualEffects(DEFAULT_REDUCED_VISUAL_EFFECTS)
     selectedEndpoint.value = settingsStore.resolvedPreferredEndpoint
     selectedTheme.value = settingsStore.theme
     selectedLocale.value = settingsStore.locale
+    selectedReducedVisualEffects.value = settingsStore.reducedVisualEffects
     toast.info(t("homeSettings.toast.reset"))
   }
 
   onMounted(() => {
     settingsStore.initTheme()
+    settingsStore.initVisualEffects()
   })
 
   watch(
@@ -122,6 +128,7 @@ export function useHomeSettings() {
     selectedEndpoint,
     selectedTheme,
     selectedLocale,
+    selectedReducedVisualEffects,
     endpointOptions,
     endpointSelectionDisabled,
     endpointUnavailable,
@@ -130,6 +137,7 @@ export function useHomeSettings() {
     selectedEndpointLabel,
     selectedThemeLabel,
     selectedLocaleLabel,
+    visualEffectsIcon: Gauge,
     saveSettings,
     resetSettings,
   }

@@ -10,7 +10,7 @@ const props = defineProps<ToasterProps>()
     class="toaster group"
     v-bind="props"
     :style="{
-      '--normal-bg': 'var(--popover)',
+      '--normal-bg': 'color-mix(in oklab, var(--popover) 88%, transparent)',
       '--normal-text': 'var(--popover-foreground)',
       '--normal-border': 'var(--border)',
 

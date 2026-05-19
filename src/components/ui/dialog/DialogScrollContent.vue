@@ -27,9 +27,10 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
     >
       <DialogContent
+        data-glass-surface="dialog"
         :class="
           cn(
-            'relative z-50 grid w-full max-w-lg my-8 gap-4 border border-border bg-background p-6 shadow-lg duration-200 sm:rounded-lg md:w-full',
+            'relative z-50 grid w-full max-w-lg my-8 gap-4 border border-white/55 bg-background/94 p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.95)] backdrop-blur-xl duration-200 supports-[backdrop-filter]:bg-background/82 sm:rounded-lg md:w-full dark:border-white/10 dark:bg-slate-950/88 dark:supports-[backdrop-filter]:bg-slate-950/76',
             props.class,
           )
         "

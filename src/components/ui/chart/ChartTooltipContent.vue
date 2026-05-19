@@ -48,8 +48,9 @@ const tooltipLabel = computed(() => {
 
 <template>
   <div
+    data-glass-surface="chart-tooltip"
     :class="cn(
-      'border-border/50 bg-background grid min-w-[8rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl',
+      'grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-white/55 bg-background/94 px-2.5 py-1.5 text-xs shadow-[0_14px_42px_-30px_rgba(15,23,42,0.9)] backdrop-blur-md supports-[backdrop-filter]:bg-background/84 dark:border-white/10 dark:bg-slate-950/88 dark:supports-[backdrop-filter]:bg-slate-950/78',
       props.class,
     )"
   >

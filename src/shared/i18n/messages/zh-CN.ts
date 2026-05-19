@@ -2304,7 +2304,7 @@ export const zhCN = {
   },
   homeSettings: {
     title: "Haruki工具箱设置",
-    description: "配置Haruki工具箱的端点、外观和语言",
+    description: "配置Haruki工具箱的端点、外观、语言和性能偏好",
     endpoint: {
       label: "服务器端点",
       help: "选择服务器连接方式，默认使用直连。若在海外连接困难，可尝试 CDN。",
@@ -2328,12 +2328,16 @@ export const zhCN = {
       zhCN: "简体中文",
       enUS: "English",
     },
+    visualEffects: {
+      label: "低特效模式",
+      help: "开启后会关闭毛玻璃、强阴影等较耗性能的视觉效果，适合移动设备或低功耗场景。",
+    },
     toast: {
       saved: "设置已保存",
       reset: "设置已重置为默认值",
     },
     tip: {
-      content: "主题设置会立即生效，端点设置将在下次请求时生效。",
+      content: "主题和低特效模式保存后会立即生效，端点设置将在下次请求时生效。",
     },
   },
   core: {

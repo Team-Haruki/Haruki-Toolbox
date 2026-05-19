@@ -21,6 +21,7 @@ export const useSettingsStore = defineStore("settings", () => {
     const preferredEndpoint = ref<EndpointType>('direct')
     const theme = ref<ThemeType>('system')
     const locale = ref<AppLocale>(DEFAULT_LOCALE)
+    const reducedVisualEffects = ref(false)
     const hasDirectEndpoint = computed(() => directEndpoint.value !== '')
     const hasCdnEndpoint = computed(() => cdnEndpoint.value !== '')
 
@@ -62,6 +63,10 @@ export const useSettingsStore = defineStore("settings", () => {
     function setLocale(newLocale: AppLocale) {
         locale.value = newLocale
     }
+    function setReducedVisualEffects(enabled: boolean) {
+        reducedVisualEffects.value = enabled
+        applyReducedVisualEffects(enabled)
+    }
     function applyTheme(themeValue: ThemeType) {
         const root = document.documentElement
         if (themeValue === 'system') {
@@ -70,6 +75,9 @@ export const useSettingsStore = defineStore("settings", () => {
         } else {
             root.classList.toggle('dark', themeValue === 'dark')
         }
+    }
+    function applyReducedVisualEffects(enabled: boolean) {
+        document.documentElement.classList.toggle('reduced-visual-effects', enabled)
     }
     let themeListenerInitialized = false
     let themeMediaQuery: MediaQueryList | null = null
@@ -87,6 +95,9 @@ export const useSettingsStore = defineStore("settings", () => {
             themeMediaQuery.addEventListener('change', handleThemeChange)
         }
     }
+    function initVisualEffects() {
+        applyReducedVisualEffects(reducedVisualEffects.value)
+    }
     return {
         directEndpoint,
         cdnEndpoint,
@@ -97,14 +108,17 @@ export const useSettingsStore = defineStore("settings", () => {
         currentEndpoint,
         theme,
         locale,
+        reducedVisualEffects,
         getEndpointUrl,
         setPreferredEndpoint,
         setTheme,
         setLocale,
+        setReducedVisualEffects,
         initTheme,
+        initVisualEffects,
     }
 }, {
     persist: {
-        pick: ['preferredEndpoint', 'theme', 'locale']
+        pick: ['preferredEndpoint', 'theme', 'locale', 'reducedVisualEffects']
     }
 })

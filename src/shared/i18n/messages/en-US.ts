@@ -2304,7 +2304,7 @@ export const enUS = {
   },
   homeSettings: {
     title: "Haruki Toolbox Settings",
-    description: "Configure website endpoint, appearance, and language",
+    description: "Configure website endpoint, appearance, language, and performance preferences",
     endpoint: {
       label: "Server Endpoint",
       help: "Direct is default. If international access is unstable, try CDN.",
@@ -2328,12 +2328,16 @@ export const enUS = {
       zhCN: "简体中文",
       enUS: "English",
     },
+    visualEffects: {
+      label: "Low effects mode",
+      help: "Turns off glass blur, heavy shadows, and other costly visual effects. Useful on mobile or low-power devices.",
+    },
     toast: {
       saved: "Settings saved",
       reset: "Settings reset to defaults",
     },
     tip: {
-      content: "Theme applies immediately. Endpoint applies on next request.",
+      content: "Theme and low effects mode apply immediately after saving. Endpoint applies on next request.",
     },
   },
   core: {
