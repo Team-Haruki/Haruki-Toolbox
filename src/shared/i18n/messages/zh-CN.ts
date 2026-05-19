@@ -645,17 +645,17 @@ export const zhCN = {
         subtitle: "我们编写并维护了一系列开源高性能工具、微服务与应用栈",
         techStack: "技术栈",
         list: {
-          drawingEngine: { name: "HarukiBot NEO Drawing Engine", desc: "基于高性能 Python 环境的 HarukiBot NEO 绘图与渲染引擎服务。" },
-          botBackend: { name: "HarukiBot NEO Backend", desc: "基于 Go 语言和 EntGo 框架构建的 HarukiBot NEO 高性能核心后端服务。" },
-          toolboxBackend: { name: "Haruki Toolbox Backend", desc: "基于 Go 语言的 Haruki 工具箱后台服务，统一提供 API 接口。" },
-          deckService: { name: "Deck Service", desc: "基于 Rust 的高性能卡组推荐与游戏数据计算微服务。" },
-          deckCpp: { name: "Sekai Deck Recommend CPP", desc: "用 C++ 编写的 Sekai 卡组推荐核心算法库（分叉修改并持续维护版本）。" },
-          scoresRs: { name: "PJSekai Scores RS", desc: "基于 Rust 与 Skia 图形库的成绩渲染核心底座。" },
-          toolbox: { name: "Haruki Toolbox", desc: "Haruki 工具箱前端 Web 应用，采用现代的 Vue 3、Vite 和 Tailwind v4 构建。" },
-          assetUpdater: { name: "Haruki Asset Updater", desc: "基于 Rust 的游戏资源包解密与自动同步更新同步器。" },
-          sekaiApi: { name: "Haruki Sekai API", desc: "第三方 Sekai 游戏数据代理与聚合 API 服务，基于 Rust 构建。" },
-          eventTracker: { name: "Haruki Event Tracker", desc: "追踪游戏活动数据及实时排位的 Rust 微服务。" },
-          cridecoder: { name: "Cridecoder", desc: "用 Rust 编写的用于解密解码 Cryware（HCA/WAV）音频和封包的工具。" }
+          drawingEngine: { name: "HarukiBot NEO Drawing Engine", desc: "基于 Python 3.14 自由线程 (free-threaded) 编写，使用 FastAPI 与 Pillow，充分利用 asyncio 与多线程性能的 Bot 图片渲染服务。" },
+          botBackend: { name: "HarukiBot NEO Backend", desc: "基于 Go、Fiber 与 EntGo 编写的高性能 HarukiBot NEO 核心后端服务。" },
+          toolboxBackend: { name: "Haruki Toolbox Backend", desc: "基于 Go、Fiber、EntGo 与 PostgreSQL、MongoDB 编写的高性能 Haruki 工具箱后端服务。" },
+          deckService: { name: "Deck Service", desc: "基于 Rust 编写的高性能卡组推荐微服务。" },
+          deckCpp: { name: "Sekai Deck Recommend CPP", desc: "基于 C++ 编写的卡组推荐服务核心算法引擎。" },
+          scoresRs: { name: "PJSekai Scores RS", desc: "基于 Rust 编写的平面游戏谱面 SVG 生成器，同时使用 skia-safe 提供 PNG/JPG 谱面图片导出支持。" },
+          toolbox: { name: "Haruki Toolbox", desc: "基于 Vue 3 与 TypeScript，使用 Shadcn-Vue 与 Tailwind CSS 设计的 Haruki 工具箱 Web 前端网站。" },
+          assetUpdater: { name: "Haruki Sekai Asset Updater", desc: "基于 Rust 编写的高性能 Project Sekai 游戏资产解密与解包微服务。" },
+          sekaiApi: { name: "Haruki Sekai API", desc: "基于 Rust 编写的高性能 Project Sekai 游戏服务器 API 反向代理与聚合微服务。" },
+          eventTracker: { name: "Haruki Event Tracker", desc: "基于 Rust 编写的高性能 Project Sekai 游戏活动与实时排行榜追踪微服务。" },
+          cridecoder: { name: "Cridecoder", desc: "基于 Rust 编写的高性能 CriWare 音视频与封包中间件解密解码依赖库。" }
         }
       },
       support: {

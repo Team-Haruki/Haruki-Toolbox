@@ -645,17 +645,17 @@ export const enUS = {
         subtitle: "A collection of high-performance open-source tools, microservices, and applications authored by us",
         techStack: "Tech Stack",
         list: {
-          drawingEngine: { name: "HarukiBot NEO Drawing Engine", desc: "A high-performance Python-based drawing and rendering engine for HarukiBot NEO." },
-          botBackend: { name: "HarukiBot NEO Backend", desc: "The core backend API for HarukiBot NEO written in Go with EntGo framework." },
-          toolboxBackend: { name: "Haruki Toolbox Backend", desc: "Backend API service for Haruki Toolbox built on Go and EntGo." },
-          deckService: { name: "Deck Service", desc: "High-performance deck recommendation and gameplay calculation service in Rust." },
-          deckCpp: { name: "Sekai Deck Recommend CPP", desc: "Sekai deck recommendation core algorithm library written in C++ (forked and maintained version)." },
-          scoresRs: { name: "PJSekai Scores RS", desc: "Score rendering engine core based on Rust and Skia graphics library." },
-          toolbox: { name: "Haruki Toolbox", desc: "Web frontend for Haruki Toolbox, built using Vue 3, Vite, and Tailwind CSS v4." },
-          assetUpdater: { name: "Haruki Asset Updater", desc: "Decryption and auto-sync tool for game asset packages written in Rust." },
-          sekaiApi: { name: "Haruki Sekai API", desc: "A proxy and aggregator service for Sekai game data built with Rust." },
-          eventTracker: { name: "Haruki Event Tracker", desc: "A Rust-based microservice for tracking in-game events and real-time tiers." },
-          cridecoder: { name: "Cridecoder", desc: "A Rust utility library and tool for decrypting Cryware (HCA/WAV) files." }
+          drawingEngine: { name: "HarukiBot NEO Drawing Engine", desc: "A high-performance Bot image rendering service built on free-threaded Python 3.14, utilizing FastAPI and Pillow to fully leverage asyncio and multi-threaded performance." },
+          botBackend: { name: "HarukiBot NEO Backend", desc: "A high-performance core backend service for HarukiBot NEO, built with Go, Fiber, and EntGo." },
+          toolboxBackend: { name: "Haruki Toolbox Backend", desc: "A high-performance backend service for Haruki Toolbox, built with Go, Fiber, EntGo, PostgreSQL, and MongoDB." },
+          deckService: { name: "Deck Service", desc: "A high-performance deck recommendation microservice built with Rust." },
+          deckCpp: { name: "Sekai Deck Recommend CPP", desc: "The core algorithm engine for deck recommendation services, written in C++." },
+          scoresRs: { name: "PJSekai Scores RS", desc: "A flat game chart SVG generator written in Rust, utilizing skia-safe to support PNG/JPG chart image exports." },
+          toolbox: { name: "Haruki Toolbox", desc: "The Haruki Toolbox Web frontend website, built with Vue 3 and TypeScript, designed using Shadcn-Vue and Tailwind CSS." },
+          assetUpdater: { name: "Haruki Sekai Asset Updater", desc: "A high-performance decryption and unpacking microservice for Project Sekai game assets, built with Rust." },
+          sekaiApi: { name: "Haruki Sekai API", desc: "A high-performance reverse proxy and aggregation microservice for Project Sekai game server APIs, built with Rust." },
+          eventTracker: { name: "Haruki Event Tracker", desc: "A high-performance Project Sekai game events and real-time leaderboard tracking microservice built with Rust." },
+          cridecoder: { name: "Cridecoder", desc: "A high-performance Rust library for decrypting and decoding CriWare audio, video, and package middleware." }
         }
       },
       support: {
