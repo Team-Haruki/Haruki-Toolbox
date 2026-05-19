@@ -626,17 +626,17 @@ export const enUS = {
           sponsor: "Generously sponsored hosting servers for HarukiBot NEO and Haruki Sekai Asset station"
         },
         members: {
-          seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "Project initiator, main developer and maintainer of HarukiBot NEO", quote: "\"Coding for love, dedicated to creating more interesting community tools.\"" },
-          lingqian: { name: "Lingqian", role: "Core Developer", desc: "Core developer and maintainer of HarukiBot NEO", quote: "\"Code saves the world, or at least makes playing Sekai easier.\"" },
-          deseer: { name: "Deseer", role: "Core Developer", desc: "Core developer and maintainer of HarukiBot NEO" },
-          storyxy: { name: "storyxy3", role: "Core Developer", desc: "Core developer and maintainer of HarukiBot NEO" },
-          aposetles: { name: "Aposetles", role: "Documentation Maintainer", desc: "Documentation maintainer of HarukiBot NEO" },
-          tianshinling: { name: "Amane Rin", role: "Documentation Maintainer", desc: "Documentation maintainer of HarukiBot NEO" },
-          yangzi: { name: "Yangzi", role: "Documentation Maintainer", desc: "Documentation maintainer of HarukiBot NEO" },
-          watagashi: { name: "Watagashi Uni", role: "Contributor", desc: "External contributor, provided invaluable technical and resource support to the project" },
-          middlered: { name: "MiddleRed", role: "Contributor", desc: "External contributor, provided many ideas and strong support for project development" },
-          dnaroma: { name: "DNARoma", role: "Contributor", desc: "External contributor, provided key assistance and coordination for the project" },
-          yamamoto: { name: "Yamamoto", role: "Gold Sponsor", desc: "Sponsored server hosting for HarukiBot NEO and Haruki Sekai Asset servers" }
+          seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "Project initiator", quote: "\"Coding for love, dedicated to creating more interesting community tools.\"" },
+          lingqian: { name: "Lingqian", role: "Core Developer", desc: "", quote: "\"Code saves the world, or at least makes playing Sekai easier.\"" },
+          deseer: { name: "Deseer", role: "Core Developer", desc: "" },
+          storyxy: { name: "storyxy3", role: "Core Developer", desc: "" },
+          aposetles: { name: "Aposetles", role: "Documentation Maintainer", desc: "" },
+          tianshinling: { name: "Amane Rin", role: "Documentation Maintainer", desc: "" },
+          yangzi: { name: "Yangzi", role: "Documentation Maintainer", desc: "" },
+          watagashi: { name: "Watagashi Uni", role: "Contributor", desc: "Provided invaluable technical and resource support to the project" },
+          middlered: { name: "MiddleRed", role: "Contributor", desc: "Provided many ideas and strong support for project development" },
+          dnaroma: { name: "DNARoma", role: "Contributor", desc: "Provided key assistance and coordination for the project" },
+          yamamoto: { name: "Yamamoto", role: "Gold Sponsor", desc: "" }
         }
       },
       projects: {

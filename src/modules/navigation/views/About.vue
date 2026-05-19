@@ -30,6 +30,11 @@ const hasQuote = (memberKey: string) => {
   return te(quoteKey) && t(quoteKey) !== quoteKey
 }
 
+const hasDesc = (memberKey: string) => {
+  const descKey = `navigationPages.about.team.members.${memberKey}.desc`
+  return te(descKey) && t(descKey) !== descKey && t(descKey) !== ""
+}
+
 // Developer team member structure
 interface TeamMember {
   key: string // used for i18n lookup
@@ -191,8 +196,11 @@ const showSponsorsMaintenance = () => {
                     </span>
                   </div>
                 </CardHeader>
-                <CardContent class="pt-0 space-y-2">
-                  <CardDescription class="text-xs line-clamp-2 leading-relaxed">
+                <CardContent v-if="hasDesc(member.key) || hasQuote(member.key)" class="pt-0 space-y-2">
+                  <CardDescription 
+                    v-if="hasDesc(member.key)"
+                    class="text-xs line-clamp-2 leading-relaxed"
+                  >
                     {{ t(`navigationPages.about.team.members.${member.key}.desc`) }}
                   </CardDescription>
                   <div 

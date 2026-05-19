@@ -626,17 +626,17 @@ export const zhCN = {
           sponsor: "提供了 HarukiBot NEO 使用的服务器以及 Haruki Sekai Asset 站服务器的人"
         },
         members: {
-          seiun: { name: "星雲希凪", role: "创始人 / 核心开发", desc: "Project Haruki 发起人，HarukiBot NEO 主要开发与维护者", quote: "“为爱发电，致力于创造更有趣的社区工具。”" },
-          lingqian: { name: "灵潜", role: "核心开发", desc: "HarukiBot NEO 核心开发与维护者", quote: "“代码拯救世界，或者至少让打歌更方便点。”" },
-          deseer: { name: "Deseer", role: "核心开发", desc: "HarukiBot NEO 核心开发与维护者" },
-          storyxy: { name: "storyxy3", role: "核心开发", desc: "HarukiBot NEO 核心开发与维护者" },
-          aposetles: { name: "Aposetles", role: "文档维护", desc: "HarukiBot NEO 使用文档维护者" },
-          tianshinling: { name: "天音铃", role: "文档维护", desc: "HarukiBot NEO 使用文档维护者" },
-          yangzi: { name: "阳子", role: "文档维护", desc: "HarukiBot NEO 使用文档维护者" },
-          watagashi: { name: "綿菓子ウニ", role: "外部协力", desc: "外部贡献者，为项目提供了许多技术及资源层面的支持与帮助" },
-          middlered: { name: "MiddleRed", role: "外部协力", desc: "外部贡献者，为项目开发提供了诸多建议与大力支持" },
-          dnaroma: { name: "DNARoma", role: "外部协力", desc: "外部贡献者，为项目发展提供了关键的支持和协助" },
-          yamamoto: { name: "山本", role: "金牌赞助者", desc: "赞助了 HarukiBot NEO 运行所需的服务器以及 Haruki Sekai Asset 站服务器" }
+          seiun: { name: "星雲希凪", role: "创始人 / 核心开发", desc: "Project Haruki 发起人", quote: "“为爱发电，致力于创造更有趣的社区工具。”" },
+          lingqian: { name: "灵潜", role: "核心开发", desc: "", quote: "“代码拯救世界，或者至少让打歌更方便点。”" },
+          deseer: { name: "Deseer", role: "核心开发", desc: "" },
+          storyxy: { name: "storyxy3", role: "核心开发", desc: "" },
+          aposetles: { name: "Aposetles", role: "文档维护", desc: "" },
+          tianshinling: { name: "天音铃", role: "文档维护", desc: "" },
+          yangzi: { name: "阳子", role: "文档维护", desc: "" },
+          watagashi: { name: "綿菓子ウニ", role: "外部协力", desc: "为项目提供了许多技术及资源层面的支持与帮助" },
+          middlered: { name: "MiddleRed", role: "外部协力", desc: "为项目开发提供了诸多建议与大力支持" },
+          dnaroma: { name: "DNARoma", role: "外部协力", desc: "为项目发展提供了关键的支持和协助" },
+          yamamoto: { name: "山本", role: "金牌赞助者", desc: "" }
         }
       },
       projects: {
