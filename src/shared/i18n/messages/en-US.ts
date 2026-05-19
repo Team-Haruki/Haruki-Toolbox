@@ -627,8 +627,8 @@ export const enUS = {
           sponsor: "Generously sponsored hosting servers for HarukiBot NEO and Haruki Sekai Asset station"
         },
         members: {
-          seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "", quote: "\"Coding for love, dedicated to creating more interesting community tools.\"" },
-          lingqian: { name: "Lingqian", role: "Core Developer", desc: "", quote: "\"Code saves the world, or at least makes playing Sekai easier.\"" },
+          seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "", quote: "\"Pursuing infinite possibilities within a finite life\"" },
+          lingqian: { name: "Lingqian", role: "Core Developer", desc: "" },
           deseer: { name: "Deseer", role: "Core Developer", desc: "" },
           storyxy: { name: "storyxy3", role: "Core Developer", desc: "" },
           aposetles: { name: "Aposetles", role: "Documentation Maintainer", desc: "" },

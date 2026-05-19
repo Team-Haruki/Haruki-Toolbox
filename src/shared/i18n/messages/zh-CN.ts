@@ -627,8 +627,8 @@ export const zhCN = {
           sponsor: "提供了 HarukiBot NEO 使用的服务器以及 Haruki Sekai Asset 站服务器的人"
         },
         members: {
-          seiun: { name: "星雲希凪", role: "创始人 / 核心开发", desc: "", quote: "“为爱发电，致力于创造更有趣的社区工具。”" },
-          lingqian: { name: "灵潜", role: "核心开发", desc: "", quote: "“代码拯救世界，或者至少让打歌更方便点。”" },
+          seiun: { name: "星雲希凪", role: "创始人 / 核心开发", desc: "", quote: "“有限的生命里追求无限的可能”" },
+          lingqian: { name: "灵潜", role: "核心开发", desc: "" },
           deseer: { name: "Deseer", role: "核心开发", desc: "" },
           storyxy: { name: "storyxy3", role: "核心开发", desc: "" },
           aposetles: { name: "Aposetles", role: "文档维护", desc: "" },

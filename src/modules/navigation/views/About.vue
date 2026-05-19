@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
+import { i18n } from "@/shared/i18n"
+import { useSettingsStore } from "@/shared/stores/settings"
 import { 
   Card, 
   CardContent, 
@@ -24,10 +26,45 @@ import {
 } from "lucide-vue-next"
 
 const { t, te } = useI18n()
+const settingsStore = useSettingsStore()
+
+const getQuote = (memberKey: string) => {
+  const quoteKey = `navigationPages.about.team.members.${memberKey}.quote`
+  
+  // 1. Try current locale
+  if (te(quoteKey)) {
+    const val = t(quoteKey)
+    if (val && val !== quoteKey && val !== "") {
+      return val
+    }
+  }
+  
+  // 2. Fallback to zh-CN (Chinese)
+  try {
+    const zhMessages = i18n.global.getLocaleMessage('zh-CN') as any
+    const quote = zhMessages?.navigationPages?.about?.team?.members?.[memberKey]?.quote
+    if (quote && quote !== "") {
+      return quote
+    }
+  } catch {
+    // ignore
+  }
+  
+  return ""
+}
 
 const hasQuote = (memberKey: string) => {
-  const quoteKey = `navigationPages.about.team.members.${memberKey}.quote`
-  return te(quoteKey) && t(quoteKey) !== quoteKey
+  return getQuote(memberKey) !== ""
+}
+
+const getAvatarUrl = (member: TeamMember) => {
+  if (member.avatar) {
+    if (member.avatar.startsWith('http://') || member.avatar.startsWith('https://')) {
+      return member.avatar
+    }
+    return `${settingsStore.currentEndpoint}${member.avatar.startsWith('/') ? '' : '/'}${member.avatar}`
+  }
+  return member.github ? `https://github.com/${member.github}.png` : ''
 }
 
 // Developer team member structure
@@ -41,7 +78,7 @@ interface TeamMember {
 
 const teamMembers: TeamMember[] = [
   // Core developers
-  { key: "seiun", github: "seiunx", roleKey: "core", linkUrl: "https://github.com/seiunx" },
+  { key: "seiun", github: "MejiroRina", roleKey: "core", linkUrl: "https://seiun.io" },
   { key: "lingqian", roleKey: "core", linkUrl: "https://github.com/Team-Haruki" },
   { key: "deseer", github: "Deseer", roleKey: "core", linkUrl: "https://github.com/Deseer" },
   { key: "storyxy", github: "storyxy", roleKey: "core", linkUrl: "https://github.com/storyxy" },
@@ -172,9 +209,9 @@ const showSponsorsMaintenance = () => {
             >
               <Card class="h-full border border-muted/50 bg-card/40 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer">
                 <CardHeader class="flex flex-row items-center gap-4 pb-3">
-                  <Avatar class="h-10 w-10 border border-muted/80 transition-colors duration-300 group-hover:border-primary">
+                   <Avatar class="h-10 w-10 border border-muted/80 transition-colors duration-300 group-hover:border-primary">
                     <AvatarImage 
-                      :src="member.avatar || (member.github ? `https://github.com/${member.github}.png` : '')" 
+                      :src="getAvatarUrl(member)" 
                       :alt="t(`navigationPages.about.team.members.${member.key}.name`)" 
                     />
                     <AvatarFallback class="bg-primary/5 text-primary text-sm font-semibold">
@@ -196,7 +233,7 @@ const showSponsorsMaintenance = () => {
                     v-if="hasQuote(member.key)"
                     class="text-[10px] text-primary/80 italic border-l-2 border-primary/30 pl-2 py-0.5 line-clamp-2 font-medium bg-primary/[0.02] rounded-r"
                   >
-                    {{ t(`navigationPages.about.team.members.${member.key}.quote`) }}
+                    {{ getQuote(member.key) }}
                   </div>
                   <CardDescription 
                     v-else
