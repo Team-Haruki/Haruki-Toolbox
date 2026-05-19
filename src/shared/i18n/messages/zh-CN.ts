@@ -620,8 +620,8 @@ export const zhCN = {
           sponsor: "金牌赞助"
         },
         members: {
-          seiun: { name: "星雲希凪", role: "创始人 / 核心开发", desc: "Project Haruki 发起人，HarukiBot NEO 主要开发与维护者" },
-          lingqian: { name: "灵潜", role: "核心开发", desc: "HarukiBot NEO 核心开发与维护者" },
+          seiun: { name: "星雲希凪", role: "创始人 / 核心开发", desc: "Project Haruki 发起人，HarukiBot NEO 主要开发与维护者", quote: "“为爱发电，致力于创造更有趣的社区工具。”" },
+          lingqian: { name: "灵潜", role: "核心开发", desc: "HarukiBot NEO 核心开发与维护者", quote: "“代码拯救世界，或者至少让打歌更方便点。”" },
           deseer: { name: "Deseer", role: "核心开发", desc: "HarukiBot NEO 核心开发与维护者" },
           storyxy: { name: "storyxy3", role: "核心开发", desc: "HarukiBot NEO 核心开发与维护者" },
           aposetles: { name: "Aposetles", role: "文档维护", desc: "HarukiBot NEO 使用文档维护者" },

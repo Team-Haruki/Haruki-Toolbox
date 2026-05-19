@@ -23,7 +23,12 @@ import {
   Sparkles
 } from "lucide-vue-next"
 
-const { t } = useI18n()
+const { t, te } = useI18n()
+
+const hasQuote = (memberKey: string) => {
+  const quoteKey = `navigationPages.about.team.members.${memberKey}.quote`
+  return te(quoteKey) && t(quoteKey) !== quoteKey
+}
 
 // Developer team member structure
 interface TeamMember {
@@ -181,10 +186,16 @@ const showSponsorsMaintenance = () => {
                     </span>
                   </div>
                 </CardHeader>
-                <CardContent class="pt-0">
+                <CardContent class="pt-0 space-y-2">
                   <CardDescription class="text-xs line-clamp-2 leading-relaxed">
                     {{ t(`navigationPages.about.team.members.${member.key}.desc`) }}
                   </CardDescription>
+                  <div 
+                    v-if="hasQuote(member.key)"
+                    class="text-[10px] text-primary/80 italic border-l-2 border-primary/30 pl-2 py-0.5 mt-2 line-clamp-2 font-medium bg-primary/[0.02] rounded-r"
+                  >
+                    {{ t(`navigationPages.about.team.members.${member.key}.quote`) }}
+                  </div>
                 </CardContent>
               </Card>
             </a>

@@ -620,8 +620,8 @@ export const enUS = {
           sponsor: "Gold Sponsors"
         },
         members: {
-          seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "Project initiator, main developer and maintainer of HarukiBot NEO" },
-          lingqian: { name: "Lingqian", role: "Core Developer", desc: "Core developer and maintainer of HarukiBot NEO" },
+          seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "Project initiator, main developer and maintainer of HarukiBot NEO", quote: "\"Coding for love, dedicated to creating more interesting community tools.\"" },
+          lingqian: { name: "Lingqian", role: "Core Developer", desc: "Core developer and maintainer of HarukiBot NEO", quote: "\"Code saves the world, or at least makes playing Sekai easier.\"" },
           deseer: { name: "Deseer", role: "Core Developer", desc: "Core developer and maintainer of HarukiBot NEO" },
           storyxy: { name: "storyxy3", role: "Core Developer", desc: "Core developer and maintainer of HarukiBot NEO" },
           aposetles: { name: "Aposetles", role: "Documentation Maintainer", desc: "Documentation maintainer of HarukiBot NEO" },
