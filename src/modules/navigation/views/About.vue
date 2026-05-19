@@ -157,16 +157,14 @@ const showSponsorsMaintenance = () => {
     <!-- Simplified typographic Header Section -->
     <div class="space-y-4 max-w-3xl">
       <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
-        <div class="p-2 bg-primary/10 border border-primary/20 rounded-xl text-primary shrink-0">
-          <Sparkles class="w-6 h-6 md:w-7 md:h-7" />
-        </div>
+        <Sparkles class="w-7 h-7 md:w-8 md:h-8 text-primary shrink-0" />
         <span>{{ t("navigationPages.about.title") }}</span>
       </h1>
       <p class="text-base md:text-lg font-semibold text-primary">
         {{ t("navigationPages.about.subtitle") }}
       </p>
       <div class="space-y-4 text-muted-foreground text-sm md:text-base leading-relaxed pt-2">
-        <p>{{ t("navigationPages.about.projectIntro.p1") }}</p>
+        <p v-html="t('navigationPages.about.projectIntro.p1')"></p>
         <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
         <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
       </div>

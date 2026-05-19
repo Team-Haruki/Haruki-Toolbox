@@ -606,7 +606,7 @@ export const zhCN = {
       subtitle: "服务于世界计划玩家的社区计划",
       projectIntro: {
         title: "关于项目",
-        p1: "Project Haruki 是由星雲希凪 (SeiunKinagi) 发起的社区计划，旨在为《世界计划 缤纷舞台！ feat. 初音未来》的玩家提供更优质的游戏服务与社区支持。",
+        p1: "Project Haruki 是由<span class=\"text-foreground font-semibold\">星雲希凪 (SeiunKinagi)</span> 发起的社区计划，旨在为《世界计划 缤纷舞台！ feat. 初音未来》的玩家提供更优质的游戏服务与社区支持。",
         p2: "我们的核心项目包括 HarukiBot NEO 和 Haruki 工具箱。其中，HarukiBot NEO 专注于为中文玩家提供便捷、智能的各种游戏辅助与实用功能。",
         p3: "此外，我们也自主开发并维护了一系列高性能的开源底层程序与微服务，为整个 Haruki 生态系统注入强大且稳定的性能支撑，让每位玩家都能享受流畅、舒适的使用体验。"
       },
@@ -633,7 +633,7 @@ export const zhCN = {
           storyxy: { name: "storyxy3", role: "核心开发", desc: "", quote: "“Beyond Light”" },
           aposetles: { name: "Aposetles", role: "文档维护", desc: "", quote: "文档问题反馈喜欢您来" },
           tianshinling: { name: "天音铃", role: "文档维护", desc: "" },
-          yangzi: { name: "阳子", role: "文档维护", desc: "" },
+          yangzi: { name: "岩崎阳子", role: "文档维护", desc: "" },
           watagashi: { name: "綿菓子ウニ", role: "外部协力", desc: "" },
           middlered: { name: "MiddleRed", role: "外部协力", desc: "" },
           dnaroma: { name: "DNARoma", role: "外部协力", desc: "" },

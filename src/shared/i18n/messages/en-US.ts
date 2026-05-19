@@ -606,7 +606,7 @@ export const enUS = {
       subtitle: "A community initiative serving Project Sekai players",
       projectIntro: {
         title: "About the Project",
-        p1: "Project Haruki is a community initiative started by SeiunKinagi, dedicated to providing players of *Project Sekai: Colorful Stage! feat. Hatsune Miku* with high-quality game services and community support.",
+        p1: "Project Haruki is a community initiative started by <span class=\"text-foreground font-semibold\">SeiunKinagi</span>, dedicated to providing players of <em>Project Sekai: Colorful Stage! feat. Hatsune Miku</em> with high-quality game services and community support.",
         p2: "Our core projects include HarukiBot NEO and Haruki Toolbox. Among them, HarukiBot NEO focuses on providing Chinese-speaking players with a wide range of convenient, intelligent game-helper features.",
         p3: "In addition, we independently develop and maintain a series of high-performance open-source underlying utilities and microservices. These serve as a robust, stable foundation for the entire Haruki ecosystem, ensuring a smooth and responsive experience for all players."
       },
@@ -628,12 +628,12 @@ export const enUS = {
         },
         members: {
           seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "", quote: "\"Pursuing infinite possibilities within a finite life\"" },
-          lingqian: { name: "Lingqian", role: "Core Developer", desc: "" },
+          lingqian: { name: "xuanmingLQ", role: "Core Developer", desc: "" },
           deseer: { name: "Deseer", role: "Core Developer", desc: "", quote: "「空に昇つて、光つて、消えて」" },
           storyxy: { name: "storyxy3", role: "Core Developer", desc: "", quote: "\"Beyond Light\"" },
           aposetles: { name: "Aposetles", role: "Documentation Maintainer", desc: "", quote: "文档问题反馈喜欢您来" },
-          tianshinling: { name: "Amane Rin", role: "Documentation Maintainer", desc: "" },
-          yangzi: { name: "Yangzi", role: "Documentation Maintainer", desc: "" },
+          tianshinling: { name: "TY_Ling", role: "Documentation Maintainer", desc: "" },
+          yangzi: { name: "IwasakiYouko", role: "Documentation Maintainer", desc: "" },
           watagashi: { name: "Watagashi Uni", role: "Contributor", desc: "" },
           middlered: { name: "MiddleRed", role: "Contributor", desc: "" },
           dnaroma: { name: "DNARoma", role: "Contributor", desc: "" },
