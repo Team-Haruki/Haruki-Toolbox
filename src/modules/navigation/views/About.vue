@@ -151,10 +151,15 @@ const showSponsorsMaintenance = () => {
       <div class="space-y-8">
         <!-- Render each category -->
         <div v-for="(group, key) in groupedMembers" :key="key" class="space-y-3">
-          <h3 class="text-lg font-semibold text-foreground/80 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-primary" />
-            {{ t(`navigationPages.about.team.roles.${key}`) }}
-          </h3>
+          <div class="space-y-1">
+            <h3 class="text-lg font-semibold text-foreground/85 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-primary" />
+              {{ t(`navigationPages.about.team.roles.${key}`) }}
+            </h3>
+            <p class="text-xs text-muted-foreground pl-4 leading-normal">
+              {{ t(`navigationPages.about.team.roleDescs.${key}`) }}
+            </p>
+          </div>
           
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <a

@@ -619,6 +619,12 @@ export const zhCN = {
           contrib: "外部协力",
           sponsor: "金牌赞助"
         },
+        roleDescs: {
+          core: "HarukiBot NEO 的主要开发与维护者",
+          doc: "HarukiBot NEO 的使用文档维护者",
+          contrib: "一些并不归属 Haruki Dev Team，但是为 Project Haruki 提供了不少帮助的人",
+          sponsor: "提供了 HarukiBot NEO 使用的服务器以及 Haruki Sekai Asset 站服务器的人"
+        },
         members: {
           seiun: { name: "星雲希凪", role: "创始人 / 核心开发", desc: "Project Haruki 发起人，HarukiBot NEO 主要开发与维护者", quote: "“为爱发电，致力于创造更有趣的社区工具。”" },
           lingqian: { name: "灵潜", role: "核心开发", desc: "HarukiBot NEO 核心开发与维护者", quote: "“代码拯救世界，或者至少让打歌更方便点。”" },

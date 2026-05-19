@@ -619,6 +619,12 @@ export const enUS = {
           contrib: "Contributors",
           sponsor: "Gold Sponsors"
         },
+        roleDescs: {
+          core: "Main developers and maintainers of HarukiBot NEO",
+          doc: "Maintainers of the HarukiBot NEO user documentation",
+          contrib: "Individuals who do not belong to Haruki Dev Team but have provided significant help to Project Haruki",
+          sponsor: "Generously sponsored hosting servers for HarukiBot NEO and Haruki Sekai Asset station"
+        },
         members: {
           seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "Project initiator, main developer and maintainer of HarukiBot NEO", quote: "\"Coding for love, dedicated to creating more interesting community tools.\"" },
           lingqian: { name: "Lingqian", role: "Core Developer", desc: "Core developer and maintainer of HarukiBot NEO", quote: "\"Code saves the world, or at least makes playing Sekai easier.\"" },
