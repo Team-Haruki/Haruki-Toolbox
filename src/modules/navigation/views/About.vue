@@ -79,22 +79,22 @@ interface TeamMember {
 const teamMembers: TeamMember[] = [
   // Core developers
   { key: "seiun", github: "MejiroRina", roleKey: "core", linkUrl: "https://seiun.io" },
-  { key: "lingqian", roleKey: "core", linkUrl: "https://github.com/Team-Haruki" },
+  { key: "lingqian", github: "xuanmingLQ", roleKey: "core", linkUrl: "https://github.com/xuanmingLQ" },
   { key: "deseer", github: "Deseer", roleKey: "core", linkUrl: "https://github.com/Deseer" },
-  { key: "storyxy", github: "storyxy", roleKey: "core", linkUrl: "https://github.com/storyxy" },
+  { key: "storyxy", github: "storyxy3", roleKey: "core", linkUrl: "https://github.com/storyxy3" },
   
   // Documentation maintainers
   { key: "aposetles", github: "Aposetles", roleKey: "doc", linkUrl: "https://github.com/Aposetles" },
   { key: "tianshinling", roleKey: "doc", linkUrl: "https://github.com/Team-Haruki" },
-  { key: "yangzi", roleKey: "doc", linkUrl: "https://github.com/Team-Haruki" },
+  { key: "yangzi", github: "IwasakiYouko", roleKey: "doc", linkUrl: "https://dick.plus" },
   
   // External collaborators
   { key: "watagashi", roleKey: "contrib", linkUrl: "https://github.com/Team-Haruki" },
-  { key: "middlered", github: "MiddleRed", roleKey: "contrib", linkUrl: "https://github.com/MiddleRed" },
-  { key: "dnaroma", github: "DNARoma", roleKey: "contrib", linkUrl: "https://github.com/DNARoma" },
+  { key: "middlered", github: "MiddleRed", roleKey: "contrib", linkUrl: "https://mid.red" },
+  { key: "dnaroma", github: "DNARoma", roleKey: "contrib", linkUrl: "https://blog.dna.moe/about/" },
   
   // Gold Sponsors
-  { key: "yamamoto", roleKey: "sponsor", linkUrl: "https://github.com/Team-Haruki" }
+  { key: "yamamoto", github: "Yamamoto-2", roleKey: "sponsor", linkUrl: "https://github.com/Yamamoto-2" }
 ]
 
 // Open source project structure
