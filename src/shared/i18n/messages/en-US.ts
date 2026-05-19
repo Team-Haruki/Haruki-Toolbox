@@ -629,7 +629,7 @@ export const enUS = {
         members: {
           seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "", quote: "\"Pursuing infinite possibilities within a finite life\"" },
           lingqian: { name: "Lingqian", role: "Core Developer", desc: "" },
-          deseer: { name: "Deseer", role: "Core Developer", desc: "", quote: "(空に昇つて、光つて、消えて)" },
+          deseer: { name: "Deseer", role: "Core Developer", desc: "", quote: "（空に昇つて、光つて、消えて）" },
           storyxy: { name: "storyxy3", role: "Core Developer", desc: "", quote: "\"Beyond Light\"" },
           aposetles: { name: "Aposetles", role: "Documentation Maintainer", desc: "", quote: "文档问题反馈喜欢您来" },
           tianshinling: { name: "Amane Rin", role: "Documentation Maintainer", desc: "" },
