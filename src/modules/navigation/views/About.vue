@@ -105,22 +105,22 @@ interface Project {
 }
 
 const projectsList: Project[] = [
-  { key: "drawingEngine", tags: ["Python", "FastAPI", "Pillow"], githubUrl: "https://github.com/Team-Haruki" },
-  { key: "botBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL"], githubUrl: "https://github.com/Team-Haruki" },
-  { key: "toolboxBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL", "MongoDB"], githubUrl: "https://github.com/Team-Haruki" },
-  { key: "deckService", tags: ["Rust", "Axum", "Tokio"], githubUrl: "https://github.com/Team-Haruki" },
-  { key: "deckCpp", tags: ["C++", "FastJSON"], githubUrl: "https://github.com/Team-Haruki" },
-  { key: "scoresRs", tags: ["Rust", "Skia"], githubUrl: "https://github.com/Team-Haruki" },
-  { key: "toolbox", tags: ["TypeScript", "Vue 3", "Vite", "Tailwind"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox" },
-  { key: "assetUpdater", tags: ["Rust", "Axum", "Cridecoder"], githubUrl: "https://github.com/Team-Haruki" },
-  { key: "sekaiApi", tags: ["Rust", "Axum", "SeaORM"], githubUrl: "https://github.com/Team-Haruki" },
-  { key: "eventTracker", tags: ["Rust", "Axum", "SeaORM"], githubUrl: "https://github.com/Team-Haruki" },
-  { key: "cridecoder", tags: ["Rust"], githubUrl: "https://github.com/Team-Haruki" }
+  { key: "drawingEngine", tags: ["Python", "FastAPI", "Pillow"], githubUrl: "https://github.com/Team-Haruki/Haruki-Drawing-API" },
+  { key: "botBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL"], githubUrl: "https://github.com/Team-Haruki/Haruki-Cloud" },
+  { key: "toolboxBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL", "MongoDB"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox-Backend" },
+  { key: "deckService", tags: ["Rust", "Axum", "Tokio"], githubUrl: "https://github.com/Team-Haruki/deck-service" },
+  { key: "deckCpp", tags: ["C++", "FastJSON"], githubUrl: "https://github.com/Team-Haruki/sekai-deck-recommend-cpp" },
+  { key: "scoresRs", tags: ["Rust", "Skia"], githubUrl: "https://github.com/Team-Haruki/pjsekai-scores-rs" },
+  { key: "toolbox", tags: ["TypeScript", "Vue 3", "Vite", "Shadcn-Vue", "Tailwind"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox" },
+  { key: "assetUpdater", tags: ["Rust", "Axum", "Cridecoder"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-Asset-Updater" },
+  { key: "sekaiApi", tags: ["Rust", "Axum", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-API" },
+  { key: "eventTracker", tags: ["Rust", "Axum", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Event-Tracker" },
+  { key: "cridecoder", tags: ["Rust"], githubUrl: "https://github.com/Team-Haruki/cridecoder" }
 ]
 
 const getTagClass = (tag: string) => {
   const t = tag.toLowerCase()
-  if (t === "rust" || t === "cridecoder") {
+  if (t === "rust" || t === "cridecoder" || t === "axum" || t === "tokio" || t === "skia" || t === "seaorm") {
     return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
   }
   if (t === "go" || t === "entgo" || t === "fiber" || t === "postgresql" || t === "mongodb") {
@@ -129,10 +129,10 @@ const getTagClass = (tag: string) => {
   if (t === "python" || t === "fastapi" || t === "pillow") {
     return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20"
   }
-  if (t === "c++") {
+  if (t === "c++" || t === "fastjson") {
     return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
   }
-  if (t === "vue 3" || t === "vite" || t === "tailwind" || t === "typescript" || t === "javascript") {
+  if (t === "vue 3" || t === "vite" || t === "tailwind" || t === "typescript" || t === "javascript" || t === "shadcn-vue") {
     return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
   }
   return "bg-secondary text-secondary-foreground border border-transparent"
