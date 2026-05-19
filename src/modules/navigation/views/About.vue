@@ -14,13 +14,12 @@ import {
   AvatarImage 
 } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import { 
-  Info, 
   Users, 
   Code2, 
   Heart, 
-  ExternalLink, 
-  Sparkles 
+  ExternalLink 
 } from "lucide-vue-next"
 
 const { t } = useI18n()
@@ -110,42 +109,24 @@ const showSponsorsMaintenance = () => {
 </script>
 
 <template>
-  <div class="w-full flex-1 px-4 py-8 space-y-12 max-w-5xl mx-auto">
+  <div class="w-full flex-1 px-4 py-8 space-y-10 max-w-5xl mx-auto">
     
-    <!-- Hero Header -->
-    <div class="relative bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-sky-500/10 border border-primary/10 rounded-2xl p-6 md:p-10 backdrop-blur-md shadow-xl overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
-      <!-- Glow decoration -->
-      <div class="absolute -right-16 -top-16 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
-      <div class="absolute -left-16 -bottom-16 w-48 h-48 bg-sky-500/20 rounded-full blur-3xl pointer-events-none" />
-
-      <div class="space-y-4 max-w-2xl relative z-10 text-center md:text-left">
-        <h1 class="text-3xl md:text-5xl font-extrabold bg-gradient-to-r from-primary to-sky-500 bg-clip-text text-transparent tracking-tight">
-          {{ t("navigationPages.about.title") }}
-        </h1>
-        <p class="text-lg md:text-xl text-muted-foreground font-medium">
-          {{ t("navigationPages.about.subtitle") }}
-        </p>
-      </div>
-
-      <div class="relative z-10 flex items-center justify-center p-4 bg-card/60 backdrop-blur-sm border border-primary/10 rounded-2xl shadow-inner animate-pulse duration-[3000ms]">
-        <Sparkles class="w-16 h-16 text-primary" />
+    <!-- Simplified typographic Header Section -->
+    <div class="space-y-4 max-w-3xl">
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
+        {{ t("navigationPages.about.title") }}
+      </h1>
+      <p class="text-base md:text-lg font-semibold text-primary">
+        {{ t("navigationPages.about.subtitle") }}
+      </p>
+      <div class="space-y-4 text-muted-foreground text-sm md:text-base leading-relaxed pt-2">
+        <p>{{ t("navigationPages.about.projectIntro.p1") }}</p>
+        <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
+        <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
       </div>
     </div>
 
-    <!-- About Project Section -->
-    <section class="space-y-4">
-      <div class="flex items-center gap-2 text-2xl font-bold tracking-tight">
-        <Info class="w-6 h-6 text-primary" />
-        <h2>{{ t("navigationPages.about.projectIntro.title") }}</h2>
-      </div>
-      <Card class="bg-card/50 backdrop-blur-sm border-muted/60 shadow-sm transition-all duration-300 hover:shadow-md">
-        <CardContent class="pt-6 space-y-4 text-muted-foreground text-base md:text-lg leading-relaxed">
-          <p>{{ t("navigationPages.about.projectIntro.p1") }}</p>
-          <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
-          <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
-        </CardContent>
-      </Card>
-    </section>
+    <Separator class="my-6" />
 
     <!-- Dev Team Section -->
     <section class="space-y-6">
