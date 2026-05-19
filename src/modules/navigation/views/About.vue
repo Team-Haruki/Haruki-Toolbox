@@ -112,9 +112,9 @@ const projectsList: Project[] = [
   { key: "deckCpp", tags: ["C++", "FastJSON"], githubUrl: "https://github.com/Team-Haruki/sekai-deck-recommend-cpp" },
   { key: "scoresRs", tags: ["Rust", "Skia"], githubUrl: "https://github.com/Team-Haruki/pjsekai-scores-rs" },
   { key: "toolbox", tags: ["TypeScript", "Vue 3", "Vite", "Shadcn-Vue", "Tailwind"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox" },
-  { key: "assetUpdater", tags: ["Rust", "Axum", "Cridecoder"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-Asset-Updater" },
-  { key: "sekaiApi", tags: ["Rust", "Axum", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-API" },
-  { key: "eventTracker", tags: ["Rust", "Axum", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Event-Tracker" },
+  { key: "assetUpdater", tags: ["Rust", "Axum", "Tokio", "Cridecoder"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-Asset-Updater" },
+  { key: "sekaiApi", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-API" },
+  { key: "eventTracker", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Event-Tracker" },
   { key: "cridecoder", tags: ["Rust"], githubUrl: "https://github.com/Team-Haruki/cridecoder" }
 ]
 

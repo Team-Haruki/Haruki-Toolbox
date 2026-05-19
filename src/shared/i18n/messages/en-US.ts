@@ -630,7 +630,7 @@ export const enUS = {
           seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "", quote: "\"Pursuing infinite possibilities within a finite life\"" },
           lingqian: { name: "Lingqian", role: "Core Developer", desc: "" },
           deseer: { name: "Deseer", role: "Core Developer", desc: "" },
-          storyxy: { name: "storyxy3", role: "Core Developer", desc: "" },
+          storyxy: { name: "storyxy3", role: "Core Developer", desc: "", quote: "Beyond Light" },
           aposetles: { name: "Aposetles", role: "Documentation Maintainer", desc: "" },
           tianshinling: { name: "Amane Rin", role: "Documentation Maintainer", desc: "" },
           yangzi: { name: "Yangzi", role: "Documentation Maintainer", desc: "" },

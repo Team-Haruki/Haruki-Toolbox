@@ -630,7 +630,7 @@ export const zhCN = {
           seiun: { name: "星雲希凪", role: "创始人 / 核心开发", desc: "", quote: "“有限的生命里追求无限的可能”" },
           lingqian: { name: "灵潜", role: "核心开发", desc: "" },
           deseer: { name: "Deseer", role: "核心开发", desc: "" },
-          storyxy: { name: "storyxy3", role: "核心开发", desc: "" },
+          storyxy: { name: "storyxy3", role: "核心开发", desc: "", quote: "Beyond Light" },
           aposetles: { name: "Aposetles", role: "文档维护", desc: "" },
           tianshinling: { name: "天音铃", role: "文档维护", desc: "" },
           yangzi: { name: "阳子", role: "文档维护", desc: "" },
