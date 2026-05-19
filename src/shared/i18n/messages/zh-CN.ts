@@ -629,8 +629,8 @@ export const zhCN = {
         members: {
           seiun: { name: "星雲希凪", role: "创始人 / 核心开发", desc: "", quote: "“有限的生命里追求无限的可能”" },
           lingqian: { name: "灵潜", role: "核心开发", desc: "" },
-          deseer: { name: "Deseer", role: "核心开发", desc: "", quote: "空に昇つて、光つて、消えて" },
-          storyxy: { name: "storyxy3", role: "核心开发", desc: "", quote: "(Beyond Light)" },
+          deseer: { name: "Deseer", role: "核心开发", desc: "", quote: "（空に昇つて、光つて、消えて）" },
+          storyxy: { name: "storyxy3", role: "核心开发", desc: "", quote: "“Beyond Light”" },
           aposetles: { name: "Aposetles", role: "文档维护", desc: "", quote: "文档问题反馈喜欢您来" },
           tianshinling: { name: "天音铃", role: "文档维护", desc: "" },
           yangzi: { name: "阳子", role: "文档维护", desc: "" },
