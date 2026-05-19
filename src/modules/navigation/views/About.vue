@@ -85,11 +85,11 @@ const teamMembers: TeamMember[] = [
   
   // Documentation maintainers
   { key: "aposetles", github: "Aposetles", roleKey: "doc", linkUrl: "https://github.com/Aposetles" },
-  { key: "tianshinling", roleKey: "doc", linkUrl: "https://github.com/Team-Haruki" },
+  { key: "tianshinling", github: "YoisakiKnd", roleKey: "doc", linkUrl: "https://ty0.icu/about/" },
   { key: "yangzi", github: "IwasakiYouko", roleKey: "doc", linkUrl: "https://dick.plus" },
   
   // External collaborators
-  { key: "watagashi", roleKey: "contrib", linkUrl: "https://github.com/Team-Haruki" },
+  { key: "watagashi", github: "watagashi-uni", roleKey: "contrib", linkUrl: "https://github.com/watagashi-uni" },
   { key: "middlered", github: "MiddleRed", roleKey: "contrib", linkUrl: "https://mid.red" },
   { key: "dnaroma", github: "DNARoma", roleKey: "contrib", linkUrl: "https://blog.dna.moe/about/" },
   
