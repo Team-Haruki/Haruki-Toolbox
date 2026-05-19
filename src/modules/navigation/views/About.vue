@@ -205,7 +205,7 @@ const showSponsorsMaintenance = () => {
               rel="noopener noreferrer"
               class="block group outline-none"
             >
-              <Card class="h-full border border-muted/50 bg-card/40 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer">
+              <Card class="h-full border border-muted/50 bg-card/20 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer">
                 <CardHeader class="flex flex-row items-center gap-4 pb-3">
                    <Avatar class="h-10 w-10 border border-muted/80 transition-colors duration-300 group-hover:border-primary">
                     <AvatarImage 
@@ -267,7 +267,7 @@ const showSponsorsMaintenance = () => {
           rel="noopener noreferrer"
           class="block group outline-none"
         >
-          <Card class="h-full border border-muted/50 bg-card/40 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer">
+          <Card class="h-full border border-muted/50 bg-card/20 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer">
             <CardHeader class="pb-2">
               <div class="flex items-start justify-between gap-2">
                 <CardTitle class="text-base font-bold group-hover:text-primary transition-colors flex items-center gap-1.5 leading-snug">
