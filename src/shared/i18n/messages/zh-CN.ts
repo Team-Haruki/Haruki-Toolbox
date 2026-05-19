@@ -601,6 +601,64 @@ export const zhCN = {
       defaultMessage: "该页面正在开发中，请等待 Haruki Dev Team 开发完成。",
       etaLabel: "预计维护结束时间：",
     },
+    about: {
+      title: "关于 Project Haruki",
+      subtitle: "服务于世界计划玩家的社区计划",
+      projectIntro: {
+        title: "关于项目",
+        p1: "Project Haruki 是由星雲希凪(SeiunKinagi)发起的社区计划，我们致力于服务游戏《世界计划缤纷舞台！ feat. 初音未来》的玩家。",
+        p2: "Project Haruki 主要作品为 HarukiBot NEO 以及 Haruki 工具箱，HarukiBot NEO 致力于为中文玩家提供各类游戏相关便捷功能。",
+        p3: "Project Haruki 也编写了许多开源高性能程序，为 HarukiBot NEO 和 Haruki 工具箱提供了强大的性能以便玩家使用更舒服。"
+      },
+      team: {
+        title: "开发团队",
+        subtitle: "Project Haruki 的开发与维护离不开 Haruki Dev Team 以下成员的大力支持",
+        roles: {
+          core: "主开发",
+          doc: "文档维护",
+          contrib: "外部协力",
+          sponsor: "金牌赞助"
+        },
+        members: {
+          seiun: { name: "星雲希凪", role: "创始人 / 核心开发", desc: "Project Haruki 发起人，HarukiBot NEO 主要开发与维护者" },
+          lingqian: { name: "灵潜", role: "核心开发", desc: "HarukiBot NEO 核心开发与维护者" },
+          deseer: { name: "Deseer", role: "核心开发", desc: "HarukiBot NEO 核心开发与维护者" },
+          storyxy: { name: "storyxy3", role: "核心开发", desc: "HarukiBot NEO 核心开发与维护者" },
+          aposetles: { name: "Aposetles", role: "文档维护", desc: "HarukiBot NEO 使用文档维护者" },
+          tianshinling: { name: "天音铃", role: "文档维护", desc: "HarukiBot NEO 使用文档维护者" },
+          yangzi: { name: "阳子", role: "文档维护", desc: "HarukiBot NEO 使用文档维护者" },
+          watagashi: { name: "綿菓子ウニ", role: "外部协力", desc: "外部贡献者，为项目提供了许多技术及资源层面的支持与帮助" },
+          middlered: { name: "MiddleRed", role: "外部协力", desc: "外部贡献者，为项目开发提供了诸多建议与大力支持" },
+          dnaroma: { name: "DNARoma", role: "外部协力", desc: "外部贡献者，为项目发展提供了关键的支持和协助" },
+          yamamoto: { name: "山本", role: "金牌赞助者", desc: "赞助了 HarukiBot NEO 运行所需的服务器以及 Haruki Sekai Asset 站服务器" }
+        }
+      },
+      projects: {
+        title: "开源项目",
+        subtitle: "我们编写并维护了一系列开源高性能工具、微服务与应用栈",
+        techStack: "技术栈",
+        list: {
+          drawingEngine: { name: "HarukiBot NEO Drawing Engine", desc: "基于高性能 Python 环境的 HarukiBot NEO 绘图与渲染引擎服务。" },
+          botBackend: { name: "HarukiBot NEO Backend", desc: "基于 Go 语言和 EntGo 框架构建的 HarukiBot NEO 高性能核心后端服务。" },
+          toolboxBackend: { name: "Haruki Toolbox Backend", desc: "基于 Go 语言的 Haruki 工具箱后台服务，统一提供 API 接口。" },
+          deckService: { name: "Deck Service", desc: "基于 Rust 的高性能卡组推荐与游戏数据计算微服务。" },
+          deckCpp: { name: "Sekai Deck Recommend CPP", desc: "用 C++ 编写的 Sekai 卡组推荐核心算法库（分叉修改并持续维护版本）。" },
+          scoresRs: { name: "PJSekai Scores RS", desc: "基于 Rust 与 Skia 图形库的成绩渲染核心底座。" },
+          toolbox: { name: "Haruki Toolbox", desc: "Haruki 工具箱前端 Web 应用，采用现代的 Vue 3、Vite 和 Tailwind v4 构建。" },
+          assetUpdater: { name: "Haruki Asset Updater", desc: "基于 Rust 的游戏资源包解密与自动同步更新同步器。" },
+          sekaiApi: { name: "Haruki Sekai API", desc: "第三方 Sekai 游戏数据代理与聚合 API 服务，基于 Rust 构建。" },
+          eventTracker: { name: "Haruki Event Tracker", desc: "追踪游戏活动数据及实时排位的 Rust 微服务。" },
+          cridecoder: { name: "Cridecoder", desc: "用 Rust 编写的用于解密解码 Cryware（HCA/WAV）音频和封包的工具。" }
+        }
+      },
+      support: {
+        title: "支持 Haruki Dev Team",
+        desc: "Project Haruki 相关项目的开发与维护需要消耗开发团队大量的人力、财力及精力。为了帮助我们做得更好，欢迎您前往我们的爱发电页面进行赞助，或查看我们目前的赞助者名单。",
+        afdianBtn: "赞助我们 (爱发电)",
+        sponsorsBtn: "赞助者名单",
+        sponsorsMaintenance: "赞助者页面后端 API 目前正在维护中，敬请期待！"
+      }
+    },
   },
   home: {
     title: "欢迎使用 Haruki 工具箱",

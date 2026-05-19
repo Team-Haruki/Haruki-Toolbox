@@ -15,7 +15,7 @@ export const navigationRoutes: RouteRecordRaw[] = [
     },
     {
         path: "/about",
-        component: () => import("@/modules/navigation/views/Maintenance.vue"),
+        component: () => import("@/modules/navigation/views/About.vue"),
         meta: { titleKey: "route.about" },
     },
     {

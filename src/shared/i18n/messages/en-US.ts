@@ -601,6 +601,64 @@ export const enUS = {
       defaultMessage: "This page is under development. Please wait for Haruki Dev Team to finish it.",
       etaLabel: "Estimated end time: ",
     },
+    about: {
+      title: "About Project Haruki",
+      subtitle: "A community initiative serving Project Sekai players",
+      projectIntro: {
+        title: "About the Project",
+        p1: "Project Haruki is a community initiative started by SeiunKinagi, dedicated to serving players of the game *Project Sekai: Colorful Stage! feat. Hatsune Miku*.",
+        p2: "The main works of Project Haruki are HarukiBot NEO and Haruki Toolbox. HarukiBot NEO focuses on providing various convenient game-related features for Chinese-speaking players.",
+        p3: "Project Haruki also develops many open-source high-performance programs, supplying powerful performance capabilities to HarukiBot NEO and Haruki Toolbox for a smoother player experience."
+      },
+      team: {
+        title: "Dev Team",
+        subtitle: "The development and maintenance of Project Haruki would not be possible without the support of the following members of the Haruki Dev Team",
+        roles: {
+          core: "Core Developers",
+          doc: "Documentation",
+          contrib: "Contributors",
+          sponsor: "Gold Sponsors"
+        },
+        members: {
+          seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "Project initiator, main developer and maintainer of HarukiBot NEO" },
+          lingqian: { name: "Lingqian", role: "Core Developer", desc: "Core developer and maintainer of HarukiBot NEO" },
+          deseer: { name: "Deseer", role: "Core Developer", desc: "Core developer and maintainer of HarukiBot NEO" },
+          storyxy: { name: "storyxy3", role: "Core Developer", desc: "Core developer and maintainer of HarukiBot NEO" },
+          aposetles: { name: "Aposetles", role: "Documentation Maintainer", desc: "Documentation maintainer of HarukiBot NEO" },
+          tianshinling: { name: "Amane Rin", role: "Documentation Maintainer", desc: "Documentation maintainer of HarukiBot NEO" },
+          yangzi: { name: "Yangzi", role: "Documentation Maintainer", desc: "Documentation maintainer of HarukiBot NEO" },
+          watagashi: { name: "Watagashi Uni", role: "Contributor", desc: "External contributor, provided invaluable technical and resource support to the project" },
+          middlered: { name: "MiddleRed", role: "Contributor", desc: "External contributor, provided many ideas and strong support for project development" },
+          dnaroma: { name: "DNARoma", role: "Contributor", desc: "External contributor, provided key assistance and coordination for the project" },
+          yamamoto: { name: "Yamamoto", role: "Gold Sponsor", desc: "Sponsored server hosting for HarukiBot NEO and Haruki Sekai Asset servers" }
+        }
+      },
+      projects: {
+        title: "Open Source Projects",
+        subtitle: "A collection of high-performance open-source tools, microservices, and applications authored by us",
+        techStack: "Tech Stack",
+        list: {
+          drawingEngine: { name: "HarukiBot NEO Drawing Engine", desc: "A high-performance Python-based drawing and rendering engine for HarukiBot NEO." },
+          botBackend: { name: "HarukiBot NEO Backend", desc: "The core backend API for HarukiBot NEO written in Go with EntGo framework." },
+          toolboxBackend: { name: "Haruki Toolbox Backend", desc: "Backend API service for Haruki Toolbox built on Go and EntGo." },
+          deckService: { name: "Deck Service", desc: "High-performance deck recommendation and gameplay calculation service in Rust." },
+          deckCpp: { name: "Sekai Deck Recommend CPP", desc: "Sekai deck recommendation core algorithm library written in C++ (forked and maintained version)." },
+          scoresRs: { name: "PJSekai Scores RS", desc: "Score rendering engine core based on Rust and Skia graphics library." },
+          toolbox: { name: "Haruki Toolbox", desc: "Web frontend for Haruki Toolbox, built using Vue 3, Vite, and Tailwind CSS v4." },
+          assetUpdater: { name: "Haruki Asset Updater", desc: "Decryption and auto-sync tool for game asset packages written in Rust." },
+          sekaiApi: { name: "Haruki Sekai API", desc: "A proxy and aggregator service for Sekai game data built with Rust." },
+          eventTracker: { name: "Haruki Event Tracker", desc: "A Rust-based microservice for tracking in-game events and real-time tiers." },
+          cridecoder: { name: "Cridecoder", desc: "A Rust utility library and tool for decrypting Cryware (HCA/WAV) files." }
+        }
+      },
+      support: {
+        title: "Support Haruki",
+        desc: "The development and maintenance of Project Haruki related projects require a significant amount of manpower, financial resources, and energy from the Haruki Dev Team. To help us do better, your support is highly appreciated!",
+        afdianBtn: "Sponsor us (Afdian)",
+        sponsorsBtn: "Sponsors List",
+        sponsorsMaintenance: "Sponsors list page backend API is currently under maintenance. Stay tuned!"
+      }
+    },
   },
   home: {
     title: "Welcome to Haruki Toolbox",
