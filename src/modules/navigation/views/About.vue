@@ -84,7 +84,7 @@ const teamMembers: TeamMember[] = [
   { key: "storyxy", github: "storyxy3", roleKey: "core", linkUrl: "https://github.com/storyxy3" },
   
   // Documentation maintainers
-  { key: "aposetles", github: "Aposetles", roleKey: "doc", linkUrl: "https://github.com/Aposetles" },
+  { key: "aposetles", github: "Aposetles", roleKey: "doc", linkUrl: "https://space.bilibili.com/178748972" },
   { key: "tianshinling", github: "YoisakiKnd", roleKey: "doc", linkUrl: "https://ty0.icu/about/" },
   { key: "yangzi", github: "IwasakiYouko", roleKey: "doc", linkUrl: "https://dick.plus" },
   
