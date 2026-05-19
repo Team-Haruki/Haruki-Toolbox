@@ -1,5 +1,6 @@
 <template>
   <router-view></router-view>
+  <PointerEffects />
   <Toaster position="top-right" richColors/>
 </template>
 
@@ -19,6 +20,7 @@ import {
   watch
 } from "vue"
 import {Toaster} from "@/components/ui/sonner";
+import PointerEffects from "@/shared/components/PointerEffects.vue"
 
 const userStore = useUserStore()
 const route = useRoute()

@@ -1,8 +1,10 @@
 import { readUpdatedItems, readUpdatedTotal, request, unwrapUpdatedData } from "@/core/http/call-api"
 import { encodePathSegment } from "@/core/http/url"
 import type { QueryParams } from "@/core/http/query"
-import { asRecord, readBoolean, type UnknownRecord } from "@/lib/record-utils"
+import { asRecord, readBoolean, readString, type UnknownRecord } from "@/lib/record-utils"
+import { userBase } from "@/modules/admin-users/api/shared"
 import { translate } from "@/shared/i18n"
+import type { AdminTicketNotificationRecipient } from "@/types/admin"
 import type { APIResponse } from "@/types/response"
 import type {
   AdminTicketNotificationPreference,
@@ -15,6 +17,7 @@ import { normalizeMessage, normalizeTicket } from "./normalize"
 
 const ADMIN_BASE = "/api/admin/tickets"
 const ADMIN_ME_BASE = "/api/admin/me"
+const ADMIN_USERS_BASE = "/api/admin/users"
 
 export async function getAdminTickets(params?: QueryParams) {
   const res = await request<APIResponse<{ total?: number; items?: UnknownRecord[] }>>(`${ADMIN_BASE}`, {
@@ -71,6 +74,30 @@ function normalizeTicketNotificationPreference(raw: UnknownRecord | null): Admin
   }
 }
 
+function normalizeAdminTicketNotificationRecipient(raw: UnknownRecord): AdminTicketNotificationRecipient | null {
+  const role = readString(raw, ["role"]).trim()
+  if (role !== "admin" && role !== "super_admin") {
+    return null
+  }
+
+  const userId = readString(raw, ["userId", "user_id", "id"]).trim()
+  if (!userId) {
+    return null
+  }
+
+  return {
+    userId,
+    name: readString(raw, ["name"]).trim(),
+    email: readString(raw, ["email"]).trim(),
+    role: role as AdminTicketNotificationRecipient["role"],
+    banned: readBoolean(raw, ["banned"]),
+    ticketEmailNotificationsEnabled: readBoolean(raw, [
+      "ticketEmailNotificationsEnabled",
+      "ticket_email_notifications_enabled",
+    ]),
+  }
+}
+
 export async function getAdminTicketNotificationPreference(): Promise<AdminTicketNotificationPreference> {
   const res = await request<APIResponse<UnknownRecord>>(`${ADMIN_ME_BASE}/ticket-notifications`, { method: "GET" })
   const updatedData = asRecord(unwrapUpdatedData(res, translate("tickets.adminList.notifications.loadFailedTitle")))
@@ -86,4 +113,39 @@ export async function updateAdminTicketNotificationPreference(enabled: boolean):
   })
   const updatedData = asRecord(unwrapUpdatedData(res, translate("tickets.adminList.notifications.saveFailedTitle")))
   return normalizeTicketNotificationPreference(updatedData)
+}
+
+export async function getAdminTicketNotificationRecipients(): Promise<AdminTicketNotificationRecipient[]> {
+  const res = await request<APIResponse<UnknownRecord>>(`${ADMIN_USERS_BASE}/ticket-notification-recipients`, {
+    method: "GET",
+  })
+  const updatedData = asRecord(
+    unwrapUpdatedData(res, translate("tickets.adminList.notifications.manageLoadFailedTitle"))
+  )
+  const rawItems = readUpdatedItems(updatedData)
+  return rawItems
+    .map((item) => asRecord(item))
+    .filter((item): item is UnknownRecord => item !== null)
+    .map((item) => normalizeAdminTicketNotificationRecipient(item))
+    .filter((item): item is AdminTicketNotificationRecipient => item !== null)
+}
+
+export async function updateAdminUserTicketNotificationPreference(
+  userId: string,
+  enabled: boolean
+): Promise<AdminTicketNotificationRecipient> {
+  const res = await request<APIResponse<UnknownRecord>>(`${userBase(userId)}/ticket-notifications`, {
+    method: "PUT",
+    data: {
+      ticketEmailNotificationsEnabled: enabled,
+    },
+  })
+  const updatedData = asRecord(
+    unwrapUpdatedData(res, translate("tickets.adminList.notifications.manageSaveFailedTitle"))
+  )
+  const normalized = updatedData ? normalizeAdminTicketNotificationRecipient(updatedData) : null
+  if (normalized == null) {
+    throw new Error(translate("tickets.adminList.notifications.manageSaveFailedFallback"))
+  }
+  return normalized
 }

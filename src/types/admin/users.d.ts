@@ -16,6 +16,21 @@ export interface AdminUser {
   allowCNMysekai?: boolean
 }
 
+export interface AdminTicketNotificationRecipient {
+  userId: string
+  name: string
+  email: string
+  role: UserRole
+  banned: boolean
+  ticketEmailNotificationsEnabled: boolean
+}
+
+export interface AdminTicketNotificationRecipientsResponse {
+  generatedAt: string
+  total: number
+  items: AdminTicketNotificationRecipient[]
+}
+
 export interface AdminUserDetail {
   userData: {
     userId: string

@@ -171,8 +171,8 @@ const { t, locale } = useI18n()
           <div class="flex items-start gap-3 rounded-md border p-3">
             <Checkbox
               id="remember-inherit"
-              :checked="rememberInherit"
-              @update:checked="value => emit('update:rememberInherit', Boolean(value))"
+              :model-value="rememberInherit"
+              @update:model-value="value => emit('update:rememberInherit', value === true)"
             />
             <label for="remember-inherit" class="flex flex-col gap-1 cursor-pointer">
               <span class="text-sm font-medium">{{ t("tools.uploadData.inheritTab.remember.label") }}</span>

@@ -29,6 +29,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   LucideSearch,
   LucideChevronLeft,
   LucideChevronRight,
@@ -36,7 +43,11 @@ import {
   LucideLoader2,
   LucideMessageSquare,
   LucideRefreshCw,
+  LucideUsers,
+  LucideShield,
+  LucideShieldAlert,
 } from "lucide-vue-next"
+import { roleLabel } from "@/modules/admin-users/constants"
 import {
   ticketPriorityBadgeClass,
   ticketPriorityIcon,
@@ -66,10 +77,18 @@ const {
   ticketNotificationsEnabled,
   ticketNotificationsLoading,
   ticketNotificationsSaving,
+  ticketNotificationRecipients,
+  ticketNotificationRecipientsLoading,
+  ticketNotificationRecipientsSavingUserId,
+  ticketNotificationRecipientsDialogOpen,
+  isSuperAdmin,
   quickFilterOptions,
   statusOptions,
   priorityOptions,
   setTicketNotificationsEnabled,
+  openTicketNotificationRecipientsDialog,
+  refreshTicketNotificationRecipients,
+  setTicketNotificationRecipientEnabled,
   refreshTickets,
   prevPage,
   nextPage,
@@ -107,21 +126,27 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
             <CardTitle class="text-lg">{{ t("tickets.adminList.title") }}</CardTitle>
             <CardDescription>{{ t("tickets.adminList.description") }}</CardDescription>
           </div>
-          <div class="flex items-center gap-2 rounded-md border px-3 py-2">
-            <LucideBell class="w-4 h-4 text-muted-foreground" />
-            <div class="flex flex-col">
-              <Label for="ticket-notification-toggle" class="text-sm">
-                {{ t("tickets.adminList.notifications.label") }}
-              </Label>
-              <span class="text-xs text-muted-foreground">{{ t("tickets.adminList.notifications.description") }}</span>
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-2 rounded-md border px-3 py-2">
+              <LucideBell class="w-4 h-4 text-muted-foreground" />
+              <div class="flex flex-col">
+                <Label for="ticket-notification-toggle" class="text-sm">
+                  {{ t("tickets.adminList.notifications.label") }}
+                </Label>
+                <span class="text-xs text-muted-foreground">{{ t("tickets.adminList.notifications.description") }}</span>
+              </div>
+              <LucideLoader2 v-if="ticketNotificationsLoading || ticketNotificationsSaving" class="w-4 h-4 animate-spin text-muted-foreground" />
+              <Switch
+                id="ticket-notification-toggle"
+                :model-value="ticketNotificationsEnabled"
+                :disabled="ticketNotificationsLoading || ticketNotificationsSaving"
+                @update:model-value="setTicketNotificationsEnabled"
+              />
             </div>
-            <LucideLoader2 v-if="ticketNotificationsLoading || ticketNotificationsSaving" class="w-4 h-4 animate-spin text-muted-foreground" />
-            <Switch
-              id="ticket-notification-toggle"
-              :model-value="ticketNotificationsEnabled"
-              :disabled="ticketNotificationsLoading || ticketNotificationsSaving"
-              @update:model-value="setTicketNotificationsEnabled"
-            />
+            <Button v-if="isSuperAdmin" variant="outline" @click="openTicketNotificationRecipientsDialog">
+              <LucideUsers class="w-4 h-4" />
+              {{ t("tickets.adminList.notifications.manageButton") }}
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -169,6 +194,95 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
         </div>
       </CardContent>
     </Card>
+
+    <Dialog v-model:open="ticketNotificationRecipientsDialogOpen">
+      <DialogContent class="max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>{{ t("tickets.adminList.notifications.manageDialogTitle") }}</DialogTitle>
+          <DialogDescription>
+            {{ t("tickets.adminList.notifications.manageDialogDescription") }}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <span class="text-sm text-muted-foreground">
+            {{ t("tickets.adminList.notifications.manageDialogSummary", { total: ticketNotificationRecipients.length }) }}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="ticketNotificationRecipientsLoading"
+            @click="refreshTicketNotificationRecipients"
+          >
+            <LucideLoader2 v-if="ticketNotificationRecipientsLoading" class="w-4 h-4 animate-spin" />
+            <LucideRefreshCw v-else class="w-4 h-4" />
+            {{ t("tickets.adminList.notifications.manageRefresh") }}
+          </Button>
+        </div>
+
+        <div v-if="ticketNotificationRecipientsLoading" class="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+          <LucideLoader2 class="w-4 h-4 animate-spin" />
+          {{ t("tickets.adminList.notifications.manageLoading") }}
+        </div>
+        <div v-else-if="ticketNotificationRecipients.length === 0" class="rounded-md border py-10 text-center text-sm text-muted-foreground">
+          {{ t("tickets.adminList.notifications.manageEmpty") }}
+        </div>
+        <div v-else class="max-h-[60vh] overflow-y-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{{ t("tickets.adminList.notifications.manageTable.name") }}</TableHead>
+                <TableHead>{{ t("tickets.adminList.notifications.manageTable.role") }}</TableHead>
+                <TableHead class="hidden sm:table-cell">{{ t("tickets.adminList.notifications.manageTable.email") }}</TableHead>
+                <TableHead class="text-right">{{ t("tickets.adminList.notifications.manageTable.enabled") }}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="recipient in ticketNotificationRecipients" :key="recipient.userId">
+                <TableCell>
+                  <div class="font-medium">{{ recipient.name || recipient.userId }}</div>
+                  <div class="text-xs text-muted-foreground">{{ recipient.userId }}</div>
+                  <div v-if="recipient.banned" class="mt-1 text-xs text-red-500">
+                    {{ t("tickets.adminList.notifications.manageBannedHint") }}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span
+                    :class="[
+                      'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                      recipient.role === 'super_admin'
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                    ]"
+                  >
+                    <LucideShieldAlert v-if="recipient.role === 'super_admin'" class="w-3.5 h-3.5" />
+                    <LucideShield v-else class="w-3.5 h-3.5" />
+                    {{ roleLabel(recipient.role, t) }}
+                  </span>
+                </TableCell>
+                <TableCell class="hidden sm:table-cell text-muted-foreground">
+                  {{ recipient.email || "—" }}
+                </TableCell>
+                <TableCell class="text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <LucideLoader2
+                      v-if="ticketNotificationRecipientsSavingUserId === recipient.userId"
+                      class="w-4 h-4 animate-spin text-muted-foreground"
+                    />
+                    <Switch
+                      :id="`ticket-notification-recipient-${recipient.userId}`"
+                      :model-value="recipient.ticketEmailNotificationsEnabled"
+                      :disabled="ticketNotificationRecipientsSavingUserId === recipient.userId"
+                      @update:model-value="setTicketNotificationRecipientEnabled(recipient.userId, Boolean($event))"
+                    />
+                  </div>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </DialogContent>
+    </Dialog>
 
     <!-- Ticket table -->
     <Card>

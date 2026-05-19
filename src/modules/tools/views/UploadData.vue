@@ -36,7 +36,10 @@ const {
       <Alert variant="default" class="flex items-start gap-2">
         <LucideInfo class="h-4 w-4" />
         <div>
-          <AlertDescription>{{ t("tools.uploadData.groupNotice", { groupId: "730020933" }) }}</AlertDescription>
+          <AlertDescription>
+            <span class="block">{{ t("tools.uploadData.groupNotice1", { groupId: "730020933" }) }}</span>
+            <span class="block">{{ t("tools.uploadData.groupNotice2", { groupId: "1023178678" }) }}</span>
+          </AlertDescription>
         </div>
       </Alert>
 

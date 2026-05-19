@@ -24,7 +24,7 @@ const forwardedProps = useForwardProps(delegatedProps)
       v-bind="forwardedProps"
       :class="
         cn(
-          'origin-top-center border-white/55 bg-popover/92 text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-90 relative mt-1.5 h-[var(--reka-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border shadow-[0_16px_44px_-28px_rgba(15,23,42,0.9)] backdrop-blur-xl supports-[backdrop-filter]:bg-popover/78 md:w-[var(--reka-navigation-menu-viewport-width)] dark:border-white/10 dark:bg-slate-950/88 dark:supports-[backdrop-filter]:bg-slate-950/74',
+          'origin-top-center border-white/65 bg-popover/84 text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-90 relative mt-1.5 h-[var(--reka-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border shadow-[0_22px_64px_-38px_rgba(15,23,42,0.95),inset_0_1px_0_rgba(255,255,255,0.54)] backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-popover/58 md:w-[var(--reka-navigation-menu-viewport-width)] dark:border-white/12 dark:bg-slate-950/80 dark:shadow-[0_18px_54px_-36px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.08)] dark:supports-[backdrop-filter]:bg-slate-950/62',
           props.class,
         )
       "

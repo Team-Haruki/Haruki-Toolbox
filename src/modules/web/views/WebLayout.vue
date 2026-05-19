@@ -61,9 +61,12 @@ const {
   <SidebarProvider>
     <Sidebar
       v-bind="props"
-      class="border-r border-white/45 bg-white/55 bg-gradient-to-b from-white/72 via-white/52 to-white/36 shadow-none backdrop-blur-2xl supports-[backdrop-filter]:bg-white/42 dark:border-white/10 dark:bg-slate-950/34 dark:from-slate-950/62 dark:via-slate-900/38 dark:to-slate-950/46 dark:supports-[backdrop-filter]:bg-slate-950/26 [&_[data-sidebar=sidebar]]:border-r [&_[data-sidebar=sidebar]]:border-white/45 [&_[data-sidebar=sidebar]]:bg-gradient-to-b [&_[data-sidebar=sidebar]]:from-white/72 [&_[data-sidebar=sidebar]]:via-white/52 [&_[data-sidebar=sidebar]]:to-white/36 [&_[data-sidebar=sidebar]]:shadow-[inset_-1px_0_0_rgba(255,255,255,0.48)] [&_[data-sidebar=sidebar]]:backdrop-blur-2xl dark:[&_[data-sidebar=sidebar]]:border-white/10 dark:[&_[data-sidebar=sidebar]]:from-slate-950/62 dark:[&_[data-sidebar=sidebar]]:via-slate-900/38 dark:[&_[data-sidebar=sidebar]]:to-slate-950/46 dark:[&_[data-sidebar=sidebar]]:shadow-[inset_-1px_0_0_rgba(255,255,255,0.08)]"
+      data-glass-surface="sidebar"
+      class="border-r border-white/60 bg-white/52 bg-gradient-to-b from-white/72 via-white/44 to-white/30 shadow-[inset_-1px_0_0_rgba(255,255,255,0.62),0_24px_70px_-54px_rgba(15,23,42,0.62)] backdrop-blur-3xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/36 dark:border-white/10 dark:bg-slate-950/36 dark:from-slate-950/64 dark:via-slate-900/40 dark:to-slate-950/48 dark:supports-[backdrop-filter]:bg-slate-950/28 [&_[data-sidebar=sidebar]]:border-r [&_[data-sidebar=sidebar]]:border-white/60 [&_[data-sidebar=sidebar]]:!bg-white/38 [&_[data-sidebar=sidebar]]:bg-gradient-to-b [&_[data-sidebar=sidebar]]:from-white/72 [&_[data-sidebar=sidebar]]:via-white/44 [&_[data-sidebar=sidebar]]:to-white/30 [&_[data-sidebar=sidebar]]:shadow-[inset_-1px_0_0_rgba(255,255,255,0.62)] [&_[data-sidebar=sidebar]]:backdrop-blur-3xl [&_[data-sidebar=sidebar]]:backdrop-saturate-150 dark:[&_[data-sidebar=sidebar]]:border-white/10 dark:[&_[data-sidebar=sidebar]]:!bg-slate-950/34 dark:[&_[data-sidebar=sidebar]]:from-slate-950/64 dark:[&_[data-sidebar=sidebar]]:via-slate-900/40 dark:[&_[data-sidebar=sidebar]]:to-slate-950/48 dark:[&_[data-sidebar=sidebar]]:shadow-[inset_-1px_0_0_rgba(255,255,255,0.08)]"
     >
-      <SidebarHeader class="border-b border-white/45 px-3 py-2 h-13 justify-center items-center bg-white/25 dark:border-white/10 dark:bg-white/[0.03]">
+      <SidebarHeader
+        class="border-b border-slate-950/[0.06] px-3 py-2 h-13 justify-center items-center bg-transparent shadow-[inset_0_-1px_0_rgba(15,23,42,0.035)] dark:border-white/10 dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]"
+      >
         <router-link to="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <Avatar class="w-9 h-9 ring-2 ring-muted">
             <AvatarImage :src="harukiLogo" alt="@haruki"/>
@@ -169,7 +172,7 @@ const {
     <SidebarInset>
       <header
           data-glass-surface="topbar"
-          class="sticky top-0 z-40 flex h-13 items-center border-b border-white/55 px-4 gap-2 text-base-content bg-white/58 shadow-[0_12px_32px_-28px_rgba(15,23,42,0.9)] backdrop-blur-md supports-[backdrop-filter]:bg-white/44 dark:border-white/10 dark:bg-slate-950/52 dark:shadow-[0_12px_32px_-26px_rgba(34,211,238,0.35)] dark:supports-[backdrop-filter]:bg-slate-950/38 overflow-hidden flex-nowrap"
+          class="sticky top-0 z-40 flex h-13 items-center border-b border-white/60 px-4 gap-2 text-base-content bg-white/58 shadow-[0_16px_42px_-32px_rgba(15,23,42,0.72)] backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/40 dark:border-white/10 dark:bg-slate-950/54 dark:shadow-[0_12px_32px_-26px_rgba(34,211,238,0.30)] dark:supports-[backdrop-filter]:bg-slate-950/38 overflow-hidden flex-nowrap"
       >
         <SidebarTrigger class="flex-shrink-0"/>
         <div class="flex items-center flex-shrink-0 whitespace-nowrap">
@@ -204,7 +207,7 @@ const {
 
       <SidebarFooter
         data-glass-surface="footer"
-        class="border-t border-white/55 bg-white/50 p-2 text-center text-sm text-muted-foreground backdrop-blur-sm supports-[backdrop-filter]:bg-white/34 dark:border-white/10 dark:bg-slate-950/42 dark:supports-[backdrop-filter]:bg-slate-950/28"
+        class="border-t border-white/60 bg-white/56 p-2 text-center text-sm text-muted-foreground backdrop-blur-md supports-[backdrop-filter]:bg-white/40 dark:border-white/10 dark:bg-slate-950/42 dark:supports-[backdrop-filter]:bg-slate-950/28"
       >
         <div class="flex flex-wrap items-center justify-center gap-2">
           <span>&copy; {{ copyrightYear }} {{ t("webLayout.footer.copyright") }}</span>
