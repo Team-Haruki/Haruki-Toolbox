@@ -636,7 +636,7 @@ export const zhCN = {
           yangzi: { name: "岩崎阳子", role: "文档维护", desc: "" },
           watagashi: { name: "綿菓子ウニ", role: "外部协力", desc: "" },
           middlered: { name: "MiddleRed", role: "外部协力", desc: "" },
-          dnaroma: { name: "DNARoma", role: "外部协力", desc: "" },
+          dnaroma: { name: "DNARoma", role: "外部协力", desc: "", quote: "\"0.1 + 0.2 = 0.300000004\"" },
           yamamoto: { name: "山本", role: "金牌赞助者", desc: "" }
         }
       },
@@ -670,6 +670,11 @@ export const zhCN = {
   home: {
     title: "欢迎使用 Haruki 工具箱",
     description: "请选择您需要的功能",
+    aboutBanner: {
+      badge: "关于 & 赞助",
+      title: "您的帮助是我们继续下去的动力",
+      desc: "点击查看关于 Project Haruki 以及如何赞助开发者团队"
+    },
     accountAndSettings: "账号与设置",
     register: "注册",
     login: "登录",

@@ -636,7 +636,7 @@ export const enUS = {
           yangzi: { name: "IwasakiYouko", role: "Documentation Maintainer", desc: "" },
           watagashi: { name: "Watagashi Uni", role: "Contributor", desc: "" },
           middlered: { name: "MiddleRed", role: "Contributor", desc: "" },
-          dnaroma: { name: "DNARoma", role: "Contributor", desc: "" },
+          dnaroma: { name: "DNARoma", role: "Contributor", desc: "", quote: "\"0.1 + 0.2 = 0.300000004\"" },
           yamamoto: { name: "Yamamoto", role: "Gold Sponsor", desc: "" }
         }
       },
@@ -670,6 +670,11 @@ export const enUS = {
   home: {
     title: "Welcome to Haruki Toolbox",
     description: "Choose the feature you need",
+    aboutBanner: {
+      badge: "About & Support",
+      title: "Your support is our motivation to keep going",
+      desc: "Click to view about Project Haruki and how to sponsor our dev team"
+    },
     accountAndSettings: "Account & Settings",
     register: "Register",
     login: "Sign in",

@@ -6,6 +6,7 @@ import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
 import SheetHeader from '@/components/ui/sheet/SheetHeader.vue'
 import SheetTitle from '@/components/ui/sheet/SheetTitle.vue'
 import { SIDEBAR_WIDTH_MOBILE, useSidebar } from "./utils"
+import { useSettingsStore } from "@/shared/stores/settings"
 
 defineOptions({
   inheritAttrs: false,
@@ -18,6 +19,7 @@ const props = withDefaults(defineProps<SidebarProps>(), {
 })
 
 const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+const settingsStore = useSettingsStore()
 </script>
 
 <template>
@@ -39,7 +41,9 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
       :class="cn(
         'bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden',
         props.class,
-        'border-white/60 bg-none !bg-white/58 shadow-[inset_-1px_0_0_rgba(255,255,255,0.64)] backdrop-blur-3xl backdrop-saturate-150 supports-[backdrop-filter]:!bg-white/44 dark:border-white/10 dark:!bg-slate-950/78 dark:shadow-[inset_-1px_0_0_rgba(255,255,255,0.08)] dark:supports-[backdrop-filter]:!bg-slate-950/62'
+        settingsStore.reducedVisualEffects
+          ? 'border-r border-slate-200 dark:border-slate-800 bg-sidebar'
+          : 'border-white/60 bg-none !bg-white/12 shadow-[inset_-1px_0_0_rgba(255,255,255,0.64)] backdrop-blur-3xl backdrop-saturate-150 supports-[backdrop-filter]:!bg-white/10 dark:border-white/10 dark:!bg-slate-950/30 dark:shadow-[inset_-1px_0_0_rgba(255,255,255,0.08)] dark:supports-[backdrop-filter]:!bg-slate-950/24'
       )"
       overlay-class="bg-black/25 backdrop-blur-[1px] dark:bg-slate-950/45"
       :style="{

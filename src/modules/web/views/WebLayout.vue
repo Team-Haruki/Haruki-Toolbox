@@ -5,6 +5,8 @@ import { useI18n } from "vue-i18n"
 import SidebarUser from "@/modules/user/components/SidebarUser.vue";
 import { useWebLayout } from "@/modules/web/composables/useWebLayout"
 import { WEB_NAV_ITEMS } from "@/config/navigation"
+import { useSettingsStore } from "@/shared/stores/settings"
+import { cn } from "@/lib/utils"
 
 import {
   LucideHome,
@@ -45,6 +47,7 @@ import {
 
 const props = defineProps<SidebarProps>()
 const { t } = useI18n()
+const settingsStore = useSettingsStore()
 const {
   harukiLogo,
   userStore,
@@ -62,7 +65,11 @@ const {
     <Sidebar
       v-bind="props"
       data-glass-surface="sidebar"
-      class="border-r border-white/60 bg-white/52 bg-gradient-to-b from-white/72 via-white/44 to-white/30 shadow-[inset_-1px_0_0_rgba(255,255,255,0.62),0_24px_70px_-54px_rgba(15,23,42,0.62)] backdrop-blur-3xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/36 dark:border-white/10 dark:bg-slate-950/36 dark:from-slate-950/64 dark:via-slate-900/40 dark:to-slate-950/48 dark:supports-[backdrop-filter]:bg-slate-950/28 [&_[data-sidebar=sidebar]]:border-r [&_[data-sidebar=sidebar]]:border-white/60 [&_[data-sidebar=sidebar]]:!bg-white/38 [&_[data-sidebar=sidebar]]:bg-gradient-to-b [&_[data-sidebar=sidebar]]:from-white/72 [&_[data-sidebar=sidebar]]:via-white/44 [&_[data-sidebar=sidebar]]:to-white/30 [&_[data-sidebar=sidebar]]:shadow-[inset_-1px_0_0_rgba(255,255,255,0.62)] [&_[data-sidebar=sidebar]]:backdrop-blur-3xl [&_[data-sidebar=sidebar]]:backdrop-saturate-150 dark:[&_[data-sidebar=sidebar]]:border-white/10 dark:[&_[data-sidebar=sidebar]]:!bg-slate-950/34 dark:[&_[data-sidebar=sidebar]]:from-slate-950/64 dark:[&_[data-sidebar=sidebar]]:via-slate-900/40 dark:[&_[data-sidebar=sidebar]]:to-slate-950/48 dark:[&_[data-sidebar=sidebar]]:shadow-[inset_-1px_0_0_rgba(255,255,255,0.08)]"
+      :class="cn(
+        settingsStore.reducedVisualEffects
+          ? 'border-r border-slate-200 dark:border-slate-800 bg-sidebar [&_[data-sidebar=sidebar]]:border-r [&_[data-sidebar=sidebar]]:border-slate-200 dark:[&_[data-sidebar=sidebar]]:border-slate-800 [&_[data-sidebar=sidebar]]:bg-sidebar [&_[data-sidebar=sidebar]]:!bg-sidebar'
+          : 'border-r border-white/60 bg-white/6 bg-gradient-to-b from-white/10 via-white/4 to-white/1 shadow-[inset_-1px_0_0_rgba(255,255,255,0.62),0_24px_70px_-54px_rgba(15,23,42,0.62)] backdrop-blur-3xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/5 dark:border-white/10 dark:bg-slate-950/8 dark:from-slate-950/15 dark:via-slate-900/4 dark:to-slate-950/2 dark:supports-[backdrop-filter]:bg-slate-950/6 [&_[data-sidebar=sidebar]]:border-r [&_[data-sidebar=sidebar]]:border-white/60 [&_[data-sidebar=sidebar]]:!bg-white/4 [&_[data-sidebar=sidebar]]:bg-gradient-to-b [&_[data-sidebar=sidebar]]:from-white/10 [&_[data-sidebar=sidebar]]:via-white/4 [&_[data-sidebar=sidebar]]:to-white/1 [&_[data-sidebar=sidebar]]:shadow-[inset_-1px_0_0_rgba(255,255,255,0.62)] [&_[data-sidebar=sidebar]]:backdrop-blur-3xl [&_[data-sidebar=sidebar]]:backdrop-saturate-150 dark:[&_[data-sidebar=sidebar]]:border-white/10 dark:[&_[data-sidebar=sidebar]]:!bg-slate-950/8 dark:[&_[data-sidebar=sidebar]]:from-slate-950/15 dark:[&_[data-sidebar=sidebar]]:via-slate-900/4 dark:[&_[data-sidebar=sidebar]]:to-slate-950/2 dark:[&_[data-sidebar=sidebar]]:shadow-[inset_-1px_0_0_rgba(255,255,255,0.08)]'
+      )"
     >
       <SidebarHeader
         class="border-b border-slate-950/[0.06] px-3 py-2 h-13 justify-center items-center bg-transparent shadow-[inset_0_-1px_0_rgba(15,23,42,0.035)] dark:border-white/10 dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]"
@@ -172,7 +179,12 @@ const {
     <SidebarInset>
       <header
           data-glass-surface="topbar"
-          class="sticky top-0 z-40 flex h-13 items-center border-b border-white/60 px-4 gap-2 text-base-content bg-white/58 shadow-[0_16px_42px_-32px_rgba(15,23,42,0.72)] backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/40 dark:border-white/10 dark:bg-slate-950/54 dark:shadow-[0_12px_32px_-26px_rgba(34,211,238,0.30)] dark:supports-[backdrop-filter]:bg-slate-950/38 overflow-hidden flex-nowrap"
+          :class="cn(
+            'sticky top-0 z-40 flex h-13 items-center px-4 gap-2 text-base-content overflow-hidden flex-nowrap',
+            settingsStore.reducedVisualEffects
+              ? 'border-b border-slate-200 dark:border-slate-800 bg-background'
+              : 'border-b border-white/60 bg-white/18 shadow-[0_16px_42px_-32px_rgba(15,23,42,0.72)] backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/12 dark:border-white/10 dark:bg-slate-950/22 dark:shadow-[0_12px_32px_-26px_rgba(34,211,238,0.30)] dark:supports-[backdrop-filter]:bg-slate-950/20'
+          )"
       >
         <SidebarTrigger class="flex-shrink-0"/>
         <div class="flex items-center flex-shrink-0 whitespace-nowrap">
@@ -207,7 +219,12 @@ const {
 
       <SidebarFooter
         data-glass-surface="footer"
-        class="border-t border-white/60 bg-white/56 p-2 text-center text-sm text-muted-foreground backdrop-blur-md supports-[backdrop-filter]:bg-white/40 dark:border-white/10 dark:bg-slate-950/42 dark:supports-[backdrop-filter]:bg-slate-950/28"
+        :class="cn(
+          'p-2 text-center text-sm text-muted-foreground',
+          settingsStore.reducedVisualEffects
+            ? 'border-t border-slate-200 dark:border-slate-800 bg-background'
+            : 'border-t border-white/60 bg-white/16 backdrop-blur-md supports-[backdrop-filter]:bg-white/12 dark:border-white/10 dark:bg-slate-950/22 dark:supports-[backdrop-filter]:bg-slate-950/20'
+        )"
       >
         <div class="flex flex-wrap items-center justify-center gap-2">
           <span>&copy; {{ copyrightYear }} {{ t("webLayout.footer.copyright") }}</span>
