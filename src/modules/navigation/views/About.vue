@@ -165,7 +165,7 @@ const showSponsorsMaintenance = () => {
       <p class="text-base md:text-lg font-semibold text-primary">
         {{ t("navigationPages.about.subtitle") }}
       </p>
-      <div class="space-y-4 text-muted-foreground text-sm md:text-base leading-relaxed pt-2">
+      <div class="bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent border border-primary/10 rounded-2xl p-6 shadow-sm space-y-4 text-muted-foreground text-sm md:text-base leading-relaxed mt-2">
         <p>{{ t("navigationPages.about.projectIntro.p1") }}</p>
         <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
         <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
