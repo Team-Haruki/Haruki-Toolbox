@@ -606,9 +606,9 @@ export const enUS = {
       subtitle: "A community initiative serving Project Sekai players",
       projectIntro: {
         title: "About the Project",
-        p1: "Project Haruki is a community initiative started by SeiunKinagi, dedicated to serving players of the game *Project Sekai: Colorful Stage! feat. Hatsune Miku*.",
-        p2: "The main works of Project Haruki are HarukiBot NEO and Haruki Toolbox. HarukiBot NEO focuses on providing various convenient game-related features for Chinese-speaking players.",
-        p3: "Project Haruki also develops many open-source high-performance programs, supplying powerful performance capabilities to HarukiBot NEO and Haruki Toolbox for a smoother player experience."
+        p1: "Project Haruki is a community initiative started by SeiunKinagi, dedicated to providing players of *Project Sekai: Colorful Stage! feat. Hatsune Miku* with high-quality game services and community support.",
+        p2: "Our core projects include HarukiBot NEO and Haruki Toolbox. Among them, HarukiBot NEO focuses on providing Chinese-speaking players with a wide range of convenient, intelligent game-helper features.",
+        p3: "In addition, we independently develop and maintain a series of high-performance open-source underlying utilities and microservices. These serve as a robust, stable foundation for the entire Haruki ecosystem, ensuring a smooth and responsive experience for all players."
       },
       team: {
         title: "Dev Team",

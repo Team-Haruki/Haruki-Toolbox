@@ -19,7 +19,8 @@ import {
   Users, 
   Code2, 
   Heart, 
-  ExternalLink 
+  ExternalLink,
+  Sparkles
 } from "lucide-vue-next"
 
 const { t } = useI18n()
@@ -113,8 +114,11 @@ const showSponsorsMaintenance = () => {
     
     <!-- Simplified typographic Header Section -->
     <div class="space-y-4 max-w-3xl">
-      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
-        {{ t("navigationPages.about.title") }}
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
+        <div class="p-2 bg-primary/10 border border-primary/20 rounded-xl text-primary shrink-0">
+          <Sparkles class="w-6 h-6 md:w-7 md:h-7" />
+        </div>
+        <span>{{ t("navigationPages.about.title") }}</span>
       </h1>
       <p class="text-base md:text-lg font-semibold text-primary">
         {{ t("navigationPages.about.subtitle") }}

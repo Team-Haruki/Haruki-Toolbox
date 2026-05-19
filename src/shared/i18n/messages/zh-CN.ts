@@ -606,9 +606,9 @@ export const zhCN = {
       subtitle: "服务于世界计划玩家的社区计划",
       projectIntro: {
         title: "关于项目",
-        p1: "Project Haruki 是由星雲希凪(SeiunKinagi)发起的社区计划，我们致力于服务游戏《世界计划缤纷舞台！ feat. 初音未来》的玩家。",
-        p2: "Project Haruki 主要作品为 HarukiBot NEO 以及 Haruki 工具箱，HarukiBot NEO 致力于为中文玩家提供各类游戏相关便捷功能。",
-        p3: "Project Haruki 也编写了许多开源高性能程序，为 HarukiBot NEO 和 Haruki 工具箱提供了强大的性能以便玩家使用更舒服。"
+        p1: "Project Haruki 是由星雲希凪 (SeiunKinagi) 发起的社区计划，旨在为《世界计划 缤纷舞台！ feat. 初音未来》的玩家提供更优质的游戏服务与社区支持。",
+        p2: "我们的核心项目包括 HarukiBot NEO 和 Haruki 工具箱。其中，HarukiBot NEO 专注于为中文玩家提供便捷、智能的各种游戏辅助与实用功能。",
+        p3: "此外，我们也自主开发并维护了一系列高性能的开源底层程序与微服务，为整个 Haruki 生态系统注入强大且稳定的性能支撑，让每位玩家都能享受流畅、舒适的使用体验。"
       },
       team: {
         title: "开发团队",
