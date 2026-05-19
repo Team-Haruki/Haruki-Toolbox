@@ -613,6 +613,7 @@ export const enUS = {
       team: {
         title: "Dev Team",
         subtitle: "The development and maintenance of Project Haruki would not be possible without the support of the following members of the Haruki Dev Team",
+        noBio: "No bio available",
         roles: {
           core: "Core Developers",
           doc: "Documentation",
@@ -626,16 +627,16 @@ export const enUS = {
           sponsor: "Generously sponsored hosting servers for HarukiBot NEO and Haruki Sekai Asset station"
         },
         members: {
-          seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "Project initiator", quote: "\"Coding for love, dedicated to creating more interesting community tools.\"" },
+          seiun: { name: "SeiunKinagi", role: "Founder / Lead Developer", desc: "", quote: "\"Coding for love, dedicated to creating more interesting community tools.\"" },
           lingqian: { name: "Lingqian", role: "Core Developer", desc: "", quote: "\"Code saves the world, or at least makes playing Sekai easier.\"" },
           deseer: { name: "Deseer", role: "Core Developer", desc: "" },
           storyxy: { name: "storyxy3", role: "Core Developer", desc: "" },
           aposetles: { name: "Aposetles", role: "Documentation Maintainer", desc: "" },
           tianshinling: { name: "Amane Rin", role: "Documentation Maintainer", desc: "" },
           yangzi: { name: "Yangzi", role: "Documentation Maintainer", desc: "" },
-          watagashi: { name: "Watagashi Uni", role: "Contributor", desc: "Provided invaluable technical and resource support to the project" },
-          middlered: { name: "MiddleRed", role: "Contributor", desc: "Provided many ideas and strong support for project development" },
-          dnaroma: { name: "DNARoma", role: "Contributor", desc: "Provided key assistance and coordination for the project" },
+          watagashi: { name: "Watagashi Uni", role: "Contributor", desc: "" },
+          middlered: { name: "MiddleRed", role: "Contributor", desc: "" },
+          dnaroma: { name: "DNARoma", role: "Contributor", desc: "" },
           yamamoto: { name: "Yamamoto", role: "Gold Sponsor", desc: "" }
         }
       },
