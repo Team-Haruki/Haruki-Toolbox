@@ -165,7 +165,7 @@ const showSponsorsMaintenance = () => {
       <p class="text-base md:text-lg font-semibold text-primary">
         {{ t("navigationPages.about.subtitle") }}
       </p>
-      <div class="bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent border border-primary/10 rounded-2xl p-6 shadow-sm space-y-4 text-muted-foreground text-sm md:text-base leading-relaxed mt-2">
+      <div class="space-y-4 text-muted-foreground text-sm md:text-base leading-relaxed pt-2">
         <p>{{ t("navigationPages.about.projectIntro.p1") }}</p>
         <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
         <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
@@ -306,14 +306,12 @@ const showSponsorsMaintenance = () => {
         <h2>{{ t("navigationPages.about.support.title") }}</h2>
       </div>
       
-      <div class="bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-primary/5 border border-pink-500/10 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
-        <div class="space-y-2 max-w-xl text-center md:text-left">
-          <p class="text-muted-foreground text-sm md:text-base leading-relaxed">
-            {{ t("navigationPages.about.support.desc") }}
-          </p>
-        </div>
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-2">
+        <p class="text-muted-foreground text-sm md:text-base leading-relaxed max-w-xl">
+          {{ t("navigationPages.about.support.desc") }}
+        </p>
 
-        <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
           <Button 
             as-child
             class="bg-pink-600 hover:bg-pink-700 text-white font-semibold flex items-center justify-center gap-2 h-11 px-6 shadow-sm hover:shadow transition-all duration-300 hover:scale-[1.02]"
