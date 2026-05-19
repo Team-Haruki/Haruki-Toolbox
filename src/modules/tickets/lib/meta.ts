@@ -3,6 +3,7 @@ import { translate } from "@/shared/i18n"
 
 export type TicketStatusFilter = TicketStatus | "all"
 export type TicketPriorityFilter = TicketPriority | "all"
+export type AdminTicketQuickFilter = "all" | "pending_admin" | "pending_user" | "unassigned" | "mine" | "high_or_urgent"
 
 export interface TicketOption<T extends string> {
   value: T
@@ -13,12 +14,20 @@ type TicketLocalizer = (key: string) => string
 
 const defaultLocalizer: TicketLocalizer = (key) => translate(key)
 
-const TICKET_STATUS_VALUES: readonly TicketStatus[] = ["open", "in_progress", "resolved", "closed"]
-const TICKET_PRIORITY_VALUES: readonly TicketPriority[] = ["low", "normal", "medium", "high", "urgent"]
+const TICKET_STATUS_VALUES: readonly TicketStatus[] = ["open", "pending_admin", "pending_user", "resolved", "closed"]
+const TICKET_PRIORITY_VALUES: readonly TicketPriority[] = ["low", "normal", "high", "urgent"]
 const TICKET_CATEGORY_VALUES: readonly TicketCategory[] = ["upload", "account", "bug", "feature", "other"]
 const TICKET_STATUS_FILTER_VALUES: readonly TicketStatusFilter[] = ["all", ...TICKET_STATUS_VALUES]
 const TICKET_PRIORITY_FILTER_VALUES: readonly TicketPriorityFilter[] = ["all", ...TICKET_PRIORITY_VALUES]
-const ADMIN_TICKET_PRIORITY_FILTER_VALUES: readonly TicketPriorityFilter[] = ["all", "urgent", "high", "medium", "normal", "low"]
+const ADMIN_TICKET_PRIORITY_FILTER_VALUES: readonly TicketPriorityFilter[] = ["all", "urgent", "high", "normal", "low"]
+const ADMIN_TICKET_QUICK_FILTER_VALUES: readonly AdminTicketQuickFilter[] = [
+  "all",
+  "pending_admin",
+  "pending_user",
+  "unassigned",
+  "mine",
+  "high_or_urgent",
+]
 
 export function ticketStatusOptionLabel(status: TicketStatusFilter, localizer: TicketLocalizer = defaultLocalizer): string {
   switch (status) {
@@ -26,8 +35,10 @@ export function ticketStatusOptionLabel(status: TicketStatusFilter, localizer: T
       return localizer("tickets.filters.allStatus")
     case "open":
       return localizer("tickets.status.open")
-    case "in_progress":
-      return localizer("tickets.status.inProgress")
+    case "pending_admin":
+      return localizer("tickets.status.pendingAdmin")
+    case "pending_user":
+      return localizer("tickets.status.pendingUser")
     case "resolved":
       return localizer("tickets.status.resolved")
     case "closed":
@@ -46,8 +57,6 @@ export function ticketPriorityOptionLabel(
       return localizer("tickets.priority.low")
     case "normal":
       return localizer("tickets.priority.normal")
-    case "medium":
-      return localizer("tickets.priority.medium")
     case "high":
       return localizer("tickets.priority.high")
     case "urgent":
@@ -67,6 +76,26 @@ export function ticketCategoryLabel(category: TicketCategory, localizer: TicketL
       return localizer("tickets.category.feature")
     case "other":
       return localizer("tickets.category.other")
+  }
+}
+
+export function adminTicketQuickFilterLabel(
+  quickFilter: AdminTicketQuickFilter,
+  localizer: TicketLocalizer = defaultLocalizer
+): string {
+  switch (quickFilter) {
+    case "all":
+      return localizer("tickets.adminList.quickFilters.all")
+    case "pending_admin":
+      return localizer("tickets.adminList.quickFilters.pendingAdmin")
+    case "pending_user":
+      return localizer("tickets.adminList.quickFilters.pendingUser")
+    case "unassigned":
+      return localizer("tickets.adminList.quickFilters.unassigned")
+    case "mine":
+      return localizer("tickets.adminList.quickFilters.mine")
+    case "high_or_urgent":
+      return localizer("tickets.adminList.quickFilters.highOrUrgent")
   }
 }
 
@@ -108,6 +137,12 @@ export function getAdminTicketPriorityFilterOptions(
   return toOptions(ADMIN_TICKET_PRIORITY_FILTER_VALUES, (value) => ticketPriorityOptionLabel(value, localizer))
 }
 
+export function getAdminTicketQuickFilterOptions(
+  localizer: TicketLocalizer = defaultLocalizer
+): ReadonlyArray<TicketOption<AdminTicketQuickFilter>> {
+  return toOptions(ADMIN_TICKET_QUICK_FILTER_VALUES, (value) => adminTicketQuickFilterLabel(value, localizer))
+}
+
 export function getTicketCategoryOptions(
   localizer: TicketLocalizer = defaultLocalizer
 ): ReadonlyArray<TicketOption<TicketCategory>> {
@@ -121,12 +156,14 @@ export const TICKET_PRIORITY_OPTIONS: ReadonlyArray<TicketOption<TicketPriority>
 export const TICKET_PRIORITY_FILTER_OPTIONS: ReadonlyArray<TicketOption<TicketPriorityFilter>> = getTicketPriorityFilterOptions()
 export const ADMIN_TICKET_PRIORITY_FILTER_OPTIONS: ReadonlyArray<TicketOption<TicketPriorityFilter>> =
   getAdminTicketPriorityFilterOptions()
+export const ADMIN_TICKET_QUICK_FILTER_OPTIONS: ReadonlyArray<TicketOption<AdminTicketQuickFilter>> =
+  getAdminTicketQuickFilterOptions()
 export const TICKET_CATEGORY_OPTIONS: ReadonlyArray<TicketOption<TicketCategory>> = getTicketCategoryOptions()
 
 const TICKET_STATUS_SET = new Set<string>(TICKET_STATUS_VALUES)
 const TICKET_PRIORITY_SET = new Set<string>(TICKET_PRIORITY_VALUES)
 const TICKET_CATEGORY_SET = new Set<string>(TICKET_CATEGORY_VALUES)
-const TICKET_SENDER_ROLE_SET = new Set<string>(["user", "admin"])
+const TICKET_SENDER_ROLE_SET = new Set<string>(["user", "admin", "system"])
 
 export function isTicketStatus(value: unknown): value is TicketStatus {
   return typeof value === "string" && TICKET_STATUS_SET.has(value)

@@ -26,6 +26,7 @@ import {
   ticketStatusIcon,
   ticketStatusLabel,
   ticketStatusTextClass,
+  ticketUserStatusHint,
 } from "@/modules/tickets/lib/display"
 import { isTicketCategory, ticketCategoryLabel } from "@/modules/tickets/lib/meta"
 import { useTicketList } from "@/modules/tickets/composables/useTicketList"
@@ -65,8 +66,11 @@ function handleTicketCardKeydown(event: KeyboardEvent, ticketId: string) {
 
 <template>
   <div class="w-full max-w-3xl mx-auto flex flex-col gap-4">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">{{ t("tickets.list.title") }}</h1>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">{{ t("tickets.list.title") }}</h1>
+        <p class="text-sm text-muted-foreground">{{ t("tickets.list.description") }}</p>
+      </div>
       <Button @click="openCreateTicket">
         <LucidePlus class="w-4 h-4 mr-1" /> {{ t("tickets.list.createButton") }}
       </Button>
@@ -100,11 +104,12 @@ function handleTicketCardKeydown(event: KeyboardEvent, ticketId: string) {
         @click="openTicketDetail(ticket.ticketId)"
         @keydown="handleTicketCardKeydown($event, ticket.ticketId)"
       >
-        <CardContent class="py-0 flex flex-col gap-2">
+        <CardContent class="py-0 flex flex-col gap-3">
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
               <h3 class="font-semibold text-base truncate">{{ ticket.subject }}</h3>
-              <div class="flex items-center gap-2 mt-1 flex-wrap">
+              <div class="mt-1 text-xs text-muted-foreground truncate">{{ ticket.ticketId }}</div>
+              <div class="flex items-center gap-2 mt-2 flex-wrap">
                 <span :class="['inline-flex items-center gap-1 text-xs font-medium', ticketStatusTextClass(ticket.status)]">
                   <component :is="ticketStatusIcon(ticket.status)" class="w-3.5 h-3.5" />
                   {{ ticketStatusLabel(ticket.status) }}
@@ -118,9 +123,13 @@ function handleTicketCardKeydown(event: KeyboardEvent, ticketId: string) {
                 </span>
               </div>
             </div>
-            <span class="text-xs text-muted-foreground whitespace-nowrap">
-              {{ formatTicketDate(ticket.updatedAt) }}
-            </span>
+            <div class="text-right text-xs text-muted-foreground whitespace-nowrap">
+              <div>{{ t("tickets.list.updatedAt") }}</div>
+              <div>{{ formatTicketDate(ticket.updatedAt) }}</div>
+            </div>
+          </div>
+          <div class="rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            {{ ticketUserStatusHint(ticket.status) }}
           </div>
         </CardContent>
       </Card>

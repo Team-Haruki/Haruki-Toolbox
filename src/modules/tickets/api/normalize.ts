@@ -28,6 +28,15 @@ function normalizeSenderRole(value: unknown): TicketMessage["senderRole"] {
   return isTicketSenderRole(value) ? value : "user"
 }
 
+function normalizeOptionalSenderRole(value: unknown): TicketMessage["senderRole"] | undefined {
+  return isTicketSenderRole(value) ? value : undefined
+}
+
+function readOptionalBoolean(raw: UnknownRecord, keys: readonly string[]): boolean | undefined {
+  if (!keys.some((key) => raw[key] !== undefined && raw[key] !== null)) return undefined
+  return readBoolean(raw, keys)
+}
+
 export function normalizeTicket(raw: UnknownRecord): Ticket {
   const creatorId = readString(raw, ["creatorUserId", "creator_user_id", "userId", "user_id", "submittedBy", "submitted_by"])
   const creatorName = readOptionalString(raw, ["creatorUserName", "creator_user_name", "userName", "user_name", "submitterName", "submitter_name"])
@@ -44,6 +53,10 @@ export function normalizeTicket(raw: UnknownRecord): Ticket {
     creatorUserName: creatorName,
     assigneeAdminId: assigneeId,
     assigneeAdminName: assigneeName,
+    lastMessageSenderRole: normalizeOptionalSenderRole(raw.lastMessageSenderRole ?? raw.last_message_sender_role),
+    lastMessagePreview: readOptionalString(raw, ["lastMessagePreview", "last_message_preview"]),
+    lastMessageInternal: readOptionalBoolean(raw, ["lastMessageInternal", "last_message_internal"]),
+    lastMessageAt: readOptionalString(raw, ["lastMessageAt", "last_message_at"]),
     createdAt: readString(raw, ["createdAt", "created_at"]),
     updatedAt: readString(raw, ["updatedAt", "updated_at"]),
     closedAt: readOptionalString(raw, ["closedAt", "closed_at"]),

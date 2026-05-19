@@ -1,12 +1,19 @@
-import { computed } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useUserStore } from "@/shared/stores/user"
 import { ADMIN_NAV_ITEMS } from "@/config/navigation"
+import { getAdminTickets } from "@/modules/tickets/api/admin"
+
+const TICKET_REMINDER_REFRESH_MS = 60_000
 
 export function useAdminLayout() {
   const route = useRoute()
   const router = useRouter()
   const userStore = useUserStore()
+  const pendingTicketCount = ref<number | null>(null)
+  let pendingTicketCountLoading = false
+  let pendingTicketCountRefreshQueued = false
+  let pendingTicketRefreshTimer: ReturnType<typeof window.setInterval> | null = null
 
   const visibleNavItems = computed(() =>
     ADMIN_NAV_ITEMS.filter((item) => !item.superOnly || userStore.isSuperAdmin)
@@ -24,10 +31,66 @@ export function useAdminLayout() {
     void router.push({ name: target.routeName })
   }
 
+  async function loadPendingTicketCount() {
+    if (pendingTicketCountLoading) {
+      pendingTicketCountRefreshQueued = true
+      return
+    }
+    if (!userStore.isAdmin) {
+      pendingTicketCount.value = null
+      return
+    }
+
+    pendingTicketCountLoading = true
+    try {
+      const response = await getAdminTickets({
+        page: 1,
+        page_size: 1,
+        quick_filter: "pending_admin",
+      })
+      pendingTicketCount.value = response.total
+    } catch {
+      pendingTicketCount.value = null
+    } finally {
+      pendingTicketCountLoading = false
+      if (pendingTicketCountRefreshQueued) {
+        pendingTicketCountRefreshQueued = false
+        void loadPendingTicketCount()
+      }
+    }
+  }
+
+  function refreshPendingTicketCountIfVisible() {
+    if (document.visibilityState !== "visible") return
+    void loadPendingTicketCount()
+  }
+
+  watch(
+    [() => route.fullPath, () => userStore.isAdmin],
+    () => {
+      if (!route.path.startsWith("/admin")) return
+      void loadPendingTicketCount()
+    }
+  )
+
+  onMounted(() => {
+    void loadPendingTicketCount()
+    pendingTicketRefreshTimer = window.setInterval(refreshPendingTicketCountIfVisible, TICKET_REMINDER_REFRESH_MS)
+    document.addEventListener("visibilitychange", refreshPendingTicketCountIfVisible)
+  })
+
+  onUnmounted(() => {
+    if (pendingTicketRefreshTimer) {
+      window.clearInterval(pendingTicketRefreshTimer)
+    }
+    document.removeEventListener("visibilitychange", refreshPendingTicketCountIfVisible)
+  })
+
   return {
     userStore,
     visibleNavItems,
     activeTab,
+    pendingTicketCount,
     onTabChange,
   }
 }

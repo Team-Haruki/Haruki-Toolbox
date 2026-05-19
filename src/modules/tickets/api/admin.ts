@@ -1,10 +1,11 @@
 import { readUpdatedItems, readUpdatedTotal, request, unwrapUpdatedData } from "@/core/http/call-api"
 import { encodePathSegment } from "@/core/http/url"
 import type { QueryParams } from "@/core/http/query"
-import { asRecord, type UnknownRecord } from "@/lib/record-utils"
+import { asRecord, readBoolean, type UnknownRecord } from "@/lib/record-utils"
 import { translate } from "@/shared/i18n"
 import type { APIResponse } from "@/types/response"
 import type {
+  AdminTicketNotificationPreference,
   TicketAssignRequest,
   TicketDetail,
   TicketMessageRequest,
@@ -13,6 +14,7 @@ import type {
 import { normalizeMessage, normalizeTicket } from "./normalize"
 
 const ADMIN_BASE = "/api/admin/tickets"
+const ADMIN_ME_BASE = "/api/admin/me"
 
 export async function getAdminTickets(params?: QueryParams) {
   const res = await request<APIResponse<{ total?: number; items?: UnknownRecord[] }>>(`${ADMIN_BASE}`, {
@@ -59,4 +61,29 @@ export function updateTicketStatus(ticketId: string, data: TicketStatusUpdateReq
 
 export function assignTicket(ticketId: string, data: TicketAssignRequest) {
   return request(`${ADMIN_BASE}/${encodePathSegment(ticketId)}/assign`, { method: "PUT", data })
+}
+
+function normalizeTicketNotificationPreference(raw: UnknownRecord | null): AdminTicketNotificationPreference {
+  return {
+    ticketEmailNotificationsEnabled: raw
+      ? readBoolean(raw, ["ticketEmailNotificationsEnabled", "ticket_email_notifications_enabled"])
+      : false,
+  }
+}
+
+export async function getAdminTicketNotificationPreference(): Promise<AdminTicketNotificationPreference> {
+  const res = await request<APIResponse<UnknownRecord>>(`${ADMIN_ME_BASE}/ticket-notifications`, { method: "GET" })
+  const updatedData = asRecord(unwrapUpdatedData(res, translate("tickets.adminList.notifications.loadFailedTitle")))
+  return normalizeTicketNotificationPreference(updatedData)
+}
+
+export async function updateAdminTicketNotificationPreference(enabled: boolean): Promise<AdminTicketNotificationPreference> {
+  const res = await request<APIResponse<UnknownRecord>>(`${ADMIN_ME_BASE}/ticket-notifications`, {
+    method: "PUT",
+    data: {
+      ticketEmailNotificationsEnabled: enabled,
+    },
+  })
+  const updatedData = asRecord(unwrapUpdatedData(res, translate("tickets.adminList.notifications.saveFailedTitle")))
+  return normalizeTicketNotificationPreference(updatedData)
 }

@@ -1,6 +1,7 @@
-export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
-export type TicketPriority = 'low' | 'normal' | 'medium' | 'high' | 'urgent'
+export type TicketStatus = 'open' | 'pending_user' | 'pending_admin' | 'resolved' | 'closed'
+export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent'
 export type TicketCategory = 'upload' | 'account' | 'bug' | 'feature' | 'other'
+export type TicketSenderRole = 'user' | 'admin' | 'system'
 
 export interface Ticket {
     ticketId: string
@@ -12,6 +13,10 @@ export interface Ticket {
     creatorUserName?: string
     assigneeAdminId?: string
     assigneeAdminName?: string
+    lastMessageSenderRole?: TicketSenderRole
+    lastMessagePreview?: string
+    lastMessageInternal?: boolean
+    lastMessageAt?: string
     createdAt: string
     updatedAt: string
     closedAt?: string
@@ -22,7 +27,7 @@ export interface TicketMessage {
     ticketId: string
     senderId: string
     senderName?: string
-    senderRole: 'user' | 'admin'
+    senderRole: TicketSenderRole
     message: string
     internal: boolean
     createdAt: string
@@ -52,4 +57,8 @@ export interface TicketStatusUpdateRequest {
 
 export interface TicketAssignRequest {
     assigneeAdminId?: string
+}
+
+export interface AdminTicketNotificationPreference {
+    ticketEmailNotificationsEnabled: boolean
 }

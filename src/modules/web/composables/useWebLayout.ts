@@ -1,19 +1,25 @@
-import { computed, ref, watch, watchEffect } from "vue"
+import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "vue"
 import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
 import { WEB_NAV_ITEMS, type NavItem } from "@/config/navigation"
+import { getUserTickets } from "@/modules/tickets/api/user"
 
 const APP_TITLE_KEY = "app.name"
 const DEFAULT_PAGE_TITLE_KEY = "route.home"
 const COPYRIGHT_START_YEAR = 2024
 const HARUKI_LOGO = `${import.meta.env.BASE_URL}assets/haruki.ico`
+const TICKET_REMINDER_REFRESH_MS = 60_000
 
 export function useWebLayout() {
   const route = useRoute()
   const userStore = useUserStore()
   const { t } = useI18n()
   const navGroupOpenState = ref<Record<string, boolean>>({})
+  const pendingUserTicketCount = ref<number | null>(null)
+  let pendingUserTicketCountLoading = false
+  let pendingUserTicketCountRefreshQueued = false
+  let pendingTicketRefreshTimer: ReturnType<typeof window.setInterval> | null = null
 
   const pageTitle = computed(() => {
     if (typeof route.meta.titleKey === "string" && route.meta.titleKey) {
@@ -72,12 +78,68 @@ export function useWebLayout() {
     }
   }
 
+  async function loadPendingUserTicketCount() {
+    if (pendingUserTicketCountLoading) {
+      pendingUserTicketCountRefreshQueued = true
+      return
+    }
+    const userId = userStore.userId
+    if (!userStore.isLoggedIn || !userId) {
+      pendingUserTicketCount.value = null
+      return
+    }
+
+    pendingUserTicketCountLoading = true
+    try {
+      const response = await getUserTickets(userId, {
+        page: 1,
+        page_size: 1,
+        status: "pending_user",
+      })
+      pendingUserTicketCount.value = response.total
+    } catch {
+      pendingUserTicketCount.value = null
+    } finally {
+      pendingUserTicketCountLoading = false
+      if (pendingUserTicketCountRefreshQueued) {
+        pendingUserTicketCountRefreshQueued = false
+        void loadPendingUserTicketCount()
+      }
+    }
+  }
+
+  function refreshPendingUserTicketCountIfVisible() {
+    if (document.visibilityState !== "visible") return
+    void loadPendingUserTicketCount()
+  }
+
+  watch(
+    [() => route.fullPath, () => userStore.isLoggedIn, () => userStore.userId],
+    () => {
+      void loadPendingUserTicketCount()
+    }
+  )
+
+  onMounted(() => {
+    void loadPendingUserTicketCount()
+    pendingTicketRefreshTimer = window.setInterval(refreshPendingUserTicketCountIfVisible, TICKET_REMINDER_REFRESH_MS)
+    document.addEventListener("visibilitychange", refreshPendingUserTicketCountIfVisible)
+  })
+
+  onUnmounted(() => {
+    if (pendingTicketRefreshTimer) {
+      window.clearInterval(pendingTicketRefreshTimer)
+    }
+    document.removeEventListener("visibilitychange", refreshPendingUserTicketCountIfVisible)
+  })
+
   return {
     harukiLogo: HARUKI_LOGO,
     userStore,
     pageTitle,
     showPageTitle,
     copyrightYear,
+    pendingUserTicketCount,
     isNavGroupOpen,
     setNavGroupOpen,
   }

@@ -5,6 +5,7 @@ import {
   CardTitle,
   CardHeader,
   CardContent,
+  CardDescription,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -51,16 +52,18 @@ const {
     <Card>
       <CardHeader>
         <CardTitle>{{ t("tickets.create.title") }}</CardTitle>
+        <CardDescription>{{ t("tickets.create.description") }}</CardDescription>
       </CardHeader>
       <CardContent class="flex flex-col gap-5">
         <!-- Subject -->
         <div class="flex flex-col gap-2">
           <Label for="subject">{{ t("tickets.create.fields.subject") }}</Label>
           <Input id="subject" v-model="subject" :placeholder="t('tickets.create.fields.subjectPlaceholder')" />
+          <p class="text-xs text-muted-foreground">{{ t("tickets.create.fields.subjectHint") }}</p>
         </div>
 
         <!-- Category and priority -->
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid gap-4 sm:grid-cols-2">
           <div class="flex flex-col gap-2">
             <Label>{{ t("tickets.create.fields.category") }}</Label>
             <Select :key="locale" v-model="category">
@@ -73,6 +76,7 @@ const {
                 </SelectItem>
               </SelectContent>
             </Select>
+            <p class="text-xs text-muted-foreground">{{ t("tickets.create.fields.categoryHint") }}</p>
           </div>
           <div class="flex flex-col gap-2">
             <Label>{{ t("tickets.create.fields.priority") }}</Label>
@@ -89,6 +93,7 @@ const {
                 </SelectItem>
               </SelectContent>
             </Select>
+            <p class="text-xs text-muted-foreground">{{ t("tickets.create.fields.priorityHint") }}</p>
           </div>
         </div>
 
@@ -102,6 +107,7 @@ const {
             rows="6"
             class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y"
           />
+          <p class="text-xs text-muted-foreground">{{ t("tickets.create.fields.messageHint") }}</p>
         </div>
 
         <!-- Submit -->

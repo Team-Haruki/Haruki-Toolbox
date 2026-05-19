@@ -34,6 +34,7 @@ import {
   ticketStatusIcon,
   ticketStatusLabel,
   ticketStatusTextClass,
+  ticketUserStatusHint,
 } from "@/modules/tickets/lib/display"
 import { isTicketCategory, ticketCategoryLabel } from "@/modules/tickets/lib/meta"
 import { useTicketDetail } from "@/modules/tickets/composables/useTicketDetail"
@@ -83,25 +84,40 @@ function formatCategory(category: string) {
     <template v-else-if="ticket">
       <!-- Ticket info -->
       <Card>
-        <CardHeader class="py-0">
-          <div class="flex items-start justify-between gap-3">
+        <CardHeader class="py-0 gap-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex-1 min-w-0">
               <CardTitle class="truncate">{{ ticket.subject }}</CardTitle>
-              <CardDescription class="mt-2 flex items-center gap-2 text-sm flex-wrap">
-                <span>{{ formatCategory(ticket.category) }}</span>
-                <span>·</span>
-                <span :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium', ticketPriorityBadgeClass(ticket.priority)]">
-                  <component :is="ticketPriorityIcon(ticket.priority)" class="w-3.5 h-3.5" v-if="ticketPriorityIcon(ticket.priority)" />
-                  {{ ticketPriorityLabel(ticket.priority) }} {{ t("tickets.detail.prioritySuffix") }}
-                </span>
-                <span>·</span>
-                <span>{{ t("tickets.detail.createdAt", { date: formatDateTime(ticket.createdAt) }) }}</span>
-              </CardDescription>
+              <CardDescription class="mt-1 break-all">{{ ticket.ticketId }}</CardDescription>
             </div>
             <span :class="['inline-flex items-center gap-1 text-sm font-medium flex-shrink-0', ticketStatusTextClass(ticket.status)]">
               <component :is="ticketStatusIcon(ticket.status)" class="w-4 h-4" />
               {{ ticketStatusLabel(ticket.status) }}
             </span>
+          </div>
+          <div class="rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            {{ ticketUserStatusHint(ticket.status) }}
+          </div>
+          <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <div class="text-xs text-muted-foreground">{{ t("tickets.detail.summary.category") }}</div>
+              <div class="font-medium">{{ formatCategory(ticket.category) }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-muted-foreground">{{ t("tickets.detail.summary.priority") }}</div>
+              <span :class="['mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium', ticketPriorityBadgeClass(ticket.priority)]">
+                <component :is="ticketPriorityIcon(ticket.priority)" class="w-3.5 h-3.5" v-if="ticketPriorityIcon(ticket.priority)" />
+                {{ ticketPriorityLabel(ticket.priority) }}
+              </span>
+            </div>
+            <div>
+              <div class="text-xs text-muted-foreground">{{ t("tickets.detail.summary.createdAt") }}</div>
+              <div class="font-medium">{{ formatDateTime(ticket.createdAt) }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-muted-foreground">{{ t("tickets.detail.summary.updatedAt") }}</div>
+              <div class="font-medium">{{ formatDateTime(ticket.updatedAt) }}</div>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -168,7 +184,7 @@ function formatCategory(category: string) {
       </Card>
 
       <!-- Close action -->
-      <div v-if="isOpen && ticket.status !== 'resolved'" class="flex justify-end">
+      <div v-if="isOpen" class="flex justify-end">
         <AlertDialog>
           <AlertDialogTrigger as-child>
             <Button variant="outline" size="sm" :disabled="closing" class="text-destructive">

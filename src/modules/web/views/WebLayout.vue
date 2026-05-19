@@ -51,6 +51,7 @@ const {
   pageTitle,
   showPageTitle,
   copyrightYear,
+  pendingUserTicketCount,
   isNavGroupOpen,
   setNavGroupOpen,
 } = useWebLayout()
@@ -135,6 +136,13 @@ const {
                 <router-link to="/tickets" class="flex items-center gap-2">
                   <LucideTicket></LucideTicket>
                   <span>{{ t("webLayout.nav.myTickets") }}</span>
+                  <span
+                    v-if="pendingUserTicketCount !== null && pendingUserTicketCount > 0"
+                    class="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium leading-none text-primary-foreground"
+                    :title="t('webLayout.nav.pendingTicketReplies', { total: pendingUserTicketCount })"
+                  >
+                    {{ pendingUserTicketCount > 99 ? "99+" : pendingUserTicketCount }}
+                  </span>
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>

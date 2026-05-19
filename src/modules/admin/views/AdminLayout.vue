@@ -3,7 +3,7 @@ import { useI18n } from "vue-i18n"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAdminLayout } from "@/modules/admin/composables/useAdminLayout"
 
-const { userStore, visibleNavItems, activeTab, onTabChange } = useAdminLayout()
+const { userStore, visibleNavItems, activeTab, pendingTicketCount, onTabChange } = useAdminLayout()
 const { t } = useI18n()
 </script>
 
@@ -23,6 +23,13 @@ const { t } = useI18n()
         >
           <component :is="item.icon" class="w-4 h-4 flex-shrink-0" />
           <span class="inline">{{ t(item.labelKey) }}</span>
+          <span
+            v-if="item.value === 'tickets' && pendingTicketCount !== null && pendingTicketCount > 0"
+            class="ml-0.5 rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-medium leading-none text-destructive-foreground"
+            :title="t('admin.nav.pendingTickets', { total: pendingTicketCount })"
+          >
+            {{ pendingTicketCount > 99 ? "99+" : pendingTicketCount }}
+          </span>
         </TabsTrigger>
       </TabsList>
     </Tabs>

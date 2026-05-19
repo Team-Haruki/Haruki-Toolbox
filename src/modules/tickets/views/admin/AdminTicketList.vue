@@ -5,11 +5,14 @@ import {
   Card,
   CardTitle,
   CardHeader,
+  CardDescription,
   CardContent,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
 import {
   Select,
   SelectContent,
@@ -29,6 +32,10 @@ import {
   LucideSearch,
   LucideChevronLeft,
   LucideChevronRight,
+  LucideBell,
+  LucideLoader2,
+  LucideMessageSquare,
+  LucideRefreshCw,
 } from "lucide-vue-next"
 import {
   ticketPriorityBadgeClass,
@@ -53,14 +60,34 @@ const {
   total,
   totalPages,
   search,
+  quickFilter,
   statusFilter,
   priorityFilter,
+  ticketNotificationsEnabled,
+  ticketNotificationsLoading,
+  ticketNotificationsSaving,
+  quickFilterOptions,
   statusOptions,
   priorityOptions,
+  setTicketNotificationsEnabled,
+  refreshTickets,
   prevPage,
   nextPage,
   openTicket,
 } = useAdminTicketList()
+
+function lastMessageRoleLabel(role?: string) {
+  switch (role) {
+    case "admin":
+      return t("tickets.adminList.lastMessage.admin")
+    case "user":
+      return t("tickets.adminList.lastMessage.user")
+    case "system":
+      return t("tickets.adminList.lastMessage.system")
+    default:
+      return ""
+  }
+}
 
 function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
   if (event.key === "Enter" || event.key === " ") {
@@ -75,7 +102,28 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
     <!-- Toolbar -->
     <Card>
       <CardHeader class="pb-3">
-        <CardTitle class="text-lg">{{ t("tickets.adminList.title") }}</CardTitle>
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <CardTitle class="text-lg">{{ t("tickets.adminList.title") }}</CardTitle>
+            <CardDescription>{{ t("tickets.adminList.description") }}</CardDescription>
+          </div>
+          <div class="flex items-center gap-2 rounded-md border px-3 py-2">
+            <LucideBell class="w-4 h-4 text-muted-foreground" />
+            <div class="flex flex-col">
+              <Label for="ticket-notification-toggle" class="text-sm">
+                {{ t("tickets.adminList.notifications.label") }}
+              </Label>
+              <span class="text-xs text-muted-foreground">{{ t("tickets.adminList.notifications.description") }}</span>
+            </div>
+            <LucideLoader2 v-if="ticketNotificationsLoading || ticketNotificationsSaving" class="w-4 h-4 animate-spin text-muted-foreground" />
+            <Switch
+              id="ticket-notification-toggle"
+              :model-value="ticketNotificationsEnabled"
+              :disabled="ticketNotificationsLoading || ticketNotificationsSaving"
+              @update:model-value="setTicketNotificationsEnabled"
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent class="flex flex-col gap-4">
         <div class="flex flex-wrap gap-3 items-end">
@@ -83,8 +131,18 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
             <LucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input v-model="search" :placeholder="t('tickets.adminList.searchPlaceholder')" class="pl-9" />
           </div>
+          <Select :key="locale" v-model="quickFilter">
+            <SelectTrigger class="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="option in quickFilterOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <Select :key="locale" v-model="statusFilter">
-            <SelectTrigger class="w-32">
+            <SelectTrigger class="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -94,7 +152,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
             </SelectContent>
           </Select>
           <Select :key="locale" v-model="priorityFilter">
-            <SelectTrigger class="w-32">
+            <SelectTrigger class="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -103,6 +161,11 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
               </SelectItem>
             </SelectContent>
           </Select>
+          <Button variant="outline" :disabled="loading" @click="refreshTickets">
+            <LucideLoader2 v-if="loading" class="w-4 h-4 animate-spin" />
+            <LucideRefreshCw v-else class="w-4 h-4" />
+            {{ t("tickets.adminList.refreshButton") }}
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -124,6 +187,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
                 <TableHead>{{ t("tickets.adminList.table.priority") }}</TableHead>
                 <TableHead class="hidden sm:table-cell">{{ t("tickets.adminList.table.creator") }}</TableHead>
                 <TableHead class="hidden md:table-cell">{{ t("tickets.adminList.table.assignee") }}</TableHead>
+                <TableHead class="hidden lg:table-cell">{{ t("tickets.adminList.table.lastMessage") }}</TableHead>
                 <TableHead>{{ t("tickets.adminList.table.updatedAt") }}</TableHead>
               </TableRow>
             </TableHeader>
@@ -137,7 +201,10 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
                 @click="openTicket(ticketItem.ticketId)"
                 @keydown="handleRowKeydown($event, ticketItem.ticketId)"
               >
-                <TableCell class="font-medium max-w-[200px] truncate">{{ ticketItem.subject }}</TableCell>
+                <TableCell class="font-medium max-w-[260px]">
+                  <div class="truncate">{{ ticketItem.subject }}</div>
+                  <div class="text-xs text-muted-foreground truncate">{{ ticketItem.ticketId }}</div>
+                </TableCell>
                 <TableCell>
                   <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium', ticketStatusBadgeClass(ticketItem.status)]">
                     <component :is="ticketStatusIcon(ticketItem.status)" class="w-3.5 h-3.5" />
@@ -154,10 +221,23 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
                 <TableCell class="hidden md:table-cell text-muted-foreground">
                   {{ ticketItem.assigneeAdminName || ticketItem.assigneeAdminId || t("tickets.adminList.unassigned") }}
                 </TableCell>
+                <TableCell class="hidden lg:table-cell max-w-[280px]">
+                  <div v-if="ticketItem.lastMessagePreview" class="flex items-center gap-2 text-sm text-muted-foreground">
+                    <LucideMessageSquare class="w-4 h-4 shrink-0" />
+                    <span v-if="ticketItem.lastMessageSenderRole" class="shrink-0">
+                      {{ lastMessageRoleLabel(ticketItem.lastMessageSenderRole) }}
+                    </span>
+                    <span v-if="ticketItem.lastMessageInternal" class="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                      {{ t("tickets.adminList.lastMessage.internal") }}
+                    </span>
+                    <span class="truncate">{{ ticketItem.lastMessagePreview }}</span>
+                  </div>
+                  <div v-else class="text-sm text-muted-foreground">{{ t("tickets.adminList.lastMessage.none") }}</div>
+                </TableCell>
                 <TableCell class="text-muted-foreground text-sm">{{ formatTicketDate(ticketItem.updatedAt) }}</TableCell>
               </TableRow>
               <TableRow v-if="tickets.length === 0">
-                <TableCell :colspan="6" class="text-center py-8 text-muted-foreground">{{ t("tickets.adminList.empty") }}</TableCell>
+                <TableCell :colspan="7" class="text-center py-8 text-muted-foreground">{{ t("tickets.adminList.empty") }}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
