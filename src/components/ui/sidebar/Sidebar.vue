@@ -43,9 +43,9 @@ const settingsStore = useSettingsStore()
         props.class,
         settingsStore.reducedVisualEffects
           ? 'border-r border-slate-200 dark:border-slate-800 bg-sidebar'
-          : 'border-white/60 bg-none !bg-white/12 shadow-[inset_-1px_0_0_rgba(255,255,255,0.64)] backdrop-blur-3xl backdrop-saturate-150 supports-[backdrop-filter]:!bg-white/10 dark:border-white/10 dark:!bg-slate-950/30 dark:shadow-[inset_-1px_0_0_rgba(255,255,255,0.08)] dark:supports-[backdrop-filter]:!bg-slate-950/24'
+          : 'border-white/60 bg-none !bg-white/28 shadow-[inset_-1px_0_0_rgba(255,255,255,0.64)] backdrop-blur-3xl backdrop-saturate-150 supports-[backdrop-filter]:!bg-white/20 dark:border-white/10 dark:!bg-slate-950/30 dark:shadow-[inset_-1px_0_0_rgba(255,255,255,0.08)] dark:supports-[backdrop-filter]:!bg-slate-950/24'
       )"
-      overlay-class="bg-black/25 backdrop-blur-[1px] dark:bg-slate-950/45"
+      overlay-class="bg-black/8 backdrop-blur-[1px] dark:bg-slate-950/40"
       :style="{
         '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
       }"
