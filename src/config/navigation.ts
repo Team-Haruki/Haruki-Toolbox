@@ -39,6 +39,7 @@ export const WEB_NAV_ITEMS: NavItem[] = [
     items: [
       { titleKey: "navigation.items.friendGroups", icon: LucideMap, url: "/friend-groups" },
       { titleKey: "navigation.items.friendLinks", icon: LucideMap, url: "/friend-links" },
+      { titleKey: "navigation.items.deckRecommend", icon: LucideGamepad2, url: "/deck-recommend" },
       { titleKey: "navigation.items.about", icon: LucideInfo, url: "/about" },
     ],
   },
