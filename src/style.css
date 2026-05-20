@@ -142,7 +142,9 @@
 
 html.reduced-visual-effects [data-glass-surface],
 html.reduced-visual-effects [data-sidebar="sidebar"],
+html.reduced-visual-effects [data-slot="dialog-overlay"],
 html.reduced-visual-effects [data-slot="sheet-overlay"],
+html.reduced-visual-effects [data-slot="alert-dialog-overlay"],
 html.reduced-visual-effects .toaster [data-sonner-toast] {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
@@ -207,7 +209,9 @@ html.dark.reduced-visual-effects body [data-sidebar="sidebar"][data-mobile="true
     background-color: oklch(0.19 0.034 264.665) !important;
 }
 
-html.reduced-visual-effects [data-slot="sheet-overlay"] {
+html.reduced-visual-effects [data-slot="dialog-overlay"],
+html.reduced-visual-effects [data-slot="sheet-overlay"],
+html.reduced-visual-effects [data-slot="alert-dialog-overlay"] {
     background-color: rgb(0 0 0 / 0.55) !important;
 }
 
@@ -222,6 +226,15 @@ html.reduced-visual-effects .toaster {
 html:not(.reduced-visual-effects) :where([data-glass-surface], [data-sidebar="sidebar"]) {
     -webkit-backdrop-filter: blur(48px) saturate(1.75) contrast(1.04) !important;
     backdrop-filter: blur(48px) saturate(1.75) contrast(1.04) !important;
+}
+
+html:not(.reduced-visual-effects) :where(
+    [data-slot="dialog-overlay"],
+    [data-slot="sheet-overlay"],
+    [data-slot="alert-dialog-overlay"]
+) {
+    -webkit-backdrop-filter: blur(4px) !important;
+    backdrop-filter: blur(4px) !important;
 }
 
 html:not(.reduced-visual-effects) :where(
