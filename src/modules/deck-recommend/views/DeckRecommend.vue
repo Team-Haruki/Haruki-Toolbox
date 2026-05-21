@@ -12,6 +12,7 @@ import {
 } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Card,
   CardContent,
@@ -37,15 +38,17 @@ import CardTrainingConfigTable from "../components/CardTrainingConfigTable.vue"
 import CharacterSelect from "../components/CharacterSelect.vue"
 import EventSelect from "../components/EventSelect.vue"
 import MusicSelect from "../components/MusicSelect.vue"
-import { buildDeckResultViews } from "../lib/card-thumbnail"
+import { buildDeckResultViews, type DeckResultDeckView } from "../lib/card-thumbnail"
 import {
   resolveWasmLiveType,
   type DeckRecommendAlgorithm,
   type DeckRecommendLiveType,
   type DeckRecommendMode,
+  type WasmRecommendLiveType,
 } from "../lib/recommend-options"
 import { createDefaultCardTrainingConfig } from "../lib/training-config"
 import { useDeckRecommendRunner } from "../composables/useDeckRecommendRunner"
+import { useWorldBloomCharacterOptions } from "../composables/useWorldBloomCharacterOptions"
 
 type BoundAccountOption = {
   key: string
@@ -53,6 +56,10 @@ type BoundAccountOption = {
   uid: string
   label: string
 }
+
+const DEFAULT_MUSIC_ID = "74"
+const DEFAULT_MUSIC_DIFFICULTY = "expert"
+const DEFAULT_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "ga", "rl"]
 
 const { t, locale } = useI18n()
 const userStore = useUserStore()
@@ -63,12 +70,13 @@ const selectedAccountKey = ref("")
 const dataRegion = ref<SekaiRegion>("jp")
 const recommendMode = ref<DeckRecommendMode>("event")
 const liveType = ref<DeckRecommendLiveType>("solo")
-const algorithm = ref<DeckRecommendAlgorithm>("dfs_ga")
+const selectedAlgorithms = ref<DeckRecommendAlgorithm[]>([...DEFAULT_ALGORITHMS])
 const selectedEventId = ref<string | null>(null)
 const selectedCharacterId = ref<string | null>(null)
-const selectedMusicId = ref<string | null>(null)
-const selectedDifficulty = ref<string | null>(null)
+const selectedMusicId = ref<string | null>(DEFAULT_MUSIC_ID)
+const selectedDifficulty = ref<string | null>(DEFAULT_MUSIC_DIFFICULTY)
 const trainingConfig = ref(createDefaultCardTrainingConfig())
+const worldBloomCharacters = useWorldBloomCharacterOptions(dataRegion, selectedEventId)
 
 const accountOptions = computed<BoundAccountOption[]>(() => {
   const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
@@ -81,17 +89,37 @@ const selectedAccount = computed(() => {
 
 const currentRegionState = computed(() => sekaiDataStore.regionStates[dataRegion.value])
 const wasmLiveType = computed(() => resolveWasmLiveType(recommendMode.value, liveType.value))
+const wasmLiveTypeLabel = computed(() => liveTypeLabel(wasmLiveType.value))
 const dataReady = computed(() => currentRegionState.value.status === "ready")
 const queueItems = computed(() => sekaiDataStore.latestQueueItems)
 const resultDecks = computed(() => buildDeckResultViews(runner.result.value, runner.masterData.value, dataRegion.value))
+const isEventLikeMode = computed(() =>
+  recommendMode.value === "event" || recommendMode.value === "bonus" || recommendMode.value === "mysekai",
+)
+const showWorldBloomCharacterSelect = computed(() =>
+  isEventLikeMode.value && worldBloomCharacters.hasCharacters.value,
+)
+const showCharacterSelect = computed(() =>
+  recommendMode.value === "challenge" || showWorldBloomCharacterSelect.value,
+)
+const characterSelectAllowedIds = computed<readonly number[] | null>(() =>
+  recommendMode.value === "challenge" ? null : worldBloomCharacters.characterIds.value,
+)
+const activeCharacterId = computed(() => showCharacterSelect.value ? selectedCharacterId.value : null)
 const canRunRecommend = computed(() => {
-  if (runner.running.value || !selectedAccount.value || !dataReady.value) {
+  if (runner.running.value || !selectedAccount.value || !dataReady.value || selectedAlgorithms.value.length === 0) {
     return false
   }
   if (!selectedMusicId.value || !selectedDifficulty.value) {
     return false
   }
   if (recommendMode.value === "challenge") {
+    return Boolean(selectedCharacterId.value)
+  }
+  if (isEventLikeMode.value && worldBloomCharacters.loading.value) {
+    return false
+  }
+  if (showWorldBloomCharacterSelect.value) {
     return Boolean(selectedCharacterId.value)
   }
   if (recommendMode.value === "event" || recommendMode.value === "bonus" || recommendMode.value === "mysekai") {
@@ -110,16 +138,16 @@ const modeOptions = computed<Array<{ value: DeckRecommendMode; label: string }>>
 ])
 
 const liveTypeOptions = computed<Array<{ value: DeckRecommendLiveType; label: string }>>(() => [
-  { value: "solo", label: "solo" },
-  { value: "multi", label: "multi" },
-  { value: "auto", label: "auto" },
-  { value: "carnival", label: "carnival" },
+  { value: "solo", label: t("deckRecommend.liveTypes.solo") },
+  { value: "multi", label: t("deckRecommend.liveTypes.multi") },
+  { value: "auto", label: t("deckRecommend.liveTypes.auto") },
+  { value: "cheerful", label: t("deckRecommend.liveTypes.cheerful") },
 ])
 
 const algorithmOptions = computed<Array<{ value: DeckRecommendAlgorithm; label: string }>>(() => [
-  { value: "dfs_ga", label: "dfs_ga" },
-  { value: "ga", label: "ga" },
-  { value: "rl", label: "rl" },
+  { value: "dfs_ga", label: t("deckRecommend.algorithms.dfsGa") },
+  { value: "ga", label: t("deckRecommend.algorithms.ga") },
+  { value: "rl", label: t("deckRecommend.algorithms.rl") },
 ])
 
 watch(
@@ -149,8 +177,9 @@ watch(
 
 watch(dataRegion, () => {
   selectedEventId.value = null
-  selectedMusicId.value = null
-  selectedDifficulty.value = null
+  selectedCharacterId.value = null
+  selectedMusicId.value = DEFAULT_MUSIC_ID
+  selectedDifficulty.value = DEFAULT_MUSIC_DIFFICULTY
   runner.reset()
   void sekaiDataStore.ensureRegionData(dataRegion.value)
 })
@@ -160,7 +189,7 @@ watch(
     selectedAccountKey,
     recommendMode,
     liveType,
-    algorithm,
+    selectedAlgorithms,
     selectedEventId,
     selectedCharacterId,
     selectedMusicId,
@@ -169,6 +198,53 @@ watch(
   ],
   () => runner.reset(),
   { deep: true },
+)
+
+watch(
+  [showCharacterSelect, characterSelectAllowedIds],
+  () => {
+    if (!showCharacterSelect.value) {
+      selectedCharacterId.value = null
+      return
+    }
+
+    const allowedIds = characterSelectAllowedIds.value
+    if (!allowedIds || selectedCharacterId.value == null) {
+      return
+    }
+
+    if (!allowedIds.includes(Number(selectedCharacterId.value))) {
+      selectedCharacterId.value = null
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  [
+    showWorldBloomCharacterSelect,
+    () => worldBloomCharacters.defaultCharacterId.value,
+    () => worldBloomCharacters.characterIds.value.join(","),
+  ],
+  () => {
+    if (!showWorldBloomCharacterSelect.value) {
+      return
+    }
+
+    const defaultCharacterId = worldBloomCharacters.defaultCharacterId.value
+      ?? worldBloomCharacters.characterIds.value[0]
+      ?? null
+    if (!defaultCharacterId) {
+      selectedCharacterId.value = null
+      return
+    }
+
+    const currentId = selectedCharacterId.value == null ? null : Number(selectedCharacterId.value)
+    if (!currentId || !worldBloomCharacters.characterIds.value.includes(currentId)) {
+      selectedCharacterId.value = String(defaultCharacterId)
+    }
+  },
+  { immediate: true },
 )
 
 onMounted(() => {
@@ -207,10 +283,17 @@ function updateLiveType(value: AcceptableValue) {
   }
 }
 
-function updateAlgorithm(value: AcceptableValue) {
-  if (typeof value === "string" && isDeckRecommendAlgorithm(value)) {
-    algorithm.value = value
+function toggleAlgorithm(value: DeckRecommendAlgorithm, checked: boolean) {
+  const next = new Set(selectedAlgorithms.value)
+  if (checked) {
+    next.add(value)
+  } else {
+    next.delete(value)
   }
+
+  selectedAlgorithms.value = algorithmOptions.value
+    .map((option) => option.value)
+    .filter((optionValue) => next.has(optionValue))
 }
 
 function refreshCurrentRegion() {
@@ -228,9 +311,9 @@ async function runRecommend() {
       dataRegion: dataRegion.value,
       mode: recommendMode.value,
       liveType: liveType.value,
-      algorithm: algorithm.value,
+      algorithms: selectedAlgorithms.value,
       eventId: selectedEventId.value,
-      characterId: selectedCharacterId.value,
+      characterId: activeCharacterId.value,
       musicId: selectedMusicId.value,
       difficulty: selectedDifficulty.value,
       trainingConfig: trainingConfig.value,
@@ -249,6 +332,75 @@ function phaseLabel(item: Pick<SekaiDataQueueItem, "phase">) {
 
 function queueStatusLabel(item: Pick<SekaiDataQueueItem, "status">) {
   return t(`deckRecommend.dataQueue.status.${item.status}`)
+}
+
+function algorithmLabel(algorithm: DeckRecommendAlgorithm) {
+  switch (algorithm) {
+    case "dfs_ga":
+      return t("deckRecommend.algorithms.dfsGa")
+    case "ga":
+      return t("deckRecommend.algorithms.ga")
+    case "rl":
+      return t("deckRecommend.algorithms.rl")
+  }
+}
+
+function liveTypeLabel(type: DeckRecommendLiveType | WasmRecommendLiveType) {
+  switch (type) {
+    case "solo":
+      return t("deckRecommend.liveTypes.solo")
+    case "multi":
+      return t("deckRecommend.liveTypes.multi")
+    case "auto":
+      return t("deckRecommend.liveTypes.auto")
+    case "challenge":
+      return t("deckRecommend.liveTypes.challenge")
+    case "challenge_auto":
+      return t("deckRecommend.liveTypes.challengeAuto")
+    case "cheerful":
+      return t("deckRecommend.liveTypes.cheerful")
+    case "mysekai":
+      return t("deckRecommend.liveTypes.mysekai")
+  }
+}
+
+function deckSourceAlgorithms(deck: DeckResultDeckView["deck"]): DeckRecommendAlgorithm[] {
+  if ("source_algorithms" in deck && Array.isArray(deck.source_algorithms)) {
+    return deck.source_algorithms
+  }
+
+  return []
+}
+
+function algorithmTagClass(algorithm: DeckRecommendAlgorithm) {
+  switch (algorithm) {
+    case "dfs_ga":
+      return "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200"
+    case "ga":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
+    case "rl":
+      return "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+  }
+}
+
+function deckEventBonusLabel(deck: DeckResultDeckView["deck"]) {
+  if (showWorldBloomCharacterSelect.value) {
+    const main = Number(deck.event_bonus_rate) || 0
+    const support = Number(deck.support_deck_bonus_rate) || 0
+    return t("deckRecommend.result.worldBloomEventBonus", {
+      main: formatPercentValue(main),
+      support: formatPercentValue(support),
+      total: formatPercentValue(main + support),
+    })
+  }
+
+  return t("deckRecommend.result.eventBonus", { value: formatPercentValue(deck.event_bonus_rate) })
+}
+
+function formatPercentValue(value: number) {
+  return new Intl.NumberFormat(locale.value, {
+    maximumFractionDigits: 2,
+  }).format(value)
 }
 
 function formatTime(value: number | null) {
@@ -276,9 +428,6 @@ function isDeckRecommendLiveType(value: string): value is DeckRecommendLiveType 
   return liveTypeOptions.value.some((option) => option.value === value)
 }
 
-function isDeckRecommendAlgorithm(value: string): value is DeckRecommendAlgorithm {
-  return algorithmOptions.value.some((option) => option.value === value)
-}
 </script>
 
 <template>
@@ -353,22 +502,25 @@ function isDeckRecommendAlgorithm(value: string): value is DeckRecommendAlgorith
                   </SelectContent>
                 </Select>
                 <p class="text-xs text-muted-foreground">
-                  {{ t("deckRecommend.form.wasmLiveType", { type: wasmLiveType }) }}
+                  {{ t("deckRecommend.form.wasmLiveType", { type: wasmLiveTypeLabel }) }}
                 </p>
               </div>
 
               <div class="grid gap-2">
                 <Label>{{ t("deckRecommend.form.algorithm") }}</Label>
-                <Select :model-value="algorithm" @update:model-value="updateAlgorithm">
-                  <SelectTrigger class="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="option in algorithmOptions" :key="option.value" :value="option.value">
-                      {{ option.label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <div class="grid gap-2 rounded-md border p-3 sm:grid-cols-3">
+                  <label
+                    v-for="option in algorithmOptions"
+                    :key="option.value"
+                    class="flex items-center gap-2 text-sm"
+                  >
+                    <Checkbox
+                      :model-value="selectedAlgorithms.includes(option.value)"
+                      @update:model-value="checked => toggleAlgorithm(option.value, checked === true)"
+                    />
+                    <span>{{ option.label }}</span>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -378,9 +530,14 @@ function isDeckRecommendAlgorithm(value: string): value is DeckRecommendAlgorith
                 <EventSelect v-model="selectedEventId" :region="dataRegion" :disabled="!dataReady" />
               </div>
 
-              <div class="grid gap-2">
+              <div v-if="showCharacterSelect" class="grid gap-2">
                 <Label>{{ t("deckRecommend.form.character") }}</Label>
-                <CharacterSelect v-model="selectedCharacterId" :region="dataRegion" :disabled="!dataReady" />
+                <CharacterSelect
+                  v-model="selectedCharacterId"
+                  :region="dataRegion"
+                  :allowed-character-ids="characterSelectAllowedIds"
+                  :disabled="!dataReady || worldBloomCharacters.loading.value"
+                />
               </div>
 
               <div class="grid gap-2">
@@ -432,6 +589,15 @@ function isDeckRecommendAlgorithm(value: string): value is DeckRecommendAlgorith
             </CardDescription>
           </CardHeader>
           <CardContent class="space-y-3">
+            <div v-if="runner.algorithmTimings.value.length > 0" class="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span
+                v-for="item in runner.algorithmTimings.value"
+                :key="item.algorithm"
+                class="rounded-md border bg-muted/20 px-2 py-1"
+              >
+                {{ t("deckRecommend.result.algorithmElapsed", { algorithm: algorithmLabel(item.algorithm), ms: item.elapsedMs }) }}
+              </span>
+            </div>
             <div v-if="runner.error.value" class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
               {{ runner.error.value }}
             </div>
@@ -440,12 +606,24 @@ function isDeckRecommendAlgorithm(value: string): value is DeckRecommendAlgorith
             </div>
             <div v-for="deckView in resultDecks" :key="deckView.index" class="space-y-3 rounded-md border p-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="font-medium">{{ t("deckRecommend.result.deckTitle", { index: deckView.index + 1 }) }}</span>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-medium">{{ t("deckRecommend.result.deckTitle", { index: deckView.index + 1 }) }}</span>
+                  <span
+                    v-for="algorithm in deckSourceAlgorithms(deckView.deck)"
+                    :key="algorithm"
+                    :class="[
+                      'rounded-md border px-2 py-0.5 text-xs font-medium',
+                      algorithmTagClass(algorithm),
+                    ]"
+                  >
+                    {{ algorithmLabel(algorithm) }}
+                  </span>
+                </div>
                 <span class="font-mono text-xs text-muted-foreground">{{ t("deckRecommend.result.score", { score: deckView.deck.score }) }}</span>
               </div>
               <div class="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
                 <span>{{ t("deckRecommend.result.totalPower", { value: deckView.deck.total_power }) }}</span>
-                <span>{{ t("deckRecommend.result.eventBonus", { value: deckView.deck.event_bonus_rate }) }}</span>
+                <span>{{ deckEventBonusLabel(deckView.deck) }}</span>
                 <span>{{ t("deckRecommend.result.liveScore", { value: deckView.deck.live_score }) }}</span>
               </div>
               <div class="grid gap-2 md:grid-cols-2">

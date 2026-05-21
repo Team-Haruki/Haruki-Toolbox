@@ -10,7 +10,7 @@ export type DeckRecommendMode =
   | "max-power"
   | "max-skill"
 
-export type DeckRecommendLiveType = "solo" | "multi" | "auto" | "carnival"
+export type DeckRecommendLiveType = "solo" | "multi" | "auto" | "cheerful"
 
 export type DeckRecommendAlgorithm = "dfs_ga" | "ga" | "rl"
 
@@ -50,10 +50,6 @@ export function resolveWasmLiveType(
     return liveType === "auto" ? "challenge_auto" : "challenge"
   }
 
-  if (liveType === "carnival") {
-    return "cheerful"
-  }
-
   return liveType
 }
 
@@ -91,6 +87,11 @@ export function buildDeckRecommendOptions(input: BuildDeckRecommendOptionsInput)
     const eventId = normalizePositiveInteger(input.eventId)
     if (eventId) {
       options.event_id = eventId
+    }
+
+    const worldBloomCharacterId = normalizePositiveInteger(input.characterId)
+    if (worldBloomCharacterId) {
+      options.world_bloom_character_id = worldBloomCharacterId
     }
   }
 

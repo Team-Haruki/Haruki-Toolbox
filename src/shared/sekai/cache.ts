@@ -119,6 +119,11 @@ export async function writeSekaiMusicMetas(
   data: unknown,
   url: string,
   pairedMasterDisplayVersion: string | null,
+  validators: {
+    etag?: string | null
+    lastModified?: string | null
+    contentLength?: string | null
+  } = {},
 ): Promise<void> {
   await writeStoreRecord(MUSIC_METAS_STORE, {
     key: makeSekaiMusicMetasKey(region),
@@ -126,6 +131,9 @@ export async function writeSekaiMusicMetas(
     data,
     url,
     pairedMasterDisplayVersion,
+    etag: validators.etag ?? null,
+    lastModified: validators.lastModified ?? null,
+    contentLength: validators.contentLength ?? null,
     updatedAt: Date.now(),
   } satisfies SekaiMusicMetasRecord)
 }

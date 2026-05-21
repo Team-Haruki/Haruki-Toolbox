@@ -5,6 +5,7 @@ export const SEKAI_DATA_DEFAULT_MASTER_FILES = [
   "gameCharacters",
   "musics",
   "musicDifficulties",
+  "worldBlooms",
 ] as const
 
 export const SEKAI_DATA_RECOMMEND_MASTER_FILES = [
@@ -83,6 +84,8 @@ export type SekaiDataWorkerEvent =
     displayVersion: string | null
     fetchVersion: string | null
     files: string[]
+    musicMetasUpdatedAt: number | null
+    updatedAt: number | null
   }
   | {
     type: "cleared"

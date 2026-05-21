@@ -17,4 +17,10 @@ describe("deck recommend training config", () => {
     expect(highRarities.every((row) => row.maxLevel && row.episodesRead)).toBe(true)
     expect(highRarities.every((row) => !row.maxMasterRank && !row.maxSkillLevel)).toBe(true)
   })
+
+  it("defaults MySekai canvas bonus to enabled for every rarity", () => {
+    const config = createDefaultCardTrainingConfig()
+
+    expect(config.every((row) => row.mySekaiCanvas)).toBe(true)
+  })
 })

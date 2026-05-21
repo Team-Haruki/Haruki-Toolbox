@@ -9,6 +9,7 @@ import {
   resolveSekaiCardThumbnailUrl,
   resolveTrainRankImageUrl,
 } from "@/shared/sekai/data-sources"
+import type { TaggedRecommendDeck, TaggedRecommendResult } from "./recommend-results"
 
 export type DeckRecommendMasterCard = {
   id: number
@@ -46,12 +47,12 @@ export type DeckResultCardView = {
 
 export type DeckResultDeckView = {
   index: number
-  deck: RecommendDeck
+  deck: RecommendDeck | TaggedRecommendDeck
   cards: DeckResultCardView[]
 }
 
 export function buildDeckResultViews(
-  result: RecommendResult | null,
+  result: RecommendResult | TaggedRecommendResult | null,
   masterData: Record<string, unknown> | null,
   region: SekaiRegion,
 ): DeckResultDeckView[] {

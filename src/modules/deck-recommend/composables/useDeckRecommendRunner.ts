@@ -14,6 +14,11 @@ import {
   type DeckRecommendMode,
 } from "../lib/recommend-options"
 import {
+  mergeDeckRecommendResults,
+  type AlgorithmRecommendResult,
+  type TaggedRecommendResult,
+} from "../lib/recommend-results"
+import {
   postDeckRecommendWorkerRequest,
   subscribeDeckRecommendWorker,
 } from "../lib/recommend-worker-client"
@@ -28,12 +33,17 @@ export type DeckRecommendRunnerInput = {
   dataRegion: SekaiRegion
   mode: DeckRecommendMode
   liveType: DeckRecommendLiveType
-  algorithm: DeckRecommendAlgorithm
+  algorithms: DeckRecommendAlgorithm[]
   eventId: string | null
   characterId: string | null
   musicId: string | null
   difficulty: string | null
   trainingConfig: CardTrainingConfig[]
+}
+
+export type DeckRecommendAlgorithmTiming = {
+  algorithm: DeckRecommendAlgorithm
+  elapsedMs: number
 }
 
 export function useDeckRecommendRunner() {
@@ -42,9 +52,10 @@ export function useDeckRecommendRunner() {
   const running = ref(false)
   const phase = ref<Extract<DeckRecommendWorkerEvent, { type: "progress" }>["phase"] | "fetching-user-data" | "preparing-data" | null>(null)
   const error = ref<string | null>(null)
-  const result = ref<RecommendResult | null>(null)
+  const result = ref<TaggedRecommendResult | null>(null)
   const masterData = ref<Record<string, unknown> | null>(null)
   const elapsedMs = ref<number | null>(null)
+  const algorithmTimings = ref<DeckRecommendAlgorithmTiming[]>([])
 
   const hasResult = computed(() => Boolean(result.value?.decks?.length))
 
@@ -62,6 +73,7 @@ export function useDeckRecommendRunner() {
     result.value = null
     masterData.value = null
     elapsedMs.value = null
+    algorithmTimings.value = []
 
     try {
       await sekaiDataStore.ensureRegionData(input.dataRegion, {
@@ -86,35 +98,56 @@ export function useDeckRecommendRunner() {
         throw new Error(`master data is missing: ${missingFiles.join(", ")}`)
       }
       masterData.value = masterFileData
+      const workerResults: AlgorithmRecommendResult[] = []
+      let totalElapsedMs = 0
+      const algorithms = normalizeAlgorithms(input.algorithms)
+      if (algorithms.length === 0) {
+        throw new Error("at least one algorithm is required")
+      }
 
-      const options = buildDeckRecommendOptions({
-        region: input.dataRegion,
-        mode: input.mode,
-        liveType: input.liveType,
-        algorithm: input.algorithm,
-        musicId: input.musicId,
-        musicDifficulty: input.difficulty,
-        eventId: input.eventId,
-        characterId: input.characterId,
-        trainingConfig: input.trainingConfig,
-        userData: userDataResponse.userData,
-      })
+      for (const algorithm of algorithms) {
+        const options = buildDeckRecommendOptions({
+          region: input.dataRegion,
+          mode: input.mode,
+          liveType: input.liveType,
+          algorithm,
+          musicId: input.musicId,
+          musicDifficulty: input.difficulty,
+          eventId: input.eventId,
+          characterId: input.characterId,
+          trainingConfig: input.trainingConfig,
+          userData: userDataResponse.userData,
+        })
 
-      phase.value = "initializing"
-      const workerResult = await recommendWithWorker({
-        region: input.dataRegion,
-        masterVersion: regionState.masterFetchVersion,
-        masterData: masterFileData,
-        musicMetas,
-        options,
-      }, (event) => {
-        if (event.type === "progress") {
-          phase.value = event.phase
-        }
-      })
+        phase.value = "initializing"
+        const workerResult = await recommendWithWorker({
+          region: input.dataRegion,
+          masterVersion: regionState.masterFetchVersion,
+          masterData: masterFileData,
+          musicMetas,
+          options,
+        }, (event) => {
+          if (event.type === "progress") {
+            phase.value = event.phase
+          }
+        })
 
-      result.value = workerResult.result
-      elapsedMs.value = workerResult.elapsedMs
+        workerResults.push({
+          algorithm,
+          result: workerResult.result,
+        })
+        totalElapsedMs += workerResult.elapsedMs
+        algorithmTimings.value = [
+          ...algorithmTimings.value,
+          {
+            algorithm,
+            elapsedMs: workerResult.elapsedMs,
+          },
+        ]
+      }
+
+      result.value = mergeDeckRecommendResults(workerResults)
+      elapsedMs.value = totalElapsedMs
     } catch (runError) {
       const message = runError instanceof Error ? runError.message : String(runError)
       error.value = message
@@ -135,6 +168,7 @@ export function useDeckRecommendRunner() {
     result.value = null
     masterData.value = null
     elapsedMs.value = null
+    algorithmTimings.value = []
   }
 
   async function fetchUserData(input: DeckRecommendRunnerInput) {
@@ -154,10 +188,15 @@ export function useDeckRecommendRunner() {
     result,
     masterData,
     elapsedMs,
+    algorithmTimings,
     hasResult,
     run,
     reset,
   }
+}
+
+function normalizeAlgorithms(algorithms: readonly DeckRecommendAlgorithm[]): DeckRecommendAlgorithm[] {
+  return [...new Set(algorithms)]
 }
 
 type RecommendWithWorkerInput = Parameters<typeof postDeckRecommendWorkerRequest>[0]

@@ -33,7 +33,9 @@ export function useMusicOptions(region: Ref<SekaiRegion>, selectedMusicId: Ref<s
   async function loadOptions() {
     loading.value = true
     try {
-      await sekaiDataStore.ensureRegionData(region.value)
+      if (!hasRequiredFiles(regionState.value.files, ["musics", "musicDifficulties"])) {
+        await sekaiDataStore.ensureRegionData(region.value, { files: ["musics", "musicDifficulties"] })
+      }
       const [musics, musicDifficulties] = await Promise.all([
         readSekaiMasterFile<SekaiMusic[]>(region.value, "musics"),
         readSekaiMasterFile<SekaiMusicDifficulty[]>(region.value, "musicDifficulties"),
@@ -53,4 +55,8 @@ export function useMusicOptions(region: Ref<SekaiRegion>, selectedMusicId: Ref<s
     difficultyOptions,
     loading,
   }
+}
+
+function hasRequiredFiles(cachedFiles: readonly string[], requiredFiles: readonly string[]): boolean {
+  return requiredFiles.every((fileName) => cachedFiles.includes(fileName))
 }

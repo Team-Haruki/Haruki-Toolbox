@@ -10,11 +10,11 @@ export const SEKAI_MASTER_REPOS: Record<SekaiRegion, string> = {
 }
 
 export const SEKAI_MUSIC_METAS_URLS: Record<SekaiRegion, string> = {
-  jp: "https://sekai-data.3-3.dev/music_metas.json",
-  cn: "https://sekai-data.3-3.dev/music_metas-cn.json",
-  tw: "https://sekai-data.3-3.dev/music_metas-tc.json",
-  en: "https://sekai-data.3-3.dev/music_metas-en.json",
-  kr: "https://sekai-data.3-3.dev/music_metas-kr.json",
+  jp: "https://sekai-master-cdn.haruki.seiunx.com/music_metas.json",
+  en: "https://sekai-master-cdn.haruki.seiunx.com/music_metas-en.json",
+  tw: "https://sekai-master-cdn.haruki.seiunx.com/music_metas-tc.json",
+  kr: "https://sekai-master-cdn.haruki.seiunx.com/music_metas-kr.json",
+  cn: "https://sekai-master-cdn.haruki.seiunx.com/music_metas-cn.json",
 }
 
 const SEKAI_MASTER_CDN_BASE_URL = "https://sekai-master-cdn.haruki.seiunx.com"
@@ -118,8 +118,13 @@ export function resolveSekaiMasterFileUrl(
   return `${SEKAI_MASTER_CDN_BASE_URL}/${repo}/master/${fileName}.json?version=${encodeURIComponent(version)}`
 }
 
-export function resolveSekaiMusicMetasUrl(region: SekaiRegion): string {
-  return SEKAI_MUSIC_METAS_URLS[region]
+export function resolveSekaiMusicMetasUrl(region: SekaiRegion, cacheKey?: string | number): string {
+  const url = SEKAI_MUSIC_METAS_URLS[region]
+  if (cacheKey == null || cacheKey === "") {
+    return url
+  }
+
+  return appendQueryParam(url, "v", String(cacheKey))
 }
 
 export function resolveSekaiAssetRootUrl(preference: SekaiAssetEndpointPreference): string {
@@ -160,7 +165,15 @@ export function resolveToolboxStaticImageUrl(path: string): string {
 }
 
 export function resolveRarityTrainingIconUrl(rarity: string): string {
-  return resolveToolboxStaticImageUrl(`static_images/deck_recommend/rarity/${rarity}.png`)
+  if (rarity === "rarity_birthday") {
+    return resolveRareBirthdayImageUrl()
+  }
+
+  if (rarity === "rarity_3" || rarity === "rarity_4") {
+    return resolveRareStarImageUrl(true)
+  }
+
+  return resolveRareStarImageUrl(false)
 }
 
 export function resolveCardFrameImageUrl(rarity: string): string {
@@ -168,7 +181,7 @@ export function resolveCardFrameImageUrl(rarity: string): string {
 }
 
 export function resolveCardAttrIconUrl(attribute: string): string {
-  return resolveToolboxStaticImageUrl(`static_images/card/attr_${attribute}.png`)
+  return resolveToolboxStaticImageUrl(`static_images/card/attr_icon_${attribute}.png`)
 }
 
 export function resolveRareStarImageUrl(afterTraining: boolean): string {
@@ -186,7 +199,7 @@ export function resolveTrainRankImageUrl(rank: number): string {
 }
 
 export function resolveMySekaiCanvasIconUrl(): string {
-  return resolveToolboxStaticImageUrl("static_images/mysekai/icon/category_icon/icon_canvas.png")
+  return resolveToolboxStaticImageUrl("static_images/mysekai/icon/icon_canvas.png")
 }
 
 export function resolveCharacterIconUrl(characterId: number): string {
@@ -208,4 +221,9 @@ function normalizeVersionValue(value: unknown): string {
 
 function joinUrl(base: string, path: string): string {
   return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`
+}
+
+function appendQueryParam(url: string, key: string, value: string): string {
+  const separator = url.includes("?") ? "&" : "?"
+  return `${url}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`
 }

@@ -20,6 +20,9 @@ export type SekaiMasterCacheState = {
 export type SekaiMusicMetasCacheState = {
   url: string
   pairedMasterDisplayVersion: string | null
+  etag: string | null
+  lastModified: string | null
+  contentLength: string | null
   updatedAt: number
 }
 
@@ -44,5 +47,8 @@ export type SekaiMusicMetasRecord<T = unknown> = {
   data: T
   url: string
   pairedMasterDisplayVersion: string | null
+  etag: string | null
+  lastModified: string | null
+  contentLength: string | null
   updatedAt: number
 }

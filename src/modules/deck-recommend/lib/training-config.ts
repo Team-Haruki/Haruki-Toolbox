@@ -35,7 +35,15 @@ export function createDefaultCardTrainingConfig(): CardTrainingConfig[] {
       episodesRead: true,
       maxMasterRank: lowRarity,
       maxSkillLevel: lowRarity,
-      mySekaiCanvas: false,
+      mySekaiCanvas: true,
     }
   })
+}
+
+export function resolveRarityStarCount(rarity: DeckRecommendRarity): number {
+  if (rarity === "rarity_birthday") {
+    return 0
+  }
+
+  return Number(rarity.replace("rarity_", ""))
 }

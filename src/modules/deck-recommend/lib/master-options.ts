@@ -15,7 +15,19 @@ export type SekaiEvent = {
   eventType?: string
   startAt?: number
   aggregateAt?: number
+  closedAt?: number
   assetbundleName?: string
+}
+
+export type SekaiWorldBloom = {
+  id?: number
+  eventId?: number
+  gameCharacterId?: number
+  worldBloomChapterType?: string
+  chapterNo?: number
+  chapterStartAt?: number
+  chapterEndAt?: number
+  aggregateAt?: number
 }
 
 export type SekaiMusic = {
@@ -47,6 +59,8 @@ export type EventOption = {
   label: string
   eventType: string | null
   startAt: number | null
+  aggregateAt: number | null
+  closedAt: number | null
 }
 
 export type MusicOption = {
@@ -96,6 +110,8 @@ export function buildEventOptions(items: SekaiEvent[] | null): EventOption[] {
         label: normalizeText(item.name) ?? `#${id}`,
         eventType: normalizeText(item.eventType),
         startAt: normalizePositiveNumber(item.startAt),
+        aggregateAt: normalizePositiveNumber(item.aggregateAt),
+        closedAt: normalizePositiveNumber(item.closedAt),
       }
     })
     .filter((item): item is EventOption => item != null)
@@ -139,13 +155,68 @@ export function resolveMusicDifficultyOptions(
       }
 
       const playLevel = normalizePositiveNumber(item.playLevel)
+      const displayDifficulty = difficulty.toUpperCase()
       return {
         value: difficulty,
-        label: playLevel ? `${difficulty} Lv.${playLevel}` : difficulty,
+        label: playLevel ? `${displayDifficulty} Lv.${playLevel}` : displayDifficulty,
         playLevel,
       }
     })
     .filter((item): item is MusicDifficultyOption => item != null)
+}
+
+export function resolveDefaultEventOption(options: readonly EventOption[], now = Date.now()): EventOption | null {
+  return resolveCurrentEventOption(options, now) ?? options[0] ?? null
+}
+
+export function resolveCurrentEventOption(options: readonly EventOption[], now = Date.now()): EventOption | null {
+  return options.find((option) => isEventOptionActive(option, now)) ?? null
+}
+
+export function resolveWorldBloomGameCharacterIds(
+  eventId: string | number | null,
+  events: SekaiEvent[] | null,
+  worldBlooms: SekaiWorldBloom[] | null,
+): number[] {
+  const targetEventId = normalizeSelectNumber(eventId)
+  if (!targetEventId || !isWorldBloomEvent(targetEventId, events)) {
+    return []
+  }
+
+  const seen = new Set<number>()
+  return (worldBlooms ?? [])
+    .filter((item) =>
+      item.eventId === targetEventId
+      && item.worldBloomChapterType === "game_character"
+      && normalizePositiveNumber(item.gameCharacterId),
+    )
+    .sort((a, b) => (normalizePositiveNumber(a.chapterNo) ?? 0) - (normalizePositiveNumber(b.chapterNo) ?? 0))
+    .flatMap((item) => {
+      const characterId = normalizePositiveNumber(item.gameCharacterId)
+      if (!characterId || seen.has(characterId)) {
+        return []
+      }
+
+      seen.add(characterId)
+      return [characterId]
+    })
+}
+
+export function resolveWorldBloomDefaultGameCharacterId(
+  eventId: string | number | null,
+  events: SekaiEvent[] | null,
+  worldBlooms: SekaiWorldBloom[] | null,
+  now = Date.now(),
+): number | null {
+  const targetEventId = normalizeSelectNumber(eventId)
+  const characterIds = resolveWorldBloomGameCharacterIds(eventId, events, worldBlooms)
+  if (!targetEventId || characterIds.length === 0 || !isEventActive(targetEventId, events, now)) {
+    return characterIds[0] ?? null
+  }
+
+  const activeChapter = resolveWorldBloomGameCharacterChapters(targetEventId, events, worldBlooms)
+    .find((chapter) => isWorldBloomChapterActive(chapter, now))
+  return normalizePositiveNumber(activeChapter?.gameCharacterId) ?? characterIds[0] ?? null
 }
 
 function resolveCharacterName(item: SekaiGameCharacter, id: number): string {
@@ -164,10 +235,76 @@ function normalizeText(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null
 }
 
+function normalizeSelectNumber(value: string | number | null): number | null {
+  const raw = typeof value === "string" ? Number(value) : value
+  return normalizePositiveNumber(raw)
+}
+
 function normalizePositiveNumber(value: unknown): number | null {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return null
   }
 
   return value
+}
+
+function isWorldBloomEvent(eventId: number, events: SekaiEvent[] | null): boolean {
+  return (events ?? []).some((event) =>
+    event.id === eventId
+    && event.eventType === "world_bloom",
+  )
+}
+
+function resolveWorldBloomGameCharacterChapters(
+  eventId: number,
+  events: SekaiEvent[] | null,
+  worldBlooms: SekaiWorldBloom[] | null,
+): SekaiWorldBloom[] {
+  if (!isWorldBloomEvent(eventId, events)) {
+    return []
+  }
+
+  return (worldBlooms ?? [])
+    .filter((item) =>
+      item.eventId === eventId
+      && item.worldBloomChapterType === "game_character"
+      && normalizePositiveNumber(item.gameCharacterId),
+    )
+    .sort((a, b) => (normalizePositiveNumber(a.chapterNo) ?? 0) - (normalizePositiveNumber(b.chapterNo) ?? 0))
+}
+
+function isEventOptionActive(option: EventOption, now: number): boolean {
+  if (!option.startAt || option.startAt > now) {
+    return false
+  }
+
+  const endAt = option.aggregateAt ?? option.closedAt
+  return endAt == null || now < endAt
+}
+
+function isEventActive(eventId: number, events: SekaiEvent[] | null, now: number): boolean {
+  const event = (events ?? []).find((item) => item.id === eventId)
+  if (!event) {
+    return false
+  }
+
+  return isEventOptionActive({
+    id: eventId,
+    value: String(eventId),
+    label: "",
+    eventType: normalizeText(event.eventType),
+    startAt: normalizePositiveNumber(event.startAt),
+    aggregateAt: normalizePositiveNumber(event.aggregateAt),
+    closedAt: normalizePositiveNumber(event.closedAt),
+  }, now)
+}
+
+function isWorldBloomChapterActive(chapter: SekaiWorldBloom, now: number): boolean {
+  const startAt = normalizePositiveNumber(chapter.chapterStartAt)
+  if (!startAt || startAt > now) {
+    return false
+  }
+
+  const endAt = normalizePositiveNumber(chapter.aggregateAt) ?? normalizePositiveNumber(chapter.chapterEndAt)
+  return endAt == null || now < endAt
 }

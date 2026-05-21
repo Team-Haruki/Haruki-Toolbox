@@ -10,7 +10,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { resolveMySekaiCanvasIconUrl, resolveRarityTrainingIconUrl } from "@/shared/sekai/data-sources"
-import type { CardTrainingConfig, DeckRecommendRarity } from "../lib/training-config"
+import {
+  resolveRarityStarCount,
+  type CardTrainingConfig,
+  type DeckRecommendRarity,
+} from "../lib/training-config"
 
 const props = defineProps<{
   modelValue: CardTrainingConfig[]
@@ -32,6 +36,16 @@ function updateRow(
     "update:modelValue",
     props.modelValue.map((row) => row.rarity === rarity ? { ...row, [key]: checked } : row),
   )
+}
+
+function resolveRarityIconUrls(rarity: DeckRecommendRarity): string[] {
+  const iconUrl = resolveRarityTrainingIconUrl(rarity)
+  const starCount = resolveRarityStarCount(rarity)
+  if (starCount === 0) {
+    return [iconUrl]
+  }
+
+  return Array.from({ length: starCount }, () => iconUrl)
 }
 </script>
 
@@ -57,8 +71,17 @@ function updateRow(
       <TableRow v-for="row in props.modelValue" :key="row.rarity">
         <TableCell>
           <span class="inline-flex items-center gap-2 font-medium">
-            <img :src="resolveRarityTrainingIconUrl(row.rarity)" alt="" class="size-6" loading="lazy">
-            {{ t(`deckRecommend.training.rarities.${row.rarity}`) }}
+            <span class="inline-flex items-center gap-0.5">
+              <img
+                v-for="(iconUrl, index) in resolveRarityIconUrls(row.rarity)"
+                :key="`${row.rarity}-${index}`"
+                :src="iconUrl"
+                alt=""
+                class="size-5"
+                loading="lazy"
+              >
+            </span>
+            <span class="sr-only">{{ t(`deckRecommend.training.rarities.${row.rarity}`) }}</span>
           </span>
         </TableCell>
         <TableCell class="text-center">

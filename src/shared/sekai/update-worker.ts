@@ -20,6 +20,7 @@ import {
   type SekaiDataWorkerRequest,
   type SekaiDataUpdatePhase,
 } from "./worker-protocol"
+import type { SekaiMasterCacheState, SekaiMusicMetasCacheState } from "./types"
 
 const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
 
@@ -58,10 +59,17 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
   const fetchVersion = resolveSekaiMasterFetchVersion(region, versionInfo)
   const displayVersion = versionInfo.dataVersion
   const cachedMeta = await readSekaiRegionCacheMeta(region)
-  const cacheHit = !request.force
+  const musicMetasBaseUrl = resolveSekaiMusicMetasUrl(region)
+  const musicMetasRemoteState = await fetchMusicMetasRemoteState(musicMetasBaseUrl)
+  const cachedMasterFiles = cachedMeta?.master?.fetchVersion === fetchVersion
+    ? cachedMeta.master.files
+    : []
+  const masterCacheHit = !request.force
     && cachedMeta?.master?.fetchVersion === fetchVersion
     && files.every((fileName) => cachedMeta.master?.files.includes(fileName))
-    && cachedMeta.musicMetas != null
+  const musicMetasCacheHit = musicMetasCacheMatches(cachedMeta?.musicMetas, musicMetasBaseUrl, musicMetasRemoteState)
+  const cacheHit = masterCacheHit
+    && musicMetasCacheHit
 
   if (cacheHit) {
     postEvent({
@@ -71,45 +79,69 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
       cacheHit: true,
       displayVersion: cachedMeta.master?.displayVersion ?? displayVersion,
       fetchVersion,
-      files,
+      files: cachedMeta.master?.files ?? files,
+      musicMetasUpdatedAt: cachedMeta.musicMetas?.updatedAt ?? null,
+      updatedAt: resolveCacheUpdatedAt(cachedMeta.master ?? null, cachedMeta.musicMetas ?? null),
     })
     return
   }
 
-  const masterFiles: Record<string, unknown> = {}
-  for (let index = 0; index < files.length; index += 1) {
-    const fileName = files[index]
-    postProgress(request.requestId, region, "fetching-master", 10 + Math.round((index / files.length) * 55), {
-      fileName,
-      current: index + 1,
-      total: files.length,
-    })
-    masterFiles[fileName] = await fetchJson(resolveSekaiMasterFileUrl(region, fileName, versionInfo))
+  const filesToFetch = request.force
+    ? files
+    : files.filter((fileName) => !cachedMasterFiles.includes(fileName))
+
+  if (!masterCacheHit) {
+    const masterFiles: Record<string, unknown> = {}
+    for (let index = 0; index < filesToFetch.length; index += 1) {
+      const fileName = filesToFetch[index]
+      postProgress(request.requestId, region, "fetching-master", 10 + Math.round((index / filesToFetch.length) * 55), {
+        fileName,
+        current: index + 1,
+        total: filesToFetch.length,
+      })
+      masterFiles[fileName] = await fetchJson(resolveSekaiMasterFileUrl(region, fileName, versionInfo))
+    }
+
+    if (Object.keys(masterFiles).length > 0) {
+      await writeSekaiMasterFiles(region, fetchVersion, masterFiles)
+    }
   }
 
   postProgress(request.requestId, region, "fetching-music-metas", 72)
-  const musicMetasUrl = resolveSekaiMusicMetasUrl(region)
-  const musicMetas = await fetchJson(musicMetasUrl)
+  const musicMetas = musicMetasCacheHit
+    ? null
+    : await fetchJson(resolveSekaiMusicMetasUrl(region, musicMetasRemoteState.cacheKey ?? Date.now()))
 
   postProgress(request.requestId, region, "writing-cache", 88)
-  await writeSekaiMasterFiles(region, fetchVersion, masterFiles)
-  await writeSekaiMusicMetas(region, musicMetas, musicMetasUrl, displayVersion)
+  const now = Date.now()
+  const nextMasterMeta = resolveNextMasterMeta({
+    cachedMaster: cachedMeta?.master ?? null,
+    displayVersion,
+    fetchVersion,
+    files,
+    filesToFetch,
+    region,
+    versionInfo,
+    now,
+  })
+  const nextMusicMetasMeta = musicMetasCacheHit && cachedMeta?.musicMetas
+    ? cachedMeta.musicMetas
+    : {
+        url: musicMetasBaseUrl,
+        pairedMasterDisplayVersion: displayVersion,
+        etag: musicMetasRemoteState.etag,
+        lastModified: musicMetasRemoteState.lastModified,
+        contentLength: musicMetasRemoteState.contentLength,
+        updatedAt: now,
+      }
+
+  if (musicMetas != null) {
+    await writeSekaiMusicMetas(region, musicMetas, musicMetasBaseUrl, displayVersion, musicMetasRemoteState)
+  }
   await writeSekaiRegionCacheMeta({
     region,
-    master: {
-      repo: resolveSekaiMasterRepo(region),
-      dataVersion: versionInfo.dataVersion,
-      displayVersion,
-      fetchVersion,
-      cdnVersion: versionInfo.cdnVersion,
-      files,
-      updatedAt: Date.now(),
-    },
-    musicMetas: {
-      url: musicMetasUrl,
-      pairedMasterDisplayVersion: displayVersion,
-      updatedAt: Date.now(),
-    },
+    master: nextMasterMeta,
+    musicMetas: nextMusicMetasMeta,
   })
 
   postEvent({
@@ -119,12 +151,14 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
     cacheHit: false,
     displayVersion,
     fetchVersion,
-    files,
+    files: nextMasterMeta.files,
+    musicMetasUpdatedAt: nextMusicMetasMeta.updatedAt,
+    updatedAt: resolveCacheUpdatedAt(nextMasterMeta, nextMusicMetasMeta),
   })
 }
 
 async function fetchJson(url: string): Promise<unknown> {
-  const response = await fetch(url, { cache: "no-cache" })
+  const response = await fetch(url, { cache: "no-store" })
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status}`)
   }
@@ -132,9 +166,115 @@ async function fetchJson(url: string): Promise<unknown> {
   return response.json()
 }
 
+type MusicMetasRemoteState = {
+  etag: string | null
+  lastModified: string | null
+  contentLength: string | null
+  cacheKey: string | null
+}
+
+async function fetchMusicMetasRemoteState(baseUrl: string): Promise<MusicMetasRemoteState> {
+  const response = await fetch(resolveMusicMetasProbeUrl(baseUrl), {
+    method: "HEAD",
+    cache: "no-store",
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to check ${baseUrl}: ${response.status}`)
+  }
+
+  const etag = response.headers.get("etag")
+  const lastModified = response.headers.get("last-modified")
+  const contentLength = response.headers.get("content-length")
+  return {
+    etag,
+    lastModified,
+    contentLength,
+    cacheKey: etag ?? lastModified ?? contentLength,
+  }
+}
+
+function musicMetasCacheMatches(
+  cachedMeta: SekaiMusicMetasCacheState | null | undefined,
+  url: string,
+  remoteState: MusicMetasRemoteState,
+): boolean {
+  if (!cachedMeta || cachedMeta.url !== url) {
+    return false
+  }
+
+  const checks: Array<["etag" | "lastModified" | "contentLength", string | null]> = [
+    ["etag", remoteState.etag],
+    ["lastModified", remoteState.lastModified],
+    ["contentLength", remoteState.contentLength],
+  ]
+
+  return checks.some(([key, remoteValue]) => Boolean(remoteValue) && cachedMeta[key] === remoteValue)
+}
+
+function resolveMusicMetasProbeUrl(baseUrl: string): string {
+  const separator = baseUrl.includes("?") ? "&" : "?"
+  return `${baseUrl}${separator}t=${Date.now()}`
+}
+
 function normalizeFileList(files: string[] | undefined): string[] {
   const rawFiles = files?.length ? files : [...SEKAI_DATA_DEFAULT_MASTER_FILES]
   return [...new Set(rawFiles.map(normalizeSekaiMasterFileName).filter(Boolean))]
+}
+
+function resolveNextMasterMeta(input: {
+  cachedMaster: SekaiMasterCacheState | null
+  displayVersion: string
+  fetchVersion: string
+  files: string[]
+  filesToFetch: string[]
+  region: SekaiDataWorkerRequest["region"]
+  versionInfo: ReturnType<typeof normalizeSekaiMasterVersionInfo>
+  now: number
+}): SekaiMasterCacheState {
+  const {
+    cachedMaster,
+    displayVersion,
+    fetchVersion,
+    files,
+    filesToFetch,
+    region,
+    versionInfo,
+    now,
+  } = input
+  if (cachedMaster?.fetchVersion === fetchVersion) {
+    return {
+      ...cachedMaster,
+      repo: resolveSekaiMasterRepo(region),
+      dataVersion: versionInfo.dataVersion,
+      displayVersion,
+      fetchVersion,
+      cdnVersion: versionInfo.cdnVersion,
+      files: mergeFileLists(cachedMaster.files, files),
+      updatedAt: filesToFetch.length > 0 ? now : cachedMaster.updatedAt,
+    }
+  }
+
+  return {
+    repo: resolveSekaiMasterRepo(region),
+    dataVersion: versionInfo.dataVersion,
+    displayVersion,
+    fetchVersion,
+    cdnVersion: versionInfo.cdnVersion,
+    files,
+    updatedAt: now,
+  }
+}
+
+function mergeFileLists(first: readonly string[], second: readonly string[]): string[] {
+  return [...new Set([...first, ...second].map(normalizeSekaiMasterFileName).filter(Boolean))]
+}
+
+function resolveCacheUpdatedAt(
+  master: SekaiMasterCacheState | null,
+  musicMetas: SekaiMusicMetasCacheState | null,
+): number | null {
+  const updatedAt = Math.max(master?.updatedAt ?? 0, musicMetas?.updatedAt ?? 0)
+  return updatedAt > 0 ? updatedAt : null
 }
 
 function postProgress(

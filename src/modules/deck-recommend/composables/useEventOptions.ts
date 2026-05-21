@@ -26,7 +26,9 @@ export function useEventOptions(region: Ref<SekaiRegion>) {
   async function loadOptions() {
     loading.value = true
     try {
-      await sekaiDataStore.ensureRegionData(region.value)
+      if (!regionState.value.masterFetchVersion || !regionState.value.files.includes("events")) {
+        await sekaiDataStore.ensureRegionData(region.value, { files: ["events"] })
+      }
       const events = await readSekaiMasterFile<SekaiEvent[]>(region.value, "events")
       options.value = buildEventOptions(events)
     } catch {

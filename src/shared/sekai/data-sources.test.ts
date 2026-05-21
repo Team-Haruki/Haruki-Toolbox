@@ -1,10 +1,14 @@
 import { describe, expect, it } from "bun:test"
 import {
   normalizeSekaiMasterVersionInfo,
+  resolveCardAttrIconUrl,
   resolveCharacterIconUrl,
+  resolveMySekaiCanvasIconUrl,
+  resolveRarityTrainingIconUrl,
   resolveSekaiMasterFetchVersion,
   resolveSekaiMasterFileUrl,
   resolveSekaiMasterVersionUrl,
+  resolveSekaiMusicMetasUrl,
 } from "./data-sources"
 
 describe("Sekai data source helpers", () => {
@@ -30,6 +34,15 @@ describe("Sekai data source helpers", () => {
     )
   })
 
+  it("builds music metas URLs with optional cache keys", () => {
+    expect(resolveSekaiMusicMetasUrl("jp")).toBe(
+      "https://sekai-master-cdn.haruki.seiunx.com/music_metas.json",
+    )
+    expect(resolveSekaiMusicMetasUrl("tw", "etag 1")).toBe(
+      "https://sekai-master-cdn.haruki.seiunx.com/music_metas-tc.json?v=etag%201",
+    )
+  })
+
   it("normalizes version payloads and character icon URLs", () => {
     expect(normalizeSekaiMasterVersionInfo({ dataVersion: 123, cdnVersion: "" })).toEqual({
       dataVersion: "123",
@@ -37,6 +50,24 @@ describe("Sekai data source helpers", () => {
     })
     expect(resolveCharacterIconUrl(5)).toBe(
       "https://images.haruki.seiunx.com/sekai-toolbox/static_images/chara_icon/mnr.png",
+    )
+  })
+
+  it("builds toolbox static image URLs for deck recommend UI assets", () => {
+    expect(resolveRarityTrainingIconUrl("rarity_4")).toBe(
+      "https://images.haruki.seiunx.com/sekai-toolbox/static_images/card/rare_star_after_training.png",
+    )
+    expect(resolveRarityTrainingIconUrl("rarity_2")).toBe(
+      "https://images.haruki.seiunx.com/sekai-toolbox/static_images/card/rare_star_normal.png",
+    )
+    expect(resolveRarityTrainingIconUrl("rarity_birthday")).toBe(
+      "https://images.haruki.seiunx.com/sekai-toolbox/static_images/card/rare_birthday.png",
+    )
+    expect(resolveCardAttrIconUrl("cute")).toBe(
+      "https://images.haruki.seiunx.com/sekai-toolbox/static_images/card/attr_icon_cute.png",
+    )
+    expect(resolveMySekaiCanvasIconUrl()).toBe(
+      "https://images.haruki.seiunx.com/sekai-toolbox/static_images/mysekai/icon/icon_canvas.png",
     )
   })
 })

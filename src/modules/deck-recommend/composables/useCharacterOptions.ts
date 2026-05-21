@@ -26,7 +26,9 @@ export function useCharacterOptions(region: Ref<SekaiRegion>) {
   async function loadOptions() {
     loading.value = true
     try {
-      await sekaiDataStore.ensureRegionData(region.value)
+      if (!regionState.value.masterFetchVersion || !regionState.value.files.includes("gameCharacters")) {
+        await sekaiDataStore.ensureRegionData(region.value, { files: ["gameCharacters"] })
+      }
       const characters = await readSekaiMasterFile<SekaiGameCharacter[]>(region.value, "gameCharacters")
       options.value = buildCharacterOptions(characters)
     } catch {

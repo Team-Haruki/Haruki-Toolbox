@@ -3,8 +3,8 @@ import { buildDeckRecommendOptions, resolveRecommendDataMode, resolveWasmLiveTyp
 import { createDefaultCardTrainingConfig } from "./training-config"
 
 describe("deck recommend wasm option helpers", () => {
-  it("maps carnival UI live type to wasm cheerful", () => {
-    expect(resolveWasmLiveType("event", "carnival")).toBe("cheerful")
+  it("keeps cheerful live type aligned with wasm", () => {
+    expect(resolveWasmLiveType("event", "cheerful")).toBe("cheerful")
   })
 
   it("maps challenge auto live type to challenge_auto and other challenge types to challenge", () => {
@@ -42,5 +42,22 @@ describe("deck recommend wasm option helpers", () => {
   it("uses mysekai recommend-data mode only for mysekai deck mode", () => {
     expect(resolveRecommendDataMode("mysekai")).toBe("mysekai")
     expect(resolveRecommendDataMode("event")).toBe("suite")
+  })
+
+  it("passes world bloom character id for event-like modes", () => {
+    const options = buildDeckRecommendOptions({
+      region: "jp",
+      mode: "event",
+      liveType: "solo",
+      algorithm: "ga",
+      musicId: "1",
+      musicDifficulty: "expert",
+      eventId: "112",
+      characterId: "18",
+      trainingConfig: createDefaultCardTrainingConfig(),
+      userData: { userCards: [] },
+    })
+
+    expect(options.world_bloom_character_id).toBe(18)
   })
 })
