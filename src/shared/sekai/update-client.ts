@@ -43,7 +43,7 @@ function ensureWorker(): Worker {
       type: "error",
       requestId: "worker",
       region: "jp" satisfies SekaiRegion,
-      message: event.message || "Sekai data worker failed",
+      message: event.message || "Master data worker failed",
     }
     for (const listener of listeners) {
       listener(errorEvent)

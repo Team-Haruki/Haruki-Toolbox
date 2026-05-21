@@ -6,10 +6,7 @@ import {
   LucideGamepad2,
   LucideInfo,
   LucidePlay,
-  LucideRefreshCw,
   LucideSettings2,
-  LucideTrash2,
-  LucideUsers,
 } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 import { Button } from "@/components/ui/button"
@@ -22,7 +19,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
 import {
   Select,
   SelectContent,
@@ -38,7 +34,7 @@ import {
 } from "@/components/ui/tooltip"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { SEKAI_DATA_RECOMMEND_MASTER_FILES } from "@/shared/sekai/worker-protocol"
-import { useSekaiDataStore, type SekaiDataQueueItem } from "@/shared/stores/sekai-data"
+import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useUserStore } from "@/shared/stores/user"
 import type { GameAccountBinding, SekaiRegion } from "@/types"
 import CardThumbnail from "../components/CardThumbnail.vue"
@@ -92,6 +88,7 @@ const selectedDifficulty = ref<string | null>(DEFAULT_MUSIC_DIFFICULTY)
 const trainingConfig = ref(createDefaultCardTrainingConfig())
 const worldBloomCharacters = useWorldBloomCharacterOptions(dataRegion, selectedEventId)
 let dataPreloadGeneration = 0
+let dataPreloadSignature = ""
 
 const accountOptions = computed<BoundAccountOption[]>(() => {
   const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
@@ -109,8 +106,10 @@ const recommendDataReady = computed(() =>
   && currentRegionState.value.musicMetasUpdatedAt != null
   && hasRequiredFiles(currentRegionState.value.files, SEKAI_DATA_RECOMMEND_MASTER_FILES),
 )
-const queueItems = computed(() => sekaiDataStore.latestQueueItems)
 const resultDecks = computed(() => buildDeckResultViews(runner.result.value, runner.masterData.value, dataRegion.value))
+const showResultCard = computed(() =>
+  runner.error.value != null || runner.elapsedMs.value != null || resultDecks.value.length > 0,
+)
 const resultTimingItems = computed<Array<{ key: string; label: string; elapsedMs: number; class: string }>>(() => {
   const items: Array<{ key: string; label: string; elapsedMs: number; class: string }> = []
   if (runner.dataElapsedMs.value != null) {
@@ -228,6 +227,7 @@ watch(
 )
 
 watch(dataRegion, () => {
+  invalidateDataPreload()
   selectedEventId.value = null
   selectedEventType.value = null
   selectedCharacterId.value = null
@@ -338,13 +338,12 @@ watch(
   () => [
     dataRegion.value,
     recommendDataReady.value,
-    currentRegionState.value.refreshing,
     currentRegionState.value.masterFetchVersion,
     currentRegionState.value.musicMetasUpdatedAt,
     currentRegionState.value.files.join(","),
   ],
   () => {
-    if (!recommendDataReady.value || currentRegionState.value.refreshing) {
+    if (!recommendDataReady.value) {
       return
     }
 
@@ -355,10 +354,13 @@ watch(
 onMounted(() => {
   checkDeckRecommendRegionData(dataRegion.value)
   void runner.preloadEngine().catch(() => undefined)
+  if (recommendDataReady.value) {
+    preloadCurrentRegionData()
+  }
 })
 
 onBeforeUnmount(() => {
-  dataPreloadGeneration += 1
+  invalidateDataPreload()
   void runner.disposeEngine().catch(() => undefined)
 })
 
@@ -418,14 +420,38 @@ function checkDeckRecommendRegionData(region: SekaiRegion) {
 }
 
 function preloadCurrentRegionData() {
+  if (!recommendDataReady.value) {
+    return
+  }
+
   const region = dataRegion.value
-  const generation = dataPreloadGeneration + 1
-  dataPreloadGeneration = generation
+  const signature = createDataPreloadSignature()
+  if (signature !== dataPreloadSignature) {
+    dataPreloadSignature = signature
+    dataPreloadGeneration += 1
+  }
+  const generation = dataPreloadGeneration
   void runner.preloadRegionData(region, () => generation === dataPreloadGeneration).catch(() => undefined)
   const parallelCount = executionMode.value === "parallel" ? selectedAlgorithms.value.length : 0
   if (parallelCount > 0) {
     void runner.preloadParallelRegionData(region, parallelCount, () => generation === dataPreloadGeneration).catch(() => undefined)
   }
+}
+
+function invalidateDataPreload() {
+  dataPreloadSignature = ""
+  dataPreloadGeneration += 1
+}
+
+function createDataPreloadSignature() {
+  return [
+    dataRegion.value,
+    currentRegionState.value.masterFetchVersion ?? "",
+    currentRegionState.value.musicMetasUpdatedAt ?? "",
+    currentRegionState.value.files.slice().sort().join(","),
+    executionMode.value,
+    selectedAlgorithms.value.join(","),
+  ].join(":")
 }
 
 function syncParallelEngines() {
@@ -436,19 +462,11 @@ function syncParallelEngines() {
   const parallelCount = executionMode.value === "parallel" ? selectedAlgorithms.value.length : 0
   void runner.preloadParallelEngines(parallelCount)
     .then(() => {
-      if (parallelCount > 0 && recommendDataReady.value && !currentRegionState.value.refreshing) {
+      if (parallelCount > 0 && recommendDataReady.value) {
         preloadCurrentRegionData()
       }
     })
     .catch(() => undefined)
-}
-
-function refreshCurrentRegion() {
-  sekaiDataStore.refreshRegionData(dataRegion.value, SEKAI_DATA_RECOMMEND_MASTER_FILES)
-}
-
-function clearCurrentRegion() {
-  sekaiDataStore.clearRegionData(dataRegion.value)
 }
 
 async function runRecommend() {
@@ -472,14 +490,6 @@ async function runRecommend() {
       description: error instanceof Error ? error.message : String(error),
     })
   }
-}
-
-function phaseLabel(item: Pick<SekaiDataQueueItem, "phase">) {
-  return t(`deckRecommend.dataQueue.phases.${item.phase}`)
-}
-
-function queueStatusLabel(item: Pick<SekaiDataQueueItem, "status">) {
-  return t(`deckRecommend.dataQueue.status.${item.status}`)
 }
 
 function algorithmLabel(algorithm: DeckRecommendAlgorithm) {
@@ -537,19 +547,6 @@ function deckEventBonusLabel(deck: DeckResultDeckView["deck"]) {
 function formatPercentValue(value: number) {
   return new Intl.NumberFormat(locale.value, {
     maximumFractionDigits: 2,
-  }).format(value)
-}
-
-function formatTime(value: number | null) {
-  if (!value) {
-    return t("deckRecommend.dataStatus.never")
-  }
-
-  return new Intl.DateTimeFormat(locale.value, {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
   }).format(value)
 }
 
@@ -623,16 +620,17 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-4 sm:px-6">
-    <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
-      <div class="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle class="flex items-center gap-2 text-lg">
-              <LucideGamepad2 class="size-5" />
-              {{ t("deckRecommend.title") }}
-            </CardTitle>
-            <CardDescription>{{ t("deckRecommend.description") }}</CardDescription>
+  <div class="flex w-full flex-1 flex-col items-center justify-center px-0 py-4">
+    <div class="mx-auto w-full max-w-6xl space-y-4">
+      <Card>
+          <CardHeader class="gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="space-y-1.5">
+              <CardTitle class="flex items-center gap-2 text-lg">
+                <LucideGamepad2 class="size-5" />
+                {{ t("deckRecommend.title") }}
+              </CardTitle>
+              <CardDescription>{{ t("deckRecommend.description") }}</CardDescription>
+            </div>
           </CardHeader>
           <CardContent class="grid gap-4">
             <div class="grid gap-4 lg:grid-cols-2">
@@ -709,7 +707,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           <LucideInfo class="size-3.5" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent class="max-w-72">
+                      <TooltipContent class="max-w-80 !border-slate-200 !bg-white !text-slate-950 text-left leading-5 shadow-lg dark:!border-slate-700 dark:!bg-slate-950 dark:!text-slate-50">
                         {{ t("deckRecommend.form.algorithmHint") }}
                       </TooltipContent>
                     </Tooltip>
@@ -788,7 +786,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
               </Button>
             </div>
           </CardContent>
-        </Card>
+      </Card>
 
         <Card>
           <CardHeader>
@@ -803,7 +801,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
           </CardContent>
         </Card>
 
-        <Card>
+        <Card v-if="showResultCard">
           <CardHeader>
             <CardTitle class="text-base">{{ t("deckRecommend.result.title") }}</CardTitle>
             <CardDescription>
@@ -903,84 +901,41 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
               </div>
             </div>
           </CardContent>
-        </Card>
-      </div>
+      </Card>
 
-      <div class="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle class="flex items-center gap-2 text-base">
-              <LucideUsers class="size-4" />
-              {{ t("deckRecommend.dataStatus.title") }}
-            </CardTitle>
-            <CardDescription>{{ t("deckRecommend.dataStatus.description") }}</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-4">
-            <div class="grid gap-2 text-sm">
-              <div class="flex items-center justify-between gap-3">
-                <span class="text-muted-foreground">{{ t("deckRecommend.dataStatus.region") }}</span>
-                <span class="font-medium">{{ resolveSekaiRegionLabel(dataRegion, t) }}</span>
-              </div>
-              <div class="flex items-center justify-between gap-3">
-                <span class="text-muted-foreground">{{ t("deckRecommend.dataStatus.masterVersion") }}</span>
-                <span class="font-mono text-xs">{{ currentRegionState.masterDisplayVersion ?? "-" }}</span>
-              </div>
-              <div class="flex items-center justify-between gap-3">
-                <span class="text-muted-foreground">{{ t("deckRecommend.dataStatus.fetchVersion") }}</span>
-                <span class="font-mono text-xs">{{ currentRegionState.masterFetchVersion ?? "-" }}</span>
-              </div>
-              <div class="flex items-center justify-between gap-3">
-                <span class="text-muted-foreground">{{ t("deckRecommend.dataStatus.updatedAt") }}</span>
-                <span>{{ formatTime(currentRegionState.updatedAt) }}</span>
-              </div>
-            </div>
-
-            <div class="space-y-2">
-              <div class="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{{ currentRegionState.phase ? t(`deckRecommend.dataQueue.phases.${currentRegionState.phase}`) : t("deckRecommend.dataStatus.idle") }}</span>
-                <span>{{ currentRegionState.progress }}%</span>
-              </div>
-              <Progress :model-value="currentRegionState.progress" />
-              <p v-if="currentRegionState.error" class="text-xs text-destructive">
-                {{ currentRegionState.error }}
-              </p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2">
-              <Button type="button" variant="outline" :disabled="currentRegionState.refreshing" @click="refreshCurrentRegion">
-                <LucideRefreshCw class="size-4" />
-                {{ t("deckRecommend.dataStatus.refresh") }}
-              </Button>
-              <Button type="button" variant="outline" :disabled="currentRegionState.refreshing" @click="clearCurrentRegion">
-                <LucideTrash2 class="size-4" />
-                {{ t("deckRecommend.dataStatus.clear") }}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle class="text-base">{{ t("deckRecommend.dataQueue.title") }}</CardTitle>
-            <CardDescription>{{ t("deckRecommend.dataQueue.description") }}</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-3">
-            <div v-if="queueItems.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-              {{ t("deckRecommend.dataQueue.empty") }}
-            </div>
-            <div v-for="item in queueItems" :key="item.id" class="space-y-2 rounded-md border p-3">
-              <div class="flex items-center justify-between gap-3 text-sm">
-                <span class="font-medium">{{ resolveSekaiRegionLabel(item.region, t) }}</span>
-                <span class="text-xs text-muted-foreground">{{ queueStatusLabel(item) }}</span>
-              </div>
-              <div class="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                <span>{{ phaseLabel(item) }}</span>
-                <span v-if="item.fileName">{{ item.fileName }}</span>
-              </div>
-              <Progress :model-value="item.progress" />
-            </div>
-          </CardContent>
-        </Card>
+      <div class="space-y-1.5 rounded-md border bg-muted/20 p-4 text-xs leading-6 text-muted-foreground">
+        <p>
+          {{ t("deckRecommend.attribution.originalPrefix") }}<a
+            class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+            href="https://github.com/xfl03"
+            target="_blank"
+            rel="noreferrer noopener"
+          >xfl03(33)</a>{{ t("deckRecommend.attribution.originalMiddle") }}<a
+            class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+            href="https://github.com/xfl03/sekai-calculator"
+            target="_blank"
+            rel="noreferrer noopener"
+          >sekai-calculator</a>{{ t("deckRecommend.attribution.originalSuffix") }}
+        </p>
+        <p>
+          {{ t("deckRecommend.attribution.optimizationPrefix") }}<a
+            class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+            href="https://github.com/NeuraXmy"
+            target="_blank"
+            rel="noreferrer noopener"
+          >{{ t("deckRecommend.attribution.neuraxmyName") }}</a>{{ t("deckRecommend.attribution.optimizationMiddle") }}<a
+            class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+            href="https://github.com/NeuraXmy/sekai-deck-recommend-cpp"
+            target="_blank"
+            rel="noreferrer noopener"
+          >sekai-deck-recommend-cpp</a>
+        </p>
+        <p>
+          {{ t("deckRecommend.attribution.enginePrefix") }}<router-link
+            class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+            to="/about"
+          >{{ t("deckRecommend.attribution.aboutLink") }}</router-link>{{ t("deckRecommend.attribution.engineSuffix") }}
+        </p>
       </div>
     </div>
   </div>

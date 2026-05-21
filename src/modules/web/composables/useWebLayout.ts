@@ -14,7 +14,7 @@ const TICKET_REMINDER_REFRESH_MS = 60_000
 export function useWebLayout() {
   const route = useRoute()
   const userStore = useUserStore()
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
   const navGroupOpenState = ref<Record<string, boolean>>({})
   const pendingUserTicketCount = ref<number | null>(null)
   let pendingUserTicketCountLoading = false
@@ -36,6 +36,18 @@ export function useWebLayout() {
     return currentYear > COPYRIGHT_START_YEAR
       ? `${COPYRIGHT_START_YEAR}-${currentYear}`
       : String(COPYRIGHT_START_YEAR)
+  })
+  const buildTime = computed(() => {
+    const parsedBuildTime = new Date(__APP_BUILD_TIME__)
+
+    if (Number.isNaN(parsedBuildTime.valueOf())) {
+      return __APP_BUILD_TIME__
+    }
+
+    return new Intl.DateTimeFormat(locale.value, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(parsedBuildTime)
   })
 
   watchEffect(() => {
@@ -139,6 +151,10 @@ export function useWebLayout() {
     pageTitle,
     showPageTitle,
     copyrightYear,
+    appVersion: __APP_VERSION__,
+    gitHash: __APP_GIT_HASH__,
+    buildTimeIso: __APP_BUILD_TIME__,
+    buildTime,
     pendingUserTicketCount,
     isNavGroupOpen,
     setNavGroupOpen,

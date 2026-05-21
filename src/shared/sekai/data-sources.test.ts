@@ -64,7 +64,7 @@ describe("Sekai data source helpers", () => {
       "https://images.haruki.seiunx.com/sekai-toolbox/static_images/card/rare_birthday.png",
     )
     expect(resolveCardAttrIconUrl("cute")).toBe(
-      "https://images.haruki.seiunx.com/sekai-toolbox/static_images/card/attr_icon_cute.png",
+      "https://images.haruki.seiunx.com/sekai-toolbox/static_images/card/attr_cute.png",
     )
     expect(resolveMySekaiCanvasIconUrl()).toBe(
       "https://images.haruki.seiunx.com/sekai-toolbox/static_images/mysekai/icon/icon_canvas.png",

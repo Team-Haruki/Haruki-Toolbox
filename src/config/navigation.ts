@@ -6,10 +6,8 @@ import {
   LucideCog,
   LucideFileEdit,
   LucideGamepad2,
-  LucideInfo,
   LucideKeyRound,
   LucideLayoutDashboard,
-  LucideMap,
   LucideNavigation,
   LucideScrollText,
   LucideShieldAlert,
@@ -34,13 +32,11 @@ export interface NavItem {
 
 export const WEB_NAV_ITEMS: NavItem[] = [
   {
-    titleKey: "navigation.groups.recommendAndAbout",
+    titleKey: "navigation.groups.friendshipRecommendation",
     icon: LucideNavigation,
     items: [
-      { titleKey: "navigation.items.friendGroups", icon: LucideMap, url: "/friend-groups" },
-      { titleKey: "navigation.items.friendLinks", icon: LucideMap, url: "/friend-links" },
-      { titleKey: "navigation.items.deckRecommend", icon: LucideGamepad2, url: "/deck-recommend" },
-      { titleKey: "navigation.items.about", icon: LucideInfo, url: "/about" },
+      { titleKey: "navigation.items.friendGroups", icon: LucideUsers, url: "/friend-groups" },
+      { titleKey: "navigation.items.friendLinks", icon: LucideUsers, url: "/friend-links" },
     ],
   },
   {
@@ -48,8 +44,21 @@ export const WEB_NAV_ITEMS: NavItem[] = [
     icon: LucideWrench,
     items: [
       { titleKey: "navigation.items.ptCalculator", icon: LucideCalculator, url: "/pt-calculator" },
+      { titleKey: "navigation.items.deckRecommend", icon: LucideGamepad2, url: "/deck-recommend" },
+    ],
+  },
+  {
+    titleKey: "navigation.groups.dataUpload",
+    icon: LucideCloudUpload,
+    items: [
       { titleKey: "navigation.items.uploadData", icon: LucideCloudUpload, url: "/upload-data" },
       { titleKey: "navigation.items.iosModules", icon: LucideArrowDownToLine, url: "/ios-modules" },
+    ],
+  },
+  {
+    titleKey: "navigation.groups.harukiBot",
+    icon: LucideBot,
+    items: [
       { titleKey: "navigation.items.botNeoRegistration", icon: LucideBot, url: "/haruki-bot-neo" },
     ],
   },

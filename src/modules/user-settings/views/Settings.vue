@@ -12,7 +12,6 @@ import {
   IMBindingSettings,
   OAuth2Authorizations,
   PasswordSettings,
-  SekaiDataSettings,
   SessionSettings,
   SocialSettings,
   KratosSettingsFlow,
@@ -154,7 +153,6 @@ onMounted(() => {
       <IMBindingSettings />
       <IMAuthorization />
       <OAuth2Authorizations />
-      <SekaiDataSettings />
     </div>
   </div>
 </template>

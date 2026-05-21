@@ -181,7 +181,7 @@ export function resolveCardFrameImageUrl(rarity: string): string {
 }
 
 export function resolveCardAttrIconUrl(attribute: string): string {
-  return resolveToolboxStaticImageUrl(`static_images/card/attr_icon_${attribute}.png`)
+  return resolveToolboxStaticImageUrl(`static_images/card/attr_${attribute}.png`)
 }
 
 export function resolveRareStarImageUrl(afterTraining: boolean): string {

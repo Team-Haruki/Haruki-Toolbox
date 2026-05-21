@@ -62,7 +62,7 @@ describe("deck recommend card thumbnail helpers", () => {
 
     expect(view.thumbnailUrl).toContain("/jp-assets/startapp/thumbnail/chara/res005_no001_normal.png")
     expect(view.frameUrl).toContain("frame_rarity_4.png")
-    expect(view.attrIconUrl).toContain("attr_icon_cute.png")
+    expect(view.attrIconUrl).toContain("attr_cute.png")
     expect(view.rareIconUrl).toContain("rare_star_normal.png")
     expect(view.rareCount).toBe(4)
     expect(view.trainRankUrl).toContain("train_rank_2.png")

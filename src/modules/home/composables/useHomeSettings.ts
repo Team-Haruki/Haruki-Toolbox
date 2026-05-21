@@ -4,7 +4,7 @@ import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { CloudLightning, Gauge, Link, Monitor, Moon, Sun } from "lucide-vue-next"
 import { useSettingsStore, type EndpointType, type ThemeType } from "@/shared/stores/settings"
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type AppLocale } from "@/shared/i18n"
+import { DEFAULT_LOCALE, setI18nLocale, SUPPORTED_LOCALES, translate, type AppLocale } from "@/shared/i18n"
 
 interface EndpointOption {
   value: EndpointType
@@ -79,7 +79,7 @@ export function useHomeSettings() {
       t("homeSettings.locale.placeholder")
   )
 
-  function saveSettings() {
+  async function saveSettings() {
     if (endpointUnavailable.value) {
       toast.error(t("homeSettings.endpoint.unavailable"))
       return
@@ -89,19 +89,21 @@ export function useHomeSettings() {
     settingsStore.setTheme(selectedTheme.value)
     settingsStore.setLocale(selectedLocale.value)
     settingsStore.setReducedVisualEffects(selectedReducedVisualEffects.value)
-    toast.success(t("homeSettings.toast.saved"))
+    await setI18nLocale(selectedLocale.value)
+    toast.success(translate("homeSettings.toast.saved"))
   }
 
-  function resetSettings() {
+  async function resetSettings() {
     settingsStore.setPreferredEndpoint(DEFAULT_ENDPOINT)
     settingsStore.setTheme(DEFAULT_THEME)
     settingsStore.setLocale(DEFAULT_LOCALE)
     settingsStore.setReducedVisualEffects(DEFAULT_REDUCED_VISUAL_EFFECTS)
+    await setI18nLocale(DEFAULT_LOCALE)
     selectedEndpoint.value = settingsStore.resolvedPreferredEndpoint
     selectedTheme.value = settingsStore.theme
     selectedLocale.value = settingsStore.locale
     selectedReducedVisualEffects.value = settingsStore.reducedVisualEffects
-    toast.info(t("homeSettings.toast.reset"))
+    toast.info(translate("homeSettings.toast.reset"))
   }
 
   onMounted(() => {
