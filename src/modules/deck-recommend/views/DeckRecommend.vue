@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
 import {
   LucideGamepad2,
+  LucideInfo,
   LucidePlay,
   LucideRefreshCw,
   LucideSettings2,
@@ -29,7 +30,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
+import { SEKAI_DATA_RECOMMEND_MASTER_FILES } from "@/shared/sekai/worker-protocol"
 import { useSekaiDataStore, type SekaiDataQueueItem } from "@/shared/stores/sekai-data"
 import { useUserStore } from "@/shared/stores/user"
 import type { GameAccountBinding, SekaiRegion } from "@/types"
@@ -40,14 +48,15 @@ import EventSelect from "../components/EventSelect.vue"
 import MusicSelect from "../components/MusicSelect.vue"
 import { buildDeckResultViews, type DeckResultDeckView } from "../lib/card-thumbnail"
 import {
-  resolveWasmLiveType,
   type DeckRecommendAlgorithm,
   type DeckRecommendLiveType,
   type DeckRecommendMode,
-  type WasmRecommendLiveType,
 } from "../lib/recommend-options"
 import { createDefaultCardTrainingConfig } from "../lib/training-config"
-import { useDeckRecommendRunner } from "../composables/useDeckRecommendRunner"
+import {
+  useDeckRecommendRunner,
+  type DeckRecommendExecutionMode,
+} from "../composables/useDeckRecommendRunner"
 import { useWorldBloomCharacterOptions } from "../composables/useWorldBloomCharacterOptions"
 
 type BoundAccountOption = {
@@ -60,23 +69,29 @@ type BoundAccountOption = {
 const DEFAULT_MUSIC_ID = "74"
 const DEFAULT_MUSIC_DIFFICULTY = "expert"
 const DEFAULT_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "ga", "rl"]
+const DECK_RECOMMEND_PREFERENCES_STORAGE_KEY = "haruki:deck-recommend:preferences"
+const DECK_RECOMMEND_EXECUTION_MODES: DeckRecommendExecutionMode[] = ["sequential", "parallel"]
 
 const { t, locale } = useI18n()
 const userStore = useUserStore()
 const sekaiDataStore = useSekaiDataStore()
 const runner = useDeckRecommendRunner()
+const initialPreferences = readDeckRecommendPreferences()
 
 const selectedAccountKey = ref("")
 const dataRegion = ref<SekaiRegion>("jp")
 const recommendMode = ref<DeckRecommendMode>("event")
-const liveType = ref<DeckRecommendLiveType>("solo")
-const selectedAlgorithms = ref<DeckRecommendAlgorithm[]>([...DEFAULT_ALGORITHMS])
+const liveType = ref<DeckRecommendLiveType>("multi")
+const selectedAlgorithms = ref<DeckRecommendAlgorithm[]>(initialPreferences.algorithms ?? [...DEFAULT_ALGORITHMS])
+const executionMode = ref<DeckRecommendExecutionMode>(initialPreferences.executionMode ?? "sequential")
 const selectedEventId = ref<string | null>(null)
+const selectedEventType = ref<string | null>(null)
 const selectedCharacterId = ref<string | null>(null)
 const selectedMusicId = ref<string | null>(DEFAULT_MUSIC_ID)
 const selectedDifficulty = ref<string | null>(DEFAULT_MUSIC_DIFFICULTY)
 const trainingConfig = ref(createDefaultCardTrainingConfig())
 const worldBloomCharacters = useWorldBloomCharacterOptions(dataRegion, selectedEventId)
+let dataPreloadGeneration = 0
 
 const accountOptions = computed<BoundAccountOption[]>(() => {
   const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
@@ -88,11 +103,43 @@ const selectedAccount = computed(() => {
 })
 
 const currentRegionState = computed(() => sekaiDataStore.regionStates[dataRegion.value])
-const wasmLiveType = computed(() => resolveWasmLiveType(recommendMode.value, liveType.value))
-const wasmLiveTypeLabel = computed(() => liveTypeLabel(wasmLiveType.value))
 const dataReady = computed(() => currentRegionState.value.status === "ready")
+const recommendDataReady = computed(() =>
+  dataReady.value
+  && currentRegionState.value.musicMetasUpdatedAt != null
+  && hasRequiredFiles(currentRegionState.value.files, SEKAI_DATA_RECOMMEND_MASTER_FILES),
+)
 const queueItems = computed(() => sekaiDataStore.latestQueueItems)
 const resultDecks = computed(() => buildDeckResultViews(runner.result.value, runner.masterData.value, dataRegion.value))
+const resultTimingItems = computed<Array<{ key: string; label: string; elapsedMs: number; class: string }>>(() => {
+  const items: Array<{ key: string; label: string; elapsedMs: number; class: string }> = []
+  if (runner.dataElapsedMs.value != null) {
+    items.push({
+      key: "data",
+      label: t("deckRecommend.result.dataElapsed"),
+      elapsedMs: runner.dataElapsedMs.value,
+      class: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200",
+    })
+  }
+  if (runner.engineDataElapsedMs.value != null) {
+    items.push({
+      key: "engine-data",
+      label: t("deckRecommend.result.engineDataElapsed"),
+      elapsedMs: runner.engineDataElapsedMs.value,
+      class: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200",
+    })
+  }
+  if (runner.recommendElapsedMs.value != null) {
+    items.push({
+      key: "recommend",
+      label: recommendElapsedTimingLabel(runner.resultExecutionMode.value),
+      elapsedMs: runner.recommendElapsedMs.value,
+      class: "border-lime-200 bg-lime-50 text-lime-800 dark:border-lime-500/30 dark:bg-lime-500/10 dark:text-lime-200",
+    })
+  }
+
+  return items
+})
 const isEventLikeMode = computed(() =>
   recommendMode.value === "event" || recommendMode.value === "bonus" || recommendMode.value === "mysekai",
 )
@@ -107,7 +154,7 @@ const characterSelectAllowedIds = computed<readonly number[] | null>(() =>
 )
 const activeCharacterId = computed(() => showCharacterSelect.value ? selectedCharacterId.value : null)
 const canRunRecommend = computed(() => {
-  if (runner.running.value || !selectedAccount.value || !dataReady.value || selectedAlgorithms.value.length === 0) {
+  if (runner.running.value || !selectedAccount.value || !recommendDataReady.value || selectedAlgorithms.value.length === 0) {
     return false
   }
   if (!selectedMusicId.value || !selectedDifficulty.value) {
@@ -150,6 +197,11 @@ const algorithmOptions = computed<Array<{ value: DeckRecommendAlgorithm; label: 
   { value: "rl", label: t("deckRecommend.algorithms.rl") },
 ])
 
+const executionModeOptions = computed<Array<{ value: DeckRecommendExecutionMode; label: string }>>(() => [
+  { value: "sequential", label: t("deckRecommend.executionModes.sequential") },
+  { value: "parallel", label: t("deckRecommend.executionModes.parallel") },
+])
+
 watch(
   accountOptions,
   (accounts) => {
@@ -177,11 +229,12 @@ watch(
 
 watch(dataRegion, () => {
   selectedEventId.value = null
+  selectedEventType.value = null
   selectedCharacterId.value = null
   selectedMusicId.value = DEFAULT_MUSIC_ID
   selectedDifficulty.value = DEFAULT_MUSIC_DIFFICULTY
   runner.reset()
-  void sekaiDataStore.ensureRegionData(dataRegion.value)
+  checkDeckRecommendRegionData(dataRegion.value)
 })
 
 watch(
@@ -190,6 +243,7 @@ watch(
     recommendMode,
     liveType,
     selectedAlgorithms,
+    executionMode,
     selectedEventId,
     selectedCharacterId,
     selectedMusicId,
@@ -198,6 +252,39 @@ watch(
   ],
   () => runner.reset(),
   { deep: true },
+)
+
+watch(
+  () => [selectedAlgorithms.value.join(","), executionMode.value],
+  () => {
+    writeDeckRecommendPreferences({
+      algorithms: selectedAlgorithms.value,
+      executionMode: executionMode.value,
+    })
+    syncParallelEngines()
+  },
+  { immediate: true },
+)
+
+watch(
+  () => runner.running.value,
+  (running) => {
+    if (!running) {
+      syncParallelEngines()
+    }
+  },
+)
+
+watch(
+  [selectedEventType, recommendMode],
+  () => {
+    if (!isEventLikeMode.value) {
+      return
+    }
+
+    liveType.value = selectedEventType.value === "cheerful_carnival" ? "cheerful" : "multi"
+  },
+  { immediate: true },
 )
 
 watch(
@@ -247,8 +334,32 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => [
+    dataRegion.value,
+    recommendDataReady.value,
+    currentRegionState.value.refreshing,
+    currentRegionState.value.masterFetchVersion,
+    currentRegionState.value.musicMetasUpdatedAt,
+    currentRegionState.value.files.join(","),
+  ],
+  () => {
+    if (!recommendDataReady.value || currentRegionState.value.refreshing) {
+      return
+    }
+
+    preloadCurrentRegionData()
+  },
+)
+
 onMounted(() => {
-  void sekaiDataStore.ensureRegionData(dataRegion.value)
+  checkDeckRecommendRegionData(dataRegion.value)
+  void runner.preloadEngine().catch(() => undefined)
+})
+
+onBeforeUnmount(() => {
+  dataPreloadGeneration += 1
+  void runner.disposeEngine().catch(() => undefined)
 })
 
 function createAccountOption(account: GameAccountBinding): BoundAccountOption {
@@ -296,8 +407,44 @@ function toggleAlgorithm(value: DeckRecommendAlgorithm, checked: boolean) {
     .filter((optionValue) => next.has(optionValue))
 }
 
+function updateExecutionMode(value: AcceptableValue) {
+  if (typeof value === "string" && isDeckRecommendExecutionMode(value)) {
+    executionMode.value = value
+  }
+}
+
+function checkDeckRecommendRegionData(region: SekaiRegion) {
+  void sekaiDataStore.ensureRegionData(region, { files: SEKAI_DATA_RECOMMEND_MASTER_FILES })
+}
+
+function preloadCurrentRegionData() {
+  const region = dataRegion.value
+  const generation = dataPreloadGeneration + 1
+  dataPreloadGeneration = generation
+  void runner.preloadRegionData(region, () => generation === dataPreloadGeneration).catch(() => undefined)
+  const parallelCount = executionMode.value === "parallel" ? selectedAlgorithms.value.length : 0
+  if (parallelCount > 0) {
+    void runner.preloadParallelRegionData(region, parallelCount, () => generation === dataPreloadGeneration).catch(() => undefined)
+  }
+}
+
+function syncParallelEngines() {
+  if (runner.running.value) {
+    return
+  }
+
+  const parallelCount = executionMode.value === "parallel" ? selectedAlgorithms.value.length : 0
+  void runner.preloadParallelEngines(parallelCount)
+    .then(() => {
+      if (parallelCount > 0 && recommendDataReady.value && !currentRegionState.value.refreshing) {
+        preloadCurrentRegionData()
+      }
+    })
+    .catch(() => undefined)
+}
+
 function refreshCurrentRegion() {
-  sekaiDataStore.refreshRegionData(dataRegion.value)
+  sekaiDataStore.refreshRegionData(dataRegion.value, SEKAI_DATA_RECOMMEND_MASTER_FILES)
 }
 
 function clearCurrentRegion() {
@@ -312,6 +459,7 @@ async function runRecommend() {
       mode: recommendMode.value,
       liveType: liveType.value,
       algorithms: selectedAlgorithms.value,
+      executionMode: executionMode.value,
       eventId: selectedEventId.value,
       characterId: activeCharacterId.value,
       musicId: selectedMusicId.value,
@@ -345,23 +493,12 @@ function algorithmLabel(algorithm: DeckRecommendAlgorithm) {
   }
 }
 
-function liveTypeLabel(type: DeckRecommendLiveType | WasmRecommendLiveType) {
-  switch (type) {
-    case "solo":
-      return t("deckRecommend.liveTypes.solo")
-    case "multi":
-      return t("deckRecommend.liveTypes.multi")
-    case "auto":
-      return t("deckRecommend.liveTypes.auto")
-    case "challenge":
-      return t("deckRecommend.liveTypes.challenge")
-    case "challenge_auto":
-      return t("deckRecommend.liveTypes.challengeAuto")
-    case "cheerful":
-      return t("deckRecommend.liveTypes.cheerful")
-    case "mysekai":
-      return t("deckRecommend.liveTypes.mysekai")
+function recommendElapsedTimingLabel(mode: DeckRecommendExecutionMode | null) {
+  if (mode === "parallel") {
+    return t("deckRecommend.result.parallelRecommendElapsed")
   }
+
+  return t("deckRecommend.result.sequentialRecommendElapsed")
 }
 
 function deckSourceAlgorithms(deck: DeckResultDeckView["deck"]): DeckRecommendAlgorithm[] {
@@ -426,6 +563,61 @@ function isDeckRecommendMode(value: string): value is DeckRecommendMode {
 
 function isDeckRecommendLiveType(value: string): value is DeckRecommendLiveType {
   return liveTypeOptions.value.some((option) => option.value === value)
+}
+
+function isDeckRecommendExecutionMode(value: string): value is DeckRecommendExecutionMode {
+  return DECK_RECOMMEND_EXECUTION_MODES.includes(value as DeckRecommendExecutionMode)
+}
+
+function hasRequiredFiles(cachedFiles: readonly string[], requiredFiles: readonly string[]): boolean {
+  return requiredFiles.every((fileName) => cachedFiles.includes(fileName))
+}
+
+type DeckRecommendPreferences = {
+  algorithms?: DeckRecommendAlgorithm[]
+  executionMode?: DeckRecommendExecutionMode
+}
+
+function readDeckRecommendPreferences(): DeckRecommendPreferences {
+  if (typeof window === "undefined") {
+    return {}
+  }
+
+  try {
+    const raw = window.localStorage.getItem(DECK_RECOMMEND_PREFERENCES_STORAGE_KEY)
+    if (!raw) {
+      return {}
+    }
+
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    return {
+      algorithms: normalizePersistedAlgorithms(parsed.algorithms),
+      executionMode: typeof parsed.executionMode === "string" && isDeckRecommendExecutionMode(parsed.executionMode)
+        ? parsed.executionMode
+        : undefined,
+    }
+  } catch {
+    return {}
+  }
+}
+
+function writeDeckRecommendPreferences(preferences: Required<DeckRecommendPreferences>) {
+  if (typeof window === "undefined") {
+    return
+  }
+
+  try {
+    window.localStorage.setItem(DECK_RECOMMEND_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences))
+  } catch {
+  }
+}
+
+function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+
+  return DEFAULT_ALGORITHMS.filter((algorithm) => value.includes(algorithm))
 }
 
 </script>
@@ -501,13 +693,28 @@ function isDeckRecommendLiveType(value: string): value is DeckRecommendLiveType 
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <p class="text-xs text-muted-foreground">
-                  {{ t("deckRecommend.form.wasmLiveType", { type: wasmLiveTypeLabel }) }}
-                </p>
               </div>
 
               <div class="grid gap-2">
-                <Label>{{ t("deckRecommend.form.algorithm") }}</Label>
+                <div class="flex items-center gap-1.5">
+                  <Label>{{ t("deckRecommend.form.algorithm") }}</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <button
+                          type="button"
+                          class="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          :aria-label="t('deckRecommend.form.algorithmHint')"
+                        >
+                          <LucideInfo class="size-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent class="max-w-72">
+                        {{ t("deckRecommend.form.algorithmHint") }}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <div class="grid gap-2 rounded-md border p-3 sm:grid-cols-3">
                   <label
                     v-for="option in algorithmOptions"
@@ -516,18 +723,38 @@ function isDeckRecommendLiveType(value: string): value is DeckRecommendLiveType 
                   >
                     <Checkbox
                       :model-value="selectedAlgorithms.includes(option.value)"
+                      :disabled="runner.running.value"
                       @update:model-value="checked => toggleAlgorithm(option.value, checked === true)"
                     />
                     <span>{{ option.label }}</span>
                   </label>
                 </div>
               </div>
+
+              <div class="grid gap-2">
+                <Label>{{ t("deckRecommend.form.executionMode") }}</Label>
+                <Select :model-value="executionMode" :disabled="runner.running.value" @update:model-value="updateExecutionMode">
+                  <SelectTrigger class="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="option in executionModeOptions" :key="option.value" :value="option.value">
+                      {{ option.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div class="grid gap-4">
               <div class="grid gap-2">
                 <Label>{{ t("deckRecommend.form.event") }}</Label>
-                <EventSelect v-model="selectedEventId" :region="dataRegion" :disabled="!dataReady" />
+                <EventSelect
+                  v-model="selectedEventId"
+                  v-model:event-type="selectedEventType"
+                  :region="dataRegion"
+                  :disabled="!dataReady"
+                />
               </div>
 
               <div v-if="showCharacterSelect" class="grid gap-2">
@@ -581,7 +808,7 @@ function isDeckRecommendLiveType(value: string): value is DeckRecommendLiveType 
             <CardTitle class="text-base">{{ t("deckRecommend.result.title") }}</CardTitle>
             <CardDescription>
               <template v-if="runner.elapsedMs.value != null">
-                {{ t("deckRecommend.result.elapsed", { ms: runner.elapsedMs.value }) }}
+                {{ t("deckRecommend.result.totalElapsed", { ms: runner.elapsedMs.value }) }}
               </template>
               <template v-else>
                 {{ t("deckRecommend.result.description") }}
@@ -589,13 +816,36 @@ function isDeckRecommendLiveType(value: string): value is DeckRecommendLiveType 
             </CardDescription>
           </CardHeader>
           <CardContent class="space-y-3">
+            <div v-if="resultTimingItems.length > 0" class="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span
+                v-for="item in resultTimingItems"
+                :key="item.key"
+                :class="[
+                  'inline-flex items-baseline gap-1 rounded-md border px-2 py-1 font-medium',
+                  item.class,
+                ]"
+              >
+                <span>{{ item.label }}</span>
+                <span class="rounded bg-background/80 px-1 font-mono text-sm font-bold text-foreground shadow-sm">
+                  {{ item.elapsedMs }}
+                </span>
+                <span>ms</span>
+              </span>
+            </div>
             <div v-if="runner.algorithmTimings.value.length > 0" class="flex flex-wrap gap-2 text-xs text-muted-foreground">
               <span
                 v-for="item in runner.algorithmTimings.value"
                 :key="item.algorithm"
-                class="rounded-md border bg-muted/20 px-2 py-1"
+                :class="[
+                  'inline-flex items-baseline gap-1 rounded-md border px-2 py-1 font-medium',
+                  algorithmTagClass(item.algorithm),
+                ]"
               >
-                {{ t("deckRecommend.result.algorithmElapsed", { algorithm: algorithmLabel(item.algorithm), ms: item.elapsedMs }) }}
+                <span>{{ algorithmLabel(item.algorithm) }}</span>
+                <span class="rounded bg-background/80 px-1 font-mono text-sm font-bold text-foreground shadow-sm">
+                  {{ item.elapsedMs }}
+                </span>
+                <span>ms</span>
               </span>
             </div>
             <div v-if="runner.error.value" class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">

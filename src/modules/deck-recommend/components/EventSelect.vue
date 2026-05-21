@@ -15,18 +15,23 @@ import { resolveDefaultEventOption } from "../lib/master-options"
 
 const props = defineProps<{
   modelValue: string | null
+  eventType?: string | null
   region: SekaiRegion
   disabled?: boolean
 }>()
 
 const emit = defineEmits<{
   "update:modelValue": [value: string | null]
+  "update:eventType": [value: string | null]
 }>()
 
 const { t } = useI18n()
 const regionRef = toRef(props, "region")
 const { options, loading } = useEventOptions(regionRef)
 const selectedValue = computed(() => props.modelValue ?? "")
+const selectedOption = computed(() =>
+  options.value.find((option) => option.value === props.modelValue) ?? null,
+)
 
 watch(
   options,
@@ -35,7 +40,17 @@ watch(
       return
     }
 
-    emit("update:modelValue", resolveDefaultEventOption(nextOptions)?.value ?? null)
+    const defaultOption = resolveDefaultEventOption(nextOptions)
+    emit("update:modelValue", defaultOption?.value ?? null)
+    emit("update:eventType", defaultOption?.eventType ?? null)
+  },
+  { immediate: true },
+)
+
+watch(
+  selectedOption,
+  (option) => {
+    emit("update:eventType", option?.eventType ?? null)
   },
   { immediate: true },
 )
