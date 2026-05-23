@@ -164,7 +164,7 @@ const showSponsorsMaintenance = () => {
         {{ t("navigationPages.about.subtitle") }}
       </p>
       <div class="space-y-4 text-muted-foreground text-sm md:text-base leading-relaxed pt-2">
-        <p v-html="t('navigationPages.about.projectIntro.p1')"></p>
+        <p>{{ t("navigationPages.about.projectIntro.p1Before") }}<span class="font-semibold text-foreground">{{ t("navigationPages.about.projectIntro.p1Name") }}</span>{{ t("navigationPages.about.projectIntro.p1After") }}</p>
         <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
         <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
       </div>

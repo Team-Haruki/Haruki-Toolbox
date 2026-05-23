@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="vite-plugin-pwa/client" />
 
 interface ImportMetaEnv {
   readonly ENABLE_CLOUDFLARE_TURNSTILE?: string
@@ -13,6 +14,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+declare const __APP_VERSION__: string
+declare const __APP_GIT_HASH__: string
+declare const __APP_BUILD_TIME__: string
 
 declare module '*.vue' {
   import type { DefineComponent } from 'vue'

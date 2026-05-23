@@ -6,12 +6,13 @@ import SidebarUser from "@/modules/user/components/SidebarUser.vue";
 import { useWebLayout } from "@/modules/web/composables/useWebLayout"
 import { WEB_NAV_ITEMS } from "@/config/navigation"
 import { useSettingsStore } from "@/shared/stores/settings"
+import HomeSettingsDialog from "@/modules/home/components/HomeSettingsDialog.vue"
 import { cn } from "@/lib/utils"
 
 import {
   LucideHome,
-  LucideSettings,
   LucideChevronRight,
+  LucideInfo,
   LucideShieldCheck,
   LucideTicket,
 } from 'lucide-vue-next'
@@ -34,7 +35,6 @@ import {
   SidebarContent,
   SidebarProvider,
   SidebarMenuItem,
-  SidebarGroupLabel,
   SidebarMenuButton,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
@@ -54,6 +54,10 @@ const {
   pageTitle,
   showPageTitle,
   copyrightYear,
+  appVersion,
+  gitHash,
+  buildTimeIso,
+  buildTime,
   pendingUserTicketCount,
   isNavGroupOpen,
   setNavGroupOpen,
@@ -94,9 +98,16 @@ const {
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <router-link to="/about" class="flex items-center gap-2">
+                  <LucideInfo></LucideInfo>
+                  <span>{{ t("navigation.items.about") }}</span>
+                </router-link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
 
-          <SidebarGroupLabel>{{ t("webLayout.nav.harukiBotGroup") }}</SidebarGroupLabel>
           <SidebarMenu>
             <Collapsible
                 v-for="item in WEB_NAV_ITEMS"
@@ -159,14 +170,6 @@ const {
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton as-child>
-                <router-link to="/settings" class="flex items-center gap-2">
-                  <LucideSettings></LucideSettings>
-                  <span>{{ t("webLayout.nav.settings") }}</span>
-                </router-link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
@@ -204,10 +207,13 @@ const {
         >
           {{ pageTitle }}
         </div>
+        <div class="ml-auto flex shrink-0 items-center">
+          <HomeSettingsDialog />
+        </div>
       </header>
 
-      <main class="flex-1 auto">
-        <div class="flex flex-col items-center p-6 min-h-full">
+      <main class="flex flex-1 flex-col">
+        <div class="flex flex-1 flex-col items-center p-6">
           <router-view v-slot="{ Component, route }">
             <Transition name="page-blur-fade" mode="out-in">
               <component :is="Component" :key="route.fullPath" />
@@ -220,22 +226,53 @@ const {
       <SidebarFooter
         data-glass-surface="footer"
         :class="cn(
-          'p-2 text-center text-sm text-muted-foreground',
+          'px-6 py-2.5 text-sm text-muted-foreground md:px-12',
           settingsStore.reducedVisualEffects
             ? 'border-t border-slate-200 dark:border-slate-800 bg-background'
             : 'border-t border-white/60 bg-white/16 backdrop-blur-md supports-[backdrop-filter]:bg-white/12 dark:border-white/10 dark:bg-slate-950/22 dark:supports-[backdrop-filter]:bg-slate-950/20'
         )"
       >
-        <div class="flex flex-wrap items-center justify-center gap-2">
-          <span>&copy; {{ copyrightYear }} {{ t("webLayout.footer.copyright") }}</span>
-          <span aria-hidden="true">|</span>
-          <router-link to="/privacy" class="underline-offset-4 hover:underline">
-            {{ t("webLayout.footer.privacyPolicy") }}
-          </router-link>
-          <span aria-hidden="true">|</span>
-          <router-link to="/tos" class="underline-offset-4 hover:underline">
-            {{ t("webLayout.footer.termsOfService") }}
-          </router-link>
+        <div
+          class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
+        >
+          <div class="flex flex-col items-center gap-1.5 text-center md:items-start md:text-left">
+            <span class="text-sm text-foreground/75">
+              &copy; {{ copyrightYear }} {{ t("webLayout.footer.copyright") }}
+            </span>
+            <nav
+              :aria-label="t('webLayout.footer.legalLinks')"
+              class="flex items-center gap-2 text-xs"
+            >
+              <router-link to="/privacy" class="transition-colors underline-offset-4 hover:text-foreground hover:underline">
+                {{ t("webLayout.footer.privacyPolicy") }}
+              </router-link>
+              <span class="h-3 w-px bg-border" aria-hidden="true"></span>
+              <router-link to="/tos" class="transition-colors underline-offset-4 hover:text-foreground hover:underline">
+                {{ t("webLayout.footer.termsOfService") }}
+              </router-link>
+            </nav>
+          </div>
+
+          <dl
+            class="flex w-full flex-col gap-1.5 border-t border-slate-950/[0.08] pt-2 text-xs sm:grid sm:grid-cols-3 md:flex md:w-auto md:min-w-[28rem] md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-x-3 md:gap-y-1 md:border-t-0 md:pt-0 dark:border-white/10"
+          >
+            <div class="flex min-w-0 items-baseline justify-between gap-3 md:justify-start md:gap-1.5">
+              <dt>{{ t("webLayout.footer.version") }}</dt>
+              <dd class="font-mono font-medium tabular-nums text-foreground/75">v{{ appVersion }}</dd>
+            </div>
+            <div class="flex min-w-0 items-baseline justify-between gap-3 md:border-l md:border-slate-950/[0.08] md:pl-3 md:justify-start md:gap-1.5 dark:md:border-white/10">
+              <dt>{{ t("webLayout.footer.gitHash") }}</dt>
+              <dd class="truncate font-mono font-medium text-foreground/75" :title="gitHash">
+                {{ gitHash }}
+              </dd>
+            </div>
+            <div class="flex min-w-0 items-baseline justify-between gap-3 md:border-l md:border-slate-950/[0.08] md:pl-3 md:justify-start md:gap-1.5 dark:md:border-white/10">
+              <dt>{{ t("webLayout.footer.buildTime") }}</dt>
+              <dd class="min-w-0 font-medium tabular-nums text-foreground/75">
+                <time :datetime="buildTimeIso">{{ buildTime }}</time>
+              </dd>
+            </div>
+          </dl>
         </div>
       </SidebarFooter>
     </SidebarInset>

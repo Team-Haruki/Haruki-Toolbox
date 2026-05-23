@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import type { UploadDataType } from "@/types"
 import { useI18n } from "vue-i18n"
 import { Label } from "@/components/ui/label"
@@ -23,7 +24,7 @@ type BoundAccount = {
   label: string
 }
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     dataType: UploadDataType
     boundAccounts: BoundAccount[]
@@ -41,6 +42,9 @@ withDefaults(
 )
 
 const { t, locale } = useI18n()
+const selectedAccountLabel = computed(() =>
+  props.boundAccounts.find((account) => account.key === props.selectedAccountKey)?.label ?? "",
+)
 
 const emit = defineEmits<{
   (event: "update:dataType", value: UploadDataType): void
@@ -102,7 +106,9 @@ function handleDataTypeChange(value: string) {
                 @update:model-value="handleAccountChange"
               >
                 <SelectTrigger class="w-full pl-10">
-                  <SelectValue :placeholder="t('tools.uploadData.fileTab.fields.accountPlaceholder')" />
+                  <SelectValue :key="`upload-account-value-${selectedAccountLabel}`" :placeholder="t('tools.uploadData.fileTab.fields.accountPlaceholder')">
+                    {{ selectedAccountLabel }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem v-for="acc in boundAccounts" :key="acc.key" :value="acc.key">

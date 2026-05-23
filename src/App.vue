@@ -13,6 +13,7 @@ import { useI18n } from "vue-i18n"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { createLogger } from "@/lib/logger"
 import { useRoute, useRouter } from "vue-router"
+import { refreshDeckRecommendProfilesForBoundAccounts } from "@/modules/deck-recommend/lib/user-data"
 import {
   computed,
   onBeforeUnmount,
@@ -32,10 +33,18 @@ const latestSyncRequestId = ref(0)
 const syncRetryTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const syncRetryUserId = ref<string | null>(null)
 const syncRetryCount = ref(0)
+const profileRefreshSignature = ref("")
 const MAX_SYNC_RETRIES = 3
 const { t } = useI18n()
 const logger = createLogger("app-settings-sync")
 const hasLoginSuccessFlag = computed(() => route.query._login_success === "1")
+const boundGameAccountSignature = computed(() => {
+  const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
+  return accounts
+    .map((account) => `${account.server}:${String(account.userId).trim()}`)
+    .sort()
+    .join("|")
+})
 
 function clearSyncRetryState(resetCount = true) {
   if (syncRetryTimer.value !== null) {
@@ -152,6 +161,35 @@ watch(
     }
   },
   { immediate: true }
+)
+
+watch(
+  [isLoggedIn, () => userStore.userId, () => userStore.settingsSyncState, boundGameAccountSignature],
+  ([loggedIn, userId, settingsSyncState, accountSignature]) => {
+    if (!loggedIn || !userId) {
+      profileRefreshSignature.value = ""
+      return
+    }
+    if (settingsSyncState !== "synced") {
+      return
+    }
+    if (!accountSignature) {
+      return
+    }
+
+    const signature = `${userId}:${accountSignature}`
+    if (profileRefreshSignature.value === signature) {
+      return
+    }
+
+    profileRefreshSignature.value = signature
+    const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
+    void refreshDeckRecommendProfilesForBoundAccounts({
+      toolboxUserId: userId,
+      accounts,
+    })
+  },
+  { immediate: true },
 )
 
 watch(

@@ -46,7 +46,7 @@ const { t } = useI18n()
       <div class="space-y-1 w-full">
         <AlertTitle>{{ t("userSettings.gameBinding.alert.title") }}</AlertTitle>
         <AlertDescription class="space-y-1.5 leading-relaxed text-muted-foreground mt-2">
-          <p v-html="t('userSettings.gameBinding.alert.line1')"></p>
+          <p><span class="font-semibold text-foreground">{{ t("userSettings.gameBinding.alert.line1Server") }}</span>{{ t("userSettings.gameBinding.alert.line1Middle") }}<span class="font-semibold text-foreground">{{ t("userSettings.gameBinding.alert.line1GameId") }}</span>{{ t("userSettings.gameBinding.alert.line1After") }}</p>
           <p>{{ t("userSettings.gameBinding.alert.line2") }}</p>
           <p>{{ t("userSettings.gameBinding.alert.line3") }}</p>
           <p>

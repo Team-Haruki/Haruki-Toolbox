@@ -92,7 +92,9 @@ All commits must follow `[Type] Short description`:
 - Do **not** end the subject line with a period.
 - Keep it short.
 - When Claude Code authors the commit, append a `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>` trailer (blank line between subject and trailer).
-- Bump `version` in `package.json` with every commit: **patch** (+0.0.1) for `[Fix]`, **minor** (+0.1.0) for `[Feat]`, **major** (+1.0.0) for breaking changes.
+- Before creating any commit, ask the user whether this commit should publish a new version.
+- If the user wants a new version, bump `version` in `package.json` according to the user's requested release level. Versions must use `major.minor.patch` format.
+- If the user does not want a new version, create the commit without changing `version`.
 
 Examples (from this repo's history):
 - `[Feat] Add hydra oauth2 flow`

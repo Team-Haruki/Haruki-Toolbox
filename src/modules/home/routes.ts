@@ -9,8 +9,7 @@ export const homeRoutes: RouteRecordRaw[] = [
     },
     {
         path: "/settings",
-        name: "home.settings",
-        component: () => import("@/modules/home/views/Settings.vue"),
+        redirect: "/",
         meta: { titleKey: "route.settings" },
     },
 ]

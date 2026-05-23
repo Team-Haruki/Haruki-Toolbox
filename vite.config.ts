@@ -1,7 +1,10 @@
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 const manualChunkGroups = [
@@ -23,9 +26,95 @@ const manualChunkGroups = [
     },
 ]
 
+const packageJson = JSON.parse(
+    readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+) as { version?: string }
+
+function shortenGitHash(hash: string) {
+    return hash.trim().slice(0, 12)
+}
+
+function resolveGitHash() {
+    const ciGitHash = [
+        process.env.VITE_HARUKI_TOOLBOX_GIT_HASH,
+        process.env.GITHUB_SHA,
+        process.env.CF_PAGES_COMMIT_SHA,
+        process.env.VERCEL_GIT_COMMIT_SHA,
+    ].find((hash): hash is string => !!hash)
+
+    if (ciGitHash) {
+        return shortenGitHash(ciGitHash)
+    }
+
+    try {
+        return shortenGitHash(
+            execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], {
+                encoding: 'utf8',
+                stdio: ['ignore', 'pipe', 'ignore'],
+            }),
+        )
+    } catch {
+        return 'unknown'
+    }
+}
+
+const appBuildInfo = {
+    version: packageJson.version ?? '0.0.0',
+    gitHash: resolveGitHash(),
+    buildTime: new Date().toISOString(),
+}
+
 export default defineConfig(({ command }) => ({
     envPrefix: ['VITE_', 'ENABLE_'],
-    plugins: [vue(), tailwindcss(), command === 'serve' ? vueDevTools() : null].filter(Boolean),
+    plugins: [
+        vue(),
+        tailwindcss(),
+        VitePWA({
+            registerType: 'autoUpdate',
+            includeAssets: ['assets/haruki.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+            manifest: {
+                name: 'Haruki Toolbox',
+                short_name: 'Haruki',
+                description: 'Project Haruki web toolbox for Project Sekai utilities.',
+                lang: 'zh-CN',
+                start_url: '/',
+                scope: '/',
+                display: 'standalone',
+                background_color: '#f8fafc',
+                theme_color: '#0f172a',
+                categories: ['utilities', 'games'],
+                icons: [
+                    {
+                        src: '/pwa-192x192.png',
+                        sizes: '192x192',
+                        type: 'image/png',
+                    },
+                    {
+                        src: '/pwa-512x512.png',
+                        sizes: '512x512',
+                        type: 'image/png',
+                    },
+                ],
+            },
+            workbox: {
+                cleanupOutdatedCaches: true,
+                clientsClaim: true,
+                skipWaiting: true,
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,wasm}'],
+                maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
+                navigateFallbackDenylist: [/^\/api\//],
+            },
+            devOptions: {
+                enabled: false,
+            },
+        }),
+        command === 'serve' ? vueDevTools() : null,
+    ].filter(Boolean),
+    define: {
+        __APP_VERSION__: JSON.stringify(appBuildInfo.version),
+        __APP_GIT_HASH__: JSON.stringify(appBuildInfo.gitHash),
+        __APP_BUILD_TIME__: JSON.stringify(appBuildInfo.buildTime),
+    },
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
