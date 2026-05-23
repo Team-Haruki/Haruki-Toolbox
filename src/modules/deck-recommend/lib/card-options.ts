@@ -48,6 +48,8 @@ type RawGameCharacter = {
   unit?: string
   firstName?: string
   givenName?: string
+  firstNameRuby?: string
+  givenNameRuby?: string
   firstNameEnglish?: string
   givenNameEnglish?: string
 }
@@ -68,11 +70,38 @@ type MasterCharacterInfo = {
   name: string | null
   unit: DeckRecommendUnitType | null
   colorCode: string | null
+  keywords: string[]
 }
 
 type MasterUnitProfileInfo = {
   name: string | null
   colorCode: string | null
+  keywords: string[]
+}
+
+const UNIT_SEARCH_ALIASES: Readonly<Record<DeckRecommendUnitType, readonly string[]>> = {
+  light_sound: ["Leo/need", "ln", "l/n", "レオニ", "星团", "星團"],
+  idol: ["MORE MORE JUMP!", "MORE MORE JUMP！", "mmj", "モモジャン", "偶像"],
+  street: ["Vivid BAD SQUAD", "vbs", "ビビバス", "街头", "街頭"],
+  theme_park: ["Wonderlands×Showtime", "Wonderlands x Showtime", "Wonderlands Showtime", "wxs", "ws", "ワンダショ", "游乐园", "遊樂園"],
+  school_refusal: ["25時、ナイトコードで。", "Nightcord at 25:00", "Nightcord", "n25", "25ji", "25时", "25點", "ニーゴ"],
+  piapro: ["Virtual Singer", "VIRTUAL SINGER", "vs", "バーチャルシンガー", "虚拟歌手", "虛擬歌手"],
+}
+
+const ATTR_SEARCH_ALIASES: Readonly<Record<DeckRecommendEventAttr, readonly string[]>> = {
+  happy: ["Happy", "橙", "橙色", "orange"],
+  cute: ["Cute", "粉", "粉色", "pink"],
+  cool: ["Cool", "蓝", "藍", "蓝色", "藍色", "blue"],
+  pure: ["Pure", "绿", "綠", "绿色", "綠色", "green"],
+  mysterious: ["Mysterious", "紫", "紫色", "purple"],
+}
+
+const RARITY_SEARCH_ALIASES: Readonly<Record<DeckRecommendRarity, readonly string[]>> = {
+  rarity_1: ["1星", "一星", "★1", "star1"],
+  rarity_2: ["2星", "二星", "★2", "star2"],
+  rarity_3: ["3星", "三星", "★3", "star3"],
+  rarity_4: ["4星", "四星", "★4", "star4"],
+  rarity_birthday: ["生日", "Birthday", "birthday", "bd"],
 }
 
 export function buildMasterCardOptions(
@@ -98,6 +127,7 @@ export function buildMasterCardOptions(
       const canSpecialTrain = Boolean(rarityConfig?.trainingMaxLevel)
       const maxLevel = rarityConfig?.trainingMaxLevel || rarityConfig?.maxLevel || 1
       const maxSkillLevel = rarityConfig?.maxSkillLevel || 4
+      const seq = normalizePositiveInteger(card.seq)
       const characterId = normalizePositiveInteger(card.characterId)
       const characterInfo = characterId ? characterInfoMap.get(characterId) ?? null : null
       const characterName = characterInfo?.name ?? null
@@ -135,16 +165,25 @@ export function buildMasterCardOptions(
           ? resolveSekaiCardThumbnailUrl(region, assetbundleName, canSpecialTrain, assetEndpoint)
           : null,
         attrIconUrl: attr ? resolveCardAttrIconUrl(attr) : null,
-        keywords: [
+        keywords: uniqueKeywords([
           String(id),
+          `#${id}`,
+          seq ? String(seq) : "",
           prefix ?? "",
+          assetbundleName ?? "",
           rarity ?? "",
+          ...(rarity ? RARITY_SEARCH_ALIASES[rarity] : []),
           attr ?? "",
+          ...(attr ? ATTR_SEARCH_ALIASES[attr] : []),
           unit ?? "",
+          ...(unit ? UNIT_SEARCH_ALIASES[unit] : []),
           unitProfileName ?? "",
+          ...(unitProfile?.keywords ?? []),
           characterName ?? "",
+          ...(characterInfo?.keywords ?? []),
           characterId ? String(characterId) : "",
-        ].filter(Boolean),
+          characterId ? `#${characterId}` : "",
+        ]),
       }
     })
     .filter((item): item is DeckRecommendMasterCardOption => item != null)
@@ -164,6 +203,12 @@ function buildUnitProfileMap(rawUnitProfiles: unknown): Map<DeckRecommendUnitTyp
       map.set(unit, {
         name,
         colorCode: normalizeColorCode(item.colorCode),
+        keywords: uniqueKeywords([
+          unit,
+          name,
+          normalizeText(item.unitName),
+          ...UNIT_SEARCH_ALIASES[unit],
+        ]),
       })
     }
   }
@@ -201,11 +246,13 @@ function buildCharacterInfoMap(rawCharacters: unknown, rawCharacterUnits: unknow
   for (const item of rawCharacters as RawGameCharacter[]) {
     const id = normalizePositiveInteger(item.id)
     const unit = normalizeUnit(item.unit)
+    const name = id ? resolveCharacterName(item, id) : null
     if (id) {
       map.set(id, {
-        name: resolveCharacterName(item, id),
+        name,
         unit,
         colorCode: colorMap.get(id) ?? null,
+        keywords: buildCharacterKeywords(item, id, name),
       })
     }
   }
@@ -246,6 +293,43 @@ function resolveCharacterName(character: RawGameCharacter, id: number): string {
     .filter((part): part is string => Boolean(part))
     .join(" ")
   return english || `#${id}`
+}
+
+function buildCharacterKeywords(character: RawGameCharacter, id: number, name: string | null): string[] {
+  const firstName = normalizeText(character.firstName)
+  const givenName = normalizeText(character.givenName)
+  const firstNameRuby = normalizeText(character.firstNameRuby)
+  const givenNameRuby = normalizeText(character.givenNameRuby)
+  const firstNameEnglish = normalizeText(character.firstNameEnglish)
+  const givenNameEnglish = normalizeText(character.givenNameEnglish)
+
+  return uniqueKeywords([
+    String(id),
+    `#${id}`,
+    name,
+    firstName,
+    givenName,
+    joinText([firstName, givenName], ""),
+    joinText([firstNameRuby, givenNameRuby], ""),
+    joinText([firstNameRuby, givenNameRuby], " "),
+    firstNameRuby,
+    givenNameRuby,
+    joinText([givenNameEnglish, firstNameEnglish], " "),
+    joinText([firstNameEnglish, givenNameEnglish], " "),
+    joinText([givenNameEnglish, firstNameEnglish], ""),
+    joinText([firstNameEnglish, givenNameEnglish], ""),
+    firstNameEnglish,
+    givenNameEnglish,
+  ])
+}
+
+function joinText(parts: readonly (string | null | undefined)[], separator: string): string | null {
+  const normalized = parts.filter((part): part is string => Boolean(part))
+  return normalized.length > 0 ? normalized.join(separator) : null
+}
+
+function uniqueKeywords(values: readonly (string | null | undefined)[]): string[] {
+  return [...new Set(values.map((value) => normalizeText(value)).filter((value): value is string => Boolean(value)))]
 }
 
 function normalizeRarity(value: unknown): DeckRecommendRarity | null {

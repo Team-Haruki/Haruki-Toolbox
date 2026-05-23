@@ -1,22 +1,12 @@
+import { SEKAI_LIVE_BOOST_MULTIPLIERS } from "@/shared/sekai/live-boost"
+
 export const SCORE_CONTROL_DEFAULT_MUSIC_ID = 74
 export const SCORE_CONTROL_MAX_SCORE = 2_840_000
 export const SCORE_CONTROL_MAX_EVENT_BONUS = 435
 export const SCORE_CONTROL_MAX_WORLD_LINK_EVENT_BONUS = 600
 export const SCORE_CONTROL_DEFAULT_RESULT_LIMIT = 150
 
-export const SCORE_CONTROL_BOOST_MULTIPLIERS: Readonly<Record<number, number>> = {
-  0: 1,
-  1: 5,
-  2: 10,
-  3: 15,
-  4: 20,
-  5: 25,
-  6: 27,
-  7: 29,
-  8: 31,
-  9: 33,
-  10: 35,
-}
+export const SCORE_CONTROL_BOOST_MULTIPLIERS = SEKAI_LIVE_BOOST_MULTIPLIERS
 
 export type ScoreControlMusicMeta = {
   music_id?: number

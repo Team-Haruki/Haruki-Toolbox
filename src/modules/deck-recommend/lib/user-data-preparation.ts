@@ -19,6 +19,7 @@ export type PrepareDeckRecommendUserDataInput = {
   masterData: Record<string, unknown>
   unitFilters?: readonly DeckRecommendUnitType[] | null
   attrFilters?: readonly DeckRecommendEventAttr[] | null
+  characterFilters?: readonly number[] | null
   areaItemLevel?: number | null
   singleCardOverrides?: readonly DeckRecommendSingleCardOverride[]
   trainingConfig?: readonly CardTrainingConfig[]
@@ -61,7 +62,13 @@ type MasterCardRarityRecord = {
 }
 
 type UserAreaRecord = Record<string, unknown> & {
+  areaId?: number
   areaItems?: Array<Record<string, unknown>>
+}
+
+type MasterAreaItemRecord = {
+  id?: number
+  areaId?: number
 }
 
 export function prepareDeckRecommendUserData(input: PrepareDeckRecommendUserDataInput): PreparedDeckRecommendUserData {
@@ -73,6 +80,7 @@ export function prepareDeckRecommendUserData(input: PrepareDeckRecommendUserData
   const singleCardConfigs = buildSingleCardConfigs(input.singleCardOverrides, cardMap, input.trainingConfig)
   const unitFilters = createFilterSet(input.unitFilters)
   const attrFilters = createFilterSet(input.attrFilters)
+  const characterFilters = createPositiveIntegerFilterSet(input.characterFilters)
 
   userData.userCards = prepareUserCards({
     userCards: userData.userCards,
@@ -82,6 +90,7 @@ export function prepareDeckRecommendUserData(input: PrepareDeckRecommendUserData
     episodeMap,
     unitFilters,
     attrFilters,
+    characterFilters,
     singleCardOverrides: input.singleCardOverrides ?? [],
   })
 
@@ -131,6 +140,7 @@ function prepareUserCards(input: {
   episodeMap: ReadonlyMap<number, MasterCardEpisodeRecord[]>
   unitFilters: ReadonlySet<DeckRecommendUnitType>
   attrFilters: ReadonlySet<DeckRecommendEventAttr>
+  characterFilters: ReadonlySet<number>
   singleCardOverrides: readonly DeckRecommendSingleCardOverride[]
 }): UserCardRecord[] {
   const overrides = new Map(
@@ -157,7 +167,7 @@ function prepareUserCards(input: {
     }
 
     const masterCard = input.cardMap.get(cardId)
-    if (!matchesFilters(masterCard, input.characterUnitMap, input.unitFilters, input.attrFilters)) {
+    if (!matchesFilters(masterCard, input.characterUnitMap, input.unitFilters, input.attrFilters, input.characterFilters)) {
       continue
     }
 
@@ -171,7 +181,7 @@ function prepareUserCards(input: {
     }
 
     const masterCard = input.cardMap.get(override.cardId)
-    if (!masterCard || !matchesFilters(masterCard, input.characterUnitMap, input.unitFilters, input.attrFilters)) {
+    if (!masterCard || !matchesFilters(masterCard, input.characterUnitMap, input.unitFilters, input.attrFilters, input.characterFilters)) {
       continue
     }
 
@@ -186,11 +196,15 @@ function matchesFilters(
   characterUnitMap: ReadonlyMap<number, DeckRecommendUnitType>,
   unitFilters: ReadonlySet<DeckRecommendUnitType>,
   attrFilters: ReadonlySet<DeckRecommendEventAttr>,
+  characterFilters: ReadonlySet<number>,
 ): boolean {
-  if (unitFilters.size === 0 && attrFilters.size === 0) {
+  if (unitFilters.size === 0 && attrFilters.size === 0 && characterFilters.size === 0) {
     return true
   }
   if (!masterCard) {
+    return false
+  }
+  if (characterFilters.size > 0 && !characterFilters.has(normalizePositiveInteger(masterCard.characterId) ?? 0)) {
     return false
   }
   if (attrFilters.size > 0 && !attrFilters.has(masterCard.attr as DeckRecommendEventAttr)) {
@@ -210,6 +224,14 @@ function createFilterSet<T extends string>(values: readonly T[] | null | undefin
     return new Set()
   }
   return new Set(values.filter(Boolean))
+}
+
+function createPositiveIntegerFilterSet(values: readonly number[] | null | undefined): ReadonlySet<number> {
+  if (!values || values.length === 0) {
+    return new Set()
+  }
+
+  return new Set(values.filter((value) => Number.isInteger(value) && value > 0))
 }
 
 function applySingleCardOverride(
@@ -391,12 +413,35 @@ function buildAreaItemMaxLevelMap(areaItemLevels: unknown): Map<number, number> 
   return levels
 }
 
+function buildAreaItemAreaMap(areaItems: unknown): Map<number, number> {
+  const areaMap = new Map<number, number>()
+  if (!Array.isArray(areaItems)) {
+    return areaMap
+  }
+
+  for (const item of areaItems) {
+    if (!isRecord(item)) {
+      continue
+    }
+
+    const areaItem = item as MasterAreaItemRecord
+    const itemId = normalizePositiveInteger(areaItem.id)
+    const areaId = normalizePositiveInteger(areaItem.areaId)
+    if (itemId && areaId) {
+      areaMap.set(itemId, areaId)
+    }
+  }
+
+  return areaMap
+}
+
 function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, areaItemLevels: unknown, targetLevel: number): UserAreaRecord[] {
-  const levels = new Map<number, number>()
+  const targetLevels = new Map<number, number>()
   const maxLevels = buildAreaItemMaxLevelMap(areaItemLevels)
-  const sourceAreas = Array.isArray(userAreas) ? userAreas : []
+  const areaItemAreaMap = buildAreaItemAreaMap(areaItems)
+  const sourceAreas = Array.isArray(userAreas) ? userAreas.filter(isRecord) as UserAreaRecord[] : []
   for (const area of sourceAreas) {
-    if (!isRecord(area) || !Array.isArray(area.areaItems)) {
+    if (!Array.isArray(area.areaItems)) {
       continue
     }
 
@@ -407,8 +452,8 @@ function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, areaItemLeve
 
       const itemId = normalizePositiveInteger(item.areaItemId)
       const level = normalizePositiveInteger(item.level) ?? 0
-      if (itemId && level > (levels.get(itemId) ?? 0)) {
-        levels.set(itemId, level)
+      if (itemId && level > (targetLevels.get(itemId) ?? 0)) {
+        targetLevels.set(itemId, level)
       }
     }
   }
@@ -420,23 +465,85 @@ function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, areaItemLeve
       }
 
       const itemId = normalizePositiveInteger(item.id)
-      if (itemId && !levels.has(itemId)) {
-        levels.set(itemId, 0)
+      if (itemId && maxLevels.has(itemId) && !targetLevels.has(itemId)) {
+        targetLevels.set(itemId, 0)
       }
     }
   }
 
-  if (levels.size === 0) {
-    return sourceAreas.filter(isRecord) as UserAreaRecord[]
+  if (targetLevels.size === 0) {
+    return sourceAreas
   }
 
-  const preparedAreaItems = [...levels.entries()]
-    .sort(([left], [right]) => left - right)
-    .map(([areaItemId, level]) => ({
-      areaItemId,
-      level: clampAreaItemLevel(Math.max(level, targetLevel), maxLevels.get(areaItemId)),
-    }))
-  return [{ areaItems: preparedAreaItems }]
+  for (const [areaItemId, level] of targetLevels) {
+    targetLevels.set(areaItemId, clampAreaItemLevel(Math.max(level, targetLevel), maxLevels.get(areaItemId)))
+  }
+
+  const emittedAreaItemIds = new Set<number>()
+  const preparedAreas = sourceAreas.map((area) => {
+    const preparedAreaItems: Record<string, unknown>[] = []
+    const sourceAreaItems = Array.isArray(area.areaItems) ? area.areaItems : []
+    for (const item of sourceAreaItems) {
+      if (!isRecord(item)) {
+        continue
+      }
+
+      const itemId = normalizePositiveInteger(item.areaItemId)
+      if (!itemId || emittedAreaItemIds.has(itemId) || !targetLevels.has(itemId)) {
+        continue
+      }
+
+      emittedAreaItemIds.add(itemId)
+      preparedAreaItems.push({
+        ...item,
+        level: targetLevels.get(itemId),
+      })
+    }
+
+    return {
+      ...area,
+      areaItems: preparedAreaItems,
+    }
+  })
+  const preparedAreaById = new Map<number, UserAreaRecord>()
+  for (const area of preparedAreas) {
+    const areaId = normalizePositiveInteger(area.areaId)
+    if (areaId) {
+      preparedAreaById.set(areaId, area)
+    }
+  }
+
+  for (const [areaItemId, level] of [...targetLevels.entries()].sort(([left], [right]) => left - right)) {
+    if (emittedAreaItemIds.has(areaItemId)) {
+      continue
+    }
+
+    const areaId = areaItemAreaMap.get(areaItemId)
+    if (!areaId) {
+      continue
+    }
+
+    let area = preparedAreaById.get(areaId)
+    if (!area) {
+      area = {
+        areaId,
+        actionSets: [],
+        areaItems: [],
+        userAreaStatus: {
+          areaId,
+          status: "released",
+        },
+      }
+      preparedAreaById.set(areaId, area)
+      preparedAreas.push(area)
+    }
+
+    area.areaItems ??= []
+    area.areaItems.push({ areaItemId, level })
+    emittedAreaItemIds.add(areaItemId)
+  }
+
+  return preparedAreas
 }
 
 function clampAreaItemLevel(level: number, maxLevel: number | undefined): number {

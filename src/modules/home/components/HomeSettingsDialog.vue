@@ -75,6 +75,8 @@ const {
 const { t, locale } = useI18n()
 const localeKey = computed(() => locale.value)
 const settingsDialogOpen = ref(false)
+const settingsTab = ref("preferences")
+const visitedSettingsTabs = ref(new Set(["preferences"]))
 const currentBuildTimeLabel = computed(() => formatBuildTime(appUpdateState.current.buildTime))
 const remoteBuildTimeLabel = computed(() => appUpdateState.remote ? formatBuildTime(appUpdateState.remote.buildTime) : null)
 
@@ -82,6 +84,14 @@ watch(settingsDialogOpen, (open) => {
   if (open) {
     void refreshEndpointLatencies()
   }
+})
+
+watch(settingsTab, (tab) => {
+  if (visitedSettingsTabs.value.has(tab)) {
+    return
+  }
+
+  visitedSettingsTabs.value = new Set([...visitedSettingsTabs.value, tab])
 })
 
 function formatBuildTime(value: string) {
@@ -94,6 +104,10 @@ function formatBuildTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date)
+}
+
+function hasVisitedSettingsTab(tab: string) {
+  return visitedSettingsTabs.value.has(tab)
 }
 </script>
 
@@ -114,23 +128,23 @@ function formatBuildTime(value: string) {
         <DialogDescription>{{ t("homeSettings.description") }}</DialogDescription>
       </DialogHeader>
 
-      <Tabs default-value="preferences" class="space-y-4">
-        <TabsList class="grid h-auto w-full grid-cols-2 auto-rows-[2.25rem] gap-1 sm:inline-flex sm:h-9 sm:w-fit sm:auto-rows-auto sm:grid-cols-none sm:gap-0">
-          <TabsTrigger value="preferences" class="min-w-0 px-1.5 text-xs sm:px-2 sm:text-sm">
+      <Tabs v-model="settingsTab" :unmount-on-hide="false" class="space-y-4">
+        <TabsList class="grid h-auto w-full grid-cols-2 auto-rows-[2.25rem] gap-1 p-1 sm:inline-flex sm:h-9 sm:w-fit sm:auto-rows-auto sm:grid-cols-none sm:gap-0 sm:p-[3px]">
+          <TabsTrigger value="preferences" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
             <Settings class="size-4" />
-            {{ t("homeSettings.tabs.preferences") }}
+            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.preferences") }}</span>
           </TabsTrigger>
-          <TabsTrigger value="app" class="min-w-0 px-1.5 text-xs sm:px-2 sm:text-sm">
+          <TabsTrigger value="app" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
             <Smartphone class="size-4" />
-            {{ t("homeSettings.tabs.app") }}
+            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.app") }}</span>
           </TabsTrigger>
-          <TabsTrigger value="sekai-data" class="min-w-0 px-1.5 text-xs sm:px-2 sm:text-sm">
+          <TabsTrigger value="sekai-data" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
             <Network class="size-4" />
-            {{ t("homeSettings.tabs.sekaiData") }}
+            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.sekaiData") }}</span>
           </TabsTrigger>
-          <TabsTrigger value="user-data" class="min-w-0 px-1.5 text-xs sm:px-2 sm:text-sm">
+          <TabsTrigger value="user-data" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
             <EyeOff class="size-4" />
-            {{ t("homeSettings.tabs.userData") }}
+            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.userData") }}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -389,11 +403,11 @@ function formatBuildTime(value: string) {
         </TabsContent>
 
         <TabsContent value="sekai-data">
-          <SekaiDataSettings />
+          <SekaiDataSettings v-if="hasVisitedSettingsTab('sekai-data')" />
         </TabsContent>
 
         <TabsContent value="user-data">
-          <UserDataSettings />
+          <UserDataSettings v-if="hasVisitedSettingsTab('user-data')" />
         </TabsContent>
       </Tabs>
     </DialogScrollContent>

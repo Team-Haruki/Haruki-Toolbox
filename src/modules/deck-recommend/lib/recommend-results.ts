@@ -1,12 +1,21 @@
 import type { RecommendDeck, RecommendResult } from "haruki-sekai-deck-recommend-cpp"
+import { resolveSekaiLiveBoostMultiplier } from "@/shared/sekai/live-boost"
 import type { DeckRecommendAlgorithm, DeckRecommendMode, DeckRecommendTarget } from "./recommend-options"
 
 export type AlgorithmRecommendResult = {
   algorithm: DeckRecommendAlgorithm
-  result: RecommendResult
+  result: Omit<RecommendResult, "decks"> & { decks: DeckRecommendResultDeck[] }
 }
 
-export type TaggedRecommendDeck = RecommendDeck & {
+export type DeckRecommendLiveBoostFields = {
+  live_boost_multiplier?: number
+  live_boost_original_score?: number
+  live_boost_original_mysekai_event_point?: number
+}
+
+export type DeckRecommendResultDeck = RecommendDeck & DeckRecommendLiveBoostFields
+
+export type TaggedRecommendDeck = DeckRecommendResultDeck & {
   source_algorithms: DeckRecommendAlgorithm[]
 }
 
@@ -40,6 +49,38 @@ export function mergeDeckRecommendResults(
   return {
     decks: [...deckByKey.values()].sort((a, b) => compareRecommendDecks(mode, target, a, b)),
   }
+}
+
+export function applyDeckRecommendLiveBoost(
+  results: readonly AlgorithmRecommendResult[],
+  mode: DeckRecommendMode,
+  boost: number | null | undefined,
+): AlgorithmRecommendResult[] {
+  if (!shouldApplyLiveBoost(mode)) {
+    return [...results]
+  }
+
+  const multiplier = resolveSekaiLiveBoostMultiplier(boost)
+  if (multiplier === 1) {
+    return [...results]
+  }
+
+  return results.map(({ algorithm, result }) => ({
+    algorithm,
+    result: {
+      ...result,
+      decks: result.decks.map((deck) => ({
+        ...deck,
+        score: multiplyInteger(deck.score, multiplier),
+        mysekai_event_point: mode === "mysekai"
+          ? multiplyInteger(deck.mysekai_event_point, multiplier)
+          : deck.mysekai_event_point,
+        live_boost_multiplier: multiplier,
+        live_boost_original_score: deck.score,
+        live_boost_original_mysekai_event_point: mode === "mysekai" ? deck.mysekai_event_point : undefined,
+      })),
+    },
+  }))
 }
 
 export function compareRecommendDecks(
@@ -136,6 +177,14 @@ function mergeAlgorithms(
   newAlgorithms: readonly DeckRecommendAlgorithm[],
 ): DeckRecommendAlgorithm[] {
   return [...new Set([...existingAlgorithms, ...newAlgorithms])]
+}
+
+function shouldApplyLiveBoost(mode: DeckRecommendMode): boolean {
+  return mode === "event" || mode === "bonus" || mode === "mysekai"
+}
+
+function multiplyInteger(value: number, multiplier: number): number {
+  return Number.isFinite(value) ? Math.round(value * multiplier) : value
 }
 
 function compareValues(values: readonly number[]): number {

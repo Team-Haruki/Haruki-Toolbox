@@ -42,9 +42,11 @@ const comboboxOptions = computed<ComboboxOption[]>(() =>
       },
     ],
     keywords: [
+      option.label,
       String(option.id),
       `#${option.id}`,
       option.seq ? String(option.seq) : "",
+      option.seq ? `#${option.seq}` : "",
       option.pronunciation ?? "",
       option.assetbundleName ?? "",
     ],

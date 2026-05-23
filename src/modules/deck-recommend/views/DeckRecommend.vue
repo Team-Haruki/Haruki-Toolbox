@@ -182,6 +182,7 @@ const resultLimitInput = ref<NumericInputValue>("")
 const engineTimeoutMsInput = ref<NumericInputValue>("")
 const unitFilters = ref<DeckRecommendUnitType[]>([])
 const attrFilters = ref<DeckRecommendEventAttr[]>([])
+const characterFilters = ref<number[]>([])
 const fixedCardIds = ref<number[]>([])
 const useCurrentDeck = ref(false)
 const fixedCharacterIds = ref<number[]>([])
@@ -431,6 +432,7 @@ const areaItemLevelOptions = computed(() => [
     }
   }),
 ])
+const characterFilterMaxCount = computed(() => Math.max(characterOptions.options.value.length, 26))
 const multiLiveTeammatePower = computed(() =>
   parseOptionalNumberInput(multiLiveTeammatePowerInput.value),
 )
@@ -692,6 +694,7 @@ watch(
     engineTimeoutMsInput,
     unitFilters,
     attrFilters,
+    characterFilters,
     fixedCardIds,
     useCurrentDeck,
     fixedCharacterIds,
@@ -1388,6 +1391,7 @@ async function runRecommend() {
       timeoutMs: engineTimeoutMs.value.value,
       unitFilters: unitFilters.value,
       attrFilters: attrFilters.value,
+      characterFilters: characterFilters.value,
       fixedCards: isCurrentDeckEnabled.value ? [] : fixedCardIds.value,
       useCurrentDeck: isCurrentDeckEnabled.value,
       fixedCharacters: recommendMode.value === "challenge" || isCurrentDeckEnabled.value ? [] : fixedCharacterIds.value,
@@ -1482,6 +1486,27 @@ function deckPointLabel() {
   return recommendMode.value === "challenge" || recommendMode.value === "max"
     ? t("deckRecommend.targets.score")
     : t("deckRecommend.targets.pt")
+}
+
+function deckLiveBoostPointDetailText(deck: DeckResultDeckView["deck"]) {
+  const deckWithBoost = deck as DeckResultDeckView["deck"] & {
+    live_boost_multiplier?: number
+    live_boost_original_score?: number
+    live_boost_original_mysekai_event_point?: number
+  }
+  const multiplier = Number(deckWithBoost.live_boost_multiplier)
+  if (!Number.isFinite(multiplier) || multiplier <= 1) {
+    return null
+  }
+
+  const originalPoint = recommendMode.value === "mysekai" && Number(deckWithBoost.live_boost_original_mysekai_event_point) > 0
+    ? Number(deckWithBoost.live_boost_original_mysekai_event_point)
+    : Number(deckWithBoost.live_boost_original_score)
+  if (!Number.isFinite(originalPoint)) {
+    return null
+  }
+
+  return `${formatInteger(originalPoint)} (${formatInteger(multiplier)}x)`
 }
 
 function deckBonusParts(deck: DeckResultDeckView["deck"]) {
@@ -2230,6 +2255,19 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                               </div>
                             </div>
                           </div>
+                          <div class="grid gap-2">
+                            <div class="flex items-center justify-between gap-2">
+                              <Label>{{ t("deckRecommend.options.filters.character") }}</Label>
+                              <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(characterFilters.length) }}</span>
+                            </div>
+                            <CharacterMultiPicker
+                              v-model="characterFilters"
+                              :region="dataRegion"
+                              :max-characters="characterFilterMaxCount"
+                              :disabled="runner.running.value"
+                              :placeholder="t('deckRecommend.options.filters.characterSelectPlaceholder')"
+                            />
+                          </div>
                           <div class="grid gap-3 sm:grid-cols-2">
                             <div class="grid gap-2">
                               <Label>{{ t("deckRecommend.options.filters.areaItemLevel") }}</Label>
@@ -2781,6 +2819,9 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                               <span class="block text-xs text-muted-foreground">{{ deckPointLabel() }}</span>
                               <span class="block font-mono text-sm font-semibold sm:text-base">
                                 {{ formatInteger(deckPointValue(deckView.deck)) }}
+                              </span>
+                              <span v-if="deckLiveBoostPointDetailText(deckView.deck)" class="block font-mono text-xs text-muted-foreground">
+                                {{ deckLiveBoostPointDetailText(deckView.deck) }}
                               </span>
                             </div>
                             <div class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">

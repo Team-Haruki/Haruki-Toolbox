@@ -243,6 +243,7 @@ function addRomajiVariants(variants: Set<string>, value: string | null) {
   addNormalizedVariant(variants, normalized)
   addNormalizedVariant(variants, normalized.replace(/([aeiou])\1+/g, "$1"))
   addNormalizedVariant(variants, normalized.replace(/ou/g, "o"))
+  addNormalizedVariant(variants, normalized.replace(/vii/g, "vy"))
 }
 
 function addPinyinVariants(variants: Set<string>, value: string) {

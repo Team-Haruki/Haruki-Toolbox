@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test"
 import type { RecommendDeck } from "haruki-sekai-deck-recommend-cpp"
-import { mergeDeckRecommendResults } from "./recommend-results"
+import { applyDeckRecommendLiveBoost, mergeDeckRecommendResults } from "./recommend-results"
 
 describe("deck recommend result helpers", () => {
   it("deduplicates decks by card set and keeps results sorted by score", () => {
@@ -101,6 +101,39 @@ describe("deck recommend result helpers", () => {
     ], "mysekai")
 
     expect(result.decks.map((deck) => deck.cards[0]?.card_id)).toEqual([6, 1, 11])
+  })
+
+  it("applies live boost multipliers to event Pt without changing live score", () => {
+    const results = applyDeckRecommendLiveBoost([
+      {
+        algorithm: "dfs",
+        result: {
+          decks: [
+            createDeck([1, 2, 3, 4, 5], 123, {
+              live_score: 456789,
+            }),
+          ],
+        },
+      },
+    ], "event", 3)
+
+    expect(results[0]?.result.decks[0]?.score).toBe(1845)
+    expect(results[0]?.result.decks[0]?.live_score).toBe(456789)
+    expect(results[0]?.result.decks[0]?.live_boost_original_score).toBe(123)
+    expect(results[0]?.result.decks[0]?.live_boost_multiplier).toBe(15)
+  })
+
+  it("does not apply live boost multipliers to score-only modes", () => {
+    const results = applyDeckRecommendLiveBoost([
+      {
+        algorithm: "dfs",
+        result: {
+          decks: [createDeck([1, 2, 3, 4, 5], 123)],
+        },
+      },
+    ], "challenge", 5)
+
+    expect(results[0]?.result.decks[0]?.score).toBe(123)
   })
 
 })

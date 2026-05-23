@@ -31,4 +31,12 @@ describe("command search", () => {
     expect(buildSearchVariants("わーるど")).toContain("waarudo")
     expect(matchesCommandSearch(["わーるど"], "warudo")).toBe(true)
   })
+
+  it("matches mixed Japanese title keywords and common romaji spellings", () => {
+    const parts = ["独りんぼエンヴィー", "ひとりんぼえんヴぃー"]
+
+    expect(matchesCommandSearch(parts, "独")).toBe(true)
+    expect(matchesCommandSearch(parts, "hitorinbo")).toBe(true)
+    expect(matchesCommandSearch(parts, "envy")).toBe(true)
+  })
 })

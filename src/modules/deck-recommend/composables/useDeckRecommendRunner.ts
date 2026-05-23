@@ -24,6 +24,7 @@ import {
   type DeckRecommendUnitType,
 } from "../lib/recommend-options"
 import {
+  applyDeckRecommendLiveBoost,
   mergeDeckRecommendResults,
   type TaggedRecommendResult,
 } from "../lib/recommend-results"
@@ -90,6 +91,7 @@ export type DeckRecommendRunnerInput = {
   timeoutMs: number | null
   unitFilters: readonly DeckRecommendUnitType[]
   attrFilters: readonly DeckRecommendEventAttr[]
+  characterFilters: readonly number[]
   fixedCards: readonly number[]
   useCurrentDeck: boolean
   fixedCharacters: readonly number[]
@@ -183,6 +185,7 @@ export function useDeckRecommendRunner() {
         masterData: recommendData.masterData,
         unitFilters: input.unitFilters,
         attrFilters: input.attrFilters,
+        characterFilters: input.characterFilters,
         areaItemLevel: input.areaItemLevel,
         singleCardOverrides: input.singleCardOverrides,
         trainingConfig: input.trainingConfig,
@@ -265,7 +268,8 @@ export function useDeckRecommendRunner() {
             },
           }))
         : workerResults
-      result.value = mergeDeckRecommendResults(resultWithChallengeDelta, input.mode, input.target)
+      const resultWithLiveBoost = applyDeckRecommendLiveBoost(resultWithChallengeDelta, input.mode, input.boost)
+      result.value = mergeDeckRecommendResults(resultWithLiveBoost, input.mode, input.target)
       worldBloomSupportCards.value = await loadWorldBloomSupportCards({
         input,
         recommendData,
