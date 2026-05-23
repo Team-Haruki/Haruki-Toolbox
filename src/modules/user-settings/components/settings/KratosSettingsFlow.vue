@@ -20,6 +20,7 @@ import {
 } from "@/modules/auth/composables/useKratosBrowserFlow"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
+import { createAllowedReturnToOrigins } from "@/modules/auth/lib/return-to"
 
 const props = defineProps<{
   section?: string
@@ -75,7 +76,7 @@ function resolveFrontendOrigin(): string {
   }
 
   const kratosOrigin = resolveKratosOrigin()
-  const allowedOrigins = new Set<string>([window.location.origin])
+  const allowedOrigins = createAllowedReturnToOrigins(window.location.origin)
   const envFrontend = parseAbsoluteUrl(import.meta.env.VITE_HARUKI_TOOLBOX_WEB_URL ?? "")
   if (envFrontend && !isKratosCandidate(envFrontend, kratosOrigin)) {
     allowedOrigins.add(envFrontend.origin)

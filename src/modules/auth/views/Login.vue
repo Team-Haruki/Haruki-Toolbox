@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card"
 import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
+import { createAllowedReturnToOrigins, isAllowedFlowReturnTo } from "@/modules/auth/lib/return-to"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 import { resolveSafeRedirectTarget } from "@/core/router/navigation"
 
@@ -49,48 +50,16 @@ function resolveLoginReturnTo(): string {
   return url.toString()
 }
 
-function parseReturnToUrl(value: string): URL | null {
+function isAllowedLoginFlowReturnTo(value: string): boolean {
   if (typeof window === "undefined") {
-    return null
-  }
-
-  const trimmed = value.trim()
-  if (!trimmed) {
-    return null
-  }
-
-  try {
-    return new URL(trimmed, window.location.origin)
-  } catch {
-    return null
-  }
-}
-
-function isAllowedFlowReturnTo(value: string, depth = 0): boolean {
-  if (typeof window === "undefined" || depth > 4) {
     return false
   }
 
-  const parsed = parseReturnToUrl(value)
-  if (!parsed) {
-    return false
-  }
-
-  if (parsed.origin === window.location.origin) {
-    return true
-  }
-
-  const kratosOrigin = resolveKratosOrigin()
-  if (
-    kratosOrigin !== ""
-    && parsed.origin === kratosOrigin
-    && parsed.pathname.startsWith("/self-service/")
-  ) {
-    const nested = parsed.searchParams.get("return_to")
-    return nested ? isAllowedFlowReturnTo(nested, depth + 1) : true
-  }
-
-  return false
+  return isAllowedFlowReturnTo(value, {
+    currentOrigin: window.location.origin,
+    kratosOrigin: resolveKratosOrigin(),
+    allowedOrigins: createAllowedReturnToOrigins(window.location.origin),
+  })
 }
 
 const {
@@ -126,7 +95,7 @@ watch(
       return
     }
 
-    if (isAllowedFlowReturnTo(normalizedReturnTo)) {
+    if (isAllowedLoginFlowReturnTo(normalizedReturnTo)) {
       return
     }
 
