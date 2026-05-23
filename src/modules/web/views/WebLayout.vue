@@ -55,7 +55,7 @@ const {
   showPageTitle,
   copyrightYear,
   appVersion,
-  gitHash,
+  gitCommit,
   buildTimeIso,
   buildTime,
   pendingUserTicketCount,
@@ -261,9 +261,9 @@ const {
               <dd class="font-mono font-medium tabular-nums text-foreground/75">v{{ appVersion }}</dd>
             </div>
             <div class="flex min-w-0 items-baseline justify-between gap-3 md:border-l md:border-slate-950/[0.08] md:pl-3 md:justify-start md:gap-1.5 dark:md:border-white/10">
-              <dt>{{ t("webLayout.footer.gitHash") }}</dt>
-              <dd class="truncate font-mono font-medium text-foreground/75" :title="gitHash">
-                {{ gitHash }}
+              <dt>{{ t("webLayout.footer.gitCommit") }}</dt>
+              <dd class="truncate font-mono font-medium text-foreground/75" :title="gitCommit">
+                {{ gitCommit }}
               </dd>
             </div>
             <div class="flex min-w-0 items-baseline justify-between gap-3 md:border-l md:border-slate-950/[0.08] md:pl-3 md:justify-start md:gap-1.5 dark:md:border-white/10">

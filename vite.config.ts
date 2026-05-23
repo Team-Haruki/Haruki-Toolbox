@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -30,24 +30,25 @@ const packageJson = JSON.parse(
     readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
 ) as { version?: string }
 
-function shortenGitHash(hash: string) {
+function shortenGitCommit(hash: string) {
     return hash.trim().slice(0, 12)
 }
 
-function resolveGitHash() {
-    const ciGitHash = [
+function resolveGitCommit() {
+    const ciGitCommit = [
+        process.env.VITE_HARUKI_TOOLBOX_GIT_COMMIT,
         process.env.VITE_HARUKI_TOOLBOX_GIT_HASH,
         process.env.GITHUB_SHA,
         process.env.CF_PAGES_COMMIT_SHA,
         process.env.VERCEL_GIT_COMMIT_SHA,
     ].find((hash): hash is string => !!hash)
 
-    if (ciGitHash) {
-        return shortenGitHash(ciGitHash)
+    if (ciGitCommit) {
+        return shortenGitCommit(ciGitCommit)
     }
 
     try {
-        return shortenGitHash(
+        return shortenGitCommit(
             execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], {
                 encoding: 'utf8',
                 stdio: ['ignore', 'pipe', 'ignore'],
@@ -60,8 +61,21 @@ function resolveGitHash() {
 
 const appBuildInfo = {
     version: packageJson.version ?? '0.0.0',
-    gitHash: resolveGitHash(),
+    gitCommit: resolveGitCommit(),
     buildTime: new Date().toISOString(),
+}
+
+function buildInfoPlugin(): Plugin {
+    return {
+        name: 'haruki-build-info',
+        generateBundle() {
+            this.emitFile({
+                type: 'asset',
+                fileName: 'build-info.json',
+                source: `${JSON.stringify(appBuildInfo, null, 2)}\n`,
+            })
+        },
+    }
 }
 
 export default defineConfig(({ command }) => ({
@@ -69,8 +83,9 @@ export default defineConfig(({ command }) => ({
     plugins: [
         vue(),
         tailwindcss(),
+        buildInfoPlugin(),
         VitePWA({
-            registerType: 'autoUpdate',
+            registerType: 'prompt',
             includeAssets: ['assets/haruki.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
             manifest: {
                 name: 'Haruki Toolbox',
@@ -99,7 +114,6 @@ export default defineConfig(({ command }) => ({
             workbox: {
                 cleanupOutdatedCaches: true,
                 clientsClaim: true,
-                skipWaiting: true,
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,wasm}'],
                 maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
                 navigateFallbackDenylist: [/^\/api\//],
@@ -112,7 +126,7 @@ export default defineConfig(({ command }) => ({
     ].filter(Boolean),
     define: {
         __APP_VERSION__: JSON.stringify(appBuildInfo.version),
-        __APP_GIT_HASH__: JSON.stringify(appBuildInfo.gitHash),
+        __APP_GIT_COMMIT__: JSON.stringify(appBuildInfo.gitCommit),
         __APP_BUILD_TIME__: JSON.stringify(appBuildInfo.buildTime),
     },
     resolve: {
@@ -121,7 +135,10 @@ export default defineConfig(({ command }) => ({
         },
     },
     build: {
-        rollupOptions: {
+        rolldownOptions: {
+            checks: {
+                pluginTimings: false,
+            },
             output: {
                 manualChunks(id) {
                     const normalizedId = id.replaceAll('\\', '/')

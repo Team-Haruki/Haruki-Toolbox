@@ -3,13 +3,16 @@ import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import {
   CloudLightning,
+  Download,
   EyeOff,
   Info,
   Network,
   Palette,
   RotateCcw,
+  RefreshCw,
   Save,
   Settings,
+  Smartphone,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
@@ -44,6 +47,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import SekaiDataSettings from "@/modules/home/components/SekaiDataSettings.vue"
 import UserDataSettings from "@/modules/home/components/UserDataSettings.vue"
 import { useHomeSettings } from "@/modules/home/composables/useHomeSettings"
+import { appUpdateState, applyAppUpdate, checkForAppUpdate } from "@/pwa"
 
 const {
   selectedEndpoint,
@@ -71,12 +75,26 @@ const {
 const { t, locale } = useI18n()
 const localeKey = computed(() => locale.value)
 const settingsDialogOpen = ref(false)
+const currentBuildTimeLabel = computed(() => formatBuildTime(appUpdateState.current.buildTime))
+const remoteBuildTimeLabel = computed(() => appUpdateState.remote ? formatBuildTime(appUpdateState.remote.buildTime) : null)
 
 watch(settingsDialogOpen, (open) => {
   if (open) {
     void refreshEndpointLatencies()
   }
 })
+
+function formatBuildTime(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.valueOf())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat(locale.value, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date)
+}
 </script>
 
 <template>
@@ -97,10 +115,14 @@ watch(settingsDialogOpen, (open) => {
       </DialogHeader>
 
       <Tabs default-value="preferences" class="space-y-4">
-        <TabsList class="grid w-full grid-cols-3 sm:w-fit">
+        <TabsList class="grid w-full grid-cols-4 sm:w-fit">
           <TabsTrigger value="preferences">
             <Settings class="size-4" />
             {{ t("homeSettings.tabs.preferences") }}
+          </TabsTrigger>
+          <TabsTrigger value="app">
+            <Smartphone class="size-4" />
+            {{ t("homeSettings.tabs.app") }}
           </TabsTrigger>
           <TabsTrigger value="sekai-data">
             <Network class="size-4" />
@@ -290,6 +312,80 @@ watch(settingsDialogOpen, (open) => {
               <span><strong>{{ t("common.tip") }}: </strong>{{ t("homeSettings.tip.content") }}</span>
             </p>
           </div>
+        </TabsContent>
+
+        <TabsContent value="app" class="space-y-4">
+          <section class="grid gap-4 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div class="space-y-1">
+                <h3 class="flex items-center gap-2 text-base font-medium">
+                  <Smartphone class="size-4" />
+                  {{ t("homeSettings.appUpdate.title") }}
+                </h3>
+                <p class="text-sm text-muted-foreground">
+                  {{ t("homeSettings.appUpdate.description") }}
+                </p>
+              </div>
+              <span
+                :class="[
+                  'inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-medium',
+                  appUpdateState.updateAvailable
+                    ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'
+                    : 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200',
+                ]"
+              >
+                {{ appUpdateState.updateAvailable ? t("homeSettings.appUpdate.available") : t("homeSettings.appUpdate.current") }}
+              </span>
+            </div>
+
+            <div class="grid gap-3 md:grid-cols-3">
+              <div class="rounded-md border border-border/70 bg-background/60 p-3">
+                <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.version") }}</p>
+                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.current.version }}</p>
+              </div>
+              <div class="rounded-md border border-border/70 bg-background/60 p-3">
+                <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.gitCommit") }}</p>
+                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.current.gitCommit }}</p>
+              </div>
+              <div class="rounded-md border border-border/70 bg-background/60 p-3">
+                <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.buildTime") }}</p>
+                <p class="mt-1 text-sm font-medium">{{ currentBuildTimeLabel }}</p>
+              </div>
+            </div>
+
+            <div v-if="appUpdateState.remote" class="grid gap-3 rounded-md border border-dashed bg-background/40 p-3 md:grid-cols-3">
+              <div>
+                <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteVersion") }}</p>
+                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.remote.version }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteCommit") }}</p>
+                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.remote.gitCommit }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteBuildTime") }}</p>
+                <p class="mt-1 text-sm font-medium">{{ remoteBuildTimeLabel }}</p>
+              </div>
+            </div>
+
+            <p v-if="appUpdateState.checkedAt" class="text-xs text-muted-foreground">
+              {{ t("homeSettings.appUpdate.checkedAt", { time: formatBuildTime(appUpdateState.checkedAt) }) }}
+            </p>
+            <p v-if="appUpdateState.lastError" class="text-xs text-destructive">
+              {{ t("homeSettings.appUpdate.lastError") }}
+            </p>
+
+            <div class="grid gap-2 sm:grid-cols-2">
+              <Button type="button" variant="outline" :disabled="appUpdateState.checking || appUpdateState.applying" @click="checkForAppUpdate()">
+                <RefreshCw :class="['size-4', appUpdateState.checking ? 'animate-spin' : '']" />
+                {{ appUpdateState.checking ? t("homeSettings.appUpdate.checking") : t("homeSettings.appUpdate.check") }}
+              </Button>
+              <Button type="button" :disabled="!appUpdateState.updateAvailable || appUpdateState.applying" @click="applyAppUpdate">
+                <Download :class="['size-4', appUpdateState.applying ? 'animate-pulse' : '']" />
+                {{ appUpdateState.applying ? t("homeSettings.appUpdate.updating") : t("homeSettings.appUpdate.update") }}
+              </Button>
+            </div>
+          </section>
         </TabsContent>
 
         <TabsContent value="sekai-data">
