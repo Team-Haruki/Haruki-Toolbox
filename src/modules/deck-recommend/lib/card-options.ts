@@ -10,8 +10,11 @@ export type DeckRecommendMasterCardOption = {
   label: string
   description: string
   characterId: number | null
+  characterName: string | null
+  characterColorCode: string | null
   unit: DeckRecommendUnitType | null
   unitProfileName: string | null
+  unitColorCode: string | null
   rarity: DeckRecommendRarity | null
   attr: DeckRecommendEventAttr | null
   maxLevel: number
@@ -43,12 +46,33 @@ type RawCardRarity = {
 type RawGameCharacter = {
   id?: number
   unit?: string
+  firstName?: string
+  givenName?: string
+  firstNameEnglish?: string
+  givenNameEnglish?: string
+}
+
+type RawGameCharacterUnit = {
+  gameCharacterId?: number
+  colorCode?: string
 }
 
 type RawUnitProfile = {
   unit?: string
   unitProfileName?: string
   unitName?: string
+  colorCode?: string
+}
+
+type MasterCharacterInfo = {
+  name: string | null
+  unit: DeckRecommendUnitType | null
+  colorCode: string | null
+}
+
+type MasterUnitProfileInfo = {
+  name: string | null
+  colorCode: string | null
 }
 
 export function buildMasterCardOptions(
@@ -58,8 +82,8 @@ export function buildMasterCardOptions(
 ): DeckRecommendMasterCardOption[] {
   const cards = Array.isArray(masterData?.cards) ? masterData.cards as RawCard[] : []
   const rarityMap = buildRarityMap(masterData?.cardRarities)
-  const characterUnitMap = buildCharacterUnitMap(masterData?.gameCharacters)
-  const unitProfileNameMap = buildUnitProfileNameMap(masterData?.unitProfiles)
+  const characterInfoMap = buildCharacterInfoMap(masterData?.gameCharacters, masterData?.gameCharacterUnits)
+  const unitProfileMap = buildUnitProfileMap(masterData?.unitProfiles)
 
   return cards
     .map((card) => {
@@ -75,8 +99,13 @@ export function buildMasterCardOptions(
       const maxLevel = rarityConfig?.trainingMaxLevel || rarityConfig?.maxLevel || 1
       const maxSkillLevel = rarityConfig?.maxSkillLevel || 4
       const characterId = normalizePositiveInteger(card.characterId)
-      const unit = resolveCardUnit(card, characterId, characterUnitMap)
-      const unitProfileName = unit ? unitProfileNameMap.get(unit) ?? null : null
+      const characterInfo = characterId ? characterInfoMap.get(characterId) ?? null : null
+      const characterName = characterInfo?.name ?? null
+      const characterColorCode = characterInfo?.colorCode ?? null
+      const unit = resolveCardUnit(card, characterInfo?.unit ?? null)
+      const unitProfile = unit ? unitProfileMap.get(unit) ?? null : null
+      const unitProfileName = unitProfile?.name ?? null
+      const unitColorCode = unitProfile?.colorCode ?? null
       const prefix = normalizeText(card.prefix)
       const assetbundleName = normalizeText(card.assetbundleName)
       const label = prefix ? `${prefix} (#${id})` : `#${id}`
@@ -92,8 +121,11 @@ export function buildMasterCardOptions(
         label,
         description,
         characterId,
+        characterName,
+        characterColorCode,
         unit,
         unitProfileName,
+        unitColorCode,
         rarity,
         attr,
         maxLevel,
@@ -110,6 +142,7 @@ export function buildMasterCardOptions(
           attr ?? "",
           unit ?? "",
           unitProfileName ?? "",
+          characterName ?? "",
           characterId ? String(characterId) : "",
         ].filter(Boolean),
       }
@@ -118,8 +151,8 @@ export function buildMasterCardOptions(
     .sort((a, b) => a.id - b.id)
 }
 
-function buildUnitProfileNameMap(rawUnitProfiles: unknown): Map<DeckRecommendUnitType, string> {
-  const map = new Map<DeckRecommendUnitType, string>()
+function buildUnitProfileMap(rawUnitProfiles: unknown): Map<DeckRecommendUnitType, MasterUnitProfileInfo> {
+  const map = new Map<DeckRecommendUnitType, MasterUnitProfileInfo>()
   if (!Array.isArray(rawUnitProfiles)) {
     return map
   }
@@ -127,8 +160,11 @@ function buildUnitProfileNameMap(rawUnitProfiles: unknown): Map<DeckRecommendUni
   for (const item of rawUnitProfiles as RawUnitProfile[]) {
     const unit = normalizeUnit(item.unit)
     const name = normalizeText(item.unitProfileName) ?? normalizeText(item.unitName)
-    if (unit && name) {
-      map.set(unit, name)
+    if (unit) {
+      map.set(unit, {
+        name,
+        colorCode: normalizeColorCode(item.colorCode),
+      })
     }
   }
   return map
@@ -155,8 +191,9 @@ function buildRarityMap(rawRarities: unknown): Map<DeckRecommendRarity, Required
   return map
 }
 
-function buildCharacterUnitMap(rawCharacters: unknown): Map<number, DeckRecommendUnitType> {
-  const map = new Map<number, DeckRecommendUnitType>()
+function buildCharacterInfoMap(rawCharacters: unknown, rawCharacterUnits: unknown): Map<number, MasterCharacterInfo> {
+  const colorMap = buildCharacterColorMap(rawCharacterUnits)
+  const map = new Map<number, MasterCharacterInfo>()
   if (!Array.isArray(rawCharacters)) {
     return map
   }
@@ -164,23 +201,51 @@ function buildCharacterUnitMap(rawCharacters: unknown): Map<number, DeckRecommen
   for (const item of rawCharacters as RawGameCharacter[]) {
     const id = normalizePositiveInteger(item.id)
     const unit = normalizeUnit(item.unit)
-    if (id && unit) {
-      map.set(id, unit)
+    if (id) {
+      map.set(id, {
+        name: resolveCharacterName(item, id),
+        unit,
+        colorCode: colorMap.get(id) ?? null,
+      })
     }
   }
   return map
 }
 
-function resolveCardUnit(
-  card: RawCard,
-  characterId: number | null,
-  characterUnitMap: ReadonlyMap<number, DeckRecommendUnitType>,
-): DeckRecommendUnitType | null {
+function buildCharacterColorMap(rawCharacterUnits: unknown): Map<number, string> {
+  const map = new Map<number, string>()
+  if (!Array.isArray(rawCharacterUnits)) {
+    return map
+  }
+
+  for (const item of rawCharacterUnits as RawGameCharacterUnit[]) {
+    const characterId = normalizePositiveInteger(item.gameCharacterId)
+    const colorCode = normalizeColorCode(item.colorCode)
+    if (characterId && colorCode && !map.has(characterId)) {
+      map.set(characterId, colorCode)
+    }
+  }
+  return map
+}
+
+function resolveCardUnit(card: RawCard, fallbackUnit: DeckRecommendUnitType | null): DeckRecommendUnitType | null {
   const supportUnit = normalizeUnit(card.supportUnit)
   if (supportUnit && supportUnit !== "piapro") {
     return supportUnit
   }
-  return characterId ? characterUnitMap.get(characterId) ?? null : null
+  return fallbackUnit
+}
+
+function resolveCharacterName(character: RawGameCharacter, id: number): string {
+  const localized = `${normalizeText(character.firstName) ?? ""}${normalizeText(character.givenName) ?? ""}`
+  if (localized) {
+    return localized
+  }
+
+  const english = [normalizeText(character.givenNameEnglish), normalizeText(character.firstNameEnglish)]
+    .filter((part): part is string => Boolean(part))
+    .join(" ")
+  return english || `#${id}`
 }
 
 function normalizeRarity(value: unknown): DeckRecommendRarity | null {
@@ -233,4 +298,13 @@ function normalizePositiveInteger(value: unknown): number | null {
 
 function normalizeText(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null
+}
+
+function normalizeColorCode(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null
+  }
+
+  const normalized = value.trim()
+  return /^#[0-9a-f]{6}$/i.test(normalized) ? normalized : null
 }

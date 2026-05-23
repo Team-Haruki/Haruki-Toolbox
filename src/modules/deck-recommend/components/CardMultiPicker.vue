@@ -5,6 +5,7 @@ import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
 import type { DeckRecommendMasterCardOption } from "../lib/card-options"
+import { createDeckRecommendCardTags } from "../lib/card-tags"
 
 const props = defineProps<{
   modelValue: readonly number[]
@@ -109,45 +110,14 @@ function createUnknownCardOption(cardId: number): DeckRecommendMasterCardOption 
     thumbnailUrl: null,
     attrIconUrl: null,
     keywords: [String(cardId), `#${cardId}`],
+    characterName: null,
+    characterColorCode: null,
+    unitColorCode: null,
   }
 }
 
 function createCardTags(option: DeckRecommendMasterCardOption) {
-  return [
-    option.rarity
-      ? {
-          label: t(`deckRecommend.training.rarities.${option.rarity}`),
-          class: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200",
-        }
-      : null,
-    option.attr
-      ? {
-          label: t(`deckRecommend.cardTags.attrs.${option.attr}`),
-          class: resolveAttrTagClass(option.attr),
-        }
-      : null,
-    option.unit
-      ? {
-          label: option.unitProfileName ?? t(`deckRecommend.eventUnits.${option.unit}`),
-          class: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/10 dark:text-slate-200",
-        }
-      : null,
-  ].filter((tag): tag is { label: string; class: string } => tag != null)
-}
-
-function resolveAttrTagClass(attr: NonNullable<DeckRecommendMasterCardOption["attr"]>) {
-  switch (attr) {
-    case "happy":
-      return "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-200"
-    case "cute":
-      return "border-pink-200 bg-pink-50 text-pink-800 dark:border-pink-500/30 dark:bg-pink-500/10 dark:text-pink-200"
-    case "cool":
-      return "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200"
-    case "pure":
-      return "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
-    case "mysterious":
-      return "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200"
-  }
+  return createDeckRecommendCardTags(option, t)
 }
 </script>
 
@@ -192,6 +162,7 @@ function resolveAttrTagClass(attr: NonNullable<DeckRecommendMasterCardOption["at
                 'inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[11px] font-medium leading-none',
                 tag.class,
               ]"
+              :style="tag.style"
             >
               {{ tag.label }}
             </span>

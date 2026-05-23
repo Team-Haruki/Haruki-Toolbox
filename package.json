@@ -10,7 +10,8 @@
     "e2e:install": "playwright install chromium",
     "lint": "eslint --max-warnings=0 \"src/**/*.{ts,vue}\" \"scripts/**/*.mjs\" \"vite.config.ts\"",
     "check:imports": "bun scripts/check-imports.mjs",
-    "build": "bun run check:imports && vue-tsc --noEmit && bunx --bun vite build",
+    "build": "bun run check:imports && vue-tsc --noEmit && vite build",
+    "build:edgeone": "bun run check:imports && vite build",
     "preview": "vue-tsc --noEmit && bunx --bun vite preview",
     "typecheck": "bun run check:imports && vue-tsc --noEmit",
     "quality": "bun run lint && bun run typecheck && bun run test"

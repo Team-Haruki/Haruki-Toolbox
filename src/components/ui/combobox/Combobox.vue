@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, type Component } from "vue"
+import { computed, ref, watch, type Component, type CSSProperties } from "vue"
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
@@ -29,6 +29,7 @@ export type ComboboxOption = {
 export type ComboboxOptionTag = {
   label: string
   class?: string
+  style?: CSSProperties
 }
 
 const props = withDefaults(defineProps<{
@@ -157,6 +158,7 @@ function selectOption(value: string) {
                         tag.class,
                       )
                     "
+                    :style="tag.style"
                   >
                     {{ tag.label }}
                   </span>
