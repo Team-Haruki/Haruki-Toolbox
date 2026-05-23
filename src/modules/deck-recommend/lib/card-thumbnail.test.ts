@@ -3,6 +3,7 @@ import type { RecommendCard, RecommendResult } from "haruki-sekai-deck-recommend
 import {
   buildCardThumbnailView,
   buildDeckResultViews,
+  buildDeckSupportCardViews,
   resolveRecommendCardDisplayState,
   type DeckRecommendMasterCard,
 } from "./card-thumbnail"
@@ -27,6 +28,7 @@ const baseRecommendCard: RecommendCard = {
 const masterCard: DeckRecommendMasterCard = {
   id: 100,
   characterId: 5,
+  characterName: "Test character",
   cardRarityType: "rarity_4",
   attr: "cute",
   prefix: "Test card",
@@ -89,8 +91,30 @@ describe("deck recommend card thumbnail helpers", () => {
       }],
     }
 
-    const views = buildDeckResultViews(result, { cards: [masterCard] }, "jp")
+    const views = buildDeckResultViews(result, {
+      cards: [masterCard],
+      gameCharacters: [{ id: 5, firstName: "白石", givenName: "杏" }],
+    }, "jp")
     expect(views).toHaveLength(1)
     expect(views[0].cards[0].thumbnail.title).toBe("Test card")
+    expect(views[0].cards[0].masterCard?.characterName).toBe("白石杏")
+  })
+
+  it("maps world bloom support cards with available master data", () => {
+    const views = buildDeckSupportCardViews([{
+      card_id: 100,
+      bonus: 12.5,
+      skill_level: 4,
+      master_rank: 5,
+      level: 60,
+      after_training: true,
+      default_image: "special_training",
+    }], { cards: [masterCard] }, "jp")
+
+    expect(views).toHaveLength(1)
+    expect(views[0].card.bonus).toBe(12.5)
+    expect(views[0].card.skill_level).toBe(4)
+    expect(views[0].thumbnail.title).toBe("Test card")
+    expect(views[0].thumbnail.trainRank).toBe(5)
   })
 })

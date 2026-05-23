@@ -42,6 +42,21 @@ export const SEKAI_DATA_RECOMMEND_MASTER_FILES = [
   "mysekaiGateLevels",
 ] as const
 
+export const SEKAI_DATA_RECOMMEND_OPTIONAL_MASTER_FILES = [
+  "eventCardBonusLimits",
+  "eventSkillScoreUpLimits",
+  "eventTotalPowerLimits",
+] as const
+
+export const SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES = [
+  ...SEKAI_DATA_RECOMMEND_MASTER_FILES,
+  ...SEKAI_DATA_RECOMMEND_OPTIONAL_MASTER_FILES,
+] as const
+
+export const SEKAI_DATA_OPTIONAL_MASTER_FILES = [
+  ...SEKAI_DATA_RECOMMEND_OPTIONAL_MASTER_FILES,
+] as const
+
 export type SekaiDataUpdatePhase =
   | "queued"
   | "checking"

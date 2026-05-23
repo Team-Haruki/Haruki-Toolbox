@@ -2,16 +2,24 @@
 import { computed } from "vue"
 import type { CardThumbnailView } from "../lib/card-thumbnail"
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   thumbnail: CardThumbnailView
-}>()
+  size?: "sm" | "md"
+  cornerBadge?: string | null
+}>(), {
+  size: "md",
+  cornerBadge: null,
+})
 
 const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCount }, (_, index) => index))
 </script>
 
 <template>
   <div
-    class="relative aspect-square w-20 shrink-0 overflow-hidden rounded-md bg-muted text-muted-foreground ring-1 ring-border"
+    :class="[
+      'relative shrink-0 self-start overflow-hidden bg-muted text-muted-foreground ring-1 ring-border',
+      size === 'sm' ? 'size-11 rounded-sm sm:size-12 md:size-14 xl:size-16' : 'size-20 rounded-md',
+    ]"
     :aria-label="thumbnail.title ?? `#${thumbnail.cardId}`"
   >
     <img
@@ -57,11 +65,17 @@ const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCoun
       loading="lazy"
     >
     <img
-      v-if="thumbnail.canvasIconUrl"
+      v-if="!cornerBadge && thumbnail.canvasIconUrl"
       :src="thumbnail.canvasIconUrl"
       alt=""
       class="absolute right-1 top-1 size-4 rounded bg-background/85 p-0.5"
       loading="lazy"
     >
+    <span
+      v-if="cornerBadge"
+      class="absolute right-1 top-1 max-w-[72%] truncate rounded bg-primary px-1 py-0.5 font-mono text-[10px] font-semibold leading-none text-primary-foreground shadow-sm"
+    >
+      {{ cornerBadge }}
+    </span>
   </div>
 </template>

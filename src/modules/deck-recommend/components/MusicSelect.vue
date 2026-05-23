@@ -3,6 +3,7 @@ import { computed, toRef } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
 import type { SekaiRegion } from "@/types"
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
 import {
   Select,
   SelectContent,
@@ -30,9 +31,28 @@ const selectedMusicId = computed(() => props.modelValue)
 const { options, difficultyOptions, loading } = useMusicOptions(regionRef, selectedMusicId)
 const selectedValue = computed(() => props.modelValue ?? "")
 const selectedDifficulty = computed(() => props.difficultyValue ?? "")
+const comboboxOptions = computed<ComboboxOption[]>(() =>
+  options.value.map((option) => ({
+    value: option.value,
+    label: option.label,
+    tags: [
+      {
+        label: `#${option.id}`,
+        class: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-200",
+      },
+    ],
+    keywords: [
+      String(option.id),
+      `#${option.id}`,
+      option.seq ? String(option.seq) : "",
+      option.pronunciation ?? "",
+      option.assetbundleName ?? "",
+    ],
+  })),
+)
 
-function handleMusicUpdate(value: AcceptableValue) {
-  emit("update:modelValue", typeof value === "string" && value ? value : null)
+function handleMusicUpdate(value: string | null) {
+  emit("update:modelValue", value || null)
   emit("update:difficultyValue", null)
 }
 
@@ -42,17 +62,17 @@ function handleDifficultyUpdate(value: AcceptableValue) {
 </script>
 
 <template>
-  <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
-    <Select :model-value="selectedValue" :disabled="props.disabled || loading" @update:model-value="handleMusicUpdate">
-      <SelectTrigger class="w-full">
-        <SelectValue :placeholder="loading ? t('deckRecommend.select.loading') : t('deckRecommend.form.musicPlaceholder')" />
-      </SelectTrigger>
-      <SelectContent class="max-h-72">
-        <SelectItem v-for="option in options" :key="option.id" :value="option.value">
-          <span class="truncate">{{ option.label }}</span>
-        </SelectItem>
-      </SelectContent>
-    </Select>
+  <div class="grid gap-3 md:grid-cols-2">
+    <Combobox
+      :model-value="selectedValue"
+      :options="comboboxOptions"
+      :disabled="props.disabled || loading"
+      :clearable="false"
+      :placeholder="loading ? t('deckRecommend.select.loading') : t('deckRecommend.form.musicPlaceholder')"
+      :search-placeholder="t('deckRecommend.form.musicSearchPlaceholder')"
+      :empty-text="t('deckRecommend.form.musicEmpty')"
+      @update:model-value="handleMusicUpdate"
+    />
 
     <Select
       :model-value="selectedDifficulty"

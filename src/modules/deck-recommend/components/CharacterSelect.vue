@@ -17,6 +17,7 @@ const props = defineProps<{
   region: SekaiRegion
   disabled?: boolean
   allowedCharacterIds?: readonly number[] | null
+  allowNoneOption?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -26,7 +27,10 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const regionRef = toRef(props, "region")
 const { options, loading } = useCharacterOptions(regionRef)
-const selectedValue = computed(() => props.modelValue ?? "")
+const NONE_OPTION_VALUE = "__none__"
+const selectedValue = computed(() =>
+  props.modelValue ?? (props.allowNoneOption ? NONE_OPTION_VALUE : ""),
+)
 const filteredOptions = computed(() => {
   if (!props.allowedCharacterIds) {
     return options.value
@@ -37,7 +41,12 @@ const filteredOptions = computed(() => {
 })
 
 function handleUpdate(value: AcceptableValue) {
-  emit("update:modelValue", typeof value === "string" && value ? value : null)
+  if (value === NONE_OPTION_VALUE || value === "" || value == null) {
+    emit("update:modelValue", null)
+    return
+  }
+
+  emit("update:modelValue", typeof value === "string" ? value : null)
 }
 </script>
 
@@ -47,6 +56,9 @@ function handleUpdate(value: AcceptableValue) {
       <SelectValue :placeholder="loading ? t('deckRecommend.select.loading') : t('deckRecommend.form.characterPlaceholder')" />
     </SelectTrigger>
     <SelectContent class="max-h-72">
+      <SelectItem v-if="props.allowNoneOption" :value="NONE_OPTION_VALUE">
+        {{ t("deckRecommend.options.constraints.characterNone") }}
+      </SelectItem>
       <SelectItem v-for="option in filteredOptions" :key="option.id" :value="option.value">
         <img :src="option.iconUrl" :alt="option.label" class="size-6 rounded-sm object-cover" loading="lazy">
         <span class="truncate">{{ option.label }}</span>

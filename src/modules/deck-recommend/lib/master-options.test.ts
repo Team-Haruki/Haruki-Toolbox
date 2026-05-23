@@ -1,9 +1,13 @@
 import { describe, expect, it } from "bun:test"
 import {
   resolveDefaultEventOption,
+  resolveEventCardBonusLimit,
+  resolveEventSkillScoreUpLimit,
+  resolveEventTotalPowerLimit,
   resolveMusicDifficultyOptions,
   resolveWorldBloomDefaultGameCharacterId,
   resolveWorldBloomGameCharacterIds,
+  resolveWorldBloomSupportDeckCount,
 } from "./master-options"
 
 describe("deck recommend master option helpers", () => {
@@ -66,5 +70,46 @@ describe("deck recommend master option helpers", () => {
 
     expect(resolveWorldBloomDefaultGameCharacterId("112", events, worldBlooms, 2_500)).toBe(20)
     expect(resolveWorldBloomDefaultGameCharacterId("112", events, worldBlooms, 6_000)).toBe(18)
+  })
+
+  it("resolves world bloom support deck count by turn and event id", () => {
+    expect(resolveWorldBloomSupportDeckCount(null, 1)).toBe(12)
+    expect(resolveWorldBloomSupportDeckCount(null, 2)).toBe(20)
+    expect(resolveWorldBloomSupportDeckCount(null, 3)).toBe(25)
+    expect(resolveWorldBloomSupportDeckCount(140)).toBe(12)
+    expect(resolveWorldBloomSupportDeckCount(180)).toBe(20)
+    expect(resolveWorldBloomSupportDeckCount(205)).toBe(25)
+    expect(resolveWorldBloomSupportDeckCount(3_200_001)).toBe(25)
+  })
+
+  it("resolves event total power limits from optional master data", () => {
+    expect(resolveEventTotalPowerLimit("205", [
+      { id: 1, eventId: 202, upperTotalPower: 336000 },
+      { id: 2, eventId: 205, upperTotalPower: 336000 },
+    ])).toBe(336000)
+    expect(resolveEventTotalPowerLimit("204", [
+      { id: 2, eventId: 205, upperTotalPower: 336000 },
+    ])).toBeNull()
+    expect(resolveEventTotalPowerLimit("205", null)).toBeNull()
+  })
+
+  it("resolves event card bonus member limits from optional master data", () => {
+    expect(resolveEventCardBonusLimit("180", [
+      { id: 1, eventId: 180, memberCountLimit: 4 },
+    ])).toBe(4)
+    expect(resolveEventCardBonusLimit("181", [
+      { id: 1, eventId: 180, memberCountLimit: 4 },
+    ])).toBeNull()
+    expect(resolveEventCardBonusLimit("180", null)).toBeNull()
+  })
+
+  it("resolves event skill score up limits as bonus percentage caps", () => {
+    expect(resolveEventSkillScoreUpLimit("180", [
+      { id: 1, eventId: 180, scoreUpRateLimit: 300 },
+    ])).toBe(200)
+    expect(resolveEventSkillScoreUpLimit("181", [
+      { id: 1, eventId: 180, scoreUpRateLimit: 300 },
+    ])).toBeNull()
+    expect(resolveEventSkillScoreUpLimit("180", null)).toBeNull()
   })
 })

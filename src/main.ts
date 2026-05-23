@@ -20,6 +20,7 @@ const userStore = useUserStore()
 const settingsStore = useSettingsStore()
 settingsStore.initTheme()
 settingsStore.initVisualEffects()
+void settingsStore.initAssetEndpointPreference()
 if (isAppLocale(settingsStore.locale)) {
     await setI18nLocale(settingsStore.locale)
 }

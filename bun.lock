@@ -16,10 +16,11 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
-        "haruki-sekai-deck-recommend-cpp": "^0.2.21",
+        "haruki-sekai-deck-recommend-cpp": "^0.2.25",
         "lucide-vue-next": "^1.0.0",
         "pinia": "^3.0.4",
         "pinia-plugin-persistedstate": "^4.7.1",
+        "pinyin-pro": "^3.28.1",
         "reka-ui": "^2.9.7",
         "tailwind-merge": "^3.5.0",
         "tailwindcss": "^4.2.4",
@@ -774,7 +775,7 @@
 
     "graceful-fs": ["graceful-fs@4.2.11", "", {}, "sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ=="],
 
-    "haruki-sekai-deck-recommend-cpp": ["haruki-sekai-deck-recommend-cpp@0.2.21", "", {}, "sha512-C/x0RAbwkXSX2iNmwGcg1sWunbajr/dWRKolsZOYHwc+CRkTP+FlozIpxVE437aZ/W/6R7zJ/j0L2eQ9zpOL9w=="],
+    "haruki-sekai-deck-recommend-cpp": ["haruki-sekai-deck-recommend-cpp@0.2.25", "", {}, "sha512-hIf+8WQ8lbeDa88YT0FFQ8vCW3sUQK7BgS3BRPBgaiw6FEr9VuK1t65ofo06P5i5WVQsKjpIqv0ZV/JGQr3v0g=="],
 
     "has-symbols": ["has-symbols@1.1.0", "", {}, "sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ=="],
 
@@ -967,6 +968,8 @@
     "pinia": ["pinia@3.0.4", "", { "dependencies": { "@vue/devtools-api": "^7.7.7" }, "peerDependencies": { "typescript": ">=4.5.0", "vue": "^3.5.11" }, "optionalPeers": ["typescript"] }, "sha512-l7pqLUFTI/+ESXn6k3nu30ZIzW5E2WZF/LaHJEpoq6ElcLD+wduZoB2kBN19du6K/4FDpPMazY2wJr+IndBtQw=="],
 
     "pinia-plugin-persistedstate": ["pinia-plugin-persistedstate@4.7.1", "", { "dependencies": { "defu": "^6.1.4" }, "peerDependencies": { "@nuxt/kit": ">=3.0.0", "@pinia/nuxt": ">=0.10.0", "pinia": ">=3.0.0" }, "optionalPeers": ["@nuxt/kit", "@pinia/nuxt", "pinia"] }, "sha512-WHOqh2esDlR3eAaknPbqXrkkj0D24h8shrDPqysgCFR6ghqP/fpFfJmMPJp0gETHsvrh9YNNg6dQfo2OEtDnIQ=="],
+
+    "pinyin-pro": ["pinyin-pro@3.28.1", "", {}, "sha512-oqz8ulwRgtUXRi0vbqEfGNly19zpyCxYrjhkk5TibGcgSW6eNwS5woajCXRwqURi8Ehc2yOFTiB4uNoZ+NJOnA=="],
 
     "pkg-types": ["pkg-types@2.3.0", "", { "dependencies": { "confbox": "^0.2.2", "exsolve": "^1.0.7", "pathe": "^2.0.3" } }, "sha512-SIqCzDRg0s9npO5XQ3tNZioRY1uK06lA41ynBC1YmFTmnY6FjUjVt6s4LoADmwoig1qqD0oK8h1p/8mlMx8Oig=="],
 

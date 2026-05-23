@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import {
+  CloudLightning,
+  EyeOff,
   Info,
   Network,
   Palette,
@@ -40,31 +42,45 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import SekaiDataSettings from "@/modules/home/components/SekaiDataSettings.vue"
+import UserDataSettings from "@/modules/home/components/UserDataSettings.vue"
 import { useHomeSettings } from "@/modules/home/composables/useHomeSettings"
 
 const {
   selectedEndpoint,
+  selectedAssetEndpoint,
   selectedTheme,
   selectedLocale,
   selectedReducedVisualEffects,
+  selectedHideGameUserId,
   endpointOptions,
+  assetEndpointOptions,
   endpointSelectionDisabled,
   endpointUnavailable,
   themeOptions,
   localeOptions,
   selectedEndpointLabel,
+  selectedAssetEndpointLabel,
   selectedThemeLabel,
   selectedLocaleLabel,
   visualEffectsIcon,
+  latencyTagClass,
+  refreshEndpointLatencies,
   saveSettings,
   resetSettings,
 } = useHomeSettings()
 const { t, locale } = useI18n()
 const localeKey = computed(() => locale.value)
+const settingsDialogOpen = ref(false)
+
+watch(settingsDialogOpen, (open) => {
+  if (open) {
+    void refreshEndpointLatencies()
+  }
+})
 </script>
 
 <template>
-  <Dialog>
+  <Dialog v-model:open="settingsDialogOpen">
     <DialogTrigger as-child>
       <Button type="button" variant="ghost" size="sm" class="gap-2" :aria-label="t('homeSettings.trigger')">
         <Settings class="size-4" />
@@ -81,7 +97,7 @@ const localeKey = computed(() => locale.value)
       </DialogHeader>
 
       <Tabs default-value="preferences" class="space-y-4">
-        <TabsList class="grid w-full grid-cols-2 sm:w-fit">
+        <TabsList class="grid w-full grid-cols-3 sm:w-fit">
           <TabsTrigger value="preferences">
             <Settings class="size-4" />
             {{ t("homeSettings.tabs.preferences") }}
@@ -89,6 +105,10 @@ const localeKey = computed(() => locale.value)
           <TabsTrigger value="sekai-data">
             <Network class="size-4" />
             {{ t("homeSettings.tabs.sekaiData") }}
+          </TabsTrigger>
+          <TabsTrigger value="user-data">
+            <EyeOff class="size-4" />
+            {{ t("homeSettings.tabs.userData") }}
           </TabsTrigger>
         </TabsList>
 
@@ -110,9 +130,19 @@ const localeKey = computed(() => locale.value)
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem v-for="opt in endpointOptions" :key="opt.value" :value="opt.value">
-                    <div class="flex items-center gap-2">
-                      <component :is="opt.icon" class="size-4" />
-                      <span>{{ opt.label }}</span>
+                    <div class="flex w-full min-w-64 items-center justify-between gap-3">
+                      <div class="flex min-w-0 items-center gap-2">
+                        <component :is="opt.icon" class="size-4 shrink-0" />
+                        <span class="truncate">{{ opt.label }}</span>
+                      </div>
+                      <span
+                        :class="[
+                          'shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium',
+                          latencyTagClass(opt.latencyStatus),
+                        ]"
+                      >
+                        {{ opt.latencyLabel }}
+                      </span>
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -120,6 +150,41 @@ const localeKey = computed(() => locale.value)
               <p v-if="endpointUnavailable" class="text-sm text-destructive">
                 {{ t("homeSettings.endpoint.unavailable") }}
               </p>
+            </section>
+
+            <section class="grid h-full content-center gap-2 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
+              <Label class="flex items-center gap-2 text-base font-medium">
+                <CloudLightning class="size-4" />
+                {{ t("homeSettings.assetEndpoint.label") }}
+              </Label>
+              <p class="text-sm text-muted-foreground">
+                {{ t("homeSettings.assetEndpoint.help") }}
+              </p>
+              <Select v-model="selectedAssetEndpoint" :key="`asset-endpoint-${localeKey}`">
+                <SelectTrigger class="w-full">
+                  <SelectValue :key="`asset-endpoint-value-${localeKey}`" :placeholder="t('homeSettings.assetEndpoint.placeholder')">
+                    {{ selectedAssetEndpointLabel }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="opt in assetEndpointOptions" :key="opt.value" :value="opt.value">
+                    <div class="flex w-full min-w-64 items-center justify-between gap-3">
+                      <div class="flex min-w-0 items-center gap-2">
+                        <component :is="opt.icon" class="size-4 shrink-0" />
+                        <span class="truncate">{{ opt.label }}</span>
+                      </div>
+                      <span
+                        :class="[
+                          'shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium',
+                          latencyTagClass(opt.latencyStatus),
+                        ]"
+                      >
+                        {{ opt.latencyLabel }}
+                      </span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </section>
 
             <section class="grid h-full content-center gap-2 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
@@ -177,6 +242,19 @@ const localeKey = computed(() => locale.value)
                 <Switch id="dialog-reduced-visual-effects" v-model="selectedReducedVisualEffects" class="mt-1 shrink-0" />
               </div>
             </section>
+
+            <section class="grid h-full content-center gap-4 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <Label for="dialog-hide-game-user-id" class="flex items-center gap-2 text-base font-medium">
+                    <EyeOff class="size-4" />
+                    {{ t("homeSettings.privacy.hideGameUserIdLabel") }}
+                  </Label>
+                  <p class="mt-2 text-sm text-muted-foreground">{{ t("homeSettings.privacy.hideGameUserIdHelp") }}</p>
+                </div>
+                <Switch id="dialog-hide-game-user-id" v-model="selectedHideGameUserId" class="mt-1 shrink-0" />
+              </div>
+            </section>
           </div>
 
           <div class="grid gap-2 border-t pt-4 sm:grid-cols-2">
@@ -216,6 +294,10 @@ const localeKey = computed(() => locale.value)
 
         <TabsContent value="sekai-data">
           <SekaiDataSettings />
+        </TabsContent>
+
+        <TabsContent value="user-data">
+          <UserDataSettings />
         </TabsContent>
       </Tabs>
     </DialogScrollContent>

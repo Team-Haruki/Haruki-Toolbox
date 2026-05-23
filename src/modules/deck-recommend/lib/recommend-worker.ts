@@ -8,6 +8,7 @@ import type {
   DeckRecommendWorkerEvent,
   DeckRecommendWorkerLoadDataRequest,
   DeckRecommendWorkerRecommendRequest,
+  DeckRecommendWorkerWorldBloomSupportRequest,
   DeckRecommendWorkerRequest,
 } from "./worker-protocol"
 
@@ -46,6 +47,19 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
     postEvent({ type: "progress", requestId: request.requestId, phase: "initializing" })
     const engine = await loadEngineData(request, request.requestId).then((result) => result.engine)
 
+    if (request.type === "world-bloom-support") {
+      postEvent({ type: "progress", requestId: request.requestId, phase: "recommending" })
+      const startedAt = performance.now()
+      const cards = engine.getWorldBloomSupportCards(request.options)
+      postEvent({
+        type: "world-bloom-support-done",
+        requestId: request.requestId,
+        cards,
+        elapsedMs: Math.round(performance.now() - startedAt),
+      })
+      return
+    }
+
     postEvent({ type: "progress", requestId: request.requestId, phase: "recommending" })
     const startedAt = performance.now()
     const result = engine.recommend(request.options)
@@ -59,13 +73,13 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
     postEvent({
       type: "error",
       requestId: request.requestId,
-      message: error instanceof Error ? error.message : String(error),
+      message: normalizeWorkerErrorMessage(error),
     })
   }
 }
 
 async function loadEngineData(
-  request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest,
+  request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest | DeckRecommendWorkerWorldBloomSupportRequest,
   requestId: string,
 ): Promise<{ engine: SekaiDeckRecommendWasm; elapsedMs: number; cacheHit: boolean }> {
   const startedAt = performance.now()
@@ -106,7 +120,7 @@ function getEngine() {
   return enginePromise
 }
 
-function createDataKey(request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest) {
+function createDataKey(request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest | DeckRecommendWorkerWorldBloomSupportRequest) {
   return [
     request.masterVersion,
     request.musicMetasKey ?? "unknown-music-metas",
@@ -128,4 +142,25 @@ async function disposeEngine() {
 
 function postEvent(event: DeckRecommendWorkerEvent) {
   workerScope.postMessage(event)
+}
+
+function normalizeWorkerErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  if (typeof error === "object" && error !== null) {
+    const message = "message" in error && typeof error.message === "string" ? error.message : ""
+    const name = error.constructor?.name
+    if (message) {
+      return name && name !== "Object" ? `${name}: ${message}` : message
+    }
+    if (name === "Exception") {
+      return "wasm engine failed to execute recommendation"
+    }
+    if (name && name !== "Object") {
+      return name
+    }
+  }
+
+  return String(error)
 }

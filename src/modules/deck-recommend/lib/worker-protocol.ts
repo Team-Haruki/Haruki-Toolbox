@@ -1,4 +1,9 @@
-import type { RecommendOptions, RecommendResult } from "haruki-sekai-deck-recommend-cpp"
+import type {
+  RecommendOptions,
+  RecommendResult,
+  WorldBloomSupportCard,
+  WorldBloomSupportOptions,
+} from "haruki-sekai-deck-recommend-cpp"
 import type { SekaiRegion } from "@/types"
 
 export type DeckRecommendWorkerRecommendRequest = {
@@ -11,6 +16,18 @@ export type DeckRecommendWorkerRecommendRequest = {
   masterData?: Record<string, unknown>
   musicMetas?: unknown
   options: RecommendOptions
+}
+
+export type DeckRecommendWorkerWorldBloomSupportRequest = {
+  type: "world-bloom-support"
+  requestId: string
+  region: SekaiRegion
+  masterVersion: string
+  musicMetasKey: string | null
+  masterFileNames: string[]
+  masterData?: Record<string, unknown>
+  musicMetas?: unknown
+  options: WorldBloomSupportOptions
 }
 
 export type DeckRecommendWorkerLoadDataRequest = {
@@ -36,6 +53,7 @@ export type DeckRecommendWorkerDisposeRequest = {
 
 export type DeckRecommendWorkerRequest =
   | DeckRecommendWorkerRecommendRequest
+  | DeckRecommendWorkerWorldBloomSupportRequest
   | DeckRecommendWorkerLoadDataRequest
   | DeckRecommendWorkerPreloadRequest
   | DeckRecommendWorkerDisposeRequest
@@ -67,6 +85,12 @@ export type DeckRecommendWorkerEvent =
     type: "done"
     requestId: string
     result: RecommendResult
+    elapsedMs: number
+  }
+  | {
+    type: "world-bloom-support-done"
+    requestId: string
+    cards: WorldBloomSupportCard[]
     elapsedMs: number
   }
   | {

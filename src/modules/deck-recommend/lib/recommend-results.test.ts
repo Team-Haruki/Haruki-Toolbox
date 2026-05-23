@@ -24,9 +24,57 @@ describe("deck recommend result helpers", () => {
     expect(result.decks[0]?.source_algorithms).toEqual(["dfs_ga", "ga"])
     expect(result.decks[1]?.source_algorithms).toEqual(["ga"])
   })
+
+  it("sorts bonus decks by event bonus before score", () => {
+    const result = mergeDeckRecommendResults([
+      {
+        algorithm: "dfs",
+        result: {
+          decks: [
+            createDeck([1, 2, 3, 4, 5], 100, { event_bonus_rate: 110 }),
+            createDeck([6, 7, 8, 9, 10], 120, { event_bonus_rate: 100 }),
+          ],
+        },
+      },
+    ], "bonus")
+
+    expect(result.decks.map((deck) => deck.event_bonus_rate)).toEqual([110, 100])
+  })
+
+  it("sorts mysekai decks by mysekai event point and support-aware bonus tie breakers", () => {
+    const result = mergeDeckRecommendResults([
+      {
+        algorithm: "ga",
+        result: {
+          decks: [
+            createDeck([1, 2, 3, 4, 5], 100, {
+              mysekai_event_point: 1000,
+              total_power: 450000,
+              event_bonus_rate: 20,
+              support_deck_bonus_rate: 0,
+            }),
+            createDeck([6, 7, 8, 9, 10], 90, {
+              mysekai_event_point: 1000,
+              total_power: 450000,
+              event_bonus_rate: 15,
+              support_deck_bonus_rate: 10,
+            }),
+            createDeck([11, 12, 13, 14, 15], 200, {
+              mysekai_event_point: 900,
+              total_power: 500000,
+              event_bonus_rate: 50,
+            }),
+          ],
+        },
+      },
+    ], "mysekai")
+
+    expect(result.decks.map((deck) => deck.cards[0]?.card_id)).toEqual([6, 1, 11])
+  })
+
 })
 
-function createDeck(cardIds: number[], score: number): RecommendDeck {
+function createDeck(cardIds: number[], score: number, patch: Partial<RecommendDeck> = {}): RecommendDeck {
   return {
     score,
     live_score: score,
@@ -41,6 +89,7 @@ function createDeck(cardIds: number[], score: number): RecommendDeck {
     event_bonus_rate: 0,
     support_deck_bonus_rate: 0,
     multi_live_score_up: 0,
+    ...patch,
     cards: cardIds.map((cardId) => ({
       card_id: cardId,
       total_power: 0,

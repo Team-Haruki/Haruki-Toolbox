@@ -8,6 +8,7 @@ import {
   resolveSekaiMasterFetchVersion,
   resolveSekaiMasterFileUrl,
   resolveSekaiMasterVersionUrl,
+  resolveSekaiCardThumbnailUrl,
   resolveSekaiMusicMetasUrl,
 } from "./data-sources"
 
@@ -68,6 +69,21 @@ describe("Sekai data source helpers", () => {
     )
     expect(resolveMySekaiCanvasIconUrl()).toBe(
       "https://images.haruki.seiunx.com/sekai-toolbox/static_images/mysekai/icon/icon_canvas.png",
+    )
+  })
+
+  it("builds game asset URLs from the selected asset endpoint", () => {
+    expect(resolveSekaiCardThumbnailUrl("jp", "res005_no001", true, "china")).toBe(
+      "https://sekai-assets.haruki.seiunx.com/jp-assets/startapp/thumbnail/chara/res005_no001_after_training.png",
+    )
+    expect(resolveSekaiCardThumbnailUrl("jp", "res005_no001", false, "global")).toBe(
+      "https://sekai-assets-bdf29c81.seiunx.net/jp-assets/startapp/thumbnail/chara/res005_no001_normal.png",
+    )
+  })
+
+  it("defaults game asset URLs to the China-accelerated overseas CDN", () => {
+    expect(resolveSekaiCardThumbnailUrl("jp", "res005_no001", false)).toBe(
+      "https://sekai-assets.haruki.seiunx.com/jp-assets/startapp/thumbnail/chara/res005_no001_normal.png",
     )
   })
 })

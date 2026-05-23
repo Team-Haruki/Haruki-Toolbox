@@ -18,7 +18,7 @@ export const SEKAI_MUSIC_METAS_URLS: Record<SekaiRegion, string> = {
 }
 
 const SEKAI_MASTER_CDN_BASE_URL = "https://sekai-master-cdn.haruki.seiunx.com"
-const SEKAI_ASSET_ROOTS: Record<SekaiAssetEndpointPreference, string> = {
+export const SEKAI_ASSET_ENDPOINT_ROOTS: Record<SekaiAssetEndpointPreference, string> = {
   china: "https://sekai-assets.haruki.seiunx.com",
   global: "https://sekai-assets-bdf29c81.seiunx.net",
 }
@@ -128,7 +128,7 @@ export function resolveSekaiMusicMetasUrl(region: SekaiRegion, cacheKey?: string
 }
 
 export function resolveSekaiAssetRootUrl(preference: SekaiAssetEndpointPreference): string {
-  return SEKAI_ASSET_ROOTS[preference]
+  return SEKAI_ASSET_ENDPOINT_ROOTS[preference]
 }
 
 export function resolveSekaiRegionAssetsUrl(

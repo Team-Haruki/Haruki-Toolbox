@@ -1,5 +1,6 @@
 import type { RecommendCard, RecommendDeck, RecommendResult } from "haruki-sekai-deck-recommend-cpp"
 import type { SekaiRegion } from "@/types"
+import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import {
   resolveCardAttrIconUrl,
   resolveCardFrameImageUrl,
@@ -14,6 +15,7 @@ import type { TaggedRecommendDeck, TaggedRecommendResult } from "./recommend-res
 export type DeckRecommendMasterCard = {
   id: number
   characterId: number | null
+  characterName: string | null
   cardRarityType: string
   attr: string
   prefix: string | null
@@ -45,6 +47,22 @@ export type DeckResultCardView = {
   thumbnail: CardThumbnailView
 }
 
+export type DeckResultSupportCard = {
+  card_id: number
+  bonus: number
+  skill_level: number
+  master_rank: number
+  level: number
+  after_training: boolean
+  default_image: string
+}
+
+export type DeckResultSupportCardView = {
+  card: DeckResultSupportCard
+  masterCard: DeckRecommendMasterCard | null
+  thumbnail: CardThumbnailView
+}
+
 export type DeckResultDeckView = {
   index: number
   deck: RecommendDeck | TaggedRecommendDeck
@@ -55,12 +73,13 @@ export function buildDeckResultViews(
   result: RecommendResult | TaggedRecommendResult | null,
   masterData: Record<string, unknown> | null,
   region: SekaiRegion,
+  assetEndpoint: SekaiAssetEndpointPreference = "china",
 ): DeckResultDeckView[] {
   if (!result?.decks?.length) {
     return []
   }
 
-  const cardMap = buildMasterCardMap(masterData?.cards)
+  const cardMap = buildMasterCardMap(masterData?.cards, masterData?.gameCharacters)
   return result.decks.map((deck, index) => ({
     index,
     deck,
@@ -69,16 +88,49 @@ export function buildDeckResultViews(
       return {
         card,
         masterCard,
-        thumbnail: buildCardThumbnailView(card, masterCard, region),
+        thumbnail: buildCardThumbnailView(card, masterCard, region, assetEndpoint),
       }
     }),
   }))
+}
+
+export function buildDeckSupportCardViews(
+  cards: readonly DeckResultSupportCard[],
+  masterData: Record<string, unknown> | null,
+  region: SekaiRegion,
+  assetEndpoint: SekaiAssetEndpointPreference = "china",
+): DeckResultSupportCardView[] {
+  const cardMap = buildMasterCardMap(masterData?.cards, masterData?.gameCharacters)
+  return cards.map((card) => {
+    const masterCard = cardMap.get(card.card_id) ?? null
+    return {
+      card,
+      masterCard,
+      thumbnail: buildCardThumbnailView({
+        card_id: card.card_id,
+        total_power: 0,
+        base_power: 0,
+        event_bonus_rate: card.bonus,
+        master_rank: card.master_rank,
+        level: card.level,
+        skill_level: card.skill_level,
+        skill_score_up: 0,
+        skill_life_recovery: 0,
+        episode1_read: false,
+        episode2_read: false,
+        after_training: card.after_training,
+        default_image: card.default_image,
+        has_canvas_bonus: false,
+      }, masterCard, region, assetEndpoint),
+    }
+  })
 }
 
 export function buildCardThumbnailView(
   card: RecommendCard,
   masterCard: DeckRecommendMasterCard | null,
   region: SekaiRegion,
+  assetEndpoint: SekaiAssetEndpointPreference = "china",
 ): CardThumbnailView {
   const { displayAfterTraining, trainedArt } = resolveRecommendCardDisplayState(card)
   const rarity = masterCard?.cardRarityType ?? ""
@@ -91,7 +143,7 @@ export function buildCardThumbnailView(
     title: masterCard?.prefix ?? null,
     rarity,
     attr,
-    thumbnailUrl: assetbundleName ? resolveSekaiCardThumbnailUrl(region, assetbundleName, trainedArt) : null,
+    thumbnailUrl: assetbundleName ? resolveSekaiCardThumbnailUrl(region, assetbundleName, trainedArt, assetEndpoint) : null,
     frameUrl: rarity ? resolveCardFrameImageUrl(rarity) : null,
     attrIconUrl: attr ? resolveCardAttrIconUrl(attr) : null,
     rareIconUrl: rarity === "rarity_birthday"
@@ -124,14 +176,23 @@ export function resolveRecommendCardDisplayState(card: Pick<RecommendCard, "afte
   }
 }
 
-function buildMasterCardMap(rawCards: unknown): Map<number, DeckRecommendMasterCard> {
+type DeckRecommendMasterGameCharacter = {
+  id?: number
+  firstName?: string
+  givenName?: string
+  firstNameEnglish?: string
+  givenNameEnglish?: string
+}
+
+function buildMasterCardMap(rawCards: unknown, rawGameCharacters: unknown): Map<number, DeckRecommendMasterCard> {
   const map = new Map<number, DeckRecommendMasterCard>()
   if (!Array.isArray(rawCards)) {
     return map
   }
 
+  const characterNameMap = buildCharacterNameMap(rawGameCharacters)
   for (const rawCard of rawCards) {
-    const card = normalizeMasterCard(rawCard)
+    const card = normalizeMasterCard(rawCard, characterNameMap)
     if (card) {
       map.set(card.id, card)
     }
@@ -140,7 +201,7 @@ function buildMasterCardMap(rawCards: unknown): Map<number, DeckRecommendMasterC
   return map
 }
 
-function normalizeMasterCard(rawCard: unknown): DeckRecommendMasterCard | null {
+function normalizeMasterCard(rawCard: unknown, characterNameMap: ReadonlyMap<number, string>): DeckRecommendMasterCard | null {
   if (!rawCard || typeof rawCard !== "object") {
     return null
   }
@@ -151,14 +212,44 @@ function normalizeMasterCard(rawCard: unknown): DeckRecommendMasterCard | null {
     return null
   }
 
+  const characterId = normalizeNumber(record.characterId)
   return {
     id,
-    characterId: normalizeNumber(record.characterId),
+    characterId,
+    characterName: characterId ? characterNameMap.get(characterId) ?? null : null,
     cardRarityType: normalizeString(record.cardRarityType),
     attr: normalizeString(record.attr),
     prefix: normalizeString(record.prefix) || null,
     assetbundleName: normalizeString(record.assetbundleName),
   }
+}
+
+function buildCharacterNameMap(rawGameCharacters: unknown): Map<number, string> {
+  const map = new Map<number, string>()
+  if (!Array.isArray(rawGameCharacters)) {
+    return map
+  }
+
+  for (const rawCharacter of rawGameCharacters as DeckRecommendMasterGameCharacter[]) {
+    const id = normalizeNumber(rawCharacter.id)
+    const name = id ? resolveCharacterName(rawCharacter) : null
+    if (id && name) {
+      map.set(id, name)
+    }
+  }
+  return map
+}
+
+function resolveCharacterName(character: DeckRecommendMasterGameCharacter): string | null {
+  const localized = `${normalizeString(character.firstName)}${normalizeString(character.givenName)}`
+  if (localized) {
+    return localized
+  }
+
+  const english = [normalizeString(character.givenNameEnglish), normalizeString(character.firstNameEnglish)]
+    .filter(Boolean)
+    .join(" ")
+  return english || null
 }
 
 function resolveRareCount(rarity: string): number {

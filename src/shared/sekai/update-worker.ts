@@ -16,6 +16,7 @@ import {
 } from "./cache"
 import {
   SEKAI_DATA_DEFAULT_MASTER_FILES,
+  SEKAI_DATA_OPTIONAL_MASTER_FILES,
   type SekaiDataWorkerEvent,
   type SekaiDataWorkerRequest,
   type SekaiDataUpdatePhase,
@@ -23,6 +24,7 @@ import {
 import type { SekaiMasterCacheState, SekaiMusicMetasCacheState } from "./types"
 
 const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
+const OPTIONAL_MASTER_FILE_SET = new Set<string>(SEKAI_DATA_OPTIONAL_MASTER_FILES)
 
 workerScope.onmessage = (event: MessageEvent<SekaiDataWorkerRequest>) => {
   void handleRequest(event.data)
@@ -99,7 +101,10 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
         current: index + 1,
         total: filesToFetch.length,
       })
-      masterFiles[fileName] = await fetchJson(resolveSekaiMasterFileUrl(region, fileName, versionInfo))
+      masterFiles[fileName] = await fetchMasterFileJson(
+        resolveSekaiMasterFileUrl(region, fileName, versionInfo),
+        fileName,
+      )
     }
 
     if (Object.keys(masterFiles).length > 0) {
@@ -159,6 +164,18 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
 
 async function fetchJson(url: string): Promise<unknown> {
   const response = await fetch(url, { cache: "no-store" })
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+async function fetchMasterFileJson(url: string, fileName: string): Promise<unknown> {
+  const response = await fetch(url, { cache: "no-store" })
+  if (response.status === 404 && OPTIONAL_MASTER_FILE_SET.has(normalizeSekaiMasterFileName(fileName))) {
+    return []
+  }
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status}`)
   }

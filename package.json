@@ -1,7 +1,7 @@
 {
   "name": "haruki-toolbox",
   "private": true,
-  "version": "8.0.0-dev.1",
+  "version": "8.0.0-alpha1.0",
   "type": "module",
   "scripts": {
     "dev": "bunx --bun vite",
@@ -27,10 +27,11 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "haruki-sekai-deck-recommend-cpp": "^0.2.21",
+    "haruki-sekai-deck-recommend-cpp": "^0.2.25",
     "lucide-vue-next": "^1.0.0",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
+    "pinyin-pro": "^3.28.1",
     "reka-ui": "^2.9.7",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.4",

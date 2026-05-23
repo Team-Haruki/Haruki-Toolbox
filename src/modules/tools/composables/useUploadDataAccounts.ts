@@ -1,7 +1,9 @@
 import { computed, ref, watch, type Ref } from "vue"
 import { useI18n } from "vue-i18n"
 import type { SekaiRegion, UploadDataType } from "@/types"
+import { formatGameAccountLabel } from "@/lib/game-account-display"
 import { isSekaiRegion } from "@/lib/sekai-region"
+import { useSettingsStore } from "@/shared/stores/settings"
 
 export interface BoundAccount {
   key: string
@@ -18,6 +20,7 @@ type UploadAccountStore = {
 
 export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: Ref<UploadDataType>) {
   const { t } = useI18n()
+  const settingsStore = useSettingsStore()
   const selectedAccountKey = ref<string | null>(null)
 
   function regionLabel(server: SekaiRegion): string {
@@ -46,7 +49,11 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
         key: `${server}:${uid}`,
         server,
         uid,
-        label: `${regionLabel(server)} / UID ${uid}`,
+        label: formatGameAccountLabel({
+          regionLabel: regionLabel(server),
+          uid,
+          hideUid: settingsStore.hideGameUserId,
+        }),
       }
     })
   })

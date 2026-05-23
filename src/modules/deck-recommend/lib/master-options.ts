@@ -30,10 +30,29 @@ export type SekaiWorldBloom = {
   aggregateAt?: number
 }
 
+export type SekaiEventTotalPowerLimit = {
+  id?: number
+  eventId?: number
+  upperTotalPower?: number
+}
+
+export type SekaiEventCardBonusLimit = {
+  id?: number
+  eventId?: number
+  memberCountLimit?: number
+}
+
+export type SekaiEventSkillScoreUpLimit = {
+  id?: number
+  eventId?: number
+  scoreUpRateLimit?: number
+}
+
 export type SekaiMusic = {
   id?: number
   seq?: number
   title?: string
+  pronunciation?: string
   assetbundleName?: string
   publishedAt?: number
 }
@@ -61,6 +80,7 @@ export type EventOption = {
   startAt: number | null
   aggregateAt: number | null
   closedAt: number | null
+  assetbundleName: string | null
 }
 
 export type MusicOption = {
@@ -68,6 +88,8 @@ export type MusicOption = {
   value: string
   label: string
   seq: number | null
+  pronunciation: string | null
+  assetbundleName: string | null
 }
 
 export type MusicDifficultyOption = {
@@ -112,6 +134,7 @@ export function buildEventOptions(items: SekaiEvent[] | null): EventOption[] {
         startAt: normalizePositiveNumber(item.startAt),
         aggregateAt: normalizePositiveNumber(item.aggregateAt),
         closedAt: normalizePositiveNumber(item.closedAt),
+        assetbundleName: normalizeText(item.assetbundleName),
       }
     })
     .filter((item): item is EventOption => item != null)
@@ -131,6 +154,8 @@ export function buildMusicOptions(items: SekaiMusic[] | null): MusicOption[] {
         value: String(id),
         label: normalizeText(item.title) ?? `#${id}`,
         seq: normalizePositiveNumber(item.seq),
+        pronunciation: normalizeText(item.pronunciation),
+        assetbundleName: normalizeText(item.assetbundleName),
       }
     })
     .filter((item): item is MusicOption => item != null)
@@ -219,6 +244,76 @@ export function resolveWorldBloomDefaultGameCharacterId(
   return normalizePositiveNumber(activeChapter?.gameCharacterId) ?? characterIds[0] ?? null
 }
 
+export function resolveWorldBloomSupportDeckCount(
+  eventId: string | number | null,
+  worldBloomTurn: string | number | null = null,
+): number {
+  const turn = normalizeWorldBloomTurn(worldBloomTurn) ?? resolveWorldBloomTurnFromEventId(normalizeSelectNumber(eventId))
+
+  switch (turn) {
+    case 1:
+      return 12
+    case 2:
+      return 20
+    case 3:
+      return 25
+    default:
+      return 25
+  }
+}
+
+export function resolveEventTotalPowerLimit(
+  eventId: string | number | null,
+  items: unknown,
+): number | null {
+  const targetEventId = normalizeSelectNumber(eventId)
+  if (!targetEventId || !Array.isArray(items)) {
+    return null
+  }
+
+  const matched = items.find((item): item is SekaiEventTotalPowerLimit =>
+    isRecord(item)
+    && normalizePositiveNumber(item.eventId) === targetEventId
+    && normalizePositiveNumber(item.upperTotalPower) != null,
+  )
+  return normalizePositiveNumber(matched?.upperTotalPower)
+}
+
+export function resolveEventCardBonusLimit(
+  eventId: string | number | null,
+  items: unknown,
+): number | null {
+  const targetEventId = normalizeSelectNumber(eventId)
+  if (!targetEventId || !Array.isArray(items)) {
+    return null
+  }
+
+  const matched = items.find((item): item is SekaiEventCardBonusLimit =>
+    isRecord(item)
+    && normalizePositiveNumber(item.eventId) === targetEventId
+    && normalizePositiveNumber(item.memberCountLimit) != null,
+  )
+  return normalizePositiveNumber(matched?.memberCountLimit)
+}
+
+export function resolveEventSkillScoreUpLimit(
+  eventId: string | number | null,
+  items: unknown,
+): number | null {
+  const targetEventId = normalizeSelectNumber(eventId)
+  if (!targetEventId || !Array.isArray(items)) {
+    return null
+  }
+
+  const matched = items.find((item): item is SekaiEventSkillScoreUpLimit =>
+    isRecord(item)
+    && normalizePositiveNumber(item.eventId) === targetEventId
+    && normalizePositiveNumber(item.scoreUpRateLimit) != null,
+  )
+  const scoreUpRateLimit = normalizePositiveNumber(matched?.scoreUpRateLimit)
+  return scoreUpRateLimit == null ? null : Math.max(0, scoreUpRateLimit - 100)
+}
+
 function resolveCharacterName(item: SekaiGameCharacter, id: number): string {
   const localized = `${normalizeText(item.firstName) ?? ""}${normalizeText(item.givenName) ?? ""}`
   if (localized) {
@@ -240,12 +335,39 @@ function normalizeSelectNumber(value: string | number | null): number | null {
   return normalizePositiveNumber(raw)
 }
 
+function normalizeWorldBloomTurn(value: string | number | null): 1 | 2 | 3 | null {
+  const turn = normalizeSelectNumber(value)
+  return turn === 1 || turn === 2 || turn === 3 ? turn : null
+}
+
 function normalizePositiveNumber(value: unknown): number | null {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return null
   }
 
   return value
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function resolveWorldBloomTurnFromEventId(eventId: number | null): 1 | 2 | 3 | null {
+  if (eventId == null) {
+    return null
+  }
+  if (eventId > 1000) {
+    const turn = Math.floor(eventId / 100_000) % 10 + 1
+    return normalizeWorldBloomTurn(turn)
+  }
+  if (eventId <= 140) {
+    return 1
+  }
+  if (eventId <= 180) {
+    return 2
+  }
+
+  return 3
 }
 
 function isWorldBloomEvent(eventId: number, events: SekaiEvent[] | null): boolean {
@@ -296,6 +418,7 @@ function isEventActive(eventId: number, events: SekaiEvent[] | null, now: number
     startAt: normalizePositiveNumber(event.startAt),
     aggregateAt: normalizePositiveNumber(event.aggregateAt),
     closedAt: normalizePositiveNumber(event.closedAt),
+    assetbundleName: normalizeText(event.assetbundleName),
   }, now)
 }
 

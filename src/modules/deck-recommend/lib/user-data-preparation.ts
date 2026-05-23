@@ -1,0 +1,581 @@
+import type { SingleCardConfig } from "haruki-sekai-deck-recommend-cpp"
+import type { DeckRecommendEventAttr, DeckRecommendUnitType } from "./recommend-options"
+import type { CardTrainingConfig } from "./training-config"
+
+export type DeckRecommendSingleCardEpisodeState = "none" | "first" | "both"
+
+export type DeckRecommendSingleCardOverride = {
+  cardId: number
+  disabled: boolean
+  level: number | null
+  skillLevel: number | null
+  masterRank: number | null
+  episodeState: DeckRecommendSingleCardEpisodeState | null
+  canvas: boolean | null
+}
+
+export type PrepareDeckRecommendUserDataInput = {
+  userData: unknown
+  masterData: Record<string, unknown>
+  unitFilters?: readonly DeckRecommendUnitType[] | null
+  attrFilters?: readonly DeckRecommendEventAttr[] | null
+  areaItemLevel?: number | null
+  singleCardOverrides?: readonly DeckRecommendSingleCardOverride[]
+  trainingConfig?: readonly CardTrainingConfig[]
+}
+
+export type PreparedDeckRecommendUserData = {
+  userData: Record<string, unknown>
+  singleCardConfigs: SingleCardConfig[]
+}
+
+type UserCardRecord = Record<string, unknown> & {
+  cardId?: number
+  level?: number
+  skillLevel?: number
+  masterRank?: number
+  specialTrainingStatus?: string
+  defaultImage?: string
+  episodes?: Array<Record<string, unknown>>
+}
+
+type MasterCardRecord = {
+  id?: number
+  characterId?: number
+  cardRarityType?: string
+  attr?: string
+  supportUnit?: string
+}
+
+type MasterCardEpisodeRecord = {
+  id?: number
+  cardId?: number
+  cardEpisodePartType?: string
+}
+
+type MasterCardRarityRecord = {
+  cardRarityType?: string
+  maxLevel?: number
+  trainingMaxLevel?: number
+  maxSkillLevel?: number
+}
+
+type UserAreaRecord = Record<string, unknown> & {
+  areaItems?: Array<Record<string, unknown>>
+}
+
+export function prepareDeckRecommendUserData(input: PrepareDeckRecommendUserDataInput): PreparedDeckRecommendUserData {
+  const userData = deepCloneRecord(input.userData)
+  const cardMap = buildMasterCardMap(input.masterData.cards)
+  const characterUnitMap = buildCharacterUnitMap(input.masterData.gameCharacters)
+  const rarityMap = buildRarityMap(input.masterData.cardRarities)
+  const episodeMap = buildCardEpisodeMap(input.masterData.cardEpisodes)
+  const singleCardConfigs = buildSingleCardConfigs(input.singleCardOverrides, cardMap, input.trainingConfig)
+  const unitFilters = createFilterSet(input.unitFilters)
+  const attrFilters = createFilterSet(input.attrFilters)
+
+  userData.userCards = prepareUserCards({
+    userCards: userData.userCards,
+    cardMap,
+    characterUnitMap,
+    rarityMap,
+    episodeMap,
+    unitFilters,
+    attrFilters,
+    singleCardOverrides: input.singleCardOverrides ?? [],
+  })
+
+  if (input.areaItemLevel != null && input.areaItemLevel > 0) {
+    userData.userAreas = applyAreaItemLevel(userData.userAreas, input.masterData.areaItems, input.areaItemLevel)
+  }
+
+  return {
+    userData,
+    singleCardConfigs,
+  }
+}
+
+export function createPreparedDeckRecommendUserDataString(input: PrepareDeckRecommendUserDataInput): {
+  userDataString: string
+  singleCardConfigs: SingleCardConfig[]
+} {
+  const prepared = prepareDeckRecommendUserData(input)
+  return {
+    userDataString: JSON.stringify(prepared.userData),
+    singleCardConfigs: prepared.singleCardConfigs,
+  }
+}
+
+export function applyChallengeScoreDelta<T extends { score: number; challenge_score_delta?: number }>(
+  decks: T[],
+  userData: unknown,
+  characterId: string | number | null,
+): T[] {
+  const highScore = resolveChallengeHighScore(userData, characterId)
+  return decks.map((deck) => ({
+    ...deck,
+    challenge_score_delta: deck.score - highScore,
+  }))
+}
+
+function prepareUserCards(input: {
+  userCards: unknown
+  cardMap: ReadonlyMap<number, MasterCardRecord>
+  characterUnitMap: ReadonlyMap<number, DeckRecommendUnitType>
+  rarityMap: ReadonlyMap<string, MasterCardRarityRecord>
+  episodeMap: ReadonlyMap<number, MasterCardEpisodeRecord[]>
+  unitFilters: ReadonlySet<DeckRecommendUnitType>
+  attrFilters: ReadonlySet<DeckRecommendEventAttr>
+  singleCardOverrides: readonly DeckRecommendSingleCardOverride[]
+}): UserCardRecord[] {
+  const overrides = new Map(
+    input.singleCardOverrides
+      .filter((item) => Number.isInteger(item.cardId) && item.cardId > 0)
+      .map((item) => [item.cardId, item]),
+  )
+  const sourceCards = Array.isArray(input.userCards) ? input.userCards : []
+  const preparedCards: UserCardRecord[] = []
+
+  for (const rawCard of sourceCards) {
+    if (!isRecord(rawCard)) {
+      continue
+    }
+
+    const cardId = normalizePositiveInteger(rawCard.cardId)
+    if (!cardId) {
+      continue
+    }
+
+    const override = overrides.get(cardId)
+    if (override?.disabled) {
+      continue
+    }
+
+    const masterCard = input.cardMap.get(cardId)
+    if (!matchesFilters(masterCard, input.characterUnitMap, input.unitFilters, input.attrFilters)) {
+      continue
+    }
+
+    preparedCards.push(applySingleCardOverride(rawCard, masterCard, input.rarityMap, input.episodeMap, override))
+  }
+
+  const existingIds = new Set(preparedCards.map((card) => normalizePositiveInteger(card.cardId)).filter(Boolean))
+  for (const override of overrides.values()) {
+    if (override.disabled || existingIds.has(override.cardId)) {
+      continue
+    }
+
+    const masterCard = input.cardMap.get(override.cardId)
+    if (!masterCard || !matchesFilters(masterCard, input.characterUnitMap, input.unitFilters, input.attrFilters)) {
+      continue
+    }
+
+    preparedCards.push(applySingleCardOverride(createSyntheticUserCard(override.cardId), masterCard, input.rarityMap, input.episodeMap, override))
+  }
+
+  return preparedCards
+}
+
+function matchesFilters(
+  masterCard: MasterCardRecord | undefined,
+  characterUnitMap: ReadonlyMap<number, DeckRecommendUnitType>,
+  unitFilters: ReadonlySet<DeckRecommendUnitType>,
+  attrFilters: ReadonlySet<DeckRecommendEventAttr>,
+): boolean {
+  if (unitFilters.size === 0 && attrFilters.size === 0) {
+    return true
+  }
+  if (!masterCard) {
+    return false
+  }
+  if (attrFilters.size > 0 && !attrFilters.has(masterCard.attr as DeckRecommendEventAttr)) {
+    return false
+  }
+  if (unitFilters.size > 0) {
+    const cardUnit = resolveCardUnit(masterCard, characterUnitMap)
+    if (!cardUnit || !unitFilters.has(cardUnit)) {
+      return false
+    }
+  }
+  return true
+}
+
+function createFilterSet<T extends string>(values: readonly T[] | null | undefined): ReadonlySet<T> {
+  if (!values || values.length === 0) {
+    return new Set()
+  }
+  return new Set(values.filter(Boolean))
+}
+
+function applySingleCardOverride(
+  rawCard: Record<string, unknown>,
+  masterCard: MasterCardRecord | undefined,
+  rarityMap: ReadonlyMap<string, MasterCardRarityRecord>,
+  episodeMap: ReadonlyMap<number, MasterCardEpisodeRecord[]>,
+  override: DeckRecommendSingleCardOverride | undefined,
+): UserCardRecord {
+  const card = { ...rawCard } as UserCardRecord
+  if (!override) {
+    return card
+  }
+
+  const rarity = masterCard?.cardRarityType
+  const rarityConfig = rarity ? rarityMap.get(rarity) : null
+  const maxLevel = rarityConfig?.trainingMaxLevel || rarityConfig?.maxLevel || null
+  const maxSkillLevel = rarityConfig?.maxSkillLevel || null
+  const level = normalizeBoundedInteger(override.level, 1, maxLevel)
+  const skillLevel = normalizeBoundedInteger(override.skillLevel, 1, maxSkillLevel)
+  const masterRank = normalizeBoundedInteger(override.masterRank, 0, 5)
+  if (level != null) {
+    card.level = level
+  }
+  if (skillLevel != null) {
+    card.skillLevel = skillLevel
+  }
+  if (masterRank != null) {
+    card.masterRank = masterRank
+  }
+  if (masterCard && card.level && rarityConfig?.trainingMaxLevel && card.level >= rarityConfig.trainingMaxLevel) {
+    card.specialTrainingStatus = "done"
+    card.defaultImage = "special_training"
+  }
+  if (override.episodeState != null && override.episodeState !== "none") {
+    card.episodes = applyEpisodeOverride(episodeMap.get(override.cardId) ?? [], override.episodeState)
+  }
+  return card
+}
+
+function applyEpisodeOverride(
+  episodes: readonly MasterCardEpisodeRecord[],
+  episodeState: DeckRecommendSingleCardEpisodeState,
+): Array<Record<string, unknown>> {
+  const allowedParts = episodeState === "both"
+    ? new Set(["first_part", "second_part"])
+    : new Set(["first_part"])
+
+  return episodes
+    .filter((episode) => episode.id && allowedParts.has(String(episode.cardEpisodePartType)))
+    .sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
+    .map((episode) => ({
+      cardEpisodeId: episode.id,
+      scenarioStatus: "already_read",
+    }))
+}
+
+function createSyntheticUserCard(cardId: number): UserCardRecord {
+  return {
+    userId: 0,
+    cardId,
+    level: 1,
+    exp: 0,
+    totalExp: 0,
+    skillLevel: 1,
+    skillExp: 0,
+    totalSkillExp: 0,
+    masterRank: 0,
+    specialTrainingStatus: "not_doing",
+    defaultImage: "original",
+    episodes: [],
+  }
+}
+
+function buildSingleCardConfigs(
+  overrides: readonly DeckRecommendSingleCardOverride[] | undefined,
+  cardMap: ReadonlyMap<number, MasterCardRecord>,
+  trainingConfig: readonly CardTrainingConfig[] | undefined,
+): SingleCardConfig[] {
+  if (!overrides) {
+    return []
+  }
+
+  return overrides
+    .filter((item) => Number.isInteger(item.cardId) && item.cardId > 0)
+    .map((item) => {
+      const baseConfig = createSingleCardBaseConfig(item.cardId, cardMap, trainingConfig)
+      const config: SingleCardConfig = {
+        ...baseConfig,
+        card_id: item.cardId,
+      }
+      const level = normalizeBoundedInteger(item.level, 1, null)
+      const skillLevel = normalizeBoundedInteger(item.skillLevel, 1, null)
+      const masterRank = normalizeBoundedInteger(item.masterRank, 0, 5)
+
+      if (item.disabled || baseConfig.disable != null) {
+        config.disable = item.disabled
+      }
+      if (item.canvas != null) {
+        config.canvas = item.canvas
+      }
+      if (level != null) {
+        config.level = level
+      }
+      if (skillLevel != null) {
+        config.skill_level = skillLevel
+      }
+      if (masterRank != null) {
+        config.master_rank = masterRank
+      }
+      if (item.episodeState != null) {
+        config.episode_read_count = toEpisodeReadCount(item.episodeState)
+      }
+
+      return config
+    })
+    .filter(hasSingleCardConfigOverride)
+}
+
+function createSingleCardBaseConfig(
+  cardId: number,
+  cardMap: ReadonlyMap<number, MasterCardRecord>,
+  trainingConfig: readonly CardTrainingConfig[] | undefined,
+): Omit<SingleCardConfig, "card_id"> {
+  const rarity = cardMap.get(cardId)?.cardRarityType
+  const config = rarity ? trainingConfig?.find((item) => item.rarity === rarity) : null
+  if (!config) {
+    return {}
+  }
+
+  return {
+    disable: config.disabled,
+    level_max: config.maxLevel,
+    episode_read: config.episodesRead,
+    master_max: config.maxMasterRank,
+    skill_max: config.maxSkillLevel,
+    canvas: config.mySekaiCanvas,
+  }
+}
+
+function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, targetLevel: number): UserAreaRecord[] {
+  const levels = new Map<number, number>()
+  const sourceAreas = Array.isArray(userAreas) ? userAreas : []
+  for (const area of sourceAreas) {
+    if (!isRecord(area) || !Array.isArray(area.areaItems)) {
+      continue
+    }
+
+    for (const item of area.areaItems) {
+      if (!isRecord(item)) {
+        continue
+      }
+
+      const itemId = normalizePositiveInteger(item.areaItemId)
+      const level = normalizePositiveInteger(item.level) ?? 0
+      if (itemId && level > (levels.get(itemId) ?? 0)) {
+        levels.set(itemId, level)
+      }
+    }
+  }
+
+  if (Array.isArray(areaItems)) {
+    for (const item of areaItems) {
+      if (!isRecord(item)) {
+        continue
+      }
+
+      const itemId = normalizePositiveInteger(item.id)
+      if (itemId && !levels.has(itemId)) {
+        levels.set(itemId, 0)
+      }
+    }
+  }
+
+  if (levels.size === 0) {
+    return sourceAreas.filter(isRecord) as UserAreaRecord[]
+  }
+
+  const preparedAreaItems = [...levels.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([areaItemId, level]) => ({
+      areaItemId,
+      level: Math.max(level, targetLevel),
+    }))
+  return [{ areaItems: preparedAreaItems }]
+}
+
+function resolveChallengeHighScore(userData: unknown, characterId: string | number | null): number {
+  const targetCharacterId = typeof characterId === "string" ? Number(characterId) : characterId
+  if (!Number.isInteger(targetCharacterId) || !targetCharacterId) {
+    return 0
+  }
+  if (!isRecord(userData) || !Array.isArray(userData.userChallengeLiveSoloResults)) {
+    return 0
+  }
+
+  for (const item of userData.userChallengeLiveSoloResults) {
+    if (!isRecord(item)) {
+      continue
+    }
+    if (item.characterId === targetCharacterId && typeof item.highScore === "number") {
+      return item.highScore
+    }
+  }
+  return 0
+}
+
+function buildMasterCardMap(rawCards: unknown): Map<number, MasterCardRecord> {
+  const map = new Map<number, MasterCardRecord>()
+  if (!Array.isArray(rawCards)) {
+    return map
+  }
+  for (const rawCard of rawCards) {
+    if (!isRecord(rawCard)) {
+      continue
+    }
+    const id = normalizePositiveInteger(rawCard.id)
+    if (!id) {
+      continue
+    }
+    map.set(id, {
+      id,
+      characterId: normalizePositiveInteger(rawCard.characterId) ?? undefined,
+      cardRarityType: normalizeText(rawCard.cardRarityType) ?? undefined,
+      attr: normalizeText(rawCard.attr) ?? undefined,
+      supportUnit: normalizeText(rawCard.supportUnit) ?? undefined,
+    })
+  }
+  return map
+}
+
+function buildCharacterUnitMap(rawCharacters: unknown): Map<number, DeckRecommendUnitType> {
+  const map = new Map<number, DeckRecommendUnitType>()
+  if (!Array.isArray(rawCharacters)) {
+    return map
+  }
+  for (const rawCharacter of rawCharacters) {
+    if (!isRecord(rawCharacter)) {
+      continue
+    }
+    const id = normalizePositiveInteger(rawCharacter.id)
+    const unit = normalizeUnit(rawCharacter.unit)
+    if (id && unit) {
+      map.set(id, unit)
+    }
+  }
+  return map
+}
+
+function buildRarityMap(rawRarities: unknown): Map<string, MasterCardRarityRecord> {
+  const map = new Map<string, MasterCardRarityRecord>()
+  if (!Array.isArray(rawRarities)) {
+    return map
+  }
+  for (const rawRarity of rawRarities) {
+    if (!isRecord(rawRarity)) {
+      continue
+    }
+    const rarity = normalizeText(rawRarity.cardRarityType)
+    if (!rarity) {
+      continue
+    }
+    map.set(rarity, {
+      cardRarityType: rarity,
+      maxLevel: normalizePositiveInteger(rawRarity.maxLevel) ?? undefined,
+      trainingMaxLevel: normalizePositiveInteger(rawRarity.trainingMaxLevel) ?? undefined,
+      maxSkillLevel: normalizePositiveInteger(rawRarity.maxSkillLevel) ?? undefined,
+    })
+  }
+  return map
+}
+
+function buildCardEpisodeMap(rawEpisodes: unknown): Map<number, MasterCardEpisodeRecord[]> {
+  const map = new Map<number, MasterCardEpisodeRecord[]>()
+  if (!Array.isArray(rawEpisodes)) {
+    return map
+  }
+  for (const rawEpisode of rawEpisodes) {
+    if (!isRecord(rawEpisode)) {
+      continue
+    }
+    const id = normalizePositiveInteger(rawEpisode.id)
+    const cardId = normalizePositiveInteger(rawEpisode.cardId)
+    if (!id || !cardId) {
+      continue
+    }
+    const items = map.get(cardId) ?? []
+    items.push({
+      id,
+      cardId,
+      cardEpisodePartType: normalizeText(rawEpisode.cardEpisodePartType) ?? undefined,
+    })
+    map.set(cardId, items)
+  }
+  return map
+}
+
+function resolveCardUnit(
+  masterCard: MasterCardRecord,
+  characterUnitMap: ReadonlyMap<number, DeckRecommendUnitType>,
+): DeckRecommendUnitType | null {
+  const supportUnit = normalizeUnit(masterCard.supportUnit)
+  if (supportUnit && supportUnit !== "piapro") {
+    return supportUnit
+  }
+
+  return masterCard.characterId ? characterUnitMap.get(masterCard.characterId) ?? null : null
+}
+
+function deepCloneRecord(value: unknown): Record<string, unknown> {
+  if (!isRecord(value)) {
+    return {}
+  }
+
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>
+}
+
+function normalizeBoundedInteger(value: number | null, min: number, max: number | null): number | null {
+  if (!Number.isInteger(value) || value == null || value < min) {
+    return null
+  }
+
+  return max != null ? Math.min(value, max) : value
+}
+
+function toEpisodeReadCount(value: DeckRecommendSingleCardEpisodeState): number {
+  switch (value) {
+    case "both":
+      return 2
+    case "first":
+      return 1
+    default:
+      return 0
+  }
+}
+
+function hasSingleCardConfigOverride(value: SingleCardConfig): boolean {
+  return value.disable != null
+    || value.level_max != null
+    || value.episode_read != null
+    || value.master_max != null
+    || value.skill_max != null
+    || value.canvas != null
+    || value.level != null
+    || value.skill_level != null
+    || value.master_rank != null
+    || value.episode_read_count != null
+}
+
+function normalizePositiveInteger(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null
+}
+
+function normalizeText(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null
+}
+
+function normalizeUnit(value: unknown): DeckRecommendUnitType | null {
+  switch (value) {
+    case "light_sound":
+    case "idol":
+    case "street":
+    case "theme_park":
+    case "school_refusal":
+    case "piapro":
+      return value
+    default:
+      return null
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
