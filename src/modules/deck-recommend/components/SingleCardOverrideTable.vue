@@ -227,7 +227,7 @@ function resolveAttrTagClass(attr: NonNullable<DeckRecommendMasterCardOption["at
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div class="min-w-0 space-y-3">
     <div class="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
       <div class="grid gap-2">
         <Label>{{ t("deckRecommend.singleCard.card") }}</Label>
@@ -255,111 +255,31 @@ function resolveAttrTagClass(attr: NonNullable<DeckRecommendMasterCardOption["at
     <div v-if="props.modelValue.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
       {{ t("deckRecommend.singleCard.empty") }}
     </div>
-    <Table v-else class="min-w-[1040px]">
-      <TableHeader>
-        <TableRow>
-          <TableHead>{{ t("deckRecommend.singleCard.card") }}</TableHead>
-          <TableHead class="w-24 text-center">{{ t("deckRecommend.training.disabled") }}</TableHead>
-          <TableHead class="w-32">{{ t("deckRecommend.singleCard.level") }}</TableHead>
-          <TableHead class="w-32">{{ t("deckRecommend.singleCard.skillLevel") }}</TableHead>
-          <TableHead class="w-36">{{ t("deckRecommend.singleCard.masterRank") }}</TableHead>
-          <TableHead class="w-40">{{ t("deckRecommend.singleCard.episodes") }}</TableHead>
-          <TableHead class="w-24 text-center">{{ t("deckRecommend.training.mySekaiCanvas") }}</TableHead>
-          <TableHead class="w-14" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        <TableRow v-for="item in props.modelValue" :key="item.cardId">
-          <TableCell class="min-w-64 whitespace-normal">
+    <template v-else>
+      <div class="grid min-w-0 gap-3 lg:hidden">
+        <article
+          v-for="item in props.modelValue"
+          :key="item.cardId"
+          class="grid min-w-0 gap-3 rounded-md border bg-background/60 p-2.5"
+        >
+          <div class="flex min-w-0 items-start justify-between gap-2">
             <div class="flex min-w-0 items-center gap-2">
-              <img
-                v-if="cardOption(item.cardId)?.thumbnailUrl"
-                :src="cardOption(item.cardId)?.thumbnailUrl ?? ''"
-                alt=""
-                class="size-10 shrink-0 rounded-md object-cover"
-                loading="lazy"
-              >
-              <div class="min-w-0">
-                <div class="truncate text-sm font-medium">
-                  {{ cardOption(item.cardId)?.label ?? `#${item.cardId}` }}
+                <img
+                  v-if="cardOption(item.cardId)?.thumbnailUrl"
+                  :src="cardOption(item.cardId)?.thumbnailUrl ?? ''"
+                  alt=""
+                  class="size-11 shrink-0 rounded-md object-cover"
+                  loading="lazy"
+                >
+                <div class="min-w-0">
+                  <div class="truncate text-sm font-medium">
+                    {{ cardOption(item.cardId)?.label ?? `#${item.cardId}` }}
+                  </div>
+                  <div class="truncate text-xs text-muted-foreground">
+                    {{ cardOption(item.cardId)?.description }}
+                  </div>
                 </div>
-                <div class="truncate text-xs text-muted-foreground">
-                  {{ cardOption(item.cardId)?.description }}
-                </div>
-              </div>
             </div>
-          </TableCell>
-          <TableCell class="text-center">
-            <Checkbox
-              :model-value="item.disabled"
-              :disabled="props.disabled"
-              @update:model-value="checked => updateOverride(item.cardId, { disabled: checked === true })"
-            />
-          </TableCell>
-          <TableCell>
-            <Combobox
-              :model-value="numberComboboxValue(item.level)"
-              :options="levelOptions(item.cardId)"
-              :disabled="props.disabled || item.disabled"
-              :placeholder="t('deckRecommend.singleCard.inherit')"
-              :search-placeholder="t('deckRecommend.singleCard.numberSearchPlaceholder')"
-              :empty-text="t('deckRecommend.singleCard.numberEmpty')"
-              trigger-class="h-8 px-2 text-xs"
-              content-class="min-w-40"
-              @update:model-value="value => updateNumber(item.cardId, 'level', value)"
-            />
-          </TableCell>
-          <TableCell>
-            <Combobox
-              :model-value="numberComboboxValue(item.skillLevel)"
-              :options="skillLevelOptions(item.cardId)"
-              :disabled="props.disabled || item.disabled"
-              :placeholder="t('deckRecommend.singleCard.inherit')"
-              :search-placeholder="t('deckRecommend.singleCard.numberSearchPlaceholder')"
-              :empty-text="t('deckRecommend.singleCard.numberEmpty')"
-              trigger-class="h-8 px-2 text-xs"
-              content-class="min-w-40"
-              @update:model-value="value => updateNumber(item.cardId, 'skillLevel', value)"
-            />
-          </TableCell>
-          <TableCell>
-            <Combobox
-              :model-value="numberComboboxValue(item.masterRank)"
-              :options="masterRankOptions()"
-              :disabled="props.disabled || item.disabled"
-              :placeholder="t('deckRecommend.singleCard.inherit')"
-              :search-placeholder="t('deckRecommend.singleCard.numberSearchPlaceholder')"
-              :empty-text="t('deckRecommend.singleCard.numberEmpty')"
-              trigger-class="h-8 px-2 text-xs"
-              content-class="min-w-40"
-              @update:model-value="value => updateNumber(item.cardId, 'masterRank', value)"
-            />
-          </TableCell>
-          <TableCell>
-            <Select
-              :model-value="item.episodeState ?? 'inherit'"
-              :disabled="props.disabled || item.disabled"
-              @update:model-value="value => updateEpisodeState(item.cardId, value)"
-            >
-              <SelectTrigger class="h-8 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="inherit">{{ t("deckRecommend.singleCard.episodeStates.inherit") }}</SelectItem>
-                <SelectItem value="none">{{ t("deckRecommend.singleCard.episodeStates.none") }}</SelectItem>
-                <SelectItem value="first">{{ t("deckRecommend.singleCard.episodeStates.first") }}</SelectItem>
-                <SelectItem value="both">{{ t("deckRecommend.singleCard.episodeStates.both") }}</SelectItem>
-              </SelectContent>
-            </Select>
-          </TableCell>
-          <TableCell class="text-center">
-            <Checkbox
-              :model-value="item.canvas === true"
-              :disabled="props.disabled || item.disabled"
-              @update:model-value="checked => updateOverride(item.cardId, { canvas: checked === true })"
-            />
-          </TableCell>
-          <TableCell>
             <Button
               type="button"
               variant="ghost"
@@ -370,9 +290,215 @@ function resolveAttrTagClass(attr: NonNullable<DeckRecommendMasterCardOption["at
             >
               <Trash2Icon class="size-4" />
             </Button>
-          </TableCell>
-        </TableRow>
-      </TableBody>
-    </Table>
+          </div>
+
+          <div class="grid min-w-0 gap-2 sm:grid-cols-2">
+            <label class="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-2.5 py-2 text-sm">
+              <span class="font-medium">{{ t("deckRecommend.training.disabled") }}</span>
+              <Checkbox
+                :model-value="item.disabled"
+                :disabled="props.disabled"
+                @update:model-value="checked => updateOverride(item.cardId, { disabled: checked === true })"
+              />
+            </label>
+
+            <label class="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-2.5 py-2 text-sm">
+              <span class="font-medium">{{ t("deckRecommend.training.mySekaiCanvas") }}</span>
+              <Checkbox
+                :model-value="item.canvas === true"
+                :disabled="props.disabled || item.disabled"
+                @update:model-value="checked => updateOverride(item.cardId, { canvas: checked === true })"
+              />
+            </label>
+
+            <div class="grid min-w-0 gap-1.5">
+              <Label>{{ t("deckRecommend.singleCard.level") }}</Label>
+              <Combobox
+                :model-value="numberComboboxValue(item.level)"
+                :options="levelOptions(item.cardId)"
+                :disabled="props.disabled || item.disabled"
+                :placeholder="t('deckRecommend.singleCard.inherit')"
+                :search-placeholder="t('deckRecommend.singleCard.numberSearchPlaceholder')"
+                :empty-text="t('deckRecommend.singleCard.numberEmpty')"
+                trigger-class="h-9 px-2 text-xs"
+                content-class="min-w-40 max-w-[calc(100vw-2rem)]"
+                @update:model-value="value => updateNumber(item.cardId, 'level', value)"
+              />
+            </div>
+
+            <div class="grid min-w-0 gap-1.5">
+              <Label>{{ t("deckRecommend.singleCard.skillLevel") }}</Label>
+              <Combobox
+                :model-value="numberComboboxValue(item.skillLevel)"
+                :options="skillLevelOptions(item.cardId)"
+                :disabled="props.disabled || item.disabled"
+                :placeholder="t('deckRecommend.singleCard.inherit')"
+                :search-placeholder="t('deckRecommend.singleCard.numberSearchPlaceholder')"
+                :empty-text="t('deckRecommend.singleCard.numberEmpty')"
+                trigger-class="h-9 px-2 text-xs"
+                content-class="min-w-40 max-w-[calc(100vw-2rem)]"
+                @update:model-value="value => updateNumber(item.cardId, 'skillLevel', value)"
+              />
+            </div>
+
+            <div class="grid min-w-0 gap-1.5">
+              <Label>{{ t("deckRecommend.singleCard.masterRank") }}</Label>
+              <Combobox
+                :model-value="numberComboboxValue(item.masterRank)"
+                :options="masterRankOptions()"
+                :disabled="props.disabled || item.disabled"
+                :placeholder="t('deckRecommend.singleCard.inherit')"
+                :search-placeholder="t('deckRecommend.singleCard.numberSearchPlaceholder')"
+                :empty-text="t('deckRecommend.singleCard.numberEmpty')"
+                trigger-class="h-9 px-2 text-xs"
+                content-class="min-w-40 max-w-[calc(100vw-2rem)]"
+                @update:model-value="value => updateNumber(item.cardId, 'masterRank', value)"
+              />
+            </div>
+
+            <div class="grid min-w-0 gap-1.5">
+              <Label>{{ t("deckRecommend.singleCard.episodes") }}</Label>
+              <Select
+                :model-value="item.episodeState ?? 'inherit'"
+                :disabled="props.disabled || item.disabled"
+                @update:model-value="value => updateEpisodeState(item.cardId, value)"
+              >
+                <SelectTrigger class="h-9 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="inherit">{{ t("deckRecommend.singleCard.episodeStates.inherit") }}</SelectItem>
+                  <SelectItem value="none">{{ t("deckRecommend.singleCard.episodeStates.none") }}</SelectItem>
+                  <SelectItem value="first">{{ t("deckRecommend.singleCard.episodeStates.first") }}</SelectItem>
+                  <SelectItem value="both">{{ t("deckRecommend.singleCard.episodeStates.both") }}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="hidden min-w-0 lg:block">
+        <Table class="min-w-[1040px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead>{{ t("deckRecommend.singleCard.card") }}</TableHead>
+              <TableHead class="w-24 text-center">{{ t("deckRecommend.training.disabled") }}</TableHead>
+              <TableHead class="w-32">{{ t("deckRecommend.singleCard.level") }}</TableHead>
+              <TableHead class="w-32">{{ t("deckRecommend.singleCard.skillLevel") }}</TableHead>
+              <TableHead class="w-36">{{ t("deckRecommend.singleCard.masterRank") }}</TableHead>
+              <TableHead class="w-40">{{ t("deckRecommend.singleCard.episodes") }}</TableHead>
+              <TableHead class="w-24 text-center">{{ t("deckRecommend.training.mySekaiCanvas") }}</TableHead>
+              <TableHead class="w-14" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="item in props.modelValue" :key="item.cardId">
+              <TableCell class="min-w-64 whitespace-normal">
+                <div class="flex min-w-0 items-center gap-2">
+                  <img
+                    v-if="cardOption(item.cardId)?.thumbnailUrl"
+                    :src="cardOption(item.cardId)?.thumbnailUrl ?? ''"
+                    alt=""
+                    class="size-10 shrink-0 rounded-md object-cover"
+                    loading="lazy"
+                  >
+                  <div class="min-w-0">
+                    <div class="truncate text-sm font-medium">
+                      {{ cardOption(item.cardId)?.label ?? `#${item.cardId}` }}
+                    </div>
+                    <div class="truncate text-xs text-muted-foreground">
+                      {{ cardOption(item.cardId)?.description }}
+                    </div>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell class="text-center">
+                <Checkbox
+                  :model-value="item.disabled"
+                  :disabled="props.disabled"
+                  @update:model-value="checked => updateOverride(item.cardId, { disabled: checked === true })"
+                />
+              </TableCell>
+              <TableCell>
+                <Combobox
+                  :model-value="numberComboboxValue(item.level)"
+                  :options="levelOptions(item.cardId)"
+                  :disabled="props.disabled || item.disabled"
+                  :placeholder="t('deckRecommend.singleCard.inherit')"
+                  :search-placeholder="t('deckRecommend.singleCard.numberSearchPlaceholder')"
+                  :empty-text="t('deckRecommend.singleCard.numberEmpty')"
+                  trigger-class="h-8 px-2 text-xs"
+                  content-class="min-w-40"
+                  @update:model-value="value => updateNumber(item.cardId, 'level', value)"
+                />
+              </TableCell>
+              <TableCell>
+                <Combobox
+                  :model-value="numberComboboxValue(item.skillLevel)"
+                  :options="skillLevelOptions(item.cardId)"
+                  :disabled="props.disabled || item.disabled"
+                  :placeholder="t('deckRecommend.singleCard.inherit')"
+                  :search-placeholder="t('deckRecommend.singleCard.numberSearchPlaceholder')"
+                  :empty-text="t('deckRecommend.singleCard.numberEmpty')"
+                  trigger-class="h-8 px-2 text-xs"
+                  content-class="min-w-40"
+                  @update:model-value="value => updateNumber(item.cardId, 'skillLevel', value)"
+                />
+              </TableCell>
+              <TableCell>
+                <Combobox
+                  :model-value="numberComboboxValue(item.masterRank)"
+                  :options="masterRankOptions()"
+                  :disabled="props.disabled || item.disabled"
+                  :placeholder="t('deckRecommend.singleCard.inherit')"
+                  :search-placeholder="t('deckRecommend.singleCard.numberSearchPlaceholder')"
+                  :empty-text="t('deckRecommend.singleCard.numberEmpty')"
+                  trigger-class="h-8 px-2 text-xs"
+                  content-class="min-w-40"
+                  @update:model-value="value => updateNumber(item.cardId, 'masterRank', value)"
+                />
+              </TableCell>
+              <TableCell>
+                <Select
+                  :model-value="item.episodeState ?? 'inherit'"
+                  :disabled="props.disabled || item.disabled"
+                  @update:model-value="value => updateEpisodeState(item.cardId, value)"
+                >
+                  <SelectTrigger class="h-8 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inherit">{{ t("deckRecommend.singleCard.episodeStates.inherit") }}</SelectItem>
+                    <SelectItem value="none">{{ t("deckRecommend.singleCard.episodeStates.none") }}</SelectItem>
+                    <SelectItem value="first">{{ t("deckRecommend.singleCard.episodeStates.first") }}</SelectItem>
+                    <SelectItem value="both">{{ t("deckRecommend.singleCard.episodeStates.both") }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell class="text-center">
+                <Checkbox
+                  :model-value="item.canvas === true"
+                  :disabled="props.disabled || item.disabled"
+                  @update:model-value="checked => updateOverride(item.cardId, { canvas: checked === true })"
+                />
+              </TableCell>
+              <TableCell>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  :aria-label="t('deckRecommend.singleCard.remove')"
+                  :disabled="props.disabled"
+                  @click="removeOverride(item.cardId)"
+                >
+                  <Trash2Icon class="size-4" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    </template>
   </div>
 </template>

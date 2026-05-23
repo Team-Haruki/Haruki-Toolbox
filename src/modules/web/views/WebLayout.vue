@@ -213,7 +213,7 @@ const {
       </header>
 
       <main class="flex flex-1 flex-col">
-        <div class="flex flex-1 flex-col items-center p-6">
+        <div class="flex flex-1 flex-col items-center p-2 sm:p-4 xl:p-6">
           <router-view v-slot="{ Component, route }">
             <Transition name="page-blur-fade" mode="out-in">
               <component :is="Component" :key="route.fullPath" />

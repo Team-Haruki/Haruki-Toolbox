@@ -71,6 +71,22 @@ describe("deck recommend wasm option helpers", () => {
       userData: { userCards: [] },
     }).target).toBe("power")
 
+    const eventBonusOptions = buildDeckRecommendOptions({
+      region: "jp",
+      mode: "event",
+      target: "bonus",
+      liveType: "multi",
+      algorithm: "dfs_ga",
+      musicId: "1",
+      musicDifficulty: "master",
+      eventId: "205",
+      characterId: null,
+      trainingConfig: createDefaultCardTrainingConfig(),
+      userData: { userCards: [] },
+    })
+    expect(eventBonusOptions.target).toBe("bonus")
+    expect(eventBonusOptions.target_bonus_list).toBeUndefined()
+
     expect(buildDeckRecommendOptions({
       region: "jp",
       mode: "challenge",
