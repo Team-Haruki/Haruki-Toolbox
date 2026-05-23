@@ -4,7 +4,7 @@ import { PlusIcon, Trash2Icon } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
+import { Combobox, type ComboboxOption, type ComboboxOptionTag } from "@/components/ui/combobox"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -104,6 +104,11 @@ function removeOverride(cardId: number) {
 
 function cardOption(cardId: number) {
   return cardOptionMap.value.get(cardId) ?? null
+}
+
+function cardTags(cardId: number): ComboboxOptionTag[] {
+  const option = cardOption(cardId)
+  return option ? createCardTags(option) : []
 }
 
 function updateNumber(cardId: number, key: "level" | "skillLevel" | "masterRank", value: string | null) {
@@ -275,8 +280,20 @@ function resolveAttrTagClass(attr: NonNullable<DeckRecommendMasterCardOption["at
                   <div class="truncate text-sm font-medium">
                     {{ cardOption(item.cardId)?.label ?? `#${item.cardId}` }}
                   </div>
-                  <div class="truncate text-xs text-muted-foreground">
-                    {{ cardOption(item.cardId)?.description }}
+                  <div class="min-w-0 text-xs text-muted-foreground">
+                    <span v-if="cardTags(item.cardId).length" class="flex flex-wrap gap-1">
+                      <span
+                        v-for="tag in cardTags(item.cardId)"
+                        :key="tag.label"
+                        :class="[
+                          'inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[11px] font-medium leading-none',
+                          tag.class,
+                        ]"
+                      >
+                        {{ tag.label }}
+                      </span>
+                    </span>
+                    <span v-else class="block truncate">{{ cardOption(item.cardId)?.description }}</span>
                   </div>
                 </div>
             </div>
@@ -407,8 +424,20 @@ function resolveAttrTagClass(attr: NonNullable<DeckRecommendMasterCardOption["at
                     <div class="truncate text-sm font-medium">
                       {{ cardOption(item.cardId)?.label ?? `#${item.cardId}` }}
                     </div>
-                    <div class="truncate text-xs text-muted-foreground">
-                      {{ cardOption(item.cardId)?.description }}
+                    <div class="min-w-0 text-xs text-muted-foreground">
+                      <span v-if="cardTags(item.cardId).length" class="flex flex-wrap gap-1">
+                        <span
+                          v-for="tag in cardTags(item.cardId)"
+                          :key="tag.label"
+                          :class="[
+                            'inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[11px] font-medium leading-none',
+                            tag.class,
+                          ]"
+                        >
+                          {{ tag.label }}
+                        </span>
+                      </span>
+                      <span v-else class="block truncate">{{ cardOption(item.cardId)?.description }}</span>
                     </div>
                   </div>
                 </div>

@@ -1391,8 +1391,8 @@ export const enUS = {
       tips: {
         title: "Tip",
         boostConfig: "Before score control, make sure your Live Boost setting is correct to avoid missing the target.",
-        testingPrefix: "This feature is still being tested",
-        testingSuffix: ". If you run into any issue, please contact Haruki Dev Team.",
+        testingPrefix: "This feature is still being tested.",
+        testingSuffix: " If you run into any issue, please contact Haruki Dev Team.",
         deckRecommend: "Score-control results include a Bonus deck button for quick deck recommendation.",
       },
       fields: {
@@ -1445,8 +1445,8 @@ export const enUS = {
     title: "Deck Recommendation",
     description: "Choose account, data region, mode, and song parameters to get the best possible event deck recommendation.",
     notice: {
-      testingPrefix: "This feature is still being tested",
-      testingSuffix: ". If you run into any issue, please contact Haruki Dev Team.",
+      testingPrefix: "This feature is still being tested.",
+      testingSuffix: " If you run into any issue, please contact Haruki Dev Team.",
     },
     select: {
       loading: "Preparing data...",
@@ -1622,10 +1622,13 @@ export const enUS = {
         unit: "Unit filter",
         attr: "Attribute filter",
         areaItemLevel: "Area item level",
+        areaItemLevelDefault: "Use current data",
+        areaItemLevelOption: "Lv.{value}",
         areaItemLevelPlaceholder: "Use current data",
-        boost: "Boost",
+        boost: "Live boost count",
+        boostOption: "{value}",
         boostPlaceholder: "Recorded as condition only",
-        invalid: "Boost must be an integer from 0 to 10; area item level must be an integer greater than 0.",
+        invalid: "Live boost count must be an integer from 0 to 10; area item level must be an integer greater than 0.",
       },
       constraints: {
         title: "Deck Constraints",
@@ -2957,7 +2960,7 @@ export const enUS = {
     },
     appUpdate: {
       title: "App update",
-      description: "App updates are checked by Git commit, so a new build can be detected even when the version number stays the same.",
+      description: "Check for Haruki Toolbox version updates.",
       current: "Current",
       available: "Update available",
       remoteVersion: "Remote version",

@@ -10,6 +10,7 @@ import {
   List,
   LucideAlertCircle,
   LucideCalculator,
+  LucideTriangleAlert,
   Music2,
   Percent,
   Target,
@@ -326,11 +327,14 @@ function normalizeBonusBound(value: number | undefined, fallback: number) {
         <AlertTitle>{{ t("tools.pointCalculator.tips.title") }}</AlertTitle>
         <AlertDescription class="space-y-1 leading-6">
           <p>{{ t("tools.pointCalculator.tips.boostConfig") }}</p>
-          <p>
-            <span class="font-semibold text-destructive">{{ t("tools.pointCalculator.tips.testingPrefix") }}</span>
-            {{ t("tools.pointCalculator.tips.testingSuffix") }}
-          </p>
           <p>{{ t("tools.pointCalculator.tips.deckRecommend") }}</p>
+        </AlertDescription>
+      </Alert>
+
+      <Alert class="border-amber-200 bg-amber-50/90 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+        <LucideTriangleAlert class="h-4 w-4 text-amber-600 dark:text-amber-300" />
+        <AlertDescription class="leading-6">
+          <span class="font-bold text-amber-950 dark:text-amber-50">{{ t("tools.pointCalculator.tips.testingPrefix") }}</span>{{ t("tools.pointCalculator.tips.testingSuffix") }}
         </AlertDescription>
       </Alert>
 

@@ -175,7 +175,7 @@ type NumericInputValue = string | number
 const multiLiveTeammatePowerInput = ref<NumericInputValue>("")
 const multiLiveTeammateScoreUpInput = ref<NumericInputValue>("")
 const multiLiveScoreUpLowerBoundInput = ref<NumericInputValue>("")
-const boostInput = ref<NumericInputValue>("")
+const boostInput = ref<NumericInputValue>("0")
 const areaItemLevelInput = ref<NumericInputValue>("")
 const resultLimitInput = ref<NumericInputValue>("")
 const engineTimeoutMsInput = ref<NumericInputValue>("")
@@ -408,6 +408,25 @@ const showBonusTargetsInput = computed(() => recommendMode.value === "bonus")
 const hasBonusTargetsError = computed(() =>
   showBonusTargetsInput.value && bonusTargetsInput.value.trim() !== "" && bonusTargets.value.invalidTokens.length > 0,
 )
+const boostOptions = computed(() =>
+  Array.from({ length: 11 }, (_, value) => ({
+    value: String(value),
+    label: t("deckRecommend.options.filters.boostOption", { value }),
+  })),
+)
+const areaItemLevelOptions = computed(() => [
+  {
+    value: "default",
+    label: t("deckRecommend.options.filters.areaItemLevelDefault"),
+  },
+  ...Array.from({ length: 20 }, (_, index) => {
+    const value = index + 1
+    return {
+      value: String(value),
+      label: t("deckRecommend.options.filters.areaItemLevelOption", { value }),
+    }
+  }),
+])
 const multiLiveTeammatePower = computed(() =>
   parseOptionalNumberInput(multiLiveTeammatePowerInput.value),
 )
@@ -958,6 +977,33 @@ function toggleAlgorithm(value: DeckRecommendAlgorithm, checked: boolean) {
 function updateExecutionMode(value: AcceptableValue) {
   if (typeof value === "string" && isDeckRecommendExecutionMode(value)) {
     executionMode.value = value
+  }
+}
+
+function updateBoostInput(value: AcceptableValue) {
+  if (typeof value !== "string") {
+    return
+  }
+
+  const parsed = Number(value)
+  if (Number.isInteger(parsed) && parsed >= 0 && parsed <= 10) {
+    boostInput.value = value
+  }
+}
+
+function updateAreaItemLevelInput(value: AcceptableValue) {
+  if (value === "default") {
+    areaItemLevelInput.value = ""
+    return
+  }
+
+  if (typeof value !== "string") {
+    return
+  }
+
+  const parsed = Number(value)
+  if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 20) {
+    areaItemLevelInput.value = value
   }
 }
 
@@ -2169,31 +2215,34 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           </div>
                           <div class="grid gap-3 sm:grid-cols-2">
                             <div class="grid gap-2">
-                              <Label for="deck-recommend-area-item-level">{{ t("deckRecommend.options.filters.areaItemLevel") }}</Label>
-                              <Input
-                                id="deck-recommend-area-item-level"
-                                v-model="areaItemLevelInput"
-                                type="number"
-                                min="1"
-                                inputmode="numeric"
-                                :placeholder="t('deckRecommend.options.filters.areaItemLevelPlaceholder')"
-                                :aria-invalid="areaItemLevel.invalid || undefined"
+                              <Label>{{ t("deckRecommend.options.filters.areaItemLevel") }}</Label>
+                              <Select
+                                :model-value="areaItemLevelInput === '' ? 'default' : String(areaItemLevelInput)"
                                 :disabled="runner.running.value"
-                              />
+                                @update:model-value="updateAreaItemLevelInput"
+                              >
+                                <SelectTrigger class="w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem v-for="option in areaItemLevelOptions" :key="option.value" :value="option.value">
+                                    {{ option.label }}
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div class="grid gap-2">
-                              <Label for="deck-recommend-boost">{{ t("deckRecommend.options.filters.boost") }}</Label>
-                              <Input
-                                id="deck-recommend-boost"
-                                v-model="boostInput"
-                                type="number"
-                                min="0"
-                                max="10"
-                                inputmode="numeric"
-                                :placeholder="t('deckRecommend.options.filters.boostPlaceholder')"
-                                :aria-invalid="boost.invalid || undefined"
-                                :disabled="runner.running.value"
-                              />
+                              <Label>{{ t("deckRecommend.options.filters.boost") }}</Label>
+                              <Select :model-value="String(boostInput)" :disabled="runner.running.value" @update:model-value="updateBoostInput">
+                                <SelectTrigger class="w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem v-for="option in boostOptions" :key="option.value" :value="option.value">
+                                    {{ option.label }}
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                         </div>
@@ -2213,8 +2262,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             <Input
                               id="deck-recommend-teammate-power"
                               v-model="multiLiveTeammatePowerInput"
-                              type="number"
-                              min="0"
+                              type="text"
                               inputmode="numeric"
                               :placeholder="t('deckRecommend.options.multiLive.followSelfPlaceholder')"
                               :aria-invalid="isMultiLiveOptionsEnabled && multiLiveTeammatePower.invalid || undefined"
@@ -2226,8 +2274,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             <Input
                               id="deck-recommend-teammate-score-up"
                               v-model="multiLiveTeammateScoreUpInput"
-                              type="number"
-                              min="0"
+                              type="text"
                               inputmode="numeric"
                               :placeholder="t('deckRecommend.options.multiLive.followSelfPlaceholder')"
                               :aria-invalid="isMultiLiveOptionsEnabled && multiLiveTeammateScoreUp.invalid || undefined"
@@ -2239,8 +2286,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             <Input
                               id="deck-recommend-score-up-lower-bound"
                               v-model="multiLiveScoreUpLowerBoundInput"
-                              type="number"
-                              min="0"
+                              type="text"
                               inputmode="decimal"
                               :placeholder="t('deckRecommend.options.multiLive.scoreUpLowerBoundPlaceholder')"
                               :aria-invalid="isMultiLiveOptionsEnabled && multiLiveScoreUpLowerBound.invalid || undefined"
@@ -2475,9 +2521,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           <Input
                             id="deck-recommend-result-limit"
                             v-model="resultLimitInput"
-                            type="number"
-                            min="1"
-                            max="50"
+                            type="text"
                             inputmode="numeric"
                             :placeholder="t('deckRecommend.options.engine.resultLimitPlaceholder')"
                             :aria-invalid="resultLimit.invalid || undefined"
@@ -2489,9 +2533,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           <Input
                             id="deck-recommend-engine-timeout"
                             v-model="engineTimeoutMsInput"
-                            type="number"
-                            min="1000"
-                            max="300000"
+                            type="text"
                             inputmode="numeric"
                             :placeholder="t('deckRecommend.options.engine.timeoutMsPlaceholder')"
                             :aria-invalid="engineTimeoutMs.invalid || undefined"
