@@ -115,20 +115,20 @@ function formatBuildTime(value: string) {
       </DialogHeader>
 
       <Tabs default-value="preferences" class="space-y-4">
-        <TabsList class="grid w-full grid-cols-4 sm:w-fit">
-          <TabsTrigger value="preferences">
+        <TabsList class="grid h-auto w-full grid-cols-2 auto-rows-[2.25rem] gap-1 sm:inline-flex sm:h-9 sm:w-fit sm:auto-rows-auto sm:grid-cols-none sm:gap-0">
+          <TabsTrigger value="preferences" class="min-w-0 px-1.5 text-xs sm:px-2 sm:text-sm">
             <Settings class="size-4" />
             {{ t("homeSettings.tabs.preferences") }}
           </TabsTrigger>
-          <TabsTrigger value="app">
+          <TabsTrigger value="app" class="min-w-0 px-1.5 text-xs sm:px-2 sm:text-sm">
             <Smartphone class="size-4" />
             {{ t("homeSettings.tabs.app") }}
           </TabsTrigger>
-          <TabsTrigger value="sekai-data">
+          <TabsTrigger value="sekai-data" class="min-w-0 px-1.5 text-xs sm:px-2 sm:text-sm">
             <Network class="size-4" />
             {{ t("homeSettings.tabs.sekaiData") }}
           </TabsTrigger>
-          <TabsTrigger value="user-data">
+          <TabsTrigger value="user-data" class="min-w-0 px-1.5 text-xs sm:px-2 sm:text-sm">
             <EyeOff class="size-4" />
             {{ t("homeSettings.tabs.userData") }}
           </TabsTrigger>

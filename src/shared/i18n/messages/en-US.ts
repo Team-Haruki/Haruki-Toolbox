@@ -3043,7 +3043,7 @@ export const enUS = {
       applyingTitle: "Updating app",
       applyingDescription: "The page will refresh after the update is applied.",
       currentTitle: "App is up to date",
-      currentDescription: "The current Git commit is already the latest build.",
+      currentDescription: "The current app version is up to date.",
       checkFailedTitle: "Update check failed",
       checkFailedDescription: "Remote build information could not be loaded. Please try again later.",
       offlineReadyTitle: "Offline cache ready",

@@ -170,13 +170,15 @@ const simulatedEventUnit = ref<DeckRecommendSimulatedEventUnitValue | null>("ido
 const customBonusSimulationDialogOpen = ref(false)
 const simulatedWorldBloomTurn = ref<string | null>("1")
 const simulatedWorldBloomCharacterId = ref<string | null>(null)
-const multiLiveTeammatePowerInput = ref("")
-const multiLiveTeammateScoreUpInput = ref("")
-const multiLiveScoreUpLowerBoundInput = ref("")
-const boostInput = ref("")
-const areaItemLevelInput = ref("")
-const resultLimitInput = ref("")
-const engineTimeoutMsInput = ref("")
+type NumericInputValue = string | number
+
+const multiLiveTeammatePowerInput = ref<NumericInputValue>("")
+const multiLiveTeammateScoreUpInput = ref<NumericInputValue>("")
+const multiLiveScoreUpLowerBoundInput = ref<NumericInputValue>("")
+const boostInput = ref<NumericInputValue>("")
+const areaItemLevelInput = ref<NumericInputValue>("")
+const resultLimitInput = ref<NumericInputValue>("")
+const engineTimeoutMsInput = ref<NumericInputValue>("")
 const unitFilters = ref<DeckRecommendUnitType[]>([])
 const attrFilters = ref<DeckRecommendEventAttr[]>([])
 const fixedCardIds = ref<number[]>([])
@@ -1609,10 +1611,10 @@ function hasRequiredFiles(cachedFiles: readonly string[], requiredFiles: readonl
 }
 
 function parseOptionalNumberInput(
-  value: string,
+  value: NumericInputValue | null | undefined,
   options: { min?: number; max?: number; integer?: boolean } = {},
 ): { value: number | null; invalid: boolean } {
-  const trimmed = value.trim()
+  const trimmed = value == null ? "" : String(value).trim()
   if (trimmed === "") {
     return { value: null, invalid: false }
   }

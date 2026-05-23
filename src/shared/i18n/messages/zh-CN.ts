@@ -3043,7 +3043,7 @@ export const zhCN = {
       applyingTitle: "正在更新应用",
       applyingDescription: "更新完成后页面会自动刷新。",
       currentTitle: "应用已是最新",
-      currentDescription: "当前 Git 提交已经是最新构建。",
+      currentDescription: "当前应用版本已是最新。",
       checkFailedTitle: "检查更新失败",
       checkFailedDescription: "无法读取远程构建信息，请稍后重试。",
       offlineReadyTitle: "离线缓存已准备好",
