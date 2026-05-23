@@ -2,7 +2,12 @@ import { computed, ref } from "vue"
 import { defineStore } from "pinia"
 import type { SekaiRegion } from "@/types"
 import { SEKAI_REGIONS } from "@/lib/sekai-region"
-import { normalizeSekaiMasterFileName } from "@/shared/sekai/data-sources"
+import {
+  formatSekaiMasterVersionLabel,
+  normalizeSekaiMasterFileName,
+  normalizeSekaiMasterVersionInfo,
+  resolveSekaiMasterVersionUrl,
+} from "@/shared/sekai/data-sources"
 import { readSekaiRegionCacheMeta } from "@/shared/sekai/cache"
 import { postSekaiDataWorkerRequest, subscribeSekaiDataWorker } from "@/shared/sekai/update-client"
 import {
@@ -21,6 +26,8 @@ export type SekaiDataRegionState = {
   progress: number
   masterDisplayVersion: string | null
   masterFetchVersion: string | null
+  masterLocalVersion: string | null
+  masterRemoteVersion: string | null
   musicMetasUpdatedAt: number | null
   files: string[]
   error: string | null
@@ -106,6 +113,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
           status: "idle",
           masterDisplayVersion: null,
           masterFetchVersion: null,
+          masterLocalVersion: null,
           musicMetasUpdatedAt: meta?.musicMetas?.updatedAt ?? null,
           files: [],
           updatedAt: updatedAt > 0 ? updatedAt : null,
@@ -118,6 +126,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
         status: "ready",
         masterDisplayVersion: meta.master.displayVersion,
         masterFetchVersion: meta.master.fetchVersion,
+        masterLocalVersion: formatSekaiMasterVersionLabel(region, meta.master.dataVersion, meta.master.cdnVersion),
         musicMetasUpdatedAt: meta.musicMetas?.updatedAt ?? null,
         files: meta.master.files,
         updatedAt: updatedAt > 0 ? updatedAt : null,
@@ -147,6 +156,22 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
     }
 
     return startRegionDataRequest(region, { force, files: requestedFiles })
+  }
+
+  async function checkRegionRemoteVersion(region: SekaiRegion) {
+    try {
+      const response = await fetch(resolveSekaiMasterVersionUrl(region), { cache: "no-store" })
+      if (!response.ok) {
+        return
+      }
+
+      const versionInfo = normalizeSekaiMasterVersionInfo(await response.json())
+      updateRegionState(region, {
+        masterRemoteVersion: formatSekaiMasterVersionLabel(region, versionInfo.dataVersion, versionInfo.cdnVersion),
+      })
+    } catch {
+      // Remote version checks are informational and should not break settings.
+    }
   }
 
   async function ensureRegionCacheStateLoaded(region: SekaiRegion) {
@@ -307,6 +332,8 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
         progress: 100,
         masterDisplayVersion: event.displayVersion,
         masterFetchVersion: event.fetchVersion,
+        masterLocalVersion: formatSekaiMasterVersionLabel(event.region, event.dataVersion ?? event.displayVersion, event.cdnVersion),
+        masterRemoteVersion: formatSekaiMasterVersionLabel(event.region, event.dataVersion ?? event.displayVersion, event.cdnVersion),
         musicMetasUpdatedAt: event.musicMetasUpdatedAt,
         files: event.files,
         error: null,
@@ -407,6 +434,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
     queue,
     latestQueueItems,
     loadRegionCacheState,
+    checkRegionRemoteVersion,
     ensureRegionData,
     refreshRegionData,
     clearRegionData,
@@ -442,6 +470,8 @@ function createRegionState(region: SekaiRegion): SekaiDataRegionState {
     progress: 0,
     masterDisplayVersion: null,
     masterFetchVersion: null,
+    masterLocalVersion: null,
+    masterRemoteVersion: null,
     musicMetasUpdatedAt: null,
     files: [],
     error: null,

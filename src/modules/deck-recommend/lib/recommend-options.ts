@@ -17,8 +17,9 @@ export type DeckRecommendMode =
   | "challenge"
   | "bonus"
   | "mysekai"
-  | "max-power"
-  | "max-skill"
+  | "max"
+
+export type DeckRecommendTarget = RecommendTarget
 
 export type DeckRecommendLiveType = "solo" | "multi" | "auto" | "cheerful"
 
@@ -66,6 +67,7 @@ export type WasmRecommendLiveType =
 export type BuildDeckRecommendOptionsInput = {
   region: SekaiRegion
   mode: DeckRecommendMode
+  target?: DeckRecommendTarget | null
   liveType: DeckRecommendLiveType
   algorithm: DeckRecommendAlgorithm
   musicId: string | number | null
@@ -134,7 +136,7 @@ export function buildDeckRecommendOptions(input: BuildDeckRecommendOptionsInput)
   }
 
   const liveType = resolveWasmLiveType(input.mode, input.liveType)
-  const target = resolveRecommendTarget(input.mode)
+  const target = resolveRecommendTarget(input.mode, input.target)
   const userDataOption = typeof input.userData === "string"
     ? { user_data_str: input.userData }
     : { user_data: input.userData }
@@ -186,11 +188,15 @@ export function buildDeckRecommendOptions(input: BuildDeckRecommendOptionsInput)
     options.target_bonus_list = targetBonuses
   }
 
-  if (input.customBonusAttr) {
+  const customBonusEnabled = isCustomBonusSimulation(input.eventSimulation)
+
+  if (customBonusEnabled && input.customBonusAttr) {
     options.custom_bonus_attr = input.customBonusAttr
   }
 
-  const customBonusCharacterIds = normalizeCustomBonusCharacterIds(input.customBonusCharacterIds)
+  const customBonusCharacterIds = customBonusEnabled
+    ? normalizeCustomBonusCharacterIds(input.customBonusCharacterIds)
+    : []
   if (customBonusCharacterIds.length > 0) {
     options.custom_bonus_character_ids = customBonusCharacterIds
   }
@@ -203,7 +209,7 @@ export function buildDeckRecommendOptions(input: BuildDeckRecommendOptionsInput)
     options.custom_bonus_character_support_units = customBonusCharacterSupportUnits
   }
 
-  if (input.filterOtherUnit === true) {
+  if (customBonusEnabled && input.filterOtherUnit === true) {
     options.filter_other_unit = true
   }
 
@@ -483,17 +489,15 @@ export function resolveRecommendDataMode(mode: DeckRecommendMode): "suite" | "my
   return mode === "mysekai" ? "mysekai" : "suite"
 }
 
-function resolveRecommendTarget(mode: DeckRecommendMode): RecommendTarget {
-  switch (mode) {
-    case "bonus":
-      return "bonus"
-    case "max-power":
-      return "power"
-    case "max-skill":
-      return "skill"
-    default:
-      return "score"
+function resolveRecommendTarget(
+  mode: DeckRecommendMode,
+  target: DeckRecommendTarget | null | undefined,
+): RecommendTarget {
+  if (mode === "bonus") {
+    return "bonus"
   }
+
+  return isAllowedRecommendTarget(mode, target) ? target : "score"
 }
 
 function resolveRecommendAlgorithm(
@@ -505,6 +509,28 @@ function resolveRecommendAlgorithm(
   }
 
   return algorithm
+}
+
+function isAllowedRecommendTarget(
+  mode: DeckRecommendMode,
+  target: DeckRecommendTarget | null | undefined,
+): target is DeckRecommendTarget {
+  if (!target) {
+    return false
+  }
+
+  switch (mode) {
+    case "event":
+      return target === "score" || target === "power" || target === "skill" || target === "bonus"
+    case "mysekai":
+      return target === "score" || target === "power" || target === "bonus"
+    case "challenge":
+      return target === "score" || target === "power"
+    case "max":
+      return target === "score" || target === "power" || target === "skill"
+    case "bonus":
+      return target === "bonus"
+  }
 }
 
 function defaultSkillStrategy(mode: DeckRecommendMode, liveType: WasmRecommendLiveType) {
@@ -544,6 +570,12 @@ function buildSimulatedEventOptions(
     }
   }
 
+  if (!input.attr && !input.unit) {
+    return {
+      event_type: input.eventType,
+    }
+  }
+
   if (!input.attr || !input.unit) {
     throw new Error("event_attr and event_unit are required")
   }
@@ -553,6 +585,13 @@ function buildSimulatedEventOptions(
     event_attr: input.attr,
     event_unit: input.unit,
   }
+}
+
+function isCustomBonusSimulation(input: DeckRecommendEventSimulationInput | undefined): boolean {
+  return input?.enabled === true
+    && input.worldBloomTurn == null
+    && !input.attr
+    && !input.unit
 }
 
 function isWasmMultiLiveType(liveType: WasmRecommendLiveType): boolean {

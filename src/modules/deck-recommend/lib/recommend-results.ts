@@ -1,5 +1,5 @@
 import type { RecommendDeck, RecommendResult } from "haruki-sekai-deck-recommend-cpp"
-import type { DeckRecommendAlgorithm, DeckRecommendMode } from "./recommend-options"
+import type { DeckRecommendAlgorithm, DeckRecommendMode, DeckRecommendTarget } from "./recommend-options"
 
 export type AlgorithmRecommendResult = {
   algorithm: DeckRecommendAlgorithm
@@ -17,6 +17,7 @@ export type TaggedRecommendResult = {
 export function mergeDeckRecommendResults(
   results: readonly AlgorithmRecommendResult[],
   mode: DeckRecommendMode = "event",
+  target: DeckRecommendTarget = "score",
 ): TaggedRecommendResult {
   const deckByKey = new Map<string, TaggedRecommendDeck>()
 
@@ -24,7 +25,7 @@ export function mergeDeckRecommendResults(
     for (const deck of result.decks) {
       const key = buildDeckDedupKey(deck)
       const previous = deckByKey.get(key)
-      if (!previous || compareRecommendDecks(mode, deck, previous) < 0) {
+      if (!previous || compareRecommendDecks(mode, target, deck, previous) < 0) {
         deckByKey.set(key, {
           ...deck,
           source_algorithms: mergeAlgorithms(previous?.source_algorithms ?? [], [algorithm]),
@@ -37,12 +38,38 @@ export function mergeDeckRecommendResults(
   }
 
   return {
-    decks: [...deckByKey.values()].sort((a, b) => compareRecommendDecks(mode, a, b)),
+    decks: [...deckByKey.values()].sort((a, b) => compareRecommendDecks(mode, target, a, b)),
   }
 }
 
-export function compareRecommendDecks(mode: DeckRecommendMode, left: RecommendDeck, right: RecommendDeck): number {
+export function compareRecommendDecks(
+  mode: DeckRecommendMode,
+  target: DeckRecommendTarget,
+  left: RecommendDeck,
+  right: RecommendDeck,
+): number {
   if (mode === "mysekai") {
+    if (target === "power") {
+      return compareValues([
+        numberDesc(left.total_power, right.total_power),
+        numberDesc(left.mysekai_event_point, right.mysekai_event_point),
+        numberDesc(mysekaiCombinedBonusRate(left), mysekaiCombinedBonusRate(right)),
+        numberDesc(left.multi_live_score_up, right.multi_live_score_up),
+        numberDesc(left.score, right.score),
+      ])
+    }
+
+    if (target === "bonus") {
+      return compareValues([
+        numberDesc(mysekaiCombinedBonusRate(left), mysekaiCombinedBonusRate(right)),
+        numberDesc(left.support_deck_bonus_rate, right.support_deck_bonus_rate),
+        numberDesc(left.event_bonus_rate, right.event_bonus_rate),
+        numberDesc(left.mysekai_event_point, right.mysekai_event_point),
+        numberDesc(left.total_power, right.total_power),
+        numberDesc(left.score, right.score),
+      ])
+    }
+
     return compareValues([
       numberDesc(left.mysekai_event_point, right.mysekai_event_point),
       numberDesc(mysekaiInternalPoint(left), mysekaiInternalPoint(right)),
@@ -63,24 +90,37 @@ export function compareRecommendDecks(mode: DeckRecommendMode, left: RecommendDe
     ])
   }
 
-  if (mode === "max-power") {
+  if (target === "power") {
     return compareValues([
       numberDesc(left.total_power, right.total_power),
       numberDesc(left.score, right.score),
       numberDesc(left.multi_live_score_up, right.multi_live_score_up),
+      numberDesc(combinedBonusRate(left), combinedBonusRate(right)),
     ])
   }
 
-  if (mode === "max-skill") {
+  if (target === "skill") {
     return compareValues([
       numberDesc(left.multi_live_score_up, right.multi_live_score_up),
       numberDesc(left.score, right.score),
+      numberDesc(left.total_power, right.total_power),
+    ])
+  }
+
+  if (target === "bonus") {
+    return compareValues([
+      numberDesc(combinedBonusRate(left), combinedBonusRate(right)),
+      numberDesc(left.event_bonus_rate, right.event_bonus_rate),
+      numberDesc(left.score, right.score),
+      numberDesc(left.total_power, right.total_power),
+      numberDesc(left.multi_live_score_up, right.multi_live_score_up),
     ])
   }
 
   return compareValues([
     numberDesc(left.score, right.score),
     numberDesc(left.multi_live_score_up, right.multi_live_score_up),
+    numberDesc(left.total_power, right.total_power),
   ])
 }
 
@@ -111,6 +151,10 @@ function numberDesc(left: number, right: number): number {
 }
 
 function mysekaiCombinedBonusRate(deck: RecommendDeck): number {
+  return combinedBonusRate(deck)
+}
+
+function combinedBonusRate(deck: RecommendDeck): number {
   return deck.event_bonus_rate + deck.support_deck_bonus_rate
 }
 

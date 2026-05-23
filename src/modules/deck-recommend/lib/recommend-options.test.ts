@@ -47,12 +47,43 @@ describe("deck recommend wasm option helpers", () => {
 
     expect(options.region).toBe("jp")
     expect(options.live_type).toBe("multi")
+    expect(options.target).toBe("score")
     expect(options.algorithm).toBe("dfs_ga")
     expect(options.event_id).toBe(205)
     expect(options.multi_live_teammate_power).toBeUndefined()
     expect(options.multi_live_teammate_score_up).toBeUndefined()
     expect(options.rarity_1_config?.master_max).toBe(true)
     expect(options.rarity_4_config?.skill_max).toBe(false)
+  })
+
+  it("passes explicit recommendation targets", () => {
+    expect(buildDeckRecommendOptions({
+      region: "jp",
+      mode: "event",
+      target: "power",
+      liveType: "multi",
+      algorithm: "dfs_ga",
+      musicId: "1",
+      musicDifficulty: "master",
+      eventId: "205",
+      characterId: null,
+      trainingConfig: createDefaultCardTrainingConfig(),
+      userData: { userCards: [] },
+    }).target).toBe("power")
+
+    expect(buildDeckRecommendOptions({
+      region: "jp",
+      mode: "challenge",
+      target: "bonus",
+      liveType: "multi",
+      algorithm: "dfs_ga",
+      musicId: "1",
+      musicDifficulty: "master",
+      eventId: "205",
+      characterId: "1",
+      trainingConfig: createDefaultCardTrainingConfig(),
+      userData: { userCards: [] },
+    }).target).toBe("score")
   })
 
   it("passes pre-serialized user data through user_data_str", () => {
@@ -367,6 +398,46 @@ describe("deck recommend wasm option helpers", () => {
     expect(options.live_type).toBe("solo")
     expect(options.algorithm).toBe("dfs")
     expect(options.target_bonus_list).toEqual([120, 130])
+    expect(options.custom_bonus_attr).toBeUndefined()
+    expect(options.custom_bonus_character_ids).toBeUndefined()
+    expect(options.custom_bonus_character_support_units).toBeUndefined()
+    expect(options.filter_other_unit).toBeUndefined()
+  })
+
+  it("builds custom bonus simulated event options", () => {
+    const options = buildDeckRecommendOptions({
+      region: "jp",
+      mode: "event",
+      liveType: "multi",
+      algorithm: "ga",
+      musicId: "74",
+      musicDifficulty: "expert",
+      eventId: "205",
+      characterId: null,
+      eventSimulation: {
+        enabled: true,
+        eventType: "marathon",
+        attr: null,
+        unit: null,
+        worldBloomTurn: null,
+        worldBloomCharacterId: null,
+        worldBloomCharacterUnit: null,
+      },
+      customBonusAttr: "cool",
+      customBonusCharacterIds: [1, 21, 1],
+      customBonusCharacterSupportUnits: {
+        "21": "light_sound",
+        "22": "idol",
+      },
+      filterOtherUnit: true,
+      trainingConfig: createDefaultCardTrainingConfig(),
+      userData: { userCards: [] },
+    })
+
+    expect(options.event_id).toBeUndefined()
+    expect(options.event_type).toBe("marathon")
+    expect(options.event_attr).toBeUndefined()
+    expect(options.event_unit).toBeUndefined()
     expect(options.custom_bonus_attr).toBe("cool")
     expect(options.custom_bonus_character_ids).toEqual([1, 21])
     expect(options.custom_bonus_character_support_units).toEqual({ "21": "light_sound" })

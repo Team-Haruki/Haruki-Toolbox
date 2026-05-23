@@ -96,6 +96,8 @@ export type SekaiDataWorkerEvent =
     requestId: string
     region: SekaiRegion
     cacheHit: boolean
+    dataVersion: string | null
+    cdnVersion: string | null
     displayVersion: string | null
     fetchVersion: string | null
     files: string[]

@@ -105,6 +105,22 @@ export function resolveSekaiMasterFetchVersion(
   return versionInfo.dataVersion
 }
 
+export function formatSekaiMasterVersionLabel(
+  region: SekaiRegion,
+  dataVersion: string | null | undefined,
+  cdnVersion: string | null | undefined,
+): string | null {
+  if (!dataVersion) {
+    return null
+  }
+
+  if (regionUsesCdnVersion(region) && cdnVersion) {
+    return `${dataVersion} (${cdnVersion})`
+  }
+
+  return dataVersion
+}
+
 export function resolveSekaiMasterFileUrl(
   region: SekaiRegion,
   name: string,

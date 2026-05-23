@@ -41,6 +41,37 @@ describe("deck recommend result helpers", () => {
     expect(result.decks.map((deck) => deck.event_bonus_rate)).toEqual([110, 100])
   })
 
+  it("sorts event decks by explicit target", () => {
+    const results = [
+      {
+        algorithm: "dfs_ga" as const,
+        result: {
+          decks: [
+            createDeck([1, 2, 3, 4, 5], 300, {
+              total_power: 1000,
+              multi_live_score_up: 100,
+              event_bonus_rate: 100,
+            }),
+            createDeck([6, 7, 8, 9, 10], 200, {
+              total_power: 3000,
+              multi_live_score_up: 150,
+              event_bonus_rate: 90,
+            }),
+            createDeck([11, 12, 13, 14, 15], 100, {
+              total_power: 2000,
+              multi_live_score_up: 200,
+              event_bonus_rate: 120,
+            }),
+          ],
+        },
+      },
+    ]
+
+    expect(mergeDeckRecommendResults(results, "event", "power").decks[0]?.total_power).toBe(3000)
+    expect(mergeDeckRecommendResults(results, "event", "skill").decks[0]?.multi_live_score_up).toBe(200)
+    expect(mergeDeckRecommendResults(results, "event", "bonus").decks[0]?.event_bonus_rate).toBe(120)
+  })
+
   it("sorts mysekai decks by mysekai event point and support-aware bonus tie breakers", () => {
     const result = mergeDeckRecommendResults([
       {

@@ -17,6 +17,7 @@ import {
   type DeckRecommendEventSimulationInput,
   type DeckRecommendLiveType,
   type DeckRecommendMode,
+  type DeckRecommendTarget,
   type DeckRecommendSkillOrderStrategy,
   type DeckRecommendSkillReferenceStrategy,
   type DeckRecommendSupportUnitType,
@@ -67,6 +68,7 @@ export type DeckRecommendRunnerInput = {
   account: DeckRecommendRunnerAccount | null
   dataRegion: SekaiRegion
   mode: DeckRecommendMode
+  target: DeckRecommendTarget
   liveType: DeckRecommendLiveType
   algorithms: DeckRecommendAlgorithm[]
   executionMode: DeckRecommendExecutionMode
@@ -207,6 +209,7 @@ export function useDeckRecommendRunner() {
           options: buildDeckRecommendOptions({
             region: input.dataRegion,
             mode: input.mode,
+            target: input.target,
             liveType: input.liveType,
             algorithm,
             musicId: input.musicId,
@@ -262,7 +265,7 @@ export function useDeckRecommendRunner() {
             },
           }))
         : workerResults
-      result.value = mergeDeckRecommendResults(resultWithChallengeDelta, input.mode)
+      result.value = mergeDeckRecommendResults(resultWithChallengeDelta, input.mode, input.target)
       worldBloomSupportCards.value = await loadWorldBloomSupportCards({
         input,
         recommendData,
