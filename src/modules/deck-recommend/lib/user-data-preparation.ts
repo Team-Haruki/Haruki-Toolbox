@@ -86,7 +86,12 @@ export function prepareDeckRecommendUserData(input: PrepareDeckRecommendUserData
   })
 
   if (input.areaItemLevel != null && input.areaItemLevel > 0) {
-    userData.userAreas = applyAreaItemLevel(userData.userAreas, input.masterData.areaItems, input.areaItemLevel)
+    userData.userAreas = applyAreaItemLevel(
+      userData.userAreas,
+      input.masterData.areaItems,
+      input.masterData.areaItemLevels,
+      input.areaItemLevel,
+    )
   }
 
   return {
@@ -345,8 +350,50 @@ function createSingleCardBaseConfig(
   }
 }
 
-function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, targetLevel: number): UserAreaRecord[] {
+export function resolveMaxAreaItemLevel(areaItemLevels: unknown): number | null {
+  if (!Array.isArray(areaItemLevels)) {
+    return null
+  }
+
+  let maxLevel = 0
+  for (const item of areaItemLevels) {
+    if (!isRecord(item)) {
+      continue
+    }
+
+    const level = normalizePositiveInteger(item.level)
+    if (level && level > maxLevel) {
+      maxLevel = level
+    }
+  }
+
+  return maxLevel > 0 ? maxLevel : null
+}
+
+function buildAreaItemMaxLevelMap(areaItemLevels: unknown): Map<number, number> {
   const levels = new Map<number, number>()
+  if (!Array.isArray(areaItemLevels)) {
+    return levels
+  }
+
+  for (const item of areaItemLevels) {
+    if (!isRecord(item)) {
+      continue
+    }
+
+    const itemId = normalizePositiveInteger(item.areaItemId)
+    const level = normalizePositiveInteger(item.level)
+    if (itemId && level && level > (levels.get(itemId) ?? 0)) {
+      levels.set(itemId, level)
+    }
+  }
+
+  return levels
+}
+
+function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, areaItemLevels: unknown, targetLevel: number): UserAreaRecord[] {
+  const levels = new Map<number, number>()
+  const maxLevels = buildAreaItemMaxLevelMap(areaItemLevels)
   const sourceAreas = Array.isArray(userAreas) ? userAreas : []
   for (const area of sourceAreas) {
     if (!isRecord(area) || !Array.isArray(area.areaItems)) {
@@ -387,9 +434,13 @@ function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, targetLevel:
     .sort(([left], [right]) => left - right)
     .map(([areaItemId, level]) => ({
       areaItemId,
-      level: Math.max(level, targetLevel),
+      level: clampAreaItemLevel(Math.max(level, targetLevel), maxLevels.get(areaItemId)),
     }))
   return [{ areaItems: preparedAreaItems }]
+}
+
+function clampAreaItemLevel(level: number, maxLevel: number | undefined): number {
+  return maxLevel ? Math.min(level, maxLevel) : level
 }
 
 function resolveChallengeHighScore(userData: unknown, characterId: string | number | null): number {

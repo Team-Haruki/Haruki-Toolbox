@@ -95,6 +95,7 @@ import {
   parseDeckSkillOrderInput,
 } from "../lib/recommend-options"
 import { createDefaultCardTrainingConfig } from "../lib/training-config"
+import { resolveMaxAreaItemLevel } from "../lib/user-data-preparation"
 import {
   useDeckRecommendRunner,
   type DeckRecommendExecutionMode,
@@ -118,7 +119,7 @@ const DEFAULT_MUSIC_ID = "74"
 const DEFAULT_MUSIC_DIFFICULTY = "expert"
 const DEFAULT_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "ga", "rl"]
 const DECK_RECOMMEND_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "dfs", "ga", "rl"]
-const DECK_RECOMMEND_CARD_OPTION_MASTER_FILES = ["cards", "cardRarities", "gameCharacters", "gameCharacterUnits", "unitProfiles"] as const
+const DECK_RECOMMEND_CARD_OPTION_MASTER_FILES = ["cards", "cardRarities", "gameCharacters", "gameCharacterUnits", "unitProfiles", "areaItemLevels"] as const
 const DECK_RECOMMEND_PREFERENCES_STORAGE_KEY = "haruki:deck-recommend:preferences"
 const DECK_RECOMMEND_PREFERENCES_VERSION = 2
 const DECK_RECOMMEND_EXECUTION_MODES: DeckRecommendExecutionMode[] = ["sequential", "parallel"]
@@ -230,6 +231,9 @@ const worldBloomSupportCardViews = computed(() =>
 )
 const cardOptions = computed(() =>
   buildMasterCardOptions(cardOptionMasterData.value ?? runner.masterData.value, dataRegion.value, settingsStore.currentAssetEndpoint),
+)
+const areaItemMaxLevel = computed(() =>
+  resolveMaxAreaItemLevel((runner.masterData.value ?? cardOptionMasterData.value)?.areaItemLevels) ?? 20,
 )
 const showResultCard = computed(() =>
   runner.error.value != null || runner.elapsedMs.value != null || resultDecks.value.length > 0,
@@ -419,7 +423,7 @@ const areaItemLevelOptions = computed(() => [
     value: "default",
     label: t("deckRecommend.options.filters.areaItemLevelDefault"),
   },
-  ...Array.from({ length: 20 }, (_, index) => {
+  ...Array.from({ length: areaItemMaxLevel.value }, (_, index) => {
     const value = index + 1
     return {
       value: String(value),
@@ -437,7 +441,9 @@ const multiLiveScoreUpLowerBound = computed(() =>
   parseOptionalNumberInput(multiLiveScoreUpLowerBoundInput.value),
 )
 const boost = computed(() => parseOptionalNumberInput(boostInput.value, { min: 0, max: 10, integer: true }))
-const areaItemLevel = computed(() => parseOptionalNumberInput(areaItemLevelInput.value, { min: 1, integer: true }))
+const areaItemLevel = computed(() =>
+  parseOptionalNumberInput(areaItemLevelInput.value, { min: 1, max: areaItemMaxLevel.value, integer: true }),
+)
 const resultLimit = computed(() => parseOptionalNumberInput(resultLimitInput.value, { min: 1, max: 50, integer: true }))
 const engineTimeoutMs = computed(() => parseOptionalNumberInput(engineTimeoutMsInput.value, { min: 1_000, max: 300_000, integer: true }))
 const specificSkillOrder = computed(() => parseDeckSkillOrderInput(specificSkillOrderInput.value))
@@ -635,6 +641,17 @@ watch(dataRegion, () => {
   runner.reset()
   checkDeckRecommendRegionData(dataRegion.value)
 })
+
+watch(
+  areaItemMaxLevel,
+  (maxLevel) => {
+    const parsed = Number(areaItemLevelInput.value)
+    if (Number.isInteger(parsed) && parsed > maxLevel) {
+      areaItemLevelInput.value = String(maxLevel)
+    }
+  },
+  { immediate: true },
+)
 
 watch(
   () => route.query,
@@ -1002,7 +1019,7 @@ function updateAreaItemLevelInput(value: AcceptableValue) {
   }
 
   const parsed = Number(value)
-  if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 20) {
+  if (Number.isInteger(parsed) && parsed >= 1 && parsed <= areaItemMaxLevel.value) {
     areaItemLevelInput.value = value
   }
 }

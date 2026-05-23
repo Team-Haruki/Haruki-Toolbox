@@ -64,6 +64,16 @@ describe("deck recommend user data preparation", () => {
         unit: "theme_park",
       },
     ],
+    areaItems: [
+      { id: 1 },
+      { id: 2 },
+    ],
+    areaItemLevels: [
+      { areaItemId: 1, level: 1 },
+      { areaItemId: 1, level: 15 },
+      { areaItemId: 2, level: 1 },
+      { areaItemId: 2, level: 20 },
+    ],
   }
 
   it("forwards precise single-card training overrides to the wasm engine", () => {
@@ -233,5 +243,32 @@ describe("deck recommend user data preparation", () => {
     const userData = JSON.parse(prepared.userDataString) as { userCards: Array<{ cardId: number }> }
 
     expect(userData.userCards.map((card) => card.cardId)).toEqual([101, 102])
+  })
+
+  it("clamps area item level overrides to master max levels", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [],
+        userAreas: [
+          {
+            areaItems: [
+              { areaItemId: 1, level: 12 },
+              { areaItemId: 2, level: 5 },
+            ],
+          },
+        ],
+      },
+      areaItemLevel: 20,
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as {
+      userAreas: Array<{ areaItems: Array<{ areaItemId: number; level: number }> }>
+    }
+
+    expect(userData.userAreas[0]?.areaItems).toEqual([
+      { areaItemId: 1, level: 15 },
+      { areaItemId: 2, level: 20 },
+    ])
   })
 })
