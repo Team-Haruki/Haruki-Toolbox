@@ -1,9 +1,14 @@
 import { expect, test } from "@playwright/test"
 
-test("settings page renders i18n controls", async ({ page }) => {
-  await page.goto("/settings")
+test("settings dialog renders i18n controls", async ({ page }) => {
+  await page.goto("/")
+  await page.getByRole("button", { name: /^(设置|Settings)$/ }).click()
 
-  await expect(page.getByRole("heading", { name: /Haruki工具箱设置|Haruki Toolbox Settings/ })).toBeVisible()
-  await expect(page.getByText(/服务器端点|Server Endpoint/)).toBeVisible()
-  await expect(page.getByText(/界面语言|Language/)).toBeVisible()
+  const settingsDialog = page.getByRole("dialog", { name: /Haruki工具箱设置|Haruki Toolbox Settings/ })
+
+  await expect(settingsDialog.getByRole("heading", { name: /Haruki工具箱设置|Haruki Toolbox Settings/ })).toBeVisible()
+  await expect(
+    settingsDialog.getByText("工具箱服务器端点", { exact: true }).or(settingsDialog.getByText("Toolbox server endpoint", { exact: true })),
+  ).toBeVisible()
+  await expect(settingsDialog.getByText("界面语言", { exact: true }).or(settingsDialog.getByText("Language", { exact: true }))).toBeVisible()
 })

@@ -10,6 +10,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { setupInterceptors } from "@/core/http/call-api";
 import { i18n, isAppLocale, setI18nLocale } from "@/shared/i18n";
 import { bootstrapUserSettingsFromKratosSession } from "@/modules/auth/lib/kratos";
+import { registerAppServiceWorker } from "@/pwa";
 
 
 const app = createApp(App)
@@ -60,3 +61,4 @@ try {
 app.use(i18n)
 app.use(router)
 app.mount('#app')
+void registerAppServiceWorker()
