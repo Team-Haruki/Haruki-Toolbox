@@ -475,7 +475,7 @@ function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, areaItemLeve
     return sourceAreas
   }
 
-  for (const [areaItemId, level] of targetLevels) {
+  for (const areaItemId of targetLevels.keys()) {
     targetLevels.set(areaItemId, clampAreaItemLevel(targetLevel, maxLevels.get(areaItemId)))
   }
 

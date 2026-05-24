@@ -86,7 +86,7 @@ export default defineConfig(({ command }) => ({
         buildInfoPlugin(),
         VitePWA({
             registerType: 'prompt',
-            includeAssets: ['assets/haruki.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+            includeAssets: ['apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
             manifest: {
                 name: 'Haruki Toolbox',
                 short_name: 'Haruki',
