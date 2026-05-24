@@ -721,7 +721,7 @@ export const zhCN = {
           botBackend: { name: "HarukiBot NEO Backend", desc: "基于 Go、Fiber 与 EntGo 编写的高性能 HarukiBot NEO 核心后端服务。" },
           toolboxBackend: { name: "Haruki Toolbox Backend", desc: "基于 Go、Fiber、EntGo 与 PostgreSQL、MongoDB 编写的高性能 Haruki 工具箱后端服务。" },
           deckService: { name: "Deck Service", desc: "基于 Rust 编写的高性能卡组推荐微服务。" },
-          deckCpp: { name: "Sekai Deck Recommend CPP", desc: "基于 C++ 编写的卡组推荐服务核心算法引擎。" },
+          deckCpp: { name: "Sekai Deck Recommend CPP", desc: "基于 C++ 与 yyjson 编写的卡组推荐服务核心算法引擎。原始实现来自 ルナ茶，部分修改来自 moe-sekai。" },
           scoresRs: { name: "PJSekai Scores RS", desc: "基于 Rust 编写的平面游戏谱面 SVG 生成器，同时使用 skia-safe 提供 PNG/JPG 谱面图片导出支持。" },
           toolbox: { name: "Haruki Toolbox", desc: "基于 Vue 3 与 TypeScript，使用 Shadcn-Vue 与 Tailwind CSS 设计的 Haruki 工具箱 Web 前端网站。" },
           assetUpdater: { name: "Haruki Sekai Asset Updater", desc: "基于 Rust 编写的高性能 Project Sekai 游戏资产解密与解包微服务。" },
@@ -1616,7 +1616,7 @@ export const zhCN = {
       },
       filters: {
         title: "高级过滤",
-        description: "按角色、团体或属性限制可用卡牌，也可以临时提高本地数据里的区域道具等级。",
+        description: "按角色、团体或属性限制可用卡牌，也可以临时覆盖本地数据里的区域道具等级。",
         none: "不限制",
         selectedCount: "已选 {count} 项",
         unit: "团体过滤",

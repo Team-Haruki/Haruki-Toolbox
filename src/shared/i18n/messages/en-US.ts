@@ -721,7 +721,7 @@ export const enUS = {
           botBackend: { name: "HarukiBot NEO Backend", desc: "A high-performance core backend service for HarukiBot NEO, built with Go, Fiber, and EntGo." },
           toolboxBackend: { name: "Haruki Toolbox Backend", desc: "A high-performance backend service for Haruki Toolbox, built with Go, Fiber, EntGo, PostgreSQL, and MongoDB." },
           deckService: { name: "Deck Service", desc: "A high-performance deck recommendation microservice built with Rust." },
-          deckCpp: { name: "Sekai Deck Recommend CPP", desc: "The core algorithm engine for deck recommendation services, written in C++." },
+          deckCpp: { name: "Sekai Deck Recommend CPP", desc: "The core algorithm engine for deck recommendation services, written in C++ with yyjson. The original implementation comes from NeuraXmy, with some modifications from moe-sekai." },
           scoresRs: { name: "PJSekai Scores RS", desc: "A flat game chart SVG generator written in Rust, utilizing skia-safe to support PNG/JPG chart image exports." },
           toolbox: { name: "Haruki Toolbox", desc: "The Haruki Toolbox Web frontend website, built with Vue 3 and TypeScript, designed using Shadcn-Vue and Tailwind CSS." },
           assetUpdater: { name: "Haruki Sekai Asset Updater", desc: "A high-performance decryption and unpacking microservice for Project Sekai game assets, built with Rust." },

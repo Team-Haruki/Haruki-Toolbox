@@ -320,4 +320,52 @@ describe("deck recommend user data preparation", () => {
       },
     ])
   })
+
+  it("overrides existing area item levels exactly instead of only raising them", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [],
+        userAreas: [
+          {
+            areaId: 10,
+            areaItems: [
+              { areaItemId: 1, level: 15 },
+            ],
+          },
+          {
+            areaId: 11,
+            areaItems: [
+              { areaItemId: 2, level: 20 },
+            ],
+          },
+        ],
+      },
+      areaItemLevel: 5,
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as {
+      userAreas: Array<{
+        areaId: number
+        areaItems: Array<{ areaItemId: number; level: number }>
+      }>
+    }
+
+    expect(userData.userAreas).toEqual([
+      {
+        areaId: 10,
+        areaItems: [{ areaItemId: 1, level: 5 }],
+      },
+      {
+        areaId: 11,
+        areaItems: [{ areaItemId: 2, level: 5 }],
+      },
+      {
+        areaId: 12,
+        actionSets: [],
+        areaItems: [{ areaItemId: 3, level: 5 }],
+        userAreaStatus: { areaId: 12, status: "released" },
+      },
+    ])
+  })
 })
