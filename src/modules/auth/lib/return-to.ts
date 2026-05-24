@@ -5,16 +5,29 @@ export interface FlowReturnToOptions {
   maxDepth?: number
 }
 
-function parseAbsoluteOrigin(value: string): string {
+interface PublicFrontendOriginOptions {
+  webUrl?: unknown
+}
+
+function readEnvString(key: keyof ImportMetaEnv): string {
+  const value = import.meta.env?.[key]
+  return typeof value === "string" ? value : ""
+}
+
+function parseHttpUrl(value: string, base?: string): URL | null {
   try {
-    const url = new URL(value)
+    const url = base ? new URL(value, base) : new URL(value)
     if (url.protocol !== "https:" && url.protocol !== "http:") {
-      return ""
+      return null
     }
-    return url.origin
+    return url
   } catch {
-    return ""
+    return null
   }
+}
+
+function parseAbsoluteOrigin(value: string): string {
+  return parseHttpUrl(value)?.origin ?? ""
 }
 
 function parseReturnToUrl(value: string, currentOrigin: string): URL | null {
@@ -28,6 +41,52 @@ function parseReturnToUrl(value: string, currentOrigin: string): URL | null {
   } catch {
     return null
   }
+}
+
+function isPrivateIpv4(hostname: string): boolean {
+  const parts = hostname.split(".").map((part) => Number.parseInt(part, 10))
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+    return false
+  }
+
+  return parts[0] === 10
+    || parts[0] === 127
+    || (parts[0] === 169 && parts[1] === 254)
+    || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31)
+    || (parts[0] === 192 && parts[1] === 168)
+}
+
+function isLocalHostname(hostname: string): boolean {
+  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, "")
+  return normalized === "localhost"
+    || normalized.endsWith(".localhost")
+    || normalized === "::1"
+    || normalized === "0.0.0.0"
+    || isPrivateIpv4(normalized)
+}
+
+export function resolvePublicFrontendOrigin(
+  currentOrigin: string,
+  options: PublicFrontendOriginOptions = {}
+): string {
+  const configuredWebUrl = typeof options.webUrl === "string"
+    ? options.webUrl
+    : readEnvString("VITE_HARUKI_TOOLBOX_WEB_URL")
+  const configuredOrigin = parseAbsoluteOrigin(configuredWebUrl)
+  if (configuredOrigin) {
+    return configuredOrigin
+  }
+
+  const currentUrl = parseHttpUrl(currentOrigin)
+  if (!currentUrl) {
+    return ""
+  }
+
+  if (currentUrl.protocol === "http:" && !isLocalHostname(currentUrl.hostname)) {
+    currentUrl.protocol = "https:"
+  }
+
+  return currentUrl.origin
 }
 
 export function parseAllowedReturnToOrigins(value: unknown): string[] {
@@ -51,18 +110,24 @@ export function parseAllowedReturnToOrigins(value: unknown): string[] {
 }
 
 export function getConfiguredAllowedReturnToOrigins(): string[] {
-  return parseAllowedReturnToOrigins(import.meta.env.VITE_HARUKI_TOOLBOX_ALLOWED_RETURN_TO_ORIGINS)
+  return parseAllowedReturnToOrigins(readEnvString("VITE_HARUKI_TOOLBOX_ALLOWED_RETURN_TO_ORIGINS"))
 }
 
 export function createAllowedReturnToOrigins(
   currentOrigin: string,
   extraOrigins: Iterable<string> = []
 ): Set<string> {
+  const currentUrl = parseHttpUrl(currentOrigin)
+  const safeCurrentOrigin = currentUrl && (currentUrl.protocol !== "http:" || isLocalHostname(currentUrl.hostname))
+    ? currentUrl.origin
+    : ""
+
   return new Set([
-    currentOrigin,
+    resolvePublicFrontendOrigin(currentOrigin),
+    safeCurrentOrigin,
     ...getConfiguredAllowedReturnToOrigins(),
     ...[...extraOrigins].map(parseAbsoluteOrigin).filter((origin) => origin !== ""),
-  ])
+  ].filter((origin) => origin !== ""))
 }
 
 export function isAllowedFlowReturnTo(
@@ -75,14 +140,17 @@ export function isAllowedFlowReturnTo(
     return false
   }
 
-  const parsed = parseReturnToUrl(value, options.currentOrigin)
+  const currentOrigin = resolvePublicFrontendOrigin(options.currentOrigin) || options.currentOrigin
+  const parsed = parseReturnToUrl(value, currentOrigin)
   if (!parsed) {
     return false
   }
 
   const allowedOrigins = new Set([
-    options.currentOrigin,
-    ...(options.allowedOrigins ?? []),
+    currentOrigin,
+    ...[...(options.allowedOrigins ?? [])]
+      .map(parseAbsoluteOrigin)
+      .filter((origin) => origin !== ""),
   ])
   if (allowedOrigins.has(parsed.origin)) {
     return true
