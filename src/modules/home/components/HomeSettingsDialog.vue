@@ -130,21 +130,21 @@ function hasVisitedSettingsTab(tab: string) {
 
       <Tabs v-model="settingsTab" :unmount-on-hide="false" class="space-y-4">
         <TabsList class="grid h-auto w-full grid-cols-2 auto-rows-[2.25rem] gap-1 p-1 sm:inline-flex sm:h-9 sm:w-fit sm:auto-rows-auto sm:grid-cols-none sm:gap-0 sm:p-[3px]">
-          <TabsTrigger value="preferences" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
+          <TabsTrigger value="preferences" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:min-w-max sm:flex-none sm:overflow-visible sm:px-3 sm:text-sm">
             <Settings class="size-4" />
-            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.preferences") }}</span>
+            <span class="min-w-0 truncate sm:min-w-max sm:overflow-visible sm:text-clip">{{ t("homeSettings.tabs.preferences") }}</span>
           </TabsTrigger>
-          <TabsTrigger value="app" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
+          <TabsTrigger value="app" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:min-w-max sm:flex-none sm:overflow-visible sm:px-3 sm:text-sm">
             <Smartphone class="size-4" />
-            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.app") }}</span>
+            <span class="min-w-0 truncate sm:min-w-max sm:overflow-visible sm:text-clip">{{ t("homeSettings.tabs.app") }}</span>
           </TabsTrigger>
-          <TabsTrigger value="sekai-data" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
+          <TabsTrigger value="sekai-data" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:min-w-max sm:flex-none sm:overflow-visible sm:px-3 sm:text-sm">
             <Network class="size-4" />
-            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.sekaiData") }}</span>
+            <span class="min-w-0 truncate sm:min-w-max sm:overflow-visible sm:text-clip">{{ t("homeSettings.tabs.sekaiData") }}</span>
           </TabsTrigger>
-          <TabsTrigger value="user-data" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
+          <TabsTrigger value="user-data" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:min-w-max sm:flex-none sm:overflow-visible sm:px-3 sm:text-sm">
             <EyeOff class="size-4" />
-            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.userData") }}</span>
+            <span class="min-w-0 truncate sm:min-w-max sm:overflow-visible sm:text-clip">{{ t("homeSettings.tabs.userData") }}</span>
           </TabsTrigger>
         </TabsList>
 
