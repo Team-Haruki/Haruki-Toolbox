@@ -72,6 +72,22 @@ describe("deck recommend result helpers", () => {
     expect(mergeDeckRecommendResults(results, "event", "bonus").decks[0]?.event_bonus_rate).toBe(120)
   })
 
+  it("sorts max score decks by live score instead of fake event point", () => {
+    const result = mergeDeckRecommendResults([
+      {
+        algorithm: "dfs_ga",
+        result: {
+          decks: [
+            createDeck([1, 2, 3, 4, 5], 300, { live_score: 1000 }),
+            createDeck([6, 7, 8, 9, 10], 200, { live_score: 3000 }),
+          ],
+        },
+      },
+    ], "max", "score")
+
+    expect(result.decks[0]?.live_score).toBe(3000)
+  })
+
   it("sorts mysekai decks by mysekai event point and support-aware bonus tie breakers", () => {
     const result = mergeDeckRecommendResults([
       {

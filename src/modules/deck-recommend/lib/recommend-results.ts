@@ -131,10 +131,12 @@ export function compareRecommendDecks(
     ])
   }
 
+  const scoreValue = mode === "max" ? liveScoreValue : eventScoreValue
+
   if (target === "power") {
     return compareValues([
       numberDesc(left.total_power, right.total_power),
-      numberDesc(left.score, right.score),
+      numberDesc(scoreValue(left), scoreValue(right)),
       numberDesc(left.multi_live_score_up, right.multi_live_score_up),
       numberDesc(combinedBonusRate(left), combinedBonusRate(right)),
     ])
@@ -143,7 +145,7 @@ export function compareRecommendDecks(
   if (target === "skill") {
     return compareValues([
       numberDesc(left.multi_live_score_up, right.multi_live_score_up),
-      numberDesc(left.score, right.score),
+      numberDesc(scoreValue(left), scoreValue(right)),
       numberDesc(left.total_power, right.total_power),
     ])
   }
@@ -152,14 +154,14 @@ export function compareRecommendDecks(
     return compareValues([
       numberDesc(combinedBonusRate(left), combinedBonusRate(right)),
       numberDesc(left.event_bonus_rate, right.event_bonus_rate),
-      numberDesc(left.score, right.score),
+      numberDesc(scoreValue(left), scoreValue(right)),
       numberDesc(left.total_power, right.total_power),
       numberDesc(left.multi_live_score_up, right.multi_live_score_up),
     ])
   }
 
   return compareValues([
-    numberDesc(left.score, right.score),
+    numberDesc(scoreValue(left), scoreValue(right)),
     numberDesc(left.multi_live_score_up, right.multi_live_score_up),
     numberDesc(left.total_power, right.total_power),
   ])
@@ -185,6 +187,14 @@ function shouldApplyLiveBoost(mode: DeckRecommendMode): boolean {
 
 function multiplyInteger(value: number, multiplier: number): number {
   return Number.isFinite(value) ? Math.round(value * multiplier) : value
+}
+
+function eventScoreValue(deck: RecommendDeck): number {
+  return deck.score
+}
+
+function liveScoreValue(deck: RecommendDeck): number {
+  return Number(deck.live_score) || deck.score
 }
 
 function compareValues(values: readonly number[]): number {

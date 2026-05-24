@@ -281,6 +281,9 @@ const recommendTargetOptions = computed<Array<{ value: DeckRecommendTarget; labe
 const activeRecommendTarget = computed<DeckRecommendTarget>(() =>
   isAllowedRecommendTarget(recommendTarget.value, recommendMode.value) ? recommendTarget.value : defaultRecommendTarget(recommendMode.value),
 )
+const activeRecommendTargetLabel = computed(() =>
+  recommendTargetLabel(activeRecommendTarget.value, recommendMode.value),
+)
 const isEventSimulationAvailable = computed(() => isEventLikeMode.value)
 const isEventSimulationActive = computed(() => eventSimulationEnabled.value && isEventSimulationAvailable.value)
 const activeOfficialEventId = computed(() =>
@@ -1475,6 +1478,10 @@ function algorithmTagClass(algorithm: DeckRecommendAlgorithm) {
 }
 
 function deckPointValue(deck: DeckResultDeckView["deck"]) {
+  if (recommendMode.value === "max" && Number(deck.live_score) > 0) {
+    return deck.live_score
+  }
+
   if (recommendMode.value === "mysekai" && Number(deck.mysekai_event_point) > 0) {
     return deck.mysekai_event_point
   }
@@ -1881,7 +1888,9 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                 <Label>{{ t("deckRecommend.form.target") }}</Label>
                 <Select :model-value="activeRecommendTarget" @update:model-value="updateRecommendTarget">
                   <SelectTrigger class="w-full">
-                    <SelectValue />
+                    <SelectValue :key="`recommend-target-${recommendMode}-${activeRecommendTarget}-${locale}`">
+                      {{ activeRecommendTargetLabel }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem v-for="option in recommendTargetOptions" :key="option.value" :value="option.value">
