@@ -10,9 +10,19 @@ import {
 } from "@/components/ui/card"
 import { KeyRound, ShieldCheck } from "lucide-vue-next"
 import { redirectToKratosBrowserFlow } from "@/modules/auth/lib/kratos"
-import { resolveSettingsReturnTo } from "@/modules/user-settings/lib/settings-return-to"
 
 const { t } = useI18n()
+
+function resolveSettingsReturnTo(section: string): string {
+  if (typeof window === "undefined") {
+    return `/user/settings?section=${encodeURIComponent(section)}&_identity_saved=1`
+  }
+
+  return new URL(
+    `/user/settings?section=${encodeURIComponent(section)}&_identity_saved=1`,
+    window.location.origin
+  ).toString()
+}
 
 function openSecuritySettings() {
   redirectToKratosBrowserFlow("settings", {

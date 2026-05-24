@@ -20,10 +20,7 @@ import {
 } from "@/modules/auth/composables/useKratosBrowserFlow"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
-import {
-  createAllowedReturnToOrigins,
-  resolvePublicFrontendOrigin,
-} from "@/modules/auth/lib/return-to"
+import { createAllowedReturnToOrigins } from "@/modules/auth/lib/return-to"
 
 const props = defineProps<{
   section?: string
@@ -59,7 +56,7 @@ function parseAbsoluteUrl(value: string): URL | null {
   }
 
   try {
-    return new URL(trimmed, resolvePublicFrontendOrigin(window.location.origin) || window.location.origin)
+    return new URL(trimmed, window.location.origin)
   } catch {
     return null
   }
@@ -79,9 +76,11 @@ function resolveFrontendOrigin(): string {
   }
 
   const kratosOrigin = resolveKratosOrigin()
-  const publicFrontendOrigin = resolvePublicFrontendOrigin(window.location.origin) || window.location.origin
   const allowedOrigins = createAllowedReturnToOrigins(window.location.origin)
-  allowedOrigins.add(publicFrontendOrigin)
+  const envFrontend = parseAbsoluteUrl(import.meta.env.VITE_HARUKI_TOOLBOX_WEB_URL ?? "")
+  if (envFrontend && !isKratosCandidate(envFrontend, kratosOrigin)) {
+    allowedOrigins.add(envFrontend.origin)
+  }
 
   const queryReturnTo = typeof route.query.return_to === "string" ? route.query.return_to : ""
   const searchReturnTo = new URLSearchParams(window.location.search).get("return_to") ?? ""
@@ -107,8 +106,12 @@ function resolveFrontendOrigin(): string {
     return parsed.origin
   }
 
+  if (envFrontend && allowedOrigins.has(envFrontend.origin)) {
+    return envFrontend.origin
+  }
+
   // Fallback to current frontend origin.
-  return publicFrontendOrigin
+  return window.location.origin
 }
 
 const settingsReturnTo = computed(() => {
@@ -203,7 +206,7 @@ function readSectionFromReturnTo(value: string): string {
   try {
     const parsed = typeof window === "undefined"
       ? new URL(trimmed, "https://haruki.local")
-      : new URL(trimmed, resolvePublicFrontendOrigin(window.location.origin) || window.location.origin)
+      : new URL(trimmed, window.location.origin)
     return normalizeSection(parsed.searchParams.get("section"))
   } catch {
     const queryStart = trimmed.indexOf("?")

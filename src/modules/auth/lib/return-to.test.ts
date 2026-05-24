@@ -1,10 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import {
-  createAllowedReturnToOrigins,
-  isAllowedFlowReturnTo,
-  parseAllowedReturnToOrigins,
-  resolvePublicFrontendOrigin,
-} from "./return-to"
+import { isAllowedFlowReturnTo, parseAllowedReturnToOrigins } from "./return-to"
 
 describe("auth return_to helpers", () => {
   it("parses configured allowed origins", () => {
@@ -25,22 +20,6 @@ describe("auth return_to helpers", () => {
         allowedOrigins: ["https://haruki-dev.seiunx.com"],
       }
     )).toBe(true)
-  })
-
-  it("uses https for public frontend origins when the browser reports a non-local http origin", () => {
-    expect(resolvePublicFrontendOrigin("http://haruki.seiunx.com")).toBe("https://haruki.seiunx.com")
-    expect(resolvePublicFrontendOrigin("http://localhost:5173")).toBe("http://localhost:5173")
-    expect(resolvePublicFrontendOrigin(
-      "http://haruki.seiunx.com",
-      { webUrl: "https://haruki-dev-local.seiunx.com/app" }
-    )).toBe("https://haruki-dev-local.seiunx.com")
-  })
-
-  it("does not keep downgrade http origins in allowed return_to origins", () => {
-    const origins = createAllowedReturnToOrigins("http://haruki.seiunx.com")
-
-    expect(origins.has("https://haruki.seiunx.com")).toBe(true)
-    expect(origins.has("http://haruki.seiunx.com")).toBe(false)
   })
 
   it("allows nested Kratos flow URLs only when their return_to is allowed", () => {

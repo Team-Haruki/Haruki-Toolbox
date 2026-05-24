@@ -7,11 +7,6 @@ interface KratosBrowserFlowRedirectOptions {
   returnTo?: string
 }
 
-interface NormalizeKratosFlowUrlOptions {
-  publicUrl?: string
-  baseUrl?: string
-}
-
 export interface KratosUiMessage {
   id?: number
   text?: string
@@ -146,71 +141,6 @@ export function getKratosPublicUrl(): string {
 export function buildKratosUrl(path: string): string {
   const baseUrl = getKratosPublicUrl()
   return baseUrl ? `${baseUrl}${path}` : path
-}
-
-function resolveBrowserBaseUrl(fallback: string): string {
-  if (fallback) {
-    return fallback
-  }
-
-  if (typeof window !== "undefined") {
-    return window.location.origin
-  }
-
-  return ""
-}
-
-function parseFlowUrl(value: string, baseUrl: string): URL | null {
-  try {
-    return baseUrl ? new URL(value, baseUrl) : new URL(value)
-  } catch {
-    return null
-  }
-}
-
-export function normalizeKratosFlowUrl(
-  value: string,
-  options: NormalizeKratosFlowUrlOptions = {},
-  depth = 0
-): string {
-  const trimmed = value.trim()
-  if (!trimmed) {
-    return ""
-  }
-
-  const publicUrl = normalizeBaseUrl(options.publicUrl ?? getKratosPublicUrl())
-  const baseUrl = resolveBrowserBaseUrl(options.baseUrl ?? publicUrl)
-  const parsed = parseFlowUrl(trimmed, baseUrl)
-  const publicParsed = publicUrl ? parseFlowUrl(publicUrl, baseUrl) : null
-  if (!parsed) {
-    return trimmed
-  }
-
-  if (publicParsed && parsed.hostname === publicParsed.hostname) {
-    if (publicParsed.protocol === "https:" && parsed.protocol === "http:") {
-      parsed.protocol = "https:"
-    }
-
-    if (publicParsed.port && parsed.port !== publicParsed.port) {
-      parsed.port = publicParsed.port
-    }
-  }
-
-  if (depth < 4) {
-    const nestedReturnTo = parsed.searchParams.get("return_to")
-    if (nestedReturnTo) {
-      const normalizedReturnTo = normalizeKratosFlowUrl(
-        nestedReturnTo,
-        { publicUrl, baseUrl },
-        depth + 1
-      )
-      if (normalizedReturnTo !== nestedReturnTo) {
-        parsed.searchParams.set("return_to", normalizedReturnTo)
-      }
-    }
-  }
-
-  return parsed.toString()
 }
 
 export function redirectToKratosBrowserFlow(

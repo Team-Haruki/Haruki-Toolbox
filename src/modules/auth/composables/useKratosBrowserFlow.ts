@@ -4,7 +4,6 @@ import { extractErrorMessage } from "@/lib/error-utils"
 import { createLogger } from "@/lib/logger"
 import {
   fetchKratosBrowserFlow,
-  normalizeKratosFlowUrl,
   redirectToKratosBrowserFlow,
   type KratosBrowserFlow,
   type KratosFlowType,
@@ -681,7 +680,7 @@ export function useKratosBrowserFlow(
   const submitName = computed(() => submitFields.value[0]?.name ?? "")
   const submitValue = computed(() => submitFields.value[0]?.value ?? "")
 
-  const action = computed(() => normalizeKratosFlowUrl(flow.value?.ui.action ?? ""))
+  const action = computed(() => flow.value?.ui.action ?? "")
   const flowReturnTo = computed(() =>
     typeof flow.value?.return_to === "string" ? flow.value.return_to : ""
   )

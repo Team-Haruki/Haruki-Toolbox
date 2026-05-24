@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/card"
 import { ArrowRightLeft, Mail, ShieldCheck } from "lucide-vue-next"
 import { redirectToKratosBrowserFlow } from "@/modules/auth/lib/kratos"
-import { resolveSettingsReturnTo } from "@/modules/user-settings/lib/settings-return-to"
 
 const userStore = useUserStore()
 const { t } = useI18n()
@@ -21,6 +20,17 @@ const { t } = useI18n()
 const currentEmail = computed(() => userStore.emailInfo?.email ?? t("userSettings.email.unbound"))
 const currentNickname = computed(() => userStore.name?.trim() || t("userSettings.email.unsetNickname"))
 const emailVerified = computed(() => userStore.emailInfo?.verified === true)
+
+function resolveSettingsReturnTo(section: string): string {
+  if (typeof window === "undefined") {
+    return `/user/settings?section=${encodeURIComponent(section)}&_identity_saved=1`
+  }
+
+  return new URL(
+    `/user/settings?section=${encodeURIComponent(section)}&_identity_saved=1`,
+    window.location.origin
+  ).toString()
+}
 
 function openIdentitySettings() {
   redirectToKratosBrowserFlow("settings", {

@@ -16,11 +16,7 @@ import {
 } from "@/components/ui/card"
 import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
-import {
-  createAllowedReturnToOrigins,
-  isAllowedFlowReturnTo,
-  resolvePublicFrontendOrigin,
-} from "@/modules/auth/lib/return-to"
+import { createAllowedReturnToOrigins, isAllowedFlowReturnTo } from "@/modules/auth/lib/return-to"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 import { resolveSafeRedirectTarget } from "@/core/router/navigation"
 
@@ -49,8 +45,7 @@ function resolveLoginReturnTo(): string {
     return redirectPath
   }
 
-  const frontendOrigin = resolvePublicFrontendOrigin(window.location.origin) || window.location.origin
-  const url = new URL(redirectPath, frontendOrigin)
+  const url = new URL(redirectPath, window.location.origin)
   url.searchParams.set("_login_success", "1")
   return url.toString()
 }
@@ -61,7 +56,7 @@ function isAllowedLoginFlowReturnTo(value: string): boolean {
   }
 
   return isAllowedFlowReturnTo(value, {
-    currentOrigin: resolvePublicFrontendOrigin(window.location.origin) || window.location.origin,
+    currentOrigin: window.location.origin,
     kratosOrigin: resolveKratosOrigin(),
     allowedOrigins: createAllowedReturnToOrigins(window.location.origin),
   })
