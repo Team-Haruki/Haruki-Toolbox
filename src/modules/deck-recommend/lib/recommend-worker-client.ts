@@ -3,9 +3,7 @@ import type {
   DeckRecommendWorkerLoadDataRequest,
   DeckRecommendWorkerRequest,
   DeckRecommendWorkerRequestWithoutId,
-  DeckRecommendWorkerWorldBloomSupportRequest,
 } from "./worker-protocol"
-import type { WorldBloomSupportCard } from "haruki-sekai-deck-recommend-cpp"
 
 type Listener = (event: DeckRecommendWorkerEvent) => void
 
@@ -37,62 +35,6 @@ export function loadDeckRecommendWorkerData(
   input: Omit<DeckRecommendWorkerLoadDataRequest, "type" | "requestId">,
 ): Promise<void> {
   return runLifecycleRequest("load-data", input)
-}
-
-export function getDeckRecommendWorldBloomSupportCards(
-  input: Omit<DeckRecommendWorkerWorldBloomSupportRequest, "type" | "requestId">,
-): Promise<WorldBloomSupportCard[]> {
-  return new Promise((resolve, reject) => {
-    const requestId = createRequestId()
-    let timeoutId: ReturnType<typeof setTimeout> | null = null
-    let unsubscribe: () => void = () => {}
-    let finished = false
-
-    const finish = (cards?: WorldBloomSupportCard[], error?: Error) => {
-      if (finished) {
-        return
-      }
-
-      finished = true
-      if (timeoutId != null) {
-        clearTimeout(timeoutId)
-      }
-      unsubscribe()
-      if (error) {
-        reject(error)
-        return
-      }
-
-      resolve(cards ?? [])
-    }
-
-    try {
-      unsubscribe = subscribeDeckRecommendWorker((event) => {
-        if (event.requestId !== requestId && event.requestId !== "worker") {
-          return
-        }
-
-        if (event.type === "world-bloom-support-done") {
-          finish(event.cards)
-          return
-        }
-
-        if (event.type === "error") {
-          finish(undefined, new Error(event.message))
-        }
-      })
-      timeoutId = setTimeout(() => {
-        finish(undefined, new Error("Deck recommend worker world-bloom support timed out"))
-      }, 30000)
-      postDeckRecommendWorkerRequest({
-        type: "world-bloom-support",
-        requestId,
-        ...input,
-      })
-    } catch (error) {
-      finish(undefined, error instanceof Error ? error : new Error(normalizeWorkerClientErrorMessage(error)))
-    }
-  })
 }
 
 export async function disposeDeckRecommendWorker(): Promise<void> {

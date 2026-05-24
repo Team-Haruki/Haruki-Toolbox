@@ -864,67 +864,233 @@ export const zhCN = {
   legal: {
     privacy: {
       title: "隐私政策",
-      lastUpdated: "最后更新：2026-03-18",
-      intro: "我们重视您的隐私。本政策说明 Haruki 工具箱如何收集、使用、保护和处理您的个人信息。",
+      lastUpdated: "最后更新：2026-05-25",
+      intro: "本隐私政策说明 Haruki 工具箱如何收集、使用、保存、共享和保护您的信息。Haruki Dev Team 是一个民间业余开发维护团体，我们会尽力以清晰、克制和必要的方式处理您的数据。",
+      contactLead: "隐私相关问题请联系：",
       sections: {
+        controller: {
+          title: "1. 服务提供者与适用范围",
+          paragraphs: {
+            summary: "Haruki 工具箱由 Haruki Dev Team 维护，主要面向中国大陆用户，同时允许全球用户访问和使用。本政策适用于 Haruki 工具箱网站及其相关功能。"
+          },
+          bullets: {
+            team: "服务提供者：Haruki Dev Team。我们不是注册公司，而是民间业余开发维护团体。",
+            contact: "联系邮箱见页面上方。",
+            region: "数据主要存储在中国大陆；我们也会使用 CDN 以改善访问体验。",
+            minors: "本服务目前不设置年龄限制。未成年人使用本服务时，建议在监护人知情和指导下进行。"
+          }
+        },
         collection: {
-          title: "1. 我们收集的信息",
-          content: "当您注册、登录或使用服务时，我们可能收集账户标识信息、登录认证信息、设备信息和必要的操作日志。",
+          title: "2. 我们收集的信息",
+          paragraphs: {
+            summary: "为了提供账号、绑定、数据上传、组卡、控分、工单和安全风控等功能，我们会收集您主动提供的信息、使用服务时产生的信息，以及为保障服务运行所必需的技术信息。"
+          },
+          bullets: {
+            account: "账号与认证信息：例如邮箱、用户名、头像、OAuth 或第三方登录标识、MFA 状态、登录会话、IP 地址、User-Agent 和其他必要认证信息。",
+            game: "游戏账号与上传数据：例如区服、游戏 UID、玩家昵称、suite 数据、MySekai 数据、上传时间、缓存数据及与绑定账号相关的配置。",
+            profile: "用户 profile 数据会用于页面展示和功能计算，但不会保存到 Haruki 工具箱服务器。",
+            logs: "运行与安全日志：例如访问日志、错误日志、上传日志、风控日志、管理员操作日志和必要的接口调用记录。",
+            storage: "本地数据：我们会使用 Cookie、localStorage、IndexedDB 与 PWA 缓存保存登录状态、设置、缓存数据和离线资源。这些存储是当前服务正常运行所需，暂不提供关闭选项。"
+          }
         },
         usage: {
-          title: "2. 信息用途",
-          content: "我们仅在提供服务、账号安全验证、问题排查、客服支持和法律合规所必需的范围内使用相关信息。",
+          title: "3. 信息用途",
+          paragraphs: {
+            summary: "我们仅在提供和维护 Haruki 工具箱及 HarukiBot NEO 相关高级功能所需的范围内使用您的信息。"
+          },
+          bullets: {
+            service: "提供账号登录、游戏账号绑定、数据上传、组卡推荐、控分计算、工单处理和偏好设置同步等功能。",
+            security: "进行身份验证、账号安全保护、接口限流、滥用检测、风控审计和异常排查。",
+            support: "定位故障、回复反馈、处理工单、改进产品体验和维护服务稳定性。",
+            advanced: "在 Haruki 工具箱与 HarukiBot NEO 中提供与您授权或上传数据相关的高级功能。",
+            compliance: "在法律法规、监管要求或保护用户与服务安全所必要的范围内处理相关信息。"
+          }
+        },
+        retention: {
+          title: "4. 数据保存",
+          paragraphs: {
+            summary: "除非我们主动清理、服务策略调整或法律要求另有规定，服务器端数据理论上会长期保存，以便维持账号绑定、历史上传、风控审计和服务连续性。"
+          },
+          bullets: {
+            server: "服务器端数据：游戏账号绑定、上传记录、suite/MySekai 数据、日志和管理员操作记录目前没有固定保存期限。",
+            local: "本地数据：登出会清理浏览器中的部分本地缓存用户数据，但不会自动删除服务器端已保存的数据。",
+            requests: "删除、导出或注销账号目前不能由用户自助完成；如需处理，请通过联系邮箱向 Haruki Dev Team 提出请求。"
+          }
         },
         sharing: {
-          title: "3. 信息共享",
-          content: "除法律法规要求或得到您的明确授权外，我们不会向无关第三方出售或披露您的个人信息。",
+          title: "5. 信息共享与第三方服务",
+          paragraphs: {
+            summary: "我们不会出售您的个人信息，也不会将您的信息用于广告画像。除提供服务所必需、您主动授权或法律要求外，我们不会向无关第三方披露您的信息。"
+          },
+          bullets: {
+            noSale: "不会出售、出租或以广告画像为目的共享您的个人信息。",
+            harukiServices: "您上传或绑定的数据默认仅用于 Haruki 工具箱与 HarukiBot NEO 提供高级功能服务；除非您开启公开 API 查询或自行进行 OAuth 授权，第三方服务无法访问这些数据。",
+            github: "如果您使用 GitHub 登录，GitHub 会按照其自身政策处理相关第三方登录信息。",
+            cdn: "我们使用 Cloudflare、EdgeOne 和 CDN 服务分发静态资源、改善访问速度和可用性。",
+            email: "我们使用邮件服务发送账号、安全或服务相关邮件。Ory Kratos/Hydra 为自建认证与授权服务。"
+          }
         },
         security: {
-          title: "4. 信息安全",
-          content: "我们采用访问控制、传输加密和最小权限等措施保护数据安全，并持续改进安全能力。",
+          title: "6. 信息安全",
+          paragraphs: {
+            summary: "我们会采取合理的技术和管理措施保护数据安全，但任何互联网服务都无法保证绝对安全。"
+          },
+          bullets: {
+            controls: "我们会使用传输加密、访问控制、权限隔离、日志审计和最小权限等方式降低数据泄露、滥用或未授权访问风险。",
+            limits: "由于本项目由民间业余团队维护，资源和安全能力存在客观限制。发现安全问题时，请优先通过联系邮箱负责任地告知我们。"
+          }
         },
         rights: {
-          title: "5. 您的权利",
-          content: "您可以通过账号设置页面管理部分信息，并可联系我们申请查询、更正或删除在法律允许范围内的数据。",
+          title: "7. 您的权利",
+          paragraphs: {
+            summary: "在适用法律允许的范围内，您可以查询、更正、导出、删除部分个人信息或申请注销账号。"
+          },
+          bullets: {
+            settings: "您可以在账号设置或相关功能页面管理部分账号信息、绑定信息和偏好设置。",
+            contact: "如果需要删除、导出数据或注销账号，请通过页面上方联系邮箱联系 Haruki Dev Team。",
+            limits: "为了安全、审计、争议处理、服务连续性或法律合规，我们可能无法立即或完整删除某些日志、备份或必要记录。"
+          }
+        },
+        changes: {
+          title: "8. 政策更新",
+          paragraphs: {
+            summary: "我们可能会根据功能变化、服务调整或合规需要更新本隐私政策。更新后的政策会发布在本页面，并自发布时生效。"
+          },
+          bullets: {}
         },
         contact: {
-          title: "6. 联系我们",
-          content: "若您对本政策有疑问，请通过项目公开渠道与 Haruki Dev Team 联系。",
+          title: "9. 联系我们",
+          paragraphs: {
+            summary: "如果您对本政策、个人信息处理或账号数据有任何疑问，请通过页面上方联系邮箱联系 Haruki Dev Team。"
+          },
+          bullets: {}
         },
       },
     },
     tos: {
       title: "服务条款",
-      lastUpdated: "最后更新：2026-03-18",
-      intro: "使用 Haruki 工具箱即表示您同意遵守本条款。若您不同意，请停止访问或使用本服务。",
+      lastUpdated: "最后更新：2026-05-25",
+      intro: "使用 Haruki 工具箱即表示您同意遵守本服务条款。若您不同意本条款，请停止访问或使用本服务。",
+      contactLead: "条款相关问题请联系：",
       sections: {
-        eligibility: {
+        scope: {
           title: "1. 适用范围",
-          content: "本条款适用于您访问和使用 Haruki 工具箱网站、页面及相关功能服务的全部行为。",
-        },
-        acceptableUse: {
-          title: "2. 使用规范",
-          content: "您不得利用本服务进行违法违规、滥用接口、破坏系统或侵害其他用户权益的行为。",
+          paragraphs: {
+            summary: "本条款适用于您访问和使用 Haruki 工具箱网站、页面、工具、账号系统、数据上传、组卡、控分、工单和相关功能的全部行为。"
+          },
+          bullets: {
+            team: "Haruki 工具箱由 Haruki Dev Team 这一民间业余开发维护团体提供。",
+            unofficial: "Haruki 工具箱是 fan-made / unofficial 项目，与 SEGA、Colorful Palette、Craft Egg 及相关权利方不存在隶属、授权、背书或官方合作关系。",
+            global: "本服务主要面向中国大陆用户，同时允许全球用户使用；您应自行确保使用行为符合所在地适用法律法规。"
+          }
         },
         account: {
-          title: "3. 账号责任",
-          content: "您需妥善保管账号凭证并对账号下行为负责。如发现异常，请及时修改密码并联系我们。",
+          title: "2. 账号责任",
+          paragraphs: {
+            summary: "您应妥善保管账号、密码、MFA、OAuth 授权、游戏继承码及其他凭证，并对账号下的操作负责。"
+          },
+          bullets: {
+            credentials: "如发现账号异常、凭证泄露或未经授权的使用，应及时修改密码、撤销授权并联系我们。",
+            dataAccuracy: "您应确保提交、绑定或上传的数据来自您有权使用的账号，并尽量保证信息真实、准确、完整。",
+            adminSupport: "为了处理反馈、工单、风控、安全或服务支持，管理员可能查看与问题相关的用户数据、上传记录、日志和工单内容。"
+          }
+        },
+        acceptableUse: {
+          title: "3. 使用规范",
+          paragraphs: {
+            summary: "您应以合理、合法、善意的方式使用本服务，不得干扰服务运行或损害其他用户、项目维护者或第三方的权益。"
+          },
+          bullets: {
+            lawful: "不得利用本服务从事违法违规、侵权、欺诈、骚扰、绕过限制或其他不当行为。",
+            automation: "未经明确许可，不允许任何形式的自动化访问、爬虫、批量请求、批量注册、批量上传或接口滥用。",
+            security: "不得尝试扫描、攻击、破坏、绕过认证、绕过风控、逆向接口限制或获取未授权数据。",
+            rateLimit: "我们可能对异常请求、批量请求或滥用行为进行限流、拒绝服务、封禁账号或阻断访问。"
+          }
+        },
+        dataUse: {
+          title: "4. 用户数据与授权",
+          paragraphs: {
+            summary: "您上传、绑定或授权的数据默认仅用于 Haruki 工具箱与 HarukiBot NEO 提供高级功能服务。"
+          },
+          bullets: {
+            harukiServices: "除非您允许公开 API 查询或自行进行 OAuth 授权，第三方服务无法访问您在 Haruki 工具箱中的绑定和上传数据。",
+            thirdParty: "您通过第三方登录、CDN 或邮件服务产生的数据，可能同时受到对应第三方服务条款与隐私政策约束。",
+            oauth: "如果您主动授权其他应用访问您的账号或数据，请自行确认授权范围和第三方可信度。"
+          }
+        },
+        betaFeatures: {
+          title: "5. 测试功能与结果准确性",
+          paragraphs: {
+            summary: "部分功能仍处于测试阶段，可能存在计算误差、数据延迟、接口变化或结果不符合预期的情况。"
+          },
+          bullets: {
+            deckRecommend: "组卡推荐目前处于测试状态，推荐结果不保证一定最优或完全符合游戏内实际表现。",
+            scoreControl: "控分计算目前处于测试状态，控分结果不保证准确；使用前请自行核对体力消耗、活动配置和游戏内数据。",
+            noGuarantee: "您应自行判断和承担基于推荐、计算或展示结果进行操作所产生的风险。"
+          }
+        },
+        gameAccountRisk: {
+          title: "6. 游戏账号与继承码风险",
+          paragraphs: {
+            summary: "Haruki 工具箱可能提供与游戏数据更新、上传或继承码相关的辅助功能。您应理解这些操作可能存在账号安全和游戏服务条款风险。"
+          },
+          bullets: {
+            transferCode: "因使用继承码更新数据、同步数据或相关操作产生的游戏账号封禁、限制、异常或其他风险，由您自行承担。",
+            accountLoss: "因您未妥善保存继承码、密码、登录凭证或其他账号恢复信息导致的游戏账号丢失，我们不承担责任。"
+          }
         },
         availability: {
-          title: "4. 服务变更",
-          content: "我们可基于维护、安全或产品更新对功能进行调整、限制或下线，并尽量提前公告。",
+          title: "7. 服务可用性与变更",
+          paragraphs: {
+            summary: "我们会尽力维护服务可用性，但不承诺服务持续、无错误、无中断或永久保留任何功能。"
+          },
+          bullets: {
+            changes: "我们可能因维护、安全、滥用防护、成本、产品调整或第三方变化，修改、暂停、限制或下线部分功能。",
+            thirdParty: "第三方登录、CDN、邮件、网络环境、游戏数据来源或其他外部服务异常，可能影响 Haruki 工具箱的可用性。"
+          }
+        },
+        enforcement: {
+          title: "8. 违规处理",
+          paragraphs: {
+            summary: "如果您违反本条款或存在危害服务、安全、其他用户或项目维护者的行为，我们可以采取必要处理措施。"
+          },
+          bullets: {
+            ban: "处理措施包括但不限于限制功能、限流、阻断请求、暂停账号、封禁账号或拒绝继续提供服务。",
+            data: "为调查违规、处理争议、保障安全或满足必要审计需要，我们可能保留相关日志和记录。"
+          }
+        },
+        links: {
+          title: "9. 第三方链接与开源项目",
+          paragraphs: {
+            summary: "Haruki 工具箱可能包含指向第三方网站、开源仓库、文档或社区资源的链接。"
+          },
+          bullets: {
+            external: "第三方网站和服务由其各自运营者负责，我们不控制其内容、可用性、安全性或隐私实践。",
+            openSource: "与开源项目相关的代码、依赖和许可信息，以对应仓库、许可证文件和项目说明为准。"
+          }
         },
         liability: {
-          title: "5. 责任限制",
-          content: "在法律允许范围内，我们不对因不可抗力、第三方服务异常或非我们可控原因导致的损失承担责任。",
+          title: "10. 责任限制",
+          paragraphs: {
+            summary: "在法律允许的范围内，Haruki Dev Team 不对因您使用或无法使用本服务、依赖计算或推荐结果、第三方服务异常、网络故障、不可抗力或非我们可控原因导致的直接或间接损失承担责任。"
+          },
+          bullets: {
+            scope: "本服务按现状提供，不构成对游戏结果、账号安全、数据完整性、服务连续性或特定目的适用性的保证。"
+          }
         },
         changes: {
-          title: "6. 条款更新",
-          content: "我们可能不定期更新本条款。更新后继续使用服务即视为您接受修订版本。",
+          title: "11. 条款更新",
+          paragraphs: {
+            summary: "我们可能不定期更新本条款。更新后的条款会发布在本页面，并自发布时生效；您在更新后继续使用本服务，即视为接受修订后的条款。"
+          },
+          bullets: {}
         },
         contact: {
-          title: "7. 联系方式",
-          content: "如对本条款有疑问，请通过项目公开渠道联系 Haruki Dev Team。",
+          title: "12. 联系与争议处理",
+          paragraphs: {
+            summary: "如果您对本条款或服务使用有疑问、反馈或争议，请通过页面上方联系邮箱联系 Haruki Dev Team。我们倾向于通过友好沟通解决问题。"
+          },
+          bullets: {}
         },
       },
     },
@@ -1524,7 +1690,6 @@ export const zhCN = {
       auto: "自动Live",
       challenge: "挑战Live",
       challengeAuto: "挑战自动Live",
-      cheerful: "欢乐嘉年华",
       mysekai: "烤森Live",
     },
     algorithms: {
@@ -1605,7 +1770,7 @@ export const zhCN = {
       },
       multiLive: {
         title: "协力参数",
-        description: "用于多人 Live 与欢乐嘉年华。队友综合力和队友实效留空时，会按当前卡组近似队友。",
+        description: "用于多人 Live。队友综合力和队友实效留空时，会按当前卡组近似队友。",
         teammatePower: "队友综合力",
         teammateScoreUp: "队友实效",
         followSelfPlaceholder: "跟随当前卡组",
@@ -1623,6 +1788,8 @@ export const zhCN = {
         attr: "属性过滤",
         character: "角色过滤",
         characterSelectPlaceholder: "选择过滤角色",
+        characterMinHint: "角色过滤会限制候选卡池；启用时至少选择 {count} 个角色，才能组成完整卡组。",
+        characterMinInvalid: "角色过滤启用时至少需要选择 {count} 个角色。",
         areaItemLevel: "区域道具等级",
         areaItemLevelDefault: "沿用当前数据",
         areaItemLevelOption: "Lv.{value}",

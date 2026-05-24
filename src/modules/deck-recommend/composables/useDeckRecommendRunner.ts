@@ -1,5 +1,5 @@
 import { computed, ref } from "vue"
-import type { RecommendOptions, RecommendResult, WorldBloomSupportCard } from "haruki-sekai-deck-recommend-cpp"
+import type { RecommendResult } from "haruki-sekai-deck-recommend-cpp"
 import type { SekaiRegion } from "@/types"
 import { readSekaiMasterFiles, readSekaiMusicMetas } from "@/shared/sekai/cache"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
@@ -31,7 +31,6 @@ import {
 import {
   createDeckRecommendWorker,
   disposeDeckRecommendWorker,
-  getDeckRecommendWorldBloomSupportCards,
   loadDeckRecommendWorkerData,
   postDeckRecommendWorkerRequest,
   subscribeDeckRecommendWorker,
@@ -49,14 +48,12 @@ import {
   fetchDeckRecommendUserDataWithCache,
   type DeckRecommendUserDataFetchResult,
 } from "../lib/user-data"
-import { resolveWorldBloomSupportDeckCount } from "../lib/master-options"
 import {
   applyChallengeScoreDelta,
   createPreparedDeckRecommendUserDataString,
   type DeckRecommendSingleCardOverride,
 } from "../lib/user-data-preparation"
 import { prepareRecommendUserDataForWasm } from "../lib/wasm-user-data"
-import type { DeckResultSupportCard } from "../lib/card-thumbnail"
 
 export type DeckRecommendExecutionMode = "sequential" | "parallel"
 
@@ -127,7 +124,6 @@ export function useDeckRecommendRunner() {
   const recommendElapsedMs = ref<number | null>(null)
   const resultExecutionMode = ref<DeckRecommendExecutionMode | null>(null)
   const algorithmTimings = ref<DeckRecommendAlgorithmTiming[]>([])
-  const worldBloomSupportCards = ref<DeckResultSupportCard[]>([])
   const userDataRefreshing = ref(false)
   const userDataCacheHit = ref<boolean | null>(null)
   const userDataCacheUpdatedAt = ref<number | null>(null)
@@ -157,7 +153,6 @@ export function useDeckRecommendRunner() {
     recommendElapsedMs.value = null
     resultExecutionMode.value = input.executionMode
     algorithmTimings.value = []
-    worldBloomSupportCards.value = []
 
     try {
       const runStartedAt = performance.now()
@@ -270,12 +265,6 @@ export function useDeckRecommendRunner() {
         : workerResults
       const resultWithLiveBoost = applyDeckRecommendLiveBoost(resultWithChallengeDelta, input.mode, input.boost)
       result.value = mergeDeckRecommendResults(resultWithLiveBoost, input.mode, input.target)
-      worldBloomSupportCards.value = await loadWorldBloomSupportCards({
-        input,
-        recommendData,
-        options: workerInputs[0]?.request.options,
-        preparedUserDataString: preparedUserData.userDataString,
-      })
       algorithmTimings.value = workerResults.map(({ algorithm, elapsedMs }) => ({ algorithm, elapsedMs }))
       recommendElapsedMs.value = createElapsedMs(recommendStartedAt)
       elapsedMs.value = createElapsedMs(runStartedAt)
@@ -304,7 +293,6 @@ export function useDeckRecommendRunner() {
     recommendElapsedMs.value = null
     resultExecutionMode.value = null
     algorithmTimings.value = []
-    worldBloomSupportCards.value = []
   }
 
   async function fetchUserData(input: DeckRecommendRunnerInput) {
@@ -573,7 +561,6 @@ export function useDeckRecommendRunner() {
     recommendElapsedMs,
     resultExecutionMode,
     algorithmTimings,
-    worldBloomSupportCards,
     userDataRefreshing,
     userDataCacheHit,
     userDataCacheUpdatedAt,
@@ -630,118 +617,12 @@ async function readRecommendCacheData(region: SekaiRegion): Promise<RecommendCac
   }
 }
 
-async function loadWorldBloomSupportCards(input: {
-  input: DeckRecommendRunnerInput
-  recommendData: RecommendCacheData
-  options: RecommendOptions | undefined
-  preparedUserDataString: string
-}): Promise<DeckResultSupportCard[]> {
-  if (!input.options || !isWorldBloomSupportOptions(input.options)) {
-    return []
-  }
-
-  const cards = await getDeckRecommendWorldBloomSupportCards({
-    region: input.input.dataRegion,
-    masterVersion: input.recommendData.masterVersion,
-    musicMetasKey: input.recommendData.musicMetasKey,
-    masterFileNames: input.recommendData.masterFileNames,
-    masterData: input.recommendData.masterData,
-    musicMetas: input.recommendData.musicMetas,
-    options: input.options,
-  }).catch(() => [])
-
-  if (cards.length === 0) {
-    return []
-  }
-
-  const userCardMap = buildPreparedUserCardMap(input.preparedUserDataString)
-  const optionRecord = input.options as Record<string, unknown>
-  const supportDeckCount = resolveWorldBloomSupportDeckCount(
-    normalizePositiveNumber(optionRecord.event_id),
-    normalizePositiveNumber(optionRecord.world_bloom_event_turn),
-  )
-  return cards.slice(0, supportDeckCount).map((card) =>
-    createDeckResultSupportCard(card, userCardMap, input.input.supportSkillMax),
-  )
-}
-
-function isWorldBloomSupportOptions(options: RecommendOptions): boolean {
-  const record = options as Record<string, unknown>
-  return record.event_type === "world_bloom"
-    || (
-      (record.world_bloom_character_id != null || record.forcedLeaderCharacterId != null)
-      && (record.event_id != null || record.world_bloom_event_turn != null)
-    )
-}
-
-function buildPreparedUserCardMap(userDataString: string): Map<number, Record<string, unknown>> {
-  const map = new Map<number, Record<string, unknown>>()
-  try {
-    const parsed = JSON.parse(userDataString) as { userCards?: unknown }
-    if (!Array.isArray(parsed.userCards)) {
-      return map
-    }
-
-    for (const rawCard of parsed.userCards) {
-      if (!rawCard || typeof rawCard !== "object") {
-        continue
-      }
-      const card = rawCard as Record<string, unknown>
-      const cardId = normalizePositiveNumber(card.cardId)
-      if (cardId) {
-        map.set(cardId, card)
-      }
-    }
-  } catch {
-    return map
-  }
-
-  return map
-}
-
-function createDeckResultSupportCard(
-  card: WorldBloomSupportCard,
-  userCardMap: Map<number, Record<string, unknown>>,
-  supportSkillMax: boolean,
-): DeckResultSupportCard {
-  const userCard = userCardMap.get(card.card_id)
-  const defaultImage = normalizeText(userCard?.defaultImage)
-  const specialTrainingStatus = normalizeText(userCard?.specialTrainingStatus)
-  return {
-    card_id: card.card_id,
-    bonus: card.bonus,
-    skill_level: supportSkillMax ? 4 : normalizePositiveNumber(userCard?.skillLevel) ?? 1,
-    master_rank: normalizeNonNegativeNumber(userCard?.masterRank) ?? 0,
-    level: normalizePositiveNumber(userCard?.level) ?? 1,
-    after_training: specialTrainingStatus === "done",
-    default_image: defaultImage ?? "",
-  }
-}
-
 function createMusicMetasKey(updatedAt: number | null): string | null {
   return updatedAt == null ? null : String(updatedAt)
 }
 
 function createElapsedMs(startedAt: number): number {
   return Math.round(performance.now() - startedAt)
-}
-
-function normalizePositiveNumber(value: unknown): number | null {
-  const numberValue = typeof value === "string" && value.trim() !== "" ? Number(value) : value
-  return typeof numberValue === "number" && Number.isFinite(numberValue) && numberValue > 0
-    ? numberValue
-    : null
-}
-
-function normalizeNonNegativeNumber(value: unknown): number | null {
-  const numberValue = typeof value === "string" && value.trim() !== "" ? Number(value) : value
-  return typeof numberValue === "number" && Number.isFinite(numberValue) && numberValue >= 0
-    ? numberValue
-    : null
-}
-
-function normalizeText(value: unknown): string | null {
-  return typeof value === "string" && value.trim() !== "" ? value.trim() : null
 }
 
 function createRecommendDataKey(

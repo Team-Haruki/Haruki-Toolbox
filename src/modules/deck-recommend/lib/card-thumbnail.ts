@@ -1,4 +1,4 @@
-import type { RecommendCard, RecommendDeck, RecommendResult } from "haruki-sekai-deck-recommend-cpp"
+import type { RecommendCard, RecommendDeck, RecommendResult, WorldBloomSupportCard } from "haruki-sekai-deck-recommend-cpp"
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import {
@@ -55,6 +55,14 @@ export type DeckResultSupportCard = {
   level: number
   after_training: boolean
   default_image: string
+}
+
+export type DeckResultDeckSupportCard = WorldBloomSupportCard & {
+  skill_level?: number
+  master_rank?: number
+  level?: number
+  after_training?: boolean
+  default_image?: string
 }
 
 export type DeckResultSupportCardView = {
@@ -124,6 +132,12 @@ export function buildDeckSupportCardViews(
       }, masterCard, region, assetEndpoint),
     }
   })
+}
+
+export function resolveDeckSupportCards(
+  deck: RecommendDeck,
+): DeckResultSupportCard[] {
+  return normalizeDeckSupportCards(deck)
 }
 
 export function buildCardThumbnailView(
@@ -201,6 +215,40 @@ function buildMasterCardMap(rawCards: unknown, rawGameCharacters: unknown): Map<
   return map
 }
 
+function normalizeDeckSupportCards(deck: RecommendDeck): DeckResultSupportCard[] {
+  const rawCards = (deck as RecommendDeck & { support_deck_cards?: unknown }).support_deck_cards
+  if (!Array.isArray(rawCards)) {
+    return []
+  }
+
+  const mainCardIds = new Set(deck.cards.map((card) => card.card_id))
+  return rawCards
+    .map((rawCard) => normalizeDeckSupportCard(rawCard))
+    .filter((card): card is DeckResultSupportCard => card != null && !mainCardIds.has(card.card_id))
+}
+
+function normalizeDeckSupportCard(rawCard: unknown): DeckResultSupportCard | null {
+  if (!rawCard || typeof rawCard !== "object") {
+    return null
+  }
+
+  const card = rawCard as Partial<DeckResultDeckSupportCard>
+  const cardId = normalizeNumber(card.card_id)
+  if (!cardId) {
+    return null
+  }
+
+  return {
+    card_id: cardId,
+    bonus: normalizeFiniteNumber(card.bonus, 0),
+    skill_level: normalizePositiveNumber(card.skill_level) ?? 1,
+    master_rank: normalizeNonNegativeNumber(card.master_rank) ?? 0,
+    level: normalizePositiveNumber(card.level) ?? 1,
+    after_training: card.after_training === true,
+    default_image: normalizeString(card.default_image),
+  }
+}
+
 function normalizeMasterCard(rawCard: unknown, characterNameMap: ReadonlyMap<number, string>): DeckRecommendMasterCard | null {
   if (!rawCard || typeof rawCard !== "object") {
     return null
@@ -272,6 +320,21 @@ function normalizeNumber(value: unknown): number | null {
   }
 
   return null
+}
+
+function normalizePositiveNumber(value: unknown): number | null {
+  const normalized = normalizeNumber(value)
+  return normalized != null && normalized > 0 ? normalized : null
+}
+
+function normalizeNonNegativeNumber(value: unknown): number | null {
+  const normalized = normalizeNumber(value)
+  return normalized != null && normalized >= 0 ? normalized : null
+}
+
+function normalizeFiniteNumber(value: unknown, fallback: number): number {
+  const normalized = normalizeNumber(value)
+  return normalized ?? fallback
 }
 
 function normalizeString(value: unknown): string {

@@ -8,7 +8,6 @@ import type {
   DeckRecommendWorkerEvent,
   DeckRecommendWorkerLoadDataRequest,
   DeckRecommendWorkerRecommendRequest,
-  DeckRecommendWorkerWorldBloomSupportRequest,
   DeckRecommendWorkerRequest,
 } from "./worker-protocol"
 
@@ -47,19 +46,6 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
     postEvent({ type: "progress", requestId: request.requestId, phase: "initializing" })
     const engine = await loadEngineData(request, request.requestId).then((result) => result.engine)
 
-    if (request.type === "world-bloom-support") {
-      postEvent({ type: "progress", requestId: request.requestId, phase: "recommending" })
-      const startedAt = performance.now()
-      const cards = engine.getWorldBloomSupportCards(request.options)
-      postEvent({
-        type: "world-bloom-support-done",
-        requestId: request.requestId,
-        cards,
-        elapsedMs: Math.round(performance.now() - startedAt),
-      })
-      return
-    }
-
     postEvent({ type: "progress", requestId: request.requestId, phase: "recommending" })
     const startedAt = performance.now()
     const result = engine.recommend(request.options)
@@ -79,7 +65,7 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
 }
 
 async function loadEngineData(
-  request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest | DeckRecommendWorkerWorldBloomSupportRequest,
+  request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest,
   requestId: string,
 ): Promise<{ engine: SekaiDeckRecommendWasm; elapsedMs: number; cacheHit: boolean }> {
   const startedAt = performance.now()
@@ -120,7 +106,7 @@ function getEngine() {
   return enginePromise
 }
 
-function createDataKey(request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest | DeckRecommendWorkerWorldBloomSupportRequest) {
+function createDataKey(request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest) {
   return [
     request.masterVersion,
     request.musicMetasKey ?? "unknown-music-metas",

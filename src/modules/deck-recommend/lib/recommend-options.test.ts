@@ -14,10 +14,6 @@ import {
 import { createDefaultCardTrainingConfig } from "./training-config"
 
 describe("deck recommend wasm option helpers", () => {
-  it("keeps cheerful live type aligned with wasm", () => {
-    expect(resolveWasmLiveType("event", "cheerful")).toBe("cheerful")
-  })
-
   it("maps challenge auto live type to challenge_auto and other challenge types to challenge", () => {
     expect(resolveWasmLiveType("challenge", "auto")).toBe("challenge_auto")
     expect(resolveWasmLiveType("challenge", "multi")).toBe("challenge")
@@ -125,7 +121,7 @@ describe("deck recommend wasm option helpers", () => {
     const options = buildDeckRecommendOptions({
       region: "jp",
       mode: "event",
-      liveType: "cheerful",
+      liveType: "multi",
       algorithm: "dfs_ga",
       musicId: "74",
       musicDifficulty: "expert",

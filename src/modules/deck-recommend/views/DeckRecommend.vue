@@ -73,8 +73,10 @@ import { buildMasterCardOptions } from "../lib/card-options"
 import {
   buildDeckResultViews,
   buildDeckSupportCardViews,
+  resolveDeckSupportCards,
   type DeckResultCardView,
   type DeckResultDeckView,
+  type DeckResultSupportCardView,
 } from "../lib/card-thumbnail"
 import {
   type DeckRecommendAlgorithm,
@@ -135,6 +137,7 @@ const DECK_RECOMMEND_UNITS: DeckRecommendUnitType[] = [
 ]
 const DECK_RECOMMEND_WORLD_BLOOM_TURNS = ["1", "2", "3"] as const
 const DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT = "custom_bonus_characters" as const
+const CHARACTER_FILTER_MIN_COUNT = 5
 
 type DeckRecommendEventSimulationMode = DeckRecommendSimulatedEventType | "world_bloom"
 type DeckRecommendSimulatedEventUnitValue = DeckRecommendUnitType | typeof DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT
@@ -226,9 +229,6 @@ const recommendDataReady = computed(() =>
 )
 const resultDecks = computed(() =>
   buildDeckResultViews(runner.result.value, runner.masterData.value, dataRegion.value, settingsStore.currentAssetEndpoint),
-)
-const worldBloomSupportCardViews = computed(() =>
-  buildDeckSupportCardViews(runner.worldBloomSupportCards.value, runner.masterData.value, dataRegion.value, settingsStore.currentAssetEndpoint),
 )
 const cardOptions = computed(() =>
   buildMasterCardOptions(cardOptionMasterData.value ?? runner.masterData.value, dataRegion.value, settingsStore.currentAssetEndpoint),
@@ -410,7 +410,7 @@ const activeForcedLeaderCharacterId = computed(() =>
 const activeAlgorithms = computed<DeckRecommendAlgorithm[]>(() =>
   recommendMode.value === "bonus" ? ["dfs"] : selectedAlgorithms.value,
 )
-const isMultiLiveOptionsEnabled = computed(() => liveType.value === "multi" || liveType.value === "cheerful")
+const isMultiLiveOptionsEnabled = computed(() => liveType.value === "multi")
 const bonusTargets = computed(() => parseDeckBonusTargetsInput(bonusTargetsInput.value))
 const showBonusTargetsInput = computed(() => recommendMode.value === "bonus")
 const hasBonusTargetsError = computed(() =>
@@ -448,6 +448,9 @@ const multiLiveScoreUpLowerBound = computed(() =>
 const boost = computed(() => parseOptionalNumberInput(boostInput.value, { min: 0, max: 10, integer: true }))
 const areaItemLevel = computed(() =>
   parseOptionalNumberInput(areaItemLevelInput.value, { min: 1, max: areaItemMaxLevel.value, integer: true }),
+)
+const hasCharacterFilterError = computed(() =>
+  characterFilters.value.length > 0 && characterFilters.value.length < CHARACTER_FILTER_MIN_COUNT,
 )
 const resultLimit = computed(() => parseOptionalNumberInput(resultLimitInput.value, { min: 1, max: 50, integer: true }))
 const engineTimeoutMs = computed(() => parseOptionalNumberInput(engineTimeoutMsInput.value, { min: 1_000, max: 300_000, integer: true }))
@@ -497,6 +500,7 @@ const invalidOptionalFields = computed(() => [
   isMultiLiveOptionsEnabled.value && multiLiveScoreUpLowerBound.value.invalid,
   boost.value.invalid,
   areaItemLevel.value.invalid,
+  hasCharacterFilterError.value,
   resultLimit.value.invalid,
   engineTimeoutMs.value.invalid,
   hasSpecificSkillOrderError.value,
@@ -542,7 +546,6 @@ const liveTypeOptions = computed<Array<{ value: DeckRecommendLiveType; label: st
   { value: "solo", label: t("deckRecommend.liveTypes.solo") },
   { value: "multi", label: t("deckRecommend.liveTypes.multi") },
   { value: "auto", label: t("deckRecommend.liveTypes.auto") },
-  { value: "cheerful", label: t("deckRecommend.liveTypes.cheerful") },
 ])
 
 const algorithmOptions = computed<Array<{ value: DeckRecommendAlgorithm; label: string }>>(() => [
@@ -792,19 +795,11 @@ watch(
 )
 
 watch(
-  [selectedEventType, recommendMode, eventSimulationEnabled, simulatedEventMode],
+  recommendMode,
   () => {
-    if (!isEventLikeMode.value) {
-      return
-    }
-
     if (recommendMode.value === "bonus") {
       liveType.value = "solo"
-      return
     }
-
-    const eventType = isEventSimulationActive.value ? simulatedEventMode.value : selectedEventType.value
-    liveType.value = eventType === "cheerful_carnival" ? "cheerful" : "multi"
   },
   { immediate: true },
 )
@@ -979,8 +974,9 @@ function updateLiveType(value: AcceptableValue) {
     return
   }
 
-  if (typeof value === "string" && isDeckRecommendLiveType(value)) {
-    liveType.value = value
+  const normalized = typeof value === "string" ? normalizeDeckRecommendLiveType(value) : null
+  if (normalized) {
+    liveType.value = normalized
   }
 }
 
@@ -1225,8 +1221,11 @@ function applyDeckRecommendRouteQuery() {
   const queryLiveType = readRouteQueryString("liveType")
   if (recommendMode.value === "bonus") {
     liveType.value = "solo"
-  } else if (queryLiveType && isDeckRecommendLiveType(queryLiveType)) {
-    liveType.value = queryLiveType
+  } else {
+    const normalizedLiveType = normalizeDeckRecommendLiveType(queryLiveType)
+    if (normalizedLiveType) {
+      liveType.value = normalizedLiveType
+    }
   }
 
   const queryMusicId = readPositiveIntegerRouteQuery("musicId")
@@ -1532,6 +1531,15 @@ function isWorldBloomResultDeck(deck: DeckResultDeckView["deck"]) {
     || (isEventSimulationActive.value && isWorldBloomSimulation.value)
 }
 
+function worldBloomSupportCardViews(deck: DeckResultDeckView["deck"]): DeckResultSupportCardView[] {
+  return buildDeckSupportCardViews(
+    resolveDeckSupportCards(deck),
+    runner.masterData.value,
+    dataRegion.value,
+    settingsStore.currentAssetEndpoint,
+  )
+}
+
 function mainDeckSectionTitle(deck: DeckResultDeckView["deck"]) {
   return isWorldBloomResultDeck(deck)
     ? t("deckRecommend.result.sections.mainCards")
@@ -1655,6 +1663,18 @@ function normalizeLegacyRecommendModeTarget(
 
 function isDeckRecommendLiveType(value: string): value is DeckRecommendLiveType {
   return liveTypeOptions.value.some((option) => option.value === value)
+}
+
+function normalizeDeckRecommendLiveType(value: string | null): DeckRecommendLiveType | null {
+  if (!value) {
+    return null
+  }
+
+  return value === "cheerful"
+    ? "multi"
+    : isDeckRecommendLiveType(value)
+      ? value
+      : null
 }
 
 function isDeckRecommendExecutionMode(value: string): value is DeckRecommendExecutionMode {
@@ -2276,6 +2296,14 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                               :disabled="runner.running.value"
                               :placeholder="t('deckRecommend.options.filters.characterSelectPlaceholder')"
                             />
+                            <p
+                              :class="[
+                                'text-xs leading-5',
+                                hasCharacterFilterError ? 'text-destructive' : 'text-muted-foreground',
+                              ]"
+                            >
+                              {{ t("deckRecommend.options.filters.characterMinHint", { count: CHARACTER_FILTER_MIN_COUNT }) }}
+                            </p>
                           </div>
                           <div class="grid gap-3 sm:grid-cols-2">
                             <div class="grid gap-2">
@@ -2310,8 +2338,12 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             </div>
                           </div>
                         </div>
-                        <p v-if="boost.invalid || areaItemLevel.invalid" class="text-xs text-destructive">
-                          {{ t("deckRecommend.options.filters.invalid") }}
+                        <p v-if="boost.invalid || areaItemLevel.invalid || hasCharacterFilterError" class="text-xs text-destructive">
+                          {{
+                            hasCharacterFilterError
+                              ? t("deckRecommend.options.filters.characterMinInvalid", { count: CHARACTER_FILTER_MIN_COUNT })
+                              : t("deckRecommend.options.filters.invalid")
+                          }}
                         </p>
                       </section>
 
@@ -3001,7 +3033,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                     </Collapsible>
 
                     <Collapsible
-                      v-if="isWorldBloomResultDeck(deckView.deck) && worldBloomSupportCardViews.length > 0"
+                      v-if="isWorldBloomResultDeck(deckView.deck) && worldBloomSupportCardViews(deckView.deck).length > 0"
                       v-slot="{ open: supportOpen }"
                       as-child
                     >
@@ -3028,7 +3060,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         <CollapsibleContent>
                           <div class="grid grid-cols-3 gap-1.5 border-t bg-muted/5 p-2 sm:grid-cols-4 sm:gap-2 sm:p-3 xl:grid-cols-5">
                             <div
-                              v-for="supportCardView in worldBloomSupportCardViews"
+                              v-for="supportCardView in worldBloomSupportCardViews(deckView.deck)"
                               :key="supportCardView.card.card_id"
                               class="grid gap-1.5 rounded-md bg-background/75 p-1.5 ring-1 ring-border/60 sm:gap-2 sm:p-2"
                             >

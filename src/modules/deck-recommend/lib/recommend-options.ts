@@ -21,7 +21,7 @@ export type DeckRecommendMode =
 
 export type DeckRecommendTarget = RecommendTarget
 
-export type DeckRecommendLiveType = "solo" | "multi" | "auto" | "cheerful"
+export type DeckRecommendLiveType = "solo" | "multi" | "auto"
 
 export type DeckRecommendAlgorithm = "dfs_ga" | "dfs" | "ga" | "rl"
 

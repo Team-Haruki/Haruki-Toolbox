@@ -4,8 +4,10 @@ import {
   buildCardThumbnailView,
   buildDeckResultViews,
   buildDeckSupportCardViews,
+  resolveDeckSupportCards,
   resolveRecommendCardDisplayState,
   type DeckRecommendMasterCard,
+  type DeckResultSupportCard,
 } from "./card-thumbnail"
 
 const baseRecommendCard: RecommendCard = {
@@ -117,4 +119,57 @@ describe("deck recommend card thumbnail helpers", () => {
     expect(views[0].thumbnail.title).toBe("Test card")
     expect(views[0].thumbnail.trainRank).toBe(5)
   })
+
+  it("maps per-deck world bloom support cards and filters main deck duplicates", () => {
+    const deck = {
+      ...createRecommendDeck([100, 101, 102, 103, 104]),
+      support_deck_cards: [
+        createSupportCard(100, 30),
+        createSupportCard(200, 20),
+        createSupportCard(201, 10),
+      ],
+    }
+
+    expect(resolveDeckSupportCards(deck).map((card) => card.card_id)).toEqual([200, 201])
+  })
+
+  it("returns no support cards when a deck has no per-deck support data", () => {
+    const deck = createRecommendDeck([100, 101, 102, 103, 104])
+
+    expect(resolveDeckSupportCards(deck)).toEqual([])
+  })
 })
+
+function createRecommendDeck(cardIds: number[]): RecommendResult["decks"][number] {
+  return {
+    score: 0,
+    live_score: 0,
+    mysekai_event_point: 0,
+    total_power: 0,
+    base_power: 0,
+    area_item_bonus_power: 0,
+    character_bonus_power: 0,
+    honor_bonus_power: 0,
+    fixture_bonus_power: 0,
+    gate_bonus_power: 0,
+    event_bonus_rate: 0,
+    support_deck_bonus_rate: 0,
+    multi_live_score_up: 0,
+    cards: cardIds.map((cardId) => ({
+      ...baseRecommendCard,
+      card_id: cardId,
+    })),
+  }
+}
+
+function createSupportCard(cardId: number, bonus: number): DeckResultSupportCard {
+  return {
+    card_id: cardId,
+    bonus,
+    skill_level: 4,
+    master_rank: 5,
+    level: 60,
+    after_training: true,
+    default_image: "special_training",
+  }
+}
