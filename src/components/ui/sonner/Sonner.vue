@@ -28,3 +28,23 @@ const props = defineProps<ToasterProps>()
     }"
   />
 </template>
+
+<style>
+.toaster [data-sonner-toast][data-styled='true'] [data-button][data-action] {
+  border: 1px solid color-mix(in oklab, var(--primary) 82%, var(--background) 18%);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 700;
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--primary) 22%, transparent);
+}
+
+.toaster [data-sonner-toast][data-styled='true'] [data-button][data-action]:hover {
+  background: color-mix(in oklab, var(--primary) 90%, var(--background) 10%);
+}
+
+.toaster [data-sonner-toast][data-styled='true'] [data-button][data-action]:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px color-mix(in oklab, var(--primary) 58%, transparent);
+}
+</style>
