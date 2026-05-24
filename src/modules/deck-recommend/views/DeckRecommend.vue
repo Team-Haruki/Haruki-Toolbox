@@ -23,6 +23,14 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
+  Dialog,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogScrollContent,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -75,6 +83,7 @@ import {
   type DeckRecommendSimulatedEventType,
   type DeckRecommendLiveType,
   type DeckRecommendMode,
+  type DeckRecommendTarget,
   type DeckRecommendSkillOrderStrategy,
   type DeckRecommendSkillReferenceStrategy,
   type DeckRecommendSupportUnitType,
@@ -86,6 +95,7 @@ import {
   parseDeckSkillOrderInput,
 } from "../lib/recommend-options"
 import { createDefaultCardTrainingConfig } from "../lib/training-config"
+import { resolveMaxAreaItemLevel } from "../lib/user-data-preparation"
 import {
   useDeckRecommendRunner,
   type DeckRecommendExecutionMode,
@@ -109,9 +119,11 @@ const DEFAULT_MUSIC_ID = "74"
 const DEFAULT_MUSIC_DIFFICULTY = "expert"
 const DEFAULT_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "ga", "rl"]
 const DECK_RECOMMEND_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "dfs", "ga", "rl"]
-const DECK_RECOMMEND_CARD_OPTION_MASTER_FILES = ["cards", "cardRarities", "gameCharacters", "unitProfiles"] as const
+const DECK_RECOMMEND_CARD_OPTION_MASTER_FILES = ["cards", "cardRarities", "gameCharacters", "gameCharacterUnits", "unitProfiles", "areaItemLevels"] as const
 const DECK_RECOMMEND_PREFERENCES_STORAGE_KEY = "haruki:deck-recommend:preferences"
+const DECK_RECOMMEND_PREFERENCES_VERSION = 2
 const DECK_RECOMMEND_EXECUTION_MODES: DeckRecommendExecutionMode[] = ["sequential", "parallel"]
+const DEFAULT_EXECUTION_MODE: DeckRecommendExecutionMode = "parallel"
 const DECK_RECOMMEND_EVENT_ATTRS: DeckRecommendEventAttr[] = ["happy", "cute", "cool", "pure", "mysterious"]
 const DECK_RECOMMEND_UNITS: DeckRecommendUnitType[] = [
   "light_sound",
@@ -122,8 +134,10 @@ const DECK_RECOMMEND_UNITS: DeckRecommendUnitType[] = [
   "piapro",
 ]
 const DECK_RECOMMEND_WORLD_BLOOM_TURNS = ["1", "2", "3"] as const
+const DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT = "custom_bonus_characters" as const
 
 type DeckRecommendEventSimulationMode = DeckRecommendSimulatedEventType | "world_bloom"
+type DeckRecommendSimulatedEventUnitValue = DeckRecommendUnitType | typeof DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT
 
 const { t, locale } = useI18n()
 const userStore = useUserStore()
@@ -137,34 +151,38 @@ const cardOptionMasterData = ref<Record<string, unknown> | null>(null)
 const selectedAccountKey = ref("")
 const dataRegion = ref<SekaiRegion>("jp")
 const recommendMode = ref<DeckRecommendMode>("event")
+const recommendTarget = ref<DeckRecommendTarget>("score")
 const liveType = ref<DeckRecommendLiveType>("multi")
 const selectedAlgorithms = ref<DeckRecommendAlgorithm[]>(initialPreferences.algorithms ?? [...DEFAULT_ALGORITHMS])
-const executionMode = ref<DeckRecommendExecutionMode>(initialPreferences.executionMode ?? "sequential")
+const executionMode = ref<DeckRecommendExecutionMode>(initialPreferences.executionMode ?? DEFAULT_EXECUTION_MODE)
 const selectedEventId = ref<string | null>(null)
 const selectedEventType = ref<string | null>(null)
 const selectedCharacterId = ref<string | null>(null)
 const selectedMusicId = ref<string | null>(DEFAULT_MUSIC_ID)
 const selectedDifficulty = ref<string | null>(DEFAULT_MUSIC_DIFFICULTY)
 const bonusTargetsInput = ref("")
-const customBonusAttr = ref<DeckRecommendEventAttr | null>(null)
 const customBonusCharacterIds = ref<number[]>([])
 const customBonusSupportUnits = ref<Record<string, DeckRecommendSupportUnitType>>({})
 const filterOtherUnit = ref(false)
 const eventSimulationEnabled = ref(false)
 const simulatedEventMode = ref<DeckRecommendEventSimulationMode>("marathon")
 const simulatedEventAttr = ref<DeckRecommendEventAttr | null>("cool")
-const simulatedEventUnit = ref<DeckRecommendUnitType | null>("idol")
+const simulatedEventUnit = ref<DeckRecommendSimulatedEventUnitValue | null>("idol")
+const customBonusSimulationDialogOpen = ref(false)
 const simulatedWorldBloomTurn = ref<string | null>("1")
 const simulatedWorldBloomCharacterId = ref<string | null>(null)
-const multiLiveTeammatePowerInput = ref("")
-const multiLiveTeammateScoreUpInput = ref("")
-const multiLiveScoreUpLowerBoundInput = ref("")
-const boostInput = ref("")
-const areaItemLevelInput = ref("")
-const resultLimitInput = ref("")
-const engineTimeoutMsInput = ref("")
+type NumericInputValue = string | number
+
+const multiLiveTeammatePowerInput = ref<NumericInputValue>("")
+const multiLiveTeammateScoreUpInput = ref<NumericInputValue>("")
+const multiLiveScoreUpLowerBoundInput = ref<NumericInputValue>("")
+const boostInput = ref<NumericInputValue>("0")
+const areaItemLevelInput = ref<NumericInputValue>("")
+const resultLimitInput = ref<NumericInputValue>("")
+const engineTimeoutMsInput = ref<NumericInputValue>("")
 const unitFilters = ref<DeckRecommendUnitType[]>([])
 const attrFilters = ref<DeckRecommendEventAttr[]>([])
+const characterFilters = ref<number[]>([])
 const fixedCardIds = ref<number[]>([])
 const useCurrentDeck = ref(false)
 const fixedCharacterIds = ref<number[]>([])
@@ -186,6 +204,7 @@ let dataPreloadSignature = ""
 let cardOptionMasterDataSignature = ""
 let routeQueryHydrationSignature = ""
 let routeRegionLocked = false
+let silentUserDataCheckSignature = ""
 const routeHydrationInProgress = ref(false)
 
 const accountOptions = computed<BoundAccountOption[]>(() => {
@@ -213,6 +232,9 @@ const worldBloomSupportCardViews = computed(() =>
 )
 const cardOptions = computed(() =>
   buildMasterCardOptions(cardOptionMasterData.value ?? runner.masterData.value, dataRegion.value, settingsStore.currentAssetEndpoint),
+)
+const areaItemMaxLevel = computed(() =>
+  resolveMaxAreaItemLevel((runner.masterData.value ?? cardOptionMasterData.value)?.areaItemLevels) ?? 20,
 )
 const showResultCard = computed(() =>
   runner.error.value != null || runner.elapsedMs.value != null || resultDecks.value.length > 0,
@@ -248,6 +270,19 @@ const resultTimingItems = computed<Array<{ key: string; label: string; elapsedMs
 })
 const isEventLikeMode = computed(() =>
   recommendMode.value === "event" || recommendMode.value === "bonus" || recommendMode.value === "mysekai",
+)
+const showRecommendTargetSelect = computed(() => recommendMode.value !== "bonus")
+const recommendTargetOptions = computed<Array<{ value: DeckRecommendTarget; label: string }>>(() =>
+  allowedRecommendTargets(recommendMode.value).map((value) => ({
+    value,
+    label: recommendTargetLabel(value, recommendMode.value),
+  })),
+)
+const activeRecommendTarget = computed<DeckRecommendTarget>(() =>
+  isAllowedRecommendTarget(recommendTarget.value, recommendMode.value) ? recommendTarget.value : defaultRecommendTarget(recommendMode.value),
+)
+const activeRecommendTargetLabel = computed(() =>
+  recommendTargetLabel(activeRecommendTarget.value, recommendMode.value),
 )
 const isEventSimulationAvailable = computed(() => isEventLikeMode.value)
 const isEventSimulationActive = computed(() => eventSimulationEnabled.value && isEventSimulationAvailable.value)
@@ -305,6 +340,14 @@ const eventRuleWarnings = computed(() => {
   return warnings
 })
 const isWorldBloomSimulation = computed(() => simulatedEventMode.value === "world_bloom")
+const isCustomBonusSimulation = computed(() =>
+  isEventSimulationActive.value
+  && !isWorldBloomSimulation.value
+  && simulatedEventUnit.value === DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT,
+)
+const activeSimulatedEventUnit = computed<DeckRecommendUnitType | null>(() =>
+  simulatedEventUnit.value && isDeckRecommendUnit(simulatedEventUnit.value) ? simulatedEventUnit.value : null,
+)
 const showWorldBloomCharacterSelect = computed(() =>
   isEventLikeMode.value
   && !isEventSimulationActive.value
@@ -373,6 +416,26 @@ const showBonusTargetsInput = computed(() => recommendMode.value === "bonus")
 const hasBonusTargetsError = computed(() =>
   showBonusTargetsInput.value && bonusTargetsInput.value.trim() !== "" && bonusTargets.value.invalidTokens.length > 0,
 )
+const boostOptions = computed(() =>
+  Array.from({ length: 11 }, (_, value) => ({
+    value: String(value),
+    label: t("deckRecommend.options.filters.boostOption", { value }),
+  })),
+)
+const areaItemLevelOptions = computed(() => [
+  {
+    value: "default",
+    label: t("deckRecommend.options.filters.areaItemLevelDefault"),
+  },
+  ...Array.from({ length: areaItemMaxLevel.value }, (_, index) => {
+    const value = index + 1
+    return {
+      value: String(value),
+      label: t("deckRecommend.options.filters.areaItemLevelOption", { value }),
+    }
+  }),
+])
+const characterFilterMaxCount = computed(() => Math.max(characterOptions.options.value.length, 26))
 const multiLiveTeammatePower = computed(() =>
   parseOptionalNumberInput(multiLiveTeammatePowerInput.value),
 )
@@ -383,7 +446,9 @@ const multiLiveScoreUpLowerBound = computed(() =>
   parseOptionalNumberInput(multiLiveScoreUpLowerBoundInput.value),
 )
 const boost = computed(() => parseOptionalNumberInput(boostInput.value, { min: 0, max: 10, integer: true }))
-const areaItemLevel = computed(() => parseOptionalNumberInput(areaItemLevelInput.value, { min: 1, integer: true }))
+const areaItemLevel = computed(() =>
+  parseOptionalNumberInput(areaItemLevelInput.value, { min: 1, max: areaItemMaxLevel.value, integer: true }),
+)
 const resultLimit = computed(() => parseOptionalNumberInput(resultLimitInput.value, { min: 1, max: 50, integer: true }))
 const engineTimeoutMs = computed(() => parseOptionalNumberInput(engineTimeoutMsInput.value, { min: 1_000, max: 300_000, integer: true }))
 const specificSkillOrder = computed(() => parseDeckSkillOrderInput(specificSkillOrderInput.value))
@@ -395,8 +460,8 @@ const hasSpecificSkillOrderError = computed(() =>
 const eventSimulation = computed<DeckRecommendEventSimulationInput>(() => ({
   enabled: isEventSimulationActive.value,
   eventType: simulatedEventMode.value === "cheerful_carnival" ? "cheerful_carnival" : "marathon",
-  attr: isWorldBloomSimulation.value ? null : simulatedEventAttr.value,
-  unit: isWorldBloomSimulation.value ? null : simulatedEventUnit.value,
+  attr: isWorldBloomSimulation.value || isCustomBonusSimulation.value ? null : simulatedEventAttr.value,
+  unit: isWorldBloomSimulation.value || isCustomBonusSimulation.value ? null : activeSimulatedEventUnit.value,
   worldBloomTurn: isWorldBloomSimulation.value ? parseWorldBloomTurn(simulatedWorldBloomTurn.value) : null,
   worldBloomCharacterId: isWorldBloomSimulation.value ? simulatedWorldBloomCharacterId.value : null,
   worldBloomCharacterUnit: isWorldBloomSimulation.value ? simulatedWorldBloomCharacterUnit.value : null,
@@ -415,8 +480,17 @@ const hasEventSimulationError = computed(() => {
     return turn <= 2 && !simulatedWorldBloomCharacterUnit.value
   }
 
-  return !simulatedEventAttr.value || !simulatedEventUnit.value
+  if (isCustomBonusSimulation.value) {
+    return !simulatedEventAttr.value || customBonusCharacterIds.value.length === 0
+  }
+
+  return !simulatedEventAttr.value || !activeSimulatedEventUnit.value
 })
+const eventSimulationErrorMessage = computed(() =>
+  isCustomBonusSimulation.value
+    ? t("deckRecommend.options.eventSimulation.customBonusInvalid")
+    : t("deckRecommend.options.eventSimulation.invalid"),
+)
 const invalidOptionalFields = computed(() => [
   isMultiLiveOptionsEnabled.value && multiLiveTeammatePower.value.invalid,
   isMultiLiveOptionsEnabled.value && multiLiveTeammateScoreUp.value.invalid,
@@ -461,8 +535,7 @@ const modeOptions = computed<Array<{ value: DeckRecommendMode; label: string }>>
   { value: "challenge", label: t("deckRecommend.modes.challenge") },
   { value: "bonus", label: t("deckRecommend.modes.bonus") },
   { value: "mysekai", label: t("deckRecommend.modes.mysekai") },
-  { value: "max-power", label: t("deckRecommend.modes.maxPower") },
-  { value: "max-skill", label: t("deckRecommend.modes.maxSkill") },
+  { value: "max", label: t("deckRecommend.modes.max") },
 ])
 
 const liveTypeOptions = computed<Array<{ value: DeckRecommendLiveType; label: string }>>(() => [
@@ -497,16 +570,15 @@ const eventAttrOptions = computed<Array<{ value: DeckRecommendEventAttr; label: 
   })),
 )
 
-const eventUnitOptions = computed<Array<{ value: DeckRecommendUnitType; label: string }>>(() =>
-  DECK_RECOMMEND_UNITS.map((value) => ({
+const eventUnitOptions = computed<Array<{ value: DeckRecommendSimulatedEventUnitValue; label: string }>>(() => [
+  ...DECK_RECOMMEND_UNITS.map((value) => ({
     value,
     label: t(`deckRecommend.eventUnits.${value}`),
   })),
-)
-
-const bonusAttrOptions = computed<Array<{ value: string; label: string }>>(() => [
-  { value: "none", label: t("deckRecommend.form.customBonusAttrNone") },
-  ...eventAttrOptions.value,
+  {
+    value: DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT,
+    label: t("deckRecommend.options.eventSimulation.customBonusUnit"),
+  },
 ])
 
 const worldBloomTurnOptions = computed<Array<{ value: string; label: string }>>(() =>
@@ -552,6 +624,14 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => [userStore.userId, selectedAccount.value?.key],
+  () => {
+    void checkSelectedAccountSuiteData()
+  },
+  { immediate: true },
+)
+
 watch(dataRegion, () => {
   invalidateDataPreload()
   cardOptionMasterData.value = null
@@ -568,6 +648,17 @@ watch(dataRegion, () => {
 })
 
 watch(
+  areaItemMaxLevel,
+  (maxLevel) => {
+    const parsed = Number(areaItemLevelInput.value)
+    if (Number.isInteger(parsed) && parsed > maxLevel) {
+      areaItemLevelInput.value = String(maxLevel)
+    }
+  },
+  { immediate: true },
+)
+
+watch(
   () => route.query,
   () => {
     applyDeckRecommendRouteQuery()
@@ -579,6 +670,7 @@ watch(
   [
     selectedAccountKey,
     recommendMode,
+    recommendTarget,
     liveType,
     selectedAlgorithms,
     executionMode,
@@ -587,7 +679,6 @@ watch(
     selectedMusicId,
     selectedDifficulty,
     bonusTargetsInput,
-    customBonusAttr,
     customBonusCharacterIds,
     customBonusSupportUnits,
     filterOtherUnit,
@@ -606,6 +697,7 @@ watch(
     engineTimeoutMsInput,
     unitFilters,
     attrFilters,
+    characterFilters,
     fixedCardIds,
     useCurrentDeck,
     fixedCharacterIds,
@@ -664,11 +756,24 @@ watch(
       useCurrentDeck.value = false
       fixedCharacterIds.value = []
     }
+    if (!isAllowedRecommendTarget(recommendTarget.value, recommendMode.value)) {
+      recommendTarget.value = defaultRecommendTarget(recommendMode.value)
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  recommendTargetOptions,
+  () => {
+    if (!isAllowedRecommendTarget(recommendTarget.value, recommendMode.value)) {
+      recommendTarget.value = defaultRecommendTarget(recommendMode.value)
+    }
   },
 )
 
 watch(
-  [recommendMode, liveType],
+  [recommendMode, recommendTarget, liveType],
   () => {
     const defaultStrategy = resolveDefaultSkillStrategyForForm(recommendMode.value, liveType.value)
     skillOrderStrategy.value = defaultStrategy
@@ -709,6 +814,15 @@ watch(
   () => {
     if (isWorldBloomSimulation.value && !simulatedWorldBloomTurn.value) {
       simulatedWorldBloomTurn.value = "1"
+    }
+  },
+)
+
+watch(
+  isCustomBonusSimulation,
+  (enabled) => {
+    if (!enabled) {
+      customBonusSimulationDialogOpen.value = false
     }
   },
 )
@@ -850,6 +964,16 @@ function updateRecommendMode(value: AcceptableValue) {
   }
 }
 
+function updateRecommendTarget(value: AcceptableValue) {
+  if (
+    typeof value === "string"
+    && isDeckRecommendTarget(value)
+    && isAllowedRecommendTarget(value, recommendMode.value)
+  ) {
+    recommendTarget.value = value
+  }
+}
+
 function updateLiveType(value: AcceptableValue) {
   if (recommendMode.value === "bonus") {
     return
@@ -879,6 +1003,33 @@ function updateExecutionMode(value: AcceptableValue) {
   }
 }
 
+function updateBoostInput(value: AcceptableValue) {
+  if (typeof value !== "string") {
+    return
+  }
+
+  const parsed = Number(value)
+  if (Number.isInteger(parsed) && parsed >= 0 && parsed <= 10) {
+    boostInput.value = value
+  }
+}
+
+function updateAreaItemLevelInput(value: AcceptableValue) {
+  if (value === "default") {
+    areaItemLevelInput.value = ""
+    return
+  }
+
+  if (typeof value !== "string") {
+    return
+  }
+
+  const parsed = Number(value)
+  if (Number.isInteger(parsed) && parsed >= 1 && parsed <= areaItemMaxLevel.value) {
+    areaItemLevelInput.value = value
+  }
+}
+
 function updateEventSimulationMode(value: AcceptableValue) {
   if (typeof value === "string" && isDeckRecommendEventSimulationMode(value)) {
     simulatedEventMode.value = value
@@ -892,18 +1043,11 @@ function updateSimulatedEventAttr(value: AcceptableValue) {
 }
 
 function updateSimulatedEventUnit(value: AcceptableValue) {
-  if (typeof value === "string" && isDeckRecommendUnit(value)) {
+  if (typeof value === "string" && isDeckRecommendSimulatedEventUnit(value)) {
     simulatedEventUnit.value = value
-  }
-}
-
-function updateCustomBonusAttr(value: AcceptableValue) {
-  if (value === "none") {
-    customBonusAttr.value = null
-    return
-  }
-  if (typeof value === "string" && isDeckRecommendEventAttr(value)) {
-    customBonusAttr.value = value
+    if (value === DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT) {
+      customBonusSimulationDialogOpen.value = true
+    }
   }
 }
 
@@ -948,6 +1092,21 @@ function checkDeckRecommendRegionData(region: SekaiRegion) {
   void sekaiDataStore.ensureRegionData(region, {
     files: mergeMasterFileNames(SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES, DECK_RECOMMEND_CARD_OPTION_MASTER_FILES),
   })
+}
+
+async function checkSelectedAccountSuiteData() {
+  const account = selectedAccount.value
+  if (!userStore.userId || !account) {
+    return
+  }
+
+  const signature = `${userStore.userId}:${account.server}:${account.uid}:suite`
+  if (signature === silentUserDataCheckSignature) {
+    return
+  }
+
+  silentUserDataCheckSignature = signature
+  await runner.refreshUserData({ account, mode: "event" }).catch(() => undefined)
 }
 
 function preloadCurrentRegionData() {
@@ -1050,8 +1209,17 @@ function applyDeckRecommendRouteQuery() {
   }
 
   const queryMode = readRouteQueryString("mode")
-  if (queryMode && isDeckRecommendMode(queryMode)) {
+  const legacyModeTarget = normalizeLegacyRecommendModeTarget(queryMode)
+  if (legacyModeTarget) {
+    recommendMode.value = legacyModeTarget.mode
+    recommendTarget.value = legacyModeTarget.target
+  } else if (queryMode && isDeckRecommendMode(queryMode)) {
     recommendMode.value = queryMode
+  }
+
+  const queryTarget = readRouteQueryString("target") ?? readRouteQueryString("recommendTarget")
+  if (queryTarget && isDeckRecommendTarget(queryTarget) && isAllowedRecommendTarget(queryTarget, recommendMode.value)) {
+    recommendTarget.value = queryTarget
   }
 
   const queryLiveType = readRouteQueryString("liveType")
@@ -1081,7 +1249,7 @@ function applyDeckRecommendRouteQuery() {
 
   const queryCustomBonusAttr = readRouteQueryString("customBonusAttr")
   if (queryCustomBonusAttr && isDeckRecommendEventAttr(queryCustomBonusAttr)) {
-    customBonusAttr.value = queryCustomBonusAttr
+    simulatedEventAttr.value = queryCustomBonusAttr
   }
 
   const queryCustomBonusCharacters = readRouteQueryString("customBonusCharacters")
@@ -1100,6 +1268,16 @@ function applyDeckRecommendRouteQuery() {
     filterOtherUnit.value = queryFilterOtherUnit
   }
 
+  const querySimulatedEventUnit = readRouteQueryString("simulatedEventUnit")
+  const hasCustomBonusQuery = Boolean(queryCustomBonusCharacters || queryCustomBonusSupportUnits)
+  if (querySimulatedEventUnit && isDeckRecommendSimulatedEventUnit(querySimulatedEventUnit)) {
+    simulatedEventUnit.value = querySimulatedEventUnit
+    eventSimulationEnabled.value = true
+  } else if (hasCustomBonusQuery) {
+    simulatedEventUnit.value = DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT
+    eventSimulationEnabled.value = true
+  }
+
   const queryBoost = readIntegerRouteQuery("boost")
   if (queryBoost != null && queryBoost >= 0 && queryBoost <= 10) {
     boostInput.value = String(queryBoost)
@@ -1114,6 +1292,8 @@ function createDeckRecommendRouteQuerySignature() {
   const keys = [
     "source",
     "mode",
+    "target",
+    "recommendTarget",
     "dataRegion",
     "region",
     "liveType",
@@ -1128,6 +1308,7 @@ function createDeckRecommendRouteQuerySignature() {
     "customBonusCharacterIds",
     "customBonusSupportUnits",
     "filterOtherUnit",
+    "simulatedEventUnit",
     "boost",
   ]
   const values = keys.map((key) => `${key}=${readRouteQueryString(key) ?? ""}`)
@@ -1191,6 +1372,7 @@ async function runRecommend() {
       account: selectedAccount.value,
       dataRegion: dataRegion.value,
       mode: recommendMode.value,
+      target: activeRecommendTarget.value,
       liveType: liveType.value,
       algorithms: activeAlgorithms.value,
       executionMode: executionMode.value,
@@ -1199,10 +1381,10 @@ async function runRecommend() {
       forcedLeaderCharacterId: activeForcedLeaderCharacterId.value,
       eventSimulation: eventSimulation.value,
       targetBonuses: bonusTargets.value.targets,
-      customBonusAttr: showBonusTargetsInput.value ? customBonusAttr.value : null,
-      customBonusCharacterIds: showBonusTargetsInput.value ? customBonusCharacterIds.value : [],
-      customBonusCharacterSupportUnits: showBonusTargetsInput.value ? customBonusSupportUnits.value : {},
-      filterOtherUnit: showBonusTargetsInput.value && filterOtherUnit.value,
+      customBonusAttr: isCustomBonusSimulation.value ? simulatedEventAttr.value : null,
+      customBonusCharacterIds: isCustomBonusSimulation.value ? customBonusCharacterIds.value : [],
+      customBonusCharacterSupportUnits: isCustomBonusSimulation.value ? customBonusSupportUnits.value : {},
+      filterOtherUnit: isCustomBonusSimulation.value && filterOtherUnit.value,
       multiLiveTeammatePower: isMultiLiveOptionsEnabled.value ? multiLiveTeammatePower.value.value : null,
       multiLiveTeammateScoreUp: isMultiLiveOptionsEnabled.value ? multiLiveTeammateScoreUp.value.value : null,
       multiLiveScoreUpLowerBound: isMultiLiveOptionsEnabled.value ? multiLiveScoreUpLowerBound.value.value : null,
@@ -1212,6 +1394,7 @@ async function runRecommend() {
       timeoutMs: engineTimeoutMs.value.value,
       unitFilters: unitFilters.value,
       attrFilters: attrFilters.value,
+      characterFilters: characterFilters.value,
       fixedCards: isCurrentDeckEnabled.value ? [] : fixedCardIds.value,
       useCurrentDeck: isCurrentDeckEnabled.value,
       fixedCharacters: recommendMode.value === "challenge" || isCurrentDeckEnabled.value ? [] : fixedCharacterIds.value,
@@ -1295,11 +1478,42 @@ function algorithmTagClass(algorithm: DeckRecommendAlgorithm) {
 }
 
 function deckPointValue(deck: DeckResultDeckView["deck"]) {
+  if (recommendMode.value === "max" && Number(deck.live_score) > 0) {
+    return deck.live_score
+  }
+
   if (recommendMode.value === "mysekai" && Number(deck.mysekai_event_point) > 0) {
     return deck.mysekai_event_point
   }
 
   return deck.score
+}
+
+function deckPointLabel() {
+  return recommendMode.value === "challenge" || recommendMode.value === "max"
+    ? t("deckRecommend.targets.score")
+    : t("deckRecommend.targets.pt")
+}
+
+function deckLiveBoostPointDetailText(deck: DeckResultDeckView["deck"]) {
+  const deckWithBoost = deck as DeckResultDeckView["deck"] & {
+    live_boost_multiplier?: number
+    live_boost_original_score?: number
+    live_boost_original_mysekai_event_point?: number
+  }
+  const multiplier = Number(deckWithBoost.live_boost_multiplier)
+  if (!Number.isFinite(multiplier) || multiplier <= 1) {
+    return null
+  }
+
+  const originalPoint = recommendMode.value === "mysekai" && Number(deckWithBoost.live_boost_original_mysekai_event_point) > 0
+    ? Number(deckWithBoost.live_boost_original_mysekai_event_point)
+    : Number(deckWithBoost.live_boost_original_score)
+  if (!Number.isFinite(originalPoint)) {
+    return null
+  }
+
+  return `${formatInteger(originalPoint)} (${formatInteger(multiplier)}x)`
 }
 
 function deckBonusParts(deck: DeckResultDeckView["deck"]) {
@@ -1341,12 +1555,6 @@ function readStateLabel(read: boolean) {
 function readStateTagClass(read: boolean) {
   return read
     ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
-    : "border-muted bg-muted/45 text-muted-foreground"
-}
-
-function canvasStateTagClass(enabled: boolean) {
-  return enabled
-    ? "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-200"
     : "border-muted bg-muted/45 text-muted-foreground"
 }
 
@@ -1394,6 +1602,57 @@ function isDeckRecommendMode(value: string): value is DeckRecommendMode {
   return modeOptions.value.some((option) => option.value === value)
 }
 
+function isDeckRecommendTarget(value: string): value is DeckRecommendTarget {
+  return value === "score" || value === "power" || value === "skill" || value === "bonus"
+}
+
+function isAllowedRecommendTarget(target: DeckRecommendTarget, mode: DeckRecommendMode): boolean {
+  return allowedRecommendTargets(mode).includes(target)
+}
+
+function allowedRecommendTargets(mode: DeckRecommendMode): DeckRecommendTarget[] {
+  switch (mode) {
+    case "event":
+      return ["score", "power", "skill", "bonus"]
+    case "mysekai":
+      return ["score", "power", "bonus"]
+    case "challenge":
+      return ["score", "power"]
+    case "max":
+      return ["score", "power", "skill"]
+    case "bonus":
+      return ["bonus"]
+  }
+}
+
+function defaultRecommendTarget(mode: DeckRecommendMode): DeckRecommendTarget {
+  return mode === "bonus" ? "bonus" : "score"
+}
+
+function recommendTargetLabel(target: DeckRecommendTarget, mode: DeckRecommendMode) {
+  if (target === "score" && mode !== "challenge" && mode !== "max") {
+    return t("deckRecommend.targets.pt")
+  }
+
+  if (target === "score" && (mode === "challenge" || mode === "max")) {
+    return t("deckRecommend.targets.score")
+  }
+
+  return t(`deckRecommend.targets.${target}`)
+}
+
+function normalizeLegacyRecommendModeTarget(
+  mode: string | null,
+): { mode: DeckRecommendMode; target: DeckRecommendTarget } | null {
+  if (mode === "max-power") {
+    return { mode: "max", target: "power" }
+  }
+  if (mode === "max-skill") {
+    return { mode: "max", target: "skill" }
+  }
+  return null
+}
+
 function isDeckRecommendLiveType(value: string): value is DeckRecommendLiveType {
   return liveTypeOptions.value.some((option) => option.value === value)
 }
@@ -1412,6 +1671,10 @@ function isDeckRecommendEventAttr(value: string): value is DeckRecommendEventAtt
 
 function isDeckRecommendUnit(value: string): value is DeckRecommendUnitType {
   return DECK_RECOMMEND_UNITS.includes(value as DeckRecommendUnitType)
+}
+
+function isDeckRecommendSimulatedEventUnit(value: string): value is DeckRecommendSimulatedEventUnitValue {
+  return value === DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT || isDeckRecommendUnit(value)
 }
 
 function normalizeDeckRecommendUnit(value: string | null | undefined): DeckRecommendUnitType | null {
@@ -1443,10 +1706,10 @@ function hasRequiredFiles(cachedFiles: readonly string[], requiredFiles: readonl
 }
 
 function parseOptionalNumberInput(
-  value: string,
+  value: NumericInputValue | null | undefined,
   options: { min?: number; max?: number; integer?: boolean } = {},
 ): { value: number | null; invalid: boolean } {
-  const trimmed = value.trim()
+  const trimmed = value == null ? "" : String(value).trim()
   if (trimmed === "") {
     return { value: null, invalid: false }
   }
@@ -1477,7 +1740,10 @@ function resolveDefaultSkillStrategyForForm(
   mode: DeckRecommendMode,
   selectedLiveType: DeckRecommendLiveType,
 ): DeckRecommendSkillReferenceStrategy {
-  if (mode === "challenge" && selectedLiveType !== "auto") {
+  if (
+    (mode === "challenge" && selectedLiveType !== "auto")
+    || activeRecommendTarget.value === "skill"
+  ) {
     return "max"
   }
 
@@ -1501,11 +1767,16 @@ function readDeckRecommendPreferences(): DeckRecommendPreferences {
     }
 
     const parsed = JSON.parse(raw) as Record<string, unknown>
+    const persistedExecutionMode = typeof parsed.executionMode === "string" && isDeckRecommendExecutionMode(parsed.executionMode)
+      ? parsed.executionMode
+      : undefined
+    const preferencesVersion = typeof parsed.version === "number" ? parsed.version : 1
+
     return {
       algorithms: normalizePersistedAlgorithms(parsed.algorithms),
-      executionMode: typeof parsed.executionMode === "string" && isDeckRecommendExecutionMode(parsed.executionMode)
-        ? parsed.executionMode
-        : undefined,
+      executionMode: preferencesVersion < DECK_RECOMMEND_PREFERENCES_VERSION && persistedExecutionMode === "sequential"
+        ? DEFAULT_EXECUTION_MODE
+        : persistedExecutionMode,
     }
   } catch {
     return {}
@@ -1518,7 +1789,10 @@ function writeDeckRecommendPreferences(preferences: Required<DeckRecommendPrefer
   }
 
   try {
-    window.localStorage.setItem(DECK_RECOMMEND_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences))
+    window.localStorage.setItem(DECK_RECOMMEND_PREFERENCES_STORAGE_KEY, JSON.stringify({
+      ...preferences,
+      version: DECK_RECOMMEND_PREFERENCES_VERSION,
+    }))
   } catch {
   }
 }
@@ -1535,8 +1809,8 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
 
 <template>
   <div class="flex w-full flex-1 flex-col items-center justify-center px-0 py-4">
-    <div class="mx-auto w-full max-w-6xl space-y-4">
-      <div class="flex gap-3 rounded-lg border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+    <div class="mx-auto w-full max-w-6xl space-y-3 sm:space-y-4">
+      <div class="flex gap-2 rounded-md border border-amber-200 bg-amber-50/90 px-2 py-2 text-sm text-amber-950 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:gap-3 sm:rounded-lg sm:px-4 sm:py-3">
         <LucideTriangleAlert class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-300" />
         <p class="leading-6">
           <strong class="font-bold text-amber-950 dark:text-amber-50">
@@ -1545,8 +1819,8 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
         </p>
       </div>
 
-      <Card>
-          <CardHeader class="gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <Card class="gap-3 rounded-lg py-3 xl:gap-6 xl:rounded-xl xl:py-6">
+          <CardHeader class="gap-3 px-2 sm:flex-row sm:items-start sm:justify-between sm:px-4 xl:px-6">
             <div class="space-y-1.5">
               <CardTitle class="flex items-center gap-2 text-lg">
                 <LucideGamepad2 class="size-5" />
@@ -1555,14 +1829,14 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
               <CardDescription>{{ t("deckRecommend.description") }}</CardDescription>
             </div>
           </CardHeader>
-          <CardContent class="grid gap-5">
-            <section class="grid gap-4 rounded-lg border bg-muted/10 p-4">
+          <CardContent class="grid gap-3 px-2 pb-2 sm:px-4 sm:pb-4 xl:gap-5 xl:px-6 xl:pb-6">
+            <section class="grid gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3 xl:gap-4 xl:rounded-lg xl:p-4">
               <div class="space-y-1">
                 <h2 class="text-base font-semibold">{{ t("deckRecommend.layers.default.title") }}</h2>
                 <p class="text-sm text-muted-foreground">{{ t("deckRecommend.layers.default.description") }}</p>
               </div>
 
-              <div class="grid gap-4 lg:grid-cols-2">
+              <div class="grid gap-3 sm:gap-4 lg:grid-cols-2">
               <div class="grid gap-2">
                 <Label>{{ t("deckRecommend.form.account") }}</Label>
                 <Select :model-value="selectedAccountKey" :disabled="accountOptions.length === 0" @update:model-value="updateAccount">
@@ -1610,6 +1884,22 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                 </Select>
               </div>
 
+              <div v-if="showRecommendTargetSelect" class="grid gap-2">
+                <Label>{{ t("deckRecommend.form.target") }}</Label>
+                <Select :model-value="activeRecommendTarget" @update:model-value="updateRecommendTarget">
+                  <SelectTrigger class="w-full">
+                    <SelectValue :key="`recommend-target-${recommendMode}-${activeRecommendTarget}-${locale}`">
+                      {{ activeRecommendTargetLabel }}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="option in recommendTargetOptions" :key="option.value" :value="option.value">
+                      {{ option.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div class="grid gap-2">
                 <Label>{{ t("deckRecommend.form.liveType") }}</Label>
                 <Select
@@ -1648,7 +1938,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div class="grid gap-2 rounded-md border p-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="grid gap-2 rounded-md border p-2 sm:grid-cols-2 sm:p-3 xl:grid-cols-4">
                   <label
                     v-for="option in algorithmOptions"
                     :key="option.value"
@@ -1679,7 +1969,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
               </div>
             </div>
 
-            <div class="grid gap-4">
+            <div class="grid gap-3 sm:gap-4">
               <div class="grid gap-2">
                 <Label>{{ t("deckRecommend.form.music") }}</Label>
                 <MusicSelect
@@ -1690,7 +1980,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                 />
               </div>
 
-              <section class="grid gap-3 rounded-md border bg-muted/20 p-3">
+              <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div class="space-y-1">
                     <h3 class="text-sm font-medium">{{ t("deckRecommend.options.eventCondition.title") }}</h3>
@@ -1789,6 +2079,30 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         </SelectContent>
                       </Select>
                     </div>
+                    <div
+                      v-if="isCustomBonusSimulation"
+                      class="grid gap-2 rounded-md border bg-background/60 p-2.5 sm:p-3 md:col-span-2 xl:col-span-2"
+                    >
+                      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="space-y-1">
+                          <p class="text-sm font-medium">{{ t("deckRecommend.options.eventSimulation.customBonusTitle") }}</p>
+                          <p class="text-xs leading-5 text-muted-foreground">
+                            {{ t("deckRecommend.options.eventSimulation.customBonusSummary", { count: customBonusCharacterIds.length }) }}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          class="shrink-0"
+                          :disabled="runner.running.value || !dataReady"
+                          @click="customBonusSimulationDialogOpen = true"
+                        >
+                          <LucideSettings2 class="mr-2 size-4" aria-hidden="true" />
+                          {{ t("deckRecommend.options.eventSimulation.customBonusConfigure") }}
+                        </Button>
+                      </div>
+                    </div>
                   </template>
 
                   <template v-else>
@@ -1820,14 +2134,14 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                   </template>
                 </div>
                 <p v-if="hasEventSimulationError" class="text-xs text-destructive">
-                  {{ t("deckRecommend.options.eventSimulation.invalid") }}
+                  {{ eventSimulationErrorMessage }}
                 </p>
                 <p v-else-if="isEventSimulationActive" class="text-xs text-muted-foreground">
                   {{ t("deckRecommend.options.eventSimulation.activeHint") }}
                 </p>
               </section>
 
-              <section v-if="showBonusTargetsInput" class="grid gap-3 rounded-md border bg-muted/20 p-3">
+              <section v-if="showBonusTargetsInput" class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                 <div class="space-y-1">
                   <h3 class="text-sm font-medium">{{ t("deckRecommend.options.bonus.title") }}</h3>
                   <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.bonus.description") }}</p>
@@ -1844,41 +2158,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                       :disabled="runner.running.value"
                     />
                   </div>
-                  <div class="grid gap-2">
-                    <Label>{{ t("deckRecommend.form.customBonusAttr") }}</Label>
-                    <Select
-                      :model-value="customBonusAttr ?? 'none'"
-                      :disabled="runner.running.value"
-                      @update:model-value="updateCustomBonusAttr"
-                    >
-                      <SelectTrigger class="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="option in bonusAttrOptions" :key="option.value" :value="option.value">
-                          {{ option.label }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div class="grid gap-2 md:col-span-2">
-                    <Label>{{ t("deckRecommend.form.customBonusCharacters") }}</Label>
-                    <CustomBonusCharacterPicker
-                      v-model="customBonusCharacterIds"
-                      v-model:support-units="customBonusSupportUnits"
-                      :region="dataRegion"
-                      :disabled="runner.running.value || !dataReady"
-                    />
-                  </div>
                 </div>
-                <label class="flex items-center justify-between gap-3 rounded-md border bg-background/60 p-2 text-sm">
-                  <span>{{ t("deckRecommend.form.filterOtherUnit") }}</span>
-                  <Switch
-                    v-model="filterOtherUnit"
-                    :aria-label="t('deckRecommend.form.filterOtherUnit')"
-                    :disabled="runner.running.value"
-                  />
-                </label>
                 <p
                   v-if="hasBonusTargetsError"
                   class="text-xs text-destructive"
@@ -1886,27 +2166,21 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                   {{ t("deckRecommend.form.bonusTargetsInvalid") }}
                 </p>
                 <p v-else class="text-xs text-muted-foreground">
-                  {{ t("deckRecommend.form.customBonusHint") }}
+                  {{ t("deckRecommend.form.bonusTargetsHint") }}
                 </p>
               </section>
 
             </div>
             </section>
 
-            <Collapsible
-              v-slot="{ open }"
-              as-child
-              :open="advancedConfigOpen"
-              class="group/collapsible"
-              @update:open="advancedConfigOpen = $event"
-            >
-              <section class="grid gap-4 rounded-lg border bg-muted/10 p-4">
-                <CollapsibleTrigger as-child>
-                  <button
-                    type="button"
-                    class="flex w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                    :aria-label="t('deckRecommend.layers.advanced.title')"
-                  >
+            <section class="grid min-w-0 gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3 xl:gap-4 xl:rounded-lg xl:p-4">
+              <button
+                type="button"
+                class="flex w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                :aria-label="t('deckRecommend.layers.advanced.title')"
+                :aria-expanded="advancedConfigOpen"
+                @click="advancedConfigOpen = !advancedConfigOpen"
+              >
                     <span class="space-y-1">
                       <span class="flex items-center gap-2 text-base font-semibold">
                         <LucideSettings2 class="size-4" />
@@ -1919,15 +2193,13 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                     <LucideChevronDown
                       :class="[
                         'mt-1 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                        open ? 'rotate-180' : '',
+                        advancedConfigOpen ? 'rotate-180' : '',
                       ]"
                     />
-                  </button>
-                </CollapsibleTrigger>
+              </button>
 
-                <CollapsibleContent>
-                  <div class="grid gap-4">
-                    <section class="grid gap-3 rounded-md border bg-muted/20 p-3">
+              <div v-show="advancedConfigOpen" class="grid min-w-0 gap-3 sm:gap-4">
+                    <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.training.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.training.description") }}</p>
@@ -1935,13 +2207,13 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                       <CardTrainingConfigTable v-model="trainingConfig" />
                     </section>
 
-                    <div class="grid gap-4 lg:grid-cols-2">
-                      <section class="grid gap-3 rounded-md border bg-muted/20 p-3">
+                    <div class="grid gap-3 sm:gap-4 lg:grid-cols-2">
+                      <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                         <div class="space-y-1">
                           <h3 class="text-sm font-medium">{{ t("deckRecommend.options.filters.title") }}</h3>
                           <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.filters.description") }}</p>
                         </div>
-                        <div class="grid gap-4">
+                        <div class="grid gap-3 sm:gap-4">
                           <div class="grid gap-3 xl:grid-cols-2">
                             <div class="grid gap-2">
                               <div class="flex items-center justify-between gap-2">
@@ -1992,33 +2264,49 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                               </div>
                             </div>
                           </div>
+                          <div class="grid gap-2">
+                            <div class="flex items-center justify-between gap-2">
+                              <Label>{{ t("deckRecommend.options.filters.character") }}</Label>
+                              <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(characterFilters.length) }}</span>
+                            </div>
+                            <CharacterMultiPicker
+                              v-model="characterFilters"
+                              :region="dataRegion"
+                              :max-characters="characterFilterMaxCount"
+                              :disabled="runner.running.value"
+                              :placeholder="t('deckRecommend.options.filters.characterSelectPlaceholder')"
+                            />
+                          </div>
                           <div class="grid gap-3 sm:grid-cols-2">
                             <div class="grid gap-2">
-                              <Label for="deck-recommend-area-item-level">{{ t("deckRecommend.options.filters.areaItemLevel") }}</Label>
-                              <Input
-                                id="deck-recommend-area-item-level"
-                                v-model="areaItemLevelInput"
-                                type="number"
-                                min="1"
-                                inputmode="numeric"
-                                :placeholder="t('deckRecommend.options.filters.areaItemLevelPlaceholder')"
-                                :aria-invalid="areaItemLevel.invalid || undefined"
+                              <Label>{{ t("deckRecommend.options.filters.areaItemLevel") }}</Label>
+                              <Select
+                                :model-value="areaItemLevelInput === '' ? 'default' : String(areaItemLevelInput)"
                                 :disabled="runner.running.value"
-                              />
+                                @update:model-value="updateAreaItemLevelInput"
+                              >
+                                <SelectTrigger class="w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem v-for="option in areaItemLevelOptions" :key="option.value" :value="option.value">
+                                    {{ option.label }}
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div class="grid gap-2">
-                              <Label for="deck-recommend-boost">{{ t("deckRecommend.options.filters.boost") }}</Label>
-                              <Input
-                                id="deck-recommend-boost"
-                                v-model="boostInput"
-                                type="number"
-                                min="0"
-                                max="10"
-                                inputmode="numeric"
-                                :placeholder="t('deckRecommend.options.filters.boostPlaceholder')"
-                                :aria-invalid="boost.invalid || undefined"
-                                :disabled="runner.running.value"
-                              />
+                              <Label>{{ t("deckRecommend.options.filters.boost") }}</Label>
+                              <Select :model-value="String(boostInput)" :disabled="runner.running.value" @update:model-value="updateBoostInput">
+                                <SelectTrigger class="w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem v-for="option in boostOptions" :key="option.value" :value="option.value">
+                                    {{ option.label }}
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                         </div>
@@ -2027,7 +2315,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         </p>
                       </section>
 
-                      <section class="grid gap-3 rounded-md border bg-muted/20 p-3">
+                      <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                         <div class="space-y-1">
                           <h3 class="text-sm font-medium">{{ t("deckRecommend.options.multiLive.title") }}</h3>
                           <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.multiLive.description") }}</p>
@@ -2038,8 +2326,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             <Input
                               id="deck-recommend-teammate-power"
                               v-model="multiLiveTeammatePowerInput"
-                              type="number"
-                              min="0"
+                              type="text"
                               inputmode="numeric"
                               :placeholder="t('deckRecommend.options.multiLive.followSelfPlaceholder')"
                               :aria-invalid="isMultiLiveOptionsEnabled && multiLiveTeammatePower.invalid || undefined"
@@ -2051,8 +2338,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             <Input
                               id="deck-recommend-teammate-score-up"
                               v-model="multiLiveTeammateScoreUpInput"
-                              type="number"
-                              min="0"
+                              type="text"
                               inputmode="numeric"
                               :placeholder="t('deckRecommend.options.multiLive.followSelfPlaceholder')"
                               :aria-invalid="isMultiLiveOptionsEnabled && multiLiveTeammateScoreUp.invalid || undefined"
@@ -2064,8 +2350,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             <Input
                               id="deck-recommend-score-up-lower-bound"
                               v-model="multiLiveScoreUpLowerBoundInput"
-                              type="number"
-                              min="0"
+                              type="text"
                               inputmode="decimal"
                               :placeholder="t('deckRecommend.options.multiLive.scoreUpLowerBoundPlaceholder')"
                               :aria-invalid="isMultiLiveOptionsEnabled && multiLiveScoreUpLowerBound.invalid || undefined"
@@ -2085,13 +2370,13 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                       </section>
                     </div>
 
-                    <section class="grid gap-3 rounded-md border bg-muted/20 p-3">
+                    <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.constraints.description") }}</p>
                       </div>
                       <div class="grid gap-3">
-                        <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-3 text-sm">
+                        <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
                           <span class="min-w-0 space-y-1">
                             <span class="block font-medium">{{ t("deckRecommend.options.constraints.useCurrentDeck") }}</span>
                             <span class="block text-xs leading-5 text-muted-foreground">
@@ -2106,7 +2391,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         </label>
 
                         <div v-if="!isCurrentDeckEnabled" class="grid gap-3 xl:grid-cols-2">
-                          <div class="grid gap-3 rounded-md border bg-background/50 p-3">
+                          <div class="grid gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
                             <div class="space-y-1">
                               <h4 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.fixedGroup") }}</h4>
                               <p class="text-xs leading-5 text-muted-foreground">
@@ -2135,7 +2420,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                               />
                             </div>
                           </div>
-                          <div class="grid content-start gap-3 rounded-md border bg-background/50 p-3">
+                          <div class="grid content-start gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
                             <div class="space-y-1">
                               <h4 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.excludedGroup") }}</h4>
                               <p class="text-xs leading-5 text-muted-foreground">
@@ -2162,25 +2447,17 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                       </p>
                     </section>
 
-                  </div>
-                </CollapsibleContent>
-              </section>
-            </Collapsible>
+              </div>
+            </section>
 
-            <Collapsible
-              v-slot="{ open }"
-              as-child
-              :open="expertConfigOpen"
-              class="group/collapsible"
-              @update:open="expertConfigOpen = $event"
-            >
-              <section class="grid gap-4 rounded-lg border bg-muted/10 p-4">
-                <CollapsibleTrigger as-child>
-                  <button
-                    type="button"
-                    class="flex w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                    :aria-label="t('deckRecommend.layers.expert.title')"
-                  >
+            <section class="grid min-w-0 gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3 xl:gap-4 xl:rounded-lg xl:p-4">
+              <button
+                type="button"
+                class="flex w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                :aria-label="t('deckRecommend.layers.expert.title')"
+                :aria-expanded="expertConfigOpen"
+                @click="expertConfigOpen = !expertConfigOpen"
+              >
                     <span class="space-y-1">
                       <span class="flex items-center gap-2 text-base font-semibold">
                         <LucideSettings2 class="size-4" />
@@ -2193,21 +2470,19 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                     <LucideChevronDown
                       :class="[
                         'mt-1 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                        open ? 'rotate-180' : '',
+                        expertConfigOpen ? 'rotate-180' : '',
                       ]"
                     />
-                  </button>
-                </CollapsibleTrigger>
+              </button>
 
-                <CollapsibleContent>
-                  <div class="grid gap-4">
-                    <section class="grid gap-3 rounded-md border bg-muted/20 p-3">
+              <div v-show="expertConfigOpen" class="grid min-w-0 gap-3 sm:gap-4">
+                    <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.random.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.random.description") }}</p>
                       </div>
                       <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.75fr)]">
-                        <div class="grid gap-3 rounded-md border bg-background/50 p-3">
+                        <div class="grid gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
                           <div class="space-y-1">
                             <h4 class="text-sm font-medium">{{ t("deckRecommend.options.random.skillGroup") }}</h4>
                             <p class="text-xs leading-5 text-muted-foreground">
@@ -2259,7 +2534,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                               </p>
                             </div>
                           </div>
-                          <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-3 text-sm">
+                          <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
                             <span class="min-w-0 space-y-1">
                               <span class="block font-medium">{{ t("deckRecommend.options.random.keepAfterTrainingState") }}</span>
                               <span class="block text-xs leading-5 text-muted-foreground">
@@ -2270,14 +2545,14 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           </label>
                         </div>
 
-                        <div class="grid content-start gap-3 rounded-md border bg-background/50 p-3">
+                        <div class="grid content-start gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
                           <div class="space-y-1">
                             <h4 class="text-sm font-medium">{{ t("deckRecommend.options.random.supportGroup") }}</h4>
                             <p class="text-xs leading-5 text-muted-foreground">
                               {{ t("deckRecommend.options.random.supportGroupDescription") }}
                             </p>
                           </div>
-                          <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-3 text-sm">
+                          <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
                             <span class="min-w-0 space-y-1">
                               <span class="block font-medium">{{ t("deckRecommend.options.random.supportMasterMax") }}</span>
                               <span class="block text-xs leading-5 text-muted-foreground">
@@ -2286,7 +2561,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             </span>
                             <Switch v-model="supportMasterMax" :disabled="runner.running.value" />
                           </label>
-                          <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-3 text-sm">
+                          <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
                             <span class="min-w-0 space-y-1">
                               <span class="block font-medium">{{ t("deckRecommend.options.random.supportSkillMax") }}</span>
                               <span class="block text-xs leading-5 text-muted-foreground">
@@ -2299,7 +2574,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                       </div>
                     </section>
 
-                    <section class="grid gap-3 rounded-md border bg-muted/20 p-3">
+                    <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.engine.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.engine.description") }}</p>
@@ -2310,9 +2585,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           <Input
                             id="deck-recommend-result-limit"
                             v-model="resultLimitInput"
-                            type="number"
-                            min="1"
-                            max="50"
+                            type="text"
                             inputmode="numeric"
                             :placeholder="t('deckRecommend.options.engine.resultLimitPlaceholder')"
                             :aria-invalid="resultLimit.invalid || undefined"
@@ -2324,9 +2597,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           <Input
                             id="deck-recommend-engine-timeout"
                             v-model="engineTimeoutMsInput"
-                            type="number"
-                            min="1000"
-                            max="300000"
+                            type="text"
                             inputmode="numeric"
                             :placeholder="t('deckRecommend.options.engine.timeoutMsPlaceholder')"
                             :aria-invalid="engineTimeoutMs.invalid || undefined"
@@ -2339,7 +2610,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                       </p>
                     </section>
 
-                    <section class="grid gap-3 rounded-md border bg-muted/20 p-3">
+                    <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.singleCard.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.singleCard.description") }}</p>
@@ -2350,10 +2621,8 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         :disabled="runner.running.value || !dataReady"
                       />
                     </section>
-                  </div>
-                </CollapsibleContent>
-              </section>
-            </Collapsible>
+              </div>
+            </section>
 
             <div class="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p class="text-sm text-muted-foreground">
@@ -2367,8 +2636,8 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
           </CardContent>
       </Card>
 
-        <Card v-if="showResultCard">
-          <CardHeader>
+        <Card v-if="showResultCard" class="gap-3 rounded-lg py-3 xl:gap-6 xl:rounded-xl xl:py-6">
+          <CardHeader class="px-2 sm:px-4 xl:px-6">
             <CardTitle class="text-base">{{ t("deckRecommend.result.title") }}</CardTitle>
             <CardDescription>
               <template v-if="runner.elapsedMs.value != null">
@@ -2378,24 +2647,24 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                 {{ t("deckRecommend.result.description") }}
               </template>
             </CardDescription>
-            <div v-if="runner.elapsedMs.value != null && eventRuleWarnings.length > 0" class="grid gap-2 pt-1">
+            <div v-if="runner.elapsedMs.value != null && eventRuleWarnings.length > 0" class="grid gap-1.5 pt-1 sm:gap-2">
               <div
                 v-for="warning in eventRuleWarnings"
                 :key="warning.key"
-                class="flex w-full items-start gap-2 rounded-md border border-amber-300 bg-amber-50/90 px-3 py-2 text-sm font-medium leading-5 text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"
+                class="flex w-full items-start gap-2 rounded-md border border-amber-300 bg-amber-50/90 px-2 py-2 text-sm font-medium leading-5 text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 sm:px-3"
               >
                 <LucideTriangleAlert class="mt-0.5 size-4 shrink-0" />
                 <span>{{ warning.message }}</span>
               </div>
             </div>
           </CardHeader>
-          <CardContent class="space-y-3">
+          <CardContent class="space-y-2 px-2 pb-2 sm:px-4 sm:pb-4 xl:space-y-3 xl:px-6 xl:pb-6">
             <div v-if="resultTimingItems.length > 0" class="flex flex-wrap gap-2 text-xs text-muted-foreground">
               <span
                 v-for="item in resultTimingItems"
                 :key="item.key"
                 :class="[
-                  'inline-flex items-baseline gap-1 rounded-md border px-2 py-1 font-medium',
+                  'inline-flex items-baseline gap-1 rounded-md border px-1.5 py-1 font-medium sm:px-2',
                   item.class,
                 ]"
               >
@@ -2411,7 +2680,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                 v-for="item in runner.algorithmTimings.value"
                 :key="item.algorithm"
                 :class="[
-                  'inline-flex items-baseline gap-1 rounded-md border px-2 py-1 font-medium',
+                  'inline-flex items-baseline gap-1 rounded-md border px-1.5 py-1 font-medium sm:px-2',
                   algorithmTagClass(item.algorithm),
                 ]"
               >
@@ -2434,14 +2703,14 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
               v-slot="{ open }"
               as-child
             >
-              <section class="overflow-hidden rounded-lg border bg-background/80 shadow-sm">
+              <section class="overflow-hidden rounded-md border bg-background/80 shadow-sm">
                 <CollapsibleTrigger as-child>
                   <button
                     type="button"
-                    class="grid w-full gap-3 p-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:grid-cols-[minmax(0,1fr)_auto_1.5rem] lg:items-start"
+                    class="relative grid w-full gap-2 p-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-start sm:gap-3 sm:p-3"
                   >
                     <div class="min-w-0 space-y-2">
-                      <div class="flex min-w-0 flex-wrap items-center gap-2">
+                      <div class="flex min-w-0 flex-wrap items-center gap-2 pr-7 md:pr-0">
                         <span class="shrink-0 text-sm font-semibold text-foreground">
                           {{ t("deckRecommend.result.deckTitle", { index: deckView.index + 1 }) }}
                         </span>
@@ -2459,27 +2728,27 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         </div>
                       </div>
 
-                      <div class="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                        <div class="min-w-0 rounded-md bg-muted/25 px-3 py-2">
-                          <span class="block text-[11px] font-medium uppercase text-muted-foreground">{{ t("deckRecommend.result.summary.pt") }}</span>
-                          <span class="block truncate font-mono text-sm font-semibold text-foreground">
+                      <div v-if="!open" class="grid min-w-0 grid-cols-4 gap-1 sm:gap-2">
+                        <div class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
+                          <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ deckPointLabel() }}</span>
+                          <span class="block truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
                             {{ formatInteger(deckPointValue(deckView.deck)) }}
                           </span>
                         </div>
 
-                        <div class="min-w-0 rounded-md bg-muted/25 px-3 py-2">
-                          <span class="block text-[11px] font-medium uppercase text-muted-foreground">{{ t("deckRecommend.result.summary.power") }}</span>
-                          <span class="block truncate font-mono text-sm font-semibold text-foreground">
+                        <div class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
+                          <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ t("deckRecommend.result.summary.power") }}</span>
+                          <span class="block truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
                             {{ formatInteger(deckView.deck.total_power) }}
                           </span>
                         </div>
 
-                        <div class="min-w-0 rounded-md bg-muted/25 px-3 py-2">
-                          <span class="block text-[11px] font-medium uppercase text-muted-foreground">{{ t("deckRecommend.result.summary.totalBonus") }}</span>
-                          <span class="block truncate font-mono text-sm font-semibold text-foreground">
+                        <div class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
+                          <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ t("deckRecommend.result.summary.totalBonus") }}</span>
+                          <span class="block truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
                             {{ formatPercentValue(deckBonusParts(deckView.deck).total) }}%
                           </span>
-                          <span class="block truncate text-[11px] text-muted-foreground">
+                          <span class="hidden truncate text-[11px] text-muted-foreground sm:block">
                             {{ t("deckRecommend.result.summary.bonusBreakdown", {
                               main: formatPercentValue(deckBonusParts(deckView.deck).main),
                               support: formatPercentValue(deckBonusParts(deckView.deck).support),
@@ -2487,27 +2756,30 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           </span>
                         </div>
 
-                        <div class="min-w-0 rounded-md bg-muted/25 px-3 py-2">
-                          <span class="block text-[11px] font-medium uppercase text-muted-foreground">{{ t("deckRecommend.result.summary.effective") }}</span>
-                          <span class="block truncate font-mono text-sm font-semibold text-foreground">
+                        <div class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
+                          <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ t("deckRecommend.result.summary.effective") }}</span>
+                          <span class="block truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
                             {{ formatPercentValue(deckView.deck.multi_live_score_up) }}%
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div class="flex min-w-0 justify-start gap-1.5 rounded-md bg-muted/25 p-1 ring-1 ring-border/70 sm:gap-2 lg:justify-end">
+                    <div
+                      v-if="!open"
+                      class="grid w-full max-w-[41rem] grid-cols-5 content-center justify-items-center gap-0.5 self-end justify-self-center rounded bg-muted/20 p-0.5 ring-1 ring-border/60 sm:gap-1 sm:rounded-md md:w-[26rem] md:max-w-full md:justify-self-end"
+                    >
                       <CardThumbnail
                         v-for="cardView in deckView.cards"
                         :key="cardView.card.card_id"
                         :thumbnail="cardView.thumbnail"
-                        size="sm"
+                        size="fluid"
                       />
                     </div>
 
                     <LucideChevronDown
                       :class="[
-                        'mt-1 size-5 self-start justify-self-end text-muted-foreground transition-transform duration-200',
+                        'absolute right-2 top-2 size-5 text-muted-foreground transition-transform duration-200 sm:right-3 sm:top-3 md:static md:mt-1 md:self-start md:justify-self-end',
                         open ? 'rotate-180' : '',
                       ]"
                     />
@@ -2515,119 +2787,183 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                 </CollapsibleTrigger>
 
                 <CollapsibleContent>
-                  <div class="grid gap-4 border-t bg-muted/10 p-3">
-                    <section class="grid gap-3 rounded-md border bg-background/70 p-3">
-                      <h3 class="text-sm font-semibold">{{ t("deckRecommend.result.sections.basic") }}</h3>
-                      <div class="grid gap-2 sm:grid-cols-3">
-                        <div class="rounded-md bg-muted/25 px-3 py-2">
-                          <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.summary.totalBonus") }}</span>
-                          <span class="block font-mono text-base font-semibold">
-                            {{ formatPercentValue(deckBonusParts(deckView.deck).total) }}%
-                          </span>
-                          <span class="block text-xs text-muted-foreground">
-                            {{ t("deckRecommend.result.summary.bonusBreakdown", {
-                              main: formatPercentValue(deckBonusParts(deckView.deck).main),
-                              support: formatPercentValue(deckBonusParts(deckView.deck).support),
-                            }) }}
-                          </span>
-                        </div>
-                        <div class="rounded-md bg-muted/25 px-3 py-2">
-                          <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.liveScoreLabel") }}</span>
-                          <span class="block font-mono text-base font-semibold">
-                            {{ formatInteger(deckView.deck.live_score) }}
-                          </span>
-                        </div>
-                        <div class="rounded-md bg-muted/25 px-3 py-2">
-                          <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.summary.effective") }}</span>
-                          <span class="block font-mono text-base font-semibold">
-                            {{ formatPercentValue(deckView.deck.multi_live_score_up) }}%
-                          </span>
-                        </div>
-                        <div v-if="shouldShowChallengeScoreDelta(deckView.deck)" class="rounded-md bg-muted/25 px-3 py-2">
-                          <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.challengeScoreDeltaLabel") }}</span>
-                          <span class="block font-mono text-base font-semibold">
-                            {{ formatSignedNumber(deckView.deck.challenge_score_delta) }}
-                          </span>
-                        </div>
-                      </div>
-                    </section>
-
-                    <section class="grid gap-3 rounded-md border bg-background/70 p-3">
-                      <h3 class="text-sm font-semibold">{{ t("deckRecommend.result.sections.power") }}</h3>
-                      <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                        <div
-                          v-for="item in deckPowerDetailItems(deckView.deck)"
-                          :key="item.key"
-                          class="rounded-md bg-muted/25 px-3 py-2"
-                        >
-                          <span class="block text-xs text-muted-foreground">{{ item.label }}</span>
-                          <span class="block font-mono text-sm font-semibold text-foreground">
-                            {{ formatInteger(item.value) }}
-                          </span>
-                        </div>
-                      </div>
-                    </section>
-
-                    <section class="grid gap-3 rounded-md border bg-background/70 p-3">
-                      <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="text-sm font-semibold">{{ mainDeckSectionTitle(deckView.deck) }}</h3>
-                        <span class="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-                          {{ bonusTagLabel(deckBonusParts(deckView.deck).main) }}
-                        </span>
-                      </div>
-                      <div class="grid gap-2 xl:grid-cols-2">
-                        <div
-                          v-for="cardView in deckView.cards"
-                          :key="cardView.card.card_id"
-                          class="flex min-w-0 items-start gap-3 rounded-md border bg-muted/20 p-2.5"
-                        >
-                          <CardThumbnail :thumbnail="cardView.thumbnail" />
-                          <div class="min-w-0 flex-1 space-y-2.5">
-                            <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
-                              <span class="min-w-0 text-sm font-semibold leading-5">
-                                {{ cardDetailTitle(cardView) }}
+                  <div class="space-y-3 border-t bg-muted/5 p-2.5 sm:p-3">
+                    <Collapsible v-slot="{ open: basicOpen }" as-child>
+                      <section class="overflow-hidden rounded-md bg-background/70 ring-1 ring-border/60">
+                        <CollapsibleTrigger as-child>
+                          <button
+                            type="button"
+                            class="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3"
+                          >
+                            <span class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                              <span class="mr-1 min-w-0 text-sm font-semibold">{{ t("deckRecommend.result.sections.basic") }}</span>
+                              <template v-if="!basicOpen">
+                                <span class="rounded-md bg-muted/45 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+                                  {{ deckPointLabel() }}
+                                  <span class="font-mono font-semibold text-foreground">{{ formatInteger(deckPointValue(deckView.deck)) }}</span>
+                                </span>
+                                <span class="rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+                                  {{ t("deckRecommend.result.summary.totalBonus") }} {{ formatPercentValue(deckBonusParts(deckView.deck).total) }}%
+                                </span>
+                                <span class="rounded-md bg-muted/45 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+                                  {{ t("deckRecommend.result.liveScoreLabel") }}
+                                  <span class="font-mono font-semibold text-foreground">{{ formatInteger(deckView.deck.live_score) }}</span>
+                                </span>
+                                <span class="rounded-md bg-cyan-50 px-1.5 py-0.5 text-xs font-medium text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-200">
+                                  {{ t("deckRecommend.result.summary.effective") }} {{ formatPercentValue(deckView.deck.multi_live_score_up) }}%
+                                </span>
+                              </template>
+                            </span>
+                            <LucideChevronDown
+                              :class="[
+                                'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+                                basicOpen ? 'rotate-180' : '',
+                              ]"
+                            />
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div class="grid grid-cols-2 gap-1.5 border-t bg-muted/5 p-2 sm:grid-cols-4 sm:gap-2 sm:p-3">
+                            <div class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
+                              <span class="block text-xs text-muted-foreground">{{ deckPointLabel() }}</span>
+                              <span class="block font-mono text-sm font-semibold sm:text-base">
+                                {{ formatInteger(deckPointValue(deckView.deck)) }}
                               </span>
-                              <span class="shrink-0 rounded-md bg-background/70 px-1.5 py-0.5 font-mono text-xs text-muted-foreground ring-1 ring-border/70">
-                                #{{ cardView.card.card_id }}
+                              <span v-if="deckLiveBoostPointDetailText(deckView.deck)" class="block font-mono text-xs text-muted-foreground">
+                                {{ deckLiveBoostPointDetailText(deckView.deck) }}
                               </span>
                             </div>
-                            <div class="grid gap-2 text-xs sm:grid-cols-2">
-                              <div class="rounded-md bg-background/70 p-2 ring-1 ring-border/60">
-                                <span class="block text-[11px] font-medium text-muted-foreground">
-                                  {{ t("deckRecommend.result.cardGroups.power") }}
+                            <div class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
+                              <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.summary.totalBonus") }}</span>
+                              <span class="block font-mono text-sm font-semibold sm:text-base">
+                                {{ formatPercentValue(deckBonusParts(deckView.deck).total) }}%
+                              </span>
+                              <span class="block text-xs text-muted-foreground">
+                                {{ t("deckRecommend.result.summary.bonusBreakdown", {
+                                  main: formatPercentValue(deckBonusParts(deckView.deck).main),
+                                  support: formatPercentValue(deckBonusParts(deckView.deck).support),
+                                }) }}
+                              </span>
+                            </div>
+                            <div class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
+                              <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.liveScoreLabel") }}</span>
+                              <span class="block font-mono text-sm font-semibold sm:text-base">
+                                {{ formatInteger(deckView.deck.live_score) }}
+                              </span>
+                            </div>
+                            <div class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
+                              <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.summary.effective") }}</span>
+                              <span class="block font-mono text-sm font-semibold sm:text-base">
+                                {{ formatPercentValue(deckView.deck.multi_live_score_up) }}%
+                              </span>
+                            </div>
+                            <div v-if="shouldShowChallengeScoreDelta(deckView.deck)" class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
+                              <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.challengeScoreDeltaLabel") }}</span>
+                              <span class="block font-mono text-sm font-semibold sm:text-base">
+                                {{ formatSignedNumber(deckView.deck.challenge_score_delta) }}
+                              </span>
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </section>
+                    </Collapsible>
+
+                    <Collapsible v-slot="{ open: powerOpen }" as-child>
+                      <section class="overflow-hidden rounded-md bg-background/70 ring-1 ring-border/60">
+                        <CollapsibleTrigger as-child>
+                          <button
+                            type="button"
+                            class="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3"
+                          >
+                            <span class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                              <span class="mr-1 min-w-0 text-sm font-semibold">{{ t("deckRecommend.result.sections.power") }}</span>
+                              <template v-if="!powerOpen">
+                                <span class="rounded-md bg-muted/45 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+                                  {{ t("deckRecommend.result.power.total") }}
+                                  <span class="font-mono font-semibold text-foreground">{{ formatInteger(deckView.deck.total_power) }}</span>
                                 </span>
-                                <div class="mt-1 flex flex-wrap gap-1.5">
+                                <span class="rounded-md bg-muted/45 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+                                  {{ t("deckRecommend.result.power.base") }}
+                                  <span class="font-mono font-semibold text-foreground">{{ formatInteger(deckView.deck.base_power) }}</span>
+                                </span>
+                              </template>
+                            </span>
+                            <LucideChevronDown
+                              :class="[
+                                'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+                                powerOpen ? 'rotate-180' : '',
+                              ]"
+                            />
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div class="grid grid-cols-2 gap-1.5 border-t bg-muted/5 p-2 sm:grid-cols-4 sm:gap-2 sm:p-3">
+                            <div
+                              v-for="item in deckPowerDetailItems(deckView.deck)"
+                              :key="item.key"
+                              class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2"
+                            >
+                              <span class="block text-xs text-muted-foreground">{{ item.label }}</span>
+                              <span class="block font-mono text-sm font-semibold text-foreground">
+                                {{ formatInteger(item.value) }}
+                              </span>
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </section>
+                    </Collapsible>
+
+                    <Collapsible v-slot="{ open: mainCardsOpen }" as-child default-open>
+                      <section class="overflow-hidden rounded-md bg-background/70 ring-1 ring-border/60">
+                        <CollapsibleTrigger as-child>
+                          <button
+                            type="button"
+                            class="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3"
+                          >
+                            <span class="flex min-w-0 flex-wrap items-center gap-2">
+                              <span class="text-sm font-semibold">{{ mainDeckSectionTitle(deckView.deck) }}</span>
+                              <span class="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+                                {{ bonusTagLabel(deckBonusParts(deckView.deck).main) }}
+                              </span>
+                            </span>
+                            <LucideChevronDown
+                              :class="[
+                                'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+                                mainCardsOpen ? 'rotate-180' : '',
+                              ]"
+                            />
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div class="grid gap-2 border-t bg-muted/5 p-2 sm:p-3 lg:grid-cols-2">
+                            <div
+                              v-for="cardView in deckView.cards"
+                              :key="cardView.card.card_id"
+                              class="flex min-w-0 items-start gap-2 rounded-md bg-background/70 p-2 ring-1 ring-border/60 sm:gap-3"
+                            >
+                              <CardThumbnail :thumbnail="cardView.thumbnail" />
+                              <div class="min-w-0 flex-1 space-y-2">
+                                <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                                  <span class="min-w-0 text-sm font-semibold leading-5">
+                                    {{ cardDetailTitle(cardView) }}
+                                  </span>
+                                  <span class="shrink-0 rounded-md bg-background/70 px-1.5 py-0.5 font-mono text-xs text-muted-foreground ring-1 ring-border/70">
+                                    #{{ cardView.card.card_id }}
+                                  </span>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5 text-xs">
                                   <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground">
                                     {{ t("deckRecommend.result.cardTotalPowerShort", { value: formatInteger(cardView.card.total_power) }) }}
                                   </span>
                                   <span class="rounded-md bg-muted/50 px-1.5 py-0.5 text-muted-foreground">
                                     {{ t("deckRecommend.result.cardBasePowerShort", { value: formatInteger(cardView.card.base_power) }) }}
                                   </span>
-                                </div>
-                              </div>
-
-                              <div class="rounded-md bg-background/70 p-2 ring-1 ring-border/60">
-                                <span class="block text-[11px] font-medium text-muted-foreground">
-                                  {{ t("deckRecommend.result.cardGroups.training") }}
-                                </span>
-                                <div class="mt-1 flex flex-wrap gap-1.5">
                                   <span class="rounded-md bg-violet-50 px-1.5 py-0.5 font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
                                     {{ t("deckRecommend.result.cardLevel", { value: cardView.card.level }) }}
                                   </span>
                                   <span class="rounded-md bg-violet-50 px-1.5 py-0.5 font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
-                                    {{ t("deckRecommend.result.masterRank", { value: cardView.card.master_rank }) }}
-                                  </span>
-                                  <span class="rounded-md bg-violet-50 px-1.5 py-0.5 font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
                                     {{ t("deckRecommend.result.skillLevel", { value: cardView.card.skill_level }) }}
                                   </span>
-                                </div>
-                              </div>
-
-                              <div class="rounded-md bg-background/70 p-2 ring-1 ring-border/60">
-                                <span class="block text-[11px] font-medium text-muted-foreground">
-                                  {{ t("deckRecommend.result.cardGroups.skillBonus") }}
-                                </span>
-                                <div class="mt-1 flex flex-wrap gap-1.5">
                                   <span class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200">
                                     {{ t("deckRecommend.result.skillScoreUpShort", { value: cardView.card.skill_score_up }) }}
                                   </span>
@@ -2640,14 +2976,6 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                                   <span class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200">
                                     {{ t("deckRecommend.result.cardEventBonusShort", { value: cardView.card.event_bonus_rate }) }}
                                   </span>
-                                </div>
-                              </div>
-
-                              <div class="rounded-md bg-background/70 p-2 ring-1 ring-border/60">
-                                <span class="block text-[11px] font-medium text-muted-foreground">
-                                  {{ t("deckRecommend.result.cardGroups.storyCanvas") }}
-                                </span>
-                                <div class="mt-1 flex flex-wrap gap-1.5">
                                   <span
                                     :class="[
                                       'rounded-md border px-1.5 py-0.5 font-medium',
@@ -2664,21 +2992,13 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                                   >
                                     {{ t("deckRecommend.result.episodeSecond") }} {{ readStateLabel(cardView.card.episode2_read) }}
                                   </span>
-                                  <span
-                                    :class="[
-                                      'rounded-md border px-1.5 py-0.5 font-medium',
-                                      canvasStateTagClass(cardView.card.has_canvas_bonus),
-                                    ]"
-                                  >
-                                    {{ t(cardView.card.has_canvas_bonus ? "deckRecommend.result.canvasBonus" : "deckRecommend.result.noCanvasBonus") }}
-                                  </span>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    </section>
+                        </CollapsibleContent>
+                      </section>
+                    </Collapsible>
 
                     <Collapsible
                       v-if="isWorldBloomResultDeck(deckView.deck) && worldBloomSupportCardViews.length > 0"
@@ -2689,7 +3009,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         <CollapsibleTrigger as-child>
                           <button
                             type="button"
-                            class="flex w-full items-start justify-between gap-3 p-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            class="flex w-full items-start justify-between gap-3 p-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-3"
                           >
                             <span class="flex min-w-0 flex-wrap items-center gap-2">
                               <span class="text-sm font-semibold">{{ t("deckRecommend.result.sections.supportCards") }}</span>
@@ -2706,11 +3026,11 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           </button>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                          <div class="grid grid-cols-2 gap-2 border-t bg-muted/10 p-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                          <div class="grid grid-cols-3 gap-1.5 border-t bg-muted/5 p-2 sm:grid-cols-4 sm:gap-2 sm:p-3 xl:grid-cols-5">
                             <div
                               v-for="supportCardView in worldBloomSupportCardViews"
                               :key="supportCardView.card.card_id"
-                              class="grid gap-2 rounded-md border bg-background/75 p-2"
+                              class="grid gap-1.5 rounded-md bg-background/75 p-1.5 ring-1 ring-border/60 sm:gap-2 sm:p-2"
                             >
                               <div class="flex justify-center">
                                 <CardThumbnail
@@ -2738,7 +3058,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
           </CardContent>
       </Card>
 
-      <div class="space-y-1.5 rounded-md border bg-muted/20 p-4 text-xs leading-6 text-muted-foreground">
+      <div class="space-y-1.5 rounded-md border bg-muted/20 p-2.5 text-xs leading-6 text-muted-foreground sm:p-3 xl:p-4">
         <p>
           {{ t("deckRecommend.attribution.originalPrefix") }}<a
             class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
@@ -2772,6 +3092,41 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
           >{{ t("deckRecommend.attribution.aboutLink") }}</router-link>{{ t("deckRecommend.attribution.engineSuffix") }}
         </p>
       </div>
+
+      <Dialog v-model:open="customBonusSimulationDialogOpen">
+        <DialogScrollContent class="max-h-[88vh] overflow-y-auto sm:max-w-[760px]">
+          <DialogHeader>
+            <DialogTitle>{{ t("deckRecommend.options.eventSimulation.customBonusTitle") }}</DialogTitle>
+            <DialogDescription>
+              {{ t("deckRecommend.options.eventSimulation.customBonusDescription") }}
+            </DialogDescription>
+          </DialogHeader>
+          <div class="grid gap-4">
+            <CustomBonusCharacterPicker
+              v-model="customBonusCharacterIds"
+              v-model:support-units="customBonusSupportUnits"
+              :region="dataRegion"
+              :disabled="runner.running.value || !dataReady"
+            />
+            <label class="flex items-center justify-between gap-3 rounded-md border bg-background/60 p-3 text-sm">
+              <span>{{ t("deckRecommend.form.filterOtherUnit") }}</span>
+              <Switch
+                v-model="filterOtherUnit"
+                :aria-label="t('deckRecommend.form.filterOtherUnit')"
+                :disabled="runner.running.value"
+              />
+            </label>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              @click="customBonusSimulationDialogOpen = false"
+            >
+              {{ t("deckRecommend.options.eventSimulation.customBonusDone") }}
+            </Button>
+          </DialogFooter>
+        </DialogScrollContent>
+      </Dialog>
     </div>
   </div>
 </template>

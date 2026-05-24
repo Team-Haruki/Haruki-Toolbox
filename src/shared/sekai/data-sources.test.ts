@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test"
 import {
+  formatSekaiMasterVersionLabel,
   normalizeSekaiMasterVersionInfo,
   resolveCardAttrIconUrl,
   resolveCharacterIconUrl,
@@ -24,6 +25,14 @@ describe("Sekai data source helpers", () => {
     expect(resolveSekaiMasterFetchVersion("tw", versionInfo)).toBe("cdn-1")
     expect(resolveSekaiMasterFetchVersion("kr", versionInfo)).toBe("cdn-1")
     expect(resolveSekaiMasterFetchVersion("cn", versionInfo)).toBe("cdn-1")
+  })
+
+  it("formats user-facing master versions by region", () => {
+    expect(formatSekaiMasterVersionLabel("jp", "6.5.0.51", "123")).toBe("6.5.0.51")
+    expect(formatSekaiMasterVersionLabel("en", "6.5.0.51", "123")).toBe("6.5.0.51")
+    expect(formatSekaiMasterVersionLabel("tw", "6.0.0.33", "145")).toBe("6.0.0.33 (145)")
+    expect(formatSekaiMasterVersionLabel("kr", "6.0.0.33", "145")).toBe("6.0.0.33 (145)")
+    expect(formatSekaiMasterVersionLabel("cn", "6.0.0.33", "145")).toBe("6.0.0.33 (145)")
   })
 
   it("builds version and master file URLs", () => {

@@ -17,12 +17,14 @@ import {
   type DeckRecommendEventSimulationInput,
   type DeckRecommendLiveType,
   type DeckRecommendMode,
+  type DeckRecommendTarget,
   type DeckRecommendSkillOrderStrategy,
   type DeckRecommendSkillReferenceStrategy,
   type DeckRecommendSupportUnitType,
   type DeckRecommendUnitType,
 } from "../lib/recommend-options"
 import {
+  applyDeckRecommendLiveBoost,
   mergeDeckRecommendResults,
   type TaggedRecommendResult,
 } from "../lib/recommend-results"
@@ -67,6 +69,7 @@ export type DeckRecommendRunnerInput = {
   account: DeckRecommendRunnerAccount | null
   dataRegion: SekaiRegion
   mode: DeckRecommendMode
+  target: DeckRecommendTarget
   liveType: DeckRecommendLiveType
   algorithms: DeckRecommendAlgorithm[]
   executionMode: DeckRecommendExecutionMode
@@ -88,6 +91,7 @@ export type DeckRecommendRunnerInput = {
   timeoutMs: number | null
   unitFilters: readonly DeckRecommendUnitType[]
   attrFilters: readonly DeckRecommendEventAttr[]
+  characterFilters: readonly number[]
   fixedCards: readonly number[]
   useCurrentDeck: boolean
   fixedCharacters: readonly number[]
@@ -181,6 +185,7 @@ export function useDeckRecommendRunner() {
         masterData: recommendData.masterData,
         unitFilters: input.unitFilters,
         attrFilters: input.attrFilters,
+        characterFilters: input.characterFilters,
         areaItemLevel: input.areaItemLevel,
         singleCardOverrides: input.singleCardOverrides,
         trainingConfig: input.trainingConfig,
@@ -207,6 +212,7 @@ export function useDeckRecommendRunner() {
           options: buildDeckRecommendOptions({
             region: input.dataRegion,
             mode: input.mode,
+            target: input.target,
             liveType: input.liveType,
             algorithm,
             musicId: input.musicId,
@@ -262,7 +268,8 @@ export function useDeckRecommendRunner() {
             },
           }))
         : workerResults
-      result.value = mergeDeckRecommendResults(resultWithChallengeDelta, input.mode)
+      const resultWithLiveBoost = applyDeckRecommendLiveBoost(resultWithChallengeDelta, input.mode, input.boost)
+      result.value = mergeDeckRecommendResults(resultWithLiveBoost, input.mode, input.target)
       worldBloomSupportCards.value = await loadWorldBloomSupportCards({
         input,
         recommendData,

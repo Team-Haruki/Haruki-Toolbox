@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test"
 import type { RecommendDeck } from "haruki-sekai-deck-recommend-cpp"
-import { mergeDeckRecommendResults } from "./recommend-results"
+import { applyDeckRecommendLiveBoost, mergeDeckRecommendResults } from "./recommend-results"
 
 describe("deck recommend result helpers", () => {
   it("deduplicates decks by card set and keeps results sorted by score", () => {
@@ -41,6 +41,53 @@ describe("deck recommend result helpers", () => {
     expect(result.decks.map((deck) => deck.event_bonus_rate)).toEqual([110, 100])
   })
 
+  it("sorts event decks by explicit target", () => {
+    const results = [
+      {
+        algorithm: "dfs_ga" as const,
+        result: {
+          decks: [
+            createDeck([1, 2, 3, 4, 5], 300, {
+              total_power: 1000,
+              multi_live_score_up: 100,
+              event_bonus_rate: 100,
+            }),
+            createDeck([6, 7, 8, 9, 10], 200, {
+              total_power: 3000,
+              multi_live_score_up: 150,
+              event_bonus_rate: 90,
+            }),
+            createDeck([11, 12, 13, 14, 15], 100, {
+              total_power: 2000,
+              multi_live_score_up: 200,
+              event_bonus_rate: 120,
+            }),
+          ],
+        },
+      },
+    ]
+
+    expect(mergeDeckRecommendResults(results, "event", "power").decks[0]?.total_power).toBe(3000)
+    expect(mergeDeckRecommendResults(results, "event", "skill").decks[0]?.multi_live_score_up).toBe(200)
+    expect(mergeDeckRecommendResults(results, "event", "bonus").decks[0]?.event_bonus_rate).toBe(120)
+  })
+
+  it("sorts max score decks by live score instead of fake event point", () => {
+    const result = mergeDeckRecommendResults([
+      {
+        algorithm: "dfs_ga",
+        result: {
+          decks: [
+            createDeck([1, 2, 3, 4, 5], 300, { live_score: 1000 }),
+            createDeck([6, 7, 8, 9, 10], 200, { live_score: 3000 }),
+          ],
+        },
+      },
+    ], "max", "score")
+
+    expect(result.decks[0]?.live_score).toBe(3000)
+  })
+
   it("sorts mysekai decks by mysekai event point and support-aware bonus tie breakers", () => {
     const result = mergeDeckRecommendResults([
       {
@@ -70,6 +117,39 @@ describe("deck recommend result helpers", () => {
     ], "mysekai")
 
     expect(result.decks.map((deck) => deck.cards[0]?.card_id)).toEqual([6, 1, 11])
+  })
+
+  it("applies live boost multipliers to event Pt without changing live score", () => {
+    const results = applyDeckRecommendLiveBoost([
+      {
+        algorithm: "dfs",
+        result: {
+          decks: [
+            createDeck([1, 2, 3, 4, 5], 123, {
+              live_score: 456789,
+            }),
+          ],
+        },
+      },
+    ], "event", 3)
+
+    expect(results[0]?.result.decks[0]?.score).toBe(1845)
+    expect(results[0]?.result.decks[0]?.live_score).toBe(456789)
+    expect(results[0]?.result.decks[0]?.live_boost_original_score).toBe(123)
+    expect(results[0]?.result.decks[0]?.live_boost_multiplier).toBe(15)
+  })
+
+  it("does not apply live boost multipliers to score-only modes", () => {
+    const results = applyDeckRecommendLiveBoost([
+      {
+        algorithm: "dfs",
+        result: {
+          decks: [createDeck([1, 2, 3, 4, 5], 123)],
+        },
+      },
+    ], "challenge", 5)
+
+    expect(results[0]?.result.decks[0]?.score).toBe(123)
   })
 
 })

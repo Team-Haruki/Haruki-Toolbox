@@ -4,7 +4,7 @@ import type { CardThumbnailView } from "../lib/card-thumbnail"
 
 const props = withDefaults(defineProps<{
   thumbnail: CardThumbnailView
-  size?: "sm" | "md"
+  size?: "fluid" | "xs" | "sm" | "md"
   cornerBadge?: string | null
 }>(), {
   size: "md",
@@ -18,7 +18,13 @@ const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCoun
   <div
     :class="[
       'relative shrink-0 self-start overflow-hidden bg-muted text-muted-foreground ring-1 ring-border',
-      size === 'sm' ? 'size-11 rounded-sm sm:size-12 md:size-14 xl:size-16' : 'size-20 rounded-md',
+      size === 'fluid'
+        ? 'aspect-square w-full max-w-32 rounded-sm md:max-w-20'
+        : size === 'xs'
+        ? 'size-[clamp(3rem,16vw,3.75rem)] rounded-sm'
+        : size === 'sm'
+          ? 'size-11 rounded-sm sm:size-12 md:size-14 xl:size-16'
+          : 'size-20 rounded-md',
     ]"
     :aria-label="thumbnail.title ?? `#${thumbnail.cardId}`"
   >

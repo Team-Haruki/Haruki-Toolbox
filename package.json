@@ -1,7 +1,7 @@
 {
   "name": "haruki-toolbox",
   "private": true,
-  "version": "8.0.0-alpha1.2",
+  "version": "8.0.0-alpha1.3",
   "type": "module",
   "scripts": {
     "dev": "bunx --bun vite",
@@ -10,7 +10,8 @@
     "e2e:install": "playwright install chromium",
     "lint": "eslint --max-warnings=0 \"src/**/*.{ts,vue}\" \"scripts/**/*.mjs\" \"vite.config.ts\"",
     "check:imports": "bun scripts/check-imports.mjs",
-    "build": "bun run check:imports && vue-tsc --noEmit && bunx --bun vite build",
+    "build": "bun run check:imports && vue-tsc --noEmit && vite build",
+    "build:edgeone": "bun run check:imports && vite build",
     "preview": "vue-tsc --noEmit && bunx --bun vite preview",
     "typecheck": "bun run check:imports && vue-tsc --noEmit",
     "quality": "bun run lint && bun run typecheck && bun run test"
@@ -27,7 +28,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "haruki-sekai-deck-recommend-cpp": "^0.2.25",
+    "haruki-sekai-deck-recommend-cpp": "0.2.27",
     "lucide-vue-next": "^1.0.0",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",

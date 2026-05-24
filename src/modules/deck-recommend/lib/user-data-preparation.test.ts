@@ -64,6 +64,19 @@ describe("deck recommend user data preparation", () => {
         unit: "theme_park",
       },
     ],
+    areaItems: [
+      { id: 1, areaId: 10 },
+      { id: 2, areaId: 11 },
+      { id: 3, areaId: 12 },
+    ],
+    areaItemLevels: [
+      { areaItemId: 1, level: 1 },
+      { areaItemId: 1, level: 15 },
+      { areaItemId: 2, level: 1 },
+      { areaItemId: 2, level: 20 },
+      { areaItemId: 3, level: 1 },
+      { areaItemId: 3, level: 10 },
+    ],
   }
 
   it("forwards precise single-card training overrides to the wasm engine", () => {
@@ -233,5 +246,78 @@ describe("deck recommend user data preparation", () => {
     const userData = JSON.parse(prepared.userDataString) as { userCards: Array<{ cardId: number }> }
 
     expect(userData.userCards.map((card) => card.cardId)).toEqual([101, 102])
+  })
+
+  it("filters user cards by selected characters", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [
+          { cardId: 100 },
+          { cardId: 101 },
+          { cardId: 102 },
+          { cardId: 103 },
+        ],
+      },
+      characterFilters: [1, 3],
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as { userCards: Array<{ cardId: number }> }
+
+    expect(userData.userCards.map((card) => card.cardId)).toEqual([100, 101, 103])
+  })
+
+  it("clamps area item level overrides to master max levels", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [],
+        userAreas: [
+          {
+            areaId: 10,
+            actionSets: [{ id: 100, status: "already_read" }],
+            areaItems: [
+              { areaItemId: 1, level: 12 },
+            ],
+            userAreaStatus: { areaId: 10, status: "released" },
+          },
+          {
+            areaId: 11,
+            areaItems: [
+              { areaItemId: 2, level: 5 },
+            ],
+          },
+        ],
+      },
+      areaItemLevel: 20,
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as {
+      userAreas: Array<{
+        areaId: number
+        actionSets?: Array<{ id: number; status: string }>
+        areaItems: Array<{ areaItemId: number; level: number }>
+        userAreaStatus?: { areaId: number; status: string }
+      }>
+    }
+
+    expect(userData.userAreas).toEqual([
+      {
+        areaId: 10,
+        actionSets: [{ id: 100, status: "already_read" }],
+        areaItems: [{ areaItemId: 1, level: 15 }],
+        userAreaStatus: { areaId: 10, status: "released" },
+      },
+      {
+        areaId: 11,
+        areaItems: [{ areaItemId: 2, level: 20 }],
+      },
+      {
+        areaId: 12,
+        actionSets: [],
+        areaItems: [{ areaItemId: 3, level: 10 }],
+        userAreaStatus: { areaId: 12, status: "released" },
+      },
+    ])
   })
 })

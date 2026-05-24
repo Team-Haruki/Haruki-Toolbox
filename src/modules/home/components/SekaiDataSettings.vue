@@ -26,7 +26,7 @@ import { Progress } from "@/components/ui/progress"
 import { resolveSekaiRegionLabel, SEKAI_REGIONS } from "@/lib/sekai-region"
 import {
   SEKAI_DATA_DEFAULT_MASTER_FILES,
-  SEKAI_DATA_RECOMMEND_MASTER_FILES,
+  SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES,
   type SekaiDataUpdatePhase,
 } from "@/shared/sekai/worker-protocol"
 import { useSekaiDataStore, type SekaiDataQueueItem } from "@/shared/stores/sekai-data"
@@ -46,6 +46,7 @@ const activeQueueCount = computed(() =>
 onMounted(() => {
   for (const region of SEKAI_REGIONS) {
     void sekaiDataStore.loadRegionCacheState(region)
+    void sekaiDataStore.checkRegionRemoteVersion(region)
   }
 })
 
@@ -54,7 +55,7 @@ function refreshBasic(region: SekaiRegion) {
 }
 
 function refreshRecommend(region: SekaiRegion) {
-  sekaiDataStore.refreshRegionData(region, SEKAI_DATA_RECOMMEND_MASTER_FILES)
+  sekaiDataStore.refreshRegionData(region, SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES)
 }
 
 function clearRegion(region: SekaiRegion) {
@@ -204,12 +205,12 @@ function formatTime(value: number | null) {
 
           <div class="grid gap-2 text-sm sm:grid-cols-3">
             <div>
-              <p class="text-xs text-muted-foreground">{{ t("userSettings.sekaiData.displayVersion") }}</p>
-              <p class="font-mono">{{ row.masterDisplayVersion ?? "-" }}</p>
+              <p class="text-xs text-muted-foreground">{{ t("userSettings.sekaiData.localVersion") }}</p>
+              <p class="font-mono">{{ row.masterLocalVersion ?? row.masterDisplayVersion ?? "-" }}</p>
             </div>
             <div>
-              <p class="text-xs text-muted-foreground">{{ t("userSettings.sekaiData.fetchVersion") }}</p>
-              <p class="font-mono">{{ row.masterFetchVersion ?? "-" }}</p>
+              <p class="text-xs text-muted-foreground">{{ t("userSettings.sekaiData.remoteVersion") }}</p>
+              <p class="font-mono">{{ row.masterRemoteVersion ?? "-" }}</p>
             </div>
             <div>
               <p class="text-xs text-muted-foreground">{{ t("userSettings.sekaiData.files") }}</p>

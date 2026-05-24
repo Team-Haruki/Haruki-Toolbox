@@ -3,13 +3,16 @@ import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import {
   CloudLightning,
+  Download,
   EyeOff,
   Info,
   Network,
   Palette,
   RotateCcw,
+  RefreshCw,
   Save,
   Settings,
+  Smartphone,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
@@ -44,6 +47,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import SekaiDataSettings from "@/modules/home/components/SekaiDataSettings.vue"
 import UserDataSettings from "@/modules/home/components/UserDataSettings.vue"
 import { useHomeSettings } from "@/modules/home/composables/useHomeSettings"
+import { appUpdateState, applyAppUpdate, checkForAppUpdate } from "@/pwa"
 
 const {
   selectedEndpoint,
@@ -71,12 +75,40 @@ const {
 const { t, locale } = useI18n()
 const localeKey = computed(() => locale.value)
 const settingsDialogOpen = ref(false)
+const settingsTab = ref("preferences")
+const visitedSettingsTabs = ref(new Set(["preferences"]))
+const currentBuildTimeLabel = computed(() => formatBuildTime(appUpdateState.current.buildTime))
+const remoteBuildTimeLabel = computed(() => appUpdateState.remote ? formatBuildTime(appUpdateState.remote.buildTime) : null)
 
 watch(settingsDialogOpen, (open) => {
   if (open) {
     void refreshEndpointLatencies()
   }
 })
+
+watch(settingsTab, (tab) => {
+  if (visitedSettingsTabs.value.has(tab)) {
+    return
+  }
+
+  visitedSettingsTabs.value = new Set([...visitedSettingsTabs.value, tab])
+})
+
+function formatBuildTime(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.valueOf())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat(locale.value, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date)
+}
+
+function hasVisitedSettingsTab(tab: string) {
+  return visitedSettingsTabs.value.has(tab)
+}
 </script>
 
 <template>
@@ -96,19 +128,23 @@ watch(settingsDialogOpen, (open) => {
         <DialogDescription>{{ t("homeSettings.description") }}</DialogDescription>
       </DialogHeader>
 
-      <Tabs default-value="preferences" class="space-y-4">
-        <TabsList class="grid w-full grid-cols-3 sm:w-fit">
-          <TabsTrigger value="preferences">
+      <Tabs v-model="settingsTab" :unmount-on-hide="false" class="space-y-4">
+        <TabsList class="grid h-auto w-full grid-cols-2 auto-rows-[2.25rem] gap-1 p-1 sm:inline-flex sm:h-9 sm:w-fit sm:auto-rows-auto sm:grid-cols-none sm:gap-0 sm:p-[3px]">
+          <TabsTrigger value="preferences" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
             <Settings class="size-4" />
-            {{ t("homeSettings.tabs.preferences") }}
+            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.preferences") }}</span>
           </TabsTrigger>
-          <TabsTrigger value="sekai-data">
+          <TabsTrigger value="app" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
+            <Smartphone class="size-4" />
+            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.app") }}</span>
+          </TabsTrigger>
+          <TabsTrigger value="sekai-data" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
             <Network class="size-4" />
-            {{ t("homeSettings.tabs.sekaiData") }}
+            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.sekaiData") }}</span>
           </TabsTrigger>
-          <TabsTrigger value="user-data">
+          <TabsTrigger value="user-data" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:px-2 sm:text-sm">
             <EyeOff class="size-4" />
-            {{ t("homeSettings.tabs.userData") }}
+            <span class="min-w-0 truncate">{{ t("homeSettings.tabs.userData") }}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -292,12 +328,86 @@ watch(settingsDialogOpen, (open) => {
           </div>
         </TabsContent>
 
+        <TabsContent value="app" class="space-y-4">
+          <section class="grid gap-4 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div class="space-y-1">
+                <h3 class="flex items-center gap-2 text-base font-medium">
+                  <Smartphone class="size-4" />
+                  {{ t("homeSettings.appUpdate.title") }}
+                </h3>
+                <p class="text-sm text-muted-foreground">
+                  {{ t("homeSettings.appUpdate.description") }}
+                </p>
+              </div>
+              <span
+                :class="[
+                  'inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-medium',
+                  appUpdateState.updateAvailable
+                    ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'
+                    : 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200',
+                ]"
+              >
+                {{ appUpdateState.updateAvailable ? t("homeSettings.appUpdate.available") : t("homeSettings.appUpdate.current") }}
+              </span>
+            </div>
+
+            <div class="grid gap-3 md:grid-cols-3">
+              <div class="rounded-md border border-border/70 bg-background/60 p-3">
+                <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.version") }}</p>
+                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.current.version }}</p>
+              </div>
+              <div class="rounded-md border border-border/70 bg-background/60 p-3">
+                <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.gitCommit") }}</p>
+                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.current.gitCommit }}</p>
+              </div>
+              <div class="rounded-md border border-border/70 bg-background/60 p-3">
+                <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.buildTime") }}</p>
+                <p class="mt-1 text-sm font-medium">{{ currentBuildTimeLabel }}</p>
+              </div>
+            </div>
+
+            <div v-if="appUpdateState.remote" class="grid gap-3 rounded-md border border-dashed bg-background/40 p-3 md:grid-cols-3">
+              <div>
+                <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteVersion") }}</p>
+                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.remote.version }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteCommit") }}</p>
+                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.remote.gitCommit }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteBuildTime") }}</p>
+                <p class="mt-1 text-sm font-medium">{{ remoteBuildTimeLabel }}</p>
+              </div>
+            </div>
+
+            <p v-if="appUpdateState.checkedAt" class="text-xs text-muted-foreground">
+              {{ t("homeSettings.appUpdate.checkedAt", { time: formatBuildTime(appUpdateState.checkedAt) }) }}
+            </p>
+            <p v-if="appUpdateState.lastError" class="text-xs text-destructive">
+              {{ t("homeSettings.appUpdate.lastError") }}
+            </p>
+
+            <div class="grid gap-2 sm:grid-cols-2">
+              <Button type="button" variant="outline" :disabled="appUpdateState.checking || appUpdateState.applying" @click="checkForAppUpdate()">
+                <RefreshCw :class="['size-4', appUpdateState.checking ? 'animate-spin' : '']" />
+                {{ appUpdateState.checking ? t("homeSettings.appUpdate.checking") : t("homeSettings.appUpdate.check") }}
+              </Button>
+              <Button type="button" :disabled="!appUpdateState.updateAvailable || appUpdateState.applying" @click="applyAppUpdate">
+                <Download :class="['size-4', appUpdateState.applying ? 'animate-pulse' : '']" />
+                {{ appUpdateState.applying ? t("homeSettings.appUpdate.updating") : t("homeSettings.appUpdate.update") }}
+              </Button>
+            </div>
+          </section>
+        </TabsContent>
+
         <TabsContent value="sekai-data">
-          <SekaiDataSettings />
+          <SekaiDataSettings v-if="hasVisitedSettingsTab('sekai-data')" />
         </TabsContent>
 
         <TabsContent value="user-data">
-          <UserDataSettings />
+          <UserDataSettings v-if="hasVisitedSettingsTab('user-data')" />
         </TabsContent>
       </Tabs>
     </DialogScrollContent>

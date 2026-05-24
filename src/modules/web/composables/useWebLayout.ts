@@ -152,7 +152,7 @@ export function useWebLayout() {
     showPageTitle,
     copyrightYear,
     appVersion: __APP_VERSION__,
-    gitHash: __APP_GIT_HASH__,
+    gitCommit: __APP_GIT_COMMIT__,
     buildTimeIso: __APP_BUILD_TIME__,
     buildTime,
     pendingUserTicketCount,

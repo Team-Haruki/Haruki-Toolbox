@@ -79,6 +79,8 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
       requestId: request.requestId,
       region,
       cacheHit: true,
+      dataVersion: versionInfo.dataVersion,
+      cdnVersion: versionInfo.cdnVersion,
       displayVersion: cachedMeta.master?.displayVersion ?? displayVersion,
       fetchVersion,
       files: cachedMeta.master?.files ?? files,
@@ -154,6 +156,8 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
     requestId: request.requestId,
     region,
     cacheHit: false,
+    dataVersion: versionInfo.dataVersion,
+    cdnVersion: versionInfo.cdnVersion,
     displayVersion,
     fetchVersion,
     files: nextMasterMeta.files,
@@ -172,8 +176,19 @@ async function fetchJson(url: string): Promise<unknown> {
 }
 
 async function fetchMasterFileJson(url: string, fileName: string): Promise<unknown> {
-  const response = await fetch(url, { cache: "no-store" })
-  if (response.status === 404 && OPTIONAL_MASTER_FILE_SET.has(normalizeSekaiMasterFileName(fileName))) {
+  const normalizedFileName = normalizeSekaiMasterFileName(fileName)
+  const isOptionalFile = OPTIONAL_MASTER_FILE_SET.has(normalizedFileName)
+  let response: Response
+  try {
+    response = await fetch(url, { cache: "no-store" })
+  } catch (error) {
+    if (isOptionalFile) {
+      return []
+    }
+    throw error
+  }
+
+  if (response.status === 404 && isOptionalFile) {
     return []
   }
   if (!response.ok) {

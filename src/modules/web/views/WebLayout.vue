@@ -55,7 +55,7 @@ const {
   showPageTitle,
   copyrightYear,
   appVersion,
-  gitHash,
+  gitCommit,
   buildTimeIso,
   buildTime,
   pendingUserTicketCount,
@@ -213,7 +213,7 @@ const {
       </header>
 
       <main class="flex flex-1 flex-col">
-        <div class="flex flex-1 flex-col items-center p-6">
+        <div class="flex flex-1 flex-col items-center px-4 py-3 sm:p-4 xl:p-6">
           <router-view v-slot="{ Component, route }">
             <Transition name="page-blur-fade" mode="out-in">
               <component :is="Component" :key="route.fullPath" />
@@ -254,16 +254,16 @@ const {
           </div>
 
           <dl
-            class="flex w-full flex-col gap-1.5 border-t border-slate-950/[0.08] pt-2 text-xs sm:grid sm:grid-cols-3 md:flex md:w-auto md:min-w-[28rem] md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-x-3 md:gap-y-1 md:border-t-0 md:pt-0 dark:border-white/10"
+            class="flex w-[calc(100%+3rem)] -mx-6 flex-col gap-1.5 border-t border-slate-950/[0.08] px-4 pt-2 text-xs sm:grid sm:grid-cols-3 md:mx-0 md:flex md:w-auto md:min-w-[28rem] md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-x-3 md:gap-y-1 md:border-t-0 md:px-0 md:pt-0 dark:border-white/10"
           >
             <div class="flex min-w-0 items-baseline justify-between gap-3 md:justify-start md:gap-1.5">
               <dt>{{ t("webLayout.footer.version") }}</dt>
               <dd class="font-mono font-medium tabular-nums text-foreground/75">v{{ appVersion }}</dd>
             </div>
             <div class="flex min-w-0 items-baseline justify-between gap-3 md:border-l md:border-slate-950/[0.08] md:pl-3 md:justify-start md:gap-1.5 dark:md:border-white/10">
-              <dt>{{ t("webLayout.footer.gitHash") }}</dt>
-              <dd class="truncate font-mono font-medium text-foreground/75" :title="gitHash">
-                {{ gitHash }}
+              <dt>{{ t("webLayout.footer.gitCommit") }}</dt>
+              <dd class="truncate font-mono font-medium text-foreground/75" :title="gitCommit">
+                {{ gitCommit }}
               </dd>
             </div>
             <div class="flex min-w-0 items-baseline justify-between gap-3 md:border-l md:border-slate-950/[0.08] md:pl-3 md:justify-start md:gap-1.5 dark:md:border-white/10">

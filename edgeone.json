@@ -1,7 +1,7 @@
 {
   "name": "haruki-toolbox",
   "installCommand": "bun install --frozen-lockfile",
-  "buildCommand": "bun run build",
+  "buildCommand": "bun run build:edgeone",
   "outputDirectory": "./dist",
   "nodeVersion": "22.11.0"
 }

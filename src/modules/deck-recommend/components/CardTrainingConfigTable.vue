@@ -50,16 +50,16 @@ function resolveRarityIconUrls(rarity: DeckRecommendRarity): string[] {
 </script>
 
 <template>
-  <Table>
+  <Table class="min-w-[42rem]">
     <TableHeader>
       <TableRow>
-        <TableHead>{{ t("deckRecommend.training.rarity") }}</TableHead>
-        <TableHead class="text-center">{{ t("deckRecommend.training.disabled") }}</TableHead>
-        <TableHead class="text-center">{{ t("deckRecommend.training.maxLevel") }}</TableHead>
-        <TableHead class="text-center">{{ t("deckRecommend.training.episodesRead") }}</TableHead>
-        <TableHead class="text-center">{{ t("deckRecommend.training.maxMasterRank") }}</TableHead>
-        <TableHead class="text-center">{{ t("deckRecommend.training.maxSkillLevel") }}</TableHead>
-        <TableHead class="text-center">
+        <TableHead class="w-24 pl-3 pr-2 sm:pl-6">{{ t("deckRecommend.training.rarity") }}</TableHead>
+        <TableHead class="w-16 px-2 text-center">{{ t("deckRecommend.training.disabled") }}</TableHead>
+        <TableHead class="w-20 px-2 text-center">{{ t("deckRecommend.training.maxLevel") }}</TableHead>
+        <TableHead class="w-24 px-2 text-center">{{ t("deckRecommend.training.episodesRead") }}</TableHead>
+        <TableHead class="w-24 px-2 text-center">{{ t("deckRecommend.training.maxMasterRank") }}</TableHead>
+        <TableHead class="w-24 px-2 text-center">{{ t("deckRecommend.training.maxSkillLevel") }}</TableHead>
+        <TableHead class="w-32 px-2 text-center">
           <span class="inline-flex items-center justify-center gap-1">
             <img :src="canvasIconUrl" alt="" class="size-5" loading="lazy">
             {{ t("deckRecommend.training.mySekaiCanvas") }}
@@ -69,52 +69,52 @@ function resolveRarityIconUrls(rarity: DeckRecommendRarity): string[] {
     </TableHeader>
     <TableBody>
       <TableRow v-for="row in props.modelValue" :key="row.rarity">
-        <TableCell>
+        <TableCell class="w-24 pl-3 pr-2 sm:pl-6">
           <span class="inline-flex items-center gap-2 font-medium">
-            <span class="inline-flex items-center gap-0.5">
+            <span class="inline-grid grid-flow-col auto-cols-max items-center gap-0.5 whitespace-nowrap">
               <img
                 v-for="(iconUrl, index) in resolveRarityIconUrls(row.rarity)"
                 :key="`${row.rarity}-${index}`"
                 :src="iconUrl"
                 alt=""
-                class="size-5"
+                class="size-4 sm:size-5"
                 loading="lazy"
               >
             </span>
             <span class="sr-only">{{ t(`deckRecommend.training.rarities.${row.rarity}`) }}</span>
           </span>
         </TableCell>
-        <TableCell class="text-center">
+        <TableCell class="w-16 px-2 text-center">
           <Checkbox
             :model-value="row.disabled"
             @update:model-value="checked => updateRow(row.rarity, 'disabled', checked === true)"
           />
         </TableCell>
-        <TableCell class="text-center">
+        <TableCell class="w-20 px-2 text-center">
           <Checkbox
             :model-value="row.maxLevel"
             @update:model-value="checked => updateRow(row.rarity, 'maxLevel', checked === true)"
           />
         </TableCell>
-        <TableCell class="text-center">
+        <TableCell class="w-24 px-2 text-center">
           <Checkbox
             :model-value="row.episodesRead"
             @update:model-value="checked => updateRow(row.rarity, 'episodesRead', checked === true)"
           />
         </TableCell>
-        <TableCell class="text-center">
+        <TableCell class="w-24 px-2 text-center">
           <Checkbox
             :model-value="row.maxMasterRank"
             @update:model-value="checked => updateRow(row.rarity, 'maxMasterRank', checked === true)"
           />
         </TableCell>
-        <TableCell class="text-center">
+        <TableCell class="w-24 px-2 text-center">
           <Checkbox
             :model-value="row.maxSkillLevel"
             @update:model-value="checked => updateRow(row.rarity, 'maxSkillLevel', checked === true)"
           />
         </TableCell>
-        <TableCell class="text-center">
+        <TableCell class="w-32 px-2 text-center">
           <Checkbox
             :model-value="row.mySekaiCanvas"
             @update:model-value="checked => updateRow(row.rarity, 'mySekaiCanvas', checked === true)"
