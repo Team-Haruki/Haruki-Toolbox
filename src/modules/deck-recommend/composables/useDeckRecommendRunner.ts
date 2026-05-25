@@ -51,6 +51,7 @@ import {
 import {
   applyChallengeScoreDelta,
   createPreparedDeckRecommendUserDataString,
+  type DeckRecommendAreaItemLevelOverride,
   type DeckRecommendSingleCardOverride,
 } from "../lib/user-data-preparation"
 import { prepareRecommendUserDataForWasm } from "../lib/wasm-user-data"
@@ -84,6 +85,7 @@ export type DeckRecommendRunnerInput = {
   multiLiveScoreUpLowerBound: number | null
   boost: number | null
   areaItemLevel: number | null
+  areaItemLevelOverrides: readonly DeckRecommendAreaItemLevelOverride[]
   resultLimit: number | null
   timeoutMs: number | null
   unitFilters: readonly DeckRecommendUnitType[]
@@ -182,6 +184,7 @@ export function useDeckRecommendRunner() {
         attrFilters: input.attrFilters,
         characterFilters: input.characterFilters,
         areaItemLevel: input.areaItemLevel,
+        areaItemLevelOverrides: input.areaItemLevelOverrides,
         singleCardOverrides: input.singleCardOverrides,
         trainingConfig: input.trainingConfig,
       })

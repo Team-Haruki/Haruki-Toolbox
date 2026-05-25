@@ -8,6 +8,7 @@ import {
   LucideGamepad2,
   LucideInfo,
   LucidePlay,
+  LucideRotateCcw,
   LucideSettings2,
   LucideTriangleAlert,
 } from "lucide-vue-next"
@@ -69,6 +70,11 @@ import CustomBonusCharacterPicker from "../components/CustomBonusCharacterPicker
 import EventSelect from "../components/EventSelect.vue"
 import MusicSelect from "../components/MusicSelect.vue"
 import SingleCardOverrideTable from "../components/SingleCardOverrideTable.vue"
+import {
+  buildDeckRecommendAreaItemOptions,
+  type DeckRecommendAreaItemKind,
+  type DeckRecommendAreaItemOption,
+} from "../lib/area-item-options"
 import { buildMasterCardOptions } from "../lib/card-options"
 import {
   buildDeckResultViews,
@@ -121,7 +127,7 @@ const DEFAULT_MUSIC_ID = "74"
 const DEFAULT_MUSIC_DIFFICULTY = "expert"
 const DEFAULT_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "ga", "rl"]
 const DECK_RECOMMEND_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "dfs", "ga", "rl"]
-const DECK_RECOMMEND_CARD_OPTION_MASTER_FILES = ["cards", "cardRarities", "gameCharacters", "gameCharacterUnits", "unitProfiles", "areaItemLevels"] as const
+const DECK_RECOMMEND_CARD_OPTION_MASTER_FILES = ["cards", "cardRarities", "gameCharacters", "gameCharacterUnits", "unitProfiles", "areaItems", "areaItemLevels", "areas"] as const
 const DECK_RECOMMEND_PREFERENCES_STORAGE_KEY = "haruki:deck-recommend:preferences"
 const DECK_RECOMMEND_PREFERENCES_VERSION = 2
 const DECK_RECOMMEND_EXECUTION_MODES: DeckRecommendExecutionMode[] = ["sequential", "parallel"]
@@ -141,6 +147,16 @@ const CHARACTER_FILTER_MIN_COUNT = 5
 
 type DeckRecommendEventSimulationMode = DeckRecommendSimulatedEventType | "world_bloom"
 type DeckRecommendSimulatedEventUnitValue = DeckRecommendUnitType | typeof DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT
+type AreaItemOverrideAreaGroup = {
+  key: string
+  label: string
+  items: DeckRecommendAreaItemOption[]
+}
+type AreaItemOverrideSection = {
+  kind: DeckRecommendAreaItemKind
+  label: string
+  areas: AreaItemOverrideAreaGroup[]
+}
 
 const { t, locale } = useI18n()
 const userStore = useUserStore()
@@ -181,6 +197,7 @@ const multiLiveTeammateScoreUpInput = ref<NumericInputValue>("")
 const multiLiveScoreUpLowerBoundInput = ref<NumericInputValue>("")
 const boostInput = ref<NumericInputValue>("0")
 const areaItemLevelInput = ref<NumericInputValue>("")
+const areaItemLevelOverrideInputs = ref<Record<string, string>>({})
 const resultLimitInput = ref<NumericInputValue>("")
 const engineTimeoutMsInput = ref<NumericInputValue>("")
 const unitFilters = ref<DeckRecommendUnitType[]>([])
@@ -199,6 +216,7 @@ const supportMasterMax = ref(false)
 const supportSkillMax = ref(false)
 const advancedConfigOpen = ref(false)
 const expertConfigOpen = ref(false)
+const areaItemOverrideOpen = ref(false)
 const trainingConfig = ref(createDefaultCardTrainingConfig())
 const characterOptions = useCharacterOptions(dataRegion)
 const worldBloomCharacters = useWorldBloomCharacterOptions(dataRegion, selectedEventId)
@@ -233,8 +251,35 @@ const resultDecks = computed(() =>
 const cardOptions = computed(() =>
   buildMasterCardOptions(cardOptionMasterData.value ?? runner.masterData.value, dataRegion.value, settingsStore.currentAssetEndpoint),
 )
+const areaItemOptions = computed(() =>
+  buildDeckRecommendAreaItemOptions(cardOptionMasterData.value ?? runner.masterData.value),
+)
 const areaItemMaxLevel = computed(() =>
   resolveMaxAreaItemLevel((runner.masterData.value ?? cardOptionMasterData.value)?.areaItemLevels) ?? 20,
+)
+const areaItemLevelOverrides = computed(() =>
+  Object.entries(areaItemLevelOverrideInputs.value)
+    .map(([areaItemId, level]) => ({
+      areaItemId: Number(areaItemId),
+      level: Number(level),
+    }))
+    .filter((item) => {
+      const option = areaItemOptions.value.find((areaItem) => areaItem.id === item.areaItemId)
+      return option
+        && Number.isInteger(item.areaItemId)
+        && Number.isInteger(item.level)
+        && item.level >= 1
+        && item.level <= option.maxLevel
+    }),
+)
+const areaItemOverrideSections = computed<AreaItemOverrideSection[]>(() =>
+  (["character", "unit", "attr"] as const)
+    .map((kind) => ({
+      kind,
+      label: t(`deckRecommend.options.areaItemOverride.kinds.${kind}`),
+      areas: buildAreaItemOverrideAreaGroups(areaItemOptions.value.filter((item) => item.kind === kind)),
+    }))
+    .filter((section) => section.areas.length > 0),
 )
 const showResultCard = computed(() =>
   runner.error.value != null || runner.elapsedMs.value != null || resultDecks.value.length > 0,
@@ -353,6 +398,8 @@ const showWorldBloomCharacterSelect = computed(() =>
   && !isEventSimulationActive.value
   && selectedEventType.value === "world_bloom",
 )
+const showChallengeCharacterSelect = computed(() => recommendMode.value === "challenge")
+const showEventConditionSection = computed(() => !showChallengeCharacterSelect.value)
 const worldBloomCharacterSelectAllowNone = computed(() =>
   selectedEventType.value === "world_bloom" && !worldBloomCharacters.hasCharacters.value,
 )
@@ -370,7 +417,7 @@ const isWorldBloomFinaleSelection = computed(() =>
   selectedEventType.value === "world_bloom" && !isEventSimulationActive.value && !worldBloomCharacters.hasCharacters.value,
 )
 const showCharacterSelect = computed(() =>
-  recommendMode.value === "challenge" || showWorldBloomCharacterSelect.value,
+  showChallengeCharacterSelect.value || showWorldBloomCharacterSelect.value,
 )
 const characterSelectAllowedIds = computed<readonly number[] | null>(() =>
   recommendMode.value === "challenge"
@@ -410,7 +457,14 @@ const activeForcedLeaderCharacterId = computed(() =>
 const activeAlgorithms = computed<DeckRecommendAlgorithm[]>(() =>
   recommendMode.value === "bonus" ? ["dfs"] : selectedAlgorithms.value,
 )
-const isMultiLiveOptionsEnabled = computed(() => liveType.value === "multi")
+const showLiveTypeSelect = computed(() => recommendMode.value !== "mysekai")
+const isLiveTypeLocked = computed(() => recommendMode.value === "bonus" || recommendMode.value === "challenge")
+const isMultiLiveOptionsEnabled = computed(() =>
+  showLiveTypeSelect.value
+  && recommendMode.value !== "bonus"
+  && recommendMode.value !== "challenge"
+  && liveType.value === "multi",
+)
 const bonusTargets = computed(() => parseDeckBonusTargetsInput(bonusTargetsInput.value))
 const showBonusTargetsInput = computed(() => recommendMode.value === "bonus")
 const hasBonusTargetsError = computed(() =>
@@ -584,6 +638,13 @@ const eventUnitOptions = computed<Array<{ value: DeckRecommendSimulatedEventUnit
   },
 ])
 
+const unitFilterOptions = computed<Array<{ value: DeckRecommendUnitType; label: string }>>(() =>
+  DECK_RECOMMEND_UNITS.map((value) => ({
+    value,
+    label: t(`deckRecommend.eventUnits.${value}`),
+  })),
+)
+
 const worldBloomTurnOptions = computed<Array<{ value: string; label: string }>>(() =>
   DECK_RECOMMEND_WORLD_BLOOM_TURNS.map((value) => ({
     value,
@@ -662,6 +723,28 @@ watch(
 )
 
 watch(
+  areaItemOptions,
+  (options) => {
+    const optionMap = new Map(options.map((option) => [String(option.id), option]))
+    const nextInputs: Record<string, string> = {}
+    for (const [areaItemId, value] of Object.entries(areaItemLevelOverrideInputs.value)) {
+      const option = optionMap.get(areaItemId)
+      const level = Number(value)
+      if (!option || !Number.isInteger(level) || level < 1) {
+        continue
+      }
+
+      nextInputs[areaItemId] = String(Math.min(level, option.maxLevel))
+    }
+
+    if (JSON.stringify(nextInputs) !== JSON.stringify(areaItemLevelOverrideInputs.value)) {
+      areaItemLevelOverrideInputs.value = nextInputs
+    }
+  },
+  { immediate: true },
+)
+
+watch(
   () => route.query,
   () => {
     applyDeckRecommendRouteQuery()
@@ -696,6 +779,7 @@ watch(
     multiLiveScoreUpLowerBoundInput,
     boostInput,
     areaItemLevelInput,
+    areaItemLevelOverrideInputs,
     resultLimitInput,
     engineTimeoutMsInput,
     unitFilters,
@@ -797,7 +881,7 @@ watch(
 watch(
   recommendMode,
   () => {
-    if (recommendMode.value === "bonus") {
+    if (isLiveTypeLocked.value) {
       liveType.value = "solo"
     }
   },
@@ -953,7 +1037,7 @@ function updateDataRegion(value: AcceptableValue) {
 function updateRecommendMode(value: AcceptableValue) {
   if (typeof value === "string" && isDeckRecommendMode(value)) {
     recommendMode.value = value
-    if (value === "bonus") {
+    if (value === "bonus" || value === "challenge") {
       liveType.value = "solo"
     }
   }
@@ -970,7 +1054,7 @@ function updateRecommendTarget(value: AcceptableValue) {
 }
 
 function updateLiveType(value: AcceptableValue) {
-  if (recommendMode.value === "bonus") {
+  if (isLiveTypeLocked.value || !showLiveTypeSelect.value) {
     return
   }
 
@@ -1024,6 +1108,36 @@ function updateAreaItemLevelInput(value: AcceptableValue) {
   if (Number.isInteger(parsed) && parsed >= 1 && parsed <= areaItemMaxLevel.value) {
     areaItemLevelInput.value = value
   }
+}
+
+function updateAreaItemLevelOverride(areaItemId: number, value: AcceptableValue) {
+  const nextInputs = { ...areaItemLevelOverrideInputs.value }
+  if (value === "default") {
+    delete nextInputs[String(areaItemId)]
+    areaItemLevelOverrideInputs.value = nextInputs
+    return
+  }
+
+  if (typeof value !== "string") {
+    return
+  }
+
+  const option = areaItemOptions.value.find((item) => item.id === areaItemId)
+  const parsed = Number(value)
+  if (!option || !Number.isInteger(parsed) || parsed < 1 || parsed > option.maxLevel) {
+    return
+  }
+
+  nextInputs[String(areaItemId)] = value
+  areaItemLevelOverrideInputs.value = nextInputs
+}
+
+function clearAreaItemLevelOverrides() {
+  areaItemLevelOverrideInputs.value = {}
+}
+
+function areaItemLevelOverrideValue(areaItemId: number) {
+  return areaItemLevelOverrideInputs.value[String(areaItemId)] ?? "default"
 }
 
 function updateEventSimulationMode(value: AcceptableValue) {
@@ -1082,6 +1196,46 @@ function filterSelectionLabel(count: number) {
   return count === 0
     ? t("deckRecommend.options.filters.none")
     : t("deckRecommend.options.filters.selectedCount", { count })
+}
+
+function buildAreaItemOverrideAreaGroups(items: DeckRecommendAreaItemOption[]): AreaItemOverrideAreaGroup[] {
+  const groups = new Map<number, DeckRecommendAreaItemOption[]>()
+  for (const item of items) {
+    groups.set(item.areaId, [...groups.get(item.areaId) ?? [], item])
+  }
+
+  return [...groups.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([areaId, areaItems]) => ({
+      key: String(areaId),
+      label: areaItemAreaLabel(areaItems[0]),
+      items: areaItems,
+    }))
+}
+
+function areaItemAreaLabel(item: DeckRecommendAreaItemOption | undefined) {
+  if (!item) {
+    return t("deckRecommend.options.areaItemOverride.areaFallback", { id: "-" })
+  }
+
+  const areaName = [item.areaName, item.areaSubName].filter(Boolean).join(" · ")
+  return areaName || t("deckRecommend.options.areaItemOverride.areaFallback", { id: item.areaId })
+}
+
+function areaItemTargetLabel(item: DeckRecommendAreaItemOption) {
+  if (item.kind === "attr" && item.targetAttr) {
+    return t(`deckRecommend.cardTags.attrs.${item.targetAttr}`)
+  }
+
+  if (item.kind === "unit" && item.targetUnit && item.targetLabel === item.targetUnit) {
+    return t(`deckRecommend.eventUnits.${item.targetUnit}`)
+  }
+
+  return item.targetLabel ?? t("deckRecommend.options.areaItemOverride.targetFallback", { id: item.id })
+}
+
+function areaItemDetailLabel(item: DeckRecommendAreaItemOption) {
+  return item.itemName ?? t("deckRecommend.options.areaItemOverride.itemFallback", { id: item.id })
 }
 
 function checkDeckRecommendRegionData(region: SekaiRegion) {
@@ -1219,7 +1373,7 @@ function applyDeckRecommendRouteQuery() {
   }
 
   const queryLiveType = readRouteQueryString("liveType")
-  if (recommendMode.value === "bonus") {
+  if (isLiveTypeLocked.value) {
     liveType.value = "solo"
   } else {
     const normalizedLiveType = normalizeDeckRecommendLiveType(queryLiveType)
@@ -1389,6 +1543,7 @@ async function runRecommend() {
       multiLiveScoreUpLowerBound: isMultiLiveOptionsEnabled.value ? multiLiveScoreUpLowerBound.value.value : null,
       boost: boost.value.value,
       areaItemLevel: areaItemLevel.value.value,
+      areaItemLevelOverrides: areaItemLevelOverrides.value,
       resultLimit: resultLimit.value.value,
       timeoutMs: engineTimeoutMs.value.value,
       unitFilters: unitFilters.value,
@@ -1522,6 +1677,45 @@ function deckBonusParts(deck: DeckResultDeckView["deck"]) {
     main,
     support,
     total: main + support,
+  }
+}
+
+function shouldShowDeckBonusSummary() {
+  return recommendMode.value !== "challenge" && recommendMode.value !== "max"
+}
+
+function shouldShowDeckEffectiveSummary() {
+  return recommendMode.value !== "challenge" && recommendMode.value !== "mysekai"
+}
+
+function deckSummaryGridClass() {
+  const count = 2
+    + (shouldShowDeckBonusSummary() ? 1 : 0)
+    + (shouldShowDeckEffectiveSummary() ? 1 : 0)
+
+  switch (count) {
+    case 2:
+      return "grid-cols-2"
+    case 3:
+      return "grid-cols-3"
+    default:
+      return "grid-cols-4"
+  }
+}
+
+function deckBasicInfoGridClass(deck: DeckResultDeckView["deck"]) {
+  const count = 2
+    + (shouldShowDeckBonusSummary() ? 1 : 0)
+    + (shouldShowDeckEffectiveSummary() ? 1 : 0)
+    + (shouldShowChallengeScoreDelta(deck) ? 1 : 0)
+
+  switch (Math.min(Math.max(count, 2), 4)) {
+    case 2:
+      return "sm:grid-cols-2"
+    case 3:
+      return "sm:grid-cols-3"
+    default:
+      return "sm:grid-cols-4"
   }
 }
 
@@ -1835,7 +2029,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
         <p class="leading-6">
           <strong class="font-bold text-amber-950 dark:text-amber-50">
             {{ t("deckRecommend.notice.testingPrefix") }}
-          </strong>{{ t("deckRecommend.notice.testingSuffix") }}
+          </strong><span>&#8288;{{ t("deckRecommend.notice.testingSuffix") }}</span>
         </p>
       </div>
 
@@ -1920,11 +2114,20 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                 </Select>
               </div>
 
-              <div class="grid gap-2">
+              <div v-if="showChallengeCharacterSelect" class="grid gap-2">
+                <Label>{{ t("deckRecommend.form.character") }}</Label>
+                <CharacterSelect
+                  v-model="selectedCharacterId"
+                  :region="dataRegion"
+                  :disabled="!dataReady || characterOptions.loading.value"
+                />
+              </div>
+
+              <div v-if="showLiveTypeSelect" class="grid gap-2">
                 <Label>{{ t("deckRecommend.form.liveType") }}</Label>
                 <Select
                   :model-value="liveType"
-                  :disabled="runner.running.value || recommendMode === 'bonus'"
+                  :disabled="runner.running.value || isLiveTypeLocked"
                   @update:model-value="updateLiveType"
                 >
                   <SelectTrigger class="w-full">
@@ -1953,7 +2156,9 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         </button>
                       </TooltipTrigger>
                       <TooltipContent class="max-w-80 !border-slate-200 !bg-white !text-slate-950 text-left leading-5 shadow-lg dark:!border-slate-700 dark:!bg-slate-950 dark:!text-slate-50">
-                        {{ t("deckRecommend.form.algorithmHint") }}
+                        <span class="block w-[min(20rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] whitespace-normal">
+                          {{ t("deckRecommend.form.algorithmHint") }}
+                        </span>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -2000,7 +2205,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                 />
               </div>
 
-              <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+              <section v-if="showEventConditionSection" class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div class="space-y-1">
                     <h3 class="text-sm font-medium">{{ t("deckRecommend.options.eventCondition.title") }}</h3>
@@ -2031,7 +2236,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                     </p>
                   </div>
 
-                  <div v-if="showCharacterSelect" class="grid gap-2 md:col-span-2 xl:col-span-2">
+                  <div v-if="showWorldBloomCharacterSelect" class="grid gap-2 md:col-span-2 xl:col-span-2">
                     <Label>{{ t("deckRecommend.form.character") }}</Label>
                     <CharacterSelect
                       v-model="selectedCharacterId"
@@ -2242,7 +2447,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                               </div>
                               <div class="grid gap-2 sm:grid-cols-2">
                                 <label
-                                  v-for="option in eventUnitOptions"
+                                  v-for="option in unitFilterOptions"
                                   :key="option.value"
                                   :class="[
                                     'flex min-w-0 items-center gap-2 rounded-md border bg-background/70 px-2 py-1.5 text-sm transition-colors hover:bg-muted/40',
@@ -2606,6 +2811,125 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                       </div>
                     </section>
 
+                    <Collapsible v-slot="{ open }" v-model:open="areaItemOverrideOpen" as-child>
+                      <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                        <CollapsibleTrigger as-child>
+                          <button
+                            type="button"
+                            class="flex min-w-0 items-start justify-between gap-3 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <span class="min-w-0 space-y-1">
+                              <span class="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium">
+                                <span>{{ t("deckRecommend.options.areaItemOverride.title") }}</span>
+                                <span
+                                  v-if="areaItemLevelOverrides.length > 0"
+                                  class="rounded-md border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[11px] font-semibold text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200"
+                                >
+                                  {{ t("deckRecommend.options.areaItemOverride.selectedCount", { count: areaItemLevelOverrides.length }) }}
+                                </span>
+                              </span>
+                              <span class="block text-xs leading-5 text-muted-foreground">
+                                {{ t("deckRecommend.options.areaItemOverride.description") }}
+                              </span>
+                            </span>
+                            <LucideChevronDown
+                              :class="[
+                                'mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+                                open ? 'rotate-180' : '',
+                              ]"
+                            />
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div class="grid min-w-0 gap-3 pt-1">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                              <p class="text-xs leading-5 text-muted-foreground">
+                                {{ t("deckRecommend.options.areaItemOverride.priorityHint") }}
+                              </p>
+                              <Button
+                                v-if="areaItemLevelOverrides.length > 0"
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                class="h-8 shrink-0"
+                                :disabled="runner.running.value"
+                                @click="clearAreaItemLevelOverrides"
+                              >
+                                <LucideRotateCcw class="size-3.5" />
+                                {{ t("deckRecommend.options.areaItemOverride.clear") }}
+                              </Button>
+                            </div>
+
+                            <div v-if="areaItemOverrideSections.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                              {{ t("deckRecommend.options.areaItemOverride.empty") }}
+                            </div>
+
+                            <div v-else class="grid min-w-0 gap-3">
+                              <section
+                                v-for="section in areaItemOverrideSections"
+                                :key="section.kind"
+                                class="grid min-w-0 gap-2 rounded-md border bg-background/50 p-2.5"
+                              >
+                                <h4 class="text-sm font-medium">{{ section.label }}</h4>
+                                <div
+                                  v-for="areaGroup in section.areas"
+                                  :key="areaGroup.key"
+                                  class="grid min-w-0 gap-2"
+                                >
+                                  <div class="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+                                    <span class="h-px flex-1 bg-border" />
+                                    <span class="min-w-0 truncate">{{ areaGroup.label }}</span>
+                                    <span class="h-px flex-1 bg-border" />
+                                  </div>
+                                  <div class="grid min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3">
+                                    <div
+                                      v-for="item in areaGroup.items"
+                                      :key="item.id"
+                                      class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_100px] items-center gap-2 rounded-md border bg-background/70 p-2 text-sm"
+                                    >
+                                      <img
+                                        v-if="item.iconUrl"
+                                        :src="item.iconUrl"
+                                        :alt="areaItemTargetLabel(item)"
+                                        class="size-8 rounded object-contain"
+                                        loading="lazy"
+                                      >
+                                      <span v-else class="size-8 rounded bg-muted" />
+                                      <span class="min-w-0">
+                                        <span class="block truncate font-medium">{{ areaItemTargetLabel(item) }}</span>
+                                        <span class="block truncate text-xs text-muted-foreground">{{ areaItemDetailLabel(item) }}</span>
+                                      </span>
+                                      <Select
+                                        :model-value="areaItemLevelOverrideValue(item.id)"
+                                        :disabled="runner.running.value"
+                                        @update:model-value="value => updateAreaItemLevelOverride(item.id, value)"
+                                      >
+                                        <SelectTrigger class="h-8 w-full">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="default">
+                                            {{ t("deckRecommend.options.areaItemOverride.default") }}
+                                          </SelectItem>
+                                          <SelectItem
+                                            v-for="level in item.maxLevel"
+                                            :key="level"
+                                            :value="String(level)"
+                                          >
+                                            {{ t("deckRecommend.options.filters.areaItemLevelOption", { value: level }) }}
+                                          </SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+                                </div>
+                              </section>
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </section>
+                    </Collapsible>
+
                     <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.engine.title") }}</h3>
@@ -2760,15 +3084,15 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         </div>
                       </div>
 
-                      <div v-if="!open" class="grid min-w-0 grid-cols-4 gap-1 sm:gap-2">
-                        <div class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
+                      <div v-if="!open" :class="['grid min-w-0 gap-1 sm:gap-2', deckSummaryGridClass()]">
+                        <div v-if="shouldShowDeckBonusSummary()" class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
                           <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ deckPointLabel() }}</span>
                           <span class="block truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
                             {{ formatInteger(deckPointValue(deckView.deck)) }}
                           </span>
                         </div>
 
-                        <div class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
+                        <div v-if="shouldShowDeckEffectiveSummary()" class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
                           <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ t("deckRecommend.result.summary.power") }}</span>
                           <span class="block truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
                             {{ formatInteger(deckView.deck.total_power) }}
@@ -2834,14 +3158,14 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                                   {{ deckPointLabel() }}
                                   <span class="font-mono font-semibold text-foreground">{{ formatInteger(deckPointValue(deckView.deck)) }}</span>
                                 </span>
-                                <span class="rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+                                <span v-if="shouldShowDeckBonusSummary()" class="rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
                                   {{ t("deckRecommend.result.summary.totalBonus") }} {{ formatPercentValue(deckBonusParts(deckView.deck).total) }}%
                                 </span>
                                 <span class="rounded-md bg-muted/45 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
                                   {{ t("deckRecommend.result.liveScoreLabel") }}
                                   <span class="font-mono font-semibold text-foreground">{{ formatInteger(deckView.deck.live_score) }}</span>
                                 </span>
-                                <span class="rounded-md bg-cyan-50 px-1.5 py-0.5 text-xs font-medium text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-200">
+                                <span v-if="shouldShowDeckEffectiveSummary()" class="rounded-md bg-cyan-50 px-1.5 py-0.5 text-xs font-medium text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-200">
                                   {{ t("deckRecommend.result.summary.effective") }} {{ formatPercentValue(deckView.deck.multi_live_score_up) }}%
                                 </span>
                               </template>
@@ -2855,8 +3179,8 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           </button>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                          <div class="grid grid-cols-2 gap-1.5 border-t bg-muted/5 p-2 sm:grid-cols-4 sm:gap-2 sm:p-3">
-                            <div class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
+                          <div :class="['grid grid-cols-2 gap-1.5 border-t bg-muted/5 p-2 sm:gap-2 sm:p-3', deckBasicInfoGridClass(deckView.deck)]">
+                            <div v-if="shouldShowDeckBonusSummary()" class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
                               <span class="block text-xs text-muted-foreground">{{ deckPointLabel() }}</span>
                               <span class="block font-mono text-sm font-semibold sm:text-base">
                                 {{ formatInteger(deckPointValue(deckView.deck)) }}
@@ -2865,7 +3189,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                                 {{ deckLiveBoostPointDetailText(deckView.deck) }}
                               </span>
                             </div>
-                            <div class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
+                            <div v-if="shouldShowDeckEffectiveSummary()" class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
                               <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.summary.totalBonus") }}</span>
                               <span class="block font-mono text-sm font-semibold sm:text-base">
                                 {{ formatPercentValue(deckBonusParts(deckView.deck).total) }}%

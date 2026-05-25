@@ -71,7 +71,9 @@ type MusicOption = {
 }
 
 const POINT_CALCULATOR_DEFAULT_RESULT_LIMIT = 10
-const POINT_CALCULATOR_MIN_BONUS_CAP = 100
+const POINT_CALCULATOR_DEFAULT_BONUS_FLOOR = 100
+const POINT_CALCULATOR_MIN_BONUS_LIMIT = 0
+const POINT_CALCULATOR_MAX_BONUS_LIMIT = 1000
 
 const { t } = useI18n()
 const router = useRouter()
@@ -82,7 +84,7 @@ const selectedMusicId = ref(String(SCORE_CONTROL_DEFAULT_MUSIC_ID))
 const inputPt = ref<number | undefined>(undefined)
 const selectedBoost = ref("all")
 const maxResults = ref<number | undefined>(POINT_CALCULATOR_DEFAULT_RESULT_LIMIT)
-const customBonusFloor = ref<number | undefined>(POINT_CALCULATOR_MIN_BONUS_CAP)
+const customBonusFloor = ref<number | undefined>(POINT_CALCULATOR_DEFAULT_BONUS_FLOOR)
 const customBonusCap = ref<number | undefined>(SCORE_CONTROL_MAX_EVENT_BONUS)
 const loading = ref(false)
 const loadError = ref<string | null>(null)
@@ -105,7 +107,7 @@ const selectedMusicOption = computed(() =>
 const selectedBasicPoint = computed(() =>
   selectScoreControlBasicPoint(selectedMusicId.value, musicMetas.value),
 )
-const minEventBonus = computed(() => normalizeBonusBound(customBonusFloor.value, POINT_CALCULATOR_MIN_BONUS_CAP))
+const minEventBonus = computed(() => normalizeBonusBound(customBonusFloor.value, POINT_CALCULATOR_DEFAULT_BONUS_FLOOR))
 const maxEventBonus = computed(() => normalizeBonusBound(customBonusCap.value, SCORE_CONTROL_MAX_EVENT_BONUS))
 const maxResultsInvalid = computed(() => {
   if (maxResults.value == null || String(maxResults.value).trim() === "") {
@@ -121,8 +123,8 @@ const customBonusCapInvalid = computed(() => {
 
   const parsed = Number(customBonusCap.value)
   return !Number.isInteger(parsed)
-    || parsed < POINT_CALCULATOR_MIN_BONUS_CAP
-    || parsed > SCORE_CONTROL_MAX_EVENT_BONUS
+    || parsed < POINT_CALCULATOR_MIN_BONUS_LIMIT
+    || parsed > POINT_CALCULATOR_MAX_BONUS_LIMIT
     || parsed < minEventBonus.value
 })
 const customBonusFloorInvalid = computed(() => {
@@ -132,8 +134,8 @@ const customBonusFloorInvalid = computed(() => {
 
   const parsed = Number(customBonusFloor.value)
   return !Number.isInteger(parsed)
-    || parsed < POINT_CALCULATOR_MIN_BONUS_CAP
-    || parsed > SCORE_CONTROL_MAX_EVENT_BONUS
+    || parsed < POINT_CALCULATOR_MIN_BONUS_LIMIT
+    || parsed > POINT_CALCULATOR_MAX_BONUS_LIMIT
     || parsed > maxEventBonus.value
 })
 const targetPointInvalid = computed(() => {
@@ -309,11 +311,15 @@ function formatScore(value: number) {
   return formatNumberCN(value, "0")
 }
 
-function normalizeBonusBound(value: number | undefined, fallback: number) {
+function normalizeBonusBound(value: unknown, fallback: number) {
+  if (value == null || String(value).trim() === "") {
+    return fallback
+  }
+
   const parsed = Number(value)
   return Number.isInteger(parsed)
-    && parsed >= POINT_CALCULATOR_MIN_BONUS_CAP
-    && parsed <= SCORE_CONTROL_MAX_EVENT_BONUS
+    && parsed >= POINT_CALCULATOR_MIN_BONUS_LIMIT
+    && parsed <= POINT_CALCULATOR_MAX_BONUS_LIMIT
     ? parsed
     : fallback
 }
@@ -334,7 +340,7 @@ function normalizeBonusBound(value: number | undefined, fallback: number) {
       <Alert class="border-amber-200 bg-amber-50/90 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
         <LucideTriangleAlert class="h-4 w-4 text-amber-600 dark:text-amber-300" />
         <AlertDescription class="leading-6">
-          <span class="font-bold text-amber-950 dark:text-amber-50">{{ t("tools.pointCalculator.tips.testingPrefix") }}</span>{{ t("tools.pointCalculator.tips.testingSuffix") }}
+          <span class="font-bold text-amber-950 dark:text-amber-50">{{ t("tools.pointCalculator.tips.testingPrefix") }}</span><span>&#8288;{{ t("tools.pointCalculator.tips.testingSuffix") }}</span>
         </AlertDescription>
       </Alert>
 
@@ -454,8 +460,8 @@ function normalizeBonusBound(value: number | undefined, fallback: number) {
                       v-model.number="customBonusFloor"
                       class="pl-10"
                       type="number"
-                      :min="POINT_CALCULATOR_MIN_BONUS_CAP"
-                      :max="SCORE_CONTROL_MAX_EVENT_BONUS"
+                      :min="POINT_CALCULATOR_MIN_BONUS_LIMIT"
+                      :max="POINT_CALCULATOR_MAX_BONUS_LIMIT"
                       inputmode="numeric"
                       :aria-invalid="customBonusFloorInvalid || undefined"
                       :placeholder="t('tools.pointCalculator.fields.customBonusFloorPlaceholder')"
@@ -473,8 +479,8 @@ function normalizeBonusBound(value: number | undefined, fallback: number) {
                       v-model.number="customBonusCap"
                       class="pl-10"
                       type="number"
-                      :min="POINT_CALCULATOR_MIN_BONUS_CAP"
-                      :max="SCORE_CONTROL_MAX_EVENT_BONUS"
+                      :min="POINT_CALCULATOR_MIN_BONUS_LIMIT"
+                      :max="POINT_CALCULATOR_MAX_BONUS_LIMIT"
                       inputmode="numeric"
                       :aria-invalid="customBonusCapInvalid || undefined"
                       :placeholder="t('tools.pointCalculator.fields.customBonusCapPlaceholder')"

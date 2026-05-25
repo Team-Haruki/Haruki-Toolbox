@@ -368,4 +368,56 @@ describe("deck recommend user data preparation", () => {
       },
     ])
   })
+
+  it("applies per-area-item overrides after the shared area item level", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [],
+        userAreas: [
+          {
+            areaId: 10,
+            areaItems: [
+              { areaItemId: 1, level: 15 },
+            ],
+          },
+          {
+            areaId: 11,
+            areaItems: [
+              { areaItemId: 2, level: 20 },
+            ],
+          },
+        ],
+      },
+      areaItemLevel: 20,
+      areaItemLevelOverrides: [
+        { areaItemId: 1, level: 3 },
+        { areaItemId: 3, level: 99 },
+      ],
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as {
+      userAreas: Array<{
+        areaId: number
+        areaItems: Array<{ areaItemId: number; level: number }>
+      }>
+    }
+
+    expect(userData.userAreas).toEqual([
+      {
+        areaId: 10,
+        areaItems: [{ areaItemId: 1, level: 3 }],
+      },
+      {
+        areaId: 11,
+        areaItems: [{ areaItemId: 2, level: 20 }],
+      },
+      {
+        areaId: 12,
+        actionSets: [],
+        areaItems: [{ areaItemId: 3, level: 10 }],
+        userAreaStatus: { areaId: 12, status: "released" },
+      },
+    ])
+  })
 })

@@ -14,6 +14,11 @@ export type DeckRecommendSingleCardOverride = {
   canvas: boolean | null
 }
 
+export type DeckRecommendAreaItemLevelOverride = {
+  areaItemId: number
+  level: number
+}
+
 export type PrepareDeckRecommendUserDataInput = {
   userData: unknown
   masterData: Record<string, unknown>
@@ -21,6 +26,7 @@ export type PrepareDeckRecommendUserDataInput = {
   attrFilters?: readonly DeckRecommendEventAttr[] | null
   characterFilters?: readonly number[] | null
   areaItemLevel?: number | null
+  areaItemLevelOverrides?: readonly DeckRecommendAreaItemLevelOverride[]
   singleCardOverrides?: readonly DeckRecommendSingleCardOverride[]
   trainingConfig?: readonly CardTrainingConfig[]
 }
@@ -100,6 +106,15 @@ export function prepareDeckRecommendUserData(input: PrepareDeckRecommendUserData
       input.masterData.areaItems,
       input.masterData.areaItemLevels,
       input.areaItemLevel,
+    )
+  }
+
+  if (input.areaItemLevelOverrides && input.areaItemLevelOverrides.length > 0) {
+    userData.userAreas = applyAreaItemLevelOverrides(
+      userData.userAreas,
+      input.masterData.areaItems,
+      input.masterData.areaItemLevels,
+      input.areaItemLevelOverrides,
     )
   }
 
@@ -505,6 +520,99 @@ function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, areaItemLeve
       areaItems: preparedAreaItems,
     }
   })
+  const preparedAreaById = new Map<number, UserAreaRecord>()
+  for (const area of preparedAreas) {
+    const areaId = normalizePositiveInteger(area.areaId)
+    if (areaId) {
+      preparedAreaById.set(areaId, area)
+    }
+  }
+
+  for (const [areaItemId, level] of [...targetLevels.entries()].sort(([left], [right]) => left - right)) {
+    if (emittedAreaItemIds.has(areaItemId)) {
+      continue
+    }
+
+    const areaId = areaItemAreaMap.get(areaItemId)
+    if (!areaId) {
+      continue
+    }
+
+    let area = preparedAreaById.get(areaId)
+    if (!area) {
+      area = {
+        areaId,
+        actionSets: [],
+        areaItems: [],
+        userAreaStatus: {
+          areaId,
+          status: "released",
+        },
+      }
+      preparedAreaById.set(areaId, area)
+      preparedAreas.push(area)
+    }
+
+    area.areaItems ??= []
+    area.areaItems.push({ areaItemId, level })
+    emittedAreaItemIds.add(areaItemId)
+  }
+
+  return preparedAreas
+}
+
+function applyAreaItemLevelOverrides(
+  userAreas: unknown,
+  areaItems: unknown,
+  areaItemLevels: unknown,
+  overrides: readonly DeckRecommendAreaItemLevelOverride[],
+): UserAreaRecord[] {
+  const targetLevels = new Map<number, number>()
+  const maxLevels = buildAreaItemMaxLevelMap(areaItemLevels)
+  const areaItemAreaMap = buildAreaItemAreaMap(areaItems)
+  const sourceAreas = Array.isArray(userAreas) ? userAreas.filter(isRecord) as UserAreaRecord[] : []
+
+  for (const override of overrides) {
+    const areaItemId = normalizePositiveInteger(override.areaItemId)
+    const level = normalizePositiveInteger(override.level)
+    if (!areaItemId || !level || !maxLevels.has(areaItemId)) {
+      continue
+    }
+
+    targetLevels.set(areaItemId, clampAreaItemLevel(level, maxLevels.get(areaItemId)))
+  }
+
+  if (targetLevels.size === 0) {
+    return sourceAreas
+  }
+
+  const emittedAreaItemIds = new Set<number>()
+  const preparedAreas = sourceAreas.map((area) => {
+    const preparedAreaItems: Record<string, unknown>[] = []
+    const sourceAreaItems = Array.isArray(area.areaItems) ? area.areaItems : []
+    for (const item of sourceAreaItems) {
+      if (!isRecord(item)) {
+        continue
+      }
+
+      const itemId = normalizePositiveInteger(item.areaItemId)
+      if (!itemId || emittedAreaItemIds.has(itemId)) {
+        continue
+      }
+
+      emittedAreaItemIds.add(itemId)
+      preparedAreaItems.push({
+        ...item,
+        level: targetLevels.get(itemId) ?? item.level,
+      })
+    }
+
+    return {
+      ...area,
+      areaItems: preparedAreaItems,
+    }
+  })
+
   const preparedAreaById = new Map<number, UserAreaRecord>()
   for (const area of preparedAreas) {
     const areaId = normalizePositiveInteger(area.areaId)
