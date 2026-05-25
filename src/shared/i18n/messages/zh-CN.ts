@@ -928,7 +928,7 @@ export const zhCN = {
           bullets: {
             noSale: "不会出售、出租或以广告画像为目的共享您的个人信息。",
             harukiServices: "您上传或绑定的数据默认仅用于 Haruki 工具箱与 HarukiBot NEO 提供高级功能服务；除非您开启公开 API 查询或自行进行 OAuth 授权，第三方服务无法访问这些数据。",
-            github: "如果您使用 GitHub 登录，GitHub 会按照其自身政策处理相关第三方登录信息。",
+            google: "如果您使用 Google 登录，Google 会按照其自身政策处理相关第三方登录信息。",
             cdn: "我们使用 Cloudflare、EdgeOne 和 CDN 服务分发静态资源、改善访问速度和可用性。",
             email: "我们使用邮件服务发送账号、安全或服务相关邮件。Ory Kratos/Hydra 为自建认证与授权服务。"
           }

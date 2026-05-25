@@ -36,7 +36,7 @@ const sections = [
   {
     key: "sharing",
     paragraphKeys: ["summary"],
-    bulletKeys: ["noSale", "harukiServices", "github", "cdn", "email"],
+    bulletKeys: ["noSale", "harukiServices", "google", "cdn", "email"],
   },
   {
     key: "security",

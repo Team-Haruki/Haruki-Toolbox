@@ -1242,6 +1242,12 @@ function checkDeckRecommendRegionData(region: SekaiRegion) {
   void sekaiDataStore.ensureRegionData(region, {
     files: mergeMasterFileNames(SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES, DECK_RECOMMEND_CARD_OPTION_MASTER_FILES),
   })
+  const accountRegion = selectedAccount.value?.server
+  if (accountRegion && accountRegion !== region) {
+    void sekaiDataStore.ensureRegionData(accountRegion, {
+      files: ["honors"],
+    })
+  }
 }
 
 async function checkSelectedAccountSuiteData() {
@@ -1271,11 +1277,12 @@ function preloadCurrentRegionData() {
     dataPreloadGeneration += 1
   }
   const generation = dataPreloadGeneration
+  const accountHonorRegion = selectedAccount.value?.server ?? region
   void loadCardOptionMasterData(region, generation).catch(() => undefined)
-  void runner.preloadRegionData(region, () => generation === dataPreloadGeneration).catch(() => undefined)
+  void runner.preloadRegionData(region, accountHonorRegion, () => generation === dataPreloadGeneration).catch(() => undefined)
   const parallelCount = executionMode.value === "parallel" ? activeAlgorithms.value.length : 0
   if (parallelCount > 0) {
-    void runner.preloadParallelRegionData(region, parallelCount, () => generation === dataPreloadGeneration).catch(() => undefined)
+    void runner.preloadParallelRegionData(region, parallelCount, accountHonorRegion, () => generation === dataPreloadGeneration).catch(() => undefined)
   }
 }
 
@@ -1287,6 +1294,7 @@ function invalidateDataPreload() {
 function createDataPreloadSignature() {
   return [
     dataRegion.value,
+    selectedAccount.value?.server ?? "",
     currentRegionState.value.masterFetchVersion ?? "",
     currentRegionState.value.musicMetasUpdatedAt ?? "",
     currentRegionState.value.files.slice().sort().join(","),
@@ -2262,8 +2270,8 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           <LucideInfo class="size-3.5" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent class="max-w-80 !border-slate-200 !bg-white !text-slate-950 text-left leading-5 shadow-lg dark:!border-slate-700 dark:!bg-slate-950 dark:!text-slate-50">
-                        <span class="block w-[min(20rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] whitespace-normal">
+                      <TooltipContent class="w-max max-w-[calc(100vw-2rem)] !border-slate-200 !bg-white !text-slate-950 text-left leading-5 text-nowrap shadow-lg dark:!border-slate-700 dark:!bg-slate-950 dark:!text-slate-50">
+                        <span class="block whitespace-nowrap">
                           {{ t("deckRecommend.form.algorithmHint") }}
                         </span>
                       </TooltipContent>

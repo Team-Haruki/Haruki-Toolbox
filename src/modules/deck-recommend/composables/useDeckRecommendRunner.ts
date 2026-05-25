@@ -1,7 +1,7 @@
 import { computed, ref } from "vue"
 import type { RecommendResult } from "haruki-sekai-deck-recommend-cpp"
 import type { SekaiRegion } from "@/types"
-import { readSekaiMasterFiles, readSekaiMusicMetas } from "@/shared/sekai/cache"
+import { readSekaiMasterFile, readSekaiMasterFiles, readSekaiMusicMetas } from "@/shared/sekai/cache"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useUserStore } from "@/shared/stores/user"
 import {
@@ -143,7 +143,6 @@ export function useDeckRecommendRunner() {
     if (!input.account) {
       throw new Error("game account is required")
     }
-
     running.value = true
     phase.value = "preparing-data"
     error.value = null
@@ -160,7 +159,7 @@ export function useDeckRecommendRunner() {
       const runStartedAt = performance.now()
       const dataStartedAt = performance.now()
       const [recommendData, userDataResponse, profileData] = await Promise.all([
-        readRecommendCacheData(input.dataRegion),
+        readRecommendCacheData(input.dataRegion, input.account.server),
         fetchUserData(input),
         input.useCurrentDeck ? fetchUserProfile(input) : Promise.resolve(null),
       ])
@@ -204,7 +203,7 @@ export function useDeckRecommendRunner() {
         algorithm,
         request: {
           region: input.dataRegion,
-          masterVersion: recommendData.masterVersion,
+          masterVersion: recommendData.engineMasterVersion,
           musicMetasKey: recommendData.musicMetasKey,
           masterFileNames: recommendData.masterFileNames,
           options: buildDeckRecommendOptions({
@@ -346,7 +345,11 @@ export function useDeckRecommendRunner() {
     }
   }
 
-  async function preloadRegionData(region: SekaiRegion, isCurrent: () => boolean = () => true) {
+  async function preloadRegionData(
+    region: SekaiRegion,
+    accountHonorRegion: SekaiRegion = region,
+    isCurrent: () => boolean = () => true,
+  ) {
     const regionState = sekaiDataStore.regionStates[region]
     if (!regionState.masterFetchVersion || !regionState.musicMetasUpdatedAt) {
       return
@@ -355,6 +358,8 @@ export function useDeckRecommendRunner() {
     const dataKey = createRecommendDataKey(
       region,
       regionState.masterFetchVersion,
+      accountHonorRegion,
+      sekaiDataStore.regionStates[accountHonorRegion].masterFetchVersion ?? "unknown-honors",
       createMusicMetasKey(regionState.musicMetasUpdatedAt),
       SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES,
     )
@@ -368,10 +373,12 @@ export function useDeckRecommendRunner() {
     }
 
     const preloadPromise = (async () => {
-      const recommendData = await readRecommendCacheData(region)
+      const recommendData = await readRecommendCacheData(region, accountHonorRegion)
       const loadedDataKey = createRecommendDataKey(
         region,
         recommendData.masterVersion,
+        recommendData.accountHonorRegion,
+        recommendData.accountHonorMasterVersion ?? "unknown-honors",
         recommendData.musicMetasKey,
         recommendData.masterFileNames,
       )
@@ -395,6 +402,7 @@ export function useDeckRecommendRunner() {
   async function preloadParallelRegionData(
     region: SekaiRegion,
     count: number,
+    accountHonorRegion: SekaiRegion = region,
     isCurrent: () => boolean = () => true,
   ) {
     const regionState = sekaiDataStore.regionStates[region]
@@ -403,7 +411,7 @@ export function useDeckRecommendRunner() {
       return
     }
 
-    const recommendData = await readRecommendCacheData(region)
+    const recommendData = await readRecommendCacheData(region, accountHonorRegion)
     await ensureParallelRegionDataPreloaded(region, recommendData, count, isCurrent)
   }
 
@@ -417,6 +425,8 @@ export function useDeckRecommendRunner() {
     const dataKey = createRecommendDataKey(
       region,
       recommendData.masterVersion,
+      recommendData.accountHonorRegion,
+      recommendData.accountHonorMasterVersion ?? "unknown-honors",
       recommendData.musicMetasKey,
       recommendData.masterFileNames,
     )
@@ -437,6 +447,8 @@ export function useDeckRecommendRunner() {
     const dataKey = createRecommendDataKey(
       region,
       recommendData.masterVersion,
+      recommendData.accountHonorRegion,
+      recommendData.accountHonorMasterVersion ?? "unknown-honors",
       recommendData.musicMetasKey,
       recommendData.masterFileNames,
     )
@@ -470,7 +482,7 @@ export function useDeckRecommendRunner() {
 
     await loadDeckRecommendWorkerData({
       region,
-      masterVersion: recommendData.masterVersion,
+      masterVersion: recommendData.engineMasterVersion,
       musicMetasKey: recommendData.musicMetasKey,
       masterFileNames: recommendData.masterFileNames,
       masterData: recommendData.masterData,
@@ -506,7 +518,7 @@ export function useDeckRecommendRunner() {
 
       await loadDataOnDedicatedWorker(entry.worker, {
         region,
-        masterVersion: recommendData.masterVersion,
+        masterVersion: recommendData.engineMasterVersion,
         musicMetasKey: recommendData.musicMetasKey,
         masterFileNames: recommendData.masterFileNames,
         masterData: recommendData.masterData,
@@ -582,20 +594,33 @@ export function useDeckRecommendRunner() {
 
 type RecommendCacheData = {
   masterVersion: string
+  engineMasterVersion: string
+  accountHonorRegion: SekaiRegion
+  accountHonorMasterVersion: string | null
   musicMetasKey: string | null
   masterFileNames: string[]
   masterData: Record<string, unknown>
   musicMetas: unknown
 }
 
-async function readRecommendCacheData(region: SekaiRegion): Promise<RecommendCacheData> {
+async function readRecommendCacheData(
+  region: SekaiRegion,
+  accountHonorRegion: SekaiRegion = region,
+): Promise<RecommendCacheData> {
   const sekaiDataStore = useSekaiDataStore()
   if (sekaiDataStore.regionStates[region].checkedAt == null) {
     await sekaiDataStore.loadRegionCacheState(region)
   }
+  if (sekaiDataStore.regionStates[accountHonorRegion].checkedAt == null) {
+    await sekaiDataStore.loadRegionCacheState(accountHonorRegion)
+  }
   const regionState = sekaiDataStore.regionStates[region]
   if (!regionState.masterFetchVersion) {
     throw new Error("master data is not ready")
+  }
+  const accountRegionState = sekaiDataStore.regionStates[accountHonorRegion]
+  if (!accountRegionState.masterFetchVersion) {
+    throw new Error("account server master data is not ready")
   }
 
   const [masterData, musicMetas] = await Promise.all([
@@ -610,9 +635,19 @@ async function readRecommendCacheData(region: SekaiRegion): Promise<RecommendCac
   if (missingFiles.length > 0) {
     throw new Error(`master data is missing: ${missingFiles.join(", ")}`)
   }
+  if (accountHonorRegion !== region) {
+    const honors = await readSekaiMasterFile(accountHonorRegion, "honors", accountRegionState.masterFetchVersion)
+    if (!honors) {
+      throw new Error("account server honors master data is not ready")
+    }
+    masterData.honors = honors
+  }
 
   return {
     masterVersion: regionState.masterFetchVersion,
+    engineMasterVersion: createEngineMasterVersion(regionState.masterFetchVersion, accountHonorRegion, accountRegionState.masterFetchVersion),
+    accountHonorRegion,
+    accountHonorMasterVersion: accountRegionState.masterFetchVersion,
     musicMetasKey: createMusicMetasKey(regionState.musicMetasUpdatedAt),
     masterFileNames: [...SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES],
     masterData,
@@ -624,6 +659,17 @@ function createMusicMetasKey(updatedAt: number | null): string | null {
   return updatedAt == null ? null : String(updatedAt)
 }
 
+function createEngineMasterVersion(
+  masterVersion: string,
+  accountHonorRegion: SekaiRegion,
+  accountHonorMasterVersion: string | null,
+): string {
+  return [
+    masterVersion,
+    `honors:${accountHonorRegion}:${accountHonorMasterVersion ?? "unknown-honors"}`,
+  ].join("|")
+}
+
 function createElapsedMs(startedAt: number): number {
   return Math.round(performance.now() - startedAt)
 }
@@ -631,12 +677,15 @@ function createElapsedMs(startedAt: number): number {
 function createRecommendDataKey(
   region: SekaiRegion,
   masterVersion: string,
+  accountHonorRegion: SekaiRegion,
+  accountHonorMasterVersion: string,
   musicMetasKey: string | null,
   masterFileNames: readonly string[],
 ): string {
   return [
     region,
     masterVersion,
+    `honors:${accountHonorRegion}:${accountHonorMasterVersion}`,
     musicMetasKey ?? "unknown-music-metas",
     masterFileNames.slice().sort().join(","),
   ].join(":")

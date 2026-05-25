@@ -928,7 +928,7 @@ export const enUS = {
           bullets: {
             noSale: "We do not sell, rent, or share your personal information for advertising profiling.",
             harukiServices: "Uploaded or bound data is used by default only to provide advanced features in Haruki Toolbox and HarukiBot NEO. Third-party services cannot access this data unless you enable public API queries or grant OAuth authorization yourself.",
-            github: "If you sign in with GitHub, GitHub processes the relevant third-party login information under its own policies.",
+            google: "If you sign in with Google, Google processes the relevant third-party login information under its own policies.",
             cdn: "We use Cloudflare, EdgeOne, and CDN services to distribute static assets and improve performance and availability.",
             email: "We use email services to send account, security, and service-related emails. Ory Kratos/Hydra is self-hosted for authentication and authorization."
           }

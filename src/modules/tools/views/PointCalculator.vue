@@ -337,11 +337,11 @@ function normalizeBonusBound(value: unknown, fallback: number) {
         </AlertDescription>
       </Alert>
 
-      <Alert class="border-amber-200 bg-amber-50/90 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-        <LucideTriangleAlert class="h-4 w-4 text-amber-600 dark:text-amber-300" />
-        <AlertDescription class="leading-6">
+      <Alert class="flex items-center gap-2 border-amber-200 bg-amber-50/90 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:gap-3">
+        <LucideTriangleAlert class="size-4 shrink-0 text-amber-600 dark:text-amber-300" />
+        <p class="min-w-0 whitespace-nowrap leading-6">
           <span class="font-bold text-amber-950 dark:text-amber-50">{{ t("tools.pointCalculator.tips.testingPrefix") }}</span><span>&#8288;{{ t("tools.pointCalculator.tips.testingSuffix") }}</span>
-        </AlertDescription>
+        </p>
       </Alert>
 
       <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
