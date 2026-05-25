@@ -1632,7 +1632,7 @@ function algorithmTagClass(algorithm: DeckRecommendAlgorithm) {
 }
 
 function deckPointValue(deck: DeckResultDeckView["deck"]) {
-  if (recommendMode.value === "max" && Number(deck.live_score) > 0) {
+  if ((recommendMode.value === "challenge" || recommendMode.value === "max") && Number(deck.live_score) > 0) {
     return deck.live_score
   }
 
@@ -1641,6 +1641,16 @@ function deckPointValue(deck: DeckResultDeckView["deck"]) {
   }
 
   return deck.score
+}
+
+type DeckResultMetricKind = "score" | "power" | "bonus" | "effective" | "liveScore" | "challengeDelta"
+
+type DeckResultMetric = {
+  kind: DeckResultMetricKind
+  label: string
+  value: string
+  detail?: string
+  class?: string
 }
 
 function deckPointLabel() {
@@ -1680,20 +1690,17 @@ function deckBonusParts(deck: DeckResultDeckView["deck"]) {
   }
 }
 
-function shouldShowDeckBonusSummary() {
-  return recommendMode.value !== "challenge" && recommendMode.value !== "max"
+function deckSummaryMetrics(deck: DeckResultDeckView["deck"]): DeckResultMetric[] {
+  return orderDeckMetricsByTarget(deckSummaryMetricKinds())
+    .map((kind) => deckMetric(kind, deck))
 }
 
-function shouldShowDeckEffectiveSummary() {
-  return recommendMode.value !== "challenge" && recommendMode.value !== "mysekai"
+function deckBasicInfoMetrics(deck: DeckResultDeckView["deck"]): DeckResultMetric[] {
+  return deckBasicInfoMetricKinds(deck).map((kind) => deckMetric(kind, deck))
 }
 
-function deckSummaryGridClass() {
-  const count = 2
-    + (shouldShowDeckBonusSummary() ? 1 : 0)
-    + (shouldShowDeckEffectiveSummary() ? 1 : 0)
-
-  switch (count) {
+function deckMetricGridClass(count: number) {
+  switch (Math.min(Math.max(count, 2), 4)) {
     case 2:
       return "grid-cols-2"
     case 3:
@@ -1704,18 +1711,118 @@ function deckSummaryGridClass() {
 }
 
 function deckBasicInfoGridClass(deck: DeckResultDeckView["deck"]) {
-  const count = 2
-    + (shouldShowDeckBonusSummary() ? 1 : 0)
-    + (shouldShowDeckEffectiveSummary() ? 1 : 0)
-    + (shouldShowChallengeScoreDelta(deck) ? 1 : 0)
-
-  switch (Math.min(Math.max(count, 2), 4)) {
+  switch (Math.min(Math.max(deckBasicInfoMetrics(deck).length, 2), 4)) {
     case 2:
       return "sm:grid-cols-2"
     case 3:
       return "sm:grid-cols-3"
     default:
       return "sm:grid-cols-4"
+  }
+}
+
+function deckSummaryMetricKinds(): DeckResultMetricKind[] {
+  switch (recommendMode.value) {
+    case "challenge":
+      return ["score", "power"]
+    case "mysekai":
+      return ["score", "power", "bonus"]
+    case "max":
+      return ["score", "power", "bonus", "effective"]
+    case "bonus":
+      return ["bonus", "score", "power", "effective"]
+    case "event":
+    default:
+      return ["score", "power", "bonus", "effective"]
+  }
+}
+
+function deckBasicInfoMetricKinds(deck: DeckResultDeckView["deck"]): DeckResultMetricKind[] {
+  switch (recommendMode.value) {
+    case "challenge":
+      return shouldShowChallengeScoreDelta(deck) ? ["score", "challengeDelta"] : ["score"]
+    case "mysekai":
+      return ["score", "bonus"]
+    case "max":
+      return ["score", "bonus", "effective"]
+    case "bonus":
+    case "event":
+    default:
+      return ["score", "bonus", "liveScore", "effective"]
+  }
+}
+
+function orderDeckMetricsByTarget(kinds: DeckResultMetricKind[]): DeckResultMetricKind[] {
+  const primary = recommendTargetMetricKind()
+  if (!primary || !kinds.includes(primary)) {
+    return kinds
+  }
+
+  return [primary, ...kinds.filter((kind) => kind !== primary)]
+}
+
+function recommendTargetMetricKind(): DeckResultMetricKind | null {
+  switch (activeRecommendTarget.value) {
+    case "score":
+      return "score"
+    case "power":
+      return "power"
+    case "bonus":
+      return "bonus"
+    case "skill":
+      return "effective"
+    default:
+      return null
+  }
+}
+
+function deckMetric(kind: DeckResultMetricKind, deck: DeckResultDeckView["deck"]): DeckResultMetric {
+  switch (kind) {
+    case "score":
+      return {
+        kind,
+        label: deckPointLabel(),
+        value: formatInteger(deckPointValue(deck)),
+        detail: deckLiveBoostPointDetailText(deck) ?? undefined,
+      }
+    case "power":
+      return {
+        kind,
+        label: t("deckRecommend.result.summary.power"),
+        value: formatInteger(deck.total_power),
+      }
+    case "bonus": {
+      const bonusParts = deckBonusParts(deck)
+      return {
+        kind,
+        label: t("deckRecommend.result.summary.totalBonus"),
+        value: `${formatPercentValue(bonusParts.total)}%`,
+        detail: t("deckRecommend.result.summary.bonusBreakdown", {
+          main: formatPercentValue(bonusParts.main),
+          support: formatPercentValue(bonusParts.support),
+        }),
+        class: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200",
+      }
+    }
+    case "effective":
+      return {
+        kind,
+        label: t("deckRecommend.result.summary.effective"),
+        value: `${formatPercentValue(deck.multi_live_score_up)}%`,
+        class: "bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-200",
+      }
+    case "liveScore":
+      return {
+        kind,
+        label: t("deckRecommend.result.liveScoreLabel"),
+        value: formatInteger(deck.live_score),
+      }
+    case "challengeDelta":
+      return {
+        kind,
+        label: t("deckRecommend.result.challengeScoreDeltaLabel"),
+        value: formatSignedNumber(deck.challenge_score_delta),
+      }
   }
 }
 
@@ -3084,38 +3191,18 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         </div>
                       </div>
 
-                      <div v-if="!open" :class="['grid min-w-0 gap-1 sm:gap-2', deckSummaryGridClass()]">
-                        <div v-if="shouldShowDeckBonusSummary()" class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
-                          <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ deckPointLabel() }}</span>
+                      <div v-if="!open" :class="['grid min-w-0 gap-1 sm:gap-2', deckMetricGridClass(deckSummaryMetrics(deckView.deck).length)]">
+                        <div
+                          v-for="metric in deckSummaryMetrics(deckView.deck)"
+                          :key="metric.kind"
+                          class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2"
+                        >
+                          <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ metric.label }}</span>
                           <span class="block truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
-                            {{ formatInteger(deckPointValue(deckView.deck)) }}
+                            {{ metric.value }}
                           </span>
-                        </div>
-
-                        <div v-if="shouldShowDeckEffectiveSummary()" class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
-                          <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ t("deckRecommend.result.summary.power") }}</span>
-                          <span class="block truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
-                            {{ formatInteger(deckView.deck.total_power) }}
-                          </span>
-                        </div>
-
-                        <div class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
-                          <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ t("deckRecommend.result.summary.totalBonus") }}</span>
-                          <span class="block truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
-                            {{ formatPercentValue(deckBonusParts(deckView.deck).total) }}%
-                          </span>
-                          <span class="hidden truncate text-[11px] text-muted-foreground sm:block">
-                            {{ t("deckRecommend.result.summary.bonusBreakdown", {
-                              main: formatPercentValue(deckBonusParts(deckView.deck).main),
-                              support: formatPercentValue(deckBonusParts(deckView.deck).support),
-                            }) }}
-                          </span>
-                        </div>
-
-                        <div class="min-w-0 rounded bg-muted/20 px-1.5 py-1 sm:rounded-md sm:px-3 sm:py-2">
-                          <span class="block truncate text-[10px] font-medium uppercase leading-4 text-muted-foreground sm:text-[11px]">{{ t("deckRecommend.result.summary.effective") }}</span>
-                          <span class="block truncate font-mono text-xs font-semibold text-foreground sm:text-sm">
-                            {{ formatPercentValue(deckView.deck.multi_live_score_up) }}%
+                          <span v-if="metric.detail" class="hidden truncate text-[11px] text-muted-foreground sm:block">
+                            {{ metric.detail }}
                           </span>
                         </div>
                       </div>
@@ -3154,19 +3241,16 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             <span class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                               <span class="mr-1 min-w-0 text-sm font-semibold">{{ t("deckRecommend.result.sections.basic") }}</span>
                               <template v-if="!basicOpen">
-                                <span class="rounded-md bg-muted/45 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
-                                  {{ deckPointLabel() }}
-                                  <span class="font-mono font-semibold text-foreground">{{ formatInteger(deckPointValue(deckView.deck)) }}</span>
-                                </span>
-                                <span v-if="shouldShowDeckBonusSummary()" class="rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-                                  {{ t("deckRecommend.result.summary.totalBonus") }} {{ formatPercentValue(deckBonusParts(deckView.deck).total) }}%
-                                </span>
-                                <span class="rounded-md bg-muted/45 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
-                                  {{ t("deckRecommend.result.liveScoreLabel") }}
-                                  <span class="font-mono font-semibold text-foreground">{{ formatInteger(deckView.deck.live_score) }}</span>
-                                </span>
-                                <span v-if="shouldShowDeckEffectiveSummary()" class="rounded-md bg-cyan-50 px-1.5 py-0.5 text-xs font-medium text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-200">
-                                  {{ t("deckRecommend.result.summary.effective") }} {{ formatPercentValue(deckView.deck.multi_live_score_up) }}%
+                                <span
+                                  v-for="metric in deckBasicInfoMetrics(deckView.deck)"
+                                  :key="metric.kind"
+                                  :class="[
+                                    'rounded-md bg-muted/45 px-1.5 py-0.5 text-xs font-medium text-muted-foreground',
+                                    metric.class,
+                                  ]"
+                                >
+                                  {{ metric.label }}
+                                  <span class="font-mono font-semibold text-foreground">{{ metric.value }}</span>
                                 </span>
                               </template>
                             </span>
@@ -3180,43 +3264,17 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <div :class="['grid grid-cols-2 gap-1.5 border-t bg-muted/5 p-2 sm:gap-2 sm:p-3', deckBasicInfoGridClass(deckView.deck)]">
-                            <div v-if="shouldShowDeckBonusSummary()" class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
-                              <span class="block text-xs text-muted-foreground">{{ deckPointLabel() }}</span>
+                            <div
+                              v-for="metric in deckBasicInfoMetrics(deckView.deck)"
+                              :key="metric.kind"
+                              class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2"
+                            >
+                              <span class="block text-xs text-muted-foreground">{{ metric.label }}</span>
                               <span class="block font-mono text-sm font-semibold sm:text-base">
-                                {{ formatInteger(deckPointValue(deckView.deck)) }}
+                                {{ metric.value }}
                               </span>
-                              <span v-if="deckLiveBoostPointDetailText(deckView.deck)" class="block font-mono text-xs text-muted-foreground">
-                                {{ deckLiveBoostPointDetailText(deckView.deck) }}
-                              </span>
-                            </div>
-                            <div v-if="shouldShowDeckEffectiveSummary()" class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
-                              <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.summary.totalBonus") }}</span>
-                              <span class="block font-mono text-sm font-semibold sm:text-base">
-                                {{ formatPercentValue(deckBonusParts(deckView.deck).total) }}%
-                              </span>
-                              <span class="block text-xs text-muted-foreground">
-                                {{ t("deckRecommend.result.summary.bonusBreakdown", {
-                                  main: formatPercentValue(deckBonusParts(deckView.deck).main),
-                                  support: formatPercentValue(deckBonusParts(deckView.deck).support),
-                                }) }}
-                              </span>
-                            </div>
-                            <div class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
-                              <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.liveScoreLabel") }}</span>
-                              <span class="block font-mono text-sm font-semibold sm:text-base">
-                                {{ formatInteger(deckView.deck.live_score) }}
-                              </span>
-                            </div>
-                            <div class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
-                              <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.summary.effective") }}</span>
-                              <span class="block font-mono text-sm font-semibold sm:text-base">
-                                {{ formatPercentValue(deckView.deck.multi_live_score_up) }}%
-                              </span>
-                            </div>
-                            <div v-if="shouldShowChallengeScoreDelta(deckView.deck)" class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2">
-                              <span class="block text-xs text-muted-foreground">{{ t("deckRecommend.result.challengeScoreDeltaLabel") }}</span>
-                              <span class="block font-mono text-sm font-semibold sm:text-base">
-                                {{ formatSignedNumber(deckView.deck.challenge_score_delta) }}
+                              <span v-if="metric.detail" class="block text-xs text-muted-foreground">
+                                {{ metric.detail }}
                               </span>
                             </div>
                           </div>

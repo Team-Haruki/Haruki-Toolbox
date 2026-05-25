@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { createPreparedDeckRecommendUserDataString } from "./user-data-preparation"
+import { applyChallengeScoreDelta, createPreparedDeckRecommendUserDataString } from "./user-data-preparation"
 import { createDefaultCardTrainingConfig } from "./training-config"
 
 describe("deck recommend user data preparation", () => {
@@ -78,6 +78,14 @@ describe("deck recommend user data preparation", () => {
       { areaItemId: 3, level: 10 },
     ],
   }
+
+  it("calculates challenge score delta from live score", () => {
+    expect(applyChallengeScoreDelta(
+      [{ score: 10, live_score: 12345 }],
+      { userChallengeLiveSoloResults: [{ characterId: "1", highScore: "12000" }] },
+      1,
+    )).toEqual([{ score: 10, live_score: 12345, challenge_score_delta: 345 }])
+  })
 
   it("forwards precise single-card training overrides to the wasm engine", () => {
     const prepared = createPreparedDeckRecommendUserDataString({

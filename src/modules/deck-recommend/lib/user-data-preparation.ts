@@ -135,7 +135,7 @@ export function createPreparedDeckRecommendUserDataString(input: PrepareDeckReco
   }
 }
 
-export function applyChallengeScoreDelta<T extends { score: number; challenge_score_delta?: number }>(
+export function applyChallengeScoreDelta<T extends { score: number; live_score?: number; challenge_score_delta?: number }>(
   decks: T[],
   userData: unknown,
   characterId: string | number | null,
@@ -143,7 +143,7 @@ export function applyChallengeScoreDelta<T extends { score: number; challenge_sc
   const highScore = resolveChallengeHighScore(userData, characterId)
   return decks.map((deck) => ({
     ...deck,
-    challenge_score_delta: deck.score - highScore,
+    challenge_score_delta: (Number(deck.live_score) || deck.score) - highScore,
   }))
 }
 
@@ -671,11 +671,22 @@ function resolveChallengeHighScore(userData: unknown, characterId: string | numb
     if (!isRecord(item)) {
       continue
     }
-    if (item.characterId === targetCharacterId && typeof item.highScore === "number") {
-      return item.highScore
+    const itemCharacterId = normalizePositiveInteger(item.characterId)
+    const highScore = normalizeNonNegativeInteger(item.highScore)
+    if (itemCharacterId === targetCharacterId && highScore != null) {
+      return highScore
     }
   }
   return 0
+}
+
+function normalizeNonNegativeInteger(value: unknown): number | null {
+  const numericValue = typeof value === "string" ? Number(value) : value
+  if (!Number.isInteger(numericValue) || numericValue < 0) {
+    return null
+  }
+
+  return numericValue
 }
 
 function buildMasterCardMap(rawCards: unknown): Map<number, MasterCardRecord> {
@@ -821,7 +832,8 @@ function hasSingleCardConfigOverride(value: SingleCardConfig): boolean {
 }
 
 function normalizePositiveInteger(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null
+  const numericValue = typeof value === "string" ? Number(value) : value
+  return typeof numericValue === "number" && Number.isInteger(numericValue) && numericValue > 0 ? numericValue : null
 }
 
 function normalizeText(value: unknown): string | null {

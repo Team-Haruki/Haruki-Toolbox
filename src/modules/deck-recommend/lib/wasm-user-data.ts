@@ -52,6 +52,7 @@ const USER_CHALLENGE_LIVE_SOLO_DECK_FIELDS = [
   "support3",
   "support4",
 ] as const
+const USER_CHALLENGE_LIVE_SOLO_RESULT_FIELDS = ["characterId", "highScore"] as const
 const USER_MYSEKAI_CANVAS_FIELDS = ["mysekaiFixtureId", "cardId", "isSpecialTraining", "quantity"] as const
 const USER_MYSEKAI_FIXTURE_BONUS_FIELDS = ["gameCharacterId", "totalBonusRate"] as const
 const USER_MYSEKAI_GATE_FIELDS = [
@@ -82,6 +83,10 @@ export function prepareRecommendUserDataForWasm(value: unknown): Record<string, 
     userChallengeLiveSoloDecks: compactArray(
       userData.userChallengeLiveSoloDecks,
       (item) => compactRecord(item, USER_CHALLENGE_LIVE_SOLO_DECK_FIELDS),
+    ),
+    userChallengeLiveSoloResults: compactArray(
+      userData.userChallengeLiveSoloResults,
+      (item) => compactRecord(item, USER_CHALLENGE_LIVE_SOLO_RESULT_FIELDS),
     ),
     userCharacters: compactArray(userData.userCharacters, (item) => compactRecord(item, USER_CHARACTER_FIELDS)),
     userDecks: compactArray(userData.userDecks, (item) => compactRecord(item, USER_DECK_FIELDS)),
