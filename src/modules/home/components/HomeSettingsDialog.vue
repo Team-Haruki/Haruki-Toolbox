@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import {
   CloudLightning,
+  Database,
   Download,
   EyeOff,
   Info,
@@ -49,6 +50,16 @@ import UserDataSettings from "@/modules/home/components/UserDataSettings.vue"
 import { useHomeSettings } from "@/modules/home/composables/useHomeSettings"
 import { appUpdateState, applyAppUpdate, checkForAppUpdate } from "@/pwa"
 
+const props = defineProps<{
+  open?: boolean
+  tab?: string
+}>()
+
+const emit = defineEmits<{
+  "update:open": [value: boolean]
+  "update:tab": [value: string]
+}>()
+
 const {
   selectedEndpoint,
   selectedAssetEndpoint,
@@ -74,8 +85,22 @@ const {
 } = useHomeSettings()
 const { t, locale } = useI18n()
 const localeKey = computed(() => locale.value)
-const settingsDialogOpen = ref(false)
-const settingsTab = ref("preferences")
+const internalSettingsDialogOpen = ref(false)
+const internalSettingsTab = ref("preferences")
+const settingsDialogOpen = computed({
+  get: () => props.open ?? internalSettingsDialogOpen.value,
+  set: (value: boolean) => {
+    internalSettingsDialogOpen.value = value
+    emit("update:open", value)
+  },
+})
+const settingsTab = computed({
+  get: () => props.tab ?? internalSettingsTab.value,
+  set: (value: string) => {
+    internalSettingsTab.value = value
+    emit("update:tab", value)
+  },
+})
 const visitedSettingsTabs = ref(new Set(["preferences"]))
 const currentBuildTimeLabel = computed(() => formatBuildTime(appUpdateState.current.buildTime))
 const remoteBuildTimeLabel = computed(() => appUpdateState.remote ? formatBuildTime(appUpdateState.remote.buildTime) : null)
@@ -143,7 +168,7 @@ function hasVisitedSettingsTab(tab: string) {
             <span class="min-w-0 truncate sm:min-w-max sm:overflow-visible sm:text-clip">{{ t("homeSettings.tabs.sekaiData") }}</span>
           </TabsTrigger>
           <TabsTrigger value="user-data" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:min-w-max sm:flex-none sm:overflow-visible sm:px-3 sm:text-sm">
-            <EyeOff class="size-4" />
+            <Database class="size-4" />
             <span class="min-w-0 truncate sm:min-w-max sm:overflow-visible sm:text-clip">{{ t("homeSettings.tabs.userData") }}</span>
           </TabsTrigger>
         </TabsList>

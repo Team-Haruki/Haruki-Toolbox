@@ -792,6 +792,9 @@ export const zhCN = {
       privacyPolicy: "隐私政策",
       termsOfService: "服务条款",
       legalLinks: "法律条款",
+      unofficialNotice: "Haruki 工具箱与 SEGA / Colorful Palette 不存在隶属、授权、背书或官方合作关系。",
+      assetCopyright: "相关游戏资产版权归 SEGA / Colorful Palette 所有。",
+      appVersion: "应用版本",
       version: "版本",
       gitCommit: "Git 提交",
       buildTime: "构建时间",
@@ -980,7 +983,7 @@ export const zhCN = {
           },
           bullets: {
             team: "Haruki 工具箱由 Haruki Dev Team 这一民间业余开发维护团体提供。",
-            unofficial: "Haruki 工具箱是 fan-made / unofficial 项目，与 SEGA、Colorful Palette、Craft Egg 及相关权利方不存在隶属、授权、背书或官方合作关系。",
+            unofficial: "Haruki 工具箱是 fan-made / unofficial 项目，与 SEGA、Colorful Palette 及相关权利方不存在隶属、授权、背书或官方合作关系。",
             global: "本服务主要面向中国大陆用户，同时允许全球用户使用；您应自行确保使用行为符合所在地适用法律法规。"
           }
         },
@@ -1678,7 +1681,7 @@ export const zhCN = {
       max: "最强组卡",
     },
     targets: {
-      score: "分数",
+      score: "Live分数",
       pt: "PT",
       power: "综合力",
       skill: "技能实效",
@@ -1946,7 +1949,7 @@ export const zhCN = {
       algorithmElapsed: "{algorithm}: {ms} ms",
       empty: "暂无推荐结果。",
       deckTitle: "卡组 #{index}",
-      score: "score {score}",
+      score: "Live分数 {score}",
       totalPower: "综合力 {value}",
       totalPowerLimitWarning: "该活动的综合力上限限制到了 {value}",
       eventCardBonusLimitWarning: "该活动的当期活动加成仅计算 {count} 名成员。",
@@ -1977,8 +1980,8 @@ export const zhCN = {
       eventBonus: "活动加成 {value}%",
       bonusTag: "加成 {value}%",
       worldBloomEventBonus: "活动加成 主卡组 {main}% + 支援卡组 {support}% = {total}%",
-      liveScore: "Live score {value}",
-      liveScoreLabel: "Live 分数",
+      liveScore: "Live分数 {value}",
+      liveScoreLabel: "Live分数",
       mysekaiEventPoint: "烤森活动 Pt {value}",
       multiLiveScoreUp: "协力实效 {value}%",
       challengeScoreDelta: "挑战分差 {value}",

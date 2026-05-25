@@ -2,6 +2,7 @@
 import {Separator} from '@/components/ui/separator'
 import type {SidebarProps} from '@/components/ui/sidebar'
 import { useI18n } from "vue-i18n"
+import { ref } from "vue"
 import SidebarUser from "@/modules/user/components/SidebarUser.vue";
 import { useWebLayout } from "@/modules/web/composables/useWebLayout"
 import { WEB_NAV_ITEMS } from "@/config/navigation"
@@ -54,14 +55,17 @@ const {
   pageTitle,
   showPageTitle,
   copyrightYear,
-  appVersion,
-  gitCommit,
-  buildTimeIso,
-  buildTime,
   pendingUserTicketCount,
   isNavGroupOpen,
   setNavGroupOpen,
 } = useWebLayout()
+const homeSettingsDialogOpen = ref(false)
+const homeSettingsDialogTab = ref("preferences")
+
+function openAppSettings() {
+  homeSettingsDialogTab.value = "app"
+  homeSettingsDialogOpen.value = true
+}
 </script>
 
 <template>
@@ -208,7 +212,7 @@ const {
           {{ pageTitle }}
         </div>
         <div class="ml-auto flex shrink-0 items-center">
-          <HomeSettingsDialog />
+          <HomeSettingsDialog v-model:open="homeSettingsDialogOpen" v-model:tab="homeSettingsDialogTab" />
         </div>
       </header>
 
@@ -250,29 +254,23 @@ const {
               <router-link to="/tos" class="transition-colors underline-offset-4 hover:text-foreground hover:underline">
                 {{ t("webLayout.footer.termsOfService") }}
               </router-link>
+              <span class="h-3 w-px bg-border" aria-hidden="true"></span>
+              <button
+                type="button"
+                class="transition-colors underline-offset-4 hover:text-foreground hover:underline"
+                @click="openAppSettings"
+              >
+                {{ t("webLayout.footer.appVersion") }}
+              </button>
             </nav>
           </div>
 
-          <dl
-            class="flex w-[calc(100%+3rem)] -mx-6 flex-col gap-1.5 border-t border-slate-950/[0.08] px-4 pt-2 text-xs sm:grid sm:grid-cols-3 md:mx-0 md:flex md:w-auto md:min-w-[28rem] md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-x-3 md:gap-y-1 md:border-t-0 md:px-0 md:pt-0 dark:border-white/10"
+          <div
+            class="flex w-[calc(100%+3rem)] -mx-6 flex-col gap-1 border-t border-slate-950/[0.08] px-4 pt-2 text-center text-xs md:mx-0 md:w-auto md:max-w-[34rem] md:items-end md:border-t-0 md:px-0 md:pt-0 md:text-right dark:border-white/10"
           >
-            <div class="flex min-w-0 items-baseline justify-between gap-3 md:justify-start md:gap-1.5">
-              <dt>{{ t("webLayout.footer.version") }}</dt>
-              <dd class="font-mono font-medium tabular-nums text-foreground/75">v{{ appVersion }}</dd>
-            </div>
-            <div class="flex min-w-0 items-baseline justify-between gap-3 md:border-l md:border-slate-950/[0.08] md:pl-3 md:justify-start md:gap-1.5 dark:md:border-white/10">
-              <dt>{{ t("webLayout.footer.gitCommit") }}</dt>
-              <dd class="truncate font-mono font-medium text-foreground/75" :title="gitCommit">
-                {{ gitCommit }}
-              </dd>
-            </div>
-            <div class="flex min-w-0 items-baseline justify-between gap-3 md:border-l md:border-slate-950/[0.08] md:pl-3 md:justify-start md:gap-1.5 dark:md:border-white/10">
-              <dt>{{ t("webLayout.footer.buildTime") }}</dt>
-              <dd class="min-w-0 font-medium tabular-nums text-foreground/75">
-                <time :datetime="buildTimeIso">{{ buildTime }}</time>
-              </dd>
-            </div>
-          </dl>
+            <p>{{ t("webLayout.footer.unofficialNotice") }}</p>
+            <p>{{ t("webLayout.footer.assetCopyright") }}</p>
+          </div>
         </div>
       </SidebarFooter>
     </SidebarInset>

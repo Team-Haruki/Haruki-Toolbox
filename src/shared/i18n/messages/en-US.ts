@@ -792,6 +792,9 @@ export const enUS = {
       privacyPolicy: "Privacy Policy",
       termsOfService: "Terms of Service",
       legalLinks: "Legal links",
+      unofficialNotice: "Haruki Toolbox is not affiliated with, authorized by, endorsed by, or officially partnered with SEGA / Colorful Palette.",
+      assetCopyright: "Related game assets are copyright SEGA / Colorful Palette.",
+      appVersion: "App version",
       version: "Version",
       gitCommit: "Git commit",
       buildTime: "Build time",
@@ -980,7 +983,7 @@ export const enUS = {
           },
           bullets: {
             team: "Haruki Toolbox is provided by Haruki Dev Team, a fan-run volunteer development and maintenance group.",
-            unofficial: "Haruki Toolbox is a fan-made and unofficial project. It is not affiliated with, authorized by, endorsed by, or officially partnered with SEGA, Colorful Palette, Craft Egg, or related rights holders.",
+            unofficial: "Haruki Toolbox is a fan-made and unofficial project. It is not affiliated with, authorized by, endorsed by, or officially partnered with SEGA, Colorful Palette, or related rights holders.",
             global: "The service is primarily intended for users in mainland China while also allowing global use. You are responsible for ensuring your use complies with applicable local laws."
           }
         },
