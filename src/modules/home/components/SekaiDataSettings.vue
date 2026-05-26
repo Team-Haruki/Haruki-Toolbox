@@ -25,8 +25,7 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { resolveSekaiRegionLabel, SEKAI_REGIONS } from "@/lib/sekai-region"
 import {
-  SEKAI_DATA_DEFAULT_MASTER_FILES,
-  SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES,
+  SEKAI_DATA_TOOLBOX_MASTER_FILES,
   type SekaiDataUpdatePhase,
 } from "@/shared/sekai/worker-protocol"
 import { useSekaiDataStore, type SekaiDataQueueItem } from "@/shared/stores/sekai-data"
@@ -50,12 +49,8 @@ onMounted(() => {
   }
 })
 
-function refreshBasic(region: SekaiRegion) {
-  sekaiDataStore.refreshRegionData(region, SEKAI_DATA_DEFAULT_MASTER_FILES)
-}
-
-function refreshRecommend(region: SekaiRegion) {
-  sekaiDataStore.refreshRegionData(region, SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES)
+function refreshMasterData(region: SekaiRegion) {
+  sekaiDataStore.refreshRegionData(region, SEKAI_DATA_TOOLBOX_MASTER_FILES)
 }
 
 function clearRegion(region: SekaiRegion) {
@@ -235,20 +230,10 @@ function formatTime(value: number | null) {
               size="sm"
               variant="outline"
               :disabled="row.refreshing"
-              @click="refreshBasic(row.region)"
+              @click="refreshMasterData(row.region)"
             >
               <RefreshCw class="size-4" />
-              {{ t("userSettings.sekaiData.refreshBasic") }}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              :disabled="row.refreshing"
-              @click="refreshRecommend(row.region)"
-            >
-              <RefreshCw class="size-4" />
-              {{ t("userSettings.sekaiData.refreshRecommend") }}
+              {{ t("userSettings.sekaiData.refreshMasterData") }}
             </Button>
             <AlertDialog>
               <AlertDialogTrigger as-child>

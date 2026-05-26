@@ -153,7 +153,7 @@ export const enUS = {
     },
     sekaiData: {
       title: "Master data cache",
-      description: "Manage regional caches and background updates for selectors and deck recommendation.",
+      description: "Manage regional caches and background updates for selectors, recommendations, and other features.",
       region: "Region",
       masterVersion: "Master version",
       displayVersion: "Display version",
@@ -173,8 +173,7 @@ export const enUS = {
         cachedFiles: "Cached files",
         activeTasks: "Active tasks",
       },
-      refreshBasic: "Update basic",
-      refreshRecommend: "Update deck",
+      refreshMasterData: "Update Master data",
       clear: "Clear",
       clearDialog: {
         title: "Clear Master data cache?",
@@ -1354,6 +1353,16 @@ export const enUS = {
       common: {
         selectPlaceholder: "Please select",
       },
+      layers: {
+        basic: {
+          title: "Basic settings",
+          description: "Choose the proxy app, toolbox endpoint, upload mode, and script parameters.",
+        },
+        scope: {
+          title: "Upload scope",
+          description: "Choose the regions and data types to upload.",
+        },
+      },
       sections: {
         software: {
           title: "Select app",
@@ -1619,6 +1628,14 @@ export const enUS = {
     },
     select: {
       loading: "Preparing data...",
+    },
+    configActions: {
+      save: "Save config",
+      clear: "Clear config",
+      clearDialogTitle: "Clear saved config?",
+      clearDialogDescription: "This removes the saved deck recommendation config and resets the current page to defaults. Continue?",
+      clearDialogCancel: "Cancel",
+      clearDialogConfirm: "Clear config",
     },
     form: {
       account: "Account",
@@ -2074,6 +2091,9 @@ export const enUS = {
     toast: {
       runSuccessTitle: "Recommendation complete",
       runFailedTitle: "Recommendation failed",
+      configSavedTitle: "Config saved",
+      configSaveFailedTitle: "Failed to save config",
+      configClearedTitle: "Config cleared",
     },
     attribution: {
       originalPrefix: "The original deck recommendation algorithm comes from ",

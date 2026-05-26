@@ -8,14 +8,25 @@ import {
   LucideGamepad2,
   LucideInfo,
   LucidePlay,
-  LucideRotateCcw,
+  LucideSave,
   LucideSettings2,
+  LucideTrash2,
   LucideTriangleAlert,
 } from "lucide-vue-next"
 import { toast } from "vue-sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
+import { Combobox } from "@/components/ui/combobox"
 import {
   Card,
   CardContent,
@@ -62,15 +73,20 @@ import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import type { GameAccountBinding, SekaiRegion } from "@/types"
+import AreaItemOverrideList from "../components/AreaItemOverrideList.vue"
 import CardMultiPicker from "../components/CardMultiPicker.vue"
 import CardThumbnail from "../components/CardThumbnail.vue"
 import CardTrainingConfigTable from "../components/CardTrainingConfigTable.vue"
+import CharacterRankOverrideList from "../components/CharacterRankOverrideList.vue"
 import CharacterMultiPicker from "../components/CharacterMultiPicker.vue"
 import CharacterSelect from "../components/CharacterSelect.vue"
 import CustomBonusCharacterPicker from "../components/CustomBonusCharacterPicker.vue"
 import EventSelect from "../components/EventSelect.vue"
+import MysekaiFixtureBonusOverrideList from "../components/MysekaiFixtureBonusOverrideList.vue"
+import MysekaiGateOverrideList from "../components/MysekaiGateOverrideList.vue"
 import MusicSelect from "../components/MusicSelect.vue"
 import SingleCardOverrideTable from "../components/SingleCardOverrideTable.vue"
+import TemporaryOverridePanel from "../components/TemporaryOverridePanel.vue"
 import {
   buildDeckRecommendAreaItemOptions,
   resolveAreaItemAttrIconUrl,
@@ -78,6 +94,7 @@ import {
   type DeckRecommendAreaItemKind,
   type DeckRecommendAreaItemOption,
 } from "../lib/area-item-options"
+import type { LazyOverrideComboboxOption } from "../components/LazyOverrideCombobox.vue"
 import { buildMasterCardOptions } from "../lib/card-options"
 import {
   buildDeckResultViews,
@@ -105,7 +122,7 @@ import {
   parseDeckCustomBonusSupportUnitsInput,
   parseDeckSkillOrderInput,
 } from "../lib/recommend-options"
-import { createDefaultCardTrainingConfig } from "../lib/training-config"
+import { createDefaultCardTrainingConfig, type CardTrainingConfig } from "../lib/training-config"
 import {
   resolveMaxAreaItemLevel,
   type DeckRecommendCharacterRankOverride,
@@ -140,6 +157,8 @@ const DECK_RECOMMEND_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "dfs", "g
 const DECK_RECOMMEND_CARD_OPTION_MASTER_FILES = ["cards", "cardRarities", "gameCharacters", "gameCharacterUnits", "unitProfiles", "areaItems", "areaItemLevels", "areas", "characterRanks", "mysekaiGates", "mysekaiGateLevels"] as const
 const DECK_RECOMMEND_PREFERENCES_STORAGE_KEY = "haruki:deck-recommend:preferences"
 const DECK_RECOMMEND_PREFERENCES_VERSION = 2
+const DECK_RECOMMEND_SAVED_CONFIG_STORAGE_KEY = "haruki:deck-recommend:saved-config"
+const DECK_RECOMMEND_SAVED_CONFIG_VERSION = 1
 const DECK_RECOMMEND_EXECUTION_MODES: DeckRecommendExecutionMode[] = ["sequential", "parallel"]
 const DEFAULT_EXECUTION_MODE: DeckRecommendExecutionMode = "parallel"
 const DECK_RECOMMEND_EVENT_ATTRS: DeckRecommendEventAttr[] = ["happy", "cute", "cool", "pure", "mysterious"]
@@ -168,6 +187,58 @@ type AreaItemOverrideSection = {
   label: string
   areas: AreaItemOverrideAreaGroup[]
 }
+type DeckRecommendSavedConfig = {
+  selectedAccountKey?: string
+  dataRegion?: SekaiRegion
+  recommendMode?: DeckRecommendMode
+  recommendTarget?: DeckRecommendTarget
+  liveType?: DeckRecommendLiveType
+  selectedAlgorithms?: DeckRecommendAlgorithm[]
+  executionMode?: DeckRecommendExecutionMode
+  selectedEventId?: string | null
+  selectedCharacterId?: string | null
+  selectedMusicId?: string | null
+  selectedDifficulty?: string | null
+  bonusTargetsInput?: string
+  customBonusCharacterIds?: number[]
+  customBonusSupportUnits?: Record<string, DeckRecommendSupportUnitType>
+  filterOtherUnit?: boolean
+  eventSimulationEnabled?: boolean
+  simulatedEventMode?: DeckRecommendEventSimulationMode
+  simulatedEventAttr?: DeckRecommendEventAttr | null
+  simulatedEventUnit?: DeckRecommendSimulatedEventUnitValue | null
+  simulatedWorldBloomTurn?: string | null
+  simulatedWorldBloomCharacterId?: string | null
+  multiLiveTeammatePowerInput?: string
+  multiLiveTeammateScoreUpInput?: string
+  multiLiveScoreUpLowerBoundInput?: string
+  boostInput?: string
+  areaItemLevelInput?: string
+  areaItemLevelOverrideInputs?: Record<string, string>
+  characterRankInput?: string
+  characterRankOverrideInputs?: Record<string, string>
+  mysekaiGateLevelInput?: string
+  mysekaiGateLevelOverrideInputs?: Record<string, string>
+  mysekaiFixtureBonusRateInput?: string
+  mysekaiFixtureBonusRateOverrideInputs?: Record<string, string>
+  resultLimitInput?: string
+  engineTimeoutMsInput?: string
+  unitFilters?: DeckRecommendUnitType[]
+  attrFilters?: DeckRecommendEventAttr[]
+  characterFilters?: number[]
+  fixedCardIds?: number[]
+  useCurrentDeck?: boolean
+  fixedCharacterIds?: number[]
+  excludedCardIds?: number[]
+  singleCardOverrides?: DeckRecommendSingleCardOverride[]
+  skillOrderStrategy?: DeckRecommendSkillOrderStrategy
+  skillReferenceStrategy?: DeckRecommendSkillReferenceStrategy
+  specificSkillOrderInput?: string
+  keepAfterTrainingState?: boolean
+  supportMasterMax?: boolean
+  supportSkillMax?: boolean
+  trainingConfig?: CardTrainingConfig[]
+}
 
 const { t, locale } = useI18n()
 const userStore = useUserStore()
@@ -176,76 +247,80 @@ const sekaiDataStore = useSekaiDataStore()
 const runner = useDeckRecommendRunner()
 const route = useRoute()
 const initialPreferences = readDeckRecommendPreferences()
+const initialSavedConfig = readDeckRecommendSavedConfig()
 const cardOptionMasterData = ref<Record<string, unknown> | null>(null)
 
-const selectedAccountKey = ref("")
-const dataRegion = ref<SekaiRegion>("jp")
-const recommendMode = ref<DeckRecommendMode>("event")
-const recommendTarget = ref<DeckRecommendTarget>("score")
-const liveType = ref<DeckRecommendLiveType>("multi")
-const selectedAlgorithms = ref<DeckRecommendAlgorithm[]>(initialPreferences.algorithms ?? [...DEFAULT_ALGORITHMS])
-const executionMode = ref<DeckRecommendExecutionMode>(initialPreferences.executionMode ?? DEFAULT_EXECUTION_MODE)
-const selectedEventId = ref<string | null>(null)
+const selectedAccountKey = ref(initialSavedConfig.selectedAccountKey ?? "")
+const dataRegion = ref<SekaiRegion>(initialSavedConfig.dataRegion ?? "jp")
+const recommendMode = ref<DeckRecommendMode>(initialSavedConfig.recommendMode ?? "event")
+const recommendTarget = ref<DeckRecommendTarget>(initialSavedConfig.recommendTarget ?? "score")
+const liveType = ref<DeckRecommendLiveType>(initialSavedConfig.liveType ?? "multi")
+const selectedAlgorithms = ref<DeckRecommendAlgorithm[]>(initialSavedConfig.selectedAlgorithms ?? initialPreferences.algorithms ?? [...DEFAULT_ALGORITHMS])
+const executionMode = ref<DeckRecommendExecutionMode>(initialSavedConfig.executionMode ?? initialPreferences.executionMode ?? DEFAULT_EXECUTION_MODE)
+const selectedEventId = ref<string | null>(initialSavedConfig.selectedEventId ?? null)
 const selectedEventType = ref<string | null>(null)
-const selectedCharacterId = ref<string | null>(null)
-const selectedMusicId = ref<string | null>(DEFAULT_MUSIC_ID)
-const selectedDifficulty = ref<string | null>(DEFAULT_MUSIC_DIFFICULTY)
-const bonusTargetsInput = ref("")
-const customBonusCharacterIds = ref<number[]>([])
-const customBonusSupportUnits = ref<Record<string, DeckRecommendSupportUnitType>>({})
-const filterOtherUnit = ref(false)
-const eventSimulationEnabled = ref(false)
-const simulatedEventMode = ref<DeckRecommendEventSimulationMode>("marathon")
-const simulatedEventAttr = ref<DeckRecommendEventAttr | null>("cool")
-const simulatedEventUnit = ref<DeckRecommendSimulatedEventUnitValue | null>("idol")
+const selectedCharacterId = ref<string | null>(initialSavedConfig.selectedCharacterId ?? null)
+const selectedMusicId = ref<string | null>(initialSavedConfig.selectedMusicId ?? DEFAULT_MUSIC_ID)
+const selectedDifficulty = ref<string | null>(initialSavedConfig.selectedDifficulty ?? DEFAULT_MUSIC_DIFFICULTY)
+const bonusTargetsInput = ref(initialSavedConfig.bonusTargetsInput ?? "")
+const customBonusCharacterIds = ref<number[]>(initialSavedConfig.customBonusCharacterIds ?? [])
+const customBonusSupportUnits = ref<Record<string, DeckRecommendSupportUnitType>>(initialSavedConfig.customBonusSupportUnits ?? {})
+const filterOtherUnit = ref(initialSavedConfig.filterOtherUnit ?? false)
+const eventSimulationEnabled = ref(initialSavedConfig.eventSimulationEnabled ?? false)
+const simulatedEventMode = ref<DeckRecommendEventSimulationMode>(initialSavedConfig.simulatedEventMode ?? "marathon")
+const simulatedEventAttr = ref<DeckRecommendEventAttr | null>(initialSavedConfig.simulatedEventAttr ?? "cool")
+const simulatedEventUnit = ref<DeckRecommendSimulatedEventUnitValue | null>(initialSavedConfig.simulatedEventUnit ?? "idol")
 const customBonusSimulationDialogOpen = ref(false)
-const simulatedWorldBloomTurn = ref<string | null>("1")
-const simulatedWorldBloomCharacterId = ref<string | null>(null)
+const simulatedWorldBloomTurn = ref<string | null>(initialSavedConfig.simulatedWorldBloomTurn ?? "1")
+const simulatedWorldBloomCharacterId = ref<string | null>(initialSavedConfig.simulatedWorldBloomCharacterId ?? null)
 type NumericInputValue = string | number
 
-const multiLiveTeammatePowerInput = ref<NumericInputValue>("")
-const multiLiveTeammateScoreUpInput = ref<NumericInputValue>("")
-const multiLiveScoreUpLowerBoundInput = ref<NumericInputValue>("")
-const boostInput = ref<NumericInputValue>("0")
-const areaItemLevelInput = ref<NumericInputValue>("")
-const areaItemLevelOverrideInputs = ref<Record<string, string>>({})
-const characterRankInput = ref<NumericInputValue>("")
-const characterRankOverrideInputs = ref<Record<string, string>>({})
-const mysekaiGateLevelInput = ref<NumericInputValue>("")
-const mysekaiGateLevelOverrideInputs = ref<Record<string, string>>({})
-const mysekaiFixtureBonusRateInput = ref<NumericInputValue>("")
-const mysekaiFixtureBonusRateOverrideInputs = ref<Record<string, string>>({})
-const resultLimitInput = ref<NumericInputValue>("")
-const engineTimeoutMsInput = ref<NumericInputValue>("")
-const unitFilters = ref<DeckRecommendUnitType[]>([])
-const attrFilters = ref<DeckRecommendEventAttr[]>([])
-const characterFilters = ref<number[]>([])
-const fixedCardIds = ref<number[]>([])
-const useCurrentDeck = ref(false)
-const fixedCharacterIds = ref<number[]>([])
-const excludedCardIds = ref<number[]>([])
-const singleCardOverrides = ref<DeckRecommendSingleCardOverride[]>([])
-const skillOrderStrategy = ref<DeckRecommendSkillOrderStrategy>("average")
-const skillReferenceStrategy = ref<DeckRecommendSkillReferenceStrategy>("average")
-const specificSkillOrderInput = ref("")
-const keepAfterTrainingState = ref(false)
-const supportMasterMax = ref(false)
-const supportSkillMax = ref(false)
+const multiLiveTeammatePowerInput = ref<NumericInputValue>(initialSavedConfig.multiLiveTeammatePowerInput ?? "")
+const multiLiveTeammateScoreUpInput = ref<NumericInputValue>(initialSavedConfig.multiLiveTeammateScoreUpInput ?? "")
+const multiLiveScoreUpLowerBoundInput = ref<NumericInputValue>(initialSavedConfig.multiLiveScoreUpLowerBoundInput ?? "")
+const boostInput = ref<NumericInputValue>(initialSavedConfig.boostInput ?? "0")
+const areaItemLevelInput = ref<NumericInputValue>(initialSavedConfig.areaItemLevelInput ?? "")
+const areaItemLevelOverrideInputs = ref<Record<string, string>>(initialSavedConfig.areaItemLevelOverrideInputs ?? {})
+const characterRankInput = ref<NumericInputValue>(initialSavedConfig.characterRankInput ?? "")
+const characterRankOverrideInputs = ref<Record<string, string>>(initialSavedConfig.characterRankOverrideInputs ?? {})
+const mysekaiGateLevelInput = ref<NumericInputValue>(initialSavedConfig.mysekaiGateLevelInput ?? "")
+const mysekaiGateLevelOverrideInputs = ref<Record<string, string>>(initialSavedConfig.mysekaiGateLevelOverrideInputs ?? {})
+const mysekaiFixtureBonusRateInput = ref<NumericInputValue>(initialSavedConfig.mysekaiFixtureBonusRateInput ?? "")
+const mysekaiFixtureBonusRateOverrideInputs = ref<Record<string, string>>(initialSavedConfig.mysekaiFixtureBonusRateOverrideInputs ?? {})
+const resultLimitInput = ref<NumericInputValue>(initialSavedConfig.resultLimitInput ?? "")
+const engineTimeoutMsInput = ref<NumericInputValue>(initialSavedConfig.engineTimeoutMsInput ?? "")
+const unitFilters = ref<DeckRecommendUnitType[]>(initialSavedConfig.unitFilters ?? [])
+const attrFilters = ref<DeckRecommendEventAttr[]>(initialSavedConfig.attrFilters ?? [])
+const characterFilters = ref<number[]>(initialSavedConfig.characterFilters ?? [])
+const fixedCardIds = ref<number[]>(initialSavedConfig.fixedCardIds ?? [])
+const useCurrentDeck = ref(initialSavedConfig.useCurrentDeck ?? false)
+const fixedCharacterIds = ref<number[]>(initialSavedConfig.fixedCharacterIds ?? [])
+const excludedCardIds = ref<number[]>(initialSavedConfig.excludedCardIds ?? [])
+const singleCardOverrides = ref<DeckRecommendSingleCardOverride[]>(initialSavedConfig.singleCardOverrides ?? [])
+const skillOrderStrategy = ref<DeckRecommendSkillOrderStrategy>(initialSavedConfig.skillOrderStrategy ?? "average")
+const skillReferenceStrategy = ref<DeckRecommendSkillReferenceStrategy>(initialSavedConfig.skillReferenceStrategy ?? "average")
+const specificSkillOrderInput = ref(initialSavedConfig.specificSkillOrderInput ?? "")
+const keepAfterTrainingState = ref(initialSavedConfig.keepAfterTrainingState ?? false)
+const supportMasterMax = ref(initialSavedConfig.supportMasterMax ?? false)
+const supportSkillMax = ref(initialSavedConfig.supportSkillMax ?? false)
 const advancedConfigOpen = ref(false)
 const expertConfigOpen = ref(false)
 const areaItemOverrideOpen = ref(false)
 const characterRankOverrideOpen = ref(false)
 const mysekaiGateOverrideOpen = ref(false)
 const mysekaiFixtureBonusOverrideOpen = ref(false)
-const trainingConfig = ref(createDefaultCardTrainingConfig())
+const clearConfigConfirmOpen = ref(false)
+const trainingConfig = ref(initialSavedConfig.trainingConfig ?? createDefaultCardTrainingConfig())
 const characterOptions = useCharacterOptions(dataRegion)
 const worldBloomCharacters = useWorldBloomCharacterOptions(dataRegion, selectedEventId)
 let dataPreloadGeneration = 0
 let dataPreloadSignature = ""
 let cardOptionMasterDataSignature = ""
 let routeQueryHydrationSignature = ""
-let routeRegionLocked = false
+let routeRegionLocked = initialSavedConfig.dataRegion != null
 let silentUserDataCheckSignature = ""
+let preserveInitialSavedSkillStrategy = Boolean(initialSavedConfig.skillOrderStrategy || initialSavedConfig.skillReferenceStrategy)
+let pendingSavedAccountKey = initialSavedConfig.selectedAccountKey ?? ""
 const routeHydrationInProgress = ref(false)
 
 const accountOptions = computed<BoundAccountOption[]>(() => {
@@ -274,14 +349,26 @@ const cardOptions = computed(() =>
 const areaItemOptions = computed(() =>
   buildDeckRecommendAreaItemOptions(cardOptionMasterData.value ?? runner.masterData.value),
 )
+const areaItemOptionMap = computed(() =>
+  new Map(areaItemOptions.value.map((option) => [option.id, option])),
+)
 const characterRankOptions = computed(() =>
   buildCharacterRankOptions(cardOptionMasterData.value ?? runner.masterData.value),
+)
+const characterRankOptionMap = computed(() =>
+  new Map(characterRankOptions.value.map((option) => [option.id, option])),
 )
 const mysekaiFixtureBonusCharacterOptions = computed(() =>
   characterOptions.options.value,
 )
+const mysekaiFixtureBonusCharacterIdSet = computed(() =>
+  new Set(mysekaiFixtureBonusCharacterOptions.value.map((option) => option.id)),
+)
 const mysekaiGateOptions = computed(() =>
   buildMysekaiGateOptions(cardOptionMasterData.value ?? runner.masterData.value),
+)
+const mysekaiGateOptionMap = computed(() =>
+  new Map(mysekaiGateOptions.value.map((option) => [option.id, option])),
 )
 const areaItemMaxLevel = computed(() =>
   resolveMaxAreaItemLevel((runner.masterData.value ?? cardOptionMasterData.value)?.areaItemLevels) ?? 20,
@@ -299,7 +386,7 @@ const areaItemLevelOverrides = computed(() =>
       level: Number(level),
     }))
     .filter((item) => {
-      const option = areaItemOptions.value.find((areaItem) => areaItem.id === item.areaItemId)
+      const option = areaItemOptionMap.value.get(item.areaItemId)
       return option
         && Number.isInteger(item.areaItemId)
         && Number.isInteger(item.level)
@@ -314,7 +401,7 @@ const characterRankOverrides = computed<DeckRecommendCharacterRankOverride[]>(()
       rank: Number(rank),
     }))
     .filter((item) => {
-      const option = characterRankOptions.value.find((character) => character.id === item.characterId)
+      const option = characterRankOptionMap.value.get(item.characterId)
       return option
         && Number.isInteger(item.characterId)
         && Number.isInteger(item.rank)
@@ -329,7 +416,7 @@ const mysekaiGateLevelOverrides = computed<DeckRecommendMysekaiGateLevelOverride
       level: Number(level),
     }))
     .filter((item) => {
-      const option = mysekaiGateOptions.value.find((gate) => gate.id === item.mysekaiGateId)
+      const option = mysekaiGateOptionMap.value.get(item.mysekaiGateId)
       return option
         && Number.isInteger(item.mysekaiGateId)
         && Number.isInteger(item.level)
@@ -344,7 +431,7 @@ const mysekaiFixtureBonusRateOverrides = computed<DeckRecommendMysekaiFixtureBon
       totalBonusRate: Number(totalBonusRate),
     }))
     .filter((item) =>
-      mysekaiFixtureBonusCharacterOptions.value.some((character) => character.id === item.characterId)
+      mysekaiFixtureBonusCharacterIdSet.value.has(item.characterId)
       && isValidFixtureBonusRate(item.totalBonusRate),
     ),
 )
@@ -601,6 +688,15 @@ const mysekaiFixtureBonusRateOptions = computed(() => [
     label: formatFixtureBonusRate(value),
   })),
 ])
+const mysekaiFixtureBonusRateComboboxOptions = computed<LazyOverrideComboboxOption[]>(() =>
+  mysekaiFixtureBonusRateOptions.value.map((option) => ({
+    ...option,
+    keywords: [option.value, option.label, option.value === "default" ? t("deckRecommend.options.mysekaiFixtureBonusOverride.default") : ""].filter(Boolean),
+  })),
+)
+const mysekaiFixtureBonusMaxRateLabel = computed(() =>
+  formatFixtureBonusRate(MYSEKAI_FIXTURE_BONUS_RATE_MAX),
+)
 const characterFilterMaxCount = computed(() => Math.max(characterOptions.options.value.length, 26))
 const multiLiveTeammatePower = computed(() =>
   parseOptionalNumberInput(multiLiveTeammatePowerInput.value),
@@ -787,13 +883,74 @@ const skillOrderStrategyOptions = computed<Array<{ value: DeckRecommendSkillOrde
   { value: "specific", label: t("deckRecommend.skillStrategies.specific") },
 ])
 
+const deckRecommendResetSignature = computed(() => [
+  selectedAccountKey.value,
+  recommendMode.value,
+  recommendTarget.value,
+  liveType.value,
+  selectedAlgorithms.value.join(","),
+  executionMode.value,
+  selectedEventId.value ?? "",
+  selectedCharacterId.value ?? "",
+  selectedMusicId.value ?? "",
+  selectedDifficulty.value ?? "",
+  bonusTargetsInput.value,
+  numberArraySignature(customBonusCharacterIds.value),
+  sortedRecordSignature(customBonusSupportUnits.value),
+  String(filterOtherUnit.value),
+  String(eventSimulationEnabled.value),
+  simulatedEventMode.value,
+  simulatedEventAttr.value ?? "",
+  simulatedEventUnit.value ?? "",
+  simulatedWorldBloomTurn.value ?? "",
+  simulatedWorldBloomCharacterId.value ?? "",
+  String(multiLiveTeammatePowerInput.value),
+  String(multiLiveTeammateScoreUpInput.value),
+  String(multiLiveScoreUpLowerBoundInput.value),
+  String(boostInput.value),
+  String(areaItemLevelInput.value),
+  sortedRecordSignature(areaItemLevelOverrideInputs.value),
+  String(characterRankInput.value),
+  sortedRecordSignature(characterRankOverrideInputs.value),
+  String(mysekaiGateLevelInput.value),
+  sortedRecordSignature(mysekaiGateLevelOverrideInputs.value),
+  String(mysekaiFixtureBonusRateInput.value),
+  sortedRecordSignature(mysekaiFixtureBonusRateOverrideInputs.value),
+  String(resultLimitInput.value),
+  String(engineTimeoutMsInput.value),
+  stringArraySignature(unitFilters.value),
+  stringArraySignature(attrFilters.value),
+  numberArraySignature(characterFilters.value),
+  numberArraySignature(fixedCardIds.value),
+  String(useCurrentDeck.value),
+  numberArraySignature(fixedCharacterIds.value),
+  numberArraySignature(excludedCardIds.value),
+  singleCardOverridesSignature(singleCardOverrides.value),
+  skillOrderStrategy.value,
+  skillReferenceStrategy.value,
+  specificSkillOrderInput.value,
+  String(keepAfterTrainingState.value),
+  String(supportMasterMax.value),
+  String(supportSkillMax.value),
+  trainingConfigSignature(trainingConfig.value),
+].join("\u001F"))
+
 watch(
   accountOptions,
   (accounts) => {
     if (accounts.length === 0) {
-      selectedAccountKey.value = ""
+      if (!pendingSavedAccountKey) {
+        selectedAccountKey.value = ""
+      }
       return
     }
+
+    if (pendingSavedAccountKey && accounts.some((account) => account.key === pendingSavedAccountKey)) {
+      selectedAccountKey.value = pendingSavedAccountKey
+      pendingSavedAccountKey = ""
+      return
+    }
+    pendingSavedAccountKey = ""
 
     if (!accounts.some((account) => account.key === selectedAccountKey.value)) {
       selectedAccountKey.value = accounts[0].key
@@ -848,11 +1005,10 @@ watch(
 
 watch(
   areaItemOptions,
-  (options) => {
-    const optionMap = new Map(options.map((option) => [String(option.id), option]))
+  () => {
     const nextInputs: Record<string, string> = {}
     for (const [areaItemId, value] of Object.entries(areaItemLevelOverrideInputs.value)) {
-      const option = optionMap.get(areaItemId)
+      const option = areaItemOptionMap.value.get(Number(areaItemId))
       const level = Number(value)
       if (!option || !Number.isInteger(level) || level < 1) {
         continue
@@ -881,11 +1037,10 @@ watch(
 
 watch(
   characterRankOptions,
-  (options) => {
-    const optionMap = new Map(options.map((option) => [String(option.id), option]))
+  () => {
     const nextInputs: Record<string, string> = {}
     for (const [characterId, value] of Object.entries(characterRankOverrideInputs.value)) {
-      const option = optionMap.get(characterId)
+      const option = characterRankOptionMap.value.get(Number(characterId))
       const rank = Number(value)
       if (!option || !Number.isInteger(rank) || rank < 1) {
         continue
@@ -914,12 +1069,11 @@ watch(
 
 watch(
   mysekaiFixtureBonusCharacterOptions,
-  (options) => {
-    const optionIds = new Set(options.map((option) => String(option.id)))
+  () => {
     const nextInputs: Record<string, string> = {}
     for (const [characterId, value] of Object.entries(mysekaiFixtureBonusRateOverrideInputs.value)) {
       const rate = Number(value)
-      if (!optionIds.has(characterId) || !isValidFixtureBonusRate(rate)) {
+      if (!mysekaiFixtureBonusCharacterIdSet.value.has(Number(characterId)) || !isValidFixtureBonusRate(rate)) {
         continue
       }
 
@@ -935,11 +1089,10 @@ watch(
 
 watch(
   mysekaiGateOptions,
-  (options) => {
-    const optionMap = new Map(options.map((option) => [String(option.id), option]))
+  () => {
     const nextInputs: Record<string, string> = {}
     for (const [gateId, value] of Object.entries(mysekaiGateLevelOverrideInputs.value)) {
-      const option = optionMap.get(gateId)
+      const option = mysekaiGateOptionMap.value.get(Number(gateId))
       const level = Number(value)
       if (!option || !Number.isInteger(level) || level < 1) {
         continue
@@ -964,59 +1117,8 @@ watch(
 )
 
 watch(
-  [
-    selectedAccountKey,
-    recommendMode,
-    recommendTarget,
-    liveType,
-    selectedAlgorithms,
-    executionMode,
-    selectedEventId,
-    selectedCharacterId,
-    selectedMusicId,
-    selectedDifficulty,
-    bonusTargetsInput,
-    customBonusCharacterIds,
-    customBonusSupportUnits,
-    filterOtherUnit,
-    eventSimulationEnabled,
-    simulatedEventMode,
-    simulatedEventAttr,
-    simulatedEventUnit,
-    simulatedWorldBloomTurn,
-    simulatedWorldBloomCharacterId,
-    multiLiveTeammatePowerInput,
-    multiLiveTeammateScoreUpInput,
-    multiLiveScoreUpLowerBoundInput,
-    boostInput,
-    areaItemLevelInput,
-    areaItemLevelOverrideInputs,
-    characterRankInput,
-    characterRankOverrideInputs,
-    mysekaiGateLevelInput,
-    mysekaiGateLevelOverrideInputs,
-    mysekaiFixtureBonusRateInput,
-    mysekaiFixtureBonusRateOverrideInputs,
-    resultLimitInput,
-    engineTimeoutMsInput,
-    unitFilters,
-    attrFilters,
-    characterFilters,
-    fixedCardIds,
-    useCurrentDeck,
-    fixedCharacterIds,
-    excludedCardIds,
-    singleCardOverrides,
-    skillOrderStrategy,
-    skillReferenceStrategy,
-    specificSkillOrderInput,
-    keepAfterTrainingState,
-    supportMasterMax,
-    supportSkillMax,
-    trainingConfig,
-  ],
+  deckRecommendResetSignature,
   () => runner.reset(),
-  { deep: true },
 )
 
 watch(
@@ -1079,6 +1181,11 @@ watch(
 watch(
   [recommendMode, recommendTarget, liveType],
   () => {
+    if (preserveInitialSavedSkillStrategy) {
+      preserveInitialSavedSkillStrategy = false
+      return
+    }
+
     const defaultStrategy = resolveDefaultSkillStrategyForForm(recommendMode.value, liveType.value)
     skillOrderStrategy.value = defaultStrategy
     skillReferenceStrategy.value = defaultStrategy
@@ -1241,6 +1348,7 @@ function createAccountOption(account: GameAccountBinding): BoundAccountOption {
 
 function updateAccount(value: AcceptableValue) {
   routeRegionLocked = false
+  pendingSavedAccountKey = ""
   selectedAccountKey.value = typeof value === "string" ? value : ""
 }
 
@@ -1375,93 +1483,6 @@ function updateMysekaiFixtureBonusRateInput(value: AcceptableValue) {
   }
 }
 
-function updateAreaItemLevelOverride(areaItemId: number, value: AcceptableValue) {
-  const nextInputs = { ...areaItemLevelOverrideInputs.value }
-  if (value === "default") {
-    delete nextInputs[String(areaItemId)]
-    areaItemLevelOverrideInputs.value = nextInputs
-    return
-  }
-
-  if (typeof value !== "string") {
-    return
-  }
-
-  const option = areaItemOptions.value.find((item) => item.id === areaItemId)
-  const parsed = Number(value)
-  if (!option || !Number.isInteger(parsed) || parsed < 1 || parsed > option.maxLevel) {
-    return
-  }
-
-  nextInputs[String(areaItemId)] = value
-  areaItemLevelOverrideInputs.value = nextInputs
-}
-
-function updateCharacterRankOverride(characterId: number, value: AcceptableValue | null) {
-  const nextInputs = { ...characterRankOverrideInputs.value }
-  if (value == null || value === "default") {
-    delete nextInputs[String(characterId)]
-    characterRankOverrideInputs.value = nextInputs
-    return
-  }
-
-  if (typeof value !== "string") {
-    return
-  }
-
-  const option = characterRankOptions.value.find((item) => item.id === characterId)
-  const parsed = Number(value)
-  if (!option || !Number.isInteger(parsed) || parsed < 1 || parsed > option.maxRank) {
-    return
-  }
-
-  nextInputs[String(characterId)] = value
-  characterRankOverrideInputs.value = nextInputs
-}
-
-function updateMysekaiGateLevelOverride(gateId: number, value: AcceptableValue | null) {
-  const nextInputs = { ...mysekaiGateLevelOverrideInputs.value }
-  if (value == null || value === "default") {
-    delete nextInputs[String(gateId)]
-    mysekaiGateLevelOverrideInputs.value = nextInputs
-    return
-  }
-
-  if (typeof value !== "string") {
-    return
-  }
-
-  const option = mysekaiGateOptions.value.find((item) => item.id === gateId)
-  const parsed = Number(value)
-  if (!option || !Number.isInteger(parsed) || parsed < 1 || parsed > option.maxLevel) {
-    return
-  }
-
-  nextInputs[String(gateId)] = value
-  mysekaiGateLevelOverrideInputs.value = nextInputs
-}
-
-function updateMysekaiFixtureBonusRateOverride(characterId: number, value: AcceptableValue | null) {
-  const nextInputs = { ...mysekaiFixtureBonusRateOverrideInputs.value }
-  if (value == null || value === "default") {
-    delete nextInputs[String(characterId)]
-    mysekaiFixtureBonusRateOverrideInputs.value = nextInputs
-    return
-  }
-
-  if (typeof value !== "string") {
-    return
-  }
-
-  const parsed = Number(value)
-  if (!mysekaiFixtureBonusCharacterOptions.value.some((item) => item.id === characterId) || !isValidFixtureBonusRate(parsed)) {
-    return
-  }
-
-  nextInputs[String(characterId)] = value
-  mysekaiFixtureBonusRateOverrideInputs.value = nextInputs
-}
-
 function clearAreaItemLevelOverrides() {
   areaItemLevelOverrideInputs.value = {}
 }
@@ -1476,66 +1497,6 @@ function clearMysekaiGateLevelOverrides() {
 
 function clearMysekaiFixtureBonusRateOverrides() {
   mysekaiFixtureBonusRateOverrideInputs.value = {}
-}
-
-function areaItemLevelOverrideValue(areaItemId: number) {
-  return areaItemLevelOverrideInputs.value[String(areaItemId)] ?? "default"
-}
-
-function characterRankOverrideValue(characterId: number) {
-  return characterRankOverrideInputs.value[String(characterId)] ?? "default"
-}
-
-function mysekaiGateLevelOverrideValue(gateId: number) {
-  return mysekaiGateLevelOverrideInputs.value[String(gateId)] ?? "default"
-}
-
-function mysekaiFixtureBonusRateOverrideValue(characterId: number) {
-  return mysekaiFixtureBonusRateOverrideInputs.value[String(characterId)] ?? "default"
-}
-
-function characterRankComboboxOptions(maxRank: number): ComboboxOption[] {
-  return createOverrideLevelOptions(
-    maxRank,
-    t("deckRecommend.options.characterRankOverride.default"),
-    (value) => t("deckRecommend.options.filters.characterRankOption", { value }),
-  )
-}
-
-function mysekaiGateLevelComboboxOptions(maxLevel: number): ComboboxOption[] {
-  return createOverrideLevelOptions(
-    maxLevel,
-    t("deckRecommend.options.mysekaiGateOverride.default"),
-    (value) => t("deckRecommend.options.filters.mysekaiGateLevelOption", { value }),
-  )
-}
-
-function mysekaiFixtureBonusRateComboboxOptions(): ComboboxOption[] {
-  return mysekaiFixtureBonusRateOptions.value.map((option) => ({
-    ...option,
-    keywords: [option.value, option.label, option.value === "default" ? t("deckRecommend.options.mysekaiFixtureBonusOverride.default") : ""].filter(Boolean),
-  }))
-}
-
-function createOverrideLevelOptions(maxLevel: number, defaultLabel: string, label: (value: number) => string): ComboboxOption[] {
-  const options: ComboboxOption[] = [
-    {
-      value: "default",
-      label: defaultLabel,
-    },
-  ]
-  for (let value = 1; value <= maxLevel; value += 1) {
-    options.push({
-      value: String(value),
-      label: label(value),
-      keywords: [String(value)],
-    })
-  }
-  return options
-}
-
-function mysekaiGateIconUrl(gate: { unit: string | null }) {
-  return gate.unit && isDeckRecommendUnit(gate.unit) ? resolveUnitIconUrl(gate.unit) : null
 }
 
 function updateEventSimulationMode(value: AcceptableValue) {
@@ -1620,22 +1581,6 @@ function areaItemAreaLabel(item: DeckRecommendAreaItemOption | undefined) {
   return areaName || t("deckRecommend.options.areaItemOverride.areaFallback", { id: item.areaId })
 }
 
-function areaItemTargetLabel(item: DeckRecommendAreaItemOption) {
-  if (item.kind === "attr" && item.targetAttr) {
-    return t(`deckRecommend.cardTags.attrs.${item.targetAttr}`)
-  }
-
-  if (item.kind === "unit" && item.targetUnit && item.targetLabel === item.targetUnit) {
-    return t(`deckRecommend.eventUnits.${item.targetUnit}`)
-  }
-
-  return item.targetLabel ?? t("deckRecommend.options.areaItemOverride.targetFallback", { id: item.id })
-}
-
-function areaItemDetailLabel(item: DeckRecommendAreaItemOption) {
-  return item.itemName ?? t("deckRecommend.options.areaItemOverride.itemFallback", { id: item.id })
-}
-
 function checkDeckRecommendRegionData(region: SekaiRegion) {
   void sekaiDataStore.ensureRegionData(region, {
     files: mergeMasterFileNames(SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES, DECK_RECOMMEND_CARD_OPTION_MASTER_FILES),
@@ -1699,6 +1644,49 @@ function createDataPreloadSignature() {
     executionMode.value,
     activeAlgorithms.value.join(","),
   ].join(":")
+}
+
+function stringArraySignature(values: readonly string[]) {
+  return values.join(",")
+}
+
+function numberArraySignature(values: readonly number[]) {
+  return values.join(",")
+}
+
+function sortedRecordSignature(record: Record<string, string>) {
+  return Object.entries(record)
+    .sort(([left], [right]) => Number(left) - Number(right))
+    .map(([key, value]) => `${key}=${value}`)
+    .join(",")
+}
+
+function singleCardOverridesSignature(values: readonly DeckRecommendSingleCardOverride[]) {
+  return values
+    .map((item) => [
+      item.cardId,
+      item.disabled ? 1 : 0,
+      item.level ?? "",
+      item.skillLevel ?? "",
+      item.masterRank ?? "",
+      item.episodeState ?? "",
+      item.canvas == null ? "" : item.canvas ? 1 : 0,
+    ].join(":"))
+    .join(",")
+}
+
+function trainingConfigSignature(values: readonly CardTrainingConfig[]) {
+  return values
+    .map((item) => [
+      item.rarity,
+      item.disabled ? 1 : 0,
+      item.maxLevel ? 1 : 0,
+      item.episodesRead ? 1 : 0,
+      item.maxMasterRank ? 1 : 0,
+      item.maxSkillLevel ? 1 : 0,
+      item.mySekaiCanvas ? 1 : 0,
+    ].join(":"))
+    .join(",")
 }
 
 async function loadCardOptionMasterData(region: SekaiRegion, generation: number) {
@@ -1982,6 +1970,136 @@ async function runRecommend() {
       description: runner.error.value ?? (error instanceof Error ? error.message : String(error)),
     })
   }
+}
+
+function saveDeckRecommendConfig() {
+  try {
+    writeDeckRecommendSavedConfig(createCurrentDeckRecommendConfig())
+    toast.success(t("deckRecommend.toast.configSavedTitle"))
+  } catch (error) {
+    toast.error(t("deckRecommend.toast.configSaveFailedTitle"), {
+      description: error instanceof Error ? error.message : String(error),
+    })
+  }
+}
+
+function clearDeckRecommendConfig() {
+  removeDeckRecommendSavedConfig()
+  resetDeckRecommendConfig()
+  clearConfigConfirmOpen.value = false
+  toast.success(t("deckRecommend.toast.configClearedTitle"))
+}
+
+function createCurrentDeckRecommendConfig(): DeckRecommendSavedConfig {
+  return {
+    selectedAccountKey: selectedAccountKey.value,
+    dataRegion: dataRegion.value,
+    recommendMode: recommendMode.value,
+    recommendTarget: recommendTarget.value,
+    liveType: liveType.value,
+    selectedAlgorithms: [...selectedAlgorithms.value],
+    executionMode: executionMode.value,
+    selectedEventId: selectedEventId.value,
+    selectedCharacterId: selectedCharacterId.value,
+    selectedMusicId: selectedMusicId.value,
+    selectedDifficulty: selectedDifficulty.value,
+    bonusTargetsInput: bonusTargetsInput.value,
+    customBonusCharacterIds: [...customBonusCharacterIds.value],
+    customBonusSupportUnits: { ...customBonusSupportUnits.value },
+    filterOtherUnit: filterOtherUnit.value,
+    eventSimulationEnabled: eventSimulationEnabled.value,
+    simulatedEventMode: simulatedEventMode.value,
+    simulatedEventAttr: simulatedEventAttr.value,
+    simulatedEventUnit: simulatedEventUnit.value,
+    simulatedWorldBloomTurn: simulatedWorldBloomTurn.value,
+    simulatedWorldBloomCharacterId: simulatedWorldBloomCharacterId.value,
+    multiLiveTeammatePowerInput: String(multiLiveTeammatePowerInput.value),
+    multiLiveTeammateScoreUpInput: String(multiLiveTeammateScoreUpInput.value),
+    multiLiveScoreUpLowerBoundInput: String(multiLiveScoreUpLowerBoundInput.value),
+    boostInput: String(boostInput.value),
+    areaItemLevelInput: String(areaItemLevelInput.value),
+    areaItemLevelOverrideInputs: { ...areaItemLevelOverrideInputs.value },
+    characterRankInput: String(characterRankInput.value),
+    characterRankOverrideInputs: { ...characterRankOverrideInputs.value },
+    mysekaiGateLevelInput: String(mysekaiGateLevelInput.value),
+    mysekaiGateLevelOverrideInputs: { ...mysekaiGateLevelOverrideInputs.value },
+    mysekaiFixtureBonusRateInput: String(mysekaiFixtureBonusRateInput.value),
+    mysekaiFixtureBonusRateOverrideInputs: { ...mysekaiFixtureBonusRateOverrideInputs.value },
+    resultLimitInput: String(resultLimitInput.value),
+    engineTimeoutMsInput: String(engineTimeoutMsInput.value),
+    unitFilters: [...unitFilters.value],
+    attrFilters: [...attrFilters.value],
+    characterFilters: [...characterFilters.value],
+    fixedCardIds: [...fixedCardIds.value],
+    useCurrentDeck: useCurrentDeck.value,
+    fixedCharacterIds: [...fixedCharacterIds.value],
+    excludedCardIds: [...excludedCardIds.value],
+    singleCardOverrides: singleCardOverrides.value.map((item) => ({ ...item })),
+    skillOrderStrategy: skillOrderStrategy.value,
+    skillReferenceStrategy: skillReferenceStrategy.value,
+    specificSkillOrderInput: specificSkillOrderInput.value,
+    keepAfterTrainingState: keepAfterTrainingState.value,
+    supportMasterMax: supportMasterMax.value,
+    supportSkillMax: supportSkillMax.value,
+    trainingConfig: trainingConfig.value.map((item) => ({ ...item })),
+  }
+}
+
+function resetDeckRecommendConfig() {
+  routeRegionLocked = false
+  pendingSavedAccountKey = ""
+  selectedAccountKey.value = accountOptions.value[0]?.key ?? ""
+  dataRegion.value = selectedAccount.value?.server ?? "jp"
+  recommendMode.value = "event"
+  recommendTarget.value = "score"
+  liveType.value = "multi"
+  selectedAlgorithms.value = [...DEFAULT_ALGORITHMS]
+  executionMode.value = DEFAULT_EXECUTION_MODE
+  selectedEventId.value = null
+  selectedEventType.value = null
+  selectedCharacterId.value = null
+  selectedMusicId.value = DEFAULT_MUSIC_ID
+  selectedDifficulty.value = DEFAULT_MUSIC_DIFFICULTY
+  bonusTargetsInput.value = ""
+  customBonusCharacterIds.value = []
+  customBonusSupportUnits.value = {}
+  filterOtherUnit.value = false
+  eventSimulationEnabled.value = false
+  simulatedEventMode.value = "marathon"
+  simulatedEventAttr.value = "cool"
+  simulatedEventUnit.value = "idol"
+  customBonusSimulationDialogOpen.value = false
+  simulatedWorldBloomTurn.value = "1"
+  simulatedWorldBloomCharacterId.value = null
+  multiLiveTeammatePowerInput.value = ""
+  multiLiveTeammateScoreUpInput.value = ""
+  multiLiveScoreUpLowerBoundInput.value = ""
+  boostInput.value = "0"
+  areaItemLevelInput.value = ""
+  areaItemLevelOverrideInputs.value = {}
+  characterRankInput.value = ""
+  characterRankOverrideInputs.value = {}
+  mysekaiGateLevelInput.value = ""
+  mysekaiGateLevelOverrideInputs.value = {}
+  mysekaiFixtureBonusRateInput.value = ""
+  mysekaiFixtureBonusRateOverrideInputs.value = {}
+  resultLimitInput.value = ""
+  engineTimeoutMsInput.value = ""
+  unitFilters.value = []
+  attrFilters.value = []
+  characterFilters.value = []
+  fixedCardIds.value = []
+  useCurrentDeck.value = false
+  fixedCharacterIds.value = []
+  excludedCardIds.value = []
+  singleCardOverrides.value = []
+  skillOrderStrategy.value = "average"
+  skillReferenceStrategy.value = "average"
+  specificSkillOrderInput.value = ""
+  keepAfterTrainingState.value = false
+  supportMasterMax.value = false
+  supportSkillMax.value = false
+  trainingConfig.value = createDefaultCardTrainingConfig()
 }
 
 function createSingleCardOverrideFromTrainingConfig(cardId: number): DeckRecommendSingleCardOverride {
@@ -2559,6 +2677,287 @@ function writeDeckRecommendPreferences(preferences: Required<DeckRecommendPrefer
     }))
   } catch {
   }
+}
+
+function readDeckRecommendSavedConfig(): DeckRecommendSavedConfig {
+  if (typeof window === "undefined") {
+    return {}
+  }
+
+  try {
+    const raw = window.localStorage.getItem(DECK_RECOMMEND_SAVED_CONFIG_STORAGE_KEY)
+    if (!raw) {
+      return {}
+    }
+
+    const parsed = JSON.parse(raw)
+    if (!isRecord(parsed) || parsed.version !== DECK_RECOMMEND_SAVED_CONFIG_VERSION || !isRecord(parsed.config)) {
+      return {}
+    }
+
+    return normalizeDeckRecommendSavedConfig(parsed.config)
+  } catch {
+    return {}
+  }
+}
+
+function writeDeckRecommendSavedConfig(config: DeckRecommendSavedConfig) {
+  if (typeof window === "undefined") {
+    return
+  }
+
+  window.localStorage.setItem(DECK_RECOMMEND_SAVED_CONFIG_STORAGE_KEY, JSON.stringify({
+    version: DECK_RECOMMEND_SAVED_CONFIG_VERSION,
+    config,
+  }))
+}
+
+function removeDeckRecommendSavedConfig() {
+  if (typeof window === "undefined") {
+    return
+  }
+
+  try {
+    window.localStorage.removeItem(DECK_RECOMMEND_SAVED_CONFIG_STORAGE_KEY)
+  } catch {
+  }
+}
+
+function normalizeDeckRecommendSavedConfig(value: Record<string, unknown>): DeckRecommendSavedConfig {
+  const config: DeckRecommendSavedConfig = {}
+  const selectedAccount = optionalString(value.selectedAccountKey)
+  if (selectedAccount != null) {
+    config.selectedAccountKey = selectedAccount
+  }
+
+  const region = optionalString(value.dataRegion)
+  if (region && isSekaiRegionValue(region)) {
+    config.dataRegion = region
+  }
+
+  const mode = optionalString(value.recommendMode)
+  if (mode && isDeckRecommendMode(mode)) {
+    config.recommendMode = mode
+  }
+
+  const target = optionalString(value.recommendTarget)
+  if (target && isDeckRecommendTarget(target)) {
+    config.recommendTarget = target
+  }
+
+  const live = optionalString(value.liveType)
+  if (live && isDeckRecommendLiveType(live)) {
+    config.liveType = live
+  }
+
+  config.selectedAlgorithms = normalizePersistedAlgorithms(value.selectedAlgorithms)
+  const execution = optionalString(value.executionMode)
+  if (execution && isDeckRecommendExecutionMode(execution)) {
+    config.executionMode = execution
+  }
+
+  config.selectedEventId = optionalNullableString(value.selectedEventId)
+  config.selectedCharacterId = optionalNullableString(value.selectedCharacterId)
+  config.selectedMusicId = optionalNullableString(value.selectedMusicId)
+  config.selectedDifficulty = optionalNullableString(value.selectedDifficulty)
+  config.bonusTargetsInput = optionalString(value.bonusTargetsInput)
+  config.customBonusCharacterIds = normalizePositiveIntegerArray(value.customBonusCharacterIds)
+  config.customBonusSupportUnits = normalizeSupportUnitRecord(value.customBonusSupportUnits)
+  config.filterOtherUnit = optionalBoolean(value.filterOtherUnit)
+  config.eventSimulationEnabled = optionalBoolean(value.eventSimulationEnabled)
+
+  const simulationMode = optionalString(value.simulatedEventMode)
+  if (simulationMode && isDeckRecommendEventSimulationMode(simulationMode)) {
+    config.simulatedEventMode = simulationMode
+  }
+
+  const simulationAttr = optionalNullableString(value.simulatedEventAttr)
+  if (simulationAttr == null || isDeckRecommendEventAttr(simulationAttr)) {
+    config.simulatedEventAttr = simulationAttr
+  }
+
+  const simulationUnit = optionalNullableString(value.simulatedEventUnit)
+  if (simulationUnit == null || isDeckRecommendSimulatedEventUnit(simulationUnit)) {
+    config.simulatedEventUnit = simulationUnit
+  }
+
+  config.simulatedWorldBloomTurn = optionalNullableString(value.simulatedWorldBloomTurn)
+  config.simulatedWorldBloomCharacterId = optionalNullableString(value.simulatedWorldBloomCharacterId)
+  config.multiLiveTeammatePowerInput = optionalString(value.multiLiveTeammatePowerInput)
+  config.multiLiveTeammateScoreUpInput = optionalString(value.multiLiveTeammateScoreUpInput)
+  config.multiLiveScoreUpLowerBoundInput = optionalString(value.multiLiveScoreUpLowerBoundInput)
+  config.boostInput = optionalString(value.boostInput)
+  config.areaItemLevelInput = optionalString(value.areaItemLevelInput)
+  config.areaItemLevelOverrideInputs = normalizeNumericStringRecord(value.areaItemLevelOverrideInputs)
+  config.characterRankInput = optionalString(value.characterRankInput)
+  config.characterRankOverrideInputs = normalizeNumericStringRecord(value.characterRankOverrideInputs)
+  config.mysekaiGateLevelInput = optionalString(value.mysekaiGateLevelInput)
+  config.mysekaiGateLevelOverrideInputs = normalizeNumericStringRecord(value.mysekaiGateLevelOverrideInputs)
+  config.mysekaiFixtureBonusRateInput = optionalString(value.mysekaiFixtureBonusRateInput)
+  config.mysekaiFixtureBonusRateOverrideInputs = normalizeNumericStringRecord(value.mysekaiFixtureBonusRateOverrideInputs)
+  config.resultLimitInput = optionalString(value.resultLimitInput)
+  config.engineTimeoutMsInput = optionalString(value.engineTimeoutMsInput)
+  config.unitFilters = normalizeStringArray(value.unitFilters, isDeckRecommendUnit)
+  config.attrFilters = normalizeStringArray(value.attrFilters, isDeckRecommendEventAttr)
+  config.characterFilters = normalizePositiveIntegerArray(value.characterFilters)
+  config.fixedCardIds = normalizePositiveIntegerArray(value.fixedCardIds)
+  config.useCurrentDeck = optionalBoolean(value.useCurrentDeck)
+  config.fixedCharacterIds = normalizePositiveIntegerArray(value.fixedCharacterIds)
+  config.excludedCardIds = normalizePositiveIntegerArray(value.excludedCardIds)
+  config.singleCardOverrides = normalizeSingleCardOverrides(value.singleCardOverrides)
+
+  const skillOrder = optionalString(value.skillOrderStrategy)
+  if (skillOrder && isDeckRecommendSkillOrderStrategy(skillOrder)) {
+    config.skillOrderStrategy = skillOrder
+  }
+
+  const skillReference = optionalString(value.skillReferenceStrategy)
+  if (skillReference && isDeckRecommendSkillReferenceStrategy(skillReference)) {
+    config.skillReferenceStrategy = skillReference
+  }
+
+  config.specificSkillOrderInput = optionalString(value.specificSkillOrderInput)
+  config.keepAfterTrainingState = optionalBoolean(value.keepAfterTrainingState)
+  config.supportMasterMax = optionalBoolean(value.supportMasterMax)
+  config.supportSkillMax = optionalBoolean(value.supportSkillMax)
+  config.trainingConfig = normalizeTrainingConfig(value.trainingConfig)
+
+  return config
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined
+}
+
+function optionalNullableString(value: unknown): string | null | undefined {
+  return value == null ? null : optionalString(value)
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined
+}
+
+function normalizeStringArray<T extends string>(value: unknown, isValid: (item: string) => item is T): T[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+
+  return [...new Set(value.filter((item): item is T => typeof item === "string" && isValid(item)))]
+}
+
+function normalizePositiveIntegerArray(value: unknown): number[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+
+  return [...new Set(value
+    .map((item) => Number(item))
+    .filter((item) => Number.isInteger(item) && item > 0))]
+}
+
+function normalizeNumericStringRecord(value: unknown): Record<string, string> | undefined {
+  if (!isRecord(value)) {
+    return undefined
+  }
+
+  const record: Record<string, string> = {}
+  for (const [key, rawValue] of Object.entries(value)) {
+    const id = Number(key)
+    const itemValue = Number(rawValue)
+    if (Number.isInteger(id) && id > 0 && Number.isFinite(itemValue)) {
+      record[String(id)] = String(rawValue)
+    }
+  }
+
+  return record
+}
+
+function normalizeSupportUnitRecord(value: unknown): Record<string, DeckRecommendSupportUnitType> | undefined {
+  if (!isRecord(value)) {
+    return undefined
+  }
+
+  const record: Record<string, DeckRecommendSupportUnitType> = {}
+  for (const [key, rawValue] of Object.entries(value)) {
+    const characterId = Number(key)
+    if (
+      Number.isInteger(characterId)
+      && characterId > 0
+      && typeof rawValue === "string"
+      && DECK_RECOMMEND_UNITS.includes(rawValue as DeckRecommendUnitType)
+      && rawValue !== "piapro"
+    ) {
+      record[String(characterId)] = rawValue as DeckRecommendSupportUnitType
+    }
+  }
+
+  return record
+}
+
+function normalizeSingleCardOverrides(value: unknown): DeckRecommendSingleCardOverride[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+
+  return value
+    .filter(isRecord)
+    .map((item) => ({
+      cardId: Number(item.cardId),
+      disabled: item.disabled === true,
+      level: normalizeNullableInteger(item.level, 1),
+      skillLevel: normalizeNullableInteger(item.skillLevel, 1),
+      masterRank: normalizeNullableInteger(item.masterRank, 0),
+      episodeState: normalizeSingleCardEpisodeState(item.episodeState),
+      canvas: typeof item.canvas === "boolean" ? item.canvas : null,
+    }))
+    .filter((item) => Number.isInteger(item.cardId) && item.cardId > 0)
+}
+
+function normalizeTrainingConfig(value: unknown): CardTrainingConfig[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined
+  }
+
+  const defaults = createDefaultCardTrainingConfig()
+  const inputMap = new Map(
+    value
+      .filter(isRecord)
+      .map((item) => [item.rarity, item]),
+  )
+
+  return defaults.map((defaultItem) => {
+    const input = inputMap.get(defaultItem.rarity)
+    if (!input) {
+      return defaultItem
+    }
+
+    return {
+      rarity: defaultItem.rarity,
+      disabled: input.disabled === true,
+      maxLevel: input.maxLevel === true,
+      episodesRead: input.episodesRead === true,
+      maxMasterRank: input.maxMasterRank === true,
+      maxSkillLevel: input.maxSkillLevel === true,
+      mySekaiCanvas: input.mySekaiCanvas !== false,
+    }
+  })
+}
+
+function normalizeNullableInteger(value: unknown, min: number): number | null {
+  if (value == null) {
+    return null
+  }
+
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed >= min ? parsed : null
+}
+
+function normalizeSingleCardEpisodeState(value: unknown): DeckRecommendSingleCardOverride["episodeState"] {
+  return value === "none" || value === "first" || value === "both" ? value : null
 }
 
 function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] | undefined {
@@ -3142,7 +3541,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                               <Label>{{ t("deckRecommend.options.filters.mysekaiFixtureBonusRate") }}</Label>
                               <Combobox
                                 :model-value="mysekaiFixtureBonusRateInput === '' ? 'default' : String(mysekaiFixtureBonusRateInput)"
-                                :options="mysekaiFixtureBonusRateComboboxOptions()"
+                                :options="mysekaiFixtureBonusRateComboboxOptions"
                                 :disabled="runner.running.value || mysekaiFixtureBonusCharacterOptions.length === 0"
                                 :placeholder="t('deckRecommend.options.filters.mysekaiFixtureBonusRateDefault')"
                                 :search-placeholder="t('deckRecommend.options.mysekaiFixtureBonusOverride.searchPlaceholder')"
@@ -3440,393 +3839,82 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                       </div>
                     </section>
 
-                    <Collapsible v-slot="{ open }" v-model:open="areaItemOverrideOpen" as-child>
-                      <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
-                        <CollapsibleTrigger as-child>
-                          <button
-                            type="button"
-                            class="flex min-w-0 items-start justify-between gap-3 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <span class="min-w-0 space-y-1">
-                              <span class="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium">
-                                <span>{{ t("deckRecommend.options.areaItemOverride.title") }}</span>
-                                <span
-                                  v-if="areaItemLevelOverrides.length > 0"
-                                  class="rounded-md border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[11px] font-semibold text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200"
-                                >
-                                  {{ t("deckRecommend.options.areaItemOverride.selectedCount", { count: areaItemLevelOverrides.length }) }}
-                                </span>
-                              </span>
-                              <span class="block text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.areaItemOverride.description") }}
-                              </span>
-                            </span>
-                            <LucideChevronDown
-                              :class="[
-                                'mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                                open ? 'rotate-180' : '',
-                              ]"
-                            />
-                          </button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div v-if="open" class="grid min-w-0 gap-3 pt-1">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                              <p class="text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.areaItemOverride.priorityHint") }}
-                              </p>
-                              <Button
-                                v-if="areaItemLevelOverrides.length > 0"
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                class="h-8 shrink-0"
-                                :disabled="runner.running.value"
-                                @click="clearAreaItemLevelOverrides"
-                              >
-                                <LucideRotateCcw class="size-3.5" />
-                                {{ t("deckRecommend.options.areaItemOverride.clear") }}
-                              </Button>
-                            </div>
+                    <TemporaryOverridePanel
+                      v-model:open="areaItemOverrideOpen"
+                      :title="t('deckRecommend.options.areaItemOverride.title')"
+                      :description="t('deckRecommend.options.areaItemOverride.description')"
+                      :selected-count="areaItemLevelOverrides.length"
+                      :selected-count-label="t('deckRecommend.options.areaItemOverride.selectedCount', { count: areaItemLevelOverrides.length })"
+                      :priority-hint="t('deckRecommend.options.areaItemOverride.priorityHint')"
+                      :clear-label="t('deckRecommend.options.areaItemOverride.clear')"
+                      :clear-disabled="runner.running.value"
+                      @clear="clearAreaItemLevelOverrides"
+                    >
+                      <AreaItemOverrideList
+                        v-model="areaItemLevelOverrideInputs"
+                        :sections="areaItemOverrideSections"
+                        :disabled="runner.running.value"
+                      />
+                    </TemporaryOverridePanel>
 
-                            <div v-if="areaItemOverrideSections.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                              {{ t("deckRecommend.options.areaItemOverride.empty") }}
-                            </div>
+                    <TemporaryOverridePanel
+                      v-model:open="characterRankOverrideOpen"
+                      :title="t('deckRecommend.options.characterRankOverride.title')"
+                      :description="t('deckRecommend.options.characterRankOverride.description')"
+                      :selected-count="characterRankOverrides.length"
+                      :selected-count-label="t('deckRecommend.options.characterRankOverride.selectedCount', { count: characterRankOverrides.length })"
+                      :priority-hint="t('deckRecommend.options.characterRankOverride.priorityHint')"
+                      :clear-label="t('deckRecommend.options.characterRankOverride.clear')"
+                      :clear-disabled="runner.running.value"
+                      badge-class="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
+                      @clear="clearCharacterRankOverrides"
+                    >
+                      <CharacterRankOverrideList
+                        v-model="characterRankOverrideInputs"
+                        :characters="characterRankOptions"
+                        :disabled="runner.running.value"
+                      />
+                    </TemporaryOverridePanel>
 
-                            <div v-else class="grid min-w-0 gap-3">
-                              <section
-                                v-for="section in areaItemOverrideSections"
-                                :key="section.kind"
-                                class="grid min-w-0 gap-2 rounded-md border bg-background/50 p-2.5"
-                              >
-                                <h4 class="text-sm font-medium">{{ section.label }}</h4>
-                                <div
-                                  v-for="areaGroup in section.areas"
-                                  :key="areaGroup.key"
-                                  class="grid min-w-0 gap-2"
-                                >
-                                  <div class="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
-                                    <span class="h-px flex-1 bg-border" />
-                                    <span class="min-w-0 truncate">{{ areaGroup.label }}</span>
-                                    <span class="h-px flex-1 bg-border" />
-                                  </div>
-                                  <div class="grid min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3">
-                                    <div
-                                      v-for="item in areaGroup.items"
-                                      :key="item.id"
-                                      class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_100px] items-center gap-2 rounded-md border bg-background/70 p-2 text-sm"
-                                    >
-                                      <img
-                                        v-if="item.iconUrl"
-                                        :src="item.iconUrl"
-                                        :alt="areaItemTargetLabel(item)"
-                                        class="size-8 rounded object-contain"
-                                        loading="lazy"
-                                      >
-                                      <span v-else class="size-8 rounded bg-muted" />
-                                      <span class="min-w-0">
-                                        <span class="block truncate font-medium">{{ areaItemTargetLabel(item) }}</span>
-                                        <span class="block truncate text-xs text-muted-foreground">{{ areaItemDetailLabel(item) }}</span>
-                                      </span>
-                                      <Select
-                                        :model-value="areaItemLevelOverrideValue(item.id)"
-                                        :disabled="runner.running.value"
-                                        @update:model-value="value => updateAreaItemLevelOverride(item.id, value)"
-                                      >
-                                        <SelectTrigger class="h-8 w-full">
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="default">
-                                            {{ t("deckRecommend.options.areaItemOverride.default") }}
-                                          </SelectItem>
-                                          <SelectItem
-                                            v-for="level in item.maxLevel"
-                                            :key="level"
-                                            :value="String(level)"
-                                          >
-                                            {{ t("deckRecommend.options.filters.areaItemLevelOption", { value: level }) }}
-                                          </SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                  </div>
-                                </div>
-                              </section>
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </section>
-                    </Collapsible>
+                    <TemporaryOverridePanel
+                      v-model:open="mysekaiGateOverrideOpen"
+                      :title="t('deckRecommend.options.mysekaiGateOverride.title')"
+                      :description="t('deckRecommend.options.mysekaiGateOverride.description')"
+                      :selected-count="mysekaiGateLevelOverrides.length"
+                      :selected-count-label="t('deckRecommend.options.mysekaiGateOverride.selectedCount', { count: mysekaiGateLevelOverrides.length })"
+                      :priority-hint="t('deckRecommend.options.mysekaiGateOverride.priorityHint')"
+                      :clear-label="t('deckRecommend.options.mysekaiGateOverride.clear')"
+                      :clear-disabled="runner.running.value"
+                      badge-class="border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-500/30 dark:bg-fuchsia-500/10 dark:text-fuchsia-200"
+                      @clear="clearMysekaiGateLevelOverrides"
+                    >
+                      <MysekaiGateOverrideList
+                        v-model="mysekaiGateLevelOverrideInputs"
+                        :gates="mysekaiGateOptions"
+                        :disabled="runner.running.value"
+                      />
+                    </TemporaryOverridePanel>
 
-                    <Collapsible v-slot="{ open }" v-model:open="characterRankOverrideOpen" as-child>
-                      <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
-                        <CollapsibleTrigger as-child>
-                          <button
-                            type="button"
-                            class="flex min-w-0 items-start justify-between gap-3 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <span class="min-w-0 space-y-1">
-                              <span class="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium">
-                                <span>{{ t("deckRecommend.options.characterRankOverride.title") }}</span>
-                                <span
-                                  v-if="characterRankOverrides.length > 0"
-                                  class="rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
-                                >
-                                  {{ t("deckRecommend.options.characterRankOverride.selectedCount", { count: characterRankOverrides.length }) }}
-                                </span>
-                              </span>
-                              <span class="block text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.characterRankOverride.description") }}
-                              </span>
-                            </span>
-                            <LucideChevronDown
-                              :class="[
-                                'mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                                open ? 'rotate-180' : '',
-                              ]"
-                            />
-                          </button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div v-if="open" class="grid min-w-0 gap-3 pt-1">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                              <p class="text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.characterRankOverride.priorityHint") }}
-                              </p>
-                              <Button
-                                v-if="characterRankOverrides.length > 0"
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                class="h-8 shrink-0"
-                                :disabled="runner.running.value"
-                                @click="clearCharacterRankOverrides"
-                              >
-                                <LucideRotateCcw class="size-3.5" />
-                                {{ t("deckRecommend.options.characterRankOverride.clear") }}
-                              </Button>
-                            </div>
-
-                            <div v-if="characterRankOptions.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                              {{ t("deckRecommend.options.characterRankOverride.empty") }}
-                            </div>
-
-                            <div v-else class="grid min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3">
-                              <div
-                                v-for="character in characterRankOptions"
-                                :key="character.id"
-                                class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_100px] items-center gap-2 rounded-md border bg-background/70 p-2 text-sm"
-                              >
-                                <img
-                                  :src="character.iconUrl"
-                                  :alt="character.label"
-                                  class="size-8 rounded object-cover"
-                                  loading="lazy"
-                                >
-                                <span class="min-w-0">
-                                  <span class="block truncate font-medium">{{ character.label }}</span>
-                                  <span class="block truncate text-xs text-muted-foreground">
-                                    {{ t("deckRecommend.options.characterRankOverride.maxRank", { value: character.maxRank }) }}
-                                  </span>
-                                </span>
-                                <Combobox
-                                  :model-value="characterRankOverrideValue(character.id)"
-                                  :options="characterRankComboboxOptions(character.maxRank)"
-                                  :disabled="runner.running.value"
-                                  :placeholder="t('deckRecommend.options.characterRankOverride.default')"
-                                  :search-placeholder="t('deckRecommend.options.characterRankOverride.searchPlaceholder')"
-                                  :empty-text="t('deckRecommend.options.characterRankOverride.emptySearch')"
-                                  trigger-class="h-8 px-2 text-xs"
-                                  content-class="min-w-36 max-w-[calc(100vw-2rem)]"
-                                  @update:model-value="value => updateCharacterRankOverride(character.id, value)"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </section>
-                    </Collapsible>
-
-                    <Collapsible v-slot="{ open }" v-model:open="mysekaiGateOverrideOpen" as-child>
-                      <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
-                        <CollapsibleTrigger as-child>
-                          <button
-                            type="button"
-                            class="flex min-w-0 items-start justify-between gap-3 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <span class="min-w-0 space-y-1">
-                              <span class="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium">
-                                <span>{{ t("deckRecommend.options.mysekaiGateOverride.title") }}</span>
-                                <span
-                                  v-if="mysekaiGateLevelOverrides.length > 0"
-                                  class="rounded-md border border-fuchsia-200 bg-fuchsia-50 px-1.5 py-0.5 text-[11px] font-semibold text-fuchsia-700 dark:border-fuchsia-500/30 dark:bg-fuchsia-500/10 dark:text-fuchsia-200"
-                                >
-                                  {{ t("deckRecommend.options.mysekaiGateOverride.selectedCount", { count: mysekaiGateLevelOverrides.length }) }}
-                                </span>
-                              </span>
-                              <span class="block text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.mysekaiGateOverride.description") }}
-                              </span>
-                            </span>
-                            <LucideChevronDown
-                              :class="[
-                                'mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                                open ? 'rotate-180' : '',
-                              ]"
-                            />
-                          </button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div v-if="open" class="grid min-w-0 gap-3 pt-1">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                              <p class="text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.mysekaiGateOverride.priorityHint") }}
-                              </p>
-                              <Button
-                                v-if="mysekaiGateLevelOverrides.length > 0"
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                class="h-8 shrink-0"
-                                :disabled="runner.running.value"
-                                @click="clearMysekaiGateLevelOverrides"
-                              >
-                                <LucideRotateCcw class="size-3.5" />
-                                {{ t("deckRecommend.options.mysekaiGateOverride.clear") }}
-                              </Button>
-                            </div>
-
-                            <div v-if="mysekaiGateOptions.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                              {{ t("deckRecommend.options.mysekaiGateOverride.empty") }}
-                            </div>
-
-                            <div v-else class="grid min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3">
-                              <div
-                                v-for="gate in mysekaiGateOptions"
-                                :key="gate.id"
-                                class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_100px] items-center gap-2 rounded-md border bg-background/70 p-2 text-sm"
-                              >
-                                <img
-                                  v-if="mysekaiGateIconUrl(gate)"
-                                  :src="mysekaiGateIconUrl(gate) ?? ''"
-                                  :alt="gate.unit ? t(`deckRecommend.eventUnits.${gate.unit}`) : gate.label"
-                                  class="size-8 rounded object-contain"
-                                  loading="lazy"
-                                >
-                                <span v-else class="size-8 rounded bg-muted" />
-                                <span class="min-w-0">
-                                  <span class="block truncate font-medium">{{ gate.label }}</span>
-                                  <span class="block truncate text-xs text-muted-foreground">
-                                    {{ t("deckRecommend.options.mysekaiGateOverride.maxLevel", { value: gate.maxLevel }) }}
-                                  </span>
-                                </span>
-                                <Combobox
-                                  :model-value="mysekaiGateLevelOverrideValue(gate.id)"
-                                  :options="mysekaiGateLevelComboboxOptions(gate.maxLevel)"
-                                  :disabled="runner.running.value"
-                                  :placeholder="t('deckRecommend.options.mysekaiGateOverride.default')"
-                                  :search-placeholder="t('deckRecommend.options.mysekaiGateOverride.searchPlaceholder')"
-                                  :empty-text="t('deckRecommend.options.mysekaiGateOverride.emptySearch')"
-                                  trigger-class="h-8 px-2 text-xs"
-                                  content-class="min-w-36 max-w-[calc(100vw-2rem)]"
-                                  @update:model-value="value => updateMysekaiGateLevelOverride(gate.id, value)"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </section>
-                    </Collapsible>
-
-                    <Collapsible v-slot="{ open }" v-model:open="mysekaiFixtureBonusOverrideOpen" as-child>
-                      <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
-                        <CollapsibleTrigger as-child>
-                          <button
-                            type="button"
-                            class="flex min-w-0 items-start justify-between gap-3 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <span class="min-w-0 space-y-1">
-                              <span class="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium">
-                                <span>{{ t("deckRecommend.options.mysekaiFixtureBonusOverride.title") }}</span>
-                                <span
-                                  v-if="mysekaiFixtureBonusRateOverrides.length > 0"
-                                  class="rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
-                                >
-                                  {{ t("deckRecommend.options.mysekaiFixtureBonusOverride.selectedCount", { count: mysekaiFixtureBonusRateOverrides.length }) }}
-                                </span>
-                              </span>
-                              <span class="block text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.mysekaiFixtureBonusOverride.description") }}
-                              </span>
-                            </span>
-                            <LucideChevronDown
-                              :class="[
-                                'mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                                open ? 'rotate-180' : '',
-                              ]"
-                            />
-                          </button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div v-if="open" class="grid min-w-0 gap-3 pt-1">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                              <p class="text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.mysekaiFixtureBonusOverride.priorityHint") }}
-                              </p>
-                              <Button
-                                v-if="mysekaiFixtureBonusRateOverrides.length > 0"
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                class="h-8 shrink-0"
-                                :disabled="runner.running.value"
-                                @click="clearMysekaiFixtureBonusRateOverrides"
-                              >
-                                <LucideRotateCcw class="size-3.5" />
-                                {{ t("deckRecommend.options.mysekaiFixtureBonusOverride.clear") }}
-                              </Button>
-                            </div>
-
-                            <div v-if="mysekaiFixtureBonusCharacterOptions.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
-                              {{ t("deckRecommend.options.mysekaiFixtureBonusOverride.empty") }}
-                            </div>
-
-                            <div v-else class="grid min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3">
-                              <div
-                                v-for="character in mysekaiFixtureBonusCharacterOptions"
-                                :key="character.id"
-                                class="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_110px] items-center gap-2 rounded-md border bg-background/70 p-2 text-sm"
-                              >
-                                <img
-                                  :src="character.iconUrl"
-                                  :alt="character.label"
-                                  class="size-8 rounded object-cover"
-                                  loading="lazy"
-                                >
-                                <span class="min-w-0">
-                                  <span class="block truncate font-medium">{{ character.label }}</span>
-                                  <span class="block truncate text-xs text-muted-foreground">
-                                    {{ t("deckRecommend.options.mysekaiFixtureBonusOverride.maxRate", { value: formatFixtureBonusRate(MYSEKAI_FIXTURE_BONUS_RATE_MAX) }) }}
-                                  </span>
-                                </span>
-                                <Combobox
-                                  :model-value="mysekaiFixtureBonusRateOverrideValue(character.id)"
-                                  :options="mysekaiFixtureBonusRateComboboxOptions()"
-                                  :disabled="runner.running.value"
-                                  :placeholder="t('deckRecommend.options.mysekaiFixtureBonusOverride.default')"
-                                  :search-placeholder="t('deckRecommend.options.mysekaiFixtureBonusOverride.searchPlaceholder')"
-                                  :empty-text="t('deckRecommend.options.mysekaiFixtureBonusOverride.emptySearch')"
-                                  trigger-class="h-8 px-2 text-xs"
-                                  content-class="min-w-40 max-w-[calc(100vw-2rem)]"
-                                  @update:model-value="value => updateMysekaiFixtureBonusRateOverride(character.id, value)"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </section>
-                    </Collapsible>
+                    <TemporaryOverridePanel
+                      v-model:open="mysekaiFixtureBonusOverrideOpen"
+                      :title="t('deckRecommend.options.mysekaiFixtureBonusOverride.title')"
+                      :description="t('deckRecommend.options.mysekaiFixtureBonusOverride.description')"
+                      :selected-count="mysekaiFixtureBonusRateOverrides.length"
+                      :selected-count-label="t('deckRecommend.options.mysekaiFixtureBonusOverride.selectedCount', { count: mysekaiFixtureBonusRateOverrides.length })"
+                      :priority-hint="t('deckRecommend.options.mysekaiFixtureBonusOverride.priorityHint')"
+                      :clear-label="t('deckRecommend.options.mysekaiFixtureBonusOverride.clear')"
+                      :clear-disabled="runner.running.value"
+                      badge-class="border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+                      @clear="clearMysekaiFixtureBonusRateOverrides"
+                    >
+                      <MysekaiFixtureBonusOverrideList
+                        v-model="mysekaiFixtureBonusRateOverrideInputs"
+                        :characters="mysekaiFixtureBonusCharacterOptions"
+                        :options="mysekaiFixtureBonusRateComboboxOptions"
+                        :max-rate-label="mysekaiFixtureBonusMaxRateLabel"
+                        :disabled="runner.running.value"
+                      />
+                    </TemporaryOverridePanel>
 
                     <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
@@ -3882,10 +3970,20 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
               <p class="text-sm text-muted-foreground">
                 {{ runner.running.value && runner.phase.value ? t(`deckRecommend.runner.phases.${runner.phase.value}`) : t("deckRecommend.runner.ready") }}
               </p>
-              <Button type="button" :disabled="!canRunRecommend" @click="runRecommend">
-                <LucidePlay class="size-4" />
-                {{ runner.running.value ? t("deckRecommend.runner.running") : t("deckRecommend.runner.run") }}
-              </Button>
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                <Button type="button" variant="outline" :disabled="runner.running.value" @click="saveDeckRecommendConfig">
+                  <LucideSave class="size-4" />
+                  {{ t("deckRecommend.configActions.save") }}
+                </Button>
+                <Button type="button" variant="destructive" :disabled="runner.running.value" @click="clearConfigConfirmOpen = true">
+                  <LucideTrash2 class="size-4" />
+                  {{ t("deckRecommend.configActions.clear") }}
+                </Button>
+                <Button type="button" :disabled="!canRunRecommend" @click="runRecommend">
+                  <LucidePlay class="size-4" />
+                  {{ runner.running.value ? t("deckRecommend.runner.running") : t("deckRecommend.runner.run") }}
+                </Button>
+              </div>
             </div>
           </CardContent>
       </Card>
@@ -4297,6 +4395,26 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
           >{{ t("deckRecommend.attribution.aboutLink") }}</router-link>{{ t("deckRecommend.attribution.engineSuffix") }}
         </p>
       </div>
+
+      <AlertDialog v-model:open="clearConfigConfirmOpen">
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{{ t("deckRecommend.configActions.clearDialogTitle") }}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {{ t("deckRecommend.configActions.clearDialogDescription") }}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{{ t("deckRecommend.configActions.clearDialogCancel") }}</AlertDialogCancel>
+            <AlertDialogAction
+              class="bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40"
+              @click="clearDeckRecommendConfig"
+            >
+              {{ t("deckRecommend.configActions.clearDialogConfirm") }}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog v-model:open="customBonusSimulationDialogOpen">
         <DialogScrollContent class="max-h-[88vh] overflow-y-auto sm:max-w-[760px]">

@@ -142,7 +142,7 @@ const { columns, table, FlexRender } = useIMAuthorizationTable({
   </Card>
 
   <Dialog v-model:open="showEditDialog">
-    <DialogScrollContent class="sm:max-w-[425px]">
+    <DialogScrollContent class="sm:max-w-xl">
       <DialogHeader>
         <DialogTitle>
           {{ isCreateMode ? t("userSettings.imAuthorization.dialog.createTitle") : t("userSettings.imAuthorization.dialog.editTitle") }}

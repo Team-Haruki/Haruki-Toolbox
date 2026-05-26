@@ -25,6 +25,7 @@ import type { SekaiMasterCacheState, SekaiMusicMetasCacheState } from "./types"
 
 const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
 const OPTIONAL_MASTER_FILE_SET = new Set<string>(SEKAI_DATA_OPTIONAL_MASTER_FILES)
+const MASTER_FILE_FETCH_CONCURRENCY = 4
 
 workerScope.onmessage = (event: MessageEvent<SekaiDataWorkerRequest>) => {
   void handleRequest(event.data)
@@ -95,19 +96,12 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
     : files.filter((fileName) => !cachedMasterFiles.includes(fileName))
 
   if (!masterCacheHit) {
-    const masterFiles: Record<string, unknown> = {}
-    for (let index = 0; index < filesToFetch.length; index += 1) {
-      const fileName = filesToFetch[index]
-      postProgress(request.requestId, region, "fetching-master", 10 + Math.round((index / filesToFetch.length) * 55), {
-        fileName,
-        current: index + 1,
-        total: filesToFetch.length,
-      })
-      masterFiles[fileName] = await fetchMasterFileJson(
-        resolveSekaiMasterFileUrl(region, fileName, versionInfo),
-        fileName,
-      )
-    }
+    const masterFiles = await fetchMasterFilesConcurrently({
+      filesToFetch,
+      region,
+      requestId: request.requestId,
+      versionInfo,
+    })
 
     if (Object.keys(masterFiles).length > 0) {
       await writeSekaiMasterFiles(region, fetchVersion, masterFiles)
@@ -196,6 +190,50 @@ async function fetchMasterFileJson(url: string, fileName: string): Promise<unkno
   }
 
   return response.json()
+}
+
+async function fetchMasterFilesConcurrently(input: {
+  filesToFetch: string[]
+  region: SekaiDataWorkerRequest["region"]
+  requestId: string
+  versionInfo: ReturnType<typeof normalizeSekaiMasterVersionInfo>
+}): Promise<Record<string, unknown>> {
+  const { filesToFetch, region, requestId, versionInfo } = input
+  const masterFiles: Record<string, unknown> = {}
+  let nextIndex = 0
+  let completed = 0
+  const total = filesToFetch.length
+  const workerCount = Math.min(MASTER_FILE_FETCH_CONCURRENCY, total)
+
+  if (total === 0) {
+    return masterFiles
+  }
+
+  async function fetchNextFile() {
+    while (nextIndex < total) {
+      const index = nextIndex
+      nextIndex += 1
+      const fileName = filesToFetch[index]
+      postProgress(requestId, region, "fetching-master", 10 + Math.round((completed / total) * 55), {
+        fileName,
+        current: completed + 1,
+        total,
+      })
+      masterFiles[fileName] = await fetchMasterFileJson(
+        resolveSekaiMasterFileUrl(region, fileName, versionInfo),
+        fileName,
+      )
+      completed += 1
+      postProgress(requestId, region, "fetching-master", 10 + Math.round((completed / total) * 55), {
+        fileName,
+        current: completed,
+        total,
+      })
+    }
+  }
+
+  await Promise.all(Array.from({ length: workerCount }, fetchNextFile))
+  return masterFiles
 }
 
 type MusicMetasRemoteState = {

@@ -153,7 +153,7 @@ export const zhCN = {
     },
     sekaiData: {
       title: "Master数据缓存",
-      description: "管理各区服缓存与后台更新任务，供选择器和组卡推荐复用。",
+      description: "管理各区服缓存与后台更新任务，供选择器、推荐和其他功能复用。",
       region: "区服",
       masterVersion: "Master 版本",
       displayVersion: "展示版本",
@@ -173,8 +173,7 @@ export const zhCN = {
         cachedFiles: "已缓存文件",
         activeTasks: "活动任务",
       },
-      refreshBasic: "更新基础",
-      refreshRecommend: "更新组卡",
+      refreshMasterData: "更新 Master 数据",
       clear: "清理",
       clearDialog: {
         title: "清理Master数据缓存？",
@@ -1354,6 +1353,16 @@ export const zhCN = {
       common: {
         selectPlaceholder: "请选择",
       },
+      layers: {
+        basic: {
+          title: "基础配置",
+          description: "选择代理软件、服务端域名、上传方式与脚本参数。",
+        },
+        scope: {
+          title: "上传范围",
+          description: "选择需要上传数据的区服和数据类型。",
+        },
+      },
       sections: {
         software: {
           title: "选择软件",
@@ -1619,6 +1628,14 @@ export const zhCN = {
     },
     select: {
       loading: "正在准备数据...",
+    },
+    configActions: {
+      save: "保存配置",
+      clear: "清除配置",
+      clearDialogTitle: "确认清除配置",
+      clearDialogDescription: "此操作会删除已保存的组卡推荐配置，并将当前页面恢复为默认值。确定要继续吗？",
+      clearDialogCancel: "取消",
+      clearDialogConfirm: "确认清除",
     },
     form: {
       account: "账号",
@@ -2074,6 +2091,9 @@ export const zhCN = {
     toast: {
       runSuccessTitle: "推荐完成",
       runFailedTitle: "推荐失败",
+      configSavedTitle: "配置已保存",
+      configSaveFailedTitle: "保存配置失败",
+      configClearedTitle: "配置已清除",
     },
     attribution: {
       originalPrefix: "组卡推荐原始算法来自",
