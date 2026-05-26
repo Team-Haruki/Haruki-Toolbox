@@ -1897,6 +1897,8 @@ export const zhCN = {
         clear: "清空覆盖",
         default: "不覆盖",
         empty: "当前数据还没有可覆盖的区域道具。",
+        searchPlaceholder: "搜索等级...",
+        emptySearch: "没有找到等级。",
         areaFallback: "区域 #{id}",
         itemFallback: "道具 #{id}",
         targetFallback: "目标 #{id}",

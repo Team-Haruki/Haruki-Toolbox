@@ -1897,6 +1897,8 @@ export const enUS = {
         clear: "Clear overrides",
         default: "No override",
         empty: "No overridable area items are available in the current data.",
+        searchPlaceholder: "Search level...",
+        emptySearch: "No level found.",
         areaFallback: "Area #{id}",
         itemFallback: "Item #{id}",
         targetFallback: "Target #{id}",
