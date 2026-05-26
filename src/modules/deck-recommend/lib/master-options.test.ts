@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test"
 import {
+  buildCharacterRankOptions,
+  buildMysekaiGateOptions,
   resolveDefaultEventOption,
   resolveEventCardBonusLimit,
   resolveEventSkillScoreUpLimit,
@@ -11,6 +13,42 @@ import {
 } from "./master-options"
 
 describe("deck recommend master option helpers", () => {
+  it("builds character rank options with per-character max ranks", () => {
+    expect(buildCharacterRankOptions({
+      gameCharacters: [
+        { id: 2, firstName: "B", unit: "idol" },
+        { id: 1, firstName: "A", unit: "light_sound" },
+        { id: 3, firstName: "C", unit: "street" },
+      ],
+      characterRanks: [
+        { characterId: 1, rank: 80 },
+        { characterId: 1, rank: 90 },
+        { gameCharacterId: 2, characterRank: 75 },
+      ],
+    }).map((option) => ({ id: option.id, label: option.label, maxRank: option.maxRank }))).toEqual([
+      { id: 1, label: "A", maxRank: 90 },
+      { id: 2, label: "B", maxRank: 75 },
+    ])
+  })
+
+  it("builds mysekai gate options with max levels", () => {
+    expect(buildMysekaiGateOptions({
+      mysekaiGates: [
+        { id: 2, name: "Second gate" },
+        { id: 1, mysekaiGateName: "First gate" },
+        { id: 3 },
+      ],
+      mysekaiGateLevels: [
+        { mysekaiGateId: 1, level: 2 },
+        { mysekaiGateId: 1, level: 5 },
+        { mysekaiGateId: 2, mysekaiGateLevel: 3 },
+      ],
+    })).toEqual([
+      { id: 1, value: "1", label: "First gate", unit: null, maxLevel: 5 },
+      { id: 2, value: "2", label: "Second gate", unit: null, maxLevel: 3 },
+    ])
+  })
+
   it("formats difficulty labels in uppercase with levels", () => {
     expect(resolveMusicDifficultyOptions("74", [
       { musicId: 74, musicDifficulty: "expert", playLevel: 24 },

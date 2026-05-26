@@ -52,6 +52,9 @@ import {
   applyChallengeScoreDelta,
   createPreparedDeckRecommendUserDataString,
   type DeckRecommendAreaItemLevelOverride,
+  type DeckRecommendCharacterRankOverride,
+  type DeckRecommendMysekaiFixtureBonusRateOverride,
+  type DeckRecommendMysekaiGateLevelOverride,
   type DeckRecommendSingleCardOverride,
 } from "../lib/user-data-preparation"
 import { prepareRecommendUserDataForWasm } from "../lib/wasm-user-data"
@@ -86,6 +89,12 @@ export type DeckRecommendRunnerInput = {
   boost: number | null
   areaItemLevel: number | null
   areaItemLevelOverrides: readonly DeckRecommendAreaItemLevelOverride[]
+  characterRank: number | null
+  characterRankOverrides: readonly DeckRecommendCharacterRankOverride[]
+  mysekaiGateLevel: number | null
+  mysekaiGateLevelOverrides: readonly DeckRecommendMysekaiGateLevelOverride[]
+  mysekaiFixtureBonusRate: number | null
+  mysekaiFixtureBonusRateOverrides: readonly DeckRecommendMysekaiFixtureBonusRateOverride[]
   resultLimit: number | null
   timeoutMs: number | null
   unitFilters: readonly DeckRecommendUnitType[]
@@ -184,6 +193,12 @@ export function useDeckRecommendRunner() {
         characterFilters: input.characterFilters,
         areaItemLevel: input.areaItemLevel,
         areaItemLevelOverrides: input.areaItemLevelOverrides,
+        characterRank: input.characterRank,
+        characterRankOverrides: input.characterRankOverrides,
+        mysekaiGateLevel: input.mysekaiGateLevel,
+        mysekaiGateLevelOverrides: input.mysekaiGateLevelOverrides,
+        mysekaiFixtureBonusRate: input.mysekaiFixtureBonusRate,
+        mysekaiFixtureBonusRateOverrides: input.mysekaiFixtureBonusRateOverrides,
         singleCardOverrides: input.singleCardOverrides,
         trainingConfig: input.trainingConfig,
       })

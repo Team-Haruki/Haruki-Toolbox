@@ -64,6 +64,12 @@ describe("deck recommend user data preparation", () => {
         unit: "theme_park",
       },
     ],
+    characterRanks: [
+      { characterId: 1, rank: 80 },
+      { characterId: 1, rank: 90 },
+      { characterId: 2, rank: 80 },
+      { characterId: 3, rank: 70 },
+    ],
     areaItems: [
       { id: 1, areaId: 10 },
       { id: 2, areaId: 11 },
@@ -76,6 +82,16 @@ describe("deck recommend user data preparation", () => {
       { areaItemId: 2, level: 20 },
       { areaItemId: 3, level: 1 },
       { areaItemId: 3, level: 10 },
+    ],
+    mysekaiGates: [
+      { id: 1 },
+      { id: 2 },
+    ],
+    mysekaiGateLevels: [
+      { mysekaiGateId: 1, level: 1 },
+      { mysekaiGateId: 1, level: 5 },
+      { mysekaiGateId: 2, level: 1 },
+      { mysekaiGateId: 2, level: 3 },
     ],
   }
 
@@ -273,6 +289,175 @@ describe("deck recommend user data preparation", () => {
     const userData = JSON.parse(prepared.userDataString) as { userCards: Array<{ cardId: number }> }
 
     expect(userData.userCards.map((card) => card.cardId)).toEqual([100, 101, 103])
+  })
+
+  it("applies uniform character rank overrides to all master characters", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [],
+        userCharacters: [{ characterId: 1, characterRank: 12 }],
+      },
+      characterRank: 85,
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as { userCharacters: Array<{ characterId: number; characterRank: number }> }
+
+    expect(userData.userCharacters).toEqual([
+      { characterId: 1, characterRank: 85 },
+      { characterId: 2, characterRank: 80 },
+      { characterId: 3, characterRank: 70 },
+    ])
+  })
+
+  it("lets per-character rank overrides take priority over uniform rank overrides", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [],
+        userCharacters: [{ characterId: 1, characterRank: 12 }],
+      },
+      characterRank: 50,
+      characterRankOverrides: [
+        { characterId: 1, rank: 999 },
+        { characterId: 2, rank: 60 },
+        { characterId: 99, rank: 60 },
+      ],
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as { userCharacters: Array<{ characterId: number; characterRank: number }> }
+
+    expect(userData.userCharacters).toEqual([
+      { characterId: 1, characterRank: 90 },
+      { characterId: 2, characterRank: 60 },
+      { characterId: 3, characterRank: 50 },
+    ])
+  })
+
+  it("applies uniform mysekai gate level overrides and synthesizes missing gates", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [],
+        userMysekaiGates: [{ mysekaiGateId: 1, mysekaiGateLevel: 2, isSettingAtHomeSite: false }],
+      },
+      mysekaiGateLevel: 4,
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as {
+      userMysekaiGates: Array<{ mysekaiGateId: number; mysekaiGateLevel: number; isSettingAtHomeSite?: boolean }>
+    }
+
+    expect(userData.userMysekaiGates).toEqual([
+      { mysekaiGateId: 1, mysekaiGateLevel: 4, isSettingAtHomeSite: false },
+      { mysekaiGateId: 2, mysekaiGateSkinId: 0, mysekaiGateLevel: 3, visitCount: 0, isSettingAtHomeSite: true },
+    ])
+  })
+
+  it("lets per-gate level overrides take priority over uniform gate overrides", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [],
+        userMysekaiGates: [{ mysekaiGateId: 1, mysekaiGateLevel: 2 }],
+      },
+      mysekaiGateLevel: 2,
+      mysekaiGateLevelOverrides: [
+        { mysekaiGateId: 1, level: 999 },
+        { mysekaiGateId: 2, level: 1 },
+        { mysekaiGateId: 99, level: 5 },
+      ],
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as { userMysekaiGates: Array<{ mysekaiGateId: number; mysekaiGateLevel: number }> }
+
+    expect(userData.userMysekaiGates.map((gate) => ({
+      mysekaiGateId: gate.mysekaiGateId,
+      mysekaiGateLevel: gate.mysekaiGateLevel,
+    }))).toEqual([
+      { mysekaiGateId: 1, mysekaiGateLevel: 5 },
+      { mysekaiGateId: 2, mysekaiGateLevel: 1 },
+    ])
+  })
+
+  it("applies uniform mysekai fixture bonus rates to all master characters", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [],
+        userMysekaiFixtureGameCharacterPerformanceBonuses: [
+          { gameCharacterId: 1, totalBonusRate: 15, source: "kept" },
+        ],
+      },
+      mysekaiFixtureBonusRate: 30,
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as {
+      userMysekaiFixtureGameCharacterPerformanceBonuses: Array<{
+        gameCharacterId: number
+        totalBonusRate: number
+        source?: string
+      }>
+    }
+
+    expect(userData.userMysekaiFixtureGameCharacterPerformanceBonuses).toEqual([
+      { gameCharacterId: 1, totalBonusRate: 30, source: "kept" },
+      { gameCharacterId: 2, totalBonusRate: 30 },
+      { gameCharacterId: 3, totalBonusRate: 30 },
+    ])
+  })
+
+  it("lets per-character mysekai fixture bonus rates take priority over uniform rates", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [],
+        userMysekaiFixtureGameCharacterPerformanceBonuses: [
+          { gameCharacterId: 1, totalBonusRate: 15 },
+          { gameCharacterId: 2, totalBonusRate: 20 },
+        ],
+      },
+      mysekaiFixtureBonusRate: 30,
+      mysekaiFixtureBonusRateOverrides: [
+        { characterId: 2, totalBonusRate: 6 },
+        { characterId: 3, totalBonusRate: 0 },
+      ],
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as {
+      userMysekaiFixtureGameCharacterPerformanceBonuses: Array<{ gameCharacterId: number; totalBonusRate: number }>
+    }
+
+    expect(userData.userMysekaiFixtureGameCharacterPerformanceBonuses).toEqual([
+      { gameCharacterId: 1, totalBonusRate: 30 },
+      { gameCharacterId: 2, totalBonusRate: 6 },
+      { gameCharacterId: 3, totalBonusRate: 0 },
+    ])
+  })
+
+  it("ignores invalid mysekai fixture bonus rate overrides", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [],
+        userMysekaiFixtureGameCharacterPerformanceBonuses: [
+          { gameCharacterId: 1, totalBonusRate: 15 },
+        ],
+      },
+      mysekaiFixtureBonusRate: 101,
+      mysekaiFixtureBonusRateOverrides: [
+        { characterId: 2, totalBonusRate: 101 },
+        { characterId: 99, totalBonusRate: 30 },
+      ],
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as {
+      userMysekaiFixtureGameCharacterPerformanceBonuses: Array<{ gameCharacterId: number; totalBonusRate: number }>
+    }
+
+    expect(userData.userMysekaiFixtureGameCharacterPerformanceBonuses).toEqual([
+      { gameCharacterId: 1, totalBonusRate: 15 },
+    ])
   })
 
   it("clamps area item level overrides to master max levels", () => {

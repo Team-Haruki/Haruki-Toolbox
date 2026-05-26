@@ -72,6 +72,18 @@ export type CharacterOption = {
   iconUrl: string
 }
 
+export type CharacterRankOption = CharacterOption & {
+  maxRank: number
+}
+
+export type MysekaiGateOption = {
+  id: number
+  value: string
+  label: string
+  unit: string | null
+  maxLevel: number
+}
+
 export type EventOption = {
   id: number
   value: string
@@ -115,6 +127,49 @@ export function buildCharacterOptions(items: SekaiGameCharacter[] | null): Chara
       }
     })
     .filter((item): item is CharacterOption => item != null)
+    .sort((a, b) => a.id - b.id)
+}
+
+export function buildCharacterRankOptions(masterData: Record<string, unknown> | null): CharacterRankOption[] {
+  const maxRankMap = buildCharacterMaxRankMap(masterData?.characterRanks)
+  return buildCharacterOptions(Array.isArray(masterData?.gameCharacters) ? masterData.gameCharacters as SekaiGameCharacter[] : null)
+    .map((option) => {
+      const maxRank = maxRankMap.get(option.id)
+      return maxRank
+        ? {
+            ...option,
+            maxRank,
+          }
+        : null
+    })
+    .filter((option): option is CharacterRankOption => option != null)
+}
+
+export function buildMysekaiGateOptions(masterData: Record<string, unknown> | null): MysekaiGateOption[] {
+  const maxLevelMap = buildMysekaiGateMaxLevelMap(masterData?.mysekaiGateLevels)
+  const gates = Array.isArray(masterData?.mysekaiGates) ? masterData.mysekaiGates : []
+
+  return gates
+    .map((item) => {
+      if (!isRecord(item)) {
+        return null
+      }
+
+      const id = normalizePositiveNumber(item.id)
+      const maxLevel = id ? maxLevelMap.get(id) : null
+      if (!id || !maxLevel) {
+        return null
+      }
+
+      return {
+        id,
+        value: String(id),
+        label: resolveMysekaiGateName(item, id),
+        unit: normalizeText(item.unit),
+        maxLevel,
+      }
+    })
+    .filter((option): option is MysekaiGateOption => option != null)
     .sort((a, b) => a.id - b.id)
 }
 
@@ -324,6 +379,56 @@ function resolveCharacterName(item: SekaiGameCharacter, id: number): string {
     .filter((part): part is string => Boolean(part))
     .join(" ")
   return english || `#${id}`
+}
+
+function resolveMysekaiGateName(item: Record<string, unknown>, id: number): string {
+  return normalizeText(item.name)
+    ?? normalizeText(item.mysekaiGateName)
+    ?? normalizeText(item.displayName)
+    ?? normalizeText(item.assetbundleName)
+    ?? `#${id}`
+}
+
+function buildCharacterMaxRankMap(items: unknown): Map<number, number> {
+  const map = new Map<number, number>()
+  if (!Array.isArray(items)) {
+    return map
+  }
+
+  for (const item of items) {
+    if (!isRecord(item)) {
+      continue
+    }
+
+    const characterId = normalizePositiveNumber(item.characterId) ?? normalizePositiveNumber(item.gameCharacterId)
+    const rank = normalizePositiveNumber(item.characterRank) ?? normalizePositiveNumber(item.rank)
+    if (characterId && rank) {
+      map.set(characterId, Math.max(map.get(characterId) ?? 0, rank))
+    }
+  }
+
+  return map
+}
+
+function buildMysekaiGateMaxLevelMap(items: unknown): Map<number, number> {
+  const map = new Map<number, number>()
+  if (!Array.isArray(items)) {
+    return map
+  }
+
+  for (const item of items) {
+    if (!isRecord(item)) {
+      continue
+    }
+
+    const gateId = normalizePositiveNumber(item.mysekaiGateId)
+    const level = normalizePositiveNumber(item.mysekaiGateLevel) ?? normalizePositiveNumber(item.level)
+    if (gateId && level) {
+      map.set(gateId, Math.max(map.get(gateId) ?? 0, level))
+    }
+  }
+
+  return map
 }
 
 function normalizeText(value: unknown): string | null {

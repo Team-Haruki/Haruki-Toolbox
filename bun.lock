@@ -16,7 +16,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
-        "haruki-sekai-deck-recommend-cpp": "0.2.29",
+        "haruki-sekai-deck-recommend-cpp": "0.2.30",
         "lucide-vue-next": "^1.0.0",
         "pinia": "^3.0.4",
         "pinia-plugin-persistedstate": "^4.7.1",
@@ -1052,7 +1052,7 @@
 
     "graceful-fs": ["graceful-fs@4.2.11", "", {}, "sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ=="],
 
-    "haruki-sekai-deck-recommend-cpp": ["haruki-sekai-deck-recommend-cpp@0.2.29", "", {}, "sha512-SeQ0CeFbKSXgHa4UCoWX3Dgdbl1AUz9FiJY4cz3VDxuVMUyNNUMCTLOjzOXI7iadovfqTDhTgKJBC4E7r1b8LA=="],
+    "haruki-sekai-deck-recommend-cpp": ["haruki-sekai-deck-recommend-cpp@0.2.30", "", {}, "sha512-Mx0gi3qDY0jHzDScRUxSCLQA8Y3ueNDrqiHVlEwR7JZ7xl4HxbqJRReyBaRa6LrYxFQow52b/LGRGGZ7p2HiMA=="],
 
     "has-bigints": ["has-bigints@1.1.0", "", {}, "sha512-R3pbpkcIqv2Pm3dUwgjclDRVmWpTJW2DcMzcIhEXEx1oh/CEMObMm3KLmRJOdvhM7o4uQBnwr8pzRK2sJWIqfg=="],
 

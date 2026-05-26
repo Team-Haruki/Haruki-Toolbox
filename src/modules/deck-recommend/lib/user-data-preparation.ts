@@ -19,6 +19,21 @@ export type DeckRecommendAreaItemLevelOverride = {
   level: number
 }
 
+export type DeckRecommendCharacterRankOverride = {
+  characterId: number
+  rank: number
+}
+
+export type DeckRecommendMysekaiGateLevelOverride = {
+  mysekaiGateId: number
+  level: number
+}
+
+export type DeckRecommendMysekaiFixtureBonusRateOverride = {
+  characterId: number
+  totalBonusRate: number
+}
+
 export type PrepareDeckRecommendUserDataInput = {
   userData: unknown
   masterData: Record<string, unknown>
@@ -27,6 +42,12 @@ export type PrepareDeckRecommendUserDataInput = {
   characterFilters?: readonly number[] | null
   areaItemLevel?: number | null
   areaItemLevelOverrides?: readonly DeckRecommendAreaItemLevelOverride[]
+  characterRank?: number | null
+  characterRankOverrides?: readonly DeckRecommendCharacterRankOverride[]
+  mysekaiGateLevel?: number | null
+  mysekaiGateLevelOverrides?: readonly DeckRecommendMysekaiGateLevelOverride[]
+  mysekaiFixtureBonusRate?: number | null
+  mysekaiFixtureBonusRateOverrides?: readonly DeckRecommendMysekaiFixtureBonusRateOverride[]
   singleCardOverrides?: readonly DeckRecommendSingleCardOverride[]
   trainingConfig?: readonly CardTrainingConfig[]
 }
@@ -72,9 +93,41 @@ type UserAreaRecord = Record<string, unknown> & {
   areaItems?: Array<Record<string, unknown>>
 }
 
+type UserCharacterRecord = Record<string, unknown> & {
+  characterId?: number
+  characterRank?: number
+}
+
+type UserMysekaiGateRecord = Record<string, unknown> & {
+  mysekaiGateId?: number
+  mysekaiGateLevel?: number
+}
+
+type UserMysekaiFixtureBonusRecord = Record<string, unknown> & {
+  gameCharacterId?: number
+  totalBonusRate?: number
+}
+
 type MasterAreaItemRecord = {
   id?: number
   areaId?: number
+}
+
+type MasterCharacterRankRecord = {
+  characterId?: number
+  gameCharacterId?: number
+  characterRank?: number
+  rank?: number
+}
+
+type MasterMysekaiGateRecord = {
+  id?: number
+}
+
+type MasterMysekaiGateLevelRecord = {
+  mysekaiGateId?: number
+  mysekaiGateLevel?: number
+  level?: number
 }
 
 export function prepareDeckRecommendUserData(input: PrepareDeckRecommendUserDataInput): PreparedDeckRecommendUserData {
@@ -117,6 +170,29 @@ export function prepareDeckRecommendUserData(input: PrepareDeckRecommendUserData
       input.areaItemLevelOverrides,
     )
   }
+
+  userData.userCharacters = applyCharacterRankOverrides(
+    userData.userCharacters,
+    input.masterData.gameCharacters,
+    input.masterData.characterRanks,
+    input.characterRank,
+    input.characterRankOverrides,
+  )
+
+  userData.userMysekaiGates = applyMysekaiGateLevelOverrides(
+    userData.userMysekaiGates,
+    input.masterData.mysekaiGates,
+    input.masterData.mysekaiGateLevels,
+    input.mysekaiGateLevel,
+    input.mysekaiGateLevelOverrides,
+  )
+
+  userData.userMysekaiFixtureGameCharacterPerformanceBonuses = applyMysekaiFixtureBonusRateOverrides(
+    userData.userMysekaiFixtureGameCharacterPerformanceBonuses,
+    input.masterData.gameCharacters,
+    input.mysekaiFixtureBonusRate,
+    input.mysekaiFixtureBonusRateOverrides,
+  )
 
   return {
     userData,
@@ -655,6 +731,328 @@ function applyAreaItemLevelOverrides(
 }
 
 function clampAreaItemLevel(level: number, maxLevel: number | undefined): number {
+  return maxLevel ? Math.min(level, maxLevel) : level
+}
+
+function applyCharacterRankOverrides(
+  userCharacters: unknown,
+  gameCharacters: unknown,
+  characterRanks: unknown,
+  uniformRank: number | null | undefined,
+  overrides: readonly DeckRecommendCharacterRankOverride[] | undefined,
+): UserCharacterRecord[] {
+  const sourceCharacters = Array.isArray(userCharacters) ? userCharacters.filter(isRecord) as UserCharacterRecord[] : []
+  const maxRankMap = buildCharacterMaxRankMap(gameCharacters, characterRanks)
+  const targetRanks = new Map<number, number>()
+  const normalizedUniformRank = normalizePositiveInteger(uniformRank)
+  const normalizedOverrides = normalizeCharacterRankOverrides(overrides, maxRankMap)
+
+  if (normalizedUniformRank) {
+    for (const characterId of maxRankMap.keys()) {
+      targetRanks.set(characterId, clampPositiveLevel(normalizedUniformRank, maxRankMap.get(characterId)))
+    }
+  }
+
+  for (const [characterId, rank] of normalizedOverrides) {
+    targetRanks.set(characterId, rank)
+  }
+
+  if (targetRanks.size === 0) {
+    return sourceCharacters
+  }
+
+  const emittedCharacterIds = new Set<number>()
+  const preparedCharacters: UserCharacterRecord[] = []
+  for (const character of sourceCharacters) {
+    const characterId = normalizePositiveInteger(character.characterId)
+    if (!characterId || emittedCharacterIds.has(characterId)) {
+      continue
+    }
+
+    emittedCharacterIds.add(characterId)
+    preparedCharacters.push({
+      ...character,
+      characterRank: targetRanks.get(characterId) ?? character.characterRank,
+    })
+  }
+
+  for (const [characterId, rank] of [...targetRanks.entries()].sort(([left], [right]) => left - right)) {
+    if (emittedCharacterIds.has(characterId)) {
+      continue
+    }
+
+    preparedCharacters.push({
+      characterId,
+      characterRank: rank,
+    })
+  }
+
+  return preparedCharacters
+}
+
+function applyMysekaiGateLevelOverrides(
+  userMysekaiGates: unknown,
+  mysekaiGates: unknown,
+  mysekaiGateLevels: unknown,
+  uniformLevel: number | null | undefined,
+  overrides: readonly DeckRecommendMysekaiGateLevelOverride[] | undefined,
+): UserMysekaiGateRecord[] {
+  const sourceGates = Array.isArray(userMysekaiGates) ? userMysekaiGates.filter(isRecord) as UserMysekaiGateRecord[] : []
+  const maxLevelMap = buildMysekaiGateMaxLevelMap(mysekaiGates, mysekaiGateLevels)
+  const targetLevels = new Map<number, number>()
+  const normalizedUniformLevel = normalizePositiveInteger(uniformLevel)
+  const normalizedOverrides = normalizeMysekaiGateLevelOverrides(overrides, maxLevelMap)
+
+  if (normalizedUniformLevel) {
+    for (const gateId of maxLevelMap.keys()) {
+      targetLevels.set(gateId, clampPositiveLevel(normalizedUniformLevel, maxLevelMap.get(gateId)))
+    }
+  }
+
+  for (const [gateId, level] of normalizedOverrides) {
+    targetLevels.set(gateId, level)
+  }
+
+  if (targetLevels.size === 0) {
+    return sourceGates
+  }
+
+  const emittedGateIds = new Set<number>()
+  const preparedGates: UserMysekaiGateRecord[] = []
+  for (const gate of sourceGates) {
+    const gateId = normalizePositiveInteger(gate.mysekaiGateId)
+    if (!gateId || emittedGateIds.has(gateId)) {
+      continue
+    }
+
+    emittedGateIds.add(gateId)
+    preparedGates.push({
+      ...gate,
+      mysekaiGateLevel: targetLevels.get(gateId) ?? gate.mysekaiGateLevel,
+    })
+  }
+
+  for (const [gateId, level] of [...targetLevels.entries()].sort(([left], [right]) => left - right)) {
+    if (emittedGateIds.has(gateId)) {
+      continue
+    }
+
+    preparedGates.push({
+      mysekaiGateId: gateId,
+      mysekaiGateSkinId: 0,
+      mysekaiGateLevel: level,
+      visitCount: 0,
+      isSettingAtHomeSite: true,
+    })
+  }
+
+  return preparedGates
+}
+
+function applyMysekaiFixtureBonusRateOverrides(
+  userFixtureBonuses: unknown,
+  gameCharacters: unknown,
+  uniformRate: number | null | undefined,
+  overrides: readonly DeckRecommendMysekaiFixtureBonusRateOverride[] | undefined,
+): UserMysekaiFixtureBonusRecord[] {
+  const sourceBonuses = Array.isArray(userFixtureBonuses)
+    ? userFixtureBonuses.filter(isRecord) as UserMysekaiFixtureBonusRecord[]
+    : []
+  const characterIds = buildGameCharacterIdSet(gameCharacters)
+  const targetRates = new Map<number, number>()
+  const normalizedUniformRate = normalizeFixtureBonusRate(uniformRate)
+  const normalizedOverrides = normalizeMysekaiFixtureBonusRateOverrides(overrides, characterIds)
+
+  if (normalizedUniformRate != null) {
+    for (const characterId of characterIds) {
+      targetRates.set(characterId, normalizedUniformRate)
+    }
+  }
+
+  for (const [characterId, rate] of normalizedOverrides) {
+    targetRates.set(characterId, rate)
+  }
+
+  if (targetRates.size === 0) {
+    return sourceBonuses
+  }
+
+  const emittedCharacterIds = new Set<number>()
+  const preparedBonuses: UserMysekaiFixtureBonusRecord[] = []
+  for (const bonus of sourceBonuses) {
+    const characterId = normalizePositiveInteger(bonus.gameCharacterId)
+    if (!characterId || emittedCharacterIds.has(characterId)) {
+      continue
+    }
+
+    emittedCharacterIds.add(characterId)
+    preparedBonuses.push({
+      ...bonus,
+      totalBonusRate: targetRates.get(characterId) ?? bonus.totalBonusRate,
+    })
+  }
+
+  for (const [characterId, totalBonusRate] of [...targetRates.entries()].sort(([left], [right]) => left - right)) {
+    if (emittedCharacterIds.has(characterId)) {
+      continue
+    }
+
+    preparedBonuses.push({
+      gameCharacterId: characterId,
+      totalBonusRate,
+    })
+  }
+
+  return preparedBonuses
+}
+
+function buildCharacterMaxRankMap(gameCharacters: unknown, characterRanks: unknown): Map<number, number> {
+  const map = new Map<number, number>()
+  if (Array.isArray(gameCharacters)) {
+    for (const item of gameCharacters) {
+      if (!isRecord(item)) {
+        continue
+      }
+
+      const characterId = normalizePositiveInteger(item.id)
+      if (characterId) {
+        map.set(characterId, 0)
+      }
+    }
+  }
+
+  if (Array.isArray(characterRanks)) {
+    for (const item of characterRanks) {
+      if (!isRecord(item)) {
+        continue
+      }
+
+      const rankItem = item as MasterCharacterRankRecord
+      const characterId = normalizePositiveInteger(rankItem.characterId) ?? normalizePositiveInteger(rankItem.gameCharacterId)
+      const rank = normalizePositiveInteger(rankItem.characterRank) ?? normalizePositiveInteger(rankItem.rank)
+      if (characterId && rank) {
+        map.set(characterId, Math.max(map.get(characterId) ?? 0, rank))
+      }
+    }
+  }
+
+  return new Map([...map.entries()].filter(([, maxRank]) => maxRank > 0))
+}
+
+function buildMysekaiGateMaxLevelMap(mysekaiGates: unknown, mysekaiGateLevels: unknown): Map<number, number> {
+  const map = new Map<number, number>()
+  if (Array.isArray(mysekaiGates)) {
+    for (const item of mysekaiGates) {
+      if (!isRecord(item)) {
+        continue
+      }
+
+      const gateId = normalizePositiveInteger((item as MasterMysekaiGateRecord).id)
+      if (gateId) {
+        map.set(gateId, 0)
+      }
+    }
+  }
+
+  if (Array.isArray(mysekaiGateLevels)) {
+    for (const item of mysekaiGateLevels) {
+      if (!isRecord(item)) {
+        continue
+      }
+
+      const levelItem = item as MasterMysekaiGateLevelRecord
+      const gateId = normalizePositiveInteger(levelItem.mysekaiGateId)
+      const level = normalizePositiveInteger(levelItem.mysekaiGateLevel) ?? normalizePositiveInteger(levelItem.level)
+      if (gateId && level) {
+        map.set(gateId, Math.max(map.get(gateId) ?? 0, level))
+      }
+    }
+  }
+
+  return new Map([...map.entries()].filter(([, maxLevel]) => maxLevel > 0))
+}
+
+function buildGameCharacterIdSet(gameCharacters: unknown): Set<number> {
+  const set = new Set<number>()
+  if (!Array.isArray(gameCharacters)) {
+    return set
+  }
+
+  for (const item of gameCharacters) {
+    if (!isRecord(item)) {
+      continue
+    }
+
+    const characterId = normalizePositiveInteger(item.id)
+    if (characterId) {
+      set.add(characterId)
+    }
+  }
+
+  return set
+}
+
+function normalizeCharacterRankOverrides(
+  overrides: readonly DeckRecommendCharacterRankOverride[] | undefined,
+  maxRankMap: ReadonlyMap<number, number>,
+): Map<number, number> {
+  const map = new Map<number, number>()
+  for (const override of overrides ?? []) {
+    const characterId = normalizePositiveInteger(override.characterId)
+    const rank = normalizePositiveInteger(override.rank)
+    if (!characterId || !rank || !maxRankMap.has(characterId)) {
+      continue
+    }
+
+    map.set(characterId, clampPositiveLevel(rank, maxRankMap.get(characterId)))
+  }
+  return map
+}
+
+function normalizeMysekaiGateLevelOverrides(
+  overrides: readonly DeckRecommendMysekaiGateLevelOverride[] | undefined,
+  maxLevelMap: ReadonlyMap<number, number>,
+): Map<number, number> {
+  const map = new Map<number, number>()
+  for (const override of overrides ?? []) {
+    const gateId = normalizePositiveInteger(override.mysekaiGateId)
+    const level = normalizePositiveInteger(override.level)
+    if (!gateId || !level || !maxLevelMap.has(gateId)) {
+      continue
+    }
+
+    map.set(gateId, clampPositiveLevel(level, maxLevelMap.get(gateId)))
+  }
+  return map
+}
+
+function normalizeMysekaiFixtureBonusRateOverrides(
+  overrides: readonly DeckRecommendMysekaiFixtureBonusRateOverride[] | undefined,
+  characterIds: ReadonlySet<number>,
+): Map<number, number> {
+  const map = new Map<number, number>()
+  for (const override of overrides ?? []) {
+    const characterId = normalizePositiveInteger(override.characterId)
+    const totalBonusRate = normalizeFixtureBonusRate(override.totalBonusRate)
+    if (!characterId || totalBonusRate == null || !characterIds.has(characterId)) {
+      continue
+    }
+
+    map.set(characterId, totalBonusRate)
+  }
+  return map
+}
+
+function normalizeFixtureBonusRate(value: unknown): number | null {
+  const numericValue = typeof value === "string" ? Number(value) : value
+  if (!Number.isInteger(numericValue) || numericValue < 0 || numericValue > 100) {
+    return null
+  }
+
+  return numericValue
+}
+
+function clampPositiveLevel(level: number, maxLevel: number | undefined): number {
   return maxLevel ? Math.min(level, maxLevel) : level
 }
 
