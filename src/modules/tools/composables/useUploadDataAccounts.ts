@@ -78,6 +78,20 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
     return selectedAccount.value?.server === "cn" && userStore.allowCNMysekai !== true && dataType.value === "mysekai"
   })
 
+  const canSelectMySekaiDataType = computed(() => {
+    return selectedAccount.value?.server !== "cn" || userStore.allowCNMysekai === true
+  })
+
+  watch(
+    [canSelectMySekaiDataType, dataType],
+    () => {
+      if (!canSelectMySekaiDataType.value && dataType.value === "mysekai") {
+        dataType.value = "suite"
+      }
+    },
+    { immediate: true }
+  )
+
   watch(
     boundAccounts,
     (accounts) => {
@@ -100,5 +114,6 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
     selectedAccount,
     disabledReason,
     isCNMySekaiForbidden,
+    canSelectMySekaiDataType,
   }
 }

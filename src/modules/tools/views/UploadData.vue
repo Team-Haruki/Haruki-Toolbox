@@ -23,6 +23,7 @@ const {
   selectedAccountKey,
   disabledReason,
   isCNMySekaiForbidden,
+  canSelectMySekaiDataType,
   onFileChange,
   setRememberInherit,
   submitFileUpload,
@@ -59,6 +60,7 @@ const {
           v-model:data-type="fileDataType"
           v-model:selected-account-key="selectedAccountKey"
           :bound-accounts="boundAccounts"
+          :can-select-my-sekai-data-type="canSelectMySekaiDataType"
           :disabled-reason="disabledReason"
           :is-cn-my-sekai-forbidden="isCNMySekaiForbidden"
           :is-submitting-file="isSubmittingFile"

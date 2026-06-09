@@ -36,6 +36,7 @@ export function useUploadDataTool() {
     selectedAccount,
     disabledReason,
     isCNMySekaiForbidden,
+    canSelectMySekaiDataType,
   } = useUploadDataAccounts(userStore, fileDataType)
 
   const savedInherit = loadInheritFromStorage()
@@ -213,6 +214,7 @@ export function useUploadDataTool() {
     selectedAccountKey,
     disabledReason,
     isCNMySekaiForbidden,
+    canSelectMySekaiDataType,
     onFileChange,
     setRememberInherit,
     submitFileUpload,

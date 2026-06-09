@@ -29,6 +29,7 @@ const props = withDefaults(
     dataType: UploadDataType
     boundAccounts: BoundAccount[]
     selectedAccountKey: string | null
+    canSelectMySekaiDataType: boolean
     disabledReason: string | null
     isCnMySekaiForbidden: boolean
     isSubmittingFile: boolean
@@ -58,7 +59,7 @@ function handleAccountChange(value: string) {
 }
 
 function handleDataTypeChange(value: string) {
-  if (value === "suite" || value === "mysekai") {
+  if (value === "suite" || (value === "mysekai" && props.canSelectMySekaiDataType)) {
     emit("update:dataType", value)
   }
 }
@@ -135,7 +136,9 @@ function handleDataTypeChange(value: string) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="suite">{{ t("tools.uploadData.dataTypes.suite") }}</SelectItem>
-                  <SelectItem value="mysekai">{{ t("tools.uploadData.dataTypes.mysekai") }}</SelectItem>
+                  <SelectItem v-if="canSelectMySekaiDataType" value="mysekai">
+                    {{ t("tools.uploadData.dataTypes.mysekai") }}
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
