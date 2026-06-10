@@ -3,9 +3,12 @@ import {
   GameBindingAccountTable,
   GameBindingDeleteDialog,
   GameBindingEditDialog,
+  GameBindingGrantsDialog,
   GameBindingVerifyDialog,
 } from "@/modules/user-settings/components/game-binding"
 import { useGameAccountBindingManagement } from "@/modules/user-settings/composables/useGameAccountBindingManagement"
+import { useGameAccountDataGrants } from "@/modules/user-settings/composables/useGameAccountDataGrants"
+import { useUserStore } from "@/shared/stores/user"
 import { useI18n } from "vue-i18n"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { LucideInfo } from "lucide-vue-next"
@@ -37,6 +40,24 @@ const {
 } = useGameAccountBindingManagement()
 
 const { t } = useI18n()
+const userStore = useUserStore()
+const {
+  grantsOpen,
+  grantsLoading,
+  grantSaving,
+  grantDeleting,
+  selectedAccount,
+  receivedGrants,
+  selectedAccountGrants,
+  granteeUserId,
+  grantDataType,
+  expiresAtLocal,
+  loadGrants,
+  openGrantManager,
+  editGrant,
+  saveGrant,
+  revokeGrant,
+} = useGameAccountDataGrants(() => userStore.userId)
 </script>
 
 <template>
@@ -64,6 +85,7 @@ const { t } = useI18n()
       :region-labels="regionLabels"
       @add="startAdd"
       @edit="startEdit"
+      @grants="openGrantManager"
       @delete="confirmDelete"
     />
 
@@ -95,6 +117,24 @@ const { t } = useI18n()
       v-model:open="showVerifyDialog"
       :generated-code="generatedCode"
       @copy="copyCodeToClipboard"
+    />
+
+    <GameBindingGrantsDialog
+      v-model:open="grantsOpen"
+      v-model:grantee-user-id="granteeUserId"
+      v-model:data-type="grantDataType"
+      v-model:expires-at-local="expiresAtLocal"
+      :loading="grantsLoading"
+      :saving="grantSaving"
+      :deleting="grantDeleting"
+      :selected-account="selectedAccount"
+      :selected-account-grants="selectedAccountGrants"
+      :received-grants="receivedGrants"
+      :region-labels="regionLabels"
+      @refresh="loadGrants"
+      @save="saveGrant"
+      @edit="editGrant"
+      @revoke="revokeGrant"
     />
   </div>
 </template>

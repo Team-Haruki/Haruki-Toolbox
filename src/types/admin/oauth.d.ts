@@ -33,3 +33,39 @@ export interface OAuthAuditLog {
   detail?: string
   createdAt: string
 }
+
+export interface OAuthClientWebhook {
+  id: string
+  clientId: string
+  callbackUrl: string
+  bearerSet: boolean
+  enabled: boolean
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface OAuthClientWebhookListResponse {
+  generatedAt: string
+  clientId: string
+  total: number
+  items: OAuthClientWebhook[]
+}
+
+export interface OAuthClientWebhookMutationResponse {
+  generatedAt: string
+  clientId: string
+  webhook: OAuthClientWebhook
+}
+
+export interface OAuthClientWebhookCreatePayload {
+  callbackUrl: string
+  bearer?: string
+  enabled?: boolean
+}
+
+export interface OAuthClientWebhookUpdatePayload {
+  callbackUrl?: string
+  bearer?: string
+  enabled?: boolean
+  clearBearer?: boolean
+}

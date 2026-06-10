@@ -14,9 +14,17 @@ import type {
     OAuthClientStatistics,
     OAuthClientAuthorization,
     OAuthAuditLog,
+    OAuthClientWebhookCreatePayload,
+    OAuthClientWebhookListResponse,
+    OAuthClientWebhookMutationResponse,
+    OAuthClientWebhookUpdatePayload,
     PaginatedResponse,
 } from "@/types/admin"
 import type { APIResponse } from "@/types/response"
+import {
+    normalizeOAuthClientWebhook,
+    readOAuthClientWebhookMutation,
+} from "@/modules/admin-oauth-clients/lib/webhook"
 
 const BASE = "/api/admin/oauth-clients"
 
@@ -141,4 +149,63 @@ export async function getOAuthClientAuditLogs(clientId: string, params?: QueryPa
 export async function getOAuthClientAuditSummary(clientId: string) {
     const res = await request<APIResponse>(`${BASE}/${encodePathSegment(clientId)}/audit-summary`, { method: "GET" })
     return res.updatedData
+}
+
+const webhooksBase = (clientId: string) => `${BASE}/${encodePathSegment(clientId)}/webhooks`
+
+export async function getOAuthClientWebhooks(clientId: string): Promise<OAuthClientWebhookListResponse> {
+    const res = await request<APIResponse<UnknownRecord>>(webhooksBase(clientId), { method: "GET" })
+    const updatedData = unwrapUpdatedData(res, translate("adminOAuthClients.toast.loadWebhooksFailedTitle"))
+    const items = Array.isArray(updatedData.items)
+        ? updatedData.items
+            .map((item) => asWebhookRecord(item))
+            .filter((item): item is UnknownRecord => item !== null)
+            .map((item) => normalizeOAuthClientWebhook(item))
+        : []
+    return {
+        generatedAt: readString(updatedData, ["generatedAt", "generated_at"]),
+        clientId: readString(updatedData, ["clientId", "client_id"], clientId),
+        total: Number(updatedData.total ?? items.length),
+        items,
+    }
+}
+
+export async function createOAuthClientWebhook(
+    clientId: string,
+    data: OAuthClientWebhookCreatePayload
+): Promise<OAuthClientWebhookMutationResponse> {
+    const res = await request<APIResponse<UnknownRecord>>(webhooksBase(clientId), { method: "POST", data })
+    const updatedData = unwrapUpdatedData(res, translate("adminOAuthClients.toast.saveWebhookFailedTitle"))
+    return {
+        generatedAt: readString(updatedData, ["generatedAt", "generated_at"]),
+        clientId: readString(updatedData, ["clientId", "client_id"], clientId),
+        webhook: readOAuthClientWebhookMutation(updatedData),
+    }
+}
+
+export async function updateOAuthClientWebhook(
+    clientId: string,
+    webhookId: string,
+    data: OAuthClientWebhookUpdatePayload
+): Promise<OAuthClientWebhookMutationResponse> {
+    const res = await request<APIResponse<UnknownRecord>>(
+        `${webhooksBase(clientId)}/${encodePathSegment(webhookId)}`,
+        { method: "PUT", data }
+    )
+    const updatedData = unwrapUpdatedData(res, translate("adminOAuthClients.toast.saveWebhookFailedTitle"))
+    return {
+        generatedAt: readString(updatedData, ["generatedAt", "generated_at"]),
+        clientId: readString(updatedData, ["clientId", "client_id"], clientId),
+        webhook: readOAuthClientWebhookMutation(updatedData),
+    }
+}
+
+export function deleteOAuthClientWebhook(clientId: string, webhookId: string) {
+    return request(`${webhooksBase(clientId)}/${encodePathSegment(webhookId)}`, { method: "DELETE" })
+}
+
+function asWebhookRecord(value: unknown): UnknownRecord | null {
+    return value && typeof value === "object" && !Array.isArray(value)
+        ? (value as UnknownRecord)
+        : null
 }

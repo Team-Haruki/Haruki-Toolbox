@@ -31,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-vue-next"
+import { KeyRound, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-vue-next"
 
 const props = defineProps<{
   data: GameAccountBinding[]
@@ -42,6 +42,7 @@ const emit = defineEmits<{
   (e: "add"): void
   (e: "edit", account: GameAccountBinding): void
   (e: "delete", account: GameAccountBinding): void
+  (e: "grants", account: GameAccountBinding): void
 }>()
 
 const { t } = useI18n()
@@ -79,6 +80,12 @@ const columns: ColumnDef<GameAccountBinding>[] = [
               h(Pencil, { class: "h-4 w-4 mr-2" }),
               t("userSettings.gameBinding.actions.edit"),
             ]),
+            row.original.verified
+              ? h(DropdownMenuItem, { onClick: () => emit("grants", row.original) }, () => [
+                h(KeyRound, { class: "h-4 w-4 mr-2" }),
+                t("userSettings.gameBinding.actions.grants"),
+              ])
+              : null,
             h(
               DropdownMenuItem,
               { onClick: () => emit("delete", row.original), class: "text-destructive" },

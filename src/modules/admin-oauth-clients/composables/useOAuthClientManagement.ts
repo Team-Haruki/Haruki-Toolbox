@@ -7,6 +7,7 @@ import { useOAuthClientList } from "@/modules/admin-oauth-clients/composables/us
 import { useOAuthClientRowActions } from "@/modules/admin-oauth-clients/composables/useOAuthClientRowActions"
 import { useOAuthClientSecretDialog } from "@/modules/admin-oauth-clients/composables/useOAuthClientSecretDialog"
 import { useOAuthClientStats } from "@/modules/admin-oauth-clients/composables/useOAuthClientStats"
+import { useOAuthClientWebhooks } from "@/modules/admin-oauth-clients/composables/useOAuthClientWebhooks"
 
 const SCOPE_LABEL_KEY: Record<(typeof AVAILABLE_SCOPE_IDS)[number], string> = {
   "user:read": "adminOAuthClients.scope.userRead",
@@ -94,6 +95,26 @@ export function useOAuthClientManagement() {
     applyStatsFilters,
     resetStatsFilters,
   } = useOAuthClientStats()
+  const {
+    webhookOpen,
+    webhookClientId,
+    webhooks,
+    webhookLoading,
+    webhookSaving,
+    webhookDeleting,
+    editingWebhook,
+    webhookFormOpen,
+    callbackUrl,
+    bearer,
+    enabled,
+    clearBearer,
+    loadWebhooks,
+    openWebhookManager,
+    openCreateWebhook,
+    openEditWebhook,
+    saveWebhook,
+    deleteWebhook,
+  } = useOAuthClientWebhooks()
 
   onMounted(() => {
     void loadClients()
@@ -129,6 +150,18 @@ export function useOAuthClientManagement() {
     displayedSecret,
     deleteConfirmOpen,
     clientToDelete,
+    webhookOpen,
+    webhookClientId,
+    webhooks,
+    webhookLoading,
+    webhookSaving,
+    webhookDeleting,
+    editingWebhook,
+    webhookFormOpen,
+    callbackUrl,
+    bearer,
+    enabled,
+    clearBearer,
     AVAILABLE_SCOPES,
     confirmDelete,
     executeDelete,
@@ -157,6 +190,12 @@ export function useOAuthClientManagement() {
     showStats,
     applyStatsFilters,
     resetStatsFilters,
+    loadWebhooks,
+    openWebhookManager,
+    openCreateWebhook,
+    openEditWebhook,
+    saveWebhook,
+    deleteWebhook,
     copySecret,
   }
 }
