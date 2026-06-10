@@ -1463,6 +1463,20 @@ export const zhCN = {
     uploadData: {
       groupNotice1: "Haruki游乐园QQ 1群: {groupId}",
       groupNotice2: "Haruki游乐园QQ 2群: {groupId}",
+      groupTitle: "Haruki游乐园 QQ 群",
+      group1Label: "1 群",
+      group2Label: "2 群",
+      tutorialNotice: {
+        title: "其他上传方式",
+        androidProxy: {
+          platform: "Android / Windows",
+          linkText: "HarukiProxy 教程",
+        },
+        iosModule: {
+          platform: "iOS / iPadOS",
+          linkText: "iOS 模块教程",
+        },
+      },
       tabs: {
         file: "文件上传",
         inherit: "继承码上传",

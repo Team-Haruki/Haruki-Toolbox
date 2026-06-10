@@ -1463,6 +1463,20 @@ export const enUS = {
     uploadData: {
       groupNotice1: "Haruki Playground QQ Group 1: {groupId}",
       groupNotice2: "Haruki Playground QQ Group 2: {groupId}",
+      groupTitle: "Haruki Playground QQ Groups",
+      group1Label: "Group 1",
+      group2Label: "Group 2",
+      tutorialNotice: {
+        title: "Other upload methods",
+        androidProxy: {
+          platform: "Android / Windows",
+          linkText: "HarukiProxy guide",
+        },
+        iosModule: {
+          platform: "iOS / iPadOS",
+          linkText: "iOS module guide",
+        },
+      },
       tabs: {
         file: "File upload",
         inherit: "Transfer-code upload",
