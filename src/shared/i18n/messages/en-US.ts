@@ -443,7 +443,6 @@ export const enUS = {
       },
       actions: {
         edit: "Edit",
-        grants: "Data grants",
         delete: "Delete",
       },
       dialog: {
@@ -530,6 +529,8 @@ export const enUS = {
       },
       actions: {
         edit: "Edit",
+        grants: "Data grants",
+        receivedGrants: "Received grants",
         delete: "Delete",
       },
       editDialog: {
@@ -616,6 +617,7 @@ export const enUS = {
       grants: {
         title: "Game account data grants",
         description: "Temporarily grant another Toolbox user access to suite / mysekai data from a verified account.",
+        receivedDescription: "View game account data granted to you by other Toolbox users.",
         selectedAccount: "Selected account: {account}",
         noSelectedAccount: "No account selected",
         ownedTitle: "Data granted from this account",

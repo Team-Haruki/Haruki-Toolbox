@@ -76,6 +76,13 @@ const selectedAccountLabel = computed(() => {
   return `${props.regionLabels[account.server] ?? account.server} / ${account.userId}`
 })
 
+const hasSelectedAccount = computed(() => props.selectedAccount !== null)
+const dialogDescription = computed(() =>
+  hasSelectedAccount.value
+    ? t("userSettings.gameBinding.grants.description")
+    : t("userSettings.gameBinding.grants.receivedDescription")
+)
+
 function dataTypeLabel(value: GameAccountGrantDataType) {
   return value === "mysekai"
     ? t("userSettings.gameBinding.grants.dataType.mysekai")
@@ -99,13 +106,13 @@ function handleDataTypeChange(value: unknown) {
 
 <template>
   <Dialog :open="props.open" @update:open="emit('update:open', $event)">
-    <DialogContent class="max-w-5xl">
+    <DialogContent class="sm:max-w-[min(96vw,72rem)] max-h-[86vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{{ t("userSettings.gameBinding.grants.title") }}</DialogTitle>
-        <DialogDescription>{{ t("userSettings.gameBinding.grants.description") }}</DialogDescription>
+        <DialogDescription>{{ dialogDescription }}</DialogDescription>
       </DialogHeader>
 
-      <div class="flex flex-wrap items-center justify-between gap-2">
+      <div v-if="hasSelectedAccount" class="flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm text-muted-foreground">
           {{ t("userSettings.gameBinding.grants.selectedAccount", { account: selectedAccountLabel }) }}
         </div>
@@ -114,8 +121,14 @@ function handleDataTypeChange(value: unknown) {
           {{ t("userSettings.gameBinding.grants.actions.refresh") }}
         </Button>
       </div>
+      <div v-else class="flex justify-end">
+        <Button variant="outline" size="sm" :disabled="props.loading" @click="emit('refresh')">
+          <LucideRefreshCw class="h-4 w-4" />
+          {{ t("userSettings.gameBinding.grants.actions.refresh") }}
+        </Button>
+      </div>
 
-      <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+      <div v-if="hasSelectedAccount" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <div class="rounded-md border p-4">
           <h3 class="text-sm font-medium">{{ t("userSettings.gameBinding.grants.form.title") }}</h3>
           <div class="mt-4 space-y-3">
@@ -154,7 +167,7 @@ function handleDataTypeChange(value: unknown) {
           </div>
         </div>
 
-        <div class="rounded-md border">
+        <div class="rounded-md border overflow-x-auto">
           <div class="border-b px-4 py-3">
             <h3 class="text-sm font-medium">{{ t("userSettings.gameBinding.grants.ownedTitle") }}</h3>
           </div>
@@ -202,7 +215,7 @@ function handleDataTypeChange(value: unknown) {
         </div>
       </div>
 
-      <div class="rounded-md border">
+      <div class="rounded-md border overflow-x-auto">
         <div class="border-b px-4 py-3">
           <h3 class="text-sm font-medium">{{ t("userSettings.gameBinding.grants.receivedTitle") }}</h3>
         </div>

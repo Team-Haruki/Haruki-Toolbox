@@ -101,6 +101,10 @@ export function useGameAccountDataGrants(currentUserId: () => string | null | un
     void loadGrants()
   }
 
+  function openReceivedGrantManager() {
+    openGrantManager()
+  }
+
   function editGrant(grant: GameAccountDataGrant) {
     const account = selectedAccount.value
     if (!account || account.server !== grant.server || String(account.userId) !== grant.gameUserId) {
@@ -223,6 +227,7 @@ export function useGameAccountDataGrants(currentUserId: () => string | null | un
     expiresAtLocal,
     loadGrants,
     openGrantManager,
+    openReceivedGrantManager,
     editGrant,
     saveGrant,
     revokeGrant,

@@ -443,7 +443,6 @@ export const zhCN = {
       },
       actions: {
         edit: "编辑",
-        grants: "数据授权",
         delete: "删除",
       },
       dialog: {
@@ -530,6 +529,8 @@ export const zhCN = {
       },
       actions: {
         edit: "编辑",
+        grants: "数据授权",
+        receivedGrants: "收到的授权",
         delete: "删除",
       },
       editDialog: {
@@ -616,6 +617,7 @@ export const zhCN = {
       grants: {
         title: "游戏账号数据授权",
         description: "把已验证账号的 suite / mysekai 数据临时授权给其他 Toolbox 用户读取。",
+        receivedDescription: "查看其他 Toolbox 用户授权给你的游戏账号数据。",
         selectedAccount: "当前账号：{account}",
         noSelectedAccount: "未选择账号",
         ownedTitle: "此账号授权出去的数据",

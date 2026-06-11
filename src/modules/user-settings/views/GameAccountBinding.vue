@@ -54,6 +54,7 @@ const {
   expiresAtLocal,
   loadGrants,
   openGrantManager,
+  openReceivedGrantManager,
   editGrant,
   saveGrant,
   revokeGrant,
@@ -86,6 +87,7 @@ const {
       @add="startAdd"
       @edit="startEdit"
       @grants="openGrantManager"
+      @received-grants="openReceivedGrantManager"
       @delete="confirmDelete"
     />
 

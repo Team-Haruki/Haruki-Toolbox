@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
@@ -65,6 +65,27 @@ const appBuildInfo = {
     buildTime: new Date().toISOString(),
 }
 
+const localDevHost = 'haruki-dev-local.seiunx.com'
+const localDevCert = new URL('./certs/haruki-dev-local.seiunx.com.pem', import.meta.url)
+const localDevKey = new URL('./certs/haruki-dev-local.seiunx.com-key.pem', import.meta.url)
+
+function resolveLocalDevServer(command: string) {
+    if (command !== 'serve' || !existsSync(localDevCert) || !existsSync(localDevKey)) {
+        return undefined
+    }
+
+    return {
+        host: '127.0.0.1',
+        allowedHosts: [localDevHost],
+        port: 443,
+        strictPort: true,
+        https: {
+            cert: readFileSync(localDevCert),
+            key: readFileSync(localDevKey),
+        },
+    }
+}
+
 function buildInfoPlugin(): Plugin {
     return {
         name: 'haruki-build-info',
@@ -80,6 +101,7 @@ function buildInfoPlugin(): Plugin {
 
 export default defineConfig(({ command }) => ({
     envPrefix: ['VITE_', 'ENABLE_'],
+    server: resolveLocalDevServer(command),
     plugins: [
         vue(),
         tailwindcss(),
