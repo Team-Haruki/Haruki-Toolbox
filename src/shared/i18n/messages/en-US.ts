@@ -3318,6 +3318,11 @@ export const enUS = {
       missingUpdatedDataDescription: "Cloud settings response is incomplete (missing updatedData).",
       unexpectedStatusDescription: "Cloud settings request returned an unexpected status ({status}).",
     },
+    unsupportedBrowser: {
+      title: "Unsupported browser",
+      description: "You are trying to access Haruki Toolbox from an unsupported browser.",
+      suggestion: "Please use Chrome, Safari, Firefox, or another supported browser.",
+    },
     pwa: {
       updateAvailableTitle: "New version available",
       updateAvailableDescription: "A new app build is ready. You can update now.",

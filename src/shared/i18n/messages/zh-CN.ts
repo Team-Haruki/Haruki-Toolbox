@@ -3318,6 +3318,11 @@ export const zhCN = {
       missingUpdatedDataDescription: "云端设置返回数据不完整（缺少 updatedData）。",
       unexpectedStatusDescription: "云端设置请求返回了异常状态（{status}）。",
     },
+    unsupportedBrowser: {
+      title: "不受支持的浏览器",
+      description: "您正在尝试使用不受支持的浏览器访问Haruki工具箱",
+      suggestion: "请改用Chrome、Safari、Firefox等浏览器再使用Haruki工具箱",
+    },
     pwa: {
       updateAvailableTitle: "发现新版本",
       updateAvailableDescription: "新的应用版本已经准备好，可以立即更新。",
