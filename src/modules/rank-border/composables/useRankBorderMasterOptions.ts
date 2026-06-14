@@ -1,0 +1,304 @@
+import { computed, ref, watch, type Ref } from "vue"
+import type { SekaiRegion } from "@/types"
+import { readSekaiMasterFile } from "@/shared/sekai/cache"
+import { useSekaiDataStore } from "@/shared/stores/sekai-data"
+
+type SekaiEvent = {
+  id?: number
+  name?: string
+  eventType?: string
+  startAt?: number
+  aggregateAt?: number
+  closedAt?: number
+  assetbundleName?: string
+}
+
+type SekaiWorldBloom = {
+  id?: number
+  eventId?: number
+  gameCharacterId?: number
+  chapterNo?: number
+  chapterStartAt?: number
+  chapterEndAt?: number
+  aggregateAt?: number
+}
+
+type SekaiGameCharacter = {
+  id?: number
+  firstName?: string
+  givenName?: string
+  firstNameEnglish?: string
+  givenNameEnglish?: string
+  unit?: string
+}
+
+export type RankBorderMasterCard = {
+  id?: number
+  characterId?: number
+  cardRarityType?: string
+  attr?: string
+  prefix?: string
+  assetbundleName?: string
+}
+
+export type RankBorderMasterHonor = {
+  id?: number
+  name?: string
+  groupId?: number
+  honorRarity?: string
+  assetbundleName?: string
+  levels?: Array<{
+    level?: number
+    assetbundleName?: string
+    honorRarity?: string
+  }>
+}
+
+export type RankBorderMasterHonorGroup = {
+  id?: number
+  name?: string
+  honorType?: string
+  backgroundAssetbundleName?: string
+  backgroundAssetBundleName?: string
+  frameName?: string
+}
+
+export type RankBorderEventOption = {
+  id: number
+  value: string
+  label: string
+  eventType: string | null
+  startAt: number | null
+  aggregateAt: number | null
+  closedAt: number | null
+  assetbundleName: string | null
+  isWorldBloom: boolean
+}
+
+export type RankBorderWorldBloomCharacterOption = {
+  id: number
+  value: string
+  label: string
+  chapterNo: number | null
+  chapterStartAt: number | null
+  aggregateAt: number | null
+}
+
+const REQUIRED_FILES = ["events", "worldBlooms", "gameCharacters"] as const
+const PROFILE_ASSET_FILES = ["cards", "honors", "honorGroups"] as const
+
+export function useRankBorderMasterOptions(region: Ref<SekaiRegion>, selectedEventId: Ref<string | null>) {
+  const sekaiDataStore = useSekaiDataStore()
+  const events = ref<SekaiEvent[]>([])
+  const worldBlooms = ref<SekaiWorldBloom[]>([])
+  const gameCharacters = ref<SekaiGameCharacter[]>([])
+  const cards = ref<RankBorderMasterCard[]>([])
+  const honors = ref<RankBorderMasterHonor[]>([])
+  const honorGroups = ref<RankBorderMasterHonorGroup[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+
+  const regionState = computed(() => sekaiDataStore.regionStates[region.value])
+  const eventOptions = computed<RankBorderEventOption[]>(() =>
+    buildEventOptions(events.value, worldBlooms.value),
+  )
+  const selectedEvent = computed(() =>
+    eventOptions.value.find((option) => option.value === selectedEventId.value) ?? null,
+  )
+  const worldBloomCharacterOptions = computed<RankBorderWorldBloomCharacterOption[]>(() =>
+    buildWorldBloomCharacterOptions(selectedEventId.value, worldBlooms.value, gameCharacters.value),
+  )
+
+  watch(
+    () => [region.value, regionState.value.masterFetchVersion],
+    () => {
+      void loadOptions()
+    },
+    { immediate: true },
+  )
+
+  async function loadOptions(force = false) {
+    loading.value = true
+    error.value = null
+    try {
+      if (force || !hasRequiredFiles(regionState.value.files, REQUIRED_FILES)) {
+        await sekaiDataStore.ensureRegionData(region.value, { force, files: REQUIRED_FILES })
+      }
+
+      const [eventData, worldBloomData, characterData] = await Promise.all([
+        readSekaiMasterFile<SekaiEvent[]>(region.value, "events"),
+        readSekaiMasterFile<SekaiWorldBloom[]>(region.value, "worldBlooms"),
+        readSekaiMasterFile<SekaiGameCharacter[]>(region.value, "gameCharacters"),
+      ])
+      events.value = Array.isArray(eventData) ? eventData : []
+      worldBlooms.value = Array.isArray(worldBloomData) ? worldBloomData : []
+      gameCharacters.value = Array.isArray(characterData) ? characterData : []
+    } catch (loadError) {
+      events.value = []
+      worldBlooms.value = []
+      gameCharacters.value = []
+      cards.value = []
+      honors.value = []
+      honorGroups.value = []
+      error.value = loadError instanceof Error ? loadError.message : String(loadError)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function loadProfileAssets(force = false) {
+    try {
+      if (force || !hasRequiredFiles(regionState.value.files, PROFILE_ASSET_FILES)) {
+        await sekaiDataStore.ensureRegionData(region.value, { force, files: PROFILE_ASSET_FILES })
+      }
+
+      const [cardData, honorData, honorGroupData] = await Promise.all([
+        readSekaiMasterFile<RankBorderMasterCard[]>(region.value, "cards"),
+        readSekaiMasterFile<RankBorderMasterHonor[]>(region.value, "honors"),
+        readSekaiMasterFile<RankBorderMasterHonorGroup[]>(region.value, "honorGroups"),
+      ])
+      cards.value = Array.isArray(cardData) ? cardData : []
+      honors.value = Array.isArray(honorData) ? honorData : []
+      honorGroups.value = Array.isArray(honorGroupData) ? honorGroupData : []
+    } catch {
+      cards.value = []
+      honors.value = []
+      honorGroups.value = []
+    }
+  }
+
+  return {
+    eventOptions,
+    selectedEvent,
+    worldBloomCharacterOptions,
+    cards,
+    honors,
+    honorGroups,
+    loading,
+    error,
+    reload: () => loadOptions(true),
+    loadProfileAssets,
+  }
+}
+
+function buildEventOptions(events: SekaiEvent[], worldBlooms: SekaiWorldBloom[]): RankBorderEventOption[] {
+  const now = Math.floor(Date.now() / 1000)
+  const worldBloomEventIds = new Set(
+    worldBlooms
+      .map((item) => normalizePositiveNumber(item.eventId))
+      .filter((eventId): eventId is number => eventId != null),
+  )
+
+  return events
+    .map((event) => {
+      const id = normalizePositiveNumber(event.id)
+      if (!id) {
+        return null
+      }
+
+      const startAt = normalizeSekaiTimestamp(event.startAt)
+      if (startAt != null && startAt > now) {
+        return null
+      }
+
+      const eventType = normalizeText(event.eventType)
+      return {
+        id,
+        value: String(id),
+        label: normalizeText(event.name) ?? `#${id}`,
+        eventType,
+        startAt,
+        aggregateAt: normalizeSekaiTimestamp(event.aggregateAt),
+        closedAt: normalizeSekaiTimestamp(event.closedAt),
+        assetbundleName: normalizeText(event.assetbundleName),
+        isWorldBloom: eventType === "world_bloom" || worldBloomEventIds.has(id),
+      }
+    })
+    .filter((item): item is RankBorderEventOption => item != null)
+    .sort((a, b) => (b.startAt ?? 0) - (a.startAt ?? 0))
+}
+
+function buildWorldBloomCharacterOptions(
+  selectedEventId: string | null,
+  worldBlooms: SekaiWorldBloom[],
+  gameCharacters: SekaiGameCharacter[],
+): RankBorderWorldBloomCharacterOption[] {
+  const now = Math.floor(Date.now() / 1000)
+  const eventId = Number(selectedEventId)
+  if (!Number.isInteger(eventId) || eventId <= 0) {
+    return []
+  }
+
+  const characterMap = new Map(
+    gameCharacters
+      .map((character) => {
+        const id = normalizePositiveNumber(character.id)
+        return id ? [id, character] as const : null
+      })
+      .filter((item): item is readonly [number, SekaiGameCharacter] => item != null),
+  )
+
+  return worldBlooms
+    .filter((chapter) => normalizePositiveNumber(chapter.eventId) === eventId)
+    .map((chapter) => {
+      const id = normalizePositiveNumber(chapter.gameCharacterId)
+      if (!id) {
+        return null
+      }
+
+      const chapterStartAt = normalizeSekaiTimestamp(chapter.chapterStartAt)
+      if (chapterStartAt != null && chapterStartAt > now) {
+        return null
+      }
+
+      const chapterNo = normalizePositiveNumber(chapter.chapterNo)
+      const character = characterMap.get(id)
+      const characterName = character ? resolveCharacterName(character, id) : `#${id}`
+      return {
+        id,
+        value: String(id),
+        label: chapterNo ? `${characterName} / Chapter ${chapterNo}` : characterName,
+        chapterNo,
+        chapterStartAt,
+        aggregateAt: normalizeSekaiTimestamp(chapter.aggregateAt),
+      }
+    })
+    .filter((item): item is RankBorderWorldBloomCharacterOption => item != null)
+    .sort((a, b) => (a.chapterNo ?? a.id) - (b.chapterNo ?? b.id))
+}
+
+function resolveCharacterName(character: SekaiGameCharacter, fallbackId: number): string {
+  return [
+    normalizeText(character.firstName),
+    normalizeText(character.givenName),
+    normalizeText(character.firstNameEnglish),
+    normalizeText(character.givenNameEnglish),
+  ].find((item): item is string => item != null) ?? `#${fallbackId}`
+}
+
+function hasRequiredFiles(cachedFiles: readonly string[], requiredFiles: readonly string[]): boolean {
+  return requiredFiles.every((fileName) => cachedFiles.includes(fileName))
+}
+
+function normalizePositiveNumber(value: unknown): number | null {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function normalizeSekaiTimestamp(value: unknown): number | null {
+  const parsed = normalizePositiveNumber(value)
+  if (parsed == null) {
+    return null
+  }
+
+  return parsed > 10_000_000_000 ? Math.floor(parsed / 1000) : parsed
+}
+
+function normalizeText(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null
+  }
+
+  const trimmed = value.trim()
+  return trimmed === "" ? null : trimmed
+}
