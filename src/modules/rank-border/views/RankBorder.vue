@@ -85,6 +85,7 @@ import {
 } from "../composables/useRankBorderMasterOptions"
 import { useRankBorderTracker } from "../composables/useRankBorderTracker"
 import {
+  normalizeRankBorderWebRankings,
   normalizeTrackerEndpoint,
   parseRankBorderRankQuery,
   resolveRankBorderTraceGrowth,
@@ -307,6 +308,11 @@ const DETAIL_UPDATE_RECORD_LIMIT = 8
 const DETAIL_CSB_WINDOW_SECONDS = 20 * 60 * 3
 const TOP_100_TRACE_WARMUP_MIN_LIMIT = 400
 const TOP_100_TRACE_WARMUP_MAX_LIMIT = 12_000
+const TOP_100_DETAIL_CACHE_TTL_MS = 2 * 60 * 1000
+const TOP_100_DETAIL_CACHE_PREFIX = "haruki:rank-border:top100:"
+const PROFILE_ENRICH_PRIORITY_LIMIT = 24
+const DEFERRED_PROFILE_ENRICH_DELAY_MS = 600
+const DEFERRED_TRACE_WARMUP_DELAY_MS = 500
 const HEATMAP_MYSEKAI_ROUND_THRESHOLD = 37
 const HEATMAP_ACTIVE_ROUND_BASELINE = 15
 const HEATMAP_ACTIVE_ROUND_SPAN = 15
@@ -350,10 +356,10 @@ const rankBorderTooltip = ref<RankBorderTooltipState>({
 })
 const top100Details = ref<Map<number, RankBorderLatest>>(new Map())
 const top100GrowthByRank = ref<Map<number, RankBorderGrowth>>(new Map())
+const top100GrowthIntervalSeconds = ref<number | null>(null)
 const top100TraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
 const segmentTraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
 const publicProfileByUserId = ref<Map<string, RankBorderUserProfile>>(new Map())
-const trackerGrowthIntervalSeconds = ref<number | null>(null)
 const scoreChangedRanks = ref<Set<number>>(new Set())
 const growthChangedRanks = ref<Set<number>>(new Set())
 const detailChangedRanks = ref<Set<number>>(new Set())
@@ -471,7 +477,7 @@ const top100Rows = computed<RankBorderLineRow[]>(() =>
 
 const hasTop100Data = computed(() => top100Details.value.size > 0)
 const selectedTrackerGrowthByRank = computed(() =>
-  trackerGrowthIntervalSeconds.value === selectedIntervalSeconds.value
+  tracker.growthIntervalSeconds.value === selectedIntervalSeconds.value
     ? tracker.growthByRank.value
     : new Map<number, RankBorderGrowth>(),
 )
@@ -819,6 +825,7 @@ let numberFlashTimer: ReturnType<typeof setTimeout> | null = null
 let pendingRefresh = false
 let top100DetailRefreshToken = 0
 let top100TraceWarmupToken = 0
+let top100TraceWarmupTimer: ReturnType<typeof setTimeout> | null = null
 let detailRequestToken = 0
 let activeDetailTraceKey = ""
 let visibleRankFrame: number | null = null
@@ -923,7 +930,7 @@ watch(
 
 watch(intervalSeconds, () => {
   refreshTop100GrowthsFromCachedTraces(top100GrowthByRank.value)
-  warmTop100Traces(top100GrowthByRank.value, true)
+  scheduleTop100TraceWarmup(top100GrowthByRank.value, true)
   void refreshData(true)
 })
 
@@ -949,12 +956,6 @@ watch(hasProfileAssetPayload, (shouldLoad) => {
   preloadProfileAssets()
 })
 
-watch([canRefresh, shouldRenderProfileAssets], ([ready, shouldRender]) => {
-  if (ready && shouldRender) {
-    preloadProfileAssets()
-  }
-}, { immediate: true })
-
 function preloadProfileAssets() {
   if (profileAssetsLoading.value) {
     return
@@ -973,6 +974,7 @@ function preloadProfileAssets() {
 onBeforeUnmount(() => {
   stopLiveRefreshTimer()
   stopRealtimeSubscription()
+  clearTop100TraceWarmupTimer()
   stopVisibleRankListener()
   stopMobileViewportListener()
   clearInterval(clockTimer)
@@ -1057,7 +1059,10 @@ function switchRegion(region: SekaiRegion) {
 }
 
 function createTop100Row(rank: number, rowDetail: RankBorderLatest | null): RankBorderLineRow {
-  const growth = top100GrowthByRank.value.get(rank) ?? selectedTrackerGrowthByRank.value.get(rank) ?? null
+  const localGrowth = top100GrowthIntervalSeconds.value === selectedIntervalSeconds.value
+    ? top100GrowthByRank.value.get(rank)
+    : null
+  const growth = localGrowth ?? selectedTrackerGrowthByRank.value.get(rank) ?? null
   const rowKey = top100RowKey(rank, rowDetail)
   return {
     key: rowKey,
@@ -1102,12 +1107,13 @@ function resetRankBorderData() {
   mobileLocateOpen.value = false
   top100Details.value = new Map()
   top100GrowthByRank.value = new Map()
+  top100GrowthIntervalSeconds.value = null
   top100TraceByRank.value = new Map()
   segmentTraceByRank.value = new Map()
   publicProfileByUserId.value = new Map()
-  trackerGrowthIntervalSeconds.value = null
   tracker.lines.value = []
   tracker.growths.value = []
+  tracker.growthIntervalSeconds.value = null
   profileAssetsLoading.value = false
 }
 
@@ -1140,6 +1146,7 @@ async function refreshData(cacheBust = true) {
     const previousGrowths = new Map(tracker.growths.value.map((growth) => [growth.rank, growth.growth]))
     const previousTrackerTimestamp = latestTrackerTimestamp.value
     const requestedIntervalSeconds = selectedIntervalSeconds.value
+    hydrateTop100DetailsFromCache()
     const initialDetailsRefresh = top100Details.value.size === 0
       ? refreshTop100Details(previousDetails).catch(() => undefined)
       : null
@@ -1162,7 +1169,6 @@ async function refreshData(cacheBust = true) {
       return
     }
 
-    trackerGrowthIntervalSeconds.value = requestedIntervalSeconds
     markChangedLines(previousLines)
     markChangedGrowths(previousGrowths)
     if (initialDetailsRefresh) {
@@ -1172,7 +1178,7 @@ async function refreshData(cacheBust = true) {
       void detailsRefresh
     }
     refreshTop100GrowthsFromCachedTraces(previousTop100Growths)
-    warmTop100Traces(previousTop100Growths)
+    scheduleTop100TraceWarmup(previousTop100Growths)
     await refreshSegmentTraces()
     await refreshActiveDetail()
   } finally {
@@ -1899,6 +1905,7 @@ async function refreshTop100Details(previousDetails: Map<number, RankBorderLates
     }
 
     top100Details.value = nextDetails
+    writeTop100DetailsCache(nextDetails)
     if (nextScoreChanges.size > 0) {
       restartRankFlash(scoreChangedRanks, nextScoreChanges)
     }
@@ -1906,7 +1913,16 @@ async function refreshTop100Details(previousDetails: Map<number, RankBorderLates
       restartRankFlash(detailChangedRanks, nextDetailChanges)
     }
     if (missingProfileIds.length > 0) {
-      void enrichTop100Profiles(missingProfileIds, profileScope)
+      const priorityIds = missingProfileIds.slice(0, PROFILE_ENRICH_PRIORITY_LIMIT)
+      const deferredIds = missingProfileIds.slice(PROFILE_ENRICH_PRIORITY_LIMIT)
+      if (priorityIds.length > 0) {
+        void enrichTop100Profiles(priorityIds, profileScope)
+      }
+      if (deferredIds.length > 0) {
+        window.setTimeout(() => {
+          void enrichTop100Profiles(deferredIds, profileScope)
+        }, DEFERRED_PROFILE_ENRICH_DELAY_MS)
+      }
     }
   } finally {
     if (token === top100DetailRefreshToken) {
@@ -1953,6 +1969,7 @@ async function enrichTop100Profiles(userIds: string[], scope: RankBorderTrackerS
     }
   }
   top100Details.value = nextDetails
+  writeTop100DetailsCache(nextDetails)
   if (nextDetailChanges.size > 0) {
     restartRankFlash(detailChangedRanks, nextDetailChanges)
   }
@@ -2000,6 +2017,66 @@ function latestDetailsByRowKey(details: Map<number, RankBorderLatest>) {
   return byKey
 }
 
+function top100DetailsCacheKey() {
+  return [
+    TOP_100_DETAIL_CACHE_PREFIX,
+    normalizeTrackerEndpoint(trackerEndpoint.value),
+    selectedRegion.value,
+    selectedEventIdNumber.value,
+    mode.value,
+    selectedWorldBloomCharacterIdNumber.value || "",
+    playbackAt.value ?? "live",
+  ].join(":")
+}
+
+function hydrateTop100DetailsFromCache() {
+  if (top100Details.value.size > 0 || !canRefresh.value) {
+    return
+  }
+
+  try {
+    const raw = sessionStorage.getItem(top100DetailsCacheKey())
+    if (!raw) {
+      return
+    }
+
+    const parsed = JSON.parse(raw) as { cachedAt?: unknown; items?: unknown }
+    if (typeof parsed.cachedAt !== "number" || Date.now() - parsed.cachedAt > TOP_100_DETAIL_CACHE_TTL_MS) {
+      return
+    }
+
+    const cachedItems = Array.isArray(parsed.items)
+      ? parsed.items.map((item) => ({ rankData: item, userData: item }))
+      : []
+    const items = normalizeRankBorderWebRankings({ items: cachedItems }).items
+    if (items.length === 0) {
+      return
+    }
+
+    const nextDetails = new Map<number, RankBorderLatest>()
+    for (const item of latestRankingEntriesByRank(items)) {
+      nextDetails.set(item.rank, item)
+    }
+    top100Details.value = nextDetails
+    seedProfilesFromLatestEntries(items)
+  } catch {
+  }
+}
+
+function writeTop100DetailsCache(details: Map<number, RankBorderLatest>) {
+  if (!canRefresh.value || details.size === 0) {
+    return
+  }
+
+  try {
+    sessionStorage.setItem(top100DetailsCacheKey(), JSON.stringify({
+      cachedAt: Date.now(),
+      items: Array.from(details.values()),
+    }))
+  } catch {
+  }
+}
+
 function refreshTop100GrowthsFromCachedTraces(previousGrowths: Map<number, RankBorderGrowth>) {
   const nextGrowths = new Map<number, RankBorderGrowth>()
   const nextGrowthChanges = new Set<number>()
@@ -2019,10 +2096,6 @@ function refreshTop100GrowthsFromCachedTraces(previousGrowths: Map<number, RankB
     }
 
     const startTime = latestRecord.timestamp - selectedIntervalSeconds.value
-    if (!hasTraceIntervalCoverage(records, startTime)) {
-      continue
-    }
-
     const growth = resolveRankBorderTraceGrowth(records, startTime)
     if (!growth) {
       continue
@@ -2036,13 +2109,10 @@ function refreshTop100GrowthsFromCachedTraces(previousGrowths: Map<number, RankB
   }
 
   top100GrowthByRank.value = nextGrowths
+  top100GrowthIntervalSeconds.value = selectedIntervalSeconds.value
   if (nextGrowthChanges.size > 0) {
     restartRankFlash(growthChangedRanks, nextGrowthChanges)
   }
-}
-
-function hasTraceIntervalCoverage(records: RankBorderTracePoint[], startTime: number) {
-  return records.some((record) => record.timestamp <= startTime)
 }
 
 function findLatestTraceAtTimestamp(records: RankBorderTracePoint[], timestamp: number) {
@@ -2055,8 +2125,27 @@ function findLatestTraceAtTimestamp(records: RankBorderTracePoint[], timestamp: 
   return null
 }
 
+function scheduleTop100TraceWarmup(previousGrowths: Map<number, RankBorderGrowth>, force = false) {
+  clearTop100TraceWarmupTimer()
+  top100TraceWarmupTimer = setTimeout(() => {
+    top100TraceWarmupTimer = null
+    warmTop100Traces(previousGrowths, force)
+  }, DEFERRED_TRACE_WARMUP_DELAY_MS)
+}
+
+function clearTop100TraceWarmupTimer() {
+  if (top100TraceWarmupTimer) {
+    clearTimeout(top100TraceWarmupTimer)
+    top100TraceWarmupTimer = null
+  }
+}
+
 function warmTop100Traces(previousGrowths: Map<number, RankBorderGrowth>, force = false) {
   if (!canRefresh.value) {
+    return
+  }
+
+  if (!force && !shouldWarmTop100Traces()) {
     return
   }
 
@@ -2094,6 +2183,19 @@ function warmTop100Traces(previousGrowths: Map<number, RankBorderGrowth>, force 
       }
     }
   })()
+}
+
+function shouldWarmTop100Traces() {
+  const growthCount = TOP_100_RANKS.reduce(
+    (count, rank) => count + (selectedTrackerGrowthByRank.value.has(rank) ? 1 : 0),
+    0,
+  )
+  if (selectedIntervalSeconds.value <= Number(DEFAULT_INTERVAL_SECONDS) && growthCount >= 80) {
+    return false
+  }
+
+  return growthCount < TOP_100_RANKS.length
+    || top100TraceByRank.value.size < Math.min(24, TOP_100_RANKS.length)
 }
 
 function resolveTop100TraceWarmupLimit() {
@@ -3426,7 +3528,10 @@ function detailGrowth(value: DetailState) {
     return detailTraceStats.value.growth?.growth ?? null
   }
 
-  return top100GrowthByRank.value.get(value.result.rank)?.growth
+  const localGrowth = top100GrowthIntervalSeconds.value === selectedIntervalSeconds.value
+    ? top100GrowthByRank.value.get(value.result.rank)?.growth
+    : null
+  return localGrowth
     ?? selectedTrackerGrowthByRank.value.get(value.result.rank)?.growth
     ?? detailTraceStats.value.growth?.growth
     ?? null

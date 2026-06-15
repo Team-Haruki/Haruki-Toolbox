@@ -23,6 +23,7 @@ export type RankBorderRefreshInput = RankBorderTrackerScope & {
 export function useRankBorderTracker() {
   const lines = ref<RankBorderLine[]>([])
   const growths = ref<RankBorderGrowth[]>([])
+  const growthIntervalSeconds = ref<number | null>(null)
   const status = ref<RankBorderStatus | null>(null)
   const userResult = ref<RankBorderLatest | null>(null)
   const rankResult = ref<RankBorderLatest | null>(null)
@@ -65,9 +66,8 @@ export function useRankBorderTracker() {
       if (nextLines.length > 0 || lines.value.length === 0) {
         lines.value = nextLines
       }
-      if (nextGrowths.length > 0 || growths.value.length === 0) {
-        growths.value = nextGrowths
-      }
+      growths.value = nextGrowths
+      growthIntervalSeconds.value = input.intervalSeconds
       status.value = nextStatus
 
       await Promise.all([
@@ -131,6 +131,7 @@ export function useRankBorderTracker() {
   return {
     lines,
     growths,
+    growthIntervalSeconds,
     growthByRank,
     status,
     userResult,

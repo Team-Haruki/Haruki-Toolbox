@@ -332,6 +332,25 @@ describe("rank border helpers", () => {
     expect(resolveRankBorderTraceGrowth(records, 1710000120)).toBeNull()
   })
 
+  it("falls back to the earliest available trace point when interval history is incomplete", () => {
+    const records = normalizeRankBorderTrace({
+      rankData: [
+        { rank: 8, score: 1200, timestamp: 1710003600 },
+        { rank: 8, score: 1800, timestamp: 1710007200 },
+      ],
+    })
+
+    expect(resolveRankBorderTraceGrowth(records, 1709917200)).toEqual({
+      rank: 8,
+      scoreLatest: 1800,
+      scoreEarlier: 1200,
+      timestampLatest: 1710007200,
+      timestampEarlier: 1710003600,
+      timeDiff: 3600,
+      growth: 600,
+    })
+  })
+
   it("normalizes batch trace ranking responses", () => {
     const records = normalizeRankBorderBatchTrace({
       items: [
