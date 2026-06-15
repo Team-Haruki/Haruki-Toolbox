@@ -226,6 +226,7 @@ type RankBorderHonorView = {
   label: string
   type: "normal" | "bonds"
   groupType: string | null
+  honorId: number | null
   baseUrl: string | null
   rankUrl: string | null
   rankPlacement: "event" | "full" | "rank_match"
@@ -239,7 +240,6 @@ type RankBorderHonorView = {
   bondsRightBgUrl: string | null
   bondsLeftIconUrl: string | null
   bondsRightIconUrl: string | null
-  bondsMaskUrl: string | null
   level: number | null
 }
 
@@ -290,6 +290,7 @@ const LEGACY_DIRECT_TRACKER_ENDPOINTS = new Set([
 const DEFAULT_INTERVAL_SECONDS = "3600"
 const PERSONAL_COLLECTION_LIMIT = 100
 const NUMBER_FLASH_MS = 1200
+const FC_AP_HONOR_IDS = new Set([3009, 3010, 3011, 3012, 3013, 3014, 4700, 4701])
 const TOP_100_DETAIL_CONCURRENCY = 8
 const TRACKER_UPDATE_INTERVAL_SECONDS = 10
 const MIN_LIVE_REFRESH_MS = 2_000
@@ -462,7 +463,7 @@ const detailScope = computed<RankBorderTrackerScope>(() => ({
   worldBloomCharacterId: selectedWorldBloomCharacterIdNumber.value || null,
   cacheBust: true,
   playbackAt: playbackAt.value,
-  useWebSocket: canUseRealtimeAutoRefresh.value,
+  useWebSocket: false,
 }))
 const shouldRenderProfileAssets = computed(() => !hideProfileAssets.value)
 
@@ -545,13 +546,13 @@ const playbackStatusLabel = computed(() =>
     : t("rankBorder.result.activityReplayAt", { time: formatTimestamp(playbackDisplayAt.value) }),
 )
 const canUseRealtimeAutoRefresh = computed(() =>
-  canRefresh.value && isPlaybackLive.value && userStore.isLoggedIn,
+  canRefresh.value && isPlaybackLive.value && userStore.hasActiveSession,
 )
 const trackerStatusTone = computed(() => {
   if (!isPlaybackLive.value) {
     return "muted"
   }
-  if (!userStore.isLoggedIn) {
+  if (!userStore.hasActiveSession) {
     return "amber"
   }
   if (realtimeState.value === "ready") {
@@ -566,7 +567,7 @@ const trackerStatusLabel = computed(() => {
   if (!isPlaybackLive.value) {
     return t("rankBorder.status.replaying")
   }
-  if (!userStore.isLoggedIn) {
+  if (!userStore.hasActiveSession) {
     return t("rankBorder.status.loginRequired")
   }
   if (realtimeState.value === "ready") {
@@ -2687,7 +2688,7 @@ function leaderMasterRankLabel(result: ProfileResult) {
   return isLatestResult(result) && result.cardMasterRank != null ? `MR${result.cardMasterRank}` : null
 }
 
-function profileHonorViews(result: ProfileResult, limit = 3): RankBorderHonorView[] {
+function profileHonorViews(result: ProfileResult, limit = 3, keyScope = "profile"): RankBorderHonorView[] {
   if (!isLatestResult(result)) {
     return []
   }
@@ -2699,22 +2700,31 @@ function profileHonorViews(result: ProfileResult, limit = 3): RankBorderHonorVie
       const masterHonor = honorId ? honorById.value.get(honorId) ?? null : null
       const bondsHonor = honorId ? bondsHonorById.value.get(honorId) ?? null : null
       if (!masterHonor && bondsHonor) {
-        return resolveBondsHonorView(honor, bondsHonor, honorId, index)
+        return resolveBondsHonorView(honor, bondsHonor, honorId, index, keyScope)
       }
 
       const masterGroup = masterHonor?.groupId ? honorGroupById.value.get(masterHonor.groupId) ?? null : null
       return {
-        key: `${honor.seq ?? index}:${honorId ?? "unknown"}`,
+        key: `${keyScope}:${honor.seq ?? index}:${honorId ?? "unknown"}`,
         label: normalizeTextValue(masterHonor?.name) ?? (honorId ? `#${honorId}` : "-"),
-        ...resolveHonorVisual(masterHonor, masterGroup, honor.honorLevel, "sub"),
+        ...resolveHonorVisual(masterHonor, masterGroup, honorId ?? null, honor.honorLevel, "sub"),
         level: honor.honorLevel,
       }
     })
 }
 
+function rowHonorKeyScope(row: RankBorderLineRow) {
+  return `row-${row.rank}-${sanitizeDomId(row.detail?.userId ?? "line")}`
+}
+
+function detailHonorKeyScope(value: DetailState) {
+  return `detail-${value.source}-${value.result.rank}-${sanitizeDomId(isLatestResult(value.result) ? value.result.userId ?? value.query : value.query)}`
+}
+
 function resolveHonorVisual(
   honor: RankBorderMasterHonor | null,
   group: RankBorderMasterHonorGroup | null,
+  honorId: number | null,
   level: number | null,
   mode: "main" | "sub",
 ): Omit<RankBorderHonorView, "key" | "label" | "level"> {
@@ -2722,12 +2732,15 @@ function resolveHonorVisual(
   const assetBundleName = normalizeTextValue(honor?.assetbundleName) ?? normalizeTextValue(levelVisual?.assetbundleName)
   const rarity = normalizeTextValue(honor?.honorRarity) ?? normalizeTextValue(levelVisual?.honorRarity)
   const backgroundAssetBundleName = resolveHonorBackgroundAssetName(group, assetBundleName)
-  const groupType = resolveHonorGroupType(group, backgroundAssetBundleName, assetBundleName)
+  const groupType = honorId != null && FC_AP_HONOR_IDS.has(honorId)
+    ? "fc_ap"
+    : resolveHonorGroupType(group, backgroundAssetBundleName, assetBundleName)
   const resolvedRarity = rarity ?? resolveHonorRarityFromAssetName(assetBundleName)
 
   return {
     type: "normal",
     groupType,
+    honorId,
     baseUrl: backgroundAssetBundleName
       ? resolveHonorBaseUrl(groupType, backgroundAssetBundleName, mode)
       : null,
@@ -2746,14 +2759,13 @@ function resolveHonorVisual(
     level6IconUrl: honorUsesLevelIconLayer(groupType)
       ? "/rank-border/honor/icon_degreeLv6.png"
       : null,
-    fcApLevel: assetBundleName && honorUsesScrollLayer(groupType)
+    fcApLevel: assetBundleName && honorUsesScrollLevel(groupType)
       ? String(level ?? "")
       : null,
     bondsLeftBgUrl: null,
     bondsRightBgUrl: null,
     bondsLeftIconUrl: null,
     bondsRightIconUrl: null,
-    bondsMaskUrl: null,
   }
 }
 
@@ -2762,15 +2774,17 @@ function resolveBondsHonorView(
   bondsHonor: RankBorderMasterBondsHonor,
   honorId: number | null,
   index: number,
+  keyScope: string,
 ): RankBorderHonorView {
   const slots = resolveBondsHonorDisplaySlots(bondsHonor, honor.bondsHonorViewType)
   const rarity = normalizeTextValue(bondsHonor.honorRarity)
   const word = honor.bondsHonorWordId ? bondsHonorWordById.value.get(honor.bondsHonorWordId) ?? null : null
   return {
-    key: `${honor.seq ?? index}:bonds:${honorId ?? "unknown"}:${honor.bondsHonorViewType ?? ""}`,
+    key: `${keyScope}:${honor.seq ?? index}:bonds:${honorId ?? "unknown"}:${honor.bondsHonorViewType ?? ""}`,
     label: normalizeTextValue(word?.name) ?? normalizeTextValue(bondsHonor.name) ?? (honorId ? `#${honorId}` : "-"),
     type: "bonds",
     groupType: "bonds",
+    honorId,
     baseUrl: null,
     rankUrl: null,
     rankPlacement: "event",
@@ -2784,7 +2798,6 @@ function resolveBondsHonorView(
     bondsRightBgUrl: slots.rightCharacterId ? `/rank-border/honor/bonds/${slots.rightCharacterId}_sub.png` : null,
     bondsLeftIconUrl: slots.leftUnitId ? resolveBondsHonorCharacterUrl(slots.leftUnitId) : null,
     bondsRightIconUrl: slots.rightUnitId ? resolveBondsHonorCharacterUrl(slots.rightUnitId) : null,
-    bondsMaskUrl: "/rank-border/honor/mask_degree_sub.png",
     level: honor.honorLevel,
   }
 }
@@ -2793,8 +2806,10 @@ function resolveBondsHonorDisplaySlots(bondsHonor: RankBorderMasterBondsHonor, v
   let leftUnitId = normalizePositiveNumber(bondsHonor.gameCharacterUnitId1 ?? bondsHonor.gameCharacterUnitID1)
   let rightUnitId = normalizePositiveNumber(bondsHonor.gameCharacterUnitId2 ?? bondsHonor.gameCharacterUnitID2)
   if (bondsHonor.configurableUnitVirtualSinger && bondsHonorUsesUnitVirtualSinger(viewType)) {
-    leftUnitId = resolveUnitVirtualSingerUnitId(leftUnitId, rightUnitId)
-    rightUnitId = resolveUnitVirtualSingerUnitId(rightUnitId, leftUnitId)
+    const originalLeftUnitId = leftUnitId
+    const originalRightUnitId = rightUnitId
+    leftUnitId = resolveUnitVirtualSingerUnitId(originalLeftUnitId, originalRightUnitId)
+    rightUnitId = resolveUnitVirtualSingerUnitId(originalRightUnitId, originalLeftUnitId)
   }
 
   if (bondsHonorViewTypeIsReverse(viewType)) {
@@ -2937,8 +2952,12 @@ function honorUsesScrollLayer(groupType: string) {
   return groupType === "event" || groupType === "wl_event" || groupType === "fc_ap"
 }
 
+function honorUsesScrollLevel(groupType: string) {
+  return groupType === "event" || groupType === "wl_event" || groupType === "fc_ap"
+}
+
 function honorUsesLevelIconLayer(groupType: string) {
-  return groupType === "character" || groupType === "achievement" || groupType.startsWith("fc_ap")
+  return groupType === "character" || groupType === "achievement" || groupType === "bonds"
 }
 
 function resolveHonorBaseUrl(groupType: string, assetBundleName: string, mode: "main" | "sub") {
@@ -3126,6 +3145,30 @@ function resolveCardDisplayAfterTraining(result: ProfileResult) {
 
 function honorLevelLabel(honor: RankBorderHonorView) {
   return honor.level != null && honor.level > 0 ? `Lv.${honor.level}` : ""
+}
+
+function honorSvgId(honor: RankBorderHonorView, suffix: string) {
+  return `rank-border-honor-${sanitizeDomId(honor.key)}-${suffix}`
+}
+
+function sanitizeDomId(value: string) {
+  return value.replace(/[^A-Za-z0-9_-]/g, "-")
+}
+
+function honorFrameSvgAttrs(honor: RankBorderHonorView) {
+  return honor.framePlacement === "low"
+    ? { x: 8, y: 0, width: 164, height: 80 }
+    : { x: 0, y: 0, width: 180, height: 80 }
+}
+
+function honorRankSvgAttrs(honor: RankBorderHonorView) {
+  if (honor.rankPlacement === "full") {
+    return { x: 0, y: 0, width: 180, height: 80 }
+  }
+
+  return honor.rankPlacement === "rank_match"
+    ? { x: 17, y: 42, width: 120, height: 38 }
+    : { x: 34, y: 42, width: 120, height: 38 }
 }
 
 function honorLevelStars(honor: RankBorderHonorView) {
@@ -4246,127 +4289,124 @@ function traceUpdateRecords(
                         <p class="rank-border-player-name">
                           {{ row.detail ? formatUserLabel(row.detail) : t("rankBorder.result.noPlayer") }}
                         </p>
-                        <div v-if="shouldRenderProfileAssets && profileHonorViews(row.detail).length > 0" class="rank-border-honor-strip rank-border-honor-strip--row">
+                        <div v-if="shouldRenderProfileAssets && profileHonorViews(row.detail, 3, rowHonorKeyScope(row)).length > 0" class="rank-border-honor-strip rank-border-honor-strip--row">
                           <span
-                            v-for="honor in profileHonorViews(row.detail)"
+                            v-for="honor in profileHonorViews(row.detail, 3, rowHonorKeyScope(row))"
                             :key="honor.key"
                             class="rank-border-honor rank-border-honor--row"
                             :title="`${honor.label} ${honorLevelLabel(honor)}`.trim()"
                           >
                             <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
-                              <img
-                                class="rank-border-honor-layer"
-                                :src="honor.baseUrl"
-                                :alt="honor.label"
-                                loading="lazy"
-                                @error="hideBrokenImage"
-                              >
-                              <img
-                                v-if="honor.frameUrl"
-                                :class="[
-                                  'rank-border-honor-layer rank-border-honor-frame-layer',
-                                  `rank-border-honor-frame-layer--${honor.framePlacement}`,
-                                ]"
-                                :src="honor.frameUrl"
-                                alt=""
-                                loading="lazy"
-                                @error="hideBrokenImage"
-                              >
-                              <img
-                                v-if="honor.rankUrl"
-                                :class="[
-                                  'rank-border-honor-layer rank-border-honor-rank-layer',
-                                  `rank-border-honor-rank-layer--${honor.rankPlacement}`,
-                                ]"
-                                :src="honor.rankUrl"
-                                alt=""
-                                loading="lazy"
-                                @error="hideBrokenImage"
-                              >
-                              <img
-                                v-if="honor.scrollUrl"
-                                class="rank-border-honor-layer rank-border-honor-scroll-layer"
-                                :src="honor.scrollUrl"
-                                alt=""
-                                loading="lazy"
-                                @error="hideBrokenImage"
-                              >
-                              <span v-if="honor.fcApLevel" class="rank-border-honor-fcap-level">{{ honor.fcApLevel }}</span>
-                              <span v-if="honorLevelStars(honor).length > 0" class="rank-border-honor-level-stars" aria-hidden="true">
-                                <img
+                              <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
+                                <image :href="honor.baseUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none" />
+                                <image
+                                  v-if="honor.frameUrl"
+                                  :href="honor.frameUrl"
+                                  v-bind="honorFrameSvgAttrs(honor)"
+                                  preserveAspectRatio="none"
+                                />
+                                <image
+                                  v-if="honor.rankUrl"
+                                  :href="honor.rankUrl"
+                                  v-bind="honorRankSvgAttrs(honor)"
+                                  preserveAspectRatio="none"
+                                />
+                                <image
+                                  v-if="honor.scrollUrl"
+                                  :href="honor.scrollUrl"
+                                  x="37"
+                                  y="3"
+                                  width="101"
+                                  height="75"
+                                  preserveAspectRatio="none"
+                                />
+                                <image
                                   v-for="star in honorLevelStars(honor)"
                                   :key="star.key"
-                                  class="rank-border-honor-level-star"
-                                  :style="{ '--rank-border-honor-star-slot': star.slot, '--rank-border-honor-star-layer': star.layer }"
-                                  :src="star.url"
-                                  alt=""
-                                  loading="lazy"
-                                  @error="hideBrokenImage"
+                                  :href="star.url"
+                                  :x="50 + star.slot * 16"
+                                  y="61"
+                                  width="16"
+                                  height="16"
+                                  preserveAspectRatio="none"
+                                />
+                                <text
+                                  v-if="honor.fcApLevel"
+                                  class="rank-border-honor-fcap-text"
+                                  x="87"
+                                  y="57"
+                                  text-anchor="middle"
+                                  dominant-baseline="middle"
                                 >
-                              </span>
+                                  {{ honor.fcApLevel }}
+                                </text>
+                              </svg>
                             </span>
                             <span v-else-if="honor.type === 'bonds' && honor.bondsLeftBgUrl && honor.bondsRightBgUrl" class="rank-border-honor-visual rank-border-honor-visual--bonds">
-                              <img
-                                class="rank-border-honor-layer rank-border-honor-bonds-bg rank-border-honor-bonds-bg--right"
-                                :src="honor.bondsRightBgUrl"
-                                :alt="honor.label"
-                                loading="lazy"
-                                @error="hideBrokenImage"
-                              >
-                              <img
-                                class="rank-border-honor-layer rank-border-honor-bonds-bg rank-border-honor-bonds-bg--left"
-                                :src="honor.bondsLeftBgUrl"
-                                alt=""
-                                loading="lazy"
-                                @error="hideBrokenImage"
-                              >
-                              <img
-                                v-if="honor.bondsLeftIconUrl"
-                                class="rank-border-honor-layer rank-border-honor-bonds-icon rank-border-honor-bonds-icon--left"
-                                :src="honor.bondsLeftIconUrl"
-                                alt=""
-                                loading="lazy"
-                                @error="hideBrokenImage"
-                              >
-                              <img
-                                v-if="honor.bondsRightIconUrl"
-                                class="rank-border-honor-layer rank-border-honor-bonds-icon rank-border-honor-bonds-icon--right"
-                                :src="honor.bondsRightIconUrl"
-                                alt=""
-                                loading="lazy"
-                                @error="hideBrokenImage"
-                              >
-                              <img
-                                v-if="honor.bondsMaskUrl"
-                                class="rank-border-honor-layer rank-border-honor-bonds-mask-layer"
-                                :src="honor.bondsMaskUrl"
-                                alt=""
-                                loading="lazy"
-                                @error="hideBrokenImage"
-                              >
-                              <img
-                                v-if="honor.frameUrl"
-                                :class="[
-                                  'rank-border-honor-layer rank-border-honor-frame-layer',
-                                  `rank-border-honor-frame-layer--${honor.framePlacement}`,
-                                ]"
-                                :src="honor.frameUrl"
-                                alt=""
-                                loading="lazy"
-                                @error="hideBrokenImage"
-                              >
-                              <span v-if="honorLevelStars(honor).length > 0" class="rank-border-honor-level-stars" aria-hidden="true">
-                                <img
+                              <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
+                                <defs>
+                                  <mask :id="honorSvgId(honor, 'mask')" maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="80" style="mask-type: alpha">
+                                    <image href="/rank-border/honor/mask_degree_sub.png" x="0" y="0" width="180" height="80" preserveAspectRatio="none" />
+                                  </mask>
+                                  <clipPath :id="honorSvgId(honor, 'left-bg')">
+                                    <rect x="0" y="0" width="93" height="80" />
+                                  </clipPath>
+                                  <clipPath :id="honorSvgId(honor, 'left-icon')">
+                                    <rect x="0" y="0" width="90" height="80" />
+                                  </clipPath>
+                                  <clipPath :id="honorSvgId(honor, 'right-icon')">
+                                    <rect x="90" y="0" width="90" height="80" />
+                                  </clipPath>
+                                </defs>
+                                <g :mask="`url(#${honorSvgId(honor, 'mask')})`">
+                                  <image :href="honor.bondsRightBgUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none" />
+                                  <image
+                                    :href="honor.bondsLeftBgUrl"
+                                    x="0"
+                                    y="0"
+                                    width="180"
+                                    height="80"
+                                    preserveAspectRatio="none"
+                                    :clip-path="`url(#${honorSvgId(honor, 'left-bg')})`"
+                                  />
+                                  <image
+                                    v-if="honor.bondsLeftIconUrl"
+                                    :href="honor.bondsLeftIconUrl"
+                                    x="-4"
+                                    y="-29"
+                                    width="128"
+                                    height="109"
+                                    preserveAspectRatio="none"
+                                    :clip-path="`url(#${honorSvgId(honor, 'left-icon')})`"
+                                  />
+                                  <image
+                                    v-if="honor.bondsRightIconUrl"
+                                    :href="honor.bondsRightIconUrl"
+                                    x="56"
+                                    y="-29"
+                                    width="128"
+                                    height="109"
+                                    preserveAspectRatio="none"
+                                    :clip-path="`url(#${honorSvgId(honor, 'right-icon')})`"
+                                  />
+                                </g>
+                                <image
+                                  v-if="honor.frameUrl"
+                                  :href="honor.frameUrl"
+                                  v-bind="honorFrameSvgAttrs(honor)"
+                                  preserveAspectRatio="none"
+                                />
+                                <image
                                   v-for="star in honorLevelStars(honor)"
                                   :key="star.key"
-                                  class="rank-border-honor-level-star"
-                                  :style="{ '--rank-border-honor-star-slot': star.slot, '--rank-border-honor-star-layer': star.layer }"
-                                  :src="star.url"
-                                  alt=""
-                                  loading="lazy"
-                                  @error="hideBrokenImage"
-                                >
-                              </span>
+                                  :href="star.url"
+                                  :x="50 + star.slot * 16"
+                                  y="61"
+                                  width="16"
+                                  height="16"
+                                  preserveAspectRatio="none"
+                                />
+                              </svg>
                             </span>
                             <span v-else class="rank-border-honor-fallback">{{ honor.label }}</span>
                           </span>
@@ -4818,129 +4858,126 @@ function traceUpdateRecords(
                       <p class="mt-1 truncate text-xs text-muted-foreground">{{ t("rankBorder.result.latestPlain") }} {{ formatTimestamp((activeDetailResult ?? detail.result).timestamp) }}</p>
                     </div>
                     <div
-                      v-if="shouldRenderProfileAssets && profileHonorViews(detail.result).length > 0"
+                      v-if="shouldRenderProfileAssets && profileHonorViews(detail.result, 3, detailHonorKeyScope(detail)).length > 0"
                       class="rank-border-honor-strip rank-border-honor-strip--detail"
                     >
                     <span
-                      v-for="honor in profileHonorViews(detail.result)"
+                      v-for="honor in profileHonorViews(detail.result, 3, detailHonorKeyScope(detail))"
                       :key="honor.key"
                       class="rank-border-honor rank-border-honor--detail"
                       :title="`${honor.label} ${honorLevelLabel(honor)}`.trim()"
                     >
                       <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
-                        <img
-                          class="rank-border-honor-layer"
-                          :src="honor.baseUrl"
-                          :alt="honor.label"
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <img
-                          v-if="honor.frameUrl"
-                          :class="[
-                            'rank-border-honor-layer rank-border-honor-frame-layer',
-                            `rank-border-honor-frame-layer--${honor.framePlacement}`,
-                          ]"
-                          :src="honor.frameUrl"
-                          alt=""
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <img
-                          v-if="honor.rankUrl"
-                          :class="[
-                            'rank-border-honor-layer rank-border-honor-rank-layer',
-                            `rank-border-honor-rank-layer--${honor.rankPlacement}`,
-                          ]"
-                          :src="honor.rankUrl"
-                          alt=""
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <img
-                          v-if="honor.scrollUrl"
-                          class="rank-border-honor-layer rank-border-honor-scroll-layer"
-                          :src="honor.scrollUrl"
-                          alt=""
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <span v-if="honor.fcApLevel" class="rank-border-honor-fcap-level">{{ honor.fcApLevel }}</span>
-                        <span v-if="honorLevelStars(honor).length > 0" class="rank-border-honor-level-stars" aria-hidden="true">
-                          <img
+                        <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
+                          <image :href="honor.baseUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none" />
+                          <image
+                            v-if="honor.frameUrl"
+                            :href="honor.frameUrl"
+                            v-bind="honorFrameSvgAttrs(honor)"
+                            preserveAspectRatio="none"
+                          />
+                          <image
+                            v-if="honor.rankUrl"
+                            :href="honor.rankUrl"
+                            v-bind="honorRankSvgAttrs(honor)"
+                            preserveAspectRatio="none"
+                          />
+                          <image
+                            v-if="honor.scrollUrl"
+                            :href="honor.scrollUrl"
+                            x="37"
+                            y="3"
+                            width="101"
+                            height="75"
+                            preserveAspectRatio="none"
+                          />
+                          <image
                             v-for="star in honorLevelStars(honor)"
                             :key="star.key"
-                            class="rank-border-honor-level-star"
-                            :style="{ '--rank-border-honor-star-slot': star.slot, '--rank-border-honor-star-layer': star.layer }"
-                            :src="star.url"
-                            alt=""
-                            loading="lazy"
-                            @error="hideBrokenImage"
+                            :href="star.url"
+                            :x="50 + star.slot * 16"
+                            y="61"
+                            width="16"
+                            height="16"
+                            preserveAspectRatio="none"
+                          />
+                          <text
+                            v-if="honor.fcApLevel"
+                            class="rank-border-honor-fcap-text"
+                            x="87"
+                            y="57"
+                            text-anchor="middle"
+                            dominant-baseline="middle"
                           >
-                        </span>
+                            {{ honor.fcApLevel }}
+                          </text>
+                        </svg>
                       </span>
                       <span v-else-if="honor.type === 'bonds' && honor.bondsLeftBgUrl && honor.bondsRightBgUrl" class="rank-border-honor-visual rank-border-honor-visual--bonds">
-                        <img
-                          class="rank-border-honor-layer rank-border-honor-bonds-bg rank-border-honor-bonds-bg--right"
-                          :src="honor.bondsRightBgUrl"
-                          :alt="honor.label"
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <img
-                          class="rank-border-honor-layer rank-border-honor-bonds-bg rank-border-honor-bonds-bg--left"
-                          :src="honor.bondsLeftBgUrl"
-                          alt=""
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <img
-                          v-if="honor.bondsLeftIconUrl"
-                          class="rank-border-honor-layer rank-border-honor-bonds-icon rank-border-honor-bonds-icon--left"
-                          :src="honor.bondsLeftIconUrl"
-                          alt=""
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <img
-                          v-if="honor.bondsRightIconUrl"
-                          class="rank-border-honor-layer rank-border-honor-bonds-icon rank-border-honor-bonds-icon--right"
-                          :src="honor.bondsRightIconUrl"
-                          alt=""
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <img
-                          v-if="honor.bondsMaskUrl"
-                          class="rank-border-honor-layer rank-border-honor-bonds-mask-layer"
-                          :src="honor.bondsMaskUrl"
-                          alt=""
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <img
-                          v-if="honor.frameUrl"
-                          :class="[
-                            'rank-border-honor-layer rank-border-honor-frame-layer',
-                            `rank-border-honor-frame-layer--${honor.framePlacement}`,
-                          ]"
-                          :src="honor.frameUrl"
-                          alt=""
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <span v-if="honorLevelStars(honor).length > 0" class="rank-border-honor-level-stars" aria-hidden="true">
-                          <img
+                        <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
+                          <defs>
+                            <mask :id="honorSvgId(honor, 'mask')" maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="80" style="mask-type: alpha">
+                              <image href="/rank-border/honor/mask_degree_sub.png" x="0" y="0" width="180" height="80" preserveAspectRatio="none" />
+                            </mask>
+                            <clipPath :id="honorSvgId(honor, 'left-bg')">
+                              <rect x="0" y="0" width="93" height="80" />
+                            </clipPath>
+                            <clipPath :id="honorSvgId(honor, 'left-icon')">
+                              <rect x="0" y="0" width="90" height="80" />
+                            </clipPath>
+                            <clipPath :id="honorSvgId(honor, 'right-icon')">
+                              <rect x="90" y="0" width="90" height="80" />
+                            </clipPath>
+                          </defs>
+                          <g :mask="`url(#${honorSvgId(honor, 'mask')})`">
+                            <image :href="honor.bondsRightBgUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none" />
+                            <image
+                              :href="honor.bondsLeftBgUrl"
+                              x="0"
+                              y="0"
+                              width="180"
+                              height="80"
+                              preserveAspectRatio="none"
+                              :clip-path="`url(#${honorSvgId(honor, 'left-bg')})`"
+                            />
+                            <image
+                              v-if="honor.bondsLeftIconUrl"
+                              :href="honor.bondsLeftIconUrl"
+                              x="-4"
+                              y="-29"
+                              width="128"
+                              height="109"
+                              preserveAspectRatio="none"
+                              :clip-path="`url(#${honorSvgId(honor, 'left-icon')})`"
+                            />
+                            <image
+                              v-if="honor.bondsRightIconUrl"
+                              :href="honor.bondsRightIconUrl"
+                              x="56"
+                              y="-29"
+                              width="128"
+                              height="109"
+                              preserveAspectRatio="none"
+                              :clip-path="`url(#${honorSvgId(honor, 'right-icon')})`"
+                            />
+                          </g>
+                          <image
+                            v-if="honor.frameUrl"
+                            :href="honor.frameUrl"
+                            v-bind="honorFrameSvgAttrs(honor)"
+                            preserveAspectRatio="none"
+                          />
+                          <image
                             v-for="star in honorLevelStars(honor)"
                             :key="star.key"
-                            class="rank-border-honor-level-star"
-                            :style="{ '--rank-border-honor-star-slot': star.slot, '--rank-border-honor-star-layer': star.layer }"
-                            :src="star.url"
-                            alt=""
-                            loading="lazy"
-                            @error="hideBrokenImage"
-                          >
-                        </span>
+                            :href="star.url"
+                            :x="50 + star.slot * 16"
+                            y="61"
+                            width="16"
+                            height="16"
+                            preserveAspectRatio="none"
+                          />
+                        </svg>
                       </span>
                       <span v-else class="rank-border-honor-fallback">{{ honor.label }}</span>
                     </span>
@@ -5251,20 +5288,24 @@ function traceUpdateRecords(
   grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
 }
 
+.rank-border-query-grid > * {
+  min-width: 0;
+}
+
 @media (min-width: 1024px) {
   .rank-border-query-grid--normal {
     grid-template-columns: minmax(5.6rem, 0.58fr) minmax(8.2rem, 0.72fr) minmax(18rem, 3fr) minmax(7rem, 0.7fr);
   }
 
   .rank-border-query-grid--world-bloom {
-    grid-template-columns: minmax(5rem, 0.5fr) minmax(7.5rem, 0.65fr) minmax(18rem, 3.2fr) minmax(9.5rem, 0.95fr) minmax(6.5rem, 0.62fr);
+    grid-template-columns: minmax(4.75rem, 0.48fr) minmax(7rem, 0.62fr) minmax(13rem, 2.7fr) minmax(8.25rem, 0.9fr) minmax(5.75rem, 0.55fr);
   }
 }
 
 @media (min-width: 1024px) and (max-width: 1180px) {
   .rank-border-query-grid--world-bloom {
     gap: 0.375rem;
-    grid-template-columns: minmax(4.75rem, 0.45fr) minmax(7rem, 0.58fr) minmax(16rem, 3fr) minmax(8.4rem, 0.82fr) minmax(6rem, 0.55fr);
+    grid-template-columns: minmax(4.5rem, 0.44fr) minmax(6.5rem, 0.56fr) minmax(11.5rem, 2.5fr) minmax(7.6rem, 0.78fr) minmax(5.35rem, 0.5fr);
   }
 }
 
@@ -5610,6 +5651,7 @@ function traceUpdateRecords(
 
 .rank-border-honor-visual {
   position: relative;
+  container-type: inline-size;
   display: block;
   width: 100%;
   height: 100%;
@@ -5621,146 +5663,25 @@ function traceUpdateRecords(
 
 .rank-border-honor-visual--bonds {
   background: color-mix(in oklab, var(--muted) 64%, transparent);
-  -webkit-mask-image: url("/rank-border/honor/mask_degree_sub.png");
-  mask-image: url("/rank-border/honor/mask_degree_sub.png");
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
 }
 
-.rank-border-honor-layer {
-  position: absolute;
-  inset: 0;
+.rank-border-honor-svg {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
 }
 
-.rank-border-honor-frame-layer {
-  z-index: 1;
-}
-
-.rank-border-honor-rank-layer {
-  z-index: 2;
-}
-
-.rank-border-honor-rank-layer--event,
-.rank-border-honor-rank-layer--rank_match {
-  inset: 52.5% auto auto 18.8889%;
-  width: 66.6667%;
-  height: 47.5%;
-}
-
-.rank-border-honor-rank-layer--rank_match {
-  inset-inline-start: 9.4444%;
-}
-
-.rank-border-honor-rank-layer--full {
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.rank-border-honor-scroll-layer {
-  inset: 3.75% auto auto 20.5556%;
-  z-index: 3;
-  width: 55.5556%;
-  height: 42.5%;
-}
-
-.rank-border-honor-fcap-level {
-  position: absolute;
-  inset: 57.5% auto auto 20.5556%;
-  z-index: 4;
-  width: 55.5556%;
-  color: #fff;
-  font-size: 25%;
+.rank-border-honor-fcap-text {
+  fill: #fff;
+  stroke: rgb(33 35 64 / 0.45);
+  stroke-linejoin: round;
+  stroke-width: 2;
+  font-family: "RankBorderSourceHanSansSC", ui-sans-serif, system-ui, sans-serif;
+  font-size: 22px;
   font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  line-height: 1;
-  text-align: center;
-  text-shadow:
-    0 1px 2px rgb(33 35 64 / 0.75),
-    0 0 2px rgb(33 35 64 / 0.6);
-}
-
-.rank-border-honor-level-stars {
-  position: absolute;
-  inset: 76.25% auto auto 27.7778%;
-  z-index: 4;
-  display: block;
-  width: 44.4444%;
-  height: 20%;
-}
-
-.rank-border-honor-level-star {
-  position: absolute;
-  top: 0;
-  left: calc(var(--rank-border-honor-star-slot, 0) * 20%);
-  z-index: var(--rank-border-honor-star-layer, 1);
-  display: block;
-  width: 20%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.rank-border-honor-bonds-bg {
-  z-index: 0;
-  object-fit: fill;
-}
-
-.rank-border-honor-bonds-bg--left {
-  width: 51.6667%;
-  object-position: left center;
-  clip-path: none;
-}
-
-.rank-border-honor-bonds-bg--right {
-  object-position: right center;
-  clip-path: none;
-}
-
-.rank-border-honor-bonds-icon {
-  top: auto;
-  bottom: 0;
-  z-index: 1;
-  width: 53.3333%;
-  height: 80%;
-  object-fit: contain;
-}
-
-.rank-border-honor-bonds-icon--left {
-  left: 33.3333%;
-  transform: translateX(-50%);
-  clip-path: inset(0 0 0 0);
-}
-
-.rank-border-honor-bonds-icon--right {
-  right: auto;
-  left: 66.6667%;
-  transform: translateX(-50%);
-  clip-path: inset(0 0 0 0);
-}
-
-.rank-border-honor-bonds-mask-layer {
-  z-index: 2;
-  opacity: 0;
+  font-weight: 700;
+  paint-order: stroke fill;
   pointer-events: none;
-}
-
-.rank-border-honor-frame-layer--low {
-  inset: 0 auto 0 4.4444%;
-  inset-inline-start: 4.4444%;
-  width: 91.1111%;
-  height: 100%;
-}
-
-.rank-border-honor-frame-layer--full {
-  inset: 0;
-  width: 100%;
-  height: 100%;
 }
 
 .rank-border-honor-fallback {
@@ -6911,35 +6832,42 @@ function traceUpdateRecords(
   :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
     position: fixed !important;
     top: auto !important;
-    right: auto !important;
+    right: 0 !important;
     bottom: 0 !important;
-    left: auto !important;
-    inset: auto 0.375rem 0 0.375rem !important;
-    inset-inline-start: 0.375rem !important;
-    inset-inline-end: 0.375rem !important;
-    width: auto !important;
-    max-width: none !important;
+    left: 0 !important;
+    inset: auto 0 0 0 !important;
+    inset-inline-start: 0 !important;
+    inset-inline-end: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
     height: min(92svh, calc(100svh - 0.75rem));
     max-height: min(92svh, calc(100svh - 0.75rem));
     margin: 0;
-    display: block;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     gap: 0.5rem;
-    overflow-y: auto;
+    overflow: hidden;
     overscroll-behavior: contain;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
+    border-left: 0;
+    border-right: 0;
     padding: 0.625rem;
-    translate: none !important;
+    --tw-translate-x: 0 !important;
+    --tw-translate-y: 0 !important;
+    translate: 0 0 !important;
     transform: none !important;
   }
 
   .rank-border-detail-dialog__header {
+    min-height: 0;
     padding-right: 2rem;
   }
 
   .rank-border-detail-grid {
     display: grid;
-    min-height: auto;
+    min-height: 0;
+    max-height: 100%;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
     grid-auto-rows: auto;
@@ -6951,7 +6879,10 @@ function traceUpdateRecords(
     align-content: start;
     gap: 0.625rem;
     padding-top: 0.625rem;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 1rem;
   }
 
   .rank-border-detail-profile,
@@ -6970,12 +6901,12 @@ function traceUpdateRecords(
   }
 
   .rank-border-detail-profile__body {
-    align-items: center;
+    align-items: start;
     gap: 0.5rem 0.625rem;
   }
 
   .rank-border-detail-profile__body--assets {
-    grid-template-columns: 3.25rem minmax(0, 1fr);
+    grid-template-columns: 3rem minmax(0, 1fr);
   }
 
   .rank-border-leader--detail {
@@ -6984,23 +6915,23 @@ function traceUpdateRecords(
   }
 
   .rank-border-leader--dialog {
-    width: 3.25rem;
-    height: 3.25rem;
+    width: 3rem;
+    height: 3rem;
   }
 
   .rank-border-honor--detail {
-    width: 4.25rem;
+    width: 4.6rem;
   }
 
   .rank-border-detail-profile__copy {
-    align-content: center;
+    align-content: start;
   }
 
   .rank-border-detail-profile__score {
     display: grid;
-    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
-    align-items: baseline;
-    gap: 0.25rem 0.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 0.125rem;
   }
 
   .rank-border-detail-rank {
@@ -7009,10 +6940,10 @@ function traceUpdateRecords(
 
   .rank-border-detail-score {
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
     font-size: 0.9375rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 
   .rank-border-detail-stats {

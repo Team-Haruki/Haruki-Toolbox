@@ -734,10 +734,14 @@ async function fetchTrackerJson(endpoint: string, path: string, cacheBust = fals
   }
 
   const requestPath = appendPlaybackQuery(path, playbackAt)
+  if (!useWebSocket) {
+    return fetchTrackerJsonViaRest(baseUrl, requestPath, cacheBust)
+  }
+
   const wsUrl = resolveRankBorderTrackerWebSocketUrl(baseUrl)
   const ticketUrl = resolveRankBorderTrackerWebSocketTicketUrl(baseUrl)
   let wsError: unknown
-  if (useWebSocket && wsUrl && ticketUrl) {
+  if (wsUrl && ticketUrl) {
     try {
       throwIfTrackerWsTemporarilyDisabled(wsUrl)
       return await requestTrackerJsonViaWebSocket(wsUrl, ticketUrl, requestPath)

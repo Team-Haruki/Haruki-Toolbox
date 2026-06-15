@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test"
 import {
   fetchRankBorderPrivateLatestByUser,
+  fetchRankBorderStatus,
   resolveRankBorderTrackerWebSocketTicketUrl,
   resolveRankBorderTrackerWebSocketUrl,
 } from "./rank-border"
@@ -102,5 +103,38 @@ describe("rank border tracker api", () => {
 
     expect(requests.some((url) => url.includes("/ws-ticket"))).toBe(true)
     expect(requests.some((url) => url === "/event/jp/1/private/latest-ranking/user/123456789?owner=kratos-1")).toBe(true)
+  })
+
+  it("uses REST directly when websocket transport is disabled", async () => {
+    const originalFetch = globalThis.fetch
+    const requests: string[] = []
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      requests.push(url)
+      if (url.endsWith("/event/jp/1/status")) {
+        return new Response(JSON.stringify({
+          timestamp: 1,
+          status: 0,
+          statusDesc: "ok",
+          timeAgo: 0,
+        }), { status: 200 })
+      }
+      return new Response("unexpected", { status: 500 })
+    }) as typeof fetch
+
+    try {
+      await fetchRankBorderStatus({
+        endpoint: "https://tracker.example/base",
+        region: "jp",
+        eventId: 1,
+        mode: "normal",
+        useWebSocket: false,
+      })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    expect(requests).toEqual(["https://tracker.example/base/event/jp/1/status"])
+    expect(requests.some((url) => url.includes("/ws-ticket"))).toBe(false)
   })
 })
