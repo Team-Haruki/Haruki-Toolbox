@@ -58,6 +58,7 @@ import type { SekaiRegion } from "@/types"
 import {
   fetchRankBorderLatestByRank,
   fetchRankBorderLatestByUser,
+  fetchRankBorderBatchTraceByRanks,
   fetchRankBorderPrivateLatestByUser,
   fetchRankBorderPrivateTraceByUser,
   fetchRankBorderTraceByRank,
@@ -803,6 +804,7 @@ let realtimeSubscriptionToken = 0
 let numberFlashTimer: ReturnType<typeof setTimeout> | null = null
 let pendingRefresh = false
 let top100DetailRefreshToken = 0
+let top100TraceRefreshToken = 0
 let detailRequestToken = 0
 let activeDetailTraceKey = ""
 let visibleRankFrame: number | null = null
@@ -1034,10 +1036,7 @@ function switchRegion(region: SekaiRegion) {
 }
 
 function createTop100Row(rank: number, rowDetail: RankBorderLatest | null): RankBorderLineRow {
-  const localGrowth = top100GrowthIntervalSeconds.value === selectedIntervalSeconds.value
-    ? top100GrowthByRank.value.get(rank)
-    : null
-  const growth = localGrowth ?? selectedTrackerGrowthByRank.value.get(rank) ?? null
+  const growth = resolveTop100RowGrowth(rank, rowDetail)
   const rowKey = top100RowKey(rank, rowDetail)
   return {
     key: rowKey,
@@ -1056,6 +1055,70 @@ function createTop100Row(rank: number, rowDetail: RankBorderLatest | null): Rank
   }
 }
 
+function resolveTop100RowGrowth(rank: number, rowDetail: RankBorderLatest | null): RankBorderGrowth | null {
+  const localGrowth = top100GrowthIntervalSeconds.value === selectedIntervalSeconds.value
+    ? top100GrowthByRank.value.get(rank) ?? null
+    : null
+  if (isTraceBackedTop100RowGrowthCompatible(rank, rowDetail, localGrowth)) {
+    return localGrowth
+  }
+
+  const trackerGrowth = selectedTrackerGrowthByRank.value.get(rank) ?? null
+  if (isRankGrowthValue(rank, trackerGrowth)) {
+    return trackerGrowth
+  }
+
+  const activeDetailGrowth = resolveActiveTop100DetailGrowth(rank, rowDetail)
+  if (isTraceBackedTop100RowGrowthCompatible(rank, rowDetail, activeDetailGrowth)) {
+    return activeDetailGrowth
+  }
+
+  return null
+}
+
+function resolveActiveTop100DetailGrowth(rank: number, rowDetail: RankBorderLatest | null): RankBorderGrowth | null {
+  const activeDetail = detail.value
+  if (!activeDetail || activeDetail.source === "line" || activeDetail.result.rank !== rank) {
+    return null
+  }
+
+  const rowUserId = normalizeTextValue(rowDetail?.userId)
+  const detailUserId = normalizeTextValue(activeDetail.result.userId)
+  if (rowUserId && detailUserId && rowUserId !== detailUserId) {
+    return null
+  }
+
+  return detailTraceStats.value.growth ?? null
+}
+
+function isRankGrowthValue(rank: number, growth: RankBorderGrowth | null | undefined) {
+  return !!growth && growth.growth != null && growth.rank === rank
+}
+
+function isTraceBackedTop100RowGrowthCompatible(
+  rank: number,
+  rowDetail: RankBorderLatest | null,
+  growth: RankBorderGrowth | null | undefined,
+) {
+  if (!isRankGrowthValue(rank, growth)) {
+    return false
+  }
+
+  const records = top100TraceByRank.value.get(rank) ?? []
+  const latestRecord = records[records.length - 1] ?? null
+  if (!latestRecord) {
+    return true
+  }
+
+  if (latestRecord.rank !== rank) {
+    return false
+  }
+
+  const rowUserId = normalizeTextValue(rowDetail?.userId)
+  const traceUserId = normalizeTextValue(latestRecord.userId)
+  return !rowUserId || !traceUserId || rowUserId === traceUserId
+}
+
 function top100RowKey(rank: number, rowDetail: RankBorderLatest | null) {
   const userId = normalizeTextValue(rowDetail?.userId)
   if (userId) {
@@ -1072,6 +1135,7 @@ function top100RowKey(rank: number, rowDetail: RankBorderLatest | null) {
 
 function resetRankBorderData() {
   detailRequestToken += 1
+  top100TraceRefreshToken += 1
   activeDetailTraceKey = ""
   detail.value = null
   detailTrace.value = []
@@ -1148,6 +1212,7 @@ async function refreshData(cacheBust = true) {
       await detailsRefresh
     }
     refreshTop100GrowthsFromCachedTraces(previousTop100Growths)
+    void refreshTop100Traces(previousTop100Growths)
     await refreshActiveDetail()
   } finally {
     liveRefreshing.value = false
@@ -1803,6 +1868,7 @@ function cacheTrace(rank: number, records: RankBorderTracePoint[]) {
     const next = new Map(top100TraceByRank.value)
     next.set(rank, records)
     top100TraceByRank.value = next
+    refreshTop100GrowthsFromCachedTraces(top100GrowthByRank.value)
     return
   }
 
@@ -1981,6 +2047,39 @@ function writeTop100DetailsCache(details: Map<number, RankBorderLatest>) {
       cachedAt: Date.now(),
       items: Array.from(details.values()),
     }))
+  } catch {
+  }
+}
+
+async function refreshTop100Traces(previousGrowths: Map<number, RankBorderGrowth>) {
+  if (!canRefresh.value || top100Details.value.size === 0) {
+    return
+  }
+
+  const token = ++top100TraceRefreshToken
+  const ranks = TOP_100_RANKS.filter((rank) => top100Details.value.has(rank))
+  if (ranks.length === 0) {
+    return
+  }
+
+  try {
+    const traces = await fetchRankBorderBatchTraceByRanks({
+      ...detailScope.value,
+      ranks,
+      full: true,
+    })
+    if (token !== top100TraceRefreshToken) {
+      return
+    }
+
+    const nextTraces = new Map(top100TraceByRank.value)
+    for (const [rank, records] of traces) {
+      if (records.length > 0) {
+        nextTraces.set(rank, records)
+      }
+    }
+    top100TraceByRank.value = nextTraces
+    refreshTop100GrowthsFromCachedTraces(previousGrowths)
   } catch {
   }
 }
@@ -4408,7 +4507,7 @@ function traceUpdateRecords(
                     >
                       {{ formatPt(row.score) }}
                     </span>
-                    <div class="flex flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5 text-[0.6875rem] leading-4 text-muted-foreground sm:gap-2 sm:text-xs">
+                    <div class="rank-border-score-meta flex flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5 text-[0.6875rem] leading-4 text-muted-foreground sm:gap-2 sm:text-xs">
                       <span
                         v-if="row.displayGrowth != null"
                         :class="[
@@ -4529,7 +4628,7 @@ function traceUpdateRecords(
                     >
                       {{ formatPt(row.score) }}
                     </span>
-                    <div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:justify-end">
+                    <div class="rank-border-score-meta flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:justify-end">
                       <span
                         v-if="row.growth?.growth != null"
                         :class="[
@@ -5549,7 +5648,7 @@ function traceUpdateRecords(
   position: relative;
   z-index: 2;
   display: grid;
-  min-width: 0;
+  min-width: min-content;
   justify-items: end;
   gap: 0.25rem;
   align-self: stretch;
@@ -5576,12 +5675,11 @@ function traceUpdateRecords(
 .rank-border-row-score {
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
   font-size: clamp(0.9375rem, 1.65vw, 1.25rem);
   font-variant-numeric: tabular-nums;
   font-weight: 650;
   line-height: 1.15;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -6883,12 +6981,12 @@ function traceUpdateRecords(
   }
 
   .rank-border-top-row {
-    grid-template-columns: 3.1rem minmax(0, 1fr) minmax(5.3rem, 5.95rem);
+    grid-template-columns: 3.1rem minmax(0, 1fr) minmax(6.9rem, 7.65rem);
     column-gap: 0.375rem;
   }
 
   .rank-border-segment-row {
-    grid-template-columns: 3.8rem minmax(0, 1fr) minmax(5.3rem, 5.95rem);
+    grid-template-columns: 4.2rem minmax(0, 1fr) minmax(6.45rem, 7rem);
     column-gap: 0.375rem;
   }
 
@@ -6921,6 +7019,7 @@ function traceUpdateRecords(
 
   .rank-border-score-cell {
     gap: 0.15rem;
+    min-width: 0;
     padding-inline-start: 0.125rem;
   }
 
@@ -6930,6 +7029,25 @@ function traceUpdateRecords(
   }
 
   .rank-border-row-score {
+    font-size: clamp(0.765rem, 2.95vw, 0.9375rem);
+    letter-spacing: 0;
+  }
+
+  .rank-border-score-meta {
+    display: grid;
+    justify-items: end;
+    gap: 0.0625rem;
+    font-size: 0.75rem;
+    line-height: 1.15;
+  }
+
+  .rank-border-score-meta span {
+    min-width: 0;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+
+  .rank-border-segment-row .rank-border-score-meta {
     font-size: 0.8125rem;
   }
 
@@ -7157,12 +7275,12 @@ function traceUpdateRecords(
 
 @media (max-width: 380px) {
   .rank-border-top-row {
-    grid-template-columns: 2.8rem minmax(0, 1fr) 5.35rem;
+    grid-template-columns: 2.8rem minmax(0, 1fr) 6.75rem;
     padding-inline: 0.45rem;
   }
 
   .rank-border-segment-row {
-    grid-template-columns: 3.45rem minmax(0, 1fr) 5.35rem;
+    grid-template-columns: 3.75rem minmax(0, 1fr) 6.3rem;
     padding-inline: 0.45rem;
   }
 
@@ -7185,6 +7303,14 @@ function traceUpdateRecords(
   }
 
   .rank-border-row-score {
+    font-size: 0.6875rem;
+  }
+
+  .rank-border-score-meta {
+    font-size: 0.6875rem;
+  }
+
+  .rank-border-segment-row .rank-border-score-meta {
     font-size: 0.75rem;
   }
 
