@@ -352,9 +352,8 @@ const top100Details = ref<Map<number, RankBorderLatest>>(new Map())
 const top100GrowthByRank = ref<Map<number, RankBorderGrowth>>(new Map())
 const top100TraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
 const segmentTraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
-const top100ScoreUpdatedAtByKey = ref<Map<string, number>>(new Map())
-const segmentScoreUpdatedAtByRank = ref<Map<number, number>>(new Map())
 const publicProfileByUserId = ref<Map<string, RankBorderUserProfile>>(new Map())
+const trackerGrowthIntervalSeconds = ref<number | null>(null)
 const scoreChangedRanks = ref<Set<number>>(new Set())
 const growthChangedRanks = ref<Set<number>>(new Set())
 const detailChangedRanks = ref<Set<number>>(new Set())
@@ -471,15 +470,20 @@ const top100Rows = computed<RankBorderLineRow[]>(() =>
 )
 
 const hasTop100Data = computed(() => top100Details.value.size > 0)
+const selectedTrackerGrowthByRank = computed(() =>
+  trackerGrowthIntervalSeconds.value === selectedIntervalSeconds.value
+    ? tracker.growthByRank.value
+    : new Map<number, RankBorderGrowth>(),
+)
 const segmentRows = computed<RankBorderSegmentRow[]>(() =>
   tracker.lines.value
     .filter((line) => line.rank > PERSONAL_COLLECTION_LIMIT)
     .map((line) => {
-      const growth = tracker.growthByRank.value.get(line.rank) ?? null
+      const growth = selectedTrackerGrowthByRank.value.get(line.rank) ?? null
       return {
         rank: line.rank,
         score: line.score,
-        timestamp: segmentScoreUpdatedAtByRank.value.get(line.rank) ?? line.timestamp,
+        timestamp: line.timestamp,
         growth,
         selected: detail.value?.source === "line" && detail.value.result.rank === line.rank,
         scoreChanged: scoreChangedRanks.value.has(line.rank),
@@ -642,10 +646,13 @@ const detailTraceStats = computed(() => {
   const records = scopedDetailTrace.value
   const latestTrace = records[records.length - 1] ?? null
   const startTime = (latestTrace?.timestamp ?? currentUnixSecond.value) - selectedIntervalSeconds.value
-  const windowRecords = records.filter((record) => record.timestamp >= startTime)
   const growth = resolveRankBorderTraceGrowth(records, startTime)
-  const earlier = windowRecords[0] ?? null
-  const latest = windowRecords[windowRecords.length - 1] ?? null
+  const earlier = growth?.timestampEarlier != null
+    ? records.find((record) => record.timestamp === growth.timestampEarlier) ?? null
+    : null
+  const latest = growth?.timestampLatest != null
+    ? findLatestTraceAtTimestamp(records, growth.timestampLatest)
+    : null
   const latestInterval = resolveLatestTraceDelta(records)
   const recentAverage = resolveRecentAverageDelta(records, DETAIL_RECENT_POINT_COUNT)
   const threeWindowGrowth = resolveTraceGrowthForWindow(records, DETAIL_CSB_WINDOW_SECONDS)
@@ -916,6 +923,7 @@ watch(
 
 watch(intervalSeconds, () => {
   refreshTop100GrowthsFromCachedTraces(top100GrowthByRank.value)
+  warmTop100Traces(top100GrowthByRank.value, true)
   void refreshData(true)
 })
 
@@ -938,6 +946,20 @@ watch(hasProfileAssetPayload, (shouldLoad) => {
     return
   }
 
+  preloadProfileAssets()
+})
+
+watch([canRefresh, shouldRenderProfileAssets], ([ready, shouldRender]) => {
+  if (ready && shouldRender) {
+    preloadProfileAssets()
+  }
+}, { immediate: true })
+
+function preloadProfileAssets() {
+  if (profileAssetsLoading.value) {
+    return
+  }
+
   if (cardById.value.size > 0 && honorById.value.size > 0 && honorGroupById.value.size > 0) {
     return
   }
@@ -946,7 +968,7 @@ watch(hasProfileAssetPayload, (shouldLoad) => {
   void masterOptions.loadProfileAssets(false).finally(() => {
     profileAssetsLoading.value = false
   })
-})
+}
 
 onBeforeUnmount(() => {
   stopLiveRefreshTimer()
@@ -1035,13 +1057,13 @@ function switchRegion(region: SekaiRegion) {
 }
 
 function createTop100Row(rank: number, rowDetail: RankBorderLatest | null): RankBorderLineRow {
-  const growth = top100GrowthByRank.value.get(rank) ?? tracker.growthByRank.value.get(rank) ?? null
+  const growth = top100GrowthByRank.value.get(rank) ?? selectedTrackerGrowthByRank.value.get(rank) ?? null
   const rowKey = top100RowKey(rank, rowDetail)
   return {
     key: rowKey,
     rank,
     score: rowDetail?.score ?? null,
-    timestamp: top100ScoreUpdatedAtByKey.value.get(rowKey) ?? rowDetail?.timestamp ?? null,
+    timestamp: rowDetail?.timestamp ?? null,
     growth,
     displayGrowth: growth?.growth ?? null,
     detail: rowDetail,
@@ -1082,9 +1104,8 @@ function resetRankBorderData() {
   top100GrowthByRank.value = new Map()
   top100TraceByRank.value = new Map()
   segmentTraceByRank.value = new Map()
-  top100ScoreUpdatedAtByKey.value = new Map()
-  segmentScoreUpdatedAtByRank.value = new Map()
   publicProfileByUserId.value = new Map()
+  trackerGrowthIntervalSeconds.value = null
   tracker.lines.value = []
   tracker.growths.value = []
   profileAssetsLoading.value = false
@@ -1118,26 +1139,37 @@ async function refreshData(cacheBust = true) {
     const previousLines = new Map(tracker.lines.value.map((line) => [line.rank, line]))
     const previousGrowths = new Map(tracker.growths.value.map((growth) => [growth.rank, growth.growth]))
     const previousTrackerTimestamp = latestTrackerTimestamp.value
-    await tracker.refresh({
+    const requestedIntervalSeconds = selectedIntervalSeconds.value
+    const initialDetailsRefresh = top100Details.value.size === 0
+      ? refreshTop100Details(previousDetails).catch(() => undefined)
+      : null
+    const trackerRefresh = tracker.refresh({
       endpoint: trackerEndpoint.value,
       region: selectedRegion.value,
       eventId: selectedEventIdNumber.value,
       mode: mode.value,
       worldBloomCharacterId: selectedWorldBloomCharacterIdNumber.value || null,
-      intervalSeconds: selectedIntervalSeconds.value,
+      intervalSeconds: requestedIntervalSeconds,
       userId: null,
       rank: null,
       cacheBust,
       playbackAt: playbackAt.value,
       useWebSocket: canUseRealtimeAutoRefresh.value,
     })
+    await trackerRefresh
+    if (tracker.error.value) {
+      await initialDetailsRefresh
+      return
+    }
+
+    trackerGrowthIntervalSeconds.value = requestedIntervalSeconds
     markChangedLines(previousLines)
     markChangedGrowths(previousGrowths)
-    if (top100Details.value.size === 0 || latestTrackerTimestamp.value !== previousTrackerTimestamp) {
+    if (initialDetailsRefresh) {
+      await initialDetailsRefresh
+    } else if (latestTrackerTimestamp.value !== previousTrackerTimestamp) {
       const detailsRefresh = refreshTop100Details(previousDetails)
-      if (top100Details.value.size === 0) {
-        await detailsRefresh
-      }
+      void detailsRefresh
     }
     refreshTop100GrowthsFromCachedTraces(previousTop100Growths)
     warmTop100Traces(previousTop100Growths)
@@ -1611,12 +1643,44 @@ function mergeLatestWithProfile(latest: RankBorderLatest, profile: RankBorderUse
   }
 }
 
+function mergeProfileFromLatest(
+  previous: RankBorderUserProfile | null,
+  latest: RankBorderLatest,
+): RankBorderUserProfile {
+  return {
+    userId: latest.userId ?? previous?.userId ?? "",
+    name: latest.name ?? previous?.name ?? null,
+    cheerfulTeamId: latest.cheerfulTeamId ?? previous?.cheerfulTeamId ?? null,
+    cardId: latest.cardId ?? previous?.cardId ?? null,
+    cardLevel: latest.cardLevel ?? previous?.cardLevel ?? null,
+    cardMasterRank: latest.cardMasterRank ?? previous?.cardMasterRank ?? null,
+    cardSpecialTrainingStatus: latest.cardSpecialTrainingStatus ?? previous?.cardSpecialTrainingStatus ?? null,
+    cardDefaultImage: latest.cardDefaultImage ?? previous?.cardDefaultImage ?? null,
+    profileWord: latest.profileWord ?? previous?.profileWord ?? null,
+    profileHonors: latest.profileHonors.length > 0 ? latest.profileHonors : previous?.profileHonors ?? [],
+    userPlayerFrames: latest.userPlayerFrames.length > 0 ? latest.userPlayerFrames : previous?.userPlayerFrames ?? [],
+  }
+}
+
 function hasProfileFields(latest: RankBorderLatest) {
   return latest.name != null
     || latest.cardId != null
     || latest.profileWord != null
     || latest.profileHonors.length > 0
     || latest.userPlayerFrames.length > 0
+}
+
+function isProfileChanged(previous: RankBorderUserProfile, next: RankBorderUserProfile) {
+  return previous.name !== next.name
+    || previous.cheerfulTeamId !== next.cheerfulTeamId
+    || previous.cardId !== next.cardId
+    || previous.cardLevel !== next.cardLevel
+    || previous.cardMasterRank !== next.cardMasterRank
+    || previous.cardSpecialTrainingStatus !== next.cardSpecialTrainingStatus
+    || previous.cardDefaultImage !== next.cardDefaultImage
+    || previous.profileWord !== next.profileWord
+    || profileHonorSignature(previous) !== profileHonorSignature(next)
+    || playerFrameSignature(previous) !== playerFrameSignature(next)
 }
 
 function latestByTimestamp(items: RankBorderLatest[]) {
@@ -1802,21 +1866,20 @@ async function refreshTop100Details(previousDetails: Map<number, RankBorderLates
     if (latestEntries.length === 0 && previousDetails.size > 0) {
       return
     }
+    const nextProfiles = seedProfilesFromLatestEntries(latestEntries)
     const missingProfileIds = Array.from(new Set(
       latestEntries
+        .filter((item) => item.userId && !nextProfiles.has(item.userId) && !hasProfileFields(item))
         .map((item) => item.userId)
-        .filter((userId): userId is string => !!userId && !publicProfileByUserId.value.has(userId)),
+        .filter((userId): userId is string => !!userId),
     ))
     const profileScope = { ...detailScope.value }
     if (token !== top100DetailRefreshToken) {
       return
     }
 
-    const nextProfiles = new Map(publicProfileByUserId.value)
     const nextDetails = new Map<number, RankBorderLatest>()
     const previousDetailsByKey = latestDetailsByRowKey(previousDetails)
-    const previousScoreUpdatedAt = top100ScoreUpdatedAtByKey.value
-    const nextScoreUpdatedAt = new Map<string, number>()
     const nextDetailChanges = new Set<number>()
     const nextScoreChanges = new Set<number>()
 
@@ -1825,13 +1888,7 @@ async function refreshTop100Details(previousDetails: Map<number, RankBorderLates
       const nextDetail = mergeLatestWithProfile(latest, profile)
       const rowKey = top100RowKey(nextDetail.rank, nextDetail)
       const previousDetail = previousDetailsByKey.get(rowKey)
-      const scoreUpdatedAt = !previousDetail || previousDetail.score !== nextDetail.score
-        ? nextDetail.timestamp
-        : previousScoreUpdatedAt.get(rowKey) ?? previousDetail.timestamp
       nextDetails.set(nextDetail.rank, nextDetail)
-      if (scoreUpdatedAt != null) {
-        nextScoreUpdatedAt.set(rowKey, scoreUpdatedAt)
-      }
 
       if (!previousDetail || isLineDetailChanged(previousDetail, nextDetail)) {
         nextDetailChanges.add(nextDetail.rank)
@@ -1842,7 +1899,6 @@ async function refreshTop100Details(previousDetails: Map<number, RankBorderLates
     }
 
     top100Details.value = nextDetails
-    top100ScoreUpdatedAtByKey.value = nextScoreUpdatedAt
     if (nextScoreChanges.size > 0) {
       restartRankFlash(scoreChangedRanks, nextScoreChanges)
     }
@@ -1897,10 +1953,31 @@ async function enrichTop100Profiles(userIds: string[], scope: RankBorderTrackerS
     }
   }
   top100Details.value = nextDetails
-  top100ScoreUpdatedAtByKey.value = new Map(top100ScoreUpdatedAtByKey.value)
   if (nextDetailChanges.size > 0) {
     restartRankFlash(detailChangedRanks, nextDetailChanges)
   }
+}
+
+function seedProfilesFromLatestEntries(items: RankBorderLatest[]) {
+  const nextProfiles = new Map(publicProfileByUserId.value)
+  let changed = false
+  for (const item of items) {
+    if (!item.userId || !hasProfileFields(item)) {
+      continue
+    }
+
+    const previous = nextProfiles.get(item.userId) ?? null
+    const profile = mergeProfileFromLatest(previous, item)
+    if (!previous || isProfileChanged(previous, profile)) {
+      nextProfiles.set(item.userId, profile)
+      changed = true
+    }
+  }
+
+  if (changed) {
+    publicProfileByUserId.value = nextProfiles
+  }
+  return nextProfiles
 }
 
 function latestRankingEntriesByRank(items: RankBorderLatest[]) {
@@ -1924,12 +2001,11 @@ function latestDetailsByRowKey(details: Map<number, RankBorderLatest>) {
 }
 
 function refreshTop100GrowthsFromCachedTraces(previousGrowths: Map<number, RankBorderGrowth>) {
-  const startTime = currentUnixSecond.value - selectedIntervalSeconds.value
   const nextGrowths = new Map<number, RankBorderGrowth>()
   const nextGrowthChanges = new Set<number>()
 
   for (const rank of TOP_100_RANKS) {
-    const trackerGrowth = tracker.growthByRank.value.get(rank)
+    const trackerGrowth = selectedTrackerGrowthByRank.value.get(rank)
     if (trackerGrowth) {
       nextGrowths.set(rank, trackerGrowth)
     }
@@ -1937,6 +2013,16 @@ function refreshTop100GrowthsFromCachedTraces(previousGrowths: Map<number, RankB
 
   for (const rank of TOP_100_RANKS) {
     const records = top100TraceByRank.value.get(rank) ?? []
+    const latestRecord = records[records.length - 1] ?? null
+    if (!latestRecord) {
+      continue
+    }
+
+    const startTime = latestRecord.timestamp - selectedIntervalSeconds.value
+    if (!hasTraceIntervalCoverage(records, startTime)) {
+      continue
+    }
+
     const growth = resolveRankBorderTraceGrowth(records, startTime)
     if (!growth) {
       continue
@@ -1955,9 +2041,32 @@ function refreshTop100GrowthsFromCachedTraces(previousGrowths: Map<number, RankB
   }
 }
 
-function warmTop100Traces(previousGrowths: Map<number, RankBorderGrowth>) {
-  if (top100TraceWarming.value || !canRefresh.value) {
+function hasTraceIntervalCoverage(records: RankBorderTracePoint[], startTime: number) {
+  return records.some((record) => record.timestamp <= startTime)
+}
+
+function findLatestTraceAtTimestamp(records: RankBorderTracePoint[], timestamp: number) {
+  for (let index = records.length - 1; index >= 0; index -= 1) {
+    const record = records[index]
+    if (record.timestamp === timestamp) {
+      return record
+    }
+  }
+  return null
+}
+
+function warmTop100Traces(previousGrowths: Map<number, RankBorderGrowth>, force = false) {
+  if (!canRefresh.value) {
     return
+  }
+
+  if (top100TraceWarming.value) {
+    if (!force) {
+      return
+    }
+
+    top100TraceWarming.value = false
+    top100TraceWarmupToken += 1
   }
 
   top100TraceWarming.value = true
@@ -2126,7 +2235,7 @@ function createLineDetailFromLine(result: RankBorderLine, comparableLines = reso
     source: "line",
     query: String(result.rank),
     result,
-    growth: tracker.growthByRank.value.get(result.rank) ?? null,
+    growth: selectedTrackerGrowthByRank.value.get(result.rank) ?? null,
     previous: index > 0 ? lines[index - 1] : null,
     next: index + 1 < lines.length ? lines[index + 1] : null,
   }
@@ -2280,24 +2389,14 @@ function resolveNextLiveRefreshDelay() {
 
 function markChangedLines(previousLines: Map<number, RankBorderLine>) {
   const changedRanks = new Set<number>()
-  const previousScoreUpdatedAt = segmentScoreUpdatedAtByRank.value
-  const nextScoreUpdatedAt = new Map<number, number>()
 
   for (const line of tracker.lines.value) {
     const previousLine = previousLines.get(line.rank)
-    const scoreUpdatedAt = !previousLine || previousLine.score !== line.score
-      ? line.timestamp
-      : previousScoreUpdatedAt.get(line.rank) ?? previousLine.timestamp
-    if (scoreUpdatedAt != null) {
-      nextScoreUpdatedAt.set(line.rank, scoreUpdatedAt)
-    }
-
     if (previousLine && previousLine.score !== line.score) {
       changedRanks.add(line.rank)
     }
   }
 
-  segmentScoreUpdatedAtByRank.value = nextScoreUpdatedAt
   if (changedRanks.size > 0) {
     restartRankFlash(scoreChangedRanks, changedRanks)
   }
@@ -3320,7 +3419,7 @@ function detailBadgeClass(value: DetailState, result = value.result) {
 
 function detailGrowth(value: DetailState) {
   if (value.source === "line") {
-    return value.growth?.growth ?? null
+    return selectedTrackerGrowthByRank.value.get(value.result.rank)?.growth ?? value.growth?.growth ?? null
   }
 
   if (value.source === "user") {
@@ -3328,7 +3427,7 @@ function detailGrowth(value: DetailState) {
   }
 
   return top100GrowthByRank.value.get(value.result.rank)?.growth
-    ?? tracker.growthByRank.value.get(value.result.rank)?.growth
+    ?? selectedTrackerGrowthByRank.value.get(value.result.rank)?.growth
     ?? detailTraceStats.value.growth?.growth
     ?? null
 }
@@ -3361,7 +3460,7 @@ function isGrowthChanged(previous: RankBorderGrowth, next: RankBorderGrowth) {
     || previous.timestampEarlier !== next.timestampEarlier
 }
 
-function profileHonorSignature(value: RankBorderLatest) {
+function profileHonorSignature(value: Pick<RankBorderLatest, "profileHonors">) {
   return value.profileHonors
     .map((honor) => [
       honor.seq,
@@ -3371,6 +3470,15 @@ function profileHonorSignature(value: RankBorderLatest) {
       honor.profileHonorType,
       honor.bondsHonorViewType,
       honor.bondsHonorWordId,
+    ].join(":"))
+    .join("|")
+}
+
+function playerFrameSignature(value: Pick<RankBorderLatest, "userPlayerFrames">) {
+  return value.userPlayerFrames
+    .map((frame) => [
+      frame.playerFrameId,
+      frame.playerFrameAttachStatus,
     ].join(":"))
     .join("|")
 }
@@ -3970,7 +4078,7 @@ function traceUpdateRecords(
                 mode === 'world_bloom' ? 'rank-border-query-grid--world-bloom' : 'rank-border-query-grid--normal',
               ]"
             >
-              <div class="grid gap-1.5">
+              <div class="rank-border-query-field rank-border-query-field--region">
                 <Label>{{ t("rankBorder.fields.region") }}</Label>
                 <Select :model-value="selectedRegion" :disabled="masterOptions.loading.value" @update:model-value="updateRegion">
                   <SelectTrigger class="w-full">
@@ -3984,7 +4092,7 @@ function traceUpdateRecords(
                 </Select>
               </div>
 
-              <div class="grid gap-1.5">
+              <div class="rank-border-query-field rank-border-query-field--mode">
                 <Label>{{ t("rankBorder.fields.mode") }}</Label>
                 <Select :model-value="mode" @update:model-value="updateMode">
                   <SelectTrigger class="w-full">
@@ -3998,13 +4106,15 @@ function traceUpdateRecords(
                 </Select>
               </div>
 
-              <div class="grid gap-1.5">
+              <div class="rank-border-query-field rank-border-query-field--event">
                 <Label>{{ t("rankBorder.fields.event") }}</Label>
                 <Combobox
                   :model-value="selectedEventId"
                   :options="eventComboboxOptions"
                   :disabled="masterOptions.loading.value || eventComboboxOptions.length === 0"
                   :clearable="false"
+                  trigger-class="rank-border-event-combobox-trigger"
+                  content-class="rank-border-event-combobox-content"
                   :placeholder="masterOptions.loading.value ? t('rankBorder.fields.loadingEvents') : t('rankBorder.fields.eventPlaceholder')"
                   :search-placeholder="t('rankBorder.fields.eventSearchPlaceholder')"
                   :empty-text="t('rankBorder.fields.eventEmpty')"
@@ -4013,7 +4123,7 @@ function traceUpdateRecords(
                 />
               </div>
 
-              <div v-if="mode === 'world_bloom'" class="grid gap-1.5">
+              <div v-if="mode === 'world_bloom'" class="rank-border-query-field rank-border-query-field--world-bloom">
                 <Label>{{ t("rankBorder.fields.worldBloomCharacter") }}</Label>
                 <Select :model-value="selectedWorldBloomCharacterId ?? undefined" @update:model-value="updateWorldBloomCharacter">
                   <SelectTrigger class="rank-border-world-bloom-select-trigger w-full">
@@ -4036,7 +4146,7 @@ function traceUpdateRecords(
                 </Select>
               </div>
 
-              <div class="grid gap-1.5">
+              <div class="rank-border-query-field rank-border-query-field--interval">
                 <Label>{{ t("rankBorder.fields.interval") }}</Label>
                 <Select :model-value="intervalSeconds" @update:model-value="updateInterval">
                   <SelectTrigger class="w-full">
@@ -5341,27 +5451,50 @@ function traceUpdateRecords(
 .rank-border-query-grid {
   display: grid;
   min-width: 0;
-  gap: 0.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+  gap: 0.625rem;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .rank-border-query-grid > * {
   min-width: 0;
 }
 
+.rank-border-query-field {
+  display: grid;
+  min-width: 0;
+  gap: 0.375rem;
+}
+
+.rank-border-query-field .text-sm,
+.rank-border-query-field label {
+  min-width: 0;
+}
+
+.rank-border-event-combobox-trigger {
+  min-width: 0;
+}
+
+.rank-border-event-combobox-content {
+  width: min(92vw, 42rem);
+}
+
 .rank-border-world-bloom-select-trigger {
   min-width: 0;
+  height: auto;
+  min-height: 2.25rem;
 }
 
 .rank-border-world-bloom-select-trigger :deep([data-slot="select-value"]) {
   min-width: 0;
-  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   line-height: 1.25;
   text-align: left;
 }
 
 .rank-border-world-bloom-select-content {
-  width: min(92vw, 32rem);
+  width: min(92vw, 42rem);
 }
 
 .rank-border-world-bloom-select-item {
@@ -5386,18 +5519,71 @@ function traceUpdateRecords(
 
 @media (min-width: 1024px) {
   .rank-border-query-grid--normal {
-    grid-template-columns: minmax(5.6rem, 0.58fr) minmax(8.2rem, 0.72fr) minmax(18rem, 3fr) minmax(7rem, 0.7fr);
+    grid-template-columns: minmax(5.8rem, 7.5rem) minmax(8rem, 11rem) minmax(22rem, 1fr) minmax(7rem, 8.5rem);
   }
 
   .rank-border-query-grid--world-bloom {
-    grid-template-columns: minmax(4.75rem, 0.46fr) minmax(7rem, 0.58fr) minmax(13rem, 2.3fr) minmax(13rem, 1.9fr) minmax(5.75rem, 0.5fr);
+    grid-template-areas: "region mode event world interval";
+    grid-template-columns:
+      minmax(5.6rem, 7.5rem)
+      minmax(8rem, 10.5rem)
+      minmax(18rem, 1.25fr)
+      minmax(18rem, 1fr)
+      minmax(7.4rem, 8.8rem);
+  }
+
+  .rank-border-query-grid--world-bloom .rank-border-query-field--region {
+    grid-area: region;
+  }
+
+  .rank-border-query-grid--world-bloom .rank-border-query-field--mode {
+    grid-area: mode;
+  }
+
+  .rank-border-query-grid--world-bloom .rank-border-query-field--event {
+    grid-area: event;
+  }
+
+  .rank-border-query-grid--world-bloom .rank-border-query-field--world-bloom {
+    grid-area: world;
+  }
+
+  .rank-border-query-grid--world-bloom .rank-border-query-field--interval {
+    grid-area: interval;
   }
 }
 
 @media (min-width: 1024px) and (max-width: 1180px) {
   .rank-border-query-grid--world-bloom {
-    gap: 0.375rem;
-    grid-template-columns: minmax(4.5rem, 0.42fr) minmax(6.5rem, 0.52fr) minmax(11.5rem, 2fr) minmax(12rem, 1.7fr) minmax(5.35rem, 0.46fr);
+    grid-template-areas:
+      "region mode interval"
+      "event event event"
+      "world world world";
+    grid-template-columns: minmax(5.6rem, 1fr) minmax(8rem, 1.25fr) minmax(7.4rem, 1fr);
+  }
+}
+
+@media (min-width: 1181px) and (max-width: 1450px) {
+  .rank-border-query-grid--world-bloom {
+    grid-template-areas:
+      "region mode event event"
+      "interval world world world";
+    grid-template-columns: minmax(5.6rem, 7.5rem) minmax(8rem, 10.5rem) minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .rank-border-query-grid--normal {
+    grid-template-columns: minmax(7rem, 0.7fr) minmax(8rem, 0.8fr) minmax(18rem, 2fr) minmax(7rem, 0.7fr);
+  }
+
+  .rank-border-query-grid--world-bloom {
+    grid-template-columns: minmax(7rem, 0.8fr) minmax(8rem, 1fr) minmax(7rem, 0.8fr);
+  }
+
+  .rank-border-query-grid--world-bloom .rank-border-query-field--event,
+  .rank-border-query-grid--world-bloom .rank-border-query-field--world-bloom {
+    grid-column: 1 / -1;
   }
 }
 

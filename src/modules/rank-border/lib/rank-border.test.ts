@@ -250,6 +250,33 @@ describe("rank border helpers", () => {
     })
   })
 
+  it("keeps flat public web ranking user payloads", () => {
+    expect(normalizeRankBorderWebRankings({
+      items: [
+        {
+          rank: 1,
+          score: 3000,
+          timestamp: 1710000060,
+          userId: "public-1",
+          userData: {
+            userId: "public-1",
+            name: "Haruki",
+            cardId: 1404,
+            cardLevel: 60,
+          },
+        },
+      ],
+    }).items[0]).toMatchObject({
+      rank: 1,
+      score: 3000,
+      timestamp: 1710000060,
+      userId: "public-1",
+      name: "Haruki",
+      cardId: 1404,
+      cardLevel: 60,
+    })
+  })
+
   it("normalizes trace ranking responses and resolves interval growth", () => {
     const records = normalizeRankBorderTrace({
       rankData: [
@@ -263,7 +290,15 @@ describe("rank border helpers", () => {
       { rank: 3, score: 100, timestamp: 1710000000, userId: "1", characterId: null },
       { rank: 3, score: 200, timestamp: 1710000120, userId: "2", characterId: null },
     ])
-    expect(resolveRankBorderTraceGrowth(records, 1710000060)).toBeNull()
+    expect(resolveRankBorderTraceGrowth(records, 1710000060)).toEqual({
+      rank: 3,
+      scoreLatest: 200,
+      scoreEarlier: 100,
+      timestampLatest: 1710000120,
+      timestampEarlier: 1710000000,
+      timeDiff: 120,
+      growth: 100,
+    })
     expect(resolveRankBorderTraceGrowth(records, 1710000000)).toEqual({
       rank: 3,
       scoreLatest: 200,
@@ -273,6 +308,28 @@ describe("rank border helpers", () => {
       timeDiff: 120,
       growth: 100,
     })
+  })
+
+  it("uses the latest trace point before the interval as growth baseline", () => {
+    const records = normalizeRankBorderTrace({
+      rankData: [
+        { rank: 3, score: 100, timestamp: 1710000000 },
+        { rank: 3, score: 150, timestamp: 1710000030 },
+        { rank: 3, score: 280, timestamp: 1710000090 },
+        { rank: 3, score: 400, timestamp: 1710000120 },
+      ],
+    })
+
+    expect(resolveRankBorderTraceGrowth(records, 1710000060)).toEqual({
+      rank: 3,
+      scoreLatest: 400,
+      scoreEarlier: 150,
+      timestampLatest: 1710000120,
+      timestampEarlier: 1710000030,
+      timeDiff: 90,
+      growth: 250,
+    })
+    expect(resolveRankBorderTraceGrowth(records, 1710000120)).toBeNull()
   })
 
   it("normalizes batch trace ranking responses", () => {

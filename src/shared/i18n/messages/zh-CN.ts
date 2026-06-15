@@ -1715,7 +1715,7 @@ export const zhCN = {
       event: "当前活动",
       status: "Tracker 状态",
       trackerLag: "数据延迟",
-      refreshedAt: "前端刷新时间",
+      refreshedAt: "Tracker 更新时间",
       interval: "增长区间：{value}",
       topScore: "最高分",
       coverage: "采集范围",

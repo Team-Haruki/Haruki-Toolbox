@@ -1715,7 +1715,7 @@ export const enUS = {
       event: "Current event",
       status: "Tracker status",
       trackerLag: "Data lag",
-      refreshedAt: "Frontend refreshed at",
+      refreshedAt: "Tracker updated at",
       interval: "Growth interval: {value}",
       topScore: "Top score",
       coverage: "Tracked range",

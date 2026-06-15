@@ -274,13 +274,28 @@ export function normalizeRankBorderBatchTrace(value: unknown): Map<number, RankB
 }
 
 export function resolveRankBorderTraceGrowth(records: RankBorderTracePoint[], startTime: number): RankBorderGrowth | null {
-  const windowRecords = records.filter((record) => record.timestamp >= startTime)
-  if (windowRecords.length < 2) {
+  if (records.length < 2) {
     return null
   }
 
-  const earlier = windowRecords[0]
-  const latest = windowRecords[windowRecords.length - 1]
+  const latest = records[records.length - 1]
+  if (latest.timestamp <= startTime) {
+    return null
+  }
+
+  let earlier: RankBorderTracePoint | null = null
+  for (const record of records) {
+    if (record.timestamp <= startTime) {
+      earlier = record
+      continue
+    }
+    break
+  }
+  earlier ??= records[0]
+  if (earlier.timestamp === latest.timestamp) {
+    return null
+  }
+
   return {
     rank: latest.rank,
     scoreLatest: latest.score,
@@ -367,8 +382,15 @@ function normalizeWebRankingItem(value: unknown): unknown {
     return value
   }
 
-  if (isRecord(value.rankData) || isRecord(value.userData)) {
+  if (isRecord(value.rankData)) {
     return value
+  }
+
+  if (isRecord(value.userData)) {
+    return {
+      rankData: value,
+      userData: value.userData,
+    }
   }
 
   return { rankData: value }
