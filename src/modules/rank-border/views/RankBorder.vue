@@ -6923,43 +6923,55 @@ function traceUpdateRecords(
 
   :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
     position: fixed !important;
-    top: auto !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    inset: auto 0 0 0 !important;
-    inset-inline-start: 0 !important;
-    inset-inline-end: 0 !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: min(92svh, calc(100svh - 0.75rem));
-    max-height: min(92svh, calc(100svh - 0.75rem));
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: 50% !important;
+    inset: auto !important;
+    inset-block-start: 50% !important;
+    inset-block-end: auto !important;
+    inset-inline-start: 50% !important;
+    inset-inline-end: auto !important;
+    width: min(30rem, calc(100vw - 1rem)) !important;
+    max-width: calc(100vw - 1rem) !important;
+    height: min(44rem, calc(100svh - 1rem));
+    max-height: calc(100svh - 1rem);
     margin: 0;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 0.5rem;
     overflow: hidden;
     overscroll-behavior: contain;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-    border-left: 0;
-    border-right: 0;
+    border-radius: 0.875rem;
     padding: 0.625rem;
-    --tw-translate-x: 0 !important;
-    --tw-translate-y: 0 !important;
-    translate: 0 0 !important;
+    --tw-translate-x: -50% !important;
+    --tw-translate-y: -50% !important;
+    translate: -50% -50% !important;
     transform: none !important;
   }
 
   .rank-border-detail-dialog__header {
     min-height: 0;
-    padding-right: 2rem;
+    padding-right: 2.25rem;
+  }
+
+  .rank-border-detail-dialog__header :deep([data-slot="dialog-title"]) {
+    line-height: 1.25;
+  }
+
+  .rank-border-detail-dialog__header :deep([data-slot="dialog-description"]) {
+    display: -webkit-box;
+    overflow: hidden;
+    line-height: 1.3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .rank-border-detail-grid {
     display: grid;
+    height: 100%;
     min-height: 0;
-    max-height: 100%;
+    max-height: none;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
     grid-auto-rows: auto;
@@ -6970,11 +6982,11 @@ function traceUpdateRecords(
       "heatmap";
     align-content: start;
     gap: 0.625rem;
-    padding-top: 0.625rem;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding-bottom: 1rem;
+    padding: 0.125rem 0.125rem 0.75rem;
+    scrollbar-width: thin;
   }
 
   .rank-border-detail-profile,
@@ -6992,13 +7004,20 @@ function traceUpdateRecords(
     overflow: visible;
   }
 
+  .rank-border-detail-profile,
+  .rank-border-trend-panel,
+  .rank-border-heatmap-section,
+  .rank-border-update-section {
+    padding: 0.625rem;
+  }
+
   .rank-border-detail-profile__body {
     align-items: start;
     gap: 0.5rem 0.625rem;
   }
 
   .rank-border-detail-profile__body--assets {
-    grid-template-columns: 3rem minmax(0, 1fr);
+    grid-template-columns: 2.85rem minmax(0, 1fr);
   }
 
   .rank-border-leader--detail {
@@ -7007,8 +7026,8 @@ function traceUpdateRecords(
   }
 
   .rank-border-leader--dialog {
-    width: 3rem;
-    height: 3rem;
+    width: 2.85rem;
+    height: 2.85rem;
   }
 
   .rank-border-honor--detail {
@@ -7041,6 +7060,7 @@ function traceUpdateRecords(
   .rank-border-detail-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: start;
+    padding: 0.5rem;
   }
 
   .rank-border-trend-grid {
@@ -7059,6 +7079,13 @@ function traceUpdateRecords(
 
   .rank-border-update-section {
     grid-template-rows: auto auto;
+  }
+
+  .rank-border-trend-panel > div:first-child,
+  .rank-border-heatmap-section > div:first-child,
+  .rank-border-update-section > div:first-child {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .rank-border-live-card__metrics,
@@ -7096,15 +7123,15 @@ function traceUpdateRecords(
   }
 
   .rank-border-heatmap-panel {
-    --rank-border-heatmap-min-cell-size: 1.02rem;
-    --rank-border-heatmap-cell-size: clamp(1.02rem, 4.4vw, 1.24rem);
+    --rank-border-heatmap-min-cell-size: 1rem;
+    --rank-border-heatmap-cell-size: clamp(1rem, 3.6vw, 1.18rem);
     --rank-border-heatmap-gap: 0.125rem;
-    max-height: none;
+    max-height: 13.75rem;
   }
 
   .rank-border-update-log {
-    height: 12.5rem;
-    max-height: 12.5rem;
+    height: 13rem;
+    max-height: 13rem;
     overflow: hidden;
   }
 
