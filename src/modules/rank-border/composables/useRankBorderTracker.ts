@@ -1,0 +1,144 @@
+import { computed, ref } from "vue"
+import {
+  fetchRankBorderGrowths,
+  fetchRankBorderLatestByUser,
+  fetchRankBorderLines,
+  fetchRankBorderStatus,
+  fetchRankBorderWebRankings,
+  type RankBorderTrackerScope,
+} from "../api/rank-border"
+import type {
+  RankBorderGrowth,
+  RankBorderLatest,
+  RankBorderLine,
+  RankBorderStatus,
+} from "../lib/rank-border"
+
+export type RankBorderRefreshInput = RankBorderTrackerScope & {
+  intervalSeconds: number
+  userId?: string | null
+  rank?: string | null
+}
+
+export function useRankBorderTracker() {
+  const lines = ref<RankBorderLine[]>([])
+  const growths = ref<RankBorderGrowth[]>([])
+  const status = ref<RankBorderStatus | null>(null)
+  const userResult = ref<RankBorderLatest | null>(null)
+  const rankResult = ref<RankBorderLatest | null>(null)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+  const userError = ref<string | null>(null)
+  const rankError = ref<string | null>(null)
+  const refreshedAt = ref<number | null>(null)
+
+  const growthByRank = computed(() =>
+    new Map(growths.value.map((growth) => [growth.rank, growth])),
+  )
+
+  async function refresh(input: RankBorderRefreshInput) {
+    loading.value = true
+    error.value = null
+    userError.value = null
+    rankError.value = null
+
+    try {
+      const baseScope = {
+        endpoint: input.endpoint,
+        region: input.region,
+        eventId: input.eventId,
+        mode: input.mode,
+        worldBloomCharacterId: input.worldBloomCharacterId,
+        cacheBust: input.cacheBust,
+        playbackAt: input.playbackAt,
+      }
+      const [nextLines, nextGrowths, nextStatus] = await Promise.all([
+        fetchRankBorderLines(baseScope),
+        fetchRankBorderGrowths({
+          ...baseScope,
+          intervalSeconds: input.intervalSeconds,
+        }),
+        fetchRankBorderStatus(baseScope).catch(() => null),
+      ])
+
+      if (nextLines.length > 0 || lines.value.length === 0) {
+        lines.value = nextLines
+      }
+      if (nextGrowths.length > 0 || growths.value.length === 0) {
+        growths.value = nextGrowths
+      }
+      status.value = nextStatus
+
+      await Promise.all([
+        refreshUser(baseScope, input.userId),
+        refreshRank(baseScope, input.rank),
+      ])
+      refreshedAt.value = Date.now()
+    } catch (refreshError) {
+      error.value = refreshError instanceof Error ? refreshError.message : String(refreshError)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function refreshUser(scope: RankBorderTrackerScope, userId: string | null | undefined) {
+    const normalizedUserId = String(userId ?? "").trim()
+    if (!normalizedUserId) {
+      userResult.value = null
+      userError.value = null
+      return
+    }
+
+    try {
+      userResult.value = await fetchRankBorderLatestByUser({
+        ...scope,
+        userId: normalizedUserId,
+      })
+      userError.value = userResult.value ? null : "not found"
+    } catch (refreshError) {
+      userResult.value = null
+      userError.value = refreshError instanceof Error ? refreshError.message : String(refreshError)
+    }
+  }
+
+  async function refreshRank(scope: RankBorderTrackerScope, rank: string | null | undefined) {
+    const normalizedRank = String(rank ?? "").trim()
+    if (!normalizedRank) {
+      rankResult.value = null
+      rankError.value = null
+      return
+    }
+
+    try {
+      const rank = Number(normalizedRank)
+      const rankings = Number.isInteger(rank) && rank > 0
+        ? await fetchRankBorderWebRankings({
+        ...scope,
+            rankMin: rank,
+            rankMax: rank,
+            limit: 1,
+          })
+        : null
+      rankResult.value = rankings?.items[0] ?? null
+      rankError.value = rankResult.value ? null : "not found"
+    } catch (refreshError) {
+      rankResult.value = null
+      rankError.value = refreshError instanceof Error ? refreshError.message : String(refreshError)
+    }
+  }
+
+  return {
+    lines,
+    growths,
+    growthByRank,
+    status,
+    userResult,
+    rankResult,
+    loading,
+    error,
+    userError,
+    rankError,
+    refreshedAt,
+    refresh,
+  }
+}

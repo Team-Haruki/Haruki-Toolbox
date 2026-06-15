@@ -176,6 +176,18 @@ export function resolveSekaiCardThumbnailUrl(
   )
 }
 
+export function resolveSekaiHonorImageUrl(
+  region: SekaiRegion,
+  assetBundleName: string,
+  preference: SekaiAssetEndpointPreference = "china",
+): string {
+  return resolveSekaiGameAssetUrl(
+    region,
+    `startapp/honor/${assetBundleName.trim()}/degree_main.png`,
+    preference,
+  )
+}
+
 export function resolveToolboxStaticImageUrl(path: string): string {
   return joinUrl(TOOLBOX_STATIC_IMAGE_BASE_URL, path)
 }
