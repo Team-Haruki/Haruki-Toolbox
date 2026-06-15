@@ -15,6 +15,9 @@ type SekaiEvent = {
 
 type SekaiWorldBloom = {
   id?: number
+  name?: string
+  chapterName?: string
+  title?: string
   eventId?: number
   gameCharacterId?: number
   chapterNo?: number
@@ -45,6 +48,7 @@ export type RankBorderMasterHonor = {
   id?: number
   name?: string
   groupId?: number
+  groupID?: number
   honorRarity?: string
   assetbundleName?: string
   levels?: Array<{
@@ -104,8 +108,10 @@ export type RankBorderWorldBloomCharacterOption = {
   id: number
   value: string
   label: string
+  active: boolean
   chapterNo: number | null
   chapterStartAt: number | null
+  chapterEndAt: number | null
   aggregateAt: number | null
 }
 
@@ -295,15 +301,30 @@ function buildWorldBloomCharacterOptions(
       }
 
       const chapterNo = normalizePositiveNumber(chapter.chapterNo)
+      const chapterEndAt = normalizeSekaiTimestamp(chapter.chapterEndAt)
+      const aggregateAt = normalizeSekaiTimestamp(chapter.aggregateAt)
       const character = characterMap.get(id)
       const characterName = character ? resolveCharacterName(character, id) : `#${id}`
+      const chapterName = normalizeText(chapter.name)
+        ?? normalizeText(chapter.chapterName)
+        ?? normalizeText(chapter.title)
+      const chapterLabel = chapterName
+        ? `${chapterName} / ${characterName}`
+        : chapterNo
+          ? `Chapter ${chapterNo} / ${characterName}`
+          : characterName
       return {
         id,
         value: String(id),
-        label: chapterNo ? `${characterName} / Chapter ${chapterNo}` : characterName,
+        label: chapterNo ? `Ch.${chapterNo} ${chapterLabel}` : chapterLabel,
+        active: chapterStartAt != null
+          && (aggregateAt ?? chapterEndAt) != null
+          && chapterStartAt <= now
+          && (aggregateAt ?? chapterEndAt)! >= now,
         chapterNo,
         chapterStartAt,
-        aggregateAt: normalizeSekaiTimestamp(chapter.aggregateAt),
+        chapterEndAt,
+        aggregateAt,
       }
     })
     .filter((item): item is RankBorderWorldBloomCharacterOption => item != null)
@@ -311,12 +332,17 @@ function buildWorldBloomCharacterOptions(
 }
 
 function resolveCharacterName(character: SekaiGameCharacter, fallbackId: number): string {
-  return [
-    normalizeText(character.firstName),
-    normalizeText(character.givenName),
-    normalizeText(character.firstNameEnglish),
-    normalizeText(character.givenNameEnglish),
-  ].find((item): item is string => item != null) ?? `#${fallbackId}`
+  const localizedName = [normalizeText(character.firstName), normalizeText(character.givenName)]
+    .filter((item): item is string => item != null)
+    .join("")
+  if (localizedName) {
+    return localizedName
+  }
+
+  const englishName = [normalizeText(character.firstNameEnglish), normalizeText(character.givenNameEnglish)]
+    .filter((item): item is string => item != null)
+    .join(" ")
+  return englishName || `#${fallbackId}`
 }
 
 function hasRequiredFiles(cachedFiles: readonly string[], requiredFiles: readonly string[]): boolean {

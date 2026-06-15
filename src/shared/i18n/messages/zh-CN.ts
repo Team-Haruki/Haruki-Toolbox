@@ -1645,6 +1645,7 @@ export const zhCN = {
     },
     badges: {
       worldBloom: "WL",
+      current: "当前",
     },
     modes: {
       normal: "活动总榜",

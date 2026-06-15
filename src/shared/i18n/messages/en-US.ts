@@ -1645,6 +1645,7 @@ export const enUS = {
     },
     badges: {
       worldBloom: "WL",
+      current: "Current",
     },
     modes: {
       normal: "Event ranking",

@@ -505,22 +505,6 @@ export async function fetchRankBorderLatestByRank(params: FetchRankBorderRankPar
 }
 
 export async function fetchRankBorderWebRankings(params: FetchRankBorderWebRankingsParams): Promise<RankBorderWebRankingPage> {
-  if (isContiguousRankWindow(params.rankMin, params.rankMax)) {
-    const rankMin = normalizePositiveInteger(params.rankMin)
-    const rankMax = normalizePositiveInteger(params.rankMax)
-    const limit = normalizeWebRankingLimit(params.limit)
-    const ranks = Array.from({ length: Math.min(limit, rankMax - rankMin + 1) }, (_, index) => rankMin + index)
-    const items = await mapWithConcurrency(
-      ranks,
-      8,
-      (rank) => fetchRankBorderLatestByRank({ ...params, rank }).catch(() => null),
-    )
-    return {
-      items: items.filter((item): item is RankBorderLatest => item != null),
-      nextCursor: null,
-    }
-  }
-
   const search = new URLSearchParams()
   const rankMin = params.rankMin != null ? normalizePositiveInteger(params.rankMin) : null
   const rankMax = params.rankMax != null ? normalizePositiveInteger(params.rankMax) : null
@@ -1087,31 +1071,6 @@ function normalizeTraceLimit(value: unknown): number | null {
 function normalizePlaybackTimestamp(value: unknown): number | null {
   const parsed = Number(value)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
-}
-
-function isContiguousRankWindow(rankMin: unknown, rankMax: unknown) {
-  const min = Number(rankMin)
-  const max = Number(rankMax)
-  return Number.isInteger(min) && min > 0 && Number.isInteger(max) && max >= min
-}
-
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  concurrency: number,
-  worker: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array(items.length)
-  let nextIndex = 0
-  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-    while (nextIndex < items.length) {
-      const currentIndex = nextIndex
-      nextIndex += 1
-      results[currentIndex] = await worker(items[currentIndex])
-    }
-  })
-
-  await Promise.all(workers)
-  return results
 }
 
 function isPublicUniqueId(value: string): boolean {
