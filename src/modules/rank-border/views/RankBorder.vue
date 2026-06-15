@@ -615,28 +615,15 @@ const detailTraceScopeLabel = computed(() =>
   ?? "-",
 )
 
-const activeDetailResult = computed(() => {
-  if (!detail.value) {
-    return null
-  }
-
-  const latestScopedTrace = scopedDetailTrace.value[scopedDetailTrace.value.length - 1] ?? null
-  if (!latestScopedTrace) {
-    return detail.value.result
-  }
-
-  return latestResultFromTrace(detail.value.result, latestScopedTrace)
-})
-
 const activeDetailPreviousGap = computed(() =>
-  detail.value?.previous && activeDetailResult.value
-    ? detailDelta(detail.value.previous, activeDetailResult.value)
+  detail.value?.previous
+    ? detailDelta(detail.value.previous, detail.value.result)
     : null,
 )
 
 const activeDetailNextGap = computed(() =>
-  detail.value?.next && activeDetailResult.value
-    ? detailDelta(activeDetailResult.value, detail.value.next)
+  detail.value?.next
+    ? detailDelta(detail.value.result, detail.value.next)
     : null,
 )
 
@@ -1828,17 +1815,6 @@ function longestTrace(items: RankBorderTracePoint[][]) {
   return items.reduce<RankBorderTracePoint[]>((best, current) =>
     current.length > best.length ? current : best,
   [])
-}
-
-function latestResultFromTrace(base: RankBorderLatest | RankBorderLine, trace: RankBorderTracePoint) {
-  return {
-    ...base,
-    rank: trace.rank,
-    score: trace.score,
-    timestamp: trace.timestamp,
-    userId: "userId" in base ? trace.userId ?? base.userId : trace.userId,
-    characterId: "characterId" in base ? trace.characterId ?? base.characterId : trace.characterId,
-  } satisfies RankBorderLatest | RankBorderLine
 }
 
 async function refreshTop100Details(previousDetails: Map<number, RankBorderLatest>) {
@@ -4780,14 +4756,14 @@ function traceUpdateRecords(
                   <span
                     :class="[
                       'inline-flex shrink-0 rounded-md border px-2 py-1 text-xs font-medium',
-                      detailBadgeClass(detail, activeDetailResult ?? detail.result),
+                      detailBadgeClass(detail),
                     ]"
                   >
-                    {{ formatDetailBadge(detail, activeDetailResult ?? detail.result) }}
+                    {{ formatDetailBadge(detail) }}
                   </span>
                 </DialogTitle>
                 <DialogDescription>
-                  {{ formatDetailTitle(detail, activeDetailResult ?? detail.result) }} / {{ formatDetailRank(detail, activeDetailResult ?? detail.result) }}
+                  {{ formatDetailTitle(detail) }} / {{ formatDetailRank(detail) }}
                 </DialogDescription>
               </DialogHeader>
 
@@ -4853,17 +4829,17 @@ function traceUpdateRecords(
                     <div class="rank-border-detail-profile__copy">
                       <p class="truncate text-sm text-muted-foreground">{{ formatUserLabel(isLatestResult(detail.result) ? detail.result : null) }}</p>
                       <div class="rank-border-detail-profile__score">
-                        <p class="rank-border-detail-rank">{{ formatDetailRank(detail, activeDetailResult ?? detail.result) }}</p>
+                        <p class="rank-border-detail-rank">{{ formatDetailRank(detail) }}</p>
                         <p
                           :class="[
                             'rank-border-live-number rank-border-detail-score',
                             detailScoreChanged ? 'rank-border-live-number--changed' : '',
                           ]"
                         >
-                          {{ formatPt((activeDetailResult ?? detail.result).score) }}
+                          {{ formatPt(detail.result.score) }}
                         </p>
                       </div>
-                      <p class="mt-1 truncate text-xs text-muted-foreground">{{ t("rankBorder.result.latestPlain") }} {{ formatTimestamp((activeDetailResult ?? detail.result).timestamp) }}</p>
+                      <p class="mt-1 truncate text-xs text-muted-foreground">{{ t("rankBorder.result.latestPlain") }} {{ formatTimestamp(detail.result.timestamp) }}</p>
                     </div>
                     <div
                       v-if="shouldRenderProfileAssets && profileHonorViews(detail.result, 3, detailHonorKeyScope(detail)).length > 0"
@@ -5698,16 +5674,16 @@ function traceUpdateRecords(
   inset-block-start: auto;
   inset-inline-start: 4.6875%;
   bottom: 2.5%;
-  max-width: 58%;
-  overflow: hidden;
+  width: 52%;
+  min-width: 0;
+  overflow: visible;
   color: white;
   font-family: "RankBorderSourceHanSansSC", "Source Han Sans SC", "Source Han Sans CN", "Noto Sans CJK SC", sans-serif;
   font-size: 0.55rem;
-  font-size: 15.625cqw;
+  font-size: clamp(0.42rem, 13.2cqw, 0.72rem);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   line-height: 1;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
