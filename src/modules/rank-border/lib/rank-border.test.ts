@@ -277,6 +277,51 @@ describe("rank border helpers", () => {
     })
   })
 
+  it("keeps top-level public web ranking profile fields", () => {
+    expect(normalizeRankBorderWebRankings({
+      items: [
+        {
+          rankData: {
+            rank: 1,
+            score: 3000,
+            timestamp: 1710000060,
+            userId: "public-1",
+          },
+          userId: "public-1",
+          name: "Haruki",
+          cardId: 1404,
+          cardLevel: 60,
+          profileHonors: [
+            { seq: 2, honorId: 8104, honorLevel: 1 },
+            { seq: 1, honorId: 8071, honorLevel: 1 },
+          ],
+          userPlayerFrames: [{ playerFrameId: 10050, playerFrameAttachStatus: "first" }],
+        },
+      ],
+    }).items[0]).toMatchObject({
+      rank: 1,
+      score: 3000,
+      timestamp: 1710000060,
+      userId: "public-1",
+      name: "Haruki",
+      cardId: 1404,
+      cardLevel: 60,
+      profileHonors: [
+        {
+          seq: 1,
+          honorId: 8071,
+          honorLevel: 1,
+        },
+        {
+          seq: 2,
+          honorId: 8104,
+          honorLevel: 1,
+        },
+      ],
+      userPlayerFrames: [{ playerFrameId: 10050, playerFrameAttachStatus: "first" }],
+    })
+  })
+
   it("normalizes trace ranking responses and resolves interval growth", () => {
     const records = normalizeRankBorderTrace({
       rankData: [

@@ -56,7 +56,6 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import type { SekaiRegion } from "@/types"
 import {
-  fetchRankBorderBatchTraceByRanks,
   fetchRankBorderLatestByRank,
   fetchRankBorderLatestByUser,
   fetchRankBorderPrivateLatestByUser,
@@ -291,7 +290,6 @@ const DEFAULT_INTERVAL_SECONDS = "3600"
 const PERSONAL_COLLECTION_LIMIT = 100
 const NUMBER_FLASH_MS = 1200
 const FC_AP_HONOR_IDS = new Set([3009, 3010, 3011, 3012, 3013, 3014, 4700, 4701])
-const TOP_100_DETAIL_CONCURRENCY = 8
 const TRACKER_UPDATE_INTERVAL_SECONDS = 10
 const MIN_LIVE_REFRESH_MS = 2_000
 const MAX_LIVE_REFRESH_MS = 30_000
@@ -306,13 +304,8 @@ const DETAIL_HEATMAP_HOURS_PER_DAY = 24
 const DETAIL_RECENT_POINT_COUNT = 10
 const DETAIL_UPDATE_RECORD_LIMIT = 8
 const DETAIL_CSB_WINDOW_SECONDS = 20 * 60 * 3
-const TOP_100_TRACE_WARMUP_MIN_LIMIT = 400
-const TOP_100_TRACE_WARMUP_MAX_LIMIT = 12_000
 const TOP_100_DETAIL_CACHE_TTL_MS = 2 * 60 * 1000
-const TOP_100_DETAIL_CACHE_PREFIX = "haruki:rank-border:top100:"
-const PROFILE_ENRICH_PRIORITY_LIMIT = 24
-const DEFERRED_PROFILE_ENRICH_DELAY_MS = 600
-const DEFERRED_TRACE_WARMUP_DELAY_MS = 500
+const TOP_100_DETAIL_CACHE_PREFIX = "haruki:rank-border:top100:v2:"
 const HEATMAP_MYSEKAI_ROUND_THRESHOLD = 37
 const HEATMAP_ACTIVE_ROUND_BASELINE = 15
 const HEATMAP_ACTIVE_ROUND_SPAN = 15
@@ -366,7 +359,6 @@ const detailChangedRanks = ref<Set<number>>(new Set())
 const detailScoreChanged = ref(false)
 const visibleRank = ref<number | null>(null)
 const top100DetailRefreshing = ref(false)
-const top100TraceWarming = ref(false)
 const profileAssetsLoading = ref(false)
 
 const masterOptions = useRankBorderMasterOptions(selectedRegion, selectedEventId)
@@ -824,8 +816,6 @@ let realtimeSubscriptionToken = 0
 let numberFlashTimer: ReturnType<typeof setTimeout> | null = null
 let pendingRefresh = false
 let top100DetailRefreshToken = 0
-let top100TraceWarmupToken = 0
-let top100TraceWarmupTimer: ReturnType<typeof setTimeout> | null = null
 let detailRequestToken = 0
 let activeDetailTraceKey = ""
 let visibleRankFrame: number | null = null
@@ -930,7 +920,6 @@ watch(
 
 watch(intervalSeconds, () => {
   refreshTop100GrowthsFromCachedTraces(top100GrowthByRank.value)
-  scheduleTop100TraceWarmup(top100GrowthByRank.value, true)
   void refreshData(true)
 })
 
@@ -974,7 +963,6 @@ function preloadProfileAssets() {
 onBeforeUnmount(() => {
   stopLiveRefreshTimer()
   stopRealtimeSubscription()
-  clearTop100TraceWarmupTimer()
   stopVisibleRankListener()
   stopMobileViewportListener()
   clearInterval(clockTimer)
@@ -1144,12 +1132,10 @@ async function refreshData(cacheBust = true) {
     const previousTop100Growths = top100GrowthByRank.value
     const previousLines = new Map(tracker.lines.value.map((line) => [line.rank, line]))
     const previousGrowths = new Map(tracker.growths.value.map((growth) => [growth.rank, growth.growth]))
-    const previousTrackerTimestamp = latestTrackerTimestamp.value
     const requestedIntervalSeconds = selectedIntervalSeconds.value
     hydrateTop100DetailsFromCache()
-    const initialDetailsRefresh = top100Details.value.size === 0
-      ? refreshTop100Details(previousDetails).catch(() => undefined)
-      : null
+    const shouldWaitForTop100Details = top100Details.value.size === 0
+    const detailsRefresh = refreshTop100Details(previousDetails).catch(() => undefined)
     const trackerRefresh = tracker.refresh({
       endpoint: trackerEndpoint.value,
       region: selectedRegion.value,
@@ -1165,21 +1151,16 @@ async function refreshData(cacheBust = true) {
     })
     await trackerRefresh
     if (tracker.error.value) {
-      await initialDetailsRefresh
+      await detailsRefresh
       return
     }
 
     markChangedLines(previousLines)
     markChangedGrowths(previousGrowths)
-    if (initialDetailsRefresh) {
-      await initialDetailsRefresh
-    } else if (latestTrackerTimestamp.value !== previousTrackerTimestamp) {
-      const detailsRefresh = refreshTop100Details(previousDetails)
-      void detailsRefresh
+    if (shouldWaitForTop100Details) {
+      await detailsRefresh
     }
     refreshTop100GrowthsFromCachedTraces(previousTop100Growths)
-    scheduleTop100TraceWarmup(previousTop100Growths)
-    await refreshSegmentTraces()
     await refreshActiveDetail()
   } finally {
     liveRefreshing.value = false
@@ -1413,7 +1394,7 @@ async function loadRankDetail(rank: number, silent: boolean, requestToken = deta
   detailError.value = null
   try {
     const [result, previous, next] = await Promise.all([
-      fetchLatestPublicRank(rank),
+      fetchLatestPublicRank(rank, { enrichProfile: true }),
       rank > 1 ? fetchLatestPublicRank(rank - 1).catch(() => null) : Promise.resolve(null),
       fetchLatestPublicRank(rank + 1).catch(() => null),
     ])
@@ -1569,13 +1550,20 @@ async function fetchPrivateLatestByUser(userId: string) {
   })
 }
 
-async function fetchLatestPublicRank(rank: number): Promise<RankBorderLatest | null> {
+async function fetchLatestPublicRank(
+  rank: number,
+  options: { enrichProfile?: boolean } = {},
+): Promise<RankBorderLatest | null> {
   const cached = top100Details.value.get(rank)
-  if (cached && (!cached.userId || publicProfileByUserId.value.has(cached.userId) || hasProfileFields(cached))) {
-    return cached
+  if (cached) {
+    if (!options.enrichProfile || !shouldEnrichDetailProfile(cached)) {
+      return cached
+    }
+
+    return mergeLatestWithProfile(cached, await fetchPublicProfile(cached.userId).catch(() => null))
   }
 
-  const latest = cached ?? latestByTimestamp((await fetchRankBorderWebRankings({
+  const latest = latestByTimestamp((await fetchRankBorderWebRankings({
     ...detailScope.value,
     rankMin: rank,
     rankMax: rank,
@@ -1585,8 +1573,11 @@ async function fetchLatestPublicRank(rank: number): Promise<RankBorderLatest | n
     return null
   }
 
-  const profile = latest.userId ? await fetchPublicProfile(latest.userId).catch(() => null) : null
-  return mergeLatestWithProfile(latest, profile)
+  if (!options.enrichProfile || !shouldEnrichDetailProfile(latest)) {
+    return latest
+  }
+
+  return mergeLatestWithProfile(latest, await fetchPublicProfile(latest.userId).catch(() => null))
 }
 
 async function fetchFallbackLineDetail(rank: number): Promise<LineDetailState | null> {
@@ -1626,6 +1617,10 @@ async function fetchPublicProfile(userId: string | null | undefined): Promise<Ra
     publicProfileByUserId.value = nextProfiles
   }
   return profile
+}
+
+function shouldEnrichDetailProfile(latest: RankBorderLatest) {
+  return !!latest.userId && !hasProfileFields(latest) && !publicProfileByUserId.value.has(latest.userId)
 }
 
 function mergeLatestWithProfile(latest: RankBorderLatest, profile: RankBorderUserProfile | null): RankBorderLatest {
@@ -1873,13 +1868,6 @@ async function refreshTop100Details(previousDetails: Map<number, RankBorderLates
       return
     }
     const nextProfiles = seedProfilesFromLatestEntries(latestEntries)
-    const missingProfileIds = Array.from(new Set(
-      latestEntries
-        .filter((item) => item.userId && !nextProfiles.has(item.userId) && !hasProfileFields(item))
-        .map((item) => item.userId)
-        .filter((userId): userId is string => !!userId),
-    ))
-    const profileScope = { ...detailScope.value }
     if (token !== top100DetailRefreshToken) {
       return
     }
@@ -1912,66 +1900,10 @@ async function refreshTop100Details(previousDetails: Map<number, RankBorderLates
     if (nextDetailChanges.size > 0) {
       restartRankFlash(detailChangedRanks, nextDetailChanges)
     }
-    if (missingProfileIds.length > 0) {
-      const priorityIds = missingProfileIds.slice(0, PROFILE_ENRICH_PRIORITY_LIMIT)
-      const deferredIds = missingProfileIds.slice(PROFILE_ENRICH_PRIORITY_LIMIT)
-      if (priorityIds.length > 0) {
-        void enrichTop100Profiles(priorityIds, profileScope)
-      }
-      if (deferredIds.length > 0) {
-        window.setTimeout(() => {
-          void enrichTop100Profiles(deferredIds, profileScope)
-        }, DEFERRED_PROFILE_ENRICH_DELAY_MS)
-      }
-    }
   } finally {
     if (token === top100DetailRefreshToken) {
       top100DetailRefreshing.value = false
     }
-  }
-}
-
-async function enrichTop100Profiles(userIds: string[], scope: RankBorderTrackerScope) {
-  const profiles = await mapWithConcurrency(userIds, TOP_100_DETAIL_CONCURRENCY, async (userId) =>
-    [
-      userId,
-      await fetchRankBorderPublicUserProfile({
-        ...scope,
-        uniqueId: userId,
-        limit: 1,
-      }).catch(() => null),
-    ] as const,
-  )
-  if (!isSameTrackerScope(scope, detailScope.value)) {
-    return
-  }
-
-  const nextProfiles = new Map(publicProfileByUserId.value)
-  for (const [userId, profile] of profiles) {
-    if (profile) {
-      nextProfiles.set(userId, profile)
-    }
-  }
-  publicProfileByUserId.value = nextProfiles
-
-  const nextDetails = new Map(top100Details.value)
-  const nextDetailChanges = new Set<number>()
-  for (const [rank, latest] of top100Details.value) {
-    const profile = latest.userId ? nextProfiles.get(latest.userId) ?? null : null
-    if (!profile) {
-      continue
-    }
-
-    const merged = mergeLatestWithProfile(latest, profile)
-    if (isLineDetailChanged(latest, merged)) {
-      nextDetails.set(rank, merged)
-      nextDetailChanges.add(rank)
-    }
-  }
-  top100Details.value = nextDetails
-  writeTop100DetailsCache(nextDetails)
-  if (nextDetailChanges.size > 0) {
-    restartRankFlash(detailChangedRanks, nextDetailChanges)
   }
 }
 
@@ -2125,119 +2057,6 @@ function findLatestTraceAtTimestamp(records: RankBorderTracePoint[], timestamp: 
   return null
 }
 
-function scheduleTop100TraceWarmup(previousGrowths: Map<number, RankBorderGrowth>, force = false) {
-  clearTop100TraceWarmupTimer()
-  top100TraceWarmupTimer = setTimeout(() => {
-    top100TraceWarmupTimer = null
-    warmTop100Traces(previousGrowths, force)
-  }, DEFERRED_TRACE_WARMUP_DELAY_MS)
-}
-
-function clearTop100TraceWarmupTimer() {
-  if (top100TraceWarmupTimer) {
-    clearTimeout(top100TraceWarmupTimer)
-    top100TraceWarmupTimer = null
-  }
-}
-
-function warmTop100Traces(previousGrowths: Map<number, RankBorderGrowth>, force = false) {
-  if (!canRefresh.value) {
-    return
-  }
-
-  if (!force && !shouldWarmTop100Traces()) {
-    return
-  }
-
-  if (top100TraceWarming.value) {
-    if (!force) {
-      return
-    }
-
-    top100TraceWarming.value = false
-    top100TraceWarmupToken += 1
-  }
-
-  top100TraceWarming.value = true
-  const token = ++top100TraceWarmupToken
-  void (async () => {
-    try {
-      const traces = await fetchRankTraceMapFromWebRankings(
-        1,
-        PERSONAL_COLLECTION_LIMIT,
-        resolveTop100TraceWarmupLimit(),
-      ).catch(() => new Map<number, RankBorderTracePoint[]>())
-      if (token !== top100TraceWarmupToken || traces.size === 0) {
-        return
-      }
-
-      const nextTraces = new Map(top100TraceByRank.value)
-      for (const [rank, records] of traces) {
-        nextTraces.set(rank, records)
-      }
-      top100TraceByRank.value = nextTraces
-      refreshTop100GrowthsFromCachedTraces(previousGrowths)
-    } finally {
-      if (token === top100TraceWarmupToken) {
-        top100TraceWarming.value = false
-      }
-    }
-  })()
-}
-
-function shouldWarmTop100Traces() {
-  const growthCount = TOP_100_RANKS.reduce(
-    (count, rank) => count + (selectedTrackerGrowthByRank.value.has(rank) ? 1 : 0),
-    0,
-  )
-  if (selectedIntervalSeconds.value <= Number(DEFAULT_INTERVAL_SECONDS) && growthCount >= 80) {
-    return false
-  }
-
-  return growthCount < TOP_100_RANKS.length
-    || top100TraceByRank.value.size < Math.min(24, TOP_100_RANKS.length)
-}
-
-function resolveTop100TraceWarmupLimit() {
-  const intervalSamples = Math.ceil(selectedIntervalSeconds.value / TRACKER_UPDATE_INTERVAL_SECONDS) + 12
-  return clampNumber(
-    Math.max(TOP_100_TRACE_WARMUP_MIN_LIMIT, intervalSamples),
-    TOP_100_TRACE_WARMUP_MIN_LIMIT,
-    TOP_100_TRACE_WARMUP_MAX_LIMIT,
-  )
-}
-
-async function refreshSegmentTraces() {
-  const ranks = tracker.lines.value
-    .filter((line) => line.rank > PERSONAL_COLLECTION_LIMIT)
-    .map((line) => line.rank)
-  if (ranks.length === 0) {
-    segmentTraceByRank.value = new Map()
-    return
-  }
-
-  const entries = await mapWithConcurrency(ranks, TOP_100_DETAIL_CONCURRENCY, async (rank) => {
-    const records = await fetchRankTraceFromWebRankings(rank, ROW_SPARKLINE_MAX_POINTS).catch(() => [])
-    return records.length > 0 ? [rank, records] as const : null
-  })
-  const nextTraces = new Map<number, RankBorderTracePoint[]>()
-  for (const entry of entries) {
-    if (entry) {
-      nextTraces.set(entry[0], entry[1])
-    }
-  }
-  segmentTraceByRank.value = nextTraces
-}
-
-async function fetchRankTraceFromWebRankings(rank: number, limit?: number): Promise<RankBorderTracePoint[]> {
-  const records = await fetchRankBorderTraceByRank({
-    ...detailScope.value,
-    rank,
-    limit,
-  })
-  return typeof limit === "number" ? records.slice(-limit) : records
-}
-
 async function fetchFullRankTrace(rank: number): Promise<RankBorderTracePoint[]> {
   const webRecords = await fetchRankBorderWebTraceByRank({
     ...detailScope.value,
@@ -2251,71 +2070,6 @@ async function fetchFullRankTrace(rank: number): Promise<RankBorderTracePoint[]>
   }).catch(() => [])
 
   return longestTrace([webRecords, directRecords])
-}
-
-async function fetchRankTraceMapFromWebRankings(rankMin: number, rankMax: number, limit: number) {
-  const ranks = Array.from({ length: rankMax - rankMin + 1 }, (_, index) => rankMin + index)
-  const batchTraces = await fetchRankBorderBatchTraceByRanks({
-    ...detailScope.value,
-    ranks,
-    limit,
-  }).catch(() => new Map<number, RankBorderTracePoint[]>())
-  if (batchTraces.size > 0) {
-    const limitedTraces = new Map<number, RankBorderTracePoint[]>()
-    for (const [rank, records] of batchTraces) {
-      limitedTraces.set(rank, records.slice(-limit))
-    }
-    return limitedTraces
-  }
-
-  const rankings = await fetchRankBorderWebRankings({
-    ...detailScope.value,
-    rankMin,
-    rankMax,
-    limit,
-  })
-  const traces = new Map<number, RankBorderTracePoint[]>()
-  for (const item of rankings.items) {
-    const records = traces.get(item.rank) ?? []
-    records.push({
-      rank: item.rank,
-      score: item.score,
-      timestamp: item.timestamp ?? 0,
-      userId: item.userId,
-      characterId: item.characterId,
-    })
-    traces.set(item.rank, records)
-  }
-
-  for (const [rank, records] of traces) {
-    traces.set(
-      rank,
-      records
-        .filter((record) => record.timestamp > 0)
-        .sort((a, b) => a.timestamp - b.timestamp),
-    )
-  }
-
-  return traces
-}
-
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  concurrency: number,
-  worker: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array(items.length)
-  let nextIndex = 0
-  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-    while (nextIndex < items.length) {
-      const currentIndex = nextIndex
-      nextIndex += 1
-      results[currentIndex] = await worker(items[currentIndex])
-    }
-  })
-
-  await Promise.all(workers)
-  return results
 }
 
 function resolveLineDetail(rank: number): LineDetailState | null {
@@ -2561,15 +2315,6 @@ function clearNumberFlashTimer() {
     clearTimeout(numberFlashTimer)
     numberFlashTimer = null
   }
-}
-
-function isSameTrackerScope(left: RankBorderTrackerScope, right: RankBorderTrackerScope) {
-  return normalizeTrackerEndpoint(left.endpoint) === normalizeTrackerEndpoint(right.endpoint)
-    && left.region === right.region
-    && left.eventId === right.eventId
-    && left.mode === right.mode
-    && (left.worldBloomCharacterId ?? null) === (right.worldBloomCharacterId ?? null)
-    && (left.playbackAt ?? null) === (right.playbackAt ?? null)
 }
 
 function persistState() {

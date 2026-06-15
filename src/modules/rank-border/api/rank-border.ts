@@ -655,19 +655,6 @@ export async function fetchRankBorderPublicUserProfile(params: FetchRankBorderPu
     return null
   }
 
-  const directProfile = normalizeRankBorderUserProfiles(
-    await fetchTrackerJson(
-      params.endpoint,
-      buildNormalPath(params, `user-data/${formatRankBorderPathSegment(uniqueId)}`),
-      params.cacheBust,
-      params.playbackAt,
-      params.useWebSocket,
-    ).catch(() => null),
-  )[0] ?? null
-  if (directProfile) {
-    return directProfile
-  }
-
   const search = new URLSearchParams()
   search.set("uniqueId", uniqueId)
   search.set("limit", String(normalizeSearchLimit(params.limit)))

@@ -383,7 +383,10 @@ function normalizeWebRankingItem(value: unknown): unknown {
   }
 
   if (isRecord(value.rankData)) {
-    return value
+    return {
+      rankData: value.rankData,
+      userData: isRecord(value.userData) ? value.userData : value,
+    }
   }
 
   if (isRecord(value.userData)) {
@@ -393,7 +396,7 @@ function normalizeWebRankingItem(value: unknown): unknown {
     }
   }
 
-  return { rankData: value }
+  return { rankData: value, userData: value }
 }
 
 function normalizeRankBorderUserProfile(value: unknown): RankBorderUserProfile | null {
