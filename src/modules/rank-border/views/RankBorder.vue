@@ -5613,9 +5613,12 @@ function traceUpdateRecords(
 }
 
 :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
-  top: 50%;
-  left: 50%;
-  inset-inline-start: 50%;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: 50% !important;
+  inset-inline-start: 50% !important;
+  inset-inline-end: auto !important;
   display: grid;
   width: min(82rem, calc(100vw - 2rem));
   max-width: none;
@@ -5626,8 +5629,8 @@ function traceUpdateRecords(
   gap: 0.75rem;
   overflow: hidden;
   padding: 1rem;
-  translate: none;
-  transform: translate(-50%, -50%);
+  translate: -50% -50% !important;
+  transform: none !important;
 }
 
 .rank-border-detail-dialog__header {
@@ -6468,16 +6471,19 @@ function traceUpdateRecords(
 
 @media (min-width: 768px) and (max-width: 900px) {
   :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
-    inset: auto;
-    top: 50%;
-    left: 50%;
-    inset-inline-start: 50%;
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: 50% !important;
+    inset-inline-start: 50% !important;
+    inset-inline-end: auto !important;
     width: calc(100vw - 1rem);
     max-width: calc(100vw - 1rem);
     height: calc(100svh - 1rem);
     max-height: calc(100svh - 1rem);
     margin: 0;
-    transform: translate(-50%, -50%);
+    translate: -50% -50% !important;
+    transform: none !important;
   }
 
   .rank-border-detail-grid {
@@ -6651,7 +6657,12 @@ function traceUpdateRecords(
   }
 
   :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
-    inset: auto 0.375rem 0;
+    top: auto !important;
+    right: 0.375rem !important;
+    bottom: 0 !important;
+    left: 0.375rem !important;
+    inset-inline-start: 0.375rem !important;
+    inset-inline-end: 0.375rem !important;
     width: calc(100vw - 0.75rem);
     max-width: calc(100vw - 0.75rem);
     height: min(92svh, calc(100svh - 0.75rem));
@@ -6664,8 +6675,8 @@ function traceUpdateRecords(
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     padding: 0.625rem;
-    translate: none;
-    transform: none;
+    translate: none !important;
+    transform: none !important;
   }
 
   .rank-border-detail-dialog__header {

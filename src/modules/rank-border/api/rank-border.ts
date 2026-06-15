@@ -108,7 +108,7 @@ export type RankBorderRealtimeSubscription = {
 
 const TRACKER_WS_OPEN_TIMEOUT_MS = 4_000
 const TRACKER_WS_REQUEST_TIMEOUT_MS = 15_000
-const TRACKER_WS_FAILURE_COOLDOWN_MS = 30_000
+const TRACKER_WS_FAILURE_COOLDOWN_MS = 2_000
 const LOCAL_TRACKER_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"])
 
 type TrackerWsPendingRequest = {
@@ -128,9 +128,13 @@ type TrackerWsTicketResponse = {
 }
 
 type TrackerWsEventHandler = (event: RankBorderRealtimeEvent) => void
+type TrackerWsDisabledState = {
+  until: number
+  error: Error
+}
 
 const trackerWsClients = new Map<string, TrackerWsClient>()
-const trackerWsDisabledUntil = new Map<string, number>()
+const trackerWsDisabledState = new Map<string, TrackerWsDisabledState>()
 
 class TrackerWsClient {
   private readonly url: string
@@ -255,11 +259,24 @@ class TrackerWsClient {
       return this.opening
     }
 
+    const opening = this.openWithTicket()
+    this.opening = opening
+    void opening
+      .finally(() => {
+        if (this.opening === opening) {
+          this.opening = null
+        }
+      })
+      .catch(() => {})
+    return opening
+  }
+
+  private async openWithTicket(): Promise<void> {
     const socketUrl = await resolveTicketedWebSocketUrl(this.url, this.ticketUrl)
     const socket = new WebSocket(socketUrl)
     this.socket = socket
 
-    const opening = new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       let settled = false
       const timeoutId = setTimeout(() => {
         failOpen("Tracker WebSocket connection timed out")
@@ -315,16 +332,6 @@ class TrackerWsClient {
       socket.addEventListener("close", handleClose)
       socket.addEventListener("message", handleMessage)
     })
-
-    this.opening = opening
-    void opening
-      .finally(() => {
-        if (this.opening === opening) {
-          this.opening = null
-        }
-      })
-      .catch(() => {})
-    return opening
   }
 
   private handleMessage(event: MessageEvent) {
@@ -684,9 +691,10 @@ export async function subscribeRankBorderRealtime(
 
   const wsUrl = resolveRankBorderTrackerWebSocketUrl(baseUrl)
   const ticketUrl = resolveRankBorderTrackerWebSocketTicketUrl(baseUrl)
-  if (!wsUrl || isTrackerWsTemporarilyDisabled(wsUrl)) {
+  if (!wsUrl) {
     throw new Error("Tracker WebSocket endpoint is unavailable")
   }
+  throwIfTrackerWsTemporarilyDisabled(wsUrl)
   if (!ticketUrl) {
     throw new Error("Tracker WebSocket ticket endpoint is unavailable")
   }
@@ -696,7 +704,7 @@ export async function subscribeRankBorderRealtime(
     return await client.subscribeRealtime(scope, handler)
   } catch (error) {
     if (!isTrackerWsProtocolError(error)) {
-      rememberTrackerWsFailure(wsUrl)
+      rememberTrackerWsFailure(wsUrl, error)
     }
     throw error
   }
@@ -712,15 +720,16 @@ async function fetchTrackerJson(endpoint: string, path: string, cacheBust = fals
   const wsUrl = resolveRankBorderTrackerWebSocketUrl(baseUrl)
   const ticketUrl = resolveRankBorderTrackerWebSocketTicketUrl(baseUrl)
   let wsError: unknown
-  if (useWebSocket && wsUrl && ticketUrl && !isTrackerWsTemporarilyDisabled(wsUrl)) {
+  if (useWebSocket && wsUrl && ticketUrl) {
     try {
+      throwIfTrackerWsTemporarilyDisabled(wsUrl)
       return await requestTrackerJsonViaWebSocket(wsUrl, ticketUrl, requestPath)
     } catch (error) {
       wsError = error
       if (isTrackerWsProtocolError(error) || !shouldAllowTrackerRestFallback(baseUrl)) {
         throw toError(error, "Tracker WebSocket request failed")
       }
-      rememberTrackerWsFailure(wsUrl)
+      rememberTrackerWsFailure(wsUrl, error)
     }
   }
 
@@ -891,21 +900,24 @@ function getTrackerOrigin(): string {
   return typeof window === "undefined" ? "http://localhost" : window.location.href
 }
 
-function isTrackerWsTemporarilyDisabled(wsUrl: string): boolean {
-  const disabledUntil = trackerWsDisabledUntil.get(wsUrl)
-  if (!disabledUntil) {
-    return false
+function throwIfTrackerWsTemporarilyDisabled(wsUrl: string) {
+  const disabledState = trackerWsDisabledState.get(wsUrl)
+  if (!disabledState) {
+    return
   }
-  if (disabledUntil <= Date.now()) {
-    trackerWsDisabledUntil.delete(wsUrl)
-    return false
+  if (disabledState.until <= Date.now()) {
+    trackerWsDisabledState.delete(wsUrl)
+    return
   }
 
-  return true
+  throw disabledState.error
 }
 
-function rememberTrackerWsFailure(wsUrl: string) {
-  trackerWsDisabledUntil.set(wsUrl, Date.now() + TRACKER_WS_FAILURE_COOLDOWN_MS)
+function rememberTrackerWsFailure(wsUrl: string, error: unknown) {
+  trackerWsDisabledState.set(wsUrl, {
+    until: Date.now() + TRACKER_WS_FAILURE_COOLDOWN_MS,
+    error: toError(error, "Tracker WebSocket endpoint is unavailable"),
+  })
 }
 
 function createTrackerWsProtocolError(message: string, status: number | undefined): TrackerWsError {
