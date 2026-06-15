@@ -63,6 +63,31 @@ export type RankBorderMasterHonorGroup = {
   frameName?: string
 }
 
+export type RankBorderMasterBondsHonor = {
+  id?: number
+  name?: string
+  gameCharacterUnitId1?: number
+  gameCharacterUnitID1?: number
+  gameCharacterUnitId2?: number
+  gameCharacterUnitID2?: number
+  honorRarity?: string
+  configurableUnitVirtualSinger?: boolean
+}
+
+export type RankBorderMasterBondsHonorWord = {
+  id?: number
+  assetbundleName?: string
+  assetBundleName?: string
+  name?: string
+}
+
+export type RankBorderMasterGameCharacterUnit = {
+  id?: number
+  gameCharacterId?: number
+  gameCharacterID?: number
+  unit?: string
+}
+
 export type RankBorderEventOption = {
   id: number
   value: string
@@ -85,7 +110,7 @@ export type RankBorderWorldBloomCharacterOption = {
 }
 
 const REQUIRED_FILES = ["events", "worldBlooms", "gameCharacters"] as const
-const PROFILE_ASSET_FILES = ["cards", "honors", "honorGroups"] as const
+const PROFILE_ASSET_FILES = ["cards", "honors", "honorGroups", "bondsHonors", "bondsHonorWords", "gameCharacterUnits"] as const
 
 export function useRankBorderMasterOptions(region: Ref<SekaiRegion>, selectedEventId: Ref<string | null>) {
   const sekaiDataStore = useSekaiDataStore()
@@ -95,6 +120,9 @@ export function useRankBorderMasterOptions(region: Ref<SekaiRegion>, selectedEve
   const cards = ref<RankBorderMasterCard[]>([])
   const honors = ref<RankBorderMasterHonor[]>([])
   const honorGroups = ref<RankBorderMasterHonorGroup[]>([])
+  const bondsHonors = ref<RankBorderMasterBondsHonor[]>([])
+  const bondsHonorWords = ref<RankBorderMasterBondsHonorWord[]>([])
+  const gameCharacterUnits = ref<RankBorderMasterGameCharacterUnit[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -140,6 +168,9 @@ export function useRankBorderMasterOptions(region: Ref<SekaiRegion>, selectedEve
       cards.value = []
       honors.value = []
       honorGroups.value = []
+      bondsHonors.value = []
+      bondsHonorWords.value = []
+      gameCharacterUnits.value = []
       error.value = loadError instanceof Error ? loadError.message : String(loadError)
     } finally {
       loading.value = false
@@ -152,18 +183,27 @@ export function useRankBorderMasterOptions(region: Ref<SekaiRegion>, selectedEve
         await sekaiDataStore.ensureRegionData(region.value, { force, files: PROFILE_ASSET_FILES })
       }
 
-      const [cardData, honorData, honorGroupData] = await Promise.all([
-        readSekaiMasterFile<RankBorderMasterCard[]>(region.value, "cards"),
-        readSekaiMasterFile<RankBorderMasterHonor[]>(region.value, "honors"),
-        readSekaiMasterFile<RankBorderMasterHonorGroup[]>(region.value, "honorGroups"),
+      const [cardData, honorData, honorGroupData, bondsHonorData, bondsHonorWordData, gameCharacterUnitData] = await Promise.all([
+        readOptionalMasterFile<RankBorderMasterCard[]>(region.value, "cards"),
+        readOptionalMasterFile<RankBorderMasterHonor[]>(region.value, "honors"),
+        readOptionalMasterFile<RankBorderMasterHonorGroup[]>(region.value, "honorGroups"),
+        readOptionalMasterFile<RankBorderMasterBondsHonor[]>(region.value, "bondsHonors"),
+        readOptionalMasterFile<RankBorderMasterBondsHonorWord[]>(region.value, "bondsHonorWords"),
+        readOptionalMasterFile<RankBorderMasterGameCharacterUnit[]>(region.value, "gameCharacterUnits"),
       ])
       cards.value = Array.isArray(cardData) ? cardData : []
       honors.value = Array.isArray(honorData) ? honorData : []
       honorGroups.value = Array.isArray(honorGroupData) ? honorGroupData : []
+      bondsHonors.value = Array.isArray(bondsHonorData) ? bondsHonorData : []
+      bondsHonorWords.value = Array.isArray(bondsHonorWordData) ? bondsHonorWordData : []
+      gameCharacterUnits.value = Array.isArray(gameCharacterUnitData) ? gameCharacterUnitData : []
     } catch {
       cards.value = []
       honors.value = []
       honorGroups.value = []
+      bondsHonors.value = []
+      bondsHonorWords.value = []
+      gameCharacterUnits.value = []
     }
   }
 
@@ -174,6 +214,9 @@ export function useRankBorderMasterOptions(region: Ref<SekaiRegion>, selectedEve
     cards,
     honors,
     honorGroups,
+    bondsHonors,
+    bondsHonorWords,
+    gameCharacterUnits,
     loading,
     error,
     reload: () => loadOptions(true),
@@ -278,6 +321,14 @@ function resolveCharacterName(character: SekaiGameCharacter, fallbackId: number)
 
 function hasRequiredFiles(cachedFiles: readonly string[], requiredFiles: readonly string[]): boolean {
   return requiredFiles.every((fileName) => cachedFiles.includes(fileName))
+}
+
+async function readOptionalMasterFile<T>(region: SekaiRegion, fileName: string): Promise<T | null> {
+  try {
+    return await readSekaiMasterFile<T>(region, fileName)
+  } catch {
+    return null
+  }
 }
 
 function normalizePositiveNumber(value: unknown): number | null {

@@ -1723,7 +1723,6 @@ export const enUS = {
       unknown: "Unknown",
       live: "Live updating",
       liveWs: "Live push connected",
-      liveWsWithOnline: "Live push connected · {value} online",
       connecting: "Connecting live push",
       waitingWs: "Waiting for live push",
       loginRequired: "Log in to enable auto refresh",

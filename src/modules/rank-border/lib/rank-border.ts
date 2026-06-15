@@ -73,6 +73,7 @@ export type RankBorderProfileHonor = {
   seq: number | null
   profileHonorType: string | null
   honorId: number | null
+  honorId2: number | null
   honorLevel: number | null
   bondsHonorViewType: string | null
   bondsHonorWordId: number | null
@@ -413,6 +414,7 @@ function normalizeProfileHonors(value: unknown): RankBorderProfileHonor[] {
         seq: normalizePositiveInteger(item.seq),
         profileHonorType: normalizeText(item.profileHonorType),
         honorId: normalizePositiveInteger(item.honorId),
+        honorId2: normalizePositiveInteger(item.honorId2),
         honorLevel: normalizeNonNegativeInteger(item.honorLevel),
         bondsHonorViewType: normalizeText(item.bondsHonorViewType),
         bondsHonorWordId: normalizeNonNegativeInteger(item.bondsHonorWordId),

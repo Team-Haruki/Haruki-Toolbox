@@ -1723,7 +1723,6 @@ export const zhCN = {
       unknown: "未知",
       live: "实时更新中",
       liveWs: "实时推送已连接",
-      liveWsWithOnline: "实时推送已连接 · {value} 在线",
       connecting: "正在连接实时推送",
       waitingWs: "等待实时推送",
       loginRequired: "登录后开启自动刷新",

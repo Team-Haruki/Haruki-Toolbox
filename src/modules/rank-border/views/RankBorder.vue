@@ -75,7 +75,10 @@ import {
 } from "../api/rank-border"
 import {
   useRankBorderMasterOptions,
+  type RankBorderMasterBondsHonor,
+  type RankBorderMasterBondsHonorWord,
   type RankBorderMasterCard,
+  type RankBorderMasterGameCharacterUnit,
   type RankBorderMasterHonor,
   type RankBorderMasterHonorGroup,
 } from "../composables/useRankBorderMasterOptions"
@@ -219,11 +222,21 @@ type RankBorderUpdateRecord = {
 type RankBorderHonorView = {
   key: string
   label: string
+  type: "normal" | "bonds"
   baseUrl: string | null
   rankUrl: string | null
   rankPlacement: "event" | "full" | "rank_match"
   frameUrl: string | null
   framePlacement: "full" | "low"
+  scrollUrl: string | null
+  levelIconUrl: string | null
+  level6IconUrl: string | null
+  fcApLevel: string | null
+  bondsLeftBgUrl: string | null
+  bondsRightBgUrl: string | null
+  bondsLeftIconUrl: string | null
+  bondsRightIconUrl: string | null
+  bondsMaskUrl: string | null
   level: number | null
 }
 
@@ -408,6 +421,15 @@ const honorById = computed<Map<number, RankBorderMasterHonor>>(() => buildMaster
 const honorGroupById = computed<Map<number, RankBorderMasterHonorGroup>>(() =>
   buildMasterRecordMap(masterOptions.honorGroups.value),
 )
+const bondsHonorById = computed<Map<number, RankBorderMasterBondsHonor>>(() =>
+  buildMasterRecordMap(masterOptions.bondsHonors.value),
+)
+const bondsHonorWordById = computed<Map<number, RankBorderMasterBondsHonorWord>>(() =>
+  buildMasterRecordMap(masterOptions.bondsHonorWords.value),
+)
+const gameCharacterUnitById = computed<Map<number, RankBorderMasterGameCharacterUnit>>(() =>
+  buildMasterRecordMap(masterOptions.gameCharacterUnits.value),
+)
 const selectedIntervalSeconds = computed(() => normalizePositiveInteger(intervalSeconds.value, Number(DEFAULT_INTERVAL_SECONDS)))
 const selectedEventIdNumber = computed(() => normalizePositiveInteger(selectedEventId.value, 0))
 const selectedWorldBloomCharacterIdNumber = computed(() =>
@@ -529,9 +551,7 @@ const trackerStatusLabel = computed(() => {
     return t("rankBorder.status.loginRequired")
   }
   if (realtimeState.value === "ready") {
-    return realtimeOnline.value
-      ? t("rankBorder.status.liveWsWithOnline", { value: realtimeOnline.value.topic })
-      : t("rankBorder.status.liveWs")
+    return t("rankBorder.status.liveWs")
   }
   if (realtimeState.value === "connecting") {
     return t("rankBorder.status.connecting")
@@ -2567,11 +2587,17 @@ function profileHonorViews(result: ProfileResult, limit = 3): RankBorderHonorVie
   return result.profileHonors
     .slice(0, limit)
     .map((honor, index) => {
-      const masterHonor = honor.honorId ? honorById.value.get(honor.honorId) ?? null : null
+      const honorId = honor.honorId ?? honor.honorId2
+      const masterHonor = honorId ? honorById.value.get(honorId) ?? null : null
+      const bondsHonor = honorId ? bondsHonorById.value.get(honorId) ?? null : null
+      if (!masterHonor && bondsHonor) {
+        return resolveBondsHonorView(honor, bondsHonor, honorId, index)
+      }
+
       const masterGroup = masterHonor?.groupId ? honorGroupById.value.get(masterHonor.groupId) ?? null : null
       return {
-        key: `${honor.seq ?? index}:${honor.honorId ?? "unknown"}`,
-        label: normalizeTextValue(masterHonor?.name) ?? (honor.honorId ? `#${honor.honorId}` : "-"),
+        key: `${honor.seq ?? index}:${honorId ?? "unknown"}`,
+        label: normalizeTextValue(masterHonor?.name) ?? (honorId ? `#${honorId}` : "-"),
         ...resolveHonorVisual(masterHonor, masterGroup, honor.honorLevel, "sub"),
         level: honor.honorLevel,
       }
@@ -2583,7 +2609,7 @@ function resolveHonorVisual(
   group: RankBorderMasterHonorGroup | null,
   level: number | null,
   mode: "main" | "sub",
-): Pick<RankBorderHonorView, "baseUrl" | "rankUrl" | "rankPlacement" | "frameUrl" | "framePlacement"> {
+): Omit<RankBorderHonorView, "key" | "label" | "level"> {
   const levelVisual = resolveHonorLevelVisual(honor, level)
   const assetBundleName = normalizeTextValue(honor?.assetbundleName) ?? normalizeTextValue(levelVisual?.assetbundleName)
   const rarity = normalizeTextValue(honor?.honorRarity) ?? normalizeTextValue(levelVisual?.honorRarity)
@@ -2592,6 +2618,7 @@ function resolveHonorVisual(
   const resolvedRarity = rarity ?? resolveHonorRarityFromAssetName(assetBundleName)
 
   return {
+    type: "normal",
     baseUrl: backgroundAssetBundleName
       ? resolveHonorBaseUrl(groupType, backgroundAssetBundleName, mode)
       : null,
@@ -2601,7 +2628,129 @@ function resolveHonorVisual(
     rankPlacement: resolveHonorRankPlacement(groupType, assetBundleName),
     frameUrl: resolveHonorFrameUrl(group, backgroundAssetBundleName, assetBundleName, resolvedRarity, mode),
     framePlacement: resolvedRarity === "low" ? "low" : "full",
+    scrollUrl: assetBundleName && honorUsesScrollLayer(groupType)
+      ? resolveHonorScrollUrl(assetBundleName)
+      : null,
+    levelIconUrl: honorUsesLevelIconLayer(groupType)
+      ? "/rank-border/honor/icon_degreeLv.png"
+      : null,
+    level6IconUrl: honorUsesLevelIconLayer(groupType)
+      ? "/rank-border/honor/icon_degreeLv6.png"
+      : null,
+    fcApLevel: assetBundleName && honorUsesScrollLayer(groupType)
+      ? String(level ?? "")
+      : null,
+    bondsLeftBgUrl: null,
+    bondsRightBgUrl: null,
+    bondsLeftIconUrl: null,
+    bondsRightIconUrl: null,
+    bondsMaskUrl: null,
   }
+}
+
+function resolveBondsHonorView(
+  honor: RankBorderLatest["profileHonors"][number],
+  bondsHonor: RankBorderMasterBondsHonor,
+  honorId: number | null,
+  index: number,
+): RankBorderHonorView {
+  const slots = resolveBondsHonorDisplaySlots(bondsHonor, honor.bondsHonorViewType)
+  const rarity = normalizeTextValue(bondsHonor.honorRarity)
+  const word = honor.bondsHonorWordId ? bondsHonorWordById.value.get(honor.bondsHonorWordId) ?? null : null
+  return {
+    key: `${honor.seq ?? index}:bonds:${honorId ?? "unknown"}:${honor.bondsHonorViewType ?? ""}`,
+    label: normalizeTextValue(word?.name) ?? normalizeTextValue(bondsHonor.name) ?? (honorId ? `#${honorId}` : "-"),
+    type: "bonds",
+    baseUrl: null,
+    rankUrl: null,
+    rankPlacement: "event",
+    frameUrl: resolveBondsHonorFrameUrl(rarity, "sub"),
+    framePlacement: rarity === "low" ? "low" : "full",
+    scrollUrl: null,
+    levelIconUrl: "/rank-border/honor/icon_degreeLv.png",
+    level6IconUrl: "/rank-border/honor/icon_degreeLv6.png",
+    fcApLevel: null,
+    bondsLeftBgUrl: slots.leftCharacterId ? `/rank-border/honor/bonds/${slots.leftCharacterId}_sub.png` : null,
+    bondsRightBgUrl: slots.rightCharacterId ? `/rank-border/honor/bonds/${slots.rightCharacterId}_sub.png` : null,
+    bondsLeftIconUrl: slots.leftUnitId ? resolveBondsHonorCharacterUrl(slots.leftUnitId) : null,
+    bondsRightIconUrl: slots.rightUnitId ? resolveBondsHonorCharacterUrl(slots.rightUnitId) : null,
+    bondsMaskUrl: "/rank-border/honor/mask_degree_sub.png",
+    level: honor.honorLevel,
+  }
+}
+
+function resolveBondsHonorDisplaySlots(bondsHonor: RankBorderMasterBondsHonor, viewType: string | null) {
+  let leftUnitId = normalizePositiveNumber(bondsHonor.gameCharacterUnitId1 ?? bondsHonor.gameCharacterUnitID1)
+  let rightUnitId = normalizePositiveNumber(bondsHonor.gameCharacterUnitId2 ?? bondsHonor.gameCharacterUnitID2)
+  if (bondsHonor.configurableUnitVirtualSinger && bondsHonorUsesUnitVirtualSinger(viewType)) {
+    leftUnitId = resolveUnitVirtualSingerUnitId(leftUnitId, rightUnitId)
+    rightUnitId = resolveUnitVirtualSingerUnitId(rightUnitId, leftUnitId)
+  }
+
+  if (bondsHonorViewTypeIsReverse(viewType)) {
+    const originalLeftUnitId = leftUnitId
+    leftUnitId = rightUnitId
+    rightUnitId = originalLeftUnitId
+  }
+
+  return {
+    leftUnitId,
+    rightUnitId,
+    leftCharacterId: resolveGameCharacterIdByUnitId(leftUnitId),
+    rightCharacterId: resolveGameCharacterIdByUnitId(rightUnitId),
+  }
+}
+
+function normalizePositiveNumber(value: unknown): number | null {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function resolveUnitVirtualSingerUnitId(candidateUnitId: number | null, pairedUnitId: number | null) {
+  if (!candidateUnitId) {
+    return candidateUnitId
+  }
+
+  const candidate = gameCharacterUnitById.value.get(candidateUnitId)
+  const candidateCharacterId = normalizePositiveNumber(candidate?.gameCharacterId ?? candidate?.gameCharacterID)
+  if (!candidate || !candidateCharacterId || candidateCharacterId < 21 || !pairedUnitId) {
+    return candidateUnitId
+  }
+
+  const paired = gameCharacterUnitById.value.get(pairedUnitId)
+  const pairedUnit = normalizeTextValue(paired?.unit)
+  if (!paired || !pairedUnit || pairedUnit === "piapro") {
+    return candidateUnitId
+  }
+
+  for (let unitId = 27; unitId <= 56; unitId += 1) {
+    const unit = gameCharacterUnitById.value.get(unitId)
+    if (
+      normalizePositiveNumber(unit?.gameCharacterId ?? unit?.gameCharacterID) === candidateCharacterId
+      && normalizeTextValue(unit?.unit) === pairedUnit
+    ) {
+      return unitId
+    }
+  }
+
+  return candidateUnitId
+}
+
+function resolveGameCharacterIdByUnitId(unitId: number | null) {
+  if (!unitId) {
+    return null
+  }
+
+  const unit = gameCharacterUnitById.value.get(unitId)
+  return normalizePositiveNumber(unit?.gameCharacterId ?? unit?.gameCharacterID)
+}
+
+function bondsHonorViewTypeIsReverse(viewType: string | null) {
+  return (normalizeTextValue(viewType)?.toLowerCase() ?? "").startsWith("reverse")
+}
+
+function bondsHonorUsesUnitVirtualSinger(viewType: string | null) {
+  return (normalizeTextValue(viewType)?.toLowerCase() ?? "").includes("unit_virtual_singer")
 }
 
 function resolveHonorLevelVisual(honor: RankBorderMasterHonor | null, level: number | null) {
@@ -2673,6 +2822,14 @@ function honorUsesRankLayer(groupType: string, assetBundleName: string) {
     || assetBundleName.includes("honor_top_")
 }
 
+function honorUsesScrollLayer(groupType: string) {
+  return groupType === "event" || groupType === "wl_event" || groupType === "fc_ap"
+}
+
+function honorUsesLevelIconLayer(groupType: string) {
+  return groupType === "character" || groupType === "achievement"
+}
+
 function resolveHonorBaseUrl(groupType: string, assetBundleName: string, mode: "main" | "sub") {
   const path = groupType === "rank_match"
     ? `startapp/rank_live/honor/${assetBundleName}/degree_${mode}.png`
@@ -2685,6 +2842,30 @@ function resolveHonorRankUrl(groupType: string, assetBundleName: string, mode: "
     ? `startapp/rank_live/honor/${assetBundleName}/${mode}.png`
     : `startapp/honor/${assetBundleName}/rank_${mode}.png`
   return resolveSekaiGameAssetUrl(selectedRegion.value, path, settingsStore.currentAssetEndpoint)
+}
+
+function resolveHonorScrollUrl(assetBundleName: string) {
+  return resolveSekaiGameAssetUrl(
+    selectedRegion.value,
+    `startapp/honor/${assetBundleName}/scroll.png`,
+    settingsStore.currentAssetEndpoint,
+  )
+}
+
+function resolveBondsHonorCharacterUrl(unitId: number) {
+  return resolveSekaiGameAssetUrl(
+    selectedRegion.value,
+    `startapp/bonds_honor/character/chr_sd_${String(unitId).padStart(2, "0")}_01.png`,
+    settingsStore.currentAssetEndpoint,
+  )
+}
+
+function resolveBondsHonorFrameUrl(rarity: string | null, mode: "main" | "sub") {
+  if (!rarity) {
+    return null
+  }
+
+  return `/rank-border/honor/frame_degree_${mode[0]}_${honorRarityRank(rarity)}.png`
 }
 
 function resolveHonorFrameUrl(
@@ -2836,6 +3017,15 @@ function honorLevelLabel(honor: RankBorderHonorView) {
   return honor.level != null && honor.level > 0 ? `Lv.${honor.level}` : ""
 }
 
+function honorLevelStars(honor: RankBorderHonorView) {
+  const level = Math.max(0, honor.level ?? 0)
+  const normalizedLevel = level > 10 ? level - 10 : level
+  return Array.from({ length: Math.min(10, normalizedLevel) }, (_, index) => ({
+    key: `${honor.key}:lv:${index}`,
+    url: index < 5 ? honor.levelIconUrl : honor.level6IconUrl,
+  })).filter((item): item is { key: string, url: string } => Boolean(item.url))
+}
+
 function hideBrokenImage(event: Event) {
   if (event.target instanceof HTMLImageElement) {
     event.target.hidden = true
@@ -2955,6 +3145,7 @@ function profileHonorSignature(value: RankBorderLatest) {
     .map((honor) => [
       honor.seq,
       honor.honorId,
+      honor.honorId2,
       honor.honorLevel,
       honor.profileHonorType,
       honor.bondsHonorViewType,
@@ -3861,7 +4052,7 @@ function traceUpdateRecords(
                             class="rank-border-honor rank-border-honor--row"
                             :title="`${honor.label} ${honorLevelLabel(honor)}`.trim()"
                           >
-                            <span v-if="honor.baseUrl" class="rank-border-honor-visual">
+                            <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
                               <img
                                 class="rank-border-honor-layer"
                                 :src="honor.baseUrl"
@@ -3891,6 +4082,88 @@ function traceUpdateRecords(
                                 loading="lazy"
                                 @error="hideBrokenImage"
                               >
+                              <img
+                                v-if="honor.scrollUrl"
+                                class="rank-border-honor-layer rank-border-honor-scroll-layer"
+                                :src="honor.scrollUrl"
+                                alt=""
+                                loading="lazy"
+                                @error="hideBrokenImage"
+                              >
+                              <span v-if="honor.fcApLevel" class="rank-border-honor-fcap-level">{{ honor.fcApLevel }}</span>
+                              <span v-if="honorLevelStars(honor).length > 0" class="rank-border-honor-level-stars" aria-hidden="true">
+                                <img
+                                  v-for="star in honorLevelStars(honor)"
+                                  :key="star.key"
+                                  class="rank-border-honor-level-star"
+                                  :src="star.url"
+                                  alt=""
+                                  loading="lazy"
+                                  @error="hideBrokenImage"
+                                >
+                              </span>
+                            </span>
+                            <span v-else-if="honor.type === 'bonds' && honor.bondsLeftBgUrl && honor.bondsRightBgUrl" class="rank-border-honor-visual rank-border-honor-visual--bonds">
+                              <img
+                                class="rank-border-honor-layer rank-border-honor-bonds-bg rank-border-honor-bonds-bg--right"
+                                :src="honor.bondsRightBgUrl"
+                                :alt="honor.label"
+                                loading="lazy"
+                                @error="hideBrokenImage"
+                              >
+                              <img
+                                class="rank-border-honor-layer rank-border-honor-bonds-bg rank-border-honor-bonds-bg--left"
+                                :src="honor.bondsLeftBgUrl"
+                                alt=""
+                                loading="lazy"
+                                @error="hideBrokenImage"
+                              >
+                              <img
+                                v-if="honor.bondsLeftIconUrl"
+                                class="rank-border-honor-layer rank-border-honor-bonds-icon rank-border-honor-bonds-icon--left"
+                                :src="honor.bondsLeftIconUrl"
+                                alt=""
+                                loading="lazy"
+                                @error="hideBrokenImage"
+                              >
+                              <img
+                                v-if="honor.bondsRightIconUrl"
+                                class="rank-border-honor-layer rank-border-honor-bonds-icon rank-border-honor-bonds-icon--right"
+                                :src="honor.bondsRightIconUrl"
+                                alt=""
+                                loading="lazy"
+                                @error="hideBrokenImage"
+                              >
+                              <img
+                                v-if="honor.bondsMaskUrl"
+                                class="rank-border-honor-layer rank-border-honor-bonds-mask-layer"
+                                :src="honor.bondsMaskUrl"
+                                alt=""
+                                loading="lazy"
+                                @error="hideBrokenImage"
+                              >
+                              <img
+                                v-if="honor.frameUrl"
+                                :class="[
+                                  'rank-border-honor-layer rank-border-honor-frame-layer',
+                                  `rank-border-honor-frame-layer--${honor.framePlacement}`,
+                                ]"
+                                :src="honor.frameUrl"
+                                alt=""
+                                loading="lazy"
+                                @error="hideBrokenImage"
+                              >
+                              <span v-if="honorLevelStars(honor).length > 0" class="rank-border-honor-level-stars" aria-hidden="true">
+                                <img
+                                  v-for="star in honorLevelStars(honor)"
+                                  :key="star.key"
+                                  class="rank-border-honor-level-star"
+                                  :src="star.url"
+                                  alt=""
+                                  loading="lazy"
+                                  @error="hideBrokenImage"
+                                >
+                              </span>
                             </span>
                             <span v-else class="rank-border-honor-fallback">{{ honor.label }}</span>
                           </span>
@@ -4351,7 +4624,7 @@ function traceUpdateRecords(
                       class="rank-border-honor rank-border-honor--detail"
                       :title="`${honor.label} ${honorLevelLabel(honor)}`.trim()"
                     >
-                      <span v-if="honor.baseUrl" class="rank-border-honor-visual">
+                      <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
                         <img
                           class="rank-border-honor-layer"
                           :src="honor.baseUrl"
@@ -4381,6 +4654,88 @@ function traceUpdateRecords(
                           loading="lazy"
                           @error="hideBrokenImage"
                         >
+                        <img
+                          v-if="honor.scrollUrl"
+                          class="rank-border-honor-layer rank-border-honor-scroll-layer"
+                          :src="honor.scrollUrl"
+                          alt=""
+                          loading="lazy"
+                          @error="hideBrokenImage"
+                        >
+                        <span v-if="honor.fcApLevel" class="rank-border-honor-fcap-level">{{ honor.fcApLevel }}</span>
+                        <span v-if="honorLevelStars(honor).length > 0" class="rank-border-honor-level-stars" aria-hidden="true">
+                          <img
+                            v-for="star in honorLevelStars(honor)"
+                            :key="star.key"
+                            class="rank-border-honor-level-star"
+                            :src="star.url"
+                            alt=""
+                            loading="lazy"
+                            @error="hideBrokenImage"
+                          >
+                        </span>
+                      </span>
+                      <span v-else-if="honor.type === 'bonds' && honor.bondsLeftBgUrl && honor.bondsRightBgUrl" class="rank-border-honor-visual rank-border-honor-visual--bonds">
+                        <img
+                          class="rank-border-honor-layer rank-border-honor-bonds-bg rank-border-honor-bonds-bg--right"
+                          :src="honor.bondsRightBgUrl"
+                          :alt="honor.label"
+                          loading="lazy"
+                          @error="hideBrokenImage"
+                        >
+                        <img
+                          class="rank-border-honor-layer rank-border-honor-bonds-bg rank-border-honor-bonds-bg--left"
+                          :src="honor.bondsLeftBgUrl"
+                          alt=""
+                          loading="lazy"
+                          @error="hideBrokenImage"
+                        >
+                        <img
+                          v-if="honor.bondsLeftIconUrl"
+                          class="rank-border-honor-layer rank-border-honor-bonds-icon rank-border-honor-bonds-icon--left"
+                          :src="honor.bondsLeftIconUrl"
+                          alt=""
+                          loading="lazy"
+                          @error="hideBrokenImage"
+                        >
+                        <img
+                          v-if="honor.bondsRightIconUrl"
+                          class="rank-border-honor-layer rank-border-honor-bonds-icon rank-border-honor-bonds-icon--right"
+                          :src="honor.bondsRightIconUrl"
+                          alt=""
+                          loading="lazy"
+                          @error="hideBrokenImage"
+                        >
+                        <img
+                          v-if="honor.bondsMaskUrl"
+                          class="rank-border-honor-layer rank-border-honor-bonds-mask-layer"
+                          :src="honor.bondsMaskUrl"
+                          alt=""
+                          loading="lazy"
+                          @error="hideBrokenImage"
+                        >
+                        <img
+                          v-if="honor.frameUrl"
+                          :class="[
+                            'rank-border-honor-layer rank-border-honor-frame-layer',
+                            `rank-border-honor-frame-layer--${honor.framePlacement}`,
+                          ]"
+                          :src="honor.frameUrl"
+                          alt=""
+                          loading="lazy"
+                          @error="hideBrokenImage"
+                        >
+                        <span v-if="honorLevelStars(honor).length > 0" class="rank-border-honor-level-stars" aria-hidden="true">
+                          <img
+                            v-for="star in honorLevelStars(honor)"
+                            :key="star.key"
+                            class="rank-border-honor-level-star"
+                            :src="star.url"
+                            alt=""
+                            loading="lazy"
+                            @error="hideBrokenImage"
+                          >
+                        </span>
                       </span>
                       <span v-else class="rank-border-honor-fallback">{{ honor.label }}</span>
                     </span>
@@ -5018,6 +5373,13 @@ function traceUpdateRecords(
   width: 100%;
   height: 100%;
   aspect-ratio: 9 / 4;
+  overflow: hidden;
+  border-radius: 999px;
+  contain: paint;
+}
+
+.rank-border-honor-visual--bonds {
+  background: color-mix(in oklab, var(--muted) 64%, transparent);
 }
 
 .rank-border-honor-layer {
@@ -5039,7 +5401,7 @@ function traceUpdateRecords(
 
 .rank-border-honor-rank-layer--event,
 .rank-border-honor-rank-layer--rank_match {
-  inset: auto 0 0 18.8889%;
+  inset: auto auto 0 18.8889%;
   width: 66.6667%;
   height: 47.5%;
 }
@@ -5052,6 +5414,86 @@ function traceUpdateRecords(
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.rank-border-honor-scroll-layer {
+  inset: 3.75% auto auto 20.5556%;
+  z-index: 3;
+  width: 58.8889%;
+  height: 42.5%;
+}
+
+.rank-border-honor-fcap-level {
+  position: absolute;
+  inset: 57.5% auto auto 20.5556%;
+  z-index: 4;
+  width: 48.3333%;
+  color: #fff;
+  font-size: 22.5%;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  text-shadow:
+    0 1px 2px rgb(33 35 64 / 0.75),
+    0 0 2px rgb(33 35 64 / 0.6);
+}
+
+.rank-border-honor-level-stars {
+  position: absolute;
+  inset: auto auto 3.75% 27.7778%;
+  z-index: 4;
+  display: flex;
+  width: 44.4444%;
+  height: 20%;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.rank-border-honor-level-star {
+  display: block;
+  width: 20%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.rank-border-honor-bonds-bg {
+  z-index: 0;
+  object-fit: fill;
+}
+
+.rank-border-honor-bonds-bg--left {
+  clip-path: inset(0 48% 0 0);
+}
+
+.rank-border-honor-bonds-bg--right {
+  clip-path: inset(0 0 0 48%);
+}
+
+.rank-border-honor-bonds-icon {
+  top: 12%;
+  z-index: 1;
+  width: 55%;
+  height: 88%;
+  object-fit: contain;
+}
+
+.rank-border-honor-bonds-icon--left {
+  left: -4%;
+  clip-path: inset(0 8% 0 0);
+}
+
+.rank-border-honor-bonds-icon--right {
+  right: -4%;
+  left: auto;
+  clip-path: inset(0 0 0 8%);
+}
+
+.rank-border-honor-bonds-mask-layer {
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .rank-border-honor-frame-layer--low {
@@ -5101,20 +5543,19 @@ function traceUpdateRecords(
 }
 
 :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
-  bottom: auto;
-  left: 50%;
-  top: 50%;
+  inset: 0;
   display: grid;
   width: min(82rem, calc(100vw - 2rem));
   max-width: none;
   height: min(50rem, calc(100svh - 2rem));
   max-height: calc(100svh - 2rem);
+  margin: auto;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 0.75rem;
   overflow: hidden;
   padding: 1rem;
   translate: none;
-  transform: translate(-50%, -50%);
+  transform: none;
 }
 
 .rank-border-detail-dialog__header {
@@ -5947,12 +6388,12 @@ function traceUpdateRecords(
 
 @media (min-width: 768px) and (max-width: 900px) {
   :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
-    left: 0.5rem;
-    top: 0.5rem;
+    inset: 0.5rem;
     width: calc(100vw - 1rem);
     max-width: calc(100vw - 1rem);
     height: calc(100svh - 1rem);
     max-height: calc(100svh - 1rem);
+    margin: auto;
     transform: none;
   }
 
@@ -6126,13 +6567,12 @@ function traceUpdateRecords(
   }
 
   :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
-    bottom: 0;
-    left: 0.375rem;
-    top: auto;
+    inset: auto 0.375rem 0;
     width: calc(100vw - 0.75rem);
     max-width: calc(100vw - 0.75rem);
     height: min(92svh, calc(100svh - 0.75rem));
     max-height: min(92svh, calc(100svh - 0.75rem));
+    margin: 0;
     display: block;
     gap: 0.5rem;
     overflow-y: auto;
