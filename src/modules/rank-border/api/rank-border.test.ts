@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test"
-import { resolveRankBorderTrackerWebSocketUrl } from "./rank-border"
+import {
+  resolveRankBorderTrackerWebSocketTicketUrl,
+  resolveRankBorderTrackerWebSocketUrl,
+} from "./rank-border"
 
 describe("rank border tracker api", () => {
   it("resolves relative tracker endpoints to same-origin websocket urls", () => {
@@ -8,6 +11,15 @@ describe("rank border tracker api", () => {
     )
     expect(resolveRankBorderTrackerWebSocketUrl("event-tracker", "http://127.0.0.1:5173/rank-border")).toBe(
       "ws://127.0.0.1:5173/event-tracker/ws",
+    )
+  })
+
+  it("resolves websocket ticket endpoints beside websocket endpoints", () => {
+    expect(resolveRankBorderTrackerWebSocketTicketUrl("/event-tracker", "https://toolbox.example/rank-border")).toBe(
+      "https://toolbox.example/event-tracker/ws-ticket",
+    )
+    expect(resolveRankBorderTrackerWebSocketTicketUrl("wss://tracker.example/base/ws", "https://toolbox.example")).toBe(
+      "https://tracker.example/base/ws-ticket",
     )
   })
 

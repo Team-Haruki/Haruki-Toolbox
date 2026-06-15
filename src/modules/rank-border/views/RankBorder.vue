@@ -240,6 +240,13 @@ type RankBorderHonorView = {
   level: number | null
 }
 
+type RankBorderHonorLevelStar = {
+  key: string
+  url: string
+  slot: number
+  layer: number
+}
+
 type PlayerDetailSource = "rank" | "user"
 
 type PlayerDetailState = {
@@ -449,6 +456,7 @@ const detailScope = computed<RankBorderTrackerScope>(() => ({
   worldBloomCharacterId: selectedWorldBloomCharacterIdNumber.value || null,
   cacheBust: true,
   playbackAt: playbackAt.value,
+  useWebSocket: canUseRealtimeAutoRefresh.value,
 }))
 const shouldRenderProfileAssets = computed(() => !hideProfileAssets.value)
 
@@ -579,6 +587,12 @@ const intervalOptions = computed(() => [
 const scopedDetailTrace = computed(() =>
   selectedHeatmapWindow.value
     ? traceRecordsForWindow(detailTrace.value, selectedHeatmapWindow.value.start, selectedHeatmapWindow.value.end, true)
+    : detailTrace.value,
+)
+
+const chartDetailTrace = computed(() =>
+  selectedHeatmapWindow.value
+    ? traceRecordsForWindow(detailTrace.value, selectedHeatmapWindow.value.start, selectedHeatmapWindow.value.end, false)
     : detailTrace.value,
 )
 
@@ -741,14 +755,16 @@ const hasDetailHeatmap = computed(() => detailHeatmapDays.value.length > 0)
 
 const detailUpdateRecords = computed<RankBorderUpdateRecord[]>(() =>
   traceUpdateRecords(
-    scopedDetailTrace.value,
+    selectedHeatmapWindow.value
+      ? detailTrace.value
+      : scopedDetailTrace.value,
     selectedHeatmapWindow.value ? Number.POSITIVE_INFINITY : DETAIL_UPDATE_RECORD_LIMIT,
     selectedHeatmapWindow.value,
   ),
 )
 
 const detailCharts = computed<RankBorderDetailCharts>(() => {
-  const records = scopedDetailTrace.value
+  const records = chartDetailTrace.value
   const timeDomain = selectedHeatmapWindow.value
     ? { start: selectedHeatmapWindow.value.start, end: selectedHeatmapWindow.value.end }
     : resolveDetailChartTimeDomain(records)
@@ -1094,6 +1110,7 @@ async function refreshData(cacheBust = true) {
       rank: null,
       cacheBust,
       playbackAt: playbackAt.value,
+      useWebSocket: canUseRealtimeAutoRefresh.value,
     })
     markChangedLines(previousLines)
     markChangedGrowths(previousGrowths)
@@ -1605,7 +1622,10 @@ async function loadDetailTrace(value: DetailState) {
     return
   }
 
-  detailTraceLoading.value = true
+  const shouldShowLoading = detailTrace.value.length === 0
+  if (shouldShowLoading) {
+    detailTraceLoading.value = true
+  }
   try {
     const records = await fetchDetailTrace(value)
     if (detail.value?.query === value.query && detail.value.source === value.source) {
@@ -1613,7 +1633,9 @@ async function loadDetailTrace(value: DetailState) {
       cacheTrace(value.result.rank, records)
     }
   } finally {
-    detailTraceLoading.value = false
+    if (shouldShowLoading) {
+      detailTraceLoading.value = false
+    }
   }
 }
 
@@ -2819,6 +2841,7 @@ function honorUsesRankLayer(groupType: string, assetBundleName: string) {
   return groupType === "event"
     || groupType === "wl_event"
     || groupType === "rank_match"
+    || groupType === "sekai_echo"
     || assetBundleName.includes("honor_top_")
 }
 
@@ -2827,7 +2850,7 @@ function honorUsesScrollLayer(groupType: string) {
 }
 
 function honorUsesLevelIconLayer(groupType: string) {
-  return groupType === "character" || groupType === "achievement"
+  return groupType === "character" || groupType === "achievement" || groupType.startsWith("fc_ap")
 }
 
 function resolveHonorBaseUrl(groupType: string, assetBundleName: string, mode: "main" | "sub") {
@@ -3020,10 +3043,28 @@ function honorLevelLabel(honor: RankBorderHonorView) {
 function honorLevelStars(honor: RankBorderHonorView) {
   const level = Math.max(0, honor.level ?? 0)
   const normalizedLevel = level > 10 ? level - 10 : level
-  return Array.from({ length: Math.min(10, normalizedLevel) }, (_, index) => ({
-    key: `${honor.key}:lv:${index}`,
-    url: index < 5 ? honor.levelIconUrl : honor.level6IconUrl,
-  })).filter((item): item is { key: string, url: string } => Boolean(item.url))
+  const stars: RankBorderHonorLevelStar[] = []
+  if (honor.levelIconUrl) {
+    for (let index = 0; index < Math.min(normalizedLevel, 5); index += 1) {
+      stars.push({
+        key: `${honor.key}:lv:${index}`,
+        url: honor.levelIconUrl,
+        slot: index,
+        layer: 1,
+      })
+    }
+  }
+  if (honor.level6IconUrl) {
+    for (let index = 5; index < normalizedLevel; index += 1) {
+      stars.push({
+        key: `${honor.key}:lv6:${index}`,
+        url: honor.level6IconUrl,
+        slot: index - 5,
+        layer: 2,
+      })
+    }
+  }
+  return stars
 }
 
 function hideBrokenImage(event: Event) {
@@ -3680,6 +3721,9 @@ function traceUpdateRecords(
     }
 
     const previous = records[index - 1]
+    if (window && previous.timestamp >= window.end) {
+      continue
+    }
     const delta = record.score - previous.score
     if (delta <= 0) {
       continue
@@ -4096,6 +4140,7 @@ function traceUpdateRecords(
                                   v-for="star in honorLevelStars(honor)"
                                   :key="star.key"
                                   class="rank-border-honor-level-star"
+                                  :style="{ '--rank-border-honor-star-slot': star.slot, '--rank-border-honor-star-layer': star.layer }"
                                   :src="star.url"
                                   alt=""
                                   loading="lazy"
@@ -4158,6 +4203,7 @@ function traceUpdateRecords(
                                   v-for="star in honorLevelStars(honor)"
                                   :key="star.key"
                                   class="rank-border-honor-level-star"
+                                  :style="{ '--rank-border-honor-star-slot': star.slot, '--rank-border-honor-star-layer': star.layer }"
                                   :src="star.url"
                                   alt=""
                                   loading="lazy"
@@ -4668,6 +4714,7 @@ function traceUpdateRecords(
                             v-for="star in honorLevelStars(honor)"
                             :key="star.key"
                             class="rank-border-honor-level-star"
+                            :style="{ '--rank-border-honor-star-slot': star.slot, '--rank-border-honor-star-layer': star.layer }"
                             :src="star.url"
                             alt=""
                             loading="lazy"
@@ -4730,6 +4777,7 @@ function traceUpdateRecords(
                             v-for="star in honorLevelStars(honor)"
                             :key="star.key"
                             class="rank-border-honor-level-star"
+                            :style="{ '--rank-border-honor-star-slot': star.slot, '--rank-border-honor-star-layer': star.layer }"
                             :src="star.url"
                             alt=""
                             loading="lazy"
@@ -5127,13 +5175,18 @@ function traceUpdateRecords(
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
-  scrollbar-width: thin;
+  scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+}
+
+.rank-border-player-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .rank-border-player-track {
   display: grid;
-  min-width: max-content;
+  width: 100%;
+  min-width: 0;
   align-items: center;
   gap: 0.75rem;
   padding-block: 0.125rem;
@@ -5141,7 +5194,7 @@ function traceUpdateRecords(
 }
 
 .rank-border-player-track--assets {
-  grid-template-columns: auto minmax(13rem, max-content);
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
 .rank-border-player-track--plain {
@@ -5342,7 +5395,14 @@ function traceUpdateRecords(
 .rank-border-honor-strip--row {
   flex-wrap: nowrap;
   gap: 0.25rem 0.375rem;
-  overflow: visible;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.rank-border-honor-strip--row::-webkit-scrollbar {
+  display: none;
 }
 
 .rank-border-honor-strip--detail {
@@ -5374,12 +5434,18 @@ function traceUpdateRecords(
   height: 100%;
   aspect-ratio: 9 / 4;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: 0;
   contain: paint;
 }
 
 .rank-border-honor-visual--bonds {
   background: color-mix(in oklab, var(--muted) 64%, transparent);
+  -webkit-mask-image: url("/rank-border/honor/mask_degree_sub.png");
+  mask-image: url("/rank-border/honor/mask_degree_sub.png");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
 }
 
 .rank-border-honor-layer {
@@ -5401,7 +5467,7 @@ function traceUpdateRecords(
 
 .rank-border-honor-rank-layer--event,
 .rank-border-honor-rank-layer--rank_match {
-  inset: auto auto 0 18.8889%;
+  inset: 52.5% auto auto 18.8889%;
   width: 66.6667%;
   height: 47.5%;
 }
@@ -5419,7 +5485,7 @@ function traceUpdateRecords(
 .rank-border-honor-scroll-layer {
   inset: 3.75% auto auto 20.5556%;
   z-index: 3;
-  width: 58.8889%;
+  width: 55.5556%;
   height: 42.5%;
 }
 
@@ -5427,9 +5493,9 @@ function traceUpdateRecords(
   position: absolute;
   inset: 57.5% auto auto 20.5556%;
   z-index: 4;
-  width: 48.3333%;
+  width: 55.5556%;
   color: #fff;
-  font-size: 22.5%;
+  font-size: 25%;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
   line-height: 1;
@@ -5441,17 +5507,18 @@ function traceUpdateRecords(
 
 .rank-border-honor-level-stars {
   position: absolute;
-  inset: auto auto 3.75% 27.7778%;
+  inset: 76.25% auto auto 27.7778%;
   z-index: 4;
-  display: flex;
+  display: block;
   width: 44.4444%;
   height: 20%;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
 }
 
 .rank-border-honor-level-star {
+  position: absolute;
+  top: 0;
+  left: calc(var(--rank-border-honor-star-slot, 0) * 20%);
+  z-index: var(--rank-border-honor-star-layer, 1);
   display: block;
   width: 20%;
   height: 100%;
@@ -5464,30 +5531,33 @@ function traceUpdateRecords(
 }
 
 .rank-border-honor-bonds-bg--left {
-  clip-path: inset(0 48% 0 0);
+  clip-path: inset(0 48.3333% 0 0);
 }
 
 .rank-border-honor-bonds-bg--right {
-  clip-path: inset(0 0 0 48%);
+  clip-path: inset(0 0 0 50%);
 }
 
 .rank-border-honor-bonds-icon {
-  top: 12%;
+  top: auto;
+  bottom: 0;
   z-index: 1;
-  width: 55%;
-  height: 88%;
+  width: 53.3333%;
+  height: 80%;
   object-fit: contain;
 }
 
 .rank-border-honor-bonds-icon--left {
-  left: -4%;
-  clip-path: inset(0 8% 0 0);
+  left: 16.6667%;
+  transform: translateX(-50%);
+  clip-path: none;
 }
 
 .rank-border-honor-bonds-icon--right {
-  right: -4%;
-  left: auto;
-  clip-path: inset(0 0 0 8%);
+  right: auto;
+  left: 83.3333%;
+  transform: translateX(-50%);
+  clip-path: none;
 }
 
 .rank-border-honor-bonds-mask-layer {
@@ -5543,19 +5613,21 @@ function traceUpdateRecords(
 }
 
 :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  inset-inline-start: 50%;
   display: grid;
   width: min(82rem, calc(100vw - 2rem));
   max-width: none;
   height: min(50rem, calc(100svh - 2rem));
   max-height: calc(100svh - 2rem);
-  margin: auto;
+  margin: 0;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 0.75rem;
   overflow: hidden;
   padding: 1rem;
   translate: none;
-  transform: none;
+  transform: translate(-50%, -50%);
 }
 
 .rank-border-detail-dialog__header {
@@ -5672,19 +5744,25 @@ function traceUpdateRecords(
   display: grid;
   grid-area: heatmap;
   min-width: 0;
-  grid-template-rows: max-content minmax(7.5rem, 1fr);
+  min-height: 0;
+  grid-template-rows: minmax(0, auto) minmax(8rem, 1fr);
   align-content: stretch;
   gap: 0.75rem;
+  overflow: hidden;
 }
 
 .rank-border-heatmap-section {
-  grid-template-rows: auto max-content;
+  display: grid;
+  grid-template-rows: auto minmax(0, auto);
   align-content: start;
+  min-height: 0;
 }
 
 .rank-border-update-section {
+  display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  align-content: start;
+  align-content: stretch;
+  min-height: 0;
 }
 
 .rank-border-mobile-fact {
@@ -6010,10 +6088,11 @@ function traceUpdateRecords(
     calc(var(--rank-border-heatmap-min-cell-size) * 24 + var(--rank-border-heatmap-gap) * 23)
   );
   min-width: 0;
-  min-height: max-content;
+  min-height: 0;
+  max-height: 15.75rem;
   gap: 0.25rem;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: auto;
   overscroll-behavior-x: contain;
   padding-block: 0.0625rem 0.625rem;
   scrollbar-width: thin;
@@ -6155,7 +6234,7 @@ function traceUpdateRecords(
   align-self: stretch;
   height: 100%;
   min-height: 0;
-  max-height: min(18rem, 36svh);
+  max-height: none;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--border);
@@ -6193,6 +6272,7 @@ function traceUpdateRecords(
 
 .rank-border-update-log__rows {
   min-height: 0;
+  padding-bottom: 0.375rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -6388,13 +6468,16 @@ function traceUpdateRecords(
 
 @media (min-width: 768px) and (max-width: 900px) {
   :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
-    inset: 0.5rem;
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    inset-inline-start: 50%;
     width: calc(100vw - 1rem);
     max-width: calc(100vw - 1rem);
     height: calc(100svh - 1rem);
     max-height: calc(100svh - 1rem);
-    margin: auto;
-    transform: none;
+    margin: 0;
+    transform: translate(-50%, -50%);
   }
 
   .rank-border-detail-grid {
@@ -6420,7 +6503,8 @@ function traceUpdateRecords(
   }
 
   .rank-border-detail-history {
-    grid-template-rows: max-content auto;
+    grid-template-rows: auto minmax(10rem, auto);
+    overflow: visible;
   }
 
   .rank-border-detail-profile__body--assets {
@@ -6531,7 +6615,7 @@ function traceUpdateRecords(
   }
 
   .rank-border-player-track--assets {
-    grid-template-columns: auto minmax(8.75rem, max-content);
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .rank-border-player-name {
@@ -6616,7 +6700,8 @@ function traceUpdateRecords(
   }
 
   .rank-border-detail-history {
-    grid-template-rows: max-content auto;
+    grid-template-rows: auto auto;
+    overflow: visible;
   }
 
   .rank-border-detail-profile__body {
@@ -6726,10 +6811,11 @@ function traceUpdateRecords(
     --rank-border-heatmap-min-cell-size: 1.02rem;
     --rank-border-heatmap-cell-size: clamp(1.02rem, 4.4vw, 1.24rem);
     --rank-border-heatmap-gap: 0.125rem;
+    max-height: none;
   }
 
   .rank-border-update-log {
-    height: auto;
+    height: 12.5rem;
     max-height: 12.5rem;
     overflow: hidden;
   }
@@ -6754,7 +6840,7 @@ function traceUpdateRecords(
   }
 
   .rank-border-player-track--assets {
-    grid-template-columns: auto minmax(7.5rem, max-content);
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .rank-border-player-name {

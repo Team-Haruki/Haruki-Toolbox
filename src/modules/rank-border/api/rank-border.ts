@@ -29,6 +29,7 @@ export type RankBorderTrackerScope = {
   worldBloomCharacterId?: number | null
   cacheBust?: boolean
   playbackAt?: number | null
+  useWebSocket?: boolean
 }
 
 export type FetchRankBorderUserParams = RankBorderTrackerScope & {
@@ -121,6 +122,11 @@ type TrackerWsError = Error & {
   trackerWsProtocolError?: boolean
 }
 
+type TrackerWsTicketResponse = {
+  ticket?: unknown
+  expiresIn?: unknown
+}
+
 type TrackerWsEventHandler = (event: RankBorderRealtimeEvent) => void
 
 const trackerWsClients = new Map<string, TrackerWsClient>()
@@ -128,14 +134,16 @@ const trackerWsDisabledUntil = new Map<string, number>()
 
 class TrackerWsClient {
   private readonly url: string
+  private readonly ticketUrl: string
   private socket: WebSocket | null = null
   private opening: Promise<void> | null = null
   private nextId = 1
   private readonly pending = new Map<string, TrackerWsPendingRequest>()
   private readonly eventHandlers = new Set<TrackerWsEventHandler>()
 
-  constructor(url: string) {
+  constructor(url: string, ticketUrl: string) {
     this.url = url
+    this.ticketUrl = ticketUrl
   }
 
   async request(path: string): Promise<unknown> {
@@ -231,7 +239,7 @@ class TrackerWsClient {
     }
   }
 
-  private ensureOpen(): Promise<void> {
+  private async ensureOpen(): Promise<void> {
     if (typeof WebSocket === "undefined") {
       return Promise.reject(new Error("Tracker WebSocket is unavailable"))
     }
@@ -247,7 +255,8 @@ class TrackerWsClient {
       return this.opening
     }
 
-    const socket = new WebSocket(this.url)
+    const socketUrl = await resolveTicketedWebSocketUrl(this.url, this.ticketUrl)
+    const socket = new WebSocket(socketUrl)
     this.socket = socket
 
     const opening = new Promise<void>((resolve, reject) => {
@@ -268,6 +277,8 @@ class TrackerWsClient {
         }
         settled = true
         cleanupOpenListeners()
+        socket.removeEventListener("close", handleClose)
+        socket.removeEventListener("message", handleMessage)
         if (this.socket === socket) {
           this.socket = null
         }
@@ -450,7 +461,7 @@ export async function fetchRankBorderLines(scope: RankBorderTrackerScope): Promi
   const path = scope.mode === "world_bloom"
     ? buildWorldBloomPath(scope, "world-bloom-ranking-lines", `character/${scope.worldBloomCharacterId}`)
     : buildNormalPath(scope, "ranking-lines")
-  return normalizeRankBorderLines(await fetchTrackerJson(scope.endpoint, path, scope.cacheBust, scope.playbackAt))
+  return normalizeRankBorderLines(await fetchTrackerJson(scope.endpoint, path, scope.cacheBust, scope.playbackAt, scope.useWebSocket))
 }
 
 export async function fetchRankBorderGrowths(params: FetchRankBorderGrowthParams): Promise<RankBorderGrowth[]> {
@@ -458,7 +469,7 @@ export async function fetchRankBorderGrowths(params: FetchRankBorderGrowthParams
   const path = params.mode === "world_bloom"
     ? buildWorldBloomPath(params, "world-bloom-ranking-score-growth", `character/${params.worldBloomCharacterId}/interval/${interval}`)
     : buildNormalPath(params, `ranking-score-growth/interval/${interval}`)
-  return normalizeRankBorderGrowths(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt))
+  return normalizeRankBorderGrowths(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
 export async function fetchRankBorderLatestByUser(params: FetchRankBorderUserParams): Promise<RankBorderLatest | null> {
@@ -466,7 +477,7 @@ export async function fetchRankBorderLatestByUser(params: FetchRankBorderUserPar
   const path = params.mode === "world_bloom"
     ? buildWorldBloomPath(params, "latest-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
     : buildNormalPath(params, `latest-ranking/user/${userId}`)
-  return normalizeRankBorderLatest(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt))
+  return normalizeRankBorderLatest(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
 export async function fetchRankBorderLatestByRank(params: FetchRankBorderRankParams): Promise<RankBorderLatest | null> {
@@ -474,7 +485,7 @@ export async function fetchRankBorderLatestByRank(params: FetchRankBorderRankPar
   const path = params.mode === "world_bloom"
     ? buildWorldBloomPath(params, "latest-world-bloom-ranking", `character/${params.worldBloomCharacterId}/rank/${rank}`)
     : buildNormalPath(params, `latest-ranking/rank/${rank}`)
-  return normalizeRankBorderLatest(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt))
+  return normalizeRankBorderLatest(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
 export async function fetchRankBorderWebRankings(params: FetchRankBorderWebRankingsParams): Promise<RankBorderWebRankingPage> {
@@ -513,6 +524,7 @@ export async function fetchRankBorderWebRankings(params: FetchRankBorderWebRanki
     `${buildNormalPath(params, suffix)}${query ? `?${query}` : ""}`,
     params.cacheBust,
     params.playbackAt,
+    params.useWebSocket,
   ))
 }
 
@@ -530,6 +542,7 @@ export async function fetchRankBorderWebRankingHistoryByRank(params: FetchRankBo
     `${buildNormalPath(params, suffix)}?${search}`,
     params.cacheBust,
     params.playbackAt,
+    params.useWebSocket,
   )).items
 }
 
@@ -538,7 +551,7 @@ export async function fetchRankBorderTraceByRank(params: FetchRankBorderRankPara
   const path = params.mode === "world_bloom"
     ? buildWorldBloomPath(params, "trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/rank/${rank}`)
     : buildNormalPath(params, `trace-ranking/rank/${rank}`)
-  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt))
+  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
 export async function fetchRankBorderWebTraceByRank(params: FetchRankBorderRankParams): Promise<RankBorderTracePoint[]> {
@@ -547,7 +560,7 @@ export async function fetchRankBorderWebTraceByRank(params: FetchRankBorderRankP
     ? buildNormalPath(params, `web/trace-world-bloom-ranking/character/${normalizePositiveInteger(params.worldBloomCharacterId)}/rank/${rank}`)
     : buildNormalPath(params, `web/trace-ranking/rank/${rank}`)
   const webRecords = normalizeRankBorderTrace(
-    await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt).catch(() => null),
+    await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket).catch(() => null),
   )
   if (webRecords.length > 0) {
     return webRecords
@@ -576,7 +589,7 @@ export async function fetchRankBorderBatchTraceByRanks(params: FetchRankBorderRa
   const path = params.mode === "world_bloom"
     ? `${buildWorldBloomPath(params, "trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/ranks`)}?${query}`
     : `${buildNormalPath(params, "trace-ranking/ranks")}?${query}`
-  return normalizeRankBorderBatchTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt))
+  return normalizeRankBorderBatchTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
 export async function fetchRankBorderTraceByUser(params: FetchRankBorderUserParams): Promise<RankBorderTracePoint[]> {
@@ -584,7 +597,7 @@ export async function fetchRankBorderTraceByUser(params: FetchRankBorderUserPara
   const path = params.mode === "world_bloom"
     ? buildWorldBloomPath(params, "trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
     : buildNormalPath(params, `trace-ranking/user/${userId}`)
-  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt))
+  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
 export async function fetchRankBorderWebTraceByUser(params: FetchRankBorderUserParams): Promise<RankBorderTracePoint[]> {
@@ -594,7 +607,7 @@ export async function fetchRankBorderWebTraceByUser(params: FetchRankBorderUserP
     : buildNormalPath(params, `web/trace-ranking/user/${userId}`)
   if (params.full) {
     const webRecords = normalizeRankBorderTrace(
-      await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt).catch(() => null),
+      await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket).catch(() => null),
     )
     if (webRecords.length > 0) {
       return webRecords
@@ -605,13 +618,13 @@ export async function fetchRankBorderWebTraceByUser(params: FetchRankBorderUserP
     ? buildWorldBloomPath(params, "trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
     : buildNormalPath(params, `trace-ranking/user/${userId}`)
   const directRecords = normalizeRankBorderTrace(
-    await fetchTrackerJson(params.endpoint, appendTraceQuery(directPath, params), params.cacheBust, params.playbackAt).catch(() => null),
+    await fetchTrackerJson(params.endpoint, appendTraceQuery(directPath, params), params.cacheBust, params.playbackAt, params.useWebSocket).catch(() => null),
   )
   if (directRecords.length > 0) {
     return directRecords
   }
 
-  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt))
+  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
 export async function fetchRankBorderUserProfiles(params: FetchRankBorderUserSearchParams): Promise<RankBorderUserProfile[]> {
@@ -624,7 +637,7 @@ export async function fetchRankBorderUserProfiles(params: FetchRankBorderUserSea
   search.set(isPublicUniqueId(query) ? "uniqueId" : "name", query)
   search.set("limit", String(normalizeSearchLimit(params.limit)))
   return normalizeRankBorderUserProfiles(
-    await fetchTrackerJson(params.endpoint, `${buildNormalPath(params, "web/users")}?${search}`, params.cacheBust, params.playbackAt),
+    await fetchTrackerJson(params.endpoint, `${buildNormalPath(params, "web/users")}?${search}`, params.cacheBust, params.playbackAt, params.useWebSocket),
   )
 }
 
@@ -640,6 +653,7 @@ export async function fetchRankBorderPublicUserProfile(params: FetchRankBorderPu
       buildNormalPath(params, `user-data/${formatRankBorderPathSegment(uniqueId)}`),
       params.cacheBust,
       params.playbackAt,
+      params.useWebSocket,
     ).catch(() => null),
   )[0] ?? null
   if (directProfile) {
@@ -650,13 +664,13 @@ export async function fetchRankBorderPublicUserProfile(params: FetchRankBorderPu
   search.set("uniqueId", uniqueId)
   search.set("limit", String(normalizeSearchLimit(params.limit)))
   const users = normalizeRankBorderUserProfiles(
-    await fetchTrackerJson(params.endpoint, `${buildNormalPath(params, "web/users")}?${search}`, params.cacheBust, params.playbackAt),
+    await fetchTrackerJson(params.endpoint, `${buildNormalPath(params, "web/users")}?${search}`, params.cacheBust, params.playbackAt, params.useWebSocket),
   )
   return users.find((user) => user.userId === uniqueId) ?? users[0] ?? null
 }
 
 export async function fetchRankBorderStatus(scope: RankBorderTrackerScope): Promise<RankBorderStatus | null> {
-  return normalizeRankBorderStatus(await fetchTrackerJson(scope.endpoint, buildNormalPath(scope, "status"), scope.cacheBust, scope.playbackAt))
+  return normalizeRankBorderStatus(await fetchTrackerJson(scope.endpoint, buildNormalPath(scope, "status"), scope.cacheBust, scope.playbackAt, scope.useWebSocket))
 }
 
 export async function subscribeRankBorderRealtime(
@@ -669,11 +683,15 @@ export async function subscribeRankBorderRealtime(
   }
 
   const wsUrl = resolveRankBorderTrackerWebSocketUrl(baseUrl)
+  const ticketUrl = resolveRankBorderTrackerWebSocketTicketUrl(baseUrl)
   if (!wsUrl || isTrackerWsTemporarilyDisabled(wsUrl)) {
     throw new Error("Tracker WebSocket endpoint is unavailable")
   }
+  if (!ticketUrl) {
+    throw new Error("Tracker WebSocket ticket endpoint is unavailable")
+  }
 
-  const client = getTrackerWsClient(wsUrl)
+  const client = getTrackerWsClient(wsUrl, ticketUrl)
   try {
     return await client.subscribeRealtime(scope, handler)
   } catch (error) {
@@ -684,7 +702,7 @@ export async function subscribeRankBorderRealtime(
   }
 }
 
-async function fetchTrackerJson(endpoint: string, path: string, cacheBust = false, playbackAt?: number | null): Promise<unknown> {
+async function fetchTrackerJson(endpoint: string, path: string, cacheBust = false, playbackAt?: number | null, useWebSocket = false): Promise<unknown> {
   const baseUrl = normalizeTrackerEndpoint(endpoint)
   if (!baseUrl) {
     throw new Error("Tracker endpoint is empty")
@@ -692,10 +710,11 @@ async function fetchTrackerJson(endpoint: string, path: string, cacheBust = fals
 
   const requestPath = appendPlaybackQuery(path, playbackAt)
   const wsUrl = resolveRankBorderTrackerWebSocketUrl(baseUrl)
+  const ticketUrl = resolveRankBorderTrackerWebSocketTicketUrl(baseUrl)
   let wsError: unknown
-  if (wsUrl && !isTrackerWsTemporarilyDisabled(wsUrl)) {
+  if (useWebSocket && wsUrl && ticketUrl && !isTrackerWsTemporarilyDisabled(wsUrl)) {
     try {
-      return await requestTrackerJsonViaWebSocket(wsUrl, requestPath)
+      return await requestTrackerJsonViaWebSocket(wsUrl, ticketUrl, requestPath)
     } catch (error) {
       wsError = error
       if (isTrackerWsProtocolError(error) || !shouldAllowTrackerRestFallback(baseUrl)) {
@@ -726,15 +745,16 @@ async function fetchTrackerJsonViaRest(baseUrl: string, path: string, cacheBust:
   return response.json()
 }
 
-async function requestTrackerJsonViaWebSocket(wsUrl: string, path: string): Promise<unknown> {
-  return getTrackerWsClient(wsUrl).request(path)
+async function requestTrackerJsonViaWebSocket(wsUrl: string, ticketUrl: string, path: string): Promise<unknown> {
+  return getTrackerWsClient(wsUrl, ticketUrl).request(path)
 }
 
-function getTrackerWsClient(wsUrl: string): TrackerWsClient {
-  let client = trackerWsClients.get(wsUrl)
+function getTrackerWsClient(wsUrl: string, ticketUrl: string): TrackerWsClient {
+  const key = `${wsUrl}\n${ticketUrl}`
+  let client = trackerWsClients.get(key)
   if (!client) {
-    client = new TrackerWsClient(wsUrl)
-    trackerWsClients.set(wsUrl, client)
+    client = new TrackerWsClient(wsUrl, ticketUrl)
+    trackerWsClients.set(key, client)
   }
 
   return client
@@ -761,6 +781,55 @@ export function resolveRankBorderTrackerWebSocketUrl(endpoint: string, origin = 
   }
 }
 
+export function resolveRankBorderTrackerWebSocketTicketUrl(endpoint: string, origin = getTrackerOrigin()): string {
+  const normalized = normalizeTrackerEndpoint(endpoint)
+  if (!normalized) {
+    return ""
+  }
+
+  try {
+    const url = /^wss?:\/\//i.test(normalized)
+      ? new URL(normalized)
+      : /^https?:\/\//i.test(normalized)
+        ? new URL(normalized)
+        : new URL(normalized.startsWith("/") ? normalized : `/${normalized}`, origin)
+    url.protocol = url.protocol === "wss:" ? "https:" : url.protocol === "ws:" ? "http:" : url.protocol
+    url.pathname = appendWebSocketTicketPath(stripWebSocketPath(url.pathname))
+    url.hash = ""
+    return url.toString()
+  } catch {
+    return ""
+  }
+}
+
+async function resolveTicketedWebSocketUrl(wsUrl: string, ticketUrl: string): Promise<string> {
+  const ticket = await fetchTrackerWsTicket(ticketUrl)
+  return appendWebSocketTicket(wsUrl, ticket)
+}
+
+async function fetchTrackerWsTicket(ticketUrl: string): Promise<string> {
+  const response = await fetch(ticketUrl, {
+    credentials: "include",
+    cache: "no-store",
+  })
+  if (!response.ok) {
+    const message = await readErrorMessage(response)
+    throw new Error(message || `Tracker WebSocket ticket request failed: HTTP ${response.status}`)
+  }
+
+  const data = await response.json() as TrackerWsTicketResponse
+  if (typeof data.ticket !== "string" || data.ticket.trim() === "") {
+    throw new Error("Tracker WebSocket ticket response is invalid")
+  }
+  return data.ticket
+}
+
+function appendWebSocketTicket(wsUrl: string, ticket: string): string {
+  const url = new URL(wsUrl)
+  url.searchParams.set("ticket", ticket)
+  return url.toString()
+}
+
 function resolveRankBorderTrackerRestEndpoint(endpoint: string): string {
   const normalized = normalizeTrackerEndpoint(endpoint)
   if (!/^wss?:\/\//i.test(normalized)) {
@@ -781,6 +850,15 @@ function appendWebSocketPath(pathname: string): string {
   }
 
   return `${trimmed}/ws`
+}
+
+function appendWebSocketTicketPath(pathname: string): string {
+  const trimmed = pathname.replace(/\/+$/, "")
+  if (trimmed.toLowerCase().endsWith("/ws-ticket")) {
+    return trimmed || "/ws-ticket"
+  }
+
+  return `${trimmed}/ws-ticket`
 }
 
 function stripWebSocketPath(pathname: string): string {

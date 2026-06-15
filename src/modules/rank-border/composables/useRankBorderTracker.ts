@@ -51,6 +51,7 @@ export function useRankBorderTracker() {
         worldBloomCharacterId: input.worldBloomCharacterId,
         cacheBust: input.cacheBust,
         playbackAt: input.playbackAt,
+        useWebSocket: input.useWebSocket,
       }
       const [nextLines, nextGrowths, nextStatus] = await Promise.all([
         fetchRankBorderLines(baseScope),
