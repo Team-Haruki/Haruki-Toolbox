@@ -51,7 +51,7 @@ describe("rank border tracker api", () => {
       static CLOSED = 3
       readyState = MockWebSocket.CONNECTING
 
-      constructor(_url: string) {
+      constructor() {
         super()
         setTimeout(() => {
           this.readyState = MockWebSocket.OPEN
