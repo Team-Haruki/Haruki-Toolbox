@@ -34,6 +34,7 @@ export type RankBorderTrackerScope = {
 
 export type FetchRankBorderUserParams = RankBorderTrackerScope & {
   userId: string | number
+  ownerId?: string | null
   full?: boolean
   limit?: number | null
 }
@@ -487,6 +488,14 @@ export async function fetchRankBorderLatestByUser(params: FetchRankBorderUserPar
   return normalizeRankBorderLatest(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
+export async function fetchRankBorderPrivateLatestByUser(params: FetchRankBorderUserParams): Promise<RankBorderLatest | null> {
+  const userId = formatRankBorderPathSegment(params.userId)
+  const path = params.mode === "world_bloom"
+    ? buildWorldBloomPath(params, "private/latest-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
+    : buildNormalPath(params, `private/latest-ranking/user/${userId}`)
+  return normalizeRankBorderLatest(await fetchTrackerJson(params.endpoint, appendPrivateLookupQuery(path, params), params.cacheBust, params.playbackAt, true))
+}
+
 export async function fetchRankBorderLatestByRank(params: FetchRankBorderRankParams): Promise<RankBorderLatest | null> {
   const rank = normalizePositiveInteger(params.rank)
   const path = params.mode === "world_bloom"
@@ -605,6 +614,14 @@ export async function fetchRankBorderTraceByUser(params: FetchRankBorderUserPara
     ? buildWorldBloomPath(params, "trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
     : buildNormalPath(params, `trace-ranking/user/${userId}`)
   return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket))
+}
+
+export async function fetchRankBorderPrivateTraceByUser(params: FetchRankBorderUserParams): Promise<RankBorderTracePoint[]> {
+  const userId = formatRankBorderPathSegment(params.userId)
+  const path = params.mode === "world_bloom"
+    ? buildWorldBloomPath(params, "private/trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
+    : buildNormalPath(params, `private/trace-ranking/user/${userId}`)
+  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(appendPrivateLookupQuery(path, params), params), params.cacheBust, params.playbackAt, true))
 }
 
 export async function fetchRankBorderWebTraceByUser(params: FetchRankBorderUserParams): Promise<RankBorderTracePoint[]> {
@@ -996,6 +1013,19 @@ function appendTraceQuery(path: string, params: { full?: boolean; limit?: number
     }
   }
 
+  const query = search.toString()
+  return query ? `${basePath}?${query}` : basePath
+}
+
+function appendPrivateLookupQuery(path: string, params: { ownerId?: string | null }): string {
+  const owner = String(params.ownerId ?? "").trim()
+  if (!owner) {
+    return path
+  }
+
+  const search = new URLSearchParams(path.includes("?") ? path.slice(path.indexOf("?") + 1) : "")
+  const basePath = path.split("?")[0]
+  search.set("owner", owner)
   const query = search.toString()
   return query ? `${basePath}?${query}` : basePath
 }

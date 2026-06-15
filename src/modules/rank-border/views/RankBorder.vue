@@ -59,6 +59,8 @@ import {
   fetchRankBorderBatchTraceByRanks,
   fetchRankBorderLatestByRank,
   fetchRankBorderLatestByUser,
+  fetchRankBorderPrivateLatestByUser,
+  fetchRankBorderPrivateTraceByUser,
   fetchRankBorderTraceByRank,
   fetchRankBorderTraceByUser,
   fetchRankBorderWebRankingHistoryByRank,
@@ -223,6 +225,7 @@ type RankBorderHonorView = {
   key: string
   label: string
   type: "normal" | "bonds"
+  groupType: string | null
   baseUrl: string | null
   rankUrl: string | null
   rankPlacement: "event" | "full" | "rank_match"
@@ -302,6 +305,8 @@ const DETAIL_HEATMAP_HOURS_PER_DAY = 24
 const DETAIL_RECENT_POINT_COUNT = 10
 const DETAIL_UPDATE_RECORD_LIMIT = 8
 const DETAIL_CSB_WINDOW_SECONDS = 20 * 60 * 3
+const TOP_100_TRACE_WARMUP_MIN_LIMIT = 400
+const TOP_100_TRACE_WARMUP_MAX_LIMIT = 12_000
 const HEATMAP_MYSEKAI_ROUND_THRESHOLD = 37
 const HEATMAP_ACTIVE_ROUND_BASELINE = 15
 const HEATMAP_ACTIVE_ROUND_SPAN = 15
@@ -330,6 +335,7 @@ const detailDialogOpen = ref(false)
 const selectedHeatmapWindow = ref<RankBorderHeatmapWindow | null>(null)
 const isMobileViewport = ref(resolveIsMobileViewport())
 const mobileExpandedDetail = ref<{ source: "rank" | "line", rank: number } | null>(null)
+const mobileLocateOpen = ref(false)
 const liveRefreshing = ref(false)
 const detailLoading = ref(false)
 const detailError = ref<string | null>(null)
@@ -501,6 +507,11 @@ const quickJumpTargets = computed<RankBorderJumpTarget[]>(() => {
 
 const activeQuickJumpRank = computed(() =>
   visibleRank.value ?? detail.value?.result.rank ?? null,
+)
+const selectedAccountDetail = computed(() =>
+  selectedAccount.value && detail.value?.source === "user" && detail.value.query === selectedAccount.value.userId
+    ? detail.value
+    : null,
 )
 
 const latestTrackerTimestamp = computed(() => {
@@ -892,7 +903,6 @@ watch(
     selectedEventId,
     mode,
     selectedWorldBloomCharacterId,
-    intervalSeconds,
     playbackAt,
     () => userStore.isLoggedIn,
   ],
@@ -903,6 +913,11 @@ watch(
   },
   { immediate: true },
 )
+
+watch(intervalSeconds, () => {
+  refreshTop100GrowthsFromCachedTraces(top100GrowthByRank.value)
+  void refreshData(true)
+})
 
 watch([selectedRegion, selectedEventId, mode, selectedWorldBloomCharacterId], () => {
   playbackAt.value = null
@@ -1059,6 +1074,7 @@ function resetRankBorderData() {
   detailLoading.value = false
   detailError.value = null
   mobileExpandedDetail.value = null
+  mobileLocateOpen.value = false
   top100Details.value = new Map()
   top100GrowthByRank.value = new Map()
   top100TraceByRank.value = new Map()
@@ -1155,7 +1171,8 @@ async function locateSelectedAccount() {
     await nextTick()
   }
 
-  await openUserDetail(account.userId)
+  mobileLocateOpen.value = true
+  await openUserDetail(account.userId, { privateLookup: true })
 }
 
 async function jumpToRank(rank: number) {
@@ -1229,6 +1246,24 @@ function updateVisibleRankFromViewport() {
   const rows = Array.from(document.querySelectorAll<HTMLElement>("[data-rank-border-row]"))
   if (rows.length === 0) {
     visibleRank.value = null
+    return
+  }
+
+  const scrollElement = document.scrollingElement ?? document.documentElement
+  const scrollTop = scrollElement.scrollTop
+  const scrollBottom = scrollTop + window.innerHeight
+  if (scrollTop <= 4) {
+    const firstRank = Number(rows[0]?.dataset.rankBorderRow)
+    if (Number.isFinite(firstRank)) {
+      visibleRank.value = firstRank
+    }
+    return
+  }
+  if (scrollBottom >= scrollElement.scrollHeight - 8) {
+    const lastRank = Number(rows[rows.length - 1]?.dataset.rankBorderRow)
+    if (Number.isFinite(lastRank)) {
+      visibleRank.value = lastRank
+    }
     return
   }
 
@@ -1417,11 +1452,16 @@ async function loadLineDetail(rank: number, silent: boolean, requestToken = deta
   }
 }
 
-async function openUserDetail(userId: string) {
-  await loadUserDetail(userId, false, ++detailRequestToken)
+async function openUserDetail(userId: string, options: { privateLookup?: boolean } = {}) {
+  await loadUserDetail(userId, false, ++detailRequestToken, options)
 }
 
-async function loadUserDetail(userId: string, silent: boolean, requestToken = detailRequestToken) {
+async function loadUserDetail(
+  userId: string,
+  silent: boolean,
+  requestToken = detailRequestToken,
+  options: { privateLookup?: boolean } = {},
+) {
   if (!userId || !canRefresh.value) {
     return
   }
@@ -1432,11 +1472,16 @@ async function loadUserDetail(userId: string, silent: boolean, requestToken = de
   }
   detailError.value = null
   try {
-    const result = await fetchRankBorderLatestByUser({
-      ...detailScope.value,
-      userId,
-    })
+    const result = options.privateLookup
+      ? await fetchPrivateLatestByUser(userId)
+      : await fetchRankBorderLatestByUser({
+          ...detailScope.value,
+          userId,
+        })
     if (!result) {
+      throw new Error(t("rankBorder.result.accountOutOfRange"))
+    }
+    if (!options.privateLookup && shouldRejectMismatchedAccountLookup(userId, result)) {
       throw new Error(t("rankBorder.result.accountOutOfRange"))
     }
 
@@ -1469,6 +1514,18 @@ async function loadUserDetail(userId: string, silent: boolean, requestToken = de
       detailLoading.value = false
     }
   }
+}
+
+async function fetchPrivateLatestByUser(userId: string) {
+  if (!userStore.isLoggedIn) {
+    throw new Error(t("rankBorder.result.privateLookupLoginRequired"))
+  }
+
+  return await fetchRankBorderPrivateLatestByUser({
+    ...detailScope.value,
+    userId,
+    ownerId: userStore.kratosIdentityId,
+  })
 }
 
 async function fetchLatestPublicRank(rank: number): Promise<RankBorderLatest | null> {
@@ -1569,6 +1626,20 @@ function latestByTimestamp(items: RankBorderLatest[]) {
   }, null)
 }
 
+function shouldRejectMismatchedAccountLookup(requestedUserId: string, result: RankBorderLatest) {
+  if (isLocalMockTrackerEndpoint(trackerEndpoint.value)) {
+    return false
+  }
+
+  const requested = normalizeTextValue(requestedUserId)
+  const returned = normalizeTextValue(result.userId)
+  if (!requested || !returned || requested === returned) {
+    return false
+  }
+
+  return true
+}
+
 async function refreshActiveDetail() {
   const activeDetail = detail.value
   if (!activeDetail || detailLoading.value) {
@@ -1576,7 +1647,7 @@ async function refreshActiveDetail() {
   }
 
   if (activeDetail.source === "user") {
-    await loadUserDetail(activeDetail.query, true)
+    await loadUserDetail(activeDetail.query, true, detailRequestToken, { privateLookup: true })
     return
   }
 
@@ -1609,6 +1680,9 @@ function readCachedTrace(value: DetailState) {
   if (value.source === "line") {
     return segmentTraceByRank.value.get(value.result.rank) ?? []
   }
+  if (value.source === "user") {
+    return []
+  }
 
   return top100TraceByRank.value.get(value.result.rank) ?? []
 }
@@ -1630,7 +1704,9 @@ async function loadDetailTrace(value: DetailState) {
     const records = await fetchDetailTrace(value)
     if (detail.value?.query === value.query && detail.value.source === value.source) {
       detailTrace.value = records
-      cacheTrace(value.result.rank, records)
+      if (value.source !== "user") {
+        cacheTrace(value.result.rank, records)
+      }
     }
   } finally {
     if (shouldShowLoading) {
@@ -1641,18 +1717,12 @@ async function loadDetailTrace(value: DetailState) {
 
 async function fetchDetailTrace(value: DetailState): Promise<RankBorderTracePoint[]> {
   if (value.source === "user") {
-    const webRecords = await fetchRankBorderWebTraceByUser({
+    return await fetchRankBorderPrivateTraceByUser({
       ...detailScope.value,
       userId: value.query,
+      ownerId: userStore.kratosIdentityId,
       full: true,
     }).catch(() => [])
-    const directRecords = await fetchRankBorderTraceByUser({
-      ...detailScope.value,
-      userId: value.query,
-      full: true,
-    }).catch(() => [])
-    const rankRecords = await fetchFullRankTrace(value.result.rank).catch(() => [])
-    return longestTrace([webRecords, directRecords, rankRecords])
   }
 
   if (value.source === "rank" && value.result.userId) {
@@ -1872,6 +1942,13 @@ function refreshTop100GrowthsFromCachedTraces(previousGrowths: Map<number, RankB
   const nextGrowthChanges = new Set<number>()
 
   for (const rank of TOP_100_RANKS) {
+    const trackerGrowth = tracker.growthByRank.value.get(rank)
+    if (trackerGrowth) {
+      nextGrowths.set(rank, trackerGrowth)
+    }
+  }
+
+  for (const rank of TOP_100_RANKS) {
     const records = top100TraceByRank.value.get(rank) ?? []
     const growth = resolveRankBorderTraceGrowth(records, startTime)
     if (!growth) {
@@ -1903,7 +1980,7 @@ function warmTop100Traces(previousGrowths: Map<number, RankBorderGrowth>) {
       const traces = await fetchRankTraceMapFromWebRankings(
         1,
         PERSONAL_COLLECTION_LIMIT,
-        PERSONAL_COLLECTION_LIMIT * 4,
+        resolveTop100TraceWarmupLimit(),
       ).catch(() => new Map<number, RankBorderTracePoint[]>())
       if (token !== top100TraceWarmupToken || traces.size === 0) {
         return
@@ -1921,6 +1998,15 @@ function warmTop100Traces(previousGrowths: Map<number, RankBorderGrowth>) {
       }
     }
   })()
+}
+
+function resolveTop100TraceWarmupLimit() {
+  const intervalSamples = Math.ceil(selectedIntervalSeconds.value / TRACKER_UPDATE_INTERVAL_SECONDS) + 12
+  return clampNumber(
+    Math.max(TOP_100_TRACE_WARMUP_MIN_LIMIT, intervalSamples),
+    TOP_100_TRACE_WARMUP_MIN_LIMIT,
+    TOP_100_TRACE_WARMUP_MAX_LIMIT,
+  )
 }
 
 async function refreshSegmentTraces() {
@@ -2641,6 +2727,7 @@ function resolveHonorVisual(
 
   return {
     type: "normal",
+    groupType,
     baseUrl: backgroundAssetBundleName
       ? resolveHonorBaseUrl(groupType, backgroundAssetBundleName, mode)
       : null,
@@ -2683,6 +2770,7 @@ function resolveBondsHonorView(
     key: `${honor.seq ?? index}:bonds:${honorId ?? "unknown"}:${honor.bondsHonorViewType ?? ""}`,
     label: normalizeTextValue(word?.name) ?? normalizeTextValue(bondsHonor.name) ?? (honorId ? `#${honorId}` : "-"),
     type: "bonds",
+    groupType: "bonds",
     baseUrl: null,
     rankUrl: null,
     rankPlacement: "event",
@@ -3041,6 +3129,10 @@ function honorLevelLabel(honor: RankBorderHonorView) {
 }
 
 function honorLevelStars(honor: RankBorderHonorView) {
+  if (honor.groupType === "fc_ap") {
+    return []
+  }
+
   const level = Math.max(0, honor.level ?? 0)
   const normalizedLevel = level > 10 ? level - 10 : level
   const stars: RankBorderHonorLevelStar[] = []
@@ -3150,7 +3242,18 @@ function detailBadgeClass(value: DetailState, result = value.result) {
 }
 
 function detailGrowth(value: DetailState) {
-  return value.source === "line" ? value.growth?.growth : null
+  if (value.source === "line") {
+    return value.growth?.growth ?? null
+  }
+
+  if (value.source === "user") {
+    return detailTraceStats.value.growth?.growth ?? null
+  }
+
+  return top100GrowthByRank.value.get(value.result.rank)?.growth
+    ?? tracker.growthByRank.value.get(value.result.rank)?.growth
+    ?? detailTraceStats.value.growth?.growth
+    ?? null
 }
 
 function previousDetailLabel(value: DetailState) {
@@ -3784,7 +3887,12 @@ function traceUpdateRecords(
 
         <CardContent class="grid gap-2 px-1.5 pb-1.5 sm:gap-3 sm:px-4 sm:pb-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-4 xl:grid-cols-[minmax(0,1fr)_24rem] xl:px-5 xl:pb-5">
           <section class="order-1 grid gap-3 lg:col-span-2">
-            <div class="grid gap-2 rounded-md border bg-muted/10 p-2.5 lg:grid-cols-[7rem_11rem_minmax(16rem,1fr)_10rem]">
+            <div
+              :class="[
+                'rank-border-query-grid rounded-md border bg-muted/10 p-2.5',
+                mode === 'world_bloom' ? 'rank-border-query-grid--world-bloom' : 'rank-border-query-grid--normal',
+              ]"
+            >
               <div class="grid gap-1.5">
                 <Label>{{ t("rankBorder.fields.region") }}</Label>
                 <Select :model-value="selectedRegion" :disabled="masterOptions.loading.value" @update:model-value="updateRegion">
@@ -3897,6 +4005,55 @@ function traceUpdateRecords(
                 {{ accountOptions.length === 0 ? t("rankBorder.result.noBoundAccount") : t("rankBorder.sections.locateDescription") }}
               </p>
             </div>
+
+            <section
+              v-if="isMobileViewport && (mobileLocateOpen || selectedAccountDetail || detailLoading || detailError)"
+              class="rank-border-mobile-locator md:hidden"
+            >
+              <div class="rank-border-mobile-locator__head">
+                <div class="min-w-0">
+                  <p class="truncate text-xs text-muted-foreground">{{ t("rankBorder.sections.locateIndicator") }}</p>
+                  <p class="truncate text-sm font-semibold">{{ selectedAccount?.label ?? t("rankBorder.result.noBoundAccount") }}</p>
+                </div>
+                <Button
+                  v-if="selectedAccountDetail"
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  class="h-8 shrink-0"
+                  @click="detailDialogOpen = true"
+                >
+                  <ChartLine class="size-4" />
+                  {{ t("rankBorder.actions.showDetails") }}
+                </Button>
+              </div>
+              <div v-if="detailLoading && !selectedAccountDetail" class="rank-border-mobile-locator__state">
+                {{ t("rankBorder.result.waitingLiveData") }}
+              </div>
+              <div v-else-if="detailError && !selectedAccountDetail" class="rank-border-mobile-locator__state rank-border-mobile-locator__state--error">
+                {{ detailError }}
+              </div>
+              <div v-else-if="selectedAccountDetail" class="rank-border-mobile-locator__metrics">
+                <div>
+                  <span>{{ t("rankBorder.result.rank") }}</span>
+                  <strong>{{ formatDetailRank(selectedAccountDetail) }}</strong>
+                </div>
+                <div>
+                  <span>{{ t("rankBorder.result.score") }}</span>
+                  <strong>{{ formatPt(selectedAccountDetail.result.score) }}</strong>
+                </div>
+                <div>
+                  <span>{{ t("rankBorder.result.intervalGrowth", { interval: intervalOptions.find((option) => option.value === intervalSeconds)?.label ?? "-" }) }}</span>
+                  <strong :class="(detailGrowth(selectedAccountDetail) ?? 0) > 0 ? 'text-emerald-600 dark:text-emerald-300' : ''">
+                    {{ formatGrowth(detailGrowth(selectedAccountDetail)) }}
+                  </strong>
+                </div>
+                <div>
+                  <span>{{ t("rankBorder.result.latestPlain") }}</span>
+                  <strong>{{ formatElapsed(elapsedSince(selectedAccountDetail.result.timestamp)) }}</strong>
+                </div>
+              </div>
+            </section>
 
             <div class="flex flex-col gap-2 rounded-md border bg-background/70 p-2.5 sm:flex-row sm:items-center sm:justify-between">
               <div class="min-w-0">
@@ -5087,6 +5244,30 @@ function traceUpdateRecords(
   animation: rank-border-number-lift 520ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.rank-border-query-grid {
+  display: grid;
+  min-width: 0;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+}
+
+@media (min-width: 1024px) {
+  .rank-border-query-grid--normal {
+    grid-template-columns: minmax(5.6rem, 0.58fr) minmax(8.2rem, 0.72fr) minmax(18rem, 3fr) minmax(7rem, 0.7fr);
+  }
+
+  .rank-border-query-grid--world-bloom {
+    grid-template-columns: minmax(5rem, 0.5fr) minmax(7.5rem, 0.65fr) minmax(18rem, 3.2fr) minmax(9.5rem, 0.95fr) minmax(6.5rem, 0.62fr);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1180px) {
+  .rank-border-query-grid--world-bloom {
+    gap: 0.375rem;
+    grid-template-columns: minmax(4.75rem, 0.45fr) minmax(7rem, 0.58fr) minmax(16rem, 3fr) minmax(8.4rem, 0.82fr) minmax(6rem, 0.55fr);
+  }
+}
+
 .rank-border-table-shell {
   overflow-x: auto;
   overflow-y: hidden;
@@ -5531,11 +5712,14 @@ function traceUpdateRecords(
 }
 
 .rank-border-honor-bonds-bg--left {
-  clip-path: inset(0 48.3333% 0 0);
+  width: 51.6667%;
+  object-position: left center;
+  clip-path: none;
 }
 
 .rank-border-honor-bonds-bg--right {
-  clip-path: inset(0 0 0 50%);
+  object-position: right center;
+  clip-path: none;
 }
 
 .rank-border-honor-bonds-icon {
@@ -5548,16 +5732,16 @@ function traceUpdateRecords(
 }
 
 .rank-border-honor-bonds-icon--left {
-  left: 16.6667%;
+  left: 33.3333%;
   transform: translateX(-50%);
-  clip-path: none;
+  clip-path: inset(0 0 0 0);
 }
 
 .rank-border-honor-bonds-icon--right {
   right: auto;
-  left: 83.3333%;
+  left: 66.6667%;
   transform: translateX(-50%);
-  clip-path: none;
+  clip-path: inset(0 0 0 0);
 }
 
 .rank-border-honor-bonds-mask-layer {
@@ -5826,6 +6010,74 @@ function traceUpdateRecords(
 }
 
 .rank-border-mobile-fact__state--error {
+  border-color: color-mix(in oklab, var(--destructive) 52%, var(--border));
+  background: color-mix(in oklab, var(--destructive) 8%, var(--background));
+  color: var(--destructive);
+}
+
+.rank-border-mobile-locator {
+  display: grid;
+  min-width: 0;
+  gap: 0.625rem;
+  border: 1px solid color-mix(in oklab, var(--border) 78%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--background) 88%, var(--muted));
+  padding: 0.625rem;
+  box-shadow: 0 8px 22px rgb(15 23 42 / 0.08);
+}
+
+.rank-border-mobile-locator__head {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rank-border-mobile-locator__metrics {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+.rank-border-mobile-locator__metrics div,
+.rank-border-mobile-locator__state {
+  min-width: 0;
+  border: 1px solid color-mix(in oklab, var(--border) 76%, transparent);
+  border-radius: 0.375rem;
+  background: color-mix(in oklab, var(--background) 84%, transparent);
+  padding: 0.45rem 0.5rem;
+}
+
+.rank-border-mobile-locator__metrics span {
+  display: block;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-border-mobile-locator__metrics strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 0.125rem;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-border-mobile-locator__state {
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+}
+
+.rank-border-mobile-locator__state--error {
   border-color: color-mix(in oklab, var(--destructive) 52%, var(--border));
   background: color-mix(in oklab, var(--destructive) 8%, var(--background));
   color: var(--destructive);
@@ -6657,14 +6909,16 @@ function traceUpdateRecords(
   }
 
   :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
+    position: fixed !important;
     top: auto !important;
-    right: 0.375rem !important;
+    right: auto !important;
     bottom: 0 !important;
-    left: 0.375rem !important;
+    left: auto !important;
+    inset: auto 0.375rem 0 0.375rem !important;
     inset-inline-start: 0.375rem !important;
     inset-inline-end: 0.375rem !important;
-    width: calc(100vw - 0.75rem);
-    max-width: calc(100vw - 0.75rem);
+    width: auto !important;
+    max-width: none !important;
     height: min(92svh, calc(100svh - 0.75rem));
     max-height: min(92svh, calc(100svh - 0.75rem));
     margin: 0;
