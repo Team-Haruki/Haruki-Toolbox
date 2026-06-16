@@ -179,6 +179,7 @@ type RankBorderHeatmapWindow = {
   start: number
   end: number
   label: string
+  anchorTimestamp: number | null
 }
 
 type RankBorderJumpTarget = {
@@ -645,7 +646,7 @@ const scopedDetailTrace = computed(() =>
 
 const chartDetailTrace = computed(() =>
   selectedHeatmapWindow.value
-    ? traceRecordsForWindow(detailTrace.value, selectedHeatmapWindow.value.start, selectedHeatmapWindow.value.end, false)
+    ? traceRecordsForWindow(detailTrace.value, selectedHeatmapWindow.value.start, selectedHeatmapWindow.value.end, true)
     : detailTrace.value,
 )
 
@@ -716,7 +717,7 @@ const detailHeatmapDays = computed<RankBorderHeatmapDay[]>(() => {
   }
 
   const hourSeconds = 60 * 60
-  const eventStart = selectedEvent.value?.startAt ?? records[0]?.timestamp
+  const eventStart = selectedActivityStartAt.value ?? records[0]?.timestamp
   const latest = records[records.length - 1]
   if (!eventStart || latest.timestamp < eventStart) {
     return []
@@ -735,7 +736,7 @@ const detailHeatmapDays = computed<RankBorderHeatmapDay[]>(() => {
       continue
     }
 
-    const bucketTimestamp = Math.max(previous.timestamp, eventStart)
+    const bucketTimestamp = Math.max(record.timestamp, eventStart)
     const bucketStart = Math.floor(bucketTimestamp / hourSeconds) * hourSeconds
     const bucket = buckets.get(bucketStart) ?? { value: 0, sampleCount: 0, roundCount: 0 }
     const delta = Math.max(0, record.score - previous.score)
@@ -781,7 +782,7 @@ const detailHeatmapDays = computed<RankBorderHeatmapDay[]>(() => {
           value,
           roundCount,
           sampleCount,
-          displayLabel: status === "active" ? formatHeatmapRoundCount(roundCount) : "",
+          displayLabel: status === "active" && bucket ? formatHeatmapRoundCount(roundCount) : "",
           intensity,
           color: status === "active" ? heatmapColor(roundCount) : "rgb(148 163 184)",
           textColor: status === "active" ? heatmapTextColor() : "rgb(100 116 139)",
@@ -799,7 +800,12 @@ const hasDetailHeatmap = computed(() => detailHeatmapDays.value.length > 0)
 const detailUpdateRecords = computed<RankBorderUpdateRecord[]>(() =>
   traceUpdateRecords(
     selectedHeatmapWindow.value
-      ? detailTrace.value
+      ? traceRecordsForWindow(
+          detailTrace.value,
+          selectedHeatmapWindow.value.start,
+          selectedHeatmapWindow.value.end,
+          selectedHeatmapWindow.value.anchorTimestamp != null,
+        )
       : scopedDetailTrace.value,
     selectedHeatmapWindow.value ? Number.POSITIVE_INFINITY : DETAIL_UPDATE_RECORD_LIMIT,
     selectedHeatmapWindow.value,
@@ -3711,7 +3717,12 @@ function chartRecordsForTimeDomain(records: RankBorderTracePoint[], timeDomain: 
   const visibleRecords = timeDomain
     ? records.filter((record) => record.timestamp >= timeDomain.start && record.timestamp <= timeDomain.end)
     : records
-  return dedupeChartRecordsByTimestamp(visibleRecords)
+  if (!timeDomain || visibleRecords.length === records.length) {
+    return dedupeChartRecordsByTimestamp(visibleRecords)
+  }
+
+  const anchor = findPreviousTracePoint(records, timeDomain.start)
+  return dedupeChartRecordsByTimestamp(anchor ? [anchor, ...visibleRecords] : visibleRecords)
 }
 
 function dedupeChartRecordsByTimestamp(records: RankBorderTracePoint[]) {
@@ -3817,10 +3828,8 @@ function resolveDetailChartTimeDomain(records: RankBorderTracePoint[]): RankBord
 
   const firstRecord = records[0]
   const latestRecord = records[records.length - 1]
-  const event = selectedEvent.value
-  const chapter = mode.value === "world_bloom" ? selectedWorldBloomCharacter.value : null
-  const eventStart = chapter?.chapterStartAt ?? event?.startAt ?? firstRecord.timestamp
-  const eventEnd = chapter?.aggregateAt ?? event?.aggregateAt ?? null
+  const eventStart = selectedActivityStartAt.value ?? firstRecord.timestamp
+  const eventEnd = selectedActivityEndAt.value ?? null
   const now = Math.floor(Date.now() / 1000)
   const latestDataTimestamp = Math.max(latestRecord.timestamp, latestTrackerTimestamp.value ?? latestRecord.timestamp)
   const resolvedEnd = eventEnd != null && eventEnd <= now
@@ -3988,7 +3997,7 @@ function resolveHeatmapRoundCount(records: RankBorderTracePoint[], startTimestam
   for (let index = 1; index < records.length; index += 1) {
     const previous = records[index - 1]
     const record = records[index]
-    const bucketTimestamp = previous.timestamp
+    const bucketTimestamp = record.timestamp
     if (bucketTimestamp < startTimestamp || bucketTimestamp >= endTimestamp) {
       continue
     }
@@ -4052,6 +4061,7 @@ function selectHeatmapWindow(cell: RankBorderHeatmapCell) {
     start: cell.start,
     end: cell.end,
     label: formatHeatmapWindowLabel(cell.start, cell.end),
+    anchorTimestamp: findPreviousTracePoint(detailTrace.value, cell.start)?.timestamp ?? null,
   }
 }
 
@@ -5939,21 +5949,6 @@ function traceUpdateRecords(
   text-align: right;
 }
 
-.rank-border-score-cell::before {
-  position: absolute;
-  inset-block: -0.5rem;
-  inset-inline-start: -0.5rem;
-  z-index: -1;
-  width: calc(100% + 0.5rem);
-  content: "";
-  background: linear-gradient(
-    90deg,
-    color-mix(in oklab, var(--background) 0%, transparent),
-    color-mix(in oklab, var(--background) 86%, transparent) 1rem,
-    color-mix(in oklab, var(--background) 96%, transparent)
-  );
-}
-
 .rank-border-row-score {
   min-width: 0;
   max-width: 100%;
@@ -6965,9 +6960,9 @@ function traceUpdateRecords(
 .rank-border-update-log {
   display: grid;
   align-self: stretch;
-  height: 100%;
+  height: clamp(11rem, 24svh, 15rem);
   min-height: 0;
-  max-height: none;
+  max-height: clamp(11rem, 24svh, 15rem);
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--border);
@@ -7410,11 +7405,6 @@ function traceUpdateRecords(
     gap: 0.15rem;
     min-width: 0;
     padding-inline-start: 0.125rem;
-  }
-
-  .rank-border-score-cell::before {
-    inset-inline-start: -0.375rem;
-    width: calc(100% + 0.375rem);
   }
 
   .rank-border-row-score {
