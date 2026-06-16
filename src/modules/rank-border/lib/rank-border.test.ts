@@ -5,6 +5,7 @@ import {
   normalizeRankBorderLines,
   normalizeRankBorderStatus,
   normalizeRankBorderTrace,
+  normalizeRankBorderTraceTimeline,
   normalizeRankBorderUserProfiles,
   normalizeRankBorderWebRankings,
   normalizeTrackerEndpoint,
@@ -353,6 +354,17 @@ describe("rank border helpers", () => {
       timeDiff: 120,
       growth: 100,
     })
+  })
+
+  it("deduplicates trace timeline points by timestamp", () => {
+    expect(normalizeRankBorderTraceTimeline([
+      { rank: 1, score: 100, timestamp: 1710000000, userId: "u1", characterId: null },
+      { rank: 1, score: 120, timestamp: 1710000000, userId: "u1", characterId: null },
+      { rank: 1, score: 180, timestamp: 1710000060, userId: "u1", characterId: null },
+    ])).toEqual([
+      { rank: 1, score: 120, timestamp: 1710000000, userId: "u1", characterId: null },
+      { rank: 1, score: 180, timestamp: 1710000060, userId: "u1", characterId: null },
+    ])
   })
 
   it("uses the latest trace point before the interval as growth baseline", () => {

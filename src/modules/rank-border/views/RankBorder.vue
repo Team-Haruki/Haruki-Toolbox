@@ -61,6 +61,7 @@ import {
   fetchRankBorderBatchTraceByRanks,
   fetchRankBorderPrivateLatestByUser,
   fetchRankBorderPrivateTraceByUser,
+  fetchRankBorderStatus,
   fetchRankBorderTraceByRank,
   fetchRankBorderTraceByUser,
   fetchRankBorderWebTraceByRank,
@@ -85,6 +86,7 @@ import {
 } from "../composables/useRankBorderMasterOptions"
 import { useRankBorderTracker } from "../composables/useRankBorderTracker"
 import {
+  normalizeRankBorderTraceTimeline,
   normalizeRankBorderWebRankings,
   normalizeTrackerEndpoint,
   parseRankBorderRankQuery,
@@ -368,6 +370,22 @@ const profileAssetsLoading = ref(false)
 
 const masterOptions = useRankBorderMasterOptions(selectedRegion, selectedEventId)
 const tracker = useRankBorderTracker()
+
+function createLineFromLatest(item: RankBorderLatest): RankBorderLine {
+  return {
+    rank: item.rank,
+    score: item.score,
+    timestamp: item.timestamp,
+  }
+}
+
+function normalizeTraceForPlayback(records: RankBorderTracePoint[]): RankBorderTracePoint[] {
+  const timeline = normalizeRankBorderTraceTimeline(records)
+  const cutoff = playbackAt.value
+  return cutoff == null
+    ? timeline
+    : timeline.filter((record) => record.timestamp <= cutoff)
+}
 
 const eventComboboxOptions = computed<ComboboxOption[]>(() =>
   masterOptions.eventOptions.value.map((event) => ({
@@ -1217,7 +1235,10 @@ async function refreshData(cacheBust = true) {
     hydrateTop100DetailsFromCache()
     const shouldWaitForTop100Details = top100Details.value.size === 0
     const detailsRefresh = refreshTop100Details(previousDetails).catch(() => undefined)
-    const trackerRefresh = tracker.refresh({
+    const playbackRefresh = playbackAt.value != null
+      ? refreshPlaybackSnapshot(cacheBust)
+      : null
+    const trackerRefresh = playbackRefresh ?? tracker.refresh({
       endpoint: trackerEndpoint.value,
       region: selectedRegion.value,
       eventId: selectedEventIdNumber.value,
@@ -1252,6 +1273,40 @@ async function refreshData(cacheBust = true) {
       return
     }
     resetLiveRefreshTimer()
+  }
+}
+
+async function refreshPlaybackSnapshot(cacheBust: boolean) {
+  tracker.loading.value = true
+  tracker.error.value = null
+  tracker.userError.value = null
+  tracker.rankError.value = null
+
+  try {
+    const rankings = await fetchRankBorderWebRankings({
+      ...detailScope.value,
+      rankMin: 1,
+      rankMax: PERSONAL_COLLECTION_LIMIT,
+      limit: PERSONAL_COLLECTION_LIMIT,
+      cacheBust,
+    })
+    const latestEntries = latestRankingEntriesByRank(rankings.items)
+    if (latestEntries.length === 0) {
+      return
+    }
+
+    tracker.lines.value = latestEntries.map(createLineFromLatest)
+    tracker.growths.value = []
+    tracker.growthIntervalSeconds.value = null
+    tracker.status.value = await fetchRankBorderStatus({
+      ...detailScope.value,
+      cacheBust,
+    }).catch(() => tracker.status.value)
+    tracker.refreshedAt.value = Date.now()
+  } catch (error) {
+    tracker.error.value = error instanceof Error ? error.message : String(error)
+  } finally {
+    tracker.loading.value = false
   }
 }
 
@@ -2023,9 +2078,9 @@ async function loadDetailTrace(value: DetailState) {
   try {
     const records = await fetchDetailTrace(value)
     if (detail.value?.query === value.query && detail.value.source === value.source) {
-      detailTrace.value = records
+      detailTrace.value = normalizeTraceForPlayback(records)
       if (value.source !== "user") {
-        cacheTrace(value.result.rank, records)
+        cacheTrace(value.result.rank, detailTrace.value)
       }
     }
   } finally {
@@ -2051,13 +2106,20 @@ async function fetchDetailTrace(value: DetailState): Promise<RankBorderTracePoin
       userId: value.result.userId,
       full: true,
     }).catch(() => [])
+    if (webRecords.length > 0) {
+      return webRecords
+    }
+
     const directRecords = await fetchRankBorderTraceByUser({
       ...detailScope.value,
       userId: value.result.userId,
       full: true,
     }).catch(() => [])
-    const rankRecords = await fetchFullRankTrace(value.result.rank).catch(() => [])
-    return longestTrace([webRecords, directRecords, rankRecords])
+    if (directRecords.length > 0) {
+      return directRecords
+    }
+
+    return await fetchFullRankTrace(value.result.rank).catch(() => [])
   }
 
   return await fetchFullRankTrace(value.result.rank).catch(() => [])
@@ -2274,8 +2336,9 @@ async function refreshTop100Traces(previousGrowths: Map<number, RankBorderGrowth
 
     const nextTraces = new Map(top100TraceByRank.value)
     for (const [rank, records] of traces) {
-      if (records.length > 0) {
-        nextTraces.set(rank, records)
+      const timeline = normalizeTraceForPlayback(records)
+      if (timeline.length > 0) {
+        nextTraces.set(rank, timeline)
       }
     }
     top100TraceByRank.value = nextTraces

@@ -44,7 +44,7 @@ if (isRestrictedBrowser()) {
     userStore.checkExpiration()
     const hadCachedUserContext = userStore.isLoggedIn || !!userStore.userId
     try {
-        const { sessionUser, fullUser } = await bootstrapUserSettingsFromKratosSession()
+        const { sessionUser, fullUser, hasKratosSession } = await bootstrapUserSettingsFromKratosSession()
         if (fullUser) {
             userStore.clearUser()
             userStore.setUser(fullUser)
@@ -56,8 +56,10 @@ if (isRestrictedBrowser()) {
             userStore.setUser(sessionUser, { resetExpiration: false })
             userStore.setSessionActive(true)
             userStore.setSettingsSyncState("loading")
-        } else {
+        } else if (hasKratosSession === false) {
             userStore.clearUser()
+        } else {
+            userStore.setSessionActive(false)
         }
     } catch {
         if (!hadCachedUserContext) {

@@ -244,6 +244,18 @@ export function normalizeRankBorderTrace(value: unknown): RankBorderTracePoint[]
     .sort((a, b) => a.timestamp - b.timestamp)
 }
 
+export function normalizeRankBorderTraceTimeline(records: RankBorderTracePoint[]): RankBorderTracePoint[] {
+  const byTimestamp = new Map<number, RankBorderTracePoint>()
+  for (const record of records) {
+    const previous = byTimestamp.get(record.timestamp)
+    if (!previous || record.score >= previous.score) {
+      byTimestamp.set(record.timestamp, record)
+    }
+  }
+
+  return Array.from(byTimestamp.values()).sort((a, b) => a.timestamp - b.timestamp)
+}
+
 export function normalizeRankBorderBatchTrace(value: unknown): Map<number, RankBorderTracePoint[]> {
   const items = isRecord(value) && Array.isArray(value.items)
     ? value.items

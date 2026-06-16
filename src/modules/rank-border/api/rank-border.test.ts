@@ -186,6 +186,41 @@ describe("rank border tracker api", () => {
     expect(requests.some((request) => request.url.includes("/ws-ticket"))).toBe(false)
   })
 
+  it("keeps tracker cache keys stable when cache busting is requested", async () => {
+    const originalFetch = globalThis.fetch
+    const requests: string[] = []
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      requests.push(url)
+      if (url.endsWith("/event/jp/1/status")) {
+        return new Response(JSON.stringify({
+          timestamp: 1,
+          status: 0,
+          statusDesc: "ok",
+          timeAgo: 0,
+        }), { status: 200 })
+      }
+      return new Response("unexpected", { status: 500 })
+    }) as typeof fetch
+
+    try {
+      await fetchRankBorderStatus({
+        endpoint: "https://tracker.example/base",
+        region: "jp",
+        eventId: 1,
+        mode: "normal",
+        cacheBust: true,
+        useWebSocket: false,
+      })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    expect(requests).toEqual([
+      "https://tracker.example/base/event/jp/1/status",
+    ])
+  })
+
   it("adds compatible playback timestamp query parameters to REST requests", async () => {
     const originalFetch = globalThis.fetch
     const requests: string[] = []

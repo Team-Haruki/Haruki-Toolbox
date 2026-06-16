@@ -101,6 +101,7 @@ export interface KratosFlowError {
 export interface KratosSessionBootstrap {
   sessionUser: UserSettings | null
   fullUser: UserSettings | null
+  hasKratosSession: boolean | null
 }
 
 export interface KratosSessionDevice {
@@ -461,6 +462,7 @@ export async function bootstrapUserSettingsFromKratosSession(): Promise<KratosSe
     return {
       sessionUser: response.updatedData ?? null,
       fullUser: response.updatedData ?? null,
+      hasKratosSession: true,
     }
   } catch {
     const session = await fetchKratosWhoAmI()
@@ -468,6 +470,7 @@ export async function bootstrapUserSettingsFromKratosSession(): Promise<KratosSe
     return {
       sessionUser,
       fullUser: null,
+      hasKratosSession: session != null,
     }
   }
 }

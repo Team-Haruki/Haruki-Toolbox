@@ -1,6 +1,5 @@
 import type { SekaiRegion } from "@/types"
 import {
-  appendCacheBust,
   formatRankBorderPathSegment,
   normalizeRankBorderBatchTrace,
   normalizeRankBorderGrowths,
@@ -743,11 +742,11 @@ async function fetchTrackerJson(
 async function fetchTrackerJsonViaRest(
   baseUrl: string,
   path: string,
-  cacheBust: boolean,
+  _cacheBust: boolean,
   credentials: TrackerFetchCredentials,
 ): Promise<unknown> {
   const restBaseUrl = resolveRankBorderTrackerRestEndpoint(baseUrl)
-  const response = await fetch(appendCacheBust(`${restBaseUrl}${path}`, cacheBust), {
+  const response = await fetch(`${restBaseUrl}${path}`, {
     credentials,
     cache: "no-store",
   })

@@ -114,7 +114,7 @@ export function useRankBorderTracker() {
       const rank = Number(normalizedRank)
       const rankings = Number.isInteger(rank) && rank > 0
         ? await fetchRankBorderWebRankings({
-        ...scope,
+            ...scope,
             rankMin: rank,
             rankMax: rank,
             limit: 1,
