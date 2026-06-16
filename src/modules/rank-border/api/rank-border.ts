@@ -109,6 +109,7 @@ export type RankBorderRealtimeSubscription = {
 const TRACKER_WS_OPEN_TIMEOUT_MS = 4_000
 const TRACKER_WS_REQUEST_TIMEOUT_MS = 15_000
 const TRACKER_WS_FAILURE_COOLDOWN_MS = 2_000
+const FULL_TRACE_LIMIT = 5_000
 const LOCAL_TRACKER_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"])
 
 type TrackerWsPendingRequest = {
@@ -556,17 +557,17 @@ export async function fetchRankBorderTraceByRank(params: FetchRankBorderRankPara
 
 export async function fetchRankBorderWebTraceByRank(params: FetchRankBorderRankParams): Promise<RankBorderTracePoint[]> {
   const rank = normalizePositiveInteger(params.rank)
+  const directRecords = await fetchRankBorderTraceByRank(params).catch(() => [])
+  if (directRecords.length > 0) {
+    return directRecords
+  }
+
   const path = params.mode === "world_bloom"
     ? buildNormalPath(params, `web/trace-world-bloom-ranking/character/${normalizePositiveInteger(params.worldBloomCharacterId)}/rank/${rank}`)
     : buildNormalPath(params, `web/trace-ranking/rank/${rank}`)
-  const webRecords = normalizeRankBorderTrace(
+  return normalizeRankBorderTrace(
     await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket).catch(() => null),
   )
-  if (webRecords.length > 0) {
-    return webRecords
-  }
-
-  return fetchRankBorderTraceByRank(params)
 }
 
 export async function fetchRankBorderTraceByRanks(params: FetchRankBorderRanksParams): Promise<Map<number, RankBorderTracePoint[]>> {
@@ -613,15 +614,6 @@ export async function fetchRankBorderWebTraceByUser(params: FetchRankBorderUserP
   const path = params.mode === "world_bloom"
     ? buildNormalPath(params, `web/trace-world-bloom-ranking/character/${normalizePositiveInteger(params.worldBloomCharacterId)}/user/${userId}`)
     : buildNormalPath(params, `web/trace-ranking/user/${userId}`)
-  if (params.full) {
-    const webRecords = normalizeRankBorderTrace(
-      await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket).catch(() => null),
-    )
-    if (webRecords.length > 0) {
-      return webRecords
-    }
-  }
-
   const directPath = params.mode === "world_bloom"
     ? buildWorldBloomPath(params, "trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
     : buildNormalPath(params, `trace-ranking/user/${userId}`)
@@ -994,8 +986,9 @@ function appendTraceQuery(path: string, params: { full?: boolean; limit?: number
     search.set("full", "1")
     search.set("all", "1")
   }
-  if (params.limit != null) {
-    const limit = normalizeTraceLimit(params.limit)
+  const requestedLimit = params.limit ?? (params.full ? FULL_TRACE_LIMIT : null)
+  if (requestedLimit != null) {
+    const limit = normalizeTraceLimit(requestedLimit)
     if (limit != null) {
       search.set("limit", String(limit))
     }

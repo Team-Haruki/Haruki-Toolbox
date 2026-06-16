@@ -3,6 +3,7 @@ import {
   fetchRankBorderLines,
   fetchRankBorderPrivateLatestByUser,
   fetchRankBorderStatus,
+  fetchRankBorderWebTraceByUser,
   resolveRankBorderTrackerWebSocketTicketUrl,
   resolveRankBorderTrackerWebSocketUrl,
 } from "./rank-border"
@@ -248,6 +249,43 @@ describe("rank border tracker api", () => {
 
     expect(requests).toEqual([
       "https://tracker.example/base/event/jp/1/ranking-lines?at=1710000000&timestamp=1710000000",
+    ])
+  })
+
+  it("requests full direct user traces before web trace fallbacks", async () => {
+    const originalFetch = globalThis.fetch
+    const requests: string[] = []
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      requests.push(url)
+      if (url.includes("/event/jp/1/trace-ranking/user/public-user")) {
+        return new Response(JSON.stringify({
+          rankData: [
+            { timestamp: 1710000000, userId: "public-user", score: 100, rank: 1 },
+            { timestamp: 1710000600, userId: "public-user", score: 200, rank: 1 },
+          ],
+        }), { status: 200 })
+      }
+      return new Response("unexpected", { status: 500 })
+    }) as typeof fetch
+
+    try {
+      const records = await fetchRankBorderWebTraceByUser({
+        endpoint: "https://tracker.example/base",
+        region: "jp",
+        eventId: 1,
+        mode: "normal",
+        userId: "public-user",
+        full: true,
+        useWebSocket: false,
+      })
+      expect(records.map((record) => record.timestamp)).toEqual([1710000000, 1710000600])
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    expect(requests).toEqual([
+      "https://tracker.example/base/event/jp/1/trace-ranking/user/public-user?full=1&all=1&limit=5000",
     ])
   })
 })

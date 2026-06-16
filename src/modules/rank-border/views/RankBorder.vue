@@ -3829,14 +3829,8 @@ function resolveDetailChartTimeDomain(records: RankBorderTracePoint[]): RankBord
   const firstRecord = records[0]
   const latestRecord = records[records.length - 1]
   const eventStart = selectedActivityStartAt.value ?? firstRecord.timestamp
-  const eventEnd = selectedActivityEndAt.value ?? null
-  const now = Math.floor(Date.now() / 1000)
-  const latestDataTimestamp = Math.max(latestRecord.timestamp, latestTrackerTimestamp.value ?? latestRecord.timestamp)
-  const resolvedEnd = eventEnd != null && eventEnd <= now
-    ? eventEnd
-    : Math.min(eventEnd ?? latestDataTimestamp, latestDataTimestamp)
   const start = eventStart
-  const end = Math.max(resolvedEnd, latestRecord.timestamp, start + 1)
+  const end = Math.max(latestRecord.timestamp, start + 1)
   return { start, end }
 }
 
