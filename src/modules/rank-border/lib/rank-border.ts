@@ -340,15 +340,6 @@ export function normalizeTrackerEndpoint(value: unknown): string {
   return value.trim().replace(/\/+$/, "")
 }
 
-export function appendCacheBust(url: string, enabled: boolean): string {
-  if (!enabled) {
-    return url
-  }
-
-  const separator = url.includes("?") ? "&" : "?"
-  return `${url}${separator}t=${Date.now()}`
-}
-
 export function formatRankBorderPathSegment(value: string | number): string {
   return encodeURIComponent(String(value).trim())
 }
