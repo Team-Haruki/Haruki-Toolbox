@@ -21,6 +21,7 @@ import {
   LucideBan,
   LucideBarChart3,
   LucideCheckCircle2,
+  LucideCable,
   LucideKey,
   LucideMoreHorizontal,
   LucidePencil,
@@ -44,6 +45,7 @@ const props = defineProps<Props>()
 const { t } = useI18n()
 const emit = defineEmits<{
   (event: "open-edit", client: OAuthClient): void
+  (event: "manage-webhooks", clientId: string): void
   (event: "show-stats", clientId: string): void
   (event: "toggle-active", client: OAuthClient): void
   (event: "rotate-secret", clientId: string): void
@@ -140,6 +142,14 @@ function resolveClientStatus(client: OAuthClient) {
                 <DropdownMenuItem :disabled="props.actionLoading" @click="emit('show-stats', client.clientId)">
                   <LucideBarChart3 class="w-4 h-4 mr-2" />
                   {{ t("adminOAuthClients.table.menu.stats") }}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  v-if="props.isSuperAdmin"
+                  :disabled="props.actionLoading || client.deleted"
+                  @click="emit('manage-webhooks', client.clientId)"
+                >
+                  <LucideCable class="w-4 h-4 mr-2" />
+                  {{ t("adminOAuthClients.table.menu.webhooks") }}
                 </DropdownMenuItem>
                 <DropdownMenuItem :disabled="props.actionLoading" @click="emit('toggle-active', client)">
                   <LucidePower class="w-4 h-4 mr-2" />

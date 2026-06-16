@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test"
 import {
+  fetchRankBorderLines,
   fetchRankBorderPrivateLatestByUser,
   fetchRankBorderStatus,
   resolveRankBorderTrackerWebSocketTicketUrl,
@@ -95,6 +96,7 @@ describe("rank border tracker api", () => {
         mode: "normal",
         userId: "123456789",
         ownerId: "kratos-1",
+        useWebSocket: true,
       })
     } finally {
       globalThis.fetch = originalFetch
@@ -105,12 +107,53 @@ describe("rank border tracker api", () => {
     expect(requests.some((url) => url === "/event/jp/1/private/latest-ranking/user/123456789?owner=kratos-1")).toBe(true)
   })
 
+  it("includes browser credentials for private REST lookup fallbacks", async () => {
+    const originalFetch = globalThis.fetch
+    const requests: Array<{ url: string; credentials: RequestCredentials | undefined }> = []
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      requests.push({ url, credentials: init?.credentials })
+      if (url.includes("/event/jp/1/private/latest-ranking/user/123456789")) {
+        return new Response(JSON.stringify({
+          rankData: {
+            timestamp: 1,
+            userId: "123456789",
+            score: 100,
+            rank: 10,
+          },
+        }), { status: 200 })
+      }
+      return new Response("unexpected", { status: 500 })
+    }) as typeof fetch
+
+    try {
+      await fetchRankBorderPrivateLatestByUser({
+        endpoint: "https://tracker.example/base",
+        region: "jp",
+        eventId: 1,
+        mode: "normal",
+        userId: "123456789",
+        ownerId: "kratos-1",
+        useWebSocket: false,
+      })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    expect(requests).toEqual([
+      {
+        url: "https://tracker.example/base/event/jp/1/private/latest-ranking/user/123456789?owner=kratos-1",
+        credentials: "include",
+      },
+    ])
+  })
+
   it("uses REST directly when websocket transport is disabled", async () => {
     const originalFetch = globalThis.fetch
-    const requests: string[] = []
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const requests: Array<{ url: string; credentials: RequestCredentials | undefined }> = []
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
-      requests.push(url)
+      requests.push({ url, credentials: init?.credentials })
       if (url.endsWith("/event/jp/1/status")) {
         return new Response(JSON.stringify({
           timestamp: 1,
@@ -134,7 +177,42 @@ describe("rank border tracker api", () => {
       globalThis.fetch = originalFetch
     }
 
-    expect(requests).toEqual(["https://tracker.example/base/event/jp/1/status"])
-    expect(requests.some((url) => url.includes("/ws-ticket"))).toBe(false)
+    expect(requests).toEqual([
+      {
+        url: "https://tracker.example/base/event/jp/1/status",
+        credentials: "omit",
+      },
+    ])
+    expect(requests.some((request) => request.url.includes("/ws-ticket"))).toBe(false)
+  })
+
+  it("adds compatible playback timestamp query parameters to REST requests", async () => {
+    const originalFetch = globalThis.fetch
+    const requests: string[] = []
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      requests.push(url)
+      if (url.includes("/event/jp/1/ranking-lines")) {
+        return new Response(JSON.stringify([]), { status: 200 })
+      }
+      return new Response("unexpected", { status: 500 })
+    }) as typeof fetch
+
+    try {
+      await fetchRankBorderLines({
+        endpoint: "https://tracker.example/base",
+        region: "jp",
+        eventId: 1,
+        mode: "normal",
+        playbackAt: 1710000000,
+        useWebSocket: false,
+      })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    expect(requests).toEqual([
+      "https://tracker.example/base/event/jp/1/ranking-lines?at=1710000000&timestamp=1710000000",
+    ])
   })
 })

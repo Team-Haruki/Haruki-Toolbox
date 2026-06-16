@@ -3,3 +3,4 @@ export { default as GameBindingAccountTable } from "./GameBindingAccountTable.vu
 export { default as GameBindingEditDialog } from "./GameBindingEditDialog.vue"
 export { default as GameBindingDeleteDialog } from "./GameBindingDeleteDialog.vue"
 export { default as GameBindingVerifyDialog } from "./GameBindingVerifyDialog.vue"
+export { default as GameBindingGrantsDialog } from "./GameBindingGrantsDialog.vue"

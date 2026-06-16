@@ -14,6 +14,7 @@ export interface GameAccountBindingPayload {
 
 export type UploadDataType = "suite" | "mysekai"
 export type InheritServer = Extract<SekaiRegion, "jp" | "en">
+export type GameAccountGrantDataType = "suite" | "mysekai"
 
 // Used for create/update binding endpoints (server and game_user_id come from URL params)
 export interface CreateGameAccountBindingPayload {
@@ -36,4 +37,27 @@ export type GenerateGameAccountCodeResponse = {
     updatedData?: {
         oneTimePassword?: string
     }
+}
+
+export interface GameAccountDataGrant {
+    id: number
+    ownerUserId: string
+    granteeUserId: string
+    server: SekaiRegion
+    gameUserId: string
+    dataType: GameAccountGrantDataType
+    expiresAt: string
+    createdAt: string
+    updatedAt: string
+}
+
+export interface GameAccountDataGrantListResponse {
+    generatedAt: string
+    total: number
+    items: GameAccountDataGrant[]
+}
+
+export interface GameAccountDataGrantMutationResponse {
+    generatedAt: string
+    grant: GameAccountDataGrant
 }

@@ -31,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-vue-next"
+import { Inbox, KeyRound, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-vue-next"
 
 const props = defineProps<{
   data: GameAccountBinding[]
@@ -42,6 +42,8 @@ const emit = defineEmits<{
   (e: "add"): void
   (e: "edit", account: GameAccountBinding): void
   (e: "delete", account: GameAccountBinding): void
+  (e: "grants", account: GameAccountBinding): void
+  (e: "received-grants"): void
 }>()
 
 const { t } = useI18n()
@@ -79,6 +81,12 @@ const columns: ColumnDef<GameAccountBinding>[] = [
               h(Pencil, { class: "h-4 w-4 mr-2" }),
               t("userSettings.gameBinding.actions.edit"),
             ]),
+            row.original.verified
+              ? h(DropdownMenuItem, { onClick: () => emit("grants", row.original) }, () => [
+                h(KeyRound, { class: "h-4 w-4 mr-2" }),
+                t("userSettings.gameBinding.actions.grants"),
+              ])
+              : null,
             h(
               DropdownMenuItem,
               { onClick: () => emit("delete", row.original), class: "text-destructive" },
@@ -104,15 +112,19 @@ const table = useVueTable({
 
 <template>
   <Card class="w-full max-w-2xl">
-    <CardHeader>
-      <div class="flex items-center justify-between">
-        <div>
-          <CardTitle>{{ t("userSettings.gameBinding.title") }}</CardTitle>
-          <CardDescription>
-            {{ t("userSettings.gameBinding.description") }}
-          </CardDescription>
-        </div>
-        <Button @click="emit('add')">
+    <CardHeader class="space-y-4">
+      <div>
+        <CardTitle>{{ t("userSettings.gameBinding.title") }}</CardTitle>
+        <CardDescription>
+          {{ t("userSettings.gameBinding.description") }}
+        </CardDescription>
+      </div>
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Button variant="outline" class="w-full sm:w-auto" @click="emit('received-grants')">
+          <Inbox class="h-4 w-4 mr-2" />
+          {{ t("userSettings.gameBinding.actions.receivedGrants") }}
+        </Button>
+        <Button class="w-full sm:w-auto" @click="emit('add')">
           <Plus class="h-4 w-4 mr-2" />
           {{ t("userSettings.gameBinding.addButton") }}
         </Button>

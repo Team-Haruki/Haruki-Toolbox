@@ -133,6 +133,7 @@ type TrackerWsDisabledState = {
   until: number
   error: Error
 }
+type TrackerFetchCredentials = RequestCredentials
 
 const trackerWsClients = new Map<string, TrackerWsClient>()
 const trackerWsDisabledState = new Map<string, TrackerWsDisabledState>()
@@ -493,7 +494,7 @@ export async function fetchRankBorderPrivateLatestByUser(params: FetchRankBorder
   const path = params.mode === "world_bloom"
     ? buildWorldBloomPath(params, "private/latest-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
     : buildNormalPath(params, `private/latest-ranking/user/${userId}`)
-  return normalizeRankBorderLatest(await fetchTrackerJson(params.endpoint, appendPrivateLookupQuery(path, params), params.cacheBust, params.playbackAt, true))
+  return normalizeRankBorderLatest(await fetchTrackerJson(params.endpoint, appendPrivateLookupQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket, "include"))
 }
 
 export async function fetchRankBorderLatestByRank(params: FetchRankBorderRankParams): Promise<RankBorderLatest | null> {
@@ -605,7 +606,7 @@ export async function fetchRankBorderPrivateTraceByUser(params: FetchRankBorderU
   const path = params.mode === "world_bloom"
     ? buildWorldBloomPath(params, "private/trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
     : buildNormalPath(params, `private/trace-ranking/user/${userId}`)
-  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(appendPrivateLookupQuery(path, params), params), params.cacheBust, params.playbackAt, true))
+  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(appendPrivateLookupQuery(path, params), params), params.cacheBust, params.playbackAt, params.useWebSocket, "include"))
 }
 
 export async function fetchRankBorderWebTraceByUser(params: FetchRankBorderUserParams): Promise<RankBorderTracePoint[]> {
@@ -698,7 +699,14 @@ export async function subscribeRankBorderRealtime(
   }
 }
 
-async function fetchTrackerJson(endpoint: string, path: string, cacheBust = false, playbackAt?: number | null, useWebSocket = false): Promise<unknown> {
+async function fetchTrackerJson(
+  endpoint: string,
+  path: string,
+  cacheBust = false,
+  playbackAt?: number | null,
+  useWebSocket = false,
+  credentials: TrackerFetchCredentials = "omit",
+): Promise<unknown> {
   const baseUrl = normalizeTrackerEndpoint(endpoint)
   if (!baseUrl) {
     throw new Error("Tracker endpoint is empty")
@@ -706,7 +714,7 @@ async function fetchTrackerJson(endpoint: string, path: string, cacheBust = fals
 
   const requestPath = appendPlaybackQuery(path, playbackAt)
   if (!useWebSocket) {
-    return fetchTrackerJsonViaRest(baseUrl, requestPath, cacheBust)
+    return fetchTrackerJsonViaRest(baseUrl, requestPath, cacheBust, credentials)
   }
 
   const wsUrl = resolveRankBorderTrackerWebSocketUrl(baseUrl)
@@ -729,13 +737,18 @@ async function fetchTrackerJson(endpoint: string, path: string, cacheBust = fals
     throw toError(wsError, "Tracker WebSocket endpoint is unavailable")
   }
 
-  return fetchTrackerJsonViaRest(baseUrl, requestPath, cacheBust)
+  return fetchTrackerJsonViaRest(baseUrl, requestPath, cacheBust, credentials)
 }
 
-async function fetchTrackerJsonViaRest(baseUrl: string, path: string, cacheBust: boolean): Promise<unknown> {
+async function fetchTrackerJsonViaRest(
+  baseUrl: string,
+  path: string,
+  cacheBust: boolean,
+  credentials: TrackerFetchCredentials,
+): Promise<unknown> {
   const restBaseUrl = resolveRankBorderTrackerRestEndpoint(baseUrl)
   const response = await fetch(appendCacheBust(`${restBaseUrl}${path}`, cacheBust), {
-    credentials: "omit",
+    credentials,
     cache: "no-store",
   })
   if (!response.ok) {
@@ -937,6 +950,7 @@ function appendPlaybackQuery(path: string, playbackAt: number | null | undefined
   const basePath = questionIndex >= 0 ? path.slice(0, questionIndex) : path
   const search = new URLSearchParams(questionIndex >= 0 ? path.slice(questionIndex + 1) : "")
   search.set("at", String(timestamp))
+  search.set("timestamp", String(timestamp))
   return `${basePath}?${search}`
 }
 

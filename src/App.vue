@@ -92,7 +92,7 @@ async function syncUserSettings(userId: string) {
   userStore.setSettingsSyncState("loading")
   syncingUserId.value = userId
   try {
-    const response = await getSettings(userId)
+    const response = await getSettings(userId, { skipAuthRedirect: true })
     if (requestId !== latestSyncRequestId.value) return
     if (!userStore.isLoggedIn || userStore.userId !== userId) return
 
@@ -193,9 +193,9 @@ watch(
 )
 
 watch(
-  hasLoginSuccessFlag,
-  (enabled) => {
-    if (!enabled || !userStore.isLoggedIn) {
+  [hasLoginSuccessFlag, () => userStore.settingsSyncState],
+  ([enabled, settingsSyncState]) => {
+    if (!enabled || !userStore.isLoggedIn || settingsSyncState !== "synced") {
       return
     }
 

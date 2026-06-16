@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
@@ -65,6 +65,27 @@ const appBuildInfo = {
     buildTime: new Date().toISOString(),
 }
 
+const localDevHost = 'haruki-dev-local.seiunx.com'
+const localDevCert = new URL('./certs/haruki-dev-local.seiunx.com.pem', import.meta.url)
+const localDevKey = new URL('./certs/haruki-dev-local.seiunx.com-key.pem', import.meta.url)
+
+function resolveLocalDevServer(command: string) {
+    if (command !== 'serve' || !existsSync(localDevCert) || !existsSync(localDevKey)) {
+        return undefined
+    }
+
+    return {
+        host: '127.0.0.1',
+        allowedHosts: [localDevHost],
+        port: 443,
+        strictPort: true,
+        https: {
+            cert: readFileSync(localDevCert),
+            key: readFileSync(localDevKey),
+        },
+    }
+}
+
 function buildInfoPlugin(): Plugin {
     return {
         name: 'haruki-build-info',
@@ -90,6 +111,19 @@ function buildTrackerProxy(target: string) {
             ws: true,
             rewrite: (proxyPath: string) => proxyPath.replace(/^\/event-tracker/, ''),
         },
+    }
+}
+
+function buildDevServerConfig(command: string, trackerProxy: ReturnType<typeof buildTrackerProxy> | undefined) {
+    const localDevServer = resolveLocalDevServer(command)
+
+    if (!localDevServer && !trackerProxy) {
+        return undefined
+    }
+
+    return {
+        ...localDevServer,
+        ...(trackerProxy ? { proxy: trackerProxy } : {}),
     }
 }
 
@@ -154,9 +188,7 @@ export default defineConfig(({ command, mode }) => {
                 '@': path.resolve(__dirname, './src'),
             },
         },
-        server: trackerProxy
-            ? { proxy: trackerProxy }
-            : undefined,
+        server: buildDevServerConfig(command, trackerProxy),
         preview: trackerProxy
             ? { proxy: trackerProxy }
             : undefined,

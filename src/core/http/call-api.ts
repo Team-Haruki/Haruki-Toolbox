@@ -12,6 +12,7 @@ import { translate } from "@/shared/i18n"
 declare module 'axios' {
     export interface AxiosRequestConfig {
         skipErrorToast?: boolean
+        skipAuthRedirect?: boolean
         retry?: number
         retryAttempt?: number
         retryMax?: number
@@ -25,6 +26,8 @@ export const apiClient: AxiosInstance = axios.create({
         "Content-Type": "application/json",
     },
 })
+
+let authRedirectInProgress = false
 
 function generateRequestId(): string {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -78,7 +81,10 @@ export function setupInterceptors(router: Router) {
         return config
     })
     apiClient.interceptors.response.use(
-        (response) => response,
+        (response) => {
+            authRedirectInProgress = false
+            return response
+        },
         async (error) => {
             const retryAttempt = Number(error.config?.retryAttempt ?? 0)
             const retryMax = Number(error.config?.retryMax ?? 0)
@@ -90,11 +96,16 @@ export function setupInterceptors(router: Router) {
             const userStore = useUserStore()
             if (error.response?.status === 401) {
                 if (userStore.isLoggedIn) {
-                    toast.error(translate("core.auth.sessionExpiredTitle"), {
-                        description: translate("core.auth.sessionExpiredDescription"),
-                    })
-                    userStore.clearUser()
-                    await redirectToLogin(router, { redirect: router.currentRoute.value.fullPath })
+                    if (!error.config?.skipAuthRedirect && !authRedirectInProgress) {
+                        authRedirectInProgress = true
+                        toast.error(translate("core.auth.sessionExpiredTitle"), {
+                            description: translate("core.auth.sessionExpiredDescription"),
+                        })
+                        userStore.clearUser()
+                        await redirectToLogin(router, { redirect: router.currentRoute.value.fullPath })
+                    }
+                } else {
+                    authRedirectInProgress = false
                 }
             } else if (error.response?.status === 403) {
                 const message = getApiErrorMessage(error.response.data) || translate("core.auth.permissionDeniedTitle")

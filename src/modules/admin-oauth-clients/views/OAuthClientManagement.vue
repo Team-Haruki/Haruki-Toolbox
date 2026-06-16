@@ -8,6 +8,7 @@ import {
   OAuthClientSecretDialog,
   OAuthClientStatsDialog,
   OAuthClientTable,
+  OAuthClientWebhooksDialog,
 } from "@/modules/admin-oauth-clients/components"
 import { useOAuthClientManagement } from "@/modules/admin-oauth-clients/composables/useOAuthClientManagement"
 
@@ -42,6 +43,18 @@ const {
   displayedSecret,
   deleteConfirmOpen,
   clientToDelete,
+  webhookOpen,
+  webhookClientId,
+  webhooks,
+  webhookLoading,
+  webhookSaving,
+  webhookDeleting,
+  editingWebhook,
+  webhookFormOpen,
+  callbackUrl,
+  bearer,
+  enabled,
+  clearBearer,
   AVAILABLE_SCOPES,
   confirmDelete,
   executeDelete,
@@ -68,6 +81,12 @@ const {
   showStats,
   applyStatsFilters,
   resetStatsFilters,
+  loadWebhooks,
+  openWebhookManager,
+  openCreateWebhook,
+  openEditWebhook,
+  saveWebhook,
+  deleteWebhook,
   copySecret,
 } = useOAuthClientManagement()
 </script>
@@ -104,6 +123,7 @@ const {
           :action-loading="actionLoading"
           :is-super-admin="userStore.isSuperAdmin"
           @open-edit="openEdit"
+          @manage-webhooks="openWebhookManager"
           @show-stats="showStats"
           @toggle-active="toggleActive"
           @rotate-secret="handleRotateSecret"
@@ -153,6 +173,26 @@ const {
       v-model:open="secretDisplayOpen"
       :secret="displayedSecret"
       @copy="copySecret"
+    />
+
+    <OAuthClientWebhooksDialog
+      v-model:open="webhookOpen"
+      v-model:form-open="webhookFormOpen"
+      v-model:callback-url="callbackUrl"
+      v-model:bearer="bearer"
+      v-model:enabled="enabled"
+      v-model:clear-bearer="clearBearer"
+      :client-id="webhookClientId"
+      :loading="webhookLoading"
+      :saving="webhookSaving"
+      :deleting="webhookDeleting"
+      :editing-webhook="editingWebhook"
+      :webhooks="webhooks"
+      @refresh="loadWebhooks"
+      @create="openCreateWebhook"
+      @edit="openEditWebhook"
+      @delete="deleteWebhook"
+      @save="saveWebhook"
     />
   </div>
 </template>

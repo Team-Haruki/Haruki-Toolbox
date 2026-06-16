@@ -457,7 +457,7 @@ export function resolveUserSettingsFromKratosSession(session: KratosWhoAmIRespon
 
 export async function bootstrapUserSettingsFromKratosSession(): Promise<KratosSessionBootstrap> {
   try {
-    const response = await getCurrentUser({ skipErrorToast: true })
+    const response = await getCurrentUser({ skipErrorToast: true, skipAuthRedirect: true })
     return {
       sessionUser: response.updatedData ?? null,
       fullUser: response.updatedData ?? null,
