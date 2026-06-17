@@ -3328,7 +3328,7 @@ function honorUsesRankLayer(groupType: string, assetBundleName: string) {
 }
 
 function honorUsesScrollLayer(groupType: string) {
-  return groupType === "event" || groupType === "wl_event" || groupType === "fc_ap"
+  return groupType === "fc_ap"
 }
 
 function honorUsesScrollLevel(groupType: string, assetBundleName: string | null) {
@@ -3635,6 +3635,7 @@ function retryRecoverableImage(target: RecoverableImageTarget) {
     ? storedSource
     : strippedSource
   target.setAttribute(IMAGE_RETRY_ORIGINAL_ATTRIBUTE, originalSource)
+  hideRecoverableImage(target)
   const retryCount = Number(target.getAttribute(IMAGE_RETRY_COUNT_ATTRIBUTE) ?? "0")
   const nextRetryCount = retryCount + 1
   target.setAttribute(IMAGE_RETRY_COUNT_ATTRIBUTE, String(nextRetryCount))
@@ -3674,21 +3675,21 @@ function setRecoverableImageSource(target: RecoverableImageTarget, source: strin
 
 function hideRecoverableImage(target: RecoverableImageTarget) {
   if (target instanceof HTMLImageElement) {
-    target.hidden = true
+    target.style.visibility = "hidden"
     return
   }
 
-  target.style.display = "none"
+  target.style.visibility = "hidden"
   target.setAttribute("visibility", "hidden")
 }
 
 function showRecoverableImage(target: RecoverableImageTarget) {
   if (target instanceof HTMLImageElement) {
-    target.hidden = false
+    target.style.visibility = ""
     return
   }
 
-  target.style.display = ""
+  target.style.visibility = ""
   target.removeAttribute("visibility")
 }
 
