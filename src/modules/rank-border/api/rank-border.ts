@@ -1,24 +1,18 @@
 import type { SekaiRegion } from "@/types"
 import {
   formatRankBorderPathSegment,
-  normalizeRankBorderGrowths,
-  normalizeRankBorderLatest,
-  normalizeRankBorderLines,
   normalizeRankBorderOverview,
-  normalizeRankBorderStatus,
   normalizeRankBorderTrace,
   normalizeRankBorderUserProfiles,
-  normalizeRankBorderWebRankings,
+  normalizeRankBorderWebRankDetail,
+  normalizeRankBorderWebUserDetail,
   normalizeTrackerEndpoint,
-  type RankBorderGrowth,
-  type RankBorderLatest,
-  type RankBorderLine,
   type RankBorderOverview,
   type RankBorderMode,
-  type RankBorderStatus,
   type RankBorderTracePoint,
   type RankBorderUserProfile,
-  type RankBorderWebRankingPage,
+  type RankBorderWebRankDetail,
+  type RankBorderWebUserDetail,
 } from "../lib/rank-border"
 
 export type RankBorderTrackerScope = {
@@ -39,24 +33,23 @@ export type FetchRankBorderUserParams = RankBorderTrackerScope & {
   limit?: number | null
 }
 
-export type FetchRankBorderRankParams = RankBorderTrackerScope & {
-  rank: string | number
-  full?: boolean
-  limit?: number | null
-}
-
-export type FetchRankBorderWebRankingsParams = RankBorderTrackerScope & {
-  rankMin?: string | number | null
-  rankMax?: string | number | null
-  limit?: number | null
-}
-
-export type FetchRankBorderGrowthParams = RankBorderTrackerScope & {
-  intervalSeconds: number
-}
-
 export type FetchRankBorderOverviewParams = RankBorderTrackerScope & {
   intervalSeconds: number
+}
+
+export type FetchRankBorderWebDetailParams = RankBorderTrackerScope & {
+  rank?: string | number
+  userId?: string | number
+  intervalSeconds?: number | null
+  includeTrace?: boolean
+  includePlayerTrace?: boolean
+  includeProfile?: boolean
+  limit?: number | null
+}
+
+export type FetchRankBorderPrivateWebDetailParams = FetchRankBorderWebDetailParams & {
+  userId: string | number
+  ownerId?: string | null
 }
 
 export type FetchRankBorderUserSearchParams = RankBorderTrackerScope & {
@@ -460,125 +453,84 @@ class TrackerWsClient {
   }
 }
 
-export async function fetchRankBorderLines(scope: RankBorderTrackerScope): Promise<RankBorderLine[]> {
-  const path = scope.mode === "world_bloom"
-    ? buildWorldBloomPath(scope, "world-bloom-ranking-lines", `character/${scope.worldBloomCharacterId}`)
-    : buildNormalPath(scope, "ranking-lines")
-  return normalizeRankBorderLines(await fetchTrackerJson(scope.endpoint, path, scope.cacheBust, scope.playbackAt, scope.useWebSocket))
-}
-
-export async function fetchRankBorderGrowths(params: FetchRankBorderGrowthParams): Promise<RankBorderGrowth[]> {
-  const interval = normalizePositiveInteger(params.intervalSeconds)
-  const path = params.mode === "world_bloom"
-    ? buildWorldBloomPath(params, "world-bloom-ranking-score-growth", `character/${params.worldBloomCharacterId}/interval/${interval}`)
-    : buildNormalPath(params, `ranking-score-growth/interval/${interval}`)
-  return normalizeRankBorderGrowths(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
-}
-
 export async function fetchRankBorderOverview(params: FetchRankBorderOverviewParams): Promise<RankBorderOverview> {
   const interval = normalizePositiveInteger(params.intervalSeconds)
   const search = new URLSearchParams()
   search.set("interval", String(interval))
-  const suffix = params.mode === "world_bloom"
-    ? `web/world-bloom-overview/character/${normalizePositiveInteger(params.worldBloomCharacterId)}`
-    : "web/overview"
-  return normalizeRankBorderOverview(await fetchTrackerJson(
-    params.endpoint,
-    `${buildNormalPath(params, suffix)}?${search}`,
-    params.cacheBust,
-    params.playbackAt,
-    params.useWebSocket,
-  ))
+  const path = `${buildWebLeaderboardV2Path(params, "overview")}?${search}`
+  return normalizeRankBorderOverview(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
-export async function fetchRankBorderLatestByUser(params: FetchRankBorderUserParams): Promise<RankBorderLatest | null> {
-  const userId = formatRankBorderPathSegment(params.userId)
-  const path = params.mode === "world_bloom"
-    ? buildWorldBloomPath(params, "latest-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
-    : buildNormalPath(params, `latest-ranking/user/${userId}`)
-  return normalizeRankBorderLatest(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
-}
-
-export async function fetchRankBorderPrivateLatestByUser(params: FetchRankBorderUserParams): Promise<RankBorderLatest | null> {
-  const userId = formatRankBorderPathSegment(params.userId)
-  const path = params.mode === "world_bloom"
-    ? buildWorldBloomPath(params, "private/latest-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
-    : buildNormalPath(params, `private/latest-ranking/user/${userId}`)
-  return normalizeRankBorderLatest(await fetchTrackerJson(params.endpoint, appendPrivateLookupQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket, "include"))
-}
-
-export async function fetchRankBorderLatestByRank(params: FetchRankBorderRankParams): Promise<RankBorderLatest | null> {
-  const rank = normalizePositiveInteger(params.rank)
-  const path = params.mode === "world_bloom"
-    ? buildWorldBloomPath(params, "latest-world-bloom-ranking", `character/${params.worldBloomCharacterId}/rank/${rank}`)
-    : buildNormalPath(params, `latest-ranking/rank/${rank}`)
-  return normalizeRankBorderLatest(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
-}
-
-export async function fetchRankBorderWebRankings(params: FetchRankBorderWebRankingsParams): Promise<RankBorderWebRankingPage> {
+export async function fetchRankBorderReplayOverviewV2(params: FetchRankBorderOverviewParams): Promise<RankBorderOverview> {
+  const interval = normalizePositiveInteger(params.intervalSeconds)
   const search = new URLSearchParams()
-  const rankMin = params.rankMin != null ? normalizePositiveInteger(params.rankMin) : null
-  const rankMax = params.rankMax != null ? normalizePositiveInteger(params.rankMax) : null
-  if (rankMin != null) {
-    search.set("rankMin", String(rankMin))
-  }
-  if (rankMax != null) {
-    search.set("rankMax", String(rankMax))
-  }
-  search.set("limit", String(normalizeWebRankingLimit(params.limit)))
-  const suffix = params.mode === "world_bloom"
-    ? `web/world-bloom-rankings/character/${normalizePositiveInteger(params.worldBloomCharacterId)}`
-    : "web/rankings"
-  const query = search.toString()
-  return normalizeRankBorderWebRankings(await fetchTrackerJson(
-    params.endpoint,
-    `${buildNormalPath(params, suffix)}${query ? `?${query}` : ""}`,
-    params.cacheBust,
-    params.playbackAt,
-    params.useWebSocket,
-  ))
+  search.set("interval", String(interval))
+  const path = `${buildWebLeaderboardV2Path(params, "replay/overview")}?${search}`
+  return normalizeRankBorderOverview(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
-export async function fetchRankBorderTraceByRank(params: FetchRankBorderRankParams): Promise<RankBorderTracePoint[]> {
+export async function fetchRankBorderWebRankDetailV2(params: FetchRankBorderWebDetailParams & { rank: string | number }): Promise<RankBorderWebRankDetail> {
+  const search = new URLSearchParams()
+  if (params.intervalSeconds != null) {
+    search.set("interval", String(normalizePositiveInteger(params.intervalSeconds)))
+  }
+  search.set("includeTrace", params.includeTrace ? "true" : "false")
+  search.set("includePlayerTrace", params.includePlayerTrace ? "true" : "false")
+  const limit = normalizeTraceLimit(params.limit ?? FULL_TRACE_LIMIT)
+  if (limit != null) {
+    search.set("limit", String(limit))
+  }
   const rank = normalizePositiveInteger(params.rank)
-  const path = params.mode === "world_bloom"
-    ? buildWorldBloomPath(params, "trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/rank/${rank}`)
-    : buildNormalPath(params, `trace-ranking/rank/${rank}`)
-  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket))
+  const query = search.toString()
+  const path = `${buildWebLeaderboardV2Path(params, `details/rank/${rank}`)}${query ? `?${query}` : ""}`
+  return normalizeRankBorderWebRankDetail(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
-export async function fetchRankBorderTraceByUser(params: FetchRankBorderUserParams): Promise<RankBorderTracePoint[]> {
+export async function fetchRankBorderWebUserDetailV2(params: FetchRankBorderWebDetailParams & { userId: string | number }): Promise<RankBorderWebUserDetail> {
+  const search = new URLSearchParams()
+  if (params.intervalSeconds != null) {
+    search.set("interval", String(normalizePositiveInteger(params.intervalSeconds)))
+  }
+  search.set("includeTrace", params.includeTrace ? "true" : "false")
+  search.set("includeProfile", params.includeProfile ? "true" : "false")
+  const limit = normalizeTraceLimit(params.limit ?? FULL_TRACE_LIMIT)
+  if (limit != null) {
+    search.set("limit", String(limit))
+  }
   const userId = formatRankBorderPathSegment(params.userId)
-  const path = params.mode === "world_bloom"
-    ? buildWorldBloomPath(params, "trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
-    : buildNormalPath(params, `trace-ranking/user/${userId}`)
-  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket))
+  const query = search.toString()
+  const path = `${buildWebLeaderboardV2Path(params, `details/user/${userId}`)}${query ? `?${query}` : ""}`
+  return normalizeRankBorderWebUserDetail(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
-export async function fetchRankBorderPrivateTraceByUser(params: FetchRankBorderUserParams): Promise<RankBorderTracePoint[]> {
+export async function fetchRankBorderPrivateWebUserDetailV2(params: FetchRankBorderPrivateWebDetailParams): Promise<RankBorderWebUserDetail> {
+  const search = new URLSearchParams()
+  if (params.intervalSeconds != null) {
+    search.set("interval", String(normalizePositiveInteger(params.intervalSeconds)))
+  }
+  search.set("includeTrace", params.includeTrace ? "true" : "false")
+  search.set("includeProfile", params.includeProfile ? "true" : "false")
+  const limit = normalizeTraceLimit(params.limit ?? FULL_TRACE_LIMIT)
+  if (limit != null) {
+    search.set("limit", String(limit))
+  }
+  const owner = String(params.ownerId ?? "").trim()
+  if (owner) {
+    search.set("owner", owner)
+  }
   const userId = formatRankBorderPathSegment(params.userId)
-  const path = params.mode === "world_bloom"
-    ? buildWorldBloomPath(params, "private/trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
-    : buildNormalPath(params, `private/trace-ranking/user/${userId}`)
-  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(appendPrivateLookupQuery(path, params), params), params.cacheBust, params.playbackAt, params.useWebSocket, "include"))
+  const query = search.toString()
+  const path = `${buildWebLeaderboardV2Path(params, `private/details/user/${userId}`)}${query ? `?${query}` : ""}`
+  return normalizeRankBorderWebUserDetail(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket, "include"))
 }
 
 export async function fetchRankBorderWebTraceByUser(params: FetchRankBorderUserParams): Promise<RankBorderTracePoint[]> {
-  const userId = formatRankBorderPathSegment(params.userId)
-  const path = params.mode === "world_bloom"
-    ? buildNormalPath(params, `web/trace-world-bloom-ranking/character/${normalizePositiveInteger(params.worldBloomCharacterId)}/user/${userId}`)
-    : buildNormalPath(params, `web/trace-ranking/user/${userId}`)
-  const directPath = params.mode === "world_bloom"
-    ? buildWorldBloomPath(params, "trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/user/${userId}`)
-    : buildNormalPath(params, `trace-ranking/user/${userId}`)
-  const directRecords = normalizeRankBorderTrace(
-    await fetchTrackerJson(params.endpoint, appendTraceQuery(directPath, params), params.cacheBust, params.playbackAt, params.useWebSocket).catch(() => null),
-  )
-  if (directRecords.length > 0) {
-    return directRecords
-  }
-
-  return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket))
+  const detail = await fetchRankBorderWebUserDetailV2({
+    ...params,
+    includeTrace: true,
+    limit: params.limit ?? (params.full ? FULL_TRACE_LIMIT : null),
+  })
+  return normalizeRankBorderTrace(detail.playerTrace)
 }
 
 export async function fetchRankBorderUserProfiles(params: FetchRankBorderUserSearchParams): Promise<RankBorderUserProfile[]> {
@@ -591,7 +543,7 @@ export async function fetchRankBorderUserProfiles(params: FetchRankBorderUserSea
   search.set(isPublicUniqueId(query) ? "uniqueId" : "name", query)
   search.set("limit", String(normalizeSearchLimit(params.limit)))
   return normalizeRankBorderUserProfiles(
-    await fetchTrackerJson(params.endpoint, `${buildNormalPath(params, "web/users")}?${search}`, params.cacheBust, params.playbackAt, params.useWebSocket),
+    await fetchTrackerJson(params.endpoint, `${buildWebLeaderboardV2Path(params, "users/search")}?${search}`, params.cacheBust, params.playbackAt, params.useWebSocket),
   )
 }
 
@@ -605,13 +557,9 @@ export async function fetchRankBorderPublicUserProfile(params: FetchRankBorderPu
   search.set("uniqueId", uniqueId)
   search.set("limit", String(normalizeSearchLimit(params.limit)))
   const users = normalizeRankBorderUserProfiles(
-    await fetchTrackerJson(params.endpoint, `${buildNormalPath(params, "web/users")}?${search}`, params.cacheBust, params.playbackAt, params.useWebSocket),
+    await fetchTrackerJson(params.endpoint, `${buildWebLeaderboardV2Path(params, "users/search")}?${search}`, params.cacheBust, params.playbackAt, params.useWebSocket),
   )
   return users.find((user) => user.userId === uniqueId) ?? users[0] ?? null
-}
-
-export async function fetchRankBorderStatus(scope: RankBorderTrackerScope): Promise<RankBorderStatus | null> {
-  return normalizeRankBorderStatus(await fetchTrackerJson(scope.endpoint, buildNormalPath(scope, "status"), scope.cacheBust, scope.playbackAt, scope.useWebSocket))
 }
 
 export async function subscribeRankBorderRealtime(
@@ -915,54 +863,12 @@ async function readErrorMessage(response: Response): Promise<string> {
   }
 }
 
-function buildNormalPath(scope: RankBorderTrackerScope, suffix: string): string {
-  return [
-    "",
-    "event",
-    formatRankBorderPathSegment(scope.region),
-    normalizePositiveInteger(scope.eventId),
-    suffix.replace(/^\/+/, ""),
-  ].join("/")
-}
-
-function buildWorldBloomPath(scope: RankBorderTrackerScope, category: string, suffix: string): string {
-  if (!scope.worldBloomCharacterId || scope.worldBloomCharacterId <= 0) {
-    throw new Error("World Bloom character is required")
+function buildWebLeaderboardV2Path(scope: RankBorderTrackerScope, suffix: string): string {
+  const base = `/api/v2/web/events/${scope.region}/${normalizePositiveInteger(scope.eventId)}/leaderboards`
+  if (scope.mode === "world_bloom") {
+    return `${base}/world-bloom/${normalizePositiveInteger(scope.worldBloomCharacterId)}/${suffix}`
   }
-
-  return buildNormalPath(scope, `${category}/${suffix}`)
-}
-
-function appendTraceQuery(path: string, params: { full?: boolean; limit?: number | null }): string {
-  const search = new URLSearchParams(path.includes("?") ? path.slice(path.indexOf("?") + 1) : "")
-  const basePath = path.split("?")[0]
-  if (params.full) {
-    search.set("full", "1")
-    search.set("all", "1")
-  }
-  const requestedLimit = params.limit ?? (params.full ? FULL_TRACE_LIMIT : null)
-  if (requestedLimit != null) {
-    const limit = normalizeTraceLimit(requestedLimit)
-    if (limit != null) {
-      search.set("limit", String(limit))
-    }
-  }
-
-  const query = search.toString()
-  return query ? `${basePath}?${query}` : basePath
-}
-
-function appendPrivateLookupQuery(path: string, params: { ownerId?: string | null }): string {
-  const owner = String(params.ownerId ?? "").trim()
-  if (!owner) {
-    return path
-  }
-
-  const search = new URLSearchParams(path.includes("?") ? path.slice(path.indexOf("?") + 1) : "")
-  const basePath = path.split("?")[0]
-  search.set("owner", owner)
-  const query = search.toString()
-  return query ? `${basePath}?${query}` : basePath
+  return `${base}/total/${suffix}`
 }
 
 function normalizePositiveInteger(value: unknown): number {
@@ -1003,11 +909,6 @@ function normalizeRealtimeOnline(value: unknown): RankBorderRealtimeOnline | nul
 function normalizeSearchLimit(value: unknown): number {
   const parsed = Number(value)
   return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 20) : 5
-}
-
-function normalizeWebRankingLimit(value: unknown): number {
-  const parsed = Number(value)
-  return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 500) : 100
 }
 
 function normalizeTraceLimit(value: unknown): number | null {

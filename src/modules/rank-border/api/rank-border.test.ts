@@ -1,9 +1,12 @@
 import { describe, expect, it } from "bun:test"
 import {
-  fetchRankBorderLines,
-  fetchRankBorderPrivateLatestByUser,
-  fetchRankBorderStatus,
+  fetchRankBorderOverview,
+  fetchRankBorderPrivateWebUserDetailV2,
+  fetchRankBorderPublicUserProfile,
+  fetchRankBorderUserProfiles,
+  fetchRankBorderWebRankDetailV2,
   fetchRankBorderWebTraceByUser,
+  fetchRankBorderWebUserDetailV2,
   resolveRankBorderTrackerWebSocketTicketUrl,
   resolveRankBorderTrackerWebSocketUrl,
 } from "./rank-border"
@@ -36,7 +39,7 @@ describe("rank border tracker api", () => {
     )
   })
 
-  it("passes owner identity on private bound account lookups", async () => {
+  it("passes owner identity on private bound account lookups over websocket", async () => {
     const originalFetch = globalThis.fetch
     const requests: string[] = []
     globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -71,11 +74,13 @@ describe("rank border tracker api", () => {
             ok: true,
             status: 200,
             data: {
-              rankData: {
-                timestamp: 1,
-                userId: "123456789",
-                score: 100,
-                rank: 10,
+              current: {
+                rankData: {
+                  timestamp: 1,
+                  userId: "123456789",
+                  score: 100,
+                  rank: 10,
+                },
               },
             },
           }),
@@ -90,7 +95,7 @@ describe("rank border tracker api", () => {
     const originalWebSocket = globalThis.WebSocket
     globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket
     try {
-      await fetchRankBorderPrivateLatestByUser({
+      await fetchRankBorderPrivateWebUserDetailV2({
         endpoint: "https://tracker.example/base",
         region: "jp",
         eventId: 1,
@@ -105,7 +110,7 @@ describe("rank border tracker api", () => {
     }
 
     expect(requests.some((url) => url.includes("/ws-ticket"))).toBe(true)
-    expect(requests.some((url) => url === "/event/jp/1/private/latest-ranking/user/123456789?owner=kratos-1")).toBe(true)
+    expect(requests.some((url) => url === "/api/v2/web/events/jp/1/leaderboards/total/private/details/user/123456789?includeTrace=false&includeProfile=false&limit=5000&owner=kratos-1")).toBe(true)
   })
 
   it("includes browser credentials for private REST lookup fallbacks", async () => {
@@ -114,13 +119,15 @@ describe("rank border tracker api", () => {
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
       requests.push({ url, credentials: init?.credentials })
-      if (url.includes("/event/jp/1/private/latest-ranking/user/123456789")) {
+      if (url.includes("/api/v2/web/events/jp/1/leaderboards/total/private/details/user/123456789")) {
         return new Response(JSON.stringify({
-          rankData: {
-            timestamp: 1,
-            userId: "123456789",
-            score: 100,
-            rank: 10,
+          current: {
+            rankData: {
+              timestamp: 1,
+              userId: "123456789",
+              score: 100,
+              rank: 10,
+            },
           },
         }), { status: 200 })
       }
@@ -128,7 +135,7 @@ describe("rank border tracker api", () => {
     }) as typeof fetch
 
     try {
-      await fetchRankBorderPrivateLatestByUser({
+      await fetchRankBorderPrivateWebUserDetailV2({
         endpoint: "https://tracker.example/base",
         region: "jp",
         eventId: 1,
@@ -143,124 +150,101 @@ describe("rank border tracker api", () => {
 
     expect(requests).toEqual([
       {
-        url: "https://tracker.example/base/event/jp/1/private/latest-ranking/user/123456789?owner=kratos-1",
+        url: "https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/private/details/user/123456789?includeTrace=false&includeProfile=false&limit=5000&owner=kratos-1",
         credentials: "include",
       },
     ])
   })
 
-  it("uses REST directly when websocket transport is disabled", async () => {
+  it("uses v2 web overview and detail routes", async () => {
     const originalFetch = globalThis.fetch
-    const requests: Array<{ url: string; credentials: RequestCredentials | undefined }> = []
-    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const requests: string[] = []
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
       const url = String(input)
-      requests.push({ url, credentials: init?.credentials })
-      if (url.endsWith("/event/jp/1/status")) {
+      requests.push(url)
+      if (url.includes("/api/v2/web/events/cn/170/leaderboards/world-bloom/20/overview")) {
         return new Response(JSON.stringify({
-          timestamp: 1,
-          status: 0,
-          statusDesc: "ok",
-          timeAgo: 0,
+          meta: { server: "cn", eventId: 170, scope: "world-bloom/20", characterId: 20, fetchedAt: 1 },
+          topRankings: [],
+          topPlayerGrowths: [],
+          topRankGrowths: [],
+          borderLines: [],
+          borderGrowths: [],
+          intervalSeconds: 3600,
+          windowStart: 1,
+          windowEnd: 2,
+        }), { status: 200 })
+      }
+      if (url.includes("/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/rank/100")) {
+        return new Response(JSON.stringify({
+          current: {
+            rankData: { timestamp: 2, userId: "u100", score: 1100, rank: 100, characterId: 20 },
+            userData: { userId: "u100", name: "Miku" },
+          },
+          rankTrace: [{ timestamp: 1, userId: "u100", score: 1000, rank: 100, characterId: 20 }],
+        }), { status: 200 })
+      }
+      if (url.includes("/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/user/u100")) {
+        return new Response(JSON.stringify({
+          current: {
+            rankData: { timestamp: 2, userId: "u100", score: 1100, rank: 100, characterId: 20 },
+            userData: { userId: "u100", name: "Miku" },
+          },
+          playerTrace: [{ timestamp: 1, userId: "u100", score: 1000, rank: 100, characterId: 20 }],
         }), { status: 200 })
       }
       return new Response("unexpected", { status: 500 })
     }) as typeof fetch
 
     try {
-      await fetchRankBorderStatus({
+      await fetchRankBorderOverview({
         endpoint: "https://tracker.example/base",
-        region: "jp",
-        eventId: 1,
-        mode: "normal",
-        useWebSocket: false,
+        region: "cn",
+        eventId: 170,
+        mode: "world_bloom",
+        worldBloomCharacterId: 20,
+        intervalSeconds: 3600,
       })
+      const rankDetail = await fetchRankBorderWebRankDetailV2({
+        endpoint: "https://tracker.example/base",
+        region: "cn",
+        eventId: 170,
+        mode: "world_bloom",
+        worldBloomCharacterId: 20,
+        rank: 100,
+        includeTrace: true,
+      })
+      const userDetail = await fetchRankBorderWebUserDetailV2({
+        endpoint: "https://tracker.example/base",
+        region: "cn",
+        eventId: 170,
+        mode: "world_bloom",
+        worldBloomCharacterId: 20,
+        userId: "u100",
+        includeTrace: true,
+      })
+      expect(rankDetail.rankTrace[0]?.score).toBe(1000)
+      expect(userDetail.playerTrace[0]?.score).toBe(1000)
     } finally {
       globalThis.fetch = originalFetch
     }
 
     expect(requests).toEqual([
-      {
-        url: "https://tracker.example/base/event/jp/1/status",
-        credentials: "omit",
-      },
+      "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/overview?interval=3600",
+      "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/rank/100?includeTrace=true&includePlayerTrace=false&limit=5000",
+      "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/user/u100?includeTrace=true&includeProfile=false&limit=5000",
     ])
-    expect(requests.some((request) => request.url.includes("/ws-ticket"))).toBe(false)
   })
 
-  it("keeps tracker cache keys stable when cache busting is requested", async () => {
+  it("requests user traces through v2 web user details", async () => {
     const originalFetch = globalThis.fetch
     const requests: string[] = []
     globalThis.fetch = (async (input: RequestInfo | URL) => {
       const url = String(input)
       requests.push(url)
-      if (url.endsWith("/event/jp/1/status")) {
+      if (url.includes("/api/v2/web/events/jp/1/leaderboards/total/details/user/public-user")) {
         return new Response(JSON.stringify({
-          timestamp: 1,
-          status: 0,
-          statusDesc: "ok",
-          timeAgo: 0,
-        }), { status: 200 })
-      }
-      return new Response("unexpected", { status: 500 })
-    }) as typeof fetch
-
-    try {
-      await fetchRankBorderStatus({
-        endpoint: "https://tracker.example/base",
-        region: "jp",
-        eventId: 1,
-        mode: "normal",
-        cacheBust: true,
-        useWebSocket: false,
-      })
-    } finally {
-      globalThis.fetch = originalFetch
-    }
-
-    expect(requests).toEqual([
-      "https://tracker.example/base/event/jp/1/status",
-    ])
-  })
-
-  it("adds compatible playback timestamp query parameters to REST requests", async () => {
-    const originalFetch = globalThis.fetch
-    const requests: string[] = []
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
-      const url = String(input)
-      requests.push(url)
-      if (url.includes("/event/jp/1/ranking-lines")) {
-        return new Response(JSON.stringify([]), { status: 200 })
-      }
-      return new Response("unexpected", { status: 500 })
-    }) as typeof fetch
-
-    try {
-      await fetchRankBorderLines({
-        endpoint: "https://tracker.example/base",
-        region: "jp",
-        eventId: 1,
-        mode: "normal",
-        playbackAt: 1710000000,
-        useWebSocket: false,
-      })
-    } finally {
-      globalThis.fetch = originalFetch
-    }
-
-    expect(requests).toEqual([
-      "https://tracker.example/base/event/jp/1/ranking-lines?at=1710000000&timestamp=1710000000",
-    ])
-  })
-
-  it("requests full direct user traces before web trace fallbacks", async () => {
-    const originalFetch = globalThis.fetch
-    const requests: string[] = []
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
-      const url = String(input)
-      requests.push(url)
-      if (url.includes("/event/jp/1/trace-ranking/user/public-user")) {
-        return new Response(JSON.stringify({
-          rankData: [
+          playerTrace: [
             { timestamp: 1710000000, userId: "public-user", score: 100, rank: 1 },
             { timestamp: 1710000600, userId: "public-user", score: 200, rank: 1 },
           ],
@@ -285,7 +269,50 @@ describe("rank border tracker api", () => {
     }
 
     expect(requests).toEqual([
-      "https://tracker.example/base/event/jp/1/trace-ranking/user/public-user?full=1&all=1&limit=5000",
+      "https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/details/user/public-user?includeTrace=true&includeProfile=false&limit=5000",
+    ])
+  })
+
+  it("uses v2 web user search routes", async () => {
+    const originalFetch = globalThis.fetch
+    const requests: string[] = []
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      requests.push(url)
+      if (url.includes("/api/v2/web/events/jp/1/leaderboards/total/users/search")) {
+        return new Response(JSON.stringify({
+          items: [
+            { userId: "abc", name: "Alice" },
+          ],
+        }), { status: 200 })
+      }
+      return new Response("unexpected", { status: 500 })
+    }) as typeof fetch
+
+    try {
+      const users = await fetchRankBorderUserProfiles({
+        endpoint: "https://tracker.example/base",
+        region: "jp",
+        eventId: 1,
+        mode: "normal",
+        query: "Alice",
+      })
+      const user = await fetchRankBorderPublicUserProfile({
+        endpoint: "https://tracker.example/base",
+        region: "jp",
+        eventId: 1,
+        mode: "normal",
+        uniqueId: "a".repeat(64),
+      })
+      expect(users[0]?.name).toBe("Alice")
+      expect(user?.name).toBe("Alice")
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    expect(requests).toEqual([
+      "https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/users/search?name=Alice&limit=5",
+      `https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/users/search?uniqueId=${"a".repeat(64)}&limit=5`,
     ])
   })
 })

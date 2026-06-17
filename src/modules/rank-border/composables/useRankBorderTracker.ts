@@ -1,8 +1,8 @@
 import { computed, ref } from "vue"
 import {
-  fetchRankBorderLatestByUser,
   fetchRankBorderOverview,
-  fetchRankBorderWebRankings,
+  fetchRankBorderWebRankDetailV2,
+  fetchRankBorderWebUserDetailV2,
   type RankBorderTrackerScope,
 } from "../api/rank-border"
 import type {
@@ -92,10 +92,11 @@ export function useRankBorderTracker() {
     }
 
     try {
-      userResult.value = await fetchRankBorderLatestByUser({
+      const detail = await fetchRankBorderWebUserDetailV2({
         ...scope,
         userId: normalizedUserId,
       })
+      userResult.value = detail.current
       userError.value = userResult.value ? null : "not found"
     } catch (refreshError) {
       userResult.value = null
@@ -113,15 +114,13 @@ export function useRankBorderTracker() {
 
     try {
       const rank = Number(normalizedRank)
-      const rankings = Number.isInteger(rank) && rank > 0
-        ? await fetchRankBorderWebRankings({
+      const detail = Number.isInteger(rank) && rank > 0
+        ? await fetchRankBorderWebRankDetailV2({
             ...scope,
-            rankMin: rank,
-            rankMax: rank,
-            limit: 1,
+            rank,
           })
         : null
-      rankResult.value = rankings?.items[0] ?? null
+      rankResult.value = detail?.current ?? null
       rankError.value = rankResult.value ? null : "not found"
     } catch (refreshError) {
       rankResult.value = null
