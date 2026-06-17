@@ -260,6 +260,14 @@ type RankBorderHonorLevelStar = {
   layer: number
 }
 
+type RichNameSegment = {
+  key: string
+  text: string
+  color: string | null
+}
+
+type RecoverableImageTarget = HTMLImageElement | SVGImageElement
+
 type PlayerDetailSource = "rank" | "user"
 
 type PlayerDetailState = {
@@ -317,6 +325,11 @@ const DETAIL_UPDATE_RECORD_LIMIT = 8
 const DETAIL_CSB_WINDOW_SECONDS = 20 * 60 * 3
 const TOP_100_DETAIL_CACHE_TTL_MS = 2 * 60 * 1000
 const TOP_100_DETAIL_CACHE_PREFIX = "haruki:rank-border:top100:v2:"
+const IMAGE_RETRY_LIMIT = 3
+const IMAGE_RETRY_DELAY_MS = 260
+const IMAGE_RETRY_PARAM = "hrk_image_retry"
+const IMAGE_RETRY_ORIGINAL_ATTRIBUTE = "data-rank-border-original-src"
+const IMAGE_RETRY_COUNT_ATTRIBUTE = "data-rank-border-retry-count"
 const HEATMAP_MYSEKAI_ROUND_THRESHOLD = 37
 const HEATMAP_ACTIVE_ROUND_BASELINE = 15
 const HEATMAP_ACTIVE_ROUND_SPAN = 15
@@ -2883,6 +2896,68 @@ function formatUserLabel(result: { name: string | null } | null) {
   return result.name ?? t("rankBorder.result.unknownPlayer")
 }
 
+function richUserLabelSegments(result: { name: string | null } | null, fallback = "-"): RichNameSegment[] {
+  return parseRichNameSegments(result ? formatUserLabel(result) : fallback)
+}
+
+function richDetailTitleSegments(value: DetailState): RichNameSegment[] {
+  return parseRichNameSegments(formatDetailTitle(value))
+}
+
+function richNameSegmentStyle(segment: RichNameSegment) {
+  return segment.color ? { color: segment.color } : undefined
+}
+
+function parseRichNameSegments(value: string): RichNameSegment[] {
+  const rawText = value
+  const segments: Omit<RichNameSegment, "key">[] = [{ text: "", color: null }]
+  let rest = value
+
+  try {
+    while (true) {
+      const openIndex = rest.indexOf("<#")
+      if (openIndex === -1) {
+        segments[segments.length - 1].text += rest.replaceAll("</color>", "")
+        break
+      }
+
+      const closeIndex = rest.indexOf(">", openIndex)
+      if (closeIndex === -1) {
+        throw new Error("Unclosed color tag")
+      }
+
+      segments[segments.length - 1].text += rest.slice(0, openIndex).replaceAll("</color>", "")
+      const code = rest.slice(openIndex + 2, closeIndex)
+      const color = normalizeRichNameColor(code)
+      if (!color) {
+        throw new Error("Invalid color tag")
+      }
+
+      segments.push({ text: "", color })
+      rest = rest.slice(closeIndex + 1)
+    }
+  } catch {
+    return [{ key: "plain", text: rawText, color: null }]
+  }
+
+  const visibleSegments = segments.filter((segment) => segment.text.length > 0)
+  return visibleSegments.length > 0
+    ? visibleSegments.map((segment, index) => ({ ...segment, key: `${index}:${segment.text}:${segment.color ?? ""}` }))
+    : [{ key: "plain", text: rawText, color: null }]
+}
+
+function normalizeRichNameColor(code: string) {
+  if (/^[\dA-Fa-f]{3}$/.test(code)) {
+    return `#${code.split("").map((value) => `${value}${value}`).join("").toLowerCase()}`
+  }
+
+  if (/^[\dA-Fa-f]{6}$/.test(code)) {
+    return `#${code.toLowerCase()}`
+  }
+
+  return null
+}
+
 function buildMasterRecordMap<T extends { id?: number }>(items: T[]) {
   const map = new Map<number, T>()
   for (const item of items) {
@@ -3561,15 +3636,106 @@ function honorLevelStars(honor: RankBorderHonorView) {
 }
 
 function hideBrokenImage(event: Event) {
-  if (event.target instanceof HTMLImageElement) {
-    event.target.hidden = true
+  if (event.target instanceof HTMLImageElement || event.target instanceof SVGImageElement) {
+    retryRecoverableImage(event.target)
+  }
+}
+
+function resetRecoveredImage(event: Event) {
+  if (event.target instanceof HTMLImageElement || event.target instanceof SVGImageElement) {
+    event.target.removeAttribute(IMAGE_RETRY_COUNT_ATTRIBUTE)
+    event.target.removeAttribute(IMAGE_RETRY_ORIGINAL_ATTRIBUTE)
+  }
+}
+
+function retryRecoverableImage(target: RecoverableImageTarget) {
+  const currentSource = recoverableImageSource(target)
+  if (!currentSource) {
+    hideRecoverableImage(target)
     return
   }
 
-  if (event.target instanceof SVGImageElement) {
-    event.target.style.display = "none"
-    event.target.setAttribute("visibility", "hidden")
-    event.target.removeAttribute("href")
+  const strippedSource = stripImageRetryParam(currentSource)
+  const storedSource = target.getAttribute(IMAGE_RETRY_ORIGINAL_ATTRIBUTE)
+  const originalSource = storedSource && stripImageRetryParam(storedSource) === strippedSource
+    ? storedSource
+    : strippedSource
+  target.setAttribute(IMAGE_RETRY_ORIGINAL_ATTRIBUTE, originalSource)
+  const retryCount = Number(target.getAttribute(IMAGE_RETRY_COUNT_ATTRIBUTE) ?? "0")
+  if (retryCount >= IMAGE_RETRY_LIMIT) {
+    hideRecoverableImage(target)
+    return
+  }
+
+  const nextRetryCount = retryCount + 1
+  target.setAttribute(IMAGE_RETRY_COUNT_ATTRIBUTE, String(nextRetryCount))
+  window.setTimeout(() => {
+    if (!target.isConnected || target.getAttribute(IMAGE_RETRY_ORIGINAL_ATTRIBUTE) !== originalSource) {
+      return
+    }
+
+    showRecoverableImage(target)
+    setRecoverableImageSource(target, appendImageRetryParam(originalSource, nextRetryCount))
+  }, IMAGE_RETRY_DELAY_MS * nextRetryCount)
+}
+
+function recoverableImageSource(target: RecoverableImageTarget) {
+  if (target instanceof HTMLImageElement) {
+    return target.getAttribute("src") || target.currentSrc || target.src
+  }
+
+  return target.getAttribute("href")
+    || target.getAttributeNS("http://www.w3.org/1999/xlink", "href")
+}
+
+function setRecoverableImageSource(target: RecoverableImageTarget, source: string) {
+  if (target instanceof HTMLImageElement) {
+    target.src = source
+    return
+  }
+
+  target.setAttribute("href", source)
+  target.setAttributeNS("http://www.w3.org/1999/xlink", "href", source)
+}
+
+function hideRecoverableImage(target: RecoverableImageTarget) {
+  if (target instanceof HTMLImageElement) {
+    target.hidden = true
+    return
+  }
+
+  target.style.display = "none"
+  target.setAttribute("visibility", "hidden")
+}
+
+function showRecoverableImage(target: RecoverableImageTarget) {
+  if (target instanceof HTMLImageElement) {
+    target.hidden = false
+    return
+  }
+
+  target.style.display = ""
+  target.removeAttribute("visibility")
+}
+
+function appendImageRetryParam(source: string, retryCount: number) {
+  const [baseSource, hash = ""] = source.split("#", 2)
+  const separator = baseSource.includes("?") ? "&" : "?"
+  const nextSource = `${stripImageRetryParam(baseSource)}${separator}${IMAGE_RETRY_PARAM}=${retryCount}-${Date.now()}`
+  return hash ? `${nextSource}#${hash}` : nextSource
+}
+
+function stripImageRetryParam(source: string) {
+  try {
+    const url = new URL(source, window.location.href)
+    url.searchParams.delete(IMAGE_RETRY_PARAM)
+    if (source.startsWith("http://") || source.startsWith("https://") || source.startsWith("//")) {
+      return url.toString()
+    }
+
+    return `${url.pathname}${url.search}${url.hash}`
+  } catch {
+    return source.replace(new RegExp(`([?&])${IMAGE_RETRY_PARAM}=[^&#]*&?`), "$1").replace(/[?&]$/, "")
   }
 }
 
@@ -4629,69 +4795,80 @@ function traceUpdateRecords(
                       </span>
                     </div>
 
-                  <div class="rank-border-player-scroll">
-                    <div
-                      :class="[
-                        'rank-border-player-track',
-                        shouldRenderProfileAssets ? 'rank-border-player-track--assets' : 'rank-border-player-track--plain',
-                      ]"
-                    >
+                    <div class="rank-border-player-scroll">
                       <div
-                        v-if="shouldRenderProfileAssets"
-                        class="rank-border-leader rank-border-leader--row"
+                        :class="[
+                          'rank-border-player-track',
+                          shouldRenderProfileAssets ? 'rank-border-player-track--assets' : 'rank-border-player-track--plain',
+                        ]"
                       >
-                        <img
-                          v-if="leaderThumbnailUrl(row.detail)"
-                          class="rank-border-leader__base"
-                          :src="leaderThumbnailUrl(row.detail) ?? ''"
-                          :alt="leaderCardLabel(row.detail) ?? ''"
-                          loading="lazy"
-                          @error="hideBrokenImage"
+                        <div
+                          v-if="shouldRenderProfileAssets"
+                          class="rank-border-leader rank-border-leader--row"
                         >
-                        <UserRound v-else class="rank-border-leader__fallback size-4" />
-                        <span v-if="leaderThumbnailUrl(row.detail)" class="rank-border-leader__level-band" aria-hidden="true" />
-                        <span v-if="leaderLevelLabel(row.detail)" class="rank-border-leader__level">{{ leaderLevelLabel(row.detail) }}</span>
-                        <img
-                          v-if="leaderCardFrameUrl(row.detail)"
-                          class="rank-border-leader__frame"
-                          :src="leaderCardFrameUrl(row.detail) ?? ''"
-                          alt=""
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <img
-                          v-if="leaderAttrIconUrl(row.detail)"
-                          class="rank-border-leader__attr"
-                          :src="leaderAttrIconUrl(row.detail) ?? ''"
-                          alt=""
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                        <span v-if="leaderRareIconUrl(row.detail) && leaderRareCount(row.detail) > 0" class="rank-border-leader__stars" aria-hidden="true">
                           <img
-                            v-for="starIndex in leaderRareCount(row.detail)"
-                            :key="starIndex"
-                            class="rank-border-leader__star"
-                            :src="leaderRareIconUrl(row.detail) ?? ''"
-                            alt=""
+                            v-if="leaderThumbnailUrl(row.detail)"
+                            class="rank-border-leader__base"
+                            :src="leaderThumbnailUrl(row.detail) ?? ''"
+                            :alt="leaderCardLabel(row.detail) ?? ''"
                             loading="lazy"
+                            @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           >
-                        </span>
-                        <img
-                          v-if="leaderMasterRankUrl(row.detail)"
-                          class="rank-border-leader__train-rank"
-                          :src="leaderMasterRankUrl(row.detail) ?? ''"
-                          :alt="leaderMasterRankLabel(row.detail) ?? ''"
-                          loading="lazy"
-                          @error="hideBrokenImage"
-                        >
-                      </div>
-                      <div class="rank-border-player-copy">
-                        <p class="rank-border-player-name">
-                          {{ row.detail ? formatUserLabel(row.detail) : t("rankBorder.result.noPlayer") }}
-                        </p>
-                        <div v-if="shouldRenderProfileAssets && profileHonorViews(row.detail, 3, rowHonorKeyScope(row)).length > 0" class="rank-border-honor-strip rank-border-honor-strip--row">
+                          <UserRound v-else class="rank-border-leader__fallback size-4" />
+                          <span v-if="leaderThumbnailUrl(row.detail)" class="rank-border-leader__level-band" aria-hidden="true" />
+                          <span v-if="leaderLevelLabel(row.detail)" class="rank-border-leader__level">{{ leaderLevelLabel(row.detail) }}</span>
+                          <img
+                            v-if="leaderCardFrameUrl(row.detail)"
+                            class="rank-border-leader__frame"
+                            :src="leaderCardFrameUrl(row.detail) ?? ''"
+                            alt=""
+                            loading="lazy"
+                            @load="resetRecoveredImage"
+                            @error="hideBrokenImage"
+                          >
+                          <img
+                            v-if="leaderAttrIconUrl(row.detail)"
+                            class="rank-border-leader__attr"
+                            :src="leaderAttrIconUrl(row.detail) ?? ''"
+                            alt=""
+                            loading="lazy"
+                            @load="resetRecoveredImage"
+                            @error="hideBrokenImage"
+                          >
+                          <span v-if="leaderRareIconUrl(row.detail) && leaderRareCount(row.detail) > 0" class="rank-border-leader__stars" aria-hidden="true">
+                            <img
+                              v-for="starIndex in leaderRareCount(row.detail)"
+                              :key="starIndex"
+                              class="rank-border-leader__star"
+                              :src="leaderRareIconUrl(row.detail) ?? ''"
+                              alt=""
+                              loading="lazy"
+                              @load="resetRecoveredImage"
+                              @error="hideBrokenImage"
+                            >
+                          </span>
+                          <img
+                            v-if="leaderMasterRankUrl(row.detail)"
+                            class="rank-border-leader__train-rank"
+                            :src="leaderMasterRankUrl(row.detail) ?? ''"
+                            :alt="leaderMasterRankLabel(row.detail) ?? ''"
+                            loading="lazy"
+                            @load="resetRecoveredImage"
+                            @error="hideBrokenImage"
+                          >
+                        </div>
+                        <div class="rank-border-player-copy">
+                          <p class="rank-border-player-name">
+                            <span
+                              v-for="segment in richUserLabelSegments(row.detail, t('rankBorder.result.noPlayer'))"
+                              :key="segment.key"
+                              :style="richNameSegmentStyle(segment)"
+                            >
+                              {{ segment.text }}
+                            </span>
+                          </p>
+                          <div v-if="shouldRenderProfileAssets && profileHonorViews(row.detail, 3, rowHonorKeyScope(row)).length > 0" class="rank-border-honor-strip rank-border-honor-strip--row">
                           <span
                             v-for="honor in profileHonorViews(row.detail, 3, rowHonorKeyScope(row))"
                             :key="honor.key"
@@ -4699,12 +4876,17 @@ function traceUpdateRecords(
                           >
                             <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
                               <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
-                                <image :href="honor.baseUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none" @error="hideBrokenImage" />
+                                <image
+                                  :href="honor.baseUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                                  @load="resetRecoveredImage"
+                                  @error="hideBrokenImage"
+                                />
                                 <image
                                   v-if="honor.frameUrl"
                                   :href="honor.frameUrl"
                                   v-bind="honorFrameSvgAttrs(honor)"
                                   preserveAspectRatio="none"
+                                  @load="resetRecoveredImage"
                                   @error="hideBrokenImage"
                                 />
                                 <image
@@ -4712,6 +4894,7 @@ function traceUpdateRecords(
                                   :href="honor.rankUrl"
                                   v-bind="honorRankSvgAttrs(honor)"
                                   preserveAspectRatio="none"
+                                  @load="resetRecoveredImage"
                                   @error="hideBrokenImage"
                                 />
                                 <image
@@ -4722,6 +4905,7 @@ function traceUpdateRecords(
                                   width="101"
                                   height="75"
                                   preserveAspectRatio="none"
+                                  @load="resetRecoveredImage"
                                   @error="hideBrokenImage"
                                 />
                                 <image
@@ -4733,6 +4917,7 @@ function traceUpdateRecords(
                                   width="16"
                                   height="16"
                                   preserveAspectRatio="none"
+                                  @load="resetRecoveredImage"
                                   @error="hideBrokenImage"
                                 />
                                 <text
@@ -4751,7 +4936,11 @@ function traceUpdateRecords(
                               <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
                                 <defs>
                                   <mask :id="honorSvgId(honor, 'mask')" maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="80" style="mask-type: alpha">
-                                    <image href="/rank-border/honor/mask_degree_sub.png" x="0" y="0" width="180" height="80" preserveAspectRatio="none" @error="hideBrokenImage" />
+                                    <image
+                                      href="/rank-border/honor/mask_degree_sub.png" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                                      @load="resetRecoveredImage"
+                                      @error="hideBrokenImage"
+                                    />
                                   </mask>
                                   <clipPath :id="honorSvgId(honor, 'left-bg')">
                                     <rect x="0" y="0" width="93" height="80" />
@@ -4764,7 +4953,11 @@ function traceUpdateRecords(
                                   </clipPath>
                                 </defs>
                                 <g :mask="`url(#${honorSvgId(honor, 'mask')})`">
-                                  <image :href="honor.bondsRightBgUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none" @error="hideBrokenImage" />
+                                  <image
+                                    :href="honor.bondsRightBgUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                                    @load="resetRecoveredImage"
+                                    @error="hideBrokenImage"
+                                  />
                                   <image
                                     :href="honor.bondsLeftBgUrl"
                                     x="0"
@@ -4773,6 +4966,7 @@ function traceUpdateRecords(
                                     height="80"
                                     preserveAspectRatio="none"
                                     :clip-path="`url(#${honorSvgId(honor, 'left-bg')})`"
+                                    @load="resetRecoveredImage"
                                     @error="hideBrokenImage"
                                   />
                                   <image
@@ -4784,6 +4978,7 @@ function traceUpdateRecords(
                                     height="109"
                                     preserveAspectRatio="none"
                                     :clip-path="`url(#${honorSvgId(honor, 'left-icon')})`"
+                                    @load="resetRecoveredImage"
                                     @error="hideBrokenImage"
                                   />
                                   <image
@@ -4795,6 +4990,7 @@ function traceUpdateRecords(
                                     height="109"
                                     preserveAspectRatio="none"
                                     :clip-path="`url(#${honorSvgId(honor, 'right-icon')})`"
+                                    @load="resetRecoveredImage"
                                     @error="hideBrokenImage"
                                   />
                                 </g>
@@ -4803,6 +4999,7 @@ function traceUpdateRecords(
                                   :href="honor.frameUrl"
                                   v-bind="honorFrameSvgAttrs(honor)"
                                   preserveAspectRatio="none"
+                                  @load="resetRecoveredImage"
                                   @error="hideBrokenImage"
                                 />
                                 <image
@@ -4814,6 +5011,7 @@ function traceUpdateRecords(
                                   width="16"
                                   height="16"
                                   preserveAspectRatio="none"
+                                  @load="resetRecoveredImage"
                                   @error="hideBrokenImage"
                                 />
                               </svg>
@@ -4860,7 +5058,15 @@ function traceUpdateRecords(
                     <template v-else-if="detail && isMobileDetailExpanded('rank', row.rank)">
                       <div class="rank-border-mobile-fact__head">
                         <div class="min-w-0">
-                          <p class="truncate text-xs text-muted-foreground">{{ formatDetailTitle(detail) }}</p>
+                          <p class="truncate text-xs text-muted-foreground">
+                            <span
+                              v-for="segment in richDetailTitleSegments(detail)"
+                              :key="segment.key"
+                              :style="richNameSegmentStyle(segment)"
+                            >
+                              {{ segment.text }}
+                            </span>
+                          </p>
                           <p class="truncate text-xl font-semibold tabular-nums">{{ formatDetailRank(detail) }}</p>
                         </div>
                         <Button type="button" variant="outline" size="sm" class="h-8 shrink-0" @click.stop="openDetailFromMobileFact">
@@ -4981,7 +5187,15 @@ function traceUpdateRecords(
                   <template v-else-if="detail && isMobileDetailExpanded('line', row.rank)">
                     <div class="rank-border-mobile-fact__head">
                       <div class="min-w-0">
-                        <p class="truncate text-xs text-muted-foreground">{{ formatDetailTitle(detail) }}</p>
+                        <p class="truncate text-xs text-muted-foreground">
+                          <span
+                            v-for="segment in richDetailTitleSegments(detail)"
+                            :key="segment.key"
+                            :style="richNameSegmentStyle(segment)"
+                          >
+                            {{ segment.text }}
+                          </span>
+                        </p>
                         <p class="truncate text-xl font-semibold tabular-nums">{{ formatDetailRank(detail) }}</p>
                       </div>
                       <Button type="button" variant="outline" size="sm" class="h-8 shrink-0" @click.stop="openDetailFromMobileFact">
@@ -5056,6 +5270,7 @@ function traceUpdateRecords(
                           :src="leaderThumbnailUrl(detail.result) ?? ''"
                           :alt="leaderCardLabel(detail.result) ?? ''"
                           loading="lazy"
+                          @load="resetRecoveredImage"
                           @error="hideBrokenImage"
                         >
                         <UserRound v-else class="rank-border-leader__fallback size-6" />
@@ -5067,6 +5282,7 @@ function traceUpdateRecords(
                           :src="leaderCardFrameUrl(detail.result) ?? ''"
                           alt=""
                           loading="lazy"
+                          @load="resetRecoveredImage"
                           @error="hideBrokenImage"
                         >
                         <img
@@ -5075,6 +5291,7 @@ function traceUpdateRecords(
                           :src="leaderAttrIconUrl(detail.result) ?? ''"
                           alt=""
                           loading="lazy"
+                          @load="resetRecoveredImage"
                           @error="hideBrokenImage"
                         >
                         <span v-if="leaderRareIconUrl(detail.result) && leaderRareCount(detail.result) > 0" class="rank-border-leader__stars" aria-hidden="true">
@@ -5085,6 +5302,7 @@ function traceUpdateRecords(
                             :src="leaderRareIconUrl(detail.result) ?? ''"
                             alt=""
                             loading="lazy"
+                            @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           >
                         </span>
@@ -5094,11 +5312,20 @@ function traceUpdateRecords(
                           :src="leaderMasterRankUrl(detail.result) ?? ''"
                           :alt="leaderMasterRankLabel(detail.result) ?? ''"
                           loading="lazy"
+                          @load="resetRecoveredImage"
                           @error="hideBrokenImage"
                         >
                       </div>
                       <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm text-muted-foreground">{{ formatDetailTitle(detail) }}</p>
+                        <p class="truncate text-sm text-muted-foreground">
+                          <span
+                            v-for="segment in richDetailTitleSegments(detail)"
+                            :key="segment.key"
+                            :style="richNameSegmentStyle(segment)"
+                          >
+                            {{ segment.text }}
+                          </span>
+                        </p>
                         <p class="mt-1 truncate text-3xl font-semibold tabular-nums">{{ formatDetailRank(detail) }}</p>
                       </div>
                     </div>
@@ -5189,7 +5416,14 @@ function traceUpdateRecords(
                   </span>
                 </DialogTitle>
                 <DialogDescription>
-                  {{ formatDetailTitle(detail) }} / {{ formatDetailRank(detail) }}
+                  <span
+                    v-for="segment in richDetailTitleSegments(detail)"
+                    :key="segment.key"
+                    :style="richNameSegmentStyle(segment)"
+                  >
+                    {{ segment.text }}
+                  </span>
+                  <span> / {{ formatDetailRank(detail) }}</span>
                 </DialogDescription>
               </DialogHeader>
 
@@ -5211,6 +5445,7 @@ function traceUpdateRecords(
                         :src="leaderThumbnailUrl(detail.result) ?? ''"
                         :alt="leaderCardLabel(detail.result) ?? ''"
                         loading="lazy"
+                        @load="resetRecoveredImage"
                         @error="hideBrokenImage"
                       >
                       <UserRound v-else class="rank-border-leader__fallback size-7" />
@@ -5222,6 +5457,7 @@ function traceUpdateRecords(
                         :src="leaderCardFrameUrl(detail.result) ?? ''"
                         alt=""
                         loading="lazy"
+                        @load="resetRecoveredImage"
                         @error="hideBrokenImage"
                       >
                       <img
@@ -5230,6 +5466,7 @@ function traceUpdateRecords(
                         :src="leaderAttrIconUrl(detail.result) ?? ''"
                         alt=""
                         loading="lazy"
+                        @load="resetRecoveredImage"
                         @error="hideBrokenImage"
                       >
                       <span v-if="leaderRareIconUrl(detail.result) && leaderRareCount(detail.result) > 0" class="rank-border-leader__stars" aria-hidden="true">
@@ -5240,6 +5477,7 @@ function traceUpdateRecords(
                           :src="leaderRareIconUrl(detail.result) ?? ''"
                           alt=""
                           loading="lazy"
+                          @load="resetRecoveredImage"
                           @error="hideBrokenImage"
                         >
                       </span>
@@ -5249,11 +5487,20 @@ function traceUpdateRecords(
                         :src="leaderMasterRankUrl(detail.result) ?? ''"
                         :alt="leaderMasterRankLabel(detail.result) ?? ''"
                         loading="lazy"
+                        @load="resetRecoveredImage"
                         @error="hideBrokenImage"
                       >
                     </div>
                     <div class="rank-border-detail-profile__copy">
-                      <p class="truncate text-sm text-muted-foreground">{{ formatUserLabel(isLatestResult(detail.result) ? detail.result : null) }}</p>
+                      <p class="truncate text-sm text-muted-foreground">
+                        <span
+                          v-for="segment in richUserLabelSegments(isLatestResult(detail.result) ? detail.result : null)"
+                          :key="segment.key"
+                          :style="richNameSegmentStyle(segment)"
+                        >
+                          {{ segment.text }}
+                        </span>
+                      </p>
                       <div class="rank-border-detail-profile__score">
                         <p class="rank-border-detail-rank">{{ formatDetailRank(detail) }}</p>
                         <p
@@ -5278,12 +5525,17 @@ function traceUpdateRecords(
                     >
                       <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
                         <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
-                          <image :href="honor.baseUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none" @error="hideBrokenImage" />
+                          <image
+                            :href="honor.baseUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                            @load="resetRecoveredImage"
+                            @error="hideBrokenImage"
+                          />
                           <image
                             v-if="honor.frameUrl"
                             :href="honor.frameUrl"
                             v-bind="honorFrameSvgAttrs(honor)"
                             preserveAspectRatio="none"
+                            @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           />
                           <image
@@ -5291,6 +5543,7 @@ function traceUpdateRecords(
                             :href="honor.rankUrl"
                             v-bind="honorRankSvgAttrs(honor)"
                             preserveAspectRatio="none"
+                            @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           />
                           <image
@@ -5301,6 +5554,7 @@ function traceUpdateRecords(
                             width="101"
                             height="75"
                             preserveAspectRatio="none"
+                            @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           />
                           <image
@@ -5312,6 +5566,7 @@ function traceUpdateRecords(
                             width="16"
                             height="16"
                             preserveAspectRatio="none"
+                            @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           />
                           <text
@@ -5330,7 +5585,11 @@ function traceUpdateRecords(
                         <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
                           <defs>
                             <mask :id="honorSvgId(honor, 'mask')" maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="80" style="mask-type: alpha">
-                              <image href="/rank-border/honor/mask_degree_sub.png" x="0" y="0" width="180" height="80" preserveAspectRatio="none" @error="hideBrokenImage" />
+                              <image
+                                href="/rank-border/honor/mask_degree_sub.png" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                                @load="resetRecoveredImage"
+                                @error="hideBrokenImage"
+                              />
                             </mask>
                             <clipPath :id="honorSvgId(honor, 'left-bg')">
                               <rect x="0" y="0" width="93" height="80" />
@@ -5343,7 +5602,11 @@ function traceUpdateRecords(
                             </clipPath>
                           </defs>
                           <g :mask="`url(#${honorSvgId(honor, 'mask')})`">
-                            <image :href="honor.bondsRightBgUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none" @error="hideBrokenImage" />
+                            <image
+                              :href="honor.bondsRightBgUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                              @load="resetRecoveredImage"
+                              @error="hideBrokenImage"
+                            />
                             <image
                               :href="honor.bondsLeftBgUrl"
                               x="0"
@@ -5352,6 +5615,7 @@ function traceUpdateRecords(
                               height="80"
                               preserveAspectRatio="none"
                               :clip-path="`url(#${honorSvgId(honor, 'left-bg')})`"
+                              @load="resetRecoveredImage"
                               @error="hideBrokenImage"
                             />
                             <image
@@ -5363,6 +5627,7 @@ function traceUpdateRecords(
                               height="109"
                               preserveAspectRatio="none"
                               :clip-path="`url(#${honorSvgId(honor, 'left-icon')})`"
+                              @load="resetRecoveredImage"
                               @error="hideBrokenImage"
                             />
                             <image
@@ -5374,6 +5639,7 @@ function traceUpdateRecords(
                               height="109"
                               preserveAspectRatio="none"
                               :clip-path="`url(#${honorSvgId(honor, 'right-icon')})`"
+                              @load="resetRecoveredImage"
                               @error="hideBrokenImage"
                             />
                           </g>
@@ -5382,6 +5648,7 @@ function traceUpdateRecords(
                             :href="honor.frameUrl"
                             v-bind="honorFrameSvgAttrs(honor)"
                             preserveAspectRatio="none"
+                            @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           />
                           <image
@@ -5393,6 +5660,7 @@ function traceUpdateRecords(
                             width="16"
                             height="16"
                             preserveAspectRatio="none"
+                            @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           />
                         </svg>
@@ -5939,13 +6207,14 @@ function traceUpdateRecords(
   width: max-content;
   min-width: 100%;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: start;
+  gap: 0.5rem;
   padding-block: 0.125rem;
   padding-inline-end: 0.75rem;
 }
 
 .rank-border-player-track--assets {
-  grid-template-columns: auto max-content;
+  grid-template-columns: max-content max-content;
 }
 
 .rank-border-player-track--plain {
@@ -5957,17 +6226,25 @@ function traceUpdateRecords(
   display: grid;
   width: max-content;
   min-width: 0;
+  justify-items: start;
   gap: 0.375rem;
+  text-align: left;
 }
 
 .rank-border-player-name {
+  display: inline-flex;
+  width: max-content;
+  justify-self: start;
   min-width: max-content;
   max-width: none;
+  align-items: baseline;
+  justify-content: flex-start;
   overflow: visible;
   color: var(--foreground);
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.35;
+  text-align: left;
   white-space: nowrap;
 }
 
