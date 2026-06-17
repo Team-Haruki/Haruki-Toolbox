@@ -328,6 +328,7 @@ const DETAIL_UPDATE_RECORD_LIMIT = 8
 const DETAIL_CSB_WINDOW_SECONDS = 20 * 60 * 3
 const TOP_100_DETAIL_CACHE_TTL_MS = 2 * 60 * 1000
 const TOP_100_DETAIL_CACHE_PREFIX = "haruki:rank-border:top100:v2:"
+const IMAGE_RETRY_LIMIT = 6
 const IMAGE_RETRY_DELAY_MS = 260
 const IMAGE_RETRY_BACKOFF_LIMIT = 8
 const IMAGE_RETRY_MAX_DELAY_MS = 30_000
@@ -3631,12 +3632,19 @@ function retryRecoverableImage(target: RecoverableImageTarget) {
 
   const strippedSource = stripImageRetryParam(currentSource)
   const storedSource = target.getAttribute(IMAGE_RETRY_ORIGINAL_ATTRIBUTE)
-  const originalSource = storedSource && stripImageRetryParam(storedSource) === strippedSource
+  const storedSourceMatches = storedSource != null && stripImageRetryParam(storedSource) === strippedSource
+  const originalSource = storedSourceMatches
     ? storedSource
     : strippedSource
   target.setAttribute(IMAGE_RETRY_ORIGINAL_ATTRIBUTE, originalSource)
   hideRecoverableImage(target)
-  const retryCount = Number(target.getAttribute(IMAGE_RETRY_COUNT_ATTRIBUTE) ?? "0")
+  const retryCount = storedSourceMatches
+    ? Number(target.getAttribute(IMAGE_RETRY_COUNT_ATTRIBUTE) ?? "0")
+    : 0
+  if (retryCount >= IMAGE_RETRY_LIMIT) {
+    return
+  }
+
   const nextRetryCount = retryCount + 1
   target.setAttribute(IMAGE_RETRY_COUNT_ATTRIBUTE, String(nextRetryCount))
   window.setTimeout(() => {
@@ -3644,7 +3652,6 @@ function retryRecoverableImage(target: RecoverableImageTarget) {
       return
     }
 
-    showRecoverableImage(target)
     setRecoverableImageSource(target, appendImageRetryParam(originalSource, nextRetryCount))
   }, recoverableImageRetryDelay(nextRetryCount))
 }
