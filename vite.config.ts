@@ -77,7 +77,7 @@ function resolveLocalDevServer(command: string) {
     return {
         host: '127.0.0.1',
         allowedHosts: [localDevHost],
-        port: 443,
+        port: 5173,
         strictPort: true,
         https: {
             cert: readFileSync(localDevCert),

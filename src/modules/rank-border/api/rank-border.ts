@@ -602,7 +602,7 @@ export function isRankBorderTrackerUnauthorizedError(error: unknown): boolean {
 async function fetchTrackerJson(
   endpoint: string,
   path: string,
-  cacheBust = false,
+  _cacheBust = false,
   playbackAt?: number | null,
   useWebSocket = false,
   credentials: TrackerFetchCredentials = "omit",
@@ -614,7 +614,7 @@ async function fetchTrackerJson(
 
   const requestPath = appendPlaybackQuery(path, playbackAt)
   if (!useWebSocket) {
-    return fetchTrackerJsonViaRest(baseUrl, requestPath, cacheBust, credentials)
+    return fetchTrackerJsonViaRest(baseUrl, requestPath, credentials)
   }
 
   const wsUrl = resolveRankBorderTrackerWebSocketUrl(baseUrl)
@@ -637,13 +637,12 @@ async function fetchTrackerJson(
     throw toError(wsError, "Tracker WebSocket endpoint is unavailable")
   }
 
-  return fetchTrackerJsonViaRest(baseUrl, requestPath, cacheBust, credentials)
+  return fetchTrackerJsonViaRest(baseUrl, requestPath, credentials)
 }
 
 async function fetchTrackerJsonViaRest(
   baseUrl: string,
   path: string,
-  _cacheBust: boolean,
   credentials: TrackerFetchCredentials,
 ): Promise<unknown> {
   const restBaseUrl = resolveRankBorderTrackerRestEndpoint(baseUrl)
