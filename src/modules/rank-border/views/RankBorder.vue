@@ -274,6 +274,7 @@ type PlayerDetailSource = "rank" | "user"
 type PlayerDetailState = {
   source: PlayerDetailSource
   query: string
+  trackedUserId: string | null
   result: RankBorderLatest
   previous: RankBorderLatest | null
   next: RankBorderLatest | null
@@ -1599,6 +1600,7 @@ async function openRankDetail(rank: number) {
     const nextDetail: PlayerDetailState = {
       source: "rank",
       query: String(rank),
+      trackedUserId: resolveTrackedPlayerId(cachedDetail),
       result: cachedDetail,
       previous: rank > 1 ? top100Details.value.get(rank - 1) ?? null : null,
       next: top100Details.value.get(rank + 1) ?? null,
@@ -1608,14 +1610,19 @@ async function openRankDetail(rank: number) {
     detailLoading.value = false
     refreshDetailTrace(nextDetail)
     markDetailScoreChange(previousScore, cachedDetail.score)
-    void loadRankDetail(rank, true, requestToken)
+    void loadRankDetail(rank, true, requestToken, { trackedUserId: nextDetail.trackedUserId })
     return
   }
 
   await loadRankDetail(rank, false, requestToken)
 }
 
-async function loadRankDetail(rank: number, silent: boolean, requestToken = detailRequestToken) {
+async function loadRankDetail(
+  rank: number,
+  silent: boolean,
+  requestToken = detailRequestToken,
+  options: { trackedUserId?: string | null } = {},
+) {
   if (!rank || !canRefresh.value) {
     return
   }
@@ -1626,11 +1633,10 @@ async function loadRankDetail(rank: number, silent: boolean, requestToken = deta
   }
   detailError.value = null
   try {
-    const [result, previous, next] = await Promise.all([
-      fetchLatestPublicRank(rank, { enrichProfile: true }),
-      rank > 1 ? fetchLatestPublicRank(rank - 1).catch(() => null) : Promise.resolve(null),
-      fetchLatestPublicRank(rank + 1).catch(() => null),
-    ])
+    const trackedUserId = normalizeTextValue(options.trackedUserId)
+    const result = trackedUserId
+      ? await fetchLatestPublicUser(trackedUserId, { enrichProfile: true })
+      : await fetchLatestPublicRank(rank, { enrichProfile: true })
     if (requestToken !== detailRequestToken) {
       return
     }
@@ -1638,9 +1644,15 @@ async function loadRankDetail(rank: number, silent: boolean, requestToken = deta
       throw new Error(t("rankBorder.result.rankNotFound"))
     }
 
+    const [previous, next] = await fetchNeighborPublicRanks(result.rank)
+    if (requestToken !== detailRequestToken) {
+      return
+    }
+
     detail.value = {
       source: "rank",
       query: String(rank),
+      trackedUserId: trackedUserId ?? resolveTrackedPlayerId(result),
       result,
       previous,
       next,
@@ -1750,6 +1762,7 @@ async function loadUserDetail(
     detail.value = {
       source: "user",
       query: userId,
+      trackedUserId: normalizeTextValue(result.userId),
       result,
       previous,
       next,
@@ -1811,6 +1824,36 @@ async function fetchLatestPublicRank(
   }
 
   return mergeLatestWithProfile(latest, await fetchPublicProfile(latest.userId).catch(() => null))
+}
+
+async function fetchLatestPublicUser(
+  userId: string,
+  options: { enrichProfile?: boolean } = {},
+): Promise<RankBorderLatest | null> {
+  const latest = await fetchRankBorderLatestByUser({
+    ...detailScope.value,
+    userId,
+  })
+  if (!latest) {
+    return null
+  }
+
+  if (!options.enrichProfile || !shouldEnrichDetailProfile(latest)) {
+    return latest
+  }
+
+  return mergeLatestWithProfile(latest, await fetchPublicProfile(latest.userId).catch(() => null))
+}
+
+async function fetchNeighborPublicRanks(rank: number) {
+  return await Promise.all([
+    rank > 1 ? fetchLatestPublicRank(rank - 1).catch(() => null) : Promise.resolve(null),
+    fetchLatestPublicRank(rank + 1).catch(() => null),
+  ])
+}
+
+function resolveTrackedPlayerId(result: RankBorderLatest | null | undefined) {
+  return normalizeTextValue(result?.userId)
 }
 
 async function fetchFallbackLineDetail(rank: number): Promise<LineDetailState | null> {
@@ -1957,7 +2000,12 @@ async function refreshActiveDetail() {
     return
   }
 
-  await loadRankDetail(parseRankBorderRankQuery(activeDetail.query) ?? 0, true)
+  await loadRankDetail(
+    parseRankBorderRankQuery(activeDetail.query) ?? activeDetail.result.rank,
+    true,
+    detailRequestToken,
+    { trackedUserId: activeDetail.trackedUserId ?? resolveTrackedPlayerId(activeDetail.result) },
+  )
 }
 
 function refreshDetailTrace(value: DetailState) {
