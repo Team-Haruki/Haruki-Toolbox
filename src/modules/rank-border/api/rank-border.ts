@@ -1,10 +1,10 @@
 import type { SekaiRegion } from "@/types"
 import {
   formatRankBorderPathSegment,
-  normalizeRankBorderBatchTrace,
   normalizeRankBorderGrowths,
   normalizeRankBorderLatest,
   normalizeRankBorderLines,
+  normalizeRankBorderOverview,
   normalizeRankBorderStatus,
   normalizeRankBorderTrace,
   normalizeRankBorderUserProfiles,
@@ -13,6 +13,7 @@ import {
   type RankBorderGrowth,
   type RankBorderLatest,
   type RankBorderLine,
+  type RankBorderOverview,
   type RankBorderMode,
   type RankBorderStatus,
   type RankBorderTracePoint,
@@ -44,24 +45,17 @@ export type FetchRankBorderRankParams = RankBorderTrackerScope & {
   limit?: number | null
 }
 
-export type FetchRankBorderWebRankingHistoryParams = RankBorderTrackerScope & {
-  rank: string | number
-  limit?: number | null
-}
-
 export type FetchRankBorderWebRankingsParams = RankBorderTrackerScope & {
   rankMin?: string | number | null
   rankMax?: string | number | null
   limit?: number | null
 }
 
-export type FetchRankBorderRanksParams = RankBorderTrackerScope & {
-  ranks: Array<string | number>
-  full?: boolean
-  limit?: number | null
+export type FetchRankBorderGrowthParams = RankBorderTrackerScope & {
+  intervalSeconds: number
 }
 
-export type FetchRankBorderGrowthParams = RankBorderTrackerScope & {
+export type FetchRankBorderOverviewParams = RankBorderTrackerScope & {
   intervalSeconds: number
 }
 
@@ -481,6 +475,22 @@ export async function fetchRankBorderGrowths(params: FetchRankBorderGrowthParams
   return normalizeRankBorderGrowths(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
+export async function fetchRankBorderOverview(params: FetchRankBorderOverviewParams): Promise<RankBorderOverview> {
+  const interval = normalizePositiveInteger(params.intervalSeconds)
+  const search = new URLSearchParams()
+  search.set("interval", String(interval))
+  const suffix = params.mode === "world_bloom"
+    ? `web/world-bloom-overview/character/${normalizePositiveInteger(params.worldBloomCharacterId)}`
+    : "web/overview"
+  return normalizeRankBorderOverview(await fetchTrackerJson(
+    params.endpoint,
+    `${buildNormalPath(params, suffix)}?${search}`,
+    params.cacheBust,
+    params.playbackAt,
+    params.useWebSocket,
+  ))
+}
+
 export async function fetchRankBorderLatestByUser(params: FetchRankBorderUserParams): Promise<RankBorderLatest | null> {
   const userId = formatRankBorderPathSegment(params.userId)
   const path = params.mode === "world_bloom"
@@ -529,68 +539,12 @@ export async function fetchRankBorderWebRankings(params: FetchRankBorderWebRanki
   ))
 }
 
-export async function fetchRankBorderWebRankingHistoryByRank(params: FetchRankBorderWebRankingHistoryParams): Promise<RankBorderLatest[]> {
-  const rank = normalizePositiveInteger(params.rank)
-  const search = new URLSearchParams()
-  search.set("rankMin", String(rank))
-  search.set("rankMax", String(rank))
-  search.set("limit", String(normalizeTraceLimit(params.limit) ?? 100_000))
-  const suffix = params.mode === "world_bloom"
-    ? `web/world-bloom-rankings/character/${normalizePositiveInteger(params.worldBloomCharacterId)}`
-    : "web/rankings"
-  return normalizeRankBorderWebRankings(await fetchTrackerJson(
-    params.endpoint,
-    `${buildNormalPath(params, suffix)}?${search}`,
-    params.cacheBust,
-    params.playbackAt,
-    params.useWebSocket,
-  )).items
-}
-
 export async function fetchRankBorderTraceByRank(params: FetchRankBorderRankParams): Promise<RankBorderTracePoint[]> {
   const rank = normalizePositiveInteger(params.rank)
   const path = params.mode === "world_bloom"
     ? buildWorldBloomPath(params, "trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/rank/${rank}`)
     : buildNormalPath(params, `trace-ranking/rank/${rank}`)
   return normalizeRankBorderTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket))
-}
-
-export async function fetchRankBorderWebTraceByRank(params: FetchRankBorderRankParams): Promise<RankBorderTracePoint[]> {
-  const rank = normalizePositiveInteger(params.rank)
-  const directRecords = await fetchRankBorderTraceByRank(params).catch(() => [])
-  if (directRecords.length > 0) {
-    return directRecords
-  }
-
-  const path = params.mode === "world_bloom"
-    ? buildNormalPath(params, `web/trace-world-bloom-ranking/character/${normalizePositiveInteger(params.worldBloomCharacterId)}/rank/${rank}`)
-    : buildNormalPath(params, `web/trace-ranking/rank/${rank}`)
-  return normalizeRankBorderTrace(
-    await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket).catch(() => null),
-  )
-}
-
-export async function fetchRankBorderTraceByRanks(params: FetchRankBorderRanksParams): Promise<Map<number, RankBorderTracePoint[]>> {
-  const ranks = Array.from(new Set(params.ranks.map(normalizePositiveInteger)))
-  const entries = await Promise.all(
-    ranks.map(async (rank) => [rank, await fetchRankBorderTraceByRank({ ...params, rank }).catch(() => [])] as const),
-  )
-  const result = new Map<number, RankBorderTracePoint[]>()
-  for (const [rank, records] of entries) {
-    if (records.length > 0) {
-      result.set(rank, records)
-    }
-  }
-  return result
-}
-
-export async function fetchRankBorderBatchTraceByRanks(params: FetchRankBorderRanksParams): Promise<Map<number, RankBorderTracePoint[]>> {
-  const ranks = Array.from(new Set(params.ranks.map(normalizePositiveInteger)))
-  const query = ranks.map((rank) => `rank=${encodeURIComponent(rank)}`).join("&")
-  const path = params.mode === "world_bloom"
-    ? `${buildWorldBloomPath(params, "trace-world-bloom-ranking", `character/${params.worldBloomCharacterId}/ranks`)}?${query}`
-    : `${buildNormalPath(params, "trace-ranking/ranks")}?${query}`
-  return normalizeRankBorderBatchTrace(await fetchTrackerJson(params.endpoint, appendTraceQuery(path, params), params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
 export async function fetchRankBorderTraceByUser(params: FetchRankBorderUserParams): Promise<RankBorderTracePoint[]> {

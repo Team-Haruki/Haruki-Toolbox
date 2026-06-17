@@ -58,13 +58,10 @@ import type { SekaiRegion } from "@/types"
 import {
   fetchRankBorderLatestByRank,
   fetchRankBorderLatestByUser,
-  fetchRankBorderBatchTraceByRanks,
   fetchRankBorderPrivateLatestByUser,
   fetchRankBorderPrivateTraceByUser,
-  fetchRankBorderStatus,
   fetchRankBorderTraceByRank,
   fetchRankBorderTraceByUser,
-  fetchRankBorderWebTraceByRank,
   fetchRankBorderWebTraceByUser,
   fetchRankBorderWebRankings,
   fetchRankBorderPublicUserProfile,
@@ -99,6 +96,7 @@ import {
   type RankBorderLatest,
   type RankBorderLine,
   type RankBorderMode,
+  type RankBorderTopPlayerGrowth,
   type RankBorderTracePoint,
   type RankBorderUserProfile,
 } from "../lib/rank-border"
@@ -127,8 +125,11 @@ type RankBorderLineRow = {
   score: number | null
   timestamp: number | null
   growth: RankBorderGrowth | null
+  rankGrowth: RankBorderGrowth | null
   displayGrowth: number | null
+  displayRankGrowth: number | null
   displayGrowthChanged: boolean
+  displayRankGrowthChanged: boolean
   detail: RankBorderLatest | null
   selected: boolean
   scoreChanged: boolean
@@ -374,6 +375,7 @@ const rankBorderTooltip = ref<RankBorderTooltipState>({
 })
 const top100Details = ref<Map<number, RankBorderLatest>>(new Map())
 const top100GrowthByRank = ref<Map<number, RankBorderGrowth>>(new Map())
+const top100RankGrowthByRank = ref<Map<number, RankBorderGrowth>>(new Map())
 const top100GrowthIntervalSeconds = ref<number | null>(null)
 const top100TraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
 const segmentTraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
@@ -384,19 +386,10 @@ const growthChangedRanks = ref<Set<number>>(new Set())
 const detailChangedRanks = ref<Set<number>>(new Set())
 const detailScoreChanged = ref(false)
 const visibleRank = ref<number | null>(null)
-const top100DetailRefreshing = ref(false)
 const profileAssetsLoading = ref(false)
 
 const masterOptions = useRankBorderMasterOptions(selectedRegion, selectedEventId)
 const tracker = useRankBorderTracker()
-
-function createLineFromLatest(item: RankBorderLatest): RankBorderLine {
-  return {
-    rank: item.rank,
-    score: item.score,
-    timestamp: item.timestamp,
-  }
-}
 
 function normalizeTraceForPlayback(records: RankBorderTracePoint[]): RankBorderTracePoint[] {
   const timeline = normalizeRankBorderTraceTimeline(records)
@@ -866,8 +859,6 @@ let realtimeSubscriptionKey = ""
 let realtimeSubscriptionToken = 0
 let numberFlashTimer: ReturnType<typeof setTimeout> | null = null
 let pendingRefresh = false
-let top100DetailRefreshToken = 0
-let top100TraceRefreshToken = 0
 let detailRequestToken = 0
 let activeDetailTraceKey = ""
 let visibleRankFrame: number | null = null
@@ -1108,7 +1099,14 @@ function switchRegion(region: SekaiRegion) {
 }
 
 function createTop100Row(rank: number, rowDetail: RankBorderLatest | null): RankBorderLineRow {
-  const growth = resolveTop100RowGrowth(rank, rowDetail)
+  const localGrowth = top100GrowthIntervalSeconds.value === selectedIntervalSeconds.value
+    ? top100GrowthByRank.value.get(rank)
+    : null
+  const localRankGrowth = top100GrowthIntervalSeconds.value === selectedIntervalSeconds.value
+    ? top100RankGrowthByRank.value.get(rank)
+    : null
+  const growth = localGrowth ?? null
+  const rankGrowth = localRankGrowth ?? selectedTrackerGrowthByRank.value.get(rank) ?? null
   const rowKey = top100RowKey(rank, rowDetail)
   return {
     key: rowKey,
@@ -1116,79 +1114,18 @@ function createTop100Row(rank: number, rowDetail: RankBorderLatest | null): Rank
     score: rowDetail?.score ?? null,
     timestamp: rowDetail?.timestamp ?? null,
     growth,
+    rankGrowth,
     displayGrowth: growth?.growth ?? null,
+    displayRankGrowth: rankGrowth?.growth ?? null,
     detail: rowDetail,
     selected: detail.value?.result.rank === rank,
     scoreChanged: scoreChangedRanks.value.has(rank),
     growthChanged: growthChangedRanks.value.has(rank),
     displayGrowthChanged: growthChangedRanks.value.has(rank),
+    displayRankGrowthChanged: growthChangedRanks.value.has(rank),
     detailChanged: detailChangedRanks.value.has(rank),
     top100: rank <= PERSONAL_COLLECTION_LIMIT,
   }
-}
-
-function resolveTop100RowGrowth(rank: number, rowDetail: RankBorderLatest | null): RankBorderGrowth | null {
-  const localGrowth = top100GrowthIntervalSeconds.value === selectedIntervalSeconds.value
-    ? top100GrowthByRank.value.get(rank) ?? null
-    : null
-  if (isTraceBackedTop100RowGrowthCompatible(rank, rowDetail, localGrowth)) {
-    return localGrowth
-  }
-
-  const trackerGrowth = selectedTrackerGrowthByRank.value.get(rank) ?? null
-  if (isRankGrowthValue(rank, trackerGrowth)) {
-    return trackerGrowth
-  }
-
-  const activeDetailGrowth = resolveActiveTop100DetailGrowth(rank, rowDetail)
-  if (isTraceBackedTop100RowGrowthCompatible(rank, rowDetail, activeDetailGrowth)) {
-    return activeDetailGrowth
-  }
-
-  return null
-}
-
-function resolveActiveTop100DetailGrowth(rank: number, rowDetail: RankBorderLatest | null): RankBorderGrowth | null {
-  const activeDetail = detail.value
-  if (!activeDetail || activeDetail.source === "line" || activeDetail.result.rank !== rank) {
-    return null
-  }
-
-  const rowUserId = normalizeTextValue(rowDetail?.userId)
-  const detailUserId = normalizeTextValue(activeDetail.result.userId)
-  if (rowUserId && detailUserId && rowUserId !== detailUserId) {
-    return null
-  }
-
-  return detailTraceStats.value.growth ?? null
-}
-
-function isRankGrowthValue(rank: number, growth: RankBorderGrowth | null | undefined) {
-  return !!growth && growth.growth != null && growth.rank === rank
-}
-
-function isTraceBackedTop100RowGrowthCompatible(
-  rank: number,
-  rowDetail: RankBorderLatest | null,
-  growth: RankBorderGrowth | null | undefined,
-) {
-  if (!isRankGrowthValue(rank, growth)) {
-    return false
-  }
-
-  const records = top100TraceByRank.value.get(rank) ?? []
-  const latestRecord = records[records.length - 1] ?? null
-  if (!latestRecord) {
-    return true
-  }
-
-  if (latestRecord.rank !== rank) {
-    return false
-  }
-
-  const rowUserId = normalizeTextValue(rowDetail?.userId)
-  const traceUserId = normalizeTextValue(latestRecord.userId)
-  return !rowUserId || !traceUserId || rowUserId === traceUserId
 }
 
 function top100RowKey(rank: number, rowDetail: RankBorderLatest | null) {
@@ -1207,7 +1144,6 @@ function top100RowKey(rank: number, rowDetail: RankBorderLatest | null) {
 
 function resetRankBorderData() {
   detailRequestToken += 1
-  top100TraceRefreshToken += 1
   activeDetailTraceKey = ""
   detail.value = null
   detailTrace.value = []
@@ -1218,6 +1154,7 @@ function resetRankBorderData() {
   mobileLocateOpen.value = false
   top100Details.value = new Map()
   top100GrowthByRank.value = new Map()
+  top100RankGrowthByRank.value = new Map()
   top100GrowthIntervalSeconds.value = null
   top100TraceByRank.value = new Map()
   segmentTraceByRank.value = new Map()
@@ -1254,16 +1191,12 @@ async function refreshData(cacheBust = true) {
   try {
     const previousDetails = top100Details.value
     const previousTop100Growths = top100GrowthByRank.value
+    const previousTop100RankGrowths = top100RankGrowthByRank.value
     const previousLines = new Map(tracker.lines.value.map((line) => [line.rank, line]))
     const previousGrowths = new Map(tracker.growths.value.map((growth) => [growth.rank, growth.growth]))
     const requestedIntervalSeconds = selectedIntervalSeconds.value
     hydrateTop100DetailsFromCache()
-    const shouldWaitForTop100Details = top100Details.value.size === 0
-    const detailsRefresh = refreshTop100Details(previousDetails).catch(() => undefined)
-    const playbackRefresh = playbackAt.value != null
-      ? refreshPlaybackSnapshot(cacheBust)
-      : null
-    const trackerRefresh = playbackRefresh ?? tracker.refresh({
+    const trackerRefresh = tracker.refresh({
       endpoint: trackerEndpoint.value,
       region: selectedRegion.value,
       eventId: selectedEventIdNumber.value,
@@ -1278,17 +1211,19 @@ async function refreshData(cacheBust = true) {
     })
     await trackerRefresh
     if (tracker.error.value) {
-      await detailsRefresh
       return
     }
 
+    applyTop100Overview(
+      tracker.topRankings.value,
+      tracker.topPlayerGrowths.value,
+      tracker.topRankGrowths.value,
+      previousDetails,
+      previousTop100Growths,
+      previousTop100RankGrowths,
+    )
     markChangedLines(previousLines)
     markChangedGrowths(previousGrowths)
-    if (shouldWaitForTop100Details) {
-      await detailsRefresh
-    }
-    refreshTop100GrowthsFromCachedTraces(previousTop100Growths)
-    void refreshTop100Traces(previousTop100Growths)
     await refreshActiveDetail()
   } finally {
     liveRefreshing.value = false
@@ -1298,40 +1233,6 @@ async function refreshData(cacheBust = true) {
       return
     }
     resetLiveRefreshTimer()
-  }
-}
-
-async function refreshPlaybackSnapshot(cacheBust: boolean) {
-  tracker.loading.value = true
-  tracker.error.value = null
-  tracker.userError.value = null
-  tracker.rankError.value = null
-
-  try {
-    const rankings = await fetchRankBorderWebRankings({
-      ...detailScope.value,
-      rankMin: 1,
-      rankMax: PERSONAL_COLLECTION_LIMIT,
-      limit: PERSONAL_COLLECTION_LIMIT,
-      cacheBust,
-    })
-    const latestEntries = latestRankingEntriesByRank(rankings.items)
-    if (latestEntries.length === 0) {
-      return
-    }
-
-    tracker.lines.value = latestEntries.map(createLineFromLatest)
-    tracker.growths.value = []
-    tracker.growthIntervalSeconds.value = null
-    tracker.status.value = await fetchRankBorderStatus({
-      ...detailScope.value,
-      cacheBust,
-    }).catch(() => tracker.status.value)
-    tracker.refreshedAt.value = Date.now()
-  } catch (error) {
-    tracker.error.value = error instanceof Error ? error.message : String(error)
-  } finally {
-    tracker.loading.value = false
   }
 }
 
@@ -2154,7 +2055,7 @@ async function fetchDetailTrace(value: DetailState): Promise<RankBorderTracePoin
       userId: value.result.userId,
       full: true,
     }).catch(() => [])
-    if (webRecords.length > 0) {
+    if (webRecords.length > 0 || value.result.rank <= PERSONAL_COLLECTION_LIMIT) {
       return webRecords
     }
 
@@ -2163,11 +2064,9 @@ async function fetchDetailTrace(value: DetailState): Promise<RankBorderTracePoin
       userId: value.result.userId,
       full: true,
     }).catch(() => [])
-    if (directRecords.length > 0) {
+    if (directRecords.length > 0 || value.result.rank <= PERSONAL_COLLECTION_LIMIT) {
       return directRecords
     }
-
-    return await fetchFullRankTrace(value.result.rank).catch(() => [])
   }
 
   return await fetchFullRankTrace(value.result.rank).catch(() => [])
@@ -2187,75 +2086,76 @@ function cacheTrace(rank: number, records: RankBorderTracePoint[]) {
   segmentTraceByRank.value = next
 }
 
-function longestTrace(items: RankBorderTracePoint[][]) {
-  return items.reduce<RankBorderTracePoint[]>((best, current) =>
-    current.length > best.length ? current : best,
-  [])
-}
-
-async function refreshTop100Details(previousDetails: Map<number, RankBorderLatest>) {
-  if (top100DetailRefreshing.value) {
+function applyTop100Overview(
+  rankings: RankBorderLatest[],
+  playerGrowths: RankBorderTopPlayerGrowth[],
+  rankGrowths: RankBorderGrowth[],
+  previousDetails: Map<number, RankBorderLatest>,
+  previousPlayerGrowths: Map<number, RankBorderGrowth>,
+  previousRankGrowths: Map<number, RankBorderGrowth>,
+) {
+  const latestEntries = latestRankingEntriesByRank(rankings)
+  if (latestEntries.length === 0 && previousDetails.size > 0) {
     return
   }
 
-  top100DetailRefreshing.value = true
-  const token = ++top100DetailRefreshToken
-  const ranks = TOP_100_RANKS
-  if (ranks.length === 0) {
-    top100Details.value = new Map()
-    detailChangedRanks.value = new Set()
-    top100DetailRefreshing.value = false
-    return
-  }
+  const nextProfiles = seedProfilesFromLatestEntries(latestEntries)
+  const nextDetails = new Map<number, RankBorderLatest>()
+  const previousDetailsByKey = latestDetailsByRowKey(previousDetails)
+  const nextDetailChanges = new Set<number>()
+  const nextScoreChanges = new Set<number>()
 
-  try {
-    const rankings = await fetchRankBorderWebRankings({
-      ...detailScope.value,
-      rankMin: 1,
-      rankMax: PERSONAL_COLLECTION_LIMIT,
-      limit: PERSONAL_COLLECTION_LIMIT,
-    })
-    const latestEntries = latestRankingEntriesByRank(rankings.items)
-    if (latestEntries.length === 0 && previousDetails.size > 0) {
-      return
-    }
-    const nextProfiles = seedProfilesFromLatestEntries(latestEntries)
-    if (token !== top100DetailRefreshToken) {
-      return
-    }
+  for (const latest of latestEntries) {
+    const profile = latest.userId ? nextProfiles.get(latest.userId) ?? null : null
+    const nextDetail = mergeLatestWithProfile(latest, profile)
+    const rowKey = top100RowKey(nextDetail.rank, nextDetail)
+    const previousDetail = previousDetailsByKey.get(rowKey)
+    nextDetails.set(nextDetail.rank, nextDetail)
 
-    const nextDetails = new Map<number, RankBorderLatest>()
-    const previousDetailsByKey = latestDetailsByRowKey(previousDetails)
-    const nextDetailChanges = new Set<number>()
-    const nextScoreChanges = new Set<number>()
-
-    for (const latest of latestEntries) {
-      const profile = latest.userId ? nextProfiles.get(latest.userId) ?? null : null
-      const nextDetail = mergeLatestWithProfile(latest, profile)
-      const rowKey = top100RowKey(nextDetail.rank, nextDetail)
-      const previousDetail = previousDetailsByKey.get(rowKey)
-      nextDetails.set(nextDetail.rank, nextDetail)
-
-      if (!previousDetail || isLineDetailChanged(previousDetail, nextDetail)) {
-        nextDetailChanges.add(nextDetail.rank)
-        if (!previousDetail || previousDetail.score !== nextDetail.score) {
-          nextScoreChanges.add(nextDetail.rank)
-        }
+    if (!previousDetail || isLineDetailChanged(previousDetail, nextDetail)) {
+      nextDetailChanges.add(nextDetail.rank)
+      if (!previousDetail || previousDetail.score !== nextDetail.score) {
+        nextScoreChanges.add(nextDetail.rank)
       }
     }
+  }
 
-    top100Details.value = nextDetails
-    writeTop100DetailsCache(nextDetails)
-    if (nextScoreChanges.size > 0) {
-      restartRankFlash(scoreChangedRanks, nextScoreChanges)
+  const nextGrowths = new Map<number, RankBorderGrowth>()
+  const nextGrowthChanges = new Set<number>()
+  for (const growth of playerGrowths) {
+    const detail = nextDetails.get(growth.rank)
+    if (detail?.userId && detail.userId !== growth.userId) {
+      continue
     }
-    if (nextDetailChanges.size > 0) {
-      restartRankFlash(detailChangedRanks, nextDetailChanges)
+    nextGrowths.set(growth.rank, growth)
+    const previousGrowth = previousPlayerGrowths.get(growth.rank)
+    if (!previousGrowth || isGrowthChanged(previousGrowth, growth)) {
+      nextGrowthChanges.add(growth.rank)
     }
-  } finally {
-    if (token === top100DetailRefreshToken) {
-      top100DetailRefreshing.value = false
+  }
+
+  const nextRankGrowths = new Map<number, RankBorderGrowth>()
+  for (const growth of rankGrowths) {
+    nextRankGrowths.set(growth.rank, growth)
+    const previousGrowth = previousRankGrowths.get(growth.rank)
+    if (!previousGrowth || isGrowthChanged(previousGrowth, growth)) {
+      nextGrowthChanges.add(growth.rank)
     }
+  }
+
+  top100Details.value = nextDetails
+  top100GrowthByRank.value = nextGrowths
+  top100RankGrowthByRank.value = nextRankGrowths
+  top100GrowthIntervalSeconds.value = selectedIntervalSeconds.value
+  writeTop100DetailsCache(nextDetails)
+  if (nextScoreChanges.size > 0) {
+    restartRankFlash(scoreChangedRanks, nextScoreChanges)
+  }
+  if (nextDetailChanges.size > 0) {
+    restartRankFlash(detailChangedRanks, nextDetailChanges)
+  }
+  if (nextGrowthChanges.size > 0) {
+    restartRankFlash(growthChangedRanks, nextGrowthChanges)
   }
 }
 
@@ -2361,48 +2261,15 @@ function writeTop100DetailsCache(details: Map<number, RankBorderLatest>) {
   }
 }
 
-async function refreshTop100Traces(previousGrowths: Map<number, RankBorderGrowth>) {
-  if (!canRefresh.value || top100Details.value.size === 0) {
-    return
-  }
-
-  const token = ++top100TraceRefreshToken
-  const ranks = TOP_100_RANKS.filter((rank) => top100Details.value.has(rank))
-  if (ranks.length === 0) {
-    return
-  }
-
-  try {
-    const traces = await fetchRankBorderBatchTraceByRanks({
-      ...detailScope.value,
-      ranks,
-      full: true,
-    })
-    if (token !== top100TraceRefreshToken) {
-      return
-    }
-
-    const nextTraces = new Map(top100TraceByRank.value)
-    for (const [rank, records] of traces) {
-      const timeline = normalizeTraceForPlayback(records)
-      if (timeline.length > 0) {
-        nextTraces.set(rank, timeline)
-      }
-    }
-    top100TraceByRank.value = nextTraces
-    refreshTop100GrowthsFromCachedTraces(previousGrowths)
-  } catch {
-  }
-}
-
 function refreshTop100GrowthsFromCachedTraces(previousGrowths: Map<number, RankBorderGrowth>) {
   const nextGrowths = new Map<number, RankBorderGrowth>()
+  const nextRankGrowths = new Map<number, RankBorderGrowth>()
   const nextGrowthChanges = new Set<number>()
 
   for (const rank of TOP_100_RANKS) {
     const trackerGrowth = selectedTrackerGrowthByRank.value.get(rank)
     if (trackerGrowth) {
-      nextGrowths.set(rank, trackerGrowth)
+      nextRankGrowths.set(rank, trackerGrowth)
     }
   }
 
@@ -2427,6 +2294,7 @@ function refreshTop100GrowthsFromCachedTraces(previousGrowths: Map<number, RankB
   }
 
   top100GrowthByRank.value = nextGrowths
+  top100RankGrowthByRank.value = nextRankGrowths
   top100GrowthIntervalSeconds.value = selectedIntervalSeconds.value
   if (nextGrowthChanges.size > 0) {
     restartRankFlash(growthChangedRanks, nextGrowthChanges)
@@ -2444,18 +2312,11 @@ function findLatestTraceAtTimestamp(records: RankBorderTracePoint[], timestamp: 
 }
 
 async function fetchFullRankTrace(rank: number): Promise<RankBorderTracePoint[]> {
-  const webRecords = await fetchRankBorderWebTraceByRank({
+  return await fetchRankBorderTraceByRank({
     ...detailScope.value,
     rank,
     full: true,
   }).catch(() => [])
-  const directRecords = await fetchRankBorderTraceByRank({
-    ...detailScope.value,
-    rank,
-    full: true,
-  }).catch(() => [])
-
-  return longestTrace([webRecords, directRecords])
 }
 
 function resolveLineDetail(rank: number): LineDetailState | null {
@@ -3828,8 +3689,24 @@ function detailGrowth(value: DetailState) {
     ? top100GrowthByRank.value.get(value.result.rank)?.growth
     : null
   return localGrowth
-    ?? selectedTrackerGrowthByRank.value.get(value.result.rank)?.growth
     ?? detailTraceStats.value.growth?.growth
+    ?? null
+}
+
+function detailRankGrowth(value: DetailState) {
+  if (value.source === "line") {
+    return selectedTrackerGrowthByRank.value.get(value.result.rank)?.growth ?? value.growth?.growth ?? null
+  }
+
+  if (value.source === "user") {
+    return null
+  }
+
+  const localGrowth = top100GrowthIntervalSeconds.value === selectedIntervalSeconds.value
+    ? top100RankGrowthByRank.value.get(value.result.rank)?.growth
+    : null
+  return localGrowth
+    ?? selectedTrackerGrowthByRank.value.get(value.result.rank)?.growth
     ?? null
 }
 
@@ -5036,12 +4913,24 @@ function traceUpdateRecords(
                       <span
                         v-if="row.displayGrowth != null"
                         :class="[
-                          'rank-border-live-number',
+                          'rank-border-live-number inline-flex items-center gap-1',
                           row.displayGrowthChanged ? 'rank-border-live-number--changed' : '',
                           row.displayGrowth > 0 ? 'text-emerald-600 dark:text-emerald-300' : '',
                         ]"
                       >
-                        {{ formatGrowth(row.displayGrowth) }}
+                        <span class="text-muted-foreground">{{ t("rankBorder.result.playerGrowthShort") }}</span>
+                        <span>{{ formatGrowth(row.displayGrowth) }}</span>
+                      </span>
+                      <span
+                        v-if="row.displayRankGrowth != null"
+                        :class="[
+                          'rank-border-live-number inline-flex items-center gap-1',
+                          row.displayRankGrowthChanged ? 'rank-border-live-number--changed' : '',
+                          row.displayRankGrowth > 0 ? 'text-emerald-600 dark:text-emerald-300' : '',
+                        ]"
+                      >
+                        <span class="text-muted-foreground">{{ t("rankBorder.result.rankGrowthShort") }}</span>
+                        <span>{{ formatGrowth(row.displayRankGrowth) }}</span>
                       </span>
                       <span>{{ formatElapsed(elapsedSince(row.timestamp)) }}</span>
                     </div>
@@ -5084,8 +4973,12 @@ function traceUpdateRecords(
                           <strong>{{ formatElapsed(elapsedSince(detail.result.timestamp)) }}</strong>
                         </div>
                         <div v-if="row.displayGrowth != null">
-                          <span>{{ t("rankBorder.result.intervalGrowth", { interval: intervalOptions.find((option) => option.value === intervalSeconds)?.label ?? "-" }) }}</span>
+                          <span>{{ t("rankBorder.result.playerIntervalGrowth", { interval: intervalOptions.find((option) => option.value === intervalSeconds)?.label ?? "-" }) }}</span>
                           <strong :class="row.displayGrowth > 0 ? 'text-emerald-600 dark:text-emerald-300' : ''">{{ formatGrowth(row.displayGrowth) }}</strong>
+                        </div>
+                        <div v-if="row.displayRankGrowth != null">
+                          <span>{{ t("rankBorder.result.rankIntervalGrowth", { interval: intervalOptions.find((option) => option.value === intervalSeconds)?.label ?? "-" }) }}</span>
+                          <strong :class="row.displayRankGrowth > 0 ? 'text-emerald-600 dark:text-emerald-300' : ''">{{ formatGrowth(row.displayRankGrowth) }}</strong>
                         </div>
                         <div>
                           <span>{{ previousDetailLabel(detail) }}</span>
@@ -5356,8 +5249,8 @@ function traceUpdateRecords(
                     <p class="text-xs text-muted-foreground">{{ t("rankBorder.result.latest") }}</p>
                     <p class="truncate text-sm font-medium tabular-nums">{{ formatElapsed(elapsedSince(detail.result.timestamp)) }}</p>
                   </div>
-                  <div v-if="detailGrowth(detail) != null" class="col-span-2 min-w-0 rounded-md border bg-muted/20 p-2.5">
-                    <p class="text-xs text-muted-foreground">{{ t("rankBorder.result.intervalGrowth", { interval: intervalOptions.find((option) => option.value === intervalSeconds)?.label ?? "-" }) }}</p>
+                  <div v-if="detailGrowth(detail) != null" class="min-w-0 rounded-md border bg-muted/20 p-2.5">
+                    <p class="text-xs text-muted-foreground">{{ t("rankBorder.result.playerIntervalGrowth", { interval: intervalOptions.find((option) => option.value === intervalSeconds)?.label ?? "-" }) }}</p>
                     <p
                       :class="[
                         'rank-border-live-number truncate text-xl font-semibold tabular-nums',
@@ -5366,6 +5259,18 @@ function traceUpdateRecords(
                       ]"
                     >
                       {{ formatGrowth(detailGrowth(detail)) }}
+                    </p>
+                  </div>
+                  <div v-if="detailRankGrowth(detail) != null" class="min-w-0 rounded-md border bg-muted/20 p-2.5">
+                    <p class="text-xs text-muted-foreground">{{ t("rankBorder.result.rankIntervalGrowth", { interval: intervalOptions.find((option) => option.value === intervalSeconds)?.label ?? "-" }) }}</p>
+                    <p
+                      :class="[
+                        'rank-border-live-number truncate text-xl font-semibold tabular-nums',
+                        detailScoreChanged ? 'rank-border-live-number--changed' : '',
+                        (detailRankGrowth(detail) ?? 0) > 0 ? 'text-emerald-600 dark:text-emerald-300' : '',
+                      ]"
+                    >
+                      {{ formatGrowth(detailRankGrowth(detail)) }}
                     </p>
                   </div>
                 </div>

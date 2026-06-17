@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test"
 import {
-  normalizeRankBorderBatchTrace,
   normalizeRankBorderLatest,
   normalizeRankBorderLines,
+  normalizeRankBorderOverview,
   normalizeRankBorderStatus,
   normalizeRankBorderTrace,
   normalizeRankBorderTraceTimeline,
@@ -284,6 +284,126 @@ describe("rank border helpers", () => {
     })
   })
 
+  it("normalizes rank border overview payloads", () => {
+    expect(normalizeRankBorderOverview({
+      topRankings: [
+        {
+          rankData: { rank: 1, score: 3000, timestamp: 1710000060, userId: "public-1" },
+          userData: { userId: "public-1", name: "Alpha" },
+        },
+      ],
+      topPlayerGrowths: [
+        {
+          rank: 1,
+          userId: "public-1",
+          scoreLatest: 3000,
+          scoreEarlier: 2000,
+          timestampLatest: 1710000060,
+          timestampEarlier: 1710000000,
+          timeDiff: 60,
+          growth: 1000,
+        },
+      ],
+      topRankGrowths: [
+        {
+          rank: 1,
+          scoreLatest: 3000,
+          scoreEarlier: 2500,
+          timestampLatest: 1710000060,
+          timestampEarlier: 1710000000,
+          timeDiff: 60,
+          growth: 500,
+        },
+      ],
+      borderLines: [
+        { rank: 200, score: 1000, timestamp: 1710000060 },
+      ],
+      borderGrowths: [
+        {
+          rank: 200,
+          scoreLatest: 1000,
+          scoreEarlier: 900,
+          timestampLatest: 1710000060,
+          timestampEarlier: 1710000000,
+          timeDiff: 60,
+          growth: 100,
+        },
+      ],
+      status: {
+        timestamp: 1710000060,
+        status: 0,
+        statusDesc: "OK",
+        timeAgo: 1,
+      },
+      intervalSeconds: 3600,
+    })).toEqual({
+      topRankings: [
+        {
+          rank: 1,
+          score: 3000,
+          timestamp: 1710000060,
+          userId: "public-1",
+          name: "Alpha",
+          cheerfulTeamId: null,
+          characterId: null,
+          cardId: null,
+          cardLevel: null,
+          cardMasterRank: null,
+          cardSpecialTrainingStatus: null,
+          cardDefaultImage: null,
+          profileWord: null,
+          profileHonors: [],
+          userPlayerFrames: [],
+        },
+      ],
+      topPlayerGrowths: [
+        {
+          rank: 1,
+          userId: "public-1",
+          scoreLatest: 3000,
+          scoreEarlier: 2000,
+          timestampLatest: 1710000060,
+          timestampEarlier: 1710000000,
+          timeDiff: 60,
+          growth: 1000,
+          characterId: null,
+        },
+      ],
+      topRankGrowths: [
+        {
+          rank: 1,
+          scoreLatest: 3000,
+          scoreEarlier: 2500,
+          timestampLatest: 1710000060,
+          timestampEarlier: 1710000000,
+          timeDiff: 60,
+          growth: 500,
+        },
+      ],
+      borderLines: [
+        { rank: 200, score: 1000, timestamp: 1710000060 },
+      ],
+      borderGrowths: [
+        {
+          rank: 200,
+          scoreLatest: 1000,
+          scoreEarlier: 900,
+          timestampLatest: 1710000060,
+          timestampEarlier: 1710000000,
+          timeDiff: 60,
+          growth: 100,
+        },
+      ],
+      status: {
+        timestamp: 1710000060,
+        status: 0,
+        statusDesc: "OK",
+        timeAgo: 1,
+      },
+      intervalSeconds: 3600,
+    })
+  })
+
   it("keeps user payloads on public web ranking pages", () => {
     expect(normalizeRankBorderWebRankings({
       items: [
@@ -528,27 +648,6 @@ describe("rank border helpers", () => {
       timeDiff: 3600,
       growth: 600,
     })
-  })
-
-  it("normalizes batch trace ranking responses", () => {
-    const records = normalizeRankBorderBatchTrace({
-      items: [
-        {
-          rank: 1,
-          rankData: [
-            { rank: 1, score: 100, timestamp: 1710000000 },
-            { rank: 1, score: 200, timestamp: 1710000060 },
-          ],
-        },
-        { rank: 2, rankData: [] },
-      ],
-    })
-
-    expect(records.get(1)).toEqual([
-      { rank: 1, score: 100, timestamp: 1710000000, userId: null, characterId: null },
-      { rank: 1, score: 200, timestamp: 1710000060, userId: null, characterId: null },
-    ])
-    expect(records.has(2)).toBe(false)
   })
 
   it("returns null when latest ranking data is incomplete", () => {

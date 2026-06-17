@@ -16,6 +16,11 @@ export type RankBorderGrowth = {
   growth: number | null
 }
 
+export type RankBorderTopPlayerGrowth = RankBorderGrowth & {
+  userId: string
+  characterId: number | null
+}
+
 export type RankBorderLatest = {
   rank: number
   score: number
@@ -75,6 +80,16 @@ export type RankBorderDetailTraceTarget = {
   source: RankBorderDetailTraceSource
   query: string
   result: RankBorderLatest | RankBorderLine
+}
+
+export type RankBorderOverview = {
+  topRankings: RankBorderLatest[]
+  topPlayerGrowths: RankBorderTopPlayerGrowth[]
+  topRankGrowths: RankBorderGrowth[]
+  borderLines: RankBorderLine[]
+  borderGrowths: RankBorderGrowth[]
+  status: RankBorderStatus | null
+  intervalSeconds: number | null
 }
 
 export type RankBorderProfileHonor = {
@@ -151,6 +166,45 @@ export function normalizeRankBorderGrowths(value: unknown): RankBorderGrowth[] {
     .sort((a, b) => a.rank - b.rank)
 }
 
+export function normalizeRankBorderTopPlayerGrowths(value: unknown): RankBorderTopPlayerGrowth[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .map((item) => {
+      if (!isRecord(item)) {
+        return null
+      }
+
+      const rank = normalizePositiveInteger(item.rank)
+      const userId = normalizeText(item.userId)
+      const scoreLatest = normalizeNonNegativeInteger(item.scoreLatest)
+      const scoreEarlier = normalizeNonNegativeInteger(item.scoreEarlier)
+      const timestampLatest = normalizeNullableTimestamp(item.timestampLatest)
+      const timestampEarlier = normalizeNullableTimestamp(item.timestampEarlier)
+      const timeDiff = normalizeNonNegativeInteger(item.timeDiff)
+      const growth = normalizeInteger(item.growth)
+      if (!rank || !userId || scoreLatest == null || scoreEarlier == null || timestampLatest == null || timestampEarlier == null || timeDiff == null || growth == null) {
+        return null
+      }
+
+      return {
+        rank,
+        userId,
+        scoreLatest,
+        scoreEarlier,
+        timestampLatest,
+        timestampEarlier,
+        timeDiff,
+        growth,
+        characterId: normalizePositiveInteger(item.characterId),
+      }
+    })
+    .filter((item): item is RankBorderTopPlayerGrowth => item != null)
+    .sort((a, b) => a.rank - b.rank)
+}
+
 export function normalizeRankBorderLatest(value: unknown): RankBorderLatest | null {
   const response = normalizeLatestResponseRecord(value)
   if (!response) {
@@ -216,6 +270,21 @@ export function normalizeRankBorderWebRankings(value: unknown): RankBorderWebRan
       .filter((item): item is RankBorderLatest => item != null)
       .sort((a, b) => a.rank - b.rank),
     nextCursor: isRecord(value) ? normalizeText(value.nextCursor) : null,
+  }
+}
+
+export function normalizeRankBorderOverview(value: unknown): RankBorderOverview {
+  const record = isRecord(value) ? value : {}
+  return {
+    topRankings: normalizeRankBorderWebRankings({
+      items: Array.isArray(record.topRankings) ? record.topRankings : [],
+    }).items,
+    topPlayerGrowths: normalizeRankBorderTopPlayerGrowths(record.topPlayerGrowths),
+    topRankGrowths: normalizeRankBorderGrowths(record.topRankGrowths),
+    borderLines: normalizeRankBorderLines(record.borderLines),
+    borderGrowths: normalizeRankBorderGrowths(record.borderGrowths),
+    status: normalizeRankBorderStatus(record.status),
+    intervalSeconds: normalizePositiveInteger(record.intervalSeconds),
   }
 }
 
@@ -300,35 +369,6 @@ export function isSameRankBorderTraceTimeline(previous: RankBorderTracePoint[], 
       && record.userId === nextRecord.userId
       && record.characterId === nextRecord.characterId
   })
-}
-
-export function normalizeRankBorderBatchTrace(value: unknown): Map<number, RankBorderTracePoint[]> {
-  const items = isRecord(value) && Array.isArray(value.items)
-    ? value.items
-    : Array.isArray(value)
-      ? value
-      : []
-  const result = new Map<number, RankBorderTracePoint[]>()
-
-  for (const item of items) {
-    if (!isRecord(item)) {
-      continue
-    }
-
-    const rank = normalizePositiveInteger(item.rank)
-    if (!rank) {
-      continue
-    }
-
-    const records = normalizeRankBorderTrace({
-      rankData: Array.isArray(item.rankData) ? item.rankData : [],
-    })
-    if (records.length > 0) {
-      result.set(rank, records)
-    }
-  }
-
-  return result
 }
 
 export function resolveRankBorderTraceGrowth(records: RankBorderTracePoint[], startTime: number): RankBorderGrowth | null {

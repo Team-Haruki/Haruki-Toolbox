@@ -1,9 +1,7 @@
 import { computed, ref } from "vue"
 import {
-  fetchRankBorderGrowths,
   fetchRankBorderLatestByUser,
-  fetchRankBorderLines,
-  fetchRankBorderStatus,
+  fetchRankBorderOverview,
   fetchRankBorderWebRankings,
   type RankBorderTrackerScope,
 } from "../api/rank-border"
@@ -12,6 +10,7 @@ import type {
   RankBorderLatest,
   RankBorderLine,
   RankBorderStatus,
+  RankBorderTopPlayerGrowth,
 } from "../lib/rank-border"
 
 export type RankBorderRefreshInput = RankBorderTrackerScope & {
@@ -25,6 +24,9 @@ export function useRankBorderTracker() {
   const growths = ref<RankBorderGrowth[]>([])
   const growthIntervalSeconds = ref<number | null>(null)
   const status = ref<RankBorderStatus | null>(null)
+  const topRankings = ref<RankBorderLatest[]>([])
+  const topPlayerGrowths = ref<RankBorderTopPlayerGrowth[]>([])
+  const topRankGrowths = ref<RankBorderGrowth[]>([])
   const userResult = ref<RankBorderLatest | null>(null)
   const rankResult = ref<RankBorderLatest | null>(null)
   const loading = ref(false)
@@ -54,21 +56,20 @@ export function useRankBorderTracker() {
         playbackAt: input.playbackAt,
         useWebSocket: input.useWebSocket,
       }
-      const [nextLines, nextGrowths, nextStatus] = await Promise.all([
-        fetchRankBorderLines(baseScope),
-        fetchRankBorderGrowths({
-          ...baseScope,
-          intervalSeconds: input.intervalSeconds,
-        }),
-        fetchRankBorderStatus(baseScope).catch(() => null),
-      ])
+      const overview = await fetchRankBorderOverview({
+        ...baseScope,
+        intervalSeconds: input.intervalSeconds,
+      })
 
-      if (nextLines.length > 0 || lines.value.length === 0) {
-        lines.value = nextLines
+      if (overview.borderLines.length > 0 || lines.value.length === 0) {
+        lines.value = overview.borderLines
       }
-      growths.value = nextGrowths
+      growths.value = overview.borderGrowths
       growthIntervalSeconds.value = input.intervalSeconds
-      status.value = nextStatus
+      status.value = overview.status
+      topRankings.value = overview.topRankings
+      topPlayerGrowths.value = overview.topPlayerGrowths
+      topRankGrowths.value = overview.topRankGrowths
 
       await Promise.all([
         refreshUser(baseScope, input.userId),
@@ -134,6 +135,9 @@ export function useRankBorderTracker() {
     growthIntervalSeconds,
     growthByRank,
     status,
+    topRankings,
+    topPlayerGrowths,
+    topRankGrowths,
     userResult,
     rankResult,
     loading,
