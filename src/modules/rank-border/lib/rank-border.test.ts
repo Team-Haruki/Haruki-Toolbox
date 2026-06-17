@@ -76,6 +76,7 @@ describe("rank border helpers", () => {
           honorId: 10,
           honorId2: null,
           honorLevel: 1,
+          honorCount: null,
           bondsHonorViewType: null,
           bondsHonorWordId: null,
         },
@@ -85,6 +86,7 @@ describe("rank border helpers", () => {
           honorId: 20,
           honorId2: null,
           honorLevel: 3,
+          honorCount: null,
           bondsHonorViewType: null,
           bondsHonorWordId: null,
         },
@@ -94,11 +96,66 @@ describe("rank border helpers", () => {
           honorId: null,
           honorId2: 30,
           honorLevel: 5,
+          honorCount: null,
           bondsHonorViewType: null,
           bondsHonorWordId: null,
         },
       ],
       userPlayerFrames: [{ playerFrameId: 10050, playerFrameAttachStatus: "first" }],
+    })
+  })
+
+  it("normalizes APFC count-like honor fields separately from badge level", () => {
+    expect(normalizeRankBorderLatest({
+      rankData: {
+        rank: 1,
+        score: 3000,
+      },
+      userData: {
+        profileHonors: [
+          { seq: 1, honorId: 3009, honorLevel: 2, honorCount: 148 },
+          { seq: 2, honorId: 3010, honorLevel: 1, allPerfectCount: 37 },
+        ],
+      },
+    })?.profileHonors).toEqual([
+      {
+        seq: 1,
+        profileHonorType: null,
+        honorId: 3009,
+        honorId2: null,
+        honorLevel: 2,
+        honorCount: 148,
+        bondsHonorViewType: null,
+        bondsHonorWordId: null,
+      },
+      {
+        seq: 2,
+        profileHonorType: null,
+        honorId: 3010,
+        honorId2: null,
+        honorLevel: 1,
+        honorCount: 37,
+        bondsHonorViewType: null,
+        bondsHonorWordId: null,
+      },
+    ])
+  })
+
+  it("does not treat APFC honor level as APFC count", () => {
+    expect(normalizeRankBorderLatest({
+      rankData: {
+        rank: 1,
+        score: 3000,
+      },
+      userData: {
+        profileHonors: [
+          { seq: 1, honorId: 3013, honorLevel: 57 },
+        ],
+      },
+    })?.profileHonors[0]).toMatchObject({
+      honorId: 3013,
+      honorLevel: 57,
+      honorCount: null,
     })
   })
 
@@ -158,6 +215,7 @@ describe("rank border helpers", () => {
             honorId: 8071,
             honorId2: null,
             honorLevel: 1,
+            honorCount: null,
             bondsHonorViewType: null,
             bondsHonorWordId: null,
           },
@@ -167,6 +225,7 @@ describe("rank border helpers", () => {
             honorId: 8104,
             honorId2: null,
             honorLevel: 1,
+            honorCount: null,
             bondsHonorViewType: null,
             bondsHonorWordId: null,
           },

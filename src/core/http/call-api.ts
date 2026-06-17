@@ -28,6 +28,7 @@ export const apiClient: AxiosInstance = axios.create({
 })
 
 let authRedirectInProgress = false
+let sessionExpiredHandled = false
 
 function generateRequestId(): string {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -82,7 +83,11 @@ export function setupInterceptors(router: Router) {
     })
     apiClient.interceptors.response.use(
         (response) => {
-            authRedirectInProgress = false
+            const userStore = useUserStore()
+            if (response.config?.skipAuthRedirect !== true || userStore.isLoggedIn) {
+                authRedirectInProgress = false
+                sessionExpiredHandled = false
+            }
             return response
         },
         async (error) => {
@@ -96,13 +101,17 @@ export function setupInterceptors(router: Router) {
             const userStore = useUserStore()
             if (error.response?.status === 401) {
                 if (userStore.isLoggedIn) {
-                    if (!error.config?.skipAuthRedirect && !authRedirectInProgress) {
+                    if (!error.config?.skipAuthRedirect && !authRedirectInProgress && !sessionExpiredHandled) {
                         authRedirectInProgress = true
+                        sessionExpiredHandled = true
                         toast.error(translate("core.auth.sessionExpiredTitle"), {
                             description: translate("core.auth.sessionExpiredDescription"),
                         })
                         userStore.clearUser()
-                        await redirectToLogin(router, { redirect: router.currentRoute.value.fullPath })
+                        await redirectToLogin(router, {
+                            redirect: router.currentRoute.value.fullPath,
+                            reason: "session-expired",
+                        })
                     }
                 } else {
                     authRedirectInProgress = false

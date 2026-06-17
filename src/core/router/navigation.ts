@@ -2,6 +2,7 @@ import type { Router } from "vue-router"
 
 interface RedirectToLoginOptions {
     redirect?: string
+    reason?: "session-expired"
 }
 
 export function resolveSafeRedirectTarget(value: unknown): string | null {
@@ -34,10 +35,16 @@ export async function redirectToLogin(
     if (redirect) {
         await router.push({
             name: "user.login",
-            query: { redirect },
+            query: {
+                redirect,
+                ...(options.reason ? { reason: options.reason } : {}),
+            },
         })
         return
     }
 
-    await router.push({ name: "user.login" })
+    await router.push({
+        name: "user.login",
+        query: options.reason ? { reason: options.reason } : {},
+    })
 }

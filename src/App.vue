@@ -57,6 +57,20 @@ function clearSyncRetryState(resetCount = true) {
   }
 }
 
+function clearLoginSuccessFlag() {
+  if (!hasLoginSuccessFlag.value) {
+    return
+  }
+
+  const nextQuery = { ...route.query }
+  delete nextQuery._login_success
+  void router.replace({
+    path: route.path,
+    query: nextQuery,
+    hash: route.hash,
+  })
+}
+
 function scheduleSyncRetry(userId: string) {
   if (syncRetryUserId.value !== userId) {
     syncRetryUserId.value = userId
@@ -158,6 +172,7 @@ watch(
       syncedUserId.value = null
       userStore.setSettingsSyncState("idle")
       clearSyncRetryState()
+      clearLoginSuccessFlag()
     }
   },
   { immediate: true }
@@ -195,7 +210,16 @@ watch(
 watch(
   [hasLoginSuccessFlag, () => userStore.settingsSyncState],
   ([enabled, settingsSyncState]) => {
-    if (!enabled || !userStore.isLoggedIn || settingsSyncState !== "synced") {
+    if (!enabled) {
+      return
+    }
+
+    if (!userStore.isLoggedIn || settingsSyncState === "failed" || settingsSyncState === "idle") {
+      clearLoginSuccessFlag()
+      return
+    }
+
+    if (settingsSyncState !== "synced") {
       return
     }
 
@@ -203,13 +227,7 @@ watch(
       description: t("auth.login.toast.loginSuccessDescription"),
     })
 
-    const nextQuery = { ...route.query }
-    delete nextQuery._login_success
-    void router.replace({
-      path: route.path,
-      query: nextQuery,
-      hash: route.hash,
-    })
+    clearLoginSuccessFlag()
   },
   { immediate: true }
 )

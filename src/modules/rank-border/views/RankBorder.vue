@@ -245,7 +245,7 @@ type RankBorderHonorView = {
   scrollUrl: string | null
   levelIconUrl: string | null
   level6IconUrl: string | null
-  fcApLevel: string | null
+  fcApCount: string | null
   bondsLeftBgUrl: string | null
   bondsRightBgUrl: string | null
   bondsLeftIconUrl: string | null
@@ -3022,10 +3022,25 @@ function profileHonorViews(result: ProfileResult, limit = 3, keyScope = "profile
       return {
         key: `${keyScope}:${honor.seq ?? index}:${honorId ?? "unknown"}`,
         label: normalizeTextValue(masterHonor?.name) ?? (honorId ? `#${honorId}` : "-"),
-        ...resolveHonorVisual(masterHonor, masterGroup, honorId ?? null, honor.honorLevel, "sub"),
+        ...resolveHonorVisual(
+          masterHonor,
+          masterGroup,
+          honorId ?? null,
+          honor.honorLevel,
+          resolveFcApHonorCount(honorId ?? null, honor.honorCount),
+          "sub",
+        ),
         level: honor.honorLevel,
       }
     })
+}
+
+function resolveFcApHonorCount(honorId: number | null, count: number | null) {
+  if (honorId == null || !FC_AP_HONOR_IDS.has(honorId)) {
+    return null
+  }
+
+  return count
 }
 
 function rowHonorKeyScope(row: RankBorderLineRow) {
@@ -3041,6 +3056,7 @@ function resolveHonorVisual(
   group: RankBorderMasterHonorGroup | null,
   honorId: number | null,
   level: number | null,
+  count: number | null,
   mode: "main" | "sub",
 ): Omit<RankBorderHonorView, "key" | "label" | "level"> {
   const levelVisual = resolveHonorLevelVisual(honor, level)
@@ -3074,8 +3090,8 @@ function resolveHonorVisual(
     level6IconUrl: honorUsesLevelIconLayer(groupType)
       ? "/rank-border/honor/icon_degreeLv6.png"
       : null,
-    fcApLevel: assetBundleName && honorUsesScrollLevel(groupType, assetBundleName)
-      ? String(level ?? "")
+    fcApCount: assetBundleName && honorUsesScrollLevel(groupType, assetBundleName) && count != null
+      ? String(count)
       : null,
     bondsLeftBgUrl: null,
     bondsRightBgUrl: null,
@@ -3108,7 +3124,7 @@ function resolveBondsHonorView(
     scrollUrl: null,
     levelIconUrl: "/rank-border/honor/icon_degreeLv.png",
     level6IconUrl: "/rank-border/honor/icon_degreeLv6.png",
-    fcApLevel: null,
+    fcApCount: null,
     bondsLeftBgUrl: slots.leftCharacterId ? `/rank-border/honor/bonds/${slots.leftCharacterId}_sub.png` : null,
     bondsRightBgUrl: slots.rightCharacterId ? `/rank-border/honor/bonds/${slots.rightCharacterId}_sub.png` : null,
     bondsLeftIconUrl: slots.leftUnitId ? resolveBondsHonorCharacterUrl(slots.leftUnitId) : null,
@@ -3489,10 +3505,6 @@ function resolveCardDisplayAfterTraining(result: ProfileResult) {
   return resolveCardTrainedArt(result)
 }
 
-function honorLevelLabel(honor: RankBorderHonorView) {
-  return honor.level != null && honor.level > 0 ? `Lv.${honor.level}` : ""
-}
-
 function honorSvgId(honor: RankBorderHonorView, suffix: string) {
   return `rank-border-honor-${sanitizeDomId(honor.key)}-${suffix}`
 }
@@ -3690,6 +3702,7 @@ function profileHonorSignature(value: Pick<RankBorderLatest, "profileHonors">) {
       honor.honorId,
       honor.honorId2,
       honor.honorLevel,
+      honor.honorCount,
       honor.profileHonorType,
       honor.bondsHonorViewType,
       honor.bondsHonorWordId,
@@ -4683,7 +4696,6 @@ function traceUpdateRecords(
                             v-for="honor in profileHonorViews(row.detail, 3, rowHonorKeyScope(row))"
                             :key="honor.key"
                             class="rank-border-honor rank-border-honor--row"
-                            :title="`${honor.label} ${honorLevelLabel(honor)}`.trim()"
                           >
                             <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
                               <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
@@ -4724,14 +4736,14 @@ function traceUpdateRecords(
                                   @error="hideBrokenImage"
                                 />
                                 <text
-                                  v-if="honor.fcApLevel"
+                                  v-if="honor.fcApCount"
                                   class="rank-border-honor-fcap-text"
                                   x="87"
                                   y="57"
                                   text-anchor="middle"
                                   dominant-baseline="middle"
                                 >
-                                  {{ honor.fcApLevel }}
+                                  {{ honor.fcApCount }}
                                 </text>
                               </svg>
                             </span>
@@ -5263,7 +5275,6 @@ function traceUpdateRecords(
                       v-for="honor in profileHonorViews(detail.result, 3, detailHonorKeyScope(detail))"
                       :key="honor.key"
                       class="rank-border-honor rank-border-honor--detail"
-                      :title="`${honor.label} ${honorLevelLabel(honor)}`.trim()"
                     >
                       <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
                         <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
@@ -5304,14 +5315,14 @@ function traceUpdateRecords(
                             @error="hideBrokenImage"
                           />
                           <text
-                            v-if="honor.fcApLevel"
+                            v-if="honor.fcApCount"
                             class="rank-border-honor-fcap-text"
                             x="87"
                             y="57"
                             text-anchor="middle"
                             dominant-baseline="middle"
                           >
-                            {{ honor.fcApLevel }}
+                            {{ honor.fcApCount }}
                           </text>
                         </svg>
                       </span>
@@ -5925,8 +5936,8 @@ function traceUpdateRecords(
 
 .rank-border-player-track {
   display: grid;
-  width: 100%;
-  min-width: 0;
+  width: max-content;
+  min-width: 100%;
   align-items: center;
   gap: 0.75rem;
   padding-block: 0.125rem;
@@ -5934,28 +5945,29 @@ function traceUpdateRecords(
 }
 
 .rank-border-player-track--assets {
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto max-content;
 }
 
 .rank-border-player-track--plain {
-  min-width: 0;
+  width: max-content;
+  min-width: 100%;
 }
 
 .rank-border-player-copy {
   display: grid;
+  width: max-content;
   min-width: 0;
   gap: 0.375rem;
 }
 
 .rank-border-player-name {
-  min-width: 0;
-  max-width: 22rem;
-  overflow: hidden;
+  min-width: max-content;
+  max-width: none;
+  overflow: visible;
   color: var(--foreground);
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.35;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -6119,8 +6131,9 @@ function traceUpdateRecords(
 .rank-border-honor-strip--row {
   flex-wrap: nowrap;
   gap: 0.25rem 0.375rem;
-  max-width: 100%;
-  overflow-x: auto;
+  width: max-content;
+  max-width: none;
+  overflow-x: visible;
   overflow-y: hidden;
   scrollbar-width: none;
 }
@@ -7210,7 +7223,7 @@ function traceUpdateRecords(
   }
 
   .rank-border-player-name {
-    max-width: 18rem;
+    max-width: none;
   }
 
   .rank-border-row-score {
@@ -7403,11 +7416,10 @@ function traceUpdateRecords(
   }
 
   .rank-border-player-track--assets {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto max-content;
   }
 
   .rank-border-player-name {
-    max-width: 9.75rem;
     font-size: 0.8125rem;
   }
 
@@ -7418,6 +7430,8 @@ function traceUpdateRecords(
 
   .rank-border-honor-strip--row {
     gap: 0.1875rem;
+    max-width: none;
+    overflow-x: visible;
   }
 
   .rank-border-honor--row {
@@ -7688,11 +7702,10 @@ function traceUpdateRecords(
   }
 
   .rank-border-player-track--assets {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto max-content;
   }
 
   .rank-border-player-name {
-    max-width: 8.5rem;
     font-size: 0.75rem;
   }
 

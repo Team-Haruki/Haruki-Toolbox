@@ -21,7 +21,7 @@ export function setupRouteGuards(router: Router) {
         )
 
         if (requiresAuth && !userStore.isLoggedIn) {
-            if (to.path !== "/user/login") {
+            if (to.path !== "/user/login" && to.query.reason !== "session-expired") {
                 toast.error(translate("core.auth.loginRequiredTitle"), {
                     description: translate("core.auth.loginRequiredDescription"),
                 })

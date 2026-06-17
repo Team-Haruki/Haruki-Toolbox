@@ -83,6 +83,7 @@ export type RankBorderProfileHonor = {
   honorId: number | null
   honorId2: number | null
   honorLevel: number | null
+  honorCount: number | null
   bondsHonorViewType: string | null
   bondsHonorWordId: number | null
 }
@@ -489,12 +490,34 @@ function normalizeProfileHonors(value: unknown): RankBorderProfileHonor[] {
         honorId: normalizePositiveInteger(item.honorId),
         honorId2: normalizePositiveInteger(item.honorId2),
         honorLevel: normalizeNonNegativeInteger(item.honorLevel),
+        honorCount: normalizeHonorCount(item),
         bondsHonorViewType: normalizeText(item.bondsHonorViewType),
         bondsHonorWordId: normalizeNonNegativeInteger(item.bondsHonorWordId),
       }
     })
     .filter((item): item is RankBorderProfileHonor => item != null)
     .sort((a, b) => (a.seq ?? 999) - (b.seq ?? 999))
+}
+
+function normalizeHonorCount(item: Record<string, unknown>): number | null {
+  for (const key of [
+    "honorCount",
+    "count",
+    "achievementCount",
+    "progressCount",
+    "musicCount",
+    "fullComboCount",
+    "allPerfectCount",
+    "fcCount",
+    "apCount",
+  ]) {
+    const value = normalizeNonNegativeInteger(item[key])
+    if (value != null) {
+      return value
+    }
+  }
+
+  return null
 }
 
 function normalizePlayerFrames(value: unknown): RankBorderPlayerFrame[] {
