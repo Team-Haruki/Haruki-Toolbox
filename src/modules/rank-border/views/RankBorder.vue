@@ -56,16 +56,11 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import type { SekaiRegion } from "@/types"
 import {
-  fetchRankBorderLatestByRank,
-  fetchRankBorderLatestByUser,
-  fetchRankBorderPrivateLatestByUser,
-  fetchRankBorderPrivateTraceByUser,
-  fetchRankBorderTraceByRank,
-  fetchRankBorderTraceByUser,
-  fetchRankBorderWebTraceByUser,
-  fetchRankBorderWebRankings,
+  fetchRankBorderPrivateWebUserDetailV2,
   fetchRankBorderPublicUserProfile,
   isRankBorderTrackerUnauthorizedError,
+  fetchRankBorderWebRankDetailV2,
+  fetchRankBorderWebUserDetailV2,
   subscribeRankBorderRealtime,
   type RankBorderRealtimeEvent,
   type RankBorderRealtimeOnline,
@@ -310,6 +305,7 @@ const LEGACY_DIRECT_TRACKER_ENDPOINTS = new Set([
 ])
 const DEFAULT_INTERVAL_SECONDS = "3600"
 const PERSONAL_COLLECTION_LIMIT = 100
+const FULL_TRACE_LIMIT = 5_000
 const NUMBER_FLASH_MS = 1200
 const FC_AP_HONOR_IDS = new Set([3009, 3010, 3011, 3012, 3013, 3014, 4700, 4701])
 const TRACKER_UPDATE_INTERVAL_SECONDS = 10
@@ -1641,9 +1637,18 @@ async function loadRankDetail(
   detailError.value = null
   try {
     const trackedUserId = normalizeTextValue(options.trackedUserId)
-    const result = trackedUserId
-      ? await fetchLatestPublicUser(trackedUserId, { enrichProfile: true })
-      : await fetchLatestPublicRank(rank, { enrichProfile: true })
+    const rankDetail = trackedUserId
+      ? null
+      : await fetchRankBorderWebRankDetailV2({
+          ...detailScope.value,
+          rank,
+          intervalSeconds: selectedIntervalSeconds.value,
+        }).catch(() => null)
+    const result = rankDetail?.current
+      ? await maybeEnrichLatestProfile(rankDetail.current, { enrichProfile: true })
+      : trackedUserId
+        ? await fetchLatestPublicUser(trackedUserId, { enrichProfile: true })
+        : await fetchLatestPublicRank(rank, { enrichProfile: true })
     if (requestToken !== detailRequestToken) {
       return
     }
@@ -1651,7 +1656,8 @@ async function loadRankDetail(
       throw new Error(t("rankBorder.result.rankNotFound"))
     }
 
-    const [previous, next] = await fetchNeighborPublicRanks(result.rank)
+    const previous = rankDetail?.previous ?? (result.rank > 1 ? await fetchLatestPublicRank(result.rank - 1).catch(() => null) : null)
+    const next = rankDetail?.next ?? await fetchLatestPublicRank(result.rank + 1).catch(() => null)
     if (requestToken !== detailRequestToken) {
       return
     }
@@ -1746,12 +1752,16 @@ async function loadUserDetail(
   }
   detailError.value = null
   try {
-    const result = options.privateLookup
-      ? await fetchPrivateLatestByUser(userId)
-      : await fetchRankBorderLatestByUser({
+    const webDetail = options.privateLookup
+      ? null
+      : await fetchRankBorderWebUserDetailV2({
           ...detailScope.value,
           userId,
+          includeProfile: true,
         })
+    const result = options.privateLookup
+      ? await fetchPrivateLatestByUser(userId)
+      : webDetail?.current ?? null
     if (!result) {
       throw new Error(t("rankBorder.result.accountOutOfRange"))
     }
@@ -1759,10 +1769,8 @@ async function loadUserDetail(
       throw new Error(t("rankBorder.result.accountOutOfRange"))
     }
 
-    const [previous, next] = await Promise.all([
-      result.rank > 1 ? fetchLatestPublicRank(result.rank - 1).catch(() => null) : Promise.resolve(null),
-      fetchLatestPublicRank(result.rank + 1).catch(() => null),
-    ])
+    const previous = webDetail?.previous ?? (result.rank > 1 ? await fetchLatestPublicRank(result.rank - 1).catch(() => null) : null)
+    const next = webDetail?.next ?? await fetchLatestPublicRank(result.rank + 1).catch(() => null)
     if (requestToken !== detailRequestToken) {
       return
     }
@@ -1800,11 +1808,12 @@ async function fetchPrivateLatestByUser(userId: string) {
     throw new Error(t("rankBorder.result.privateLookupLoginRequired"))
   }
 
-  return await fetchRankBorderPrivateLatestByUser({
+  return await fetchRankBorderPrivateWebUserDetailV2({
     ...detailScope.value,
     userId,
     ownerId: userStore.kratosIdentityId,
-  })
+    includeProfile: true,
+  }).then((detail) => detail.current ?? null)
 }
 
 async function refreshUserDetailFromPublicFallback(userId: string, requestToken: number) {
@@ -1839,24 +1848,22 @@ async function fetchLatestPublicRank(
 ): Promise<RankBorderLatest | null> {
   const cached = top100Details.value.get(rank)
   if (cached) {
-    if (!options.enrichProfile || !shouldEnrichDetailProfile(cached)) {
-      return cached
-    }
-
-    return mergeLatestWithProfile(cached, await fetchPublicProfile(cached.userId).catch(() => null))
+    return await maybeEnrichLatestProfile(cached, options)
   }
 
-  const latest = latestByTimestamp((await fetchRankBorderWebRankings({
+  const rankDetail = await fetchRankBorderWebRankDetailV2({
     ...detailScope.value,
-    rankMin: rank,
-    rankMax: rank,
-    limit: 1,
-  })).items)
-  if (!latest) {
-    return null
-  }
+    rank,
+  }).catch(() => null)
+  const latest = rankDetail?.current ?? null
+  return await maybeEnrichLatestProfile(latest, options)
+}
 
-  if (!options.enrichProfile || !shouldEnrichDetailProfile(latest)) {
+async function maybeEnrichLatestProfile(
+  latest: RankBorderLatest | null,
+  options: { enrichProfile?: boolean } = {},
+): Promise<RankBorderLatest | null> {
+  if (!latest || !options.enrichProfile || !shouldEnrichDetailProfile(latest)) {
     return latest
   }
 
@@ -1876,10 +1883,12 @@ async function fetchLatestPublicUser(
     return mergeLatestWithProfile(cached, await fetchPublicProfile(cached.userId).catch(() => null))
   }
 
-  const latest = await fetchRankBorderLatestByUser({
+  const detail = await fetchRankBorderWebUserDetailV2({
     ...detailScope.value,
     userId,
-  })
+    includeProfile: options.enrichProfile,
+  }).catch(() => null)
+  const latest = detail?.current ?? null
   if (!latest) {
     return null
   }
@@ -1918,10 +1927,11 @@ function findTop100DetailByUserId(userId: string | null | undefined): RankBorder
 }
 
 async function fetchFallbackLineDetail(rank: number): Promise<LineDetailState | null> {
-  const latest = await fetchRankBorderLatestByRank({
+  const rankDetail = await fetchRankBorderWebRankDetailV2({
     ...detailScope.value,
     rank,
   }).catch(() => null)
+  const latest = rankDetail?.current ?? null
   if (!latest) {
     return null
   }
@@ -2019,16 +2029,6 @@ function isProfileChanged(previous: RankBorderUserProfile, next: RankBorderUserP
     || previous.profileWord !== next.profileWord
     || profileHonorSignature(previous) !== profileHonorSignature(next)
     || playerFrameSignature(previous) !== playerFrameSignature(next)
-}
-
-function latestByTimestamp(items: RankBorderLatest[]) {
-  return items.reduce<RankBorderLatest | null>((latest, item) => {
-    if (!latest) {
-      return item
-    }
-
-    return (item.timestamp ?? 0) > (latest.timestamp ?? 0) ? item : latest
-  }, null)
 }
 
 function shouldRejectMismatchedAccountLookup(requestedUserId: string, result: RankBorderLatest) {
@@ -2158,31 +2158,39 @@ function cacheDetailTrace(key: string, value: DetailState, records: RankBorderTr
 
 async function fetchDetailTrace(value: DetailState): Promise<RankBorderTracePoint[]> {
   if (value.source === "user") {
-    return await fetchRankBorderPrivateTraceByUser({
+    if (!userStore.isLoggedIn) {
+      const detail = await fetchRankBorderWebUserDetailV2({
+        ...detailScope.value,
+        userId: value.query,
+        includeTrace: true,
+        limit: FULL_TRACE_LIMIT,
+      }).catch(() => null)
+      return detail?.playerTrace ?? []
+    }
+    return await fetchRankBorderPrivateWebUserDetailV2({
       ...detailScope.value,
       userId: value.query,
       ownerId: userStore.kratosIdentityId,
-      full: true,
-    }).catch(() => [])
+      includeTrace: true,
+      limit: FULL_TRACE_LIMIT,
+    }).then((detail) => detail.playerTrace).catch(() => [])
   }
 
   if (value.source === "rank" && value.result.userId) {
-    const webRecords = await fetchRankBorderWebTraceByUser({
+    const detail = await fetchRankBorderWebRankDetailV2({
       ...detailScope.value,
-      userId: value.result.userId,
-      full: true,
-    }).catch(() => [])
-    if (webRecords.length > 0 || value.result.rank <= PERSONAL_COLLECTION_LIMIT) {
-      return webRecords
-    }
-
-    const directRecords = await fetchRankBorderTraceByUser({
-      ...detailScope.value,
-      userId: value.result.userId,
-      full: true,
-    }).catch(() => [])
-    if (directRecords.length > 0 || value.result.rank <= PERSONAL_COLLECTION_LIMIT) {
-      return directRecords
+      rank: value.result.rank,
+      includeTrace: true,
+      includePlayerTrace: true,
+      limit: FULL_TRACE_LIMIT,
+    }).catch(() => null)
+    if (detail) {
+      if (detail.rankTrace.length > 0 || value.result.rank <= PERSONAL_COLLECTION_LIMIT) {
+        return detail.rankTrace
+      }
+      if (detail.playerTrace.length > 0 || value.result.rank <= PERSONAL_COLLECTION_LIMIT) {
+        return detail.playerTrace
+      }
     }
   }
 
@@ -2429,11 +2437,13 @@ function findLatestTraceAtTimestamp(records: RankBorderTracePoint[], timestamp: 
 }
 
 async function fetchFullRankTrace(rank: number): Promise<RankBorderTracePoint[]> {
-  return await fetchRankBorderTraceByRank({
+  const detail = await fetchRankBorderWebRankDetailV2({
     ...detailScope.value,
     rank,
-    full: true,
-  }).catch(() => [])
+    includeTrace: true,
+    limit: FULL_TRACE_LIMIT,
+  }).catch(() => null)
+  return detail?.rankTrace ?? []
 }
 
 function resolveLineDetail(rank: number): LineDetailState | null {

@@ -92,6 +92,37 @@ export type RankBorderOverview = {
   intervalSeconds: number | null
 }
 
+export type RankBorderSnapshot = {
+  rank: number
+  current: RankBorderLatest | null
+  previous: RankBorderLatest | null
+  next: RankBorderLatest | null
+  metrics: RankBorderGrowth | null
+}
+
+export type RankBorderSnapshotResponse = {
+  items: RankBorderSnapshot[]
+  intervalSeconds: number | null
+}
+
+export type RankBorderWebRankDetail = {
+  current: RankBorderLatest | null
+  previous: RankBorderLatest | null
+  next: RankBorderLatest | null
+  metrics: RankBorderGrowth | null
+  rankTrace: RankBorderTracePoint[]
+  playerTrace: RankBorderTracePoint[]
+  intervalSeconds: number | null
+}
+
+export type RankBorderWebUserDetail = {
+  current: RankBorderLatest | null
+  previous: RankBorderLatest | null
+  next: RankBorderLatest | null
+  playerTrace: RankBorderTracePoint[]
+  profile: RankBorderUserProfile | null
+}
+
 export type RankBorderProfileHonor = {
   seq: number | null
   profileHonorType: string | null
@@ -288,6 +319,33 @@ export function normalizeRankBorderOverview(value: unknown): RankBorderOverview 
   }
 }
 
+export function normalizeRankBorderSnapshots(value: unknown): RankBorderSnapshotResponse {
+  const record = isRecord(value) ? value : {}
+  const items = Array.isArray(record.items) ? record.items : []
+  return {
+    items: items
+      .map((item) => {
+        if (!isRecord(item)) {
+          return null
+        }
+        const rank = normalizePositiveInteger(item.rank)
+        if (!rank) {
+          return null
+        }
+        return {
+          rank,
+          current: normalizeRankBorderLatest(normalizeWebRankingItem(item.current)),
+          previous: normalizeRankBorderLatest(normalizeWebRankingItem(item.previous)),
+          next: normalizeRankBorderLatest(normalizeWebRankingItem(item.next)),
+          metrics: normalizeRankBorderGrowths([item.metrics])[0] ?? null,
+        }
+      })
+      .filter((item): item is RankBorderSnapshot => item != null)
+      .sort((a, b) => a.rank - b.rank),
+    intervalSeconds: normalizePositiveInteger(record.intervalSeconds),
+  }
+}
+
 export function normalizeRankBorderTrace(value: unknown): RankBorderTracePoint[] {
   const rankData = isRecord(value) && Array.isArray(value.rankData)
     ? value.rankData
@@ -320,6 +378,30 @@ export function normalizeRankBorderTrace(value: unknown): RankBorderTracePoint[]
     })
     .filter((item): item is RankBorderTracePoint => item != null)
     .sort((a, b) => a.timestamp - b.timestamp)
+}
+
+export function normalizeRankBorderWebRankDetail(value: unknown): RankBorderWebRankDetail {
+  const record = isRecord(value) ? value : {}
+  return {
+    current: normalizeRankBorderLatest(normalizeWebRankingItem(record.current)),
+    previous: normalizeRankBorderLatest(normalizeWebRankingItem(record.previous)),
+    next: normalizeRankBorderLatest(normalizeWebRankingItem(record.next)),
+    metrics: normalizeRankBorderGrowths([record.metrics])[0] ?? null,
+    rankTrace: normalizeRankBorderTrace(record.rankTrace),
+    playerTrace: normalizeRankBorderTrace(record.playerTrace),
+    intervalSeconds: normalizePositiveInteger(record.intervalSeconds),
+  }
+}
+
+export function normalizeRankBorderWebUserDetail(value: unknown): RankBorderWebUserDetail {
+  const record = isRecord(value) ? value : {}
+  return {
+    current: normalizeRankBorderLatest(normalizeWebRankingItem(record.current)),
+    previous: normalizeRankBorderLatest(normalizeWebRankingItem(record.previous)),
+    next: normalizeRankBorderLatest(normalizeWebRankingItem(record.next)),
+    playerTrace: normalizeRankBorderTrace(record.playerTrace),
+    profile: normalizeRankBorderUserProfile(record.profile),
+  }
 }
 
 export function normalizeRankBorderTraceTimeline(records: RankBorderTracePoint[]): RankBorderTracePoint[] {
