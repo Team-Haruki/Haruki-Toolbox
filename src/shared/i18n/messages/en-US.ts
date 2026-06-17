@@ -636,7 +636,7 @@ export const enUS = {
         form: {
           title: "Create or update grant",
           granteeUserId: "Grantee Toolbox user ID",
-          granteeUserIdPlaceholder: "For example 00000000-0000-0000-0000-000000000000",
+          granteeUserIdPlaceholder: "For example 1234567890",
           dataType: "Data type",
           expiresAt: "Expires at",
           expiresAtHelp: "Must be a future time. Permanent grants are not available.",

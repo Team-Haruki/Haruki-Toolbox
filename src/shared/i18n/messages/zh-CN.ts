@@ -636,7 +636,7 @@ export const zhCN = {
         form: {
           title: "新增或更新授权",
           granteeUserId: "被授权 Toolbox 用户 ID",
-          granteeUserIdPlaceholder: "例如 00000000-0000-0000-0000-000000000000",
+          granteeUserIdPlaceholder: "例如 1234567890",
           dataType: "数据类型",
           expiresAt: "过期时间",
           expiresAtHelp: "必须是未来时间，不提供永久授权。",

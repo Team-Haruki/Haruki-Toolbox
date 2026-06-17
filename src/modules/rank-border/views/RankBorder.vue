@@ -332,9 +332,11 @@ const IMAGE_RETRY_LIMIT = 6
 const IMAGE_RETRY_DELAY_MS = 260
 const IMAGE_RETRY_BACKOFF_LIMIT = 8
 const IMAGE_RETRY_MAX_DELAY_MS = 30_000
+const IMAGE_PRELOAD_CACHE_LIMIT = 600
 const IMAGE_RETRY_PARAM = "hrk_image_retry"
 const IMAGE_RETRY_ORIGINAL_ATTRIBUTE = "data-rank-border-original-src"
 const IMAGE_RETRY_COUNT_ATTRIBUTE = "data-rank-border-retry-count"
+const HONOR_BONDS_MASK_URL = "/rank-border/honor/mask_degree_sub.png"
 const HEATMAP_MYSEKAI_ROUND_THRESHOLD = 37
 const HEATMAP_ACTIVE_ROUND_BASELINE = 15
 const HEATMAP_ACTIVE_ROUND_SPAN = 15
@@ -391,6 +393,8 @@ const detailChangedRanks = ref<Set<number>>(new Set())
 const detailScoreChanged = ref(false)
 const visibleRank = ref<number | null>(null)
 const profileAssetsLoading = ref(false)
+const preloadedImageSources = ref(new Map<string, "loading" | "loaded" | "failed">())
+const queuedImagePreloads = new Set<string>()
 
 const masterOptions = useRankBorderMasterOptions(selectedRegion, selectedEventId)
 const tracker = useRankBorderTracker()
@@ -3609,6 +3613,141 @@ function honorLevelStars(honor: RankBorderHonorView) {
   return stars
 }
 
+function loadedHonorLevelStars(honor: RankBorderHonorView) {
+  return honorLevelStars(honor)
+    .map((star) => ({
+      ...star,
+      url: preloadedRankBorderImageUrl(star.url),
+    }))
+    .filter((star): star is RankBorderHonorLevelStar => star.url != null)
+}
+
+function preloadedRankBorderImageUrl(source: string | null | undefined) {
+  const normalizedSource = normalizeImageSource(source)
+  if (!normalizedSource) {
+    return null
+  }
+
+  const status = preloadedImageSources.value.get(normalizedSource)
+  if (status === "loaded") {
+    return normalizedSource
+  }
+
+  if (status == null) {
+    queueRankBorderImagePreload(normalizedSource)
+  }
+
+  return null
+}
+
+function isRankBorderImageLoaded(source: string | null | undefined) {
+  const normalizedSource = normalizeImageSource(source)
+  if (!normalizedSource) {
+    return false
+  }
+
+  const status = preloadedImageSources.value.get(normalizedSource)
+  if (status === "loaded") {
+    return true
+  }
+
+  if (status == null) {
+    queueRankBorderImagePreload(normalizedSource)
+  }
+
+  return false
+}
+
+function areRankBorderImagesLoaded(...sources: Array<string | null | undefined>) {
+  let allLoaded = true
+  for (const source of sources) {
+    if (!isRankBorderImageLoaded(source)) {
+      allLoaded = false
+    }
+  }
+
+  return allLoaded
+}
+
+function normalizeImageSource(source: string | null | undefined) {
+  if (!source) {
+    return null
+  }
+
+  const trimmed = source.trim()
+  return trimmed ? stripImageRetryParam(trimmed) : null
+}
+
+async function preloadRankBorderImage(source: string, retryCount = 0) {
+  queuedImagePreloads.delete(source)
+  const normalizedSource = normalizeImageSource(source)
+  if (!normalizedSource) {
+    return
+  }
+
+  const currentStatus = preloadedImageSources.value.get(normalizedSource)
+  if (currentStatus === "loaded" || currentStatus === "loading") {
+    return
+  }
+
+  updatePreloadedImageSource(normalizedSource, "loading")
+  try {
+    await loadRankBorderImage(normalizedSource)
+    updatePreloadedImageSource(normalizedSource, "loaded")
+  } catch {
+    if (retryCount >= IMAGE_RETRY_LIMIT) {
+      updatePreloadedImageSource(normalizedSource, "failed")
+      return
+    }
+
+    window.setTimeout(() => {
+      updatePreloadedImageSource(normalizedSource, "failed")
+      void preloadRankBorderImage(normalizedSource, retryCount + 1)
+    }, recoverableImageRetryDelay(retryCount + 1))
+  }
+}
+
+function queueRankBorderImagePreload(source: string) {
+  if (queuedImagePreloads.has(source)) {
+    return
+  }
+
+  queuedImagePreloads.add(source)
+  window.setTimeout(() => {
+    void preloadRankBorderImage(source)
+  }, 0)
+}
+
+function loadRankBorderImage(source: string) {
+  return new Promise<void>((resolve, reject) => {
+    const image = new Image()
+    image.decoding = "async"
+    image.onload = () => {
+      if (typeof image.decode === "function") {
+        void image.decode().then(resolve, resolve)
+        return
+      }
+
+      resolve()
+    }
+    image.onerror = () => reject(new Error("image load failed"))
+    image.src = source
+  })
+}
+
+function updatePreloadedImageSource(source: string, status: "loading" | "loaded" | "failed") {
+  const nextSources = new Map(preloadedImageSources.value)
+  if (!nextSources.has(source) && nextSources.size >= IMAGE_PRELOAD_CACHE_LIMIT) {
+    const oldestSource = nextSources.keys().next().value
+    if (oldestSource != null) {
+      nextSources.delete(oldestSource)
+    }
+  }
+
+  nextSources.set(source, status)
+  preloadedImageSources.value = nextSources
+}
+
 function hideBrokenImage(event: Event) {
   if (event.target instanceof HTMLImageElement || event.target instanceof SVGImageElement) {
     retryRecoverableImage(event.target)
@@ -4873,31 +5012,38 @@ function traceUpdateRecords(
                             class="rank-border-honor rank-border-honor--row"
                           >
                             <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
-                              <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
+                              <svg
+                                v-if="isRankBorderImageLoaded(honor.baseUrl)"
+                                class="rank-border-honor-svg"
+                                viewBox="0 0 180 80"
+                                aria-hidden="true"
+                                focusable="false"
+                              >
                                 <image
-                                  :href="honor.baseUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                                  v-if="preloadedRankBorderImageUrl(honor.baseUrl)"
+                                  :href="preloadedRankBorderImageUrl(honor.baseUrl) ?? ''" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
                                   @load="resetRecoveredImage"
                                   @error="hideBrokenImage"
                                 />
                                 <image
-                                  v-if="honor.frameUrl"
-                                  :href="honor.frameUrl"
+                                  v-if="preloadedRankBorderImageUrl(honor.frameUrl)"
+                                  :href="preloadedRankBorderImageUrl(honor.frameUrl) ?? ''"
                                   v-bind="honorFrameSvgAttrs(honor)"
                                   preserveAspectRatio="none"
                                   @load="resetRecoveredImage"
                                   @error="hideBrokenImage"
                                 />
                                 <image
-                                  v-if="honor.rankUrl"
-                                  :href="honor.rankUrl"
+                                  v-if="preloadedRankBorderImageUrl(honor.rankUrl)"
+                                  :href="preloadedRankBorderImageUrl(honor.rankUrl) ?? ''"
                                   v-bind="honorRankSvgAttrs(honor)"
                                   preserveAspectRatio="none"
                                   @load="resetRecoveredImage"
                                   @error="hideBrokenImage"
                                 />
                                 <image
-                                  v-if="honor.scrollUrl"
-                                  :href="honor.scrollUrl"
+                                  v-if="preloadedRankBorderImageUrl(honor.scrollUrl)"
+                                  :href="preloadedRankBorderImageUrl(honor.scrollUrl) ?? ''"
                                   x="37"
                                   y="3"
                                   width="101"
@@ -4907,7 +5053,7 @@ function traceUpdateRecords(
                                   @error="hideBrokenImage"
                                 />
                                 <image
-                                  v-for="star in honorLevelStars(honor)"
+                                  v-for="star in loadedHonorLevelStars(honor)"
                                   :key="star.key"
                                   :href="star.url"
                                   :x="50 + star.slot * 16"
@@ -4931,11 +5077,18 @@ function traceUpdateRecords(
                               </svg>
                             </span>
                             <span v-else-if="honor.type === 'bonds' && honor.bondsLeftBgUrl && honor.bondsRightBgUrl" class="rank-border-honor-visual rank-border-honor-visual--bonds">
-                              <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
+                              <svg
+                                v-if="areRankBorderImagesLoaded(honor.bondsLeftBgUrl, honor.bondsRightBgUrl, HONOR_BONDS_MASK_URL)"
+                                class="rank-border-honor-svg"
+                                viewBox="0 0 180 80"
+                                aria-hidden="true"
+                                focusable="false"
+                              >
                                 <defs>
                                   <mask :id="honorSvgId(honor, 'mask')" maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="80" style="mask-type: alpha">
                                     <image
-                                      href="/rank-border/honor/mask_degree_sub.png" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                                      v-if="preloadedRankBorderImageUrl(HONOR_BONDS_MASK_URL)"
+                                      :href="preloadedRankBorderImageUrl(HONOR_BONDS_MASK_URL) ?? ''" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
                                       @load="resetRecoveredImage"
                                       @error="hideBrokenImage"
                                     />
@@ -4952,12 +5105,14 @@ function traceUpdateRecords(
                                 </defs>
                                 <g :mask="`url(#${honorSvgId(honor, 'mask')})`">
                                   <image
-                                    :href="honor.bondsRightBgUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                                    v-if="preloadedRankBorderImageUrl(honor.bondsRightBgUrl)"
+                                    :href="preloadedRankBorderImageUrl(honor.bondsRightBgUrl) ?? ''" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
                                     @load="resetRecoveredImage"
                                     @error="hideBrokenImage"
                                   />
                                   <image
-                                    :href="honor.bondsLeftBgUrl"
+                                    v-if="preloadedRankBorderImageUrl(honor.bondsLeftBgUrl)"
+                                    :href="preloadedRankBorderImageUrl(honor.bondsLeftBgUrl) ?? ''"
                                     x="0"
                                     y="0"
                                     width="180"
@@ -4968,8 +5123,8 @@ function traceUpdateRecords(
                                     @error="hideBrokenImage"
                                   />
                                   <image
-                                    v-if="honor.bondsLeftIconUrl"
-                                    :href="honor.bondsLeftIconUrl"
+                                    v-if="preloadedRankBorderImageUrl(honor.bondsLeftIconUrl)"
+                                    :href="preloadedRankBorderImageUrl(honor.bondsLeftIconUrl) ?? ''"
                                     x="-4"
                                     y="-29"
                                     width="128"
@@ -4980,8 +5135,8 @@ function traceUpdateRecords(
                                     @error="hideBrokenImage"
                                   />
                                   <image
-                                    v-if="honor.bondsRightIconUrl"
-                                    :href="honor.bondsRightIconUrl"
+                                    v-if="preloadedRankBorderImageUrl(honor.bondsRightIconUrl)"
+                                    :href="preloadedRankBorderImageUrl(honor.bondsRightIconUrl) ?? ''"
                                     x="56"
                                     y="-29"
                                     width="128"
@@ -4993,15 +5148,15 @@ function traceUpdateRecords(
                                   />
                                 </g>
                                 <image
-                                  v-if="honor.frameUrl"
-                                  :href="honor.frameUrl"
+                                  v-if="preloadedRankBorderImageUrl(honor.frameUrl)"
+                                  :href="preloadedRankBorderImageUrl(honor.frameUrl) ?? ''"
                                   v-bind="honorFrameSvgAttrs(honor)"
                                   preserveAspectRatio="none"
                                   @load="resetRecoveredImage"
                                   @error="hideBrokenImage"
                                 />
                                 <image
-                                  v-for="star in honorLevelStars(honor)"
+                                  v-for="star in loadedHonorLevelStars(honor)"
                                   :key="star.key"
                                   :href="star.url"
                                   :x="50 + star.slot * 16"
@@ -5550,31 +5705,38 @@ function traceUpdateRecords(
                       class="rank-border-honor rank-border-honor--detail"
                     >
                       <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
-                        <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
+                        <svg
+                          v-if="isRankBorderImageLoaded(honor.baseUrl)"
+                          class="rank-border-honor-svg"
+                          viewBox="0 0 180 80"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
                           <image
-                            :href="honor.baseUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                            v-if="preloadedRankBorderImageUrl(honor.baseUrl)"
+                            :href="preloadedRankBorderImageUrl(honor.baseUrl) ?? ''" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
                             @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           />
                           <image
-                            v-if="honor.frameUrl"
-                            :href="honor.frameUrl"
+                            v-if="preloadedRankBorderImageUrl(honor.frameUrl)"
+                            :href="preloadedRankBorderImageUrl(honor.frameUrl) ?? ''"
                             v-bind="honorFrameSvgAttrs(honor)"
                             preserveAspectRatio="none"
                             @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           />
                           <image
-                            v-if="honor.rankUrl"
-                            :href="honor.rankUrl"
+                            v-if="preloadedRankBorderImageUrl(honor.rankUrl)"
+                            :href="preloadedRankBorderImageUrl(honor.rankUrl) ?? ''"
                             v-bind="honorRankSvgAttrs(honor)"
                             preserveAspectRatio="none"
                             @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           />
                           <image
-                            v-if="honor.scrollUrl"
-                            :href="honor.scrollUrl"
+                            v-if="preloadedRankBorderImageUrl(honor.scrollUrl)"
+                            :href="preloadedRankBorderImageUrl(honor.scrollUrl) ?? ''"
                             x="37"
                             y="3"
                             width="101"
@@ -5584,7 +5746,7 @@ function traceUpdateRecords(
                             @error="hideBrokenImage"
                           />
                           <image
-                            v-for="star in honorLevelStars(honor)"
+                            v-for="star in loadedHonorLevelStars(honor)"
                             :key="star.key"
                             :href="star.url"
                             :x="50 + star.slot * 16"
@@ -5608,11 +5770,18 @@ function traceUpdateRecords(
                         </svg>
                       </span>
                       <span v-else-if="honor.type === 'bonds' && honor.bondsLeftBgUrl && honor.bondsRightBgUrl" class="rank-border-honor-visual rank-border-honor-visual--bonds">
-                        <svg class="rank-border-honor-svg" viewBox="0 0 180 80" aria-hidden="true" focusable="false">
+                        <svg
+                          v-if="areRankBorderImagesLoaded(honor.bondsLeftBgUrl, honor.bondsRightBgUrl, HONOR_BONDS_MASK_URL)"
+                          class="rank-border-honor-svg"
+                          viewBox="0 0 180 80"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
                           <defs>
                             <mask :id="honorSvgId(honor, 'mask')" maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="80" style="mask-type: alpha">
                               <image
-                                href="/rank-border/honor/mask_degree_sub.png" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                                v-if="preloadedRankBorderImageUrl(HONOR_BONDS_MASK_URL)"
+                                :href="preloadedRankBorderImageUrl(HONOR_BONDS_MASK_URL) ?? ''" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
                                 @load="resetRecoveredImage"
                                 @error="hideBrokenImage"
                               />
@@ -5629,12 +5798,14 @@ function traceUpdateRecords(
                           </defs>
                           <g :mask="`url(#${honorSvgId(honor, 'mask')})`">
                             <image
-                              :href="honor.bondsRightBgUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+                              v-if="preloadedRankBorderImageUrl(honor.bondsRightBgUrl)"
+                              :href="preloadedRankBorderImageUrl(honor.bondsRightBgUrl) ?? ''" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
                               @load="resetRecoveredImage"
                               @error="hideBrokenImage"
                             />
                             <image
-                              :href="honor.bondsLeftBgUrl"
+                              v-if="preloadedRankBorderImageUrl(honor.bondsLeftBgUrl)"
+                              :href="preloadedRankBorderImageUrl(honor.bondsLeftBgUrl) ?? ''"
                               x="0"
                               y="0"
                               width="180"
@@ -5645,8 +5816,8 @@ function traceUpdateRecords(
                               @error="hideBrokenImage"
                             />
                             <image
-                              v-if="honor.bondsLeftIconUrl"
-                              :href="honor.bondsLeftIconUrl"
+                              v-if="preloadedRankBorderImageUrl(honor.bondsLeftIconUrl)"
+                              :href="preloadedRankBorderImageUrl(honor.bondsLeftIconUrl) ?? ''"
                               x="-4"
                               y="-29"
                               width="128"
@@ -5657,8 +5828,8 @@ function traceUpdateRecords(
                               @error="hideBrokenImage"
                             />
                             <image
-                              v-if="honor.bondsRightIconUrl"
-                              :href="honor.bondsRightIconUrl"
+                              v-if="preloadedRankBorderImageUrl(honor.bondsRightIconUrl)"
+                              :href="preloadedRankBorderImageUrl(honor.bondsRightIconUrl) ?? ''"
                               x="56"
                               y="-29"
                               width="128"
@@ -5670,15 +5841,15 @@ function traceUpdateRecords(
                             />
                           </g>
                           <image
-                            v-if="honor.frameUrl"
-                            :href="honor.frameUrl"
+                            v-if="preloadedRankBorderImageUrl(honor.frameUrl)"
+                            :href="preloadedRankBorderImageUrl(honor.frameUrl) ?? ''"
                             v-bind="honorFrameSvgAttrs(honor)"
                             preserveAspectRatio="none"
                             @load="resetRecoveredImage"
                             @error="hideBrokenImage"
                           />
                           <image
-                            v-for="star in honorLevelStars(honor)"
+                            v-for="star in loadedHonorLevelStars(honor)"
                             :key="star.key"
                             :href="star.url"
                             :x="50 + star.slot * 16"
