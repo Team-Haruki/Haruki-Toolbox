@@ -29,6 +29,7 @@ export const apiClient: AxiosInstance = axios.create({
 
 let authRedirectInProgress = false
 let sessionExpiredHandled = false
+let kratosSessionCheckInProgress: Promise<boolean | null> | null = null
 
 function generateRequestId(): string {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -72,6 +73,20 @@ async function retryDelay(attempt: number) {
     await new Promise((resolve) => setTimeout(resolve, delayMs))
 }
 
+async function hasActiveKratosSession(): Promise<boolean | null> {
+    if (!kratosSessionCheckInProgress) {
+        kratosSessionCheckInProgress = import("@/modules/auth/lib/kratos")
+            .then(({ fetchKratosWhoAmI }) => fetchKratosWhoAmI())
+            .then((session) => session !== null)
+            .catch(() => null)
+            .finally(() => {
+                kratosSessionCheckInProgress = null
+            })
+    }
+
+    return await kratosSessionCheckInProgress
+}
+
 export function setupInterceptors(router: Router) {
     apiClient.interceptors.request.use((config) => {
         const settingsStore = useSettingsStore()
@@ -102,6 +117,14 @@ export function setupInterceptors(router: Router) {
             if (error.response?.status === 401) {
                 if (userStore.isLoggedIn) {
                     if (!error.config?.skipAuthRedirect && !authRedirectInProgress && !sessionExpiredHandled) {
+                        const kratosSessionActive = await hasActiveKratosSession()
+                        if (kratosSessionActive !== false) {
+                            if (kratosSessionActive === true) {
+                                userStore.setSessionActive(true)
+                            }
+                            return Promise.reject(error)
+                        }
+
                         authRedirectInProgress = true
                         sessionExpiredHandled = true
                         toast.error(translate("core.auth.sessionExpiredTitle"), {

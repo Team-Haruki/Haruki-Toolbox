@@ -32,6 +32,10 @@ export function setupRouteGuards(router: Router) {
             }
         }
 
+        if (userStore.settingsSyncState === "loading") {
+            return
+        }
+
         if (to.meta.requiresSuperAdmin && !userStore.isSuperAdmin) {
             toast.error(translate("core.auth.permissionDeniedTitle"), {
                 description: translate("core.auth.requireSuperAdminDescription"),

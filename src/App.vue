@@ -14,6 +14,7 @@ import { extractErrorMessage } from "@/lib/error-utils"
 import { createLogger } from "@/lib/logger"
 import { useRoute, useRouter } from "vue-router"
 import { refreshDeckRecommendProfilesForBoundAccounts } from "@/modules/deck-recommend/lib/user-data"
+import { consumeLoginSuccessPendingFlag } from "@/modules/auth/lib/login-success"
 import {
   computed,
   onBeforeUnmount,
@@ -35,7 +36,6 @@ const syncRetryUserId = ref<string | null>(null)
 const syncRetryCount = ref(0)
 const profileRefreshSignature = ref("")
 const MAX_SYNC_RETRIES = 3
-const LOGIN_SUCCESS_STORAGE_KEY = "haruki-toolbox-login-success"
 const { t } = useI18n()
 const logger = createLogger("app-settings-sync")
 const hasLoginSuccessFlag = ref(false)
@@ -48,20 +48,7 @@ const boundGameAccountSignature = computed(() => {
 })
 
 function consumeLoginSuccessFlag() {
-  if (typeof window === "undefined") {
-    return false
-  }
-  if (route.query._login_success !== "1") {
-    return false
-  }
-
-  try {
-    const enabled = window.sessionStorage.getItem(LOGIN_SUCCESS_STORAGE_KEY) === "1"
-    window.sessionStorage.removeItem(LOGIN_SUCCESS_STORAGE_KEY)
-    return enabled
-  } catch {
-    return false
-  }
+  return consumeLoginSuccessPendingFlag(route.query._login_success === "1")
 }
 
 function clearSyncRetryState(resetCount = true) {

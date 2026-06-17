@@ -16,24 +16,13 @@ import {
 } from "@/components/ui/card"
 import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
+import { markLoginSuccessPending } from "@/modules/auth/lib/login-success"
 import { createAllowedReturnToOrigins, isAllowedFlowReturnTo } from "@/modules/auth/lib/return-to"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 import { resolveSafeRedirectTarget } from "@/core/router/navigation"
 
 const route = useRoute()
 const { t } = useI18n()
-const LOGIN_SUCCESS_STORAGE_KEY = "haruki-toolbox-login-success"
-
-function markLoginSuccessPending() {
-  if (typeof window === "undefined") {
-    return
-  }
-
-  try {
-    window.sessionStorage.setItem(LOGIN_SUCCESS_STORAGE_KEY, "1")
-  } catch {
-  }
-}
 
 function resolveKratosOrigin(): string {
   if (typeof window === "undefined") {
@@ -53,7 +42,6 @@ function resolveLoginRedirectPath(): string {
 
 function resolveLoginReturnTo(): string {
   const redirectPath = resolveLoginRedirectPath()
-  markLoginSuccessPending()
   if (typeof window === "undefined") {
     return redirectPath
   }
@@ -241,7 +229,12 @@ function handleActionClick(action: LoginAction) {
     return
   }
 
+  markLoginSuccessPending()
   invokeVisibleFieldAction({ onClickTrigger: action.onClickTrigger })
+}
+
+function handleSubmit() {
+  markLoginSuccessPending()
 }
 
 function iconForField(name: string) {
@@ -283,7 +276,7 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
             {{ t("auth.common.restartFlow") }}
           </Button>
         </div>
-        <form v-else :action="action" :method="method" novalidate>
+        <form v-else :action="action" :method="method" novalidate @submit="handleSubmit">
           <div class="grid gap-6">
             <input v-for="field in hiddenFields" :key="field.key" type="hidden" :name="field.name" :value="field.value" />
 
