@@ -1666,8 +1666,8 @@ async function loadRankDetail(
     }
     if (!silent) {
       detail.value = null
+      detailError.value = error instanceof Error ? error.message : String(error)
     }
-    detailError.value = error instanceof Error ? error.message : String(error)
   } finally {
     if (!silent && requestToken === detailRequestToken) {
       detailLoading.value = false
@@ -1861,6 +1861,15 @@ async function fetchLatestPublicUser(
   userId: string,
   options: { enrichProfile?: boolean } = {},
 ): Promise<RankBorderLatest | null> {
+  const cached = findTop100DetailByUserId(userId)
+  if (cached) {
+    if (!options.enrichProfile || !shouldEnrichDetailProfile(cached)) {
+      return cached
+    }
+
+    return mergeLatestWithProfile(cached, await fetchPublicProfile(cached.userId).catch(() => null))
+  }
+
   const latest = await fetchRankBorderLatestByUser({
     ...detailScope.value,
     userId,
@@ -1885,6 +1894,21 @@ async function fetchNeighborPublicRanks(rank: number) {
 
 function resolveTrackedPlayerId(result: RankBorderLatest | null | undefined) {
   return normalizeTextValue(result?.userId)
+}
+
+function findTop100DetailByUserId(userId: string | null | undefined): RankBorderLatest | null {
+  const normalizedUserId = normalizeTextValue(userId)
+  if (!normalizedUserId) {
+    return null
+  }
+
+  for (const detail of top100Details.value.values()) {
+    if (normalizeTextValue(detail.userId) === normalizedUserId) {
+      return detail
+    }
+  }
+
+  return null
 }
 
 async function fetchFallbackLineDetail(rank: number): Promise<LineDetailState | null> {
