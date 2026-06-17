@@ -328,8 +328,9 @@ const DETAIL_UPDATE_RECORD_LIMIT = 8
 const DETAIL_CSB_WINDOW_SECONDS = 20 * 60 * 3
 const TOP_100_DETAIL_CACHE_TTL_MS = 2 * 60 * 1000
 const TOP_100_DETAIL_CACHE_PREFIX = "haruki:rank-border:top100:v2:"
-const IMAGE_RETRY_LIMIT = 3
 const IMAGE_RETRY_DELAY_MS = 260
+const IMAGE_RETRY_BACKOFF_LIMIT = 8
+const IMAGE_RETRY_MAX_DELAY_MS = 30_000
 const IMAGE_RETRY_PARAM = "hrk_image_retry"
 const IMAGE_RETRY_ORIGINAL_ATTRIBUTE = "data-rank-border-original-src"
 const IMAGE_RETRY_COUNT_ATTRIBUTE = "data-rank-border-retry-count"
@@ -3615,6 +3616,7 @@ function hideBrokenImage(event: Event) {
 
 function resetRecoveredImage(event: Event) {
   if (event.target instanceof HTMLImageElement || event.target instanceof SVGImageElement) {
+    showRecoverableImage(event.target)
     event.target.removeAttribute(IMAGE_RETRY_COUNT_ATTRIBUTE)
     event.target.removeAttribute(IMAGE_RETRY_ORIGINAL_ATTRIBUTE)
   }
@@ -3634,11 +3636,6 @@ function retryRecoverableImage(target: RecoverableImageTarget) {
     : strippedSource
   target.setAttribute(IMAGE_RETRY_ORIGINAL_ATTRIBUTE, originalSource)
   const retryCount = Number(target.getAttribute(IMAGE_RETRY_COUNT_ATTRIBUTE) ?? "0")
-  if (retryCount >= IMAGE_RETRY_LIMIT) {
-    hideRecoverableImage(target)
-    return
-  }
-
   const nextRetryCount = retryCount + 1
   target.setAttribute(IMAGE_RETRY_COUNT_ATTRIBUTE, String(nextRetryCount))
   window.setTimeout(() => {
@@ -3648,7 +3645,12 @@ function retryRecoverableImage(target: RecoverableImageTarget) {
 
     showRecoverableImage(target)
     setRecoverableImageSource(target, appendImageRetryParam(originalSource, nextRetryCount))
-  }, IMAGE_RETRY_DELAY_MS * nextRetryCount)
+  }, recoverableImageRetryDelay(nextRetryCount))
+}
+
+function recoverableImageRetryDelay(retryCount: number) {
+  const backoffStep = Math.min(retryCount - 1, IMAGE_RETRY_BACKOFF_LIMIT)
+  return Math.min(IMAGE_RETRY_DELAY_MS * 2 ** backoffStep, IMAGE_RETRY_MAX_DELAY_MS)
 }
 
 function recoverableImageSource(target: RecoverableImageTarget) {
