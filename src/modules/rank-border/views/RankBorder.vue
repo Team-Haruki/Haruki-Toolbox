@@ -91,6 +91,10 @@ import {
   normalizeTrackerEndpoint,
   parseRankBorderRankQuery,
   resolveRankBorderTraceGrowth,
+  isRankBorderLatestResult,
+  isSameRankBorderTraceTimeline,
+  resolveRankBorderDetailTraceKey,
+  shouldCacheRankBorderDetailTraceByRank,
   type RankBorderGrowth,
   type RankBorderLatest,
   type RankBorderLine,
@@ -360,6 +364,7 @@ const top100GrowthByRank = ref<Map<number, RankBorderGrowth>>(new Map())
 const top100GrowthIntervalSeconds = ref<number | null>(null)
 const top100TraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
 const segmentTraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
+const detailTraceByKey = ref<Map<string, RankBorderTracePoint[]>>(new Map())
 const publicProfileByUserId = ref<Map<string, RankBorderUserProfile>>(new Map())
 const scoreChangedRanks = ref<Set<number>>(new Set())
 const growthChangedRanks = ref<Set<number>>(new Set())
@@ -1203,6 +1208,7 @@ function resetRankBorderData() {
   top100GrowthIntervalSeconds.value = null
   top100TraceByRank.value = new Map()
   segmentTraceByRank.value = new Map()
+  detailTraceByKey.value = new Map()
   publicProfileByUserId.value = new Map()
   tracker.lines.value = []
   tracker.growths.value = []
@@ -2042,37 +2048,46 @@ async function refreshActiveDetail() {
 
 function refreshDetailTrace(value: DetailState) {
   const nextDetailTraceKey = detailTraceKey(value)
+  const detailChanged = nextDetailTraceKey !== activeDetailTraceKey
   if (nextDetailTraceKey !== activeDetailTraceKey) {
     activeDetailTraceKey = nextDetailTraceKey
     selectedHeatmapWindow.value = null
   }
 
-  const cachedTrace = readCachedTrace(value)
+  const cachedTrace = readCachedTrace(value, nextDetailTraceKey)
   if (cachedTrace.length > 0) {
     detailTrace.value = cachedTrace
-  } else if (detailTrace.value.length === 0) {
+  } else if (detailChanged || detailTrace.value.length === 0) {
     detailTrace.value = []
   }
 
-  void loadDetailTrace(value)
+  void loadDetailTrace(value, nextDetailTraceKey)
 }
 
-function readCachedTrace(value: DetailState) {
-  if (value.source === "line") {
-    return segmentTraceByRank.value.get(value.result.rank) ?? []
-  }
-  if (value.source === "user") {
-    return []
+function readCachedTrace(value: DetailState, key: string) {
+  const detailCachedTrace = detailTraceByKey.value.get(key)
+  if (detailCachedTrace) {
+    return detailCachedTrace
   }
 
-  return top100TraceByRank.value.get(value.result.rank) ?? []
+  if (value.source === "line") {
+    return value.result.rank <= PERSONAL_COLLECTION_LIMIT
+      ? top100TraceByRank.value.get(value.result.rank) ?? []
+      : segmentTraceByRank.value.get(value.result.rank) ?? []
+  }
+
+  if (shouldCacheRankBorderDetailTraceByRank(value)) {
+    return top100TraceByRank.value.get(value.result.rank) ?? []
+  }
+
+  return []
 }
 
 function detailTraceKey(value: DetailState) {
-  return `${value.source}:${value.query}:${value.result.rank}`
+  return resolveRankBorderDetailTraceKey(value)
 }
 
-async function loadDetailTrace(value: DetailState) {
+async function loadDetailTrace(value: DetailState, expectedKey = detailTraceKey(value)) {
   if (!canRefresh.value) {
     return
   }
@@ -2083,16 +2098,30 @@ async function loadDetailTrace(value: DetailState) {
   }
   try {
     const records = await fetchDetailTrace(value)
-    if (detail.value?.query === value.query && detail.value.source === value.source) {
-      detailTrace.value = normalizeTraceForPlayback(records)
-      if (value.source !== "user") {
-        cacheTrace(value.result.rank, detailTrace.value)
+    if (detail.value?.query === value.query && detail.value.source === value.source && detailTraceKey(detail.value) === expectedKey) {
+      const nextTrace = normalizeTraceForPlayback(records)
+      if (nextTrace.length === 0) {
+        return
+      }
+      cacheDetailTrace(expectedKey, value, nextTrace)
+      if (!isSameRankBorderTraceTimeline(detailTrace.value, nextTrace)) {
+        detailTrace.value = nextTrace
       }
     }
   } finally {
     if (shouldShowLoading) {
       detailTraceLoading.value = false
     }
+  }
+}
+
+function cacheDetailTrace(key: string, value: DetailState, records: RankBorderTracePoint[]) {
+  const nextDetailTraces = new Map(detailTraceByKey.value)
+  nextDetailTraces.set(key, records)
+  detailTraceByKey.value = nextDetailTraces
+
+  if (shouldCacheRankBorderDetailTraceByRank(value)) {
+    cacheTrace(value.result.rank, records)
   }
 }
 
@@ -2872,7 +2901,7 @@ function isLocalMockTrackerEndpoint(endpoint: string) {
 type ProfileResult = RankBorderLatest | RankBorderLine | null
 
 function isLatestResult(result: ProfileResult): result is RankBorderLatest {
-  return Array.isArray((result as RankBorderLatest | null)?.profileHonors)
+  return isRankBorderLatestResult(result)
 }
 
 function leaderThumbnailUrl(result: ProfileResult) {

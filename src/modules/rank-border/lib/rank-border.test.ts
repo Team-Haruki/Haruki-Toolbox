@@ -10,7 +10,10 @@ import {
   normalizeRankBorderWebRankings,
   normalizeTrackerEndpoint,
   parseRankBorderRankQuery,
+  resolveRankBorderDetailTraceKey,
   resolveRankBorderTraceGrowth,
+  shouldCacheRankBorderDetailTraceByRank,
+  isSameRankBorderTraceTimeline,
 } from "./rank-border"
 
 describe("rank border helpers", () => {
@@ -365,6 +368,66 @@ describe("rank border helpers", () => {
       { rank: 1, score: 120, timestamp: 1710000000, userId: "u1", characterId: null },
       { rank: 1, score: 180, timestamp: 1710000060, userId: "u1", characterId: null },
     ])
+  })
+
+  it("keys detail traces by player identity when available", () => {
+    const latest = normalizeRankBorderLatest({
+      rankData: { rank: 42, score: 1234, timestamp: 1710000000, userId: "public-user" },
+      userData: { userId: "public-user", name: "Haruki" },
+    })
+    expect(latest).not.toBeNull()
+
+    expect(resolveRankBorderDetailTraceKey({
+      source: "rank",
+      query: "42",
+      result: latest!,
+    })).toBe("rank:user:public-user:42")
+    expect(shouldCacheRankBorderDetailTraceByRank({
+      source: "rank",
+      query: "42",
+      result: latest!,
+    })).toBe(false)
+  })
+
+  it("keeps line and anonymous rank traces cacheable by rank", () => {
+    const line = { rank: 1000, score: 9876543, timestamp: 1710000000 }
+    const anonymousLatest = normalizeRankBorderLatest({
+      rankData: { rank: 42, score: 1234, timestamp: 1710000000 },
+    })
+    expect(anonymousLatest).not.toBeNull()
+
+    expect(resolveRankBorderDetailTraceKey({
+      source: "line",
+      query: "1000",
+      result: line,
+    })).toBe("line:rank:1000:1000")
+    expect(shouldCacheRankBorderDetailTraceByRank({
+      source: "line",
+      query: "1000",
+      result: line,
+    })).toBe(true)
+    expect(resolveRankBorderDetailTraceKey({
+      source: "rank",
+      query: "42",
+      result: anonymousLatest!,
+    })).toBe("rank:rank:42:42")
+    expect(shouldCacheRankBorderDetailTraceByRank({
+      source: "rank",
+      query: "42",
+      result: anonymousLatest!,
+    })).toBe(true)
+  })
+
+  it("compares trace timelines by rendered chart fields", () => {
+    const records = [
+      { rank: 1, score: 100, timestamp: 1710000000, userId: "u1", characterId: null },
+      { rank: 1, score: 120, timestamp: 1710000060, userId: "u1", characterId: null },
+    ]
+    expect(isSameRankBorderTraceTimeline(records, records.map((record) => ({ ...record })))).toBe(true)
+    expect(isSameRankBorderTraceTimeline(records, [
+      records[0],
+      { ...records[1], score: 121 },
+    ])).toBe(false)
   })
 
   it("uses the latest trace point before the interval as growth baseline", () => {

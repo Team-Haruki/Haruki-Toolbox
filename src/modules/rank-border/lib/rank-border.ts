@@ -69,6 +69,14 @@ export type RankBorderWebRankingPage = {
   nextCursor: string | null
 }
 
+export type RankBorderDetailTraceSource = "rank" | "user" | "line"
+
+export type RankBorderDetailTraceTarget = {
+  source: RankBorderDetailTraceSource
+  query: string
+  result: RankBorderLatest | RankBorderLine
+}
+
 export type RankBorderProfileHonor = {
   seq: number | null
   profileHonorType: string | null
@@ -254,6 +262,43 @@ export function normalizeRankBorderTraceTimeline(records: RankBorderTracePoint[]
   }
 
   return Array.from(byTimestamp.values()).sort((a, b) => a.timestamp - b.timestamp)
+}
+
+export function isRankBorderLatestResult(result: RankBorderLatest | RankBorderLine | null | undefined): result is RankBorderLatest {
+  return Array.isArray((result as RankBorderLatest | null | undefined)?.profileHonors)
+}
+
+export function resolveRankBorderDetailTraceKey(target: RankBorderDetailTraceTarget): string {
+  const userId = isRankBorderLatestResult(target.result)
+    ? normalizeText(target.result.userId)
+    : null
+  const identity = target.source === "line" || !userId
+    ? `rank:${target.result.rank}`
+    : `user:${userId}`
+  return `${target.source}:${identity}:${target.query}`
+}
+
+export function shouldCacheRankBorderDetailTraceByRank(target: RankBorderDetailTraceTarget): boolean {
+  return target.source === "line"
+    || (
+      target.source === "rank"
+      && (!isRankBorderLatestResult(target.result) || !normalizeText(target.result.userId))
+    )
+}
+
+export function isSameRankBorderTraceTimeline(previous: RankBorderTracePoint[], next: RankBorderTracePoint[]): boolean {
+  if (previous.length !== next.length) {
+    return false
+  }
+
+  return previous.every((record, index) => {
+    const nextRecord = next[index]
+    return record.timestamp === nextRecord.timestamp
+      && record.score === nextRecord.score
+      && record.rank === nextRecord.rank
+      && record.userId === nextRecord.userId
+      && record.characterId === nextRecord.characterId
+  })
 }
 
 export function normalizeRankBorderBatchTrace(value: unknown): Map<number, RankBorderTracePoint[]> {
