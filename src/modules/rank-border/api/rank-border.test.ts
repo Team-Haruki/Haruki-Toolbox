@@ -4,6 +4,7 @@ import {
   fetchRankBorderPrivateLatestByUser,
   fetchRankBorderStatus,
   fetchRankBorderWebTraceByUser,
+  isRankBorderTrackerUnauthorizedError,
   resolveRankBorderTrackerWebSocketTicketUrl,
   resolveRankBorderTrackerWebSocketUrl,
 } from "./rank-border"
@@ -147,6 +148,38 @@ describe("rank border tracker api", () => {
         credentials: "include",
       },
     ])
+  })
+
+  it("extracts nested private lookup auth errors", async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = (async () => {
+      return new Response(JSON.stringify({
+        error: {
+          code: 401,
+          status: "Unauthorized",
+          message: "Access credentials are invalid",
+        },
+      }), { status: 401 })
+    }) as typeof fetch
+
+    try {
+      await fetchRankBorderPrivateLatestByUser({
+        endpoint: "https://tracker.example/base",
+        region: "jp",
+        eventId: 1,
+        mode: "normal",
+        userId: "123456789",
+        ownerId: "kratos-1",
+        useWebSocket: false,
+      })
+      throw new Error("expected private lookup to fail")
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error)
+      expect((error as Error).message).toBe("Access credentials are invalid")
+      expect(isRankBorderTrackerUnauthorizedError(error)).toBe(true)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
   })
 
   it("uses REST directly when websocket transport is disabled", async () => {

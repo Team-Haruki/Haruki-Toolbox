@@ -65,6 +65,7 @@ import {
   fetchRankBorderWebTraceByUser,
   fetchRankBorderWebRankings,
   fetchRankBorderPublicUserProfile,
+  isRankBorderTrackerUnauthorizedError,
   subscribeRankBorderRealtime,
   type RankBorderRealtimeEvent,
   type RankBorderRealtimeOnline,
@@ -1773,10 +1774,14 @@ async function loadUserDetail(
     if (requestToken !== detailRequestToken) {
       return
     }
+    if (silent && options.privateLookup && isRankBorderTrackerUnauthorizedError(error)) {
+      await refreshUserDetailFromPublicFallback(userId, requestToken)
+      return
+    }
     if (!silent) {
       detail.value = null
     }
-    detailError.value = error instanceof Error ? error.message : String(error)
+    detailError.value = resolveDetailErrorMessage(error, options.privateLookup)
   } finally {
     if (!silent && requestToken === detailRequestToken) {
       detailLoading.value = false
@@ -1794,6 +1799,32 @@ async function fetchPrivateLatestByUser(userId: string) {
     userId,
     ownerId: userStore.kratosIdentityId,
   })
+}
+
+async function refreshUserDetailFromPublicFallback(userId: string, requestToken: number) {
+  const fallbackUserId = normalizeTextValue(detail.value?.trackedUserId) ?? normalizeTextValue(detail.value?.result.userId) ?? userId
+  const result = await fetchLatestPublicUser(fallbackUserId, { enrichProfile: true }).catch(() => null)
+  if (requestToken !== detailRequestToken || !result) {
+    return
+  }
+
+  const [previous, next] = await fetchNeighborPublicRanks(result.rank)
+  if (requestToken !== detailRequestToken) {
+    return
+  }
+
+  const previousScore = detail.value?.result.score ?? null
+  detail.value = {
+    source: "user",
+    query: userId,
+    trackedUserId: normalizeTextValue(result.userId) ?? fallbackUserId,
+    result,
+    previous,
+    next,
+  }
+  detailError.value = null
+  refreshDetailTrace(detail.value)
+  markDetailScoreChange(previousScore, result.score)
 }
 
 async function fetchLatestPublicRank(
@@ -1982,6 +2013,14 @@ function shouldRejectMismatchedAccountLookup(requestedUserId: string, result: Ra
   }
 
   return true
+}
+
+function resolveDetailErrorMessage(error: unknown, privateLookup = false) {
+  if (privateLookup && isRankBorderTrackerUnauthorizedError(error)) {
+    return t("rankBorder.result.privateLookupLoginRequired")
+  }
+
+  return error instanceof Error ? error.message : String(error)
 }
 
 async function refreshActiveDetail() {

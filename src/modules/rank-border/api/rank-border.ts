@@ -100,6 +100,10 @@ export type RankBorderRealtimeSubscription = {
   unsubscribe: () => void
 }
 
+export type RankBorderTrackerError = Error & {
+  status?: number
+}
+
 const TRACKER_WS_OPEN_TIMEOUT_MS = 4_000
 const TRACKER_WS_REQUEST_TIMEOUT_MS = 15_000
 const TRACKER_WS_FAILURE_COOLDOWN_MS = 2_000
@@ -112,8 +116,7 @@ type TrackerWsPendingRequest = {
   timeoutId: ReturnType<typeof setTimeout>
 }
 
-type TrackerWsError = Error & {
-  status?: number
+type TrackerWsError = RankBorderTrackerError & {
   trackerWsProtocolError?: boolean
 }
 
@@ -644,6 +647,10 @@ export async function subscribeRankBorderRealtime(
   }
 }
 
+export function isRankBorderTrackerUnauthorizedError(error: unknown): boolean {
+  return isRecord(error) && error.status === 401
+}
+
 async function fetchTrackerJson(
   endpoint: string,
   path: string,
@@ -698,7 +705,7 @@ async function fetchTrackerJsonViaRest(
   })
   if (!response.ok) {
     const message = await readErrorMessage(response)
-    throw new Error(message || `Tracker request failed: HTTP ${response.status}`)
+    throw createTrackerError(message || `Tracker request failed: HTTP ${response.status}`, response.status)
   }
 
   return response.json()
@@ -773,7 +780,7 @@ async function fetchTrackerWsTicket(ticketUrl: string): Promise<string> {
   })
   if (!response.ok) {
     const message = await readErrorMessage(response)
-    throw new Error(message || `Tracker WebSocket ticket request failed: HTTP ${response.status}`)
+    throw createTrackerError(message || `Tracker WebSocket ticket request failed: HTTP ${response.status}`, response.status)
   }
 
   const data = await response.json() as TrackerWsTicketResponse
@@ -871,9 +878,14 @@ function rememberTrackerWsFailure(wsUrl: string, error: unknown) {
 }
 
 function createTrackerWsProtocolError(message: string, status: number | undefined): TrackerWsError {
-  const error = new Error(message) as TrackerWsError
-  error.status = status
+  const error = createTrackerError(message, status) as TrackerWsError
   error.trackerWsProtocolError = true
+  return error
+}
+
+function createTrackerError(message: string, status: number | undefined): RankBorderTrackerError {
+  const error = new Error(message) as RankBorderTrackerError
+  error.status = status
   return error
 }
 
@@ -902,8 +914,9 @@ function appendPlaybackQuery(path: string, playbackAt: number | null | undefined
 async function readErrorMessage(response: Response): Promise<string> {
   try {
     const value = await response.clone().json()
-    if (isRecord(value) && typeof value.error === "string") {
-      return value.error
+    const message = extractTrackerErrorMessage(value)
+    if (message) {
+      return message
     }
   } catch {
   }
@@ -913,6 +926,41 @@ async function readErrorMessage(response: Response): Promise<string> {
   } catch {
     return ""
   }
+}
+
+function extractTrackerErrorMessage(value: unknown): string | null {
+  if (typeof value === "string") {
+    return value.trim() || null
+  }
+
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const message = readStringField(value, "message")
+    ?? readStringField(value, "error_description")
+    ?? readStringField(value, "errorDescription")
+    ?? readStringField(value, "detail")
+  if (message) {
+    return message
+  }
+
+  const nestedError = value.error
+  if (typeof nestedError === "string") {
+    return nestedError.trim() || null
+  }
+
+  const nestedMessage = extractTrackerErrorMessage(nestedError)
+  if (nestedMessage) {
+    return nestedMessage
+  }
+
+  return readStringField(value, "status")
+}
+
+function readStringField(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key]
+  return typeof value === "string" && value.trim() ? value.trim() : null
 }
 
 function buildNormalPath(scope: RankBorderTrackerScope, suffix: string): string {
