@@ -35,9 +35,10 @@ const syncRetryUserId = ref<string | null>(null)
 const syncRetryCount = ref(0)
 const profileRefreshSignature = ref("")
 const MAX_SYNC_RETRIES = 3
+const LOGIN_SUCCESS_STORAGE_KEY = "haruki-toolbox-login-success"
 const { t } = useI18n()
 const logger = createLogger("app-settings-sync")
-const hasLoginSuccessFlag = computed(() => route.query._login_success === "1")
+const hasLoginSuccessFlag = ref(false)
 const boundGameAccountSignature = computed(() => {
   const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
   return accounts
@@ -45,6 +46,23 @@ const boundGameAccountSignature = computed(() => {
     .sort()
     .join("|")
 })
+
+function consumeLoginSuccessFlag() {
+  if (typeof window === "undefined") {
+    return false
+  }
+  if (route.query._login_success !== "1") {
+    return false
+  }
+
+  try {
+    const enabled = window.sessionStorage.getItem(LOGIN_SUCCESS_STORAGE_KEY) === "1"
+    window.sessionStorage.removeItem(LOGIN_SUCCESS_STORAGE_KEY)
+    return enabled
+  } catch {
+    return false
+  }
+}
 
 function clearSyncRetryState(resetCount = true) {
   if (syncRetryTimer.value !== null) {
@@ -58,7 +76,11 @@ function clearSyncRetryState(resetCount = true) {
 }
 
 function clearLoginSuccessFlag() {
-  if (!hasLoginSuccessFlag.value) {
+  hasLoginSuccessFlag.value = false
+}
+
+function clearLegacyLoginSuccessQuery() {
+  if (route.query._login_success !== "1") {
     return
   }
 
@@ -70,6 +92,19 @@ function clearLoginSuccessFlag() {
     hash: route.hash,
   })
 }
+
+hasLoginSuccessFlag.value = consumeLoginSuccessFlag()
+
+watch(
+  () => route.query._login_success,
+  () => {
+    if (!hasLoginSuccessFlag.value) {
+      hasLoginSuccessFlag.value = consumeLoginSuccessFlag()
+    }
+    clearLegacyLoginSuccessQuery()
+  },
+  { immediate: true }
+)
 
 function scheduleSyncRetry(userId: string) {
   if (syncRetryUserId.value !== userId) {

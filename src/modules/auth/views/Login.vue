@@ -22,6 +22,18 @@ import { resolveSafeRedirectTarget } from "@/core/router/navigation"
 
 const route = useRoute()
 const { t } = useI18n()
+const LOGIN_SUCCESS_STORAGE_KEY = "haruki-toolbox-login-success"
+
+function markLoginSuccessPending() {
+  if (typeof window === "undefined") {
+    return
+  }
+
+  try {
+    window.sessionStorage.setItem(LOGIN_SUCCESS_STORAGE_KEY, "1")
+  } catch {
+  }
+}
 
 function resolveKratosOrigin(): string {
   if (typeof window === "undefined") {
@@ -41,6 +53,7 @@ function resolveLoginRedirectPath(): string {
 
 function resolveLoginReturnTo(): string {
   const redirectPath = resolveLoginRedirectPath()
+  markLoginSuccessPending()
   if (typeof window === "undefined") {
     return redirectPath
   }

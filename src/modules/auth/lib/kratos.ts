@@ -1,5 +1,7 @@
 import { asRecord, readBoolean, readOptionalString } from "@/lib/record-utils"
+import { getSettings } from "@/modules/user-settings/api/get-settings"
 import { getCurrentUser } from "@/modules/user-settings/api/me"
+import type { UserRole } from "@/types/common"
 import type { UserSettings } from "@/types/get-settings"
 
 export type KratosFlowType = "login" | "registration" | "recovery" | "verification" | "settings"
@@ -427,6 +429,56 @@ export function resolveToolboxUserIdFromKratosSession(session: KratosWhoAmIRespo
   return fallback ?? null
 }
 
+function normalizeUserRole(value: unknown): UserRole | undefined {
+  if (typeof value !== "string") {
+    return undefined
+  }
+
+  const normalized = value.trim().toLowerCase().replaceAll("-", "_")
+  if (normalized === "super_admin" || normalized === "superadmin") {
+    return "super_admin"
+  }
+
+  if (normalized === "admin") {
+    return "admin"
+  }
+
+  if (normalized === "user") {
+    return "user"
+  }
+
+  return undefined
+}
+
+function resolveUserRoleFromRecords(records: Array<Record<string, unknown> | null>): UserRole | undefined {
+  for (const record of records) {
+    if (!record) {
+      continue
+    }
+
+    const role = normalizeUserRole(readOptionalString(record, ["role", "user_role", "userRole"]))
+    if (role) {
+      return role
+    }
+  }
+
+  for (const record of records) {
+    if (!record) {
+      continue
+    }
+
+    if (readBoolean(record, ["is_super_admin", "isSuperAdmin", "super_admin", "superAdmin"], false)) {
+      return "super_admin"
+    }
+
+    if (readBoolean(record, ["is_admin", "isAdmin", "admin"], false)) {
+      return "admin"
+    }
+  }
+
+  return undefined
+}
+
 export function resolveUserSettingsFromKratosSession(session: KratosWhoAmIResponse | null): UserSettings | null {
   const identity = asRecord(session?.identity)
   if (!identity) {
@@ -435,6 +487,8 @@ export function resolveUserSettingsFromKratosSession(session: KratosWhoAmIRespon
 
   const toolboxUserId = resolveToolboxUserIdFromKratosSession(session)
   const traits = asRecord(identity.traits)
+  const metadataPublic = asRecord(identity.metadata_public)
+  const metadataAdmin = asRecord(identity.metadata_admin)
   const verifiableAddresses = Array.isArray(identity?.verifiable_addresses)
     ? identity.verifiable_addresses
     : []
@@ -452,6 +506,7 @@ export function resolveUserSettingsFromKratosSession(session: KratosWhoAmIRespon
     userId: toolboxUserId ?? undefined,
     kratosIdentityId: readOptionalString(identity, ["id"]),
     name,
+    role: resolveUserRoleFromRecords([metadataAdmin, metadataPublic, traits]),
     emailInfo: email ? { email, verified: emailVerified } : undefined,
   }
 }
@@ -459,14 +514,32 @@ export function resolveUserSettingsFromKratosSession(session: KratosWhoAmIRespon
 export async function bootstrapUserSettingsFromKratosSession(): Promise<KratosSessionBootstrap> {
   try {
     const response = await getCurrentUser({ skipErrorToast: true, skipAuthRedirect: true })
+    if (!response.updatedData) {
+      throw new Error("current user response is missing updatedData")
+    }
+
     return {
-      sessionUser: response.updatedData ?? null,
-      fullUser: response.updatedData ?? null,
+      sessionUser: response.updatedData,
+      fullUser: response.updatedData,
       hasKratosSession: true,
     }
   } catch {
     const session = await fetchKratosWhoAmI()
     const sessionUser = resolveUserSettingsFromKratosSession(session)
+    if (sessionUser?.userId) {
+      try {
+        const response = await getSettings(sessionUser.userId, { skipErrorToast: true, skipAuthRedirect: true })
+        if (response.status === 200 && response.updatedData) {
+          return {
+            sessionUser: response.updatedData,
+            fullUser: response.updatedData,
+            hasKratosSession: true,
+          }
+        }
+      } catch {
+      }
+    }
+
     return {
       sessionUser,
       fullUser: null,
