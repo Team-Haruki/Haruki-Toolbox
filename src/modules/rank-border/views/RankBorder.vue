@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatGameAccountLabel } from "@/lib/game-account-display"
 import { formatNumberCN } from "@/lib/number-format"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
@@ -358,6 +359,7 @@ const detail = ref<DetailState | null>(null)
 const detailTrace = ref<RankBorderTracePoint[]>([])
 const detailTraceLoading = ref(false)
 const detailDialogOpen = ref(false)
+const detailDialogTab = ref<"player" | "border">("player")
 const selectedHeatmapWindow = ref<RankBorderHeatmapWindow | null>(null)
 const isMobileViewport = ref(resolveIsMobileViewport())
 const mobileExpandedDetail = ref<{ source: "rank" | "line", rank: number } | null>(null)
@@ -1591,6 +1593,7 @@ function openMobileLineDetail(rank: number) {
 
 function openDetailFromMobileFact() {
   if (detail.value) {
+    detailDialogTab.value = "player"
     detailDialogOpen.value = true
   }
 }
@@ -1609,6 +1612,7 @@ async function openRankDetail(rank: number) {
       next: top100Details.value.get(rank + 1) ?? null,
     }
     detail.value = nextDetail
+    detailDialogTab.value = "player"
     detailError.value = null
     detailLoading.value = false
     refreshDetailTrace(nextDetail)
@@ -1669,6 +1673,7 @@ async function loadRankDetail(
       previous,
       next,
     }
+    detailDialogTab.value = "player"
     refreshDetailTrace(detail.value)
     markDetailScoreChange(previousScore, result.score)
   } catch (error) {
@@ -1714,6 +1719,7 @@ async function loadLineDetail(rank: number, silent: boolean, requestToken = deta
     }
 
     detail.value = nextDetail
+    detailDialogTab.value = "border"
     refreshDetailTrace(nextDetail)
     markDetailScoreChange(previousScore, nextDetail.result.score)
   } catch (error) {
@@ -1733,6 +1739,34 @@ async function loadLineDetail(rank: number, silent: boolean, requestToken = deta
 
 async function openUserDetail(userId: string, options: { privateLookup?: boolean } = {}) {
   await loadUserDetail(userId, false, ++detailRequestToken, options)
+}
+
+async function updateDetailDialogTab(value: AcceptableValue) {
+  if (value !== "player" && value !== "border") {
+    return
+  }
+  if (detailDialogTab.value === value) {
+    return
+  }
+
+  const activeDetail = detail.value
+  if (!activeDetail) {
+    detailDialogTab.value = value
+    return
+  }
+
+  detailDialogTab.value = value
+  const rank = activeDetail.result.rank
+  if (value === "border") {
+    await loadLineDetail(rank, false, ++detailRequestToken)
+    detailDialogTab.value = "border"
+    return
+  }
+
+  await loadRankDetail(rank, false, ++detailRequestToken, {
+    trackedUserId: activeDetail.source === "line" ? null : activeDetail.trackedUserId,
+  })
+  detailDialogTab.value = "player"
 }
 
 async function loadUserDetail(
@@ -1780,6 +1814,7 @@ async function loadUserDetail(
       previous,
       next,
     }
+    detailDialogTab.value = "player"
     refreshDetailTrace(detail.value)
     markDetailScoreChange(previousScore, result.score)
   } catch (error) {
@@ -2491,6 +2526,14 @@ function createLineDetailFromLine(result: RankBorderLine, comparableLines = reso
 
 function resolveComparableLinePoints() {
   const linesByRank = new Map<number, RankBorderLine>()
+  for (const detail of top100Details.value.values()) {
+    linesByRank.set(detail.rank, {
+      rank: detail.rank,
+      score: detail.score,
+      timestamp: detail.timestamp,
+    })
+  }
+
   for (const line of tracker.lines.value) {
     if (line.rank >= PERSONAL_COLLECTION_LIMIT) {
       linesByRank.set(line.rank, line)
@@ -5618,17 +5661,30 @@ function traceUpdateRecords(
           <DialogContent class="rank-border-detail-dialog">
             <template v-if="detail">
               <DialogHeader class="rank-border-detail-dialog__header">
-                <DialogTitle class="flex min-w-0 flex-wrap items-center gap-2">
-                  <span class="truncate">{{ t("rankBorder.sections.detailDialog") }}</span>
-                  <span
-                    :class="[
-                      'inline-flex shrink-0 rounded-md border px-2 py-1 text-xs font-medium',
-                      detailBadgeClass(detail),
-                    ]"
+                <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                  <DialogTitle class="flex min-w-0 flex-wrap items-center gap-2">
+                    <span class="truncate">{{ t("rankBorder.sections.detailDialog") }}</span>
+                    <span
+                      :class="[
+                        'inline-flex shrink-0 rounded-md border px-2 py-1 text-xs font-medium',
+                        detailBadgeClass(detail),
+                      ]"
+                    >
+                      {{ formatDetailBadge(detail) }}
+                    </span>
+                  </DialogTitle>
+                  <Tabs
+                    v-if="detail.result.rank <= PERSONAL_COLLECTION_LIMIT"
+                    :model-value="detailDialogTab"
+                    class="rank-border-detail-tabs"
+                    @update:model-value="updateDetailDialogTab"
                   >
-                    {{ formatDetailBadge(detail) }}
-                  </span>
-                </DialogTitle>
+                    <TabsList class="h-8">
+                      <TabsTrigger value="player" class="h-7 px-2.5 text-xs">{{ t("rankBorder.sections.playerTracking") }}</TabsTrigger>
+                      <TabsTrigger value="border" class="h-7 px-2.5 text-xs">{{ t("rankBorder.sections.borderTracking") }}</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
                 <DialogDescription>
                   <span
                     v-for="segment in richDetailTitleSegments(detail)"
@@ -6217,6 +6273,10 @@ function traceUpdateRecords(
 .rank-border-query-field .text-sm,
 .rank-border-query-field label {
   min-width: 0;
+}
+
+.rank-border-detail-tabs {
+  flex: 0 0 auto;
 }
 
 .rank-border-locate-panels {
