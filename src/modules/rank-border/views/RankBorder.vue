@@ -4604,6 +4604,13 @@ function traceUpdateRecords(
           {{ t("rankBorder.notice.description") }}
         </AlertDescription>
       </Alert>
+      <Alert class="hidden border-amber-200 bg-amber-50/70 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:grid">
+        <Activity class="h-4 w-4" />
+        <AlertTitle>{{ t("rankBorder.notice.betaTitle") }}</AlertTitle>
+        <AlertDescription class="leading-6">
+          {{ t("rankBorder.notice.betaDescription") }}
+        </AlertDescription>
+      </Alert>
 
       <Card class="gap-2 rounded-lg py-2 sm:gap-3 sm:py-3 xl:rounded-xl xl:py-5">
         <CardHeader class="gap-2 px-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3 sm:px-4 xl:px-5">
@@ -4636,13 +4643,6 @@ function traceUpdateRecords(
         </CardHeader>
 
         <CardContent class="grid gap-2 px-1.5 pb-1.5 sm:gap-3 sm:px-4 sm:pb-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-4 xl:grid-cols-[minmax(0,1fr)_24rem] xl:px-5 xl:pb-5">
-          <Alert class="hidden border-amber-200 bg-amber-50/70 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:grid lg:col-span-2">
-            <Activity class="h-4 w-4" />
-            <AlertTitle>{{ t("rankBorder.notice.betaTitle") }}</AlertTitle>
-            <AlertDescription class="leading-6">
-              {{ t("rankBorder.notice.betaDescription") }}
-            </AlertDescription>
-          </Alert>
           <section class="order-1 grid gap-3 lg:col-span-2">
             <div
               :class="[
