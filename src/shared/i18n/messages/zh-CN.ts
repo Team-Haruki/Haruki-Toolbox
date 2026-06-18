@@ -1807,7 +1807,7 @@ export const zhCN = {
     result: {
       emptyLines: "实时连接准备好后会在这里显示榜线，也可以点击刷新数据立即拉取。",
       emptySegments: "当前 tracker 尚未返回 T100 以外的档线点。",
-      emptyLiveCard: "点击榜线行，或选择绑定账号查询后显示玩家实时数据。",
+      emptyLiveCard: "点击榜线行，或选择绑定账号查询后显示实时卡片。",
       waitingLiveData: "等待实时数据",
       noPlayer: "等待玩家信息",
       unknownPlayer: "未知玩家",

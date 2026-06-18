@@ -7,10 +7,10 @@ import {
   ArrowDown,
   ArrowUp,
   ChartLine,
-  Gauge,
   RefreshCcw,
   Server,
   Trophy,
+  UserSearch,
   UserRound,
 } from "lucide-vue-next"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -1768,8 +1768,7 @@ async function loadUserDetail(
       throw new Error(t("rankBorder.result.accountOutOfRange"))
     }
 
-    const previous = webDetail?.previous ?? (result.rank > 1 ? await fetchLatestPublicRank(result.rank - 1).catch(() => null) : null)
-    const next = webDetail?.next ?? await fetchLatestPublicRank(result.rank + 1).catch(() => null)
+    const [previous, next] = await resolveDetailNeighbors(result.rank, webDetail?.previous ?? null, webDetail?.next ?? null)
     if (requestToken !== detailRequestToken) {
       return
     }
@@ -2911,30 +2910,6 @@ function richDetailTitleSegments(value: DetailState): RichNameSegment[] {
   return parseRichNameSegments(formatDetailTitle(value))
 }
 
-function detailSummaryLabel(value: DetailState) {
-  if (value.source === "line") {
-    return t("rankBorder.result.borderSummary")
-  }
-
-  if (value.source === "rank") {
-    return t("rankBorder.result.currentPlayerSummary")
-  }
-
-  return t("rankBorder.result.playerSummary")
-}
-
-function detailDescription(value: DetailState) {
-  if (value.source === "line") {
-    return t("rankBorder.result.borderDetailDescription", { rank: formatTargetRank(value.result.rank) })
-  }
-
-  if (value.source === "rank") {
-    return t("rankBorder.result.rankDetailDescription", { rank: formatRank(value.result.rank) })
-  }
-
-  return t("rankBorder.sections.detailDialogDescription")
-}
-
 function richNameSegmentStyle(segment: RichNameSegment) {
   return segment.color ? { color: segment.color } : undefined
 }
@@ -4031,12 +4006,6 @@ function nextDetailLabel(value: DetailState) {
   return value.source === "line" ? t("rankBorder.result.nextLine") : t("rankBorder.result.nextRank")
 }
 
-function detailPrimaryDeltaLabel(value: DetailState) {
-  return value.source === "line"
-    ? t("rankBorder.result.lineIntervalGap", { interval: intervalOptions.find((option) => option.value === intervalSeconds)?.label ?? "-" })
-    : t("rankBorder.result.playerIntervalGrowth", { interval: intervalOptions.find((option) => option.value === intervalSeconds)?.label ?? "-" })
-}
-
 function isLineDetailChanged(previous: RankBorderLatest, next: RankBorderLatest) {
   return previous.score !== next.score
     || previous.userId !== next.userId
@@ -4635,13 +4604,6 @@ function traceUpdateRecords(
           {{ t("rankBorder.notice.description") }}
         </AlertDescription>
       </Alert>
-      <Alert class="hidden border-amber-200 bg-amber-50/70 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:grid">
-        <Activity class="h-4 w-4" />
-        <AlertTitle>{{ t("rankBorder.notice.betaTitle") }}</AlertTitle>
-        <AlertDescription class="leading-6">
-          {{ t("rankBorder.notice.betaDescription") }}
-        </AlertDescription>
-      </Alert>
 
       <Card class="gap-2 rounded-lg py-2 sm:gap-3 sm:py-3 xl:rounded-xl xl:py-5">
         <CardHeader class="gap-2 px-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3 sm:px-4 xl:px-5">
@@ -4674,6 +4636,13 @@ function traceUpdateRecords(
         </CardHeader>
 
         <CardContent class="grid gap-2 px-1.5 pb-1.5 sm:gap-3 sm:px-4 sm:pb-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-4 xl:grid-cols-[minmax(0,1fr)_24rem] xl:px-5 xl:pb-5">
+          <Alert class="hidden border-amber-200 bg-amber-50/70 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:grid lg:col-span-2">
+            <Activity class="h-4 w-4" />
+            <AlertTitle>{{ t("rankBorder.notice.betaTitle") }}</AlertTitle>
+            <AlertDescription class="leading-6">
+              {{ t("rankBorder.notice.betaDescription") }}
+            </AlertDescription>
+          </Alert>
           <section class="order-1 grid gap-3 lg:col-span-2">
             <div
               :class="[
@@ -4764,42 +4733,52 @@ function traceUpdateRecords(
               </div>
             </div>
 
-            <div class="grid gap-2 rounded-md border bg-background/70 p-2.5 lg:grid-cols-[minmax(16rem,1fr)_8rem]">
-              <div class="grid gap-1.5">
-                <Label>{{ t("rankBorder.fields.account") }}</Label>
-                <Select
-                  :model-value="selectedAccountKey"
-                  :disabled="accountOptions.length === 0"
-                  @update:model-value="updateAccount"
-                >
-                  <SelectTrigger class="w-full">
-                    <SelectValue :placeholder="t('rankBorder.fields.accountPlaceholder')" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="account in accountOptions" :key="account.key" :value="account.key">
-                      {{ account.label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <div class="rank-border-locate-panels">
+                <div class="rank-border-locate-panel">
+                  <div class="rank-border-account-controls">
+                    <Label>{{ t("rankBorder.fields.account") }}</Label>
+                    <Select
+                      :model-value="selectedAccountKey"
+                      :disabled="accountOptions.length === 0"
+                      @update:model-value="updateAccount"
+                    >
+                      <SelectTrigger class="w-full">
+                        <SelectValue :placeholder="t('rankBorder.fields.accountPlaceholder')" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="account in accountOptions" :key="account.key" :value="account.key">
+                          {{ account.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" :disabled="!canRefresh || accountOptions.length === 0 || detailLoading" @click="locateSelectedAccount">
+                      <UserSearch :class="['size-4', detailLoading ? 'animate-pulse' : '']" />
+                      {{ t("rankBorder.actions.locate") }}
+                    </Button>
+                  </div>
 
-              <div class="grid content-end">
-                <Button type="button" :disabled="!canRefresh || accountOptions.length === 0 || detailLoading" @click="locateSelectedAccount">
-                  <Gauge :class="['size-4', detailLoading ? 'animate-pulse' : '']" />
-                  {{ t("rankBorder.actions.locate") }}
-                </Button>
-              </div>
+                  <p
+                    :class="[
+                      'text-xs leading-5',
+                      accountOptions.length === 0 ? 'text-destructive' : 'text-muted-foreground',
+                    ]"
+                  >
+                    {{ accountOptions.length === 0 ? t("rankBorder.result.noBoundAccount") : t("rankBorder.sections.locateDescription") }}
+                  </p>
+                </div>
 
-              <p
-                :class="[
-                  'text-xs leading-5',
-                  accountOptions.length === 0 ? 'text-destructive' : 'text-muted-foreground',
-                ]"
-                class="lg:col-span-2"
-              >
-                {{ accountOptions.length === 0 ? t("rankBorder.result.noBoundAccount") : t("rankBorder.sections.locateDescription") }}
-              </p>
-            </div>
+                <div class="rank-border-locate-panel rank-border-locate-panel--switch">
+                  <div class="flex min-w-0 items-center gap-2">
+                    <Switch
+                      v-model="hideProfileAssets"
+                      class="shrink-0"
+                      :aria-label="t('rankBorder.fields.hideProfileAssets')"
+                    />
+                    <p class="min-w-0 text-sm font-medium leading-5">{{ t("rankBorder.fields.hideProfileAssets") }}</p>
+                  </div>
+                  <p class="text-xs leading-5 text-muted-foreground">{{ t("rankBorder.fields.hideProfileAssetsHint") }}</p>
+                </div>
+              </div>
 
             <section
               v-if="isMobileViewport && (mobileLocateOpen || selectedAccountDetail || detailLoading || detailError)"
@@ -4849,18 +4828,6 @@ function traceUpdateRecords(
                 </div>
               </div>
             </section>
-
-            <div class="flex flex-col gap-2 rounded-md border bg-background/70 p-2.5 sm:flex-row sm:items-center sm:justify-between">
-              <div class="min-w-0">
-                <p class="text-sm font-medium">{{ t("rankBorder.fields.hideProfileAssets") }}</p>
-                <p class="text-xs leading-5 text-muted-foreground">{{ t("rankBorder.fields.hideProfileAssetsHint") }}</p>
-              </div>
-              <Switch
-                v-model="hideProfileAssets"
-                class="shrink-0"
-                :aria-label="t('rankBorder.fields.hideProfileAssets')"
-              />
-            </div>
 
             <p v-if="masterOptions.error.value" class="text-xs text-destructive">{{ masterOptions.error.value }}</p>
           </section>
@@ -5467,17 +5434,12 @@ function traceUpdateRecords(
           </section>
           </div>
 
-          <aside v-if="!isMobileViewport" class="rank-border-live-aside order-2 hidden min-w-0 max-w-full content-start gap-3 md:grid lg:sticky lg:top-[4.25rem] lg:order-3 lg:max-h-[calc(100svh-5.25rem)] lg:overflow-y-auto lg:overscroll-contain">
+          <aside v-if="!isMobileViewport" class="rank-border-live-aside order-2 hidden min-w-0 max-w-full content-start gap-3 md:grid lg:sticky lg:top-[4.25rem] lg:order-3 lg:self-start lg:max-h-[calc(100svh-5.25rem)] lg:overflow-y-auto lg:overscroll-contain">
             <section class="rank-border-live-card grid min-w-0 max-w-full gap-3 overflow-hidden rounded-md border bg-background p-2.5 shadow-sm sm:p-3">
               <div class="flex items-center justify-between gap-2">
-                <div class="grid min-w-0 gap-1">
-                  <div class="flex min-w-0 items-center gap-2">
-                    <component :is="detail?.source === 'line' ? ChartLine : UserRound" class="size-4 text-muted-foreground" />
-                    <h2 class="truncate text-base font-semibold">{{ t("rankBorder.sections.liveCard") }}</h2>
-                  </div>
-                  <p class="text-xs text-muted-foreground">
-                    {{ detail ? detailDescription(detail) : t("rankBorder.sections.liveCardDescription") }}
-                  </p>
+                <div class="flex min-w-0 items-center gap-2">
+                  <UserRound class="size-4 text-muted-foreground" />
+                  <h2 class="truncate text-base font-semibold">{{ t("rankBorder.sections.liveCard") }}</h2>
                 </div>
                 <Button
                   v-if="detail"
@@ -5501,7 +5463,7 @@ function traceUpdateRecords(
                   <div class="flex min-w-0 items-start justify-between gap-3">
                     <div class="flex min-w-0 items-start gap-3">
                       <div
-                        v-if="detail.source !== 'line' && shouldRenderProfileAssets"
+                        v-if="shouldRenderProfileAssets"
                         class="rank-border-leader rank-border-leader--detail"
                       >
                         <img
@@ -5558,10 +5520,6 @@ function traceUpdateRecords(
                       </div>
                       <div class="min-w-0 flex-1">
                         <p class="truncate text-sm text-muted-foreground">
-                          {{ detailSummaryLabel(detail) }}
-                        </p>
-                        <p class="mt-1 truncate text-3xl font-semibold tabular-nums">{{ formatDetailRank(detail) }}</p>
-                        <p class="mt-1 truncate text-sm text-muted-foreground">
                           <span
                             v-for="segment in richDetailTitleSegments(detail)"
                             :key="segment.key"
@@ -5570,6 +5528,7 @@ function traceUpdateRecords(
                             {{ segment.text }}
                           </span>
                         </p>
+                        <p class="mt-1 truncate text-3xl font-semibold tabular-nums">{{ formatDetailRank(detail) }}</p>
                       </div>
                     </div>
                     <span
@@ -5600,7 +5559,7 @@ function traceUpdateRecords(
                     <p class="truncate text-sm font-medium tabular-nums">{{ formatElapsed(elapsedSince(detail.result.timestamp)) }}</p>
                   </div>
                   <div v-if="detailGrowth(detail) != null" class="min-w-0 rounded-md border bg-muted/20 p-2.5">
-                    <p class="text-xs text-muted-foreground">{{ detailPrimaryDeltaLabel(detail) }}</p>
+                    <p class="text-xs text-muted-foreground">{{ t("rankBorder.result.playerIntervalGrowth", { interval: intervalOptions.find((option) => option.value === intervalSeconds)?.label ?? "-" }) }}</p>
                     <p
                       :class="[
                         'rank-border-live-number truncate text-xl font-semibold tabular-nums',
@@ -5671,17 +5630,14 @@ function traceUpdateRecords(
                   </span>
                 </DialogTitle>
                 <DialogDescription>
-                  <span class="block">{{ detailDescription(detail) }}</span>
-                  <span class="mt-1 block">
-                    <span
-                      v-for="segment in richDetailTitleSegments(detail)"
-                      :key="segment.key"
-                      :style="richNameSegmentStyle(segment)"
-                    >
-                      {{ segment.text }}
-                    </span>
-                    <span> / {{ formatDetailRank(detail) }}</span>
+                  <span
+                    v-for="segment in richDetailTitleSegments(detail)"
+                    :key="segment.key"
+                    :style="richNameSegmentStyle(segment)"
+                  >
+                    {{ segment.text }}
                   </span>
+                  <span> / {{ formatDetailRank(detail) }}</span>
                 </DialogDescription>
               </DialogHeader>
 
@@ -5690,11 +5646,11 @@ function traceUpdateRecords(
                   <div
                     :class="[
                       'rank-border-detail-profile__body',
-                      detail.source !== 'line' && shouldRenderProfileAssets ? 'rank-border-detail-profile__body--assets' : 'rank-border-detail-profile__body--plain',
+                      shouldRenderProfileAssets ? 'rank-border-detail-profile__body--assets' : 'rank-border-detail-profile__body--plain',
                     ]"
                   >
                     <div
-                      v-if="detail.source !== 'line' && shouldRenderProfileAssets"
+                      v-if="shouldRenderProfileAssets"
                       class="rank-border-leader rank-border-leader--dialog"
                     >
                       <img
@@ -5751,7 +5707,13 @@ function traceUpdateRecords(
                     </div>
                     <div class="rank-border-detail-profile__copy">
                       <p class="truncate text-sm text-muted-foreground">
-                        {{ detailSummaryLabel(detail) }}
+                        <span
+                          v-for="segment in richUserLabelSegments(isLatestResult(detail.result) ? detail.result : null)"
+                          :key="segment.key"
+                          :style="richNameSegmentStyle(segment)"
+                        >
+                          {{ segment.text }}
+                        </span>
                       </p>
                       <div class="rank-border-detail-profile__score">
                         <p class="rank-border-detail-rank">{{ formatDetailRank(detail) }}</p>
@@ -5764,19 +5726,10 @@ function traceUpdateRecords(
                           {{ formatPt(detail.result.score) }}
                         </p>
                       </div>
-                      <p class="mt-1 truncate text-sm text-foreground">
-                        <span
-                          v-for="segment in richDetailTitleSegments(detail)"
-                          :key="segment.key"
-                          :style="richNameSegmentStyle(segment)"
-                        >
-                          {{ segment.text }}
-                        </span>
-                      </p>
                       <p class="mt-1 truncate text-xs text-muted-foreground">{{ t("rankBorder.result.latestPlain") }} {{ formatTimestamp(detail.result.timestamp) }}</p>
                     </div>
                     <div
-                      v-if="detail.source !== 'line' && shouldRenderProfileAssets && profileHonorViews(detail.result, 3, detailHonorKeyScope(detail)).length > 0"
+                      v-if="shouldRenderProfileAssets && profileHonorViews(detail.result, 3, detailHonorKeyScope(detail)).length > 0"
                       class="rank-border-honor-strip rank-border-honor-strip--detail"
                     >
                     <span
@@ -5944,55 +5897,6 @@ function traceUpdateRecords(
                       </span>
                       <span v-else class="rank-border-honor-fallback">{{ honor.label }}</span>
                     </span>
-                    </div>
-                  </div>
-                </section>
-
-                <section
-                  v-if="detail.source === 'rank'"
-                  class="rank-border-rank-summary rounded-md border bg-muted/15 p-3"
-                >
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                      <p class="text-sm text-muted-foreground">{{ t("rankBorder.result.rankPerspectiveSummary") }}</p>
-                      <div class="mt-1 flex min-w-0 flex-wrap items-end gap-x-3 gap-y-1">
-                        <p class="rank-border-detail-rank">{{ formatRank(detail.result.rank) }}</p>
-                        <p class="text-sm text-muted-foreground">{{ t("rankBorder.result.borderLineTitle", { rank: formatTargetRank(detail.result.rank) }) }}</p>
-                      </div>
-                    </div>
-                    <span
-                      :class="[
-                        'inline-flex shrink-0 rounded-md border px-2 py-1 text-xs font-medium',
-                        detailBadgeClass(detail),
-                      ]"
-                    >
-                      {{ t("rankBorder.result.rankPerspectiveBadge") }}
-                    </span>
-                  </div>
-
-                  <div class="rank-border-rank-summary__grid mt-3">
-                    <div class="rounded-md border bg-background/70 p-2.5">
-                      <p class="text-xs text-muted-foreground">{{ t("rankBorder.result.score") }}</p>
-                      <p class="rank-border-live-number mt-1 text-lg font-semibold tabular-nums">{{ formatPt(detail.result.score) }}</p>
-                    </div>
-                    <div class="rounded-md border bg-background/70 p-2.5">
-                      <p class="text-xs text-muted-foreground">{{ t("rankBorder.result.rankIntervalGrowth", { interval: intervalOptions.find((option) => option.value === intervalSeconds)?.label ?? "-" }) }}</p>
-                      <p
-                        :class="[
-                          'rank-border-live-number mt-1 text-lg font-semibold tabular-nums',
-                          (detailRankGrowth(detail) ?? 0) > 0 ? 'text-emerald-600 dark:text-emerald-300' : '',
-                        ]"
-                      >
-                        {{ formatGrowth(detailRankGrowth(detail)) }}
-                      </p>
-                    </div>
-                    <div class="rounded-md border bg-background/70 p-2.5">
-                      <p class="text-xs text-muted-foreground">{{ previousDetailLabel(detail) }}</p>
-                      <p class="mt-1 text-lg font-semibold tabular-nums">{{ detail.previous ? formatGrowth(detailDelta(detail.previous, detail.result)) : "-" }}</p>
-                    </div>
-                    <div class="rounded-md border bg-background/70 p-2.5">
-                      <p class="text-xs text-muted-foreground">{{ nextDetailLabel(detail) }}</p>
-                      <p class="mt-1 text-lg font-semibold tabular-nums">{{ detail.next ? formatGrowth(detailDelta(detail.result, detail.next)) : "-" }}</p>
                     </div>
                   </div>
                 </section>
@@ -6315,6 +6219,28 @@ function traceUpdateRecords(
   min-width: 0;
 }
 
+.rank-border-locate-panels {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+}
+
+.rank-border-locate-panel {
+  display: grid;
+  min-width: 0;
+  gap: 0.625rem;
+  border: 1px solid color-mix(in oklab, var(--border) 78%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--background) 88%, var(--muted));
+  padding: 0.875rem;
+}
+
+.rank-border-account-controls {
+  display: grid;
+  min-width: 0;
+  gap: 0.5rem;
+}
+
 .rank-border-event-combobox-trigger {
   min-width: 0;
 }
@@ -6365,6 +6291,24 @@ function traceUpdateRecords(
 @media (min-width: 1024px) {
   .rank-border-query-grid--normal {
     grid-template-columns: minmax(5.8rem, 7.5rem) minmax(8rem, 11rem) minmax(22rem, 1fr) minmax(7rem, 8.5rem);
+  }
+
+  .rank-border-locate-panels {
+    grid-template-columns: minmax(0, 1.5fr) minmax(16rem, 0.8fr);
+    align-items: stretch;
+  }
+
+  .rank-border-account-controls {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .rank-border-account-controls label {
+    grid-column: 1 / -1;
+  }
+
+  .rank-border-locate-panel--switch {
+    align-content: start;
   }
 
   .rank-border-query-grid--world-bloom {
@@ -6891,19 +6835,6 @@ function traceUpdateRecords(
   display: grid;
   grid-area: profile;
   align-self: start;
-}
-
-.rank-border-rank-summary {
-  display: grid;
-  grid-area: profile;
-  align-self: start;
-}
-
-.rank-border-rank-summary__grid {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
 }
 
 .rank-border-detail-profile__body {
@@ -7869,7 +7800,6 @@ function traceUpdateRecords(
     grid-template-rows: none;
     grid-template-areas:
       "profile"
-      "profile"
       "stats"
       "trend"
       "heatmap";
@@ -7878,7 +7808,6 @@ function traceUpdateRecords(
   }
 
   .rank-border-detail-profile,
-  .rank-border-rank-summary,
   .rank-border-trend-panel,
   .rank-border-detail-history,
   .rank-border-heatmap-section,
@@ -7931,8 +7860,8 @@ function traceUpdateRecords(
   }
 
   .rank-border-detail-grid {
-    grid-template-rows: auto auto;
-    overflow: visible;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
   }
 
   .rank-border-detail-profile,

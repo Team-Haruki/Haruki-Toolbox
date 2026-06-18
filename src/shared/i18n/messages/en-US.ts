@@ -1734,7 +1734,7 @@ export const enUS = {
       liveCard: "Player realtime stats",
       liveCardDescription: "This panel currently shows only the player's own realtime stats. T100 rank summary and detail data are not available here yet.",
       detailDialog: "Player realtime details",
-      detailDialogDescription: "This dialog shows the player's own realtime stats in detail. T100 rank detail data is not available here yet.",
+      detailDialogDescription: "This dialog shows the player's own realtime stats in detail. T100 rank detail data are not available here yet.",
       quickJump: "Quick jump",
       activityReplay: "Event replay",
       source: "Data source",
@@ -1807,7 +1807,7 @@ export const enUS = {
     result: {
       emptyLines: "Live borders appear here when the connection is ready. You can also refresh data immediately.",
       emptySegments: "The tracker has not returned border points beyond T100 yet.",
-      emptyLiveCard: "Click a border row or query a bound account to show the player's realtime stats.",
+      emptyLiveCard: "Click a border row or query a bound account to show the realtime card.",
       waitingLiveData: "Waiting for live data",
       noPlayer: "Waiting for player info",
       unknownPlayer: "Unknown player",
