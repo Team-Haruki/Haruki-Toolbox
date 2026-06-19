@@ -60,12 +60,12 @@ interface ModuleRow {
 interface ScopedAccessRow {
   key: string
   scope: string
-  value: string
+  value: string | number
 }
 
 interface AccessIdRow {
   key: string
-  value: string
+  value: string | number
 }
 
 const form = reactive(cloneDefaultClientConfigForm())
@@ -190,7 +190,7 @@ function createModuleRow(module = ""): ModuleRow {
   }
 }
 
-function createScopedAccessRow(scope = "all", value = ""): ScopedAccessRow {
+function createScopedAccessRow(scope = "all", value: string | number = ""): ScopedAccessRow {
   return {
     key: `scoped-access-${rowSeed++}`,
     scope,
@@ -198,7 +198,7 @@ function createScopedAccessRow(scope = "all", value = ""): ScopedAccessRow {
   }
 }
 
-function createAccessIdRow(value = ""): AccessIdRow {
+function createAccessIdRow(value: string | number = ""): AccessIdRow {
   return {
     key: `access-id-${rowSeed++}`,
     value,
@@ -856,8 +856,9 @@ function removeAllModuleRows() {
                         </Select>
                         <Input
                           v-model="row.value"
-                          type="number"
-                          min="0"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
                           :aria-label="editor.valueLabel"
                           :placeholder="editor.valuePlaceholder"
                         />
@@ -892,8 +893,9 @@ function removeAllModuleRows() {
                       >
                         <Input
                           v-model="row.value"
-                          type="number"
-                          min="0"
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9]*"
                           :aria-label="t('tools.clientConfigGenerator.fields.botAdmins.label')"
                           :placeholder="t('tools.clientConfigGenerator.accessEditor.botAdminPlaceholder')"
                         />

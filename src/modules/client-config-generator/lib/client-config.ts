@@ -150,8 +150,8 @@ export function parseClientConfigLists(form: ClientConfigForm): ParsedClientConf
   }
 }
 
-export function parseStringList(value: string, fallback: string[] = []): string[] {
-  const items = value
+export function parseStringList(value: string | number | null | undefined, fallback: string[] = []): string[] {
+  const items = normalizeListInput(value)
     .split(/[\n,，\s]+/)
     .map((item) => item.trim())
     .filter(Boolean)
@@ -159,9 +159,9 @@ export function parseStringList(value: string, fallback: string[] = []): string[
   return unique(items.length > 0 ? items : fallback)
 }
 
-export function parseNumberList(value: string): number[] {
+export function parseNumberList(value: string | number | null | undefined): number[] {
   return unique(
-    value
+    normalizeListInput(value)
       .split(/[\n,，\s]+/)
       .map((item) => item.trim())
       .filter(Boolean)
@@ -287,6 +287,14 @@ function quoteYamlString(value: string): string {
 
 function normalizeInteger(value: number, fallback: number): number {
   return Number.isSafeInteger(Number(value)) ? Number(value) : fallback
+}
+
+function normalizeListInput(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return ""
+  }
+
+  return String(value)
 }
 
 function unique<T>(values: T[]): T[] {

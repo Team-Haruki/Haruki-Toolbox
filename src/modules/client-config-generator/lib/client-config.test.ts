@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test"
 import {
   buildClientConfigYaml,
   cloneDefaultClientConfigForm,
+  parseNumberList,
   parseNumberMap,
   parsePolicyModes,
 } from "./client-config"
@@ -75,5 +76,10 @@ botAdmins:
       all: [100, 200],
       profile: [300],
     })
+  })
+
+  it("accepts numeric values from number-like inputs", () => {
+    expect(parseNumberList(123456)).toEqual([123456])
+    expect(parseNumberList(null)).toEqual([])
   })
 })
