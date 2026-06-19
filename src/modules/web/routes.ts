@@ -3,6 +3,7 @@ import { homeRoutes } from "@/modules/home/routes"
 import { navigationRoutes } from "@/modules/navigation/routes"
 import { deckRecommendRoutes } from "@/modules/deck-recommend/routes"
 import { rankBorderRoutes } from "@/modules/rank-border/routes"
+import { clientConfigGeneratorRoutes } from "@/modules/client-config-generator/routes"
 import { toolRoutes } from "@/modules/tools/routes"
 import { userRoutes } from "@/modules/user/routes"
 import { userTicketRoutes } from "@/modules/tickets/routes"
@@ -13,6 +14,7 @@ export const webChildRoutes: RouteRecordRaw[] = [
     ...navigationRoutes,
     ...deckRecommendRoutes,
     ...rankBorderRoutes,
+    ...clientConfigGeneratorRoutes,
     ...toolRoutes,
     ...userRoutes,
     ...userTicketRoutes,

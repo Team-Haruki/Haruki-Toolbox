@@ -872,6 +872,7 @@ export const enUS = {
     deckRecommend: "Deck recommend",
     rankBorder: "Rank border",
     ptCalculator: "Event Pt calculator",
+    clientConfigGenerator: "Client config generator",
     uploadData: "Upload data",
     iosModules: "iOS module generator",
     botNeoRegistration: "HarukiBot NEO registration",
@@ -1378,6 +1379,207 @@ export const enUS = {
     },
   },
   tools: {
+    clientConfigGenerator: {
+      title: "Haruki Client Config Generator",
+      description: "Generate configs.yaml for the current Haruki Client schema, including dynamic routing, control API, modules, and access policies.",
+      summary: {
+        modules: "Modules",
+        admins: "Admins",
+        scopes: "Scopes",
+      },
+      sections: {
+        identity: {
+          title: "Identity",
+          description: "Set local ports, Bot ID, credential, and optional crypto fields.",
+        },
+        routing: {
+          title: "Network routing",
+          description: "Configure dynamic primary/alternative cloud endpoints or pin a fixed endpoint.",
+        },
+        runtime: {
+          title: "Runtime policy",
+          description: "Control help, CN features, reply quoting, and global command limits.",
+        },
+        modules: {
+          title: "Modules and feature scopes",
+          description: "Use manifest command_module for base module gating, then the current cloud client_policy_scope for feature-level policy.",
+        },
+        access: {
+          title: "Access lists",
+          description: "Enter group blacklists, group whitelists, user blacklists, and Bot admin QQ IDs by scope.",
+        },
+      },
+      fields: {
+        host: {
+          label: "Listen host",
+          placeholder: "127.0.0.1",
+        },
+        port: {
+          label: "OneBot port",
+        },
+        controlApiPort: {
+          label: "Control API port",
+        },
+        botId: {
+          label: "Bot ID",
+          placeholder: "From registration flow",
+        },
+        credential: {
+          label: "Credential",
+          placeholder: "Paste Haruki Client credential",
+        },
+        authEncryptionKey: {
+          label: "Auth encryption key",
+          placeholder: "Optional 64-char hex AES-256 key",
+        },
+        noiseServerPubkey: {
+          label: "Noise server public key",
+          placeholder: "Usually received from auth response",
+        },
+        controlApiAccessToken: {
+          label: "Control API access token",
+          description: "When enabled, the control API requires a Bearer token. Disabled writes null.",
+          placeholder: "Local control API token",
+        },
+        serverEndpointOverride: {
+          label: "Pinned server endpoint",
+          placeholder: "Leave empty unless the group announces one",
+          help: "Only fill this when a group notice asks you to pin an endpoint.",
+        },
+        routingConfigURL: {
+          label: "Routing config URL",
+          placeholder: "Leave empty to use the built-in EdgeOne default",
+          help: "Used for production/alternative failover. Ignored when a pinned endpoint is set.",
+        },
+        runMode: {
+          label: "Run mode",
+          placeholder: "Select run mode",
+        },
+        helpContent: {
+          label: "Custom help content",
+          placeholder: "Leave empty to use default help content",
+        },
+        enableGroupCommandLimit: {
+          label: "Enable global command limit",
+          description: "Limit successful calls across all groups per hour/day. 0 means unlimited.",
+        },
+        globalCommandHourlyLimit: {
+          label: "Hourly limit",
+        },
+        globalCommandDailyLimit: {
+          label: "Daily limit",
+        },
+        enableModules: {
+          label: "Enabled modules",
+          placeholder: "Select module",
+          help: "Choose command_module values from the dropdown. all enables every module. card/music/mysekai are cloud-side categories, not base module names here.",
+        },
+        featurePolicyModes: {
+          label: "Feature policy modes",
+          placeholder: "Select feature scope",
+          help: "Add rows only when a feature needs to override the global run mode. Leave this empty when no feature has a separate policy.",
+        },
+        blacklists: {
+          label: "Group blacklists",
+          placeholder: "all: 123456, 789012\nprofile: 345678",
+        },
+        whitelists: {
+          label: "Group whitelists",
+          placeholder: "all: 123456, 789012\nmysekai: 345678",
+        },
+        userBlacklists: {
+          label: "User blacklists",
+          placeholder: "all: 10001, 10002\nprofile: 10003",
+        },
+        botAdmins: {
+          label: "Bot admin QQ IDs",
+          placeholder: "114514\n1919810",
+          help: "Admins can use Haruki Client control commands in groups.",
+        },
+      },
+      toggles: {
+        enableHelp: {
+          label: "Help command",
+          description: "Allow built-in help replies.",
+        },
+        enableCN: {
+          label: "CN features",
+          description: "Enable CN-related features.",
+        },
+        enableReplyMessage: {
+          label: "Quote replies",
+          description: "Quote the original message in replies.",
+        },
+      },
+      actions: {
+        addModule: "Add module",
+        addFeaturePolicy: "Add policy",
+        addAccessRow: "Add",
+        addBotAdmin: "Add admin",
+        removeRow: "Remove row",
+        copy: "Copy YAML",
+        download: "Download configs.yaml",
+        reset: "Reset",
+      },
+      moduleSelector: {
+        allModules: "All modules",
+        moduleOption: "Module: {value}",
+        placeholder: "Select module",
+      },
+      policyEditor: {
+        scopeLabel: "Feature scope",
+        scopePlaceholder: "Select feature",
+        modePlaceholder: "Select mode",
+        empty: "Leave this empty when no feature needs its own policy.",
+      },
+      accessEditor: {
+        scopeLabel: "Access scope",
+        scopePlaceholder: "Select global, module, or feature",
+        globalGroup: "Global",
+        moduleGroup: "Modules",
+        featureGroup: "Features",
+        globalScope: "Global: all",
+        moduleScope: "Module: {value}",
+        featureScope: "Feature: {value}",
+        groupIdLabel: "Group ID",
+        groupIdPlaceholder: "Group ID",
+        userIdLabel: "User QQ",
+        userIdPlaceholder: "User QQ",
+        botAdminPlaceholder: "Admin QQ",
+        blacklistsDescription: "Pick a global, module, or feature scope, then add groups to block.",
+        whitelistsDescription: "Pick a global, module, or feature scope, then add groups to allow.",
+        userBlacklistsDescription: "Pick a global, module, or feature scope, then add user QQ IDs to block.",
+      },
+      runMode: {
+        blacklist: "Blacklist mode",
+        whitelist: "Whitelist mode",
+      },
+      routingState: {
+        dynamic: "Dynamic routing enabled",
+        pinned: "Server endpoint pinned",
+        dynamicDescription: "When serverEndpointOverride is empty, the client reads routingConfigURL. If routingConfigURL is empty, it uses the built-in EdgeOne default.",
+        pinnedDescription: "When serverEndpointOverride is non-empty, the client uses that endpoint directly and does not read dynamic routing config.",
+      },
+      preview: {
+        title: "configs.yaml preview",
+        description: "The YAML updates live and can be copied into the Haruki Client working directory.",
+      },
+      notes: {
+        title: "Notes",
+        description: "This generator handles values locally in your browser and does not submit credentials.",
+        items: {
+          dynamicRouting: "routingConfigURL is the new dynamic routing entry. Leave it empty for the default production config.",
+          accessToken: "Keep controlApiAccessToken disabled when auth is not needed; YAML will write null.",
+          listSyntax: "Access lists can be added row by row; the generator merges scopes and IDs into client YAML.",
+        },
+      },
+      toast: {
+        reset: "Reset to defaults",
+        copySuccess: "configs.yaml copied to clipboard",
+        copyFailed: "Copy failed. Check browser clipboard permission.",
+        downloadSuccess: "configs.yaml download started",
+      },
+    },
     iosModules: {
       title: "iOS Module Generator",
       description: "Generate custom iOS proxy modules",

@@ -872,6 +872,7 @@ export const zhCN = {
     deckRecommend: "组卡推荐",
     rankBorder: "榜线查询",
     ptCalculator: "活动Pt计算器",
+    clientConfigGenerator: "Client 配置生成器",
     uploadData: "上传数据",
     iosModules: "iOS模块生成器",
     botNeoRegistration: "HarukiBot NEO 注册",
@@ -1378,6 +1379,207 @@ export const zhCN = {
     },
   },
   tools: {
+    clientConfigGenerator: {
+      title: "Haruki Client 配置生成器",
+      description: "按新版 Haruki Client 的 configs.yaml 字段生成本地配置，包含动态路由、控制 API、模块与黑白名单策略。",
+      summary: {
+        modules: "启用模块",
+        admins: "管理员",
+        scopes: "策略范围",
+      },
+      sections: {
+        identity: {
+          title: "基础身份",
+          description: "填写本地监听端口、Bot ID、登录凭证和可选加密参数。",
+        },
+        routing: {
+          title: "网络路由",
+          description: "配置云端 API 的动态主副节点或固定覆盖端点。",
+        },
+        runtime: {
+          title: "运行策略",
+          description: "控制帮助、国服功能、回复引用和全局指令限流。",
+        },
+        modules: {
+          title: "模块与功能范围",
+          description: "按 manifest 的 command_module 控制基础模块，再按 cloud 当前 client_policy_scope 设置功能级策略。",
+        },
+        access: {
+          title: "权限名单",
+          description: "按 scope 填写群黑名单、群白名单、用户黑名单和 Bot 管理员 QQ。",
+        },
+      },
+      fields: {
+        host: {
+          label: "监听地址",
+          placeholder: "127.0.0.1",
+        },
+        port: {
+          label: "OneBot 端口",
+        },
+        controlApiPort: {
+          label: "控制 API 端口",
+        },
+        botId: {
+          label: "Bot ID",
+          placeholder: "从注册流程获取",
+        },
+        credential: {
+          label: "登录凭证",
+          placeholder: "粘贴 Haruki Client credential",
+        },
+        authEncryptionKey: {
+          label: "认证加密密钥",
+          placeholder: "可留空，或填 64 位 hex AES-256 key",
+        },
+        noiseServerPubkey: {
+          label: "Noise 服务端公钥",
+          placeholder: "通常由认证响应自动获取，可留空",
+        },
+        controlApiAccessToken: {
+          label: "控制 API 访问令牌",
+          description: "开启后控制 API 需要 Bearer Token；关闭时写入 null。",
+          placeholder: "本机控制接口访问令牌",
+        },
+        serverEndpointOverride: {
+          label: "固定服务端端点",
+          placeholder: "群内如果没有通知则留空",
+          help: "仅在群内通知要求固定端点时填写；没有通知则留空。",
+        },
+        routingConfigURL: {
+          label: "动态路由配置 URL",
+          placeholder: "留空使用 client 内置 EdgeOne 默认地址",
+          help: "用于生产/备用节点 failover。固定端点非空时不会生效。",
+        },
+        runMode: {
+          label: "运行模式",
+          placeholder: "选择运行模式",
+        },
+        helpContent: {
+          label: "自定义帮助内容",
+          placeholder: "留空使用默认帮助内容",
+        },
+        enableGroupCommandLimit: {
+          label: "启用全局指令限流",
+          description: "限制所有群合计的每小时/每日成功调用次数，0 表示不限制。",
+        },
+        globalCommandHourlyLimit: {
+          label: "每小时上限",
+        },
+        globalCommandDailyLimit: {
+          label: "每日上限",
+        },
+        enableModules: {
+          label: "启用模块",
+          placeholder: "选择模块",
+          help: "通过下拉选择 command_module；all 表示启用全部模块。card/music/mysekai 等是云端业务分类，不是这里的基础模块名。",
+        },
+        featurePolicyModes: {
+          label: "功能级策略模式",
+          placeholder: "选择功能 scope",
+          help: "只在某个功能需要覆盖全局运行模式时添加；没有单独策略时保持为空即可。",
+        },
+        blacklists: {
+          label: "群黑名单",
+          placeholder: "all: 123456, 789012\nprofile: 345678",
+        },
+        whitelists: {
+          label: "群白名单",
+          placeholder: "all: 123456, 789012\nmysekai: 345678",
+        },
+        userBlacklists: {
+          label: "用户黑名单",
+          placeholder: "all: 10001, 10002\nprofile: 10003",
+        },
+        botAdmins: {
+          label: "Bot 管理员 QQ",
+          placeholder: "114514\n1919810",
+          help: "管理员可在群内使用 Haruki Client 控制命令。",
+        },
+      },
+      toggles: {
+        enableHelp: {
+          label: "帮助命令",
+          description: "允许内置帮助响应。",
+        },
+        enableCN: {
+          label: "国服功能",
+          description: "启用 CN 相关功能。",
+        },
+        enableReplyMessage: {
+          label: "引用回复",
+          description: "回复结果时引用原消息。",
+        },
+      },
+      actions: {
+        addModule: "添加模块",
+        addFeaturePolicy: "添加策略",
+        addAccessRow: "添加",
+        addBotAdmin: "添加管理员",
+        removeRow: "删除这一行",
+        copy: "复制 YAML",
+        download: "下载 configs.yaml",
+        reset: "重置",
+      },
+      moduleSelector: {
+        allModules: "全部模块",
+        moduleOption: "模块：{value}",
+        placeholder: "选择模块",
+      },
+      policyEditor: {
+        scopeLabel: "功能 scope",
+        scopePlaceholder: "选择功能",
+        modePlaceholder: "选择策略",
+        empty: "没有功能需要单独策略时，这里保持为空。",
+      },
+      accessEditor: {
+        scopeLabel: "名单 scope",
+        scopePlaceholder: "选择全局、模块或功能",
+        globalGroup: "全局",
+        moduleGroup: "模块",
+        featureGroup: "功能",
+        globalScope: "全局：all",
+        moduleScope: "模块：{value}",
+        featureScope: "功能：{value}",
+        groupIdLabel: "群号",
+        groupIdPlaceholder: "群号",
+        userIdLabel: "用户 QQ",
+        userIdPlaceholder: "用户 QQ",
+        botAdminPlaceholder: "管理员 QQ",
+        blacklistsDescription: "选择全局、模块或功能范围，再添加需要禁用的群。",
+        whitelistsDescription: "选择全局、模块或功能范围，再添加允许使用的群。",
+        userBlacklistsDescription: "选择全局、模块或功能范围，再添加需要禁用的用户 QQ。",
+      },
+      runMode: {
+        blacklist: "黑名单模式",
+        whitelist: "白名单模式",
+      },
+      routingState: {
+        dynamic: "当前使用动态路由",
+        pinned: "当前固定服务端端点",
+        dynamicDescription: "serverEndpointOverride 为空时，client 会读取 routingConfigURL；routingConfigURL 为空则使用内置 EdgeOne 默认地址。",
+        pinnedDescription: "serverEndpointOverride 非空时，client 会直接使用该端点，不再读取动态路由配置。",
+      },
+      preview: {
+        title: "configs.yaml 预览",
+        description: "右侧内容会随表单实时更新，可直接复制到 Haruki Client 工作目录。",
+      },
+      notes: {
+        title: "填写说明",
+        description: "生成器只在浏览器本地处理内容，不会提交凭证。",
+        items: {
+          dynamicRouting: "routingConfigURL 是新版 client 的动态路由入口，留空即可走默认生产配置。",
+          accessToken: "controlApiAccessToken 不需要鉴权时保持关闭，YAML 会写成 null。",
+          listSyntax: "名单可以逐行添加 scope 和群号/QQ，生成器会自动合并为 client 需要的 YAML。",
+        },
+      },
+      toast: {
+        reset: "已重置为默认配置",
+        copySuccess: "configs.yaml 已复制到剪贴板",
+        copyFailed: "复制失败，请检查浏览器剪贴板权限",
+        downloadSuccess: "configs.yaml 已开始下载",
+      },
+    },
     iosModules: {
       title: "iOS模块生成器",
       description: "生成自定义的iOS代理模块",
