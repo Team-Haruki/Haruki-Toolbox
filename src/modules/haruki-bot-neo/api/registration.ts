@@ -8,6 +8,8 @@ export interface BotNeoStatusResponse {
 export interface BotNeoRegistrationResult {
   bot_id: string
   credential: string
+  owner_id?: string | number
+  ownerId?: string | number
 }
 
 export async function getBotNeoStatus(): Promise<APIResponse<BotNeoStatusResponse>> {

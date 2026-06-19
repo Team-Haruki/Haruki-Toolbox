@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, reactive } from "vue"
+import { computed, reactive, watch } from "vue"
 import { useI18n } from "vue-i18n"
+import { useRoute } from "vue-router"
 import { toast } from "vue-sonner"
 import {
   CheckCircle2,
@@ -42,9 +43,11 @@ import {
   CLIENT_CONFIG_MODULE_OPTIONS,
   cloneDefaultClientConfigForm,
   parseNumberList,
+  resolveClientConfigPrefillParams,
 } from "@/modules/client-config-generator/lib/client-config"
 
 const { t } = useI18n()
+const route = useRoute()
 
 interface FeaturePolicyRow {
   key: string
@@ -69,6 +72,12 @@ interface AccessIdRow {
 }
 
 const form = reactive(cloneDefaultClientConfigForm())
+const queryPrefill = reactive({
+  ownerId: "",
+  botId: "",
+  hasCredential: false,
+  hasPrefill: false,
+})
 let rowSeed = 0
 
 const moduleRows = reactive<ModuleRow[]>([createModuleRow("all")])
@@ -92,6 +101,17 @@ const adminCount = computed(() => generated.value.parsed.botAdmins.length)
 const scopedPolicyCount = computed(() => Object.keys(generated.value.parsed.featurePolicyModes).length)
 const pinnedEndpoint = computed(() => form.serverEndpointOverride.trim().length > 0)
 const usesDynamicRouting = computed(() => !pinnedEndpoint.value)
+const queryPrefillItems = computed(() => [
+  queryPrefill.ownerId
+    ? t("tools.clientConfigGenerator.prefill.ownerId", { value: queryPrefill.ownerId })
+    : "",
+  queryPrefill.botId
+    ? t("tools.clientConfigGenerator.prefill.botId", { value: queryPrefill.botId })
+    : "",
+  queryPrefill.hasCredential
+    ? t("tools.clientConfigGenerator.prefill.credential")
+    : "",
+].filter(Boolean))
 
 const textareaClass = "border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-24 w-full resize-y rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
 
@@ -174,6 +194,26 @@ const scopedAccessEditors = computed(() => [
     valuePlaceholder: t("tools.clientConfigGenerator.accessEditor.userIdPlaceholder"),
   },
 ] as const)
+
+watch(
+  () => route.query,
+  (query) => {
+    const prefill = resolveClientConfigPrefillParams(query)
+    queryPrefill.ownerId = prefill.ownerId
+    queryPrefill.botId = prefill.botId === null ? "" : String(prefill.botId)
+    queryPrefill.hasCredential = Boolean(prefill.credential)
+    queryPrefill.hasPrefill = prefill.hasPrefill
+
+    if (prefill.botId !== null) {
+      form.botId = prefill.botId
+    }
+
+    if (prefill.credential) {
+      form.credential = prefill.credential
+    }
+  },
+  { immediate: true },
+)
 
 function createFeaturePolicyRow(scope = "", mode: ClientFeaturePolicyMode = "blacklist"): FeaturePolicyRow {
   return {
@@ -418,6 +458,24 @@ function removeAllModuleRows() {
                   <span>{{ t("tools.clientConfigGenerator.notes.items.dynamicRouting") }}</span>
                   <span>{{ t("tools.clientConfigGenerator.notes.items.accessToken") }}</span>
                   <span>{{ t("tools.clientConfigGenerator.notes.items.listSyntax") }}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            v-if="queryPrefill.hasPrefill"
+            class="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-emerald-900 dark:border-emerald-800/70 dark:bg-emerald-950/30 dark:text-emerald-100"
+          >
+            <div class="flex items-start gap-2.5">
+              <CheckCircle2 class="mt-0.5 size-4 shrink-0" />
+              <div class="min-w-0 space-y-1">
+                <h2 class="text-sm font-semibold">{{ t("tools.clientConfigGenerator.prefill.title") }}</h2>
+                <p class="text-sm leading-relaxed opacity-90">
+                  {{ t("tools.clientConfigGenerator.prefill.description") }}
+                </p>
+                <div class="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-xs leading-relaxed opacity-80">
+                  <span v-for="item in queryPrefillItems" :key="item">{{ item }}</span>
                 </div>
               </div>
             </div>

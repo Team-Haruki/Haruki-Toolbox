@@ -1564,6 +1564,13 @@ export const enUS = {
         title: "configs.yaml preview",
         description: "The YAML updates live and can be copied into the Haruki Client working directory.",
       },
+      prefill: {
+        title: "Filled from registration result",
+        description: "Bot ID and credential were filled into the config form. ownerId is only shown to confirm the registration source and is not written to configs.yaml.",
+        ownerId: "ownerId: {value}",
+        botId: "Bot ID: {value}",
+        credential: "Credential filled",
+      },
       notes: {
         title: "Notes",
         description: "This generator handles values locally in your browser and does not submit credentials.",
@@ -2594,6 +2601,9 @@ export const enUS = {
       botIdLabel: "Bot ID",
       credentialLabel: "Credential (JWT)",
       saveWarning: "The credential is shown only once. Please copy and save it securely — it cannot be retrieved again.",
+      configGeneratorTitle: "Continue to Client config",
+      configGeneratorDescription: "Open the config generator with ownerId, Bot ID, and Credential prefilled. Then complete ports, modules, and access lists.",
+      configGeneratorButton: "Open config generator",
       registerAnotherButton: "Register another",
     },
     toast: {

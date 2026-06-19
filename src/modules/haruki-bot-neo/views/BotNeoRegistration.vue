@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted } from "vue"
+import { computed, onMounted } from "vue"
 import { useI18n } from "vue-i18n"
+import { RouterLink } from "vue-router"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
@@ -26,6 +27,7 @@ import {
   ArrowLeft,
   AlertTriangle,
   CheckCircle,
+  FileSliders,
   RotateCcw,
 } from "lucide-vue-next"
 import { useBotNeoRegistration } from "@/modules/haruki-bot-neo/composables/useBotNeoRegistration"
@@ -50,9 +52,31 @@ const {
   handleBackToInput,
 } = useBotNeoRegistration()
 
+const configGeneratorRoute = computed(() => {
+  const data = result.value
+  const ownerId = normalizeRouteValue(data?.owner_id ?? data?.ownerId ?? qqNumber.value)
+
+  return {
+    path: "/client-config-generator",
+    query: {
+      ownerId,
+      botId: data?.bot_id ?? "",
+      credential: data?.credential ?? "",
+    },
+  }
+})
+
 onMounted(() => {
   checkStatus()
 })
+
+function normalizeRouteValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return ""
+  }
+
+  return String(value).trim()
+}
 </script>
 
 <template>
@@ -234,6 +258,19 @@ onMounted(() => {
             class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-300"
           >
             {{ t("botNeo.result.saveWarning") }}
+          </div>
+
+          <div class="rounded-md border bg-muted/30 px-3 py-3 text-sm">
+            <div class="font-medium">{{ t("botNeo.result.configGeneratorTitle") }}</div>
+            <p class="mt-1 text-muted-foreground">
+              {{ t("botNeo.result.configGeneratorDescription") }}
+            </p>
+            <Button as-child class="mt-3 w-full">
+              <RouterLink :to="configGeneratorRoute">
+                <FileSliders class="mr-2 h-4 w-4" />
+                {{ t("botNeo.result.configGeneratorButton") }}
+              </RouterLink>
+            </Button>
           </div>
 
           <Button variant="outline" class="w-full" @click="handleReset">

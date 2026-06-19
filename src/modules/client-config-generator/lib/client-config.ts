@@ -98,8 +98,29 @@ export interface ClientConfigBuildResult {
   parsed: ParsedClientConfigLists
 }
 
+export interface ClientConfigPrefillParams {
+  ownerId: string
+  botId: number | null
+  credential: string
+  hasPrefill: boolean
+}
+
 export function cloneDefaultClientConfigForm(): ClientConfigForm {
   return { ...DEFAULT_CLIENT_CONFIG_FORM }
+}
+
+export function resolveClientConfigPrefillParams(params: Record<string, unknown>): ClientConfigPrefillParams {
+  const ownerId = readQueryString(params.ownerId) || readQueryString(params.owner_id)
+  const rawBotId = readQueryString(params.botId) || readQueryString(params.bot_id)
+  const credential = readQueryString(params.credential)
+  const botId = parseQueryInteger(rawBotId)
+
+  return {
+    ownerId,
+    botId,
+    credential,
+    hasPrefill: Boolean(ownerId || botId !== null || credential),
+  }
 }
 
 export function buildClientConfigYaml(form: ClientConfigForm): ClientConfigBuildResult {
@@ -295,6 +316,33 @@ function normalizeListInput(value: string | number | null | undefined): string {
   }
 
   return String(value)
+}
+
+function readQueryString(value: unknown): string {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const normalized = readQueryString(item)
+      if (normalized) {
+        return normalized
+      }
+    }
+    return ""
+  }
+
+  if (value === null || value === undefined) {
+    return ""
+  }
+
+  return String(value).trim()
+}
+
+function parseQueryInteger(value: string): number | null {
+  if (!value) {
+    return null
+  }
+
+  const parsed = Number(value)
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null
 }
 
 function unique<T>(values: T[]): T[] {

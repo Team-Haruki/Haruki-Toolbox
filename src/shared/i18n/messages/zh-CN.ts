@@ -1564,6 +1564,13 @@ export const zhCN = {
         title: "configs.yaml 预览",
         description: "右侧内容会随表单实时更新，可直接复制到 Haruki Client 工作目录。",
       },
+      prefill: {
+        title: "已从注册结果带入",
+        description: "Bot ID 与凭据已自动填入配置表单，ownerId 仅用于确认注册来源，不会写入 configs.yaml。",
+        ownerId: "ownerId：{value}",
+        botId: "Bot ID：{value}",
+        credential: "Credential 已填入",
+      },
       notes: {
         title: "填写说明",
         description: "生成器只在浏览器本地处理内容，不会提交凭证。",
@@ -2594,6 +2601,9 @@ export const zhCN = {
       botIdLabel: "Bot ID",
       credentialLabel: "凭据（JWT）",
       saveWarning: "凭据仅显示一次，请立即复制并安全保存，之后将无法再次获取。",
+      configGeneratorTitle: "继续生成 Client 配置",
+      configGeneratorDescription: "打开配置生成器并自动带入 ownerId、Bot ID 和 Credential，后续只需补充端口、模块和名单配置。",
+      configGeneratorButton: "打开配置生成器",
       registerAnotherButton: "注册另一个",
     },
     toast: {

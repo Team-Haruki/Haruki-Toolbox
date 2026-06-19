@@ -5,6 +5,7 @@ import {
   parseNumberList,
   parseNumberMap,
   parsePolicyModes,
+  resolveClientConfigPrefillParams,
 } from "./client-config"
 
 describe("client config generator", () => {
@@ -81,5 +82,28 @@ botAdmins:
   it("accepts numeric values from number-like inputs", () => {
     expect(parseNumberList(123456)).toEqual([123456])
     expect(parseNumberList(null)).toEqual([])
+  })
+
+  it("resolves registration prefill query params", () => {
+    expect(resolveClientConfigPrefillParams({
+      ownerId: "114514",
+      botId: "91145149",
+      credential: "jwt-token",
+    })).toEqual({
+      ownerId: "114514",
+      botId: 91145149,
+      credential: "jwt-token",
+      hasPrefill: true,
+    })
+
+    expect(resolveClientConfigPrefillParams({
+      owner_id: ["", "1919810"],
+      bot_id: "invalid",
+    })).toEqual({
+      ownerId: "1919810",
+      botId: null,
+      credential: "",
+      hasPrefill: true,
+    })
   })
 })
