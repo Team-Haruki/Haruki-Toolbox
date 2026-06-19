@@ -80,10 +80,12 @@ import {
 } from "../composables/useRankBorderMasterOptions"
 import { useRankBorderTracker } from "../composables/useRankBorderTracker"
 import {
+  buildRankBorderTraceHeatmapBuckets,
   normalizeRankBorderTraceTimeline,
   normalizeRankBorderWebRankings,
   normalizeTrackerEndpoint,
   parseRankBorderRankQuery,
+  resolveRankBorderTraceRoundCount,
   resolveRankBorderTraceGrowth,
   isRankBorderLatestResult,
   isSameRankBorderTraceTimeline,
@@ -702,7 +704,7 @@ const detailTraceStats = computed(() => {
   const roundWindowStart = selectedHeatmapWindow.value?.start ?? startTime
   const roundWindowEnd = selectedHeatmapWindow.value?.end ?? latestTrace?.timestamp ?? currentUnixSecond.value
   const roundRate = selectedHeatmapWindow.value
-    ? resolveHeatmapRoundCount(detailTrace.value, selectedHeatmapWindow.value.start, selectedHeatmapWindow.value.end)
+    ? resolveRankBorderTraceRoundCount(detailTrace.value, selectedHeatmapWindow.value.start, selectedHeatmapWindow.value.end)
     : resolveTraceRoundRate(detailTrace.value, roundWindowStart, roundWindowEnd)
   const hourlySpeed = growth?.growth != null && growth.timeDiff
     ? Math.round((growth.growth / growth.timeDiff) * 3600)
@@ -744,26 +746,7 @@ const detailHeatmapDays = computed<RankBorderHeatmapDay[]>(() => {
   const latestHour = Math.floor(latest.timestamp / hourSeconds) * hourSeconds
   const latestDay = startOfLocalDay(latest.timestamp)
   const dayStarts = heatmapDayStarts(startDay, latestDay)
-  const buckets = new Map<number, { value: number; sampleCount: number; roundCount: number }>()
-
-  for (let index = 1; index < records.length; index += 1) {
-    const previous = records[index - 1]
-    const record = records[index]
-    if (record.timestamp < eventStart || previous.timestamp > latest.timestamp) {
-      continue
-    }
-
-    const bucketTimestamp = Math.max(record.timestamp, eventStart)
-    const bucketStart = Math.floor(bucketTimestamp / hourSeconds) * hourSeconds
-    const bucket = buckets.get(bucketStart) ?? { value: 0, sampleCount: 0, roundCount: 0 }
-    const delta = Math.max(0, record.score - previous.score)
-    bucket.value += delta
-    bucket.sampleCount += 1
-    if (delta > 0) {
-      bucket.roundCount += 1
-    }
-    buckets.set(bucketStart, bucket)
-  }
+  const buckets = buildRankBorderTraceHeatmapBuckets(records, eventStart, latest.timestamp + 1, hourSeconds)
 
   return dayStarts.map((dayStart) => {
     return {
@@ -786,7 +769,7 @@ const detailHeatmapDays = computed<RankBorderHeatmapDay[]>(() => {
           key: `hour:${start}:${hourIndex}`,
           start,
           end,
-          hourLabel: String(hourIndex + 1),
+          hourLabel: String(hourIndex),
           label: t(selected
             ? "rankBorder.result.heatmapCellSelected"
             : selectable
@@ -2154,6 +2137,10 @@ function readCachedTrace(value: DetailState, key: string) {
     return detailCachedTrace
   }
 
+  if (resolveDetailTraceUserId(value)) {
+    return []
+  }
+
   if (value.source === "line") {
     return value.result.rank <= PERSONAL_COLLECTION_LIMIT
       ? top100TraceByRank.value.get(value.result.rank) ?? []
@@ -2168,6 +2155,11 @@ function readCachedTrace(value: DetailState, key: string) {
 }
 
 function detailTraceKey(value: DetailState) {
+  const userId = resolveDetailTraceUserId(value)
+  if (value.source === "rank" && userId) {
+    return `rank:user:${userId}:${value.query}`
+  }
+
   return resolveRankBorderDetailTraceKey(value)
 }
 
@@ -2204,7 +2196,7 @@ function cacheDetailTrace(key: string, value: DetailState, records: RankBorderTr
   nextDetailTraces.set(key, records)
   detailTraceByKey.value = nextDetailTraces
 
-  if (shouldCacheRankBorderDetailTraceByRank(value)) {
+  if (!resolveDetailTraceUserId(value) && shouldCacheRankBorderDetailTraceByRank(value)) {
     cacheTrace(value.result.rank, records)
   }
 }
@@ -2229,25 +2221,39 @@ async function fetchDetailTrace(value: DetailState): Promise<RankBorderTracePoin
     }).then((detail) => detail.playerTrace).catch(() => [])
   }
 
-  if (value.source === "rank" && value.result.userId) {
+  if (value.source === "rank") {
+    const traceUserId = resolveDetailTraceUserId(value)
     const detail = await fetchRankBorderWebRankDetailV2({
       ...detailScope.value,
       rank: value.result.rank,
-      includeTrace: true,
-      includePlayerTrace: true,
+      includeTrace: !traceUserId,
+      includePlayerTrace: traceUserId != null,
       limit: FULL_TRACE_LIMIT,
     }).catch(() => null)
     if (detail) {
+      if (traceUserId) {
+        return detail.playerTrace
+      }
+
       if (detail.rankTrace.length > 0 || value.result.rank <= PERSONAL_COLLECTION_LIMIT) {
         return detail.rankTrace
-      }
-      if (detail.playerTrace.length > 0 || value.result.rank <= PERSONAL_COLLECTION_LIMIT) {
-        return detail.playerTrace
       }
     }
   }
 
   return await fetchFullRankTrace(value.result.rank).catch(() => [])
+}
+
+function resolveDetailTraceUserId(value: DetailState) {
+  if (value.source === "user") {
+    return normalizeTextValue(value.query)
+  }
+
+  if (value.source === "rank") {
+    return normalizeTextValue(value.trackedUserId) ?? normalizeTextValue(value.result.userId)
+  }
+
+  return null
 }
 
 function cacheTrace(rank: number, records: RankBorderTracePoint[]) {
@@ -4397,25 +4403,9 @@ function resolveTraceRoundRate(records: RankBorderTracePoint[], startTimestamp: 
     return null
   }
 
-  const roundCount = resolveHeatmapRoundCount(records, startTimestamp, endTimestamp)
+  const roundCount = resolveRankBorderTraceRoundCount(records, startTimestamp, endTimestamp)
   const hours = (endTimestamp - startTimestamp) / 3600
   return hours > 0 ? roundCount / hours : null
-}
-
-function resolveHeatmapRoundCount(records: RankBorderTracePoint[], startTimestamp: number, endTimestamp: number) {
-  let roundCount = 0
-  for (let index = 1; index < records.length; index += 1) {
-    const previous = records[index - 1]
-    const record = records[index]
-    const bucketTimestamp = record.timestamp
-    if (bucketTimestamp < startTimestamp || bucketTimestamp >= endTimestamp) {
-      continue
-    }
-    if (record.score > previous.score) {
-      roundCount += 1
-    }
-  }
-  return roundCount
 }
 
 function formatHourPoint(timestamp: number | null | undefined) {
@@ -6135,7 +6125,7 @@ function traceUpdateRecords(
                       <div class="rank-border-heatmap-row rank-border-heatmap-row--header" aria-hidden="true">
                         <span class="rank-border-heatmap-corner" />
                         <div class="rank-border-heatmap-hours">
-                          <span v-for="hour in DETAIL_HEATMAP_HOURS_PER_DAY" :key="`heatmap-hour-${hour}`">{{ hour }}</span>
+                          <span v-for="hour in DETAIL_HEATMAP_HOURS_PER_DAY" :key="`heatmap-hour-${hour}`">{{ hour - 1 }}</span>
                         </div>
                       </div>
                       <div

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test"
 import {
+  buildRankBorderTraceHeatmapBuckets,
   normalizeRankBorderLatest,
   normalizeRankBorderLines,
   normalizeRankBorderOverview,
@@ -11,6 +12,7 @@ import {
   normalizeTrackerEndpoint,
   parseRankBorderRankQuery,
   resolveRankBorderDetailTraceKey,
+  resolveRankBorderTraceRoundCount,
   resolveRankBorderTraceGrowth,
   shouldCacheRankBorderDetailTraceByRank,
   isSameRankBorderTraceTimeline,
@@ -547,6 +549,45 @@ describe("rank border helpers", () => {
       { rank: 1, score: 120, timestamp: 1710000000, userId: "u1", characterId: null },
       { rank: 1, score: 180, timestamp: 1710000060, userId: "u1", characterId: null },
     ])
+  })
+
+  it("buckets heatmap rounds by the current trace sample hour", () => {
+    const hourStart = 1710000000 - (1710000000 % 3600)
+    const records = [
+      { rank: 1, score: 100, timestamp: hourStart + 3590, userId: "u1", characterId: null },
+      { rank: 1, score: 200, timestamp: hourStart + 3610, userId: "u1", characterId: null },
+      { rank: 1, score: 200, timestamp: hourStart + 3700, userId: "u1", characterId: null },
+      { rank: 1, score: 400, timestamp: hourStart + 7000, userId: "u1", characterId: null },
+    ]
+
+    const buckets = buildRankBorderTraceHeatmapBuckets(records, hourStart, hourStart + 7200)
+
+    expect(buckets.get(hourStart)).toMatchObject({
+      start: hourStart,
+      value: 100,
+      sampleCount: 1,
+      roundCount: 1,
+    })
+    expect(buckets.get(hourStart + 3600)).toMatchObject({
+      start: hourStart + 3600,
+      value: 200,
+      sampleCount: 2,
+      roundCount: 1,
+    })
+  })
+
+  it("counts selected heatmap window rounds with the same bucket semantics", () => {
+    const hourStart = 1710000000 - (1710000000 % 3600)
+    const records = [
+      { rank: 1, score: 100, timestamp: hourStart + 3590, userId: "u1", characterId: null },
+      { rank: 1, score: 200, timestamp: hourStart + 3610, userId: "u1", characterId: null },
+      { rank: 1, score: 200, timestamp: hourStart + 3700, userId: "u1", characterId: null },
+      { rank: 1, score: 400, timestamp: hourStart + 7000, userId: "u1", characterId: null },
+    ]
+
+    expect(resolveRankBorderTraceRoundCount(records, hourStart, hourStart + 3600)).toBe(1)
+    expect(resolveRankBorderTraceRoundCount(records, hourStart + 3600, hourStart + 7200)).toBe(1)
+    expect(resolveRankBorderTraceRoundCount(records, hourStart, hourStart + 7200)).toBe(2)
   })
 
   it("keys detail traces by player identity when available", () => {

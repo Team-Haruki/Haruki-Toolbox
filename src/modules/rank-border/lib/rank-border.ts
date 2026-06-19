@@ -62,6 +62,13 @@ export type RankBorderTracePoint = {
   characterId: number | null
 }
 
+export type RankBorderTraceHeatmapBucket = {
+  start: number
+  value: number
+  sampleCount: number
+  roundCount: number
+}
+
 export type RankBorderStatus = {
   timestamp: number | null
   status: number | null
@@ -414,6 +421,66 @@ export function normalizeRankBorderTraceTimeline(records: RankBorderTracePoint[]
   }
 
   return Array.from(byTimestamp.values()).sort((a, b) => a.timestamp - b.timestamp)
+}
+
+export function buildRankBorderTraceHeatmapBuckets(
+  records: RankBorderTracePoint[],
+  startTimestamp: number,
+  endTimestamp: number,
+  hourSeconds = 3600,
+): Map<number, RankBorderTraceHeatmapBucket> {
+  const buckets = new Map<number, RankBorderTraceHeatmapBucket>()
+  if (records.length < 2 || endTimestamp <= startTimestamp || hourSeconds <= 0) {
+    return buckets
+  }
+
+  for (let index = 0; index < records.length - 1; index += 1) {
+    const current = records[index]
+    const next = records[index + 1]
+    if (current.timestamp < startTimestamp || current.timestamp >= endTimestamp) {
+      continue
+    }
+
+    const bucketStart = Math.floor(current.timestamp / hourSeconds) * hourSeconds
+    const bucket = buckets.get(bucketStart) ?? {
+      start: bucketStart,
+      value: 0,
+      sampleCount: 0,
+      roundCount: 0,
+    }
+    const delta = Math.max(0, next.score - current.score)
+    bucket.value += delta
+    bucket.sampleCount += 1
+    if (delta > 0) {
+      bucket.roundCount += 1
+    }
+    buckets.set(bucketStart, bucket)
+  }
+
+  return buckets
+}
+
+export function resolveRankBorderTraceRoundCount(
+  records: RankBorderTracePoint[],
+  startTimestamp: number,
+  endTimestamp: number,
+): number {
+  if (records.length < 2 || endTimestamp <= startTimestamp) {
+    return 0
+  }
+
+  let roundCount = 0
+  for (let index = 0; index < records.length - 1; index += 1) {
+    const current = records[index]
+    const next = records[index + 1]
+    if (current.timestamp < startTimestamp || current.timestamp >= endTimestamp) {
+      continue
+    }
+    if (next.score > current.score) {
+      roundCount += 1
+    }
+  }
+  return roundCount
 }
 
 export function isRankBorderLatestResult(result: RankBorderLatest | RankBorderLine | null | undefined): result is RankBorderLatest {
