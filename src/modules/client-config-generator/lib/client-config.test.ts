@@ -32,6 +32,9 @@ enableHelp: true
 helpContent: ""
 enableCN: true
 enableReplyMessage: false
+sendBase64Image: false
+mysekaiBirthdayMonitorNotifyEmpty: false
+enableParamEcho: false
 enableGroupCommandLimit: false
 globalCommandHourlyLimit: 0
 globalCommandDailyLimit: 0

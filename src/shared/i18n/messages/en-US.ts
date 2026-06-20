@@ -1510,6 +1510,18 @@ export const enUS = {
           label: "Quote replies",
           description: "Quote the original message in replies.",
         },
+        sendBase64Image: {
+          label: "Base64 images",
+          description: "Fetch Cloud images on the client and send them to OneBot as base64.",
+        },
+        mysekaiBirthdayMonitorNotifyEmpty: {
+          label: "Birthday empty notice",
+          description: "Notify when a MySekai birthday material monitor has no matches.",
+        },
+        enableParamEcho: {
+          label: "Parameter echo",
+          description: "Allow Cloud parse errors to echo concrete parameters.",
+        },
       },
       actions: {
         addModule: "Add module",

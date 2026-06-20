@@ -1510,6 +1510,18 @@ export const zhCN = {
           label: "引用回复",
           description: "回复结果时引用原消息。",
         },
+        sendBase64Image: {
+          label: "图片转 Base64",
+          description: "客户端下载 Cloud 图片后以 base64 发送给 OneBot。",
+        },
+        mysekaiBirthdayMonitorNotifyEmpty: {
+          label: "生日空结果通知",
+          description: "烤森生日材料监听无命中时也发送通知。",
+        },
+        enableParamEcho: {
+          label: "参数错误回显",
+          description: "Cloud 参数解析错误时允许回显具体参数。",
+        },
       },
       actions: {
         addModule: "添加模块",

@@ -18,6 +18,9 @@ export interface ClientConfigForm {
   helpContent: string
   enableCN: boolean
   enableReplyMessage: boolean
+  sendBase64Image: boolean
+  mysekaiBirthdayMonitorNotifyEmpty: boolean
+  enableParamEcho: boolean
   enableGroupCommandLimit: boolean
   globalCommandHourlyLimit: number
   globalCommandDailyLimit: number
@@ -46,6 +49,9 @@ export const DEFAULT_CLIENT_CONFIG_FORM: ClientConfigForm = {
   helpContent: "",
   enableCN: true,
   enableReplyMessage: false,
+  sendBase64Image: false,
+  mysekaiBirthdayMonitorNotifyEmpty: false,
+  enableParamEcho: false,
   enableGroupCommandLimit: false,
   globalCommandHourlyLimit: 0,
   globalCommandDailyLimit: 0,
@@ -142,6 +148,9 @@ export function buildClientConfigYaml(form: ClientConfigForm): ClientConfigBuild
     `helpContent: ${quoteYamlString(form.helpContent)}`,
     `enableCN: ${form.enableCN}`,
     `enableReplyMessage: ${form.enableReplyMessage}`,
+    `sendBase64Image: ${form.sendBase64Image}`,
+    `mysekaiBirthdayMonitorNotifyEmpty: ${form.mysekaiBirthdayMonitorNotifyEmpty}`,
+    `enableParamEcho: ${form.enableParamEcho}`,
     `enableGroupCommandLimit: ${form.enableGroupCommandLimit}`,
     `globalCommandHourlyLimit: ${normalizeInteger(form.globalCommandHourlyLimit, 0)}`,
     `globalCommandDailyLimit: ${normalizeInteger(form.globalCommandDailyLimit, 0)}`,

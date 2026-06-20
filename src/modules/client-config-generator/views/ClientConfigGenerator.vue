@@ -131,6 +131,21 @@ const toggleItems = computed(() => [
     label: t("tools.clientConfigGenerator.toggles.enableReplyMessage.label"),
     description: t("tools.clientConfigGenerator.toggles.enableReplyMessage.description"),
   },
+  {
+    key: "sendBase64Image",
+    label: t("tools.clientConfigGenerator.toggles.sendBase64Image.label"),
+    description: t("tools.clientConfigGenerator.toggles.sendBase64Image.description"),
+  },
+  {
+    key: "mysekaiBirthdayMonitorNotifyEmpty",
+    label: t("tools.clientConfigGenerator.toggles.mysekaiBirthdayMonitorNotifyEmpty.label"),
+    description: t("tools.clientConfigGenerator.toggles.mysekaiBirthdayMonitorNotifyEmpty.description"),
+  },
+  {
+    key: "enableParamEcho",
+    label: t("tools.clientConfigGenerator.toggles.enableParamEcho.label"),
+    description: t("tools.clientConfigGenerator.toggles.enableParamEcho.description"),
+  },
 ] as const)
 
 const moduleOptions = computed(() => CLIENT_CONFIG_MODULE_OPTIONS.map((value) => ({
