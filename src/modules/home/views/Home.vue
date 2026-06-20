@@ -37,7 +37,7 @@ const { t } = useI18n()
     </div>
 
     <!-- Elegant Guide Banner for About/Sponsorship -->
-    <router-link to="/about" class="max-w-md mx-auto w-full group block outline-none -mt-2">
+    <router-link to="/sponsors" class="max-w-md mx-auto w-full group block outline-none -mt-2">
       <div class="relative overflow-hidden rounded-xl border border-primary/20 bg-primary/5 p-4 transition-all duration-300 hover:border-primary/45 hover:bg-primary/8 hover:shadow-[0_0_15px_rgba(var(--primary),0.08)]">
         <div class="absolute -right-4 -bottom-4 opacity-5 transition-transform duration-500 group-hover:scale-110">
           <Heart class="w-24 h-24 text-primary fill-current" />

@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from "vue-router"
 import { homeRoutes } from "@/modules/home/routes"
 import { navigationRoutes } from "@/modules/navigation/routes"
+import { sponsorRoutes } from "@/modules/sponsor/routes"
 import { deckRecommendRoutes } from "@/modules/deck-recommend/routes"
 import { rankBorderRoutes } from "@/modules/rank-border/routes"
 import { clientConfigGeneratorRoutes } from "@/modules/client-config-generator/routes"
@@ -12,6 +13,7 @@ import { adminRoutes } from "@/modules/admin/routes"
 export const webChildRoutes: RouteRecordRaw[] = [
     ...homeRoutes,
     ...navigationRoutes,
+    ...sponsorRoutes,
     ...deckRecommendRoutes,
     ...rankBorderRoutes,
     ...clientConfigGeneratorRoutes,

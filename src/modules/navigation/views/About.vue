@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
-import { toast } from "vue-sonner"
 import { i18n } from "@/shared/i18n"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { 
@@ -146,9 +145,6 @@ const groupedMembers = {
   sponsor: teamMembers.filter(m => m.roleKey === 'sponsor')
 }
 
-const showSponsorsMaintenance = () => {
-  toast.info(t("navigationPages.about.support.sponsorsMaintenance"))
-}
 </script>
 
 <template>
@@ -322,11 +318,13 @@ const showSponsorsMaintenance = () => {
 
           <Button 
             variant="outline"
+            as-child
             class="h-11 px-6 font-semibold flex items-center justify-center gap-2 border-muted/80 hover:bg-muted/30 transition-all duration-300 hover:scale-[1.02]"
-            @click="showSponsorsMaintenance"
           >
-            <Users class="w-4 h-4" />
-            {{ t("navigationPages.about.support.sponsorsBtn") }}
+            <router-link to="/sponsors">
+              <Users class="w-4 h-4" />
+              {{ t("navigationPages.about.support.sponsorsBtn") }}
+            </router-link>
           </Button>
         </div>
       </div>

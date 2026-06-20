@@ -6,6 +6,7 @@ import {
   LucideCog,
   LucideFileEdit,
   LucideGamepad2,
+  LucideHeartHandshake,
   LucideKeyRound,
   LucideLayoutDashboard,
   LucideNavigation,
@@ -37,6 +38,7 @@ export const WEB_NAV_ITEMS: NavItem[] = [
     items: [
       { titleKey: "navigation.items.friendGroups", icon: LucideUsers, url: "/friend-groups" },
       { titleKey: "navigation.items.friendLinks", icon: LucideUsers, url: "/friend-links" },
+      { titleKey: "navigation.items.sponsors", icon: LucideHeartHandshake, url: "/sponsors" },
     ],
   },
   {
@@ -124,6 +126,14 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     segment: "content",
     routeName: "admin.content",
     titleKey: "route.admin.content",
+  },
+  {
+    value: "sponsors",
+    labelKey: "admin.nav.sponsors",
+    icon: LucideHeartHandshake,
+    segment: "sponsors",
+    routeName: "admin.sponsors",
+    titleKey: "route.admin.sponsors",
   },
   {
     value: "config",
