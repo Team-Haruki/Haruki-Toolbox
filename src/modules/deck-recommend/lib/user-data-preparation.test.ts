@@ -291,6 +291,22 @@ describe("deck recommend user data preparation", () => {
     expect(userData.userCards.map((card) => card.cardId)).toEqual([100, 101, 103])
   })
 
+  it("filters out user cards missing from target master data without selected filters", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData,
+      userData: {
+        userCards: [
+          { cardId: 100 },
+          { cardId: 999 },
+        ],
+      },
+    })
+
+    const userData = JSON.parse(prepared.userDataString) as { userCards: Array<{ cardId: number }> }
+
+    expect(userData.userCards.map((card) => card.cardId)).toEqual([100])
+  })
+
   it("applies uniform character rank overrides to all master characters", () => {
     const prepared = createPreparedDeckRecommendUserDataString({
       masterData,

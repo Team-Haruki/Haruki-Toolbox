@@ -602,7 +602,7 @@ export function isRankBorderTrackerUnauthorizedError(error: unknown): boolean {
 async function fetchTrackerJson(
   endpoint: string,
   path: string,
-  _cacheBust = false,
+  cacheBust = false,
   playbackAt?: number | null,
   useWebSocket = false,
   credentials: TrackerFetchCredentials = "omit",
@@ -612,7 +612,7 @@ async function fetchTrackerJson(
     throw new Error("Tracker endpoint is empty")
   }
 
-  const requestPath = appendPlaybackQuery(path, playbackAt)
+  const requestPath = appendCacheBustQuery(appendPlaybackQuery(path, playbackAt), cacheBust)
   if (!useWebSocket) {
     return fetchTrackerJsonViaRest(baseUrl, requestPath, credentials)
   }
@@ -855,6 +855,18 @@ function appendPlaybackQuery(path: string, playbackAt: number | null | undefined
   const search = new URLSearchParams(questionIndex >= 0 ? path.slice(questionIndex + 1) : "")
   search.set("at", String(timestamp))
   search.set("timestamp", String(timestamp))
+  return `${basePath}?${search}`
+}
+
+function appendCacheBustQuery(path: string, cacheBust: boolean): string {
+  if (!cacheBust) {
+    return path
+  }
+
+  const questionIndex = path.indexOf("?")
+  const basePath = questionIndex >= 0 ? path.slice(0, questionIndex) : path
+  const search = new URLSearchParams(questionIndex >= 0 ? path.slice(questionIndex + 1) : "")
+  search.set("_t", String(Date.now()))
   return `${basePath}?${search}`
 }
 

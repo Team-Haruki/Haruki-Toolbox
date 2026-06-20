@@ -289,11 +289,11 @@ function matchesFilters(
   attrFilters: ReadonlySet<DeckRecommendEventAttr>,
   characterFilters: ReadonlySet<number>,
 ): boolean {
-  if (unitFilters.size === 0 && attrFilters.size === 0 && characterFilters.size === 0) {
-    return true
-  }
   if (!masterCard) {
     return false
+  }
+  if (unitFilters.size === 0 && attrFilters.size === 0 && characterFilters.size === 0) {
+    return true
   }
   if (characterFilters.size > 0 && !characterFilters.has(normalizePositiveInteger(masterCard.characterId) ?? 0)) {
     return false
