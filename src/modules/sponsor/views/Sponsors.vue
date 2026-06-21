@@ -129,12 +129,27 @@ function compareSponsorTier(a: SponsorSupporter, b: SponsorSupporter) {
 }
 
 function compareDurationSponsor(a: SponsorSupporter, b: SponsorSupporter) {
+  const priceDelta = (b.planPrice ?? 0) - (a.planPrice ?? 0)
+  if (priceDelta !== 0) {
+    return priceDelta
+  }
+
+  const rankDelta = (b.planRank ?? 0) - (a.planRank ?? 0)
+  if (rankDelta !== 0) {
+    return rankDelta
+  }
+
   const expiresDelta = timestampValue(b.planExpiresAt) - timestampValue(a.planExpiresAt)
   if (expiresDelta !== 0) {
     return expiresDelta
   }
 
-  return compareSponsorTier(a, b)
+  const planDelta = sponsorSubtitle(a).localeCompare(sponsorSubtitle(b), locale.value)
+  if (planDelta !== 0) {
+    return planDelta
+  }
+
+  return timestampValue(b.paidAt) - timestampValue(a.paidAt)
 }
 
 const sponsorSections = computed<SponsorSection[]>(() => {
