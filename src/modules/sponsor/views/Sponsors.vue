@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useSponsors } from "@/modules/sponsor/composables/useSponsors"
 import type { SponsorSupporter } from "@/modules/sponsor/types"
 
-const AFDIAN_URL = "https://ifdian.net/p/9c65d9cc617011ed81c352540025c377"
+const AFDIAN_URL = "https://afdian.com/a/seiunx"
 
 const { t, locale } = useI18n()
 const { supporters, summary, loading, loadFailed } = useSponsors()
