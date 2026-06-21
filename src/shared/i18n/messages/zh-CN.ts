@@ -788,6 +788,7 @@ export const zhCN = {
       title: "支持 Project Haruki",
       description: "每一份赞助都会帮助 HarukiBot NEO、Haruki 工具箱以及公共服务基础设施继续稳定运行。",
       cta: "前往爱发电赞助",
+      aboutCta: "关于 Project Haruki",
     },
     summary: {
       supporters: "赞助者",

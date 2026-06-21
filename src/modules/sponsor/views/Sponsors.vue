@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ExternalLink,
   Heart,
+  Info,
   Sparkles,
   Users,
 } from "lucide-vue-next"
@@ -24,6 +25,11 @@ const hasSupporters = computed(() => supporters.value.length > 0)
 
 const dateFormatter = computed(() => new Intl.DateTimeFormat(locale.value, {
   dateStyle: "medium",
+}))
+
+const dateTimeFormatter = computed(() => new Intl.DateTimeFormat(locale.value, {
+  dateStyle: "medium",
+  timeStyle: "medium",
 }))
 
 const summaryCards = computed(() => [
@@ -53,6 +59,29 @@ function timestampValue(value: string) {
   const date = new Date(value)
   return Number.isNaN(date.valueOf()) ? 0 : date.valueOf()
 }
+
+function utcOffsetLabel(date: Date) {
+  const offsetMinutes = -date.getTimezoneOffset()
+  const sign = offsetMinutes >= 0 ? "+" : "-"
+  const absoluteMinutes = Math.abs(offsetMinutes)
+  const hours = String(Math.floor(absoluteMinutes / 60)).padStart(2, "0")
+  const minutes = String(absoluteMinutes % 60).padStart(2, "0")
+
+  return `UTC${sign}${hours}:${minutes}`
+}
+
+const generatedAtLabel = computed(() => {
+  if (!summary.value.generatedAt) {
+    return ""
+  }
+
+  const date = new Date(summary.value.generatedAt)
+  if (Number.isNaN(date.valueOf())) {
+    return summary.value.generatedAt
+  }
+
+  return `${dateTimeFormatter.value.format(date)} (${utcOffsetLabel(date)})`
+})
 
 function isManualSponsor(sponsor: SponsorSupporter) {
   return ["manual", "legacy", "imported"].includes(sponsor.source.toLowerCase())
@@ -99,6 +128,15 @@ function compareSponsorTier(a: SponsorSupporter, b: SponsorSupporter) {
   return timestampValue(b.paidAt) - timestampValue(a.paidAt)
 }
 
+function compareDurationSponsor(a: SponsorSupporter, b: SponsorSupporter) {
+  const expiresDelta = timestampValue(b.planExpiresAt) - timestampValue(a.planExpiresAt)
+  if (expiresDelta !== 0) {
+    return expiresDelta
+  }
+
+  return compareSponsorTier(a, b)
+}
+
 const sponsorSections = computed<SponsorSection[]>(() => {
   const oneTime: SponsorSupporter[] = []
   const duration: SponsorSupporter[] = []
@@ -116,14 +154,14 @@ const sponsorSections = computed<SponsorSection[]>(() => {
 
   return [
     {
+      key: "duration",
+      title: t("sponsor.sections.duration.title"),
+      supporters: duration.sort(compareDurationSponsor),
+    },
+    {
       key: "oneTime",
       title: t("sponsor.sections.oneTime.title"),
       supporters: oneTime.sort(compareSponsorTier),
-    },
-    {
-      key: "duration",
-      title: t("sponsor.sections.duration.title"),
-      supporters: duration.sort(compareSponsorTier),
     },
     {
       key: "manual",
@@ -214,7 +252,7 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
               </div>
             </div>
 
-            <div>
+            <div class="flex flex-wrap gap-3">
               <Button
                 as-child
                 class="h-11 bg-pink-600 px-5 font-semibold text-white shadow-sm transition-all duration-300 hover:bg-pink-700 hover:shadow-md"
@@ -224,6 +262,16 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
                   {{ t("sponsor.hero.cta") }}
                   <ExternalLink class="h-4 w-4" />
                 </a>
+              </Button>
+              <Button
+                variant="outline"
+                as-child
+                class="h-11 border-pink-500/25 bg-white/60 px-5 font-semibold text-foreground shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-pink-500/45 hover:bg-white/80 dark:bg-slate-950/30 dark:hover:bg-slate-950/45"
+              >
+                <router-link to="/about">
+                  <Info class="h-4 w-4" />
+                  {{ t("sponsor.hero.aboutCta") }}
+                </router-link>
               </Button>
             </div>
           </div>
@@ -249,11 +297,11 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
               <h2 class="truncate text-xl font-bold tracking-tight">{{ t("sponsor.list.title") }}</h2>
             </div>
             <span
-              v-if="summary.generatedAt"
+              v-if="generatedAtLabel"
               class="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex"
             >
               <CalendarDays class="h-3.5 w-3.5" />
-              {{ summary.generatedAt }}
+              {{ generatedAtLabel }}
             </span>
           </div>
 
@@ -298,9 +346,9 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
                 <Card
                   v-for="sponsor in section.supporters"
                   :key="sponsor.id"
-                  class="h-full border border-muted/50 bg-card/20 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-pink-500/45 hover:shadow-md"
+                  class="h-full gap-2 border border-muted/50 bg-card/20 py-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-pink-500/45 hover:shadow-md"
                 >
-                  <CardHeader class="flex flex-row items-center gap-4 pb-3">
+                  <CardHeader class="flex flex-row items-center gap-3 pb-1">
                     <Avatar class="h-10 w-10 border border-muted/80 transition-colors duration-300">
                       <AvatarImage :src="sponsor.avatar" :alt="fallbackName(sponsor)" />
                       <AvatarFallback class="bg-pink-500/5 text-sm font-semibold text-pink-600 dark:text-pink-300">
@@ -311,15 +359,15 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
                       <CardTitle class="truncate text-sm font-semibold">
                         {{ fallbackName(sponsor) }}
                       </CardTitle>
-                      <span class="text-[10px] font-medium text-muted-foreground/80">
+                      <span class="block truncate text-[10px] font-medium text-muted-foreground/80">
                         {{ sponsorSubtitle(sponsor) }}
+                      </span>
+                      <span class="mt-0.5 block truncate text-[10px] text-muted-foreground/70">
+                        {{ sponsorStatusLabel(sponsor) }}
                       </span>
                     </div>
                   </CardHeader>
                   <CardContent class="pt-0">
-                    <p class="mb-2 text-[10px] text-muted-foreground/70">
-                      {{ sponsorStatusLabel(sponsor) }}
-                    </p>
                     <div
                       class="line-clamp-2 rounded-r border-l-2 border-pink-500/30 bg-pink-500/[0.02] py-0.5 pl-2 text-[10px] font-medium italic text-pink-600/80 dark:text-pink-300/80"
                     >

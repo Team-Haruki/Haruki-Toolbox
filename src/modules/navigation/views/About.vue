@@ -148,10 +148,10 @@ const groupedMembers = {
 </script>
 
 <template>
-  <div class="w-full flex-1 px-4 py-8 space-y-10 max-w-5xl mx-auto">
+  <div class="w-full flex-1 px-4 py-6 space-y-8 max-w-5xl mx-auto">
     
     <!-- Simplified typographic Header Section -->
-    <div class="space-y-4 max-w-3xl">
+    <div class="space-y-3 max-w-3xl">
       <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
         <Sparkles class="w-7 h-7 md:w-8 md:h-8 text-primary shrink-0" />
         <span>{{ t("navigationPages.about.title") }}</span>
@@ -159,17 +159,17 @@ const groupedMembers = {
       <p class="text-base md:text-lg font-semibold text-primary">
         {{ t("navigationPages.about.subtitle") }}
       </p>
-      <div class="space-y-4 text-muted-foreground text-sm md:text-base leading-relaxed pt-2">
+      <div class="space-y-3 text-muted-foreground text-sm md:text-base leading-relaxed pt-1">
         <p>{{ t("navigationPages.about.projectIntro.p1Before") }}<span class="font-semibold text-foreground">{{ t("navigationPages.about.projectIntro.p1Name") }}</span>{{ t("navigationPages.about.projectIntro.p1After") }}</p>
         <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
         <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
       </div>
     </div>
 
-    <Separator class="my-6" />
+    <Separator class="my-4" />
 
     <!-- Dev Team Section -->
-    <section class="space-y-6">
+    <section class="space-y-4">
       <div class="flex items-center gap-2 text-2xl font-bold tracking-tight">
         <Users class="w-6 h-6 text-primary" />
         <h2>{{ t("navigationPages.about.team.title") }}</h2>
@@ -179,7 +179,7 @@ const groupedMembers = {
         {{ t("navigationPages.about.team.subtitle") }}
       </p>
 
-      <div class="space-y-8">
+      <div class="space-y-6">
         <!-- Render each category -->
         <div v-for="(group, key) in groupedMembers" :key="key" class="space-y-3">
           <div class="space-y-1">
@@ -201,8 +201,8 @@ const groupedMembers = {
               rel="noopener noreferrer"
               class="block group outline-none"
             >
-              <Card class="h-full border border-muted/50 bg-card/20 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer">
-                <CardHeader class="flex flex-row items-center gap-4 pb-3">
+              <Card class="h-full gap-2 border border-muted/50 bg-card/20 py-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer">
+                <CardHeader class="flex flex-row items-center gap-3 pb-1">
                    <Avatar class="h-10 w-10 border border-muted/80 transition-colors duration-300 group-hover:border-primary">
                     <AvatarImage 
                       :src="getAvatarUrl(member)" 
@@ -244,7 +244,7 @@ const groupedMembers = {
     </section>
 
     <!-- Open Source Projects Section -->
-    <section class="space-y-6">
+    <section class="space-y-4">
       <div class="flex items-center gap-2 text-2xl font-bold tracking-tight">
         <Code2 class="w-6 h-6 text-primary" />
         <h2>{{ t("navigationPages.about.projects.title") }}</h2>
@@ -254,7 +254,7 @@ const groupedMembers = {
         {{ t("navigationPages.about.projects.subtitle") }}
       </p>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <a 
           v-for="project in projectsList" 
           :key="project.key"
@@ -263,8 +263,8 @@ const groupedMembers = {
           rel="noopener noreferrer"
           class="block group outline-none"
         >
-          <Card class="h-full border border-muted/50 bg-card/20 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer">
-            <CardHeader class="pb-2">
+          <Card class="h-full gap-3 border border-muted/50 bg-card/20 py-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer">
+            <CardHeader class="pb-1">
               <div class="flex items-start justify-between gap-2">
                 <CardTitle class="text-base font-bold group-hover:text-primary transition-colors flex items-center gap-1.5 leading-snug">
                   <span class="line-clamp-1">{{ t(`navigationPages.about.projects.list.${project.key}.name`) }}</span>
@@ -273,7 +273,7 @@ const groupedMembers = {
               </div>
               
               <!-- Tech tags -->
-              <div class="flex flex-wrap gap-1 mt-2">
+              <div class="flex flex-wrap gap-1 mt-1.5">
                 <span 
                   v-for="tag in project.tags" 
                   :key="tag"
@@ -283,7 +283,7 @@ const groupedMembers = {
                 </span>
               </div>
             </CardHeader>
-            <CardContent class="pt-2">
+            <CardContent class="pt-0">
               <CardDescription class="text-xs line-clamp-3 leading-relaxed">
                 {{ t(`navigationPages.about.projects.list.${project.key}.desc`) }}
               </CardDescription>
@@ -294,13 +294,13 @@ const groupedMembers = {
     </section>
 
     <!-- Support Section -->
-    <section class="space-y-4">
+    <section class="space-y-3">
       <div class="flex items-center gap-2 text-2xl font-bold tracking-tight">
         <Heart class="w-6 h-6 text-primary animate-pulse" />
         <h2>{{ t("navigationPages.about.support.title") }}</h2>
       </div>
       
-      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-2">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-1">
         <p class="text-muted-foreground text-sm md:text-base leading-relaxed max-w-xl">
           {{ t("navigationPages.about.support.desc") }}
         </p>

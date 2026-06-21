@@ -788,6 +788,7 @@ export const enUS = {
       title: "Support Project Haruki",
       description: "Every sponsorship helps keep HarukiBot NEO, Haruki Toolbox, and the shared service infrastructure running for the community.",
       cta: "Sponsor on Afdian",
+      aboutCta: "About Project Haruki",
     },
     summary: {
       supporters: "Supporters",
