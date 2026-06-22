@@ -130,6 +130,26 @@
     --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+/*
+ * Bind @unovis chart chrome (axes, grid, tooltip, crosshair) to the app theme
+ * tokens. unovis ships light-only defaults (#e8e9ef grid, white tooltip) that do
+ * not adapt to dark mode — producing a harsh white grid and white tooltip on the
+ * dark dashboard. Declaring these on `body` overrides unovis' :root defaults via
+ * nearest-ancestor custom-property inheritance, for every chart, in both themes.
+ */
+body {
+    --vis-axis-grid-color: var(--border);
+    --vis-axis-tick-color: var(--border);
+    --vis-axis-domain-color: var(--border);
+    --vis-axis-tick-label-color: var(--muted-foreground);
+    --vis-axis-label-color: var(--muted-foreground);
+    --vis-tooltip-background-color: var(--popover);
+    --vis-tooltip-border-color: var(--border);
+    --vis-tooltip-text-color: var(--popover-foreground);
+    --vis-crosshair-line-stroke-color: var(--muted-foreground);
+    --vis-crosshair-circle-stroke-color: var(--background);
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;

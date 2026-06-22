@@ -8,6 +8,13 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { VisXYContainer, VisLine, VisArea, VisAxis, VisScatter, VisCrosshair, VisTooltip } from "@unovis/vue"
 import { useI18n } from "vue-i18n"
 import { useDashboardStats } from "@/modules/admin-statistics/composables/useDashboardStats"
@@ -20,10 +27,17 @@ const {
   dashboard,
   chartData,
   chartLoading,
+  rangeDays,
+  bucket,
+  rangeOptions,
+  bucketOptions,
+  onRangeChange,
+  onBucketChange,
   statCards,
   x,
   yUploads,
   yRegistrations,
+  yFailures,
   crosshairTemplate,
   xTickFormat,
 } = useDashboardStats()
@@ -73,8 +87,34 @@ const uploadSummaryCards = computed(() => {
 
     <Card>
       <CardHeader>
-        <CardTitle>{{ t("adminStatistics.dashboard.chart.title") }}</CardTitle>
-        <CardDescription>{{ t("adminStatistics.dashboard.chart.description") }}</CardDescription>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div class="space-y-1.5">
+            <CardTitle>{{ t("adminStatistics.dashboard.chart.title") }}</CardTitle>
+            <CardDescription>{{ t("adminStatistics.dashboard.chart.description") }}</CardDescription>
+          </div>
+          <div class="flex gap-2">
+            <Select :model-value="String(rangeDays)" @update:model-value="onRangeChange">
+              <SelectTrigger class="h-8 w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in rangeOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Select :model-value="bucket" @update:model-value="onBucketChange">
+              <SelectTrigger class="h-8 w-[104px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in bucketOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <template v-if="chartLoading">
@@ -88,6 +128,8 @@ const uploadSummaryCards = computed(() => {
               <VisScatter :x="x" :y="yUploads" color="#3b82f6" :size="4" />
               <VisLine :x="x" :y="yRegistrations" color="#22c55e" curveType="monotoneX" />
               <VisScatter :x="x" :y="yRegistrations" color="#22c55e" :size="4" />
+              <VisLine :x="x" :y="yFailures" color="#ef4444" curveType="monotoneX" />
+              <VisScatter :x="x" :y="yFailures" color="#ef4444" :size="4" />
               <VisCrosshair :template="crosshairTemplate" />
               <VisTooltip />
               <VisAxis type="x" :tickFormat="xTickFormat" />
@@ -102,6 +144,10 @@ const uploadSummaryCards = computed(() => {
             <div class="flex items-center gap-1.5">
               <span class="w-3 h-3 rounded-full bg-green-500"></span>
               {{ t("adminStatistics.dashboard.chart.registrations") }}
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-red-500"></span>
+              {{ t("adminStatistics.dashboard.chart.failures") }}
             </div>
           </div>
         </template>

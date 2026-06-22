@@ -40,6 +40,7 @@ export interface TimeseriesResponse {
   from: string
   to: string
   bucket: string
+  timezone?: string
   points: TimeseriesPoint[]
 }
 
