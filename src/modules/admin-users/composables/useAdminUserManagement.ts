@@ -1,4 +1,5 @@
 import { onMounted, ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import {
@@ -41,19 +42,56 @@ export function useAdminUserManagement() {
     | "created_at_asc"
 
   const { t } = useI18n()
+  const route = useRoute()
+  const router = useRouter()
 
-  const search = ref("")
-  const roleFilter = ref<RoleFilter>("all")
-  const bannedFilter = ref<BooleanFilter>("all")
-  const allowCNMysekaiFilter = ref<BooleanFilter>("all")
-  const sortFilter = ref<SortFilter>("id_desc")
-  const createdFrom = ref<Date>()
-  const createdTo = ref<Date>()
+  const ROLE_FILTERS: readonly RoleFilter[] = ["all", "user", "admin", "super_admin"]
+  const BOOLEAN_FILTERS: readonly BooleanFilter[] = ["all", "true", "false"]
+  const SORT_FILTERS: readonly SortFilter[] = [
+    "id_desc",
+    "id_asc",
+    "name_desc",
+    "name_asc",
+    "created_at_desc",
+    "created_at_asc",
+  ]
+  const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
+  const DEFAULT_PAGE_SIZE = 20
+
+  function queryString(value: unknown): string {
+    if (typeof value === "string") return value
+    if (Array.isArray(value) && typeof value[0] === "string") return value[0]
+    return ""
+  }
+  function queryEnum<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
+    const raw = queryString(value)
+    return (allowed as readonly string[]).includes(raw) ? (raw as T) : fallback
+  }
+  function queryDate(value: unknown): Date | undefined {
+    const raw = queryString(value)
+    if (!raw) return undefined
+    const date = new Date(raw)
+    return Number.isNaN(date.getTime()) ? undefined : date
+  }
+  function queryInt(value: unknown, fallback: number): number {
+    const parsed = Number.parseInt(queryString(value), 10)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+  }
+
+  const initialQuery = route.query
+  const search = ref(queryString(initialQuery.q))
+  const roleFilter = ref<RoleFilter>(queryEnum(initialQuery.role, ROLE_FILTERS, "all"))
+  const bannedFilter = ref<BooleanFilter>(queryEnum(initialQuery.banned, BOOLEAN_FILTERS, "all"))
+  const allowCNMysekaiFilter = ref<BooleanFilter>(queryEnum(initialQuery.allowcn, BOOLEAN_FILTERS, "all"))
+  const sortFilter = ref<SortFilter>(queryEnum(initialQuery.sort, SORT_FILTERS, "id_desc"))
+  const createdFrom = ref<Date | undefined>(queryDate(initialQuery.from))
+  const createdTo = ref<Date | undefined>(queryDate(initialQuery.to))
 
   const selectedIds = ref<string[]>([])
+  const loadError = ref(false)
   const batchLoading = ref(false)
   const batchRoleTarget = ref<UserRole>("user")
-  const batchAllowCNTarget = ref("true")
+  const batchAllowCNTarget = ref<"true" | "false">("true")
 
   const {
     loading,
@@ -66,14 +104,23 @@ export function useAdminUserManagement() {
     load: loadUsers,
     prevPage,
     nextPage,
+    goToPage,
   } = usePagedList<AdminUser>({
-    initialPage: 1,
-    initialPageSize: 20,
+    initialPage: queryInt(initialQuery.page, 1),
+    initialPageSize: (() => {
+      const size = queryInt(initialQuery.size, DEFAULT_PAGE_SIZE)
+      return PAGE_SIZE_OPTIONS.includes(size) ? size : DEFAULT_PAGE_SIZE
+    })(),
     fetchPage: ({ page, pageSize }) => getUsers(buildQueryParams(page, pageSize)),
     onBeforeLoad: () => {
       selectedIds.value = []
+      loadError.value = false
+    },
+    onSuccess: () => {
+      loadError.value = false
     },
     onError: (error) => {
+      loadError.value = true
       toast.error(t("adminUsers.management.toast.loadFailedTitle"), {
         description: extractErrorMessage(error, t("adminUsers.management.toast.loadFailedFallback")),
       })
@@ -109,6 +156,30 @@ export function useAdminUserManagement() {
     resetPage()
     void loadUsers()
   })
+
+  function buildRouteQuery(): Record<string, string> {
+    const query: Record<string, string> = {}
+    const trimmedSearch = search.value.trim()
+    if (trimmedSearch) query.q = trimmedSearch
+    if (roleFilter.value !== "all") query.role = roleFilter.value
+    if (bannedFilter.value !== "all") query.banned = bannedFilter.value
+    if (allowCNMysekaiFilter.value !== "all") query.allowcn = allowCNMysekaiFilter.value
+    if (sortFilter.value !== "id_desc") query.sort = sortFilter.value
+    if (createdFrom.value) query.from = createdFrom.value.toISOString()
+    if (createdTo.value) query.to = createdTo.value.toISOString()
+    if (page.value > 1) query.page = String(page.value)
+    if (pageSize.value !== DEFAULT_PAGE_SIZE) query.size = String(pageSize.value)
+    return query
+  }
+
+  // Keep filters + page in the URL so navigating into a user's detail and back
+  // (or refreshing / sharing the link) restores the exact list state.
+  watch(
+    [search, roleFilter, bannedFilter, allowCNMysekaiFilter, sortFilter, createdFrom, createdTo, page, pageSize],
+    () => {
+      void router.replace({ query: buildRouteQuery() }).catch(() => {})
+    }
+  )
 
   onMounted(() => {
     void loadUsers()
@@ -212,12 +283,17 @@ export function useAdminUserManagement() {
     createdFrom,
     createdTo,
     selectedIds,
+    loadError,
     batchLoading,
     batchRoleTarget,
     batchAllowCNTarget,
     totalPages,
+    reloadUsers: () => {
+      void loadUsers()
+    },
     prevPage,
     nextPage,
+    goToPage,
     toggleSelect,
     toggleSelectAll,
     doBatchBan,

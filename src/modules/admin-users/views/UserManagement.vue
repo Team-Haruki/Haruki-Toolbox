@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
+import { useUserStore } from "@/shared/stores/user"
 import {
   Card,
   CardContent,
@@ -17,6 +18,7 @@ import { useAdminUserManagement } from "@/modules/admin-users/composables/useAdm
 
 const router = useRouter()
 const { t } = useI18n()
+const userStore = useUserStore()
 
 const {
   loading,
@@ -32,12 +34,15 @@ const {
   createdFrom,
   createdTo,
   selectedIds,
+  loadError,
   batchLoading,
   batchRoleTarget,
   batchAllowCNTarget,
   totalPages,
+  reloadUsers,
   prevPage,
   nextPage,
+  goToPage,
   toggleSelect,
   toggleSelectAll,
   doBatchBan,
@@ -71,6 +76,7 @@ function goToUser(userId: string) {
         <UserManagementBatchActions
           :selected-count="selectedIds.length"
           :batch-loading="batchLoading"
+          :is-super-admin="userStore.isSuperAdmin"
           v-model:batch-role-target="batchRoleTarget"
           v-model:batch-allow-cn-target="batchAllowCNTarget"
           @batch-ban="doBatchBan"
@@ -86,11 +92,13 @@ function goToUser(userId: string) {
       <CardContent class="p-0">
         <UserManagementTable
           :loading="loading"
+          :error="loadError"
           :users="users"
           :selected-ids="selectedIds"
           @toggle-select-all="toggleSelectAll"
           @toggle-select="toggleSelect"
           @go-to-user="goToUser"
+          @retry="reloadUsers"
         />
       </CardContent>
     </Card>
@@ -103,6 +111,7 @@ function goToUser(userId: string) {
       @update:page-size="pageSize = $event"
       @prev-page="prevPage"
       @next-page="nextPage"
+      @go-to-page="goToPage"
     />
   </div>
 </template>

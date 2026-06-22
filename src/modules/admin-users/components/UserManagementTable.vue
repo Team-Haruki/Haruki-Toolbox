@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
+import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -23,6 +25,7 @@ import type { AdminUser } from "@/types/admin"
 
 const props = defineProps<{
   loading: boolean
+  error: boolean
   users: AdminUser[]
   selectedIds: string[]
 }>()
@@ -32,7 +35,14 @@ const emit = defineEmits<{
   (e: "toggleSelectAll"): void
   (e: "toggleSelect", userId: string): void
   (e: "goToUser", userId: string): void
+  (e: "retry"): void
 }>()
+
+const selectAllState = computed<boolean | "indeterminate">(() => {
+  if (props.selectedIds.length === 0) return false
+  if (props.selectedIds.length === props.users.length) return true
+  return "indeterminate"
+})
 
 function formatCreatedAt(iso?: string) {
   return formatDate(iso, { year: "numeric", month: "2-digit", day: "2-digit" })
@@ -62,7 +72,7 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
         <TableRow>
           <TableHead class="w-12 cursor-pointer" @click.stop="emit('toggleSelectAll')">
             <Checkbox
-              :model-value="users.length > 0 && selectedIds.length === users.length"
+              :model-value="selectAllState"
               class="pointer-events-none"
             />
           </TableHead>
@@ -154,7 +164,17 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
             {{ formatCreatedAt(user.createdAt) }}
           </TableCell>
         </TableRow>
-        <TableRow v-if="users.length === 0">
+        <TableRow v-if="error && users.length === 0">
+          <TableCell :colspan="7" class="text-center py-8">
+            <div class="flex flex-col items-center gap-3 text-muted-foreground">
+              <span>{{ t("adminUsers.management.table.loadError") }}</span>
+              <Button variant="outline" size="sm" @click="emit('retry')">
+                {{ t("adminUsers.management.table.retry") }}
+              </Button>
+            </div>
+          </TableCell>
+        </TableRow>
+        <TableRow v-else-if="users.length === 0">
           <TableCell :colspan="7" class="text-center py-8 text-muted-foreground">
             {{ t("adminUsers.management.table.empty") }}
           </TableCell>

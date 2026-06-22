@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import {
@@ -36,11 +37,13 @@ import {
   LucideUser,
   LucideUserCog,
 } from "lucide-vue-next"
+import { roleLabel } from "@/modules/admin-users/constants"
 import type { UserRole } from "@/types/common"
 
 defineProps<{
   selectedCount: number
   batchLoading: boolean
+  isSuperAdmin: boolean
   batchRoleTarget: UserRole
   batchAllowCnTarget: "true" | "false"
 }>()
@@ -56,6 +59,13 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
+
+const allowCNOpen = ref(false)
+
+function confirmAllowCN() {
+  allowCNOpen.value = false
+  emit("batchAllowCN")
+}
 </script>
 
 <template>
@@ -87,11 +97,27 @@ const { t, locale } = useI18n()
     <Button variant="outline" size="sm" :disabled="batchLoading" @click="emit('batchUnban')">
       <LucideShieldOff class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.unbanButton") }}
     </Button>
-    <Button variant="outline" size="sm" :disabled="batchLoading" @click="emit('batchForceLogout')">
-      <LucideLogOut class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.forceLogoutButton") }}
-    </Button>
+    <AlertDialog>
+      <AlertDialogTrigger as-child>
+        <Button variant="outline" size="sm" :disabled="batchLoading">
+          <LucideLogOut class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.forceLogoutButton") }}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{{ t("adminUsers.management.batch.forceLogoutDialogTitle") }}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ t("adminUsers.management.batch.forceLogoutDialogDescription", { count: selectedCount }) }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
+          <AlertDialogAction @click="emit('batchForceLogout')">{{ t("adminUsers.management.batch.forceLogoutDialogConfirm") }}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
-    <Popover>
+    <Popover v-if="isSuperAdmin">
       <PopoverTrigger as-child>
         <Button variant="outline" size="sm" :disabled="batchLoading">
           <LucideUserCog class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.roleButton") }}
@@ -129,13 +155,29 @@ const { t, locale } = useI18n()
             </SelectContent>
           </Select>
           <div class="flex justify-end gap-2 mt-4">
-            <Button size="sm" @click="emit('batchRole')">{{ t("adminUsers.management.batch.roleConfirm") }}</Button>
+            <AlertDialog>
+              <AlertDialogTrigger as-child>
+                <Button size="sm">{{ t("adminUsers.management.batch.roleConfirm") }}</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{{ t("adminUsers.management.batch.roleDialogTitle") }}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {{ t("adminUsers.management.batch.roleDialogDescription", { count: selectedCount, role: roleLabel(batchRoleTarget, t) }) }}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
+                  <AlertDialogAction @click="emit('batchRole')">{{ t("adminUsers.management.batch.roleDialogConfirm") }}</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </PopoverContent>
     </Popover>
 
-    <Popover>
+    <Popover v-model:open="allowCNOpen">
       <PopoverTrigger as-child>
         <Button variant="outline" size="sm" :disabled="batchLoading">
           <LucideSettings2 class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.allowCNButton") }}
@@ -167,7 +209,7 @@ const { t, locale } = useI18n()
             </SelectContent>
           </Select>
           <div class="flex justify-end gap-2 mt-4">
-            <Button size="sm" @click="emit('batchAllowCN')">{{ t("adminUsers.management.batch.allowCNConfirm") }}</Button>
+            <Button size="sm" @click="confirmAllowCN">{{ t("adminUsers.management.batch.allowCNConfirm") }}</Button>
           </div>
         </div>
       </PopoverContent>

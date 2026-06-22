@@ -25,6 +25,13 @@ export function usePagination(initialPage = 1, initialPageSize = 20) {
         return true
     }
 
+    function goToPage(target: number) {
+        const clamped = Math.min(Math.max(Math.trunc(target), 1), totalPages.value)
+        if (!Number.isFinite(clamped) || clamped === page.value) return false
+        page.value = clamped
+        return true
+    }
+
     return {
         page,
         pageSize,
@@ -33,5 +40,6 @@ export function usePagination(initialPage = 1, initialPageSize = 20) {
         resetPage,
         prevPage,
         nextPage,
+        goToPage,
     }
 }

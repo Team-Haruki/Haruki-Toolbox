@@ -44,6 +44,7 @@ export function usePagedList<TItem, TResponse = PagedData<TItem>>(
     resetPage,
     prevPage: goPrevPage,
     nextPage: goNextPage,
+    goToPage: goToPageInternal,
   } = usePagination(options.initialPage ?? 1, options.initialPageSize ?? 20)
 
   let latestRequestId = 0
@@ -113,6 +114,18 @@ export function usePagedList<TItem, TResponse = PagedData<TItem>>(
     })
   }
 
+  function goToPage(target: number) {
+    const previousPage = page.value
+    if (!goToPageInternal(target)) return
+
+    const targetPage = page.value
+    void load().then((success) => {
+      if (success === false && page.value === targetPage) {
+        page.value = previousPage
+      }
+    })
+  }
+
   function reloadFromFirstPage() {
     resetPage()
     void load()
@@ -129,6 +142,7 @@ export function usePagedList<TItem, TResponse = PagedData<TItem>>(
     load,
     prevPage,
     nextPage,
+    goToPage,
     reloadFromFirstPage,
   }
 }

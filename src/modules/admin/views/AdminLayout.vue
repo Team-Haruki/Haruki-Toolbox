@@ -40,7 +40,7 @@ const { t } = useI18n()
     <div class="flex-1">
       <router-view v-slot="{ Component, route }">
         <Transition name="page-blur-fade" mode="out-in">
-          <component :is="Component" :key="route.fullPath" />
+          <component :is="Component" :key="route.path" />
         </Transition>
       </router-view>
     </div>

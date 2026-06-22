@@ -29,6 +29,16 @@ const router = useRouter()
 const userStore = useUserStore()
 const { t } = useI18n()
 
+function goBack() {
+  // Prefer history back so the list's filters/page (kept in its URL) are restored;
+  // fall back to the list route when the detail was opened directly (no history).
+  if (window.history.state?.back) {
+    router.back()
+  } else {
+    void router.push({ name: "admin.users" })
+  }
+}
+
 const {
   loading,
   actionLoading,
@@ -93,7 +103,7 @@ const {
 </script>
 <template>
   <div class="w-full flex flex-col gap-4">
-    <Button variant="ghost" size="sm" class="self-start" @click="router.push({ name: 'admin.users' })">
+    <Button variant="ghost" size="sm" class="self-start" @click="goBack">
       <LucideArrowLeft class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.backToList") }}
     </Button>
 
@@ -119,6 +129,7 @@ const {
             :user="user"
             :is-super-admin="userStore.isSuperAdmin"
             :action-loading="actionLoading"
+            :busy="taskLoading"
             @open-email-edit="openEmailEdit"
             @role-change="handleRoleChange"
             @toggle-cn-mysekai="handleToggleCNMysekai"

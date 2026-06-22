@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -11,9 +13,11 @@ import {
 import {
   LucideChevronLeft,
   LucideChevronRight,
+  LucideChevronsLeft,
+  LucideChevronsRight,
 } from "lucide-vue-next"
 
-defineProps<{
+const props = defineProps<{
   total: number
   page: number
   pageSize: number
@@ -24,6 +28,7 @@ const emit = defineEmits<{
   (e: "update:pageSize", value: number): void
   (e: "prevPage"): void
   (e: "nextPage"): void
+  (e: "goToPage", value: number): void
 }>()
 
 const { t, locale } = useI18n()
@@ -33,10 +38,32 @@ function handlePageSizeChange(value: unknown) {
   if (!Number.isFinite(pageSize) || pageSize <= 0) return
   emit("update:pageSize", pageSize)
 }
+
+// Local mirror of the page input so the user can type freely before committing.
+const pageInput = ref(String(props.page))
+watch(
+  () => props.page,
+  (value) => {
+    pageInput.value = String(value)
+  }
+)
+
+function commitPageInput() {
+  const parsed = Number(pageInput.value)
+  if (!Number.isFinite(parsed)) {
+    pageInput.value = String(props.page)
+    return
+  }
+  const target = Math.min(Math.max(Math.trunc(parsed), 1), props.totalPages)
+  pageInput.value = String(target)
+  if (target !== props.page) {
+    emit("goToPage", target)
+  }
+}
 </script>
 
 <template>
-  <div class="flex items-center justify-between px-2">
+  <div class="flex flex-wrap items-center justify-between gap-3 px-2">
     <div class="flex items-center gap-4">
       <span class="text-sm text-muted-foreground mr-2">
         {{ t("adminUsers.management.pagination.totalUsers", { total }) }}
@@ -59,12 +86,41 @@ function handlePageSizeChange(value: unknown) {
       </div>
     </div>
     <div class="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        :disabled="page <= 1"
+        :aria-label="t('adminUsers.management.pagination.firstPage')"
+        @click="emit('goToPage', 1)"
+      >
+        <LucideChevronsLeft class="w-4 h-4" />
+      </Button>
       <Button variant="outline" size="sm" :disabled="page <= 1" @click="emit('prevPage')">
         <LucideChevronLeft class="w-4 h-4" />
       </Button>
-      <span class="text-sm tabular-nums">{{ page }} / {{ totalPages }}</span>
+      <div class="flex items-center gap-1.5 text-sm">
+        <Input
+          :model-value="pageInput"
+          inputmode="numeric"
+          class="w-12 h-8 text-center tabular-nums px-1"
+          :aria-label="t('adminUsers.management.pagination.jumpToPage')"
+          @update:model-value="pageInput = String($event ?? '')"
+          @keyup.enter="commitPageInput"
+          @blur="commitPageInput"
+        />
+        <span class="text-muted-foreground tabular-nums whitespace-nowrap">/ {{ totalPages }}</span>
+      </div>
       <Button variant="outline" size="sm" :disabled="page >= totalPages" @click="emit('nextPage')">
         <LucideChevronRight class="w-4 h-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        :disabled="page >= totalPages"
+        :aria-label="t('adminUsers.management.pagination.lastPage')"
+        @click="emit('goToPage', totalPages)"
+      >
+        <LucideChevronsRight class="w-4 h-4" />
       </Button>
     </div>
   </div>
