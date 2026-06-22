@@ -102,12 +102,3 @@ export function batchDeleteGameBindings(items: Array<{ server: SekaiRegion; game
         data: { items },
     })
 }
-
-export function batchReassignGameBindings(
-    items: Array<{ server: SekaiRegion; gameUserId: string; targetUserId: string }>
-) {
-    return request(`${BASE}/batch-reassign`, {
-        method: "POST",
-        data: { items },
-    })
-}

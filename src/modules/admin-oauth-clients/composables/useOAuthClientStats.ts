@@ -59,7 +59,7 @@ export function useOAuthClientStats() {
   }
 
   async function showStats(clientId: string) {
-    if (statsClientId.value !== clientId) {
+    if (statsClientId.value !== clientId || hasInvalidTimeRange()) {
       resetFilters()
     }
     statsOpen.value = true

@@ -94,6 +94,13 @@ function normalizeSponsorProfile(value: unknown): AdminSponsorProfile | null {
   const planName = readFirstString(plan, ["name", "title"])
     || readFirstString(record, ["planName", "plan_name", "title"])
 
+  const planExpiresAt = readDateString(plan, ["expiresAt", "expires_at", "expireTime", "expire_time"])
+    || readDateString(record, ["planExpiresAt", "plan_expires_at", "expiresAt", "expires_at"])
+
+  const activeFallback = planExpiresAt
+    ? new Date(planExpiresAt).valueOf() > Date.now()
+    : false
+
   return {
     id,
     name: readFirstString(user, ["name", "nickname", "userName", "user_name"])
@@ -103,7 +110,7 @@ function normalizeSponsorProfile(value: unknown): AdminSponsorProfile | null {
     planName,
     message: readFirstString(record, ["message", "remark", "memo"]),
     source: readFirstString(record, ["source", "origin", "category", "kind", "type"]),
-    isActive: readBoolean(record, ["isActive", "is_active", "active"], Boolean(planName)),
+    isActive: readBoolean(record, ["isActive", "is_active", "active"], activeFallback),
     afdianSyncDisabled: readBoolean(record, [
       "afdianSyncDisabled",
       "afdian_sync_disabled",
@@ -115,8 +122,7 @@ function normalizeSponsorProfile(value: unknown): AdminSponsorProfile | null {
     totalAmount: readNumber(record, ["totalAmount", "total_amount", "allSumAmount", "all_sum_amount", "showAmount", "show_amount", "amount"]),
     month: readNumber(record, ["month", "months"]),
     paidAt: readDateString(record, ["paidAt", "paid_at", "lastPayTime", "last_pay_time", "createdAt", "created_at"]),
-    planExpiresAt: readDateString(plan, ["expiresAt", "expires_at", "expireTime", "expire_time"])
-      || readDateString(record, ["planExpiresAt", "plan_expires_at", "expiresAt", "expires_at"]),
+    planExpiresAt,
     createdAt: readDateString(record, ["createdAt", "created_at"]),
     updatedAt: readDateString(record, ["updatedAt", "updated_at"]),
   }

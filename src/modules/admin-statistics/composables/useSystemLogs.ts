@@ -3,7 +3,7 @@ import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useDebouncedWatch } from "@/composables/useDebouncedWatch"
 import { usePagedList } from "@/composables/usePagedList"
-import { createPageQuery, setTrimmedQueryValue } from "@/core/http/query"
+import { createPageQuery, type QueryParams, setTrimmedQueryValue } from "@/core/http/query"
 import { formatDateKey, formatLocalizedDateTime } from "@/lib/date-time"
 import {
   exportSystemLogs,
@@ -92,7 +92,9 @@ export function useSystemLogs() {
 
   async function handleExport() {
     try {
-      const blob = await exportSystemLogs()
+      const params: QueryParams = {}
+      setTrimmedQueryValue(params, "q", search.value)
+      const blob = await exportSystemLogs(params)
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement("a")
       anchor.href = url

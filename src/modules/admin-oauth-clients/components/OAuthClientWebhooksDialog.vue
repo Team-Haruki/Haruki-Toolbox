@@ -188,7 +188,9 @@ function formatDate(value: string | undefined) {
         <div class="space-y-1.5">
           <Label>{{ t("adminOAuthClients.webhooks.form.bearer") }}</Label>
           <Input
+            type="password"
             :model-value="props.bearer"
+            :disabled="props.saving || props.clearBearer"
             :placeholder="props.editingWebhook?.bearerSet ? t('adminOAuthClients.webhooks.form.bearerReplacePlaceholder') : t('adminOAuthClients.webhooks.form.bearerPlaceholder')"
             @update:model-value="emit('update:bearer', String($event ?? ''))"
           />

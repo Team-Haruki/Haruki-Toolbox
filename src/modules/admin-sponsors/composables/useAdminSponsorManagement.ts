@@ -84,6 +84,7 @@ export function useAdminSponsorManagement() {
   const refreshing = ref(false)
   const saving = ref(false)
   const syncing = ref(false)
+  const togglingIds = ref<Set<string>>(new Set())
   const sponsors = ref<AdminSponsorProfile[]>([])
   const generatedAt = ref("")
   const total = ref(0)
@@ -165,8 +166,31 @@ export function useAdminSponsorManagement() {
     })
   }
 
+  function isToggling(sponsorId: string) {
+    return togglingIds.value.has(sponsorId)
+  }
+
   async function toggleAfdianSync(sponsor: AdminSponsorProfile, disabled: boolean) {
-    await runAsyncAction(saving, () => updateAdminSponsorProfile(sponsor.id, { afdianSyncDisabled: disabled }), {
+    if (togglingIds.value.has(sponsor.id)) {
+      return
+    }
+
+    const rowLoading = {
+      get value() {
+        return togglingIds.value.has(sponsor.id)
+      },
+      set value(next: boolean) {
+        const nextSet = new Set(togglingIds.value)
+        if (next) {
+          nextSet.add(sponsor.id)
+        } else {
+          nextSet.delete(sponsor.id)
+        }
+        togglingIds.value = nextSet
+      },
+    }
+
+    await runAsyncAction(rowLoading, () => updateAdminSponsorProfile(sponsor.id, { afdianSyncDisabled: disabled }), {
       successMessage: disabled
         ? t("adminSponsors.toast.afdianSyncDisabled")
         : t("adminSponsors.toast.afdianSyncEnabled"),
@@ -217,6 +241,7 @@ export function useAdminSponsorManagement() {
     refreshSponsors,
     openEditDialog,
     saveSponsor,
+    isToggling,
     toggleAfdianSync,
     syncFromAfdian,
     formatDate,

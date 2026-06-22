@@ -21,9 +21,9 @@ export function useOAuthClientList() {
     const notifyOnError = options.notifyOnError ?? true
     loading.value = true
     try {
-      const data = await getOAuthClients()
+      const data = await getOAuthClients({ page_size: 200 })
       if (requestId !== latestLoadRequestId) return
-      clients.value = data
+      clients.value = data.items
     } catch (error: unknown) {
       if (requestId !== latestLoadRequestId) return
       if (notifyOnError) {

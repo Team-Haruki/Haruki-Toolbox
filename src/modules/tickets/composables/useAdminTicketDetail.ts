@@ -13,6 +13,7 @@ import type { AdminUser } from "@/types/admin"
 import type { TicketDetail, TicketMessage } from "@/types/ticket"
 import { ticketStatusLabel } from "@/modules/tickets/lib/display"
 import { getTicketStatusOptions, isTicketStatus } from "@/modules/tickets/lib/meta"
+import { bumpAdminTicketRefresh } from "@/modules/tickets/lib/admin-ticket-refresh"
 import { extractErrorMessage } from "@/lib/error-utils"
 
 function normalizeCreatorInfo(ticketDetail: TicketDetail) {
@@ -43,13 +44,14 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
   const { t } = useI18n()
   const router = useRouter()
   const loading = ref(true)
+  const refreshing = ref(false)
   const ticket = ref<TicketDetail | null>(null)
   const newMessage = ref("")
   const isInternal = ref(false)
   const sending = ref(false)
   const actionLoading = ref(false)
   const messageContainer = ref<HTMLElement | null>(null)
-  const assigneeId = ref("")
+  const assigneeId = ref("__none__")
   const adminUsers = ref<AdminUser[]>([])
   const adminUsersLoading = ref(false)
   const adminUsersLoadFailed = ref(false)
@@ -130,16 +132,21 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
       if (requestId !== latestLoadRequestId) return
       ticket.value = null
       loading.value = false
+      refreshing.value = false
       return
     }
 
-    loading.value = true
+    if (silent) {
+      refreshing.value = true
+    } else {
+      loading.value = true
+    }
     try {
       const detail = await getAdminTicketDetail(ticketIdValue)
       if (requestId !== latestLoadRequestId) return
       normalizeCreatorInfo(detail)
       ticket.value = detail
-      assigneeId.value = detail.assigneeAdminId || ""
+      assigneeId.value = detail.assigneeAdminId || "__none__"
       await nextTick()
       if (requestId !== latestLoadRequestId) return
       scrollToBottom()
@@ -156,6 +163,7 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     } finally {
       if (requestId !== latestLoadRequestId) return
       loading.value = false
+      refreshing.value = false
     }
   }
 
@@ -173,7 +181,9 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
       })
       if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
       newMessage.value = ""
-      await loadTicket()
+      isInternal.value = false
+      bumpAdminTicketRefresh()
+      await loadTicket({ silent: true })
     } catch (error: unknown) {
       if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
       toast.error(t("tickets.adminDetail.toast.sendFailedTitle"), {
@@ -187,6 +197,7 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
 
   async function handleStatusChange(newStatus: unknown) {
     if (!isTicketStatus(newStatus)) return
+    if (newStatus === ticket.value?.status) return
     if (actionLoading.value) return
     const ticketIdValue = resolveTicketId()
     if (!ticketIdValue) return
@@ -197,6 +208,7 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     try {
       await updateTicketStatus(ticketIdValue, { status })
       if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
+      bumpAdminTicketRefresh()
       try {
         await loadTicket({ silent: true, throwOnError: true })
         if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
@@ -233,6 +245,7 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
       const realId = assigneeId.value === "__none__" ? "" : assigneeId.value
       await assignTicket(ticketIdValue, { assigneeAdminId: realId || undefined })
       if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
+      bumpAdminTicketRefresh()
       try {
         await loadTicket({ silent: true, throwOnError: true })
         if (!isActiveActionGeneration(generation) || !isCurrentActionContext(ticketIdValue)) return
@@ -270,7 +283,7 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
       ticket.value = null
       newMessage.value = ""
       isInternal.value = false
-      assigneeId.value = ""
+      assigneeId.value = "__none__"
       void loadTicket()
     }
   )
@@ -287,6 +300,7 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
 
   return {
     loading,
+    refreshing,
     ticket,
     newMessage,
     isInternal,

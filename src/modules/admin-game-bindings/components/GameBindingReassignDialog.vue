@@ -36,13 +36,11 @@ const emit = defineEmits<{
       <DialogHeader>
         <DialogTitle>{{ t("adminGameBindings.reassignDialog.title") }}</DialogTitle>
         <DialogDescription>
-          {{ t("adminGameBindings.reassignDialog.descriptionPrefix") }}
-          {{ serverLabel(target?.server ?? "") }}
-          {{ t("adminGameBindings.reassignDialog.gameIdLabel") }}
-          <strong>{{ target?.gameUserId }}</strong>
-          {{ t("adminGameBindings.reassignDialog.descriptionMiddle") }}
-          {{ target?.userName || target?.userId }}
-          {{ t("adminGameBindings.reassignDialog.descriptionSuffix") }}
+          <i18n-t keypath="adminGameBindings.reassignDialog.description" scope="global">
+            <template #server>{{ serverLabel(target?.server ?? "") }}</template>
+            <template #gameId><strong>{{ target?.gameUserId }}</strong></template>
+            <template #fromUser>{{ target?.userName || target?.userId }}</template>
+          </i18n-t>
         </DialogDescription>
       </DialogHeader>
       <div class="flex flex-col gap-2 py-2">

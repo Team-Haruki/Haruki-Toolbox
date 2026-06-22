@@ -1,4 +1,5 @@
 export { default as OAuthClientFormFields } from "./OAuthClientFormFields.vue"
+export { default as OAuthClientConfirmActionDialog } from "./OAuthClientConfirmActionDialog.vue"
 export { default as OAuthClientCreateDialog } from "./OAuthClientCreateDialog.vue"
 export { default as OAuthClientDeleteDialog } from "./OAuthClientDeleteDialog.vue"
 export { default as OAuthClientEditDialog } from "./OAuthClientEditDialog.vue"

@@ -54,6 +54,7 @@ export function useRiskManagement() {
   const creating = ref(false)
 
   const rulesLoading = ref(true)
+  const rulesLoadError = ref(false)
   const rules = ref<RiskRule[]>([])
   const rulesJson = ref("")
   const rulesSaving = ref(false)
@@ -103,10 +104,12 @@ export function useRiskManagement() {
 
   async function loadRules() {
     rulesLoading.value = true
+    rulesLoadError.value = false
     try {
       rules.value = await getRiskRules()
       rulesJson.value = JSON.stringify(rules.value, null, 2)
     } catch (error: unknown) {
+      rulesLoadError.value = true
       toastErrorWithExtractedMessage(
         t("adminRisk.toast.loadRulesFailedTitle"),
         error,
@@ -114,6 +117,21 @@ export function useRiskManagement() {
       )
     } finally {
       rulesLoading.value = false
+    }
+  }
+
+  function resetCreateForm() {
+    newSeverity.value = "medium"
+    newSource.value = "dashboard"
+    newAction.value = ""
+    newReason.value = ""
+    newTargetUserId.value = ""
+  }
+
+  function setCreateOpen(open: boolean) {
+    createOpen.value = open
+    if (!open) {
+      resetCreateForm()
     }
   }
 
@@ -138,9 +156,7 @@ export function useRiskManagement() {
       fallbackError: t("adminRisk.toast.createFailedFallback"),
       onSuccess: async () => {
         createOpen.value = false
-        newAction.value = ""
-        newReason.value = ""
-        newTargetUserId.value = ""
+        resetCreateForm()
         await refreshEventsStrict()
       },
     })
@@ -161,7 +177,7 @@ export function useRiskManagement() {
     try {
       const parsed = parseRiskRules(rulesJson.value)
       if (!parsed) {
-        toast.error(t("adminRisk.toast.invalidJson"))
+        toast.error(t("adminRisk.toast.rulesMustBeJsonArray"))
         return
       }
 
@@ -194,7 +210,11 @@ export function useRiskManagement() {
 
   onMounted(() => {
     void loadEvents()
-    void loadRules()
+    if (userStore.isSuperAdmin) {
+      void loadRules()
+    } else {
+      rulesLoading.value = false
+    }
   })
 
   return {
@@ -213,11 +233,14 @@ export function useRiskManagement() {
     newTargetUserId,
     creating,
     rulesLoading,
+    rulesLoadError,
     rules,
     rulesJson,
     rulesSaving,
+    setCreateOpen,
     handleCreate,
     handleResolve,
+    loadRules,
     saveRules,
     eventTotalPages,
     prevPage,

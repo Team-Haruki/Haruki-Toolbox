@@ -32,10 +32,11 @@ export function setupRouteGuards(router: Router) {
             }
         }
 
-        if (userStore.settingsSyncState === "loading") {
-            return
-        }
-
+        // Role gates are evaluated even while settings are still syncing: the role
+        // is already resolved from the Kratos session before the first navigation
+        // (main.ts bootstrap / persisted session), so skipping these checks during
+        // "loading" would let a non-super admin transiently reach a super-admin
+        // route and never be re-checked once the sync completes.
         if (to.meta.requiresSuperAdmin && !userStore.isSuperAdmin) {
             toast.error(translate("core.auth.permissionDeniedTitle"), {
                 description: translate("core.auth.requireSuperAdminDescription"),

@@ -17,6 +17,16 @@ export async function getAuthorizedSocialPlatforms(userId: string) {
   return items.map((item) => normalizeAuthorizedSocialPlatform(item))
 }
 
+export function createAuthorizedSocialPlatform(
+  userId: string,
+  data: { platform: SocialPlatform; userId: string; comment?: string }
+) {
+  return request(`${userBase(userId)}/authorized-social-platforms`, {
+    method: "POST",
+    data,
+  })
+}
+
 export function updateAuthorizedSocialPlatform(
   userId: string,
   platformId: EntityId,

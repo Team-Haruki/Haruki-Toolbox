@@ -2701,6 +2701,9 @@ export const enUS = {
     runtime: {
       title: "Runtime configuration",
       description: "Manage runtime configuration. Changes take effect immediately.",
+      saveDialogTitle: "Apply runtime configuration?",
+      saveDialogDescription: "This change takes effect immediately and applies system-wide. Make sure the JSON is correct before continuing.",
+      saveDialogConfirm: "Apply",
     },
     toast: {
       loadApiKeysFailedTitle: "Failed to load Public API Keys",
@@ -2709,9 +2712,14 @@ export const enUS = {
       apiKeysUpdated: "Public API Keys updated",
       runtimeUpdated: "Runtime configuration updated",
       invalidJson: "Invalid JSON format",
+      invalidApiKeysSchema: "Public API Keys must be a JSON object of string values",
+      invalidRuntimeSchema: "Runtime configuration must be a JSON object",
       saveFailedTitle: "Failed to save",
       saveFailedFallback: "Save failed",
     },
+    loadError: "Failed to load configuration",
+    retry: "Retry",
+    unsavedChanges: "Unsaved changes",
   },
   adminRisk: {
     tabs: {
@@ -2766,6 +2774,9 @@ export const enUS = {
       title: "Risk rules",
       description: "View and edit risk rules (super admins only).",
       saveButton: "Save rules",
+      superAdminOnly: "Risk rules are only available to super admins.",
+      loadError: "Failed to load risk rules.",
+      retry: "Retry",
     },
     toast: {
       loadEventsFailedTitle: "Failed to load risk events",
@@ -2893,6 +2904,7 @@ export const enUS = {
     },
     common: {
       fallback: "—",
+      empty: "No statistics available",
     },
     status: {
       deleted: "Deleted",
@@ -2955,6 +2967,18 @@ export const enUS = {
       cancel: "Cancel",
       confirm: "Confirm",
     },
+    rotateDialog: {
+      title: "Rotate client secret",
+      description: "Rotate the secret for client {clientId}? The current secret will be invalidated immediately and existing integrations will break until updated.",
+      cancel: "Cancel",
+      confirm: "Rotate",
+    },
+    revokeDialog: {
+      title: "Revoke all authorizations",
+      description: "Revoke all user authorizations for client {clientId}? Every user will need to authorize again. This cannot be undone.",
+      cancel: "Cancel",
+      confirm: "Revoke all",
+    },
     statsDialog: {
       title: "Client statistics",
       from: "Start time",
@@ -3013,6 +3037,12 @@ export const enUS = {
       },
       validation: {
         callbackUrlRequired: "Callback URL is required",
+      },
+      deleteDialog: {
+        title: "Delete webhook endpoint",
+        description: "Delete the webhook endpoint {callbackUrl}? It will stop receiving callbacks. You can recreate it later.",
+        cancel: "Cancel",
+        confirm: "Delete",
       },
     },
     toast: {
@@ -3085,6 +3115,8 @@ export const enUS = {
       jwtSecretLabel: "Webhook JWT secret",
       jwtSecretPlaceholder: "Leave empty to keep the current secret",
       jwtSecretHelp: "Only enter a value when you want to replace the current JWT secret.",
+      readOnlyNoticeTitle: "Read-only view",
+      readOnlyNoticeDescription: "You can view webhook settings and endpoints, but modifying them requires super-admin permission.",
     },
     list: {
       title: "Webhook endpoints",
@@ -3178,6 +3210,10 @@ export const enUS = {
       fallback: "—",
       anonymous: "Anonymous supporter",
     },
+    contribution: {
+      amount: "¥{amount}",
+      month: "{count} mo",
+    },
     actions: {
       refresh: "Refresh list",
       syncAfdian: "Sync from Afdian",
@@ -3206,6 +3242,7 @@ export const enUS = {
       status: "Status",
       source: "Source",
       lastSupport: "Last support",
+      contribution: "Contribution",
       afdianSync: "Afdian updates",
       actions: "Actions",
       empty: "No sponsor records yet",
@@ -3214,6 +3251,7 @@ export const enUS = {
       title: "Edit sponsor profile",
       name: "Display name",
       avatar: "Avatar URL",
+      avatarPlaceholder: "https://example.com/avatar.png",
       planName: "Sponsor tier",
       source: "Source",
       paidAt: "Last support time",
@@ -3260,6 +3298,14 @@ export const enUS = {
         description: "Registration and upload trends",
         uploads: "Uploads",
         registrations: "Registrations",
+        failures: "Failures",
+        successRate: "Success rate",
+        range7d: "Last 7 days",
+        range30d: "Last 30 days",
+        range90d: "Last 90 days",
+        bucketDay: "Daily",
+        bucketWeek: "Weekly",
+        bucketMonth: "Monthly",
         empty: "No data",
       },
       toast: {
@@ -3451,10 +3497,7 @@ export const enUS = {
     },
     reassignDialog: {
       title: "Reassign game account",
-      descriptionPrefix: "Move",
-      gameIdLabel: "game ID",
-      descriptionMiddle: "from",
-      descriptionSuffix: "to the target user.",
+      description: "Move {server} game ID {gameId} from {fromUser} to the target user.",
       targetUserIdLabel: "Target user ID",
       targetUserIdPlaceholder: "Enter target toolbox user ID",
       confirm: "Confirm reassign",
@@ -3546,10 +3589,19 @@ export const enUS = {
         allowCNEnable: "Allow CN features",
         allowCNDisable: "Disable CN features",
         allowCNConfirm: "Confirm",
+        forceLogoutDialogTitle: "Confirm batch logout",
+        forceLogoutDialogDescription: "Force logout for {count} selected users? Their active sessions will be invalidated.",
+        forceLogoutDialogConfirm: "Confirm logout",
+        roleDialogTitle: "Confirm role change",
+        roleDialogDescription: "Change the role of {count} selected users to {role}?",
+        roleDialogConfirm: "Confirm change",
       },
       pagination: {
         totalUsers: "{total} users in total",
         pageSize: "Per page",
+        jumpToPage: "Jump to page",
+        firstPage: "First page",
+        lastPage: "Last page",
       },
       table: {
         columns: {
@@ -3561,6 +3613,8 @@ export const enUS = {
           createdAt: "Created at",
         },
         empty: "No users found",
+        loadError: "Failed to load user list",
+        retry: "Retry",
       },
       toast: {
         loadFailedTitle: "Failed to load user list",
@@ -3631,6 +3685,8 @@ export const enUS = {
         revokeAll: "Revoke all",
         total: "{count} authorizations in total",
         empty: "No OAuth authorizations",
+        revokeAllDialogTitle: "Revoke all authorizations",
+        revokeAllDialogDescription: "This revokes every OAuth authorization for this user and logs them out of all connected third-party apps. Continue?",
       },
       game: {
         title: "Game account bindings",
@@ -3642,11 +3698,15 @@ export const enUS = {
         edit: "Edit game binding",
         unbind: "Unbind game account",
         empty: "No game bindings",
+        unbindDialogTitle: "Confirm unbind",
+        unbindDialogDescription: "This will unbind game account {gameUserId}. You can re-add it later.",
       },
       social: {
         title: "Social platform binding",
         add: "Add binding",
         empty: "No social platform binding",
+        deleteDialogTitle: "Confirm delete",
+        deleteDialogDescription: "Delete this primary social platform binding? You can add it again later.",
       },
       authSocial: {
         title: "Authorized social platforms",
@@ -3657,12 +3717,16 @@ export const enUS = {
           comment: "Comment",
         },
         empty: "No authorized social platforms",
+        deleteDialogTitle: "Confirm delete",
+        deleteDialogDescription: "Delete this authorized social platform? You can add it again later.",
       },
       ios: {
         title: "iOS upload code",
         regenerate: "Regenerate",
         generate: "Generate upload code",
         empty: "No upload code",
+        deleteDialogTitle: "Confirm delete",
+        deleteDialogDescription: "Delete the current iOS upload code? You can regenerate a new one afterward.",
       },
       dialog: {
         email: {

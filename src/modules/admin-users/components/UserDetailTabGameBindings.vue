@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue"
 import { useI18n } from "vue-i18n"
 import {
     Card,
@@ -14,6 +15,16 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
     Table,
     TableBody,
@@ -43,6 +54,22 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const deleteDialogOpen = ref(false)
+const pendingDelete = ref<{ server: AdminGameAccountBinding["server"]; gameUserId: string } | null>(null)
+
+function requestDelete(binding: AdminGameAccountBinding) {
+    pendingDelete.value = { server: binding.server, gameUserId: binding.gameUserId }
+    deleteDialogOpen.value = true
+}
+
+function confirmDelete() {
+    if (pendingDelete.value) {
+        emit("delete", pendingDelete.value)
+    }
+    deleteDialogOpen.value = false
+    pendingDelete.value = null
+}
 </script>
 
 <template>
@@ -88,7 +115,7 @@ const { t } = useI18n()
                     <DropdownMenuItem
                       class="text-destructive focus:text-destructive"
                       :disabled="busy"
-                      @click="emit('delete', { server: binding.server, gameUserId: binding.gameUserId })"
+                      @click="requestDelete(binding)"
                     >
                       <LucideTrash2 class="w-4 h-4 mr-2" />
                       {{ t("adminUsers.detail.game.unbind") }}
@@ -105,4 +132,19 @@ const { t } = useI18n()
       </template>
     </CardContent>
   </Card>
+
+  <AlertDialog v-model:open="deleteDialogOpen">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{{ t("adminUsers.detail.game.unbindDialogTitle") }}</AlertDialogTitle>
+        <AlertDialogDescription>
+          {{ t("adminUsers.detail.game.unbindDialogDescription", { gameUserId: pendingDelete?.gameUserId }) }}
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
+        <AlertDialogAction @click="confirmDelete">{{ t("adminUsers.common.confirm") }}</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 </template>

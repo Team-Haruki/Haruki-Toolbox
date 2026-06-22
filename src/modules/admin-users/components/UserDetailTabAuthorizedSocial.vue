@@ -10,6 +10,17 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
     Table,
     TableBody,
     TableCell,
@@ -75,15 +86,30 @@ const socialPlatforms = computed(() => getSocialPlatforms(t))
               <TableCell>
                 <div class="flex gap-1">
                   <Button variant="ghost" size="sm" :disabled="busy" @click="emit('edit', social)">{{ t("adminUsers.common.edit") }}</Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    class="text-destructive"
-                    :disabled="busy"
-                    @click="emit('delete', social.id)"
-                  >
-                    <LucideTrash2 class="w-4 h-4" />
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger as-child>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        class="text-destructive"
+                        :disabled="busy"
+                      >
+                        <LucideTrash2 class="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{{ t("adminUsers.detail.authSocial.deleteDialogTitle") }}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {{ t("adminUsers.detail.authSocial.deleteDialogDescription") }}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
+                        <AlertDialogAction @click="emit('delete', social.id)">{{ t("adminUsers.common.confirm") }}</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </TableCell>
             </TableRow>

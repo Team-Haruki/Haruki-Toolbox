@@ -22,10 +22,13 @@ const {
   newTargetUserId,
   creating,
   rulesLoading,
+  rulesLoadError,
   rulesJson,
   rulesSaving,
+  setCreateOpen,
   handleCreate,
   handleResolve,
+  loadRules,
   saveRules,
   eventTotalPages,
   prevPage,
@@ -53,7 +56,8 @@ const {
           :creating="creating"
           :event-total-pages="eventTotalPages"
           :format-date="formatDate"
-          v-model:create-open="createOpen"
+          :create-open="createOpen"
+          @update:create-open="setCreateOpen"
           v-model:new-severity="newSeverity"
           v-model:new-source="newSource"
           v-model:new-action="newAction"
@@ -70,9 +74,11 @@ const {
         <RiskRulesPanel
           :user-is-super-admin="userStore.isSuperAdmin"
           :rules-loading="rulesLoading"
+          :rules-load-error="rulesLoadError"
           :rules-saving="rulesSaving"
           v-model:rules-json="rulesJson"
           @save="saveRules"
+          @retry="loadRules"
         />
       </TabsContent>
     </Tabs>

@@ -1,4 +1,4 @@
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
@@ -30,6 +30,8 @@ export function useOAuthClientWebhooks() {
   const bearer = ref("")
   const enabled = ref(true)
   const clearBearer = ref(false)
+  const webhookDeleteConfirmOpen = ref(false)
+  const webhookToDelete = ref<OAuthClientWebhook | null>(null)
 
   const hasActiveClient = () => webhookClientId.value.trim() !== ""
 
@@ -75,6 +77,12 @@ export function useOAuthClientWebhooks() {
     clearBearer.value = false
     webhookFormOpen.value = true
   }
+
+  watch(webhookFormOpen, (open) => {
+    if (!open) {
+      resetForm()
+    }
+  })
 
   function validateWebhookForm() {
     if (!callbackUrl.value.trim()) {
@@ -132,8 +140,14 @@ export function useOAuthClientWebhooks() {
     toast.success(t("adminOAuthClients.toast.webhookSaved"))
   }
 
-  async function deleteWebhook(webhook: OAuthClientWebhook) {
-    if (!hasActiveClient() || webhookDeleting.value) return
+  function confirmDeleteWebhook(webhook: OAuthClientWebhook) {
+    webhookToDelete.value = webhook
+    webhookDeleteConfirmOpen.value = true
+  }
+
+  async function deleteWebhook() {
+    const webhook = webhookToDelete.value
+    if (!webhook || !hasActiveClient() || webhookDeleting.value) return
     const response = await runAsyncAction(
       webhookDeleting,
       () => deleteOAuthClientWebhook(webhookClientId.value, webhook.id),
@@ -145,6 +159,8 @@ export function useOAuthClientWebhooks() {
     if (!response) return
 
     webhooks.value = webhooks.value.filter((item) => item.id !== webhook.id)
+    webhookDeleteConfirmOpen.value = false
+    webhookToDelete.value = null
     toast.success(t("adminOAuthClients.toast.webhookDeleted"))
   }
 
@@ -161,11 +177,14 @@ export function useOAuthClientWebhooks() {
     bearer,
     enabled,
     clearBearer,
+    webhookDeleteConfirmOpen,
+    webhookToDelete,
     loadWebhooks,
     openWebhookManager,
     openCreateWebhook,
     openEditWebhook,
     saveWebhook,
+    confirmDeleteWebhook,
     deleteWebhook,
   }
 }

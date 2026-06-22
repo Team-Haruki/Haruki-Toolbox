@@ -1,4 +1,4 @@
-import { readUpdatedItems, request, unwrapUpdatedData } from "@/core/http/call-api"
+import { readUpdatedItems, readUpdatedTotal, request, unwrapUpdatedData } from "@/core/http/call-api"
 import { encodePathSegment } from "@/core/http/url"
 import type { QueryParams } from "@/core/http/query"
 import { translate } from "@/shared/i18n"
@@ -27,6 +27,34 @@ import {
 } from "@/modules/admin-oauth-clients/lib/webhook"
 
 const BASE = "/api/admin/oauth-clients"
+
+function readNumber(record: UnknownRecord, keys: readonly string[], fallback = 0): number {
+    for (const key of keys) {
+        const value = record[key]
+        if (typeof value === "number" && Number.isFinite(value)) {
+            return value
+        }
+        if (typeof value === "string" && value.trim() !== "") {
+            const parsed = Number(value)
+            if (Number.isFinite(parsed)) {
+                return parsed
+            }
+        }
+    }
+
+    return fallback
+}
+
+function normalizeOAuthClientStatistics(record: UnknownRecord): OAuthClientStatistics {
+    return {
+        totalAuthorizations: readNumber(record, ["totalAuthorizations", "total_authorizations"]),
+        activeAuthorizations: readNumber(record, ["activeAuthorizations", "active_authorizations"]),
+        last30DaysAuthorizations: readNumber(record, [
+            "last30DaysAuthorizations",
+            "last_30_days_authorizations",
+        ]),
+    }
+}
 
 function normalizeOAuthClientType(value: unknown): OAuthClient["clientType"] {
     return value === "public" ? "public" : "confidential"
@@ -84,7 +112,10 @@ export async function getOAuthClients(params?: QueryParams) {
         params,
     })
     const rawItems = readUpdatedItems(res.updatedData)
-    return rawItems.map((item) => normalizeOAuthClient(item))
+    return {
+        items: rawItems.map((item) => normalizeOAuthClient(item)),
+        total: readUpdatedTotal(res.updatedData),
+    }
 }
 
 export function updateOAuthClient(clientId: string, data: Partial<OAuthClient>) {
@@ -99,11 +130,11 @@ export function setOAuthClientActive(clientId: string, active: boolean) {
 }
 
 export async function rotateClientSecret(clientId: string) {
-    const res = await request<APIResponse<{ clientSecret: string }>>(`${BASE}/${encodePathSegment(clientId)}/rotate-secret`, {
+    const res = await request<APIResponse<UnknownRecord>>(`${BASE}/${encodePathSegment(clientId)}/rotate-secret`, {
         method: "POST",
     })
     const updatedData = unwrapUpdatedData(res, translate("adminOAuthClients.toast.rotateFailedTitle"))
-    const clientSecret = updatedData.clientSecret.trim()
+    const clientSecret = readString(updatedData, ["clientSecret", "client_secret"]).trim()
     if (!clientSecret) {
         throw new Error(translate("common.missingUpdatedData", { context: translate("adminOAuthClients.toast.rotateFailedTitle") }))
     }
@@ -115,11 +146,12 @@ export function deleteOAuthClient(clientId: string) {
 }
 
 export async function getOAuthClientStatistics(clientId: string, params?: QueryParams) {
-    const res = await request<APIResponse<OAuthClientStatistics>>(`${BASE}/${encodePathSegment(clientId)}/statistics`, {
+    const res = await request<APIResponse<UnknownRecord>>(`${BASE}/${encodePathSegment(clientId)}/statistics`, {
         method: "GET",
         params,
     })
-    return unwrapUpdatedData(res, translate("adminOAuthClients.toast.loadStatsFailedTitle"))
+    const updatedData = unwrapUpdatedData(res, translate("adminOAuthClients.toast.loadStatsFailedTitle"))
+    return normalizeOAuthClientStatistics(updatedData)
 }
 
 export async function getOAuthClientAuthorizations(clientId: string, params?: QueryParams) {

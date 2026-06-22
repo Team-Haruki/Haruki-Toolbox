@@ -43,6 +43,7 @@ const props = defineProps<{ ticketId: string }>()
 const { t, locale } = useI18n()
 const {
   loading,
+  refreshing,
   ticket,
   newMessage,
   isInternal,
@@ -236,6 +237,7 @@ function messageSenderLabel(message: TicketMessage) {
               <CardTitle class="text-base">{{ t("tickets.adminDetail.messagesTitle") }}</CardTitle>
               <CardDescription>{{ t("tickets.adminDetail.messagesDescription") }}</CardDescription>
             </div>
+            <LucideLoader2 v-if="refreshing" class="w-4 h-4 animate-spin text-muted-foreground" />
           </div>
         </CardHeader>
         <CardContent class="flex-1 flex flex-col p-0 min-h-0">

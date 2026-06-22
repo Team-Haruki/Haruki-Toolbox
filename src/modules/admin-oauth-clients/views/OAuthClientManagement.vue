@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useI18n } from "vue-i18n"
 import {
+  OAuthClientConfirmActionDialog,
   OAuthClientCreateDialog,
   OAuthClientDeleteDialog,
   OAuthClientEditDialog,
@@ -43,6 +44,10 @@ const {
   displayedSecret,
   deleteConfirmOpen,
   clientToDelete,
+  rotateConfirmOpen,
+  clientToRotate,
+  revokeConfirmOpen,
+  clientToRevoke,
   webhookOpen,
   webhookClientId,
   webhooks,
@@ -55,6 +60,8 @@ const {
   bearer,
   enabled,
   clearBearer,
+  webhookDeleteConfirmOpen,
+  webhookToDelete,
   AVAILABLE_SCOPES,
   confirmDelete,
   executeDelete,
@@ -75,8 +82,10 @@ const {
   openEdit,
   handleSaveEdit,
   toggleActive,
+  confirmRotateSecret,
   handleRotateSecret,
   handleRestore,
+  confirmRevoke,
   handleRevoke,
   showStats,
   applyStatsFilters,
@@ -86,6 +95,7 @@ const {
   openCreateWebhook,
   openEditWebhook,
   saveWebhook,
+  confirmDeleteWebhook,
   deleteWebhook,
   copySecret,
 } = useOAuthClientManagement()
@@ -126,8 +136,8 @@ const {
           @manage-webhooks="openWebhookManager"
           @show-stats="showStats"
           @toggle-active="toggleActive"
-          @rotate-secret="handleRotateSecret"
-          @revoke="handleRevoke"
+          @rotate-secret="confirmRotateSecret"
+          @revoke="confirmRevoke"
           @restore="handleRestore"
           @confirm-delete="confirmDelete"
         />
@@ -169,6 +179,24 @@ const {
       @confirm="executeDelete"
     />
 
+    <OAuthClientConfirmActionDialog
+      v-model:open="rotateConfirmOpen"
+      :title="t('adminOAuthClients.rotateDialog.title')"
+      :description="t('adminOAuthClients.rotateDialog.description', { clientId: clientToRotate })"
+      :cancel-label="t('adminOAuthClients.rotateDialog.cancel')"
+      :confirm-label="t('adminOAuthClients.rotateDialog.confirm')"
+      @confirm="handleRotateSecret"
+    />
+
+    <OAuthClientConfirmActionDialog
+      v-model:open="revokeConfirmOpen"
+      :title="t('adminOAuthClients.revokeDialog.title')"
+      :description="t('adminOAuthClients.revokeDialog.description', { clientId: clientToRevoke })"
+      :cancel-label="t('adminOAuthClients.revokeDialog.cancel')"
+      :confirm-label="t('adminOAuthClients.revokeDialog.confirm')"
+      @confirm="handleRevoke"
+    />
+
     <OAuthClientSecretDialog
       v-model:open="secretDisplayOpen"
       :secret="displayedSecret"
@@ -191,8 +219,17 @@ const {
       @refresh="loadWebhooks"
       @create="openCreateWebhook"
       @edit="openEditWebhook"
-      @delete="deleteWebhook"
+      @delete="confirmDeleteWebhook"
       @save="saveWebhook"
+    />
+
+    <OAuthClientConfirmActionDialog
+      v-model:open="webhookDeleteConfirmOpen"
+      :title="t('adminOAuthClients.webhooks.deleteDialog.title')"
+      :description="t('adminOAuthClients.webhooks.deleteDialog.description', { callbackUrl: webhookToDelete?.callbackUrl ?? '' })"
+      :cancel-label="t('adminOAuthClients.webhooks.deleteDialog.cancel')"
+      :confirm-label="t('adminOAuthClients.webhooks.deleteDialog.confirm')"
+      @confirm="deleteWebhook"
     />
   </div>
 </template>

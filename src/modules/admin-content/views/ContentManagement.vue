@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useI18n } from "vue-i18n"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -115,6 +116,9 @@ const {
           </div>
         </div>
         <DialogFooter>
+          <DialogClose as-child>
+            <Button variant="outline" :disabled="linkSaving">{{ t("common.cancel") }}</Button>
+          </DialogClose>
           <Button :disabled="linkSaving" @click="saveLink">
             <LucideLoader2 v-if="linkSaving" class="w-4 h-4 mr-1 animate-spin" />
             {{ t("common.save") }}
@@ -157,6 +161,9 @@ const {
           </div>
         </div>
         <DialogFooter>
+          <DialogClose as-child>
+            <Button variant="outline" :disabled="itemSaving">{{ t("common.cancel") }}</Button>
+          </DialogClose>
           <Button :disabled="itemSaving" @click="saveItem">
             <LucideLoader2 v-if="itemSaving" class="w-4 h-4 mr-1 animate-spin" />
             {{ t("common.save") }}

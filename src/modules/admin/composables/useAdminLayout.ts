@@ -3,6 +3,7 @@ import { useRoute, useRouter } from "vue-router"
 import { useUserStore } from "@/shared/stores/user"
 import { ADMIN_NAV_ITEMS } from "@/config/navigation"
 import { getAdminTickets } from "@/modules/tickets/api/admin"
+import { adminTicketRefreshSignal } from "@/modules/tickets/lib/admin-ticket-refresh"
 
 const TICKET_REMINDER_REFRESH_MS = 60_000
 
@@ -65,13 +66,22 @@ export function useAdminLayout() {
     void loadPendingTicketCount()
   }
 
+  // Refresh on entering the admin area (and on role change), not on every
+  // query/param change within /admin — the 60s interval keeps the count fresh.
   watch(
-    [() => route.fullPath, () => userStore.isAdmin],
-    () => {
-      if (!route.path.startsWith("/admin")) return
+    [() => route.path.startsWith("/admin"), () => userStore.isAdmin],
+    ([inAdmin]) => {
+      if (!inAdmin) return
       void loadPendingTicketCount()
     }
   )
+
+  // Refresh promptly after an admin mutates a ticket, so the badge does not stay
+  // stale while the admin lingers on a ticket detail page.
+  watch(adminTicketRefreshSignal, () => {
+    if (!route.path.startsWith("/admin")) return
+    void loadPendingTicketCount()
+  })
 
   onMounted(() => {
     void loadPendingTicketCount()

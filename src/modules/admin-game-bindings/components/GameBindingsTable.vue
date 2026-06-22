@@ -34,6 +34,7 @@ import {
   LucideCheckSquare,
   LucideChevronLeft,
   LucideChevronRight,
+  LucideLoader2,
   LucideMoreHorizontal,
   LucidePencil,
   LucideTrash2,
@@ -94,7 +95,8 @@ function isSelected(binding: GlobalGameBinding): boolean {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{{ t("adminGameBindings.table.batchDialog.cancel") }}</AlertDialogCancel>
-          <AlertDialogAction @click="emit('batch-delete')">
+          <AlertDialogAction :disabled="props.actionLoading" @click="emit('batch-delete')">
+            <LucideLoader2 v-if="props.actionLoading" class="w-4 h-4 mr-1 animate-spin" />
             {{ t("adminGameBindings.table.batchDialog.confirm") }}
           </AlertDialogAction>
         </AlertDialogFooter>

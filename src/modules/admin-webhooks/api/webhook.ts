@@ -122,7 +122,7 @@ export async function updateAdminWebhookSettings(payload: { enabled?: boolean; j
     method: "PUT",
     data: payload,
   })
-  return normalizeWebhookSettings(response.updatedData)
+  return normalizeWebhookSettings(unwrapUpdatedData(response, translate("adminWebhooks.toast.saveSettingsFailedTitle")))
 }
 
 export async function listAdminWebhookEndpoints(): Promise<AdminWebhookListResponse> {

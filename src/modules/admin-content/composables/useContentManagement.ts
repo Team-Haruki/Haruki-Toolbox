@@ -1,4 +1,4 @@
-import { onMounted, ref } from "vue"
+import { onMounted, ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
@@ -39,7 +39,9 @@ export function useContentManagement() {
     const groupDialogOpen = ref(false)
     const groupName = ref("")
     const groupSaving = ref(false)
-    const actionLoading = ref(false)
+    const linkDeleting = ref(false)
+    const groupDeleting = ref(false)
+    const itemDeleting = ref(false)
 
     const itemDialogOpen = ref(false)
     const editingItem = ref<AdminFriendGroupItem | null>(null)
@@ -143,7 +145,7 @@ export function useContentManagement() {
         const editingId = editingLink.value?.id
 
         await runAsyncAction(linkSaving, async () => {
-            if (editingId) {
+            if (editingId !== undefined && editingId !== null && editingId !== "") {
                 await updateFriendLink(editingId, data)
                 return t("adminContent.toast.linkUpdated")
             }
@@ -162,7 +164,7 @@ export function useContentManagement() {
     }
 
     async function handleDeleteLink(id: string) {
-        await runAsyncAction(actionLoading, () => deleteFriendLink(id), {
+        await runAsyncAction(linkDeleting, () => deleteFriendLink(id), {
             successMessage: t("adminContent.toast.linkDeleted"),
             successAfterOnSuccess: true,
             errorTitle: t("adminContent.toast.deleteFailedTitle"),
@@ -191,7 +193,7 @@ export function useContentManagement() {
     }
 
     async function handleDeleteGroup(groupId: number | string) {
-        await runAsyncAction(actionLoading, () => deleteFriendGroup(String(groupId)), {
+        await runAsyncAction(groupDeleting, () => deleteFriendGroup(String(groupId)), {
             successMessage: t("adminContent.toast.groupDeleted"),
             successAfterOnSuccess: true,
             errorTitle: t("adminContent.toast.deleteFailedTitle"),
@@ -267,7 +269,7 @@ export function useContentManagement() {
     }
 
     async function handleDeleteItem(groupId: number | string, itemId: number | string) {
-        await runAsyncAction(actionLoading, () => deleteFriendGroupItem(String(groupId), String(itemId)), {
+        await runAsyncAction(itemDeleting, () => deleteFriendGroupItem(String(groupId), String(itemId)), {
             successMessage: t("adminContent.toast.itemDeleted"),
             successAfterOnSuccess: true,
             errorTitle: t("adminContent.toast.deleteFailedTitle"),
@@ -275,6 +277,12 @@ export function useContentManagement() {
             onSuccess: () => loadGroups({ throwOnError: true, notifyOnError: false }),
         })
     }
+
+    watch(groupDialogOpen, (open) => {
+        if (!open) {
+            groupName.value = ""
+        }
+    })
 
     onMounted(() => {
         void loadLinks()

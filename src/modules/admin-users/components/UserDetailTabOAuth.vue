@@ -8,6 +8,17 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import type { UserOAuthAuthorization } from "@/modules/admin-users/api/oauth"
 
 defineProps<{
@@ -27,15 +38,25 @@ const { t } = useI18n()
   <Card>
     <CardHeader class="flex flex-row items-center justify-between">
       <CardTitle>{{ t("adminUsers.detail.oauth.title") }}</CardTitle>
-      <Button
-        v-if="authorizations.length > 0"
-        variant="destructive"
-        size="sm"
-        :disabled="busy"
-        @click="emit('revoke-all')"
-      >
-        {{ t("adminUsers.detail.oauth.revokeAll") }}
-      </Button>
+      <AlertDialog v-if="authorizations.length > 0">
+        <AlertDialogTrigger as-child>
+          <Button variant="destructive" size="sm" :disabled="busy">
+            {{ t("adminUsers.detail.oauth.revokeAll") }}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{{ t("adminUsers.detail.oauth.revokeAllDialogTitle") }}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {{ t("adminUsers.detail.oauth.revokeAllDialogDescription") }}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
+            <AlertDialogAction @click="emit('revoke-all')">{{ t("adminUsers.common.confirm") }}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </CardHeader>
     <CardContent>
       <template v-if="loading">

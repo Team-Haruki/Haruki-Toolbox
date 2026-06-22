@@ -61,6 +61,9 @@ export function useUploadLogs() {
       responseTo.value = response.to ?? ""
     },
     onError: (error) => {
+      summary.value = null
+      responseFrom.value = ""
+      responseTo.value = ""
       toastErrorWithExtractedMessage(
         t("adminStatistics.uploadLogs.toast.loadFailedTitle"),
         error,
@@ -203,6 +206,7 @@ export function useUploadLogs() {
         value: item.count,
         color: CHART_COLORS[index % CHART_COLORS.length] as string,
       }))
+      .filter((item) => item.value > 0)
   })
 
   const methodTotal = computed(() => methodChartData.value.reduce((sum, item) => sum + item.value, 0))
@@ -217,6 +221,7 @@ export function useUploadLogs() {
         value: item.count,
         color: CHART_COLORS[index % CHART_COLORS.length] as string,
       }))
+      .filter((item) => item.value > 0)
   })
 
   const dataTypeTotal = computed(() => dataTypeChartData.value.reduce((sum, item) => sum + item.value, 0))

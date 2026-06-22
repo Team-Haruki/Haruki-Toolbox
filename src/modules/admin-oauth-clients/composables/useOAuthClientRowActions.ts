@@ -20,6 +20,10 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
   const actionLoading = ref(false)
   const deleteConfirmOpen = ref(false)
   const clientToDelete = ref<string | null>(null)
+  const rotateConfirmOpen = ref(false)
+  const clientToRotate = ref<string | null>(null)
+  const revokeConfirmOpen = ref(false)
+  const clientToRevoke = ref<string | null>(null)
 
   function confirmDelete(clientId: string) {
     clientToDelete.value = clientId
@@ -53,11 +57,21 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
     })
   }
 
-  async function handleRotateSecret(clientId: string) {
-    await runAsyncAction(actionLoading, () => rotateClientSecret(clientId), {
+  function confirmRotateSecret(clientId: string) {
+    clientToRotate.value = clientId
+    rotateConfirmOpen.value = true
+  }
+
+  async function handleRotateSecret() {
+    const targetClientId = clientToRotate.value
+    if (!targetClientId) return
+
+    await runAsyncAction(actionLoading, () => rotateClientSecret(targetClientId), {
       errorTitle: t("adminOAuthClients.toast.rotateFailedTitle"),
       onSuccess: (rotatedSecret) => {
         options.onSecretGenerated(rotatedSecret)
+        rotateConfirmOpen.value = false
+        clientToRotate.value = null
       },
     })
   }
@@ -71,10 +85,23 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
     })
   }
 
-  async function handleRevoke(clientId: string) {
-    await runAsyncAction(actionLoading, () => revokeOAuthClient(clientId), {
+  function confirmRevoke(clientId: string) {
+    clientToRevoke.value = clientId
+    revokeConfirmOpen.value = true
+  }
+
+  async function handleRevoke() {
+    const targetClientId = clientToRevoke.value
+    if (!targetClientId) return
+
+    await runAsyncAction(actionLoading, () => revokeOAuthClient(targetClientId), {
       successMessage: t("adminOAuthClients.toast.revokedAll"),
+      successAfterOnSuccess: true,
       errorTitle: t("adminOAuthClients.toast.revokeFailedTitle"),
+      onSuccess: () => {
+        revokeConfirmOpen.value = false
+        clientToRevoke.value = null
+      },
     })
   }
 
@@ -82,11 +109,17 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
     actionLoading,
     deleteConfirmOpen,
     clientToDelete,
+    rotateConfirmOpen,
+    clientToRotate,
+    revokeConfirmOpen,
+    clientToRevoke,
     confirmDelete,
     executeDelete,
     toggleActive,
+    confirmRotateSecret,
     handleRotateSecret,
     handleRestore,
+    confirmRevoke,
     handleRevoke,
   }
 }

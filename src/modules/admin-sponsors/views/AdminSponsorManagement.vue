@@ -60,6 +60,7 @@ const {
   refreshSponsors,
   openEditDialog,
   saveSponsor,
+  isToggling,
   toggleAfdianSync,
   syncFromAfdian,
   formatDate,
@@ -81,6 +82,17 @@ function statusClass(active: boolean) {
 
 function sourceLabel(source: string) {
   return source || t("adminSponsors.common.fallback")
+}
+
+function contributionLabel(sponsor: AdminSponsorProfile) {
+  const parts: string[] = []
+  if (sponsor.totalAmount !== null) {
+    parts.push(t("adminSponsors.contribution.amount", { amount: sponsor.totalAmount }))
+  }
+  if (sponsor.month !== null) {
+    parts.push(t("adminSponsors.contribution.month", { count: sponsor.month }))
+  }
+  return parts.length > 0 ? parts.join(" · ") : t("adminSponsors.common.fallback")
 }
 </script>
 
@@ -143,6 +155,7 @@ function sourceLabel(source: string) {
               <TableRow>
                 <TableHead>{{ t("adminSponsors.table.supporter") }}</TableHead>
                 <TableHead>{{ t("adminSponsors.table.tier") }}</TableHead>
+                <TableHead class="hidden lg:table-cell">{{ t("adminSponsors.table.contribution") }}</TableHead>
                 <TableHead>{{ t("adminSponsors.table.status") }}</TableHead>
                 <TableHead class="hidden md:table-cell">{{ t("adminSponsors.table.source") }}</TableHead>
                 <TableHead class="hidden lg:table-cell">{{ t("adminSponsors.table.lastSupport") }}</TableHead>
@@ -153,7 +166,7 @@ function sourceLabel(source: string) {
             <TableBody>
               <template v-if="loading">
                 <TableRow v-for="row in 6" :key="row">
-                  <TableCell colspan="7">
+                  <TableCell colspan="8">
                     <Skeleton class="h-9 w-full" />
                   </TableCell>
                 </TableRow>
@@ -178,6 +191,9 @@ function sourceLabel(source: string) {
                       {{ sponsor.planName || t("adminSponsors.common.fallback") }}
                     </span>
                   </TableCell>
+                  <TableCell class="hidden lg:table-cell text-sm text-muted-foreground">
+                    {{ contributionLabel(sponsor) }}
+                  </TableCell>
                   <TableCell>
                     <span
                       :class="[
@@ -200,7 +216,7 @@ function sourceLabel(source: string) {
                     <div class="flex min-w-[170px] items-center gap-2">
                       <Switch
                         :model-value="sponsor.afdianSyncDisabled"
-                        :disabled="saving"
+                        :disabled="isToggling(sponsor.id)"
                         @update:model-value="toggleAfdianSync(sponsor, !!$event)"
                       />
                       <span class="text-xs text-muted-foreground">
@@ -218,7 +234,7 @@ function sourceLabel(source: string) {
               </template>
 
               <TableRow v-else>
-                <TableCell colspan="7" class="h-24 text-center text-muted-foreground">
+                <TableCell colspan="8" class="h-24 text-center text-muted-foreground">
                   {{ t("adminSponsors.table.empty") }}
                 </TableCell>
               </TableRow>
@@ -253,7 +269,7 @@ function sourceLabel(source: string) {
             </div>
             <div class="space-y-2">
               <Label for="admin-sponsor-avatar">{{ t("adminSponsors.edit.avatar") }}</Label>
-              <Input id="admin-sponsor-avatar" v-model="form.avatar" placeholder="https://example.com/avatar.png" />
+              <Input id="admin-sponsor-avatar" v-model="form.avatar" :placeholder="t('adminSponsors.edit.avatarPlaceholder')" />
             </div>
           </div>
 

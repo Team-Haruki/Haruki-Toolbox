@@ -1,4 +1,5 @@
 import {
+  createAuthorizedSocialPlatform,
   deleteAuthorizedSocialPlatform,
   updateAuthorizedSocialPlatform,
 } from "@/modules/admin-users/api/authorized-social"
@@ -103,14 +104,18 @@ export function createAdminUserDetailSocialActions({
     const userIdValue = refs.editAuthSocialUserId.value.trim()
     if (!userIdValue) return
 
+    const payload = {
+      platform: refs.editAuthSocialPlatform.value,
+      userId: userIdValue,
+      comment: refs.editAuthSocialComment.value.trim(),
+    }
+
     await runAction(
       translate("adminUsers.detail.toast.saveAuthSocialFailedTitle"),
       () =>
-        updateAuthorizedSocialPlatform(userId(), refs.editAuthSocialId.value, {
-          platform: refs.editAuthSocialPlatform.value,
-          userId: userIdValue,
-          comment: refs.editAuthSocialComment.value.trim(),
-        }),
+        refs.authSocialCreateMode.value
+          ? createAuthorizedSocialPlatform(userId(), payload)
+          : updateAuthorizedSocialPlatform(userId(), refs.editAuthSocialId.value, payload),
       {
         successMessage: translate("adminUsers.detail.toast.saveAuthSocialSuccess"),
         afterSuccess: async () => {

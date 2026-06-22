@@ -2701,6 +2701,9 @@ export const zhCN = {
     runtime: {
       title: "运行时配置",
       description: "管理运行时配置项（修改后立即生效）",
+      saveDialogTitle: "应用运行时配置？",
+      saveDialogDescription: "此更改将立即生效并应用于整个系统。请在继续前确认 JSON 内容正确。",
+      saveDialogConfirm: "应用",
     },
     toast: {
       loadApiKeysFailedTitle: "加载 Public API Keys 失败",
@@ -2709,9 +2712,14 @@ export const zhCN = {
       apiKeysUpdated: "Public API Keys 更新成功",
       runtimeUpdated: "运行时配置更新成功",
       invalidJson: "JSON 格式无效",
+      invalidApiKeysSchema: "公共 API 密钥必须是字符串值组成的 JSON 对象",
+      invalidRuntimeSchema: "运行时配置必须是一个 JSON 对象",
       saveFailedTitle: "保存失败",
       saveFailedFallback: "保存失败",
     },
+    loadError: "加载配置失败",
+    retry: "重试",
+    unsavedChanges: "有未保存的更改",
   },
   adminRisk: {
     tabs: {
@@ -2766,6 +2774,9 @@ export const zhCN = {
       title: "风控规则",
       description: "查看和编辑风控规则配置（仅超级管理员可编辑）",
       saveButton: "保存规则",
+      superAdminOnly: "风控规则仅超级管理员可见。",
+      loadError: "加载风控规则失败。",
+      retry: "重试",
     },
     toast: {
       loadEventsFailedTitle: "加载风控事件失败",
@@ -2893,6 +2904,7 @@ export const zhCN = {
     },
     common: {
       fallback: "—",
+      empty: "暂无统计数据",
     },
     status: {
       deleted: "已删除",
@@ -2955,6 +2967,18 @@ export const zhCN = {
       cancel: "取消",
       confirm: "确认",
     },
+    rotateDialog: {
+      title: "轮换客户端密钥",
+      description: "确定要轮换客户端 {clientId} 的密钥吗？当前密钥将立即失效，现有集成在更新前将无法使用。",
+      cancel: "取消",
+      confirm: "轮换",
+    },
+    revokeDialog: {
+      title: "撤销全部授权",
+      description: "确定要撤销客户端 {clientId} 的所有用户授权吗？所有用户都需要重新授权，此操作无法撤销。",
+      cancel: "取消",
+      confirm: "全部撤销",
+    },
     statsDialog: {
       title: "客户端统计",
       from: "开始时间",
@@ -3013,6 +3037,12 @@ export const zhCN = {
       },
       validation: {
         callbackUrlRequired: "请填写 Callback URL",
+      },
+      deleteDialog: {
+        title: "删除 Webhook 端点",
+        description: "确定要删除 Webhook 端点 {callbackUrl} 吗？该端点将停止接收回调，之后可重新创建。",
+        cancel: "取消",
+        confirm: "删除",
       },
     },
     toast: {
@@ -3085,6 +3115,8 @@ export const zhCN = {
       jwtSecretLabel: "Webhook JWT 密钥",
       jwtSecretPlaceholder: "留空表示保持当前密钥不变",
       jwtSecretHelp: "只有在您想替换当前密钥时才需要填写新值。",
+      readOnlyNoticeTitle: "只读视图",
+      readOnlyNoticeDescription: "你可以查看 Webhook 设置和端点，但修改需要超级管理员权限。",
     },
     list: {
       title: "Webhook endpoints",
@@ -3178,6 +3210,10 @@ export const zhCN = {
       fallback: "—",
       anonymous: "匿名赞助者",
     },
+    contribution: {
+      amount: "¥{amount}",
+      month: "{count} 个月",
+    },
     actions: {
       refresh: "刷新名单",
       syncAfdian: "从爱发电同步",
@@ -3206,6 +3242,7 @@ export const zhCN = {
       status: "状态",
       source: "来源",
       lastSupport: "最近赞助",
+      contribution: "赞助贡献",
       afdianSync: "爱发电更新",
       actions: "操作",
       empty: "暂无赞助者记录",
@@ -3214,6 +3251,7 @@ export const zhCN = {
       title: "编辑赞助者资料",
       name: "显示名称",
       avatar: "头像 URL",
+      avatarPlaceholder: "https://example.com/avatar.png",
       planName: "赞助档位",
       source: "来源",
       paidAt: "最近赞助时间",
@@ -3260,6 +3298,14 @@ export const zhCN = {
         description: "注册与上传趋势",
         uploads: "上传",
         registrations: "注册",
+        failures: "上传失败",
+        successRate: "成功率",
+        range7d: "近 7 天",
+        range30d: "近 30 天",
+        range90d: "近 90 天",
+        bucketDay: "按日",
+        bucketWeek: "按周",
+        bucketMonth: "按月",
         empty: "暂无数据",
       },
       toast: {
@@ -3451,10 +3497,7 @@ export const zhCN = {
     },
     reassignDialog: {
       title: "转移游戏账号",
-      descriptionPrefix: "将",
-      gameIdLabel: "游戏ID",
-      descriptionMiddle: "从",
-      descriptionSuffix: "转移到目标用户。",
+      description: "将 {server} 游戏 ID {gameId} 从 {fromUser} 转移到目标用户。",
       targetUserIdLabel: "目标用户ID",
       targetUserIdPlaceholder: "请输入目标工具箱用户ID",
       confirm: "确认转移",
@@ -3546,10 +3589,19 @@ export const zhCN = {
         allowCNEnable: "允许国服功能",
         allowCNDisable: "禁止国服功能",
         allowCNConfirm: "确认修改",
+        forceLogoutDialogTitle: "确认批量登出",
+        forceLogoutDialogDescription: "确定要强制登出选中的 {count} 个用户吗？他们的活跃会话将被注销。",
+        forceLogoutDialogConfirm: "确认登出",
+        roleDialogTitle: "确认变更角色",
+        roleDialogDescription: "确定要将选中的 {count} 个用户的角色变更为 {role} 吗？",
+        roleDialogConfirm: "确认变更",
       },
       pagination: {
         totalUsers: "共 {total} 个用户",
         pageSize: "每页显示",
+        jumpToPage: "跳转到页",
+        firstPage: "第一页",
+        lastPage: "最后一页",
       },
       table: {
         columns: {
@@ -3561,6 +3613,8 @@ export const zhCN = {
           createdAt: "注册时间",
         },
         empty: "暂无用户数据",
+        loadError: "加载用户列表失败",
+        retry: "重试",
       },
       toast: {
         loadFailedTitle: "加载用户列表失败",
@@ -3631,6 +3685,8 @@ export const zhCN = {
         revokeAll: "撤销全部",
         total: "共 {count} 个授权",
         empty: "暂无 OAuth 授权",
+        revokeAllDialogTitle: "撤销全部授权",
+        revokeAllDialogDescription: "此操作将撤销该用户的全部 OAuth 授权，并使其从所有已连接的第三方应用登出。是否继续？",
       },
       game: {
         title: "游戏账号绑定",
@@ -3642,11 +3698,15 @@ export const zhCN = {
         edit: "编辑游戏绑定",
         unbind: "解绑游戏账号",
         empty: "暂无游戏绑定",
+        unbindDialogTitle: "确认解绑",
+        unbindDialogDescription: "此操作将解绑游戏账号 {gameUserId}，之后可重新添加。",
       },
       social: {
         title: "社交平台绑定",
         add: "添加绑定",
         empty: "暂无社交平台绑定",
+        deleteDialogTitle: "确认删除",
+        deleteDialogDescription: "确定要删除此主社交平台绑定吗？之后可重新添加。",
       },
       authSocial: {
         title: "授权社交平台",
@@ -3657,12 +3717,16 @@ export const zhCN = {
           comment: "备注",
         },
         empty: "暂无授权社交平台",
+        deleteDialogTitle: "确认删除",
+        deleteDialogDescription: "确定要删除此授权社交平台吗？之后可重新添加。",
       },
       ios: {
         title: "iOS 上传码",
         regenerate: "重新生成",
         generate: "生成上传码",
         empty: "暂无上传码",
+        deleteDialogTitle: "确认删除",
+        deleteDialogDescription: "确定要删除当前的 iOS 上传码吗？之后可重新生成一个新的。",
       },
       dialog: {
         email: {

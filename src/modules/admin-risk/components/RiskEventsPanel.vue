@@ -249,11 +249,11 @@ function statusLabel(status: string) {
     </CardContent>
   </Card>
 
-  <div v-if="props.totalEvents > props.eventPageSize" class="flex items-center justify-between px-2 mt-4">
+  <div v-if="props.totalEvents > 0" class="flex items-center justify-between px-2 mt-4">
     <span class="text-sm text-muted-foreground">
       {{ t("adminRisk.events.total", { total: props.totalEvents }) }}
     </span>
-    <div class="flex items-center gap-2">
+    <div v-if="props.totalEvents > props.eventPageSize" class="flex items-center gap-2">
       <Button variant="outline" size="sm" :disabled="props.loading || props.eventPage <= 1" @click="emit('prevPage')">
         <LucideChevronLeft class="w-4 h-4" />
       </Button>
