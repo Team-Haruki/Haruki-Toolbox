@@ -8,7 +8,7 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import {
     Select,
@@ -50,6 +50,7 @@ defineProps<{
     user: AdminUserDetail
     isSuperAdmin: boolean
     actionLoading: boolean
+    busy: boolean
 }>()
 
 const emit = defineEmits<{
@@ -124,44 +125,46 @@ function handleRoleChange(value: unknown) {
         </div>
       </div>
 
-      <div v-if="isSuperAdmin" class="flex items-center gap-3">
-        <Label>{{ t("adminUsers.detail.info.changeRole") }}</Label>
-        <Select :key="locale" :model-value="user.userData.role" @update:model-value="handleRoleChange">
-          <SelectTrigger class="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="user">
-              <div class="flex items-center gap-2">
-                <LucideUser class="w-4 h-4 text-muted-foreground" />
-                {{ t("adminUsers.role.user") }}
-              </div>
-            </SelectItem>
-            <SelectItem value="admin">
-              <div class="flex items-center gap-2">
-                <LucideShield class="w-4 h-4 text-blue-500" />
-                {{ t("adminUsers.role.admin") }}
-              </div>
-            </SelectItem>
-            <SelectItem value="super_admin">
-              <div class="flex items-center gap-2">
-                <LucideShieldAlert class="w-4 h-4 text-red-500" />
-                {{ t("adminUsers.role.superAdmin") }}
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div class="flex items-center gap-3 bg-muted/20 p-3 rounded-lg border w-fit">
-        <Checkbox
-          id="allowCNMysekai"
-          :model-value="user.userData.allowCNMysekai ?? false"
-          @update:model-value="emit('toggle-cn-mysekai', $event)"
-        />
-        <Label for="allowCNMysekai" class="text-sm font-medium cursor-pointer">
-          {{ t("adminUsers.detail.info.allowCNFeature") }}
-        </Label>
+      <div class="rounded-xl border divide-y">
+        <div v-if="isSuperAdmin" class="flex items-center justify-between gap-4 p-4">
+          <Label class="text-sm font-medium">{{ t("adminUsers.detail.info.changeRole") }}</Label>
+          <Select :key="locale" :model-value="user.userData.role" @update:model-value="handleRoleChange">
+            <SelectTrigger class="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="user">
+                <div class="flex items-center gap-2">
+                  <LucideUser class="w-4 h-4 text-muted-foreground" />
+                  {{ t("adminUsers.role.user") }}
+                </div>
+              </SelectItem>
+              <SelectItem value="admin">
+                <div class="flex items-center gap-2">
+                  <LucideShield class="w-4 h-4 text-blue-500" />
+                  {{ t("adminUsers.role.admin") }}
+                </div>
+              </SelectItem>
+              <SelectItem value="super_admin">
+                <div class="flex items-center gap-2">
+                  <LucideShieldAlert class="w-4 h-4 text-red-500" />
+                  {{ t("adminUsers.role.superAdmin") }}
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div class="flex items-center justify-between gap-4 p-4">
+          <Label for="allowCNMysekai" class="text-sm font-medium cursor-pointer">
+            {{ t("adminUsers.detail.info.allowCNFeature") }}
+          </Label>
+          <Switch
+            id="allowCNMysekai"
+            :model-value="user.userData.allowCNMysekai ?? false"
+            :disabled="busy"
+            @update:model-value="emit('toggle-cn-mysekai', !!$event)"
+          />
+        </div>
       </div>
 
       <div class="flex flex-wrap items-center gap-2 pt-4 mt-2 border-t text-sm text-muted-foreground">

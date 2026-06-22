@@ -19,6 +19,7 @@ import {
 import {
   LucideBan,
   LucideCheckCircle2,
+  LucideInfo,
   LucideKeyRound,
   LucideLoader2,
   LucideRefreshCw,
@@ -70,6 +71,12 @@ function endpointStatusClass(enabled: boolean) {
         <Skeleton class="h-28 w-full" />
       </template>
       <template v-else>
+        <Alert v-if="!props.canMutate" variant="default">
+          <LucideInfo />
+          <AlertTitle>{{ t("adminWebhooks.settings.readOnlyNoticeTitle") }}</AlertTitle>
+          <AlertDescription>{{ t("adminWebhooks.settings.readOnlyNoticeDescription") }}</AlertDescription>
+        </Alert>
+
         <div class="grid gap-4 md:grid-cols-2">
           <div class="rounded-xl border bg-muted/20 p-4 space-y-2">
             <div class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.globalStatus") }}</div>
@@ -118,38 +125,41 @@ function endpointStatusClass(enabled: boolean) {
           <AlertDescription>{{ t("adminWebhooks.settings.secretAlertDescription") }}</AlertDescription>
         </Alert>
 
-        <div class="grid gap-4 lg:grid-cols-[auto_1fr] lg:items-start">
-          <div class="flex items-center gap-3">
+        <div class="overflow-hidden rounded-xl border divide-y">
+          <div class="flex items-center justify-between gap-4 p-4">
+            <Label for="admin-webhooks-enabled" class="text-sm font-medium cursor-pointer">
+              {{ t("adminWebhooks.settings.enableSwitchLabel") }}
+            </Label>
             <Switch
               id="admin-webhooks-enabled"
               :model-value="props.settingsEnabled"
               :disabled="!props.canMutate || props.settingsSaving"
               @update:model-value="emit('update:settingsEnabled', !!$event)"
             />
-            <Label for="admin-webhooks-enabled">{{ t("adminWebhooks.settings.enableSwitchLabel") }}</Label>
           </div>
 
-          <div class="space-y-3">
-            <div class="space-y-2">
-              <Label for="admin-webhooks-jwt-secret">{{ t("adminWebhooks.settings.jwtSecretLabel") }}</Label>
-              <InputWithToggle
-                id="admin-webhooks-jwt-secret"
-                :model-value="props.jwtSecretInput"
-                type="password"
-                :placeholder="t('adminWebhooks.settings.jwtSecretPlaceholder')"
-                :disabled="!props.canMutate || props.settingsSaving"
-                @update:model-value="emit('update:jwtSecretInput', String($event ?? ''))"
-              />
-              <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretHelp") }}</p>
-            </div>
-            <div v-if="props.canMutate" class="flex justify-end">
-              <Button :disabled="props.settingsSaving" @click="emit('save-settings')">
-                <LucideLoader2 v-if="props.settingsSaving" class="w-4 h-4 mr-2 animate-spin" />
-                <LucideSave v-else class="w-4 h-4 mr-2" />
-                {{ t("common.save") }}
-              </Button>
-            </div>
+          <div class="space-y-2 p-4">
+            <Label for="admin-webhooks-jwt-secret" class="text-sm font-medium">
+              {{ t("adminWebhooks.settings.jwtSecretLabel") }}
+            </Label>
+            <InputWithToggle
+              id="admin-webhooks-jwt-secret"
+              :model-value="props.jwtSecretInput"
+              type="password"
+              :placeholder="t('adminWebhooks.settings.jwtSecretPlaceholder')"
+              :disabled="!props.canMutate || props.settingsSaving"
+              @update:model-value="emit('update:jwtSecretInput', String($event ?? ''))"
+            />
+            <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretHelp") }}</p>
           </div>
+        </div>
+
+        <div v-if="props.canMutate" class="flex justify-end">
+          <Button :disabled="props.settingsSaving" @click="emit('save-settings')">
+            <LucideLoader2 v-if="props.settingsSaving" class="w-4 h-4 mr-2 animate-spin" />
+            <LucideSave v-else class="w-4 h-4 mr-2" />
+            {{ t("common.save") }}
+          </Button>
         </div>
       </template>
     </CardContent>

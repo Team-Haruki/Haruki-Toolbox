@@ -151,13 +151,13 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
         </div>
       </CardHeader>
       <CardContent class="flex flex-col gap-4">
-        <div class="flex flex-wrap gap-3 items-end">
-          <div class="relative flex-1 min-w-[200px]">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="relative">
             <LucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input v-model="search" :placeholder="t('tickets.adminList.searchPlaceholder')" class="pl-9" />
           </div>
           <Select :key="locale" v-model="quickFilter">
-            <SelectTrigger class="w-40">
+            <SelectTrigger class="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -167,7 +167,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
             </SelectContent>
           </Select>
           <Select :key="locale" v-model="statusFilter">
-            <SelectTrigger class="w-40">
+            <SelectTrigger class="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -177,7 +177,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
             </SelectContent>
           </Select>
           <Select :key="locale" v-model="priorityFilter">
-            <SelectTrigger class="w-40">
+            <SelectTrigger class="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -186,6 +186,8 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
               </SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div class="flex justify-end">
           <Button variant="outline" :disabled="loading" @click="refreshTickets">
             <LucideLoader2 v-if="loading" class="w-4 h-4 animate-spin" />
             <LucideRefreshCw v-else class="w-4 h-4" />
