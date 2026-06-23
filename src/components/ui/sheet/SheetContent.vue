@@ -40,7 +40,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="sheet-content"
       data-glass-surface="sheet-content"
       :class="cn(
-        'border-white/55 bg-background/94 data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.95)] backdrop-blur-xl transition ease-in-out supports-[backdrop-filter]:bg-background/82 data-[state=closed]:duration-300 data-[state=open]:duration-500 dark:border-white/10 dark:bg-slate-950/88 dark:supports-[backdrop-filter]:bg-slate-950/76',
+        'pointer-events-auto border-white/55 bg-background/94 data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.95)] backdrop-blur-xl transition ease-in-out supports-[backdrop-filter]:bg-background/82 data-[state=closed]:duration-300 data-[state=open]:duration-500 dark:border-white/10 dark:bg-slate-950/88 dark:supports-[backdrop-filter]:bg-slate-950/76',
         side === 'right'
           && 'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm',
         side === 'left'
