@@ -79,43 +79,39 @@ function endpointStatusClass(enabled: boolean) {
 
         <div class="grid gap-4 md:grid-cols-2">
           <div class="rounded-xl border bg-muted/20 p-4 space-y-2">
-            <div class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.globalStatus") }}</div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.globalStatus") }}</span>
               <span
                 :class="[
-                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0 whitespace-nowrap',
                   endpointStatusClass(settings.enabled),
                 ]"
               >
-                <LucideCheckCircle2 v-if="settings.enabled" class="w-3.5 h-3.5" />
-                <LucideBan v-else class="w-3.5 h-3.5" />
+                <LucideCheckCircle2 v-if="settings.enabled" class="w-3.5 h-3.5 shrink-0" />
+                <LucideBan v-else class="w-3.5 h-3.5 shrink-0" />
                 {{ settings.enabled ? t("adminWebhooks.status.enabled") : t("adminWebhooks.status.disabled") }}
               </span>
-              <span class="text-sm text-muted-foreground">
-                {{ t("adminWebhooks.settings.globalStatusHint") }}
-              </span>
             </div>
+            <p class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.globalStatusHint") }}</p>
           </div>
 
           <div class="rounded-xl border bg-muted/20 p-4 space-y-2">
-            <div class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretStatus") }}</div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretStatus") }}</span>
               <span
                 :class="[
-                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0 whitespace-nowrap',
                   props.settings.jwtSecretConfigured
                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                     : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400',
                 ]"
               >
-                <LucideCheckCircle2 v-if="props.settings.jwtSecretConfigured" class="w-3.5 h-3.5" />
-                <LucideBan v-else class="w-3.5 h-3.5" />
+                <LucideCheckCircle2 v-if="props.settings.jwtSecretConfigured" class="w-3.5 h-3.5 shrink-0" />
+                <LucideBan v-else class="w-3.5 h-3.5 shrink-0" />
                 {{ props.settings.jwtSecretConfigured ? t("adminWebhooks.status.configured") : t("adminWebhooks.status.notConfigured") }}
               </span>
-              <span class="text-sm text-muted-foreground">
-                {{ t("adminWebhooks.settings.jwtSecretStatusHint") }}
-              </span>
             </div>
+            <p class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretStatusHint") }}</p>
           </div>
         </div>
 
