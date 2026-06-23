@@ -55,6 +55,14 @@ const {
   goBackToTicketList,
 } = useTicketDetail(() => props.ticketId)
 
+function handleComposeEnter(event: KeyboardEvent) {
+  // Ignore the Enter that confirms an IME composition (e.g. picking a pinyin
+  // candidate); otherwise an unfinished message would be sent prematurely.
+  if (event.isComposing || event.keyCode === 229) return
+  event.preventDefault()
+  void sendMessage()
+}
+
 function formatDateTime(value?: string) {
   return formatLocalizedDateTime(value, {
     year: "numeric",
@@ -169,7 +177,7 @@ function formatCategory(category: string) {
               :placeholder="t('tickets.detail.inputPlaceholder')"
               rows="2"
               class="flex-1 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
-              @keydown.enter.exact.prevent="sendMessage"
+              @keydown.enter.exact="handleComposeEnter"
             />
             <Button 
               class="h-auto min-w-[5rem] shrink-0 flex flex-col items-center justify-center gap-1.5 transition-colors"

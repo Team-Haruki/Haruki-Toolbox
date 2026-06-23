@@ -63,6 +63,14 @@ const {
   isAdmin,
 } = useAdminTicketDetail(() => props.ticketId)
 
+function handleComposeEnter(event: KeyboardEvent) {
+  // Ignore the Enter that confirms an IME composition (e.g. picking a pinyin
+  // candidate); otherwise an unfinished message would be sent prematurely.
+  if (event.isComposing || event.keyCode === 229) return
+  event.preventDefault()
+  void sendMessage()
+}
+
 function formatDateTime(value?: string) {
   return formatLocalizedDateTime(value, {
     year: "numeric",
@@ -308,7 +316,7 @@ function messageSenderLabel(message: TicketMessage) {
                     ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700 focus-visible:ring-amber-400'
                     : 'bg-transparent border-input focus-visible:ring-ring'
                 ]"
-                @keydown.enter.exact.prevent="sendMessage"
+                @keydown.enter.exact="handleComposeEnter"
               />
               <Button 
                 :class="['h-auto min-w-[5rem] shrink-0 flex flex-col items-center justify-center gap-1.5 transition-colors', isInternal ? 'bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700' : '']"
