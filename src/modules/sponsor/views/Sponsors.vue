@@ -139,30 +139,6 @@ function compareSponsorTier(a: SponsorSupporter, b: SponsorSupporter) {
   return timestampValue(b.paidAt) - timestampValue(a.paidAt)
 }
 
-function compareDurationSponsor(a: SponsorSupporter, b: SponsorSupporter) {
-  const priceDelta = (b.planPrice ?? 0) - (a.planPrice ?? 0)
-  if (priceDelta !== 0) {
-    return priceDelta
-  }
-
-  const rankDelta = (b.planRank ?? 0) - (a.planRank ?? 0)
-  if (rankDelta !== 0) {
-    return rankDelta
-  }
-
-  const expiresDelta = timestampValue(b.planExpiresAt) - timestampValue(a.planExpiresAt)
-  if (expiresDelta !== 0) {
-    return expiresDelta
-  }
-
-  const planDelta = sponsorSubtitle(a).localeCompare(sponsorSubtitle(b), locale.value)
-  if (planDelta !== 0) {
-    return planDelta
-  }
-
-  return timestampValue(b.paidAt) - timestampValue(a.paidAt)
-}
-
 const sponsorSections = computed<SponsorSection[]>(() => {
   const oneTime: SponsorSupporter[] = []
   const duration: SponsorSupporter[] = []
@@ -180,9 +156,11 @@ const sponsorSections = computed<SponsorSection[]>(() => {
 
   return [
     {
+      // Backend already orders supporters by tier (plan rank) desc, then duration
+      // (expiry) desc, so the duration list is rendered in server order as-is.
       key: "duration",
       title: t("sponsor.sections.duration.title"),
-      supporters: duration.sort(compareDurationSponsor),
+      supporters: duration,
     },
     {
       key: "oneTime",
