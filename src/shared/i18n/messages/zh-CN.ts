@@ -793,6 +793,8 @@ export const zhCN = {
     summary: {
       supporters: "赞助者",
       pending: "待同步",
+      duration: "长期赞助",
+      oneTime: "一次性",
     },
     sections: {
       oneTime: {

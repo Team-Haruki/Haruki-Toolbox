@@ -32,15 +32,26 @@ const dateTimeFormatter = computed(() => new Intl.DateTimeFormat(locale.value, {
   timeStyle: "medium",
 }))
 
-const summaryCards = computed(() => [
-  {
-    key: "supporters",
-    label: t("sponsor.summary.supporters"),
-    value: summary.value.supporterCount > 0
-      ? String(summary.value.supporterCount)
-      : t("sponsor.summary.pending"),
-  },
-])
+const heroStats = computed(() => {
+  const stats: { key: string; label: string; value: string }[] = [
+    {
+      key: "supporters",
+      label: t("sponsor.summary.supporters"),
+      value: summary.value.supporterCount > 0
+        ? String(summary.value.supporterCount)
+        : t("sponsor.summary.pending"),
+    },
+  ]
+
+  if (summary.value.supporterCount > 0) {
+    const sectionCount = (key: SponsorSectionKey) =>
+      sponsorSections.value.find((section) => section.key === key)?.supporters.length ?? 0
+    stats.push({ key: "duration", label: t("sponsor.summary.duration"), value: String(sectionCount("duration")) })
+    stats.push({ key: "oneTime", label: t("sponsor.summary.oneTime"), value: String(sectionCount("oneTime")) })
+  }
+
+  return stats
+})
 
 type SponsorSectionKey = "oneTime" | "duration" | "manual"
 type SponsorSection = {
@@ -293,7 +304,7 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
 
           <div class="grid content-end gap-3 sm:grid-cols-2 md:grid-cols-1">
             <div
-              v-for="card in summaryCards"
+              v-for="card in heroStats"
               :key="card.key"
               class="rounded-lg border border-white/60 bg-white/55 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/38"
             >
@@ -347,6 +358,7 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
                 <h3 class="flex items-center gap-2 text-lg font-semibold text-foreground/85">
                   <span class="h-2 w-2 rounded-full bg-pink-500" />
                   {{ section.title }}
+                  <span class="text-sm font-normal text-muted-foreground">({{ section.supporters.length }})</span>
                 </h3>
               </div>
 
@@ -374,17 +386,17 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
                       <CardTitle class="truncate text-sm font-semibold">
                         {{ fallbackName(sponsor) }}
                       </CardTitle>
-                      <span class="block truncate text-[10px] font-medium text-muted-foreground/80">
+                      <span class="block truncate text-xs font-medium text-muted-foreground/80">
                         {{ sponsorSubtitle(sponsor) }}
                       </span>
-                      <span class="mt-0.5 block truncate text-[10px] text-muted-foreground/70">
+                      <span class="mt-0.5 block truncate text-xs text-muted-foreground/70">
                         {{ sponsorStatusLabel(sponsor) }}
                       </span>
                     </div>
                   </CardHeader>
                   <CardContent class="pt-0">
                     <div
-                      class="line-clamp-2 rounded-r border-l-2 border-pink-500/30 bg-pink-500/[0.02] py-0.5 pl-2 text-[10px] font-medium italic text-pink-600/80 dark:text-pink-300/80"
+                      class="line-clamp-2 rounded-r border-l-2 border-pink-500/30 bg-pink-500/[0.02] py-0.5 pl-2 text-xs font-medium italic text-pink-600/80 dark:text-pink-300/80"
                     >
                       {{ sponsorNote(sponsor) }}
                     </div>

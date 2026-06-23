@@ -793,6 +793,8 @@ export const enUS = {
     summary: {
       supporters: "Supporters",
       pending: "Pending",
+      duration: "Recurring",
+      oneTime: "One-time",
     },
     sections: {
       oneTime: {

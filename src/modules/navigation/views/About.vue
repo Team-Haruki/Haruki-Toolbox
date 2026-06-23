@@ -201,7 +201,14 @@ const groupedMembers = {
               rel="noopener noreferrer"
               class="block group outline-none"
             >
-              <Card class="h-full gap-2 border border-muted/50 bg-card/20 py-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer">
+              <Card
+                :class="[
+                  'h-full gap-2 border py-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer',
+                  member.roleKey === 'sponsor'
+                    ? 'border-amber-400/60 bg-amber-50/50 hover:border-amber-400 dark:border-amber-500/40 dark:bg-amber-950/20'
+                    : 'border-muted/50 bg-card/20 hover:border-primary/50',
+                ]"
+              >
                 <CardHeader class="flex flex-row items-center gap-3 pb-1">
                    <Avatar class="h-10 w-10 border border-muted/80 transition-colors duration-300 group-hover:border-primary">
                     <AvatarImage 
@@ -217,7 +224,7 @@ const groupedMembers = {
                       <span class="truncate">{{ t(`navigationPages.about.team.members.${member.key}.name`) }}</span>
                       <ExternalLink class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                     </CardTitle>
-                    <span class="text-[10px] text-muted-foreground/80 font-medium">
+                    <span class="text-xs text-muted-foreground/80 font-medium">
                       {{ t(`navigationPages.about.team.members.${member.key}.role`) }}
                     </span>
                   </div>
@@ -225,13 +232,13 @@ const groupedMembers = {
                 <CardContent class="pt-0">
                   <div 
                     v-if="hasQuote(member.key)"
-                    class="text-[10px] text-primary/80 italic border-l-2 border-primary/30 pl-2 py-0.5 line-clamp-2 font-medium bg-primary/[0.02] rounded-r"
+                    class="text-xs text-primary/80 italic border-l-2 border-primary/30 pl-2 py-0.5 line-clamp-2 font-medium bg-primary/[0.02] rounded-r"
                   >
                     {{ getQuote(member.key) }}
                   </div>
                   <CardDescription 
                     v-else
-                    class="text-[10px] text-muted-foreground/40 italic pl-1"
+                    class="text-xs text-muted-foreground/50 italic pl-1"
                   >
                     {{ t("navigationPages.about.team.noBio") }}
                   </CardDescription>
