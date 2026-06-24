@@ -8,6 +8,12 @@ import type { APIResponse } from "@/types/response"
 
 const BASE = "/api/admin/content"
 
+function readSortOrder(record: object): number {
+  const raw = (record as { sortOrder?: unknown }).sortOrder ?? (record as { sort_order?: unknown }).sort_order
+  const value = Number(raw)
+  return Number.isFinite(value) ? value : 0
+}
+
 function normalizeFriendGroupItem(item: unknown): AdminFriendGroupItem | null {
   if (!item || typeof item !== "object" || Array.isArray(item)) return null
 
@@ -24,6 +30,7 @@ function normalizeFriendGroupItem(item: unknown): AdminFriendGroupItem | null {
     groupInfo: readOptionalString(item, ["groupInfo", "group_info"]),
     detail: readOptionalString(item, ["detail", "description"]),
     url: url ? normalizeExternalHttpUrl(url) ?? undefined : undefined,
+    sortOrder: readSortOrder(item),
   }
 }
 
@@ -42,6 +49,7 @@ function normalizeFriendGroup(group: unknown): AdminFriendGroup | null {
   return {
     id: normalizeEntityId((group as { id?: unknown }).id),
     group: normalizedGroup,
+    sortOrder: readSortOrder(group),
     groupList: rawItems
       .map((item) => normalizeFriendGroupItem(item))
       .filter((item): item is AdminFriendGroupItem => item !== null),
@@ -59,6 +67,10 @@ export async function getFriendGroups() {
 
 export function createFriendGroup(data: Omit<AdminFriendGroup, "id" | "groupList">) {
   return request(`${BASE}/friend-groups`, { method: "POST", data })
+}
+
+export function updateFriendGroup(groupId: string, data: Omit<AdminFriendGroup, "id" | "groupList">) {
+  return request(`${BASE}/friend-groups/${encodePathSegment(groupId)}`, { method: "PUT", data })
 }
 
 export function deleteFriendGroup(groupId: string) {

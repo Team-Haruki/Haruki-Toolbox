@@ -2826,9 +2826,10 @@ export const zhCN = {
       createGroupButton: "创建群聊分组",
       createGroupDialog: {
         title: "创建分组",
+        editTitle: "编辑分组",
         groupNameLabel: "分组名称",
         groupNamePlaceholder: "分组名称",
-        create: "创建",
+        create: "保存",
       },
       addItemButton: "添加项目",
       deleteGroupDialog: {
@@ -2892,6 +2893,7 @@ export const zhCN = {
       linkDeleted: "已删除友链",
       groupNameRequired: "请输入分组名称",
       groupCreated: "分组已创建",
+      groupUpdated: "分组已更新",
       groupDeleted: "分组已删除",
       itemNameRequired: "请填写名称",
       itemUpdated: "项目已更新",

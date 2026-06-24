@@ -15,7 +15,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -42,7 +41,9 @@ defineProps<{
   loading: boolean
   groups: AdminFriendGroup[]
   groupDialogOpen: boolean
+  editingGroup: AdminFriendGroup | null
   groupName: string
+  groupSortOrder: number
   groupSaving: boolean
 }>()
 const { t } = useI18n()
@@ -50,7 +51,10 @@ const { t } = useI18n()
 const emit = defineEmits<{
   (e: "update:groupDialogOpen", value: boolean): void
   (e: "update:groupName", value: string): void
-  (e: "createGroup"): void
+  (e: "update:groupSortOrder", value: number): void
+  (e: "openCreateGroup"): void
+  (e: "editGroup", group: AdminFriendGroup): void
+  (e: "saveGroup"): void
   (e: "deleteGroup", groupId: string): void
   (e: "createItem", groupId: string): void
   (e: "editItem", groupId: string, item: AdminFriendGroupItem): void
@@ -62,26 +66,39 @@ const emit = defineEmits<{
   <Card>
     <CardHeader class="flex flex-row items-center justify-between">
       <CardTitle class="text-lg">{{ t("adminContent.groupsTab.title") }}</CardTitle>
+      <Button size="sm" @click="emit('openCreateGroup')">
+        <LucidePlus class="w-4 h-4 mr-1" /> {{ t("adminContent.groupsTab.createGroupButton") }}
+      </Button>
       <Dialog :open="groupDialogOpen" @update:open="emit('update:groupDialogOpen', $event)">
-        <DialogTrigger as-child>
-          <Button size="sm">
-            <LucidePlus class="w-4 h-4 mr-1" /> {{ t("adminContent.groupsTab.createGroupButton") }}
-          </Button>
-        </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{{ t("adminContent.groupsTab.createGroupDialog.title") }}</DialogTitle>
+            <DialogTitle>
+              {{ editingGroup ? t("adminContent.groupsTab.createGroupDialog.editTitle") : t("adminContent.groupsTab.createGroupDialog.title") }}
+            </DialogTitle>
           </DialogHeader>
-          <div class="flex flex-col gap-2 py-4">
-            <Label>{{ t("adminContent.groupsTab.createGroupDialog.groupNameLabel") }}</Label>
-            <Input
-              :model-value="groupName"
-              :placeholder="t('adminContent.groupsTab.createGroupDialog.groupNamePlaceholder')"
-              @update:model-value="emit('update:groupName', String($event ?? ''))"
-            />
+          <div class="flex flex-col gap-3 py-4">
+            <div class="flex flex-col gap-1.5">
+              <Label>{{ t("adminContent.groupsTab.createGroupDialog.groupNameLabel") }}</Label>
+              <Input
+                :model-value="groupName"
+                :placeholder="t('adminContent.groupsTab.createGroupDialog.groupNamePlaceholder')"
+                @update:model-value="emit('update:groupName', String($event ?? ''))"
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <Label>{{ t("adminContent.linkDialog.fields.sortOrder") }}</Label>
+              <Input
+                :model-value="groupSortOrder"
+                type="number"
+                min="0"
+                :placeholder="t('adminContent.linkDialog.placeholders.sortOrder')"
+                @update:model-value="emit('update:groupSortOrder', Number($event ?? 0))"
+              />
+              <p class="text-xs text-muted-foreground">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
+            </div>
           </div>
           <DialogFooter>
-            <Button :disabled="groupSaving" @click="emit('createGroup')">
+            <Button :disabled="groupSaving" @click="emit('saveGroup')">
               <LucideLoader2 v-if="groupSaving" class="w-4 h-4 mr-1 animate-spin" />
               {{ t("adminContent.groupsTab.createGroupDialog.create") }}
             </Button>
@@ -97,10 +114,16 @@ const emit = defineEmits<{
         <div class="flex flex-col gap-4">
           <Card v-for="group in groups" :key="group.id" class="border">
             <CardHeader class="flex flex-row items-center justify-between py-3">
-              <CardTitle class="text-base">{{ group.group }}</CardTitle>
+              <CardTitle class="text-base flex items-center gap-2">
+                <span class="text-xs text-muted-foreground tabular-nums">#{{ group.sortOrder }}</span>
+                {{ group.group }}
+              </CardTitle>
               <div class="flex gap-1">
                 <Button variant="outline" size="sm" @click="emit('createItem', String(group.id))">
                   <LucidePlus class="w-3 h-3 mr-1" /> {{ t("adminContent.groupsTab.addItemButton") }}
+                </Button>
+                <Button variant="ghost" size="sm" @click="emit('editGroup', group)">
+                  <LucidePencil class="w-4 h-4" />
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger as-child>
@@ -134,6 +157,7 @@ const emit = defineEmits<{
                   class="flex items-center justify-between p-2 border rounded-md"
                 >
                   <span class="flex items-center gap-1 text-sm font-medium truncate">
+                    <span class="text-xs text-muted-foreground tabular-nums shrink-0">#{{ item.sortOrder }}</span>
                     <span class="truncate">{{ item.name }}</span>
                     <LucideLink v-if="item.url" class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                   </span>

@@ -13,6 +13,7 @@ export interface AdminFriendLink {
 export interface AdminFriendGroup {
   id: EntityId
   group: string
+  sortOrder: number
   groupList?: AdminFriendGroupItem[]
 }
 
@@ -24,4 +25,5 @@ export interface AdminFriendGroupItem {
   groupInfo?: string
   detail?: string
   url?: string
+  sortOrder: number
 }

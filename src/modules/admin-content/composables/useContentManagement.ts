@@ -14,6 +14,7 @@ import {
     deleteFriendGroup,
     deleteFriendGroupItem,
     getFriendGroups,
+    updateFriendGroup,
     updateFriendGroupItem,
 } from "@/modules/admin-content/api/friend-group"
 import type { AdminFriendGroup, AdminFriendGroupItem, AdminFriendLink } from "@/types/admin"
@@ -37,7 +38,9 @@ export function useContentManagement() {
     const groupsLoading = ref(true)
     const groups = ref<AdminFriendGroup[]>([])
     const groupDialogOpen = ref(false)
+    const editingGroup = ref<AdminFriendGroup | null>(null)
     const groupName = ref("")
+    const groupSortOrder = ref(0)
     const groupSaving = ref(false)
     const linkDeleting = ref(false)
     const groupDeleting = ref(false)
@@ -46,7 +49,7 @@ export function useContentManagement() {
     const itemDialogOpen = ref(false)
     const editingItem = ref<AdminFriendGroupItem | null>(null)
     const itemGroupId = ref("")
-    const itemForm = ref({ name: "", avatar: "", bg: "", groupInfo: "", detail: "", url: "" })
+    const itemForm = ref({ name: "", avatar: "", bg: "", groupInfo: "", detail: "", url: "", sortOrder: 0 })
     const itemSaving = ref(false)
     let latestLinksRequestId = 0
     let latestGroupsRequestId = 0
@@ -177,21 +180,48 @@ export function useContentManagement() {
         })
     }
 
-    async function handleCreateGroup() {
+    function openCreateGroup() {
+        editingGroup.value = null
+        groupName.value = ""
+        groupSortOrder.value = groups.value.reduce((max, group) => Math.max(max, group.sortOrder ?? 0), 0) + 1
+        groupDialogOpen.value = true
+    }
+
+    function openEditGroup(group: AdminFriendGroup) {
+        editingGroup.value = group
+        groupName.value = group.group
+        groupSortOrder.value = group.sortOrder ?? 0
+        groupDialogOpen.value = true
+    }
+
+    async function handleSaveGroup() {
         if (!groupName.value.trim()) {
             toast.error(t("adminContent.toast.groupNameRequired"))
             return
         }
 
-        await runAsyncAction(groupSaving, () => createFriendGroup({ group: groupName.value.trim() }), {
-            successMessage: t("adminContent.toast.groupCreated"),
+        const sortOrder = Number(groupSortOrder.value)
+        const data = {
+            group: groupName.value.trim(),
+            sortOrder: Number.isFinite(sortOrder) && sortOrder >= 0 ? sortOrder : 0,
+        }
+        const editingId = editingGroup.value?.id
+
+        await runAsyncAction(groupSaving, async () => {
+            if (editingId !== undefined && editingId !== null && editingId !== "") {
+                await updateFriendGroup(String(editingId), data)
+                return t("adminContent.toast.groupUpdated")
+            }
+            await createFriendGroup(data)
+            return t("adminContent.toast.groupCreated")
+        }, {
+            successMessage: (message) => message,
             successAfterOnSuccess: true,
-            errorTitle: t("adminContent.toast.createFailedTitle"),
+            errorTitle: t("adminContent.toast.saveFailedTitle"),
             fallbackError: t("adminContent.toast.actionFailedFallback"),
             onSuccess: async () => {
                 await loadGroups({ throwOnError: true, notifyOnError: false })
                 groupDialogOpen.value = false
-                groupName.value = ""
             },
         })
     }
@@ -209,7 +239,9 @@ export function useContentManagement() {
     function openCreateItem(groupId: number | string) {
         editingItem.value = null
         itemGroupId.value = String(groupId)
-        itemForm.value = { name: "", avatar: "", bg: "", groupInfo: "", detail: "", url: "" }
+        const currentGroup = groups.value.find((group) => String(group.id) === String(groupId))
+        const nextSortOrder = (currentGroup?.groupList ?? []).reduce((max, item) => Math.max(max, item.sortOrder ?? 0), 0) + 1
+        itemForm.value = { name: "", avatar: "", bg: "", groupInfo: "", detail: "", url: "", sortOrder: nextSortOrder }
         itemDialogOpen.value = true
     }
 
@@ -223,6 +255,7 @@ export function useContentManagement() {
             groupInfo: item.groupInfo || "",
             detail: item.detail || "",
             url: item.url || "",
+            sortOrder: item.sortOrder ?? 0,
         }
         itemDialogOpen.value = true
     }
@@ -243,6 +276,7 @@ export function useContentManagement() {
             return
         }
 
+        const itemSortOrder = Number(itemForm.value.sortOrder)
         const data = {
             name: itemForm.value.name.trim(),
             avatar: itemForm.value.avatar.trim(),
@@ -250,6 +284,7 @@ export function useContentManagement() {
             groupInfo: itemForm.value.groupInfo.trim() || undefined,
             detail: itemForm.value.detail.trim() || undefined,
             url: normalizedUrl,
+            sortOrder: Number.isFinite(itemSortOrder) && itemSortOrder >= 0 ? itemSortOrder : 0,
         }
         const editingItemId = editingItem.value?.id
 
@@ -285,6 +320,8 @@ export function useContentManagement() {
     watch(groupDialogOpen, (open) => {
         if (!open) {
             groupName.value = ""
+            groupSortOrder.value = 0
+            editingGroup.value = null
         }
     })
 
@@ -303,7 +340,9 @@ export function useContentManagement() {
         groupsLoading,
         groups,
         groupDialogOpen,
+        editingGroup,
         groupName,
+        groupSortOrder,
         groupSaving,
         itemDialogOpen,
         editingItem,
@@ -314,7 +353,9 @@ export function useContentManagement() {
         openEditLink,
         saveLink,
         handleDeleteLink,
-        handleCreateGroup,
+        openCreateGroup,
+        openEditGroup,
+        handleSaveGroup,
         handleDeleteGroup,
         openCreateItem,
         openEditItem,

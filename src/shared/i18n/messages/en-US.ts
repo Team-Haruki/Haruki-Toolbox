@@ -2826,9 +2826,10 @@ export const enUS = {
       createGroupButton: "Create group",
       createGroupDialog: {
         title: "Create group",
+        editTitle: "Edit group",
         groupNameLabel: "Group name",
         groupNamePlaceholder: "Group name",
-        create: "Create",
+        create: "Save",
       },
       addItemButton: "Add item",
       deleteGroupDialog: {
@@ -2892,6 +2893,7 @@ export const enUS = {
       linkDeleted: "Friend link deleted",
       groupNameRequired: "Please enter group name",
       groupCreated: "Group created",
+      groupUpdated: "Group updated",
       groupDeleted: "Group deleted",
       itemNameRequired: "Please enter name",
       itemUpdated: "Item updated",

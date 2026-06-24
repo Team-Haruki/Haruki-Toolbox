@@ -31,7 +31,9 @@ const {
   groupsLoading,
   groups,
   groupDialogOpen,
+  editingGroup,
   groupName,
+  groupSortOrder,
   groupSaving,
   itemDialogOpen,
   editingItem,
@@ -41,7 +43,9 @@ const {
   openEditLink,
   saveLink,
   handleDeleteLink,
-  handleCreateGroup,
+  openCreateGroup,
+  openEditGroup,
+  handleSaveGroup,
   handleDeleteGroup,
   openCreateItem,
   openEditItem,
@@ -73,11 +77,16 @@ const {
           :loading="groupsLoading"
           :groups="groups"
           :group-dialog-open="groupDialogOpen"
+          :editing-group="editingGroup"
           :group-name="groupName"
+          :group-sort-order="groupSortOrder"
           :group-saving="groupSaving"
           @update:group-dialog-open="groupDialogOpen = $event"
           @update:group-name="groupName = $event"
-          @create-group="handleCreateGroup"
+          @update:group-sort-order="groupSortOrder = $event"
+          @open-create-group="openCreateGroup"
+          @edit-group="openEditGroup"
+          @save-group="handleSaveGroup"
           @delete-group="handleDeleteGroup"
           @create-item="openCreateItem"
           @edit-item="openEditItem"
@@ -168,6 +177,16 @@ const {
           <div class="flex flex-col gap-1.5">
             <Label>{{ t("adminContent.itemDialog.fields.detail") }}</Label>
             <Input v-model="itemForm.detail" :placeholder="t('adminContent.itemDialog.placeholders.optional')" />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <Label>{{ t("adminContent.linkDialog.fields.sortOrder") }}</Label>
+            <Input
+              v-model.number="itemForm.sortOrder"
+              type="number"
+              min="0"
+              :placeholder="t('adminContent.linkDialog.placeholders.sortOrder')"
+            />
+            <p class="text-xs text-muted-foreground">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
           </div>
         </div>
         <DialogFooter>
