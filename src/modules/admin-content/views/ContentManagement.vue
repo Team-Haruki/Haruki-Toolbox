@@ -114,6 +114,16 @@ const {
             <Label>{{ t("adminContent.linkDialog.fields.tags") }}</Label>
             <Input v-model="linkForm.tags" :placeholder="t('adminContent.linkDialog.placeholders.tags')" />
           </div>
+          <div class="flex flex-col gap-1.5">
+            <Label>{{ t("adminContent.linkDialog.fields.sortOrder") }}</Label>
+            <Input
+              v-model.number="linkForm.sortOrder"
+              type="number"
+              min="0"
+              :placeholder="t('adminContent.linkDialog.placeholders.sortOrder')"
+            />
+            <p class="text-xs text-muted-foreground">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
+          </div>
         </div>
         <DialogFooter>
           <DialogClose as-child>

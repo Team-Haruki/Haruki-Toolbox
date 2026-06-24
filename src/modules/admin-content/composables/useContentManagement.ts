@@ -31,7 +31,7 @@ export function useContentManagement() {
     const links = ref<AdminFriendLink[]>([])
     const linkDialogOpen = ref(false)
     const editingLink = ref<AdminFriendLink | null>(null)
-    const linkForm = ref({ name: "", description: "", avatar: "", url: "", tags: "" })
+    const linkForm = ref({ name: "", description: "", avatar: "", url: "", tags: "", sortOrder: 0 })
     const linkSaving = ref(false)
 
     const groupsLoading = ref(true)
@@ -105,7 +105,8 @@ export function useContentManagement() {
 
     function openCreateLink() {
         editingLink.value = null
-        linkForm.value = { name: "", description: "", avatar: "", url: "", tags: "" }
+        const nextSortOrder = links.value.reduce((max, link) => Math.max(max, link.sortOrder ?? 0), 0) + 1
+        linkForm.value = { name: "", description: "", avatar: "", url: "", tags: "", sortOrder: nextSortOrder }
         linkDialogOpen.value = true
     }
 
@@ -117,6 +118,7 @@ export function useContentManagement() {
             avatar: link.avatar,
             url: link.url,
             tags: (link.tags || []).join(", "),
+            sortOrder: link.sortOrder ?? 0,
         }
         linkDialogOpen.value = true
     }
@@ -135,12 +137,14 @@ export function useContentManagement() {
             return
         }
 
+        const sortOrder = Number(linkForm.value.sortOrder)
         const data = {
             name: linkForm.value.name.trim(),
             description: linkForm.value.description.trim(),
             avatar: linkForm.value.avatar.trim(),
             url: normalizedUrl,
             tags: linkForm.value.tags.split(",").map((t) => t.trim()).filter(Boolean),
+            sortOrder: Number.isFinite(sortOrder) && sortOrder >= 0 ? sortOrder : 0,
         }
         const editingId = editingLink.value?.id
 

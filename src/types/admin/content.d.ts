@@ -7,6 +7,7 @@ export interface AdminFriendLink {
   avatar: string
   url: string
   tags?: string[]
+  sortOrder: number
 }
 
 export interface AdminFriendGroup {

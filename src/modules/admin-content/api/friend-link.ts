@@ -16,6 +16,9 @@ function normalizeFriendLink(link: unknown): AdminFriendLink | null {
 
   const url = readOptionalString(link, ["url"])
   const tags = readStringArray(link, ["tags"])
+  const rawSortOrder
+    = (link as { sortOrder?: unknown }).sortOrder ?? (link as { sort_order?: unknown }).sort_order
+  const sortOrder = Number(rawSortOrder)
 
   return {
     id: String(normalizeEntityId((link as { id?: unknown }).id)),
@@ -24,6 +27,7 @@ function normalizeFriendLink(link: unknown): AdminFriendLink | null {
     avatar: readString(link, ["avatar"]),
     url: url ? normalizeExternalHttpUrl(url) ?? url : "",
     tags: tags.length > 0 ? tags : undefined,
+    sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0,
   }
 }
 

@@ -65,6 +65,7 @@ const emit = defineEmits<{
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead class="w-16">{{ t("adminContent.linksTab.table.sortOrder") }}</TableHead>
               <TableHead>{{ t("adminContent.linksTab.table.name") }}</TableHead>
               <TableHead class="hidden sm:table-cell">{{ t("adminContent.linksTab.table.url") }}</TableHead>
               <TableHead class="hidden md:table-cell">{{ t("adminContent.linksTab.table.tags") }}</TableHead>
@@ -73,6 +74,7 @@ const emit = defineEmits<{
           </TableHeader>
           <TableBody>
             <TableRow v-for="link in links" :key="link.id">
+              <TableCell class="text-muted-foreground tabular-nums">{{ link.sortOrder }}</TableCell>
               <TableCell class="font-medium">{{ link.name }}</TableCell>
               <TableCell class="hidden sm:table-cell text-muted-foreground text-sm max-w-[200px] truncate">
                 {{ link.url }}
@@ -118,7 +120,7 @@ const emit = defineEmits<{
               </TableCell>
             </TableRow>
             <TableRow v-if="links.length === 0">
-              <TableCell :colspan="4" class="text-center py-8 text-muted-foreground">
+              <TableCell :colspan="5" class="text-center py-8 text-muted-foreground">
                 {{ t("adminContent.linksTab.empty") }}
               </TableCell>
             </TableRow>

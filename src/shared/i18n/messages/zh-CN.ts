@@ -2807,6 +2807,7 @@ export const zhCN = {
       title: "友情链接管理",
       createButton: "添加友情链接",
       table: {
+        sortOrder: "排序",
         name: "名称",
         url: "URL",
         tags: "标签",
@@ -2848,6 +2849,8 @@ export const zhCN = {
         avatarUrl: "头像URL",
         linkUrl: "链接URL",
         tags: "标签（逗号分隔）",
+        sortOrder: "排序值",
+        sortOrderHint: "数值越小越靠前，相同则按 ID 排序。",
       },
       placeholders: {
         name: "站点名称",
@@ -2855,6 +2858,7 @@ export const zhCN = {
         avatarUrl: "https://example.com/avatar.png",
         linkUrl: "https://example.com",
         tags: "博客, 技术",
+        sortOrder: "0",
       },
     },
     itemDialog: {

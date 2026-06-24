@@ -2807,6 +2807,7 @@ export const enUS = {
       title: "Friend links",
       createButton: "Add friend link",
       table: {
+        sortOrder: "Order",
         name: "Name",
         url: "URL",
         tags: "Tags",
@@ -2848,6 +2849,8 @@ export const enUS = {
         avatarUrl: "Avatar URL",
         linkUrl: "Link URL",
         tags: "Tags (comma separated)",
+        sortOrder: "Sort order",
+        sortOrderHint: "Lower values appear first; ties break by ID.",
       },
       placeholders: {
         name: "Site name",
@@ -2855,6 +2858,7 @@ export const enUS = {
         avatarUrl: "https://example.com/avatar.png",
         linkUrl: "https://example.com",
         tags: "Blog, Tech",
+        sortOrder: "0",
       },
     },
     itemDialog: {
