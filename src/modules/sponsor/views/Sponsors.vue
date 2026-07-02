@@ -196,18 +196,6 @@ function formatSponsorDate(sponsor: SponsorSupporter) {
   return dateFormatter.value.format(date)
 }
 
-function sponsorNote(sponsor: SponsorSupporter) {
-  if (sponsor.message) {
-    return sponsor.message
-  }
-
-  if (sponsor.isActive) {
-    return t("sponsor.supporter.activeMessage")
-  }
-
-  return t("sponsor.supporter.defaultMessage")
-}
-
 function sponsorSubtitle(sponsor: SponsorSupporter) {
   return sponsor.planName || t("sponsor.supporter.pastPlan")
 }
@@ -334,7 +322,7 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
             >
               <div class="space-y-1">
                 <h3 class="flex items-center gap-2 text-lg font-semibold text-foreground/85">
-                  <span class="h-2 w-2 rounded-full bg-pink-500" />
+                  <span class="h-2 w-2 rounded-full bg-primary" />
                   {{ section.title }}
                   <span class="text-sm font-normal text-muted-foreground">({{ section.supporters.length }})</span>
                 </h3>
@@ -372,11 +360,11 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
                       </span>
                     </div>
                   </CardHeader>
-                  <CardContent class="pt-0">
+                  <CardContent v-if="sponsor.message" class="pt-0">
                     <div
                       class="line-clamp-2 rounded-r border-l-2 border-pink-500/30 bg-pink-500/[0.02] py-0.5 pl-2 text-xs font-medium italic text-pink-600/80 dark:text-pink-300/80"
                     >
-                      {{ sponsorNote(sponsor) }}
+                      {{ sponsor.message }}
                     </div>
                   </CardContent>
                 </Card>

@@ -13,7 +13,6 @@ import {
   UserSearch,
   UserRound,
 } from "lucide-vue-next"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -4630,34 +4629,29 @@ function traceUpdateRecords(
 <template>
   <div class="flex w-full flex-1 flex-col items-center px-1 py-2 sm:px-0 sm:py-4">
     <div class="mx-auto grid w-full max-w-7xl gap-2 sm:gap-4">
-      <Alert class="hidden border-cyan-200 bg-cyan-50/70 text-cyan-950 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-100 sm:grid">
-        <Server class="h-4 w-4" />
-        <AlertTitle>{{ t("rankBorder.notice.title") }}</AlertTitle>
-        <AlertDescription class="leading-6">
-          {{ t("rankBorder.notice.description") }}
-        </AlertDescription>
-      </Alert>
-      <Alert class="hidden border-amber-200 bg-amber-50/70 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:grid">
-        <Activity class="h-4 w-4" />
-        <AlertTitle>{{ t("rankBorder.notice.betaTitle") }}</AlertTitle>
-        <AlertDescription class="leading-6">
-          {{ t("rankBorder.notice.betaDescription") }}
-        </AlertDescription>
-      </Alert>
-
       <Card class="gap-2 rounded-lg py-2 sm:gap-3 sm:py-3 xl:rounded-xl xl:py-5">
         <CardHeader class="gap-2 px-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3 sm:px-4 xl:px-5">
           <div class="min-w-0 space-y-1.5">
-            <CardTitle class="flex items-center gap-2 text-lg">
+            <CardTitle class="flex flex-wrap items-center gap-2 text-lg">
               <Trophy class="size-5" />
               {{ t("rankBorder.title") }}
+              <span
+                class="inline-flex items-center rounded-full border border-amber-300/70 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+                :title="t('rankBorder.notice.betaDescription')"
+              >
+                {{ t("rankBorder.notice.betaTitle") }}
+              </span>
             </CardTitle>
             <CardDescription class="hidden sm:block">{{ t("rankBorder.description") }}</CardDescription>
+            <p class="hidden items-start gap-1.5 text-xs text-muted-foreground sm:flex">
+              <Server class="mt-0.5 size-3.5 shrink-0" />
+              <span>{{ t("rankBorder.notice.description") }}</span>
+            </p>
           </div>
           <div class="flex flex-wrap gap-2">
             <span
               :class="[
-                'inline-flex items-center gap-2 rounded-md border px-2.5 py-2 text-sm font-medium',
+                'inline-flex items-center gap-1.5 self-center rounded-full border px-3 py-1 text-xs font-medium',
                 trackerStatusTone === 'live'
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
                   : trackerStatusTone === 'amber'
@@ -4955,8 +4949,16 @@ function traceUpdateRecords(
               </div>
             </div>
 
-            <div v-if="tracker.error.value" class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-              {{ tracker.error.value }}
+            <div v-if="tracker.error.value" class="flex flex-col gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0 space-y-1">
+                <p class="text-sm font-medium text-destructive">{{ t("rankBorder.result.loadErrorTitle") }}</p>
+                <p class="text-xs text-muted-foreground">{{ t("rankBorder.result.loadErrorHint") }}</p>
+                <p class="break-all text-xs text-destructive/70">{{ tracker.error.value }}</p>
+              </div>
+              <Button variant="outline" size="sm" class="shrink-0" :disabled="!canRefresh || liveRefreshing" @click="refreshData(true)">
+                <RefreshCcw :class="['size-4', liveRefreshing ? 'animate-spin' : '']" />
+                {{ t("rankBorder.actions.retry") }}
+              </Button>
             </div>
 
             <div v-if="!hasTop100Data" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">

@@ -729,7 +729,6 @@ export const zhCN = {
       team: {
         title: "开发团队",
         subtitle: "Project Haruki 的开发与维护离不开 Haruki Dev Team 以下成员的大力支持",
-        noBio: "暂无简介",
         roles: {
           core: "主开发",
           doc: "文档维护",
@@ -823,8 +822,6 @@ export const zhCN = {
       expiredAt: "已于 {date} 到期",
       oneTime: "一次性赞助",
       manual: "手动记录",
-      activeMessage: "正在赞助 Project Haruki，感谢持续发电。",
-      defaultMessage: "感谢你让 Haruki 继续前进。",
       recent: "近期赞助",
       months: "{month} 个月",
     },
@@ -875,6 +872,12 @@ export const zhCN = {
       iosModules: "iOS模块安装",
       botNeoRegistration: "HarukiBot NEO 注册",
     },
+    notFound: {
+      title: "页面不存在",
+      description: "你访问的地址不存在或已被移动，请检查链接是否正确。",
+      backHome: "返回首页",
+      backPrevious: "返回上一页",
+    },
   },
   webLayout: {
     nav: {
@@ -917,6 +920,7 @@ export const zhCN = {
   },
   route: {
     home: "主页",
+    notFound: "页面不存在",
     settings: "设置",
     privacy: "隐私政策",
     tos: "服务条款",
@@ -1870,6 +1874,7 @@ export const zhCN = {
           dataTypePlaceholder: "请选择数据类型",
         },
         alerts: {
+          notesTitle: "使用须知",
           warning1: {
             title: "警告",
             description: "请妥善保存您的引继ID与密码！Haruki工具箱服务器不会保存您的引继ID与密码！",
@@ -1906,6 +1911,7 @@ export const zhCN = {
       description: "根据目标活动 Pt 和歌曲基础 Pt，反推所需活动加成与可打分数区间。",
       tips: {
         title: "小提示",
+        beta: "测试中",
         boostConfig: "控分之前请务必确保您的体力消耗（Live Boost）配置正确，谨防控分失败。",
         testingPrefix: "该功能处于测试状态，",
         testingSuffix: "如果遇到任何问题请联系 Haruki Dev Team 进行反馈。",
@@ -1985,6 +1991,7 @@ export const zhCN = {
     },
     actions: {
       reloadMaster: "刷新活动列表",
+      retry: "重试",
       refresh: "刷新数据",
       refreshing: "刷新中...",
       locate: "定位",
@@ -2078,6 +2085,8 @@ export const zhCN = {
       hourlySpeed: "时速",
     },
     result: {
+      loadErrorTitle: "榜线数据加载失败",
+      loadErrorHint: "请检查网络连接后重试；如果多次失败，可能是 Tracker 服务暂时不可用。",
       emptyLines: "实时连接准备好后会在这里显示榜线，也可以点击刷新数据立即拉取。",
       emptySegments: "当前 tracker 尚未返回 T100 以外的档线点。",
       emptyLiveCard: "点击榜线行，或选择绑定账号查询后显示实时卡片。",

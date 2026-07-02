@@ -729,7 +729,6 @@ export const enUS = {
       team: {
         title: "Dev Team",
         subtitle: "The development and maintenance of Project Haruki would not be possible without the support of the following members of the Haruki Dev Team",
-        noBio: "No bio available",
         roles: {
           core: "Core Developers",
           doc: "Documentation",
@@ -823,8 +822,6 @@ export const enUS = {
       expiredAt: "Expired on {date}",
       oneTime: "One-time support",
       manual: "Manual record",
-      activeMessage: "Currently supporting Project Haruki. Thank you for keeping the lights on.",
-      defaultMessage: "Thank you for keeping Haruki moving.",
       recent: "Recent support",
       months: "{month} mo",
     },
@@ -875,6 +872,12 @@ export const enUS = {
       iosModules: "iOS module install",
       botNeoRegistration: "HarukiBot NEO registration",
     },
+    notFound: {
+      title: "Page not found",
+      description: "The address you visited doesn't exist or has been moved. Please check that the link is correct.",
+      backHome: "Back to home",
+      backPrevious: "Go back",
+    },
   },
   webLayout: {
     nav: {
@@ -917,6 +920,7 @@ export const enUS = {
   },
   route: {
     home: "Home",
+    notFound: "Page not found",
     settings: "Settings",
     privacy: "Privacy Policy",
     tos: "Terms of Service",
@@ -1870,6 +1874,7 @@ export const enUS = {
           dataTypePlaceholder: "Select data type",
         },
         alerts: {
+          notesTitle: "Before you upload",
           warning1: {
             title: "Warning",
             description: "Keep your transfer ID and password safe. Haruki Toolbox server does not store them.",
@@ -1906,6 +1911,7 @@ export const enUS = {
       description: "Calculate the event bonus and score ranges needed for a target event Pt value.",
       tips: {
         title: "Tip",
+        beta: "Beta",
         boostConfig: "Before score control, make sure your Live Boost setting is correct to avoid missing the target.",
         testingPrefix: "This feature is still being tested.",
         testingSuffix: " If you run into any issue, please contact Haruki Dev Team.",
@@ -1985,6 +1991,7 @@ export const enUS = {
     },
     actions: {
       reloadMaster: "Reload events",
+      retry: "Retry",
       refresh: "Refresh data",
       refreshing: "Refreshing...",
       locate: "Locate",
@@ -2078,6 +2085,8 @@ export const enUS = {
       hourlySpeed: "Speed",
     },
     result: {
+      loadErrorTitle: "Couldn't load leaderboard data",
+      loadErrorHint: "Check your connection and retry. If this keeps failing, the tracker service may be temporarily unavailable.",
       emptyLines: "Live borders appear here when the connection is ready. You can also refresh data immediately.",
       emptySegments: "The tracker has not returned border points beyond T100 yet.",
       emptyLiveCard: "Click a border row or query a bound account to show the realtime card.",

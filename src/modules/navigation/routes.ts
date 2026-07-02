@@ -28,4 +28,10 @@ export const navigationRoutes: RouteRecordRaw[] = [
         component: () => import("@/modules/navigation/views/FriendLinks.vue"),
         meta: { titleKey: "route.friendLinks" },
     },
+    {
+        path: "/:pathMatch(.*)*",
+        name: "not-found",
+        component: () => import("@/modules/navigation/views/NotFound.vue"),
+        meta: { titleKey: "route.notFound" },
+    },
 ]

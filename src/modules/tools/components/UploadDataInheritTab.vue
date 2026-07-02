@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue"
 import type { InheritServer, UploadDataType } from "@/types"
 import { useI18n } from "vue-i18n"
 import { Label } from "@/components/ui/label"
@@ -8,13 +9,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input, InputWithToggle } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   Database,
   Globe,
   Loader2,
   Lock,
+  LucideChevronDown,
   LucideFileKey,
-  LucideShieldAlert,
   LucideAlertTriangle,
   ServerCog,
   UploadCloud,
@@ -52,46 +54,54 @@ function handleServerChange(value: string) {
   }
 
 const { t, locale } = useI18n()
+const notesOpen = ref(false)
 </script>
 
 <template>
-  <Alert variant="destructive" class="mb-2 bg-red-200">
+  <Alert variant="destructive" class="mb-2">
     <LucideAlertTriangle class="h-5 w-5" />
-    <AlertTitle class="text-red-600 dark:text-red-600">{{ t("tools.uploadData.inheritTab.alerts.warning1.title") }}</AlertTitle>
-    <AlertDescription class="text-red-600 dark:text-red-600">
-      {{ t("tools.uploadData.inheritTab.alerts.warning1.description") }}
-    </AlertDescription>
-  </Alert>
-  <Alert variant="destructive" class="mb-2 bg-amber-200">
-    <LucideShieldAlert class="h-5 w-5" />
-    <AlertTitle class="text-red-600 dark:text-red-600">{{ t("tools.uploadData.inheritTab.alerts.warning2.title") }}</AlertTitle>
-    <AlertDescription class="text-red-600 dark:text-red-600">
-      {{ t("tools.uploadData.inheritTab.alerts.warning2.line1") }}<br>
-      {{ t("tools.uploadData.inheritTab.alerts.warning2.line2") }}
+    <AlertTitle>{{ t("tools.uploadData.inheritTab.alerts.warning1.title") }}</AlertTitle>
+    <AlertDescription>
+      <p>{{ t("tools.uploadData.inheritTab.alerts.warning1.description") }}</p>
+      <p>
+        {{ t("tools.uploadData.inheritTab.alerts.warning2.line1") }}
+        {{ t("tools.uploadData.inheritTab.alerts.warning2.line2") }}
+      </p>
     </AlertDescription>
   </Alert>
 
-  <Alert class="mb-2 bg-green-300">
-    <LucideFileKey class="h-5 w-5" />
-    <AlertTitle class="dark:text-black">{{ t("tools.uploadData.inheritTab.alerts.reminder1.title") }}</AlertTitle>
-    <AlertDescription class="dark:text-black">
-      {{ t("tools.uploadData.inheritTab.alerts.reminder1.line1") }}<br>
-      {{ t("tools.uploadData.inheritTab.alerts.reminder1.line2") }}
-    </AlertDescription>
-  </Alert>
-  <Alert class="mb-2 bg-green-300">
-    <LucideFileKey class="h-5 w-5" />
-    <AlertTitle class="dark:text-black">{{ t("tools.uploadData.inheritTab.alerts.reminder2.title") }}</AlertTitle>
-    <AlertDescription class="dark:text-black">
-      {{ t("tools.uploadData.inheritTab.alerts.reminder2.line1") }}<br>
-      {{ t("tools.uploadData.inheritTab.alerts.reminder2.line2") }}<br>
-      {{ t("tools.uploadData.inheritTab.alerts.reminder2.line3") }}<br>
-      {{ t("tools.uploadData.inheritTab.alerts.reminder2.line4") }}
-      <router-link to="/user/game-account-bindings" class="text-blue-500 hover:underline">
-        {{ t("tools.uploadData.inheritTab.alerts.reminder2.bindLink") }}
-      </router-link>
-    </AlertDescription>
-  </Alert>
+  <Collapsible v-model:open="notesOpen" class="mb-2 rounded-lg border bg-muted/20">
+    <CollapsibleTrigger
+      class="flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium"
+    >
+      <span class="flex items-center gap-2">
+        <LucideFileKey class="size-4 text-muted-foreground" />
+        {{ t("tools.uploadData.inheritTab.alerts.notesTitle") }}
+      </span>
+      <LucideChevronDown :class="['size-4 text-muted-foreground transition-transform duration-200', notesOpen ? 'rotate-180' : '']" />
+    </CollapsibleTrigger>
+    <CollapsibleContent>
+      <div class="space-y-4 border-t px-4 py-3 text-sm text-muted-foreground">
+        <div class="space-y-1">
+          <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.reminder1.title") }}</p>
+          <p>{{ t("tools.uploadData.inheritTab.alerts.reminder1.line1") }}</p>
+          <p>{{ t("tools.uploadData.inheritTab.alerts.reminder1.line2") }}</p>
+        </div>
+        <div class="space-y-1">
+          <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.reminder2.title") }}</p>
+          <p>{{ t("tools.uploadData.inheritTab.alerts.reminder2.line1") }}</p>
+          <p>{{ t("tools.uploadData.inheritTab.alerts.reminder2.line2") }}</p>
+          <p>{{ t("tools.uploadData.inheritTab.alerts.reminder2.line3") }}</p>
+          <p>
+            {{ t("tools.uploadData.inheritTab.alerts.reminder2.line4") }}
+            <router-link to="/user/game-account-bindings" class="font-medium text-primary underline-offset-4 hover:underline">
+              {{ t("tools.uploadData.inheritTab.alerts.reminder2.bindLink") }}
+            </router-link>
+          </p>
+        </div>
+      </div>
+    </CollapsibleContent>
+  </Collapsible>
 
   <Card>
     <CardHeader>

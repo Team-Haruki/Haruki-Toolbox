@@ -10,7 +10,6 @@ import {
   List,
   LucideAlertCircle,
   LucideCalculator,
-  LucideTriangleAlert,
   Music2,
   Percent,
   Target,
@@ -328,7 +327,7 @@ function normalizeBonusBound(value: unknown, fallback: number) {
 <template>
   <div class="flex w-full flex-1 items-center justify-center px-0 py-4">
     <div class="mx-auto w-full max-w-5xl space-y-4">
-      <Alert class="border-sky-200 bg-sky-50/70 text-sky-900 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-100">
+      <Alert>
         <LucideAlertCircle class="h-4 w-4" />
         <AlertTitle>{{ t("tools.pointCalculator.tips.title") }}</AlertTitle>
         <AlertDescription class="space-y-1 leading-6">
@@ -337,19 +336,18 @@ function normalizeBonusBound(value: unknown, fallback: number) {
         </AlertDescription>
       </Alert>
 
-      <Alert class="flex items-start gap-2 border-amber-200 bg-amber-50/90 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:items-center sm:gap-3">
-        <LucideTriangleAlert class="mt-1 size-4 shrink-0 text-amber-600 dark:text-amber-300 sm:mt-0" />
-        <p class="min-w-0 whitespace-normal leading-6 sm:whitespace-nowrap">
-          <span class="font-bold text-amber-950 dark:text-amber-50">{{ t("tools.pointCalculator.tips.testingPrefix") }}</span><span>&#8288;{{ t("tools.pointCalculator.tips.testingSuffix") }}</span>
-        </p>
-      </Alert>
-
       <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <Card class="self-start">
           <CardHeader>
-            <CardTitle class="flex items-center gap-2 text-lg">
+            <CardTitle class="flex flex-wrap items-center gap-2 text-lg">
               <LucideCalculator class="size-5" />
               {{ t("tools.pointCalculator.title") }}
+              <span
+                class="inline-flex items-center rounded-full border border-amber-300/70 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+                :title="t('tools.pointCalculator.tips.testingPrefix') + t('tools.pointCalculator.tips.testingSuffix')"
+              >
+                {{ t("tools.pointCalculator.tips.beta") }}
+              </span>
             </CardTitle>
             <CardDescription>{{ t("tools.pointCalculator.description") }}</CardDescription>
           </CardHeader>

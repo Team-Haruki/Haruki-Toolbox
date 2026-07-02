@@ -16,13 +16,15 @@ import {
 } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { 
-  Users, 
-  Code2, 
-  Heart, 
-  ExternalLink,
-  Sparkles
+import {
+  Users,
+  Code2,
+  Crown,
+  Heart,
+  ExternalLink
 } from "lucide-vue-next"
+
+const HARUKI_LOGO = `${import.meta.env.BASE_URL}assets/haruki.ico`
 
 const { t, te } = useI18n()
 const settingsStore = useSettingsStore()
@@ -153,7 +155,10 @@ const groupedMembers = {
     <!-- Simplified typographic Header Section -->
     <div class="space-y-3 max-w-3xl">
       <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
-        <Sparkles class="w-7 h-7 md:w-8 md:h-8 text-primary shrink-0" />
+        <Avatar class="w-9 h-9 md:w-10 md:h-10 shrink-0 ring-2 ring-primary/25">
+          <AvatarImage :src="HARUKI_LOGO" alt="Project Haruki" />
+          <AvatarFallback class="text-sm font-bold text-primary">PH</AvatarFallback>
+        </Avatar>
         <span>{{ t("navigationPages.about.title") }}</span>
       </h1>
       <p class="text-base md:text-lg font-semibold text-primary">
@@ -202,12 +207,7 @@ const groupedMembers = {
               class="block group outline-none"
             >
               <Card
-                :class="[
-                  'h-full gap-2 border py-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer',
-                  member.roleKey === 'sponsor'
-                    ? 'border-amber-400/60 bg-amber-50/50 hover:border-amber-400 dark:border-amber-500/40 dark:bg-amber-950/20'
-                    : 'border-muted/50 bg-card/20 hover:border-primary/50',
-                ]"
+                class="h-full gap-2 border border-muted/50 bg-card/20 py-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer"
               >
                 <CardHeader class="flex flex-row items-center gap-3 pb-1">
                    <Avatar class="h-10 w-10 border border-muted/80 transition-colors duration-300 group-hover:border-primary">
@@ -222,6 +222,11 @@ const groupedMembers = {
                   <div class="flex-1 min-w-0">
                     <CardTitle class="text-sm font-semibold group-hover:text-primary transition-colors flex items-center gap-1">
                       <span class="truncate">{{ t(`navigationPages.about.team.members.${member.key}.name`) }}</span>
+                      <Crown
+                        v-if="member.roleKey === 'sponsor'"
+                        class="w-3.5 h-3.5 flex-shrink-0 text-amber-500 dark:text-amber-400"
+                        :title="t(`navigationPages.about.team.members.${member.key}.role`)"
+                      />
                       <ExternalLink class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                     </CardTitle>
                     <span class="text-xs text-muted-foreground/80 font-medium">
@@ -229,19 +234,12 @@ const groupedMembers = {
                     </span>
                   </div>
                 </CardHeader>
-                <CardContent class="pt-0">
-                  <div 
-                    v-if="hasQuote(member.key)"
+                <CardContent v-if="hasQuote(member.key)" class="pt-0">
+                  <div
                     class="text-xs text-primary/80 italic border-l-2 border-primary/30 pl-2 py-0.5 line-clamp-2 font-medium bg-primary/[0.02] rounded-r"
                   >
                     {{ getQuote(member.key) }}
                   </div>
-                  <CardDescription 
-                    v-else
-                    class="text-xs text-muted-foreground/50 italic pl-1"
-                  >
-                    {{ t("navigationPages.about.team.noBio") }}
-                  </CardDescription>
                 </CardContent>
               </Card>
             </a>
@@ -303,7 +301,7 @@ const groupedMembers = {
     <!-- Support Section -->
     <section class="space-y-3">
       <div class="flex items-center gap-2 text-2xl font-bold tracking-tight">
-        <Heart class="w-6 h-6 text-primary animate-pulse" />
+        <Heart class="w-6 h-6 text-primary" />
         <h2>{{ t("navigationPages.about.support.title") }}</h2>
       </div>
       

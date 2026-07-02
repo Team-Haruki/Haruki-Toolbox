@@ -12,3 +12,12 @@ test("settings dialog renders i18n controls", async ({ page }) => {
   ).toBeVisible()
   await expect(settingsDialog.getByText("界面语言", { exact: true }).or(settingsDialog.getByText("Language", { exact: true }))).toBeVisible()
 })
+
+test("unknown route shows 404 page with a way back home", async ({ page }) => {
+  await page.goto("/this/route/does/not/exist")
+
+  await expect(page.getByRole("heading", { name: /页面不存在|Page not found/ })).toBeVisible()
+
+  await page.getByRole("link", { name: /返回首页|Back to home/ }).click()
+  await expect(page.getByRole("heading", { name: /欢迎使用 Haruki 工具箱|Welcome to Haruki Toolbox/ })).toBeVisible()
+})
