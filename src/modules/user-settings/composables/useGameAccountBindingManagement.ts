@@ -51,6 +51,8 @@ export function useGameAccountBindingManagement() {
   const showEditDialog = ref(false)
   const showVerifyDialog = ref(false)
   const showDeleteDialog = ref(false)
+  const suppressNextEditClose = ref(false)
+  let suppressEditCloseTimer: ReturnType<typeof setTimeout> | null = null
   const userIdInput = ref("")
   const verificationTriggered = ref(false)
   const editTarget = ref<GameAccountBinding | null>(null)
@@ -89,9 +91,48 @@ export function useGameAccountBindingManagement() {
     verifiedBindingSnapshot.value = null
   }
 
+  function suppressTransientEditClose() {
+    suppressNextEditClose.value = true
+    if (suppressEditCloseTimer) {
+      clearTimeout(suppressEditCloseTimer)
+    }
+    suppressEditCloseTimer = setTimeout(() => {
+      suppressNextEditClose.value = false
+      suppressEditCloseTimer = null
+    }, 250)
+  }
+
+  function setEditDialogOpen(open: boolean) {
+    if (open) {
+      showEditDialog.value = true
+      suppressNextEditClose.value = false
+      return
+    }
+
+    if (showVerifyDialog.value || suppressNextEditClose.value) {
+      suppressTransientEditClose()
+      return
+    }
+
+    showEditDialog.value = false
+  }
+
+  function setVerifyDialogOpen(open: boolean) {
+    if (open) {
+      showVerifyDialog.value = true
+      return
+    }
+
+    if (showVerifyDialog.value) {
+      suppressTransientEditClose()
+    }
+    showVerifyDialog.value = false
+  }
+
   function startAdd() {
     isCreating.value = true
     clearVerificationState()
+    suppressNextEditClose.value = false
     editIdentitySnapshot.value = null
     editTarget.value = toEditableAccount()
     userIdInput.value = ""
@@ -101,6 +142,7 @@ export function useGameAccountBindingManagement() {
   function startEdit(account: GameAccountBinding) {
     isCreating.value = false
     clearVerificationState()
+    suppressNextEditClose.value = false
     editIdentitySnapshot.value = {
       server: account.server,
       userId: String(account.userId),
@@ -315,6 +357,8 @@ export function useGameAccountBindingManagement() {
     allowCNMysekai,
     regionLabels,
     regionOptions,
+    setEditDialogOpen,
+    setVerifyDialogOpen,
     startAdd,
     startEdit,
     confirmDelete,

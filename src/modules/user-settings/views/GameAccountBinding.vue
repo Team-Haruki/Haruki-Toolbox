@@ -30,6 +30,8 @@ const {
   allowCNMysekai,
   regionLabels,
   regionOptions,
+  setEditDialogOpen,
+  setVerifyDialogOpen,
   startAdd,
   startEdit,
   confirmDelete,
@@ -84,7 +86,7 @@ const {
     />
 
     <GameBindingEditDialog
-      v-model:open="showEditDialog"
+      :open="showEditDialog"
       :is-creating="isCreating"
       :verification-triggered="verificationTriggered"
       :is-saving="isSaving"
@@ -93,6 +95,7 @@ const {
       :user-id-input="userIdInput"
       :edit-target="editTarget"
       :region-options="regionOptions"
+      @update:open="setEditDialogOpen"
       @update:user-id-input="userIdInput = $event"
       @update:edit-target="editTarget = $event"
       @verify="handleVerify"
@@ -108,8 +111,9 @@ const {
     />
 
     <GameBindingVerifyDialog
-      v-model:open="showVerifyDialog"
+      :open="showVerifyDialog"
       :generated-code="generatedCode"
+      @update:open="setVerifyDialogOpen"
       @copy="copyCodeToClipboard"
     />
 
