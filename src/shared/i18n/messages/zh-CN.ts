@@ -501,6 +501,7 @@ export const zhCN = {
         line1Middle: "的",
         line1GameId: "同一个游戏ID",
         line1After: "在Haruki工具箱中仅限一个Haruki工具箱用户绑定",
+        line2: "Haruki工具箱的账号绑定信息与HarukiBot NEO不共享，如果需要在HarukiBot NEO上查询数据，请先按照Bot使用帮助在Bot上绑定对应的游戏账号",
       },
       addButton: "绑定新账号",
       empty: "暂无数据",

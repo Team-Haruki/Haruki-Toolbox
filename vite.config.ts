@@ -26,6 +26,10 @@ const manualChunkGroups = [
     },
 ]
 
+const adminPrecacheGlobIgnores = [
+    '**/assets/{admin,AdminLayout,Dashboard,SystemLogs,UploadLogs,UserManagement,UserDetail,OAuthClientManagement,AdminWebhookManagement,ContentManagement,AdminSponsorManagement,SystemConfig,GameAccountBindings,RiskManagement,AdminTicketList,AdminTicketDetail}-*.js',
+]
+
 const packageJson = JSON.parse(
     readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
 ) as { version?: string }
@@ -169,6 +173,7 @@ export default defineConfig(({ command, mode }) => {
                     cleanupOutdatedCaches: true,
                     clientsClaim: true,
                     globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,wasm}'],
+                    globIgnores: adminPrecacheGlobIgnores,
                     maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
                     navigateFallbackDenylist: [/^\/api\//],
                 },

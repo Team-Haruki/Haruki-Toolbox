@@ -71,6 +71,7 @@ const {
         <AlertTitle>{{ t("userSettings.gameBinding.alert.title") }}</AlertTitle>
         <AlertDescription class="space-y-1.5 leading-relaxed text-muted-foreground mt-2">
           <p><span class="font-semibold text-foreground">{{ t("userSettings.gameBinding.alert.line1Server") }}</span>{{ t("userSettings.gameBinding.alert.line1Middle") }}<span class="font-semibold text-foreground">{{ t("userSettings.gameBinding.alert.line1GameId") }}</span>{{ t("userSettings.gameBinding.alert.line1After") }}</p>
+          <p>{{ t("userSettings.gameBinding.alert.line2") }}</p>
         </AlertDescription>
       </div>
     </Alert>

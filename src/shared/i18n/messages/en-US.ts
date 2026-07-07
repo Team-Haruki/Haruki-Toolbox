@@ -501,6 +501,7 @@ export const enUS = {
         line1Middle: " and ",
         line1GameId: "same game ID",
         line1After: " can only be bound to one Haruki Toolbox account.",
+        line2: "Account binding information in Haruki Toolbox is not shared with HarukiBot NEO. To query data on HarukiBot NEO, please first bind the corresponding game account on the Bot by following the Bot usage guide.",
       },
       addButton: "Bind new account",
       empty: "No data",
