@@ -46,7 +46,8 @@
     "zod": "^4.4.3"
   },
   "overrides": {
-    "dompurify": "3.4.2"
+    "dompurify": "3.4.2",
+    "@babel/core": "^7.29.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
