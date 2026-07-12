@@ -152,15 +152,16 @@ type BoundAccountOption = {
 
 const DEFAULT_MUSIC_ID = "74"
 const DEFAULT_MUSIC_DIFFICULTY = "expert"
-const DEFAULT_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "ga", "rl"]
+// v0.3.0 前的默认三算法组合；仅用于偏好迁移时识别“用户未定制”
+const LEGACY_DEFAULT_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "ga", "rl"]
 const DECK_RECOMMEND_ALGORITHMS: DeckRecommendAlgorithm[] = ["dfs_ga", "dfs", "ga", "rl"]
 const DECK_RECOMMEND_CARD_OPTION_MASTER_FILES = ["cards", "cardRarities", "gameCharacters", "gameCharacterUnits", "unitProfiles", "areaItems", "areaItemLevels", "areas", "characterRanks", "mysekaiGates", "mysekaiGateLevels"] as const
 const DECK_RECOMMEND_PREFERENCES_STORAGE_KEY = "haruki:deck-recommend:preferences"
-const DECK_RECOMMEND_PREFERENCES_VERSION = 2
+const DECK_RECOMMEND_PREFERENCES_VERSION = 3
 const DECK_RECOMMEND_SAVED_CONFIG_STORAGE_KEY = "haruki:deck-recommend:saved-config"
 const DECK_RECOMMEND_SAVED_CONFIG_VERSION = 1
 const DECK_RECOMMEND_EXECUTION_MODES: DeckRecommendExecutionMode[] = ["sequential", "parallel"]
-const DEFAULT_EXECUTION_MODE: DeckRecommendExecutionMode = "parallel"
+const DEFAULT_EXECUTION_MODE: DeckRecommendExecutionMode = "sequential"
 const DECK_RECOMMEND_EVENT_ATTRS: DeckRecommendEventAttr[] = ["happy", "cute", "cool", "pure", "mysterious"]
 const DECK_RECOMMEND_UNITS: DeckRecommendUnitType[] = [
   "light_sound",
@@ -176,6 +177,7 @@ const CHARACTER_FILTER_MIN_COUNT = 5
 const MYSEKAI_FIXTURE_BONUS_RATE_MAX = 100
 
 type DeckRecommendEventSimulationMode = DeckRecommendSimulatedEventType | "world_bloom"
+type DeckRecommendAlgorithmSelectionMode = "auto" | "manual"
 type DeckRecommendSimulatedEventUnitValue = DeckRecommendUnitType | typeof DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT
 type AreaItemOverrideAreaGroup = {
   key: string
@@ -194,6 +196,7 @@ type DeckRecommendSavedConfig = {
   recommendTarget?: DeckRecommendTarget
   liveType?: DeckRecommendLiveType
   selectedAlgorithms?: DeckRecommendAlgorithm[]
+  algorithmSelectionMode?: DeckRecommendAlgorithmSelectionMode
   executionMode?: DeckRecommendExecutionMode
   selectedEventId?: string | null
   selectedCharacterId?: string | null
@@ -255,7 +258,8 @@ const dataRegion = ref<SekaiRegion>(initialSavedConfig.dataRegion ?? "jp")
 const recommendMode = ref<DeckRecommendMode>(initialSavedConfig.recommendMode ?? "event")
 const recommendTarget = ref<DeckRecommendTarget>(initialSavedConfig.recommendTarget ?? "score")
 const liveType = ref<DeckRecommendLiveType>(initialSavedConfig.liveType ?? "multi")
-const selectedAlgorithms = ref<DeckRecommendAlgorithm[]>(initialSavedConfig.selectedAlgorithms ?? initialPreferences.algorithms ?? [...DEFAULT_ALGORITHMS])
+const algorithmSelectionIsManual = ref(resolveInitialAlgorithmSelectionIsManual(initialSavedConfig, initialPreferences))
+const selectedAlgorithms = ref<DeckRecommendAlgorithm[]>(initialSavedConfig.selectedAlgorithms ?? initialPreferences.algorithms ?? [])
 const executionMode = ref<DeckRecommendExecutionMode>(initialSavedConfig.executionMode ?? initialPreferences.executionMode ?? DEFAULT_EXECUTION_MODE)
 const selectedEventId = ref<string | null>(initialSavedConfig.selectedEventId ?? null)
 const selectedEventType = ref<string | null>(null)
@@ -620,6 +624,25 @@ const activeForcedLeaderCharacterId = computed(() =>
 const activeAlgorithms = computed<DeckRecommendAlgorithm[]>(() =>
   recommendMode.value === "bonus" ? ["dfs"] : selectedAlgorithms.value,
 )
+const isWorldBloomScenario = computed(() =>
+  isEventSimulationActive.value
+    ? simulatedEventMode.value === "world_bloom"
+    : selectedEventType.value === "world_bloom",
+)
+// v0.3.0 引擎下按场景选默认算法：分数目标走 DFS 精确搜索；WL 上界松、
+// 可能超时的场景走 DFS-GA；烤森走 RL；power/skill 等目标暂保持 DFS-GA
+const scenarioDefaultAlgorithms = computed<DeckRecommendAlgorithm[]>(() => {
+  if (recommendMode.value === "challenge" || recommendMode.value === "bonus") {
+    return ["dfs"]
+  }
+  if (recommendMode.value === "mysekai") {
+    return ["rl"]
+  }
+  if (recommendMode.value === "event" && isWorldBloomScenario.value) {
+    return ["dfs_ga"]
+  }
+  return activeRecommendTarget.value === "score" ? ["dfs"] : ["dfs_ga"]
+})
 const showLiveTypeSelect = computed(() => recommendMode.value !== "mysekai")
 const isLiveTypeLocked = computed(() => recommendMode.value === "bonus" || recommendMode.value === "challenge")
 const isMultiLiveOptionsEnabled = computed(() =>
@@ -1141,10 +1164,21 @@ watch(
 )
 
 watch(
-  () => [selectedAlgorithms.value.join(","), activeAlgorithms.value.join(","), executionMode.value],
+  [scenarioDefaultAlgorithms, algorithmSelectionIsManual],
+  () => {
+    if (!algorithmSelectionIsManual.value) {
+      selectedAlgorithms.value = [...scenarioDefaultAlgorithms.value]
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => [selectedAlgorithms.value.join(","), activeAlgorithms.value.join(","), executionMode.value, algorithmSelectionIsManual.value] as const,
   () => {
     writeDeckRecommendPreferences({
       algorithms: selectedAlgorithms.value,
+      algorithmsAuto: !algorithmSelectionIsManual.value,
       executionMode: executionMode.value,
     })
     syncParallelEngines()
@@ -1390,6 +1424,7 @@ function updateLiveType(value: AcceptableValue) {
 }
 
 function toggleAlgorithm(value: DeckRecommendAlgorithm, checked: boolean) {
+  algorithmSelectionIsManual.value = true
   const next = new Set(selectedAlgorithms.value)
   if (checked) {
     next.add(value)
@@ -1998,6 +2033,7 @@ function createCurrentDeckRecommendConfig(): DeckRecommendSavedConfig {
     recommendTarget: recommendTarget.value,
     liveType: liveType.value,
     selectedAlgorithms: [...selectedAlgorithms.value],
+    algorithmSelectionMode: algorithmSelectionIsManual.value ? "manual" : "auto",
     executionMode: executionMode.value,
     selectedEventId: selectedEventId.value,
     selectedCharacterId: selectedCharacterId.value,
@@ -2053,7 +2089,8 @@ function resetDeckRecommendConfig() {
   recommendMode.value = "event"
   recommendTarget.value = "score"
   liveType.value = "multi"
-  selectedAlgorithms.value = [...DEFAULT_ALGORITHMS]
+  algorithmSelectionIsManual.value = false
+  selectedAlgorithms.value = [...scenarioDefaultAlgorithms.value]
   executionMode.value = DEFAULT_EXECUTION_MODE
   selectedEventId.value = null
   selectedEventType.value = null
@@ -2634,7 +2671,29 @@ function resolveDefaultSkillStrategyForForm(
 
 type DeckRecommendPreferences = {
   algorithms?: DeckRecommendAlgorithm[]
+  algorithmsAuto?: boolean
   executionMode?: DeckRecommendExecutionMode
+}
+
+function isLegacyDefaultAlgorithmSelection(algorithms: readonly DeckRecommendAlgorithm[]): boolean {
+  return algorithms.length === LEGACY_DEFAULT_ALGORITHMS.length
+    && LEGACY_DEFAULT_ALGORITHMS.every((algorithm) => algorithms.includes(algorithm))
+}
+
+function resolveInitialAlgorithmSelectionIsManual(
+  savedConfig: DeckRecommendSavedConfig,
+  preferences: DeckRecommendPreferences,
+): boolean {
+  if (savedConfig.algorithmSelectionMode) {
+    return savedConfig.algorithmSelectionMode === "manual"
+  }
+
+  // 旧版保存配置没有选择模式标记：与旧默认组合一致视为未手动定制
+  if (savedConfig.selectedAlgorithms) {
+    return !isLegacyDefaultAlgorithmSelection(savedConfig.selectedAlgorithms)
+  }
+
+  return preferences.algorithms != null
 }
 
 function readDeckRecommendPreferences(): DeckRecommendPreferences {
@@ -2653,12 +2712,23 @@ function readDeckRecommendPreferences(): DeckRecommendPreferences {
       ? parsed.executionMode
       : undefined
     const preferencesVersion = typeof parsed.version === "number" ? parsed.version : 1
+    const persistedAlgorithms = normalizePersistedAlgorithms(parsed.algorithms)
+
+    if (preferencesVersion < 3) {
+      // v3迁移：等于旧默认三算法组合（或缺失）视为未定制，交给按场景默认；
+      // 用户自选的组合与执行方式原样保留
+      const isCustomized = persistedAlgorithms != null
+        && persistedAlgorithms.length > 0
+        && !isLegacyDefaultAlgorithmSelection(persistedAlgorithms)
+      return {
+        algorithms: isCustomized ? persistedAlgorithms : undefined,
+        executionMode: isCustomized ? persistedExecutionMode : undefined,
+      }
+    }
 
     return {
-      algorithms: normalizePersistedAlgorithms(parsed.algorithms),
-      executionMode: preferencesVersion < DECK_RECOMMEND_PREFERENCES_VERSION && persistedExecutionMode === "sequential"
-        ? DEFAULT_EXECUTION_MODE
-        : persistedExecutionMode,
+      algorithms: parsed.algorithmsAuto === true ? undefined : persistedAlgorithms,
+      executionMode: persistedExecutionMode,
     }
   } catch {
     return {}
@@ -2751,6 +2821,10 @@ function normalizeDeckRecommendSavedConfig(value: Record<string, unknown>): Deck
   }
 
   config.selectedAlgorithms = normalizePersistedAlgorithms(value.selectedAlgorithms)
+  const algorithmSelectionMode = optionalString(value.algorithmSelectionMode)
+  if (algorithmSelectionMode === "auto" || algorithmSelectionMode === "manual") {
+    config.algorithmSelectionMode = algorithmSelectionMode
+  }
   const execution = optionalString(value.executionMode)
   if (execution && isDeckRecommendExecutionMode(execution)) {
     config.executionMode = execution
@@ -3128,7 +3202,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                 </div>
               </div>
 
-              <div class="grid gap-2">
+              <div v-if="activeAlgorithms.length > 1" class="grid gap-2">
                 <Label>{{ t("deckRecommend.form.executionMode") }}</Label>
                 <Select :model-value="executionMode" :disabled="runner.running.value" @update:model-value="updateExecutionMode">
                   <SelectTrigger class="w-full">

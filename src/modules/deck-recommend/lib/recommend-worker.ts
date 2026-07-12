@@ -7,6 +7,7 @@ import type { SekaiRegion } from "@/types"
 import type {
   DeckRecommendWorkerEvent,
   DeckRecommendWorkerLoadDataRequest,
+  DeckRecommendWorkerRecommendBatchRequest,
   DeckRecommendWorkerRecommendRequest,
   DeckRecommendWorkerRequest,
 } from "./worker-protocol"
@@ -48,12 +49,23 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
 
     postEvent({ type: "progress", requestId: request.requestId, phase: "recommending" })
     const startedAt = performance.now()
+    if (request.type === "recommend-batch") {
+      const results = engine.recommendBatch(request.optionsList)
+      postEvent({
+        type: "batch-done",
+        requestId: request.requestId,
+        results,
+      })
+      return
+    }
+
     const result = engine.recommend(request.options)
+    const costMs = typeof result.cost_ms === "number" ? Math.round(result.cost_ms) : null
     postEvent({
       type: "done",
       requestId: request.requestId,
       result,
-      elapsedMs: Math.round(performance.now() - startedAt),
+      elapsedMs: costMs ?? Math.round(performance.now() - startedAt),
     })
   } catch (error) {
     postEvent({
@@ -65,7 +77,7 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
 }
 
 async function loadEngineData(
-  request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest,
+  request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest | DeckRecommendWorkerRecommendBatchRequest,
   requestId: string,
 ): Promise<{ engine: SekaiDeckRecommendWasm; elapsedMs: number; cacheHit: boolean }> {
   const startedAt = performance.now()
@@ -106,7 +118,9 @@ function getEngine() {
   return enginePromise
 }
 
-function createDataKey(request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest) {
+function createDataKey(
+  request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest | DeckRecommendWorkerRecommendBatchRequest,
+) {
   return [
     request.masterVersion,
     request.musicMetasKey ?? "unknown-music-metas",

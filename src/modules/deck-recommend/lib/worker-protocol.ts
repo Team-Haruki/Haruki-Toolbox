@@ -16,6 +16,18 @@ export type DeckRecommendWorkerRecommendRequest = {
   options: RecommendOptions
 }
 
+export type DeckRecommendWorkerRecommendBatchRequest = {
+  type: "recommend-batch"
+  requestId: string
+  region: SekaiRegion
+  masterVersion: string
+  musicMetasKey: string | null
+  masterFileNames: string[]
+  masterData?: Record<string, unknown>
+  musicMetas?: unknown
+  optionsList: RecommendOptions[]
+}
+
 export type DeckRecommendWorkerLoadDataRequest = {
   type: "load-data"
   requestId: string
@@ -39,12 +51,14 @@ export type DeckRecommendWorkerDisposeRequest = {
 
 export type DeckRecommendWorkerRequest =
   | DeckRecommendWorkerRecommendRequest
+  | DeckRecommendWorkerRecommendBatchRequest
   | DeckRecommendWorkerLoadDataRequest
   | DeckRecommendWorkerPreloadRequest
   | DeckRecommendWorkerDisposeRequest
 
 export type DeckRecommendWorkerRequestWithoutId =
   | Omit<DeckRecommendWorkerRecommendRequest, "requestId">
+  | Omit<DeckRecommendWorkerRecommendBatchRequest, "requestId">
   | Omit<DeckRecommendWorkerLoadDataRequest, "requestId">
   | Omit<DeckRecommendWorkerPreloadRequest, "requestId">
   | Omit<DeckRecommendWorkerDisposeRequest, "requestId">
@@ -71,6 +85,11 @@ export type DeckRecommendWorkerEvent =
     requestId: string
     result: RecommendResult
     elapsedMs: number
+  }
+  | {
+    type: "batch-done"
+    requestId: string
+    results: RecommendResult[]
   }
   | {
     type: "disposed"

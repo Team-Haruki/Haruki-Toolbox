@@ -28,6 +28,7 @@ import {
   mergeDeckRecommendResults,
   type TaggedRecommendResult,
 } from "../lib/recommend-results"
+import { mapRecommendBatchResults } from "../lib/recommend-batch"
 import {
   createDeckRecommendWorker,
   disposeDeckRecommendWorker,
@@ -40,6 +41,7 @@ import type {
   DeckRecommendWorkerEvent,
   DeckRecommendWorkerLoadDataRequest,
   DeckRecommendWorkerRequest,
+  DeckRecommendWorkerRecommendBatchRequest,
   DeckRecommendWorkerRecommendRequest,
 } from "../lib/worker-protocol"
 import type { CardTrainingConfig } from "../lib/training-config"
@@ -721,17 +723,18 @@ async function runAlgorithmsSequentially(
   workerInputs: readonly AlgorithmWorkerInput[],
   onEvent: (event: DeckRecommendWorkerEvent) => void,
 ): Promise<AlgorithmWorkerResult[]> {
-  const results: AlgorithmWorkerResult[] = []
-  for (const { algorithm, request } of workerInputs) {
+  if (workerInputs.length === 1) {
+    const { algorithm, request } = workerInputs[0]
     const workerResult = await recommendWithSharedWorker(request, onEvent)
-    results.push({
+    return [{
       algorithm,
       result: workerResult.result,
       elapsedMs: workerResult.elapsedMs,
-    })
+    }]
   }
 
-  return results
+  const batchResults = await recommendBatchWithSharedWorker(workerInputs.map(({ request }) => request), onEvent)
+  return mapRecommendBatchResults(workerInputs.map(({ algorithm }) => algorithm), batchResults)
 }
 
 function runAlgorithmsInParallel(
@@ -795,6 +798,54 @@ function recommendWithSharedWorker(
       requestId,
       ...input,
     })
+  })
+}
+
+function recommendBatchWithSharedWorker(
+  inputs: readonly Omit<DeckRecommendWorkerRecommendRequest, "type" | "requestId">[],
+  onEvent: (event: DeckRecommendWorkerEvent) => void,
+): Promise<RecommendResult[]> {
+  const [firstInput] = inputs
+  if (!firstInput) {
+    return Promise.resolve([])
+  }
+
+  return new Promise((resolve, reject) => {
+    const requestId = createRequestId()
+
+    const unsubscribe = subscribeDeckRecommendWorker((event) => {
+      if (event.requestId !== requestId) {
+        if (event.requestId === "worker" && event.type === "error") {
+          unsubscribe?.()
+          reject(new Error(event.message))
+        }
+        return
+      }
+
+      onEvent(event)
+      if (event.type === "batch-done") {
+        unsubscribe?.()
+        resolve(event.results)
+        return
+      }
+
+      if (event.type === "error") {
+        unsubscribe?.()
+        reject(new Error(event.message))
+      }
+    })
+
+    postDeckRecommendWorkerRequest({
+      type: "recommend-batch",
+      requestId,
+      region: firstInput.region,
+      masterVersion: firstInput.masterVersion,
+      musicMetasKey: firstInput.musicMetasKey,
+      masterFileNames: firstInput.masterFileNames,
+      masterData: firstInput.masterData,
+      musicMetas: firstInput.musicMetas,
+      optionsList: inputs.map(({ options }) => options),
+    } satisfies DeckRecommendWorkerRecommendBatchRequest)
   })
 }
 
