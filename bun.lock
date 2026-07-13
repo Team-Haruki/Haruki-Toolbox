@@ -9,7 +9,7 @@
         "@tailwindcss/vite": "^4.3.1",
         "@tanstack/vue-table": "^8.21.3",
         "@unovis/ts": "^1.6.6",
-        "@unovis/vue": "^1.6.6",
+        "@unovis/vue": "^1.6.7",
         "@vee-validate/zod": "^4.15.1",
         "@vueuse/core": "^14.3.0",
         "axios": "1.18.1",
@@ -651,7 +651,7 @@
 
     "@unovis/ts": ["@unovis/ts@1.6.6", "", { "dependencies": { "@emotion/css": "^11.7.1", "@juggle/resize-observer": "^3.3.1", "@types/d3": "^7.4.0", "@types/d3-array": "~3.2.2", "@types/d3-axis": "~3.0.6", "@types/d3-brush": "~3.0.6", "@types/d3-chord": "~3.0.6", "@types/d3-collection": "^1.0.10", "@types/d3-color": "~3.1.3", "@types/d3-drag": "~3.0.7", "@types/d3-ease": "~3.0.2", "@types/d3-force": "~3.0.10", "@types/d3-geo": "~3.1.0", "@types/d3-hierarchy": "~3.1.7", "@types/d3-interpolate": "~3.0.4", "@types/d3-path": "~3.1.1", "@types/d3-sankey": "^0.12.4", "@types/d3-scale": "~4.0.9", "@types/d3-selection": "~3.0.0", "@types/d3-shape": "~3.1.7", "@types/d3-timer": "~3.0.2", "@types/d3-transition": "~3.0.9", "@types/d3-zoom": "~3.0.8", "@types/dagre": "^0.7.50", "@types/geojson": "^7946.0.8", "@types/leaflet": "1.7.6", "@types/supercluster": "^5.0.2", "@types/three": "^0.135.0", "@types/throttle-debounce": "^5.0.0", "@types/topojson": "^3.2.3", "@types/topojson-client": "^3.0.0", "@types/topojson-specification": "^1.0.2", "@unovis/dagre-layout": "0.8.8-2", "@unovis/graphlibrary": "2.2.0-2", "d3": "^7.2.1", "d3-array": "~3", "d3-axis": "~3", "d3-brush": "~3", "d3-chord": "~3", "d3-collection": "^1.0.7", "d3-color": "~3", "d3-drag": "~3", "d3-ease": "~3", "d3-force": "~3", "d3-geo": "~3", "d3-geo-projection": "^4.0.0", "d3-hierarchy": "~3", "d3-interpolate": "~3", "d3-interpolate-path": "^2.2.3", "d3-path": "~3", "d3-sankey": "^0.12.3", "d3-scale": "~4", "d3-selection": "~3", "d3-shape": "~3", "d3-timer": "~3", "d3-transition": "~3", "d3-zoom": "~3", "elkjs": "^0.10.0", "geojson": "^0.5.0", "leaflet": "1.7.1", "maplibre-gl": "^2.1.9", "striptags": "^3.2.0", "supercluster": "^7.1.5", "three": "^0.135.0", "throttle-debounce": "^5.0.0", "topojson-client": "^3.1.0", "tslib": "^2.3.1" } }, "sha512-i9VJpURi1sycMrTO6MfVRAThVH1Ugmu1olhkStlBGoCzbWvQW016K105AnvpQ3qGzpYkUAaW101ohdatt8yBrw=="],
 
-    "@unovis/vue": ["@unovis/vue@1.6.6", "", { "peerDependencies": { "@unovis/ts": "1.6.6", "vue": "^3" } }, "sha512-2WmSy2JWuoNE6jtV12TMGF4BcXsGF4gkJe1mx2sClVZ6M6s6ByHNmXH2XjLSkKzHitYsHoduPiDFtcb3OBR3iw=="],
+    "@unovis/vue": ["@unovis/vue@1.6.7", "", { "peerDependencies": { "@unovis/ts": "1.6.7", "vue": "^3" } }, "sha512-iyYdwwI8Tm8Kyb3aUvG3GVmId6gcmw8EY2Qbaim1W4uqktDYViFzJXIjLPbNir4ju+ziXmaxM2sfhfEC3t3TYw=="],
 
     "@vee-validate/zod": ["@vee-validate/zod@4.15.1", "", { "dependencies": { "type-fest": "^4.8.3", "vee-validate": "4.15.1" }, "peerDependencies": { "zod": "^3.24.0" } }, "sha512-329Z4TDBE5Vx0FdbA8S4eR9iGCFFUNGbxjpQ20ff5b5wGueScjocUIx9JHPa79LTG06RnlUR4XogQsjN4tecKA=="],
 
