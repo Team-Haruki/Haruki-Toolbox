@@ -24,6 +24,7 @@ import {
 import { computed } from "vue"
 import { useUserStore } from "@/shared/stores/user"
 import { WEB_NAV_ITEMS } from "@/config/navigation"
+import CurrentEventCard from "@/modules/home/components/CurrentEventCard.vue"
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const { t } = useI18n()
@@ -62,6 +63,7 @@ const { t } = useI18n()
     </router-link>
 
     <div class="grid gap-4 sm:gap-6 sm:grid-cols-2 items-start">
+    <CurrentEventCard />
     <Card v-for="group in WEB_NAV_ITEMS" :key="group.titleKey" class="w-full">
       <CardHeader>
         <CardTitle>{{ t(group.titleKey) }}</CardTitle>

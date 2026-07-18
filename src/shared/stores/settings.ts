@@ -3,6 +3,8 @@ import { ref, computed } from "vue"
 import { DEFAULT_LOCALE, type AppLocale } from "@/shared/i18n"
 import { SEKAI_ASSET_ENDPOINT_ROOTS } from "@/shared/sekai/data-sources"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
+import type { SekaiRegion } from "@/types"
+import { normalizeSekaiRegion } from "@/lib/sekai-region"
 
 export type EndpointType = 'direct' | 'cdn'
 export type ThemeType = 'light' | 'dark' | 'system'
@@ -67,6 +69,7 @@ export const useSettingsStore = defineStore("settings", () => {
     const locale = ref<AppLocale>(DEFAULT_LOCALE)
     const reducedVisualEffects = ref(false)
     const hideGameUserId = ref(false)
+    const sekaiCatalogRegion = ref<SekaiRegion>('jp')
     const hasDirectEndpoint = computed(() => directEndpoint.value !== '')
     const hasCdnEndpoint = computed(() => cdnEndpoint.value !== '')
 
@@ -130,6 +133,9 @@ export const useSettingsStore = defineStore("settings", () => {
     }
     function setHideGameUserId(enabled: boolean) {
         hideGameUserId.value = enabled
+    }
+    function setSekaiCatalogRegion(region: SekaiRegion) {
+        sekaiCatalogRegion.value = normalizeSekaiRegion(region) ?? 'jp'
     }
     function applyTheme(themeValue: ThemeType) {
         const root = document.documentElement
@@ -255,6 +261,7 @@ export const useSettingsStore = defineStore("settings", () => {
         locale,
         reducedVisualEffects,
         hideGameUserId,
+        sekaiCatalogRegion,
         getEndpointUrl,
         getAssetEndpointUrl,
         setPreferredEndpoint,
@@ -264,6 +271,7 @@ export const useSettingsStore = defineStore("settings", () => {
         setLocale,
         setReducedVisualEffects,
         setHideGameUserId,
+        setSekaiCatalogRegion,
         initTheme,
         initVisualEffects,
         initAssetEndpointPreference,
@@ -284,6 +292,7 @@ export const useSettingsStore = defineStore("settings", () => {
             'locale',
             'reducedVisualEffects',
             'hideGameUserId',
+            'sekaiCatalogRegion',
         ]
     }
 })

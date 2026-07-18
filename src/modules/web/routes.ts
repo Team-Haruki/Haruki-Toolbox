@@ -4,6 +4,9 @@ import { navigationRoutes } from "@/modules/navigation/routes"
 import { sponsorRoutes } from "@/modules/sponsor/routes"
 import { deckRecommendRoutes } from "@/modules/deck-recommend/routes"
 import { rankBorderRoutes } from "@/modules/rank-border/routes"
+import { musicLibraryRoutes } from "@/modules/music-library/routes"
+import { cardsRoutes } from "@/modules/cards/routes"
+import { eventsRoutes } from "@/modules/events/routes"
 import { clientConfigGeneratorRoutes } from "@/modules/client-config-generator/routes"
 import { toolRoutes } from "@/modules/tools/routes"
 import { userRoutes } from "@/modules/user/routes"
@@ -16,6 +19,9 @@ export const webChildRoutes: RouteRecordRaw[] = [
     ...sponsorRoutes,
     ...deckRecommendRoutes,
     ...rankBorderRoutes,
+    ...musicLibraryRoutes,
+    ...cardsRoutes,
+    ...eventsRoutes,
     ...clientConfigGeneratorRoutes,
     ...toolRoutes,
     ...userRoutes,

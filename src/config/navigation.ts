@@ -2,6 +2,7 @@ import type { Component } from "vue"
 import {
   LucideArrowDownToLine,
   LucideCalculator,
+  LucideCalendarDays,
   LucideCloudUpload,
   LucideCog,
   LucideFileEdit,
@@ -9,12 +10,15 @@ import {
   LucideHeartHandshake,
   LucideKeyRound,
   LucideLayoutDashboard,
+  LucideLibrary,
+  LucideMusic,
   LucideNavigation,
   LucideScrollText,
   LucideShieldAlert,
   LucideTicket,
   LucideTrophy,
   LucideUsers,
+  LucideWalletCards,
   LucideWebhook,
   LucideWrench,
 } from "lucide-vue-next"
@@ -39,6 +43,15 @@ export const WEB_NAV_ITEMS: NavItem[] = [
       { titleKey: "navigation.items.friendGroups", icon: LucideUsers, url: "/friend-groups" },
       { titleKey: "navigation.items.friendLinks", icon: LucideUsers, url: "/friend-links" },
       { titleKey: "navigation.items.sponsors", icon: LucideHeartHandshake, url: "/sponsors" },
+    ],
+  },
+  {
+    titleKey: "navigation.groups.sekaiCatalog",
+    icon: LucideLibrary,
+    items: [
+      { titleKey: "navigation.items.musicLibrary", icon: LucideMusic, url: "/music" },
+      { titleKey: "navigation.items.cards", icon: LucideWalletCards, url: "/cards" },
+      { titleKey: "navigation.items.events", icon: LucideCalendarDays, url: "/events" },
     ],
   },
   {
