@@ -7,6 +7,8 @@ import { rankBorderRoutes } from "@/modules/rank-border/routes"
 import { musicLibraryRoutes } from "@/modules/music-library/routes"
 import { cardsRoutes } from "@/modules/cards/routes"
 import { eventsRoutes } from "@/modules/events/routes"
+import { gachasRoutes } from "@/modules/gachas/routes"
+import { playerProfileRoutes } from "@/modules/player-profile/routes"
 import { clientConfigGeneratorRoutes } from "@/modules/client-config-generator/routes"
 import { toolRoutes } from "@/modules/tools/routes"
 import { userRoutes } from "@/modules/user/routes"
@@ -22,6 +24,8 @@ export const webChildRoutes: RouteRecordRaw[] = [
     ...musicLibraryRoutes,
     ...cardsRoutes,
     ...eventsRoutes,
+    ...gachasRoutes,
+    ...playerProfileRoutes,
     ...clientConfigGeneratorRoutes,
     ...toolRoutes,
     ...userRoutes,

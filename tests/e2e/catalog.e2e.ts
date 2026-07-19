@@ -22,6 +22,12 @@ test("event catalog route renders its list page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /活动图鉴|Event catalog/ })).toBeVisible()
 })
 
+test("gacha catalog route renders its list page", async ({ page }) => {
+  await page.goto("/gachas")
+
+  await expect(page.getByRole("heading", { name: /卡池图鉴|Gacha catalog/ })).toBeVisible()
+})
+
 test("home navigation links into the sekai catalog", async ({ page }) => {
   await page.goto("/")
 
