@@ -1,12 +1,13 @@
 import {
   getUserProfile,
-  fetchDeckRecommendUserData,
+  fetchDeckRecommendMysekaiUserData,
   normalizeDeckRecommendUserDataResponse,
   type DeckRecommendUserDataResponse,
   type FetchDeckRecommendUserDataParams,
   type GetUserProfileResponse,
   unwrapGameAccountDataResponse,
 } from "../api/recommend-data"
+import { fetchUserSuiteWithCache } from "@/shared/sekai/user-snapshot/fetch"
 import {
   makeDeckRecommendUserDataCacheKey,
   readDeckRecommendProfileCache,
@@ -43,14 +44,24 @@ export type RefreshDeckRecommendProfilesResult = {
 const userDataRequests = new Map<string, Promise<DeckRecommendUserDataFetchResult>>()
 const profileRequests = new Map<string, Promise<DeckRecommendProfileFetchResult>>()
 
+export const DECK_RECOMMEND_SUITE_KEYS = [
+  "userAreas",
+  "userCards",
+  "userCharacters",
+  "userGamedata",
+  "userHonors",
+] as const
+
 export type DeckRecommendUserDataCacheDependencies = {
-  fetchUserData: typeof fetchDeckRecommendUserData
+  fetchSuite: typeof fetchUserSuiteWithCache
+  fetchMysekaiUserData: typeof fetchDeckRecommendMysekaiUserData
   readUserDataCache: typeof readDeckRecommendUserDataCache
   writeUserDataCache: typeof writeDeckRecommendUserDataCache
 }
 
 const defaultUserDataCacheDependencies: DeckRecommendUserDataCacheDependencies = {
-  fetchUserData: fetchDeckRecommendUserData,
+  fetchSuite: fetchUserSuiteWithCache,
+  fetchMysekaiUserData: fetchDeckRecommendMysekaiUserData,
   readUserDataCache: readDeckRecommendUserDataCache,
   writeUserDataCache: writeDeckRecommendUserDataCache,
 }
@@ -159,6 +170,10 @@ export async function fetchDeckRecommendCachedUserData(
   strategy: DeckRecommendUserDataCacheStrategy,
   dependencies: DeckRecommendUserDataCacheDependencies = defaultUserDataCacheDependencies,
 ): Promise<DeckRecommendUserDataFetchResult> {
+  if (params.mode === "suite") {
+    return fetchDeckRecommendSuiteUserDataFromSnapshot(params, strategy, dependencies)
+  }
+
   const cachedRecord = await safeReadUserDataCache(params, dependencies.readUserDataCache)
   const cachedRecordComplete = cachedRecord
     ? isDeckRecommendUserDataResponseComplete(cachedRecord.data, params.mode)
@@ -173,7 +188,7 @@ export async function fetchDeckRecommendCachedUserData(
     }
   }
 
-  const readResult = await dependencies.fetchUserData({
+  const readResult = await dependencies.fetchMysekaiUserData({
     ...params,
     knownUploadTime: cachedRecord && cachedRecordComplete ? cachedRecord.uploadTime : undefined,
   })
@@ -204,6 +219,32 @@ export async function fetchDeckRecommendCachedUserData(
     cacheable,
     remoteUploadTime,
     cacheUpdatedAt: writtenRecord?.updatedAt ?? cachedRecord?.updatedAt ?? null,
+  }
+}
+
+async function fetchDeckRecommendSuiteUserDataFromSnapshot(
+  params: FetchDeckRecommendUserDataParams,
+  strategy: DeckRecommendUserDataCacheStrategy,
+  dependencies: DeckRecommendUserDataCacheDependencies,
+): Promise<DeckRecommendUserDataFetchResult> {
+  const result = await dependencies.fetchSuite({
+    toolboxUserId: params.toolboxUserId,
+    server: params.server,
+    gameUserId: params.gameUserId,
+    keys: DECK_RECOMMEND_SUITE_KEYS,
+  }, { strategy })
+  const data: DeckRecommendUserDataResponse = {
+    server: params.server,
+    gameUserId: String(params.gameUserId),
+    mode: "suite",
+    userData: result.data,
+  }
+  return {
+    data,
+    cacheHit: result.cacheHit,
+    cacheable: result.cacheable && isDeckRecommendUserDataResponseComplete(data, "suite"),
+    remoteUploadTime: result.remoteUploadTime,
+    cacheUpdatedAt: result.cacheUpdatedAt,
   }
 }
 

@@ -15,10 +15,9 @@ Object.defineProperty(globalThis, "localStorage", { value: storage, configurable
 Object.defineProperty(globalThis, "sessionStorage", { value: storage, configurable: true })
 
 const {
-  fetchDeckRecommendUserData,
+  fetchDeckRecommendMysekaiUserData,
   normalizeDeckRecommendUserDataResponse,
   normalizeDeckRecommendUploadTime,
-  unwrapGameAccountDataKeyResponse,
   unwrapGameAccountDataResponse,
   unwrapUserProfileResponse,
 } = await import("./recommend-data")
@@ -89,13 +88,6 @@ describe("deck recommend data api helpers", () => {
     expect(unwrapGameAccountDataResponse({ payload: { data: directData } })).toBe(directData)
   })
 
-  it("unwraps explicit game account data key responses", () => {
-    const userGamedata = { userId: 123, deck: 1 }
-    expect(unwrapGameAccountDataKeyResponse(userGamedata, "userGamedata")).toBe(userGamedata)
-    expect(unwrapGameAccountDataKeyResponse({ updatedData: { userGamedata } }, "userGamedata")).toBe(userGamedata)
-    expect(unwrapGameAccountDataKeyResponse({ data: { updatedData: { userGamedata } } }, "userGamedata")).toBe(userGamedata)
-  })
-
   it("normalizes cached deck recommend user data responses", () => {
     const directData = { userCards: [{ cardId: 1 }] }
     expect(normalizeDeckRecommendUserDataResponse({
@@ -108,14 +100,13 @@ describe("deck recommend data api helpers", () => {
 })
 
 describe("deck recommend conditional data reads", () => {
-  it("uses one suite request and the local stamp when the server returns 304", async () => {
+  it("uses one mysekai request and the local stamp when the server returns 304", async () => {
     const { requester, requests } = createRequester(() => ({ data: "", status: 304 }))
 
-    const result = await fetchDeckRecommendUserData({
+    const result = await fetchDeckRecommendMysekaiUserData({
       toolboxUserId: "toolbox-user",
       server: "jp",
       gameUserId: "123456789",
-      mode: "suite",
       knownUploadTime: 1712345678,
     }, requester)
 
@@ -124,71 +115,14 @@ describe("deck recommend conditional data reads", () => {
     expect(requests[0]?.params).toEqual({ known_upload_time: 1712345678 })
   })
 
-  it("merges changed suite data and only accepts matching body timestamps", async () => {
-    let call = 0
-    const { requester, requests } = createRequester(() => {
-      call += 1
-      return call === 1
-        ? {
-            status: 200,
-            data: {
-              upload_time: 1712345679,
-              userCards: [{ cardId: 1 }],
-              userAreas: [],
-              userCharacters: [],
-              userHonors: [],
-            },
-          }
-        : {
-            status: 200,
-            data: {
-              upload_time: 1712345679,
-              userGamedata: { userId: 123456789, deck: 1 },
-            },
-          }
-    })
+  it("rejects a 304 mysekai response without a known upload time", async () => {
+    const { requester } = createRequester(() => ({ data: "", status: 304 }))
 
-    const result = await fetchDeckRecommendUserData({
+    await expect(fetchDeckRecommendMysekaiUserData({
       toolboxUserId: "toolbox-user",
       server: "jp",
       gameUserId: "123456789",
-      mode: "suite",
-      knownUploadTime: 1712345678,
-    }, requester)
-
-    expect(result.kind).toBe("data")
-    if (result.kind !== "data") {
-      throw new Error("expected changed data")
-    }
-    expect(result.uploadTime).toBe(1712345679)
-    expect(result.data.userData.userGamedata).toEqual({ userId: 123456789, deck: 1 })
-    expect(requests).toHaveLength(2)
-    expect(requests[1]?.params).toEqual({ key: "userGamedata,upload_time" })
-  })
-
-  it("does not expose a cache timestamp for cross-generation suite responses", async () => {
-    let call = 0
-    const { requester } = createRequester(() => {
-      call += 1
-      return {
-        status: 200,
-        data: call === 1
-          ? { upload_time: 1712345679, userCards: [] }
-          : { upload_time: 1712345680, userGamedata: { userId: 123456789 } },
-      }
-    })
-
-    const result = await fetchDeckRecommendUserData({
-      toolboxUserId: "toolbox-user",
-      server: "jp",
-      gameUserId: "123456789",
-      mode: "suite",
-    }, requester)
-
-    expect(result.kind).toBe("data")
-    if (result.kind === "data") {
-      expect(result.uploadTime).toBeNull()
-    }
+    }, requester)).rejects.toThrow("received 304 without a valid known upload time")
   })
 
   it("accepts a legacy 200 response when the backend ignores the conditional parameter", async () => {
@@ -197,11 +131,10 @@ describe("deck recommend conditional data reads", () => {
       data: { upload_time: 1712345679, userMysekaiGates: [] },
     }))
 
-    const result = await fetchDeckRecommendUserData({
+    const result = await fetchDeckRecommendMysekaiUserData({
       toolboxUserId: "toolbox-user",
       server: "jp",
       gameUserId: "123456789",
-      mode: "mysekai",
       knownUploadTime: 1712345678,
     }, requester)
 

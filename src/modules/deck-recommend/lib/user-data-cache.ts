@@ -6,7 +6,7 @@ import type {
 } from "../api/recommend-data"
 
 const DB_NAME = "haruki-deck-recommend-user-data"
-const DB_VERSION = 2
+const DB_VERSION = 3
 const USER_DATA_STORE = "gameAccountData"
 const LEGACY_SUITE_USER_DATA_STORE = "suiteUserData"
 
@@ -161,7 +161,13 @@ function openDeckRecommendUserDataDatabase(): Promise<IDBDatabase> {
       const db = request.result
       if (!db.objectStoreNames.contains(USER_DATA_STORE)) {
         db.createObjectStore(USER_DATA_STORE, { keyPath: "key" })
+        return
       }
+
+      // Suite user data moved to the shared user snapshot cache; drop orphaned "suite:*" records.
+      request.transaction
+        ?.objectStore(USER_DATA_STORE)
+        .delete(IDBKeyRange.bound("suite:", "suite;", false, true))
     }
 
     request.onsuccess = () => resolve(request.result)
