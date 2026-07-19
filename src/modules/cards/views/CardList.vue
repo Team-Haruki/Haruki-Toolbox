@@ -22,6 +22,7 @@ import {
   LucideChevronDown,
   LucideChevronLeft,
   LucideChevronRight,
+  LucidePackageOpen,
   LucideRotateCcw,
   LucideSearch,
 } from "lucide-vue-next"
@@ -179,6 +180,12 @@ function nextPage() {
         <p class="text-sm text-muted-foreground">{{ t("cards.list.description") }}</p>
       </div>
       <div class="flex items-center gap-2">
+        <Button as-child variant="outline" size="sm" class="gap-1.5">
+          <RouterLink :to="{ name: 'cards.box' }">
+            <LucidePackageOpen class="size-4" />
+            {{ t("cardBox.entryLink") }}
+          </RouterLink>
+        </Button>
         <Select :key="locale" v-model="selectedRegion">
           <SelectTrigger class="w-32" :aria-label="t('cards.common.region')">
             <SelectValue />

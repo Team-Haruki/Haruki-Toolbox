@@ -1,6 +1,7 @@
 import type { Component } from "vue"
 import {
   LucideArrowDownToLine,
+  LucideBox,
   LucideCalculator,
   LucideCalendarDays,
   LucideCloudUpload,
@@ -8,15 +9,18 @@ import {
   LucideFileEdit,
   LucideGamepad2,
   LucideHeartHandshake,
+  LucideHistory,
   LucideKeyRound,
   LucideLayoutDashboard,
   LucideLibrary,
+  LucideListChecks,
   LucideMusic,
   LucideNavigation,
   LucideScrollText,
   LucideShieldAlert,
   LucideTicket,
   LucideTrophy,
+  LucideUserRound,
   LucideUsers,
   LucideWalletCards,
   LucideWebhook,
@@ -52,6 +56,15 @@ export const WEB_NAV_ITEMS: NavItem[] = [
       { titleKey: "navigation.items.musicLibrary", icon: LucideMusic, url: "/music" },
       { titleKey: "navigation.items.cards", icon: LucideWalletCards, url: "/cards" },
       { titleKey: "navigation.items.events", icon: LucideCalendarDays, url: "/events" },
+    ],
+  },
+  {
+    titleKey: "navigation.groups.sekaiPlayer",
+    icon: LucideUserRound,
+    items: [
+      { titleKey: "navigation.items.cardBox", icon: LucideBox, url: "/cards/box" },
+      { titleKey: "navigation.items.musicProgress", icon: LucideListChecks, url: "/music/progress" },
+      { titleKey: "navigation.items.eventRecords", icon: LucideHistory, url: "/events/records" },
     ],
   },
   {

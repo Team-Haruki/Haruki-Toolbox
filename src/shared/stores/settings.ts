@@ -70,6 +70,7 @@ export const useSettingsStore = defineStore("settings", () => {
     const reducedVisualEffects = ref(false)
     const hideGameUserId = ref(false)
     const sekaiCatalogRegion = ref<SekaiRegion>('jp')
+    const selectedGameAccountKey = ref<string | null>(null)
     const hasDirectEndpoint = computed(() => directEndpoint.value !== '')
     const hasCdnEndpoint = computed(() => cdnEndpoint.value !== '')
 
@@ -136,6 +137,9 @@ export const useSettingsStore = defineStore("settings", () => {
     }
     function setSekaiCatalogRegion(region: SekaiRegion) {
         sekaiCatalogRegion.value = normalizeSekaiRegion(region) ?? 'jp'
+    }
+    function setSelectedGameAccountKey(key: string | null) {
+        selectedGameAccountKey.value = key
     }
     function applyTheme(themeValue: ThemeType) {
         const root = document.documentElement
@@ -262,6 +266,7 @@ export const useSettingsStore = defineStore("settings", () => {
         reducedVisualEffects,
         hideGameUserId,
         sekaiCatalogRegion,
+        selectedGameAccountKey,
         getEndpointUrl,
         getAssetEndpointUrl,
         setPreferredEndpoint,
@@ -272,6 +277,7 @@ export const useSettingsStore = defineStore("settings", () => {
         setReducedVisualEffects,
         setHideGameUserId,
         setSekaiCatalogRegion,
+        setSelectedGameAccountKey,
         initTheme,
         initVisualEffects,
         initAssetEndpointPreference,
@@ -293,6 +299,7 @@ export const useSettingsStore = defineStore("settings", () => {
             'reducedVisualEffects',
             'hideGameUserId',
             'sekaiCatalogRegion',
+            'selectedGameAccountKey',
         ]
     }
 })

@@ -34,6 +34,7 @@ import {
   readDeckRecommendProfileCache,
   readDeckRecommendUserDataCache,
 } from "@/modules/deck-recommend/lib/user-data-cache"
+import { clearUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import type { SekaiRegion } from "@/types"
@@ -167,6 +168,7 @@ async function clearUserDataCache() {
   clearing.value = true
   try {
     await clearDeckRecommendUserDataCache(userStore.userId)
+    await clearUserSuiteSubsetCache(userStore.userId)
     cacheUpdatedAt.value = null
     cacheUploadTime.value = null
     lastCacheHit.value = null

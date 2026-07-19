@@ -8,12 +8,14 @@ import { useWebLayout } from "@/modules/web/composables/useWebLayout"
 import { WEB_NAV_ITEMS } from "@/config/navigation"
 import { useSettingsStore } from "@/shared/stores/settings"
 import HomeSettingsDialog from "@/modules/home/components/HomeSettingsDialog.vue"
+import { GlobalSearchDialog } from "@/modules/search"
 import { cn } from "@/lib/utils"
 
 import {
   LucideHome,
   LucideChevronRight,
   LucideInfo,
+  LucideSearch,
   LucideShieldCheck,
   LucideTicket,
 } from 'lucide-vue-next'
@@ -61,6 +63,7 @@ const {
 } = useWebLayout()
 const homeSettingsDialogOpen = ref(false)
 const homeSettingsDialogTab = ref("preferences")
+const globalSearchDialog = ref<InstanceType<typeof GlobalSearchDialog> | null>(null)
 
 function openAppSettings() {
   homeSettingsDialogTab.value = "app"
@@ -212,6 +215,16 @@ function openAppSettings() {
           {{ pageTitle }}
         </div>
         <div class="ml-auto flex shrink-0 items-center">
+          <button
+            type="button"
+            class="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            :aria-label="t('globalSearch.title')"
+            :title="t('globalSearch.title')"
+            @click="globalSearchDialog?.open()"
+          >
+            <LucideSearch class="size-4.5" />
+          </button>
+          <GlobalSearchDialog ref="globalSearchDialog" />
           <HomeSettingsDialog v-model:open="homeSettingsDialogOpen" v-model:tab="homeSettingsDialogTab" />
         </div>
       </header>

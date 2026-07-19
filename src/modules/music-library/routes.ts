@@ -8,6 +8,14 @@ export const musicLibraryRoutes: RouteRecordRaw[] = [
         meta: { titleKey: "route.musicLibrary.list" },
     },
     {
+        // Must stay before the /music/:musicId catch-all so "progress" is not
+        // captured as a musicId param.
+        path: "/music/progress",
+        name: "musicLibrary.progress",
+        component: () => import("@/modules/music-library/views/MusicProgress.vue"),
+        meta: { titleKey: "route.musicLibrary.progress", requiresAuth: true },
+    },
+    {
         path: "/music/:musicId",
         name: "musicLibrary.detail",
         component: () => import("@/modules/music-library/views/MusicDetail.vue"),

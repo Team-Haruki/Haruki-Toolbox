@@ -8,6 +8,12 @@ export const cardsRoutes: RouteRecordRaw[] = [
         meta: { titleKey: "route.cards.list" },
     },
     {
+        path: "/cards/box",
+        name: "cards.box",
+        component: () => import("@/modules/cards/views/CardBox.vue"),
+        meta: { titleKey: "route.cards.box", requiresAuth: true },
+    },
+    {
         path: "/cards/:cardId",
         name: "cards.detail",
         component: () => import("@/modules/cards/views/CardDetail.vue"),
