@@ -1,4 +1,4 @@
-import axios, { type AxiosError, type AxiosInstance, type AxiosRequestConfig } from "axios"
+import axios, { type AxiosError, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from "axios"
 import { toast } from "vue-sonner"
 import { useUserStore } from "@/shared/stores/user"
 import { useSettingsStore } from "@/shared/stores/settings"
@@ -172,6 +172,14 @@ export async function request<T = unknown>(
     url: string,
     options: AxiosRequestConfig = {}
 ): Promise<T> {
+    const response = await requestWithResponse<T>(url, options)
+    return response.data
+}
+
+export async function requestWithResponse<T = unknown>(
+    url: string,
+    options: AxiosRequestConfig = {}
+): Promise<AxiosResponse<T>> {
     const { retry, ...axiosOptions } = options
     const requestOptions: AxiosRequestConfig = {
         ...axiosOptions,
@@ -191,7 +199,7 @@ export async function request<T = unknown>(
                 retryMax: maxRetries,
                 ...requestOptions,
             })
-            return response.data
+            return response
         } catch (error) {
             if (!shouldRetry(error) || attempt >= maxRetries) {
                 throw error

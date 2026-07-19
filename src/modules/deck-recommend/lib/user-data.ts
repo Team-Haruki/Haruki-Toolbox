@@ -1,6 +1,5 @@
 import {
   getUserProfile,
-  fetchDeckRecommendUploadTime,
   fetchDeckRecommendUserData,
   normalizeDeckRecommendUserDataResponse,
   type DeckRecommendUserDataResponse,
@@ -43,6 +42,18 @@ export type RefreshDeckRecommendProfilesResult = {
 
 const userDataRequests = new Map<string, Promise<DeckRecommendUserDataFetchResult>>()
 const profileRequests = new Map<string, Promise<DeckRecommendProfileFetchResult>>()
+
+export type DeckRecommendUserDataCacheDependencies = {
+  fetchUserData: typeof fetchDeckRecommendUserData
+  readUserDataCache: typeof readDeckRecommendUserDataCache
+  writeUserDataCache: typeof writeDeckRecommendUserDataCache
+}
+
+const defaultUserDataCacheDependencies: DeckRecommendUserDataCacheDependencies = {
+  fetchUserData: fetchDeckRecommendUserData,
+  readUserDataCache: readDeckRecommendUserDataCache,
+  writeUserDataCache: writeDeckRecommendUserDataCache,
+}
 
 export async function fetchDeckRecommendUserDataWithCache(
   params: FetchDeckRecommendUserDataParams,
@@ -143,11 +154,12 @@ async function fetchCachedDeckRecommendProfile(
   }
 }
 
-async function fetchDeckRecommendCachedUserData(
+export async function fetchDeckRecommendCachedUserData(
   params: FetchDeckRecommendUserDataParams,
   strategy: DeckRecommendUserDataCacheStrategy,
+  dependencies: DeckRecommendUserDataCacheDependencies = defaultUserDataCacheDependencies,
 ): Promise<DeckRecommendUserDataFetchResult> {
-  const cachedRecord = await safeReadUserDataCache(params)
+  const cachedRecord = await safeReadUserDataCache(params, dependencies.readUserDataCache)
   const cachedRecordComplete = cachedRecord
     ? isDeckRecommendUserDataResponseComplete(cachedRecord.data, params.mode)
     : false
@@ -161,29 +173,35 @@ async function fetchDeckRecommendCachedUserData(
     }
   }
 
-  const remoteUploadTime = await fetchDeckRecommendUploadTime(params).catch(() => null)
-  if (cachedRecord && cachedRecordComplete && remoteUploadTime != null && cachedRecord.uploadTime === remoteUploadTime) {
+  const readResult = await dependencies.fetchUserData({
+    ...params,
+    knownUploadTime: cachedRecord && cachedRecordComplete ? cachedRecord.uploadTime : undefined,
+  })
+  if (readResult.kind === "not-modified" && cachedRecord && cachedRecordComplete) {
     return {
       data: cachedRecord.data,
       cacheHit: true,
       cacheable: true,
-      remoteUploadTime,
+      remoteUploadTime: readResult.uploadTime,
       cacheUpdatedAt: cachedRecord.updatedAt,
     }
   }
 
-  const data = await fetchDeckRecommendUserData({
-    ...params,
-    cacheBust: remoteUploadTime != null,
-  })
+  if (readResult.kind === "not-modified") {
+    throw new Error("received not-modified response without a complete local cache")
+  }
+
+  const data = readResult.data
+  const remoteUploadTime = readResult.uploadTime
+  const cacheable = remoteUploadTime != null && isDeckRecommendUserDataResponseComplete(data, params.mode)
   const writtenRecord = remoteUploadTime == null || !isDeckRecommendUserDataResponseComplete(data, params.mode)
     ? null
-    : await safeWriteUserDataCache(params, data, remoteUploadTime)
+    : await safeWriteUserDataCache(params, data, remoteUploadTime, dependencies.writeUserDataCache)
 
   return {
     data,
     cacheHit: false,
-    cacheable: true,
+    cacheable,
     remoteUploadTime,
     cacheUpdatedAt: writtenRecord?.updatedAt ?? cachedRecord?.updatedAt ?? null,
   }
@@ -205,7 +223,7 @@ function mergeDeckRecommendUserDataFetchResults(
       },
     },
     cacheHit: suiteResult.cacheHit && mysekaiResult.cacheHit,
-    cacheable: true,
+    cacheable: suiteResult.cacheable && mysekaiResult.cacheable,
     remoteUploadTime: mysekaiResult.remoteUploadTime ?? suiteResult.remoteUploadTime,
     cacheUpdatedAt: maxNullableNumber(suiteResult.cacheUpdatedAt, mysekaiResult.cacheUpdatedAt),
   }
@@ -213,9 +231,10 @@ function mergeDeckRecommendUserDataFetchResults(
 
 async function safeReadUserDataCache(
   params: FetchDeckRecommendUserDataParams,
+  readCache: typeof readDeckRecommendUserDataCache = readDeckRecommendUserDataCache,
 ): Promise<DeckRecommendUserDataCacheRecord | null> {
   try {
-    const record = await readDeckRecommendUserDataCache(params)
+    const record = await readCache(params)
     if (!record) {
       return null
     }
@@ -279,9 +298,10 @@ async function safeWriteUserDataCache(
   params: FetchDeckRecommendUserDataParams,
   data: DeckRecommendUserDataResponse,
   uploadTime: number,
+  writeCache: typeof writeDeckRecommendUserDataCache = writeDeckRecommendUserDataCache,
 ): Promise<DeckRecommendUserDataCacheRecord | null> {
   try {
-    return await writeDeckRecommendUserDataCache(params, data, uploadTime)
+    return await writeCache(params, data, uploadTime)
   } catch {
     return null
   }

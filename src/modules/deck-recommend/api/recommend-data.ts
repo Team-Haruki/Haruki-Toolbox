@@ -1,6 +1,7 @@
 import { buildUserApiPath } from "@/core/http/path"
-import { request } from "@/core/http/call-api"
+import { requestWithResponse } from "@/core/http/call-api"
 import type { SekaiRegion } from "@/types"
+import type { AxiosRequestConfig, AxiosResponse } from "axios"
 
 export type DeckRecommendUserDataMode = "suite" | "mysekai"
 export type DeckRecommendGameAccountDataType = DeckRecommendUserDataMode | "profile"
@@ -11,6 +12,7 @@ export type FetchDeckRecommendUserDataParams = {
   gameUserId: string | number
   mode: DeckRecommendUserDataMode
   cacheBust?: boolean
+  knownUploadTime?: number
 }
 
 export type FetchDeckRecommendGameAccountDataParams = {
@@ -20,6 +22,7 @@ export type FetchDeckRecommendGameAccountDataParams = {
   dataType: DeckRecommendGameAccountDataType
   key?: string
   cacheBust?: boolean
+  knownUploadTime?: number
 }
 
 export type DeckRecommendUserDataResponse = {
@@ -28,6 +31,22 @@ export type DeckRecommendUserDataResponse = {
   mode: DeckRecommendUserDataMode
   userData: Record<string, unknown>
 }
+
+export type DeckRecommendUserDataReadResult =
+  | {
+      kind: "not-modified"
+      uploadTime: number
+    }
+  | {
+      kind: "data"
+      data: DeckRecommendUserDataResponse
+      uploadTime: number | null
+    }
+
+export type DeckRecommendResponseRequester = <T = unknown>(
+  url: string,
+  options?: AxiosRequestConfig,
+) => Promise<AxiosResponse<T>>
 
 export type GetUserProfileResponse = Record<string, unknown> & {
   user?: Record<string, unknown>
@@ -52,29 +71,50 @@ export type GetUserProfileResponse = Record<string, unknown> & {
 
 export async function fetchDeckRecommendUserData(
   params: FetchDeckRecommendUserDataParams,
-): Promise<DeckRecommendUserDataResponse> {
-  const userData = params.mode === "suite"
-    ? await fetchDeckRecommendSuiteUserData(params)
-    : await fetchDeckRecommendGameAccountData({
-        toolboxUserId: params.toolboxUserId,
-        server: params.server,
-        gameUserId: params.gameUserId,
-        dataType: params.mode,
-        cacheBust: params.cacheBust,
-      })
+  requester: DeckRecommendResponseRequester = requestWithResponse,
+): Promise<DeckRecommendUserDataReadResult> {
+  if (params.mode === "suite") {
+    return fetchDeckRecommendSuiteUserData(params, requester)
+  }
+
+  const response = await fetchDeckRecommendGameAccountDataResponse({
+    toolboxUserId: params.toolboxUserId,
+    server: params.server,
+    gameUserId: params.gameUserId,
+    dataType: params.mode,
+    cacheBust: params.cacheBust,
+    knownUploadTime: params.knownUploadTime,
+  }, requester)
+  if (response.status === 304) {
+    return {
+      kind: "not-modified",
+      uploadTime: requireKnownUploadTime(params.knownUploadTime),
+    }
+  }
 
   return {
-    server: params.server,
-    gameUserId: String(params.gameUserId),
-    mode: params.mode,
-    userData: unwrapGameAccountDataResponse(userData),
+    kind: "data",
+    data: {
+      server: params.server,
+      gameUserId: String(params.gameUserId),
+      mode: params.mode,
+      userData: unwrapGameAccountDataResponse(response.data),
+    },
+    uploadTime: readUploadTimeFromGameAccountData(response.data),
   }
 }
 
 export function fetchDeckRecommendGameAccountData<T = unknown>(
   params: FetchDeckRecommendGameAccountDataParams,
 ): Promise<T> {
-  return request<T>(
+  return fetchDeckRecommendGameAccountDataResponse<T>(params).then((response) => response.data)
+}
+
+function fetchDeckRecommendGameAccountDataResponse<T = unknown>(
+  params: FetchDeckRecommendGameAccountDataParams,
+  requester: DeckRecommendResponseRequester = requestWithResponse,
+) {
+  return requester<T>(
     buildUserApiPath(
       params.toolboxUserId,
       "game-account",
@@ -85,27 +125,12 @@ export function fetchDeckRecommendGameAccountData<T = unknown>(
     {
       params: {
         ...(params.key ? { key: params.key } : {}),
+        ...(isValidUploadTime(params.knownUploadTime) ? { known_upload_time: params.knownUploadTime } : {}),
         ...(params.cacheBust ? { t: Date.now() } : {}),
       },
+      validateStatus: (status) => (status >= 200 && status < 300) || status === 304,
     },
   )
-}
-
-export async function fetchDeckRecommendUploadTime(
-  params: Omit<FetchDeckRecommendUserDataParams, "cacheBust">,
-): Promise<number> {
-  const response = await fetchDeckRecommendGameAccountData({
-    ...params,
-    dataType: params.mode,
-    key: "upload_time",
-    cacheBust: true,
-  })
-  const uploadTime = normalizeDeckRecommendUploadTime(response)
-  if (uploadTime == null) {
-    throw new Error(`invalid ${params.mode} upload_time response`)
-  }
-
-  return uploadTime
 }
 
 export async function getUserProfile(
@@ -120,18 +145,18 @@ export async function getUserProfile(
 }
 
 export function normalizeDeckRecommendUploadTime(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
     return value
   }
   if (typeof value === "string" && value.trim() !== "") {
     const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null
   }
   if (isRecord(value)) {
     const numberLong = value.$numberLong
     if (typeof numberLong === "string" && numberLong.trim() !== "") {
       const parsed = Number(numberLong)
-      return Number.isFinite(parsed) ? parsed : null
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : null
     }
   }
 
@@ -176,35 +201,71 @@ export function normalizeDeckRecommendUserDataResponse(
 
 async function fetchDeckRecommendSuiteUserData(
   params: FetchDeckRecommendUserDataParams,
-): Promise<Record<string, unknown>> {
-  const [baseDataResponse, userGamedataResponse] = await Promise.all([
-    fetchDeckRecommendGameAccountData({
-      toolboxUserId: params.toolboxUserId,
-      server: params.server,
-      gameUserId: params.gameUserId,
-      dataType: "suite",
-      cacheBust: params.cacheBust,
-    }),
-    fetchDeckRecommendGameAccountData({
-      toolboxUserId: params.toolboxUserId,
-      server: params.server,
-      gameUserId: params.gameUserId,
-      dataType: "suite",
-      key: "userGamedata",
-      cacheBust: params.cacheBust,
-    }),
-  ])
+  requester: DeckRecommendResponseRequester,
+): Promise<DeckRecommendUserDataReadResult> {
+  const baseDataResponse = await fetchDeckRecommendGameAccountDataResponse({
+    toolboxUserId: params.toolboxUserId,
+    server: params.server,
+    gameUserId: params.gameUserId,
+    dataType: "suite",
+    knownUploadTime: params.knownUploadTime,
+  }, requester)
+  if (baseDataResponse.status === 304) {
+    return {
+      kind: "not-modified",
+      uploadTime: requireKnownUploadTime(params.knownUploadTime),
+    }
+  }
 
-  const baseData = unwrapGameAccountDataResponse(baseDataResponse)
-  const userGamedata = unwrapGameAccountDataKeyResponse(userGamedataResponse, "userGamedata")
+  const userGamedataResponse = await fetchDeckRecommendGameAccountDataResponse({
+    toolboxUserId: params.toolboxUserId,
+    server: params.server,
+    gameUserId: params.gameUserId,
+    dataType: "suite",
+    key: "userGamedata,upload_time",
+  }, requester)
+
+  const baseData = unwrapGameAccountDataResponse(baseDataResponse.data)
+  const userGamedata = unwrapGameAccountDataKeyResponse(userGamedataResponse.data, "userGamedata")
   if (!isRecord(userGamedata)) {
     throw new Error("invalid suite userGamedata response")
   }
 
   return {
-    ...baseData,
-    userGamedata,
+    kind: "data",
+    data: {
+      server: params.server,
+      gameUserId: String(params.gameUserId),
+      mode: params.mode,
+      userData: {
+        ...baseData,
+        userGamedata,
+      },
+    },
+    uploadTime: matchingUploadTime(baseDataResponse.data, userGamedataResponse.data),
   }
+}
+
+function readUploadTimeFromGameAccountData(value: unknown): number | null {
+  const data = unwrapGameAccountDataResponse(value)
+  return normalizeDeckRecommendUploadTime(data.upload_time)
+}
+
+function matchingUploadTime(left: unknown, right: unknown): number | null {
+  const leftUploadTime = readUploadTimeFromGameAccountData(left)
+  const rightUploadTime = readUploadTimeFromGameAccountData(right)
+  return leftUploadTime != null && leftUploadTime === rightUploadTime ? leftUploadTime : null
+}
+
+function isValidUploadTime(value: number | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+}
+
+function requireKnownUploadTime(value: number | undefined): number {
+  if (!isValidUploadTime(value)) {
+    throw new Error("received 304 without a valid known upload time")
+  }
+  return value
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
