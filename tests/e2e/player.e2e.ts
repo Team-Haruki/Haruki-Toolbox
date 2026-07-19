@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-const authGatedRoutes = ["/cards/box", "/music/progress", "/events/records", "/profile/me"]
+const authGatedRoutes = ["/cards/box", "/music/progress", "/events/records", "/profile/me", "/training/challenge"]
 
 for (const route of authGatedRoutes) {
   test(`unauthenticated visit to ${route} redirects to login`, async ({ page }) => {

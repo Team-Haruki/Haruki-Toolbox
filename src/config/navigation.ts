@@ -20,6 +20,7 @@ import {
   LucideNavigation,
   LucideScrollText,
   LucideShieldAlert,
+  LucideSprout,
   LucideTicket,
   LucideTrophy,
   LucideUserRound,
@@ -69,6 +70,7 @@ export const WEB_NAV_ITEMS: NavItem[] = [
       { titleKey: "navigation.items.cardBox", icon: LucideBox, url: "/cards/box" },
       { titleKey: "navigation.items.musicProgress", icon: LucideListChecks, url: "/music/progress" },
       { titleKey: "navigation.items.eventRecords", icon: LucideHistory, url: "/events/records" },
+      { titleKey: "navigation.items.training", icon: LucideSprout, url: "/training" },
     ],
   },
   {
