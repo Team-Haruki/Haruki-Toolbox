@@ -150,6 +150,8 @@ export const zhCN = {
       accountDescription: "管理你的身份、登录与安全相关设置。",
       toolboxTitle: "工具箱设置",
       toolboxDescription: "管理 Haruki 工具箱功能相关偏好与集成。",
+      harukiBotTitle: "HarukiBot数据授权",
+      harukiBotDescription: "管理社交平台绑定与授权，供 HarukiBot 查询你的游戏数据。",
     },
     sekaiData: {
       title: "Master数据缓存",
@@ -659,8 +661,6 @@ export const zhCN = {
         },
       },
       toast: {
-        socialBindingRequiredTitle: "请先完成社交平台账号绑定",
-        socialBindingRequiredDescription: "该功能需要先完成社交平台绑定",
         deleteSuccessTitle: "删除成功",
         deleteSuccessDescription: "账号已解除绑定",
         deleteFailedTitle: "删除失败",
@@ -686,6 +686,7 @@ export const zhCN = {
     accountSettings: "帐号设置",
     identitySettings: "用户身份设置",
     gameAccountManagement: "游戏账号管理",
+    harukiBotAuthorization: "HarukiBot数据授权",
     logout: "注销",
     register: "注册",
     login: "登录",
@@ -1464,6 +1465,7 @@ export const zhCN = {
     userIdentitySocialSettings: "社交登录设置",
     userIdentitySessionSettings: "身份会话管理",
     gameAccountBindings: "绑定游戏账号",
+    harukiBotAuthorization: "HarukiBot数据授权",
     oauthLogin: "继续登录授权",
     oauthConsent: "授权第三方应用",
     tickets: {

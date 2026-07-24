@@ -1,7 +1,6 @@
 import { computed, ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
-import { useRouter } from "vue-router"
 import { useUserStore } from "@/shared/stores/user"
 import { unwrapUpdatedData } from "@/core/http/call-api"
 import type { GameAccountBinding, SekaiRegion } from "@/types/store"
@@ -29,7 +28,6 @@ function toEditableAccount(account?: GameAccountBinding | null): GameAccountBind
 
 export function useGameAccountBindingManagement() {
   const { t } = useI18n()
-  const router = useRouter()
   const userStore = useUserStore()
   const allowCNMysekai = computed(() => userStore.allowCNMysekai === true)
   const regionLabels = computed<Record<SekaiRegion, string>>(() => ({
@@ -66,20 +64,6 @@ export function useGameAccountBindingManagement() {
   const data = computed<GameAccountBinding[]>(() =>
     Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
   )
-
-  function redirectWhenSocialAccountNotVerified() {
-    if (userStore.settingsSyncState !== "synced") {
-      return
-    }
-
-    const info = userStore.socialPlatformInfo
-    if (!info?.verified) {
-      toast.warning(t("userSettings.gameBinding.toast.socialBindingRequiredTitle"), {
-        description: t("userSettings.gameBinding.toast.socialBindingRequiredDescription"),
-      })
-      void router.push({ name: "user.settings" })
-    }
-  }
 
   function requireCurrentUserId(errorTitle: string) {
     return resolveRequiredUserId(userStore.userId, errorTitle)
@@ -317,14 +301,6 @@ export function useGameAccountBindingManagement() {
       description: t("userSettings.gameBinding.toast.copyFallbackDescription"),
     })
   }
-
-  watch(
-    [() => userStore.settingsSyncState, () => userStore.socialPlatformInfo?.verified],
-    () => {
-      redirectWhenSocialAccountNotVerified()
-    },
-    { immediate: true }
-  )
 
   watch(
     [isCreating, () => editTarget.value?.server, userIdInput],

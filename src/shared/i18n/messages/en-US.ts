@@ -150,6 +150,8 @@ export const enUS = {
       accountDescription: "Identity and login security settings for your account.",
       toolboxTitle: "Toolbox settings",
       toolboxDescription: "Preferences and integrations for Haruki Toolbox features.",
+      harukiBotTitle: "HarukiBot data authorization",
+      harukiBotDescription: "Manage social platform bindings and authorizations that let HarukiBot query your game data.",
     },
     sekaiData: {
       title: "Master data cache",
@@ -659,8 +661,6 @@ export const enUS = {
         },
       },
       toast: {
-        socialBindingRequiredTitle: "Complete social binding first",
-        socialBindingRequiredDescription: "This feature requires social platform binding first",
         deleteSuccessTitle: "Deleted",
         deleteSuccessDescription: "Account binding has been removed",
         deleteFailedTitle: "Delete failed",
@@ -686,6 +686,7 @@ export const enUS = {
     accountSettings: "Account settings",
     identitySettings: "Identity settings",
     gameAccountManagement: "Game account management",
+    harukiBotAuthorization: "HarukiBot data authorization",
     logout: "Sign out",
     register: "Register",
     login: "Sign in",
@@ -1464,6 +1465,7 @@ export const enUS = {
     userIdentitySocialSettings: "Social login settings",
     userIdentitySessionSettings: "Identity sessions",
     gameAccountBindings: "Game account bindings",
+    harukiBotAuthorization: "HarukiBot data authorization",
     oauthLogin: "Continue sign in",
     oauthConsent: "Authorize app",
     tickets: {

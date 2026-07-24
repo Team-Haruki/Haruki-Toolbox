@@ -8,8 +8,6 @@ import {
   AccountSettings,
   EmailSettings,
   MfaSettings,
-  IMAuthorization,
-  IMBindingSettings,
   OAuth2Authorizations,
   PasswordSettings,
   SessionSettings,
@@ -150,8 +148,6 @@ onMounted(() => {
     </div>
 
     <div class="w-full flex flex-col items-center gap-6">
-      <IMBindingSettings />
-      <IMAuthorization />
       <OAuth2Authorizations />
     </div>
   </div>
