@@ -8,11 +8,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { formatGameAccountLabel } from "@/lib/game-account-display"
 import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
+import { useSettingsStore } from "@/shared/stores/settings"
 import { useGameAccountSelection } from "@/shared/sekai/user-snapshot/use-user-suite"
 
 const { t } = useI18n()
+const settingsStore = useSettingsStore()
 const { accounts, selectedAccountKey, selectAccount } = useGameAccountSelection()
+
+function accountLabel(server: string, userId: string | number): string {
+  return formatGameAccountLabel({
+    regionLabel: resolveSekaiRegionLabel(server, t),
+    uid: userId,
+    hideUid: settingsStore.hideGameUserId,
+  })
+}
 
 function handleUpdate(value: unknown) {
   selectAccount(typeof value === "string" && value !== "" ? value : null)
@@ -28,7 +39,7 @@ function handleUpdate(value: unknown) {
       <SelectContent>
         <SelectItem v-for="account in accounts" :key="account.key" :value="account.key">
           <span class="inline-flex items-center gap-1.5">
-            <span>{{ resolveSekaiRegionLabel(account.server, t) }} · {{ account.userId }}</span>
+            <span>{{ accountLabel(account.server, account.userId) }}</span>
             <LucideBadgeCheck
               v-if="account.verified"
               class="size-3.5 text-emerald-500"
