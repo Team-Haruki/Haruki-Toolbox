@@ -1850,6 +1850,7 @@ export const zhCN = {
         arranger: "编曲",
         publishedAt: "发布时间",
         duration: "时长",
+        bpm: "BPM",
         id: "ID",
       },
       difficultiesTitle: "难度信息",

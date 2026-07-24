@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref, watch } from "vue"
 import { RouterLink } from "vue-router"
 import { useI18n } from "vue-i18n"
 import {
+  Activity,
   ArrowLeft,
   CalendarDays,
   Clock3,
@@ -40,6 +41,14 @@ import {
   MUSIC_DIFFICULTY_COLORS,
   type MusicDifficulty,
 } from "../lib/music-difficulties"
+import {
+  BPM_DIFFICULTY_CANDIDATES,
+  collectBpmRange,
+  formatBpmValue,
+  parseChartBpm,
+  resolveMusicScoreUrl,
+  type ChartBpmInfo,
+} from "../lib/music-bpm"
 import { formatMusicDurationLabel, type MusicVocalCharacter } from "../lib/music-data"
 import { isMusicEntryUnreleased } from "../lib/music-filter"
 import {
@@ -101,6 +110,69 @@ const difficultyRows = computed(() => {
 })
 
 const durationLabel = computed(() => formatMusicDurationLabel(durationSeconds.value))
+
+const bpmInfo = ref<ChartBpmInfo | null>(null)
+let bpmLoadToken = 0
+
+// Chart scores are plain public assets; failures (missing chart, CORS) just
+// hide the BPM row instead of surfacing an error.
+watch([entry, region, () => settingsStore.currentAssetEndpoint], async ([nextEntry, nextRegion, preference]) => {
+  const token = ++bpmLoadToken
+  bpmInfo.value = null
+  if (!nextEntry) {
+    return
+  }
+
+  const available = BPM_DIFFICULTY_CANDIDATES
+    .filter((difficulty) => nextEntry.difficulties[difficulty as MusicDifficulty] != null)
+  const candidates = available.length > 0 ? available : [...BPM_DIFFICULTY_CANDIDATES]
+  for (const difficulty of candidates) {
+    const url = resolveMusicScoreUrl(nextRegion, nextEntry.id, difficulty, preference)
+    if (!url) {
+      continue
+    }
+
+    try {
+      const response = await fetch(url)
+      if (token !== bpmLoadToken) {
+        return
+      }
+
+      if (!response.ok) {
+        continue
+      }
+
+      const parsed = parseChartBpm(await response.text())
+      if (token !== bpmLoadToken) {
+        return
+      }
+
+      if (parsed != null && parsed.mainBpm > 0) {
+        bpmInfo.value = parsed
+        return
+      }
+    } catch {
+      if (token !== bpmLoadToken) {
+        return
+      }
+    }
+  }
+}, { immediate: true })
+
+const bpmLabel = computed(() => {
+  const info = bpmInfo.value
+  if (info == null) {
+    return null
+  }
+
+  const range = collectBpmRange(info)
+  const main = formatBpmValue(info.mainBpm)
+  if (range.length <= 1) {
+    return main
+  }
+
+  return `${main} (${formatBpmValue(range[0])} – ${formatBpmValue(range[range.length - 1])})`
+})
 const dateFormatter = computed(() =>
   new Intl.DateTimeFormat(locale.value || getI18nLocale(), { dateStyle: "medium" }),
 )
@@ -255,7 +327,7 @@ function formatEventPeriod(startAt: number | null, aggregateAt: number | null): 
                     <dt class="shrink-0 text-muted-foreground">{{ t("musicLibrary.detail.info.arranger") }}</dt>
                     <dd class="min-w-0 break-words font-medium">{{ entry.arranger || "-" }}</dd>
                   </div>
-                  <div class="flex items-baseline gap-2">
+                  <div class="flex items-center gap-2">
                     <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
                       <CalendarDays class="size-3.5" />
                       {{ t("musicLibrary.detail.info.publishedAt") }}
@@ -264,14 +336,21 @@ function formatEventPeriod(startAt: number | null, aggregateAt: number | null): 
                       {{ formatDateLabel(entry.publishedAt) ?? "-" }}
                     </dd>
                   </div>
-                  <div v-if="durationLabel" class="flex items-baseline gap-2">
+                  <div v-if="durationLabel" class="flex items-center gap-2">
                     <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
                       <Clock3 class="size-3.5" />
                       {{ t("musicLibrary.detail.info.duration") }}
                     </dt>
                     <dd class="font-medium">{{ durationLabel }}</dd>
                   </div>
-                  <div class="flex items-baseline gap-2">
+                  <div v-if="bpmLabel" class="flex items-center gap-2">
+                    <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
+                      <Activity class="size-3.5" />
+                      {{ t("musicLibrary.detail.info.bpm") }}
+                    </dt>
+                    <dd class="font-medium tabular-nums">{{ bpmLabel }}</dd>
+                  </div>
+                  <div class="flex items-center gap-2">
                     <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
                       <Disc3 class="size-3.5" />
                       {{ t("musicLibrary.detail.info.id") }}

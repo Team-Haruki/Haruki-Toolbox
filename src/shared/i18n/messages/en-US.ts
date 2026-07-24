@@ -1850,6 +1850,7 @@ export const enUS = {
         arranger: "Arranger",
         publishedAt: "Released",
         duration: "Duration",
+        bpm: "BPM",
         id: "ID",
       },
       difficultiesTitle: "Difficulties",
