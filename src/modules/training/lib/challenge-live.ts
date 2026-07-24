@@ -69,15 +69,25 @@ export function normalizeChallengeRewardMasters(raw: unknown): ChallengeRewardMa
 }
 
 /**
- * Builds the jewel/shard content per resource box from the flat
- * `resourceBoxDetails` masterdata list (rows are not nested per box in this
- * dump): keeps only `challenge_live_high_score` rows, groups them by
- * `resourceBoxId`, and sums jewel quantities plus material-15 shard
- * quantities — mirroring `pickChallengeRewards` in the Go implementation.
+ * Builds the jewel/shard content per resource box: keeps only
+ * `challenge_live_high_score` rows, groups them by `resourceBoxId`, and sums
+ * jewel quantities plus material-15 shard quantities — mirroring
+ * `pickChallengeRewards` in the Go implementation. Accepts both the nested
+ * `resourceBoxes` dump (boxes with a `details` array, as served by the master
+ * CDN) and a flat `resourceBoxDetails` row list.
  */
-export function buildChallengeBoxRewardMap(rawDetails: unknown): Map<number, ChallengeBoxReward> {
+export function buildChallengeBoxRewardMap(rawBoxes: unknown): Map<number, ChallengeBoxReward> {
+  const details: Record<string, unknown>[] = []
+  for (const record of normalizeCatalogRecords(rawBoxes)) {
+    if (Array.isArray(record.details)) {
+      details.push(...normalizeCatalogRecords(record.details))
+    } else {
+      details.push(record)
+    }
+  }
+
   const map = new Map<number, ChallengeBoxReward>()
-  for (const record of normalizeCatalogRecords(rawDetails)) {
+  for (const record of details) {
     if (normalizeCatalogString(record.resourceBoxPurpose) !== CHALLENGE_RESOURCE_BOX_PURPOSE) {
       continue
     }

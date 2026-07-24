@@ -20,7 +20,7 @@ export const TRAINING_CHALLENGE_SUITE_KEYS = [
 
 export const TRAINING_CHALLENGE_MASTER_FILES = [
   "challengeLiveHighScoreRewards",
-  "resourceBoxDetails",
+  "resourceBoxes",
   "gameCharacters",
 ] as const
 
@@ -67,7 +67,7 @@ export function useTrainingChallenge() {
 
       characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
       rewardMasters.value = normalizeChallengeRewardMasters(files.challengeLiveHighScoreRewards)
-      boxRewards.value = buildChallengeBoxRewardMap(files.resourceBoxDetails)
+      boxRewards.value = buildChallengeBoxRewardMap(files.resourceBoxes)
     } catch (loadError) {
       if (token === loadToken) {
         masterError.value = loadError instanceof Error ? loadError.message : String(loadError)

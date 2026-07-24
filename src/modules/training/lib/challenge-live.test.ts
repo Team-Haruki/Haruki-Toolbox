@@ -38,6 +38,29 @@ describe("buildChallengeBoxRewardMap", () => {
     expect(map.get(3)).toEqual({ jewel: 0, shard: 20 })
   })
 
+  it("flattens the nested resourceBoxes dump and skips other purposes", () => {
+    const map = buildChallengeBoxRewardMap([
+      {
+        resourceBoxPurpose: "challenge_live_high_score",
+        id: 1,
+        details: [
+          { resourceBoxId: 1, resourceBoxPurpose: "challenge_live_high_score", resourceType: "jewel", resourceId: null, resourceQuantity: 100 },
+          { resourceBoxId: 1, resourceBoxPurpose: "challenge_live_high_score", resourceType: "material", resourceId: 15, resourceQuantity: 10 },
+        ],
+      },
+      {
+        resourceBoxPurpose: "ad_reward",
+        id: 2,
+        details: [
+          { resourceBoxId: 2, resourceBoxPurpose: "ad_reward", resourceType: "jewel", resourceId: null, resourceQuantity: 999 },
+        ],
+      },
+    ])
+
+    expect(map.get(1)).toEqual({ jewel: 100, shard: 10 })
+    expect(map.has(2)).toBe(false)
+  })
+
   it("ignores rows with other purposes and malformed rows", () => {
     const map = buildChallengeBoxRewardMap([
       { resourceBoxId: 7, resourceBoxPurpose: "shop_item", resourceType: "jewel", resourceQuantity: 100 },
