@@ -10,12 +10,15 @@ const props = withDefaults(defineProps<{
   unreleased?: boolean
   title?: string | null
   cornerBadge?: string | null
+  /** When set, renders the game-style bottom band with this text on its left. */
+  levelLabel?: string | null
 }>(), {
   size: "fluid",
   trained: false,
   unreleased: false,
   title: null,
   cornerBadge: null,
+  levelLabel: null,
 })
 
 const { t } = useI18n()
@@ -60,7 +63,7 @@ const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCoun
 <template>
   <div
     :class="[
-      'relative shrink-0 select-none overflow-hidden bg-muted text-muted-foreground ring-1 ring-border',
+      'relative shrink-0 select-none overflow-hidden bg-muted text-muted-foreground ring-1 ring-border @container',
       sizeClass,
     ]"
     :aria-label="title ?? thumbnail.title ?? `#${thumbnail.cardId}`"
@@ -77,6 +80,11 @@ const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCoun
       #{{ thumbnail.cardId }}
     </div>
 
+    <span
+      v-if="levelLabel"
+      class="absolute inset-x-0 bottom-0 h-[18.75%] bg-[rgb(70_70_100)]"
+      aria-hidden="true"
+    />
     <img
       v-if="thumbnail.frameUrl"
       :src="thumbnail.frameUrl"
@@ -93,7 +101,10 @@ const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCoun
     >
     <div
       v-if="thumbnail.rareIconUrl && rareIndexes.length > 0"
-      class="absolute bottom-[5%] left-[6%] flex w-[74%] gap-px"
+      :class="[
+        'absolute flex gap-px',
+        levelLabel ? 'bottom-[20%] left-[5%] w-[72%]' : 'bottom-[5%] left-[6%] w-[74%]',
+      ]"
     >
       <img
         v-for="index in rareIndexes"
@@ -104,6 +115,12 @@ const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCoun
         loading="lazy"
       >
     </div>
+    <span
+      v-if="levelLabel"
+      class="absolute bottom-[3.5%] left-[4.7%] whitespace-nowrap font-semibold leading-none text-white tabular-nums text-[clamp(0.42rem,13.2cqw,0.72rem)]"
+    >
+      {{ levelLabel }}
+    </span>
     <img
       v-if="thumbnail.trainRankUrl"
       :src="thumbnail.trainRankUrl"

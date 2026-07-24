@@ -469,7 +469,7 @@ function retry() {
                 :thumbnail="view.thumbnail"
                 :trained="view.trained"
                 :title="view.card.prefix"
-                :corner-badge="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
+                :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
                 :class="[
                   'transition-transform group-hover:scale-[1.02]',
                   view.record == null ? 'opacity-40 grayscale' : '',
@@ -510,7 +510,7 @@ function retry() {
                 :thumbnail="view.thumbnail"
                 :trained="view.trained"
                 :title="view.card.prefix"
-                :corner-badge="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
+                :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
                 :class="[
                   'transition-transform group-hover:scale-[1.02]',
                   view.record == null ? 'opacity-40 grayscale' : '',
@@ -538,7 +538,7 @@ function retry() {
               :thumbnail="view.thumbnail"
               :trained="view.trained"
               :title="view.card.prefix"
-              :corner-badge="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
+              :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
               :class="[
                 'transition-transform group-hover:scale-[1.02]',
                 view.record == null ? 'opacity-40 grayscale' : '',

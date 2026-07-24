@@ -293,7 +293,7 @@ function retry() {
                 :key="view.cardId"
                 :thumbnail="view.thumbnail"
                 size="fluid"
-                :corner-badge="view.level != null && view.level > 0 ? t('playerProfile.badge.level', { level: view.level }) : null"
+                :level-label="view.level != null && view.level > 0 ? t('playerProfile.badge.level', { level: view.level }) : null"
               />
             </div>
           </div>
