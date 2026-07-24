@@ -1041,6 +1041,7 @@ export const enUS = {
       back: "Back to gachas",
       notFound: "Gacha #{gachaId} was not found",
       pickups: "Pickup members",
+      poolCards: "All cards in pool",
       rates: "Rates",
       rarity: "Rarity",
       cardCount: "Cards",

@@ -1,17 +1,40 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from "vue"
+import { computed, onBeforeUnmount, reactive, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { useRouter } from "vue-router"
 import {
   LucideArrowLeft,
   LucideCalendarDays,
+  LucideChevronLeft,
+  LucideChevronRight,
   LucideRefreshCcw,
+  LucideRotateCcw,
+  LucideSearch,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatLocalizedDateTime } from "@/lib/date-time"
-import { buildCatalogCardThumbnail } from "@/shared/sekai/catalog"
+import {
+  SEKAI_CARD_ATTRS,
+  SEKAI_UNITS,
+  buildCatalogCardThumbnail,
+  type CatalogMasterCard,
+  type SekaiCardAttr,
+  type SekaiUnit,
+} from "@/shared/sekai/catalog"
+import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
+import {
+  CARD_RARITY_TYPES,
+  countCardPages,
+  createDefaultCardFilters,
+  filterCards,
+  paginateCards,
+  sortCards,
+  type CardRarityType,
+} from "@/modules/cards/lib/card-filter"
 import { isUnreleasedContent, useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import {
   buildGachaBannerCandidates,
@@ -137,6 +160,107 @@ const pickupViews = computed(() => {
     })
     .filter((view) => !(hideUnreleased.value && view.unreleased))
 })
+
+// --- Full pool listing with the cards-style filter toolbar ---
+
+const POOL_PAGE_SIZE = 30
+
+const poolFilters = reactive(createDefaultCardFilters())
+const poolPage = ref(1)
+const emptySupplyTypeMap = new Map<number, string>()
+
+const characterOptions = computed(() => [...characterMap.value.values()])
+
+const poolCards = computed<CatalogMasterCard[]>(() => {
+  const currentGacha = gacha.value
+  if (!currentGacha) {
+    return []
+  }
+
+  const seen = new Set<number>()
+  const cards: CatalogMasterCard[] = []
+  for (const detail of currentGacha.details) {
+    if (seen.has(detail.cardId)) {
+      continue
+    }
+
+    seen.add(detail.cardId)
+    const card = cardsById.value.get(detail.cardId)
+    if (card != null && !(hideUnreleased.value && isUnreleasedContent(card.releaseAt, nowMs.value))) {
+      cards.push(card)
+    }
+  }
+
+  return cards
+})
+
+const filteredPoolCards = computed(() => sortCards(
+  filterCards(poolCards.value, poolFilters, {
+    characterMap: characterMap.value,
+    supplyTypeMap: emptySupplyTypeMap,
+  }),
+  "rarityDesc",
+))
+
+watch(poolFilters, () => {
+  poolPage.value = 1
+})
+
+const poolTotalPages = computed(() => countCardPages(filteredPoolCards.value.length, POOL_PAGE_SIZE))
+
+const pagedPoolViews = computed(() => paginateCards(filteredPoolCards.value, poolPage.value, POOL_PAGE_SIZE)
+  .map((card) => ({
+    card,
+    unreleased: isUnreleasedContent(card.releaseAt, nowMs.value),
+    thumbnail: buildCatalogCardThumbnail(card, region.value, assetEndpoint.value),
+    characterName: card.characterId != null
+      ? characterMap.value.get(card.characterId)?.name ?? null
+      : null,
+  })))
+
+const poolHasActiveFilters = computed(() => poolFilters.query.trim() !== ""
+  || poolFilters.characterIds.length > 0
+  || poolFilters.units.length > 0
+  || poolFilters.attrs.length > 0
+  || poolFilters.rarities.length > 0)
+
+function togglePoolListValue<T>(list: T[], value: T) {
+  const index = list.indexOf(value)
+  if (index >= 0) {
+    list.splice(index, 1)
+  } else {
+    list.push(value)
+  }
+}
+
+function togglePoolCharacter(characterId: number) {
+  togglePoolListValue(poolFilters.characterIds, characterId)
+}
+
+function togglePoolUnit(unit: SekaiUnit) {
+  togglePoolListValue(poolFilters.units, unit)
+}
+
+function togglePoolAttr(attr: SekaiCardAttr) {
+  togglePoolListValue(poolFilters.attrs, attr)
+}
+
+function togglePoolRarity(rarity: CardRarityType) {
+  togglePoolListValue(poolFilters.rarities, rarity)
+}
+
+function clearPoolFilters() {
+  Object.assign(poolFilters, createDefaultCardFilters())
+}
+
+// Units whose logo image failed to load fall back to a neutral dot.
+const failedUnitLogos = ref<Set<SekaiUnit>>(new Set())
+
+function markUnitLogoFailed(unit: SekaiUnit) {
+  const next = new Set(failedUnitLogos.value)
+  next.add(unit)
+  failedUnitLogos.value = next
+}
 
 const ceilItem = computed(() => (gacha.value?.gachaCeilItemId != null
   ? ceilItemMap.value.get(gacha.value.gachaCeilItemId) ?? null
@@ -294,6 +418,189 @@ function goBack() {
                 {{ formatGachaRatePercent(view.rate) }}
               </span>
             </RouterLink>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Full card pool -->
+      <Card v-if="poolCards.length > 0">
+        <CardHeader>
+          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
+            <span>{{ t("gachas.detail.poolCards") }}</span>
+            <span class="text-sm font-normal tabular-nums text-muted-foreground">
+              {{ t("cards.list.total", { total: filteredPoolCards.length }) }}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent class="flex flex-col gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <Popover>
+              <PopoverTrigger as-child>
+                <Button variant="outline" size="sm" class="gap-1">
+                  {{ t("cards.filter.characters") }}
+                  <span
+                    v-if="poolFilters.characterIds.length > 0"
+                    class="rounded bg-primary px-1 text-[10px] font-semibold text-primary-foreground"
+                  >
+                    {{ poolFilters.characterIds.length }}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent class="w-80 p-2" align="start">
+                <div class="grid grid-cols-2 gap-1">
+                  <button
+                    v-for="character in characterOptions"
+                    :key="character.id"
+                    type="button"
+                    :class="[
+                      'flex items-center gap-2 rounded-md px-2 py-1 text-left text-sm transition-colors',
+                      poolFilters.characterIds.includes(character.id)
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted',
+                    ]"
+                    @click="togglePoolCharacter(character.id)"
+                  >
+                    <img :src="character.iconUrl" alt="" class="size-6 shrink-0 rounded-full" loading="lazy">
+                    <span class="truncate">{{ character.name }}</span>
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <div class="relative w-full sm:w-64">
+              <LucideSearch class="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                v-model="poolFilters.query"
+                class="h-8 pl-8"
+                :placeholder="t('cards.list.searchPlaceholder')"
+              />
+            </div>
+            <Button
+              v-if="poolHasActiveFilters"
+              variant="ghost"
+              size="sm"
+              class="ml-auto h-7 gap-1 text-xs text-muted-foreground"
+              @click="clearPoolFilters"
+            >
+              <LucideRotateCcw class="size-3.5" />
+              {{ t("cards.filter.clear") }}
+            </Button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cards.filter.units") }}</span>
+            <button
+              v-for="unit in SEKAI_UNITS"
+              :key="unit"
+              type="button"
+              :class="[
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
+                poolFilters.units.includes(unit)
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border hover:bg-muted',
+              ]"
+              @click="togglePoolUnit(unit)"
+            >
+              <img
+                v-if="!failedUnitLogos.has(unit)"
+                :src="resolveUnitLogoUrl(unit)"
+                alt=""
+                class="h-4 w-auto max-w-9 object-contain"
+                loading="lazy"
+                @error="markUnitLogoFailed(unit)"
+              >
+              <span v-else class="size-2 rounded-full bg-muted-foreground/40" />
+              {{ t(`cards.unit.${unit}`) }}
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cards.filter.attrs") }}</span>
+            <button
+              v-for="attr in SEKAI_CARD_ATTRS"
+              :key="attr"
+              type="button"
+              :class="[
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
+                poolFilters.attrs.includes(attr)
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border hover:bg-muted',
+              ]"
+              @click="togglePoolAttr(attr)"
+            >
+              <img :src="resolveCardAttrIconUrl(attr)" alt="" class="size-4" loading="lazy">
+              {{ t(`cards.attr.${attr}`) }}
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cards.filter.rarity") }}</span>
+            <button
+              v-for="rarity in CARD_RARITY_TYPES"
+              :key="rarity"
+              type="button"
+              :class="[
+                'rounded-full border px-2.5 py-1 text-xs transition-colors',
+                poolFilters.rarities.includes(rarity)
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border hover:bg-muted',
+              ]"
+              @click="togglePoolRarity(rarity)"
+            >
+              {{ t(`cards.rarity.${rarity}`) }}
+            </button>
+          </div>
+
+          <div
+            v-if="pagedPoolViews.length > 0"
+            class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
+          >
+            <RouterLink
+              v-for="view in pagedPoolViews"
+              :key="view.card.id"
+              :to="{ name: 'cards.detail', params: { cardId: view.card.id } }"
+              class="group flex flex-col gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div :class="['relative', view.unreleased && blurUnreleased ? 'overflow-hidden rounded-md' : '']">
+                <SekaiCardThumbnail
+                  :thumbnail="view.thumbnail"
+                  :unreleased="view.unreleased && !blurUnreleased"
+                  :title="view.card.prefix"
+                  :class="view.unreleased && blurUnreleased
+                    ? 'blur-md scale-105'
+                    : 'transition-transform group-hover:scale-[1.02]'"
+                />
+                <span
+                  v-if="view.unreleased && blurUnreleased"
+                  class="absolute right-1 top-1 rounded bg-background/80 px-1.5 py-0.5 text-xs font-semibold"
+                >
+                  {{ t("sekaiUnreleased.badge") }}
+                </span>
+              </div>
+              <span class="line-clamp-2 text-xs leading-tight group-hover:underline">
+                {{ view.card.prefix ?? `#${view.card.id}` }}
+              </span>
+              <span v-if="view.characterName" class="truncate text-[11px] text-muted-foreground">
+                {{ view.characterName }}
+              </span>
+            </RouterLink>
+          </div>
+          <p v-else class="py-8 text-center text-sm text-muted-foreground">
+            {{ t("cards.list.empty") }}
+          </p>
+
+          <div v-if="poolTotalPages > 1" class="flex items-center justify-center gap-2">
+            <Button variant="outline" size="sm" :disabled="poolPage <= 1" @click="poolPage = Math.max(1, poolPage - 1)">
+              <LucideChevronLeft class="size-4" />
+            </Button>
+            <span class="text-sm tabular-nums">{{ poolPage }} / {{ poolTotalPages }}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="poolPage >= poolTotalPages"
+              @click="poolPage = Math.min(poolTotalPages, poolPage + 1)"
+            >
+              <LucideChevronRight class="size-4" />
+            </Button>
           </div>
         </CardContent>
       </Card>

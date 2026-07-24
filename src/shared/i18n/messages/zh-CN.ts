@@ -1041,6 +1041,7 @@ export const zhCN = {
       back: "返回卡池一览",
       notFound: "未找到卡池 #{gachaId}",
       pickups: "PICK UP 成员",
+      poolCards: "卡池全部卡牌",
       rates: "提供概率",
       rarity: "稀有度",
       cardCount: "卡牌数",
