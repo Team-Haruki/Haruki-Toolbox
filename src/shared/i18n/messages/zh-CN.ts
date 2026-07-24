@@ -1116,7 +1116,7 @@ export const zhCN = {
     },
     challenge: {
       title: "挑战Live",
-      summary: "最强角色：{name} · {score}",
+      summary: "最高分数：{name} · {score}",
       empty: "暂无挑战Live记录",
     },
   },

@@ -1116,7 +1116,7 @@ export const enUS = {
     },
     challenge: {
       title: "Challenge Live",
-      summary: "Best: {name} · {score}",
+      summary: "Best score: {name} · {score}",
       empty: "No challenge live records yet",
     },
   },
