@@ -26,6 +26,7 @@ import {
 import { formatGameAccountLabel } from "@/lib/game-account-display"
 import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
 import {
+  DECK_RECOMMEND_SUITE_KEYS,
   fetchDeckRecommendProfileWithCache,
   fetchDeckRecommendUserDataWithCache,
 } from "@/modules/deck-recommend/lib/user-data"
@@ -34,7 +35,7 @@ import {
   readDeckRecommendProfileCache,
   readDeckRecommendUserDataCache,
 } from "@/modules/deck-recommend/lib/user-data-cache"
-import { clearUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache"
+import { clearUserSuiteSubsetCache, readUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import type { SekaiRegion } from "@/types"
@@ -200,6 +201,21 @@ async function loadCacheStatus() {
       })
       cacheUpdatedAt.value = record?.updatedAt ?? null
       cacheUploadTime.value = null
+      lastCacheHit.value = null
+      return
+    }
+
+    if (selectedDataMode.value === "suite") {
+      // Suite data lives in the shared snapshot cache since the deck-recommend
+      // fetch migration; the module-local cache only stores mysekai records.
+      const record = await readUserSuiteSubsetCache({
+        toolboxUserId: userStore.userId,
+        server: account.server,
+        gameUserId: account.uid,
+        keys: DECK_RECOMMEND_SUITE_KEYS,
+      })
+      cacheUpdatedAt.value = record?.updatedAt ?? null
+      cacheUploadTime.value = record?.uploadTime ?? null
       lastCacheHit.value = null
       return
     }
