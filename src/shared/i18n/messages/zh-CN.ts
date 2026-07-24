@@ -1021,7 +1021,6 @@ export const zhCN = {
     },
     status: {
       ongoing: "进行中",
-      upcoming: "未开始",
       ended: "已结束",
     },
     list: {
@@ -1968,7 +1967,6 @@ export const zhCN = {
       unknown: "未知类型",
     },
     status: {
-      upcoming: "未开始",
       ongoing: "进行中",
       ended: "已结束",
     },

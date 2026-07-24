@@ -20,7 +20,10 @@ export type GachaType = (typeof GACHA_TYPES)[number]
 
 export type GachaStatus = "upcoming" | "ongoing" | "ended"
 
-export const GACHA_STATUSES: readonly GachaStatus[] = ["ongoing", "upcoming", "ended"]
+// "upcoming" stays a resolvable status (startAt in the future) but is no
+// longer offered as a filter option or badge — the unreleased-content
+// handling covers that state.
+export const GACHA_STATUSES: readonly GachaStatus[] = ["ongoing", "ended"]
 
 export const GACHA_SORT_KEYS = ["startDesc", "startAsc", "idAsc"] as const
 

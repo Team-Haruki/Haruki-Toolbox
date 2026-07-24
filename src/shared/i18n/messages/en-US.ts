@@ -1021,7 +1021,6 @@ export const enUS = {
     },
     status: {
       ongoing: "Ongoing",
-      upcoming: "Upcoming",
       ended: "Ended",
     },
     list: {
@@ -1968,7 +1967,6 @@ export const enUS = {
       unknown: "Unknown type",
     },
     status: {
-      upcoming: "Upcoming",
       ongoing: "Ongoing",
       ended: "Ended",
     },
