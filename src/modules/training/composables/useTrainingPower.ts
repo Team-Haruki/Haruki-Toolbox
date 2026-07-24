@@ -2,7 +2,7 @@ import { computed, ref, shallowRef, watch } from "vue"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
 import type { CatalogCharacter, SekaiUnit } from "@/shared/sekai/catalog"
-import { buildCatalogCharacterMap, buildCatalogUnitColorMap } from "@/shared/sekai/catalog"
+import { buildCatalogCharacterColorMap, buildCatalogCharacterMap, buildCatalogUnitColorMap } from "@/shared/sekai/catalog"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import type { SekaiRegion } from "@/types"
 import {
@@ -42,6 +42,7 @@ export function useTrainingPower() {
   const masterError = ref<string | null>(null)
   const characterMap = shallowRef<Map<number, CatalogCharacter>>(new Map())
   const unitColorMap = shallowRef<Map<SekaiUnit, string>>(new Map())
+  const characterColorMap = shallowRef<Map<number, string>>(new Map())
   const areaItemLevels = shallowRef<AreaItemLevelMaster[]>([])
   const characterRanks = shallowRef<CharacterRankBonusMaster[]>([])
 
@@ -54,6 +55,7 @@ export function useTrainingPower() {
       masterError.value = null
       characterMap.value = new Map()
       unitColorMap.value = new Map()
+      characterColorMap.value = new Map()
       areaItemLevels.value = []
       characterRanks.value = []
       return
@@ -68,8 +70,10 @@ export function useTrainingPower() {
         return
       }
 
-      characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+      const nextCharacterMap = buildCatalogCharacterMap(files.gameCharacters)
+      characterMap.value = nextCharacterMap
       unitColorMap.value = buildCatalogUnitColorMap(files.gameCharacterUnits)
+      characterColorMap.value = buildCatalogCharacterColorMap(files.gameCharacterUnits, nextCharacterMap)
       areaItemLevels.value = normalizeAreaItemLevels(files.areaItemLevels)
       characterRanks.value = normalizeCharacterRankBonuses(files.characterRanks)
     } catch (loadError) {
@@ -103,6 +107,7 @@ export function useTrainingPower() {
     masterError,
     characterMap,
     unitColorMap,
+    characterColorMap,
     areaItemLevels,
     characterRanks,
     reloadMaster,

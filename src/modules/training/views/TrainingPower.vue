@@ -25,6 +25,7 @@ const {
   masterError,
   characterMap,
   unitColorMap,
+  characterColorMap,
   areaItemLevels,
   characterRanks,
   reloadMaster,
@@ -70,7 +71,7 @@ const characterRows = computed(() => bonuses.value.characters.map((bonus) => {
     ...bonus,
     name: character?.name ?? t("training.power.unknownCharacter"),
     iconUrl: character?.iconUrl ?? null,
-    unitColor,
+    color: characterColorMap.value.get(bonus.characterId) ?? unitColor,
   }
 }))
 
@@ -157,7 +158,7 @@ function retry() {
               v-for="row in characterRows"
               :key="row.characterId"
               class="flex items-center gap-2 rounded-md border border-l-4 p-2"
-              :style="row.unitColor ? { borderLeftColor: row.unitColor } : {}"
+              :style="row.color ? { borderLeftColor: row.color } : {}"
             >
               <img
                 v-if="row.iconUrl"
