@@ -49,9 +49,9 @@ const activeDifficulty = ref<MusicDifficulty>("master")
 const expandedLevels = ref<Set<string>>(new Set())
 
 const STATUS_COLORS: Record<MusicProgressStatus, string> = {
-  allPerfect: "#3B82F6",
-  fullCombo: "#A855F7",
-  clear: "#F7B50C",
+  allPerfect: "#38BDF8",
+  fullCombo: "#C084FC",
+  clear: "#FCD34D",
   unplayed: "var(--muted-foreground)",
 }
 
