@@ -71,6 +71,8 @@ export const useSettingsStore = defineStore("settings", () => {
     const locale = ref<AppLocale>(DEFAULT_LOCALE)
     const reducedVisualEffects = ref(false)
     const hideGameUserId = ref(false)
+    const showUnreleasedContent = ref(false)
+    const blurUnreleasedContent = ref(true)
     const sekaiCatalogRegion = ref<SekaiRegion>('jp')
     // "follow": catalog pages use the selected game account's server and fall
     // back to sekaiCatalogRegion when no account is available. "manual": always
@@ -140,6 +142,12 @@ export const useSettingsStore = defineStore("settings", () => {
     }
     function setHideGameUserId(enabled: boolean) {
         hideGameUserId.value = enabled
+    }
+    function setShowUnreleasedContent(enabled: boolean) {
+        showUnreleasedContent.value = enabled
+    }
+    function setBlurUnreleasedContent(enabled: boolean) {
+        blurUnreleasedContent.value = enabled
     }
     function setSekaiCatalogRegion(region: SekaiRegion) {
         sekaiCatalogRegion.value = normalizeSekaiRegion(region) ?? 'jp'
@@ -275,6 +283,8 @@ export const useSettingsStore = defineStore("settings", () => {
         locale,
         reducedVisualEffects,
         hideGameUserId,
+        showUnreleasedContent,
+        blurUnreleasedContent,
         sekaiCatalogRegion,
         sekaiCatalogRegionMode,
         selectedGameAccountKey,
@@ -287,6 +297,8 @@ export const useSettingsStore = defineStore("settings", () => {
         setLocale,
         setReducedVisualEffects,
         setHideGameUserId,
+        setShowUnreleasedContent,
+        setBlurUnreleasedContent,
         setSekaiCatalogRegion,
         setSekaiCatalogRegionFollowAccount,
         setSelectedGameAccountKey,
@@ -310,6 +322,8 @@ export const useSettingsStore = defineStore("settings", () => {
             'locale',
             'reducedVisualEffects',
             'hideGameUserId',
+            'showUnreleasedContent',
+            'blurUnreleasedContent',
             'sekaiCatalogRegion',
             'sekaiCatalogRegionMode',
             'selectedGameAccountKey',

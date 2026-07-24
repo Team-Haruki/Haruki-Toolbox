@@ -1366,6 +1366,9 @@ export const zhCN = {
   sekaiRegion: {
     followAccount: "跟随当前账号",
   },
+  sekaiUnreleased: {
+    badge: "未上线",
+  },
   navigation: {
     groups: {
       recommendAndAbout: "推荐与关于",
@@ -4762,6 +4765,12 @@ export const zhCN = {
     privacy: {
       hideGameUserIdLabel: "隐藏游戏 UID",
       hideGameUserIdHelp: "开启后，组卡、上传数据等账号选择器会保留 UID 前 2 位和后 4 位，中间用星号隐藏。",
+    },
+    unreleased: {
+      showLabel: "展示未上线内容",
+      showHelp: "开启后，卡牌、活动、曲库、卡池等图鉴会显示当前区服尚未上线的内容。",
+      blurLabel: "未上线内容防剧透模糊",
+      blurHelp: "展示未上线内容时，对其卡面、封面等图片做模糊处理，避免剧透。",
     },
     appUpdate: {
       title: "应用更新",

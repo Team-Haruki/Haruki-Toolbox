@@ -1,4 +1,5 @@
 import { normalizeCatalogNumber, normalizeCatalogRecords, normalizeCatalogString } from "@/shared/sekai/catalog"
+import { isUnreleasedContent } from "@/shared/sekai/unreleased"
 
 export const SEKAI_EVENT_TYPES = ["marathon", "cheerful_carnival", "world_bloom"] as const
 
@@ -92,6 +93,18 @@ export function resolveEventStatus(event: SekaiEventItem, nowMs = Date.now()): S
   }
 
   return "ended"
+}
+
+/** An event counts as unreleased while its start timestamp is in the future. */
+export function isEventUnreleased(event: SekaiEventItem, nowMs = Date.now()): boolean {
+  return isUnreleasedContent(event.startAt, nowMs)
+}
+
+export function excludeUnreleasedEvents(
+  events: readonly SekaiEventItem[],
+  nowMs = Date.now(),
+): SekaiEventItem[] {
+  return events.filter((event) => !isEventUnreleased(event, nowMs))
 }
 
 export function resolveEventYear(event: SekaiEventItem): number | null {

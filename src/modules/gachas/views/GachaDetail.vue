@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatLocalizedDateTime } from "@/lib/date-time"
 import { buildCatalogCardThumbnail } from "@/shared/sekai/catalog"
+import { isUnreleasedContent, useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import {
   buildGachaBannerCandidates,
   buildGachaCeilItemIconCandidates,
@@ -21,6 +22,7 @@ import {
   dedupGachaPickupCardIds,
   formatGachaRatePercent,
   isGachaType,
+  isGachaUnreleased,
   resolveGachaCardRate,
   resolveGachaStatus,
   stripGachaMarkup,
@@ -76,6 +78,12 @@ const notFound = computed(() => !loading.value && !error.value && gachas.value.l
 
 const status = computed(() => (gacha.value ? resolveGachaStatus(gacha.value, nowMs.value) : null))
 
+const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
+
+const unreleased = computed(() => gacha.value != null && isGachaUnreleased(gacha.value, nowMs.value))
+
+const blurArt = computed(() => unreleased.value && blurUnreleased.value)
+
 const bannerSources = computed(() => (gacha.value
   ? [
     ...buildGachaBannerCandidates(gacha.value, region.value, assetEndpoint.value),
@@ -112,18 +120,21 @@ const pickupViews = computed(() => {
     return []
   }
 
-  return dedupGachaPickupCardIds(currentGacha.pickups).map((cardId) => {
-    const card = cardsById.value.get(cardId) ?? null
-    return {
-      cardId,
-      card,
-      thumbnail: card ? buildCatalogCardThumbnail(card, region.value, assetEndpoint.value) : null,
-      characterName: card?.characterId != null
-        ? characterMap.value.get(card.characterId)?.name ?? null
-        : null,
-      rate: resolveGachaCardRate(summary, cardId),
-    }
-  })
+  return dedupGachaPickupCardIds(currentGacha.pickups)
+    .map((cardId) => {
+      const card = cardsById.value.get(cardId) ?? null
+      return {
+        cardId,
+        card,
+        unreleased: card != null && isUnreleasedContent(card.releaseAt, nowMs.value),
+        thumbnail: card ? buildCatalogCardThumbnail(card, region.value, assetEndpoint.value) : null,
+        characterName: card?.characterId != null
+          ? characterMap.value.get(card.characterId)?.name ?? null
+          : null,
+        rate: resolveGachaCardRate(summary, cardId),
+      }
+    })
+    .filter((view) => !(hideUnreleased.value && view.unreleased))
 })
 
 const ceilItem = computed(() => (gacha.value?.gachaCeilItemId != null
@@ -206,12 +217,22 @@ function goBack() {
     <template v-else-if="gacha">
       <!-- Header -->
       <div class="aspect-[5/2] w-full overflow-hidden rounded-lg bg-muted ring-1 ring-border">
-        <GachaAssetImage :sources="bannerSources" :alt="gacha.name" />
+        <GachaAssetImage
+          :sources="bannerSources"
+          :alt="gacha.name"
+          :class="blurArt ? 'blur-md scale-105' : ''"
+        />
       </div>
 
       <div class="flex flex-col gap-2">
         <div class="flex flex-wrap items-center gap-2">
           <h1 class="text-2xl font-bold">{{ gacha.name }}</h1>
+          <span
+            v-if="unreleased"
+            class="rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold text-white"
+          >
+            {{ t("sekaiUnreleased.badge") }}
+          </span>
           <span class="font-mono text-sm text-muted-foreground">#{{ gacha.id }}</span>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -241,12 +262,19 @@ function goBack() {
               :to="{ name: 'cards.detail', params: { cardId: view.cardId } }"
               class="flex w-28 shrink-0 flex-col gap-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <div class="aspect-square w-full overflow-hidden rounded-md bg-muted">
+              <div class="relative aspect-square w-full overflow-hidden rounded-md bg-muted">
                 <GachaAssetImage
                   :sources="view.thumbnail?.thumbnailUrl ? [view.thumbnail.thumbnailUrl] : []"
                   :alt="view.card?.prefix ?? `#${view.cardId}`"
                   fit="cover"
+                  :class="view.unreleased && blurUnreleased ? 'blur-md scale-105' : ''"
                 />
+                <span
+                  v-if="view.unreleased"
+                  class="absolute right-1 top-1 rounded bg-background/80 px-1 py-0.5 text-[10px] font-semibold"
+                >
+                  {{ t("sekaiUnreleased.badge") }}
+                </span>
               </div>
               <span class="line-clamp-2 text-[11px] leading-tight">
                 {{ view.card?.prefix ?? `#${view.cardId}` }}

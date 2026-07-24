@@ -31,6 +31,7 @@ import {
 import { getI18nLocale } from "@/shared/i18n"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import MusicJacket from "../components/MusicJacket.vue"
 import { useMusicLibraryDetail } from "../composables/useMusicLibraryDetail"
 import { resolveMusicJacketUrl } from "../lib/music-assets"
@@ -40,6 +41,7 @@ import {
   type MusicDifficulty,
 } from "../lib/music-difficulties"
 import { formatMusicDurationLabel, type MusicVocalCharacter } from "../lib/music-data"
+import { isMusicEntryUnreleased } from "../lib/music-filter"
 import {
   resolveMusicCategoryLabelKey,
   resolveMusicTagLabelKey,
@@ -70,6 +72,9 @@ const {
   error,
   notFound,
 } = useMusicLibraryDetail(region, parsedMusicId)
+
+const { blurUnreleased } = useUnreleasedContentDisplay()
+const unreleased = computed(() => entry.value != null && isMusicEntryUnreleased(entry.value))
 
 const jacketUrl = computed(() => {
   if (!entry.value) {
@@ -200,14 +205,25 @@ function formatEventPeriod(startAt: number | null, aggregateAt: number | null): 
         <Card>
           <CardContent class="pt-6">
             <div class="grid gap-6 md:grid-cols-[16rem_minmax(0,1fr)]">
-              <MusicJacket
-                :url="jacketUrl"
-                :alt="entry.title"
-                class="mx-auto aspect-square w-full max-w-64 rounded-lg shadow-sm"
-              />
+              <div class="relative mx-auto aspect-square w-full max-w-64 overflow-hidden rounded-lg shadow-sm">
+                <MusicJacket
+                  :url="jacketUrl"
+                  :alt="entry.title"
+                  class="size-full"
+                  :class="unreleased && blurUnreleased ? 'blur-md scale-105' : ''"
+                />
+              </div>
               <div class="min-w-0 space-y-4">
                 <div class="space-y-2">
-                  <h1 class="text-2xl font-semibold leading-tight">{{ entry.title }}</h1>
+                  <h1 class="flex flex-wrap items-center gap-2 text-2xl font-semibold leading-tight">
+                    {{ entry.title }}
+                    <span
+                      v-if="unreleased"
+                      class="rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold leading-none text-white shadow-sm"
+                    >
+                      {{ t("sekaiUnreleased.badge") }}
+                    </span>
+                  </h1>
                   <div class="flex flex-wrap gap-1.5">
                     <span
                       v-for="tag in entry.tags"

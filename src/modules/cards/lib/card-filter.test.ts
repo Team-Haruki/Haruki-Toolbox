@@ -7,6 +7,7 @@ import {
   collectCardReleaseYears,
   countCardPages,
   createDefaultCardFilters,
+  excludeUnreleasedCards,
   filterCards,
   isCardUnreleased,
   paginateCards,
@@ -126,6 +127,17 @@ describe("release helpers", () => {
     expect(isCardUnreleased(now + 1000, now)).toBe(true)
     expect(isCardUnreleased(now - 1000, now)).toBe(false)
     expect(isCardUnreleased(null, now)).toBe(false)
+  })
+
+  it("excludes unreleased cards only when hiding is enabled", () => {
+    const now = Date.UTC(2026, 0, 1)
+    const cards = [
+      makeCard({ id: 1, releaseAt: now - 1000 }),
+      makeCard({ id: 2, releaseAt: now + 1000 }),
+      makeCard({ id: 3, releaseAt: null }),
+    ]
+    expect(excludeUnreleasedCards(cards, true, now).map((card) => card.id)).toEqual([1, 3])
+    expect(excludeUnreleasedCards(cards, false, now).map((card) => card.id)).toEqual([1, 2, 3])
   })
 })
 

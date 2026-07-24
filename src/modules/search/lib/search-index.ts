@@ -17,6 +17,11 @@ export type SearchIndexEntry = {
   title: string
   subtitle: string
   keywords: string[]
+  /**
+   * Release timestamp in ms (cards → releaseAt, musics → publishedAt,
+   * events → startAt); null when the master record has none.
+   */
+  releaseAt?: number | null
   /** Owning game character id — only present on card entries. */
   characterId?: number
 }
@@ -75,6 +80,7 @@ export function buildSearchIndex(input: SearchMasterInput): SearchIndexEntry[] {
       title,
       subtitle: composer || arranger,
       keywords: dedupeKeywords([pronunciation, composer, arranger]),
+      releaseAt: normalizeCatalogNumber(record.publishedAt),
     })
   }
 
@@ -94,6 +100,7 @@ export function buildSearchIndex(input: SearchMasterInput): SearchIndexEntry[] {
       title: prefix,
       subtitle: characterName,
       keywords: dedupeKeywords([characterName]),
+      releaseAt: normalizeCatalogNumber(record.releaseAt),
       ...(characterId ? { characterId } : {}),
     })
   }
@@ -111,6 +118,7 @@ export function buildSearchIndex(input: SearchMasterInput): SearchIndexEntry[] {
       title: name,
       subtitle: "",
       keywords: [],
+      releaseAt: normalizeCatalogNumber(record.startAt),
     })
   }
 

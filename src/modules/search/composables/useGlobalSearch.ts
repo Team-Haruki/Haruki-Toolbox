@@ -1,5 +1,6 @@
 import { computed, onScopeDispose, ref, shallowRef, watch } from "vue"
 import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { isUnreleasedContent, useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
 import type { SekaiRegion } from "@/types"
@@ -41,6 +42,7 @@ export function useGlobalSearch() {
   const query = ref("")
 
   const { region } = useEffectiveCatalogRegion()
+  const { hideUnreleased } = useUnreleasedContentDisplay()
   let loadedRegion: SekaiRegion | null = null
   let loadToken = 0
 
@@ -50,11 +52,15 @@ export function useGlobalSearch() {
 
   const results = computed<SearchResultEntry[]>(() => {
     const localResults = searchIndexEntries(entries.value, query.value)
-    if (aliasMatches.value.length === 0) {
-      return localResults
+    const merged = aliasMatches.value.length === 0
+      ? localResults
+      : mergeAliasResults(localResults, resolveAliasMatches(entries.value, aliasMatches.value))
+    if (!hideUnreleased.value) {
+      return merged
     }
 
-    return mergeAliasResults(localResults, resolveAliasMatches(entries.value, aliasMatches.value))
+    const nowMs = Date.now()
+    return merged.filter((entry) => !isUnreleasedContent(entry.releaseAt, nowMs))
   })
   const groupedResults = computed<GlobalSearchResultGroup[]>(() => {
     return SEARCH_ENTRY_TYPES

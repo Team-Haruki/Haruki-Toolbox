@@ -1,3 +1,4 @@
+import { isUnreleasedContent } from "@/shared/sekai/unreleased"
 import type { MusicDifficulty } from "./music-difficulties"
 import type { MusicDifficultyStat, MusicLibraryEntry } from "./music-data"
 
@@ -49,6 +50,18 @@ export function matchesMusicSearch(entry: MusicLibraryEntry, search: string): bo
 
   return entry.title.toLowerCase().includes(query)
     || entry.pronunciation.toLowerCase().includes(query)
+}
+
+/** A music counts as unreleased while its publish timestamp is in the future. */
+export function isMusicEntryUnreleased(entry: MusicLibraryEntry, nowMs = Date.now()): boolean {
+  return isUnreleasedContent(entry.publishedAt, nowMs)
+}
+
+export function excludeUnreleasedMusicEntries(
+  entries: readonly MusicLibraryEntry[],
+  nowMs = Date.now(),
+): MusicLibraryEntry[] {
+  return entries.filter((entry) => !isMusicEntryUnreleased(entry, nowMs))
 }
 
 export function getMusicPublishedYear(publishedAt: number | null): number | null {

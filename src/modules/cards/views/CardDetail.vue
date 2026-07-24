@@ -15,8 +15,10 @@ import {
 import { formatLocalizedDateTime } from "@/lib/date-time"
 import type { SekaiUnit } from "@/shared/sekai/catalog"
 import { buildCatalogCardThumbnail, cardRarityHasTrainedArt, SEKAI_UNITS } from "@/shared/sekai/catalog"
+import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import { CARD_FULL_ART_ASPECT_CLASS, resolveCardFullArtUrl } from "@/modules/cards/lib/card-assets"
 import {
+  excludeUnreleasedCards,
   isCardUnreleased,
   resolveCardSupplyType,
   resolveCardUnit,
@@ -109,7 +111,11 @@ const supplyType = computed(() => (card.value
   ? resolveCardSupplyType(card.value, supplyTypeMap.value)
   : null))
 
+const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
+
 const unreleased = computed(() => card.value != null && isCardUnreleased(card.value.releaseAt))
+
+const blurArt = computed(() => unreleased.value && blurUnreleased.value)
 
 const extras = computed(() => extractCardDetailExtras(rawCards.value, cardIdNumber.value))
 
@@ -129,10 +135,13 @@ const sameCharacterCards = computed(() => {
     return []
   }
 
-  return selectSameCharacterCards(cards.value, card.value).map((other) => ({
-    card: other,
-    thumbnail: buildCatalogCardThumbnail(other, region.value, assetEndpoint.value),
-  }))
+  const now = Date.now()
+  return excludeUnreleasedCards(selectSameCharacterCards(cards.value, card.value), hideUnreleased.value, now)
+    .map((other) => ({
+      card: other,
+      thumbnail: buildCatalogCardThumbnail(other, region.value, assetEndpoint.value),
+      unreleased: isCardUnreleased(other.releaseAt, now),
+    }))
 })
 
 const rareIndexes = computed(() => Array.from(
@@ -195,7 +204,7 @@ function goBack() {
           v-if="unreleased"
           class="rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold text-white"
         >
-          {{ t("cards.common.unreleased") }}
+          {{ t("sekaiUnreleased.badge") }}
         </span>
         <span class="font-mono text-sm text-muted-foreground">#{{ card.id }}</span>
       </div>
@@ -218,7 +227,7 @@ function goBack() {
             v-if="artUrl && !artFailed"
             :src="artUrl"
             :alt="card.prefix ?? `#${card.id}`"
-            class="absolute inset-0 h-full w-full object-cover"
+            :class="['absolute inset-0 h-full w-full object-cover', blurArt ? 'blur-md scale-105' : '']"
             loading="lazy"
             @error="artFailed = true"
           >
@@ -371,7 +380,21 @@ function goBack() {
               :to="{ name: 'cards.detail', params: { cardId: view.card.id } }"
               class="flex w-24 shrink-0 flex-col gap-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <CardThumbnail :thumbnail="view.thumbnail" size="fluid" :title="view.card.prefix" />
+              <div :class="['relative', view.unreleased && blurUnreleased ? 'overflow-hidden rounded-md' : '']">
+                <CardThumbnail
+                  :thumbnail="view.thumbnail"
+                  size="fluid"
+                  :unreleased="view.unreleased && !blurUnreleased"
+                  :title="view.card.prefix"
+                  :class="view.unreleased && blurUnreleased ? 'blur-md scale-105' : ''"
+                />
+                <span
+                  v-if="view.unreleased && blurUnreleased"
+                  class="absolute right-1 top-1 rounded bg-background/80 px-1 py-0.5 text-[10px] font-semibold"
+                >
+                  {{ t("sekaiUnreleased.badge") }}
+                </span>
+              </div>
               <span class="line-clamp-2 text-[11px] leading-tight">{{ view.card.prefix ?? `#${view.card.id}` }}</span>
             </RouterLink>
           </div>

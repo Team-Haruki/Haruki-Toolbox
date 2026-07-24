@@ -35,6 +35,7 @@ import {
   SEKAI_UNITS,
 } from "@/shared/sekai/catalog"
 import { resolveCardAttrIconUrl } from "@/shared/sekai/data-sources"
+import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import type { CardRarityType, CardSortKey, CardSupplyType } from "@/modules/cards/lib/card-filter"
 import {
   CARD_RARITY_TYPES,
@@ -43,6 +44,7 @@ import {
   collectCardReleaseYears,
   countCardPages,
   createDefaultCardFilters,
+  excludeUnreleasedCards,
   filterCards,
   isCardUnreleased,
   paginateCards,
@@ -89,10 +91,14 @@ const selectedRegion = computed<string>({
 
 const characterOptions = computed(() => [...characterMap.value.values()].sort((a, b) => a.id - b.id))
 
-const years = computed(() => collectCardReleaseYears(cards.value))
+const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
+
+const visibleCards = computed(() => excludeUnreleasedCards(cards.value, hideUnreleased.value, Date.now()))
+
+const years = computed(() => collectCardReleaseYears(visibleCards.value))
 
 const filteredCards = computed(() => sortCards(
-  filterCards(cards.value, filters, {
+  filterCards(visibleCards.value, filters, {
     characterMap: characterMap.value,
     supplyTypeMap: supplyTypeMap.value,
   }),
@@ -101,17 +107,18 @@ const filteredCards = computed(() => sortCards(
 
 const totalPages = computed(() => countCardPages(filteredCards.value.length, PAGE_SIZE))
 
-const now = Date.now()
-
-const pagedCardViews = computed(() => paginateCards(filteredCards.value, page.value, PAGE_SIZE)
-  .map((card) => ({
-    card,
-    thumbnail: buildCatalogCardThumbnail(card, region.value, assetEndpoint.value),
-    characterName: card.characterId != null
-      ? characterMap.value.get(card.characterId)?.name ?? null
-      : null,
-    unreleased: isCardUnreleased(card.releaseAt, now),
-  })))
+const pagedCardViews = computed(() => {
+  const now = Date.now()
+  return paginateCards(filteredCards.value, page.value, PAGE_SIZE)
+    .map((card) => ({
+      card,
+      thumbnail: buildCatalogCardThumbnail(card, region.value, assetEndpoint.value),
+      characterName: card.characterId != null
+        ? characterMap.value.get(card.characterId)?.name ?? null
+        : null,
+      unreleased: isCardUnreleased(card.releaseAt, now),
+    }))
+})
 
 const hasActiveFilters = computed(() => filters.query.trim() !== ""
   || filters.characterIds.length > 0
@@ -121,7 +128,7 @@ const hasActiveFilters = computed(() => filters.query.trim() !== ""
   || filters.supplyTypes.length > 0
   || filters.year != null)
 
-watch([filters, sortKey, region], () => {
+watch([filters, sortKey, region, hideUnreleased], () => {
   page.value = 1
 })
 
@@ -400,13 +407,23 @@ function nextPage() {
           :to="{ name: 'cards.detail', params: { cardId: view.card.id } }"
           class="group flex flex-col gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <CardThumbnail
-            :thumbnail="view.thumbnail"
-            :trained="showTrained"
-            :unreleased="view.unreleased"
-            :title="view.card.prefix"
-            class="transition-transform group-hover:scale-[1.02]"
-          />
+          <div :class="['relative', view.unreleased && blurUnreleased ? 'overflow-hidden rounded-md' : '']">
+            <CardThumbnail
+              :thumbnail="view.thumbnail"
+              :trained="showTrained"
+              :unreleased="view.unreleased && !blurUnreleased"
+              :title="view.card.prefix"
+              :class="view.unreleased && blurUnreleased
+                ? 'blur-md scale-105'
+                : 'transition-transform group-hover:scale-[1.02]'"
+            />
+            <span
+              v-if="view.unreleased && blurUnreleased"
+              class="absolute right-1 top-1 rounded bg-background/80 px-1.5 py-0.5 text-xs font-semibold"
+            >
+              {{ t("sekaiUnreleased.badge") }}
+            </span>
+          </div>
           <span class="line-clamp-2 text-xs leading-tight group-hover:underline">
             {{ view.card.prefix ?? `#${view.card.id}` }}
           </span>

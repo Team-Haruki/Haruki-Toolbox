@@ -22,13 +22,16 @@ import { SEKAI_CARD_ATTRS } from "@/shared/sekai/catalog"
 import { resolveCardAttrIconUrl } from "@/shared/sekai/data-sources"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { SEKAI_CATALOG_REGION_FOLLOW_VALUE, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import EventBannerImage from "../components/EventBannerImage.vue"
 import EventStatusBadge from "../components/EventStatusBadge.vue"
 import EventTypeBadge from "../components/EventTypeBadge.vue"
 import { useEventCatalog } from "../composables/useEventCatalog"
 import {
   collectEventYears,
+  excludeUnreleasedEvents,
   filterEvents,
+  isEventUnreleased,
   isSekaiEventType,
   resolveEventStatus,
   SEKAI_EVENT_TYPES,
@@ -40,6 +43,7 @@ const router = useRouter()
 const settingsStore = useSettingsStore()
 
 const { region, selectorValue: regionSelectorValue, updateSelectorValue: updateRegionSelector } = useEffectiveCatalogRegion()
+const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 
 const { events, bonusAttrMap, loading, error, reload } = useEventCatalog(region)
@@ -62,8 +66,11 @@ const years = computed(() => collectEventYears(events.value))
 
 const filteredEvents = computed(() => {
   const year = yearFilter.value === "all" ? null : Number(yearFilter.value)
+  const visibleEvents = hideUnreleased.value
+    ? excludeUnreleasedEvents(events.value, nowMs.value)
+    : events.value
   return filterEvents(
-    events.value,
+    visibleEvents,
     {
       search: search.value,
       eventType: isSekaiEventType(typeFilter.value) ? typeFilter.value : null,
@@ -112,6 +119,10 @@ function handleEventKeydown(keyboardEvent: KeyboardEvent, eventId: number) {
 
 function eventStatus(event: SekaiEventItem) {
   return resolveEventStatus(event, nowMs.value)
+}
+
+function eventUnreleased(event: SekaiEventItem) {
+  return isEventUnreleased(event, nowMs.value)
 }
 </script>
 
@@ -231,13 +242,20 @@ function eventStatus(event: SekaiEventItem) {
         @keydown="handleEventKeydown($event, event.id)"
       >
         <CardContent class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-          <div class="aspect-[2/1] w-full shrink-0 overflow-hidden rounded-md bg-muted sm:w-44">
+          <div class="relative aspect-[2/1] w-full shrink-0 overflow-hidden rounded-md bg-muted sm:w-44">
             <EventBannerImage
               :region="region"
               :assetbundle-name="event.assetbundleName"
               :alt="event.name"
               :preference="assetEndpoint"
+              :class="eventUnreleased(event) && blurUnreleased ? 'blur-md scale-105' : ''"
             />
+            <span
+              v-if="eventUnreleased(event)"
+              class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm"
+            >
+              {{ t("sekaiUnreleased.badge") }}
+            </span>
           </div>
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2">

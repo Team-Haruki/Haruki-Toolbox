@@ -1366,6 +1366,9 @@ export const enUS = {
   sekaiRegion: {
     followAccount: "Follow current account",
   },
+  sekaiUnreleased: {
+    badge: "Unreleased",
+  },
   navigation: {
     groups: {
       recommendAndAbout: "Recommended & About",
@@ -4762,6 +4765,12 @@ export const enUS = {
     privacy: {
       hideGameUserIdLabel: "Hide game UID",
       hideGameUserIdHelp: "When enabled, account selectors for deck recommendation and uploads keep the first 2 and last 4 UID digits, replacing the middle with asterisks.",
+    },
+    unreleased: {
+      showLabel: "Show unreleased content",
+      showHelp: "When enabled, catalogs (cards, events, music, gachas) include content not yet released on the current server.",
+      blurLabel: "Spoiler blur for unreleased content",
+      blurHelp: "When unreleased content is shown, blur its card art, covers, and banners to avoid spoilers.",
     },
     appUpdate: {
       title: "App update",

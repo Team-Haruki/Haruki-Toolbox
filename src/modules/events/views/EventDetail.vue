@@ -25,6 +25,7 @@ import { buildCatalogCardThumbnail, type CatalogMasterCard } from "@/shared/seka
 import { resolveCardAttrIconUrl, resolveCharacterIconUrl } from "@/shared/sekai/data-sources"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import EventBannerImage from "../components/EventBannerImage.vue"
 import EventCardThumb from "../components/EventCardThumb.vue"
 import EventStatusBadge from "../components/EventStatusBadge.vue"
@@ -36,7 +37,7 @@ import {
   resolveBonusCharacterIconId,
   type EventBonusCharacter,
 } from "../lib/event-bonus"
-import { resolveEventStatus, splitEventCountdown } from "../lib/event-filter"
+import { isEventUnreleased, resolveEventStatus, splitEventCountdown } from "../lib/event-filter"
 
 const props = defineProps<{
   eventId: string
@@ -75,6 +76,9 @@ onBeforeUnmount(() => {
 })
 
 const status = computed(() => (event.value ? resolveEventStatus(event.value, nowMs.value) : null))
+
+const { blurUnreleased } = useUnreleasedContentDisplay()
+const unreleased = computed(() => event.value != null && isEventUnreleased(event.value, nowMs.value))
 
 const countdown = computed(() => {
   if (!event.value || !status.value) {
@@ -188,22 +192,32 @@ function goBack() {
           :src="backgroundUrl"
           alt=""
           class="absolute inset-0 h-full w-full object-cover opacity-30 dark:opacity-20"
+          :class="unreleased && blurUnreleased ? 'blur-md scale-105' : ''"
           aria-hidden="true"
           @error="backgroundFailed = true"
         >
         <div class="absolute inset-0 bg-gradient-to-r from-background/85 to-background/40" aria-hidden="true" />
         <CardContent class="relative flex flex-col items-center gap-4 p-5 sm:flex-row sm:items-center">
-          <div class="h-28 w-48 shrink-0">
+          <div class="relative h-28 w-48 shrink-0 overflow-hidden rounded-md">
             <EventBannerImage
               :region="region"
               :assetbundle-name="event.assetbundleName"
               :alt="event.name"
               :preference="assetEndpoint"
               variant="logo"
+              :class="unreleased && blurUnreleased ? 'blur-md scale-105' : ''"
             />
           </div>
           <div class="min-w-0 flex-1 text-center sm:text-left">
-            <h1 class="text-xl font-bold sm:text-2xl">{{ event.name }}</h1>
+            <h1 class="flex flex-wrap items-center justify-center gap-2 text-xl font-bold sm:justify-start sm:text-2xl">
+              {{ event.name }}
+              <span
+                v-if="unreleased"
+                class="rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold leading-none text-white shadow-sm"
+              >
+                {{ t("sekaiUnreleased.badge") }}
+              </span>
+            </h1>
             <div class="mt-1 text-xs text-muted-foreground">{{ t("events.common.idLabel", { id: event.id }) }}</div>
             <div class="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
               <EventTypeBadge :event-type="event.eventType" />

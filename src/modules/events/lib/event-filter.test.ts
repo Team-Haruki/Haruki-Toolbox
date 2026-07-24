@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test"
 import {
   collectEventYears,
+  excludeUnreleasedEvents,
   filterEvents,
+  isEventUnreleased,
   isSekaiEventType,
   normalizeEventItem,
   normalizeEventItems,
@@ -128,6 +130,28 @@ describe("resolveEventStatus", () => {
 
   test("ended when timestamps are missing", () => {
     expect(resolveEventStatus(makeEvent({ startAt: null, aggregateAt: null, closedAt: null }))).toBe("ended")
+  })
+})
+
+describe("unreleased helpers", () => {
+  const event = makeEvent()
+
+  test("flags events starting in the future, treating missing startAt as released", () => {
+    expect(isEventUnreleased(event, event.startAt! - 1)).toBe(true)
+    expect(isEventUnreleased(event, event.startAt!)).toBe(false)
+    expect(isEventUnreleased(event, event.startAt! + DAY)).toBe(false)
+    expect(isEventUnreleased(makeEvent({ startAt: null }), 0)).toBe(false)
+  })
+
+  test("excludes unreleased events without mutating the input", () => {
+    const now = Date.UTC(2024, 0, 15)
+    const input = [
+      makeEvent({ id: 1, startAt: now - DAY }),
+      makeEvent({ id: 2, startAt: now + DAY }),
+      makeEvent({ id: 3, startAt: null }),
+    ]
+    expect(excludeUnreleasedEvents(input, now).map((item) => item.id)).toEqual([1, 3])
+    expect(input.map((item) => item.id)).toEqual([1, 2, 3])
   })
 })
 

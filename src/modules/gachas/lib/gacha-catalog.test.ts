@@ -9,8 +9,10 @@ import {
   collectGachaYears,
   countGachaPages,
   dedupGachaPickupCardIds,
+  excludeUnreleasedGachas,
   filterGachas,
   formatGachaRatePercent,
+  isGachaUnreleased,
   normalizeCatalogGacha,
   normalizeCatalogGachas,
   normalizeGachaCeilItems,
@@ -165,6 +167,24 @@ describe("resolveGachaStatus", () => {
 
   it("falls back to ended without timestamps", () => {
     expect(resolveGachaStatus(makeGacha({ startAt: null, endAt: null }), 50)).toBe("ended")
+  })
+})
+
+describe("unreleased gachas", () => {
+  it("flags gachas whose startAt is in the future", () => {
+    expect(isGachaUnreleased(makeGacha({ startAt: 100 }), 50)).toBe(true)
+    expect(isGachaUnreleased(makeGacha({ startAt: 100 }), 150)).toBe(false)
+    expect(isGachaUnreleased(makeGacha({ startAt: null }), 50)).toBe(false)
+  })
+
+  it("excludes unreleased gachas only when hiding is enabled", () => {
+    const gachas = [
+      makeGacha({ id: 1, startAt: 100 }),
+      makeGacha({ id: 2, startAt: 300 }),
+      makeGacha({ id: 3, startAt: null }),
+    ]
+    expect(excludeUnreleasedGachas(gachas, true, 200).map((gacha) => gacha.id)).toEqual([1, 3])
+    expect(excludeUnreleasedGachas(gachas, false, 200).map((gacha) => gacha.id)).toEqual([1, 2, 3])
   })
 })
 

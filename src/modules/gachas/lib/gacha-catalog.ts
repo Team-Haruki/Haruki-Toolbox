@@ -250,6 +250,24 @@ export function resolveGachaStatus(gacha: CatalogGacha, nowMs = Date.now()): Gac
   return "ended"
 }
 
+/** A gacha counts as unreleased while its startAt is still in the future. */
+export function isGachaUnreleased(gacha: Pick<CatalogGacha, "startAt">, nowMs = Date.now()): boolean {
+  return gacha.startAt != null && gacha.startAt > nowMs
+}
+
+/** Removes unreleased gachas when hiding is enabled; otherwise returns the input unchanged. */
+export function excludeUnreleasedGachas(
+  gachas: readonly CatalogGacha[],
+  hide: boolean,
+  nowMs = Date.now(),
+): readonly CatalogGacha[] {
+  if (!hide) {
+    return gachas
+  }
+
+  return gachas.filter((gacha) => !isGachaUnreleased(gacha, nowMs))
+}
+
 export function resolveGachaYear(gacha: CatalogGacha): number | null {
   if (gacha.startAt == null) {
     return null

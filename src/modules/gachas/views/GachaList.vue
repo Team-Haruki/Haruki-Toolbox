@@ -22,17 +22,20 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { formatLocalizedDate } from "@/lib/date-time"
 import { SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { SEKAI_CATALOG_REGION_FOLLOW_VALUE } from "@/shared/sekai/catalog-region"
+import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import type { GachaSortKey, GachaStatus } from "@/modules/gachas/lib/gacha-catalog"
 import {
   buildGachaBannerCandidates,
   buildGachaLogoCandidates,
   collectGachaYears,
   countGachaPages,
+  excludeUnreleasedGachas,
   filterGachas,
   GACHA_SORT_KEYS,
   GACHA_STATUSES,
   GACHA_TYPES,
   isGachaType,
+  isGachaUnreleased,
   paginateGachas,
   resolveGachaStatus,
   sortGachas,
@@ -78,13 +81,17 @@ const selectedRegion = computed<string>({
   set: (value) => updateRegionSelector(value),
 })
 
-const years = computed(() => collectGachaYears(gachas.value))
+const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
+
+const visibleGachas = computed(() => excludeUnreleasedGachas(gachas.value, hideUnreleased.value, nowMs.value))
+
+const years = computed(() => collectGachaYears(visibleGachas.value))
 
 const filteredGachas = computed(() => {
   const year = yearFilter.value === ALL ? null : Number(yearFilter.value)
   return sortGachas(
     filterGachas(
-      gachas.value,
+      visibleGachas.value,
       {
         search: search.value,
         gachaType: typeFilter.value === ALL ? null : typeFilter.value,
@@ -103,13 +110,14 @@ const pagedGachaViews = computed(() => paginateGachas(filteredGachas.value, page
   .map((gacha) => ({
     gacha,
     status: resolveGachaStatus(gacha, nowMs.value),
+    unreleased: isGachaUnreleased(gacha, nowMs.value),
     imageSources: [
       ...buildGachaLogoCandidates(gacha, region.value, assetEndpoint.value),
       ...buildGachaBannerCandidates(gacha, region.value, assetEndpoint.value),
     ],
   })))
 
-watch([search, typeFilter, statusFilter, yearFilter, sortKey, region], () => {
+watch([search, typeFilter, statusFilter, yearFilter, sortKey, region, hideUnreleased], () => {
   page.value = 1
 })
 
@@ -263,8 +271,18 @@ function nextPage() {
         >
           <Card class="h-full overflow-hidden py-0 transition-shadow group-hover:shadow-md">
             <CardContent class="flex h-full flex-col gap-2 p-3">
-              <div class="aspect-[2/1] w-full overflow-hidden rounded-md bg-muted">
-                <GachaAssetImage :sources="view.imageSources" :alt="view.gacha.name" />
+              <div class="relative aspect-[2/1] w-full overflow-hidden rounded-md bg-muted">
+                <GachaAssetImage
+                  :sources="view.imageSources"
+                  :alt="view.gacha.name"
+                  :class="view.unreleased && blurUnreleased ? 'blur-md scale-105' : ''"
+                />
+                <span
+                  v-if="view.unreleased"
+                  class="absolute right-1 top-1 rounded bg-background/80 px-1.5 py-0.5 text-xs font-semibold"
+                >
+                  {{ t("sekaiUnreleased.badge") }}
+                </span>
               </div>
               <h3 class="line-clamp-2 text-sm font-semibold leading-tight group-hover:underline">
                 {{ view.gacha.name }}

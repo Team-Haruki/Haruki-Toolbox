@@ -2,8 +2,10 @@ import { describe, expect, it } from "bun:test"
 import type { MusicLibraryEntry } from "./music-data"
 import {
   createDefaultMusicLibraryFilter,
+  excludeUnreleasedMusicEntries,
   filterMusicEntries,
   getMusicPublishedYear,
+  isMusicEntryUnreleased,
   listMusicTagOptions,
   listMusicYearOptions,
   matchesMusicSearch,
@@ -173,5 +175,26 @@ describe("option helpers", () => {
   it("resolves published year in UTC", () => {
     expect(getMusicPublishedYear(Date.UTC(2022, 0, 1))).toBe(2022)
     expect(getMusicPublishedYear(null)).toBeNull()
+  })
+})
+
+describe("unreleased helpers", () => {
+  const now = Date.UTC(2024, 5, 1)
+
+  it("flags entries published in the future, treating missing timestamps as released", () => {
+    expect(isMusicEntryUnreleased(makeEntry({ publishedAt: now + 1000 }), now)).toBe(true)
+    expect(isMusicEntryUnreleased(makeEntry({ publishedAt: now }), now)).toBe(false)
+    expect(isMusicEntryUnreleased(makeEntry({ publishedAt: now - 1000 }), now)).toBe(false)
+    expect(isMusicEntryUnreleased(makeEntry({ publishedAt: null }), now)).toBe(false)
+  })
+
+  it("excludes unreleased entries without mutating the input", () => {
+    const input = [
+      makeEntry({ id: 1, publishedAt: now - 1000 }),
+      makeEntry({ id: 2, publishedAt: now + 1000 }),
+      makeEntry({ id: 3, publishedAt: null }),
+    ]
+    expect(excludeUnreleasedMusicEntries(input, now).map((entry) => entry.id)).toEqual([1, 3])
+    expect(input.map((entry) => entry.id)).toEqual([1, 2, 3])
   })
 })

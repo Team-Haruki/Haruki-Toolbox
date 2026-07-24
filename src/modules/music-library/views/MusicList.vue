@@ -35,6 +35,7 @@ import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-regio
 import { getI18nLocale } from "@/shared/i18n"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { SEKAI_CATALOG_REGION_FOLLOW_VALUE, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import MusicJacket from "../components/MusicJacket.vue"
 import { useMusicLibraryList } from "../composables/useMusicLibraryList"
 import { resolveMusicJacketUrl } from "../lib/music-assets"
@@ -50,7 +51,9 @@ import {
   MUSIC_NOTE_COUNT_FILTER_MODES,
   MUSIC_SORT_KEYS,
   createDefaultMusicLibraryFilter,
+  excludeUnreleasedMusicEntries,
   filterMusicEntries,
+  isMusicEntryUnreleased,
   sortMusicEntries,
   type MusicLibraryFilter,
   type MusicNoteCountFilterMode,
@@ -64,6 +67,7 @@ const { t, te, locale } = useI18n()
 const settingsStore = useSettingsStore()
 
 const { region, selectorValue: regionSelectorValue, updateSelectorValue: updateRegionSelector } = useEffectiveCatalogRegion()
+const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
 const {
   entries,
   tagOptions,
@@ -100,14 +104,15 @@ const filter = computed<MusicLibraryFilter>(() => ({
   year: selectedYear.value,
 }))
 
-const visibleEntries = computed(() =>
-  sortMusicEntries(
-    filterMusicEntries(entries.value, filter.value),
+const visibleEntries = computed(() => {
+  const filtered = filterMusicEntries(entries.value, filter.value)
+  return sortMusicEntries(
+    hideUnreleased.value ? excludeUnreleasedMusicEntries(filtered) : filtered,
     sortKey.value,
     sortDirection.value,
     selectedDifficulty.value,
-  ),
-)
+  )
+})
 
 const showSkeleton = computed(() => loading.value && entries.value.length === 0)
 const showDownloadProgress = computed(
@@ -479,11 +484,20 @@ function toNullableNumber(value: number | string | undefined | null): number | n
           :to="`/music/${entry.id}`"
           class="group flex flex-col gap-2 rounded-lg border bg-card p-3 shadow-xs transition-colors hover:bg-accent/50 dark:hover:bg-accent/30"
         >
-          <MusicJacket
-            :url="jacketUrl(entry)"
-            :alt="entry.title"
-            class="aspect-square w-full rounded-md"
-          />
+          <div class="relative aspect-square w-full overflow-hidden rounded-md">
+            <MusicJacket
+              :url="jacketUrl(entry)"
+              :alt="entry.title"
+              class="size-full"
+              :class="isMusicEntryUnreleased(entry) && blurUnreleased ? 'blur-md scale-105' : ''"
+            />
+            <span
+              v-if="isMusicEntryUnreleased(entry)"
+              class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm"
+            >
+              {{ t("sekaiUnreleased.badge") }}
+            </span>
+          </div>
           <div class="min-w-0 space-y-1">
             <p class="truncate text-sm font-medium" :title="entry.title">{{ entry.title }}</p>
             <p class="flex items-center gap-1 text-xs text-muted-foreground">

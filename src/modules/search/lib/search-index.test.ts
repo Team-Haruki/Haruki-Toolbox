@@ -20,17 +20,17 @@ function makeEntry(overrides: Partial<SearchIndexEntry>): SearchIndexEntry {
 
 const MASTER_INPUT = {
   musics: [
-    { id: 1, title: "Tell Your World", pronunciation: "てるゆあわーるど", composer: "kz", arranger: "kz" },
+    { id: 1, title: "Tell Your World", pronunciation: "てるゆあわーるど", composer: "kz", arranger: "kz", publishedAt: 1600000000000 },
     { id: 2, title: "ハローセカイ", pronunciation: "はろーせかい", composer: "someone", arranger: "other" },
     { id: 3, title: "" },
   ],
   cards: [
-    { id: 101, characterId: 21, prefix: "奇跡の歌声" },
+    { id: 101, characterId: 21, prefix: "奇跡の歌声", releaseAt: 1700000000000 },
     { id: 102, characterId: 999, prefix: "Unknown Owner" },
     { id: 103, characterId: 21 },
   ],
   events: [
-    { id: 7, name: "Colorful Live" },
+    { id: 7, name: "Colorful Live", startAt: 1650000000000 },
     { id: 8 },
   ],
   gameCharacters: [
@@ -63,10 +63,29 @@ describe("buildSearchIndex", () => {
   it("builds event entries from names and skips records without id or title", () => {
     const entries = buildSearchIndex(MASTER_INPUT)
     const event = entries.find((entry) => entry.type === "event")
-    expect(event).toEqual({ type: "event", id: 7, title: "Colorful Live", subtitle: "", keywords: [] })
+    expect(event).toEqual({
+      type: "event",
+      id: 7,
+      title: "Colorful Live",
+      subtitle: "",
+      keywords: [],
+      releaseAt: 1650000000000,
+    })
     expect(entries.some((entry) => entry.type === "music" && entry.id === 3)).toBe(false)
     expect(entries.some((entry) => entry.type === "card" && entry.id === 103)).toBe(false)
     expect(entries.some((entry) => entry.type === "event" && entry.id === 8)).toBe(false)
+  })
+
+  it("records the release timestamp per entry type, defaulting to null", () => {
+    const entries = buildSearchIndex(MASTER_INPUT)
+    const music = entries.find((entry) => entry.type === "music" && entry.id === 1)
+    const musicWithoutDate = entries.find((entry) => entry.type === "music" && entry.id === 2)
+    const card = entries.find((entry) => entry.type === "card" && entry.id === 101)
+    const cardWithoutDate = entries.find((entry) => entry.type === "card" && entry.id === 102)
+    expect(music?.releaseAt).toBe(1600000000000)
+    expect(musicWithoutDate?.releaseAt).toBeNull()
+    expect(card?.releaseAt).toBe(1700000000000)
+    expect(cardWithoutDate?.releaseAt).toBeNull()
   })
 
   it("returns no entries for missing input", () => {

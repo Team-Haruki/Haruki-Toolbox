@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/command"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
+import { isUnreleasedContent } from "@/shared/sekai/unreleased"
 import type { SearchEntryType, SearchIndexEntry, SearchResultEntry } from "@/modules/search/lib/search-index"
 import { useGlobalSearch } from "@/modules/search/composables/useGlobalSearch"
 
@@ -119,6 +120,10 @@ function isActive(entry: SearchIndexEntry) {
   return activeEntry.value?.type === entry.type && activeEntry.value?.id === entry.id
 }
 
+function isEntryUnreleased(entry: SearchIndexEntry) {
+  return isUnreleasedContent(entry.releaseAt, Date.now())
+}
+
 function selectEntry(entry: SearchIndexEntry) {
   isOpen.value = false
   void router.push(`${ROUTE_BASE[entry.type]}/${entry.id}`)
@@ -183,6 +188,12 @@ function selectEntry(entry: SearchIndexEntry) {
                       {{ entry.subtitle }}
                     </p>
                   </div>
+                  <span
+                    v-if="isEntryUnreleased(entry)"
+                    class="shrink-0 rounded border px-1 py-px text-[10px] text-muted-foreground"
+                  >
+                    {{ t("sekaiUnreleased.badge") }}
+                  </span>
                   <span
                     v-if="entry.viaAlias"
                     class="shrink-0 rounded border px-1 py-px text-[10px] text-muted-foreground"

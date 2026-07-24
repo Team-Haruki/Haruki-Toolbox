@@ -14,6 +14,7 @@ import {
   Save,
   Settings,
   Smartphone,
+  Sparkles,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
@@ -67,6 +68,8 @@ const {
   selectedLocale,
   selectedReducedVisualEffects,
   selectedHideGameUserId,
+  selectedShowUnreleasedContent,
+  selectedBlurUnreleasedContent,
   endpointOptions,
   assetEndpointOptions,
   endpointSelectionDisabled,
@@ -314,6 +317,40 @@ function hasVisitedSettingsTab(tab: string) {
                   <p class="mt-2 text-sm text-muted-foreground">{{ t("homeSettings.privacy.hideGameUserIdHelp") }}</p>
                 </div>
                 <Switch id="dialog-hide-game-user-id" v-model="selectedHideGameUserId" class="mt-1 shrink-0" />
+              </div>
+            </section>
+
+            <section class="grid h-full content-center gap-4 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <Label for="dialog-show-unreleased-content" class="flex items-center gap-2 text-base font-medium">
+                    <Sparkles class="size-4" />
+                    {{ t("homeSettings.unreleased.showLabel") }}
+                  </Label>
+                  <p class="mt-2 text-sm text-muted-foreground">{{ t("homeSettings.unreleased.showHelp") }}</p>
+                </div>
+                <Switch id="dialog-show-unreleased-content" v-model="selectedShowUnreleasedContent" class="mt-1 shrink-0" />
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <Label
+                    for="dialog-blur-unreleased-content"
+                    class="flex items-center gap-2 text-base font-medium"
+                    :class="selectedShowUnreleasedContent ? '' : 'opacity-50'"
+                  >
+                    <EyeOff class="size-4" />
+                    {{ t("homeSettings.unreleased.blurLabel") }}
+                  </Label>
+                  <p class="mt-2 text-sm text-muted-foreground" :class="selectedShowUnreleasedContent ? '' : 'opacity-50'">
+                    {{ t("homeSettings.unreleased.blurHelp") }}
+                  </p>
+                </div>
+                <Switch
+                  id="dialog-blur-unreleased-content"
+                  v-model="selectedBlurUnreleasedContent"
+                  :disabled="!selectedShowUnreleasedContent"
+                  class="mt-1 shrink-0"
+                />
               </div>
             </section>
           </div>

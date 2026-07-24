@@ -158,6 +158,19 @@ export function isCardUnreleased(releaseAt: number | null, now = Date.now()): bo
   return releaseAt != null && releaseAt > now
 }
 
+/** Removes unreleased cards when hiding is enabled; otherwise returns the input unchanged. */
+export function excludeUnreleasedCards(
+  cards: readonly CatalogMasterCard[],
+  hide: boolean,
+  now = Date.now(),
+): readonly CatalogMasterCard[] {
+  if (!hide) {
+    return cards
+  }
+
+  return cards.filter((card) => !isCardUnreleased(card.releaseAt, now))
+}
+
 export function filterCards(
   cards: readonly CatalogMasterCard[],
   filters: CardListFilters,
