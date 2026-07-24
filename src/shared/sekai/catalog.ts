@@ -55,6 +55,23 @@ export type CatalogCardThumbnail = {
   hasTrainedArt: boolean
 }
 
+/**
+ * The minimal shape the shared `SekaiCardThumbnail` component renders. Both
+ * `CatalogCardThumbnail` and deck-recommend's `CardThumbnailView` satisfy it.
+ */
+export type SekaiCardThumbnailView = {
+  cardId: number
+  title?: string | null
+  thumbnailUrl: string | null
+  trainedThumbnailUrl?: string | null
+  frameUrl: string | null
+  attrIconUrl: string | null
+  rareIconUrl: string | null
+  rareCount: number
+  trainRankUrl?: string | null
+  canvasIconUrl?: string | null
+}
+
 export function normalizeCatalogNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value
@@ -126,6 +143,40 @@ export function buildCatalogUnitColorMap(rawGameCharacterUnits: unknown): Map<Se
     const colorCode = normalizeCatalogString(record.colorCode)
     if (isSekaiUnit(unit) && colorCode && !map.has(unit)) {
       map.set(unit, colorCode)
+    }
+  }
+
+  return map
+}
+
+/**
+ * Builds each character's representative color from `gameCharacterUnits`.
+ * Virtual singers have one entry per unit, so the entry matching the
+ * character's own unit (piapro) wins over the unit-variant entries.
+ */
+export function buildCatalogCharacterColorMap(
+  rawGameCharacterUnits: unknown,
+  characterMap?: ReadonlyMap<number, CatalogCharacter>,
+): Map<number, string> {
+  const map = new Map<number, string>()
+  const ownUnitResolved = new Set<number>()
+  for (const record of normalizeCatalogRecords(rawGameCharacterUnits)) {
+    const characterId = normalizeCatalogNumber(record.gameCharacterId)
+    const colorCode = normalizeCatalogString(record.colorCode)
+    if (!characterId || !colorCode || ownUnitResolved.has(characterId)) {
+      continue
+    }
+
+    const unit = normalizeCatalogString(record.unit)
+    const ownUnit = characterMap?.get(characterId)?.unit ?? null
+    if (ownUnit != null && unit === ownUnit) {
+      map.set(characterId, colorCode)
+      ownUnitResolved.add(characterId)
+      continue
+    }
+
+    if (!map.has(characterId)) {
+      map.set(characterId, colorCode)
     }
   }
 

@@ -913,7 +913,6 @@ export const zhCN = {
     },
     badge: {
       level: "Lv.{level}",
-      masterRankLabel: "专精等级 {rank}",
     },
   },
   eventRecords: {
@@ -1105,7 +1104,6 @@ export const zhCN = {
     },
     badge: {
       level: "Lv.{level}",
-      masterRankLabel: "突破等级 {rank}",
     },
     music: {
       title: "歌曲通关统计",
@@ -1872,7 +1870,6 @@ export const zhCN = {
   cards: {
     common: {
       region: "区服",
-      unreleased: "未上线",
       loadError: "卡牌数据加载失败",
       retry: "重试",
     },

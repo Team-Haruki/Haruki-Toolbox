@@ -1,3 +1,4 @@
+import type { RecommendCard } from "haruki-sekai-deck-recommend-cpp"
 import {
   normalizeCatalogNumber,
   normalizeCatalogRecords,
@@ -143,6 +144,30 @@ export function buildPlayerCardMap(records: readonly PlayerCardRecord[]): Map<nu
 /** The game renders after-training art when the card's default image is set to it. */
 export function shouldUseTrainedImage(record: Pick<PlayerCardRecord, "defaultImage">): boolean {
   return record.defaultImage === "special_training"
+}
+
+/**
+ * Adapts a suite card record into the deck-recommend card shape so the deck
+ * section can reuse the deck-recommend thumbnail pipeline. Score-related
+ * fields are irrelevant for rendering and stay zeroed.
+ */
+export function buildDeckThumbnailCard(cardId: number, record: PlayerCardRecord | null): RecommendCard {
+  return {
+    card_id: cardId,
+    total_power: 0,
+    base_power: 0,
+    event_bonus_rate: 0,
+    master_rank: record?.masterRank ?? 0,
+    level: record?.level ?? 0,
+    skill_level: record?.skillLevel ?? 0,
+    skill_score_up: 0,
+    skill_life_recovery: 0,
+    episode1_read: false,
+    episode2_read: false,
+    after_training: record?.specialTrainingStatus === "done",
+    default_image: record?.defaultImage ?? "",
+    has_canvas_bonus: false,
+  }
 }
 
 /**

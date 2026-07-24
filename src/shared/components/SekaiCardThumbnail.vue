@@ -1,26 +1,32 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import type { CatalogCardThumbnail } from "@/shared/sekai/catalog"
+import type { SekaiCardThumbnailView } from "@/shared/sekai/catalog"
 
 const props = withDefaults(defineProps<{
-  thumbnail: CatalogCardThumbnail
-  size?: "fluid" | "sm" | "md" | "lg"
+  thumbnail: SekaiCardThumbnailView
+  size?: "fluid" | "xs" | "sm" | "md" | "lg"
   trained?: boolean
   unreleased?: boolean
   title?: string | null
+  cornerBadge?: string | null
 }>(), {
   size: "fluid",
   trained: false,
   unreleased: false,
   title: null,
+  cornerBadge: null,
 })
 
 const { t } = useI18n()
 
 const sizeClass = computed(() => {
+  if (props.size === "xs") {
+    return "size-[clamp(3rem,16vw,3.75rem)] rounded-sm"
+  }
+
   if (props.size === "sm") {
-    return "size-14 rounded-md"
+    return "size-11 rounded-sm sm:size-12 md:size-14 xl:size-16"
   }
 
   if (props.size === "md") {
@@ -57,7 +63,7 @@ const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCoun
       'relative shrink-0 select-none overflow-hidden bg-muted text-muted-foreground ring-1 ring-border',
       sizeClass,
     ]"
-    :aria-label="title ?? `#${thumbnail.cardId}`"
+    :aria-label="title ?? thumbnail.title ?? `#${thumbnail.cardId}`"
   >
     <img
       v-if="artUrl && !artFailed"
@@ -98,11 +104,31 @@ const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCoun
         loading="lazy"
       >
     </div>
+    <img
+      v-if="thumbnail.trainRankUrl"
+      :src="thumbnail.trainRankUrl"
+      alt=""
+      class="absolute bottom-0 right-0 w-[35%]"
+      loading="lazy"
+    >
+    <img
+      v-if="!unreleased && !cornerBadge && thumbnail.canvasIconUrl"
+      :src="thumbnail.canvasIconUrl"
+      alt=""
+      class="absolute right-1 top-1 size-4 rounded bg-background/85 p-0.5"
+      loading="lazy"
+    >
+    <span
+      v-if="!unreleased && cornerBadge"
+      class="absolute right-1 top-1 max-w-[72%] truncate rounded bg-primary px-1 py-0.5 font-mono text-[10px] font-semibold leading-none text-primary-foreground shadow-sm"
+    >
+      {{ cornerBadge }}
+    </span>
     <span
       v-if="unreleased"
       class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm"
     >
-      {{ t("cards.common.unreleased") }}
+      {{ t("sekaiUnreleased.badge") }}
     </span>
   </div>
 </template>

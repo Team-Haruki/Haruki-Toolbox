@@ -27,7 +27,7 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import EventBannerImage from "../components/EventBannerImage.vue"
-import EventCardThumb from "../components/EventCardThumb.vue"
+import SekaiCardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 import EventStatusBadge from "../components/EventStatusBadge.vue"
 import EventTypeBadge from "../components/EventTypeBadge.vue"
 import { useEventDetail } from "../composables/useEventDetail"
@@ -354,7 +354,7 @@ function goBack() {
               :to="`/cards/${entry.card.id}`"
               class="group flex flex-col gap-1 rounded-md focus-visible:outline-2 focus-visible:outline-ring"
             >
-              <EventCardThumb :thumbnail="entry.thumbnail" :title="cardTitle(entry.card)" />
+              <SekaiCardThumbnail :thumbnail="entry.thumbnail" :title="cardTitle(entry.card)" />
               <span class="truncate text-center text-xs text-muted-foreground group-hover:text-foreground">
                 {{ cardTitle(entry.card) }}
               </span>

@@ -8,26 +8,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
-import { buildCatalogCardThumbnail } from "@/shared/sekai/catalog"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import { usePlayerProfile } from "@/modules/player-profile/composables/usePlayerProfile"
 import {
   CHALLENGE_LIVE_SORT_MODES,
   buildChallengeLiveGrid,
   buildCharacterRanks,
+  buildDeckThumbnailCard,
   buildMusicClearCounts,
   buildPlayerCardMap,
   normalizePlayerCards,
   normalizePlayerGamedata,
   normalizePlayerProfile,
   resolveActiveDeckCardIds,
-  shouldUseTrainedImage,
   sortChallengeLiveCells,
   summarizeChallengeLiveTop,
   type ChallengeLiveSortMode,
-  type ProfileMusicDifficulty,
 } from "@/modules/player-profile/lib/player-profile"
-import DeckCardThumbnail from "@/modules/player-profile/components/DeckCardThumbnail.vue"
+import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
+import { buildCardThumbnailView, type DeckRecommendMasterCard } from "@/modules/deck-recommend/lib/card-thumbnail"
+import { MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
 
 const { t, locale } = useI18n()
 
@@ -44,19 +44,11 @@ const {
   cardMap,
   characterMap,
   unitColorMap,
+  characterColorMap,
   reloadMaster,
 } = usePlayerProfile()
 
 const challengeSort = ref<ChallengeLiveSortMode>("character")
-
-const DIFFICULTY_COLORS: Record<ProfileMusicDifficulty, string> = {
-  easy: "#66DD11",
-  normal: "#33BBEE",
-  hard: "#FFAA00",
-  expert: "#EE4466",
-  master: "#BB33EE",
-  append: "#FF7BAC",
-}
 
 const isLoading = computed(() => suiteStatus.value === "loading" || masterLoading.value)
 const hasError = computed(() => suiteStatus.value === "error" || masterError.value != null)
@@ -96,12 +88,23 @@ const deckViews = computed(() => {
   return cardIds.map((cardId) => {
     const master = cardMap.value.get(cardId) ?? null
     const record = playerCardMap.value.get(cardId) ?? null
+    const masterCard: DeckRecommendMasterCard | null = master
+      ? {
+          id: master.id,
+          characterId: master.characterId,
+          characterName: master.characterId != null
+            ? characterMap.value.get(master.characterId)?.name ?? null
+            : null,
+          cardRarityType: master.cardRarityType,
+          attr: master.attr,
+          prefix: master.prefix,
+          assetbundleName: master.assetbundleName,
+        }
+      : null
     return {
       cardId,
-      thumbnail: master ? buildCatalogCardThumbnail(master, region, assetEndpoint.value) : null,
-      trained: record != null && shouldUseTrainedImage(record),
       level: record?.level ?? null,
-      masterRank: record?.masterRank ?? 0,
+      thumbnail: buildCardThumbnailView(buildDeckThumbnailCard(cardId, record), masterCard, region, assetEndpoint.value),
     }
   })
 })
@@ -115,7 +118,7 @@ const characterRankCells = computed(() => buildCharacterRanks(suiteData.value?.u
     ...entry,
     name: character?.name ?? t("playerProfile.unknownCharacter"),
     iconUrl: character?.iconUrl ?? null,
-    unitColor,
+    color: characterColorMap.value.get(entry.characterId) ?? unitColor,
   }
 }))
 
@@ -281,31 +284,17 @@ function retry() {
             <p v-if="deckViews.length === 0" class="text-sm text-muted-foreground">
               {{ t("playerProfile.deck.empty") }}
             </p>
-            <div v-else class="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:max-w-xl">
-              <div
+            <div
+              v-else
+              class="grid w-full max-w-[41rem] grid-cols-5 content-center justify-items-center gap-0.5 rounded bg-muted/20 p-0.5 ring-1 ring-border/60 sm:gap-1 sm:rounded-md"
+            >
+              <CardThumbnail
                 v-for="view in deckViews"
                 :key="view.cardId"
-                class="relative"
-              >
-                <DeckCardThumbnail
-                  :card-id="view.cardId"
-                  :thumbnail="view.thumbnail"
-                  :trained="view.trained"
-                />
-                <span
-                  v-if="view.level != null"
-                  class="absolute right-1 top-1 rounded bg-black/70 px-1 py-0.5 text-[10px] font-semibold leading-none text-white"
-                >
-                  {{ t("playerProfile.badge.level", { level: view.level }) }}
-                </span>
-                <span
-                  v-if="view.masterRank > 0"
-                  class="absolute bottom-1 right-1 rounded-full bg-fuchsia-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white shadow-sm"
-                  :aria-label="t('playerProfile.badge.masterRankLabel', { rank: view.masterRank })"
-                >
-                  {{ view.masterRank }}
-                </span>
-              </div>
+                :thumbnail="view.thumbnail"
+                size="fluid"
+                :corner-badge="view.level != null && view.level > 0 ? t('playerProfile.badge.level', { level: view.level }) : null"
+              />
             </div>
           </div>
         </CardContent>
@@ -328,7 +317,7 @@ function retry() {
             >
               <span
                 class="inline-flex min-w-16 items-center justify-center rounded px-2 py-0.5 text-xs font-semibold text-white"
-                :style="{ backgroundColor: DIFFICULTY_COLORS[row.difficulty] }"
+                :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[row.difficulty] }"
               >
                 {{ t(`musicLibrary.difficulty.${row.difficulty}`) }}
               </span>
@@ -356,7 +345,7 @@ function retry() {
               v-for="cell in characterRankCells"
               :key="cell.characterId"
               class="flex items-center gap-2 rounded-md border border-l-4 p-2"
-              :style="cell.unitColor ? { borderLeftColor: cell.unitColor } : {}"
+              :style="cell.color ? { borderLeftColor: cell.color } : {}"
             >
               <img
                 v-if="cell.iconUrl"

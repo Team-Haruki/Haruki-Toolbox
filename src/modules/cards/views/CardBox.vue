@@ -10,7 +10,8 @@ import { LucideChartPie, LucideRefreshCw } from "lucide-vue-next"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import type { CatalogMasterCard } from "@/shared/sekai/catalog"
-import { SEKAI_CARD_ATTRS, buildCatalogCardThumbnail } from "@/shared/sekai/catalog"
+import { SEKAI_CARD_ATTRS, buildCatalogCardThumbnail, type SekaiCardThumbnailView } from "@/shared/sekai/catalog"
+import { resolveTrainRankImageUrl } from "@/shared/sekai/data-sources"
 import { resolveCardAttrIconUrl } from "@/shared/sekai/data-sources"
 import type { SekaiRegion } from "@/types"
 import { CARD_RARITY_TYPES, sortCards, type CardRarityType } from "@/modules/cards/lib/card-filter"
@@ -32,7 +33,7 @@ import {
   type UserCardRecord,
 } from "@/modules/cards/lib/card-box"
 import { useCardBoxCatalog } from "@/modules/cards/composables/useCardBoxCatalog"
-import CardThumbnail from "@/modules/cards/components/CardThumbnail.vue"
+import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 
 const { t, locale } = useI18n()
 
@@ -102,7 +103,7 @@ const uploadTimeText = computed(() => {
 
 type CardView = {
   card: CatalogMasterCard
-  thumbnail: ReturnType<typeof buildCatalogCardThumbnail>
+  thumbnail: SekaiCardThumbnailView
   record: UserCardRecord | null
   trained: boolean
 }
@@ -111,7 +112,10 @@ function makeCardView(card: CatalogMasterCard): CardView {
   const record = ownedMap.value.get(card.id) ?? null
   return {
     card,
-    thumbnail: buildCatalogCardThumbnail(card, accountRegion.value ?? "jp", assetEndpoint.value),
+    thumbnail: {
+      ...buildCatalogCardThumbnail(card, accountRegion.value ?? "jp", assetEndpoint.value),
+      trainRankUrl: record != null && record.masterRank > 0 ? resolveTrainRankImageUrl(record.masterRank) : null,
+    },
     record,
     trained: record != null && isCardTrained(record),
   }
@@ -465,23 +469,12 @@ function retry() {
                 :thumbnail="view.thumbnail"
                 :trained="view.trained"
                 :title="view.card.prefix"
+                :corner-badge="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
                 :class="[
                   'transition-transform group-hover:scale-[1.02]',
                   view.record == null ? 'opacity-40 grayscale' : '',
                 ]"
               />
-              <template v-if="view.record">
-                <span class="absolute right-1 top-1 rounded bg-black/70 px-1 py-0.5 text-[10px] font-semibold leading-none text-white">
-                  {{ t("cardBox.badge.level", { level: view.record.level }) }}
-                </span>
-                <span
-                  v-if="view.record.masterRank > 0"
-                  class="absolute bottom-1 right-1 rounded-full bg-fuchsia-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white shadow-sm"
-                  :aria-label="t('cardBox.badge.masterRankLabel', { rank: view.record.masterRank })"
-                >
-                  {{ view.record.masterRank }}
-                </span>
-              </template>
             </RouterLink>
           </div>
         </section>
@@ -517,23 +510,12 @@ function retry() {
                 :thumbnail="view.thumbnail"
                 :trained="view.trained"
                 :title="view.card.prefix"
+                :corner-badge="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
                 :class="[
                   'transition-transform group-hover:scale-[1.02]',
                   view.record == null ? 'opacity-40 grayscale' : '',
                 ]"
               />
-              <template v-if="view.record">
-                <span class="absolute right-1 top-1 rounded bg-black/70 px-1 py-0.5 text-[10px] font-semibold leading-none text-white">
-                  {{ t("cardBox.badge.level", { level: view.record.level }) }}
-                </span>
-                <span
-                  v-if="view.record.masterRank > 0"
-                  class="absolute bottom-1 right-1 rounded-full bg-fuchsia-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white shadow-sm"
-                  :aria-label="t('cardBox.badge.masterRankLabel', { rank: view.record.masterRank })"
-                >
-                  {{ view.record.masterRank }}
-                </span>
-              </template>
             </RouterLink>
           </div>
         </section>
@@ -556,23 +538,12 @@ function retry() {
               :thumbnail="view.thumbnail"
               :trained="view.trained"
               :title="view.card.prefix"
+              :corner-badge="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
               :class="[
                 'transition-transform group-hover:scale-[1.02]',
                 view.record == null ? 'opacity-40 grayscale' : '',
               ]"
             />
-            <template v-if="view.record">
-              <span class="absolute right-1 top-1 rounded bg-black/70 px-1 py-0.5 text-[10px] font-semibold leading-none text-white">
-                {{ t("cardBox.badge.level", { level: view.record.level }) }}
-              </span>
-              <span
-                v-if="view.record.masterRank > 0"
-                class="absolute bottom-1 right-1 rounded-full bg-fuchsia-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white shadow-sm"
-                :aria-label="t('cardBox.badge.masterRankLabel', { rank: view.record.masterRank })"
-              >
-                {{ view.record.masterRank }}
-              </span>
-            </template>
           </RouterLink>
         </div>
       </template>

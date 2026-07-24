@@ -29,6 +29,7 @@ import {
 } from "@/modules/gachas/lib/gacha-catalog"
 import { useGachaCatalog } from "@/modules/gachas/composables/useGachaCatalog"
 import GachaAssetImage from "@/modules/gachas/components/GachaAssetImage.vue"
+import SekaiCardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 import GachaStatusBadge from "@/modules/gachas/components/GachaStatusBadge.vue"
 
 const KNOWN_BEHAVIOR_TYPES = [
@@ -262,15 +263,22 @@ function goBack() {
               :to="{ name: 'cards.detail', params: { cardId: view.cardId } }"
               class="flex w-28 shrink-0 flex-col gap-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <div class="relative aspect-square w-full overflow-hidden rounded-md bg-muted">
-                <GachaAssetImage
-                  :sources="view.thumbnail?.thumbnailUrl ? [view.thumbnail.thumbnailUrl] : []"
-                  :alt="view.card?.prefix ?? `#${view.cardId}`"
-                  fit="cover"
+              <div :class="['relative', view.unreleased && blurUnreleased ? 'overflow-hidden rounded-md' : '']">
+                <SekaiCardThumbnail
+                  v-if="view.thumbnail"
+                  :thumbnail="view.thumbnail"
+                  :unreleased="view.unreleased && !blurUnreleased"
+                  :title="view.card?.prefix ?? `#${view.cardId}`"
                   :class="view.unreleased && blurUnreleased ? 'blur-md scale-105' : ''"
                 />
+                <div
+                  v-else
+                  class="flex aspect-square w-full items-center justify-center rounded-md bg-muted font-mono text-xs text-muted-foreground ring-1 ring-border"
+                >
+                  #{{ view.cardId }}
+                </div>
                 <span
-                  v-if="view.unreleased"
+                  v-if="view.unreleased && blurUnreleased"
                   class="absolute right-1 top-1 rounded bg-background/80 px-1 py-0.5 text-[10px] font-semibold"
                 >
                   {{ t("sekaiUnreleased.badge") }}

@@ -913,7 +913,6 @@ export const enUS = {
     },
     badge: {
       level: "Lv.{level}",
-      masterRankLabel: "Master rank {rank}",
     },
   },
   eventRecords: {
@@ -1105,7 +1104,6 @@ export const enUS = {
     },
     badge: {
       level: "Lv.{level}",
-      masterRankLabel: "Master rank {rank}",
     },
     music: {
       title: "Music Clear Stats",
@@ -1872,7 +1870,6 @@ export const enUS = {
   cards: {
     common: {
       region: "Server",
-      unreleased: "Unreleased",
       loadError: "Failed to load card data",
       retry: "Retry",
     },

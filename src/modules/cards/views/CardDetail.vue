@@ -31,7 +31,7 @@ import {
   selectSameCharacterCards,
 } from "@/modules/cards/lib/card-detail"
 import { useCardCatalog } from "@/modules/cards/composables/useCardCatalog"
-import CardThumbnail from "@/modules/cards/components/CardThumbnail.vue"
+import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 
 const props = defineProps<{
   cardId: string

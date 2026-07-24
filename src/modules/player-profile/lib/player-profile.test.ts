@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test"
 import {
   buildChallengeLiveGrid,
   buildCharacterRanks,
+  buildDeckThumbnailCard,
   buildMusicClearCounts,
   buildPlayerCardMap,
   cleanProfileWord,
@@ -69,6 +70,36 @@ describe("normalizePlayerCards / buildPlayerCardMap", () => {
     expect(map.get(11)?.level).toBe(1)
     expect(shouldUseTrainedImage(map.get(10)!)).toBe(true)
     expect(shouldUseTrainedImage(map.get(11)!)).toBe(false)
+  })
+})
+
+describe("buildDeckThumbnailCard", () => {
+  it("maps a suite record into the deck-recommend card shape", () => {
+    const card = buildDeckThumbnailCard(10, {
+      cardId: 10,
+      level: 60,
+      masterRank: 5,
+      skillLevel: 4,
+      specialTrainingStatus: "done",
+      defaultImage: "special_training",
+    })
+
+    expect(card.card_id).toBe(10)
+    expect(card.level).toBe(60)
+    expect(card.master_rank).toBe(5)
+    expect(card.skill_level).toBe(4)
+    expect(card.after_training).toBe(true)
+    expect(card.default_image).toBe("special_training")
+  })
+
+  it("falls back to safe defaults when the record is missing", () => {
+    const card = buildDeckThumbnailCard(99, null)
+
+    expect(card.card_id).toBe(99)
+    expect(card.level).toBe(0)
+    expect(card.master_rank).toBe(0)
+    expect(card.after_training).toBe(false)
+    expect(card.default_image).toBe("")
   })
 })
 

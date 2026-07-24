@@ -51,7 +51,7 @@ import {
   sortCards,
 } from "@/modules/cards/lib/card-filter"
 import { useCardCatalog } from "@/modules/cards/composables/useCardCatalog"
-import CardThumbnail from "@/modules/cards/components/CardThumbnail.vue"
+import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 
 const PAGE_SIZE = 60
 const YEAR_ALL = "all"
