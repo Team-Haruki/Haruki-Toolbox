@@ -169,6 +169,10 @@ const flatViews = computed(() => {
   return flatCards.map(makeCardView)
 })
 
+const statsRarityColumns = computed(() => CARD_RARITY_TYPES.filter((rarity) =>
+  characterDistribution.value.some((row) => row.rarityBuckets[rarity].total > 0),
+))
+
 const statsCharacterRows = computed(() => characterDistribution.value.map((row) => {
   const character = characterMap.value.get(row.characterId) ?? null
   return {
@@ -178,9 +182,7 @@ const statsCharacterRows = computed(() => characterDistribution.value.map((row) 
     owned: row.owned,
     total: row.total,
     percent: row.percent,
-    buckets: CARD_RARITY_TYPES
-      .map((rarity) => ({ rarity, ...row.rarityBuckets[rarity] }))
-      .filter((bucket) => bucket.total > 0),
+    buckets: statsRarityColumns.value.map((rarity) => ({ rarity, ...row.rarityBuckets[rarity] })),
   }
 }))
 
@@ -388,26 +390,48 @@ function retry() {
         <CardContent class="grid gap-6 lg:grid-cols-[2fr_1fr]">
           <div class="flex flex-col gap-1">
             <h3 class="mb-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byCharacter") }}</h3>
-            <div
-              v-for="row in statsCharacterRows"
-              :key="row.characterId"
-              class="flex flex-wrap items-center gap-2 rounded-md px-1 py-1 hover:bg-muted/50"
-            >
-              <img v-if="row.iconUrl" :src="row.iconUrl" alt="" class="size-6 shrink-0 rounded-full" loading="lazy">
-              <span class="w-24 truncate text-xs">{{ row.name }}</span>
-              <span class="text-xs tabular-nums text-muted-foreground">
-                {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
-                ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
-              </span>
-              <div class="ml-auto flex flex-wrap justify-end gap-1">
-                <span
-                  v-for="bucket in row.buckets"
-                  :key="bucket.rarity"
-                  class="rounded bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground"
-                >
-                  {{ t(`cards.rarity.${bucket.rarity}`) }} {{ bucket.owned }}/{{ bucket.total }}
-                </span>
-              </div>
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse text-xs">
+                <thead>
+                  <tr class="text-[11px] text-muted-foreground">
+                    <th class="px-1 py-1 text-left font-medium" scope="col" />
+                    <th class="px-1 py-1 text-right font-medium" scope="col" />
+                    <th
+                      v-for="rarity in statsRarityColumns"
+                      :key="rarity"
+                      class="px-1.5 py-1 text-center font-medium"
+                      scope="col"
+                    >
+                      {{ t(`cards.rarity.${rarity}`) }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="row in statsCharacterRows"
+                    :key="row.characterId"
+                    class="rounded-md hover:bg-muted/50"
+                  >
+                    <td class="px-1 py-1">
+                      <span class="flex min-w-0 items-center gap-2">
+                        <img v-if="row.iconUrl" :src="row.iconUrl" alt="" class="size-6 shrink-0 rounded-full" loading="lazy">
+                        <span class="max-w-24 truncate">{{ row.name }}</span>
+                      </span>
+                    </td>
+                    <td class="whitespace-nowrap px-1 py-1 text-right tabular-nums text-muted-foreground">
+                      {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
+                      ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
+                    </td>
+                    <td
+                      v-for="bucket in row.buckets"
+                      :key="bucket.rarity"
+                      class="whitespace-nowrap px-1.5 py-1 text-center tabular-nums text-muted-foreground"
+                    >
+                      {{ bucket.total > 0 ? `${bucket.owned}/${bucket.total}` : "—" }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
           <div class="flex flex-col gap-1">
