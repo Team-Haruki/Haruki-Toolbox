@@ -4839,7 +4839,7 @@ export const zhCN = {
       progressTitle: "正在获取账号数据",
       progressDescription: "已完成 {completed}/{total} 个绑定账号",
       successTitle: "账号数据获取完成",
-      successDescription: "已更新 {total} 个绑定账号的抓包数据缓存",
+      successDescription: "已更新 {updated}/{total} 个绑定账号的抓包数据缓存",
       partialTitle: "部分账号数据获取失败",
       partialDescription: "{failed}/{total} 个账号获取失败，进入相关页面时会自动重试。",
       failedDescription: "获取绑定账号数据失败，进入相关页面时会自动重试。",

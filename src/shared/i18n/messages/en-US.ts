@@ -4839,7 +4839,7 @@ export const enUS = {
       progressTitle: "Fetching account data",
       progressDescription: "{completed}/{total} bound accounts done",
       successTitle: "Account data fetched",
-      successDescription: "Refreshed cached suite data for {total} bound accounts",
+      successDescription: "Downloaded new suite data for {updated}/{total} bound accounts",
       partialTitle: "Some account data failed to fetch",
       partialDescription: "{failed}/{total} accounts failed. They will retry automatically on the related pages.",
       failedDescription: "Failed to fetch bound account data. It will retry automatically on the related pages.",

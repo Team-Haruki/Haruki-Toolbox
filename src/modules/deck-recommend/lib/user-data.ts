@@ -43,6 +43,7 @@ export type RefreshDeckRecommendProfilesResult = {
 
 export type RefreshDeckRecommendSuitesResult = {
   refreshed: number
+  updated: number
   failed: number
   total: number
 }
@@ -140,6 +141,7 @@ export async function refreshDeckRecommendSuitesForBoundAccounts(input: {
   const uniqueAccounts = dedupeProfileAccounts(input.accounts)
   const result: RefreshDeckRecommendSuitesResult = {
     refreshed: 0,
+    updated: 0,
     failed: 0,
     total: uniqueAccounts.length,
   }
@@ -147,13 +149,16 @@ export async function refreshDeckRecommendSuitesForBoundAccounts(input: {
   let completed = 0
   for (const account of uniqueAccounts) {
     try {
-      await fetchDeckRecommendUserDataWithCache({
+      const fetchResult = await fetchDeckRecommendUserDataWithCache({
         toolboxUserId: input.toolboxUserId,
         server: account.server,
         gameUserId: account.userId,
         mode: "suite",
       }, { strategy: "check-remote" })
       result.refreshed += 1
+      if (!fetchResult.cacheHit) {
+        result.updated += 1
+      }
     } catch {
       result.failed += 1
     }

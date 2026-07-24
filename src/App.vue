@@ -266,9 +266,15 @@ async function prefetchBoundAccountSuites(
       return
     }
 
+    if (result.updated === 0) {
+      // Everything came back 304/cache-hit — nothing new to announce.
+      toast.dismiss(toastId)
+      return
+    }
+
     toast.success(t("core.suitePrefetch.successTitle"), {
       id: toastId,
-      description: t("core.suitePrefetch.successDescription", { total: result.total }),
+      description: t("core.suitePrefetch.successDescription", { updated: result.updated, total: result.total }),
     })
   } catch (e) {
     logger.error("Failed to prefetch bound account suites", e)
