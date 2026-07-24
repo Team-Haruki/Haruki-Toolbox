@@ -10,6 +10,7 @@ export interface BoundAccount {
   server: SekaiRegion
   uid: string
   label: string
+  isDefault?: boolean
 }
 
 type UploadAccountStore = {
@@ -49,6 +50,7 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
         key: `${server}:${uid}`,
         server,
         uid,
+        isDefault: account.isDefault === true,
         label: formatGameAccountLabel({
           regionLabel: regionLabel(server),
           uid,
@@ -102,7 +104,7 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
 
       const currentKey = selectedAccountKey.value
       if (!currentKey || !accounts.some((item) => item.key === currentKey)) {
-        selectedAccountKey.value = accounts[0].key
+        selectedAccountKey.value = (accounts.find((item) => item.isDefault) ?? accounts[0]).key
       }
     },
     { immediate: true }

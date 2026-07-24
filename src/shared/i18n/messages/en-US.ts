@@ -523,12 +523,14 @@ export const enUS = {
       status: {
         verified: "Verified",
         unverified: "Unverified",
+        default: "Default",
       },
       actions: {
         edit: "Edit",
         grants: "Data grants",
         receivedGrants: "Received grants",
         delete: "Delete",
+        setDefault: "Set as default account",
       },
       editDialog: {
         createTitle: "Add account",
@@ -661,6 +663,9 @@ export const enUS = {
         },
       },
       toast: {
+        setDefaultSuccessTitle: "Default account updated",
+        setDefaultSuccessDescription: "Feature pages will select this account by default",
+        setDefaultFailedTitle: "Failed to set default account",
         deleteSuccessTitle: "Deleted",
         deleteSuccessDescription: "Account binding has been removed",
         deleteFailedTitle: "Delete failed",

@@ -56,7 +56,15 @@ export function useGameAccountSelection(): UseGameAccountSelectionResult {
       }
     }
 
-    return available.find((account) => account.verified) ?? available[0] ?? null
+    // No (valid) local selection yet: start from the server-side default
+    // account, then any verified binding, then whatever exists.
+    return (
+      available.find((account) => account.isDefault && account.verified)
+      ?? available.find((account) => account.isDefault)
+      ?? available.find((account) => account.verified)
+      ?? available[0]
+      ?? null
+    )
   })
 
   return {

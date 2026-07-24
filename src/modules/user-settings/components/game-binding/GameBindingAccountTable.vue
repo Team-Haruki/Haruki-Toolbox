@@ -31,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Inbox, KeyRound, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-vue-next"
+import { Inbox, KeyRound, MoreHorizontal, Pencil, Plus, Star, Trash2 } from "lucide-vue-next"
 
 const props = defineProps<{
   data: GameAccountBinding[]
@@ -44,6 +44,7 @@ const emit = defineEmits<{
   (e: "delete", account: GameAccountBinding): void
   (e: "grants", account: GameAccountBinding): void
   (e: "received-grants"): void
+  (e: "set-default", account: GameAccountBinding): void
 }>()
 
 const { t } = useI18n()
@@ -54,7 +55,21 @@ const columns: ColumnDef<GameAccountBinding>[] = [
     header: () => t("userSettings.gameBinding.table.server"),
     cell: ({ row }) => props.regionLabels[row.original.server] ?? row.original.server,
   },
-  { accessorKey: "userId", header: () => t("userSettings.gameBinding.table.userId"), cell: ({ row }) => row.original.userId },
+  {
+    accessorKey: "userId",
+    header: () => t("userSettings.gameBinding.table.userId"),
+    cell: ({ row }) =>
+      h("span", { class: "inline-flex items-center gap-1.5" }, [
+        String(row.original.userId),
+        row.original.isDefault
+          ? h(
+              "span",
+              { class: "inline-flex items-center gap-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-xs text-amber-600 dark:text-amber-400" },
+              [h(Star, { class: "h-3 w-3" }), t("userSettings.gameBinding.status.default")],
+            )
+          : null,
+      ]),
+  },
   {
     accessorKey: "verified",
     header: () => t("userSettings.gameBinding.table.verificationStatus"),
@@ -81,6 +96,12 @@ const columns: ColumnDef<GameAccountBinding>[] = [
               h(Pencil, { class: "h-4 w-4 mr-2" }),
               t("userSettings.gameBinding.actions.edit"),
             ]),
+            row.original.verified && !row.original.isDefault
+              ? h(DropdownMenuItem, { onClick: () => emit("set-default", row.original) }, () => [
+                h(Star, { class: "h-4 w-4 mr-2" }),
+                t("userSettings.gameBinding.actions.setDefault"),
+              ])
+              : null,
             row.original.verified
               ? h(DropdownMenuItem, { onClick: () => emit("grants", row.original) }, () => [
                 h(KeyRound, { class: "h-4 w-4 mr-2" }),

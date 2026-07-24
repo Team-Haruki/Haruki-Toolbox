@@ -523,12 +523,14 @@ export const zhCN = {
       status: {
         verified: "已验证",
         unverified: "未验证",
+        default: "默认",
       },
       actions: {
         edit: "编辑",
         grants: "数据授权",
         receivedGrants: "收到的授权",
         delete: "删除",
+        setDefault: "设为默认账号",
       },
       editDialog: {
         createTitle: "新增账号",
@@ -661,6 +663,9 @@ export const zhCN = {
         },
       },
       toast: {
+        setDefaultSuccessTitle: "已设为默认账号",
+        setDefaultSuccessDescription: "各功能页面将默认选中该账号",
+        setDefaultFailedTitle: "设置默认账号失败",
         deleteSuccessTitle: "删除成功",
         deleteSuccessDescription: "账号已解除绑定",
         deleteFailedTitle: "删除失败",

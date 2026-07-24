@@ -148,6 +148,7 @@ type BoundAccountOption = {
   server: SekaiRegion
   uid: string
   label: string
+  isDefault?: boolean
 }
 
 const DEFAULT_MUSIC_ID = "74"
@@ -975,7 +976,7 @@ watch(
     pendingSavedAccountKey = ""
 
     if (!accounts.some((account) => account.key === selectedAccountKey.value)) {
-      selectedAccountKey.value = accounts[0].key
+      selectedAccountKey.value = (accounts.find((account) => account.isDefault) ?? accounts[0]).key
     }
   },
   { immediate: true },
@@ -1363,6 +1364,7 @@ function createAccountOption(account: GameAccountBinding): BoundAccountOption {
     key: `${account.server}:${uid}`,
     server: account.server,
     uid,
+    isDefault: account.isDefault === true,
     label: formatGameAccountLabel({
       regionLabel: resolveSekaiRegionLabel(account.server, t),
       uid,

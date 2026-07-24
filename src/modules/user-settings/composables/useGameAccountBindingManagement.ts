@@ -58,6 +58,7 @@ export function useGameAccountBindingManagement() {
   const isSaving = ref(false)
   const isDeleting = ref(false)
   const isVerifying = ref(false)
+  const settingDefaultKey = ref<string | null>(null)
   const editIdentitySnapshot = ref<{ server: SekaiRegion; userId: string } | null>(null)
   const verifiedBindingSnapshot = ref<{ server: SekaiRegion; userId: string } | null>(null)
 
@@ -232,6 +233,33 @@ export function useGameAccountBindingManagement() {
     }
   }
 
+  async function setDefaultBinding(account: GameAccountBinding) {
+    if (settingDefaultKey.value) return
+    const currentUserId = requireCurrentUserId(t("userSettings.gameBinding.toast.setDefaultFailedTitle"))
+    if (!currentUserId) return
+
+    settingDefaultKey.value = `${account.server}:${account.userId}`
+    try {
+      const resp = await updateGameAccount(account.server, String(account.userId), currentUserId, {
+        suite: normalizeSuitePermissions(account.suite),
+        mysekai: normalizeMysekaiPermissions(account.mysekai),
+        isDefault: true,
+      }, { skipErrorToast: true })
+
+      const updatedData = unwrapUpdatedData(resp, t("userSettings.gameBinding.title"))
+      userStore.setUser({ gameAccountBindings: updatedData.gameAccountBindings })
+      toast.success(t("userSettings.gameBinding.toast.setDefaultSuccessTitle"), {
+        description: t("userSettings.gameBinding.toast.setDefaultSuccessDescription"),
+      })
+    } catch (error: unknown) {
+      toast.error(t("userSettings.gameBinding.toast.setDefaultFailedTitle"), {
+        description: extractErrorMessage(error, t("userSettings.gameBinding.toast.setDefaultFailedTitle")),
+      })
+    } finally {
+      settingDefaultKey.value = null
+    }
+  }
+
   async function handleVerify() {
     if (isVerifying.value) return
     const uidStr = userIdInput.value.trim()
@@ -330,6 +358,8 @@ export function useGameAccountBindingManagement() {
     isSaving,
     isDeleting,
     isVerifying,
+    settingDefaultKey,
+    setDefaultBinding,
     allowCNMysekai,
     regionLabels,
     regionOptions,
