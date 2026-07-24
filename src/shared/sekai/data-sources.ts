@@ -230,6 +230,11 @@ export function resolveMySekaiCanvasIconUrl(): string {
   return resolveToolboxStaticImageUrl("static_images/mysekai/icon/icon_canvas.png")
 }
 
+/** Unit logo from the toolbox static bucket (`static_images/unit_logo/logo_{unit}.png`). */
+export function resolveUnitLogoUrl(unit: string): string {
+  return resolveToolboxStaticImageUrl(`static_images/unit_logo/logo_${unit}.png`)
+}
+
 export function resolveCharacterIconUrl(characterId: number): string {
   const nickname = CHARACTER_ICON_NICKNAMES[characterId] ?? `chr_icon_${characterId}`
   return resolveToolboxStaticImageUrl(`static_images/chara_icon/${nickname}.png`)

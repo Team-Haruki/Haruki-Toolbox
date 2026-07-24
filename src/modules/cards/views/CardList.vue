@@ -34,7 +34,7 @@ import {
   SEKAI_CARD_ATTRS,
   SEKAI_UNITS,
 } from "@/shared/sekai/catalog"
-import { resolveCardAttrIconUrl } from "@/shared/sekai/data-sources"
+import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import type { CardRarityType, CardSortKey, CardSupplyType } from "@/modules/cards/lib/card-filter"
 import {
@@ -170,6 +170,15 @@ function unitDotStyle(unit: SekaiUnit) {
   return color ? { backgroundColor: color } : undefined
 }
 
+// Units whose logo image failed to load fall back to the colored dot.
+const failedUnitLogos = ref<Set<SekaiUnit>>(new Set())
+
+function markUnitLogoFailed(unit: SekaiUnit) {
+  const next = new Set(failedUnitLogos.value)
+  next.add(unit)
+  failedUnitLogos.value = next
+}
+
 function prevPage() {
   page.value = Math.max(1, page.value - 1)
 }
@@ -296,7 +305,15 @@ function nextPage() {
             ]"
             @click="toggleUnit(unit)"
           >
-            <span class="size-2 rounded-full bg-muted-foreground/40" :style="unitDotStyle(unit)" />
+            <img
+              v-if="!failedUnitLogos.has(unit)"
+              :src="resolveUnitLogoUrl(unit)"
+              alt=""
+              class="h-4 w-auto max-w-9 object-contain"
+              loading="lazy"
+              @error="markUnitLogoFailed(unit)"
+            >
+            <span v-else class="size-2 rounded-full bg-muted-foreground/40" :style="unitDotStyle(unit)" />
             {{ t(`cards.unit.${unit}`) }}
           </button>
         </div>
