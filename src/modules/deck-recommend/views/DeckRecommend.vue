@@ -322,7 +322,6 @@ let dataPreloadSignature = ""
 let cardOptionMasterDataSignature = ""
 let routeQueryHydrationSignature = ""
 let routeRegionLocked = initialSavedConfig.dataRegion != null
-let silentUserDataCheckSignature = ""
 let preserveInitialSavedSkillStrategy = Boolean(initialSavedConfig.skillOrderStrategy || initialSavedConfig.skillReferenceStrategy)
 let pendingSavedAccountKey = initialSavedConfig.selectedAccountKey ?? ""
 const routeHydrationInProgress = ref(false)
@@ -992,14 +991,6 @@ watch(
   { immediate: true },
 )
 
-watch(
-  () => [userStore.userId, selectedAccount.value?.key],
-  () => {
-    void checkSelectedAccountSuiteData()
-  },
-  { immediate: true },
-)
-
 watch(dataRegion, () => {
   invalidateDataPreload()
   cardOptionMasterData.value = null
@@ -1626,21 +1617,6 @@ function checkDeckRecommendRegionData(region: SekaiRegion) {
       files: ["honors"],
     })
   }
-}
-
-async function checkSelectedAccountSuiteData() {
-  const account = selectedAccount.value
-  if (!userStore.userId || !account) {
-    return
-  }
-
-  const signature = `${userStore.userId}:${account.server}:${account.uid}:suite`
-  if (signature === silentUserDataCheckSignature) {
-    return
-  }
-
-  silentUserDataCheckSignature = signature
-  await runner.refreshUserData({ account, mode: "event" }).catch(() => undefined)
 }
 
 function preloadCurrentRegionData() {

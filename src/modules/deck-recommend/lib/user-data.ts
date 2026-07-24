@@ -41,6 +41,17 @@ export type RefreshDeckRecommendProfilesResult = {
   failed: number
 }
 
+export type RefreshDeckRecommendSuitesResult = {
+  refreshed: number
+  failed: number
+  total: number
+}
+
+export type RefreshDeckRecommendSuitesProgress = {
+  completed: number
+  total: number
+}
+
 const userDataRequests = new Map<string, Promise<DeckRecommendUserDataFetchResult>>()
 const profileRequests = new Map<string, Promise<DeckRecommendProfileFetchResult>>()
 
@@ -119,6 +130,38 @@ export async function refreshDeckRecommendProfilesForBoundAccounts(input: {
     }
     return acc
   }, { refreshed: 0, failed: 0 })
+}
+
+export async function refreshDeckRecommendSuitesForBoundAccounts(input: {
+  toolboxUserId: string | number
+  accounts: readonly { server: SekaiRegion; userId: string | number }[]
+  onProgress?: (progress: RefreshDeckRecommendSuitesProgress) => void
+}): Promise<RefreshDeckRecommendSuitesResult> {
+  const uniqueAccounts = dedupeProfileAccounts(input.accounts)
+  const result: RefreshDeckRecommendSuitesResult = {
+    refreshed: 0,
+    failed: 0,
+    total: uniqueAccounts.length,
+  }
+
+  let completed = 0
+  for (const account of uniqueAccounts) {
+    try {
+      await fetchDeckRecommendUserDataWithCache({
+        toolboxUserId: input.toolboxUserId,
+        server: account.server,
+        gameUserId: account.userId,
+        mode: "suite",
+      }, { strategy: "check-remote" })
+      result.refreshed += 1
+    } catch {
+      result.failed += 1
+    }
+    completed += 1
+    input.onProgress?.({ completed, total: result.total })
+  }
+
+  return result
 }
 
 async function fetchDeckRecommendSingleUserDataWithCache(

@@ -4835,6 +4835,15 @@ export const zhCN = {
       missingUpdatedDataDescription: "云端设置返回数据不完整（缺少 updatedData）。",
       unexpectedStatusDescription: "云端设置请求返回了异常状态（{status}）。",
     },
+    suitePrefetch: {
+      progressTitle: "正在获取账号数据",
+      progressDescription: "已完成 {completed}/{total} 个绑定账号",
+      successTitle: "账号数据获取完成",
+      successDescription: "已更新 {total} 个绑定账号的抓包数据缓存",
+      partialTitle: "部分账号数据获取失败",
+      partialDescription: "{failed}/{total} 个账号获取失败，进入相关页面时会自动重试。",
+      failedDescription: "获取绑定账号数据失败，进入相关页面时会自动重试。",
+    },
     unsupportedBrowser: {
       title: "不受支持的浏览器",
       description: "您正在尝试使用不受支持的浏览器访问Haruki工具箱",

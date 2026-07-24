@@ -13,7 +13,11 @@ import { useI18n } from "vue-i18n"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { createLogger } from "@/lib/logger"
 import { useRoute, useRouter } from "vue-router"
-import { refreshDeckRecommendProfilesForBoundAccounts } from "@/modules/deck-recommend/lib/user-data"
+import {
+  refreshDeckRecommendProfilesForBoundAccounts,
+  refreshDeckRecommendSuitesForBoundAccounts,
+} from "@/modules/deck-recommend/lib/user-data"
+import type { SekaiRegion } from "@/types/store"
 import { consumeLoginSuccessPendingFlag } from "@/modules/auth/lib/login-success"
 import {
   computed,
@@ -225,9 +229,55 @@ watch(
       toolboxUserId: userId,
       accounts,
     })
+    void prefetchBoundAccountSuites(userId, accounts)
   },
   { immediate: true },
 )
+
+async function prefetchBoundAccountSuites(
+  toolboxUserId: string,
+  accounts: readonly { server: SekaiRegion; userId: string | number }[],
+) {
+  if (accounts.length === 0) {
+    return
+  }
+
+  const toastId = toast.loading(t("core.suitePrefetch.progressTitle"), {
+    description: t("core.suitePrefetch.progressDescription", { completed: 0, total: accounts.length }),
+  })
+
+  try {
+    const result = await refreshDeckRecommendSuitesForBoundAccounts({
+      toolboxUserId,
+      accounts,
+      onProgress: (progress) => {
+        toast.loading(t("core.suitePrefetch.progressTitle"), {
+          id: toastId,
+          description: t("core.suitePrefetch.progressDescription", progress),
+        })
+      },
+    })
+
+    if (result.failed > 0) {
+      toast.warning(t("core.suitePrefetch.partialTitle"), {
+        id: toastId,
+        description: t("core.suitePrefetch.partialDescription", { failed: result.failed, total: result.total }),
+      })
+      return
+    }
+
+    toast.success(t("core.suitePrefetch.successTitle"), {
+      id: toastId,
+      description: t("core.suitePrefetch.successDescription", { total: result.total }),
+    })
+  } catch (e) {
+    logger.error("Failed to prefetch bound account suites", e)
+    toast.warning(t("core.suitePrefetch.partialTitle"), {
+      id: toastId,
+      description: t("core.suitePrefetch.failedDescription"),
+    })
+  }
+}
 
 watch(
   [hasLoginSuccessFlag, () => userStore.settingsSyncState],
