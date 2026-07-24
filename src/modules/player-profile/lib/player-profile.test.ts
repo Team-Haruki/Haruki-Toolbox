@@ -9,6 +9,7 @@ import {
   normalizePlayerCards,
   normalizePlayerGamedata,
   normalizePlayerProfile,
+  parseSekaiColoredText,
   resolveActiveDeckCardIds,
   shouldUseTrainedImage,
   sortChallengeLiveCells,
@@ -51,6 +52,30 @@ describe("normalizePlayerProfile", () => {
       twitterId: "haruki",
     })
     expect(normalizePlayerProfile(undefined)).toEqual({ word: "", twitterId: "" })
+  })
+})
+
+describe("parseSekaiColoredText", () => {
+  it("splits color-tagged names into colored segments", () => {
+    expect(parseSekaiColoredText("<#DAC>星<#B68>雲<#9CF>夏<#FCA>希")).toEqual([
+      { text: "星", color: "#DAC" },
+      { text: "雲", color: "#B68" },
+      { text: "夏", color: "#9CF" },
+      { text: "希", color: "#FCA" },
+    ])
+  })
+
+  it("keeps untagged prefixes uncolored and supports 6-digit tags", () => {
+    expect(parseSekaiColoredText("Hi<#33CCBB>Miku")).toEqual([
+      { text: "Hi", color: null },
+      { text: "Miku", color: "#33CCBB" },
+    ])
+  })
+
+  it("leaves malformed tags as literal text", () => {
+    expect(parseSekaiColoredText("<#GGG>abc")).toEqual([{ text: "<#GGG>abc", color: null }])
+    expect(parseSekaiColoredText("")).toEqual([])
+    expect(parseSekaiColoredText(null)).toEqual([])
   })
 })
 

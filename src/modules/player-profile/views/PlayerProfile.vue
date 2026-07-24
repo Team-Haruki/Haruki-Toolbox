@@ -21,6 +21,7 @@ import {
   normalizePlayerCards,
   normalizePlayerGamedata,
   normalizePlayerProfile,
+  parseSekaiColoredText,
   resolveActiveDeckCardIds,
   sortChallengeLiveCells,
   summarizeChallengeLiveTop,
@@ -79,6 +80,7 @@ const uploadTimeText = computed(() => {
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
 const gamedata = computed(() => normalizePlayerGamedata(suiteData.value?.userGamedata))
+const nameSegments = computed(() => parseSekaiColoredText(gamedata.value?.name))
 const profileInfo = computed(() => normalizePlayerProfile(suiteData.value?.userProfile))
 const playerCardMap = computed(() => buildPlayerCardMap(normalizePlayerCards(suiteData.value?.userCards)))
 
@@ -253,7 +255,16 @@ function retry() {
         <CardContent class="flex flex-col gap-4">
           <div class="flex flex-col gap-1">
             <div class="flex flex-wrap items-center gap-2">
-              <span class="text-xl font-semibold">{{ gamedata?.name || "—" }}</span>
+              <span class="text-xl font-semibold">
+                <template v-if="nameSegments.length > 0">
+                  <span
+                    v-for="(segment, index) in nameSegments"
+                    :key="index"
+                    :style="segment.color ? { color: segment.color } : {}"
+                  >{{ segment.text }}</span>
+                </template>
+                <template v-else>—</template>
+              </span>
               <span class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
                 {{ t("playerProfile.header.rank", { rank: gamedata?.rank ?? 0 }) }}
               </span>
@@ -286,7 +297,7 @@ function retry() {
             </p>
             <div
               v-else
-              class="grid w-full max-w-[41rem] grid-cols-5 content-center justify-items-center gap-0.5 rounded bg-muted/20 p-0.5 ring-1 ring-border/60 sm:gap-1 sm:rounded-md"
+              class="grid w-full max-w-[26rem] grid-cols-5 content-center justify-items-center gap-0.5 rounded bg-muted/20 p-0.5 ring-1 ring-border/60 sm:gap-1 sm:rounded-md"
             >
               <CardThumbnail
                 v-for="view in deckViews"

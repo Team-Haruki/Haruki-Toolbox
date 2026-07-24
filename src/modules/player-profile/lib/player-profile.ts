@@ -75,6 +75,44 @@ export function cleanProfileWord(value: unknown): string {
   return value.replace(/<#.*?>/g, "").trim()
 }
 
+export type ColoredTextSegment = {
+  text: string
+  /** CSS hex color from the preceding `<#RGB>`/`<#RRGGBB>` tag, if any. */
+  color: string | null
+}
+
+/**
+ * Splits text containing in-game `<#RGB>`/`<#RRGGBB>` color tags into
+ * renderable segments; each tag colors the text that follows it. Malformed
+ * tags stay in the output as literal text.
+ */
+export function parseSekaiColoredText(value: unknown): ColoredTextSegment[] {
+  if (typeof value !== "string" || value === "") {
+    return []
+  }
+
+  const segments: ColoredTextSegment[] = []
+  const tagPattern = /<#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})>/g
+  let cursor = 0
+  let color: string | null = null
+  for (const match of value.matchAll(tagPattern)) {
+    const text = value.slice(cursor, match.index)
+    if (text) {
+      segments.push({ text, color })
+    }
+
+    color = `#${match[1]}`
+    cursor = match.index + match[0].length
+  }
+
+  const tail = value.slice(cursor)
+  if (tail) {
+    segments.push({ text: tail, color })
+  }
+
+  return segments
+}
+
 /** Tolerantly parses the suite `userGamedata` record. */
 export function normalizePlayerGamedata(raw: unknown): PlayerGamedataInfo | null {
   if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
