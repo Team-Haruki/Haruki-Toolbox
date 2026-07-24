@@ -48,9 +48,10 @@ const master = useMusicProgressMasterData(region)
 const activeDifficulty = ref<MusicDifficulty>("master")
 const expandedLevels = ref<Set<string>>(new Set())
 
-const STATUS_COLORS: Record<Exclude<MusicProgressStatus, "clear">, string> = {
-  allPerfect: "#F7B50C",
-  fullCombo: "#EC4FBE",
+const STATUS_COLORS: Record<MusicProgressStatus, string> = {
+  allPerfect: "#3B82F6",
+  fullCombo: "#A855F7",
+  clear: "#F7B50C",
   unplayed: "var(--muted-foreground)",
 }
 
@@ -161,7 +162,7 @@ function barSegments(row: MusicProgressLevelRow) {
   return [
     { key: "allPerfect", count: row.allPerfect, color: STATUS_COLORS.allPerfect },
     { key: "fullCombo", count: row.fullComboOnly, color: STATUS_COLORS.fullCombo },
-    { key: "clear", count: row.clearOnly, color: activeColor.value },
+    { key: "clear", count: row.clearOnly, color: STATUS_COLORS.clear },
     { key: "unplayed", count: row.unplayed, color: STATUS_COLORS.unplayed },
   ].filter((segment) => segment.count > 0)
 }
@@ -170,7 +171,7 @@ function legendItems() {
   return [
     { key: "allPerfect", color: STATUS_COLORS.allPerfect },
     { key: "fullCombo", color: STATUS_COLORS.fullCombo },
-    { key: "clear", color: activeColor.value },
+    { key: "clear", color: STATUS_COLORS.clear },
     { key: "unplayed", color: STATUS_COLORS.unplayed },
   ] as const
 }
@@ -180,8 +181,7 @@ function statusChipStyle(status: MusicProgressStatus): Record<string, string> {
     return {}
   }
 
-  const color = status === "clear" ? activeColor.value : STATUS_COLORS[status]
-  return { backgroundColor: color, color: "#fff", borderColor: "transparent" }
+  return { backgroundColor: STATUS_COLORS[status], color: "#fff", borderColor: "transparent" }
 }
 
 function jacketUrl(assetbundleName: string): string | null {
