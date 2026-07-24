@@ -1103,10 +1103,10 @@ export const enUS = {
     },
     music: {
       title: "Music Clear Stats",
-      clear: "Clear",
-      fullCombo: "FC",
-      allPerfect: "AP",
-      empty: "No play records yet",
+    },
+    multiLive: {
+      mvp: "MVP count",
+      superStar: "Super Star count",
     },
     characters: {
       title: "Character Growth",

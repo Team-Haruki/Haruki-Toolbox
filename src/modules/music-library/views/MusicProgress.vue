@@ -30,6 +30,7 @@ import {
   type MusicDifficulty,
 } from "../lib/music-difficulties"
 import {
+  MUSIC_PROGRESS_STATUS_COLORS,
   buildMusicProgress,
   type MusicProgress,
   type MusicProgressLevelRow,
@@ -48,12 +49,7 @@ const master = useMusicProgressMasterData(region)
 const activeDifficulty = ref<MusicDifficulty>("master")
 const expandedLevels = ref<Set<string>>(new Set())
 
-const STATUS_COLORS: Record<MusicProgressStatus, string> = {
-  allPerfect: "#38BDF8",
-  fullCombo: "#C084FC",
-  clear: "#FCD34D",
-  unplayed: "var(--muted-foreground)",
-}
+const STATUS_COLORS = MUSIC_PROGRESS_STATUS_COLORS
 
 const progress = computed<MusicProgress | null>(() => {
   if (suite.status.value !== "ready" || master.rawMusics.value == null) {

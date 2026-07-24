@@ -3,10 +3,10 @@ import {
   buildChallengeLiveGrid,
   buildCharacterRanks,
   buildDeckThumbnailCard,
-  buildMusicClearCounts,
   buildPlayerCardMap,
   cleanProfileWord,
   normalizePlayerCards,
+  normalizeMultiLiveTopScoreCount,
   normalizePlayerGamedata,
   normalizePlayerProfile,
   parseSekaiColoredText,
@@ -146,40 +146,16 @@ describe("resolveActiveDeckCardIds", () => {
   })
 })
 
-describe("buildMusicClearCounts", () => {
-  it("dedups by musicId and merges fc/ap flags across rows", () => {
-    const rows = buildMusicClearCounts([
-      { musicId: 1, musicDifficultyType: "master", playType: "multi", fullComboFlg: false, fullPerfectFlg: false },
-      { musicId: 1, musicDifficultyType: "master", playType: "solo", fullComboFlg: true, fullPerfectFlg: false },
-      { musicId: 2, musicDifficultyType: "master", fullComboFlg: true, fullPerfectFlg: true },
-      { musicId: 3, musicDifficultyType: "expert", fullComboFlg: false, fullPerfectFlg: false },
-    ])
-
-    expect(rows).toEqual([
-      { difficulty: "expert", clear: 1, fullCombo: 0, allPerfect: 0 },
-      { difficulty: "master", clear: 2, fullCombo: 2, allPerfect: 1 },
-    ])
+describe("normalizeMultiLiveTopScoreCount", () => {
+  it("parses mvp and superStar counts", () => {
+    expect(normalizeMultiLiveTopScoreCount({ mvp: 120, superStar: 45 })).toEqual({ mvp: 120, superStar: 45 })
+    expect(normalizeMultiLiveTopScoreCount({ mvp: 3 })).toEqual({ mvp: 3, superStar: 0 })
   })
 
-  it("skips difficulties without rows and ignores malformed entries", () => {
-    const rows = buildMusicClearCounts([
-      { musicId: 1, musicDifficultyType: "easy" },
-      { musicId: 2, musicDifficultyType: "append_plus" },
-      { musicDifficultyType: "hard" },
-      null,
-    ])
-
-    expect(rows).toEqual([{ difficulty: "easy", clear: 1, fullCombo: 0, allPerfect: 0 }])
-  })
-
-  it("returns fixed difficulty order", () => {
-    const rows = buildMusicClearCounts([
-      { musicId: 1, musicDifficultyType: "append" },
-      { musicId: 1, musicDifficultyType: "easy" },
-      { musicId: 1, musicDifficultyType: "hard" },
-    ])
-
-    expect(rows.map((row) => row.difficulty)).toEqual(["easy", "hard", "append"])
+  it("returns null for missing or malformed records", () => {
+    expect(normalizeMultiLiveTopScoreCount(null)).toBeNull()
+    expect(normalizeMultiLiveTopScoreCount([])).toBeNull()
+    expect(normalizeMultiLiveTopScoreCount({})).toBeNull()
   })
 })
 

@@ -5,18 +5,6 @@ import {
   normalizeCatalogString,
 } from "@/shared/sekai/catalog"
 
-/** Fixed render order for the music clear-count section. */
-export const PROFILE_MUSIC_DIFFICULTIES = [
-  "easy",
-  "normal",
-  "hard",
-  "expert",
-  "master",
-  "append",
-] as const
-
-export type ProfileMusicDifficulty = (typeof PROFILE_MUSIC_DIFFICULTIES)[number]
-
 /** Challenge live always renders the full character roster (IDs 1..26). */
 export const CHALLENGE_LIVE_CHARACTER_COUNT = 26
 
@@ -46,11 +34,9 @@ export type PlayerCardRecord = {
   defaultImage: string
 }
 
-export type MusicClearCountRow = {
-  difficulty: ProfileMusicDifficulty
-  clear: number
-  fullCombo: number
-  allPerfect: number
+export type MultiLiveTopScoreCount = {
+  mvp: number
+  superStar: number
 }
 
 export type CharacterRankEntry = {
@@ -240,60 +226,23 @@ export function resolveActiveDeckCardIds(rawDecks: unknown, activeDeckId: number
 }
 
 /**
- * Per-difficulty clear counts from `userMusicResults`, deduped by musicId:
- * a music counts as cleared when it has any result row for that difficulty,
- * FC / AP when any of its rows carries the corresponding flag. Difficulties
- * without any rows are omitted (e.g. append on servers without it).
+ * Tolerantly parses the suite `userMultiLiveTopScoreCount` record; null when
+ * the snapshot has no usable counts (key missing from the backend allowlist
+ * or an older upload).
  */
-export function buildMusicClearCounts(rawResults: unknown): MusicClearCountRow[] {
-  const perDifficulty = new Map<ProfileMusicDifficulty, Map<number, { fullCombo: boolean, allPerfect: boolean }>>()
-
-  for (const record of normalizeCatalogRecords(rawResults)) {
-    const musicId = normalizeCatalogNumber(record.musicId)
-    const difficulty = normalizeCatalogString(record.musicDifficultyType)
-    if (!musicId || !isProfileMusicDifficulty(difficulty)) {
-      continue
-    }
-
-    let musics = perDifficulty.get(difficulty)
-    if (!musics) {
-      musics = new Map()
-      perDifficulty.set(difficulty, musics)
-    }
-
-    let flags = musics.get(musicId)
-    if (!flags) {
-      flags = { fullCombo: false, allPerfect: false }
-      musics.set(musicId, flags)
-    }
-
-    flags.fullCombo ||= record.fullComboFlg === true
-    flags.allPerfect ||= record.fullPerfectFlg === true
+export function normalizeMultiLiveTopScoreCount(raw: unknown): MultiLiveTopScoreCount | null {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return null
   }
 
-  const rows: MusicClearCountRow[] = []
-  for (const difficulty of PROFILE_MUSIC_DIFFICULTIES) {
-    const musics = perDifficulty.get(difficulty)
-    if (!musics || musics.size === 0) {
-      continue
-    }
-
-    let fullCombo = 0
-    let allPerfect = 0
-    for (const flags of musics.values()) {
-      if (flags.fullCombo) {
-        fullCombo += 1
-      }
-
-      if (flags.allPerfect) {
-        allPerfect += 1
-      }
-    }
-
-    rows.push({ difficulty, clear: musics.size, fullCombo, allPerfect })
+  const record = raw as Record<string, unknown>
+  const mvp = normalizeCatalogNumber(record.mvp)
+  const superStar = normalizeCatalogNumber(record.superStar)
+  if (mvp == null && superStar == null) {
+    return null
   }
 
-  return rows
+  return { mvp: mvp ?? 0, superStar: superStar ?? 0 }
 }
 
 /**
@@ -384,8 +333,4 @@ export function sortChallengeLiveCells(
   }
 
   return sorted
-}
-
-export function isProfileMusicDifficulty(value: string): value is ProfileMusicDifficulty {
-  return (PROFILE_MUSIC_DIFFICULTIES as readonly string[]).includes(value)
 }

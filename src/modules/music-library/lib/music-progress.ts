@@ -18,6 +18,14 @@ export type MusicProgressFlags = {
 
 export type MusicProgressStatus = "allPerfect" | "fullCombo" | "clear" | "unplayed"
 
+/** Shared status colors for progress bars/legends (also used by the profile page). */
+export const MUSIC_PROGRESS_STATUS_COLORS: Record<MusicProgressStatus, string> = {
+  allPerfect: "#38BDF8",
+  fullCombo: "#C084FC",
+  clear: "#FCD34D",
+  unplayed: "var(--muted-foreground)",
+}
+
 export type MusicProgressSong = {
   musicId: number
   title: string

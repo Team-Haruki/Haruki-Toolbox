@@ -1103,10 +1103,10 @@ export const zhCN = {
     },
     music: {
       title: "歌曲通关统计",
-      clear: "通关",
-      fullCombo: "FC",
-      allPerfect: "AP",
-      empty: "暂无游玩记录",
+    },
+    multiLive: {
+      mvp: "MVP 次数",
+      superStar: "SuperStar 次数",
     },
     characters: {
       title: "角色成长",

@@ -23,6 +23,8 @@ export const PLAYER_PROFILE_SUITE_KEYS = [
   "userMusicResults",
 ] as const
 
+export const PLAYER_PROFILE_MULTI_LIVE_KEYS = ["userMultiLiveTopScoreCount"] as const
+
 export const PLAYER_PROFILE_MASTER_FILES = [
   "cards",
   "gameCharacters",
@@ -42,6 +44,10 @@ export function usePlayerProfile() {
   const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 
   const suite = useUserSuite(PLAYER_PROFILE_SUITE_KEYS, selectedAccount)
+
+  // Fetched separately so instances whose backend allowlist lacks the key
+  // only lose the MVP/SuperStar chips instead of the whole profile.
+  const multiLiveSuite = useUserSuite(PLAYER_PROFILE_MULTI_LIVE_KEYS, selectedAccount)
 
   const masterLoading = ref(false)
   const masterError = ref<string | null>(null)
@@ -111,6 +117,9 @@ export function usePlayerProfile() {
     uploadTime: suite.uploadTime,
     suiteError: suite.error,
     reloadSuite: suite.reload,
+    multiLiveStatus: multiLiveSuite.status,
+    multiLiveData: multiLiveSuite.data,
+    reloadMultiLive: multiLiveSuite.reload,
     masterLoading,
     masterError,
     assetEndpoint,

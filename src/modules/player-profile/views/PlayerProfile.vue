@@ -16,8 +16,8 @@ import {
   buildChallengeLiveGrid,
   buildCharacterRanks,
   buildDeckThumbnailCard,
-  buildMusicClearCounts,
   buildPlayerCardMap,
+  normalizeMultiLiveTopScoreCount,
   normalizePlayerCards,
   normalizePlayerGamedata,
   normalizePlayerProfile,
@@ -29,7 +29,9 @@ import {
 } from "@/modules/player-profile/lib/player-profile"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 import { buildCardThumbnailView, type DeckRecommendMasterCard } from "@/modules/deck-recommend/lib/card-thumbnail"
-import { MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
+import { MUSIC_DIFFICULTIES, MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
+import { MUSIC_PROGRESS_STATUS_COLORS, buildMusicProgress } from "@/modules/music-library/lib/music-progress"
+import { useMusicProgressMasterData } from "@/modules/music-library/composables/useMusicProgressMasterData"
 
 const { t, locale } = useI18n()
 
@@ -43,11 +45,16 @@ const {
   masterLoading,
   masterError,
   assetEndpoint,
+  multiLiveStatus,
+  multiLiveData,
+  reloadMultiLive,
   cardMap,
   characterMap,
   unitColorMap,
   reloadMaster,
 } = usePlayerProfile()
+
+const musicMaster = useMusicProgressMasterData(accountRegion)
 
 const challengeSort = ref<ChallengeLiveSortMode>("character")
 
@@ -111,7 +118,38 @@ const deckViews = computed(() => {
   })
 })
 
-const musicRows = computed(() => buildMusicClearCounts(suiteData.value?.userMusicResults))
+const multiLiveCounts = computed(() => {
+  if (multiLiveStatus.value !== "ready") {
+    return null
+  }
+
+  return normalizeMultiLiveTopScoreCount(multiLiveData.value?.userMultiLiveTopScoreCount)
+})
+
+const musicStatRows = computed(() => {
+  if (musicMaster.rawMusics.value == null || musicMaster.rawMusicDifficulties.value == null) {
+    return []
+  }
+
+  const progress = buildMusicProgress({
+    rawMusics: musicMaster.rawMusics.value,
+    rawMusicDifficulties: musicMaster.rawMusicDifficulties.value,
+    rawUserMusicResults: suiteData.value?.userMusicResults,
+  })
+
+  return MUSIC_DIFFICULTIES
+    .map((difficulty) => progress[difficulty].summary)
+    .map((summary, index) => {
+      const difficulty = MUSIC_DIFFICULTIES[index]
+      const segments = [
+        { key: "allPerfect", count: summary.allPerfect, color: MUSIC_PROGRESS_STATUS_COLORS.allPerfect },
+        { key: "fullCombo", count: summary.fullCombo - summary.allPerfect, color: MUSIC_PROGRESS_STATUS_COLORS.fullCombo },
+        { key: "clear", count: summary.cleared - summary.fullCombo, color: MUSIC_PROGRESS_STATUS_COLORS.clear },
+      ].filter((segment) => segment.count > 0)
+      return { difficulty, summary, segments }
+    })
+    .filter((row) => row.summary.total > 0)
+})
 
 const characterRankCells = computed(() => buildCharacterRanks(suiteData.value?.userCharacters).map((entry) => {
   const character = characterMap.value.get(entry.characterId) ?? null
@@ -179,6 +217,7 @@ async function copyGameId() {
 
 function refresh() {
   void reloadSuite("check-remote")
+  void reloadMultiLive("check-remote")
   reloadMaster()
 }
 
@@ -252,7 +291,8 @@ function retry() {
             </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent class="flex flex-col gap-4">
+        <CardContent class="grid gap-6 lg:grid-cols-2">
+          <div class="flex flex-col gap-4">
           <div class="flex flex-col gap-1">
             <div class="flex flex-wrap items-center gap-2">
               <span class="text-xl font-semibold">
@@ -308,35 +348,47 @@ function retry() {
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+          </div>
 
-      <!-- Music clear counts -->
-      <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="text-base">{{ t("playerProfile.music.title") }}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p v-if="musicRows.length === 0" class="py-4 text-center text-sm text-muted-foreground">
-            {{ t("playerProfile.music.empty") }}
-          </p>
-          <div v-else class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <div
-              v-for="row in musicRows"
-              :key="row.difficulty"
-              class="flex items-center gap-3 rounded-md border p-2.5"
-            >
-              <span
-                class="inline-flex min-w-16 items-center justify-center rounded px-2 py-0.5 text-xs font-semibold text-white"
-                :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[row.difficulty] }"
+          <!-- Multi-live counts + music stats -->
+          <div class="flex flex-col gap-4">
+            <div v-if="multiLiveCounts" class="grid grid-cols-2 gap-3">
+              <div class="rounded-md border p-3">
+                <div class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.mvp") }}</div>
+                <div class="mt-0.5 text-xl font-bold tabular-nums">{{ formatScore(multiLiveCounts.mvp) }}</div>
+              </div>
+              <div class="rounded-md border p-3">
+                <div class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.superStar") }}</div>
+                <div class="mt-0.5 text-xl font-bold tabular-nums">{{ formatScore(multiLiveCounts.superStar) }}</div>
+              </div>
+            </div>
+
+            <div v-if="musicStatRows.length > 0" class="flex flex-col gap-2">
+              <h3 class="text-xs font-medium text-muted-foreground">{{ t("playerProfile.music.title") }}</h3>
+              <div
+                v-for="row in musicStatRows"
+                :key="row.difficulty"
+                class="flex flex-wrap items-center gap-x-2 gap-y-1"
               >
-                {{ t(`musicLibrary.difficulty.${row.difficulty}`) }}
-              </span>
-              <span class="flex flex-wrap gap-x-3 gap-y-0.5 text-xs tabular-nums text-muted-foreground">
-                <span>{{ t("playerProfile.music.clear") }} <b class="font-semibold text-foreground">{{ row.clear }}</b></span>
-                <span>{{ t("playerProfile.music.fullCombo") }} <b class="font-semibold text-foreground">{{ row.fullCombo }}</b></span>
-                <span>{{ t("playerProfile.music.allPerfect") }} <b class="font-semibold text-foreground">{{ row.allPerfect }}</b></span>
-              </span>
+                <span
+                  class="inline-flex min-w-14 items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold text-white"
+                  :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[row.difficulty] }"
+                >
+                  {{ t(`musicLibrary.difficulty.${row.difficulty}`) }}
+                </span>
+                <span class="flex h-2.5 min-w-24 flex-1 gap-px overflow-hidden rounded-full bg-muted">
+                  <span
+                    v-for="segment in row.segments"
+                    :key="segment.key"
+                    class="h-full"
+                    :style="{ backgroundColor: segment.color, width: `${(segment.count / row.summary.total) * 100}%` }"
+                  />
+                </span>
+                <span class="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                  AP {{ row.summary.allPerfect }} · FC {{ row.summary.fullCombo }} ·
+                  CL {{ row.summary.cleared }} / {{ row.summary.total }}
+                </span>
+              </div>
             </div>
           </div>
         </CardContent>
