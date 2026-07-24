@@ -1286,6 +1286,77 @@ export const enUS = {
       },
     },
   },
+  eventPlanner: {
+    title: "Event Planner",
+    description: "Enter your target and current event points, pick an event and songs, then see per-play PT, plays and energy cost for every boost level.",
+    sections: {
+      setup: {
+        title: "Account & Event",
+        description: "Pick a bound game account, data server and event; World Bloom events can select a chapter character.",
+      },
+      targets: {
+        title: "Targets",
+        description: "Supports units like 万/w, k and 亿, e.g. 1000w, 120万, 1.5亿, 25k.",
+      },
+      songs: {
+        title: "Songs",
+        description: "Add up to 3 songs; each one gets its own deck recommendation and base PT per play.",
+      },
+    },
+    form: {
+      targetPoint: "Target PT",
+      targetPointPlaceholder: "e.g. 1000w, 120万, 1.5亿",
+      currentPoint: "Current PT",
+      currentPointPlaceholder: "e.g. 25k, leave empty if unknown",
+      currentPointHint: "Leave empty if unknown; daily PT will then be spread over the full event duration.",
+      parsedValue: "Parsed as {value}",
+      invalidPoint: "Cannot parse this value. Use a non-negative number, optionally with a 万/w, k or 亿 suffix.",
+    },
+    songs: {
+      rowTitle: "Song {index}",
+      add: "Add song",
+      remove: "Remove song",
+    },
+    runner: {
+      ready: "Fill in the target PT and pick an event and songs to start planning.",
+      run: "Start planning",
+      running: "Planning...",
+    },
+    summary: {
+      title: "Plan Summary",
+      description: "Overall progress computed from the target PT, current PT and event schedule.",
+      targetPoint: "Target PT",
+      currentPoint: "Current PT",
+      remainingPoint: "Remaining PT",
+      dailyPoint: "Daily PT",
+      currentUnknown: "Unknown",
+      reached: "Your current PT already reaches the target - no more grinding needed.",
+      dailyHint: "Daily PT = remaining PT / remaining days; live events use now to the ranking cutoff once the current PT is filled in.",
+      noEventSchedule: "The selected event has no start or cutoff time, so daily PT cannot be computed.",
+    },
+    result: {
+      title: "Plan Results",
+      description: "Each song shows the recommended deck, base PT per play, and plays plus energy per boost level.",
+      basePoint: "Base PT per play {value}",
+      running: "Computing...",
+      deckTitle: "Recommended deck",
+      deckPower: "Total power",
+      deckBonus: "Event bonus {value}%",
+      remainingZeroHint: "Remaining PT is 0 - no plays needed at any boost level.",
+      table: {
+        boost: "Boost",
+        pointPerPlay: "PT / play",
+        plays: "Plays",
+        energy: "Energy",
+      },
+    },
+    errors: {
+      noResult: "The deck engine returned no usable deck, so per-play PT cannot be computed.",
+    },
+  },
+  searchAlias: {
+    badge: "Alias",
+  },
   navigation: {
     groups: {
       recommendAndAbout: "Recommended & About",
@@ -1301,6 +1372,7 @@ export const enUS = {
       friendLinks: "Friend links",
       sponsors: "Sponsors",
       deckRecommend: "Deck recommend",
+      eventPlanner: "Event planner",
       rankBorder: "Rank border",
       about: "About",
       ptCalculator: "Event Pt calculator",
@@ -1428,6 +1500,9 @@ export const enUS = {
       bonds: "Bonds",
       leader: "Leader stats",
       missions: "Character missions",
+    },
+    eventPlanner: {
+      planner: "Event planner",
     },
     admin: {
       layout: "Admin",

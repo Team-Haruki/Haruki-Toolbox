@@ -1286,6 +1286,77 @@ export const zhCN = {
       },
     },
   },
+  eventPlanner: {
+    title: "活动规划",
+    description: "填写目标 PT 与当前 PT，选择活动和歌曲，计算各档火力下的单局 PT、所需局数与体力消耗。",
+    sections: {
+      setup: {
+        title: "账号与活动",
+        description: "选择已绑定账号、数据服务器和活动；连接世界活动可选择章节角色。",
+      },
+      targets: {
+        title: "目标设置",
+        description: "支持 万/w、k、亿 等单位，例如 1000w、120万、1.5亿、25k。",
+      },
+      songs: {
+        title: "歌曲",
+        description: "最多添加 3 首歌曲，每首会单独组卡并计算单局基础 PT。",
+      },
+    },
+    form: {
+      targetPoint: "目标 PT",
+      targetPointPlaceholder: "例如 1000w、120万、1.5亿",
+      currentPoint: "当前 PT",
+      currentPointPlaceholder: "例如 25k，留空表示未知",
+      currentPointHint: "留空表示当前 PT 未知，将按活动全程计算日均 PT。",
+      parsedValue: "解析为 {value}",
+      invalidPoint: "无法解析该数值，请使用非负数字，可带 万/w、k、亿 后缀。",
+    },
+    songs: {
+      rowTitle: "歌曲 {index}",
+      add: "添加歌曲",
+      remove: "移除歌曲",
+    },
+    runner: {
+      ready: "填写目标 PT 并选择活动与歌曲后即可开始规划。",
+      run: "开始规划",
+      running: "规划中...",
+    },
+    summary: {
+      title: "规划总览",
+      description: "根据目标 PT、当前 PT 与活动时间计算的整体进度。",
+      targetPoint: "目标 PT",
+      currentPoint: "当前 PT",
+      remainingPoint: "剩余 PT",
+      dailyPoint: "日均 PT",
+      currentUnknown: "未知",
+      reached: "当前 PT 已达到目标，无需继续肝活动。",
+      dailyHint: "日均 PT = 剩余 PT ÷ 剩余天数；进行中的活动在填写当前 PT 后按当前时间到结算时间计算。",
+      noEventSchedule: "所选活动缺少开始或结算时间，无法计算日均 PT。",
+    },
+    result: {
+      title: "规划结果",
+      description: "每首歌曲展示推荐卡组、单局基础 PT，以及各档火力所需局数与体力。",
+      basePoint: "单局基础 PT {value}",
+      running: "正在计算...",
+      deckTitle: "推荐卡组",
+      deckPower: "综合力",
+      deckBonus: "活动加成 {value}%",
+      remainingZeroHint: "剩余 PT 为 0，各档火力均无需再打歌。",
+      table: {
+        boost: "火",
+        pointPerPlay: "单局 PT",
+        plays: "局数",
+        energy: "消耗体力",
+      },
+    },
+    errors: {
+      noResult: "组卡引擎没有返回可用卡组，无法计算单局 PT。",
+    },
+  },
+  searchAlias: {
+    badge: "别名",
+  },
   navigation: {
     groups: {
       recommendAndAbout: "推荐与关于",
@@ -1301,6 +1372,7 @@ export const zhCN = {
       friendLinks: "友情链接",
       sponsors: "赞助者名单",
       deckRecommend: "组卡推荐",
+      eventPlanner: "活动规划",
       rankBorder: "榜线查询",
       about: "关于",
       ptCalculator: "活动Pt控分计算器",
@@ -1428,6 +1500,9 @@ export const zhCN = {
       bonds: "羁绊",
       leader: "队长统计",
       missions: "角色任务",
+    },
+    eventPlanner: {
+      planner: "活动规划",
     },
     admin: {
       layout: "管理后台",

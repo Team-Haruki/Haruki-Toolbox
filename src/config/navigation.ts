@@ -3,6 +3,7 @@ import {
   LucideArrowDownToLine,
   LucideBox,
   LucideCalculator,
+  LucideCalendarClock,
   LucideCalendarDays,
   LucideCloudUpload,
   LucideCog,
@@ -79,6 +80,7 @@ export const WEB_NAV_ITEMS: NavItem[] = [
     items: [
       { titleKey: "navigation.items.ptCalculator", icon: LucideCalculator, url: "/pt-calculator" },
       { titleKey: "navigation.items.deckRecommend", icon: LucideGamepad2, url: "/deck-recommend" },
+      { titleKey: "navigation.items.eventPlanner", icon: LucideCalendarClock, url: "/event-planner" },
       { titleKey: "navigation.items.rankBorder", icon: LucideTrophy, url: "/rank-border" },
     ],
   },

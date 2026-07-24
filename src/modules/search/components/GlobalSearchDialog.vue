@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/command"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { SearchEntryType, SearchIndexEntry } from "@/modules/search/lib/search-index"
+import type { SearchEntryType, SearchIndexEntry, SearchResultEntry } from "@/modules/search/lib/search-index"
 import { useGlobalSearch } from "@/modules/search/composables/useGlobalSearch"
 
 const ROUTE_BASE: Record<SearchEntryType, string> = {
@@ -40,7 +40,7 @@ const isMac = typeof navigator !== "undefined" && /mac|iphone|ipad/i.test(naviga
 const shortcutLabel = isMac ? "⌘K" : "Ctrl+K"
 
 const hasQuery = computed(() => query.value.trim() !== "")
-const activeEntry = computed<SearchIndexEntry | null>(() => results.value[activeIndex.value] ?? null)
+const activeEntry = computed<SearchResultEntry | null>(() => results.value[activeIndex.value] ?? null)
 
 onMounted(() => {
   window.addEventListener("keydown", onGlobalKeydown)
@@ -183,6 +183,12 @@ function selectEntry(entry: SearchIndexEntry) {
                       {{ entry.subtitle }}
                     </p>
                   </div>
+                  <span
+                    v-if="entry.viaAlias"
+                    class="shrink-0 rounded border px-1 py-px text-[10px] text-muted-foreground"
+                  >
+                    {{ t("searchAlias.badge") }}
+                  </span>
                   <span class="shrink-0 text-[10px] text-muted-foreground">#{{ entry.id }}</span>
                 </CommandItem>
               </CommandGroup>

@@ -17,7 +17,12 @@ export type SearchIndexEntry = {
   title: string
   subtitle: string
   keywords: string[]
+  /** Owning game character id — only present on card entries. */
+  characterId?: number
 }
+
+/** A result entry as surfaced to the UI; `viaAlias` marks alias-only hits. */
+export type SearchResultEntry = SearchIndexEntry & { viaAlias?: boolean }
 
 export type SearchMasterInput = {
   musics?: unknown
@@ -26,8 +31,14 @@ export type SearchMasterInput = {
   gameCharacters?: unknown
 }
 
+/**
+ * Alias matches may point at a catalog entry directly or at a game character
+ * ("character" resolves to that character's card entries at merge time).
+ */
+export type SearchAliasMatchType = SearchEntryType | "character"
+
 export type SearchAliasMatch = {
-  type: SearchEntryType
+  type: SearchAliasMatchType
   id: number
 }
 
@@ -83,6 +94,7 @@ export function buildSearchIndex(input: SearchMasterInput): SearchIndexEntry[] {
       title: prefix,
       subtitle: characterName,
       keywords: dedupeKeywords([characterName]),
+      ...(characterId ? { characterId } : {}),
     })
   }
 
@@ -136,6 +148,93 @@ export function searchIndexEntries(
   }
 
   return results
+}
+
+/**
+ * Resolves raw alias matches to concrete index entries. Direct matches
+ * ("music" | "card" | "event") map by (type, id); "character" matches expand
+ * to every card entry owned by that character. Unknown ids are dropped and
+ * duplicates are removed while preserving match order.
+ */
+export function resolveAliasMatches(
+  entries: readonly SearchIndexEntry[],
+  matches: readonly SearchAliasMatch[],
+): SearchIndexEntry[] {
+  if (matches.length === 0) {
+    return []
+  }
+
+  const byKey = new Map<string, SearchIndexEntry>()
+  const cardsByCharacter = new Map<number, SearchIndexEntry[]>()
+  for (const entry of entries) {
+    byKey.set(`${entry.type}-${entry.id}`, entry)
+    if (entry.type === "card" && entry.characterId) {
+      const bucket = cardsByCharacter.get(entry.characterId)
+      if (bucket) {
+        bucket.push(entry)
+      } else {
+        cardsByCharacter.set(entry.characterId, [entry])
+      }
+    }
+  }
+
+  const resolved: SearchIndexEntry[] = []
+  const seen = new Set<string>()
+  const append = (entry: SearchIndexEntry) => {
+    const key = `${entry.type}-${entry.id}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      resolved.push(entry)
+    }
+  }
+
+  for (const match of matches) {
+    if (match.type === "character") {
+      for (const card of cardsByCharacter.get(match.id) ?? []) {
+        append(card)
+      }
+    } else {
+      const entry = byKey.get(`${match.type}-${match.id}`)
+      if (entry) {
+        append(entry)
+      }
+    }
+  }
+
+  return resolved
+}
+
+/**
+ * Merges alias-resolved entries into the local result list. Local results keep
+ * their position; alias-only hits (deduped by type + id) are appended to their
+ * type group within `perTypeLimit` and flagged with `viaAlias`.
+ */
+export function mergeAliasResults(
+  localResults: readonly SearchIndexEntry[],
+  aliasEntries: readonly SearchIndexEntry[],
+  perTypeLimit = SEARCH_RESULTS_PER_TYPE,
+): SearchResultEntry[] {
+  if (aliasEntries.length === 0) {
+    return [...localResults]
+  }
+
+  const merged: SearchResultEntry[] = []
+  for (const type of SEARCH_ENTRY_TYPES) {
+    const group: SearchResultEntry[] = localResults.filter((entry) => entry.type === type)
+    const seenIds = new Set(group.map((entry) => entry.id))
+    for (const entry of aliasEntries) {
+      if (entry.type !== type || group.length >= perTypeLimit || seenIds.has(entry.id)) {
+        continue
+      }
+
+      seenIds.add(entry.id)
+      group.push({ ...entry, viaAlias: true })
+    }
+
+    merged.push(...group)
+  }
+
+  return merged
 }
 
 function appendMatch(matches: Map<SearchEntryType, SearchIndexEntry[]>, entry: SearchIndexEntry) {
