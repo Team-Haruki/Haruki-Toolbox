@@ -24,6 +24,7 @@ import { formatLocalizedDateTime } from "@/lib/date-time"
 import { buildCatalogCardThumbnail, type CatalogMasterCard } from "@/shared/sekai/catalog"
 import { resolveCardAttrIconUrl, resolveCharacterIconUrl } from "@/shared/sekai/data-sources"
 import { useSettingsStore } from "@/shared/stores/settings"
+import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import EventBannerImage from "../components/EventBannerImage.vue"
 import EventCardThumb from "../components/EventCardThumb.vue"
 import EventStatusBadge from "../components/EventStatusBadge.vue"
@@ -45,7 +46,7 @@ const { t } = useI18n()
 const router = useRouter()
 const settingsStore = useSettingsStore()
 
-const region = computed(() => settingsStore.sekaiCatalogRegion)
+const { region } = useEffectiveCatalogRegion()
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 const eventIdNumber = computed(() => {
   const parsed = Number(props.eventId)

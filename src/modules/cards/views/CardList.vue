@@ -27,7 +27,7 @@ import {
   LucideSearch,
 } from "lucide-vue-next"
 import { SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
-import type { SekaiRegion } from "@/types"
+import { SEKAI_CATALOG_REGION_FOLLOW_VALUE } from "@/shared/sekai/catalog-region"
 import type { SekaiCardAttr, SekaiUnit } from "@/shared/sekai/catalog"
 import {
   buildCatalogCardThumbnail,
@@ -60,13 +60,14 @@ const {
   loading,
   error,
   region,
+  regionSelectorValue,
+  updateRegionSelector,
   assetEndpoint,
   cards,
   characterMap,
   unitColorMap,
   supplyTypeMap,
   reload,
-  setRegion,
 } = useCardCatalog()
 
 const filters = reactive(createDefaultCardFilters())
@@ -81,9 +82,9 @@ const selectedYear = computed<string>({
   },
 })
 
-const selectedRegion = computed<SekaiRegion>({
-  get: () => region.value,
-  set: (value) => setRegion(value),
+const selectedRegion = computed<string>({
+  get: () => regionSelectorValue.value,
+  set: (value) => updateRegionSelector(value),
 })
 
 const characterOptions = computed(() => [...characterMap.value.values()].sort((a, b) => a.id - b.id))
@@ -191,6 +192,9 @@ function nextPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem :value="SEKAI_CATALOG_REGION_FOLLOW_VALUE">
+              {{ t("sekaiRegion.followAccount") }}
+            </SelectItem>
             <SelectItem v-for="option in SEKAI_REGION_OPTIONS" :key="option.value" :value="option.value">
               {{ t(option.labelKey) }}
             </SelectItem>

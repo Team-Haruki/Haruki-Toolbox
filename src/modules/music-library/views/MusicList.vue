@@ -34,7 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { getI18nLocale } from "@/shared/i18n"
 import { useSettingsStore } from "@/shared/stores/settings"
-import type { SekaiRegion } from "@/types"
+import { SEKAI_CATALOG_REGION_FOLLOW_VALUE, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import MusicJacket from "../components/MusicJacket.vue"
 import { useMusicLibraryList } from "../composables/useMusicLibraryList"
 import { resolveMusicJacketUrl } from "../lib/music-assets"
@@ -63,7 +63,7 @@ const ALL_OPTION = "all"
 const { t, te, locale } = useI18n()
 const settingsStore = useSettingsStore()
 
-const region = computed<SekaiRegion>(() => settingsStore.sekaiCatalogRegion)
+const { region, selectorValue: regionSelectorValue, updateSelectorValue: updateRegionSelector } = useEffectiveCatalogRegion()
 const {
   entries,
   tagOptions,
@@ -118,9 +118,7 @@ const dateFormatter = computed(() =>
 )
 
 function updateRegion(value: AcceptableValue) {
-  if (typeof value === "string" && SEKAI_REGION_OPTIONS.some((option) => option.value === value)) {
-    settingsStore.setSekaiCatalogRegion(value as SekaiRegion)
-  }
+  updateRegionSelector(value)
 }
 
 function updateDifficulty(value: AcceptableValue) {
@@ -221,11 +219,14 @@ function toNullableNumber(value: number | string | undefined | null): number | n
           <div class="grid gap-4 md:grid-cols-2">
             <div class="grid gap-2">
               <Label>{{ t("musicLibrary.list.filters.region") }}</Label>
-              <Select :model-value="region" @update:model-value="updateRegion">
+              <Select :model-value="regionSelectorValue" @update:model-value="updateRegion">
                 <SelectTrigger class="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem :value="SEKAI_CATALOG_REGION_FOLLOW_VALUE">
+                    {{ t("sekaiRegion.followAccount") }}
+                  </SelectItem>
                   <SelectItem
                     v-for="option in SEKAI_REGION_OPTIONS"
                     :key="option.value"

@@ -1,6 +1,7 @@
 import { computed, ref, shallowRef, watch } from "vue"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
+import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
 import type { CatalogCharacter, CatalogMasterCard } from "@/shared/sekai/catalog"
 import {
@@ -30,7 +31,7 @@ export function useGachaCatalog() {
   const characterMap = shallowRef<Map<number, CatalogCharacter>>(new Map())
   const ceilItemMap = shallowRef<Map<number, CatalogGachaCeilItem>>(new Map())
 
-  const region = computed<SekaiRegion>(() => settingsStore.sekaiCatalogRegion)
+  const { region, selectorValue: regionSelectorValue, updateSelectorValue: updateRegionSelector } = useEffectiveCatalogRegion()
   const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 
   let loadToken = 0
@@ -96,6 +97,8 @@ export function useGachaCatalog() {
     loading,
     error,
     region,
+    regionSelectorValue,
+    updateRegionSelector,
     assetEndpoint,
     gachas,
     cardsById,

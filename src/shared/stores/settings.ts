@@ -6,6 +6,8 @@ import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import type { SekaiRegion } from "@/types"
 import { normalizeSekaiRegion } from "@/lib/sekai-region"
 
+export type SekaiCatalogRegionMode = 'follow' | 'manual'
+
 export type EndpointType = 'direct' | 'cdn'
 export type ThemeType = 'light' | 'dark' | 'system'
 export type EndpointLatencyStatus = 'pending' | 'ok' | 'failed'
@@ -70,6 +72,10 @@ export const useSettingsStore = defineStore("settings", () => {
     const reducedVisualEffects = ref(false)
     const hideGameUserId = ref(false)
     const sekaiCatalogRegion = ref<SekaiRegion>('jp')
+    // "follow": catalog pages use the selected game account's server and fall
+    // back to sekaiCatalogRegion when no account is available. "manual": always
+    // use sekaiCatalogRegion.
+    const sekaiCatalogRegionMode = ref<SekaiCatalogRegionMode>('follow')
     const selectedGameAccountKey = ref<string | null>(null)
     const hasDirectEndpoint = computed(() => directEndpoint.value !== '')
     const hasCdnEndpoint = computed(() => cdnEndpoint.value !== '')
@@ -137,6 +143,10 @@ export const useSettingsStore = defineStore("settings", () => {
     }
     function setSekaiCatalogRegion(region: SekaiRegion) {
         sekaiCatalogRegion.value = normalizeSekaiRegion(region) ?? 'jp'
+        sekaiCatalogRegionMode.value = 'manual'
+    }
+    function setSekaiCatalogRegionFollowAccount() {
+        sekaiCatalogRegionMode.value = 'follow'
     }
     function setSelectedGameAccountKey(key: string | null) {
         selectedGameAccountKey.value = key
@@ -266,6 +276,7 @@ export const useSettingsStore = defineStore("settings", () => {
         reducedVisualEffects,
         hideGameUserId,
         sekaiCatalogRegion,
+        sekaiCatalogRegionMode,
         selectedGameAccountKey,
         getEndpointUrl,
         getAssetEndpointUrl,
@@ -277,6 +288,7 @@ export const useSettingsStore = defineStore("settings", () => {
         setReducedVisualEffects,
         setHideGameUserId,
         setSekaiCatalogRegion,
+        setSekaiCatalogRegionFollowAccount,
         setSelectedGameAccountKey,
         initTheme,
         initVisualEffects,
@@ -299,6 +311,7 @@ export const useSettingsStore = defineStore("settings", () => {
             'reducedVisualEffects',
             'hideGameUserId',
             'sekaiCatalogRegion',
+            'sekaiCatalogRegionMode',
             'selectedGameAccountKey',
         ]
     }

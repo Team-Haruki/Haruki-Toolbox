@@ -1363,6 +1363,9 @@ export const zhCN = {
   searchAlias: {
     badge: "别名",
   },
+  sekaiRegion: {
+    followAccount: "跟随当前账号",
+  },
   navigation: {
     groups: {
       recommendAndAbout: "推荐与关于",

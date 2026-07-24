@@ -1,5 +1,5 @@
 import { computed, onScopeDispose, ref, shallowRef, watch } from "vue"
-import { useSettingsStore } from "@/shared/stores/settings"
+import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
 import type { SekaiRegion } from "@/types"
@@ -33,7 +33,6 @@ export type GlobalSearchResultGroup = {
 const aliasProvider = createHarukiAliasProvider()
 
 export function useGlobalSearch() {
-  const settingsStore = useSettingsStore()
   const sekaiDataStore = useSekaiDataStore()
 
   const status = ref<GlobalSearchStatus>("idle")
@@ -41,7 +40,7 @@ export function useGlobalSearch() {
   const entries = shallowRef<SearchIndexEntry[]>([])
   const query = ref("")
 
-  const region = computed<SekaiRegion>(() => settingsStore.sekaiCatalogRegion)
+  const { region } = useEffectiveCatalogRegion()
   let loadedRegion: SekaiRegion | null = null
   let loadToken = 0
 

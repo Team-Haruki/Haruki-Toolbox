@@ -1363,6 +1363,9 @@ export const enUS = {
   searchAlias: {
     badge: "Alias",
   },
+  sekaiRegion: {
+    followAccount: "Follow current account",
+  },
   navigation: {
     groups: {
       recommendAndAbout: "Recommended & About",

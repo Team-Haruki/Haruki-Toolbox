@@ -1,6 +1,7 @@
 import { computed, ref, shallowRef, watch } from "vue"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
+import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
 import type { CatalogCharacter, CatalogMasterCard, SekaiUnit } from "@/shared/sekai/catalog"
 import {
@@ -37,7 +38,7 @@ export function useCardCatalog() {
   const rawEventCards = shallowRef<unknown>(null)
   const rawCards = shallowRef<unknown>(null)
 
-  const region = computed<SekaiRegion>(() => settingsStore.sekaiCatalogRegion)
+  const { region, selectorValue: regionSelectorValue, updateSelectorValue: updateRegionSelector } = useEffectiveCatalogRegion()
   const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 
   let loadToken = 0
@@ -91,6 +92,8 @@ export function useCardCatalog() {
     loading,
     error,
     region,
+    regionSelectorValue,
+    updateRegionSelector,
     assetEndpoint,
     cards,
     characterMap,

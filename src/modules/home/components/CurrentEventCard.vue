@@ -5,7 +5,7 @@ import { LucideCalendarDays, LucideChevronRight } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useSettingsStore } from "@/shared/stores/settings"
+import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
 import { normalizeCatalogNumber, normalizeCatalogRecords, normalizeCatalogString } from "@/shared/sekai/catalog"
@@ -18,7 +18,6 @@ type HomeCurrentEvent = {
 }
 
 const { t } = useI18n()
-const settingsStore = useSettingsStore()
 const sekaiDataStore = useSekaiDataStore()
 
 const state = ref<"checking" | "needs-opt-in" | "loading" | "ready" | "empty" | "error">("checking")
@@ -26,7 +25,7 @@ const currentEvent = ref<HomeCurrentEvent | null>(null)
 const now = ref(Date.now())
 let timer: ReturnType<typeof setInterval> | null = null
 
-const region = computed(() => settingsStore.sekaiCatalogRegion)
+const { region } = useEffectiveCatalogRegion()
 
 const remainingLabel = computed(() => {
   if (!currentEvent.value) {

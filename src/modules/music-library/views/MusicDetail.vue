@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/table"
 import { getI18nLocale } from "@/shared/i18n"
 import { useSettingsStore } from "@/shared/stores/settings"
-import type { SekaiRegion } from "@/types"
+import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import MusicJacket from "../components/MusicJacket.vue"
 import { useMusicLibraryDetail } from "../composables/useMusicLibraryDetail"
 import { resolveMusicJacketUrl } from "../lib/music-assets"
@@ -53,7 +53,7 @@ const props = defineProps<{
 const { t, te, locale } = useI18n()
 const settingsStore = useSettingsStore()
 
-const region = computed<SekaiRegion>(() => settingsStore.sekaiCatalogRegion)
+const { region } = useEffectiveCatalogRegion()
 const parsedMusicId = computed(() => {
   const parsed = Number(props.musicId)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null

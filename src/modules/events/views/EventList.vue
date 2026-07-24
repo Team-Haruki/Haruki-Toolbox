@@ -21,7 +21,7 @@ import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-regio
 import { SEKAI_CARD_ATTRS } from "@/shared/sekai/catalog"
 import { resolveCardAttrIconUrl } from "@/shared/sekai/data-sources"
 import { useSettingsStore } from "@/shared/stores/settings"
-import type { SekaiRegion } from "@/types"
+import { SEKAI_CATALOG_REGION_FOLLOW_VALUE, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import EventBannerImage from "../components/EventBannerImage.vue"
 import EventStatusBadge from "../components/EventStatusBadge.vue"
 import EventTypeBadge from "../components/EventTypeBadge.vue"
@@ -39,7 +39,7 @@ const { t, locale } = useI18n()
 const router = useRouter()
 const settingsStore = useSettingsStore()
 
-const region = computed(() => settingsStore.sekaiCatalogRegion)
+const { region, selectorValue: regionSelectorValue, updateSelectorValue: updateRegionSelector } = useEffectiveCatalogRegion()
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 
 const { events, bonusAttrMap, loading, error, reload } = useEventCatalog(region)
@@ -92,9 +92,7 @@ const displayEvents = computed(() => {
 })
 
 function updateRegion(value: AcceptableValue) {
-  if (typeof value === "string" && SEKAI_REGION_OPTIONS.some((option) => option.value === value)) {
-    settingsStore.setSekaiCatalogRegion(value as SekaiRegion)
-  }
+  updateRegionSelector(value)
 }
 
 function formatEventDate(value: number | null) {
@@ -130,11 +128,14 @@ function eventStatus(event: SekaiEventItem) {
     <div class="grid gap-3 sm:grid-cols-[12rem_1fr]">
       <div class="grid gap-1.5">
         <Label class="text-xs text-muted-foreground">{{ t("events.list.regionLabel") }}</Label>
-        <Select :key="locale" :model-value="region" @update:model-value="updateRegion">
+        <Select :key="locale" :model-value="regionSelectorValue" @update:model-value="updateRegion">
           <SelectTrigger class="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem :value="SEKAI_CATALOG_REGION_FOLLOW_VALUE">
+              {{ t("sekaiRegion.followAccount") }}
+            </SelectItem>
             <SelectItem v-for="option in SEKAI_REGION_OPTIONS" :key="option.value" :value="option.value">
               {{ resolveSekaiRegionLabel(option.value, t) }}
             </SelectItem>
