@@ -149,38 +149,43 @@ export function buildCatalogUnitColorMap(rawGameCharacterUnits: unknown): Map<Se
   return map
 }
 
-/**
- * Builds each character's representative color from `gameCharacterUnits`.
- * Virtual singers have one entry per unit, so the entry matching the
- * character's own unit (piapro) wins over the unit-variant entries.
- */
-export function buildCatalogCharacterColorMap(
-  rawGameCharacterUnits: unknown,
-  characterMap?: ReadonlyMap<number, CatalogCharacter>,
-): Map<number, string> {
-  const map = new Map<number, string>()
-  const ownUnitResolved = new Set<number>()
-  for (const record of normalizeCatalogRecords(rawGameCharacterUnits)) {
-    const characterId = normalizeCatalogNumber(record.gameCharacterId)
-    const colorCode = normalizeCatalogString(record.colorCode)
-    if (!characterId || !colorCode || ownUnitResolved.has(characterId)) {
-      continue
-    }
+/** Fixed representative color per game character, keyed by gameCharacterId. */
+export const SEKAI_CHARACTER_COLORS: Record<number, string> = {
+  1: "#33AAEE",
+  2: "#FFDD44",
+  3: "#EE6666",
+  4: "#BBDD22",
+  5: "#FFCCAA",
+  6: "#99CCFF",
+  7: "#FFAACC",
+  8: "#99EEDD",
+  9: "#FF6699",
+  10: "#00BBDD",
+  11: "#FF7722",
+  12: "#0077DD",
+  13: "#FFBB00",
+  14: "#FF66BB",
+  15: "#33DD99",
+  16: "#BB88EE",
+  17: "#BB6688",
+  18: "#8888CC",
+  19: "#CCAA88",
+  20: "#DDAACC",
+  21: "#33CCBB",
+  22: "#FFCC11",
+  23: "#FFEE11",
+  24: "#FFBBCC",
+  25: "#DD4444",
+  26: "#3366CC",
+}
 
-    const unit = normalizeCatalogString(record.unit)
-    const ownUnit = characterMap?.get(characterId)?.unit ?? null
-    if (ownUnit != null && unit === ownUnit) {
-      map.set(characterId, colorCode)
-      ownUnitResolved.add(characterId)
-      continue
-    }
-
-    if (!map.has(characterId)) {
-      map.set(characterId, colorCode)
-    }
+/** The character's representative color, or null for unknown character ids. */
+export function resolveSekaiCharacterColor(characterId: number | null | undefined): string | null {
+  if (characterId == null) {
+    return null
   }
 
-  return map
+  return SEKAI_CHARACTER_COLORS[characterId] ?? null
 }
 
 export function normalizeCatalogMasterCard(value: unknown): CatalogMasterCard | null {

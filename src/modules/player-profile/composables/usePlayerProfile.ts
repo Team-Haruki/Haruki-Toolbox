@@ -4,7 +4,6 @@ import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
 import type { CatalogCharacter, CatalogMasterCard, SekaiUnit } from "@/shared/sekai/catalog"
 import {
-  buildCatalogCharacterColorMap,
   buildCatalogCharacterMap,
   buildCatalogUnitColorMap,
   normalizeCatalogMasterCard,
@@ -49,7 +48,6 @@ export function usePlayerProfile() {
   const cardMap = shallowRef<Map<number, CatalogMasterCard>>(new Map())
   const characterMap = shallowRef<Map<number, CatalogCharacter>>(new Map())
   const unitColorMap = shallowRef<Map<SekaiUnit, string>>(new Map())
-  const characterColorMap = shallowRef<Map<number, string>>(new Map())
 
   const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 
@@ -63,7 +61,6 @@ export function usePlayerProfile() {
       cardMap.value = new Map()
       characterMap.value = new Map()
       unitColorMap.value = new Map()
-      characterColorMap.value = new Map()
       return
     }
 
@@ -85,10 +82,8 @@ export function usePlayerProfile() {
       }
 
       cardMap.value = nextCardMap
-      const nextCharacterMap = buildCatalogCharacterMap(files.gameCharacters)
-      characterMap.value = nextCharacterMap
+      characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
       unitColorMap.value = buildCatalogUnitColorMap(files.gameCharacterUnits)
-      characterColorMap.value = buildCatalogCharacterColorMap(files.gameCharacterUnits, nextCharacterMap)
     } catch (loadError) {
       if (token === loadToken) {
         masterError.value = loadError instanceof Error ? loadError.message : String(loadError)
@@ -122,7 +117,6 @@ export function usePlayerProfile() {
     cardMap,
     characterMap,
     unitColorMap,
-    characterColorMap,
     reloadMaster,
   }
 }

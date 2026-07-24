@@ -5,6 +5,7 @@ import { LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { useTrainingPower } from "@/modules/training/composables/useTrainingPower"
 import {
   buildPowerBonuses,
@@ -25,7 +26,6 @@ const {
   masterError,
   characterMap,
   unitColorMap,
-  characterColorMap,
   areaItemLevels,
   characterRanks,
   reloadMaster,
@@ -71,7 +71,7 @@ const characterRows = computed(() => bonuses.value.characters.map((bonus) => {
     ...bonus,
     name: character?.name ?? t("training.power.unknownCharacter"),
     iconUrl: character?.iconUrl ?? null,
-    color: characterColorMap.value.get(bonus.characterId) ?? unitColor,
+    color: resolveSekaiCharacterColor(bonus.characterId) ?? unitColor,
   }
 }))
 

@@ -1,12 +1,12 @@
 import { describe, expect, it } from "bun:test"
 import {
   buildCatalogCardThumbnail,
-  buildCatalogCharacterColorMap,
   buildCatalogCharacterMap,
   buildCatalogUnitColorMap,
   cardRarityHasTrainedArt,
   normalizeCatalogMasterCard,
   resolveCardRareCount,
+  resolveSekaiCharacterColor,
 } from "./catalog"
 
 describe("buildCatalogCharacterMap", () => {
@@ -47,36 +47,23 @@ describe("buildCatalogUnitColorMap", () => {
   })
 })
 
-describe("buildCatalogCharacterColorMap", () => {
-  it("prefers the entry matching the character's own unit", () => {
-    const characterMap = buildCatalogCharacterMap([
-      { id: 1, firstName: "星乃", givenName: "一歌", unit: "light_sound" },
-      { id: 21, givenNameEnglish: "MIKU", firstNameEnglish: "HATSUNE", unit: "piapro" },
-    ])
-
-    const map = buildCatalogCharacterColorMap([
-      { gameCharacterId: 1, unit: "light_sound", colorCode: "#33aaee" },
-      { gameCharacterId: 21, unit: "light_sound", colorCode: "#4455dd" },
-      { gameCharacterId: 21, unit: "piapro", colorCode: "#33ccbb" },
-      { gameCharacterId: 21, unit: "street", colorCode: "#00bbdd" },
-    ], characterMap)
-
-    expect(map.get(1)).toBe("#33aaee")
-    expect(map.get(21)).toBe("#33ccbb")
+describe("resolveSekaiCharacterColor", () => {
+  it("returns the fixed representative color for known characters", () => {
+    expect(resolveSekaiCharacterColor(1)).toBe("#33AAEE")
+    expect(resolveSekaiCharacterColor(21)).toBe("#33CCBB")
+    expect(resolveSekaiCharacterColor(26)).toBe("#3366CC")
   })
 
-  it("falls back to the first entry when no own-unit match exists", () => {
-    const map = buildCatalogCharacterColorMap([
-      { gameCharacterId: 5, unit: "idol", colorCode: "#ffdd44" },
-      { gameCharacterId: 5, unit: "street", colorCode: "#ee1166" },
-      { gameCharacterId: 0, unit: "idol", colorCode: "#ffffff" },
-      { gameCharacterId: 6, unit: "idol", colorCode: "" },
-      null,
-    ])
+  it("returns null for unknown or missing character ids", () => {
+    expect(resolveSekaiCharacterColor(0)).toBeNull()
+    expect(resolveSekaiCharacterColor(27)).toBeNull()
+    expect(resolveSekaiCharacterColor(null)).toBeNull()
+  })
 
-    expect(map.get(5)).toBe("#ffdd44")
-    expect(map.has(0)).toBe(false)
-    expect(map.has(6)).toBe(false)
+  it("covers all 26 characters with hex colors", () => {
+    for (let characterId = 1; characterId <= 26; characterId += 1) {
+      expect(resolveSekaiCharacterColor(characterId)).toMatch(/^#[0-9A-F]{6}$/)
+    }
   })
 })
 

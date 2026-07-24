@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
+import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import { usePlayerProfile } from "@/modules/player-profile/composables/usePlayerProfile"
 import {
@@ -44,7 +45,6 @@ const {
   cardMap,
   characterMap,
   unitColorMap,
-  characterColorMap,
   reloadMaster,
 } = usePlayerProfile()
 
@@ -118,7 +118,7 @@ const characterRankCells = computed(() => buildCharacterRanks(suiteData.value?.u
     ...entry,
     name: character?.name ?? t("playerProfile.unknownCharacter"),
     iconUrl: character?.iconUrl ?? null,
-    color: characterColorMap.value.get(entry.characterId) ?? unitColor,
+    color: resolveSekaiCharacterColor(entry.characterId) ?? unitColor,
   }
 }))
 
