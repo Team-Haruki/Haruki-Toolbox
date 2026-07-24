@@ -1110,15 +1110,12 @@ export const enUS = {
       superStar: "Super Star count",
     },
     characters: {
-      title: "Character Growth",
+      title: "Character Levels",
       rank: "Rank {rank}",
       empty: "No character data",
     },
     challenge: {
       title: "Challenge Live",
-      sortByCharacter: "By character",
-      sortByScore: "By score",
-      stage: "Stage {stage}",
       summary: "Best: {name} · {score}",
       empty: "No challenge live records yet",
     },

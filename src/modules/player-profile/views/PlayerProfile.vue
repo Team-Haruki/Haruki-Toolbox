@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
 import { LucideCopy, LucideRefreshCw, LucideTrophy } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import { usePlayerProfile } from "@/modules/player-profile/composables/usePlayerProfile"
+import ProfileRadarChart from "@/modules/player-profile/components/ProfileRadarChart.vue"
 import {
-  CHALLENGE_LIVE_SORT_MODES,
   buildChallengeLiveGrid,
   buildCharacterRanks,
   buildDeckThumbnailCard,
@@ -23,9 +22,7 @@ import {
   normalizePlayerProfile,
   parseSekaiColoredText,
   resolveActiveDeckCardIds,
-  sortChallengeLiveCells,
   summarizeChallengeLiveTop,
-  type ChallengeLiveSortMode,
 } from "@/modules/player-profile/lib/player-profile"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 import { buildCardThumbnailView, type DeckRecommendMasterCard } from "@/modules/deck-recommend/lib/card-thumbnail"
@@ -55,8 +52,6 @@ const {
 } = usePlayerProfile()
 
 const musicMaster = useMusicProgressMasterData(accountRegion)
-
-const challengeSort = ref<ChallengeLiveSortMode>("character")
 
 const isLoading = computed(() => suiteStatus.value === "loading" || masterLoading.value)
 const hasError = computed(() => suiteStatus.value === "error" || masterError.value != null)
@@ -89,6 +84,7 @@ const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 const gamedata = computed(() => normalizePlayerGamedata(suiteData.value?.userGamedata))
 const nameSegments = computed(() => parseSekaiColoredText(gamedata.value?.name))
 const profileInfo = computed(() => normalizePlayerProfile(suiteData.value?.userProfile))
+const wordSegments = computed(() => parseSekaiColoredText(profileInfo.value.rawWord))
 const playerCardMap = computed(() => buildPlayerCardMap(normalizePlayerCards(suiteData.value?.userCards)))
 
 const deckViews = computed(() => {
@@ -162,21 +158,31 @@ const characterRankCells = computed(() => buildCharacterRanks(suiteData.value?.u
   }
 }))
 
+const characterRadarEntries = computed(() => characterRankCells.value.map((cell) => ({
+  key: cell.characterId,
+  label: cell.name,
+  value: cell.characterRank,
+  detail: t("playerProfile.characters.rank", { rank: cell.characterRank }),
+  iconUrl: cell.iconUrl,
+  color: cell.color,
+})))
+
 const challengeCells = computed(() => buildChallengeLiveGrid(
   suiteData.value?.userChallengeLiveSoloResults,
   suiteData.value?.userChallengeLiveSoloStages,
 ))
 
-const sortedChallengeCells = computed(() =>
-  sortChallengeLiveCells(challengeCells.value, challengeSort.value).map((cell) => {
-    const character = characterMap.value.get(cell.characterId) ?? null
-    return {
-      ...cell,
-      name: character?.name ?? t("playerProfile.unknownCharacter"),
-      iconUrl: character?.iconUrl ?? null,
-    }
-  }),
-)
+const challengeRadarEntries = computed(() => challengeCells.value.map((cell) => {
+  const character = characterMap.value.get(cell.characterId) ?? null
+  return {
+    key: cell.characterId,
+    label: character?.name ?? t("playerProfile.unknownCharacter"),
+    value: cell.highScore,
+    detail: formatScore(cell.highScore),
+    iconUrl: character?.iconUrl ?? null,
+    color: resolveSekaiCharacterColor(cell.characterId),
+  }
+}))
 
 const challengeTop = computed(() => {
   const top = summarizeChallengeLiveTop(challengeCells.value)
@@ -193,12 +199,6 @@ const challengeTop = computed(() => {
 
 function formatScore(value: number): string {
   return numberFormatter.value.format(value)
-}
-
-function handleChallengeSortChange(value: unknown) {
-  if (typeof value === "string" && (CHALLENGE_LIVE_SORT_MODES as readonly string[]).includes(value)) {
-    challengeSort.value = value as ChallengeLiveSortMode
-  }
 }
 
 async function copyGameId() {
@@ -310,7 +310,11 @@ function retry() {
               </span>
             </div>
             <p v-if="profileInfo.word" class="whitespace-pre-wrap break-words text-sm text-muted-foreground">
-              {{ profileInfo.word }}
+              <span
+                v-for="(segment, index) in wordSegments"
+                :key="index"
+                :style="segment.color ? { color: segment.color } : {}"
+              >{{ segment.text }}</span>
             </p>
             <p v-if="profileInfo.twitterId" class="text-xs text-muted-foreground">
               @{{ profileInfo.twitterId }}
@@ -394,56 +398,23 @@ function retry() {
         </CardContent>
       </Card>
 
-      <!-- Character growth -->
+      <!-- Character levels radar -->
       <Card>
         <CardHeader class="pb-2">
           <CardTitle class="text-base">{{ t("playerProfile.characters.title") }}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p v-if="characterRankCells.length === 0" class="py-4 text-center text-sm text-muted-foreground">
+          <p v-if="characterRadarEntries.length === 0" class="py-4 text-center text-sm text-muted-foreground">
             {{ t("playerProfile.characters.empty") }}
           </p>
-          <div v-else class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            <div
-              v-for="cell in characterRankCells"
-              :key="cell.characterId"
-              class="flex items-center gap-2 rounded-md border border-l-4 p-2"
-              :style="cell.color ? { borderLeftColor: cell.color } : {}"
-            >
-              <img
-                v-if="cell.iconUrl"
-                :src="cell.iconUrl"
-                alt=""
-                class="size-8 shrink-0 rounded-full"
-                loading="lazy"
-              >
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-xs" :title="cell.name">{{ cell.name }}</p>
-                <p class="text-sm font-semibold tabular-nums">
-                  {{ t("playerProfile.characters.rank", { rank: cell.characterRank }) }}
-                </p>
-              </div>
-            </div>
-          </div>
+          <ProfileRadarChart v-else :entries="characterRadarEntries" />
         </CardContent>
       </Card>
 
-      <!-- Challenge live -->
+      <!-- Challenge live radar -->
       <Card>
         <CardHeader class="pb-2">
-          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-            <span>{{ t("playerProfile.challenge.title") }}</span>
-            <Tabs :model-value="challengeSort" @update:model-value="handleChallengeSortChange">
-              <TabsList class="h-8">
-                <TabsTrigger value="character" class="text-xs">
-                  {{ t("playerProfile.challenge.sortByCharacter") }}
-                </TabsTrigger>
-                <TabsTrigger value="score" class="text-xs">
-                  {{ t("playerProfile.challenge.sortByScore") }}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </CardTitle>
+          <CardTitle class="text-base">{{ t("playerProfile.challenge.title") }}</CardTitle>
         </CardHeader>
         <CardContent class="flex flex-col gap-3">
           <p
@@ -457,33 +428,7 @@ function retry() {
             {{ t("playerProfile.challenge.empty") }}
           </p>
 
-          <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            <div
-              v-for="cell in sortedChallengeCells"
-              :key="cell.characterId"
-              :class="[
-                'flex items-center gap-2 rounded-md border p-2',
-                cell.hasData ? '' : 'opacity-50',
-              ]"
-            >
-              <img
-                v-if="cell.iconUrl"
-                :src="cell.iconUrl"
-                alt=""
-                class="size-8 shrink-0 rounded-full"
-                loading="lazy"
-              >
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-xs" :title="cell.name">{{ cell.name }}</p>
-                <p class="text-sm font-semibold tabular-nums">
-                  {{ cell.highScore > 0 ? formatScore(cell.highScore) : "—" }}
-                </p>
-                <p class="text-[11px] tabular-nums text-muted-foreground">
-                  {{ cell.stage > 0 ? t("playerProfile.challenge.stage", { stage: cell.stage }) : "—" }}
-                </p>
-              </div>
-            </div>
-          </div>
+          <ProfileRadarChart :entries="challengeRadarEntries" />
         </CardContent>
       </Card>
     </template>

@@ -1110,15 +1110,12 @@ export const zhCN = {
       superStar: "SuperStar 次数",
     },
     characters: {
-      title: "角色成长",
+      title: "角色等级",
       rank: "Rank {rank}",
       empty: "暂无角色数据",
     },
     challenge: {
       title: "挑战Live",
-      sortByCharacter: "按角色排序",
-      sortByScore: "按分数排序",
-      stage: "第 {stage} 关",
       summary: "最强角色：{name} · {score}",
       empty: "暂无挑战Live记录",
     },

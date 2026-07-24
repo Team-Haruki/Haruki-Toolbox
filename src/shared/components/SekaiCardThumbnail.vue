@@ -117,7 +117,7 @@ const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCoun
     </div>
     <span
       v-if="levelLabel"
-      class="absolute inset-x-0 bottom-0 flex h-[18.75%] items-center pl-[4.7%] whitespace-nowrap font-semibold leading-none text-white tabular-nums text-[clamp(0.55rem,16cqw,1.3rem)]"
+      class="absolute inset-x-0 bottom-0 flex h-[18.75%] items-center pb-[2.5%] pl-[4.7%] whitespace-nowrap font-semibold leading-none text-white tabular-nums text-[clamp(0.55rem,16cqw,1.3rem)]"
     >
       {{ levelLabel }}
     </span>

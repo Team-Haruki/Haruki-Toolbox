@@ -20,7 +20,10 @@ export type PlayerGamedataInfo = {
 }
 
 export type PlayerProfileInfo = {
+  /** Bio with color tags stripped — use for emptiness checks and plain text. */
   word: string
+  /** Trimmed bio with `<#...>` color tags intact, for colored rendering. */
+  rawWord: string
   twitterId: string
 }
 
@@ -124,12 +127,13 @@ export function normalizePlayerGamedata(raw: unknown): PlayerGamedataInfo | null
 /** Tolerantly parses the suite `userProfile` record. */
 export function normalizePlayerProfile(raw: unknown): PlayerProfileInfo {
   if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
-    return { word: "", twitterId: "" }
+    return { word: "", rawWord: "", twitterId: "" }
   }
 
   const record = raw as Record<string, unknown>
   return {
     word: cleanProfileWord(record.word),
+    rawWord: typeof record.word === "string" ? record.word.trim() : "",
     twitterId: normalizeCatalogString(record.twitterId),
   }
 }

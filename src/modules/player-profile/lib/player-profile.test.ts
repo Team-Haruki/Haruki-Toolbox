@@ -46,12 +46,13 @@ describe("normalizePlayerGamedata", () => {
 })
 
 describe("normalizePlayerProfile", () => {
-  it("cleans the word and trims twitterId", () => {
+  it("cleans the word, keeps the raw tagged word, and trims twitterId", () => {
     expect(normalizePlayerProfile({ word: "<#f00>hi", twitterId: " haruki " })).toEqual({
       word: "hi",
+      rawWord: "<#f00>hi",
       twitterId: "haruki",
     })
-    expect(normalizePlayerProfile(undefined)).toEqual({ word: "", twitterId: "" })
+    expect(normalizePlayerProfile(undefined)).toEqual({ word: "", rawWord: "", twitterId: "" })
   })
 })
 
