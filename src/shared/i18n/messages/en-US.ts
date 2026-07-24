@@ -942,12 +942,8 @@ export const enUS = {
       rank: "Rank",
     },
     worldLink: {
-      title: "World Link chapters",
       chapterLabel: "Chapter {no}",
       finale: "Finale",
-      point: "Chapter PT",
-      rank: "Rank",
-      updatedAt: "Updated",
     },
   },
   musicProgress: {

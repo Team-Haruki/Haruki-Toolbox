@@ -942,12 +942,8 @@ export const zhCN = {
       rank: "排名",
     },
     worldLink: {
-      title: "World Link 章节",
       chapterLabel: "第 {no} 章",
       finale: "终章",
-      point: "章节 PT",
-      rank: "排名",
-      updatedAt: "更新时间",
     },
   },
   musicProgress: {
@@ -1959,7 +1955,7 @@ export const zhCN = {
     },
     type: {
       marathon: "马拉松",
-      cheerful_carnival: "欢乐嘉年华",
+      cheerful_carnival: "5v5",
       world_bloom: "连接世界",
       unknown: "未知类型",
     },
@@ -3079,7 +3075,7 @@ export const zhCN = {
     },
     eventTypes: {
       marathon: "马拉松",
-      cheerfulCarnival: "欢乐嘉年华",
+      cheerfulCarnival: "5v5",
       worldBloom: "连接世界",
       unknown: "未知类型",
     },

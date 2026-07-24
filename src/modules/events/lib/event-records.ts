@@ -195,6 +195,49 @@ export function buildWorldBloomGroups(
   return [...groups.values()].sort(compareByEventStartDesc)
 }
 
+/** A main-table row: an event record plus its World Link chapter sub-rows. */
+export type EventRecordTableRow = {
+  eventId: number
+  event: SekaiEventItem | null
+  name: string
+  /** Null for World Link events that only have chapter records. */
+  eventPoint: number | null
+  rank: number | null
+  chapters: WorldBloomChapterRow[]
+}
+
+/**
+ * Merges World Link chapter groups into the main record rows: chapters attach
+ * to their event's row as sub-rows, and groups without a main record become
+ * standalone rows. Keeps event startAt-desc ordering.
+ */
+export function mergeWorldBloomIntoRows(
+  rows: readonly EventRecordRow[],
+  groups: readonly WorldBloomGroup[],
+): EventRecordTableRow[] {
+  const groupsByEvent = new Map(groups.map((group) => [group.eventId, group]))
+  const merged: EventRecordTableRow[] = rows.map((row) => ({
+    ...row,
+    chapters: groupsByEvent.get(row.eventId)?.chapters ?? [],
+  }))
+
+  const recordedEventIds = new Set(rows.map((row) => row.eventId))
+  for (const group of groups) {
+    if (!recordedEventIds.has(group.eventId)) {
+      merged.push({
+        eventId: group.eventId,
+        event: group.event,
+        name: group.name,
+        eventPoint: null,
+        rank: null,
+        chapters: group.chapters,
+      })
+    }
+  }
+
+  return merged.sort(compareByEventStartDesc)
+}
+
 /** Chronological (startAt asc) PT series; rows without a dated master event are skipped. */
 export function buildEventPointTrend(rows: readonly EventRecordRow[]): EventPointTrendPoint[] {
   const points: EventPointTrendPoint[] = []

@@ -6,6 +6,7 @@ import {
   buildEventsById,
   buildWorldBloomChapterNoIndex,
   buildWorldBloomGroups,
+  mergeWorldBloomIntoRows,
   normalizeUserEventRecords,
   normalizeUserWorldBloomRecords,
   summarizeEventRecords,
@@ -167,6 +168,49 @@ describe("buildWorldBloomGroups", () => {
     expect(groups).toHaveLength(1)
     expect(groups[0]?.name).toBe("#555")
     expect(groups[0]?.event).toBeNull()
+  })
+})
+
+describe("mergeWorldBloomIntoRows", () => {
+  const eventsById = buildEventsById([
+    makeEvent({ id: 160, name: "WL 1", eventType: "world_bloom", startAt: Date.UTC(2024, 2, 1) }),
+    makeEvent({ id: 165, name: "Marathon", startAt: Date.UTC(2024, 4, 1) }),
+    makeEvent({ id: 170, name: "WL 2", eventType: "world_bloom", startAt: Date.UTC(2024, 8, 1) }),
+  ])
+
+  test("attaches chapters to the matching main row", () => {
+    const rows = buildEventRecordRows(
+      [
+        { eventId: 160, eventPoint: 100, rank: 5 },
+        { eventId: 165, eventPoint: 200, rank: 9 },
+      ],
+      eventsById,
+    )
+    const groups = buildWorldBloomGroups(
+      [{ eventId: 160, gameCharacterId: 3, chapterPoint: 10, rank: 2, updatedAt: null }],
+      eventsById,
+    )
+
+    const merged = mergeWorldBloomIntoRows(rows, groups)
+
+    expect(merged.map((row) => row.eventId)).toEqual([165, 160])
+    expect(merged[1]?.eventPoint).toBe(100)
+    expect(merged[1]?.chapters.map((chapter) => chapter.gameCharacterId)).toEqual([3])
+    expect(merged[0]?.chapters).toEqual([])
+  })
+
+  test("keeps chapter-only events as standalone rows in date order", () => {
+    const rows = buildEventRecordRows([{ eventId: 165, eventPoint: 200, rank: null }], eventsById)
+    const groups = buildWorldBloomGroups(
+      [{ eventId: 170, gameCharacterId: 1, chapterPoint: 30, rank: null, updatedAt: null }],
+      eventsById,
+    )
+
+    const merged = mergeWorldBloomIntoRows(rows, groups)
+
+    expect(merged.map((row) => row.eventId)).toEqual([170, 165])
+    expect(merged[0]?.eventPoint).toBeNull()
+    expect(merged[0]?.chapters).toHaveLength(1)
   })
 })
 

@@ -41,6 +41,7 @@ import {
   buildEventPointTrend,
   buildEventRecordRows,
   buildWorldBloomGroups,
+  mergeWorldBloomIntoRows,
   normalizeUserEventRecords,
   normalizeUserWorldBloomRecords,
   summarizeEventRecords,
@@ -90,6 +91,8 @@ const worldGroups = computed(() =>
   ),
 )
 
+const tableRows = computed(() => mergeWorldBloomIntoRows(rows.value, worldGroups.value))
+
 const trend = computed(() => buildEventPointTrend(rows.value))
 const summary = computed(() => summarizeEventRecords(userEvents.value))
 
@@ -124,14 +127,6 @@ function formatRecordDate(value: number | null) {
   return formatLocalizedDate(
     value,
     { year: "numeric", month: "2-digit", day: "2-digit" },
-    t("events.common.dateFallback"),
-  )
-}
-
-function formatRecordDateTime(value: number | null) {
-  return formatLocalizedDateTime(
-    value,
-    { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" },
     t("events.common.dateFallback"),
   )
 }
@@ -256,7 +251,7 @@ function crosshairTemplate(point: EventPointTrendPoint) {
           <CardTitle class="text-base">{{ t("eventRecords.table.title") }}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p v-if="rows.length === 0" class="text-sm text-muted-foreground">
+          <p v-if="tableRows.length === 0" class="text-sm text-muted-foreground">
             {{ t("eventRecords.noData") }}
           </p>
           <div v-else class="overflow-x-auto">
@@ -270,91 +265,69 @@ function crosshairTemplate(point: EventPointTrendPoint) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow v-for="row in rows" :key="row.eventId">
-                  <TableCell>
-                    <div class="flex min-w-0 items-center gap-3">
-                      <div class="aspect-[2/1] w-20 shrink-0 overflow-hidden rounded-md bg-muted">
-                        <EventBannerImage
-                          :region="bannerRegion"
-                          :assetbundle-name="row.event?.assetbundleName ?? null"
-                          :alt="row.name"
-                          :preference="assetEndpoint"
-                        />
+                <template v-for="row in tableRows" :key="row.eventId">
+                  <TableRow>
+                    <TableCell>
+                      <div class="flex min-w-0 items-center gap-3">
+                        <div class="aspect-[2/1] w-20 shrink-0 overflow-hidden rounded-md bg-muted">
+                          <EventBannerImage
+                            :region="bannerRegion"
+                            :assetbundle-name="row.event?.assetbundleName ?? null"
+                            :alt="row.name"
+                            :preference="assetEndpoint"
+                          />
+                        </div>
+                        <div class="min-w-0">
+                          <RouterLink
+                            v-if="row.event"
+                            :to="`/events/${row.eventId}`"
+                            class="block max-w-56 truncate text-sm font-medium underline-offset-4 hover:underline"
+                          >
+                            {{ row.name }}
+                          </RouterLink>
+                          <span v-else class="block max-w-56 truncate text-sm font-medium">{{ row.name }}</span>
+                          <span class="text-xs text-muted-foreground">{{ formatRecordDate(row.event?.startAt ?? null) }}</span>
+                        </div>
                       </div>
-                      <div class="min-w-0">
-                        <RouterLink
-                          v-if="row.event"
-                          :to="`/events/${row.eventId}`"
-                          class="block max-w-56 truncate text-sm font-medium underline-offset-4 hover:underline"
+                    </TableCell>
+                    <TableCell>
+                      <EventTypeBadge :event-type="row.event?.eventType ?? null" />
+                    </TableCell>
+                    <TableCell class="text-right tabular-nums">
+                      {{ row.eventPoint != null ? formatNumberCN(row.eventPoint) : "—" }}
+                    </TableCell>
+                    <TableCell class="text-right tabular-nums">{{ formatNumberCN(row.rank) }}</TableCell>
+                  </TableRow>
+                  <TableRow
+                    v-for="chapter in row.chapters"
+                    :key="worldBloomChapterKey(row.eventId, chapter.gameCharacterId)"
+                    class="bg-muted/20"
+                  >
+                    <TableCell class="py-1.5">
+                      <div class="flex min-w-0 items-center gap-2 pl-10">
+                        <img
+                          v-if="chapter.gameCharacterId != null"
+                          :src="resolveCharacterIconUrl(chapter.gameCharacterId)"
+                          :alt="characterName(chapter.gameCharacterId)"
+                          class="size-6 shrink-0 rounded-full ring-1 ring-border"
+                          loading="lazy"
                         >
-                          {{ row.name }}
-                        </RouterLink>
-                        <span v-else class="block max-w-56 truncate text-sm font-medium">{{ row.name }}</span>
-                        <span class="text-xs text-muted-foreground">{{ formatRecordDate(row.event?.startAt ?? null) }}</span>
+                        <span class="truncate text-xs">{{ characterName(chapter.gameCharacterId) }}</span>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <EventTypeBadge :event-type="row.event?.eventType ?? null" />
-                  </TableCell>
-                  <TableCell class="text-right tabular-nums">{{ formatNumberCN(row.eventPoint) }}</TableCell>
-                  <TableCell class="text-right tabular-nums">{{ formatNumberCN(row.rank) }}</TableCell>
-                </TableRow>
+                    </TableCell>
+                    <TableCell class="py-1.5">
+                      <span v-if="chapter.chapterNo != null" class="text-xs text-muted-foreground">
+                        {{ t("eventRecords.worldLink.chapterLabel", { no: chapter.chapterNo }) }}
+                      </span>
+                    </TableCell>
+                    <TableCell class="py-1.5 text-right text-xs tabular-nums">
+                      {{ formatNumberCN(chapter.chapterPoint) }}
+                    </TableCell>
+                    <TableCell class="py-1.5 text-right text-xs tabular-nums">{{ formatNumberCN(chapter.rank) }}</TableCell>
+                  </TableRow>
+                </template>
               </TableBody>
             </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- World Link chapter records -->
-      <Card v-if="worldGroups.length > 0">
-        <CardHeader>
-          <CardTitle class="text-base">{{ t("eventRecords.worldLink.title") }}</CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-4">
-          <div v-for="group in worldGroups" :key="group.eventId" class="flex flex-col gap-2">
-            <RouterLink
-              v-if="group.event"
-              :to="`/events/${group.eventId}`"
-              class="w-fit text-sm font-semibold underline-offset-4 hover:underline"
-            >
-              {{ group.name }}
-            </RouterLink>
-            <span v-else class="text-sm font-semibold">{{ group.name }}</span>
-            <div
-              v-for="chapter in group.chapters"
-              :key="worldBloomChapterKey(group.eventId, chapter.gameCharacterId)"
-              class="flex flex-col gap-2 rounded-md border border-border/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div class="flex min-w-0 items-center gap-3">
-                <img
-                  v-if="chapter.gameCharacterId != null"
-                  :src="resolveCharacterIconUrl(chapter.gameCharacterId)"
-                  :alt="characterName(chapter.gameCharacterId)"
-                  class="h-9 w-9 shrink-0 rounded-full ring-1 ring-border"
-                  loading="lazy"
-                >
-                <div class="min-w-0">
-                  <div class="truncate text-sm font-medium">{{ characterName(chapter.gameCharacterId) }}</div>
-                  <div class="text-xs text-muted-foreground">
-                    <template v-if="chapter.chapterNo != null">
-                      {{ t("eventRecords.worldLink.chapterLabel", { no: chapter.chapterNo }) }} ·
-                    </template>
-                    {{ t("eventRecords.worldLink.updatedAt") }}: {{ formatRecordDateTime(chapter.updatedAt) }}
-                  </div>
-                </div>
-              </div>
-              <div class="flex shrink-0 items-center gap-4 text-sm tabular-nums">
-                <span>
-                  <span class="text-xs text-muted-foreground">{{ t("eventRecords.worldLink.point") }}</span>
-                  {{ formatNumberCN(chapter.chapterPoint) }}
-                </span>
-                <span>
-                  <span class="text-xs text-muted-foreground">{{ t("eventRecords.worldLink.rank") }}</span>
-                  {{ formatNumberCN(chapter.rank) }}
-                </span>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
