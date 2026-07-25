@@ -164,16 +164,16 @@ describe("listMusicEventLinks", () => {
     { eventId: 3, musicId: 64, releaseConditionId: 1, seq: 1 },
   ]
   const rawEvents = [
-    { id: 1, eventType: "marathon", name: "Event One", startAt: 1653112800000, aggregateAt: 1653652799000 },
-    { id: 2, eventType: "marathon", name: "Event Two", startAt: 1654000000000, aggregateAt: 1654500000000 },
+    { id: 1, eventType: "marathon", name: "Event One", assetbundleName: "event_one", startAt: 1653112800000, aggregateAt: 1653652799000 },
+    { id: 2, eventType: "marathon", name: "Event Two", assetbundleName: "event_two", startAt: 1654000000000, aggregateAt: 1654500000000 },
     { id: 3, eventType: "cheerful_carnival", name: "Event Three", startAt: 1655000000000, aggregateAt: 1655500000000 },
   ]
 
   it("collects all events linked to a music", () => {
     const links = listMusicEventLinks(rawEventMusics, rawEvents, 64)
     expect(links).toEqual([
-      { eventId: 1, name: "Event One", startAt: 1653112800000, aggregateAt: 1653652799000 },
-      { eventId: 3, name: "Event Three", startAt: 1655000000000, aggregateAt: 1655500000000 },
+      { eventId: 1, name: "Event One", assetbundleName: "event_one", startAt: 1653112800000, aggregateAt: 1653652799000 },
+      { eventId: 3, name: "Event Three", assetbundleName: null, startAt: 1655000000000, aggregateAt: 1655500000000 },
     ])
   })
 

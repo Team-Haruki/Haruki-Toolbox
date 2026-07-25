@@ -40,6 +40,7 @@ export type MusicVocalEntry = {
 export type MusicEventLink = {
   eventId: number
   name: string
+  assetbundleName: string | null
   startAt: number | null
   aggregateAt: number | null
 }
@@ -174,6 +175,7 @@ export function listMusicEventLinks(
     links.push({
       eventId,
       name: normalizeCatalogString(record.name) || `#${eventId}`,
+      assetbundleName: normalizeCatalogString(record.assetbundleName) || null,
       startAt: normalizeCatalogNumber(record.startAt),
       aggregateAt: normalizeCatalogNumber(record.aggregateAt),
     })

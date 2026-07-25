@@ -33,6 +33,7 @@ import { getI18nLocale } from "@/shared/i18n"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
+import EventBannerImage from "@/modules/events/components/EventBannerImage.vue"
 import MusicJacket from "../components/MusicJacket.vue"
 import { useMusicLibraryDetail } from "../composables/useMusicLibraryDetail"
 import { resolveMusicJacketUrl } from "../lib/music-assets"
@@ -455,9 +456,17 @@ function formatEventPeriod(startAt: number | null, aggregateAt: number | null): 
               v-for="event in eventLinks"
               :key="event.eventId"
               :to="`/events/${event.eventId}`"
-              class="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/20 p-3 transition-colors hover:bg-accent/50 dark:hover:bg-accent/30"
+              class="flex flex-wrap items-center gap-3 rounded-md border bg-muted/20 p-3 transition-colors hover:bg-accent/50 dark:hover:bg-accent/30"
             >
-              <div class="min-w-0 space-y-1">
+              <div class="relative aspect-[2/1] w-full shrink-0 overflow-hidden rounded-md bg-muted sm:w-36">
+                <EventBannerImage
+                  :region="region"
+                  :assetbundle-name="event.assetbundleName"
+                  :alt="event.name"
+                  :preference="settingsStore.currentAssetEndpoint"
+                />
+              </div>
+              <div class="min-w-0 flex-1 space-y-1">
                 <p class="truncate text-sm font-medium">{{ event.name }}</p>
                 <p class="text-xs text-muted-foreground">
                   {{ formatEventPeriod(event.startAt, event.aggregateAt) }}

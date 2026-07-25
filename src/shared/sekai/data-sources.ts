@@ -230,9 +230,9 @@ export function resolveMySekaiCanvasIconUrl(): string {
   return resolveToolboxStaticImageUrl("static_images/mysekai/icon/icon_canvas.png")
 }
 
-/** Unit logo from the toolbox static bucket (`static_images/unit_logo/logo_{unit}.png`). */
+/** Unit emblem from the toolbox static bucket (`static_images/icon_{unit}.png`). */
 export function resolveUnitLogoUrl(unit: string): string {
-  return resolveToolboxStaticImageUrl(`static_images/unit_logo/logo_${unit}.png`)
+  return resolveToolboxStaticImageUrl(`static_images/icon_${unit}.png`)
 }
 
 export function resolveCharacterIconUrl(characterId: number): string {
