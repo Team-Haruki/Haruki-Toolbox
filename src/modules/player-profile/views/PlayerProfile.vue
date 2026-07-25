@@ -159,6 +159,15 @@ const characterRankCells = computed(() => buildCharacterRanks(suiteData.value?.u
   }
 }))
 
+function unitGroupOf(characterId: number): { groupKey: string | null; groupColor: string | null } {
+  const unit = characterMap.value.get(characterId)?.unit ?? null
+  if (unit == null) {
+    return { groupKey: null, groupColor: null }
+  }
+
+  return { groupKey: unit, groupColor: unitColorMap.value.get(unit) ?? null }
+}
+
 const characterRadarEntries = computed(() => characterRankCells.value.map((cell) => ({
   key: cell.characterId,
   label: cell.name,
@@ -166,6 +175,7 @@ const characterRadarEntries = computed(() => characterRankCells.value.map((cell)
   detail: t("playerProfile.characters.rank", { rank: cell.characterRank }),
   iconUrl: cell.iconUrl,
   color: cell.color,
+  ...unitGroupOf(cell.characterId),
 })))
 
 const challengeCells = computed(() => buildChallengeLiveGrid(
@@ -182,8 +192,61 @@ const challengeRadarEntries = computed(() => challengeCells.value.map((cell) => 
     detail: formatScore(cell.highScore),
     iconUrl: character?.iconUrl ?? null,
     color: resolveSekaiCharacterColor(cell.characterId),
+    ...unitGroupOf(cell.characterId),
   }
 }))
+
+type UnitLegendItem = {
+  unit: string
+  color: string | null
+  detail: string
+  top: boolean
+}
+
+/** Per-unit average of the radar values; the highest unit gets `top`. */
+function buildUnitLegend(
+  entries: ReadonlyArray<{ groupKey: string | null; groupColor: string | null; value: number }>,
+  formatValue: (value: number) => string,
+): UnitLegendItem[] {
+  const rows = new Map<string, { unit: string; color: string | null; sum: number; count: number }>()
+  for (const entry of entries) {
+    if (entry.groupKey == null) {
+      continue
+    }
+
+    let row = rows.get(entry.groupKey)
+    if (!row) {
+      row = { unit: entry.groupKey, color: entry.groupColor, sum: 0, count: 0 }
+      rows.set(entry.groupKey, row)
+    }
+
+    row.sum += entry.value
+    row.count += 1
+  }
+
+  const items = [...rows.values()].map((row) => ({
+    unit: row.unit,
+    color: row.color,
+    average: row.count > 0 ? row.sum / row.count : 0,
+  }))
+  const maxAverage = Math.max(0, ...items.map((item) => item.average))
+  return items.map((item) => ({
+    unit: item.unit,
+    color: item.color,
+    detail: formatValue(item.average),
+    top: items.length > 1 && maxAverage > 0 && item.average === maxAverage,
+  }))
+}
+
+const characterUnitLegend = computed(() => buildUnitLegend(
+  characterRadarEntries.value,
+  (value) => (Math.round(value * 10) / 10).toFixed(1),
+))
+
+const challengeUnitLegend = computed(() => buildUnitLegend(
+  challengeRadarEntries.value,
+  (value) => formatScore(Math.round(value)),
+))
 
 const challengeTop = computed(() => {
   const top = summarizeChallengeLiveTop(challengeCells.value)
@@ -376,7 +439,7 @@ function retry() {
                 class="flex flex-wrap items-center gap-x-2 gap-y-1"
               >
                 <span
-                  class="inline-flex min-w-14 items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold text-white"
+                  class="inline-flex w-16 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
                   :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[row.difficulty] }"
                 >
                   {{ t(`musicLibrary.difficulty.${row.difficulty}`) }}
@@ -409,7 +472,22 @@ function retry() {
             <p v-if="characterRadarEntries.length === 0" class="py-4 text-center text-sm text-muted-foreground">
               {{ t("playerProfile.characters.empty") }}
             </p>
-            <ProfileRadarChart v-else :entries="characterRadarEntries" />
+            <template v-else>
+              <ProfileRadarChart :entries="characterRadarEntries" />
+              <div v-if="characterUnitLegend.length > 0" class="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
+                <span class="text-muted-foreground">{{ t("playerProfile.unitAverage") }}</span>
+                <span
+                  v-for="item in characterUnitLegend"
+                  :key="item.unit"
+                  :class="['inline-flex items-center gap-1', item.top ? 'font-semibold' : 'text-muted-foreground']"
+                >
+                  <span class="size-2.5 rounded-full" :style="{ backgroundColor: item.color ?? 'currentColor' }" />
+                  {{ t(`cards.unit.${item.unit}`) }}
+                  <span class="tabular-nums">{{ item.detail }}</span>
+                  <LucideTrophy v-if="item.top" class="size-3 text-amber-500" />
+                </span>
+              </div>
+            </template>
           </CardContent>
         </Card>
 
@@ -431,6 +509,19 @@ function retry() {
               {{ t("playerProfile.challenge.empty") }}
             </p>
             <ProfileRadarChart :entries="challengeRadarEntries" />
+            <div v-if="challengeUnitLegend.length > 0" class="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
+              <span class="text-muted-foreground">{{ t("playerProfile.unitAverage") }}</span>
+              <span
+                v-for="item in challengeUnitLegend"
+                :key="item.unit"
+                :class="['inline-flex items-center gap-1', item.top ? 'font-semibold' : 'text-muted-foreground']"
+              >
+                <span class="size-2.5 rounded-full" :style="{ backgroundColor: item.color ?? 'currentColor' }" />
+                {{ t(`cards.unit.${item.unit}`) }}
+                <span class="tabular-nums">{{ item.detail }}</span>
+                <LucideTrophy v-if="item.top" class="size-3 text-amber-500" />
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>

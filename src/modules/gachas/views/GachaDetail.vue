@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatLocalizedDateTime } from "@/lib/date-time"
 import {
@@ -169,8 +168,6 @@ const poolFilters = reactive(createDefaultCardFilters())
 const poolPage = ref(1)
 const emptySupplyTypeMap = new Map<number, string>()
 
-const characterOptions = computed(() => [...characterMap.value.values()])
-
 const poolCards = computed<CatalogMasterCard[]>(() => {
   const currentGacha = gacha.value
   if (!currentGacha) {
@@ -192,6 +189,27 @@ const poolCards = computed<CatalogMasterCard[]>(() => {
   }
 
   return cards
+})
+
+/** Characters that actually appear in this pool, in id order. */
+const poolCharacterOptions = computed(() => {
+  const ids = new Set<number>()
+  for (const card of poolCards.value) {
+    if (card.characterId != null) {
+      ids.add(card.characterId)
+    }
+  }
+
+  return [...ids]
+    .sort((a, b) => a - b)
+    .map((id) => {
+      const character = characterMap.value.get(id) ?? null
+      return {
+        id,
+        name: character?.name ?? `#${id}`,
+        iconUrl: character?.iconUrl ?? null,
+      }
+    })
 })
 
 const filteredPoolCards = computed(() => sortCards(
@@ -434,38 +452,6 @@ function goBack() {
         </CardHeader>
         <CardContent class="flex flex-col gap-3">
           <div class="flex flex-wrap items-center gap-2">
-            <Popover>
-              <PopoverTrigger as-child>
-                <Button variant="outline" size="sm" class="gap-1">
-                  {{ t("cards.filter.characters") }}
-                  <span
-                    v-if="poolFilters.characterIds.length > 0"
-                    class="rounded bg-primary px-1 text-[10px] font-semibold text-primary-foreground"
-                  >
-                    {{ poolFilters.characterIds.length }}
-                  </span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent class="w-80 p-2" align="start">
-                <div class="grid grid-cols-2 gap-1">
-                  <button
-                    v-for="character in characterOptions"
-                    :key="character.id"
-                    type="button"
-                    :class="[
-                      'flex items-center gap-2 rounded-md px-2 py-1 text-left text-sm transition-colors',
-                      poolFilters.characterIds.includes(character.id)
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-muted',
-                    ]"
-                    @click="togglePoolCharacter(character.id)"
-                  >
-                    <img :src="character.iconUrl" alt="" class="size-6 shrink-0 rounded-full" loading="lazy">
-                    <span class="truncate">{{ character.name }}</span>
-                  </button>
-                </div>
-              </PopoverContent>
-            </Popover>
             <div class="relative w-full sm:w-64">
               <LucideSearch class="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -484,6 +470,41 @@ function goBack() {
               <LucideRotateCcw class="size-3.5" />
               {{ t("cards.filter.clear") }}
             </Button>
+          </div>
+
+          <div v-if="poolCharacterOptions.length > 0" class="flex flex-wrap items-center gap-1.5">
+            <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cards.filter.characters") }}</span>
+            <button
+              v-for="character in poolCharacterOptions"
+              :key="character.id"
+              type="button"
+              :class="[
+                'relative shrink-0 rounded-full ring-2 transition',
+                poolFilters.characterIds.includes(character.id)
+                  ? 'ring-primary'
+                  : 'ring-transparent hover:ring-border',
+                poolFilters.characterIds.length > 0 && !poolFilters.characterIds.includes(character.id)
+                  ? 'opacity-40 hover:opacity-100'
+                  : '',
+              ]"
+              :title="character.name"
+              :aria-pressed="poolFilters.characterIds.includes(character.id)"
+              @click="togglePoolCharacter(character.id)"
+            >
+              <img
+                v-if="character.iconUrl"
+                :src="character.iconUrl"
+                :alt="character.name"
+                class="size-8 rounded-full"
+                loading="lazy"
+              >
+              <span
+                v-else
+                class="flex size-8 items-center justify-center rounded-full bg-muted font-mono text-[10px] text-muted-foreground"
+              >
+                {{ character.id }}
+              </span>
+            </button>
           </div>
 
           <div class="flex flex-wrap items-center gap-1.5">

@@ -1088,6 +1088,7 @@ export const enUS = {
     refresh: "Refresh",
     dataAsOf: "Data as of {time}",
     unknownCharacter: "Unknown character",
+    unitAverage: "Unit averages",
     header: {
       title: "Basic Info",
       rank: "Lv.{rank}",

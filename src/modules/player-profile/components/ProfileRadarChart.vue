@@ -9,6 +9,12 @@ export type ProfileRadarEntry = {
   detail?: string
   iconUrl?: string | null
   color?: string | null
+  /**
+   * Optional group (e.g. the character's unit). Consecutive entries sharing a
+   * key are filled as one colored sector so groups can be compared at a glance.
+   */
+  groupKey?: string | null
+  groupColor?: string | null
 }
 
 const props = withDefaults(defineProps<{
@@ -64,6 +70,43 @@ const valueVertices = computed(() => props.entries.map((entry, index) => {
 
 const valuePolygon = computed(() => toPolygonPoints(valueVertices.value.map((vertex) => vertex.point)))
 
+/** Center-fanned sectors for consecutive runs of same-group entries. */
+const groupSectors = computed(() => {
+  const sectors: Array<{ id: string; color: string | null; points: string }> = []
+  let run: { key: string; color: string | null; points: Array<{ x: number; y: number }> } | null = null
+
+  const flush = () => {
+    if (run && run.points.length > 0) {
+      sectors.push({
+        id: `${run.key}-${sectors.length}`,
+        color: run.color,
+        points: toPolygonPoints([{ x: center.value, y: center.value }, ...run.points]),
+      })
+    }
+    run = null
+  }
+
+  for (const vertex of valueVertices.value) {
+    const key = vertex.entry.groupKey
+    if (key == null) {
+      flush()
+      continue
+    }
+
+    if (run == null || run.key !== key) {
+      flush()
+      run = { key, color: vertex.entry.groupColor ?? null, points: [] }
+    }
+
+    run.points.push(vertex.point)
+  }
+  flush()
+
+  return sectors
+})
+
+const hasGroups = computed(() => groupSectors.value.length > 0)
+
 const iconPositions = computed(() => props.entries.map((entry, index) => {
   const point = pointAt(index, radius.value + LABEL_MARGIN / 2 + 1)
   return { entry, x: point.x - ICON_SIZE / 2, y: point.y - ICON_SIZE / 2, cx: point.x, cy: point.y }
@@ -102,9 +145,20 @@ function hideTooltip() {
         stroke-width="1"
       />
       <polygon
-        :points="valuePolygon"
-        class="fill-primary/25 stroke-primary"
+        v-for="sector in groupSectors"
+        :key="sector.id"
+        :points="sector.points"
+        :fill="sector.color ?? 'currentColor'"
+        fill-opacity="0.3"
+        :stroke="sector.color ?? 'currentColor'"
         stroke-width="1.5"
+        stroke-linejoin="round"
+        class="text-primary"
+      />
+      <polygon
+        :points="valuePolygon"
+        :class="hasGroups ? 'fill-none stroke-primary/40' : 'fill-primary/25 stroke-primary'"
+        :stroke-width="hasGroups ? 1 : 1.5"
         stroke-linejoin="round"
       />
       <circle
