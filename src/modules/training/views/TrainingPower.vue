@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { useTrainingPower } from "@/modules/training/composables/useTrainingPower"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   buildPowerBonuses,
   collectUserAreaItemLevels,
@@ -54,7 +55,7 @@ const uploadTimeText = computed(() => {
   }
 
   return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(uploadTime.value)
+    .format(suiteUploadTimeToMillis(uploadTime.value))
 })
 
 const bonuses = computed(() => buildPowerBonuses({

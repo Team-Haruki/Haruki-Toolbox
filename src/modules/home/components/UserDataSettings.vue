@@ -35,6 +35,7 @@ import {
   readDeckRecommendProfileCache,
   readDeckRecommendUserDataCache,
 } from "@/modules/deck-recommend/lib/user-data-cache"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import { clearUserSuiteSubsetCache, readUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
@@ -246,11 +247,7 @@ function formatTime(value: number | null) {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(normalizeTimestampForDate(value))
-}
-
-function normalizeTimestampForDate(value: number) {
-  return value < 1_000_000_000_000 ? value * 1000 : value
+  }).format(suiteUploadTimeToMillis(value))
 }
 </script>
 

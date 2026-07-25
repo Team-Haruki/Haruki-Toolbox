@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTrainingChallenge } from "@/modules/training/composables/useTrainingChallenge"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   CHALLENGE_SORT_MODES,
   buildChallengeGrid,
@@ -59,7 +60,7 @@ const uploadTimeText = computed(() => {
   }
 
   return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(uploadTime.value)
+    .format(suiteUploadTimeToMillis(uploadTime.value))
 })
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))

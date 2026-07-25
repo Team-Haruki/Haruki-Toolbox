@@ -8,6 +8,7 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useTrainingMissions } from "@/modules/training/composables/useTrainingMissions"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   buildCharacterMissionSummary,
   type CharacterMissionRowView,
@@ -57,7 +58,7 @@ const uploadTimeText = computed(() => {
   }
 
   return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(uploadTime.value)
+    .format(suiteUploadTimeToMillis(uploadTime.value))
 })
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))

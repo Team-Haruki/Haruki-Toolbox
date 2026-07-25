@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { SEKAI_CARD_ATTRS, SEKAI_UNITS, type SekaiUnit } from "@/shared/sekai/catalog"
 import { resolveCardAttrIconUrl, resolveSekaiGameAssetUrl } from "@/shared/sekai/data-sources"
 import { useTrainingArea } from "@/modules/training/composables/useTrainingArea"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   areaItemIconAssetPath,
   buildAreaItemViews,
@@ -73,7 +74,7 @@ const uploadTimeText = computed(() => {
   }
 
   return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(uploadTime.value)
+    .format(suiteUploadTimeToMillis(uploadTime.value))
 })
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))

@@ -13,6 +13,7 @@ import {
   normalizeUserBonds,
 } from "@/modules/training/lib/bonds"
 import { normalizeUserCharacterRanks } from "@/modules/training/lib/power-bonus"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 
 const { t, locale } = useI18n()
 
@@ -57,7 +58,7 @@ const uploadTimeText = computed(() => {
   }
 
   return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(uploadTime.value)
+    .format(suiteUploadTimeToMillis(uploadTime.value))
 })
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))

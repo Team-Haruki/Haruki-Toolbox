@@ -23,6 +23,7 @@ import type { SekaiRegion } from "@/types"
 import MusicJacket from "../components/MusicJacket.vue"
 import { useMusicProgressMasterData } from "../composables/useMusicProgressMasterData"
 import { resolveMusicJacketUrl } from "../lib/music-assets"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   MUSIC_DIFFICULTIES,
   MUSIC_DIFFICULTY_COLORS,
@@ -113,7 +114,7 @@ const dateTimeFormatter = computed(() =>
 )
 const uploadTimeLabel = computed(() => {
   const timestamp = suite.uploadTime.value
-  return timestamp != null ? dateTimeFormatter.value.format(new Date(timestamp)) : null
+  return timestamp != null ? dateTimeFormatter.value.format(new Date(suiteUploadTimeToMillis(timestamp))) : null
 })
 
 watch(

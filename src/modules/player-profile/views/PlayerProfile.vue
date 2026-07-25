@@ -29,6 +29,7 @@ import { buildCardThumbnailView, type DeckRecommendMasterCard } from "@/modules/
 import { MUSIC_DIFFICULTIES, MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
 import { MUSIC_PROGRESS_STATUS_COLORS, buildMusicProgress } from "@/modules/music-library/lib/music-progress"
 import { useMusicProgressMasterData } from "@/modules/music-library/composables/useMusicProgressMasterData"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 
 const { t, locale } = useI18n()
 
@@ -76,7 +77,7 @@ const uploadTimeText = computed(() => {
   }
 
   return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(uploadTime.value)
+    .format(suiteUploadTimeToMillis(uploadTime.value))
 })
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))

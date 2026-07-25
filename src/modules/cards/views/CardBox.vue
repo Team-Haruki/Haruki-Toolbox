@@ -34,6 +34,7 @@ import {
 } from "@/modules/cards/lib/card-box"
 import { useCardBoxCatalog } from "@/modules/cards/composables/useCardBoxCatalog"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 
 const { t, locale } = useI18n()
 
@@ -98,7 +99,7 @@ const uploadTimeText = computed(() => {
   }
 
   return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(uploadTime.value)
+    .format(suiteUploadTimeToMillis(uploadTime.value))
 })
 
 type CardView = {

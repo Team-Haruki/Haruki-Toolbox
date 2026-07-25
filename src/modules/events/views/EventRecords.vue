@@ -37,6 +37,7 @@ import type { SekaiRegion } from "@/types"
 import EventBannerImage from "../components/EventBannerImage.vue"
 import EventTypeBadge from "../components/EventTypeBadge.vue"
 import { useEventRecordsMaster } from "../composables/useEventRecordsMaster"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   buildEventPointTrend,
   buildEventRecordRows,
@@ -104,7 +105,7 @@ const summaryChips = computed(() => [
 
 const uploadTimeText = computed(() =>
   formatLocalizedDateTime(
-    suite.uploadTime.value,
+    suite.uploadTime.value == null ? null : suiteUploadTimeToMillis(suite.uploadTime.value),
     { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" },
     t("events.common.dateFallback"),
   ),

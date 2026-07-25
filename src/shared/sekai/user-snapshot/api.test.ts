@@ -20,6 +20,7 @@ const {
   makeSuiteSubsetSignature,
   normalizeSuiteSubsetKeys,
   normalizeSuiteUploadTime,
+  suiteUploadTimeToMillis,
   unwrapSuiteSubsetResponse,
 } = await import("./api")
 
@@ -61,6 +62,16 @@ describe("normalizeSuiteUploadTime", () => {
     expect(normalizeSuiteUploadTime(0)).toBeNull()
     expect(normalizeSuiteUploadTime("abc")).toBeNull()
     expect(normalizeSuiteUploadTime(null)).toBeNull()
+  })
+})
+
+describe("suiteUploadTimeToMillis", () => {
+  test("scales epoch seconds to milliseconds", () => {
+    expect(suiteUploadTimeToMillis(1779105682)).toBe(1779105682000)
+  })
+
+  test("passes millisecond values through unchanged", () => {
+    expect(suiteUploadTimeToMillis(1779105682333)).toBe(1779105682333)
   })
 })
 

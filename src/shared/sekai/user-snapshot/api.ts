@@ -63,6 +63,14 @@ export function normalizeSuiteUploadTime(value: unknown): number | null {
   return null
 }
 
+/**
+ * The backend reports `upload_time` in epoch seconds while `Date`/`Intl`
+ * expect milliseconds. Values already in milliseconds pass through unchanged.
+ */
+export function suiteUploadTimeToMillis(value: number): number {
+  return value < 1_000_000_000_000 ? value * 1000 : value
+}
+
 export function unwrapSuiteSubsetResponse(value: unknown): Record<string, unknown> {
   const data = unwrapSuiteSubsetValue(value)
   if (!data) {
