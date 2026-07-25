@@ -71,6 +71,43 @@ describe("normalizeAreaShopResourceBoxDetails", () => {
 
     expect(details).toEqual([{ resourceBoxId: 1, areaItemId: 3, level: 2 }])
   })
+
+  test("flattens the nested resourceBoxes dump shape (jp/en)", () => {
+    const details = normalizeAreaShopResourceBoxDetails([
+      {
+        resourceBoxPurpose: "shop_item",
+        id: 1001,
+        resourceBoxType: "expand",
+        details: [
+          { resourceBoxPurpose: "shop_item", resourceBoxId: 1001, seq: 1, resourceType: "area_item", resourceId: 1, resourceLevel: 1, resourceQuantity: 1 },
+        ],
+      },
+      {
+        resourceBoxPurpose: "challenge_live_high_score",
+        id: 5,
+        details: [
+          { resourceBoxPurpose: "challenge_live_high_score", resourceBoxId: 5, seq: 1, resourceType: "jewel", resourceQuantity: 10 },
+        ],
+      },
+    ])
+
+    expect(details).toEqual([{ resourceBoxId: 1001, areaItemId: 1, level: 1 }])
+  })
+
+  test("merges the separate resourceBoxDetails rows without duplicating flat boxes (tw/kr/cn)", () => {
+    const details = normalizeAreaShopResourceBoxDetails(
+      [
+        // Flat box rows carry `id` and no resourceType — they must not match.
+        { assetbundleName: null, resourceBoxPurpose: "shop_item", name: null, id: 1001, resourceBoxType: "expand" },
+      ],
+      [
+        { resourceBoxId: 1001, resourceQuantity: 1, resourceId: 2, resourceBoxPurpose: "shop_item", resourceLevel: 3, resourceType: "area_item" },
+        { resourceBoxId: 1, resourceQuantity: 1, resourceId: 1, resourceBoxPurpose: "ad_reward", resourceLevel: null, resourceType: "ad_reward_random_box" },
+      ],
+    )
+
+    expect(details).toEqual([{ resourceBoxId: 1001, areaItemId: 2, level: 3 }])
+  })
 })
 
 describe("collectUserAreaItemLevels", () => {

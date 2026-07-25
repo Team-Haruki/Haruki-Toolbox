@@ -194,11 +194,25 @@ export function normalizeAreaShopItems(raw: unknown): AreaShopItem[] {
 /**
  * Keeps only `resourceBoxPurpose == "shop_item"` rows granting an
  * `area_item` (Go reads resourceBoxes by purpose then filters details the
- * same way).
+ * same way). Region dumps differ: jp/en nest the detail rows inside
+ * `resourceBoxes.json` (`details` arrays), while tw/kr/cn keep the boxes
+ * flat and ship the rows in a separate `resourceBoxDetails.json` — so both
+ * sources are merged here. Flat box rows carry no `resourceType` and fall
+ * out of the filter, which keeps the merge duplicate-free.
  */
-export function normalizeAreaShopResourceBoxDetails(raw: unknown): AreaShopResourceBoxDetail[] {
+export function normalizeAreaShopResourceBoxDetails(rawBoxes: unknown, rawDetails?: unknown): AreaShopResourceBoxDetail[] {
+  const rows: Record<string, unknown>[] = []
+  for (const record of normalizeCatalogRecords(rawBoxes)) {
+    if (Array.isArray(record.details)) {
+      rows.push(...normalizeCatalogRecords(record.details))
+    } else {
+      rows.push(record)
+    }
+  }
+  rows.push(...normalizeCatalogRecords(rawDetails))
+
   const details: AreaShopResourceBoxDetail[] = []
-  for (const record of normalizeCatalogRecords(raw)) {
+  for (const record of rows) {
     if (normalizeCatalogString(record.resourceBoxPurpose).toLowerCase() !== "shop_item") {
       continue
     }

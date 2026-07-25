@@ -57,6 +57,9 @@ export const SEKAI_DATA_TOOLBOX_MASTER_FILES = SEKAI_DATA_RECOMMEND_FETCH_MASTER
 
 export const SEKAI_DATA_OPTIONAL_MASTER_FILES = [
   ...SEKAI_DATA_RECOMMEND_OPTIONAL_MASTER_FILES,
+  // Only the tw/kr/cn dumps ship a flat resourceBoxDetails.json; jp/en embed
+  // the details inside resourceBoxes.json instead.
+  "resourceBoxDetails",
 ] as const
 
 export type SekaiDataUpdatePhase =

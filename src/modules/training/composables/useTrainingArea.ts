@@ -27,6 +27,7 @@ export const TRAINING_AREA_MASTER_FILES = [
   "areaItems",
   "areaItemLevels",
   "shopItems",
+  "resourceBoxes",
   "resourceBoxDetails",
   "gameCharacters",
   "gameCharacterUnits",
@@ -85,7 +86,7 @@ export function useTrainingArea() {
       areaItems.value = normalizeAreaItems(files.areaItems)
       areaItemLevels.value = normalizeAreaItemLevels(files.areaItemLevels)
       shopItems.value = normalizeAreaShopItems(files.shopItems)
-      shopDetails.value = normalizeAreaShopResourceBoxDetails(files.resourceBoxDetails)
+      shopDetails.value = normalizeAreaShopResourceBoxDetails(files.resourceBoxes, files.resourceBoxDetails)
       characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
       unitColorMap.value = buildCatalogUnitColorMap(files.gameCharacterUnits)
     } catch (loadError) {
