@@ -414,20 +414,21 @@ function retry() {
 
         <Card>
           <CardHeader class="pb-2">
-            <CardTitle class="text-base">{{ t("playerProfile.challenge.title") }}</CardTitle>
+            <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
+              {{ t("playerProfile.challenge.title") }}
+              <span
+                v-if="challengeTop"
+                class="inline-flex items-center gap-1.5 text-sm font-normal text-muted-foreground"
+              >
+                <LucideTrophy class="size-4 shrink-0 text-amber-500" />
+                {{ t("playerProfile.challenge.summary", { name: challengeTop.name, score: formatScore(challengeTop.highScore) }) }}
+              </span>
+            </CardTitle>
           </CardHeader>
-          <CardContent class="flex flex-col gap-3">
-            <p
-              v-if="challengeTop"
-              class="inline-flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground"
-            >
-              <LucideTrophy class="size-4 shrink-0 text-amber-500" />
-              {{ t("playerProfile.challenge.summary", { name: challengeTop.name, score: formatScore(challengeTop.highScore) }) }}
-            </p>
-            <p v-else class="text-sm text-muted-foreground">
+          <CardContent>
+            <p v-if="!challengeTop" class="py-4 text-center text-sm text-muted-foreground">
               {{ t("playerProfile.challenge.empty") }}
             </p>
-
             <ProfileRadarChart :entries="challengeRadarEntries" />
           </CardContent>
         </Card>
