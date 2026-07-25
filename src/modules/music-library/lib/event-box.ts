@@ -12,17 +12,27 @@ export type EventBoxInfo = {
 }
 
 /**
- * Community "N箱" (box) counting: a regular event's banner character is the
+ * Community "N箱" (box) counting: a unit event's banner character is the
  * character of its lowest-id 4★ event card, and the box number is the ordinal
  * of that event among the character's banner events, ordered by startAt.
- * World Link (world_bloom) events feature a whole unit and count as nobody's
- * box.
+ * Mixed events (event cards spanning multiple non-VS units) and World Link
+ * (world_bloom) events count as nobody's box.
  */
 export function buildEventBoxMap(
   rawEvents: unknown,
   rawEventCards: unknown,
   rawCards: unknown,
+  rawGameCharacters: unknown,
 ): Map<number, EventBoxInfo> {
+  const unitByCharacter = new Map<number, string>()
+  for (const record of normalizeCatalogRecords(rawGameCharacters)) {
+    const id = normalizeCatalogNumber(record.id)
+    const unit = normalizeCatalogString(record.unit)
+    if (id && unit) {
+      unitByCharacter.set(id, unit)
+    }
+  }
+
   const cardById = new Map<number, { characterId: number; rarity: string }>()
   for (const record of normalizeCatalogRecords(rawCards)) {
     const id = normalizeCatalogNumber(record.id)
@@ -32,8 +42,10 @@ export function buildEventBoxMap(
     }
   }
 
-  // eventId -> lowest 4★ cardId among its event cards.
+  // eventId -> lowest 4★ cardId, plus the distinct non-VS units of all event
+  // cards (two or more units means a mixed event, which is not a box).
   const bannerCardByEvent = new Map<number, number>()
+  const unitsByEvent = new Map<number, Set<string>>()
   for (const record of normalizeCatalogRecords(rawEventCards)) {
     const eventId = normalizeCatalogNumber(record.eventId)
     const cardId = normalizeCatalogNumber(record.cardId)
@@ -42,7 +54,21 @@ export function buildEventBoxMap(
     }
 
     const card = cardById.get(cardId)
-    if (card == null || card.rarity !== "rarity_4") {
+    if (card == null) {
+      continue
+    }
+
+    const unit = unitByCharacter.get(card.characterId)
+    if (unit && unit !== "piapro") {
+      let units = unitsByEvent.get(eventId)
+      if (!units) {
+        units = new Set()
+        unitsByEvent.set(eventId, units)
+      }
+      units.add(unit)
+    }
+
+    if (card.rarity !== "rarity_4") {
       continue
     }
 
@@ -66,6 +92,10 @@ export function buildEventBoxMap(
   const counters = new Map<number, number>()
   const map = new Map<number, EventBoxInfo>()
   for (const event of events) {
+    if ((unitsByEvent.get(event.id)?.size ?? 0) >= 2) {
+      continue
+    }
+
     const bannerCardId = bannerCardByEvent.get(event.id)
     const characterId = bannerCardId != null ? cardById.get(bannerCardId)?.characterId ?? null : null
     if (characterId == null) {

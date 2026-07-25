@@ -54,7 +54,7 @@ export function useMusicLibraryList(region: Ref<SekaiRegion>) {
       characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
       musicEventBoxes.value = buildMusicEventBoxMap(
         files.eventMusics,
-        buildEventBoxMap(files.events, files.eventCards, files.cards),
+        buildEventBoxMap(files.events, files.eventCards, files.cards, files.gameCharacters),
       )
     } catch (loadError) {
       entries.value = []

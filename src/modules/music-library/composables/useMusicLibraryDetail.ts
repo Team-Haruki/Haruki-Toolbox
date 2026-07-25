@@ -81,7 +81,7 @@ export function useMusicLibraryDetail(region: Ref<SekaiRegion>, musicId: Ref<num
       characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
       outsideCharacterNames.value = buildOutsideCharacterNameMap(files.outsideCharacters)
       eventLinks.value = listMusicEventLinks(files.eventMusics, files.events, targetMusicId)
-      eventBoxMap.value = buildEventBoxMap(files.events, files.eventCards, files.cards)
+      eventBoxMap.value = buildEventBoxMap(files.events, files.eventCards, files.cards, files.gameCharacters)
       durationSeconds.value = findMusicDurationSeconds(musicMetas, targetMusicId)
     } catch (loadError) {
       entry.value = null
