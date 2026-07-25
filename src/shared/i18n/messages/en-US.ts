@@ -907,6 +907,7 @@ export const enUS = {
       title: "Collection stats",
       toggle: "Stats",
       byCharacter: "By character",
+      byUnit: "By unit",
       byAttr: "By attribute",
       ownedOfTotal: "{owned}/{total}",
       percent: "{percent}%",

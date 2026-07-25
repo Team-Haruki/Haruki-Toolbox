@@ -1,6 +1,7 @@
-import type { CatalogMasterCard } from "@/shared/sekai/catalog"
+import type { CatalogMasterCard, SekaiUnit } from "@/shared/sekai/catalog"
 import {
   SEKAI_CARD_ATTRS,
+  SEKAI_UNITS,
   normalizeCatalogNumber,
   normalizeCatalogRecords,
   normalizeCatalogString,
@@ -249,6 +250,64 @@ export function buildAttrDistribution(
   }
 
   return sorted
+}
+
+export type UnitDistributionRow = {
+  unit: SekaiUnit
+  owned: number
+  total: number
+  percent: number
+}
+
+/**
+ * Per-unit owned/total rows following the canonical unit order. Cards whose
+ * character is unknown (or has no unit) are skipped.
+ */
+export function buildUnitDistribution(
+  cards: readonly CatalogMasterCard[],
+  ownedMap: ReadonlyMap<number, UserCardRecord>,
+  unitOf: (characterId: number) => SekaiUnit | null,
+): UnitDistributionRow[] {
+  const rows = new Map<SekaiUnit, UnitDistributionRow>()
+  for (const card of cards) {
+    const unit = card.characterId != null ? unitOf(card.characterId) : null
+    if (unit == null) {
+      continue
+    }
+
+    let row = rows.get(unit)
+    if (!row) {
+      row = { unit, owned: 0, total: 0, percent: 0 }
+      rows.set(unit, row)
+    }
+
+    row.total += 1
+    if (ownedMap.has(card.id)) {
+      row.owned += 1
+    }
+  }
+
+  const order = new Map<string, number>(SEKAI_UNITS.map((unit, index) => [unit, index]))
+  const sorted = [...rows.values()].sort(
+    (a, b) => (order.get(a.unit) ?? SEKAI_UNITS.length) - (order.get(b.unit) ?? SEKAI_UNITS.length),
+  )
+  for (const row of sorted) {
+    row.percent = computeCollectionPercent(row.owned, row.total)
+  }
+
+  return sorted
+}
+
+/** Restricts to the given rarities; an empty selection keeps every card. */
+export function filterCardsByRarity(
+  cards: readonly CatalogMasterCard[],
+  rarities: readonly CardRarityType[],
+): CatalogMasterCard[] {
+  if (rarities.length === 0) {
+    return [...cards]
+  }
+
+  return cards.filter((card) => (rarities as readonly string[]).includes(card.cardRarityType))
 }
 
 export function summarizeCollection(

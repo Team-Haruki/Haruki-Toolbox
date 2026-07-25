@@ -5,7 +5,9 @@ import {
   buildAttrDistribution,
   buildCharacterDistribution,
   buildOwnedCardMap,
+  buildUnitDistribution,
   computeCollectionPercent,
+  filterCardsByRarity,
   filterReleasedCards,
   groupCardsByAttr,
   groupCardsByCharacter,
@@ -239,6 +241,43 @@ describe("buildAttrDistribution / summarizeCollection", () => {
   it("summarizes the overall collection", () => {
     expect(summarizeCollection(cards, ownedMap)).toEqual({ owned: 1, total: 3, percent: 33.3 })
     expect(summarizeCollection([], ownedMap)).toEqual({ owned: 0, total: 0, percent: 0 })
+  })
+})
+
+describe("buildUnitDistribution", () => {
+  it("groups by resolved unit in canonical order and skips unitless cards", () => {
+    const cards = [
+      makeCard({ id: 1, characterId: 21 }), // piapro
+      makeCard({ id: 2, characterId: 1 }), // light_sound
+      makeCard({ id: 3, characterId: 1 }),
+      makeCard({ id: 4, characterId: null }),
+      makeCard({ id: 5, characterId: 99 }), // unknown character
+    ]
+    const ownedMap = buildOwnedCardMap(normalizeUserCards([makeUserCard(2), makeUserCard(1)]))
+    const unitOf = (characterId: number) => {
+      if (characterId === 1) {
+        return "light_sound" as const
+      }
+      return characterId === 21 ? ("piapro" as const) : null
+    }
+
+    expect(buildUnitDistribution(cards, ownedMap, unitOf)).toEqual([
+      { unit: "light_sound", owned: 1, total: 2, percent: 50 },
+      { unit: "piapro", owned: 1, total: 1, percent: 100 },
+    ])
+  })
+})
+
+describe("filterCardsByRarity", () => {
+  it("restricts to the selected rarities and keeps everything for an empty selection", () => {
+    const cards = [
+      makeCard({ id: 1, cardRarityType: "rarity_4" }),
+      makeCard({ id: 2, cardRarityType: "rarity_2" }),
+      makeCard({ id: 3, cardRarityType: "rarity_birthday" }),
+    ]
+
+    expect(filterCardsByRarity(cards, []).map((card) => card.id)).toEqual([1, 2, 3])
+    expect(filterCardsByRarity(cards, ["rarity_4", "rarity_birthday"]).map((card) => card.id)).toEqual([1, 3])
   })
 })
 

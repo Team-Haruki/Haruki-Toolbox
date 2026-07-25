@@ -10,9 +10,9 @@ import { LucideChartPie, LucideRefreshCw } from "lucide-vue-next"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import type { CatalogMasterCard } from "@/shared/sekai/catalog"
-import { SEKAI_CARD_ATTRS, buildCatalogCardThumbnail, resolveSekaiCharacterColor, type SekaiCardThumbnailView } from "@/shared/sekai/catalog"
+import { SEKAI_CARD_ATTRS, buildCatalogCardThumbnail, resolveSekaiCharacterColor, type SekaiCardThumbnailView, type SekaiUnit } from "@/shared/sekai/catalog"
 import { resolveTrainRankImageUrl } from "@/shared/sekai/data-sources"
-import { resolveCardAttrIconUrl } from "@/shared/sekai/data-sources"
+import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import type { SekaiRegion } from "@/types"
 import { CARD_RARITY_TYPES, sortCards, type CardRarityType } from "@/modules/cards/lib/card-filter"
 import {
@@ -22,6 +22,8 @@ import {
   buildAttrDistribution,
   buildCharacterDistribution,
   buildOwnedCardMap,
+  buildUnitDistribution,
+  filterCardsByRarity,
   filterReleasedCards,
   groupCardsByAttr,
   groupCardsByCharacter,
@@ -62,19 +64,25 @@ const {
 const groupMode = ref<CardBoxGroupMode>("character")
 const ownership = ref<CardOwnershipFilter>("all")
 const flatAttrs = ref<string[]>([])
-const flatRarities = ref<CardRarityType[]>([])
-const showStats = ref(true)
+const rarityFilter = ref<CardRarityType[]>([])
+const showStats = ref(false)
 
 const now = Date.now()
 
 const userCards = computed(() => normalizeUserCards(suiteData.value?.userCards))
 const ownedMap = computed(() => buildOwnedCardMap(userCards.value))
 const releasedCards = computed(() => sortCards(filterReleasedCards(cards.value, now), "idAsc"))
-const visibleCards = computed(() => applyOwnershipFilter(releasedCards.value, ownedMap.value, ownership.value))
+const rarityCards = computed(() => filterCardsByRarity(releasedCards.value, rarityFilter.value))
+const visibleCards = computed(() => applyOwnershipFilter(rarityCards.value, ownedMap.value, ownership.value))
 
-const overall = computed(() => summarizeCollection(releasedCards.value, ownedMap.value))
-const characterDistribution = computed(() => buildCharacterDistribution(releasedCards.value, ownedMap.value))
-const attrDistribution = computed(() => buildAttrDistribution(releasedCards.value, ownedMap.value))
+const overall = computed(() => summarizeCollection(rarityCards.value, ownedMap.value))
+const characterDistribution = computed(() => buildCharacterDistribution(rarityCards.value, ownedMap.value))
+const attrDistribution = computed(() => buildAttrDistribution(rarityCards.value, ownedMap.value))
+const unitDistribution = computed(() => buildUnitDistribution(
+  rarityCards.value,
+  ownedMap.value,
+  (characterId) => characterMap.value.get(characterId)?.unit ?? null,
+))
 
 const isLoading = computed(() => suiteStatus.value === "loading" || catalogLoading.value)
 const hasError = computed(() => suiteStatus.value === "error" || catalogError.value != null)
@@ -159,15 +167,9 @@ const attrSections = computed(() => {
 })
 
 const flatViews = computed(() => {
-  let flatCards = visibleCards.value
-  if (flatAttrs.value.length > 0) {
-    flatCards = flatCards.filter((card) => flatAttrs.value.includes(card.attr))
-  }
-
-  if (flatRarities.value.length > 0) {
-    flatCards = flatCards.filter((card) => (flatRarities.value as readonly string[]).includes(card.cardRarityType))
-  }
-
+  const flatCards = flatAttrs.value.length > 0
+    ? visibleCards.value.filter((card) => flatAttrs.value.includes(card.attr))
+    : visibleCards.value
   return flatCards.map(makeCardView)
 })
 
@@ -184,9 +186,17 @@ const statsCharacterRows = computed(() => characterDistribution.value.map((row) 
     owned: row.owned,
     total: row.total,
     percent: row.percent,
+    color: resolveSekaiCharacterColor(row.characterId),
     buckets: statsRarityColumns.value.map((rarity) => ({ rarity, ...row.rarityBuckets[rarity] })),
   }
 }))
+
+const statsUnitRows = computed(() => unitDistribution.value.map((row) => ({
+  ...row,
+  name: t(`cards.unit.${row.unit}`),
+  logoUrl: resolveUnitLogoUrl(row.unit),
+  color: unitColorMap.value.get(row.unit) ?? null,
+})))
 
 const statsAttrRows = computed(() => attrDistribution.value.map((row) => ({
   ...row,
@@ -225,13 +235,21 @@ function toggleFlatAttr(attr: string) {
   }
 }
 
-function toggleFlatRarity(rarity: CardRarityType) {
-  const index = flatRarities.value.indexOf(rarity)
+function toggleRarity(rarity: CardRarityType) {
+  const index = rarityFilter.value.indexOf(rarity)
   if (index >= 0) {
-    flatRarities.value.splice(index, 1)
+    rarityFilter.value.splice(index, 1)
   } else {
-    flatRarities.value.push(rarity)
+    rarityFilter.value.push(rarity)
   }
+}
+
+const failedUnitLogos = ref<Set<SekaiUnit>>(new Set())
+
+function markUnitLogoFailed(unit: SekaiUnit) {
+  const next = new Set(failedUnitLogos.value)
+  next.add(unit)
+  failedUnitLogos.value = next
 }
 
 function refresh() {
@@ -337,6 +355,24 @@ function retry() {
             </div>
           </div>
 
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.filter.rarity") }}</span>
+            <button
+              v-for="rarity in CARD_RARITY_TYPES"
+              :key="rarity"
+              type="button"
+              :class="[
+                'rounded-full border px-2.5 py-1 text-xs transition-colors',
+                rarityFilter.includes(rarity)
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border hover:bg-muted',
+              ]"
+              @click="toggleRarity(rarity)"
+            >
+              {{ t(`cards.rarity.${rarity}`) }}
+            </button>
+          </div>
+
           <!-- Flat-mode filters -->
           <template v-if="groupMode === 'all'">
             <div class="flex flex-wrap items-center gap-1.5">
@@ -355,23 +391,6 @@ function retry() {
               >
                 <img :src="resolveCardAttrIconUrl(attr)" alt="" class="size-4" loading="lazy">
                 {{ t(`cards.attr.${attr}`) }}
-              </button>
-            </div>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.filter.rarity") }}</span>
-              <button
-                v-for="rarity in CARD_RARITY_TYPES"
-                :key="rarity"
-                type="button"
-                :class="[
-                  'rounded-full border px-2.5 py-1 text-xs transition-colors',
-                  flatRarities.includes(rarity)
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border hover:bg-muted',
-                ]"
-                @click="toggleFlatRarity(rarity)"
-              >
-                {{ t(`cards.rarity.${rarity}`) }}
               </button>
             </div>
           </template>
@@ -398,6 +417,7 @@ function retry() {
                   <tr class="text-[11px] text-muted-foreground">
                     <th class="px-1 py-1 text-left font-medium" scope="col" />
                     <th class="px-1 py-1 text-right font-medium" scope="col" />
+                    <th class="px-1 py-1 font-medium" scope="col" />
                     <th
                       v-for="rarity in statsRarityColumns"
                       :key="rarity"
@@ -424,6 +444,14 @@ function retry() {
                       {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
                       ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
                     </td>
+                    <td class="px-1.5 py-1">
+                      <div class="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                        <div
+                          class="h-full rounded-full bg-primary"
+                          :style="{ width: `${row.percent}%`, ...(row.color ? { backgroundColor: row.color } : {}) }"
+                        />
+                      </div>
+                    </td>
                     <td
                       v-for="bucket in row.buckets"
                       :key="bucket.rarity"
@@ -436,20 +464,57 @@ function retry() {
               </table>
             </div>
           </div>
-          <div class="flex flex-col gap-1">
-            <h3 class="mb-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byAttr") }}</h3>
-            <div
-              v-for="row in statsAttrRows"
-              :key="row.attr"
-              class="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-muted/50"
-            >
-              <img :src="row.iconUrl" alt="" class="size-5 shrink-0" loading="lazy">
-              <span class="w-20 truncate text-xs">{{ row.name }}</span>
-              <span class="text-xs tabular-nums text-muted-foreground">
-                {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
-                ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
-              </span>
-              <Progress :model-value="row.percent" class="ml-auto h-1.5 w-16" />
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
+              <h3 class="mb-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byUnit") }}</h3>
+              <div
+                v-for="row in statsUnitRows"
+                :key="row.unit"
+                class="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-muted/50"
+              >
+                <span class="flex w-9 shrink-0 justify-center">
+                  <img
+                    v-if="!failedUnitLogos.has(row.unit)"
+                    :src="row.logoUrl"
+                    alt=""
+                    class="h-4 w-auto max-w-9 object-contain"
+                    loading="lazy"
+                    @error="markUnitLogoFailed(row.unit)"
+                  >
+                  <span
+                    v-else
+                    class="size-2.5 rounded-full"
+                    :style="{ backgroundColor: row.color ?? 'var(--muted-foreground)' }"
+                  />
+                </span>
+                <span class="w-20 truncate text-xs" :title="row.name">{{ row.name }}</span>
+                <span class="text-xs tabular-nums text-muted-foreground">
+                  {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
+                  ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
+                </span>
+                <div class="ml-auto h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-muted">
+                  <div
+                    class="h-full rounded-full bg-primary"
+                    :style="{ width: `${row.percent}%`, ...(row.color ? { backgroundColor: row.color } : {}) }"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1">
+              <h3 class="mb-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byAttr") }}</h3>
+              <div
+                v-for="row in statsAttrRows"
+                :key="row.attr"
+                class="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-muted/50"
+              >
+                <img :src="row.iconUrl" alt="" class="size-5 shrink-0" loading="lazy">
+                <span class="w-20 truncate text-xs">{{ row.name }}</span>
+                <span class="text-xs tabular-nums text-muted-foreground">
+                  {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
+                  ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
+                </span>
+                <Progress :model-value="row.percent" class="ml-auto h-1.5 w-16 shrink-0" />
+              </div>
             </div>
           </div>
         </CardContent>

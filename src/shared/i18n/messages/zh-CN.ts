@@ -907,6 +907,7 @@ export const zhCN = {
       title: "收集统计",
       toggle: "统计",
       byCharacter: "按角色",
+      byUnit: "按团体",
       byAttr: "按属性",
       ownedOfTotal: "{owned}/{total}",
       percent: "{percent}%",
