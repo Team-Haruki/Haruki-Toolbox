@@ -12,6 +12,11 @@ const props = withDefaults(defineProps<{
   cornerBadge?: string | null
   /** When set, renders the game-style bottom band with this text on its left. */
   levelLabel?: string | null
+  /**
+   * Forces the bottom band (and the raised star row) even without a level
+   * label, so grids mixing labelled and unlabelled cards stay aligned.
+   */
+  levelBand?: boolean
 }>(), {
   size: "fluid",
   trained: false,
@@ -19,6 +24,7 @@ const props = withDefaults(defineProps<{
   title: null,
   cornerBadge: null,
   levelLabel: null,
+  levelBand: false,
 })
 
 const { t } = useI18n()
@@ -58,6 +64,8 @@ watch(artUrl, () => {
 })
 
 const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCount }, (_, index) => index))
+
+const showBand = computed(() => props.levelBand || props.levelLabel != null)
 </script>
 
 <template>
@@ -81,7 +89,7 @@ const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCoun
     </div>
 
     <span
-      v-if="levelLabel"
+      v-if="showBand"
       class="absolute inset-x-0 bottom-0 h-[18.75%] bg-[rgb(70_70_100)]"
       aria-hidden="true"
     />
@@ -103,7 +111,7 @@ const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCoun
       v-if="thumbnail.rareIconUrl && rareIndexes.length > 0"
       :class="[
         'absolute flex gap-px',
-        levelLabel ? 'bottom-[20%] left-[5%] w-[72%]' : 'bottom-[5%] left-[6%] w-[74%]',
+        showBand ? 'bottom-[20%] left-[5%] w-[72%]' : 'bottom-[5%] left-[6%] w-[74%]',
       ]"
     >
       <img

@@ -10,7 +10,7 @@ import { LucideChartPie, LucideRefreshCw } from "lucide-vue-next"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import type { CatalogMasterCard } from "@/shared/sekai/catalog"
-import { SEKAI_CARD_ATTRS, buildCatalogCardThumbnail, type SekaiCardThumbnailView } from "@/shared/sekai/catalog"
+import { SEKAI_CARD_ATTRS, buildCatalogCardThumbnail, resolveSekaiCharacterColor, type SekaiCardThumbnailView } from "@/shared/sekai/catalog"
 import { resolveTrainRankImageUrl } from "@/shared/sekai/data-sources"
 import { resolveCardAttrIconUrl } from "@/shared/sekai/data-sources"
 import type { SekaiRegion } from "@/types"
@@ -128,6 +128,7 @@ const characterSections = computed(() => {
     const character = characterMap.value.get(group.key) ?? null
     const progress = progressByCharacter.get(group.key) ?? null
     const unitColor = character?.unit != null ? unitColorMap.value.get(character.unit) ?? null : null
+    const stripeColor = resolveSekaiCharacterColor(group.key) ?? unitColor
     return {
       key: group.key,
       name: character?.name ?? t("cardBox.unknownCharacter"),
@@ -135,7 +136,7 @@ const characterSections = computed(() => {
       owned: progress?.owned ?? group.owned,
       total: progress?.total ?? group.total,
       percent: progress?.percent ?? 0,
-      unitColor,
+      stripeColor,
       views: group.cards.map(makeCardView),
     }
   })
@@ -477,7 +478,7 @@ function retry() {
               <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   class="h-full rounded-full bg-primary transition-all"
-                  :style="{ width: `${section.percent}%`, ...(section.unitColor ? { backgroundColor: section.unitColor } : {}) }"
+                  :style="{ width: `${section.percent}%`, ...(section.stripeColor ? { backgroundColor: section.stripeColor } : {}) }"
                 />
               </div>
             </div>
@@ -495,6 +496,7 @@ function retry() {
                 :trained="view.trained"
                 :title="view.card.prefix"
                 :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
+                level-band
                 :class="[
                   'transition-transform group-hover:scale-[1.02]',
                   view.record == null ? 'opacity-40 grayscale' : '',
@@ -536,6 +538,7 @@ function retry() {
                 :trained="view.trained"
                 :title="view.card.prefix"
                 :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
+                level-band
                 :class="[
                   'transition-transform group-hover:scale-[1.02]',
                   view.record == null ? 'opacity-40 grayscale' : '',
@@ -564,6 +567,7 @@ function retry() {
               :trained="view.trained"
               :title="view.card.prefix"
               :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
+              level-band
               :class="[
                 'transition-transform group-hover:scale-[1.02]',
                 view.record == null ? 'opacity-40 grayscale' : '',
