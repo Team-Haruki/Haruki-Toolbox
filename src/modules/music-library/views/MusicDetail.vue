@@ -44,7 +44,6 @@ import {
 } from "../lib/music-difficulties"
 import {
   BPM_DIFFICULTY_CANDIDATES,
-  collectBpmRange,
   formatBpmValue,
   parseChartBpm,
   resolveMusicScoreUrl,
@@ -166,13 +165,14 @@ const bpmLabel = computed(() => {
     return null
   }
 
-  const range = collectBpmRange(info)
   const main = formatBpmValue(info.mainBpm)
-  if (range.length <= 1) {
+  if (info.events.length <= 1) {
     return main
   }
 
-  return `${main} (${formatBpmValue(range[0])} – ${formatBpmValue(range[range.length - 1])})`
+  // Full chronological BPM sequence (consecutive duplicates already collapsed).
+  const sequence = info.events.map((event) => formatBpmValue(event.bpm)).join(" → ")
+  return `${main} (${sequence})`
 })
 const dateFormatter = computed(() =>
   new Intl.DateTimeFormat(locale.value || getI18nLocale(), { dateStyle: "medium" }),
@@ -315,20 +315,20 @@ function formatEventPeriod(startAt: number | null, aggregateAt: number | null): 
                   </div>
                 </div>
 
-                <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-                  <div class="flex items-baseline gap-2">
+                <dl class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                  <div class="flex min-w-0 max-w-full items-baseline gap-2">
                     <dt class="shrink-0 text-muted-foreground">{{ t("musicLibrary.detail.info.composer") }}</dt>
                     <dd class="min-w-0 break-words font-medium">{{ entry.composer || "-" }}</dd>
                   </div>
-                  <div class="flex items-baseline gap-2">
+                  <div class="flex min-w-0 max-w-full items-baseline gap-2">
                     <dt class="shrink-0 text-muted-foreground">{{ t("musicLibrary.detail.info.lyricist") }}</dt>
                     <dd class="min-w-0 break-words font-medium">{{ entry.lyricist || "-" }}</dd>
                   </div>
-                  <div class="flex items-baseline gap-2">
+                  <div class="flex min-w-0 max-w-full items-baseline gap-2">
                     <dt class="shrink-0 text-muted-foreground">{{ t("musicLibrary.detail.info.arranger") }}</dt>
                     <dd class="min-w-0 break-words font-medium">{{ entry.arranger || "-" }}</dd>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex min-w-0 max-w-full items-center gap-2">
                     <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
                       <CalendarDays class="size-3.5" />
                       {{ t("musicLibrary.detail.info.publishedAt") }}
@@ -337,21 +337,21 @@ function formatEventPeriod(startAt: number | null, aggregateAt: number | null): 
                       {{ formatDateLabel(entry.publishedAt) ?? "-" }}
                     </dd>
                   </div>
-                  <div v-if="durationLabel" class="flex items-center gap-2">
+                  <div v-if="durationLabel" class="flex min-w-0 max-w-full items-center gap-2">
                     <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
                       <Clock3 class="size-3.5" />
                       {{ t("musicLibrary.detail.info.duration") }}
                     </dt>
                     <dd class="font-medium">{{ durationLabel }}</dd>
                   </div>
-                  <div v-if="bpmLabel" class="flex items-center gap-2">
+                  <div v-if="bpmLabel" class="flex min-w-0 max-w-full items-center gap-2">
                     <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
                       <Activity class="size-3.5" />
                       {{ t("musicLibrary.detail.info.bpm") }}
                     </dt>
-                    <dd class="font-medium tabular-nums">{{ bpmLabel }}</dd>
+                    <dd class="min-w-0 break-words font-medium tabular-nums">{{ bpmLabel }}</dd>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex min-w-0 max-w-full items-center gap-2">
                     <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
                       <Disc3 class="size-3.5" />
                       {{ t("musicLibrary.detail.info.id") }}
