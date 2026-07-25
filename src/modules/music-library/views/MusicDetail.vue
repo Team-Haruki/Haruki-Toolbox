@@ -335,20 +335,20 @@ function eventBoxHint(eventId: number) {
                   </div>
                 </div>
 
-                <dl class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                  <div class="flex min-w-0 max-w-full items-baseline gap-2">
+                <dl class="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-x-6 gap-y-2 text-sm">
+                  <div class="flex min-w-0 items-baseline gap-2">
                     <dt class="shrink-0 text-muted-foreground">{{ t("musicLibrary.detail.info.composer") }}</dt>
                     <dd class="min-w-0 break-words font-medium">{{ entry.composer || "-" }}</dd>
                   </div>
-                  <div class="flex min-w-0 max-w-full items-baseline gap-2">
+                  <div class="flex min-w-0 items-baseline gap-2">
                     <dt class="shrink-0 text-muted-foreground">{{ t("musicLibrary.detail.info.lyricist") }}</dt>
                     <dd class="min-w-0 break-words font-medium">{{ entry.lyricist || "-" }}</dd>
                   </div>
-                  <div class="flex min-w-0 max-w-full items-baseline gap-2">
+                  <div class="flex min-w-0 items-baseline gap-2">
                     <dt class="shrink-0 text-muted-foreground">{{ t("musicLibrary.detail.info.arranger") }}</dt>
                     <dd class="min-w-0 break-words font-medium">{{ entry.arranger || "-" }}</dd>
                   </div>
-                  <div class="flex min-w-0 max-w-full items-center gap-2">
+                  <div class="flex min-w-0 items-center gap-2">
                     <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
                       <CalendarDays class="size-3.5" />
                       {{ t("musicLibrary.detail.info.publishedAt") }}
@@ -357,21 +357,21 @@ function eventBoxHint(eventId: number) {
                       {{ formatDateLabel(entry.publishedAt) ?? "-" }}
                     </dd>
                   </div>
-                  <div v-if="durationLabel" class="flex min-w-0 max-w-full items-center gap-2">
+                  <div v-if="durationLabel" class="flex min-w-0 items-center gap-2">
                     <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
                       <Clock3 class="size-3.5" />
                       {{ t("musicLibrary.detail.info.duration") }}
                     </dt>
                     <dd class="font-medium">{{ durationLabel }}</dd>
                   </div>
-                  <div v-if="bpmLabel" class="flex min-w-0 max-w-full items-center gap-2">
+                  <div v-if="bpmLabel" class="flex min-w-0 items-center gap-2">
                     <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
                       <Activity class="size-3.5" />
                       {{ t("musicLibrary.detail.info.bpm") }}
                     </dt>
                     <dd class="min-w-0 break-words font-medium tabular-nums">{{ bpmLabel }}</dd>
                   </div>
-                  <div class="flex min-w-0 max-w-full items-center gap-2">
+                  <div class="flex min-w-0 items-center gap-2">
                     <dt class="flex shrink-0 items-center gap-1 text-muted-foreground">
                       <Disc3 class="size-3.5" />
                       {{ t("musicLibrary.detail.info.id") }}
