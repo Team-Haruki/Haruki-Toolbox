@@ -1,15 +1,28 @@
 import { computed, ref, watch, type Ref } from "vue"
 import type { SekaiRegion } from "@/types"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
+import { buildCatalogCharacterMap, type CatalogCharacter } from "@/shared/sekai/catalog"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { buildMusicLibraryEntries, type MusicLibraryEntry } from "../lib/music-data"
+import { buildEventBoxMap, buildMusicEventBoxMap, type EventBoxInfo } from "../lib/event-box"
 import { listMusicTagOptions, listMusicYearOptions } from "../lib/music-filter"
 
-const MUSIC_LIST_MASTER_FILES = ["musics", "musicDifficulties", "musicTags"] as const
+const MUSIC_LIST_MASTER_FILES = [
+  "musics",
+  "musicDifficulties",
+  "musicTags",
+  "gameCharacters",
+  "events",
+  "eventMusics",
+  "eventCards",
+  "cards",
+] as const
 
 export function useMusicLibraryList(region: Ref<SekaiRegion>) {
   const sekaiDataStore = useSekaiDataStore()
   const entries = ref<MusicLibraryEntry[]>([])
+  const characterMap = ref<Map<number, CatalogCharacter>>(new Map())
+  const musicEventBoxes = ref<Map<number, EventBoxInfo>>(new Map())
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -38,8 +51,15 @@ export function useMusicLibraryList(region: Ref<SekaiRegion>) {
         files.musicDifficulties,
         files.musicTags,
       )
+      characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+      musicEventBoxes.value = buildMusicEventBoxMap(
+        files.eventMusics,
+        buildEventBoxMap(files.events, files.eventCards, files.cards),
+      )
     } catch (loadError) {
       entries.value = []
+      characterMap.value = new Map()
+      musicEventBoxes.value = new Map()
       error.value = loadError instanceof Error ? loadError.message : String(loadError)
     } finally {
       loading.value = false
@@ -48,6 +68,8 @@ export function useMusicLibraryList(region: Ref<SekaiRegion>) {
 
   return {
     entries,
+    characterMap,
+    musicEventBoxes,
     tagOptions,
     yearOptions,
     loading,

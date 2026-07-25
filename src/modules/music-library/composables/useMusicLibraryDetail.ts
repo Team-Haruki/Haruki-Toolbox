@@ -14,6 +14,7 @@ import {
   type MusicLibraryEntry,
   type MusicVocalEntry,
 } from "../lib/music-data"
+import { buildEventBoxMap, type EventBoxInfo } from "../lib/event-box"
 
 const MUSIC_DETAIL_MASTER_FILES = [
   "musics",
@@ -24,6 +25,8 @@ const MUSIC_DETAIL_MASTER_FILES = [
   "outsideCharacters",
   "events",
   "eventMusics",
+  "eventCards",
+  "cards",
 ] as const
 
 export function useMusicLibraryDetail(region: Ref<SekaiRegion>, musicId: Ref<number | null>) {
@@ -33,6 +36,7 @@ export function useMusicLibraryDetail(region: Ref<SekaiRegion>, musicId: Ref<num
   const characterMap = ref<Map<number, CatalogCharacter>>(new Map())
   const outsideCharacterNames = ref<Map<number, string>>(new Map())
   const eventLinks = ref<MusicEventLink[]>([])
+  const eventBoxMap = ref<Map<number, EventBoxInfo>>(new Map())
   const durationSeconds = ref<number | null>(null)
   const loading = ref(false)
   const loaded = ref(false)
@@ -77,11 +81,13 @@ export function useMusicLibraryDetail(region: Ref<SekaiRegion>, musicId: Ref<num
       characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
       outsideCharacterNames.value = buildOutsideCharacterNameMap(files.outsideCharacters)
       eventLinks.value = listMusicEventLinks(files.eventMusics, files.events, targetMusicId)
+      eventBoxMap.value = buildEventBoxMap(files.events, files.eventCards, files.cards)
       durationSeconds.value = findMusicDurationSeconds(musicMetas, targetMusicId)
     } catch (loadError) {
       entry.value = null
       vocals.value = []
       eventLinks.value = []
+      eventBoxMap.value = new Map()
       durationSeconds.value = null
       error.value = loadError instanceof Error ? loadError.message : String(loadError)
     } finally {
@@ -96,6 +102,7 @@ export function useMusicLibraryDetail(region: Ref<SekaiRegion>, musicId: Ref<num
     characterMap,
     outsideCharacterNames,
     eventLinks,
+    eventBoxMap,
     durationSeconds,
     loading,
     error,

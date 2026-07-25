@@ -1762,6 +1762,10 @@ export const zhCN = {
     },
   },
   musicLibrary: {
+    eventBox: {
+      short: "{name} {count}箱",
+      title: "{name}的第{count}箱活动曲",
+    },
     list: {
       title: "曲库",
       description: "浏览 PJSK 曲库：支持搜索，并按难度、等级、物量、团体与年份筛选。",

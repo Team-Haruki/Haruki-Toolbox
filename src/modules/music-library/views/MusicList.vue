@@ -70,6 +70,8 @@ const { region, selectorValue: regionSelectorValue, updateSelectorValue: updateR
 const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
 const {
   entries,
+  characterMap,
+  musicEventBoxes,
   tagOptions,
   yearOptions,
   loading,
@@ -170,6 +172,25 @@ function resetFilters() {
 
 function jacketUrl(entry: MusicLibraryEntry): string | null {
   return resolveMusicJacketUrl(region.value, entry.assetbundleName, settingsStore.currentAssetEndpoint)
+}
+
+/** "某角色几箱活动曲" hint when the entry is a known event song. */
+function entryEventBox(entry: MusicLibraryEntry) {
+  const info = musicEventBoxes.value.get(entry.id)
+  if (info == null) {
+    return null
+  }
+
+  const character = characterMap.value.get(info.characterId) ?? null
+  if (character == null) {
+    return null
+  }
+
+  return {
+    name: character.name,
+    iconUrl: character.iconUrl,
+    boxNumber: info.boxNumber,
+  }
 }
 
 function entryDifficulties(entry: MusicLibraryEntry) {
@@ -503,6 +524,28 @@ function toNullableNumber(value: number | string | undefined | null): number | n
             <p class="flex items-center gap-1 text-xs text-muted-foreground">
               <CalendarDays class="size-3.5 shrink-0" />
               {{ formatDateLabel(entry.publishedAt) ?? t("musicLibrary.list.unknownDate") }}
+            </p>
+            <p
+              v-if="entryEventBox(entry)"
+              class="flex items-center gap-1 truncate text-xs text-muted-foreground"
+              :title="t('musicLibrary.eventBox.title', {
+                name: entryEventBox(entry)!.name,
+                count: entryEventBox(entry)!.boxNumber,
+              })"
+            >
+              <img
+                v-if="entryEventBox(entry)!.iconUrl"
+                :src="entryEventBox(entry)!.iconUrl ?? undefined"
+                alt=""
+                class="size-3.5 shrink-0 rounded-full"
+                loading="lazy"
+              >
+              <span class="truncate">
+                {{ t("musicLibrary.eventBox.short", {
+                  name: entryEventBox(entry)!.name,
+                  count: entryEventBox(entry)!.boxNumber,
+                }) }}
+              </span>
             </p>
           </div>
           <div class="mt-auto flex flex-wrap gap-1">

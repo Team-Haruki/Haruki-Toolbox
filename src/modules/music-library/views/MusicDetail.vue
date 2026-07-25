@@ -76,6 +76,7 @@ const {
   characterMap,
   outsideCharacterNames,
   eventLinks,
+  eventBoxMap,
   durationSeconds,
   loading,
   error,
@@ -235,6 +236,25 @@ function formatEventPeriod(startAt: number | null, aggregateAt: number | null): 
   const start = formatDateLabel(startAt) ?? "?"
   const end = formatDateLabel(aggregateAt) ?? "?"
   return `${start} - ${end}`
+}
+
+/** "某角色几箱" hint for an event, when its banner character is known. */
+function eventBoxHint(eventId: number) {
+  const info = eventBoxMap.value.get(eventId)
+  if (info == null) {
+    return null
+  }
+
+  const character = characterMap.value.get(info.characterId) ?? null
+  if (character == null) {
+    return null
+  }
+
+  return {
+    name: character.name,
+    iconUrl: character.iconUrl,
+    boxNumber: info.boxNumber,
+  }
 }
 </script>
 
@@ -470,6 +490,27 @@ function formatEventPeriod(startAt: number | null, aggregateAt: number | null): 
                 <p class="truncate text-sm font-medium">{{ event.name }}</p>
                 <p class="text-xs text-muted-foreground">
                   {{ formatEventPeriod(event.startAt, event.aggregateAt) }}
+                </p>
+                <p v-if="eventBoxHint(event.eventId)" class="flex items-center gap-1.5">
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground"
+                    :title="t('musicLibrary.eventBox.title', {
+                      name: eventBoxHint(event.eventId)!.name,
+                      count: eventBoxHint(event.eventId)!.boxNumber,
+                    })"
+                  >
+                    <img
+                      v-if="eventBoxHint(event.eventId)!.iconUrl"
+                      :src="eventBoxHint(event.eventId)!.iconUrl ?? undefined"
+                      alt=""
+                      class="size-4 shrink-0 rounded-full"
+                      loading="lazy"
+                    >
+                    {{ t("musicLibrary.eventBox.short", {
+                      name: eventBoxHint(event.eventId)!.name,
+                      count: eventBoxHint(event.eventId)!.boxNumber,
+                    }) }}
+                  </span>
                 </p>
               </div>
               <ExternalLink class="size-4 shrink-0 text-muted-foreground" />

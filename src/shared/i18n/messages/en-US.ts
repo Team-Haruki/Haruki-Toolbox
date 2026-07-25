@@ -1762,6 +1762,10 @@ export const enUS = {
     },
   },
   musicLibrary: {
+    eventBox: {
+      short: "{name} · Box {count}",
+      title: "Event song from {name}'s box #{count}",
+    },
     list: {
       title: "Music library",
       description: "Browse the PJSK music catalog: search, filter by difficulty, level, note count, unit and year.",
