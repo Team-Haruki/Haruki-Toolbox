@@ -398,39 +398,40 @@ function retry() {
         </CardContent>
       </Card>
 
-      <!-- Character levels radar -->
-      <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="text-base">{{ t("playerProfile.characters.title") }}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p v-if="characterRadarEntries.length === 0" class="py-4 text-center text-sm text-muted-foreground">
-            {{ t("playerProfile.characters.empty") }}
-          </p>
-          <ProfileRadarChart v-else :entries="characterRadarEntries" />
-        </CardContent>
-      </Card>
+      <!-- Character levels + challenge live radars, side by side on large screens -->
+      <div class="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader class="pb-2">
+            <CardTitle class="text-base">{{ t("playerProfile.characters.title") }}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p v-if="characterRadarEntries.length === 0" class="py-4 text-center text-sm text-muted-foreground">
+              {{ t("playerProfile.characters.empty") }}
+            </p>
+            <ProfileRadarChart v-else :entries="characterRadarEntries" />
+          </CardContent>
+        </Card>
 
-      <!-- Challenge live radar -->
-      <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="text-base">{{ t("playerProfile.challenge.title") }}</CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-3">
-          <p
-            v-if="challengeTop"
-            class="inline-flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground"
-          >
-            <LucideTrophy class="size-4 shrink-0 text-amber-500" />
-            {{ t("playerProfile.challenge.summary", { name: challengeTop.name, score: formatScore(challengeTop.highScore) }) }}
-          </p>
-          <p v-else class="text-sm text-muted-foreground">
-            {{ t("playerProfile.challenge.empty") }}
-          </p>
+        <Card>
+          <CardHeader class="pb-2">
+            <CardTitle class="text-base">{{ t("playerProfile.challenge.title") }}</CardTitle>
+          </CardHeader>
+          <CardContent class="flex flex-col gap-3">
+            <p
+              v-if="challengeTop"
+              class="inline-flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground"
+            >
+              <LucideTrophy class="size-4 shrink-0 text-amber-500" />
+              {{ t("playerProfile.challenge.summary", { name: challengeTop.name, score: formatScore(challengeTop.highScore) }) }}
+            </p>
+            <p v-else class="text-sm text-muted-foreground">
+              {{ t("playerProfile.challenge.empty") }}
+            </p>
 
-          <ProfileRadarChart :entries="challengeRadarEntries" />
-        </CardContent>
-      </Card>
+            <ProfileRadarChart :entries="challengeRadarEntries" />
+          </CardContent>
+        </Card>
+      </div>
     </template>
   </div>
 </template>
