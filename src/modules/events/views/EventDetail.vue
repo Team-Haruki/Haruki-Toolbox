@@ -153,7 +153,7 @@ function goBack() {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-4xl flex-col gap-4">
+  <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center gap-4">
     <div>
       <Button variant="ghost" size="sm" @click="goBack">
         <LucideArrowLeft class="mr-1 h-4 w-4" /> {{ t("events.detail.back") }}

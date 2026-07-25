@@ -210,7 +210,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
 </script>
 
 <template>
-  <div class="flex w-full flex-1 justify-center px-0 py-4">
+  <div class="flex w-full flex-1 items-center justify-center px-0 py-4">
     <div class="mx-auto w-full max-w-6xl space-y-4">
       <Card>
         <CardHeader>

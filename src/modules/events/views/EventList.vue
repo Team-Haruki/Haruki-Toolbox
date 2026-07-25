@@ -127,7 +127,7 @@ function eventUnreleased(event: SekaiEventItem) {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-4xl flex-col gap-4">
+  <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center gap-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold">{{ t("events.list.title") }}</h1>

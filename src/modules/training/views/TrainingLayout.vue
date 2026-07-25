@@ -15,7 +15,7 @@ const tabs = [
 </script>
 
 <template>
-  <div class="w-full max-w-6xl mx-auto flex flex-col gap-4">
+  <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold">{{ t("training.layout.title") }}</h1>

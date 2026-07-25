@@ -174,7 +174,7 @@ function crosshairTemplate(point: EventPointTrendPoint) {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-4xl flex-col gap-4">
+  <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center gap-4">
     <div>
       <h1 class="text-2xl font-bold">{{ t("eventRecords.title") }}</h1>
       <p class="text-sm text-muted-foreground">{{ t("eventRecords.description") }}</p>

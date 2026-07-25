@@ -160,7 +160,7 @@ function goBack() {
 </script>
 
 <template>
-  <div class="w-full max-w-5xl mx-auto flex flex-col gap-4">
+  <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center gap-4">
     <div>
       <Button variant="ghost" size="sm" class="gap-1 -ml-2" @click="goBack">
         <LucideArrowLeft class="size-4" />
