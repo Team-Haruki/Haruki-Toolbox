@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideHeart, LucideRefreshCw } from "lucide-vue-next"
+import { LucideCheck, LucideChevronDown, LucideChevronRight, LucideHeart, LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
@@ -11,6 +11,7 @@ import {
   bondLevelProgressPercent,
   buildBondEntries,
   normalizeUserBonds,
+  type BondRewardItem,
 } from "@/modules/training/lib/bonds"
 import { normalizeUserCharacterRanks } from "@/modules/training/lib/power-bonus"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
@@ -29,6 +30,8 @@ const {
   bondMasters,
   bondLevelTable,
   styleMap,
+  bondsRewardsByGroup,
+  materialNames,
   reloadMaster,
 } = useTrainingBonds()
 
@@ -91,14 +94,56 @@ const bondRows = computed(() => bondsResult.value.entries.map((entry) => {
   const character2 = characterMap.value.get(entry.baseCharaId2) ?? null
   return {
     ...entry,
+    key: `${entry.groupId}:${entry.charaId1}:${entry.charaId2}`,
     name1: character1?.name ?? t("training.bonds.unknownCharacter"),
     name2: character2?.name ?? t("training.bonds.unknownCharacter"),
     iconUrl1: character1?.iconUrl ?? null,
     iconUrl2: character2?.iconUrl ?? null,
     progressPercent: bondLevelProgressPercent(entry),
     atMaxLevel: entry.bondLevel > 0 && entry.bondLevel >= bondsResult.value.maxLevel,
+    rewardRanks: bondsRewardsByGroup.value.get(entry.groupId) ?? [],
   }
 }))
+
+const expandedRows = ref<Set<string>>(new Set())
+
+function toggleExpanded(key: string) {
+  const next = new Set(expandedRows.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  expandedRows.value = next
+}
+
+function rewardLabel(item: BondRewardItem): string {
+  if (item.type === "jewel") {
+    return t("training.bonds.rewards.jewel", { count: item.quantity })
+  }
+  if (item.type === "material") {
+    const name = item.resourceId != null ? materialNames.value.get(item.resourceId) ?? null : null
+    return name != null
+      ? t("training.bonds.rewards.material", { name, count: item.quantity })
+      : t("training.bonds.rewards.materialFallback", { count: item.quantity })
+  }
+  if (item.type === "bonds_honor") {
+    return t("training.bonds.rewards.bondsHonor", { level: item.level ?? 1 })
+  }
+  if (item.type === "bonds_honor_word") {
+    return t("training.bonds.rewards.bondsHonorWord")
+  }
+  if (item.type === "stamp") {
+    return t("training.bonds.rewards.stamp")
+  }
+  if (item.type === "boost_item") {
+    return t("training.bonds.rewards.boostItem", { count: item.quantity })
+  }
+  if (item.type === "cut_in_voice") {
+    return t("training.bonds.rewards.cutInVoice")
+  }
+  return t("training.bonds.rewards.other")
+}
 
 function formatNumber(value: number): string {
   return numberFormatter.value.format(value)
@@ -187,19 +232,17 @@ function retry() {
           {{ t("training.bonds.empty") }}
         </p>
 
-        <div v-else class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div v-else class="flex flex-col gap-2">
           <div
             v-for="row in bondRows"
-            :key="`${row.groupId}:${row.charaId1}:${row.charaId2}`"
-            :class="[
-              'flex flex-col gap-2 rounded-md border p-2.5',
-              row.hasBond ? '' : 'opacity-50',
-            ]"
+            :key="row.key"
+            :class="['rounded-md border', row.hasBond ? '' : 'opacity-50']"
           >
-            <div class="flex items-center gap-2">
-              <div class="flex shrink-0 items-center gap-1.5">
+            <div class="flex items-center gap-3 p-2.5">
+              <!-- Left character with their rank -->
+              <div class="flex w-32 shrink-0 items-center gap-2 sm:w-44">
                 <span
-                  class="rounded-full p-0.5"
+                  class="shrink-0 rounded-full p-0.5"
                   :style="row.colorCode1 ? { backgroundColor: row.colorCode1 } : {}"
                 >
                   <img
@@ -210,9 +253,53 @@ function retry() {
                     loading="lazy"
                   >
                 </span>
-                <LucideHeart class="size-3.5 shrink-0 text-rose-400" />
+                <div class="min-w-0">
+                  <p class="truncate text-xs" :title="row.name1">{{ row.name1 }}</p>
+                  <p class="text-[11px] tabular-nums text-muted-foreground">
+                    {{ t("training.bonds.charaRank", { rank: row.charaRank1 }) }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Bond level + progress in the middle -->
+              <div class="flex min-w-0 flex-1 flex-col items-center gap-1">
+                <div class="flex items-center gap-1.5">
+                  <LucideHeart class="size-3.5 shrink-0 text-rose-400" />
+                  <span v-if="row.hasBond" class="text-sm font-semibold tabular-nums">
+                    {{ t("training.bonds.level", { level: row.bondLevel }) }}
+                  </span>
+                  <span v-else class="text-xs text-muted-foreground">
+                    {{ t("training.bonds.notOwned") }}
+                  </span>
+                </div>
+                <template v-if="row.hasBond">
+                  <div v-if="row.progressPercent != null" class="w-full max-w-56">
+                    <div class="h-1.5 w-full overflow-hidden rounded-full bg-primary/15">
+                      <div
+                        class="h-full rounded-full bg-primary transition-all"
+                        :style="{ width: `${row.progressPercent}%` }"
+                      />
+                    </div>
+                    <p v-if="row.needExp != null" class="mt-0.5 text-center text-[11px] tabular-nums text-muted-foreground">
+                      {{ t("training.bonds.needExp", { exp: formatNumber(row.needExp) }) }}
+                    </p>
+                  </div>
+                  <p v-else-if="row.atMaxLevel" class="text-[11px] font-medium text-amber-500">
+                    {{ t("training.bonds.maxLevel") }}
+                  </p>
+                </template>
+              </div>
+
+              <!-- Right character mirrored with their rank -->
+              <div class="flex w-32 shrink-0 items-center justify-end gap-2 sm:w-44">
+                <div class="min-w-0 text-right">
+                  <p class="truncate text-xs" :title="row.name2">{{ row.name2 }}</p>
+                  <p class="text-[11px] tabular-nums text-muted-foreground">
+                    {{ t("training.bonds.charaRank", { rank: row.charaRank2 }) }}
+                  </p>
+                </div>
                 <span
-                  class="rounded-full p-0.5"
+                  class="shrink-0 rounded-full p-0.5"
                   :style="row.colorCode2 ? { backgroundColor: row.colorCode2 } : {}"
                 >
                   <img
@@ -224,39 +311,49 @@ function retry() {
                   >
                 </span>
               </div>
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-xs" :title="`${row.name1} × ${row.name2}`">
-                  {{ row.name1 }} × {{ row.name2 }}
-                </p>
-                <p class="flex flex-wrap gap-x-3 text-[11px] tabular-nums text-muted-foreground">
-                  <span>{{ t("training.bonds.charaRank", { rank: row.charaRank1 }) }}</span>
-                  <span>{{ t("training.bonds.charaRank", { rank: row.charaRank2 }) }}</span>
-                </p>
-              </div>
-              <span v-if="row.hasBond" class="shrink-0 text-sm font-semibold tabular-nums">
-                {{ t("training.bonds.level", { level: row.bondLevel }) }}
-              </span>
-              <span v-else class="shrink-0 text-xs text-muted-foreground">
-                {{ t("training.bonds.notOwned") }}
-              </span>
+
+              <button
+                v-if="row.rewardRanks.length > 0"
+                type="button"
+                class="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                :aria-expanded="expandedRows.has(row.key)"
+                :aria-label="t(expandedRows.has(row.key) ? 'training.bonds.hideRewards' : 'training.bonds.showRewards')"
+                :title="t(expandedRows.has(row.key) ? 'training.bonds.hideRewards' : 'training.bonds.showRewards')"
+                @click="toggleExpanded(row.key)"
+              >
+                <component :is="expandedRows.has(row.key) ? LucideChevronDown : LucideChevronRight" class="size-4" />
+              </button>
             </div>
 
-            <template v-if="row.hasBond">
-              <div v-if="row.progressPercent != null" class="flex flex-col gap-1">
-                <div class="h-1.5 w-full overflow-hidden rounded-full bg-primary/15">
-                  <div
-                    class="h-full rounded-full bg-primary transition-all"
-                    :style="{ width: `${row.progressPercent}%` }"
-                  />
-                </div>
-                <p v-if="row.needExp != null" class="text-[11px] tabular-nums text-muted-foreground">
-                  {{ t("training.bonds.needExp", { exp: formatNumber(row.needExp) }) }}
-                </p>
-              </div>
-              <p v-else-if="row.atMaxLevel" class="text-[11px] font-medium text-amber-500">
-                {{ t("training.bonds.maxLevel") }}
+            <!-- Rewards obtainable at each bond level -->
+            <div v-if="expandedRows.has(row.key)" class="flex flex-col gap-1 border-t p-2.5">
+              <p class="text-[11px] font-medium text-muted-foreground">
+                {{ t("training.bonds.rewardsTitle") }}
               </p>
-            </template>
+              <div
+                v-for="rankRow in row.rewardRanks"
+                :key="rankRow.rank"
+                :class="[
+                  'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs',
+                  rankRow.rank <= row.bondLevel ? 'opacity-50' : '',
+                ]"
+              >
+                <span class="w-11 shrink-0 font-semibold tabular-nums">
+                  Lv.{{ rankRow.rank }}
+                </span>
+                <LucideCheck
+                  v-if="rankRow.rank <= row.bondLevel"
+                  class="size-3.5 shrink-0 text-emerald-500"
+                />
+                <span
+                  v-for="(item, index) in rankRow.items"
+                  :key="index"
+                  class="rounded-full border bg-muted/30 px-2 py-0.5"
+                >
+                  {{ rewardLabel(item) }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>

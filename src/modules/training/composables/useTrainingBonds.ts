@@ -5,13 +5,16 @@ import type { CatalogCharacter, SekaiUnit } from "@/shared/sekai/catalog"
 import { buildCatalogCharacterMap, buildCatalogUnitColorMap } from "@/shared/sekai/catalog"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import type { SekaiRegion } from "@/types"
+import { normalizeCatalogNumber, normalizeCatalogRecords, normalizeCatalogString } from "@/shared/sekai/catalog"
 import {
   buildBondCharacterStyleMap,
+  buildBondsRewardsByGroup,
   normalizeBondLevelTable,
   normalizeBondMasters,
   type BondCharacterStyle,
   type BondLevelTable,
   type BondMaster,
+  type BondRankRewards,
 } from "@/modules/training/lib/bonds"
 
 export const TRAINING_BONDS_SUITE_KEYS = [
@@ -24,6 +27,10 @@ export const TRAINING_BONDS_MASTER_FILES = [
   "levels",
   "gameCharacters",
   "gameCharacterUnits",
+  "bondsRewards",
+  "resourceBoxes",
+  "resourceBoxDetails",
+  "materials",
 ] as const
 
 /**
@@ -46,6 +53,8 @@ export function useTrainingBonds() {
   const bondMasters = shallowRef<BondMaster[]>([])
   const bondLevelTable = shallowRef<BondLevelTable>({ totalExpByLevel: new Map(), maxLevel: 0 })
   const styleMap = shallowRef<Map<number, BondCharacterStyle>>(new Map())
+  const bondsRewardsByGroup = shallowRef<Map<number, BondRankRewards[]>>(new Map())
+  const materialNames = shallowRef<Map<number, string>>(new Map())
 
   let loadToken = 0
 
@@ -59,6 +68,8 @@ export function useTrainingBonds() {
       bondMasters.value = []
       bondLevelTable.value = { totalExpByLevel: new Map(), maxLevel: 0 }
       styleMap.value = new Map()
+      bondsRewardsByGroup.value = new Map()
+      materialNames.value = new Map()
       return
     }
 
@@ -76,6 +87,20 @@ export function useTrainingBonds() {
       bondMasters.value = normalizeBondMasters(files.bonds)
       bondLevelTable.value = normalizeBondLevelTable(files.levels)
       styleMap.value = buildBondCharacterStyleMap(files.gameCharacterUnits)
+      bondsRewardsByGroup.value = buildBondsRewardsByGroup(
+        files.bondsRewards,
+        files.resourceBoxes,
+        files.resourceBoxDetails,
+      )
+      const names = new Map<number, string>()
+      for (const record of normalizeCatalogRecords(files.materials)) {
+        const id = normalizeCatalogNumber(record.id)
+        const name = normalizeCatalogString(record.name)
+        if (id != null && id > 0 && name !== "") {
+          names.set(id, name)
+        }
+      }
+      materialNames.value = names
     } catch (loadError) {
       if (token === loadToken) {
         masterError.value = loadError instanceof Error ? loadError.message : String(loadError)
@@ -110,6 +135,8 @@ export function useTrainingBonds() {
     bondMasters,
     bondLevelTable,
     styleMap,
+    bondsRewardsByGroup,
+    materialNames,
     reloadMaster,
   }
 }

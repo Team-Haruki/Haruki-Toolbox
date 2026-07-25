@@ -7,6 +7,7 @@ import {
   buildAreaItemViews,
   collectUserAreaItemLevels,
   collectUserMaterials,
+  formatAreaBonusRate,
   materialIconAssetPath,
   normalizeAreaShopItems,
   normalizeAreaShopResourceBoxDetails,
@@ -517,5 +518,14 @@ describe("asset paths", () => {
     expect(materialIconAssetPath("material", 17)).toBe("startapp/thumbnail/material/material17.png")
     expect(materialIconAssetPath("material", 0)).toBeNull()
     expect(materialIconAssetPath("boost_item", 1)).toBeNull()
+  })
+})
+
+describe("formatAreaBonusRate", () => {
+  test("rounds float32-noisy master rates to one decimal", () => {
+    expect(formatAreaBonusRate(0.20000000298023224)).toBe("0.2")
+    expect(formatAreaBonusRate(2.799999952316284)).toBe("2.8")
+    expect(formatAreaBonusRate(1.0)).toBe("1")
+    expect(formatAreaBonusRate(15)).toBe("15")
   })
 })

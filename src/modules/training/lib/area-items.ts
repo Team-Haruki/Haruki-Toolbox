@@ -273,6 +273,15 @@ export function collectUserMaterials(rawUserMaterials: unknown, rawUserGamedata:
   return materials
 }
 
+/**
+ * Master bonus rates carry float32 noise (e.g. `0.20000000298023224` for VS
+ * items); round to one decimal for display and trim a trailing `.0`.
+ */
+export function formatAreaBonusRate(value: number): string {
+  const rounded = Math.round(value * 10) / 10
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
+}
+
 export type AreaItemFilter = {
   unit?: string
   attr?: string

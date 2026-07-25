@@ -336,6 +336,102 @@ export function buildBondEntries(input: BuildBondEntriesInput): BondEntriesResul
   return { entries, maxLevel }
 }
 
+/** One reward granted at a bond rank. */
+export type BondRewardItem = {
+  /** resourceType from the resource box, or "cut_in_voice" for voice rewards. */
+  type: string
+  resourceId: number | null
+  quantity: number
+  level: number | null
+}
+
+export type BondRankRewards = {
+  rank: number
+  items: BondRewardItem[]
+}
+
+/**
+ * bondsGroupId -> per-rank rewards, resolved through the `bonds_reward`
+ * resource boxes. Accepts the nested `resourceBoxes` dump (jp/en) and merges
+ * the flat `resourceBoxDetails` rows shipped by tw/kr/cn.
+ */
+export function buildBondsRewardsByGroup(
+  rawBondsRewards: unknown,
+  rawResourceBoxes: unknown,
+  rawResourceBoxDetails?: unknown,
+): Map<number, BondRankRewards[]> {
+  const details: Record<string, unknown>[] = []
+  for (const record of normalizeCatalogRecords(rawResourceBoxes)) {
+    details.push(...normalizeCatalogRecords(record.details))
+  }
+  details.push(...normalizeCatalogRecords(rawResourceBoxDetails))
+
+  const itemsByBox = new Map<number, BondRewardItem[]>()
+  for (const record of details) {
+    if (normalizeCatalogString(record.resourceBoxPurpose) !== "bonds_reward") {
+      continue
+    }
+
+    const boxId = normalizeCatalogNumber(record.resourceBoxId)
+    const resourceType = normalizeCatalogString(record.resourceType)
+    if (boxId == null || boxId <= 0 || resourceType === "") {
+      continue
+    }
+
+    let items = itemsByBox.get(boxId)
+    if (!items) {
+      items = []
+      itemsByBox.set(boxId, items)
+    }
+    items.push({
+      type: resourceType,
+      resourceId: normalizeCatalogNumber(record.resourceId),
+      quantity: normalizeCatalogNumber(record.resourceQuantity) ?? 1,
+      level: normalizeCatalogNumber(record.resourceLevel),
+    })
+  }
+
+  const rankMapByGroup = new Map<number, Map<number, BondRewardItem[]>>()
+  for (const record of normalizeCatalogRecords(rawBondsRewards)) {
+    const groupId = normalizeCatalogNumber(record.bondsGroupId)
+    const rank = normalizeCatalogNumber(record.rank)
+    if (groupId == null || groupId <= 0 || rank == null || rank <= 0) {
+      continue
+    }
+
+    let rankMap = rankMapByGroup.get(groupId)
+    if (!rankMap) {
+      rankMap = new Map()
+      rankMapByGroup.set(groupId, rankMap)
+    }
+    let items = rankMap.get(rank)
+    if (!items) {
+      items = []
+      rankMap.set(rank, items)
+    }
+
+    if (normalizeCatalogString(record.bondsRewardType) === "cut_in_voice") {
+      items.push({ type: "cut_in_voice", resourceId: null, quantity: 1, level: null })
+      continue
+    }
+
+    const boxId = normalizeCatalogNumber(record.resourceBoxId)
+    if (boxId != null) {
+      items.push(...(itemsByBox.get(boxId) ?? []))
+    }
+  }
+
+  const result = new Map<number, BondRankRewards[]>()
+  for (const [groupId, rankMap] of rankMapByGroup) {
+    const ranks = [...rankMap.entries()]
+      .map(([rank, items]) => ({ rank, items }))
+      .sort((a, b) => a.rank - b.rank)
+    result.set(groupId, ranks)
+  }
+
+  return result
+}
+
 /** Progress toward the next bond level as a 0..100 percentage. */
 export function bondLevelProgressPercent(entry: BondEntry): number | null {
   if (entry.levelExpSpan == null || entry.needExp == null || entry.levelExpSpan <= 0) {

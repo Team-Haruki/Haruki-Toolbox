@@ -37,15 +37,22 @@ import {
   type MusicProgressLevelRow,
   type MusicProgressStatus,
 } from "../lib/music-progress"
+import {
+  buildClaimedMusicAchievementMap,
+  hasMusicRewardTotals,
+  normalizeMusicAchievementMasters,
+  sumRemainingMusicRewards,
+  type MusicRewardTotals,
+} from "../lib/music-rewards"
 
 const { t, locale } = useI18n()
 const settingsStore = useSettingsStore()
 
 const { selectedAccount } = useGameAccountSelection()
-const suite = useUserSuite(["userMusics", "userMusicResults"], selectedAccount)
+const suite = useUserSuite(["userMusics", "userMusicResults", "userMusicAchievements"], selectedAccount)
 
 const region = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
-const master = useMusicProgressMasterData(region)
+const master = useMusicProgressMasterData(region, { withAchievements: true })
 
 const activeDifficulty = ref<MusicDifficulty>("master")
 const expandedLevels = ref<Set<string>>(new Set())
@@ -96,6 +103,104 @@ const hasResults = computed(() => {
   const results = suite.data.value?.userMusicResults
   return Array.isArray(results) && results.length > 0
 })
+
+// --- Obtainable achievement rewards (crystals / coins / shards) ---
+
+const achievementMasters = computed(() => {
+  if (master.rawMusicAchievements.value == null) {
+    return []
+  }
+
+  return normalizeMusicAchievementMasters(
+    master.rawMusicAchievements.value,
+    master.rawResourceBoxes.value,
+    master.rawResourceBoxDetails.value,
+  )
+})
+
+/** null when the snapshot does not include `userMusicAchievements`. */
+const claimedAchievements = computed(() => {
+  const raw = suite.data.value?.userMusicAchievements
+  return raw == null ? null : buildClaimedMusicAchievementMap(raw)
+})
+
+const rewardStats = computed(() => {
+  const current = progress.value
+  const claimed = claimedAchievements.value
+  if (current == null || claimed == null || achievementMasters.value.length === 0) {
+    return null
+  }
+
+  const allMusicIds = new Set<number>()
+  const perDifficulty: Array<{ difficulty: MusicDifficulty; totals: MusicRewardTotals }> = []
+  for (const difficulty of MUSIC_DIFFICULTIES) {
+    const musicIds = current[difficulty].levels.flatMap((row) => row.songs.map((song) => song.musicId))
+    for (const musicId of musicIds) {
+      allMusicIds.add(musicId)
+    }
+    if (musicIds.length === 0) {
+      continue
+    }
+
+    const combos = achievementMasters.value
+      .filter((achievement) => achievement.type === "combo" && achievement.difficulty === difficulty)
+    const totals = sumRemainingMusicRewards(musicIds, combos, claimed)
+    perDifficulty.push({ difficulty, totals })
+  }
+
+  const scoreRankMasters = achievementMasters.value
+    .filter((achievement) => achievement.type === "score_rank")
+  const scoreRank = sumRemainingMusicRewards([...allMusicIds], scoreRankMasters, claimed)
+
+  const total = { jewel: scoreRank.jewel, coin: scoreRank.coin, shard: scoreRank.shard }
+  for (const entry of perDifficulty) {
+    total.jewel += entry.totals.jewel
+    total.coin += entry.totals.coin
+    total.shard += entry.totals.shard
+  }
+
+  return { total, perDifficulty, scoreRank }
+})
+
+const activeComboMasters = computed(() => achievementMasters.value
+  .filter((achievement) => achievement.type === "combo" && achievement.difficulty === activeDifficulty.value))
+
+/** Remaining combo rewards of the active difficulty for one level row. */
+function levelRemaining(row: MusicProgressLevelRow): MusicRewardTotals | null {
+  const claimed = claimedAchievements.value
+  if (claimed == null || activeComboMasters.value.length === 0) {
+    return null
+  }
+
+  return sumRemainingMusicRewards(row.songs.map((song) => song.musicId), activeComboMasters.value, claimed)
+}
+
+function levelRemainingText(row: MusicProgressLevelRow): string | null {
+  const totals = levelRemaining(row)
+  if (totals == null) {
+    return null
+  }
+
+  return hasRemaining(totals) ? formatRewardTotals(totals) : t("musicProgress.rewards.allClaimed")
+}
+
+function formatRewardTotals(totals: MusicRewardTotals): string {
+  const parts: string[] = []
+  if (totals.jewel > 0) {
+    parts.push(`${t("musicProgress.rewards.jewel")} ${totals.jewel.toLocaleString()}`)
+  }
+  if (totals.coin > 0) {
+    parts.push(`${t("musicProgress.rewards.coin")} ${totals.coin.toLocaleString()}`)
+  }
+  if (totals.shard > 0) {
+    parts.push(`${t("musicProgress.rewards.shard")} ${totals.shard.toLocaleString()}`)
+  }
+  return parts.join(" · ")
+}
+
+function hasRemaining(totals: MusicRewardTotals): boolean {
+  return hasMusicRewardTotals(totals)
+}
 
 const showSkeleton = computed(
   () => progress.value == null
@@ -294,6 +399,63 @@ function difficultyLabel(difficulty: MusicDifficulty): string {
           </CardContent>
         </Card>
 
+        <Card v-if="rewardStats">
+          <CardHeader>
+            <CardTitle class="text-sm font-medium text-muted-foreground">
+              {{ t("musicProgress.rewards.title") }}
+            </CardTitle>
+            <CardDescription class="text-xs">
+              {{ t("musicProgress.rewards.hint") }}
+            </CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-3">
+            <div class="grid grid-cols-3 gap-2">
+              <div class="rounded-md border p-2 text-center">
+                <p class="text-xs text-muted-foreground">{{ t("musicProgress.rewards.jewel") }}</p>
+                <p class="text-xl font-semibold tabular-nums">{{ rewardStats.total.jewel.toLocaleString() }}</p>
+              </div>
+              <div class="rounded-md border p-2 text-center">
+                <p class="text-xs text-muted-foreground">{{ t("musicProgress.rewards.coin") }}</p>
+                <p class="text-xl font-semibold tabular-nums">{{ rewardStats.total.coin.toLocaleString() }}</p>
+              </div>
+              <div class="rounded-md border p-2 text-center">
+                <p class="text-xs text-muted-foreground">{{ t("musicProgress.rewards.shard") }}</p>
+                <p class="text-xl font-semibold tabular-nums">{{ rewardStats.total.shard.toLocaleString() }}</p>
+              </div>
+            </div>
+            <div class="grid gap-1 text-xs text-muted-foreground">
+              <p
+                v-for="entry in rewardStats.perDifficulty"
+                :key="entry.difficulty"
+                class="flex flex-wrap items-center gap-2"
+              >
+                <span class="inline-flex min-w-20 items-center gap-1.5 font-medium">
+                  <span
+                    class="size-2.5 shrink-0 rounded-full"
+                    :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[entry.difficulty] }"
+                  />
+                  {{ difficultyLabel(entry.difficulty) }}
+                </span>
+                <span class="tabular-nums">
+                  {{ hasRemaining(entry.totals) ? formatRewardTotals(entry.totals) : t("musicProgress.rewards.allClaimed") }}
+                </span>
+              </p>
+              <p class="flex flex-wrap items-center gap-2">
+                <span class="min-w-20 font-medium">{{ t("musicProgress.rewards.scoreRank") }}</span>
+                <span class="tabular-nums">
+                  {{ hasRemaining(rewardStats.scoreRank) ? formatRewardTotals(rewardStats.scoreRank) : t("musicProgress.rewards.allClaimed") }}
+                </span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <p
+          v-else-if="claimedAchievements == null && suite.status.value === 'ready'"
+          class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
+        >
+          {{ t("musicProgress.rewards.unavailable") }}
+        </p>
+
         <Tabs :model-value="activeDifficulty" @update:model-value="updateDifficulty">
           <TabsList class="w-full flex-wrap sm:w-auto">
             <TabsTrigger
@@ -390,6 +552,12 @@ function difficultyLabel(difficulty: MusicDifficulty): string {
                 <span class="text-xs tabular-nums text-muted-foreground">
                   AP {{ row.allPerfect }} · FC {{ row.fullComboOnly }} ·
                   CL {{ row.clearOnly }} · — {{ row.unplayed }}
+                </span>
+                <span
+                  v-if="levelRemainingText(row)"
+                  class="text-xs tabular-nums text-emerald-600 dark:text-emerald-400"
+                >
+                  {{ levelRemainingText(row) }}
                 </span>
               </button>
 

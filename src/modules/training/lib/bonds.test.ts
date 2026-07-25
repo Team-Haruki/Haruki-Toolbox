@@ -3,6 +3,7 @@ import {
   bondLevelProgressPercent,
   buildBondCharacterStyleMap,
   buildBondEntries,
+  buildBondsRewardsByGroup,
   normalizeBondLevelTable,
   normalizeBondMasters,
   normalizeUserBonds,
@@ -244,5 +245,53 @@ describe("bondLevelProgressPercent", () => {
       needExp: null,
       levelExpSpan: null,
     })).toBeNull()
+  })
+})
+
+describe("buildBondsRewardsByGroup", () => {
+  const rawBondsRewards = [
+    { bondsGroupId: 10102, rank: 2, resourceBoxId: 1, bondsRewardType: "resource" },
+    { bondsGroupId: 10102, rank: 3, resourceBoxId: 2, bondsRewardType: "resource" },
+    { bondsGroupId: 10102, rank: 5, resourceBoxId: 4, bondsRewardType: "resource" },
+    { bondsGroupId: 10102, rank: 5, bondsRewardType: "cut_in_voice" },
+    { bondsGroupId: 10103, rank: 2, resourceBoxId: 1, bondsRewardType: "resource" },
+    { bondsGroupId: 0, rank: 2, resourceBoxId: 1, bondsRewardType: "resource" },
+  ]
+  const flatDetails = [
+    { resourceBoxId: 1, resourceBoxPurpose: "bonds_reward", resourceType: "jewel", resourceId: null, resourceQuantity: 50, resourceLevel: null },
+    { resourceBoxId: 2, resourceBoxPurpose: "bonds_reward", resourceType: "material", resourceId: 15, resourceQuantity: 10, resourceLevel: null },
+    { resourceBoxId: 4, resourceBoxPurpose: "bonds_reward", resourceType: "bonds_honor", resourceId: 1010201, resourceQuantity: 1, resourceLevel: 1 },
+    // Other purposes must be ignored even with a matching box id.
+    { resourceBoxId: 1, resourceBoxPurpose: "shop_item", resourceType: "jewel", resourceId: null, resourceQuantity: 9999, resourceLevel: null },
+  ]
+
+  it("resolves flat detail rows (tw/kr/cn) into per-rank rewards", () => {
+    const map = buildBondsRewardsByGroup(rawBondsRewards, [], flatDetails)
+    const ranks = map.get(10102)!
+    expect(ranks.map((row) => row.rank)).toEqual([2, 3, 5])
+    expect(ranks[0]!.items).toEqual([
+      { type: "jewel", resourceId: null, quantity: 50, level: null },
+    ])
+    expect(ranks[1]!.items).toEqual([
+      { type: "material", resourceId: 15, quantity: 10, level: null },
+    ])
+    expect(ranks[2]!.items).toEqual([
+      { type: "bonds_honor", resourceId: 1010201, quantity: 1, level: 1 },
+      { type: "cut_in_voice", resourceId: null, quantity: 1, level: null },
+    ])
+    expect(map.has(0)).toBe(false)
+  })
+
+  it("flattens the nested resourceBoxes dump (jp/en)", () => {
+    const map = buildBondsRewardsByGroup(rawBondsRewards, [
+      { id: 1, resourceBoxPurpose: "bonds_reward", details: [flatDetails[0]] },
+    ])
+    expect(map.get(10103)!.at(0)?.items).toEqual([
+      { type: "jewel", resourceId: null, quantity: 50, level: null },
+    ])
+  })
+
+  it("tolerates junk input", () => {
+    expect(buildBondsRewardsByGroup(null, "x", 42).size).toBe(0)
   })
 })

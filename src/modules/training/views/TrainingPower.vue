@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
+import { SEKAI_CARD_ATTR_COLORS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
+import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { useTrainingPower } from "@/modules/training/composables/useTrainingPower"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
@@ -80,12 +81,24 @@ const unitRows = computed(() => bonuses.value.units.map((bonus) => ({
   ...bonus,
   label: t(`training.power.units.${bonus.unit}`),
   color: unitColorMap.value.get(bonus.unit) ?? null,
+  logoUrl: resolveUnitLogoUrl(bonus.unit),
 })))
 
 const attrRows = computed(() => bonuses.value.attrs.map((bonus) => ({
   ...bonus,
   label: t(`training.power.attrs.${bonus.attr}`),
+  iconUrl: resolveCardAttrIconUrl(bonus.attr),
+  color: SEKAI_CARD_ATTR_COLORS[bonus.attr] ?? null,
 })))
+
+// Units whose emblem image failed to load just drop the image.
+const failedUnitLogos = ref<Set<SekaiUnit>>(new Set())
+
+function markUnitLogoFailed(unit: SekaiUnit) {
+  const next = new Set(failedUnitLogos.value)
+  next.add(unit)
+  failedUnitLogos.value = next
+}
 
 function formatPercent(value: number): string {
   return formatPowerBonusPercent(value)
@@ -196,6 +209,14 @@ function retry() {
               class="flex items-center gap-2 rounded-md border border-l-4 p-2.5"
               :style="row.color ? { borderLeftColor: row.color } : {}"
             >
+              <img
+                v-if="!failedUnitLogos.has(row.unit)"
+                :src="row.logoUrl"
+                alt=""
+                class="h-5 w-auto max-w-10 shrink-0 object-contain"
+                loading="lazy"
+                @error="markUnitLogoFailed(row.unit)"
+              >
               <p class="min-w-0 flex-1 truncate text-sm" :title="row.label">{{ row.label }}</p>
               <span class="shrink-0 text-sm font-semibold tabular-nums">
                 {{ formatPercent(row.total) }}
@@ -216,8 +237,10 @@ function retry() {
             <div
               v-for="row in attrRows"
               :key="row.attr"
-              class="flex items-center gap-2 rounded-md border p-2.5"
+              class="flex items-center gap-2 rounded-md border border-l-4 p-2.5"
+              :style="row.color ? { borderLeftColor: row.color } : {}"
             >
+              <img :src="row.iconUrl" alt="" class="size-5 shrink-0" loading="lazy">
               <p class="min-w-0 flex-1 truncate text-sm" :title="row.label">{{ row.label }}</p>
               <span class="shrink-0 text-sm font-semibold tabular-nums">
                 {{ formatPercent(row.total) }}

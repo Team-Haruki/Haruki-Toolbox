@@ -22,6 +22,15 @@ export type SekaiUnit = (typeof SEKAI_UNITS)[number]
 
 export const SEKAI_CARD_ATTRS = ["cute", "cool", "pure", "happy", "mysterious"] as const
 
+/** Representative color per card attribute (approximate in-game palette). */
+export const SEKAI_CARD_ATTR_COLORS: Record<string, string> = {
+  cute: "#FF6BA1",
+  cool: "#4270F5",
+  pure: "#46C74C",
+  happy: "#FFA928",
+  mysterious: "#B24BDD",
+}
+
 export type SekaiCardAttr = (typeof SEKAI_CARD_ATTRS)[number]
 
 export type CatalogCharacter = {

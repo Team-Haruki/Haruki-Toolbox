@@ -15,6 +15,7 @@ import {
   buildAreaItemViews,
   collectUserAreaItemLevels,
   collectUserMaterials,
+  formatAreaBonusRate,
   materialIconAssetPath,
   type AreaItemFilter,
   type AreaItemLevelView,
@@ -369,7 +370,7 @@ function retry() {
                   {{ t("training.area.level", { level: row.level }) }}
                 </span>
                 <span v-if="row.bonus > 0" class="text-xs tabular-nums text-muted-foreground">
-                  {{ t("training.area.bonus", { bonus: row.bonus }) }}
+                  {{ t("training.area.bonus", { bonus: formatAreaBonusRate(row.bonus) }) }}
                 </span>
                 <span v-if="row.materials.length === 0" class="text-xs text-muted-foreground">
                   {{ t("training.area.notInShop") }}
