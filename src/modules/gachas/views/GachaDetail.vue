@@ -191,8 +191,8 @@ const poolCards = computed<CatalogMasterCard[]>(() => {
   return cards
 })
 
-/** Characters that actually appear in this pool, in id order. */
-const poolCharacterOptions = computed(() => {
+/** Characters that actually appear in this pool, grouped by unit with the unit logo as marker. */
+const poolCharacterGroups = computed(() => {
   const ids = new Set<number>()
   for (const card of poolCards.value) {
     if (card.characterId != null) {
@@ -200,16 +200,30 @@ const poolCharacterOptions = computed(() => {
     }
   }
 
-  return [...ids]
-    .sort((a, b) => a - b)
-    .map((id) => {
-      const character = characterMap.value.get(id) ?? null
-      return {
-        id,
-        name: character?.name ?? `#${id}`,
-        iconUrl: character?.iconUrl ?? null,
-      }
-    })
+  const byUnit = new Map<SekaiUnit | null, Array<{ id: number; name: string; iconUrl: string | null }>>()
+  for (const id of [...ids].sort((a, b) => a - b)) {
+    const character = characterMap.value.get(id) ?? null
+    const unit = character?.unit ?? null
+    const entry = {
+      id,
+      name: character?.name ?? `#${id}`,
+      iconUrl: character?.iconUrl ?? null,
+    }
+    const group = byUnit.get(unit)
+    if (group) {
+      group.push(entry)
+    } else {
+      byUnit.set(unit, [entry])
+    }
+  }
+
+  return [...SEKAI_UNITS, null as SekaiUnit | null]
+    .map((unit) => ({
+      unit,
+      logoUrl: unit != null ? resolveUnitLogoUrl(unit) : null,
+      characters: byUnit.get(unit) ?? [],
+    }))
+    .filter((group) => group.characters.length > 0)
 })
 
 const filteredPoolCards = computed(() => sortCards(
@@ -472,39 +486,56 @@ function goBack() {
             </Button>
           </div>
 
-          <div v-if="poolCharacterOptions.length > 0" class="flex flex-wrap items-center gap-1.5">
+          <div v-if="poolCharacterGroups.length > 0" class="flex flex-wrap items-center gap-1.5">
             <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cards.filter.characters") }}</span>
-            <button
-              v-for="character in poolCharacterOptions"
-              :key="character.id"
-              type="button"
-              :class="[
-                'relative shrink-0 rounded-full ring-2 transition',
-                poolFilters.characterIds.includes(character.id)
-                  ? 'ring-primary'
-                  : 'ring-transparent hover:ring-border',
-                poolFilters.characterIds.length > 0 && !poolFilters.characterIds.includes(character.id)
-                  ? 'opacity-40 hover:opacity-100'
-                  : '',
-              ]"
-              :title="character.name"
-              :aria-pressed="poolFilters.characterIds.includes(character.id)"
-              @click="togglePoolCharacter(character.id)"
-            >
-              <img
-                v-if="character.iconUrl"
-                :src="character.iconUrl"
-                :alt="character.name"
-                class="size-8 rounded-full"
-                loading="lazy"
-              >
+            <template v-for="group in poolCharacterGroups" :key="group.unit ?? 'other'">
               <span
-                v-else
-                class="flex size-8 items-center justify-center rounded-full bg-muted font-mono text-[10px] text-muted-foreground"
+                v-if="group.unit"
+                class="ml-1 inline-flex shrink-0 items-center"
+                :title="t(`cards.unit.${group.unit}`)"
               >
-                {{ character.id }}
+                <img
+                  v-if="!failedUnitLogos.has(group.unit)"
+                  :src="group.logoUrl ?? undefined"
+                  alt=""
+                  class="h-4 w-auto max-w-10 object-contain"
+                  loading="lazy"
+                  @error="markUnitLogoFailed(group.unit)"
+                >
+                <span v-else class="size-2.5 rounded-full bg-muted-foreground/40" />
               </span>
-            </button>
+              <button
+                v-for="character in group.characters"
+                :key="character.id"
+                type="button"
+                :class="[
+                  'relative shrink-0 rounded-full ring-2 transition',
+                  poolFilters.characterIds.includes(character.id)
+                    ? 'ring-primary'
+                    : 'ring-transparent hover:ring-border',
+                  poolFilters.characterIds.length > 0 && !poolFilters.characterIds.includes(character.id)
+                    ? 'opacity-40 hover:opacity-100'
+                    : '',
+                ]"
+                :title="character.name"
+                :aria-pressed="poolFilters.characterIds.includes(character.id)"
+                @click="togglePoolCharacter(character.id)"
+              >
+                <img
+                  v-if="character.iconUrl"
+                  :src="character.iconUrl"
+                  :alt="character.name"
+                  class="size-8 rounded-full"
+                  loading="lazy"
+                >
+                <span
+                  v-else
+                  class="flex size-8 items-center justify-center rounded-full bg-muted font-mono text-[10px] text-muted-foreground"
+                >
+                  {{ character.id }}
+                </span>
+              </button>
+            </template>
           </div>
 
           <div class="flex flex-wrap items-center gap-1.5">

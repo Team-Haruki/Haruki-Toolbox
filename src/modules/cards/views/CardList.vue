@@ -7,11 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -19,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  LucideChevronDown,
   LucideChevronLeft,
   LucideChevronRight,
   LucidePackageOpen,
@@ -89,7 +83,28 @@ const selectedRegion = computed<string>({
   set: (value) => updateRegionSelector(value),
 })
 
-const characterOptions = computed(() => [...characterMap.value.values()].sort((a, b) => a.id - b.id))
+/** Characters grouped by unit (canonical order), unitless characters last. */
+const characterGroups = computed(() => {
+  const characters = [...characterMap.value.values()].sort((a, b) => a.id - b.id)
+  const byUnit = new Map<SekaiUnit | null, typeof characters>()
+  for (const character of characters) {
+    const unit = character.unit ?? null
+    const group = byUnit.get(unit)
+    if (group) {
+      group.push(character)
+    } else {
+      byUnit.set(unit, [character])
+    }
+  }
+
+  return [...SEKAI_UNITS, null as SekaiUnit | null]
+    .map((unit) => ({
+      unit,
+      logoUrl: unit != null ? resolveUnitLogoUrl(unit) : null,
+      characters: byUnit.get(unit) ?? [],
+    }))
+    .filter((group) => group.characters.length > 0)
+})
 
 const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
 
@@ -231,37 +246,6 @@ function nextPage() {
     <Card>
       <CardContent class="flex flex-col gap-3 py-4">
         <div class="flex flex-wrap items-center gap-2">
-          <Popover>
-            <PopoverTrigger as-child>
-              <Button variant="outline" size="sm" class="gap-1">
-                {{ t("cards.filter.characters") }}
-                <span v-if="filters.characterIds.length > 0" class="rounded bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-                  {{ filters.characterIds.length }}
-                </span>
-                <LucideChevronDown class="size-3.5 opacity-60" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent class="w-80 p-2" align="start">
-              <div class="grid grid-cols-2 gap-1">
-                <button
-                  v-for="character in characterOptions"
-                  :key="character.id"
-                  type="button"
-                  :class="[
-                    'flex items-center gap-2 rounded-md px-2 py-1 text-left text-sm transition-colors',
-                    filters.characterIds.includes(character.id)
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-muted',
-                  ]"
-                  @click="toggleCharacter(character.id)"
-                >
-                  <img :src="character.iconUrl" alt="" class="size-6 shrink-0 rounded-full" loading="lazy">
-                  <span class="truncate">{{ character.name }}</span>
-                </button>
-              </div>
-            </PopoverContent>
-          </Popover>
-
           <Select v-model="selectedYear">
             <SelectTrigger class="h-8 w-28 text-sm" :aria-label="t('cards.filter.year')">
               <SelectValue />
@@ -289,6 +273,46 @@ function nextPage() {
             <Switch v-model="showTrained" />
             {{ t("cards.list.showTrained") }}
           </label>
+        </div>
+
+        <div v-if="characterGroups.length > 0" class="flex flex-wrap items-center gap-1.5">
+          <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cards.filter.characters") }}</span>
+          <template v-for="group in characterGroups" :key="group.unit ?? 'other'">
+            <span
+              v-if="group.unit"
+              class="ml-1 inline-flex shrink-0 items-center"
+              :title="t(`cards.unit.${group.unit}`)"
+            >
+              <img
+                v-if="!failedUnitLogos.has(group.unit)"
+                :src="group.logoUrl ?? undefined"
+                alt=""
+                class="h-4 w-auto max-w-10 object-contain"
+                loading="lazy"
+                @error="markUnitLogoFailed(group.unit)"
+              >
+              <span v-else class="size-2.5 rounded-full bg-muted-foreground/40" :style="unitDotStyle(group.unit)" />
+            </span>
+            <button
+              v-for="character in group.characters"
+              :key="character.id"
+              type="button"
+              :class="[
+                'relative shrink-0 rounded-full ring-2 transition',
+                filters.characterIds.includes(character.id)
+                  ? 'ring-primary'
+                  : 'ring-transparent hover:ring-border',
+                filters.characterIds.length > 0 && !filters.characterIds.includes(character.id)
+                  ? 'opacity-40 hover:opacity-100'
+                  : '',
+              ]"
+              :title="character.name"
+              :aria-pressed="filters.characterIds.includes(character.id)"
+              @click="toggleCharacter(character.id)"
+            >
+              <img :src="character.iconUrl" :alt="character.name" class="size-8 rounded-full" loading="lazy">
+            </button>
+          </template>
         </div>
 
         <div class="flex flex-wrap items-center gap-1.5">
