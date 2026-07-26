@@ -523,6 +523,30 @@ export function fillAreaItemShopItemsByShopSequence(args: {
   }
 }
 
+/**
+ * Highest contiguous level from 1 with masterdata, ignoring shop
+ * availability. Fallback cap for dumps without resource box data (currently
+ * cn), where no shop mapping can be built at all.
+ */
+export function masterAreaItemLevelCap(levels: readonly AreaItemLevelMaster[]): number {
+  const levelSet = new Set<number>()
+  for (const level of levels) {
+    if (level.level > 0) {
+      levelSet.add(level.level)
+    }
+  }
+  if (!levelSet.has(1)) {
+    return 0
+  }
+
+  let cap = 1
+  while (levelSet.has(cap + 1)) {
+    cap++
+  }
+
+  return cap
+}
+
 /** Go: releasedAreaItemLevelCap — highest contiguous level from 1 with masterdata and a shop item. */
 export function releasedAreaItemLevelCap(
   levels: readonly AreaItemLevelMaster[],
@@ -676,6 +700,11 @@ export function buildAreaItemViews(args: {
     maxVisibleLevel: number
   }
 
+  // With no shop mapping at all (cn dumps ship no resource box data), the
+  // released-level walk would cap everything at the current level; fall back
+  // to the plain masterdata cap instead.
+  const shopDataAvailable = [...levelShopItems.values()].some((map) => map.size > 0)
+
   const states: AreaItemRenderState[] = []
   let minCurrentLevel = -1
   for (const itemId of itemIds) {
@@ -691,7 +720,9 @@ export function buildAreaItemViews(args: {
     }
 
     const shopLevels = levelShopItems.get(itemId)
-    const releasedCap = releasedAreaItemLevelCap(levels, shopLevels)
+    const releasedCap = shopDataAvailable
+      ? releasedAreaItemLevelCap(levels, shopLevels)
+      : masterAreaItemLevelCap(levels)
 
     let currentLevel = args.userAreaLevels.get(itemId) ?? 0
     if (releasedCap > 0 && currentLevel > releasedCap) {

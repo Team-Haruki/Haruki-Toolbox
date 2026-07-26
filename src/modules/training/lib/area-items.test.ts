@@ -12,6 +12,7 @@ import {
   materialIconAssetPath,
   normalizeAreaShopItems,
   normalizeAreaShopResourceBoxDetails,
+  masterAreaItemLevelCap,
   releasedAreaItemLevelCap,
   type AreaItemLevelMaster,
   type AreaItemMaster,
@@ -549,5 +550,38 @@ describe("formatCompactQuantity", () => {
     expect(formatCompactQuantity(500_000, "en-US")).toBe("500k")
     expect(formatCompactQuantity(1_172_288, "en-US")).toBe("1.2M")
     expect(formatCompactQuantity(29, "en-US")).toBe("29")
+  })
+})
+
+describe("masterAreaItemLevelCap", () => {
+  test("walks the contiguous masterdata levels from 1", () => {
+    expect(masterAreaItemLevelCap([makeLevel(1, 1), makeLevel(1, 2), makeLevel(1, 3)])).toBe(3)
+    expect(masterAreaItemLevelCap([makeLevel(1, 1), makeLevel(1, 3)])).toBe(1)
+  })
+
+  test("returns 0 without a level 1", () => {
+    expect(masterAreaItemLevelCap([makeLevel(1, 2)])).toBe(0)
+    expect(masterAreaItemLevelCap([])).toBe(0)
+  })
+})
+
+describe("buildAreaItemViews without shop data", () => {
+  test("falls back to the masterdata level cap instead of capping at the current level", () => {
+    const views = buildAreaItemViews({
+      areaItems: [makeItem(1, 1)],
+      areaItemLevels: [makeLevel(1, 1), makeLevel(1, 2), makeLevel(1, 3)],
+      shopItems: [],
+      shopDetails: [],
+      userAreaLevels: new Map([[1, 1]]),
+      userMaterials: new Map(),
+      nowMs: 1_000,
+    })
+
+    expect(views).toHaveLength(1)
+    expect(views[0].currentLevel).toBe(1)
+    expect(views[0].maxVisibleLevel).toBe(3)
+    // Upgrade rows exist but are not marked purchasable without shop costs.
+    expect(views[0].levels.map((row) => row.level)).toEqual([2, 3])
+    expect(views[0].levels.every((row) => !row.canUpgrade)).toBe(true)
   })
 })
