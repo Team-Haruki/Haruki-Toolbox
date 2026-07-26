@@ -415,102 +415,89 @@ function retry() {
             </span>
           </CardTitle>
         </CardHeader>
-        <CardContent class="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <div class="flex flex-col gap-1">
-            <h3 class="mb-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byCharacter") }}</h3>
-            <div class="overflow-x-auto">
-              <table class="w-full border-collapse text-xs">
-                <thead>
-                  <tr class="text-[11px] text-muted-foreground">
-                    <th class="px-1 py-1 text-left font-medium" scope="col" />
-                    <th class="px-1 py-1 text-right font-medium" scope="col" />
-                    <th class="px-1 py-1 font-medium" scope="col" />
-                    <th
-                      v-for="rarity in statsRarityColumns"
-                      :key="rarity"
-                      class="px-1.5 py-1 text-center font-medium"
-                      scope="col"
-                    >
-                      {{ t(`cards.rarity.${rarity}`) }}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="row in statsCharacterRows"
-                    :key="row.characterId"
-                    class="rounded-md hover:bg-muted/50"
-                  >
-                    <td class="px-1 py-1">
-                      <span class="flex min-w-0 items-center gap-2">
-                        <img v-if="row.iconUrl" :src="row.iconUrl" alt="" class="size-6 shrink-0 rounded-full" loading="lazy">
-                        <span class="max-w-24 truncate">{{ row.name }}</span>
-                      </span>
-                    </td>
-                    <td class="whitespace-nowrap px-1 py-1 text-right tabular-nums text-muted-foreground">
-                      {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
-                      ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
-                    </td>
-                    <td class="px-1.5 py-1">
-                      <Progress :model-value="row.percent" :color="row.color ?? undefined" class="h-1.5 w-16" />
-                    </td>
-                    <td
-                      v-for="bucket in row.buckets"
-                      :key="bucket.rarity"
-                      class="whitespace-nowrap px-1.5 py-1 text-center tabular-nums text-muted-foreground"
-                    >
-                      {{ bucket.total > 0 ? `${bucket.owned}/${bucket.total}` : "—" }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+        <CardContent class="flex flex-col gap-4">
+          <div class="flex flex-col gap-2">
+            <h3 class="text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byCharacter") }}</h3>
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              <div
+                v-for="row in statsCharacterRows"
+                :key="row.characterId"
+                class="flex flex-col gap-1.5 rounded-md border border-l-4 p-2"
+                :style="row.color ? { borderLeftColor: row.color } : {}"
+              >
+                <div class="flex items-center gap-2">
+                  <img v-if="row.iconUrl" :src="row.iconUrl" alt="" class="size-7 shrink-0 rounded-full" loading="lazy">
+                  <span class="min-w-0 flex-1 truncate text-xs font-medium" :title="row.name">{{ row.name }}</span>
+                  <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
+                    · {{ t("cardBox.stats.percent", { percent: row.percent }) }}
+                  </span>
+                </div>
+                <Progress :model-value="row.percent" :color="row.color ?? undefined" class="h-1.5" />
+                <p class="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] tabular-nums text-muted-foreground">
+                  <span v-for="bucket in row.buckets" :key="bucket.rarity">
+                    {{ t(`cards.rarity.${bucket.rarity}`) }}
+                    {{ bucket.total > 0 ? `${bucket.owned}/${bucket.total}` : "—" }}
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
-          <div class="flex flex-col gap-4">
-            <div class="flex flex-col gap-1">
-              <h3 class="mb-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byUnit") }}</h3>
+
+          <div class="flex flex-col gap-2">
+            <h3 class="text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byUnit") }}</h3>
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
               <div
                 v-for="row in statsUnitRows"
                 :key="row.unit"
-                class="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-muted/50"
+                class="flex flex-col gap-1.5 rounded-md border border-l-4 p-2"
+                :style="row.color ? { borderLeftColor: row.color } : {}"
               >
-                <span class="flex w-9 shrink-0 justify-center">
-                  <img
-                    v-if="!failedUnitLogos.has(row.unit)"
-                    :src="row.logoUrl"
-                    alt=""
-                    class="h-4 w-auto max-w-9 object-contain"
-                    loading="lazy"
-                    @error="markUnitLogoFailed(row.unit)"
-                  >
-                  <span
-                    v-else
-                    class="size-2.5 rounded-full"
-                    :style="{ backgroundColor: row.color ?? 'var(--muted-foreground)' }"
-                  />
-                </span>
-                <span class="w-20 truncate text-xs" :title="row.name">{{ row.name }}</span>
-                <span class="text-xs tabular-nums text-muted-foreground">
-                  {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
-                  ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
-                </span>
-                <Progress :model-value="row.percent" :color="row.color ?? undefined" class="ml-auto h-1.5 w-16 shrink-0" />
+                <div class="flex items-center gap-2">
+                  <span class="flex w-9 shrink-0 justify-center">
+                    <img
+                      v-if="!failedUnitLogos.has(row.unit)"
+                      :src="row.logoUrl"
+                      alt=""
+                      class="h-4 w-auto max-w-9 object-contain"
+                      loading="lazy"
+                      @error="markUnitLogoFailed(row.unit)"
+                    >
+                    <span
+                      v-else
+                      class="size-2.5 rounded-full"
+                      :style="{ backgroundColor: row.color ?? 'var(--muted-foreground)' }"
+                    />
+                  </span>
+                  <span class="min-w-0 flex-1 truncate text-xs font-medium" :title="row.name">{{ row.name }}</span>
+                  <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
+                    · {{ t("cardBox.stats.percent", { percent: row.percent }) }}
+                  </span>
+                </div>
+                <Progress :model-value="row.percent" :color="row.color ?? undefined" class="h-1.5" />
               </div>
             </div>
-            <div class="flex flex-col gap-1">
-              <h3 class="mb-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byAttr") }}</h3>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <h3 class="text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byAttr") }}</h3>
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
               <div
                 v-for="row in statsAttrRows"
                 :key="row.attr"
-                class="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-muted/50"
+                class="flex flex-col gap-1.5 rounded-md border border-l-4 p-2"
+                :style="row.color ? { borderLeftColor: row.color } : {}"
               >
-                <img :src="row.iconUrl" alt="" class="size-5 shrink-0" loading="lazy">
-                <span class="w-20 truncate text-xs">{{ row.name }}</span>
-                <span class="text-xs tabular-nums text-muted-foreground">
-                  {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
-                  ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
-                </span>
-                <Progress :model-value="row.percent" :color="row.color ?? undefined" class="ml-auto h-1.5 w-16 shrink-0" />
+                <div class="flex items-center gap-2">
+                  <img :src="row.iconUrl" alt="" class="size-5 shrink-0" loading="lazy">
+                  <span class="min-w-0 flex-1 truncate text-xs font-medium">{{ row.name }}</span>
+                  <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
+                    · {{ t("cardBox.stats.percent", { percent: row.percent }) }}
+                  </span>
+                </div>
+                <Progress :model-value="row.percent" :color="row.color ?? undefined" class="h-1.5" />
               </div>
             </div>
           </div>
