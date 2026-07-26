@@ -211,15 +211,15 @@ function retry() {
                 </p>
               </div>
               <div class="mt-1.5 grid grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1">
-                <span class="text-[11px] text-muted-foreground">{{ t("training.leader.normalLabel") }}</span>
+                <span class="text-center text-[11px] text-muted-foreground">{{ t("training.leader.normalLabel") }}</span>
                 <Progress :model-value="cell.percent" :color="cell.color ?? undefined" class="h-1.5" />
-                <span class="text-[11px] tabular-nums text-muted-foreground">
+                <span class="text-center text-[11px] tabular-nums text-muted-foreground">
                   {{ formatCount(cell.playCount) }}<template v-if="maxPlayCount > 0">/{{ formatCount(maxPlayCount) }}</template>
                 </span>
 
-                <span class="text-[11px] text-muted-foreground">{{ t("training.leader.exLevel", { level: cell.exLevel }) }}</span>
+                <span class="text-center text-[11px] text-muted-foreground">{{ t("training.leader.exLevel", { level: cell.exLevel }) }}</span>
                 <Progress :model-value="cell.exPercent" :color="cell.color ?? undefined" class="h-1.5" />
-                <span class="text-[11px] tabular-nums text-muted-foreground">
+                <span class="text-center text-[11px] tabular-nums text-muted-foreground">
                   {{ formatCount(cell.exCount) }}<template v-if="maxExCount > 0">/{{ formatCount(maxExCount) }}</template>
                 </span>
               </div>
