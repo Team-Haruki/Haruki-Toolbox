@@ -227,7 +227,7 @@ function retry() {
                   :style="{ width: `${cell.scorePercent}%`, ...(cell.color ? { backgroundColor: cell.color } : {}) }"
                 />
               </div>
-              <span class="text-xs font-semibold tabular-nums">
+              <span class="text-center text-xs font-semibold tabular-nums">
                 {{ cell.highScore > 0 ? formatNumber(cell.highScore) : "—" }}
               </span>
 
@@ -241,7 +241,7 @@ function retry() {
                   :style="{ width: `${cell.stagePercent}%`, ...(cell.color ? { backgroundColor: cell.color } : {}) }"
                 />
               </div>
-              <span class="text-[11px] tabular-nums text-muted-foreground">
+              <span class="text-center text-xs font-semibold tabular-nums">
                 <template v-if="cell.stage > 0">
                   {{ cell.stageCap > 0 ? `${cell.stage}/${cell.stageCap}` : cell.stage }}
                 </template>
