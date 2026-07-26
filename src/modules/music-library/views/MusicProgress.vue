@@ -425,11 +425,11 @@ function refresh() {
                 <p class="text-xl font-semibold tabular-nums">{{ formatCompactNumber(rewardStats.total.shard, locale) }}</p>
               </div>
             </div>
-            <div class="grid gap-1 text-xs text-muted-foreground">
-              <p
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              <div
                 v-for="entry in rewardStats.perDifficulty"
                 :key="entry.difficulty"
-                class="flex flex-wrap items-center gap-2"
+                class="flex flex-wrap items-center gap-2 rounded-md border p-2"
               >
                 <span
                   class="inline-flex w-16 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
@@ -437,18 +437,32 @@ function refresh() {
                 >
                   {{ difficultyLabel(entry.difficulty) }}
                 </span>
-                <span class="tabular-nums">
+                <span
+                  :class="[
+                    'text-xs tabular-nums',
+                    hasRemaining(entry.totals)
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-muted-foreground/70',
+                  ]"
+                >
                   {{ hasRemaining(entry.totals) ? formatRewardTotals(entry.totals) : t("musicProgress.rewards.allClaimed") }}
                 </span>
-              </p>
-              <p class="flex flex-wrap items-center gap-2">
+              </div>
+              <div class="flex flex-wrap items-center gap-2 rounded-md border p-2">
                 <span class="inline-flex w-16 shrink-0 items-center justify-center rounded border px-1 py-0.5 text-[11px] font-semibold">
                   {{ t("musicProgress.rewards.scoreRank") }}
                 </span>
-                <span class="tabular-nums">
+                <span
+                  :class="[
+                    'text-xs tabular-nums',
+                    hasRemaining(rewardStats.scoreRank)
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-muted-foreground/70',
+                  ]"
+                >
                   {{ hasRemaining(rewardStats.scoreRank) ? formatRewardTotals(rewardStats.scoreRank) : t("musicProgress.rewards.allClaimed") }}
                 </span>
-              </p>
+              </div>
             </div>
           </CardContent>
         </Card>
