@@ -296,18 +296,18 @@ function crosshairTemplate(point: EventPointTrendPoint) {
               <VisAxis type="x" :tick-format="xTickFormat" />
               <VisAxis v-if="showPointSeries" type="y" :tick-format="yTickFormat" :tick-text-color="TREND_POINT_COLOR" />
             </VisXYContainer>
-            <VisXYContainer
-              v-if="showRankSeries"
-              class="pointer-events-none absolute inset-0"
-              :data="trend"
-              :height="240"
-              :auto-margin="false"
-              :margin="TREND_MARGIN"
-            >
-              <VisLine :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" curve-type="monotoneX" />
-              <VisScatter :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" :size="4" />
-              <VisAxis type="y" position="right" :tick-format="rankTickFormat" :tick-text-color="TREND_RANK_COLOR" :grid-line="false" />
-            </VisXYContainer>
+            <div v-if="showRankSeries" class="pointer-events-none absolute inset-0">
+              <VisXYContainer
+                :data="trend"
+                :height="240"
+                :auto-margin="false"
+                :margin="TREND_MARGIN"
+              >
+                <VisLine :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" curve-type="monotoneX" />
+                <VisScatter :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" :size="4" />
+                <VisAxis type="y" position="right" :tick-format="rankTickFormat" :tick-text-color="TREND_RANK_COLOR" :grid-line="false" />
+              </VisXYContainer>
+            </div>
           </div>
           <p v-else class="text-sm text-muted-foreground">{{ t("eventRecords.trend.empty") }}</p>
         </CardContent>
