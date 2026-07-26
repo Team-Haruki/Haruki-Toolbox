@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SEKAI_CARD_ATTRS, SEKAI_UNITS, type SekaiUnit } from "@/shared/sekai/catalog"
+import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, SEKAI_UNITS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
 import { resolveCardAttrIconUrl, resolveSekaiGameAssetUrl } from "@/shared/sekai/data-sources"
 import { useTrainingArea } from "@/modules/training/composables/useTrainingArea"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
@@ -186,6 +186,35 @@ function targetUnitColor(view: AreaItemView): string | null {
   return unitColorMap.value.get(view.target.unit as SekaiUnit) ?? null
 }
 
+/** Representative color of the boosted target (character/unit/attribute). */
+function targetColor(view: AreaItemView): string | null {
+  const target = view.target
+  if (target == null) {
+    return null
+  }
+
+  if (target.type === "character") {
+    return resolveSekaiCharacterColor(target.characterId)
+  }
+  if (target.type === "attr") {
+    return SEKAI_CARD_ATTR_COLORS[target.attr] ?? null
+  }
+  return unitColorMap.value.get(target.unit as SekaiUnit) ?? null
+}
+
+function currentBonus(view: AreaItemView): number {
+  return view.levels.find((row) => row.level === view.currentLevel)?.bonus ?? 0
+}
+
+function maxLevel(view: AreaItemView): number {
+  return view.levels[view.levels.length - 1]?.level ?? view.currentLevel
+}
+
+function levelPercent(view: AreaItemView): number {
+  const max = maxLevel(view)
+  return max > 0 ? Math.min((view.currentLevel / max) * 100, 100) : 0
+}
+
 function formatQuantity(value: number): string {
   return numberFormatter.value.format(value)
 }
@@ -308,7 +337,12 @@ function retry() {
       </Card>
 
       <div v-else class="flex flex-col gap-2">
-        <Card v-for="view in itemViews" :key="view.itemId" class="py-3">
+        <Card
+          v-for="view in itemViews"
+          :key="view.itemId"
+          class="border-l-4 py-3"
+          :style="targetColor(view) ? { borderLeftColor: targetColor(view)! } : {}"
+        >
           <CardContent class="flex flex-col gap-2 px-4">
             <!-- Item header -->
             <div class="flex flex-wrap items-center gap-3">
@@ -322,9 +356,6 @@ function retry() {
               <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-medium" :title="view.name">{{ view.name }}</p>
                 <div class="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                  <span class="font-semibold tabular-nums text-foreground">
-                    {{ t("training.area.level", { level: view.currentLevel }) }}
-                  </span>
                   <span v-if="targetLabel(view)" class="inline-flex items-center gap-1">
                     <img
                       v-if="targetIconUrl(view)"
@@ -342,6 +373,9 @@ function retry() {
                   </span>
                 </div>
               </div>
+              <span class="shrink-0 text-sm font-semibold tabular-nums">
+                {{ t("training.area.bonus", { bonus: formatAreaBonusRate(currentBonus(view)) }) }}
+              </span>
               <Button
                 v-if="upgradeRows(view).length > 1"
                 variant="ghost"
@@ -352,6 +386,22 @@ function retry() {
                 <component :is="isExpanded(view.itemId) ? LucideChevronUp : LucideChevronDown" class="size-3.5" />
                 {{ isExpanded(view.itemId) ? t("training.area.hideAll") : t("training.area.showAll") }}
               </Button>
+            </div>
+
+            <!-- Level progress -->
+            <div class="flex items-center gap-2">
+              <span class="shrink-0 text-[11px] font-semibold tabular-nums">
+                {{ t("training.area.level", { level: view.currentLevel }) }}/{{ maxLevel(view) }}
+              </span>
+              <div
+                class="h-1.5 flex-1 overflow-hidden rounded-full bg-primary/15"
+                :style="targetColor(view) ? { backgroundColor: `color-mix(in srgb, ${targetColor(view)} 15%, transparent)` } : undefined"
+              >
+                <div
+                  class="h-full rounded-full bg-primary transition-all"
+                  :style="{ width: `${levelPercent(view)}%`, ...(targetColor(view) ? { backgroundColor: targetColor(view)! } : {}) }"
+                />
+              </div>
             </div>
 
             <!-- Fully upgraded -->
@@ -366,11 +416,11 @@ function retry() {
                 :key="row.level"
                 class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-2.5 py-1.5"
               >
-                <span class="min-w-12 text-xs font-semibold tabular-nums">
+                <span class="w-11 shrink-0 text-xs font-semibold tabular-nums">
                   {{ t("training.area.level", { level: row.level }) }}
                 </span>
-                <span v-if="row.bonus > 0" class="text-xs tabular-nums text-muted-foreground">
-                  {{ t("training.area.bonus", { bonus: formatAreaBonusRate(row.bonus) }) }}
+                <span class="w-12 shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {{ row.bonus > 0 ? t("training.area.bonus", { bonus: formatAreaBonusRate(row.bonus) }) : "" }}
                 </span>
                 <span v-if="row.materials.length === 0" class="text-xs text-muted-foreground">
                   {{ t("training.area.notInShop") }}
