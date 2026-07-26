@@ -1158,7 +1158,7 @@ export const enUS = {
       empty: "No challenge live records yet",
       sortByCharacter: "By character",
       sortByScore: "By score",
-      stage: "Stage {stage}",
+      scoreLabel: "Score",
       stageLabel: "Challenge Stage",
       jewel: "Claimable gems {count}",
       shard: "Crystal shards {count}",

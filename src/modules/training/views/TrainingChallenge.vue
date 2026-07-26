@@ -213,40 +213,39 @@ function retry() {
                 class="size-9 shrink-0 rounded-full"
                 loading="lazy"
               >
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-xs" :title="cell.name">{{ cell.name }}</p>
-                <p class="text-sm font-semibold tabular-nums">
-                  {{ cell.highScore > 0 ? formatNumber(cell.highScore) : "—" }}
-                </p>
-              </div>
+              <p class="min-w-0 flex-1 truncate text-xs font-medium" :title="cell.name">{{ cell.name }}</p>
             </div>
 
-            <div
-              class="h-1.5 w-full overflow-hidden rounded-full bg-primary/15"
-              :style="cell.color ? { backgroundColor: `color-mix(in srgb, ${cell.color} 15%, transparent)` } : undefined"
-            >
+            <div class="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1.5">
+              <span class="text-[11px] text-muted-foreground">{{ t("training.challenge.scoreLabel") }}</span>
               <div
-                class="h-full rounded-full bg-primary transition-all"
-                :style="{ width: `${cell.scorePercent}%`, ...(cell.color ? { backgroundColor: cell.color } : {}) }"
-              />
-            </div>
-
-            <div class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <span class="shrink-0">{{ t("training.challenge.stageLabel") }}</span>
-              <template v-if="cell.stageCap > 0">
+                class="h-1.5 overflow-hidden rounded-full bg-primary/15"
+                :style="cell.color ? { backgroundColor: `color-mix(in srgb, ${cell.color} 15%, transparent)` } : undefined"
+              >
                 <div
-                  class="h-1 flex-1 overflow-hidden rounded-full bg-primary/10"
-                  :style="cell.color ? { backgroundColor: `color-mix(in srgb, ${cell.color} 10%, transparent)` } : undefined"
-                >
-                  <div
-                    class="h-full rounded-full bg-primary/70 transition-all"
-                    :style="{ width: `${cell.stagePercent}%`, ...(cell.color ? { backgroundColor: cell.color } : {}) }"
-                  />
-                </div>
-                <span class="shrink-0 tabular-nums">{{ cell.stage }}/{{ cell.stageCap }}</span>
-              </template>
-              <span v-else class="tabular-nums">
-                {{ cell.stage > 0 ? t("training.challenge.stage", { stage: cell.stage }) : "—" }}
+                  class="h-full rounded-full bg-primary transition-all"
+                  :style="{ width: `${cell.scorePercent}%`, ...(cell.color ? { backgroundColor: cell.color } : {}) }"
+                />
+              </div>
+              <span class="text-xs font-semibold tabular-nums">
+                {{ cell.highScore > 0 ? formatNumber(cell.highScore) : "—" }}
+              </span>
+
+              <span class="text-[11px] text-muted-foreground">{{ t("training.challenge.stageLabel") }}</span>
+              <div
+                class="h-1.5 overflow-hidden rounded-full bg-primary/15"
+                :style="cell.color ? { backgroundColor: `color-mix(in srgb, ${cell.color} 15%, transparent)` } : undefined"
+              >
+                <div
+                  class="h-full rounded-full bg-primary transition-all"
+                  :style="{ width: `${cell.stagePercent}%`, ...(cell.color ? { backgroundColor: cell.color } : {}) }"
+                />
+              </div>
+              <span class="text-[11px] tabular-nums text-muted-foreground">
+                <template v-if="cell.stage > 0">
+                  {{ cell.stageCap > 0 ? `${cell.stage}/${cell.stageCap}` : cell.stage }}
+                </template>
+                <template v-else>—</template>
               </span>
             </div>
 
