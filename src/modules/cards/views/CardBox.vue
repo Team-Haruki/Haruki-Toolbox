@@ -10,7 +10,7 @@ import { LucideChartPie, LucideRefreshCw } from "lucide-vue-next"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import type { CatalogMasterCard } from "@/shared/sekai/catalog"
-import { SEKAI_CARD_ATTRS, buildCatalogCardThumbnail, resolveSekaiCharacterColor, type SekaiCardThumbnailView, type SekaiUnit } from "@/shared/sekai/catalog"
+import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, buildCatalogCardThumbnail, resolveSekaiCharacterColor, type SekaiCardThumbnailView, type SekaiUnit } from "@/shared/sekai/catalog"
 import { resolveTrainRankImageUrl } from "@/shared/sekai/data-sources"
 import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import type { SekaiRegion } from "@/types"
@@ -202,6 +202,7 @@ const statsAttrRows = computed(() => attrDistribution.value.map((row) => ({
   ...row,
   name: attrLabel(row.attr),
   iconUrl: resolveCardAttrIconUrl(row.attr),
+  color: SEKAI_CARD_ATTR_COLORS[row.attr] ?? null,
 })))
 
 const visibleEmpty = computed(() => {
@@ -223,6 +224,12 @@ function attrLabel(attr: string): string {
 function handleGroupModeChange(value: unknown) {
   if (typeof value === "string" && (CARD_BOX_GROUP_MODES as readonly string[]).includes(value)) {
     groupMode.value = value as CardBoxGroupMode
+  }
+}
+
+function handleOwnershipChange(value: unknown) {
+  if (typeof value === "string" && (CARD_OWNERSHIP_FILTERS as readonly string[]).includes(value)) {
+    ownership.value = value as CardOwnershipFilter
   }
 }
 
@@ -277,7 +284,13 @@ function retry() {
         <p class="text-sm text-muted-foreground">{{ t("cardBox.description") }}</p>
       </div>
       <div class="flex flex-col items-start gap-1 sm:items-end">
-        <GameAccountSelect />
+        <div class="flex flex-wrap items-center gap-2">
+          <GameAccountSelect />
+          <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
+            <LucideRefreshCw class="size-3.5" />
+            {{ t("cardBox.refresh") }}
+          </Button>
+        </div>
         <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
           {{ t("cardBox.dataAsOf", { time: uploadTimeText }) }}
         </p>
@@ -327,30 +340,24 @@ function retry() {
 
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.ownership.label") }}</span>
-              <button
-                v-for="filterOption in CARD_OWNERSHIP_FILTERS"
-                :key="filterOption"
-                type="button"
-                :class="[
-                  'rounded-full border px-2.5 py-1 text-xs transition-colors',
-                  ownership === filterOption
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border hover:bg-muted',
-                ]"
-                @click="ownership = filterOption"
-              >
-                {{ t(`cardBox.ownership.${filterOption}`) }}
-              </button>
+              <Tabs :model-value="ownership" @update:model-value="handleOwnershipChange">
+                <TabsList class="h-8">
+                  <TabsTrigger
+                    v-for="filterOption in CARD_OWNERSHIP_FILTERS"
+                    :key="filterOption"
+                    :value="filterOption"
+                    class="text-xs"
+                  >
+                    {{ t(`cardBox.ownership.${filterOption}`) }}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
             <div class="ml-auto flex items-center gap-1.5">
               <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="showStats = !showStats">
                 <LucideChartPie class="size-3.5" />
                 {{ t("cardBox.stats.toggle") }}
-              </Button>
-              <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
-                <LucideRefreshCw class="size-3.5" />
-                {{ t("cardBox.refresh") }}
               </Button>
             </div>
           </div>
@@ -445,12 +452,7 @@ function retry() {
                       ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
                     </td>
                     <td class="px-1.5 py-1">
-                      <div class="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
-                        <div
-                          class="h-full rounded-full bg-primary"
-                          :style="{ width: `${row.percent}%`, ...(row.color ? { backgroundColor: row.color } : {}) }"
-                        />
-                      </div>
+                      <Progress :model-value="row.percent" :color="row.color ?? undefined" class="h-1.5 w-16" />
                     </td>
                     <td
                       v-for="bucket in row.buckets"
@@ -492,12 +494,7 @@ function retry() {
                   {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
                   ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
                 </span>
-                <div class="ml-auto h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-muted">
-                  <div
-                    class="h-full rounded-full bg-primary"
-                    :style="{ width: `${row.percent}%`, ...(row.color ? { backgroundColor: row.color } : {}) }"
-                  />
-                </div>
+                <Progress :model-value="row.percent" :color="row.color ?? undefined" class="ml-auto h-1.5 w-16 shrink-0" />
               </div>
             </div>
             <div class="flex flex-col gap-1">
@@ -513,7 +510,7 @@ function retry() {
                   {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
                   ({{ t("cardBox.stats.percent", { percent: row.percent }) }})
                 </span>
-                <Progress :model-value="row.percent" class="ml-auto h-1.5 w-16 shrink-0" />
+                <Progress :model-value="row.percent" :color="row.color ?? undefined" class="ml-auto h-1.5 w-16 shrink-0" />
               </div>
             </div>
           </div>

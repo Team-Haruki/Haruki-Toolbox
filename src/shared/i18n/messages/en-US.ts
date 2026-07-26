@@ -878,7 +878,7 @@ export const enUS = {
   },
   cardBox: {
     title: "Card collection",
-    description: "Your card collection on the selected game account",
+    description: "View your game account's card collection progress",
     entryLink: "Card collection",
     noAccountHint: "Bind and select a game account to view your card collection.",
     dataAsOf: "Data as of {time}",

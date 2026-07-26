@@ -878,7 +878,7 @@ export const zhCN = {
   },
   cardBox: {
     title: "卡牌图鉴",
-    description: "查看所选游戏账号的卡牌收集情况",
+    description: "查看账号的卡牌收集进度",
     entryLink: "卡牌图鉴",
     noAccountHint: "绑定并选择一个游戏账号后即可查看卡牌图鉴。",
     dataAsOf: "数据更新于 {time}",
