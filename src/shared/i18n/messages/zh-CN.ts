@@ -910,6 +910,13 @@ export const zhCN = {
       byUnit: "按团体",
       byAttr: "按属性",
       byRarity: "按星级",
+      rarities: {
+        rarity_1: "1星",
+        rarity_2: "2星",
+        rarity_3: "3星",
+        rarity_4: "4星",
+        rarity_birthday: "生日",
+      },
       ownedOfTotal: "{owned}/{total}",
       percent: "{percent}%",
     },

@@ -910,6 +910,13 @@ export const enUS = {
       byUnit: "By unit",
       byAttr: "By attribute",
       byRarity: "By rarity",
+      rarities: {
+        rarity_1: "1 star",
+        rarity_2: "2 stars",
+        rarity_3: "3 stars",
+        rarity_4: "4 stars",
+        rarity_birthday: "Birthday",
+      },
       ownedOfTotal: "{owned}/{total}",
       percent: "{percent}%",
     },

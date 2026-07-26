@@ -10,7 +10,7 @@ import { LucideChartPie, LucideRefreshCw } from "lucide-vue-next"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import type { CatalogMasterCard } from "@/shared/sekai/catalog"
-import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, buildCatalogCardThumbnail, resolveSekaiCharacterColor, type SekaiCardThumbnailView, type SekaiUnit } from "@/shared/sekai/catalog"
+import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, buildCatalogCardThumbnail, resolveCardRareCount, resolveSekaiCharacterColor, type SekaiCardThumbnailView, type SekaiUnit } from "@/shared/sekai/catalog"
 import { resolveRarityTrainingIconUrl, resolveTrainRankImageUrl } from "@/shared/sekai/data-sources"
 import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import type { SekaiRegion } from "@/types"
@@ -210,8 +210,11 @@ const RARITY_STRIPE_COLORS: Record<CardRarityType, string> = {
 
 const statsRarityRows = computed(() => rarityDistribution.value.map((row) => ({
   ...row,
-  name: t(`cards.rarity.${row.rarity}`),
-  iconUrl: resolveRarityTrainingIconUrl(row.rarity),
+  name: t(`cardBox.stats.rarities.${row.rarity}`),
+  iconUrls: Array.from(
+    { length: Math.max(1, resolveCardRareCount(row.rarity)) },
+    () => resolveRarityTrainingIconUrl(row.rarity),
+  ),
   color: RARITY_STRIPE_COLORS[row.rarity],
 })))
 
@@ -529,7 +532,16 @@ function retry() {
                 :style="{ borderLeftColor: row.color }"
               >
                 <div class="flex items-center gap-2">
-                  <img :src="row.iconUrl" alt="" class="size-5 shrink-0" loading="lazy">
+                  <span class="inline-flex shrink-0 items-center">
+                    <img
+                      v-for="(iconUrl, index) in row.iconUrls"
+                      :key="`${row.rarity}-${index}`"
+                      :src="iconUrl"
+                      alt=""
+                      class="size-4"
+                      loading="lazy"
+                    >
+                  </span>
                   <span class="min-w-0 flex-1 truncate text-xs font-medium">{{ row.name }}</span>
                   <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
                     {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
