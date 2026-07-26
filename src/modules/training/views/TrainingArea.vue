@@ -96,7 +96,11 @@ const attrFilterOptions = computed(() => [
 
 const characterFilterOptions = computed(() => [
   { value: "0", label: `${t("training.area.filters.character")}: ${t("training.area.filters.all")}` },
-  ...characterOptions.value.map((character) => ({ value: String(character.id), label: character.name })),
+  ...characterOptions.value.map((character) => ({
+    value: String(character.id),
+    label: character.name,
+    iconUrl: character.iconUrl,
+  })),
 ])
 
 const filter = computed<AreaItemFilter>(() => ({

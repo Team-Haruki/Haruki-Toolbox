@@ -83,7 +83,11 @@ const selectedCharacter = computed(() => characterMap.value.get(selectedCharacte
 const selectedColor = computed(() => resolveSekaiCharacterColor(selectedCharacterId.value))
 
 const characterSelectOptions = computed(() =>
-  CHARACTER_IDS.map((characterId) => ({ value: String(characterId), label: characterName(characterId) })),
+  CHARACTER_IDS.map((characterId) => ({
+    value: String(characterId),
+    label: characterName(characterId),
+    iconUrl: characterMap.value.get(characterId)?.iconUrl ?? null,
+  })),
 )
 
 function characterName(characterId: number): string {

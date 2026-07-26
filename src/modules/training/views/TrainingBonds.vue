@@ -69,12 +69,12 @@ const uploadTimeText = computed(() => {
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
 const filterOptions = computed(() => {
-  const options: { value: string; label: string }[] = [
+  const options: { value: string; label: string; iconUrl?: string | null }[] = [
     { value: "", label: t("training.bonds.filterAll") },
   ]
-  const characterEntries: { value: string; label: string }[] = []
+  const characterEntries: { value: string; label: string; iconUrl?: string | null }[] = []
   for (const [id, character] of characterMap.value) {
-    characterEntries.push({ value: String(id), label: character.name })
+    characterEntries.push({ value: String(id), label: character.name, iconUrl: character.iconUrl })
   }
   characterEntries.sort((a, b) => Number(a.value) - Number(b.value))
   return [...options, ...characterEntries]

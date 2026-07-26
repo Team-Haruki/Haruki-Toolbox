@@ -11,6 +11,8 @@ import {
 export type SimpleSelectOption = {
   value: string
   label: string
+  /** Optional leading icon (e.g. a character avatar) shown in the option and trigger. */
+  iconUrl?: string | null
 }
 
 const props = withDefaults(defineProps<{
@@ -44,8 +46,8 @@ function toInternal(value: string): string {
 
 const internalValue = computed(() => toInternal(props.modelValue))
 
-const selectedLabel = computed(() =>
-  props.options.find((option) => option.value === props.modelValue)?.label ?? "",
+const selectedOption = computed(() =>
+  props.options.find((option) => option.value === props.modelValue) ?? null,
 )
 
 function handleUpdate(value: unknown) {
@@ -61,16 +63,32 @@ function handleUpdate(value: unknown) {
   <Select :model-value="internalValue" :disabled="disabled" @update:model-value="handleUpdate">
     <SelectTrigger :class="triggerClass" :size="size" :aria-label="ariaLabel">
       <SelectValue :placeholder="placeholder">
-        <template v-if="selectedLabel">{{ selectedLabel }}</template>
+        <template v-if="selectedOption">
+          <img
+            v-if="selectedOption.iconUrl"
+            :src="selectedOption.iconUrl"
+            alt=""
+            class="size-5 rounded-sm object-cover"
+            loading="lazy"
+          >
+          <span class="truncate">{{ selectedOption.label }}</span>
+        </template>
       </SelectValue>
     </SelectTrigger>
-    <SelectContent>
+    <SelectContent class="max-h-72">
       <SelectItem
         v-for="option in options"
         :key="option.value"
         :value="toInternal(option.value)"
       >
-        {{ option.label }}
+        <img
+          v-if="option.iconUrl"
+          :src="option.iconUrl"
+          alt=""
+          class="size-6 rounded-sm object-cover"
+          loading="lazy"
+        >
+        <span class="truncate">{{ option.label }}</span>
       </SelectItem>
     </SelectContent>
   </Select>
