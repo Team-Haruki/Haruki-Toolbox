@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test"
 import {
   buildChallengeBoxRewardMap,
   buildChallengeGrid,
+  buildChallengeStageCapMap,
   collectClaimedChallengeRewardIds,
   estimateChallengeMaxScore,
   normalizeChallengeRewardMasters,
@@ -224,5 +225,28 @@ describe("summarizeChallengeCells", () => {
     ])
     expect(summary.top).toBeNull()
     expect(summary.withDataCount).toBe(0)
+  })
+})
+
+describe("buildChallengeStageCapMap", () => {
+  it("keeps the highest rank per character and tolerates junk", () => {
+    const map = buildChallengeStageCapMap([
+      { characterId: 1, rank: 1 },
+      { characterId: 1, rank: 150 },
+      { characterId: 1, rank: 80 },
+      { characterId: 2, rank: 120 },
+      { characterId: null, rank: 5 },
+      { characterId: 3 },
+      "junk",
+    ])
+
+    expect(map.get(1)).toBe(150)
+    expect(map.get(2)).toBe(120)
+    expect(map.has(3)).toBe(false)
+    expect(map.size).toBe(2)
+  })
+
+  it("returns an empty map for missing masterdata", () => {
+    expect(buildChallengeStageCapMap(undefined).size).toBe(0)
   })
 })

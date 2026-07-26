@@ -33,6 +33,7 @@ const {
   characterMap,
   rewardMasters,
   boxRewards,
+  stageCaps,
   reloadMaster,
 } = useTrainingChallenge()
 
@@ -78,12 +79,16 @@ const displayMax = computed(() => resolveChallengeDisplayMax(rewardMasters.value
 
 const sortedCells = computed(() => sortChallengeCells(cells.value, sortMode.value).map((cell) => {
   const character = characterMap.value.get(cell.characterId) ?? null
+  const stageCap = stageCaps.value.get(cell.characterId) ?? 0
   return {
     ...cell,
     name: character?.name ?? t("training.challenge.unknownCharacter"),
     iconUrl: character?.iconUrl ?? null,
     color: resolveSekaiCharacterColor(cell.characterId),
     scorePercent: displayMax.value > 0 ? Math.min((cell.highScore / displayMax.value) * 100, 100) : 0,
+    stageCap,
+    // EX stages can push the player past the master cap; clamp the bar only.
+    stagePercent: stageCap > 0 ? Math.min((cell.stage / stageCap) * 100, 100) : 0,
   }
 }))
 
@@ -214,9 +219,6 @@ function retry() {
                   {{ cell.highScore > 0 ? formatNumber(cell.highScore) : "—" }}
                 </p>
               </div>
-              <span class="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-                {{ cell.stage > 0 ? t("training.challenge.stage", { stage: cell.stage }) : "—" }}
-              </span>
             </div>
 
             <div
@@ -227,6 +229,25 @@ function retry() {
                 class="h-full rounded-full bg-primary transition-all"
                 :style="{ width: `${cell.scorePercent}%`, ...(cell.color ? { backgroundColor: cell.color } : {}) }"
               />
+            </div>
+
+            <div class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span class="shrink-0">{{ t("training.challenge.stageLabel") }}</span>
+              <template v-if="cell.stageCap > 0">
+                <div
+                  class="h-1 flex-1 overflow-hidden rounded-full bg-primary/10"
+                  :style="cell.color ? { backgroundColor: `color-mix(in srgb, ${cell.color} 10%, transparent)` } : undefined"
+                >
+                  <div
+                    class="h-full rounded-full bg-primary/70 transition-all"
+                    :style="{ width: `${cell.stagePercent}%`, ...(cell.color ? { backgroundColor: cell.color } : {}) }"
+                  />
+                </div>
+                <span class="shrink-0 tabular-nums">{{ cell.stage }}/{{ cell.stageCap }}</span>
+              </template>
+              <span v-else class="tabular-nums">
+                {{ cell.stage > 0 ? t("training.challenge.stage", { stage: cell.stage }) : "—" }}
+              </span>
             </div>
 
             <p

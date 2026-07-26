@@ -120,6 +120,27 @@ export function buildChallengeBoxRewardMap(rawBoxes: unknown, rawDetails?: unkno
   return map
 }
 
+/**
+ * Max stage rank per character from the `challengeLiveStages` masterdata.
+ * EX stages past this cap exist (`challengeLiveStageExs`), so a player's
+ * stage may exceed the cap; display code clamps the bar and keeps the number.
+ */
+export function buildChallengeStageCapMap(raw: unknown): Map<number, number> {
+  const map = new Map<number, number>()
+  for (const record of normalizeCatalogRecords(raw)) {
+    const characterId = normalizeCatalogNumber(record.characterId)
+    const rank = normalizeCatalogNumber(record.rank)
+    if (characterId == null || rank == null) {
+      continue
+    }
+    if (rank > (map.get(characterId) ?? 0)) {
+      map.set(characterId, rank)
+    }
+  }
+
+  return map
+}
+
 /** Collects claimed reward ids from `userChallengeLiveSoloHighScoreRewards`. */
 export function collectClaimedChallengeRewardIds(raw: unknown): Set<number> {
   const claimed = new Set<number>()

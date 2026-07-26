@@ -7,6 +7,7 @@ import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snaps
 import type { SekaiRegion } from "@/types"
 import {
   buildChallengeBoxRewardMap,
+  buildChallengeStageCapMap,
   normalizeChallengeRewardMasters,
   type ChallengeBoxReward,
   type ChallengeRewardMaster,
@@ -20,6 +21,7 @@ export const TRAINING_CHALLENGE_SUITE_KEYS = [
 
 export const TRAINING_CHALLENGE_MASTER_FILES = [
   "challengeLiveHighScoreRewards",
+  "challengeLiveStages",
   "resourceBoxes",
   "resourceBoxDetails",
   "gameCharacters",
@@ -43,6 +45,7 @@ export function useTrainingChallenge() {
   const characterMap = shallowRef<Map<number, CatalogCharacter>>(new Map())
   const rewardMasters = shallowRef<ChallengeRewardMaster[]>([])
   const boxRewards = shallowRef<Map<number, ChallengeBoxReward>>(new Map())
+  const stageCaps = shallowRef<Map<number, number>>(new Map())
 
   let loadToken = 0
 
@@ -54,6 +57,7 @@ export function useTrainingChallenge() {
       characterMap.value = new Map()
       rewardMasters.value = []
       boxRewards.value = new Map()
+      stageCaps.value = new Map()
       return
     }
 
@@ -69,6 +73,7 @@ export function useTrainingChallenge() {
       characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
       rewardMasters.value = normalizeChallengeRewardMasters(files.challengeLiveHighScoreRewards)
       boxRewards.value = buildChallengeBoxRewardMap(files.resourceBoxes, files.resourceBoxDetails)
+      stageCaps.value = buildChallengeStageCapMap(files.challengeLiveStages)
     } catch (loadError) {
       if (token === loadToken) {
         masterError.value = loadError instanceof Error ? loadError.message : String(loadError)
@@ -101,6 +106,7 @@ export function useTrainingChallenge() {
     characterMap,
     rewardMasters,
     boxRewards,
+    stageCaps,
     reloadMaster,
   }
 }
