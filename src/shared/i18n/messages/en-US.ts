@@ -1159,7 +1159,7 @@ export const enUS = {
       sortByCharacter: "By character",
       sortByScore: "By score",
       stage: "Stage {stage}",
-      stageLabel: "Stage",
+      stageLabel: "Challenge Stage",
       jewel: "Claimable gems {count}",
       shard: "Crystal shards {count}",
       allClaimed: "All rewards claimed",

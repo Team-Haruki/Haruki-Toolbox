@@ -1159,7 +1159,7 @@ export const zhCN = {
       sortByCharacter: "按角色",
       sortByScore: "按分数",
       stage: "第 {stage} 阶段",
-      stageLabel: "阶段",
+      stageLabel: "挑战等级",
       jewel: "可获取宝石 {count}",
       shard: "水晶碎片 {count}",
       allClaimed: "奖励已全部领取",
