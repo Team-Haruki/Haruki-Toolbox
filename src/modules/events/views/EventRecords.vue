@@ -316,9 +316,13 @@ function crosshairTemplate(point: EventPointTrendPoint) {
           </TabsList>
         </Tabs>
         <div v-if="timeMode === 'custom'" class="flex flex-wrap items-center gap-2">
-          <DateTimePicker24h v-model="customStart" :aria-label="t('eventRecords.filters.from')" />
+          <div class="w-48">
+            <DateTimePicker24h v-model="customStart" :aria-label="t('eventRecords.filters.from')" />
+          </div>
           <span class="text-xs text-muted-foreground">—</span>
-          <DateTimePicker24h v-model="customEnd" :aria-label="t('eventRecords.filters.to')" />
+          <div class="w-48">
+            <DateTimePicker24h v-model="customEnd" :aria-label="t('eventRecords.filters.to')" />
+          </div>
         </div>
         <div class="ml-auto flex flex-wrap items-center gap-2">
           <span class="text-xs text-muted-foreground">{{ t("eventRecords.filters.type") }}</span>
