@@ -194,7 +194,12 @@ function retry() {
       </div>
 
       <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        <Card v-for="cell in leaderCells" :key="cell.characterId" class="py-3">
+        <Card
+          v-for="cell in leaderCells"
+          :key="cell.characterId"
+          class="border-l-4 py-3"
+          :style="cell.color ? { borderLeftColor: cell.color } : {}"
+        >
           <CardContent class="flex items-center gap-3 px-4">
             <img
               v-if="cell.iconUrl"
