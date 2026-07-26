@@ -561,7 +561,6 @@ function retry() {
                 :trained="view.trained"
                 :title="view.card.prefix"
                 :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
-                level-band
                 :class="[
                   'transition-transform group-hover:scale-[1.02]',
                   view.record == null ? 'opacity-40 grayscale' : '',
@@ -603,7 +602,6 @@ function retry() {
                 :trained="view.trained"
                 :title="view.card.prefix"
                 :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
-                level-band
                 :class="[
                   'transition-transform group-hover:scale-[1.02]',
                   view.record == null ? 'opacity-40 grayscale' : '',
@@ -632,7 +630,6 @@ function retry() {
               :trained="view.trained"
               :title="view.card.prefix"
               :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
-              level-band
               :class="[
                 'transition-transform group-hover:scale-[1.02]',
                 view.record == null ? 'opacity-40 grayscale' : '',

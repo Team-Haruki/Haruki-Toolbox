@@ -60,6 +60,7 @@ export type CatalogCardThumbnail = {
   frameUrl: string | null
   attrIconUrl: string | null
   rareIconUrl: string | null
+  trainedRareIconUrl: string | null
   rareCount: number
   hasTrainedArt: boolean
 }
@@ -76,6 +77,7 @@ export type SekaiCardThumbnailView = {
   frameUrl: string | null
   attrIconUrl: string | null
   rareIconUrl: string | null
+  trainedRareIconUrl?: string | null
   rareCount: number
   trainRankUrl?: string | null
   canvasIconUrl?: string | null
@@ -255,6 +257,9 @@ export function buildCatalogCardThumbnail(
     rareIconUrl: card.cardRarityType === "rarity_birthday"
       ? resolveRareBirthdayImageUrl()
       : resolveRareStarImageUrl(false),
+    trainedRareIconUrl: card.cardRarityType === "rarity_birthday"
+      ? resolveRareBirthdayImageUrl()
+      : resolveRareStarImageUrl(true),
     rareCount: resolveCardRareCount(card.cardRarityType),
     hasTrainedArt,
   }

@@ -123,6 +123,8 @@ describe("buildCatalogCardThumbnail", () => {
 
     expect(thumbnail.thumbnailUrl).toContain("res005_no015_normal.png")
     expect(thumbnail.trainedThumbnailUrl).toContain("res005_no015_after_training.png")
+    expect(thumbnail.rareIconUrl).toContain("rare_star_normal.png")
+    expect(thumbnail.trainedRareIconUrl).toContain("rare_star_after_training.png")
     expect(thumbnail.rareCount).toBe(4)
     expect(thumbnail.hasTrainedArt).toBe(true)
   })
@@ -138,5 +140,6 @@ describe("buildCatalogCardThumbnail", () => {
 
     expect(thumbnail.trainedThumbnailUrl).toBeNull()
     expect(thumbnail.rareIconUrl).toContain("rare_birthday")
+    expect(thumbnail.trainedRareIconUrl).toContain("rare_birthday")
   })
 })

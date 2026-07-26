@@ -65,6 +65,14 @@ watch(artUrl, () => {
 
 const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCount }, (_, index) => index))
 
+const rareIconUrl = computed(() => {
+  if (props.trained && props.thumbnail.trainedRareIconUrl) {
+    return props.thumbnail.trainedRareIconUrl
+  }
+
+  return props.thumbnail.rareIconUrl
+})
+
 const showBand = computed(() => props.levelBand || props.levelLabel != null)
 </script>
 
@@ -108,7 +116,7 @@ const showBand = computed(() => props.levelBand || props.levelLabel != null)
       loading="lazy"
     >
     <div
-      v-if="thumbnail.rareIconUrl && rareIndexes.length > 0"
+      v-if="rareIconUrl && rareIndexes.length > 0"
       :class="[
         'absolute flex gap-px',
         showBand ? 'bottom-[20%] left-[5%] w-[72%]' : 'bottom-[5%] left-[6%] w-[74%]',
@@ -117,7 +125,7 @@ const showBand = computed(() => props.levelBand || props.levelLabel != null)
       <img
         v-for="index in rareIndexes"
         :key="index"
-        :src="thumbnail.rareIconUrl"
+        :src="rareIconUrl"
         alt=""
         class="w-[18%] max-w-4"
         loading="lazy"
