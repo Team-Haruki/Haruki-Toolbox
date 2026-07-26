@@ -396,7 +396,7 @@ function refresh() {
                 </span>
                 <p class="text-xs tabular-nums text-muted-foreground">
                   AP {{ entry.summary.allPerfect }} · FC {{ entry.summary.fullCombo }} ·
-                  CL {{ entry.summary.cleared }}/{{ entry.summary.total }}
+                  Clear {{ entry.summary.cleared }}/{{ entry.summary.total }}
                 </p>
               </div>
             </div>
