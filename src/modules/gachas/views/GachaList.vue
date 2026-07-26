@@ -25,8 +25,8 @@ import { SEKAI_CATALOG_REGION_FOLLOW_VALUE } from "@/shared/sekai/catalog-region
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import type { GachaSortKey, GachaStatus } from "@/modules/gachas/lib/gacha-catalog"
 import {
-  buildGachaBannerCandidates,
-  buildGachaLogoCandidates,
+  buildGachaBannerAliasMap,
+  buildGachaImageCandidates,
   collectGachaYears,
   countGachaPages,
   excludeUnreleasedGachas,
@@ -106,15 +106,19 @@ const filteredGachas = computed(() => {
 
 const totalPages = computed(() => countGachaPages(filteredGachas.value.length, PAGE_SIZE))
 
+const bannerAliases = computed(() => buildGachaBannerAliasMap(gachas.value))
+
 const pagedGachaViews = computed(() => paginateGachas(filteredGachas.value, page.value, PAGE_SIZE)
   .map((gacha) => ({
     gacha,
     status: resolveGachaStatus(gacha, nowMs.value),
     unreleased: isGachaUnreleased(gacha, nowMs.value),
-    imageSources: [
-      ...buildGachaLogoCandidates(gacha, region.value, assetEndpoint.value),
-      ...buildGachaBannerCandidates(gacha, region.value, assetEndpoint.value),
-    ],
+    imageSources: buildGachaImageCandidates(
+      gacha,
+      region.value,
+      assetEndpoint.value,
+      bannerAliases.value.get(gacha.id),
+    ),
   })))
 
 watch([search, typeFilter, statusFilter, yearFilter, sortKey, region, hideUnreleased], () => {

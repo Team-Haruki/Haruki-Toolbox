@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
+import { goBackOr, hasInAppHistory } from "@/lib/router-back"
 import {
   LucideArrowLeft,
   LucideCalendarDays,
@@ -36,9 +37,9 @@ import {
 } from "@/modules/cards/lib/card-filter"
 import { isUnreleasedContent, useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import {
-  buildGachaBannerCandidates,
+  buildGachaBannerAliasMap,
   buildGachaCeilItemIconCandidates,
-  buildGachaLogoCandidates,
+  buildGachaImageCandidates,
   buildGachaRateSummary,
   collectGachaRarities,
   dedupGachaPickupCardIds,
@@ -107,11 +108,15 @@ const unreleased = computed(() => gacha.value != null && isGachaUnreleased(gacha
 
 const blurArt = computed(() => unreleased.value && blurUnreleased.value)
 
+const bannerAliases = computed(() => buildGachaBannerAliasMap(gachas.value))
+
 const bannerSources = computed(() => (gacha.value
-  ? [
-    ...buildGachaBannerCandidates(gacha.value, region.value, assetEndpoint.value),
-    ...buildGachaLogoCandidates(gacha.value, region.value, assetEndpoint.value),
-  ]
+  ? buildGachaImageCandidates(
+      gacha.value,
+      region.value,
+      assetEndpoint.value,
+      bannerAliases.value.get(gacha.value.id),
+    )
   : []))
 
 const summaryText = computed(() => (gacha.value ? stripGachaMarkup(gacha.value.information.summary) : ""))
@@ -330,8 +335,16 @@ function behaviorCostLabel(costResourceType: string | null, costResourceQuantity
 }
 
 function goBack() {
-  router.push({ name: "gachas.list" })
+  goBackOr(router, { name: "gachas.list" })
 }
+
+const route = useRoute()
+
+/** Track the route so in-component navigation re-checks the history state. */
+const canGoBack = computed(() => {
+  void route.fullPath
+  return hasInAppHistory()
+})
 </script>
 
 <template>
@@ -339,7 +352,7 @@ function goBack() {
     <div>
       <Button variant="ghost" size="sm" class="-ml-2 gap-1" @click="goBack">
         <LucideArrowLeft class="size-4" />
-        {{ t("gachas.detail.back") }}
+        {{ canGoBack ? t("common.back") : t("gachas.detail.back") }}
       </Button>
     </div>
 

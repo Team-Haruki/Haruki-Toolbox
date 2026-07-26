@@ -541,6 +541,8 @@ export function buildGachaLogoCandidates(
   const paths: string[] = []
   const assetbundleName = gacha.assetbundleName
   if (assetbundleName) {
+    // Non-jp dumps (and newer jp gachas) ship gacha art under ondemand/.
+    paths.push(`ondemand/gacha/${assetbundleName}/logo/logo.png`)
     paths.push(`startapp/gacha/${assetbundleName}/logo/logo.png`)
     paths.push(`startapp/logo/${assetbundleName}.png`)
   }
@@ -566,13 +568,81 @@ export function buildGachaBannerCandidates(
 ): string[] {
   const paths = [
     `startapp/home/banner/banner_gacha${gacha.id}/banner_gacha${gacha.id}.png`,
-    `startapp/gacha/ab_gacha_${gacha.id}/screen/texture/bg_gacha${gacha.id}.png`,
   ]
+  if (gacha.assetbundleName) {
+    // Non-jp dumps (and newer jp gachas) ship gacha art under ondemand/.
+    paths.push(`ondemand/gacha/${gacha.assetbundleName}/screen/texture/bg_gacha${gacha.id}.png`)
+  }
+  paths.push(`startapp/gacha/ab_gacha_${gacha.id}/screen/texture/bg_gacha${gacha.id}.png`)
   if (gacha.assetbundleName) {
     paths.push(`startapp/home/banner/${gacha.assetbundleName}/${gacha.assetbundleName}.png`)
   }
 
   return dedupAssetPaths(paths).map((path) => resolveSekaiGameAssetUrl(region, path, preference))
+}
+
+/**
+ * Rerun gachas ([復刻]/[复刻]/[回响]/[1回限定]…) ship no banner of their own;
+ * their name is another gacha's full name with extra bracketed prefixes.
+ * Maps such gachas to the original whose banner they can reuse. When several
+ * gachas share the base name, the closest earlier id wins (the original
+ * always precedes its reruns).
+ */
+export function buildGachaBannerAliasMap(
+  gachas: readonly Pick<CatalogGacha, "id" | "name">[],
+): Map<number, number> {
+  const idsByName = new Map<string, number[]>()
+  for (const gacha of gachas) {
+    const name = gacha.name.trim()
+    const ids = idsByName.get(name) ?? []
+    ids.push(gacha.id)
+    idsByName.set(name, ids)
+  }
+
+  const aliases = new Map<number, number>()
+  for (const gacha of gachas) {
+    let rest = gacha.name.trim()
+    for (let depth = 0; depth < 3; depth++) {
+      const stripped = rest.replace(/^\s*[[［][^\]］]*[\]］]\s*/u, "")
+      if (stripped === rest || stripped === "") {
+        break
+      }
+      rest = stripped
+
+      const ids = (idsByName.get(rest) ?? []).filter((id) => id !== gacha.id)
+      if (ids.length > 0) {
+        const earlier = ids.filter((id) => id < gacha.id)
+        aliases.set(gacha.id, earlier.length > 0 ? Math.max(...earlier) : Math.min(...ids))
+        break
+      }
+    }
+  }
+
+  return aliases
+}
+
+/**
+ * Combined display-image candidates, most-likely-first: probing the asset CDN
+ * shows the home banner (`banner_gacha{id}`) is the only asset that reliably
+ * exists, so it leads and the logo variants serve as fallbacks. Reruns get the
+ * aliased original's banner right after their own. Some gachas (very old or
+ * not yet mirrored) have no assets at all.
+ */
+export function buildGachaImageCandidates(
+  gacha: Pick<CatalogGacha, "id" | "seq" | "assetbundleName">,
+  region: SekaiRegion,
+  preference: SekaiAssetEndpointPreference = "china",
+  aliasGachaId?: number | null,
+): string[] {
+  const aliasBanners = aliasGachaId != null && aliasGachaId !== gacha.id
+    ? buildGachaBannerCandidates({ id: aliasGachaId, assetbundleName: "" }, region, preference)
+    : []
+
+  return dedupAssetPaths([
+    ...buildGachaBannerCandidates(gacha, region, preference),
+    ...aliasBanners,
+    ...buildGachaLogoCandidates(gacha, region, preference),
+  ])
 }
 
 export function buildGachaCeilItemIconCandidates(

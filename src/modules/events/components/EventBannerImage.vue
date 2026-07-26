@@ -17,11 +17,18 @@ const props = withDefaults(defineProps<{
   variant: "banner",
 })
 
-// Fallback chain: preferred source -> the other source -> placeholder.
+// Fallback chain: preferred source -> the other source -> the same pair from
+// the jp bucket (regional buckets are occasionally unreachable or missing an
+// asset; jp mirrors everything) -> placeholder.
 const sources = computed(() => {
   const banner = resolveEventBannerUrl(props.region, props.assetbundleName, props.preference)
   const logo = resolveEventLogoUrl(props.region, props.assetbundleName, props.preference)
   const ordered = props.variant === "logo" ? [logo, banner] : [banner, logo]
+  if (props.region !== "jp") {
+    const jpBanner = resolveEventBannerUrl("jp", props.assetbundleName, props.preference)
+    const jpLogo = resolveEventLogoUrl("jp", props.assetbundleName, props.preference)
+    ordered.push(...(props.variant === "logo" ? [jpLogo, jpBanner] : [jpBanner, jpLogo]))
+  }
   return ordered.filter((url): url is string => url != null)
 })
 

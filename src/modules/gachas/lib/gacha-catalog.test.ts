@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test"
 import type { CatalogGacha } from "./gacha-catalog"
 import {
+  buildGachaBannerAliasMap,
   buildGachaBannerCandidates,
   buildGachaCeilItemIconCandidates,
+  buildGachaImageCandidates,
   buildGachaLogoCandidates,
   buildGachaRateSummary,
   collectGachaRarities,
@@ -354,7 +356,8 @@ describe("asset candidates", () => {
 
   it("builds ordered deduped logo candidates", () => {
     const urls = buildGachaLogoCandidates(gacha, "kr", "china")
-    expect(urls[0]).toBe("https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/gacha/ab_gacha_145/logo/logo.png")
+    expect(urls[0]).toBe("https://sekai-assets.haruki.seiunx.com/kr-assets/ondemand/gacha/ab_gacha_145/logo/logo.png")
+    expect(urls).toContain("https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/gacha/ab_gacha_145/logo/logo.png")
     expect(urls).toContain("https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/logo/ab_gacha_145.png")
     expect(urls).toContain("https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/logo/banner_logo145.png")
     expect(urls).toContain("https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/logo/banner_logo1000.png")
@@ -373,6 +376,7 @@ describe("asset candidates", () => {
     const urls = buildGachaBannerCandidates(gacha, "kr")
     expect(urls).toEqual([
       "https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/home/banner/banner_gacha145/banner_gacha145.png",
+      "https://sekai-assets.haruki.seiunx.com/kr-assets/ondemand/gacha/ab_gacha_145/screen/texture/bg_gacha145.png",
       "https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/gacha/ab_gacha_145/screen/texture/bg_gacha145.png",
       "https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/home/banner/ab_gacha_145/ab_gacha_145.png",
     ])
@@ -386,5 +390,55 @@ describe("asset candidates", () => {
       "https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/thumbnail/common_material/ceil_item.png",
     ])
     expect(buildGachaCeilItemIconCandidates("  ", "kr")).toEqual([])
+  })
+})
+
+describe("buildGachaBannerAliasMap", () => {
+  it("aliases reruns to the closest earlier gacha with the base name", () => {
+    const aliases = buildGachaBannerAliasMap([
+      { id: 767, name: "[草薙宁宁]HAPPY BIRTHDAY 2024招募" },
+      { id: 768, name: "[复刻][草薙宁宁]HAPPY BIRTHDAY 2024招募" },
+      { id: 770, name: "[回响][草薙宁宁]HAPPY BIRTHDAY 2024招募" },
+      { id: 60, name: "天翔けるハッピーひな祭り☆ガチャ" },
+      { id: 61, name: "[1回限定]天翔けるハッピーひな祭り☆ガチャ" },
+    ])
+
+    expect(aliases.get(768)).toBe(767)
+    expect(aliases.get(770)).toBe(767)
+    expect(aliases.get(61)).toBe(60)
+    expect(aliases.has(767)).toBe(false)
+    expect(aliases.has(60)).toBe(false)
+  })
+
+  it("does not alias different characters' pools to each other", () => {
+    const aliases = buildGachaBannerAliasMap([
+      { id: 134, name: "[桐谷遥]HAPPY BIRTHDAYガチャ" },
+      { id: 141, name: "[望月穂波]HAPPY BIRTHDAYガチャ" },
+    ])
+
+    expect(aliases.size).toBe(0)
+  })
+})
+
+describe("buildGachaImageCandidates", () => {
+  it("leads with the own banner, then the alias banner, then logos", () => {
+    const urls = buildGachaImageCandidates(
+      { id: 61, seq: null, assetbundleName: "ab_gacha_61" },
+      "jp",
+      "china",
+      60,
+    )
+
+    const bannerIndex = urls.findIndex((url) => url.includes("banner_gacha61"))
+    const aliasIndex = urls.findIndex((url) => url.includes("banner_gacha60"))
+    const logoIndex = urls.findIndex((url) => url.includes("logo"))
+    expect(bannerIndex).toBe(0)
+    expect(aliasIndex).toBeGreaterThan(bannerIndex)
+    expect(logoIndex).toBeGreaterThan(aliasIndex)
+  })
+
+  it("omits alias candidates without an alias", () => {
+    const urls = buildGachaImageCandidates({ id: 61, seq: null, assetbundleName: "ab_gacha_61" }, "jp")
+    expect(urls.some((url) => url.includes("banner_gacha60"))).toBe(false)
   })
 })
