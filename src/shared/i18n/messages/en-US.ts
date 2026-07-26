@@ -1249,6 +1249,8 @@ export const enUS = {
       maxed: "All released levels reached",
       notInShop: "Not available in the shop yet",
       canUpgrade: "Ready to upgrade",
+      nextLevel: "Next level",
+      nextBonus: "Next bonus",
       showAll: "All levels",
     },
     leader: {

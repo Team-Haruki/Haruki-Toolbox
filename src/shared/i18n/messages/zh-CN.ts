@@ -1249,6 +1249,8 @@ export const zhCN = {
       maxed: "已达当前可升级的最高等级",
       notInShop: "商店暂未开放",
       canUpgrade: "可升级",
+      nextLevel: "下一级",
+      nextBonus: "下级加成",
       showAll: "全部等级",
     },
     leader: {

@@ -403,50 +403,56 @@ function retry() {
               {{ t("training.area.maxed") }}
             </p>
 
-            <!-- Next level row -->
-            <div v-else class="flex flex-col gap-1.5">
-              <div
-                v-for="row in [nextRow(view)!]"
-                :key="row.level"
-                class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-2.5 py-1.5"
-              >
-                <span class="w-11 shrink-0 text-xs font-semibold tabular-nums">
-                  {{ t("training.area.level", { level: row.level }) }}
+            <!-- Next level -->
+            <div
+              v-for="row in nextRow(view) ? [nextRow(view)!] : []"
+              :key="row.level"
+              class="rounded-md border px-2.5 py-1.5"
+            >
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span class="text-xs text-muted-foreground">
+                  {{ t("training.area.nextLevel") }}
+                  <span class="font-semibold tabular-nums text-foreground">
+                    {{ t("training.area.level", { level: row.level }) }}
+                  </span>
                 </span>
-                <span class="w-12 shrink-0 text-xs tabular-nums text-muted-foreground">
-                  {{ row.bonus > 0 ? t("training.area.bonus", { bonus: formatAreaBonusRate(row.bonus) }) : "" }}
+                <span v-if="row.bonus > 0" class="text-xs text-muted-foreground">
+                  {{ t("training.area.nextBonus") }}
+                  <span class="font-semibold tabular-nums text-foreground">
+                    {{ t("training.area.bonus", { bonus: formatAreaBonusRate(row.bonus) }) }}
+                  </span>
                 </span>
+                <span
+                  v-if="row.canUpgrade"
+                  class="ml-auto rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                >
+                  {{ t("training.area.canUpgrade") }}
+                </span>
+              </div>
+              <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span v-if="row.materials.length === 0" class="text-xs text-muted-foreground">
                   {{ t("training.area.notInShop") }}
                 </span>
-                <template v-else>
-                  <span
-                    v-for="material in row.materials"
-                    :key="material.materialId"
-                    class="inline-flex items-center gap-1 text-xs tabular-nums"
+                <span
+                  v-for="material in row.materials"
+                  :key="material.materialId"
+                  class="inline-flex items-center gap-1 text-xs tabular-nums"
+                >
+                  <img
+                    v-if="materialIconUrl(material.resourceType, material.materialId)"
+                    :src="materialIconUrl(material.resourceType, material.materialId)!"
+                    alt=""
+                    class="size-5 object-contain"
+                    loading="lazy"
                   >
-                    <img
-                      v-if="materialIconUrl(material.resourceType, material.materialId)"
-                      :src="materialIconUrl(material.resourceType, material.materialId)!"
-                      alt=""
-                      class="size-5 object-contain"
-                      loading="lazy"
-                    >
-                    <span
-                      :class="material.isEnough
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-red-600 dark:text-red-400'"
-                    >
-                      {{ formatQuantity(material.haveQuantity) }}/{{ formatQuantity(material.sumQuantity) }}
-                    </span>
-                  </span>
                   <span
-                    v-if="row.canUpgrade"
-                    class="ml-auto rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                    :class="material.isEnough
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-red-600 dark:text-red-400'"
                   >
-                    {{ t("training.area.canUpgrade") }}
+                    {{ formatQuantity(material.haveQuantity) }}/{{ formatQuantity(material.sumQuantity) }}
                   </span>
-                </template>
+                </span>
               </div>
             </div>
           </CardContent>
