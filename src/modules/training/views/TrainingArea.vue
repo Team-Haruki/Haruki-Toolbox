@@ -336,7 +336,7 @@ function retry() {
         </CardContent>
       </Card>
 
-      <div v-else class="flex flex-col gap-2">
+      <div v-else class="grid grid-cols-1 items-start gap-2 lg:grid-cols-2 2xl:grid-cols-3">
         <Card
           v-for="view in itemViews"
           :key="view.itemId"
