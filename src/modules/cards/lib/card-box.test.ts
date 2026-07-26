@@ -5,6 +5,7 @@ import {
   buildAttrDistribution,
   buildCharacterDistribution,
   buildOwnedCardMap,
+  buildRarityDistribution,
   buildUnitDistribution,
   computeCollectionPercent,
   filterCardsByRarity,
@@ -264,6 +265,25 @@ describe("buildUnitDistribution", () => {
     expect(buildUnitDistribution(cards, ownedMap, unitOf)).toEqual([
       { unit: "light_sound", owned: 1, total: 2, percent: 50 },
       { unit: "piapro", owned: 1, total: 1, percent: 100 },
+    ])
+  })
+})
+
+describe("buildRarityDistribution", () => {
+  it("groups by rarity in canonical order, omitting empty and unknown rarities", () => {
+    const cards = [
+      makeCard({ id: 1, cardRarityType: "rarity_4" }),
+      makeCard({ id: 2, cardRarityType: "rarity_1" }),
+      makeCard({ id: 3, cardRarityType: "rarity_4" }),
+      makeCard({ id: 4, cardRarityType: "rarity_birthday" }),
+      makeCard({ id: 5, cardRarityType: "rarity_unknown" }),
+    ]
+    const ownedMap = buildOwnedCardMap(normalizeUserCards([makeUserCard(1), makeUserCard(4)]))
+
+    expect(buildRarityDistribution(cards, ownedMap)).toEqual([
+      { rarity: "rarity_1", owned: 0, total: 1, percent: 0 },
+      { rarity: "rarity_4", owned: 1, total: 2, percent: 50 },
+      { rarity: "rarity_birthday", owned: 1, total: 1, percent: 100 },
     ])
   })
 })

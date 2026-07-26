@@ -909,6 +909,7 @@ export const zhCN = {
       byCharacter: "按角色",
       byUnit: "按团体",
       byAttr: "按属性",
+      byRarity: "按星级",
       ownedOfTotal: "{owned}/{total}",
       percent: "{percent}%",
     },

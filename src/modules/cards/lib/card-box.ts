@@ -298,6 +298,50 @@ export function buildUnitDistribution(
   return sorted
 }
 
+export type RarityDistributionRow = {
+  rarity: CardRarityType
+  owned: number
+  total: number
+  percent: number
+}
+
+/**
+ * Per-rarity owned/total rows following the canonical rarity order. Cards
+ * with an unknown rarity type are skipped; empty rarities are omitted.
+ */
+export function buildRarityDistribution(
+  cards: readonly CatalogMasterCard[],
+  ownedMap: ReadonlyMap<number, UserCardRecord>,
+): RarityDistributionRow[] {
+  const rows = new Map<CardRarityType, RarityDistributionRow>()
+  for (const card of cards) {
+    if (!isCardRarityType(card.cardRarityType)) {
+      continue
+    }
+
+    let row = rows.get(card.cardRarityType)
+    if (!row) {
+      row = { rarity: card.cardRarityType, owned: 0, total: 0, percent: 0 }
+      rows.set(card.cardRarityType, row)
+    }
+
+    row.total += 1
+    if (ownedMap.has(card.id)) {
+      row.owned += 1
+    }
+  }
+
+  const order = new Map<string, number>(CARD_RARITY_TYPES.map((rarity, index) => [rarity, index]))
+  const sorted = [...rows.values()].sort(
+    (a, b) => (order.get(a.rarity) ?? CARD_RARITY_TYPES.length) - (order.get(b.rarity) ?? CARD_RARITY_TYPES.length),
+  )
+  for (const row of sorted) {
+    row.percent = computeCollectionPercent(row.owned, row.total)
+  }
+
+  return sorted
+}
+
 /** Restricts to the given rarities; an empty selection keeps every card. */
 export function filterCardsByRarity(
   cards: readonly CatalogMasterCard[],

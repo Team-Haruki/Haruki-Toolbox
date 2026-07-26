@@ -11,7 +11,7 @@ import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import type { CatalogMasterCard } from "@/shared/sekai/catalog"
 import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, buildCatalogCardThumbnail, resolveSekaiCharacterColor, type SekaiCardThumbnailView, type SekaiUnit } from "@/shared/sekai/catalog"
-import { resolveTrainRankImageUrl } from "@/shared/sekai/data-sources"
+import { resolveRarityTrainingIconUrl, resolveTrainRankImageUrl } from "@/shared/sekai/data-sources"
 import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import type { SekaiRegion } from "@/types"
 import { CARD_RARITY_TYPES, sortCards, type CardRarityType } from "@/modules/cards/lib/card-filter"
@@ -22,6 +22,7 @@ import {
   buildAttrDistribution,
   buildCharacterDistribution,
   buildOwnedCardMap,
+  buildRarityDistribution,
   buildUnitDistribution,
   filterCardsByRarity,
   filterReleasedCards,
@@ -78,6 +79,7 @@ const visibleCards = computed(() => applyOwnershipFilter(rarityCards.value, owne
 const overall = computed(() => summarizeCollection(rarityCards.value, ownedMap.value))
 const characterDistribution = computed(() => buildCharacterDistribution(rarityCards.value, ownedMap.value))
 const attrDistribution = computed(() => buildAttrDistribution(rarityCards.value, ownedMap.value))
+const rarityDistribution = computed(() => buildRarityDistribution(rarityCards.value, ownedMap.value))
 const unitDistribution = computed(() => buildUnitDistribution(
   rarityCards.value,
   ownedMap.value,
@@ -196,6 +198,21 @@ const statsUnitRows = computed(() => unitDistribution.value.map((row) => ({
   name: t(`cards.unit.${row.unit}`),
   logoUrl: resolveUnitLogoUrl(row.unit),
   color: unitColorMap.value.get(row.unit) ?? null,
+})))
+
+const RARITY_STRIPE_COLORS: Record<CardRarityType, string> = {
+  rarity_1: "#9ca3af",
+  rarity_2: "#60a5fa",
+  rarity_3: "#a78bfa",
+  rarity_4: "#f59e0b",
+  rarity_birthday: "#f472b6",
+}
+
+const statsRarityRows = computed(() => rarityDistribution.value.map((row) => ({
+  ...row,
+  name: t(`cards.rarity.${row.rarity}`),
+  iconUrl: resolveRarityTrainingIconUrl(row.rarity),
+  color: RARITY_STRIPE_COLORS[row.rarity],
 })))
 
 const statsAttrRows = computed(() => attrDistribution.value.map((row) => ({
@@ -498,6 +515,28 @@ function retry() {
                   </span>
                 </div>
                 <Progress :model-value="row.percent" :color="row.color ?? undefined" class="h-1.5" />
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <h3 class="text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byRarity") }}</h3>
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              <div
+                v-for="row in statsRarityRows"
+                :key="row.rarity"
+                class="flex flex-col gap-1.5 rounded-md border border-l-4 p-2"
+                :style="{ borderLeftColor: row.color }"
+              >
+                <div class="flex items-center gap-2">
+                  <img :src="row.iconUrl" alt="" class="size-5 shrink-0" loading="lazy">
+                  <span class="min-w-0 flex-1 truncate text-xs font-medium">{{ row.name }}</span>
+                  <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
+                    · {{ t("cardBox.stats.percent", { percent: row.percent }) }}
+                  </span>
+                </div>
+                <Progress :model-value="row.percent" :color="row.color" class="h-1.5" />
               </div>
             </div>
           </div>

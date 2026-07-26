@@ -909,6 +909,7 @@ export const enUS = {
       byCharacter: "By character",
       byUnit: "By unit",
       byAttr: "By attribute",
+      byRarity: "By rarity",
       ownedOfTotal: "{owned}/{total}",
       percent: "{percent}%",
     },
