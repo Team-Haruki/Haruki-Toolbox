@@ -307,24 +307,26 @@ function crosshairTemplate(point: EventPointTrendPoint) {
 
     <template v-else>
       <!-- Filters -->
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Tabs :model-value="timeMode" @update:model-value="handleTimeModeChange">
-          <TabsList class="h-8">
-            <TabsTrigger value="year" class="text-xs">{{ t("eventRecords.filters.lastYear") }}</TabsTrigger>
-            <TabsTrigger value="all" class="text-xs">{{ t("eventRecords.filters.all") }}</TabsTrigger>
-            <TabsTrigger value="custom" class="text-xs">{{ t("eventRecords.filters.custom") }}</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div v-if="timeMode === 'custom'" class="flex flex-wrap items-center gap-2">
-          <div class="w-48">
-            <DateTimePicker24h v-model="customStart" :aria-label="t('eventRecords.filters.from')" />
-          </div>
-          <span class="text-xs text-muted-foreground">—</span>
-          <div class="w-48">
-            <DateTimePicker24h v-model="customEnd" :aria-label="t('eventRecords.filters.to')" />
+      <div class="flex flex-col gap-2">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <Tabs :model-value="timeMode" @update:model-value="handleTimeModeChange">
+            <TabsList class="h-8">
+              <TabsTrigger value="year" class="text-xs">{{ t("eventRecords.filters.lastYear") }}</TabsTrigger>
+              <TabsTrigger value="all" class="text-xs">{{ t("eventRecords.filters.all") }}</TabsTrigger>
+              <TabsTrigger value="custom" class="text-xs">{{ t("eventRecords.filters.custom") }}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div v-if="timeMode === 'custom'" class="flex flex-wrap items-center gap-2">
+            <div class="w-48">
+              <DateTimePicker24h v-model="customStart" :aria-label="t('eventRecords.filters.from')" />
+            </div>
+            <span class="text-xs text-muted-foreground">—</span>
+            <div class="w-48">
+              <DateTimePicker24h v-model="customEnd" :aria-label="t('eventRecords.filters.to')" />
+            </div>
           </div>
         </div>
-        <div class="ml-auto flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <span class="text-xs text-muted-foreground">{{ t("eventRecords.filters.type") }}</span>
           <label
             v-for="eventType in EVENT_TYPE_OPTIONS"
