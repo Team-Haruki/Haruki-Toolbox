@@ -143,10 +143,20 @@ function retry() {
         <p class="text-sm text-muted-foreground">{{ t("training.missions.description") }}</p>
       </div>
       <div class="flex flex-col items-start gap-1 sm:items-end">
-        <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
-          <LucideRefreshCw class="size-3.5" />
-          {{ t("training.missions.refresh") }}
-        </Button>
+        <div class="flex flex-wrap items-center gap-2">
+          <SimpleSelect
+            v-if="isReady"
+            :model-value="String(selectedCharacterId)"
+            :options="characterSelectOptions"
+            size="sm"
+            :aria-label="t('training.missions.character')"
+            @update:model-value="handleCharacterChange"
+          />
+          <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
+            <LucideRefreshCw class="size-3.5" />
+            {{ t("training.missions.refresh") }}
+          </Button>
+        </div>
         <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
           {{ t("training.missions.dataAsOf", { time: uploadTimeText }) }}
         </p>
@@ -182,16 +192,6 @@ function retry() {
     </template>
 
     <template v-else-if="isReady">
-      <!-- Character selector -->
-      <div class="flex flex-wrap items-center gap-2">
-        <SimpleSelect
-          :model-value="String(selectedCharacterId)"
-          :options="characterSelectOptions"
-          :aria-label="t('training.missions.character')"
-          @update:model-value="handleCharacterChange"
-        />
-      </div>
-
       <!-- Rank summary -->
       <Card class="border-l-4" :style="selectedColor ? { borderLeftColor: selectedColor } : {}">
         <CardContent class="flex flex-col gap-3 px-4">
