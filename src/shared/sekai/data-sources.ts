@@ -212,6 +212,23 @@ export function resolveCardAttrIconUrl(attribute: string): string {
   return resolveToolboxStaticImageUrl(`static_images/card/attr_${attribute}.png`)
 }
 
+/** Round badge variant of the attribute icon (`attr_icon_{attr}.png`). */
+export function resolveCardAttrRoundIconUrl(attribute: string): string {
+  return resolveToolboxStaticImageUrl(`static_images/card/attr_icon_${attribute}.png`)
+}
+
+export function resolveCostumeThumbnailUrl(
+  region: SekaiRegion,
+  assetbundleName: string,
+  preference: SekaiAssetEndpointPreference = "china",
+): string {
+  return resolveSekaiGameAssetUrl(
+    region,
+    `startapp/thumbnail/costume/${assetbundleName.trim()}.png`,
+    preference,
+  )
+}
+
 export function resolveRareStarImageUrl(afterTraining: boolean): string {
   return resolveToolboxStaticImageUrl(
     `static_images/card/${afterTraining ? "rare_star_after_training" : "rare_star_normal"}.png`,

@@ -21,6 +21,7 @@ export const CARD_CATALOG_MASTER_FILES = [
   "gameCharacterUnits",
   "events",
   "eventCards",
+  "gachas",
 ] as const
 
 export function useCardCatalog() {
@@ -36,6 +37,7 @@ export function useCardCatalog() {
   const rawSkills = shallowRef<unknown>(null)
   const rawEvents = shallowRef<unknown>(null)
   const rawEventCards = shallowRef<unknown>(null)
+  const rawGachas = shallowRef<unknown>(null)
   const rawCards = shallowRef<unknown>(null)
 
   const { region, selectorValue: regionSelectorValue, updateSelectorValue: updateRegionSelector } = useEffectiveCatalogRegion()
@@ -65,6 +67,7 @@ export function useCardCatalog() {
       rawSkills.value = files.skills ?? null
       rawEvents.value = files.events ?? null
       rawEventCards.value = files.eventCards ?? null
+      rawGachas.value = files.gachas ?? null
     } catch (loadError) {
       if (token === loadToken) {
         error.value = loadError instanceof Error ? loadError.message : String(loadError)
@@ -103,6 +106,7 @@ export function useCardCatalog() {
     rawSkills,
     rawEvents,
     rawEventCards,
+    rawGachas,
     reload,
     setRegion,
   }

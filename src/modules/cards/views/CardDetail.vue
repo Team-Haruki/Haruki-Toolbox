@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -12,9 +12,11 @@ import {
   LucideExternalLink,
   LucideImageOff,
 } from "lucide-vue-next"
-import { formatLocalizedDateTime } from "@/lib/date-time"
+import { formatLocalizedDate, formatLocalizedDateTime } from "@/lib/date-time"
+import { goBackOr, hasInAppHistory } from "@/lib/router-back"
 import type { SekaiUnit } from "@/shared/sekai/catalog"
 import { buildCatalogCardThumbnail, cardRarityHasTrainedArt, SEKAI_UNITS } from "@/shared/sekai/catalog"
+import { resolveCardAttrRoundIconUrl, resolveCostumeThumbnailUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import { CARD_FULL_ART_ASPECT_CLASS, resolveCardFullArtUrl } from "@/modules/cards/lib/card-assets"
 import {
@@ -28,9 +30,18 @@ import {
   buildCardEventIndex,
   extractCardDetailExtras,
   resolveCardEventSummaries,
+  selectCardPickupGachas,
   selectSameCharacterCards,
 } from "@/modules/cards/lib/card-detail"
 import { useCardCatalog } from "@/modules/cards/composables/useCardCatalog"
+import { useCardCostumes } from "@/modules/cards/composables/useCardCostumes"
+import {
+  buildGachaBannerAliasMap,
+  buildGachaImageCandidates,
+  normalizeCatalogGachas,
+} from "@/modules/gachas/lib/gacha-catalog"
+import EventBannerImage from "@/modules/events/components/EventBannerImage.vue"
+import GachaAssetImage from "@/modules/gachas/components/GachaAssetImage.vue"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 
 const props = defineProps<{
@@ -53,10 +64,18 @@ const {
   rawSkills,
   rawEvents,
   rawEventCards,
+  rawGachas,
   reload,
 } = useCardCatalog()
 
 const cardIdNumber = computed(() => Number(props.cardId))
+
+const costumeCardId = computed(() => (Number.isInteger(cardIdNumber.value) ? cardIdNumber.value : null))
+const { groups: costumeGroups, loading: costumesLoading } = useCardCostumes(region, costumeCardId)
+
+function costumeThumbnailUrl(assetbundleName: string): string {
+  return resolveCostumeThumbnailUrl(region.value, assetbundleName, assetEndpoint.value)
+}
 
 const card = computed(() => cards.value.find((candidate) => candidate.id === cardIdNumber.value) ?? null)
 
@@ -130,6 +149,25 @@ const relatedEvents = computed(() => {
   return resolveCardEventSummaries(rawEvents.value, eventIds)
 })
 
+const allGachas = computed(() => normalizeCatalogGachas(rawGachas.value))
+const gachaBannerAliases = computed(() => buildGachaBannerAliasMap(allGachas.value))
+
+const relatedGachas = computed(() => {
+  if (!card.value) {
+    return []
+  }
+
+  return selectCardPickupGachas(allGachas.value, card.value.id).map((gacha) => ({
+    gacha,
+    imageSources: buildGachaImageCandidates(
+      gacha,
+      region.value,
+      assetEndpoint.value,
+      gachaBannerAliases.value.get(gacha.id),
+    ),
+  }))
+})
+
 const sameCharacterCards = computed(() => {
   if (!card.value) {
     return []
@@ -154,9 +192,27 @@ function unitDotStyle(unitValue: SekaiUnit) {
   return color ? { backgroundColor: color } : undefined
 }
 
-function goBack() {
-  router.push({ name: "cards.list" })
+const failedUnitLogos = ref<Set<SekaiUnit>>(new Set())
+
+function markUnitLogoFailed(unitValue: SekaiUnit) {
+  failedUnitLogos.value = new Set(failedUnitLogos.value).add(unitValue)
 }
+
+function formatPeriod(startAt: number | null, endAt: number | null): string {
+  return `${formatLocalizedDate(startAt, { dateStyle: "medium" }, "?")} - ${formatLocalizedDate(endAt, { dateStyle: "medium" }, "?")}`
+}
+
+function goBack() {
+  goBackOr(router, { name: "cards.list" })
+}
+
+const route = useRoute()
+
+/** Track the route so in-component navigation re-checks the history state. */
+const canGoBack = computed(() => {
+  void route.fullPath
+  return hasInAppHistory()
+})
 </script>
 
 <template>
@@ -164,7 +220,7 @@ function goBack() {
     <div>
       <Button variant="ghost" size="sm" class="gap-1 -ml-2" @click="goBack">
         <LucideArrowLeft class="size-4" />
-        {{ t("cards.detail.back") }}
+        {{ canGoBack ? t("common.back") : t("cards.detail.back") }}
       </Button>
     </div>
 
@@ -261,7 +317,15 @@ function goBack() {
               <dt class="text-muted-foreground">{{ t("cards.detail.unit") }}</dt>
               <dd class="flex items-center gap-2">
                 <template v-if="unit">
-                  <span class="size-2.5 rounded-full" :style="unitDotStyle(unit)" />
+                  <img
+                    v-if="!failedUnitLogos.has(unit)"
+                    :src="resolveUnitLogoUrl(unit)"
+                    alt=""
+                    class="h-5 w-auto max-w-10 object-contain"
+                    loading="lazy"
+                    @error="markUnitLogoFailed(unit)"
+                  >
+                  <span v-else class="size-2.5 rounded-full" :style="unitDotStyle(unit)" />
                   <span>{{ t(`cards.unit.${unit}`) }}</span>
                 </template>
                 <span v-else>—</span>
@@ -270,7 +334,15 @@ function goBack() {
               <template v-if="supportUnit">
                 <dt class="text-muted-foreground">{{ t("cards.detail.supportUnit") }}</dt>
                 <dd class="flex items-center gap-2">
-                  <span class="size-2.5 rounded-full" :style="unitDotStyle(supportUnit)" />
+                  <img
+                    v-if="!failedUnitLogos.has(supportUnit)"
+                    :src="resolveUnitLogoUrl(supportUnit)"
+                    alt=""
+                    class="h-5 w-auto max-w-10 object-contain"
+                    loading="lazy"
+                    @error="markUnitLogoFailed(supportUnit)"
+                  >
+                  <span v-else class="size-2.5 rounded-full" :style="unitDotStyle(supportUnit)" />
                   <span>{{ t(`cards.unit.${supportUnit}`) }}</span>
                 </dd>
               </template>
@@ -278,8 +350,8 @@ function goBack() {
               <dt class="text-muted-foreground">{{ t("cards.detail.attr") }}</dt>
               <dd class="flex items-center gap-2">
                 <img
-                  v-if="thumbnail?.attrIconUrl"
-                  :src="thumbnail.attrIconUrl"
+                  v-if="card.attr"
+                  :src="resolveCardAttrRoundIconUrl(card.attr)"
                   alt=""
                   class="size-5"
                   loading="lazy"
@@ -348,24 +420,118 @@ function goBack() {
               </div>
             </template>
             <p v-else class="text-sm text-muted-foreground">{{ t("cards.detail.noSkill") }}</p>
-
-            <template v-if="relatedEvents.length > 0">
-              <p class="mt-1 text-sm font-semibold">{{ t("cards.detail.relatedEvents") }}</p>
-              <ul class="flex flex-col gap-1">
-                <li v-for="event in relatedEvents" :key="event.id">
-                  <RouterLink
-                    :to="`/events/${event.id}`"
-                    class="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                  >
-                    {{ event.name }}
-                    <LucideExternalLink class="size-3.5" />
-                  </RouterLink>
-                </li>
-              </ul>
-            </template>
           </CardContent>
         </Card>
       </div>
+
+      <!-- Related events / gachas -->
+      <div v-if="relatedEvents.length > 0 || relatedGachas.length > 0" class="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">{{ t("cards.detail.relatedEvents") }}</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-2">
+            <template v-if="relatedEvents.length > 0">
+              <RouterLink
+                v-for="event in relatedEvents"
+                :key="event.id"
+                :to="`/events/${event.id}`"
+                class="flex flex-wrap items-center gap-3 rounded-md border bg-muted/20 p-3 transition-colors hover:bg-accent/50 dark:hover:bg-accent/30"
+              >
+                <div class="relative aspect-[2/1] w-full shrink-0 overflow-hidden rounded-md bg-muted sm:w-36">
+                  <EventBannerImage
+                    :region="region"
+                    :assetbundle-name="event.assetbundleName"
+                    :alt="event.name"
+                    :preference="assetEndpoint"
+                  />
+                </div>
+                <div class="min-w-0 flex-1 space-y-1">
+                  <p class="truncate text-sm font-medium">{{ event.name }}</p>
+                  <p class="text-xs text-muted-foreground">
+                    {{ formatPeriod(event.startAt, event.aggregateAt) }}
+                  </p>
+                </div>
+                <LucideExternalLink class="size-4 shrink-0 text-muted-foreground" />
+              </RouterLink>
+            </template>
+            <p v-else class="text-sm text-muted-foreground">{{ t("cards.detail.relatedEventsEmpty") }}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-base">{{ t("cards.detail.relatedGachas") }}</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-2">
+            <template v-if="relatedGachas.length > 0">
+              <RouterLink
+                v-for="view in relatedGachas"
+                :key="view.gacha.id"
+                :to="`/gachas/${view.gacha.id}`"
+                class="flex flex-wrap items-center gap-3 rounded-md border bg-muted/20 p-3 transition-colors hover:bg-accent/50 dark:hover:bg-accent/30"
+              >
+                <div class="relative aspect-[2/1] w-full shrink-0 overflow-hidden rounded-md bg-muted sm:w-36">
+                  <GachaAssetImage
+                    :sources="view.imageSources"
+                    :alt="view.gacha.name"
+                  />
+                </div>
+                <div class="min-w-0 flex-1 space-y-1">
+                  <p class="truncate text-sm font-medium">{{ view.gacha.name }}</p>
+                  <p class="text-xs text-muted-foreground">
+                    {{ formatPeriod(view.gacha.startAt, view.gacha.endAt) }}
+                  </p>
+                </div>
+                <LucideExternalLink class="size-4 shrink-0 text-muted-foreground" />
+              </RouterLink>
+            </template>
+            <p v-else class="text-sm text-muted-foreground">{{ t("cards.detail.relatedGachasEmpty") }}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <!-- Costumes -->
+      <Card v-if="costumesLoading || costumeGroups.length > 0">
+        <CardHeader>
+          <CardTitle class="text-base">{{ t("cards.detail.costumes") }}</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div v-if="costumesLoading && costumeGroups.length === 0" class="flex gap-3">
+            <Skeleton v-for="index in 4" :key="index" class="size-20 rounded-md" />
+          </div>
+          <div
+            v-for="group in costumeGroups"
+            :key="group.costume3dGroupId"
+            class="space-y-2"
+          >
+            <p class="text-sm font-medium">{{ group.name }}</p>
+            <div class="flex flex-wrap gap-3">
+              <figure
+                v-for="color in group.colors"
+                :key="color.costume3dId"
+                class="w-20 space-y-1"
+              >
+                <div class="aspect-square w-full overflow-hidden rounded-md border bg-muted/20">
+                  <img
+                    :src="costumeThumbnailUrl(color.assetbundleName)"
+                    :alt="color.colorName || group.name"
+                    class="size-full object-contain"
+                    loading="lazy"
+                  >
+                </div>
+                <figcaption
+                  v-if="color.colorName"
+                  class="truncate text-center text-[11px] text-muted-foreground"
+                  :title="color.colorName"
+                >
+                  {{ color.colorName }}
+                </figcaption>
+              </figure>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <!-- Same character cards -->
       <Card v-if="sameCharacterCards.length > 0">

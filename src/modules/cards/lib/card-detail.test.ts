@@ -1,9 +1,12 @@
 import { describe, expect, it } from "bun:test"
+import { normalizeCatalogGachas } from "@/modules/gachas/lib/gacha-catalog"
 import type { CatalogMasterCard } from "@/shared/sekai/catalog"
 import {
   buildCardEventIndex,
   extractCardDetailExtras,
+  resolveCardCostumeGroups,
   resolveCardEventSummaries,
+  selectCardPickupGachas,
   selectSameCharacterCards,
 } from "./card-detail"
 
@@ -58,7 +61,7 @@ describe("card event lookup", () => {
     { cardId: null, eventId: 2 },
   ]
   const rawEvents = [
-    { id: 1, name: "First Star" },
+    { id: 1, name: "First Star", assetbundleName: "event_first", startAt: 100, aggregateAt: 200 },
     { id: 5, name: "" },
   ]
 
@@ -71,10 +74,81 @@ describe("card event lookup", () => {
 
   it("resolves event summaries with id fallback names", () => {
     expect(resolveCardEventSummaries(rawEvents, [5, 1])).toEqual([
-      { id: 1, name: "First Star" },
-      { id: 5, name: "#5" },
+      { id: 1, name: "First Star", assetbundleName: "event_first", startAt: 100, aggregateAt: 200 },
+      { id: 5, name: "#5", assetbundleName: null, startAt: null, aggregateAt: null },
     ])
     expect(resolveCardEventSummaries(rawEvents, [])).toEqual([])
+  })
+})
+
+describe("selectCardPickupGachas", () => {
+  const rawGachas = [
+    {
+      id: 2,
+      name: "Later Gacha",
+      startAt: 5_000_000_000_000,
+      gachaPickups: [{ cardId: 109 }],
+    },
+    {
+      id: 1,
+      name: "Early Gacha",
+      startAt: 4_000_000_000_000,
+      gachaPickups: [{ cardId: 109 }, { cardId: 110 }],
+    },
+    {
+      id: 3,
+      name: "Unrelated Gacha",
+      startAt: 6_000_000_000_000,
+      gachaPickups: [{ cardId: 999 }],
+    },
+  ]
+
+  const gachas = normalizeCatalogGachas(rawGachas)
+
+  it("returns gachas picking up the card, ordered by start time", () => {
+    expect(selectCardPickupGachas(gachas, 109).map((gacha) => gacha.id)).toEqual([1, 2])
+    expect(selectCardPickupGachas(gachas, 110).map((gacha) => gacha.id)).toEqual([1])
+  })
+
+  it("returns an empty list for cards without pickups", () => {
+    expect(selectCardPickupGachas(gachas, 42)).toEqual([])
+    expect(selectCardPickupGachas([], 109)).toEqual([])
+  })
+})
+
+describe("resolveCardCostumeGroups", () => {
+  const rawCardCostume3ds = [
+    { cardId: 4, costume3dId: 29001 },
+    { cardId: 4, costume3dId: 29002 },
+    { cardId: 5, costume3dId: 31001 },
+  ]
+  const rawCostume3ds = [
+    { id: 29001, costume3dGroupId: 29, partType: "head", colorId: 1, colorName: "オリジナル", name: "トゥインクルサウンド", assetbundleName: "cos0029_unique_head" },
+    { id: 29002, costume3dGroupId: 29, partType: "body", colorId: 1, colorName: "オリジナル", name: "トゥインクルサウンド", assetbundleName: "cos0029_body" },
+    { id: 29004, costume3dGroupId: 29, partType: "body", colorId: 2, colorName: "アナザー1", name: "トゥインクルサウンド", assetbundleName: "cos0029_body_01" },
+    { id: 31001, costume3dGroupId: 31, partType: "head", colorId: 1, colorName: "ノーマル", name: "ヘアアクセ", assetbundleName: "cos0031_head" },
+  ]
+
+  it("expands linked costumes into body color variants of the group", () => {
+    const groups = resolveCardCostumeGroups(rawCardCostume3ds, rawCostume3ds, 4)
+    expect(groups).toHaveLength(1)
+    expect(groups[0].name).toBe("トゥインクルサウンド")
+    expect(groups[0].colors.map((color) => color.assetbundleName)).toEqual([
+      "cos0029_body",
+      "cos0029_body_01",
+    ])
+    expect(groups[0].colors.map((color) => color.colorName)).toEqual(["オリジナル", "アナザー1"])
+  })
+
+  it("falls back to non-body parts when the group has no body entries", () => {
+    const groups = resolveCardCostumeGroups(rawCardCostume3ds, rawCostume3ds, 5)
+    expect(groups).toHaveLength(1)
+    expect(groups[0].colors.map((color) => color.assetbundleName)).toEqual(["cos0031_head"])
+  })
+
+  it("returns an empty list for unknown cards and malformed payloads", () => {
+    expect(resolveCardCostumeGroups(rawCardCostume3ds, rawCostume3ds, 999)).toEqual([])
+    expect(resolveCardCostumeGroups(null, undefined, 4)).toEqual([])
   })
 })
 
