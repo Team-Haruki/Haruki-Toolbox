@@ -1122,6 +1122,7 @@ export const zhCN = {
       title: "歌曲通关统计",
     },
     multiLive: {
+      title: "多人 Live",
       mvp: "MVP 次数",
       superStar: "SuperStar 次数",
     },

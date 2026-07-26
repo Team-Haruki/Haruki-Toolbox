@@ -498,14 +498,17 @@ function retry() {
 
           <!-- Multi-live counts + music stats -->
           <div class="flex flex-col gap-4">
-            <div v-if="multiLiveCounts" class="grid grid-cols-2 gap-3">
-              <div class="rounded-md border p-3">
-                <div class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.mvp") }}</div>
-                <div class="mt-0.5 text-xl font-bold tabular-nums">{{ formatScore(multiLiveCounts.mvp) }}</div>
-              </div>
-              <div class="rounded-md border p-3">
-                <div class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.superStar") }}</div>
-                <div class="mt-0.5 text-xl font-bold tabular-nums">{{ formatScore(multiLiveCounts.superStar) }}</div>
+            <div v-if="multiLiveCounts" class="flex flex-col gap-2">
+              <h3 class="text-xs font-medium text-muted-foreground">{{ t("playerProfile.multiLive.title") }}</h3>
+              <div class="flex flex-wrap gap-2">
+                <span class="inline-flex items-baseline gap-1.5 rounded-md border px-3 py-1.5">
+                  <span class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.mvp") }}</span>
+                  <span class="text-sm font-semibold tabular-nums">{{ formatScore(multiLiveCounts.mvp) }}</span>
+                </span>
+                <span class="inline-flex items-baseline gap-1.5 rounded-md border px-3 py-1.5">
+                  <span class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.superStar") }}</span>
+                  <span class="text-sm font-semibold tabular-nums">{{ formatScore(multiLiveCounts.superStar) }}</span>
+                </span>
               </div>
             </div>
 

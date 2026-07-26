@@ -1122,6 +1122,7 @@ export const enUS = {
       title: "Music Clear Stats",
     },
     multiLive: {
+      title: "Multi Live",
       mvp: "MVP count",
       superStar: "Super Star count",
     },
