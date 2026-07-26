@@ -1135,7 +1135,7 @@ export const zhCN = {
   training: {
     layout: {
       title: "角色养成",
-      description: "基于已上传的游戏数据查看挑战 Live、综合力加成、区域道具、牵绊、队长统计与角色任务。",
+      description: "查看游戏账号的养成进度",
     },
     tabs: {
       challenge: "挑战信息",

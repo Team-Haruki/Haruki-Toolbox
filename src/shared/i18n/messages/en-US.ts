@@ -1135,7 +1135,7 @@ export const enUS = {
   training: {
     layout: {
       title: "Character training",
-      description: "Challenge Live, power bonuses, area items, bonds, leader stats and character missions from your uploaded game data.",
+      description: "View your game account's training progress",
     },
     tabs: {
       challenge: "Challenge Live",
