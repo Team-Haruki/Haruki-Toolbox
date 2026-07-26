@@ -1249,8 +1249,7 @@ export const zhCN = {
       maxed: "已达当前可升级的最高等级",
       notInShop: "商店暂未开放",
       canUpgrade: "可升级",
-      showAll: "展开全部等级",
-      hideAll: "收起",
+      showAll: "全部等级",
     },
     leader: {
       title: "队长统计",

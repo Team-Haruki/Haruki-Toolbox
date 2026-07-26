@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideChevronDown, LucideChevronUp, LucideRefreshCw } from "lucide-vue-next"
+import { LucideList, LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, SEKAI_UNITS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
@@ -48,7 +49,7 @@ const filterAttr = ref("")
 const filterCharacterId = ref(0)
 const filterTree = ref(false)
 const filterFlower = ref(false)
-const expandedItems = ref(new Set<number>())
+const dialogItemId = ref<number | null>(null)
 
 const nowMs = Date.now()
 
@@ -117,18 +118,16 @@ function nextRow(view: AreaItemView): AreaItemLevelView | null {
   return upgradeRows(view)[0] ?? null
 }
 
-function isExpanded(itemId: number): boolean {
-  return expandedItems.value.has(itemId)
-}
+const dialogView = computed(() =>
+  dialogItemId.value == null
+    ? null
+    : itemViews.value.find((view) => view.itemId === dialogItemId.value) ?? null,
+)
 
-function toggleExpanded(itemId: number) {
-  const next = new Set(expandedItems.value)
-  if (next.has(itemId)) {
-    next.delete(itemId)
-  } else {
-    next.add(itemId)
+function handleDialogOpenChange(open: boolean) {
+  if (!open) {
+    dialogItemId.value = null
   }
-  expandedItems.value = next
 }
 
 function itemIconUrl(view: AreaItemView): string | null {
@@ -200,10 +199,6 @@ function targetColor(view: AreaItemView): string | null {
     return SEKAI_CARD_ATTR_COLORS[target.attr] ?? null
   }
   return unitColorMap.value.get(target.unit as SekaiUnit) ?? null
-}
-
-function currentBonus(view: AreaItemView): number {
-  return view.levels.find((row) => row.level === view.currentLevel)?.bonus ?? 0
 }
 
 function maxLevel(view: AreaItemView): number {
@@ -374,17 +369,17 @@ function retry() {
                 </div>
               </div>
               <span class="shrink-0 text-sm font-semibold tabular-nums">
-                {{ t("training.area.bonus", { bonus: formatAreaBonusRate(currentBonus(view)) }) }}
+                {{ t("training.area.bonus", { bonus: formatAreaBonusRate(view.currentBonus) }) }}
               </span>
               <Button
                 v-if="upgradeRows(view).length > 1"
                 variant="ghost"
                 size="sm"
                 class="h-7 gap-1 text-xs text-muted-foreground"
-                @click="toggleExpanded(view.itemId)"
+                @click="dialogItemId = view.itemId"
               >
-                <component :is="isExpanded(view.itemId) ? LucideChevronUp : LucideChevronDown" class="size-3.5" />
-                {{ isExpanded(view.itemId) ? t("training.area.hideAll") : t("training.area.showAll") }}
+                <LucideList class="size-3.5" />
+                {{ t("training.area.showAll") }}
               </Button>
             </div>
 
@@ -409,10 +404,10 @@ function retry() {
               {{ t("training.area.maxed") }}
             </p>
 
-            <!-- Level rows -->
+            <!-- Next level row -->
             <div v-else class="flex flex-col gap-1.5">
               <div
-                v-for="row in (isExpanded(view.itemId) ? upgradeRows(view) : [nextRow(view)!])"
+                v-for="row in [nextRow(view)!]"
                 :key="row.level"
                 class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-2.5 py-1.5"
               >
@@ -458,6 +453,72 @@ function retry() {
           </CardContent>
         </Card>
       </div>
+
+      <!-- All upgrade levels dialog -->
+      <Dialog :open="dialogView != null" @update:open="handleDialogOpenChange">
+        <DialogContent class="max-h-[85vh] gap-3 overflow-y-auto sm:max-w-xl">
+          <DialogHeader v-if="dialogView">
+            <DialogTitle class="flex items-center gap-2 text-base">
+              <img
+                v-if="itemIconUrl(dialogView)"
+                :src="itemIconUrl(dialogView)!"
+                alt=""
+                class="size-8 shrink-0 rounded-md object-contain"
+                loading="lazy"
+              >
+              <span class="truncate">{{ dialogView.name }}</span>
+              <span class="ml-auto shrink-0 text-sm font-semibold tabular-nums">
+                {{ t("training.area.level", { level: dialogView.currentLevel }) }}/{{ maxLevel(dialogView) }}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          <div v-if="dialogView" class="flex flex-col gap-1.5">
+            <div
+              v-for="row in upgradeRows(dialogView)"
+              :key="row.level"
+              class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-2.5 py-1.5"
+            >
+              <span class="w-11 shrink-0 text-xs font-semibold tabular-nums">
+                {{ t("training.area.level", { level: row.level }) }}
+              </span>
+              <span class="w-12 shrink-0 text-xs tabular-nums text-muted-foreground">
+                {{ row.bonus > 0 ? t("training.area.bonus", { bonus: formatAreaBonusRate(row.bonus) }) : "" }}
+              </span>
+              <span v-if="row.materials.length === 0" class="text-xs text-muted-foreground">
+                {{ t("training.area.notInShop") }}
+              </span>
+              <template v-else>
+                <span
+                  v-for="material in row.materials"
+                  :key="material.materialId"
+                  class="inline-flex items-center gap-1 text-xs tabular-nums"
+                >
+                  <img
+                    v-if="materialIconUrl(material.resourceType, material.materialId)"
+                    :src="materialIconUrl(material.resourceType, material.materialId)!"
+                    alt=""
+                    class="size-5 object-contain"
+                    loading="lazy"
+                  >
+                  <span
+                    :class="material.isEnough
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-red-600 dark:text-red-400'"
+                  >
+                    {{ formatQuantity(material.haveQuantity) }}/{{ formatQuantity(material.sumQuantity) }}
+                  </span>
+                </span>
+                <span
+                  v-if="row.canUpgrade"
+                  class="ml-auto rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                >
+                  {{ t("training.area.canUpgrade") }}
+                </span>
+              </template>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </template>
   </div>
 </template>

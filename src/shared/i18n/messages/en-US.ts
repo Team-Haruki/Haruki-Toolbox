@@ -1249,8 +1249,7 @@ export const enUS = {
       maxed: "All released levels reached",
       notInShop: "Not available in the shop yet",
       canUpgrade: "Ready to upgrade",
-      showAll: "Show all levels",
-      hideAll: "Collapse",
+      showAll: "All levels",
     },
     leader: {
       title: "Leader Statistics",

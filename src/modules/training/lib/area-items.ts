@@ -596,6 +596,8 @@ export type AreaItemView = {
   name: string
   assetbundleName: string
   currentLevel: number
+  /** Bonus rate at the current level; 0 when the item is not owned yet. */
+  currentBonus: number
   maxVisibleLevel: number
   target: AreaItemTarget | null
   levels: AreaItemLevelView[]
@@ -760,6 +762,7 @@ export function buildAreaItemViews(args: {
       name: state.item.name,
       assetbundleName: state.item.assetbundleName,
       currentLevel: state.currentLevel,
+      currentBonus: state.levelMap.get(state.currentLevel)?.power1BonusRate ?? 0,
       maxVisibleLevel: state.maxVisibleLevel,
       target: resolveAreaItemTarget(state.levels),
       levels: levelViews,

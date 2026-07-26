@@ -332,6 +332,9 @@ describe("buildAreaItemViews", () => {
     expect(views).toHaveLength(1)
     const view = views[0]
     expect(view.currentLevel).toBe(1)
+    // The rendered rows start past the current level, but the current bonus
+    // must still resolve from the masterdata (level 1 -> rate 2).
+    expect(view.currentBonus).toBe(2)
     expect(view.maxVisibleLevel).toBe(3)
     expect(view.target).toEqual({ type: "character", characterId: 1 })
     // minCurrentLevel is 1 -> rows start at level 2.
@@ -458,6 +461,7 @@ describe("buildAreaItemViews", () => {
 
     expect(views.map((view) => view.itemId)).toEqual([1])
     expect(views[0].currentLevel).toBe(0)
+    expect(views[0].currentBonus).toBe(0)
   })
 })
 
