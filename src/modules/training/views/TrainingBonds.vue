@@ -5,8 +5,8 @@ import { LucideCheck, LucideChevronRight, LucideHeart, LucideRefreshCw } from "l
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Skeleton } from "@/components/ui/skeleton"
+import SimpleSelect from "@/shared/components/SimpleSelect.vue"
 import { useTrainingBonds } from "@/modules/training/composables/useTrainingBonds"
 import {
   bondLevelProgressPercent,
@@ -69,12 +69,15 @@ const uploadTimeText = computed(() => {
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
 const filterOptions = computed(() => {
-  const options: { value: string; label: string }[] = []
+  const options: { value: string; label: string }[] = [
+    { value: "", label: t("training.bonds.filterAll") },
+  ]
+  const characterEntries: { value: string; label: string }[] = []
   for (const [id, character] of characterMap.value) {
-    options.push({ value: String(id), label: character.name })
+    characterEntries.push({ value: String(id), label: character.name })
   }
-  options.sort((a, b) => Number(a.value) - Number(b.value))
-  return options
+  characterEntries.sort((a, b) => Number(a.value) - Number(b.value))
+  return [...options, ...characterEntries]
 })
 
 const filterCharacterId = computed(() => {
@@ -212,19 +215,16 @@ function retry() {
         <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
           <span>{{ t("training.bonds.title") }}</span>
           <span class="flex flex-wrap items-center gap-2">
-            <label class="text-xs font-normal text-muted-foreground" for="training-bonds-filter">
+            <span class="text-xs font-normal text-muted-foreground">
               {{ t("training.bonds.filterLabel") }}
-            </label>
-            <NativeSelect id="training-bonds-filter" v-model="filterValue" class="h-8 text-xs">
-              <NativeSelectOption value="">{{ t("training.bonds.filterAll") }}</NativeSelectOption>
-              <NativeSelectOption
-                v-for="option in filterOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </NativeSelectOption>
-            </NativeSelect>
+            </span>
+            <SimpleSelect
+              v-model="filterValue"
+              :options="filterOptions"
+              size="sm"
+              trigger-class="text-xs"
+              :aria-label="t('training.bonds.filterLabel')"
+            />
             <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
               <LucideRefreshCw class="size-3.5" />
               {{ t("training.bonds.refresh") }}

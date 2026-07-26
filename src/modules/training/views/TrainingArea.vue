@@ -5,8 +5,8 @@ import { LucideList, LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Skeleton } from "@/components/ui/skeleton"
+import SimpleSelect from "@/shared/components/SimpleSelect.vue"
 import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, SEKAI_UNITS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
 import { resolveCardAttrIconUrl, resolveSekaiGameAssetUrl } from "@/shared/sekai/data-sources"
 import { useTrainingArea } from "@/modules/training/composables/useTrainingArea"
@@ -83,6 +83,21 @@ const uploadTimeText = computed(() => {
 const characterOptions = computed(() =>
   [...characterMap.value.values()].sort((a, b) => a.id - b.id),
 )
+
+const unitFilterOptions = computed(() => [
+  { value: "", label: `${t("training.area.filters.unit")}: ${t("training.area.filters.all")}` },
+  ...SEKAI_UNITS.map((unit) => ({ value: unit, label: t(`cards.unit.${unit}`) })),
+])
+
+const attrFilterOptions = computed(() => [
+  { value: "", label: `${t("training.area.filters.attr")}: ${t("training.area.filters.all")}` },
+  ...SEKAI_CARD_ATTRS.map((attr) => ({ value: attr, label: t(`cards.attr.${attr}`) })),
+])
+
+const characterFilterOptions = computed(() => [
+  { value: "0", label: `${t("training.area.filters.character")}: ${t("training.area.filters.all")}` },
+  ...characterOptions.value.map((character) => ({ value: String(character.id), label: character.name })),
+])
 
 const filter = computed<AreaItemFilter>(() => ({
   unit: filterUnit.value,
@@ -283,29 +298,25 @@ function retry() {
     <template v-else-if="isReady">
       <!-- Filters -->
       <div class="flex flex-wrap items-center gap-2">
-        <NativeSelect v-model="filterUnit" class="text-xs" :aria-label="t('training.area.filters.unit')">
-          <NativeSelectOption value="">{{ t("training.area.filters.unit") }}: {{ t("training.area.filters.all") }}</NativeSelectOption>
-          <NativeSelectOption v-for="unit in SEKAI_UNITS" :key="unit" :value="unit">
-            {{ t(`cards.unit.${unit}`) }}
-          </NativeSelectOption>
-        </NativeSelect>
-        <NativeSelect v-model="filterAttr" class="text-xs" :aria-label="t('training.area.filters.attr')">
-          <NativeSelectOption value="">{{ t("training.area.filters.attr") }}: {{ t("training.area.filters.all") }}</NativeSelectOption>
-          <NativeSelectOption v-for="attr in SEKAI_CARD_ATTRS" :key="attr" :value="attr">
-            {{ t(`cards.attr.${attr}`) }}
-          </NativeSelectOption>
-        </NativeSelect>
-        <NativeSelect
+        <SimpleSelect
+          v-model="filterUnit"
+          :options="unitFilterOptions"
+          trigger-class="text-xs"
+          :aria-label="t('training.area.filters.unit')"
+        />
+        <SimpleSelect
+          v-model="filterAttr"
+          :options="attrFilterOptions"
+          trigger-class="text-xs"
+          :aria-label="t('training.area.filters.attr')"
+        />
+        <SimpleSelect
           :model-value="String(filterCharacterId)"
-          class="text-xs"
+          :options="characterFilterOptions"
+          trigger-class="text-xs"
           :aria-label="t('training.area.filters.character')"
           @update:model-value="handleCharacterFilterChange"
-        >
-          <NativeSelectOption value="0">{{ t("training.area.filters.character") }}: {{ t("training.area.filters.all") }}</NativeSelectOption>
-          <NativeSelectOption v-for="character in characterOptions" :key="character.id" :value="String(character.id)">
-            {{ character.name }}
-          </NativeSelectOption>
-        </NativeSelect>
+        />
         <Button
           :variant="filterTree ? 'default' : 'outline'"
           size="sm"

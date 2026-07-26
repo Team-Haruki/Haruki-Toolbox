@@ -4,9 +4,10 @@ import { useI18n } from "vue-i18n"
 import { LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
+import SimpleSelect from "@/shared/components/SimpleSelect.vue"
+import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { useTrainingMissions } from "@/modules/training/composables/useTrainingMissions"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
@@ -79,6 +80,11 @@ const summary = computed(() => {
 })
 
 const selectedCharacter = computed(() => characterMap.value.get(selectedCharacterId.value) ?? null)
+const selectedColor = computed(() => resolveSekaiCharacterColor(selectedCharacterId.value))
+
+const characterSelectOptions = computed(() =>
+  CHARACTER_IDS.map((characterId) => ({ value: String(characterId), label: characterName(characterId) })),
+)
 
 function characterName(characterId: number): string {
   return characterMap.value.get(characterId)?.name ?? t("training.missions.unknownCharacter", { id: characterId })
@@ -173,7 +179,7 @@ function retry() {
 
     <template v-else-if="isReady">
       <!-- Character selector + rank summary -->
-      <Card>
+      <Card class="border-l-4" :style="selectedColor ? { borderLeftColor: selectedColor } : {}">
         <CardContent class="flex flex-col gap-3 px-4">
           <div class="flex flex-wrap items-center gap-3">
             <img
@@ -183,19 +189,18 @@ function retry() {
               class="size-10 shrink-0 rounded-full"
               loading="lazy"
             >
-            <NativeSelect
+            <SimpleSelect
               :model-value="String(selectedCharacterId)"
-              class="text-sm"
+              :options="characterSelectOptions"
               :aria-label="t('training.missions.character')"
               @update:model-value="handleCharacterChange"
-            >
-              <NativeSelectOption v-for="characterId in CHARACTER_IDS" :key="characterId" :value="String(characterId)">
-                {{ characterName(characterId) }}
-              </NativeSelectOption>
-            </NativeSelect>
+            />
             <span
               v-if="summary"
               class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-primary"
+              :style="selectedColor
+                ? { backgroundColor: `color-mix(in srgb, ${selectedColor} 15%, transparent)`, color: selectedColor }
+                : {}"
             >
               {{ t("training.missions.rank", { rank: summary.currentLevel }) }}
             </span>
@@ -253,7 +258,7 @@ function retry() {
                     {{ missionProgressText(row) }}
                   </p>
                 </div>
-                <Progress :model-value="row.ratio * 100" class="h-1.5" />
+                <Progress :model-value="row.ratio * 100" :color="selectedColor ?? undefined" class="h-1.5" />
                 <p v-if="row.isEx && row.currentRound != null" class="text-[11px] tabular-nums text-muted-foreground">
                   {{ t("training.missions.exRound", { round: row.currentRound }) }}
                   <template v-if="row.currentRoundNeed != null">
