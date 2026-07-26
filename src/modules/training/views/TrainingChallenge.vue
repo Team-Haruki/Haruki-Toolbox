@@ -253,11 +253,14 @@ function retry() {
               v-if="cell.unclaimedJewel > 0 || cell.unclaimedShard > 0"
               class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] tabular-nums text-muted-foreground"
             >
-              <span class="inline-flex items-center gap-1">
+              <span>{{ t("training.challenge.unclaimedLabel") }}</span>
+              <span v-if="cell.unclaimedJewel > 0" class="inline-flex items-center gap-1">
                 <LucideGem class="size-3 shrink-0 text-sky-500" />
                 {{ t("training.challenge.jewel", { count: formatNumber(cell.unclaimedJewel) }) }}
               </span>
-              <span>{{ t("training.challenge.shard", { count: formatNumber(cell.unclaimedShard) }) }}</span>
+              <span v-if="cell.unclaimedShard > 0">
+                {{ t("training.challenge.shard", { count: formatNumber(cell.unclaimedShard) }) }}
+              </span>
             </p>
             <p v-else class="text-[11px] text-muted-foreground">
               {{ t("training.challenge.allClaimed") }}

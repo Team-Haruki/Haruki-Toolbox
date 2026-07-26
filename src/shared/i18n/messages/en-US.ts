@@ -1160,8 +1160,9 @@ export const enUS = {
       sortByScore: "By score",
       scoreLabel: "Score",
       stageLabel: "Challenge Stage",
-      jewel: "Claimable gems {count}",
-      shard: "Crystal shards {count}",
+      unclaimedLabel: "Claimable rewards",
+      jewel: "Crystals ×{count}",
+      shard: "Crystal shards ×{count}",
       allClaimed: "All rewards claimed",
     },
     power: {
