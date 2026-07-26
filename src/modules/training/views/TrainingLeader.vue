@@ -8,7 +8,6 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTrainingLeader } from "@/modules/training/composables/useTrainingLeader"
-import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   LEADER_SORT_MODES,
   buildLeaderCounts,
@@ -22,7 +21,6 @@ const { t, locale } = useI18n()
 const {
   suiteStatus,
   suiteData,
-  uploadTime,
   suiteError,
   reloadSuite,
   masterLoading,
@@ -51,14 +49,6 @@ const errorDetail = computed(() => {
   return raw instanceof Error ? raw.message : String(raw)
 })
 
-const uploadTimeText = computed(() => {
-  if (uploadTime.value == null) {
-    return null
-  }
-
-  return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(suiteUploadTimeToMillis(uploadTime.value))
-})
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
@@ -143,9 +133,6 @@ function retry() {
           <LucideRefreshCw class="size-3.5" />
           {{ t("training.leader.refresh") }}
         </Button>
-        <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
-          {{ t("training.leader.dataAsOf", { time: uploadTimeText }) }}
-        </p>
       </div>
     </div>
 

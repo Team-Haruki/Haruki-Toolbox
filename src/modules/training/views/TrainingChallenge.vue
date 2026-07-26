@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTrainingChallenge } from "@/modules/training/composables/useTrainingChallenge"
-import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   CHALLENGE_SORT_MODES,
   buildChallengeGrid,
@@ -25,7 +24,6 @@ const {
   accountRegion,
   suiteStatus,
   suiteData,
-  uploadTime,
   suiteError,
   reloadSuite,
   masterLoading,
@@ -56,14 +54,6 @@ const errorDetail = computed(() => {
   return raw instanceof Error ? raw.message : String(raw)
 })
 
-const uploadTimeText = computed(() => {
-  if (uploadTime.value == null) {
-    return null
-  }
-
-  return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(suiteUploadTimeToMillis(uploadTime.value))
-})
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
@@ -133,6 +123,12 @@ function retry() {
 
 <template>
   <div class="flex flex-col gap-4">
+    <!-- Header -->
+    <div>
+      <h2 class="text-xl font-bold">{{ t("training.challenge.title") }}</h2>
+      <p class="text-sm text-muted-foreground">{{ t("training.challenge.description") }}</p>
+    </div>
+
     <!-- No account selected -->
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
@@ -163,8 +159,7 @@ function retry() {
 
     <Card v-else-if="isReady">
       <CardHeader class="pb-2">
-        <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-          <span>{{ t("training.challenge.title") }}</span>
+        <CardTitle class="flex flex-wrap items-center justify-end gap-2 text-base">
           <span class="flex flex-wrap items-center gap-2">
             <Tabs :model-value="sortMode" @update:model-value="handleSortChange">
               <TabsList class="h-8">
@@ -182,9 +177,6 @@ function retry() {
             </Button>
           </span>
         </CardTitle>
-        <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
-          {{ t("training.challenge.dataAsOf", { time: uploadTimeText }) }}
-        </p>
       </CardHeader>
       <CardContent class="flex flex-col gap-3">
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">

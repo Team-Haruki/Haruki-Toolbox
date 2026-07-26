@@ -1,8 +1,23 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
+import { useAccountUploadTime, useGameAccountSelection } from "@/shared/sekai/user-snapshot/use-user-suite"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+const { selectedAccount } = useGameAccountSelection()
+const uploadTime = useAccountUploadTime(selectedAccount)
+
+const uploadTimeText = computed(() => {
+  if (uploadTime.value == null) {
+    return null
+  }
+
+  return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
+    .format(suiteUploadTimeToMillis(uploadTime.value))
+})
 
 const tabs = [
   { name: "training.challenge", labelKey: "training.tabs.challenge" },
@@ -21,7 +36,12 @@ const tabs = [
         <h1 class="text-2xl font-bold">{{ t("training.layout.title") }}</h1>
         <p class="text-sm text-muted-foreground">{{ t("training.layout.description") }}</p>
       </div>
-      <GameAccountSelect />
+      <div class="flex flex-col items-start gap-1 sm:items-end">
+        <GameAccountSelect />
+        <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
+          {{ t("training.layout.dataAsOf", { time: uploadTimeText }) }}
+        </p>
+      </div>
     </div>
 
     <nav class="flex flex-wrap gap-1 border-b border-border" :aria-label="t('training.layout.title')">

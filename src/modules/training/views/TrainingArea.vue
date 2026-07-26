@@ -10,7 +10,6 @@ import SimpleSelect from "@/shared/components/SimpleSelect.vue"
 import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, SEKAI_UNITS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
 import { resolveCardAttrIconUrl, resolveSekaiGameAssetUrl } from "@/shared/sekai/data-sources"
 import { useTrainingArea } from "@/modules/training/composables/useTrainingArea"
-import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   areaItemIconAssetPath,
   buildAreaItemViews,
@@ -30,7 +29,6 @@ const {
   accountRegion,
   suiteStatus,
   suiteData,
-  uploadTime,
   suiteError,
   reloadSuite,
   masterLoading,
@@ -71,14 +69,6 @@ const errorDetail = computed(() => {
   return raw instanceof Error ? raw.message : String(raw)
 })
 
-const uploadTimeText = computed(() => {
-  if (uploadTime.value == null) {
-    return null
-  }
-
-  return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(suiteUploadTimeToMillis(uploadTime.value))
-})
 
 const characterOptions = computed(() =>
   [...characterMap.value.values()].sort((a, b) => a.id - b.id),
@@ -265,9 +255,6 @@ function retry() {
           <LucideRefreshCw class="size-3.5" />
           {{ t("training.area.refresh") }}
         </Button>
-        <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
-          {{ t("training.area.dataAsOf", { time: uploadTimeText }) }}
-        </p>
       </div>
     </div>
 

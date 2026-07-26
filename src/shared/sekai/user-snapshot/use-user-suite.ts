@@ -1,4 +1,4 @@
-import { computed, shallowRef, ref, watch, type ComputedRef, type Ref } from "vue"
+import { computed, reactive, shallowRef, ref, watch, type ComputedRef, type Ref } from "vue"
 import { storeToRefs } from "pinia"
 import { useUserStore } from "@/shared/stores/user"
 import { useSettingsStore } from "@/shared/stores/settings"
@@ -27,6 +27,20 @@ export type UseUserSuiteResult = {
 
 export function makeGameAccountKey(account: Pick<GameAccountBinding, "server" | "userId">): string {
   return `${account.server}:${account.userId}`
+}
+
+// Last known snapshot upload time per account, fed by every useUserSuite
+// fetch so layout-level UI (e.g. under the account selector) can show the
+// data timestamp without issuing its own suite request.
+const uploadTimeByAccount = reactive(new Map<string, number | null>())
+
+export function useAccountUploadTime(
+  account: ComputedRef<SelectableGameAccount | null> | Ref<SelectableGameAccount | null>,
+): ComputedRef<number | null> {
+  return computed(() => {
+    const key = account.value?.key
+    return key ? uploadTimeByAccount.get(key) ?? null : null
+  })
 }
 
 export function useGameAccountSelection(): UseGameAccountSelectionResult {
@@ -122,6 +136,7 @@ export function useUserSuite(
 
       data.value = result.data
       uploadTime.value = result.remoteUploadTime
+      uploadTimeByAccount.set(target.key, result.remoteUploadTime)
       cacheHit.value = result.cacheHit
       status.value = "ready"
     } catch (loadError) {

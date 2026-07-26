@@ -8,7 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { SEKAI_CARD_ATTR_COLORS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
 import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { useTrainingPower } from "@/modules/training/composables/useTrainingPower"
-import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   buildPowerBonuses,
   collectUserAreaItemLevels,
@@ -18,12 +17,11 @@ import {
   normalizeUserMysekaiGates,
 } from "@/modules/training/lib/power-bonus"
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const {
   suiteStatus,
   suiteData,
-  uploadTime,
   suiteError,
   reloadSuite,
   masterLoading,
@@ -53,14 +51,6 @@ const errorDetail = computed(() => {
   return raw instanceof Error ? raw.message : String(raw)
 })
 
-const uploadTimeText = computed(() => {
-  if (uploadTime.value == null) {
-    return null
-  }
-
-  return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(suiteUploadTimeToMillis(uploadTime.value))
-})
 
 const bonuses = computed(() => buildPowerBonuses({
   userAreaItemLevels: collectUserAreaItemLevels(suiteData.value?.userAreas),
@@ -130,6 +120,12 @@ function retry() {
 
 <template>
   <div class="flex flex-col gap-4">
+    <!-- Header -->
+    <div>
+      <h2 class="text-xl font-bold">{{ t("training.power.title") }}</h2>
+      <p class="text-sm text-muted-foreground">{{ t("training.power.description") }}</p>
+    </div>
+
     <!-- No account selected -->
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
@@ -170,9 +166,6 @@ function retry() {
               {{ t("training.power.refresh") }}
             </Button>
           </CardTitle>
-          <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
-            {{ t("training.power.dataAsOf", { time: uploadTimeText }) }}
-          </p>
         </CardHeader>
         <CardContent>
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">

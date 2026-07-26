@@ -16,14 +16,12 @@ import {
 } from "@/modules/training/lib/bonds"
 import { normalizeUserCharacterRanks } from "@/modules/training/lib/power-bonus"
 import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
-import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 
 const { t, locale } = useI18n()
 
 const {
   suiteStatus,
   suiteData,
-  uploadTime,
   suiteError,
   reloadSuite,
   masterLoading,
@@ -57,14 +55,6 @@ const errorDetail = computed(() => {
   return raw instanceof Error ? raw.message : String(raw)
 })
 
-const uploadTimeText = computed(() => {
-  if (uploadTime.value == null) {
-    return null
-  }
-
-  return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(suiteUploadTimeToMillis(uploadTime.value))
-})
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
@@ -182,6 +172,12 @@ function retry() {
 
 <template>
   <div class="flex flex-col gap-4">
+    <!-- Header -->
+    <div>
+      <h2 class="text-xl font-bold">{{ t("training.bonds.title") }}</h2>
+      <p class="text-sm text-muted-foreground">{{ t("training.bonds.description") }}</p>
+    </div>
+
     <!-- No account selected -->
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
@@ -212,8 +208,7 @@ function retry() {
 
     <Card v-else-if="isReady">
       <CardHeader class="pb-2">
-        <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-          <span>{{ t("training.bonds.title") }}</span>
+        <CardTitle class="flex flex-wrap items-center justify-end gap-2 text-base">
           <span class="flex flex-wrap items-center gap-2">
             <span class="text-xs font-normal text-muted-foreground">
               {{ t("training.bonds.filterLabel") }}
@@ -231,9 +226,6 @@ function retry() {
             </Button>
           </span>
         </CardTitle>
-        <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
-          {{ t("training.bonds.dataAsOf", { time: uploadTimeText }) }}
-        </p>
       </CardHeader>
       <CardContent class="flex flex-col gap-3">
         <p class="text-sm text-muted-foreground">

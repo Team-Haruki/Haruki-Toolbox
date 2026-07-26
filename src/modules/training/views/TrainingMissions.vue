@@ -9,7 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import SimpleSelect from "@/shared/components/SimpleSelect.vue"
 import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { useTrainingMissions } from "@/modules/training/composables/useTrainingMissions"
-import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   buildCharacterMissionSummary,
   type CharacterMissionRowView,
@@ -20,7 +19,6 @@ const { t, locale } = useI18n()
 const {
   suiteStatus,
   suiteData,
-  uploadTime,
   suiteError,
   reloadSuite,
   masterLoading,
@@ -53,14 +51,6 @@ const errorDetail = computed(() => {
   return raw instanceof Error ? raw.message : String(raw)
 })
 
-const uploadTimeText = computed(() => {
-  if (uploadTime.value == null) {
-    return null
-  }
-
-  return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(suiteUploadTimeToMillis(uploadTime.value))
-})
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
@@ -157,9 +147,6 @@ function retry() {
             {{ t("training.missions.refresh") }}
           </Button>
         </div>
-        <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
-          {{ t("training.missions.dataAsOf", { time: uploadTimeText }) }}
-        </p>
       </div>
     </div>
 
