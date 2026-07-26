@@ -203,6 +203,11 @@ function hasRemaining(totals: MusicRewardTotals): boolean {
   return hasMusicRewardTotals(totals)
 }
 
+function levelHasRemaining(row: MusicProgressLevelRow): boolean {
+  const totals = levelRemaining(row)
+  return totals != null && hasRemaining(totals)
+}
+
 const showSkeleton = computed(
   () => progress.value == null
     && (suite.status.value === "loading" || master.loading.value)
@@ -377,21 +382,21 @@ function refresh() {
             <CardTitle class="text-base">{{ t("musicProgress.overallTitle") }}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
               <div
                 v-for="entry in overallRows"
                 :key="entry.difficulty"
-                class="rounded-md border p-2"
+                class="flex flex-wrap items-center gap-2 rounded-md border p-2"
               >
                 <span
-                  class="inline-flex w-16 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
+                  class="inline-flex w-16 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
                   :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[entry.difficulty] }"
                 >
                   {{ difficultyLabel(entry.difficulty) }}
                 </span>
-                <p class="mt-1.5 text-xs tabular-nums text-muted-foreground">
+                <p class="text-xs tabular-nums text-muted-foreground">
                   AP {{ entry.summary.allPerfect }} · FC {{ entry.summary.fullCombo }} ·
-                  CL {{ entry.summary.cleared }} / {{ entry.summary.total }}
+                  CL {{ entry.summary.cleared }}/{{ entry.summary.total }}
                 </p>
               </div>
             </div>
@@ -455,7 +460,7 @@ function refresh() {
         </p>
 
         <Tabs :model-value="activeDifficulty" @update:model-value="updateDifficulty">
-          <TabsList class="w-full flex-wrap sm:w-auto">
+          <TabsList class="flex-wrap">
             <TabsTrigger
               v-for="difficulty in MUSIC_DIFFICULTIES"
               :key="difficulty"
@@ -545,13 +550,18 @@ function refresh() {
                     :title="`${t(`musicProgress.legend.${segment.key}`)}: ${segment.count}`"
                   />
                 </span>
-                <span class="text-xs tabular-nums text-muted-foreground">
+                <span class="w-48 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                   AP {{ row.allPerfect }} · FC {{ row.fullComboOnly }} ·
                   CL {{ row.clearOnly }} · — {{ row.unplayed }}
                 </span>
                 <span
                   v-if="levelRemainingText(row)"
-                  class="text-xs tabular-nums text-emerald-600 dark:text-emerald-400"
+                  :class="[
+                    'w-44 shrink-0 text-right text-xs tabular-nums',
+                    levelHasRemaining(row)
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-muted-foreground/70',
+                  ]"
                 >
                   {{ levelRemainingText(row) }}
                 </span>
