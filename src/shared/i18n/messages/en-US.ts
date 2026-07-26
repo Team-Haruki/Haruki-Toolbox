@@ -1263,8 +1263,8 @@ export const enUS = {
       limit: "Mission cap {count}",
       sortByTotal: "By count",
       sortByCharacter: "By character",
+      normalLabel: "Normal",
       exLevel: "EX Lv.{level}",
-      exCount: "EX {count}",
       unknownCharacter: "Unknown character",
     },
     missions: {

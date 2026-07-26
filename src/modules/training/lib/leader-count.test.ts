@@ -69,6 +69,17 @@ describe("buildLeaderCounts", () => {
     expect(leaders).toHaveLength(26)
   })
 
+  test("maxExCount accumulates requirements through the level before the last", () => {
+    const { maxExCount } = buildLeaderCounts({
+      userCharacterMissionV2s: [],
+      userCharacterLiveUsageCounts: [],
+      userCharacterMissionV2Statuses: [],
+      parameterGroups,
+    })
+    // maxSeq is 4, so the cap covers seqs 1..3 at 500 each.
+    expect(maxExCount).toBe(1_500)
+  })
+
   test("falls back to leader live usage counts when no play_live mission exists", () => {
     const { leaders } = buildLeaderCounts({
       userCharacterMissionV2s: [],

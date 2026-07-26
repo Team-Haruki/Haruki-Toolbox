@@ -87,17 +87,22 @@ const leaderCells = computed(() => {
     const percent = result.maxPlayCount > 0
       ? Math.min(100, (leader.playCount / result.maxPlayCount) * 100)
       : 0
+    const exPercent = result.maxExCount > 0
+      ? Math.min(100, (leader.exCount / result.maxExCount) * 100)
+      : 0
     return {
       ...leader,
       name: character?.name ?? t("training.leader.unknownCharacter"),
       iconUrl: character?.iconUrl ?? null,
       color: resolveSekaiCharacterColor(leader.characterId),
       percent,
+      exPercent,
     }
   })
 })
 
 const maxPlayCount = computed(() => leaderResult.value?.maxPlayCount ?? 0)
+const maxExCount = computed(() => leaderResult.value?.maxExCount ?? 0)
 
 function formatCount(value: number): string {
   return numberFormatter.value.format(value)
@@ -200,17 +205,24 @@ function retry() {
             >
             <div class="min-w-0 flex-1">
               <div class="flex items-baseline justify-between gap-2">
-                <p class="truncate text-xs" :title="cell.name">{{ cell.name }}</p>
+                <p class="truncate text-sm font-medium" :title="cell.name">{{ cell.name }}</p>
                 <p class="shrink-0 text-sm font-semibold tabular-nums">
-                  {{ formatCount(cell.playCount) }}
+                  {{ formatCount(cell.playCount + cell.exCount) }}
                 </p>
               </div>
-              <Progress :model-value="cell.percent" :color="cell.color ?? undefined" class="mt-1.5 h-1.5" />
-              <p class="mt-1 text-[11px] tabular-nums text-muted-foreground">
-                {{ t("training.leader.exLevel", { level: cell.exLevel }) }}
-                ·
-                {{ t("training.leader.exCount", { count: formatCount(cell.exCount) }) }}
-              </p>
+              <div class="mt-1.5 grid grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1">
+                <span class="text-[11px] text-muted-foreground">{{ t("training.leader.normalLabel") }}</span>
+                <Progress :model-value="cell.percent" :color="cell.color ?? undefined" class="h-1.5" />
+                <span class="text-[11px] tabular-nums text-muted-foreground">
+                  {{ formatCount(cell.playCount) }}<template v-if="maxPlayCount > 0">/{{ formatCount(maxPlayCount) }}</template>
+                </span>
+
+                <span class="text-[11px] text-muted-foreground">{{ t("training.leader.exLevel", { level: cell.exLevel }) }}</span>
+                <Progress :model-value="cell.exPercent" :color="cell.color ?? undefined" class="h-1.5" />
+                <span class="text-[11px] tabular-nums text-muted-foreground">
+                  {{ formatCount(cell.exCount) }}<template v-if="maxExCount > 0">/{{ formatCount(maxExCount) }}</template>
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>

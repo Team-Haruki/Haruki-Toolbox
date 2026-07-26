@@ -1263,8 +1263,8 @@ export const zhCN = {
       limit: "任务上限 {count}",
       sortByTotal: "按次数",
       sortByCharacter: "按角色",
+      normalLabel: "通常",
       exLevel: "EX Lv.{level}",
-      exCount: "EX {count}",
       unknownCharacter: "未知角色",
     },
     missions: {

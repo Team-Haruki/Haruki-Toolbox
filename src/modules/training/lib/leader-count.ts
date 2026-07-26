@@ -33,6 +33,12 @@ export type LeaderCountEntry = {
 export type LeaderCountResult = {
   leaders: LeaderCountEntry[]
   maxPlayCount: number
+  /**
+   * EX play count needed to reach the highest EX level (the character badge
+   * cap). Displayed EX levels are `completed seqs + 1`, so this is the
+   * cumulative requirement through `maxSeq - 1` — e.g. EX Lv.31 ↔ 28,500.
+   */
+  maxExCount: number
 }
 
 export const LEADER_SORT_MODES = ["total", "character"] as const
@@ -175,7 +181,13 @@ export function buildLeaderCounts(input: {
     }
   }
 
-  return { leaders, maxPlayCount }
+  const maxExSeq = requirements.length > 0 ? requirements[requirements.length - 1].seq : 0
+  let maxExCount = 0
+  for (let seq = 1; seq < maxExSeq; seq++) {
+    maxExCount += leaderMissionRequirementForSeq(requirements, seq)
+  }
+
+  return { leaders, maxPlayCount, maxExCount }
 }
 
 /** Default sort: playCount + exCount descending, character id ascending. */
