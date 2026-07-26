@@ -3,7 +3,7 @@ import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideGem, LucideRefreshCw, LucideTrophy } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTrainingChallenge } from "@/modules/training/composables/useTrainingChallenge"
@@ -124,9 +124,15 @@ function retry() {
 <template>
   <div class="flex flex-col gap-4">
     <!-- Header -->
-    <div>
-      <h2 class="text-xl font-bold">{{ t("training.challenge.title") }}</h2>
-      <p class="text-sm text-muted-foreground">{{ t("training.challenge.description") }}</p>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 class="text-xl font-bold">{{ t("training.challenge.title") }}</h2>
+        <p class="text-sm text-muted-foreground">{{ t("training.challenge.description") }}</p>
+      </div>
+      <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
+        <LucideRefreshCw class="size-3.5" />
+        {{ t("training.challenge.refresh") }}
+      </Button>
     </div>
 
     <!-- No account selected -->
@@ -158,34 +164,24 @@ function retry() {
     </template>
 
     <Card v-else-if="isReady">
-      <CardHeader class="pb-2">
-        <CardTitle class="flex flex-wrap items-center justify-end gap-2 text-base">
-          <span class="flex flex-wrap items-center gap-2">
-            <Tabs :model-value="sortMode" @update:model-value="handleSortChange">
-              <TabsList class="h-8">
-                <TabsTrigger value="character" class="text-xs">
-                  {{ t("training.challenge.sortByCharacter") }}
-                </TabsTrigger>
-                <TabsTrigger value="score" class="text-xs">
-                  {{ t("training.challenge.sortByScore") }}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
-              <LucideRefreshCw class="size-3.5" />
-              {{ t("training.challenge.refresh") }}
-            </Button>
-          </span>
-        </CardTitle>
-      </CardHeader>
       <CardContent class="flex flex-col gap-3">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
           <p v-if="summary.top" class="inline-flex items-center gap-1.5">
             <LucideTrophy class="size-4 shrink-0 text-amber-500" />
             {{ t("training.challenge.summary", { name: summary.top.name, score: formatNumber(summary.top.highScore) }) }}
           </p>
           <p v-else>{{ t("training.challenge.empty") }}</p>
           <p>{{ t("training.challenge.charactersWithData", { count: summary.withDataCount, total: cells.length }) }}</p>
+          <Tabs :model-value="sortMode" class="ml-auto" @update:model-value="handleSortChange">
+            <TabsList class="h-8">
+              <TabsTrigger value="character" class="text-xs">
+                {{ t("training.challenge.sortByCharacter") }}
+              </TabsTrigger>
+              <TabsTrigger value="score" class="text-xs">
+                {{ t("training.challenge.sortByScore") }}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">

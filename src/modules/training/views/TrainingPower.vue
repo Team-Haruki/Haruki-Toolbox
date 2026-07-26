@@ -121,9 +121,15 @@ function retry() {
 <template>
   <div class="flex flex-col gap-4">
     <!-- Header -->
-    <div>
-      <h2 class="text-xl font-bold">{{ t("training.power.title") }}</h2>
-      <p class="text-sm text-muted-foreground">{{ t("training.power.description") }}</p>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 class="text-xl font-bold">{{ t("training.power.title") }}</h2>
+        <p class="text-sm text-muted-foreground">{{ t("training.power.description") }}</p>
+      </div>
+      <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
+        <LucideRefreshCw class="size-3.5" />
+        {{ t("training.power.refresh") }}
+      </Button>
     </div>
 
     <!-- No account selected -->
@@ -159,13 +165,7 @@ function retry() {
       <!-- Character bonuses -->
       <Card>
         <CardHeader class="pb-2">
-          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-            <span>{{ t("training.power.charactersTitle") }}</span>
-            <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
-              <LucideRefreshCw class="size-3.5" />
-              {{ t("training.power.refresh") }}
-            </Button>
-          </CardTitle>
+          <CardTitle class="text-base">{{ t("training.power.charactersTitle") }}</CardTitle>
         </CardHeader>
         <CardContent>
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">

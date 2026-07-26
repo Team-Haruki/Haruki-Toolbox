@@ -3,7 +3,7 @@ import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideCheck, LucideChevronRight, LucideHeart, LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import SimpleSelect from "@/shared/components/SimpleSelect.vue"
@@ -173,9 +173,15 @@ function retry() {
 <template>
   <div class="flex flex-col gap-4">
     <!-- Header -->
-    <div>
-      <h2 class="text-xl font-bold">{{ t("training.bonds.title") }}</h2>
-      <p class="text-sm text-muted-foreground">{{ t("training.bonds.description") }}</p>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 class="text-xl font-bold">{{ t("training.bonds.title") }}</h2>
+        <p class="text-sm text-muted-foreground">{{ t("training.bonds.description") }}</p>
+      </div>
+      <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
+        <LucideRefreshCw class="size-3.5" />
+        {{ t("training.bonds.refresh") }}
+      </Button>
     </div>
 
     <!-- No account selected -->
@@ -207,10 +213,13 @@ function retry() {
     </template>
 
     <Card v-else-if="isReady">
-      <CardHeader class="pb-2">
-        <CardTitle class="flex flex-wrap items-center justify-end gap-2 text-base">
+      <CardContent class="flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p class="text-sm text-muted-foreground">
+            {{ t("training.bonds.count", { count: bondRows.length }) }}
+          </p>
           <span class="flex flex-wrap items-center gap-2">
-            <span class="text-xs font-normal text-muted-foreground">
+            <span class="text-xs text-muted-foreground">
               {{ t("training.bonds.filterLabel") }}
             </span>
             <SimpleSelect
@@ -220,17 +229,8 @@ function retry() {
               trigger-class="text-xs"
               :aria-label="t('training.bonds.filterLabel')"
             />
-            <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
-              <LucideRefreshCw class="size-3.5" />
-              {{ t("training.bonds.refresh") }}
-            </Button>
           </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent class="flex flex-col gap-3">
-        <p class="text-sm text-muted-foreground">
-          {{ t("training.bonds.count", { count: bondRows.length }) }}
-        </p>
+        </div>
 
         <p v-if="bondRows.length === 0" class="py-4 text-center text-sm text-muted-foreground">
           {{ t("training.bonds.empty") }}
