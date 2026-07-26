@@ -217,7 +217,7 @@ function retry() {
             </div>
 
             <div class="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1.5">
-              <span class="text-[11px] text-muted-foreground">{{ t("training.challenge.scoreLabel") }}</span>
+              <span class="text-center text-[11px] text-muted-foreground">{{ t("training.challenge.scoreLabel") }}</span>
               <div
                 class="h-1.5 overflow-hidden rounded-full bg-primary/15"
                 :style="cell.color ? { backgroundColor: `color-mix(in srgb, ${cell.color} 15%, transparent)` } : undefined"
@@ -231,7 +231,7 @@ function retry() {
                 {{ cell.highScore > 0 ? formatNumber(cell.highScore) : "—" }}
               </span>
 
-              <span class="text-[11px] text-muted-foreground">{{ t("training.challenge.stageLabel") }}</span>
+              <span class="text-center text-[11px] text-muted-foreground">{{ t("training.challenge.stageLabel") }}</span>
               <div
                 class="h-1.5 overflow-hidden rounded-full bg-primary/15"
                 :style="cell.color ? { backgroundColor: `color-mix(in srgb, ${cell.color} 15%, transparent)` } : undefined"
