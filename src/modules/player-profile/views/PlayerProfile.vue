@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
 import { LucideCopy, LucideRefreshCw, LucideTrophy } from "lucide-vue-next"
@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
+import { resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import { usePlayerProfile } from "@/modules/player-profile/composables/usePlayerProfile"
 import ProfileRadarChart from "@/modules/player-profile/components/ProfileRadarChart.vue"
@@ -260,6 +261,12 @@ type UnitLegendItem = {
 }
 
 /** Per-unit average of the radar values; the highest unit gets `top`. */
+const failedUnitLogos = ref<Set<string>>(new Set())
+
+function markUnitLogoFailed(unit: string) {
+  failedUnitLogos.value = new Set(failedUnitLogos.value).add(unit)
+}
+
 function buildUnitLegend(
   entries: ReadonlyArray<{ groupKey: string | null; groupColor: string | null; value: number }>,
   formatValue: (value: number) => string,
@@ -562,7 +569,15 @@ function retry() {
                   :key="item.unit"
                   :class="['inline-flex items-center gap-1', item.top ? 'font-semibold' : 'text-muted-foreground']"
                 >
-                  <span class="size-2.5 rounded-full" :style="{ backgroundColor: item.color ?? 'currentColor' }" />
+                  <img
+                    v-if="!failedUnitLogos.has(item.unit)"
+                    :src="resolveUnitLogoUrl(item.unit)"
+                    alt=""
+                    class="h-3.5 w-auto max-w-8 object-contain"
+                    loading="lazy"
+                    @error="markUnitLogoFailed(item.unit)"
+                  >
+                  <span v-else class="size-2.5 rounded-full" :style="{ backgroundColor: item.color ?? 'currentColor' }" />
                   {{ t(`cards.unit.${item.unit}`) }}
                   <span class="tabular-nums">{{ item.detail }}</span>
                   <LucideTrophy v-if="item.top" class="size-3 text-amber-500" />
@@ -597,7 +612,15 @@ function retry() {
                 :key="item.unit"
                 :class="['inline-flex items-center gap-1', item.top ? 'font-semibold' : 'text-muted-foreground']"
               >
-                <span class="size-2.5 rounded-full" :style="{ backgroundColor: item.color ?? 'currentColor' }" />
+                <img
+                  v-if="!failedUnitLogos.has(item.unit)"
+                  :src="resolveUnitLogoUrl(item.unit)"
+                  alt=""
+                  class="h-3.5 w-auto max-w-8 object-contain"
+                  loading="lazy"
+                  @error="markUnitLogoFailed(item.unit)"
+                >
+                <span v-else class="size-2.5 rounded-full" :style="{ backgroundColor: item.color ?? 'currentColor' }" />
                 {{ t(`cards.unit.${item.unit}`) }}
                 <span class="tabular-nums">{{ item.detail }}</span>
                 <LucideTrophy v-if="item.top" class="size-3 text-amber-500" />

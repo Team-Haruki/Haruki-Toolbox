@@ -3,11 +3,14 @@ import { computed, onBeforeUnmount, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { useRouter } from "vue-router"
 import type { AcceptableValue } from "reka-ui"
-import { LucideRefreshCcw, LucideSearch } from "lucide-vue-next"
+import { LucideRefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import CatalogSearchField from "@/shared/components/catalog/CatalogSearchField.vue"
+import CatalogSelectField from "@/shared/components/catalog/CatalogSelectField.vue"
+import type { CatalogFieldOption } from "@/shared/components/catalog/types"
 import {
   Select,
   SelectContent,
@@ -49,9 +52,16 @@ const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 const { events, bonusAttrMap, loading, error, reload } = useEventCatalog(region)
 
 const search = ref("")
-const typeFilter = ref("all")
-const attrFilter = ref("all")
-const yearFilter = ref("all")
+const typeFilter = ref<string | null>(null)
+const attrFilter = ref<string | null>(null)
+const yearFilter = ref<string | null>(null)
+
+function resetFilters() {
+  search.value = ""
+  typeFilter.value = null
+  attrFilter.value = null
+  yearFilter.value = null
+}
 
 const nowMs = ref(Date.now())
 const nowTimer = setInterval(() => {
@@ -64,8 +74,24 @@ onBeforeUnmount(() => {
 
 const years = computed(() => collectEventYears(events.value))
 
+const typeFieldOptions = computed<CatalogFieldOption[]>(() =>
+  SEKAI_EVENT_TYPES.map((eventType) => ({ value: eventType, label: t(`events.type.${eventType}`) })),
+)
+
+const attrFieldOptions = computed<CatalogFieldOption[]>(() =>
+  SEKAI_CARD_ATTRS.map((attr) => ({
+    value: attr,
+    label: t(`events.attr.${attr}`),
+    iconUrl: resolveCardAttrIconUrl(attr),
+  })),
+)
+
+const yearFieldOptions = computed<CatalogFieldOption[]>(() =>
+  years.value.map((year) => ({ value: String(year), label: String(year) })),
+)
+
 const filteredEvents = computed(() => {
-  const year = yearFilter.value === "all" ? null : Number(yearFilter.value)
+  const year = yearFilter.value != null ? Number(yearFilter.value) : null
   const visibleEvents = hideUnreleased.value
     ? excludeUnreleasedEvents(events.value, nowMs.value)
     : events.value
@@ -73,9 +99,9 @@ const filteredEvents = computed(() => {
     visibleEvents,
     {
       search: search.value,
-      eventType: isSekaiEventType(typeFilter.value) ? typeFilter.value : null,
-      bonusAttr: attrFilter.value === "all" ? null : attrFilter.value,
-      year: Number.isFinite(year) ? year : null,
+      eventType: typeFilter.value != null && isSekaiEventType(typeFilter.value) ? typeFilter.value : null,
+      bonusAttr: attrFilter.value,
+      year: year != null && Number.isFinite(year) ? year : null,
     },
     bonusAttrMap.value,
   )
@@ -153,63 +179,42 @@ function eventUnreleased(event: SekaiEventItem) {
           </SelectContent>
         </Select>
       </div>
-      <div class="grid gap-1.5">
-        <Label class="text-xs text-muted-foreground">{{ t("events.list.searchLabel") }}</Label>
-        <div class="relative">
-          <LucideSearch class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input v-model="search" class="pl-9" :placeholder="t('events.list.searchPlaceholder')" />
-        </div>
-      </div>
+      <CatalogSearchField
+        v-model="search"
+        :label="t('events.list.searchLabel')"
+        :placeholder="t('events.list.searchPlaceholder')"
+      />
     </div>
 
     <!-- Filters -->
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <div class="grid gap-1.5">
-        <Label class="text-xs text-muted-foreground">{{ t("events.list.typeLabel") }}</Label>
-        <Select :key="locale" v-model="typeFilter">
-          <SelectTrigger class="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{{ t("events.list.allTypes") }}</SelectItem>
-            <SelectItem v-for="eventType in SEKAI_EVENT_TYPES" :key="eventType" :value="eventType">
-              {{ t(`events.type.${eventType}`) }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div class="grid gap-1.5">
-        <Label class="text-xs text-muted-foreground">{{ t("events.list.attrLabel") }}</Label>
-        <Select :key="locale" v-model="attrFilter">
-          <SelectTrigger class="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{{ t("events.list.allAttrs") }}</SelectItem>
-            <SelectItem v-for="attr in SEKAI_CARD_ATTRS" :key="attr" :value="attr">
-              <span class="inline-flex items-center gap-2">
-                <img :src="resolveCardAttrIconUrl(attr)" alt="" class="h-4 w-4">
-                {{ t(`events.attr.${attr}`) }}
-              </span>
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div class="grid gap-1.5">
-        <Label class="text-xs text-muted-foreground">{{ t("events.list.yearLabel") }}</Label>
-        <Select :key="locale" v-model="yearFilter">
-          <SelectTrigger class="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{{ t("events.list.allYears") }}</SelectItem>
-            <SelectItem v-for="year in years" :key="year" :value="String(year)">
-              {{ year }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
+    <CatalogFilterPanel
+      :title="t('events.list.filtersTitle')"
+      :count-label="t('events.list.resultsCount', { count: filteredEvents.length })"
+      :reset-label="t('events.list.resetFilters')"
+      @reset="resetFilters"
+    >
+      <CatalogSelectField
+        :key="`type-${locale}`"
+        v-model="typeFilter"
+        :label="t('events.list.typeLabel')"
+        :all-label="t('events.list.allTypes')"
+        :options="typeFieldOptions"
+      />
+      <CatalogSelectField
+        :key="`attr-${locale}`"
+        v-model="attrFilter"
+        :label="t('events.list.attrLabel')"
+        :all-label="t('events.list.allAttrs')"
+        :options="attrFieldOptions"
+      />
+      <CatalogSelectField
+        :key="`year-${locale}`"
+        v-model="yearFilter"
+        :label="t('events.list.yearLabel')"
+        :all-label="t('events.list.allYears')"
+        :options="yearFieldOptions"
+      />
+    </CatalogFilterPanel>
 
     <!-- Loading -->
     <template v-if="loading">

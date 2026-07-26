@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
+import { goBackOr, hasInAppHistory } from "@/lib/router-back"
 import {
   LucideArrowLeft,
   LucideCalendarCheck,
@@ -148,15 +149,23 @@ function cardTitle(card: CatalogMasterCard) {
 }
 
 function goBack() {
-  void router.push({ name: "events.list" })
+  goBackOr(router, { name: "events.list" })
 }
+
+const route = useRoute()
+
+/** Track the route so in-component navigation re-checks the history state. */
+const canGoBack = computed(() => {
+  void route.fullPath
+  return hasInAppHistory()
+})
 </script>
 
 <template>
   <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center gap-4">
     <div>
       <Button variant="ghost" size="sm" @click="goBack">
-        <LucideArrowLeft class="mr-1 h-4 w-4" /> {{ t("events.detail.back") }}
+        <LucideArrowLeft class="mr-1 h-4 w-4" /> {{ canGoBack ? t("common.back") : t("events.detail.back") }}
       </Button>
     </div>
 

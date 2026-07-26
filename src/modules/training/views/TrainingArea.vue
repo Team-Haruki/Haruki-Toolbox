@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Skeleton } from "@/components/ui/skeleton"
 import SimpleSelect from "@/shared/components/SimpleSelect.vue"
 import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, SEKAI_UNITS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
-import { resolveCardAttrIconUrl, resolveSekaiGameAssetUrl } from "@/shared/sekai/data-sources"
+import { resolveCardAttrIconUrl, resolveSekaiGameAssetUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { useTrainingArea } from "@/modules/training/composables/useTrainingArea"
 import {
   areaItemIconAssetPath,
@@ -193,6 +193,20 @@ function targetUnitColor(view: AreaItemView): string | null {
   return unitColorMap.value.get(view.target.unit as SekaiUnit) ?? null
 }
 
+const failedUnitLogos = ref<Set<string>>(new Set())
+
+function markUnitLogoFailed(unit: string) {
+  failedUnitLogos.value = new Set(failedUnitLogos.value).add(unit)
+}
+
+function targetUnitLogoUrl(view: AreaItemView): string | null {
+  if (view.target?.type !== "unit" || failedUnitLogos.value.has(view.target.unit)) {
+    return null
+  }
+
+  return resolveUnitLogoUrl(view.target.unit)
+}
+
 /** Representative color of the boosted target (character/unit/attribute). */
 function targetColor(view: AreaItemView): string | null {
   const target = view.target
@@ -359,6 +373,14 @@ function retry() {
                       alt=""
                       class="size-4 rounded-full"
                       loading="lazy"
+                    >
+                    <img
+                      v-else-if="targetUnitLogoUrl(view)"
+                      :src="targetUnitLogoUrl(view)!"
+                      alt=""
+                      class="h-4 w-auto max-w-9 object-contain"
+                      loading="lazy"
+                      @error="view.target?.type === 'unit' && markUnitLogoFailed(view.target.unit)"
                     >
                     <span
                       v-else-if="targetUnitColor(view)"
