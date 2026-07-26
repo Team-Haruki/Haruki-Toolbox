@@ -958,7 +958,7 @@ export const zhCN = {
   },
   musicProgress: {
     title: "打歌进度",
-    description: "基于已上传的游戏数据，按难度与定数统计 Clear / Full Combo / All Perfect 进度。",
+    description: "查看账号的打歌进度与可获取奖励",
     rewards: {
       title: "可获取资源",
       hint: "统计尚未领取的歌曲成就奖励（评分达标 + 各难度连击里程碑）。",

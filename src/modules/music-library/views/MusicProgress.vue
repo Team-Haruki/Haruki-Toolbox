@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue"
 import { RouterLink } from "vue-router"
 import { useI18n } from "vue-i18n"
 import type { AcceptableValue } from "reka-ui"
-import { CalendarClock, ChevronDown, ChevronRight, ListChecks, RotateCcw } from "lucide-vue-next"
+import { ChevronDown, ChevronRight, LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -18,6 +18,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import { getI18nLocale } from "@/shared/i18n"
+import { formatCompactNumber } from "@/lib/number-format"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import MusicJacket from "../components/MusicJacket.vue"
@@ -187,13 +188,13 @@ function levelRemainingText(row: MusicProgressLevelRow): string | null {
 function formatRewardTotals(totals: MusicRewardTotals): string {
   const parts: string[] = []
   if (totals.jewel > 0) {
-    parts.push(`${t("musicProgress.rewards.jewel")} ${totals.jewel.toLocaleString()}`)
+    parts.push(`${t("musicProgress.rewards.jewel")} ${formatCompactNumber(totals.jewel, locale.value)}`)
   }
   if (totals.coin > 0) {
-    parts.push(`${t("musicProgress.rewards.coin")} ${totals.coin.toLocaleString()}`)
+    parts.push(`${t("musicProgress.rewards.coin")} ${formatCompactNumber(totals.coin, locale.value)}`)
   }
   if (totals.shard > 0) {
-    parts.push(`${t("musicProgress.rewards.shard")} ${totals.shard.toLocaleString()}`)
+    parts.push(`${t("musicProgress.rewards.shard")} ${formatCompactNumber(totals.shard, locale.value)}`)
   }
   return parts.join(" · ")
 }
@@ -305,76 +306,75 @@ function formatPercent(value: number, total: number): string {
 function difficultyLabel(difficulty: MusicDifficulty): string {
   return t(`musicLibrary.difficulty.${difficulty}`)
 }
+
+function refresh() {
+  void suite.reload()
+  void master.reload()
+}
 </script>
 
 <template>
-  <div class="flex w-full flex-1 items-center justify-center px-0 py-4">
-    <div class="mx-auto w-full max-w-6xl space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle class="flex flex-wrap items-center gap-2 text-lg">
-            <ListChecks class="size-5" />
-            {{ t("musicProgress.title") }}
-          </CardTitle>
-          <CardDescription>{{ t("musicProgress.description") }}</CardDescription>
-        </CardHeader>
-        <CardContent class="space-y-3">
-          <GameAccountSelect />
-
-          <div
-            v-if="uploadTimeLabel"
-            class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
-          >
-            <span class="inline-flex items-center gap-1">
-              <CalendarClock class="size-3.5 shrink-0" />
-              {{ t("musicProgress.dataAsOf", { time: uploadTimeLabel }) }}
-            </span>
-            <Button type="button" variant="ghost" size="sm" class="h-7 px-2" @click="suite.reload()">
-              <RotateCcw class="size-3.5" />
+  <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-4 py-4">
+      <!-- Header -->
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 class="text-2xl font-bold">{{ t("musicProgress.title") }}</h1>
+          <p class="text-sm text-muted-foreground">{{ t("musicProgress.description") }}</p>
+        </div>
+        <div class="flex flex-col items-start gap-1 sm:items-end">
+          <div class="flex flex-wrap items-center gap-2">
+            <GameAccountSelect />
+            <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
+              <LucideRefreshCw class="size-3.5" />
               {{ t("musicProgress.refresh") }}
             </Button>
           </div>
-
-          <div
-            v-if="suite.status.value === 'idle'"
-            class="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground"
-          >
-            {{ t("musicProgress.noAccount") }}
-          </div>
-
-          <div v-if="suite.status.value === 'error'" class="flex flex-wrap items-center gap-2">
-            <p class="text-sm text-destructive">{{ t("musicProgress.suiteError") }}</p>
-            <Button type="button" variant="outline" size="sm" @click="suite.reload()">
-              {{ t("musicProgress.retry") }}
-            </Button>
-          </div>
-
-          <p v-if="master.error.value" class="text-sm text-destructive">
-            {{ t("musicProgress.masterError", { message: master.error.value }) }}
+          <p v-if="uploadTimeLabel" class="text-xs text-muted-foreground">
+            {{ t("musicProgress.dataAsOf", { time: uploadTimeLabel }) }}
           </p>
+        </div>
+      </div>
 
-          <p
-            v-if="suite.status.value === 'ready' && !hasResults"
-            class="text-xs text-muted-foreground"
-          >
-            {{ t("musicProgress.noResults") }}
-          </p>
-
-          <div v-if="showDownloadProgress" class="grid gap-2 rounded-md border bg-muted/20 p-3">
-            <p class="text-xs text-muted-foreground">
-              {{ t("musicProgress.downloading", { progress: Math.round(master.regionState.value?.progress ?? 0) }) }}
-            </p>
-            <Progress :model-value="master.regionState.value?.progress ?? 0" />
-          </div>
+      <!-- No account selected -->
+      <Card v-if="suite.status.value === 'idle'">
+        <CardContent class="py-12 text-center text-sm text-muted-foreground">
+          {{ t("musicProgress.noAccount") }}
         </CardContent>
       </Card>
 
+      <!-- Errors -->
+      <Card v-else-if="suite.status.value === 'error' || master.error.value">
+        <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
+          <p v-if="suite.status.value === 'error'" class="text-sm text-muted-foreground">
+            {{ t("musicProgress.suiteError") }}
+          </p>
+          <p v-if="master.error.value" class="max-w-full truncate font-mono text-xs text-muted-foreground">
+            {{ t("musicProgress.masterError", { message: master.error.value }) }}
+          </p>
+          <Button type="button" variant="outline" size="sm" @click="refresh">
+            {{ t("musicProgress.retry") }}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <p
+        v-if="suite.status.value === 'ready' && !hasResults"
+        class="rounded-md border border-dashed p-3 text-xs text-muted-foreground"
+      >
+        {{ t("musicProgress.noResults") }}
+      </p>
+
+      <div v-if="showDownloadProgress" class="grid gap-2 rounded-md border bg-muted/20 p-3">
+        <p class="text-xs text-muted-foreground">
+          {{ t("musicProgress.downloading", { progress: Math.round(master.regionState.value?.progress ?? 0) }) }}
+        </p>
+        <Progress :model-value="master.regionState.value?.progress ?? 0" />
+      </div>
+
       <template v-if="progress">
         <Card>
-          <CardHeader>
-            <CardTitle class="text-sm font-medium text-muted-foreground">
-              {{ t("musicProgress.overallTitle") }}
-            </CardTitle>
+          <CardHeader class="pb-2">
+            <CardTitle class="text-base">{{ t("musicProgress.overallTitle") }}</CardTitle>
           </CardHeader>
           <CardContent>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -383,14 +383,13 @@ function difficultyLabel(difficulty: MusicDifficulty): string {
                 :key="entry.difficulty"
                 class="rounded-md border p-2"
               >
-                <p class="flex items-center gap-1.5 text-xs font-semibold">
-                  <span
-                    class="size-2.5 shrink-0 rounded-full"
-                    :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[entry.difficulty] }"
-                  />
+                <span
+                  class="inline-flex w-16 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
+                  :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[entry.difficulty] }"
+                >
                   {{ difficultyLabel(entry.difficulty) }}
-                </p>
-                <p class="mt-1 text-xs text-muted-foreground">
+                </span>
+                <p class="mt-1.5 text-xs tabular-nums text-muted-foreground">
                   AP {{ entry.summary.allPerfect }} · FC {{ entry.summary.fullCombo }} ·
                   CL {{ entry.summary.cleared }} / {{ entry.summary.total }}
                 </p>
@@ -400,10 +399,8 @@ function difficultyLabel(difficulty: MusicDifficulty): string {
         </Card>
 
         <Card v-if="rewardStats">
-          <CardHeader>
-            <CardTitle class="text-sm font-medium text-muted-foreground">
-              {{ t("musicProgress.rewards.title") }}
-            </CardTitle>
+          <CardHeader class="pb-2">
+            <CardTitle class="text-base">{{ t("musicProgress.rewards.title") }}</CardTitle>
             <CardDescription class="text-xs">
               {{ t("musicProgress.rewards.hint") }}
             </CardDescription>
@@ -412,15 +409,15 @@ function difficultyLabel(difficulty: MusicDifficulty): string {
             <div class="grid grid-cols-3 gap-2">
               <div class="rounded-md border p-2 text-center">
                 <p class="text-xs text-muted-foreground">{{ t("musicProgress.rewards.jewel") }}</p>
-                <p class="text-xl font-semibold tabular-nums">{{ rewardStats.total.jewel.toLocaleString() }}</p>
+                <p class="text-xl font-semibold tabular-nums">{{ formatCompactNumber(rewardStats.total.jewel, locale) }}</p>
               </div>
               <div class="rounded-md border p-2 text-center">
                 <p class="text-xs text-muted-foreground">{{ t("musicProgress.rewards.coin") }}</p>
-                <p class="text-xl font-semibold tabular-nums">{{ rewardStats.total.coin.toLocaleString() }}</p>
+                <p class="text-xl font-semibold tabular-nums">{{ formatCompactNumber(rewardStats.total.coin, locale) }}</p>
               </div>
               <div class="rounded-md border p-2 text-center">
                 <p class="text-xs text-muted-foreground">{{ t("musicProgress.rewards.shard") }}</p>
-                <p class="text-xl font-semibold tabular-nums">{{ rewardStats.total.shard.toLocaleString() }}</p>
+                <p class="text-xl font-semibold tabular-nums">{{ formatCompactNumber(rewardStats.total.shard, locale) }}</p>
               </div>
             </div>
             <div class="grid gap-1 text-xs text-muted-foreground">
@@ -429,11 +426,10 @@ function difficultyLabel(difficulty: MusicDifficulty): string {
                 :key="entry.difficulty"
                 class="flex flex-wrap items-center gap-2"
               >
-                <span class="inline-flex min-w-20 items-center gap-1.5 font-medium">
-                  <span
-                    class="size-2.5 shrink-0 rounded-full"
-                    :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[entry.difficulty] }"
-                  />
+                <span
+                  class="inline-flex w-16 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
+                  :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[entry.difficulty] }"
+                >
                   {{ difficultyLabel(entry.difficulty) }}
                 </span>
                 <span class="tabular-nums">
@@ -441,7 +437,9 @@ function difficultyLabel(difficulty: MusicDifficulty): string {
                 </span>
               </p>
               <p class="flex flex-wrap items-center gap-2">
-                <span class="min-w-20 font-medium">{{ t("musicProgress.rewards.scoreRank") }}</span>
+                <span class="inline-flex w-16 shrink-0 items-center justify-center rounded border px-1 py-0.5 text-[11px] font-semibold">
+                  {{ t("musicProgress.rewards.scoreRank") }}
+                </span>
                 <span class="tabular-nums">
                   {{ hasRemaining(rewardStats.scoreRank) ? formatRewardTotals(rewardStats.scoreRank) : t("musicProgress.rewards.allClaimed") }}
                 </span>
@@ -489,10 +487,8 @@ function difficultyLabel(difficulty: MusicDifficulty): string {
         </div>
 
         <Card v-if="activeProgress">
-          <CardHeader>
-            <CardTitle class="text-sm font-medium text-muted-foreground">
-              {{ t("musicProgress.levelsTitle") }}
-            </CardTitle>
+          <CardHeader class="pb-2">
+            <CardTitle class="text-base">{{ t("musicProgress.levelsTitle") }}</CardTitle>
             <CardDescription class="flex flex-wrap gap-x-3 gap-y-1 text-xs">
               <span
                 v-for="item in legendItems()"
@@ -528,7 +524,7 @@ function difficultyLabel(difficulty: MusicDifficulty): string {
                   class="size-4 shrink-0 text-muted-foreground"
                 />
                 <span
-                  class="inline-flex min-w-12 items-center justify-center rounded px-2 py-0.5 text-xs font-semibold text-white"
+                  class="inline-flex w-16 shrink-0 items-center justify-center rounded px-2 py-0.5 text-xs font-semibold text-white"
                   :style="{ backgroundColor: activeColor }"
                 >
                   {{ levelLabel(row.playLevel) }}
@@ -601,6 +597,5 @@ function difficultyLabel(difficulty: MusicDifficulty): string {
           <Skeleton v-for="index in 6" :key="index" class="h-12 w-full rounded-lg" />
         </div>
       </div>
-    </div>
   </div>
 </template>

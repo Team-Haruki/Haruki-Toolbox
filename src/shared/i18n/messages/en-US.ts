@@ -958,7 +958,7 @@ export const enUS = {
   },
   musicProgress: {
     title: "Music progress",
-    description: "Track your Clear / Full Combo / All Perfect progress per difficulty and level, based on your uploaded game data.",
+    description: "View your game account's music play progress and claimable rewards",
     rewards: {
       title: "Obtainable rewards",
       hint: "Unclaimed song achievement rewards (score ranks + per-difficulty combo milestones).",
