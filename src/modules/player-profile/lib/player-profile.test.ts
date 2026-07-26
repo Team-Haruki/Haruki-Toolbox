@@ -14,6 +14,8 @@ import {
   shouldUseTrainedImage,
   sortChallengeLiveCells,
   summarizeChallengeLiveTop,
+  normalizeProfileSnapshot,
+  normalizeMusicDifficultyClearCounts,
 } from "./player-profile"
 
 describe("cleanProfileWord", () => {
@@ -220,5 +222,61 @@ describe("buildChallengeLiveGrid", () => {
     expect(byCharacter.map((cell) => cell.characterId)).toEqual(
       Array.from({ length: 26 }, (_, index) => index + 1),
     )
+  })
+})
+
+describe("normalizeProfileSnapshot", () => {
+  it("maps the realtime profile payload onto suite-shaped keys", () => {
+    const snapshot = normalizeProfileSnapshot({
+      user: { userId: 123, name: "Kanade", rank: 300 },
+      userProfile: { word: "hi", twitterId: "x" },
+      userDeck: { deckId: 7, leader: 1, member1: 1, member2: 2, member3: 3, member4: 4, member5: 5 },
+      userCards: [{ cardId: 1, level: 60 }],
+      userCharacters: [{ characterId: 17, characterRank: 71 }],
+      userChallengeLiveSoloResult: { characterId: 17, highScore: 2_000_000 },
+      userChallengeLiveSoloStages: [{ characterId: 17, rank: 30 }],
+      userMultiLiveTopScoreCount: { mvp: 10, superStar: 5 },
+      userMusicDifficultyClearCount: [{ musicDifficultyType: "master", liveClear: 100, fullCombo: 50, allPerfect: 10 }],
+    })!
+
+    expect(snapshot).not.toBeNull()
+    expect(normalizePlayerGamedata(snapshot.userGamedata)).toEqual({
+      userId: "123",
+      name: "Kanade",
+      rank: 300,
+      deck: 7,
+    })
+    expect(resolveActiveDeckCardIds(snapshot.userDecks, 7)).toEqual([1, 2, 3, 4, 5])
+    const cells = buildChallengeLiveGrid(
+      snapshot.userChallengeLiveSoloResults,
+      snapshot.userChallengeLiveSoloStages,
+    )
+    const ena = cells.find((cell) => cell.characterId === 17)
+    expect(ena?.highScore).toBe(2_000_000)
+    expect(ena?.stage).toBe(30)
+  })
+
+  it("returns null or empty wrappers for malformed payloads", () => {
+    expect(normalizeProfileSnapshot(null)).toBeNull()
+    expect(normalizeProfileSnapshot("junk")).toBeNull()
+    const empty = normalizeProfileSnapshot({})!
+    expect(empty.userGamedata).toBeNull()
+    expect(empty.userDecks).toEqual([])
+    expect(empty.userChallengeLiveSoloResults).toEqual([])
+  })
+})
+
+describe("normalizeMusicDifficultyClearCounts", () => {
+  it("keys aggregated counts by lowercased difficulty", () => {
+    const map = normalizeMusicDifficultyClearCounts([
+      { musicDifficultyType: "master", liveClear: 100, fullCombo: 50, allPerfect: 10 },
+      { musicDifficultyType: "APPEND", liveClear: 20, fullCombo: 5, allPerfect: 1 },
+      { liveClear: 3 },
+      "junk",
+    ])
+
+    expect(map.get("master")).toEqual({ liveClear: 100, fullCombo: 50, allPerfect: 10 })
+    expect(map.get("append")).toEqual({ liveClear: 20, fullCombo: 5, allPerfect: 1 })
+    expect(map.size).toBe(2)
   })
 })

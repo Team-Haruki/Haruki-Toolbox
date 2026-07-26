@@ -1091,7 +1091,11 @@ export const enUS = {
   },
   playerProfile: {
     title: "My Profile",
-    description: "Your in-game profile from the uploaded suite snapshot",
+    description: "View your game account's profile",
+    source: {
+      realtime: "Live data",
+      snapshot: "Snapshot",
+    },
     noAccountHint: "Bind and select a game account to view your profile.",
     loadError: "Failed to load profile data.",
     retry: "Retry",
@@ -1127,6 +1131,7 @@ export const enUS = {
       empty: "No character data",
     },
     challenge: {
+      stageDetail: "Challenge stage {stage}",
       title: "Challenge Live",
       description: "Challenge stages and high scores per character",
       summary: "Best score: {name} · {score}",

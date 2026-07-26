@@ -10,6 +10,8 @@ import {
   normalizeCatalogRecords,
 } from "@/shared/sekai/catalog"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
+import { fetchDeckRecommendProfileWithCache } from "@/modules/deck-recommend/lib/user-data"
+import { useUserStore } from "@/shared/stores/user"
 import type { SekaiRegion } from "@/types"
 
 export const PLAYER_PROFILE_SUITE_KEYS = [
@@ -31,6 +33,10 @@ export const PLAYER_PROFILE_MASTER_FILES = [
   "gameCharacterUnits",
 ] as const
 
+export const PLAYER_PROFILE_SOURCES = ["realtime", "snapshot"] as const
+
+export type PlayerProfileSource = (typeof PLAYER_PROFILE_SOURCES)[number]
+
 /**
  * Orchestrates the profile page's data: the selected account's suite snapshot
  * plus the masterdata for that account's server (region follows the account,
@@ -39,15 +45,76 @@ export const PLAYER_PROFILE_MASTER_FILES = [
 export function usePlayerProfile() {
   const settingsStore = useSettingsStore()
   const sekaiDataStore = useSekaiDataStore()
+  const userStore = useUserStore()
 
   const { selectedAccount } = useGameAccountSelection()
   const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 
-  const suite = useUserSuite(PLAYER_PROFILE_SUITE_KEYS, selectedAccount)
+  // Realtime game profile is the default; the suite snapshot (manual upload)
+  // remains available as an alternative source.
+  const dataSource = ref<PlayerProfileSource>("realtime")
+
+  // Suite requests are gated on the snapshot source so switching to realtime
+  // does not keep fetching the (potentially large) suite subset.
+  const suiteAccount = computed(() => dataSource.value === "snapshot" ? selectedAccount.value : null)
+  const suite = useUserSuite(PLAYER_PROFILE_SUITE_KEYS, suiteAccount)
 
   // Fetched separately so instances whose backend allowlist lacks the key
   // only lose the MVP/SuperStar chips instead of the whole profile.
-  const multiLiveSuite = useUserSuite(PLAYER_PROFILE_MULTI_LIVE_KEYS, selectedAccount)
+  const multiLiveSuite = useUserSuite(PLAYER_PROFILE_MULTI_LIVE_KEYS, suiteAccount)
+
+  const profileStatus = ref<"idle" | "loading" | "ready" | "error">("idle")
+  const profileData = shallowRef<Record<string, unknown> | null>(null)
+  const profileError = shallowRef<unknown>(null)
+  const profileUpdatedAt = ref<number | null>(null)
+
+  let profileGeneration = 0
+
+  async function loadProfile(strategy: "prefer-cache" | "refresh" = "refresh") {
+    const toolboxUserId = userStore.userId
+    const target = selectedAccount.value
+    if (!toolboxUserId || !target || dataSource.value !== "realtime") {
+      profileGeneration += 1
+      profileStatus.value = "idle"
+      profileData.value = null
+      profileError.value = null
+      profileUpdatedAt.value = null
+      return
+    }
+
+    const generation = ++profileGeneration
+    profileStatus.value = "loading"
+    profileError.value = null
+    try {
+      const result = await fetchDeckRecommendProfileWithCache({
+        toolboxUserId,
+        server: target.server,
+        gameUserId: target.userId,
+      }, { strategy })
+      if (generation !== profileGeneration) {
+        return
+      }
+
+      profileData.value = result.data as Record<string, unknown>
+      profileUpdatedAt.value = result.cacheUpdatedAt
+      profileStatus.value = "ready"
+    } catch (loadError) {
+      if (generation !== profileGeneration) {
+        return
+      }
+
+      profileError.value = loadError
+      profileStatus.value = "error"
+    }
+  }
+
+  watch(
+    () => [userStore.userId, selectedAccount.value?.key ?? null, dataSource.value] as const,
+    () => {
+      void loadProfile()
+    },
+    { immediate: true },
+  )
 
   const masterLoading = ref(false)
   const masterError = ref<string | null>(null)
@@ -112,6 +179,12 @@ export function usePlayerProfile() {
   return {
     selectedAccount,
     accountRegion,
+    dataSource,
+    profileStatus,
+    profileData,
+    profileError,
+    profileUpdatedAt,
+    reloadProfile: loadProfile,
     suiteStatus: suite.status,
     suiteData: suite.data,
     uploadTime: suite.uploadTime,

@@ -6,6 +6,7 @@ import { LucideCopy, LucideRefreshCw, LucideTrophy } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { copyTextToClipboard } from "@/lib/clipboard"
@@ -17,9 +18,11 @@ import {
   buildDeckThumbnailCard,
   buildPlayerCardMap,
   normalizeMultiLiveTopScoreCount,
+  normalizeMusicDifficultyClearCounts,
   normalizePlayerCards,
   normalizePlayerGamedata,
   normalizePlayerProfile,
+  normalizeProfileSnapshot,
   parseSekaiColoredText,
   resolveActiveDeckCardIds,
   summarizeChallengeLiveTop,
@@ -35,6 +38,12 @@ const { t, locale } = useI18n()
 
 const {
   accountRegion,
+  dataSource,
+  profileStatus,
+  profileData,
+  profileError,
+  profileUpdatedAt,
+  reloadProfile,
   suiteStatus,
   suiteData,
   uploadTime,
@@ -54,16 +63,27 @@ const {
 
 const musicMaster = useMusicProgressMasterData(accountRegion)
 
-const isLoading = computed(() => suiteStatus.value === "loading" || masterLoading.value)
-const hasError = computed(() => suiteStatus.value === "error" || masterError.value != null)
-const isReady = computed(() => suiteStatus.value === "ready" && !masterLoading.value && masterError.value == null)
+const isRealtime = computed(() => dataSource.value === "realtime")
+
+const sourceStatus = computed(() => isRealtime.value ? profileStatus.value : suiteStatus.value)
+const sourceError = computed(() => isRealtime.value ? profileError.value : suiteError.value)
+
+// Both sources are exposed through one suite-shaped record so every section
+// below reads the same keys regardless of where the data came from.
+const snapshotData = computed(() =>
+  isRealtime.value ? normalizeProfileSnapshot(profileData.value) : suiteData.value,
+)
+
+const isLoading = computed(() => sourceStatus.value === "loading" || masterLoading.value)
+const hasError = computed(() => sourceStatus.value === "error" || masterError.value != null)
+const isReady = computed(() => sourceStatus.value === "ready" && !masterLoading.value && masterError.value == null)
 
 const errorDetail = computed(() => {
   if (masterError.value != null) {
     return masterError.value
   }
 
-  const raw = suiteError.value
+  const raw = sourceError.value
   if (raw == null) {
     return null
   }
@@ -72,24 +92,35 @@ const errorDetail = computed(() => {
 })
 
 const uploadTimeText = computed(() => {
-  if (uploadTime.value == null) {
+  const millis = isRealtime.value
+    ? profileUpdatedAt.value
+    : uploadTime.value != null
+      ? suiteUploadTimeToMillis(uploadTime.value)
+      : null
+  if (millis == null) {
     return null
   }
 
   return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(suiteUploadTimeToMillis(uploadTime.value))
+    .format(millis)
 })
+
+function handleSourceChange(value: unknown) {
+  if (value === "realtime" || value === "snapshot") {
+    dataSource.value = value
+  }
+}
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
-const gamedata = computed(() => normalizePlayerGamedata(suiteData.value?.userGamedata))
+const gamedata = computed(() => normalizePlayerGamedata(snapshotData.value?.userGamedata))
 const nameSegments = computed(() => parseSekaiColoredText(gamedata.value?.name))
-const profileInfo = computed(() => normalizePlayerProfile(suiteData.value?.userProfile))
+const profileInfo = computed(() => normalizePlayerProfile(snapshotData.value?.userProfile))
 const wordSegments = computed(() => parseSekaiColoredText(profileInfo.value.rawWord))
-const playerCardMap = computed(() => buildPlayerCardMap(normalizePlayerCards(suiteData.value?.userCards)))
+const playerCardMap = computed(() => buildPlayerCardMap(normalizePlayerCards(snapshotData.value?.userCards)))
 
 const deckViews = computed(() => {
-  const cardIds = resolveActiveDeckCardIds(suiteData.value?.userDecks, gamedata.value?.deck ?? null)
+  const cardIds = resolveActiveDeckCardIds(snapshotData.value?.userDecks, gamedata.value?.deck ?? null)
   const region = accountRegion.value ?? "jp"
   return cardIds.map((cardId) => {
     const master = cardMap.value.get(cardId) ?? null
@@ -116,6 +147,9 @@ const deckViews = computed(() => {
 })
 
 const multiLiveCounts = computed(() => {
+  if (isRealtime.value) {
+    return normalizeMultiLiveTopScoreCount(snapshotData.value?.userMultiLiveTopScoreCount)
+  }
   if (multiLiveStatus.value !== "ready") {
     return null
   }
@@ -131,11 +165,28 @@ const musicStatRows = computed(() => {
   const progress = buildMusicProgress({
     rawMusics: musicMaster.rawMusics.value,
     rawMusicDifficulties: musicMaster.rawMusicDifficulties.value,
-    rawUserMusicResults: suiteData.value?.userMusicResults,
+    rawUserMusicResults: isRealtime.value ? [] : snapshotData.value?.userMusicResults,
   })
+  // The realtime profile ships aggregated counts instead of per-song results.
+  const clearCounts = isRealtime.value
+    ? normalizeMusicDifficultyClearCounts(snapshotData.value?.userMusicDifficultyClearCount)
+    : null
 
   return MUSIC_DIFFICULTIES
-    .map((difficulty) => progress[difficulty].summary)
+    .map((difficulty) => {
+      const summary = progress[difficulty].summary
+      if (clearCounts == null) {
+        return summary
+      }
+
+      const counts = clearCounts.get(difficulty)
+      return {
+        ...summary,
+        cleared: counts?.liveClear ?? 0,
+        fullCombo: counts?.fullCombo ?? 0,
+        allPerfect: counts?.allPerfect ?? 0,
+      }
+    })
     .map((summary, index) => {
       const difficulty = MUSIC_DIFFICULTIES[index]
       const segments = [
@@ -148,7 +199,7 @@ const musicStatRows = computed(() => {
     .filter((row) => row.summary.total > 0)
 })
 
-const characterRankCells = computed(() => buildCharacterRanks(suiteData.value?.userCharacters).map((entry) => {
+const characterRankCells = computed(() => buildCharacterRanks(snapshotData.value?.userCharacters).map((entry) => {
   const character = characterMap.value.get(entry.characterId) ?? null
   const unitColor = character?.unit != null ? unitColorMap.value.get(character.unit) ?? null : null
   return {
@@ -179,17 +230,22 @@ const characterRadarEntries = computed(() => characterRankCells.value.map((cell)
 })))
 
 const challengeCells = computed(() => buildChallengeLiveGrid(
-  suiteData.value?.userChallengeLiveSoloResults,
-  suiteData.value?.userChallengeLiveSoloStages,
+  snapshotData.value?.userChallengeLiveSoloResults,
+  snapshotData.value?.userChallengeLiveSoloStages,
 ))
 
 const challengeRadarEntries = computed(() => challengeCells.value.map((cell) => {
   const character = characterMap.value.get(cell.characterId) ?? null
+  // The realtime profile only carries the single best score, so the radar
+  // switches to the per-character challenge stage in that mode.
+  const value = isRealtime.value ? cell.stage : cell.highScore
   return {
     key: cell.characterId,
     label: character?.name ?? t("playerProfile.unknownCharacter"),
-    value: cell.highScore,
-    detail: formatScore(cell.highScore),
+    value,
+    detail: isRealtime.value
+      ? t("playerProfile.challenge.stageDetail", { stage: cell.stage })
+      : formatScore(cell.highScore),
     iconUrl: character?.iconUrl ?? null,
     color: resolveSekaiCharacterColor(cell.characterId),
     ...unitGroupOf(cell.characterId),
@@ -245,7 +301,9 @@ const characterUnitLegend = computed(() => buildUnitLegend(
 
 const challengeUnitLegend = computed(() => buildUnitLegend(
   challengeRadarEntries.value,
-  (value) => formatScore(Math.round(value)),
+  (value) => isRealtime.value
+    ? (Math.round(value * 10) / 10).toFixed(1)
+    : formatScore(Math.round(value)),
 ))
 
 const challengeTop = computed(() => {
@@ -280,8 +338,12 @@ async function copyGameId() {
 }
 
 function refresh() {
-  void reloadSuite("check-remote")
-  void reloadMultiLive("check-remote")
+  if (isRealtime.value) {
+    void reloadProfile("refresh")
+  } else {
+    void reloadSuite("check-remote")
+    void reloadMultiLive("check-remote")
+  }
   reloadMaster()
 }
 
@@ -290,8 +352,12 @@ function retry() {
     reloadMaster()
   }
 
-  if (suiteStatus.value === "error") {
-    void reloadSuite("check-remote")
+  if (sourceStatus.value === "error") {
+    if (isRealtime.value) {
+      void reloadProfile("refresh")
+    } else {
+      void reloadSuite("check-remote")
+    }
   }
 }
 </script>
@@ -304,8 +370,20 @@ function retry() {
         <h1 class="text-2xl font-bold">{{ t("playerProfile.title") }}</h1>
         <p class="text-sm text-muted-foreground">{{ t("playerProfile.description") }}</p>
       </div>
-      <div class="flex flex-col items-start gap-1 sm:items-end">
-        <GameAccountSelect />
+      <div class="flex flex-col items-start gap-1.5 sm:items-end">
+        <div class="flex flex-wrap items-center gap-2">
+          <Tabs :model-value="dataSource" @update:model-value="handleSourceChange">
+            <TabsList class="h-8">
+              <TabsTrigger value="realtime" class="text-xs">
+                {{ t("playerProfile.source.realtime") }}
+              </TabsTrigger>
+              <TabsTrigger value="snapshot" class="text-xs">
+                {{ t("playerProfile.source.snapshot") }}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <GameAccountSelect />
+        </div>
         <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
           {{ t("playerProfile.dataAsOf", { time: uploadTimeText }) }}
         </p>
@@ -313,7 +391,7 @@ function retry() {
     </div>
 
     <!-- No account selected -->
-    <Card v-if="suiteStatus === 'idle'">
+    <Card v-if="sourceStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
         {{ t("playerProfile.noAccountHint") }}
       </CardContent>

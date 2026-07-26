@@ -338,3 +338,67 @@ export function sortChallengeLiveCells(
 
   return sorted
 }
+
+/** Aggregated per-difficulty counts from the realtime profile payload. */
+export type MusicDifficultyClearCount = {
+  liveClear: number
+  fullCombo: number
+  allPerfect: number
+}
+
+/**
+ * Maps the realtime game profile payload onto the suite-shaped keys the
+ * profile page consumes, so both data sources share one rendering path:
+ * - `user` → `userGamedata`, with the active deck id injected from `userDeck`
+ * - the single `userChallengeLiveSoloResult` becomes a one-element list
+ * - `userDeck` becomes a one-element `userDecks` list
+ * Returns null when the payload is not an object.
+ */
+export function normalizeProfileSnapshot(raw: unknown): Record<string, unknown> | null {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return null
+  }
+
+  const record = raw as Record<string, unknown>
+  const userDeck = record.userDeck != null && typeof record.userDeck === "object" && !Array.isArray(record.userDeck)
+    ? record.userDeck as Record<string, unknown>
+    : null
+  const user = record.user != null && typeof record.user === "object" && !Array.isArray(record.user)
+    ? record.user as Record<string, unknown>
+    : null
+  const challengeResult = record.userChallengeLiveSoloResult
+
+  return {
+    userGamedata: user == null ? null : { ...user, deck: userDeck?.deckId ?? null },
+    userProfile: record.userProfile,
+    userCards: record.userCards,
+    userDecks: userDeck == null ? [] : [userDeck],
+    userCharacters: record.userCharacters,
+    userChallengeLiveSoloResults:
+      challengeResult != null && typeof challengeResult === "object" && !Array.isArray(challengeResult)
+        ? [challengeResult]
+        : [],
+    userChallengeLiveSoloStages: record.userChallengeLiveSoloStages,
+    userMultiLiveTopScoreCount: record.userMultiLiveTopScoreCount,
+    userMusicDifficultyClearCount: record.userMusicDifficultyClearCount,
+  }
+}
+
+/** Parses `userMusicDifficultyClearCount` rows into a per-difficulty map. */
+export function normalizeMusicDifficultyClearCounts(raw: unknown): Map<string, MusicDifficultyClearCount> {
+  const map = new Map<string, MusicDifficultyClearCount>()
+  for (const record of normalizeCatalogRecords(raw)) {
+    const difficulty = normalizeCatalogString(record.musicDifficultyType).toLowerCase()
+    if (!difficulty) {
+      continue
+    }
+
+    map.set(difficulty, {
+      liveClear: normalizeCatalogNumber(record.liveClear) ?? 0,
+      fullCombo: normalizeCatalogNumber(record.fullCombo) ?? 0,
+      allPerfect: normalizeCatalogNumber(record.allPerfect) ?? 0,
+    })
+  }
+
+  return map
+}

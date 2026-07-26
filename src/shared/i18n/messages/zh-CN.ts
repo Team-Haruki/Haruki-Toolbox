@@ -1091,7 +1091,11 @@ export const zhCN = {
   },
   playerProfile: {
     title: "我的档案",
-    description: "基于已上传的抓包数据展示你的游戏档案",
+    description: "查看账号的游戏档案",
+    source: {
+      realtime: "实时数据",
+      snapshot: "快照数据",
+    },
     noAccountHint: "请先绑定并选择一个游戏账号以查看档案。",
     loadError: "档案数据加载失败。",
     retry: "重试",
@@ -1127,6 +1131,7 @@ export const zhCN = {
       empty: "暂无角色数据",
     },
     challenge: {
+      stageDetail: "挑战等级 {stage}",
       title: "挑战Live",
       summary: "最高分数：{name} · {score}",
       empty: "暂无挑战Live记录",
