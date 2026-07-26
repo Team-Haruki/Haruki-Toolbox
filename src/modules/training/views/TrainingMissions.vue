@@ -182,7 +182,17 @@ function retry() {
     </template>
 
     <template v-else-if="isReady">
-      <!-- Character selector + rank summary -->
+      <!-- Character selector -->
+      <div class="flex flex-wrap items-center gap-2">
+        <SimpleSelect
+          :model-value="String(selectedCharacterId)"
+          :options="characterSelectOptions"
+          :aria-label="t('training.missions.character')"
+          @update:model-value="handleCharacterChange"
+        />
+      </div>
+
+      <!-- Rank summary -->
       <Card class="border-l-4" :style="selectedColor ? { borderLeftColor: selectedColor } : {}">
         <CardContent class="flex flex-col gap-3 px-4">
           <div class="flex flex-wrap items-center gap-3">
@@ -193,15 +203,12 @@ function retry() {
               class="size-10 shrink-0 rounded-full"
               loading="lazy"
             >
-            <SimpleSelect
-              :model-value="String(selectedCharacterId)"
-              :options="characterSelectOptions"
-              :aria-label="t('training.missions.character')"
-              @update:model-value="handleCharacterChange"
-            />
+            <p class="min-w-0 truncate text-base font-medium" :title="characterName(selectedCharacterId)">
+              {{ characterName(selectedCharacterId) }}
+            </p>
             <span
               v-if="summary"
-              class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-primary"
+              class="rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-semibold tabular-nums text-primary"
               :style="selectedColor
                 ? { backgroundColor: `color-mix(in srgb, ${selectedColor} 15%, transparent)`, color: selectedColor }
                 : {}"

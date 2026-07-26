@@ -1278,7 +1278,7 @@ export const zhCN = {
       empty: "暂无角色任务数据",
       character: "角色",
       unknownCharacter: "角色{id}",
-      rank: "等级 {rank}",
+      rank: "Lv.{rank}",
       currentExp: "当前经验",
       pendingExp: "待领取经验",
       projected: "领取后预计",

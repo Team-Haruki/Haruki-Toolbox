@@ -1278,7 +1278,7 @@ export const enUS = {
       empty: "No character mission data",
       character: "Character",
       unknownCharacter: "Character {id}",
-      rank: "Rank {rank}",
+      rank: "Lv.{rank}",
       currentExp: "Current EXP",
       pendingExp: "Pending EXP",
       projected: "After claiming",
