@@ -201,9 +201,10 @@ function retry() {
             v-for="cell in sortedCells"
             :key="cell.characterId"
             :class="[
-              'flex flex-col gap-2 rounded-md border p-2.5',
+              'flex flex-col gap-2 rounded-md border border-l-4 p-2.5',
               cell.hasData ? '' : 'opacity-50',
             ]"
+            :style="cell.color ? { borderLeftColor: cell.color } : {}"
           >
             <div class="flex items-center gap-2">
               <img
