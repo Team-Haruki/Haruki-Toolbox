@@ -48,6 +48,15 @@ export type MusicEventLink = {
 /** The catch-all `all` tag applies to every music, so it is excluded from entry tags. */
 const MUSIC_TAG_ALL = "all"
 
+/** Synthetic tag for songs linked to a World Link (world_bloom) event. */
+export const MUSIC_TAG_WORLD_LINK = "world_link"
+
+/** Synthetic tag for songs that are a character's box event song. */
+export const MUSIC_TAG_EVENT_BOX = "event_box"
+
+const MUSIC_VOCAL_TYPE_ANOTHER_VOCAL = "another_vocal"
+const MUSIC_VOCAL_CHARACTER_TYPE_GAME = "game_character"
+
 export function buildMusicLibraryEntries(
   rawMusics: unknown,
   rawDifficulties: unknown,
@@ -79,6 +88,82 @@ export function buildMusicLibraryEntries(
   }
 
   return entries
+}
+
+/** Music ids linked (via eventMusics) to a World Link (world_bloom) event. */
+export function listWorldLinkMusicIds(rawEvents: unknown, rawEventMusics: unknown): Set<number> {
+  const worldLinkEventIds = new Set<number>()
+  for (const record of normalizeCatalogRecords(rawEvents)) {
+    const id = normalizeCatalogNumber(record.id)
+    if (id && normalizeCatalogString(record.eventType) === "world_bloom") {
+      worldLinkEventIds.add(id)
+    }
+  }
+
+  const musicIds = new Set<number>()
+  for (const record of normalizeCatalogRecords(rawEventMusics)) {
+    const eventId = normalizeCatalogNumber(record.eventId)
+    const musicId = normalizeCatalogNumber(record.musicId)
+    if (eventId && musicId && worldLinkEventIds.has(eventId)) {
+      musicIds.add(musicId)
+    }
+  }
+
+  return musicIds
+}
+
+/** Appends a synthetic tag to the entries whose id is in `musicIds`. */
+export function applyMusicTagByIds(
+  entries: readonly MusicLibraryEntry[],
+  musicIds: { has(musicId: number): boolean },
+  tag: string,
+): MusicLibraryEntry[] {
+  return entries.map((entry) =>
+    musicIds.has(entry.id) && !entry.tags.includes(tag)
+      ? { ...entry, tags: [...entry.tags, tag] }
+      : entry,
+  )
+}
+
+export type MusicVocalCharacterSummary = {
+  /** Game character ids singing any non-Another-Vocal version. */
+  vocalCharacterIds: Set<number>
+  /** Game character ids singing an Another Vocal version. */
+  anotherVocalCharacterIds: Set<number>
+}
+
+export function buildMusicVocalCharacterMap(
+  rawVocals: unknown,
+): Map<number, MusicVocalCharacterSummary> {
+  const map = new Map<number, MusicVocalCharacterSummary>()
+  for (const record of normalizeCatalogRecords(rawVocals)) {
+    const musicId = normalizeCatalogNumber(record.musicId)
+    if (!musicId) {
+      continue
+    }
+
+    const isAnotherVocal =
+      normalizeCatalogString(record.musicVocalType) === MUSIC_VOCAL_TYPE_ANOTHER_VOCAL
+    for (const character of normalizeCatalogRecords(record.characters)) {
+      if (normalizeCatalogString(character.characterType) !== MUSIC_VOCAL_CHARACTER_TYPE_GAME) {
+        continue
+      }
+
+      const characterId = normalizeCatalogNumber(character.characterId)
+      if (!characterId) {
+        continue
+      }
+
+      let summary = map.get(musicId)
+      if (!summary) {
+        summary = { vocalCharacterIds: new Set(), anotherVocalCharacterIds: new Set() }
+        map.set(musicId, summary)
+      }
+      ;(isAnotherVocal ? summary.anotherVocalCharacterIds : summary.vocalCharacterIds).add(characterId)
+    }
+  }
+
+  return map
 }
 
 export function findMusicLibraryEntry(

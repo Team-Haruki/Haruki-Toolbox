@@ -1,12 +1,17 @@
-const KNOWN_MUSIC_TAGS = new Set([
+/** Canonical display order for the tag filter; every known tag is always offered. */
+export const MUSIC_TAG_ORDER = [
   "vocaloid",
   "light_music_club",
   "idol",
   "street",
   "theme_park",
   "school_refusal",
+  "event_box",
+  "world_link",
   "other",
-])
+] as const
+
+const KNOWN_MUSIC_TAGS = new Set<string>(MUSIC_TAG_ORDER)
 
 const KNOWN_MUSIC_CATEGORIES = new Set(["mv", "mv_2d", "image", "original"])
 

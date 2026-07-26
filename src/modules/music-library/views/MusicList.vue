@@ -7,10 +7,7 @@ import {
   ArrowDown,
   ArrowUp,
   CalendarDays,
-  Filter,
   Library,
-  RotateCcw,
-  Search,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,6 +20,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
+import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
+import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import CatalogSearchField from "@/shared/components/catalog/CatalogSearchField.vue"
+import CatalogSelectField from "@/shared/components/catalog/CatalogSelectField.vue"
+import type { CatalogFieldOption } from "@/shared/components/catalog/types"
 import {
   Select,
   SelectContent,
@@ -48,6 +50,7 @@ import {
 import { resolveMusicTagLabelKey } from "../lib/music-labels"
 import type { MusicLibraryEntry } from "../lib/music-data"
 import {
+  MUSIC_CHARACTER_FILTER_SCOPES,
   MUSIC_NOTE_COUNT_FILTER_MODES,
   MUSIC_SORT_KEYS,
   createDefaultMusicLibraryFilter,
@@ -55,6 +58,7 @@ import {
   filterMusicEntries,
   isMusicEntryUnreleased,
   sortMusicEntries,
+  type MusicCharacterFilterScope,
   type MusicLibraryFilter,
   type MusicNoteCountFilterMode,
   type MusicSortDirection,
@@ -72,6 +76,7 @@ const {
   entries,
   characterMap,
   musicEventBoxes,
+  musicVocalCharacters,
   tagOptions,
   yearOptions,
   loading,
@@ -87,8 +92,10 @@ const noteCountMode = ref<MusicNoteCountFilterMode>("exact")
 const noteCountExact = ref<number | undefined>(undefined)
 const noteCountMin = ref<number | undefined>(undefined)
 const noteCountMax = ref<number | undefined>(undefined)
-const selectedTag = ref<string | null>(null)
+const selectedTags = ref<string[]>([])
 const selectedYear = ref<number | null>(null)
+const selectedCharacterId = ref<number | null>(null)
+const characterScope = ref<MusicCharacterFilterScope>("any")
 const sortKey = ref<MusicSortKey>("publishedAt")
 const sortDirection = ref<MusicSortDirection>("desc")
 
@@ -102,12 +109,45 @@ const filter = computed<MusicLibraryFilter>(() => ({
   noteCountExact: toNullableNumber(noteCountExact.value),
   noteCountMin: toNullableNumber(noteCountMin.value),
   noteCountMax: toNullableNumber(noteCountMax.value),
-  tag: selectedTag.value,
+  tags: selectedTags.value,
   year: selectedYear.value,
+  characterId: selectedCharacterId.value,
+  characterScope: characterScope.value,
 }))
 
+const characterOptions = computed(() =>
+  [...characterMap.value.values()].sort((a, b) => a.id - b.id),
+)
+
+const difficultyFieldOptions = computed<CatalogFieldOption[]>(() =>
+  MUSIC_DIFFICULTIES.map((difficulty) => ({
+    value: difficulty,
+    label: difficultyLabel(difficulty),
+    color: MUSIC_DIFFICULTY_COLORS[difficulty],
+  })),
+)
+
+const tagFieldOptions = computed<CatalogFieldOption[]>(() =>
+  tagOptions.value.map((tag) => ({ value: tag, label: tagLabel(tag) })),
+)
+
+const characterFieldOptions = computed<CatalogFieldOption[]>(() =>
+  characterOptions.value.map((character) => ({
+    value: String(character.id),
+    label: character.name,
+    iconUrl: character.iconUrl,
+  })),
+)
+
+const yearFieldOptions = computed<CatalogFieldOption[]>(() =>
+  yearOptions.value.map((year) => ({ value: String(year), label: String(year) })),
+)
+
 const visibleEntries = computed(() => {
-  const filtered = filterMusicEntries(entries.value, filter.value)
+  const filtered = filterMusicEntries(entries.value, filter.value, {
+    eventBoxes: musicEventBoxes.value,
+    vocalCharacters: musicVocalCharacters.value,
+  })
   return sortMusicEntries(
     hideUnreleased.value ? excludeUnreleasedMusicEntries(filtered) : filtered,
     sortKey.value,
@@ -128,21 +168,29 @@ function updateRegion(value: AcceptableValue) {
   updateRegionSelector(value)
 }
 
-function updateDifficulty(value: AcceptableValue) {
-  selectedDifficulty.value = typeof value === "string" && isMusicDifficulty(value) ? value : null
+function updateDifficulty(value: string | null) {
+  selectedDifficulty.value = value != null && isMusicDifficulty(value) ? value : null
 }
 
 function updateNoteCountMode(value: AcceptableValue) {
   noteCountMode.value = value === "range" ? "range" : "exact"
 }
 
-function updateTag(value: AcceptableValue) {
-  selectedTag.value = typeof value === "string" && value !== ALL_OPTION ? value : null
+function updateYear(value: string | null) {
+  const parsed = value != null ? Number(value) : null
+  selectedYear.value = parsed != null && Number.isInteger(parsed) ? parsed : null
 }
 
-function updateYear(value: AcceptableValue) {
-  const parsed = typeof value === "string" && value !== ALL_OPTION ? Number(value) : null
-  selectedYear.value = parsed != null && Number.isInteger(parsed) ? parsed : null
+function updateCharacter(value: string | null) {
+  const parsed = value != null ? Number(value) : null
+  selectedCharacterId.value = parsed != null && Number.isInteger(parsed) ? parsed : null
+}
+
+function updateCharacterScope(value: AcceptableValue) {
+  characterScope.value = typeof value === "string"
+    && (MUSIC_CHARACTER_FILTER_SCOPES as readonly string[]).includes(value)
+    ? value as MusicCharacterFilterScope
+    : "any"
 }
 
 function updateSortKey(value: AcceptableValue) {
@@ -164,8 +212,10 @@ function resetFilters() {
   noteCountExact.value = undefined
   noteCountMin.value = undefined
   noteCountMax.value = undefined
-  selectedTag.value = null
+  selectedTags.value = []
   selectedYear.value = null
+  selectedCharacterId.value = null
+  characterScope.value = "any"
   sortKey.value = "publishedAt"
   sortDirection.value = "desc"
 }
@@ -264,59 +314,26 @@ function toNullableNumber(value: number | string | undefined | null): number | n
               </Select>
             </div>
 
-            <div class="grid gap-2">
-              <Label for="music-library-search">{{ t("musicLibrary.list.filters.search") }}</Label>
-              <div class="relative w-full items-center">
-                <Input
-                  id="music-library-search"
-                  v-model="search"
-                  class="pl-10"
-                  type="text"
-                  :placeholder="t('musicLibrary.list.filters.searchPlaceholder')"
-                />
-                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                  <Search class="size-4 text-muted-foreground" />
-                </span>
-              </div>
-            </div>
+            <CatalogSearchField
+              v-model="search"
+              :label="t('musicLibrary.list.filters.search')"
+              :placeholder="t('musicLibrary.list.filters.searchPlaceholder')"
+            />
           </div>
 
-          <section class="grid gap-3 rounded-md border bg-muted/20 p-3">
-            <div class="flex items-center gap-2 text-sm font-medium">
-              <Filter class="size-4 text-muted-foreground" />
-              {{ t("musicLibrary.list.filters.title") }}
-            </div>
-
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div class="grid gap-2">
-                <Label>{{ t("musicLibrary.list.filters.difficulty") }}</Label>
-                <Select
-                  :model-value="selectedDifficulty ?? ALL_OPTION"
-                  @update:model-value="updateDifficulty"
-                >
-                  <SelectTrigger class="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem :value="ALL_OPTION">
-                      {{ t("musicLibrary.list.filters.difficultyAll") }}
-                    </SelectItem>
-                    <SelectItem
-                      v-for="difficulty in MUSIC_DIFFICULTIES"
-                      :key="difficulty"
-                      :value="difficulty"
-                    >
-                      <span class="flex items-center gap-2">
-                        <span
-                          class="size-2.5 rounded-full"
-                          :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[difficulty] }"
-                        />
-                        {{ difficultyLabel(difficulty) }}
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <CatalogFilterPanel
+            :title="t('musicLibrary.list.filters.title')"
+            :count-label="t('musicLibrary.list.results.count', { count: visibleEntries.length })"
+            :reset-label="t('musicLibrary.list.filters.reset')"
+            @reset="resetFilters"
+          >
+              <CatalogSelectField
+                :label="t('musicLibrary.list.filters.difficulty')"
+                :all-label="t('musicLibrary.list.filters.difficultyAll')"
+                :options="difficultyFieldOptions"
+                :model-value="selectedDifficulty"
+                @update:model-value="updateDifficulty"
+              />
 
               <div class="grid gap-2">
                 <Label>{{ t("musicLibrary.list.filters.level") }}</Label>
@@ -388,45 +405,73 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                 </div>
               </div>
 
-              <div class="grid gap-2">
-                <Label>{{ t("musicLibrary.list.filters.tag") }}</Label>
-                <Select
-                  :model-value="selectedTag ?? ALL_OPTION"
-                  @update:model-value="updateTag"
-                >
-                  <SelectTrigger class="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem :value="ALL_OPTION">
-                      {{ t("musicLibrary.list.filters.tagAll") }}
-                    </SelectItem>
-                    <SelectItem v-for="tag in tagOptions" :key="tag" :value="tag">
-                      {{ tagLabel(tag) }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <CatalogChipsField
+                v-model="selectedTags"
+                :label="t('musicLibrary.list.filters.tag')"
+                :options="tagFieldOptions"
+              />
 
               <div class="grid gap-2">
-                <Label>{{ t("musicLibrary.list.filters.year") }}</Label>
-                <Select
-                  :model-value="selectedYear != null ? String(selectedYear) : ALL_OPTION"
-                  @update:model-value="updateYear"
-                >
-                  <SelectTrigger class="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem :value="ALL_OPTION">
-                      {{ t("musicLibrary.list.filters.yearAll") }}
-                    </SelectItem>
-                    <SelectItem v-for="year in yearOptions" :key="year" :value="String(year)">
-                      {{ year }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>{{ t("musicLibrary.list.filters.character") }}</Label>
+                <div class="flex items-center gap-2">
+                  <Select
+                    :model-value="selectedCharacterId != null ? String(selectedCharacterId) : ALL_OPTION"
+                    @update:model-value="(value: AcceptableValue) =>
+                      updateCharacter(typeof value === 'string' && value !== ALL_OPTION ? value : null)"
+                  >
+                    <SelectTrigger class="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem :value="ALL_OPTION">
+                        {{ t("musicLibrary.list.filters.characterAll") }}
+                      </SelectItem>
+                      <SelectItem
+                        v-for="option in characterFieldOptions"
+                        :key="option.value"
+                        :value="option.value"
+                      >
+                        <span class="flex items-center gap-2">
+                          <img
+                            v-if="option.iconUrl"
+                            :src="option.iconUrl"
+                            alt=""
+                            class="size-4 shrink-0 rounded-full"
+                            loading="lazy"
+                          >
+                          {{ option.label }}
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    :model-value="characterScope"
+                    :disabled="selectedCharacterId == null"
+                    @update:model-value="updateCharacterScope"
+                  >
+                    <SelectTrigger class="w-32 shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="scope in MUSIC_CHARACTER_FILTER_SCOPES"
+                        :key="scope"
+                        :value="scope"
+                      >
+                        {{ t(`musicLibrary.list.filters.characterScope.${scope}`) }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
+              <CatalogSelectField
+                :label="t('musicLibrary.list.filters.year')"
+                :all-label="t('musicLibrary.list.filters.yearAll')"
+                :options="yearFieldOptions"
+                :model-value="selectedYear != null ? String(selectedYear) : null"
+                @update:model-value="updateYear"
+              />
 
               <div class="grid gap-2">
                 <Label>{{ t("musicLibrary.list.filters.sort") }}</Label>
@@ -455,18 +500,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                   </Button>
                 </div>
               </div>
-            </div>
-
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <p class="text-xs text-muted-foreground">
-                {{ t("musicLibrary.list.results.count", { count: visibleEntries.length }) }}
-              </p>
-              <Button type="button" variant="ghost" size="sm" @click="resetFilters">
-                <RotateCcw class="size-4" />
-                {{ t("musicLibrary.list.filters.reset") }}
-              </Button>
-            </div>
-          </section>
+          </CatalogFilterPanel>
 
           <div
             v-if="showDownloadProgress"

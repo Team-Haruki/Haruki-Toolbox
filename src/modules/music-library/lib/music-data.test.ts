@@ -1,12 +1,17 @@
 import { describe, expect, it } from "bun:test"
 import {
+  MUSIC_TAG_EVENT_BOX,
+  MUSIC_TAG_WORLD_LINK,
+  applyMusicTagByIds,
   buildMusicLibraryEntries,
+  buildMusicVocalCharacterMap,
   buildOutsideCharacterNameMap,
   findMusicDurationSeconds,
   findMusicLibraryEntry,
   formatMusicDurationLabel,
   listMusicEventLinks,
   listMusicVocalEntries,
+  listWorldLinkMusicIds,
   normalizeMusicCategories,
 } from "./music-data"
 
@@ -140,6 +145,85 @@ describe("listMusicVocalEntries", () => {
 
   it("returns an empty list for unknown music ids", () => {
     expect(listMusicVocalEntries(rawVocals, 42)).toEqual([])
+  })
+})
+
+describe("world link music tagging", () => {
+  const rawEvents = [
+    { id: 1, eventType: "marathon" },
+    { id: 2, eventType: "world_bloom" },
+    { id: 3, eventType: "world_bloom" },
+  ]
+  const rawEventMusics = [
+    { eventId: 1, musicId: 1 },
+    { eventId: 2, musicId: 2 },
+    { eventId: 3, musicId: 2 },
+    { eventId: 3, musicId: 74 },
+  ]
+
+  it("collects music ids linked to world_bloom events", () => {
+    expect([...listWorldLinkMusicIds(rawEvents, rawEventMusics)].sort((a, b) => a - b)).toEqual([2, 74])
+    expect(listWorldLinkMusicIds(null, undefined).size).toBe(0)
+  })
+
+  it("appends a synthetic tag without duplicating it or mutating untagged entries", () => {
+    const entries = buildMusicLibraryEntries(RAW_MUSICS, RAW_DIFFICULTIES, RAW_TAGS)
+    const tagged = applyMusicTagByIds(entries, new Set([2]), MUSIC_TAG_WORLD_LINK)
+    expect(tagged[0].tags).toEqual(["vocaloid"])
+    expect(tagged[0]).toBe(entries[0])
+    expect(tagged[1].tags).toEqual(["street", MUSIC_TAG_WORLD_LINK])
+    expect(entries[1].tags).toEqual(["street"])
+
+    const retagged = applyMusicTagByIds(tagged, new Set([2]), MUSIC_TAG_WORLD_LINK)
+    expect(retagged[1].tags).toEqual(["street", MUSIC_TAG_WORLD_LINK])
+  })
+
+  it("accepts a map keyed by music id, matching the event box map shape", () => {
+    const entries = buildMusicLibraryEntries(RAW_MUSICS, RAW_DIFFICULTIES, RAW_TAGS)
+    const boxMap = new Map([[1, { eventId: 3, characterId: 5, boxNumber: 1 }]])
+    const tagged = applyMusicTagByIds(entries, boxMap, MUSIC_TAG_EVENT_BOX)
+    expect(tagged[0].tags).toEqual(["vocaloid", MUSIC_TAG_EVENT_BOX])
+    expect(tagged[1].tags).toEqual(["street"])
+  })
+})
+
+describe("buildMusicVocalCharacterMap", () => {
+  const rawVocals = [
+    {
+      id: 1,
+      musicId: 1,
+      musicVocalType: "sekai",
+      characters: [
+        { characterType: "game_character", characterId: 1 },
+        { characterType: "game_character", characterId: 2 },
+        { characterType: "outside_character", characterId: 3 },
+      ],
+    },
+    {
+      id: 2,
+      musicId: 1,
+      musicVocalType: "another_vocal",
+      characters: [{ characterType: "game_character", characterId: 9 }],
+    },
+    {
+      id: 3,
+      musicId: 2,
+      musicVocalType: "virtual_singer",
+      characters: [{ characterType: "game_character", characterId: 21 }],
+    },
+  ]
+
+  it("splits singers into vocal and another vocal sets, ignoring outside characters", () => {
+    const map = buildMusicVocalCharacterMap(rawVocals)
+    expect([...map.get(1)!.vocalCharacterIds].sort((a, b) => a - b)).toEqual([1, 2])
+    expect([...map.get(1)!.anotherVocalCharacterIds]).toEqual([9])
+    expect([...map.get(2)!.vocalCharacterIds]).toEqual([21])
+    expect(map.get(2)!.anotherVocalCharacterIds.size).toBe(0)
+  })
+
+  it("tolerates malformed payloads", () => {
+    expect(buildMusicVocalCharacterMap(null).size).toBe(0)
+    expect(buildMusicVocalCharacterMap([{ musicId: 1 }]).size).toBe(0)
   })
 })
 

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { RouterLink } from "vue-router"
+import { RouterLink, useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
+import { goBackOr, hasInAppHistory } from "@/lib/router-back"
 import {
   Activity,
   ArrowLeft,
@@ -62,6 +63,18 @@ const props = defineProps<{
 }>()
 
 const { t, te, locale } = useI18n()
+const router = useRouter()
+const route = useRoute()
+
+function goBack() {
+  goBackOr(router, "/music")
+}
+
+/** Track the route so in-component navigation re-checks the history state. */
+const canGoBack = computed(() => {
+  void route.fullPath
+  return hasInAppHistory()
+})
 const settingsStore = useSettingsStore()
 
 const { region } = useEffectiveCatalogRegion()
@@ -262,11 +275,9 @@ function eventBoxHint(eventId: number) {
   <div class="flex w-full flex-1 items-center justify-center px-0 py-4">
     <div class="mx-auto w-full max-w-5xl space-y-4">
       <div>
-        <Button variant="outline" size="sm" as-child>
-          <RouterLink to="/music">
-            <ArrowLeft class="size-4" />
-            {{ t("musicLibrary.detail.back") }}
-          </RouterLink>
+        <Button variant="outline" size="sm" @click="goBack">
+          <ArrowLeft class="size-4" />
+          {{ canGoBack ? t("common.back") : t("musicLibrary.detail.back") }}
         </Button>
       </div>
 

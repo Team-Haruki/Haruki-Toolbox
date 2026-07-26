@@ -4,17 +4,21 @@ import { readSekaiMasterFiles, readSekaiMusicMetas } from "@/shared/sekai/cache"
 import { buildCatalogCharacterMap, type CatalogCharacter } from "@/shared/sekai/catalog"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import {
+  MUSIC_TAG_EVENT_BOX,
+  MUSIC_TAG_WORLD_LINK,
+  applyMusicTagByIds,
   buildMusicLibraryEntries,
   buildOutsideCharacterNameMap,
   findMusicDurationSeconds,
   findMusicLibraryEntry,
   listMusicEventLinks,
   listMusicVocalEntries,
+  listWorldLinkMusicIds,
   type MusicEventLink,
   type MusicLibraryEntry,
   type MusicVocalEntry,
 } from "../lib/music-data"
-import { buildEventBoxMap, type EventBoxInfo } from "../lib/event-box"
+import { buildEventBoxMap, buildMusicEventBoxMap, type EventBoxInfo } from "../lib/event-box"
 
 const MUSIC_DETAIL_MASTER_FILES = [
   "musics",
@@ -71,17 +75,25 @@ export function useMusicLibraryDetail(region: Ref<SekaiRegion>, musicId: Ref<num
         readSekaiMasterFiles(region.value, MUSIC_DETAIL_MASTER_FILES),
         readSekaiMusicMetas(region.value),
       ])
-      const entries = buildMusicLibraryEntries(
-        files.musics,
-        files.musicDifficulties,
-        files.musicTags,
+      eventBoxMap.value = buildEventBoxMap(files.events, files.eventCards, files.cards, files.gameCharacters)
+      const entries = applyMusicTagByIds(
+        applyMusicTagByIds(
+          buildMusicLibraryEntries(
+            files.musics,
+            files.musicDifficulties,
+            files.musicTags,
+          ),
+          buildMusicEventBoxMap(files.eventMusics, eventBoxMap.value),
+          MUSIC_TAG_EVENT_BOX,
+        ),
+        listWorldLinkMusicIds(files.events, files.eventMusics),
+        MUSIC_TAG_WORLD_LINK,
       )
       entry.value = findMusicLibraryEntry(entries, targetMusicId)
       vocals.value = listMusicVocalEntries(files.musicVocals, targetMusicId)
       characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
       outsideCharacterNames.value = buildOutsideCharacterNameMap(files.outsideCharacters)
       eventLinks.value = listMusicEventLinks(files.eventMusics, files.events, targetMusicId)
-      eventBoxMap.value = buildEventBoxMap(files.events, files.eventCards, files.cards, files.gameCharacters)
       durationSeconds.value = findMusicDurationSeconds(musicMetas, targetMusicId)
     } catch (loadError) {
       entry.value = null

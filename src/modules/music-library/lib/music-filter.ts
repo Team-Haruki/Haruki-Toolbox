@@ -1,6 +1,7 @@
 import { isUnreleasedContent } from "@/shared/sekai/unreleased"
+import type { EventBoxInfo } from "./event-box"
 import type { MusicDifficulty } from "./music-difficulties"
-import type { MusicDifficultyStat, MusicLibraryEntry } from "./music-data"
+import type { MusicDifficultyStat, MusicLibraryEntry, MusicVocalCharacterSummary } from "./music-data"
 
 export const MUSIC_SORT_KEYS = ["publishedAt", "level", "noteCount", "title"] as const
 
@@ -14,6 +15,10 @@ export type MusicNoteCountFilterMode = (typeof MUSIC_NOTE_COUNT_FILTER_MODES)[nu
 
 export const MUSIC_SORT_FALLBACK_DIFFICULTY: MusicDifficulty = "master"
 
+export const MUSIC_CHARACTER_FILTER_SCOPES = ["any", "box", "vocal", "anotherVocal"] as const
+
+export type MusicCharacterFilterScope = (typeof MUSIC_CHARACTER_FILTER_SCOPES)[number]
+
 export type MusicLibraryFilter = {
   search: string
   difficulty: MusicDifficulty | null
@@ -23,8 +28,17 @@ export type MusicLibraryFilter = {
   noteCountExact: number | null
   noteCountMin: number | null
   noteCountMax: number | null
-  tag: string | null
+  /** Selected tags; an entry matches when it has any of them (empty = no tag filter). */
+  tags: string[]
   year: number | null
+  characterId: number | null
+  characterScope: MusicCharacterFilterScope
+}
+
+/** Lookup maps the character filter matches against; missing maps match nothing. */
+export type MusicFilterContext = {
+  eventBoxes?: ReadonlyMap<number, EventBoxInfo>
+  vocalCharacters?: ReadonlyMap<number, MusicVocalCharacterSummary>
 }
 
 export function createDefaultMusicLibraryFilter(): MusicLibraryFilter {
@@ -37,8 +51,10 @@ export function createDefaultMusicLibraryFilter(): MusicLibraryFilter {
     noteCountExact: null,
     noteCountMin: null,
     noteCountMax: null,
-    tag: null,
+    tags: [],
     year: null,
+    characterId: null,
+    characterScope: "any",
   }
 }
 
@@ -75,13 +91,18 @@ export function getMusicPublishedYear(publishedAt: number | null): number | null
 export function filterMusicEntries(
   entries: readonly MusicLibraryEntry[],
   filter: MusicLibraryFilter,
+  context: MusicFilterContext = {},
 ): MusicLibraryEntry[] {
   return entries.filter((entry) => {
     if (!matchesMusicSearch(entry, filter.search)) {
       return false
     }
 
-    if (filter.tag && !entry.tags.includes(filter.tag)) {
+    if (filter.tags.length > 0 && !filter.tags.some((tag) => entry.tags.includes(tag))) {
+      return false
+    }
+
+    if (!matchesCharacter(entry, filter, context)) {
       return false
     }
 
@@ -132,7 +153,11 @@ export function sortMusicEntries(
   })
 }
 
-export function listMusicTagOptions(entries: readonly MusicLibraryEntry[]): string[] {
+/** Known tags in their canonical order, followed by any extra tags found in the data. */
+export function listMusicTagOptions(
+  entries: readonly MusicLibraryEntry[],
+  knownTags: readonly string[] = [],
+): string[] {
   const tags = new Set<string>()
   for (const entry of entries) {
     for (const tag of entry.tags) {
@@ -140,7 +165,8 @@ export function listMusicTagOptions(entries: readonly MusicLibraryEntry[]): stri
     }
   }
 
-  return [...tags].sort()
+  const extraTags = [...tags].filter((tag) => !knownTags.includes(tag)).sort()
+  return [...knownTags, ...extraTags]
 }
 
 export function listMusicYearOptions(entries: readonly MusicLibraryEntry[]): number[] {
@@ -153,6 +179,32 @@ export function listMusicYearOptions(entries: readonly MusicLibraryEntry[]): num
   }
 
   return [...years].sort((a, b) => b - a)
+}
+
+function matchesCharacter(
+  entry: MusicLibraryEntry,
+  filter: MusicLibraryFilter,
+  context: MusicFilterContext,
+): boolean {
+  if (filter.characterId == null) {
+    return true
+  }
+
+  const boxMatch = context.eventBoxes?.get(entry.id)?.characterId === filter.characterId
+  const summary = context.vocalCharacters?.get(entry.id)
+  const vocalMatch = summary?.vocalCharacterIds.has(filter.characterId) ?? false
+  const anotherVocalMatch = summary?.anotherVocalCharacterIds.has(filter.characterId) ?? false
+
+  switch (filter.characterScope) {
+    case "box":
+      return boxMatch
+    case "vocal":
+      return vocalMatch
+    case "anotherVocal":
+      return anotherVocalMatch
+    default:
+      return boxMatch || vocalMatch || anotherVocalMatch
+  }
 }
 
 function resolveCandidateStats(

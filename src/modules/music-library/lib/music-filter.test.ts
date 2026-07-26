@@ -76,9 +76,14 @@ describe("filterMusicEntries", () => {
     expect(filterMusicEntries(ENTRIES, createDefaultMusicLibraryFilter())).toHaveLength(3)
   })
 
-  it("filters by tag", () => {
-    const filter = { ...createDefaultMusicLibraryFilter(), tag: "street" }
+  it("filters by a single tag", () => {
+    const filter = { ...createDefaultMusicLibraryFilter(), tags: ["street"] }
     expect(filterMusicEntries(ENTRIES, filter).map((entry) => entry.id)).toEqual([2, 3])
+  })
+
+  it("matches any of multiple selected tags", () => {
+    const filter = { ...createDefaultMusicLibraryFilter(), tags: ["vocaloid", "missing_tag"] }
+    expect(filterMusicEntries(ENTRIES, filter).map((entry) => entry.id)).toEqual([1, 3])
   })
 
   it("filters by published year", () => {
@@ -131,8 +136,63 @@ describe("filterMusicEntries", () => {
   })
 
   it("combines search with other filters", () => {
-    const filter = { ...createDefaultMusicLibraryFilter(), search: "another", tag: "street" }
+    const filter = { ...createDefaultMusicLibraryFilter(), search: "another", tags: ["street"] }
     expect(filterMusicEntries(ENTRIES, filter).map((entry) => entry.id)).toEqual([3])
+  })
+})
+
+describe("filterMusicEntries character scopes", () => {
+  const context = {
+    eventBoxes: new Map([
+      [1, { eventId: 10, characterId: 5, boxNumber: 2 }],
+    ]),
+    vocalCharacters: new Map([
+      [2, { vocalCharacterIds: new Set([5]), anotherVocalCharacterIds: new Set([9]) }],
+      [3, { vocalCharacterIds: new Set([9]), anotherVocalCharacterIds: new Set([5]) }],
+    ]),
+  }
+
+  it("matches box, vocal and another vocal songs with the any scope", () => {
+    const filter = { ...createDefaultMusicLibraryFilter(), characterId: 5 }
+    expect(filterMusicEntries(ENTRIES, filter, context).map((entry) => entry.id)).toEqual([1, 2, 3])
+  })
+
+  it("restricts to box songs", () => {
+    const filter = {
+      ...createDefaultMusicLibraryFilter(),
+      characterId: 5,
+      characterScope: "box" as const,
+    }
+    expect(filterMusicEntries(ENTRIES, filter, context).map((entry) => entry.id)).toEqual([1])
+  })
+
+  it("restricts to vocal versions", () => {
+    const filter = {
+      ...createDefaultMusicLibraryFilter(),
+      characterId: 5,
+      characterScope: "vocal" as const,
+    }
+    expect(filterMusicEntries(ENTRIES, filter, context).map((entry) => entry.id)).toEqual([2])
+  })
+
+  it("restricts to another vocal versions", () => {
+    const filter = {
+      ...createDefaultMusicLibraryFilter(),
+      characterId: 5,
+      characterScope: "anotherVocal" as const,
+    }
+    expect(filterMusicEntries(ENTRIES, filter, context).map((entry) => entry.id)).toEqual([3])
+  })
+
+  it("matches nothing for a character without songs and everything without a character", () => {
+    const filter = { ...createDefaultMusicLibraryFilter(), characterId: 42 }
+    expect(filterMusicEntries(ENTRIES, filter, context)).toEqual([])
+    expect(filterMusicEntries(ENTRIES, createDefaultMusicLibraryFilter(), context)).toHaveLength(3)
+  })
+
+  it("matches nothing when the lookup context is missing", () => {
+    const filter = { ...createDefaultMusicLibraryFilter(), characterId: 5 }
+    expect(filterMusicEntries(ENTRIES, filter)).toEqual([])
   })
 })
 
@@ -166,6 +226,14 @@ describe("sortMusicEntries", () => {
 describe("option helpers", () => {
   it("lists sorted unique tags", () => {
     expect(listMusicTagOptions(ENTRIES)).toEqual(["street", "vocaloid"])
+  })
+
+  it("keeps known tags first in canonical order and appends extras from the data", () => {
+    expect(listMusicTagOptions(ENTRIES, ["vocaloid", "world_link"])).toEqual([
+      "vocaloid",
+      "world_link",
+      "street",
+    ])
   })
 
   it("lists years in descending order", () => {
