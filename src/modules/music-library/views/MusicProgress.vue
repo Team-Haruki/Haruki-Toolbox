@@ -548,7 +548,7 @@ function refresh() {
                 >
                   {{ levelLabel(row.playLevel) }}
                 </span>
-                <span class="text-xs text-muted-foreground">
+                <span class="w-16 shrink-0 text-xs tabular-nums text-muted-foreground">
                   {{ t("musicProgress.songCount", { count: row.total }) }}
                 </span>
                 <span class="flex h-3 min-w-40 flex-1 gap-px overflow-hidden rounded-full bg-muted">
