@@ -18,7 +18,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import DateTimePicker24h from "@/components/ui/datetime-picker/DateTimePicker24h.vue"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
   TableBody,
@@ -36,6 +39,7 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import EventBannerImage from "../components/EventBannerImage.vue"
 import EventTypeBadge from "../components/EventTypeBadge.vue"
+import type { SekaiEventType } from "../lib/event-filter"
 import { useEventRecordsMaster } from "../composables/useEventRecordsMaster"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
@@ -84,6 +88,68 @@ const userEvents = computed(() => normalizeUserEventRecords(suite.data.value?.us
 
 const rows = computed(() => buildEventRecordRows(userEvents.value, master.eventsById.value))
 
+const TIME_MODES = ["year", "all", "custom"] as const
+type TimeMode = (typeof TIME_MODES)[number]
+
+const EVENT_TYPE_OPTIONS: readonly SekaiEventType[] = ["marathon", "cheerful_carnival", "world_bloom"]
+
+const timeMode = ref<TimeMode>("year")
+const customStart = ref<Date | undefined>(undefined)
+const customEnd = ref<Date | undefined>(undefined)
+const typeFilters = ref<SekaiEventType[]>([])
+
+function handleTimeModeChange(value: unknown) {
+  if (typeof value === "string" && (TIME_MODES as readonly string[]).includes(value)) {
+    timeMode.value = value as TimeMode
+  }
+}
+
+function toggleTypeFilter(value: SekaiEventType, checked: boolean) {
+  const current = typeFilters.value.filter((item) => item !== value)
+  typeFilters.value = checked ? [...current, value] : current
+}
+
+const timeWindow = computed<{ from: number | null; to: number | null }>(() => {
+  if (timeMode.value === "all") {
+    return { from: null, to: null }
+  }
+  if (timeMode.value === "year") {
+    return { from: Date.now() - 365 * 24 * 60 * 60 * 1000, to: null }
+  }
+  return {
+    from: customStart.value?.getTime() ?? null,
+    to: customEnd.value?.getTime() ?? null,
+  }
+})
+
+// Rows without a dated master event only survive the unfiltered "all" view.
+const filteredRows = computed(() => rows.value.filter((row) => {
+  const { from, to } = timeWindow.value
+  const startAt = row.event?.startAt ?? null
+  if (from != null || to != null) {
+    if (startAt == null) {
+      return false
+    }
+    if (from != null && startAt < from) {
+      return false
+    }
+    if (to != null && startAt > to) {
+      return false
+    }
+  }
+
+  if (typeFilters.value.length > 0) {
+    const eventType = row.event?.eventType ?? null
+    if (eventType == null || !typeFilters.value.includes(eventType)) {
+      return false
+    }
+  }
+
+  return true
+}))
+
+const filteredEventIds = computed(() => new Set(filteredRows.value.map((row) => row.eventId)))
+
 const worldGroups = computed(() =>
   buildWorldBloomGroups(
     normalizeUserWorldBloomRecords(suite.data.value?.userWorldBlooms),
@@ -92,10 +158,12 @@ const worldGroups = computed(() =>
   ),
 )
 
-const tableRows = computed(() => mergeWorldBloomIntoRows(rows.value, worldGroups.value))
+const tableRows = computed(() => mergeWorldBloomIntoRows(filteredRows.value, worldGroups.value))
 
-const trend = computed(() => buildEventPointTrend(rows.value))
-const summary = computed(() => summarizeEventRecords(userEvents.value))
+const trend = computed(() => buildEventPointTrend(filteredRows.value))
+const summary = computed(() => summarizeEventRecords(
+  userEvents.value.filter((record) => filteredEventIds.value.has(record.eventId)),
+))
 
 const summaryChips = computed(() => [
   { key: "participated", label: t("eventRecords.summary.participated"), value: formatNumberCN(summary.value.participated) },
@@ -185,7 +253,7 @@ function crosshairTemplate(point: EventPointTrendPoint) {
   // vars) provides the box, so we must not draw a second box here.
   return `<div style="font-size:12px;line-height:1.55">
     <div style="font-weight:600;margin-bottom:2px">${escapeHtml(point.name)}</div>
-    <div style="opacity:0.7">${formatRecordDate(point.startAt)}</div>
+    <div style="opacity:0.7"><b>#${point.eventId}</b> ${formatRecordDate(point.startAt)}</div>
     <div>${t("eventRecords.trend.point")}: ${formatNumberCN(point.eventPoint)}</div>
     <div>${t("eventRecords.trend.rank")}: ${point.rank != null ? formatNumberCN(point.rank) : "—"}</div>
   </div>`
@@ -238,6 +306,41 @@ function crosshairTemplate(point: EventPointTrendPoint) {
     </Card>
 
     <template v-else>
+      <!-- Filters -->
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Tabs :model-value="timeMode" @update:model-value="handleTimeModeChange">
+          <TabsList class="h-8">
+            <TabsTrigger value="year" class="text-xs">{{ t("eventRecords.filters.lastYear") }}</TabsTrigger>
+            <TabsTrigger value="all" class="text-xs">{{ t("eventRecords.filters.all") }}</TabsTrigger>
+            <TabsTrigger value="custom" class="text-xs">{{ t("eventRecords.filters.custom") }}</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div v-if="timeMode === 'custom'" class="flex flex-wrap items-center gap-2">
+          <DateTimePicker24h v-model="customStart" :aria-label="t('eventRecords.filters.from')" />
+          <span class="text-xs text-muted-foreground">—</span>
+          <DateTimePicker24h v-model="customEnd" :aria-label="t('eventRecords.filters.to')" />
+        </div>
+        <div class="ml-auto flex flex-wrap items-center gap-2">
+          <span class="text-xs text-muted-foreground">{{ t("eventRecords.filters.type") }}</span>
+          <label
+            v-for="eventType in EVENT_TYPE_OPTIONS"
+            :key="eventType"
+            :class="[
+              'flex cursor-pointer items-center gap-2 rounded-md border bg-background/70 px-2 py-1.5 text-xs transition-colors hover:bg-muted/40',
+              typeFilters.includes(eventType)
+                ? 'border-cyan-300 bg-cyan-50 text-cyan-900 dark:border-cyan-500/40 dark:bg-cyan-500/10 dark:text-cyan-100'
+                : '',
+            ]"
+          >
+            <Checkbox
+              :model-value="typeFilters.includes(eventType)"
+              @update:model-value="checked => toggleTypeFilter(eventType, checked === true)"
+            />
+            {{ t(`events.type.${eventType}`) }}
+          </label>
+        </div>
+      </div>
+
       <!-- Summary chips -->
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Card v-for="chip in summaryChips" :key="chip.key">
@@ -354,7 +457,10 @@ function crosshairTemplate(point: EventPointTrendPoint) {
                             {{ row.name }}
                           </RouterLink>
                           <span v-else class="block max-w-56 truncate text-sm font-medium">{{ row.name }}</span>
-                          <span class="text-xs text-muted-foreground">{{ formatRecordDate(row.event?.startAt ?? null) }}</span>
+                          <span class="text-xs text-muted-foreground">
+                            <b class="font-semibold">#{{ row.eventId }}</b>
+                            {{ formatRecordDate(row.event?.startAt ?? null) }}
+                          </span>
                         </div>
                       </div>
                     </TableCell>

@@ -930,6 +930,14 @@ export const zhCN = {
       bestPoint: "最高活动 PT",
       averagePoint: "平均活动 PT",
     },
+    filters: {
+      lastYear: "近一年",
+      all: "全部",
+      custom: "自定义",
+      from: "开始时间",
+      to: "结束时间",
+      type: "活动类型",
+    },
     trend: {
       title: "活动 PT 趋势",
       empty: "记录不足，暂时无法绘制趋势图。",
@@ -1993,7 +2001,7 @@ export const zhCN = {
     },
     type: {
       marathon: "马拉松",
-      cheerful_carnival: "5v5",
+      cheerful_carnival: "欢乐嘉年华",
       world_bloom: "连接世界",
       unknown: "未知类型",
     },
@@ -3113,7 +3121,7 @@ export const zhCN = {
     },
     eventTypes: {
       marathon: "马拉松",
-      cheerfulCarnival: "5v5",
+      cheerfulCarnival: "欢乐嘉年华",
       worldBloom: "连接世界",
       unknown: "未知类型",
     },

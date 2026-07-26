@@ -930,6 +930,14 @@ export const enUS = {
       bestPoint: "Best event PT",
       averagePoint: "Average event PT",
     },
+    filters: {
+      lastYear: "Past year",
+      all: "All",
+      custom: "Custom",
+      from: "From",
+      to: "To",
+      type: "Event type",
+    },
     trend: {
       title: "Event PT trend",
       empty: "Not enough records to draw a trend yet.",
