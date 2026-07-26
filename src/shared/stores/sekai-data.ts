@@ -281,7 +281,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
       })
     } catch (error) {
       updateRegionState(region, {
-        status: "error",
+        status: regionStates.value[region].masterFetchVersion ? "ready" : "error",
         refreshing: false,
         error: error instanceof Error ? error.message : String(error),
       })
@@ -359,9 +359,15 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
       status: "error",
       error: event.message,
     })
+    // A failed refresh must not take previously cached data out of service:
+    // when the region still has a usable cache, stay "ready" so consumers
+    // (e.g. deck recommend) keep working offline from IndexedDB.
+    const hasCache = Boolean(regionStates.value[event.region].masterFetchVersion)
     updateRegionState(event.region, {
-      status: "error",
+      status: hasCache ? "ready" : "error",
+      phase: null,
       refreshing: false,
+      progress: 0,
       error: event.message,
       checkedAt: Date.now(),
     })

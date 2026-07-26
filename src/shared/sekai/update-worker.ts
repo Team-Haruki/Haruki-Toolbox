@@ -160,8 +160,32 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
   })
 }
 
+// Transient network failures ("Failed to fetch") and gateway hiccups are
+// common on flaky CDN paths; retry briefly before surfacing an error.
+const FETCH_RETRY_DELAYS_MS = [500, 1500]
+
+async function fetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= FETCH_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, FETCH_RETRY_DELAYS_MS[attempt - 1]))
+    }
+    try {
+      const response = await fetch(url, init)
+      if (response.status >= 500 || response.status === 429) {
+        lastError = new Error(`Failed to fetch ${url}: ${response.status}`)
+        continue
+      }
+      return response
+    } catch (error) {
+      lastError = error
+    }
+  }
+  throw lastError
+}
+
 async function fetchJson(url: string): Promise<unknown> {
-  const response = await fetch(url, { cache: "no-store" })
+  const response = await fetchWithRetry(url, { cache: "no-store" })
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status}`)
   }
@@ -174,7 +198,7 @@ async function fetchMasterFileJson(url: string, fileName: string): Promise<unkno
   const isOptionalFile = OPTIONAL_MASTER_FILE_SET.has(normalizedFileName)
   let response: Response
   try {
-    response = await fetch(url, { cache: "no-store" })
+    response = await fetchWithRetry(url, { cache: "no-store" })
   } catch (error) {
     if (isOptionalFile) {
       return []
@@ -244,7 +268,7 @@ type MusicMetasRemoteState = {
 }
 
 async function fetchMusicMetasRemoteState(baseUrl: string): Promise<MusicMetasRemoteState> {
-  const response = await fetch(resolveMusicMetasProbeUrl(baseUrl), {
+  const response = await fetchWithRetry(resolveMusicMetasProbeUrl(baseUrl), {
     method: "HEAD",
     cache: "no-store",
   })
