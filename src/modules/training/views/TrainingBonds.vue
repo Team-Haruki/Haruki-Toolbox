@@ -241,7 +241,7 @@ function retry() {
           {{ t("training.bonds.empty") }}
         </p>
 
-        <div v-else class="flex flex-col gap-2">
+        <div v-else class="grid grid-cols-1 items-start gap-2 xl:grid-cols-2">
           <div
             v-for="row in bondRows"
             :key="row.key"
