@@ -330,14 +330,14 @@ function retry() {
         </CardContent>
       </Card>
 
-      <div v-else class="grid grid-cols-1 items-start gap-2 lg:grid-cols-2 2xl:grid-cols-3">
+      <div v-else class="grid grid-cols-1 gap-2 lg:grid-cols-2 2xl:grid-cols-3">
         <Card
           v-for="view in itemViews"
           :key="view.itemId"
-          class="border-l-4 py-3"
+          class="flex flex-col border-l-4 py-3"
           :style="targetColor(view) ? { borderLeftColor: targetColor(view)! } : {}"
         >
-          <CardContent class="flex flex-col gap-2 px-4">
+          <CardContent class="flex flex-1 flex-col gap-2 px-4">
             <!-- Item header -->
             <div class="flex flex-wrap items-center gap-3">
               <img
@@ -401,7 +401,7 @@ function retry() {
             <!-- Fully upgraded: same box shape as the next-level row below. -->
             <div
               v-if="!nextRow(view)"
-              class="flex min-h-14 items-center justify-center rounded-md border border-dashed px-2.5 py-1.5"
+              class="flex min-h-14 flex-1 items-center justify-center rounded-md border border-dashed px-2.5 py-1.5"
             >
               <p class="text-xs text-muted-foreground">{{ t("training.area.maxed") }}</p>
             </div>
@@ -410,7 +410,7 @@ function retry() {
             <div
               v-for="row in nextRow(view) ? [nextRow(view)!] : []"
               :key="row.level"
-              class="rounded-md border px-2.5 py-1.5"
+              class="flex-1 rounded-md border px-2.5 py-1.5"
             >
               <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span class="text-xs text-muted-foreground">
