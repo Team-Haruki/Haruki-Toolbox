@@ -17,6 +17,7 @@ import {
   collectUserAreaItemLevels,
   collectUserMaterials,
   formatAreaBonusRate,
+  formatCompactQuantity,
   materialIconAssetPath,
   type AreaItemFilter,
   type AreaItemLevelView,
@@ -78,8 +79,6 @@ const uploadTimeText = computed(() => {
   return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
     .format(suiteUploadTimeToMillis(uploadTime.value))
 })
-
-const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
 const characterOptions = computed(() =>
   [...characterMap.value.values()].sort((a, b) => a.id - b.id),
@@ -211,7 +210,7 @@ function levelPercent(view: AreaItemView): number {
 }
 
 function formatQuantity(value: number): string {
-  return numberFormatter.value.format(value)
+  return formatCompactQuantity(value, locale.value)
 }
 
 function handleCharacterFilterChange(value: unknown) {

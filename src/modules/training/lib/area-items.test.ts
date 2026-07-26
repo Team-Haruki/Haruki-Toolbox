@@ -8,6 +8,7 @@ import {
   collectUserAreaItemLevels,
   collectUserMaterials,
   formatAreaBonusRate,
+  formatCompactQuantity,
   materialIconAssetPath,
   normalizeAreaShopItems,
   normalizeAreaShopResourceBoxDetails,
@@ -531,5 +532,22 @@ describe("formatAreaBonusRate", () => {
     expect(formatAreaBonusRate(2.799999952316284)).toBe("2.8")
     expect(formatAreaBonusRate(1.0)).toBe("1")
     expect(formatAreaBonusRate(15)).toBe("15")
+  })
+})
+
+describe("formatCompactQuantity", () => {
+  test("uses the 万-based w shorthand for zh locales", () => {
+    expect(formatCompactQuantity(16_234, "zh-CN")).toBe("1.6w")
+    expect(formatCompactQuantity(500_000, "zh-CN")).toBe("50w")
+    expect(formatCompactQuantity(77_170_726, "zh-CN")).toBe("7717.1w")
+    expect(formatCompactQuantity(3_000, "zh-CN")).toBe("3,000")
+    expect(formatCompactQuantity(29, "zh-CN")).toBe("29")
+  })
+
+  test("uses k/M for non-zh locales", () => {
+    expect(formatCompactQuantity(3_000, "en-US")).toBe("3k")
+    expect(formatCompactQuantity(500_000, "en-US")).toBe("500k")
+    expect(formatCompactQuantity(1_172_288, "en-US")).toBe("1.2M")
+    expect(formatCompactQuantity(29, "en-US")).toBe("29")
   })
 })
