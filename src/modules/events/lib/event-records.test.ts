@@ -1,13 +1,21 @@
 import { describe, expect, test } from "bun:test"
 import type { SekaiEventItem } from "./event-filter"
 import {
+  buildDerivedRankMap,
   buildEventPointTrend,
   buildEventRecordRows,
   buildEventsById,
+  buildHonorRankIndex,
+  buildHonorRankIndexFromNames,
   buildWorldBloomChapterNoIndex,
   buildWorldBloomGroups,
+  derivedChapterRankKey,
+  derivedEventRankKey,
+  formatDerivedRankTier,
   mergeWorldBloomIntoRows,
   normalizeUserEventRecords,
+  normalizeUserHonorIds,
+  parseHonorTierName,
   normalizeUserWorldBloomRecords,
   summarizeEventRecords,
   worldBloomChapterKey,
@@ -258,5 +266,118 @@ describe("summarizeEventRecords", () => {
 
   test("returns null aggregates for empty userEvents", () => {
     expect(summarizeEventRecords([])).toEqual({ participated: 0, bestPoint: null, averagePoint: null })
+  })
+})
+
+describe("honor-derived rank tiers", () => {
+  const rawEvents = [
+    {
+      id: 11,
+      eventRankingRewardRanges: [
+        { id: 1, eventId: 11, fromRank: 1, toRank: 1, eventRankingRewards: [{ resourceBoxId: 281 }] },
+        { id: 2, eventId: 11, fromRank: 101, toRank: 1000, eventRankingRewards: [{ resourceBoxId: 282 }] },
+      ],
+    },
+  ]
+  const rawChapterRanges = [
+    { id: 9, eventId: 112, gameCharacterId: 18, fromRank: 1, toRank: 100, resourceBoxId: 1120101 },
+  ]
+  const rawResourceBoxes = [
+    {
+      resourceBoxPurpose: "event_ranking_reward",
+      id: 281,
+      details: [
+        { resourceBoxPurpose: "event_ranking_reward", resourceBoxId: 281, resourceType: "jewel", resourceQuantity: 3000 },
+        { resourceBoxPurpose: "event_ranking_reward", resourceBoxId: 281, resourceType: "honor", resourceId: 182 },
+      ],
+    },
+    {
+      resourceBoxPurpose: "event_ranking_reward",
+      id: 282,
+      details: [
+        { resourceBoxPurpose: "event_ranking_reward", resourceBoxId: 282, resourceType: "honor", resourceId: 190 },
+      ],
+    },
+  ]
+  // tw/kr/cn dumps ship flat detail rows in a separate file.
+  const rawResourceBoxDetails = [
+    { resourceBoxPurpose: "world_bloom_chapter_ranking_reward", resourceBoxId: 1120101, resourceType: "honor", resourceId: 5001 },
+  ]
+
+  test("maps ranking honors to event and chapter tiers across both dump shapes", () => {
+    const index = buildHonorRankIndex(rawEvents, rawChapterRanges, rawResourceBoxes, rawResourceBoxDetails)
+    expect(index.get(182)).toEqual({ key: derivedEventRankKey(11), tier: { fromRank: 1, toRank: 1 } })
+    expect(index.get(190)).toEqual({ key: derivedEventRankKey(11), tier: { fromRank: 101, toRank: 1000 } })
+    expect(index.get(5001)).toEqual({
+      key: derivedChapterRankKey(112, 18),
+      tier: { fromRank: 1, toRank: 100 },
+    })
+    expect(index.has(9999)).toBe(false)
+  })
+
+  test("derives the best tier per event from owned honors", () => {
+    const index = buildHonorRankIndex(rawEvents, rawChapterRanges, rawResourceBoxes, rawResourceBoxDetails)
+    const derived = buildDerivedRankMap(new Set([182, 190, 5001, 42]), index)
+    expect(derived.get(derivedEventRankKey(11))).toEqual({ fromRank: 1, toRank: 1 })
+    expect(derived.get(derivedChapterRankKey(112, 18))).toEqual({ fromRank: 1, toRank: 100 })
+    expect(derived.size).toBe(2)
+  })
+
+  test("normalizes owned honor ids and formats tiers", () => {
+    expect([...normalizeUserHonorIds([{ honorId: 182 }, { honorId: 182 }, { honorId: null }, {}])]).toEqual([182])
+    expect(normalizeUserHonorIds(null).size).toBe(0)
+    expect(formatDerivedRankTier({ fromRank: 101, toRank: 1000 })).toBe("T1000")
+    expect(formatDerivedRankTier({ fromRank: 1, toRank: 1 })).toBe("T1")
+  })
+})
+
+describe("parseHonorTierName", () => {
+  test("parses TOP-style tiers across regions", () => {
+    expect(parseHonorTierName("TOP100")).toEqual({ fromRank: 1, toRank: 100 })
+    expect(parseHonorTierName("Top 1,000")).toEqual({ fromRank: 1, toRank: 1000 })
+    expect(parseHonorTierName("top50000")).toEqual({ fromRank: 1, toRank: 50000 })
+  })
+
+  test("parses exact-rank tiers across regions", () => {
+    expect(parseHonorTierName("1位")).toEqual({ fromRank: 1, toRank: 1 })
+    expect(parseHonorTierName("第10名")).toEqual({ fromRank: 10, toRank: 10 })
+    expect(parseHonorTierName("3위")).toEqual({ fromRank: 3, toRank: 3 })
+    expect(parseHonorTierName("2nd")).toEqual({ fromRank: 2, toRank: 2 })
+    expect(parseHonorTierName("10th")).toEqual({ fromRank: 10, toRank: 10 })
+  })
+
+  test("rejects non-tier honor names", () => {
+    expect(parseHonorTierName("Memorial")).toBeNull()
+    expect(parseHonorTierName("イベント参加")).toBeNull()
+    expect(parseHonorTierName("")).toBeNull()
+  })
+})
+
+describe("buildHonorRankIndexFromNames", () => {
+  const rawEvents = [{ id: 11, name: "雨过天晴的启明星" }, { id: 12, name: "Color of Myself!" }]
+  const rawHonorGroups = [
+    { id: 71, honorType: "sekai_echo", name: "雨过天晴的启明星" },
+    { id: 72, honorType: "event", name: "Color of Myself! " },
+    { id: 90, honorType: "event", name: "HAPPY BIRTHDAY 一歌" },
+  ]
+  const rawHonors = [
+    { id: 182, groupId: 71, name: "第1名" },
+    { id: 190, groupId: 71, name: "TOP1000" },
+    { id: 200, groupId: 72, name: "TOP100" },
+    { id: 300, groupId: 90, name: "参加纪念" },
+    { id: 310, groupId: 71, name: "参加纪念" },
+  ]
+
+  test("matches groups to events by trimmed name regardless of honorType", () => {
+    const index = buildHonorRankIndexFromNames(rawHonors, rawHonorGroups, rawEvents)
+    expect(index.get(182)).toEqual({ key: derivedEventRankKey(11), tier: { fromRank: 1, toRank: 1 } })
+    expect(index.get(190)).toEqual({ key: derivedEventRankKey(11), tier: { fromRank: 1, toRank: 1000 } })
+    expect(index.get(200)).toEqual({ key: derivedEventRankKey(12), tier: { fromRank: 1, toRank: 100 } })
+    expect(index.has(300)).toBe(false)
+    expect(index.has(310)).toBe(false)
+  })
+
+  test("tolerates malformed payloads", () => {
+    expect(buildHonorRankIndexFromNames(null, undefined, "oops").size).toBe(0)
   })
 })

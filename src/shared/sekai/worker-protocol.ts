@@ -60,6 +60,10 @@ export const SEKAI_DATA_OPTIONAL_MASTER_FILES = [
   // Only the tw/kr/cn dumps ship a flat resourceBoxDetails.json; jp/en embed
   // the details inside resourceBoxes.json instead.
   "resourceBoxDetails",
+  // The cn dump currently ships no resourceBoxes.json at all; consumers must
+  // degrade gracefully when either file is missing.
+  "resourceBoxes",
+  "worldBloomChapterRankingRewardRanges",
 ] as const
 
 export type SekaiDataUpdatePhase =

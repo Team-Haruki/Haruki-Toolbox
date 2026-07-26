@@ -43,11 +43,16 @@ import type { SekaiEventType } from "../lib/event-filter"
 import { useEventRecordsMaster } from "../composables/useEventRecordsMaster"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
+  buildDerivedRankMap,
   buildEventPointTrend,
   buildEventRecordRows,
   buildWorldBloomGroups,
+  derivedChapterRankKey,
+  derivedEventRankKey,
+  formatDerivedRankTier,
   mergeWorldBloomIntoRows,
   normalizeUserEventRecords,
+  normalizeUserHonorIds,
   normalizeUserWorldBloomRecords,
   summarizeEventRecords,
   worldBloomChapterKey,
@@ -60,7 +65,7 @@ const settingsStore = useSettingsStore()
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 
 const { selectedAccount } = useGameAccountSelection()
-const suite = useUserSuite(["userEvents", "userWorldBlooms"], selectedAccount)
+const suite = useUserSuite(["userEvents", "userWorldBlooms", "userHonors"], selectedAccount)
 
 const region = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 // Only used inside the ready branch, where an account is always selected.
@@ -87,6 +92,30 @@ const state = computed<"idle" | "loading" | "error" | "ready">(() => {
 const userEvents = computed(() => normalizeUserEventRecords(suite.data.value?.userEvents))
 
 const rows = computed(() => buildEventRecordRows(userEvents.value, master.eventsById.value))
+
+/** Rank brackets reverse-derived from owned event ranking honors (badges). */
+const derivedRanks = computed(() => buildDerivedRankMap(
+  normalizeUserHonorIds(suite.data.value?.userHonors),
+  master.honorRankIndex.value,
+))
+
+function displayEventRank(eventId: number, rank: number | null): string {
+  if (rank != null) {
+    return formatNumberCN(rank)
+  }
+
+  const tier = derivedRanks.value.get(derivedEventRankKey(eventId))
+  return tier != null ? formatDerivedRankTier(tier) : "—"
+}
+
+function displayChapterRank(eventId: number, gameCharacterId: number | null, rank: number | null): string {
+  if (rank != null) {
+    return formatNumberCN(rank)
+  }
+
+  const tier = derivedRanks.value.get(derivedChapterRankKey(eventId, gameCharacterId))
+  return tier != null ? formatDerivedRankTier(tier) : "—"
+}
 
 const TIME_MODES = ["year", "all", "custom"] as const
 type TimeMode = (typeof TIME_MODES)[number]
@@ -160,7 +189,7 @@ const worldGroups = computed(() =>
 
 const tableRows = computed(() => mergeWorldBloomIntoRows(filteredRows.value, worldGroups.value))
 
-const trend = computed(() => buildEventPointTrend(filteredRows.value))
+const trend = computed(() => buildEventPointTrend(filteredRows.value, derivedRanks.value))
 const summary = computed(() => summarizeEventRecords(
   userEvents.value.filter((record) => filteredEventIds.value.has(record.eventId)),
 ))
@@ -213,7 +242,11 @@ const TREND_MARGIN = { left: 56, right: 56, top: 10, bottom: 28 }
 const trendX = (_point: EventPointTrendPoint, index: number) => index
 const trendY = (point: EventPointTrendPoint) => point.eventPoint
 // Ranks improve as the number shrinks; negating them puts better ranks higher.
-const trendRankY = (point: EventPointTrendPoint) => point.rank == null ? undefined : -point.rank
+// Honor-derived tier ceilings stand in when the exact rank is missing.
+const trendRankY = (point: EventPointTrendPoint) => {
+  const rank = point.rank ?? point.derivedRank
+  return rank == null ? undefined : -rank
+}
 
 function xTickFormat(index: number) {
   if (!Number.isInteger(index)) {
@@ -255,7 +288,9 @@ function crosshairTemplate(point: EventPointTrendPoint) {
     <div style="font-weight:600;margin-bottom:2px">${escapeHtml(point.name)}</div>
     <div style="opacity:0.7"><b>#${point.eventId}</b> ${formatRecordDate(point.startAt)}</div>
     <div>${t("eventRecords.trend.point")}: ${formatNumberCN(point.eventPoint)}</div>
-    <div>${t("eventRecords.trend.rank")}: ${point.rank != null ? formatNumberCN(point.rank) : "—"}</div>
+    <div>${t("eventRecords.trend.rank")}: ${point.rank != null
+      ? formatNumberCN(point.rank)
+      : point.derivedRank != null ? `T${point.derivedRank}` : "—"}</div>
   </div>`
 }
 </script>
@@ -476,7 +511,14 @@ function crosshairTemplate(point: EventPointTrendPoint) {
                     <TableCell class="text-right tabular-nums">
                       {{ row.eventPoint != null ? formatNumberCN(row.eventPoint) : "—" }}
                     </TableCell>
-                    <TableCell class="text-right tabular-nums">{{ formatNumberCN(row.rank) }}</TableCell>
+                    <TableCell
+                      class="text-right tabular-nums"
+                      :title="row.rank == null && displayEventRank(row.eventId, row.rank) !== '—'
+                        ? t('eventRecords.table.rankFromHonor')
+                        : undefined"
+                    >
+                      {{ displayEventRank(row.eventId, row.rank) }}
+                    </TableCell>
                   </TableRow>
                   <TableRow
                     v-for="chapter in row.chapters"
@@ -503,7 +545,14 @@ function crosshairTemplate(point: EventPointTrendPoint) {
                     <TableCell class="py-1.5 text-right text-xs tabular-nums">
                       {{ formatNumberCN(chapter.chapterPoint) }}
                     </TableCell>
-                    <TableCell class="py-1.5 text-right text-xs tabular-nums">{{ formatNumberCN(chapter.rank) }}</TableCell>
+                    <TableCell
+                      class="py-1.5 text-right text-xs tabular-nums"
+                      :title="chapter.rank == null && displayChapterRank(row.eventId, chapter.gameCharacterId, chapter.rank) !== '—'
+                        ? t('eventRecords.table.rankFromHonor')
+                        : undefined"
+                    >
+                      {{ displayChapterRank(row.eventId, chapter.gameCharacterId, chapter.rank) }}
+                    </TableCell>
                   </TableRow>
                 </template>
               </TableBody>
