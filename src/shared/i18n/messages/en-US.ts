@@ -1213,7 +1213,6 @@ export const enUS = {
       notOwned: "Not unlocked",
       empty: "No bond data yet",
       showRewards: "Show level rewards",
-      hideRewards: "Hide rewards",
       rewardsTitle: "Rewards by level (reached levels dimmed)",
       rewards: {
         jewel: "Crystals ×{count}",

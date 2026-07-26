@@ -1213,7 +1213,6 @@ export const zhCN = {
       notOwned: "尚未解锁",
       empty: "暂无牵绊数据",
       showRewards: "查看各等级奖励",
-      hideRewards: "收起奖励",
       rewardsTitle: "各等级奖励(已达成的置灰)",
       rewards: {
         jewel: "水晶 ×{count}",

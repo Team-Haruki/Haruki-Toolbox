@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideCheck, LucideChevronDown, LucideChevronRight, LucideHeart, LucideRefreshCw } from "lucide-vue-next"
+import { LucideCheck, LucideChevronRight, LucideHeart, LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useTrainingBonds } from "@/modules/training/composables/useTrainingBonds"
@@ -114,16 +115,18 @@ const bondRows = computed(() => bondsResult.value.entries.map((entry) => {
   }
 }))
 
-const expandedRows = ref<Set<string>>(new Set())
+const dialogRowKey = ref<string | null>(null)
 
-function toggleExpanded(key: string) {
-  const next = new Set(expandedRows.value)
-  if (next.has(key)) {
-    next.delete(key)
-  } else {
-    next.add(key)
+const dialogRow = computed(() =>
+  dialogRowKey.value == null
+    ? null
+    : bondRows.value.find((row) => row.key === dialogRowKey.value) ?? null,
+)
+
+function handleDialogOpenChange(open: boolean) {
+  if (!open) {
+    dialogRowKey.value = null
   }
-  expandedRows.value = next
 }
 
 function rewardLabel(item: BondRewardItem): string {
@@ -325,33 +328,59 @@ function retry() {
                 v-if="row.rewardRanks.length > 0"
                 type="button"
                 class="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                :aria-expanded="expandedRows.has(row.key)"
-                :aria-label="t(expandedRows.has(row.key) ? 'training.bonds.hideRewards' : 'training.bonds.showRewards')"
-                :title="t(expandedRows.has(row.key) ? 'training.bonds.hideRewards' : 'training.bonds.showRewards')"
-                @click="toggleExpanded(row.key)"
+                :aria-label="t('training.bonds.showRewards')"
+                :title="t('training.bonds.showRewards')"
+                @click="dialogRowKey = row.key"
               >
-                <component :is="expandedRows.has(row.key) ? LucideChevronDown : LucideChevronRight" class="size-4" />
+                <LucideChevronRight class="size-4" />
               </button>
             </div>
+          </div>
+        </div>
 
-            <!-- Rewards obtainable at each bond level -->
-            <div v-if="expandedRows.has(row.key)" class="flex flex-col gap-1 border-t p-2.5">
+        <!-- Per-level rewards dialog -->
+        <Dialog :open="dialogRow != null" @update:open="handleDialogOpenChange">
+          <DialogContent class="max-h-[85vh] gap-3 overflow-y-auto sm:max-w-xl">
+            <DialogHeader v-if="dialogRow">
+              <DialogTitle class="flex items-center gap-2 text-base">
+                <img
+                  v-if="dialogRow.iconUrl1"
+                  :src="dialogRow.iconUrl1"
+                  alt=""
+                  class="size-8 shrink-0 rounded-full"
+                  loading="lazy"
+                >
+                <img
+                  v-if="dialogRow.iconUrl2"
+                  :src="dialogRow.iconUrl2"
+                  alt=""
+                  class="size-8 shrink-0 rounded-full"
+                  loading="lazy"
+                >
+                <span class="truncate">{{ dialogRow.name1 }} × {{ dialogRow.name2 }}</span>
+                <span v-if="dialogRow.hasBond" class="ml-auto inline-flex shrink-0 items-center gap-1 text-sm font-semibold tabular-nums">
+                  <LucideHeart class="size-3.5 text-rose-400" />
+                  {{ t("training.bonds.level", { level: dialogRow.bondLevel }) }}
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            <div v-if="dialogRow" class="flex flex-col gap-1">
               <p class="text-[11px] font-medium text-muted-foreground">
                 {{ t("training.bonds.rewardsTitle") }}
               </p>
               <div
-                v-for="rankRow in row.rewardRanks"
+                v-for="rankRow in dialogRow.rewardRanks"
                 :key="rankRow.rank"
                 :class="[
                   'flex flex-wrap items-center gap-x-2 gap-y-1 text-xs',
-                  rankRow.rank <= row.bondLevel ? 'opacity-50' : '',
+                  rankRow.rank <= dialogRow.bondLevel ? 'opacity-50' : '',
                 ]"
               >
                 <span class="w-11 shrink-0 font-semibold tabular-nums">
                   Lv.{{ rankRow.rank }}
                 </span>
                 <LucideCheck
-                  v-if="rankRow.rank <= row.bondLevel"
+                  v-if="rankRow.rank <= dialogRow.bondLevel"
                   class="size-3.5 shrink-0 text-emerald-500"
                 />
                 <span
@@ -363,8 +392,8 @@ function retry() {
                 </span>
               </div>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   </div>
