@@ -1177,7 +1177,8 @@ export const enUS = {
       attrsTitle: "Attribute Bonuses",
       rankBonus: "Rank",
       areaItemBonus: "Area item",
-      mysekaiNote: "MYSEKAI gate and fixture bonuses are not included.",
+      fixtureBonus: "MYSEKAI fixtures",
+      gateBonus: "MYSEKAI gate",
       units: {
         light_sound: "Leo/need",
         idol: "MORE MORE JUMP!",

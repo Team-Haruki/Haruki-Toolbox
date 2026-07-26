@@ -6,8 +6,11 @@ import {
   normalizeAreaItemLevels,
   normalizeAttrName,
   normalizeCharacterRankBonuses,
+  normalizeMysekaiGateLevels,
   normalizeUnitName,
   normalizeUserCharacterRanks,
+  normalizeUserMysekaiFixtureBonuses,
+  normalizeUserMysekaiGates,
 } from "./power-bonus"
 
 describe("normalizeUnitName", () => {
@@ -140,7 +143,7 @@ describe("buildPowerBonuses", () => {
     expect(second?.total).toBe(0)
   })
 
-  it("unit totals equal the area-item bonus only (mysekai gate dropped)", () => {
+  it("unit totals equal the area-item bonus when no gates are owned", () => {
     const leoNeed = result.units[0]
     expect(leoNeed?.areaItem).toBe(1.5)
     expect(leoNeed?.total).toBe(1.5)
@@ -148,6 +151,56 @@ describe("buildPowerBonuses", () => {
     const piapro = result.units[5]
     expect(piapro?.areaItem).toBe(3)
     expect(piapro?.total).toBe(3)
+  })
+
+  it("adds mysekai gate bonuses to units and the best gate to piapro", () => {
+    const withMysekai = buildPowerBonuses({
+      userAreaItemLevels: new Map(),
+      areaItemLevels: [],
+      userCharacters: [],
+      characterRanks: [],
+      mysekaiGateLevels: normalizeMysekaiGateLevels([
+        { mysekaiGateId: 1, level: 5, powerBonusRate: 3 },
+        { mysekaiGateId: 2, level: 2, powerBonusRate: 1.5 },
+      ]),
+      userMysekaiGates: normalizeUserMysekaiGates([
+        { mysekaiGateId: 1, mysekaiGateLevel: 5 },
+        { mysekaiGateId: 2, mysekaiGateLevel: 2 },
+        // No masterdata row for this gate level — must be ignored.
+        { mysekaiGateId: 3, mysekaiGateLevel: 9 },
+      ]),
+    })
+
+    const leoNeed = withMysekai.units[0]
+    expect(leoNeed?.gate).toBe(3)
+    expect(leoNeed?.total).toBe(3)
+    const idol = withMysekai.units[1]
+    expect(idol?.gate).toBe(1.5)
+    const street = withMysekai.units[2]
+    expect(street?.gate).toBe(0)
+    // piapro receives the highest gate bonus across all owned gates.
+    const piapro = withMysekai.units[5]
+    expect(piapro?.gate).toBe(3)
+    expect(piapro?.total).toBe(3)
+  })
+
+  it("adds mysekai fixture bonuses (tenths of a percent) to character totals", () => {
+    const withFixtures = buildPowerBonuses({
+      userAreaItemLevels: new Map(),
+      areaItemLevels: [],
+      userCharacters: [],
+      characterRanks: [],
+      userMysekaiFixtureBonuses: normalizeUserMysekaiFixtureBonuses([
+        { gameCharacterId: 9, totalBonusRate: 30 },
+        // Out-of-roster characters must be ignored.
+        { gameCharacterId: 30, totalBonusRate: 10 },
+      ]),
+    })
+
+    const kohane = withFixtures.characters[8]
+    expect(kohane?.fixture).toBeCloseTo(3)
+    expect(kohane?.total).toBeCloseTo(3)
+    expect(withFixtures.characters[0]?.fixture).toBe(0)
   })
 
   it("attribute totals equal the area-item bonus", () => {

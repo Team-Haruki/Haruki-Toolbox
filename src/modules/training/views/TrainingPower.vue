@@ -14,6 +14,8 @@ import {
   collectUserAreaItemLevels,
   formatPowerBonusPercent,
   normalizeUserCharacterRanks,
+  normalizeUserMysekaiFixtureBonuses,
+  normalizeUserMysekaiGates,
 } from "@/modules/training/lib/power-bonus"
 
 const { t, locale } = useI18n()
@@ -30,6 +32,7 @@ const {
   unitColorMap,
   areaItemLevels,
   characterRanks,
+  mysekaiGateLevels,
   reloadMaster,
 } = useTrainingPower()
 
@@ -64,6 +67,11 @@ const bonuses = computed(() => buildPowerBonuses({
   areaItemLevels: areaItemLevels.value,
   userCharacters: normalizeUserCharacterRanks(suiteData.value?.userCharacters),
   characterRanks: characterRanks.value,
+  mysekaiGateLevels: mysekaiGateLevels.value,
+  userMysekaiGates: normalizeUserMysekaiGates(suiteData.value?.userMysekaiGates),
+  userMysekaiFixtureBonuses: normalizeUserMysekaiFixtureBonuses(
+    suiteData.value?.userMysekaiFixtureGameCharacterPerformanceBonuses,
+  ),
 }))
 
 const characterRows = computed(() => bonuses.value.characters.map((bonus) => {
@@ -186,6 +194,7 @@ function retry() {
                 <p class="flex flex-wrap gap-x-3 text-[11px] tabular-nums text-muted-foreground">
                   <span>{{ t("training.power.rankBonus") }} {{ formatPercent(row.rank) }}</span>
                   <span>{{ t("training.power.areaItemBonus") }} {{ formatPercent(row.areaItem) }}</span>
+                  <span v-if="row.fixture > 0">{{ t("training.power.fixtureBonus") }} {{ formatPercent(row.fixture) }}</span>
                 </p>
               </div>
               <span class="shrink-0 text-sm font-semibold tabular-nums">
@@ -217,13 +226,18 @@ function retry() {
                 loading="lazy"
                 @error="markUnitLogoFailed(row.unit)"
               >
-              <p class="min-w-0 flex-1 truncate text-sm" :title="row.label">{{ row.label }}</p>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm" :title="row.label">{{ row.label }}</p>
+                <p class="flex flex-wrap gap-x-3 text-[11px] tabular-nums text-muted-foreground">
+                  <span>{{ t("training.power.areaItemBonus") }} {{ formatPercent(row.areaItem) }}</span>
+                  <span v-if="row.gate > 0">{{ t("training.power.gateBonus") }} {{ formatPercent(row.gate) }}</span>
+                </p>
+              </div>
               <span class="shrink-0 text-sm font-semibold tabular-nums">
                 {{ formatPercent(row.total) }}
               </span>
             </div>
           </div>
-          <p class="text-xs text-muted-foreground">{{ t("training.power.mysekaiNote") }}</p>
         </CardContent>
       </Card>
 

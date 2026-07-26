@@ -1177,7 +1177,8 @@ export const zhCN = {
       attrsTitle: "属性加成",
       rankBonus: "角色等级",
       areaItemBonus: "区域道具",
-      mysekaiNote: "未计入 MYSEKAI 大门与家具加成。",
+      fixtureBonus: "MYSEKAI 家具",
+      gateBonus: "MYSEKAI 大门",
       units: {
         light_sound: "Leo/need",
         idol: "MORE MORE JUMP!",

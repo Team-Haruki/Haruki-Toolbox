@@ -8,13 +8,17 @@ import type { SekaiRegion } from "@/types"
 import {
   normalizeAreaItemLevels,
   normalizeCharacterRankBonuses,
+  normalizeMysekaiGateLevels,
   type AreaItemLevelMaster,
   type CharacterRankBonusMaster,
+  type MysekaiGateLevelMaster,
 } from "@/modules/training/lib/power-bonus"
 
 export const TRAINING_POWER_SUITE_KEYS = [
   "userAreas",
   "userCharacters",
+  "userMysekaiGates",
+  "userMysekaiFixtureGameCharacterPerformanceBonuses",
 ] as const
 
 export const TRAINING_POWER_MASTER_FILES = [
@@ -23,6 +27,7 @@ export const TRAINING_POWER_MASTER_FILES = [
   "characterRanks",
   "gameCharacters",
   "gameCharacterUnits",
+  "mysekaiGateLevels",
 ] as const
 
 /**
@@ -44,6 +49,7 @@ export function useTrainingPower() {
   const unitColorMap = shallowRef<Map<SekaiUnit, string>>(new Map())
   const areaItemLevels = shallowRef<AreaItemLevelMaster[]>([])
   const characterRanks = shallowRef<CharacterRankBonusMaster[]>([])
+  const mysekaiGateLevels = shallowRef<MysekaiGateLevelMaster[]>([])
 
   let loadToken = 0
 
@@ -56,6 +62,7 @@ export function useTrainingPower() {
       unitColorMap.value = new Map()
       areaItemLevels.value = []
       characterRanks.value = []
+      mysekaiGateLevels.value = []
       return
     }
 
@@ -72,6 +79,7 @@ export function useTrainingPower() {
       unitColorMap.value = buildCatalogUnitColorMap(files.gameCharacterUnits)
       areaItemLevels.value = normalizeAreaItemLevels(files.areaItemLevels)
       characterRanks.value = normalizeCharacterRankBonuses(files.characterRanks)
+      mysekaiGateLevels.value = normalizeMysekaiGateLevels(files.mysekaiGateLevels)
     } catch (loadError) {
       if (token === loadToken) {
         masterError.value = loadError instanceof Error ? loadError.message : String(loadError)
@@ -105,6 +113,7 @@ export function useTrainingPower() {
     unitColorMap,
     areaItemLevels,
     characterRanks,
+    mysekaiGateLevels,
     reloadMaster,
   }
 }

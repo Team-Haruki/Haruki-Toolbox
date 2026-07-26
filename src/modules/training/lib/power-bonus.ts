@@ -47,6 +47,34 @@ export type CharacterRankBonusMaster = {
   power1BonusRate: number
 }
 
+/** Row from the `mysekaiGateLevels` masterdata file. */
+export type MysekaiGateLevelMaster = {
+  mysekaiGateId: number
+  level: number
+  powerBonusRate: number
+}
+
+/** Normalized entry from the suite `userMysekaiGates` list. */
+export type UserMysekaiGate = {
+  mysekaiGateId: number
+  mysekaiGateLevel: number
+}
+
+/** Normalized entry from `userMysekaiFixtureGameCharacterPerformanceBonuses`. */
+export type UserMysekaiFixtureBonus = {
+  gameCharacterId: number
+  totalBonusRate: number
+}
+
+/** MYSEKAI gate id → boosted unit, mirrored from the Go `gateUnitByID` map. */
+export const MYSEKAI_GATE_UNITS: Record<number, PowerBonusUnit> = {
+  1: "light_sound",
+  2: "idol",
+  3: "street",
+  4: "theme_park",
+  5: "school_refusal",
+}
+
 /** Normalized entry from the suite `userCharacters` list. */
 export type UserCharacterRank = {
   characterId: number
@@ -57,12 +85,14 @@ export type CharacterPowerBonus = {
   characterId: number
   areaItem: number
   rank: number
+  fixture: number
   total: number
 }
 
 export type UnitPowerBonus = {
   unit: PowerBonusUnit
   areaItem: number
+  gate: number
   total: number
 }
 
@@ -146,6 +176,62 @@ export function normalizeCharacterRankBonuses(raw: unknown): CharacterRankBonusM
   return ranks
 }
 
+/** Tolerantly parses the `mysekaiGateLevels` masterdata list. */
+export function normalizeMysekaiGateLevels(raw: unknown): MysekaiGateLevelMaster[] {
+  const levels: MysekaiGateLevelMaster[] = []
+  for (const record of normalizeCatalogRecords(raw)) {
+    const mysekaiGateId = normalizeCatalogNumber(record.mysekaiGateId)
+    const level = normalizeCatalogNumber(record.level)
+    if (mysekaiGateId == null || level == null) {
+      continue
+    }
+
+    levels.push({
+      mysekaiGateId,
+      level,
+      powerBonusRate: normalizeCatalogNumber(record.powerBonusRate) ?? 0,
+    })
+  }
+
+  return levels
+}
+
+/** Tolerantly parses the suite `userMysekaiGates` list. */
+export function normalizeUserMysekaiGates(raw: unknown): UserMysekaiGate[] {
+  const gates: UserMysekaiGate[] = []
+  for (const record of normalizeCatalogRecords(raw)) {
+    const mysekaiGateId = normalizeCatalogNumber(record.mysekaiGateId)
+    if (mysekaiGateId == null) {
+      continue
+    }
+
+    gates.push({
+      mysekaiGateId,
+      mysekaiGateLevel: normalizeCatalogNumber(record.mysekaiGateLevel) ?? 0,
+    })
+  }
+
+  return gates
+}
+
+/** Tolerantly parses `userMysekaiFixtureGameCharacterPerformanceBonuses`. */
+export function normalizeUserMysekaiFixtureBonuses(raw: unknown): UserMysekaiFixtureBonus[] {
+  const bonuses: UserMysekaiFixtureBonus[] = []
+  for (const record of normalizeCatalogRecords(raw)) {
+    const gameCharacterId = normalizeCatalogNumber(record.gameCharacterId)
+    if (gameCharacterId == null) {
+      continue
+    }
+
+    bonuses.push({
+      gameCharacterId,
+      totalBonusRate: normalizeCatalogNumber(record.totalBonusRate) ?? 0,
+    })
+  }
+
+  return bonuses
+}
+
 /** Tolerantly parses the suite `userCharacters` list. */
 export function normalizeUserCharacterRanks(raw: unknown): UserCharacterRank[] {
   const characters: UserCharacterRank[] = []
@@ -192,6 +278,9 @@ export type BuildPowerBonusesInput = {
   areaItemLevels: readonly AreaItemLevelMaster[]
   userCharacters: readonly UserCharacterRank[]
   characterRanks: readonly CharacterRankBonusMaster[]
+  mysekaiGateLevels?: readonly MysekaiGateLevelMaster[]
+  userMysekaiGates?: readonly UserMysekaiGate[]
+  userMysekaiFixtureBonuses?: readonly UserMysekaiFixtureBonus[]
 }
 
 export type PowerBonusResult = {
@@ -201,22 +290,25 @@ export type PowerBonusResult = {
 }
 
 /**
- * Ports `BuildPowerBonusDetailRequestFromSnapshot` minus all MYSEKAI
- * contributions (fixture and gate columns are intentionally dropped):
+ * Ports `BuildPowerBonusDetailRequestFromSnapshot` including the MYSEKAI
+ * contributions:
  * - per-character: area-item bonus (rows targeting `targetGameCharacterId`)
- *   plus character-rank bonus; total = areaItem + rank.
- * - per-unit: area-item bonus from rows targeting `targetUnit`; total = areaItem.
+ *   plus character-rank bonus plus fixture bonus (`totalBonusRate` × 0.1);
+ *   total = areaItem + rank + fixture.
+ * - per-unit: area-item bonus from rows targeting `targetUnit` plus the
+ *   unit's gate bonus; piapro receives the highest gate bonus across all
+ *   gates; total = areaItem + gate.
  * - per-attribute: area-item bonus from rows targeting `targetCardAttr`;
  *   total = areaItem.
  */
 export function buildPowerBonuses(input: BuildPowerBonusesInput): PowerBonusResult {
   const characters = new Map<number, CharacterPowerBonus>()
   for (let characterId = 1; characterId <= POWER_BONUS_CHARACTER_COUNT; characterId += 1) {
-    characters.set(characterId, { characterId, areaItem: 0, rank: 0, total: 0 })
+    characters.set(characterId, { characterId, areaItem: 0, rank: 0, fixture: 0, total: 0 })
   }
   const units = new Map<PowerBonusUnit, UnitPowerBonus>()
   for (const unit of POWER_BONUS_UNIT_ORDER) {
-    units.set(unit, { unit, areaItem: 0, total: 0 })
+    units.set(unit, { unit, areaItem: 0, gate: 0, total: 0 })
   }
   const attrs = new Map<PowerBonusAttr, AttrPowerBonus>()
   for (const attr of POWER_BONUS_ATTR_ORDER) {
@@ -275,11 +367,44 @@ export function buildPowerBonuses(input: BuildPowerBonusesInput): PowerBonusResu
     }
   }
 
+  // MYSEKAI fixtures: the suite stores `totalBonusRate` in tenths of a percent.
+  for (const fixture of input.userMysekaiFixtureBonuses ?? []) {
+    const bonus = characters.get(fixture.gameCharacterId)
+    if (bonus != null) {
+      bonus.fixture += fixture.totalBonusRate * 0.1
+    }
+  }
+
+  // MYSEKAI gates boost their unit; piapro gets the best gate across units.
+  const gateLevelByIdAndLevel = new Map<string, MysekaiGateLevelMaster>()
+  for (const level of input.mysekaiGateLevels ?? []) {
+    gateLevelByIdAndLevel.set(`${level.mysekaiGateId}:${level.level}`, level)
+  }
+  let maxGateBonus = 0
+  for (const gate of input.userMysekaiGates ?? []) {
+    const level = gateLevelByIdAndLevel.get(`${gate.mysekaiGateId}:${gate.mysekaiGateLevel}`)
+    if (level == null) {
+      continue
+    }
+    const unit = MYSEKAI_GATE_UNITS[gate.mysekaiGateId]
+    const bonus = unit != null ? units.get(unit) : null
+    if (bonus != null) {
+      bonus.gate += level.powerBonusRate
+    }
+    if (level.powerBonusRate > maxGateBonus) {
+      maxGateBonus = level.powerBonusRate
+    }
+  }
+  const piaproBonus = units.get("piapro")
+  if (piaproBonus != null) {
+    piaproBonus.gate += maxGateBonus
+  }
+
   const characterList: CharacterPowerBonus[] = []
   for (let characterId = 1; characterId <= POWER_BONUS_CHARACTER_COUNT; characterId += 1) {
     const bonus = characters.get(characterId)
     if (bonus != null) {
-      bonus.total = bonus.areaItem + bonus.rank
+      bonus.total = bonus.areaItem + bonus.rank + bonus.fixture
       characterList.push(bonus)
     }
   }
@@ -288,7 +413,7 @@ export function buildPowerBonuses(input: BuildPowerBonusesInput): PowerBonusResu
   for (const unit of POWER_BONUS_UNIT_ORDER) {
     const bonus = units.get(unit)
     if (bonus != null) {
-      bonus.total = bonus.areaItem
+      bonus.total = bonus.areaItem + bonus.gate
       unitList.push(bonus)
     }
   }
