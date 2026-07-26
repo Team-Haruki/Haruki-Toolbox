@@ -46,6 +46,7 @@ export type EventPointTrendPoint = {
   name: string
   startAt: number
   eventPoint: number
+  rank: number | null
 }
 
 export type EventRecordsSummary = {
@@ -252,6 +253,7 @@ export function buildEventPointTrend(rows: readonly EventRecordRow[]): EventPoin
       name: row.name,
       startAt,
       eventPoint: row.eventPoint,
+      rank: row.rank,
     })
   }
 

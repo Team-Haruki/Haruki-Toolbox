@@ -918,7 +918,7 @@ export const enUS = {
   },
   eventRecords: {
     title: "Event Records",
-    description: "Your event participation history for the selected game account.",
+    description: "View your game account's event participation records",
     idle: "Select a game account to view your event records.",
     noData: "No event records found in this account's snapshot.",
     loadFailed: "Failed to load event records.",
@@ -934,6 +934,7 @@ export const enUS = {
       title: "Event PT trend",
       empty: "Not enough records to draw a trend yet.",
       point: "Event PT",
+      rank: "Event rank",
     },
     table: {
       title: "Event history",

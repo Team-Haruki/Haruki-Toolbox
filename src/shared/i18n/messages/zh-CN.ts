@@ -918,7 +918,7 @@ export const zhCN = {
   },
   eventRecords: {
     title: "活动记录",
-    description: "查看所选游戏账号的活动参与记录。",
+    description: "查看账号的活动参与记录",
     idle: "请选择一个游戏账号以查看活动记录。",
     noData: "该账号的快照中暂无活动记录。",
     loadFailed: "活动记录加载失败。",
@@ -934,6 +934,7 @@ export const zhCN = {
       title: "活动 PT 趋势",
       empty: "记录不足，暂时无法绘制趋势图。",
       point: "活动 PT",
+      rank: "活动排名",
     },
     table: {
       title: "活动历史",

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideRefreshCcw } from "lucide-vue-next"
 import {
@@ -132,8 +132,20 @@ function formatRecordDate(value: number | null) {
   )
 }
 
+const showPointSeries = ref(true)
+const showRankSeries = ref(true)
+
+const TREND_POINT_COLOR = "#8b5cf6"
+const TREND_RANK_COLOR = "#f59e0b"
+
+// Both stacked containers disable auto margins and share this fixed margin so
+// their plot areas overlap exactly (poor man's dual y-axis for unovis).
+const TREND_MARGIN = { left: 56, right: 56, top: 10, bottom: 28 }
+
 const trendX = (_point: EventPointTrendPoint, index: number) => index
 const trendY = (point: EventPointTrendPoint) => point.eventPoint
+// Ranks improve as the number shrinks; negating them puts better ranks higher.
+const trendRankY = (point: EventPointTrendPoint) => point.rank == null ? undefined : -point.rank
 
 function xTickFormat(index: number) {
   if (!Number.isInteger(index)) {
@@ -156,6 +168,12 @@ function yTickFormat(value: number) {
   return String(value)
 }
 
+/** Right-axis ticks carry negated ranks; show their absolute value. */
+function rankTickFormat(value: number) {
+  const rank = Math.abs(value)
+  return Number.isInteger(rank) ? formatNumberCN(rank) : ""
+}
+
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (char) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[char] ?? char,
@@ -169,18 +187,31 @@ function crosshairTemplate(point: EventPointTrendPoint) {
     <div style="font-weight:600;margin-bottom:2px">${escapeHtml(point.name)}</div>
     <div style="opacity:0.7">${formatRecordDate(point.startAt)}</div>
     <div>${t("eventRecords.trend.point")}: ${formatNumberCN(point.eventPoint)}</div>
+    <div>${t("eventRecords.trend.rank")}: ${point.rank != null ? formatNumberCN(point.rank) : "—"}</div>
   </div>`
 }
 </script>
 
 <template>
   <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center gap-4">
-    <div>
-      <h1 class="text-2xl font-bold">{{ t("eventRecords.title") }}</h1>
-      <p class="text-sm text-muted-foreground">{{ t("eventRecords.description") }}</p>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">{{ t("eventRecords.title") }}</h1>
+        <p class="text-sm text-muted-foreground">{{ t("eventRecords.description") }}</p>
+      </div>
+      <div class="flex flex-col items-start gap-1 sm:items-end">
+        <div class="flex flex-wrap items-center gap-2">
+          <GameAccountSelect />
+          <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="reloadAll">
+            <LucideRefreshCcw class="size-3.5" />
+            {{ t("eventRecords.refresh") }}
+          </Button>
+        </div>
+        <p v-if="state === 'ready'" class="text-xs text-muted-foreground">
+          {{ t("eventRecords.dataAsOf", { time: uploadTimeText }) }}
+        </p>
+      </div>
     </div>
-
-    <GameAccountSelect />
 
     <!-- No account selected / none bound -->
     <Card v-if="state === 'idle'">
@@ -207,14 +238,6 @@ function crosshairTemplate(point: EventPointTrendPoint) {
     </Card>
 
     <template v-else>
-      <!-- Snapshot freshness -->
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <p class="text-xs text-muted-foreground">{{ t("eventRecords.dataAsOf", { time: uploadTimeText }) }}</p>
-        <Button variant="ghost" size="sm" @click="reloadAll">
-          <LucideRefreshCcw class="mr-1 h-4 w-4" /> {{ t("eventRecords.refresh") }}
-        </Button>
-      </div>
-
       <!-- Summary chips -->
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Card v-for="chip in summaryChips" :key="chip.key">
@@ -228,18 +251,62 @@ function crosshairTemplate(point: EventPointTrendPoint) {
       <!-- PT trend -->
       <Card>
         <CardHeader>
-          <CardTitle class="text-base">{{ t("eventRecords.trend.title") }}</CardTitle>
+          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
+            <span>{{ t("eventRecords.trend.title") }}</span>
+            <span class="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                :class="[
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-normal transition-colors',
+                  showPointSeries ? '' : 'text-muted-foreground opacity-60',
+                ]"
+                :style="showPointSeries ? { borderColor: TREND_POINT_COLOR, color: TREND_POINT_COLOR } : {}"
+                :aria-pressed="showPointSeries"
+                @click="showPointSeries = !showPointSeries"
+              >
+                <span class="size-2 rounded-full" :style="{ backgroundColor: TREND_POINT_COLOR }" />
+                {{ t("eventRecords.trend.point") }}
+              </button>
+              <button
+                type="button"
+                :class="[
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-normal transition-colors',
+                  showRankSeries ? '' : 'text-muted-foreground opacity-60',
+                ]"
+                :style="showRankSeries ? { borderColor: TREND_RANK_COLOR, color: TREND_RANK_COLOR } : {}"
+                :aria-pressed="showRankSeries"
+                @click="showRankSeries = !showRankSeries"
+              >
+                <span class="size-2 rounded-full" :style="{ backgroundColor: TREND_RANK_COLOR }" />
+                {{ t("eventRecords.trend.rank") }}
+              </button>
+            </span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div v-if="trend.length >= 2" class="h-60">
-            <VisXYContainer :data="trend" :height="240">
-              <VisArea :x="trendX" :y="trendY" color="#8b5cf6" :opacity="0.15" curve-type="monotoneX" />
-              <VisLine :x="trendX" :y="trendY" color="#8b5cf6" curve-type="monotoneX" />
-              <VisScatter :x="trendX" :y="trendY" color="#8b5cf6" :size="4" />
+          <div v-if="trend.length >= 2" class="relative h-60">
+            <VisXYContainer :data="trend" :height="240" :auto-margin="false" :margin="TREND_MARGIN">
+              <template v-if="showPointSeries">
+                <VisArea :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :opacity="0.15" curve-type="monotoneX" />
+                <VisLine :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" curve-type="monotoneX" />
+                <VisScatter :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :size="4" />
+              </template>
               <VisCrosshair :template="crosshairTemplate" />
               <VisTooltip />
               <VisAxis type="x" :tick-format="xTickFormat" />
-              <VisAxis type="y" :tick-format="yTickFormat" />
+              <VisAxis v-if="showPointSeries" type="y" :tick-format="yTickFormat" :tick-text-color="TREND_POINT_COLOR" />
+            </VisXYContainer>
+            <VisXYContainer
+              v-if="showRankSeries"
+              class="pointer-events-none absolute inset-0"
+              :data="trend"
+              :height="240"
+              :auto-margin="false"
+              :margin="TREND_MARGIN"
+            >
+              <VisLine :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" curve-type="monotoneX" />
+              <VisScatter :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" :size="4" />
+              <VisAxis type="y" position="right" :tick-format="rankTickFormat" :tick-text-color="TREND_RANK_COLOR" :grid-line="false" />
             </VisXYContainer>
           </div>
           <p v-else class="text-sm text-muted-foreground">{{ t("eventRecords.trend.empty") }}</p>
