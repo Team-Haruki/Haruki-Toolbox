@@ -398,10 +398,13 @@ function retry() {
               </div>
             </div>
 
-            <!-- Fully upgraded -->
-            <p v-if="!nextRow(view)" class="text-xs text-muted-foreground">
-              {{ t("training.area.maxed") }}
-            </p>
+            <!-- Fully upgraded: same box shape as the next-level row below. -->
+            <div
+              v-if="!nextRow(view)"
+              class="flex min-h-14 items-center justify-center rounded-md border border-dashed px-2.5 py-1.5"
+            >
+              <p class="text-xs text-muted-foreground">{{ t("training.area.maxed") }}</p>
+            </div>
 
             <!-- Next level -->
             <div
