@@ -15,6 +15,7 @@ import {
   sortLeaderCounts,
   type LeaderSortMode,
 } from "@/modules/training/lib/leader-count"
+import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 
 const { t, locale } = useI18n()
 
@@ -90,6 +91,7 @@ const leaderCells = computed(() => {
       ...leader,
       name: character?.name ?? t("training.leader.unknownCharacter"),
       iconUrl: character?.iconUrl ?? null,
+      color: resolveSekaiCharacterColor(leader.characterId),
       percent,
     }
   })
@@ -203,7 +205,7 @@ function retry() {
                   {{ formatCount(cell.playCount) }}
                 </p>
               </div>
-              <Progress :model-value="cell.percent" class="mt-1.5 h-1.5" />
+              <Progress :model-value="cell.percent" :color="cell.color ?? undefined" class="mt-1.5 h-1.5" />
               <p class="mt-1 text-[11px] tabular-nums text-muted-foreground">
                 {{ t("training.leader.exLevel", { level: cell.exLevel }) }}
                 ·

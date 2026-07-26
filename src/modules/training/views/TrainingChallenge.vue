@@ -17,6 +17,7 @@ import {
   summarizeChallengeCells,
   type ChallengeSortMode,
 } from "@/modules/training/lib/challenge-live"
+import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 
 const { t, locale } = useI18n()
 
@@ -81,6 +82,7 @@ const sortedCells = computed(() => sortChallengeCells(cells.value, sortMode.valu
     ...cell,
     name: character?.name ?? t("training.challenge.unknownCharacter"),
     iconUrl: character?.iconUrl ?? null,
+    color: resolveSekaiCharacterColor(cell.characterId),
     scorePercent: displayMax.value > 0 ? Math.min((cell.highScore / displayMax.value) * 100, 100) : 0,
   }
 }))
@@ -217,10 +219,13 @@ function retry() {
               </span>
             </div>
 
-            <div class="h-1.5 w-full overflow-hidden rounded-full bg-primary/15">
+            <div
+              class="h-1.5 w-full overflow-hidden rounded-full bg-primary/15"
+              :style="cell.color ? { backgroundColor: `color-mix(in srgb, ${cell.color} 15%, transparent)` } : undefined"
+            >
               <div
                 class="h-full rounded-full bg-primary transition-all"
-                :style="{ width: `${cell.scorePercent}%` }"
+                :style="{ width: `${cell.scorePercent}%`, ...(cell.color ? { backgroundColor: cell.color } : {}) }"
               />
             </div>
 

@@ -14,6 +14,7 @@ import {
   type BondRewardItem,
 } from "@/modules/training/lib/bonds"
 import { normalizeUserCharacterRanks } from "@/modules/training/lib/power-bonus"
+import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 
 const { t, locale } = useI18n()
@@ -92,6 +93,8 @@ const bondsResult = computed(() => buildBondEntries({
 const bondRows = computed(() => bondsResult.value.entries.map((entry) => {
   const character1 = characterMap.value.get(entry.baseCharaId1) ?? null
   const character2 = characterMap.value.get(entry.baseCharaId2) ?? null
+  const color1 = resolveSekaiCharacterColor(entry.baseCharaId1)
+  const color2 = resolveSekaiCharacterColor(entry.baseCharaId2)
   return {
     ...entry,
     key: `${entry.groupId}:${entry.charaId1}:${entry.charaId2}`,
@@ -99,6 +102,12 @@ const bondRows = computed(() => bondsResult.value.entries.map((entry) => {
     name2: character2?.name ?? t("training.bonds.unknownCharacter"),
     iconUrl1: character1?.iconUrl ?? null,
     iconUrl2: character2?.iconUrl ?? null,
+    barTrackStyle: color1 && color2
+      ? { background: `linear-gradient(to right, color-mix(in srgb, ${color1} 15%, transparent), color-mix(in srgb, ${color2} 15%, transparent))` }
+      : undefined,
+    barFillStyle: color1 && color2
+      ? { background: `linear-gradient(to right, ${color1}, ${color2})` }
+      : undefined,
     progressPercent: bondLevelProgressPercent(entry),
     atMaxLevel: entry.bondLevel > 0 && entry.bondLevel >= bondsResult.value.maxLevel,
     rewardRanks: bondsRewardsByGroup.value.get(entry.groupId) ?? [],
@@ -274,10 +283,10 @@ function retry() {
                 </div>
                 <template v-if="row.hasBond">
                   <div v-if="row.progressPercent != null" class="w-full max-w-56">
-                    <div class="h-1.5 w-full overflow-hidden rounded-full bg-primary/15">
+                    <div class="h-1.5 w-full overflow-hidden rounded-full bg-primary/15" :style="row.barTrackStyle">
                       <div
                         class="h-full rounded-full bg-primary transition-all"
-                        :style="{ width: `${row.progressPercent}%` }"
+                        :style="[{ width: `${row.progressPercent}%` }, row.barFillStyle ?? {}]"
                       />
                     </div>
                     <p v-if="row.needExp != null" class="mt-0.5 text-center text-[11px] tabular-nums text-muted-foreground">
