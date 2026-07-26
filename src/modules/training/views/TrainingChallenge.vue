@@ -213,7 +213,7 @@ function retry() {
                 class="size-9 shrink-0 rounded-full"
                 loading="lazy"
               >
-              <p class="min-w-0 flex-1 truncate text-xs font-medium" :title="cell.name">{{ cell.name }}</p>
+              <p class="min-w-0 flex-1 truncate text-base font-medium" :title="cell.name">{{ cell.name }}</p>
             </div>
 
             <div class="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 gap-y-1.5">
