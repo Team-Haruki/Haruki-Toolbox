@@ -1,6 +1,6 @@
 import { computed, ref, shallowRef, watch } from "vue"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
-import { readSekaiMasterFiles } from "@/shared/sekai/cache"
+import { loadMasterFilesCacheFirst } from "@/shared/sekai/master-loader"
 import type { CatalogCharacter } from "@/shared/sekai/catalog"
 import { buildCatalogCharacterMap } from "@/shared/sekai/catalog"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
@@ -60,16 +60,22 @@ export function useTrainingMissions() {
     masterLoading.value = true
     masterError.value = null
     try {
-      await sekaiDataStore.ensureRegionData(targetRegion, { files: TRAINING_MISSIONS_MASTER_FILES, musicMetas: false })
-      const files = await readSekaiMasterFiles(targetRegion, TRAINING_MISSIONS_MASTER_FILES)
-      if (token !== loadToken) {
-        return
-      }
-
-      missionMasters.value = normalizeCharacterMissionMasters(files.characterMissionV2s)
-      parameterGroups.value = normalizeCharacterMissionParameterGroups(files.characterMissionV2ParameterGroups)
-      characterLevels.value = extractCharacterLevels(files.levels)
-      characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+      await loadMasterFilesCacheFirst({
+        region: targetRegion,
+        files: TRAINING_MISSIONS_MASTER_FILES,
+        ensure: () => sekaiDataStore.ensureRegionData(targetRegion, {
+          files: TRAINING_MISSIONS_MASTER_FILES,
+          musicMetas: false,
+        }),
+        isCurrent: () => token === loadToken,
+        apply: (files) => {
+          missionMasters.value = normalizeCharacterMissionMasters(files.characterMissionV2s)
+          parameterGroups.value = normalizeCharacterMissionParameterGroups(files.characterMissionV2ParameterGroups)
+          characterLevels.value = extractCharacterLevels(files.levels)
+          characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+          masterLoading.value = false
+        },
+      })
     } catch (loadError) {
       if (token === loadToken) {
         masterError.value = loadError instanceof Error ? loadError.message : String(loadError)

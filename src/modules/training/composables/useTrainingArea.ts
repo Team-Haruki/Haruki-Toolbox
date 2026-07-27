@@ -1,7 +1,7 @@
 import { computed, ref, shallowRef, watch } from "vue"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
-import { readSekaiMasterFiles } from "@/shared/sekai/cache"
+import { loadMasterFilesCacheFirst } from "@/shared/sekai/master-loader"
 import type { CatalogCharacter, SekaiUnit } from "@/shared/sekai/catalog"
 import { buildCatalogCharacterMap, buildCatalogUnitColorMap } from "@/shared/sekai/catalog"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
@@ -77,18 +77,24 @@ export function useTrainingArea() {
     masterLoading.value = true
     masterError.value = null
     try {
-      await sekaiDataStore.ensureRegionData(targetRegion, { files: TRAINING_AREA_MASTER_FILES, musicMetas: false })
-      const files = await readSekaiMasterFiles(targetRegion, TRAINING_AREA_MASTER_FILES)
-      if (token !== loadToken) {
-        return
-      }
-
-      areaItems.value = normalizeAreaItems(files.areaItems)
-      areaItemLevels.value = normalizeAreaItemLevels(files.areaItemLevels)
-      shopItems.value = normalizeAreaShopItems(files.shopItems)
-      shopDetails.value = normalizeAreaShopResourceBoxDetails(files.resourceBoxes, files.resourceBoxDetails)
-      characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
-      unitColorMap.value = buildCatalogUnitColorMap(files.gameCharacterUnits)
+      await loadMasterFilesCacheFirst({
+        region: targetRegion,
+        files: TRAINING_AREA_MASTER_FILES,
+        ensure: () => sekaiDataStore.ensureRegionData(targetRegion, {
+          files: TRAINING_AREA_MASTER_FILES,
+          musicMetas: false,
+        }),
+        isCurrent: () => token === loadToken,
+        apply: (files) => {
+          areaItems.value = normalizeAreaItems(files.areaItems)
+          areaItemLevels.value = normalizeAreaItemLevels(files.areaItemLevels)
+          shopItems.value = normalizeAreaShopItems(files.shopItems)
+          shopDetails.value = normalizeAreaShopResourceBoxDetails(files.resourceBoxes, files.resourceBoxDetails)
+          characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+          unitColorMap.value = buildCatalogUnitColorMap(files.gameCharacterUnits)
+          masterLoading.value = false
+        },
+      })
     } catch (loadError) {
       if (token === loadToken) {
         masterError.value = loadError instanceof Error ? loadError.message : String(loadError)

@@ -1,6 +1,6 @@
 import { computed, ref, shallowRef, watch } from "vue"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
-import { readSekaiMasterFiles } from "@/shared/sekai/cache"
+import { loadMasterFilesCacheFirst } from "@/shared/sekai/master-loader"
 import type { CatalogCharacter } from "@/shared/sekai/catalog"
 import { buildCatalogCharacterMap } from "@/shared/sekai/catalog"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
@@ -51,14 +51,20 @@ export function useTrainingLeader() {
     masterLoading.value = true
     masterError.value = null
     try {
-      await sekaiDataStore.ensureRegionData(targetRegion, { files: TRAINING_LEADER_MASTER_FILES, musicMetas: false })
-      const files = await readSekaiMasterFiles(targetRegion, TRAINING_LEADER_MASTER_FILES)
-      if (token !== loadToken) {
-        return
-      }
-
-      parameterGroups.value = normalizeCharacterMissionParameterGroups(files.characterMissionV2ParameterGroups)
-      characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+      await loadMasterFilesCacheFirst({
+        region: targetRegion,
+        files: TRAINING_LEADER_MASTER_FILES,
+        ensure: () => sekaiDataStore.ensureRegionData(targetRegion, {
+          files: TRAINING_LEADER_MASTER_FILES,
+          musicMetas: false,
+        }),
+        isCurrent: () => token === loadToken,
+        apply: (files) => {
+          parameterGroups.value = normalizeCharacterMissionParameterGroups(files.characterMissionV2ParameterGroups)
+          characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+          masterLoading.value = false
+        },
+      })
     } catch (loadError) {
       if (token === loadToken) {
         masterError.value = loadError instanceof Error ? loadError.message : String(loadError)

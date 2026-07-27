@@ -1,6 +1,6 @@
 import { computed, ref, shallowRef, watch } from "vue"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
-import { readSekaiMasterFiles } from "@/shared/sekai/cache"
+import { loadMasterFilesCacheFirst } from "@/shared/sekai/master-loader"
 import type { CatalogCharacter, SekaiUnit } from "@/shared/sekai/catalog"
 import { buildCatalogCharacterMap, buildCatalogUnitColorMap } from "@/shared/sekai/catalog"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
@@ -76,31 +76,37 @@ export function useTrainingBonds() {
     masterLoading.value = true
     masterError.value = null
     try {
-      await sekaiDataStore.ensureRegionData(targetRegion, { files: TRAINING_BONDS_MASTER_FILES, musicMetas: false })
-      const files = await readSekaiMasterFiles(targetRegion, TRAINING_BONDS_MASTER_FILES)
-      if (token !== loadToken) {
-        return
-      }
-
-      characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
-      unitColorMap.value = buildCatalogUnitColorMap(files.gameCharacterUnits)
-      bondMasters.value = normalizeBondMasters(files.bonds)
-      bondLevelTable.value = normalizeBondLevelTable(files.levels)
-      styleMap.value = buildBondCharacterStyleMap(files.gameCharacterUnits)
-      bondsRewardsByGroup.value = buildBondsRewardsByGroup(
-        files.bondsRewards,
-        files.resourceBoxes,
-        files.resourceBoxDetails,
-      )
-      const names = new Map<number, string>()
-      for (const record of normalizeCatalogRecords(files.materials)) {
-        const id = normalizeCatalogNumber(record.id)
-        const name = normalizeCatalogString(record.name)
-        if (id != null && id > 0 && name !== "") {
-          names.set(id, name)
-        }
-      }
-      materialNames.value = names
+      await loadMasterFilesCacheFirst({
+        region: targetRegion,
+        files: TRAINING_BONDS_MASTER_FILES,
+        ensure: () => sekaiDataStore.ensureRegionData(targetRegion, {
+          files: TRAINING_BONDS_MASTER_FILES,
+          musicMetas: false,
+        }),
+        isCurrent: () => token === loadToken,
+        apply: (files) => {
+          characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+          unitColorMap.value = buildCatalogUnitColorMap(files.gameCharacterUnits)
+          bondMasters.value = normalizeBondMasters(files.bonds)
+          bondLevelTable.value = normalizeBondLevelTable(files.levels)
+          styleMap.value = buildBondCharacterStyleMap(files.gameCharacterUnits)
+          bondsRewardsByGroup.value = buildBondsRewardsByGroup(
+            files.bondsRewards,
+            files.resourceBoxes,
+            files.resourceBoxDetails,
+          )
+          const names = new Map<number, string>()
+          for (const record of normalizeCatalogRecords(files.materials)) {
+            const id = normalizeCatalogNumber(record.id)
+            const name = normalizeCatalogString(record.name)
+            if (id != null && id > 0 && name !== "") {
+              names.set(id, name)
+            }
+          }
+          materialNames.value = names
+          masterLoading.value = false
+        },
+      })
     } catch (loadError) {
       if (token === loadToken) {
         masterError.value = loadError instanceof Error ? loadError.message : String(loadError)

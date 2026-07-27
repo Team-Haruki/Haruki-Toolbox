@@ -104,7 +104,7 @@ export function useUserSuite(
 
   let generation = 0
 
-  async function load(strategy: UserSuiteFetchStrategy): Promise<void> {
+  async function load(strategy: UserSuiteFetchStrategy, options: { silent?: boolean } = {}): Promise<void> {
     const toolboxUserId = userId.value
     const target = account.value
     if (!toolboxUserId || !target) {
@@ -117,9 +117,14 @@ export function useUserSuite(
       return
     }
 
+    // A silent load revalidates behind already-rendered data: no loading
+    // state, and failures keep the (stale) data on screen.
+    const silent = options.silent === true && status.value === "ready" && data.value != null
     const currentGeneration = ++generation
-    status.value = "loading"
-    error.value = null
+    if (!silent) {
+      status.value = "loading"
+      error.value = null
+    }
     try {
       const result = await fetchUserSuiteWithCache(
         {
@@ -134,13 +139,22 @@ export function useUserSuite(
         return
       }
 
-      data.value = result.data
+      // Skip the data swap when a revalidation confirmed the rendered
+      // snapshot is still current, so consumers don't recompute for nothing.
+      const unchanged = silent
+        && result.cacheHit
+        && result.remoteUploadTime != null
+        && result.remoteUploadTime === uploadTime.value
+      if (!unchanged) {
+        data.value = result.data
+      }
       uploadTime.value = result.remoteUploadTime
       uploadTimeByAccount.set(target.key, result.remoteUploadTime)
       cacheHit.value = result.cacheHit
       status.value = "ready"
+      error.value = null
     } catch (loadError) {
-      if (currentGeneration !== generation) {
+      if (currentGeneration !== generation || silent) {
         return
       }
 
@@ -149,10 +163,17 @@ export function useUserSuite(
     }
   }
 
+  async function loadWithRevalidate(): Promise<void> {
+    await load("prefer-cache")
+    if (status.value === "ready" && cacheHit.value) {
+      await load("check-remote", { silent: true })
+    }
+  }
+
   watch(
     () => [userId.value, account.value?.key ?? null] as const,
     () => {
-      void load("check-remote")
+      void loadWithRevalidate()
     },
     { immediate: true },
   )

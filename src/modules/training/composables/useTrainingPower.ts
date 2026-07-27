@@ -1,6 +1,6 @@
 import { computed, ref, shallowRef, watch } from "vue"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
-import { readSekaiMasterFiles } from "@/shared/sekai/cache"
+import { loadMasterFilesCacheFirst } from "@/shared/sekai/master-loader"
 import type { CatalogCharacter, SekaiUnit } from "@/shared/sekai/catalog"
 import { buildCatalogCharacterMap, buildCatalogUnitColorMap } from "@/shared/sekai/catalog"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
@@ -69,17 +69,23 @@ export function useTrainingPower() {
     masterLoading.value = true
     masterError.value = null
     try {
-      await sekaiDataStore.ensureRegionData(targetRegion, { files: TRAINING_POWER_MASTER_FILES, musicMetas: false })
-      const files = await readSekaiMasterFiles(targetRegion, TRAINING_POWER_MASTER_FILES)
-      if (token !== loadToken) {
-        return
-      }
-
-      characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
-      unitColorMap.value = buildCatalogUnitColorMap(files.gameCharacterUnits)
-      areaItemLevels.value = normalizeAreaItemLevels(files.areaItemLevels)
-      characterRanks.value = normalizeCharacterRankBonuses(files.characterRanks)
-      mysekaiGateLevels.value = normalizeMysekaiGateLevels(files.mysekaiGateLevels)
+      await loadMasterFilesCacheFirst({
+        region: targetRegion,
+        files: TRAINING_POWER_MASTER_FILES,
+        ensure: () => sekaiDataStore.ensureRegionData(targetRegion, {
+          files: TRAINING_POWER_MASTER_FILES,
+          musicMetas: false,
+        }),
+        isCurrent: () => token === loadToken,
+        apply: (files) => {
+          characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+          unitColorMap.value = buildCatalogUnitColorMap(files.gameCharacterUnits)
+          areaItemLevels.value = normalizeAreaItemLevels(files.areaItemLevels)
+          characterRanks.value = normalizeCharacterRankBonuses(files.characterRanks)
+          mysekaiGateLevels.value = normalizeMysekaiGateLevels(files.mysekaiGateLevels)
+          masterLoading.value = false
+        },
+      })
     } catch (loadError) {
       if (token === loadToken) {
         masterError.value = loadError instanceof Error ? loadError.message : String(loadError)
