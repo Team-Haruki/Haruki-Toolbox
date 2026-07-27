@@ -54,6 +54,7 @@ async function handleRequest(request: SekaiDataWorkerRequest): Promise<void> {
 async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "ensure-region" }>) {
   const region = request.region
   const files = normalizeFileList(request.files)
+  const includeMusicMetas = request.musicMetas !== false
 
   postProgress(request.requestId, region, "checking", 5)
   const versionInfo = normalizeSekaiMasterVersionInfo(
@@ -63,14 +64,17 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
   const displayVersion = versionInfo.dataVersion
   const cachedMeta = await readSekaiRegionCacheMeta(region)
   const musicMetasBaseUrl = resolveSekaiMusicMetasUrl(region)
-  const musicMetasRemoteState = await fetchMusicMetasRemoteState(musicMetasBaseUrl)
+  const musicMetasRemoteState = includeMusicMetas
+    ? await fetchMusicMetasRemoteState(musicMetasBaseUrl)
+    : null
   const cachedMasterFiles = cachedMeta?.master?.fetchVersion === fetchVersion
     ? cachedMeta.master.files
     : []
   const masterCacheHit = !request.force
     && cachedMeta?.master?.fetchVersion === fetchVersion
     && files.every((fileName) => cachedMeta.master?.files.includes(fileName))
-  const musicMetasCacheHit = musicMetasCacheMatches(cachedMeta?.musicMetas, musicMetasBaseUrl, musicMetasRemoteState)
+  const musicMetasCacheHit = musicMetasRemoteState == null
+    || musicMetasCacheMatches(cachedMeta?.musicMetas, musicMetasBaseUrl, musicMetasRemoteState)
   const cacheHit = masterCacheHit
     && musicMetasCacheHit
 
@@ -86,6 +90,7 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
       fetchVersion,
       files: cachedMeta.master?.files ?? files,
       musicMetasUpdatedAt: cachedMeta.musicMetas?.updatedAt ?? null,
+      musicMetasChecked: includeMusicMetas,
       updatedAt: resolveCacheUpdatedAt(cachedMeta.master ?? null, cachedMeta.musicMetas ?? null),
     })
     return
@@ -108,10 +113,11 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
     }
   }
 
-  postProgress(request.requestId, region, "fetching-music-metas", 72)
-  const musicMetas = musicMetasCacheHit
-    ? null
-    : await fetchJson(resolveSekaiMusicMetasUrl(region, musicMetasRemoteState.cacheKey ?? Date.now()))
+  let musicMetas: unknown = null
+  if (musicMetasRemoteState != null && !musicMetasCacheHit) {
+    postProgress(request.requestId, region, "fetching-music-metas", 72)
+    musicMetas = await fetchJson(resolveSekaiMusicMetasUrl(region, musicMetasRemoteState.cacheKey ?? Date.now()))
+  }
 
   postProgress(request.requestId, region, "writing-cache", 88)
   const now = Date.now()
@@ -125,8 +131,8 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
     versionInfo,
     now,
   })
-  const nextMusicMetasMeta = musicMetasCacheHit && cachedMeta?.musicMetas
-    ? cachedMeta.musicMetas
+  const nextMusicMetasMeta = musicMetasRemoteState == null || (musicMetasCacheHit && cachedMeta?.musicMetas)
+    ? cachedMeta?.musicMetas ?? null
     : {
         url: musicMetasBaseUrl,
         pairedMasterDisplayVersion: displayVersion,
@@ -136,7 +142,7 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
         updatedAt: now,
       }
 
-  if (musicMetas != null) {
+  if (musicMetas != null && musicMetasRemoteState != null) {
     await writeSekaiMusicMetas(region, musicMetas, musicMetasBaseUrl, displayVersion, musicMetasRemoteState)
   }
   await writeSekaiRegionCacheMeta({
@@ -155,7 +161,8 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
     displayVersion,
     fetchVersion,
     files: nextMasterMeta.files,
-    musicMetasUpdatedAt: nextMusicMetasMeta.updatedAt,
+    musicMetasUpdatedAt: nextMusicMetasMeta?.updatedAt ?? null,
+    musicMetasChecked: includeMusicMetas,
     updatedAt: resolveCacheUpdatedAt(nextMasterMeta, nextMusicMetasMeta),
   })
 }

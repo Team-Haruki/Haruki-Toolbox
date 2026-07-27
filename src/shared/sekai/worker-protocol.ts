@@ -82,6 +82,8 @@ export type SekaiDataWorkerRequest =
     region: SekaiRegion
     force?: boolean
     files?: string[]
+    /** Set false to skip the music-metas freshness check (pages that never read musicMetas). */
+    musicMetas?: boolean
   }
   | {
     type: "clear-region"
@@ -111,6 +113,7 @@ export type SekaiDataWorkerEvent =
     fetchVersion: string | null
     files: string[]
     musicMetasUpdatedAt: number | null
+    musicMetasChecked: boolean
     updatedAt: number | null
   }
   | {

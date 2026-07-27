@@ -69,7 +69,7 @@ export function useTrainingPower() {
     masterLoading.value = true
     masterError.value = null
     try {
-      await sekaiDataStore.ensureRegionData(targetRegion, { files: TRAINING_POWER_MASTER_FILES })
+      await sekaiDataStore.ensureRegionData(targetRegion, { files: TRAINING_POWER_MASTER_FILES, musicMetas: false })
       const files = await readSekaiMasterFiles(targetRegion, TRAINING_POWER_MASTER_FILES)
       if (token !== loadToken) {
         return
