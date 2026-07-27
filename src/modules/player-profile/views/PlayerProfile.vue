@@ -56,6 +56,8 @@ const {
   multiLiveStatus,
   multiLiveData,
   reloadMultiLive,
+  challengeData,
+  reloadChallenge,
   cardMap,
   characterMap,
   unitColorMap,
@@ -230,23 +232,23 @@ const characterRadarEntries = computed(() => characterRankCells.value.map((cell)
   ...unitGroupOf(cell.characterId),
 })))
 
-const challengeCells = computed(() => buildChallengeLiveGrid(
-  snapshotData.value?.userChallengeLiveSoloResults,
-  snapshotData.value?.userChallengeLiveSoloStages,
-))
+// The realtime profile only carries the single best challenge result, so the
+// per-character scores always come from the snapshot suite subset instead.
+const challengeCells = computed(() => {
+  const source = isRealtime.value ? challengeData.value : snapshotData.value
+  return buildChallengeLiveGrid(
+    source?.userChallengeLiveSoloResults,
+    source?.userChallengeLiveSoloStages,
+  )
+})
 
 const challengeRadarEntries = computed(() => challengeCells.value.map((cell) => {
   const character = characterMap.value.get(cell.characterId) ?? null
-  // The realtime profile only carries the single best score, so the radar
-  // switches to the per-character challenge stage in that mode.
-  const value = isRealtime.value ? cell.stage : cell.highScore
   return {
     key: cell.characterId,
     label: character?.name ?? t("playerProfile.unknownCharacter"),
-    value,
-    detail: isRealtime.value
-      ? t("playerProfile.challenge.stageDetail", { stage: cell.stage })
-      : formatScore(cell.highScore),
+    value: cell.highScore,
+    detail: formatScore(cell.highScore),
     iconUrl: character?.iconUrl ?? null,
     color: resolveSekaiCharacterColor(cell.characterId),
     ...unitGroupOf(cell.characterId),
@@ -308,9 +310,7 @@ const characterUnitLegend = computed(() => buildUnitLegend(
 
 const challengeUnitLegend = computed(() => buildUnitLegend(
   challengeRadarEntries.value,
-  (value) => isRealtime.value
-    ? (Math.round(value * 10) / 10).toFixed(1)
-    : formatScore(Math.round(value)),
+  (value) => formatScore(Math.round(value)),
 ))
 
 const challengeTop = computed(() => {
@@ -347,6 +347,7 @@ async function copyGameId() {
 function refresh() {
   if (isRealtime.value) {
     void reloadProfile("refresh")
+    void reloadChallenge("check-remote")
   } else {
     void reloadSuite("check-remote")
     void reloadMultiLive("check-remote")

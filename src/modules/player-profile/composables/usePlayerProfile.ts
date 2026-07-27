@@ -27,6 +27,11 @@ export const PLAYER_PROFILE_SUITE_KEYS = [
 
 export const PLAYER_PROFILE_MULTI_LIVE_KEYS = ["userMultiLiveTopScoreCount"] as const
 
+export const PLAYER_PROFILE_CHALLENGE_KEYS = [
+  "userChallengeLiveSoloResults",
+  "userChallengeLiveSoloStages",
+] as const
+
 export const PLAYER_PROFILE_MASTER_FILES = [
   "cards",
   "gameCharacters",
@@ -62,6 +67,12 @@ export function usePlayerProfile() {
   // Fetched separately so instances whose backend allowlist lacks the key
   // only lose the MVP/SuperStar chips instead of the whole profile.
   const multiLiveSuite = useUserSuite(PLAYER_PROFILE_MULTI_LIVE_KEYS, suiteAccount)
+
+  // The realtime game profile only carries the single best challenge result,
+  // but the challenge radar needs per-character high scores. Fetch that small
+  // suite subset in realtime mode so both sources render the same radar.
+  const challengeAccount = computed(() => dataSource.value === "realtime" ? selectedAccount.value : null)
+  const challengeSuite = useUserSuite(PLAYER_PROFILE_CHALLENGE_KEYS, challengeAccount)
 
   const profileStatus = ref<"idle" | "loading" | "ready" | "error">("idle")
   const profileData = shallowRef<Record<string, unknown> | null>(null)
@@ -193,6 +204,9 @@ export function usePlayerProfile() {
     multiLiveStatus: multiLiveSuite.status,
     multiLiveData: multiLiveSuite.data,
     reloadMultiLive: multiLiveSuite.reload,
+    challengeStatus: challengeSuite.status,
+    challengeData: challengeSuite.data,
+    reloadChallenge: challengeSuite.reload,
     masterLoading,
     masterError,
     assetEndpoint,

@@ -1151,7 +1151,6 @@ export const zhCN = {
       empty: "暂无角色数据",
     },
     challenge: {
-      stageDetail: "挑战等级 {stage}",
       title: "挑战Live",
       summary: "最高分数：{name} · {score}",
       empty: "暂无挑战Live记录",

@@ -1151,7 +1151,6 @@ export const enUS = {
       empty: "No character data",
     },
     challenge: {
-      stageDetail: "Challenge stage {stage}",
       title: "Challenge Live",
       description: "Challenge stages and high scores per character",
       summary: "Best score: {name} · {score}",
