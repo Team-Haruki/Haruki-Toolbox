@@ -878,10 +878,10 @@ export const enUS = {
     manage: "Manage bindings",
   },
   cardBox: {
-    title: "Card collection",
+    title: "My Cards",
     description: "View your game account's card collection progress",
-    entryLink: "Card collection",
-    noAccountHint: "Bind and select a game account to view your card collection.",
+    entryLink: "My Cards",
+    noAccountHint: "Bind and select a game account to view your cards.",
     dataAsOf: "Data as of {time}",
     refresh: "Refresh",
     loadError: "Failed to load your card collection data",
@@ -1447,7 +1447,7 @@ export const enUS = {
       musicLibrary: "Music library",
       cards: "Card catalog",
       events: "Event catalog",
-      cardBox: "Card collection",
+      cardBox: "My Cards",
       eventRecords: "Event records",
       musicProgress: "Music progress",
       gachas: "Gacha catalog",
@@ -1545,7 +1545,7 @@ export const enUS = {
     cards: {
       list: "Card catalog",
       detail: "Card detail",
-      box: "Card collection",
+      box: "My Cards",
     },
     events: {
       list: "Event catalog",

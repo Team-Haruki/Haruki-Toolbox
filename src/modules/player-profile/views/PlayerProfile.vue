@@ -42,10 +42,12 @@ import {
 import {
   buildCharacterDistribution,
   buildOwnedCardMap,
+  filterCardsByRarity,
   filterReleasedCards,
   normalizeUserCards,
   summarizeCollection,
 } from "@/modules/cards/lib/card-box"
+import { CARD_RARITY_TYPES, type CardRarityType } from "@/modules/cards/lib/card-filter"
 import { MUSIC_DIFFICULTIES, MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
 import { MUSIC_PROGRESS_STATUS_COLORS, buildMusicProgress } from "@/modules/music-library/lib/music-progress"
 import { useMusicProgressMasterData } from "@/modules/music-library/composables/useMusicProgressMasterData"
@@ -372,13 +374,24 @@ const collectionOwnedMap = computed(() => buildOwnedCardMap(normalizeUserCards(
 
 const releasedMasterCards = computed(() => filterReleasedCards([...cardMap.value.values()]))
 
-const collectionSummary = computed(() => summarizeCollection(releasedMasterCards.value, collectionOwnedMap.value))
+const collectionRarities = ref<CardRarityType[]>([])
+
+function toggleCollectionRarity(rarity: CardRarityType) {
+  const current = collectionRarities.value
+  collectionRarities.value = current.includes(rarity)
+    ? current.filter((item) => item !== rarity)
+    : [...current, rarity]
+}
+
+const collectionCards = computed(() => filterCardsByRarity(releasedMasterCards.value, collectionRarities.value))
+
+const collectionSummary = computed(() => summarizeCollection(collectionCards.value, collectionOwnedMap.value))
 
 /** Track color for the ring pies; a neutral gray that reads in both themes. */
 const COLLECTION_RING_TRACK = "rgba(148, 163, 184, 0.3)"
 
 const collectionColumns = computed(() => {
-  const rows = buildCharacterDistribution(releasedMasterCards.value, collectionOwnedMap.value)
+  const rows = buildCharacterDistribution(collectionCards.value, collectionOwnedMap.value)
     .filter((row) => row.characterId > 0)
   const maxOwned = Math.max(1, ...rows.map((row) => row.owned))
   return rows.map((row) => {
@@ -396,7 +409,9 @@ const collectionColumns = computed(() => {
   })
 })
 
-const hasCollectionData = computed(() => collectionColumns.value.some((column) => column.owned > 0))
+// Keyed on the unfiltered card box so an empty rarity selection still renders
+// the (all-zero) chart with the filter chips available to undo it.
+const hasCollectionData = computed(() => collectionOwnedMap.value.size > 0)
 
 async function copyGameId() {
   const gameId = gamedata.value?.userId
@@ -620,6 +635,96 @@ function retry() {
         </CardContent>
       </Card>
 
+      <!-- Event PT trend (always sourced from the suite snapshot) -->
+      <EventPointTrendChart :trend="eventTrend" :loading="eventTrendLoading">
+        <template #actions>
+          <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
+            <RouterLink :to="{ name: 'events.records' }">
+              {{ t("playerProfile.links.eventRecords") }}
+              <LucideArrowUpRight class="size-3.5" />
+            </RouterLink>
+          </Button>
+        </template>
+      </EventPointTrendChart>
+
+      <!-- Card collection by character -->
+      <Card>
+        <CardHeader class="pb-2">
+          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
+            <span>{{ t("playerProfile.collection.title") }}</span>
+            <span class="flex flex-wrap items-center gap-1.5">
+              <button
+                v-for="rarity in CARD_RARITY_TYPES"
+                :key="rarity"
+                type="button"
+                :class="[
+                  'rounded-full border px-2 py-0.5 text-xs font-normal transition-colors',
+                  collectionRarities.includes(rarity)
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border text-muted-foreground hover:bg-muted',
+                ]"
+                :aria-pressed="collectionRarities.includes(rarity)"
+                @click="toggleCollectionRarity(rarity)"
+              >
+                {{ t(`cards.rarity.${rarity}`) }}
+              </button>
+              <span v-if="hasCollectionData" class="text-sm font-normal tabular-nums text-muted-foreground">
+                {{ t("playerProfile.collection.summary", {
+                  owned: formatScore(collectionSummary.owned),
+                  total: formatScore(collectionSummary.total),
+                  percent: collectionSummary.percent,
+                }) }}
+              </span>
+              <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
+                <RouterLink :to="{ name: 'cards.box' }">
+                  {{ t("cardBox.entryLink") }}
+                  <LucideArrowUpRight class="size-3.5" />
+                </RouterLink>
+              </Button>
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p v-if="!hasCollectionData" class="py-4 text-center text-sm text-muted-foreground">
+            {{ t("playerProfile.collection.empty") }}
+          </p>
+          <div v-else class="overflow-x-auto">
+            <div class="flex min-w-[42rem] items-end gap-1 pt-1 sm:gap-1.5">
+              <div
+                v-for="column in collectionColumns"
+                :key="column.characterId"
+                class="group flex min-w-0 flex-1 flex-col items-center gap-1"
+                :title="`${column.name} ${column.owned}/${column.total}`"
+              >
+                <span class="h-4 shrink-0 whitespace-nowrap text-[10px] font-semibold tabular-nums text-muted-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                  {{ column.owned }}/{{ column.total }} · {{ column.percent }}%
+                </span>
+                <span
+                  class="flex size-8 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-125"
+                  :style="{ background: `conic-gradient(${column.color} ${column.percent * 3.6}deg, ${COLLECTION_RING_TRACK} 0deg)` }"
+                >
+                  <img
+                    v-if="column.iconUrl"
+                    :src="column.iconUrl"
+                    :alt="column.name"
+                    class="size-[26px] rounded-full border border-background bg-background object-cover"
+                    loading="lazy"
+                  >
+                  <span v-else class="size-[26px] rounded-full bg-background" />
+                </span>
+                <span class="flex h-24 w-full max-w-5 items-end overflow-hidden rounded-t-sm bg-muted/40 sm:max-w-6">
+                  <span
+                    class="w-full rounded-t-sm opacity-85 transition-[height] duration-300"
+                    :style="{ height: column.barHeight, backgroundColor: column.color }"
+                  />
+                </span>
+                <span class="text-[10px] tabular-nums text-muted-foreground">{{ column.owned }}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <!-- Character levels + challenge live radars, side by side on large screens -->
       <div class="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -715,73 +820,6 @@ function retry() {
           </CardContent>
         </Card>
       </div>
-
-      <!-- Event PT trend (always sourced from the suite snapshot) -->
-      <EventPointTrendChart :trend="eventTrend" :loading="eventTrendLoading">
-        <template #actions>
-          <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
-            <RouterLink :to="{ name: 'events.records' }">
-              {{ t("playerProfile.links.eventRecords") }}
-              <LucideArrowUpRight class="size-3.5" />
-            </RouterLink>
-          </Button>
-        </template>
-      </EventPointTrendChart>
-
-      <!-- Card collection by character -->
-      <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-            <span>{{ t("playerProfile.collection.title") }}</span>
-            <span v-if="hasCollectionData" class="text-sm font-normal tabular-nums text-muted-foreground">
-              {{ t("playerProfile.collection.summary", {
-                owned: formatScore(collectionSummary.owned),
-                total: formatScore(collectionSummary.total),
-                percent: collectionSummary.percent,
-              }) }}
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p v-if="!hasCollectionData" class="py-4 text-center text-sm text-muted-foreground">
-            {{ t("playerProfile.collection.empty") }}
-          </p>
-          <div v-else class="overflow-x-auto">
-            <div class="flex min-w-[42rem] items-end gap-1 pt-1 sm:gap-1.5">
-              <div
-                v-for="column in collectionColumns"
-                :key="column.characterId"
-                class="group flex min-w-0 flex-1 flex-col items-center gap-1"
-                :title="`${column.name} ${column.owned}/${column.total}`"
-              >
-                <span class="h-4 shrink-0 text-[10px] font-semibold tabular-nums text-muted-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                  {{ column.percent }}%
-                </span>
-                <span
-                  class="flex size-8 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-125"
-                  :style="{ background: `conic-gradient(${column.color} ${column.percent * 3.6}deg, ${COLLECTION_RING_TRACK} 0deg)` }"
-                >
-                  <img
-                    v-if="column.iconUrl"
-                    :src="column.iconUrl"
-                    :alt="column.name"
-                    class="size-[26px] rounded-full border border-background bg-background object-cover"
-                    loading="lazy"
-                  >
-                  <span v-else class="size-[26px] rounded-full bg-background" />
-                </span>
-                <span class="flex h-24 w-full max-w-5 items-end overflow-hidden rounded-t-sm bg-muted/40 sm:max-w-6">
-                  <span
-                    class="w-full rounded-t-sm opacity-85 transition-[height] duration-300"
-                    :style="{ height: column.barHeight, backgroundColor: column.color }"
-                  />
-                </span>
-                <span class="text-[10px] tabular-nums text-muted-foreground">{{ column.owned }}</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </template>
   </div>
 </template>
