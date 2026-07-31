@@ -1156,6 +1156,16 @@ export const enUS = {
       summary: "Best score: {name} · {score}",
       empty: "No challenge live records yet",
     },
+    links: {
+      eventRecords: "Event records",
+      characterMissions: "Character missions",
+      challengeDetail: "Challenge details",
+    },
+    collection: {
+      title: "Card Collection by Character",
+      summary: "{owned}/{total} collected · {percent}%",
+      empty: "No card data yet",
+    },
   },
   training: {
     layout: {

@@ -2,7 +2,7 @@
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
-import { LucideCopy, LucideRefreshCw, LucideTrophy } from "lucide-vue-next"
+import { LucideArrowUpRight, LucideCopy, LucideRefreshCw, LucideTrophy } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -30,6 +30,22 @@ import {
 } from "@/modules/player-profile/lib/player-profile"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 import { buildCardThumbnailView, type DeckRecommendMasterCard } from "@/modules/deck-recommend/lib/card-thumbnail"
+import EventPointTrendChart from "@/modules/events/components/EventPointTrendChart.vue"
+import { useEventRecordsMaster } from "@/modules/events/composables/useEventRecordsMaster"
+import {
+  buildDerivedRankMap,
+  buildEventPointTrend,
+  buildEventRecordRows,
+  normalizeUserEventRecords,
+  normalizeUserHonorIds,
+} from "@/modules/events/lib/event-records"
+import {
+  buildCharacterDistribution,
+  buildOwnedCardMap,
+  filterReleasedCards,
+  normalizeUserCards,
+  summarizeCollection,
+} from "@/modules/cards/lib/card-box"
 import { MUSIC_DIFFICULTIES, MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
 import { MUSIC_PROGRESS_STATUS_COLORS, buildMusicProgress } from "@/modules/music-library/lib/music-progress"
 import { useMusicProgressMasterData } from "@/modules/music-library/composables/useMusicProgressMasterData"
@@ -56,8 +72,11 @@ const {
   multiLiveStatus,
   multiLiveData,
   reloadMultiLive,
-  challengeData,
-  reloadChallenge,
+  extrasData,
+  reloadExtras,
+  eventsStatus,
+  eventsData,
+  reloadEvents,
   cardMap,
   characterMap,
   unitColorMap,
@@ -235,7 +254,7 @@ const characterRadarEntries = computed(() => characterRankCells.value.map((cell)
 // The realtime profile only carries the single best challenge result, so the
 // per-character scores always come from the snapshot suite subset instead.
 const challengeCells = computed(() => {
-  const source = isRealtime.value ? challengeData.value : snapshotData.value
+  const source = isRealtime.value ? extrasData.value : snapshotData.value
   return buildChallengeLiveGrid(
     source?.userChallengeLiveSoloResults,
     source?.userChallengeLiveSoloStages,
@@ -330,6 +349,55 @@ function formatScore(value: number): string {
   return numberFormatter.value.format(value)
 }
 
+const eventsMaster = useEventRecordsMaster(accountRegion)
+
+const eventTrend = computed(() => buildEventPointTrend(
+  buildEventRecordRows(
+    normalizeUserEventRecords(eventsData.value?.userEvents),
+    eventsMaster.eventsById.value,
+  ),
+  buildDerivedRankMap(
+    normalizeUserHonorIds(eventsData.value?.userHonors),
+    eventsMaster.honorRankIndex.value,
+  ),
+))
+
+const eventTrendLoading = computed(() => eventsStatus.value === "loading" || eventsMaster.loading.value)
+
+// Collection always counts against the snapshot card box: the realtime
+// profile's userCards only contains the shown deck's five cards.
+const collectionOwnedMap = computed(() => buildOwnedCardMap(normalizeUserCards(
+  isRealtime.value ? extrasData.value?.userCards : snapshotData.value?.userCards,
+)))
+
+const releasedMasterCards = computed(() => filterReleasedCards([...cardMap.value.values()]))
+
+const collectionSummary = computed(() => summarizeCollection(releasedMasterCards.value, collectionOwnedMap.value))
+
+/** Track color for the ring pies; a neutral gray that reads in both themes. */
+const COLLECTION_RING_TRACK = "rgba(148, 163, 184, 0.3)"
+
+const collectionColumns = computed(() => {
+  const rows = buildCharacterDistribution(releasedMasterCards.value, collectionOwnedMap.value)
+    .filter((row) => row.characterId > 0)
+  const maxOwned = Math.max(1, ...rows.map((row) => row.owned))
+  return rows.map((row) => {
+    const character = characterMap.value.get(row.characterId) ?? null
+    return {
+      characterId: row.characterId,
+      name: character?.name ?? t("playerProfile.unknownCharacter"),
+      iconUrl: character?.iconUrl ?? null,
+      color: resolveSekaiCharacterColor(row.characterId) ?? "#94a3b8",
+      owned: row.owned,
+      total: row.total,
+      percent: row.percent,
+      barHeight: row.owned > 0 ? `${Math.max(4, Math.round((row.owned / maxOwned) * 100))}%` : "0%",
+    }
+  })
+})
+
+const hasCollectionData = computed(() => collectionColumns.value.some((column) => column.owned > 0))
+
 async function copyGameId() {
   const gameId = gamedata.value?.userId
   if (!gameId) {
@@ -347,11 +415,12 @@ async function copyGameId() {
 function refresh() {
   if (isRealtime.value) {
     void reloadProfile("refresh")
-    void reloadChallenge("check-remote")
+    void reloadExtras("check-remote")
   } else {
     void reloadSuite("check-remote")
     void reloadMultiLive("check-remote")
   }
+  void reloadEvents("check-remote")
   reloadMaster()
 }
 
@@ -555,7 +624,15 @@ function retry() {
       <div class="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader class="pb-2">
-            <CardTitle class="text-base">{{ t("playerProfile.characters.title") }}</CardTitle>
+            <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
+              <span>{{ t("playerProfile.characters.title") }}</span>
+              <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
+                <RouterLink :to="{ name: 'training.missions' }">
+                  {{ t("playerProfile.links.characterMissions") }}
+                  <LucideArrowUpRight class="size-3.5" />
+                </RouterLink>
+              </Button>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p v-if="characterRadarEntries.length === 0" class="py-4 text-center text-sm text-muted-foreground">
@@ -591,13 +668,21 @@ function retry() {
         <Card>
           <CardHeader class="pb-2">
             <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-              {{ t("playerProfile.challenge.title") }}
-              <span
-                v-if="challengeTop"
-                class="inline-flex items-center gap-1.5 text-sm font-normal text-muted-foreground"
-              >
-                <LucideTrophy class="size-4 shrink-0 text-amber-500" />
-                {{ t("playerProfile.challenge.summary", { name: challengeTop.name, score: formatScore(challengeTop.highScore) }) }}
+              <span>{{ t("playerProfile.challenge.title") }}</span>
+              <span class="flex flex-wrap items-center gap-1.5">
+                <span
+                  v-if="challengeTop"
+                  class="inline-flex items-center gap-1.5 text-sm font-normal text-muted-foreground"
+                >
+                  <LucideTrophy class="size-4 shrink-0 text-amber-500" />
+                  {{ t("playerProfile.challenge.summary", { name: challengeTop.name, score: formatScore(challengeTop.highScore) }) }}
+                </span>
+                <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
+                  <RouterLink :to="{ name: 'training.challenge' }">
+                    {{ t("playerProfile.links.challengeDetail") }}
+                    <LucideArrowUpRight class="size-3.5" />
+                  </RouterLink>
+                </Button>
               </span>
             </CardTitle>
           </CardHeader>
@@ -630,6 +715,73 @@ function retry() {
           </CardContent>
         </Card>
       </div>
+
+      <!-- Event PT trend (always sourced from the suite snapshot) -->
+      <EventPointTrendChart :trend="eventTrend" :loading="eventTrendLoading">
+        <template #actions>
+          <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
+            <RouterLink :to="{ name: 'events.records' }">
+              {{ t("playerProfile.links.eventRecords") }}
+              <LucideArrowUpRight class="size-3.5" />
+            </RouterLink>
+          </Button>
+        </template>
+      </EventPointTrendChart>
+
+      <!-- Card collection by character -->
+      <Card>
+        <CardHeader class="pb-2">
+          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
+            <span>{{ t("playerProfile.collection.title") }}</span>
+            <span v-if="hasCollectionData" class="text-sm font-normal tabular-nums text-muted-foreground">
+              {{ t("playerProfile.collection.summary", {
+                owned: formatScore(collectionSummary.owned),
+                total: formatScore(collectionSummary.total),
+                percent: collectionSummary.percent,
+              }) }}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p v-if="!hasCollectionData" class="py-4 text-center text-sm text-muted-foreground">
+            {{ t("playerProfile.collection.empty") }}
+          </p>
+          <div v-else class="overflow-x-auto">
+            <div class="flex min-w-[42rem] items-end gap-1 pt-1 sm:gap-1.5">
+              <div
+                v-for="column in collectionColumns"
+                :key="column.characterId"
+                class="group flex min-w-0 flex-1 flex-col items-center gap-1"
+                :title="`${column.name} ${column.owned}/${column.total}`"
+              >
+                <span class="h-4 shrink-0 text-[10px] font-semibold tabular-nums text-muted-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                  {{ column.percent }}%
+                </span>
+                <span
+                  class="flex size-8 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-125"
+                  :style="{ background: `conic-gradient(${column.color} ${column.percent * 3.6}deg, ${COLLECTION_RING_TRACK} 0deg)` }"
+                >
+                  <img
+                    v-if="column.iconUrl"
+                    :src="column.iconUrl"
+                    :alt="column.name"
+                    class="size-[26px] rounded-full border border-background bg-background object-cover"
+                    loading="lazy"
+                  >
+                  <span v-else class="size-[26px] rounded-full bg-background" />
+                </span>
+                <span class="flex h-24 w-full max-w-5 items-end overflow-hidden rounded-t-sm bg-muted/40 sm:max-w-6">
+                  <span
+                    class="w-full rounded-t-sm opacity-85 transition-[height] duration-300"
+                    :style="{ height: column.barHeight, backgroundColor: column.color }"
+                  />
+                </span>
+                <span class="text-[10px] tabular-nums text-muted-foreground">{{ column.owned }}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </template>
   </div>
 </template>

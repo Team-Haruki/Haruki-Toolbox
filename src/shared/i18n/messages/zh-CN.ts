@@ -1155,6 +1155,16 @@ export const zhCN = {
       summary: "最高分数：{name} · {score}",
       empty: "暂无挑战Live记录",
     },
+    links: {
+      eventRecords: "活动记录",
+      characterMissions: "角色任务",
+      challengeDetail: "挑战信息",
+    },
+    collection: {
+      title: "角色卡牌收集",
+      summary: "已收集 {owned}/{total} · {percent}%",
+      empty: "暂无卡牌数据",
+    },
   },
   training: {
     layout: {

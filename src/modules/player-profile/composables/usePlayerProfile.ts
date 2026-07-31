@@ -27,10 +27,13 @@ export const PLAYER_PROFILE_SUITE_KEYS = [
 
 export const PLAYER_PROFILE_MULTI_LIVE_KEYS = ["userMultiLiveTopScoreCount"] as const
 
-export const PLAYER_PROFILE_CHALLENGE_KEYS = [
+export const PLAYER_PROFILE_SNAPSHOT_EXTRA_KEYS = [
+  "userCards",
   "userChallengeLiveSoloResults",
   "userChallengeLiveSoloStages",
 ] as const
+
+export const PLAYER_PROFILE_EVENT_KEYS = ["userEvents", "userHonors"] as const
 
 export const PLAYER_PROFILE_MASTER_FILES = [
   "cards",
@@ -68,11 +71,16 @@ export function usePlayerProfile() {
   // only lose the MVP/SuperStar chips instead of the whole profile.
   const multiLiveSuite = useUserSuite(PLAYER_PROFILE_MULTI_LIVE_KEYS, suiteAccount)
 
-  // The realtime game profile only carries the single best challenge result,
-  // but the challenge radar needs per-character high scores. Fetch that small
-  // suite subset in realtime mode so both sources render the same radar.
-  const challengeAccount = computed(() => dataSource.value === "realtime" ? selectedAccount.value : null)
-  const challengeSuite = useUserSuite(PLAYER_PROFILE_CHALLENGE_KEYS, challengeAccount)
+  // The realtime game profile only carries the single best challenge result
+  // and the shown deck's five cards, but the challenge radar needs per-character
+  // high scores and the collection chart the full card box. Fetch that small
+  // suite subset in realtime mode so both sources render the same modules.
+  const extrasAccount = computed(() => dataSource.value === "realtime" ? selectedAccount.value : null)
+  const extrasSuite = useUserSuite(PLAYER_PROFILE_SNAPSHOT_EXTRA_KEYS, extrasAccount)
+
+  // Event participation history only exists in the suite snapshot, so the
+  // trend module fetches it regardless of the selected data source.
+  const eventsSuite = useUserSuite(PLAYER_PROFILE_EVENT_KEYS, selectedAccount)
 
   const profileStatus = ref<"idle" | "loading" | "ready" | "error">("idle")
   const profileData = shallowRef<Record<string, unknown> | null>(null)
@@ -204,9 +212,12 @@ export function usePlayerProfile() {
     multiLiveStatus: multiLiveSuite.status,
     multiLiveData: multiLiveSuite.data,
     reloadMultiLive: multiLiveSuite.reload,
-    challengeStatus: challengeSuite.status,
-    challengeData: challengeSuite.data,
-    reloadChallenge: challengeSuite.reload,
+    extrasStatus: extrasSuite.status,
+    extrasData: extrasSuite.data,
+    reloadExtras: extrasSuite.reload,
+    eventsStatus: eventsSuite.status,
+    eventsData: eventsSuite.data,
+    reloadEvents: eventsSuite.reload,
     masterLoading,
     masterError,
     assetEndpoint,
