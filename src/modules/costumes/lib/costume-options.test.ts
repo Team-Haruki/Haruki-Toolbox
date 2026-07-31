@@ -50,6 +50,8 @@ describe("listRuntimeCostumeOptions", () => {
   it("combines full heads and accessories, skipping ambiguous ids", () => {
     const options = listRuntimeCostumeOptions(REGISTRY, 1, "head")
     expect(options.map((option) => option.id)).toEqual([1, 29001])
+    // Full head_and_hair sets carry their own hairstyle; accessories do not.
+    expect(options.map((option) => option.includesHair)).toEqual([false, true])
   })
 
   it("filters missing entries", () => {

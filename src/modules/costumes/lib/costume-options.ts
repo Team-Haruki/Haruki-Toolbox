@@ -24,6 +24,8 @@ export type RuntimeCostumeOption = {
   /** Costume thumbnail asset name (`startapp/thumbnail/costume/...`). */
   thumbnailAssetbundleName: string
   costume3dGroupId: number | null
+  /** Head-slot only: full `head_and_hair` sets replace the hairstyle. */
+  includesHair: boolean
 }
 
 type RegistryEntry = {
@@ -112,6 +114,7 @@ function toOption(entry: RegistryEntry): RuntimeCostumeOption {
     colorName: entry.colorName,
     thumbnailAssetbundleName: entry.thumbnailAssetbundleName,
     costume3dGroupId: entry.costume3dGroupId,
+    includesHair: entry.effectiveType === "head",
   }
 }
 

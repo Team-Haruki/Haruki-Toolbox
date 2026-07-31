@@ -1041,6 +1041,7 @@ export const zhCN = {
       partPlaceholder: "选择部件",
       searchPlaceholder: "搜索名称或 ID...",
       empty: "没有找到匹配项。",
+      hairLockedHint: "当前头饰是整套头部造型（自带发型），发型选项不生效。",
       reset: "恢复默认",
       loadError: "服装数据加载失败。",
       roleLoadError: "该角色的 3D 部件清单加载失败。",

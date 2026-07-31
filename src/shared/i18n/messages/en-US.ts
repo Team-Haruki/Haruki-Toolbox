@@ -1041,6 +1041,7 @@ export const enUS = {
       partPlaceholder: "Select a part",
       searchPlaceholder: "Search by name or ID...",
       empty: "No matches found.",
+      hairLockedHint: "The selected accessory is a full head set with its own hairstyle, so the hairstyle slot has no effect.",
       reset: "Reset to defaults",
       loadError: "Failed to load costume data.",
       roleLoadError: "Failed to load the character's 3D part list.",

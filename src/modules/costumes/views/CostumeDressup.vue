@@ -178,6 +178,12 @@ const handleBodyChange = handlePartChange(bodyId)
 const handleHeadChange = handlePartChange(headId)
 const handleHairChange = handlePartChange(hairId)
 
+// Full head sets ship their own hairstyle, so the hair slot has no effect
+// while one is selected (in-game behavior).
+const hairLocked = computed(() =>
+  roleData.value?.options.head.find((option) => option.id === headId.value)?.includesHair === true,
+)
+
 const recipe = computed<CostumeViewerRecipe | null>(() => {
   const unit = roleUnit.value
   if (unit == null || bodyId.value == null || headId.value == null || hairId.value == null) {
@@ -313,9 +319,13 @@ watch([characterId, bodyId, headId, hairId], ([nextCharacter, nextBody, nextHead
                 :search-placeholder="t('costumes.dressup.searchPlaceholder')"
                 :empty-text="t('costumes.dressup.empty')"
                 :clearable="false"
+                :disabled="hairLocked"
                 trigger-class="w-full"
                 @update:model-value="handleHairChange"
               />
+              <p v-if="hairLocked" class="text-[11px] text-muted-foreground">
+                {{ t("costumes.dressup.hairLockedHint") }}
+              </p>
             </div>
             <Button variant="outline" size="sm" class="w-fit" @click="resetToDefaults">
               <LucideRotateCcw class="mr-1 size-4" /> {{ t("costumes.dressup.reset") }}
