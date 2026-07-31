@@ -15,6 +15,7 @@ import {
   PartyPopper,
   Pause,
   Play,
+  ScrollText,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +38,7 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import EventBannerImage from "@/modules/events/components/EventBannerImage.vue"
+import ChartPreview from "../components/ChartPreview.vue"
 import MusicJacket from "../components/MusicJacket.vue"
 import { useMusicLibraryDetail } from "../composables/useMusicLibraryDetail"
 import { resolveMusicJacketUrl, resolveMusicLongAudioUrl } from "../lib/music-assets"
@@ -504,6 +506,23 @@ function eventBoxHint(eventId: number) {
                 </TableBody>
               </Table>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2 text-lg">
+              <ScrollText class="size-5" />
+              {{ t("musicLibrary.detail.chartPreview.title") }}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartPreview
+              :entry="entry"
+              :region="region"
+              :preference="settingsStore.currentAssetEndpoint"
+              :jacket-url="jacketUrl"
+            />
           </CardContent>
         </Card>
 
