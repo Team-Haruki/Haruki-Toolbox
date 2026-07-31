@@ -24,11 +24,8 @@ import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import CostumeViewer, { type CostumeViewerRecipe } from "../components/CostumeViewer.vue"
-import {
-  listCostumeOptions,
-  pickDefaultCostumeId,
-  type CostumePartType,
-} from "../lib/costume-options"
+import { useCostumeRoleData } from "../composables/useCostumeRoleData"
+import { pickDefaultOptionId, type CostumeSlot } from "../lib/costume-options"
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -44,11 +41,12 @@ const selectedRegion = computed<string>({
   set: (value) => updateRegionSelector(value),
 })
 
-const DRESSUP_MASTER_FILES = ["costume3ds", "gameCharacters"] as const
+// Only character names/units come from masterdata; the selectable parts and
+// per-role defaults come from the deployed 3D runtime registry instead.
+const DRESSUP_MASTER_FILES = ["gameCharacters"] as const
 
 const loading = ref(false)
 const error = ref<string | null>(null)
-const rawCostume3ds = shallowRef<unknown>(null)
 const characterMap = shallowRef<Map<number, CatalogCharacter>>(new Map())
 
 let loadToken = 0
@@ -64,7 +62,6 @@ async function loadMaster(targetRegion: SekaiRegion) {
       return
     }
 
-    rawCostume3ds.value = files.costume3ds ?? null
     characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
   } catch (loadError) {
     if (token === loadToken) {
@@ -92,31 +89,46 @@ const bodyId = ref<number | null>(queryNumber("body"))
 const headId = ref<number | null>(queryNumber("head"))
 const hairId = ref<number | null>(queryNumber("hair"))
 
-const bodyOptions = computed(() => listCostumeOptions(rawCostume3ds.value, characterId.value, "body"))
-const headOptions = computed(() => listCostumeOptions(rawCostume3ds.value, characterId.value, "head"))
-const hairOptions = computed(() => listCostumeOptions(rawCostume3ds.value, characterId.value, "hair"))
+const roleCharacterId = computed<number | null>(() => characterId.value)
+const roleUnit = computed<string | null>(() => characterMap.value.get(characterId.value)?.unit ?? null)
 
-/** Fill empty/foreign selections with the slot defaults for the character. */
-watch([bodyOptions, headOptions, hairOptions], () => {
-  const slots: Array<[typeof bodyId, typeof bodyOptions]> = [
-    [bodyId, bodyOptions],
-    [headId, headOptions],
-    [hairId, hairOptions],
+const {
+  data: roleData,
+  loading: roleLoading,
+  error: roleError,
+  reload: reloadRole,
+} = useCostumeRoleData(region, assetEndpoint, roleCharacterId, roleUnit)
+
+/** Fill empty/foreign selections with the role's stock parts. */
+watch(roleData, (data) => {
+  if (data == null) {
+    return
+  }
+  const slots: Array<[typeof bodyId, CostumeSlot, number | undefined]> = [
+    [bodyId, "body", data.defaults?.bodyCostume3dId],
+    [headId, "head", data.defaults?.headCostume3dId],
+    [hairId, "hair", data.defaults?.hairCostume3dId],
   ]
-  for (const [selection, options] of slots) {
-    if (options.value.length === 0) {
+  for (const [selection, slot, defaultId] of slots) {
+    const options = data.options[slot]
+    if (options.length === 0) {
+      selection.value = null
       continue
     }
-    if (selection.value == null || !options.value.some((option) => option.id === selection.value)) {
-      selection.value = pickDefaultCostumeId(options.value)
+    if (selection.value == null || !options.some((option) => option.id === selection.value)) {
+      selection.value = pickDefaultOptionId(options, defaultId)
     }
   }
 }, { immediate: true })
 
 function resetToDefaults() {
-  bodyId.value = pickDefaultCostumeId(bodyOptions.value)
-  headId.value = pickDefaultCostumeId(headOptions.value)
-  hairId.value = pickDefaultCostumeId(hairOptions.value)
+  const data = roleData.value
+  if (data == null) {
+    return
+  }
+  bodyId.value = pickDefaultOptionId(data.options.body, data.defaults?.bodyCostume3dId)
+  headId.value = pickDefaultOptionId(data.options.head, data.defaults?.headCostume3dId)
+  hairId.value = pickDefaultOptionId(data.options.hair, data.defaults?.hairCostume3dId)
 }
 
 const characterOptions = computed<ComboboxOption[]>(() =>
@@ -131,16 +143,13 @@ const characterOptions = computed<ComboboxOption[]>(() =>
     })),
 )
 
-function partComboboxOptions(partType: CostumePartType): ComboboxOption[] {
-  const options = partType === "body"
-    ? bodyOptions.value
-    : partType === "head" ? headOptions.value : hairOptions.value
-  return options.map((option) => ({
+function partComboboxOptions(slot: CostumeSlot): ComboboxOption[] {
+  return (roleData.value?.options[slot] ?? []).map((option) => ({
     value: String(option.id),
     label: option.name,
     description: option.colorName ? `#${option.id} · ${option.colorName}` : `#${option.id}`,
-    iconUrl: option.assetbundleName
-      ? resolveCostumeThumbnailUrl(region.value, option.assetbundleName, assetEndpoint.value)
+    iconUrl: option.thumbnailAssetbundleName
+      ? resolveCostumeThumbnailUrl(region.value, option.thumbnailAssetbundleName, assetEndpoint.value)
       : null,
     keywords: [String(option.id), option.name, option.colorName].filter(Boolean),
   }))
@@ -170,7 +179,7 @@ const handleHeadChange = handlePartChange(headId)
 const handleHairChange = handlePartChange(hairId)
 
 const recipe = computed<CostumeViewerRecipe | null>(() => {
-  const unit = characterMap.value.get(characterId.value)?.unit ?? null
+  const unit = roleUnit.value
   if (unit == null || bodyId.value == null || headId.value == null || hairId.value == null) {
     return null
   }
@@ -253,48 +262,65 @@ watch([characterId, bodyId, headId, hairId], ([nextCharacter, nextBody, nextHead
               @update:model-value="handleCharacterChange"
             />
           </div>
-          <div class="grid gap-1.5">
-            <Label class="text-xs text-muted-foreground">{{ t("costumes.dressup.body") }}</Label>
-            <Combobox
-              :model-value="bodyId != null ? String(bodyId) : null"
-              :options="partComboboxOptions('body')"
-              :placeholder="t('costumes.dressup.partPlaceholder')"
-              :search-placeholder="t('costumes.dressup.searchPlaceholder')"
-              :empty-text="t('costumes.dressup.empty')"
-              :clearable="false"
-              trigger-class="w-full"
-              @update:model-value="handleBodyChange"
-            />
+          <div
+            v-if="roleError"
+            class="flex flex-col gap-2 rounded-md border border-dashed p-3 text-center"
+          >
+            <p class="text-xs text-muted-foreground">{{ t("costumes.dressup.roleLoadError") }}</p>
+            <p class="max-w-full truncate font-mono text-[11px] text-muted-foreground" :title="roleError">
+              {{ roleError }}
+            </p>
+            <Button variant="outline" size="sm" class="mx-auto" @click="reloadRole">
+              <LucideRefreshCcw class="mr-1 size-4" /> {{ t("costumes.dressup.retry") }}
+            </Button>
           </div>
-          <div class="grid gap-1.5">
-            <Label class="text-xs text-muted-foreground">{{ t("costumes.dressup.head") }}</Label>
-            <Combobox
-              :model-value="headId != null ? String(headId) : null"
-              :options="partComboboxOptions('head')"
-              :placeholder="t('costumes.dressup.partPlaceholder')"
-              :search-placeholder="t('costumes.dressup.searchPlaceholder')"
-              :empty-text="t('costumes.dressup.empty')"
-              :clearable="false"
-              trigger-class="w-full"
-              @update:model-value="handleHeadChange"
-            />
-          </div>
-          <div class="grid gap-1.5">
-            <Label class="text-xs text-muted-foreground">{{ t("costumes.dressup.hair") }}</Label>
-            <Combobox
-              :model-value="hairId != null ? String(hairId) : null"
-              :options="partComboboxOptions('hair')"
-              :placeholder="t('costumes.dressup.partPlaceholder')"
-              :search-placeholder="t('costumes.dressup.searchPlaceholder')"
-              :empty-text="t('costumes.dressup.empty')"
-              :clearable="false"
-              trigger-class="w-full"
-              @update:model-value="handleHairChange"
-            />
-          </div>
-          <Button variant="outline" size="sm" class="w-fit" @click="resetToDefaults">
-            <LucideRotateCcw class="mr-1 size-4" /> {{ t("costumes.dressup.reset") }}
-          </Button>
+          <template v-else-if="roleLoading && roleData == null">
+            <Skeleton v-for="index in 3" :key="index" class="h-14 w-full rounded-md" />
+          </template>
+          <template v-else>
+            <div class="grid gap-1.5">
+              <Label class="text-xs text-muted-foreground">{{ t("costumes.dressup.body") }}</Label>
+              <Combobox
+                :model-value="bodyId != null ? String(bodyId) : null"
+                :options="partComboboxOptions('body')"
+                :placeholder="t('costumes.dressup.partPlaceholder')"
+                :search-placeholder="t('costumes.dressup.searchPlaceholder')"
+                :empty-text="t('costumes.dressup.empty')"
+                :clearable="false"
+                trigger-class="w-full"
+                @update:model-value="handleBodyChange"
+              />
+            </div>
+            <div class="grid gap-1.5">
+              <Label class="text-xs text-muted-foreground">{{ t("costumes.dressup.head") }}</Label>
+              <Combobox
+                :model-value="headId != null ? String(headId) : null"
+                :options="partComboboxOptions('head')"
+                :placeholder="t('costumes.dressup.partPlaceholder')"
+                :search-placeholder="t('costumes.dressup.searchPlaceholder')"
+                :empty-text="t('costumes.dressup.empty')"
+                :clearable="false"
+                trigger-class="w-full"
+                @update:model-value="handleHeadChange"
+              />
+            </div>
+            <div class="grid gap-1.5">
+              <Label class="text-xs text-muted-foreground">{{ t("costumes.dressup.hair") }}</Label>
+              <Combobox
+                :model-value="hairId != null ? String(hairId) : null"
+                :options="partComboboxOptions('hair')"
+                :placeholder="t('costumes.dressup.partPlaceholder')"
+                :search-placeholder="t('costumes.dressup.searchPlaceholder')"
+                :empty-text="t('costumes.dressup.empty')"
+                :clearable="false"
+                trigger-class="w-full"
+                @update:model-value="handleHairChange"
+              />
+            </div>
+            <Button variant="outline" size="sm" class="w-fit" @click="resetToDefaults">
+              <LucideRotateCcw class="mr-1 size-4" /> {{ t("costumes.dressup.reset") }}
+            </Button>
+          </template>
         </CardContent>
       </Card>
 

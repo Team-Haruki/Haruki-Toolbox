@@ -45,6 +45,7 @@ import EventBannerImage from "@/modules/events/components/EventBannerImage.vue"
 import GachaAssetImage from "@/modules/gachas/components/GachaAssetImage.vue"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 import CostumeViewer, { type CostumeViewerRecipe } from "@/modules/costumes/components/CostumeViewer.vue"
+import { useCostumeRoleData } from "@/modules/costumes/composables/useCostumeRoleData"
 
 const props = defineProps<{
   cardId: string
@@ -132,12 +133,18 @@ const supplyType = computed(() => (card.value
   ? resolveCardSupplyType(card.value, supplyTypeMap.value, worldBloomCardIds.value)
   : null))
 
+const { groups: costumeGroups, loading: costumesLoading } = useCardCostumes(region, costumeCardId)
+
+// Stock head/hair for the card's character come from the 3D runtime role
+// catalog — masterdata default ids are not guaranteed to exist in the runtime.
 const costumeCharacterId = computed(() => card.value?.characterId ?? null)
-const {
-  groups: costumeGroups,
-  defaults: costumeDefaults,
-  loading: costumesLoading,
-} = useCardCostumes(region, costumeCardId, costumeCharacterId)
+const costumeRoleUnit = computed<string | null>(() => unit.value)
+const { data: costumeRoleData } = useCostumeRoleData(
+  region,
+  assetEndpoint,
+  costumeCharacterId,
+  costumeRoleUnit,
+)
 
 // 3D preview of an unlocked costume: the clicked body color plus the
 // character's stock head/hair completes the engine recipe.
@@ -150,9 +157,9 @@ watch([costumeCardId, region], () => {
 const costumeViewerRecipe = computed<CostumeViewerRecipe | null>(() => {
   const characterId = card.value?.characterId
   const targetUnit = unit.value
-  const partDefaults = costumeDefaults.value
+  const roleDefaults = costumeRoleData.value?.defaults
   if (selectedCostume3dId.value == null || characterId == null || targetUnit == null
-    || partDefaults?.headCostume3dId == null || partDefaults.hairCostume3dId == null) {
+    || roleDefaults == null) {
     return null
   }
 
@@ -160,8 +167,8 @@ const costumeViewerRecipe = computed<CostumeViewerRecipe | null>(() => {
     characterId,
     unit: targetUnit,
     bodyCostume3dId: selectedCostume3dId.value,
-    headCostume3dId: partDefaults.headCostume3dId,
-    hairCostume3dId: partDefaults.hairCostume3dId,
+    headCostume3dId: roleDefaults.headCostume3dId,
+    hairCostume3dId: roleDefaults.hairCostume3dId,
   }
 })
 

@@ -1043,6 +1043,7 @@ export const enUS = {
       empty: "No matches found.",
       reset: "Reset to defaults",
       loadError: "Failed to load costume data.",
+      roleLoadError: "Failed to load the character's 3D part list.",
       retry: "Retry",
     },
     viewer: {

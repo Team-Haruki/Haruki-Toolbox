@@ -1043,6 +1043,7 @@ export const zhCN = {
       empty: "没有找到匹配项。",
       reset: "恢复默认",
       loadError: "服装数据加载失败。",
+      roleLoadError: "该角色的 3D 部件清单加载失败。",
       retry: "重试",
     },
     viewer: {
