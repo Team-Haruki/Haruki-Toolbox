@@ -1,4 +1,4 @@
-import { resolveCardAttrIconUrl, resolveSekaiCardThumbnailUrl } from "@/shared/sekai/data-sources"
+import { resolveCardAttrRoundIconUrl, resolveSekaiCardThumbnailUrl } from "@/shared/sekai/data-sources"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import type { SekaiRegion } from "@/types"
 import type { DeckRecommendEventAttr, DeckRecommendUnitType } from "./recommend-options"
@@ -164,7 +164,7 @@ export function buildMasterCardOptions(
         thumbnailUrl: assetbundleName
           ? resolveSekaiCardThumbnailUrl(region, assetbundleName, canSpecialTrain, assetEndpoint)
           : null,
-        attrIconUrl: attr ? resolveCardAttrIconUrl(attr) : null,
+        attrIconUrl: attr ? resolveCardAttrRoundIconUrl(attr) : null,
         keywords: uniqueKeywords([
           String(id),
           `#${id}`,

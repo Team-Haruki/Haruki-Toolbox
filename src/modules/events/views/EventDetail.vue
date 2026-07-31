@@ -23,7 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatLocalizedDateTime } from "@/lib/date-time"
 import { buildCatalogCardThumbnail, type CatalogMasterCard } from "@/shared/sekai/catalog"
-import { resolveCardAttrIconUrl, resolveCharacterIconUrl } from "@/shared/sekai/data-sources"
+import { resolveCardAttrRoundIconUrl, resolveCharacterIconUrl } from "@/shared/sekai/data-sources"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
@@ -236,6 +236,20 @@ const canGoBack = computed(() => {
         </CardContent>
       </Card>
 
+      <!-- Quick links -->
+      <div class="flex flex-col gap-2 sm:flex-row">
+        <Button variant="outline" class="flex-1" as-child>
+          <RouterLink to="/rank-border">
+            <LucideChartLine class="mr-1 h-4 w-4" /> {{ t("events.detail.links.rankBorder") }}
+          </RouterLink>
+        </Button>
+        <Button variant="outline" class="flex-1" as-child>
+          <RouterLink to="/deck-recommend">
+            <LucideLayoutGrid class="mr-1 h-4 w-4" /> {{ t("events.detail.links.deckRecommend") }}
+          </RouterLink>
+        </Button>
+      </div>
+
       <!-- Timeline -->
       <Card>
         <CardHeader>
@@ -255,7 +269,7 @@ const canGoBack = computed(() => {
           </div>
           <div
             v-if="countdown?.parts"
-            class="flex items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2 text-sm"
+            class="-mx-3 flex items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2 text-sm"
           >
             <span class="flex items-center gap-2 text-muted-foreground">
               <LucideTimer class="h-4 w-4" />
@@ -284,7 +298,7 @@ const canGoBack = computed(() => {
           >
             <img
               v-if="group.cardAttr"
-              :src="resolveCardAttrIconUrl(group.cardAttr)"
+              :src="resolveCardAttrRoundIconUrl(group.cardAttr)"
               :alt="t(`events.attr.${group.cardAttr}`)"
               :title="t(`events.attr.${group.cardAttr}`)"
               class="h-6 w-6"
@@ -372,19 +386,6 @@ const canGoBack = computed(() => {
         </CardContent>
       </Card>
 
-      <!-- Quick links -->
-      <div class="flex flex-col gap-2 sm:flex-row">
-        <Button variant="outline" class="flex-1" as-child>
-          <RouterLink to="/rank-border">
-            <LucideChartLine class="mr-1 h-4 w-4" /> {{ t("events.detail.links.rankBorder") }}
-          </RouterLink>
-        </Button>
-        <Button variant="outline" class="flex-1" as-child>
-          <RouterLink to="/deck-recommend">
-            <LucideLayoutGrid class="mr-1 h-4 w-4" /> {{ t("events.detail.links.deckRecommend") }}
-          </RouterLink>
-        </Button>
-      </div>
     </template>
   </div>
 </template>

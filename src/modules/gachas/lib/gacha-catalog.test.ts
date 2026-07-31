@@ -209,6 +209,17 @@ describe("filterGachas / sortGachas", () => {
     expect(filterGachas(gachas, { year: 2022 }).map((g) => g.id)).toEqual([1])
   })
 
+  it("filters by a card in the pool or pickups", () => {
+    const withCards = [
+      makeGacha({ id: 1, details: [{ cardId: 100, weight: 1 }] }),
+      makeGacha({ id: 2, pickups: [{ cardId: 100, gachaPickupType: null }] }),
+      makeGacha({ id: 3, details: [{ cardId: 200, weight: 1 }] }),
+    ]
+    expect(filterGachas(withCards, { cardId: 100 }).map((g) => g.id)).toEqual([1, 2])
+    expect(filterGachas(withCards, { cardId: 999 })).toEqual([])
+    expect(filterGachas(withCards, { cardId: null }).map((g) => g.id)).toEqual([1, 2, 3])
+  })
+
   it("sorts by startAt desc by default and supports other keys", () => {
     expect(sortGachas(gachas, "startDesc").map((g) => g.id)).toEqual([3, 1, 2])
     expect(sortGachas(gachas, "startAsc").map((g) => g.id)).toEqual([2, 1, 3])

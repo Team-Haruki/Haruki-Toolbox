@@ -296,6 +296,13 @@ export type GachaFilterOptions = {
   gachaType?: string | null
   status?: GachaStatus | null
   year?: number | null
+  /** Keeps only gachas whose pool (details) or pickups contain this card. */
+  cardId?: number | null
+}
+
+export function gachaContainsCard(gacha: CatalogGacha, cardId: number): boolean {
+  return gacha.details.some((detail) => detail.cardId === cardId)
+    || gacha.pickups.some((pickup) => pickup.cardId === cardId)
 }
 
 export function filterGachas(
@@ -307,8 +314,13 @@ export function filterGachas(
   const gachaType = options.gachaType ?? null
   const status = options.status ?? null
   const year = options.year ?? null
+  const cardId = options.cardId ?? null
 
   return gachas.filter((gacha) => {
+    if (cardId != null && !gachaContainsCard(gacha, cardId)) {
+      return false
+    }
+
     if (search && !gacha.name.toLowerCase().includes(search) && String(gacha.id) !== search) {
       return false
     }

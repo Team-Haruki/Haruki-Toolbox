@@ -11,7 +11,7 @@ import {
   normalizeCatalogRecords,
 } from "@/shared/sekai/catalog"
 import type { SekaiRegion } from "@/types"
-import { buildCardSupplyTypeMap } from "@/modules/cards/lib/card-filter"
+import { buildCardSupplyTypeMap, buildWorldBloomCardIds } from "@/modules/cards/lib/card-filter"
 
 export const CARD_CATALOG_MASTER_FILES = [
   "cards",
@@ -34,6 +34,7 @@ export function useCardCatalog() {
   const characterMap = shallowRef<Map<number, CatalogCharacter>>(new Map())
   const unitColorMap = shallowRef<Map<SekaiUnit, string>>(new Map())
   const supplyTypeMap = shallowRef<Map<number, string>>(new Map())
+  const worldBloomCardIds = shallowRef<ReadonlySet<number>>(new Set())
   const rawSkills = shallowRef<unknown>(null)
   const rawEvents = shallowRef<unknown>(null)
   const rawEventCards = shallowRef<unknown>(null)
@@ -64,6 +65,7 @@ export function useCardCatalog() {
       characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
       unitColorMap.value = buildCatalogUnitColorMap(files.gameCharacterUnits)
       supplyTypeMap.value = buildCardSupplyTypeMap(files.cardSupplies)
+      worldBloomCardIds.value = buildWorldBloomCardIds(files.events, files.eventCards)
       rawSkills.value = files.skills ?? null
       rawEvents.value = files.events ?? null
       rawEventCards.value = files.eventCards ?? null
@@ -102,6 +104,7 @@ export function useCardCatalog() {
     characterMap,
     unitColorMap,
     supplyTypeMap,
+    worldBloomCardIds,
     rawCards,
     rawSkills,
     rawEvents,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test"
 import type { CatalogCharacter, CatalogMasterCard } from "@/shared/sekai/catalog"
 import {
   buildCardSupplyTypeMap,
+  buildWorldBloomCardIds,
   cardMatchesQuery,
   cardMatchesUnit,
   collectCardReleaseYears,
@@ -71,6 +72,34 @@ describe("card supply mapping", () => {
     expect(resolveCardSupplyType(makeCard({ cardSupplyId: null }), supplyTypeMap)).toBeNull()
     expect(resolveCardSupplyType(makeCard({ cardSupplyId: 77 }), supplyTypeMap)).toBeNull()
     expect(resolveCardSupplyType(makeCard({ cardSupplyId: 99 }), supplyTypeMap)).toBeNull()
+  })
+
+  it("collects card ids that belong to world_bloom events", () => {
+    const cardIds = buildWorldBloomCardIds(
+      [
+        { id: 202, eventType: "world_bloom" },
+        { id: 203, eventType: "marathon" },
+      ],
+      [
+        { eventId: 202, cardId: 1374 },
+        { eventId: 202, cardId: 1375 },
+        { eventId: 203, cardId: 1380 },
+        { eventId: null, cardId: 1381 },
+      ],
+    )
+    expect(cardIds).toEqual(new Set([1374, 1375]))
+  })
+
+  it("reclassifies term_limited world link cards as unit_event_limited", () => {
+    const worldBloomCardIds = new Set([1374])
+    expect(resolveCardSupplyType(makeCard({ id: 1374, cardSupplyId: 3 }), supplyTypeMap, worldBloomCardIds))
+      .toBe("unit_event_limited")
+    // Non-WL term_limited cards keep their master classification.
+    expect(resolveCardSupplyType(makeCard({ id: 1000, cardSupplyId: 3 }), supplyTypeMap, worldBloomCardIds))
+      .toBe("term_limited")
+    // WL cards whose supply is not term_limited are left untouched.
+    expect(resolveCardSupplyType(makeCard({ id: 1374, cardSupplyId: 1 }), supplyTypeMap, worldBloomCardIds))
+      .toBe("normal")
   })
 })
 

@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Skeleton } from "@/components/ui/skeleton"
 import SimpleSelect from "@/shared/components/SimpleSelect.vue"
 import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, SEKAI_UNITS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
-import { resolveCardAttrIconUrl, resolveSekaiGameAssetUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
+import { resolveCardAttrRoundIconUrl, resolveSekaiGameAssetUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { useTrainingArea } from "@/modules/training/composables/useTrainingArea"
 import {
   areaItemIconAssetPath,
@@ -180,7 +180,7 @@ function targetIconUrl(view: AreaItemView): string | null {
     return characterMap.value.get(target.characterId)?.iconUrl ?? null
   }
   if (target.type === "attr") {
-    return resolveCardAttrIconUrl(target.attr)
+    return resolveCardAttrRoundIconUrl(target.attr)
   }
   return null
 }

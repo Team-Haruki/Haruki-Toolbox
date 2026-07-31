@@ -25,7 +25,7 @@ import {
   type SekaiCardAttr,
   type SekaiUnit,
 } from "@/shared/sekai/catalog"
-import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
+import { resolveCardAttrRoundIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import {
   CARD_RARITY_TYPES,
   countCardPages,
@@ -592,7 +592,7 @@ const canGoBack = computed(() => {
               ]"
               @click="togglePoolAttr(attr)"
             >
-              <img :src="resolveCardAttrIconUrl(attr)" alt="" class="size-4" loading="lazy">
+              <img :src="resolveCardAttrRoundIconUrl(attr)" alt="" class="size-4" loading="lazy">
               {{ t(`cards.attr.${attr}`) }}
             </button>
           </div>

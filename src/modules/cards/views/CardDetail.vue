@@ -60,6 +60,7 @@ const {
   characterMap,
   unitColorMap,
   supplyTypeMap,
+  worldBloomCardIds,
   rawCards,
   rawSkills,
   rawEvents,
@@ -127,7 +128,7 @@ const supportUnit = computed<SekaiUnit | null>(() => {
 })
 
 const supplyType = computed(() => (card.value
-  ? resolveCardSupplyType(card.value, supplyTypeMap.value)
+  ? resolveCardSupplyType(card.value, supplyTypeMap.value, worldBloomCardIds.value)
   : null))
 
 const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()

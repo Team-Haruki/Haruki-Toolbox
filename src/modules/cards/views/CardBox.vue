@@ -12,7 +12,7 @@ import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snaps
 import type { CatalogMasterCard } from "@/shared/sekai/catalog"
 import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, buildCatalogCardThumbnail, resolveCardRareCount, resolveSekaiCharacterColor, type SekaiCardThumbnailView, type SekaiUnit } from "@/shared/sekai/catalog"
 import { resolveRarityTrainingIconUrl, resolveTrainRankImageUrl } from "@/shared/sekai/data-sources"
-import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
+import { resolveCardAttrRoundIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import type { SekaiRegion } from "@/types"
 import { CARD_RARITY_TYPES, sortCards, type CardRarityType } from "@/modules/cards/lib/card-filter"
 import {
@@ -159,7 +159,7 @@ const attrSections = computed(() => {
     return {
       key: group.key,
       name: attrLabel(group.key),
-      iconUrl: resolveCardAttrIconUrl(group.key),
+      iconUrl: resolveCardAttrRoundIconUrl(group.key),
       owned: progress?.owned ?? group.owned,
       total: progress?.total ?? group.total,
       percent: progress?.percent ?? 0,
@@ -221,7 +221,7 @@ const statsRarityRows = computed(() => rarityDistribution.value.map((row) => ({
 const statsAttrRows = computed(() => attrDistribution.value.map((row) => ({
   ...row,
   name: attrLabel(row.attr),
-  iconUrl: resolveCardAttrIconUrl(row.attr),
+  iconUrl: resolveCardAttrRoundIconUrl(row.attr),
   color: SEKAI_CARD_ATTR_COLORS[row.attr] ?? null,
 })))
 
@@ -416,7 +416,7 @@ function retry() {
                 ]"
                 @click="toggleFlatAttr(attr)"
               >
-                <img :src="resolveCardAttrIconUrl(attr)" alt="" class="size-4" loading="lazy">
+                <img :src="resolveCardAttrRoundIconUrl(attr)" alt="" class="size-4" loading="lazy">
                 {{ t(`cards.attr.${attr}`) }}
               </button>
             </div>

@@ -28,7 +28,7 @@ import {
   SEKAI_CARD_ATTRS,
   SEKAI_UNITS,
 } from "@/shared/sekai/catalog"
-import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
+import { resolveCardAttrRoundIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import type { CardRarityType, CardSortKey, CardSupplyType } from "@/modules/cards/lib/card-filter"
 import {
@@ -63,6 +63,7 @@ const {
   characterMap,
   unitColorMap,
   supplyTypeMap,
+  worldBloomCardIds,
   reload,
 } = useCardCatalog()
 
@@ -116,6 +117,7 @@ const filteredCards = computed(() => sortCards(
   filterCards(visibleCards.value, filters, {
     characterMap: characterMap.value,
     supplyTypeMap: supplyTypeMap.value,
+    worldBloomCardIds: worldBloomCardIds.value,
   }),
   sortKey.value,
 ))
@@ -356,7 +358,7 @@ function nextPage() {
             ]"
             @click="toggleAttr(attr)"
           >
-            <img :src="resolveCardAttrIconUrl(attr)" alt="" class="size-4" loading="lazy">
+            <img :src="resolveCardAttrRoundIconUrl(attr)" alt="" class="size-4" loading="lazy">
             {{ t(`cards.attr.${attr}`) }}
           </button>
         </div>

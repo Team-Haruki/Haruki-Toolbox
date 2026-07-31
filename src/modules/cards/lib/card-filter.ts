@@ -45,6 +45,7 @@ export type CardListFilters = {
 export type CardFilterContext = {
   characterMap: Map<number, CatalogCharacter>
   supplyTypeMap: Map<number, string>
+  worldBloomCardIds?: ReadonlySet<number>
 }
 
 export function createDefaultCardFilters(): CardListFilters {
@@ -80,16 +81,51 @@ export function buildCardSupplyTypeMap(rawCardSupplies: unknown): Map<number, st
   return map
 }
 
+/**
+ * Card ids that belong to a World Link (world_bloom) event. The JP master
+ * stopped tagging World Link cards as `unit_event_limited` from WL3 onward
+ * (their cardSupplies row is plain `term_limited`), so membership is derived
+ * from eventCards joined against the event type instead.
+ */
+export function buildWorldBloomCardIds(rawEvents: unknown, rawEventCards: unknown): Set<number> {
+  const worldBloomEventIds = new Set<number>()
+  for (const record of normalizeCatalogRecords(rawEvents)) {
+    const id = normalizeCatalogNumber(record.id)
+    if (id != null && normalizeCatalogString(record.eventType) === "world_bloom") {
+      worldBloomEventIds.add(id)
+    }
+  }
+
+  const cardIds = new Set<number>()
+  for (const record of normalizeCatalogRecords(rawEventCards)) {
+    const eventId = normalizeCatalogNumber(record.eventId)
+    const cardId = normalizeCatalogNumber(record.cardId)
+    if (eventId != null && cardId != null && worldBloomEventIds.has(eventId)) {
+      cardIds.add(cardId)
+    }
+  }
+
+  return cardIds
+}
+
 export function resolveCardSupplyType(
   card: CatalogMasterCard,
   supplyTypeMap: Map<number, string>,
+  worldBloomCardIds?: ReadonlySet<number>,
 ): CardSupplyType | null {
   if (card.cardSupplyId == null) {
     return null
   }
 
   const supplyType = supplyTypeMap.get(card.cardSupplyId)
-  return supplyType && isCardSupplyType(supplyType) ? supplyType : null
+  const resolved = supplyType && isCardSupplyType(supplyType) ? supplyType : null
+  // WL3+ limited cards ship as term_limited; reclassify them under the
+  // World Link limited bucket so the filter keeps matching every WL round.
+  if (resolved === "term_limited" && worldBloomCardIds?.has(card.id)) {
+    return "unit_event_limited"
+  }
+
+  return resolved
 }
 
 /**
@@ -201,7 +237,7 @@ export function filterCards(
     }
 
     if (filters.supplyTypes.length > 0) {
-      const supplyType = resolveCardSupplyType(card, context.supplyTypeMap)
+      const supplyType = resolveCardSupplyType(card, context.supplyTypeMap, context.worldBloomCardIds)
       if (supplyType == null || !filters.supplyTypes.includes(supplyType)) {
         return false
       }

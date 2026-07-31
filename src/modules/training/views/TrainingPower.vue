@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SEKAI_CARD_ATTR_COLORS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
-import { resolveCardAttrIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
+import { resolveCardAttrRoundIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { useTrainingPower } from "@/modules/training/composables/useTrainingPower"
 import {
   buildPowerBonuses,
@@ -85,7 +85,7 @@ const unitRows = computed(() => bonuses.value.units.map((bonus) => ({
 const attrRows = computed(() => bonuses.value.attrs.map((bonus) => ({
   ...bonus,
   label: t(`training.power.attrs.${bonus.attr}`),
-  iconUrl: resolveCardAttrIconUrl(bonus.attr),
+  iconUrl: resolveCardAttrRoundIconUrl(bonus.attr),
   color: SEKAI_CARD_ATTR_COLORS[bonus.attr] ?? null,
 })))
 

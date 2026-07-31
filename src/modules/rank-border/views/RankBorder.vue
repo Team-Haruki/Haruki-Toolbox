@@ -44,7 +44,7 @@ import { formatNumberCN } from "@/lib/number-format"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { getI18nLocale } from "@/shared/i18n"
 import {
-  resolveCardAttrIconUrl,
+  resolveCardAttrRoundIconUrl,
   resolveCardFrameImageUrl,
   resolveRareBirthdayImageUrl,
   resolveRareStarImageUrl,
@@ -3069,7 +3069,7 @@ function leaderAttrIconUrl(result: ProfileResult) {
 
   const card = cardById.value.get(result.cardId)
   const attr = normalizeTextValue(card?.attr)?.toLowerCase()
-  return attr ? resolveCardAttrIconUrl(attr) : null
+  return attr ? resolveCardAttrRoundIconUrl(attr) : null
 }
 
 function leaderRareIconUrl(result: ProfileResult) {

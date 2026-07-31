@@ -9,6 +9,7 @@ import {
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -21,6 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatLocalizedDate } from "@/lib/date-time"
 import { SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
+import { resolveSekaiCardThumbnailUrl } from "@/shared/sekai/data-sources"
 import { SEKAI_CATALOG_REGION_FOLLOW_VALUE } from "@/shared/sekai/catalog-region"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import type { GachaSortKey, GachaStatus } from "@/modules/gachas/lib/gacha-catalog"
@@ -57,6 +59,8 @@ const {
   updateRegionSelector,
   assetEndpoint,
   gachas,
+  cardsById,
+  characterMap,
   reload,
 } = useGachaCatalog()
 
@@ -64,6 +68,7 @@ const search = ref("")
 const typeFilter = ref(ALL)
 const statusFilter = ref(ALL)
 const yearFilter = ref(ALL)
+const cardFilter = ref<string | null>(null)
 const sortKey = ref<GachaSortKey>("startDesc")
 const page = ref(1)
 
@@ -87,6 +92,29 @@ const visibleGachas = computed(() => excludeUnreleasedGachas(gachas.value, hideU
 
 const years = computed(() => collectGachaYears(visibleGachas.value))
 
+const cardFilterId = computed(() => {
+  const parsed = cardFilter.value != null ? Number(cardFilter.value) : null
+  return parsed != null && Number.isInteger(parsed) && parsed > 0 ? parsed : null
+})
+
+// Newest cards first, matching the in-game card-id ordering people expect.
+const cardFilterOptions = computed<ComboboxOption[]>(() => [...cardsById.value.values()]
+  .sort((a, b) => b.id - a.id)
+  .map((card) => {
+    const characterName = card.characterId != null
+      ? characterMap.value.get(card.characterId)?.name ?? null
+      : null
+    return {
+      value: String(card.id),
+      label: card.prefix ?? `#${card.id}`,
+      description: characterName != null ? `#${card.id} · ${characterName}` : `#${card.id}`,
+      iconUrl: card.assetbundleName
+        ? resolveSekaiCardThumbnailUrl(region.value, card.assetbundleName, false, assetEndpoint.value)
+        : null,
+      keywords: [String(card.id), card.prefix ?? "", characterName ?? ""].filter(Boolean),
+    }
+  }))
+
 const filteredGachas = computed(() => {
   const year = yearFilter.value === ALL ? null : Number(yearFilter.value)
   return sortGachas(
@@ -97,6 +125,7 @@ const filteredGachas = computed(() => {
         gachaType: typeFilter.value === ALL ? null : typeFilter.value,
         status: statusFilter.value === ALL ? null : (statusFilter.value as GachaStatus),
         year: Number.isFinite(year) ? year : null,
+        cardId: cardFilterId.value,
       },
       nowMs.value,
     ),
@@ -121,7 +150,7 @@ const pagedGachaViews = computed(() => paginateGachas(filteredGachas.value, page
     ),
   })))
 
-watch([search, typeFilter, statusFilter, yearFilter, sortKey, region, hideUnreleased], () => {
+watch([search, typeFilter, statusFilter, yearFilter, cardFilter, sortKey, region, hideUnreleased], () => {
   page.value = 1
 })
 
@@ -176,7 +205,7 @@ function nextPage() {
     </div>
 
     <!-- Filters -->
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
       <div class="grid gap-1.5">
         <Label class="text-xs text-muted-foreground">{{ t("gachas.list.typeLabel") }}</Label>
         <Select :key="locale" v-model="typeFilter">
@@ -218,6 +247,17 @@ function nextPage() {
             </SelectItem>
           </SelectContent>
         </Select>
+      </div>
+      <div class="grid gap-1.5">
+        <Label class="text-xs text-muted-foreground">{{ t("gachas.list.cardLabel") }}</Label>
+        <Combobox
+          v-model="cardFilter"
+          :options="cardFilterOptions"
+          :placeholder="t('gachas.list.allCards')"
+          :search-placeholder="t('gachas.list.cardSearchPlaceholder')"
+          :empty-text="t('gachas.list.cardEmpty')"
+          trigger-class="w-full"
+        />
       </div>
       <div class="grid gap-1.5">
         <Label class="text-xs text-muted-foreground">{{ t("gachas.list.sortLabel") }}</Label>

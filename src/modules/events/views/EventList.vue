@@ -22,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { formatLocalizedDate } from "@/lib/date-time"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { SEKAI_CARD_ATTRS } from "@/shared/sekai/catalog"
-import { resolveCardAttrIconUrl } from "@/shared/sekai/data-sources"
+import { resolveCardAttrRoundIconUrl } from "@/shared/sekai/data-sources"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { SEKAI_CATALOG_REGION_FOLLOW_VALUE, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
@@ -82,7 +82,7 @@ const attrFieldOptions = computed<CatalogFieldOption[]>(() =>
   SEKAI_CARD_ATTRS.map((attr) => ({
     value: attr,
     label: t(`events.attr.${attr}`),
-    iconUrl: resolveCardAttrIconUrl(attr),
+    iconUrl: resolveCardAttrRoundIconUrl(attr),
   })),
 )
 
