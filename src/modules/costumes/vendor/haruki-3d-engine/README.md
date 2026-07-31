@@ -2,11 +2,8 @@
 
 Prebuilt library output of [Team-Haruki/Haruki-3D-Engine](https://github.com/Team-Haruki/Haruki-3D-Engine)
 (`npm run build`, lib entry only — the capture harness is not vendored).
-
-Built from `main` plus one pending local patch (worth upstreaming): the kernel
-additionally exposes `setCharacterYawDegrees(degrees)` (forwards to the
-engine's existing method, re-rendering one frame when paused) so product pages
-can implement drag-to-rotate.
+Matches upstream `main` as of the `setCharacterYawDegrees` kernel API
+(Team-Haruki/Haruki-3D-Engine#1).
 
 Files:
 
