@@ -140,6 +140,11 @@ const canSave = computed(() =>
 watch(() => props.open, (open) => {
   if (open) {
     errorMessage.value = null
+    // Warm the engine and region data as soon as the dialog opens so the
+    // first deck build does not pay the whole load inside the run.
+    void runner.preloadEngine().catch(() => undefined)
+    void runner.preloadRegionData(props.dataRegion, props.account?.server ?? props.dataRegion)
+      .catch(() => undefined)
   }
 })
 

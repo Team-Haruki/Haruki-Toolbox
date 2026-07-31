@@ -91,7 +91,9 @@ function runLifecycleRequest(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const requestId = createRequestId()
-    const timeoutMs = type === "dispose" ? 1000 : 30000
+    // Loading master data into the engine parses tens of MB inside the worker
+    // and can far exceed 30s on a cold start or slower machines.
+    const timeoutMs = type === "dispose" ? 1000 : type === "load-data" ? 180000 : 60000
     let timeoutId: ReturnType<typeof setTimeout> | null = null
     let unsubscribe: () => void = () => {}
     let finished = false

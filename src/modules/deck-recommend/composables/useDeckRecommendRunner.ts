@@ -1005,7 +1005,8 @@ function loadDataOnDedicatedWorker(
   worker: Worker,
   input: Omit<DeckRecommendWorkerLoadDataRequest, "type" | "requestId">,
 ) {
-  return runDedicatedWorkerLifecycleRequest(worker, { type: "load-data", ...input }, "data-loaded")
+  // Engine-side master data parsing can far exceed the default lifecycle timeout.
+  return runDedicatedWorkerLifecycleRequest(worker, { type: "load-data", ...input }, "data-loaded", 180000)
 }
 
 function runDedicatedWorkerLifecycleRequest(
