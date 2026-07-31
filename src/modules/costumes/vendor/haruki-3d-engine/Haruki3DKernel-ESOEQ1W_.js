@@ -9118,6 +9118,9 @@ function ju(e, t) {
 		resize(t, n) {
 			d(), e.setViewportSize(t, n), e.renderFrame();
 		},
+		setCharacterYawDegrees(t) {
+			d(), e.setCharacterYawDegrees(t), r || e.renderFrame();
+		},
 		destroy() {
 			return o || (i = !0, s = null, r = !1, cancelAnimationFrame(n), n = 0, o = a.then(() => {
 				e.destroy();

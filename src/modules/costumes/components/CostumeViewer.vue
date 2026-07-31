@@ -109,6 +109,8 @@ async function loadRecipe() {
       return
     }
 
+    // Loading resets the character orientation; restore the user's rotation.
+    activeKernel.setCharacterYawDegrees(yawDegrees)
     activeKernel.play()
     status.value = "ready"
   } catch (loadError) {
@@ -116,6 +118,37 @@ async function loadRecipe() {
       errorMessage.value = loadError instanceof Error ? loadError.message : String(loadError)
       status.value = "error"
     }
+  }
+}
+
+// --- Drag to rotate ---------------------------------------------------------
+
+let yawDegrees = 0
+let dragPointerId: number | null = null
+let dragLastX = 0
+
+function handlePointerDown(event: PointerEvent) {
+  if (status.value !== "ready" || kernel == null) {
+    return
+  }
+  dragPointerId = event.pointerId
+  dragLastX = event.clientX
+  ;(event.currentTarget as HTMLElement | null)?.setPointerCapture?.(event.pointerId)
+}
+
+function handlePointerMove(event: PointerEvent) {
+  if (dragPointerId !== event.pointerId || kernel == null) {
+    return
+  }
+  const deltaX = event.clientX - dragLastX
+  dragLastX = event.clientX
+  yawDegrees = (yawDegrees + deltaX * 0.5) % 360
+  kernel.setCharacterYawDegrees(yawDegrees)
+}
+
+function handlePointerUp(event: PointerEvent) {
+  if (dragPointerId === event.pointerId) {
+    dragPointerId = null
   }
 }
 
@@ -153,7 +186,14 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="hostRef" class="relative aspect-[7/5] w-full overflow-hidden rounded-md border bg-[#1c1e2c]">
-    <canvas ref="canvasRef" class="block size-full" />
+    <canvas
+      ref="canvasRef"
+      class="block size-full touch-none cursor-grab active:cursor-grabbing"
+      @pointerdown="handlePointerDown"
+      @pointermove="handlePointerMove"
+      @pointerup="handlePointerUp"
+      @pointercancel="handlePointerUp"
+    />
     <div
       v-if="status === 'loading'"
       class="absolute inset-0 flex items-center justify-center bg-black/30"

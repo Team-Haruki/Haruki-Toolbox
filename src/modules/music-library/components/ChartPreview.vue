@@ -154,10 +154,10 @@ watch([mode, selectedDifficulty, () => props.entry.id, () => props.region], () =
 }, { immediate: true })
 
 // Charts render at full size (often 5000+ px wide); fit-to-height keeps them
-// browsable and the zoom presets restore detail on demand.
-type StaticZoom = "fit" | "half" | "full"
-const STATIC_ZOOM_OPTIONS: readonly StaticZoom[] = ["fit", "half", "full"]
+// browsable and the zoom slider restores detail on demand.
+type StaticZoom = "fit" | "custom"
 const staticZoom = ref<StaticZoom>("fit")
+const zoomPercent = ref(50)
 const STATIC_FIT_HEIGHT = 520
 
 function applyStaticZoom() {
@@ -175,12 +175,17 @@ function applyStaticZoom() {
   if (staticZoom.value === "fit") {
     svg.style.height = `${STATIC_FIT_HEIGHT}px`
     svg.style.width = "auto"
-  } else if (staticZoom.value === "half") {
-    svg.style.width = `${Math.round(width / 2)}px`
-    svg.style.height = "auto"
   } else {
-    svg.style.width = `${width}px`
+    svg.style.width = `${Math.round(width * zoomPercent.value / 100)}px`
     svg.style.height = "auto"
+  }
+}
+
+function handleZoomInput(event: Event) {
+  const value = Number((event.target as HTMLInputElement).value)
+  if (Number.isFinite(value)) {
+    zoomPercent.value = Math.min(100, Math.max(10, value))
+    staticZoom.value = "custom"
   }
 }
 
@@ -193,7 +198,7 @@ watch([svgMarkup, svgHost], ([markup, host]) => {
   }
 })
 
-watch(staticZoom, () => {
+watch([staticZoom, zoomPercent], () => {
   applyStaticZoom()
 })
 </script>
@@ -247,24 +252,38 @@ watch(staticZoom, () => {
         :filler-sec="entry.fillerSec ?? 0"
       />
       <div v-else-if="mode === 'static'" class="flex flex-col gap-2">
-        <div class="flex flex-wrap items-center gap-1.5">
+        <div class="flex flex-wrap items-center gap-2">
           <button
-            v-for="zoom in STATIC_ZOOM_OPTIONS"
-            :key="zoom"
             type="button"
             :class="[
               'rounded-full border px-2.5 py-0.5 text-xs transition-colors',
-              staticZoom === zoom
+              staticZoom === 'fit'
                 ? 'border-primary bg-primary text-primary-foreground'
                 : 'border-border text-muted-foreground hover:bg-muted',
             ]"
-            :aria-pressed="staticZoom === zoom"
-            @click="staticZoom = zoom"
+            :aria-pressed="staticZoom === 'fit'"
+            @click="staticZoom = 'fit'"
           >
-            {{ zoom === "fit"
-              ? t("musicLibrary.detail.chartPreview.zoomFit")
-              : zoom === "half" ? "50%" : "100%" }}
+            {{ t("musicLibrary.detail.chartPreview.zoomFit") }}
           </button>
+          <input
+            type="range"
+            class="w-40 accent-primary"
+            :min="10"
+            :max="100"
+            :step="5"
+            :value="zoomPercent"
+            :aria-label="t('musicLibrary.detail.chartPreview.zoom')"
+            @input="handleZoomInput"
+          >
+          <span
+            :class="[
+              'w-10 text-xs tabular-nums',
+              staticZoom === 'custom' ? 'font-semibold' : 'text-muted-foreground',
+            ]"
+          >
+            {{ zoomPercent }}%
+          </span>
         </div>
         <div class="overflow-x-auto rounded-md border bg-white">
           <div ref="svgHost" class="mx-auto w-fit [&_svg]:block [&_svg]:max-w-none" />

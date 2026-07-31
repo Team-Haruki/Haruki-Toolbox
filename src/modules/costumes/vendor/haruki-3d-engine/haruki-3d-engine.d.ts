@@ -30,6 +30,8 @@ export interface Haruki3DKernel {
   play(): void
   pause(): void
   resize(width: number, height: number): void
+  /** Rotates the loaded character around its vertical axis (drag-orbit). */
+  setCharacterYawDegrees(degrees: number): void
   destroy(): Promise<void>
 }
 
