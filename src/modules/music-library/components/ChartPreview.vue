@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, ref, shallowRef, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideRefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
@@ -10,22 +10,23 @@ import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import { MUSIC_DIFFICULTIES, MUSIC_DIFFICULTY_COLORS, type MusicDifficulty } from "../lib/music-difficulties"
 import { resolveMusicScoreUrl } from "../lib/music-bpm"
 import { renderChartSvg } from "../lib/chart-preview"
+import { parseDynamicChart, type DynamicChart } from "../lib/chart-dynamic"
 import type { MusicLibraryEntry } from "../lib/music-data"
+import DynamicChartPreview from "./DynamicChartPreview.vue"
 
 const props = defineProps<{
   entry: MusicLibraryEntry
   region: SekaiRegion
   preference: SekaiAssetEndpointPreference
   jacketUrl: string | null
+  audioUrl: string | null
 }>()
 
 const { t } = useI18n()
 
 type PreviewMode = "dynamic" | "static"
 
-// The dynamic (scrolling) preview port is still in progress, so the static
-// renderer is the default until it lands; the requested end state is dynamic.
-const mode = ref<PreviewMode>("static")
+const mode = ref<PreviewMode>("dynamic")
 
 function handleModeChange(value: unknown) {
   if (value === "dynamic" || value === "static") {
@@ -47,60 +48,99 @@ watch(availableDifficulties, (difficulties) => {
 
 const status = ref<"idle" | "loading" | "error" | "ready">("idle")
 const svgMarkup = ref<string | null>(null)
+const dynamicChart = shallowRef<DynamicChart | null>(null)
 const svgHost = ref<HTMLDivElement | null>(null)
 
+const susCache = new Map<string, string>()
 const svgCache = new Map<string, string>()
+const chartCache = new Map<string, DynamicChart>()
 let loadToken = 0
 
 function cacheKey(difficulty: MusicDifficulty): string {
   return `${props.region}:${props.entry.id}:${difficulty}`
 }
 
-async function loadStaticChart() {
+async function fetchSus(difficulty: MusicDifficulty): Promise<string> {
+  const key = cacheKey(difficulty)
+  const cached = susCache.get(key)
+  if (cached != null) {
+    return cached
+  }
+
+  const url = resolveMusicScoreUrl(props.region, props.entry.id, difficulty, props.preference)
+  if (url == null) {
+    throw new Error("no chart url")
+  }
+
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+
+  const sus = await response.text()
+  susCache.set(key, sus)
+  return sus
+}
+
+async function loadPreview() {
   const difficulty = selectedDifficulty.value
   if (difficulty == null) {
     status.value = "idle"
     svgMarkup.value = null
+    dynamicChart.value = null
     return
   }
 
   const token = ++loadToken
-  const cached = svgCache.get(cacheKey(difficulty))
-  if (cached != null) {
-    svgMarkup.value = cached
-    status.value = "ready"
-    return
+  const key = cacheKey(difficulty)
+  const targetMode = mode.value
+
+  if (targetMode === "dynamic") {
+    const cached = chartCache.get(key)
+    if (cached != null) {
+      dynamicChart.value = cached
+      status.value = "ready"
+      return
+    }
+  } else {
+    const cached = svgCache.get(key)
+    if (cached != null) {
+      svgMarkup.value = cached
+      status.value = "ready"
+      return
+    }
   }
 
   status.value = "loading"
   svgMarkup.value = null
   try {
-    const url = resolveMusicScoreUrl(props.region, props.entry.id, difficulty, props.preference)
-    if (url == null) {
-      throw new Error("no chart url")
-    }
-
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
-    }
-
-    const sus = await response.text()
-    const svg = await renderChartSvg({
-      sus,
-      title: props.entry.title,
-      artist: props.entry.composer,
-      difficulty,
-      playLevel: props.entry.difficulties[difficulty]?.playLevel ?? null,
-      musicId: props.entry.id,
-      jacketUrl: props.jacketUrl,
-    })
+    const sus = await fetchSus(difficulty)
     if (token !== loadToken) {
       return
     }
 
-    svgCache.set(cacheKey(difficulty), svg)
-    svgMarkup.value = svg
+    if (targetMode === "dynamic") {
+      const chart = parseDynamicChart(sus)
+      chartCache.set(key, chart)
+      dynamicChart.value = chart
+    } else {
+      const svg = await renderChartSvg({
+        sus,
+        title: props.entry.title,
+        artist: props.entry.composer,
+        difficulty,
+        playLevel: props.entry.difficulties[difficulty]?.playLevel ?? null,
+        musicId: props.entry.id,
+        jacketUrl: props.jacketUrl,
+      })
+      if (token !== loadToken) {
+        return
+      }
+
+      svgCache.set(key, svg)
+      svgMarkup.value = svg
+    }
+
     status.value = "ready"
   } catch {
     if (token === loadToken) {
@@ -110,9 +150,7 @@ async function loadStaticChart() {
 }
 
 watch([mode, selectedDifficulty, () => props.entry.id, () => props.region], () => {
-  if (mode.value === "static") {
-    void loadStaticChart()
-  }
+  void loadPreview()
 }, { immediate: true })
 
 // The SVG references external note sprites, so it must live inline in the
@@ -155,27 +193,25 @@ watch([svgMarkup, svgHost], ([markup, host]) => {
       </Tabs>
     </div>
 
-    <!-- Dynamic preview placeholder until the in-app port lands -->
+    <Skeleton v-if="status === 'loading'" class="h-96 w-full rounded-md" />
     <div
-      v-if="mode === 'dynamic'"
-      class="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground"
+      v-else-if="status === 'error'"
+      class="flex flex-col items-center gap-3 rounded-md border border-dashed p-10 text-center"
     >
-      {{ t("musicLibrary.detail.chartPreview.dynamicComing") }}
+      <p class="text-sm text-muted-foreground">{{ t("musicLibrary.detail.chartPreview.loadError") }}</p>
+      <Button variant="outline" size="sm" @click="loadPreview">
+        <LucideRefreshCcw class="mr-1 size-4" /> {{ t("musicLibrary.detail.chartPreview.retry") }}
+      </Button>
     </div>
-
-    <template v-else>
-      <Skeleton v-if="status === 'loading'" class="h-96 w-full rounded-md" />
+    <template v-else-if="status === 'ready'">
+      <DynamicChartPreview
+        v-if="mode === 'dynamic' && dynamicChart != null"
+        :chart="dynamicChart"
+        :audio-url="audioUrl"
+        :filler-sec="entry.fillerSec ?? 0"
+      />
       <div
-        v-else-if="status === 'error'"
-        class="flex flex-col items-center gap-3 rounded-md border border-dashed p-10 text-center"
-      >
-        <p class="text-sm text-muted-foreground">{{ t("musicLibrary.detail.chartPreview.loadError") }}</p>
-        <Button variant="outline" size="sm" @click="loadStaticChart">
-          <LucideRefreshCcw class="mr-1 size-4" /> {{ t("musicLibrary.detail.chartPreview.retry") }}
-        </Button>
-      </div>
-      <div
-        v-else-if="status === 'ready'"
+        v-else-if="mode === 'static'"
         class="overflow-x-auto rounded-md border bg-white"
       >
         <div ref="svgHost" class="mx-auto w-fit [&_svg]:block [&_svg]:max-w-none" />

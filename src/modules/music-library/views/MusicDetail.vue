@@ -269,6 +269,13 @@ function vocalAudioUrl(vocal: MusicVocalEntry): string | null {
   return resolveMusicLongAudioUrl(region.value, vocal.assetbundleName, settingsStore.currentAssetEndpoint)
 }
 
+// The chart preview plays the sekai version when available, else any vocal.
+const chartPreviewAudioUrl = computed(() => {
+  const vocal = vocals.value.find((entry) => entry.musicVocalType === "sekai" && entry.assetbundleName)
+    ?? vocals.value.find((entry) => entry.assetbundleName)
+  return vocal != null ? vocalAudioUrl(vocal) : null
+})
+
 function ensureAudioElement(): HTMLAudioElement {
   if (!audioElement) {
     audioElement = new Audio()
@@ -522,6 +529,7 @@ function eventBoxHint(eventId: number) {
               :region="region"
               :preference="settingsStore.currentAssetEndpoint"
               :jacket-url="jacketUrl"
+              :audio-url="chartPreviewAudioUrl"
             />
           </CardContent>
         </Card>
