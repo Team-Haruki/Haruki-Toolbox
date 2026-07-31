@@ -72,7 +72,12 @@ function applySize() {
   if (host != null && kernel != null) {
     const { width, height } = host.getBoundingClientRect()
     if (width > 0 && height > 0) {
-      kernel.resize(width, height)
+      // The engine multiplies by min(devicePixelRatio, 2). Supersample on
+      // low-DPR displays so the backing store always ends up ~2x the CSS
+      // size — at 1x the world-space toon outlines alias into heavy edges
+      // (the capture service renders at scale 2 for the same reason).
+      const superSample = Math.max(1, Math.min(2, 2 / (window.devicePixelRatio || 1)))
+      kernel.resize(width * superSample, height * superSample)
     }
   }
 }

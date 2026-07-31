@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
 import { buildCatalogCharacterMap, type CatalogCharacter } from "@/shared/sekai/catalog"
+import { resolveCostumeThumbnailUrl } from "@/shared/sekai/data-sources"
 import { SEKAI_CATALOG_REGION_FOLLOW_VALUE, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useSettingsStore } from "@/shared/stores/settings"
@@ -138,6 +139,9 @@ function partComboboxOptions(partType: CostumePartType): ComboboxOption[] {
     value: String(option.id),
     label: option.colorName ? `${option.name} · ${option.colorName}` : option.name,
     description: `#${option.id}`,
+    iconUrl: option.assetbundleName
+      ? resolveCostumeThumbnailUrl(region.value, option.assetbundleName, assetEndpoint.value)
+      : null,
     keywords: [String(option.id), option.name, option.colorName].filter(Boolean),
   }))
 }

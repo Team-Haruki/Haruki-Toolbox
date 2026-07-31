@@ -3,13 +3,6 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { Pause, Play } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { holdEdgesAtTime, type ChartVisHold, type ChartVisTap, type DynamicChart } from "../lib/chart-dynamic"
 
 const props = defineProps<{
@@ -41,20 +34,32 @@ const COLORS = {
   text: "rgba(255, 255, 255, 0.65)",
 } as const
 
-const SPEED_OPTIONS = [
-  { value: "220", label: "0.75x" },
-  { value: "300", label: "1x" },
-  { value: "420", label: "1.5x" },
-  { value: "560", label: "2x" },
-] as const
-
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const wrapperRef = ref<HTMLDivElement | null>(null)
 const playing = ref(false)
 const currentTime = ref(0)
-const speedValue = ref<string>("300")
 
-const pxPerSecond = computed(() => Number(speedValue.value))
+/** In-game note speed setting (1.0–12.0, 0.1 steps). */
+const noteSpeed = ref(10.5)
+const NOTE_SPEED_MIN = 1
+const NOTE_SPEED_MAX = 12
+
+/**
+ * In-game fall duration curve: speed 12 → 0.35 s, speed 1 → 4.0 s, eased
+ * with a 1.31 power (matches the game's note-speed setting behavior).
+ */
+function noteFallDuration(speed: number): number {
+  const clamped = Math.min(NOTE_SPEED_MAX, Math.max(NOTE_SPEED_MIN, speed))
+  const eased = Math.pow((NOTE_SPEED_MAX - clamped) / (NOTE_SPEED_MAX - NOTE_SPEED_MIN), 1.31)
+  return 0.35 + (4.0 - 0.35) * eased
+}
+
+function adjustNoteSpeed(delta: number) {
+  const next = Math.round((noteSpeed.value + delta) * 10) / 10
+  noteSpeed.value = Math.min(NOTE_SPEED_MAX, Math.max(NOTE_SPEED_MIN, next))
+}
+
+const noteSpeedLabel = computed(() => noteSpeed.value.toFixed(1))
 
 const totalDuration = computed(() => props.chart.duration + 1.5)
 
@@ -352,7 +357,8 @@ function draw() {
   const geometry = laneGeometry(cssWidth)
   const judgeY = cssHeight - 36
   const now = currentTime.value
-  const speed = pxPerSecond.value
+  // Notes travel from the top edge to the judge line in the in-game fall time.
+  const speed = judgeY / noteFallDuration(noteSpeed.value)
   const windowStart = now - TRAIL_SECONDS
   const windowEnd = now + (judgeY + 30) / speed
   const timeToY = (time: number) => judgeY - (time - now) * speed
@@ -435,7 +441,7 @@ watch(() => props.chart, () => {
   draw()
 })
 
-watch([speedValue], () => {
+watch([noteSpeed], () => {
   draw()
 })
 
@@ -475,16 +481,14 @@ onBeforeUnmount(() => {
         :aria-label="t('musicLibrary.detail.chartPreview.seek')"
         @input="handleSeekInput"
       >
-      <Select v-model="speedValue">
-        <SelectTrigger class="h-8 w-24 text-xs" :aria-label="t('musicLibrary.detail.chartPreview.speed')">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem v-for="option in SPEED_OPTIONS" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
+      <span class="inline-flex items-center gap-1" :aria-label="t('musicLibrary.detail.chartPreview.speed')">
+        <span class="text-xs text-muted-foreground">{{ t("musicLibrary.detail.chartPreview.speed") }}</span>
+        <Button variant="outline" size="sm" class="h-7 px-1.5 text-xs" :disabled="noteSpeed <= NOTE_SPEED_MIN" @click="adjustNoteSpeed(-1)">-1</Button>
+        <Button variant="outline" size="sm" class="h-7 px-1.5 text-xs" :disabled="noteSpeed <= NOTE_SPEED_MIN" @click="adjustNoteSpeed(-0.1)">-0.1</Button>
+        <span class="w-9 text-center text-sm font-semibold tabular-nums">{{ noteSpeedLabel }}</span>
+        <Button variant="outline" size="sm" class="h-7 px-1.5 text-xs" :disabled="noteSpeed >= NOTE_SPEED_MAX" @click="adjustNoteSpeed(0.1)">+0.1</Button>
+        <Button variant="outline" size="sm" class="h-7 px-1.5 text-xs" :disabled="noteSpeed >= NOTE_SPEED_MAX" @click="adjustNoteSpeed(1)">+1</Button>
+      </span>
     </div>
     <p v-if="audioUrl == null" class="text-xs text-muted-foreground">
       {{ t("musicLibrary.detail.chartPreview.silent") }}
