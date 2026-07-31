@@ -1,4 +1,7 @@
 import type {
+  MusicRecommendOptions,
+  RecommendDeck,
+  RecommendMusic,
   RecommendOptions,
   RecommendResult,
 } from "haruki-sekai-deck-recommend-cpp"
@@ -28,6 +31,19 @@ export type DeckRecommendWorkerRecommendBatchRequest = {
   optionsList: RecommendOptions[]
 }
 
+export type DeckRecommendWorkerMusicRequest = {
+  type: "recommend-music"
+  requestId: string
+  region: SekaiRegion
+  masterVersion: string
+  musicMetasKey: string | null
+  masterFileNames: string[]
+  masterData?: Record<string, unknown>
+  musicMetas?: unknown
+  options: MusicRecommendOptions
+  deck: RecommendDeck
+}
+
 export type DeckRecommendWorkerLoadDataRequest = {
   type: "load-data"
   requestId: string
@@ -52,6 +68,7 @@ export type DeckRecommendWorkerDisposeRequest = {
 export type DeckRecommendWorkerRequest =
   | DeckRecommendWorkerRecommendRequest
   | DeckRecommendWorkerRecommendBatchRequest
+  | DeckRecommendWorkerMusicRequest
   | DeckRecommendWorkerLoadDataRequest
   | DeckRecommendWorkerPreloadRequest
   | DeckRecommendWorkerDisposeRequest
@@ -59,6 +76,7 @@ export type DeckRecommendWorkerRequest =
 export type DeckRecommendWorkerRequestWithoutId =
   | Omit<DeckRecommendWorkerRecommendRequest, "requestId">
   | Omit<DeckRecommendWorkerRecommendBatchRequest, "requestId">
+  | Omit<DeckRecommendWorkerMusicRequest, "requestId">
   | Omit<DeckRecommendWorkerLoadDataRequest, "requestId">
   | Omit<DeckRecommendWorkerPreloadRequest, "requestId">
   | Omit<DeckRecommendWorkerDisposeRequest, "requestId">
@@ -90,6 +108,12 @@ export type DeckRecommendWorkerEvent =
     type: "batch-done"
     requestId: string
     results: RecommendResult[]
+  }
+  | {
+    type: "music-done"
+    requestId: string
+    results: RecommendMusic[]
+    elapsedMs: number
   }
   | {
     type: "disposed"

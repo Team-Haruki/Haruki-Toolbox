@@ -1,5 +1,10 @@
 import { computed, ref } from "vue"
-import type { RecommendResult } from "haruki-sekai-deck-recommend-cpp"
+import type {
+  MusicRecommendOptions,
+  RecommendDeck,
+  RecommendMusic,
+  RecommendResult,
+} from "haruki-sekai-deck-recommend-cpp"
 import type { SekaiRegion } from "@/types"
 import { readSekaiMasterFile, readSekaiMasterFiles, readSekaiMusicMetas } from "@/shared/sekai/cache"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
@@ -40,6 +45,7 @@ import {
 import type {
   DeckRecommendWorkerEvent,
   DeckRecommendWorkerLoadDataRequest,
+  DeckRecommendWorkerMusicRequest,
   DeckRecommendWorkerRequest,
   DeckRecommendWorkerRecommendBatchRequest,
   DeckRecommendWorkerRecommendRequest,
@@ -575,6 +581,31 @@ export function useDeckRecommendRunner() {
     ])
   }
 
+  /**
+   * Scores every loaded music meta for an already-recommended deck via the
+   * engine's music recommend API (used for the planner's song PT ranking).
+   */
+  async function recommendMusicForDeck(input: {
+    dataRegion: SekaiRegion
+    accountServer?: SekaiRegion
+    deck: RecommendDeck
+    options: MusicRecommendOptions
+  }): Promise<RecommendMusic[]> {
+    const recommendData = await readRecommendCacheData(
+      input.dataRegion,
+      input.accountServer ?? input.dataRegion,
+    )
+    await ensureRegionDataPreloaded(input.dataRegion, recommendData)
+    return recommendMusicWithSharedWorker({
+      region: input.dataRegion,
+      masterVersion: recommendData.engineMasterVersion,
+      musicMetasKey: recommendData.musicMetasKey,
+      masterFileNames: recommendData.masterFileNames,
+      options: input.options,
+      deck: input.deck,
+    })
+  }
+
   function applyUserDataCacheStatus(result: DeckRecommendUserDataFetchResult) {
     userDataCacheHit.value = result.cacheable ? result.cacheHit : null
     userDataCacheUpdatedAt.value = result.cacheUpdatedAt
@@ -606,6 +637,7 @@ export function useDeckRecommendRunner() {
     run,
     reset,
     refreshUserData,
+    recommendMusicForDeck,
   }
 }
 
@@ -795,6 +827,41 @@ function recommendWithSharedWorker(
 
     postDeckRecommendWorkerRequest({
       type: "recommend",
+      requestId,
+      ...input,
+    })
+  })
+}
+
+function recommendMusicWithSharedWorker(
+  input: Omit<DeckRecommendWorkerMusicRequest, "type" | "requestId">,
+): Promise<RecommendMusic[]> {
+  return new Promise((resolve, reject) => {
+    const requestId = createRequestId()
+
+    const unsubscribe = subscribeDeckRecommendWorker((event) => {
+      if (event.requestId !== requestId) {
+        if (event.requestId === "worker" && event.type === "error") {
+          unsubscribe?.()
+          reject(new Error(event.message))
+        }
+        return
+      }
+
+      if (event.type === "music-done") {
+        unsubscribe?.()
+        resolve(event.results)
+        return
+      }
+
+      if (event.type === "error") {
+        unsubscribe?.()
+        reject(new Error(event.message))
+      }
+    })
+
+    postDeckRecommendWorkerRequest({
+      type: "recommend-music",
       requestId,
       ...input,
     })

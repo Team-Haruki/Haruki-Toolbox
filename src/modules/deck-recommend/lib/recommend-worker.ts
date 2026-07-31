@@ -7,6 +7,7 @@ import type { SekaiRegion } from "@/types"
 import type {
   DeckRecommendWorkerEvent,
   DeckRecommendWorkerLoadDataRequest,
+  DeckRecommendWorkerMusicRequest,
   DeckRecommendWorkerRecommendBatchRequest,
   DeckRecommendWorkerRecommendRequest,
   DeckRecommendWorkerRequest,
@@ -49,6 +50,17 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
 
     postEvent({ type: "progress", requestId: request.requestId, phase: "recommending" })
     const startedAt = performance.now()
+    if (request.type === "recommend-music") {
+      const results = engine.recommendMusic(request.options, request.deck)
+      postEvent({
+        type: "music-done",
+        requestId: request.requestId,
+        results,
+        elapsedMs: Math.round(performance.now() - startedAt),
+      })
+      return
+    }
+
     if (request.type === "recommend-batch") {
       const results = engine.recommendBatch(request.optionsList)
       postEvent({
@@ -77,7 +89,11 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
 }
 
 async function loadEngineData(
-  request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest | DeckRecommendWorkerRecommendBatchRequest,
+  request:
+    | DeckRecommendWorkerLoadDataRequest
+    | DeckRecommendWorkerRecommendRequest
+    | DeckRecommendWorkerRecommendBatchRequest
+    | DeckRecommendWorkerMusicRequest,
   requestId: string,
 ): Promise<{ engine: SekaiDeckRecommendWasm; elapsedMs: number; cacheHit: boolean }> {
   const startedAt = performance.now()
@@ -119,7 +135,11 @@ function getEngine() {
 }
 
 function createDataKey(
-  request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest | DeckRecommendWorkerRecommendBatchRequest,
+  request:
+    | DeckRecommendWorkerLoadDataRequest
+    | DeckRecommendWorkerRecommendRequest
+    | DeckRecommendWorkerRecommendBatchRequest
+    | DeckRecommendWorkerMusicRequest,
 ) {
   return [
     request.masterVersion,
