@@ -86,7 +86,7 @@ function selectOption(value: string) {
         :disabled="props.disabled"
         :class="cn('w-full justify-between', props.triggerClass)"
       >
-        <span class="flex min-w-0 items-center gap-2">
+        <span class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-left">
           <img
             v-if="selectedOption?.iconUrl"
             :src="selectedOption.iconUrl"

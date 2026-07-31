@@ -137,8 +137,8 @@ function partComboboxOptions(partType: CostumePartType): ComboboxOption[] {
     : partType === "head" ? headOptions.value : hairOptions.value
   return options.map((option) => ({
     value: String(option.id),
-    label: option.colorName ? `${option.name} · ${option.colorName}` : option.name,
-    description: `#${option.id}`,
+    label: option.name,
+    description: option.colorName ? `#${option.id} · ${option.colorName}` : `#${option.id}`,
     iconUrl: option.assetbundleName
       ? resolveCostumeThumbnailUrl(region.value, option.assetbundleName, assetEndpoint.value)
       : null,
@@ -199,7 +199,7 @@ watch([characterId, bodyId, headId, hairId], ([nextCharacter, nextBody, nextHead
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-4">
+  <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center gap-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold">{{ t("costumes.dressup.title") }}</h1>
@@ -221,7 +221,7 @@ watch([characterId, bodyId, headId, hairId], ([nextCharacter, nextBody, nextHead
     </div>
 
     <template v-if="loading && characterOptions.length === 0">
-      <div class="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+      <div class="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
         <Skeleton class="h-72 w-full rounded-lg" />
         <Skeleton class="aspect-[7/5] w-full rounded-lg" />
       </div>
@@ -237,7 +237,7 @@ watch([characterId, bodyId, headId, hairId], ([nextCharacter, nextBody, nextHead
       </CardContent>
     </Card>
 
-    <div v-else class="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+    <div v-else class="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
       <Card class="h-fit">
         <CardContent class="flex flex-col gap-4 pt-6">
           <div class="grid gap-1.5">
