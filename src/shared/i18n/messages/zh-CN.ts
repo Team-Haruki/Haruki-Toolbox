@@ -1413,8 +1413,11 @@ export const zhCN = {
     },
     dialog: {
       title: "新建时速笔刷",
-      description: "先用组卡引擎得到卡组，再从歌曲 PT 排行中挑选要刷的歌。",
-      runDeck: "开始组卡",
+      description: "根据所选活动直接组卡，然后从歌曲 PT 排行中挑选要刷的歌。",
+      runDeck: "根据活动组卡",
+      useSavedConfig: "使用组卡页面的详细设定",
+      savedConfigHint: "组卡参数（算法、队友、区域道具/角色等级覆盖、固定/排除卡、养成配置等）沿用组卡页面保存的设定；需要调整时在组卡页面修改后回来重新组卡即可。",
+      openDeckRecommend: "打开组卡页面调整",
       running: "组卡中...",
       deckTitle: "推荐卡组",
       deckPower: "综合力",

@@ -414,7 +414,7 @@ function formatInteger(value: number) {
 
 <template>
   <div class="flex w-full flex-1 flex-col items-center justify-center px-0 py-4">
-    <div class="mx-auto w-full max-w-6xl space-y-3 sm:space-y-4">
+    <div class="mx-auto w-full max-w-7xl space-y-3 sm:space-y-4">
       <div>
         <h1 class="text-2xl font-bold">{{ t("eventPlanner.title") }}</h1>
         <p class="text-sm text-muted-foreground">{{ t("eventPlanner.description") }}</p>

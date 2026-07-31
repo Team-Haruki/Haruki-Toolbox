@@ -1413,8 +1413,11 @@ export const enUS = {
     },
     dialog: {
       title: "New Hourly-Rate Brush",
-      description: "Build a deck with the recommend engine first, then pick a song from the PT ranking.",
-      runDeck: "Build deck",
+      description: "Build a deck straight from the selected event, then pick a song from the PT ranking.",
+      runDeck: "Build deck for event",
+      useSavedConfig: "Use the deck page's detailed settings",
+      savedConfigHint: "Deck parameters (algorithms, teammates, area item / character rank overrides, fixed/excluded cards, training config, …) follow the deck recommend page's saved settings; tweak them there and rebuild here.",
+      openDeckRecommend: "Open deck recommend to adjust",
       running: "Building...",
       deckTitle: "Recommended deck",
       deckPower: "Power",

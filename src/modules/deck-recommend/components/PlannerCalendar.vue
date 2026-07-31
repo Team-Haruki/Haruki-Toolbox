@@ -121,7 +121,7 @@ function isPreviewing(hourStartMs: number): boolean {
 <template>
   <div class="overflow-x-auto">
     <div
-      class="min-w-[46rem] select-none touch-none"
+      class="min-w-[58rem] select-none touch-none"
       @pointerdown="handlePointerDown"
       @pointermove="handlePointerMove"
       @pointerup="finishStroke"
@@ -129,38 +129,41 @@ function isPreviewing(hourStartMs: number): boolean {
       @pointerleave="finishStroke"
     >
       <!-- Hour header -->
-      <div class="mb-1 flex items-center gap-px pl-24">
+      <div class="mb-1 grid grid-cols-[5.5rem_repeat(24,minmax(2rem,1fr))] gap-x-px">
+        <span />
         <span
           v-for="hour in HOUR_COLUMNS"
           :key="hour"
-          class="w-6 shrink-0 text-center text-[10px] tabular-nums text-muted-foreground"
+          class="text-center text-[11px] tabular-nums text-muted-foreground"
         >
           {{ hour % 2 === 0 ? hour : "" }}
         </span>
       </div>
 
-      <div v-for="day in days" :key="day.dayStartMs" class="flex items-center gap-px py-px">
-        <span class="w-24 shrink-0 pr-2 text-right text-xs tabular-nums text-muted-foreground">
+      <div
+        v-for="day in days"
+        :key="day.dayStartMs"
+        class="grid grid-cols-[5.5rem_repeat(24,minmax(2rem,1fr))] items-center gap-x-px py-0.5"
+      >
+        <span class="pr-2 text-right text-xs tabular-nums text-muted-foreground">
           {{ dayFormatter.format(day.dayStartMs) }}
         </span>
-        <span
-          class="flex gap-px"
-          :style="{ marginLeft: `${day.hours[0]?.hourOfDay * 25}px` }"
-        >
-          <button
-            v-for="hour in day.hours"
-            :key="hour.hourStartMs"
-            type="button"
-            :data-hour="hour.hourStartMs"
-            :class="[
-              'h-7 w-6 shrink-0 rounded-[3px] border transition-colors',
-              cellBrush(hour.hourStartMs) != null ? 'border-transparent' : 'border-border/50 bg-muted/30 hover:bg-muted/60',
-              isPreviewing(hour.hourStartMs) ? 'ring-2 ring-primary/60' : '',
-            ]"
-            :style="cellStyle(hour.hourStartMs)"
-            :title="cellTitle(hour.hourStartMs, hour.hourOfDay)"
-          />
-        </span>
+        <button
+          v-for="(hour, index) in day.hours"
+          :key="hour.hourStartMs"
+          type="button"
+          :data-hour="hour.hourStartMs"
+          :class="[
+            'h-9 w-full rounded-[4px] border transition-colors',
+            cellBrush(hour.hourStartMs) != null ? 'border-transparent' : 'border-border/50 bg-muted/30 hover:bg-muted/60',
+            isPreviewing(hour.hourStartMs) ? 'ring-2 ring-primary/60' : '',
+          ]"
+          :style="{
+            ...cellStyle(hour.hourStartMs),
+            ...(index === 0 ? { gridColumnStart: hour.hourOfDay + 2 } : {}),
+          }"
+          :title="cellTitle(hour.hourStartMs, hour.hourOfDay)"
+        />
       </div>
     </div>
   </div>

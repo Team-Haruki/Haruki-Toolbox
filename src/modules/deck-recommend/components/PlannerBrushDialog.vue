@@ -2,8 +2,9 @@
 import { computed, ref, toRef, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import type { RecommendDeck } from "haruki-sekai-deck-recommend-cpp"
-import { LucidePlay } from "lucide-vue-next"
+import { LucideExternalLink, LucideLoaderCircle, LucidePlay } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -25,7 +26,6 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 import { MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
-import MusicSelect from "./MusicSelect.vue"
 import { buildDeckResultViews, type DeckResultDeckView } from "../lib/card-thumbnail"
 import {
   buildPlannerMusicDurations,
@@ -34,9 +34,12 @@ import {
   type PlannerBrush,
   type PlannerRankedSong,
 } from "../lib/planner-calendar"
+import {
+  createDefaultPlannerDeckConfig,
+  readPlannerDeckConfig,
+  type PlannerDeckConfig,
+} from "../lib/planner-config"
 import type { DeckRecommendAlgorithm } from "../lib/recommend-options"
-import type { DeckRecommendLiveBoostFields } from "../lib/recommend-results"
-import { createDefaultCardTrainingConfig } from "../lib/training-config"
 import { useDeckRecommendRunner } from "../composables/useDeckRecommendRunner"
 import { useMusicOptions } from "../composables/useMusicOptions"
 
@@ -60,15 +63,15 @@ const { t, locale } = useI18n()
 const settingsStore = useSettingsStore()
 const runner = useDeckRecommendRunner()
 
-const DEFAULT_MUSIC_ID = "226"
-const DEFAULT_DIFFICULTY = "hard"
-
-const musicId = ref<string | null>(DEFAULT_MUSIC_ID)
-const difficulty = ref<string | null>(DEFAULT_DIFFICULTY)
+/** Reference chart for the deck search; the brush song comes from the ranking. */
+const FALLBACK_REFERENCE_MUSIC_ID = "226"
+const FALLBACK_REFERENCE_DIFFICULTY = "hard"
 
 const regionRef = toRef(props, "dataRegion")
 const musicOptions = useMusicOptions(regionRef, ref<string | null>(null))
 const musicTitles = computed(() => new Map(musicOptions.options.value.map((option) => [option.id, option.label])))
+
+const useSavedConfig = ref(true)
 
 const deckView = ref<DeckResultDeckView | null>(null)
 const rawDeck = ref<RecommendDeck | null>(null)
@@ -90,11 +93,23 @@ const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
 const canRunDeck = computed(() =>
   !runner.running.value
+  && !rankingLoading.value
   && props.account != null
-  && props.eventId != null
-  && musicId.value != null
-  && difficulty.value != null,
+  && props.eventId != null,
 )
+
+const runnerPhaseText = computed(() => {
+  if (rankingLoading.value) {
+    return t("eventPlanner.dialog.rankingLoading")
+  }
+  if (!runner.running.value) {
+    return null
+  }
+
+  return runner.phase.value != null
+    ? t(`deckRecommend.runner.phases.${runner.phase.value}`)
+    : t("eventPlanner.dialog.running")
+})
 
 const filteredRanking = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
@@ -157,6 +172,9 @@ async function runDeck() {
   rawDeck.value = null
   rankingRows.value = []
   selectedSong.value = null
+  const config: PlannerDeckConfig = useSavedConfig.value
+    ? readPlannerDeckConfig()
+    : createDefaultPlannerDeckConfig()
   try {
     await runner.run({
       account: props.account,
@@ -183,38 +201,38 @@ async function runDeck() {
       customBonusCharacterIds: [],
       customBonusCharacterSupportUnits: {},
       filterOtherUnit: false,
-      multiLiveTeammatePower: null,
-      multiLiveTeammateScoreUp: null,
-      multiLiveScoreUpLowerBound: null,
+      multiLiveTeammatePower: config.multiLiveTeammatePower,
+      multiLiveTeammateScoreUp: config.multiLiveTeammateScoreUp,
+      multiLiveScoreUpLowerBound: config.multiLiveScoreUpLowerBound,
       // Boost stays unset so scores are base per-play values.
       boost: null,
-      areaItemLevel: null,
-      areaItemLevelOverrides: [],
-      characterRank: null,
-      characterRankOverrides: [],
-      mysekaiGateLevel: null,
-      mysekaiGateLevelOverrides: [],
-      mysekaiFixtureBonusRate: null,
-      mysekaiFixtureBonusRateOverrides: [],
+      areaItemLevel: config.areaItemLevel,
+      areaItemLevelOverrides: config.areaItemLevelOverrides,
+      characterRank: config.characterRank,
+      characterRankOverrides: config.characterRankOverrides,
+      mysekaiGateLevel: config.mysekaiGateLevel,
+      mysekaiGateLevelOverrides: config.mysekaiGateLevelOverrides,
+      mysekaiFixtureBonusRate: config.mysekaiFixtureBonusRate,
+      mysekaiFixtureBonusRateOverrides: config.mysekaiFixtureBonusRateOverrides,
       resultLimit: 1,
       timeoutMs: null,
-      unitFilters: [],
-      attrFilters: [],
-      characterFilters: [],
-      fixedCards: [],
+      unitFilters: config.unitFilters,
+      attrFilters: config.attrFilters,
+      characterFilters: config.characterFilters,
+      fixedCards: config.fixedCards,
       useCurrentDeck: false,
-      fixedCharacters: [],
-      excludedCards: [],
-      singleCardOverrides: [],
-      skillOrderStrategy: "average",
-      skillReferenceStrategy: "average",
-      specificSkillOrder: [],
-      keepAfterTrainingState: false,
-      supportMasterMax: false,
-      supportSkillMax: false,
-      musicId: musicId.value,
-      difficulty: difficulty.value,
-      trainingConfig: createDefaultCardTrainingConfig(),
+      fixedCharacters: config.fixedCharacters,
+      excludedCards: config.excludedCards,
+      singleCardOverrides: config.singleCardOverrides,
+      skillOrderStrategy: config.skillOrderStrategy,
+      skillReferenceStrategy: config.skillReferenceStrategy,
+      specificSkillOrder: config.specificSkillOrder,
+      keepAfterTrainingState: config.keepAfterTrainingState,
+      supportMasterMax: config.supportMasterMax,
+      supportSkillMax: config.supportSkillMax,
+      musicId: config.referenceMusicId ?? FALLBACK_REFERENCE_MUSIC_ID,
+      difficulty: config.referenceDifficulty ?? FALLBACK_REFERENCE_DIFFICULTY,
+      trainingConfig: config.trainingConfig,
     })
 
     const deckViews = buildDeckResultViews(
@@ -232,13 +250,13 @@ async function runDeck() {
 
     deckView.value = topDeck
     rawDeck.value = topRawDeck as RecommendDeck
-    await loadRanking(topRawDeck as RecommendDeck)
+    await loadRanking(topRawDeck as RecommendDeck, config)
   } catch (error) {
     errorMessage.value = runner.error.value ?? (error instanceof Error ? error.message : String(error))
   }
 }
 
-async function loadRanking(deck: RecommendDeck) {
+async function loadRanking(deck: RecommendDeck, config: PlannerDeckConfig) {
   rankingLoading.value = true
   try {
     const [results, metas] = await Promise.all([
@@ -250,7 +268,18 @@ async function loadRanking(deck: RecommendDeck) {
           region: props.dataRegion,
           live_type: "multi",
           event_id: props.eventId != null ? Number(props.eventId) : undefined,
-          skill_order_choose_strategy: "average",
+          skill_order_choose_strategy: config.skillOrderStrategy === "specific" && config.specificSkillOrder.length === 0
+            ? "average"
+            : config.skillOrderStrategy,
+          ...(config.skillOrderStrategy === "specific" && config.specificSkillOrder.length > 0
+            ? { specific_skill_order: config.specificSkillOrder }
+            : {}),
+          ...(config.multiLiveTeammateScoreUp != null
+            ? { multi_live_teammate_score_up: config.multiLiveTeammateScoreUp }
+            : {}),
+          ...(config.multiLiveTeammatePower != null
+            ? { multi_live_teammate_power: config.multiLiveTeammatePower }
+            : {}),
         },
       }),
       readSekaiMusicMetas(props.dataRegion),
@@ -260,10 +289,7 @@ async function loadRanking(deck: RecommendDeck) {
       musicTitles.value,
       buildPlannerMusicDurations(metas),
     )
-    // Preselect the song the deck was built for.
-    selectedSong.value = rankingRows.value.find((row) =>
-      String(row.musicId) === musicId.value && row.difficulty === difficulty.value,
-    ) ?? rankingRows.value[0] ?? null
+    selectedSong.value = rankingRows.value[0] ?? null
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : String(error)
   } finally {
@@ -277,17 +303,6 @@ function selectSong(row: PlannerRankedSong) {
 
 function deckBonusTotal(view: DeckResultDeckView): number {
   return (Number(view.deck.event_bonus_rate) || 0) + (Number(view.deck.support_deck_bonus_rate) || 0)
-}
-
-function deckBasePoint(view: DeckResultDeckView): number | null {
-  const boosted = view.deck as DeckResultDeckView["deck"] & DeckRecommendLiveBoostFields
-  const original = Number(boosted.live_boost_original_score)
-  if (Number.isFinite(original) && original > 0) {
-    return original
-  }
-
-  const score = Number(view.deck.score)
-  return Number.isFinite(score) && score > 0 ? score : null
 }
 
 function handlePlaysPerHourInput(event: Event) {
@@ -327,21 +342,32 @@ function save() {
       </DialogHeader>
 
       <div class="flex flex-1 flex-col gap-4 overflow-y-auto pr-1">
-        <!-- Deck building -->
-        <div class="flex flex-wrap items-end gap-2">
-          <div class="min-w-64 flex-1">
-            <MusicSelect
-              v-model="musicId"
-              :difficulty-value="difficulty"
-              :region="dataRegion"
-              :disabled="runner.running.value"
-              @update:difficulty-value="difficulty = $event"
-            />
+        <!-- Deck building against the selected event -->
+        <div class="flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
+          <div class="flex flex-wrap items-center gap-3">
+            <Button :disabled="!canRunDeck" @click="runDeck">
+              <LucideLoaderCircle v-if="runner.running.value || rankingLoading" class="mr-1 size-4 animate-spin" />
+              <LucidePlay v-else class="mr-1 size-4" />
+              {{ runnerPhaseText ?? t("eventPlanner.dialog.runDeck") }}
+            </Button>
+            <label class="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox
+                :model-value="useSavedConfig"
+                @update:model-value="useSavedConfig = $event === true"
+              />
+              {{ t("eventPlanner.dialog.useSavedConfig") }}
+            </label>
+            <a
+              href="/deck-recommend"
+              target="_blank"
+              rel="noopener"
+              class="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              {{ t("eventPlanner.dialog.openDeckRecommend") }}
+              <LucideExternalLink class="size-3" />
+            </a>
           </div>
-          <Button :disabled="!canRunDeck" @click="runDeck">
-            <LucidePlay class="mr-1 size-4" />
-            {{ runner.running.value ? t("eventPlanner.dialog.running") : t("eventPlanner.dialog.runDeck") }}
-          </Button>
+          <p class="text-[11px] text-muted-foreground">{{ t("eventPlanner.dialog.savedConfigHint") }}</p>
         </div>
 
         <p v-if="errorMessage" class="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
@@ -354,9 +380,6 @@ function save() {
             <span class="font-medium text-foreground">{{ t("eventPlanner.dialog.deckTitle") }}</span>
             <span>{{ t("eventPlanner.dialog.deckPower") }} {{ formatInteger(Number(deckView.deck.total_power) || 0) }}</span>
             <span>{{ t("eventPlanner.dialog.deckBonus", { value: deckBonusTotal(deckView).toFixed(1) }) }}</span>
-            <span v-if="deckBasePoint(deckView) != null" class="tabular-nums">
-              {{ t("eventPlanner.dialog.columns.eventPoint") }} {{ formatInteger(deckBasePoint(deckView) ?? 0) }}
-            </span>
           </div>
           <div class="flex flex-wrap gap-1.5">
             <CardThumbnail
@@ -369,7 +392,7 @@ function save() {
         </div>
 
         <!-- Song ranking -->
-        <div class="flex flex-col gap-2">
+        <div v-if="rankingRows.length > 0 || rankingLoading" class="flex flex-col gap-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="text-sm font-medium">{{ t("eventPlanner.dialog.rankingTitle") }}</span>
             <div class="flex flex-wrap items-center gap-2">
@@ -395,9 +418,6 @@ function save() {
 
           <p v-if="rankingLoading" class="py-4 text-center text-xs text-muted-foreground">
             {{ t("eventPlanner.dialog.rankingLoading") }}
-          </p>
-          <p v-else-if="rankingRows.length === 0" class="py-4 text-center text-xs text-muted-foreground">
-            {{ t("eventPlanner.dialog.noDeck") }}
           </p>
           <div v-else class="max-h-64 overflow-y-auto rounded-md border">
             <table class="w-full text-xs">
@@ -443,10 +463,10 @@ function save() {
               </tbody>
             </table>
           </div>
-          <p v-if="rankingRows.length > 0 && selectedSong == null" class="text-xs text-muted-foreground">
-            {{ t("eventPlanner.dialog.selectHint") }}
-          </p>
         </div>
+        <p v-else-if="!deckView && !runner.running.value" class="text-xs text-muted-foreground">
+          {{ t("eventPlanner.dialog.noDeck") }}
+        </p>
 
         <!-- Brush settings -->
         <div v-if="selectedSong" class="grid gap-3 rounded-md border bg-muted/20 p-3 sm:grid-cols-3">
