@@ -1028,6 +1028,29 @@ export const zhCN = {
     footerRegion: "数据区服：{region}",
     footerHint: "{shortcut} 打开或关闭搜索",
   },
+  costumes: {
+    dressup: {
+      title: "服装搭配",
+      description: "自由组合角色的服装、头饰与发型并进行 3D 预览",
+      region: "区服",
+      character: "角色",
+      characterPlaceholder: "选择角色",
+      body: "服装",
+      head: "头饰",
+      hair: "发型",
+      partPlaceholder: "选择部件",
+      searchPlaceholder: "搜索名称或 ID...",
+      empty: "没有找到匹配项。",
+      reset: "恢复默认",
+      loadError: "服装数据加载失败。",
+      retry: "重试",
+    },
+    viewer: {
+      loadError: "3D 模型加载失败。",
+      retry: "重试",
+      idle: "请选择要预览的服装。",
+    },
+  },
   gachas: {
     common: {
       region: "区服",
@@ -1456,6 +1479,7 @@ export const zhCN = {
       eventRecords: "活动记录",
       musicProgress: "打歌进度",
       gachas: "卡池图鉴",
+      costumes: "服装搭配",
       playerProfile: "我的档案",
       training: "角色养成",
     },
@@ -1560,6 +1584,9 @@ export const zhCN = {
     gachas: {
       list: "卡池图鉴",
       detail: "卡池详情",
+    },
+    costumes: {
+      dressup: "服装搭配",
     },
     playerProfile: {
       me: "我的档案",
@@ -1949,6 +1976,7 @@ export const zhCN = {
         retry: "重试",
         seek: "播放进度",
         speed: "流速",
+        zoomFit: "适应高度",
         silent: "未找到音频资源，将静默播放。",
       },
       eventsTitle: "关联活动",
@@ -2040,6 +2068,8 @@ export const zhCN = {
       relatedGachas: "关联卡池",
       relatedGachasEmpty: "没有关联卡池。",
       costumes: "卡牌服装",
+      costumeDressup: "服装搭配",
+      costumePreviewHint: "点击服装缩略图查看 3D 预览。",
       sameCharacter: "该角色的其他卡牌",
     },
   },

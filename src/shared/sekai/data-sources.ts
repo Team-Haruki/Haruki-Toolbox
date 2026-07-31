@@ -204,6 +204,17 @@ export function resolveRarityTrainingIconUrl(rarity: string): string {
   return resolveRareStarImageUrl(false)
 }
 
+/**
+ * Browser runtime root of the Haruki 3D exporter output for one region,
+ * served from the public asset endpoints under `/pjsk-3d-output/`.
+ */
+export function resolvePjsk3dRuntimeBaseUrl(
+  region: SekaiRegion,
+  preference: SekaiAssetEndpointPreference = "china",
+): string {
+  return `${SEKAI_ASSET_ENDPOINT_ROOTS[preference]}/pjsk-3d-output/${region}/`
+}
+
 export function resolveCardFrameImageUrl(rarity: string): string {
   return resolveToolboxStaticImageUrl(`static_images/card/frame_${rarity}.png`)
 }

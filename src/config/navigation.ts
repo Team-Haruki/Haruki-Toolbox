@@ -10,6 +10,7 @@ import {
   LucideFileEdit,
   LucideGamepad2,
   LucideGift,
+  LucideShirt,
   LucideHeartHandshake,
   LucideHistory,
   LucideIdCard,
@@ -61,6 +62,7 @@ export const WEB_NAV_ITEMS: NavItem[] = [
       { titleKey: "navigation.items.cards", icon: LucideWalletCards, url: "/cards" },
       { titleKey: "navigation.items.events", icon: LucideCalendarDays, url: "/events" },
       { titleKey: "navigation.items.gachas", icon: LucideGift, url: "/gachas" },
+      { titleKey: "navigation.items.costumes", icon: LucideShirt, url: "/costumes" },
     ],
   },
   {

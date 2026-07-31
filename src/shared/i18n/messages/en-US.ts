@@ -1028,6 +1028,29 @@ export const enUS = {
     footerRegion: "Data region: {region}",
     footerHint: "{shortcut} to toggle search",
   },
+  costumes: {
+    dressup: {
+      title: "Costume Dressup",
+      description: "Mix and match character costumes, accessories and hairstyles in 3D",
+      region: "Server",
+      character: "Character",
+      characterPlaceholder: "Select a character",
+      body: "Costume",
+      head: "Accessory",
+      hair: "Hairstyle",
+      partPlaceholder: "Select a part",
+      searchPlaceholder: "Search by name or ID...",
+      empty: "No matches found.",
+      reset: "Reset to defaults",
+      loadError: "Failed to load costume data.",
+      retry: "Retry",
+    },
+    viewer: {
+      loadError: "Failed to load the 3D model.",
+      retry: "Retry",
+      idle: "Select a costume to preview.",
+    },
+  },
   gachas: {
     common: {
       region: "Region",
@@ -1456,6 +1479,7 @@ export const enUS = {
       eventRecords: "Event records",
       musicProgress: "Music progress",
       gachas: "Gacha catalog",
+      costumes: "Costume dressup",
       playerProfile: "My profile",
       training: "Character training",
     },
@@ -1560,6 +1584,9 @@ export const enUS = {
     gachas: {
       list: "Gacha catalog",
       detail: "Gacha detail",
+    },
+    costumes: {
+      dressup: "Costume Dressup",
     },
     playerProfile: {
       me: "My profile",
@@ -1949,6 +1976,7 @@ export const enUS = {
         retry: "Retry",
         seek: "Playback position",
         speed: "Note speed",
+        zoomFit: "Fit height",
         silent: "No audio found — the preview plays silently.",
       },
       eventsTitle: "Related events",
@@ -2040,6 +2068,8 @@ export const enUS = {
       relatedGachas: "Related gachas",
       relatedGachasEmpty: "No related gachas.",
       costumes: "Costumes",
+      costumeDressup: "Costume dressup",
+      costumePreviewHint: "Click a costume thumbnail for a 3D preview.",
       sameCharacter: "More cards of this character",
     },
   },

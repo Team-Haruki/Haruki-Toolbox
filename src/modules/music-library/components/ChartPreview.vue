@@ -153,12 +153,48 @@ watch([mode, selectedDifficulty, () => props.entry.id, () => props.region], () =
   void loadPreview()
 }, { immediate: true })
 
+// Charts render at full size (often 5000+ px wide); fit-to-height keeps them
+// browsable and the zoom presets restore detail on demand.
+type StaticZoom = "fit" | "half" | "full"
+const STATIC_ZOOM_OPTIONS: readonly StaticZoom[] = ["fit", "half", "full"]
+const staticZoom = ref<StaticZoom>("fit")
+const STATIC_FIT_HEIGHT = 520
+
+function applyStaticZoom() {
+  const svg = svgHost.value?.querySelector("svg")
+  if (svg == null) {
+    return
+  }
+
+  const width = Number(svg.getAttribute("width"))
+  const height = Number(svg.getAttribute("height"))
+  if (width > 0 && height > 0 && !svg.getAttribute("viewBox")) {
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`)
+  }
+
+  if (staticZoom.value === "fit") {
+    svg.style.height = `${STATIC_FIT_HEIGHT}px`
+    svg.style.width = "auto"
+  } else if (staticZoom.value === "half") {
+    svg.style.width = `${Math.round(width / 2)}px`
+    svg.style.height = "auto"
+  } else {
+    svg.style.width = `${width}px`
+    svg.style.height = "auto"
+  }
+}
+
 // The SVG references external note sprites, so it must live inline in the
 // DOM (an <img> would refuse to load the nested images).
 watch([svgMarkup, svgHost], ([markup, host]) => {
   if (host != null) {
     host.innerHTML = markup ?? ""
+    applyStaticZoom()
   }
+})
+
+watch(staticZoom, () => {
+  applyStaticZoom()
 })
 </script>
 
@@ -210,11 +246,29 @@ watch([svgMarkup, svgHost], ([markup, host]) => {
         :audio-url="audioUrl"
         :filler-sec="entry.fillerSec ?? 0"
       />
-      <div
-        v-else-if="mode === 'static'"
-        class="overflow-x-auto rounded-md border bg-white"
-      >
-        <div ref="svgHost" class="mx-auto w-fit [&_svg]:block [&_svg]:max-w-none" />
+      <div v-else-if="mode === 'static'" class="flex flex-col gap-2">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button
+            v-for="zoom in STATIC_ZOOM_OPTIONS"
+            :key="zoom"
+            type="button"
+            :class="[
+              'rounded-full border px-2.5 py-0.5 text-xs transition-colors',
+              staticZoom === zoom
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border text-muted-foreground hover:bg-muted',
+            ]"
+            :aria-pressed="staticZoom === zoom"
+            @click="staticZoom = zoom"
+          >
+            {{ zoom === "fit"
+              ? t("musicLibrary.detail.chartPreview.zoomFit")
+              : zoom === "half" ? "50%" : "100%" }}
+          </button>
+        </div>
+        <div class="overflow-x-auto rounded-md border bg-white">
+          <div ref="svgHost" class="mx-auto w-fit [&_svg]:block [&_svg]:max-w-none" />
+        </div>
       </div>
     </template>
   </div>

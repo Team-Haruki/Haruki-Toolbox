@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   LucideArrowLeft,
+  LucideArrowUpRight,
   LucideCalendarDays,
   LucideExternalLink,
   LucideImageOff,
@@ -43,6 +44,7 @@ import {
 import EventBannerImage from "@/modules/events/components/EventBannerImage.vue"
 import GachaAssetImage from "@/modules/gachas/components/GachaAssetImage.vue"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
+import CostumeViewer, { type CostumeViewerRecipe } from "@/modules/costumes/components/CostumeViewer.vue"
 
 const props = defineProps<{
   cardId: string
@@ -72,7 +74,6 @@ const {
 const cardIdNumber = computed(() => Number(props.cardId))
 
 const costumeCardId = computed(() => (Number.isInteger(cardIdNumber.value) ? cardIdNumber.value : null))
-const { groups: costumeGroups, loading: costumesLoading } = useCardCostumes(region, costumeCardId)
 
 function costumeThumbnailUrl(assetbundleName: string): string {
   return resolveCostumeThumbnailUrl(region.value, assetbundleName, assetEndpoint.value)
@@ -130,6 +131,57 @@ const supportUnit = computed<SekaiUnit | null>(() => {
 const supplyType = computed(() => (card.value
   ? resolveCardSupplyType(card.value, supplyTypeMap.value, worldBloomCardIds.value)
   : null))
+
+const costumeCharacterId = computed(() => card.value?.characterId ?? null)
+const {
+  groups: costumeGroups,
+  defaults: costumeDefaults,
+  loading: costumesLoading,
+} = useCardCostumes(region, costumeCardId, costumeCharacterId)
+
+// 3D preview of an unlocked costume: the clicked body color plus the
+// character's stock head/hair completes the engine recipe.
+const selectedCostume3dId = ref<number | null>(null)
+
+watch([costumeCardId, region], () => {
+  selectedCostume3dId.value = null
+})
+
+const costumeViewerRecipe = computed<CostumeViewerRecipe | null>(() => {
+  const characterId = card.value?.characterId
+  const targetUnit = unit.value
+  const partDefaults = costumeDefaults.value
+  if (selectedCostume3dId.value == null || characterId == null || targetUnit == null
+    || partDefaults?.headCostume3dId == null || partDefaults.hairCostume3dId == null) {
+    return null
+  }
+
+  return {
+    characterId,
+    unit: targetUnit,
+    bodyCostume3dId: selectedCostume3dId.value,
+    headCostume3dId: partDefaults.headCostume3dId,
+    hairCostume3dId: partDefaults.hairCostume3dId,
+  }
+})
+
+const dressupLink = computed(() => {
+  const characterId = card.value?.characterId
+  if (characterId == null) {
+    return null
+  }
+
+  return {
+    name: "costumes.dressup",
+    query: selectedCostume3dId.value != null
+      ? { characterId: String(characterId), body: String(selectedCostume3dId.value) }
+      : { characterId: String(characterId) },
+  }
+})
+
+function toggleCostumePreview(costume3dId: number) {
+  selectedCostume3dId.value = selectedCostume3dId.value === costume3dId ? null : costume3dId
+}
 
 const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
 
@@ -495,12 +547,27 @@ const canGoBack = computed(() => {
       <!-- Costumes -->
       <Card v-if="costumesLoading || costumeGroups.length > 0">
         <CardHeader>
-          <CardTitle class="text-base">{{ t("cards.detail.costumes") }}</CardTitle>
+          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
+            <span>{{ t("cards.detail.costumes") }}</span>
+            <Button
+              v-if="dressupLink"
+              as-child
+              variant="ghost"
+              size="sm"
+              class="h-7 gap-1 text-xs font-normal text-muted-foreground"
+            >
+              <RouterLink :to="dressupLink">
+                {{ t("cards.detail.costumeDressup") }}
+                <LucideArrowUpRight class="size-3.5" />
+              </RouterLink>
+            </Button>
+          </CardTitle>
         </CardHeader>
         <CardContent class="space-y-4">
           <div v-if="costumesLoading && costumeGroups.length === 0" class="flex gap-3">
             <Skeleton v-for="index in 4" :key="index" class="size-20 rounded-md" />
           </div>
+          <p v-else class="text-xs text-muted-foreground">{{ t("cards.detail.costumePreviewHint") }}</p>
           <div
             v-for="group in costumeGroups"
             :key="group.costume3dGroupId"
@@ -513,14 +580,25 @@ const canGoBack = computed(() => {
                 :key="color.costume3dId"
                 class="w-20 space-y-1"
               >
-                <div class="aspect-square w-full overflow-hidden rounded-md border bg-muted/20">
+                <button
+                  type="button"
+                  :class="[
+                    'block aspect-square w-full overflow-hidden rounded-md border bg-muted/20 transition-shadow',
+                    selectedCostume3dId === color.costume3dId
+                      ? 'ring-2 ring-primary'
+                      : 'hover:ring-1 hover:ring-border',
+                  ]"
+                  :aria-pressed="selectedCostume3dId === color.costume3dId"
+                  :title="t('cards.detail.costumePreviewHint')"
+                  @click="toggleCostumePreview(color.costume3dId)"
+                >
                   <img
                     :src="costumeThumbnailUrl(color.assetbundleName)"
                     :alt="color.colorName || group.name"
                     class="size-full object-contain"
                     loading="lazy"
                   >
-                </div>
+                </button>
                 <figcaption
                   v-if="color.colorName"
                   class="truncate text-center text-[11px] text-muted-foreground"
@@ -530,6 +608,13 @@ const canGoBack = computed(() => {
                 </figcaption>
               </figure>
             </div>
+          </div>
+          <div v-if="costumeViewerRecipe" class="mx-auto w-full max-w-xl">
+            <CostumeViewer
+              :region="region"
+              :preference="assetEndpoint"
+              :recipe="costumeViewerRecipe"
+            />
           </div>
         </CardContent>
       </Card>

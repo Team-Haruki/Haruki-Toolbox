@@ -1,0 +1,38 @@
+/**
+ * Hand-written declarations for the vendored Haruki 3D Engine browser build
+ * (Team-Haruki/Haruki-3D-Engine). Mirrors docs/api.md of the upstream repo.
+ */
+
+export type PreviewLightState = Record<string, unknown>
+
+export type Haruki3DKernelOptions = {
+  canvas: HTMLCanvasElement
+  /** Final Exporter runtime root for exactly one region. */
+  assetBaseUrl: string
+  initialLight?: PreviewLightState
+  /** Basis transcoder directory; defaults to `/basis/`. */
+  ktx2TranscoderPath?: string
+}
+
+export type HarukiRenderRecipe = {
+  /** `<characterId>:<unit>`, e.g. `14:theme_park`. */
+  roleId: string
+  bodyCostume3dId: number
+  headCostume3dId: number
+  headPackagePath?: string | null
+  hairCostume3dId: number
+  headOptionalCostume3dId?: number | null
+}
+
+export interface Haruki3DKernel {
+  prepare(recipe: HarukiRenderRecipe): Promise<void>
+  load(recipe: HarukiRenderRecipe): Promise<void>
+  play(): void
+  pause(): void
+  resize(width: number, height: number): void
+  destroy(): Promise<void>
+}
+
+export declare function createHaruki3DKernel(options: Haruki3DKernelOptions): Haruki3DKernel
+
+export declare const previewLightDefaults: PreviewLightState
