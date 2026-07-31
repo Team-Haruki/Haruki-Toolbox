@@ -209,15 +209,19 @@ describe("filterGachas / sortGachas", () => {
     expect(filterGachas(gachas, { year: 2022 }).map((g) => g.id)).toEqual([1])
   })
 
-  it("filters by a card in the pool or pickups", () => {
+  it("filters by cards in the pool or pickups", () => {
     const withCards = [
       makeGacha({ id: 1, details: [{ cardId: 100, weight: 1 }] }),
       makeGacha({ id: 2, pickups: [{ cardId: 100, gachaPickupType: null }] }),
       makeGacha({ id: 3, details: [{ cardId: 200, weight: 1 }] }),
+      makeGacha({ id: 4, details: [{ cardId: 100, weight: 1 }, { cardId: 200, weight: 1 }] }),
     ]
-    expect(filterGachas(withCards, { cardId: 100 }).map((g) => g.id)).toEqual([1, 2])
-    expect(filterGachas(withCards, { cardId: 999 })).toEqual([])
-    expect(filterGachas(withCards, { cardId: null }).map((g) => g.id)).toEqual([1, 2, 3])
+    expect(filterGachas(withCards, { cardIds: [100] }).map((g) => g.id)).toEqual([1, 2, 4])
+    // Multiple selections require every card to be present.
+    expect(filterGachas(withCards, { cardIds: [100, 200] }).map((g) => g.id)).toEqual([4])
+    expect(filterGachas(withCards, { cardIds: [999] })).toEqual([])
+    expect(filterGachas(withCards, { cardIds: [] }).map((g) => g.id)).toEqual([1, 2, 3, 4])
+    expect(filterGachas(withCards, { cardIds: null }).map((g) => g.id)).toEqual([1, 2, 3, 4])
   })
 
   it("sorts by startAt desc by default and supports other keys", () => {

@@ -6,6 +6,7 @@ import {
   LucideChevronRight,
   LucideRefreshCcw,
   LucideSearch,
+  LucideX,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -68,7 +69,7 @@ const search = ref("")
 const typeFilter = ref(ALL)
 const statusFilter = ref(ALL)
 const yearFilter = ref(ALL)
-const cardFilter = ref<string | null>(null)
+const cardFilterIds = ref<number[]>([])
 const sortKey = ref<GachaSortKey>("startDesc")
 const page = ref(1)
 
@@ -92,28 +93,47 @@ const visibleGachas = computed(() => excludeUnreleasedGachas(gachas.value, hideU
 
 const years = computed(() => collectGachaYears(visibleGachas.value))
 
-const cardFilterId = computed(() => {
-  const parsed = cardFilter.value != null ? Number(cardFilter.value) : null
-  return parsed != null && Number.isInteger(parsed) && parsed > 0 ? parsed : null
-})
+function cardFilterOption(cardId: number): ComboboxOption {
+  const card = cardsById.value.get(cardId) ?? null
+  const characterName = card?.characterId != null
+    ? characterMap.value.get(card.characterId)?.name ?? null
+    : null
+  return {
+    value: String(cardId),
+    label: card?.prefix ?? `#${cardId}`,
+    description: characterName != null ? `#${cardId} · ${characterName}` : `#${cardId}`,
+    iconUrl: card?.assetbundleName
+      ? resolveSekaiCardThumbnailUrl(region.value, card.assetbundleName, false, assetEndpoint.value)
+      : null,
+    keywords: [String(cardId), card?.prefix ?? "", characterName ?? ""].filter(Boolean),
+  }
+}
 
 // Newest cards first, matching the in-game card-id ordering people expect.
-const cardFilterOptions = computed<ComboboxOption[]>(() => [...cardsById.value.values()]
-  .sort((a, b) => b.id - a.id)
-  .map((card) => {
-    const characterName = card.characterId != null
-      ? characterMap.value.get(card.characterId)?.name ?? null
-      : null
-    return {
-      value: String(card.id),
-      label: card.prefix ?? `#${card.id}`,
-      description: characterName != null ? `#${card.id} · ${characterName}` : `#${card.id}`,
-      iconUrl: card.assetbundleName
-        ? resolveSekaiCardThumbnailUrl(region.value, card.assetbundleName, false, assetEndpoint.value)
-        : null,
-      keywords: [String(card.id), card.prefix ?? "", characterName ?? ""].filter(Boolean),
-    }
-  }))
+const cardFilterOptions = computed<ComboboxOption[]>(() => {
+  const selected = new Set(cardFilterIds.value)
+  return [...cardsById.value.values()]
+    .filter((card) => !selected.has(card.id))
+    .sort((a, b) => b.id - a.id)
+    .map((card) => cardFilterOption(card.id))
+})
+
+const selectedCardFilters = computed(() =>
+  cardFilterIds.value.map((cardId) => ({ cardId, option: cardFilterOption(cardId) })),
+)
+
+function addCardFilter(value: string | null) {
+  const cardId = value != null ? Number(value) : null
+  if (cardId == null || !Number.isInteger(cardId) || cardId <= 0 || cardFilterIds.value.includes(cardId)) {
+    return
+  }
+
+  cardFilterIds.value = [...cardFilterIds.value, cardId]
+}
+
+function removeCardFilter(cardId: number) {
+  cardFilterIds.value = cardFilterIds.value.filter((id) => id !== cardId)
+}
 
 const filteredGachas = computed(() => {
   const year = yearFilter.value === ALL ? null : Number(yearFilter.value)
@@ -125,7 +145,7 @@ const filteredGachas = computed(() => {
         gachaType: typeFilter.value === ALL ? null : typeFilter.value,
         status: statusFilter.value === ALL ? null : (statusFilter.value as GachaStatus),
         year: Number.isFinite(year) ? year : null,
-        cardId: cardFilterId.value,
+        cardIds: cardFilterIds.value,
       },
       nowMs.value,
     ),
@@ -150,7 +170,7 @@ const pagedGachaViews = computed(() => paginateGachas(filteredGachas.value, page
     ),
   })))
 
-watch([search, typeFilter, statusFilter, yearFilter, cardFilter, sortKey, region, hideUnreleased], () => {
+watch([search, typeFilter, statusFilter, yearFilter, cardFilterIds, sortKey, region, hideUnreleased], () => {
   page.value = 1
 })
 
@@ -251,12 +271,13 @@ function nextPage() {
       <div class="grid gap-1.5">
         <Label class="text-xs text-muted-foreground">{{ t("gachas.list.cardLabel") }}</Label>
         <Combobox
-          v-model="cardFilter"
+          :model-value="null"
           :options="cardFilterOptions"
           :placeholder="t('gachas.list.allCards')"
           :search-placeholder="t('gachas.list.cardSearchPlaceholder')"
           :empty-text="t('gachas.list.cardEmpty')"
           trigger-class="w-full"
+          @update:model-value="addCardFilter"
         />
       </div>
       <div class="grid gap-1.5">
@@ -272,6 +293,32 @@ function nextPage() {
           </SelectContent>
         </Select>
       </div>
+    </div>
+
+    <!-- Selected card filters -->
+    <div v-if="selectedCardFilters.length > 0" class="flex flex-wrap items-center gap-1.5">
+      <span
+        v-for="item in selectedCardFilters"
+        :key="item.cardId"
+        class="inline-flex items-center gap-1.5 rounded-full border bg-muted/40 py-0.5 pl-1 pr-1.5 text-xs"
+      >
+        <img
+          v-if="item.option.iconUrl"
+          :src="item.option.iconUrl"
+          alt=""
+          class="size-5 rounded-full object-cover"
+          loading="lazy"
+        >
+        <span class="max-w-40 truncate">{{ item.option.label }}</span>
+        <button
+          type="button"
+          class="inline-flex items-center rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          :aria-label="t('gachas.list.removeCardFilter')"
+          @click="removeCardFilter(item.cardId)"
+        >
+          <LucideX class="size-3" />
+        </button>
+      </span>
     </div>
 
     <!-- Loading -->

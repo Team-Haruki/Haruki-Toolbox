@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test"
-import { buildMusicJacketAssetPath, resolveMusicJacketUrl } from "./music-assets"
+import {
+  buildMusicJacketAssetPath,
+  buildMusicLongAudioAssetPath,
+  resolveMusicJacketUrl,
+  resolveMusicLongAudioUrl,
+} from "./music-assets"
 import {
   MUSIC_DIFFICULTIES,
   MUSIC_DIFFICULTY_COLORS,
@@ -34,6 +39,22 @@ describe("resolveMusicJacketUrl", () => {
 
   it("returns null when the asset bundle name is missing", () => {
     expect(resolveMusicJacketUrl("jp", "")).toBeNull()
+  })
+})
+
+describe("music long audio urls", () => {
+  it("builds the verified long-audio path pattern", () => {
+    expect(buildMusicLongAudioAssetPath("an_0006_01")).toBe(
+      "ondemand/music/long/an_0006_01/an_0006_01.mp3",
+    )
+    expect(buildMusicLongAudioAssetPath("  ")).toBeNull()
+  })
+
+  it("resolves a full region asset URL and rejects blank names", () => {
+    expect(resolveMusicLongAudioUrl("jp", "0001_01", "china")).toBe(
+      "https://sekai-assets.haruki.seiunx.com/jp-assets/ondemand/music/long/0001_01/0001_01.mp3",
+    )
+    expect(resolveMusicLongAudioUrl("jp", "")).toBeNull()
   })
 })
 

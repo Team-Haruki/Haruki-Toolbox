@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, onBeforeUnmount, ref, watch } from "vue"
 import { RouterLink, useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { goBackOr, hasInAppHistory } from "@/lib/router-back"
@@ -13,6 +13,8 @@ import {
   ListMusic,
   MicVocal,
   PartyPopper,
+  Pause,
+  Play,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,7 +39,7 @@ import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import EventBannerImage from "@/modules/events/components/EventBannerImage.vue"
 import MusicJacket from "../components/MusicJacket.vue"
 import { useMusicLibraryDetail } from "../composables/useMusicLibraryDetail"
-import { resolveMusicJacketUrl } from "../lib/music-assets"
+import { resolveMusicJacketUrl, resolveMusicLongAudioUrl } from "../lib/music-assets"
 import {
   MUSIC_DIFFICULTIES,
   MUSIC_DIFFICULTY_COLORS,
@@ -50,7 +52,11 @@ import {
   resolveMusicScoreUrl,
   type ChartBpmInfo,
 } from "../lib/music-bpm"
-import { formatMusicDurationLabel, type MusicVocalCharacter } from "../lib/music-data"
+import {
+  formatMusicDurationLabel,
+  type MusicVocalCharacter,
+  type MusicVocalEntry,
+} from "../lib/music-data"
 import { isMusicEntryUnreleased } from "../lib/music-filter"
 import {
   resolveMusicCategoryLabelKey,
@@ -251,6 +257,76 @@ function formatEventPeriod(startAt: number | null, aggregateAt: number | null): 
   return `${start} - ${end}`
 }
 
+// --- Vocal playback -------------------------------------------------------
+// One shared <audio> element; picking another version replaces the source.
+
+const playingVocalId = ref<number | null>(null)
+let audioElement: HTMLAudioElement | null = null
+
+function vocalAudioUrl(vocal: MusicVocalEntry): string | null {
+  return resolveMusicLongAudioUrl(region.value, vocal.assetbundleName, settingsStore.currentAssetEndpoint)
+}
+
+function ensureAudioElement(): HTMLAudioElement {
+  if (!audioElement) {
+    audioElement = new Audio()
+    audioElement.preload = "auto"
+    audioElement.addEventListener("ended", () => {
+      playingVocalId.value = null
+    })
+    audioElement.addEventListener("error", () => {
+      playingVocalId.value = null
+    })
+  }
+
+  return audioElement
+}
+
+function stopVocalPlayback() {
+  audioElement?.pause()
+  playingVocalId.value = null
+}
+
+function toggleVocalPlayback(vocal: MusicVocalEntry) {
+  if (playingVocalId.value === vocal.id) {
+    stopVocalPlayback()
+    return
+  }
+
+  const url = vocalAudioUrl(vocal)
+  if (url == null) {
+    return
+  }
+
+  const element = ensureAudioElement()
+  element.src = url
+  // The long audio assets lead with the chart's filler silence; skip it.
+  // (Setting currentTime pre-metadata records the default start position.)
+  const filler = entry.value?.fillerSec ?? 0
+  if (filler > 0) {
+    element.currentTime = filler
+  }
+
+  playingVocalId.value = vocal.id
+  void element.play().catch(() => {
+    if (playingVocalId.value === vocal.id) {
+      playingVocalId.value = null
+    }
+  })
+}
+
+watch([parsedMusicId, region], () => {
+  stopVocalPlayback()
+})
+
+onBeforeUnmount(() => {
+  stopVocalPlayback()
+  if (audioElement) {
+    audioElement.src = ""
+    audioElement = null
+  }
+})
+
 /** "某角色几箱" hint for an event, when its banner character is known. */
 function eventBoxHint(eventId: number) {
   const info = eventBoxMap.value.get(eventId)
@@ -450,6 +526,18 @@ function eventBoxHint(eventId: number) {
                     {{ vocalTypeLabel(vocal.musicVocalType) }}
                   </span>
                   <span class="text-sm font-medium">{{ vocal.caption || "-" }}</span>
+                  <Button
+                    v-if="vocalAudioUrl(vocal)"
+                    variant="outline"
+                    size="sm"
+                    class="ml-auto h-7 gap-1 px-2 text-xs"
+                    @click="toggleVocalPlayback(vocal)"
+                  >
+                    <component :is="playingVocalId === vocal.id ? Pause : Play" class="size-3.5" />
+                    {{ playingVocalId === vocal.id
+                      ? t("musicLibrary.detail.pause")
+                      : t("musicLibrary.detail.play") }}
+                  </Button>
                 </div>
                 <div v-if="vocal.characters.length > 0" class="flex flex-wrap gap-2">
                   <span

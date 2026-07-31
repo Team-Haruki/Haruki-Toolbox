@@ -20,6 +20,8 @@ export type MusicLibraryEntry = {
   categories: string[]
   assetbundleName: string
   publishedAt: number | null
+  /** Leading silence (seconds) baked into the long audio assets. */
+  fillerSec: number | null
   tags: string[]
   difficulties: Partial<Record<MusicDifficulty, MusicDifficultyStat>>
 }
@@ -34,6 +36,7 @@ export type MusicVocalEntry = {
   musicVocalType: string
   caption: string
   seq: number | null
+  assetbundleName: string
   characters: MusicVocalCharacter[]
 }
 
@@ -82,6 +85,7 @@ export function buildMusicLibraryEntries(
       categories: normalizeMusicCategories(record.categories),
       assetbundleName: normalizeCatalogString(record.assetbundleName),
       publishedAt: normalizeCatalogNumber(record.publishedAt),
+      fillerSec: normalizeCatalogNumber(record.fillerSec),
       tags: tagMap.get(id) ?? [],
       difficulties: difficultyMap.get(id) ?? {},
     })
@@ -209,6 +213,7 @@ export function listMusicVocalEntries(rawVocals: unknown, musicId: number): Musi
       musicVocalType: normalizeCatalogString(record.musicVocalType),
       caption: normalizeCatalogString(record.caption),
       seq: normalizeCatalogNumber(record.seq),
+      assetbundleName: normalizeCatalogString(record.assetbundleName),
       characters: normalizeCatalogRecords(record.characters).map((character) => ({
         characterType: normalizeCatalogString(character.characterType),
         characterId: normalizeCatalogNumber(character.characterId),
