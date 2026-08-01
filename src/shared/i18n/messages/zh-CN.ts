@@ -1450,6 +1450,16 @@ export const zhCN = {
       hourLabel: "{hour} 时",
       dragHint: "单击填充一格，按住拖动可框选多天 × 多小时的时间段批量填充；用同一笔刷再次框选即为擦除。",
     },
+    batch: {
+      title: "批量填充",
+      fromDay: "开始日期",
+      toDay: "结束日期",
+      fromHour: "开始时刻",
+      toHour: "结束时刻",
+      brush: "笔刷",
+      apply: "填充",
+      hint: "将所选日期范围内每天的该时间段（包含首尾小时）填充为所选笔刷；选择擦除可批量清除。",
+    },
     toasts: {
       remaining: "已规划 {planned} PT，距目标还差 {remaining} PT",
       reached: "已规划 {planned} PT，目标已覆盖！",

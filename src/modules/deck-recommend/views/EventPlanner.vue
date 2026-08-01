@@ -47,6 +47,7 @@ import {
 import {
   buildPlannerCalendar,
   buildPlannerPlanKey,
+  buildPlannerRectangleHourKeys,
   PLANNER_REST_BRUSH_ID,
   resolvePlannerRemainingPoint,
   summarizePlannerCells,
@@ -218,6 +219,54 @@ const calendarDays = computed(() => {
 
   return buildPlannerCalendar(option.startAt, option.aggregateAt)
 })
+
+// --- Batch fill -------------------------------------------------------------
+
+const batchFromDay = ref("0")
+const batchToDay = ref("0")
+const batchFromHour = ref("0")
+const batchToHour = ref("23")
+const batchBrushId = ref<string>(PLANNER_REST_BRUSH_ID)
+
+const BATCH_HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => String(hour))
+
+const batchDayFormatter = computed(() => new Intl.DateTimeFormat(locale.value, {
+  month: "2-digit",
+  day: "2-digit",
+  weekday: "short",
+}))
+
+const batchDayOptions = computed(() => calendarDays.value.map((day, index) => ({
+  value: String(index),
+  label: batchDayFormatter.value.format(day.dayStartMs),
+})))
+
+watch(calendarDays, (days) => {
+  batchFromDay.value = "0"
+  batchToDay.value = String(Math.max(days.length - 1, 0))
+}, { immediate: true })
+
+watch(allBrushes, (available) => {
+  if (batchBrushId.value !== ERASER_TOOL_ID && !available.some((brush) => brush.id === batchBrushId.value)) {
+    batchBrushId.value = PLANNER_REST_BRUSH_ID
+  }
+})
+
+function applyBatchFill() {
+  const hourKeys = buildPlannerRectangleHourKeys(
+    calendarDays.value,
+    { dayIndex: Number(batchFromDay.value), hourOfDay: Number(batchFromHour.value) },
+    { dayIndex: Number(batchToDay.value), hourOfDay: Number(batchToHour.value) },
+  )
+  if (hourKeys.length === 0) {
+    return
+  }
+
+  handleStroke({
+    hourKeys,
+    brushId: batchBrushId.value === ERASER_TOOL_ID ? null : batchBrushId.value,
+  })
+}
 
 function handleStroke(changes: { hourKeys: string[]; brushId: string | null }) {
   const next = { ...cells.value }
@@ -623,14 +672,93 @@ function formatInteger(value: number) {
           <p v-if="calendarDays.length === 0" class="py-8 text-center text-sm text-muted-foreground">
             {{ t("eventPlanner.calendar.noEvent") }}
           </p>
-          <PlannerCalendar
-            v-else
-            :days="calendarDays"
-            :cells="cells"
-            :brushes="allBrushes"
-            :active-tool="activeTool"
-            @stroke="handleStroke"
-          />
+          <template v-else>
+            <div class="mb-3 flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
+              <span class="text-xs font-medium">{{ t("eventPlanner.batch.title") }}</span>
+              <div class="flex flex-wrap items-end gap-2">
+                <div class="grid gap-1">
+                  <Label class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.fromDay") }}</Label>
+                  <Select :model-value="batchFromDay" @update:model-value="batchFromDay = typeof $event === 'string' ? $event : batchFromDay">
+                    <SelectTrigger class="h-8 w-36 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="option in batchDayOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="grid gap-1">
+                  <Label class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.toDay") }}</Label>
+                  <Select :model-value="batchToDay" @update:model-value="batchToDay = typeof $event === 'string' ? $event : batchToDay">
+                    <SelectTrigger class="h-8 w-36 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="option in batchDayOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="grid gap-1">
+                  <Label class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.fromHour") }}</Label>
+                  <Select :model-value="batchFromHour" @update:model-value="batchFromHour = typeof $event === 'string' ? $event : batchFromHour">
+                    <SelectTrigger class="h-8 w-24 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="hour in BATCH_HOUR_OPTIONS" :key="hour" :value="hour">
+                        {{ t("eventPlanner.calendar.hourLabel", { hour }) }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="grid gap-1">
+                  <Label class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.toHour") }}</Label>
+                  <Select :model-value="batchToHour" @update:model-value="batchToHour = typeof $event === 'string' ? $event : batchToHour">
+                    <SelectTrigger class="h-8 w-24 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="hour in BATCH_HOUR_OPTIONS" :key="hour" :value="hour">
+                        {{ t("eventPlanner.calendar.hourLabel", { hour }) }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="grid gap-1">
+                  <Label class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.brush") }}</Label>
+                  <Select :model-value="batchBrushId" @update:model-value="batchBrushId = typeof $event === 'string' ? $event : batchBrushId">
+                    <SelectTrigger class="h-8 w-44 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="brush in allBrushes" :key="brush.id" :value="brush.id">
+                        <span class="inline-flex items-center gap-1.5">
+                          <span class="inline-block size-2.5 rounded-full" :style="{ backgroundColor: brush.color }" />
+                          <span class="max-w-32 truncate">{{ brush.name }}</span>
+                        </span>
+                      </SelectItem>
+                      <SelectItem :value="ERASER_TOOL_ID">{{ t("eventPlanner.brushes.eraser") }}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button size="sm" class="h-8" @click="applyBatchFill">
+                  {{ t("eventPlanner.batch.apply") }}
+                </Button>
+              </div>
+              <p class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.hint") }}</p>
+            </div>
+            <PlannerCalendar
+              :days="calendarDays"
+              :cells="cells"
+              :brushes="allBrushes"
+              :active-tool="activeTool"
+              @stroke="handleStroke"
+            />
+          </template>
         </CardContent>
       </Card>
     </div>

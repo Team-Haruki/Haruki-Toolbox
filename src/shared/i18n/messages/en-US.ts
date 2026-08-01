@@ -1450,6 +1450,16 @@ export const enUS = {
       hourLabel: "{hour}:00",
       dragHint: "Click to fill one cell, or drag to batch-fill a rectangle of days × hours; selecting with the same brush again erases.",
     },
+    batch: {
+      title: "Batch fill",
+      fromDay: "From day",
+      toDay: "To day",
+      fromHour: "From hour",
+      toHour: "To hour",
+      brush: "Brush",
+      apply: "Fill",
+      hint: "Fills the selected daily hour range (inclusive) across the chosen days with the selected brush; pick the eraser to batch-clear.",
+    },
     toasts: {
       remaining: "{planned} PT planned — {remaining} PT still missing",
       reached: "{planned} PT planned — target covered!",
