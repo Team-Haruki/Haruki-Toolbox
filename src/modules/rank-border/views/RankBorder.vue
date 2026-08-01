@@ -153,7 +153,7 @@ type RankBorderSegmentRow = {
   growthChanged: boolean
 }
 
-type RankBorderChartMetric = "score" | "rank"
+type RankBorderChartMetric = "score" | "rank" | "speed"
 
 type RankBorderChartReferenceLine = {
   value: number
@@ -230,12 +230,16 @@ type RankBorderScoreOverlayLine = {
 type RankBorderDetailCharts = {
   rankReferenceLines: RankBorderChartReferenceLine[]
   scoreReferenceLines: RankBorderChartReferenceLine[]
+  speedReferenceLines: RankBorderChartReferenceLine[]
   rankPoints: RankBorderChartPoint[]
   scorePoints: RankBorderChartPoint[]
+  speedPoints: RankBorderChartPoint[]
   timeTicks: RankBorderChartTimeTick[]
   rankPath: string
   scorePath: string
+  speedPath: string
   comparisonScorePath: string
+  comparisonSpeedPath: string
   plannerLines: RankBorderScoreOverlayLine[]
 }
 
@@ -878,34 +882,26 @@ const activeDetailNextGap = computed(() =>
     : null,
 )
 
-const detailTraceStats = computed(() => {
-  const records = scopedDetailTrace.value
+// Shared per-trace metrics so the comparison target reports the same numbers
+// as the primary detail trace.
+function resolveTraceMetricStats(records: RankBorderTracePoint[], fullRecords: RankBorderTracePoint[]) {
   const latestTrace = records[records.length - 1] ?? null
   const startTime = (latestTrace?.timestamp ?? currentUnixSecond.value) - selectedIntervalSeconds.value
   const growth = resolveRankBorderTraceGrowth(records, startTime)
-  const earlier = growth?.timestampEarlier != null
-    ? records.find((record) => record.timestamp === growth.timestampEarlier) ?? null
-    : null
-  const latest = growth?.timestampLatest != null
-    ? findLatestTraceAtTimestamp(records, growth.timestampLatest)
-    : null
   const latestInterval = resolveLatestTraceDelta(records)
   const recentAverage = resolveRecentAverageDelta(records, DETAIL_RECENT_POINT_COUNT)
   const threeWindowGrowth = resolveTraceGrowthForWindow(records, DETAIL_CSB_WINDOW_SECONDS)
   const roundWindowStart = selectedHeatmapWindow.value?.start ?? startTime
   const roundWindowEnd = selectedHeatmapWindow.value?.end ?? latestTrace?.timestamp ?? currentUnixSecond.value
   const roundRate = selectedHeatmapWindow.value
-    ? resolveRankBorderTraceRoundCount(detailTrace.value, selectedHeatmapWindow.value.start, selectedHeatmapWindow.value.end)
-    : resolveTraceRoundRate(detailTrace.value, roundWindowStart, roundWindowEnd)
-  const hourlySpeed = growth?.growth != null && growth.timeDiff
-    ? Math.round((growth.growth / growth.timeDiff) * 3600)
-    : null
-  const rankShift = earlier && latest ? earlier.rank - latest.rank : null
+    ? resolveRankBorderTraceRoundCount(fullRecords, selectedHeatmapWindow.value.start, selectedHeatmapWindow.value.end)
+    : resolveTraceRoundRate(fullRecords, roundWindowStart, roundWindowEnd)
   return {
-    records,
+    latest: latestTrace,
     growth,
-    hourlySpeed,
-    rankShift,
+    hourlySpeed: growth?.growth != null && growth.timeDiff
+      ? Math.round((growth.growth / growth.timeDiff) * 3600)
+      : null,
     latestPointGrowth: latestInterval?.growth ?? null,
     latestPointSeconds: latestInterval?.timeDiff ?? null,
     recentAveragePt: recentAverage,
@@ -914,10 +910,99 @@ const detailTraceStats = computed(() => {
       ? Math.round((threeWindowGrowth.growth / threeWindowGrowth.timeDiff) * 3600)
       : null,
     loopCount: roundRate,
-    previousGap: activeDetailPreviousGap.value,
-    nextGap: activeDetailNextGap.value,
     hasChart: records.length >= 2,
   }
+}
+
+const detailTraceStats = computed(() => {
+  const records = scopedDetailTrace.value
+  const stats = resolveTraceMetricStats(records, detailTrace.value)
+  const growth = stats.growth
+  const earlier = growth?.timestampEarlier != null
+    ? records.find((record) => record.timestamp === growth.timestampEarlier) ?? null
+    : null
+  const latest = growth?.timestampLatest != null
+    ? findLatestTraceAtTimestamp(records, growth.timestampLatest)
+    : null
+  return {
+    records,
+    ...stats,
+    rankShift: earlier && latest ? earlier.rank - latest.rank : null,
+    previousGap: activeDetailPreviousGap.value,
+    nextGap: activeDetailNextGap.value,
+  }
+})
+
+const comparisonTraceStats = computed(() =>
+  comparisonRank.value == null
+    ? null
+    : resolveTraceMetricStats(comparisonChartTrace.value, comparisonTrace.value),
+)
+
+type RankBorderComparisonRow = {
+  key: string
+  label: string
+  own: string
+  target: string
+  diff: string
+}
+
+const comparisonRows = computed<RankBorderComparisonRow[]>(() => {
+  const stats = comparisonTraceStats.value
+  if (stats == null) {
+    return []
+  }
+
+  const own = detailTraceStats.value
+  const ownLatest = own.records[own.records.length - 1] ?? null
+  const diffOf = (ownValue: number | null | undefined, targetValue: number | null | undefined) =>
+    typeof ownValue === "number" && typeof targetValue === "number"
+      ? formatGrowth(ownValue - targetValue)
+      : "-"
+  return [
+    {
+      key: "score",
+      label: t("rankBorder.comparison.metricScore"),
+      own: formatPt(ownLatest?.score),
+      target: formatPt(stats.latest?.score),
+      diff: diffOf(ownLatest?.score, stats.latest?.score),
+    },
+    {
+      key: "rank",
+      label: t("rankBorder.comparison.metricRank"),
+      own: formatRank(ownLatest?.rank),
+      target: formatRank(stats.latest?.rank),
+      diff: "-",
+    },
+    {
+      key: "hourlySpeed",
+      label: t("rankBorder.result.hourlySpeed"),
+      own: formatPerHour(own.hourlySpeed),
+      target: formatPerHour(stats.hourlySpeed),
+      diff: diffOf(own.hourlySpeed, stats.hourlySpeed),
+    },
+    {
+      key: "threeWindowSpeed",
+      label: t("rankBorder.result.twentyMinTripleSpeed"),
+      own: formatPerHour(own.threeWindowSpeed),
+      target: formatPerHour(stats.threeWindowSpeed),
+      diff: diffOf(own.threeWindowSpeed, stats.threeWindowSpeed),
+    },
+    {
+      key: "recentAveragePt",
+      label: t("rankBorder.result.recentAveragePt"),
+      own: formatPt(own.recentAveragePt),
+      target: formatPt(stats.recentAveragePt),
+      diff: diffOf(own.recentAveragePt, stats.recentAveragePt),
+    },
+    {
+      key: "loopCount",
+      label: t("rankBorder.result.loopCount"),
+      own: formatLoopCount(own.loopCount),
+      target: formatLoopCount(stats.loopCount),
+      diff: diffOf(own.loopCount, stats.loopCount),
+    },
+  ]
 })
 
 const detailHeatmapDays = computed<RankBorderHeatmapDay[]>(() => {
@@ -1003,6 +1088,26 @@ const detailUpdateRecords = computed<RankBorderUpdateRecord[]>(() =>
   ),
 )
 
+/** Hourly pt/h buckets from a trace, stored in `score` for the chart helpers. */
+function buildSpeedTrendRecords(records: RankBorderTracePoint[]): RankBorderTracePoint[] {
+  if (records.length < 2) {
+    return []
+  }
+
+  const hourSeconds = 3600
+  const start = Math.floor(records[0].timestamp / hourSeconds) * hourSeconds
+  const buckets = buildRankBorderTraceHeatmapBuckets(records, start, records[records.length - 1].timestamp + 1, hourSeconds)
+  return [...buckets.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([bucketStart, bucket]) => ({
+      timestamp: bucketStart + hourSeconds / 2,
+      score: Math.round(bucket.value),
+      rank: 0,
+      userId: null,
+      characterId: null,
+    }))
+}
+
 const detailCharts = computed<RankBorderDetailCharts>(() => {
   const records = chartDetailTrace.value
   const timeDomain = selectedHeatmapWindow.value
@@ -1039,15 +1144,29 @@ const detailCharts = computed<RankBorderDetailCharts>(() => {
         tone: line.key,
       }))
 
+  const speedRecords = buildSpeedTrendRecords(chartRecords)
+  const comparisonSpeedRecords = buildSpeedTrendRecords(comparisonRecords)
+  const speedValues = [
+    ...speedRecords.map((record) => record.score),
+    ...comparisonSpeedRecords.map((record) => record.score),
+  ]
+  const speedDomain = speedValues.length > 0
+    ? { min: Math.min(0, ...speedValues), max: Math.max(...speedValues) }
+    : null
+
   return {
     rankReferenceLines: chartReferenceLines(chartRecords, "rank", DETAIL_CHART_HEIGHT, DETAIL_CHART_Y_PADDING, false, DETAIL_CHART_Y_BOTTOM_PADDING),
     scoreReferenceLines: chartReferenceLines(chartRecords, "score", DETAIL_CHART_HEIGHT, DETAIL_CHART_Y_PADDING, scoreZeroBaseline, DETAIL_CHART_Y_BOTTOM_PADDING, scoreDomain),
+    speedReferenceLines: chartReferenceLines(speedRecords, "speed", DETAIL_CHART_HEIGHT, DETAIL_CHART_Y_PADDING, false, DETAIL_CHART_Y_BOTTOM_PADDING, speedDomain),
     rankPoints: chartPoints(chartRecords, "rank", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, false, DETAIL_CHART_Y_BOTTOM_PADDING),
     scorePoints: chartPoints(chartRecords, "score", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, scoreZeroBaseline, DETAIL_CHART_Y_BOTTOM_PADDING, scoreDomain),
+    speedPoints: chartPoints(speedRecords, "speed", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, false, DETAIL_CHART_Y_BOTTOM_PADDING, speedDomain),
     timeTicks: chartTimeTicks(timeDomain, DETAIL_CHART_WIDTH, DETAIL_CHART_X_PADDING),
     rankPath: sparklinePath(chartRecords, "rank", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, false, DETAIL_CHART_Y_BOTTOM_PADDING),
     scorePath: sparklinePath(chartRecords, "score", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, scoreZeroBaseline, DETAIL_CHART_Y_BOTTOM_PADDING, scoreDomain),
+    speedPath: sparklinePath(speedRecords, "speed", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, false, DETAIL_CHART_Y_BOTTOM_PADDING, speedDomain),
     comparisonScorePath: sparklinePath(comparisonRecords, "score", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, scoreZeroBaseline, DETAIL_CHART_Y_BOTTOM_PADDING, scoreDomain),
+    comparisonSpeedPath: sparklinePath(comparisonSpeedRecords, "speed", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, false, DETAIL_CHART_Y_BOTTOM_PADDING, speedDomain),
     plannerLines,
   }
 })
@@ -4442,8 +4561,9 @@ function chartPointStyle(point: RankBorderChartPoint) {
   }
 }
 
+// Speed trend records reuse the trace point shape with pt/h stored in `score`.
 function chartMetricValue(record: RankBorderTracePoint, metric: RankBorderChartMetric) {
-  return metric === "score" ? record.score : record.rank
+  return metric === "rank" ? record.rank : record.score
 }
 
 function chartMetricY(
@@ -4497,7 +4617,11 @@ function resolveChartTickValues(minValue: number, maxValue: number) {
 }
 
 function formatChartTick(value: number, metric: RankBorderChartMetric) {
-  return metric === "rank" ? formatRank(value) : `${formatCompactNumber(value)} pt`
+  if (metric === "rank") {
+    return formatRank(value)
+  }
+
+  return metric === "speed" ? `${formatCompactNumber(value)} pt/h` : `${formatCompactNumber(value)} pt`
 }
 
 function chartPoints(
@@ -4537,7 +4661,12 @@ function chartPoints(
             time: formatChartPointTime(record.timestamp),
             value: formatRank(record.rank),
           })
-        : t("rankBorder.result.chartPointScore", {
+        : metric === "speed"
+          ? t("rankBorder.result.chartPointSpeed", {
+              time: formatChartPointTime(record.timestamp),
+              value: formatPerHour(record.score),
+            })
+          : t("rankBorder.result.chartPointScore", {
             time: formatChartPointTime(record.timestamp),
             value: formatPt(record.score),
           }),
@@ -6175,6 +6304,62 @@ function traceUpdateRecords(
                   </div>
                 </section>
 
+                <section class="grid min-w-0 gap-2 rounded-md border bg-muted/15 p-3">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-sm font-semibold">{{ t("rankBorder.comparison.label") }}</span>
+                    <Select :model-value="comparisonSelectValue" @update:model-value="updateComparisonSelect">
+                      <SelectTrigger class="h-7 w-28 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{{ t("rankBorder.comparison.none") }}</SelectItem>
+                        <SelectItem v-for="rank in comparisonLineRanks" :key="`comparison-${rank}`" :value="String(rank)">
+                          T{{ rank }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      v-model="comparisonRankInput"
+                      class="h-7 w-24 text-xs"
+                      :placeholder="t('rankBorder.comparison.customPlaceholder')"
+                      @keyup.enter="applyComparisonInput"
+                    />
+                    <Button variant="outline" size="sm" class="h-7 px-2 text-xs" @click="applyComparisonInput">
+                      {{ t("rankBorder.comparison.apply") }}
+                    </Button>
+                    <span v-if="comparisonSummary" class="text-xs text-muted-foreground">
+                      {{ comparisonSummary }}
+                    </span>
+                  </div>
+
+                  <div v-if="comparisonRows.length > 0" class="overflow-x-auto rounded-md border bg-background/70">
+                    <table class="w-full text-xs">
+                      <thead>
+                        <tr class="border-b text-muted-foreground">
+                          <th class="px-2 py-1.5 text-left font-medium">{{ t("rankBorder.comparison.metric") }}</th>
+                          <th class="px-2 py-1.5 text-right font-medium">{{ t("rankBorder.comparison.current") }}</th>
+                          <th class="px-2 py-1.5 text-right font-medium">
+                            {{ comparisonRank != null ? `T${comparisonRank}` : t("rankBorder.comparison.target") }}
+                          </th>
+                          <th class="px-2 py-1.5 text-right font-medium">{{ t("rankBorder.comparison.diff") }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr
+                          v-for="row in comparisonRows"
+                          :key="row.key"
+                          class="border-b border-border/40 last:border-b-0"
+                        >
+                          <td class="px-2 py-1.5 text-muted-foreground">{{ row.label }}</td>
+                          <td class="px-2 py-1.5 text-right font-medium tabular-nums">{{ row.own }}</td>
+                          <td class="px-2 py-1.5 text-right font-medium tabular-nums">{{ row.target }}</td>
+                          <td class="px-2 py-1.5 text-right font-semibold tabular-nums">{{ row.diff }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
                 <section class="rank-border-detail-stats rounded-md border bg-muted/15 p-2 sm:p-3">
                   <div class="rank-border-stat">
                     <p>{{ t("rankBorder.result.hourlySpeed") }}</p>
@@ -6215,33 +6400,6 @@ function traceUpdateRecords(
 	                    <h3 class="text-sm font-semibold">{{ t("rankBorder.result.trendSection") }}</h3>
 	                    <span class="text-xs text-muted-foreground">{{ detailTraceScopeLabel }}</span>
 	                  </div>
-
-                  <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="text-xs text-muted-foreground">{{ t("rankBorder.comparison.label") }}</span>
-                    <Select :model-value="comparisonSelectValue" @update:model-value="updateComparisonSelect">
-                      <SelectTrigger class="h-7 w-28 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">{{ t("rankBorder.comparison.none") }}</SelectItem>
-                        <SelectItem v-for="rank in comparisonLineRanks" :key="`comparison-${rank}`" :value="String(rank)">
-                          T{{ rank }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      v-model="comparisonRankInput"
-                      class="h-7 w-24 text-xs"
-                      :placeholder="t('rankBorder.comparison.customPlaceholder')"
-                      @keyup.enter="applyComparisonInput"
-                    />
-                    <Button variant="outline" size="sm" class="h-7 px-2 text-xs" @click="applyComparisonInput">
-                      {{ t("rankBorder.comparison.apply") }}
-                    </Button>
-                    <span v-if="comparisonSummary" class="text-xs text-muted-foreground">
-                      {{ comparisonSummary }}
-                    </span>
-                  </div>
 
                   <div v-if="detailTraceLoading && !detailTraceStats.hasChart" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
                     {{ t("rankBorder.result.waitingTrace") }}
@@ -6396,6 +6554,69 @@ function traceUpdateRecords(
                             :class="line.tone === 'target' ? 'bg-amber-500/90' : 'bg-emerald-500/90'"
                           />
                           {{ line.label }} {{ formatPt(line.value) }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="min-h-0 rounded-md border bg-background/70 p-2.5">
+                      <div class="mb-1.5 flex items-center justify-between gap-2">
+                        <p class="text-sm font-medium">{{ t("rankBorder.result.speedChart") }}</p>
+                        <span class="text-xs text-muted-foreground">pt/h</span>
+                      </div>
+                      <div class="rank-border-chart-frame rank-border-chart-frame--detail">
+                        <div class="rank-border-chart-plot">
+                          <svg
+                            class="rank-border-chart-svg text-emerald-600 dark:text-emerald-300"
+                            :viewBox="`0 0 ${DETAIL_CHART_WIDTH} ${DETAIL_CHART_HEIGHT}`"
+                            preserveAspectRatio="none"
+                            aria-label="speed trend"
+                          >
+                            <line
+                              v-for="line in detailCharts.speedReferenceLines"
+                              :key="`dialog-spd-grid-${line.value}`"
+                              class="rank-border-chart-grid"
+                              x1="0"
+                              :x2="DETAIL_CHART_WIDTH"
+                              :y1="line.y"
+                              :y2="line.y"
+                            />
+                            <path
+                              v-if="detailCharts.comparisonSpeedPath"
+                              class="rank-border-detail-line rank-border-detail-line--comparison"
+                              :d="detailCharts.comparisonSpeedPath"
+                            />
+                            <path class="rank-border-detail-line" :d="detailCharts.speedPath" />
+                          </svg>
+                          <button
+                            v-for="point in detailCharts.speedPoints"
+                            :key="point.key"
+                            type="button"
+                            class="rank-border-chart-point"
+                            :style="chartPointStyle(point)"
+                            :aria-label="point.label"
+                            @mouseenter="showRankBorderTooltip($event, point.label)"
+                            @mousemove="moveRankBorderTooltip($event)"
+                            @mouseleave="hideRankBorderTooltip"
+                          />
+                        </div>
+                        <div class="rank-border-chart-labels" aria-hidden="true">
+                          <span
+                            v-for="line in detailCharts.speedReferenceLines"
+                            :key="`dialog-spd-label-${line.value}`"
+                            class="rank-border-chart-label"
+                            :style="{ top: chartLabelTop(line) }"
+                          >
+                            {{ line.label }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="rank-border-chart-time-axis" aria-hidden="true">
+                        <span
+                          v-for="tick in detailCharts.timeTicks"
+                          :key="tick.key"
+                          :style="{ left: tick.left }"
+                        >
+                          {{ tick.label }}
                         </span>
                       </div>
                     </div>
@@ -7247,7 +7468,7 @@ function traceUpdateRecords(
   display: grid;
   min-height: 0;
   min-width: 0;
-  grid-template-rows: repeat(2, minmax(9.75rem, 1fr));
+  grid-template-rows: repeat(3, minmax(9.75rem, 1fr));
   gap: 0.5rem;
 }
 
