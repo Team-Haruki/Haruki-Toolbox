@@ -963,75 +963,43 @@ const comparisonTraceStats = computed(() =>
     : resolveTraceMetricStats(comparisonChartTrace.value, comparisonTrace.value),
 )
 
-type RankBorderComparisonRow = {
-  key: string
-  label: string
-  own: string
-  target: string
-  diff: string
+type RankBorderComparisonStatLine = {
+  value: string
+  diff: string | null
   tone: "up" | "down" | null
 }
 
-const comparisonRows = computed<RankBorderComparisonRow[]>(() => {
+/**
+ * Second-row values for the detail stats cards while a comparison target is
+ * active: the target's value plus the signed gap versus the current detail.
+ */
+const comparisonStatLines = computed<Record<string, RankBorderComparisonStatLine> | null>(() => {
   const stats = comparisonTraceStats.value
   if (stats == null) {
-    return []
+    return null
   }
 
   const own = detailTraceStats.value
-  const ownLatest = own.records[own.records.length - 1] ?? null
-  const diffOf = (ownValue: number | null | undefined, targetValue: number | null | undefined) =>
-    typeof ownValue === "number" && typeof targetValue === "number"
-      ? {
-          diff: formatNumberCN(Math.abs(ownValue - targetValue)),
-          tone: ownValue > targetValue ? "up" as const : ownValue < targetValue ? "down" as const : null,
-        }
-      : { diff: "-", tone: null }
-  return [
-    {
-      key: "score",
-      label: t("rankBorder.comparison.metricScore"),
-      own: formatPt(ownLatest?.score),
-      target: formatPt(stats.latest?.score),
-      ...diffOf(ownLatest?.score, stats.latest?.score),
-    },
-    {
-      key: "rank",
-      label: t("rankBorder.comparison.metricRank"),
-      own: formatRank(ownLatest?.rank),
-      target: formatRank(stats.latest?.rank),
-      diff: "-",
-      tone: null,
-    },
-    {
-      key: "hourlySpeed",
-      label: t("rankBorder.result.hourlySpeed"),
-      own: formatPerHour(own.hourlySpeed),
-      target: formatPerHour(stats.hourlySpeed),
-      ...diffOf(own.hourlySpeed, stats.hourlySpeed),
-    },
-    {
-      key: "threeWindowSpeed",
-      label: t("rankBorder.result.twentyMinTripleSpeed"),
-      own: formatPerHour(own.threeWindowSpeed),
-      target: formatPerHour(stats.threeWindowSpeed),
-      ...diffOf(own.threeWindowSpeed, stats.threeWindowSpeed),
-    },
-    {
-      key: "recentAveragePt",
-      label: t("rankBorder.result.recentAveragePt"),
-      own: formatPt(own.recentAveragePt),
-      target: formatPt(stats.recentAveragePt),
-      ...diffOf(own.recentAveragePt, stats.recentAveragePt),
-    },
-    {
-      key: "loopCount",
-      label: t("rankBorder.result.loopCount"),
-      own: formatLoopCount(own.loopCount),
-      target: formatLoopCount(stats.loopCount),
-      ...diffOf(own.loopCount, stats.loopCount),
-    },
-  ]
+  const line = (
+    ownValue: number | null | undefined,
+    targetValue: number | null | undefined,
+    format: (value: number | null | undefined) => string,
+  ): RankBorderComparisonStatLine => ({
+    value: format(targetValue),
+    diff: typeof ownValue === "number" && typeof targetValue === "number" && ownValue !== targetValue
+      ? formatNumberCN(Math.abs(ownValue - targetValue))
+      : null,
+    tone: typeof ownValue === "number" && typeof targetValue === "number"
+      ? ownValue > targetValue ? "up" : ownValue < targetValue ? "down" : null
+      : null,
+  })
+  return {
+    hourlySpeed: line(own.hourlySpeed, stats.hourlySpeed, formatPerHour),
+    recentAveragePt: line(own.recentAveragePt, stats.recentAveragePt, formatPt),
+    latestPointGrowth: line(own.latestPointGrowth, stats.latestPointGrowth, formatGrowth),
+    threeWindowSpeed: line(own.threeWindowSpeed, stats.threeWindowSpeed, formatPerHour),
+    loopCount: line(own.loopCount, stats.loopCount, formatLoopCount),
+  }
 })
 
 const detailHeatmapDays = computed<RankBorderHeatmapDay[]>(() => {
@@ -6096,49 +6064,9 @@ function traceUpdateRecords(
                 </DialogDescription>
               </DialogHeader>
 
-              <section
-                v-if="comparisonRows.length > 0"
-                class="grid min-w-0 gap-1.5 rounded-md border bg-muted/15 p-2.5"
-              >
-                <span v-if="comparisonSummary" class="text-xs text-muted-foreground">
-                  {{ comparisonSummary }}
-                </span>
-                <div class="overflow-x-auto rounded-md border bg-background/70">
-                  <table class="w-full text-xs">
-                    <thead>
-                      <tr class="border-b text-muted-foreground">
-                        <th class="px-2 py-1.5 text-left font-medium">{{ t("rankBorder.comparison.metric") }}</th>
-                        <th class="px-2 py-1.5 text-right font-medium">{{ t("rankBorder.comparison.current") }}</th>
-                        <th class="px-2 py-1.5 text-right font-medium">
-                          {{ comparisonRank != null ? `T${comparisonRank}` : t("rankBorder.comparison.target") }}
-                        </th>
-                        <th class="px-2 py-1.5 text-right font-medium">{{ t("rankBorder.comparison.diff") }}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr
-                        v-for="row in comparisonRows"
-                        :key="row.key"
-                        class="border-b border-border/40 last:border-b-0"
-                      >
-                        <td class="px-2 py-1.5 text-muted-foreground">{{ row.label }}</td>
-                        <td class="px-2 py-1.5 text-right font-medium tabular-nums">{{ row.own }}</td>
-                        <td class="px-2 py-1.5 text-right font-medium tabular-nums">{{ row.target }}</td>
-                        <td
-                          :class="[
-                            'px-2 py-1.5 text-right font-semibold tabular-nums',
-                            row.tone === 'up' ? 'text-emerald-500' : row.tone === 'down' ? 'text-red-500' : '',
-                          ]"
-                        >
-                          <template v-if="row.tone === 'up'">▲ </template>
-                          <template v-else-if="row.tone === 'down'">▼ </template>
-                          {{ row.diff }}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </section>
+              <div v-if="comparisonSummary" class="rounded-md border bg-muted/15 px-2.5 py-1.5 text-xs text-muted-foreground">
+                {{ comparisonSummary }}
+              </div>
 
               <div class="rank-border-detail-grid">
                 <section class="rank-border-detail-profile rounded-md border bg-muted/15 p-3">
@@ -6404,22 +6332,67 @@ function traceUpdateRecords(
                   <div class="rank-border-stat">
                     <p>{{ t("rankBorder.result.hourlySpeed") }}</p>
                     <strong>{{ formatPerHour(detailTraceStats.hourlySpeed) }}</strong>
+                    <span v-if="comparisonStatLines" class="rank-border-stat__comparison">
+                      <span>T{{ comparisonRank }} {{ comparisonStatLines.hourlySpeed.value }}</span>
+                      <span
+                        v-if="comparisonStatLines.hourlySpeed.tone"
+                        :class="comparisonStatLines.hourlySpeed.tone === 'up' ? 'text-emerald-500' : 'text-red-500'"
+                      >
+                        {{ comparisonStatLines.hourlySpeed.tone === "up" ? "▲" : "▼" }} {{ comparisonStatLines.hourlySpeed.diff }}
+                      </span>
+                    </span>
                   </div>
                   <div class="rank-border-stat">
                     <p>{{ t("rankBorder.result.recentAveragePt") }}</p>
                     <strong>{{ formatPt(detailTraceStats.recentAveragePt) }}</strong>
+                    <span v-if="comparisonStatLines" class="rank-border-stat__comparison">
+                      <span>T{{ comparisonRank }} {{ comparisonStatLines.recentAveragePt.value }}</span>
+                      <span
+                        v-if="comparisonStatLines.recentAveragePt.tone"
+                        :class="comparisonStatLines.recentAveragePt.tone === 'up' ? 'text-emerald-500' : 'text-red-500'"
+                      >
+                        {{ comparisonStatLines.recentAveragePt.tone === "up" ? "▲" : "▼" }} {{ comparisonStatLines.recentAveragePt.diff }}
+                      </span>
+                    </span>
                   </div>
                   <div class="rank-border-stat">
                     <p>{{ t("rankBorder.result.latestPointGrowth") }}</p>
                     <strong>{{ formatGrowth(detailTraceStats.latestPointGrowth) }}</strong>
+                    <span v-if="comparisonStatLines" class="rank-border-stat__comparison">
+                      <span>T{{ comparisonRank }} {{ comparisonStatLines.latestPointGrowth.value }}</span>
+                      <span
+                        v-if="comparisonStatLines.latestPointGrowth.tone"
+                        :class="comparisonStatLines.latestPointGrowth.tone === 'up' ? 'text-emerald-500' : 'text-red-500'"
+                      >
+                        {{ comparisonStatLines.latestPointGrowth.tone === "up" ? "▲" : "▼" }} {{ comparisonStatLines.latestPointGrowth.diff }}
+                      </span>
+                    </span>
                   </div>
                   <div class="rank-border-stat">
                     <p>{{ t("rankBorder.result.twentyMinTripleSpeed") }}</p>
                     <strong>{{ formatPerHour(detailTraceStats.threeWindowSpeed) }}</strong>
+                    <span v-if="comparisonStatLines" class="rank-border-stat__comparison">
+                      <span>T{{ comparisonRank }} {{ comparisonStatLines.threeWindowSpeed.value }}</span>
+                      <span
+                        v-if="comparisonStatLines.threeWindowSpeed.tone"
+                        :class="comparisonStatLines.threeWindowSpeed.tone === 'up' ? 'text-emerald-500' : 'text-red-500'"
+                      >
+                        {{ comparisonStatLines.threeWindowSpeed.tone === "up" ? "▲" : "▼" }} {{ comparisonStatLines.threeWindowSpeed.diff }}
+                      </span>
+                    </span>
                   </div>
                   <div class="rank-border-stat">
                     <p>{{ t("rankBorder.result.loopCount") }}</p>
                     <strong>{{ formatLoopCount(detailTraceStats.loopCount) }}</strong>
+                    <span v-if="comparisonStatLines" class="rank-border-stat__comparison">
+                      <span>T{{ comparisonRank }} {{ comparisonStatLines.loopCount.value }}</span>
+                      <span
+                        v-if="comparisonStatLines.loopCount.tone"
+                        :class="comparisonStatLines.loopCount.tone === 'up' ? 'text-emerald-500' : 'text-red-500'"
+                      >
+                        {{ comparisonStatLines.loopCount.tone === "up" ? "▲" : "▼" }} {{ comparisonStatLines.loopCount.diff }}
+                      </span>
+                    </span>
                   </div>
                   <div class="rank-border-stat">
                     <p>{{ t("rankBorder.result.rankShift") }}</p>
@@ -7875,6 +7848,18 @@ function traceUpdateRecords(
   border-radius: 0.375rem;
   background: color-mix(in oklab, var(--background) 74%, transparent);
   padding: 0.5rem;
+}
+
+.rank-border-stat__comparison {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.125rem 0.375rem;
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  color: var(--muted-foreground);
 }
 
 .rank-border-stat p {

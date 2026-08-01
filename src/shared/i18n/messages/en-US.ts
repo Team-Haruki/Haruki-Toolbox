@@ -2974,12 +2974,6 @@ export const enUS = {
       legend: "vs {rank}",
       targetLine: "Target PT",
       plannedLine: "Planned PT",
-      metric: "Metric",
-      current: "Current",
-      target: "Comparison",
-      diff: "Diff",
-      metricScore: "Current score",
-      metricRank: "Current rank",
     },
     actions: {
       reloadMaster: "Reload events",

@@ -2974,12 +2974,6 @@ export const zhCN = {
       legend: "对比 {rank}",
       targetLine: "目标 PT",
       plannedLine: "规划 PT",
-      metric: "指标",
-      current: "当前对象",
-      target: "对比对象",
-      diff: "差值",
-      metricScore: "当前分数",
-      metricRank: "当前排名",
     },
     actions: {
       reloadMaster: "刷新活动列表",
