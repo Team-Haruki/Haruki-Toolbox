@@ -1450,7 +1450,8 @@ export const zhCN = {
       noEvent: "选择带有开始/结算时间的活动后显示日历。",
       clear: "清空规划",
       hourLabel: "{hour} 时",
-      dragHint: "单击填充一格，按住拖动可框选多天 × 多小时的时间段批量填充；用同一笔刷再次框选即为擦除。",
+      dragHint: "单击填充一格，按住拖动可框选多天 × 多小时的时间段批量填充；用同一笔刷再次框选即为擦除。格内数字为每小时周回数。",
+      playsPerHour: "{count} 周/时",
     },
     batch: {
       title: "批量填充",

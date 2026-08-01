@@ -32,22 +32,16 @@ const dayFormatter = computed(() => new Intl.DateTimeFormat(locale.value, {
   weekday: "short",
 }))
 
-// Integer-only compact ("22万" / "216K"): a fraction like "21.6万" gets
-// clipped in the narrow cells and reads like a plays-per-hour count.
-const rateFormatter = computed(() => new Intl.NumberFormat(locale.value, {
-  notation: "compact",
-  maximumFractionDigits: 0,
-}))
-
 const exactRateFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
-function cellRateLabel(hourStartMs: number): string {
+/** Loops per hour of the painted brush; rest cells stay unlabeled. */
+function cellPlaysLabel(hourStartMs: number): string {
   const brush = cellBrush(hourStartMs)
-  if (brush == null || !(brush.pointsPerHour > 0)) {
+  if (brush == null || brush.playsPerHour == null || !(brush.playsPerHour > 0)) {
     return ""
   }
 
-  return rateFormatter.value.format(brush.pointsPerHour)
+  return String(brush.playsPerHour)
 }
 
 const HOUR_COLUMNS = Array.from({ length: 24 }, (_, hour) => hour)
@@ -79,10 +73,13 @@ function cellTitle(hourStartMs: number, hourOfDay: number): string {
     return hourLabel
   }
 
+  const plays = brush.playsPerHour != null && brush.playsPerHour > 0
+    ? ` · ${t("eventPlanner.calendar.playsPerHour", { count: brush.playsPerHour })}`
+    : ""
   const rate = brush.pointsPerHour > 0
     ? ` · ${t("eventPlanner.brushes.perHour", { points: exactRateFormatter.value.format(brush.pointsPerHour) })}`
     : ""
-  return `${hourLabel} · ${brush.name}${rate}`
+  return `${hourLabel} · ${brush.name}${plays}${rate}`
 }
 
 type PlannerCellHit = PlannerCellCoordinate & { hourKey: string }
@@ -191,7 +188,7 @@ function isPreviewing(hourStartMs: number): boolean {
           :data-day-index="dayIndex"
           :data-hour-of-day="hour.hourOfDay"
           :class="[
-            'flex h-9 w-full items-center justify-center overflow-hidden rounded-[4px] border transition-colors',
+            'flex aspect-square w-full items-center justify-center overflow-hidden rounded-[4px] border transition-colors',
             cellBrush(hour.hourStartMs) != null ? 'border-transparent' : 'border-border/50 bg-muted/30 hover:bg-muted/60',
             isPreviewing(hour.hourStartMs)
               ? strokeMode === 'erase' ? 'ring-2 ring-destructive/60' : 'ring-2 ring-primary/60'
@@ -204,10 +201,10 @@ function isPreviewing(hourStartMs: number): boolean {
           :title="cellTitle(hour.hourStartMs, hour.hourOfDay)"
         >
           <span
-            v-if="cellRateLabel(hour.hourStartMs)"
-            class="whitespace-nowrap text-[9px] font-semibold leading-none text-white/95 [text-shadow:0_1px_1px_rgba(0,0,0,0.35)]"
+            v-if="cellPlaysLabel(hour.hourStartMs)"
+            class="whitespace-nowrap text-[10px] font-semibold leading-none text-white/95 [text-shadow:0_1px_1px_rgba(0,0,0,0.35)]"
           >
-            {{ cellRateLabel(hour.hourStartMs) }}
+            {{ cellPlaysLabel(hour.hourStartMs) }}
           </span>
         </button>
       </div>
