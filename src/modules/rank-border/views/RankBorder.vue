@@ -731,7 +731,13 @@ function updateComparisonSelect(value: AcceptableValue) {
 }
 
 function applyComparisonInput() {
-  const rank = parseRankBorderRankQuery(comparisonRankInput.value)
+  const query = comparisonRankInput.value.trim()
+  if (query === "") {
+    comparisonRank.value = null
+    return
+  }
+
+  const rank = parseRankBorderRankQuery(query)
   if (rank != null) {
     comparisonRank.value = rank
   }
