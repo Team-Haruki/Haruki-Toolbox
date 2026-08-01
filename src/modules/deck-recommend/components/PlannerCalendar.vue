@@ -32,10 +32,14 @@ const dayFormatter = computed(() => new Intl.DateTimeFormat(locale.value, {
   weekday: "short",
 }))
 
+// Integer-only compact ("22万" / "216K"): a fraction like "21.6万" gets
+// clipped in the narrow cells and reads like a plays-per-hour count.
 const rateFormatter = computed(() => new Intl.NumberFormat(locale.value, {
   notation: "compact",
-  maximumFractionDigits: 1,
+  maximumFractionDigits: 0,
 }))
+
+const exactRateFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
 function cellRateLabel(hourStartMs: number): string {
   const brush = cellBrush(hourStartMs)
@@ -75,7 +79,10 @@ function cellTitle(hourStartMs: number, hourOfDay: number): string {
     return hourLabel
   }
 
-  return `${hourLabel} · ${brush.name}`
+  const rate = brush.pointsPerHour > 0
+    ? ` · ${t("eventPlanner.brushes.perHour", { points: exactRateFormatter.value.format(brush.pointsPerHour) })}`
+    : ""
+  return `${hourLabel} · ${brush.name}${rate}`
 }
 
 type PlannerCellHit = PlannerCellCoordinate & { hourKey: string }
@@ -198,7 +205,7 @@ function isPreviewing(hourStartMs: number): boolean {
         >
           <span
             v-if="cellRateLabel(hour.hourStartMs)"
-            class="text-[9px] font-semibold leading-none text-white/95 [text-shadow:0_1px_1px_rgba(0,0,0,0.35)]"
+            class="whitespace-nowrap text-[9px] font-semibold leading-none text-white/95 [text-shadow:0_1px_1px_rgba(0,0,0,0.35)]"
           >
             {{ cellRateLabel(hour.hourStartMs) }}
           </span>

@@ -65,8 +65,8 @@ describe("music score asset paths", () => {
     expect(buildMusicScoreAssetPath(1, " ")).toBeNull()
   })
 
-  it("resolves a full URL for the region", () => {
-    expect(resolveMusicScoreUrl("jp", 1, "expert")).toContain("/jp-assets/startapp/music/music_score/0001_01/expert.txt")
+  it("resolves a full URL for the region with a cache-busting version", () => {
+    expect(resolveMusicScoreUrl("jp", 1, "expert")).toContain("/jp-assets/startapp/music/music_score/0001_01/expert.txt?v=")
   })
 })
 

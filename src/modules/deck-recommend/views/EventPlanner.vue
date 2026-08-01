@@ -475,8 +475,8 @@ function formatInteger(value: number) {
           <CardTitle class="text-base">{{ t("eventPlanner.sections.setup.title") }}</CardTitle>
           <CardDescription>{{ t("eventPlanner.sections.setup.description") }}</CardDescription>
         </CardHeader>
-        <CardContent class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div class="grid gap-1.5">
+        <CardContent class="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="grid content-start gap-1.5">
             <Label class="text-xs text-muted-foreground">{{ t("deckRecommend.form.account") }}</Label>
             <Select :key="locale" :model-value="selectedAccountKey" @update:model-value="updateAccount">
               <SelectTrigger class="w-full">
@@ -489,7 +489,7 @@ function formatInteger(value: number) {
               </SelectContent>
             </Select>
           </div>
-          <div class="grid gap-1.5">
+          <div class="grid content-start gap-1.5">
             <Label class="text-xs text-muted-foreground">{{ t("deckRecommend.form.dataRegion") }}</Label>
             <Select :key="locale" :model-value="dataRegion" @update:model-value="updateDataRegion">
               <SelectTrigger class="w-full">
@@ -502,14 +502,16 @@ function formatInteger(value: number) {
               </SelectContent>
             </Select>
           </div>
-          <div class="grid gap-1.5">
+          <div class="grid content-start gap-1.5">
+            <Label class="text-xs text-muted-foreground">{{ t("deckRecommend.form.event") }}</Label>
             <EventSelect
               v-model="selectedEventId"
               :region="dataRegion"
               @update:event-type="selectedEventType = $event"
             />
           </div>
-          <div v-if="showWorldBloomCharacterSelect" class="grid gap-1.5">
+          <div v-if="showWorldBloomCharacterSelect" class="grid content-start gap-1.5">
+            <Label class="text-xs text-muted-foreground">{{ t("deckRecommend.form.character") }}</Label>
             <CharacterSelect
               :model-value="activeCharacterId"
               :region="dataRegion"
@@ -518,7 +520,7 @@ function formatInteger(value: number) {
               @update:model-value="selectedCharacterId = $event"
             />
           </div>
-          <div class="grid gap-1.5">
+          <div class="grid content-start gap-1.5">
             <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.form.targetPoint") }}</Label>
             <Input
               v-model="targetPointInput"
@@ -531,7 +533,7 @@ function formatInteger(value: number) {
               {{ t("eventPlanner.form.parsedValue", { value: formatInteger(targetPoint.value) }) }}
             </p>
           </div>
-          <div class="grid gap-1.5">
+          <div class="grid content-start gap-1.5">
             <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.form.currentPoint") }}</Label>
             <Input
               v-model="currentPointInput"

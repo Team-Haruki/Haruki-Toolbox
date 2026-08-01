@@ -139,6 +139,13 @@ export function buildMusicScoreAssetPath(musicId: number, difficulty: string): s
   return `startapp/music/music_score/${String(musicId).padStart(4, "0")}_01/${normalized}.txt`
 }
 
+/**
+ * Cache-busting version for chart fetches: some score files were cached on the
+ * CDN before the origin sent CORS headers, and those stale variants fail
+ * browser fetches. Bumping this forces a fresh, CORS-enabled cache entry.
+ */
+const MUSIC_SCORE_URL_VERSION = "2"
+
 export function resolveMusicScoreUrl(
   region: SekaiRegion,
   musicId: number,
@@ -150,7 +157,7 @@ export function resolveMusicScoreUrl(
     return null
   }
 
-  return resolveSekaiGameAssetUrl(region, assetPath, preference)
+  return `${resolveSekaiGameAssetUrl(region, assetPath, preference)}?v=${MUSIC_SCORE_URL_VERSION}`
 }
 
 /** "150", "92.5" — trims float noise to at most one decimal place. */
