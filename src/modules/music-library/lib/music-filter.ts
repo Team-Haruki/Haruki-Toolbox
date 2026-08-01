@@ -39,6 +39,8 @@ export type MusicLibraryFilter = {
 export type MusicFilterContext = {
   eventBoxes?: ReadonlyMap<number, EventBoxInfo>
   vocalCharacters?: ReadonlyMap<number, MusicVocalCharacterSummary>
+  /** Music ids whose community alias matches the current search query. */
+  aliasMatchedIds?: ReadonlySet<number>
 }
 
 export function createDefaultMusicLibraryFilter(): MusicLibraryFilter {
@@ -58,7 +60,11 @@ export function createDefaultMusicLibraryFilter(): MusicLibraryFilter {
   }
 }
 
-export function matchesMusicSearch(entry: MusicLibraryEntry, search: string): boolean {
+export function matchesMusicSearch(
+  entry: MusicLibraryEntry,
+  search: string,
+  aliasMatchedIds?: ReadonlySet<number>,
+): boolean {
   const query = search.trim().toLowerCase()
   if (!query) {
     return true
@@ -66,6 +72,7 @@ export function matchesMusicSearch(entry: MusicLibraryEntry, search: string): bo
 
   return entry.title.toLowerCase().includes(query)
     || entry.pronunciation.toLowerCase().includes(query)
+    || (aliasMatchedIds?.has(entry.id) ?? false)
 }
 
 /** A music counts as unreleased while its publish timestamp is in the future. */
@@ -94,7 +101,7 @@ export function filterMusicEntries(
   context: MusicFilterContext = {},
 ): MusicLibraryEntry[] {
   return entries.filter((entry) => {
-    if (!matchesMusicSearch(entry, filter.search)) {
+    if (!matchesMusicSearch(entry, filter.search, context.aliasMatchedIds)) {
       return false
     }
 

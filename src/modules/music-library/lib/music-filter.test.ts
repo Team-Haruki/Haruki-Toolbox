@@ -69,6 +69,12 @@ describe("matchesMusicSearch", () => {
     expect(matchesMusicSearch(ENTRIES[0], "  ")).toBe(true)
     expect(matchesMusicSearch(ENTRIES[0], "missing")).toBe(false)
   })
+
+  it("matches when the entry id is in the alias match set", () => {
+    expect(matchesMusicSearch(ENTRIES[0], "虾", new Set([ENTRIES[0].id]))).toBe(true)
+    expect(matchesMusicSearch(ENTRIES[0], "虾", new Set([999]))).toBe(false)
+    expect(matchesMusicSearch(ENTRIES[0], "虾")).toBe(false)
+  })
 })
 
 describe("filterMusicEntries", () => {

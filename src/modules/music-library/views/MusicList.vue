@@ -38,6 +38,7 @@ import { getI18nLocale } from "@/shared/i18n"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { SEKAI_CATALOG_REGION_FOLLOW_VALUE, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
+import { useMusicAliasMatches } from "@/shared/sekai/music-alias"
 import MusicJacket from "../components/MusicJacket.vue"
 import { useMusicLibraryList } from "../composables/useMusicLibraryList"
 import { resolveMusicJacketUrl } from "../lib/music-assets"
@@ -85,6 +86,7 @@ const {
 } = useMusicLibraryList(region)
 
 const search = ref("")
+const aliasMatchedIds = useMusicAliasMatches(search)
 const selectedDifficulty = ref<MusicDifficulty | null>(null)
 const levelMin = ref<number | undefined>(undefined)
 const levelMax = ref<number | undefined>(undefined)
@@ -147,6 +149,7 @@ const visibleEntries = computed(() => {
   const filtered = filterMusicEntries(entries.value, filter.value, {
     eventBoxes: musicEventBoxes.value,
     vocalCharacters: musicVocalCharacters.value,
+    aliasMatchedIds: aliasMatchedIds.value,
   })
   return sortMusicEntries(
     hideUnreleased.value ? excludeUnreleasedMusicEntries(filtered) : filtered,

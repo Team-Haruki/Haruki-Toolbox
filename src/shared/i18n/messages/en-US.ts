@@ -1425,7 +1425,7 @@ export const enUS = {
       rankingTitle: "Song PT Ranking",
       rankingHint: "Engine estimate for every song with this deck (multi live, no boost); rate = PT per play × plays per hour.",
       rankingLoading: "Ranking songs...",
-      searchPlaceholder: "Search by song name or ID...",
+      searchPlaceholder: "Search by song name, alias, or ID...",
       allDifficulties: "All difficulties",
       columns: {
         song: "Song",
@@ -1437,6 +1437,7 @@ export const enUS = {
       playsPerHour: "Plays per hour",
       playsPerHourHint: "Estimated from song length + 30 s between plays; adjust to your pace.",
       brushName: "Brush name",
+      brushColor: "Brush color",
       pointsPerHour: "Brush rate",
       save: "Save brush",
       noDeck: "Build a deck first to generate the song ranking.",
@@ -1891,7 +1892,7 @@ export const enUS = {
       filters: {
         region: "Server",
         search: "Search",
-        searchPlaceholder: "Search by title...",
+        searchPlaceholder: "Search by title or alias...",
         title: "Filters",
         difficulty: "Difficulty",
         difficultyAll: "All difficulties",

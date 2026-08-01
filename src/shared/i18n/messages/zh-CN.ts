@@ -1425,7 +1425,7 @@ export const zhCN = {
       rankingTitle: "歌曲 PT 排行",
       rankingHint: "基于该卡组对全部歌曲的引擎测算（多人 Live、不含火力），时速 = 单局 PT × 每小时局数。",
       rankingLoading: "正在测算歌曲排行...",
-      searchPlaceholder: "搜索歌曲名或 ID...",
+      searchPlaceholder: "搜索歌曲名 / 别名 / ID...",
       allDifficulties: "全部难度",
       columns: {
         song: "歌曲",
@@ -1437,6 +1437,7 @@ export const zhCN = {
       playsPerHour: "每小时局数",
       playsPerHourHint: "默认按歌曲时长 + 30 秒间隔估算，可按实际情况调整。",
       brushName: "笔刷名称",
+      brushColor: "笔刷颜色",
       pointsPerHour: "笔刷时速",
       save: "保存笔刷",
       noDeck: "先组卡后才能生成歌曲排行。",
@@ -1891,7 +1892,7 @@ export const zhCN = {
       filters: {
         region: "服务器",
         search: "搜索",
-        searchPlaceholder: "按标题搜索...",
+        searchPlaceholder: "按标题或别名搜索...",
         title: "筛选",
         difficulty: "难度",
         difficultyAll: "全部难度",

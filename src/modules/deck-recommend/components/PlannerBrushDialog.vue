@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { readSekaiMusicMetas } from "@/shared/sekai/cache"
+import { useMusicAliasMatches } from "@/shared/sekai/music-alias"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
@@ -31,6 +32,7 @@ import {
   buildPlannerMusicDurations,
   buildPlannerSongRanking,
   pickPlannerBrushColor,
+  PLANNER_BRUSH_COLORS,
   type PlannerBrush,
   type PlannerRankedSong,
 } from "../lib/planner-calendar"
@@ -82,8 +84,10 @@ const errorMessage = ref<string | null>(null)
 const selectedSong = ref<PlannerRankedSong | null>(null)
 const playsPerHour = ref<number>(30)
 const brushName = ref("")
+const brushColor = ref<string>(PLANNER_BRUSH_COLORS[0])
 
 const searchQuery = ref("")
+const aliasMatchedIds = useMusicAliasMatches(searchQuery)
 const difficultyFilter = ref("all")
 
 const RANKING_DIFFICULTIES = ["easy", "normal", "hard", "expert", "master", "append"] as const
@@ -117,7 +121,8 @@ const filteredRanking = computed(() => {
     .filter((row) => difficultyFilter.value === "all" || row.difficulty === difficultyFilter.value)
     .filter((row) => query === ""
       || row.title.toLowerCase().includes(query)
-      || String(row.musicId) === query)
+      || String(row.musicId) === query
+      || aliasMatchedIds.value.has(row.musicId))
     .slice(0, RANKING_DISPLAY_LIMIT)
 })
 
@@ -140,6 +145,7 @@ const canSave = computed(() =>
 watch(() => props.open, (open) => {
   if (open) {
     errorMessage.value = null
+    brushColor.value = pickPlannerBrushColor(props.existingBrushes)
     // Warm the engine and region data as soon as the dialog opens so the
     // first deck build does not pay the whole load inside the run.
     void runner.preloadEngine().catch(() => undefined)
@@ -326,7 +332,7 @@ function save() {
   emit("save", {
     id: crypto.randomUUID(),
     name: brushName.value.trim(),
-    color: pickPlannerBrushColor(props.existingBrushes),
+    color: brushColor.value,
     pointsPerHour: pointsPerHour.value,
     musicId: song.musicId,
     difficulty: song.difficulty,
@@ -474,29 +480,48 @@ function save() {
         </p>
 
         <!-- Brush settings -->
-        <div v-if="selectedSong" class="grid gap-3 rounded-md border bg-muted/20 p-3 sm:grid-cols-3">
-          <div class="grid gap-1.5 sm:col-span-1">
-            <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.playsPerHour") }}</Label>
-            <Input
-              type="number"
-              min="1"
-              max="120"
-              :model-value="playsPerHour"
-              class="h-8"
-              @input="handlePlaysPerHourInput"
-            />
-            <p class="text-[11px] text-muted-foreground">{{ t("eventPlanner.dialog.playsPerHourHint") }}</p>
+        <div v-if="selectedSong" class="flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
+          <div class="grid items-start gap-3 sm:grid-cols-[8rem_1fr_auto_auto]">
+            <div class="grid gap-1.5">
+              <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.playsPerHour") }}</Label>
+              <Input
+                type="number"
+                min="1"
+                max="120"
+                :model-value="playsPerHour"
+                class="h-8"
+                @input="handlePlaysPerHourInput"
+              />
+            </div>
+            <div class="grid gap-1.5">
+              <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.brushName") }}</Label>
+              <Input v-model="brushName" class="h-8" />
+            </div>
+            <div class="grid gap-1.5">
+              <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.brushColor") }}</Label>
+              <div class="flex h-8 items-center gap-1.5">
+                <button
+                  v-for="color in PLANNER_BRUSH_COLORS"
+                  :key="color"
+                  type="button"
+                  :class="[
+                    'size-5 rounded-full transition-transform',
+                    brushColor === color ? 'ring-2 ring-foreground/70 ring-offset-1 ring-offset-background' : 'hover:scale-110',
+                  ]"
+                  :style="{ backgroundColor: color }"
+                  :aria-pressed="brushColor === color"
+                  @click="brushColor = color"
+                />
+              </div>
+            </div>
+            <div class="grid gap-1.5">
+              <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.pointsPerHour") }}</Label>
+              <p class="flex h-8 items-center text-lg font-semibold tabular-nums">
+                {{ pointsPerHour != null ? formatInteger(pointsPerHour) : "-" }}
+              </p>
+            </div>
           </div>
-          <div class="grid gap-1.5 sm:col-span-1">
-            <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.brushName") }}</Label>
-            <Input v-model="brushName" class="h-8" />
-          </div>
-          <div class="grid gap-1.5 sm:col-span-1">
-            <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.pointsPerHour") }}</Label>
-            <p class="text-lg font-semibold tabular-nums">
-              {{ pointsPerHour != null ? formatInteger(pointsPerHour) : "-" }}
-            </p>
-          </div>
+          <p class="text-[11px] text-muted-foreground">{{ t("eventPlanner.dialog.playsPerHourHint") }}</p>
         </div>
       </div>
 

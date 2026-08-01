@@ -32,6 +32,20 @@ const dayFormatter = computed(() => new Intl.DateTimeFormat(locale.value, {
   weekday: "short",
 }))
 
+const rateFormatter = computed(() => new Intl.NumberFormat(locale.value, {
+  notation: "compact",
+  maximumFractionDigits: 1,
+}))
+
+function cellRateLabel(hourStartMs: number): string {
+  const brush = cellBrush(hourStartMs)
+  if (brush == null || !(brush.pointsPerHour > 0)) {
+    return ""
+  }
+
+  return rateFormatter.value.format(brush.pointsPerHour)
+}
+
 const HOUR_COLUMNS = Array.from({ length: 24 }, (_, hour) => hour)
 
 // A stroke selects the day/hour rectangle between the anchor cell and the
@@ -170,7 +184,7 @@ function isPreviewing(hourStartMs: number): boolean {
           :data-day-index="dayIndex"
           :data-hour-of-day="hour.hourOfDay"
           :class="[
-            'h-9 w-full rounded-[4px] border transition-colors',
+            'flex h-9 w-full items-center justify-center overflow-hidden rounded-[4px] border transition-colors',
             cellBrush(hour.hourStartMs) != null ? 'border-transparent' : 'border-border/50 bg-muted/30 hover:bg-muted/60',
             isPreviewing(hour.hourStartMs)
               ? strokeMode === 'erase' ? 'ring-2 ring-destructive/60' : 'ring-2 ring-primary/60'
@@ -181,7 +195,14 @@ function isPreviewing(hourStartMs: number): boolean {
             ...(index === 0 ? { gridColumnStart: hour.hourOfDay + 2 } : {}),
           }"
           :title="cellTitle(hour.hourStartMs, hour.hourOfDay)"
-        />
+        >
+          <span
+            v-if="cellRateLabel(hour.hourStartMs)"
+            class="text-[9px] font-semibold leading-none text-white/95 [text-shadow:0_1px_1px_rgba(0,0,0,0.35)]"
+          >
+            {{ cellRateLabel(hour.hourStartMs) }}
+          </span>
+        </button>
       </div>
     </div>
   </div>
