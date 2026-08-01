@@ -33,6 +33,7 @@ import {
   buildPlannerSongRanking,
   pickPlannerBrushColor,
   PLANNER_BRUSH_COLORS,
+  resolvePlannerBrushPointsPerHour,
   type PlannerBrush,
   type PlannerRankedSong,
 } from "../lib/planner-calendar"
@@ -54,6 +55,8 @@ const props = defineProps<{
   forcedLeaderCharacterId: string | null
   algorithms: DeckRecommendAlgorithm[]
   existingBrushes: PlannerBrush[]
+  /** Brush being edited; null creates a new one. Loops per hour stay outside. */
+  editingBrush: PlannerBrush | null
 }>()
 
 const emit = defineEmits<{
@@ -82,7 +85,6 @@ const rankingLoading = ref(false)
 const errorMessage = ref<string | null>(null)
 
 const selectedSong = ref<PlannerRankedSong | null>(null)
-const playsPerHour = ref<number>(30)
 const brushName = ref("")
 const brushColor = ref<string>(PLANNER_BRUSH_COLORS[0])
 
@@ -126,26 +128,20 @@ const filteredRanking = computed(() => {
     .slice(0, RANKING_DISPLAY_LIMIT)
 })
 
-const pointsPerHour = computed(() => {
-  if (selectedSong.value == null) {
-    return null
-  }
-
-  const plays = Number.isFinite(playsPerHour.value) && playsPerHour.value > 0 ? playsPerHour.value : 0
-  return Math.round(selectedSong.value.eventPoint * plays)
-})
-
 const canSave = computed(() =>
-  selectedSong.value != null
-  && pointsPerHour.value != null
-  && pointsPerHour.value > 0
-  && brushName.value.trim() !== "",
+  brushName.value.trim() !== ""
+  && (selectedSong.value != null || props.editingBrush != null),
 )
 
 watch(() => props.open, (open) => {
   if (open) {
     errorMessage.value = null
-    brushColor.value = pickPlannerBrushColor(props.existingBrushes)
+    deckView.value = null
+    rawDeck.value = null
+    rankingRows.value = []
+    selectedSong.value = null
+    brushName.value = props.editingBrush?.name ?? ""
+    brushColor.value = props.editingBrush?.color ?? pickPlannerBrushColor(props.existingBrushes)
     // Warm the engine and region data as soon as the dialog opens so the
     // first deck build does not pay the whole load inside the run.
     void runner.preloadEngine().catch(() => undefined)
@@ -155,8 +151,7 @@ watch(() => props.open, (open) => {
 })
 
 watch(selectedSong, (song) => {
-  if (song != null) {
-    playsPerHour.value = song.playsPerHour
+  if (song != null && (props.editingBrush == null || brushName.value.trim() === "")) {
     brushName.value = `${song.title} · ${difficultyLabel(song.difficulty)}`
   }
 })
@@ -316,29 +311,32 @@ function deckBonusTotal(view: DeckResultDeckView): number {
   return (Number(view.deck.event_bonus_rate) || 0) + (Number(view.deck.support_deck_bonus_rate) || 0)
 }
 
-function handlePlaysPerHourInput(event: Event) {
-  const value = Number((event.target as HTMLInputElement).value)
-  if (Number.isFinite(value)) {
-    playsPerHour.value = Math.max(1, Math.min(120, Math.round(value)))
-  }
-}
-
 function save() {
   const song = selectedSong.value
-  if (!canSave.value || song == null || pointsPerHour.value == null) {
+  const base = props.editingBrush
+  if (!canSave.value || (song == null && base == null)) {
     return
   }
 
+  // Loops per hour and boost live outside the dialog: new brushes start from
+  // the ranking estimate with no boost, edits keep the planner's settings.
+  const playsPerHour = base?.playsPerHour ?? song?.playsPerHour ?? 30
+  const boostCount = base?.boostCount ?? 0
+  const eventPointPerPlay = song?.eventPoint ?? base?.eventPointPerPlay ?? null
   emit("save", {
-    id: crypto.randomUUID(),
+    id: base?.id ?? crypto.randomUUID(),
     name: brushName.value.trim(),
     color: brushColor.value,
-    pointsPerHour: pointsPerHour.value,
-    musicId: song.musicId,
-    difficulty: song.difficulty,
-    eventPointPerPlay: song.eventPoint,
-    playsPerHour: playsPerHour.value,
-    deckCardIds: deckView.value?.cards.map((entry) => entry.card.card_id) ?? [],
+    pointsPerHour: resolvePlannerBrushPointsPerHour(eventPointPerPlay, playsPerHour, boostCount)
+      ?? base?.pointsPerHour ?? 0,
+    musicId: song?.musicId ?? base?.musicId ?? null,
+    difficulty: song?.difficulty ?? base?.difficulty ?? null,
+    eventPointPerPlay,
+    playsPerHour,
+    boostCount,
+    deckCardIds: song != null
+      ? deckView.value?.cards.map((entry) => entry.card.card_id) ?? []
+      : base?.deckCardIds ?? [],
   })
   emit("update:open", false)
 }
@@ -479,20 +477,9 @@ function save() {
           {{ t("eventPlanner.dialog.noDeck") }}
         </p>
 
-        <!-- Brush settings -->
-        <div v-if="selectedSong" class="flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
-          <div class="grid items-start gap-3 sm:grid-cols-[8rem_1fr_auto_auto]">
-            <div class="grid gap-1.5">
-              <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.playsPerHour") }}</Label>
-              <Input
-                type="number"
-                min="1"
-                max="120"
-                :model-value="playsPerHour"
-                class="h-8"
-                @input="handlePlaysPerHourInput"
-              />
-            </div>
+        <!-- Brush identity: loops per hour and boost are set on the brush list. -->
+        <div v-if="selectedSong || editingBrush" class="flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
+          <div class="grid items-start gap-3 sm:grid-cols-[1fr_auto]">
             <div class="grid gap-1.5">
               <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.brushName") }}</Label>
               <Input v-model="brushName" class="h-8" />
@@ -514,14 +501,8 @@ function save() {
                 />
               </div>
             </div>
-            <div class="grid gap-1.5">
-              <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.pointsPerHour") }}</Label>
-              <p class="flex h-8 items-center text-lg font-semibold tabular-nums">
-                {{ pointsPerHour != null ? formatInteger(pointsPerHour) : "-" }}
-              </p>
-            </div>
           </div>
-          <p class="text-[11px] text-muted-foreground">{{ t("eventPlanner.dialog.playsPerHourHint") }}</p>
+          <p class="text-[11px] text-muted-foreground">{{ t("eventPlanner.dialog.externalSettingsHint") }}</p>
         </div>
       </div>
 

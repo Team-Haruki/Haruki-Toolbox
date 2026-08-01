@@ -8,6 +8,7 @@ import {
   pickPlannerBrushColor,
   PLANNER_BRUSH_COLORS,
   PLANNER_REST_BRUSH_ID,
+  resolvePlannerBrushPointsPerHour,
   resolvePlannerRemainingPoint,
   summarizePlannerCells,
   type PlannerBrush,
@@ -118,6 +119,17 @@ describe("resolvePlannerRemainingPoint", () => {
       .toBe(500_000)
     expect(resolvePlannerRemainingPoint({ targetPoint: 100, currentPoint: 90, plannedPoints: 50 })).toBe(0)
     expect(resolvePlannerRemainingPoint({ targetPoint: null, currentPoint: 0, plannedPoints: 0 })).toBeNull()
+  })
+})
+
+describe("resolvePlannerBrushPointsPerHour", () => {
+  it("multiplies per-play PT, boost multiplier, and loops per hour", () => {
+    expect(resolvePlannerBrushPointsPerHour(2500, 40, 0)).toBe(100_000)
+    expect(resolvePlannerBrushPointsPerHour(2500, 40, null)).toBe(100_000)
+    expect(resolvePlannerBrushPointsPerHour(2500, 40, 1)).toBe(500_000)
+    expect(resolvePlannerBrushPointsPerHour(2500, 40, 10)).toBe(3_500_000)
+    expect(resolvePlannerBrushPointsPerHour(null, 40, 0)).toBeNull()
+    expect(resolvePlannerBrushPointsPerHour(2500, null, 0)).toBeNull()
   })
 })
 

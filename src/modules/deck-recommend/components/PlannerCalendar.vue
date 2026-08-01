@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
+import { resolveSekaiLiveBoostMultiplier } from "@/shared/sekai/live-boost"
 import {
   buildPlannerRectangleHourKeys,
   type PlannerBrush,
@@ -44,6 +45,17 @@ function cellPlaysLabel(hourStartMs: number): string {
   return String(brush.playsPerHour)
 }
 
+/** "×5"-style boost multiplier of the painted brush; hidden at ×1. */
+function cellBoostLabel(hourStartMs: number): string {
+  const brush = cellBrush(hourStartMs)
+  if (brush == null) {
+    return ""
+  }
+
+  const multiplier = resolveSekaiLiveBoostMultiplier(brush.boostCount ?? 0)
+  return multiplier > 1 ? `×${multiplier}` : ""
+}
+
 const HOUR_COLUMNS = Array.from({ length: 24 }, (_, hour) => hour)
 
 // A stroke selects the day/hour rectangle between the anchor cell and the
@@ -76,10 +88,12 @@ function cellTitle(hourStartMs: number, hourOfDay: number): string {
   const plays = brush.playsPerHour != null && brush.playsPerHour > 0
     ? ` · ${t("eventPlanner.calendar.playsPerHour", { count: brush.playsPerHour })}`
     : ""
+  const boostLabel = cellBoostLabel(hourStartMs)
+  const boost = boostLabel ? ` · ${boostLabel}` : ""
   const rate = brush.pointsPerHour > 0
     ? ` · ${t("eventPlanner.brushes.perHour", { points: exactRateFormatter.value.format(brush.pointsPerHour) })}`
     : ""
-  return `${hourLabel} · ${brush.name}${plays}${rate}`
+  return `${hourLabel} · ${brush.name}${plays}${boost}${rate}`
 }
 
 type PlannerCellHit = PlannerCellCoordinate & { hourKey: string }
@@ -202,9 +216,12 @@ function isPreviewing(hourStartMs: number): boolean {
         >
           <span
             v-if="cellPlaysLabel(hour.hourStartMs)"
-            class="whitespace-nowrap text-[10px] font-semibold leading-none text-white/95 [text-shadow:0_1px_1px_rgba(0,0,0,0.35)]"
+            class="flex flex-col items-center gap-px leading-none text-white/95 [text-shadow:0_1px_1px_rgba(0,0,0,0.35)]"
           >
-            {{ cellPlaysLabel(hour.hourStartMs) }}
+            <span class="whitespace-nowrap text-[10px] font-semibold">{{ cellPlaysLabel(hour.hourStartMs) }}</span>
+            <span v-if="cellBoostLabel(hour.hourStartMs)" class="whitespace-nowrap text-[8px] font-medium">
+              {{ cellBoostLabel(hour.hourStartMs) }}
+            </span>
           </span>
         </button>
       </div>

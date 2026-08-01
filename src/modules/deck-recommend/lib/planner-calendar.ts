@@ -4,6 +4,8 @@
  * PT ranking derived from the engine's music recommend output.
  */
 
+import { resolveSekaiLiveBoostMultiplier } from "@/shared/sekai/live-boost"
+
 export const PLANNER_HOUR_MS = 3_600_000
 
 /** Rest is a built-in brush; painted hours contribute zero points. */
@@ -30,8 +32,23 @@ export type PlannerBrush = {
   difficulty: string | null
   eventPointPerPlay: number | null
   playsPerHour: number | null
+  /** Live boost fires spent per play (0-10); plans saved before this field lack it. */
+  boostCount?: number | null
   /** Card ids of the deck the brush was built from, for a thumbnail recap. */
   deckCardIds: number[]
+}
+
+/** Hourly rate from base per-play PT, the boost multiplier, and loops per hour. */
+export function resolvePlannerBrushPointsPerHour(
+  eventPointPerPlay: number | null,
+  playsPerHour: number | null,
+  boostCount: number | null | undefined,
+): number | null {
+  if (eventPointPerPlay == null || playsPerHour == null || !(playsPerHour > 0)) {
+    return null
+  }
+
+  return Math.round(eventPointPerPlay * resolveSekaiLiveBoostMultiplier(boostCount ?? 0) * playsPerHour)
 }
 
 export type PlannerCalendarHour = {

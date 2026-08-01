@@ -7,6 +7,7 @@ import {
   LucideBrush,
   LucideEraser,
   LucideMoon,
+  LucidePencil,
   LucidePlus,
   LucideTrash2,
   LucideX,
@@ -49,10 +50,12 @@ import {
   buildPlannerPlanKey,
   buildPlannerRectangleHourKeys,
   PLANNER_REST_BRUSH_ID,
+  resolvePlannerBrushPointsPerHour,
   resolvePlannerRemainingPoint,
   summarizePlannerCells,
   type PlannerBrush,
 } from "../lib/planner-calendar"
+import { resolveSekaiLiveBoostMultiplier } from "@/shared/sekai/live-boost"
 import type { DeckRecommendAlgorithm } from "../lib/recommend-options"
 import { useDeckRecommendRunner } from "../composables/useDeckRecommendRunner"
 import { useEventOptions } from "../composables/useEventOptions"
@@ -305,9 +308,55 @@ function clearPlanCells() {
 
 // --- Brushes ----------------------------------------------------------------
 
-function addBrush(brush: PlannerBrush) {
-  brushes.value = [...brushes.value, brush]
+const editingBrush = ref<PlannerBrush | null>(null)
+
+function openBrushDialog(brush: PlannerBrush | null = null) {
+  editingBrush.value = brush
+  brushDialogOpen.value = true
+}
+
+function handleBrushDialogOpenChange(open: boolean) {
+  brushDialogOpen.value = open
+  if (!open) {
+    editingBrush.value = null
+  }
+}
+
+function handleBrushSave(brush: PlannerBrush) {
+  brushes.value = brushes.value.some((existing) => existing.id === brush.id)
+    ? brushes.value.map((existing) => (existing.id === brush.id ? brush : existing))
+    : [...brushes.value, brush]
   activeTool.value = brush.id
+}
+
+const BOOST_COUNT_OPTIONS = Array.from({ length: 11 }, (_, count) => count)
+
+/** Loops per hour and boost are brush-list settings; the rate follows. */
+function updateBrushSettings(brushId: string, patch: Partial<Pick<PlannerBrush, "playsPerHour" | "boostCount">>) {
+  brushes.value = brushes.value.map((brush) => {
+    if (brush.id !== brushId) {
+      return brush
+    }
+
+    const next = { ...brush, ...patch }
+    next.pointsPerHour = resolvePlannerBrushPointsPerHour(next.eventPointPerPlay, next.playsPerHour, next.boostCount)
+      ?? next.pointsPerHour
+    return next
+  })
+}
+
+function handleBrushPlaysInput(brushId: string, event: Event) {
+  const value = Number((event.target as HTMLInputElement).value)
+  if (Number.isFinite(value)) {
+    updateBrushSettings(brushId, { playsPerHour: Math.max(1, Math.min(120, Math.round(value))) })
+  }
+}
+
+function updateBrushBoost(brushId: string, value: AcceptableValue) {
+  const boostCount = Number(value)
+  if (Number.isInteger(boostCount) && boostCount >= 0 && boostCount <= 10) {
+    updateBrushSettings(brushId, { boostCount })
+  }
 }
 
 function removeBrush(brushId: string) {
@@ -574,7 +623,7 @@ function formatInteger(value: number) {
         <CardHeader class="pb-3">
           <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
             <span>{{ t("eventPlanner.brushes.title") }}</span>
-            <Button size="sm" class="h-8" :disabled="!selectedEventId || !selectedAccount" @click="brushDialogOpen = true">
+            <Button size="sm" class="h-8" :disabled="!selectedEventId || !selectedAccount" @click="openBrushDialog()">
               <LucidePlus class="mr-1 size-4" /> {{ t("eventPlanner.brushes.add") }}
             </Button>
           </CardTitle>
@@ -613,7 +662,7 @@ function formatInteger(value: number) {
             v-for="brush in brushes"
             :key="brush.id"
             :class="[
-              'inline-flex items-center gap-1.5 rounded-full border py-1 pl-3 pr-1.5 text-xs transition-colors',
+              'inline-flex flex-wrap items-center gap-1.5 rounded-full border py-1 pl-3 pr-1.5 text-xs transition-colors',
               activeTool === brush.id
                 ? 'border-primary ring-2 ring-primary/30'
                 : 'border-border hover:bg-muted/40',
@@ -630,6 +679,39 @@ function formatInteger(value: number) {
               <span class="tabular-nums text-muted-foreground">
                 {{ t("eventPlanner.brushes.perHour", { points: formatInteger(brush.pointsPerHour) }) }}
               </span>
+            </button>
+            <span class="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Input
+                type="number"
+                min="1"
+                max="120"
+                :model-value="brush.playsPerHour ?? undefined"
+                class="h-6 w-14 px-1.5 text-center text-[11px] tabular-nums"
+                :title="t('eventPlanner.brushes.playsTitle')"
+                @input="handleBrushPlaysInput(brush.id, $event)"
+              />
+              {{ t("eventPlanner.brushes.playsUnit") }}
+            </span>
+            <Select
+              :model-value="String(brush.boostCount ?? 0)"
+              @update:model-value="updateBrushBoost(brush.id, $event)"
+            >
+              <SelectTrigger class="h-6 w-24 px-1.5 text-[11px]" :title="t('eventPlanner.brushes.boostTitle')">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="count in BOOST_COUNT_OPTIONS" :key="count" :value="String(count)">
+                  {{ t("eventPlanner.brushes.boostOption", { count, multiplier: resolveSekaiLiveBoostMultiplier(count) }) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <button
+              type="button"
+              class="inline-flex items-center rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              :aria-label="t('eventPlanner.brushes.edit')"
+              @click="openBrushDialog(brush)"
+            >
+              <LucidePencil class="size-3" />
             </button>
             <button
               type="button"
@@ -766,7 +848,7 @@ function formatInteger(value: number) {
     </div>
 
     <PlannerBrushDialog
-      v-model:open="brushDialogOpen"
+      :open="brushDialogOpen"
       :data-region="dataRegion"
       :account="selectedAccount"
       :event-id="selectedEventId"
@@ -774,7 +856,9 @@ function formatInteger(value: number) {
       :forced-leader-character-id="forcedLeaderCharacterId"
       :algorithms="plannerAlgorithms"
       :existing-brushes="brushes"
-      @save="addBrush"
+      :editing-brush="editingBrush"
+      @update:open="handleBrushDialogOpenChange"
+      @save="handleBrushSave"
     />
   </div>
 </template>
