@@ -6020,17 +6020,40 @@ function traceUpdateRecords(
                       {{ formatDetailBadge(detail) }}
                     </span>
                   </DialogTitle>
-                  <Tabs
-                    v-if="detail.result.rank <= PERSONAL_COLLECTION_LIMIT"
-                    :model-value="detailDialogTab"
-                    class="rank-border-detail-tabs"
-                    @update:model-value="updateDetailDialogTab"
-                  >
-                    <TabsList class="h-8">
-                      <TabsTrigger value="player" class="h-7 px-2.5 text-xs">{{ t("rankBorder.sections.playerTracking") }}</TabsTrigger>
-                      <TabsTrigger value="border" class="h-7 px-2.5 text-xs">{{ t("rankBorder.sections.borderTracking") }}</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                  <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+                    <span class="text-xs text-muted-foreground">{{ t("rankBorder.comparison.label") }}</span>
+                    <Select :model-value="comparisonSelectValue" @update:model-value="updateComparisonSelect">
+                      <SelectTrigger class="h-8 w-28 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{{ t("rankBorder.comparison.none") }}</SelectItem>
+                        <SelectItem v-for="rank in comparisonLineRanks" :key="`comparison-${rank}`" :value="String(rank)">
+                          T{{ rank }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      v-model="comparisonRankInput"
+                      class="h-8 w-24 text-xs"
+                      :placeholder="t('rankBorder.comparison.customPlaceholder')"
+                      @keyup.enter="applyComparisonInput"
+                    />
+                    <Button variant="outline" size="sm" class="h-8 px-2 text-xs" @click="applyComparisonInput">
+                      {{ t("rankBorder.comparison.apply") }}
+                    </Button>
+                    <Tabs
+                      v-if="detail.result.rank <= PERSONAL_COLLECTION_LIMIT"
+                      :model-value="detailDialogTab"
+                      class="rank-border-detail-tabs"
+                      @update:model-value="updateDetailDialogTab"
+                    >
+                      <TabsList class="h-8">
+                        <TabsTrigger value="player" class="h-7 px-2.5 text-xs">{{ t("rankBorder.sections.playerTracking") }}</TabsTrigger>
+                        <TabsTrigger value="border" class="h-7 px-2.5 text-xs">{{ t("rankBorder.sections.borderTracking") }}</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
                 </div>
                 <DialogDescription>
                   <span
@@ -6043,6 +6066,41 @@ function traceUpdateRecords(
                   <span> / {{ formatDetailRank(detail) }}</span>
                 </DialogDescription>
               </DialogHeader>
+
+              <section
+                v-if="comparisonRows.length > 0"
+                class="grid min-w-0 gap-1.5 rounded-md border bg-muted/15 p-2.5"
+              >
+                <span v-if="comparisonSummary" class="text-xs text-muted-foreground">
+                  {{ comparisonSummary }}
+                </span>
+                <div class="overflow-x-auto rounded-md border bg-background/70">
+                  <table class="w-full text-xs">
+                    <thead>
+                      <tr class="border-b text-muted-foreground">
+                        <th class="px-2 py-1.5 text-left font-medium">{{ t("rankBorder.comparison.metric") }}</th>
+                        <th class="px-2 py-1.5 text-right font-medium">{{ t("rankBorder.comparison.current") }}</th>
+                        <th class="px-2 py-1.5 text-right font-medium">
+                          {{ comparisonRank != null ? `T${comparisonRank}` : t("rankBorder.comparison.target") }}
+                        </th>
+                        <th class="px-2 py-1.5 text-right font-medium">{{ t("rankBorder.comparison.diff") }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="row in comparisonRows"
+                        :key="row.key"
+                        class="border-b border-border/40 last:border-b-0"
+                      >
+                        <td class="px-2 py-1.5 text-muted-foreground">{{ row.label }}</td>
+                        <td class="px-2 py-1.5 text-right font-medium tabular-nums">{{ row.own }}</td>
+                        <td class="px-2 py-1.5 text-right font-medium tabular-nums">{{ row.target }}</td>
+                        <td class="px-2 py-1.5 text-right font-semibold tabular-nums">{{ row.diff }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
 
               <div class="rank-border-detail-grid">
                 <section class="rank-border-detail-profile rounded-md border bg-muted/15 p-3">
@@ -6301,62 +6359,6 @@ function traceUpdateRecords(
                       <span v-else class="rank-border-honor-fallback">{{ honor.label }}</span>
                     </span>
                     </div>
-                  </div>
-                </section>
-
-                <section class="grid min-w-0 gap-2 rounded-md border bg-muted/15 p-3">
-                  <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="text-sm font-semibold">{{ t("rankBorder.comparison.label") }}</span>
-                    <Select :model-value="comparisonSelectValue" @update:model-value="updateComparisonSelect">
-                      <SelectTrigger class="h-7 w-28 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">{{ t("rankBorder.comparison.none") }}</SelectItem>
-                        <SelectItem v-for="rank in comparisonLineRanks" :key="`comparison-${rank}`" :value="String(rank)">
-                          T{{ rank }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      v-model="comparisonRankInput"
-                      class="h-7 w-24 text-xs"
-                      :placeholder="t('rankBorder.comparison.customPlaceholder')"
-                      @keyup.enter="applyComparisonInput"
-                    />
-                    <Button variant="outline" size="sm" class="h-7 px-2 text-xs" @click="applyComparisonInput">
-                      {{ t("rankBorder.comparison.apply") }}
-                    </Button>
-                    <span v-if="comparisonSummary" class="text-xs text-muted-foreground">
-                      {{ comparisonSummary }}
-                    </span>
-                  </div>
-
-                  <div v-if="comparisonRows.length > 0" class="overflow-x-auto rounded-md border bg-background/70">
-                    <table class="w-full text-xs">
-                      <thead>
-                        <tr class="border-b text-muted-foreground">
-                          <th class="px-2 py-1.5 text-left font-medium">{{ t("rankBorder.comparison.metric") }}</th>
-                          <th class="px-2 py-1.5 text-right font-medium">{{ t("rankBorder.comparison.current") }}</th>
-                          <th class="px-2 py-1.5 text-right font-medium">
-                            {{ comparisonRank != null ? `T${comparisonRank}` : t("rankBorder.comparison.target") }}
-                          </th>
-                          <th class="px-2 py-1.5 text-right font-medium">{{ t("rankBorder.comparison.diff") }}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr
-                          v-for="row in comparisonRows"
-                          :key="row.key"
-                          class="border-b border-border/40 last:border-b-0"
-                        >
-                          <td class="px-2 py-1.5 text-muted-foreground">{{ row.label }}</td>
-                          <td class="px-2 py-1.5 text-right font-medium tabular-nums">{{ row.own }}</td>
-                          <td class="px-2 py-1.5 text-right font-medium tabular-nums">{{ row.target }}</td>
-                          <td class="px-2 py-1.5 text-right font-semibold tabular-nums">{{ row.diff }}</td>
-                        </tr>
-                      </tbody>
-                    </table>
                   </div>
                 </section>
 
@@ -7474,6 +7476,10 @@ function traceUpdateRecords(
 
 .rank-border-trend-panel {
   grid-area: trend;
+  /* Three stacked charts exceed the fixed trend row on desktop; scroll instead
+     of clipping the speed chart. */
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .rank-border-detail-history {
