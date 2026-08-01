@@ -510,6 +510,10 @@ export function useDeckRecommendRunner() {
       masterFileNames: recommendData.masterFileNames,
       masterData: recommendData.masterData,
       musicMetas: recommendData.musicMetas,
+    }, (progressPhase) => {
+      if (running.value) {
+        phase.value = progressPhase
+      }
     })
     if (isCurrent()) {
       preloadedDataKeys.add(dataKey)

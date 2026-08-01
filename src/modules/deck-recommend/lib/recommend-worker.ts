@@ -21,6 +21,17 @@ workerScope.onmessage = (event: MessageEvent<DeckRecommendWorkerRequest>) => {
   void handleRequest(event.data)
 }
 
+// Fires when an incoming request cannot be deserialized (for example a large
+// master data payload under memory pressure); report it instead of silently
+// dropping the request and letting the caller wait for its timeout.
+workerScope.onmessageerror = () => {
+  postEvent({
+    type: "error",
+    requestId: "worker",
+    message: "deck recommend worker request could not be deserialized",
+  })
+}
+
 async function handleRequest(request: DeckRecommendWorkerRequest) {
   try {
     if (request.type === "preload") {
