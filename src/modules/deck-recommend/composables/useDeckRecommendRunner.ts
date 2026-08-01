@@ -606,7 +606,9 @@ export function useDeckRecommendRunner() {
       musicMetasKey: recommendData.musicMetasKey,
       masterFileNames: recommendData.masterFileNames,
       options: input.options,
-      deck: input.deck,
+      // Callers usually pass a deck read from the reactive result ref; Vue
+      // proxies cannot be structured-cloned into the worker.
+      deck: JSON.parse(JSON.stringify(input.deck)) as RecommendDeck,
     })
   }
 
