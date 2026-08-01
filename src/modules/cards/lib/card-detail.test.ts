@@ -138,12 +138,16 @@ describe("resolveCardCostumeGroups", () => {
       "cos0029_body_01",
     ])
     expect(groups[0].colors.map((color) => color.colorName)).toEqual(["オリジナル", "アナザー1"])
+    expect(groups[0].colors.every((color) => color.slot === "body")).toBe(true)
   })
 
   it("falls back to non-body parts when the group has no body entries", () => {
     const groups = resolveCardCostumeGroups(rawCardCostume3ds, rawCostume3ds, 5)
     expect(groups).toHaveLength(1)
     expect(groups[0].colors.map((color) => color.assetbundleName)).toEqual(["cos0031_head"])
+    // Accessories must keep their slot so the viewer does not force them into
+    // the body slot of the engine recipe.
+    expect(groups[0].colors[0].slot).toBe("head")
   })
 
   it("returns an empty list for unknown cards and malformed payloads", () => {

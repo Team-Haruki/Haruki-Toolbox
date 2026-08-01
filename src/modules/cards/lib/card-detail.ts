@@ -94,6 +94,8 @@ export type CardCostumeColor = {
   colorId: number | null
   colorName: string
   assetbundleName: string
+  /** Engine slot the costume occupies (head covers accessories too). */
+  slot: "body" | "hair" | "head"
 }
 
 export type CardCostumeGroup = {
@@ -181,6 +183,7 @@ export function resolveCardCostumeGroups(
         colorId: record.colorId,
         colorName: record.colorName,
         assetbundleName: record.assetbundleName,
+        slot: record.partType === "hair" ? "hair" : record.partType === "head" ? "head" : "body",
       })
     }
 

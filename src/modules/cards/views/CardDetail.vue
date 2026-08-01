@@ -154,21 +154,38 @@ watch([costumeCardId, region], () => {
   selectedCostume3dId.value = null
 })
 
+const selectedCostume = computed(() => {
+  if (selectedCostume3dId.value == null) {
+    return null
+  }
+
+  for (const group of costumeGroups.value) {
+    const color = group.colors.find((candidate) => candidate.costume3dId === selectedCostume3dId.value)
+    if (color) {
+      return color
+    }
+  }
+
+  return null
+})
+
 const costumeViewerRecipe = computed<CostumeViewerRecipe | null>(() => {
   const characterId = card.value?.characterId
   const targetUnit = unit.value
   const roleDefaults = costumeRoleData.value?.defaults
-  if (selectedCostume3dId.value == null || characterId == null || targetUnit == null
-    || roleDefaults == null) {
+  const selected = selectedCostume.value
+  if (selected == null || characterId == null || targetUnit == null || roleDefaults == null) {
     return null
   }
 
+  // Head accessories and hairstyles must fill their own slot; the character's
+  // stock parts complete the rest of the recipe.
   return {
     characterId,
     unit: targetUnit,
-    bodyCostume3dId: selectedCostume3dId.value,
-    headCostume3dId: roleDefaults.headCostume3dId,
-    hairCostume3dId: roleDefaults.hairCostume3dId,
+    bodyCostume3dId: selected.slot === "body" ? selected.costume3dId : roleDefaults.bodyCostume3dId,
+    headCostume3dId: selected.slot === "head" ? selected.costume3dId : roleDefaults.headCostume3dId,
+    hairCostume3dId: selected.slot === "hair" ? selected.costume3dId : roleDefaults.hairCostume3dId,
   }
 })
 
@@ -178,10 +195,11 @@ const dressupLink = computed(() => {
     return null
   }
 
+  const selected = selectedCostume.value
   return {
     name: "costumes.dressup",
-    query: selectedCostume3dId.value != null
-      ? { characterId: String(characterId), body: String(selectedCostume3dId.value) }
+    query: selected != null
+      ? { characterId: String(characterId), [selected.slot]: String(selected.costume3dId) }
       : { characterId: String(characterId) },
   }
 })
