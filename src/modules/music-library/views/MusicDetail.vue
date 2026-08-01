@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from "vue"
 import { RouterLink, useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { goBackOr, hasInAppHistory } from "@/lib/router-back"
+import { fetchMusicAliases } from "@/shared/sekai/music-alias"
 import {
   Activity,
   ArrowLeft,
@@ -106,6 +107,32 @@ const {
 
 const { blurUnreleased } = useUnreleasedContentDisplay()
 const unreleased = computed(() => entry.value != null && isMusicEntryUnreleased(entry.value))
+
+// --- Community aliases (live from the HarukiBot alias API) ------------------
+
+const ALIAS_COLLAPSED_LIMIT = 16
+
+const aliases = ref<readonly string[]>([])
+const aliasesExpanded = ref(false)
+
+watch(parsedMusicId, (musicId) => {
+  aliases.value = []
+  aliasesExpanded.value = false
+  if (musicId == null) {
+    return
+  }
+
+  void fetchMusicAliases(musicId).then((result) => {
+    if (parsedMusicId.value === musicId) {
+      aliases.value = result
+    }
+  })
+}, { immediate: true })
+
+const visibleAliases = computed(() =>
+  aliasesExpanded.value ? aliases.value : aliases.value.slice(0, ALIAS_COLLAPSED_LIMIT),
+)
+const hiddenAliasCount = computed(() => Math.max(aliases.value.length - visibleAliases.value.length, 0))
 
 const jacketUrl = computed(() => {
   if (!entry.value) {
@@ -475,6 +502,35 @@ function eventBoxHint(eventId: number) {
                     <dd class="font-medium">#{{ entry.id }}</dd>
                   </div>
                 </dl>
+
+                <div v-if="aliases.length > 0" class="space-y-1.5">
+                  <div class="text-sm text-muted-foreground">{{ t("musicLibrary.detail.aliases.title") }}</div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <span
+                      v-for="alias in visibleAliases"
+                      :key="alias"
+                      class="inline-flex items-center rounded-full border bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground"
+                    >
+                      {{ alias }}
+                    </span>
+                    <button
+                      v-if="hiddenAliasCount > 0"
+                      type="button"
+                      class="inline-flex items-center rounded-full border border-dashed px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                      @click="aliasesExpanded = true"
+                    >
+                      {{ t("musicLibrary.detail.aliases.showMore", { count: hiddenAliasCount }) }}
+                    </button>
+                    <button
+                      v-else-if="aliasesExpanded && aliases.length > ALIAS_COLLAPSED_LIMIT"
+                      type="button"
+                      class="inline-flex items-center rounded-full border border-dashed px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                      @click="aliasesExpanded = false"
+                    >
+                      {{ t("musicLibrary.detail.aliases.showLess") }}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>

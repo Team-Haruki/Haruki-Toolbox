@@ -65,6 +65,59 @@ async function fetchMusicAliasMatchIds(alias: string): Promise<readonly number[]
   }
 }
 
+const aliasListCache = new Map<number, Promise<readonly string[]>>()
+
+export function parseMusicAliasList(payload: unknown): string[] {
+  if (typeof payload !== "object" || payload === null) {
+    return []
+  }
+
+  const data = (payload as { data?: unknown }).data
+  if (typeof data !== "object" || data === null) {
+    return []
+  }
+
+  const aliases = (data as { aliases?: unknown }).aliases
+  if (!Array.isArray(aliases)) {
+    return []
+  }
+
+  return aliases.filter((alias): alias is string => typeof alias === "string" && alias.trim() !== "")
+}
+
+/** All community aliases of a music; empty on miss or API failure. */
+export function fetchMusicAliases(musicId: number): Promise<readonly string[]> {
+  if (!Number.isInteger(musicId) || musicId <= 0) {
+    return Promise.resolve([])
+  }
+
+  const cached = aliasListCache.get(musicId)
+  if (cached) {
+    return cached
+  }
+
+  const promise = fetchMusicAliasList(musicId)
+  aliasListCache.set(musicId, promise)
+  return promise
+}
+
+async function fetchMusicAliasList(musicId: number): Promise<readonly string[]> {
+  try {
+    const response = await fetch(`${MUSIC_ALIAS_API_BASE}/alias/music/${musicId}`)
+    if (!response.ok) {
+      if (response.status !== 404) {
+        aliasListCache.delete(musicId)
+      }
+      return []
+    }
+
+    return parseMusicAliasList(await response.json())
+  } catch {
+    aliasListCache.delete(musicId)
+    return []
+  }
+}
+
 /**
  * Debounced alias lookup bound to a search input. The returned set holds the
  * music ids whose alias exactly matches the current query.

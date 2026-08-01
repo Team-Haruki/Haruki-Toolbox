@@ -1977,6 +1977,11 @@ export const zhCN = {
       notFound: "所选服务器上不存在这首歌曲。",
       loadError: "曲目数据加载失败：{message}",
       unknownCharacter: "未知",
+      aliases: {
+        title: "歌曲别名",
+        showMore: "还有 {count} 个",
+        showLess: "收起",
+      },
       info: {
         composer: "作曲",
         lyricist: "作词",

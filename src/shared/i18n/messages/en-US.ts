@@ -1977,6 +1977,11 @@ export const enUS = {
       notFound: "This song does not exist on the selected server.",
       loadError: "Failed to load music data: {message}",
       unknownCharacter: "Unknown",
+      aliases: {
+        title: "Aliases",
+        showMore: "{count} more",
+        showLess: "Show less",
+      },
       info: {
         composer: "Composer",
         lyricist: "Lyricist",
