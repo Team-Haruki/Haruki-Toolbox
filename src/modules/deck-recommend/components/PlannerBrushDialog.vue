@@ -87,7 +87,7 @@ const brushName = ref("")
 const brushColor = ref<string>(PLANNER_BRUSH_COLORS[0])
 
 const searchQuery = ref("")
-const aliasMatchedIds = useMusicAliasMatches(searchQuery)
+const { matchedIds: aliasMatchedIds, pending: aliasPending } = useMusicAliasMatches(searchQuery)
 const difficultyFilter = ref("all")
 
 const RANKING_DIFFICULTIES = ["easy", "normal", "hard", "expert", "master", "append"] as const
@@ -468,7 +468,7 @@ function save() {
                 </tr>
                 <tr v-if="filteredRanking.length === 0">
                   <td colspan="5" class="px-2 py-4 text-center text-muted-foreground">
-                    {{ t("eventPlanner.dialog.rankingEmpty") }}
+                    {{ aliasPending ? t("eventPlanner.dialog.rankingAliasSearching") : t("eventPlanner.dialog.rankingEmpty") }}
                   </td>
                 </tr>
               </tbody>

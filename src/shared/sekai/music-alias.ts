@@ -118,12 +118,17 @@ async function fetchMusicAliasList(musicId: number): Promise<readonly string[]> 
   }
 }
 
-/**
- * Debounced alias lookup bound to a search input. The returned set holds the
- * music ids whose alias exactly matches the current query.
- */
-export function useMusicAliasMatches(query: Ref<string>): Ref<ReadonlySet<number>> {
+export type MusicAliasMatches = {
+  /** Music ids whose alias exactly matches the current query. */
+  matchedIds: Ref<ReadonlySet<number>>
+  /** True from query change until the alias lookup for it has settled. */
+  pending: Ref<boolean>
+}
+
+/** Debounced alias lookup bound to a search input. */
+export function useMusicAliasMatches(query: Ref<string>): MusicAliasMatches {
   const matchedIds = ref<ReadonlySet<number>>(new Set())
+  const pending = ref(false)
   let timer: ReturnType<typeof setTimeout> | null = null
   let generation = 0
 
@@ -137,14 +142,17 @@ export function useMusicAliasMatches(query: Ref<string>): Ref<ReadonlySet<number
     const trimmed = value.trim()
     if (!trimmed) {
       matchedIds.value = new Set()
+      pending.value = false
       return
     }
 
+    pending.value = true
     const current = generation
     timer = setTimeout(() => {
       void resolveMusicIdsByAlias(trimmed).then((ids) => {
         if (current === generation) {
           matchedIds.value = new Set(ids)
+          pending.value = false
         }
       })
     }, MUSIC_ALIAS_SEARCH_DEBOUNCE_MS)
@@ -156,5 +164,5 @@ export function useMusicAliasMatches(query: Ref<string>): Ref<ReadonlySet<number
     }
   })
 
-  return matchedIds
+  return { matchedIds, pending }
 }

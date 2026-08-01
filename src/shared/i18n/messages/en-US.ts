@@ -1442,6 +1442,7 @@ export const enUS = {
       save: "Save brush",
       noDeck: "Build a deck first to generate the song ranking.",
       rankingEmpty: "No matching songs.",
+      rankingAliasSearching: "Matching aliases...",
       selectHint: "Click a row in the ranking to choose the song.",
     },
     calendar: {
@@ -1934,6 +1935,7 @@ export const enUS = {
       results: {
         count: "{count} songs",
         empty: "No songs match the current filters.",
+        aliasSearching: "Matching aliases...",
       },
       downloading: "Downloading master data... {progress}%",
       loadError: "Failed to load music data: {message}",

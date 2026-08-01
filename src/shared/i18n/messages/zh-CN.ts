@@ -1442,6 +1442,7 @@ export const zhCN = {
       save: "保存笔刷",
       noDeck: "先组卡后才能生成歌曲排行。",
       rankingEmpty: "没有匹配的歌曲。",
+      rankingAliasSearching: "正在匹配别名...",
       selectHint: "点击排行中的歌曲选择要刷的歌。",
     },
     calendar: {
@@ -1934,6 +1935,7 @@ export const zhCN = {
       results: {
         count: "共 {count} 首",
         empty: "没有符合当前筛选条件的歌曲。",
+        aliasSearching: "正在匹配别名...",
       },
       downloading: "正在下载 Master 数据... {progress}%",
       loadError: "曲库数据加载失败：{message}",

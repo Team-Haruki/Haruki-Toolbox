@@ -86,7 +86,7 @@ const {
 } = useMusicLibraryList(region)
 
 const search = ref("")
-const aliasMatchedIds = useMusicAliasMatches(search)
+const { matchedIds: aliasMatchedIds, pending: aliasPending } = useMusicAliasMatches(search)
 const selectedDifficulty = ref<MusicDifficulty | null>(null)
 const levelMin = ref<number | undefined>(undefined)
 const levelMax = ref<number | undefined>(undefined)
@@ -603,7 +603,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
         v-else-if="!loading"
         class="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground"
       >
-        {{ t("musicLibrary.list.results.empty") }}
+        {{ aliasPending ? t("musicLibrary.list.results.aliasSearching") : t("musicLibrary.list.results.empty") }}
       </div>
     </div>
   </div>
