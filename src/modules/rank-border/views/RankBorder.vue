@@ -604,8 +604,15 @@ const selectedAccountDetail = computed(() =>
 
 // --- Detail comparison (any queryable rank or border line) -------------------
 
+// Top-100 milestones stay pickable even when the tracker returns no segment
+// border lines (their traces come from the personal collection range).
+const COMPARISON_PRESET_RANKS = [1, 10, 20, 50, 100]
+
 const comparisonLineRanks = computed(() =>
-  [...new Set(tracker.lines.value.map((line) => line.rank))].sort((a, b) => a - b),
+  [...new Set([
+    ...COMPARISON_PRESET_RANKS,
+    ...tracker.lines.value.map((line) => line.rank),
+  ])].sort((a, b) => a - b),
 )
 
 const comparisonSelectValue = computed(() =>
@@ -676,7 +683,7 @@ async function loadComparisonTrace() {
 
   comparisonTraceLoading.value = true
   try {
-    const records = await fetchFullRankTrace(rank).catch(() => [])
+    const records = await fetchComparisonRankTrace(rank).catch(() => [])
     if (comparisonRank.value !== rank || comparisonTraceCacheKey(rank) !== key) {
       return
     }
@@ -689,6 +696,23 @@ async function loadComparisonTrace() {
   } finally {
     comparisonTraceLoading.value = false
   }
+}
+
+// Top-100 ranks often ship their history as the tracked player's trace while
+// the plain rank trace stays empty; fall back so those stay comparable.
+async function fetchComparisonRankTrace(rank: number): Promise<RankBorderTracePoint[]> {
+  const rankDetail = await fetchRankBorderWebRankDetailV2({
+    ...detailScope.value,
+    rank,
+    includeTrace: true,
+    includePlayerTrace: true,
+    limit: FULL_TRACE_LIMIT,
+  }).catch(() => null)
+  if (rankDetail == null) {
+    return []
+  }
+
+  return rankDetail.rankTrace.length > 0 ? rankDetail.rankTrace : rankDetail.playerTrace
 }
 
 function updateComparisonSelect(value: AcceptableValue) {
@@ -945,6 +969,7 @@ type RankBorderComparisonRow = {
   own: string
   target: string
   diff: string
+  tone: "up" | "down" | null
 }
 
 const comparisonRows = computed<RankBorderComparisonRow[]>(() => {
@@ -957,15 +982,18 @@ const comparisonRows = computed<RankBorderComparisonRow[]>(() => {
   const ownLatest = own.records[own.records.length - 1] ?? null
   const diffOf = (ownValue: number | null | undefined, targetValue: number | null | undefined) =>
     typeof ownValue === "number" && typeof targetValue === "number"
-      ? formatGrowth(ownValue - targetValue)
-      : "-"
+      ? {
+          diff: formatNumberCN(Math.abs(ownValue - targetValue)),
+          tone: ownValue > targetValue ? "up" as const : ownValue < targetValue ? "down" as const : null,
+        }
+      : { diff: "-", tone: null }
   return [
     {
       key: "score",
       label: t("rankBorder.comparison.metricScore"),
       own: formatPt(ownLatest?.score),
       target: formatPt(stats.latest?.score),
-      diff: diffOf(ownLatest?.score, stats.latest?.score),
+      ...diffOf(ownLatest?.score, stats.latest?.score),
     },
     {
       key: "rank",
@@ -973,34 +1001,35 @@ const comparisonRows = computed<RankBorderComparisonRow[]>(() => {
       own: formatRank(ownLatest?.rank),
       target: formatRank(stats.latest?.rank),
       diff: "-",
+      tone: null,
     },
     {
       key: "hourlySpeed",
       label: t("rankBorder.result.hourlySpeed"),
       own: formatPerHour(own.hourlySpeed),
       target: formatPerHour(stats.hourlySpeed),
-      diff: diffOf(own.hourlySpeed, stats.hourlySpeed),
+      ...diffOf(own.hourlySpeed, stats.hourlySpeed),
     },
     {
       key: "threeWindowSpeed",
       label: t("rankBorder.result.twentyMinTripleSpeed"),
       own: formatPerHour(own.threeWindowSpeed),
       target: formatPerHour(stats.threeWindowSpeed),
-      diff: diffOf(own.threeWindowSpeed, stats.threeWindowSpeed),
+      ...diffOf(own.threeWindowSpeed, stats.threeWindowSpeed),
     },
     {
       key: "recentAveragePt",
       label: t("rankBorder.result.recentAveragePt"),
       own: formatPt(own.recentAveragePt),
       target: formatPt(stats.recentAveragePt),
-      diff: diffOf(own.recentAveragePt, stats.recentAveragePt),
+      ...diffOf(own.recentAveragePt, stats.recentAveragePt),
     },
     {
       key: "loopCount",
       label: t("rankBorder.result.loopCount"),
       own: formatLoopCount(own.loopCount),
       target: formatLoopCount(stats.loopCount),
-      diff: diffOf(own.loopCount, stats.loopCount),
+      ...diffOf(own.loopCount, stats.loopCount),
     },
   ]
 })
@@ -6095,7 +6124,16 @@ function traceUpdateRecords(
                         <td class="px-2 py-1.5 text-muted-foreground">{{ row.label }}</td>
                         <td class="px-2 py-1.5 text-right font-medium tabular-nums">{{ row.own }}</td>
                         <td class="px-2 py-1.5 text-right font-medium tabular-nums">{{ row.target }}</td>
-                        <td class="px-2 py-1.5 text-right font-semibold tabular-nums">{{ row.diff }}</td>
+                        <td
+                          :class="[
+                            'px-2 py-1.5 text-right font-semibold tabular-nums',
+                            row.tone === 'up' ? 'text-emerald-500' : row.tone === 'down' ? 'text-red-500' : '',
+                          ]"
+                        >
+                          <template v-if="row.tone === 'up'">▲ </template>
+                          <template v-else-if="row.tone === 'down'">▼ </template>
+                          {{ row.diff }}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -7351,13 +7389,15 @@ function traceUpdateRecords(
   left: 50% !important;
   inset-inline-start: 50% !important;
   inset-inline-end: auto !important;
-  display: grid;
+  /* Column flow so extra sections (comparison table) stack normally and the
+     dialog itself scrolls when content exceeds its height. */
+  display: flex;
+  flex-direction: column;
   width: min(82rem, calc(100vw - 2rem));
   max-width: none;
   height: min(56rem, calc(100svh - 2rem));
   max-height: calc(100svh - 2rem);
   margin: 0;
-  grid-template-rows: auto minmax(0, 1fr);
   gap: 0.75rem;
   overflow-x: hidden;
   overflow-y: auto;
@@ -7377,14 +7417,14 @@ function traceUpdateRecords(
   display: grid;
   min-height: 0;
   min-width: 0;
+  flex: 0 0 auto;
   grid-template-columns: minmax(21rem, 0.96fr) minmax(24rem, 1.04fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
   grid-template-areas:
     "profile stats"
     "trend heatmap";
   align-items: start;
   gap: 0.75rem;
-  overflow: hidden;
 }
 
 .rank-border-detail-profile,
@@ -7476,10 +7516,6 @@ function traceUpdateRecords(
 
 .rank-border-trend-panel {
   grid-area: trend;
-  /* Three stacked charts exceed the fixed trend row on desktop; scroll instead
-     of clipping the speed chart. */
-  overflow-y: auto;
-  scrollbar-width: thin;
 }
 
 .rank-border-detail-history {
@@ -8426,8 +8462,6 @@ function traceUpdateRecords(
 @media (min-width: 768px) and (max-height: 840px) {
   :global(.rank-border-detail-dialog.rank-border-detail-dialog) {
     height: min(52rem, calc(100svh - 1rem));
-    grid-template-rows: auto minmax(0, 1fr);
-    align-content: stretch;
     overflow-y: auto;
     padding: 0.625rem;
   }
