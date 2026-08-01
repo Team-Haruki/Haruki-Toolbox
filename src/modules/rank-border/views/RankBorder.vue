@@ -29,6 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -41,6 +42,12 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatGameAccountLabel } from "@/lib/game-account-display"
 import { formatNumberCN } from "@/lib/number-format"
+import {
+  buildPlannerPlanKey,
+  parseEventPlannerPointInput,
+  summarizePlannerCells,
+  useEventPlannerStore,
+} from "@/modules/deck-recommend"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { getI18nLocale } from "@/shared/i18n"
 import {
@@ -212,6 +219,14 @@ type RankBorderChartTimeDomain = {
   end: number
 }
 
+type RankBorderScoreOverlayLine = {
+  key: string
+  value: number
+  y: number
+  label: string
+  tone: "target" | "planned"
+}
+
 type RankBorderDetailCharts = {
   rankReferenceLines: RankBorderChartReferenceLine[]
   scoreReferenceLines: RankBorderChartReferenceLine[]
@@ -220,6 +235,8 @@ type RankBorderDetailCharts = {
   timeTicks: RankBorderChartTimeTick[]
   rankPath: string
   scorePath: string
+  comparisonScorePath: string
+  plannerLines: RankBorderScoreOverlayLine[]
 }
 
 type RankBorderUpdateRecord = {
@@ -344,6 +361,7 @@ const TOP_100_RANKS = Array.from({ length: PERSONAL_COLLECTION_LIMIT }, (_, inde
 const { t } = useI18n()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
+const plannerStore = useEventPlannerStore()
 const persistedState = readPersistedState()
 
 const trackerEndpoint = ref(resolveInitialTrackerEndpoint(persistedState.endpoint))
@@ -385,6 +403,11 @@ const top100GrowthIntervalSeconds = ref<number | null>(null)
 const top100TraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
 const segmentTraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
 const detailTraceByKey = ref<Map<string, RankBorderTracePoint[]>>(new Map())
+const comparisonRankInput = ref("")
+const comparisonRank = ref<number | null>(null)
+const comparisonTrace = ref<RankBorderTracePoint[]>([])
+const comparisonTraceLoading = ref(false)
+const comparisonTraceByKey = ref<Map<string, RankBorderTracePoint[]>>(new Map())
 const publicProfileByUserId = ref<Map<string, RankBorderUserProfile>>(new Map())
 const scoreChangedRanks = ref<Set<number>>(new Set())
 const growthChangedRanks = ref<Set<number>>(new Set())
@@ -575,6 +598,160 @@ const selectedAccountDetail = computed(() =>
     : null,
 )
 
+// --- Detail comparison (any queryable rank or border line) -------------------
+
+const comparisonLineRanks = computed(() =>
+  [...new Set(tracker.lines.value.map((line) => line.rank))].sort((a, b) => a - b),
+)
+
+const comparisonSelectValue = computed(() =>
+  comparisonRank.value != null && comparisonLineRanks.value.includes(comparisonRank.value)
+    ? String(comparisonRank.value)
+    : "none",
+)
+
+const comparisonScopeKey = computed(() => [
+  trackerEndpoint.value,
+  selectedRegion.value,
+  selectedEventId.value ?? "",
+  mode.value,
+  selectedWorldBloomCharacterId.value ?? "",
+  playbackAt.value ?? "",
+].join(":"))
+
+const comparisonChartTrace = computed(() =>
+  selectedHeatmapWindow.value
+    ? traceRecordsForWindow(comparisonTrace.value, selectedHeatmapWindow.value.start, selectedHeatmapWindow.value.end, true)
+    : comparisonTrace.value,
+)
+
+const comparisonSummary = computed(() => {
+  const rank = comparisonRank.value
+  if (rank == null) {
+    return null
+  }
+  if (comparisonTraceLoading.value && comparisonTrace.value.length === 0) {
+    return t("rankBorder.comparison.loading", { rank: formatRank(rank) })
+  }
+
+  const latestComparison = comparisonTrace.value[comparisonTrace.value.length - 1] ?? null
+  if (latestComparison == null) {
+    return t("rankBorder.comparison.empty", { rank: formatRank(rank) })
+  }
+
+  const own = detailTrace.value[detailTrace.value.length - 1] ?? null
+  if (own == null) {
+    return t("rankBorder.comparison.scoreOnly", { rank: formatRank(rank), score: formatPt(latestComparison.score) })
+  }
+
+  const diff = own.score - latestComparison.score
+  const diffKey = diff > 0 ? "rankBorder.comparison.ahead" : diff < 0 ? "rankBorder.comparison.behind" : "rankBorder.comparison.even"
+  return t(diffKey, {
+    rank: formatRank(rank),
+    score: formatPt(latestComparison.score),
+    diff: formatNumberCN(Math.abs(diff)),
+  })
+})
+
+function comparisonTraceCacheKey(rank: number) {
+  return `${comparisonScopeKey.value}:${rank}`
+}
+
+async function loadComparisonTrace() {
+  const rank = comparisonRank.value
+  if (rank == null || !canRefresh.value) {
+    return
+  }
+
+  const key = comparisonTraceCacheKey(rank)
+  const cached = comparisonTraceByKey.value.get(key)
+  if (cached) {
+    comparisonTrace.value = cached
+    return
+  }
+
+  comparisonTraceLoading.value = true
+  try {
+    const records = await fetchFullRankTrace(rank).catch(() => [])
+    if (comparisonRank.value !== rank || comparisonTraceCacheKey(rank) !== key) {
+      return
+    }
+
+    const timeline = normalizeTraceForPlayback(records)
+    const next = new Map(comparisonTraceByKey.value)
+    next.set(key, timeline)
+    comparisonTraceByKey.value = next
+    comparisonTrace.value = timeline
+  } finally {
+    comparisonTraceLoading.value = false
+  }
+}
+
+function updateComparisonSelect(value: AcceptableValue) {
+  if (typeof value !== "string") {
+    return
+  }
+
+  comparisonRankInput.value = ""
+  if (value === "none") {
+    comparisonRank.value = null
+    return
+  }
+
+  const rank = Number(value)
+  comparisonRank.value = Number.isInteger(rank) && rank > 0 ? rank : null
+}
+
+function applyComparisonInput() {
+  const rank = parseRankBorderRankQuery(comparisonRankInput.value)
+  if (rank != null) {
+    comparisonRank.value = rank
+  }
+}
+
+watch(comparisonRank, () => {
+  comparisonTrace.value = []
+  void loadComparisonTrace()
+})
+
+watch(comparisonScopeKey, () => {
+  comparisonTraceByKey.value = new Map()
+  comparisonTrace.value = []
+  void loadComparisonTrace()
+})
+
+// --- Planner overlay (own realtime detail only) ------------------------------
+
+const plannerScoreLineValues = computed<Array<{ key: "target" | "planned"; value: number }>>(() => {
+  const account = selectedAccount.value
+  if (selectedAccountDetail.value == null || account == null || selectedEventId.value == null) {
+    return []
+  }
+
+  const plan = plannerStore.getPlan(buildPlannerPlanKey(
+    `${account.server}:${account.userId}`,
+    selectedRegion.value,
+    selectedEventId.value,
+  ))
+  if (plan == null) {
+    return []
+  }
+
+  const lines: Array<{ key: "target" | "planned"; value: number }> = []
+  const currentPoint = parseEventPlannerPointInput(plan.currentPointInput).value ?? 0
+  const plannedPoints = summarizePlannerCells(plan.cells, plan.brushes).plannedPoints
+  if (plannedPoints > 0) {
+    lines.push({ key: "planned", value: currentPoint + plannedPoints })
+  }
+
+  const targetPoint = parseEventPlannerPointInput(plan.targetPointInput).value
+  if (targetPoint != null && targetPoint > 0) {
+    lines.push({ key: "target", value: targetPoint })
+  }
+
+  return lines
+})
+
 const latestTrackerTimestamp = computed(() => {
   const candidates = [
     tracker.status.value?.timestamp,
@@ -582,6 +759,21 @@ const latestTrackerTimestamp = computed(() => {
     ...Array.from(top100Details.value.values()).map((line) => line.timestamp),
   ].filter((timestamp): timestamp is number => typeof timestamp === "number")
   return candidates.length > 0 ? Math.max(...candidates) : null
+})
+
+// Refresh the comparison series alongside live tracker updates.
+watch(latestTrackerTimestamp, () => {
+  if (comparisonRank.value == null || !detailDialogOpen.value) {
+    return
+  }
+
+  const key = comparisonTraceCacheKey(comparisonRank.value)
+  if (comparisonTraceByKey.value.has(key)) {
+    const next = new Map(comparisonTraceByKey.value)
+    next.delete(key)
+    comparisonTraceByKey.value = next
+  }
+  void loadComparisonTrace()
 })
 
 const replayBounds = computed(() => {
@@ -818,14 +1010,45 @@ const detailCharts = computed<RankBorderDetailCharts>(() => {
     : resolveDetailChartTimeDomain(records)
   const chartRecords = chartRecordsForTimeDomain(records, timeDomain)
   const scoreZeroBaseline = selectedHeatmapWindow.value == null
+
+  // Fold comparison and planner values into one shared score domain so every
+  // overlay lands on the same axis as the main series.
+  const comparisonRecords = chartRecordsForTimeDomain(comparisonChartTrace.value, timeDomain)
+  const plannerValues = selectedHeatmapWindow.value == null
+    ? plannerScoreLineValues.value.map((line) => line.value)
+    : []
+  const scoreValues = [
+    ...chartRecords.map((record) => record.score),
+    ...comparisonRecords.map((record) => record.score),
+    ...plannerValues,
+  ]
+  const scoreDomain = scoreValues.length > 0
+    ? {
+        min: scoreZeroBaseline ? 0 : Math.min(...scoreValues),
+        max: Math.max(...scoreValues),
+      }
+    : null
+
+  const plannerLines: RankBorderScoreOverlayLine[] = scoreDomain == null || chartRecords.length < 2
+    ? []
+    : plannerScoreLineValues.value.map((line) => ({
+        key: line.key,
+        value: line.value,
+        y: Number(chartMetricY(line.value, scoreDomain.min, scoreDomain.max, "score", DETAIL_CHART_HEIGHT, DETAIL_CHART_Y_PADDING, DETAIL_CHART_Y_BOTTOM_PADDING).toFixed(2)),
+        label: t(line.key === "target" ? "rankBorder.comparison.targetLine" : "rankBorder.comparison.plannedLine"),
+        tone: line.key,
+      }))
+
   return {
     rankReferenceLines: chartReferenceLines(chartRecords, "rank", DETAIL_CHART_HEIGHT, DETAIL_CHART_Y_PADDING, false, DETAIL_CHART_Y_BOTTOM_PADDING),
-    scoreReferenceLines: chartReferenceLines(chartRecords, "score", DETAIL_CHART_HEIGHT, DETAIL_CHART_Y_PADDING, scoreZeroBaseline, DETAIL_CHART_Y_BOTTOM_PADDING),
+    scoreReferenceLines: chartReferenceLines(chartRecords, "score", DETAIL_CHART_HEIGHT, DETAIL_CHART_Y_PADDING, scoreZeroBaseline, DETAIL_CHART_Y_BOTTOM_PADDING, scoreDomain),
     rankPoints: chartPoints(chartRecords, "rank", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, false, DETAIL_CHART_Y_BOTTOM_PADDING),
-    scorePoints: chartPoints(chartRecords, "score", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, scoreZeroBaseline, DETAIL_CHART_Y_BOTTOM_PADDING),
+    scorePoints: chartPoints(chartRecords, "score", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, scoreZeroBaseline, DETAIL_CHART_Y_BOTTOM_PADDING, scoreDomain),
     timeTicks: chartTimeTicks(timeDomain, DETAIL_CHART_WIDTH, DETAIL_CHART_X_PADDING),
     rankPath: sparklinePath(chartRecords, "rank", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, false, DETAIL_CHART_Y_BOTTOM_PADDING),
-    scorePath: sparklinePath(chartRecords, "score", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, scoreZeroBaseline, DETAIL_CHART_Y_BOTTOM_PADDING),
+    scorePath: sparklinePath(chartRecords, "score", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, scoreZeroBaseline, DETAIL_CHART_Y_BOTTOM_PADDING, scoreDomain),
+    comparisonScorePath: sparklinePath(comparisonRecords, "score", DETAIL_CHART_WIDTH, DETAIL_CHART_HEIGHT, DETAIL_CHART_MAX_POINTS, DETAIL_CHART_X_PADDING, DETAIL_CHART_Y_PADDING, timeDomain, scoreZeroBaseline, DETAIL_CHART_Y_BOTTOM_PADDING, scoreDomain),
+    plannerLines,
   }
 })
 
@@ -4109,6 +4332,7 @@ function sparklinePath(
   timeDomain: RankBorderChartTimeDomain | null = null,
   zeroBaseline = false,
   yBottomPadding = yPadding,
+  valueDomain: { min: number; max: number } | null = null,
 ) {
   const sampledRecords = sampleTraceRecords(records, maxPoints)
   const values = sampledRecords.map((record) => chartMetricValue(record, metric))
@@ -4116,8 +4340,8 @@ function sparklinePath(
     return ""
   }
 
-  const minValue = zeroBaseline && metric === "score" ? 0 : Math.min(...values)
-  const maxValue = Math.max(...values)
+  const minValue = valueDomain?.min ?? (zeroBaseline && metric === "score" ? 0 : Math.min(...values))
+  const maxValue = valueDomain?.max ?? Math.max(...values)
   const usableWidth = Math.max(1, width - xPadding * 2)
   const xStep = usableWidth / Math.max(1, values.length - 1)
   return collapseChartCoordinates(sampledRecords.map((record, index) => {
@@ -4188,14 +4412,15 @@ function chartReferenceLines(
   yPadding = 0,
   zeroBaseline = false,
   yBottomPadding = yPadding,
+  valueDomain: { min: number; max: number } | null = null,
 ): RankBorderChartReferenceLine[] {
   const values = records.map((record) => chartMetricValue(record, metric))
   if (values.length === 0) {
     return []
   }
 
-  const minValue = zeroBaseline && metric === "score" ? 0 : Math.min(...values)
-  const maxValue = Math.max(...values)
+  const minValue = valueDomain?.min ?? (zeroBaseline && metric === "score" ? 0 : Math.min(...values))
+  const maxValue = valueDomain?.max ?? Math.max(...values)
   const tickValues = resolveChartTickValues(minValue, maxValue)
   return tickValues
     .map((value) => ({
@@ -4286,6 +4511,7 @@ function chartPoints(
   timeDomain: RankBorderChartTimeDomain | null = null,
   zeroBaseline = false,
   yBottomPadding = yPadding,
+  valueDomain: { min: number; max: number } | null = null,
 ): RankBorderChartPoint[] {
   const sampledRecords = sampleTraceRecords(records, maxPoints)
   const values = sampledRecords.map((record) => chartMetricValue(record, metric))
@@ -4293,8 +4519,8 @@ function chartPoints(
     return []
   }
 
-  const minValue = zeroBaseline && metric === "score" ? 0 : Math.min(...values)
-  const maxValue = Math.max(...values)
+  const minValue = valueDomain?.min ?? (zeroBaseline && metric === "score" ? 0 : Math.min(...values))
+  const maxValue = valueDomain?.max ?? Math.max(...values)
   const usableWidth = Math.max(1, width - xPadding * 2)
   const xStep = usableWidth / Math.max(1, values.length - 1)
   const points = sampledRecords.map((record, index) => {
@@ -5990,6 +6216,33 @@ function traceUpdateRecords(
 	                    <span class="text-xs text-muted-foreground">{{ detailTraceScopeLabel }}</span>
 	                  </div>
 
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-xs text-muted-foreground">{{ t("rankBorder.comparison.label") }}</span>
+                    <Select :model-value="comparisonSelectValue" @update:model-value="updateComparisonSelect">
+                      <SelectTrigger class="h-7 w-28 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{{ t("rankBorder.comparison.none") }}</SelectItem>
+                        <SelectItem v-for="rank in comparisonLineRanks" :key="`comparison-${rank}`" :value="String(rank)">
+                          T{{ rank }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      v-model="comparisonRankInput"
+                      class="h-7 w-24 text-xs"
+                      :placeholder="t('rankBorder.comparison.customPlaceholder')"
+                      @keyup.enter="applyComparisonInput"
+                    />
+                    <Button variant="outline" size="sm" class="h-7 px-2 text-xs" @click="applyComparisonInput">
+                      {{ t("rankBorder.comparison.apply") }}
+                    </Button>
+                    <span v-if="comparisonSummary" class="text-xs text-muted-foreground">
+                      {{ comparisonSummary }}
+                    </span>
+                  </div>
+
                   <div v-if="detailTraceLoading && !detailTraceStats.hasChart" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
                     {{ t("rankBorder.result.waitingTrace") }}
                   </div>
@@ -6074,6 +6327,23 @@ function traceUpdateRecords(
                               :y1="line.y"
                               :y2="line.y"
                             />
+                            <line
+                              v-for="line in detailCharts.plannerLines"
+                              :key="`dialog-ptr-plan-${line.key}`"
+                              :class="[
+                                'rank-border-chart-plan-line',
+                                line.tone === 'target' ? 'rank-border-chart-plan-line--target' : '',
+                              ]"
+                              x1="0"
+                              :x2="DETAIL_CHART_WIDTH"
+                              :y1="line.y"
+                              :y2="line.y"
+                            />
+                            <path
+                              v-if="detailCharts.comparisonScorePath"
+                              class="rank-border-detail-line rank-border-detail-line--comparison"
+                              :d="detailCharts.comparisonScorePath"
+                            />
                             <path class="rank-border-detail-line" :d="detailCharts.scorePath" />
                           </svg>
                           <button
@@ -6106,6 +6376,26 @@ function traceUpdateRecords(
                           :style="{ left: tick.left }"
                         >
                           {{ tick.label }}
+                        </span>
+                      </div>
+                      <div
+                        v-if="detailCharts.plannerLines.length > 0 || detailCharts.comparisonScorePath"
+                        class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground"
+                      >
+                        <span v-if="detailCharts.comparisonScorePath" class="inline-flex items-center gap-1">
+                          <span class="inline-block h-0.5 w-4 rounded-full bg-purple-500/90" />
+                          {{ t("rankBorder.comparison.legend", { rank: comparisonRank != null ? `T${comparisonRank}` : "-" }) }}
+                        </span>
+                        <span
+                          v-for="line in detailCharts.plannerLines"
+                          :key="`ptr-legend-${line.key}`"
+                          class="inline-flex items-center gap-1"
+                        >
+                          <span
+                            class="inline-block h-0.5 w-4 rounded-full"
+                            :class="line.tone === 'target' ? 'bg-amber-500/90' : 'bg-emerald-500/90'"
+                          />
+                          {{ line.label }} {{ formatPt(line.value) }}
                         </span>
                       </div>
                     </div>
@@ -7296,6 +7586,24 @@ function traceUpdateRecords(
 .rank-border-detail-line {
   stroke-width: 1.85;
   vector-effect: non-scaling-stroke;
+}
+
+.rank-border-detail-line--comparison {
+  stroke: rgb(168 85 247 / 0.85);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.rank-border-chart-plan-line {
+  fill: none;
+  stroke: rgb(16 185 129 / 0.9);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.rank-border-chart-plan-line--target {
+  stroke: rgb(245 158 11 / 0.9);
 }
 
 .rank-border-stat {
