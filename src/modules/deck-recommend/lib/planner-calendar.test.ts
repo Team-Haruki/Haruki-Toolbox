@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test"
 import {
   buildPlannerCalendar,
   buildPlannerMusicDurations,
+  buildPlannerRectangleHourKeys,
   buildPlannerSongRanking,
   estimatePlaysPerHour,
   pickPlannerBrushColor,
@@ -45,6 +46,51 @@ describe("buildPlannerCalendar", () => {
   it("returns empty for invalid windows", () => {
     expect(buildPlannerCalendar(100, 100)).toEqual([])
     expect(buildPlannerCalendar(Number.NaN, 100)).toEqual([])
+  })
+})
+
+describe("buildPlannerRectangleHourKeys", () => {
+  // 2026-07-01 15:30 → 2026-07-03 21:00 local time (day 0 starts at 15:00).
+  const days = buildPlannerCalendar(
+    new Date(2026, 6, 1, 15, 30).getTime(),
+    new Date(2026, 6, 3, 21, 0).getTime(),
+  )
+
+  it("selects the inclusive day/hour rectangle regardless of drag direction", () => {
+    const forward = buildPlannerRectangleHourKeys(
+      days,
+      { dayIndex: 0, hourOfDay: 16 },
+      { dayIndex: 1, hourOfDay: 18 },
+    )
+    expect(forward).toHaveLength(6)
+    expect(forward).toContain(String(new Date(2026, 6, 1, 16).getTime()))
+    expect(forward).toContain(String(new Date(2026, 6, 2, 18).getTime()))
+    const backward = buildPlannerRectangleHourKeys(
+      days,
+      { dayIndex: 1, hourOfDay: 18 },
+      { dayIndex: 0, hourOfDay: 16 },
+    )
+    expect(new Set(backward)).toEqual(new Set(forward))
+  })
+
+  it("skips hours missing from partial first/last days", () => {
+    // 8:00–10:00 across all three days: day 0 only starts at 15:00.
+    const keys = buildPlannerRectangleHourKeys(
+      days,
+      { dayIndex: 0, hourOfDay: 8 },
+      { dayIndex: 2, hourOfDay: 10 },
+    )
+    expect(keys).toHaveLength(6)
+    expect(keys).toContain(String(new Date(2026, 6, 2, 8).getTime()))
+    expect(keys).toContain(String(new Date(2026, 6, 3, 10).getTime()))
+  })
+
+  it("returns a single cell for a click without drag", () => {
+    expect(buildPlannerRectangleHourKeys(
+      days,
+      { dayIndex: 1, hourOfDay: 0 },
+      { dayIndex: 1, hourOfDay: 0 },
+    )).toEqual([String(new Date(2026, 6, 2, 0).getTime())])
   })
 })
 

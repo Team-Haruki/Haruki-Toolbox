@@ -1448,6 +1448,7 @@ export const enUS = {
       noEvent: "Select an event with start/aggregate times to show the calendar.",
       clear: "Clear plan",
       hourLabel: "{hour}:00",
+      dragHint: "Click to fill one cell, or drag to batch-fill a rectangle of days × hours; selecting with the same brush again erases.",
     },
     toasts: {
       remaining: "{planned} PT planned — {remaining} PT still missing",

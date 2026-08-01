@@ -78,6 +78,37 @@ export function buildPlannerCalendar(startAt: number, aggregateAt: number): Plan
   return days
 }
 
+export type PlannerCellCoordinate = {
+  dayIndex: number
+  hourOfDay: number
+}
+
+/**
+ * Hour keys inside the day/hour rectangle spanned by two cells (inclusive),
+ * limited to cells that actually exist on the calendar (partial first/last
+ * days can lack part of the hour range).
+ */
+export function buildPlannerRectangleHourKeys(
+  days: readonly PlannerCalendarDay[],
+  anchor: PlannerCellCoordinate,
+  target: PlannerCellCoordinate,
+): string[] {
+  const dayStart = Math.min(anchor.dayIndex, target.dayIndex)
+  const dayEnd = Math.max(anchor.dayIndex, target.dayIndex)
+  const hourStart = Math.min(anchor.hourOfDay, target.hourOfDay)
+  const hourEnd = Math.max(anchor.hourOfDay, target.hourOfDay)
+  const keys: string[] = []
+  for (let dayIndex = dayStart; dayIndex <= dayEnd; dayIndex += 1) {
+    for (const hour of days[dayIndex]?.hours ?? []) {
+      if (hour.hourOfDay >= hourStart && hour.hourOfDay <= hourEnd) {
+        keys.push(String(hour.hourStartMs))
+      }
+    }
+  }
+
+  return keys
+}
+
 export type PlannerCells = Readonly<Record<string, string>>
 
 export type PlannerSummary = {

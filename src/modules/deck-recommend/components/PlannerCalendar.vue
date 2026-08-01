@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import type { PlannerBrush, PlannerCalendarDay, PlannerCells } from "../lib/planner-calendar"
+import {
+  buildPlannerRectangleHourKeys,
+  type PlannerBrush,
+  type PlannerCalendarDay,
+  type PlannerCellCoordinate,
+  type PlannerCells,
+} from "../lib/planner-calendar"
 
 const props = defineProps<{
   days: PlannerCalendarDay[]
@@ -28,9 +34,10 @@ const dayFormatter = computed(() => new Intl.DateTimeFormat(locale.value, {
 
 const HOUR_COLUMNS = Array.from({ length: 24 }, (_, hour) => hour)
 
-// Stroke bookkeeping; only the preview set needs reactivity for highlights.
-let strokeMode: "paint" | "erase" | null = null
-let strokeKeys: Set<string> | null = null
+// A stroke selects the day/hour rectangle between the anchor cell and the
+// current cell, so dragging batch-fills whole time ranges across days.
+const strokeMode = ref<"paint" | "erase" | null>(null)
+let anchorCell: PlannerCellCoordinate | null = null
 const pendingPreview = ref<Set<string>>(new Set())
 
 function cellBrush(hourStartMs: number): PlannerBrush | null {
@@ -57,60 +64,66 @@ function cellTitle(hourStartMs: number, hourOfDay: number): string {
   return `${hourLabel} · ${brush.name}`
 }
 
-function hourKeyFromEvent(event: PointerEvent): string | null {
-  const element = document.elementFromPoint(event.clientX, event.clientY)
-  const key = element?.closest("[data-hour]")?.getAttribute("data-hour")
-  return key ?? null
-}
+type PlannerCellHit = PlannerCellCoordinate & { hourKey: string }
 
-function applyToStroke(hourKey: string) {
-  if (strokeMode == null || strokeKeys == null || strokeKeys.has(hourKey)) {
-    return
+function cellHitFromEvent(event: PointerEvent): PlannerCellHit | null {
+  const element = document.elementFromPoint(event.clientX, event.clientY)
+  const cell = element?.closest("[data-hour]")
+  const hourKey = cell?.getAttribute("data-hour")
+  if (cell == null || hourKey == null) {
+    return null
   }
 
-  strokeKeys.add(hourKey)
-  pendingPreview.value = new Set(strokeKeys)
+  return {
+    hourKey,
+    dayIndex: Number(cell.getAttribute("data-day-index")),
+    hourOfDay: Number(cell.getAttribute("data-hour-of-day")),
+  }
+}
+
+function updatePreview(target: PlannerCellCoordinate) {
+  if (anchorCell != null) {
+    pendingPreview.value = new Set(buildPlannerRectangleHourKeys(props.days, anchorCell, target))
+  }
 }
 
 function handlePointerDown(event: PointerEvent) {
-  const hourKey = hourKeyFromEvent(event)
-  if (hourKey == null) {
+  const hit = cellHitFromEvent(event)
+  if (hit == null) {
     return
   }
 
   event.preventDefault()
-  const currentBrushId = props.cells[hourKey] ?? null
-  strokeMode = props.activeTool === "eraser" || currentBrushId === props.activeTool
+  const currentBrushId = props.cells[hit.hourKey] ?? null
+  strokeMode.value = props.activeTool === "eraser" || currentBrushId === props.activeTool
     ? "erase"
     : "paint"
-  strokeKeys = new Set()
-  applyToStroke(hourKey)
+  anchorCell = hit
+  updatePreview(hit)
 }
 
 function handlePointerMove(event: PointerEvent) {
-  if (strokeMode == null) {
+  if (strokeMode.value == null) {
     return
   }
 
-  const hourKey = hourKeyFromEvent(event)
-  if (hourKey != null) {
-    applyToStroke(hourKey)
+  const hit = cellHitFromEvent(event)
+  if (hit != null) {
+    updatePreview(hit)
   }
 }
 
 function finishStroke() {
-  if (strokeMode == null || strokeKeys == null || strokeKeys.size === 0) {
-    strokeMode = null
-    strokeKeys = null
-    pendingPreview.value = new Set()
+  const mode = strokeMode.value
+  const hourKeys = [...pendingPreview.value]
+  strokeMode.value = null
+  anchorCell = null
+  pendingPreview.value = new Set()
+  if (mode == null || hourKeys.length === 0) {
     return
   }
 
-  const brushId = strokeMode === "erase" || props.activeTool === "eraser" ? null : props.activeTool
-  emit("stroke", { hourKeys: [...strokeKeys], brushId })
-  strokeMode = null
-  strokeKeys = null
-  pendingPreview.value = new Set()
+  emit("stroke", { hourKeys, brushId: mode === "erase" ? null : props.activeTool })
 }
 
 function isPreviewing(hourStartMs: number): boolean {
@@ -120,6 +133,7 @@ function isPreviewing(hourStartMs: number): boolean {
 
 <template>
   <div class="overflow-x-auto">
+    <p class="mb-2 text-xs text-muted-foreground">{{ t("eventPlanner.calendar.dragHint") }}</p>
     <div
       class="min-w-[58rem] select-none touch-none"
       @pointerdown="handlePointerDown"
@@ -141,7 +155,7 @@ function isPreviewing(hourStartMs: number): boolean {
       </div>
 
       <div
-        v-for="day in days"
+        v-for="(day, dayIndex) in days"
         :key="day.dayStartMs"
         class="grid grid-cols-[5.5rem_repeat(24,minmax(2rem,1fr))] items-center gap-x-px py-0.5"
       >
@@ -153,10 +167,14 @@ function isPreviewing(hourStartMs: number): boolean {
           :key="hour.hourStartMs"
           type="button"
           :data-hour="hour.hourStartMs"
+          :data-day-index="dayIndex"
+          :data-hour-of-day="hour.hourOfDay"
           :class="[
             'h-9 w-full rounded-[4px] border transition-colors',
             cellBrush(hour.hourStartMs) != null ? 'border-transparent' : 'border-border/50 bg-muted/30 hover:bg-muted/60',
-            isPreviewing(hour.hourStartMs) ? 'ring-2 ring-primary/60' : '',
+            isPreviewing(hour.hourStartMs)
+              ? strokeMode === 'erase' ? 'ring-2 ring-destructive/60' : 'ring-2 ring-primary/60'
+              : '',
           ]"
           :style="{
             ...cellStyle(hour.hourStartMs),
