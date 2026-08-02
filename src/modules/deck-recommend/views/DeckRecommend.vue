@@ -3158,36 +3158,26 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
 <template>
   <div class="flex w-full flex-1 flex-col px-0 py-4">
     <div class="mx-auto w-full max-w-[100rem] space-y-3 sm:space-y-4">
-      <div class="flex gap-2 rounded-md border border-amber-200 bg-amber-50/90 px-2 py-2 text-sm text-amber-950 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:gap-3 sm:rounded-lg sm:px-4 sm:py-3">
-        <LucideTriangleAlert class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-300" />
-        <p class="leading-6">
-          <strong class="font-bold text-amber-950 dark:text-amber-50">
-            {{ t("deckRecommend.notice.testingPrefix") }}
-          </strong><span>&#8288;{{ t("deckRecommend.notice.testingSuffix") }}</span>
-        </p>
-      </div>
-
-      <Tabs :model-value="recommendMode" class="w-full" @update:model-value="updateRecommendMode">
-        <TabsList class="h-auto max-w-full flex-wrap justify-start gap-1">
-          <TabsTrigger
-            v-for="option in modeOptions"
-            :key="option.value"
-            :value="option.value"
-            class="h-8 flex-none px-3"
-          >
-            {{ option.label }}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
       <div class="grid items-start gap-3 sm:gap-4 xl:grid-cols-[minmax(23rem,26rem)_minmax(0,1fr)]">
-      <Card class="min-w-0 gap-0 rounded-lg py-0 xl:sticky xl:top-4 xl:flex xl:max-h-[calc(100vh-2rem)] xl:flex-col xl:overflow-hidden">
-          <CardHeader class="gap-1.5 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
+      <Card class="min-w-0 gap-0 rounded-lg py-0 xl:sticky xl:top-[4.25rem] xl:flex xl:max-h-[calc(100vh-5.25rem)] xl:flex-col xl:overflow-hidden">
+          <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
             <CardTitle class="flex items-center gap-2 text-base">
               <LucideGamepad2 class="size-5" />
               {{ t("deckRecommend.title") }}
             </CardTitle>
             <CardDescription class="text-xs">{{ t("deckRecommend.description") }}</CardDescription>
+            <Tabs :model-value="recommendMode" class="w-full" @update:model-value="updateRecommendMode">
+              <TabsList class="h-auto max-w-full flex-wrap justify-start gap-1">
+                <TabsTrigger
+                  v-for="option in modeOptions"
+                  :key="option.value"
+                  :value="option.value"
+                  class="h-7 flex-none px-2 text-xs @xl:px-3 @xl:text-sm"
+                >
+                  {{ option.label }}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </CardHeader>
           <CardContent class="@container grid min-h-0 gap-3 px-3 py-3 sm:px-4 xl:flex-1 xl:overflow-y-auto">
             <section class="grid gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3">
@@ -3578,7 +3568,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                                   <Label>{{ t("deckRecommend.options.filters.unit") }}</Label>
                                   <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(unitFilters.length) }}</span>
                                 </div>
-                                <div class="grid gap-2 @sm:grid-cols-2">
+                                <div class="grid gap-2 @xs:grid-cols-2">
                                   <label
                                     v-for="option in unitFilterOptions"
                                     :key="option.value"
@@ -3608,7 +3598,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                                   <Label>{{ t("deckRecommend.options.filters.attr") }}</Label>
                                   <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(attrFilters.length) }}</span>
                                 </div>
-                                <div class="grid gap-2 @sm:grid-cols-2">
+                                <div class="grid gap-2 @xs:grid-cols-2">
                                   <label
                                     v-for="option in eventAttrOptions"
                                     :key="option.value"
@@ -4163,6 +4153,15 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
       </Card>
 
       <div class="grid min-w-0 content-start gap-3 sm:gap-4">
+        <div class="flex gap-2 rounded-md border border-amber-200 bg-amber-50/90 px-2 py-2 text-sm text-amber-950 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:gap-3 sm:rounded-lg sm:px-4 sm:py-3">
+          <LucideTriangleAlert class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-300" />
+          <p class="leading-6">
+            <strong class="font-bold text-amber-950 dark:text-amber-50">
+              {{ t("deckRecommend.notice.testingPrefix") }}
+            </strong><span>&#8288;{{ t("deckRecommend.notice.testingSuffix") }}</span>
+          </p>
+        </div>
+
         <div v-if="runner.running.value" class="rounded-lg border bg-card p-4 shadow-sm">
           <div class="grid gap-2">
             <div
@@ -4537,7 +4536,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                               :key="cardView.card.card_id"
                               class="flex min-w-0 items-start gap-2 rounded-md bg-background/70 p-2 ring-1 ring-border/60 sm:gap-3"
                             >
-                              <CardThumbnail :thumbnail="cardView.thumbnail" />
+                              <CardThumbnail :thumbnail="cardView.thumbnail" size="md" />
                               <div class="min-w-0 flex-1 space-y-2">
                                 <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
                                   <span class="min-w-0 text-sm font-semibold leading-5">

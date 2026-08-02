@@ -259,17 +259,18 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
 
 <template>
   <div class="grid gap-3">
-    <div class="flex items-start gap-2">
-      <Combobox
-        class="min-w-0 flex-1"
-        :model-value="pendingCardId"
-        :options="availableOptions"
-        :disabled="props.disabled || !canSelectMore"
-        :placeholder="props.placeholder ?? t('deckRecommend.options.constraints.cardSelectPlaceholder')"
-        :search-placeholder="t('deckRecommend.options.constraints.cardSearchPlaceholder')"
-        :empty-text="t('deckRecommend.options.constraints.cardEmpty')"
-        @update:model-value="handlePendingCardUpdate"
-      />
+    <div class="flex flex-wrap items-start gap-2">
+      <div class="min-w-0 flex-1 basis-52">
+        <Combobox
+          :model-value="pendingCardId"
+          :options="availableOptions"
+          :disabled="props.disabled || !canSelectMore"
+          :placeholder="props.placeholder ?? t('deckRecommend.options.constraints.cardSelectPlaceholder')"
+          :search-placeholder="t('deckRecommend.options.constraints.cardSearchPlaceholder')"
+          :empty-text="t('deckRecommend.options.constraints.cardEmpty')"
+          @update:model-value="handlePendingCardUpdate"
+        />
+      </div>
       <Button
         type="button"
         variant="outline"
