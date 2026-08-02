@@ -56,7 +56,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Tooltip,
   TooltipContent,
@@ -3023,8 +3031,8 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
 </script>
 
 <template>
-  <div class="flex w-full flex-1 flex-col items-center justify-center px-0 py-4">
-    <div class="mx-auto w-full max-w-6xl space-y-3 sm:space-y-4">
+  <div class="flex w-full flex-1 flex-col px-0 py-4">
+    <div class="mx-auto w-full max-w-[100rem] space-y-3 sm:space-y-4">
       <div class="flex gap-2 rounded-md border border-amber-200 bg-amber-50/90 px-2 py-2 text-sm text-amber-950 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:gap-3 sm:rounded-lg sm:px-4 sm:py-3">
         <LucideTriangleAlert class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-300" />
         <p class="leading-6">
@@ -3034,24 +3042,36 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
         </p>
       </div>
 
-      <Card class="gap-3 rounded-lg py-3 xl:gap-6 xl:rounded-xl xl:py-6">
-          <CardHeader class="gap-3 px-2 sm:flex-row sm:items-start sm:justify-between sm:px-4 xl:px-6">
-            <div class="space-y-1.5">
-              <CardTitle class="flex items-center gap-2 text-lg">
-                <LucideGamepad2 class="size-5" />
-                {{ t("deckRecommend.title") }}
-              </CardTitle>
-              <CardDescription>{{ t("deckRecommend.description") }}</CardDescription>
-            </div>
+      <Tabs :model-value="recommendMode" class="w-full" @update:model-value="updateRecommendMode">
+        <TabsList class="h-auto max-w-full flex-wrap justify-start gap-1">
+          <TabsTrigger
+            v-for="option in modeOptions"
+            :key="option.value"
+            :value="option.value"
+            class="h-8 flex-none px-3"
+          >
+            {{ option.label }}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      <div class="grid items-start gap-3 sm:gap-4 xl:grid-cols-[minmax(23rem,26rem)_minmax(0,1fr)]">
+      <Card class="min-w-0 gap-0 rounded-lg py-0 xl:sticky xl:top-4 xl:flex xl:max-h-[calc(100vh-2rem)] xl:flex-col xl:overflow-hidden">
+          <CardHeader class="gap-1.5 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
+            <CardTitle class="flex items-center gap-2 text-base">
+              <LucideGamepad2 class="size-5" />
+              {{ t("deckRecommend.title") }}
+            </CardTitle>
+            <CardDescription class="text-xs">{{ t("deckRecommend.description") }}</CardDescription>
           </CardHeader>
-          <CardContent class="grid gap-3 px-2 pb-2 sm:px-4 sm:pb-4 xl:gap-5 xl:px-6 xl:pb-6">
-            <section class="grid gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3 xl:gap-4 xl:rounded-lg xl:p-4">
+          <CardContent class="@container grid min-h-0 gap-3 px-3 py-3 sm:px-4 xl:flex-1 xl:overflow-y-auto">
+            <section class="grid gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3">
               <div class="space-y-1">
-                <h2 class="text-base font-semibold">{{ t("deckRecommend.layers.default.title") }}</h2>
-                <p class="text-sm text-muted-foreground">{{ t("deckRecommend.layers.default.description") }}</p>
+                <h2 class="text-sm font-semibold">{{ t("deckRecommend.layers.default.title") }}</h2>
+                <p class="text-xs text-muted-foreground">{{ t("deckRecommend.layers.default.description") }}</p>
               </div>
 
-              <div class="grid gap-3 sm:gap-4 lg:grid-cols-2">
+              <div class="grid gap-3 @xl:grid-cols-2">
               <div class="grid gap-2">
                 <Label>{{ t("deckRecommend.form.account") }}</Label>
                 <Select :model-value="selectedAccountKey" :disabled="accountOptions.length === 0" @update:model-value="updateAccount">
@@ -3080,20 +3100,6 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                   <SelectContent>
                     <SelectItem v-for="option in SEKAI_REGION_OPTIONS" :key="option.value" :value="option.value">
                       {{ resolveSekaiRegionLabel(option.value, t) }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div class="grid gap-2">
-                <Label>{{ t("deckRecommend.form.mode") }}</Label>
-                <Select :model-value="recommendMode" @update:model-value="updateRecommendMode">
-                  <SelectTrigger class="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="option in modeOptions" :key="option.value" :value="option.value">
-                      {{ option.label }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -3164,7 +3170,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div class="grid gap-2 rounded-md border p-2 sm:grid-cols-2 sm:p-3 xl:grid-cols-4">
+                <div class="grid gap-2 rounded-md border p-2 @sm:grid-cols-2 sm:p-3">
                   <label
                     v-for="option in algorithmOptions"
                     :key="option.value"
@@ -3207,14 +3213,14 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
               </div>
 
               <section v-if="showEventConditionSection" class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex flex-col gap-3 @lg:flex-row @lg:items-start @lg:justify-between">
                   <div class="space-y-1">
                     <h3 class="text-sm font-medium">{{ t("deckRecommend.options.eventCondition.title") }}</h3>
                     <p class="text-xs leading-5 text-muted-foreground">
                       {{ t("deckRecommend.options.eventCondition.description") }}
                     </p>
                   </div>
-                  <label class="flex items-center gap-2 text-sm">
+                  <label class="flex shrink-0 items-center gap-2 text-sm">
                     <span>{{ t("deckRecommend.options.eventSimulation.title") }}</span>
                     <Switch
                       v-model="eventSimulationEnabled"
@@ -3223,8 +3229,8 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                     />
                   </label>
                 </div>
-                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                  <div class="grid gap-2 md:col-span-2 xl:col-span-2">
+                <div class="grid gap-3 @3xl:grid-cols-2">
+                  <div class="grid gap-2">
                     <Label>{{ t("deckRecommend.form.event") }}</Label>
                     <EventSelect
                       v-model="selectedEventId"
@@ -3237,7 +3243,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                     </p>
                   </div>
 
-                  <div v-if="showWorldBloomCharacterSelect" class="grid gap-2 md:col-span-2 xl:col-span-2">
+                  <div v-if="showWorldBloomCharacterSelect" class="grid gap-2">
                     <Label>{{ t("deckRecommend.form.character") }}</Label>
                     <CharacterSelect
                       v-model="selectedCharacterId"
@@ -3251,7 +3257,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                 <p v-if="!isEventSimulationAvailable" class="text-xs text-muted-foreground">
                   {{ t("deckRecommend.options.eventSimulation.unavailable") }}
                 </p>
-                <div v-else-if="eventSimulationEnabled" class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div v-else-if="eventSimulationEnabled" class="grid gap-3 @xl:grid-cols-2">
                   <div class="grid gap-2">
                     <Label>{{ t("deckRecommend.options.eventSimulation.type") }}</Label>
                     <Select
@@ -3307,7 +3313,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                     </div>
                     <div
                       v-if="isCustomBonusSimulation"
-                      class="grid gap-2 rounded-md border bg-background/60 p-2.5 sm:p-3 md:col-span-2 xl:col-span-2"
+                      class="grid gap-2 rounded-md border bg-background/60 p-2.5 @xl:col-span-2 sm:p-3"
                     >
                       <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="space-y-1">
@@ -3349,7 +3355,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         </SelectContent>
                       </Select>
                     </div>
-                    <div class="grid gap-2 md:col-span-2 xl:col-span-2">
+                    <div class="grid gap-2 @xl:col-span-2">
                       <Label>{{ t("deckRecommend.options.eventSimulation.worldBloomCharacter") }}</Label>
                     <CharacterSelect
                       v-model="simulatedWorldBloomCharacterId"
@@ -3372,7 +3378,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                   <h3 class="text-sm font-medium">{{ t("deckRecommend.options.bonus.title") }}</h3>
                   <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.bonus.description") }}</p>
                 </div>
-                <div class="grid gap-3 md:grid-cols-2">
+                <div class="grid gap-3 @xl:grid-cols-2">
                   <div class="grid gap-2">
                     <Label for="deck-recommend-bonus-targets">{{ t("deckRecommend.form.bonusTargets") }}</Label>
                     <Input
@@ -3399,7 +3405,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
             </div>
             </section>
 
-            <section class="grid min-w-0 gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3 xl:gap-4 xl:rounded-lg xl:p-4">
+            <section class="grid min-w-0 gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3">
               <button
                 type="button"
                 class="flex w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
@@ -3408,11 +3414,11 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                 @click="advancedConfigOpen = !advancedConfigOpen"
               >
                     <span class="space-y-1">
-                      <span class="flex items-center gap-2 text-base font-semibold">
+                      <span class="flex items-center gap-2 text-sm font-semibold">
                         <LucideSettings2 class="size-4" />
                         {{ t("deckRecommend.layers.advanced.title") }}
                       </span>
-                      <span class="block text-sm font-normal text-muted-foreground">
+                      <span class="block text-xs font-normal text-muted-foreground">
                         {{ t("deckRecommend.layers.advanced.description") }}
                       </span>
                     </span>
@@ -3433,7 +3439,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                       <CardTrainingConfigTable v-model="trainingConfig" />
                     </section>
 
-                    <div class="grid gap-3 sm:gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
+                    <div class="grid gap-3 sm:gap-4">
                       <div class="grid min-w-0 gap-3 sm:gap-4">
                         <section class="grid h-full content-start gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                           <div class="space-y-1">
@@ -3441,13 +3447,13 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.filters.description") }}</p>
                           </div>
                           <div class="grid gap-3 sm:gap-4">
-                            <div class="grid gap-3 xl:grid-cols-2">
+                            <div class="grid gap-3 @3xl:grid-cols-2">
                               <div class="grid gap-2">
                                 <div class="flex items-center justify-between gap-2">
                                   <Label>{{ t("deckRecommend.options.filters.unit") }}</Label>
                                   <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(unitFilters.length) }}</span>
                                 </div>
-                                <div class="grid gap-2 sm:grid-cols-2">
+                                <div class="grid gap-2 @sm:grid-cols-2">
                                   <label
                                     v-for="option in unitFilterOptions"
                                     :key="option.value"
@@ -3477,7 +3483,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                                   <Label>{{ t("deckRecommend.options.filters.attr") }}</Label>
                                   <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(attrFilters.length) }}</span>
                                 </div>
-                                <div class="grid gap-2 sm:grid-cols-2">
+                                <div class="grid gap-2 @sm:grid-cols-2">
                                   <label
                                     v-for="option in eventAttrOptions"
                                     :key="option.value"
@@ -3537,7 +3543,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.dataOverrides.title") }}</h3>
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.dataOverrides.description") }}</p>
                           </div>
-                          <div class="grid gap-3 sm:grid-cols-2">
+                          <div class="grid gap-3 @sm:grid-cols-2">
                             <div class="grid gap-2">
                               <Label>{{ t("deckRecommend.options.filters.areaItemLevel") }}</Label>
                               <Select
@@ -3636,7 +3642,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.multiLive.title") }}</h3>
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.multiLive.description") }}</p>
                           </div>
-                          <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                          <div class="grid gap-3 @lg:grid-cols-3">
                             <div class="grid gap-2">
                               <Label for="deck-recommend-teammate-power">{{ t("deckRecommend.options.multiLive.teammatePower") }}</Label>
                               <Input
@@ -3707,7 +3713,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                           />
                         </label>
 
-                        <div v-if="!isCurrentDeckEnabled" class="grid gap-3 xl:grid-cols-2">
+                        <div v-if="!isCurrentDeckEnabled" class="grid gap-3 @3xl:grid-cols-2">
                           <div class="grid gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
                             <div class="space-y-1">
                               <h4 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.fixedGroup") }}</h4>
@@ -3767,38 +3773,24 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
               </div>
             </section>
 
-            <section class="grid min-w-0 gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3 xl:gap-4 xl:rounded-lg xl:p-4">
-              <button
-                type="button"
-                class="flex w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                :aria-label="t('deckRecommend.layers.expert.title')"
-                :aria-expanded="expertConfigOpen"
-                @click="expertConfigOpen = !expertConfigOpen"
-              >
-                    <span class="space-y-1">
-                      <span class="flex items-center gap-2 text-base font-semibold">
-                        <LucideSettings2 class="size-4" />
-                        {{ t("deckRecommend.layers.expert.title") }}
-                      </span>
-                      <span class="block text-sm font-normal text-muted-foreground">
-                        {{ t("deckRecommend.layers.expert.description") }}
-                      </span>
-                    </span>
-                    <LucideChevronDown
-                      :class="[
-                        'mt-1 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                        expertConfigOpen ? 'rotate-180' : '',
-                      ]"
-                    />
-              </button>
-
-              <div v-show="expertConfigOpen" class="grid min-w-0 gap-3 sm:gap-4">
+            <Sheet v-model:open="expertConfigOpen">
+              <SheetContent side="right" class="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+                <SheetHeader class="border-b px-4 py-3 text-left">
+                  <SheetTitle class="flex items-center gap-2 text-base">
+                    <LucideSettings2 class="size-4" />
+                    {{ t("deckRecommend.layers.expert.title") }}
+                  </SheetTitle>
+                  <SheetDescription class="text-xs">
+                    {{ t("deckRecommend.layers.expert.description") }}
+                  </SheetDescription>
+                </SheetHeader>
+                <div class="@container grid min-h-0 min-w-0 flex-1 content-start gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-4">
                     <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.random.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.random.description") }}</p>
                       </div>
-                      <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.75fr)]">
+                      <div class="grid gap-3 @3xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.75fr)]">
                         <div class="grid gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
                           <div class="space-y-1">
                             <h4 class="text-sm font-medium">{{ t("deckRecommend.options.random.skillGroup") }}</h4>
@@ -3806,7 +3798,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                               {{ t("deckRecommend.options.random.skillGroupDescription") }}
                             </p>
                           </div>
-                          <div class="grid gap-3 md:grid-cols-2">
+                          <div class="grid gap-3 @md:grid-cols-2">
                             <div class="grid gap-2">
                               <Label>{{ t("deckRecommend.options.random.skillOrder") }}</Label>
                               <Select :model-value="skillOrderStrategy" :disabled="runner.running.value" @update:model-value="updateSkillOrderStrategy">
@@ -3973,7 +3965,7 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.engine.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.engine.description") }}</p>
                       </div>
-                      <div class="grid gap-3 md:grid-cols-2">
+                      <div class="grid gap-3 @md:grid-cols-2">
                         <div class="grid gap-2">
                           <Label for="deck-recommend-result-limit">{{ t("deckRecommend.options.engine.resultLimit") }}</Label>
                           <Input
@@ -4015,32 +4007,59 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                         :disabled="runner.running.value || !dataReady"
                       />
                     </section>
-              </div>
-            </section>
+                </div>
+              </SheetContent>
+            </Sheet>
 
-            <div class="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p class="text-sm text-muted-foreground">
-                {{ runner.running.value && runner.phase.value ? t(`deckRecommend.runner.phases.${runner.phase.value}`) : t("deckRecommend.runner.ready") }}
-              </p>
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                <Button type="button" variant="outline" :disabled="runner.running.value" @click="saveDeckRecommendConfig">
-                  <LucideSave class="size-4" />
-                  {{ t("deckRecommend.configActions.save") }}
-                </Button>
-                <Button type="button" variant="destructive" :disabled="runner.running.value" @click="clearConfigConfirmOpen = true">
-                  <LucideTrash2 class="size-4" />
-                  {{ t("deckRecommend.configActions.clear") }}
-                </Button>
-                <Button type="button" :disabled="!canRunRecommend" @click="runRecommend">
-                  <LucidePlay class="size-4" />
-                  {{ runner.running.value ? t("deckRecommend.runner.running") : t("deckRecommend.runner.run") }}
-                </Button>
-              </div>
-            </div>
           </CardContent>
+          <div class="grid gap-2 border-t px-3 py-3 sm:px-4">
+            <p class="text-xs text-muted-foreground">
+              {{ runner.running.value && runner.phase.value ? t(`deckRecommend.runner.phases.${runner.phase.value}`) : t("deckRecommend.runner.ready") }}
+            </p>
+            <div class="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="outline" size="sm" @click="expertConfigOpen = true">
+                <LucideSettings2 class="size-4" />
+                {{ t("deckRecommend.layers.expert.title") }}
+              </Button>
+              <Button type="button" variant="outline" size="sm" :disabled="runner.running.value" @click="saveDeckRecommendConfig">
+                <LucideSave class="size-4" />
+                {{ t("deckRecommend.configActions.save") }}
+              </Button>
+              <Button type="button" variant="destructive" size="sm" :disabled="runner.running.value" @click="clearConfigConfirmOpen = true">
+                <LucideTrash2 class="size-4" />
+                {{ t("deckRecommend.configActions.clear") }}
+              </Button>
+              <Button type="button" class="min-w-28 flex-1" :disabled="!canRunRecommend" @click="runRecommend">
+                <LucidePlay class="size-4" />
+                {{ runner.running.value ? t("deckRecommend.runner.running") : t("deckRecommend.runner.run") }}
+              </Button>
+            </div>
+          </div>
       </Card>
 
-        <Card v-if="showResultCard" class="gap-3 rounded-lg py-3 xl:gap-6 xl:rounded-xl xl:py-6">
+      <div class="grid min-w-0 content-start gap-3 sm:gap-4">
+        <div v-if="runner.running.value" class="rounded-lg border bg-card p-4 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="size-4 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" />
+            <p class="text-sm font-medium">
+              {{ runner.phase.value ? t(`deckRecommend.runner.phases.${runner.phase.value}`) : t("deckRecommend.runner.running") }}
+            </p>
+          </div>
+          <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div class="deck-recommend-progress-bar h-full w-1/3 rounded-full bg-primary" />
+          </div>
+        </div>
+
+        <div
+          v-if="!showResultCard && !runner.running.value"
+          class="flex min-h-72 flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-card/50 p-8 text-center"
+        >
+          <LucideGamepad2 class="size-8 text-muted-foreground/50" />
+          <p class="text-sm font-medium">{{ t("deckRecommend.result.title") }}</p>
+          <p class="max-w-sm text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.result.idlePlaceholder") }}</p>
+        </div>
+
+        <Card v-if="showResultCard" class="min-w-0 gap-3 rounded-lg py-3 xl:gap-4 xl:py-4">
           <CardHeader class="px-2 sm:px-4 xl:px-6">
             <CardTitle class="text-base">{{ t("deckRecommend.result.title") }}</CardTitle>
             <CardDescription>
@@ -4412,6 +4431,8 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
             </Collapsible>
           </CardContent>
       </Card>
+      </div>
+      </div>
 
       <div class="space-y-1.5 rounded-md border bg-muted/20 p-2.5 text-xs leading-6 text-muted-foreground sm:p-3 xl:p-4">
         <p>
@@ -4505,3 +4526,19 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
     </div>
   </div>
 </template>
+
+<style scoped>
+.deck-recommend-progress-bar {
+  animation: deck-recommend-progress-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes deck-recommend-progress-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(320%);
+  }
+}
+</style>

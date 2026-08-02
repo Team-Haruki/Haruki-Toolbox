@@ -3560,6 +3560,7 @@ export const zhCN = {
     result: {
       title: "推荐结果",
       description: "推荐完成后会在这里显示卡组结果。",
+      idlePlaceholder: "完成左侧配置后点击「开始推荐」，推荐卡组会显示在这里。",
       elapsed: "组卡引擎合计用时 {ms} ms",
       totalElapsed: "推荐总耗时 {ms} ms",
       dataElapsed: "获取数据",

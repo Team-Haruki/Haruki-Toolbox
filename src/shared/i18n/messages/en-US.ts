@@ -3560,6 +3560,7 @@ export const enUS = {
     result: {
       title: "Recommendation Result",
       description: "Deck results will appear here after the recommendation finishes.",
+      idlePlaceholder: "Finish the configuration on the left and hit Start — recommended decks will appear here.",
       elapsed: "Deck engine total elapsed {ms} ms",
       totalElapsed: "Recommendation total elapsed {ms} ms",
       dataElapsed: "Data fetch",
