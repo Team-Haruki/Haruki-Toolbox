@@ -537,7 +537,11 @@ function formatPercentValue(value: number) {
                         :key="cardView.card.card_id"
                         class="flex min-w-0 items-start gap-2 rounded-md bg-background/70 p-2 ring-1 ring-border/60 sm:gap-3"
                       >
-                        <CardThumbnail :thumbnail="cardView.thumbnail" size="md" />
+                        <CardThumbnail
+                          :thumbnail="cardView.thumbnail"
+                          size="md"
+                          :level-label="t('deckRecommend.result.cardLevel', { value: cardView.card.level })"
+                        />
                         <div class="min-w-0 flex-1 space-y-2">
                           <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
                             <span class="min-w-0 text-sm font-semibold leading-5">
@@ -550,9 +554,6 @@ function formatPercentValue(value: number) {
                           <div class="flex flex-wrap gap-1.5 text-xs">
                             <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground">
                               {{ t("deckRecommend.result.cardTotalPowerShort", { value: formatInteger(cardView.card.total_power) }) }}
-                            </span>
-                            <span class="rounded-md bg-violet-50 px-1.5 py-0.5 font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
-                              {{ t("deckRecommend.result.cardLevel", { value: cardView.card.level }) }}
                             </span>
                             <span class="rounded-md bg-violet-50 px-1.5 py-0.5 font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
                               {{ t("deckRecommend.result.skillLevel", { value: cardView.card.skill_level }) }}

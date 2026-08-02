@@ -3605,7 +3605,7 @@ export const zhCN = {
         areaItem: "区域道具",
         character: "角色等级",
         honor: "称号",
-        fixture: "MySekai 摆件",
+        fixture: "MySekai 玩偶",
         gate: "MySekai 大门",
       },
       eventBonus: "活动加成 {value}%",

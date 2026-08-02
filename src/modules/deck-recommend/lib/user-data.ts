@@ -62,6 +62,11 @@ export const DECK_RECOMMEND_SUITE_KEYS = [
   "userCharacters",
   "userGamedata",
   "userHonors",
+  // MySekai canvas/fixture/gate bonuses feed the engine's power calculation;
+  // without them every deck reports 0 fixture/gate bonus power.
+  "userMysekaiCanvases",
+  "userMysekaiFixtureGameCharacterPerformanceBonuses",
+  "userMysekaiGates",
 ] as const
 
 export type DeckRecommendUserDataCacheDependencies = {
