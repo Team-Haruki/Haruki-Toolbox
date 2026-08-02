@@ -5,6 +5,7 @@ import {
   buildDeckCompareRows,
   deckBasicInfoMetricKinds,
   deckBonusParts,
+  deckMetric,
   deckMetricNumeric,
   deckPointValue,
   deckSummaryMetricKinds,
@@ -78,6 +79,15 @@ describe("orderDeckMetricsByTarget", () => {
 describe("deckBonusParts", () => {
   it("splits main and support bonus with a total", () => {
     expect(deckBonusParts(makeDeck())).toEqual({ main: 250, support: 30, total: 280 })
+  })
+})
+
+describe("deckMetric bonus detail", () => {
+  it("shows the main/support split only when support bonus exists", () => {
+    const withSupport = deckMetric(makeContext(), "bonus", makeDeck())
+    expect(withSupport.detail).toBeDefined()
+    const withoutSupport = deckMetric(makeContext(), "bonus", makeDeck({ support_deck_bonus_rate: 0 }))
+    expect(withoutSupport.detail).toBeUndefined()
   })
 })
 

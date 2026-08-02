@@ -174,10 +174,14 @@ export function deckMetric(
         kind,
         label: ctx.t("deckRecommend.result.summary.totalBonus"),
         value: `${formatDeckPercent(ctx.locale, bonusParts.total)}%`,
-        detail: ctx.t("deckRecommend.result.summary.bonusBreakdown", {
-          main: formatDeckPercent(ctx.locale, bonusParts.main),
-          support: formatDeckPercent(ctx.locale, bonusParts.support),
-        }),
+        // The main/support split only means something for world-bloom decks;
+        // everywhere else support is always 0 and the detail is just noise.
+        detail: bonusParts.support > 0
+          ? ctx.t("deckRecommend.result.summary.bonusBreakdown", {
+            main: formatDeckPercent(ctx.locale, bonusParts.main),
+            support: formatDeckPercent(ctx.locale, bonusParts.support),
+          })
+          : undefined,
         class: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200",
       }
     }
