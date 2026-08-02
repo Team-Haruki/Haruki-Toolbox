@@ -3209,6 +3209,19 @@ export const enUS = {
       musicEmpty: "No music found.",
       difficultyPlaceholder: "Select difficulty",
     },
+    picker: {
+      musicDialogTitle: "Select Music",
+      eventDialogTitle: "Select Event",
+      cardDialogTitle: "Browse Cards",
+      browse: "Browse",
+      done: "Done",
+      filterAll: "All",
+      unitLabel: "Unit",
+      attrLabel: "Attribute",
+      rarityLabel: "Rarity",
+      cardSearchLabel: "Search cards",
+      browseCount: "{count} cards",
+    },
     layers: {
       default: {
         title: "Default Settings",

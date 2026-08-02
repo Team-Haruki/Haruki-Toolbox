@@ -3209,6 +3209,19 @@ export const zhCN = {
       musicEmpty: "没有找到歌曲。",
       difficultyPlaceholder: "请选择难度",
     },
+    picker: {
+      musicDialogTitle: "选择歌曲",
+      eventDialogTitle: "选择活动",
+      cardDialogTitle: "浏览卡牌",
+      browse: "浏览筛选",
+      done: "完成",
+      filterAll: "全部",
+      unitLabel: "团体",
+      attrLabel: "属性",
+      rarityLabel: "稀有度",
+      cardSearchLabel: "搜索卡牌",
+      browseCount: "共 {count} 张卡牌",
+    },
     layers: {
       default: {
         title: "默认配置",
