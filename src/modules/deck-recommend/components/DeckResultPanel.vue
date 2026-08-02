@@ -49,7 +49,6 @@ import {
   deckSummaryMetrics as buildDeckSummaryMetrics,
   formatDeckInteger,
   formatDeckPercent,
-  readStateTagClass,
   recommendElapsedTimingLabel,
   type DeckResultMetricsContext,
 } from "../lib/deck-result-metrics"
@@ -222,8 +221,20 @@ function bonusTagLabel(value: number) {
   return t("deckRecommend.result.bonusTag", { value: formatDeckPercent(locale.value, value) })
 }
 
-function readStateLabel(read: boolean) {
-  return t(read ? "deckRecommend.result.readState.read" : "deckRecommend.result.readState.unread")
+function episodeSymbol(read: boolean) {
+  return read ? "\u2713" : "\u2717"
+}
+
+function episodeTagClass(card: { episode1_read: boolean; episode2_read: boolean }) {
+  return card.episode1_read && card.episode2_read
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
+    : "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200"
+}
+
+function episodeTitle(card: { episode1_read: boolean; episode2_read: boolean }) {
+  const first = t(card.episode1_read ? "deckRecommend.result.readState.read" : "deckRecommend.result.readState.unread")
+  const second = t(card.episode2_read ? "deckRecommend.result.readState.read" : "deckRecommend.result.readState.unread")
+  return `${t("deckRecommend.result.episodeFirst")} ${first} / ${t("deckRecommend.result.episodeSecond")} ${second}`
 }
 
 function formatInteger(value: number | undefined) {
@@ -487,240 +498,122 @@ function formatPercentValue(value: number) {
 
                 <CollapsibleContent>
                   <div class="space-y-3 border-t bg-muted/5 p-2.5 sm:p-3">
-                    <Collapsible v-slot="{ open: basicOpen }" as-child>
-                      <section class="overflow-hidden rounded-md bg-background/70 ring-1 ring-border/60">
-                        <CollapsibleTrigger as-child>
-                          <button
-                            type="button"
-                            class="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3"
-                          >
-                            <span class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-                              <span class="mr-1 min-w-0 text-sm font-semibold">{{ t("deckRecommend.result.sections.basic") }}</span>
-                              <template v-if="!basicOpen">
-                                <span
-                                  v-for="metric in deckBasicInfoMetrics(deckView.deck)"
-                                  :key="metric.kind"
-                                  :class="[
-                                    'rounded-md bg-muted/45 px-1.5 py-0.5 text-xs font-medium text-muted-foreground',
-                                    metric.class,
-                                  ]"
-                                >
-                                  {{ metric.label }}
-                                  <span class="font-mono font-semibold text-foreground">{{ metric.value }}</span>
-                                </span>
-                              </template>
-                            </span>
-                            <LucideChevronDown
-                              :class="[
-                                'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                                basicOpen ? 'rotate-180' : '',
-                              ]"
-                            />
-                          </button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div :class="['grid grid-cols-2 gap-1.5 border-t bg-muted/5 p-2 sm:gap-2 sm:p-3', deckBasicInfoGridClass(deckView.deck)]">
-                            <div
-                              v-for="metric in deckBasicInfoMetrics(deckView.deck)"
-                              :key="metric.kind"
-                              class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2"
-                            >
-                              <span class="block text-xs text-muted-foreground">{{ metric.label }}</span>
-                              <span class="block font-mono text-sm font-semibold sm:text-base">
-                                {{ metric.value }}
-                              </span>
-                              <span v-if="metric.detail" class="block text-xs text-muted-foreground">
-                                {{ metric.detail }}
-                              </span>
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </section>
-                    </Collapsible>
+                    <div :class="['grid grid-cols-2 gap-1.5 sm:gap-2', deckBasicInfoGridClass(deckView.deck)]">
+                      <div
+                        v-for="metric in deckBasicInfoMetrics(deckView.deck)"
+                        :key="metric.kind"
+                        class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2"
+                      >
+                        <span class="block text-xs text-muted-foreground">{{ metric.label }}</span>
+                        <span class="block font-mono text-sm font-semibold sm:text-base">
+                          {{ metric.value }}
+                        </span>
+                        <span v-if="metric.detail" class="block text-xs text-muted-foreground">
+                          {{ metric.detail }}
+                        </span>
+                      </div>
+                    </div>
 
-                    <Collapsible v-slot="{ open: powerOpen }" as-child>
-                      <section class="overflow-hidden rounded-md bg-background/70 ring-1 ring-border/60">
-                        <CollapsibleTrigger as-child>
-                          <button
-                            type="button"
-                            class="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3"
-                          >
-                            <span class="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-                              <span class="mr-1 min-w-0 text-sm font-semibold">{{ t("deckRecommend.result.sections.power") }}</span>
-                              <template v-if="!powerOpen">
-                                <span class="rounded-md bg-muted/45 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
-                                  {{ t("deckRecommend.result.power.total") }}
-                                  <span class="font-mono font-semibold text-foreground">{{ formatInteger(deckView.deck.total_power) }}</span>
-                                </span>
-                                <span class="rounded-md bg-muted/45 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
-                                  {{ t("deckRecommend.result.power.base") }}
-                                  <span class="font-mono font-semibold text-foreground">{{ formatInteger(deckView.deck.base_power) }}</span>
-                                </span>
-                              </template>
-                            </span>
-                            <LucideChevronDown
-                              :class="[
-                                'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                                powerOpen ? 'rotate-180' : '',
-                              ]"
-                            />
-                          </button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div class="grid grid-cols-2 gap-1.5 border-t bg-muted/5 p-2 sm:grid-cols-4 sm:gap-2 sm:p-3">
-                            <div
-                              v-for="item in deckPowerDetailItems(deckView.deck)"
-                              :key="item.key"
-                              class="rounded bg-background/80 px-2 py-1.5 ring-1 ring-border/40 sm:rounded-md sm:px-3 sm:py-2"
-                            >
-                              <span class="block text-xs text-muted-foreground">{{ item.label }}</span>
-                              <span class="block font-mono text-sm font-semibold text-foreground">
-                                {{ formatInteger(item.value) }}
-                              </span>
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </section>
-                    </Collapsible>
+                    <div class="flex flex-wrap gap-1.5 text-xs">
+                      <span
+                        v-for="item in deckPowerDetailItems(deckView.deck)"
+                        :key="item.key"
+                        class="rounded-md bg-background/80 px-1.5 py-1 ring-1 ring-border/40"
+                      >
+                        <span class="text-muted-foreground">{{ item.label }}</span>
+                        <span class="ml-1 font-mono font-semibold text-foreground">{{ formatInteger(item.value) }}</span>
+                      </span>
+                    </div>
 
-                    <Collapsible v-slot="{ open: mainCardsOpen }" as-child default-open>
-                      <section class="overflow-hidden rounded-md bg-background/70 ring-1 ring-border/60">
-                        <CollapsibleTrigger as-child>
-                          <button
-                            type="button"
-                            class="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3"
-                          >
-                            <span class="flex min-w-0 flex-wrap items-center gap-2">
-                              <span class="text-sm font-semibold">{{ mainDeckSectionTitle(deckView.deck) }}</span>
-                              <span class="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-                                {{ bonusTagLabel(deckBonusParts(deckView.deck).main) }}
-                              </span>
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                      <span class="text-sm font-semibold">{{ mainDeckSectionTitle(deckView.deck) }}</span>
+                      <span class="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+                        {{ bonusTagLabel(deckBonusParts(deckView.deck).main) }}
+                      </span>
+                    </div>
+                    <div class="grid gap-2 lg:grid-cols-2">
+                      <div
+                        v-for="cardView in deckView.cards"
+                        :key="cardView.card.card_id"
+                        class="flex min-w-0 items-start gap-2 rounded-md bg-background/70 p-2 ring-1 ring-border/60 sm:gap-3"
+                      >
+                        <CardThumbnail :thumbnail="cardView.thumbnail" size="md" />
+                        <div class="min-w-0 flex-1 space-y-2">
+                          <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                            <span class="min-w-0 text-sm font-semibold leading-5">
+                              {{ cardDetailTitle(cardView) }}
                             </span>
-                            <LucideChevronDown
-                              :class="[
-                                'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                                mainCardsOpen ? 'rotate-180' : '',
-                              ]"
-                            />
-                          </button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div class="grid gap-2 border-t bg-muted/5 p-2 sm:p-3 lg:grid-cols-2">
-                            <div
-                              v-for="cardView in deckView.cards"
-                              :key="cardView.card.card_id"
-                              class="flex min-w-0 items-start gap-2 rounded-md bg-background/70 p-2 ring-1 ring-border/60 sm:gap-3"
-                            >
-                              <CardThumbnail :thumbnail="cardView.thumbnail" size="md" />
-                              <div class="min-w-0 flex-1 space-y-2">
-                                <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
-                                  <span class="min-w-0 text-sm font-semibold leading-5">
-                                    {{ cardDetailTitle(cardView) }}
-                                  </span>
-                                  <span class="shrink-0 rounded-md bg-background/70 px-1.5 py-0.5 font-mono text-xs text-muted-foreground ring-1 ring-border/70">
-                                    #{{ cardView.card.card_id }}
-                                  </span>
-                                </div>
-                                <div class="flex flex-wrap gap-1.5 text-xs">
-                                  <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground">
-                                    {{ t("deckRecommend.result.cardTotalPowerShort", { value: formatInteger(cardView.card.total_power) }) }}
-                                  </span>
-                                  <span class="rounded-md bg-muted/50 px-1.5 py-0.5 text-muted-foreground">
-                                    {{ t("deckRecommend.result.cardBasePowerShort", { value: formatInteger(cardView.card.base_power) }) }}
-                                  </span>
-                                  <span class="rounded-md bg-violet-50 px-1.5 py-0.5 font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
-                                    {{ t("deckRecommend.result.cardLevel", { value: cardView.card.level }) }}
-                                  </span>
-                                  <span class="rounded-md bg-violet-50 px-1.5 py-0.5 font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
-                                    {{ t("deckRecommend.result.skillLevel", { value: cardView.card.skill_level }) }}
-                                  </span>
-                                  <span class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200">
-                                    {{ t("deckRecommend.result.skillScoreUpShort", { value: cardView.card.skill_score_up }) }}
-                                  </span>
-                                  <span
-                                    v-if="cardView.card.skill_life_recovery > 0"
-                                    class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200"
-                                  >
-                                    {{ t("deckRecommend.result.skillLifeRecoveryShort", { value: cardView.card.skill_life_recovery }) }}
-                                  </span>
-                                  <span class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200">
-                                    {{ t("deckRecommend.result.cardEventBonusShort", { value: cardView.card.event_bonus_rate }) }}
-                                  </span>
-                                  <span
-                                    :class="[
-                                      'rounded-md border px-1.5 py-0.5 font-medium',
-                                      readStateTagClass(cardView.card.episode1_read),
-                                    ]"
-                                  >
-                                    {{ t("deckRecommend.result.episodeFirst") }} {{ readStateLabel(cardView.card.episode1_read) }}
-                                  </span>
-                                  <span
-                                    :class="[
-                                      'rounded-md border px-1.5 py-0.5 font-medium',
-                                      readStateTagClass(cardView.card.episode2_read),
-                                    ]"
-                                  >
-                                    {{ t("deckRecommend.result.episodeSecond") }} {{ readStateLabel(cardView.card.episode2_read) }}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
+                            <span class="shrink-0 rounded-md bg-background/70 px-1.5 py-0.5 font-mono text-xs text-muted-foreground ring-1 ring-border/70">
+                              #{{ cardView.card.card_id }}
+                            </span>
                           </div>
-                        </CollapsibleContent>
-                      </section>
-                    </Collapsible>
+                          <div class="flex flex-wrap gap-1.5 text-xs">
+                            <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground">
+                              {{ t("deckRecommend.result.cardTotalPowerShort", { value: formatInteger(cardView.card.total_power) }) }}
+                            </span>
+                            <span class="rounded-md bg-violet-50 px-1.5 py-0.5 font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
+                              {{ t("deckRecommend.result.cardLevel", { value: cardView.card.level }) }}
+                            </span>
+                            <span class="rounded-md bg-violet-50 px-1.5 py-0.5 font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
+                              {{ t("deckRecommend.result.skillLevel", { value: cardView.card.skill_level }) }}
+                            </span>
+                            <span class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200">
+                              {{ t("deckRecommend.result.skillScoreUpShort", { value: cardView.card.skill_score_up }) }}
+                            </span>
+                            <span
+                              v-if="cardView.card.skill_life_recovery > 0"
+                              class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200"
+                            >
+                              {{ t("deckRecommend.result.skillLifeRecoveryShort", { value: cardView.card.skill_life_recovery }) }}
+                            </span>
+                            <span class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200">
+                              {{ t("deckRecommend.result.cardEventBonusShort", { value: cardView.card.event_bonus_rate }) }}
+                            </span>
+                            <span
+                              :class="[
+                                'rounded-md border px-1.5 py-0.5 font-medium',
+                                episodeTagClass(cardView.card),
+                              ]"
+                              :title="episodeTitle(cardView.card)"
+                            >
+                              {{ t("deckRecommend.result.episodesShort") }}
+                              {{ episodeSymbol(cardView.card.episode1_read) }}{{ episodeSymbol(cardView.card.episode2_read) }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-                    <Collapsible
-                      v-if="isWorldBloomResultDeck(deckView.deck) && worldBloomSupportCardViews(deckView.deck).length > 0"
-                      v-slot="{ open: supportOpen }"
-                      as-child
-                    >
-                      <section class="overflow-hidden rounded-md border bg-background/70">
-                        <CollapsibleTrigger as-child>
-                          <button
-                            type="button"
-                            class="flex w-full items-start justify-between gap-3 p-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-3"
-                          >
-                            <span class="flex min-w-0 flex-wrap items-center gap-2">
-                              <span class="text-sm font-semibold">{{ t("deckRecommend.result.sections.supportCards") }}</span>
-                              <span class="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-                                {{ bonusTagLabel(deckBonusParts(deckView.deck).support) }}
-                              </span>
-                            </span>
-                            <LucideChevronDown
-                              :class="[
-                                'mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                                supportOpen ? 'rotate-180' : '',
-                              ]"
+                    <template v-if="isWorldBloomResultDeck(deckView.deck) && worldBloomSupportCardViews(deckView.deck).length > 0">
+                      <div class="flex flex-wrap items-center gap-2 pt-1">
+                        <span class="text-sm font-semibold">{{ t("deckRecommend.result.sections.supportCards") }}</span>
+                        <span class="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+                          {{ bonusTagLabel(deckBonusParts(deckView.deck).support) }}
+                        </span>
+                      </div>
+                      <div class="grid grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2 xl:grid-cols-5">
+                        <div
+                          v-for="supportCardView in worldBloomSupportCardViews(deckView.deck)"
+                          :key="supportCardView.card.card_id"
+                          class="grid gap-1.5 rounded-md bg-background/75 p-1.5 ring-1 ring-border/60 sm:gap-2 sm:p-2"
+                        >
+                          <div class="flex justify-center">
+                            <CardThumbnail
+                              :thumbnail="supportCardView.thumbnail"
+                              :corner-badge="`#${supportCardView.card.card_id}`"
                             />
-                          </button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div class="grid grid-cols-3 gap-1.5 border-t bg-muted/5 p-2 sm:grid-cols-4 sm:gap-2 sm:p-3 xl:grid-cols-5">
-                            <div
-                              v-for="supportCardView in worldBloomSupportCardViews(deckView.deck)"
-                              :key="supportCardView.card.card_id"
-                              class="grid gap-1.5 rounded-md bg-background/75 p-1.5 ring-1 ring-border/60 sm:gap-2 sm:p-2"
-                            >
-                              <div class="flex justify-center">
-                                <CardThumbnail
-                                  :thumbnail="supportCardView.thumbnail"
-                                  :corner-badge="`#${supportCardView.card.card_id}`"
-                                />
-                              </div>
-                              <div class="flex flex-wrap items-center justify-center gap-1.5 text-xs">
-                                <span class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200">
-                                  {{ formatPercentValue(supportCardView.card.bonus) }}%
-                                </span>
-                                <span class="font-mono text-muted-foreground">
-                                  {{ t("deckRecommend.result.supportSkillLevel", { value: supportCardView.card.skill_level }) }}
-                                </span>
-                              </div>
-                            </div>
                           </div>
-                        </CollapsibleContent>
-                      </section>
-                    </Collapsible>
+                          <div class="flex flex-wrap items-center justify-center gap-1.5 text-xs">
+                            <span class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200">
+                              {{ formatPercentValue(supportCardView.card.bonus) }}%
+                            </span>
+                            <span class="font-mono text-muted-foreground">
+                              {{ t("deckRecommend.result.supportSkillLevel", { value: supportCardView.card.skill_level }) }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
                   </div>
                 </CollapsibleContent>
               </section>

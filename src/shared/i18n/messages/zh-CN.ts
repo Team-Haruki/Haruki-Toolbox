@@ -3638,6 +3638,7 @@ export const zhCN = {
       cardEventBonus: "加成 {value}%",
       cardEventBonusShort: "活动 {value}%",
       episodeFirst: "前篇",
+      episodesShort: "剧情",
       episodeSecond: "后篇",
       readState: {
         read: "已读",

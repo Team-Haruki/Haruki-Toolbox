@@ -3638,6 +3638,7 @@ export const enUS = {
       cardEventBonus: "Bonus {value}%",
       cardEventBonusShort: "Event {value}%",
       episodeFirst: "First episode",
+      episodesShort: "Episodes",
       episodeSecond: "Second episode",
       readState: {
         read: "Read",
