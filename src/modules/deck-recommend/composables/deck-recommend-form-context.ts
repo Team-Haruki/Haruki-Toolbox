@@ -6,12 +6,19 @@ import type { DeckRecommendAreaItemKind, DeckRecommendAreaItemOption } from "../
 import type { DeckRecommendMasterCardOption } from "../lib/card-options"
 import type { CharacterOption, CharacterRankOption, MysekaiGateOption } from "../lib/master-options"
 import type {
+  DeckRecommendAlgorithm,
   DeckRecommendEventAttr,
+  DeckRecommendLiveType,
   DeckRecommendMode,
   DeckRecommendSkillOrderStrategy,
   DeckRecommendSkillReferenceStrategy,
+  DeckRecommendTarget,
   DeckRecommendUnitType,
 } from "../lib/recommend-options"
+import type {
+  DeckRecommendEventSimulationMode,
+  DeckRecommendSimulatedEventUnitValue,
+} from "../lib/saved-config"
 import type { CardTrainingConfig } from "../lib/training-config"
 import type { DeckRecommendSingleCardOverride } from "../lib/user-data-preparation"
 
@@ -124,6 +131,67 @@ export type DeckRecommendFormContext = {
   fixedCardIds: Ref<number[]>
   fixedCharacterIds: Ref<number[]>
   excludedCardIds: Ref<number[]>
+
+  // Basic section
+  selectedAccountKey: Ref<string>
+  accountOptions: ComputedRef<Array<{ key: string; label: string }>>
+  selectedAccountLabel: ComputedRef<string>
+  updateAccount: (value: AcceptableValue) => void
+  updateDataRegion: (value: AcceptableValue) => void
+  showRecommendTargetSelect: ComputedRef<boolean>
+  activeRecommendTarget: ComputedRef<DeckRecommendTarget>
+  activeRecommendTargetLabel: ComputedRef<string>
+  updateRecommendTarget: (value: AcceptableValue) => void
+  recommendTargetOptions: ComputedRef<Array<SelectOption<DeckRecommendTarget>>>
+  showChallengeCharacterSelect: ComputedRef<boolean>
+  selectedCharacterId: Ref<string | null>
+  characterOptionsLoading: ComputedRef<boolean>
+  showLiveTypeSelect: ComputedRef<boolean>
+  liveType: Ref<DeckRecommendLiveType>
+  isLiveTypeLocked: ComputedRef<boolean>
+  updateLiveType: (value: AcceptableValue) => void
+  liveTypeOptions: ComputedRef<Array<SelectOption<DeckRecommendLiveType>>>
+  algorithmOptions: ComputedRef<Array<SelectOption<DeckRecommendAlgorithm>>>
+  isAlgorithmSelected: (value: DeckRecommendAlgorithm) => boolean
+  isAlgorithmDisabled: () => boolean
+  toggleAlgorithm: (value: DeckRecommendAlgorithm, checked: boolean) => void
+  activeAlgorithms: ComputedRef<DeckRecommendAlgorithm[]>
+  executionMode: Ref<string>
+  updateExecutionMode: (value: AcceptableValue) => void
+  executionModeOptions: ComputedRef<SelectOption[]>
+  selectedMusicId: Ref<string | null>
+  selectedDifficulty: Ref<string | null>
+  showEventConditionSection: ComputedRef<boolean>
+  eventSimulationEnabled: Ref<boolean>
+  isEventSimulationAvailable: ComputedRef<boolean>
+  isEventSimulationActive: ComputedRef<boolean>
+  selectedEventId: Ref<string | null>
+  selectedEventType: Ref<string | null>
+  showWorldBloomCharacterSelect: ComputedRef<boolean>
+  characterSelectAllowedIds: ComputedRef<readonly number[] | null>
+  worldBloomCharacterSelectAllowNone: ComputedRef<boolean>
+  worldBloomCharactersLoading: ComputedRef<boolean>
+  simulatedEventMode: Ref<DeckRecommendEventSimulationMode>
+  updateEventSimulationMode: (value: AcceptableValue) => void
+  eventSimulationModeOptions: ComputedRef<Array<SelectOption<DeckRecommendEventSimulationMode>>>
+  isWorldBloomSimulation: ComputedRef<boolean>
+  simulatedEventAttr: Ref<DeckRecommendEventAttr | null>
+  updateSimulatedEventAttr: (value: AcceptableValue) => void
+  simulatedEventUnit: Ref<DeckRecommendSimulatedEventUnitValue | null>
+  updateSimulatedEventUnit: (value: AcceptableValue) => void
+  eventUnitOptions: ComputedRef<Array<SelectOption<DeckRecommendSimulatedEventUnitValue>>>
+  isCustomBonusSimulation: ComputedRef<boolean>
+  customBonusCharacterIds: Ref<number[]>
+  customBonusSimulationDialogOpen: Ref<boolean>
+  simulatedWorldBloomTurn: Ref<string | null>
+  updateSimulatedWorldBloomTurn: (value: AcceptableValue) => void
+  worldBloomTurnOptions: ComputedRef<SelectOption[]>
+  simulatedWorldBloomCharacterId: Ref<string | null>
+  hasEventSimulationError: ComputedRef<boolean>
+  eventSimulationErrorMessage: ComputedRef<string>
+  showBonusTargetsInput: ComputedRef<boolean>
+  bonusTargetsInput: Ref<string>
+  hasBonusTargetsError: ComputedRef<boolean>
 }
 
 const deckRecommendFormContextKey: InjectionKey<DeckRecommendFormContext> = Symbol("deck-recommend-form-context")
