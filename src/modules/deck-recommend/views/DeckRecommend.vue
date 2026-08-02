@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import type { RecommendDeck } from "haruki-sekai-deck-recommend-cpp"
 import type { AcceptableValue } from "reka-ui"
 import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import {
+  LucideCheck,
   LucideChevronDown,
+  LucideCopy,
   LucideGamepad2,
   LucideInfo,
+  LucideListMusic,
   LucidePlay,
   LucideSave,
   LucideSettings2,
@@ -89,6 +93,7 @@ import CharacterRankOverrideList from "../components/CharacterRankOverrideList.v
 import CharacterMultiPicker from "../components/CharacterMultiPicker.vue"
 import CharacterSelect from "../components/CharacterSelect.vue"
 import CustomBonusCharacterPicker from "../components/CustomBonusCharacterPicker.vue"
+import DeckSongRankingDialog from "../components/DeckSongRankingDialog.vue"
 import EventSelect from "../components/EventSelect.vue"
 import MysekaiFixtureBonusOverrideList from "../components/MysekaiFixtureBonusOverrideList.vue"
 import MysekaiGateOverrideList from "../components/MysekaiGateOverrideList.vue"
@@ -2420,6 +2425,126 @@ function readStateTagClass(read: boolean) {
     : "border-muted bg-muted/45 text-muted-foreground"
 }
 
+// --- Result deck actions ---
+
+const songRankingOpen = ref(false)
+const songRankingDeck = ref<RecommendDeck | null>(null)
+const songRankingAvailable = computed(() =>
+  recommendMode.value === "event" && selectedEventId.value != null && !isEventSimulationActive.value,
+)
+const songRankingLiveType = computed<"multi" | "solo">(() => liveType.value === "solo" ? "solo" : "multi")
+
+function openSongRanking(deckView: DeckResultDeckView) {
+  songRankingDeck.value = deckView.deck as RecommendDeck
+  songRankingOpen.value = true
+}
+
+async function copyDeck(deckView: DeckResultDeckView) {
+  const metrics = deckBasicInfoMetrics(deckView.deck)
+    .map((metric) => `${metric.label} ${metric.value}`)
+    .join(" · ")
+  const cards = deckView.cards
+    .map((cardView) => `#${cardView.card.card_id} ${cardDetailTitle(cardView)}`)
+    .join("\n")
+  const text = `${t("deckRecommend.result.deckTitle", { index: deckView.index + 1 })} · ${metrics}\n${cards}`
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.success(t("deckRecommend.result.actions.copied"))
+  } catch {
+    toast.error(t("deckRecommend.result.actions.copyFailed"))
+  }
+}
+
+// --- Deck comparison (first selected deck is the baseline) ---
+
+const comparedDeckIndexes = ref<number[]>([])
+
+watch(resultDecks, () => {
+  comparedDeckIndexes.value = []
+})
+
+function toggleDeckCompare(index: number, checked: boolean) {
+  const rest = comparedDeckIndexes.value.filter((item) => item !== index)
+  comparedDeckIndexes.value = checked ? [...rest, index] : rest
+}
+
+const comparedDecks = computed(() => comparedDeckIndexes.value
+  .map((index) => resultDecks.value.find((view) => view.index === index))
+  .filter((view): view is DeckResultDeckView => view != null))
+
+function deckMetricNumeric(kind: DeckResultMetricKind, deck: DeckResultDeckView["deck"]): number {
+  switch (kind) {
+    case "score":
+      return deckPointValue(deck)
+    case "power":
+      return Number(deck.total_power) || 0
+    case "bonus":
+      return deckBonusParts(deck).total
+    case "effective":
+      return Number(deck.multi_live_score_up) || 0
+    case "liveScore":
+      return Number(deck.live_score) || 0
+    case "challengeDelta":
+      return Number(deck.challenge_score_delta) || 0
+  }
+}
+
+function formatCompareDiff(kind: DeckResultMetricKind, diff: number): string {
+  const magnitude = Math.abs(diff)
+  return kind === "bonus" || kind === "effective"
+    ? `${formatPercentValue(magnitude)}%`
+    : formatInteger(magnitude)
+}
+
+type DeckCompareCell = {
+  value: string
+  diffLabel: string | null
+  tone: "up" | "down" | "even" | null
+}
+
+const deckCompareRows = computed<Array<{ kind: DeckResultMetricKind; label: string; cells: DeckCompareCell[] }>>(() => {
+  const decks = comparedDecks.value
+  if (decks.length < 2) {
+    return []
+  }
+
+  return deckBasicInfoMetricKinds(decks[0].deck).map((kind) => {
+    const baseline = deckMetricNumeric(kind, decks[0].deck)
+    return {
+      kind,
+      label: deckMetric(kind, decks[0].deck).label,
+      cells: decks.map((view, position): DeckCompareCell => {
+        const metric = deckMetric(kind, view.deck)
+        if (position === 0) {
+          return { value: metric.value, diffLabel: null, tone: null }
+        }
+
+        const diff = deckMetricNumeric(kind, view.deck) - baseline
+        return {
+          value: metric.value,
+          diffLabel: formatCompareDiff(kind, diff),
+          tone: diff > 0 ? "up" : diff < 0 ? "down" : "even",
+        }
+      }),
+    }
+  })
+})
+
+// --- Runner phase steps for the progress panel ---
+
+const RUNNER_PHASE_STEPS = [
+  "fetching-user-data",
+  "preparing-data",
+  "initializing",
+  "loading-data",
+  "recommending",
+] as const
+
+const runnerPhaseIndex = computed(() => {
+  const phase = runner.phase.value
+  return phase != null ? (RUNNER_PHASE_STEPS as readonly string[]).indexOf(phase) : -1
+})
+
 function deckPowerDetailItems(deck: DeckResultDeckView["deck"]) {
   return [
     { key: "total", label: t("deckRecommend.result.power.total"), value: deck.total_power },
@@ -4039,11 +4164,31 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
 
       <div class="grid min-w-0 content-start gap-3 sm:gap-4">
         <div v-if="runner.running.value" class="rounded-lg border bg-card p-4 shadow-sm">
-          <div class="flex items-center gap-3">
-            <span class="size-4 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" />
-            <p class="text-sm font-medium">
-              {{ runner.phase.value ? t(`deckRecommend.runner.phases.${runner.phase.value}`) : t("deckRecommend.runner.running") }}
-            </p>
+          <div class="grid gap-2">
+            <div
+              v-for="(step, stepIndex) in RUNNER_PHASE_STEPS"
+              :key="step"
+              class="flex items-center gap-2 text-sm"
+            >
+              <LucideCheck v-if="runnerPhaseIndex > stepIndex" class="size-4 shrink-0 text-emerald-500" />
+              <span
+                v-else-if="runnerPhaseIndex === stepIndex"
+                class="size-4 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent"
+                aria-hidden="true"
+              />
+              <span v-else class="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
+                <span class="size-1.5 rounded-full bg-muted-foreground/40" />
+              </span>
+              <span
+                :class="runnerPhaseIndex === stepIndex
+                  ? 'font-medium'
+                  : runnerPhaseIndex > stepIndex
+                    ? 'text-muted-foreground'
+                    : 'text-muted-foreground/60'"
+              >
+                {{ t(`deckRecommend.runner.phases.${step}`) }}
+              </span>
+            </div>
           </div>
           <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
             <div class="deck-recommend-progress-bar h-full w-1/3 rounded-full bg-primary" />
@@ -4120,6 +4265,51 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
             <div v-else-if="resultDecks.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
               {{ t("deckRecommend.result.empty") }}
             </div>
+            <div v-if="deckCompareRows.length > 0" class="overflow-x-auto rounded-md border bg-background/80 shadow-sm">
+              <table class="w-full min-w-[28rem] text-xs">
+                <thead>
+                  <tr class="border-b bg-muted/30 text-muted-foreground">
+                    <th class="px-2.5 py-2 text-left font-medium">{{ t("deckRecommend.result.actions.compareTitle") }}</th>
+                    <th
+                      v-for="(view, position) in comparedDecks"
+                      :key="view.index"
+                      class="px-2.5 py-2 text-right font-medium"
+                    >
+                      {{ t("deckRecommend.result.deckTitle", { index: view.index + 1 }) }}
+                      <span
+                        v-if="position === 0"
+                        class="ml-1 rounded bg-muted px-1 py-0.5 text-[10px] font-medium"
+                      >
+                        {{ t("deckRecommend.result.actions.compareBaseline") }}
+                      </span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in deckCompareRows" :key="row.kind" class="border-b last:border-b-0">
+                    <td class="px-2.5 py-2 text-muted-foreground">{{ row.label }}</td>
+                    <td
+                      v-for="(cell, position) in row.cells"
+                      :key="position"
+                      class="px-2.5 py-2 text-right tabular-nums"
+                    >
+                      <span class="font-medium">{{ cell.value }}</span>
+                      <span
+                        v-if="cell.diffLabel"
+                        :class="[
+                          'ml-1 text-[10px] font-semibold',
+                          cell.tone === 'up'
+                            ? 'text-emerald-600 dark:text-emerald-300'
+                            : cell.tone === 'down'
+                              ? 'text-red-500 dark:text-red-300'
+                              : 'text-muted-foreground',
+                        ]"
+                      >{{ cell.tone === 'up' ? '▲' : cell.tone === 'down' ? '▼' : '' }}{{ cell.diffLabel }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <Collapsible
               v-for="deckView in resultDecks"
               :key="deckView.index"
@@ -4188,6 +4378,38 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
                     />
                   </button>
                 </CollapsibleTrigger>
+
+                <div class="flex flex-wrap items-center gap-2 border-t bg-muted/10 px-2.5 py-1.5 sm:px-3">
+                  <label class="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+                    <Checkbox
+                      :model-value="comparedDeckIndexes.includes(deckView.index)"
+                      @update:model-value="checked => toggleDeckCompare(deckView.index, checked === true)"
+                    />
+                    {{ t("deckRecommend.result.actions.compare") }}
+                  </label>
+                  <span class="flex-1" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    class="h-7 gap-1 px-2 text-xs"
+                    @click="copyDeck(deckView)"
+                  >
+                    <LucideCopy class="size-3.5" />
+                    {{ t("deckRecommend.result.actions.copy") }}
+                  </Button>
+                  <Button
+                    v-if="songRankingAvailable"
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    class="h-7 gap-1 px-2 text-xs"
+                    @click="openSongRanking(deckView)"
+                  >
+                    <LucideListMusic class="size-3.5" />
+                    {{ t("deckRecommend.result.actions.songRanking") }}
+                  </Button>
+                </div>
 
                 <CollapsibleContent>
                   <div class="space-y-3 border-t bg-muted/5 p-2.5 sm:p-3">
@@ -4468,6 +4690,15 @@ function normalizePersistedAlgorithms(value: unknown): DeckRecommendAlgorithm[] 
           >{{ t("deckRecommend.attribution.aboutLink") }}</router-link>{{ t("deckRecommend.attribution.engineSuffix") }}
         </p>
       </div>
+
+      <DeckSongRankingDialog
+        v-model:open="songRankingOpen"
+        :data-region="dataRegion"
+        :account-server="selectedAccount?.server ?? null"
+        :deck="songRankingDeck"
+        :event-id="selectedEventId"
+        :live-type="songRankingLiveType"
+      />
 
       <AlertDialog v-model:open="clearConfigConfirmOpen">
         <AlertDialogContent>
