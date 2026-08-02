@@ -3527,6 +3527,7 @@ export const zhCN = {
       cardEmpty: "没有找到卡牌。",
       add: "添加",
       empty: "暂未添加单卡覆盖。",
+      selectedCount: "已添加 {count} 张单卡覆盖",
       inherit: "沿用通用配置",
       level: "等级",
       skillLevel: "技能",

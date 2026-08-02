@@ -3527,6 +3527,7 @@ export const enUS = {
       cardEmpty: "No card found.",
       add: "Add",
       empty: "No single-card overrides yet.",
+      selectedCount: "{count} single-card overrides added",
       inherit: "Use rarity default",
       level: "Level",
       skillLevel: "Skill",
