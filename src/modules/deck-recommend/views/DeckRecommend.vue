@@ -4,7 +4,6 @@ import type { AcceptableValue } from "reka-ui"
 import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import {
-  LucideChevronDown,
   LucideGamepad2,
   LucideInfo,
   LucidePlay,
@@ -26,7 +25,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Combobox } from "@/components/ui/combobox"
 import {
   Card,
   CardContent,
@@ -69,19 +67,15 @@ import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import type { GameAccountBinding, SekaiRegion } from "@/types"
-import CardMultiPicker from "../components/CardMultiPicker.vue"
-import CardTrainingConfigTable from "../components/CardTrainingConfigTable.vue"
-import CharacterMultiPicker from "../components/CharacterMultiPicker.vue"
 import CharacterSelect from "../components/CharacterSelect.vue"
 import CustomBonusCharacterPicker from "../components/CustomBonusCharacterPicker.vue"
+import DeckAdvancedSection from "../components/DeckAdvancedSection.vue"
 import DeckExpertSheet from "../components/DeckExpertSheet.vue"
 import DeckResultPanel from "../components/DeckResultPanel.vue"
 import EventSelect from "../components/EventSelect.vue"
 import MusicSelect from "../components/MusicSelect.vue"
 import {
   buildDeckRecommendAreaItemOptions,
-  resolveAreaItemAttrIconUrl,
-  resolveUnitIconUrl,
   type DeckRecommendAreaItemKind,
   type DeckRecommendAreaItemOption,
 } from "../lib/area-item-options"
@@ -2256,6 +2250,54 @@ provideDeckRecommendFormContext({
   resultLimitInvalid: computed(() => resultLimit.value.invalid),
   engineTimeoutInvalid: computed(() => engineTimeoutMs.value.invalid),
   singleCardOverrides,
+  recommendMode,
+  dataRegion,
+  trainingConfig,
+  unitFilters,
+  unitFilterOptions,
+  toggleUnitFilter,
+  attrFilters,
+  eventAttrOptions,
+  toggleAttrFilter,
+  filterSelectionLabel,
+  characterFilters,
+  characterFilterMaxCount,
+  characterFilterMinCount: CHARACTER_FILTER_MIN_COUNT,
+  hasCharacterFilterError,
+  areaItemLevelInput,
+  updateAreaItemLevelInput,
+  areaItemLevelOptions,
+  characterRankInput,
+  updateCharacterRankInput,
+  characterRankLevelOptions,
+  characterRankMax,
+  mysekaiGateLevelInput,
+  updateMysekaiGateLevelInput,
+  mysekaiGateLevelOptions,
+  mysekaiGateMaxLevel,
+  mysekaiFixtureBonusRateInput,
+  updateMysekaiFixtureBonusRateInput,
+  dataOverridesInvalid: computed(() =>
+    areaItemLevel.value.invalid
+    || characterRank.value.invalid
+    || mysekaiGateLevel.value.invalid
+    || mysekaiFixtureBonusRate.value.invalid),
+  boostInput,
+  updateBoostInput,
+  boostOptions,
+  boostInvalid: computed(() => boost.value.invalid),
+  isMultiLiveOptionsEnabled,
+  multiLiveTeammatePowerInput,
+  multiLiveTeammateScoreUpInput,
+  multiLiveScoreUpLowerBoundInput,
+  multiLiveTeammatePowerInvalid: computed(() => multiLiveTeammatePower.value.invalid),
+  multiLiveTeammateScoreUpInvalid: computed(() => multiLiveTeammateScoreUp.value.invalid),
+  multiLiveScoreUpLowerBoundInvalid: computed(() => multiLiveScoreUpLowerBound.value.invalid),
+  useCurrentDeck,
+  isCurrentDeckEnabled,
+  fixedCardIds,
+  fixedCharacterIds,
+  excludedCardIds,
 })
 
 </script>
@@ -2625,373 +2667,7 @@ provideDeckRecommendFormContext({
             </div>
             </section>
 
-            <section class="grid min-w-0 gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3">
-              <button
-                type="button"
-                class="flex w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                :aria-label="t('deckRecommend.layers.advanced.title')"
-                :aria-expanded="advancedConfigOpen"
-                @click="advancedConfigOpen = !advancedConfigOpen"
-              >
-                    <span class="space-y-1">
-                      <span class="flex items-center gap-2 text-sm font-semibold">
-                        <LucideSettings2 class="size-4" />
-                        {{ t("deckRecommend.layers.advanced.title") }}
-                      </span>
-                      <span class="block text-xs font-normal text-muted-foreground">
-                        {{ t("deckRecommend.layers.advanced.description") }}
-                      </span>
-                    </span>
-                    <LucideChevronDown
-                      :class="[
-                        'mt-1 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                        advancedConfigOpen ? 'rotate-180' : '',
-                      ]"
-                    />
-              </button>
-
-              <div v-show="advancedConfigOpen" class="grid min-w-0 gap-3 sm:gap-4">
-                    <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
-                      <div class="space-y-1">
-                        <h3 class="text-sm font-medium">{{ t("deckRecommend.training.title") }}</h3>
-                        <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.training.description") }}</p>
-                      </div>
-                      <CardTrainingConfigTable v-model="trainingConfig" />
-                    </section>
-
-                    <div class="grid gap-3 sm:gap-4">
-                      <div class="grid min-w-0 gap-3 sm:gap-4">
-                        <section class="grid h-full content-start gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
-                          <div class="space-y-1">
-                            <h3 class="text-sm font-medium">{{ t("deckRecommend.options.filters.title") }}</h3>
-                            <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.filters.description") }}</p>
-                          </div>
-                          <div class="grid gap-3 sm:gap-4">
-                            <div class="grid gap-3 @3xl:grid-cols-2">
-                              <div class="grid gap-2">
-                                <div class="flex items-center justify-between gap-2">
-                                  <Label>{{ t("deckRecommend.options.filters.unit") }}</Label>
-                                  <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(unitFilters.length) }}</span>
-                                </div>
-                                <div class="grid gap-2 @xs:grid-cols-2">
-                                  <label
-                                    v-for="option in unitFilterOptions"
-                                    :key="option.value"
-                                    :class="[
-                                      'flex min-w-0 items-center gap-2 rounded-md border bg-background/70 px-2 py-1.5 text-sm transition-colors hover:bg-muted/40',
-                                      unitFilters.includes(option.value) ? 'border-cyan-300 bg-cyan-50 text-cyan-900 dark:border-cyan-500/40 dark:bg-cyan-500/10 dark:text-cyan-100' : '',
-                                      runner.running.value ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
-                                    ]"
-                                  >
-                                    <Checkbox
-                                      :model-value="unitFilters.includes(option.value)"
-                                      :disabled="runner.running.value"
-                                      @update:model-value="checked => toggleUnitFilter(option.value, checked === true)"
-                                    />
-                                    <img
-                                      :src="resolveUnitIconUrl(option.value)"
-                                      alt=""
-                                      class="size-5 shrink-0 object-contain"
-                                      loading="lazy"
-                                    >
-                                    <span class="min-w-0 truncate">{{ option.label }}</span>
-                                  </label>
-                                </div>
-                              </div>
-                              <div class="grid gap-2">
-                                <div class="flex items-center justify-between gap-2">
-                                  <Label>{{ t("deckRecommend.options.filters.attr") }}</Label>
-                                  <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(attrFilters.length) }}</span>
-                                </div>
-                                <div class="grid gap-2 @xs:grid-cols-2">
-                                  <label
-                                    v-for="option in eventAttrOptions"
-                                    :key="option.value"
-                                    :class="[
-                                      'flex min-w-0 items-center gap-2 rounded-md border bg-background/70 px-2 py-1.5 text-sm transition-colors hover:bg-muted/40',
-                                      attrFilters.includes(option.value) ? 'border-fuchsia-300 bg-fuchsia-50 text-fuchsia-900 dark:border-fuchsia-500/40 dark:bg-fuchsia-500/10 dark:text-fuchsia-100' : '',
-                                      runner.running.value ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
-                                    ]"
-                                  >
-                                    <Checkbox
-                                      :model-value="attrFilters.includes(option.value)"
-                                      :disabled="runner.running.value"
-                                      @update:model-value="checked => toggleAttrFilter(option.value, checked === true)"
-                                    />
-                                    <img
-                                      :src="resolveAreaItemAttrIconUrl(option.value)"
-                                      alt=""
-                                      class="size-5 shrink-0 object-contain"
-                                      loading="lazy"
-                                    >
-                                    <span class="min-w-0 truncate">{{ option.label }}</span>
-                                  </label>
-                                </div>
-                              </div>
-                            </div>
-                            <div class="grid gap-2">
-                              <div class="flex items-center justify-between gap-2">
-                                <Label>{{ t("deckRecommend.options.filters.character") }}</Label>
-                                <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(characterFilters.length) }}</span>
-                              </div>
-                              <CharacterMultiPicker
-                                v-model="characterFilters"
-                                :region="dataRegion"
-                                :max-characters="characterFilterMaxCount"
-                                :disabled="runner.running.value"
-                                :placeholder="t('deckRecommend.options.filters.characterSelectPlaceholder')"
-                              />
-                              <p
-                                :class="[
-                                  'text-xs leading-5',
-                                  hasCharacterFilterError ? 'text-destructive' : 'text-muted-foreground',
-                                ]"
-                              >
-                                {{ t("deckRecommend.options.filters.characterMinHint", { count: CHARACTER_FILTER_MIN_COUNT }) }}
-                              </p>
-                            </div>
-                          </div>
-                          <p v-if="hasCharacterFilterError" class="text-xs text-destructive">
-                            {{ t("deckRecommend.options.filters.characterMinInvalid", { count: CHARACTER_FILTER_MIN_COUNT }) }}
-                          </p>
-                        </section>
-                      </div>
-
-                      <div class="grid min-w-0 gap-3 sm:gap-4">
-                        <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
-                          <div class="space-y-1">
-                            <h3 class="text-sm font-medium">{{ t("deckRecommend.options.dataOverrides.title") }}</h3>
-                            <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.dataOverrides.description") }}</p>
-                          </div>
-                          <div class="grid gap-3 @sm:grid-cols-2">
-                            <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.filters.areaItemLevel") }}</Label>
-                              <Select
-                                :model-value="areaItemLevelInput === '' ? 'default' : String(areaItemLevelInput)"
-                                :disabled="runner.running.value"
-                                @update:model-value="updateAreaItemLevelInput"
-                              >
-                                <SelectTrigger class="w-full">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem v-for="option in areaItemLevelOptions" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.filters.characterRank") }}</Label>
-                              <Select
-                                :model-value="characterRankInput === '' ? 'default' : String(characterRankInput)"
-                                :disabled="runner.running.value || characterRankMax === 0"
-                                @update:model-value="updateCharacterRankInput"
-                              >
-                                <SelectTrigger class="w-full">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem v-for="option in characterRankLevelOptions" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.filters.mysekaiGateLevel") }}</Label>
-                              <Select
-                                :model-value="mysekaiGateLevelInput === '' ? 'default' : String(mysekaiGateLevelInput)"
-                                :disabled="runner.running.value || mysekaiGateMaxLevel === 0"
-                                @update:model-value="updateMysekaiGateLevelInput"
-                              >
-                                <SelectTrigger class="w-full">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem v-for="option in mysekaiGateLevelOptions" :key="option.value" :value="option.value">
-                                    {{ option.label }}
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.filters.mysekaiFixtureBonusRate") }}</Label>
-                              <Combobox
-                                :model-value="mysekaiFixtureBonusRateInput === '' ? 'default' : String(mysekaiFixtureBonusRateInput)"
-                                :options="mysekaiFixtureBonusRateComboboxOptions"
-                                :disabled="runner.running.value || mysekaiFixtureBonusCharacterOptions.length === 0"
-                                :placeholder="t('deckRecommend.options.filters.mysekaiFixtureBonusRateDefault')"
-                                :search-placeholder="t('deckRecommend.options.mysekaiFixtureBonusOverride.searchPlaceholder')"
-                                :empty-text="t('deckRecommend.options.mysekaiFixtureBonusOverride.emptySearch')"
-                                trigger-class="h-9"
-                                content-class="min-w-40 max-w-[calc(100vw-2rem)]"
-                                @update:model-value="updateMysekaiFixtureBonusRateInput"
-                              />
-                            </div>
-                          </div>
-                          <p v-if="areaItemLevel.invalid || characterRank.invalid || mysekaiGateLevel.invalid || mysekaiFixtureBonusRate.invalid" class="text-xs text-destructive">
-                            {{ t("deckRecommend.options.dataOverrides.invalid") }}
-                          </p>
-                        </section>
-                        <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
-                          <div class="space-y-1">
-                            <h3 class="text-sm font-medium">{{ t("deckRecommend.options.runParameters.title") }}</h3>
-                            <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.runParameters.description") }}</p>
-                          </div>
-                          <div class="grid gap-2">
-                            <Label>{{ t("deckRecommend.options.filters.boost") }}</Label>
-                            <Select :model-value="String(boostInput)" :disabled="runner.running.value" @update:model-value="updateBoostInput">
-                              <SelectTrigger class="w-full">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem v-for="option in boostOptions" :key="option.value" :value="option.value">
-                                  {{ option.label }}
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <p v-if="boost.invalid" class="text-xs text-destructive">
-                            {{ t("deckRecommend.options.runParameters.invalid") }}
-                          </p>
-                        </section>
-
-                        <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
-                          <div class="space-y-1">
-                            <h3 class="text-sm font-medium">{{ t("deckRecommend.options.multiLive.title") }}</h3>
-                            <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.multiLive.description") }}</p>
-                          </div>
-                          <div class="grid gap-3 @lg:grid-cols-3">
-                            <div class="grid gap-2">
-                              <Label for="deck-recommend-teammate-power">{{ t("deckRecommend.options.multiLive.teammatePower") }}</Label>
-                              <Input
-                                id="deck-recommend-teammate-power"
-                                v-model="multiLiveTeammatePowerInput"
-                                type="text"
-                                inputmode="numeric"
-                                :placeholder="t('deckRecommend.options.multiLive.followSelfPlaceholder')"
-                                :aria-invalid="isMultiLiveOptionsEnabled && multiLiveTeammatePower.invalid || undefined"
-                                :disabled="runner.running.value || !isMultiLiveOptionsEnabled"
-                              />
-                            </div>
-                            <div class="grid gap-2">
-                              <Label for="deck-recommend-teammate-score-up">{{ t("deckRecommend.options.multiLive.teammateScoreUp") }}</Label>
-                              <Input
-                                id="deck-recommend-teammate-score-up"
-                                v-model="multiLiveTeammateScoreUpInput"
-                                type="text"
-                                inputmode="numeric"
-                                :placeholder="t('deckRecommend.options.multiLive.followSelfPlaceholder')"
-                                :aria-invalid="isMultiLiveOptionsEnabled && multiLiveTeammateScoreUp.invalid || undefined"
-                                :disabled="runner.running.value || !isMultiLiveOptionsEnabled"
-                              />
-                            </div>
-                            <div class="grid gap-2">
-                              <Label for="deck-recommend-score-up-lower-bound">{{ t("deckRecommend.options.multiLive.scoreUpLowerBound") }}</Label>
-                              <Input
-                                id="deck-recommend-score-up-lower-bound"
-                                v-model="multiLiveScoreUpLowerBoundInput"
-                                type="text"
-                                inputmode="decimal"
-                                :placeholder="t('deckRecommend.options.multiLive.scoreUpLowerBoundPlaceholder')"
-                                :aria-invalid="isMultiLiveOptionsEnabled && multiLiveScoreUpLowerBound.invalid || undefined"
-                                :disabled="runner.running.value || !isMultiLiveOptionsEnabled"
-                              />
-                            </div>
-                          </div>
-                          <p v-if="!isMultiLiveOptionsEnabled" class="text-xs text-muted-foreground">
-                            {{ t("deckRecommend.options.multiLive.disabled") }}
-                          </p>
-                          <p
-                            v-else-if="multiLiveTeammatePower.invalid || multiLiveTeammateScoreUp.invalid || multiLiveScoreUpLowerBound.invalid"
-                            class="text-xs text-destructive"
-                          >
-                            {{ t("deckRecommend.options.multiLive.invalid") }}
-                          </p>
-                        </section>
-                      </div>
-                    </div>
-
-                    <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
-                      <div class="space-y-1">
-                        <h3 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.title") }}</h3>
-                        <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.constraints.description") }}</p>
-                      </div>
-                      <div class="grid gap-3">
-                        <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
-                          <span class="min-w-0 space-y-1">
-                            <span class="block font-medium">{{ t("deckRecommend.options.constraints.useCurrentDeck") }}</span>
-                            <span class="block text-xs leading-5 text-muted-foreground">
-                              {{ t("deckRecommend.options.constraints.useCurrentDeckDescription") }}
-                            </span>
-                          </span>
-                          <Switch
-                            v-model="useCurrentDeck"
-                            :aria-label="t('deckRecommend.options.constraints.useCurrentDeck')"
-                            :disabled="runner.running.value || recommendMode === 'challenge'"
-                          />
-                        </label>
-
-                        <div v-if="!isCurrentDeckEnabled" class="grid gap-3 @3xl:grid-cols-2">
-                          <div class="grid gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
-                            <div class="space-y-1">
-                              <h4 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.fixedGroup") }}</h4>
-                              <p class="text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.constraints.fixedGroupDescription") }}
-                              </p>
-                            </div>
-                            <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.constraints.fixedCards") }}</Label>
-                              <CardMultiPicker
-                                v-model="fixedCardIds"
-                                :card-options="cardOptions"
-                                :disabled="runner.running.value || isCurrentDeckEnabled"
-                                :max-cards="5"
-                                unique-character
-                                :placeholder="t('deckRecommend.options.constraints.fixedCardSelectPlaceholder')"
-                              />
-                            </div>
-                            <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.constraints.fixedCharacters") }}</Label>
-                              <CharacterMultiPicker
-                                v-model="fixedCharacterIds"
-                                :region="dataRegion"
-                                :max-characters="5"
-                                :disabled="runner.running.value || recommendMode === 'challenge' || isCurrentDeckEnabled"
-                                :placeholder="t('deckRecommend.options.constraints.characterSelectPlaceholder')"
-                              />
-                            </div>
-                          </div>
-                          <div class="grid content-start gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
-                            <div class="space-y-1">
-                              <h4 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.excludedGroup") }}</h4>
-                              <p class="text-xs leading-5 text-muted-foreground">
-                                {{ t("deckRecommend.options.constraints.excludedGroupDescription") }}
-                              </p>
-                            </div>
-                            <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.constraints.excludedCards") }}</Label>
-                              <CardMultiPicker
-                                v-model="excludedCardIds"
-                                :card-options="cardOptions"
-                                :disabled="runner.running.value"
-                                :placeholder="t('deckRecommend.options.constraints.excludedCardSelectPlaceholder')"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <p v-if="recommendMode === 'challenge'" class="text-xs text-muted-foreground">
-                        {{ t("deckRecommend.options.constraints.challengeHint") }}
-                      </p>
-                      <p v-else-if="isCurrentDeckEnabled" class="text-xs text-muted-foreground">
-                        {{ t("deckRecommend.options.constraints.currentDeckHint") }}
-                      </p>
-                    </section>
-
-              </div>
-            </section>
+            <DeckAdvancedSection v-model:open="advancedConfigOpen" />
 
             <DeckExpertSheet v-model:open="expertConfigOpen" />
 

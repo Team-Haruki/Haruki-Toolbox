@@ -1,14 +1,22 @@
 import { inject, provide, type ComputedRef, type InjectionKey, type Ref } from "vue"
 import type { AcceptableValue } from "reka-ui"
+import type { SekaiRegion } from "@/types"
 import type { LazyOverrideComboboxOption } from "../components/LazyOverrideCombobox.vue"
 import type { DeckRecommendAreaItemKind, DeckRecommendAreaItemOption } from "../lib/area-item-options"
 import type { DeckRecommendMasterCardOption } from "../lib/card-options"
 import type { CharacterOption, CharacterRankOption, MysekaiGateOption } from "../lib/master-options"
 import type {
+  DeckRecommendEventAttr,
+  DeckRecommendMode,
   DeckRecommendSkillOrderStrategy,
   DeckRecommendSkillReferenceStrategy,
+  DeckRecommendUnitType,
 } from "../lib/recommend-options"
+import type { CardTrainingConfig } from "../lib/training-config"
 import type { DeckRecommendSingleCardOverride } from "../lib/user-data-preparation"
+
+type SelectOption<T extends string = string> = { value: T; label: string }
+type NumericInput = Ref<string | number>
 
 export type AreaItemOverrideSectionView = {
   kind: DeckRecommendAreaItemKind
@@ -70,6 +78,52 @@ export type DeckRecommendFormContext = {
   resultLimitInvalid: ComputedRef<boolean>
   engineTimeoutInvalid: ComputedRef<boolean>
   singleCardOverrides: Ref<DeckRecommendSingleCardOverride[]>
+
+  // Advanced section
+  recommendMode: Ref<DeckRecommendMode>
+  dataRegion: Ref<SekaiRegion>
+  trainingConfig: Ref<CardTrainingConfig[]>
+  unitFilters: Ref<DeckRecommendUnitType[]>
+  unitFilterOptions: ComputedRef<Array<SelectOption<DeckRecommendUnitType>>>
+  toggleUnitFilter: (value: DeckRecommendUnitType, checked: boolean) => void
+  attrFilters: Ref<DeckRecommendEventAttr[]>
+  eventAttrOptions: ComputedRef<Array<SelectOption<DeckRecommendEventAttr>>>
+  toggleAttrFilter: (value: DeckRecommendEventAttr, checked: boolean) => void
+  filterSelectionLabel: (count: number) => string
+  characterFilters: Ref<number[]>
+  characterFilterMaxCount: ComputedRef<number>
+  characterFilterMinCount: number
+  hasCharacterFilterError: ComputedRef<boolean>
+  areaItemLevelInput: NumericInput
+  updateAreaItemLevelInput: (value: AcceptableValue) => void
+  areaItemLevelOptions: ComputedRef<SelectOption[]>
+  characterRankInput: NumericInput
+  updateCharacterRankInput: (value: AcceptableValue) => void
+  characterRankLevelOptions: ComputedRef<SelectOption[]>
+  characterRankMax: ComputedRef<number>
+  mysekaiGateLevelInput: NumericInput
+  updateMysekaiGateLevelInput: (value: AcceptableValue) => void
+  mysekaiGateLevelOptions: ComputedRef<SelectOption[]>
+  mysekaiGateMaxLevel: ComputedRef<number>
+  mysekaiFixtureBonusRateInput: NumericInput
+  updateMysekaiFixtureBonusRateInput: (value: string | null) => void
+  dataOverridesInvalid: ComputedRef<boolean>
+  boostInput: NumericInput
+  updateBoostInput: (value: AcceptableValue) => void
+  boostOptions: ComputedRef<SelectOption[]>
+  boostInvalid: ComputedRef<boolean>
+  isMultiLiveOptionsEnabled: ComputedRef<boolean>
+  multiLiveTeammatePowerInput: NumericInput
+  multiLiveTeammateScoreUpInput: NumericInput
+  multiLiveScoreUpLowerBoundInput: NumericInput
+  multiLiveTeammatePowerInvalid: ComputedRef<boolean>
+  multiLiveTeammateScoreUpInvalid: ComputedRef<boolean>
+  multiLiveScoreUpLowerBoundInvalid: ComputedRef<boolean>
+  useCurrentDeck: Ref<boolean>
+  isCurrentDeckEnabled: ComputedRef<boolean>
+  fixedCardIds: Ref<number[]>
+  fixedCharacterIds: Ref<number[]>
+  excludedCardIds: Ref<number[]>
 }
 
 const deckRecommendFormContextKey: InjectionKey<DeckRecommendFormContext> = Symbol("deck-recommend-form-context")
