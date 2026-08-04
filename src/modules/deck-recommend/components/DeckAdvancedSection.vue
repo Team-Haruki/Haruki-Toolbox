@@ -78,7 +78,7 @@ const {
 </script>
 
 <template>
-            <section class="grid min-w-0 gap-3 rounded-md border bg-muted/10 p-2.5 sm:p-3">
+            <section class="grid min-w-0 gap-3 border-t pt-4">
               <button
                 type="button"
                 class="flex w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
@@ -87,8 +87,8 @@ const {
                 @click="open = !open"
               >
                     <span class="space-y-1">
-                      <span class="flex items-center gap-2 text-sm font-semibold">
-                        <LucideSettings2 class="size-4" />
+                      <span class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <LucideSettings2 class="size-3.5" />
                         {{ t("deckRecommend.layers.advanced.title") }}
                       </span>
                       <span class="block text-xs font-normal text-muted-foreground">
@@ -112,8 +112,8 @@ const {
                       <CardTrainingConfigTable v-model="trainingConfig" />
                     </section>
 
-                    <div class="grid gap-3 sm:gap-4">
-                      <div class="grid min-w-0 gap-3 sm:gap-4">
+                    <div class="grid gap-3 sm:gap-4 @5xl:grid-cols-2 @5xl:items-start">
+                      <div class="@container grid min-w-0 gap-3 sm:gap-4">
                         <section class="grid h-full content-start gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                           <div class="space-y-1">
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.filters.title") }}</h3>
@@ -210,7 +210,7 @@ const {
                         </section>
                       </div>
 
-                      <div class="grid min-w-0 gap-3 sm:gap-4">
+                      <div class="@container grid min-w-0 gap-3 sm:gap-4">
                         <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                           <div class="space-y-1">
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.dataOverrides.title") }}</h3>

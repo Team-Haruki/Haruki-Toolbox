@@ -3170,6 +3170,10 @@ export const zhCN = {
       clearDialogCancel: "取消",
       clearDialogConfirm: "确认清除",
     },
+    summaryBar: {
+      edit: "编辑配置",
+      rerun: "重新推荐",
+    },
     form: {
       account: "账号",
       accountPlaceholder: "请选择已绑定账号",
@@ -3235,6 +3239,10 @@ export const zhCN = {
         title: "专家配置",
         description: "调整技能策略、支援假设、引擎超时与单卡精细覆盖。",
       },
+    },
+    groups: {
+      accountTarget: "账号与目标",
+      musicAlgorithm: "歌曲与算法",
     },
     modes: {
       event: "活动组卡",
@@ -3561,7 +3569,7 @@ export const zhCN = {
     result: {
       title: "推荐结果",
       description: "推荐完成后会在这里显示卡组结果。",
-      idlePlaceholder: "完成左侧配置后点击「开始推荐」，推荐卡组会显示在这里。",
+      idlePlaceholder: "完成上方配置后点击「开始推荐」，推荐卡组会显示在这里。",
       actions: {
         compare: "对比",
         compareTitle: "卡组对比",

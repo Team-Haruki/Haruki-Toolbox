@@ -101,14 +101,13 @@ const runnerPhaseIndex = computed(() => {
   return phase != null ? (RUNNER_PHASE_STEPS as readonly string[]).indexOf(phase) : -1
 })
 
-const resultTimingItems = computed<Array<{ key: string; label: string; elapsedMs: number; class: string }>>(() => {
-  const items: Array<{ key: string; label: string; elapsedMs: number; class: string }> = []
+const resultTimingItems = computed<Array<{ key: string; label: string; elapsedMs: number }>>(() => {
+  const items: Array<{ key: string; label: string; elapsedMs: number }> = []
   if (runner.dataElapsedMs.value != null) {
     items.push({
       key: "data",
       label: t("deckRecommend.result.dataElapsed"),
       elapsedMs: runner.dataElapsedMs.value,
-      class: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200",
     })
   }
   if (runner.engineDataElapsedMs.value != null) {
@@ -116,7 +115,6 @@ const resultTimingItems = computed<Array<{ key: string; label: string; elapsedMs
       key: "engine-data",
       label: t("deckRecommend.result.engineDataElapsed"),
       elapsedMs: runner.engineDataElapsedMs.value,
-      class: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200",
     })
   }
   if (runner.recommendElapsedMs.value != null) {
@@ -124,7 +122,6 @@ const resultTimingItems = computed<Array<{ key: string; label: string; elapsedMs
       key: "recommend",
       label: recommendElapsedTimingLabel(t, runner.resultExecutionMode.value),
       elapsedMs: runner.recommendElapsedMs.value,
-      class: "border-lime-200 bg-lime-50 text-lime-800 dark:border-lime-500/30 dark:bg-lime-500/10 dark:text-lime-200",
     })
   }
 
@@ -312,36 +309,27 @@ function formatPercentValue(value: number) {
             </div>
           </CardHeader>
           <CardContent class="space-y-2 px-2 pb-2 sm:px-4 sm:pb-4 xl:space-y-3 xl:px-6 xl:pb-6">
-            <div v-if="resultTimingItems.length > 0" class="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <div
+              v-if="resultTimingItems.length > 0 || runner.algorithmTimings.value.length > 0"
+              class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"
+            >
               <span
                 v-for="item in resultTimingItems"
                 :key="item.key"
-                :class="[
-                  'inline-flex items-baseline gap-1 rounded-md border px-1.5 py-1 font-medium sm:px-2',
-                  item.class,
-                ]"
+                class="inline-flex items-baseline gap-1"
               >
-                <span>{{ item.label }}</span>
-                <span class="rounded bg-background/80 px-1 font-mono text-sm font-bold text-foreground shadow-sm">
-                  {{ item.elapsedMs }}
-                </span>
-                <span>ms</span>
+                {{ item.label }}
+                <span class="font-mono font-medium text-foreground/80">{{ item.elapsedMs }}</span>
+                ms
               </span>
-            </div>
-            <div v-if="runner.algorithmTimings.value.length > 0" class="flex flex-wrap gap-2 text-xs text-muted-foreground">
               <span
                 v-for="item in runner.algorithmTimings.value"
                 :key="item.algorithm"
-                :class="[
-                  'inline-flex items-baseline gap-1 rounded-md border px-1.5 py-1 font-medium sm:px-2',
-                  algorithmTagClass(item.algorithm),
-                ]"
+                class="inline-flex items-baseline gap-1"
               >
-                <span>{{ algorithmLabel(item.algorithm) }}</span>
-                <span class="rounded bg-background/80 px-1 font-mono text-sm font-bold text-foreground shadow-sm">
-                  {{ item.elapsedMs }}
-                </span>
-                <span>ms</span>
+                {{ algorithmLabel(item.algorithm) }}
+                <span class="font-mono font-medium text-foreground/80">{{ item.elapsedMs }}</span>
+                ms
               </span>
             </div>
             <div v-if="runner.error.value" class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
@@ -555,19 +543,19 @@ function formatPercentValue(value: number) {
                             <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground">
                               {{ t("deckRecommend.result.cardTotalPowerShort", { value: formatInteger(cardView.card.total_power) }) }}
                             </span>
-                            <span class="rounded-md bg-violet-50 px-1.5 py-0.5 font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
+                            <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground/80">
                               {{ t("deckRecommend.result.skillLevel", { value: cardView.card.skill_level }) }}
                             </span>
-                            <span class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200">
+                            <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground/80">
                               {{ t("deckRecommend.result.skillScoreUpShort", { value: cardView.card.skill_score_up }) }}
                             </span>
                             <span
                               v-if="cardView.card.skill_life_recovery > 0"
-                              class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200"
+                              class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground/80"
                             >
                               {{ t("deckRecommend.result.skillLifeRecoveryShort", { value: cardView.card.skill_life_recovery }) }}
                             </span>
-                            <span class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200">
+                            <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground/80">
                               {{ t("deckRecommend.result.cardEventBonusShort", { value: cardView.card.event_bonus_rate }) }}
                             </span>
                             <span
@@ -605,7 +593,7 @@ function formatPercentValue(value: number) {
                             />
                           </div>
                           <div class="flex flex-wrap items-center justify-center gap-1.5 text-xs">
-                            <span class="rounded-md bg-rose-50 px-1.5 py-0.5 font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-200">
+                            <span class="rounded-md bg-muted/50 px-1.5 py-0.5 font-medium text-foreground/80">
                               {{ formatPercentValue(supportCardView.card.bonus) }}%
                             </span>
                             <span class="font-mono text-muted-foreground">

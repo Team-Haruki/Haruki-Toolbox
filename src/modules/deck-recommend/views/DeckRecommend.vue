@@ -4,7 +4,6 @@ import type { AcceptableValue } from "reka-ui"
 import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import {
-  LucideGamepad2,
   LucidePlay,
   LucideSave,
   LucideSettings2,
@@ -26,9 +25,7 @@ import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import {
   Dialog,
@@ -225,6 +222,7 @@ const characterRankOverrideOpen = ref(false)
 const mysekaiGateOverrideOpen = ref(false)
 const mysekaiFixtureBonusOverrideOpen = ref(false)
 const clearConfigConfirmOpen = ref(false)
+const configCollapsed = ref(false)
 const trainingConfig = ref(initialSavedConfig.trainingConfig ?? createDefaultCardTrainingConfig())
 const characterOptions = useCharacterOptions(dataRegion)
 const worldBloomCharacters = useWorldBloomCharacterOptions(dataRegion, selectedEventId)
@@ -734,6 +732,34 @@ const executionModeOptions = computed<Array<{ value: DeckRecommendExecutionMode;
   { value: "sequential", label: t("deckRecommend.executionModes.sequential") },
   { value: "parallel", label: t("deckRecommend.executionModes.parallel") },
 ])
+
+const configSummaryItems = computed<string[]>(() => {
+  const items: string[] = []
+  const mode = modeOptions.value.find((option) => option.value === recommendMode.value)
+  if (mode) {
+    items.push(mode.label)
+  }
+  if (selectedAccountLabel.value) {
+    items.push(selectedAccountLabel.value)
+  }
+  items.push(resolveSekaiRegionLabel(dataRegion.value, t))
+  if (showRecommendTargetSelect.value && activeRecommendTargetLabel.value) {
+    items.push(activeRecommendTargetLabel.value)
+  }
+  if (showLiveTypeSelect.value) {
+    const live = liveTypeOptions.value.find((option) => option.value === liveType.value)
+    if (live) {
+      items.push(live.label)
+    }
+  }
+  const algorithmLabels = activeAlgorithms.value
+    .map((value) => algorithmOptions.value.find((option) => option.value === value)?.label)
+    .filter((label): label is string => Boolean(label))
+  if (algorithmLabels.length > 0) {
+    items.push(algorithmLabels.join(" + "))
+  }
+  return items.filter((item) => item.length > 0)
+})
 
 const eventSimulationModeOptions = computed<Array<{ value: DeckRecommendEventSimulationMode; label: string }>>(() => [
   { value: "marathon", label: t("deckRecommend.eventTypes.marathon") },
@@ -1805,6 +1831,7 @@ function normalizeRouteMusicDifficulty(value: string | null): string | null {
 }
 
 async function runRecommend() {
+  configCollapsed.value = true
   try {
     await runner.run({
       account: selectedAccount.value,
@@ -1857,6 +1884,7 @@ async function runRecommend() {
     })
     toast.success(t("deckRecommend.toast.runSuccessTitle"))
   } catch (error) {
+    configCollapsed.value = false
     toast.error(t("deckRecommend.toast.runFailedTitle"), {
       description: runner.error.value ?? (error instanceof Error ? error.message : String(error)),
     })
@@ -2345,40 +2373,31 @@ provideDeckRecommendFormContext({
 <template>
   <div class="flex w-full flex-1 flex-col px-0 py-4">
     <div class="mx-auto w-full max-w-[100rem] space-y-3 sm:space-y-4">
-      <div class="grid items-start gap-3 sm:gap-4 xl:grid-cols-[minmax(23rem,26rem)_minmax(0,1fr)]">
-      <Card class="min-w-0 gap-0 rounded-lg py-0 xl:sticky xl:top-[4.25rem] xl:flex xl:max-h-[calc(100vh-5.25rem)] xl:flex-col xl:overflow-hidden">
-          <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
-            <CardTitle class="flex items-center gap-2 text-base">
-              <LucideGamepad2 class="size-5" />
-              {{ t("deckRecommend.title") }}
-            </CardTitle>
-            <CardDescription class="text-xs">{{ t("deckRecommend.description") }}</CardDescription>
-            <Tabs :model-value="recommendMode" class="w-full" @update:model-value="updateRecommendMode">
+      <div class="flex gap-2 rounded-md border border-amber-200 bg-amber-50/90 px-3 py-2 text-sm text-amber-950 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:gap-3 sm:rounded-lg sm:px-4">
+        <LucideTriangleAlert class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-300" />
+        <p class="leading-6">
+          <strong class="font-bold text-amber-950 dark:text-amber-50">
+            {{ t("deckRecommend.notice.testingPrefix") }}
+          </strong><span>&#8288;{{ t("deckRecommend.notice.testingSuffix") }}</span>
+        </p>
+      </div>
+
+      <Card v-show="!configCollapsed" class="gap-0 rounded-lg py-0">
+        <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <Tabs :model-value="recommendMode" class="min-w-0" @update:model-value="updateRecommendMode">
               <TabsList class="h-auto max-w-full flex-wrap justify-start gap-1">
                 <TabsTrigger
                   v-for="option in modeOptions"
                   :key="option.value"
                   :value="option.value"
-                  class="h-7 flex-none px-2 text-xs @xl:px-3 @xl:text-sm"
+                  class="h-7 flex-none px-2 text-xs @2xl:px-3 @2xl:text-sm"
                 >
                   {{ option.label }}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-          </CardHeader>
-          <CardContent class="@container grid min-h-0 gap-3 px-3 py-3 sm:px-4 xl:flex-1 xl:overflow-y-auto">
-            <DeckBasicSection />
-
-            <DeckAdvancedSection v-model:open="advancedConfigOpen" />
-
-            <DeckExpertSheet v-model:open="expertConfigOpen" />
-
-          </CardContent>
-          <div class="grid gap-2 border-t px-3 py-3 sm:px-4">
-            <p class="text-xs text-muted-foreground">
-              {{ runner.running.value && runner.phase.value ? t(`deckRecommend.runner.phases.${runner.phase.value}`) : t("deckRecommend.runner.ready") }}
-            </p>
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="ml-auto flex flex-wrap items-center gap-2">
               <Button type="button" variant="outline" size="sm" @click="expertConfigOpen = true">
                 <LucideSettings2 class="size-4" />
                 {{ t("deckRecommend.layers.expert.title") }}
@@ -2387,43 +2406,66 @@ provideDeckRecommendFormContext({
                 <LucideSave class="size-4" />
                 {{ t("deckRecommend.configActions.save") }}
               </Button>
-              <Button type="button" variant="destructive" size="sm" :disabled="runner.running.value" @click="clearConfigConfirmOpen = true">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                :disabled="runner.running.value"
+                @click="clearConfigConfirmOpen = true"
+              >
                 <LucideTrash2 class="size-4" />
                 {{ t("deckRecommend.configActions.clear") }}
               </Button>
-              <Button type="button" class="min-w-28 flex-1" :disabled="!canRunRecommend" @click="runRecommend">
+              <Button type="button" size="sm" class="min-w-28" :disabled="!canRunRecommend" @click="runRecommend">
                 <LucidePlay class="size-4" />
                 {{ runner.running.value ? t("deckRecommend.runner.running") : t("deckRecommend.runner.run") }}
               </Button>
             </div>
           </div>
+        </CardHeader>
+        <CardContent class="@container grid gap-5 px-3 py-4 sm:px-5 sm:py-5">
+          <DeckBasicSection />
+
+          <DeckAdvancedSection v-model:open="advancedConfigOpen" />
+
+          <DeckExpertSheet v-model:open="expertConfigOpen" />
+        </CardContent>
       </Card>
 
-      <div class="grid min-w-0 content-start gap-3 sm:gap-4">
-        <div class="flex gap-2 rounded-md border border-amber-200 bg-amber-50/90 px-2 py-2 text-sm text-amber-950 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:gap-3 sm:rounded-lg sm:px-4 sm:py-3">
-          <LucideTriangleAlert class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-300" />
-          <p class="leading-6">
-            <strong class="font-bold text-amber-950 dark:text-amber-50">
-              {{ t("deckRecommend.notice.testingPrefix") }}
-            </strong><span>&#8288;{{ t("deckRecommend.notice.testingSuffix") }}</span>
-          </p>
+      <div
+        v-show="configCollapsed"
+        class="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg border bg-card px-3 py-2.5 shadow-sm sm:px-4"
+      >
+        <template v-for="(item, index) in configSummaryItems" :key="`${index}-${item}`">
+          <span v-if="index > 0" class="text-muted-foreground/50" aria-hidden="true">·</span>
+          <span class="text-sm text-foreground/90">{{ item }}</span>
+        </template>
+        <div class="ml-auto flex shrink-0 items-center gap-2">
+          <Button type="button" variant="outline" size="sm" @click="configCollapsed = false">
+            <LucideSettings2 class="size-4" />
+            {{ t("deckRecommend.summaryBar.edit") }}
+          </Button>
+          <Button type="button" size="sm" :disabled="!canRunRecommend" @click="runRecommend">
+            <LucidePlay class="size-4" />
+            {{ runner.running.value ? t("deckRecommend.runner.running") : t("deckRecommend.summaryBar.rerun") }}
+          </Button>
         </div>
+      </div>
 
-        <DeckResultPanel
-          :runner="runner"
-          :result-decks="resultDecks"
-          :warnings="eventRuleWarnings"
-          :mode="recommendMode"
-          :target="activeRecommendTarget"
-          :assume-world-bloom="assumeWorldBloomResult"
-          :data-region="dataRegion"
-          :account-server="selectedAccount?.server ?? null"
-          :event-id="selectedEventId"
-          :live-type="songRankingLiveType"
-          :song-ranking-available="songRankingAvailable"
-        />
-      </div>
-      </div>
+      <DeckResultPanel
+        :runner="runner"
+        :result-decks="resultDecks"
+        :warnings="eventRuleWarnings"
+        :mode="recommendMode"
+        :target="activeRecommendTarget"
+        :assume-world-bloom="assumeWorldBloomResult"
+        :data-region="dataRegion"
+        :account-server="selectedAccount?.server ?? null"
+        :event-id="selectedEventId"
+        :live-type="songRankingLiveType"
+        :song-ranking-available="songRankingAvailable"
+      />
 
       <div class="space-y-1.5 rounded-md border bg-muted/20 p-2.5 text-xs leading-6 text-muted-foreground sm:p-3 xl:p-4">
         <p>

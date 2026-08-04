@@ -3170,6 +3170,10 @@ export const enUS = {
       clearDialogCancel: "Cancel",
       clearDialogConfirm: "Clear config",
     },
+    summaryBar: {
+      edit: "Edit config",
+      rerun: "Run again",
+    },
     form: {
       account: "Account",
       accountPlaceholder: "Select a bound account",
@@ -3235,6 +3239,10 @@ export const enUS = {
         title: "Expert Settings",
         description: "Tune skill strategy, support assumptions, engine timeout, and precise single-card overrides.",
       },
+    },
+    groups: {
+      accountTarget: "Account & Target",
+      musicAlgorithm: "Music & Algorithms",
     },
     modes: {
       event: "Event deck",
@@ -3561,7 +3569,7 @@ export const enUS = {
     result: {
       title: "Recommendation Result",
       description: "Deck results will appear here after the recommendation finishes.",
-      idlePlaceholder: "Finish the configuration on the left and hit Start — recommended decks will appear here.",
+      idlePlaceholder: "Finish the configuration above and hit Start — recommended decks will appear here.",
       actions: {
         compare: "Compare",
         compareTitle: "Deck Comparison",
