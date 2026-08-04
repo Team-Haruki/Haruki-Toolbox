@@ -21,6 +21,7 @@ const SEKAI_MASTER_CDN_BASE_URL = "https://sekai-master-cdn.haruki.seiunx.com"
 export const SEKAI_ASSET_ENDPOINT_ROOTS: Record<SekaiAssetEndpointPreference, string> = {
   china: "https://sekai-assets.haruki.seiunx.com",
   global: "https://sekai-assets-bdf29c81.seiunx.net",
+  china_cdn: "https://toolbox-sekai-assets.haruki.seiunx.com",
 }
 const TOOLBOX_STATIC_IMAGE_BASE_URL = "https://images.haruki.seiunx.com/sekai-toolbox"
 const CDN_VERSION_REGIONS: readonly SekaiRegion[] = ["tw", "kr", "cn"]

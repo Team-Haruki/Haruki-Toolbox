@@ -23,6 +23,8 @@ export type ComboboxOption = {
   description?: string | null
   tags?: readonly ComboboxOptionTag[]
   iconUrl?: string | null
+  /** Swapped in when `iconUrl` fails to load (e.g. region asset mirror gaps). */
+  iconFallbackUrl?: string | null
   keywords?: readonly string[]
 }
 
@@ -60,6 +62,14 @@ const selectedOption = computed(() =>
   props.options.find((option) => option.value === props.modelValue) ?? null,
 )
 
+function handleIconError(event: Event, option: ComboboxOption) {
+  const image = event.target as HTMLImageElement | null
+  const fallback = option.iconFallbackUrl
+  if (image && fallback && image.src !== fallback) {
+    image.src = fallback
+  }
+}
+
 watch(
   () => props.disabled,
   (disabled) => {
@@ -93,6 +103,7 @@ function selectOption(value: string) {
             alt=""
             class="size-5 shrink-0 rounded-sm object-cover"
             loading="lazy"
+            @error="handleIconError($event, selectedOption)"
           >
           <component
             :is="props.iconComponent"
@@ -145,6 +156,7 @@ function selectOption(value: string) {
                 alt=""
                 class="size-6 shrink-0 rounded-sm object-cover"
                 loading="lazy"
+                @error="handleIconError($event, option)"
               >
               <span class="min-w-0 flex-1">
                 <span class="block truncate">{{ option.label }}</span>

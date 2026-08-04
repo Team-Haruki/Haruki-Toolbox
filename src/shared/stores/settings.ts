@@ -25,7 +25,7 @@ const SERVER_ENDPOINT_HEALTH_PATH = '/api/health'
 const ENDPOINT_TYPES: EndpointType[] = ['direct', 'cdn']
 const ASSET_ENDPOINT_TIMEOUT_MS = 5000
 const ASSET_ENDPOINT_PROBE_PATH = '/asset-probe.png'
-const ASSET_ENDPOINT_TYPES: SekaiAssetEndpointPreference[] = ['china', 'global']
+const ASSET_ENDPOINT_TYPES: SekaiAssetEndpointPreference[] = ['china', 'global', 'china_cdn']
 
 function normalizeEndpointUrl(value: unknown): string {
     if (typeof value !== 'string') {
@@ -50,7 +50,7 @@ function createEmptyEndpointLatencyResults(): Record<EndpointType, EndpointLaten
 }
 
 function normalizeAssetEndpointPreference(value: unknown): SekaiAssetEndpointPreference {
-    return value === 'global' ? 'global' : 'china'
+    return value === 'global' || value === 'china_cdn' ? value : 'china'
 }
 
 export const useSettingsStore = defineStore("settings", () => {

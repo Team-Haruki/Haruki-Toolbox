@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Switch } from "@/components/ui/switch"
 import {
   Select,
   SelectContent,
@@ -70,7 +69,6 @@ const {
 const filters = reactive(createDefaultCardFilters())
 const sortKey = ref<CardSortKey>("releaseDesc")
 const page = ref(1)
-const showTrained = ref(false)
 
 const selectedYear = computed<string>({
   get: () => (filters.year == null ? YEAR_ALL : String(filters.year)),
@@ -271,10 +269,6 @@ function nextPage() {
             </SelectContent>
           </Select>
 
-          <label class="ml-auto flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-            <Switch v-model="showTrained" />
-            {{ t("cards.list.showTrained") }}
-          </label>
         </div>
 
         <div v-if="characterGroups.length > 0" class="flex flex-wrap items-center gap-1.5">
@@ -451,15 +445,30 @@ function nextPage() {
           class="group flex flex-col gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <div :class="['relative', view.unreleased && blurUnreleased ? 'overflow-hidden rounded-md' : '']">
-            <CardThumbnail
-              :thumbnail="view.thumbnail"
-              :trained="showTrained"
-              :unreleased="view.unreleased && !blurUnreleased"
-              :title="view.card.prefix"
-              :class="view.unreleased && blurUnreleased
-                ? 'blur-md scale-105'
-                : 'transition-transform group-hover:scale-[1.02]'"
-            />
+            <div
+              :class="[
+                'flex justify-center gap-1 rounded-md bg-muted/30 p-1 ring-1 ring-border/60',
+                view.unreleased && blurUnreleased
+                  ? 'blur-md scale-105'
+                  : 'transition-transform group-hover:scale-[1.02]',
+              ]"
+            >
+              <CardThumbnail
+                :thumbnail="view.thumbnail"
+                :trained="false"
+                :unreleased="view.unreleased && !blurUnreleased"
+                :title="view.card.prefix"
+                class="max-w-[calc(50%-0.125rem)]"
+              />
+              <CardThumbnail
+                v-if="view.thumbnail.hasTrainedArt"
+                :thumbnail="view.thumbnail"
+                :trained="true"
+                :unreleased="view.unreleased && !blurUnreleased"
+                :title="view.card.prefix"
+                class="max-w-[calc(50%-0.125rem)]"
+              />
+            </div>
             <span
               v-if="view.unreleased && blurUnreleased"
               class="absolute right-1 top-1 rounded bg-background/80 px-1.5 py-0.5 text-xs font-semibold"

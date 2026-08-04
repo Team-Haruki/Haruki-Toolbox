@@ -151,6 +151,10 @@ function partComboboxOptions(slot: CostumeSlot): ComboboxOption[] {
     iconUrl: option.thumbnailAssetbundleName
       ? resolveCostumeThumbnailUrl(region.value, option.thumbnailAssetbundleName, assetEndpoint.value)
       : null,
+    // Regional asset mirrors miss some costume thumbnails; the jp mirror is the superset.
+    iconFallbackUrl: option.thumbnailAssetbundleName && region.value !== "jp"
+      ? resolveCostumeThumbnailUrl("jp", option.thumbnailAssetbundleName, assetEndpoint.value)
+      : null,
     keywords: [String(option.id), option.name, option.colorName].filter(Boolean),
   }))
 }

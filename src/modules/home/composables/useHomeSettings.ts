@@ -75,6 +75,7 @@ export function useHomeSettings() {
   const assetEndpointOptions = computed<ReadonlyArray<AssetEndpointOption>>(() => [
     createAssetEndpointOption("china", t("homeSettings.assetEndpoint.china"), Network),
     createAssetEndpointOption("global", t("homeSettings.assetEndpoint.global"), Globe2),
+    createAssetEndpointOption("china_cdn", t("homeSettings.assetEndpoint.chinaCdn"), CloudLightning),
   ])
 
   const themeOptions = computed<ReadonlyArray<ThemeOption>>(() => [

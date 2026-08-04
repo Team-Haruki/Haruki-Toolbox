@@ -80,6 +80,19 @@ function costumeThumbnailUrl(assetbundleName: string): string {
   return resolveCostumeThumbnailUrl(region.value, assetbundleName, assetEndpoint.value)
 }
 
+// Regional asset mirrors miss some costume thumbnails; retry from the jp mirror once.
+function handleCostumeThumbnailError(event: Event, assetbundleName: string) {
+  const image = event.target as HTMLImageElement | null
+  if (!image || region.value === "jp") {
+    return
+  }
+
+  const fallback = resolveCostumeThumbnailUrl("jp", assetbundleName, assetEndpoint.value)
+  if (image.src !== fallback) {
+    image.src = fallback
+  }
+}
+
 const card = computed(() => cards.value.find((candidate) => candidate.id === cardIdNumber.value) ?? null)
 
 const notFound = computed(() => !loading.value && !error.value && cards.value.length > 0 && card.value == null)
@@ -634,6 +647,7 @@ const canGoBack = computed(() => {
                     :alt="color.colorName || group.name"
                     class="size-full object-contain"
                     loading="lazy"
+                    @error="handleCostumeThumbnailError($event, color.assetbundleName)"
                   >
                 </button>
                 <figcaption
