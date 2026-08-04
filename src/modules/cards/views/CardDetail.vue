@@ -19,7 +19,7 @@ import type { SekaiUnit } from "@/shared/sekai/catalog"
 import { buildCatalogCardThumbnail, cardRarityHasTrainedArt, SEKAI_UNITS } from "@/shared/sekai/catalog"
 import { resolveCardAttrRoundIconUrl, resolveCostumeThumbnailUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
-import { CARD_FULL_ART_ASPECT_CLASS, resolveCardFullArtUrl } from "@/modules/cards/lib/card-assets"
+import { CARD_FULL_ART_ASPECT_CLASS, resolveCardFullArtUrls } from "@/modules/cards/lib/card-assets"
 import {
   excludeUnreleasedCards,
   isCardUnreleased,
@@ -93,12 +93,12 @@ watch([cardIdNumber, hasTrainedArt], () => {
   artTab.value = "normal"
 })
 
-const artUrl = computed(() => {
+const artCandidates = computed<string[]>(() => {
   if (!card.value) {
-    return null
+    return []
   }
 
-  return resolveCardFullArtUrl(
+  return resolveCardFullArtUrls(
     region.value,
     card.value.assetbundleName,
     artTab.value === "trained" && hasTrainedArt.value,
@@ -106,9 +106,21 @@ const artUrl = computed(() => {
   )
 })
 
-watch(artUrl, () => {
+const artCandidateIndex = ref(0)
+const artUrl = computed(() => artCandidates.value[artCandidateIndex.value] ?? null)
+
+watch(artCandidates, () => {
+  artCandidateIndex.value = 0
   artFailed.value = false
 })
+
+function handleArtError() {
+  if (artCandidateIndex.value < artCandidates.value.length - 1) {
+    artCandidateIndex.value += 1
+  } else {
+    artFailed.value = true
+  }
+}
 
 const thumbnail = computed(() => (card.value
   ? buildCatalogCardThumbnail(card.value, region.value, assetEndpoint.value)
@@ -363,7 +375,7 @@ const canGoBack = computed(() => {
             :alt="card.prefix ?? `#${card.id}`"
             :class="['absolute inset-0 h-full w-full object-cover', blurArt ? 'blur-md scale-105' : '']"
             loading="lazy"
-            @error="artFailed = true"
+            @error="handleArtError"
           >
           <div
             v-else

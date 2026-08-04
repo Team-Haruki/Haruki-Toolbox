@@ -27,3 +27,28 @@ export function resolveCardFullArtUrl(
   const path = resolveCardFullArtPath(assetbundleName, trained)
   return path ? resolveSekaiGameAssetUrl(region, path, preference) : null
 }
+
+/**
+ * Candidate URLs for the full card art, most-likely first. The en dump ships
+ * member art under `ondemand/` while every other region uses `startapp/`, so
+ * both prefixes are returned and the caller falls back on image error.
+ */
+export function resolveCardFullArtUrls(
+  region: SekaiRegion,
+  assetbundleName: string,
+  trained: boolean,
+  preference: SekaiAssetEndpointPreference = "china",
+): string[] {
+  const bundle = assetbundleName.trim()
+  if (!bundle) {
+    return []
+  }
+
+  const fileName = trained ? "card_after_training.png" : "card_normal.png"
+  const prefixes = region === "en"
+    ? ["ondemand", "startapp"]
+    : ["startapp", "ondemand"]
+  return prefixes.map((prefix) =>
+    resolveSekaiGameAssetUrl(region, `${prefix}/character/member/${bundle}/${fileName}`, preference),
+  )
+}
