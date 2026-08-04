@@ -196,7 +196,7 @@ const {
 
         <div class="grid content-start gap-3">
           <div class="grid gap-2">
-            <div class="flex items-center gap-1.5">
+            <div class="flex flex-wrap items-center gap-1.5">
               <Label>{{ t("deckRecommend.form.algorithm") }}</Label>
               <TooltipProvider>
                 <Tooltip>
@@ -216,6 +216,23 @@ const {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              <div class="ml-auto flex items-center gap-1.5">
+                <span class="text-xs text-muted-foreground">{{ t("deckRecommend.form.executionMode") }}</span>
+                <Select
+                  :model-value="executionMode"
+                  :disabled="running || activeAlgorithms.length <= 1"
+                  @update:model-value="updateExecutionMode"
+                >
+                  <SelectTrigger size="sm" class="h-7 gap-1 px-2 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="option in executionModeOptions" :key="option.value" :value="option.value">
+                      {{ option.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div class="flex min-h-9 flex-wrap items-center gap-x-5 gap-y-2">
               <label
@@ -233,19 +250,6 @@ const {
             </div>
           </div>
 
-          <div v-if="activeAlgorithms.length > 1" class="grid gap-2 @lg:max-w-72">
-            <Label>{{ t("deckRecommend.form.executionMode") }}</Label>
-            <Select :model-value="executionMode" :disabled="running" @update:model-value="updateExecutionMode">
-              <SelectTrigger class="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="option in executionModeOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </div>
     </div>
@@ -283,7 +287,7 @@ const {
           </p>
         </div>
 
-        <div v-if="showWorldBloomCharacterSelect" class="grid content-start gap-2">
+        <div v-if="showWorldBloomCharacterSelect" class="grid content-start gap-2 @3xl:grid-rows-[auto_1fr] @3xl:content-stretch">
           <Label>{{ t("deckRecommend.form.character") }}</Label>
           <CharacterSelect
             v-model="selectedCharacterId"
@@ -291,6 +295,7 @@ const {
             :allowed-character-ids="characterSelectAllowedIds"
             :allow-none-option="worldBloomCharacterSelectAllowNone"
             :disabled="!dataReady || worldBloomCharactersLoading"
+            trigger-class="@3xl:!h-full @3xl:min-h-9"
           />
         </div>
       </div>

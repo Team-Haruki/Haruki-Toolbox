@@ -79,6 +79,7 @@ import {
 } from "../lib/recommend-options"
 import { createDefaultCardTrainingConfig, type CardTrainingConfig } from "../lib/training-config"
 import {
+  DECK_RECOMMEND_ALGORITHMS,
   DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT,
   DECK_RECOMMEND_EVENT_ATTRS,
   DECK_RECOMMEND_UNITS,
@@ -135,7 +136,7 @@ type BoundAccountOption = {
 const DEFAULT_MUSIC_ID = "74"
 const DEFAULT_MUSIC_DIFFICULTY = "expert"
 const DECK_RECOMMEND_CARD_OPTION_MASTER_FILES = ["cards", "cardRarities", "gameCharacters", "gameCharacterUnits", "unitProfiles", "areaItems", "areaItemLevels", "areas", "characterRanks", "mysekaiGates", "mysekaiGateLevels"] as const
-const DEFAULT_EXECUTION_MODE: DeckRecommendExecutionMode = "sequential"
+const DEFAULT_EXECUTION_MODE: DeckRecommendExecutionMode = "parallel"
 const DECK_RECOMMEND_WORLD_BLOOM_TURNS = ["1", "2", "3"] as const
 const CHARACTER_FILTER_MIN_COUNT = 5
 const MYSEKAI_FIXTURE_BONUS_RATE_MAX = 100
@@ -500,13 +501,8 @@ const activeForcedLeaderCharacterId = computed(() =>
 const activeAlgorithms = computed<DeckRecommendAlgorithm[]>(() =>
   recommendMode.value === "bonus" ? ["dfs"] : selectedAlgorithms.value,
 )
-const isWorldBloomScenario = computed(() =>
-  isEventSimulationActive.value
-    ? simulatedEventMode.value === "world_bloom"
-    : selectedEventType.value === "world_bloom",
-)
-// v0.3.0 引擎下按场景选默认算法：分数目标走 DFS 精确搜索；WL 上界松、
-// 可能超时的场景走 DFS-GA；烤森走 RL；power/skill 等目标暂保持 DFS-GA
+// v0.3.0 引擎下按场景选默认算法：活动组卡默认全算法并行互补；
+// 挑战/加成走 DFS 精确搜索；烤森走 RL；其余目标暂保持 DFS-GA
 const scenarioDefaultAlgorithms = computed<DeckRecommendAlgorithm[]>(() => {
   if (recommendMode.value === "challenge" || recommendMode.value === "bonus") {
     return ["dfs"]
@@ -514,8 +510,8 @@ const scenarioDefaultAlgorithms = computed<DeckRecommendAlgorithm[]>(() => {
   if (recommendMode.value === "mysekai") {
     return ["rl"]
   }
-  if (recommendMode.value === "event" && isWorldBloomScenario.value) {
-    return ["dfs_ga"]
+  if (recommendMode.value === "event") {
+    return [...DECK_RECOMMEND_ALGORITHMS]
   }
   return activeRecommendTarget.value === "score" ? ["dfs"] : ["dfs_ga"]
 })
@@ -2397,7 +2393,7 @@ provideDeckRecommendFormContext({
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-            <div class="ml-auto flex flex-wrap items-center gap-2">
+            <div class="ml-auto hidden flex-wrap items-center gap-2 md:flex">
               <Button type="button" variant="outline" size="sm" @click="expertConfigOpen = true">
                 <LucideSettings2 class="size-4" />
                 {{ t("deckRecommend.layers.expert.title") }}
@@ -2431,6 +2427,33 @@ provideDeckRecommendFormContext({
 
           <DeckExpertSheet v-model:open="expertConfigOpen" />
         </CardContent>
+        <div class="grid gap-2 border-t px-3 py-3 md:hidden">
+          <div class="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" class="flex-1" @click="expertConfigOpen = true">
+              <LucideSettings2 class="size-4" />
+              {{ t("deckRecommend.layers.expert.title") }}
+            </Button>
+            <Button type="button" variant="outline" size="sm" class="flex-1" :disabled="runner.running.value" @click="saveDeckRecommendConfig">
+              <LucideSave class="size-4" />
+              {{ t("deckRecommend.configActions.save") }}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              :disabled="runner.running.value"
+              @click="clearConfigConfirmOpen = true"
+            >
+              <LucideTrash2 class="size-4" />
+              {{ t("deckRecommend.configActions.clear") }}
+            </Button>
+          </div>
+          <Button type="button" class="w-full" :disabled="!canRunRecommend" @click="runRecommend">
+            <LucidePlay class="size-4" />
+            {{ runner.running.value ? t("deckRecommend.runner.running") : t("deckRecommend.runner.run") }}
+          </Button>
+        </div>
       </Card>
 
       <div

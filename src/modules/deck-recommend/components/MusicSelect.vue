@@ -293,7 +293,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
       :disabled="props.disabled || !props.modelValue || difficultyOptions.length === 0"
       @update:model-value="handleDifficultyUpdate"
     >
-      <SelectTrigger class="w-full">
+      <SelectTrigger class="w-full md:!h-full md:min-h-9">
         <SelectValue :placeholder="t('deckRecommend.form.difficultyPlaceholder')" />
       </SelectTrigger>
       <SelectContent>
