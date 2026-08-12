@@ -13,7 +13,7 @@ test("music library route renders its list page", async ({ page }) => {
 test("card catalog route renders its list page", async ({ page }) => {
   await page.goto("/cards")
 
-  await expect(page.getByRole("heading", { name: /卡牌图鉴|Card catalog/ })).toBeVisible()
+  await expect(page.getByRole("heading", { name: /卡牌一览|Card catalog/ })).toBeVisible()
 })
 
 test("event catalog route renders its list page", async ({ page }) => {
