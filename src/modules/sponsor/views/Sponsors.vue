@@ -11,7 +11,6 @@ import {
 } from "lucide-vue-next"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useSponsors } from "@/modules/sponsor/composables/useSponsors"
 import type { SponsorSupporter } from "@/modules/sponsor/types"
@@ -223,31 +222,33 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
 <template>
   <div class="w-full flex-1 px-0 py-4">
     <div class="mx-auto flex w-full max-w-5xl flex-col gap-8">
+      <!-- Hero -->
       <section
-        class="relative overflow-hidden rounded-xl border border-pink-500/15 bg-background shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500"
+        class="relative overflow-hidden rounded-2xl border border-pink-500/20 bg-card motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500"
       >
-        <div class="absolute inset-0 bg-[linear-gradient(135deg,rgba(236,72,153,0.14),transparent_48%,rgba(34,211,238,0.10))]" aria-hidden="true" />
-        <div class="relative grid gap-8 px-5 py-8 md:grid-cols-[1.12fr_0.88fr] md:px-8 md:py-10">
-          <div class="flex min-w-0 flex-col justify-between gap-8">
-            <div class="space-y-4">
-              <div class="inline-flex items-center gap-2 rounded-md border border-pink-500/20 bg-pink-500/10 px-3 py-1 text-xs font-semibold text-pink-600 dark:text-pink-300">
-                <Sparkles class="h-3.5 w-3.5" />
-                {{ t("sponsor.hero.badge") }}
-              </div>
-              <div class="space-y-3">
-                <h1 class="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-                  {{ t("sponsor.hero.title") }}
-                </h1>
-                <p class="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                  {{ t("sponsor.hero.description") }}
-                </p>
-              </div>
+        <div
+          class="absolute inset-0 bg-[radial-gradient(48rem_20rem_at_10%_-30%,rgba(236,72,153,0.16),transparent_70%),radial-gradient(40rem_16rem_at_105%_120%,rgba(34,211,238,0.10),transparent_70%)]"
+          aria-hidden="true"
+        />
+        <div class="relative space-y-6 px-6 py-8 md:px-10 md:py-10">
+          <div class="space-y-4">
+            <div class="inline-flex items-center gap-2 rounded-full border border-pink-500/25 bg-pink-500/10 px-3 py-1 text-xs font-semibold text-pink-600 dark:text-pink-300">
+              <Sparkles class="h-3.5 w-3.5" />
+              {{ t("sponsor.hero.badge") }}
             </div>
+            <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">
+              {{ t("sponsor.hero.title") }}
+            </h1>
+            <p class="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+              {{ t("sponsor.hero.description") }}
+            </p>
+          </div>
 
+          <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div class="flex flex-wrap gap-3">
               <Button
                 as-child
-                class="h-11 bg-pink-600 px-5 font-semibold text-white shadow-sm transition-all duration-300 hover:bg-pink-700 hover:shadow-md"
+                class="h-11 bg-pink-600 px-5 font-semibold text-white transition-colors hover:bg-pink-700"
               >
                 <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
                   <Heart class="h-4 w-4 fill-current" />
@@ -255,120 +256,138 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
                   <ExternalLink class="h-4 w-4" />
                 </a>
               </Button>
-              <Button
-                variant="outline"
-                as-child
-                class="h-11 border-pink-500/25 bg-white/60 px-5 font-semibold text-foreground shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-pink-500/45 hover:bg-white/80 dark:bg-slate-950/30 dark:hover:bg-slate-950/45"
-              >
+              <Button variant="outline" as-child class="h-11 px-5 font-semibold">
                 <router-link to="/about">
                   <Info class="h-4 w-4" />
                   {{ t("sponsor.hero.aboutCta") }}
                 </router-link>
               </Button>
             </div>
-          </div>
 
-          <div class="grid content-end gap-3 sm:grid-cols-2 md:grid-cols-1">
-            <div
-              v-for="card in heroStats"
-              :key="card.key"
-              class="rounded-lg border border-white/60 bg-white/55 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/38"
-            >
-              <p class="text-xs font-medium text-muted-foreground">{{ card.label }}</p>
-              <p class="mt-1 text-xl font-bold tracking-tight text-foreground">{{ card.value }}</p>
-            </div>
+            <!-- Numeric strip -->
+            <dl class="flex items-stretch gap-6 sm:gap-8">
+              <div
+                v-for="(card, index) in heroStats"
+                :key="card.key"
+                :class="['min-w-0', index > 0 ? 'border-l pl-6 sm:pl-8' : '']"
+              >
+                <dt class="text-xs font-medium text-muted-foreground">{{ card.label }}</dt>
+                <dd class="mt-0.5 text-2xl font-extrabold tracking-tight tabular-nums">{{ card.value }}</dd>
+              </div>
+            </dl>
           </div>
         </div>
       </section>
 
-      <section class="space-y-4">
-        <div class="space-y-4">
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex min-w-0 items-center gap-2">
-              <Users class="h-5 w-5 text-primary" />
-              <h2 class="truncate text-xl font-bold tracking-tight">{{ t("sponsor.list.title") }}</h2>
-            </div>
-            <span
-              v-if="generatedAtLabel"
-              class="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex"
-            >
-              <CalendarDays class="h-3.5 w-3.5" />
-              {{ generatedAtLabel }}
-            </span>
-          </div>
-
-          <div v-if="loading" class="grid gap-3">
-            <Skeleton v-for="index in 5" :key="index" class="h-20 rounded-lg" />
-          </div>
-
-          <div
-            v-else-if="!hasSupporters"
-            class="rounded-xl border border-dashed bg-muted/20 px-5 py-10 text-center"
+      <!-- Supporters -->
+      <section class="space-y-5">
+        <header class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <h2 class="flex min-w-0 items-center gap-2 text-xl font-bold tracking-tight">
+            <Users class="h-5 w-5 text-primary" />
+            {{ t("sponsor.list.title") }}
+          </h2>
+          <span
+            v-if="generatedAtLabel"
+            class="inline-flex items-center gap-1 text-xs text-muted-foreground"
           >
-            <Heart class="mx-auto h-9 w-9 text-muted-foreground/60" />
-            <h3 class="mt-4 text-base font-semibold">
-              {{ loadFailed ? t("sponsor.empty.unavailableTitle") : t("sponsor.empty.title") }}
+            <CalendarDays class="h-3.5 w-3.5" />
+            {{ generatedAtLabel }}
+          </span>
+        </header>
+
+        <div v-if="loading" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Skeleton v-for="index in 6" :key="index" class="h-24 rounded-xl" />
+        </div>
+
+        <div
+          v-else-if="!hasSupporters"
+          class="rounded-xl border border-dashed bg-muted/20 px-5 py-12 text-center"
+        >
+          <Heart class="mx-auto h-9 w-9 text-muted-foreground/60" />
+          <h3 class="mt-4 text-base font-semibold">
+            {{ loadFailed ? t("sponsor.empty.unavailableTitle") : t("sponsor.empty.title") }}
+          </h3>
+          <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+            {{ loadFailed ? t("sponsor.empty.unavailableDescription") : t("sponsor.empty.description") }}
+          </p>
+        </div>
+
+        <div v-else class="space-y-8">
+          <div
+            v-for="section in sponsorSections"
+            :key="section.key"
+            class="space-y-3"
+          >
+            <h3 class="flex items-baseline gap-2 text-base font-semibold">
+              {{ section.title }}
+              <span class="text-sm font-normal tabular-nums text-muted-foreground">{{ section.supporters.length }}</span>
             </h3>
-            <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-              {{ loadFailed ? t("sponsor.empty.unavailableDescription") : t("sponsor.empty.description") }}
-            </p>
-          </div>
 
-          <div v-else class="space-y-8">
             <div
-              v-for="section in sponsorSections"
-              :key="section.key"
-              class="space-y-3"
+              v-if="section.supporters.length === 0"
+              class="rounded-xl border border-dashed bg-muted/20 px-5 py-6 text-center text-sm text-muted-foreground"
             >
-              <div class="space-y-1">
-                <h3 class="flex items-center gap-2 text-lg font-semibold text-foreground/85">
-                  <span class="h-2 w-2 rounded-full bg-primary" />
-                  {{ section.title }}
-                  <span class="text-sm font-normal text-muted-foreground">({{ section.supporters.length }})</span>
-                </h3>
-              </div>
+              {{ t(`sponsor.sections.${section.key}.empty`) }}
+            </div>
 
-              <div
-                v-if="section.supporters.length === 0"
-                class="rounded-xl border border-dashed bg-muted/20 px-5 py-8 text-center text-sm text-muted-foreground"
+            <!-- Past / manual supporters: quiet chip wall -->
+            <div v-else-if="section.key === 'manual'" class="flex flex-wrap gap-2">
+              <span
+                v-for="sponsor in section.supporters"
+                :key="sponsor.id"
+                class="inline-flex max-w-full items-center gap-2 rounded-full border bg-card py-1 pl-1 pr-3"
+                :title="`${sponsorSubtitle(sponsor)} · ${sponsorStatusLabel(sponsor)}`"
               >
-                {{ t(`sponsor.sections.${section.key}.empty`) }}
-              </div>
+                <Avatar class="h-6 w-6 border">
+                  <AvatarImage :src="sponsor.avatar" :alt="fallbackName(sponsor)" loading="lazy" decoding="async" />
+                  <AvatarFallback class="bg-muted text-[10px] font-semibold">
+                    {{ fallbackInitial(sponsor) }}
+                  </AvatarFallback>
+                </Avatar>
+                <span class="truncate text-xs font-medium">{{ fallbackName(sponsor) }}</span>
+              </span>
+            </div>
 
-              <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Card
-                  v-for="sponsor in section.supporters"
-                  :key="sponsor.id"
-                  class="h-full gap-2 border border-muted/50 bg-card/20 py-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-pink-500/45 hover:shadow-md"
+            <!-- Active / one-time supporters: cards -->
+            <div
+              v-else
+              :class="[
+                'grid grid-cols-1 gap-3',
+                section.key === 'duration' ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-4',
+              ]"
+            >
+              <article
+                v-for="sponsor in section.supporters"
+                :key="sponsor.id"
+                class="flex h-full flex-col gap-2.5 rounded-xl border bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-pink-500/45 hover:shadow-md"
+              >
+                <div class="flex items-center gap-3">
+                  <Avatar :class="section.key === 'duration' ? 'h-11 w-11 border' : 'h-9 w-9 border'">
+                    <AvatarImage :src="sponsor.avatar" :alt="fallbackName(sponsor)" loading="lazy" decoding="async" />
+                    <AvatarFallback class="bg-pink-500/5 text-sm font-semibold text-pink-600 dark:text-pink-300">
+                      {{ fallbackInitial(sponsor) }}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold">{{ fallbackName(sponsor) }}</p>
+                    <p class="truncate text-xs font-medium text-pink-600/90 dark:text-pink-300/90">
+                      {{ sponsorSubtitle(sponsor) }}
+                    </p>
+                  </div>
+                </div>
+                <p
+                  v-if="sponsorStatusLabel(sponsor) !== sponsorSubtitle(sponsor)"
+                  class="truncate text-xs text-muted-foreground"
                 >
-                  <CardHeader class="flex flex-row items-center gap-3 pb-1">
-                    <Avatar class="h-10 w-10 border border-muted/80 transition-colors duration-300">
-                      <AvatarImage :src="sponsor.avatar" :alt="fallbackName(sponsor)" />
-                      <AvatarFallback class="bg-pink-500/5 text-sm font-semibold text-pink-600 dark:text-pink-300">
-                        {{ fallbackInitial(sponsor) }}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div class="min-w-0 flex-1">
-                      <CardTitle class="truncate text-sm font-semibold">
-                        {{ fallbackName(sponsor) }}
-                      </CardTitle>
-                      <span class="block truncate text-xs font-medium text-muted-foreground/80">
-                        {{ sponsorSubtitle(sponsor) }}
-                      </span>
-                      <span class="mt-0.5 block truncate text-xs text-muted-foreground/70">
-                        {{ sponsorStatusLabel(sponsor) }}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent v-if="sponsor.message" class="pt-0">
-                    <div
-                      class="line-clamp-2 rounded-r border-l-2 border-pink-500/30 bg-pink-500/[0.02] py-0.5 pl-2 text-xs font-medium italic text-pink-600/80 dark:text-pink-300/80"
-                    >
-                      {{ sponsor.message }}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  {{ sponsorStatusLabel(sponsor) }}
+                </p>
+                <p
+                  v-if="sponsor.message"
+                  class="line-clamp-2 rounded-r border-l-2 border-pink-500/30 bg-pink-500/[0.03] py-0.5 pl-2 text-xs font-medium italic text-pink-600/80 dark:text-pink-300/80"
+                >
+                  {{ sponsor.message }}
+                </p>
+              </article>
             </div>
           </div>
         </div>

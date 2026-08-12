@@ -1,333 +1,297 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
-import { i18n } from "@/shared/i18n"
 import { useSettingsStore } from "@/shared/stores/settings"
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card"
-import { 
-  Avatar, 
-  AvatarFallback, 
-  AvatarImage 
-} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import {
-  Users,
   Code2,
   Crown,
+  ExternalLink,
+  Github,
   Heart,
-  ExternalLink
+  Users,
 } from "lucide-vue-next"
 
 const HARUKI_LOGO = `${import.meta.env.BASE_URL}assets/haruki.ico`
+const GITHUB_ORG_URL = "https://github.com/Team-Haruki"
+const AFDIAN_URL = "https://afdian.com/a/seiunx"
 
 const { t, te } = useI18n()
 const settingsStore = useSettingsStore()
 
-const getQuote = (memberKey: string) => {
+// Quotes exist only for some members; vue-i18n's fallback chain covers the
+// locale side, so presence is all we need to check.
+function memberQuote(memberKey: string): string {
   const quoteKey = `navigationPages.about.team.members.${memberKey}.quote`
-  
-  // 1. Try current locale
-  if (te(quoteKey)) {
-    const val = t(quoteKey)
-    if (val && val !== quoteKey && val !== "") {
-      return val
-    }
-  }
-  
-  // 2. Fallback to zh-CN (Chinese)
-  try {
-    const zhMessages = i18n.global.getLocaleMessage('zh-CN') as any
-    const quote = zhMessages?.navigationPages?.about?.team?.members?.[memberKey]?.quote
-    if (quote && quote !== "") {
-      return quote
-    }
-  } catch {
-    // ignore
-  }
-  
-  return ""
+  return te(quoteKey) ? t(quoteKey) : ""
 }
 
-const hasQuote = (memberKey: string) => {
-  return getQuote(memberKey) !== ""
-}
-
-const getAvatarUrl = (member: TeamMember) => {
+function memberAvatarUrl(member: TeamMember): string {
   if (member.avatar) {
-    if (member.avatar.startsWith('http://') || member.avatar.startsWith('https://')) {
+    if (member.avatar.startsWith("http://") || member.avatar.startsWith("https://")) {
       return member.avatar
     }
-    return `${settingsStore.currentEndpoint}${member.avatar.startsWith('/') ? '' : '/'}${member.avatar}`
+    return `${settingsStore.currentEndpoint}${member.avatar.startsWith("/") ? "" : "/"}${member.avatar}`
   }
-  return member.github ? `https://github.com/${member.github}.png` : ''
+  return member.github ? `https://github.com/${member.github}.png` : ""
 }
 
-// Developer team member structure
 interface TeamMember {
-  key: string // used for i18n lookup
+  key: string
   github?: string
   avatar?: string
-  roleKey: 'core' | 'doc' | 'contrib' | 'sponsor'
+  roleKey: "core" | "doc" | "contrib" | "sponsor"
   linkUrl: string
 }
 
 const teamMembers: TeamMember[] = [
-  // Core developers
   { key: "seiun", github: "MejiroRina", roleKey: "core", linkUrl: "https://seiun.io" },
   { key: "lingqian", github: "xuanmingLQ", roleKey: "core", linkUrl: "https://github.com/xuanmingLQ" },
   { key: "deseer", github: "Deseer", roleKey: "core", linkUrl: "https://github.com/Deseer" },
   { key: "storyxy", github: "storyxy3", roleKey: "core", linkUrl: "https://github.com/storyxy3" },
-  
-  // Documentation maintainers
   { key: "aposetles", github: "Aposetles", roleKey: "doc", linkUrl: "https://space.bilibili.com/178748972" },
   { key: "tianshinling", github: "YoisakiKnd", roleKey: "doc", linkUrl: "https://ty0.icu/about/" },
   { key: "yangzi", github: "IwasakiYouko", roleKey: "doc", linkUrl: "https://dick.plus" },
-  
-  // External collaborators
   { key: "watagashi", github: "watagashi-uni", roleKey: "contrib", linkUrl: "https://github.com/watagashi-uni" },
   { key: "middlered", github: "MiddleRed", roleKey: "contrib", linkUrl: "https://mid.red" },
   { key: "dnaroma", github: "DNARoma", roleKey: "contrib", linkUrl: "https://blog.dna.moe/about/" },
-  
-  // Gold Sponsors
-  { key: "yamamoto", github: "Yamamoto-2", roleKey: "sponsor", linkUrl: "https://github.com/Yamamoto-2" }
+  { key: "yamamoto", github: "Yamamoto-2", roleKey: "sponsor", linkUrl: "https://github.com/Yamamoto-2" },
 ]
 
-// Open source project structure
+const groupedMembers = {
+  core: teamMembers.filter((member) => member.roleKey === "core"),
+  doc: teamMembers.filter((member) => member.roleKey === "doc"),
+  contrib: teamMembers.filter((member) => member.roleKey === "contrib"),
+  sponsor: teamMembers.filter((member) => member.roleKey === "sponsor"),
+}
+
 interface Project {
-  key: string // used for i18n lookup
+  key: string
   tags: string[]
   githubUrl: string
 }
 
 const projectsList: Project[] = [
-  { key: "drawingEngine", tags: ["Python", "FastAPI", "Pillow"], githubUrl: "https://github.com/Team-Haruki/Haruki-Drawing-API" },
-  { key: "botBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL"], githubUrl: "https://github.com/Team-Haruki/Haruki-Cloud" },
+  { key: "toolbox", tags: ["TypeScript", "Vue 3", "Vite", "Shadcn-Vue", "Tailwind"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox" },
   { key: "toolboxBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL", "MongoDB"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox-Backend" },
+  { key: "botBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL"], githubUrl: "https://github.com/Team-Haruki/Haruki-Cloud" },
+  { key: "sekaiApi", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-API" },
+  { key: "eventTracker", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Event-Tracker" },
+  { key: "assetUpdater", tags: ["Rust", "Axum", "Tokio", "Cridecoder"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-Asset-Updater" },
   { key: "deckService", tags: ["Rust", "Axum", "Tokio"], githubUrl: "https://github.com/Team-Haruki/deck-service" },
   { key: "deckCpp", tags: ["C++", "yyjson"], githubUrl: "https://github.com/Team-Haruki/sekai-deck-recommend-cpp" },
   { key: "scoresRs", tags: ["Rust", "Skia"], githubUrl: "https://github.com/Team-Haruki/pjsekai-scores-rs" },
-  { key: "toolbox", tags: ["TypeScript", "Vue 3", "Vite", "Shadcn-Vue", "Tailwind"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox" },
-  { key: "assetUpdater", tags: ["Rust", "Axum", "Tokio", "Cridecoder"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-Asset-Updater" },
-  { key: "sekaiApi", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-API" },
-  { key: "eventTracker", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Event-Tracker" },
-  { key: "cridecoder", tags: ["Rust"], githubUrl: "https://github.com/Team-Haruki/cridecoder" }
+  { key: "drawingEngine", tags: ["Python", "FastAPI", "Pillow"], githubUrl: "https://github.com/Team-Haruki/Haruki-Drawing-API" },
+  { key: "cridecoder", tags: ["Rust"], githubUrl: "https://github.com/Team-Haruki/cridecoder" },
 ]
 
-const getTagClass = (tag: string) => {
-  const t = tag.toLowerCase()
-  if (t === "rust" || t === "cridecoder" || t === "axum" || t === "tokio" || t === "skia" || t === "seaorm") {
-    return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-  }
-  if (t === "go" || t === "entgo" || t === "fiber" || t === "postgresql" || t === "mongodb") {
-    return "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20"
-  }
-  if (t === "python" || t === "fastapi" || t === "pillow") {
-    return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20"
-  }
-  if (t === "c++" || t === "yyjson") {
-    return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
-  }
-  if (t === "vue 3" || t === "vite" || t === "tailwind" || t === "typescript" || t === "javascript" || t === "shadcn-vue") {
-    return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-  }
-  return "bg-secondary text-secondary-foreground border border-transparent"
+// One dot color per primary language keeps the tag row quiet; the first tag
+// of every project is its language.
+const LANGUAGE_DOT: Record<string, string> = {
+  "typescript": "bg-emerald-500",
+  "go": "bg-sky-500",
+  "rust": "bg-amber-500",
+  "c++": "bg-rose-500",
+  "python": "bg-yellow-500",
 }
 
-// Group members by role category for structured presentation
-const groupedMembers = {
-  core: teamMembers.filter(m => m.roleKey === 'core'),
-  doc: teamMembers.filter(m => m.roleKey === 'doc'),
-  contrib: teamMembers.filter(m => m.roleKey === 'contrib'),
-  sponsor: teamMembers.filter(m => m.roleKey === 'sponsor')
+function languageDotClass(project: Project): string {
+  return LANGUAGE_DOT[project.tags[0]?.toLowerCase() ?? ""] ?? "bg-muted-foreground"
 }
-
 </script>
 
 <template>
-  <div class="w-full flex-1 px-4 py-6 space-y-8 max-w-5xl mx-auto">
-    
-    <!-- Simplified typographic Header Section -->
-    <div class="space-y-3 max-w-3xl">
-      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
-        <Avatar class="w-9 h-9 md:w-10 md:h-10 shrink-0 ring-2 ring-primary/25">
-          <AvatarImage :src="HARUKI_LOGO" alt="Project Haruki" />
-          <AvatarFallback class="text-sm font-bold text-primary">PH</AvatarFallback>
-        </Avatar>
-        <span>{{ t("navigationPages.about.title") }}</span>
-      </h1>
-      <p class="text-base md:text-lg font-semibold text-primary">
-        {{ t("navigationPages.about.subtitle") }}
-      </p>
-      <div class="space-y-3 text-muted-foreground text-sm md:text-base leading-relaxed pt-1">
-        <p>{{ t("navigationPages.about.projectIntro.p1Before") }}<span class="font-semibold text-foreground">{{ t("navigationPages.about.projectIntro.p1Name") }}</span>{{ t("navigationPages.about.projectIntro.p1After") }}</p>
-        <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
-        <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
+  <div class="w-full flex-1 px-4 py-6 max-w-5xl mx-auto flex flex-col gap-10">
+    <!-- Hero -->
+    <section class="relative overflow-hidden rounded-2xl border bg-card px-6 py-8 md:px-10 md:py-10">
+      <div
+        class="absolute inset-0 bg-[radial-gradient(56rem_18rem_at_12%_-20%,color-mix(in_oklab,var(--primary)14%,transparent),transparent_70%)]"
+        aria-hidden="true"
+      />
+      <div class="relative space-y-5">
+        <div class="flex items-center gap-4">
+          <Avatar class="h-14 w-14 shrink-0 ring-2 ring-primary/25">
+            <AvatarImage :src="HARUKI_LOGO" alt="Project Haruki" />
+            <AvatarFallback class="text-base font-bold text-primary">PH</AvatarFallback>
+          </Avatar>
+          <div class="min-w-0">
+            <h1 class="text-3xl font-extrabold tracking-tight md:text-4xl">
+              {{ t("navigationPages.about.title") }}
+            </h1>
+            <p class="mt-1 text-sm font-semibold text-primary md:text-base">
+              {{ t("navigationPages.about.subtitle") }}
+            </p>
+          </div>
+        </div>
+
+        <div class="max-w-3xl space-y-2.5 text-sm leading-relaxed text-muted-foreground md:text-base">
+          <p>{{ t("navigationPages.about.projectIntro.p1Before") }}<span class="font-semibold text-foreground">{{ t("navigationPages.about.projectIntro.p1Name") }}</span>{{ t("navigationPages.about.projectIntro.p1After") }}</p>
+          <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
+          <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
+        </div>
+
+        <div class="flex flex-wrap gap-3 pt-1">
+          <Button as-child class="h-10 px-5 font-semibold">
+            <a :href="GITHUB_ORG_URL" target="_blank" rel="noopener noreferrer">
+              <Github class="h-4 w-4" />
+              Team-Haruki
+              <ExternalLink class="h-3.5 w-3.5" />
+            </a>
+          </Button>
+          <Button
+            as-child
+            variant="outline"
+            class="h-10 px-5 font-semibold border-pink-500/30 text-pink-600 hover:bg-pink-500/10 hover:text-pink-600 dark:text-pink-300 dark:hover:text-pink-300"
+          >
+            <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
+              <Heart class="h-4 w-4 fill-current" />
+              {{ t("navigationPages.about.support.afdianBtn") }}
+            </a>
+          </Button>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <Separator class="my-4" />
+    <!-- Team -->
+    <section class="space-y-5">
+      <header class="space-y-1">
+        <h2 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
+          <Users class="h-6 w-6 text-primary" />
+          {{ t("navigationPages.about.team.title") }}
+        </h2>
+        <p class="text-sm text-muted-foreground">
+          {{ t("navigationPages.about.team.subtitle") }}
+        </p>
+      </header>
 
-    <!-- Dev Team Section -->
-    <section class="space-y-4">
-      <div class="flex items-center gap-2 text-2xl font-bold tracking-tight">
-        <Users class="w-6 h-6 text-primary" />
-        <h2>{{ t("navigationPages.about.team.title") }}</h2>
-      </div>
-      
-      <p class="text-muted-foreground text-sm -mt-2">
-        {{ t("navigationPages.about.team.subtitle") }}
-      </p>
-
-      <div class="space-y-6">
-        <!-- Render each category -->
+      <div class="space-y-7">
         <div v-for="(group, key) in groupedMembers" :key="key" class="space-y-3">
-          <div class="space-y-1">
-            <h3 class="text-lg font-semibold text-foreground/85 flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-primary" />
+          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+            <h3 class="text-base font-semibold">
               {{ t(`navigationPages.about.team.roles.${key}`) }}
             </h3>
-            <p class="text-xs text-muted-foreground pl-4 leading-normal">
+            <p class="text-xs text-muted-foreground">
               {{ t(`navigationPages.about.team.roleDescs.${key}`) }}
             </p>
           </div>
-          
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <a
               v-for="member in group"
               :key="member.key"
               :href="member.linkUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="block group outline-none"
+              class="group flex h-full flex-col gap-2.5 rounded-xl border bg-card p-4 outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Card
-                class="h-full gap-2 border border-muted/50 bg-card/20 py-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer"
-              >
-                <CardHeader class="flex flex-row items-center gap-3 pb-1">
-                   <Avatar class="h-10 w-10 border border-muted/80 transition-colors duration-300 group-hover:border-primary">
-                    <AvatarImage 
-                      :src="getAvatarUrl(member)" 
-                      :alt="t(`navigationPages.about.team.members.${member.key}.name`)" 
+              <div class="flex items-center gap-3">
+                <Avatar class="h-10 w-10 border transition-colors duration-200 group-hover:border-primary/60">
+                  <AvatarImage
+                    :src="memberAvatarUrl(member)"
+                    :alt="t(`navigationPages.about.team.members.${member.key}.name`)"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <AvatarFallback class="bg-primary/5 text-sm font-semibold text-primary">
+                    {{ t(`navigationPages.about.team.members.${member.key}.name`).charAt(0) }}
+                  </AvatarFallback>
+                </Avatar>
+                <div class="min-w-0 flex-1">
+                  <p class="flex items-center gap-1 text-sm font-semibold transition-colors group-hover:text-primary">
+                    <span class="truncate">{{ t(`navigationPages.about.team.members.${member.key}.name`) }}</span>
+                    <Crown
+                      v-if="member.roleKey === 'sponsor'"
+                      class="h-3.5 w-3.5 shrink-0 text-amber-500 dark:text-amber-400"
                     />
-                    <AvatarFallback class="bg-primary/5 text-primary text-sm font-semibold">
-                      {{ t(`navigationPages.about.team.members.${member.key}.name`).charAt(0) }}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div class="flex-1 min-w-0">
-                    <CardTitle class="text-sm font-semibold group-hover:text-primary transition-colors flex items-center gap-1">
-                      <span class="truncate">{{ t(`navigationPages.about.team.members.${member.key}.name`) }}</span>
-                      <Crown
-                        v-if="member.roleKey === 'sponsor'"
-                        class="w-3.5 h-3.5 flex-shrink-0 text-amber-500 dark:text-amber-400"
-                        :title="t(`navigationPages.about.team.members.${member.key}.role`)"
-                      />
-                      <ExternalLink class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                    </CardTitle>
-                    <span class="text-xs text-muted-foreground/80 font-medium">
-                      {{ t(`navigationPages.about.team.members.${member.key}.role`) }}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent v-if="hasQuote(member.key)" class="pt-0">
-                  <div
-                    class="text-xs text-primary/80 italic border-l-2 border-primary/30 pl-2 py-0.5 line-clamp-2 font-medium bg-primary/[0.02] rounded-r"
-                  >
-                    {{ getQuote(member.key) }}
-                  </div>
-                </CardContent>
-              </Card>
+                    <ExternalLink class="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                  </p>
+                  <p class="truncate text-xs font-medium text-muted-foreground/80">
+                    {{ t(`navigationPages.about.team.members.${member.key}.role`) }}
+                  </p>
+                </div>
+              </div>
+              <p
+                v-if="memberQuote(member.key)"
+                class="line-clamp-2 rounded-r border-l-2 border-primary/30 bg-primary/[0.03] py-0.5 pl-2 text-xs font-medium italic text-primary/80"
+              >
+                {{ memberQuote(member.key) }}
+              </p>
             </a>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Open Source Projects Section -->
-    <section class="space-y-4">
-      <div class="flex items-center gap-2 text-2xl font-bold tracking-tight">
-        <Code2 class="w-6 h-6 text-primary" />
-        <h2>{{ t("navigationPages.about.projects.title") }}</h2>
-      </div>
+    <!-- Open source projects -->
+    <section class="space-y-5">
+      <header class="space-y-1">
+        <h2 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
+          <Code2 class="h-6 w-6 text-primary" />
+          {{ t("navigationPages.about.projects.title") }}
+        </h2>
+        <p class="text-sm text-muted-foreground">
+          {{ t("navigationPages.about.projects.subtitle") }}
+        </p>
+      </header>
 
-      <p class="text-muted-foreground text-sm -mt-2">
-        {{ t("navigationPages.about.projects.subtitle") }}
-      </p>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <a 
-          v-for="project in projectsList" 
+      <div class="overflow-hidden rounded-xl border bg-card">
+        <a
+          v-for="project in projectsList"
           :key="project.key"
-          :href="project.githubUrl" 
-          target="_blank" 
+          :href="project.githubUrl"
+          target="_blank"
           rel="noopener noreferrer"
-          class="block group outline-none"
+          class="group flex items-start gap-3 border-b px-4 py-3.5 outline-none transition-colors last:border-b-0 hover:bg-muted/40 focus-visible:bg-muted/40 sm:px-5"
         >
-          <Card class="h-full gap-3 border border-muted/50 bg-card/20 py-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer">
-            <CardHeader class="pb-1">
-              <div class="flex items-start justify-between gap-2">
-                <CardTitle class="text-base font-bold group-hover:text-primary transition-colors flex items-center gap-1.5 leading-snug">
-                  <span class="line-clamp-1">{{ t(`navigationPages.about.projects.list.${project.key}.name`) }}</span>
-                  <ExternalLink class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                </CardTitle>
-              </div>
-              
-              <!-- Tech tags -->
-              <div class="flex flex-wrap gap-1 mt-1.5">
-                <span 
-                  v-for="tag in project.tags" 
-                  :key="tag"
-                  :class="['text-[10px] px-1.5 py-0.5 rounded-md font-medium', getTagClass(tag)]"
-                >
-                  {{ tag }}
-                </span>
-              </div>
-            </CardHeader>
-            <CardContent class="pt-0">
-              <CardDescription class="text-xs line-clamp-3 leading-relaxed">
-                {{ t(`navigationPages.about.projects.list.${project.key}.desc`) }}
-              </CardDescription>
-            </CardContent>
-          </Card>
+          <span :class="['mt-1.5 h-2 w-2 shrink-0 rounded-full', languageDotClass(project)]" aria-hidden="true" />
+          <span class="min-w-0 flex-1">
+            <span class="flex flex-wrap items-baseline gap-x-2">
+              <span class="text-sm font-semibold transition-colors group-hover:text-primary">
+                {{ t(`navigationPages.about.projects.list.${project.key}.name`) }}
+              </span>
+              <span class="text-[11px] font-medium text-muted-foreground/70">
+                {{ project.tags.join(" · ") }}
+              </span>
+            </span>
+            <span class="mt-0.5 block text-xs leading-relaxed text-muted-foreground line-clamp-2 sm:line-clamp-1">
+              {{ t(`navigationPages.about.projects.list.${project.key}.desc`) }}
+            </span>
+          </span>
+          <ExternalLink class="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" />
         </a>
       </div>
     </section>
 
-    <!-- Support Section -->
-    <section class="space-y-3">
-      <div class="flex items-center gap-2 text-2xl font-bold tracking-tight">
-        <Heart class="w-6 h-6 text-primary" />
-        <h2>{{ t("navigationPages.about.support.title") }}</h2>
-      </div>
-      
-      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-1">
-        <p class="text-muted-foreground text-sm md:text-base leading-relaxed max-w-xl">
-          {{ t("navigationPages.about.support.desc") }}
-        </p>
+    <!-- Support band -->
+    <section class="relative overflow-hidden rounded-2xl border border-pink-500/20 bg-pink-500/[0.04] px-6 py-7 md:px-8">
+      <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div class="flex items-start gap-3">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-300">
+            <Heart class="h-5 w-5 fill-current" />
+          </span>
+          <div class="space-y-1">
+            <h2 class="text-lg font-bold tracking-tight">
+              {{ t("navigationPages.about.support.title") }}
+            </h2>
+            <p class="max-w-xl text-sm leading-relaxed text-muted-foreground">
+              {{ t("navigationPages.about.support.desc") }}
+            </p>
+          </div>
+        </div>
 
-        <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
-          <Button 
+        <div class="flex shrink-0 flex-col gap-3 sm:flex-row">
+          <Button
             as-child
-            class="bg-pink-600 hover:bg-pink-700 text-white font-semibold flex items-center justify-center gap-2 h-11 px-6 shadow-sm hover:shadow transition-all duration-300 hover:scale-[1.02]"
+            class="h-10 bg-pink-600 px-5 font-semibold text-white transition-colors hover:bg-pink-700"
           >
-            <a href="https://afdian.com/a/seiunx" target="_blank" rel="noopener noreferrer">
-              <Heart class="w-4 h-4 fill-current" />
+            <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
+              <Heart class="h-4 w-4 fill-current" />
               {{ t("navigationPages.about.support.afdianBtn") }}
             </a>
           </Button>
-
-          <Button 
-            variant="outline"
-            as-child
-            class="h-11 px-6 font-semibold flex items-center justify-center gap-2 border-muted/80 hover:bg-muted/30 transition-all duration-300 hover:scale-[1.02]"
-          >
+          <Button variant="outline" as-child class="h-10 px-5 font-semibold">
             <router-link to="/sponsors">
-              <Users class="w-4 h-4" />
+              <Users class="h-4 w-4" />
               {{ t("navigationPages.about.support.sponsorsBtn") }}
             </router-link>
           </Button>
