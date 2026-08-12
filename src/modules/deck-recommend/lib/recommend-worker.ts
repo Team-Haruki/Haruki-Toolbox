@@ -17,6 +17,24 @@ const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
 let enginePromise: Promise<SekaiDeckRecommendWasm> | null = null
 const loadedDataKeys = new Map<SekaiRegion, string>()
 
+// The engine reads a few optional master tables that the toolbox intentionally
+// does not ship (ingameNotes/ingameCombos are huge; eventHonorBonuses and the
+// mysekai fixture bonus limits are niche). It degrades gracefully when they are
+// absent but prints a "master data key not found" warning per key on every load,
+// which floods the console. Filter only these known-optional keys so genuinely
+// missing required tables still surface.
+const IGNORED_MISSING_MASTER_KEYS = [
+  "eventHonorBonuses",
+  "eventMysekaiFixtureGameCharacterPerformanceBonusLimits",
+  "ingameCombos",
+  "ingameNotes",
+]
+
+function isIgnoredEngineWarning(text: string): boolean {
+  return text.includes("master data key not found")
+    && IGNORED_MISSING_MASTER_KEYS.some((key) => text.includes(key))
+}
+
 workerScope.onmessage = (event: MessageEvent<DeckRecommendWorkerRequest>) => {
   void handleRequest(event.data)
 }
@@ -141,7 +159,17 @@ async function preloadEngine(requestId: string) {
 }
 
 function getEngine() {
-  enginePromise ??= createSekaiDeckRecommend({ wasmUrl })
+  enginePromise ??= createSekaiDeckRecommend({
+    wasmUrl,
+    moduleOptions: {
+      printErr: (text: string) => {
+        if (isIgnoredEngineWarning(text)) {
+          return
+        }
+        console.warn(text)
+      },
+    },
+  })
   return enginePromise
 }
 

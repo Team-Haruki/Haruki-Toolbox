@@ -1,10 +1,35 @@
 import { describe, expect, it } from "bun:test"
 import {
+  buildCostumeThumbnailAssetbundleName,
+  buildRuntimeCostumeNameMap,
   listRuntimeCostumeOptions,
   normalizeRuntimePartType,
   pickDefaultOptionId,
   resolveRoleDefaults,
 } from "./costume-options"
+
+describe("buildCostumeThumbnailAssetbundleName", () => {
+  it("keeps a real name that already carries a part suffix", () => {
+    expect(buildCostumeThumbnailAssetbundleName(2, "body", 1, "body_seifuku_a")).toBe("body_seifuku_a")
+  })
+
+  it("reconstructs the name from id/part/color when the master ships it empty (Nuverse)", () => {
+    // Verified against jp values: cn costume3dId 1002/1004/1006 map to these.
+    expect(buildCostumeThumbnailAssetbundleName(1002, "body", 1, "")).toBe("cos0001_body")
+    expect(buildCostumeThumbnailAssetbundleName(1004, "body", 2, "")).toBe("cos0001_body_01")
+    expect(buildCostumeThumbnailAssetbundleName(1006, "body", 3, "")).toBe("cos0001_body_02")
+    expect(buildCostumeThumbnailAssetbundleName(29001, "head", 1, "")).toBe("cos0029_head")
+  })
+
+  it("cannot reconstruct without a part type, so it returns the empty override", () => {
+    expect(buildCostumeThumbnailAssetbundleName(1002, "", 1, "")).toBe("")
+    expect(buildCostumeThumbnailAssetbundleName(1002, "  ", 1, "  ")).toBe("")
+  })
+
+  it("reconstructs from a blank (whitespace-only) override once a part type is known", () => {
+    expect(buildCostumeThumbnailAssetbundleName(1002, "body", 1, "  ")).toBe("cos0001_body")
+  })
+})
 
 const REGISTRY = {
   version: 1,
@@ -56,6 +81,20 @@ describe("listRuntimeCostumeOptions", () => {
 
   it("filters missing entries", () => {
     expect(listRuntimeCostumeOptions(REGISTRY, 1, "body").some((option) => option.id === 900)).toBe(false)
+  })
+})
+
+describe("buildRuntimeCostumeNameMap", () => {
+  it("maps every costume id to its name, keeping ambiguous heads that options drop", () => {
+    const names = buildRuntimeCostumeNameMap(REGISTRY, 1)
+    expect(names.get(2)).toEqual({ name: "制服", colorName: "赤" })
+    expect(names.get(29001)?.name).toBe("トゥインクル")
+    // id 500 is ambiguous, so listRuntimeCostumeOptions drops it — but its name
+    // must still be resolvable for display.
+    expect(listRuntimeCostumeOptions(REGISTRY, 1, "head").some((o) => o.id === 500)).toBe(false)
+    expect(names.get(500)?.name).toBe("曖昧")
+    // Other characters are excluded.
+    expect(names.has(9)).toBe(false)
   })
 })
 

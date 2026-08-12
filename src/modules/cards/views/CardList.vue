@@ -16,7 +16,6 @@ import {
   LucideChevronLeft,
   LucideChevronRight,
   LucidePackageOpen,
-  LucideRotateCcw,
   LucideSearch,
 } from "lucide-vue-next"
 import { SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
@@ -45,6 +44,7 @@ import {
 } from "@/modules/cards/lib/card-filter"
 import { useCardCatalog } from "@/modules/cards/composables/useCardCatalog"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
+import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
 
 const PAGE_SIZE = 60
 const YEAR_ALL = "all"
@@ -134,14 +134,6 @@ const pagedCardViews = computed(() => {
       unreleased: isCardUnreleased(card.releaseAt, now),
     }))
 })
-
-const hasActiveFilters = computed(() => filters.query.trim() !== ""
-  || filters.characterIds.length > 0
-  || filters.units.length > 0
-  || filters.attrs.length > 0
-  || filters.rarities.length > 0
-  || filters.supplyTypes.length > 0
-  || filters.year != null)
 
 watch([filters, sortKey, region, hideUnreleased], () => {
   page.value = 1
@@ -243,8 +235,12 @@ function nextPage() {
     </div>
 
     <!-- Filters -->
-    <Card>
-      <CardContent class="flex flex-col gap-3 py-4">
+    <CatalogFilterPanel
+      :title="t('cards.filter.title')"
+      :reset-label="t('cards.filter.clear')"
+      content-class="flex flex-col gap-3"
+      @reset="clearFilters"
+    >
         <div class="flex flex-wrap items-center gap-2">
           <Select v-model="selectedYear">
             <SelectTrigger class="h-8 w-28 text-sm" :aria-label="t('cards.filter.year')">
@@ -391,19 +387,8 @@ function nextPage() {
           >
             {{ t(`cards.supply.${supply}`) }}
           </button>
-          <Button
-            v-if="hasActiveFilters"
-            variant="ghost"
-            size="sm"
-            class="ml-auto h-7 gap-1 text-xs text-muted-foreground"
-            @click="clearFilters"
-          >
-            <LucideRotateCcw class="size-3.5" />
-            {{ t("cards.filter.clear") }}
-          </Button>
         </div>
-      </CardContent>
-    </Card>
+    </CatalogFilterPanel>
 
     <!-- Error -->
     <Card v-if="error && !loading">

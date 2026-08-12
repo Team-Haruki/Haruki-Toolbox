@@ -7,16 +7,8 @@ import {
   ArrowDown,
   ArrowUp,
   CalendarDays,
-  Library,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
@@ -286,15 +278,12 @@ function toNullableNumber(value: number | string | undefined | null): number | n
 <template>
   <div class="flex w-full flex-1 items-center justify-center px-0 py-4">
     <div class="mx-auto w-full max-w-6xl space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle class="flex flex-wrap items-center gap-2 text-lg">
-            <Library class="size-5" />
-            {{ t("musicLibrary.list.title") }}
-          </CardTitle>
-          <CardDescription>{{ t("musicLibrary.list.description") }}</CardDescription>
-        </CardHeader>
-        <CardContent class="space-y-4">
+      <div>
+        <h1 class="text-2xl font-bold">{{ t("musicLibrary.list.title") }}</h1>
+        <p class="text-sm text-muted-foreground">{{ t("musicLibrary.list.description") }}</p>
+      </div>
+
+      <div class="space-y-4">
           <div class="grid gap-4 md:grid-cols-2">
             <div class="grid gap-2">
               <Label>{{ t("musicLibrary.list.filters.region") }}</Label>
@@ -518,8 +507,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
           <p v-if="error" class="text-sm text-destructive">
             {{ t("musicLibrary.list.loadError", { message: error }) }}
           </p>
-        </CardContent>
-      </Card>
+      </div>
 
       <div
         v-if="showSkeleton"

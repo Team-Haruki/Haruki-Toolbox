@@ -1,29 +1,16 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
-import { LucideBadgeCheck } from "lucide-vue-next"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select"
-import { formatGameAccountLabel } from "@/lib/game-account-display"
-import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
-import { useSettingsStore } from "@/shared/stores/settings"
+import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import { useGameAccountSelection } from "@/shared/sekai/user-snapshot/use-user-suite"
 
 const { t } = useI18n()
-const settingsStore = useSettingsStore()
-const { accounts, selectedAccountKey, selectAccount } = useGameAccountSelection()
-
-function accountLabel(server: string, userId: string | number): string {
-  return formatGameAccountLabel({
-    regionLabel: resolveSekaiRegionLabel(server, t),
-    uid: userId,
-    hideUid: settingsStore.hideGameUserId,
-  })
-}
+const { accounts, selectedAccount, selectedAccountKey, selectAccount } = useGameAccountSelection()
 
 function handleUpdate(value: unknown) {
   selectAccount(typeof value === "string" && value !== "" ? value : null)
@@ -34,18 +21,29 @@ function handleUpdate(value: unknown) {
   <div v-if="accounts.length > 0" class="grid gap-2">
     <Select :model-value="selectedAccountKey ?? undefined" @update:model-value="handleUpdate">
       <SelectTrigger class="w-full sm:w-72">
-        <SelectValue :placeholder="t('gameAccountSelect.placeholder')" />
+        <GameAccountOption
+          v-if="selectedAccount"
+          :server="selectedAccount.server"
+          :user-id="selectedAccount.userId"
+          :verified="selectedAccount.verified"
+          :is-default="selectedAccount.isDefault"
+        />
+        <span v-else class="text-sm text-muted-foreground">
+          {{ t("gameAccountSelect.placeholder") }}
+        </span>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem v-for="account in accounts" :key="account.key" :value="account.key">
-          <span class="inline-flex items-center gap-1.5">
-            <span>{{ accountLabel(account.server, account.userId) }}</span>
-            <LucideBadgeCheck
-              v-if="account.verified"
-              class="size-3.5 text-emerald-500"
-              :aria-label="t('gameAccountSelect.verified')"
-            />
-          </span>
+        <SelectItem
+          v-for="account in accounts"
+          :key="account.key"
+          :value="account.key"
+        >
+          <GameAccountOption
+            :server="account.server"
+            :user-id="account.userId"
+            :verified="account.verified"
+            :is-default="account.isDefault"
+          />
         </SelectItem>
       </SelectContent>
     </Select>

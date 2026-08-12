@@ -1,4 +1,5 @@
 export * from "./routes"
+export { default as MusicSelect } from "./components/MusicSelect.vue"
 export { useEventPlannerStore, type EventPlannerPlan } from "./stores/event-planner"
 export { buildPlannerPlanKey, summarizePlannerCells } from "./lib/planner-calendar"
 export { parseEventPlannerPointInput } from "./lib/event-planner"

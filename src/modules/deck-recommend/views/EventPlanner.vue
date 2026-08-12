@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { formatGameAccountLabel } from "@/lib/game-account-display"
+import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import { SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES } from "@/shared/sekai/worker-protocol"
 import { useEventPlannerStore, type EventPlannerPlan } from "../stores/event-planner"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
@@ -66,6 +67,7 @@ type BoundAccountOption = {
   server: SekaiRegion
   uid: string
   label: string
+  verified?: boolean
   isDefault?: boolean
 }
 
@@ -486,6 +488,7 @@ function createAccountOption(account: GameAccountBinding): BoundAccountOption {
     key: `${account.server}:${uid}`,
     server: account.server,
     uid,
+    verified: account.verified === true,
     isDefault: account.isDefault === true,
     label: formatGameAccountLabel({
       regionLabel: resolveSekaiRegionLabel(account.server, t),
@@ -529,11 +532,25 @@ function formatInteger(value: number) {
             <Label class="text-xs text-muted-foreground">{{ t("deckRecommend.form.account") }}</Label>
             <Select :key="locale" :model-value="selectedAccountKey" @update:model-value="updateAccount">
               <SelectTrigger class="w-full">
-                <SelectValue />
+                <GameAccountOption
+                  v-if="selectedAccount"
+                  :server="selectedAccount.server"
+                  :user-id="selectedAccount.uid"
+                  :verified="selectedAccount.verified"
+                  :is-default="selectedAccount.isDefault"
+                />
+                <span v-else class="text-sm text-muted-foreground">
+                  {{ t("deckRecommend.form.accountPlaceholder") }}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="option in accountOptions" :key="option.key" :value="option.key">
-                  {{ option.label }}
+                  <GameAccountOption
+                    :server="option.server"
+                    :user-id="option.uid"
+                    :verified="option.verified"
+                    :is-default="option.isDefault"
+                  />
                 </SelectItem>
               </SelectContent>
             </Select>

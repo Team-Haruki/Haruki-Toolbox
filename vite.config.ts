@@ -176,6 +176,28 @@ export default defineConfig(({ command, mode }) => {
                     globIgnores: adminPrecacheGlobIgnores,
                     maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
                     navigateFallbackDenylist: [/^\/api\//],
+                    // Sekai game-asset and toolbox static images (music jackets, card
+                    // art, icons) are content-addressed and immutable. Cache them at
+                    // runtime so re-opening pickers or revisiting pages reuses them
+                    // instead of re-downloading — independent of the CDN's headers.
+                    // Scoped to image extensions to avoid caching large 3D bundles.
+                    runtimeCaching: [
+                        {
+                            urlPattern: /^https:\/\/(sekai-assets\.haruki\.seiunx\.com|sekai-assets-bdf29c81\.seiunx\.net|toolbox-sekai-assets\.haruki\.seiunx\.com|images\.haruki\.seiunx\.com)\/.*\.(?:png|jpe?g|webp|avif)(?:\?.*)?$/i,
+                            handler: 'CacheFirst',
+                            options: {
+                                cacheName: 'sekai-image-assets',
+                                expiration: {
+                                    maxEntries: 4000,
+                                    maxAgeSeconds: 60 * 60 * 24 * 30,
+                                    purgeOnQuotaError: true,
+                                },
+                                cacheableResponse: {
+                                    statuses: [0, 200],
+                                },
+                            },
+                        },
+                    ],
                 },
                 devOptions: {
                     enabled: false,
@@ -190,7 +212,7 @@ export default defineConfig(({ command, mode }) => {
         },
         resolve: {
             alias: {
-                '@': path.resolve(__dirname, './src'),
+                '@': path.resolve(import.meta.dirname, './src'),
             },
         },
         server: buildDevServerConfig(command, trackerProxy),

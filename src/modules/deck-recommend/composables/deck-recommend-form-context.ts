@@ -134,7 +134,14 @@ export type DeckRecommendFormContext = {
 
   // Basic section
   selectedAccountKey: Ref<string>
-  accountOptions: ComputedRef<Array<{ key: string; label: string }>>
+  accountOptions: ComputedRef<Array<{
+    key: string
+    label: string
+    server: string
+    uid: string
+    verified?: boolean
+    isDefault?: boolean
+  }>>
   selectedAccountLabel: ComputedRef<string>
   updateAccount: (value: AcceptableValue) => void
   updateDataRegion: (value: AcceptableValue) => void

@@ -231,7 +231,7 @@ function formatEventDate(value: number | null) {
               :key="event.id"
               type="button"
               :class="[
-                'flex items-center gap-3 rounded-lg border bg-card p-2.5 text-left transition-colors hover:bg-accent/50 dark:hover:bg-accent/30',
+                'flex items-center gap-3 rounded-lg border bg-card p-2.5 text-left transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_104px] hover:bg-accent/50 dark:hover:bg-accent/30',
                 selectedEvent?.id === event.id ? 'ring-2 ring-primary' : '',
               ]"
               @click="selectEvent(event)"

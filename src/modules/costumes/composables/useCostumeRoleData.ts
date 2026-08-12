@@ -3,6 +3,7 @@ import { resolvePjsk3dRuntimeBaseUrl } from "@/shared/sekai/data-sources"
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import {
+  buildRuntimeCostumeNameMap,
   listRuntimeCostumeOptions,
   resolveRoleDefaults,
   type CostumeRoleDefaults,
@@ -13,6 +14,8 @@ import {
 export type CostumeRoleData = {
   options: Record<CostumeSlot, RuntimeCostumeOption[]>
   defaults: CostumeRoleDefaults | null
+  /** costume3dId → display name/color, sourced from the runtime registry. */
+  nameById: Map<number, { name: string; colorName: string }>
 }
 
 const BROTLI_WASM_URL = new URL(
@@ -58,6 +61,7 @@ function fetchCostumeRoleData(
         head: listRuntimeCostumeOptions(registry, characterId, "head"),
       },
       defaults: resolveRoleDefaults(catalog, characterId, unit),
+      nameById: buildRuntimeCostumeNameMap(registry, characterId),
     }
   })()
   request.catch(() => {

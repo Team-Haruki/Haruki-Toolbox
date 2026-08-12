@@ -33,6 +33,8 @@ import {
   resolveCardEventSummaries,
   selectCardPickupGachas,
   selectSameCharacterCards,
+  type CardCostumeColor,
+  type CardCostumeGroup,
 } from "@/modules/cards/lib/card-detail"
 import { useCardCatalog } from "@/modules/cards/composables/useCardCatalog"
 import { useCardCostumes } from "@/modules/cards/composables/useCardCostumes"
@@ -171,6 +173,34 @@ const { data: costumeRoleData } = useCostumeRoleData(
   costumeRoleUnit,
 )
 
+// The costume master ships name/colorName blank on Nuverse regions (cn/tw/kr),
+// but the 3D runtime registry carries them — the same source 服装搭配 uses, and
+// it keeps ambiguous head accessories that the selectable options drop.
+const costumeNameById = computed(
+  () => costumeRoleData.value?.nameById ?? new Map<number, { name: string; colorName: string }>(),
+)
+
+function costumeGroupName(group: CardCostumeGroup): string {
+  if (group.name) {
+    return group.name
+  }
+  for (const color of group.colors) {
+    const name = costumeNameById.value.get(color.costume3dId)?.name
+    if (name) {
+      return name
+    }
+  }
+  // Some Nuverse accessories are absent from both the master (blank name) and
+  // the runtime registry (never exported); fall back to a slot label so the
+  // group reads meaningfully instead of showing a raw group id.
+  const slot = group.colors[0]?.slot
+  return slot ? t(`cards.detail.costumeSlot.${slot}`) : `#${group.costume3dGroupId}`
+}
+
+function costumeColorLabel(color: CardCostumeColor): string {
+  return color.colorName || costumeNameById.value.get(color.costume3dId)?.colorName || ""
+}
+
 // 3D preview of an unlocked costume: the clicked body color plus the
 // character's stock head/hair completes the engine recipe.
 const selectedCostume3dId = ref<number | null>(null)
@@ -203,14 +233,14 @@ const costumeViewerRecipe = computed<CostumeViewerRecipe | null>(() => {
     return null
   }
 
-  // Head accessories and hairstyles must fill their own slot; the character's
-  // stock parts complete the rest of the recipe.
+  // Preview every same-color part of the group together; the character's stock
+  // parts fill any slot this color does not provide.
   return {
     characterId,
     unit: targetUnit,
-    bodyCostume3dId: selected.slot === "body" ? selected.costume3dId : roleDefaults.bodyCostume3dId,
-    headCostume3dId: selected.slot === "head" ? selected.costume3dId : roleDefaults.headCostume3dId,
-    hairCostume3dId: selected.slot === "hair" ? selected.costume3dId : roleDefaults.hairCostume3dId,
+    bodyCostume3dId: selected.bodyCostume3dId ?? roleDefaults.bodyCostume3dId,
+    headCostume3dId: selected.headCostume3dId ?? roleDefaults.headCostume3dId,
+    hairCostume3dId: selected.hairCostume3dId ?? roleDefaults.hairCostume3dId,
   }
 })
 
@@ -221,12 +251,19 @@ const dressupLink = computed(() => {
   }
 
   const selected = selectedCostume.value
-  return {
-    name: "costumes.dressup",
-    query: selected != null
-      ? { characterId: String(characterId), [selected.slot]: String(selected.costume3dId) }
-      : { characterId: String(characterId) },
+  const query: Record<string, string> = { characterId: String(characterId) }
+  if (selected != null) {
+    if (selected.bodyCostume3dId != null) {
+      query.body = String(selected.bodyCostume3dId)
+    }
+    if (selected.headCostume3dId != null) {
+      query.head = String(selected.headCostume3dId)
+    }
+    if (selected.hairCostume3dId != null) {
+      query.hair = String(selected.hairCostume3dId)
+    }
   }
+  return { name: "costumes.dressup", query }
 })
 
 function toggleCostumePreview(costume3dId: number) {
@@ -623,7 +660,7 @@ const canGoBack = computed(() => {
             :key="group.costume3dGroupId"
             class="space-y-2"
           >
-            <p class="text-sm font-medium">{{ group.name }}</p>
+            <p class="text-sm font-medium">{{ costumeGroupName(group) }}</p>
             <div class="flex flex-wrap gap-3">
               <figure
                 v-for="color in group.colors"
@@ -644,18 +681,18 @@ const canGoBack = computed(() => {
                 >
                   <img
                     :src="costumeThumbnailUrl(color.assetbundleName)"
-                    :alt="color.colorName || group.name"
+                    :alt="costumeColorLabel(color) || costumeGroupName(group)"
                     class="size-full object-contain"
                     loading="lazy"
                     @error="handleCostumeThumbnailError($event, color.assetbundleName)"
                   >
                 </button>
                 <figcaption
-                  v-if="color.colorName"
+                  v-if="costumeColorLabel(color)"
                   class="truncate text-center text-[11px] text-muted-foreground"
-                  :title="color.colorName"
+                  :title="costumeColorLabel(color)"
                 >
-                  {{ color.colorName }}
+                  {{ costumeColorLabel(color) }}
                 </figcaption>
               </figure>
             </div>

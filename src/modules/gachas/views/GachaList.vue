@@ -10,6 +10,7 @@ import {
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -92,6 +93,14 @@ const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
 const visibleGachas = computed(() => excludeUnreleasedGachas(gachas.value, hideUnreleased.value, nowMs.value))
 
 const years = computed(() => collectGachaYears(visibleGachas.value))
+
+function resetFilters() {
+  search.value = ""
+  typeFilter.value = ALL
+  statusFilter.value = ALL
+  yearFilter.value = ALL
+  cardFilterIds.value = []
+}
 
 function cardFilterOption(cardId: number): ComboboxOption {
   const card = cardsById.value.get(cardId) ?? null
@@ -225,7 +234,13 @@ function nextPage() {
     </div>
 
     <!-- Filters -->
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <CatalogFilterPanel
+      :title="t('gachas.list.filtersTitle')"
+      :reset-label="t('gachas.list.resetFilters')"
+      content-class="flex flex-col gap-3"
+      @reset="resetFilters"
+    >
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
       <div class="grid gap-1.5">
         <Label class="text-xs text-muted-foreground">{{ t("gachas.list.typeLabel") }}</Label>
         <Select :key="locale" v-model="typeFilter">
@@ -295,8 +310,8 @@ function nextPage() {
       </div>
     </div>
 
-    <!-- Selected card filters -->
-    <div v-if="selectedCardFilters.length > 0" class="flex flex-wrap items-center gap-1.5">
+      <!-- Selected card filters -->
+      <div v-if="selectedCardFilters.length > 0" class="flex flex-wrap items-center gap-1.5">
       <span
         v-for="item in selectedCardFilters"
         :key="item.cardId"
@@ -319,7 +334,8 @@ function nextPage() {
           <LucideX class="size-3" />
         </button>
       </span>
-    </div>
+      </div>
+    </CatalogFilterPanel>
 
     <!-- Loading -->
     <div

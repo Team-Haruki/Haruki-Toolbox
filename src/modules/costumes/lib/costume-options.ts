@@ -42,6 +42,42 @@ type RegistryEntry = {
 const HEAD_ONLY_TYPES = new Set(["head_only", "head_all", "head_front", "head_back"])
 
 /**
+ * Reconstruct a costume thumbnail asset name when the master ships it empty.
+ *
+ * Nuverse regions (cn/tw/kr) leave `costume3ds.assetbundleName` blank for ~95%
+ * of rows, so their costumes render with no thumbnail. The name is fully
+ * derivable from the row's own `costume3dId`/`partType`/`colorId` — this is a
+ * direct port of haruki-cloud's `buildCostumeAssetBundleName`, and the derived
+ * value matches jp's real names (e.g. cn costume3dId 1002/body/color1 →
+ * `cos0001_body`, color2 → `cos0001_body_01`), so it resolves against the jp
+ * asset mirror even where the regional bucket is missing the file.
+ */
+export function buildCostumeThumbnailAssetbundleName(
+  costume3dId: number,
+  partType: string,
+  colorId: number | null,
+  override: string,
+): string {
+  const trimmed = override.trim()
+  // A real name already carries a part suffix (e.g. `body_seifuku_a`); keep it.
+  if (trimmed.includes("_")) {
+    return trimmed
+  }
+
+  const part = partType.trim()
+  if (part === "") {
+    return trimmed
+  }
+
+  const base = trimmed !== "" ? trimmed : String(Math.floor(costume3dId / 1000)).padStart(4, "0")
+  let name = `cos${base}_${part}`
+  if (colorId != null && colorId >= 2) {
+    name += `_${String(colorId - 1).padStart(2, "0")}`
+  }
+  return name
+}
+
+/**
  * Port of the engine's part-type normalization: `head_and_hair` head sources
  * act as full heads, `head_only`-style heads act as optional accessories.
  */
@@ -83,22 +119,29 @@ function normalizeRegistryEntries(rawRegistry: unknown, characterId: number): Re
       continue
     }
 
+    const rawPartType = normalizeCatalogString(record.partType)
     const effectiveType = normalizeRuntimePartType(
-      normalizeCatalogString(record.partType),
+      rawPartType,
       normalizeCatalogString(record.headCostume3dAssetbundleType) || null,
     )
     if (effectiveType == null) {
       continue
     }
 
+    const colorId = normalizeCatalogNumber(record.colorId)
     entries.push({
       costume3dId,
       effectiveType,
       packagePath: normalizeCatalogString(record.packagePath),
       name: normalizeCatalogString(record.name) || `#${costume3dId}`,
-      colorId: normalizeCatalogNumber(record.colorId),
+      colorId,
       colorName: normalizeCatalogString(record.colorName),
-      thumbnailAssetbundleName: normalizeCatalogString(record.costumeAssetbundleName),
+      thumbnailAssetbundleName: buildCostumeThumbnailAssetbundleName(
+        costume3dId,
+        rawPartType,
+        colorId,
+        normalizeCatalogString(record.costumeAssetbundleName),
+      ),
       costume3dGroupId: normalizeCatalogNumber(record.costume3dGroupId),
     })
   }
@@ -165,6 +208,26 @@ export function listRuntimeCostumeOptions(
   }
 
   return options.sort((a, b) => a.id - b.id)
+}
+
+/**
+ * Names/color names for every runtime costume of a character, keyed by
+ * `costume3dId`. Unlike {@link listRuntimeCostumeOptions} this keeps ambiguous
+ * head ids (they are dropped from selectable options but still need a display
+ * name), so it is the complete name source for Nuverse regions whose master
+ * ships costume names blank.
+ */
+export function buildRuntimeCostumeNameMap(
+  rawRegistry: unknown,
+  characterId: number,
+): Map<number, { name: string; colorName: string }> {
+  const map = new Map<number, { name: string; colorName: string }>()
+  for (const entry of normalizeRegistryEntries(rawRegistry, characterId)) {
+    if (!map.has(entry.costume3dId)) {
+      map.set(entry.costume3dId, { name: entry.name, colorName: entry.colorName })
+    }
+  }
+  return map
 }
 
 export type CostumeRoleDefaults = {

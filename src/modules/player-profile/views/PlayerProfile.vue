@@ -217,6 +217,8 @@ const musicStatRows = computed(() => {
         { key: "allPerfect", count: summary.allPerfect, color: MUSIC_PROGRESS_STATUS_COLORS.allPerfect },
         { key: "fullCombo", count: summary.fullCombo - summary.allPerfect, color: MUSIC_PROGRESS_STATUS_COLORS.fullCombo },
         { key: "clear", count: summary.cleared - summary.fullCombo, color: MUSIC_PROGRESS_STATUS_COLORS.clear },
+        // Draw the not-yet-cleared remainder explicitly in gray instead of leaving the track blank.
+        { key: "uncleared", count: summary.total - summary.cleared, color: MUSIC_PROGRESS_STATUS_COLORS.unplayed },
       ].filter((segment) => segment.count > 0)
       return { difficulty, summary, segments }
     })
@@ -625,7 +627,7 @@ function retry() {
                     :style="{ backgroundColor: segment.color, width: `${(segment.count / row.summary.total) * 100}%` }"
                   />
                 </span>
-                <span class="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                <span class="w-44 shrink-0 whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
                   AP {{ row.summary.allPerfect }} · FC {{ row.summary.fullCombo }} ·
                   CL {{ row.summary.cleared }} / {{ row.summary.total }}
                 </span>

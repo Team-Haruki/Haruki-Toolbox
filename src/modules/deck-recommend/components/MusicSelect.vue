@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, toRef } from "vue"
+import { computed, ref, toRef, watch } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
 import { ChevronsUpDown } from "lucide-vue-next"
@@ -53,9 +53,12 @@ import {
 
 const props = defineProps<{
   modelValue: string | null
-  difficultyValue: string | null
+  /** Optional — omit (with `hideDifficulty`) when only the song matters. */
+  difficultyValue?: string | null
   region: SekaiRegion
   disabled?: boolean
+  /** Render only the song picker; hides the difficulty selector entirely. */
+  hideDifficulty?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -118,6 +121,37 @@ const visibleEntries = computed(() => {
   )
 })
 
+// Render the grid incrementally: mounting all ~600 jacket components at once
+// blocks the main thread during the dialog open animation. We start with a small
+// batch and grow it as the user scrolls near the end.
+const RENDER_BATCH = 48
+const renderLimit = ref(RENDER_BATCH)
+const renderedEntries = computed(() => visibleEntries.value.slice(0, renderLimit.value))
+const hasMoreEntries = computed(() => renderLimit.value < visibleEntries.value.length)
+
+function growRenderLimit() {
+  if (hasMoreEntries.value) {
+    renderLimit.value = Math.min(renderLimit.value + RENDER_BATCH, visibleEntries.value.length)
+  }
+}
+
+function handleListScroll(event: Event) {
+  const el = event.target as HTMLElement
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 800) {
+    growRenderLimit()
+  }
+}
+
+// Reset back to the first batch whenever the dialog reopens or the result set changes.
+watch(open, (isOpen) => {
+  if (isOpen) {
+    renderLimit.value = RENDER_BATCH
+  }
+})
+watch(visibleEntries, () => {
+  renderLimit.value = RENDER_BATCH
+})
+
 const entryById = computed(() => new Map(entries.value.map((entry) => [entry.id, entry])))
 const selectedEntry = computed(() => {
   const id = props.modelValue != null ? Number(props.modelValue) : null
@@ -134,10 +168,15 @@ const difficultyOptions = computed(() => {
     .filter((difficulty) => entry.difficulties[difficulty] != null)
     .map((difficulty) => ({
       value: difficulty,
-      label: formatDifficultyOptionLabel(entry, difficulty),
+      label: difficultyLabel(difficulty),
+      playLevel: entry.difficulties[difficulty]?.playLevel ?? null,
       color: MUSIC_DIFFICULTY_COLORS[difficulty],
     }))
 })
+
+const selectedDifficultyOption = computed(() =>
+  difficultyOptions.value.find((option) => option.value === props.difficultyValue) ?? null,
+)
 
 const difficultyFieldOptions = computed<CatalogFieldOption[]>(() =>
   MUSIC_DIFFICULTIES.map((difficulty) => ({
@@ -237,12 +276,6 @@ function entryDifficultyBadges(entry: MusicLibraryEntry) {
     }))
 }
 
-function formatDifficultyOptionLabel(entry: MusicLibraryEntry, difficulty: MusicDifficulty): string {
-  const playLevel = entry.difficulties[difficulty]?.playLevel
-  const display = difficulty.toUpperCase()
-  return playLevel != null ? `${display} Lv.${playLevel}` : display
-}
-
 function difficultyLabel(difficulty: MusicDifficulty): string {
   return t(`musicLibrary.difficulty.${difficulty}`)
 }
@@ -263,7 +296,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
 </script>
 
 <template>
-  <div class="grid gap-3 md:grid-cols-2">
+  <div class="grid gap-3" :class="props.hideDifficulty ? '' : 'md:grid-cols-2'">
     <Button
       type="button"
       variant="outline"
@@ -289,18 +322,42 @@ function toNullableNumber(value: number | string | undefined | null): number | n
     </Button>
 
     <Select
+      v-if="!props.hideDifficulty"
       :model-value="props.difficultyValue ?? ''"
       :disabled="props.disabled || !props.modelValue || difficultyOptions.length === 0"
       @update:model-value="handleDifficultyUpdate"
     >
-      <SelectTrigger class="w-full md:!h-full md:min-h-9">
-        <SelectValue :placeholder="t('deckRecommend.form.difficultyPlaceholder')" />
+      <SelectTrigger class="w-full py-1.5 md:!h-full md:min-h-9">
+        <span
+          v-if="selectedDifficultyOption"
+          class="flex flex-row items-center gap-1.5 md:flex-col md:items-start md:gap-1"
+        >
+          <span
+            class="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
+            :style="{ backgroundColor: selectedDifficultyOption.color }"
+          >
+            {{ selectedDifficultyOption.label }}
+          </span>
+          <span class="text-[11px] leading-none tabular-nums text-muted-foreground">
+            Lv.{{ selectedDifficultyOption.playLevel ?? "?" }}
+          </span>
+        </span>
+        <span v-else class="text-sm text-muted-foreground">
+          {{ t("deckRecommend.form.difficultyPlaceholder") }}
+        </span>
       </SelectTrigger>
       <SelectContent>
         <SelectItem v-for="option in difficultyOptions" :key="option.value" :value="option.value">
           <span class="flex items-center gap-2">
-            <span class="size-2.5 shrink-0 rounded-full" :style="{ backgroundColor: option.color }" />
-            {{ option.label }}
+            <span
+              class="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
+              :style="{ backgroundColor: option.color }"
+            >
+              {{ option.label }}
+            </span>
+            <span class="text-xs tabular-nums text-muted-foreground">
+              Lv.{{ option.playLevel ?? "?" }}
+            </span>
           </span>
         </SelectItem>
       </SelectContent>
@@ -450,17 +507,17 @@ function toNullableNumber(value: number | string | undefined | null): number | n
           </div>
         </CatalogFilterPanel>
 
-        <div class="min-h-0 flex-1 overflow-y-auto">
+        <div class="min-h-0 flex-1 overflow-y-auto" @scroll="handleListScroll">
           <div
             v-if="visibleEntries.length > 0"
             class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6"
           >
             <button
-              v-for="entry in visibleEntries"
+              v-for="entry in renderedEntries"
               :key="entry.id"
               type="button"
               :class="[
-                'group flex flex-col gap-1.5 rounded-lg border bg-card p-2 text-left transition-colors hover:bg-accent/50 dark:hover:bg-accent/30',
+                'group flex flex-col gap-1.5 rounded-lg border bg-card p-2 text-left transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_180px] hover:bg-accent/50 dark:hover:bg-accent/30',
                 selectedEntry?.id === entry.id ? 'ring-2 ring-primary' : '',
               ]"
               @click="selectEntry(entry)"

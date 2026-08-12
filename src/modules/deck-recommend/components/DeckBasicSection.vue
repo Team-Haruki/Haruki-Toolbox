@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { LucideInfo, LucideSettings2 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
@@ -20,6 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
+import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import CharacterSelect from "./CharacterSelect.vue"
 import EventSelect from "./EventSelect.vue"
 import MusicSelect from "./MusicSelect.vue"
@@ -33,7 +35,6 @@ const {
   dataRegion,
   selectedAccountKey,
   accountOptions,
-  selectedAccountLabel,
   updateAccount,
   updateDataRegion,
   showRecommendTargetSelect,
@@ -92,6 +93,10 @@ const {
   bonusTargetsInput,
   hasBonusTargetsError,
 } = useDeckRecommendFormContext()
+
+const selectedAccountOption = computed(() =>
+  accountOptions.value.find((account) => account.key === selectedAccountKey.value) ?? null,
+)
 </script>
 
 <template>
@@ -105,13 +110,25 @@ const {
           <Label>{{ t("deckRecommend.form.account") }}</Label>
           <Select :model-value="selectedAccountKey" :disabled="accountOptions.length === 0" @update:model-value="updateAccount">
             <SelectTrigger class="w-full">
-              <SelectValue :key="`account-value-${selectedAccountLabel}`" :placeholder="t('deckRecommend.form.accountPlaceholder')">
-                {{ selectedAccountLabel }}
-              </SelectValue>
+              <GameAccountOption
+                v-if="selectedAccountOption"
+                :server="selectedAccountOption.server"
+                :user-id="selectedAccountOption.uid"
+                :verified="selectedAccountOption.verified"
+                :is-default="selectedAccountOption.isDefault"
+              />
+              <span v-else class="text-sm text-muted-foreground">
+                {{ t("deckRecommend.form.accountPlaceholder") }}
+              </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="account in accountOptions" :key="account.key" :value="account.key">
-                {{ account.label }}
+                <GameAccountOption
+                  :server="account.server"
+                  :user-id="account.uid"
+                  :verified="account.verified"
+                  :is-default="account.isDefault"
+                />
               </SelectItem>
             </SelectContent>
           </Select>

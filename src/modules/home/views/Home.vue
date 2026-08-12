@@ -62,8 +62,9 @@ const { t } = useI18n()
       </div>
     </router-link>
 
-    <div class="grid gap-4 sm:gap-6 sm:grid-cols-2 items-start">
     <CurrentEventCard />
+
+    <div class="grid gap-4 sm:gap-6 sm:grid-cols-2 items-start">
     <Card v-for="group in WEB_NAV_ITEMS" :key="group.titleKey" class="w-full">
       <CardHeader>
         <CardTitle>{{ t(group.titleKey) }}</CardTitle>

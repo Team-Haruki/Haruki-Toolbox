@@ -8,7 +8,6 @@ import {
   LucideSave,
   LucideSettings2,
   LucideTrash2,
-  LucideTriangleAlert,
 } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 import {
@@ -130,6 +129,7 @@ type BoundAccountOption = {
   server: SekaiRegion
   uid: string
   label: string
+  verified?: boolean
   isDefault?: boolean
 }
 
@@ -1264,6 +1264,7 @@ function createAccountOption(account: GameAccountBinding): BoundAccountOption {
     key: `${account.server}:${uid}`,
     server: account.server,
     uid,
+    verified: account.verified === true,
     isDefault: account.isDefault === true,
     label: formatGameAccountLabel({
       regionLabel: resolveSekaiRegionLabel(account.server, t),
@@ -2367,17 +2368,8 @@ provideDeckRecommendFormContext({
 </script>
 
 <template>
-  <div class="flex w-full flex-1 flex-col px-0 py-4">
+  <div class="flex w-full flex-1 flex-col px-4 py-4 sm:px-6">
     <div class="mx-auto w-full max-w-[100rem] space-y-3 sm:space-y-4">
-      <div class="flex gap-2 rounded-md border border-amber-200 bg-amber-50/90 px-3 py-2 text-sm text-amber-950 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100 sm:gap-3 sm:rounded-lg sm:px-4">
-        <LucideTriangleAlert class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-300" />
-        <p class="leading-6">
-          <strong class="font-bold text-amber-950 dark:text-amber-50">
-            {{ t("deckRecommend.notice.testingPrefix") }}
-          </strong><span>&#8288;{{ t("deckRecommend.notice.testingSuffix") }}</span>
-        </p>
-      </div>
-
       <Card v-show="!configCollapsed" class="gap-0 rounded-lg py-0">
         <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
           <div class="flex flex-wrap items-center gap-2">

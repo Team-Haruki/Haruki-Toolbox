@@ -1,14 +1,37 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
+import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useAccountUploadTime, useGameAccountSelection } from "@/shared/sekai/user-snapshot/use-user-suite"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
+import type { SekaiRegion } from "@/types"
+import { TRAINING_PREFETCH_MASTER_FILES } from "../lib/prefetch-master-files"
 
 const { t, locale } = useI18n()
 
 const { selectedAccount } = useGameAccountSelection()
 const uploadTime = useAccountUploadTime(selectedAccount)
+
+// Warm the master-data cache for every training tab as soon as the section
+// opens, so opening a tab for the first time resolves from cache instead of a
+// cold fetch. ensureRegionData dedupes/merges with each page's own request.
+const sekaiDataStore = useSekaiDataStore()
+const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
+
+watch(
+  accountRegion,
+  (region) => {
+    if (region == null) {
+      return
+    }
+
+    void sekaiDataStore
+      .ensureRegionData(region, { files: [...TRAINING_PREFETCH_MASTER_FILES], musicMetas: false })
+      .catch(() => {})
+  },
+  { immediate: true },
+)
 
 const uploadTimeText = computed(() => {
   if (uploadTime.value == null) {

@@ -5,6 +5,7 @@ import {
   normalizeCatalogString,
 } from "@/shared/sekai/catalog"
 import type { CatalogGacha } from "@/modules/gachas/lib/gacha-catalog"
+import { buildCostumeThumbnailAssetbundleName } from "@/modules/costumes/lib/costume-options"
 
 export type CardDetailExtras = {
   cardSkillName: string | null
@@ -90,12 +91,17 @@ export function resolveCardEventSummaries(
 }
 
 export type CardCostumeColor = {
+  /** Representative part (prefers body) for the thumbnail, name and selection. */
   costume3dId: number
   colorId: number | null
   colorName: string
   assetbundleName: string
-  /** Engine slot the costume occupies (head covers accessories too). */
+  /** Engine slot of the representative part (head covers accessories too). */
   slot: "body" | "hair" | "head"
+  /** Same-color parts of this group, split by slot, to preview together. */
+  bodyCostume3dId: number | null
+  headCostume3dId: number | null
+  hairCostume3dId: number | null
 }
 
 export type CardCostumeGroup = {
@@ -105,9 +111,11 @@ export type CardCostumeGroup = {
 }
 
 /**
- * Costume groups unlocked by a card, with one entry per body color variant.
- * Groups without body parts (e.g. hair-only unlocks) fall back to whatever
- * parts they have so the group still renders.
+ * Costume groups unlocked by a card. Within a group the body/head/hair parts
+ * that share a color are combined into a single entry so the top and bottom of
+ * one color preview together (the 3D recipe fills every slot the color has).
+ * Groups without a body (e.g. accessory-only unlocks) fall back to whatever
+ * part they have so the group still renders.
  */
 export function resolveCardCostumeGroups(
   rawCardCostume3ds: unknown,
@@ -144,15 +152,25 @@ export function resolveCardCostumeGroups(
       continue
     }
 
+    const partType = normalizeCatalogString(record.partType)
+    const colorId = normalizeCatalogNumber(record.colorId)
     const records = recordsByGroup.get(groupId) ?? []
     records.push({
       id,
       costume3dGroupId: groupId,
-      partType: normalizeCatalogString(record.partType),
-      colorId: normalizeCatalogNumber(record.colorId),
+      partType,
+      colorId,
       colorName: normalizeCatalogString(record.colorName),
       name: normalizeCatalogString(record.name),
-      assetbundleName: normalizeCatalogString(record.assetbundleName),
+      // Nuverse regions (cn/tw/kr) ship costume3ds.assetbundleName blank for
+      // ~92% of rows; reconstruct it from id/part/color so the thumbnail
+      // resolves (against the jp mirror) and body grouping still works.
+      assetbundleName: buildCostumeThumbnailAssetbundleName(
+        id,
+        partType,
+        colorId,
+        normalizeCatalogString(record.assetbundleName),
+      ),
     })
     recordsByGroup.set(groupId, records)
     if (linkedCostumeIds.has(id)) {
@@ -160,36 +178,89 @@ export function resolveCardCostumeGroups(
     }
   }
 
+  const slotOf = (partType: string): "body" | "hair" | "head" =>
+    partType === "hair" ? "hair" : partType === "head" ? "head" : "body"
+
   const groups: CardCostumeGroup[] = []
   for (const groupId of [...groupIds].sort((a, b) => a - b)) {
-    const records = recordsByGroup.get(groupId) ?? []
-    const bodies = records.filter((record) => record.partType === "body" && record.assetbundleName)
-    const candidates = bodies.length > 0
-      ? bodies
-      : records.filter((record) => record.assetbundleName)
-    if (candidates.length === 0) {
+    const parts = (recordsByGroup.get(groupId) ?? []).filter((record) => record.assetbundleName)
+    if (parts.length === 0) {
       continue
     }
 
-    const seenColors = new Set<string>()
+    // Combine same-color parts of this group across slots into one entry.
+    type ColorBucket = {
+      colorId: number | null
+      colorName: string
+      body: CostumeRecord | null
+      head: CostumeRecord | null
+      hair: CostumeRecord | null
+    }
+    const byColor = new Map<number, ColorBucket>()
+    const order: number[] = []
+    for (const record of parts) {
+      const key = record.colorId ?? record.id
+      let bucket = byColor.get(key)
+      if (!bucket) {
+        bucket = { colorId: record.colorId, colorName: "", body: null, head: null, hair: null }
+        byColor.set(key, bucket)
+        order.push(key)
+      }
+      if (!bucket.colorName && record.colorName) {
+        bucket.colorName = record.colorName
+      }
+      const slot = slotOf(record.partType)
+      if (slot === "body" && !bucket.body) {
+        bucket.body = record
+      } else if (slot === "head" && !bucket.head) {
+        bucket.head = record
+      } else if (slot === "hair" && !bucket.hair) {
+        bucket.hair = record
+      }
+    }
+
     const colors: CardCostumeColor[] = []
-    for (const record of [...candidates].sort((a, b) => (a.colorId ?? a.id) - (b.colorId ?? b.id))) {
-      if (seenColors.has(record.assetbundleName)) {
+    for (const key of order.sort((a, b) => a - b)) {
+      const bucket = byColor.get(key)
+      if (!bucket) {
         continue
       }
-      seenColors.add(record.assetbundleName)
+      // The body carries the outfit thumbnail; accessory-only groups use the
+      // head (then hair) so a group without a body still renders.
+      const representative = bucket.body ?? bucket.head ?? bucket.hair
+      if (!representative) {
+        continue
+      }
+      // Only a limited hairstyle (`*_unique_head`) is worn with its outfit; a
+      // plain/default head in a body group is not combined, so the body
+      // previews with the character's default head. A standalone accessory
+      // group has no body, so its head is what we preview.
+      const headIsUnique = bucket.head != null && bucket.head.assetbundleName.includes("unique_head")
+      const headCostume3dId = bucket.body != null
+        ? (headIsUnique ? bucket.head!.id : null)
+        : bucket.head?.id ?? null
       colors.push({
-        costume3dId: record.id,
-        colorId: record.colorId,
-        colorName: record.colorName,
-        assetbundleName: record.assetbundleName,
-        slot: record.partType === "hair" ? "hair" : record.partType === "head" ? "head" : "body",
+        costume3dId: representative.id,
+        colorId: bucket.colorId,
+        colorName: bucket.colorName,
+        assetbundleName: representative.assetbundleName,
+        slot: slotOf(representative.partType),
+        bodyCostume3dId: bucket.body?.id ?? null,
+        headCostume3dId,
+        hairCostume3dId: bucket.hair?.id ?? null,
       })
+    }
+    if (colors.length === 0) {
+      continue
     }
 
     groups.push({
       costume3dGroupId: groupId,
-      name: candidates.find((record) => record.name)?.name || `#${groupId}`,
+      // Prefer a body's name; empty on Nuverse regions (names ship blank), where
+      // the view layers a runtime-registry name fallback before a slot label.
+      name: parts.find((record) => record.partType === "body" && record.name)?.name
+        || parts.find((record) => record.name)?.name
+        || "",
       colors,
     })
   }

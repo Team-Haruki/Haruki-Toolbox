@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { LucideSettings2 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -10,13 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import { Switch } from "@/components/ui/switch"
 import AreaItemOverrideList from "./AreaItemOverrideList.vue"
 import CharacterRankOverrideList from "./CharacterRankOverrideList.vue"
@@ -76,17 +76,19 @@ const {
 </script>
 
 <template>
-            <Sheet v-model:open="open">
-              <SheetContent side="right" class="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-                <SheetHeader class="border-b px-4 py-3 text-left">
-                  <SheetTitle class="flex items-center gap-2 text-base">
+            <Dialog v-model:open="open">
+              <DialogContent
+                class="flex h-[100dvh] w-full max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0 top-0 left-0 translate-x-0 translate-y-0 sm:h-auto sm:max-h-[85vh] sm:max-w-2xl sm:rounded-lg sm:border sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] lg:max-w-4xl xl:max-w-5xl"
+              >
+                <DialogHeader class="border-b px-4 py-3 pr-12 text-left">
+                  <DialogTitle class="flex items-center gap-2 text-base">
                     <LucideSettings2 class="size-4" />
                     {{ t("deckRecommend.layers.expert.title") }}
-                  </SheetTitle>
-                  <SheetDescription class="text-xs">
+                  </DialogTitle>
+                  <DialogDescription class="text-xs">
                     {{ t("deckRecommend.layers.expert.description") }}
-                  </SheetDescription>
-                </SheetHeader>
+                  </DialogDescription>
+                </DialogHeader>
                 <div class="@container grid min-h-0 min-w-0 flex-1 content-start gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-4">
                     <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
@@ -311,6 +313,6 @@ const {
                       />
                     </section>
                 </div>
-              </SheetContent>
-            </Sheet>
+              </DialogContent>
+            </Dialog>
 </template>
