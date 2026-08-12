@@ -150,10 +150,10 @@ export const enUS = {
     sections: {
       accountTitle: "Account settings",
       accountDescription: "Identity and login security settings for your account.",
-      toolboxTitle: "Toolbox settings",
-      toolboxDescription: "Preferences and integrations for Haruki Toolbox features.",
       harukiBotTitle: "HarukiBot data authorization",
       harukiBotDescription: "Manage social platform bindings and authorizations that let HarukiBot query your game data.",
+      oauthTitle: "OAuth authorization management",
+      oauthDescription: "Manage third-party applications that access your account data via OAuth.",
     },
     sekaiData: {
       title: "Master data cache",
@@ -239,6 +239,14 @@ export const enUS = {
         totp: "Authenticator app",
         lookupSecret: "Recovery codes",
       },
+    },
+    profileCard: {
+      title: "Profile",
+      description: "Avatar, nickname and email binding.",
+    },
+    securityCard: {
+      title: "Security & sign-in",
+      description: "Password, multi-factor auth, social sign-in and sessions.",
     },
     account: {
       title: "Avatar settings",
@@ -476,8 +484,8 @@ export const enUS = {
     },
 
     oauthAuthorizations: {
-      title: "OAuth authorizations",
-      description: "Manage third-party applications authorized to access your account data",
+      title: "Authorized applications",
+      description: "Review and revoke third-party applications authorized to access your account data.",
       loading: "Loading...",
       empty: "No authorized third-party applications",
       authorizedAtPrefix: "Authorized at",
@@ -698,6 +706,7 @@ export const enUS = {
     identitySettings: "Identity settings",
     gameAccountManagement: "Game account management",
     harukiBotAuthorization: "HarukiBot data authorization",
+    oauthAuthorizations: "OAuth authorizations",
     logout: "Sign out",
     register: "Register",
     login: "Sign in",
@@ -1615,6 +1624,7 @@ export const enUS = {
     userIdentitySessionSettings: "Identity sessions",
     gameAccountBindings: "Game account bindings",
     harukiBotAuthorization: "HarukiBot data authorization",
+    oauthAuthorizations: "OAuth authorization management",
     oauthLogin: "Continue sign in",
     oauthConsent: "Authorize app",
     tickets: {
@@ -4933,7 +4943,7 @@ export const enUS = {
       continuingDescriptionSuffix: ".",
       scopeIntro: "This app will be able to:",
       noScopesRequested: "This app did not request any additional scopes.",
-      revokeHint: "After authorization, you can revoke it in Account Settings → OAuth Authorizations.",
+      revokeHint: "After authorization, you can revoke it any time on the OAuth authorization management page.",
       reject: "Reject",
       authorize: "Authorize",
       authorizing: "Authorizing...",

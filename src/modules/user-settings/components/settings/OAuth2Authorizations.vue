@@ -112,7 +112,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <Card class="w-full max-w-md">
+  <Card class="w-full">
     <CardHeader>
       <div>
         <CardTitle class="flex items-center gap-2">

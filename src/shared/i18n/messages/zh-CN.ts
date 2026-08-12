@@ -150,10 +150,10 @@ export const zhCN = {
     sections: {
       accountTitle: "账号设置",
       accountDescription: "管理你的身份、登录与安全相关设置。",
-      toolboxTitle: "工具箱设置",
-      toolboxDescription: "管理 Haruki 工具箱功能相关偏好与集成。",
       harukiBotTitle: "HarukiBot数据授权",
       harukiBotDescription: "管理社交平台绑定与授权，供 HarukiBot 查询你的游戏数据。",
+      oauthTitle: "OAuth 授权管理",
+      oauthDescription: "管理通过 OAuth 授权访问你账号数据的第三方应用。",
     },
     sekaiData: {
       title: "Master数据缓存",
@@ -239,6 +239,14 @@ export const zhCN = {
         totp: "身份验证器",
         lookupSecret: "恢复码",
       },
+    },
+    profileCard: {
+      title: "个人资料",
+      description: "头像、昵称与邮箱绑定。",
+    },
+    securityCard: {
+      title: "安全与登录",
+      description: "密码、多因素认证、社交登录与会话管理。",
     },
     account: {
       title: "头像设置",
@@ -476,8 +484,8 @@ export const zhCN = {
     },
 
     oauthAuthorizations: {
-      title: "第三方应用授权",
-      description: "管理已授权访问您账号数据的第三方应用",
+      title: "已授权的应用",
+      description: "查看并随时撤销已授权访问你账号数据的第三方应用。",
       loading: "加载中...",
       empty: "暂无已授权的第三方应用",
       authorizedAtPrefix: "授权于",
@@ -698,6 +706,7 @@ export const zhCN = {
     identitySettings: "用户身份设置",
     gameAccountManagement: "游戏账号管理",
     harukiBotAuthorization: "HarukiBot数据授权",
+    oauthAuthorizations: "OAuth 授权管理",
     logout: "注销",
     register: "注册",
     login: "登录",
@@ -1615,6 +1624,7 @@ export const zhCN = {
     userIdentitySessionSettings: "身份会话管理",
     gameAccountBindings: "绑定游戏账号",
     harukiBotAuthorization: "HarukiBot数据授权",
+    oauthAuthorizations: "OAuth 授权管理",
     oauthLogin: "继续登录授权",
     oauthConsent: "授权第三方应用",
     tickets: {
@@ -4933,7 +4943,7 @@ export const zhCN = {
       continuingDescriptionSuffix: " 准备授权流程。",
       scopeIntro: "该应用将能够：",
       noScopesRequested: "该应用未请求额外权限范围。",
-      revokeHint: "授权后，您可以随时在「账号设置 → 第三方应用授权」中撤销。",
+      revokeHint: "授权后，您可以随时在「OAuth 授权管理」页面撤销。",
       reject: "拒绝",
       authorize: "授权",
       authorizing: "授权中...",

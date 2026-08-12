@@ -44,6 +44,12 @@ export const userSettingsChildRoutes: RouteRecordRaw[] = [
         meta: { titleKey: "route.userIdentitySessionSettings", requiresAuth: true },
     },
     {
+        path: "oauth-authorizations",
+        name: "user.oauthAuthorizations",
+        component: () => import("@/modules/user-settings/views/OAuthAuthorizations.vue"),
+        meta: { titleKey: "route.oauthAuthorizations", requiresAuth: true },
+    },
+    {
         path: "harukibot-authorization",
         name: "user.harukiBotAuthorization",
         component: () => import("@/modules/user-settings/views/HarukiBotAuthorization.vue"),
