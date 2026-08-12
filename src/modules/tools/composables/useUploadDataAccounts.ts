@@ -10,13 +10,19 @@ export interface BoundAccount {
   server: SekaiRegion
   uid: string
   label: string
+  verified?: boolean
   isDefault?: boolean
 }
 
 type UploadAccountStore = {
   isLoggedIn: boolean
   allowCNMysekai: boolean | null
-  gameAccountBindings?: Array<{ server: SekaiRegion; userId: string | number }> | null
+  gameAccountBindings?: Array<{
+    server: SekaiRegion
+    userId: string | number
+    verified?: boolean
+    isDefault?: boolean
+  }> | null
 }
 
 export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: Ref<UploadDataType>) {
@@ -50,6 +56,7 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
         key: `${server}:${uid}`,
         server,
         uid,
+        verified: account.verified === true,
         isDefault: account.isDefault === true,
         label: formatGameAccountLabel({
           regionLabel: regionLabel(server),

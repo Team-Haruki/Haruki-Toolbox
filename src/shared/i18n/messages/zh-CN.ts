@@ -2797,12 +2797,13 @@ export const zhCN = {
         },
         iosModule: {
           platform: "iOS / iPadOS",
-          linkText: "iOS 模块教程",
+          linkText: "使用 iOS 模块",
         },
       },
       tabs: {
         file: "文件上传",
         inherit: "继承码上传",
+        ios: "iOS模块",
       },
       region: {
         jp: "日服",

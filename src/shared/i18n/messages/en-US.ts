@@ -2797,12 +2797,13 @@ export const enUS = {
         },
         iosModule: {
           platform: "iOS / iPadOS",
-          linkText: "iOS module guide",
+          linkText: "Use the iOS module",
         },
       },
       tabs: {
         file: "File upload",
         inherit: "Transfer-code upload",
+        ios: "iOS module",
       },
       region: {
         jp: "JP",

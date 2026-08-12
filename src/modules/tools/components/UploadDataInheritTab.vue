@@ -113,7 +113,7 @@ const notesOpen = ref(false)
     </CardHeader>
     <CardContent>
       <form id="upload-data-inherit-form" @submit.prevent="emit('submit')">
-        <div class="grid gap-4">
+        <div class="grid gap-4 sm:grid-cols-2">
           <div class="flex flex-col space-y-1.5">
             <Label for="inherit-id">{{ t("tools.uploadData.inheritTab.fields.inheritId") }}</Label>
             <div class="relative w-full items-center">
@@ -178,7 +178,7 @@ const notesOpen = ref(false)
               </span>
             </div>
           </div>
-          <div class="flex items-start gap-3 rounded-md border p-3">
+          <div class="flex items-start gap-3 rounded-md border p-3 sm:col-span-2">
             <Checkbox
               id="remember-inherit"
               :model-value="rememberInherit"

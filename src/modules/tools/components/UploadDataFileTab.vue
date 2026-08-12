@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import {
   Database,
   Loader2,
@@ -16,12 +17,15 @@ import {
   LucideShieldAlert,
   Upload,
   UploadCloud,
-  User,
 } from "lucide-vue-next"
 
 type BoundAccount = {
   key: string
+  server: string
+  uid: string
   label: string
+  verified?: boolean
+  isDefault?: boolean
 }
 
 const props = withDefaults(
@@ -43,8 +47,8 @@ const props = withDefaults(
 )
 
 const { t, locale } = useI18n()
-const selectedAccountLabel = computed(() =>
-  props.boundAccounts.find((account) => account.key === props.selectedAccountKey)?.label ?? "",
+const selectedAccountOption = computed(() =>
+  props.boundAccounts.find((account) => account.key === props.selectedAccountKey) ?? null,
 )
 
 const emit = defineEmits<{
@@ -86,8 +90,8 @@ function handleDataTypeChange(value: string) {
         <AlertDescription>{{ t("tools.uploadData.fileTab.forbiddenDescription") }}</AlertDescription>
       </Alert>
       <form id="upload-data-file-form" @submit.prevent="emit('submit')">
-        <div class="grid gap-4">
-          <div class="flex flex-col space-y-1.5">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="flex flex-col space-y-1.5 sm:col-span-2">
             <Label for="file-upload">{{ t("tools.uploadData.fileTab.fields.file") }}</Label>
             <Input
               id="file-upload"
@@ -99,28 +103,35 @@ function handleDataTypeChange(value: string) {
           </div>
           <div class="flex flex-col space-y-1.5">
             <Label for="account-select">{{ t("tools.uploadData.fileTab.fields.account") }}</Label>
-            <div class="relative w-full items-center">
-              <Select :key="locale"
-                id="account-select"
-                :model-value="selectedAccountKey ?? ''"
-                :disabled="!!disabledReason"
-                @update:model-value="handleAccountChange"
-              >
-                <SelectTrigger class="w-full pl-10">
-                  <SelectValue :key="`upload-account-value-${selectedAccountLabel}`" :placeholder="t('tools.uploadData.fileTab.fields.accountPlaceholder')">
-                    {{ selectedAccountLabel }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="acc in boundAccounts" :key="acc.key" :value="acc.key">
-                    {{ acc.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
-                <User class="size-4 text-muted-foreground" />
-              </span>
-            </div>
+            <Select :key="locale"
+              id="account-select"
+              :model-value="selectedAccountKey ?? ''"
+              :disabled="!!disabledReason"
+              @update:model-value="handleAccountChange"
+            >
+              <SelectTrigger class="w-full">
+                <GameAccountOption
+                  v-if="selectedAccountOption"
+                  :server="selectedAccountOption.server"
+                  :user-id="selectedAccountOption.uid"
+                  :verified="selectedAccountOption.verified"
+                  :is-default="selectedAccountOption.isDefault"
+                />
+                <span v-else class="text-sm text-muted-foreground">
+                  {{ t("tools.uploadData.fileTab.fields.accountPlaceholder") }}
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="acc in boundAccounts" :key="acc.key" :value="acc.key">
+                  <GameAccountOption
+                    :server="acc.server"
+                    :user-id="acc.uid"
+                    :verified="acc.verified"
+                    :is-default="acc.isDefault"
+                  />
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div class="flex flex-col space-y-1.5">
             <Label for="data-type-select">{{ t("tools.uploadData.fileTab.fields.dataType") }}</Label>

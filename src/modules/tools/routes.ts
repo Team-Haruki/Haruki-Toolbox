@@ -26,8 +26,9 @@ export const toolRoutes: RouteRecordRaw[] = [
         meta: { titleKey: "route.uploadData" },
     },
     {
+        // The iOS module generator merged into the upload-data page; external
+        // tutorials still link here.
         path: "/ios-modules",
-        component: () => import("@/modules/tools/views/IOSModules.vue"),
-        meta: { titleKey: "route.iosModules" },
+        redirect: { path: "/upload-data", query: { tab: "ios" } },
     },
 ]
