@@ -68,7 +68,7 @@ const { t, locale } = useI18n()
 </script>
 
 <template>
-  <Card class="w-full max-w-md">
+  <Card class="w-full">
     <CardHeader>
       <CardTitle class="flex items-center gap-2">
         <Link2 class="h-6 w-6" />
@@ -86,23 +86,21 @@ const { t, locale } = useI18n()
       </div>
 
       <template v-if="current">
-        <div class="space-y-2">
-          <div class="flex justify-between items-center">
-            <span class="text-sm font-medium">{{ t("userSettings.imBinding.fields.platform") }}</span>
-            <span>{{ current.platform }}</span>
+        <!-- Bound account summary tile -->
+        <div class="flex items-center gap-3 rounded-md border bg-muted/20 p-3">
+          <div class="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <Link2 class="size-5" />
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm font-medium">{{ t("userSettings.imBinding.fields.account") }}</span>
-            <span>{{ current.userId }}</span>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold uppercase leading-tight">{{ current.platform }}</p>
+            <p class="truncate text-sm text-muted-foreground">{{ current.userId }}</p>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm font-medium">{{ t("userSettings.imBinding.fields.verificationStatus") }}</span>
-            <VerificationStatusBadge
-              :verified="current.verified"
-              :verified-label="t('userSettings.imBinding.status.verified')"
-              :unverified-label="t('userSettings.imBinding.status.unverified')"
-            />
-          </div>
+          <VerificationStatusBadge
+            class="shrink-0"
+            :verified="current.verified"
+            :verified-label="t('userSettings.imBinding.status.verified')"
+            :unverified-label="t('userSettings.imBinding.status.unverified')"
+          />
         </div>
 
         <div v-if="canRetryCurrentVerification" class="space-y-2">
@@ -115,18 +113,24 @@ const { t, locale } = useI18n()
             @verify="onTurnstileVerify"
             @invalid="onTurnstileInvalid"
           />
-          <Button class="w-full" :disabled="sending || !isEmailVerified" @click="handleRetryCurrentVerification">
+        </div>
+
+        <div class="grid gap-2" :class="canRetryCurrentVerification ? 'sm:grid-cols-2' : ''">
+          <Button
+            v-if="canRetryCurrentVerification"
+            :disabled="sending || !isEmailVerified"
+            @click="handleRetryCurrentVerification"
+          >
             <Loader2 v-if="sending" class="mr-2 h-4 w-4 animate-spin" />
             <template v-else>
               <ShieldCheck class="mr-2 h-4 w-4" />
               {{ isCurrentQQBinding ? t("userSettings.imBinding.actions.sendEmailCode") : t("userSettings.imBinding.actions.generateCode") }}
             </template>
           </Button>
-        </div>
 
         <AlertDialog>
           <AlertDialogTrigger as-child>
-            <Button :disabled="clearing || !isEmailVerified" variant="destructive" class="w-full mt-4">
+            <Button :disabled="clearing || !isEmailVerified" variant="destructive" class="w-full">
               <Loader2 v-if="clearing" class="mr-2 h-4 w-4 animate-spin" />
               <Unlink v-else class="mr-2 h-4 w-4" />
               {{ t("userSettings.imBinding.unbindButton") }}
@@ -147,6 +151,7 @@ const { t, locale } = useI18n()
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        </div>
       </template>
 
       <template v-else>

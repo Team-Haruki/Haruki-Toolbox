@@ -79,7 +79,7 @@ const { columns, table, FlexRender } = useIMAuthorizationTable({
 </script>
 
 <template>
-  <Card class="w-full max-w-md">
+  <Card class="w-full">
     <CardHeader>
       <div class="flex items-center justify-between gap-2">
         <div>
@@ -97,7 +97,7 @@ const { columns, table, FlexRender } = useIMAuthorizationTable({
     </CardHeader>
     <CardContent>
       <div class="w-full flex justify-center">
-        <div class="rounded-md border w-full max-w-sm">
+        <div class="rounded-md border w-full">
           <Table>
             <TableHeader>
               <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
