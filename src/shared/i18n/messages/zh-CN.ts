@@ -407,6 +407,8 @@ export const zhCN = {
         incompleteResponseDescription: "返回数据不完整",
         codeGeneratedTitle: "验证码已生成",
         missingQQAccountDescription: "请先填写 QQ 号",
+        invalidQQAccountDescription: "QQ 号必须为纯数字",
+        invalidQQBotAccountDescription: "QQ 官方 Bot 的用户 OpenID 长度不正确，请检查是否完整复制",
         missingAccountDescription: "请填写需要绑定的账号 ID",
         verifyFailedTitle: "验证失败",
         inputQQCodeDescription: "请输入邮件中的验证码",
@@ -463,6 +465,8 @@ export const zhCN = {
       toast: {
         saveFailedTitle: "保存失败",
         accountRequiredDescription: "请输入账号",
+        accountQQNumericDescription: "QQ 号必须为纯数字",
+        accountQQBotLengthDescription: "QQ 官方 Bot 的用户 OpenID 长度不正确，请检查是否完整复制",
         saveSuccessTitle: "已保存授权",
         saveSuccessDescription: "社交平台账号授权信息已更新",
         deleteSuccessTitle: "已删除授权",

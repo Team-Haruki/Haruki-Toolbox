@@ -19,6 +19,7 @@ import {
 } from "@/modules/user-settings/lib/im-binding-response"
 import { useIMBindingTurnstile } from "@/modules/user-settings/composables/useIMBindingTurnstile"
 import { isSocialPlatform } from "@/lib/social-platform"
+import { validateSocialAccountId } from "@/modules/user-settings/lib/social-account-validation"
 import { CLOUDFLARE_TURNSTILE_ENABLED } from "@/config/turnstile"
 
 type DialogMode = "qq" | "other"
@@ -140,6 +141,21 @@ export function useIMBindingSettings() {
             platform.value === QQ_PLATFORM
               ? t("userSettings.imBinding.toast.missingQQAccountDescription")
               : t("userSettings.imBinding.toast.missingAccountDescription"),
+        }
+      )
+      return
+    }
+
+    const validationError = validateSocialAccountId(platform.value, accountId)
+    if (validationError) {
+      toast.error(
+        platform.value === QQ_PLATFORM
+          ? t("userSettings.imBinding.toast.sendFailedTitle")
+          : t("userSettings.imBinding.toast.generateFailedTitle"),
+        {
+          description: validationError === "qq-not-numeric"
+            ? t("userSettings.imBinding.toast.invalidQQAccountDescription")
+            : t("userSettings.imBinding.toast.invalidQQBotAccountDescription"),
         }
       )
       return

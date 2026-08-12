@@ -9,6 +9,7 @@ import { DEFAULT_SOCIAL_PLATFORM, isSocialPlatform } from "@/lib/social-platform
 import type { EntityId } from "@/types/common"
 import type { SocialPlatform as SocialPlatformType } from "@/types/social-platform"
 import { resolveRequiredUserId } from "@/modules/user-settings/lib/current-user"
+import { validateSocialAccountId } from "@/modules/user-settings/lib/social-account-validation"
 import {
   createAuthorizeSocialPlatformAccount,
   addAuthorizeSocialPlatformAccount,
@@ -120,6 +121,16 @@ export function useIMAuthorizationSettings() {
     if (!normalizedUserId) {
       toast.error(t("userSettings.imAuthorization.toast.saveFailedTitle"), {
         description: t("userSettings.imAuthorization.toast.accountRequiredDescription"),
+      })
+      return
+    }
+
+    const validationError = validateSocialAccountId(target.platform, normalizedUserId)
+    if (validationError) {
+      toast.error(t("userSettings.imAuthorization.toast.saveFailedTitle"), {
+        description: validationError === "qq-not-numeric"
+          ? t("userSettings.imAuthorization.toast.accountQQNumericDescription")
+          : t("userSettings.imAuthorization.toast.accountQQBotLengthDescription"),
       })
       return
     }

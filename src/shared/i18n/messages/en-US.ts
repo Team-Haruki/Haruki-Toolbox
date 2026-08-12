@@ -407,6 +407,8 @@ export const enUS = {
         incompleteResponseDescription: "Incomplete response data",
         codeGeneratedTitle: "Verification code generated",
         missingQQAccountDescription: "Please enter QQ account first",
+        invalidQQAccountDescription: "QQ number must be digits only",
+        invalidQQBotAccountDescription: "The QQ official-bot OpenID looks too short; please copy the full ID",
         missingAccountDescription: "Please enter the account ID to bind",
         verifyFailedTitle: "Verification failed",
         inputQQCodeDescription: "Please enter the code from email",
@@ -463,6 +465,8 @@ export const enUS = {
       toast: {
         saveFailedTitle: "Save failed",
         accountRequiredDescription: "Please enter account",
+        accountQQNumericDescription: "QQ number must be digits only",
+        accountQQBotLengthDescription: "The QQ official-bot OpenID looks too short; please copy the full ID",
         saveSuccessTitle: "Authorization saved",
         saveSuccessDescription: "Social authorization info has been updated",
         deleteSuccessTitle: "Authorization removed",
