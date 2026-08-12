@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from "vue"
 import { CalendarIcon } from "lucide-vue-next"
-import { format } from "date-fns"
+// Local zero-dep replacement for date-fns `format(date, "yyyy/MM/dd HH:mm")`.
+function formatDateTime(value: Date): string {
+  const pad = (part: number) => String(part).padStart(2, "0")
+  return `${value.getFullYear()}/${pad(value.getMonth() + 1)}/${pad(value.getDate())} ${pad(value.getHours())}:${pad(value.getMinutes())}`
+}
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -64,7 +68,7 @@ const handleTimeChange = (type: "hour" | "minute", value: string) => {
         )"
       >
         <CalendarIcon class="mr-2 h-4 w-4" />
-        <span v-if="modelValue">{{ format(modelValue, "yyyy/MM/dd HH:mm") }}</span>
+        <span v-if="modelValue">{{ formatDateTime(modelValue) }}</span>
         <span v-else>{{ placeholder || "请选择时间" }}</span>
       </Button>
     </PopoverTrigger>

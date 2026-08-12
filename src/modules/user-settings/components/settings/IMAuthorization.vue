@@ -3,7 +3,7 @@ import {Input} from "@/components/ui/input"
 import {Switch} from "@/components/ui/switch"
 import {Label} from "@/components/ui/label"
 import {Button} from "@/components/ui/button"
-import {Trash2, Plus, Save, X, Shield} from "lucide-vue-next"
+import {Trash2, Plus, Save, X, Shield, MoreHorizontal, Pencil} from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import {
   Card,
@@ -47,8 +47,13 @@ import {
   AlertDialogContent,
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {useIMAuthorizationSettings} from "@/modules/user-settings/composables/useIMAuthorizationSettings"
-import { useIMAuthorizationTable } from "@/modules/user-settings/composables/useIMAuthorizationTable"
 
 const { t, locale } = useI18n()
 
@@ -69,12 +74,13 @@ const {
   handleDelete,
 } = useIMAuthorizationSettings()
 
-const { columns, table, FlexRender } = useIMAuthorizationTable({
-  tableData,
-  getPlatformLabel,
-  onEdit: startEdit,
-  onDelete: confirmDelete,
-})
+function isTruncatedAccount(value: string): boolean {
+  return Boolean(value) && value.length > 12
+}
+
+function truncateAccount(value: string): string {
+  return value.slice(0, 12) + "..."
+}
 
 </script>
 
@@ -100,37 +106,49 @@ const { columns, table, FlexRender } = useIMAuthorizationTable({
         <div class="rounded-md border w-full">
           <Table>
             <TableHeader>
-              <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
-                <TableHead
-                    v-for="header in headerGroup.headers"
-                    :key="header.id"
-                    class="text-center"
-                >
-                  <FlexRender
-                      v-if="!header.isPlaceholder"
-                      :render="header.column.columnDef.header"
-                      :props="header.getContext()"
-                  />
-                </TableHead>
+              <TableRow>
+                <TableHead class="text-center">{{ t("userSettings.imAuthorization.table.platform") }}</TableHead>
+                <TableHead class="text-center">{{ t("userSettings.imAuthorization.table.account") }}</TableHead>
+                <TableHead class="text-center">{{ t("userSettings.imAuthorization.table.remark") }}</TableHead>
+                <TableHead class="text-center">{{ t("userSettings.imAuthorization.table.actions") }}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <template v-if="table.getRowModel().rows?.length">
-                <TableRow v-for="row in table.getRowModel().rows" :key="row.id">
-                  <TableCell
-                      v-for="cell in row.getVisibleCells()"
-                      :key="cell.id"
-                      class="text-center"
-                  >
-                    <FlexRender
-                        :render="cell.column.columnDef.cell"
-                        :props="cell.getContext()"
-                    />
+              <template v-if="tableData.length">
+                <TableRow v-for="(row, index) in tableData" :key="index">
+                  <TableCell class="text-center">{{ getPlatformLabel(row.platform) }}</TableCell>
+                  <TableCell class="text-center">
+                    <span
+                        v-if="isTruncatedAccount(row.userId)"
+                        :title="row.userId"
+                        class="cursor-help"
+                    >{{ truncateAccount(row.userId) }}</span>
+                    <template v-else>{{ row.userId }}</template>
+                  </TableCell>
+                  <TableCell class="text-center">{{ row.comment }}</TableCell>
+                  <TableCell class="text-center">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger as-child>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal class="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem @click="startEdit(row)">
+                          <Pencil class="h-4 w-4 mr-2" />
+                          {{ t("userSettings.imAuthorization.actions.edit") }}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem class="text-destructive" @click="confirmDelete(row)">
+                          <Trash2 class="h-4 w-4 mr-2" />
+                          {{ t("userSettings.imAuthorization.actions.delete") }}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               </template>
               <TableRow v-else>
-                <TableCell :colspan="columns.length" class="h-24 text-center">
+                <TableCell :colspan="4" class="h-24 text-center">
                   {{ t("userSettings.imAuthorization.empty") }}
                 </TableCell>
               </TableRow>

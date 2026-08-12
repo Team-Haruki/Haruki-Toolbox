@@ -50,7 +50,6 @@ Vite build uses manual vendor chunks: `vendor-vue`, `vendor-ui`, `vendor-chart`,
 Banned import tokens (with replacements):
 - `@/components/pages/*` → module-local `views/`/`components/`
 - `@/components/WebLayout.vue` → `@/modules/web/views/WebLayout.vue`
-- `@/components/Maintenance.vue` → `@/modules/navigation/views/Maintenance.vue`
 - `@/components/Turnstile.vue` → `@/shared/components/Turnstile.vue`
 - `@/api/*` / `from "@/api"` → `@/modules/<feature>/api` (or `@/core/http/call-api` for the HTTP client)
 - `@/store` → `@/shared/stores/user`

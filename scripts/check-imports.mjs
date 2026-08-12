@@ -27,7 +27,6 @@ const IMPORT_PATH_PATTERNS = [
 const BANNED_TOKENS = [
     { token: '@/components/pages/', message: 'Use module-local views/components paths instead of "@/components/pages/*".' },
     { token: '@/components/WebLayout.vue', message: 'Use "@/modules/web/views/WebLayout.vue".' },
-    { token: '@/components/Maintenance.vue', message: 'Use "@/modules/navigation/views/Maintenance.vue".' },
     { token: '@/components/Turnstile.vue', message: 'Use "@/shared/components/Turnstile.vue".' },
     { token: '@/api/', message: 'Use "@/modules/*/api" for business APIs or "@/core/http/call-api" for HTTP client.' },
     { token: 'from "@/api"', message: 'Use "@/modules/*/api" for business APIs.' },
