@@ -5,7 +5,7 @@ import { useI18n } from "vue-i18n"
 import { ref } from "vue"
 import SidebarUser from "@/modules/user/components/SidebarUser.vue";
 import { useWebLayout } from "@/modules/web/composables/useWebLayout"
-import { WEB_NAV_ITEMS } from "@/config/navigation"
+import { WEB_NAV_SECTIONS } from "@/config/navigation"
 import { useSettingsStore } from "@/shared/stores/settings"
 import HomeSettingsDialog from "@/modules/home/components/HomeSettingsDialog.vue"
 import { GlobalSearchDialog } from "@/modules/search"
@@ -31,6 +31,7 @@ import {
   SidebarRail,
   SidebarInset,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarFooter,
   SidebarHeader,
   SidebarTrigger,
@@ -115,69 +116,84 @@ function openAppSettings() {
             </SidebarMenuItem>
           </SidebarMenu>
 
-          <SidebarMenu>
-            <Collapsible
-                v-for="item in WEB_NAV_ITEMS"
-                :key="item.titleKey"
-                as-child
-                :open="isNavGroupOpen(item)"
-                @update:open="setNavGroupOpen(item, $event)"
-                class="group/collapsible"
-            >
-              <SidebarMenuItem>
-                <CollapsibleTrigger as-child>
-                  <SidebarMenuButton :tooltip="t(item.titleKey)">
-                    <component :is="item.icon" v-if="item.icon"/>
-                    <span>{{ t(item.titleKey) }}</span>
-                    <LucideChevronRight
-                        class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"/>
+          <template v-for="section in WEB_NAV_SECTIONS" :key="section.titleKey ?? section.items[0]?.titleKey">
+            <SidebarGroupLabel v-if="section.titleKey">{{ t(section.titleKey) }}</SidebarGroupLabel>
+            <SidebarMenu>
+              <template v-for="item in section.items" :key="item.titleKey">
+                <Collapsible
+                    v-if="item.items"
+                    as-child
+                    :open="isNavGroupOpen(item)"
+                    @update:open="setNavGroupOpen(item, $event)"
+                    class="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger as-child>
+                      <SidebarMenuButton :tooltip="t(item.titleKey)">
+                        <component :is="item.icon" v-if="item.icon"/>
+                        <span>{{ t(item.titleKey) }}</span>
+                        <LucideChevronRight
+                            class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"/>
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem v-for="subItem in item.items" :key="subItem.titleKey">
+                          <SidebarMenuSubButton as-child>
+                            <router-link
+                                v-if="subItem.url"
+                                :to="subItem.url"
+                                class="flex items-center gap-2"
+                            >
+                              <component :is="subItem.icon" v-if="subItem.icon"/>
+                              <span>{{ t(subItem.titleKey) }}</span>
+                            </router-link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+                <SidebarMenuItem v-else-if="item.url">
+                  <SidebarMenuButton as-child :tooltip="t(item.titleKey)">
+                    <router-link :to="item.url" class="flex items-center gap-2">
+                      <component :is="item.icon" v-if="item.icon"/>
+                      <span>{{ t(item.titleKey) }}</span>
+                    </router-link>
                   </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    <SidebarMenuSubItem v-for="subItem in item.items || []" :key="subItem.titleKey">
-                      <SidebarMenuSubButton as-child>
-                        <router-link
-                            v-if="subItem.url"
-                            :to="subItem.url"
-                            class="flex items-center gap-2"
-                        >
-                          <component :is="subItem.icon" v-if="subItem.icon"/>
-                          <span>{{ t(subItem.titleKey) }}</span>
-                        </router-link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </SidebarMenuItem>
-            </Collapsible>
-          </SidebarMenu>
+                </SidebarMenuItem>
+              </template>
+            </SidebarMenu>
+          </template>
 
-          <SidebarMenu>
-            <SidebarMenuItem v-if="userStore.isAdmin">
-              <SidebarMenuButton as-child>
-                <router-link to="/admin" class="flex items-center gap-2">
-                  <LucideShieldCheck></LucideShieldCheck>
-                  <span>{{ t("webLayout.nav.admin") }}</span>
-                </router-link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem v-if="userStore.isLoggedIn">
-              <SidebarMenuButton as-child>
-                <router-link to="/tickets" class="flex items-center gap-2">
-                  <LucideTicket></LucideTicket>
-                  <span>{{ t("webLayout.nav.myTickets") }}</span>
-                  <span
-                    v-if="pendingUserTicketCount !== null && pendingUserTicketCount > 0"
-                    class="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium leading-none text-primary-foreground"
-                    :title="t('webLayout.nav.pendingTicketReplies', { total: pendingUserTicketCount })"
-                  >
-                    {{ pendingUserTicketCount > 99 ? "99+" : pendingUserTicketCount }}
-                  </span>
-                </router-link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+          <template v-if="userStore.isLoggedIn">
+            <SidebarGroupLabel>{{ t("navigation.groups.accountManagement") }}</SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem v-if="userStore.isAdmin">
+                <SidebarMenuButton as-child>
+                  <router-link to="/admin" class="flex items-center gap-2">
+                    <LucideShieldCheck></LucideShieldCheck>
+                    <span>{{ t("webLayout.nav.admin") }}</span>
+                  </router-link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton as-child>
+                  <router-link to="/tickets" class="flex items-center gap-2">
+                    <LucideTicket></LucideTicket>
+                    <span>{{ t("webLayout.nav.myTickets") }}</span>
+                    <span
+                      v-if="pendingUserTicketCount !== null && pendingUserTicketCount > 0"
+                      class="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium leading-none text-primary-foreground"
+                      :title="t('webLayout.nav.pendingTicketReplies', { total: pendingUserTicketCount })"
+                    >
+                      {{ pendingUserTicketCount > 99 ? "99+" : pendingUserTicketCount }}
+                    </span>
+                  </router-link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </template>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>

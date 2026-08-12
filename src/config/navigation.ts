@@ -1,6 +1,5 @@
 import type { Component } from "vue"
 import {
-  LucideArrowDownToLine,
   LucideBox,
   LucideCalculator,
   LucideCalendarClock,
@@ -38,60 +37,70 @@ export interface NavSubItem {
   url: string
 }
 
+/** Either a collapsible group (`items`) or a direct link (`url`). */
 export interface NavItem {
   titleKey: string
   icon?: Component
-  items: NavSubItem[]
+  url?: string
+  items?: NavSubItem[]
 }
 
-export const WEB_NAV_ITEMS: NavItem[] = [
+/** A labelled sidebar section; `titleKey` renders as a SidebarGroupLabel. */
+export interface NavSection {
+  titleKey?: string
+  items: NavItem[]
+}
+
+export const WEB_NAV_SECTIONS: NavSection[] = [
   {
-    titleKey: "navigation.groups.friendshipRecommendation",
-    icon: LucideNavigation,
     items: [
-      { titleKey: "navigation.items.friendGroups", icon: LucideUsers, url: "/friend-groups" },
-      { titleKey: "navigation.items.friendLinks", icon: LucideUsers, url: "/friend-links" },
-      { titleKey: "navigation.items.sponsors", icon: LucideHeartHandshake, url: "/sponsors" },
+      {
+        titleKey: "navigation.groups.friendshipRecommendation",
+        icon: LucideNavigation,
+        items: [
+          { titleKey: "navigation.items.friendGroups", icon: LucideUsers, url: "/friend-groups" },
+          { titleKey: "navigation.items.friendLinks", icon: LucideUsers, url: "/friend-links" },
+          { titleKey: "navigation.items.sponsors", icon: LucideHeartHandshake, url: "/sponsors" },
+        ],
+      },
     ],
   },
   {
-    titleKey: "navigation.groups.sekaiCatalog",
-    icon: LucideLibrary,
+    titleKey: "navigation.groups.projectSekai",
     items: [
-      { titleKey: "navigation.items.musicLibrary", icon: LucideMusic, url: "/music" },
-      { titleKey: "navigation.items.cards", icon: LucideWalletCards, url: "/cards" },
-      { titleKey: "navigation.items.events", icon: LucideCalendarDays, url: "/events" },
-      { titleKey: "navigation.items.gachas", icon: LucideGift, url: "/gachas" },
-      { titleKey: "navigation.items.costumes", icon: LucideShirt, url: "/costumes" },
-    ],
-  },
-  {
-    titleKey: "navigation.groups.sekaiPlayer",
-    icon: LucideUserRound,
-    items: [
-      { titleKey: "navigation.items.playerProfile", icon: LucideIdCard, url: "/profile/me" },
-      { titleKey: "navigation.items.cardBox", icon: LucideBox, url: "/cards/box" },
-      { titleKey: "navigation.items.musicProgress", icon: LucideListChecks, url: "/music/progress" },
-      { titleKey: "navigation.items.eventRecords", icon: LucideHistory, url: "/events/records" },
-      { titleKey: "navigation.items.training", icon: LucideSprout, url: "/training" },
-    ],
-  },
-  {
-    titleKey: "navigation.groups.tools",
-    icon: LucideWrench,
-    items: [
-      { titleKey: "navigation.items.ptCalculator", icon: LucideCalculator, url: "/pt-calculator" },
-      { titleKey: "navigation.items.deckRecommend", icon: LucideGamepad2, url: "/deck-recommend" },
-      { titleKey: "navigation.items.eventPlanner", icon: LucideCalendarClock, url: "/event-planner" },
-      { titleKey: "navigation.items.rankBorder", icon: LucideTrophy, url: "/rank-border" },
-    ],
-  },
-  {
-    titleKey: "navigation.groups.dataUpload",
-    icon: LucideCloudUpload,
-    items: [
+      {
+        titleKey: "navigation.groups.sekaiCatalog",
+        icon: LucideLibrary,
+        items: [
+          { titleKey: "navigation.items.musicLibrary", icon: LucideMusic, url: "/music" },
+          { titleKey: "navigation.items.cards", icon: LucideWalletCards, url: "/cards" },
+          { titleKey: "navigation.items.events", icon: LucideCalendarDays, url: "/events" },
+          { titleKey: "navigation.items.gachas", icon: LucideGift, url: "/gachas" },
+          { titleKey: "navigation.items.costumes", icon: LucideShirt, url: "/costumes" },
+        ],
+      },
+      {
+        titleKey: "navigation.groups.sekaiPlayer",
+        icon: LucideUserRound,
+        items: [
+          { titleKey: "navigation.items.playerProfile", icon: LucideIdCard, url: "/profile/me" },
+          { titleKey: "navigation.items.cardBox", icon: LucideBox, url: "/cards/box" },
+          { titleKey: "navigation.items.musicProgress", icon: LucideListChecks, url: "/music/progress" },
+          { titleKey: "navigation.items.eventRecords", icon: LucideHistory, url: "/events/records" },
+          { titleKey: "navigation.items.training", icon: LucideSprout, url: "/training" },
+        ],
+      },
+      {
+        titleKey: "navigation.groups.eventRankingTools",
+        icon: LucideWrench,
+        items: [
+          { titleKey: "navigation.items.ptCalculator", icon: LucideCalculator, url: "/pt-calculator" },
+          { titleKey: "navigation.items.deckRecommend", icon: LucideGamepad2, url: "/deck-recommend" },
+          { titleKey: "navigation.items.eventPlanner", icon: LucideCalendarClock, url: "/event-planner" },
+          { titleKey: "navigation.items.rankBorder", icon: LucideTrophy, url: "/rank-border" },
+        ],
+      },
       { titleKey: "navigation.items.uploadData", icon: LucideCloudUpload, url: "/upload-data" },
-      { titleKey: "navigation.items.iosModules", icon: LucideArrowDownToLine, url: "/ios-modules" },
     ],
   },
 ]
