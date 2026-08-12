@@ -9,12 +9,13 @@ import { createPersistedState } from "pinia-plugin-persistedstate";
 import { useUserStore } from "@/shared/stores/user";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { setupInterceptors } from "@/core/http/call-api";
-import { i18n, isAppLocale, setI18nLocale } from "@/shared/i18n";
+import { DEFAULT_LOCALE, i18n, isAppLocale, setI18nLocale } from "@/shared/i18n";
 import { bootstrapUserSettingsFromKratosSession } from "@/modules/auth/lib/kratos";
 import { registerAppServiceWorker } from "@/pwa";
 import { isRestrictedBrowser } from "@/lib/restricted-browser";
 
 if (isRestrictedBrowser()) {
+    await setI18nLocale(DEFAULT_LOCALE)
     createApp(UnsupportedBrowserPage)
         .use(i18n)
         .mount('#app')
@@ -28,9 +29,9 @@ if (isRestrictedBrowser()) {
     settingsStore.initTheme()
     settingsStore.initVisualEffects()
     void settingsStore.initAssetEndpointPreference()
-    if (isAppLocale(settingsStore.locale)) {
-        await setI18nLocale(settingsStore.locale)
-    }
+    // Locales are lazy chunks; the active one must be loaded before mount so
+    // no raw translation keys ever flash on screen.
+    await setI18nLocale(isAppLocale(settingsStore.locale) ? settingsStore.locale : DEFAULT_LOCALE)
     watch(
         () => settingsStore.locale,
         (locale) => {

@@ -125,7 +125,7 @@ function selectOption(value: string) {
     <PopoverContent
       :class="
         cn(
-          'w-(--reka-popover-trigger-width) overflow-hidden border-white/70 bg-popover/72 p-0 shadow-[0_22px_64px_-38px_rgba(15,23,42,0.95),inset_0_1px_0_rgba(255,255,255,0.62)] supports-[backdrop-filter]:bg-popover/48 dark:border-white/12 dark:bg-slate-950/78 dark:supports-[backdrop-filter]:bg-slate-950/58',
+          'w-(--reka-popover-trigger-width) overflow-hidden p-0',
           props.contentClass,
         )
       "

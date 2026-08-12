@@ -128,8 +128,10 @@ export function useWebLayout() {
     void loadPendingUserTicketCount()
   }
 
+  // Login-state changes trigger a load; steady-state freshness comes from the
+  // 60s visible-only interval (navigations no longer fire extra requests).
   watch(
-    [() => route.fullPath, () => userStore.isLoggedIn, () => userStore.userId],
+    [() => userStore.isLoggedIn, () => userStore.userId],
     () => {
       void loadPendingUserTicketCount()
     }

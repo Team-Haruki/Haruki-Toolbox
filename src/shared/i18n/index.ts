@@ -1,5 +1,4 @@
 import { createI18n } from "vue-i18n"
-import { zhCN } from "@/shared/i18n/messages/zh-CN"
 
 export const SUPPORTED_LOCALES = ["zh-CN", "en-US"] as const
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number]
@@ -10,14 +9,13 @@ export function isAppLocale(value: unknown): value is AppLocale {
   return typeof value === "string" && SUPPORTED_LOCALES.includes(value as AppLocale)
 }
 
-const messages = {
-  "zh-CN": zhCN,
-}
-
-const loadedLocales = new Set<AppLocale>(["zh-CN"])
+// Both locales load lazily (~160KB each): main.ts awaits the active locale
+// before mounting, so no translation keys ever render untranslated. The
+// fallback (zh-CN) is topped up in the background for non-default locales.
+const loadedLocales = new Set<AppLocale>()
 
 const localeLoaders: Record<AppLocale, () => Promise<Record<string, unknown>>> = {
-  "zh-CN": async () => zhCN,
+  "zh-CN": async () => (await import("@/shared/i18n/messages/zh-CN")).zhCN,
   "en-US": async () => (await import("@/shared/i18n/messages/en-US")).enUS,
 }
 
@@ -25,7 +23,7 @@ export const i18n = createI18n({
   legacy: false,
   locale: DEFAULT_LOCALE,
   fallbackLocale: DEFAULT_LOCALE,
-  messages,
+  messages: {},
   globalInjection: true,
 })
 
@@ -67,6 +65,12 @@ export async function loadI18nLocale(locale: AppLocale) {
 export async function setI18nLocale(locale: AppLocale) {
   await loadI18nLocale(locale)
   writeGlobalLocale(locale)
+
+  // Non-blocking: make the fallback locale available for missing-key lookups
+  // without putting it on the boot critical path.
+  if (locale !== DEFAULT_LOCALE) {
+    void loadI18nLocale(DEFAULT_LOCALE)
+  }
 }
 
 export function getI18nLocale(): AppLocale {

@@ -2,14 +2,18 @@
 import {Separator} from '@/components/ui/separator'
 import type {SidebarProps} from '@/components/ui/sidebar'
 import { useI18n } from "vue-i18n"
-import { ref } from "vue"
+import { defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import SidebarUser from "@/modules/user/components/SidebarUser.vue";
 import { useWebLayout } from "@/modules/web/composables/useWebLayout"
 import { WEB_NAV_SECTIONS } from "@/config/navigation"
-import { useSettingsStore } from "@/shared/stores/settings"
+
 import HomeSettingsDialog from "@/modules/home/components/HomeSettingsDialog.vue"
-import { GlobalSearchDialog } from "@/modules/search"
-import { cn } from "@/lib/utils"
+
+// The command palette (and its pinyin/search machinery) stays off the layout's
+// critical path: the chunk loads on first open intent (button or hotkey).
+const GlobalSearchDialog = defineAsyncComponent(() =>
+  import("@/modules/search").then((mod) => mod.GlobalSearchDialog),
+)
 
 import {
   LucideHome,
@@ -51,7 +55,7 @@ import {
 
 const props = defineProps<SidebarProps>()
 const { t } = useI18n()
-const settingsStore = useSettingsStore()
+
 const {
   harukiLogo,
   userStore,
@@ -64,7 +68,38 @@ const {
 } = useWebLayout()
 const homeSettingsDialogOpen = ref(false)
 const homeSettingsDialogTab = ref("preferences")
-const globalSearchDialog = ref<InstanceType<typeof GlobalSearchDialog> | null>(null)
+const searchRequested = ref(false)
+const globalSearchDialog = ref<{ open: () => void } | null>(null)
+
+function openGlobalSearch() {
+  if (globalSearchDialog.value) {
+    globalSearchDialog.value.open()
+    return
+  }
+
+  searchRequested.value = true
+  const stopWaiting = watch(globalSearchDialog, (dialog) => {
+    if (dialog) {
+      stopWaiting()
+      dialog.open()
+    }
+  })
+}
+
+// Keep Cmd/Ctrl+K working before the dialog chunk has ever been loaded; once
+// mounted, the dialog registers its own hotkey handler.
+function onSearchHotkey(event: KeyboardEvent) {
+  if (searchRequested.value) {
+    return
+  }
+  if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "k") {
+    event.preventDefault()
+    openGlobalSearch()
+  }
+}
+
+onMounted(() => window.addEventListener("keydown", onSearchHotkey))
+onBeforeUnmount(() => window.removeEventListener("keydown", onSearchHotkey))
 
 function openAppSettings() {
   homeSettingsDialogTab.value = "app"
@@ -74,15 +109,8 @@ function openAppSettings() {
 
 <template>
   <SidebarProvider>
-    <Sidebar
-      v-bind="props"
-      data-glass-surface="sidebar"
-      :class="cn(
-        settingsStore.reducedVisualEffects
-          ? 'border-r border-slate-200 dark:border-slate-800 bg-sidebar [&_[data-sidebar=sidebar]]:border-r [&_[data-sidebar=sidebar]]:border-slate-200 dark:[&_[data-sidebar=sidebar]]:border-slate-800 [&_[data-sidebar=sidebar]]:bg-sidebar [&_[data-sidebar=sidebar]]:!bg-sidebar'
-          : 'border-r border-white/60 bg-white/6 bg-gradient-to-b from-white/10 via-white/4 to-white/1 shadow-[inset_-1px_0_0_rgba(255,255,255,0.62),0_24px_70px_-54px_rgba(15,23,42,0.62)] backdrop-blur-3xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/5 dark:border-white/10 dark:bg-slate-950/8 dark:from-slate-950/15 dark:via-slate-900/4 dark:to-slate-950/2 dark:supports-[backdrop-filter]:bg-slate-950/6 [&_[data-sidebar=sidebar]]:border-r [&_[data-sidebar=sidebar]]:border-white/60 [&_[data-sidebar=sidebar]]:!bg-white/4 [&_[data-sidebar=sidebar]]:bg-gradient-to-b [&_[data-sidebar=sidebar]]:from-white/10 [&_[data-sidebar=sidebar]]:via-white/4 [&_[data-sidebar=sidebar]]:to-white/1 [&_[data-sidebar=sidebar]]:shadow-[inset_-1px_0_0_rgba(255,255,255,0.62)] [&_[data-sidebar=sidebar]]:backdrop-blur-3xl [&_[data-sidebar=sidebar]]:backdrop-saturate-150 dark:[&_[data-sidebar=sidebar]]:border-white/10 dark:[&_[data-sidebar=sidebar]]:!bg-slate-950/8 dark:[&_[data-sidebar=sidebar]]:from-slate-950/15 dark:[&_[data-sidebar=sidebar]]:via-slate-900/4 dark:[&_[data-sidebar=sidebar]]:to-slate-950/2 dark:[&_[data-sidebar=sidebar]]:shadow-[inset_-1px_0_0_rgba(255,255,255,0.08)]'
-      )"
-    >
+    <!-- Visuals come from the data-glass-surface system in style.css. -->
+    <Sidebar v-bind="props" data-glass-surface="sidebar" class="border-r">
       <SidebarHeader
         class="border-b border-slate-950/[0.06] px-3 py-2 h-13 justify-center items-center bg-transparent shadow-[inset_0_-1px_0_rgba(15,23,42,0.035)] dark:border-white/10 dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]"
       >
@@ -205,12 +233,7 @@ function openAppSettings() {
     <SidebarInset>
       <header
           data-glass-surface="topbar"
-          :class="cn(
-            'sticky top-0 z-40 flex h-13 items-center px-4 gap-2 text-base-content overflow-hidden flex-nowrap',
-            settingsStore.reducedVisualEffects
-              ? 'border-b border-slate-200 dark:border-slate-800 bg-background'
-              : 'border-b border-white/60 bg-white/18 shadow-[0_16px_42px_-32px_rgba(15,23,42,0.72)] backdrop-blur-2xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/12 dark:border-white/10 dark:bg-slate-950/22 dark:shadow-[0_12px_32px_-26px_rgba(34,211,238,0.30)] dark:supports-[backdrop-filter]:bg-slate-950/20'
-          )"
+          class="sticky top-0 z-40 flex h-13 items-center px-4 gap-2 text-base-content overflow-hidden flex-nowrap border-b"
       >
         <SidebarTrigger class="flex-shrink-0"/>
         <div class="flex items-center flex-shrink-0 whitespace-nowrap">
@@ -236,11 +259,11 @@ function openAppSettings() {
             class="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             :aria-label="t('globalSearch.title')"
             :title="t('globalSearch.title')"
-            @click="globalSearchDialog?.open()"
+            @click="openGlobalSearch"
           >
             <LucideSearch class="size-4.5" />
           </button>
-          <GlobalSearchDialog ref="globalSearchDialog" />
+          <GlobalSearchDialog v-if="searchRequested" ref="globalSearchDialog" />
           <HomeSettingsDialog v-model:open="homeSettingsDialogOpen" v-model:tab="homeSettingsDialogTab" />
         </div>
       </header>
@@ -248,7 +271,7 @@ function openAppSettings() {
       <main class="flex flex-1 flex-col">
         <div class="flex flex-1 flex-col items-center px-4 py-3 sm:p-4 xl:p-6">
           <router-view v-slot="{ Component, route }">
-            <Transition name="page-blur-fade" mode="out-in">
+            <Transition name="page-fade" mode="out-in">
               <component :is="Component" :key="route.fullPath" />
             </Transition>
           </router-view>
@@ -258,12 +281,7 @@ function openAppSettings() {
 
       <SidebarFooter
         data-glass-surface="footer"
-        :class="cn(
-          'px-6 py-2.5 text-sm text-muted-foreground md:px-12',
-          settingsStore.reducedVisualEffects
-            ? 'border-t border-slate-200 dark:border-slate-800 bg-background'
-            : 'border-t border-white/60 bg-white/16 backdrop-blur-md supports-[backdrop-filter]:bg-white/12 dark:border-white/10 dark:bg-slate-950/22 dark:supports-[backdrop-filter]:bg-slate-950/20'
-        )"
+        class="px-6 py-2.5 text-sm text-muted-foreground md:px-12 border-t"
       >
         <div
           class="flex w-full flex-col gap-2 md:flex-row md:items-center md:justify-between"
