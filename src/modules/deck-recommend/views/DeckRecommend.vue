@@ -2368,7 +2368,7 @@ provideDeckRecommendFormContext({
 </script>
 
 <template>
-  <div class="flex w-full flex-1 flex-col px-4 py-4 sm:px-6">
+  <div class="flex w-full flex-1 flex-col items-center justify-center px-4 py-4 sm:px-6">
     <div class="mx-auto w-full max-w-[100rem] space-y-3 sm:space-y-4">
       <Card v-show="!configCollapsed" class="gap-0 rounded-lg py-0">
         <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
