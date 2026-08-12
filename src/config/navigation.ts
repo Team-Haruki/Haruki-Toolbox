@@ -108,6 +108,8 @@ export const WEB_NAV_SECTIONS: NavSection[] = [
 export interface AdminNavItem {
   value: string
   labelKey: string
+  /** Short blurb rendered under the page title in the admin shell. */
+  descriptionKey: string
   icon: Component
   segment: string
   routeName: string
@@ -115,102 +117,142 @@ export interface AdminNavItem {
   superOnly?: boolean
 }
 
-export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
+/** A labelled group of admin pages in the admin shell's secondary nav. */
+export interface AdminNavSection {
+  labelKey: string
+  items: AdminNavItem[]
+}
+
+export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
   {
-    value: "dashboard",
-    labelKey: "admin.nav.dashboard",
-    icon: LucideLayoutDashboard,
-    segment: "dashboard",
-    routeName: "admin.dashboard",
-    titleKey: "route.admin.dashboard",
+    labelKey: "admin.nav.groups.overview",
+    items: [
+      {
+        value: "dashboard",
+        labelKey: "admin.nav.dashboard",
+        descriptionKey: "admin.nav.descriptions.dashboard",
+        icon: LucideLayoutDashboard,
+        segment: "dashboard",
+        routeName: "admin.dashboard",
+        titleKey: "route.admin.dashboard",
+      },
+    ],
   },
   {
-    value: "users",
-    labelKey: "admin.nav.users",
-    icon: LucideUsers,
-    segment: "users",
-    routeName: "admin.users",
-    titleKey: "route.admin.users",
+    labelKey: "admin.nav.groups.usersRisk",
+    items: [
+      {
+        value: "users",
+        labelKey: "admin.nav.users",
+        descriptionKey: "admin.nav.descriptions.users",
+        icon: LucideUsers,
+        segment: "users",
+        routeName: "admin.users",
+        titleKey: "route.admin.users",
+      },
+      {
+        value: "game-bindings",
+        labelKey: "admin.nav.gameBindings",
+        descriptionKey: "admin.nav.descriptions.gameBindings",
+        icon: LucideGamepad2,
+        segment: "game-bindings",
+        routeName: "admin.gameBindings",
+        titleKey: "route.admin.gameBindings",
+      },
+      {
+        value: "risk",
+        labelKey: "admin.nav.risk",
+        descriptionKey: "admin.nav.descriptions.risk",
+        icon: LucideShieldAlert,
+        segment: "risk",
+        routeName: "admin.risk",
+        titleKey: "route.admin.risk",
+      },
+      {
+        value: "tickets",
+        labelKey: "admin.nav.tickets",
+        descriptionKey: "admin.nav.descriptions.tickets",
+        icon: LucideTicket,
+        segment: "tickets",
+        routeName: "admin.tickets",
+        titleKey: "route.admin.tickets",
+      },
+    ],
   },
   {
-    value: "oauth",
-    labelKey: "admin.nav.oauthClients",
-    icon: LucideKeyRound,
-    segment: "oauth-clients",
-    routeName: "admin.oauthClients",
-    titleKey: "route.admin.oauthClients",
+    labelKey: "admin.nav.groups.operations",
+    items: [
+      {
+        value: "content",
+        labelKey: "admin.nav.content",
+        descriptionKey: "admin.nav.descriptions.content",
+        icon: LucideFileEdit,
+        segment: "content",
+        routeName: "admin.content",
+        titleKey: "route.admin.content",
+      },
+      {
+        value: "sponsors",
+        labelKey: "admin.nav.sponsors",
+        descriptionKey: "admin.nav.descriptions.sponsors",
+        icon: LucideHeartHandshake,
+        segment: "sponsors",
+        routeName: "admin.sponsors",
+        titleKey: "route.admin.sponsors",
+      },
+    ],
   },
   {
-    value: "webhooks",
-    labelKey: "admin.nav.webhooks",
-    icon: LucideWebhook,
-    segment: "webhooks",
-    routeName: "admin.webhooks",
-    titleKey: "route.admin.webhooks",
-  },
-  {
-    value: "logs",
-    labelKey: "admin.nav.logs",
-    icon: LucideScrollText,
-    segment: "logs",
-    routeName: "admin.logs",
-    titleKey: "route.admin.logs",
-  },
-  {
-    value: "upload-logs",
-    labelKey: "admin.nav.uploadLogs",
-    icon: LucideCloudUpload,
-    segment: "upload-logs",
-    routeName: "admin.uploadLogs",
-    titleKey: "route.admin.uploadLogs",
-  },
-  {
-    value: "content",
-    labelKey: "admin.nav.content",
-    icon: LucideFileEdit,
-    segment: "content",
-    routeName: "admin.content",
-    titleKey: "route.admin.content",
-  },
-  {
-    value: "sponsors",
-    labelKey: "admin.nav.sponsors",
-    icon: LucideHeartHandshake,
-    segment: "sponsors",
-    routeName: "admin.sponsors",
-    titleKey: "route.admin.sponsors",
-  },
-  {
-    value: "config",
-    labelKey: "admin.nav.config",
-    icon: LucideCog,
-    segment: "config",
-    routeName: "admin.config",
-    titleKey: "route.admin.config",
-    superOnly: true,
-  },
-  {
-    value: "game-bindings",
-    labelKey: "admin.nav.gameBindings",
-    icon: LucideGamepad2,
-    segment: "game-bindings",
-    routeName: "admin.gameBindings",
-    titleKey: "route.admin.gameBindings",
-  },
-  {
-    value: "risk",
-    labelKey: "admin.nav.risk",
-    icon: LucideShieldAlert,
-    segment: "risk",
-    routeName: "admin.risk",
-    titleKey: "route.admin.risk",
-  },
-  {
-    value: "tickets",
-    labelKey: "admin.nav.tickets",
-    icon: LucideTicket,
-    segment: "tickets",
-    routeName: "admin.tickets",
-    titleKey: "route.admin.tickets",
+    labelKey: "admin.nav.groups.system",
+    items: [
+      {
+        value: "upload-logs",
+        labelKey: "admin.nav.uploadLogs",
+        descriptionKey: "admin.nav.descriptions.uploadLogs",
+        icon: LucideCloudUpload,
+        segment: "upload-logs",
+        routeName: "admin.uploadLogs",
+        titleKey: "route.admin.uploadLogs",
+      },
+      {
+        value: "logs",
+        labelKey: "admin.nav.logs",
+        descriptionKey: "admin.nav.descriptions.logs",
+        icon: LucideScrollText,
+        segment: "logs",
+        routeName: "admin.logs",
+        titleKey: "route.admin.logs",
+      },
+      {
+        value: "oauth",
+        labelKey: "admin.nav.oauthClients",
+        descriptionKey: "admin.nav.descriptions.oauthClients",
+        icon: LucideKeyRound,
+        segment: "oauth-clients",
+        routeName: "admin.oauthClients",
+        titleKey: "route.admin.oauthClients",
+      },
+      {
+        value: "webhooks",
+        labelKey: "admin.nav.webhooks",
+        descriptionKey: "admin.nav.descriptions.webhooks",
+        icon: LucideWebhook,
+        segment: "webhooks",
+        routeName: "admin.webhooks",
+        titleKey: "route.admin.webhooks",
+      },
+      {
+        value: "config",
+        labelKey: "admin.nav.config",
+        descriptionKey: "admin.nav.descriptions.config",
+        icon: LucideCog,
+        segment: "config",
+        routeName: "admin.config",
+        titleKey: "route.admin.config",
+        superOnly: true,
+      },
+    ],
   },
 ]
+
+export const ADMIN_NAV_ITEMS: AdminNavItem[] = ADMIN_NAV_SECTIONS.flatMap((section) => section.items)

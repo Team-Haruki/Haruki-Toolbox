@@ -34,8 +34,10 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import {
+    LucideGamepad2,
     LucideMoreHorizontal,
     LucidePencil,
+    LucidePlus,
     LucideTrash2,
 } from "lucide-vue-next"
 import type { AdminGameAccountBinding } from "@/types/admin"
@@ -74,10 +76,10 @@ function confirmDelete() {
 
 <template>
   <Card>
-    <CardHeader class="flex flex-row items-center justify-between">
+    <CardHeader class="flex flex-row items-center justify-between gap-2">
       <CardTitle>{{ t("adminUsers.detail.game.title") }}</CardTitle>
       <Button variant="outline" size="sm" :disabled="busy" @click="emit('add')">
-        + {{ t("adminUsers.detail.game.add") }}
+        <LucidePlus class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.game.add") }}
       </Button>
     </CardHeader>
     <CardContent>
@@ -102,7 +104,12 @@ function confirmDelete() {
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger as-child>
-                    <Button variant="ghost" class="h-8 w-8 p-0" :disabled="busy">
+                    <Button
+                      variant="ghost"
+                      class="h-8 w-8 p-0"
+                      :disabled="busy"
+                      :title="t('adminUsers.common.openMenu')"
+                    >
                       <span class="sr-only">{{ t("adminUsers.common.openMenu") }}</span>
                       <LucideMoreHorizontal class="h-4 w-4" />
                     </Button>
@@ -128,7 +135,13 @@ function confirmDelete() {
         </Table>
       </template>
       <template v-else>
-        <p class="text-center text-muted-foreground py-8">{{ t("adminUsers.detail.game.empty") }}</p>
+        <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center">
+          <LucideGamepad2 class="h-8 w-8 text-muted-foreground/60" />
+          <p class="text-sm text-muted-foreground">{{ t("adminUsers.detail.game.empty") }}</p>
+          <Button variant="outline" size="sm" :disabled="busy" @click="emit('add')">
+            <LucidePlus class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.game.add") }}
+          </Button>
+        </div>
       </template>
     </CardContent>
   </Card>

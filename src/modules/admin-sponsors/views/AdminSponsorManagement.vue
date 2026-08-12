@@ -98,103 +98,93 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
 
 <template>
   <div class="w-full flex flex-col gap-4">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div class="rounded-xl border bg-card p-4 shadow-sm">
+        <p class="text-sm text-muted-foreground">{{ t("adminSponsors.stats.total") }}</p>
+        <Skeleton v-if="loading" class="mt-1 h-8 w-14" />
+        <p v-else class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{{ total }}</p>
+      </div>
+      <div class="rounded-xl border bg-card p-4 shadow-sm">
+        <p class="text-sm text-muted-foreground">{{ t("adminSponsors.stats.active") }}</p>
+        <Skeleton v-if="loading" class="mt-1 h-8 w-14" />
+        <p v-else class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{{ activeCount }}</p>
+      </div>
+      <div class="rounded-xl border bg-card p-4 shadow-sm">
+        <p class="text-sm text-muted-foreground">{{ t("adminSponsors.stats.manualProfile") }}</p>
+        <Skeleton v-if="loading" class="mt-1 h-8 w-14" />
+        <p v-else class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{{ manualProfileCount }}</p>
+      </div>
+    </div>
+
     <Card>
       <CardHeader class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div class="space-y-1">
-          <CardTitle class="flex items-center gap-2 text-lg">
-            <LucideHeartHandshake class="h-5 w-5 text-pink-500" />
-            {{ t("adminSponsors.title") }}
-          </CardTitle>
+        <div class="space-y-1 min-w-0">
+          <CardTitle class="text-base">{{ t("adminSponsors.list.title") }}</CardTitle>
           <CardDescription>
-            {{ t("adminSponsors.description") }}
+            {{ t("adminSponsors.list.description") }}
             <span v-if="generatedAt" class="block mt-1">
               {{ t("adminSponsors.generatedAt", { date: formatDate(generatedAt) }) }}
             </span>
           </CardDescription>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <Button variant="outline" :disabled="loading || refreshing" @click="refreshSponsors">
+        <div class="flex flex-wrap gap-2 shrink-0">
+          <Button variant="outline" size="sm" :disabled="loading || refreshing" @click="refreshSponsors">
             <LucideLoader2 v-if="refreshing" class="mr-2 h-4 w-4 animate-spin" />
             <LucideRefreshCw v-else class="mr-2 h-4 w-4" />
             {{ t("adminSponsors.actions.refresh") }}
           </Button>
-          <Button variant="outline" :disabled="loading || syncing" @click="syncFromAfdian">
+          <Button variant="outline" size="sm" :disabled="loading || syncing" @click="syncFromAfdian">
             <LucideLoader2 v-if="syncing" class="mr-2 h-4 w-4 animate-spin" />
             <LucideSparkles v-else class="mr-2 h-4 w-4" />
             {{ t("adminSponsors.actions.syncAfdian") }}
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div class="grid gap-3 md:grid-cols-3">
-          <div class="rounded-xl border bg-muted/20 p-4">
-            <p class="text-sm text-muted-foreground">{{ t("adminSponsors.stats.total") }}</p>
-            <p class="mt-1 text-2xl font-semibold tracking-tight">{{ total }}</p>
-          </div>
-          <div class="rounded-xl border bg-muted/20 p-4">
-            <p class="text-sm text-muted-foreground">{{ t("adminSponsors.stats.active") }}</p>
-            <p class="mt-1 text-2xl font-semibold tracking-tight">{{ activeCount }}</p>
-          </div>
-          <div class="rounded-xl border bg-muted/20 p-4">
-            <p class="text-sm text-muted-foreground">{{ t("adminSponsors.stats.manualProfile") }}</p>
-            <p class="mt-1 text-2xl font-semibold tracking-tight">{{ manualProfileCount }}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card>
-      <CardHeader>
-        <CardTitle class="text-lg">{{ t("adminSponsors.list.title") }}</CardTitle>
-        <CardDescription>{{ t("adminSponsors.list.description") }}</CardDescription>
-      </CardHeader>
       <CardContent class="p-0">
-        <div class="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{{ t("adminSponsors.table.supporter") }}</TableHead>
-                <TableHead>{{ t("adminSponsors.table.tier") }}</TableHead>
-                <TableHead class="hidden lg:table-cell">{{ t("adminSponsors.table.contribution") }}</TableHead>
-                <TableHead>{{ t("adminSponsors.table.status") }}</TableHead>
-                <TableHead class="hidden md:table-cell">{{ t("adminSponsors.table.source") }}</TableHead>
-                <TableHead class="hidden lg:table-cell">{{ t("adminSponsors.table.lastSupport") }}</TableHead>
-                <TableHead>{{ t("adminSponsors.table.afdianSync") }}</TableHead>
-                <TableHead class="text-right">{{ t("adminSponsors.table.actions") }}</TableHead>
+        <Table v-if="loading || sponsors.length > 0">
+          <TableHeader>
+            <TableRow>
+              <TableHead>{{ t("adminSponsors.table.supporter") }}</TableHead>
+              <TableHead class="hidden md:table-cell">{{ t("adminSponsors.table.tier") }}</TableHead>
+              <TableHead>{{ t("adminSponsors.table.status") }}</TableHead>
+              <TableHead>{{ t("adminSponsors.table.afdianSync") }}</TableHead>
+              <TableHead class="text-right">{{ t("adminSponsors.table.actions") }}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <template v-if="loading">
+              <TableRow v-for="row in 6" :key="row">
+                <TableCell colspan="5">
+                  <Skeleton class="h-9 w-full" />
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              <template v-if="loading">
-                <TableRow v-for="row in 6" :key="row">
-                  <TableCell colspan="8">
-                    <Skeleton class="h-9 w-full" />
-                  </TableCell>
-                </TableRow>
-              </template>
+            </template>
 
-              <template v-else-if="sponsors.length > 0">
-                <TableRow v-for="sponsor in sponsors" :key="sponsor.id">
-                  <TableCell>
-                    <div class="flex min-w-[180px] items-center gap-3">
-                      <Avatar class="h-9 w-9 border">
-                        <AvatarImage :src="sponsor.avatar" :alt="fallbackName(sponsor)" />
-                        <AvatarFallback class="text-xs font-semibold">{{ fallbackInitial(sponsor) }}</AvatarFallback>
-                      </Avatar>
-                      <div class="min-w-0">
-                        <p class="truncate text-sm font-medium">{{ fallbackName(sponsor) }}</p>
-                        <p class="truncate font-mono text-[11px] text-muted-foreground">{{ sponsor.id }}</p>
-                      </div>
+            <template v-else>
+              <TableRow v-for="sponsor in sponsors" :key="sponsor.id">
+                <TableCell>
+                  <div class="flex items-center gap-3">
+                    <Avatar class="h-9 w-9 shrink-0 border">
+                      <AvatarImage :src="sponsor.avatar" :alt="fallbackName(sponsor)" />
+                      <AvatarFallback class="text-xs font-semibold">{{ fallbackInitial(sponsor) }}</AvatarFallback>
+                    </Avatar>
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-medium">{{ fallbackName(sponsor) }}</p>
+                      <p class="truncate text-xs text-muted-foreground">
+                        {{ sourceLabel(sponsor.source) }}
+                        · <span class="font-mono text-[11px]">{{ sponsor.id }}</span>
+                      </p>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <span class="line-clamp-2 max-w-[180px] text-sm">
-                      {{ sponsor.planName || t("adminSponsors.common.fallback") }}
-                    </span>
-                  </TableCell>
-                  <TableCell class="hidden lg:table-cell text-sm text-muted-foreground">
-                    {{ contributionLabel(sponsor) }}
-                  </TableCell>
-                  <TableCell>
+                  </div>
+                </TableCell>
+                <TableCell class="hidden md:table-cell">
+                  <div class="min-w-0 max-w-[200px]">
+                    <p class="truncate text-sm">{{ sponsor.planName || t("adminSponsors.common.fallback") }}</p>
+                    <p class="truncate text-xs text-muted-foreground tabular-nums">{{ contributionLabel(sponsor) }}</p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div class="flex flex-col items-start gap-1">
                     <span
                       :class="[
                         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
@@ -205,41 +195,57 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
                       <LucideBan v-else class="h-3.5 w-3.5" />
                       {{ sponsor.isActive ? t("adminSponsors.status.active") : t("adminSponsors.status.past") }}
                     </span>
-                  </TableCell>
-                  <TableCell class="hidden md:table-cell text-sm text-muted-foreground">
-                    {{ sourceLabel(sponsor.source) }}
-                  </TableCell>
-                  <TableCell class="hidden lg:table-cell text-sm text-muted-foreground">
-                    {{ formatDate(sponsor.paidAt) }}
-                  </TableCell>
-                  <TableCell>
-                    <div class="flex min-w-[170px] items-center gap-2">
-                      <Switch
-                        :model-value="sponsor.afdianSyncDisabled"
-                        :disabled="isToggling(sponsor.id)"
-                        @update:model-value="toggleAfdianSync(sponsor, !!$event)"
-                      />
-                      <span class="text-xs text-muted-foreground">
-                        {{ sponsor.afdianSyncDisabled ? t("adminSponsors.afdianSync.disabled") : t("adminSponsors.afdianSync.enabled") }}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell class="text-right">
-                    <Button variant="ghost" size="sm" @click="openEditDialog(sponsor)">
-                      <LucidePencil class="mr-2 h-4 w-4" />
-                      {{ t("adminSponsors.actions.edit") }}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              </template>
-
-              <TableRow v-else>
-                <TableCell colspan="8" class="h-24 text-center text-muted-foreground">
-                  {{ t("adminSponsors.table.empty") }}
+                    <span
+                      class="hidden xl:block text-xs text-muted-foreground tabular-nums"
+                      :title="t('adminSponsors.table.lastSupport')"
+                    >
+                      {{ formatDate(sponsor.paidAt) }}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div
+                    class="flex items-center gap-2"
+                    :title="sponsor.afdianSyncDisabled ? t('adminSponsors.afdianSync.disabled') : t('adminSponsors.afdianSync.enabled')"
+                  >
+                    <Switch
+                      :model-value="sponsor.afdianSyncDisabled"
+                      :disabled="isToggling(sponsor.id)"
+                      :aria-label="t('adminSponsors.table.afdianSync')"
+                      @update:model-value="toggleAfdianSync(sponsor, !!$event)"
+                    />
+                    <span class="hidden xl:inline text-xs text-muted-foreground">
+                      {{ sponsor.afdianSyncDisabled ? t("adminSponsors.afdianSync.disabled") : t("adminSponsors.afdianSync.enabled") }}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell class="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    :title="t('adminSponsors.actions.edit')"
+                    :aria-label="t('adminSponsors.actions.edit')"
+                    @click="openEditDialog(sponsor)"
+                  >
+                    <LucidePencil class="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
-            </TableBody>
-          </Table>
+            </template>
+          </TableBody>
+        </Table>
+
+        <div
+          v-else
+          class="mx-6 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center"
+        >
+          <LucideHeartHandshake class="h-8 w-8 text-muted-foreground/60" />
+          <p class="text-sm text-muted-foreground">{{ t("adminSponsors.table.empty") }}</p>
+          <Button variant="outline" size="sm" :disabled="syncing" @click="syncFromAfdian">
+            <LucideLoader2 v-if="syncing" class="mr-2 h-4 w-4 animate-spin" />
+            <LucideSparkles v-else class="mr-2 h-4 w-4" />
+            {{ t("adminSponsors.actions.syncAfdian") }}
+          </Button>
         </div>
       </CardContent>
     </Card>

@@ -1579,7 +1579,30 @@ export const enUS = {
     },
   },
   admin: {
+    layout: {
+      superAdmin: "Super admin",
+    },
     nav: {
+      groups: {
+        overview: "Overview",
+        usersRisk: "Users & Risk",
+        operations: "Content & Operations",
+        system: "System & Integrations",
+      },
+      descriptions: {
+        dashboard: "Key platform metrics and upload trends at a glance.",
+        users: "Browse, search and manage toolbox users.",
+        gameBindings: "Query and adjust user game-account bindings.",
+        risk: "Maintain risk rules and handle risk events.",
+        tickets: "Handle user tickets and replies.",
+        content: "Maintain friend links, recommended groups and other site content.",
+        sponsors: "Manage how the sponsor list is displayed.",
+        uploadLogs: "Track player data uploads and failure causes.",
+        logs: "Inspect system logs.",
+        oauthClients: "Manage OAuth clients, secrets and callbacks.",
+        webhooks: "Manage platform webhook deliveries.",
+        config: "Adjust system-level configuration (super admins only).",
+      },
       dashboard: "Dashboard",
       users: "Users",
       oauthClients: "OAuth clients",
@@ -2329,6 +2352,10 @@ export const enUS = {
       },
     },
     adminList: {
+      pagination: {
+        prevPage: "Previous page",
+        nextPage: "Next page",
+      },
       title: "Ticket management",
       description: "Filter pending, unassigned, and high-priority tickets quickly.",
       searchPlaceholder: "Search tickets…",
@@ -3822,6 +3849,10 @@ export const enUS = {
       resolved: "Resolved",
     },
     events: {
+      pagination: {
+        prev: "Previous page",
+        next: "Next page",
+      },
       title: "Risk events",
       createButton: "Create event",
       createDialogTitle: "Create risk event",
@@ -3879,6 +3910,10 @@ export const enUS = {
     },
   },
   adminContent: {
+    actions: {
+      edit: "Edit",
+      delete: "Delete",
+    },
     tabs: {
       links: "Friend links",
       groups: "Recommended groups",
@@ -4014,6 +4049,7 @@ export const enUS = {
       cancel: "Cancel",
     },
     form: {
+      removeRedirectUri: "Remove URI",
       nameLabel: "Client name",
       namePlaceholder: "Display name",
       clientTypeLabel: "Client type",
@@ -4403,6 +4439,11 @@ export const enUS = {
       },
     },
     systemLogs: {
+      pagination: {
+        prev: "Previous page",
+        next: "Next page",
+        total: "{total} logs in total",
+      },
       summary: {
         total: "Total logs",
       },
@@ -4415,9 +4456,6 @@ export const enUS = {
         user: "User",
         time: "Time",
         empty: "No logs",
-      },
-      pagination: {
-        total: "{total} logs in total",
       },
       detail: {
         title: "Log detail",
@@ -4439,6 +4477,11 @@ export const enUS = {
       },
     },
     uploadLogs: {
+      pagination: {
+        prev: "Previous page",
+        next: "Next page",
+        total: "{total} records in total",
+      },
       filters: {
         title: "Filters",
         expand: "Expand",
@@ -4480,9 +4523,6 @@ export const enUS = {
         description: "Review the backend error message returned for this failed upload.",
         close: "Close",
       },
-      pagination: {
-        total: "{total} records in total",
-      },
       summary: {
         totalUploads: "Total uploads",
         successRate: "Success rate",
@@ -4519,6 +4559,10 @@ export const enUS = {
     },
   },
   adminGameBindings: {
+    pagination: {
+      prevPage: "Previous page",
+      nextPage: "Next page",
+    },
     common: {
       cancel: "Cancel",
       create: "Create",
@@ -4547,6 +4591,8 @@ export const enUS = {
       userIdAsc: "User ID ↑",
     },
     table: {
+      selectAll: "Select all",
+      selectRow: "Select row",
       selectedCount: "{count} selected",
       batchUnbind: "Batch unbind",
       openMenu: "Open menu",
@@ -4685,6 +4731,8 @@ export const enUS = {
         roleDialogConfirm: "Confirm change",
       },
       pagination: {
+        prevPage: "Previous page",
+        nextPage: "Next page",
         totalUsers: "{total} users in total",
         pageSize: "Per page",
         jumpToPage: "Jump to page",

@@ -13,12 +13,14 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  LucideAlertCircle,
   LucideBan,
   LucideCheckCircle2,
   LucideShield,
   LucideShieldAlert,
   LucideTrash2,
   LucideUser,
+  LucideUsers,
 } from "lucide-vue-next"
 import { formatDate, getAllowCNMysekai, roleLabel } from "@/modules/admin-users/constants"
 import type { AdminUser } from "@/types/admin"
@@ -61,30 +63,37 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
 </script>
 
 <template>
-  <template v-if="loading">
-    <div class="p-6 flex flex-col gap-3">
-      <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
-    </div>
-  </template>
-  <template v-else>
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead class="w-12 cursor-pointer" @click.stop="emit('toggleSelectAll')">
-            <Checkbox
-              :model-value="selectAllState"
-              class="pointer-events-none"
-            />
-          </TableHead>
-          <TableHead>{{ t("adminUsers.management.table.columns.username") }}</TableHead>
-          <TableHead class="hidden sm:table-cell">{{ t("adminUsers.management.table.columns.email") }}</TableHead>
-          <TableHead>{{ t("adminUsers.management.table.columns.role") }}</TableHead>
-          <TableHead>{{ t("adminUsers.management.table.columns.allowCN") }}</TableHead>
-          <TableHead>{{ t("adminUsers.management.table.columns.status") }}</TableHead>
-          <TableHead class="hidden md:table-cell">{{ t("adminUsers.management.table.columns.createdAt") }}</TableHead>
+  <Table>
+    <TableHeader>
+      <TableRow>
+        <TableHead class="w-12 cursor-pointer" @click.stop="emit('toggleSelectAll')">
+          <Checkbox
+            :model-value="selectAllState"
+            class="pointer-events-none"
+          />
+        </TableHead>
+        <TableHead>{{ t("adminUsers.management.table.columns.username") }}</TableHead>
+        <TableHead class="hidden md:table-cell">{{ t("adminUsers.management.table.columns.email") }}</TableHead>
+        <TableHead>{{ t("adminUsers.management.table.columns.role") }}</TableHead>
+        <TableHead>{{ t("adminUsers.management.table.columns.allowCN") }}</TableHead>
+        <TableHead>{{ t("adminUsers.management.table.columns.status") }}</TableHead>
+        <TableHead class="hidden lg:table-cell">{{ t("adminUsers.management.table.columns.createdAt") }}</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      <!-- Loading: skeleton rows keep the table footprint stable -->
+      <template v-if="loading">
+        <TableRow v-for="i in 5" :key="`skeleton-${i}`" class="hover:bg-transparent">
+          <TableCell><Skeleton class="h-4 w-4 rounded" /></TableCell>
+          <TableCell><Skeleton class="h-4 w-24" /></TableCell>
+          <TableCell class="hidden md:table-cell"><Skeleton class="h-4 w-40" /></TableCell>
+          <TableCell><Skeleton class="h-5 w-20 rounded-full" /></TableCell>
+          <TableCell><Skeleton class="h-5 w-16 rounded-full" /></TableCell>
+          <TableCell><Skeleton class="h-5 w-16 rounded-full" /></TableCell>
+          <TableCell class="hidden lg:table-cell"><Skeleton class="h-4 w-20" /></TableCell>
         </TableRow>
-      </TableHeader>
-      <TableBody>
+      </template>
+      <template v-else>
         <TableRow
           v-for="user in users"
           :key="user.userId"
@@ -101,7 +110,7 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
             />
           </TableCell>
           <TableCell class="font-medium">{{ user.name }}</TableCell>
-          <TableCell class="hidden sm:table-cell text-muted-foreground">
+          <TableCell class="hidden md:table-cell text-muted-foreground">
             {{ user.email || "—" }}
           </TableCell>
           <TableCell>
@@ -160,26 +169,30 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
               }}
             </span>
           </TableCell>
-          <TableCell class="hidden md:table-cell text-muted-foreground text-sm">
+          <TableCell class="hidden lg:table-cell text-muted-foreground text-sm">
             {{ formatCreatedAt(user.createdAt) }}
           </TableCell>
         </TableRow>
-        <TableRow v-if="error && users.length === 0">
-          <TableCell :colspan="7" class="text-center py-8">
-            <div class="flex flex-col items-center gap-3 text-muted-foreground">
-              <span>{{ t("adminUsers.management.table.loadError") }}</span>
+        <TableRow v-if="error && users.length === 0" class="hover:bg-transparent">
+          <TableCell :colspan="7" class="p-0">
+            <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
+              <LucideAlertCircle class="h-8 w-8 text-muted-foreground/60" />
+              <p class="text-sm text-muted-foreground">{{ t("adminUsers.management.table.loadError") }}</p>
               <Button variant="outline" size="sm" @click="emit('retry')">
                 {{ t("adminUsers.management.table.retry") }}
               </Button>
             </div>
           </TableCell>
         </TableRow>
-        <TableRow v-else-if="users.length === 0">
-          <TableCell :colspan="7" class="text-center py-8 text-muted-foreground">
-            {{ t("adminUsers.management.table.empty") }}
+        <TableRow v-else-if="users.length === 0" class="hover:bg-transparent">
+          <TableCell :colspan="7" class="p-0">
+            <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
+              <LucideUsers class="h-8 w-8 text-muted-foreground/60" />
+              <p class="text-sm text-muted-foreground">{{ t("adminUsers.management.table.empty") }}</p>
+            </div>
           </TableCell>
         </TableRow>
-      </TableBody>
-    </Table>
-  </template>
+      </template>
+    </TableBody>
+  </Table>
 </template>

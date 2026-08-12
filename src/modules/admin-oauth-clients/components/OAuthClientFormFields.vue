@@ -55,7 +55,7 @@ function handleClientTypeChange(value: unknown) {
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-4">
+  <div class="grid gap-4 sm:grid-cols-2">
     <div class="flex flex-col gap-2">
       <Label>{{ t("adminOAuthClients.form.nameLabel") }}</Label>
       <Input
@@ -109,7 +109,10 @@ function handleClientTypeChange(value: unknown) {
       <Button
         v-if="props.redirectUris.length > 1"
         variant="ghost"
-        size="sm"
+        size="icon"
+        class="shrink-0"
+        :title="t('adminOAuthClients.form.removeRedirectUri')"
+        :aria-label="t('adminOAuthClients.form.removeRedirectUri')"
         @click="emit('remove-redirect-uri', i)"
       >
         <LucideX class="w-4 h-4" />

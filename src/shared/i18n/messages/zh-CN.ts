@@ -1579,7 +1579,30 @@ export const zhCN = {
     },
   },
   admin: {
+    layout: {
+      superAdmin: "超级管理员",
+    },
     nav: {
+      groups: {
+        overview: "概览",
+        usersRisk: "用户与风控",
+        operations: "内容与运营",
+        system: "系统与集成",
+      },
+      descriptions: {
+        dashboard: "平台关键指标与上传趋势总览。",
+        users: "查看、搜索与管理工具箱用户。",
+        gameBindings: "查询与调整用户的游戏账号绑定。",
+        risk: "维护风控规则并处置风险事件。",
+        tickets: "处理用户提交的工单与回复。",
+        content: "维护友情链接与推荐群聊等站点内容。",
+        sponsors: "管理赞助者名单的展示。",
+        uploadLogs: "追踪玩家数据上传记录与失败原因。",
+        logs: "查看系统运行日志。",
+        oauthClients: "管理 OAuth 客户端、密钥与回调。",
+        webhooks: "管理平台 Webhook 推送。",
+        config: "调整系统级配置（仅超级管理员可见）。",
+      },
       dashboard: "仪表盘",
       users: "用户管理",
       oauthClients: "OAuth客户端",
@@ -2329,6 +2352,10 @@ export const zhCN = {
       },
     },
     adminList: {
+      pagination: {
+        prevPage: "上一页",
+        nextPage: "下一页",
+      },
       title: "工单管理",
       description: "快速筛选待处理、未分配和高优先级工单。",
       searchPlaceholder: "搜索工单…",
@@ -3822,6 +3849,10 @@ export const zhCN = {
       resolved: "已解决",
     },
     events: {
+      pagination: {
+        prev: "上一页",
+        next: "下一页",
+      },
       title: "风控事件",
       createButton: "创建事件",
       createDialogTitle: "创建风控事件",
@@ -3879,6 +3910,10 @@ export const zhCN = {
     },
   },
   adminContent: {
+    actions: {
+      edit: "编辑",
+      delete: "删除",
+    },
     tabs: {
       links: "友情链接管理",
       groups: "推荐群聊管理",
@@ -4014,6 +4049,7 @@ export const zhCN = {
       cancel: "取消",
     },
     form: {
+      removeRedirectUri: "删除此URI",
       nameLabel: "客户端名称",
       namePlaceholder: "显示名称",
       clientTypeLabel: "客户端类型",
@@ -4403,6 +4439,11 @@ export const zhCN = {
       },
     },
     systemLogs: {
+      pagination: {
+        prev: "上一页",
+        next: "下一页",
+        total: "共 {total} 条日志",
+      },
       summary: {
         total: "总日志",
       },
@@ -4415,9 +4456,6 @@ export const zhCN = {
         user: "用户",
         time: "时间",
         empty: "暂无日志",
-      },
-      pagination: {
-        total: "共 {total} 条日志",
       },
       detail: {
         title: "日志详情",
@@ -4439,6 +4477,11 @@ export const zhCN = {
       },
     },
     uploadLogs: {
+      pagination: {
+        prev: "上一页",
+        next: "下一页",
+        total: "共 {total} 条记录",
+      },
       filters: {
         title: "筛选条件",
         expand: "展开",
@@ -4480,9 +4523,6 @@ export const zhCN = {
         description: "查看这次上传失败时后端返回的错误信息。",
         close: "关闭",
       },
-      pagination: {
-        total: "共 {total} 条记录",
-      },
       summary: {
         totalUploads: "总上传数",
         successRate: "成功率",
@@ -4519,6 +4559,10 @@ export const zhCN = {
     },
   },
   adminGameBindings: {
+    pagination: {
+      prevPage: "上一页",
+      nextPage: "下一页",
+    },
     common: {
       cancel: "取消",
       create: "创建",
@@ -4547,6 +4591,8 @@ export const zhCN = {
       userIdAsc: "用户ID ↑",
     },
     table: {
+      selectAll: "全选",
+      selectRow: "选择该行",
       selectedCount: "已选 {count} 条",
       batchUnbind: "批量解绑",
       openMenu: "打开菜单",
@@ -4685,6 +4731,8 @@ export const zhCN = {
         roleDialogConfirm: "确认变更",
       },
       pagination: {
+        prevPage: "上一页",
+        nextPage: "下一页",
         totalUsers: "共 {total} 个用户",
         pageSize: "每页显示",
         jumpToPage: "跳转到页",

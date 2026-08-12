@@ -23,6 +23,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import {
+  LucideActivity,
   LucideCheckCircle2,
   LucideXCircle,
 } from "lucide-vue-next"
@@ -74,7 +75,7 @@ function dataTypeLabel(value?: string) {
               <TableRow>
                 <TableHead>{{ t("adminUsers.detail.activity.columns.action") }}</TableHead>
                 <TableHead>{{ t("adminUsers.detail.activity.columns.result") }}</TableHead>
-                <TableHead class="hidden sm:table-cell">{{ t("adminUsers.detail.activity.columns.path") }}</TableHead>
+                <TableHead class="hidden md:table-cell">{{ t("adminUsers.detail.activity.columns.path") }}</TableHead>
                 <TableHead>{{ t("adminUsers.detail.activity.columns.time") }}</TableHead>
               </TableRow>
             </TableHeader>
@@ -93,7 +94,7 @@ function dataTypeLabel(value?: string) {
                     {{ activity.result === 'success' ? t("adminUsers.common.success") : t("adminUsers.common.failed") }}
                   </span>
                 </TableCell>
-                <TableCell class="hidden sm:table-cell text-muted-foreground text-sm">{{ activity.path || "—" }}</TableCell>
+                <TableCell class="hidden md:table-cell text-muted-foreground text-sm">{{ activity.path || "—" }}</TableCell>
                 <TableCell class="text-sm text-muted-foreground whitespace-nowrap">
                   {{ formatActivityTime(activity.eventTime) }}
                 </TableCell>
@@ -102,7 +103,10 @@ function dataTypeLabel(value?: string) {
           </Table>
         </template>
         <template v-else>
-          <p class="text-center text-muted-foreground py-8">{{ t("adminUsers.detail.activity.empty") }}</p>
+          <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center">
+            <LucideActivity class="h-8 w-8 text-muted-foreground/60" />
+            <p class="text-sm text-muted-foreground">{{ t("adminUsers.detail.activity.empty") }}</p>
+          </div>
         </template>
       </CardContent>
     </Card>

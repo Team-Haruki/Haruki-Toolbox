@@ -57,7 +57,7 @@ function parseDate(value: unknown) {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
     <div class="flex flex-col gap-1.5">
       <Label class="text-sm">{{ t("adminUsers.management.filters.searchLabel") }}</Label>
       <div class="relative">

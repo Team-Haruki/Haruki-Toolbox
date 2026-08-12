@@ -53,7 +53,7 @@ const socialPlatforms = computed(() => getSocialPlatforms(t))
         <Skeleton class="h-20 w-full" />
       </template>
       <template v-else-if="socialPlatform">
-        <div class="flex items-center justify-between p-4 border rounded-xl bg-card hover:bg-muted/30 transition-colors">
+        <div class="flex flex-wrap items-center justify-between gap-3 p-4 border rounded-lg bg-card hover:bg-muted/30 transition-colors">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
               <component :is="socialPlatforms[socialPlatform.platform]?.icon || LucideGlobe" class="w-6 h-6" />
@@ -80,7 +80,14 @@ const socialPlatforms = computed(() => getSocialPlatforms(t))
             <Button variant="ghost" size="sm" :disabled="busy" @click="emit('edit')">{{ t("adminUsers.common.edit") }}</Button>
             <AlertDialog>
               <AlertDialogTrigger as-child>
-                <Button variant="ghost" size="sm" class="text-destructive" :disabled="busy">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="text-destructive hover:text-destructive"
+                  :disabled="busy"
+                  :title="t('adminUsers.detail.info.delete')"
+                  :aria-label="t('adminUsers.detail.info.delete')"
+                >
                   <LucideTrash2 class="w-4 h-4" />
                 </Button>
               </AlertDialogTrigger>
@@ -101,9 +108,12 @@ const socialPlatforms = computed(() => getSocialPlatforms(t))
         </div>
       </template>
       <template v-else>
-        <div class="flex flex-col items-center gap-3 py-8">
-          <p class="text-muted-foreground">{{ t("adminUsers.detail.social.empty") }}</p>
-          <Button variant="outline" size="sm" :disabled="busy" @click="emit('edit')">{{ t("adminUsers.detail.social.add") }}</Button>
+        <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center">
+          <LucideGlobe class="h-8 w-8 text-muted-foreground/60" />
+          <p class="text-sm text-muted-foreground">{{ t("adminUsers.detail.social.empty") }}</p>
+          <Button variant="outline" size="sm" :disabled="busy" @click="emit('edit')">
+            {{ t("adminUsers.detail.social.add") }}
+          </Button>
         </div>
       </template>
     </CardContent>
