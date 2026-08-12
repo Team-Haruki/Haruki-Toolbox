@@ -318,6 +318,7 @@ function nextPage() {
         class="inline-flex items-center gap-1.5 rounded-full border bg-muted/40 py-0.5 pl-1 pr-1.5 text-xs"
       >
         <img
+          decoding="async"
           v-if="item.option.iconUrl"
           :src="item.option.iconUrl"
           alt=""

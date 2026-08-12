@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test"
 import type { MusicLibraryEntry } from "./music-data"
 import {
+  countMusicPages,
   createDefaultMusicLibraryFilter,
   excludeUnreleasedMusicEntries,
   filterMusicEntries,
@@ -9,6 +10,7 @@ import {
   listMusicTagOptions,
   listMusicYearOptions,
   matchesMusicSearch,
+  paginateMusicEntries,
   sortMusicEntries,
 } from "./music-filter"
 
@@ -270,5 +272,23 @@ describe("unreleased helpers", () => {
     ]
     expect(excludeUnreleasedMusicEntries(input, now).map((entry) => entry.id)).toEqual([1, 3])
     expect(input.map((entry) => entry.id)).toEqual([1, 2, 3])
+  })
+})
+
+describe("pagination", () => {
+  const items = Array.from({ length: 130 }, (_, index) => index + 1)
+
+  it("counts pages", () => {
+    expect(countMusicPages(0, 60)).toBe(1)
+    expect(countMusicPages(60, 60)).toBe(1)
+    expect(countMusicPages(61, 60)).toBe(2)
+    expect(countMusicPages(130, 60)).toBe(3)
+  })
+
+  it("slices pages and clamps out-of-range pages", () => {
+    expect(paginateMusicEntries(items, 1, 60)).toHaveLength(60)
+    expect(paginateMusicEntries(items, 3, 60)).toHaveLength(10)
+    expect(paginateMusicEntries(items, 99, 60)).toHaveLength(10)
+    expect(paginateMusicEntries(items, 0, 60)[0]).toBe(1)
   })
 })

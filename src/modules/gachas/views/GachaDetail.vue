@@ -508,6 +508,7 @@ const canGoBack = computed(() => {
                 :title="t(`cards.unit.${group.unit}`)"
               >
                 <img
+                  decoding="async"
                   v-if="!failedUnitLogos.has(group.unit)"
                   :src="group.logoUrl ?? undefined"
                   alt=""
@@ -535,6 +536,7 @@ const canGoBack = computed(() => {
                 @click="togglePoolCharacter(character.id)"
               >
                 <img
+                  decoding="async"
                   v-if="character.iconUrl"
                   :src="character.iconUrl"
                   :alt="character.name"
@@ -566,6 +568,7 @@ const canGoBack = computed(() => {
               @click="togglePoolUnit(unit)"
             >
               <img
+                decoding="async"
                 v-if="!failedUnitLogos.has(unit)"
                 :src="resolveUnitLogoUrl(unit)"
                 alt=""
@@ -592,7 +595,7 @@ const canGoBack = computed(() => {
               ]"
               @click="togglePoolAttr(attr)"
             >
-              <img :src="resolveCardAttrRoundIconUrl(attr)" alt="" class="size-4" loading="lazy">
+              <img :src="resolveCardAttrRoundIconUrl(attr)" alt="" class="size-4" loading="lazy" decoding="async">
               {{ t(`cards.attr.${attr}`) }}
             </button>
           </div>

@@ -85,6 +85,7 @@ const showBand = computed(() => props.levelBand || props.levelLabel != null)
     :aria-label="title ?? thumbnail.title ?? `#${thumbnail.cardId}`"
   >
     <img
+      decoding="async"
       v-if="artUrl && !artFailed"
       :src="artUrl"
       alt=""
@@ -102,6 +103,7 @@ const showBand = computed(() => props.levelBand || props.levelLabel != null)
       aria-hidden="true"
     />
     <img
+      decoding="async"
       v-if="thumbnail.frameUrl"
       :src="thumbnail.frameUrl"
       alt=""
@@ -109,6 +111,7 @@ const showBand = computed(() => props.levelBand || props.levelLabel != null)
       loading="lazy"
     >
     <img
+      decoding="async"
       v-if="thumbnail.attrIconUrl"
       :src="thumbnail.attrIconUrl"
       alt=""
@@ -123,6 +126,7 @@ const showBand = computed(() => props.levelBand || props.levelLabel != null)
       ]"
     >
       <img
+        decoding="async"
         v-for="index in rareIndexes"
         :key="index"
         :src="rareIconUrl"
@@ -138,6 +142,7 @@ const showBand = computed(() => props.levelBand || props.levelLabel != null)
       {{ levelLabel }}
     </span>
     <img
+      decoding="async"
       v-if="thumbnail.trainRankUrl"
       :src="thumbnail.trainRankUrl"
       alt=""
@@ -145,6 +150,7 @@ const showBand = computed(() => props.levelBand || props.levelLabel != null)
       loading="lazy"
     >
     <img
+      decoding="async"
       v-if="!unreleased && !cornerBadge && thumbnail.canvasIconUrl"
       :src="thumbnail.canvasIconUrl"
       alt=""

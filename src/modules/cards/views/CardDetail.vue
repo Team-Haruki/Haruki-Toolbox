@@ -420,6 +420,7 @@ const canGoBack = computed(() => {
           ]"
         >
           <img
+            decoding="async"
             v-if="artUrl && !artFailed"
             :src="artUrl"
             :alt="card.prefix ?? `#${card.id}`"
@@ -448,7 +449,7 @@ const canGoBack = computed(() => {
               <dt class="text-muted-foreground">{{ t("cards.detail.character") }}</dt>
               <dd class="flex items-center gap-2">
                 <template v-if="character">
-                  <img :src="character.iconUrl" alt="" class="size-6 rounded-full" loading="lazy">
+                  <img :src="character.iconUrl" alt="" class="size-6 rounded-full" loading="lazy" decoding="async">
                   <span>{{ character.name }}</span>
                 </template>
                 <span v-else>—</span>
@@ -458,6 +459,7 @@ const canGoBack = computed(() => {
               <dd class="flex items-center gap-2">
                 <template v-if="unit">
                   <img
+                    decoding="async"
                     v-if="!failedUnitLogos.has(unit)"
                     :src="resolveUnitLogoUrl(unit)"
                     alt=""
@@ -475,6 +477,7 @@ const canGoBack = computed(() => {
                 <dt class="text-muted-foreground">{{ t("cards.detail.supportUnit") }}</dt>
                 <dd class="flex items-center gap-2">
                   <img
+                    decoding="async"
                     v-if="!failedUnitLogos.has(supportUnit)"
                     :src="resolveUnitLogoUrl(supportUnit)"
                     alt=""
@@ -490,6 +493,7 @@ const canGoBack = computed(() => {
               <dt class="text-muted-foreground">{{ t("cards.detail.attr") }}</dt>
               <dd class="flex items-center gap-2">
                 <img
+                  decoding="async"
                   v-if="card.attr"
                   :src="resolveCardAttrRoundIconUrl(card.attr)"
                   alt=""
@@ -503,6 +507,7 @@ const canGoBack = computed(() => {
               <dd class="flex items-center gap-0.5">
                 <template v-if="thumbnail?.rareIconUrl && rareIndexes.length > 0">
                   <img
+                    decoding="async"
                     v-for="index in rareIndexes"
                     :key="index"
                     :src="thumbnail.rareIconUrl"
@@ -680,6 +685,7 @@ const canGoBack = computed(() => {
                   @click="toggleCostumePreview(color.costume3dId)"
                 >
                   <img
+                    decoding="async"
                     :src="costumeThumbnailUrl(color.assetbundleName)"
                     :alt="costumeColorLabel(color) || costumeGroupName(group)"
                     class="size-full object-contain"

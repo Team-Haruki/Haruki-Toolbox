@@ -393,6 +393,7 @@ function formatRecordDate(value: number | null) {
                     <TableCell class="py-1.5">
                       <div class="flex min-w-0 items-center gap-2 pl-10">
                         <img
+                          decoding="async"
                           v-if="chapter.gameCharacterId != null"
                           :src="resolveCharacterIconUrl(chapter.gameCharacterId)"
                           :alt="characterName(chapter.gameCharacterId)"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { RouterLink } from "vue-router"
 import { useI18n } from "vue-i18n"
 import type { AcceptableValue } from "reka-ui"
@@ -7,6 +7,8 @@ import {
   ArrowDown,
   ArrowUp,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -46,10 +48,12 @@ import {
   MUSIC_CHARACTER_FILTER_SCOPES,
   MUSIC_NOTE_COUNT_FILTER_MODES,
   MUSIC_SORT_KEYS,
+  countMusicPages,
   createDefaultMusicLibraryFilter,
   excludeUnreleasedMusicEntries,
   filterMusicEntries,
   isMusicEntryUnreleased,
+  paginateMusicEntries,
   sortMusicEntries,
   type MusicCharacterFilterScope,
   type MusicLibraryFilter,
@@ -59,6 +63,7 @@ import {
 } from "../lib/music-filter"
 
 const ALL_OPTION = "all"
+const PAGE_SIZE = 60
 
 const { t, te, locale } = useI18n()
 const settingsStore = useSettingsStore()
@@ -92,6 +97,7 @@ const selectedCharacterId = ref<number | null>(null)
 const characterScope = ref<MusicCharacterFilterScope>("any")
 const sortKey = ref<MusicSortKey>("publishedAt")
 const sortDirection = ref<MusicSortDirection>("desc")
+const page = ref(1)
 
 const filter = computed<MusicLibraryFilter>(() => ({
   ...createDefaultMusicLibraryFilter(),
@@ -149,6 +155,25 @@ const visibleEntries = computed(() => {
     sortDirection.value,
     selectedDifficulty.value,
   )
+})
+
+const totalPages = computed(() => countMusicPages(visibleEntries.value.length, PAGE_SIZE))
+
+const pagedEntryViews = computed(() => {
+  const now = Date.now()
+  return paginateMusicEntries(visibleEntries.value, page.value, PAGE_SIZE)
+    .map((entry) => ({
+      entry,
+      jacketUrl: jacketUrl(entry),
+      dateLabel: formatDateLabel(entry.publishedAt),
+      unreleased: isMusicEntryUnreleased(entry, now),
+      eventBox: entryEventBox(entry),
+      difficulties: entryDifficulties(entry),
+    }))
+})
+
+watch([filter, sortKey, sortDirection, region, hideUnreleased, aliasMatchedIds], () => {
+  page.value = 1
 })
 
 const showSkeleton = computed(() => loading.value && entries.value.length === 0)
@@ -213,6 +238,14 @@ function resetFilters() {
   characterScope.value = "any"
   sortKey.value = "publishedAt"
   sortDirection.value = "desc"
+}
+
+function prevPage() {
+  page.value = Math.max(1, page.value - 1)
+}
+
+function nextPage() {
+  page.value = Math.min(totalPages.value, page.value + 1)
 }
 
 function jacketUrl(entry: MusicLibraryEntry): string | null {
@@ -425,6 +458,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                       >
                         <span class="flex items-center gap-2">
                           <img
+                            decoding="async"
                             v-if="option.iconUrl"
                             :src="option.iconUrl"
                             alt=""
@@ -520,72 +554,82 @@ function toNullableNumber(value: number | string | undefined | null): number | n
         </div>
       </div>
 
-      <div
-        v-else-if="visibleEntries.length > 0"
-        class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
-      >
-        <RouterLink
-          v-for="entry in visibleEntries"
-          :key="entry.id"
-          :to="`/music/${entry.id}`"
-          class="group flex flex-col gap-2 rounded-lg border bg-card p-3 shadow-xs transition-colors hover:bg-accent/50 dark:hover:bg-accent/30"
-        >
-          <div class="relative aspect-square w-full overflow-hidden rounded-md">
-            <MusicJacket
-              :url="jacketUrl(entry)"
-              :alt="entry.title"
-              class="size-full"
-              :class="isMusicEntryUnreleased(entry) && blurUnreleased ? 'blur-md scale-105' : ''"
-            />
-            <span
-              v-if="isMusicEntryUnreleased(entry)"
-              class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm"
-            >
-              {{ t("sekaiUnreleased.badge") }}
-            </span>
-          </div>
-          <div class="min-w-0 space-y-1">
-            <p class="truncate text-sm font-medium" :title="entry.title">{{ entry.title }}</p>
-            <p class="flex items-center gap-1 text-xs text-muted-foreground">
-              <CalendarDays class="size-3.5 shrink-0" />
-              {{ formatDateLabel(entry.publishedAt) ?? t("musicLibrary.list.unknownDate") }}
-            </p>
-            <p
-              v-if="entryEventBox(entry)"
-              class="flex items-center gap-1 truncate text-xs text-muted-foreground"
-              :title="t('musicLibrary.eventBox.title', {
-                name: entryEventBox(entry)!.name,
-                count: entryEventBox(entry)!.boxNumber,
-              })"
-            >
-              <img
-                v-if="entryEventBox(entry)!.iconUrl"
-                :src="entryEventBox(entry)!.iconUrl ?? undefined"
-                alt=""
-                class="size-3.5 shrink-0 rounded-full"
-                loading="lazy"
+      <template v-else-if="visibleEntries.length > 0">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <RouterLink
+            v-for="view in pagedEntryViews"
+            :key="view.entry.id"
+            :to="`/music/${view.entry.id}`"
+            class="group flex flex-col gap-2 rounded-lg border bg-card p-3 shadow-xs transition-colors hover:bg-accent/50 dark:hover:bg-accent/30"
+          >
+            <div class="relative aspect-square w-full overflow-hidden rounded-md">
+              <MusicJacket
+                :url="view.jacketUrl"
+                :alt="view.entry.title"
+                class="size-full"
+                :class="view.unreleased && blurUnreleased ? 'blur-md scale-105' : ''"
+              />
+              <span
+                v-if="view.unreleased"
+                class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm"
               >
-              <span class="truncate">
-                {{ t("musicLibrary.eventBox.short", {
-                  name: entryEventBox(entry)!.name,
-                  count: entryEventBox(entry)!.boxNumber,
-                }) }}
+                {{ t("sekaiUnreleased.badge") }}
               </span>
-            </p>
-          </div>
-          <div class="mt-auto flex flex-wrap gap-1">
-            <span
-              v-for="item in entryDifficulties(entry)"
-              :key="item.difficulty"
-              class="inline-flex min-w-7 items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold text-white"
-              :style="{ backgroundColor: item.color }"
-              :title="difficultyLabel(item.difficulty)"
-            >
-              {{ item.playLevel ?? "-" }}
-            </span>
-          </div>
-        </RouterLink>
-      </div>
+            </div>
+            <div class="min-w-0 space-y-1">
+              <p class="truncate text-sm font-medium" :title="view.entry.title">{{ view.entry.title }}</p>
+              <p class="flex items-center gap-1 text-xs text-muted-foreground">
+                <CalendarDays class="size-3.5 shrink-0" />
+                {{ view.dateLabel ?? t("musicLibrary.list.unknownDate") }}
+              </p>
+              <p
+                v-if="view.eventBox"
+                class="flex items-center gap-1 truncate text-xs text-muted-foreground"
+                :title="t('musicLibrary.eventBox.title', {
+                  name: view.eventBox.name,
+                  count: view.eventBox.boxNumber,
+                })"
+              >
+                <img
+                  v-if="view.eventBox.iconUrl"
+                  decoding="async"
+                  :src="view.eventBox.iconUrl ?? undefined"
+                  alt=""
+                  class="size-3.5 shrink-0 rounded-full"
+                  loading="lazy"
+                >
+                <span class="truncate">
+                  {{ t("musicLibrary.eventBox.short", {
+                    name: view.eventBox.name,
+                    count: view.eventBox.boxNumber,
+                  }) }}
+                </span>
+              </p>
+            </div>
+            <div class="mt-auto flex flex-wrap gap-1">
+              <span
+                v-for="item in view.difficulties"
+                :key="item.difficulty"
+                class="inline-flex min-w-7 items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold text-white"
+                :style="{ backgroundColor: item.color }"
+                :title="difficultyLabel(item.difficulty)"
+              >
+                {{ item.playLevel ?? "-" }}
+              </span>
+            </div>
+          </RouterLink>
+        </div>
+
+        <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 pb-4">
+          <Button variant="outline" size="sm" :disabled="page <= 1" @click="prevPage">
+            <ChevronLeft class="size-4" />
+          </Button>
+          <span class="text-sm tabular-nums">{{ page }} / {{ totalPages }}</span>
+          <Button variant="outline" size="sm" :disabled="page >= totalPages" @click="nextPage">
+            <ChevronRight class="size-4" />
+          </Button>
+        </div>
+      </template>
 
       <div
         v-else-if="!loading"

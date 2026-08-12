@@ -626,6 +626,7 @@ watch(
                       class="mx-auto block h-auto w-full max-w-[256px]"
                       :width="field.width || undefined"
                       :height="field.height || undefined"
+                      loading="lazy"
                     />
                   </div>
                   <div

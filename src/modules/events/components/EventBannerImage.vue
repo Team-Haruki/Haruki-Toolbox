@@ -47,6 +47,7 @@ function handleError() {
 
 <template>
   <img
+    decoding="async"
     v-if="currentUrl"
     :src="currentUrl"
     :alt="alt"

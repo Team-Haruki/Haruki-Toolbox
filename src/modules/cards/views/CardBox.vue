@@ -416,7 +416,7 @@ function retry() {
                 ]"
                 @click="toggleFlatAttr(attr)"
               >
-                <img :src="resolveCardAttrRoundIconUrl(attr)" alt="" class="size-4" loading="lazy">
+                <img :src="resolveCardAttrRoundIconUrl(attr)" alt="" class="size-4" loading="lazy" decoding="async">
                 {{ t(`cards.attr.${attr}`) }}
               </button>
             </div>
@@ -446,7 +446,7 @@ function retry() {
                 :style="row.color ? { borderLeftColor: row.color } : {}"
               >
                 <div class="flex items-center gap-2">
-                  <img v-if="row.iconUrl" :src="row.iconUrl" alt="" class="size-7 shrink-0 rounded-full" loading="lazy">
+                  <img v-if="row.iconUrl" :src="row.iconUrl" alt="" class="size-7 shrink-0 rounded-full" loading="lazy" decoding="async">
                   <span class="min-w-0 flex-1 truncate text-xs font-medium" :title="row.name">{{ row.name }}</span>
                   <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
                     {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
@@ -476,6 +476,7 @@ function retry() {
                 <div class="flex items-center gap-2">
                   <span class="flex w-9 shrink-0 justify-center">
                     <img
+                      decoding="async"
                       v-if="!failedUnitLogos.has(row.unit)"
                       :src="row.logoUrl"
                       alt=""
@@ -510,7 +511,7 @@ function retry() {
                 :style="row.color ? { borderLeftColor: row.color } : {}"
               >
                 <div class="flex items-center gap-2">
-                  <img :src="row.iconUrl" alt="" class="size-5 shrink-0" loading="lazy">
+                  <img :src="row.iconUrl" alt="" class="size-5 shrink-0" loading="lazy" decoding="async">
                   <span class="min-w-0 flex-1 truncate text-xs font-medium">{{ row.name }}</span>
                   <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
                     {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
@@ -534,6 +535,7 @@ function retry() {
                 <div class="flex items-center gap-2">
                   <span class="inline-flex shrink-0 items-center">
                     <img
+                      decoding="async"
                       v-for="(iconUrl, index) in row.iconUrls"
                       :key="`${row.rarity}-${index}`"
                       :src="iconUrl"
@@ -566,7 +568,7 @@ function retry() {
       <template v-else-if="groupMode === 'character'">
         <section v-for="section in characterSections" :key="section.key" class="flex flex-col gap-2">
           <div class="flex items-center gap-3">
-            <img v-if="section.iconUrl" :src="section.iconUrl" alt="" class="size-8 shrink-0 rounded-full" loading="lazy">
+            <img v-if="section.iconUrl" :src="section.iconUrl" alt="" class="size-8 shrink-0 rounded-full" loading="lazy" decoding="async">
             <div class="min-w-0 flex-1">
               <div class="flex items-baseline justify-between gap-2">
                 <h2 class="truncate text-sm font-semibold">{{ section.name }}</h2>
@@ -610,7 +612,7 @@ function retry() {
       <template v-else-if="groupMode === 'attr'">
         <section v-for="section in attrSections" :key="section.key" class="flex flex-col gap-2">
           <div class="flex items-center gap-3">
-            <img :src="section.iconUrl" alt="" class="size-7 shrink-0" loading="lazy">
+            <img :src="section.iconUrl" alt="" class="size-7 shrink-0" loading="lazy" decoding="async">
             <div class="min-w-0 flex-1">
               <div class="flex items-baseline justify-between gap-2">
                 <h2 class="truncate text-sm font-semibold">{{ section.name }}</h2>

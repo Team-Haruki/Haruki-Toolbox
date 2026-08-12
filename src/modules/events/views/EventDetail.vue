@@ -67,19 +67,27 @@ const {
   reload,
 } = useEventDetail(region, eventIdNumber)
 
+/** Fine-grained clock (1s) — only the countdown text needs per-second updates. */
 const nowMs = ref(Date.now())
 const nowTimer = setInterval(() => {
   nowMs.value = Date.now()
 }, 1000)
 
+/** Coarse clock (30s) — status/unreleased checks don't need per-second re-evaluation. */
+const coarseNowMs = ref(Date.now())
+const coarseNowTimer = setInterval(() => {
+  coarseNowMs.value = Date.now()
+}, 30_000)
+
 onBeforeUnmount(() => {
   clearInterval(nowTimer)
+  clearInterval(coarseNowTimer)
 })
 
-const status = computed(() => (event.value ? resolveEventStatus(event.value, nowMs.value) : null))
+const status = computed(() => (event.value ? resolveEventStatus(event.value, coarseNowMs.value) : null))
 
 const { blurUnreleased } = useUnreleasedContentDisplay()
-const unreleased = computed(() => event.value != null && isEventUnreleased(event.value, nowMs.value))
+const unreleased = computed(() => event.value != null && isEventUnreleased(event.value, coarseNowMs.value))
 
 const countdown = computed(() => {
   if (!event.value || !status.value) {
@@ -197,6 +205,7 @@ const canGoBack = computed(() => {
       <!-- Hero -->
       <Card class="relative overflow-hidden py-0">
         <img
+          decoding="async"
           v-if="backgroundUrl && !backgroundFailed"
           :src="backgroundUrl"
           alt=""
@@ -297,6 +306,7 @@ const canGoBack = computed(() => {
             class="flex flex-wrap items-center gap-2 rounded-md border border-border/60 px-3 py-2"
           >
             <img
+              decoding="async"
               v-if="group.cardAttr"
               :src="resolveCardAttrRoundIconUrl(group.cardAttr)"
               :alt="t(`events.attr.${group.cardAttr}`)"
@@ -308,6 +318,7 @@ const canGoBack = computed(() => {
             </span>
             <div v-else class="flex min-w-0 flex-1 flex-wrap items-center gap-1">
               <img
+                decoding="async"
                 v-for="character in group.characters"
                 :key="character.gameCharacterId"
                 :src="bonusCharacterIconUrl(character)"
@@ -337,6 +348,7 @@ const canGoBack = computed(() => {
           >
             <div class="flex min-w-0 items-center gap-3">
               <img
+                decoding="async"
                 v-if="chapter.gameCharacterId != null"
                 :src="resolveCharacterIconUrl(chapter.gameCharacterId)"
                 :alt="characterName(chapter.gameCharacterId) ?? ''"

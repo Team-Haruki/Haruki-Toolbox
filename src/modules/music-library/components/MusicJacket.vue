@@ -20,6 +20,7 @@ watch(
 <template>
   <div class="relative overflow-hidden bg-muted">
     <img
+      decoding="async"
       v-if="props.url && !failed"
       :src="props.url"
       :alt="props.alt"

@@ -629,6 +629,7 @@ function eventBoxHint(eventId: number) {
                     class="inline-flex items-center gap-1.5 rounded-full border bg-background px-2 py-0.5 text-xs dark:bg-input/30"
                   >
                     <img
+                      decoding="async"
                       v-if="vocalCharacterIcon(character)"
                       :src="vocalCharacterIcon(character) ?? undefined"
                       :alt="vocalCharacterName(character)"
@@ -682,6 +683,7 @@ function eventBoxHint(eventId: number) {
                     })"
                   >
                     <img
+                      decoding="async"
                       v-if="eventBoxHint(event.eventId)!.iconUrl"
                       :src="eventBoxHint(event.eventId)!.iconUrl ?? undefined"
                       alt=""

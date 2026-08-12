@@ -188,6 +188,25 @@ export function listMusicYearOptions(entries: readonly MusicLibraryEntry[]): num
   return [...years].sort((a, b) => b - a)
 }
 
+export function countMusicPages(total: number, pageSize: number): number {
+  if (pageSize <= 0) {
+    return 1
+  }
+
+  return Math.max(1, Math.ceil(total / pageSize))
+}
+
+export function paginateMusicEntries<T>(items: readonly T[], page: number, pageSize: number): T[] {
+  if (pageSize <= 0) {
+    return [...items]
+  }
+
+  const totalPages = countMusicPages(items.length, pageSize)
+  const safePage = Math.min(Math.max(1, page), totalPages)
+  const start = (safePage - 1) * pageSize
+  return items.slice(start, start + pageSize)
+}
+
 function matchesCharacter(
   entry: MusicLibraryEntry,
   filter: MusicLibraryFilter,
