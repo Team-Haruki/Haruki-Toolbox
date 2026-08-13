@@ -142,7 +142,7 @@ function handlePointerMove(event: PointerEvent) {
   }
   const deltaX = event.clientX - dragLastX
   dragLastX = event.clientX
-  yawDegrees = (yawDegrees + deltaX * 0.33) % 360
+  yawDegrees = (yawDegrees - deltaX * 0.33) % 360
   kernel.setViewYawDegrees(yawDegrees)
 }
 

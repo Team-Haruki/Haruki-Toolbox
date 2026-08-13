@@ -1,4 +1,4 @@
-//#region node_modules/brotli-wasm/pkg.web/brotli_wasm.js
+//#region ../../data/xy/Haruki-3D-Viewer/node_modules/brotli-wasm/pkg.web/brotli_wasm.js
 var e, t = Array(32).fill(void 0);
 t.push(void 0, null, !0, !1);
 function n(e) {
@@ -175,7 +175,7 @@ function ie(e, t, n) {
 	return n > ne ? re(e, t, n) : C(e, t, n);
 }
 //#endregion
-//#region node_modules/@msgpack/msgpack/dist.esm/ExtData.mjs
+//#region ../../data/xy/Haruki-3D-Viewer/node_modules/@msgpack/msgpack/dist.esm/ExtData.mjs
 var T = class {
 	type;
 	data;
@@ -298,7 +298,7 @@ var L = {
 	}
 };
 //#endregion
-//#region node_modules/@msgpack/msgpack/dist.esm/utils/typedArrays.mjs
+//#region ../../data/xy/Haruki-3D-Viewer/node_modules/@msgpack/msgpack/dist.esm/utils/typedArrays.mjs
 function z(e) {
 	return e instanceof ArrayBuffer || typeof SharedArrayBuffer < "u" && e instanceof SharedArrayBuffer;
 }
@@ -306,12 +306,12 @@ function B(e) {
 	return e instanceof Uint8Array ? e : ArrayBuffer.isView(e) ? new Uint8Array(e.buffer, e.byteOffset, e.byteLength) : z(e) ? new Uint8Array(e) : Uint8Array.from(e);
 }
 //#endregion
-//#region node_modules/@msgpack/msgpack/dist.esm/utils/prettyByte.mjs
+//#region ../../data/xy/Haruki-3D-Viewer/node_modules/@msgpack/msgpack/dist.esm/utils/prettyByte.mjs
 function V(e) {
 	return `${e < 0 ? "-" : ""}0x${Math.abs(e).toString(16).padStart(2, "0")}`;
 }
 //#endregion
-//#region node_modules/@msgpack/msgpack/dist.esm/CachedKeyDecoder.mjs
+//#region ../../data/xy/Haruki-3D-Viewer/node_modules/@msgpack/msgpack/dist.esm/CachedKeyDecoder.mjs
 var H = 16, ae = 16, U = class {
 	hit = 0;
 	miss = 0;
@@ -748,7 +748,7 @@ var Z = /* @__PURE__ */ RangeError("Insufficient data"), se = new U(), ce = clas
 	}
 };
 //#endregion
-//#region node_modules/@msgpack/msgpack/dist.esm/decode.mjs
+//#region ../../data/xy/Haruki-3D-Viewer/node_modules/@msgpack/msgpack/dist.esm/decode.mjs
 function le(e, t) {
 	return new ce(t).decode(e);
 }
