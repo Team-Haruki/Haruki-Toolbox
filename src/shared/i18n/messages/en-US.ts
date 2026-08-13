@@ -2755,7 +2755,7 @@ export const enUS = {
         },
         mode: {
           title: "Select upload mode",
-          description: "Script upload can coexist with other bots and avoids toolbox proxy downtime, but may be less stable\nIf script upload is unstable, switch to 307 proxy",
+          description: "Script upload can coexist with other bots and avoids toolbox proxy downtime, but may be less stable\nIf script upload is unstable, switch to the redirect proxy method",
           placeholder: "Select upload mode",
         },
         chunk: {
@@ -2797,7 +2797,7 @@ export const enUS = {
         cdn: "CDN",
       },
       modeOptions: {
-        proxy: "307 Proxy",
+        proxy: "Redirect proxy",
         script: "Script Upload",
       },
       region: {

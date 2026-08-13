@@ -2755,7 +2755,7 @@ export const zhCN = {
         },
         mode: {
           title: "选择上传数据方式",
-          description: "脚本上传可以和其他Bot的模块共存，也不会受到工具箱服务端代理宕机的影响，但是不一定稳定\n如果使用脚本上传不稳定，可以切换为307代理",
+          description: "脚本上传可以和其他Bot的模块共存，也不会受到工具箱服务端代理宕机的影响，但是不一定稳定\n如果使用脚本上传不稳定，可以切换为重定向代理法",
           placeholder: "请选择上传方式",
         },
         chunk: {
@@ -2797,7 +2797,7 @@ export const zhCN = {
         cdn: "CDN (加速)",
       },
       modeOptions: {
-        proxy: "307 代理",
+        proxy: "重定向代理法",
         script: "脚本上传",
       },
       region: {
