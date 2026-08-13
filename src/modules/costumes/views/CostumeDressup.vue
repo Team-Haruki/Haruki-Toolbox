@@ -215,6 +215,29 @@ watch([characterId, bodyId, headId, hairId], ([nextCharacter, nextBody, nextHead
     },
   })
 })
+
+// URL → state: the layout no longer remounts on query-only navigations, so
+// deep links and back/forward through the replace-written URLs resync here.
+// Same-value writes are skipped, which also breaks the loop with the
+// state → URL watcher above.
+watch(() => route.query, () => {
+  const nextCharacter = queryNumber("characterId") ?? characterId.value
+  const nextBody = queryNumber("body")
+  const nextHead = queryNumber("head")
+  const nextHair = queryNumber("hair")
+  if (characterId.value !== nextCharacter) {
+    characterId.value = nextCharacter
+  }
+  if (bodyId.value !== nextBody) {
+    bodyId.value = nextBody
+  }
+  if (headId.value !== nextHead) {
+    headId.value = nextHead
+  }
+  if (hairId.value !== nextHair) {
+    hairId.value = nextHair
+  }
+})
 </script>
 
 <template>

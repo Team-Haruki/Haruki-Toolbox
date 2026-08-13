@@ -272,7 +272,9 @@ function openAppSettings() {
         <div class="flex flex-1 flex-col items-center px-4 py-3 sm:p-4 xl:p-6">
           <router-view v-slot="{ Component, route }">
             <Transition name="page-fade" mode="out-in">
-              <component :is="Component" :key="route.fullPath" />
+              <!-- Keyed by path: query-only changes (filters, tabs, pagination)
+                   update in place instead of remounting the whole page. -->
+              <component :is="Component" :key="route.path" />
             </Transition>
           </router-view>
         </div>
