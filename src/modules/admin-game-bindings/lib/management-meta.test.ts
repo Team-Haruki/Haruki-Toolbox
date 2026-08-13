@@ -6,7 +6,7 @@ import {
 } from "@/modules/admin-game-bindings/lib/management-meta"
 
 const TEST_TRANSLATIONS: Record<string, string> = {
-  "userSettings.gameBinding.region.jp": "JP",
+  "sekaiRegion.labels.jp": "JP",
 }
 
 function t(key: string) {

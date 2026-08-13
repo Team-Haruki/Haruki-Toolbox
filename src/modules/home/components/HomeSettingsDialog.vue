@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
+import { ensureI18nBundles } from "@/shared/i18n"
 import {
   CloudLightning,
   Database,
@@ -111,6 +112,9 @@ const remoteBuildTimeLabel = computed(() => appUpdateState.remote ? formatBuildT
 watch(settingsDialogOpen, (open) => {
   if (open) {
     void refreshEndpointLatencies()
+    // The Sekai data panel renders userSettings.sekaiData strings; this
+    // dialog opens from every page, so pull the bundle on demand.
+    void ensureI18nBundles(["user-settings"])
   }
 })
 

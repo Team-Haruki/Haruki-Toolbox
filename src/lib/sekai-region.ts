@@ -6,12 +6,15 @@ export const SEKAI_REGIONS: readonly SekaiRegion[] = ["jp", "en", "tw", "kr", "c
 
 const SEKAI_REGION_SET = new Set<string>(SEKAI_REGIONS)
 
+// Region labels live in the always-loaded core bundle (sekaiRegion.labels)
+// because this helper renders on pages that never load the user-settings
+// message bundle.
 export const SEKAI_REGION_LABEL_KEYS: Record<SekaiRegion, string> = {
-  jp: "userSettings.gameBinding.region.jp",
-  en: "userSettings.gameBinding.region.en",
-  tw: "userSettings.gameBinding.region.tw",
-  kr: "userSettings.gameBinding.region.kr",
-  cn: "userSettings.gameBinding.region.cn",
+  jp: "sekaiRegion.labels.jp",
+  en: "sekaiRegion.labels.en",
+  tw: "sekaiRegion.labels.tw",
+  kr: "sekaiRegion.labels.kr",
+  cn: "sekaiRegion.labels.cn",
 }
 
 export const SEKAI_REGION_OPTIONS: ReadonlyArray<{ value: SekaiRegion; labelKey: string }> =
