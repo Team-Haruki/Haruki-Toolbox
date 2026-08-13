@@ -48,6 +48,9 @@ function r(e, r) {
 		setCharacterYawDegrees(t) {
 			m(), e.setCharacterYawDegrees(t), o || e.renderFrame();
 		},
+		setViewYawDegrees(t) {
+			m(), e.setViewYawDegrees(t), o || e.renderFrame();
+		},
 		destroy() {
 			return l || (s = !0, u = null, o = !1, cancelAnimationFrame(a), a = 0, l = c.then(() => {
 				e.destroy();
