@@ -280,7 +280,9 @@ export default {
       "title": "活动 PT 趋势",
       "empty": "记录不足，暂时无法绘制趋势图。",
       "point": "活动 PT",
-      "rank": "活动排名"
+      "rank": "活动排名",
+      "showAll": "查看全部",
+      "zoomHint": "拖动或缩放下方选区以查看指定范围的活动"
     },
     "table": {
       "title": "活动历史",
@@ -741,10 +743,10 @@ export default {
       "eventPlanner": "活动规划",
       "rankBorder": "榜线查询",
       "about": "关于",
-      "ptCalculator": "活动Pt控分计算器",
+      "ptCalculator": "控分计算",
       "uploadData": "数据上传",
       "botNeoRegistration": "HarukiBot NEO 注册",
-      "musicLibrary": "曲库",
+      "musicLibrary": "歌曲一览",
       "cards": "卡牌一览",
       "events": "活动图鉴",
       "cardBox": "我的卡牌",
@@ -1343,7 +1345,7 @@ export default {
     "pwa": {
       "updateAvailableTitle": "发现新版本",
       "updateAvailableDescription": "新的应用版本已经准备好，可以立即更新。",
-      "updateAvailableDescriptionWithCommit": "新的应用版本已经准备好（Git 提交 {commit}）。",
+      "updateAvailableDescriptionWithVersion": "新版本 {version} 已经准备好，可以立即更新。",
       "updateAction": "更新应用",
       "applyingTitle": "正在更新应用",
       "applyingDescription": "更新完成后页面会自动刷新。",

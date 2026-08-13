@@ -268,6 +268,53 @@ export function buildEventPointTrend(
   return points.sort((a, b) => a.startAt - b.startAt || a.eventId - b.eventId)
 }
 
+/** Inclusive [start, end] index window over the trend series. */
+export type TrendWindow = {
+  start: number
+  end: number
+}
+
+/** Above this many points the chart shows a brush strip and defaults to the most recent window. */
+export const TREND_DEFAULT_WINDOW_SIZE = 40
+
+/** Smallest number of points a zoom window may contain (a line needs two). */
+export const TREND_MIN_WINDOW_SIZE = 2
+
+/** Full series when short enough, otherwise the most recent `size` points. */
+export function defaultTrendWindow(length: number, size: number = TREND_DEFAULT_WINDOW_SIZE): TrendWindow {
+  const end = Math.max(0, length - 1)
+  return length <= size ? { start: 0, end } : { start: length - size, end }
+}
+
+/**
+ * Normalize a raw (possibly fractional, reversed, or out-of-bounds) brush
+ * selection into valid inclusive indices spanning at least `minSize` points.
+ */
+export function clampTrendWindow(
+  rawStart: number,
+  rawEnd: number,
+  length: number,
+  minSize: number = TREND_MIN_WINDOW_SIZE,
+): TrendWindow {
+  const last = Math.max(0, length - 1)
+  if (!Number.isFinite(rawStart) || !Number.isFinite(rawEnd)) {
+    return { start: 0, end: last }
+  }
+
+  const clampIndex = (value: number) => Math.min(Math.max(Math.round(value), 0), last)
+  let start = clampIndex(Math.min(rawStart, rawEnd))
+  let end = clampIndex(Math.max(rawStart, rawEnd))
+
+  // Widen too-small selections in place, preferring to grow rightwards.
+  const minSpan = Math.min(Math.max(minSize, 1), Math.max(length, 1)) - 1
+  if (end - start < minSpan) {
+    end = Math.min(start + minSpan, last)
+    start = Math.max(end - minSpan, 0)
+  }
+
+  return { start, end }
+}
+
 /** A ranking reward bracket; `toRank` is the tier ceiling shown as "T{toRank}". */
 export type EventRankTier = {
   fromRank: number

@@ -263,8 +263,8 @@ function showAppUpdatePrompt(remote: AppBuildInfo | null) {
   updatePromptCommit = remote?.gitCommit ?? null
   toast.info(translate("core.pwa.updateAvailableTitle"), {
     id: UPDATE_TOAST_ID,
-    description: remote?.gitCommit
-      ? translate("core.pwa.updateAvailableDescriptionWithCommit", { commit: remote.gitCommit })
+    description: remote?.version
+      ? translate("core.pwa.updateAvailableDescriptionWithVersion", { version: remote.version })
       : translate("core.pwa.updateAvailableDescription"),
     duration: Number.POSITIVE_INFINITY,
     action: {

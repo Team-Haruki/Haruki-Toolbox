@@ -2,6 +2,9 @@ import { describe, expect, test } from "bun:test"
 import type { SekaiEventItem } from "./event-filter"
 import {
   buildDerivedRankMap,
+  clampTrendWindow,
+  defaultTrendWindow,
+  TREND_DEFAULT_WINDOW_SIZE,
   buildEventPointTrend,
   buildEventRecordRows,
   buildEventsById,
@@ -379,5 +382,54 @@ describe("buildHonorRankIndexFromNames", () => {
 
   test("tolerates malformed payloads", () => {
     expect(buildHonorRankIndexFromNames(null, undefined, "oops").size).toBe(0)
+  })
+})
+
+describe("defaultTrendWindow", () => {
+  test("returns the full range for short series", () => {
+    expect(defaultTrendWindow(0)).toEqual({ start: 0, end: 0 })
+    expect(defaultTrendWindow(1)).toEqual({ start: 0, end: 0 })
+    expect(defaultTrendWindow(TREND_DEFAULT_WINDOW_SIZE)).toEqual({ start: 0, end: TREND_DEFAULT_WINDOW_SIZE - 1 })
+  })
+
+  test("returns the most recent window for long series", () => {
+    expect(defaultTrendWindow(100)).toEqual({ start: 100 - TREND_DEFAULT_WINDOW_SIZE, end: 99 })
+    expect(defaultTrendWindow(41)).toEqual({ start: 1, end: 40 })
+  })
+
+  test("honors a custom window size", () => {
+    expect(defaultTrendWindow(10, 4)).toEqual({ start: 6, end: 9 })
+    expect(defaultTrendWindow(4, 4)).toEqual({ start: 0, end: 3 })
+  })
+})
+
+describe("clampTrendWindow", () => {
+  test("rounds fractional brush selections", () => {
+    expect(clampTrendWindow(2.4, 7.6, 20)).toEqual({ start: 2, end: 8 })
+  })
+
+  test("orders reversed selections", () => {
+    expect(clampTrendWindow(9, 3, 20)).toEqual({ start: 3, end: 9 })
+  })
+
+  test("clamps out-of-bounds selections", () => {
+    expect(clampTrendWindow(-5, 100, 20)).toEqual({ start: 0, end: 19 })
+  })
+
+  test("widens selections below the minimum size", () => {
+    expect(clampTrendWindow(5, 5, 20)).toEqual({ start: 5, end: 6 })
+    // At the right edge the window grows leftwards instead.
+    expect(clampTrendWindow(19, 19, 20)).toEqual({ start: 18, end: 19 })
+    expect(clampTrendWindow(3, 3, 20, 5)).toEqual({ start: 3, end: 7 })
+  })
+
+  test("falls back to the full range on non-finite input", () => {
+    expect(clampTrendWindow(Number.NaN, 4, 20)).toEqual({ start: 0, end: 19 })
+    expect(clampTrendWindow(0, Number.POSITIVE_INFINITY, 20)).toEqual({ start: 0, end: 19 })
+  })
+
+  test("degrades gracefully on tiny series", () => {
+    expect(clampTrendWindow(0, 0, 1)).toEqual({ start: 0, end: 0 })
+    expect(clampTrendWindow(0, 0, 0)).toEqual({ start: 0, end: 0 })
   })
 })

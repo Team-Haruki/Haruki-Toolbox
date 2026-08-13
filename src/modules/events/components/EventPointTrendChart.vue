@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
+import { useResizeObserver } from "@vueuse/core"
 import {
   VisArea,
   VisAxis,
+  VisBrush,
   VisCrosshair,
   VisLine,
   VisScatter,
@@ -14,7 +16,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatLocalizedDate } from "@/lib/date-time"
 import { formatNumberCN } from "@/lib/number-format"
-import type { EventPointTrendPoint } from "../lib/event-records"
+import {
+  clampTrendWindow,
+  defaultTrendWindow,
+  TREND_DEFAULT_WINDOW_SIZE,
+  type EventPointTrendPoint,
+  type TrendWindow,
+} from "../lib/event-records"
 
 const props = withDefaults(defineProps<{
   trend: readonly EventPointTrendPoint[]
@@ -33,10 +41,102 @@ const showRankSeries = ref(true)
 const TREND_POINT_COLOR = "#8b5cf6"
 const TREND_RANK_COLOR = "#f59e0b"
 
-// Both stacked containers disable auto margins and share this fixed margin so
+// --- Responsive margins -----------------------------------------------------
+// Both stacked containers disable auto margins and share one computed margin so
 // their plot areas overlap exactly (poor man's dual y-axis for unovis).
-const TREND_MARGIN = { left: 56, right: 56, top: 10, bottom: 28 }
+const chartWrapEl = ref<HTMLElement | null>(null)
+const containerWidth = ref(0)
+useResizeObserver(chartWrapEl, (entries) => {
+  const rect = entries[0]?.contentRect
+  if (rect) {
+    containerWidth.value = rect.width
+  }
+})
 
+const isNarrow = computed(() => containerWidth.value > 0 && containerWidth.value < 480)
+/** Margin kept for a side whose y-axis (series) is toggled off. */
+const COLLAPSED_SIDE_MARGIN = 12
+
+const chartMargin = computed(() => {
+  const side = isNarrow.value ? 40 : 56
+  // Rank labels ("3,000") sit outside the plot on the right; the narrow-width
+  // margin needs a few extra px or they clip at the container edge.
+  const rightSide = isNarrow.value ? 48 : 56
+  return {
+    left: showPointSeries.value ? side : COLLAPSED_SIDE_MARGIN,
+    right: showRankSeries.value ? rightSide : COLLAPSED_SIDE_MARGIN,
+    top: 10,
+    bottom: 28,
+  }
+})
+
+// The brush strip must share left/right margins with the main chart so both
+// x-scales line up visually.
+const brushMargin = computed(() => ({
+  left: chartMargin.value.left,
+  right: chartMargin.value.right,
+  top: 2,
+  bottom: 2,
+}))
+
+const xNumTicks = computed(() => {
+  const width = containerWidth.value || 640
+  return Math.max(2, Math.min(8, Math.floor(width / 90)))
+})
+
+// --- Zoom window ------------------------------------------------------------
+const trendWindow = ref<TrendWindow>(defaultTrendWindow(props.trend.length))
+
+// Reset the window whenever the trend identity changes (different account,
+// filters, region, ...), not on every deep mutation.
+watch(
+  () => [
+    props.trend.length,
+    props.trend[0]?.eventId,
+    props.trend[props.trend.length - 1]?.eventId,
+  ] as const,
+  () => {
+    trendWindow.value = defaultTrendWindow(props.trend.length)
+  },
+)
+
+const brushEnabled = computed(() => props.trend.length > TREND_DEFAULT_WINDOW_SIZE)
+
+const visibleTrend = computed<EventPointTrendPoint[]>(() =>
+  brushEnabled.value
+    ? props.trend.slice(trendWindow.value.start, trendWindow.value.end + 1)
+    : [...props.trend],
+)
+
+const isWindowed = computed(() =>
+  brushEnabled.value
+  && (trendWindow.value.start > 0 || trendWindow.value.end < props.trend.length - 1),
+)
+
+const brushSelection = computed<[number, number]>(() => [
+  trendWindow.value.start,
+  trendWindow.value.end,
+])
+
+function handleBrushEnd(selection: [number, number] | undefined, _event: unknown, userDriven: boolean) {
+  if (!userDriven) {
+    return
+  }
+
+  if (!selection) {
+    // Clicking outside the selection clears the brush; treat it as "show all".
+    resetWindow()
+    return
+  }
+
+  trendWindow.value = clampTrendWindow(selection[0], selection[1], props.trend.length)
+}
+
+function resetWindow() {
+  trendWindow.value = { start: 0, end: Math.max(0, props.trend.length - 1) }
+}
+
+// --- Accessors / formatters -------------------------------------------------
 const trendX = (_point: EventPointTrendPoint, index: number) => index
 const trendY = (point: EventPointTrendPoint) => point.eventPoint
 // Ranks improve as the number shrinks; negating them puts better ranks higher.
@@ -46,12 +146,13 @@ const trendRankY = (point: EventPointTrendPoint) => {
   return rank == null ? undefined : -rank
 }
 
+/** X ticks index into the SLICED series rendered by the main chart. */
 function xTickFormat(index: number) {
   if (!Number.isInteger(index)) {
     return ""
   }
 
-  const point = props.trend[index]
+  const point = visibleTrend.value[index]
   return point ? formatLocalizedDate(point.startAt, { year: "2-digit", month: "numeric" }, "") : ""
 }
 
@@ -133,38 +234,67 @@ function crosshairTemplate(point: EventPointTrendPoint) {
             <span class="size-2 rounded-full" :style="{ backgroundColor: TREND_RANK_COLOR }" />
             {{ t("eventRecords.trend.rank") }}
           </button>
+          <button
+            v-if="isWindowed"
+            type="button"
+            class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-normal text-muted-foreground transition-colors hover:text-foreground"
+            @click="resetWindow"
+          >
+            {{ t("eventRecords.trend.showAll") }}
+          </button>
           <slot name="actions" />
         </span>
       </CardTitle>
     </CardHeader>
     <CardContent>
-      <Skeleton v-if="loading" class="h-60 w-full rounded-lg" />
-      <div v-else-if="trend.length >= 2" class="relative h-60">
-        <VisXYContainer :data="trend" :height="240" :auto-margin="false" :margin="TREND_MARGIN">
-          <template v-if="showPointSeries">
-            <VisArea :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :opacity="0.15" curve-type="monotoneX" />
-            <VisLine :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" curve-type="monotoneX" />
-            <VisScatter :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :size="4" />
-          </template>
-          <VisCrosshair :template="crosshairTemplate" />
-          <VisTooltip />
-          <VisAxis type="x" :tick-format="xTickFormat" />
-          <VisAxis v-if="showPointSeries" type="y" :tick-format="yTickFormat" :tick-text-color="TREND_POINT_COLOR" />
-        </VisXYContainer>
-        <div v-if="showRankSeries" class="pointer-events-none absolute inset-0">
-          <VisXYContainer
-            :data="trend"
-            :height="240"
-            :auto-margin="false"
-            :margin="TREND_MARGIN"
+      <div ref="chartWrapEl">
+        <Skeleton v-if="loading" class="h-60 w-full rounded-lg" />
+        <template v-else-if="trend.length >= 2">
+          <div class="relative h-60">
+            <VisXYContainer :data="visibleTrend" :height="240" :auto-margin="false" :margin="chartMargin">
+              <template v-if="showPointSeries">
+                <VisArea :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :opacity="0.15" curve-type="monotoneX" />
+                <VisLine :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" curve-type="monotoneX" />
+                <VisScatter :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :size="4" />
+              </template>
+              <VisCrosshair :template="crosshairTemplate" />
+              <VisTooltip />
+              <VisAxis type="x" :tick-format="xTickFormat" :num-ticks="xNumTicks" />
+              <VisAxis v-if="showPointSeries" type="y" :tick-format="yTickFormat" :tick-text-color="TREND_POINT_COLOR" />
+            </VisXYContainer>
+            <div v-if="showRankSeries" class="pointer-events-none absolute inset-0">
+              <VisXYContainer
+                :data="visibleTrend"
+                :height="240"
+                :auto-margin="false"
+                :margin="chartMargin"
+              >
+                <VisLine :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" curve-type="monotoneX" />
+                <VisScatter :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" :size="4" />
+                <VisAxis type="y" position="right" :tick-format="rankTickFormat" :tick-text-color="TREND_RANK_COLOR" :grid-line="false" />
+              </VisXYContainer>
+            </div>
+          </div>
+          <div
+            v-if="brushEnabled"
+            class="mt-2 h-12 touch-none [--vis-brush-handle-fill-color:var(--muted-foreground)] [--vis-brush-handle-stroke-color:var(--background)] [--vis-brush-unselected-fill-color:var(--background)] [--vis-brush-unselected-opacity:0.6]"
+            role="group"
+            :aria-label="t('eventRecords.trend.zoomHint')"
+            :title="t('eventRecords.trend.zoomHint')"
           >
-            <VisLine :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" curve-type="monotoneX" />
-            <VisScatter :x="trendX" :y="trendRankY" :color="TREND_RANK_COLOR" :size="4" />
-            <VisAxis type="y" position="right" :tick-format="rankTickFormat" :tick-text-color="TREND_RANK_COLOR" :grid-line="false" />
-          </VisXYContainer>
-        </div>
+            <VisXYContainer :data="trend" :height="48" :auto-margin="false" :margin="brushMargin">
+              <VisArea :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :opacity="0.25" curve-type="monotoneX" />
+              <VisBrush
+                :selection="brushSelection"
+                :draggable="true"
+                :handle-width="2"
+                :on-brush-end="handleBrushEnd"
+              />
+            </VisXYContainer>
+          </div>
+        </template>
+        <p v-else class="text-sm text-muted-foreground">{{ t("eventRecords.trend.empty") }}</p>
       </div>
-      <p v-else class="text-sm text-muted-foreground">{{ t("eventRecords.trend.empty") }}</p>
     </CardContent>
   </Card>
 </template>

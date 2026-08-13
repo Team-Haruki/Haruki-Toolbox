@@ -280,11 +280,11 @@ function formatRecordDate(value: number | null) {
           </Tabs>
           <div v-if="timeMode === 'custom'" class="flex flex-wrap items-center gap-2">
             <div class="w-48">
-              <DateTimePicker24h v-model="customStart" :aria-label="t('eventRecords.filters.from')" />
+              <DateTimePicker24h v-model="customStart" :placeholder="t('eventRecords.filters.from')" :aria-label="t('eventRecords.filters.from')" />
             </div>
             <span class="text-xs text-muted-foreground">—</span>
             <div class="w-48">
-              <DateTimePicker24h v-model="customEnd" :aria-label="t('eventRecords.filters.to')" />
+              <DateTimePicker24h v-model="customEnd" :placeholder="t('eventRecords.filters.to')" :aria-label="t('eventRecords.filters.to')" />
             </div>
           </div>
         </div>

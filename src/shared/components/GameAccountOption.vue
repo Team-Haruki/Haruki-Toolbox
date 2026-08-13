@@ -47,7 +47,7 @@ function displayUid(userId: string | number): string {
       {{ regionShort(props.server) }}
     </span>
     <span class="truncate text-sm font-medium">{{ resolveSekaiRegionLabel(props.server, t) }}</span>
-    <span class="shrink-0 text-xs tabular-nums text-muted-foreground">{{ displayUid(props.userId) }}</span>
+    <span class="min-w-0 truncate text-xs tabular-nums text-muted-foreground" :title="displayUid(props.userId)">{{ displayUid(props.userId) }}</span>
     <span class="ml-auto flex shrink-0 items-center gap-1.5">
       <span
         v-if="props.isDefault"

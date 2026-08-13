@@ -280,7 +280,9 @@ export default {
       "title": "Event PT trend",
       "empty": "Not enough records to draw a trend yet.",
       "point": "Event PT",
-      "rank": "Event rank"
+      "rank": "Event rank",
+      "showAll": "Show all",
+      "zoomHint": "Drag or resize the selection below to focus on a range of events"
     },
     "table": {
       "title": "Event history",
@@ -741,10 +743,10 @@ export default {
       "eventPlanner": "Event planner",
       "rankBorder": "Rank border",
       "about": "About",
-      "ptCalculator": "Event Pt calculator",
+      "ptCalculator": "Score control",
       "uploadData": "Data upload",
       "botNeoRegistration": "HarukiBot NEO registration",
-      "musicLibrary": "Music library",
+      "musicLibrary": "Music catalog",
       "cards": "Card catalog",
       "events": "Event catalog",
       "cardBox": "My Cards",
@@ -1343,7 +1345,7 @@ export default {
     "pwa": {
       "updateAvailableTitle": "New version available",
       "updateAvailableDescription": "A new app build is ready. You can update now.",
-      "updateAvailableDescriptionWithCommit": "A new app build is ready (Git commit {commit}).",
+      "updateAvailableDescriptionWithVersion": "New version {version} is ready to install.",
       "updateAction": "Update app",
       "applyingTitle": "Updating app",
       "applyingDescription": "The page will refresh after the update is applied.",

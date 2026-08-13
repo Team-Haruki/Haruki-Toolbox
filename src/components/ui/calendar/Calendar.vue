@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<CalendarRootProps & { class?: HTMLAttribu
 })
 const emits = defineEmits<CalendarRootEmits>()
 
-const delegatedProps = reactiveOmit(props, "class", "layout", "placeholder")
+const delegatedProps = reactiveOmit(props, "class", "layout", "placeholder", "yearRange")
 
 const placeholder = useVModel(props, "placeholder", emits, {
   passive: true,

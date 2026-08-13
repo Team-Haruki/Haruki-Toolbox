@@ -31,6 +31,6 @@ test("gacha catalog route renders its list page", async ({ page }) => {
 test("home navigation links into the sekai catalog", async ({ page }) => {
   await page.goto("/")
 
-  await page.getByRole("link", { name: /^(曲库|Music library)$/ }).first().click()
+  await page.getByRole("link", { name: /^(歌曲一览|Music catalog)$/ }).first().click()
   await expect(page).toHaveURL(/\/music$/)
 })

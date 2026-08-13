@@ -280,7 +280,9 @@ export default {
       "title": "活動 PT 趨勢",
       "empty": "記錄不足，暫時無法繪製趨勢圖。",
       "point": "活動 PT",
-      "rank": "活動排名"
+      "rank": "活動排名",
+      "showAll": "檢視全部",
+      "zoomHint": "拖動或縮放下方選區以檢視指定範圍的活動"
     },
     "table": {
       "title": "活動歷史",
@@ -741,10 +743,10 @@ export default {
       "eventPlanner": "活動規劃",
       "rankBorder": "榜線查詢",
       "about": "關於",
-      "ptCalculator": "活動Pt控分計算器",
+      "ptCalculator": "控分計算",
       "uploadData": "資料上傳",
       "botNeoRegistration": "HarukiBot NEO 註冊",
-      "musicLibrary": "曲庫",
+      "musicLibrary": "歌曲一覽",
       "cards": "卡牌一覽",
       "events": "活動圖鑑",
       "cardBox": "我的卡牌",
@@ -1343,7 +1345,7 @@ export default {
     "pwa": {
       "updateAvailableTitle": "發現新版本",
       "updateAvailableDescription": "新的應用版本已經準備好，可以立即更新。",
-      "updateAvailableDescriptionWithCommit": "新的應用版本已經準備好（Git 提交 {commit}）。",
+      "updateAvailableDescriptionWithVersion": "新版本 {version} 已經準備好，可以立即更新。",
       "updateAction": "更新應用",
       "applyingTitle": "正在更新應用",
       "applyingDescription": "更新完成後頁面會自動重新整理。",
