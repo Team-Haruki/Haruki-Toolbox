@@ -278,7 +278,9 @@ const blurArt = computed(() => unreleased.value && blurUnreleased.value)
 
 const extras = computed(() => extractCardDetailExtras(rawCards.value, cardIdNumber.value))
 
-const skill = computed(() => (card.value ? normalizeCardSkill(rawSkills.value, card.value.skillId) : null))
+const skill = computed(() => (card.value
+  ? normalizeCardSkill(rawSkills.value, card.value.skillId, { characterName: character.value?.name })
+  : null))
 
 const relatedEvents = computed(() => {
   if (!card.value) {
