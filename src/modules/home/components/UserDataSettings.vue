@@ -23,8 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { formatGameAccountLabel } from "@/lib/game-account-display"
-import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
+import { isVerifiedQQBinding } from "@/lib/social-platform"
+import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import {
   DECK_RECOMMEND_SUITE_KEYS,
   fetchDeckRecommendProfileWithCache,
@@ -37,7 +37,6 @@ import {
 } from "@/modules/deck-recommend/lib/user-data-cache"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import { clearUserSuiteSubsetCache, readUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache"
-import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import type { SekaiRegion } from "@/types"
 import type { DeckRecommendUserDataMode } from "@/modules/deck-recommend/api/recommend-data"
@@ -48,12 +47,12 @@ type BoundAccountOption = {
   key: string
   server: SekaiRegion
   uid: string
-  label: string
+  verified: boolean
+  isDefault: boolean
 }
 
 const { t, locale } = useI18n()
 const userStore = useUserStore()
-const settingsStore = useSettingsStore()
 
 const selectedAccountKey = ref("")
 const selectedDataMode = ref<DeckRecommendUserCacheDataType>("suite")
@@ -71,11 +70,8 @@ const accountOptions = computed<BoundAccountOption[]>(() => {
       key: `${account.server}:${uid}`,
       server: account.server,
       uid,
-      label: formatGameAccountLabel({
-        regionLabel: resolveSekaiRegionLabel(account.server, t),
-        uid,
-        hideUid: settingsStore.hideGameUserId,
-      }),
+      verified: account.verified === true,
+      isDefault: account.isDefault === true,
     }
   })
 })
@@ -83,7 +79,6 @@ const accountOptions = computed<BoundAccountOption[]>(() => {
 const selectedAccount = computed(() =>
   accountOptions.value.find((account) => account.key === selectedAccountKey.value) ?? null,
 )
-const selectedAccountLabel = computed(() => selectedAccount.value?.label ?? "")
 
 const canRefresh = computed(() =>
   Boolean(userStore.userId && selectedAccount.value) && !refreshing.value && !clearing.value,
@@ -93,11 +88,27 @@ const canClear = computed(() =>
   Boolean(userStore.userId) && !refreshing.value && !clearing.value,
 )
 
+// MySekai data requires a verified QQ social binding on the toolbox account,
+// so the option is hidden entirely without one.
+const hasVerifiedQQ = computed(() => isVerifiedQQBinding(userStore.socialPlatformInfo))
+
 const dataModeOptions = computed<Array<{ value: DeckRecommendUserCacheDataType; label: string }>>(() => [
   { value: "suite", label: t("homeSettings.userData.types.suite") },
-  { value: "mysekai", label: t("homeSettings.userData.types.mysekai") },
+  ...(hasVerifiedQQ.value
+    ? [{ value: "mysekai" as const, label: t("homeSettings.userData.types.mysekai") }]
+    : []),
   { value: "profile", label: t("homeSettings.userData.types.profile") },
 ])
+
+watch(
+  hasVerifiedQQ,
+  (verified) => {
+    if (!verified && selectedDataMode.value === "mysekai") {
+      selectedDataMode.value = "suite"
+    }
+  },
+  { immediate: true },
+)
 
 watch(
   accountOptions,
@@ -269,13 +280,25 @@ function formatTime(value: number | null) {
           <Label>{{ t("homeSettings.userData.account") }}</Label>
           <Select v-model="selectedAccountKey" :disabled="accountOptions.length === 0 || refreshing || clearing">
             <SelectTrigger class="w-full">
-              <SelectValue :key="`user-data-account-value-${selectedAccountLabel}`" :placeholder="t('homeSettings.userData.accountPlaceholder')">
-                {{ selectedAccountLabel }}
-              </SelectValue>
+              <GameAccountOption
+                v-if="selectedAccount"
+                :server="selectedAccount.server"
+                :user-id="selectedAccount.uid"
+                :verified="selectedAccount.verified"
+                :is-default="selectedAccount.isDefault"
+              />
+              <span v-else class="text-sm text-muted-foreground">
+                {{ t("homeSettings.userData.accountPlaceholder") }}
+              </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="account in accountOptions" :key="account.key" :value="account.key">
-                {{ account.label }}
+                <GameAccountOption
+                  :server="account.server"
+                  :user-id="account.uid"
+                  :verified="account.verified"
+                  :is-default="account.isDefault"
+                />
               </SelectItem>
             </SelectContent>
           </Select>
