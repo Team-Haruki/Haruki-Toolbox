@@ -2165,6 +2165,8 @@ export const zhCN = {
       skillLevel: "等级",
       skillValue: "数值",
       skillDuration: "持续时间",
+      skillBeforeTraining: "特训前",
+      skillAfterTraining: "特训后",
       noSkill: "暂无技能数据",
       relatedEvents: "关联活动",
       relatedEventsEmpty: "没有关联活动。",

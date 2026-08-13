@@ -102,7 +102,7 @@ export function formatSkillDescription(
       return context.characterName ?? "?"
     }
 
-    if (kind === "d" || kind === "v") {
+    if (kind === "d" || (kind === "v" && ids.length === 1)) {
       const collapsed = collapse(valueList(byId.get(ids[0]), kind === "d" ? "duration" : "value"))
       return collapsed ?? "?"
     }
@@ -131,7 +131,8 @@ export function formatSkillDescription(
       return low != null && high != null ? `${low}~${high}` : "?"
     }
 
-    // Multi-id sums (`s`/`o`/`u`): base effect + max bonus effect per level.
+    // Multi-id sums (`s`/`o`/`u` and multi-id `v`): base effect plus the max
+    // bonus effect per level — the static ceiling of a dynamic in-game total.
     if (ids.length > 1) {
       const lists = ids.map((id) => valueList(byId.get(id), "value"))
       if (lists.some((list) => list.length === 0)) {

@@ -282,6 +282,33 @@ const skill = computed(() => (card.value
   ? normalizeCardSkill(rawSkills.value, card.value.skillId, { characterName: character.value?.name })
   : null))
 
+// Bloom Fes dual skills: the special-training variant renders as a second
+// block next to the base skill.
+const trainedSkill = computed(() => (extras.value.specialTrainingSkillId != null
+  ? normalizeCardSkill(rawSkills.value, extras.value.specialTrainingSkillId, { characterName: character.value?.name })
+  : null))
+
+const skillBlocks = computed(() => {
+  const blocks: { key: string; labelKey: string | null; name: string | null; view: NonNullable<typeof skill.value> }[] = []
+  if (skill.value) {
+    blocks.push({
+      key: "base",
+      labelKey: trainedSkill.value ? "cards.detail.skillBeforeTraining" : null,
+      name: extras.value.cardSkillName,
+      view: skill.value,
+    })
+  }
+  if (trainedSkill.value) {
+    blocks.push({
+      key: "trained",
+      labelKey: "cards.detail.skillAfterTraining",
+      name: extras.value.specialTrainingSkillName,
+      view: trainedSkill.value,
+    })
+  }
+  return blocks
+})
+
 const relatedEvents = computed(() => {
   if (!card.value) {
     return []
@@ -543,27 +570,42 @@ const canGoBack = computed(() => {
           <CardHeader>
             <CardTitle class="text-base">{{ t("cards.detail.skill") }}</CardTitle>
           </CardHeader>
-          <CardContent class="flex flex-col gap-3">
-            <template v-if="skill">
-              <p v-if="extras.cardSkillName" class="text-sm font-semibold">{{ extras.cardSkillName }}</p>
-              <p class="text-sm text-muted-foreground">{{ skill.formattedDescription }}</p>
-              <div v-if="skill.effectRows.length > 0" class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                  <thead>
-                    <tr class="border-b text-muted-foreground">
-                      <th class="py-1.5 pr-3 font-medium">{{ t("cards.detail.skillLevel") }}</th>
-                      <th class="py-1.5 pr-3 font-medium">{{ t("cards.detail.skillValue") }}</th>
-                      <th class="py-1.5 font-medium">{{ t("cards.detail.skillDuration") }}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="row in skill.effectRows" :key="row.level" class="border-b last:border-b-0">
-                      <td class="py-1.5 pr-3 tabular-nums">{{ row.level }}</td>
-                      <td class="py-1.5 pr-3 tabular-nums">{{ row.value ?? "—" }}</td>
-                      <td class="py-1.5 tabular-nums">{{ row.duration != null ? `${row.duration}s` : "—" }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+          <CardContent class="flex flex-col gap-5">
+            <template v-if="skillBlocks.length > 0">
+              <div
+                v-for="block in skillBlocks"
+                :key="block.key"
+                class="flex flex-col gap-3"
+                :class="block.key === 'trained' ? 'border-t pt-4' : ''"
+              >
+                <div class="flex flex-wrap items-center gap-2">
+                  <span
+                    v-if="block.labelKey"
+                    class="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+                  >
+                    {{ t(block.labelKey) }}
+                  </span>
+                  <p v-if="block.name" class="text-sm font-semibold">{{ block.name }}</p>
+                </div>
+                <p class="text-sm text-muted-foreground">{{ block.view.formattedDescription }}</p>
+                <div v-if="block.view.effectRows.length > 0" class="overflow-x-auto">
+                  <table class="w-full text-left text-xs">
+                    <thead>
+                      <tr class="border-b text-muted-foreground">
+                        <th class="py-1.5 pr-3 font-medium">{{ t("cards.detail.skillLevel") }}</th>
+                        <th class="py-1.5 pr-3 font-medium">{{ t("cards.detail.skillValue") }}</th>
+                        <th class="py-1.5 font-medium">{{ t("cards.detail.skillDuration") }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="row in block.view.effectRows" :key="row.level" class="border-b last:border-b-0">
+                        <td class="py-1.5 pr-3 tabular-nums">{{ row.level }}</td>
+                        <td class="py-1.5 pr-3 tabular-nums">{{ row.value ?? "—" }}</td>
+                        <td class="py-1.5 tabular-nums">{{ row.duration != null ? `${row.duration}s` : "—" }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </template>
             <p v-else class="text-sm text-muted-foreground">{{ t("cards.detail.noSkill") }}</p>

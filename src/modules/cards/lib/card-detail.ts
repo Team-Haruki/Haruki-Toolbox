@@ -10,6 +10,9 @@ import { buildCostumeThumbnailAssetbundleName } from "@/modules/costumes/lib/cos
 export type CardDetailExtras = {
   cardSkillName: string | null
   gachaPhrase: string | null
+  /** Bloom Fes cards switch to a second skill after special training. */
+  specialTrainingSkillId: number | null
+  specialTrainingSkillName: string | null
 }
 
 export type CardEventSummary = {
@@ -30,6 +33,8 @@ export function extractCardDetailExtras(rawCards: unknown, cardId: number): Card
   return {
     cardSkillName: normalizeMasterText(record?.cardSkillName),
     gachaPhrase: normalizeMasterText(record?.gachaPhrase),
+    specialTrainingSkillId: normalizeCatalogNumber(record?.specialTrainingSkillId),
+    specialTrainingSkillName: normalizeMasterText(record?.specialTrainingSkillName),
   }
 }
 

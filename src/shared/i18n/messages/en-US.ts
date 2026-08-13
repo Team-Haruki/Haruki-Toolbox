@@ -2165,6 +2165,8 @@ export const enUS = {
       skillLevel: "Level",
       skillValue: "Value",
       skillDuration: "Duration",
+      skillBeforeTraining: "Before training",
+      skillAfterTraining: "After training",
       noSkill: "No skill data",
       relatedEvents: "Related events",
       relatedEventsEmpty: "No related events.",

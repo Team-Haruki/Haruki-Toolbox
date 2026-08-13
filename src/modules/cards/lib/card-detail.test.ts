@@ -30,25 +30,41 @@ describe("extractCardDetailExtras", () => {
   const rawCards = [
     { id: 1, cardSkillName: "Tiny flower", gachaPhrase: "-" },
     { id: 2, cardSkillName: "  ", gachaPhrase: "Let's go!" },
+    { id: 3, cardSkillName: "Base", gachaPhrase: "-", specialTrainingSkillId: 22, specialTrainingSkillName: "Awakened" },
   ]
+  const emptyExtras = {
+    cardSkillName: null,
+    gachaPhrase: null,
+    specialTrainingSkillId: null,
+    specialTrainingSkillName: null,
+  }
 
   it("extracts skill name and treats '-' as missing", () => {
     expect(extractCardDetailExtras(rawCards, 1)).toEqual({
+      ...emptyExtras,
       cardSkillName: "Tiny flower",
-      gachaPhrase: null,
     })
   })
 
   it("extracts gacha phrase and drops blank skill names", () => {
     expect(extractCardDetailExtras(rawCards, 2)).toEqual({
-      cardSkillName: null,
+      ...emptyExtras,
       gachaPhrase: "Let's go!",
     })
   })
 
+  it("extracts the Bloom Fes special-training skill", () => {
+    expect(extractCardDetailExtras(rawCards, 3)).toEqual({
+      ...emptyExtras,
+      cardSkillName: "Base",
+      specialTrainingSkillId: 22,
+      specialTrainingSkillName: "Awakened",
+    })
+  })
+
   it("handles missing records", () => {
-    expect(extractCardDetailExtras(rawCards, 99)).toEqual({ cardSkillName: null, gachaPhrase: null })
-    expect(extractCardDetailExtras(undefined, 1)).toEqual({ cardSkillName: null, gachaPhrase: null })
+    expect(extractCardDetailExtras(rawCards, 99)).toEqual(emptyExtras)
+    expect(extractCardDetailExtras(undefined, 1)).toEqual(emptyExtras)
   })
 })
 

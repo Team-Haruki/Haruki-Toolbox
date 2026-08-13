@@ -49,7 +49,7 @@ const rawSkills = [
   {
     // Bloom Fes shape: character placeholder, rank-bonus range and total sum.
     id: 22,
-    description: "{{53;d}}초 동안 스코어가 {{53;v}}% 상승하며, '{{0;c}}'의 랭크에 의해 {{54,103;r}}% 상승한다. (최대 {{53,103;s}}%)",
+    description: "{{53;d}}초 동안 스코어가 {{53;v}}% 상승하며, '{{0;c}}'의 랭크에 의해 {{54,103;r}}% 상승한다. (최대 {{53,103;s}}%/{{53,103;v}}%)",
     skillEffects: [
       {
         id: 53,
@@ -142,7 +142,7 @@ describe("normalizeCardSkill", () => {
   it("resolves Bloom Fes character, range and sum placeholders", () => {
     const skill = normalizeCardSkill(rawSkills, 22, { characterName: "미쿠" })
     expect(skill?.formattedDescription).toBe(
-      "5초 동안 스코어가 90/95% 상승하며, '미쿠'의 랭크에 의해 1~50% 상승한다. (최대 140/145%)",
+      "5초 동안 스코어가 90/95% 상승하며, '미쿠'의 랭크에 의해 1~50% 상승한다. (최대 140/145%/140/145%)",
     )
   })
 
