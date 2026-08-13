@@ -27,6 +27,22 @@ function fillMissing(source, target, stats) {
   }
 }
 
+// Rewrites target objects in the source's key order so zh-TW stays
+// structurally aligned with zh-CN (filled keys otherwise append at the end).
+function reorderLikeSource(source, target) {
+  const out = {}
+  for (const key of Object.keys(source)) {
+    const sourceValue = source[key]
+    const targetValue = target[key]
+    out[key] =
+      sourceValue && typeof sourceValue === "object" && !Array.isArray(sourceValue) &&
+      targetValue && typeof targetValue === "object" && !Array.isArray(targetValue)
+        ? reorderLikeSource(sourceValue, targetValue)
+        : targetValue
+  }
+  return out
+}
+
 function dropOrphans(source, target, stats) {
   for (const key of Object.keys(target)) {
     if (!(key in source)) {
@@ -45,7 +61,8 @@ for (const bundle of BUNDLES) {
   const stats = { added: 0, removed: 0 }
   fillMissing(zh, tw, stats)
   dropOrphans(zh, tw, stats)
-  const header = "// AUTO-GENERATED zh-TW locale bundle (OpenCC s2twp from zh-CN).\n// Namespaces: " + Object.keys(tw).join(", ") + "\n"
-  writeFileSync(new URL(twPath, import.meta.url), header + "export default " + JSON.stringify(tw, null, 2) + " as const\n")
+  const ordered = reorderLikeSource(zh, tw)
+  const header = "// AUTO-GENERATED zh-TW locale bundle (OpenCC s2twp from zh-CN).\n// Namespaces: " + Object.keys(ordered).join(", ") + "\n"
+  writeFileSync(new URL(twPath, import.meta.url), header + "export default " + JSON.stringify(ordered, null, 2) + " as const\n")
   console.log(`zh-TW ${bundle}: +${stats.added} filled, -${stats.removed} orphaned`)
 }
