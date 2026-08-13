@@ -319,17 +319,6 @@ html.dark [data-glass-surface="chart-tooltip"] {
 .toaster [data-rich-colors="true"][data-sonner-toast][data-type="warning"] { border-color: var(--warning-border) !important; }
 .toaster [data-rich-colors="true"][data-sonner-toast][data-type="error"] { border-color: var(--error-border) !important; }
 
-.dark .toaster {
-    --success-border: oklch(0.72 0.18 150 / 0.36);
-    --success-text: oklch(0.80 0.18 150);
-    --info-border: oklch(0.70 0.15 245 / 0.34);
-    --info-text: oklch(0.78 0.14 245);
-    --warning-border: oklch(0.78 0.16 82 / 0.38);
-    --warning-text: oklch(0.84 0.16 82);
-    --error-border: oklch(0.70 0.18 28 / 0.36);
-    --error-text: oklch(0.78 0.18 28);
-}
-
 /* ====================== Reduced visual effects mode ======================
  * One token flip per surface family instead of the old ~80-selector forest.
  */
