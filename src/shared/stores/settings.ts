@@ -70,6 +70,9 @@ export const useSettingsStore = defineStore("settings", () => {
     const theme = ref<ThemeType>('system')
     const locale = ref<AppLocale>(DEFAULT_LOCALE)
     const reducedVisualEffects = ref(false)
+    // Distinguishes an explicit user choice from the untouched default so
+    // low-end devices can opt into reduced effects automatically.
+    const reducedVisualEffectsUserSet = ref(false)
     const hideGameUserId = ref(false)
     const showUnreleasedContent = ref(false)
     const blurUnreleasedContent = ref(true)
@@ -138,7 +141,17 @@ export const useSettingsStore = defineStore("settings", () => {
     }
     function setReducedVisualEffects(enabled: boolean) {
         reducedVisualEffects.value = enabled
+        reducedVisualEffectsUserSet.value = true
         applyReducedVisualEffects(enabled)
+    }
+
+    function isLowEndDevice(): boolean {
+        if (typeof navigator === "undefined") {
+            return false
+        }
+        const cores = navigator.hardwareConcurrency
+        const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
+        return (cores != null && cores <= 4) || (memory != null && memory <= 4)
     }
     function setHideGameUserId(enabled: boolean) {
         hideGameUserId.value = enabled
@@ -188,6 +201,11 @@ export const useSettingsStore = defineStore("settings", () => {
         }
     }
     function initVisualEffects() {
+        // Default reduced effects on for low-end hardware unless the user has
+        // made an explicit choice; the toggle in settings still wins.
+        if (!reducedVisualEffectsUserSet.value && !reducedVisualEffects.value && isLowEndDevice()) {
+            reducedVisualEffects.value = true
+        }
         applyReducedVisualEffects(reducedVisualEffects.value)
     }
     async function initAssetEndpointPreference() {
@@ -282,6 +300,7 @@ export const useSettingsStore = defineStore("settings", () => {
         theme,
         locale,
         reducedVisualEffects,
+        reducedVisualEffectsUserSet,
         hideGameUserId,
         showUnreleasedContent,
         blurUnreleasedContent,
@@ -321,6 +340,7 @@ export const useSettingsStore = defineStore("settings", () => {
             'theme',
             'locale',
             'reducedVisualEffects',
+            'reducedVisualEffectsUserSet',
             'hideGameUserId',
             'showUnreleasedContent',
             'blurUnreleasedContent',
