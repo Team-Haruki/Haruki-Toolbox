@@ -109,8 +109,8 @@ async function loadRecipe() {
       return
     }
 
-    // Loading resets the character orientation; restore the user's rotation.
-    activeKernel.setCharacterYawDegrees(yawDegrees)
+    // Loading resets CameraRoot; restore the user's view without moving the model.
+    activeKernel.setViewYawDegrees(yawDegrees)
     activeKernel.play()
     status.value = "ready"
   } catch (loadError) {
@@ -142,8 +142,8 @@ function handlePointerMove(event: PointerEvent) {
   }
   const deltaX = event.clientX - dragLastX
   dragLastX = event.clientX
-  yawDegrees = (yawDegrees + deltaX * 0.5) % 360
-  kernel.setCharacterYawDegrees(yawDegrees)
+  yawDegrees = (yawDegrees + deltaX * 0.33) % 360
+  kernel.setViewYawDegrees(yawDegrees)
 }
 
 function handlePointerUp(event: PointerEvent) {

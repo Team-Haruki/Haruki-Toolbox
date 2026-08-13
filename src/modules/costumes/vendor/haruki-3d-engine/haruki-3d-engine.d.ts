@@ -30,8 +30,10 @@ export interface Haruki3DKernel {
   play(): void
   pause(): void
   resize(width: number, height: number): void
-  /** Rotates the loaded character around its vertical axis (drag-orbit). */
+  /** Teleports the loaded character around its vertical axis. */
   setCharacterYawDegrees(degrees: number): void
+  /** Rotates the CostumeShop CameraRoot without moving the character skeleton. */
+  setViewYawDegrees(degrees: number): void
   destroy(): Promise<void>
 }
 

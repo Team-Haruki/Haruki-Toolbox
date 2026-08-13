@@ -2,13 +2,15 @@
 
 Prebuilt library output of [Team-Haruki/Haruki-3D-Engine](https://github.com/Team-Haruki/Haruki-3D-Engine)
 (`npm run build`, lib entry only — the capture harness is not vendored).
-Matches upstream `main` as of the `setCharacterYawDegrees` kernel API
-(Team-Haruki/Haruki-3D-Engine#1).
+Includes the split model/view yaw API: CostumeShop drag rotates CameraRoot via
+`setViewYawDegrees` and does not move the assembled character or feed false
+inertia into SpringBone.
 
 Files:
 
 - `haruki-3d-engine.js` — public entry (`createHaruki3DKernel`)
-- `Haruki3DKernel-*.js` — kernel chunk (Three.js is bundled/tree-shaken inside)
+- `CostumeShopKernel-*.js` — CostumeShop kernel chunk
+- `animationPlaybackRuntime-*.js` — shared animation/runtime package loader
 - `runtimeMessagePackDecodeCore-*.js` + `assets/` — runtime decode core, worker, Brotli WASM
 - `haruki-3d-engine.d.ts` — hand-written declarations mirroring upstream `docs/api.md`
 
