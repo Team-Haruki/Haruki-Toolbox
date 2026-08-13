@@ -227,6 +227,9 @@ export default {
     }
   },
   "legal": {
+    "common": {
+      "toc": "On this page"
+    },
     "privacy": {
       "title": "Privacy Policy",
       "lastUpdated": "Last updated: 2026-05-25",

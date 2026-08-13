@@ -227,6 +227,9 @@ export default {
     }
   },
   "legal": {
+    "common": {
+      "toc": "目錄"
+    },
     "privacy": {
       "title": "隱私政策",
       "lastUpdated": "最後更新：2026-05-25",

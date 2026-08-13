@@ -16,9 +16,17 @@ declare module 'vue-router' {
 const router = createRouter({
     history: createWebHistory(),
     routes: webRoutes,
-    scrollBehavior(_to, _from, savedPosition) {
+    scrollBehavior(to, _from, savedPosition) {
         if (savedPosition) {
             return savedPosition
+        }
+        if (to.hash) {
+            // The routed view mounts behind a 150ms page-fade transition, so
+            // the anchor target doesn't exist yet when this hook runs. The
+            // top offset matches the anchors' scroll-mt-24.
+            return new Promise((resolve) => {
+                window.setTimeout(() => resolve({ el: to.hash, top: 96, behavior: "smooth" }), 250)
+            })
         }
         return { top: 0, behavior: "smooth" }
     },
