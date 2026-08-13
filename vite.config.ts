@@ -88,8 +88,10 @@ const localDevHost = 'haruki-dev-local.seiunx.com'
 const localDevCert = new URL('./certs/haruki-dev-local.seiunx.com.pem', import.meta.url)
 const localDevKey = new URL('./certs/haruki-dev-local.seiunx.com-key.pem', import.meta.url)
 
-function resolveLocalDevServer(command: string) {
-    if (command !== 'serve' || !existsSync(localDevCert) || !existsSync(localDevKey)) {
+function resolveLocalDevServer(command: string, mode: string) {
+    // Playwright must behave the same in local checkouts and CI, where the
+    // gitignored development certificates are unavailable.
+    if (command !== 'serve' || mode === 'e2e' || !existsSync(localDevCert) || !existsSync(localDevKey)) {
         return undefined
     }
 
@@ -133,8 +135,8 @@ function buildTrackerProxy(target: string) {
     }
 }
 
-function buildDevServerConfig(command: string, trackerProxy: ReturnType<typeof buildTrackerProxy> | undefined) {
-    const localDevServer = resolveLocalDevServer(command)
+function buildDevServerConfig(command: string, mode: string, trackerProxy: ReturnType<typeof buildTrackerProxy> | undefined) {
+    const localDevServer = resolveLocalDevServer(command, mode)
 
     if (!localDevServer && !trackerProxy) {
         return undefined
@@ -247,7 +249,7 @@ export default defineConfig(({ command, mode }) => {
                 '@': path.resolve(import.meta.dirname, './src'),
             },
         },
-        server: buildDevServerConfig(command, trackerProxy),
+        server: buildDevServerConfig(command, mode, trackerProxy),
         preview: trackerProxy
             ? { proxy: trackerProxy }
             : undefined,

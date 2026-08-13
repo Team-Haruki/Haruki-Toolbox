@@ -8,14 +8,12 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: "https://127.0.0.1:4173",
-    ignoreHTTPSErrors: true,
+    baseURL: "http://127.0.0.1:4173",
     trace: "on-first-retry",
   },
   webServer: {
-    command: "bun run dev --host 127.0.0.1 --port 4173",
-    url: "https://127.0.0.1:4173",
-    ignoreHTTPSErrors: true,
+    command: "bun run dev --mode e2e --host 127.0.0.1 --port 4173 --strictPort",
+    url: "http://127.0.0.1:4173",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
