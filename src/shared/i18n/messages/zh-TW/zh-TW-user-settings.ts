@@ -294,7 +294,8 @@ export default {
       "title": "授權社交平臺查詢",
       "description": "管理您的Haruki工具箱賬號授權可查詢遊戲賬號資訊的社交平臺",
       "addButton": "新增授權",
-      "empty": "暫無資料",
+      "emptyTitle": "暫無授權的社交平台",
+      "emptyDescription": "新增授權後，對應平台的帳號即可查詢你的遊戲帳號資訊。",
       "platformPlaceholder": "請選擇社交平臺",
       "platforms": {
         "qq": "QQ",
@@ -309,12 +310,7 @@ export default {
         "allowFastVerification": "允許快速驗證",
         "allowFastVerificationHint": "開啟後，該使用者可以在HarukiBot中快速通過賬號驗證"
       },
-      "table": {
-        "platform": "平臺",
-        "account": "賬號",
-        "remark": "備註",
-        "actions": "操作"
-      },
+      "fastVerificationBadge": "快速驗證",
       "actions": {
         "edit": "編輯",
         "delete": "刪除"
@@ -345,8 +341,9 @@ export default {
     "oauthAuthorizations": {
       "title": "已授權的應用",
       "description": "檢視並隨時撤銷已授權訪問你賬號資料的第三方應用。",
-      "loading": "載入中...",
-      "empty": "暫無已授權的第三方應用",
+      "refresh": "重新整理",
+      "emptyTitle": "暫無已授權的應用",
+      "emptyDescription": "當你授權第三方應用訪問賬號資料後，它們會顯示在這裡。",
       "authorizedAtPrefix": "授權於",
       "clientType": {
         "bot": "Bot",

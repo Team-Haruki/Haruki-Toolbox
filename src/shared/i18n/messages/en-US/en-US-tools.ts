@@ -226,7 +226,6 @@ export default {
       "title": "iOS Module Generator",
       "description": "Generate custom iOS proxy modules",
       "tutorialAlert": {
-        "title": "Tip",
         "textBefore": "This tutorial can be viewed by ",
         "linkText": "clicking here",
         "textAfter": ".",
@@ -241,17 +240,18 @@ export default {
         "moduleUrl": "Module URL",
         "scriptUrl": "Script URL"
       },
-      "common": {
-        "selectPlaceholder": "Please select"
-      },
-      "layers": {
-        "basic": {
-          "title": "Basic settings",
-          "description": "Choose the proxy app, toolbox endpoint, upload mode, and script parameters."
+      "steps": {
+        "configure": {
+          "title": "Configure",
+          "description": "Choose the proxy app, toolbox endpoint, and upload mode."
         },
         "scope": {
-          "title": "Upload scope",
+          "title": "Scope",
           "description": "Choose the regions and data types to upload."
+        },
+        "install": {
+          "title": "Get & Install",
+          "description": "Generate an upload code, then copy the URLs or quick install the module."
         }
       },
       "sections": {

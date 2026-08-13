@@ -226,7 +226,6 @@ export default {
       "title": "iOS模块生成器",
       "description": "生成自定义的iOS代理模块",
       "tutorialAlert": {
-        "title": "提示",
         "textBefore": "本文教程可以",
         "linkText": "点击这里",
         "textAfter": "观看",
@@ -241,17 +240,18 @@ export default {
         "moduleUrl": "模块URL",
         "scriptUrl": "脚本URL"
       },
-      "common": {
-        "selectPlaceholder": "请选择"
-      },
-      "layers": {
-        "basic": {
-          "title": "基础配置",
-          "description": "选择代理软件、服务端域名、上传方式与脚本参数。"
+      "steps": {
+        "configure": {
+          "title": "配置",
+          "description": "选择代理软件、服务端域名与上传方式。"
         },
         "scope": {
-          "title": "上传范围",
+          "title": "范围",
           "description": "选择需要上传数据的区服和数据类型。"
+        },
+        "install": {
+          "title": "获取与安装",
+          "description": "生成上传码后，可复制 URL 手动安装或一键快速安装。"
         }
       },
       "sections": {

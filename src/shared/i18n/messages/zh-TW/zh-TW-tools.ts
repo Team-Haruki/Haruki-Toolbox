@@ -226,7 +226,6 @@ export default {
       "title": "iOS模組生成器",
       "description": "生成自定義的iOS代理模組",
       "tutorialAlert": {
-        "title": "提示",
         "textBefore": "本文教程可以",
         "linkText": "點選這裡",
         "textAfter": "觀看",
@@ -241,17 +240,18 @@ export default {
         "moduleUrl": "模組URL",
         "scriptUrl": "指令碼URL"
       },
-      "common": {
-        "selectPlaceholder": "請選擇"
-      },
-      "layers": {
-        "basic": {
-          "title": "基礎配置",
-          "description": "選擇代理軟體、服務端域名、上傳方式與指令碼引數。"
+      "steps": {
+        "configure": {
+          "title": "配置",
+          "description": "選擇代理軟體、服務端域名與上傳方式。"
         },
         "scope": {
-          "title": "上傳範圍",
+          "title": "範圍",
           "description": "選擇需要上傳資料的區服和資料型別。"
+        },
+        "install": {
+          "title": "獲取與安裝",
+          "description": "生成上傳碼後，可複製 URL 手動安裝或一鍵快速安裝。"
         }
       },
       "sections": {

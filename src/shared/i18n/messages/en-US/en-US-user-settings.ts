@@ -294,7 +294,8 @@ export default {
       "title": "Authorized social queries",
       "description": "Manage social platforms authorized to query your game account information",
       "addButton": "Add authorization",
-      "empty": "No data",
+      "emptyTitle": "No authorized platforms yet",
+      "emptyDescription": "Once you add an authorization, that platform account can look up your game account data.",
       "platformPlaceholder": "Select social platform",
       "platforms": {
         "qq": "QQ",
@@ -309,12 +310,7 @@ export default {
         "allowFastVerification": "Allow Fast Verification",
         "allowFastVerificationHint": "When enabled, this user can quickly pass account verification in HarukiBot"
       },
-      "table": {
-        "platform": "Platform",
-        "account": "Account",
-        "remark": "Remark",
-        "actions": "Actions"
-      },
+      "fastVerificationBadge": "Fast verification",
       "actions": {
         "edit": "Edit",
         "delete": "Delete"
@@ -345,8 +341,9 @@ export default {
     "oauthAuthorizations": {
       "title": "Authorized applications",
       "description": "Review and revoke third-party applications authorized to access your account data.",
-      "loading": "Loading...",
-      "empty": "No authorized third-party applications",
+      "refresh": "Refresh",
+      "emptyTitle": "No authorized applications",
+      "emptyDescription": "Third-party applications you authorize to access your account data will appear here.",
       "authorizedAtPrefix": "Authorized at",
       "clientType": {
         "bot": "Bot",
