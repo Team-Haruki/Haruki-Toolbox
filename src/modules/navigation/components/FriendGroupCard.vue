@@ -39,6 +39,7 @@ function handleTouch() {
             :src="item.bg"
             alt=""
             class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 group-[.is-touched]:scale-105"
+            loading="lazy"
           />
         </template>
         

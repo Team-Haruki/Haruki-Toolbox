@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { GitHubIcon } from "vue3-simple-icons"
 import { Button } from "@/components/ui/button"
 import { useI18n } from "vue-i18n"
 
@@ -10,30 +9,47 @@ import {
   CardContent
 } from "@/components/ui/card"
 import {
-  LogIn,
   Settings,
-  Gamepad2,
-  UserPlus,
-  LucideBot,
-  ShieldCheck,
-  FileText,
   LucideNavigation,
+  LucideZap,
   Heart,
 } from "lucide-vue-next"
 
 import { computed } from "vue"
 import { useUserStore } from "@/shared/stores/user"
-import { WEB_NAV_ITEMS } from "@/config/navigation"
+import { WEB_NAV_SECTIONS, type NavItem, type NavSubItem } from "@/config/navigation"
+import CurrentEventCard from "@/modules/home/components/CurrentEventCard.vue"
+import HomeAccountCard from "@/modules/home/components/HomeAccountCard.vue"
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 const { t } = useI18n()
+
+// Chip rows are derived from the sidebar config so home never drifts from it.
+const navGroups: NavItem[] = WEB_NAV_SECTIONS.flatMap((section) => section.items)
+function groupItems(titleKey: string): NavSubItem[] {
+  return navGroups.find((item) => item.titleKey === titleKey)?.items ?? []
+}
+
+const quickTools = groupItems("navigation.groups.eventRankingTools")
+const catalogItems = groupItems("navigation.groups.sekaiCatalog")
+const playerItems = groupItems("navigation.groups.sekaiPlayer")
+
+const moreLinks = [
+  { titleKey: "navigation.items.friendGroups", to: "/friend-groups" },
+  { titleKey: "navigation.items.friendLinks", to: "/friend-links" },
+  { titleKey: "navigation.items.sponsors", to: "/sponsors" },
+  { titleKey: "home.harukiBotDocs", href: "https://neo.haruki.seiunx.com" },
+  { titleKey: "home.harukiGithub", href: "https://github.com/Team-Haruki" },
+  { titleKey: "home.privacyPolicy", to: "/privacy" },
+  { titleKey: "home.termsOfService", to: "/tos" },
+] as const
 </script>
 
 <template>
-  <div class="flex flex-col flex-grow gap-6 w-full px-0 py-4 max-w-4xl mx-auto justify-center">
-    <div class="text-center mb-2 sm:mb-4">
-      <h1 class="text-3xl sm:text-4xl font-bold tracking-tight">{{ t("home.title") }}</h1>
-      <p class="text-base sm:text-lg text-muted-foreground mt-2">{{ t("home.description") }}</p>
+  <div class="flex flex-col flex-grow gap-5 w-full px-0 py-4 max-w-4xl mx-auto justify-center">
+    <div class="text-center">
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">{{ t("home.title") }}</h1>
+      <p class="text-sm sm:text-base text-muted-foreground mt-1.5">{{ t("home.description") }}</p>
     </div>
 
     <!-- Guide banner for About/Sponsorship -->
@@ -61,92 +77,84 @@ const { t } = useI18n()
       </div>
     </router-link>
 
-    <div class="grid gap-4 sm:gap-6 sm:grid-cols-2 items-start">
-    <Card v-for="group in WEB_NAV_ITEMS" :key="group.titleKey" class="w-full">
-      <CardHeader>
-        <CardTitle>{{ t(group.titleKey) }}</CardTitle>
-      </CardHeader>
-      <CardContent class="grid grid-cols-2 gap-4 items-stretch">
-        <router-link v-for="item in group.items" :key="item.url" :to="item.url" class="flex">
-          <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
-            <component :is="item.icon || LucideNavigation" class="w-5 h-5" />
-            <span class="whitespace-normal">{{ t(item.titleKey) }}</span>
-          </Button>
-        </router-link>
-      </CardContent>
-    </Card>
+    <!-- Hero: current event dashboard -->
+    <CurrentEventCard />
 
-    <Card class="w-full">
-      <CardHeader>
-        <CardTitle>{{ t("home.accountAndSettings") }}</CardTitle>
-      </CardHeader>
-      <CardContent class="grid grid-cols-2 gap-4 items-stretch">
-        <router-link v-if="!isLoggedIn" to="/user/register" class="flex">
-          <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
-            <UserPlus class="w-5 h-5"/>
-            <span class="whitespace-normal">{{ t("home.register") }}</span>
-          </Button>
-        </router-link>
-        <router-link v-if="!isLoggedIn" to="/user/login" class="flex">
-          <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
-            <LogIn class="w-5 h-5"/>
-            <span class="whitespace-normal">{{ t("home.login") }}</span>
+    <!-- Account + event ranking tools -->
+    <div class="grid gap-4 sm:grid-cols-2 items-stretch">
+      <HomeAccountCard class="h-full" />
+
+      <Card class="w-full h-full">
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2 text-base">
+            <LucideZap class="h-4.5 w-4.5" />
+            {{ t("navigation.groups.eventRankingTools") }}
+          </CardTitle>
+        </CardHeader>
+        <CardContent class="grid grid-cols-2 gap-2">
+          <router-link v-for="tool in quickTools" :key="tool.url" :to="tool.url" class="flex">
+            <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
+              <component :is="tool.icon || LucideNavigation" class="w-4.5 h-4.5" />
+              <span class="whitespace-normal">{{ t(tool.titleKey) }}</span>
+            </Button>
+          </router-link>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- My game data shortcuts (logged in) -->
+    <section v-if="isLoggedIn && playerItems.length" class="w-full">
+      <h2 class="mb-2.5 text-sm font-semibold text-muted-foreground">{{ t("navigation.groups.sekaiPlayer") }}</h2>
+      <div class="flex flex-wrap gap-2">
+        <router-link v-for="item in playerItems" :key="item.url" :to="item.url" class="flex">
+          <Button variant="secondary" size="sm" class="rounded-full">
+            <component :is="item.icon || LucideNavigation" class="w-4 h-4" />
+            {{ t(item.titleKey) }}
           </Button>
         </router-link>
         <router-link to="/user/settings" class="flex">
-          <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
-            <Settings class="w-5 h-5"/>
-            <span class="whitespace-normal">{{ t("home.accountSettings") }}</span>
+          <Button variant="ghost" size="sm" class="rounded-full text-muted-foreground">
+            <Settings class="w-4 h-4" />
+            {{ t("home.accountSettings") }}
           </Button>
         </router-link>
-        <router-link to="/user/game-account-bindings" class="flex">
-          <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
-            <Gamepad2 class="w-5 h-5"/>
-            <span class="whitespace-normal">{{ t("home.gameAccountManagement") }}</span>
-          </Button>
-        </router-link>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
 
-    <Card class="w-full">
-      <CardHeader>
-        <CardTitle>{{ t("home.externalLinks") }}</CardTitle>
-      </CardHeader>
-      <CardContent class="grid grid-cols-2 gap-4 items-stretch">
-        <a href="https://neo.haruki.seiunx.com" target="_blank" rel="noopener noreferrer" class="flex">
-          <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
-            <LucideBot class="w-5 h-5"/>
-            <span class="whitespace-normal">{{ t("home.harukiBotDocs") }}</span>
+    <!-- Sekai catalog shortcuts -->
+    <section v-if="catalogItems.length" class="w-full">
+      <h2 class="mb-2.5 text-sm font-semibold text-muted-foreground">{{ t("navigation.groups.sekaiCatalog") }}</h2>
+      <div class="flex flex-wrap gap-2">
+        <router-link v-for="item in catalogItems" :key="item.url" :to="item.url" class="flex">
+          <Button variant="secondary" size="sm" class="rounded-full">
+            <component :is="item.icon || LucideNavigation" class="w-4 h-4" />
+            {{ t(item.titleKey) }}
           </Button>
-        </a>
-        <a href="https://github.com/Team-Haruki" target="_blank" rel="noopener noreferrer" class="flex">
-          <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
-            <GitHubIcon class="w-5 h-5"/>
-            <span class="whitespace-normal">{{ t("home.harukiGithub") }}</span>
-          </Button>
-        </a>
-      </CardContent>
-    </Card>
+        </router-link>
+      </div>
+    </section>
 
-    <Card class="w-full">
-      <CardHeader>
-        <CardTitle>{{ t("home.legalLinks") }}</CardTitle>
-      </CardHeader>
-      <CardContent class="grid grid-cols-2 gap-4 items-stretch">
-        <router-link to="/privacy" class="flex">
-          <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
-            <ShieldCheck class="w-5 h-5"/>
-            <span class="whitespace-normal">{{ t("home.privacyPolicy") }}</span>
-          </Button>
+    <!-- Quiet footer links -->
+    <nav class="flex flex-wrap items-center justify-center gap-x-0.5 gap-y-1 text-xs text-muted-foreground">
+      <template v-for="(link, index) in moreLinks" :key="link.titleKey">
+        <span v-if="index > 0" class="select-none opacity-50" aria-hidden="true">·</span>
+        <a
+          v-if="'href' in link && link.href"
+          :href="link.href"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="rounded px-1.5 py-1 transition-colors hover:bg-accent hover:text-foreground"
+        >
+          {{ t(link.titleKey) }}
+        </a>
+        <router-link
+          v-else-if="'to' in link"
+          :to="link.to"
+          class="rounded px-1.5 py-1 transition-colors hover:bg-accent hover:text-foreground"
+        >
+          {{ t(link.titleKey) }}
         </router-link>
-        <router-link to="/tos" class="flex">
-          <Button variant="outline" class="flex-1 h-auto w-full flex items-center gap-2 truncate text-sm whitespace-normal">
-            <FileText class="w-5 h-5"/>
-            <span class="whitespace-normal">{{ t("home.termsOfService") }}</span>
-          </Button>
-        </router-link>
-      </CardContent>
-    </Card>
-    </div>
+      </template>
+    </nav>
   </div>
 </template>

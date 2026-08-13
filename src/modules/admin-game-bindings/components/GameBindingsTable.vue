@@ -28,12 +28,13 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   LucideArrowRightLeft,
-  LucideCheckSquare,
   LucideChevronLeft,
   LucideChevronRight,
+  LucideInbox,
   LucideLoader2,
   LucideMoreHorizontal,
   LucidePencil,
@@ -75,54 +76,68 @@ function isSelected(binding: GlobalGameBinding): boolean {
 </script>
 
 <template>
-  <div v-if="props.selected.size > 0" class="flex items-center gap-3 px-2">
-    <span class="text-sm text-muted-foreground">
-      {{ t("adminGameBindings.table.selectedCount", { count: props.selected.size }) }}
-    </span>
-    <AlertDialog>
-      <AlertDialogTrigger as-child>
-        <Button variant="destructive" size="sm" :disabled="props.actionLoading">
-          <LucideTrash2 class="w-4 h-4 mr-1" />
-          {{ t("adminGameBindings.table.batchUnbind") }}
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{{ t("adminGameBindings.table.batchDialog.title") }}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {{ t("adminGameBindings.table.batchDialog.description", { count: props.selected.size }) }}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{{ t("adminGameBindings.table.batchDialog.cancel") }}</AlertDialogCancel>
-          <AlertDialogAction :disabled="props.actionLoading" @click="emit('batch-delete')">
-            <LucideLoader2 v-if="props.actionLoading" class="w-4 h-4 mr-1 animate-spin" />
-            {{ t("adminGameBindings.table.batchDialog.confirm") }}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  </div>
-
-  <Card>
+  <Card class="gap-0 overflow-hidden py-0">
     <CardContent class="p-0">
+      <!-- Selection toolbar: always rendered so revealing the batch action never shifts layout -->
+      <div class="flex h-12 items-center justify-between gap-3 border-b px-4">
+        <span
+          class="text-sm text-muted-foreground tabular-nums transition-opacity duration-200"
+          :class="props.selected.size > 0 ? 'opacity-100' : 'opacity-0'"
+          :aria-hidden="props.selected.size === 0"
+        >
+          {{ t("adminGameBindings.table.selectedCount", { count: props.selected.size }) }}
+        </span>
+        <AlertDialog>
+          <AlertDialogTrigger as-child>
+            <Button
+              variant="destructive"
+              size="sm"
+              :disabled="props.selected.size === 0 || props.actionLoading"
+            >
+              <LucideTrash2 class="w-4 h-4 mr-1" />
+              {{ t("adminGameBindings.table.batchUnbind") }}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{{ t("adminGameBindings.table.batchDialog.title") }}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {{ t("adminGameBindings.table.batchDialog.description", { count: props.selected.size }) }}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{{ t("adminGameBindings.table.batchDialog.cancel") }}</AlertDialogCancel>
+              <AlertDialogAction :disabled="props.actionLoading" @click="emit('batch-delete')">
+                <LucideLoader2 v-if="props.actionLoading" class="w-4 h-4 mr-1 animate-spin" />
+                {{ t("adminGameBindings.table.batchDialog.confirm") }}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
       <template v-if="props.loading">
-        <div class="p-6 flex flex-col gap-3">
+        <div class="flex flex-col gap-3 p-6">
           <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
         </div>
       </template>
+      <div
+        v-else-if="props.bindings.length === 0"
+        class="flex flex-col items-center justify-center gap-3 py-12 text-center"
+      >
+        <LucideInbox class="h-8 w-8 text-muted-foreground/60" />
+        <p class="text-sm text-muted-foreground">{{ t("adminGameBindings.table.empty") }}</p>
+      </div>
       <template v-else>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead class="w-10">
-                <button
-                  class="flex items-center justify-center w-5 h-5 border rounded cursor-pointer"
-                  :class="props.selectAll ? 'bg-primary border-primary text-primary-foreground' : 'border-input'"
-                  @click="emit('toggle-select-all')"
-                >
-                  <LucideCheckSquare v-if="props.selectAll" class="w-3.5 h-3.5" />
-                </button>
+                <Checkbox
+                  :model-value="props.selectAll"
+                  :aria-label="t('adminGameBindings.table.selectAll')"
+                  @update:model-value="emit('toggle-select-all')"
+                />
               </TableHead>
               <TableHead>{{ t("adminGameBindings.table.columns.server") }}</TableHead>
               <TableHead>{{ t("adminGameBindings.table.columns.gameId") }}</TableHead>
@@ -131,22 +146,24 @@ function isSelected(binding: GlobalGameBinding): boolean {
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableRow v-for="binding in props.bindings" :key="props.bindingKey(binding)">
+            <TableRow
+              v-for="binding in props.bindings"
+              :key="props.bindingKey(binding)"
+              :data-state="isSelected(binding) ? 'selected' : undefined"
+            >
               <TableCell>
-                <button
-                  class="flex items-center justify-center w-5 h-5 border rounded cursor-pointer"
-                  :class="isSelected(binding) ? 'bg-primary border-primary text-primary-foreground' : 'border-input'"
-                  @click="emit('toggle-select', props.bindingKey(binding))"
-                >
-                  <LucideCheckSquare v-if="isSelected(binding)" class="w-3.5 h-3.5" />
-                </button>
+                <Checkbox
+                  :model-value="isSelected(binding)"
+                  :aria-label="t('adminGameBindings.table.selectRow')"
+                  @update:model-value="emit('toggle-select', props.bindingKey(binding))"
+                />
               </TableCell>
               <TableCell>
                 <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-muted">
                   {{ props.serverLabel(binding.server) }}
                 </span>
               </TableCell>
-              <TableCell class="font-mono text-sm">{{ binding.gameUserId }}</TableCell>
+              <TableCell class="font-mono text-sm tabular-nums">{{ binding.gameUserId }}</TableCell>
               <TableCell>
                 <div class="flex flex-col">
                   <span class="text-sm font-medium">{{ binding.userName || binding.userId }}</span>
@@ -156,8 +173,12 @@ function isSelected(binding: GlobalGameBinding): boolean {
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger as-child>
-                    <Button variant="ghost" class="h-8 w-8 p-0">
-                      <span class="sr-only">{{ t("adminGameBindings.table.openMenu") }}</span>
+                    <Button
+                      variant="ghost"
+                      class="h-8 w-8 p-0"
+                      :title="t('adminGameBindings.table.openMenu')"
+                      :aria-label="t('adminGameBindings.table.openMenu')"
+                    >
                       <LucideMoreHorizontal class="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -180,29 +201,39 @@ function isSelected(binding: GlobalGameBinding): boolean {
                 </DropdownMenu>
               </TableCell>
             </TableRow>
-            <TableRow v-if="props.bindings.length === 0">
-              <TableCell :colspan="5" class="text-center py-8 text-muted-foreground">
-                {{ t("adminGameBindings.table.empty") }}
-              </TableCell>
-            </TableRow>
           </TableBody>
         </Table>
       </template>
+
+      <!-- Pagination footer attached to the table card -->
+      <div class="flex items-center justify-between gap-3 border-t px-4 py-3">
+        <span class="text-sm text-muted-foreground">
+          {{ t("adminGameBindings.table.total", { total: formatNumberCN(props.total, "0") }) }}
+        </span>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="props.page <= 1"
+            :title="t('adminGameBindings.pagination.prevPage')"
+            :aria-label="t('adminGameBindings.pagination.prevPage')"
+            @click="emit('prev-page')"
+          >
+            <LucideChevronLeft class="w-4 h-4" />
+          </Button>
+          <span class="text-sm tabular-nums">{{ props.page }} / {{ props.totalPages }}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="props.page >= props.totalPages"
+            :title="t('adminGameBindings.pagination.nextPage')"
+            :aria-label="t('adminGameBindings.pagination.nextPage')"
+            @click="emit('next-page')"
+          >
+            <LucideChevronRight class="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
     </CardContent>
   </Card>
-
-  <div class="flex items-center justify-between px-2">
-    <span class="text-sm text-muted-foreground">
-      {{ t("adminGameBindings.table.total", { total: formatNumberCN(props.total, "0") }) }}
-    </span>
-    <div class="flex items-center gap-2">
-      <Button variant="outline" size="sm" :disabled="props.page <= 1" @click="emit('prev-page')">
-        <LucideChevronLeft class="w-4 h-4" />
-      </Button>
-      <span class="text-sm tabular-nums">{{ props.page }} / {{ props.totalPages }}</span>
-      <Button variant="outline" size="sm" :disabled="props.page >= props.totalPages" @click="emit('next-page')">
-        <LucideChevronRight class="w-4 h-4" />
-      </Button>
-    </div>
-  </div>
 </template>

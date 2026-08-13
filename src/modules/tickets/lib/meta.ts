@@ -149,17 +149,6 @@ export function getTicketCategoryOptions(
   return toOptions(TICKET_CATEGORY_VALUES, (value) => ticketCategoryLabel(value, localizer))
 }
 
-// Backward compatible static exports for non-reactive call sites.
-export const TICKET_STATUS_OPTIONS: ReadonlyArray<TicketOption<TicketStatus>> = getTicketStatusOptions()
-export const TICKET_STATUS_FILTER_OPTIONS: ReadonlyArray<TicketOption<TicketStatusFilter>> = getTicketStatusFilterOptions()
-export const TICKET_PRIORITY_OPTIONS: ReadonlyArray<TicketOption<TicketPriority>> = getTicketPriorityOptions()
-export const TICKET_PRIORITY_FILTER_OPTIONS: ReadonlyArray<TicketOption<TicketPriorityFilter>> = getTicketPriorityFilterOptions()
-export const ADMIN_TICKET_PRIORITY_FILTER_OPTIONS: ReadonlyArray<TicketOption<TicketPriorityFilter>> =
-  getAdminTicketPriorityFilterOptions()
-export const ADMIN_TICKET_QUICK_FILTER_OPTIONS: ReadonlyArray<TicketOption<AdminTicketQuickFilter>> =
-  getAdminTicketQuickFilterOptions()
-export const TICKET_CATEGORY_OPTIONS: ReadonlyArray<TicketOption<TicketCategory>> = getTicketCategoryOptions()
-
 const TICKET_STATUS_SET = new Set<string>(TICKET_STATUS_VALUES)
 const TICKET_PRIORITY_SET = new Set<string>(TICKET_PRIORITY_VALUES)
 const TICKET_CATEGORY_SET = new Set<string>(TICKET_CATEGORY_VALUES)

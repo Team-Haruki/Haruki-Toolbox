@@ -8,7 +8,12 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { LucideLoader2 } from "lucide-vue-next"
+import {
+  LucideAlertTriangle,
+  LucideLoader2,
+  LucideLock,
+  LucideRotateCcw,
+} from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 
 interface Props {
@@ -32,22 +37,28 @@ const emit = defineEmits<{
 <template>
   <Card>
     <CardHeader>
-      <CardTitle class="text-lg">{{ t("adminRisk.rules.title") }}</CardTitle>
+      <CardTitle class="text-base">{{ t("adminRisk.rules.title") }}</CardTitle>
       <CardDescription>{{ t("adminRisk.rules.description") }}</CardDescription>
     </CardHeader>
     <CardContent class="flex flex-col gap-4">
       <template v-if="!props.userIsSuperAdmin">
-        <p class="text-sm text-muted-foreground py-8 text-center">
-          {{ t("adminRisk.rules.superAdminOnly") }}
-        </p>
+        <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-12 text-center">
+          <LucideLock class="h-8 w-8 text-muted-foreground/60" />
+          <p class="text-sm text-muted-foreground">
+            {{ t("adminRisk.rules.superAdminOnly") }}
+          </p>
+        </div>
       </template>
       <template v-else-if="props.rulesLoading">
-        <Skeleton class="h-48 w-full" />
+        <Skeleton class="h-64 w-full" />
+        <Skeleton class="h-9 w-24 self-end" />
       </template>
       <template v-else-if="props.rulesLoadError">
-        <div class="flex flex-col items-center gap-3 py-8 text-center">
+        <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-12 text-center">
+          <LucideAlertTriangle class="h-8 w-8 text-muted-foreground/60" />
           <p class="text-sm text-muted-foreground">{{ t("adminRisk.rules.loadError") }}</p>
           <Button variant="outline" size="sm" @click="emit('retry')">
+            <LucideRotateCcw class="w-3.5 h-3.5" />
             {{ t("adminRisk.rules.retry") }}
           </Button>
         </div>
@@ -57,6 +68,7 @@ const emit = defineEmits<{
           :value="props.rulesJson"
           class="w-full h-64 rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y disabled:opacity-60"
           spellcheck="false"
+          :aria-label="t('adminRisk.rules.title')"
           @input="emit('update:rulesJson', String(($event.target as HTMLTextAreaElement).value))"
         />
         <Button
@@ -64,7 +76,7 @@ const emit = defineEmits<{
           :disabled="props.rulesSaving"
           @click="emit('save')"
         >
-          <LucideLoader2 v-if="props.rulesSaving" class="w-4 h-4 mr-1 animate-spin" />
+          <LucideLoader2 v-if="props.rulesSaving" class="w-4 h-4 animate-spin" />
           {{ t("adminRisk.rules.saveButton") }}
         </Button>
       </template>

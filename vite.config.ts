@@ -9,12 +9,16 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 const manualChunkGroups = [
     {
+        // '@vue' must be listed: the scoped runtime packages (@vue/runtime-dom
+        // etc.) otherwise fall through and get fused into whichever vendor
+        // chunk the bundler picks (historically vendor-chart, putting unovis on
+        // every page's critical path).
         name: 'vendor-vue',
-        packages: ['vue', 'vue-router', 'pinia'],
+        packages: ['vue', '@vue', 'vue-router', 'pinia'],
     },
     {
         name: 'vendor-ui',
-        packages: ['reka-ui', '@tanstack/vue-table', 'lucide-vue-next'],
+        packages: ['reka-ui', 'lucide-vue-next'],
     },
     {
         name: 'vendor-chart',
@@ -28,6 +32,17 @@ const manualChunkGroups = [
 
 const adminPrecacheGlobIgnores = [
     '**/assets/{admin,AdminLayout,Dashboard,SystemLogs,UploadLogs,UserManagement,UserDetail,OAuthClientManagement,AdminWebhookManagement,ContentManagement,AdminSponsorManagement,SystemConfig,GameAccountBindings,RiskManagement,AdminTicketList,AdminTicketDetail}-*.js',
+]
+
+// Niche heavyweights (deck-recommend/score wasm, 3D costume engine, the
+// non-default locale) are cached at runtime on first use instead of being
+// force-downloaded to every visitor during SW install (~6MB of the old
+// ~11MB precache).
+const heavyAssetPrecacheGlobIgnores = [
+    '**/*.wasm',
+    '**/assets/haruki-3d-engine-*.js',
+    '**/assets/en-US-*.js',
+    '**/assets/zh-TW-*.js',
 ]
 
 const packageJson = JSON.parse(
@@ -73,8 +88,10 @@ const localDevHost = 'haruki-dev-local.seiunx.com'
 const localDevCert = new URL('./certs/haruki-dev-local.seiunx.com.pem', import.meta.url)
 const localDevKey = new URL('./certs/haruki-dev-local.seiunx.com-key.pem', import.meta.url)
 
-function resolveLocalDevServer(command: string) {
-    if (command !== 'serve' || !existsSync(localDevCert) || !existsSync(localDevKey)) {
+function resolveLocalDevServer(command: string, mode: string) {
+    // Playwright must behave the same in local checkouts and CI, where the
+    // gitignored development certificates are unavailable.
+    if (command !== 'serve' || mode === 'e2e' || !existsSync(localDevCert) || !existsSync(localDevKey)) {
         return undefined
     }
 
@@ -118,8 +135,8 @@ function buildTrackerProxy(target: string) {
     }
 }
 
-function buildDevServerConfig(command: string, trackerProxy: ReturnType<typeof buildTrackerProxy> | undefined) {
-    const localDevServer = resolveLocalDevServer(command)
+function buildDevServerConfig(command: string, mode: string, trackerProxy: ReturnType<typeof buildTrackerProxy> | undefined) {
+    const localDevServer = resolveLocalDevServer(command, mode)
 
     if (!localDevServer && !trackerProxy) {
         return undefined
@@ -173,9 +190,48 @@ export default defineConfig(({ command, mode }) => {
                     cleanupOutdatedCaches: true,
                     clientsClaim: true,
                     globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,wasm}'],
-                    globIgnores: adminPrecacheGlobIgnores,
+                    globIgnores: [...adminPrecacheGlobIgnores, ...heavyAssetPrecacheGlobIgnores],
                     maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
                     navigateFallbackDenylist: [/^\/api\//],
+                    // Sekai game-asset and toolbox static images (music jackets, card
+                    // art, icons) are content-addressed and immutable. Cache them at
+                    // runtime so re-opening pickers or revisiting pages reuses them
+                    // instead of re-downloading — independent of the CDN's headers.
+                    // Scoped to image extensions to avoid caching large 3D bundles.
+                    runtimeCaching: [
+                        {
+                            // Hashed heavyweights excluded from the precache above:
+                            // immutable by filename, so cache-first on first use.
+                            urlPattern: /\/assets\/(?:[^/]+\.wasm|haruki-3d-engine-[^/]+\.js|en-US-[^/]+\.js|zh-TW-[^/]+\.js)$/i,
+                            handler: 'CacheFirst',
+                            options: {
+                                cacheName: 'heavy-immutable-assets',
+                                expiration: {
+                                    maxEntries: 24,
+                                    maxAgeSeconds: 60 * 60 * 24 * 60,
+                                    purgeOnQuotaError: true,
+                                },
+                                cacheableResponse: {
+                                    statuses: [0, 200],
+                                },
+                            },
+                        },
+                        {
+                            urlPattern: /^https:\/\/(sekai-assets\.haruki\.seiunx\.com|sekai-assets-bdf29c81\.seiunx\.net|toolbox-sekai-assets\.haruki\.seiunx\.com|images\.haruki\.seiunx\.com)\/.*\.(?:png|jpe?g|webp|avif)(?:\?.*)?$/i,
+                            handler: 'CacheFirst',
+                            options: {
+                                cacheName: 'sekai-image-assets',
+                                expiration: {
+                                    maxEntries: 4000,
+                                    maxAgeSeconds: 60 * 60 * 24 * 30,
+                                    purgeOnQuotaError: true,
+                                },
+                                cacheableResponse: {
+                                    statuses: [0, 200],
+                                },
+                            },
+                        },
+                    ],
                 },
                 devOptions: {
                     enabled: false,
@@ -190,10 +246,10 @@ export default defineConfig(({ command, mode }) => {
         },
         resolve: {
             alias: {
-                '@': path.resolve(__dirname, './src'),
+                '@': path.resolve(import.meta.dirname, './src'),
             },
         },
-        server: buildDevServerConfig(command, trackerProxy),
+        server: buildDevServerConfig(command, mode, trackerProxy),
         preview: trackerProxy
             ? { proxy: trackerProxy }
             : undefined,
@@ -203,14 +259,19 @@ export default defineConfig(({ command, mode }) => {
                     pluginTimings: false,
                 },
                 output: {
-                    manualChunks(id) {
-                        const normalizedId = id.replaceAll('\\', '/')
-
-                        return manualChunkGroups.find((group) =>
-                            group.packages.some((packageName) =>
-                                normalizedId.includes(`/node_modules/${packageName}/`),
+                    // Native rolldown chunking with explicit priority: earlier
+                    // groups win, so the Vue runtime can never be captured by
+                    // the chart chunk (which would drag unovis onto every
+                    // page's critical path).
+                    advancedChunks: {
+                        groups: manualChunkGroups.map((group) => ({
+                            name: group.name,
+                            test: new RegExp(
+                                `node_modules/(?:${group.packages
+                                    .map((packageName) => packageName.replace(/[/@]/g, (ch) => `\\${ch}`))
+                                    .join('|')})/`,
                             ),
-                        )?.name
+                        })),
                     },
                 },
             },

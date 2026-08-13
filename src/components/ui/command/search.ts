@@ -1,5 +1,3 @@
-import { pinyin } from "pinyin-pro"
-
 const HAN_PATTERN = /\p{Script=Han}/u
 const KANA_PATTERN = /[\u3041-\u30ff]/u
 const DIACRITIC_PATTERN = /\p{Diacritic}/gu
@@ -201,11 +199,18 @@ export function buildSearchVariants(value: string): string[] {
     addRomajiVariants(variants, kanaToRomaji(value))
   }
 
+  let cacheable = true
   if (HAN_PATTERN.test(value)) {
-    addPinyinVariants(variants, value)
+    // While the pinyin dictionary is still loading the variant set is
+    // incomplete — return it for this lookup but don't cache it, so the
+    // full set is computed once pinyin arrives.
+    cacheable = addPinyinVariants(variants, value)
   }
 
   const result = [...variants]
+  if (!cacheable) {
+    return result
+  }
   if (variantCache.size > VARIANT_CACHE_LIMIT) {
     variantCache.clear()
   }
@@ -246,9 +251,41 @@ function addRomajiVariants(variants: Set<string>, value: string | null) {
   addNormalizedVariant(variants, normalized.replace(/vii/g, "vy"))
 }
 
-function addPinyinVariants(variants: Set<string>, value: string) {
+// pinyin-pro ships a ~100KB CJK dictionary; loading it lazily on the first
+// Han-text lookup keeps it off every page's critical path. Until it resolves,
+// Han entries simply match without pinyin variants (base text still works).
+type PinyinFn = (typeof import("pinyin-pro"))["pinyin"]
+let pinyinFn: PinyinFn | null = null
+let pinyinReady: Promise<void> | null = null
+
+/** Kicks off (and memoizes) the dictionary load; awaitable for tests. */
+export function preloadSearchPinyin(): Promise<void> {
+  if (!pinyinReady) {
+    pinyinReady = import("pinyin-pro")
+      .then((mod) => {
+        pinyinFn = mod.pinyin
+      })
+      .catch(() => {
+        // Retry on the next Han lookup; pinyin is only a search aid.
+        pinyinReady = null
+      })
+  }
+  return pinyinReady
+}
+
+/**
+ * Adds pinyin variants when the dictionary is available.
+ * Returns false when pinyin was needed but not yet loaded, so callers can
+ * skip caching the incomplete variant set.
+ */
+function addPinyinVariants(variants: Set<string>, value: string): boolean {
+  if (!pinyinFn) {
+    void preloadSearchPinyin()
+    return false
+  }
+
   try {
-    const words = pinyin(value, { toneType: "none", type: "array" })
+    const words = pinyinFn(value, { toneType: "none", type: "array" })
       .map((item) => normalizeSearchText(item))
       .filter(Boolean)
     addNormalizedVariant(variants, words.join(" "))
@@ -257,6 +294,7 @@ function addPinyinVariants(variants: Set<string>, value: string) {
   } catch {
     // Pinyin is only a search aid; the base text still remains searchable.
   }
+  return true
 }
 
 function normalizeSearchText(value: string): string {

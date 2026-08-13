@@ -1,14 +1,8 @@
 <script setup lang="ts">
-import { h } from "vue"
 import { useI18n } from "vue-i18n"
-import {
-  FlexRender,
-  getCoreRowModel,
-  useVueTable,
-} from "@tanstack/vue-table"
-import type { ColumnDef } from "@tanstack/vue-table"
 import type { GameAccountBinding, SekaiRegion } from "@/types/store"
 import { Button } from "@/components/ui/button"
+import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import VerificationStatusBadge from "@/modules/user-settings/components/VerificationStatusBadge.vue"
 import {
   Card,
@@ -17,23 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Inbox, KeyRound, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-vue-next"
+import { Inbox, KeyRound, Pencil, Plus, Star, Trash2 } from "lucide-vue-next"
 
-const props = defineProps<{
+defineProps<{
   data: GameAccountBinding[]
   regionLabels: Record<SekaiRegion, string>
 }>()
@@ -44,70 +24,10 @@ const emit = defineEmits<{
   (e: "delete", account: GameAccountBinding): void
   (e: "grants", account: GameAccountBinding): void
   (e: "received-grants"): void
+  (e: "set-default", account: GameAccountBinding): void
 }>()
 
 const { t } = useI18n()
-
-const columns: ColumnDef<GameAccountBinding>[] = [
-  {
-    accessorKey: "server",
-    header: () => t("userSettings.gameBinding.table.server"),
-    cell: ({ row }) => props.regionLabels[row.original.server] ?? row.original.server,
-  },
-  { accessorKey: "userId", header: () => t("userSettings.gameBinding.table.userId"), cell: ({ row }) => row.original.userId },
-  {
-    accessorKey: "verified",
-    header: () => t("userSettings.gameBinding.table.verificationStatus"),
-    cell: ({ row }) =>
-      h(VerificationStatusBadge, {
-        verified: row.original.verified,
-        verifiedLabel: t("userSettings.gameBinding.status.verified"),
-        unverifiedLabel: t("userSettings.gameBinding.status.unverified"),
-      }),
-  },
-  {
-    id: "actions",
-    header: () => t("userSettings.gameBinding.table.actions"),
-    cell: ({ row }) =>
-      h(DropdownMenu, null, {
-        default: () => [
-          h(DropdownMenuTrigger, { asChild: true }, () =>
-            h(Button, { variant: "ghost", size: "icon" }, () =>
-              h(MoreHorizontal, { class: "h-4 w-4" })
-            )
-          ),
-          h(DropdownMenuContent, { align: "end" }, () => [
-            h(DropdownMenuItem, { onClick: () => emit("edit", row.original) }, () => [
-              h(Pencil, { class: "h-4 w-4 mr-2" }),
-              t("userSettings.gameBinding.actions.edit"),
-            ]),
-            row.original.verified
-              ? h(DropdownMenuItem, { onClick: () => emit("grants", row.original) }, () => [
-                h(KeyRound, { class: "h-4 w-4 mr-2" }),
-                t("userSettings.gameBinding.actions.grants"),
-              ])
-              : null,
-            h(
-              DropdownMenuItem,
-              { onClick: () => emit("delete", row.original), class: "text-destructive" },
-              () => [
-                h(Trash2, { class: "h-4 w-4 mr-2" }),
-                t("userSettings.gameBinding.actions.delete"),
-              ]
-            ),
-          ]),
-        ],
-      }),
-  },
-]
-
-const table = useVueTable({
-  get data() {
-    return props.data
-  },
-  columns,
-  getCoreRowModel: getCoreRowModel(),
-})
 </script>
 
 <template>
@@ -131,34 +51,82 @@ const table = useVueTable({
       </div>
     </CardHeader>
     <CardContent>
-      <div class="w-full rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
-              <TableHead v-for="header in headerGroup.headers" :key="header.id" class="text-center">
-                <FlexRender
-                  v-if="!header.isPlaceholder"
-                  :render="header.column.columnDef.header"
-                  :props="header.getContext()"
-                />
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <template v-if="table.getRowModel().rows?.length">
-              <TableRow v-for="row in table.getRowModel().rows" :key="row.id">
-                <TableCell v-for="cell in row.getVisibleCells()" :key="cell.id" class="text-center">
-                  <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
-                </TableCell>
-              </TableRow>
-            </template>
-            <TableRow v-else>
-              <TableCell :colspan="columns.length" class="h-24 text-center">
-                {{ t("userSettings.gameBinding.empty") }}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+      <ul v-if="data.length" class="flex flex-col gap-2">
+        <li
+          v-for="account in data"
+          :key="`${account.server}:${account.userId}`"
+          class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/30"
+        >
+          <GameAccountOption
+            class="min-w-0 flex-1 basis-56"
+            :server="account.server"
+            :user-id="account.userId"
+            :verified="account.verified"
+            :is-default="account.isDefault"
+          />
+
+          <VerificationStatusBadge
+            v-if="!account.verified"
+            class="shrink-0"
+            :verified="false"
+            :verified-label="t('userSettings.gameBinding.status.verified')"
+            :unverified-label="t('userSettings.gameBinding.status.unverified')"
+          />
+
+          <div class="ml-auto flex shrink-0 items-center gap-0.5">
+            <Button
+              v-if="account.verified && !account.isDefault"
+              variant="ghost"
+              size="icon"
+              :title="t('userSettings.gameBinding.actions.setDefault')"
+              :aria-label="t('userSettings.gameBinding.actions.setDefault')"
+              @click="emit('set-default', account)"
+            >
+              <Star class="h-4 w-4" />
+            </Button>
+            <Button
+              v-if="account.verified"
+              variant="ghost"
+              size="icon"
+              :title="t('userSettings.gameBinding.actions.grants')"
+              :aria-label="t('userSettings.gameBinding.actions.grants')"
+              @click="emit('grants', account)"
+            >
+              <KeyRound class="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              :title="t('userSettings.gameBinding.actions.edit')"
+              :aria-label="t('userSettings.gameBinding.actions.edit')"
+              @click="emit('edit', account)"
+            >
+              <Pencil class="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="text-destructive hover:text-destructive"
+              :title="t('userSettings.gameBinding.actions.delete')"
+              :aria-label="t('userSettings.gameBinding.actions.delete')"
+              @click="emit('delete', account)"
+            >
+              <Trash2 class="h-4 w-4" />
+            </Button>
+          </div>
+        </li>
+      </ul>
+
+      <div
+        v-else
+        class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center"
+      >
+        <Inbox class="h-8 w-8 text-muted-foreground/60" />
+        <p class="text-sm text-muted-foreground">{{ t("userSettings.gameBinding.empty") }}</p>
+        <Button size="sm" @click="emit('add')">
+          <Plus class="h-4 w-4 mr-2" />
+          {{ t("userSettings.gameBinding.addButton") }}
+        </Button>
       </div>
     </CardContent>
   </Card>

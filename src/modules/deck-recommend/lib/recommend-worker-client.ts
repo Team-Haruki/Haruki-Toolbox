@@ -33,21 +33,59 @@ export function warmDeckRecommendWorker(): Promise<void> {
 
 export function loadDeckRecommendWorkerData(
   input: Omit<DeckRecommendWorkerLoadDataRequest, "type" | "requestId">,
+  onProgress?: (phase: Extract<DeckRecommendWorkerEvent, { type: "progress" }>["phase"]) => void,
 ): Promise<void> {
-  return runLifecycleRequest("load-data", input)
+  return runLifecycleRequest("load-data", input, onProgress)
 }
 
 export async function disposeDeckRecommendWorker(): Promise<void> {
-  if (!worker) {
+  const current = worker
+  if (!current) {
     return
   }
 
-  try {
-    await runLifecycleRequest("dispose")
-  } finally {
-    worker?.terminate()
-    worker = null
+  // Detach the shared worker before anything async happens: requests issued
+  // from now on must get a fresh worker instead of posting to a dying one.
+  worker = null
+  // Requests already posted to the old worker would otherwise wait silently
+  // until their timeout once it is terminated; fail them immediately instead.
+  const detachedListeners = [...listeners]
+  for (const listener of detachedListeners) {
+    listener({
+      type: "error",
+      requestId: "worker",
+      message: "deck recommend worker disposed",
+    })
   }
+
+  try {
+    await requestDisposeOnWorker(current)
+  } finally {
+    current.terminate()
+  }
+}
+
+function requestDisposeOnWorker(target: Worker): Promise<void> {
+  return new Promise((resolve) => {
+    const requestId = createRequestId()
+    const finish = () => {
+      clearTimeout(timeoutId)
+      target.removeEventListener("message", handleMessage)
+      resolve()
+    }
+    const handleMessage = (event: MessageEvent<DeckRecommendWorkerEvent>) => {
+      if (event.data.type === "disposed" && event.data.requestId === requestId) {
+        finish()
+      }
+    }
+    const timeoutId = setTimeout(finish, 1000)
+    target.addEventListener("message", handleMessage)
+    try {
+      target.postMessage({ type: "dispose", requestId })
+    } catch {
+      finish()
+    }
+  })
 }
 
 export function createDeckRecommendWorker(): Worker {
@@ -82,16 +120,30 @@ function ensureWorker(): Worker {
       })
     }
   })
+  // Fires when an event from the worker cannot be deserialized (for example
+  // under memory pressure); without this the request would hang silently.
+  worker.addEventListener("messageerror", () => {
+    for (const listener of listeners) {
+      listener({
+        type: "error",
+        requestId: "worker",
+        message: "Deck recommend worker message could not be deserialized",
+      })
+    }
+  })
   return worker
 }
 
 function runLifecycleRequest(
-  type: "preload" | "load-data" | "dispose",
+  type: "preload" | "load-data",
   input?: Omit<DeckRecommendWorkerLoadDataRequest, "type" | "requestId">,
+  onProgress?: (phase: Extract<DeckRecommendWorkerEvent, { type: "progress" }>["phase"]) => void,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const requestId = createRequestId()
-    const timeoutMs = type === "dispose" ? 1000 : 30000
+    // Loading master data into the engine parses tens of MB inside the worker
+    // and can far exceed 30s on a cold start or slower machines.
+    const timeoutMs = type === "load-data" ? 180000 : 60000
     let timeoutId: ReturnType<typeof setTimeout> | null = null
     let unsubscribe: () => void = () => {}
     let finished = false
@@ -120,10 +172,14 @@ function runLifecycleRequest(
           return
         }
 
+        if (event.type === "progress") {
+          onProgress?.(event.phase)
+          return
+        }
+
         if (
           (type === "preload" && event.type === "ready")
           || (type === "load-data" && event.type === "data-loaded")
-          || (type === "dispose" && event.type === "disposed")
         ) {
           finish()
           return
@@ -134,11 +190,6 @@ function runLifecycleRequest(
         }
       })
       timeoutId = setTimeout(() => {
-        if (type === "dispose") {
-          finish()
-          return
-        }
-
         finish(new Error(`Deck recommend worker ${type} timed out`))
       }, timeoutMs)
       postDeckRecommendWorkerRequest({ type, requestId, ...input } as DeckRecommendWorkerRequestWithoutId & { requestId: string })

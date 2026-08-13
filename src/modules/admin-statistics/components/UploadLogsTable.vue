@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { RouterLink } from "vue-router"
-import { LucideCheckCircle, LucideChevronLeft, LucideChevronRight, LucideInfo, LucideXCircle } from "lucide-vue-next"
+import { LucideCheckCircle, LucideChevronLeft, LucideChevronRight, LucideInbox, LucideInfo, LucideXCircle } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -55,11 +55,17 @@ function openFailureDialog(log: UploadLog) {
 </script>
 
 <template>
-  <Card>
+  <Card class="gap-0 py-0 overflow-hidden">
     <CardContent class="p-0">
       <template v-if="props.loading">
         <div class="p-6 flex flex-col gap-3">
           <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
+        </div>
+      </template>
+      <template v-else-if="props.logs.length === 0">
+        <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
+          <LucideInbox class="h-8 w-8 text-muted-foreground/60" />
+          <p class="text-sm text-muted-foreground">{{ t("adminStatistics.uploadLogs.table.empty") }}</p>
         </div>
       </template>
       <template v-else>
@@ -68,10 +74,13 @@ function openFailureDialog(log: UploadLog) {
             <TableRow>
               <TableHead class="pl-6">{{ t("adminStatistics.uploadLogs.table.status") }}</TableHead>
               <TableHead>{{ t("adminStatistics.uploadLogs.table.user") }}</TableHead>
-              <TableHead class="hidden md:table-cell">{{ t("adminStatistics.uploadLogs.table.server") }}</TableHead>
-              <TableHead class="hidden md:table-cell">{{ t("adminStatistics.uploadLogs.table.method") }}</TableHead>
-              <TableHead class="hidden lg:table-cell">{{ t("adminStatistics.uploadLogs.table.dataType") }}</TableHead>
-              <TableHead class="hidden lg:table-cell">{{ t("adminStatistics.uploadLogs.table.error") }}</TableHead>
+              <TableHead class="hidden lg:table-cell">{{ t("adminStatistics.uploadLogs.table.server") }}</TableHead>
+              <TableHead class="hidden lg:table-cell">{{ t("adminStatistics.uploadLogs.table.method") }}</TableHead>
+              <TableHead class="hidden xl:table-cell">{{ t("adminStatistics.uploadLogs.table.dataType") }}</TableHead>
+              <TableHead>
+                <span class="hidden xl:inline">{{ t("adminStatistics.uploadLogs.table.error") }}</span>
+                <span class="sr-only xl:hidden">{{ t("adminStatistics.uploadLogs.table.error") }}</span>
+              </TableHead>
               <TableHead class="pr-6">{{ t("adminStatistics.uploadLogs.table.time") }}</TableHead>
             </TableRow>
           </TableHeader>
@@ -101,26 +110,28 @@ function openFailureDialog(log: UploadLog) {
                   </span>
                 </RouterLink>
               </TableCell>
-              <TableCell class="hidden md:table-cell text-sm text-muted-foreground">
+              <TableCell class="hidden lg:table-cell text-sm text-muted-foreground">
                 {{ props.serverLabel(log.server) }}
               </TableCell>
-              <TableCell class="hidden md:table-cell text-sm text-muted-foreground">
+              <TableCell class="hidden lg:table-cell text-sm text-muted-foreground">
                 {{ props.methodLabel(log.uploadMethod) }}
               </TableCell>
-              <TableCell class="hidden lg:table-cell text-sm text-muted-foreground">
+              <TableCell class="hidden xl:table-cell text-sm text-muted-foreground">
                 {{ props.dataTypeLabel(log.dataType) }}
               </TableCell>
-              <TableCell class="hidden lg:table-cell">
+              <TableCell>
                 <Button
                   v-if="!log.success && log.errorMessage"
                   variant="outline"
                   size="sm"
+                  :title="t('adminStatistics.uploadLogs.table.viewError')"
+                  :aria-label="t('adminStatistics.uploadLogs.table.viewError')"
                   @click="openFailureDialog(log)"
                 >
-                  <LucideInfo class="w-4 h-4 mr-1" />
-                  {{ t("adminStatistics.uploadLogs.table.viewError") }}
+                  <LucideInfo class="w-4 h-4 xl:mr-1" />
+                  <span class="hidden xl:inline">{{ t("adminStatistics.uploadLogs.table.viewError") }}</span>
                 </Button>
-                <span v-else class="text-sm text-muted-foreground">
+                <span v-else class="hidden text-sm text-muted-foreground xl:inline">
                   {{ t("adminStatistics.common.fallback") }}
                 </span>
               </TableCell>
@@ -128,31 +139,42 @@ function openFailureDialog(log: UploadLog) {
                 {{ props.formatTime(log.uploadTime) }}
               </TableCell>
             </TableRow>
-            <TableRow v-if="props.logs.length === 0">
-              <TableCell :colspan="7" class="text-center py-8 text-muted-foreground">
-                {{ t("adminStatistics.uploadLogs.table.empty") }}
-              </TableCell>
-            </TableRow>
           </TableBody>
         </Table>
       </template>
     </CardContent>
-  </Card>
-
-  <div v-if="shouldShowPagination" class="flex items-center justify-between px-2">
-    <span class="text-sm text-muted-foreground">
-      {{ t("adminStatistics.uploadLogs.pagination.total", { total: formatNumberCN(props.total, '0') }) }}
-    </span>
-    <div class="flex items-center gap-2">
-      <Button variant="outline" size="sm" :disabled="props.page <= 1" @click="emit('prev-page')">
-        <LucideChevronLeft class="w-4 h-4" />
-      </Button>
-      <span class="text-sm tabular-nums">{{ props.page }} / {{ props.totalPages }}</span>
-      <Button variant="outline" size="sm" :disabled="props.page >= props.totalPages" @click="emit('next-page')">
-        <LucideChevronRight class="w-4 h-4" />
-      </Button>
+    <div
+      v-if="shouldShowPagination"
+      class="flex items-center justify-between gap-3 border-t px-4 py-3 sm:px-6"
+    >
+      <span class="text-sm text-muted-foreground">
+        {{ t("adminStatistics.uploadLogs.pagination.total", { total: formatNumberCN(props.total, '0') }) }}
+      </span>
+      <div class="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="props.page <= 1"
+          :title="t('adminStatistics.uploadLogs.pagination.prev')"
+          :aria-label="t('adminStatistics.uploadLogs.pagination.prev')"
+          @click="emit('prev-page')"
+        >
+          <LucideChevronLeft class="w-4 h-4" />
+        </Button>
+        <span class="text-sm tabular-nums">{{ props.page }} / {{ props.totalPages }}</span>
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="props.page >= props.totalPages"
+          :title="t('adminStatistics.uploadLogs.pagination.next')"
+          :aria-label="t('adminStatistics.uploadLogs.pagination.next')"
+          @click="emit('next-page')"
+        >
+          <LucideChevronRight class="w-4 h-4" />
+        </Button>
+      </div>
     </div>
-  </div>
+  </Card>
 
   <Dialog :open="showFailureDialog" @update:open="showFailureDialog = $event">
     <DialogScrollContent class="sm:max-w-[560px]">

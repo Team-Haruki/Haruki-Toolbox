@@ -1,0 +1,404 @@
+import type { RecommendCard } from "haruki-sekai-deck-recommend-cpp"
+import {
+  normalizeCatalogNumber,
+  normalizeCatalogRecords,
+  normalizeCatalogString,
+} from "@/shared/sekai/catalog"
+
+/** Challenge live always renders the full character roster (IDs 1..26). */
+export const CHALLENGE_LIVE_CHARACTER_COUNT = 26
+
+export const CHALLENGE_LIVE_SORT_MODES = ["character", "score"] as const
+
+export type ChallengeLiveSortMode = (typeof CHALLENGE_LIVE_SORT_MODES)[number]
+
+export type PlayerGamedataInfo = {
+  userId: string | null
+  name: string
+  rank: number
+  deck: number | null
+}
+
+export type PlayerProfileInfo = {
+  /** Bio with color tags stripped — use for emptiness checks and plain text. */
+  word: string
+  /** Trimmed bio with `<#...>` color tags intact, for colored rendering. */
+  rawWord: string
+  twitterId: string
+}
+
+/** Normalized entry from the suite `userCards` record. */
+export type PlayerCardRecord = {
+  cardId: number
+  level: number
+  masterRank: number
+  skillLevel: number
+  specialTrainingStatus: string
+  defaultImage: string
+}
+
+export type MultiLiveTopScoreCount = {
+  mvp: number
+  superStar: number
+}
+
+export type CharacterRankEntry = {
+  characterId: number
+  characterRank: number
+}
+
+export type ChallengeLiveCell = {
+  characterId: number
+  highScore: number
+  /** Highest stage reached; 0 when the character has no challenge data. */
+  stage: number
+  hasData: boolean
+}
+
+/** Strips in-game `<#...>` color tags from a profile bio and trims it. */
+export function cleanProfileWord(value: unknown): string {
+  if (typeof value !== "string") {
+    return ""
+  }
+
+  return value.replace(/<#.*?>/g, "").trim()
+}
+
+export type ColoredTextSegment = {
+  text: string
+  /** CSS hex color from the preceding `<#RGB>`/`<#RRGGBB>` tag, if any. */
+  color: string | null
+}
+
+/**
+ * Splits text containing in-game `<#RGB>`/`<#RRGGBB>` color tags into
+ * renderable segments; each tag colors the text that follows it. Malformed
+ * tags stay in the output as literal text.
+ */
+export function parseSekaiColoredText(value: unknown): ColoredTextSegment[] {
+  if (typeof value !== "string" || value === "") {
+    return []
+  }
+
+  const segments: ColoredTextSegment[] = []
+  const tagPattern = /<#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})>/g
+  let cursor = 0
+  let color: string | null = null
+  for (const match of value.matchAll(tagPattern)) {
+    const text = value.slice(cursor, match.index)
+    if (text) {
+      segments.push({ text, color })
+    }
+
+    color = `#${match[1]}`
+    cursor = match.index + match[0].length
+  }
+
+  const tail = value.slice(cursor)
+  if (tail) {
+    segments.push({ text: tail, color })
+  }
+
+  return segments
+}
+
+/** Tolerantly parses the suite `userGamedata` record. */
+export function normalizePlayerGamedata(raw: unknown): PlayerGamedataInfo | null {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return null
+  }
+
+  const record = raw as Record<string, unknown>
+  const rawUserId = record.userId
+  const userId = typeof rawUserId === "string" && rawUserId.trim() !== ""
+    ? rawUserId.trim()
+    : normalizeCatalogNumber(rawUserId) != null
+      ? String(record.userId)
+      : null
+
+  return {
+    userId,
+    name: normalizeCatalogString(record.name),
+    rank: normalizeCatalogNumber(record.rank) ?? 0,
+    deck: normalizeCatalogNumber(record.deck),
+  }
+}
+
+/** Tolerantly parses the suite `userProfile` record. */
+export function normalizePlayerProfile(raw: unknown): PlayerProfileInfo {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return { word: "", rawWord: "", twitterId: "" }
+  }
+
+  const record = raw as Record<string, unknown>
+  return {
+    word: cleanProfileWord(record.word),
+    rawWord: typeof record.word === "string" ? record.word.trim() : "",
+    twitterId: normalizeCatalogString(record.twitterId),
+  }
+}
+
+/** Tolerantly parses the raw suite `userCards` list into typed records. */
+export function normalizePlayerCards(raw: unknown): PlayerCardRecord[] {
+  const records: PlayerCardRecord[] = []
+  for (const record of normalizeCatalogRecords(raw)) {
+    const cardId = normalizeCatalogNumber(record.cardId)
+    if (!cardId) {
+      continue
+    }
+
+    records.push({
+      cardId,
+      level: normalizeCatalogNumber(record.level) ?? 0,
+      masterRank: normalizeCatalogNumber(record.masterRank) ?? 0,
+      skillLevel: normalizeCatalogNumber(record.skillLevel) ?? 0,
+      specialTrainingStatus: normalizeCatalogString(record.specialTrainingStatus),
+      defaultImage: normalizeCatalogString(record.defaultImage),
+    })
+  }
+
+  return records
+}
+
+export function buildPlayerCardMap(records: readonly PlayerCardRecord[]): Map<number, PlayerCardRecord> {
+  const map = new Map<number, PlayerCardRecord>()
+  for (const record of records) {
+    map.set(record.cardId, record)
+  }
+
+  return map
+}
+
+/** The game renders after-training art when the card's default image is set to it. */
+export function shouldUseTrainedImage(record: Pick<PlayerCardRecord, "defaultImage">): boolean {
+  return record.defaultImage === "special_training"
+}
+
+/**
+ * Adapts a suite card record into the deck-recommend card shape so the deck
+ * section can reuse the deck-recommend thumbnail pipeline. Score-related
+ * fields are irrelevant for rendering and stay zeroed.
+ */
+export function buildDeckThumbnailCard(cardId: number, record: PlayerCardRecord | null): RecommendCard {
+  return {
+    card_id: cardId,
+    total_power: 0,
+    base_power: 0,
+    event_bonus_rate: 0,
+    master_rank: record?.masterRank ?? 0,
+    level: record?.level ?? 0,
+    skill_level: record?.skillLevel ?? 0,
+    skill_score_up: 0,
+    skill_life_recovery: 0,
+    episode1_read: false,
+    episode2_read: false,
+    after_training: record?.specialTrainingStatus === "done",
+    default_image: record?.defaultImage ?? "",
+    has_canvas_bonus: false,
+  }
+}
+
+/**
+ * Resolves the active deck's card ids: leader first, then member1..member5 in
+ * slot order, skipping empty slots and duplicates of the leader.
+ */
+export function resolveActiveDeckCardIds(rawDecks: unknown, activeDeckId: number | null): number[] {
+  if (activeDeckId == null) {
+    return []
+  }
+
+  const deck = normalizeCatalogRecords(rawDecks)
+    .find((record) => normalizeCatalogNumber(record.deckId) === activeDeckId)
+  if (!deck) {
+    return []
+  }
+
+  const leader = normalizeCatalogNumber(deck.leader)
+  const cardIds: number[] = []
+  if (leader != null && leader > 0) {
+    cardIds.push(leader)
+  }
+
+  for (const slot of ["member1", "member2", "member3", "member4", "member5"] as const) {
+    const cardId = normalizeCatalogNumber(deck[slot])
+    if (cardId != null && cardId > 0 && cardId !== leader) {
+      cardIds.push(cardId)
+    }
+  }
+
+  return cardIds
+}
+
+/**
+ * Tolerantly parses the suite `userMultiLiveTopScoreCount` record; null when
+ * the snapshot has no usable counts (key missing from the backend allowlist
+ * or an older upload).
+ */
+export function normalizeMultiLiveTopScoreCount(raw: unknown): MultiLiveTopScoreCount | null {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return null
+  }
+
+  const record = raw as Record<string, unknown>
+  const mvp = normalizeCatalogNumber(record.mvp)
+  const superStar = normalizeCatalogNumber(record.superStar)
+  if (mvp == null && superStar == null) {
+    return null
+  }
+
+  return { mvp: mvp ?? 0, superStar: superStar ?? 0 }
+}
+
+/**
+ * Character rank entries sorted by characterId ascending. Duplicate ids keep
+ * the highest rank.
+ */
+export function buildCharacterRanks(rawCharacters: unknown): CharacterRankEntry[] {
+  const ranks = new Map<number, number>()
+  for (const record of normalizeCatalogRecords(rawCharacters)) {
+    const characterId = normalizeCatalogNumber(record.characterId)
+    if (!characterId) {
+      continue
+    }
+
+    const characterRank = normalizeCatalogNumber(record.characterRank) ?? 0
+    ranks.set(characterId, Math.max(ranks.get(characterId) ?? 0, characterRank))
+  }
+
+  return [...ranks.entries()]
+    .map(([characterId, characterRank]) => ({ characterId, characterRank }))
+    .sort((a, b) => a.characterId - b.characterId)
+}
+
+/**
+ * Challenge live grid over the full roster (IDs 1..26): high score from the
+ * per-character best results, stage = max `rank` among the character's stage
+ * rows (floored at 1 when the character has any challenge data, 0 otherwise).
+ */
+export function buildChallengeLiveGrid(rawResults: unknown, rawStages: unknown): ChallengeLiveCell[] {
+  const highScores = new Map<number, number>()
+  for (const record of normalizeCatalogRecords(rawResults)) {
+    const characterId = normalizeCatalogNumber(record.characterId)
+    if (!characterId) {
+      continue
+    }
+
+    const highScore = normalizeCatalogNumber(record.highScore) ?? 0
+    highScores.set(characterId, Math.max(highScores.get(characterId) ?? 0, highScore))
+  }
+
+  const stageRanks = new Map<number, number>()
+  for (const record of normalizeCatalogRecords(rawStages)) {
+    const characterId = normalizeCatalogNumber(record.characterId)
+    if (!characterId) {
+      continue
+    }
+
+    const rank = normalizeCatalogNumber(record.rank) ?? 0
+    stageRanks.set(characterId, Math.max(stageRanks.get(characterId) ?? 0, rank))
+  }
+
+  const cells: ChallengeLiveCell[] = []
+  for (let characterId = 1; characterId <= CHALLENGE_LIVE_CHARACTER_COUNT; characterId += 1) {
+    const hasData = highScores.has(characterId) || stageRanks.has(characterId)
+    cells.push({
+      characterId,
+      highScore: highScores.get(characterId) ?? 0,
+      stage: hasData ? Math.max(1, stageRanks.get(characterId) ?? 0) : 0,
+      hasData,
+    })
+  }
+
+  return cells
+}
+
+/** Best challenge live character (highest score); null when nothing was played. */
+export function summarizeChallengeLiveTop(cells: readonly ChallengeLiveCell[]): ChallengeLiveCell | null {
+  let top: ChallengeLiveCell | null = null
+  for (const cell of cells) {
+    if (cell.highScore > 0 && (top == null || cell.highScore > top.highScore)) {
+      top = cell
+    }
+  }
+
+  return top
+}
+
+/** Sorted copy: by characterId ascending, or by high score descending (id as tiebreaker). */
+export function sortChallengeLiveCells(
+  cells: readonly ChallengeLiveCell[],
+  mode: ChallengeLiveSortMode,
+): ChallengeLiveCell[] {
+  const sorted = [...cells]
+  if (mode === "score") {
+    sorted.sort((a, b) => b.highScore - a.highScore || a.characterId - b.characterId)
+  } else {
+    sorted.sort((a, b) => a.characterId - b.characterId)
+  }
+
+  return sorted
+}
+
+/** Aggregated per-difficulty counts from the realtime profile payload. */
+export type MusicDifficultyClearCount = {
+  liveClear: number
+  fullCombo: number
+  allPerfect: number
+}
+
+/**
+ * Maps the realtime game profile payload onto the suite-shaped keys the
+ * profile page consumes, so both data sources share one rendering path:
+ * - `user` → `userGamedata`, with the active deck id injected from `userDeck`
+ * - the single `userChallengeLiveSoloResult` becomes a one-element list
+ * - `userDeck` becomes a one-element `userDecks` list
+ * Returns null when the payload is not an object.
+ */
+export function normalizeProfileSnapshot(raw: unknown): Record<string, unknown> | null {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return null
+  }
+
+  const record = raw as Record<string, unknown>
+  const userDeck = record.userDeck != null && typeof record.userDeck === "object" && !Array.isArray(record.userDeck)
+    ? record.userDeck as Record<string, unknown>
+    : null
+  const user = record.user != null && typeof record.user === "object" && !Array.isArray(record.user)
+    ? record.user as Record<string, unknown>
+    : null
+  const challengeResult = record.userChallengeLiveSoloResult
+
+  return {
+    userGamedata: user == null ? null : { ...user, deck: userDeck?.deckId ?? null },
+    userProfile: record.userProfile,
+    userCards: record.userCards,
+    userDecks: userDeck == null ? [] : [userDeck],
+    userCharacters: record.userCharacters,
+    userChallengeLiveSoloResults:
+      challengeResult != null && typeof challengeResult === "object" && !Array.isArray(challengeResult)
+        ? [challengeResult]
+        : [],
+    userChallengeLiveSoloStages: record.userChallengeLiveSoloStages,
+    userMultiLiveTopScoreCount: record.userMultiLiveTopScoreCount,
+    userMusicDifficultyClearCount: record.userMusicDifficultyClearCount,
+  }
+}
+
+/** Parses `userMusicDifficultyClearCount` rows into a per-difficulty map. */
+export function normalizeMusicDifficultyClearCounts(raw: unknown): Map<string, MusicDifficultyClearCount> {
+  const map = new Map<string, MusicDifficultyClearCount>()
+  for (const record of normalizeCatalogRecords(raw)) {
+    const difficulty = normalizeCatalogString(record.musicDifficultyType).toLowerCase()
+    if (!difficulty) {
+      continue
+    }
+
+    map.set(difficulty, {
+      liveClear: normalizeCatalogNumber(record.liveClear) ?? 0,
+      fullCombo: normalizeCatalogNumber(record.fullCombo) ?? 0,
+      allPerfect: normalizeCatalogNumber(record.allPerfect) ?? 0,
+    })
+  }
+
+  return map
+}

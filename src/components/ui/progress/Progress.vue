@@ -10,13 +10,17 @@ import {
 import { cn } from "@/lib/utils"
 
 const props = withDefaults(
-  defineProps<ProgressRootProps & { class?: HTMLAttributes["class"] }>(),
+  defineProps<ProgressRootProps & {
+    class?: HTMLAttributes["class"]
+    /** Optional custom bar color (any CSS color); defaults to the primary theme color. */
+    color?: string
+  }>(),
   {
     modelValue: 0,
   },
 )
 
-const delegatedProps = reactiveOmit(props, "class")
+const delegatedProps = reactiveOmit(props, "class", "color")
 </script>
 
 <template>
@@ -29,11 +33,15 @@ const delegatedProps = reactiveOmit(props, "class")
         props.class,
       )
     "
+    :style="props.color ? { backgroundColor: `color-mix(in srgb, ${props.color} 20%, transparent)` } : undefined"
   >
     <ProgressIndicator
       data-slot="progress-indicator"
       class="bg-primary h-full w-full flex-1 transition-all"
-      :style="`transform: translateX(-${100 - (props.modelValue ?? 0)}%);`"
+      :style="[
+        { transform: `translateX(-${100 - (props.modelValue ?? 0)}%)` },
+        props.color ? { backgroundColor: props.color } : {},
+      ]"
     />
   </ProgressRoot>
 </template>

@@ -18,6 +18,7 @@ const props = defineProps<{
   disabled?: boolean
   allowedCharacterIds?: readonly number[] | null
   allowNoneOption?: boolean
+  triggerClass?: string
 }>()
 
 const emit = defineEmits<{
@@ -52,7 +53,7 @@ function handleUpdate(value: AcceptableValue) {
 
 <template>
   <Select :model-value="selectedValue" :disabled="props.disabled || loading" @update:model-value="handleUpdate">
-    <SelectTrigger class="w-full">
+    <SelectTrigger :class="['w-full', props.triggerClass]">
       <SelectValue :placeholder="loading ? t('deckRecommend.select.loading') : t('deckRecommend.form.characterPlaceholder')" />
     </SelectTrigger>
     <SelectContent class="max-h-72">

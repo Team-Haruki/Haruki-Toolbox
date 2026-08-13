@@ -7,6 +7,7 @@ import type { SekaiRegion } from "@/types"
 import type {
   DeckRecommendWorkerEvent,
   DeckRecommendWorkerLoadDataRequest,
+  DeckRecommendWorkerMusicRequest,
   DeckRecommendWorkerRecommendBatchRequest,
   DeckRecommendWorkerRecommendRequest,
   DeckRecommendWorkerRequest,
@@ -16,8 +17,37 @@ const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
 let enginePromise: Promise<SekaiDeckRecommendWasm> | null = null
 const loadedDataKeys = new Map<SekaiRegion, string>()
 
+// The engine reads a few optional master tables that the toolbox intentionally
+// does not ship (ingameNotes/ingameCombos are huge; eventHonorBonuses and the
+// mysekai fixture bonus limits are niche). It degrades gracefully when they are
+// absent but prints a "master data key not found" warning per key on every load,
+// which floods the console. Filter only these known-optional keys so genuinely
+// missing required tables still surface.
+const IGNORED_MISSING_MASTER_KEYS = [
+  "eventHonorBonuses",
+  "eventMysekaiFixtureGameCharacterPerformanceBonusLimits",
+  "ingameCombos",
+  "ingameNotes",
+]
+
+function isIgnoredEngineWarning(text: string): boolean {
+  return text.includes("master data key not found")
+    && IGNORED_MISSING_MASTER_KEYS.some((key) => text.includes(key))
+}
+
 workerScope.onmessage = (event: MessageEvent<DeckRecommendWorkerRequest>) => {
   void handleRequest(event.data)
+}
+
+// Fires when an incoming request cannot be deserialized (for example a large
+// master data payload under memory pressure); report it instead of silently
+// dropping the request and letting the caller wait for its timeout.
+workerScope.onmessageerror = () => {
+  postEvent({
+    type: "error",
+    requestId: "worker",
+    message: "deck recommend worker request could not be deserialized",
+  })
 }
 
 async function handleRequest(request: DeckRecommendWorkerRequest) {
@@ -49,6 +79,17 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
 
     postEvent({ type: "progress", requestId: request.requestId, phase: "recommending" })
     const startedAt = performance.now()
+    if (request.type === "recommend-music") {
+      const results = engine.recommendMusic(request.options, request.deck)
+      postEvent({
+        type: "music-done",
+        requestId: request.requestId,
+        results,
+        elapsedMs: Math.round(performance.now() - startedAt),
+      })
+      return
+    }
+
     if (request.type === "recommend-batch") {
       const results = engine.recommendBatch(request.optionsList)
       postEvent({
@@ -77,7 +118,11 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
 }
 
 async function loadEngineData(
-  request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest | DeckRecommendWorkerRecommendBatchRequest,
+  request:
+    | DeckRecommendWorkerLoadDataRequest
+    | DeckRecommendWorkerRecommendRequest
+    | DeckRecommendWorkerRecommendBatchRequest
+    | DeckRecommendWorkerMusicRequest,
   requestId: string,
 ): Promise<{ engine: SekaiDeckRecommendWasm; elapsedMs: number; cacheHit: boolean }> {
   const startedAt = performance.now()
@@ -114,12 +159,26 @@ async function preloadEngine(requestId: string) {
 }
 
 function getEngine() {
-  enginePromise ??= createSekaiDeckRecommend({ wasmUrl })
+  enginePromise ??= createSekaiDeckRecommend({
+    wasmUrl,
+    moduleOptions: {
+      printErr: (text: string) => {
+        if (isIgnoredEngineWarning(text)) {
+          return
+        }
+        console.warn(text)
+      },
+    },
+  })
   return enginePromise
 }
 
 function createDataKey(
-  request: DeckRecommendWorkerLoadDataRequest | DeckRecommendWorkerRecommendRequest | DeckRecommendWorkerRecommendBatchRequest,
+  request:
+    | DeckRecommendWorkerLoadDataRequest
+    | DeckRecommendWorkerRecommendRequest
+    | DeckRecommendWorkerRecommendBatchRequest
+    | DeckRecommendWorkerMusicRequest,
 ) {
   return [
     request.masterVersion,

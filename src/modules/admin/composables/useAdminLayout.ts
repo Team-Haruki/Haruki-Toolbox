@@ -1,7 +1,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
+import { useRoute } from "vue-router"
 import { useUserStore } from "@/shared/stores/user"
-import { ADMIN_NAV_ITEMS } from "@/config/navigation"
+import { ADMIN_NAV_SECTIONS } from "@/config/navigation"
 import { getAdminTickets } from "@/modules/tickets/api/admin"
 import { adminTicketRefreshSignal } from "@/modules/tickets/lib/admin-ticket-refresh"
 
@@ -9,28 +9,36 @@ const TICKET_REMINDER_REFRESH_MS = 60_000
 
 export function useAdminLayout() {
   const route = useRoute()
-  const router = useRouter()
   const userStore = useUserStore()
   const pendingTicketCount = ref<number | null>(null)
   let pendingTicketCountLoading = false
   let pendingTicketCountRefreshQueued = false
   let pendingTicketRefreshTimer: ReturnType<typeof window.setInterval> | null = null
 
-  const visibleNavItems = computed(() =>
-    ADMIN_NAV_ITEMS.filter((item) => !item.superOnly || userStore.isSuperAdmin)
+  const visibleSections = computed(() =>
+    ADMIN_NAV_SECTIONS
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => !item.superOnly || userStore.isSuperAdmin),
+      }))
+      .filter((section) => section.items.length > 0)
   )
 
-  const activeTab = computed(() => {
+  const visibleNavItems = computed(() => visibleSections.value.flatMap((section) => section.items))
+
+  const activeItem = computed(() => {
     const path = route.path
-    const matched = visibleNavItems.value.find((item) => path.startsWith(`/admin/${item.segment}`))
-    return matched?.value || "dashboard"
+    return (
+      visibleNavItems.value.find((item) => path.startsWith(`/admin/${item.segment}`))
+      ?? visibleNavItems.value[0]
+      ?? null
+    )
   })
 
-  function onTabChange(value: string | number) {
-    const target = visibleNavItems.value.find((item) => item.value === String(value))
-    if (!target) return
-    void router.push({ name: target.routeName })
-  }
+  // Detail routes (user detail, ticket detail, …) keep the nav highlight of
+  // their list item, but the shell page header would then claim list-page
+  // facts over detail content — only show it on the exact list route.
+  const showPageHeader = computed(() => route.name === activeItem.value?.routeName)
 
   async function loadPendingTicketCount() {
     if (pendingTicketCountLoading) {
@@ -98,9 +106,10 @@ export function useAdminLayout() {
 
   return {
     userStore,
+    visibleSections,
     visibleNavItems,
-    activeTab,
+    activeItem,
+    showPageHeader,
     pendingTicketCount,
-    onTabChange,
   }
 }

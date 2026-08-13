@@ -1,0 +1,173 @@
+<script setup lang="ts">
+import { computed, ref, watch } from "vue"
+import { useI18n } from "vue-i18n"
+import type { SekaiCardThumbnailView } from "@/shared/sekai/catalog"
+
+const props = withDefaults(defineProps<{
+  thumbnail: SekaiCardThumbnailView
+  size?: "fluid" | "xs" | "sm" | "md" | "lg"
+  trained?: boolean
+  unreleased?: boolean
+  title?: string | null
+  cornerBadge?: string | null
+  /** When set, renders the game-style bottom band with this text on its left. */
+  levelLabel?: string | null
+  /**
+   * Forces the bottom band (and the raised star row) even without a level
+   * label, so grids mixing labelled and unlabelled cards stay aligned.
+   */
+  levelBand?: boolean
+}>(), {
+  size: "fluid",
+  trained: false,
+  unreleased: false,
+  title: null,
+  cornerBadge: null,
+  levelLabel: null,
+  levelBand: false,
+})
+
+const { t } = useI18n()
+
+const sizeClass = computed(() => {
+  if (props.size === "xs") {
+    return "size-[clamp(3rem,16vw,3.75rem)] rounded-sm"
+  }
+
+  if (props.size === "sm") {
+    return "size-11 rounded-sm sm:size-12 md:size-14 xl:size-16"
+  }
+
+  if (props.size === "md") {
+    return "size-20 rounded-md"
+  }
+
+  if (props.size === "lg") {
+    return "size-28 rounded-lg"
+  }
+
+  return "aspect-square w-full rounded-md"
+})
+
+const artUrl = computed(() => {
+  if (props.trained && props.thumbnail.trainedThumbnailUrl) {
+    return props.thumbnail.trainedThumbnailUrl
+  }
+
+  return props.thumbnail.thumbnailUrl
+})
+
+const artFailed = ref(false)
+
+watch(artUrl, () => {
+  artFailed.value = false
+})
+
+const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCount }, (_, index) => index))
+
+const rareIconUrl = computed(() => {
+  if (props.trained && props.thumbnail.trainedRareIconUrl) {
+    return props.thumbnail.trainedRareIconUrl
+  }
+
+  return props.thumbnail.rareIconUrl
+})
+
+const showBand = computed(() => props.levelBand || props.levelLabel != null)
+</script>
+
+<template>
+  <div
+    :class="[
+      'relative shrink-0 select-none overflow-hidden bg-muted text-muted-foreground ring-1 ring-border @container',
+      sizeClass,
+    ]"
+    :aria-label="title ?? thumbnail.title ?? `#${thumbnail.cardId}`"
+  >
+    <img
+      decoding="async"
+      v-if="artUrl && !artFailed"
+      :src="artUrl"
+      alt=""
+      class="absolute inset-0 h-full w-full object-cover"
+      loading="lazy"
+      @error="artFailed = true"
+    >
+    <div v-else class="absolute inset-0 flex items-center justify-center px-1 text-center font-mono text-xs">
+      #{{ thumbnail.cardId }}
+    </div>
+
+    <span
+      v-if="showBand"
+      class="absolute inset-x-0 bottom-0 h-[18.75%] bg-[rgb(70_70_100)]"
+      aria-hidden="true"
+    />
+    <img
+      decoding="async"
+      v-if="thumbnail.frameUrl"
+      :src="thumbnail.frameUrl"
+      alt=""
+      class="absolute inset-0 h-full w-full object-cover"
+      loading="lazy"
+    >
+    <img
+      decoding="async"
+      v-if="thumbnail.attrIconUrl"
+      :src="thumbnail.attrIconUrl"
+      alt=""
+      class="absolute left-0 top-0 w-[24%]"
+      loading="lazy"
+    >
+    <div
+      v-if="rareIconUrl && rareIndexes.length > 0"
+      :class="[
+        'absolute flex gap-px',
+        showBand ? 'bottom-[20%] left-[5%] w-[72%]' : 'bottom-[5%] left-[6%] w-[74%]',
+      ]"
+    >
+      <img
+        decoding="async"
+        v-for="index in rareIndexes"
+        :key="index"
+        :src="rareIconUrl"
+        alt=""
+        class="w-[18%] max-w-4"
+        loading="lazy"
+      >
+    </div>
+    <span
+      v-if="levelLabel"
+      class="absolute inset-x-0 bottom-0 flex h-[18.75%] items-center pb-[2.5%] pl-[4.7%] whitespace-nowrap font-semibold leading-none text-white tabular-nums text-[clamp(0.55rem,16cqw,1.3rem)]"
+    >
+      {{ levelLabel }}
+    </span>
+    <img
+      decoding="async"
+      v-if="thumbnail.trainRankUrl"
+      :src="thumbnail.trainRankUrl"
+      alt=""
+      class="absolute bottom-0 right-0 w-[35%]"
+      loading="lazy"
+    >
+    <img
+      decoding="async"
+      v-if="!unreleased && !cornerBadge && thumbnail.canvasIconUrl"
+      :src="thumbnail.canvasIconUrl"
+      alt=""
+      class="absolute right-1 top-1 size-4 rounded bg-background/85 p-0.5"
+      loading="lazy"
+    >
+    <span
+      v-if="!unreleased && cornerBadge"
+      class="absolute right-1 top-1 max-w-[72%] truncate rounded bg-primary px-1 py-0.5 font-mono text-[10px] font-semibold leading-none text-primary-foreground shadow-sm"
+    >
+      {{ cornerBadge }}
+    </span>
+    <span
+      v-if="unreleased"
+      class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm"
+    >
+      {{ t("sekaiUnreleased.badge") }}
+    </span>
+  </div>
+</template>

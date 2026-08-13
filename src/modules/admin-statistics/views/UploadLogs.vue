@@ -83,19 +83,31 @@ const {
 <template>
   <div class="w-full flex flex-col gap-4">
     <Card>
-      <CardHeader class="pb-3 cursor-pointer" @click="filtersExpanded = !filtersExpanded">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <LucideFilter class="w-5 h-5 text-muted-foreground" />
-            <CardTitle class="text-base">{{ t("adminStatistics.uploadLogs.filters.title") }}</CardTitle>
+      <CardHeader
+        class="pb-3 cursor-pointer select-none"
+        role="button"
+        tabindex="0"
+        :aria-expanded="filtersExpanded"
+        @click="filtersExpanded = !filtersExpanded"
+        @keydown.enter.prevent="filtersExpanded = !filtersExpanded"
+        @keydown.space.prevent="filtersExpanded = !filtersExpanded"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <LucideFilter class="w-4 h-4 shrink-0 text-muted-foreground" />
+            <CardTitle class="text-base truncate">{{ t("adminStatistics.uploadLogs.filters.title") }}</CardTitle>
           </div>
-          <Button variant="ghost" size="sm" class="text-muted-foreground">
+          <span class="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
             {{ filtersExpanded ? t("adminStatistics.uploadLogs.filters.collapse") : t("adminStatistics.uploadLogs.filters.expand") }}
-          </Button>
+            <LucideChevronDown
+              class="w-4 h-4 transition-transform duration-200"
+              :class="filtersExpanded ? 'rotate-180' : ''"
+            />
+          </span>
         </div>
       </CardHeader>
       <CardContent v-if="filtersExpanded" class="pt-0">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           <div class="flex flex-col gap-1.5">
             <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.from") }}</Label>
             <DateTimePicker24h v-model="filterFrom" :placeholder="t('adminStatistics.uploadLogs.filters.fromPlaceholder')" />

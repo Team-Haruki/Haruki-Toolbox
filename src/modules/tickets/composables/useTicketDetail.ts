@@ -149,7 +149,12 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
   }
 
   function isMe(message: TicketMessage) {
-    return message.senderId === userStore.userId
+    // The user-facing detail API omits senderId, so fall back to the sender
+    // role: on a user's own ticket, "user" messages are always theirs.
+    if (message.senderId) {
+      return message.senderId === userStore.userId
+    }
+    return message.senderRole === "user"
   }
 
   const isOpen = computed(() => ticket.value && ticket.value.status !== "closed")

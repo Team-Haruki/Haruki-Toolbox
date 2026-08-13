@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { LucideBarChart3 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 
 const props = withDefaults(
@@ -82,27 +83,30 @@ const { t } = useI18n()
         </div>
       </div>
       <template v-if="props.loading">
-        <Skeleton class="h-20 w-full" />
+        <div class="grid gap-3 sm:grid-cols-3">
+          <Skeleton v-for="i in 3" :key="i" class="h-20 w-full rounded-lg" />
+        </div>
       </template>
       <template v-else-if="props.stats">
-        <div class="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div class="text-2xl font-bold">{{ props.stats.totalAuthorizations }}</div>
+        <div class="grid gap-3 text-center sm:grid-cols-3">
+          <div class="rounded-lg border p-3">
+            <div class="text-2xl font-bold tabular-nums">{{ props.stats.totalAuthorizations }}</div>
             <div class="text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.totalAuthorizations") }}</div>
           </div>
-          <div>
-            <div class="text-2xl font-bold">{{ props.stats.activeAuthorizations }}</div>
+          <div class="rounded-lg border p-3">
+            <div class="text-2xl font-bold tabular-nums">{{ props.stats.activeAuthorizations }}</div>
             <div class="text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.activeAuthorizations") }}</div>
           </div>
-          <div>
-            <div class="text-2xl font-bold">{{ props.stats.last30DaysAuthorizations }}</div>
+          <div class="rounded-lg border p-3">
+            <div class="text-2xl font-bold tabular-nums">{{ props.stats.last30DaysAuthorizations }}</div>
             <div class="text-xs text-muted-foreground">{{ t("adminOAuthClients.statsDialog.last30Days") }}</div>
           </div>
         </div>
       </template>
       <template v-else>
-        <div class="text-center text-sm text-muted-foreground py-4">
-          {{ t("adminOAuthClients.common.empty") }}
+        <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-8 text-center">
+          <LucideBarChart3 class="h-8 w-8 text-muted-foreground/60" />
+          <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.common.empty") }}</p>
         </div>
       </template>
     </DialogContent>

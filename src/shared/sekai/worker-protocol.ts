@@ -57,6 +57,13 @@ export const SEKAI_DATA_TOOLBOX_MASTER_FILES = SEKAI_DATA_RECOMMEND_FETCH_MASTER
 
 export const SEKAI_DATA_OPTIONAL_MASTER_FILES = [
   ...SEKAI_DATA_RECOMMEND_OPTIONAL_MASTER_FILES,
+  // Only the tw/kr/cn dumps ship a flat resourceBoxDetails.json; jp/en embed
+  // the details inside resourceBoxes.json instead.
+  "resourceBoxDetails",
+  // The cn dump currently ships no resourceBoxes.json at all; consumers must
+  // degrade gracefully when either file is missing.
+  "resourceBoxes",
+  "worldBloomChapterRankingRewardRanges",
 ] as const
 
 export type SekaiDataUpdatePhase =
@@ -75,6 +82,8 @@ export type SekaiDataWorkerRequest =
     region: SekaiRegion
     force?: boolean
     files?: string[]
+    /** Set false to skip the music-metas freshness check (pages that never read musicMetas). */
+    musicMetas?: boolean
   }
   | {
     type: "clear-region"
@@ -104,6 +113,7 @@ export type SekaiDataWorkerEvent =
     fetchVersion: string | null
     files: string[]
     musicMetasUpdatedAt: number | null
+    musicMetasChecked: boolean
     updatedAt: number | null
   }
   | {

@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
 import { formatLocalizedDate } from "@/lib/date-time"
-import {
-  Card,
-  CardTitle,
-  CardHeader,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -40,6 +34,7 @@ import {
   LucideChevronLeft,
   LucideChevronRight,
   LucideBell,
+  LucideInbox,
   LucideLoader2,
   LucideMessageSquare,
   LucideRefreshCw,
@@ -118,40 +113,44 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
 
 <template>
   <div class="w-full flex flex-col gap-4">
-    <!-- Toolbar -->
-    <Card>
-      <CardHeader class="pb-3">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <CardTitle class="text-lg">{{ t("tickets.adminList.title") }}</CardTitle>
-            <CardDescription>{{ t("tickets.adminList.description") }}</CardDescription>
+    <!-- Toolbar: notifications + filters -->
+    <Card class="rounded-lg">
+      <CardContent class="flex flex-col gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex min-w-0 items-center gap-3 rounded-lg border px-3 py-2">
+            <LucideBell class="h-4 w-4 shrink-0 text-muted-foreground" />
+            <div class="min-w-0">
+              <Label for="ticket-notification-toggle" class="text-sm">
+                {{ t("tickets.adminList.notifications.label") }}
+              </Label>
+              <p class="text-xs text-muted-foreground">{{ t("tickets.adminList.notifications.description") }}</p>
+            </div>
+            <LucideLoader2
+              v-if="ticketNotificationsLoading || ticketNotificationsSaving"
+              class="h-4 w-4 shrink-0 animate-spin text-muted-foreground"
+            />
+            <Switch
+              id="ticket-notification-toggle"
+              class="shrink-0"
+              :model-value="ticketNotificationsEnabled"
+              :disabled="ticketNotificationsLoading || ticketNotificationsSaving"
+              @update:model-value="setTicketNotificationsEnabled"
+            />
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <div class="flex items-center gap-2 rounded-md border px-3 py-2">
-              <LucideBell class="w-4 h-4 text-muted-foreground" />
-              <div class="flex flex-col">
-                <Label for="ticket-notification-toggle" class="text-sm">
-                  {{ t("tickets.adminList.notifications.label") }}
-                </Label>
-                <span class="text-xs text-muted-foreground">{{ t("tickets.adminList.notifications.description") }}</span>
-              </div>
-              <LucideLoader2 v-if="ticketNotificationsLoading || ticketNotificationsSaving" class="w-4 h-4 animate-spin text-muted-foreground" />
-              <Switch
-                id="ticket-notification-toggle"
-                :model-value="ticketNotificationsEnabled"
-                :disabled="ticketNotificationsLoading || ticketNotificationsSaving"
-                @update:model-value="setTicketNotificationsEnabled"
-              />
-            </div>
             <Button v-if="isSuperAdmin" variant="outline" @click="openTicketNotificationRecipientsDialog">
-              <LucideUsers class="w-4 h-4" />
+              <LucideUsers class="h-4 w-4" />
               {{ t("tickets.adminList.notifications.manageButton") }}
+            </Button>
+            <Button variant="outline" :disabled="loading" @click="refreshTickets">
+              <LucideLoader2 v-if="loading" class="h-4 w-4 animate-spin" />
+              <LucideRefreshCw v-else class="h-4 w-4" />
+              {{ t("tickets.adminList.refreshButton") }}
             </Button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent class="flex flex-col gap-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div class="relative">
             <LucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input v-model="search" :placeholder="t('tickets.adminList.searchPlaceholder')" class="pl-9" />
@@ -187,13 +186,6 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
             </SelectContent>
           </Select>
         </div>
-        <div class="flex justify-end">
-          <Button variant="outline" :disabled="loading" @click="refreshTickets">
-            <LucideLoader2 v-if="loading" class="w-4 h-4 animate-spin" />
-            <LucideRefreshCw v-else class="w-4 h-4" />
-            {{ t("tickets.adminList.refreshButton") }}
-          </Button>
-        </div>
       </CardContent>
     </Card>
 
@@ -207,7 +199,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
         </DialogHeader>
 
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <span class="text-sm text-muted-foreground">
+          <span class="text-sm text-muted-foreground tabular-nums">
             {{ t("tickets.adminList.notifications.manageDialogSummary", { total: ticketNotificationRecipients.length }) }}
           </span>
           <Button
@@ -226,8 +218,12 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
           <LucideLoader2 class="w-4 h-4 animate-spin" />
           {{ t("tickets.adminList.notifications.manageLoading") }}
         </div>
-        <div v-else-if="ticketNotificationRecipients.length === 0" class="rounded-md border py-10 text-center text-sm text-muted-foreground">
-          {{ t("tickets.adminList.notifications.manageEmpty") }}
+        <div
+          v-else-if="ticketNotificationRecipients.length === 0"
+          class="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed py-10 text-center"
+        >
+          <LucideUsers class="h-8 w-8 text-muted-foreground/60" />
+          <p class="text-sm text-muted-foreground">{{ t("tickets.adminList.notifications.manageEmpty") }}</p>
         </div>
         <div v-else class="max-h-[60vh] overflow-y-auto rounded-md border">
           <Table>
@@ -287,92 +283,109 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
     </Dialog>
 
     <!-- Ticket table -->
-    <Card>
-      <CardContent class="p-0">
-        <template v-if="loading">
-          <div class="p-6 flex flex-col gap-3">
-            <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
-          </div>
-        </template>
-        <template v-else>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{{ t("tickets.adminList.table.subject") }}</TableHead>
-                <TableHead>{{ t("tickets.adminList.table.status") }}</TableHead>
-                <TableHead>{{ t("tickets.adminList.table.priority") }}</TableHead>
-                <TableHead class="hidden sm:table-cell">{{ t("tickets.adminList.table.creator") }}</TableHead>
-                <TableHead class="hidden md:table-cell">{{ t("tickets.adminList.table.assignee") }}</TableHead>
-                <TableHead class="hidden lg:table-cell">{{ t("tickets.adminList.table.lastMessage") }}</TableHead>
-                <TableHead>{{ t("tickets.adminList.table.updatedAt") }}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow
-                v-for="ticketItem in tickets"
-                :key="ticketItem.ticketId"
-                class="cursor-pointer hover:bg-muted/50 transition-colors"
-                role="button"
-                tabindex="0"
-                @click="openTicket(ticketItem.ticketId)"
-                @keydown="handleRowKeydown($event, ticketItem.ticketId)"
-              >
-                <TableCell class="font-medium max-w-[260px]">
-                  <div class="truncate">{{ ticketItem.subject }}</div>
-                  <div class="text-xs text-muted-foreground truncate">{{ ticketItem.ticketId }}</div>
-                </TableCell>
-                <TableCell>
-                  <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium', ticketStatusBadgeClass(ticketItem.status)]">
-                    <component :is="ticketStatusIcon(ticketItem.status)" class="w-3.5 h-3.5" />
-                    {{ ticketStatusLabel(ticketItem.status) }}
+    <Card class="rounded-lg gap-0 overflow-hidden py-0">
+      <template v-if="loading">
+        <div class="flex flex-col gap-3 p-6">
+          <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
+        </div>
+      </template>
+      <template v-else>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{{ t("tickets.adminList.table.subject") }}</TableHead>
+              <TableHead>{{ t("tickets.adminList.table.status") }}</TableHead>
+              <TableHead>{{ t("tickets.adminList.table.priority") }}</TableHead>
+              <TableHead class="hidden md:table-cell">{{ t("tickets.adminList.table.creator") }}</TableHead>
+              <TableHead class="hidden lg:table-cell">{{ t("tickets.adminList.table.assignee") }}</TableHead>
+              <TableHead class="hidden xl:table-cell">{{ t("tickets.adminList.table.lastMessage") }}</TableHead>
+              <TableHead>{{ t("tickets.adminList.table.updatedAt") }}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow
+              v-for="ticketItem in tickets"
+              :key="ticketItem.ticketId"
+              class="cursor-pointer hover:bg-muted/50 transition-colors"
+              role="button"
+              tabindex="0"
+              @click="openTicket(ticketItem.ticketId)"
+              @keydown="handleRowKeydown($event, ticketItem.ticketId)"
+            >
+              <TableCell class="font-medium max-w-[260px]">
+                <div class="truncate">{{ ticketItem.subject }}</div>
+                <div class="text-xs text-muted-foreground truncate">{{ ticketItem.ticketId }}</div>
+              </TableCell>
+              <TableCell>
+                <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium', ticketStatusBadgeClass(ticketItem.status)]">
+                  <component :is="ticketStatusIcon(ticketItem.status)" class="w-3.5 h-3.5" />
+                  {{ ticketStatusLabel(ticketItem.status) }}
+                </span>
+              </TableCell>
+              <TableCell>
+                <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium', ticketPriorityBadgeClass(ticketItem.priority)]">
+                  <component :is="ticketPriorityIcon(ticketItem.priority)" class="w-3.5 h-3.5" />
+                  {{ ticketPriorityLabel(ticketItem.priority) }}
+                </span>
+              </TableCell>
+              <TableCell class="hidden md:table-cell text-muted-foreground">{{ ticketItem.creatorUserName || ticketItem.creatorUserId }}</TableCell>
+              <TableCell class="hidden lg:table-cell text-muted-foreground">
+                {{ ticketItem.assigneeAdminName || ticketItem.assigneeAdminId || t("tickets.adminList.unassigned") }}
+              </TableCell>
+              <TableCell class="hidden xl:table-cell max-w-[280px]">
+                <div v-if="ticketItem.lastMessagePreview" class="flex items-center gap-2 text-sm text-muted-foreground">
+                  <LucideMessageSquare class="w-4 h-4 shrink-0" />
+                  <span v-if="ticketItem.lastMessageSenderRole" class="shrink-0">
+                    {{ lastMessageRoleLabel(ticketItem.lastMessageSenderRole) }}
                   </span>
-                </TableCell>
-                <TableCell>
-                  <span :class="['inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium', ticketPriorityBadgeClass(ticketItem.priority)]">
-                    <component :is="ticketPriorityIcon(ticketItem.priority)" class="w-3.5 h-3.5" />
-                    {{ ticketPriorityLabel(ticketItem.priority) }}
+                  <span v-if="ticketItem.lastMessageInternal" class="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                    {{ t("tickets.adminList.lastMessage.internal") }}
                   </span>
-                </TableCell>
-                <TableCell class="hidden sm:table-cell text-muted-foreground">{{ ticketItem.creatorUserName || ticketItem.creatorUserId }}</TableCell>
-                <TableCell class="hidden md:table-cell text-muted-foreground">
-                  {{ ticketItem.assigneeAdminName || ticketItem.assigneeAdminId || t("tickets.adminList.unassigned") }}
-                </TableCell>
-                <TableCell class="hidden lg:table-cell max-w-[280px]">
-                  <div v-if="ticketItem.lastMessagePreview" class="flex items-center gap-2 text-sm text-muted-foreground">
-                    <LucideMessageSquare class="w-4 h-4 shrink-0" />
-                    <span v-if="ticketItem.lastMessageSenderRole" class="shrink-0">
-                      {{ lastMessageRoleLabel(ticketItem.lastMessageSenderRole) }}
-                    </span>
-                    <span v-if="ticketItem.lastMessageInternal" class="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                      {{ t("tickets.adminList.lastMessage.internal") }}
-                    </span>
-                    <span class="truncate">{{ ticketItem.lastMessagePreview }}</span>
-                  </div>
-                  <div v-else class="text-sm text-muted-foreground">{{ t("tickets.adminList.lastMessage.none") }}</div>
-                </TableCell>
-                <TableCell class="text-muted-foreground text-sm">{{ formatTicketDate(ticketItem.updatedAt) }}</TableCell>
-              </TableRow>
-              <TableRow v-if="tickets.length === 0">
-                <TableCell :colspan="7" class="text-center py-8 text-muted-foreground">{{ t("tickets.adminList.empty") }}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </template>
-      </CardContent>
-    </Card>
+                  <span class="truncate">{{ ticketItem.lastMessagePreview }}</span>
+                </div>
+                <div v-else class="text-sm text-muted-foreground">{{ t("tickets.adminList.lastMessage.none") }}</div>
+              </TableCell>
+              <TableCell class="text-muted-foreground text-sm tabular-nums">{{ formatTicketDate(ticketItem.updatedAt) }}</TableCell>
+            </TableRow>
+            <TableRow v-if="tickets.length === 0">
+              <TableCell :colspan="7" class="p-0">
+                <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                  <LucideInbox class="h-8 w-8 text-muted-foreground/60" />
+                  <p class="text-sm text-muted-foreground">{{ t("tickets.adminList.empty") }}</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </template>
 
-    <!-- Pagination -->
-    <div class="flex items-center justify-between px-2">
-      <span class="text-sm text-muted-foreground">{{ t("tickets.adminList.total", { total }) }}</span>
-      <div class="flex items-center gap-2">
-        <Button variant="outline" size="sm" :disabled="page <= 1" @click="prevPage">
-          <LucideChevronLeft class="w-4 h-4" />
-        </Button>
-        <span class="text-sm tabular-nums">{{ page }} / {{ totalPages }}</span>
-        <Button variant="outline" size="sm" :disabled="page >= totalPages" @click="nextPage">
-          <LucideChevronRight class="w-4 h-4" />
-        </Button>
+      <!-- Pagination footer -->
+      <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 sm:px-6">
+        <span class="text-sm text-muted-foreground tabular-nums">{{ t("tickets.adminList.total", { total }) }}</span>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="page <= 1"
+            :title="t('tickets.adminList.pagination.prevPage')"
+            :aria-label="t('tickets.adminList.pagination.prevPage')"
+            @click="prevPage"
+          >
+            <LucideChevronLeft class="w-4 h-4" />
+          </Button>
+          <span class="text-sm tabular-nums">{{ page }} / {{ totalPages }}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="page >= totalPages"
+            :title="t('tickets.adminList.pagination.nextPage')"
+            :aria-label="t('tickets.adminList.pagination.nextPage')"
+            @click="nextPage"
+          >
+            <LucideChevronRight class="w-4 h-4" />
+          </Button>
+        </div>
       </div>
-    </div>
+    </Card>
   </div>
 </template>

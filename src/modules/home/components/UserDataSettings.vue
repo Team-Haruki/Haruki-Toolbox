@@ -26,6 +26,7 @@ import {
 import { formatGameAccountLabel } from "@/lib/game-account-display"
 import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
 import {
+  DECK_RECOMMEND_SUITE_KEYS,
   fetchDeckRecommendProfileWithCache,
   fetchDeckRecommendUserDataWithCache,
 } from "@/modules/deck-recommend/lib/user-data"
@@ -34,6 +35,8 @@ import {
   readDeckRecommendProfileCache,
   readDeckRecommendUserDataCache,
 } from "@/modules/deck-recommend/lib/user-data-cache"
+import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
+import { clearUserSuiteSubsetCache, readUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import type { SekaiRegion } from "@/types"
@@ -167,6 +170,7 @@ async function clearUserDataCache() {
   clearing.value = true
   try {
     await clearDeckRecommendUserDataCache(userStore.userId)
+    await clearUserSuiteSubsetCache(userStore.userId)
     cacheUpdatedAt.value = null
     cacheUploadTime.value = null
     lastCacheHit.value = null
@@ -202,6 +206,21 @@ async function loadCacheStatus() {
       return
     }
 
+    if (selectedDataMode.value === "suite") {
+      // Suite data lives in the shared snapshot cache since the deck-recommend
+      // fetch migration; the module-local cache only stores mysekai records.
+      const record = await readUserSuiteSubsetCache({
+        toolboxUserId: userStore.userId,
+        server: account.server,
+        gameUserId: account.uid,
+        keys: DECK_RECOMMEND_SUITE_KEYS,
+      })
+      cacheUpdatedAt.value = record?.updatedAt ?? null
+      cacheUploadTime.value = record?.uploadTime ?? null
+      lastCacheHit.value = null
+      return
+    }
+
     const record = await readDeckRecommendUserDataCache({
       toolboxUserId: userStore.userId,
       server: account.server,
@@ -228,11 +247,7 @@ function formatTime(value: number | null) {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(normalizeTimestampForDate(value))
-}
-
-function normalizeTimestampForDate(value: number) {
-  return value < 1_000_000_000_000 ? value * 1000 : value
+  }).format(suiteUploadTimeToMillis(value))
 }
 </script>
 

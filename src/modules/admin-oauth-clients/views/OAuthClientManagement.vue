@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { useI18n } from "vue-i18n"
 import {
   OAuthClientConfirmActionDialog,
@@ -104,10 +104,8 @@ const {
 <template>
   <div class="w-full flex flex-col gap-4">
     <Card>
-      <CardHeader class="flex flex-row items-center justify-between">
-        <CardTitle class="text-lg">{{ t("adminOAuthClients.title") }}</CardTitle>
+      <CardHeader v-if="userStore.isSuperAdmin" class="flex flex-row items-center justify-end">
         <OAuthClientCreateDialog
-          v-if="userStore.isSuperAdmin"
           v-model:open="createOpen"
           :creating="creating"
           :client-id="newClientId"

@@ -3,9 +3,6 @@ import { useI18n } from "vue-i18n"
 import {
     Card,
     CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
@@ -75,13 +72,9 @@ function handleRoleChange(value: unknown) {
 
 <template>
   <Card>
-    <CardHeader>
-      <CardTitle>{{ user.userData.name }}</CardTitle>
-      <CardDescription>ID: {{ user.userData.userId }}</CardDescription>
-    </CardHeader>
     <CardContent class="flex flex-col gap-6">
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-        <div class="bg-muted/30 p-4 rounded-xl border flex flex-col justify-center">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div class="bg-muted/30 p-4 rounded-lg border flex flex-col justify-center">
           <span class="text-muted-foreground text-xs mb-1">{{ t("adminUsers.detail.info.role") }}</span>
           <div class="font-semibold text-base flex items-center gap-1.5">
             <span :class="[
@@ -96,7 +89,7 @@ function handleRoleChange(value: unknown) {
             {{ roleLabel(user.userData.role, t) }}
           </div>
         </div>
-        <div class="bg-muted/30 p-4 rounded-xl border flex flex-col justify-center">
+        <div class="bg-muted/30 p-4 rounded-lg border flex flex-col justify-center">
           <span class="text-muted-foreground text-xs mb-1">{{ t("adminUsers.detail.info.accountStatus") }}</span>
           <div class="font-semibold text-base">
             <span :class="user.banned ? 'text-red-500 flex items-center gap-1.5' : 'text-green-500 flex items-center gap-1.5'">
@@ -106,10 +99,17 @@ function handleRoleChange(value: unknown) {
             </span>
           </div>
         </div>
-        <div class="bg-muted/30 p-4 rounded-xl border flex flex-col justify-center">
+        <div class="bg-muted/30 p-4 rounded-lg border flex flex-col justify-center">
           <div class="flex items-center justify-between mb-1">
             <span class="text-muted-foreground text-xs">{{ t("adminUsers.detail.info.email") }}</span>
-            <Button variant="ghost" size="sm" class="h-5 px-1.5 text-[10px]" @click="emit('open-email-edit')">
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-5 px-1.5 text-[10px]"
+              :title="t('adminUsers.common.edit')"
+              :aria-label="t('adminUsers.common.edit')"
+              @click="emit('open-email-edit')"
+            >
               <LucidePencil class="w-3 h-3" />
             </Button>
           </div>
@@ -117,7 +117,7 @@ function handleRoleChange(value: unknown) {
             {{ user.userData.emailInfo?.email || t("adminUsers.common.unbound") }}
           </div>
         </div>
-        <div class="bg-muted/30 p-4 rounded-xl border flex flex-col justify-center">
+        <div class="bg-muted/30 p-4 rounded-lg border flex flex-col justify-center">
           <span class="text-muted-foreground text-xs mb-1">{{ t("adminUsers.detail.info.registeredAt") }}</span>
           <div class="font-medium text-sm text-muted-foreground">
             {{ user.createdAt ? formatDateTime(user.createdAt) : "—" }}
@@ -125,7 +125,7 @@ function handleRoleChange(value: unknown) {
         </div>
       </div>
 
-      <div class="rounded-xl border divide-y">
+      <div class="rounded-lg border divide-y">
         <div v-if="isSuperAdmin" class="flex items-center justify-between gap-4 p-4">
           <Label class="text-sm font-medium">{{ t("adminUsers.detail.info.changeRole") }}</Label>
           <Select :key="locale" :model-value="user.userData.role" @update:model-value="handleRoleChange">

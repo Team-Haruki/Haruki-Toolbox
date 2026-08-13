@@ -50,7 +50,6 @@ Vite build uses manual vendor chunks: `vendor-vue`, `vendor-ui`, `vendor-chart`,
 Banned import tokens (with replacements):
 - `@/components/pages/*` → module-local `views/`/`components/`
 - `@/components/WebLayout.vue` → `@/modules/web/views/WebLayout.vue`
-- `@/components/Maintenance.vue` → `@/modules/navigation/views/Maintenance.vue`
 - `@/components/Turnstile.vue` → `@/shared/components/Turnstile.vue`
 - `@/api/*` / `from "@/api"` → `@/modules/<feature>/api` (or `@/core/http/call-api` for the HTTP client)
 - `@/store` → `@/shared/stores/user`
@@ -91,7 +90,7 @@ All commits must follow `[Type] Short description`:
 - Use imperative mood ("Add X", not "Added X").
 - Do **not** end the subject line with a period.
 - Keep it short.
-- When Claude Code authors the commit, append a `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>` trailer (blank line between subject and trailer).
+- When Claude Code authors the commit, append a `Co-Authored-By` trailer naming the authoring model, e.g. `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` (blank line between subject and trailer).
 - Before creating any commit, ask the user whether this commit should publish a new version.
 - If the user wants a new version, bump `version` in `package.json` according to the user's requested release level. Versions must use `major.minor.patch` format.
 - If the user does not want a new version, create the commit without changing `version`.

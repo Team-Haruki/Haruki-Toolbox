@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
-import { PlusIcon, Trash2Icon } from "lucide-vue-next"
+import { computed, ref } from "vue"
+import { LayoutGrid, Trash2Icon } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -24,6 +24,7 @@ import {
 import type { DeckRecommendSingleCardOverride } from "../lib/user-data-preparation"
 import type { DeckRecommendMasterCardOption } from "../lib/card-options"
 import { createDeckRecommendCardTags } from "../lib/card-tags"
+import CardBrowseDialog from "./CardBrowseDialog.vue"
 
 const props = defineProps<{
   modelValue: DeckRecommendSingleCardOverride[]
@@ -37,44 +38,21 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const INHERIT_OPTION_VALUE = "__inherit__"
-const pendingCardId = ref<string | null>(null)
+const browseOpen = ref(false)
+const usedCardIds = computed(() => props.modelValue.map((item) => item.cardId))
 const cardOptionMap = computed(() =>
   new Map(props.cardOptions.map((option) => [option.id, option])),
 )
-const availableCardOptions = computed<ComboboxOption[]>(() => {
-  const usedIds = new Set(props.modelValue.map((item) => item.cardId))
-  return props.cardOptions
-    .filter((option) => !usedIds.has(option.id))
-    .map((option) => ({
-      value: option.value,
-      label: option.label,
-      description: option.unitProfileName ?? option.description,
-      tags: createCardTags(option),
-      iconUrl: option.thumbnailUrl,
-      keywords: option.keywords,
-    }))
-})
 
-watch(
-  () => props.cardOptions.map((option) => option.id).join(","),
-  () => {
-    if (pendingCardId.value && !props.cardOptions.some((option) => option.value === pendingCardId.value)) {
-      pendingCardId.value = null
-    }
-  },
-)
-
-function addPendingCard() {
-  const cardId = pendingCardId.value ? Number(pendingCardId.value) : null
-  const option = cardId ? cardOptionMap.value.get(cardId) : null
-  if (!cardId || !option || props.modelValue.some((item) => item.cardId === cardId)) {
+function addOverrideForOption(option: DeckRecommendMasterCardOption) {
+  if (props.modelValue.some((item) => item.cardId === option.id)) {
     return
   }
 
   emit("update:modelValue", [
     ...props.modelValue,
     {
-      cardId,
+      cardId: option.id,
       disabled: false,
       level: option.maxLevel,
       skillLevel: option.maxSkillLevel,
@@ -83,7 +61,6 @@ function addPendingCard() {
       canvas: false,
     },
   ])
-  pendingCardId.value = null
 }
 
 function updateOverride(cardId: number, patch: Partial<DeckRecommendSingleCardOverride>) {
@@ -200,29 +177,31 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
 
 <template>
   <div class="min-w-0 space-y-3">
-    <div class="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
-      <div class="grid gap-2">
-        <Label>{{ t("deckRecommend.singleCard.card") }}</Label>
-        <Combobox
-          v-model="pendingCardId"
-          :options="availableCardOptions"
-          :disabled="props.disabled || availableCardOptions.length === 0"
-          :placeholder="t('deckRecommend.singleCard.cardPlaceholder')"
-          :search-placeholder="t('deckRecommend.singleCard.cardSearchPlaceholder')"
-          :empty-text="t('deckRecommend.singleCard.cardEmpty')"
-        />
-      </div>
-      <Button
-        type="button"
-        variant="outline"
-        class="self-end"
-        :disabled="props.disabled || !pendingCardId"
-        @click="addPendingCard"
-      >
-        <PlusIcon class="size-4" />
-        {{ t("deckRecommend.singleCard.add") }}
-      </Button>
-    </div>
+    <Button
+      type="button"
+      variant="outline"
+      class="w-full justify-between gap-2 font-normal"
+      :disabled="props.disabled || props.cardOptions.length === 0"
+      @click="browseOpen = true"
+    >
+      <span class="flex min-w-0 items-center gap-2 text-muted-foreground">
+        <LayoutGrid class="size-4 shrink-0" />
+        <span class="truncate">{{ t("deckRecommend.singleCard.cardPlaceholder") }}</span>
+      </span>
+      <span class="shrink-0 text-xs text-muted-foreground">
+        {{ t("deckRecommend.singleCard.selectedCount", { count: props.modelValue.length }) }}
+      </span>
+    </Button>
+
+    <CardBrowseDialog
+      v-model:open="browseOpen"
+      :card-options="props.cardOptions"
+      :selected-ids="usedCardIds"
+      :disabled-ids="usedCardIds"
+      :disabled="props.disabled"
+      :footer-text="t('deckRecommend.singleCard.selectedCount', { count: props.modelValue.length })"
+      @select="addOverrideForOption"
+    />
 
     <div v-if="props.modelValue.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
       {{ t("deckRecommend.singleCard.empty") }}

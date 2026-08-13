@@ -6,7 +6,7 @@ import vueParser from "vue-eslint-parser"
 
 export default [
   {
-    ignores: ["dist/**", "node_modules/**", "coverage/**"],
+    ignores: ["dist/**", "node_modules/**", "coverage/**", "src/modules/music-library/wasm/**", "src/modules/costumes/vendor/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/table"
 import {
     LucideGlobe,
+    LucidePlus,
     LucideTrash2,
 } from "lucide-vue-next"
 import type { AuthorizedSocialPlatform } from "@/types/admin"
@@ -53,10 +54,10 @@ const socialPlatforms = computed(() => getSocialPlatforms(t))
 
 <template>
   <Card>
-    <CardHeader class="flex flex-row items-center justify-between">
+    <CardHeader class="flex flex-row items-center justify-between gap-2">
       <CardTitle>{{ t("adminUsers.detail.authSocial.title") }}</CardTitle>
       <Button variant="outline" size="sm" :disabled="busy" @click="emit('add')">
-        + {{ t("adminUsers.detail.authSocial.add") }}
+        <LucidePlus class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.authSocial.add") }}
       </Button>
     </CardHeader>
     <CardContent>
@@ -91,8 +92,10 @@ const socialPlatforms = computed(() => getSocialPlatforms(t))
                       <Button
                         variant="ghost"
                         size="sm"
-                        class="text-destructive"
+                        class="text-destructive hover:text-destructive"
                         :disabled="busy"
+                        :title="t('adminUsers.detail.info.delete')"
+                        :aria-label="t('adminUsers.detail.info.delete')"
                       >
                         <LucideTrash2 class="w-4 h-4" />
                       </Button>
@@ -117,9 +120,12 @@ const socialPlatforms = computed(() => getSocialPlatforms(t))
         </Table>
       </template>
       <template v-else>
-        <div class="flex flex-col items-center gap-3 py-8">
-          <p class="text-muted-foreground">{{ t("adminUsers.detail.authSocial.empty") }}</p>
-          <Button variant="outline" size="sm" :disabled="busy" @click="emit('add')">{{ t("adminUsers.detail.authSocial.add") }}</Button>
+        <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center">
+          <LucideGlobe class="h-8 w-8 text-muted-foreground/60" />
+          <p class="text-sm text-muted-foreground">{{ t("adminUsers.detail.authSocial.empty") }}</p>
+          <Button variant="outline" size="sm" :disabled="busy" @click="emit('add')">
+            <LucidePlus class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.authSocial.add") }}
+          </Button>
         </div>
       </template>
     </CardContent>

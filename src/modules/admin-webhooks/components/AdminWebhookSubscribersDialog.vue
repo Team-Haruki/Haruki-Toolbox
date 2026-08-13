@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { LucideUsers } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import type { AdminWebhookSubscriber } from "@/types/admin"
 
@@ -48,7 +49,15 @@ const { t } = useI18n()
         </p>
       </DialogHeader>
 
-      <div class="rounded-md border">
+      <div
+        v-if="!props.subscribersLoading && props.subscribers.length === 0"
+        class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center"
+      >
+        <LucideUsers class="h-8 w-8 text-muted-foreground/60" />
+        <p class="text-sm text-muted-foreground">{{ t("adminWebhooks.subscribers.empty") }}</p>
+      </div>
+
+      <div v-else class="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -66,19 +75,14 @@ const { t } = useI18n()
                 </TableCell>
               </TableRow>
             </template>
-            <template v-else-if="props.subscribers.length > 0">
+            <template v-else>
               <TableRow v-for="subscriber in props.subscribers" :key="`${subscriber.userId}-${subscriber.server}-${subscriber.dataType}-${subscriber.createdAt}`">
-                <TableCell class="font-medium">{{ subscriber.userId }}</TableCell>
+                <TableCell class="font-medium tabular-nums">{{ subscriber.userId }}</TableCell>
                 <TableCell>{{ props.serverLabel(subscriber.server) }}</TableCell>
                 <TableCell>{{ props.dataTypeLabel(subscriber.dataType) }}</TableCell>
-                <TableCell>{{ props.formatDate(subscriber.createdAt) }}</TableCell>
+                <TableCell class="text-muted-foreground">{{ props.formatDate(subscriber.createdAt) }}</TableCell>
               </TableRow>
             </template>
-            <TableRow v-else>
-              <TableCell colspan="4" class="h-24 text-center text-muted-foreground">
-                {{ t("adminWebhooks.subscribers.empty") }}
-              </TableCell>
-            </TableRow>
           </TableBody>
         </Table>
       </div>

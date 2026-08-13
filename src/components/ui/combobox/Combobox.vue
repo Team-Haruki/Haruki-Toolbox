@@ -23,6 +23,8 @@ export type ComboboxOption = {
   description?: string | null
   tags?: readonly ComboboxOptionTag[]
   iconUrl?: string | null
+  /** Swapped in when `iconUrl` fails to load (e.g. region asset mirror gaps). */
+  iconFallbackUrl?: string | null
   keywords?: readonly string[]
 }
 
@@ -60,6 +62,14 @@ const selectedOption = computed(() =>
   props.options.find((option) => option.value === props.modelValue) ?? null,
 )
 
+function handleIconError(event: Event, option: ComboboxOption) {
+  const image = event.target as HTMLImageElement | null
+  const fallback = option.iconFallbackUrl
+  if (image && fallback && image.src !== fallback) {
+    image.src = fallback
+  }
+}
+
 watch(
   () => props.disabled,
   (disabled) => {
@@ -86,13 +96,14 @@ function selectOption(value: string) {
         :disabled="props.disabled"
         :class="cn('w-full justify-between', props.triggerClass)"
       >
-        <span class="flex min-w-0 items-center gap-2">
+        <span class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-left">
           <img
             v-if="selectedOption?.iconUrl"
             :src="selectedOption.iconUrl"
             alt=""
             class="size-5 shrink-0 rounded-sm object-cover"
             loading="lazy"
+            @error="handleIconError($event, selectedOption)"
           >
           <component
             :is="props.iconComponent"
@@ -114,7 +125,7 @@ function selectOption(value: string) {
     <PopoverContent
       :class="
         cn(
-          'w-(--reka-popover-trigger-width) overflow-hidden border-white/70 bg-popover/72 p-0 shadow-[0_22px_64px_-38px_rgba(15,23,42,0.95),inset_0_1px_0_rgba(255,255,255,0.62)] supports-[backdrop-filter]:bg-popover/48 dark:border-white/12 dark:bg-slate-950/78 dark:supports-[backdrop-filter]:bg-slate-950/58',
+          'w-(--reka-popover-trigger-width) overflow-hidden p-0',
           props.contentClass,
         )
       "
@@ -145,6 +156,7 @@ function selectOption(value: string) {
                 alt=""
                 class="size-6 shrink-0 rounded-sm object-cover"
                 loading="lazy"
+                @error="handleIconError($event, option)"
               >
               <span class="min-w-0 flex-1">
                 <span class="block truncate">{{ option.label }}</span>

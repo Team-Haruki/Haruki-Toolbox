@@ -5,17 +5,16 @@ import { useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import {
   ArrowRight,
-  Database,
+  ChevronDown,
   Flame,
   List,
   LucideAlertCircle,
   LucideCalculator,
-  Music2,
   Percent,
+  SlidersHorizontal,
   Target,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
 import {
   Alert,
   AlertDescription,
@@ -39,6 +38,7 @@ import {
 } from "@/components/ui/select"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { formatNumberCN } from "@/lib/number-format"
+import { MusicSelect } from "@/modules/deck-recommend"
 import { readSekaiMasterFile, readSekaiMusicMetas } from "@/shared/sekai/cache"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import type { SekaiRegion } from "@/types"
@@ -86,6 +86,7 @@ const maxResults = ref<number | undefined>(POINT_CALCULATOR_DEFAULT_RESULT_LIMIT
 const customBonusFloor = ref<number | undefined>(POINT_CALCULATOR_DEFAULT_BONUS_FLOOR)
 const customBonusCap = ref<number | undefined>(SCORE_CONTROL_MAX_EVENT_BONUS)
 const loading = ref(false)
+const advancedOpen = ref(false)
 const loadError = ref<string | null>(null)
 const musicOptions = ref<MusicOption[]>([])
 const musicMetas = ref<ScoreControlMusicMeta[]>([])
@@ -100,9 +101,6 @@ const boostOptions = computed(() => [
   })),
 ])
 const currentRegionState = computed(() => sekaiDataStore.regionStates[selectedRegion.value])
-const selectedMusicOption = computed(() =>
-  musicOptions.value.find((option) => option.value === selectedMusicId.value) ?? null,
-)
 const selectedBasicPoint = computed(() =>
   selectScoreControlBasicPoint(selectedMusicId.value, musicMetas.value),
 )
@@ -154,26 +152,6 @@ const canCalculate = computed(() =>
   && Number(inputPt.value) > 0
   && selectedBasicPoint.value != null,
 )
-const comboboxOptions = computed<ComboboxOption[]>(() =>
-  musicOptions.value.map((option) => ({
-    value: option.value,
-    label: option.label,
-    tags: [
-      {
-        label: `#${option.id}`,
-        class: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-200",
-      },
-    ],
-    keywords: [
-      String(option.id),
-      `#${option.id}`,
-      option.seq ? String(option.seq) : "",
-      option.pronunciation ?? "",
-      option.assetbundleName ?? "",
-    ],
-  })),
-)
-
 watch(
   selectedRegion,
   () => {
@@ -342,172 +320,165 @@ function normalizeBonusBound(value: unknown, fallback: number) {
             <CardTitle class="flex flex-wrap items-center gap-2 text-lg">
               <LucideCalculator class="size-5" />
               {{ t("tools.pointCalculator.title") }}
-              <span
-                class="inline-flex items-center rounded-full border border-amber-300/70 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
-                :title="t('tools.pointCalculator.tips.testingPrefix') + t('tools.pointCalculator.tips.testingSuffix')"
-              >
-                {{ t("tools.pointCalculator.tips.beta") }}
-              </span>
             </CardTitle>
             <CardDescription>{{ t("tools.pointCalculator.description") }}</CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
-            <div class="grid gap-4 md:grid-cols-2">
-              <div class="grid gap-2">
-                <Label>{{ t("tools.pointCalculator.fields.region") }}</Label>
-                <Select :model-value="selectedRegion" :disabled="loading" @update:model-value="updateRegion">
-                  <SelectTrigger class="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="option in SEKAI_REGION_OPTIONS" :key="option.value" :value="option.value">
-                      {{ resolveSekaiRegionLabel(option.value, t) }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div class="grid gap-2">
-                <Label>{{ t("tools.pointCalculator.fields.maxResults") }}</Label>
-                <div class="relative w-full items-center">
-                  <Input
-                    v-model.number="maxResults"
-                    class="pl-10"
-                    type="number"
-                    min="1"
-                    inputmode="numeric"
-                    :aria-invalid="maxResultsInvalid || undefined"
-                    :placeholder="t('tools.pointCalculator.fields.maxResultsPlaceholder')"
-                  />
-                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                    <List class="size-4 text-muted-foreground" />
-                  </span>
-                </div>
-              </div>
-
+            <!-- Primary inputs: region context + the song and target Pt that define the problem. -->
+            <div class="grid gap-2">
+              <Label>{{ t("tools.pointCalculator.fields.region") }}</Label>
+              <Select :model-value="selectedRegion" :disabled="loading" @update:model-value="updateRegion">
+                <SelectTrigger class="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="option in SEKAI_REGION_OPTIONS" :key="option.value" :value="option.value">
+                    {{ resolveSekaiRegionLabel(option.value, t) }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div class="grid gap-2">
               <Label>{{ t("tools.pointCalculator.fields.music") }}</Label>
-              <Combobox
+              <MusicSelect
                 :model-value="selectedMusicId"
-                :options="comboboxOptions"
-                :disabled="loading || comboboxOptions.length === 0"
-                :clearable="false"
-                :placeholder="loading ? t('tools.pointCalculator.fields.loadingMusic') : t('tools.pointCalculator.fields.musicPlaceholder')"
-                :search-placeholder="t('tools.pointCalculator.fields.musicSearchPlaceholder')"
-                :empty-text="t('tools.pointCalculator.fields.musicEmpty')"
-                :icon-component="Music2"
+                :region="selectedRegion"
+                :disabled="loading"
+                hide-difficulty
                 @update:model-value="updateMusic"
               />
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-2">
-              <div class="grid gap-2">
-                <Label for="score-control-target-pt">{{ t("tools.pointCalculator.fields.targetPt") }}</Label>
-                <div class="relative w-full items-center">
-                  <Input
-                    id="score-control-target-pt"
-                    v-model.number="inputPt"
-                    class="pl-10"
-                    type="number"
-                    min="1"
-                    inputmode="numeric"
-                    :aria-invalid="targetPointInvalid || undefined"
-                    :placeholder="t('tools.pointCalculator.fields.targetPtPlaceholder')"
-                    @keydown.enter="calcResult"
-                  />
-                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                    <Target class="size-4 text-muted-foreground" />
-                  </span>
-                </div>
-              </div>
-
-              <div class="grid gap-2">
-                <Label>{{ t("tools.pointCalculator.fields.boostIndex") }}</Label>
-                <div class="relative w-full items-center">
-                  <Select :model-value="selectedBoost" @update:model-value="updateBoost">
-                    <SelectTrigger class="w-full pl-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="option in boostOptions" :key="option.value" :value="option.value">
-                        {{ option.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
-                    <Flame class="size-4 text-muted-foreground" />
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <section class="grid gap-3 rounded-md border bg-muted/20 p-3">
-              <div class="space-y-1">
-                <h3 class="text-sm font-medium">{{ t("tools.pointCalculator.fields.bonusRange") }}</h3>
-                <p class="text-xs leading-5 text-muted-foreground">
-                  {{ t("tools.pointCalculator.fields.bonusRangeHelp") }}
-                </p>
-              </div>
-              <div class="grid gap-4 md:grid-cols-2">
-                <div class="grid gap-2">
-                  <Label>{{ t("tools.pointCalculator.fields.customBonusFloor") }}</Label>
-                  <div class="relative w-full items-center">
-                    <Input
-                      v-model.number="customBonusFloor"
-                      class="pl-10"
-                      type="number"
-                      :min="POINT_CALCULATOR_MIN_BONUS_LIMIT"
-                      :max="POINT_CALCULATOR_MAX_BONUS_LIMIT"
-                      inputmode="numeric"
-                      :aria-invalid="customBonusFloorInvalid || undefined"
-                      :placeholder="t('tools.pointCalculator.fields.customBonusFloorPlaceholder')"
-                    />
-                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                      <Percent class="size-4 text-muted-foreground" />
-                    </span>
-                  </div>
-                </div>
-
-                <div class="grid gap-2">
-                  <Label>{{ t("tools.pointCalculator.fields.customBonusCap") }}</Label>
-                  <div class="relative w-full items-center">
-                    <Input
-                      v-model.number="customBonusCap"
-                      class="pl-10"
-                      type="number"
-                      :min="POINT_CALCULATOR_MIN_BONUS_LIMIT"
-                      :max="POINT_CALCULATOR_MAX_BONUS_LIMIT"
-                      inputmode="numeric"
-                      :aria-invalid="customBonusCapInvalid || undefined"
-                      :placeholder="t('tools.pointCalculator.fields.customBonusCapPlaceholder')"
-                    />
-                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                      <Percent class="size-4 text-muted-foreground" />
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <p v-if="customBonusFloorInvalid || customBonusCapInvalid" class="text-xs text-destructive">
-                {{ t("tools.pointCalculator.fields.bonusRangeInvalid") }}
-              </p>
-            </section>
-
-            <div class="grid gap-2 rounded-md border bg-muted/20 p-3 text-sm">
-              <div class="flex items-center gap-2">
-                <Database class="size-4 text-muted-foreground" />
-                <span class="font-medium">{{ t("tools.pointCalculator.meta.title") }}</span>
-              </div>
-              <div class="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                <span>{{ t("tools.pointCalculator.meta.music", { value: selectedMusicOption?.label ?? "-" }) }}</span>
-                <span>{{ t("tools.pointCalculator.meta.basicPoint", { value: selectedBasicPoint?.basicPoint ?? "-" }) }}</span>
-                <span>{{ t("tools.pointCalculator.meta.bonusRange", { min: minEventBonus, max: maxEventBonus }) }}</span>
-              </div>
+              <!-- Derived basic Pt is the key intermediate — surface it inline instead of a separate meta box. -->
               <p v-if="loadError" class="text-xs text-destructive">{{ loadError }}</p>
-              <p v-else-if="!selectedBasicPoint" class="text-xs text-destructive">
+              <p v-else-if="selectedBasicPoint" class="text-xs text-muted-foreground">
+                {{ t("tools.pointCalculator.meta.basicPoint", { value: selectedBasicPoint.basicPoint }) }}
+              </p>
+              <p v-else-if="!loading" class="text-xs text-destructive">
                 {{ t("tools.pointCalculator.meta.missingBasicPoint") }}
               </p>
+            </div>
+
+            <div class="grid gap-2">
+              <Label for="score-control-target-pt" class="text-sm font-medium">
+                {{ t("tools.pointCalculator.fields.targetPt") }}
+              </Label>
+              <div class="relative w-full items-center">
+                <Input
+                  id="score-control-target-pt"
+                  v-model.number="inputPt"
+                  class="h-11 pl-10 text-base font-semibold tabular-nums"
+                  type="number"
+                  min="1"
+                  inputmode="numeric"
+                  :aria-invalid="targetPointInvalid || undefined"
+                  :placeholder="t('tools.pointCalculator.fields.targetPtPlaceholder')"
+                  @keydown.enter="calcResult"
+                />
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2.5">
+                  <Target class="size-5 text-primary" />
+                </span>
+              </div>
+            </div>
+
+            <!-- Advanced options: sensible defaults, folded away so the default view stays "song → target → calculate". -->
+            <div class="rounded-md border">
+              <button
+                type="button"
+                class="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent/50"
+                :aria-expanded="advancedOpen"
+                @click="advancedOpen = !advancedOpen"
+              >
+                <span class="flex items-center gap-2">
+                  <SlidersHorizontal class="size-4 text-muted-foreground" />
+                  {{ t("tools.pointCalculator.fields.advanced") }}
+                </span>
+                <ChevronDown class="size-4 text-muted-foreground transition-transform" :class="advancedOpen ? 'rotate-180' : ''" />
+              </button>
+              <div v-show="advancedOpen" class="grid gap-4 border-t p-3">
+                <div class="grid gap-4 md:grid-cols-2">
+                  <div class="grid gap-2">
+                    <Label>{{ t("tools.pointCalculator.fields.boostIndex") }}</Label>
+                    <div class="relative w-full items-center">
+                      <Select :model-value="selectedBoost" @update:model-value="updateBoost">
+                        <SelectTrigger class="w-full pl-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem v-for="option in boostOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
+                        <Flame class="size-4 text-muted-foreground" />
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="grid gap-2">
+                    <Label>{{ t("tools.pointCalculator.fields.maxResults") }}</Label>
+                    <div class="relative w-full items-center">
+                      <Input
+                        v-model.number="maxResults"
+                        class="pl-10"
+                        type="number"
+                        min="1"
+                        inputmode="numeric"
+                        :aria-invalid="maxResultsInvalid || undefined"
+                        :placeholder="t('tools.pointCalculator.fields.maxResultsPlaceholder')"
+                      />
+                      <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                        <List class="size-4 text-muted-foreground" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid gap-2">
+                  <div class="space-y-0.5">
+                    <Label>{{ t("tools.pointCalculator.fields.bonusRange") }}</Label>
+                    <p class="text-xs leading-5 text-muted-foreground">
+                      {{ t("tools.pointCalculator.fields.bonusRangeHelp") }}
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <div class="relative w-full items-center">
+                      <Input
+                        v-model.number="customBonusFloor"
+                        class="pl-10"
+                        type="number"
+                        :min="POINT_CALCULATOR_MIN_BONUS_LIMIT"
+                        :max="POINT_CALCULATOR_MAX_BONUS_LIMIT"
+                        inputmode="numeric"
+                        :aria-invalid="customBonusFloorInvalid || undefined"
+                        :placeholder="t('tools.pointCalculator.fields.customBonusFloorPlaceholder')"
+                      />
+                      <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                        <Percent class="size-4 text-muted-foreground" />
+                      </span>
+                    </div>
+                    <span class="shrink-0 text-muted-foreground">-</span>
+                    <div class="relative w-full items-center">
+                      <Input
+                        v-model.number="customBonusCap"
+                        class="pl-10"
+                        type="number"
+                        :min="POINT_CALCULATOR_MIN_BONUS_LIMIT"
+                        :max="POINT_CALCULATOR_MAX_BONUS_LIMIT"
+                        inputmode="numeric"
+                        :aria-invalid="customBonusCapInvalid || undefined"
+                        :placeholder="t('tools.pointCalculator.fields.customBonusCapPlaceholder')"
+                      />
+                      <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                        <Percent class="size-4 text-muted-foreground" />
+                      </span>
+                    </div>
+                  </div>
+                  <p v-if="customBonusFloorInvalid || customBonusCapInvalid" class="text-xs text-destructive">
+                    {{ t("tools.pointCalculator.fields.bonusRangeInvalid") }}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <Button class="w-full" :disabled="!canCalculate" @click="calcResult">
@@ -533,32 +504,33 @@ function normalizeBonusBound(value: unknown, fallback: number) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div v-if="calculatedOnce && results.length > 0" class="space-y-3">
+            <div v-if="calculatedOnce && results.length > 0" class="overflow-hidden rounded-md border">
               <div
-                v-for="row in results"
+                v-for="(row, index) in results"
                 :key="`${row.eventBonus}-${row.boost}-${row.scoreMin}-${row.scoreMax}`"
-                class="grid gap-3 rounded-md border bg-muted/20 p-3 sm:grid-cols-[1fr_auto]"
+                class="flex flex-wrap items-center gap-x-3 gap-y-2 p-3 transition-colors hover:bg-accent/40"
+                :class="index > 0 ? 'border-t' : ''"
               >
-                <div class="min-w-0 space-y-2">
-                  <div class="flex flex-wrap gap-2">
-                    <span class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">
-                      {{ t("tools.pointCalculator.result.deckBonus", { value: row.eventBonus }) }}
-                    </span>
-                    <span class="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                      {{ t("tools.pointCalculator.result.boost", { index: row.boost, rate: row.boostMultiplier }) }}
-                    </span>
-                  </div>
-                  <div class="font-mono text-sm font-semibold text-emerald-600 dark:text-emerald-300">
+                <span class="inline-flex shrink-0 items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">
+                  {{ t("tools.pointCalculator.result.deckBonus", { value: row.eventBonus }) }}
+                </span>
+                <span class="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                  <Flame class="size-3" />
+                  {{ t("tools.pointCalculator.result.boost", { index: row.boost, rate: row.boostMultiplier }) }}
+                </span>
+                <div class="min-w-0 flex-1 basis-40 text-right sm:text-left">
+                  <div class="font-mono text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-300">
                     {{ formatScore(row.scoreMin) }} ~ {{ formatScore(row.scoreMax) }}
                   </div>
-                  <div class="text-xs text-muted-foreground">
+                  <div class="text-[11px] text-muted-foreground">
                     {{ t("tools.pointCalculator.result.scoreRangeLabel") }}
                   </div>
                 </div>
                 <Button
                   type="button"
-                  variant="outline"
-                  class="self-center"
+                  variant="ghost"
+                  size="sm"
+                  class="ml-auto shrink-0"
                   :disabled="row.eventBonus <= 0"
                   @click="goToDeckRecommend(row)"
                 >
@@ -574,7 +546,7 @@ function normalizeBonusBound(value: unknown, fallback: number) {
               <AlertDescription>{{ t("tools.pointCalculator.result.noMatchDescription") }}</AlertDescription>
             </Alert>
 
-            <div v-else class="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+            <div v-else class="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground">
               {{ t("tools.pointCalculator.result.empty") }}
             </div>
           </CardContent>

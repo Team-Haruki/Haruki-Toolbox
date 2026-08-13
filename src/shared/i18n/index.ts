@@ -1,7 +1,6 @@
 import { createI18n } from "vue-i18n"
-import { zhCN } from "@/shared/i18n/messages/zh-CN"
 
-export const SUPPORTED_LOCALES = ["zh-CN", "en-US"] as const
+export const SUPPORTED_LOCALES = ["zh-CN", "zh-TW", "en-US"] as const
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number]
 
 export const DEFAULT_LOCALE: AppLocale = "zh-CN"
@@ -10,22 +9,72 @@ export function isAppLocale(value: unknown): value is AppLocale {
   return typeof value === "string" && SUPPORTED_LOCALES.includes(value as AppLocale)
 }
 
-const messages = {
-  "zh-CN": zhCN,
+/**
+ * Locale messages ship as per-feature bundles: `core` (always loaded before
+ * mount) plus lazily merged route bundles, so a typical visit downloads only
+ * the strings its pages render. The router resolves needed bundles per
+ * navigation (see ./bundles); dialogs reachable from anywhere ensure their
+ * bundle on open.
+ */
+export const I18N_BUNDLES = [
+  "core",
+  "deck",
+  "rank",
+  "tools",
+  "user-settings",
+  "admin",
+  "tickets",
+  "public-pages",
+] as const
+export type I18nBundle = (typeof I18N_BUNDLES)[number]
+
+type BundleLoader = () => Promise<{ default: Record<string, unknown> }>
+
+const bundleLoaders: Record<AppLocale, Record<I18nBundle, BundleLoader>> = {
+  "zh-CN": {
+    "core": () => import("@/shared/i18n/messages/zh-CN/zh-CN-core"),
+    "deck": () => import("@/shared/i18n/messages/zh-CN/zh-CN-deck"),
+    "rank": () => import("@/shared/i18n/messages/zh-CN/zh-CN-rank"),
+    "tools": () => import("@/shared/i18n/messages/zh-CN/zh-CN-tools"),
+    "user-settings": () => import("@/shared/i18n/messages/zh-CN/zh-CN-user-settings"),
+    "admin": () => import("@/shared/i18n/messages/zh-CN/zh-CN-admin"),
+    "tickets": () => import("@/shared/i18n/messages/zh-CN/zh-CN-tickets"),
+    "public-pages": () => import("@/shared/i18n/messages/zh-CN/zh-CN-public-pages"),
+  },
+  "zh-TW": {
+    "core": () => import("@/shared/i18n/messages/zh-TW/zh-TW-core"),
+    "deck": () => import("@/shared/i18n/messages/zh-TW/zh-TW-deck"),
+    "rank": () => import("@/shared/i18n/messages/zh-TW/zh-TW-rank"),
+    "tools": () => import("@/shared/i18n/messages/zh-TW/zh-TW-tools"),
+    "user-settings": () => import("@/shared/i18n/messages/zh-TW/zh-TW-user-settings"),
+    "admin": () => import("@/shared/i18n/messages/zh-TW/zh-TW-admin"),
+    "tickets": () => import("@/shared/i18n/messages/zh-TW/zh-TW-tickets"),
+    "public-pages": () => import("@/shared/i18n/messages/zh-TW/zh-TW-public-pages"),
+  },
+  "en-US": {
+    "core": () => import("@/shared/i18n/messages/en-US/en-US-core"),
+    "deck": () => import("@/shared/i18n/messages/en-US/en-US-deck"),
+    "rank": () => import("@/shared/i18n/messages/en-US/en-US-rank"),
+    "tools": () => import("@/shared/i18n/messages/en-US/en-US-tools"),
+    "user-settings": () => import("@/shared/i18n/messages/en-US/en-US-user-settings"),
+    "admin": () => import("@/shared/i18n/messages/en-US/en-US-admin"),
+    "tickets": () => import("@/shared/i18n/messages/en-US/en-US-tickets"),
+    "public-pages": () => import("@/shared/i18n/messages/en-US/en-US-public-pages"),
+  },
 }
 
-const loadedLocales = new Set<AppLocale>(["zh-CN"])
-
-const localeLoaders: Record<AppLocale, () => Promise<Record<string, unknown>>> = {
-  "zh-CN": async () => zhCN,
-  "en-US": async () => (await import("@/shared/i18n/messages/en-US")).enUS,
+const loadedBundles: Record<AppLocale, Set<I18nBundle>> = {
+  "zh-CN": new Set(),
+  "zh-TW": new Set(),
+  "en-US": new Set(),
 }
+const pendingBundles = new Map<string, Promise<void>>()
 
 export const i18n = createI18n({
   legacy: false,
   locale: DEFAULT_LOCALE,
   fallbackLocale: DEFAULT_LOCALE,
-  messages,
+  messages: {},
   globalInjection: true,
 })
 
@@ -54,19 +103,58 @@ function writeGlobalLocale(locale: AppLocale) {
   syncDocumentLanguage(locale)
 }
 
-export async function loadI18nLocale(locale: AppLocale) {
-  if (loadedLocales.has(locale)) {
+async function loadBundle(locale: AppLocale, bundle: I18nBundle): Promise<void> {
+  if (loadedBundles[locale].has(bundle)) {
     return
   }
 
-  const message = await localeLoaders[locale]()
-  i18n.global.setLocaleMessage(locale, message)
-  loadedLocales.add(locale)
+  const key = `${locale}:${bundle}`
+  const pending = pendingBundles.get(key)
+  if (pending) {
+    return pending
+  }
+
+  const promise = bundleLoaders[locale][bundle]()
+    .then((mod) => {
+      i18n.global.mergeLocaleMessage(locale, mod.default)
+      loadedBundles[locale].add(bundle)
+    })
+    .finally(() => {
+      pendingBundles.delete(key)
+    })
+  pendingBundles.set(key, promise)
+  return promise
+}
+
+/**
+ * Loads the given bundles for the active locale (and, in the background, for
+ * the fallback locale so missing-key lookups can resolve).
+ */
+export async function ensureI18nBundles(bundles: readonly I18nBundle[]): Promise<void> {
+  const locale = readGlobalLocale()
+  await Promise.all(bundles.map((bundle) => loadBundle(locale, bundle)))
+
+  if (locale !== DEFAULT_LOCALE) {
+    void Promise.all(bundles.map((bundle) => loadBundle(DEFAULT_LOCALE, bundle)))
+  }
 }
 
 export async function setI18nLocale(locale: AppLocale) {
-  await loadI18nLocale(locale)
+  // Carry over every bundle any locale has loaded so the switched-to locale
+  // renders all currently visible strings.
+  const needed = new Set<I18nBundle>(["core"])
+  for (const supported of SUPPORTED_LOCALES) {
+    for (const bundle of loadedBundles[supported]) {
+      needed.add(bundle)
+    }
+  }
+
+  await Promise.all([...needed].map((bundle) => loadBundle(locale, bundle)))
   writeGlobalLocale(locale)
+
+  if (locale !== DEFAULT_LOCALE) {
+    void Promise.all([...needed].map((bundle) => loadBundle(DEFAULT_LOCALE, bundle)))
+  }
 }
 
 export function getI18nLocale(): AppLocale {

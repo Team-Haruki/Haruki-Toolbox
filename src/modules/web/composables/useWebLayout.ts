@@ -2,7 +2,7 @@ import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "vue"
 import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
-import { WEB_NAV_ITEMS, type NavItem } from "@/config/navigation"
+import { WEB_NAV_SECTIONS, type NavItem } from "@/config/navigation"
 import { getUserTickets } from "@/modules/tickets/api/user"
 
 const APP_TITLE_KEY = "app.name"
@@ -67,12 +67,15 @@ export function useWebLayout() {
     () => route.path,
     () => {
       const nextState = { ...navGroupOpenState.value }
-      WEB_NAV_ITEMS.forEach((item) => {
-        if (isRouteInNavGroup(item)) {
-          nextState[item.titleKey] = true
-        } else if (nextState[item.titleKey] === undefined) {
-          nextState[item.titleKey] = false
-        }
+      WEB_NAV_SECTIONS.forEach((section) => {
+        section.items.forEach((item) => {
+          if (!item.items) return
+          if (isRouteInNavGroup(item)) {
+            nextState[item.titleKey] = true
+          } else if (nextState[item.titleKey] === undefined) {
+            nextState[item.titleKey] = false
+          }
+        })
       })
       navGroupOpenState.value = nextState
     },
@@ -125,8 +128,10 @@ export function useWebLayout() {
     void loadPendingUserTicketCount()
   }
 
+  // Login-state changes trigger a load; steady-state freshness comes from the
+  // 60s visible-only interval (navigations no longer fire extra requests).
   watch(
-    [() => route.fullPath, () => userStore.isLoggedIn, () => userStore.userId],
+    [() => userStore.isLoggedIn, () => userStore.userId],
     () => {
       void loadPendingUserTicketCount()
     }

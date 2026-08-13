@@ -21,6 +21,7 @@ const SEKAI_MASTER_CDN_BASE_URL = "https://sekai-master-cdn.haruki.seiunx.com"
 export const SEKAI_ASSET_ENDPOINT_ROOTS: Record<SekaiAssetEndpointPreference, string> = {
   china: "https://sekai-assets.haruki.seiunx.com",
   global: "https://sekai-assets-bdf29c81.seiunx.net",
+  china_cdn: "https://toolbox-sekai-assets.haruki.seiunx.com",
 }
 const TOOLBOX_STATIC_IMAGE_BASE_URL = "https://images.haruki.seiunx.com/sekai-toolbox"
 const CDN_VERSION_REGIONS: readonly SekaiRegion[] = ["tw", "kr", "cn"]
@@ -204,12 +205,40 @@ export function resolveRarityTrainingIconUrl(rarity: string): string {
   return resolveRareStarImageUrl(false)
 }
 
+/**
+ * Browser runtime root of the Haruki 3D exporter output for one region,
+ * served from the public asset endpoints under `/pjsk-3d-output/`.
+ */
+export function resolvePjsk3dRuntimeBaseUrl(
+  region: SekaiRegion,
+  preference: SekaiAssetEndpointPreference = "china",
+): string {
+  return `${SEKAI_ASSET_ENDPOINT_ROOTS[preference]}/pjsk-3d-output/${region}/`
+}
+
 export function resolveCardFrameImageUrl(rarity: string): string {
   return resolveToolboxStaticImageUrl(`static_images/card/frame_${rarity}.png`)
 }
 
 export function resolveCardAttrIconUrl(attribute: string): string {
   return resolveToolboxStaticImageUrl(`static_images/card/attr_${attribute}.png`)
+}
+
+/** Round badge variant of the attribute icon (`attr_icon_{attr}.png`). */
+export function resolveCardAttrRoundIconUrl(attribute: string): string {
+  return resolveToolboxStaticImageUrl(`static_images/card/attr_icon_${attribute}.png`)
+}
+
+export function resolveCostumeThumbnailUrl(
+  region: SekaiRegion,
+  assetbundleName: string,
+  preference: SekaiAssetEndpointPreference = "china",
+): string {
+  return resolveSekaiGameAssetUrl(
+    region,
+    `startapp/thumbnail/costume/${assetbundleName.trim()}.png`,
+    preference,
+  )
 }
 
 export function resolveRareStarImageUrl(afterTraining: boolean): string {
@@ -228,6 +257,11 @@ export function resolveTrainRankImageUrl(rank: number): string {
 
 export function resolveMySekaiCanvasIconUrl(): string {
   return resolveToolboxStaticImageUrl("static_images/mysekai/icon/icon_canvas.png")
+}
+
+/** Unit emblem from the toolbox static bucket (`static_images/icon_{unit}.png`). */
+export function resolveUnitLogoUrl(unit: string): string {
+  return resolveToolboxStaticImageUrl(`static_images/icon_${unit}.png`)
 }
 
 export function resolveCharacterIconUrl(characterId: number): string {

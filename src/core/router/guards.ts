@@ -1,7 +1,8 @@
 import { toast } from "vue-sonner"
 import type { Router } from "vue-router"
 import { useUserStore } from "@/shared/stores/user"
-import { translate } from "@/shared/i18n"
+import { ensureI18nBundles, translate } from "@/shared/i18n"
+import { resolveI18nBundlesForPath } from "@/shared/i18n/bundles"
 import { resolveSafeRedirectTarget } from "@/core/router/navigation"
 
 export function setupRouteGuards(router: Router) {
@@ -49,6 +50,15 @@ export function setupRouteGuards(router: Router) {
                 description: translate("core.auth.requireAdminDescription"),
             })
             return "/"
+        }
+    })
+
+    // Message bundles resolve before the page renders so no raw i18n keys
+    // ever flash; bundle loads are memoized, so repeat navigations are free.
+    router.beforeResolve(async (to) => {
+        const bundles = resolveI18nBundlesForPath(to.path)
+        if (bundles.length > 0) {
+            await ensureI18nBundles(bundles)
         }
     })
 }

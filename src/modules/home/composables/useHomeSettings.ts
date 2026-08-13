@@ -57,6 +57,8 @@ export function useHomeSettings() {
   const selectedLocale = ref<AppLocale>(settingsStore.locale)
   const selectedReducedVisualEffects = ref(settingsStore.reducedVisualEffects)
   const selectedHideGameUserId = ref(settingsStore.hideGameUserId)
+  const selectedShowUnreleasedContent = ref(settingsStore.showUnreleasedContent)
+  const selectedBlurUnreleasedContent = ref(settingsStore.blurUnreleasedContent)
 
   const endpointOptions = computed<ReadonlyArray<EndpointOption>>(() => [
     settingsStore.hasDirectEndpoint
@@ -73,6 +75,7 @@ export function useHomeSettings() {
   const assetEndpointOptions = computed<ReadonlyArray<AssetEndpointOption>>(() => [
     createAssetEndpointOption("china", t("homeSettings.assetEndpoint.china"), Network),
     createAssetEndpointOption("global", t("homeSettings.assetEndpoint.global"), Globe2),
+    createAssetEndpointOption("china_cdn", t("homeSettings.assetEndpoint.chinaCdn"), CloudLightning),
   ])
 
   const themeOptions = computed<ReadonlyArray<ThemeOption>>(() => [
@@ -81,10 +84,16 @@ export function useHomeSettings() {
     { value: "system", label: t("homeSettings.theme.system"), icon: Monitor },
   ])
 
+  const LOCALE_LABEL_KEYS: Record<AppLocale, string> = {
+    "zh-CN": "homeSettings.locale.zhCN",
+    "zh-TW": "homeSettings.locale.zhTW",
+    "en-US": "homeSettings.locale.enUS",
+  }
+
   const localeOptions = computed<ReadonlyArray<LocaleOption>>(() =>
     SUPPORTED_LOCALES.map((locale) => ({
       value: locale,
-      label: locale === "zh-CN" ? t("homeSettings.locale.zhCN") : t("homeSettings.locale.enUS"),
+      label: t(LOCALE_LABEL_KEYS[locale]),
     }))
   )
 
@@ -124,6 +133,8 @@ export function useHomeSettings() {
     settingsStore.setLocale(selectedLocale.value)
     settingsStore.setReducedVisualEffects(selectedReducedVisualEffects.value)
     settingsStore.setHideGameUserId(selectedHideGameUserId.value)
+    settingsStore.setShowUnreleasedContent(selectedShowUnreleasedContent.value)
+    settingsStore.setBlurUnreleasedContent(selectedBlurUnreleasedContent.value)
     await setI18nLocale(selectedLocale.value)
     toast.success(translate("homeSettings.toast.saved"))
   }
@@ -135,6 +146,8 @@ export function useHomeSettings() {
     settingsStore.setLocale(DEFAULT_LOCALE)
     settingsStore.setReducedVisualEffects(DEFAULT_REDUCED_VISUAL_EFFECTS)
     settingsStore.setHideGameUserId(DEFAULT_HIDE_GAME_USER_ID)
+    settingsStore.setShowUnreleasedContent(false)
+    settingsStore.setBlurUnreleasedContent(true)
     await setI18nLocale(DEFAULT_LOCALE)
     selectedEndpoint.value = settingsStore.resolvedPreferredEndpoint
     selectedAssetEndpoint.value = DEFAULT_ASSET_ENDPOINT
@@ -142,6 +155,8 @@ export function useHomeSettings() {
     selectedLocale.value = settingsStore.locale
     selectedReducedVisualEffects.value = settingsStore.reducedVisualEffects
     selectedHideGameUserId.value = settingsStore.hideGameUserId
+    selectedShowUnreleasedContent.value = settingsStore.showUnreleasedContent
+    selectedBlurUnreleasedContent.value = settingsStore.blurUnreleasedContent
     void settingsStore.initAssetEndpointPreference()
     toast.info(translate("homeSettings.toast.reset"))
   }
@@ -260,6 +275,8 @@ export function useHomeSettings() {
     selectedLocale,
     selectedReducedVisualEffects,
     selectedHideGameUserId,
+    selectedShowUnreleasedContent,
+    selectedBlurUnreleasedContent,
     endpointOptions,
     assetEndpointOptions,
     endpointSelectionDisabled,

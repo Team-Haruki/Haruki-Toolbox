@@ -17,21 +17,18 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  LucideBan,
-  LucideCheckCircle2,
   LucideInfo,
   LucideKeyRound,
   LucideLoader2,
-  LucideRefreshCw,
   LucideSave,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import AdminWebhookStatusBadge from "./AdminWebhookStatusBadge.vue"
 import type { AdminWebhookSettings } from "@/types/admin"
 
 const props = defineProps<{
   canMutate: boolean
   settingsLoading: boolean
-  endpointsLoading: boolean
   settingsSaving: boolean
   settings: AdminWebhookSettings
   settingsEnabled: boolean
@@ -39,36 +36,27 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: "refresh"): void
   (event: "save-settings"): void
   (event: "update:settingsEnabled", value: boolean): void
   (event: "update:jwtSecretInput", value: string): void
 }>()
 
 const { t } = useI18n()
-
-function endpointStatusClass(enabled: boolean) {
-  return enabled
-    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
-}
 </script>
 
 <template>
   <Card>
-    <CardHeader class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <div class="space-y-1">
-        <CardTitle class="text-lg">{{ t("adminWebhooks.settings.title") }}</CardTitle>
-        <CardDescription>{{ t("adminWebhooks.settings.description") }}</CardDescription>
-      </div>
-      <Button variant="outline" :disabled="settingsLoading || endpointsLoading" @click="emit('refresh')">
-        <LucideRefreshCw class="w-4 h-4 mr-2" />
-        {{ t("adminWebhooks.actions.refresh") }}
-      </Button>
+    <CardHeader>
+      <CardTitle class="text-lg">{{ t("adminWebhooks.settings.title") }}</CardTitle>
+      <CardDescription>{{ t("adminWebhooks.settings.description") }}</CardDescription>
     </CardHeader>
     <CardContent class="flex flex-col gap-4">
       <template v-if="settingsLoading">
-        <Skeleton class="h-28 w-full" />
+        <div class="grid gap-4 md:grid-cols-2">
+          <Skeleton class="h-24 w-full rounded-lg" />
+          <Skeleton class="h-24 w-full rounded-lg" />
+        </div>
+        <Skeleton class="h-36 w-full rounded-lg" />
       </template>
       <template v-else>
         <Alert v-if="!props.canMutate" variant="default">
@@ -78,38 +66,26 @@ function endpointStatusClass(enabled: boolean) {
         </Alert>
 
         <div class="grid gap-4 md:grid-cols-2">
-          <div class="rounded-xl border bg-muted/20 p-4 space-y-2">
+          <div class="rounded-lg border bg-muted/20 p-4 space-y-2">
             <div class="flex items-center justify-between gap-2">
               <span class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.globalStatus") }}</span>
-              <span
-                :class="[
-                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0 whitespace-nowrap',
-                  endpointStatusClass(settings.enabled),
-                ]"
-              >
-                <LucideCheckCircle2 v-if="settings.enabled" class="w-3.5 h-3.5 shrink-0" />
-                <LucideBan v-else class="w-3.5 h-3.5 shrink-0" />
-                {{ settings.enabled ? t("adminWebhooks.status.enabled") : t("adminWebhooks.status.disabled") }}
-              </span>
+              <AdminWebhookStatusBadge
+                class="shrink-0"
+                :active="settings.enabled"
+                :label="settings.enabled ? t('adminWebhooks.status.enabled') : t('adminWebhooks.status.disabled')"
+              />
             </div>
             <p class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.globalStatusHint") }}</p>
           </div>
 
-          <div class="rounded-xl border bg-muted/20 p-4 space-y-2">
+          <div class="rounded-lg border bg-muted/20 p-4 space-y-2">
             <div class="flex items-center justify-between gap-2">
               <span class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretStatus") }}</span>
-              <span
-                :class="[
-                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0 whitespace-nowrap',
-                  props.settings.jwtSecretConfigured
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400',
-                ]"
-              >
-                <LucideCheckCircle2 v-if="props.settings.jwtSecretConfigured" class="w-3.5 h-3.5 shrink-0" />
-                <LucideBan v-else class="w-3.5 h-3.5 shrink-0" />
-                {{ props.settings.jwtSecretConfigured ? t("adminWebhooks.status.configured") : t("adminWebhooks.status.notConfigured") }}
-              </span>
+              <AdminWebhookStatusBadge
+                class="shrink-0"
+                :active="props.settings.jwtSecretConfigured"
+                :label="props.settings.jwtSecretConfigured ? t('adminWebhooks.status.configured') : t('adminWebhooks.status.notConfigured')"
+              />
             </div>
             <p class="text-sm text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretStatusHint") }}</p>
           </div>
@@ -121,7 +97,7 @@ function endpointStatusClass(enabled: boolean) {
           <AlertDescription>{{ t("adminWebhooks.settings.secretAlertDescription") }}</AlertDescription>
         </Alert>
 
-        <div class="overflow-hidden rounded-xl border divide-y">
+        <div class="overflow-hidden rounded-lg border divide-y">
           <div class="flex items-center justify-between gap-4 p-4">
             <Label for="admin-webhooks-enabled" class="text-sm font-medium cursor-pointer">
               {{ t("adminWebhooks.settings.enableSwitchLabel") }}

@@ -42,6 +42,7 @@ export interface GameAccountBinding {
     server: SekaiRegion
     userId: number
     verified: boolean
+    isDefault?: boolean
     suite?: SuiteDataPrivacySettings | null
     mysekai?: MysekaiDataPrivacySettings | null
 }

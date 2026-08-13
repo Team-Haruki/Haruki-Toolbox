@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  LucideCable,
   LucidePencil,
   LucidePlus,
   LucideRefreshCw,
@@ -103,6 +104,17 @@ function formatDate(value: string | undefined) {
       <div v-if="props.loading" class="space-y-2">
         <Skeleton v-for="i in 3" :key="i" class="h-12 w-full" />
       </div>
+      <div
+        v-else-if="props.webhooks.length === 0"
+        class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center"
+      >
+        <LucideCable class="h-8 w-8 text-muted-foreground/60" />
+        <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.webhooks.table.empty") }}</p>
+        <Button size="sm" @click="emit('create')">
+          <LucidePlus class="h-4 w-4" />
+          {{ t("adminOAuthClients.webhooks.actions.create") }}
+        </Button>
+      </div>
       <div v-else class="rounded-md border">
         <Table>
           <TableHeader>
@@ -139,29 +151,33 @@ function formatDate(value: string | undefined) {
                   {{ webhook.enabled ? t("adminOAuthClients.status.enabled") : t("adminOAuthClients.status.disabled") }}
                 </span>
               </TableCell>
-              <TableCell class="hidden md:table-cell text-sm text-muted-foreground">
+              <TableCell class="hidden md:table-cell text-sm text-muted-foreground tabular-nums">
                 {{ formatDate(webhook.createdAt) }}
               </TableCell>
               <TableCell>
                 <div class="flex gap-1">
-                  <Button variant="ghost" size="icon" :disabled="props.saving" @click="emit('edit', webhook)">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    :disabled="props.saving"
+                    :title="t('adminOAuthClients.table.menu.edit')"
+                    :aria-label="t('adminOAuthClients.table.menu.edit')"
+                    @click="emit('edit', webhook)"
+                  >
                     <LucidePencil class="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    class="text-destructive"
+                    class="text-destructive hover:text-destructive"
                     :disabled="props.deleting"
+                    :title="t('adminOAuthClients.webhooks.deleteDialog.confirm')"
+                    :aria-label="t('adminOAuthClients.webhooks.deleteDialog.confirm')"
                     @click="emit('delete', webhook)"
                   >
                     <LucideTrash2 class="h-4 w-4" />
                   </Button>
                 </div>
-              </TableCell>
-            </TableRow>
-            <TableRow v-if="props.webhooks.length === 0">
-              <TableCell :colspan="5" class="py-8 text-center text-muted-foreground">
-                {{ t("adminOAuthClients.webhooks.table.empty") }}
               </TableCell>
             </TableRow>
           </TableBody>

@@ -1,7 +1,6 @@
 import { computed, ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
-import { useRouter } from "vue-router"
 import { useUserStore } from "@/shared/stores/user"
 import { unwrapUpdatedData } from "@/core/http/call-api"
 import type { GameAccountBinding, SekaiRegion } from "@/types/store"
@@ -29,7 +28,6 @@ function toEditableAccount(account?: GameAccountBinding | null): GameAccountBind
 
 export function useGameAccountBindingManagement() {
   const { t } = useI18n()
-  const router = useRouter()
   const userStore = useUserStore()
   const allowCNMysekai = computed(() => userStore.allowCNMysekai === true)
   const regionLabels = computed<Record<SekaiRegion, string>>(() => ({
@@ -60,26 +58,13 @@ export function useGameAccountBindingManagement() {
   const isSaving = ref(false)
   const isDeleting = ref(false)
   const isVerifying = ref(false)
+  const settingDefaultKey = ref<string | null>(null)
   const editIdentitySnapshot = ref<{ server: SekaiRegion; userId: string } | null>(null)
   const verifiedBindingSnapshot = ref<{ server: SekaiRegion; userId: string } | null>(null)
 
   const data = computed<GameAccountBinding[]>(() =>
     Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
   )
-
-  function redirectWhenSocialAccountNotVerified() {
-    if (userStore.settingsSyncState !== "synced") {
-      return
-    }
-
-    const info = userStore.socialPlatformInfo
-    if (!info?.verified) {
-      toast.warning(t("userSettings.gameBinding.toast.socialBindingRequiredTitle"), {
-        description: t("userSettings.gameBinding.toast.socialBindingRequiredDescription"),
-      })
-      void router.push({ name: "user.settings" })
-    }
-  }
 
   function requireCurrentUserId(errorTitle: string) {
     return resolveRequiredUserId(userStore.userId, errorTitle)
@@ -248,6 +233,33 @@ export function useGameAccountBindingManagement() {
     }
   }
 
+  async function setDefaultBinding(account: GameAccountBinding) {
+    if (settingDefaultKey.value) return
+    const currentUserId = requireCurrentUserId(t("userSettings.gameBinding.toast.setDefaultFailedTitle"))
+    if (!currentUserId) return
+
+    settingDefaultKey.value = `${account.server}:${account.userId}`
+    try {
+      const resp = await updateGameAccount(account.server, String(account.userId), currentUserId, {
+        suite: normalizeSuitePermissions(account.suite),
+        mysekai: normalizeMysekaiPermissions(account.mysekai),
+        isDefault: true,
+      }, { skipErrorToast: true })
+
+      const updatedData = unwrapUpdatedData(resp, t("userSettings.gameBinding.title"))
+      userStore.setUser({ gameAccountBindings: updatedData.gameAccountBindings })
+      toast.success(t("userSettings.gameBinding.toast.setDefaultSuccessTitle"), {
+        description: t("userSettings.gameBinding.toast.setDefaultSuccessDescription"),
+      })
+    } catch (error: unknown) {
+      toast.error(t("userSettings.gameBinding.toast.setDefaultFailedTitle"), {
+        description: extractErrorMessage(error, t("userSettings.gameBinding.toast.setDefaultFailedTitle")),
+      })
+    } finally {
+      settingDefaultKey.value = null
+    }
+  }
+
   async function handleVerify() {
     if (isVerifying.value) return
     const uidStr = userIdInput.value.trim()
@@ -319,14 +331,6 @@ export function useGameAccountBindingManagement() {
   }
 
   watch(
-    [() => userStore.settingsSyncState, () => userStore.socialPlatformInfo?.verified],
-    () => {
-      redirectWhenSocialAccountNotVerified()
-    },
-    { immediate: true }
-  )
-
-  watch(
     [isCreating, () => editTarget.value?.server, userIdInput],
     ([creating, server, currentUserId]) => {
       if (!creating || !verifiedBindingSnapshot.value || !server) {
@@ -354,6 +358,8 @@ export function useGameAccountBindingManagement() {
     isSaving,
     isDeleting,
     isVerifying,
+    settingDefaultKey,
+    setDefaultBinding,
     allowCNMysekai,
     regionLabels,
     regionOptions,

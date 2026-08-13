@@ -5,6 +5,8 @@ import {logout} from "@/modules/auth/api/logout";
 import {useUserStore} from "@/shared/stores/user";
 
 import {
+  Bot,
+  KeyRound,
   LogIn,
   LogOut,
   Settings,
@@ -116,6 +118,18 @@ const maskedEmail = computed(() => {
             <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
               <Gamepad2 class="mr-2 h-4 w-4"/>
               {{ t("sidebarUser.gameAccountManagement") }}
+            </DropdownMenuItem>
+          </RouterLink>
+          <RouterLink v-if="userStore.isLoggedIn" to="/user/harukibot-authorization" custom v-slot="{ navigate, href }">
+            <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
+              <Bot class="mr-2 h-4 w-4"/>
+              {{ t("sidebarUser.harukiBotAuthorization") }}
+            </DropdownMenuItem>
+          </RouterLink>
+          <RouterLink v-if="userStore.isLoggedIn" to="/user/oauth-authorizations" custom v-slot="{ navigate, href }">
+            <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
+              <KeyRound class="mr-2 h-4 w-4"/>
+              {{ t("sidebarUser.oauthAuthorizations") }}
             </DropdownMenuItem>
           </RouterLink>
           <DropdownMenuSeparator v-if="userStore.isLoggedIn"/>

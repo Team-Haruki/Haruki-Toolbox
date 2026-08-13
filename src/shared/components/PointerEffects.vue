@@ -5,7 +5,6 @@ const pointerMediaQuery = "(hover: hover) and (pointer: fine)"
 const reducedMotionQuery = "(prefers-reduced-motion: reduce)"
 
 const reactiveTargetSelector = [
-  '[data-glass-surface="topbar"]',
   '[data-sidebar="menu-button"]',
   '[data-slot="button"]',
   '[data-slot="sidebar-trigger"]',
@@ -15,8 +14,6 @@ const reactiveTargetSelector = [
   '[data-slot="dropdown-menu-checkbox-item"]',
   '[data-slot="dropdown-menu-radio-item"]',
   '[data-slot="dropdown-menu-sub-trigger"]',
-  '[data-slot="navigation-menu-trigger"]',
-  '[data-slot="navigation-menu-link"]',
 ].join(",")
 
 const ignoredTargetSelector = [
@@ -31,6 +28,7 @@ let pointerMedia: MediaQueryList | null = null
 let reducedMotionMedia: MediaQueryList | null = null
 let classObserver: MutationObserver | null = null
 let activeTarget: HTMLElement | null = null
+let activeTargetRect: DOMRect | null = null
 let pendingPointerEvent: PointerEvent | null = null
 let animationFrame = 0
 let enabled = false
@@ -42,6 +40,7 @@ function clearActiveTarget() {
   activeTarget.style.removeProperty("--cursor-local-x")
   activeTarget.style.removeProperty("--cursor-local-y")
   activeTarget = null
+  activeTargetRect = null
 }
 
 function setEnabled(nextEnabled: boolean) {
@@ -89,7 +88,12 @@ function updatePointerTarget(event: PointerEvent) {
 
   if (!target) return
 
-  const rect = target.getBoundingClientRect()
+  // One layout read per hovered target, not per frame; scrolling clears the
+  // target (and its cached rect) via the scroll listener below.
+  if (activeTarget !== target || !activeTargetRect) {
+    activeTargetRect = target.getBoundingClientRect()
+  }
+  const rect = activeTargetRect
   target.style.setProperty("--cursor-local-x", `${event.clientX - rect.left}px`)
   target.style.setProperty("--cursor-local-y", `${event.clientY - rect.top}px`)
   target.setAttribute("data-cursor-active", "true")
@@ -143,6 +147,7 @@ onMounted(() => {
   document.addEventListener("pointermove", handlePointerMove, { passive: true })
   document.addEventListener("pointerleave", handlePointerLeave)
   window.addEventListener("blur", handlePointerLeave)
+  window.addEventListener("scroll", handlePointerLeave, { passive: true, capture: true })
   syncEnabledState()
 })
 
@@ -153,6 +158,7 @@ onBeforeUnmount(() => {
   document.removeEventListener("pointermove", handlePointerMove)
   document.removeEventListener("pointerleave", handlePointerLeave)
   window.removeEventListener("blur", handlePointerLeave)
+  window.removeEventListener("scroll", handlePointerLeave, { capture: true })
 
   if (animationFrame) {
     window.cancelAnimationFrame(animationFrame)

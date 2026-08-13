@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n"
 import type { SekaiRegion, UploadDataType } from "@/types"
 import { formatGameAccountLabel } from "@/lib/game-account-display"
 import { isSekaiRegion } from "@/lib/sekai-region"
+import { isVerifiedQQBinding } from "@/lib/social-platform"
 import { useSettingsStore } from "@/shared/stores/settings"
 
 export interface BoundAccount {
@@ -10,12 +11,20 @@ export interface BoundAccount {
   server: SekaiRegion
   uid: string
   label: string
+  verified?: boolean
+  isDefault?: boolean
 }
 
 type UploadAccountStore = {
   isLoggedIn: boolean
   allowCNMysekai: boolean | null
-  gameAccountBindings?: Array<{ server: SekaiRegion; userId: string | number }> | null
+  socialPlatformInfo?: { platform: string; verified: boolean } | null
+  gameAccountBindings?: Array<{
+    server: SekaiRegion
+    userId: string | number
+    verified?: boolean
+    isDefault?: boolean
+  }> | null
 }
 
 export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: Ref<UploadDataType>) {
@@ -49,6 +58,8 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
         key: `${server}:${uid}`,
         server,
         uid,
+        verified: account.verified === true,
+        isDefault: account.isDefault === true,
         label: formatGameAccountLabel({
           regionLabel: regionLabel(server),
           uid,
@@ -74,11 +85,18 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
     return null
   })
 
+  // MySekai upload features require a verified QQ on the HarukiBot social
+  // binding; without it every mysekai option on the upload page is hidden.
+  const hasVerifiedQQ = computed(() => isVerifiedQQBinding(userStore.socialPlatformInfo))
+
   const isCNMySekaiForbidden = computed(() => {
     return selectedAccount.value?.server === "cn" && userStore.allowCNMysekai !== true && dataType.value === "mysekai"
   })
 
   const canSelectMySekaiDataType = computed(() => {
+    if (!hasVerifiedQQ.value) {
+      return false
+    }
     return selectedAccount.value?.server !== "cn" || userStore.allowCNMysekai === true
   })
 
@@ -102,7 +120,7 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
 
       const currentKey = selectedAccountKey.value
       if (!currentKey || !accounts.some((item) => item.key === currentKey)) {
-        selectedAccountKey.value = accounts[0].key
+        selectedAccountKey.value = (accounts.find((item) => item.isDefault) ?? accounts[0]).key
       }
     },
     { immediate: true }
@@ -113,6 +131,7 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
     boundAccounts,
     selectedAccount,
     disabledReason,
+    hasVerifiedQQ,
     isCNMySekaiForbidden,
     canSelectMySekaiDataType,
   }

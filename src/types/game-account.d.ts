@@ -20,6 +20,7 @@ export type GameAccountGrantDataType = "suite" | "mysekai"
 export interface CreateGameAccountBindingPayload {
     suite?: SuiteDataPrivacySettings | null
     mysekai?: MysekaiDataPrivacySettings | null
+    isDefault?: boolean
 }
 
 export interface GameAccountBinding extends StoreGameAccountBinding {

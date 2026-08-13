@@ -72,15 +72,23 @@ function resolveClientStatus(client: OAuthClient) {
       <Skeleton v-for="i in 3" :key="i" class="h-12 w-full" />
     </div>
   </template>
+  <template v-else-if="props.clients.length === 0">
+    <div class="px-6">
+      <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center">
+        <LucideKey class="h-8 w-8 text-muted-foreground/60" />
+        <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.table.empty") }}</p>
+      </div>
+    </div>
+  </template>
   <template v-else>
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>{{ t("adminOAuthClients.table.clientId") }}</TableHead>
           <TableHead>{{ t("adminOAuthClients.table.name") }}</TableHead>
-          <TableHead class="hidden sm:table-cell">{{ t("adminOAuthClients.table.redirectUris") }}</TableHead>
+          <TableHead class="hidden md:table-cell">{{ t("adminOAuthClients.table.redirectUris") }}</TableHead>
           <TableHead>{{ t("adminOAuthClients.table.status") }}</TableHead>
-          <TableHead class="hidden md:table-cell">{{ t("adminOAuthClients.table.createdAt") }}</TableHead>
+          <TableHead class="hidden lg:table-cell">{{ t("adminOAuthClients.table.createdAt") }}</TableHead>
           <TableHead>{{ t("adminOAuthClients.table.actions") }}</TableHead>
         </TableRow>
       </TableHeader>
@@ -100,7 +108,7 @@ function resolveClientStatus(client: OAuthClient) {
           <TableCell class="text-sm font-medium">
             {{ client.name || t("adminOAuthClients.common.fallback") }}
           </TableCell>
-          <TableCell class="hidden sm:table-cell text-muted-foreground text-sm max-w-[200px]">
+          <TableCell class="hidden md:table-cell text-muted-foreground text-sm max-w-[200px]">
             <div v-if="(client.redirectUris?.length ?? 0) > 0" class="flex flex-col gap-0.5">
               <code v-for="(uri, i) in client.redirectUris" :key="i" class="text-xs truncate block">{{ uri }}</code>
             </div>
@@ -122,14 +130,18 @@ function resolveClientStatus(client: OAuthClient) {
               {{ resolveClientStatus(client) }}
             </span>
           </TableCell>
-          <TableCell class="hidden md:table-cell text-muted-foreground text-sm">
+          <TableCell class="hidden lg:table-cell text-muted-foreground text-sm tabular-nums">
             {{ formatCreatedDate(client.createdAt) }}
           </TableCell>
           <TableCell>
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
-                <Button variant="ghost" class="h-8 w-8 p-0">
-                  <span class="sr-only">{{ t("adminOAuthClients.table.openMenu") }}</span>
+                <Button
+                  variant="ghost"
+                  class="h-8 w-8 p-0"
+                  :title="t('adminOAuthClients.table.openMenu')"
+                  :aria-label="t('adminOAuthClients.table.openMenu')"
+                >
                   <LucideMoreHorizontal class="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -189,11 +201,6 @@ function resolveClientStatus(client: OAuthClient) {
                 </template>
               </DropdownMenuContent>
             </DropdownMenu>
-          </TableCell>
-        </TableRow>
-        <TableRow v-if="props.clients.length === 0">
-          <TableCell :colspan="6" class="text-center py-8 text-muted-foreground">
-            {{ t("adminOAuthClients.table.empty") }}
           </TableCell>
         </TableRow>
       </TableBody>

@@ -170,7 +170,7 @@ function formatCategory(category: string) {
           <div
             v-if="isOpen"
             data-glass-surface="compose-bar"
-            class="sticky bottom-0 flex items-stretch gap-2 border-t border-white/55 bg-background/82 p-3 shadow-[0_-14px_34px_-28px_rgba(15,23,42,0.8)] backdrop-blur-md supports-[backdrop-filter]:bg-background/68 dark:border-white/10 dark:bg-slate-950/70 dark:supports-[backdrop-filter]:bg-slate-950/56"
+            class="sticky bottom-0 flex items-stretch gap-2 border-t p-3"
           >
             <textarea
               v-model="newMessage"
@@ -192,7 +192,7 @@ function formatCategory(category: string) {
           <div
             v-else
             data-glass-surface="compose-bar"
-            class="sticky bottom-0 border-t border-white/55 bg-background/82 p-3 text-center text-sm text-muted-foreground shadow-[0_-14px_34px_-28px_rgba(15,23,42,0.8)] backdrop-blur-md supports-[backdrop-filter]:bg-background/68 dark:border-white/10 dark:bg-slate-950/70 dark:supports-[backdrop-filter]:bg-slate-950/56"
+            class="sticky bottom-0 border-t p-3 text-center text-sm text-muted-foreground"
           >
             {{ t("tickets.detail.closedHint") }}
           </div>

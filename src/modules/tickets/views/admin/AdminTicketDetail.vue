@@ -24,6 +24,7 @@ import {
   LucideArrowLeft,
   LucideSend,
   LucideLoader2,
+  LucideTicketX,
   LucideUserCog,
   LucideMessageSquare,
 } from "lucide-vue-next"
@@ -117,13 +118,14 @@ function messageSenderLabel(message: TicketMessage) {
     </Button>
 
     <template v-if="loading">
-      <Skeleton class="h-24 w-full" />
+      <Skeleton class="h-32 w-full" />
+      <Skeleton class="h-28 w-full" />
       <Skeleton class="h-64 w-full" />
     </template>
 
     <template v-else-if="ticket">
       <!-- Ticket summary -->
-      <Card>
+      <Card class="rounded-lg">
         <CardHeader class="pb-2 gap-4">
           <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div class="min-w-0">
@@ -159,18 +161,18 @@ function messageSenderLabel(message: TicketMessage) {
             </div>
             <div>
               <div class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.createdAt") }}</div>
-              <div class="font-medium">{{ formatDateTime(ticket.createdAt) }}</div>
+              <div class="font-medium tabular-nums">{{ formatDateTime(ticket.createdAt) }}</div>
             </div>
             <div>
               <div class="text-xs text-muted-foreground">{{ t("tickets.adminDetail.summary.updatedAt") }}</div>
-              <div class="font-medium">{{ formatDateTime(ticket.updatedAt) }}</div>
+              <div class="font-medium tabular-nums">{{ formatDateTime(ticket.updatedAt) }}</div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <!-- Ticket actions -->
-      <Card>
+      <Card class="rounded-lg">
         <CardHeader class="pb-3">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -237,7 +239,7 @@ function messageSenderLabel(message: TicketMessage) {
       </Card>
 
       <!-- Message list -->
-      <Card class="flex-1 flex flex-col min-h-0">
+      <Card class="rounded-lg flex-1 flex flex-col min-h-0">
         <CardHeader class="pb-3 border-b">
           <div class="flex items-center gap-2">
             <LucideMessageSquare class="w-4 h-4 text-muted-foreground" />
@@ -285,14 +287,17 @@ function messageSenderLabel(message: TicketMessage) {
               </div>
             </template>
             <template v-else>
-              <div class="text-center text-muted-foreground py-8">{{ t("tickets.adminDetail.noMessages") }}</div>
+              <div class="flex flex-col items-center justify-center gap-3 py-10 text-center">
+                <LucideMessageSquare class="h-8 w-8 text-muted-foreground/60" />
+                <p class="text-sm text-muted-foreground">{{ t("tickets.adminDetail.noMessages") }}</p>
+              </div>
             </template>
           </div>
 
           <!-- Input area -->
           <div
             data-glass-surface="compose-bar"
-            class="sticky bottom-0 flex flex-col gap-2 border-t border-white/55 bg-background/82 p-3 shadow-[0_-14px_34px_-28px_rgba(15,23,42,0.8)] backdrop-blur-md supports-[backdrop-filter]:bg-background/68 dark:border-white/10 dark:bg-slate-950/70 dark:supports-[backdrop-filter]:bg-slate-950/56"
+            class="sticky bottom-0 flex flex-col gap-2 border-t p-3"
           >
             <div class="flex items-center justify-between gap-3">
               <div class="text-sm font-medium">
@@ -318,10 +323,9 @@ function messageSenderLabel(message: TicketMessage) {
                 ]"
                 @keydown.enter.exact="handleComposeEnter"
               />
-              <Button 
+              <Button
                 :class="['h-auto min-w-[5rem] shrink-0 flex flex-col items-center justify-center gap-1.5 transition-colors', isInternal ? 'bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-amber-700' : '']"
-                :variant="isInternal ? 'default' : 'default'"
-                :disabled="sending || !newMessage.trim()" 
+                :disabled="sending || !newMessage.trim()"
                 @click="sendMessage"
               >
                 <LucideLoader2 v-if="sending" class="w-4 h-4 animate-spin" />
@@ -335,9 +339,14 @@ function messageSenderLabel(message: TicketMessage) {
     </template>
 
     <template v-else>
-      <Card>
-        <CardContent class="py-16 text-center text-muted-foreground">
-          {{ t("tickets.adminDetail.notFound") }}
+      <Card class="rounded-lg">
+        <CardContent class="flex flex-col items-center justify-center gap-3 py-16 text-center">
+          <LucideTicketX class="h-8 w-8 text-muted-foreground/60" />
+          <p class="text-sm text-muted-foreground">{{ t("tickets.adminDetail.notFound") }}</p>
+          <Button variant="outline" size="sm" @click="goBack">
+            <LucideArrowLeft class="w-4 h-4 mr-1" />
+            {{ t("tickets.adminDetail.backButton") }}
+          </Button>
         </CardContent>
       </Card>
     </template>

@@ -23,3 +23,14 @@ certs/*.pem
 *.njsproj
 *.sln
 *.sw?
+
+# Local working artifacts (screenshots, downloaded masters, sibling checkouts)
+Snipaste_*.png
+home-cards.png
+nav-home.png
+collections.suite.json
+music_metas.json
+haruki-bot-neo-registration.zh-CN.md
+haruki-sekai-kr-master/
+sekai-deck-recommend-cpp/
+test-results/

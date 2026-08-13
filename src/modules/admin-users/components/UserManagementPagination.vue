@@ -63,9 +63,9 @@ function commitPageInput() {
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center justify-between gap-3 px-2">
+  <div class="flex flex-wrap items-center justify-between gap-3">
     <div class="flex items-center gap-4">
-      <span class="text-sm text-muted-foreground mr-2">
+      <span class="text-sm text-muted-foreground mr-2 tabular-nums">
         {{ t("adminUsers.management.pagination.totalUsers", { total }) }}
       </span>
       <div class="flex items-center gap-2">
@@ -90,12 +90,20 @@ function commitPageInput() {
         variant="outline"
         size="sm"
         :disabled="page <= 1"
+        :title="t('adminUsers.management.pagination.firstPage')"
         :aria-label="t('adminUsers.management.pagination.firstPage')"
         @click="emit('goToPage', 1)"
       >
         <LucideChevronsLeft class="w-4 h-4" />
       </Button>
-      <Button variant="outline" size="sm" :disabled="page <= 1" @click="emit('prevPage')">
+      <Button
+        variant="outline"
+        size="sm"
+        :disabled="page <= 1"
+        :title="t('adminUsers.management.pagination.prevPage')"
+        :aria-label="t('adminUsers.management.pagination.prevPage')"
+        @click="emit('prevPage')"
+      >
         <LucideChevronLeft class="w-4 h-4" />
       </Button>
       <div class="flex items-center gap-1.5 text-sm">
@@ -110,13 +118,21 @@ function commitPageInput() {
         />
         <span class="text-muted-foreground tabular-nums whitespace-nowrap">/ {{ totalPages }}</span>
       </div>
-      <Button variant="outline" size="sm" :disabled="page >= totalPages" @click="emit('nextPage')">
+      <Button
+        variant="outline"
+        size="sm"
+        :disabled="page >= totalPages"
+        :title="t('adminUsers.management.pagination.nextPage')"
+        :aria-label="t('adminUsers.management.pagination.nextPage')"
+        @click="emit('nextPage')"
+      >
         <LucideChevronRight class="w-4 h-4" />
       </Button>
       <Button
         variant="outline"
         size="sm"
         :disabled="page >= totalPages"
+        :title="t('adminUsers.management.pagination.lastPage')"
         :aria-label="t('adminUsers.management.pagination.lastPage')"
         @click="emit('goToPage', totalPages)"
       >

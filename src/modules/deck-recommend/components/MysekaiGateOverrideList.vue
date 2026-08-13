@@ -81,7 +81,7 @@ function isDeckRecommendUnit(value: string): value is DeckRecommendUnitType {
     {{ t("deckRecommend.options.mysekaiGateOverride.empty") }}
   </div>
 
-  <div v-else class="grid min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3">
+  <div v-else class="grid min-w-0 gap-2 @lg:grid-cols-2 @3xl:grid-cols-3">
     <div
       v-for="gate in props.gates"
       :key="gate.id"

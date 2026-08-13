@@ -54,11 +54,11 @@ const donutColor = (item: DonutChartItem) => item.color
 </script>
 
 <template>
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-    <Card>
-      <CardContent class="px-4 py-0">
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+    <Card class="py-4 gap-0">
+      <CardContent class="px-4">
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <LucideUpload class="w-4 h-4" />
+          <LucideUpload class="w-4 h-4 shrink-0" />
           {{ t("adminStatistics.uploadLogs.summary.totalUploads") }}
         </div>
         <template v-if="loading">
@@ -72,10 +72,10 @@ const donutColor = (item: DonutChartItem) => item.color
       </CardContent>
     </Card>
 
-    <Card>
-      <CardContent class="px-4 py-0">
+    <Card class="py-4 gap-0">
+      <CardContent class="px-4">
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <LucideCheckCircle class="w-4 h-4 text-green-500" />
+          <LucideCheckCircle class="w-4 h-4 shrink-0 text-green-500" />
           {{ t("adminStatistics.common.success") }}
         </div>
         <template v-if="loading">
@@ -89,10 +89,10 @@ const donutColor = (item: DonutChartItem) => item.color
       </CardContent>
     </Card>
 
-    <Card>
-      <CardContent class="px-4 py-0">
+    <Card class="py-4 gap-0">
+      <CardContent class="px-4">
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <LucideXCircle class="w-4 h-4 text-red-500" />
+          <LucideXCircle class="w-4 h-4 shrink-0 text-red-500" />
           {{ t("adminStatistics.common.failure") }}
         </div>
         <template v-if="loading">
@@ -106,12 +106,12 @@ const donutColor = (item: DonutChartItem) => item.color
       </CardContent>
     </Card>
 
-    <Card>
-      <CardContent class="px-4 py-0">
+    <Card class="py-4 gap-0">
+      <CardContent class="px-4">
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
           <component
             :is="isSuccessRateHealthy ? LucideTrendingUp : LucideTrendingDown"
-            :class="['w-4 h-4', isSuccessRateHealthy ? 'text-green-500' : 'text-orange-500']"
+            :class="['w-4 h-4 shrink-0', isSuccessRateHealthy ? 'text-green-500' : 'text-orange-500']"
           />
           {{ t("adminStatistics.uploadLogs.summary.successRate") }}
         </div>
@@ -127,7 +127,24 @@ const donutColor = (item: DonutChartItem) => item.color
     </Card>
   </div>
 
-  <div v-if="summary && !loading" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div v-if="loading" class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <Card v-for="i in 3" :key="i">
+      <CardHeader class="pb-2">
+        <div class="flex items-center gap-2">
+          <LucidePieChart class="w-4 h-4 text-muted-foreground" />
+          <Skeleton class="h-4 w-28" />
+        </div>
+      </CardHeader>
+      <CardContent class="pt-0 flex flex-col items-center gap-3">
+        <div class="flex items-center justify-center w-full" style="height: 180px">
+          <Skeleton class="h-36 w-36 rounded-full" />
+        </div>
+        <Skeleton class="h-3 w-44" />
+      </CardContent>
+    </Card>
+  </div>
+
+  <div v-else-if="summary" class="grid grid-cols-1 xl:grid-cols-3 gap-4">
     <Card>
       <CardHeader class="pb-2">
         <div class="flex items-center gap-2">

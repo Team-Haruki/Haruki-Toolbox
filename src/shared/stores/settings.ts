@@ -3,6 +3,10 @@ import { ref, computed } from "vue"
 import { DEFAULT_LOCALE, type AppLocale } from "@/shared/i18n"
 import { SEKAI_ASSET_ENDPOINT_ROOTS } from "@/shared/sekai/data-sources"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
+import type { SekaiRegion } from "@/types"
+import { normalizeSekaiRegion } from "@/lib/sekai-region"
+
+export type SekaiCatalogRegionMode = 'follow' | 'manual'
 
 export type EndpointType = 'direct' | 'cdn'
 export type ThemeType = 'light' | 'dark' | 'system'
@@ -21,7 +25,7 @@ const SERVER_ENDPOINT_HEALTH_PATH = '/api/health'
 const ENDPOINT_TYPES: EndpointType[] = ['direct', 'cdn']
 const ASSET_ENDPOINT_TIMEOUT_MS = 5000
 const ASSET_ENDPOINT_PROBE_PATH = '/asset-probe.png'
-const ASSET_ENDPOINT_TYPES: SekaiAssetEndpointPreference[] = ['china', 'global']
+const ASSET_ENDPOINT_TYPES: SekaiAssetEndpointPreference[] = ['china', 'global', 'china_cdn']
 
 function normalizeEndpointUrl(value: unknown): string {
     if (typeof value !== 'string') {
@@ -46,7 +50,7 @@ function createEmptyEndpointLatencyResults(): Record<EndpointType, EndpointLaten
 }
 
 function normalizeAssetEndpointPreference(value: unknown): SekaiAssetEndpointPreference {
-    return value === 'global' ? 'global' : 'china'
+    return value === 'global' || value === 'china_cdn' ? value : 'china'
 }
 
 export const useSettingsStore = defineStore("settings", () => {
@@ -66,7 +70,18 @@ export const useSettingsStore = defineStore("settings", () => {
     const theme = ref<ThemeType>('system')
     const locale = ref<AppLocale>(DEFAULT_LOCALE)
     const reducedVisualEffects = ref(false)
+    // Distinguishes an explicit user choice from the untouched default so
+    // low-end devices can opt into reduced effects automatically.
+    const reducedVisualEffectsUserSet = ref(false)
     const hideGameUserId = ref(false)
+    const showUnreleasedContent = ref(false)
+    const blurUnreleasedContent = ref(true)
+    const sekaiCatalogRegion = ref<SekaiRegion>('jp')
+    // "follow": catalog pages use the selected game account's server and fall
+    // back to sekaiCatalogRegion when no account is available. "manual": always
+    // use sekaiCatalogRegion.
+    const sekaiCatalogRegionMode = ref<SekaiCatalogRegionMode>('follow')
+    const selectedGameAccountKey = ref<string | null>(null)
     const hasDirectEndpoint = computed(() => directEndpoint.value !== '')
     const hasCdnEndpoint = computed(() => cdnEndpoint.value !== '')
 
@@ -126,10 +141,36 @@ export const useSettingsStore = defineStore("settings", () => {
     }
     function setReducedVisualEffects(enabled: boolean) {
         reducedVisualEffects.value = enabled
+        reducedVisualEffectsUserSet.value = true
         applyReducedVisualEffects(enabled)
+    }
+
+    function isLowEndDevice(): boolean {
+        if (typeof navigator === "undefined") {
+            return false
+        }
+        const cores = navigator.hardwareConcurrency
+        const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
+        return (cores != null && cores <= 4) || (memory != null && memory <= 4)
     }
     function setHideGameUserId(enabled: boolean) {
         hideGameUserId.value = enabled
+    }
+    function setShowUnreleasedContent(enabled: boolean) {
+        showUnreleasedContent.value = enabled
+    }
+    function setBlurUnreleasedContent(enabled: boolean) {
+        blurUnreleasedContent.value = enabled
+    }
+    function setSekaiCatalogRegion(region: SekaiRegion) {
+        sekaiCatalogRegion.value = normalizeSekaiRegion(region) ?? 'jp'
+        sekaiCatalogRegionMode.value = 'manual'
+    }
+    function setSekaiCatalogRegionFollowAccount() {
+        sekaiCatalogRegionMode.value = 'follow'
+    }
+    function setSelectedGameAccountKey(key: string | null) {
+        selectedGameAccountKey.value = key
     }
     function applyTheme(themeValue: ThemeType) {
         const root = document.documentElement
@@ -160,6 +201,11 @@ export const useSettingsStore = defineStore("settings", () => {
         }
     }
     function initVisualEffects() {
+        // Default reduced effects on for low-end hardware unless the user has
+        // made an explicit choice; the toggle in settings still wins.
+        if (!reducedVisualEffectsUserSet.value && !reducedVisualEffects.value && isLowEndDevice()) {
+            reducedVisualEffects.value = true
+        }
         applyReducedVisualEffects(reducedVisualEffects.value)
     }
     async function initAssetEndpointPreference() {
@@ -254,7 +300,13 @@ export const useSettingsStore = defineStore("settings", () => {
         theme,
         locale,
         reducedVisualEffects,
+        reducedVisualEffectsUserSet,
         hideGameUserId,
+        showUnreleasedContent,
+        blurUnreleasedContent,
+        sekaiCatalogRegion,
+        sekaiCatalogRegionMode,
+        selectedGameAccountKey,
         getEndpointUrl,
         getAssetEndpointUrl,
         setPreferredEndpoint,
@@ -264,6 +316,11 @@ export const useSettingsStore = defineStore("settings", () => {
         setLocale,
         setReducedVisualEffects,
         setHideGameUserId,
+        setShowUnreleasedContent,
+        setBlurUnreleasedContent,
+        setSekaiCatalogRegion,
+        setSekaiCatalogRegionFollowAccount,
+        setSelectedGameAccountKey,
         initTheme,
         initVisualEffects,
         initAssetEndpointPreference,
@@ -283,7 +340,13 @@ export const useSettingsStore = defineStore("settings", () => {
             'theme',
             'locale',
             'reducedVisualEffects',
+            'reducedVisualEffectsUserSet',
             'hideGameUserId',
+            'showUnreleasedContent',
+            'blurUnreleasedContent',
+            'sekaiCatalogRegion',
+            'sekaiCatalogRegionMode',
+            'selectedGameAccountKey',
         ]
     }
 })

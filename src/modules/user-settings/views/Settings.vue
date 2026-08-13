@@ -5,15 +5,8 @@ import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
 import { useUserStore } from "@/shared/stores/user"
 import {
-  AccountSettings,
-  EmailSettings,
-  MfaSettings,
-  IMAuthorization,
-  IMBindingSettings,
-  OAuth2Authorizations,
-  PasswordSettings,
-  SessionSettings,
-  SocialSettings,
+  ProfileSettingsCard,
+  SecuritySettingsCard,
   KratosSettingsFlow,
 } from "@/modules/user-settings/components/settings"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
@@ -126,33 +119,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="hasKratosFlow" class="w-full flex-1 flex flex-col items-center px-0 py-4">
+  <div v-if="hasKratosFlow" class="w-full flex-1 flex flex-col items-center justify-center px-0 py-4">
     <KratosSettingsFlow :section="activeSection" />
   </div>
-  <div v-else class="w-full flex-1 flex flex-col items-center px-0 py-4">
-    <div class="w-full max-w-md space-y-1 py-2">
+  <div v-else class="w-full flex-1 flex flex-col items-center justify-center gap-4 px-0 py-4">
+    <div class="w-full max-w-2xl space-y-1">
       <h2 class="text-lg font-semibold">{{ t("userSettings.sections.accountTitle") }}</h2>
       <p class="text-sm text-muted-foreground">{{ t("userSettings.sections.accountDescription") }}</p>
     </div>
 
-    <div class="w-full flex flex-col items-center gap-6">
-      <AccountSettings />
-      <EmailSettings />
-      <PasswordSettings />
-      <MfaSettings />
-      <SocialSettings />
-      <SessionSettings />
-    </div>
-
-    <div class="w-full max-w-md space-y-1 py-2 mt-6">
-      <h2 class="text-lg font-semibold">{{ t("userSettings.sections.toolboxTitle") }}</h2>
-      <p class="text-sm text-muted-foreground">{{ t("userSettings.sections.toolboxDescription") }}</p>
-    </div>
-
-    <div class="w-full flex flex-col items-center gap-6">
-      <IMBindingSettings />
-      <IMAuthorization />
-      <OAuth2Authorizations />
+    <div class="w-full max-w-2xl flex flex-col gap-4">
+      <ProfileSettingsCard />
+      <SecuritySettingsCard />
     </div>
   </div>
 </template>

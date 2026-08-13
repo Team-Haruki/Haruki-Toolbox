@@ -27,6 +27,7 @@ const {
   isSaving,
   isDeleting,
   isVerifying,
+  setDefaultBinding,
   allowCNMysekai,
   regionLabels,
   regionOptions,
@@ -84,6 +85,7 @@ const {
       @grants="openGrantManager"
       @received-grants="openReceivedGrantManager"
       @delete="confirmDelete"
+      @set-default="setDefaultBinding"
     />
 
     <GameBindingEditDialog

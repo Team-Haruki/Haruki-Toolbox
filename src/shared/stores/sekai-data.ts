@@ -53,16 +53,28 @@ export type SekaiDataQueueItem = {
 type ActiveRegionRequest = {
   files: string[]
   force: boolean
+  musicMetas: boolean
   promise: Promise<void>
 }
 
 type QueuedRegionRequest = {
   files: string[]
   force: boolean
+  musicMetas: boolean
   promise: Promise<void>
   resolve: () => void
   reject: (error: Error) => void
 }
+
+type RegionRemoteVerification = {
+  masterAt: number
+  musicMetasAt: number | null
+}
+
+// Skip re-checking remote master versions when the region was verified against
+// the CDN this recently. Tab/page switches inside the window render straight
+// from IndexedDB instead of waiting on the version round trip.
+const REGION_VERIFY_TTL_MS = 10 * 60 * 1000
 
 export const useSekaiDataStore = defineStore("sekai-data", () => {
   const regionStates = ref<Record<SekaiRegion, SekaiDataRegionState>>(createInitialRegionStates())
@@ -71,6 +83,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
   let workerSubscribed = false
   const activeRequests = new Map<SekaiRegion, ActiveRegionRequest>()
   const queuedRequests = new Map<SekaiRegion, QueuedRegionRequest>()
+  const remoteVerifications = new Map<SekaiRegion, RegionRemoteVerification>()
   const cacheStateLoads = new Map<SekaiRegion, Promise<void>>()
   let initialCacheLoadStarted = false
   const requestResolvers = new Map<string, {
@@ -142,20 +155,56 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
     }
   }
 
-  async function ensureRegionData(region: SekaiRegion, options: { force?: boolean; files?: readonly string[] } = {}) {
+  async function ensureRegionData(
+    region: SekaiRegion,
+    options: { force?: boolean; files?: readonly string[]; musicMetas?: boolean } = {},
+  ) {
     await ensureRegionCacheStateLoaded(region)
     const requestedFiles = normalizeFileList(options.files)
     const force = options.force === true
+    const musicMetas = options.musicMetas !== false
+    if (!force && isRegionVerificationFresh(region, requestedFiles, musicMetas)) {
+      return
+    }
+
     const activeRequest = activeRequests.get(region)
     if (activeRequest) {
-      if (!force && !activeRequest.force && isFileSubset(requestedFiles, activeRequest.files)) {
+      if (
+        !force
+        && !activeRequest.force
+        && isFileSubset(requestedFiles, activeRequest.files)
+        && (!musicMetas || activeRequest.musicMetas)
+      ) {
         return activeRequest.promise
       }
 
-      return queueRegionRequest(region, { force, files: requestedFiles })
+      return queueRegionRequest(region, { force, files: requestedFiles, musicMetas })
     }
 
-    return startRegionDataRequest(region, { force, files: requestedFiles })
+    return startRegionDataRequest(region, { force, files: requestedFiles, musicMetas })
+  }
+
+  /**
+   * True when the region's cache already covers the requested files and was
+   * verified against the remote recently enough to skip another check.
+   */
+  function isRegionVerificationFresh(
+    region: SekaiRegion,
+    requestedFiles: readonly string[],
+    musicMetas: boolean,
+  ): boolean {
+    const verification = remoteVerifications.get(region)
+    if (!verification || Date.now() - verification.masterAt >= REGION_VERIFY_TTL_MS) {
+      return false
+    }
+
+    if (musicMetas
+      && (verification.musicMetasAt == null || Date.now() - verification.musicMetasAt >= REGION_VERIFY_TTL_MS)) {
+      return false
+    }
+
+    const state = regionStates.value[region]
+    return Boolean(state.masterFetchVersion) && isFileSubset(requestedFiles, state.files)
   }
 
   async function checkRegionRemoteVersion(region: SekaiRegion) {
@@ -184,7 +233,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
 
   function startRegionDataRequest(
     region: SekaiRegion,
-    options: { force: boolean; files: string[] },
+    options: { force: boolean; files: string[]; musicMetas: boolean },
   ) {
     const requestedFiles = options.files
     const hasCache = Boolean(regionStates.value[region].masterFetchVersion)
@@ -196,7 +245,12 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
       resolveRequest = resolve
       rejectRequest = reject
     })
-    activeRequests.set(region, { files: requestedFiles, force: options.force, promise })
+    activeRequests.set(region, {
+      files: requestedFiles,
+      force: options.force,
+      musicMetas: options.musicMetas,
+      promise,
+    })
     requestResolvers.set(requestId, { resolve: resolveRequest, reject: rejectRequest })
     try {
       ensureWorkerSubscription()
@@ -205,6 +259,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
         region,
         force: options.force,
         files: requestedFiles,
+        musicMetas: options.musicMetas,
       })
       requestResolvers.delete(requestId)
       requestId = postedRequestId
@@ -231,12 +286,13 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
 
   function queueRegionRequest(
     region: SekaiRegion,
-    request: { force: boolean; files: string[] },
+    request: { force: boolean; files: string[]; musicMetas: boolean },
   ) {
     const existing = queuedRequests.get(region)
     if (existing) {
       existing.force = existing.force || request.force
       existing.files = mergeFileLists(existing.files, request.files)
+      existing.musicMetas = existing.musicMetas || request.musicMetas
       return existing.promise
     }
 
@@ -245,6 +301,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
     const queuedRequest: QueuedRegionRequest = {
       force: request.force,
       files: request.files,
+      musicMetas: request.musicMetas,
       promise: new Promise<void>((resolve, reject) => {
         resolveQueued = resolve
         rejectQueued = reject
@@ -262,6 +319,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
       startRegionDataRequest(region, {
         force: queuedRequest.force,
         files: queuedRequest.files,
+        musicMetas: queuedRequest.musicMetas,
       }).then(queuedRequest.resolve, queuedRequest.reject)
     }).catch(() => {})
     return queuedRequest.promise
@@ -281,7 +339,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
       })
     } catch (error) {
       updateRegionState(region, {
-        status: "error",
+        status: regionStates.value[region].masterFetchVersion ? "ready" : "error",
         refreshing: false,
         error: error instanceof Error ? error.message : String(error),
       })
@@ -318,6 +376,13 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
     }
 
     if (event.type === "done") {
+      const verifiedAt = Date.now()
+      remoteVerifications.set(event.region, {
+        masterAt: verifiedAt,
+        musicMetasAt: event.musicMetasChecked
+          ? verifiedAt
+          : remoteVerifications.get(event.region)?.musicMetasAt ?? null,
+      })
       resolveRequest(event.requestId, event.region)
       patchQueueItem(event.requestId, {
         status: "done",
@@ -344,6 +409,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
     }
 
     if (event.type === "cleared") {
+      remoteVerifications.delete(event.region)
       resolveRequest(event.requestId, event.region)
       patchQueueItem(event.requestId, {
         status: "done",
@@ -359,9 +425,15 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
       status: "error",
       error: event.message,
     })
+    // A failed refresh must not take previously cached data out of service:
+    // when the region still has a usable cache, stay "ready" so consumers
+    // (e.g. deck recommend) keep working offline from IndexedDB.
+    const hasCache = Boolean(regionStates.value[event.region].masterFetchVersion)
     updateRegionState(event.region, {
-      status: "error",
+      status: hasCache ? "ready" : "error",
+      phase: null,
       refreshing: false,
+      progress: 0,
       error: event.message,
       checkedAt: Date.now(),
     })

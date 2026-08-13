@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { computed } from "vue"
+import { useI18n } from "vue-i18n"
+import { LucideLoader2, LucideRefreshCw } from "lucide-vue-next"
+import { Button } from "@/components/ui/button"
 import {
   AdminWebhookDeleteDialog,
   AdminWebhookFormDialog,
@@ -8,6 +12,8 @@ import {
   AdminWebhookTokenDialog,
 } from "@/modules/admin-webhooks/components"
 import { useAdminWebhookManagement } from "@/modules/admin-webhooks/composables/useAdminWebhookManagement"
+
+const { t } = useI18n()
 
 const {
   canMutate,
@@ -54,19 +60,27 @@ const {
   serverLabel,
   dataTypeLabel,
 } = useAdminWebhookManagement()
+
+const refreshing = computed(() => settingsLoading.value || endpointsLoading.value)
 </script>
 
 <template>
   <div class="w-full flex flex-col gap-4">
+    <div class="flex justify-end">
+      <Button variant="outline" size="sm" :disabled="refreshing" @click="refreshAll">
+        <LucideLoader2 v-if="refreshing" class="w-4 h-4 mr-2 animate-spin" />
+        <LucideRefreshCw v-else class="w-4 h-4 mr-2" />
+        {{ t("adminWebhooks.actions.refresh") }}
+      </Button>
+    </div>
+
     <AdminWebhookSettingsCard
       :can-mutate="canMutate"
       :settings-loading="settingsLoading"
-      :endpoints-loading="endpointsLoading"
       :settings-saving="settingsSaving"
       :settings="settings"
       :settings-enabled="settingsEnabled"
       :jwt-secret-input="jwtSecretInput"
-      @refresh="refreshAll"
       @save-settings="saveSettings"
       @update:settings-enabled="settingsEnabled = $event"
       @update:jwt-secret-input="jwtSecretInput = $event"

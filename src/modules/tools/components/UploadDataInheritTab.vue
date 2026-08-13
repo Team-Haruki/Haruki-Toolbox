@@ -23,13 +23,15 @@ import {
   User,
 } from "lucide-vue-next"
 
-defineProps<{
+const props = defineProps<{
   dataType: UploadDataType
   inheritServer: InheritServer
   inheritId: string
   inheritPassword: string
   rememberInherit: boolean
   isSubmittingInherit: boolean
+  /** MySekai uploads require a verified QQ binding; hidden otherwise. */
+  canSelectMySekaiDataType: boolean
 }>()
 
 const emit = defineEmits<{
@@ -42,7 +44,7 @@ const emit = defineEmits<{
 }>()
 
 function handleDataTypeChange(value: string) {
-  if (value === "suite" || value === "mysekai") {
+  if (value === "suite" || (value === "mysekai" && props.canSelectMySekaiDataType)) {
     emit("update:dataType", value)
   }
 }
@@ -113,7 +115,7 @@ const notesOpen = ref(false)
     </CardHeader>
     <CardContent>
       <form id="upload-data-inherit-form" @submit.prevent="emit('submit')">
-        <div class="grid gap-4">
+        <div class="grid gap-4 sm:grid-cols-2">
           <div class="flex flex-col space-y-1.5">
             <Label for="inherit-id">{{ t("tools.uploadData.inheritTab.fields.inheritId") }}</Label>
             <div class="relative w-full items-center">
@@ -170,7 +172,9 @@ const notesOpen = ref(false)
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="suite">{{ t("tools.uploadData.dataTypes.suite") }}</SelectItem>
-                  <SelectItem value="mysekai">{{ t("tools.uploadData.dataTypes.mysekai") }}</SelectItem>
+                  <SelectItem v-if="canSelectMySekaiDataType" value="mysekai">
+                    {{ t("tools.uploadData.dataTypes.mysekai") }}
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
@@ -178,7 +182,7 @@ const notesOpen = ref(false)
               </span>
             </div>
           </div>
-          <div class="flex items-start gap-3 rounded-md border p-3">
+          <div class="flex items-start gap-3 rounded-md border p-3 sm:col-span-2">
             <Checkbox
               id="remember-inherit"
               :model-value="rememberInherit"

@@ -2,14 +2,10 @@ import type { RecommendCard, RecommendDeck, RecommendResult, WorldBloomSupportCa
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import {
-  resolveCardAttrIconUrl,
-  resolveCardFrameImageUrl,
   resolveMySekaiCanvasIconUrl,
-  resolveRareBirthdayImageUrl,
-  resolveRareStarImageUrl,
-  resolveSekaiCardThumbnailUrl,
   resolveTrainRankImageUrl,
 } from "@/shared/sekai/data-sources"
+import { buildCatalogCardThumbnail } from "@/shared/sekai/catalog"
 import type { TaggedRecommendDeck, TaggedRecommendResult } from "./recommend-results"
 
 export type DeckRecommendMasterCard = {
@@ -150,20 +146,32 @@ export function buildCardThumbnailView(
   const rarity = masterCard?.cardRarityType ?? ""
   const attr = masterCard?.attr.toLowerCase() ?? ""
   const trainRank = Math.max(0, card.master_rank)
-  const assetbundleName = masterCard?.assetbundleName.trim() ?? ""
+
+  // Single construction system: URL resolution lives in the shared catalog
+  // builder; this view only bakes in the recommend-specific display state.
+  const base = buildCatalogCardThumbnail({
+    id: card.card_id,
+    characterId: masterCard?.characterId ?? null,
+    cardRarityType: rarity,
+    attr,
+    supportUnit: "",
+    prefix: masterCard?.prefix ?? null,
+    assetbundleName: masterCard?.assetbundleName.trim() ?? "",
+    releaseAt: null,
+    skillId: null,
+    cardSupplyId: null,
+  }, region, assetEndpoint)
 
   return {
     cardId: card.card_id,
     title: masterCard?.prefix ?? null,
     rarity,
     attr,
-    thumbnailUrl: assetbundleName ? resolveSekaiCardThumbnailUrl(region, assetbundleName, trainedArt, assetEndpoint) : null,
-    frameUrl: rarity ? resolveCardFrameImageUrl(rarity) : null,
-    attrIconUrl: attr ? resolveCardAttrIconUrl(attr) : null,
-    rareIconUrl: rarity === "rarity_birthday"
-      ? resolveRareBirthdayImageUrl()
-      : resolveRareStarImageUrl(displayAfterTraining),
-    rareCount: resolveRareCount(rarity),
+    thumbnailUrl: trainedArt && base.trainedThumbnailUrl ? base.trainedThumbnailUrl : base.thumbnailUrl,
+    frameUrl: base.frameUrl,
+    attrIconUrl: base.attrIconUrl,
+    rareIconUrl: displayAfterTraining && base.trainedRareIconUrl ? base.trainedRareIconUrl : base.rareIconUrl,
+    rareCount: base.rareCount,
     trainRank,
     trainRankUrl: trainRank > 0 ? resolveTrainRankImageUrl(trainRank) : null,
     level: card.level,
@@ -298,15 +306,6 @@ function resolveCharacterName(character: DeckRecommendMasterGameCharacter): stri
     .filter(Boolean)
     .join(" ")
   return english || null
-}
-
-function resolveRareCount(rarity: string): number {
-  if (rarity === "rarity_birthday") {
-    return 1
-  }
-
-  const match = rarity.match(/\d+/)
-  return match ? Number(match[0]) : 0
 }
 
 function normalizeNumber(value: unknown): number | null {

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
-import { XIcon } from "lucide-vue-next"
+import { computed, ref } from "vue"
+import { LayoutGrid, XIcon } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
-import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
+import CardBrowseDialog from "./CardBrowseDialog.vue"
 import type { DeckRecommendMasterCardOption } from "../lib/card-options"
 import { createDeckRecommendCardTags } from "../lib/card-tags"
 
@@ -21,7 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const pendingCardId = ref<string | null>(null)
+const browseOpen = ref(false)
 const selectedIds = computed(() => props.modelValue ?? [])
 const selectedIdSet = computed(() => new Set(selectedIds.value))
 const selectedCharacterIdSet = computed(() => {
@@ -45,48 +45,43 @@ const cardOptionMap = computed(() =>
 const selectedCards = computed(() =>
   selectedIds.value.map((id) => cardOptionMap.value.get(id) ?? createUnknownCardOption(id)),
 )
-const availableOptions = computed<ComboboxOption[]>(() =>
+const browseDisabledIds = computed(() =>
   props.cardOptions
-    .filter((option) =>
-      !selectedIdSet.value.has(option.id)
-      && (!props.uniqueCharacter || !option.characterId || !selectedCharacterIdSet.value.has(option.characterId)),
-    )
-    .map((option) => ({
-      value: option.value,
-      label: option.label,
-      description: option.unitProfileName ?? option.description,
-      tags: createCardTags(option),
-      iconUrl: option.thumbnailUrl,
-      keywords: option.keywords,
-    })),
+    .filter((option) => !selectedIdSet.value.has(option.id) && !canAddCard(option))
+    .map((option) => option.id),
 )
 
-watch(
-  () => props.cardOptions.map((option) => option.id).join(","),
-  () => {
-    if (pendingCardId.value && !props.cardOptions.some((option) => option.value === pendingCardId.value)) {
-      pendingCardId.value = null
-    }
-  },
+const selectionCountText = computed(() =>
+  props.maxCards != null
+    ? t("deckRecommend.options.constraints.selectedCardsLimitCount", { count: selectedCards.value.length, max: props.maxCards })
+    : t("deckRecommend.options.constraints.selectedCardsCount", { count: selectedCards.value.length }),
 )
 
-function handlePendingCardUpdate(value: string | null) {
-  pendingCardId.value = null
-  const cardId = value ? Number(value) : null
-  if (!cardId || !Number.isInteger(cardId) || selectedIdSet.value.has(cardId) || !canSelectMore.value) {
-    return
+function canAddCard(option: DeckRecommendMasterCardOption): boolean {
+  if (selectedIdSet.value.has(option.id) || !canSelectMore.value) {
+    return false
   }
 
+  return !props.uniqueCharacter
+    || !option.characterId
+    || !selectedCharacterIdSet.value.has(option.characterId)
+}
+
+function addCard(cardId: number) {
   const option = cardOptionMap.value.get(cardId)
-  if (
-    props.uniqueCharacter
-    && option?.characterId
-    && selectedCharacterIdSet.value.has(option.characterId)
-  ) {
+  if (option == null || !canAddCard(option)) {
     return
   }
 
   emit("update:modelValue", [...selectedIds.value, cardId])
+}
+
+function toggleCard(option: DeckRecommendMasterCardOption) {
+  if (selectedIdSet.value.has(option.id)) {
+    removeCard(option.id)
+  } else {
+    addCard(option.id)
+  }
 }
 
 function removeCard(cardId: number) {
@@ -123,15 +118,19 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
 
 <template>
   <div class="grid gap-3">
-    <Combobox
-      :model-value="pendingCardId"
-      :options="availableOptions"
-      :disabled="props.disabled || !canSelectMore"
-      :placeholder="props.placeholder ?? t('deckRecommend.options.constraints.cardSelectPlaceholder')"
-      :search-placeholder="t('deckRecommend.options.constraints.cardSearchPlaceholder')"
-      :empty-text="t('deckRecommend.options.constraints.cardEmpty')"
-      @update:model-value="handlePendingCardUpdate"
-    />
+    <Button
+      type="button"
+      variant="outline"
+      class="w-full justify-between gap-2 font-normal"
+      :disabled="props.disabled || props.cardOptions.length === 0"
+      @click="browseOpen = true"
+    >
+      <span class="flex min-w-0 items-center gap-2 text-muted-foreground">
+        <LayoutGrid class="size-4 shrink-0" />
+        <span class="truncate">{{ props.placeholder ?? t('deckRecommend.options.constraints.cardSelectPlaceholder') }}</span>
+      </span>
+      <span class="shrink-0 text-xs text-muted-foreground">{{ selectionCountText }}</span>
+    </Button>
 
     <div v-if="selectedCards.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
       {{ t("deckRecommend.options.constraints.noSelectedCards") }}
@@ -181,13 +180,15 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
         </Button>
       </div>
     </div>
-    <p class="text-xs text-muted-foreground">
-      <template v-if="props.maxCards != null">
-        {{ t("deckRecommend.options.constraints.selectedCardsLimitCount", { count: selectedCards.length, max: props.maxCards }) }}
-      </template>
-      <template v-else>
-        {{ t("deckRecommend.options.constraints.selectedCardsCount", { count: selectedCards.length }) }}
-      </template>
-    </p>
+
+    <CardBrowseDialog
+      v-model:open="browseOpen"
+      :card-options="props.cardOptions"
+      :selected-ids="selectedIds"
+      :disabled-ids="browseDisabledIds"
+      :disabled="props.disabled"
+      :footer-text="selectionCountText"
+      @select="toggleCard"
+    />
   </div>
 </template>

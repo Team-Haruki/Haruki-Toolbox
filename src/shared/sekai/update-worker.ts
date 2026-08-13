@@ -54,6 +54,7 @@ async function handleRequest(request: SekaiDataWorkerRequest): Promise<void> {
 async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "ensure-region" }>) {
   const region = request.region
   const files = normalizeFileList(request.files)
+  const includeMusicMetas = request.musicMetas !== false
 
   postProgress(request.requestId, region, "checking", 5)
   const versionInfo = normalizeSekaiMasterVersionInfo(
@@ -63,14 +64,17 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
   const displayVersion = versionInfo.dataVersion
   const cachedMeta = await readSekaiRegionCacheMeta(region)
   const musicMetasBaseUrl = resolveSekaiMusicMetasUrl(region)
-  const musicMetasRemoteState = await fetchMusicMetasRemoteState(musicMetasBaseUrl)
+  const musicMetasRemoteState = includeMusicMetas
+    ? await fetchMusicMetasRemoteState(musicMetasBaseUrl)
+    : null
   const cachedMasterFiles = cachedMeta?.master?.fetchVersion === fetchVersion
     ? cachedMeta.master.files
     : []
   const masterCacheHit = !request.force
     && cachedMeta?.master?.fetchVersion === fetchVersion
     && files.every((fileName) => cachedMeta.master?.files.includes(fileName))
-  const musicMetasCacheHit = musicMetasCacheMatches(cachedMeta?.musicMetas, musicMetasBaseUrl, musicMetasRemoteState)
+  const musicMetasCacheHit = musicMetasRemoteState == null
+    || musicMetasCacheMatches(cachedMeta?.musicMetas, musicMetasBaseUrl, musicMetasRemoteState)
   const cacheHit = masterCacheHit
     && musicMetasCacheHit
 
@@ -86,6 +90,7 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
       fetchVersion,
       files: cachedMeta.master?.files ?? files,
       musicMetasUpdatedAt: cachedMeta.musicMetas?.updatedAt ?? null,
+      musicMetasChecked: includeMusicMetas,
       updatedAt: resolveCacheUpdatedAt(cachedMeta.master ?? null, cachedMeta.musicMetas ?? null),
     })
     return
@@ -108,10 +113,11 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
     }
   }
 
-  postProgress(request.requestId, region, "fetching-music-metas", 72)
-  const musicMetas = musicMetasCacheHit
-    ? null
-    : await fetchJson(resolveSekaiMusicMetasUrl(region, musicMetasRemoteState.cacheKey ?? Date.now()))
+  let musicMetas: unknown = null
+  if (musicMetasRemoteState != null && !musicMetasCacheHit) {
+    postProgress(request.requestId, region, "fetching-music-metas", 72)
+    musicMetas = await fetchJson(resolveSekaiMusicMetasUrl(region, musicMetasRemoteState.cacheKey ?? Date.now()))
+  }
 
   postProgress(request.requestId, region, "writing-cache", 88)
   const now = Date.now()
@@ -125,8 +131,8 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
     versionInfo,
     now,
   })
-  const nextMusicMetasMeta = musicMetasCacheHit && cachedMeta?.musicMetas
-    ? cachedMeta.musicMetas
+  const nextMusicMetasMeta = musicMetasRemoteState == null || (musicMetasCacheHit && cachedMeta?.musicMetas)
+    ? cachedMeta?.musicMetas ?? null
     : {
         url: musicMetasBaseUrl,
         pairedMasterDisplayVersion: displayVersion,
@@ -136,7 +142,7 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
         updatedAt: now,
       }
 
-  if (musicMetas != null) {
+  if (musicMetas != null && musicMetasRemoteState != null) {
     await writeSekaiMusicMetas(region, musicMetas, musicMetasBaseUrl, displayVersion, musicMetasRemoteState)
   }
   await writeSekaiRegionCacheMeta({
@@ -155,13 +161,38 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
     displayVersion,
     fetchVersion,
     files: nextMasterMeta.files,
-    musicMetasUpdatedAt: nextMusicMetasMeta.updatedAt,
+    musicMetasUpdatedAt: nextMusicMetasMeta?.updatedAt ?? null,
+    musicMetasChecked: includeMusicMetas,
     updatedAt: resolveCacheUpdatedAt(nextMasterMeta, nextMusicMetasMeta),
   })
 }
 
+// Transient network failures ("Failed to fetch") and gateway hiccups are
+// common on flaky CDN paths; retry briefly before surfacing an error.
+const FETCH_RETRY_DELAYS_MS = [500, 1500]
+
+async function fetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= FETCH_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, FETCH_RETRY_DELAYS_MS[attempt - 1]))
+    }
+    try {
+      const response = await fetch(url, init)
+      if (response.status >= 500 || response.status === 429) {
+        lastError = new Error(`Failed to fetch ${url}: ${response.status}`)
+        continue
+      }
+      return response
+    } catch (error) {
+      lastError = error
+    }
+  }
+  throw lastError
+}
+
 async function fetchJson(url: string): Promise<unknown> {
-  const response = await fetch(url, { cache: "no-store" })
+  const response = await fetchWithRetry(url, { cache: "no-store" })
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status}`)
   }
@@ -174,7 +205,7 @@ async function fetchMasterFileJson(url: string, fileName: string): Promise<unkno
   const isOptionalFile = OPTIONAL_MASTER_FILE_SET.has(normalizedFileName)
   let response: Response
   try {
-    response = await fetch(url, { cache: "no-store" })
+    response = await fetchWithRetry(url, { cache: "no-store" })
   } catch (error) {
     if (isOptionalFile) {
       return []
@@ -244,7 +275,7 @@ type MusicMetasRemoteState = {
 }
 
 async function fetchMusicMetasRemoteState(baseUrl: string): Promise<MusicMetasRemoteState> {
-  const response = await fetch(resolveMusicMetasProbeUrl(baseUrl), {
+  const response = await fetchWithRetry(resolveMusicMetasProbeUrl(baseUrl), {
     method: "HEAD",
     cache: "no-store",
   })

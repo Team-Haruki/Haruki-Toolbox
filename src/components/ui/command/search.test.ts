@@ -1,5 +1,9 @@
-import { describe, expect, it } from "bun:test"
-import { buildSearchVariants, matchesCommandSearch } from "./search"
+import { beforeAll, describe, expect, it } from "bun:test"
+import { buildSearchVariants, matchesCommandSearch, preloadSearchPinyin } from "./search"
+
+// The pinyin dictionary is a lazy chunk in production; load it up front so
+// CJK expectations below are deterministic.
+beforeAll(() => preloadSearchPinyin())
 
 describe("command search", () => {
   it("matches plain, compact, and id-prefixed queries", () => {

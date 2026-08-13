@@ -46,12 +46,14 @@ export async function updateGameAccount(
     options?: {
         suite?: SuiteDataPrivacySettings | null
         mysekai?: MysekaiDataPrivacySettings | null
+        isDefault?: boolean
     },
     axiosOptions?: AxiosRequestConfig
 ): Promise<APIResponse<GameAccountBindingsUpdatedData>> {
     const payload: CreateGameAccountBindingPayload = {
         suite: options?.suite ?? null,
         mysekai: options?.mysekai ?? null,
+        ...(options?.isDefault !== undefined ? { isDefault: options.isDefault } : {}),
     }
     return await request<APIResponse<GameAccountBindingsUpdatedData>>(
         gameAccountPath(userId, server, gameUserId),

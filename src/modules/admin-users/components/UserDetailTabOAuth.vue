@@ -19,6 +19,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { LucideKeyRound } from "lucide-vue-next"
 import type { UserOAuthAuthorization } from "@/modules/admin-users/api/oauth"
 
 defineProps<{
@@ -36,7 +37,7 @@ const { t } = useI18n()
 
 <template>
   <Card>
-    <CardHeader class="flex flex-row items-center justify-between">
+    <CardHeader class="flex flex-row items-center justify-between gap-2">
       <CardTitle>{{ t("adminUsers.detail.oauth.title") }}</CardTitle>
       <AlertDialog v-if="authorizations.length > 0">
         <AlertDialogTrigger as-child>
@@ -68,7 +69,10 @@ const { t } = useI18n()
         </div>
       </template>
       <template v-else>
-        <p class="text-center text-muted-foreground py-8">{{ t("adminUsers.detail.oauth.empty") }}</p>
+        <div class="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center">
+          <LucideKeyRound class="h-8 w-8 text-muted-foreground/60" />
+          <p class="text-sm text-muted-foreground">{{ t("adminUsers.detail.oauth.empty") }}</p>
+        </div>
       </template>
     </CardContent>
   </Card>
