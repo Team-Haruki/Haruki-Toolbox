@@ -1229,7 +1229,8 @@ export default {
       "help": "语言切换后会立即生效",
       "placeholder": "请选择语言",
       "zhCN": "简体中文",
-      "enUS": "English"
+      "enUS": "English",
+      "zhTW": "繁體中文"
     },
     "visualEffects": {
       "label": "低特效模式",

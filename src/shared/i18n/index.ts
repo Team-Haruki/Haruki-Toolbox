@@ -1,6 +1,6 @@
 import { createI18n } from "vue-i18n"
 
-export const SUPPORTED_LOCALES = ["zh-CN", "en-US"] as const
+export const SUPPORTED_LOCALES = ["zh-CN", "zh-TW", "en-US"] as const
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number]
 
 export const DEFAULT_LOCALE: AppLocale = "zh-CN"
@@ -41,6 +41,16 @@ const bundleLoaders: Record<AppLocale, Record<I18nBundle, BundleLoader>> = {
     "tickets": () => import("@/shared/i18n/messages/zh-CN/zh-CN-tickets"),
     "public-pages": () => import("@/shared/i18n/messages/zh-CN/zh-CN-public-pages"),
   },
+  "zh-TW": {
+    "core": () => import("@/shared/i18n/messages/zh-TW/zh-TW-core"),
+    "deck": () => import("@/shared/i18n/messages/zh-TW/zh-TW-deck"),
+    "rank": () => import("@/shared/i18n/messages/zh-TW/zh-TW-rank"),
+    "tools": () => import("@/shared/i18n/messages/zh-TW/zh-TW-tools"),
+    "user-settings": () => import("@/shared/i18n/messages/zh-TW/zh-TW-user-settings"),
+    "admin": () => import("@/shared/i18n/messages/zh-TW/zh-TW-admin"),
+    "tickets": () => import("@/shared/i18n/messages/zh-TW/zh-TW-tickets"),
+    "public-pages": () => import("@/shared/i18n/messages/zh-TW/zh-TW-public-pages"),
+  },
   "en-US": {
     "core": () => import("@/shared/i18n/messages/en-US/en-US-core"),
     "deck": () => import("@/shared/i18n/messages/en-US/en-US-deck"),
@@ -55,6 +65,7 @@ const bundleLoaders: Record<AppLocale, Record<I18nBundle, BundleLoader>> = {
 
 const loadedBundles: Record<AppLocale, Set<I18nBundle>> = {
   "zh-CN": new Set(),
+  "zh-TW": new Set(),
   "en-US": new Set(),
 }
 const pendingBundles = new Map<string, Promise<void>>()

@@ -42,6 +42,7 @@ const heavyAssetPrecacheGlobIgnores = [
     '**/*.wasm',
     '**/assets/haruki-3d-engine-*.js',
     '**/assets/en-US-*.js',
+    '**/assets/zh-TW-*.js',
 ]
 
 const packageJson = JSON.parse(
@@ -199,7 +200,7 @@ export default defineConfig(({ command, mode }) => {
                         {
                             // Hashed heavyweights excluded from the precache above:
                             // immutable by filename, so cache-first on first use.
-                            urlPattern: /\/assets\/(?:[^/]+\.wasm|haruki-3d-engine-[^/]+\.js|en-US-[^/]+\.js)$/i,
+                            urlPattern: /\/assets\/(?:[^/]+\.wasm|haruki-3d-engine-[^/]+\.js|en-US-[^/]+\.js|zh-TW-[^/]+\.js)$/i,
                             handler: 'CacheFirst',
                             options: {
                                 cacheName: 'heavy-immutable-assets',

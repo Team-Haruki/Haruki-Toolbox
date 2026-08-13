@@ -1229,7 +1229,8 @@ export default {
       "help": "Language changes apply immediately",
       "placeholder": "Select language",
       "zhCN": "简体中文",
-      "enUS": "English"
+      "enUS": "English",
+      "zhTW": "繁體中文"
     },
     "visualEffects": {
       "label": "Low effects mode",

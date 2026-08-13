@@ -75,7 +75,7 @@ function handleCopyScriptUrl(value: string) {
             </a>
             {{ t("tools.iosModules.tutorialAlert.textAfter") }}
           </p>
-          <p v-if="locale !== 'zh-CN'" class="mt-1 text-xs text-muted-foreground">
+          <p v-if="!locale.startsWith('zh')" class="mt-1 text-xs text-muted-foreground">
             {{ t("tools.iosModules.tutorialAlert.nonZhWarning") }}
           </p>
         </AlertDescription>

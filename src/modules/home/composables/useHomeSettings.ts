@@ -84,10 +84,16 @@ export function useHomeSettings() {
     { value: "system", label: t("homeSettings.theme.system"), icon: Monitor },
   ])
 
+  const LOCALE_LABEL_KEYS: Record<AppLocale, string> = {
+    "zh-CN": "homeSettings.locale.zhCN",
+    "zh-TW": "homeSettings.locale.zhTW",
+    "en-US": "homeSettings.locale.enUS",
+  }
+
   const localeOptions = computed<ReadonlyArray<LocaleOption>>(() =>
     SUPPORTED_LOCALES.map((locale) => ({
       value: locale,
-      label: locale === "zh-CN" ? t("homeSettings.locale.zhCN") : t("homeSettings.locale.enUS"),
+      label: t(LOCALE_LABEL_KEYS[locale]),
     }))
   )
 

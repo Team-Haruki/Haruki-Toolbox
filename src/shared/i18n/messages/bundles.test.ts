@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test"
 
 const BUNDLE_NAMES = ["core", "deck", "rank", "tools", "user-settings", "admin", "tickets", "public-pages"] as const
 
-async function loadMerged(locale: "zh-CN" | "en-US"): Promise<Record<string, unknown>> {
+async function loadMerged(locale: "zh-CN" | "zh-TW" | "en-US"): Promise<Record<string, unknown>> {
   const merged: Record<string, unknown> = {}
   for (const bundle of BUNDLE_NAMES) {
     const mod = await import(`./${locale}/${locale}-${bundle}.ts`)
@@ -25,19 +25,22 @@ function collectKeyPaths(value: unknown, prefix: string, out: Set<string>) {
 }
 
 describe("i18n bundles", () => {
-  it("cover the same key set in both locales", async () => {
+  it("cover the same key set in every locale", async () => {
     const zh = await loadMerged("zh-CN")
+    const tw = await loadMerged("zh-TW")
     const en = await loadMerged("en-US")
 
     const zhKeys = new Set<string>()
+    const twKeys = new Set<string>()
     const enKeys = new Set<string>()
     collectKeyPaths(zh, "", zhKeys)
+    collectKeyPaths(tw, "", twKeys)
     collectKeyPaths(en, "", enKeys)
 
-    const zhOnly = [...zhKeys].filter((key) => !enKeys.has(key))
-    const enOnly = [...enKeys].filter((key) => !zhKeys.has(key))
-    expect(zhOnly).toEqual([])
-    expect(enOnly).toEqual([])
+    expect([...zhKeys].filter((key) => !enKeys.has(key))).toEqual([])
+    expect([...enKeys].filter((key) => !zhKeys.has(key))).toEqual([])
+    expect([...zhKeys].filter((key) => !twKeys.has(key))).toEqual([])
+    expect([...twKeys].filter((key) => !zhKeys.has(key))).toEqual([])
     expect(zhKeys.size).toBeGreaterThan(3000)
   })
 
