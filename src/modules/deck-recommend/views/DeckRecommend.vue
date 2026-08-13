@@ -1,44 +1,16 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import type { AcceptableValue } from "reka-ui"
-import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
-import {
-  LucidePlay,
-  LucideSave,
-  LucideSettings2,
-  LucideTrash2,
-} from "lucide-vue-next"
 import { toast } from "vue-sonner"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardHeader,
 } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogScrollContent,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
 import { formatGameAccountLabel } from "@/lib/game-account-display"
-import { readSekaiMasterFiles } from "@/shared/sekai/cache"
 import {
   SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES,
 } from "@/shared/sekai/worker-protocol"
@@ -46,17 +18,15 @@ import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import type { GameAccountBinding, SekaiRegion } from "@/types"
-import CustomBonusCharacterPicker from "../components/CustomBonusCharacterPicker.vue"
+import CustomBonusSimulationDialog from "../components/CustomBonusSimulationDialog.vue"
 import DeckAdvancedSection from "../components/DeckAdvancedSection.vue"
+import DeckAttributionFooter from "../components/DeckAttributionFooter.vue"
 import DeckBasicSection from "../components/DeckBasicSection.vue"
+import DeckClearConfigDialog from "../components/DeckClearConfigDialog.vue"
+import DeckConfigActions from "../components/DeckConfigActions.vue"
+import DeckConfigSummaryBar from "../components/DeckConfigSummaryBar.vue"
 import DeckExpertSheet from "../components/DeckExpertSheet.vue"
 import DeckResultPanel from "../components/DeckResultPanel.vue"
-import {
-  buildDeckRecommendAreaItemOptions,
-  type DeckRecommendAreaItemKind,
-  type DeckRecommendAreaItemOption,
-} from "../lib/area-item-options"
-import type { LazyOverrideComboboxOption } from "../components/LazyOverrideCombobox.vue"
 import { buildMasterCardOptions } from "../lib/card-options"
 import { buildDeckResultViews } from "../lib/card-thumbnail"
 import {
@@ -72,11 +42,26 @@ import {
   type DeckRecommendUnitType,
   type DeckRecommendSingleCardOverride,
   parseDeckBonusTargetsInput,
-  parseDeckCustomBonusCharacterIdsInput,
-  parseDeckCustomBonusSupportUnitsInput,
   parseDeckSkillOrderInput,
 } from "../lib/recommend-options"
-import { createDefaultCardTrainingConfig, type CardTrainingConfig } from "../lib/training-config"
+import {
+  allowedRecommendTargets,
+  defaultRecommendTarget,
+  hasRequiredFiles,
+  isAllowedRecommendTarget,
+  normalizeDeckRecommendLiveType,
+  normalizeDeckRecommendUnit,
+  numberArraySignature,
+  parseOptionalNumberInput,
+  parseWorldBloomTurn,
+  singleCardOverridesSignature,
+  sortedRecordSignature,
+  stringArraySignature,
+  toggleSelectedValue,
+  trainingConfigSignature,
+  type NumericInputValue,
+} from "../lib/recommend-form-utils"
+import { createDefaultCardTrainingConfig } from "../lib/training-config"
 import {
   DECK_RECOMMEND_ALGORITHMS,
   DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT,
@@ -85,7 +70,6 @@ import {
   isDeckRecommendEventAttr,
   isDeckRecommendEventSimulationMode,
   isDeckRecommendExecutionMode,
-  isDeckRecommendLiveType,
   isDeckRecommendMode,
   isDeckRecommendSimulatedEventUnit,
   isDeckRecommendSkillOrderStrategy,
@@ -103,25 +87,20 @@ import {
   type DeckRecommendSavedConfig,
   type DeckRecommendSimulatedEventUnitValue,
 } from "../lib/saved-config"
-import {
-  resolveMaxAreaItemLevel,
-  type DeckRecommendCharacterRankOverride,
-  type DeckRecommendMysekaiFixtureBonusRateOverride,
-  type DeckRecommendMysekaiGateLevelOverride,
-} from "../lib/user-data-preparation"
 import { provideDeckRecommendFormContext } from "../composables/deck-recommend-form-context"
 import {
   useDeckRecommendRunner,
   type DeckRecommendExecutionMode,
 } from "../composables/useDeckRecommendRunner"
 import { useCharacterOptions } from "../composables/useCharacterOptions"
+import { useDeckRecommendDataOverrides } from "../composables/useDeckRecommendDataOverrides"
+import { useDeckRecommendDataPreload } from "../composables/useDeckRecommendDataPreload"
+import { useDeckRecommendRouteQuery } from "../composables/useDeckRecommendRouteQuery"
 import { useWorldBloomCharacterOptions } from "../composables/useWorldBloomCharacterOptions"
 import {
   resolveEventCardBonusLimit,
   resolveEventSkillScoreUpLimit,
   resolveEventTotalPowerLimit,
-  buildCharacterRankOptions,
-  buildMysekaiGateOptions,
 } from "../lib/master-options"
 
 type BoundAccountOption = {
@@ -135,29 +114,15 @@ type BoundAccountOption = {
 
 const DEFAULT_MUSIC_ID = "74"
 const DEFAULT_MUSIC_DIFFICULTY = "expert"
-const DECK_RECOMMEND_CARD_OPTION_MASTER_FILES = ["cards", "cardRarities", "gameCharacters", "gameCharacterUnits", "unitProfiles", "areaItems", "areaItemLevels", "areas", "characterRanks", "mysekaiGates", "mysekaiGateLevels"] as const
 const DEFAULT_EXECUTION_MODE: DeckRecommendExecutionMode = "parallel"
 const DECK_RECOMMEND_WORLD_BLOOM_TURNS = ["1", "2", "3"] as const
 const CHARACTER_FILTER_MIN_COUNT = 5
-const MYSEKAI_FIXTURE_BONUS_RATE_MAX = 100
-
-type AreaItemOverrideAreaGroup = {
-  key: string
-  label: string
-  items: DeckRecommendAreaItemOption[]
-}
-type AreaItemOverrideSection = {
-  kind: DeckRecommendAreaItemKind
-  label: string
-  areas: AreaItemOverrideAreaGroup[]
-}
 
 const { t, locale } = useI18n()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
 const sekaiDataStore = useSekaiDataStore()
 const runner = useDeckRecommendRunner()
-const route = useRoute()
 const initialPreferences = readDeckRecommendPreferences()
 const initialSavedConfig = readDeckRecommendSavedConfig()
 const cardOptionMasterData = ref<Record<string, unknown> | null>(null)
@@ -186,20 +151,11 @@ const simulatedEventUnit = ref<DeckRecommendSimulatedEventUnitValue | null>(init
 const customBonusSimulationDialogOpen = ref(false)
 const simulatedWorldBloomTurn = ref<string | null>(initialSavedConfig.simulatedWorldBloomTurn ?? "1")
 const simulatedWorldBloomCharacterId = ref<string | null>(initialSavedConfig.simulatedWorldBloomCharacterId ?? null)
-type NumericInputValue = string | number
 
 const multiLiveTeammatePowerInput = ref<NumericInputValue>(initialSavedConfig.multiLiveTeammatePowerInput ?? "")
 const multiLiveTeammateScoreUpInput = ref<NumericInputValue>(initialSavedConfig.multiLiveTeammateScoreUpInput ?? "")
 const multiLiveScoreUpLowerBoundInput = ref<NumericInputValue>(initialSavedConfig.multiLiveScoreUpLowerBoundInput ?? "")
 const boostInput = ref<NumericInputValue>(initialSavedConfig.boostInput ?? "0")
-const areaItemLevelInput = ref<NumericInputValue>(initialSavedConfig.areaItemLevelInput ?? "")
-const areaItemLevelOverrideInputs = ref<Record<string, string>>(initialSavedConfig.areaItemLevelOverrideInputs ?? {})
-const characterRankInput = ref<NumericInputValue>(initialSavedConfig.characterRankInput ?? "")
-const characterRankOverrideInputs = ref<Record<string, string>>(initialSavedConfig.characterRankOverrideInputs ?? {})
-const mysekaiGateLevelInput = ref<NumericInputValue>(initialSavedConfig.mysekaiGateLevelInput ?? "")
-const mysekaiGateLevelOverrideInputs = ref<Record<string, string>>(initialSavedConfig.mysekaiGateLevelOverrideInputs ?? {})
-const mysekaiFixtureBonusRateInput = ref<NumericInputValue>(initialSavedConfig.mysekaiFixtureBonusRateInput ?? "")
-const mysekaiFixtureBonusRateOverrideInputs = ref<Record<string, string>>(initialSavedConfig.mysekaiFixtureBonusRateOverrideInputs ?? {})
 const resultLimitInput = ref<NumericInputValue>(initialSavedConfig.resultLimitInput ?? "")
 const engineTimeoutMsInput = ref<NumericInputValue>(initialSavedConfig.engineTimeoutMsInput ?? "")
 const unitFilters = ref<DeckRecommendUnitType[]>(initialSavedConfig.unitFilters ?? [])
@@ -227,14 +183,54 @@ const configCollapsed = ref(false)
 const trainingConfig = ref(initialSavedConfig.trainingConfig ?? createDefaultCardTrainingConfig())
 const characterOptions = useCharacterOptions(dataRegion)
 const worldBloomCharacters = useWorldBloomCharacterOptions(dataRegion, selectedEventId)
-let dataPreloadGeneration = 0
-let dataPreloadSignature = ""
-let cardOptionMasterDataSignature = ""
-let routeQueryHydrationSignature = ""
 let routeRegionLocked = initialSavedConfig.dataRegion != null
 let preserveInitialSavedSkillStrategy = Boolean(initialSavedConfig.skillOrderStrategy || initialSavedConfig.skillReferenceStrategy)
 let pendingSavedAccountKey = initialSavedConfig.selectedAccountKey ?? ""
 const routeHydrationInProgress = ref(false)
+
+const {
+  areaItemLevelInput,
+  areaItemLevelOverrideInputs,
+  characterRankInput,
+  characterRankOverrideInputs,
+  mysekaiGateLevelInput,
+  mysekaiGateLevelOverrideInputs,
+  mysekaiFixtureBonusRateInput,
+  mysekaiFixtureBonusRateOverrideInputs,
+  characterRankOptions,
+  mysekaiFixtureBonusCharacterOptions,
+  mysekaiGateOptions,
+  characterRankMax,
+  mysekaiGateMaxLevel,
+  areaItemLevelOverrides,
+  characterRankOverrides,
+  mysekaiGateLevelOverrides,
+  mysekaiFixtureBonusRateOverrides,
+  areaItemOverrideSections,
+  areaItemLevelOptions,
+  characterRankLevelOptions,
+  mysekaiGateLevelOptions,
+  mysekaiFixtureBonusRateComboboxOptions,
+  mysekaiFixtureBonusMaxRateLabel,
+  areaItemLevel,
+  characterRank,
+  mysekaiGateLevel,
+  mysekaiFixtureBonusRate,
+  dataOverridesInvalid,
+  updateAreaItemLevelInput,
+  updateCharacterRankInput,
+  updateMysekaiGateLevelInput,
+  updateMysekaiFixtureBonusRateInput,
+  clearAreaItemLevelOverrides,
+  clearCharacterRankOverrides,
+  clearMysekaiGateLevelOverrides,
+  clearMysekaiFixtureBonusRateOverrides,
+} = useDeckRecommendDataOverrides({
+  initialSavedConfig,
+  cardOptionMasterData,
+  runnerMasterData: runner.masterData,
+  characterOptions: characterOptions.options,
+})
 
 const accountOptions = computed<BoundAccountOption[]>(() => {
   const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
@@ -245,6 +241,7 @@ const selectedAccount = computed(() => {
   return accountOptions.value.find((account) => account.key === selectedAccountKey.value) ?? null
 })
 const selectedAccountLabel = computed(() => selectedAccount.value?.label ?? "")
+const selectedAccountServer = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 
 const currentRegionState = computed(() => sekaiDataStore.regionStates[dataRegion.value])
 const dataReady = computed(() => currentRegionState.value.status === "ready")
@@ -258,104 +255,6 @@ const resultDecks = computed(() =>
 )
 const cardOptions = computed(() =>
   buildMasterCardOptions(cardOptionMasterData.value ?? runner.masterData.value, dataRegion.value, settingsStore.currentAssetEndpoint),
-)
-const areaItemOptions = computed(() =>
-  buildDeckRecommendAreaItemOptions(cardOptionMasterData.value ?? runner.masterData.value),
-)
-const areaItemOptionMap = computed(() =>
-  new Map(areaItemOptions.value.map((option) => [option.id, option])),
-)
-const characterRankOptions = computed(() =>
-  buildCharacterRankOptions(cardOptionMasterData.value ?? runner.masterData.value),
-)
-const characterRankOptionMap = computed(() =>
-  new Map(characterRankOptions.value.map((option) => [option.id, option])),
-)
-const mysekaiFixtureBonusCharacterOptions = computed(() =>
-  characterOptions.options.value,
-)
-const mysekaiFixtureBonusCharacterIdSet = computed(() =>
-  new Set(mysekaiFixtureBonusCharacterOptions.value.map((option) => option.id)),
-)
-const mysekaiGateOptions = computed(() =>
-  buildMysekaiGateOptions(cardOptionMasterData.value ?? runner.masterData.value),
-)
-const mysekaiGateOptionMap = computed(() =>
-  new Map(mysekaiGateOptions.value.map((option) => [option.id, option])),
-)
-const areaItemMaxLevel = computed(() =>
-  resolveMaxAreaItemLevel((runner.masterData.value ?? cardOptionMasterData.value)?.areaItemLevels) ?? 20,
-)
-const characterRankMax = computed(() =>
-  Math.max(0, ...characterRankOptions.value.map((option) => option.maxRank)),
-)
-const mysekaiGateMaxLevel = computed(() =>
-  Math.max(0, ...mysekaiGateOptions.value.map((option) => option.maxLevel)),
-)
-const areaItemLevelOverrides = computed(() =>
-  Object.entries(areaItemLevelOverrideInputs.value)
-    .map(([areaItemId, level]) => ({
-      areaItemId: Number(areaItemId),
-      level: Number(level),
-    }))
-    .filter((item) => {
-      const option = areaItemOptionMap.value.get(item.areaItemId)
-      return option
-        && Number.isInteger(item.areaItemId)
-        && Number.isInteger(item.level)
-        && item.level >= 1
-        && item.level <= option.maxLevel
-    }),
-)
-const characterRankOverrides = computed<DeckRecommendCharacterRankOverride[]>(() =>
-  Object.entries(characterRankOverrideInputs.value)
-    .map(([characterId, rank]) => ({
-      characterId: Number(characterId),
-      rank: Number(rank),
-    }))
-    .filter((item) => {
-      const option = characterRankOptionMap.value.get(item.characterId)
-      return option
-        && Number.isInteger(item.characterId)
-        && Number.isInteger(item.rank)
-        && item.rank >= 1
-        && item.rank <= option.maxRank
-    }),
-)
-const mysekaiGateLevelOverrides = computed<DeckRecommendMysekaiGateLevelOverride[]>(() =>
-  Object.entries(mysekaiGateLevelOverrideInputs.value)
-    .map(([mysekaiGateId, level]) => ({
-      mysekaiGateId: Number(mysekaiGateId),
-      level: Number(level),
-    }))
-    .filter((item) => {
-      const option = mysekaiGateOptionMap.value.get(item.mysekaiGateId)
-      return option
-        && Number.isInteger(item.mysekaiGateId)
-        && Number.isInteger(item.level)
-        && item.level >= 1
-        && item.level <= option.maxLevel
-    }),
-)
-const mysekaiFixtureBonusRateOverrides = computed<DeckRecommendMysekaiFixtureBonusRateOverride[]>(() =>
-  Object.entries(mysekaiFixtureBonusRateOverrideInputs.value)
-    .map(([characterId, totalBonusRate]) => ({
-      characterId: Number(characterId),
-      totalBonusRate: Number(totalBonusRate),
-    }))
-    .filter((item) =>
-      mysekaiFixtureBonusCharacterIdSet.value.has(item.characterId)
-      && isValidFixtureBonusRate(item.totalBonusRate),
-    ),
-)
-const areaItemOverrideSections = computed<AreaItemOverrideSection[]>(() =>
-  (["character", "unit", "attr"] as const)
-    .map((kind) => ({
-      kind,
-      label: t(`deckRecommend.options.areaItemOverride.kinds.${kind}`),
-      areas: buildAreaItemOverrideAreaGroups(areaItemOptions.value.filter((item) => item.kind === kind)),
-    }))
-    .filter((section) => section.areas.length > 0),
 )
 const isEventLikeMode = computed(() =>
   recommendMode.value === "event" || recommendMode.value === "bonus" || recommendMode.value === "mysekai",
@@ -534,64 +433,6 @@ const boostOptions = computed(() =>
     label: t("deckRecommend.options.filters.boostOption", { value }),
   })),
 )
-const areaItemLevelOptions = computed(() => [
-  {
-    value: "default",
-    label: t("deckRecommend.options.filters.areaItemLevelDefault"),
-  },
-  ...Array.from({ length: areaItemMaxLevel.value }, (_, index) => {
-    const value = index + 1
-    return {
-      value: String(value),
-      label: t("deckRecommend.options.filters.areaItemLevelOption", { value }),
-    }
-  }),
-])
-const characterRankLevelOptions = computed(() => [
-  {
-    value: "default",
-    label: t("deckRecommend.options.filters.characterRankDefault"),
-  },
-  ...Array.from({ length: characterRankMax.value }, (_, index) => {
-    const value = index + 1
-    return {
-      value: String(value),
-      label: t("deckRecommend.options.filters.characterRankOption", { value }),
-    }
-  }),
-])
-const mysekaiGateLevelOptions = computed(() => [
-  {
-    value: "default",
-    label: t("deckRecommend.options.filters.mysekaiGateLevelDefault"),
-  },
-  ...Array.from({ length: mysekaiGateMaxLevel.value }, (_, index) => {
-    const value = index + 1
-    return {
-      value: String(value),
-      label: t("deckRecommend.options.filters.mysekaiGateLevelOption", { value }),
-    }
-  }),
-])
-const mysekaiFixtureBonusRateOptions = computed(() => [
-  {
-    value: "default",
-    label: t("deckRecommend.options.filters.mysekaiFixtureBonusRateDefault"),
-  },
-  ...buildFixtureBonusRateValues().map((value) => ({
-    value: String(value),
-    label: formatFixtureBonusRate(value),
-  })),
-])
-const mysekaiFixtureBonusRateComboboxOptions = computed<LazyOverrideComboboxOption[]>(() =>
-  mysekaiFixtureBonusRateOptions.value.map((option) => ({
-    ...option,
-    keywords: [option.value, option.label, option.value === "default" ? t("deckRecommend.options.mysekaiFixtureBonusOverride.default") : ""].filter(Boolean),
-  })),
-)
-const mysekaiFixtureBonusMaxRateLabel = computed(() =>
-  formatFixtureBonusRate(MYSEKAI_FIXTURE_BONUS_RATE_MAX),
-)
 const characterFilterMaxCount = computed(() => Math.max(characterOptions.options.value.length, 26))
 const multiLiveTeammatePower = computed(() =>
   parseOptionalNumberInput(multiLiveTeammatePowerInput.value),
@@ -603,18 +444,6 @@ const multiLiveScoreUpLowerBound = computed(() =>
   parseOptionalNumberInput(multiLiveScoreUpLowerBoundInput.value),
 )
 const boost = computed(() => parseOptionalNumberInput(boostInput.value, { min: 0, max: 10, integer: true }))
-const areaItemLevel = computed(() =>
-  parseOptionalNumberInput(areaItemLevelInput.value, { min: 1, max: areaItemMaxLevel.value, integer: true }),
-)
-const characterRank = computed(() =>
-  parseOptionalNumberInput(characterRankInput.value, { min: 1, max: characterRankMax.value || undefined, integer: true }),
-)
-const mysekaiGateLevel = computed(() =>
-  parseOptionalNumberInput(mysekaiGateLevelInput.value, { min: 1, max: mysekaiGateMaxLevel.value || undefined, integer: true }),
-)
-const mysekaiFixtureBonusRate = computed(() =>
-  parseFixtureBonusRateInput(mysekaiFixtureBonusRateInput.value),
-)
 const hasCharacterFilterError = computed(() =>
   characterFilters.value.length > 0 && characterFilters.value.length < CHARACTER_FILTER_MIN_COUNT,
 )
@@ -858,6 +687,22 @@ const deckRecommendResetSignature = computed(() => [
   trainingConfigSignature(trainingConfig.value),
 ].join("\u001F"))
 
+const {
+  checkDeckRecommendRegionData,
+  preloadCurrentRegionData,
+  invalidateDataPreload,
+  resetCardOptionMasterData,
+  syncParallelEngines,
+} = useDeckRecommendDataPreload({
+  runner,
+  dataRegion,
+  cardOptionMasterData,
+  selectedAccountServer,
+  recommendDataReady,
+  executionMode,
+  activeAlgorithms,
+})
+
 watch(
   accountOptions,
   (accounts) => {
@@ -894,8 +739,7 @@ watch(
 
 watch(dataRegion, () => {
   invalidateDataPreload()
-  cardOptionMasterData.value = null
-  cardOptionMasterDataSignature = ""
+  resetCardOptionMasterData()
   if (!routeHydrationInProgress.value) {
     selectedEventId.value = null
     selectedEventType.value = null
@@ -907,129 +751,27 @@ watch(dataRegion, () => {
   checkDeckRecommendRegionData(dataRegion.value)
 })
 
-watch(
-  areaItemMaxLevel,
-  (maxLevel) => {
-    const parsed = Number(areaItemLevelInput.value)
-    if (Number.isInteger(parsed) && parsed > maxLevel) {
-      areaItemLevelInput.value = String(maxLevel)
-    }
+useDeckRecommendRouteQuery({
+  dataRegion,
+  recommendMode,
+  recommendTarget,
+  liveType,
+  isLiveTypeLocked,
+  selectedMusicId,
+  selectedDifficulty,
+  bonusTargetsInput,
+  simulatedEventAttr,
+  simulatedEventUnit,
+  eventSimulationEnabled,
+  customBonusCharacterIds,
+  customBonusSupportUnits,
+  filterOtherUnit,
+  boostInput,
+  routeHydrationInProgress,
+  lockRegion: () => {
+    routeRegionLocked = true
   },
-  { immediate: true },
-)
-
-watch(
-  areaItemOptions,
-  () => {
-    const nextInputs: Record<string, string> = {}
-    for (const [areaItemId, value] of Object.entries(areaItemLevelOverrideInputs.value)) {
-      const option = areaItemOptionMap.value.get(Number(areaItemId))
-      const level = Number(value)
-      if (!option || !Number.isInteger(level) || level < 1) {
-        continue
-      }
-
-      nextInputs[areaItemId] = String(Math.min(level, option.maxLevel))
-    }
-
-    if (JSON.stringify(nextInputs) !== JSON.stringify(areaItemLevelOverrideInputs.value)) {
-      areaItemLevelOverrideInputs.value = nextInputs
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  characterRankMax,
-  (maxRank) => {
-    const parsed = Number(characterRankInput.value)
-    if (Number.isInteger(parsed) && maxRank > 0 && parsed > maxRank) {
-      characterRankInput.value = String(maxRank)
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  characterRankOptions,
-  () => {
-    const nextInputs: Record<string, string> = {}
-    for (const [characterId, value] of Object.entries(characterRankOverrideInputs.value)) {
-      const option = characterRankOptionMap.value.get(Number(characterId))
-      const rank = Number(value)
-      if (!option || !Number.isInteger(rank) || rank < 1) {
-        continue
-      }
-
-      nextInputs[characterId] = String(Math.min(rank, option.maxRank))
-    }
-
-    if (JSON.stringify(nextInputs) !== JSON.stringify(characterRankOverrideInputs.value)) {
-      characterRankOverrideInputs.value = nextInputs
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  mysekaiGateMaxLevel,
-  (maxLevel) => {
-    const parsed = Number(mysekaiGateLevelInput.value)
-    if (Number.isInteger(parsed) && maxLevel > 0 && parsed > maxLevel) {
-      mysekaiGateLevelInput.value = String(maxLevel)
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  mysekaiFixtureBonusCharacterOptions,
-  () => {
-    const nextInputs: Record<string, string> = {}
-    for (const [characterId, value] of Object.entries(mysekaiFixtureBonusRateOverrideInputs.value)) {
-      const rate = Number(value)
-      if (!mysekaiFixtureBonusCharacterIdSet.value.has(Number(characterId)) || !isValidFixtureBonusRate(rate)) {
-        continue
-      }
-
-      nextInputs[characterId] = String(rate)
-    }
-
-    if (JSON.stringify(nextInputs) !== JSON.stringify(mysekaiFixtureBonusRateOverrideInputs.value)) {
-      mysekaiFixtureBonusRateOverrideInputs.value = nextInputs
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  mysekaiGateOptions,
-  () => {
-    const nextInputs: Record<string, string> = {}
-    for (const [gateId, value] of Object.entries(mysekaiGateLevelOverrideInputs.value)) {
-      const option = mysekaiGateOptionMap.value.get(Number(gateId))
-      const level = Number(value)
-      if (!option || !Number.isInteger(level) || level < 1) {
-        continue
-      }
-
-      nextInputs[gateId] = String(Math.min(level, option.maxLevel))
-    }
-
-    if (JSON.stringify(nextInputs) !== JSON.stringify(mysekaiGateLevelOverrideInputs.value)) {
-      mysekaiGateLevelOverrideInputs.value = nextInputs
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  () => route.query,
-  () => {
-    applyDeckRecommendRouteQuery()
-  },
-  { immediate: true },
-)
+})
 
 watch(
   deckRecommendResetSignature,
@@ -1348,86 +1090,6 @@ function updateBoostInput(value: AcceptableValue) {
   }
 }
 
-function updateAreaItemLevelInput(value: AcceptableValue) {
-  if (value === "default") {
-    areaItemLevelInput.value = ""
-    return
-  }
-
-  if (typeof value !== "string") {
-    return
-  }
-
-  const parsed = Number(value)
-  if (Number.isInteger(parsed) && parsed >= 1 && parsed <= areaItemMaxLevel.value) {
-    areaItemLevelInput.value = value
-  }
-}
-
-function updateCharacterRankInput(value: AcceptableValue) {
-  if (value === "default") {
-    characterRankInput.value = ""
-    return
-  }
-
-  if (typeof value !== "string") {
-    return
-  }
-
-  const parsed = Number(value)
-  if (Number.isInteger(parsed) && parsed >= 1 && (!characterRankMax.value || parsed <= characterRankMax.value)) {
-    characterRankInput.value = value
-  }
-}
-
-function updateMysekaiGateLevelInput(value: AcceptableValue) {
-  if (value === "default") {
-    mysekaiGateLevelInput.value = ""
-    return
-  }
-
-  if (typeof value !== "string") {
-    return
-  }
-
-  const parsed = Number(value)
-  if (Number.isInteger(parsed) && parsed >= 1 && (!mysekaiGateMaxLevel.value || parsed <= mysekaiGateMaxLevel.value)) {
-    mysekaiGateLevelInput.value = value
-  }
-}
-
-function updateMysekaiFixtureBonusRateInput(value: AcceptableValue) {
-  if (value === "default") {
-    mysekaiFixtureBonusRateInput.value = ""
-    return
-  }
-
-  if (typeof value !== "string") {
-    return
-  }
-
-  const parsed = Number(value)
-  if (isValidFixtureBonusRate(parsed)) {
-    mysekaiFixtureBonusRateInput.value = value
-  }
-}
-
-function clearAreaItemLevelOverrides() {
-  areaItemLevelOverrideInputs.value = {}
-}
-
-function clearCharacterRankOverrides() {
-  characterRankOverrideInputs.value = {}
-}
-
-function clearMysekaiGateLevelOverrides() {
-  mysekaiGateLevelOverrideInputs.value = {}
-}
-
-function clearMysekaiFixtureBonusRateOverrides() {
-  mysekaiFixtureBonusRateOverrideInputs.value = {}
-}
-
 function updateEventSimulationMode(value: AcceptableValue) {
   if (typeof value === "string" && isDeckRecommendEventSimulationMode(value)) {
     simulatedEventMode.value = value
@@ -1473,358 +1135,10 @@ function toggleUnitFilter(value: DeckRecommendUnitType, checked: boolean) {
   unitFilters.value = toggleSelectedValue(unitFilters.value, value, checked)
 }
 
-function toggleSelectedValue<T extends string>(values: readonly T[], value: T, checked: boolean): T[] {
-  if (checked) {
-    return values.includes(value) ? [...values] : [...values, value]
-  }
-  return values.filter((item) => item !== value)
-}
-
 function filterSelectionLabel(count: number) {
   return count === 0
     ? t("deckRecommend.options.filters.none")
     : t("deckRecommend.options.filters.selectedCount", { count })
-}
-
-function buildAreaItemOverrideAreaGroups(items: DeckRecommendAreaItemOption[]): AreaItemOverrideAreaGroup[] {
-  const groups = new Map<number, DeckRecommendAreaItemOption[]>()
-  for (const item of items) {
-    groups.set(item.areaId, [...groups.get(item.areaId) ?? [], item])
-  }
-
-  return [...groups.entries()]
-    .sort(([left], [right]) => left - right)
-    .map(([areaId, areaItems]) => ({
-      key: String(areaId),
-      label: areaItemAreaLabel(areaItems[0]),
-      items: areaItems,
-    }))
-}
-
-function areaItemAreaLabel(item: DeckRecommendAreaItemOption | undefined) {
-  if (!item) {
-    return t("deckRecommend.options.areaItemOverride.areaFallback", { id: "-" })
-  }
-
-  const areaName = [item.areaName, item.areaSubName].filter(Boolean).join(" · ")
-  return areaName || t("deckRecommend.options.areaItemOverride.areaFallback", { id: item.areaId })
-}
-
-function checkDeckRecommendRegionData(region: SekaiRegion) {
-  void sekaiDataStore.ensureRegionData(region, {
-    files: mergeMasterFileNames(SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES, DECK_RECOMMEND_CARD_OPTION_MASTER_FILES),
-  })
-  const accountRegion = selectedAccount.value?.server
-  if (accountRegion && accountRegion !== region) {
-    void sekaiDataStore.ensureRegionData(accountRegion, {
-      files: ["honors"],
-    })
-  }
-}
-
-function preloadCurrentRegionData() {
-  if (!recommendDataReady.value) {
-    return
-  }
-
-  const region = dataRegion.value
-  const signature = createDataPreloadSignature()
-  if (signature !== dataPreloadSignature) {
-    dataPreloadSignature = signature
-    dataPreloadGeneration += 1
-  }
-  const generation = dataPreloadGeneration
-  const accountHonorRegion = selectedAccount.value?.server ?? region
-  void loadCardOptionMasterData(region, generation).catch(() => undefined)
-  void runner.preloadRegionData(region, accountHonorRegion, () => generation === dataPreloadGeneration).catch(() => undefined)
-  const parallelCount = executionMode.value === "parallel" ? activeAlgorithms.value.length : 0
-  if (parallelCount > 0) {
-    void runner.preloadParallelRegionData(region, parallelCount, accountHonorRegion, () => generation === dataPreloadGeneration).catch(() => undefined)
-  }
-}
-
-function invalidateDataPreload() {
-  dataPreloadSignature = ""
-  dataPreloadGeneration += 1
-}
-
-function createDataPreloadSignature() {
-  return [
-    dataRegion.value,
-    selectedAccount.value?.server ?? "",
-    currentRegionState.value.masterFetchVersion ?? "",
-    currentRegionState.value.musicMetasUpdatedAt ?? "",
-    currentRegionState.value.files.slice().sort().join(","),
-    executionMode.value,
-    activeAlgorithms.value.join(","),
-  ].join(":")
-}
-
-function stringArraySignature(values: readonly string[]) {
-  return values.join(",")
-}
-
-function numberArraySignature(values: readonly number[]) {
-  return values.join(",")
-}
-
-function sortedRecordSignature(record: Record<string, string>) {
-  return Object.entries(record)
-    .sort(([left], [right]) => Number(left) - Number(right))
-    .map(([key, value]) => `${key}=${value}`)
-    .join(",")
-}
-
-function singleCardOverridesSignature(values: readonly DeckRecommendSingleCardOverride[]) {
-  return values
-    .map((item) => [
-      item.cardId,
-      item.disabled ? 1 : 0,
-      item.level ?? "",
-      item.skillLevel ?? "",
-      item.masterRank ?? "",
-      item.episodeState ?? "",
-      item.canvas == null ? "" : item.canvas ? 1 : 0,
-    ].join(":"))
-    .join(",")
-}
-
-function trainingConfigSignature(values: readonly CardTrainingConfig[]) {
-  return values
-    .map((item) => [
-      item.rarity,
-      item.disabled ? 1 : 0,
-      item.maxLevel ? 1 : 0,
-      item.episodesRead ? 1 : 0,
-      item.maxMasterRank ? 1 : 0,
-      item.maxSkillLevel ? 1 : 0,
-      item.mySekaiCanvas ? 1 : 0,
-    ].join(":"))
-    .join(",")
-}
-
-async function loadCardOptionMasterData(region: SekaiRegion, generation: number) {
-  const masterVersion = sekaiDataStore.regionStates[region].masterFetchVersion
-  if (!masterVersion) {
-    return
-  }
-
-  const signature = [
-    region,
-    masterVersion,
-    DECK_RECOMMEND_CARD_OPTION_MASTER_FILES
-      .map((fileName) => `${fileName}:${sekaiDataStore.regionStates[region].files.includes(fileName) ? "1" : "0"}`)
-      .join(","),
-  ].join(":")
-  if (cardOptionMasterData.value && cardOptionMasterDataSignature === signature) {
-    return
-  }
-
-  const masterData = await readSekaiMasterFiles(region, DECK_RECOMMEND_CARD_OPTION_MASTER_FILES, masterVersion)
-  if (generation !== dataPreloadGeneration || dataRegion.value !== region) {
-    return
-  }
-  if (!Array.isArray(masterData.cards)) {
-    return
-  }
-
-  cardOptionMasterData.value = masterData
-  cardOptionMasterDataSignature = signature
-}
-
-function mergeMasterFileNames(...groups: readonly (readonly string[])[]): string[] {
-  return [...new Set(groups.flat())]
-}
-
-function syncParallelEngines() {
-  if (runner.running.value) {
-    return
-  }
-
-  const parallelCount = executionMode.value === "parallel" ? activeAlgorithms.value.length : 0
-  void runner.preloadParallelEngines(parallelCount)
-    .then(() => {
-      if (parallelCount > 0 && recommendDataReady.value) {
-        preloadCurrentRegionData()
-      }
-    })
-    .catch(() => undefined)
-}
-
-function applyDeckRecommendRouteQuery() {
-  const signature = createDeckRecommendRouteQuerySignature()
-  if (!signature || signature === routeQueryHydrationSignature) {
-    return
-  }
-
-  routeQueryHydrationSignature = signature
-  routeHydrationInProgress.value = true
-
-  const queryRegion = readRouteQueryString("dataRegion") ?? readRouteQueryString("region")
-  if (queryRegion && isSekaiRegionValue(queryRegion)) {
-    routeRegionLocked = true
-    dataRegion.value = queryRegion
-  }
-
-  const queryMode = readRouteQueryString("mode")
-  const legacyModeTarget = normalizeLegacyRecommendModeTarget(queryMode)
-  if (legacyModeTarget) {
-    recommendMode.value = legacyModeTarget.mode
-    recommendTarget.value = legacyModeTarget.target
-  } else if (queryMode && isDeckRecommendMode(queryMode)) {
-    recommendMode.value = queryMode
-  }
-
-  const queryTarget = readRouteQueryString("target") ?? readRouteQueryString("recommendTarget")
-  if (queryTarget && isDeckRecommendTarget(queryTarget) && isAllowedRecommendTarget(queryTarget, recommendMode.value)) {
-    recommendTarget.value = queryTarget
-  }
-
-  const queryLiveType = readRouteQueryString("liveType")
-  if (isLiveTypeLocked.value) {
-    liveType.value = "solo"
-  } else {
-    const normalizedLiveType = normalizeDeckRecommendLiveType(queryLiveType)
-    if (normalizedLiveType) {
-      liveType.value = normalizedLiveType
-    }
-  }
-
-  const queryMusicId = readPositiveIntegerRouteQuery("musicId")
-  if (queryMusicId) {
-    selectedMusicId.value = String(queryMusicId)
-  }
-
-  const queryMusicDifficulty = normalizeRouteMusicDifficulty(readRouteQueryString("musicDifficulty"))
-    ?? normalizeRouteMusicDifficulty(readRouteQueryString("difficulty"))
-  if (queryMusicDifficulty) {
-    selectedDifficulty.value = queryMusicDifficulty
-  }
-
-  const queryBonusTargets = readRouteQueryString("bonusTargets")
-    ?? readRouteQueryString("targetBonuses")
-    ?? readRouteQueryString("target_bonus_list")
-  if (queryBonusTargets) {
-    bonusTargetsInput.value = queryBonusTargets
-  }
-
-  const queryCustomBonusAttr = readRouteQueryString("customBonusAttr")
-  if (queryCustomBonusAttr && isDeckRecommendEventAttr(queryCustomBonusAttr)) {
-    simulatedEventAttr.value = queryCustomBonusAttr
-  }
-
-  const queryCustomBonusCharacters = readRouteQueryString("customBonusCharacters")
-    ?? readRouteQueryString("customBonusCharacterIds")
-  if (queryCustomBonusCharacters) {
-    customBonusCharacterIds.value = parseDeckCustomBonusCharacterIdsInput(queryCustomBonusCharacters).values
-  }
-
-  const queryCustomBonusSupportUnits = readRouteQueryString("customBonusSupportUnits")
-  if (queryCustomBonusSupportUnits) {
-    customBonusSupportUnits.value = parseDeckCustomBonusSupportUnitsInput(queryCustomBonusSupportUnits).values
-  }
-
-  const queryFilterOtherUnit = readRouteQueryBoolean("filterOtherUnit")
-  if (queryFilterOtherUnit != null) {
-    filterOtherUnit.value = queryFilterOtherUnit
-  }
-
-  const querySimulatedEventUnit = readRouteQueryString("simulatedEventUnit")
-  const hasCustomBonusQuery = Boolean(queryCustomBonusCharacters || queryCustomBonusSupportUnits)
-  if (querySimulatedEventUnit && isDeckRecommendSimulatedEventUnit(querySimulatedEventUnit)) {
-    simulatedEventUnit.value = querySimulatedEventUnit
-    eventSimulationEnabled.value = true
-  } else if (hasCustomBonusQuery) {
-    simulatedEventUnit.value = DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT
-    eventSimulationEnabled.value = true
-  }
-
-  const queryBoost = readIntegerRouteQuery("boost")
-  if (queryBoost != null && queryBoost >= 0 && queryBoost <= 10) {
-    boostInput.value = String(queryBoost)
-  }
-
-  void nextTick(() => {
-    routeHydrationInProgress.value = false
-  })
-}
-
-function createDeckRecommendRouteQuerySignature() {
-  const keys = [
-    "source",
-    "mode",
-    "target",
-    "recommendTarget",
-    "dataRegion",
-    "region",
-    "liveType",
-    "musicId",
-    "musicDifficulty",
-    "difficulty",
-    "bonusTargets",
-    "targetBonuses",
-    "target_bonus_list",
-    "customBonusAttr",
-    "customBonusCharacters",
-    "customBonusCharacterIds",
-    "customBonusSupportUnits",
-    "filterOtherUnit",
-    "simulatedEventUnit",
-    "boost",
-  ]
-  const values = keys.map((key) => `${key}=${readRouteQueryString(key) ?? ""}`)
-  return values.some((value) => !value.endsWith("=")) ? values.join("&") : ""
-}
-
-function readRouteQueryString(key: string): string | null {
-  const value = route.query[key]
-  const raw = Array.isArray(value) ? value[0] : value
-  if (typeof raw !== "string") {
-    return null
-  }
-
-  const trimmed = raw.trim()
-  return trimmed ? trimmed : null
-}
-
-function readPositiveIntegerRouteQuery(key: string): number | null {
-  const value = readIntegerRouteQuery(key)
-  return value != null && value > 0 ? value : null
-}
-
-function readIntegerRouteQuery(key: string): number | null {
-  const value = readRouteQueryString(key)
-  if (!value) {
-    return null
-  }
-
-  const parsed = Number(value)
-  return Number.isInteger(parsed) ? parsed : null
-}
-
-function readRouteQueryBoolean(key: string): boolean | null {
-  const value = readRouteQueryString(key)
-  if (!value) {
-    return null
-  }
-
-  const normalized = value.toLowerCase()
-  if (["1", "true", "yes", "on"].includes(normalized)) {
-    return true
-  }
-  if (["0", "false", "no", "off"].includes(normalized)) {
-    return false
-  }
-  return null
-}
-
-function normalizeRouteMusicDifficulty(value: string | null): string | null {
-  if (!value) {
-    return null
-  }
-
-  const normalized = value.trim().toLowerCase()
-  return /^[a-z_]+$/.test(normalized) ? normalized : null
 }
 
 async function runRecommend() {
@@ -2051,35 +1365,6 @@ function formatInteger(value: number | undefined) {
   }).format(Number(value) || 0)
 }
 
-function formatPercentValue(value: number) {
-  return new Intl.NumberFormat(locale.value, {
-    maximumFractionDigits: 2,
-  }).format(value)
-}
-
-function isAllowedRecommendTarget(target: DeckRecommendTarget, mode: DeckRecommendMode): boolean {
-  return allowedRecommendTargets(mode).includes(target)
-}
-
-function allowedRecommendTargets(mode: DeckRecommendMode): DeckRecommendTarget[] {
-  switch (mode) {
-    case "event":
-      return ["score", "power", "skill", "bonus"]
-    case "mysekai":
-      return ["score", "power", "bonus"]
-    case "challenge":
-      return ["score", "power"]
-    case "max":
-      return ["score", "power", "skill"]
-    case "bonus":
-      return ["bonus"]
-  }
-}
-
-function defaultRecommendTarget(mode: DeckRecommendMode): DeckRecommendTarget {
-  return mode === "bonus" ? "bonus" : "score"
-}
-
 function recommendTargetLabel(target: DeckRecommendTarget, mode: DeckRecommendMode) {
   if (target === "score" && mode !== "challenge" && mode !== "max") {
     return t("deckRecommend.targets.pt")
@@ -2092,34 +1377,6 @@ function recommendTargetLabel(target: DeckRecommendTarget, mode: DeckRecommendMo
   return t(`deckRecommend.targets.${target}`)
 }
 
-function normalizeLegacyRecommendModeTarget(
-  mode: string | null,
-): { mode: DeckRecommendMode; target: DeckRecommendTarget } | null {
-  if (mode === "max-power") {
-    return { mode: "max", target: "power" }
-  }
-  if (mode === "max-skill") {
-    return { mode: "max", target: "skill" }
-  }
-  return null
-}
-
-function normalizeDeckRecommendLiveType(value: string | null): DeckRecommendLiveType | null {
-  if (!value) {
-    return null
-  }
-
-  return value === "cheerful"
-    ? "multi"
-    : isDeckRecommendLiveType(value)
-      ? value
-      : null
-}
-
-function normalizeDeckRecommendUnit(value: string | null | undefined): DeckRecommendUnitType | null {
-  return value && isDeckRecommendUnit(value) ? value : null
-}
-
 function isAlgorithmSelected(value: DeckRecommendAlgorithm) {
   if (recommendMode.value === "bonus") {
     return value === "dfs"
@@ -2130,72 +1387,6 @@ function isAlgorithmSelected(value: DeckRecommendAlgorithm) {
 
 function isAlgorithmDisabled() {
   return runner.running.value || recommendMode.value === "bonus"
-}
-
-function hasRequiredFiles(cachedFiles: readonly string[], requiredFiles: readonly string[]): boolean {
-  return requiredFiles.every((fileName) => cachedFiles.includes(fileName))
-}
-
-function parseOptionalNumberInput(
-  value: NumericInputValue | null | undefined,
-  options: { min?: number; max?: number; integer?: boolean } = {},
-): { value: number | null; invalid: boolean } {
-  const trimmed = value == null ? "" : String(value).trim()
-  if (trimmed === "") {
-    return { value: null, invalid: false }
-  }
-
-  const parsed = Number(trimmed)
-  if (
-    !Number.isFinite(parsed)
-    || (options.integer === true && !Number.isInteger(parsed))
-    || (options.min != null && parsed < options.min)
-    || (options.max != null && parsed > options.max)
-  ) {
-    return { value: null, invalid: true }
-  }
-
-  return { value: parsed, invalid: false }
-}
-
-function parseFixtureBonusRateInput(value: NumericInputValue | null | undefined): { value: number | null; invalid: boolean } {
-  const trimmed = value == null ? "" : String(value).trim()
-  if (trimmed === "") {
-    return { value: null, invalid: false }
-  }
-
-  const parsed = Number(trimmed)
-  return isValidFixtureBonusRate(parsed)
-    ? { value: parsed, invalid: false }
-    : { value: null, invalid: true }
-}
-
-function isValidFixtureBonusRate(value: number): boolean {
-  return Number.isInteger(value) && value >= 0 && value <= MYSEKAI_FIXTURE_BONUS_RATE_MAX && canBuildFixtureBonusRate(value)
-}
-
-function canBuildFixtureBonusRate(value: number): boolean {
-  // 1 is available, so every integer total in the supported range can be expressed.
-  return value >= 0
-}
-
-function buildFixtureBonusRateValues(): number[] {
-  return Array.from({ length: MYSEKAI_FIXTURE_BONUS_RATE_MAX + 1 }, (_, value) => value)
-}
-
-function formatFixtureBonusRate(value: number): string {
-  return t("deckRecommend.options.filters.mysekaiFixtureBonusRateOption", {
-    value: formatPercentValue(value / 10),
-  })
-}
-
-function parseWorldBloomTurn(value: string | null): number | null {
-  const parsed = typeof value === "string" ? Number(value) : null
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 3) {
-    return null
-  }
-
-  return parsed
 }
 
 function resolveDefaultSkillStrategyForForm(
@@ -2283,11 +1474,7 @@ provideDeckRecommendFormContext({
   mysekaiGateMaxLevel,
   mysekaiFixtureBonusRateInput,
   updateMysekaiFixtureBonusRateInput,
-  dataOverridesInvalid: computed(() =>
-    areaItemLevel.value.invalid
-    || characterRank.value.invalid
-    || mysekaiGateLevel.value.invalid
-    || mysekaiFixtureBonusRate.value.invalid),
+  dataOverridesInvalid,
   boostInput,
   updateBoostInput,
   boostOptions,
@@ -2385,31 +1572,15 @@ provideDeckRecommendFormContext({
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-            <div class="ml-auto hidden flex-wrap items-center gap-2 md:flex">
-              <Button type="button" variant="outline" size="sm" @click="expertConfigOpen = true">
-                <LucideSettings2 class="size-4" />
-                {{ t("deckRecommend.layers.expert.title") }}
-              </Button>
-              <Button type="button" variant="outline" size="sm" :disabled="runner.running.value" @click="saveDeckRecommendConfig">
-                <LucideSave class="size-4" />
-                {{ t("deckRecommend.configActions.save") }}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                class="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                :disabled="runner.running.value"
-                @click="clearConfigConfirmOpen = true"
-              >
-                <LucideTrash2 class="size-4" />
-                {{ t("deckRecommend.configActions.clear") }}
-              </Button>
-              <Button type="button" size="sm" class="min-w-28" :disabled="!canRunRecommend" @click="runRecommend">
-                <LucidePlay class="size-4" />
-                {{ runner.running.value ? t("deckRecommend.runner.running") : t("deckRecommend.runner.run") }}
-              </Button>
-            </div>
+            <DeckConfigActions
+              variant="desktop"
+              :running="runner.running.value"
+              :can-run="canRunRecommend"
+              @expert="expertConfigOpen = true"
+              @save="saveDeckRecommendConfig"
+              @clear="clearConfigConfirmOpen = true"
+              @run="runRecommend"
+            />
           </div>
         </CardHeader>
         <CardContent class="@container grid gap-5 px-3 py-4 sm:px-5 sm:py-5">
@@ -2419,54 +1590,25 @@ provideDeckRecommendFormContext({
 
           <DeckExpertSheet v-model:open="expertConfigOpen" />
         </CardContent>
-        <div class="grid gap-2 border-t px-3 py-3 md:hidden">
-          <div class="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" class="flex-1" @click="expertConfigOpen = true">
-              <LucideSettings2 class="size-4" />
-              {{ t("deckRecommend.layers.expert.title") }}
-            </Button>
-            <Button type="button" variant="outline" size="sm" class="flex-1" :disabled="runner.running.value" @click="saveDeckRecommendConfig">
-              <LucideSave class="size-4" />
-              {{ t("deckRecommend.configActions.save") }}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              class="flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              :disabled="runner.running.value"
-              @click="clearConfigConfirmOpen = true"
-            >
-              <LucideTrash2 class="size-4" />
-              {{ t("deckRecommend.configActions.clear") }}
-            </Button>
-          </div>
-          <Button type="button" class="w-full" :disabled="!canRunRecommend" @click="runRecommend">
-            <LucidePlay class="size-4" />
-            {{ runner.running.value ? t("deckRecommend.runner.running") : t("deckRecommend.runner.run") }}
-          </Button>
-        </div>
+        <DeckConfigActions
+          variant="mobile"
+          :running="runner.running.value"
+          :can-run="canRunRecommend"
+          @expert="expertConfigOpen = true"
+          @save="saveDeckRecommendConfig"
+          @clear="clearConfigConfirmOpen = true"
+          @run="runRecommend"
+        />
       </Card>
 
-      <div
+      <DeckConfigSummaryBar
         v-show="configCollapsed"
-        class="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-lg border bg-card px-3 py-2.5 shadow-sm sm:px-4"
-      >
-        <template v-for="(item, index) in configSummaryItems" :key="`${index}-${item}`">
-          <span v-if="index > 0" class="text-muted-foreground/50" aria-hidden="true">·</span>
-          <span class="text-sm text-foreground/90">{{ item }}</span>
-        </template>
-        <div class="ml-auto flex shrink-0 items-center gap-2">
-          <Button type="button" variant="outline" size="sm" @click="configCollapsed = false">
-            <LucideSettings2 class="size-4" />
-            {{ t("deckRecommend.summaryBar.edit") }}
-          </Button>
-          <Button type="button" size="sm" :disabled="!canRunRecommend" @click="runRecommend">
-            <LucidePlay class="size-4" />
-            {{ runner.running.value ? t("deckRecommend.runner.running") : t("deckRecommend.summaryBar.rerun") }}
-          </Button>
-        </div>
-      </div>
+        :items="configSummaryItems"
+        :running="runner.running.value"
+        :can-run="canRunRecommend"
+        @edit="configCollapsed = false"
+        @run="runRecommend"
+      />
 
       <DeckResultPanel
         :runner="runner"
@@ -2482,95 +1624,22 @@ provideDeckRecommendFormContext({
         :song-ranking-available="songRankingAvailable"
       />
 
-      <div class="space-y-1.5 rounded-md border bg-muted/20 p-2.5 text-xs leading-6 text-muted-foreground sm:p-3 xl:p-4">
-        <p>
-          {{ t("deckRecommend.attribution.originalPrefix") }}<a
-            class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
-            href="https://github.com/xfl03"
-            target="_blank"
-            rel="noreferrer noopener"
-          >xfl03(33)</a>{{ t("deckRecommend.attribution.originalMiddle") }}<a
-            class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
-            href="https://github.com/xfl03/sekai-calculator"
-            target="_blank"
-            rel="noreferrer noopener"
-          >sekai-calculator</a>{{ t("deckRecommend.attribution.originalSuffix") }}
-        </p>
-        <p>
-          {{ t("deckRecommend.attribution.optimizationPrefix") }}<a
-            class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
-            href="https://github.com/NeuraXmy"
-            target="_blank"
-            rel="noreferrer noopener"
-          >{{ t("deckRecommend.attribution.neuraxmyName") }}</a>{{ t("deckRecommend.attribution.optimizationMiddle") }}<a
-            class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
-            href="https://github.com/NeuraXmy/sekai-deck-recommend-cpp"
-            target="_blank"
-            rel="noreferrer noopener"
-          >sekai-deck-recommend-cpp</a>
-        </p>
-        <p>
-          {{ t("deckRecommend.attribution.enginePrefix") }}<router-link
-            class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
-            to="/about"
-          >{{ t("deckRecommend.attribution.aboutLink") }}</router-link>{{ t("deckRecommend.attribution.engineSuffix") }}
-        </p>
-      </div>
+      <DeckAttributionFooter />
 
-      <AlertDialog v-model:open="clearConfigConfirmOpen">
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{{ t("deckRecommend.configActions.clearDialogTitle") }}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {{ t("deckRecommend.configActions.clearDialogDescription") }}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{{ t("deckRecommend.configActions.clearDialogCancel") }}</AlertDialogCancel>
-            <AlertDialogAction
-              class="bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40"
-              @click="clearDeckRecommendConfig"
-            >
-              {{ t("deckRecommend.configActions.clearDialogConfirm") }}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeckClearConfigDialog
+        v-model:open="clearConfigConfirmOpen"
+        @confirm="clearDeckRecommendConfig"
+      />
 
-      <Dialog v-model:open="customBonusSimulationDialogOpen">
-        <DialogScrollContent class="max-h-[88vh] overflow-y-auto sm:max-w-[760px]">
-          <DialogHeader>
-            <DialogTitle>{{ t("deckRecommend.options.eventSimulation.customBonusTitle") }}</DialogTitle>
-            <DialogDescription>
-              {{ t("deckRecommend.options.eventSimulation.customBonusDescription") }}
-            </DialogDescription>
-          </DialogHeader>
-          <div class="grid gap-4">
-            <CustomBonusCharacterPicker
-              v-model="customBonusCharacterIds"
-              v-model:support-units="customBonusSupportUnits"
-              :region="dataRegion"
-              :disabled="runner.running.value || !dataReady"
-            />
-            <label class="flex items-center justify-between gap-3 rounded-md border bg-background/60 p-3 text-sm">
-              <span>{{ t("deckRecommend.form.filterOtherUnit") }}</span>
-              <Switch
-                v-model="filterOtherUnit"
-                :aria-label="t('deckRecommend.form.filterOtherUnit')"
-                :disabled="runner.running.value"
-              />
-            </label>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              @click="customBonusSimulationDialogOpen = false"
-            >
-              {{ t("deckRecommend.options.eventSimulation.customBonusDone") }}
-            </Button>
-          </DialogFooter>
-        </DialogScrollContent>
-      </Dialog>
+      <CustomBonusSimulationDialog
+        v-model:open="customBonusSimulationDialogOpen"
+        v-model:character-ids="customBonusCharacterIds"
+        v-model:support-units="customBonusSupportUnits"
+        v-model:filter-other-unit="filterOtherUnit"
+        :region="dataRegion"
+        :running="runner.running.value"
+        :data-ready="dataReady"
+      />
     </div>
   </div>
 </template>
