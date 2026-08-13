@@ -91,6 +91,7 @@ const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 te
           v-model:inherit-password="inheritPassword"
           :remember-inherit="rememberInherit"
           :is-submitting-inherit="isSubmittingInherit"
+          :can-select-my-sekai-data-type="canSelectMySekaiDataType"
           @update:remember-inherit="setRememberInherit"
           @submit="submitInheritUpload"
         />

@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n"
 import type { SekaiRegion, UploadDataType } from "@/types"
 import { formatGameAccountLabel } from "@/lib/game-account-display"
 import { isSekaiRegion } from "@/lib/sekai-region"
+import { isVerifiedQQBinding } from "@/lib/social-platform"
 import { useSettingsStore } from "@/shared/stores/settings"
 
 export interface BoundAccount {
@@ -17,6 +18,7 @@ export interface BoundAccount {
 type UploadAccountStore = {
   isLoggedIn: boolean
   allowCNMysekai: boolean | null
+  socialPlatformInfo?: { platform: string; verified: boolean } | null
   gameAccountBindings?: Array<{
     server: SekaiRegion
     userId: string | number
@@ -83,11 +85,18 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
     return null
   })
 
+  // MySekai upload features require a verified QQ on the HarukiBot social
+  // binding; without it every mysekai option on the upload page is hidden.
+  const hasVerifiedQQ = computed(() => isVerifiedQQBinding(userStore.socialPlatformInfo))
+
   const isCNMySekaiForbidden = computed(() => {
     return selectedAccount.value?.server === "cn" && userStore.allowCNMysekai !== true && dataType.value === "mysekai"
   })
 
   const canSelectMySekaiDataType = computed(() => {
+    if (!hasVerifiedQQ.value) {
+      return false
+    }
     return selectedAccount.value?.server !== "cn" || userStore.allowCNMysekai === true
   })
 
@@ -122,6 +131,7 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
     boundAccounts,
     selectedAccount,
     disabledReason,
+    hasVerifiedQQ,
     isCNMySekaiForbidden,
     canSelectMySekaiDataType,
   }

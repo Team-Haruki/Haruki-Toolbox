@@ -16,3 +16,14 @@ export const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
 export function isSocialPlatform(value: unknown): value is SocialPlatform {
     return typeof value === "string" && SOCIAL_PLATFORM_SET.has(value)
 }
+
+/**
+ * Whether the toolbox account's HarukiBot social binding is a verified QQ
+ * number — the prerequisite for adding game bindings and for any MySekai
+ * upload feature.
+ */
+export function isVerifiedQQBinding(
+    info: { platform: string; verified: boolean } | null | undefined,
+): boolean {
+    return info?.platform === "qq" && info.verified === true
+}

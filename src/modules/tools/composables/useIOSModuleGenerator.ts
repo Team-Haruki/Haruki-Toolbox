@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import { copyTextToClipboard, isClipboardSupported } from "@/lib/clipboard"
 import { extractErrorMessage } from "@/lib/error-utils"
+import { isVerifiedQQBinding } from "@/lib/social-platform"
 import { generateIOSUploadCode } from "@/modules/user-settings/api/ios-upload-code"
 import {
   CHUNK_SIZE_MIN,
@@ -67,12 +68,32 @@ export function useIOSModuleGenerator() {
       label: t(`tools.iosModules.region.${option.value}`),
     }))
   )
+  // MySekai upload types require a verified QQ on the HarukiBot social
+  // binding — hidden entirely (and deselected) without one.
+  const hasVerifiedQQ = computed(() => isVerifiedQQBinding(userStore.socialPlatformInfo))
+
   const dataTypeOptionsWithDesc = computed(() =>
-    IOS_DATA_TYPE_OPTIONS.map((option) => ({
-      value: option.value,
-      label: t(`tools.iosModules.dataTypes.${option.value}.label`),
-      desc: t(`tools.iosModules.dataTypes.${option.value}.description`),
-    }))
+    IOS_DATA_TYPE_OPTIONS
+      .filter((option) => hasVerifiedQQ.value || !isMySekaiUploadType(option.value))
+      .map((option) => ({
+        value: option.value,
+        label: t(`tools.iosModules.dataTypes.${option.value}.label`),
+        desc: t(`tools.iosModules.dataTypes.${option.value}.description`),
+      }))
+  )
+
+  watch(
+    hasVerifiedQQ,
+    (verified) => {
+      if (verified) {
+        return
+      }
+      const next = selectedDataTypes.value.filter((item) => !isMySekaiUploadType(item))
+      if (next.length !== selectedDataTypes.value.length) {
+        selectedDataTypes.value = next.length > 0 ? next : ["suite"]
+      }
+    },
+    { immediate: true },
   )
 
   const hasUploadCode = computed(() => !!userStore.iosUploadCode)

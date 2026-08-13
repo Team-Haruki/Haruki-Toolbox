@@ -1,4 +1,4 @@
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
@@ -35,6 +35,7 @@ export function useUploadDataTool() {
     boundAccounts,
     selectedAccount,
     disabledReason,
+    hasVerifiedQQ,
     isCNMySekaiForbidden,
     canSelectMySekaiDataType,
   } = useUploadDataAccounts(userStore, fileDataType)
@@ -47,6 +48,24 @@ export function useUploadDataTool() {
     inheritDataType.value = savedInherit.type
     rememberInherit.value = true
   }
+
+  // Without a verified QQ binding every mysekai option is hidden — force any
+  // (defaulted or restored) mysekai selection back to suite.
+  watch(
+    [hasVerifiedQQ, inheritDataType, fileDataType],
+    () => {
+      if (hasVerifiedQQ.value) {
+        return
+      }
+      if (inheritDataType.value === "mysekai") {
+        inheritDataType.value = "suite"
+      }
+      if (fileDataType.value === "mysekai") {
+        fileDataType.value = "suite"
+      }
+    },
+    { immediate: true },
+  )
 
   function setRememberInherit(value: boolean) {
     rememberInherit.value = value
@@ -213,6 +232,7 @@ export function useUploadDataTool() {
     boundAccounts,
     selectedAccountKey,
     disabledReason,
+    hasVerifiedQQ,
     isCNMySekaiForbidden,
     canSelectMySekaiDataType,
     onFileChange,

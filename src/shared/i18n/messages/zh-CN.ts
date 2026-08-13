@@ -549,6 +549,13 @@ export const zhCN = {
       editDialog: {
         createTitle: "新增账号",
         editTitle: "编辑账号",
+        subtitle: "绑定你的游戏账号并配置数据权限。",
+        verifyHint: "完成验证后才能保存绑定。",
+        qqGate: {
+          title: "需要先绑定并验证 QQ",
+          description: "添加游戏账号前，请先在「HarukiBot 数据授权」中绑定并验证你的 QQ 号。",
+          action: "前往绑定 QQ",
+        },
         basicInfoTitle: "账号基本信息",
         serverPlaceholder: "选择区服",
         verifyButton: "验证",
