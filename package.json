@@ -44,7 +44,7 @@
     "vue-sonner": "^2.0.9"
   },
   "overrides": {
-    "dompurify": "3.4.2",
+    "dompurify": "3.4.13",
     "@babel/core": "^7.29.6"
   },
   "devDependencies": {
