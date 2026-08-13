@@ -60,7 +60,6 @@ const {
   harukiLogo,
   userStore,
   pageTitle,
-  showPageTitle,
   copyrightYear,
   pendingUserTicketCount,
   isNavGroupOpen,
@@ -248,7 +247,6 @@ function openAppSettings() {
             class="mx-1 !h-6 bg-slate-300/70 dark:bg-cyan-400/25 hidden sm:inline-flex"
         />
         <div
-            v-if="showPageTitle"
             class="hidden sm:block text-lg font-semibold truncate whitespace-nowrap overflow-hidden min-w-0 pl-1"
         >
           {{ pageTitle }}

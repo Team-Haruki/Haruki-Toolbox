@@ -30,7 +30,6 @@ export function useWebLayout() {
     }
     return t(DEFAULT_PAGE_TITLE_KEY)
   })
-  const showPageTitle = computed(() => String(pageTitle.value || "").length <= 10)
   const copyrightYear = computed(() => {
     const currentYear = new Date().getFullYear()
     return currentYear > COPYRIGHT_START_YEAR
@@ -154,7 +153,6 @@ export function useWebLayout() {
     harukiLogo: HARUKI_LOGO,
     userStore,
     pageTitle,
-    showPageTitle,
     copyrightYear,
     appVersion: __APP_VERSION__,
     gitCommit: __APP_GIT_COMMIT__,
