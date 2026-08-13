@@ -557,7 +557,7 @@ function eventBoxHint(eventId: number) {
                   <TableRow v-for="row in difficultyRows" :key="row.difficulty">
                     <TableCell>
                       <span
-                        class="inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold text-white"
+                        class="inline-flex w-18 items-center justify-center rounded px-2 py-0.5 text-xs font-semibold text-white"
                         :style="{ backgroundColor: row.color }"
                       >
                         {{ difficultyLabel(row.difficulty) }}
