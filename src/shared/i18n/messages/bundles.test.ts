@@ -51,7 +51,7 @@ describe("i18n bundles", () => {
     expect(get("navigation.groups.projectSekai")).toBeTruthy()
     expect(get("deckRecommend.form.account")).toBeTruthy()
     expect(get("admin.nav.dashboard")).toBeTruthy()
-    expect(get("userSettings.sekaiData.title")).toBeTruthy()
+    expect(get("userSettings.sekaiData.regionCacheTitle")).toBeTruthy()
     expect(get("tools.uploadData.tabs.ios")).toBeTruthy()
     expect(get("legal.title") ?? get("legal.privacy") ?? Object.keys((zh.legal ?? {}) as object).length).toBeTruthy()
   })

@@ -1204,7 +1204,8 @@ export default {
       "checking": "测速中",
       "unknown": "未测速",
       "failed": "无法连接",
-      "latencyMs": "{ms} ms"
+      "latencyMs": "{ms} ms",
+      "refreshLatency": "重新测速"
     },
     "assetEndpoint": {
       "label": "游戏资源端点",
@@ -1264,8 +1265,7 @@ export default {
       "updating": "更新中..."
     },
     "userData": {
-      "title": "用户数据缓存",
-      "description": "管理组卡推荐使用的 suite、mysekai 与 profile 本地缓存。suite/mysekai 刷新会先检查远程上传时间，profile 会直接拉取最新数据。",
+      "description": "管理已绑定游戏账号的 suite、mysekai 与 profile 本地数据缓存，供站内各项功能共用。suite/mysekai 刷新会先检查远程上传时间，profile 会直接拉取最新数据。",
       "account": "账号",
       "accountPlaceholder": "请选择已绑定账号",
       "noAccount": "当前账号还没有绑定游戏账号。",
@@ -1287,10 +1287,10 @@ export default {
       "clear": "清理用户数据缓存",
       "clearDialog": {
         "title": "清理用户数据缓存？",
-        "description": "这会清理当前 Toolbox 账号在本浏览器保存的组卡用户数据缓存，之后需要重新检查或下载。",
+        "description": "这会清理当前工具箱账号在本浏览器保存的用户数据缓存，之后需要重新检查或下载。",
         "confirm": "确认清理"
       },
-      "logoutCleanupHint": "退出登录时会自动清理当前 Toolbox 账号在本浏览器保存的组卡用户数据缓存。",
+      "logoutCleanupHint": "退出登录时会自动清理当前工具箱账号在本浏览器保存的用户数据缓存。",
       "toast": {
         "alreadyCurrent": "用户数据已是最新",
         "refreshed": "用户数据已刷新",
@@ -1300,11 +1300,16 @@ export default {
       }
     },
     "toast": {
-      "saved": "设置已保存",
       "reset": "设置已重置为默认值"
     },
-    "tip": {
-      "content": "主题、低特效模式和 UID 显示偏好保存后会立即生效，端点设置将在下次请求时生效。"
+    "sections": {
+      "preferences": "外观、语言、网络与隐私偏好，修改后立即生效。",
+      "sekaiData": "管理各区服 Master 数据本地缓存与后台更新任务，供选择器、推荐和其他功能复用。"
+    },
+    "groups": {
+      "appearance": "外观",
+      "network": "网络",
+      "privacy": "隐私与内容"
     }
   },
   "core": {

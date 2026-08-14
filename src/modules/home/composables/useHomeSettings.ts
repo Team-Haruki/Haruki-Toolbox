@@ -1,8 +1,8 @@
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, onMounted } from "vue"
 import type { Component } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
-import { CloudLightning, Gauge, Globe2, Link, Monitor, Moon, Network, Sun } from "lucide-vue-next"
+import { CloudLightning, Globe2, Link, Monitor, Moon, Network, Sun } from "lucide-vue-next"
 import {
   useSettingsStore,
   type AssetEndpointLatencyStatus,
@@ -42,23 +42,58 @@ interface LocaleOption {
 }
 
 const DEFAULT_ENDPOINT: EndpointType = "direct"
-const DEFAULT_ASSET_ENDPOINT: SekaiAssetEndpointPreference = "china"
 const DEFAULT_THEME: ThemeType = "system"
 const DEFAULT_REDUCED_VISUAL_EFFECTS = false
 const DEFAULT_HIDE_GAME_USER_ID = false
 
+// Settings apply immediately: every selection writes straight to the settings
+// store, so the dialog has no draft state and no save button.
 export function useHomeSettings() {
   const { t } = useI18n()
   const settingsStore = useSettingsStore()
 
-  const selectedEndpoint = ref<EndpointType>(settingsStore.resolvedPreferredEndpoint)
-  const selectedAssetEndpoint = ref<SekaiAssetEndpointPreference>(settingsStore.currentAssetEndpoint)
-  const selectedTheme = ref<ThemeType>(settingsStore.theme)
-  const selectedLocale = ref<AppLocale>(settingsStore.locale)
-  const selectedReducedVisualEffects = ref(settingsStore.reducedVisualEffects)
-  const selectedHideGameUserId = ref(settingsStore.hideGameUserId)
-  const selectedShowUnreleasedContent = ref(settingsStore.showUnreleasedContent)
-  const selectedBlurUnreleasedContent = ref(settingsStore.blurUnreleasedContent)
+  const selectedEndpoint = computed<EndpointType>({
+    get: () => settingsStore.resolvedPreferredEndpoint,
+    set: (value) => settingsStore.setPreferredEndpoint(value),
+  })
+
+  const selectedAssetEndpoint = computed<SekaiAssetEndpointPreference>({
+    get: () => settingsStore.currentAssetEndpoint,
+    set: (value) => settingsStore.setPreferredAssetEndpoint(value),
+  })
+
+  const selectedTheme = computed<ThemeType>({
+    get: () => settingsStore.theme,
+    set: (value) => settingsStore.setTheme(value),
+  })
+
+  const selectedLocale = computed<AppLocale>({
+    get: () => settingsStore.locale,
+    set: (value) => {
+      settingsStore.setLocale(value)
+      void setI18nLocale(value)
+    },
+  })
+
+  const selectedReducedVisualEffects = computed<boolean>({
+    get: () => settingsStore.reducedVisualEffects,
+    set: (value) => settingsStore.setReducedVisualEffects(value),
+  })
+
+  const selectedHideGameUserId = computed<boolean>({
+    get: () => settingsStore.hideGameUserId,
+    set: (value) => settingsStore.setHideGameUserId(value),
+  })
+
+  const selectedShowUnreleasedContent = computed<boolean>({
+    get: () => settingsStore.showUnreleasedContent,
+    set: (value) => settingsStore.setShowUnreleasedContent(value),
+  })
+
+  const selectedBlurUnreleasedContent = computed<boolean>({
+    get: () => settingsStore.blurUnreleasedContent,
+    set: (value) => settingsStore.setBlurUnreleasedContent(value),
+  })
 
   const endpointOptions = computed<ReadonlyArray<EndpointOption>>(() => [
     settingsStore.hasDirectEndpoint
@@ -121,23 +156,9 @@ export function useHomeSettings() {
       t("homeSettings.locale.placeholder")
   )
 
-  async function saveSettings() {
-    if (endpointUnavailable.value) {
-      toast.error(t("homeSettings.endpoint.unavailable"))
-      return
-    }
-
-    settingsStore.setPreferredEndpoint(selectedEndpoint.value)
-    settingsStore.setPreferredAssetEndpoint(selectedAssetEndpoint.value)
-    settingsStore.setTheme(selectedTheme.value)
-    settingsStore.setLocale(selectedLocale.value)
-    settingsStore.setReducedVisualEffects(selectedReducedVisualEffects.value)
-    settingsStore.setHideGameUserId(selectedHideGameUserId.value)
-    settingsStore.setShowUnreleasedContent(selectedShowUnreleasedContent.value)
-    settingsStore.setBlurUnreleasedContent(selectedBlurUnreleasedContent.value)
-    await setI18nLocale(selectedLocale.value)
-    toast.success(translate("homeSettings.toast.saved"))
-  }
+  const latencyChecking = computed(
+    () => settingsStore.endpointLatencyChecking || settingsStore.assetEndpointLatencyChecking
+  )
 
   async function resetSettings() {
     settingsStore.setPreferredEndpoint(DEFAULT_ENDPOINT)
@@ -149,14 +170,6 @@ export function useHomeSettings() {
     settingsStore.setShowUnreleasedContent(false)
     settingsStore.setBlurUnreleasedContent(true)
     await setI18nLocale(DEFAULT_LOCALE)
-    selectedEndpoint.value = settingsStore.resolvedPreferredEndpoint
-    selectedAssetEndpoint.value = DEFAULT_ASSET_ENDPOINT
-    selectedTheme.value = settingsStore.theme
-    selectedLocale.value = settingsStore.locale
-    selectedReducedVisualEffects.value = settingsStore.reducedVisualEffects
-    selectedHideGameUserId.value = settingsStore.hideGameUserId
-    selectedShowUnreleasedContent.value = settingsStore.showUnreleasedContent
-    selectedBlurUnreleasedContent.value = settingsStore.blurUnreleasedContent
     void settingsStore.initAssetEndpointPreference()
     toast.info(translate("homeSettings.toast.reset"))
   }
@@ -246,28 +259,6 @@ export function useHomeSettings() {
     }
   }
 
-  watch(
-    endpointOptions,
-    (options) => {
-      if (options.some((option) => option.value === selectedEndpoint.value)) {
-        return
-      }
-
-      const fallback = options[0]?.value ?? settingsStore.resolvedPreferredEndpoint
-      if (fallback) {
-        selectedEndpoint.value = fallback
-      }
-    },
-    { immediate: true }
-  )
-
-  watch(
-    () => settingsStore.currentAssetEndpoint,
-    (value) => {
-      selectedAssetEndpoint.value = value
-    }
-  )
-
   return {
     selectedEndpoint,
     selectedAssetEndpoint,
@@ -287,10 +278,9 @@ export function useHomeSettings() {
     selectedAssetEndpointLabel,
     selectedThemeLabel,
     selectedLocaleLabel,
-    visualEffectsIcon: Gauge,
+    latencyChecking,
     latencyTagClass,
     refreshEndpointLatencies,
-    saveSettings,
     resetSettings,
   }
 }

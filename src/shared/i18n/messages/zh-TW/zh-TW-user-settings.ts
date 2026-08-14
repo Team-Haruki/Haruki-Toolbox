@@ -16,8 +16,6 @@ export default {
       "oauthDescription": "管理通過 OAuth 授權訪問你賬號資料的第三方應用。"
     },
     "sekaiData": {
-      "title": "Master資料快取",
-      "description": "管理各區服快取與後臺更新任務，供選擇器、推薦和其他功能複用。",
       "region": "區服",
       "masterVersion": "Master 版本",
       "displayVersion": "展示版本",
@@ -25,19 +23,17 @@ export default {
       "localVersion": "本地版本",
       "remoteVersion": "遠端版本",
       "updatedAt": "更新時間",
-      "files": "檔案",
       "fileCount": "{count} 個檔案",
       "progress": "狀態",
       "actions": "操作",
       "never": "從未更新",
       "regionCacheTitle": "區服快取",
-      "regionCacheDescription": "按區服檢視本地快取版本、檔案數量和更新進度。",
       "summary": {
         "readyRegions": "可用區服",
         "cachedFiles": "已快取檔案",
         "activeTasks": "活動任務"
       },
-      "refreshMasterData": "更新 Master 資料",
+      "refreshMasterData": "更新",
       "clear": "清理",
       "clearDialog": {
         "title": "清理Master資料快取？",
@@ -45,7 +41,6 @@ export default {
         "confirm": "確認清理"
       },
       "queueTitle": "更新佇列",
-      "queueDescription": "顯示最近的後臺更新任務。",
       "queueEmpty": "暫無更新任務。",
       "queueDetails": {
         "cacheHit": "快取已是最新，沒有下載新檔案。",

@@ -16,8 +16,6 @@ export default {
       "oauthDescription": "管理通过 OAuth 授权访问你账号数据的第三方应用。"
     },
     "sekaiData": {
-      "title": "Master数据缓存",
-      "description": "管理各区服缓存与后台更新任务，供选择器、推荐和其他功能复用。",
       "region": "区服",
       "masterVersion": "Master 版本",
       "displayVersion": "展示版本",
@@ -25,19 +23,17 @@ export default {
       "localVersion": "本地版本",
       "remoteVersion": "远程版本",
       "updatedAt": "更新时间",
-      "files": "文件",
       "fileCount": "{count} 个文件",
       "progress": "状态",
       "actions": "操作",
       "never": "从未更新",
       "regionCacheTitle": "区服缓存",
-      "regionCacheDescription": "按区服查看本地缓存版本、文件数量和更新进度。",
       "summary": {
         "readyRegions": "可用区服",
         "cachedFiles": "已缓存文件",
         "activeTasks": "活动任务"
       },
-      "refreshMasterData": "更新 Master 数据",
+      "refreshMasterData": "更新",
       "clear": "清理",
       "clearDialog": {
         "title": "清理Master数据缓存？",
@@ -45,7 +41,6 @@ export default {
         "confirm": "确认清理"
       },
       "queueTitle": "更新队列",
-      "queueDescription": "显示最近的后台更新任务。",
       "queueEmpty": "暂无更新任务。",
       "queueDetails": {
         "cacheHit": "缓存已是最新，没有下载新文件。",

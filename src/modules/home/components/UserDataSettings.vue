@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { Database, Eraser, RefreshCw, UserRound } from "lucide-vue-next"
+import { Eraser, RefreshCw, UserRound } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -263,20 +263,10 @@ function formatTime(value: number | null) {
 </script>
 
 <template>
-  <div class="space-y-5">
-    <section class="space-y-4 rounded-md border bg-muted/20 p-4">
-      <div class="space-y-1.5">
-        <h3 class="flex items-center gap-2 text-base font-semibold">
-          <Database class="size-5" />
-          {{ t("homeSettings.userData.title") }}
-        </h3>
-        <p class="max-w-3xl text-sm text-muted-foreground">
-          {{ t("homeSettings.userData.description") }}
-        </p>
-      </div>
-
-      <div class="grid gap-3 md:grid-cols-2">
-        <div class="grid gap-2">
+  <div class="space-y-4">
+    <section class="rounded-lg border bg-muted/20">
+      <div class="grid gap-4 p-4 md:grid-cols-2">
+        <div class="grid content-start gap-2">
           <Label>{{ t("homeSettings.userData.account") }}</Label>
           <Select v-model="selectedAccountKey" :disabled="accountOptions.length === 0 || refreshing || clearing">
             <SelectTrigger class="w-full">
@@ -307,7 +297,7 @@ function formatTime(value: number | null) {
           </p>
         </div>
 
-        <div class="grid gap-2">
+        <div class="grid content-start gap-2">
           <Label>{{ t("homeSettings.userData.dataType") }}</Label>
           <Select v-model="selectedDataMode" :disabled="refreshing || clearing">
             <SelectTrigger class="w-full">
@@ -322,18 +312,18 @@ function formatTime(value: number | null) {
         </div>
       </div>
 
-      <div :class="['grid gap-2', selectedDataMode === 'profile' ? 'sm:grid-cols-2' : 'sm:grid-cols-3']">
-        <div class="rounded-md border border-border/70 bg-muted/40 p-3 shadow-sm">
+      <div :class="['grid gap-x-4 gap-y-3 border-t px-4 py-3', selectedDataMode === 'profile' ? 'sm:grid-cols-2' : 'sm:grid-cols-3']">
+        <div>
           <p class="text-xs text-muted-foreground">{{ t("homeSettings.userData.cacheUpdatedAt") }}</p>
-          <p class="mt-1 text-sm font-medium">{{ formatTime(cacheUpdatedAt) }}</p>
+          <p class="mt-0.5 text-sm font-medium">{{ formatTime(cacheUpdatedAt) }}</p>
         </div>
-        <div v-if="selectedDataMode !== 'profile'" class="rounded-md border border-border/70 bg-muted/40 p-3 shadow-sm">
+        <div v-if="selectedDataMode !== 'profile'">
           <p class="text-xs text-muted-foreground">{{ t("homeSettings.userData.remoteUploadTime") }}</p>
-          <p class="mt-1 text-sm font-medium">{{ formatTime(cacheUploadTime) }}</p>
+          <p class="mt-0.5 text-sm font-medium">{{ formatTime(cacheUploadTime) }}</p>
         </div>
-        <div class="rounded-md border border-border/70 bg-muted/40 p-3 shadow-sm">
+        <div>
           <p class="text-xs text-muted-foreground">{{ t("homeSettings.userData.lastCheck") }}</p>
-          <p class="mt-1 text-sm font-medium">
+          <p class="mt-0.5 text-sm font-medium">
             <template v-if="lastCacheHit === true">{{ t("homeSettings.userData.cacheHit") }}</template>
             <template v-else-if="lastCacheHit === false">{{ t("homeSettings.userData.cacheUpdated") }}</template>
             <template v-else>{{ t("homeSettings.userData.notChecked") }}</template>
@@ -341,16 +331,16 @@ function formatTime(value: number | null) {
         </div>
       </div>
 
-      <div class="flex flex-wrap justify-end gap-2 border-t pt-4">
-        <Button type="button" variant="outline" :disabled="!canRefresh" @click="refreshUserData">
-          <RefreshCw class="size-4" :class="{ 'animate-spin': refreshing }" />
+      <div class="flex flex-wrap justify-end gap-2 border-t px-4 py-3">
+        <Button type="button" size="sm" variant="outline" :disabled="!canRefresh" @click="refreshUserData">
+          <RefreshCw class="size-3.5" :class="{ 'animate-spin': refreshing }" />
           {{ refreshing ? t("homeSettings.userData.refreshing") : t("homeSettings.userData.refresh") }}
         </Button>
 
         <AlertDialog>
           <AlertDialogTrigger as-child>
-            <Button type="button" variant="destructive" :disabled="!canClear">
-              <Eraser class="size-4" />
+            <Button type="button" size="sm" variant="outline" class="text-destructive hover:text-destructive" :disabled="!canClear">
+              <Eraser class="size-3.5" />
               {{ t("homeSettings.userData.clear") }}
             </Button>
           </AlertDialogTrigger>
@@ -370,11 +360,9 @@ function formatTime(value: number | null) {
       </div>
     </section>
 
-    <section class="rounded-md border bg-muted/20 p-4">
-      <p class="flex items-start gap-2 text-sm text-muted-foreground">
-        <UserRound class="mt-0.5 size-4 shrink-0" />
-        <span>{{ t("homeSettings.userData.logoutCleanupHint") }}</span>
-      </p>
-    </section>
+    <p class="flex items-start gap-2 px-1 text-xs text-muted-foreground">
+      <UserRound class="mt-0.5 size-3.5 shrink-0" />
+      <span>{{ t("homeSettings.userData.logoutCleanupHint") }}</span>
+    </p>
   </div>
 </template>

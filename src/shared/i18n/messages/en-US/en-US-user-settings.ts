@@ -16,8 +16,6 @@ export default {
       "oauthDescription": "Manage third-party applications that access your account data via OAuth."
     },
     "sekaiData": {
-      "title": "Master data cache",
-      "description": "Manage regional caches and background updates for selectors, recommendations, and other features.",
       "region": "Region",
       "masterVersion": "Master version",
       "displayVersion": "Display version",
@@ -25,19 +23,17 @@ export default {
       "localVersion": "Local version",
       "remoteVersion": "Remote version",
       "updatedAt": "Updated at",
-      "files": "Files",
       "fileCount": "{count} files",
       "progress": "Status",
       "actions": "Actions",
       "never": "Never",
       "regionCacheTitle": "Region caches",
-      "regionCacheDescription": "Review local cache versions, file counts, and update progress by server region.",
       "summary": {
         "readyRegions": "Ready regions",
         "cachedFiles": "Cached files",
         "activeTasks": "Active tasks"
       },
-      "refreshMasterData": "Update Master data",
+      "refreshMasterData": "Update",
       "clear": "Clear",
       "clearDialog": {
         "title": "Clear Master data cache?",
@@ -45,7 +41,6 @@ export default {
         "confirm": "Clear cache"
       },
       "queueTitle": "Update queue",
-      "queueDescription": "Shows recent background update tasks.",
       "queueEmpty": "No update tasks.",
       "queueDetails": {
         "cacheHit": "Cache is already current; no new files were downloaded.",

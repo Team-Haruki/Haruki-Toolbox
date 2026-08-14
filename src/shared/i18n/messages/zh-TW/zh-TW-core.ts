@@ -1204,7 +1204,8 @@ export default {
       "checking": "測速中",
       "unknown": "未測速",
       "failed": "無法連線",
-      "latencyMs": "{ms} ms"
+      "latencyMs": "{ms} ms",
+      "refreshLatency": "重新測速"
     },
     "assetEndpoint": {
       "label": "遊戲資源端點",
@@ -1264,8 +1265,7 @@ export default {
       "updating": "更新中..."
     },
     "userData": {
-      "title": "使用者資料快取",
-      "description": "管理組卡推薦使用的 suite、mysekai 與 profile 本地快取。suite/mysekai 重新整理會先檢查遠端上傳時間，profile 會直接拉取最新資料。",
+      "description": "管理已綁定遊戲賬號的 suite、mysekai 與 profile 本地資料快取，供站內各項功能共用。suite/mysekai 重新整理會先檢查遠端上傳時間，profile 會直接拉取最新資料。",
       "account": "賬號",
       "accountPlaceholder": "請選擇已繫結賬號",
       "noAccount": "當前賬號還沒有繫結遊戲賬號。",
@@ -1287,10 +1287,10 @@ export default {
       "clear": "清理使用者資料快取",
       "clearDialog": {
         "title": "清理使用者資料快取？",
-        "description": "這會清理當前 Toolbox 賬號在本瀏覽器儲存的組卡使用者資料快取，之後需要重新檢查或下載。",
+        "description": "這會清理當前工具箱賬號在本瀏覽器儲存的使用者資料快取，之後需要重新檢查或下載。",
         "confirm": "確認清理"
       },
-      "logoutCleanupHint": "退出登入時會自動清理當前 Toolbox 賬號在本瀏覽器儲存的組卡使用者資料快取。",
+      "logoutCleanupHint": "退出登入時會自動清理當前工具箱賬號在本瀏覽器儲存的使用者資料快取。",
       "toast": {
         "alreadyCurrent": "使用者資料已是最新",
         "refreshed": "使用者資料已重新整理",
@@ -1300,11 +1300,16 @@ export default {
       }
     },
     "toast": {
-      "saved": "設定已儲存",
       "reset": "設定已重置為預設值"
     },
-    "tip": {
-      "content": "主題、低特效模式和 UID 顯示偏好儲存後會立即生效，端點設定將在下次請求時生效。"
+    "sections": {
+      "preferences": "外觀、語言、網路與隱私偏好，修改後立即生效。",
+      "sekaiData": "管理各區服 Master 資料本地快取與後臺更新任務，供選擇器、推薦和其他功能複用。"
+    },
+    "groups": {
+      "appearance": "外觀",
+      "network": "網路",
+      "privacy": "隱私與內容"
     }
   },
   "core": {

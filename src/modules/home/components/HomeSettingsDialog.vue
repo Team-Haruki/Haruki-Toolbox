@@ -2,20 +2,16 @@
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { ensureI18nBundles } from "@/shared/i18n"
+import type { Component } from "vue"
 import {
-  CloudLightning,
   Database,
   Download,
-  EyeOff,
-  Info,
-  Network,
-  Palette,
-  RotateCcw,
   RefreshCw,
-  Save,
+  RotateCcw,
   Settings,
+  SlidersHorizontal,
   Smartphone,
-  Sparkles,
+  UserRoundCog,
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,9 +27,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import {
   Dialog,
+  DialogContent,
   DialogDescription,
-  DialogHeader,
-  DialogScrollContent,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
@@ -46,11 +41,17 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import SekaiDataSettings from "@/modules/home/components/SekaiDataSettings.vue"
 import UserDataSettings from "@/modules/home/components/UserDataSettings.vue"
 import { useHomeSettings } from "@/modules/home/composables/useHomeSettings"
 import { appUpdateState, applyAppUpdate, checkForAppUpdate } from "@/pwa"
+
+interface SettingsSection {
+  value: string
+  label: string
+  description: string
+  icon: Component
+}
 
 const props = defineProps<{
   open?: boolean
@@ -81,14 +82,12 @@ const {
   selectedAssetEndpointLabel,
   selectedThemeLabel,
   selectedLocaleLabel,
-  visualEffectsIcon,
+  latencyChecking,
   latencyTagClass,
   refreshEndpointLatencies,
-  saveSettings,
   resetSettings,
 } = useHomeSettings()
 const { t, locale } = useI18n()
-const localeKey = computed(() => locale.value)
 const internalSettingsDialogOpen = ref(false)
 const internalSettingsTab = ref("preferences")
 const settingsDialogOpen = computed({
@@ -108,6 +107,37 @@ const settingsTab = computed({
 const visitedSettingsTabs = ref(new Set(["preferences"]))
 const currentBuildTimeLabel = computed(() => formatBuildTime(appUpdateState.current.buildTime))
 const remoteBuildTimeLabel = computed(() => appUpdateState.remote ? formatBuildTime(appUpdateState.remote.buildTime) : null)
+
+const settingsSections = computed<SettingsSection[]>(() => [
+  {
+    value: "preferences",
+    label: t("homeSettings.tabs.preferences"),
+    description: t("homeSettings.sections.preferences"),
+    icon: SlidersHorizontal,
+  },
+  {
+    value: "app",
+    label: t("homeSettings.tabs.app"),
+    description: t("homeSettings.appUpdate.description"),
+    icon: Smartphone,
+  },
+  {
+    value: "sekai-data",
+    label: t("homeSettings.tabs.sekaiData"),
+    description: t("homeSettings.sections.sekaiData"),
+    icon: Database,
+  },
+  {
+    value: "user-data",
+    label: t("homeSettings.tabs.userData"),
+    description: t("homeSettings.userData.description"),
+    icon: UserRoundCog,
+  },
+])
+
+const activeSection = computed(
+  () => settingsSections.value.find((section) => section.value === settingsTab.value) ?? settingsSections.value[0]
+)
 
 watch(settingsDialogOpen, (open) => {
   if (open) {
@@ -151,331 +181,375 @@ function hasVisitedSettingsTab(tab: string) {
         <span class="hidden sm:inline">{{ t("homeSettings.trigger") }}</span>
       </Button>
     </DialogTrigger>
-    <DialogScrollContent class="max-h-[88vh] overflow-y-auto sm:max-w-[960px]">
-      <DialogHeader>
-        <DialogTitle class="flex items-center gap-2">
-          <Settings class="size-5" />
-          {{ t("homeSettings.title") }}
-        </DialogTitle>
-        <DialogDescription>{{ t("homeSettings.description") }}</DialogDescription>
-      </DialogHeader>
+    <DialogContent
+      class="flex h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:h-[min(85svh,44rem)] sm:w-full sm:max-w-4xl"
+    >
+      <DialogTitle class="sr-only">{{ t("homeSettings.title") }}</DialogTitle>
+      <DialogDescription class="sr-only">{{ t("homeSettings.description") }}</DialogDescription>
 
-      <Tabs v-model="settingsTab" :unmount-on-hide="false" class="space-y-4">
-        <TabsList class="grid h-auto w-full grid-cols-2 auto-rows-[2.25rem] gap-1 p-1 sm:inline-flex sm:h-9 sm:w-fit sm:auto-rows-auto sm:grid-cols-none sm:gap-0 sm:p-[3px]">
-          <TabsTrigger value="preferences" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:min-w-max sm:flex-none sm:overflow-visible sm:px-3 sm:text-sm">
+      <div class="flex min-h-0 flex-1">
+        <aside class="hidden w-52 shrink-0 flex-col border-r bg-muted/40 p-3 sm:flex">
+          <div class="flex items-center gap-2 px-2.5 pt-1 pb-3 text-sm font-semibold">
             <Settings class="size-4" />
-            <span class="min-w-0 truncate sm:min-w-max sm:overflow-visible sm:text-clip">{{ t("homeSettings.tabs.preferences") }}</span>
-          </TabsTrigger>
-          <TabsTrigger value="app" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:min-w-max sm:flex-none sm:overflow-visible sm:px-3 sm:text-sm">
-            <Smartphone class="size-4" />
-            <span class="min-w-0 truncate sm:min-w-max sm:overflow-visible sm:text-clip">{{ t("homeSettings.tabs.app") }}</span>
-          </TabsTrigger>
-          <TabsTrigger value="sekai-data" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:min-w-max sm:flex-none sm:overflow-visible sm:px-3 sm:text-sm">
-            <Network class="size-4" />
-            <span class="min-w-0 truncate sm:min-w-max sm:overflow-visible sm:text-clip">{{ t("homeSettings.tabs.sekaiData") }}</span>
-          </TabsTrigger>
-          <TabsTrigger value="user-data" class="h-9 min-w-0 overflow-hidden px-1.5 text-xs sm:h-[calc(100%-1px)] sm:min-w-max sm:flex-none sm:overflow-visible sm:px-3 sm:text-sm">
-            <Database class="size-4" />
-            <span class="min-w-0 truncate sm:min-w-max sm:overflow-visible sm:text-clip">{{ t("homeSettings.tabs.userData") }}</span>
-          </TabsTrigger>
-        </TabsList>
+            {{ t("homeSettings.trigger") }}
+          </div>
+          <nav class="grid gap-1" :aria-label="t('homeSettings.title')">
+            <button
+              v-for="section in settingsSections"
+              :key="section.value"
+              type="button"
+              :class="[
+                'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors',
+                settingsTab === section.value
+                  ? 'bg-background font-medium text-foreground shadow-sm ring-1 ring-border/60'
+                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
+              ]"
+              :aria-current="settingsTab === section.value ? 'true' : undefined"
+              @click="settingsTab = section.value"
+            >
+              <component
+                :is="section.icon"
+                class="size-4 shrink-0"
+                :class="settingsTab === section.value ? 'text-primary' : ''"
+              />
+              <span class="min-w-0 truncate">{{ section.label }}</span>
+              <span
+                v-if="section.value === 'app' && appUpdateState.updateAvailable"
+                class="ml-auto size-1.5 shrink-0 rounded-full bg-amber-500"
+              />
+            </button>
+          </nav>
+          <div class="mt-auto px-2.5 pt-3 pb-1 font-mono text-[11px] text-muted-foreground">
+            v{{ appUpdateState.current.version }}
+          </div>
+        </aside>
 
-        <TabsContent value="preferences" class="space-y-5">
-          <div class="grid gap-5 md:grid-cols-2">
-            <section class="grid h-full content-center gap-2 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
-              <Label class="flex items-center gap-2 text-base font-medium">
-                <Network class="size-4" />
-                {{ t("homeSettings.endpoint.label") }}
-              </Label>
-              <p class="text-sm text-muted-foreground">
-                {{ t("homeSettings.endpoint.help") }}
-              </p>
-              <Select v-model="selectedEndpoint" :key="`endpoint-${localeKey}`" :disabled="endpointSelectionDisabled || endpointUnavailable">
-                <SelectTrigger class="w-full">
-                  <SelectValue :key="`endpoint-value-${localeKey}`" :placeholder="t('homeSettings.endpoint.placeholder')">
-                    {{ selectedEndpointLabel }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="opt in endpointOptions" :key="opt.value" :value="opt.value">
-                    <div class="flex w-full min-w-64 items-center justify-between gap-3">
-                      <div class="flex min-w-0 items-center gap-2">
-                        <component :is="opt.icon" class="size-4 shrink-0" />
-                        <span class="truncate">{{ opt.label }}</span>
-                      </div>
-                      <span
-                        :class="[
-                          'shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium',
-                          latencyTagClass(opt.latencyStatus),
-                        ]"
-                      >
-                        {{ opt.latencyLabel }}
-                      </span>
+        <div class="flex min-w-0 flex-1 flex-col">
+          <!-- mr-10 ends the scrollport before the absolute close button so
+               pills can never scroll underneath it. -->
+          <div class="shrink-0 border-b sm:hidden">
+          <nav
+            class="mr-10 flex gap-1.5 overflow-x-auto px-4 pt-4 pb-3"
+            :aria-label="t('homeSettings.title')"
+          >
+            <button
+              v-for="section in settingsSections"
+              :key="section.value"
+              type="button"
+              :class="[
+                'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition-colors',
+                settingsTab === section.value
+                  ? 'border-primary bg-primary font-medium text-primary-foreground'
+                  : 'border-border text-muted-foreground',
+              ]"
+              :aria-current="settingsTab === section.value ? 'true' : undefined"
+              @click="settingsTab = section.value"
+            >
+              <component :is="section.icon" class="size-3.5" />
+              {{ section.label }}
+              <span
+                v-if="section.value === 'app' && appUpdateState.updateAvailable"
+                class="size-1.5 rounded-full"
+                :class="settingsTab === section.value ? 'bg-primary-foreground' : 'bg-amber-500'"
+              />
+            </button>
+          </nav>
+          </div>
+
+          <header class="shrink-0 border-b px-4 py-3.5 sm:px-5 sm:py-4 sm:pr-14">
+            <h2 class="text-base font-semibold">{{ activeSection.label }}</h2>
+            <p class="mt-0.5 text-sm text-muted-foreground">{{ activeSection.description }}</p>
+          </header>
+
+          <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+            <div v-show="settingsTab === 'preferences'" class="space-y-5">
+              <section>
+                <h3 class="px-1 pb-2 text-[13px] font-medium text-muted-foreground">
+                  {{ t("homeSettings.groups.appearance") }}
+                </h3>
+                <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
+                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                    <div class="min-w-0">
+                      <p id="dialog-theme-label" class="text-sm font-medium">{{ t("homeSettings.theme.label") }}</p>
+                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.theme.help") }}</p>
                     </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p v-if="endpointUnavailable" class="text-sm text-destructive">
-                {{ t("homeSettings.endpoint.unavailable") }}
-              </p>
-            </section>
+                    <Select v-model="selectedTheme">
+                      <SelectTrigger id="dialog-theme" aria-labelledby="dialog-theme-label dialog-theme" class="w-36 shrink-0 sm:w-40">
+                        <SelectValue :placeholder="t('homeSettings.theme.placeholder')">
+                          <span class="truncate">{{ selectedThemeLabel }}</span>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="opt in themeOptions" :key="opt.value" :value="opt.value">
+                          <div class="flex items-center gap-2">
+                            <component :is="opt.icon" class="size-4" />
+                            {{ opt.label }}
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            <section class="grid h-full content-center gap-2 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
-              <Label class="flex items-center gap-2 text-base font-medium">
-                <CloudLightning class="size-4" />
-                {{ t("homeSettings.assetEndpoint.label") }}
-              </Label>
-              <p class="text-sm text-muted-foreground">
-                {{ t("homeSettings.assetEndpoint.help") }}
-              </p>
-              <Select v-model="selectedAssetEndpoint" :key="`asset-endpoint-${localeKey}`">
-                <SelectTrigger class="w-full">
-                  <SelectValue :key="`asset-endpoint-value-${localeKey}`" :placeholder="t('homeSettings.assetEndpoint.placeholder')">
-                    {{ selectedAssetEndpointLabel }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="opt in assetEndpointOptions" :key="opt.value" :value="opt.value">
-                    <div class="flex w-full min-w-64 items-center justify-between gap-3">
-                      <div class="flex min-w-0 items-center gap-2">
-                        <component :is="opt.icon" class="size-4 shrink-0" />
-                        <span class="truncate">{{ opt.label }}</span>
-                      </div>
-                      <span
-                        :class="[
-                          'shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium',
-                          latencyTagClass(opt.latencyStatus),
-                        ]"
-                      >
-                        {{ opt.latencyLabel }}
-                      </span>
+                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                    <div class="min-w-0">
+                      <p id="dialog-locale-label" class="text-sm font-medium">{{ t("homeSettings.locale.label") }}</p>
+                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.locale.help") }}</p>
                     </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </section>
+                    <Select v-model="selectedLocale">
+                      <SelectTrigger id="dialog-locale" aria-labelledby="dialog-locale-label dialog-locale" class="w-36 shrink-0 sm:w-40">
+                        <SelectValue :placeholder="t('homeSettings.locale.placeholder')">
+                          <span class="truncate">{{ selectedLocaleLabel }}</span>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="opt in localeOptions" :key="opt.value" :value="opt.value">
+                          {{ opt.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            <section class="grid h-full content-center gap-2 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
-              <Label class="flex items-center gap-2 text-base font-medium">
-                <Palette class="size-4" />
-                {{ t("homeSettings.theme.label") }}
-              </Label>
-              <p class="text-sm text-muted-foreground">{{ t("homeSettings.theme.help") }}</p>
-              <Select v-model="selectedTheme" :key="`theme-${localeKey}`">
-                <SelectTrigger class="w-full">
-                  <SelectValue :key="`theme-value-${localeKey}`" :placeholder="t('homeSettings.theme.placeholder')">
-                    {{ selectedThemeLabel }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="opt in themeOptions" :key="opt.value" :value="opt.value">
-                    <div class="flex items-center gap-2">
-                      <component :is="opt.icon" class="size-4" />
-                      {{ opt.label }}
+                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                    <div class="min-w-0">
+                      <Label for="dialog-reduced-visual-effects" class="text-sm font-medium">
+                        {{ t("homeSettings.visualEffects.label") }}
+                      </Label>
+                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.visualEffects.help") }}</p>
                     </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </section>
-
-            <section class="grid h-full content-center gap-2 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
-              <Label class="flex items-center gap-2 text-base font-medium">
-                <Info class="size-4" />
-                {{ t("homeSettings.locale.label") }}
-              </Label>
-              <p class="text-sm text-muted-foreground">{{ t("homeSettings.locale.help") }}</p>
-              <Select v-model="selectedLocale" :key="`locale-${localeKey}`">
-                <SelectTrigger class="w-full">
-                  <SelectValue :key="`locale-value-${localeKey}`" :placeholder="t('homeSettings.locale.placeholder')">
-                    {{ selectedLocaleLabel }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="opt in localeOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </section>
-
-            <section class="grid h-full content-center gap-4 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
-              <div class="flex items-center justify-between gap-4">
-                <div>
-                  <Label for="dialog-reduced-visual-effects" class="flex items-center gap-2 text-base font-medium">
-                    <component :is="visualEffectsIcon" class="size-4" />
-                    {{ t("homeSettings.visualEffects.label") }}
-                  </Label>
-                  <p class="mt-2 text-sm text-muted-foreground">{{ t("homeSettings.visualEffects.help") }}</p>
+                    <Switch id="dialog-reduced-visual-effects" v-model="selectedReducedVisualEffects" class="shrink-0" />
+                  </div>
                 </div>
-                <Switch id="dialog-reduced-visual-effects" v-model="selectedReducedVisualEffects" class="mt-1 shrink-0" />
-              </div>
-            </section>
+              </section>
 
-            <section class="grid h-full content-center gap-4 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
-              <div class="flex items-center justify-between gap-4">
-                <div>
-                  <Label for="dialog-hide-game-user-id" class="flex items-center gap-2 text-base font-medium">
-                    <EyeOff class="size-4" />
-                    {{ t("homeSettings.privacy.hideGameUserIdLabel") }}
-                  </Label>
-                  <p class="mt-2 text-sm text-muted-foreground">{{ t("homeSettings.privacy.hideGameUserIdHelp") }}</p>
+              <section>
+                <div class="flex items-center justify-between gap-3 px-1 pb-2">
+                  <h3 class="text-[13px] font-medium text-muted-foreground">
+                    {{ t("homeSettings.groups.network") }}
+                  </h3>
+                  <button
+                    type="button"
+                    class="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+                    :disabled="latencyChecking"
+                    @click="refreshEndpointLatencies"
+                  >
+                    <RefreshCw :class="['size-3.5', latencyChecking ? 'animate-spin' : '']" />
+                    {{ t("homeSettings.endpoint.refreshLatency") }}
+                  </button>
                 </div>
-                <Switch id="dialog-hide-game-user-id" v-model="selectedHideGameUserId" class="mt-1 shrink-0" />
-              </div>
-            </section>
+                <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
+                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                    <div class="min-w-0">
+                      <p id="dialog-endpoint-label" class="text-sm font-medium">{{ t("homeSettings.endpoint.label") }}</p>
+                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.endpoint.help") }}</p>
+                      <p v-if="endpointUnavailable" class="mt-0.5 text-xs text-destructive">
+                        {{ t("homeSettings.endpoint.unavailable") }}
+                      </p>
+                    </div>
+                    <Select v-model="selectedEndpoint" :disabled="endpointSelectionDisabled || endpointUnavailable">
+                      <SelectTrigger id="dialog-endpoint" aria-labelledby="dialog-endpoint-label dialog-endpoint" class="w-40 shrink-0 sm:w-56">
+                        <SelectValue :placeholder="t('homeSettings.endpoint.placeholder')">
+                          <span class="truncate">{{ selectedEndpointLabel }}</span>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="opt in endpointOptions" :key="opt.value" :value="opt.value">
+                          <div class="flex w-full min-w-64 items-center justify-between gap-3">
+                            <div class="flex min-w-0 items-center gap-2">
+                              <component :is="opt.icon" class="size-4 shrink-0" />
+                              <span class="truncate">{{ opt.label }}</span>
+                            </div>
+                            <span
+                              :class="[
+                                'shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium',
+                                latencyTagClass(opt.latencyStatus),
+                              ]"
+                            >
+                              {{ opt.latencyLabel }}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            <section class="grid h-full content-center gap-4 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
-              <div class="flex items-center justify-between gap-4">
-                <div>
-                  <Label for="dialog-show-unreleased-content" class="flex items-center gap-2 text-base font-medium">
-                    <Sparkles class="size-4" />
-                    {{ t("homeSettings.unreleased.showLabel") }}
-                  </Label>
-                  <p class="mt-2 text-sm text-muted-foreground">{{ t("homeSettings.unreleased.showHelp") }}</p>
+                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                    <div class="min-w-0">
+                      <p id="dialog-asset-endpoint-label" class="text-sm font-medium">{{ t("homeSettings.assetEndpoint.label") }}</p>
+                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.assetEndpoint.help") }}</p>
+                    </div>
+                    <Select v-model="selectedAssetEndpoint">
+                      <SelectTrigger id="dialog-asset-endpoint" aria-labelledby="dialog-asset-endpoint-label dialog-asset-endpoint" class="w-40 shrink-0 sm:w-56">
+                        <SelectValue :placeholder="t('homeSettings.assetEndpoint.placeholder')">
+                          <span class="truncate">{{ selectedAssetEndpointLabel }}</span>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="opt in assetEndpointOptions" :key="opt.value" :value="opt.value">
+                          <div class="flex w-full min-w-64 items-center justify-between gap-3">
+                            <div class="flex min-w-0 items-center gap-2">
+                              <component :is="opt.icon" class="size-4 shrink-0" />
+                              <span class="truncate">{{ opt.label }}</span>
+                            </div>
+                            <span
+                              :class="[
+                                'shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium',
+                                latencyTagClass(opt.latencyStatus),
+                              ]"
+                            >
+                              {{ opt.latencyLabel }}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <Switch id="dialog-show-unreleased-content" v-model="selectedShowUnreleasedContent" class="mt-1 shrink-0" />
-              </div>
-              <div class="flex items-center justify-between gap-4">
-                <div>
-                  <Label
-                    for="dialog-blur-unreleased-content"
-                    class="flex items-center gap-2 text-base font-medium"
+              </section>
+
+              <section>
+                <h3 class="px-1 pb-2 text-[13px] font-medium text-muted-foreground">
+                  {{ t("homeSettings.groups.privacy") }}
+                </h3>
+                <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
+                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                    <div class="min-w-0">
+                      <Label for="dialog-hide-game-user-id" class="text-sm font-medium">
+                        {{ t("homeSettings.privacy.hideGameUserIdLabel") }}
+                      </Label>
+                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.privacy.hideGameUserIdHelp") }}</p>
+                    </div>
+                    <Switch id="dialog-hide-game-user-id" v-model="selectedHideGameUserId" class="shrink-0" />
+                  </div>
+
+                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                    <div class="min-w-0">
+                      <Label for="dialog-show-unreleased-content" class="text-sm font-medium">
+                        {{ t("homeSettings.unreleased.showLabel") }}
+                      </Label>
+                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.unreleased.showHelp") }}</p>
+                    </div>
+                    <Switch id="dialog-show-unreleased-content" v-model="selectedShowUnreleasedContent" class="shrink-0" />
+                  </div>
+
+                  <div
+                    class="flex items-center justify-between gap-4 px-4 py-3"
                     :class="selectedShowUnreleasedContent ? '' : 'opacity-50'"
                   >
-                    <EyeOff class="size-4" />
-                    {{ t("homeSettings.unreleased.blurLabel") }}
-                  </Label>
-                  <p class="mt-2 text-sm text-muted-foreground" :class="selectedShowUnreleasedContent ? '' : 'opacity-50'">
-                    {{ t("homeSettings.unreleased.blurHelp") }}
-                  </p>
+                    <div class="min-w-0">
+                      <Label for="dialog-blur-unreleased-content" class="text-sm font-medium">
+                        {{ t("homeSettings.unreleased.blurLabel") }}
+                      </Label>
+                      <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.unreleased.blurHelp") }}</p>
+                    </div>
+                    <Switch
+                      id="dialog-blur-unreleased-content"
+                      v-model="selectedBlurUnreleasedContent"
+                      :disabled="!selectedShowUnreleasedContent"
+                      class="shrink-0"
+                    />
+                  </div>
                 </div>
-                <Switch
-                  id="dialog-blur-unreleased-content"
-                  v-model="selectedBlurUnreleasedContent"
-                  :disabled="!selectedShowUnreleasedContent"
-                  class="mt-1 shrink-0"
-                />
+              </section>
+
+              <div class="flex justify-end pt-1">
+                <AlertDialog>
+                  <AlertDialogTrigger as-child>
+                    <Button type="button" variant="outline" size="sm" class="text-destructive hover:text-destructive">
+                      <RotateCcw class="size-4" />
+                      {{ t("common.reset") }}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{{ t("homeSettings.resetDialog.title") }}</AlertDialogTitle>
+                      <AlertDialogDescription>{{ t("homeSettings.resetDialog.description") }}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{{ t("common.cancel") }}</AlertDialogCancel>
+                      <AlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="resetSettings">
+                        {{ t("homeSettings.resetDialog.confirm") }}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
-            </section>
-          </div>
+            </div>
 
-          <div class="grid gap-2 border-t pt-4 sm:grid-cols-2">
-            <Button type="button" class="w-full" @click="saveSettings">
-              <Save class="size-4" />
-              {{ t("common.save") }}
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger as-child>
-                <Button type="button" variant="destructive" class="w-full">
-                  <RotateCcw class="size-4" />
-                  {{ t("common.reset") }}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{{ t("homeSettings.resetDialog.title") }}</AlertDialogTitle>
-                  <AlertDialogDescription>{{ t("homeSettings.resetDialog.description") }}</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{{ t("common.cancel") }}</AlertDialogCancel>
-                  <AlertDialogAction class="bg-destructive text-white hover:bg-destructive/90" @click="resetSettings">
-                    {{ t("homeSettings.resetDialog.confirm") }}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+            <div v-show="settingsTab === 'app'">
+              <section class="grid gap-4 rounded-lg border bg-muted/20 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span
+                    :class="[
+                      'inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-medium',
+                      appUpdateState.updateAvailable
+                        ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'
+                        : 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200',
+                    ]"
+                  >
+                    {{ appUpdateState.updateAvailable ? t("homeSettings.appUpdate.available") : t("homeSettings.appUpdate.current") }}
+                  </span>
+                  <span v-if="appUpdateState.checkedAt" class="text-xs text-muted-foreground">
+                    {{ t("homeSettings.appUpdate.checkedAt", { time: formatBuildTime(appUpdateState.checkedAt) }) }}
+                  </span>
+                </div>
 
-          <div class="rounded-md border bg-muted/30 p-3">
-            <p class="flex items-start gap-2 text-sm text-muted-foreground">
-              <Info class="mt-0.5 size-4 shrink-0" />
-              <span><strong>{{ t("common.tip") }}: </strong>{{ t("homeSettings.tip.content") }}</span>
-            </p>
-          </div>
-        </TabsContent>
+                <div class="grid gap-3 md:grid-cols-3">
+                  <div class="rounded-md border border-border/70 bg-background/60 p-3">
+                    <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.version") }}</p>
+                    <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.current.version }}</p>
+                  </div>
+                  <div class="rounded-md border border-border/70 bg-background/60 p-3">
+                    <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.gitCommit") }}</p>
+                    <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.current.gitCommit }}</p>
+                  </div>
+                  <div class="rounded-md border border-border/70 bg-background/60 p-3">
+                    <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.buildTime") }}</p>
+                    <p class="mt-1 text-sm font-medium">{{ currentBuildTimeLabel }}</p>
+                  </div>
+                </div>
 
-        <TabsContent value="app" class="space-y-4">
-          <section class="grid gap-4 rounded-md border border-foreground/10 bg-muted/20 p-4 shadow-sm ring-1 ring-foreground/5">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div class="space-y-1">
-                <h3 class="flex items-center gap-2 text-base font-medium">
-                  <Smartphone class="size-4" />
-                  {{ t("homeSettings.appUpdate.title") }}
-                </h3>
-                <p class="text-sm text-muted-foreground">
-                  {{ t("homeSettings.appUpdate.description") }}
+                <div v-if="appUpdateState.remote" class="grid gap-3 rounded-md border border-dashed bg-background/40 p-3 md:grid-cols-3">
+                  <div>
+                    <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteVersion") }}</p>
+                    <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.remote.version }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteCommit") }}</p>
+                    <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.remote.gitCommit }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteBuildTime") }}</p>
+                    <p class="mt-1 text-sm font-medium">{{ remoteBuildTimeLabel }}</p>
+                  </div>
+                </div>
+
+                <p v-if="appUpdateState.lastError" class="text-xs text-destructive">
+                  {{ t("homeSettings.appUpdate.lastError") }}
                 </p>
-              </div>
-              <span
-                :class="[
-                  'inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-medium',
-                  appUpdateState.updateAvailable
-                    ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'
-                    : 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200',
-                ]"
-              >
-                {{ appUpdateState.updateAvailable ? t("homeSettings.appUpdate.available") : t("homeSettings.appUpdate.current") }}
-              </span>
+
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <Button type="button" variant="outline" :disabled="appUpdateState.checking || appUpdateState.applying" @click="checkForAppUpdate()">
+                    <RefreshCw :class="['size-4', appUpdateState.checking ? 'animate-spin' : '']" />
+                    {{ appUpdateState.checking ? t("homeSettings.appUpdate.checking") : t("homeSettings.appUpdate.check") }}
+                  </Button>
+                  <Button type="button" :disabled="!appUpdateState.updateAvailable || appUpdateState.applying" @click="applyAppUpdate">
+                    <Download :class="['size-4', appUpdateState.applying ? 'animate-pulse' : '']" />
+                    {{ appUpdateState.applying ? t("homeSettings.appUpdate.updating") : t("homeSettings.appUpdate.update") }}
+                  </Button>
+                </div>
+              </section>
             </div>
 
-            <div class="grid gap-3 md:grid-cols-3">
-              <div class="rounded-md border border-border/70 bg-background/60 p-3">
-                <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.version") }}</p>
-                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.current.version }}</p>
-              </div>
-              <div class="rounded-md border border-border/70 bg-background/60 p-3">
-                <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.gitCommit") }}</p>
-                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.current.gitCommit }}</p>
-              </div>
-              <div class="rounded-md border border-border/70 bg-background/60 p-3">
-                <p class="text-xs text-muted-foreground">{{ t("webLayout.footer.buildTime") }}</p>
-                <p class="mt-1 text-sm font-medium">{{ currentBuildTimeLabel }}</p>
-              </div>
+            <div v-if="hasVisitedSettingsTab('sekai-data')" v-show="settingsTab === 'sekai-data'">
+              <SekaiDataSettings />
             </div>
 
-            <div v-if="appUpdateState.remote" class="grid gap-3 rounded-md border border-dashed bg-background/40 p-3 md:grid-cols-3">
-              <div>
-                <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteVersion") }}</p>
-                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.remote.version }}</p>
-              </div>
-              <div>
-                <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteCommit") }}</p>
-                <p class="mt-1 font-mono text-sm font-medium">{{ appUpdateState.remote.gitCommit }}</p>
-              </div>
-              <div>
-                <p class="text-xs text-muted-foreground">{{ t("homeSettings.appUpdate.remoteBuildTime") }}</p>
-                <p class="mt-1 text-sm font-medium">{{ remoteBuildTimeLabel }}</p>
-              </div>
+            <div v-if="hasVisitedSettingsTab('user-data')" v-show="settingsTab === 'user-data'">
+              <UserDataSettings />
             </div>
-
-            <p v-if="appUpdateState.checkedAt" class="text-xs text-muted-foreground">
-              {{ t("homeSettings.appUpdate.checkedAt", { time: formatBuildTime(appUpdateState.checkedAt) }) }}
-            </p>
-            <p v-if="appUpdateState.lastError" class="text-xs text-destructive">
-              {{ t("homeSettings.appUpdate.lastError") }}
-            </p>
-
-            <div class="grid gap-2 sm:grid-cols-2">
-              <Button type="button" variant="outline" :disabled="appUpdateState.checking || appUpdateState.applying" @click="checkForAppUpdate()">
-                <RefreshCw :class="['size-4', appUpdateState.checking ? 'animate-spin' : '']" />
-                {{ appUpdateState.checking ? t("homeSettings.appUpdate.checking") : t("homeSettings.appUpdate.check") }}
-              </Button>
-              <Button type="button" :disabled="!appUpdateState.updateAvailable || appUpdateState.applying" @click="applyAppUpdate">
-                <Download :class="['size-4', appUpdateState.applying ? 'animate-pulse' : '']" />
-                {{ appUpdateState.applying ? t("homeSettings.appUpdate.updating") : t("homeSettings.appUpdate.update") }}
-              </Button>
-            </div>
-          </section>
-        </TabsContent>
-
-        <TabsContent value="sekai-data">
-          <SekaiDataSettings v-if="hasVisitedSettingsTab('sekai-data')" />
-        </TabsContent>
-
-        <TabsContent value="user-data">
-          <UserDataSettings v-if="hasVisitedSettingsTab('user-data')" />
-        </TabsContent>
-      </Tabs>
-    </DialogScrollContent>
+          </div>
+        </div>
+      </div>
+    </DialogContent>
   </Dialog>
 </template>

@@ -1204,7 +1204,8 @@ export default {
       "checking": "Checking",
       "unknown": "Not checked",
       "failed": "Unreachable",
-      "latencyMs": "{ms} ms"
+      "latencyMs": "{ms} ms",
+      "refreshLatency": "Re-test latency"
     },
     "assetEndpoint": {
       "label": "Game asset endpoint",
@@ -1264,8 +1265,7 @@ export default {
       "updating": "Updating..."
     },
     "userData": {
-      "title": "User data cache",
-      "description": "Manage the local suite, mysekai, and profile caches used by deck recommendation. Suite/mysekai refresh checks remote upload time first; profile refresh fetches the latest profile directly.",
+      "description": "Manage the local suite, mysekai, and profile caches for your bound game accounts, shared by features across the site. Suite/mysekai refresh checks remote upload time first; profile refresh fetches the latest profile directly.",
       "account": "Account",
       "accountPlaceholder": "Select a bound account",
       "noAccount": "No game account is bound to the current Toolbox account.",
@@ -1287,10 +1287,10 @@ export default {
       "clear": "Clear user data cache",
       "clearDialog": {
         "title": "Clear user data cache?",
-        "description": "This clears deck recommendation user data cached in this browser for the current Toolbox account. Data will need to be checked or downloaded again.",
+        "description": "This clears user data cached in this browser for the current Toolbox account. Data will need to be checked or downloaded again.",
         "confirm": "Clear cache"
       },
-      "logoutCleanupHint": "Signing out automatically clears deck recommendation user data cached in this browser for the current Toolbox account.",
+      "logoutCleanupHint": "Signing out automatically clears user data cached in this browser for the current Toolbox account.",
       "toast": {
         "alreadyCurrent": "User data is already current",
         "refreshed": "User data refreshed",
@@ -1300,11 +1300,16 @@ export default {
       }
     },
     "toast": {
-      "saved": "Settings saved",
       "reset": "Settings reset to defaults"
     },
-    "tip": {
-      "content": "Theme, low effects mode, and UID display preference apply immediately after saving. Endpoint applies on next request."
+    "sections": {
+      "preferences": "Appearance, language, network, and privacy preferences. Changes apply immediately.",
+      "sekaiData": "Manage per-region master data caches and background update jobs shared by pickers, recommendations, and other features."
+    },
+    "groups": {
+      "appearance": "Appearance",
+      "network": "Network",
+      "privacy": "Privacy & content"
     }
   },
   "core": {
