@@ -26,6 +26,7 @@ export function useUploadDataTool() {
   const rememberInherit = ref(false)
   const isSubmittingFile = ref(false)
   const isSubmittingInherit = ref(false)
+  const isInheritConfirmOpen = ref(false)
   const uploadProgress = ref(0)
   const uploadStatus = ref("")
   const fileInputElement = ref<HTMLInputElement | null>(null)
@@ -159,7 +160,7 @@ export function useUploadDataTool() {
     }
   }
 
-  async function submitInheritUpload() {
+  function requestInheritUpload() {
     if (isSubmittingInherit.value) return
     const normalizedInheritId = inheritId.value.trim()
     const normalizedInheritPassword = inheritPassword.value.trim()
@@ -185,6 +186,15 @@ export function useUploadDataTool() {
       return
     }
 
+    isInheritConfirmOpen.value = true
+  }
+
+  async function confirmInheritUpload() {
+    if (isSubmittingInherit.value) return
+    const normalizedInheritId = inheritId.value.trim()
+    const normalizedInheritPassword = inheritPassword.value.trim()
+
+    isInheritConfirmOpen.value = false
     isSubmittingInherit.value = true
     try {
       const response = await submitInherit(
@@ -227,6 +237,7 @@ export function useUploadDataTool() {
     rememberInherit,
     isSubmittingFile,
     isSubmittingInherit,
+    isInheritConfirmOpen,
     uploadProgress,
     uploadStatus,
     boundAccounts,
@@ -238,6 +249,7 @@ export function useUploadDataTool() {
     onFileChange,
     setRememberInherit,
     submitFileUpload,
-    submitInheritUpload,
+    requestInheritUpload,
+    confirmInheritUpload,
   }
 }

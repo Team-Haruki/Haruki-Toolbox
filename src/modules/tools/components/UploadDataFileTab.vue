@@ -33,6 +33,7 @@ const props = withDefaults(
     dataType: UploadDataType
     boundAccounts: BoundAccount[]
     selectedAccountKey: string | null
+    canShowMySekaiDataType: boolean
     canSelectMySekaiDataType: boolean
     disabledReason: string | null
     isCnMySekaiForbidden: boolean
@@ -147,7 +148,7 @@ function handleDataTypeChange(value: string) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="suite">{{ t("tools.uploadData.dataTypes.suite") }}</SelectItem>
-                  <SelectItem v-if="canSelectMySekaiDataType" value="mysekai">
+                  <SelectItem v-if="canShowMySekaiDataType" value="mysekai" :disabled="!canSelectMySekaiDataType">
                     {{ t("tools.uploadData.dataTypes.mysekai") }}
                   </SelectItem>
                 </SelectContent>

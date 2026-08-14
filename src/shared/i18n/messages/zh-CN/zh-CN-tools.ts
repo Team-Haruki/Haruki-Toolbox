@@ -466,6 +466,13 @@ export default {
           "label": "在当前设备短期记住引继信息",
           "description": "仅保存在本地浏览器，24 小时后自动过期；取消勾选会立即清除。"
         },
+        "confirmDialog": {
+          "title": "确认上传数据",
+          "dataTypePrefix": "请再次确认您要上传的数据类型：",
+          "mysekaiNotice": "如果您要上传 MySekai 数据，请先登录 Haruki 工具箱，并确认已在 HarukiBot 数据授权中绑定了 QQ 号。",
+          "cancel": "取消",
+          "confirm": "确认上传"
+        },
         "submit": "提交",
         "submitting": "提交中..."
       }

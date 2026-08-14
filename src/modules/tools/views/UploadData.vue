@@ -3,6 +3,16 @@ import { ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ExternalLink, FileUp, KeyRound, LucideInfo, Smartphone } from "lucide-vue-next"
 import { UploadDataFileTab, UploadDataInheritTab, UploadDataIOSTab } from "@/modules/tools/components"
@@ -21,17 +31,20 @@ const {
   rememberInherit,
   isSubmittingFile,
   isSubmittingInherit,
+  isInheritConfirmOpen,
   uploadProgress,
   uploadStatus,
   boundAccounts,
   selectedAccountKey,
   disabledReason,
+  hasVerifiedQQ,
   isCNMySekaiForbidden,
   canSelectMySekaiDataType,
   onFileChange,
   setRememberInherit,
   submitFileUpload,
-  submitInheritUpload,
+  requestInheritUpload,
+  confirmInheritUpload,
 } = useUploadDataTool()
 
 // The iOS module tab is deep-linkable (`?tab=ios`) so the old /ios-modules
@@ -91,9 +104,9 @@ const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 te
           v-model:inherit-password="inheritPassword"
           :remember-inherit="rememberInherit"
           :is-submitting-inherit="isSubmittingInherit"
-          :can-select-my-sekai-data-type="canSelectMySekaiDataType"
+          :can-show-my-sekai-data-type="hasVerifiedQQ"
           @update:remember-inherit="setRememberInherit"
-          @submit="submitInheritUpload"
+          @submit="requestInheritUpload"
         />
       </TabsContent>
 
@@ -102,6 +115,7 @@ const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 te
           v-model:data-type="fileDataType"
           v-model:selected-account-key="selectedAccountKey"
           :bound-accounts="boundAccounts"
+          :can-show-my-sekai-data-type="hasVerifiedQQ"
           :can-select-my-sekai-data-type="canSelectMySekaiDataType"
           :disabled-reason="disabledReason"
           :is-cn-my-sekai-forbidden="isCNMySekaiForbidden"
@@ -164,5 +178,30 @@ const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 te
         </div>
       </AlertDescription>
     </Alert>
+
+    <AlertDialog v-model:open="isInheritConfirmOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{{ t("tools.uploadData.inheritTab.confirmDialog.title") }}</AlertDialogTitle>
+          <AlertDialogDescription as-child>
+            <div class="space-y-3">
+              <p>
+                {{ t("tools.uploadData.inheritTab.confirmDialog.dataTypePrefix") }}
+                <strong class="font-semibold text-foreground">{{ t(`tools.uploadData.dataTypes.${inheritDataType}`) }}</strong>
+              </p>
+              <p v-if="inheritDataType === 'mysekai'" class="rounded-md border bg-muted/40 p-3 text-foreground">
+                {{ t("tools.uploadData.inheritTab.confirmDialog.mysekaiNotice") }}
+              </p>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{{ t("tools.uploadData.inheritTab.confirmDialog.cancel") }}</AlertDialogCancel>
+          <AlertDialogAction @click="confirmInheritUpload">
+            {{ t("tools.uploadData.inheritTab.confirmDialog.confirm") }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

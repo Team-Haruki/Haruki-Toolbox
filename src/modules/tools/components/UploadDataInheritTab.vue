@@ -31,7 +31,7 @@ const props = defineProps<{
   rememberInherit: boolean
   isSubmittingInherit: boolean
   /** MySekai uploads require a verified QQ binding; hidden otherwise. */
-  canSelectMySekaiDataType: boolean
+  canShowMySekaiDataType: boolean
 }>()
 
 const emit = defineEmits<{
@@ -44,7 +44,7 @@ const emit = defineEmits<{
 }>()
 
 function handleDataTypeChange(value: string) {
-  if (value === "suite" || (value === "mysekai" && props.canSelectMySekaiDataType)) {
+  if (value === "suite" || (value === "mysekai" && props.canShowMySekaiDataType)) {
     emit("update:dataType", value)
   }
 }
@@ -172,7 +172,7 @@ const notesOpen = ref(false)
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="suite">{{ t("tools.uploadData.dataTypes.suite") }}</SelectItem>
-                  <SelectItem v-if="canSelectMySekaiDataType" value="mysekai">
+                  <SelectItem v-if="canShowMySekaiDataType" value="mysekai">
                     {{ t("tools.uploadData.dataTypes.mysekai") }}
                   </SelectItem>
                 </SelectContent>

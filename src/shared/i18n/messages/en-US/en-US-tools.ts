@@ -466,6 +466,13 @@ export default {
           "label": "Temporarily remember transfer info on this device",
           "description": "Stored only in this browser, expires after 24 hours, and is cleared immediately when unchecked."
         },
+        "confirmDialog": {
+          "title": "Confirm data upload",
+          "dataTypePrefix": "Please confirm the data type you want to upload:",
+          "mysekaiNotice": "To upload MySekai data, sign in to Haruki Toolbox first and make sure your QQ number is bound under HarukiBot data authorization.",
+          "cancel": "Cancel",
+          "confirm": "Confirm upload"
+        },
         "submit": "Submit",
         "submitting": "Submitting..."
       }

@@ -466,6 +466,13 @@ export default {
           "label": "在當前裝置短期記住引繼資訊",
           "description": "僅儲存在本地瀏覽器，24 小時後自動過期；取消勾選會立即清除。"
         },
+        "confirmDialog": {
+          "title": "確認上傳資料",
+          "dataTypePrefix": "請再次確認您要上傳的資料型別：",
+          "mysekaiNotice": "如果您要上傳 MySekai 資料，請先登入 Haruki 工具箱，並確認已在 HarukiBot 資料授權中繫結了 QQ 號。",
+          "cancel": "取消",
+          "confirm": "確認上傳"
+        },
         "submit": "提交",
         "submitting": "提交中..."
       }
