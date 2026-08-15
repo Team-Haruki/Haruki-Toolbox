@@ -44,6 +44,8 @@ export type FetchRankBorderWebDetailParams = RankBorderTrackerScope & {
   includeTrace?: boolean
   includePlayerTrace?: boolean
   includeProfile?: boolean
+  cursor?: number | null
+  fetchAllTrace?: boolean
   limit?: number | null
 }
 
@@ -100,7 +102,7 @@ export type RankBorderTrackerError = Error & {
 const TRACKER_WS_OPEN_TIMEOUT_MS = 4_000
 const TRACKER_WS_REQUEST_TIMEOUT_MS = 15_000
 const TRACKER_WS_FAILURE_COOLDOWN_MS = 2_000
-const FULL_TRACE_LIMIT = 5_000
+const TRACE_PAGE_LIMIT = 5_000
 const LOCAL_TRACKER_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"])
 
 type TrackerWsPendingRequest = {
@@ -473,13 +475,55 @@ export async function fetchRankBorderReplayOverviewV2(params: FetchRankBorderOve
 }
 
 export async function fetchRankBorderWebRankDetailV2(params: FetchRankBorderWebDetailParams & { rank: string | number }): Promise<RankBorderWebRankDetail> {
+  const detail = await fetchRankBorderWebRankDetailPageV2(params)
+  const pageLimit = resolveTracePageLimit(params)
+  if (!params.fetchAllTrace || params.cursor != null || pageLimit == null) {
+    return detail
+  }
+
+  const [rankTrace, playerTrace] = await Promise.all([
+    params.includeTrace
+      ? fetchRemainingTracePages(detail.rankTrace, pageLimit, async (cursor) => {
+          const page = await fetchRankBorderWebRankDetailPageV2({
+            ...params,
+            cursor,
+            fetchAllTrace: false,
+            includeTrace: true,
+            includePlayerTrace: false,
+            limit: pageLimit,
+          })
+          return page.rankTrace
+        })
+      : detail.rankTrace,
+    params.includePlayerTrace
+      ? fetchRemainingTracePages(detail.playerTrace, pageLimit, async (cursor) => {
+          const page = await fetchRankBorderWebRankDetailPageV2({
+            ...params,
+            cursor,
+            fetchAllTrace: false,
+            includeTrace: false,
+            includePlayerTrace: true,
+            limit: pageLimit,
+          })
+          return page.playerTrace
+        })
+      : detail.playerTrace,
+  ])
+  return { ...detail, rankTrace, playerTrace }
+}
+
+async function fetchRankBorderWebRankDetailPageV2(params: FetchRankBorderWebDetailParams & { rank: string | number }): Promise<RankBorderWebRankDetail> {
   const search = new URLSearchParams()
   if (params.intervalSeconds != null) {
     search.set("interval", String(normalizePositiveInteger(params.intervalSeconds)))
   }
   search.set("includeTrace", params.includeTrace ? "true" : "false")
   search.set("includePlayerTrace", params.includePlayerTrace ? "true" : "false")
-  const limit = normalizeTraceLimit(params.limit ?? FULL_TRACE_LIMIT)
+  const cursor = normalizeOptionalPositiveInteger(params.cursor)
+  if (cursor != null) {
+    search.set("cursor", String(cursor))
+  }
+  const limit = normalizeTraceLimit(params.limit ?? TRACE_PAGE_LIMIT)
   if (limit != null) {
     search.set("limit", String(limit))
   }
@@ -490,13 +534,38 @@ export async function fetchRankBorderWebRankDetailV2(params: FetchRankBorderWebD
 }
 
 export async function fetchRankBorderWebUserDetailV2(params: FetchRankBorderWebDetailParams & { userId: string | number }): Promise<RankBorderWebUserDetail> {
+  const detail = await fetchRankBorderWebUserDetailPageV2(params)
+  const pageLimit = resolveTracePageLimit(params)
+  if (!params.fetchAllTrace || !params.includeTrace || params.cursor != null || pageLimit == null) {
+    return detail
+  }
+
+  const playerTrace = await fetchRemainingTracePages(detail.playerTrace, pageLimit, async (cursor) => {
+    const page = await fetchRankBorderWebUserDetailPageV2({
+      ...params,
+      cursor,
+      fetchAllTrace: false,
+      includeTrace: true,
+      includeProfile: false,
+      limit: pageLimit,
+    })
+    return page.playerTrace
+  })
+  return { ...detail, playerTrace }
+}
+
+async function fetchRankBorderWebUserDetailPageV2(params: FetchRankBorderWebDetailParams & { userId: string | number }): Promise<RankBorderWebUserDetail> {
   const search = new URLSearchParams()
   if (params.intervalSeconds != null) {
     search.set("interval", String(normalizePositiveInteger(params.intervalSeconds)))
   }
   search.set("includeTrace", params.includeTrace ? "true" : "false")
   search.set("includeProfile", params.includeProfile ? "true" : "false")
-  const limit = normalizeTraceLimit(params.limit ?? FULL_TRACE_LIMIT)
+  const cursor = normalizeOptionalPositiveInteger(params.cursor)
+  if (cursor != null) {
+    search.set("cursor", String(cursor))
+  }
+  const limit = normalizeTraceLimit(params.limit ?? TRACE_PAGE_LIMIT)
   if (limit != null) {
     search.set("limit", String(limit))
   }
@@ -513,7 +582,7 @@ export async function fetchRankBorderPrivateWebUserDetailV2(params: FetchRankBor
   }
   search.set("includeTrace", params.includeTrace ? "true" : "false")
   search.set("includeProfile", params.includeProfile ? "true" : "false")
-  const limit = normalizeTraceLimit(params.limit ?? FULL_TRACE_LIMIT)
+  const limit = normalizeTraceLimit(params.limit ?? TRACE_PAGE_LIMIT)
   if (limit != null) {
     search.set("limit", String(limit))
   }
@@ -531,7 +600,8 @@ export async function fetchRankBorderWebTraceByUser(params: FetchRankBorderUserP
   const detail = await fetchRankBorderWebUserDetailV2({
     ...params,
     includeTrace: true,
-    limit: params.limit ?? (params.full ? FULL_TRACE_LIMIT : null),
+    fetchAllTrace: params.full,
+    limit: params.limit ?? (params.full ? TRACE_PAGE_LIMIT : null),
   })
   return normalizeRankBorderTrace(detail.playerTrace)
 }
@@ -973,6 +1043,37 @@ function normalizeSearchLimit(value: unknown): number {
 function normalizeTraceLimit(value: unknown): number | null {
   const parsed = Number(value)
   return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 100_000) : null
+}
+
+function resolveTracePageLimit(params: FetchRankBorderWebDetailParams): number | null {
+  const limit = normalizeTraceLimit(params.limit ?? TRACE_PAGE_LIMIT)
+  return limit == null ? null : Math.min(limit, TRACE_PAGE_LIMIT)
+}
+
+async function fetchRemainingTracePages(
+  initial: RankBorderTracePoint[],
+  pageLimit: number,
+  fetchPage: (cursor: number) => Promise<RankBorderTracePoint[]>,
+): Promise<RankBorderTracePoint[]> {
+  const records = [...initial]
+  let page = initial
+  let cursor = page[page.length - 1]?.timestamp ?? null
+
+  while (cursor != null && page.length >= pageLimit) {
+    const previousCursor = cursor
+    const nextPage = await fetchPage(previousCursor)
+    const nextRecords = nextPage.filter((record) => record.timestamp > previousCursor)
+    const nextCursor = nextRecords[nextRecords.length - 1]?.timestamp ?? null
+    if (nextCursor == null || nextCursor <= previousCursor) {
+      break
+    }
+
+    records.push(...nextRecords)
+    page = nextPage
+    cursor = nextCursor
+  }
+
+  return records
 }
 
 function normalizePlaybackTimestamp(value: unknown): number | null {

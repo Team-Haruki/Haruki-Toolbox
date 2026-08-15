@@ -269,6 +269,46 @@ describe("rank border tracker api", () => {
     ])
   })
 
+  it("paginates rank player traces until every page is loaded", async () => {
+    const originalFetch = globalThis.fetch
+    const requests: string[] = []
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      requests.push(url)
+      const cursor = new URL(url).searchParams.get("cursor")
+      const playerTrace = cursor == null
+        ? [
+            { timestamp: 1, userId: "u1", score: 100, rank: 1 },
+            { timestamp: 2, userId: "u1", score: 200, rank: 1 },
+          ]
+        : cursor === "2"
+          ? [{ timestamp: 3, userId: "u1", score: 300, rank: 1 }]
+          : []
+      return new Response(JSON.stringify({ playerTrace }), { status: 200 })
+    }) as typeof fetch
+
+    try {
+      const detail = await fetchRankBorderWebRankDetailV2({
+        endpoint: "https://tracker.example/base",
+        region: "cn",
+        eventId: 176,
+        mode: "normal",
+        rank: 1,
+        includePlayerTrace: true,
+        fetchAllTrace: true,
+        limit: 2,
+      })
+      expect(detail.playerTrace.map((record) => record.timestamp)).toEqual([1, 2, 3])
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    expect(requests).toEqual([
+      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/details/rank/1?includeTrace=false&includePlayerTrace=true&limit=2",
+      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/details/rank/1?includeTrace=false&includePlayerTrace=true&cursor=2&limit=2",
+    ])
+  })
+
   it("requests user traces through v2 web user details", async () => {
     const originalFetch = globalThis.fetch
     const requests: string[] = []

@@ -11,8 +11,8 @@ import {
   type RankBorderTracePoint,
 } from "../lib/rank-border"
 import {
-  FULL_TRACE_LIMIT,
   PERSONAL_COLLECTION_LIMIT,
+  TRACE_PAGE_LIMIT,
 } from "../lib/rank-border-constants"
 import type { DetailState } from "../lib/rank-border-types"
 import type { RankBorderDetailSharedState, UseRankBorderDetailDeps } from "./rank-border-detail-shared"
@@ -148,7 +148,8 @@ export function useRankBorderDetailTrace(
           ...detailScope.value,
           userId: value.query,
           includeTrace: true,
-          limit: FULL_TRACE_LIMIT,
+          fetchAllTrace: true,
+          limit: TRACE_PAGE_LIMIT,
         }).catch(() => null)
         return detail?.playerTrace ?? []
       }
@@ -157,7 +158,6 @@ export function useRankBorderDetailTrace(
         userId: value.query,
         ownerId: userStore.kratosIdentityId,
         includeTrace: true,
-        limit: FULL_TRACE_LIMIT,
       }).then((detail) => detail.playerTrace).catch(() => [])
     }
 
@@ -168,7 +168,8 @@ export function useRankBorderDetailTrace(
         rank: value.result.rank,
         includeTrace: !traceUserId,
         includePlayerTrace: traceUserId != null,
-        limit: FULL_TRACE_LIMIT,
+        fetchAllTrace: true,
+        limit: TRACE_PAGE_LIMIT,
       }).catch(() => null)
       if (detail) {
         if (traceUserId) {
@@ -215,7 +216,8 @@ export function useRankBorderDetailTrace(
       ...detailScope.value,
       rank,
       includeTrace: true,
-      limit: FULL_TRACE_LIMIT,
+      fetchAllTrace: true,
+      limit: TRACE_PAGE_LIMIT,
     }).catch(() => null)
     return detail?.rankTrace ?? []
   }

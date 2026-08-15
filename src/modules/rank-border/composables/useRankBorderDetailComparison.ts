@@ -4,7 +4,7 @@ import { useI18n } from "vue-i18n"
 import { formatNumberCN } from "@/lib/number-format"
 import { fetchRankBorderWebRankDetailV2 } from "../api/rank-border"
 import { parseRankBorderRankQuery, type RankBorderTracePoint } from "../lib/rank-border"
-import { FULL_TRACE_LIMIT } from "../lib/rank-border-constants"
+import { TRACE_PAGE_LIMIT } from "../lib/rank-border-constants"
 import { traceRecordsForWindow } from "../lib/rank-border-chart"
 import type { RankBorderDetailSharedState, UseRankBorderDetailDeps } from "./rank-border-detail-shared"
 
@@ -147,7 +147,8 @@ export function useRankBorderDetailComparison(
       rank,
       includeTrace: true,
       includePlayerTrace: true,
-      limit: FULL_TRACE_LIMIT,
+      fetchAllTrace: true,
+      limit: TRACE_PAGE_LIMIT,
     }).catch(() => null)
     if (rankDetail == null) {
       return []
