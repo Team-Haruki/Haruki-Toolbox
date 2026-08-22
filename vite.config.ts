@@ -217,7 +217,9 @@ export default defineConfig(({ command, mode }) => {
                             },
                         },
                         {
-                            urlPattern: /^https:\/\/(sekai-assets\.haruki\.seiunx\.com|sekai-assets-bdf29c81\.seiunx\.net|toolbox-sekai-assets\.haruki\.seiunx\.com|images\.haruki\.seiunx\.com)\/.*\.(?:png|jpe?g|webp|avif)(?:\?.*)?$/i,
+                            // Keep latency probes on the network. Caching them makes
+                            // endpoint re-tests measure Service Worker cache reads.
+                            urlPattern: /^https:\/\/(sekai-assets\.haruki\.seiunx\.com|sekai-assets-bdf29c81\.seiunx\.net|toolbox-sekai-assets\.haruki\.seiunx\.com|images\.haruki\.seiunx\.com)\/(?!asset-probe\.png(?:\?|$)).*\.(?:png|jpe?g|webp|avif)(?:\?.*)?$/i,
                             handler: 'CacheFirst',
                             options: {
                                 cacheName: 'sekai-image-assets',

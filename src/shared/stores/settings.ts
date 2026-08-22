@@ -39,6 +39,7 @@ function createEmptyAssetEndpointLatencyResults(): Record<SekaiAssetEndpointPref
     return {
         china: { status: 'pending', elapsedMs: null, checkedAt: null },
         global: { status: 'pending', elapsedMs: null, checkedAt: null },
+        china_cdn: { status: 'pending', elapsedMs: null, checkedAt: null },
     }
 }
 
@@ -186,6 +187,7 @@ export const useSettingsStore = defineStore("settings", () => {
     }
     let themeListenerInitialized = false
     let themeMediaQuery: MediaQueryList | null = null
+    let assetEndpointPreferenceInitialized = false
     const handleThemeChange = () => {
         if (theme.value === 'system') {
             applyTheme('system')
@@ -209,17 +211,21 @@ export const useSettingsStore = defineStore("settings", () => {
         applyReducedVisualEffects(reducedVisualEffects.value)
     }
     async function initAssetEndpointPreference() {
+        if (assetEndpointPreferenceInitialized) {
+            return
+        }
+        assetEndpointPreferenceInitialized = true
+
         const normalizedAssetEndpoint = normalizeAssetEndpointPreference(preferredAssetEndpoint.value)
         if (preferredAssetEndpoint.value !== normalizedAssetEndpoint) {
             preferredAssetEndpoint.value = normalizedAssetEndpoint
-            assetEndpointManuallySelected.value = false
             assetEndpointLatencyMeasuredAt.value = null
         }
 
-        if (assetEndpointLatencyMeasuredAt.value != null && hasAllAssetEndpointLatencyResults()) {
-            return
-        }
-
+        // Re-test once per full page load and replace the persisted preference
+        // with the fastest reachable endpoint. A manual choice made while this
+        // measurement is running still wins for the current page session.
+        assetEndpointManuallySelected.value = false
         await measureAssetEndpointLatencies(true)
     }
     async function measureEndpointLatencies() {
@@ -276,9 +282,6 @@ export const useSettingsStore = defineStore("settings", () => {
         } finally {
             assetEndpointLatencyChecking.value = false
         }
-    }
-    function hasAllAssetEndpointLatencyResults() {
-        return ASSET_ENDPOINT_TYPES.every((type) => assetEndpointLatencyResults.value[type]?.checkedAt != null)
     }
     return {
         directEndpoint,
@@ -387,7 +390,7 @@ async function measureAssetEndpointLatency(rootUrl: string): Promise<AssetEndpoi
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), ASSET_ENDPOINT_TIMEOUT_MS)
     try {
-        await fetch(`${rootUrl.replace(/\/+$/, '')}${ASSET_ENDPOINT_PROBE_PATH}`, {
+        await fetch(buildAssetEndpointProbeUrl(rootUrl), {
             method: 'GET',
             mode: 'no-cors',
             cache: 'no-store',
@@ -408,4 +411,10 @@ async function measureAssetEndpointLatency(rootUrl: string): Promise<AssetEndpoi
     } finally {
         clearTimeout(timeout)
     }
+}
+
+export function buildAssetEndpointProbeUrl(rootUrl: string, cacheKey = Date.now()): string {
+    const url = new URL(`${rootUrl.replace(/\/+$/, '')}${ASSET_ENDPOINT_PROBE_PATH}`)
+    url.searchParams.set('_latency', String(cacheKey))
+    return url.toString()
 }
