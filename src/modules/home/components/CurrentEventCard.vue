@@ -30,7 +30,7 @@ import {
   EventBannerImage,
   EventTypeBadge,
   normalizeEventItems,
-  resolveEventBannerUrl,
+  resolveEventBackgroundUrl,
   type SekaiEventItem,
 } from "@/modules/events"
 import { resolveMusicJacketUrl } from "@/modules/music-library"
@@ -68,17 +68,17 @@ const gachas = ref<GachaEntry[]>([])
 const now = ref(Date.now())
 let timer: ReturnType<typeof setInterval> | null = null
 
-const bannerCandidates = computed(() => {
+const backgroundUrl = computed(() => {
   const event = currentEvent.value
   if (!event) {
-    return []
+    return null
   }
 
-  const list = [resolveEventBannerUrl(region.value, event.assetbundleName, assetEndpoint.value)]
-  if (region.value !== "jp") {
-    list.push(resolveEventBannerUrl("jp", event.assetbundleName, assetEndpoint.value))
-  }
-  return list.filter((url): url is string => url != null)
+  return resolveEventBackgroundUrl(
+    region.value,
+    event.assetbundleName,
+    assetEndpoint.value,
+  )
 })
 
 const remainingLabel = computed(() => {
@@ -285,11 +285,11 @@ function selectEventGachas(event: SekaiEventItem, rawGachas: unknown): GachaEntr
 
     <!-- Ready -->
     <div v-else-if="currentEvent" class="relative">
-      <!-- Banner backdrop -->
-      <div v-if="bannerCandidates.length" class="absolute inset-0 opacity-25 dark:opacity-20" aria-hidden="true">
+      <!-- Event background artwork -->
+      <div v-if="backgroundUrl" class="absolute inset-0 opacity-25 dark:opacity-20" aria-hidden="true">
         <FallbackImage
-          :candidates="bannerCandidates"
-          :alt="currentEvent.name"
+          :candidates="[backgroundUrl]"
+          alt=""
           img-class="h-full w-full object-cover"
         />
       </div>

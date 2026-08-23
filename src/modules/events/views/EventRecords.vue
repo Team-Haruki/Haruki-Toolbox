@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
+import { RouterLink } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { LucideRefreshCcw } from "lucide-vue-next"
+import { isAxiosError } from "axios"
+import { LucideCloudUpload, LucideRefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -11,6 +13,7 @@ import {
 } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import DateTimePicker24h from "@/components/ui/datetime-picker/DateTimePicker24h.vue"
+import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -63,17 +66,26 @@ const region = computed<SekaiRegion | null>(() => selectedAccount.value?.server 
 const bannerRegion = computed<SekaiRegion>(() => region.value ?? "jp")
 
 const master = useEventRecordsMaster(region)
+const suiteDataMissing = computed(
+  () => isAxiosError(suite.error.value) && suite.error.value.response?.status === 404,
+)
 
 const state = computed<"idle" | "loading" | "error" | "ready">(() => {
   if (suite.status.value === "idle") {
     return "idle"
   }
 
+  // A missing/failed account snapshot is actionable immediately; don't hide
+  // it behind an unrelated masterdata download that may still be running.
+  if (suite.status.value === "error") {
+    return "error"
+  }
+
   if (suite.status.value === "loading" || master.loading.value) {
     return "loading"
   }
 
-  if (suite.status.value === "error" || master.error.value != null) {
+  if (master.error.value != null) {
     return "error"
   }
 
@@ -223,7 +235,7 @@ function formatRecordDate(value: number | null) {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center gap-4">
+  <div class="mx-auto flex min-w-0 w-full max-w-4xl flex-1 flex-col justify-center gap-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold">{{ t("eventRecords.title") }}</h1>
@@ -252,6 +264,12 @@ function formatRecordDate(value: number | null) {
 
     <!-- Loading -->
     <template v-else-if="state === 'loading'">
+      <div class="grid gap-2 rounded-md border bg-muted/20 p-3">
+        <p class="text-xs text-muted-foreground">
+          {{ t("eventRecords.loading") }}
+        </p>
+        <Progress :model-value="master.regionState.value?.progress ?? 0" />
+      </div>
       <Skeleton class="h-20 w-full" />
       <Skeleton class="h-64 w-full" />
       <Skeleton class="h-96 w-full" />
@@ -260,10 +278,24 @@ function formatRecordDate(value: number | null) {
     <!-- Error -->
     <Card v-else-if="state === 'error'">
       <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <p class="text-sm text-muted-foreground">{{ t("eventRecords.loadFailed") }}</p>
-        <Button variant="outline" size="sm" @click="reloadAll">
-          <LucideRefreshCcw class="mr-1 h-4 w-4" /> {{ t("eventRecords.retry") }}
-        </Button>
+        <template v-if="suiteDataMissing">
+          <LucideCloudUpload class="size-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+          <p class="max-w-md text-sm text-muted-foreground">
+            {{ t("eventRecords.missingUserData") }}
+          </p>
+          <Button as-child size="sm">
+            <RouterLink to="/upload-data">
+              <LucideCloudUpload class="size-4" aria-hidden="true" />
+              {{ t("eventRecords.uploadData") }}
+            </RouterLink>
+          </Button>
+        </template>
+        <template v-else>
+          <p class="text-sm text-muted-foreground">{{ t("eventRecords.loadFailed") }}</p>
+          <Button variant="outline" size="sm" @click="reloadAll">
+            <LucideRefreshCcw class="mr-1 h-4 w-4" /> {{ t("eventRecords.retry") }}
+          </Button>
+        </template>
       </CardContent>
     </Card>
 

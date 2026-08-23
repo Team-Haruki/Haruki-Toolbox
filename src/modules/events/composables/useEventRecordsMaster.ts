@@ -31,6 +31,12 @@ const RECORD_OPTIONAL_FILES: readonly string[] = [
 ]
 const RECORD_REQUIRED_FILES = RECORD_FILES.filter((file) => !RECORD_OPTIONAL_FILES.includes(file))
 
+function missingEventRecordFiles(files: Record<string, unknown>): string[] {
+  return RECORD_REQUIRED_FILES.filter(
+    (fileName) => !Object.prototype.hasOwnProperty.call(files, fileName),
+  )
+}
+
 /**
  * Masterdata needed by the event records page, driven by the selected game
  * account's server (not the catalog region). Reloads whenever the account —
@@ -74,10 +80,31 @@ export function useEventRecordsMaster(region: Ref<SekaiRegion | null>) {
     try {
       const state = sekaiDataStore.regionStates[currentRegion]
       if (force || !RECORD_REQUIRED_FILES.every((file) => state.files.includes(file))) {
-        await sekaiDataStore.ensureRegionData(currentRegion, { force, files: RECORD_FILES })
+        await sekaiDataStore.ensureRegionData(currentRegion, {
+          force,
+          files: RECORD_FILES,
+          musicMetas: false,
+        })
       }
 
-      const files = await readSekaiMasterFiles(currentRegion, RECORD_FILES)
+      let files = await readSekaiMasterFiles(currentRegion, RECORD_FILES)
+
+      // Safari and other mobile browsers can evict IndexedDB records without
+      // clearing our metadata entry. Repair an incomplete cache once before
+      // surfacing a real load error to the page.
+      if (!force && missingEventRecordFiles(files).length > 0) {
+        await sekaiDataStore.ensureRegionData(currentRegion, {
+          force: true,
+          files: RECORD_FILES,
+          musicMetas: false,
+        })
+        files = await readSekaiMasterFiles(currentRegion, RECORD_FILES)
+      }
+
+      const missingFiles = missingEventRecordFiles(files)
+      if (missingFiles.length > 0) {
+        throw new Error(`Incomplete event master data: ${missingFiles.join(", ")}`)
+      }
       if (region.value !== currentRegion) {
         // The selected account changed while loading; the new watch run owns the state.
         return

@@ -226,8 +226,8 @@ const selectedAccountOption = computed(() =>
                       <LucideInfo class="size-3.5" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent class="w-max max-w-[calc(100vw-2rem)] !border-slate-200 !bg-white !text-slate-950 text-left leading-5 text-nowrap shadow-lg dark:!border-slate-700 dark:!bg-slate-950 dark:!text-slate-50">
-                    <span class="block whitespace-nowrap">
+                  <TooltipContent class="w-max max-w-[calc(100vw-2rem)] !border-slate-200 !bg-white !text-slate-950 text-left leading-5 shadow-lg dark:!border-slate-700 dark:!bg-slate-950 dark:!text-slate-50 sm:max-w-md">
+                    <span class="block whitespace-normal">
                       {{ t("deckRecommend.form.algorithmHint") }}
                     </span>
                   </TooltipContent>

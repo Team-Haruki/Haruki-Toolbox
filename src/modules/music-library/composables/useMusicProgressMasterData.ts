@@ -18,6 +18,12 @@ export type UseMusicProgressMasterDataOptions = {
   withAchievements?: boolean
 }
 
+function missingMusicProgressFiles(files: Record<string, unknown>): string[] {
+  return MUSIC_PROGRESS_MASTER_FILES.filter(
+    (fileName) => !Object.prototype.hasOwnProperty.call(files, fileName),
+  )
+}
+
 /**
  * Loads the raw `musics` + `musicDifficulties` masterdata for the selected
  * game account's server. `region` is null while no account is selected.
@@ -77,9 +83,29 @@ export function useMusicProgressMasterData(
     try {
       const cachedFiles = sekaiDataStore.regionStates[target].files
       if (!requiredFiles.every((fileName) => cachedFiles.includes(fileName))) {
-        await sekaiDataStore.ensureRegionData(target, { files: requiredFiles })
+        await sekaiDataStore.ensureRegionData(target, {
+          files: requiredFiles,
+          musicMetas: false,
+        })
       }
-      const files = await readSekaiMasterFiles(target, requiredFiles)
+      let files = await readSekaiMasterFiles(target, requiredFiles)
+
+      // Mobile browsers may evict individual IndexedDB records while leaving
+      // the cache metadata intact. Recover once instead of treating an
+      // incomplete read as successfully loaded and rendering an empty page.
+      if (missingMusicProgressFiles(files).length > 0) {
+        await sekaiDataStore.ensureRegionData(target, {
+          force: true,
+          files: requiredFiles,
+          musicMetas: false,
+        })
+        files = await readSekaiMasterFiles(target, requiredFiles)
+      }
+
+      const missingFiles = missingMusicProgressFiles(files)
+      if (missingFiles.length > 0) {
+        throw new Error(`Incomplete music master data: ${missingFiles.join(", ")}`)
+      }
       if (currentGeneration !== generation) {
         return
       }

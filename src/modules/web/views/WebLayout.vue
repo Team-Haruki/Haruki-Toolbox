@@ -266,8 +266,8 @@ function openAppSettings() {
         </div>
       </header>
 
-      <main class="flex flex-1 flex-col">
-        <div class="flex flex-1 flex-col items-center px-4 py-3 sm:p-4 xl:p-6">
+      <main class="flex min-w-0 flex-1 flex-col">
+        <div class="flex min-w-0 w-full flex-1 flex-col items-center px-4 py-3 sm:p-4 xl:p-6">
           <router-view v-slot="{ Component, route }">
             <Transition name="page-fade" mode="out-in">
               <!-- Keyed by path: query-only changes (filters, tabs, pagination)

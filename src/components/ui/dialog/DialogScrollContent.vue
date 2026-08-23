@@ -31,7 +31,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
         data-glass-surface="dialog"
         :class="
           cn(
-            'pointer-events-auto relative z-50 grid w-full max-w-lg my-8 gap-4 border p-6 duration-200 sm:rounded-lg md:w-full',
+            'pointer-events-auto relative z-50 my-4 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] gap-4 overflow-y-auto border p-4 duration-200 sm:my-8 sm:max-w-lg sm:rounded-lg sm:p-6 md:w-full',
             props.class,
           )
         "

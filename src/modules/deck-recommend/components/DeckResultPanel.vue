@@ -5,12 +5,14 @@ import {
   LucideCheck,
   LucideChevronDown,
   LucideCopy,
+  LucideCloudUpload,
   LucideGamepad2,
   LucideListMusic,
   LucideTriangleAlert,
 } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
+import { RouterLink } from "vue-router"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -332,7 +334,25 @@ function formatPercentValue(value: number) {
                 ms
               </span>
             </div>
-            <div v-if="runner.error.value" class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            <div
+              v-if="runner.userDataMissing.value"
+              class="flex flex-col gap-3 rounded-md border border-amber-300 bg-amber-50/90 p-3 text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 sm:flex-row sm:items-center"
+            >
+              <LucideCloudUpload class="size-5 shrink-0" aria-hidden="true" />
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-semibold">{{ t("deckRecommend.result.missingUserDataTitle") }}</p>
+                <p class="mt-1 text-xs leading-5 text-amber-900/80 dark:text-amber-100/75">
+                  {{ t("deckRecommend.result.missingUserDataDescription") }}
+                </p>
+              </div>
+              <Button as-child size="sm" class="w-full shrink-0 sm:w-auto">
+                <RouterLink to="/upload-data">
+                  <LucideCloudUpload class="size-4" aria-hidden="true" />
+                  {{ t("deckRecommend.result.uploadDataAction") }}
+                </RouterLink>
+              </Button>
+            </div>
+            <div v-else-if="runner.error.value" class="break-words rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
               {{ runner.error.value }}
             </div>
             <div v-else-if="resultDecks.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">

@@ -155,8 +155,25 @@ body {
         @apply border-border outline-ring/50;
     }
 
+    html,
+    body,
+    #app {
+        min-width: 0;
+        max-width: 100%;
+    }
+
     body {
         @apply bg-background text-foreground;
+    }
+}
+
+/* iOS zooms the page when a focused form control renders below 16px, which
+ * makes anchored selects/popovers appear to jump outside the mobile viewport. */
+@media (max-width: 767px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        font-size: 16px !important;
     }
 }
 

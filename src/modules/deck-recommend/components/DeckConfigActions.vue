@@ -51,12 +51,12 @@ const { t } = useI18n()
     </Button>
   </div>
   <div v-else class="grid gap-2 border-t px-3 py-3 md:hidden">
-    <div class="flex items-center gap-2">
-      <Button type="button" variant="outline" size="sm" class="flex-1" @click="emit('expert')">
+    <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
+      <Button type="button" variant="outline" size="sm" class="min-w-0 px-1.5 text-xs sm:px-2.5 sm:text-sm" @click="emit('expert')">
         <LucideSettings2 class="size-4" />
         {{ t("deckRecommend.layers.expert.title") }}
       </Button>
-      <Button type="button" variant="outline" size="sm" class="flex-1" :disabled="running" @click="emit('save')">
+      <Button type="button" variant="outline" size="sm" class="min-w-0 px-1.5 text-xs sm:px-2.5 sm:text-sm" :disabled="running" @click="emit('save')">
         <LucideSave class="size-4" />
         {{ t("deckRecommend.configActions.save") }}
       </Button>
@@ -64,7 +64,7 @@ const { t } = useI18n()
         type="button"
         variant="ghost"
         size="sm"
-        class="flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        class="min-w-0 px-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive sm:px-2.5 sm:text-sm"
         :disabled="running"
         @click="emit('clear')"
       >

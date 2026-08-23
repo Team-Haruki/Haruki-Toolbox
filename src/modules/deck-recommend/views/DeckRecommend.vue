@@ -1195,6 +1195,13 @@ async function runRecommend() {
     })
     toast.success(t("deckRecommend.toast.runSuccessTitle"))
   } catch (error) {
+    if (runner.userDataMissing.value) {
+      toast.warning(t("deckRecommend.result.missingUserDataTitle"), {
+        description: t("deckRecommend.result.missingUserDataDescription"),
+      })
+      return
+    }
+
     configCollapsed.value = false
     toast.error(t("deckRecommend.toast.runFailedTitle"), {
       description: runner.error.value ?? (error instanceof Error ? error.message : String(error)),
@@ -1555,7 +1562,7 @@ provideDeckRecommendFormContext({
 </script>
 
 <template>
-  <div class="flex w-full flex-1 flex-col items-center justify-center px-4 py-4 sm:px-6">
+  <div class="flex min-w-0 w-full flex-1 flex-col items-center justify-center py-1 sm:px-2 sm:py-4">
     <div class="mx-auto w-full max-w-[100rem] space-y-3 sm:space-y-4">
       <Card v-show="!configCollapsed" class="gap-0 rounded-lg py-0">
         <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">

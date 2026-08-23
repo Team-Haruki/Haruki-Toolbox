@@ -73,7 +73,7 @@ function selectOption(value: string) {
         role="combobox"
         :aria-expanded="open"
         :disabled="props.disabled"
-        :class="cn('w-full justify-between', props.triggerClass)"
+        :class="cn('min-w-0 max-w-full w-full justify-between overflow-hidden', props.triggerClass)"
       >
         <span
           :class="[
@@ -90,7 +90,7 @@ function selectOption(value: string) {
       v-if="open"
       :class="
         cn(
-          'w-(--reka-popover-trigger-width) overflow-hidden p-0',
+          'w-(--reka-popover-trigger-width) max-w-[calc(100vw-1rem)] overflow-hidden p-0',
           props.contentClass,
         )
       "

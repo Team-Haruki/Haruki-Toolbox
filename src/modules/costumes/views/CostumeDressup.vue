@@ -241,7 +241,7 @@ watch(() => route.query, () => {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center gap-4">
+  <div class="mx-auto flex min-w-0 w-full max-w-7xl flex-1 flex-col justify-center gap-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold">{{ t("costumes.dressup.title") }}</h1>
@@ -280,8 +280,8 @@ watch(() => route.query, () => {
     </Card>
 
     <div v-else class="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-      <Card class="h-fit">
-        <CardContent class="flex flex-col gap-4 pt-6">
+      <Card class="min-w-0 h-fit">
+        <CardContent class="flex min-w-0 flex-col gap-4 px-3 pt-5 sm:px-6 sm:pt-6">
           <div class="grid gap-1.5">
             <Label class="text-xs text-muted-foreground">{{ t("costumes.dressup.character") }}</Label>
             <Combobox

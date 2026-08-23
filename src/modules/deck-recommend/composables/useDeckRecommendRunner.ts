@@ -1,4 +1,5 @@
 import { computed, ref } from "vue"
+import { isAxiosError } from "axios"
 import type {
   MusicRecommendOptions,
   RecommendDeck,
@@ -135,6 +136,7 @@ export function useDeckRecommendRunner() {
   const running = ref(false)
   const phase = ref<Extract<DeckRecommendWorkerEvent, { type: "progress" }>["phase"] | "fetching-user-data" | "preparing-data" | null>(null)
   const error = ref<string | null>(null)
+  const userDataMissing = ref(false)
   const result = ref<TaggedRecommendResult | null>(null)
   const masterData = ref<Record<string, unknown> | null>(null)
   const elapsedMs = ref<number | null>(null)
@@ -163,6 +165,7 @@ export function useDeckRecommendRunner() {
     running.value = true
     phase.value = "preparing-data"
     error.value = null
+    userDataMissing.value = false
     result.value = null
     masterData.value = null
     elapsedMs.value = null
@@ -310,6 +313,7 @@ export function useDeckRecommendRunner() {
 
     phase.value = null
     error.value = null
+    userDataMissing.value = false
     result.value = null
     masterData.value = null
     elapsedMs.value = null
@@ -322,14 +326,19 @@ export function useDeckRecommendRunner() {
 
   async function fetchUserData(input: DeckRecommendRunnerInput) {
     phase.value = "fetching-user-data"
-    const result = await fetchDeckRecommendUserDataWithCache({
-      toolboxUserId: userStore.userId || "",
-      server: input.account?.server ?? input.dataRegion,
-      gameUserId: input.account?.uid ?? "",
-      mode: resolveRecommendDataMode(input.mode),
-    }, { strategy: "prefer-cache" })
-    applyUserDataCacheStatus(result)
-    return result.data
+    try {
+      const result = await fetchDeckRecommendUserDataWithCache({
+        toolboxUserId: userStore.userId || "",
+        server: input.account?.server ?? input.dataRegion,
+        gameUserId: input.account?.uid ?? "",
+        mode: resolveRecommendDataMode(input.mode),
+      }, { strategy: "prefer-cache" })
+      applyUserDataCacheStatus(result)
+      return result.data
+    } catch (fetchError) {
+      userDataMissing.value = isAxiosError(fetchError) && fetchError.response?.status === 404
+      throw fetchError
+    }
   }
 
   async function fetchUserProfile(input: DeckRecommendRunnerInput): Promise<unknown | null> {
@@ -622,6 +631,7 @@ export function useDeckRecommendRunner() {
     running,
     phase,
     error,
+    userDataMissing,
     result,
     masterData,
     elapsedMs,

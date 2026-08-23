@@ -2,8 +2,9 @@
 import { computed, ref, watch } from "vue"
 import { RouterLink } from "vue-router"
 import { useI18n } from "vue-i18n"
+import { isAxiosError } from "axios"
 import type { AcceptableValue } from "reka-ui"
-import { ChevronDown, ChevronRight, LucideRefreshCw } from "lucide-vue-next"
+import { ChevronDown, ChevronRight, LucideCloudUpload, LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -54,6 +55,9 @@ const suite = useUserSuite(["userMusics", "userMusicResults", "userMusicAchievem
 
 const region = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 const master = useMusicProgressMasterData(region, { withAchievements: true })
+const suiteDataMissing = computed(
+  () => isAxiosError(suite.error.value) && suite.error.value.response?.status === 404,
+)
 
 const activeDifficulty = ref<MusicDifficulty>("master")
 const expandedLevels = ref<Set<string>>(new Set())
@@ -210,11 +214,15 @@ function levelHasRemaining(row: MusicProgressLevelRow): boolean {
 
 const showSkeleton = computed(
   () => progress.value == null
-    && (suite.status.value === "loading" || master.loading.value)
+    && suite.status.value !== "error"
+    && master.error.value == null
     && suite.status.value !== "idle",
 )
 const showDownloadProgress = computed(
-  () => progress.value == null && master.regionState.value?.refreshing === true,
+  () => progress.value == null
+    && suite.status.value !== "error"
+    && master.error.value == null
+    && master.regionState.value?.refreshing === true,
 )
 
 const dateTimeFormatter = computed(() =>
@@ -319,7 +327,7 @@ function refresh() {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-4 py-4">
+  <div class="mx-auto flex min-w-0 w-full max-w-6xl flex-1 flex-col justify-center gap-4 py-4">
       <!-- Header -->
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -350,15 +358,29 @@ function refresh() {
       <!-- Errors -->
       <Card v-else-if="suite.status.value === 'error' || master.error.value">
         <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-          <p v-if="suite.status.value === 'error'" class="text-sm text-muted-foreground">
-            {{ t("musicProgress.suiteError") }}
-          </p>
-          <p v-if="master.error.value" class="max-w-full truncate font-mono text-xs text-muted-foreground">
-            {{ t("musicProgress.masterError", { message: master.error.value }) }}
-          </p>
-          <Button type="button" variant="outline" size="sm" @click="refresh">
-            {{ t("musicProgress.retry") }}
-          </Button>
+          <template v-if="suiteDataMissing">
+            <LucideCloudUpload class="size-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            <p class="max-w-md text-sm text-muted-foreground">
+              {{ t("musicProgress.missingUserData") }}
+            </p>
+            <Button as-child type="button" size="sm">
+              <RouterLink to="/upload-data">
+                <LucideCloudUpload class="size-4" aria-hidden="true" />
+                {{ t("musicProgress.uploadData") }}
+              </RouterLink>
+            </Button>
+          </template>
+          <template v-else>
+            <p v-if="suite.status.value === 'error'" class="text-sm text-muted-foreground">
+              {{ t("musicProgress.suiteError") }}
+            </p>
+            <p v-if="master.error.value" class="max-w-full break-words font-mono text-xs text-muted-foreground">
+              {{ t("musicProgress.masterError", { message: master.error.value }) }}
+            </p>
+            <Button type="button" variant="outline" size="sm" @click="refresh">
+              {{ t("musicProgress.retry") }}
+            </Button>
+          </template>
         </CardContent>
       </Card>
 
@@ -411,18 +433,18 @@ function refresh() {
             </CardDescription>
           </CardHeader>
           <CardContent class="space-y-3">
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-1 gap-2 min-[360px]:grid-cols-3">
               <div class="rounded-md border p-2 text-center">
                 <p class="text-xs text-muted-foreground">{{ t("musicProgress.rewards.jewel") }}</p>
-                <p class="text-xl font-semibold tabular-nums">{{ formatCompactNumber(rewardStats.total.jewel, locale) }}</p>
+                <p class="text-lg font-semibold tabular-nums min-[420px]:text-xl">{{ formatCompactNumber(rewardStats.total.jewel, locale) }}</p>
               </div>
               <div class="rounded-md border p-2 text-center">
                 <p class="text-xs text-muted-foreground">{{ t("musicProgress.rewards.coin") }}</p>
-                <p class="text-xl font-semibold tabular-nums">{{ formatCompactNumber(rewardStats.total.coin, locale) }}</p>
+                <p class="text-lg font-semibold tabular-nums min-[420px]:text-xl">{{ formatCompactNumber(rewardStats.total.coin, locale) }}</p>
               </div>
               <div class="rounded-md border p-2 text-center">
                 <p class="text-xs text-muted-foreground">{{ t("musicProgress.rewards.shard") }}</p>
-                <p class="text-xl font-semibold tabular-nums">{{ formatCompactNumber(rewardStats.total.shard, locale) }}</p>
+                <p class="text-lg font-semibold tabular-nums min-[420px]:text-xl">{{ formatCompactNumber(rewardStats.total.shard, locale) }}</p>
               </div>
             </div>
             <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -613,6 +635,9 @@ function refresh() {
       </template>
 
       <div v-else-if="showSkeleton" class="space-y-3">
+        <p v-if="!showDownloadProgress" class="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
+          {{ t("musicProgress.loading") }}
+        </p>
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Skeleton v-for="index in 4" :key="index" class="h-20 w-full rounded-lg" />
         </div>
