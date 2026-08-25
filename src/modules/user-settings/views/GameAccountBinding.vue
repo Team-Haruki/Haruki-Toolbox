@@ -132,6 +132,7 @@ const {
       :selected-account-grants="selectedAccountGrants"
       :received-grants="receivedGrants"
       :region-labels="regionLabels"
+      :current-user-id="userStore.userId"
       @refresh="loadGrants"
       @save="saveGrant"
       @edit="editGrant"

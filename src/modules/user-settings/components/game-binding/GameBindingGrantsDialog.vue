@@ -28,10 +28,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  LucideCopy,
   LucidePencil,
   LucideRefreshCw,
   LucideTrash2,
 } from "lucide-vue-next"
+import { toast } from "vue-sonner"
+import { copyTextToClipboard } from "@/lib/clipboard"
 import { formatLocalizedDate } from "@/lib/date-time"
 import {
   isGrantDataType,
@@ -55,6 +58,7 @@ const props = defineProps<{
   dataType: GameAccountGrantDataType
   expiresAtLocal: string
   regionLabels: Record<SekaiRegion, string>
+  currentUserId: string | null
 }>()
 
 const emit = defineEmits<{
@@ -100,6 +104,16 @@ function handleDataTypeChange(value: unknown) {
     emit("update:data-type", value)
   }
 }
+
+async function copyOwnUserId() {
+  const id = props.currentUserId
+  if (!id) return
+  if (await copyTextToClipboard(id)) {
+    toast.success(t("sidebarUser.toolboxIdCopied"))
+  } else {
+    toast.error(t("sidebarUser.copyFailed"))
+  }
+}
 </script>
 
 <template>
@@ -109,6 +123,20 @@ function handleDataTypeChange(value: unknown) {
         <DialogTitle>{{ t("userSettings.gameBinding.grants.title") }}</DialogTitle>
         <DialogDescription>{{ dialogDescription }}</DialogDescription>
       </DialogHeader>
+
+      <div v-if="props.currentUserId" class="flex flex-wrap items-center gap-1.5 text-sm">
+        <span class="text-muted-foreground">{{ t("userSettings.gameBinding.grants.yourUserId") }}</span>
+        <span class="font-mono text-xs">{{ props.currentUserId }}</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          class="size-6"
+          :title="t('sidebarUser.copyToolboxId')"
+          @click="copyOwnUserId"
+        >
+          <LucideCopy class="h-3.5 w-3.5" />
+        </Button>
+      </div>
 
       <div v-if="hasSelectedAccount" class="flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm text-muted-foreground">

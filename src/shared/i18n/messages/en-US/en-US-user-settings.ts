@@ -496,6 +496,7 @@ export default {
         "emptyOwned": "No grants for this account",
         "emptyReceived": "No received grants",
         "fallback": "—",
+        "yourUserId": "Your Toolbox user ID:",
         "dataType": {
           "suite": "Suite",
           "mysekai": "MySekai",

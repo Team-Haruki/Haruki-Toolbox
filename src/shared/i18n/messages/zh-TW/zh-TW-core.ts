@@ -153,7 +153,10 @@ export default {
     "oauthAuthorizations": "OAuth 授權管理",
     "logout": "登出",
     "register": "註冊",
-    "login": "登入"
+    "login": "登入",
+    "copyToolboxId": "複製 Toolbox 使用者 ID",
+    "toolboxIdCopied": "已複製 Toolbox 使用者 ID",
+    "copyFailed": "複製失敗"
   },
   "home": {
     "title": "歡迎使用 Haruki 工具箱",

@@ -153,7 +153,10 @@ export default {
     "oauthAuthorizations": "OAuth authorizations",
     "logout": "Sign out",
     "register": "Register",
-    "login": "Sign in"
+    "login": "Sign in",
+    "copyToolboxId": "Copy Toolbox user ID",
+    "toolboxIdCopied": "Toolbox user ID copied",
+    "copyFailed": "Copy failed"
   },
   "home": {
     "title": "Welcome to Haruki Toolbox",

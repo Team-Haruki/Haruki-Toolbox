@@ -496,6 +496,7 @@ export default {
         "emptyOwned": "该账号暂无授权",
         "emptyReceived": "暂无收到的授权",
         "fallback": "—",
+        "yourUserId": "你的 Toolbox 用户 ID：",
         "dataType": {
           "suite": "Suite",
           "mysekai": "MySekai",

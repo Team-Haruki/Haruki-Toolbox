@@ -6,6 +6,7 @@ import {useUserStore} from "@/shared/stores/user";
 
 import {
   Bot,
+  Copy,
   KeyRound,
   LogIn,
   LogOut,
@@ -14,6 +15,8 @@ import {
   UserPlus,
   ChevronsUpDown
 } from "lucide-vue-next"
+import { toast } from "vue-sonner"
+import { copyTextToClipboard } from "@/lib/clipboard"
 import {
   useSidebar,
   SidebarMenu,
@@ -44,6 +47,16 @@ const displayName = computed(() => (
 
 function handleLogout() {
   logout();
+}
+
+async function copyToolboxId() {
+  const id = userStore.userId
+  if (!id) return
+  if (await copyTextToClipboard(id)) {
+    toast.success(t("sidebarUser.toolboxIdCopied"))
+  } else {
+    toast.error(t("sidebarUser.copyFailed"))
+  }
 }
 
 const maskedEmail = computed(() => {
@@ -103,6 +116,16 @@ const maskedEmail = computed(() => {
                 <span v-if="userStore.isLoggedIn && userStore.emailInfo?.email" class="truncate text-xs">
           {{ userStore.emailInfo.email }}
         </span>
+                <button
+                  v-if="userStore.isLoggedIn && userStore.userId"
+                  type="button"
+                  class="flex min-w-0 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  :title="t('sidebarUser.copyToolboxId')"
+                  @click.stop="copyToolboxId"
+                >
+                  <span class="truncate font-mono">ID: {{ userStore.userId }}</span>
+                  <Copy class="size-3 shrink-0" />
+                </button>
               </div>
             </div>
           </DropdownMenuLabel>
