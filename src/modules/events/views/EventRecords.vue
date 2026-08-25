@@ -58,7 +58,7 @@ const settingsStore = useSettingsStore()
 
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 
-const { selectedAccount } = useGameAccountSelection()
+const { selectedAccount } = useGameAccountSelection({ capability: "suite" })
 const suite = useUserSuite(["userEvents", "userWorldBlooms", "userHonors"], selectedAccount)
 
 const region = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
@@ -243,7 +243,7 @@ function formatRecordDate(value: number | null) {
       </div>
       <div class="flex flex-col items-start gap-1 sm:items-end">
         <div class="flex flex-wrap items-center gap-2">
-          <GameAccountSelect />
+          <GameAccountSelect capability="suite" />
           <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="reloadAll">
             <LucideRefreshCcw class="size-3.5" />
             {{ t("eventRecords.refresh") }}
@@ -278,7 +278,14 @@ function formatRecordDate(value: number | null) {
     <!-- Error -->
     <Card v-else-if="state === 'error'">
       <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <template v-if="suiteDataMissing">
+        <!-- A grantee cannot upload the owner's data, so no upload CTA there. -->
+        <template v-if="suiteDataMissing && selectedAccount?.ownership === 'granted'">
+          <LucideCloudUpload class="size-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+          <p class="max-w-md text-sm text-muted-foreground">
+            {{ t("eventRecords.missingGrantedData") }}
+          </p>
+        </template>
+        <template v-else-if="suiteDataMissing">
           <LucideCloudUpload class="size-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
           <p class="max-w-md text-sm text-muted-foreground">
             {{ t("eventRecords.missingUserData") }}

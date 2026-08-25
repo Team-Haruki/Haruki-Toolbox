@@ -35,7 +35,7 @@ export const TRAINING_CHALLENGE_MASTER_FILES = [
 export function useTrainingChallenge() {
   const sekaiDataStore = useSekaiDataStore()
 
-  const { selectedAccount } = useGameAccountSelection()
+  const { selectedAccount } = useGameAccountSelection({ capability: "suite" })
   const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 
   const suite = useUserSuite(TRAINING_CHALLENGE_SUITE_KEYS, selectedAccount)

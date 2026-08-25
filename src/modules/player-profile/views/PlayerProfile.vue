@@ -476,7 +476,7 @@ function retry() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <GameAccountSelect />
+          <GameAccountSelect capability="profile" />
         </div>
         <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
           {{ t("playerProfile.dataAsOf", { time: uploadTimeText }) }}

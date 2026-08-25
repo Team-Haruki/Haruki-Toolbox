@@ -11,6 +11,9 @@ const props = defineProps<{
   userId: string | number
   verified?: boolean
   isDefault?: boolean
+  ownership?: "own" | "granted"
+  /** Display name of the granting user, shown for granted accounts. */
+  ownerName?: string | null
 }>()
 
 const { t } = useI18n()
@@ -48,7 +51,20 @@ function displayUid(userId: string | number): string {
     </span>
     <span class="truncate text-sm font-medium">{{ resolveSekaiRegionLabel(props.server, t) }}</span>
     <span class="min-w-0 truncate text-xs tabular-nums text-muted-foreground" :title="displayUid(props.userId)">{{ displayUid(props.userId) }}</span>
+    <span
+      v-if="props.ownership === 'granted' && props.ownerName"
+      class="min-w-0 truncate text-xs text-muted-foreground"
+      :title="props.ownerName"
+    >
+      {{ props.ownerName }}
+    </span>
     <span class="ml-auto flex shrink-0 items-center gap-1.5">
+      <span
+        v-if="props.ownership === 'granted'"
+        class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+      >
+        {{ t("gameAccountSelect.grantedBadge") }}
+      </span>
       <span
         v-if="props.isDefault"
         class="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
@@ -56,7 +72,7 @@ function displayUid(userId: string | number): string {
         {{ t("gameAccountSelect.default") }}
       </span>
       <LucideBadgeCheck
-        v-if="props.verified"
+        v-if="props.verified && props.ownership !== 'granted'"
         class="size-4 text-emerald-500"
         :aria-label="t('gameAccountSelect.verified')"
       />

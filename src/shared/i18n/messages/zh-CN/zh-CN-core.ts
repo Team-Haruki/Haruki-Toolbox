@@ -204,7 +204,12 @@ export default {
     "verified": "已验证",
     "default": "默认",
     "none": "你还没有绑定任何游戏账号。",
-    "manage": "管理绑定"
+    "manage": "管理绑定",
+    "grantedBadge": "授权",
+    "groups": {
+      "own": "我的绑定账号",
+      "granted": "他人授权的账号"
+    }
   },
   "cardBox": {
     "title": "我的卡牌",
@@ -260,6 +265,7 @@ export default {
     "idle": "请选择一个游戏账号以查看活动记录。",
     "loading": "正在加载账号快照与活动数据...",
     "missingUserData": "当前账号还没有上传游戏数据，请先前往上传数据页面完成上传。",
+    "missingGrantedData": "该账号的所有者还没有上传游戏数据，暂时无法查看。",
     "uploadData": "前往上传数据",
     "noData": "该账号的快照中暂无活动记录。",
     "loadFailed": "活动记录加载失败。",
@@ -319,6 +325,7 @@ export default {
     "noAccount": "请选择或绑定游戏账号以查看打歌进度。",
     "loading": "正在加载账号快照与乐曲数据...",
     "missingUserData": "当前账号还没有上传游戏数据，请先前往上传数据页面完成上传。",
+    "missingGrantedData": "该账号的所有者还没有上传游戏数据，暂时无法查看。",
     "uploadData": "前往上传数据",
     "noResults": "该数据快照中暂无歌曲游玩记录，所有歌曲将显示为未游玩。",
     "suiteError": "加载账号快照数据失败。",

@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { resolveRequiredUserId } from "@/modules/user-settings/lib/current-user"
+import { invalidateAccessibleGameAccounts } from "@/shared/sekai/user-snapshot/accessible-accounts"
 import {
   deleteGameAccountDataGrant,
   getOwnedGameAccountDataGrants,
@@ -90,6 +91,10 @@ export function useGameAccountDataGrants(currentUserId: () => string | null | un
     if (!response) return
     ownedGrants.value = response.owned.items
     receivedGrants.value = response.received.items
+    // Received grants only change through other users' actions, so syncing
+    // the selector aggregate whenever this list is (re)loaded is the one
+    // client-side moment new grants can be picked up without a reload.
+    invalidateAccessibleGameAccounts()
   }
 
   function openGrantManager(account?: GameAccountBinding) {

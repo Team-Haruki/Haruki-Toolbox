@@ -204,7 +204,12 @@ export default {
     "verified": "已驗證",
     "default": "預設",
     "none": "你還沒有繫結任何遊戲賬號。",
-    "manage": "管理繫結"
+    "manage": "管理繫結",
+    "grantedBadge": "授權",
+    "groups": {
+      "own": "我的繫結賬號",
+      "granted": "他人授權的賬號"
+    }
   },
   "cardBox": {
     "title": "我的卡牌",
@@ -260,6 +265,7 @@ export default {
     "idle": "請選擇一個遊戲賬號以檢視活動記錄。",
     "loading": "正在載入賬號快照與活動資料...",
     "missingUserData": "當前賬號尚未上傳遊戲資料，請先前往上傳資料頁面完成上傳。",
+    "missingGrantedData": "該賬號的所有者還沒有上傳遊戲資料，暫時無法檢視。",
     "uploadData": "前往上傳資料",
     "noData": "該賬號的快照中暫無活動記錄。",
     "loadFailed": "活動記錄載入失敗。",
@@ -319,6 +325,7 @@ export default {
     "noAccount": "請選擇或繫結遊戲賬號以檢視打歌進度。",
     "loading": "正在載入賬號快照與樂曲資料...",
     "missingUserData": "當前賬號尚未上傳遊戲資料，請先前往上傳資料頁面完成上傳。",
+    "missingGrantedData": "該賬號的所有者還沒有上傳遊戲資料，暫時無法檢視。",
     "uploadData": "前往上傳資料",
     "noResults": "該資料快照中暫無歌曲遊玩記錄，所有歌曲將顯示為未遊玩。",
     "suiteError": "載入賬號快照資料失敗。",

@@ -18,7 +18,7 @@ import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 
 const { t, locale } = useI18n()
 const userStore = useUserStore()
-const { selectedAccount } = useGameAccountSelection()
+const { selectedAccount } = useGameAccountSelection({ capability: "suite" })
 
 // Light suite subset purely to surface the account's last upload time; the
 // cache layer keeps this cheap on repeat visits.
@@ -44,7 +44,7 @@ const uploadTimeText = computed(() => {
     </CardHeader>
 
     <CardContent v-if="userStore.isLoggedIn" class="flex flex-1 flex-col gap-3">
-      <GameAccountSelect />
+      <GameAccountSelect capability="suite" />
       <p class="flex items-center gap-1.5 text-xs text-muted-foreground">
         <LucideClock class="h-3.5 w-3.5 shrink-0" />
         <span v-if="uploadTimeText">{{ t("home.accountCard.dataUpdatedAt", { time: uploadTimeText }) }}</span>

@@ -38,7 +38,7 @@ export const TRAINING_POWER_MASTER_FILES = [
 export function useTrainingPower() {
   const sekaiDataStore = useSekaiDataStore()
 
-  const { selectedAccount } = useGameAccountSelection()
+  const { selectedAccount } = useGameAccountSelection({ capability: "suite" })
   const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 
   const suite = useUserSuite(TRAINING_POWER_SUITE_KEYS, selectedAccount)
