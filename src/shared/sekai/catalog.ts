@@ -108,6 +108,18 @@ export function normalizeCatalogRecords(value: unknown): Record<string, unknown>
   return value.filter((item): item is Record<string, unknown> => item != null && typeof item === "object")
 }
 
+/**
+ * Appends normalized records onto `target` one by one. tw/kr/cn ship
+ * resourceBoxDetails as a single flat array with 100k+ rows; spreading it
+ * into `push(...)` passes every row as a call argument and overflows the
+ * ~512KB stacks of mobile browser engines.
+ */
+export function appendCatalogRecords(target: Record<string, unknown>[], value: unknown): void {
+  for (const record of normalizeCatalogRecords(value)) {
+    target.push(record)
+  }
+}
+
 export function buildCatalogCharacterMap(rawGameCharacters: unknown): Map<number, CatalogCharacter> {
   const map = new Map<number, CatalogCharacter>()
   for (const record of normalizeCatalogRecords(rawGameCharacters)) {

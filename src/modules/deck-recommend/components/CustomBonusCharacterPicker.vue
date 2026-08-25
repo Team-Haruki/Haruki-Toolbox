@@ -17,6 +17,7 @@ import {
   type DeckRecommendSupportUnitType,
 } from "../lib/recommend-options"
 import { useCharacterOptions } from "../composables/useCharacterOptions"
+import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
 
 const props = defineProps<{
   modelValue: readonly number[]
@@ -114,7 +115,7 @@ function isSupportUnit(value: string): value is DeckRecommendSupportUnitType {
           :disabled="props.disabled || loading"
           @update:model-value="checked => toggleCharacter(option.id, checked === true)"
         />
-        <img :src="option.iconUrl" alt="" aria-hidden="true" class="size-6 rounded-sm object-cover" loading="lazy">
+        <img :src="option.iconUrl" alt="" aria-hidden="true" class="size-6 rounded-sm object-cover" loading="lazy" @error="handleSekaiImageError($event, option.iconUrl)">
         <span class="min-w-0 truncate">{{ option.label }}</span>
       </label>
     </div>
@@ -136,7 +137,7 @@ function isSupportUnit(value: string): value is DeckRecommendSupportUnitType {
           class="grid gap-2 rounded-md border bg-background/60 p-2"
         >
           <div class="flex min-w-0 items-center gap-2 text-sm">
-            <img :src="option.iconUrl" alt="" aria-hidden="true" class="size-6 rounded-sm object-cover" loading="lazy">
+            <img :src="option.iconUrl" alt="" aria-hidden="true" class="size-6 rounded-sm object-cover" loading="lazy" @error="handleSekaiImageError($event, option.iconUrl)">
             <span class="min-w-0 truncate">{{ option.label }}</span>
           </div>
           <Select

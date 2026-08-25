@@ -45,6 +45,7 @@ import {
 import { useCardCatalog } from "@/modules/cards/composables/useCardCatalog"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
 
 const PAGE_SIZE = 60
 const YEAR_ALL = "all"
@@ -303,7 +304,7 @@ function nextPage() {
               :aria-pressed="filters.characterIds.includes(character.id)"
               @click="toggleCharacter(character.id)"
             >
-              <img :src="character.iconUrl" :alt="character.name" class="size-8 rounded-full" loading="lazy" decoding="async">
+              <img :src="character.iconUrl" :alt="character.name" class="size-8 rounded-full" loading="lazy" decoding="async" @error="handleSekaiImageError($event, character.iconUrl)">
             </button>
           </template>
         </div>

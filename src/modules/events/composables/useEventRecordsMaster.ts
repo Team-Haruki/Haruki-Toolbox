@@ -146,6 +146,7 @@ export function useEventRecordsMaster(region: Ref<SekaiRegion | null>) {
     characterMap,
     chapterNoIndex,
     honorRankIndex,
+    regionState,
     loading,
     error,
     reload: () => load(true),

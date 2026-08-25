@@ -1,4 +1,5 @@
 import {
+  appendCatalogRecords,
   normalizeCatalogNumber,
   normalizeCatalogRecords,
   normalizeCatalogString,
@@ -205,12 +206,12 @@ export function normalizeAreaShopResourceBoxDetails(rawBoxes: unknown, rawDetail
   const rows: Record<string, unknown>[] = []
   for (const record of normalizeCatalogRecords(rawBoxes)) {
     if (Array.isArray(record.details)) {
-      rows.push(...normalizeCatalogRecords(record.details))
+      appendCatalogRecords(rows, record.details)
     } else {
       rows.push(record)
     }
   }
-  rows.push(...normalizeCatalogRecords(rawDetails))
+  appendCatalogRecords(rows, rawDetails)
 
   const details: AreaShopResourceBoxDetail[] = []
   for (const record of rows) {

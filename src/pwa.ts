@@ -44,6 +44,13 @@ export async function registerAppServiceWorker() {
     return
   }
 
+  // The runtime image cache was renamed to sekai-image-assets-v2 after
+  // opaque error responses poisoned it; workbox only cleans up outdated
+  // precaches, so drop the abandoned cache ourselves.
+  if (typeof caches !== "undefined") {
+    caches.delete("sekai-image-assets").catch(() => {})
+  }
+
   const { registerSW } = await import("virtual:pwa-register")
 
   updateServiceWorker = registerSW({

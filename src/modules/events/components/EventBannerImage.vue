@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue"
 import { LucideImageOff } from "lucide-vue-next"
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
+import { appendImageRetryParam, purgeCachedSekaiImage } from "@/shared/sekai/image-recovery"
 import { resolveEventBannerUrl, resolveEventLogoUrl } from "../lib/event-assets"
 
 const props = withDefaults(defineProps<{
@@ -27,14 +28,31 @@ const sources = computed(() => {
 })
 
 const sourceIndex = ref(0)
+const retrying = ref(false)
 
 watch(sources, () => {
   sourceIndex.value = 0
+  retrying.value = false
 })
 
-const currentUrl = computed(() => sources.value[sourceIndex.value] ?? null)
+const currentUrl = computed(() => {
+  const url = sources.value[sourceIndex.value] ?? null
+  return url && retrying.value ? appendImageRetryParam(url, 1) : url
+})
 
 function handleError() {
+  // A failure may be a Service-Worker-cached transient error (opaque
+  // responses hide CDN/WAF errors): purge the entry and retry the same
+  // source once with a cache-busting param before advancing.
+  const failed = sources.value[sourceIndex.value]
+  if (failed) {
+    void purgeCachedSekaiImage(failed)
+  }
+  if (failed && !retrying.value) {
+    retrying.value = true
+    return
+  }
+  retrying.value = false
   sourceIndex.value += 1
 }
 </script>

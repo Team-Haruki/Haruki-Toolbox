@@ -1,4 +1,4 @@
-import { normalizeCatalogNumber, normalizeCatalogRecords, normalizeCatalogString } from "@/shared/sekai/catalog"
+import { appendCatalogRecords, normalizeCatalogNumber, normalizeCatalogRecords, normalizeCatalogString } from "@/shared/sekai/catalog"
 import { normalizeEventTimestamp, type SekaiEventItem } from "./event-filter"
 
 /**
@@ -351,12 +351,12 @@ function buildHonorIdsByResourceBox(
   const details: Record<string, unknown>[] = []
   for (const record of normalizeCatalogRecords(rawBoxes)) {
     if (Array.isArray(record.details)) {
-      details.push(...normalizeCatalogRecords(record.details))
+      appendCatalogRecords(details, record.details)
     } else {
       details.push(record)
     }
   }
-  details.push(...normalizeCatalogRecords(rawDetails))
+  appendCatalogRecords(details, rawDetails)
 
   const map = new Map<number, number[]>()
   for (const record of details) {

@@ -17,6 +17,7 @@ import {
   shouldCacheRankBorderDetailTraceByRank,
   isSameRankBorderTraceTimeline,
 } from "./rank-border"
+import { numericExtent } from "./rank-border-chart"
 
 describe("rank border helpers", () => {
   it("normalizes and sorts ranking line payloads", () => {
@@ -717,5 +718,14 @@ describe("rank border helpers", () => {
     expect(parseRankBorderRankQuery("#2000")).toBe(2000)
     expect(parseRankBorderRankQuery("3000")).toBe(3000)
     expect(parseRankBorderRankQuery("uid")).toBeNull()
+  })
+})
+
+describe("numericExtent", () => {
+  it("computes min/max over arrays beyond the engine argument-spread limit", () => {
+    const values = Array.from({ length: 200_000 }, (_, index) => index - 100_000)
+    expect(numericExtent(values)).toEqual({ min: -100_000, max: 99_999 })
+    expect(numericExtent([7])).toEqual({ min: 7, max: 7 })
+    expect(numericExtent([])).toBeNull()
   })
 })

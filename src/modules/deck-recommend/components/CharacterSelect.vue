@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useCharacterOptions } from "../composables/useCharacterOptions"
+import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
 
 const props = defineProps<{
   modelValue: string | null
@@ -61,7 +62,7 @@ function handleUpdate(value: AcceptableValue) {
         {{ t("deckRecommend.options.constraints.characterNone") }}
       </SelectItem>
       <SelectItem v-for="option in filteredOptions" :key="option.id" :value="option.value">
-        <img :src="option.iconUrl" :alt="option.label" class="size-6 rounded-sm object-cover" loading="lazy">
+        <img :src="option.iconUrl" :alt="option.label" class="size-6 rounded-sm object-cover" loading="lazy" @error="handleSekaiImageError($event, option.iconUrl)">
         <span class="truncate">{{ option.label }}</span>
       </SelectItem>
     </SelectContent>

@@ -222,10 +222,9 @@ export const useSettingsStore = defineStore("settings", () => {
             assetEndpointLatencyMeasuredAt.value = null
         }
 
-        // Re-test once per full page load and replace the persisted preference
-        // with the fastest reachable endpoint. A manual choice made while this
-        // measurement is running still wins for the current page session.
-        assetEndpointManuallySelected.value = false
+        // Re-test once per full page load; the fastest endpoint is applied
+        // only while the user has never made a manual choice — a persisted
+        // manual selection must survive reloads.
         await measureAssetEndpointLatencies(true)
     }
     async function measureEndpointLatencies() {

@@ -40,7 +40,10 @@ describe("settings endpoint helpers", () => {
 
       expect(requests).toHaveLength(3)
       expect(requests.every((url) => url.includes("/asset-probe.png?_latency="))).toBe(true)
-      expect(store.assetEndpointManuallySelected).toBe(false)
+      // A persisted manual choice survives the boot-time re-test; the
+      // fastest endpoint is only auto-applied for users who never chose.
+      expect(store.assetEndpointManuallySelected).toBe(true)
+      expect(store.preferredAssetEndpoint).toBe("global")
     } finally {
       globalThis.fetch = originalFetch
     }

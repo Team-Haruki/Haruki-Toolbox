@@ -28,6 +28,7 @@ import type { CatalogFieldOption } from "@/shared/components/catalog/types"
 import { useMusicAliasMatches } from "@/shared/sekai/music-alias"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import { useSettingsStore } from "@/shared/stores/settings"
+import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
 import {
   MUSIC_CHARACTER_FILTER_SCOPES,
   MUSIC_DIFFICULTIES,
@@ -437,6 +438,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                         alt=""
                         class="size-4 shrink-0 rounded-full"
                         loading="lazy"
+                        @error="handleSekaiImageError($event, option.iconUrl)"
                       >
                       {{ option.label }}
                     </span>

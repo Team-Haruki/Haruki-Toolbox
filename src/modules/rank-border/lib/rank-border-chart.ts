@@ -13,6 +13,28 @@ import type {
   RankBorderChartTimeDomain,
 } from "./rank-border-types"
 
+/**
+ * Loop-based min/max. Complete traces can exceed 100k points, which
+ * overflows the engine argument limit (and mobile stacks first) when
+ * spread into Math.min/Math.max.
+ */
+export function numericExtent(values: number[]): { min: number; max: number } | null {
+  if (values.length === 0) {
+    return null
+  }
+  let min = values[0]
+  let max = values[0]
+  for (const value of values) {
+    if (value < min) {
+      min = value
+    }
+    if (value > max) {
+      max = value
+    }
+  }
+  return { min, max }
+}
+
 export function sampleTraceRecords(records: RankBorderTracePoint[], maxPoints: number) {
   if (records.length <= maxPoints || maxPoints < 3) {
     return records
@@ -140,8 +162,9 @@ export function sparklinePath(
     return ""
   }
 
-  const minValue = valueDomain?.min ?? (zeroBaseline && metric === "score" ? 0 : Math.min(...values))
-  const maxValue = valueDomain?.max ?? Math.max(...values)
+  const { min: valuesMin, max: valuesMax } = numericExtent(values) ?? { min: 0, max: 0 }
+  const minValue = valueDomain?.min ?? (zeroBaseline && metric === "score" ? 0 : valuesMin)
+  const maxValue = valueDomain?.max ?? valuesMax
   const usableWidth = Math.max(1, width - xPadding * 2)
   const xStep = usableWidth / Math.max(1, values.length - 1)
   return collapseChartCoordinates(sampledRecords.map((record, index) => {

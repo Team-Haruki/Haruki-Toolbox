@@ -220,9 +220,20 @@ export default defineConfig(({ command, mode }) => {
                             // Keep latency probes on the network. Caching them makes
                             // endpoint re-tests measure Service Worker cache reads.
                             urlPattern: /^https:\/\/(sekai-assets\.haruki\.seiunx\.com|sekai-assets-bdf29c81\.seiunx\.net|toolbox-sekai-assets\.haruki\.seiunx\.com|images\.haruki\.seiunx\.com)\/(?!asset-probe\.png(?:\?|$)).*\.(?:png|jpe?g|webp|avif)(?:\?.*)?$/i,
+                            // These <img> loads are cross-origin no-cors, so every
+                            // response is opaque (status 0) — including CDN/WAF
+                            // errors, which statuses:[0,200] cannot filter out. A
+                            // cached error used to be pinned for 30 days (the
+                            // Safari "banner never loads" bug). CacheFirst stays
+                            // (revalidate-per-use would re-trigger the WAF's burst
+                            // limit and can overwrite good entries with errors);
+                            // instead image error handlers purge the poisoned
+                            // entry and retry (shared/sekai/image-recovery.ts).
+                            // The v2 name abandons caches poisoned before that
+                            // recovery existed; pwa.ts deletes the old cache.
                             handler: 'CacheFirst',
                             options: {
-                                cacheName: 'sekai-image-assets',
+                                cacheName: 'sekai-image-assets-v2',
                                 expiration: {
                                     maxEntries: 4000,
                                     maxAgeSeconds: 60 * 60 * 24 * 30,
