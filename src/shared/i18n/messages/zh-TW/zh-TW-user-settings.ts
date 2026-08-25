@@ -613,6 +613,25 @@ export default {
         "missingRedirect": "未收到重定向地址",
         "retry": "無法完成授權，請重試"
       }
+    },
+    "logout": {
+      "loadingTitle": "正在讀取登出請求",
+      "title": "登出",
+      "descriptionPrefix": "",
+      "descriptionSuffix": " 請求登出您的 Haruki Toolbox 賬號。",
+      "genericDescription": "一個第三方應用請求登出您的 Haruki Toolbox 賬號。",
+      "confirmHint": "確認後將同時登出本站與已連線第三方應用的登入狀態。",
+      "cancel": "取消",
+      "confirm": "登出",
+      "loggingOut": "正在登出...",
+      "invalidTitle": "無效的登出請求",
+      "invalidDescription": "缺少必要的 logout challenge，或 challenge 已無效。",
+      "backHome": "返回首頁",
+      "toast": {
+        "failedTitle": "登出失敗",
+        "missingRedirect": "未收到重定向地址",
+        "retry": "無法完成登出，請重試"
+      }
     }
   }
 } as const

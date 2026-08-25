@@ -1,11 +1,11 @@
 import router from "@/core/router";
 import { redirectToLogin } from "@/core/router/navigation";
 import {useUserStore} from "@/shared/stores/user";
-import { createKratosLogoutUrl, redirectToKratosLogout } from "@/modules/auth/lib/kratos";
+import { createKratosLogoutUrl, performKratosLogout, redirectToKratosLogout } from "@/modules/auth/lib/kratos";
 import { clearDeckRecommendUserDataCache } from "@/modules/deck-recommend/lib/user-data-cache";
 import { clearUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache";
 
-export async function logout() {
+async function clearLocalUserState() {
     const userStore = useUserStore();
     const userId = userStore.userId;
     if (userId) {
@@ -13,6 +13,20 @@ export async function logout() {
         await clearUserSuiteSubsetCache(userId).catch(() => undefined);
     }
     userStore.clearUser();
+}
+
+/**
+ * Ends the local session without leaving the page. Used by the OIDC
+ * RP-initiated logout flow, where Hydra's post-logout redirect owns the
+ * navigation instead of Kratos' logout redirect.
+ */
+export async function logoutInPlace() {
+    await clearLocalUserState();
+    await performKratosLogout().catch(() => undefined);
+}
+
+export async function logout() {
+    await clearLocalUserState();
 
     if (typeof window !== "undefined") {
         try {

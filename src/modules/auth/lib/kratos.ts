@@ -174,6 +174,26 @@ export function redirectToKratosLogout() {
   window.location.assign(buildKratosUrl("/self-service/logout/browser"))
 }
 
+/**
+ * Ends the Kratos browser session without navigating: the logout URL is
+ * fetched with an Accept: application/json header, which Kratos answers
+ * with 204 instead of a redirect. Used when another party (e.g. Hydra's
+ * OIDC logout flow) owns the post-logout navigation.
+ */
+export async function performKratosLogout(): Promise<void> {
+  const logoutUrl = await createKratosLogoutUrl()
+  const response = await fetch(logoutUrl, {
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`kratos logout request failed: ${response.status}`)
+  }
+}
+
 export async function createKratosLogoutUrl(): Promise<string> {
   const response = await fetch(buildKratosUrl("/self-service/logout/browser"), {
     credentials: "include",

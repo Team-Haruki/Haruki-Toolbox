@@ -39,6 +39,15 @@ export interface OAuthConsentChallenge {
     client?: OAuthChallengeClient | null
 }
 
+export interface OAuthLogoutChallenge {
+    challenge?: string
+    subject?: string
+    sid?: string
+    rp_initiated?: boolean
+    request_url?: string
+    client?: OAuthChallengeClient | null
+}
+
 export interface OAuthRedirectResponse {
     redirect_to?: string
     redirect_url?: string
@@ -101,7 +110,7 @@ export function getScopeLabel(scope: string): string {
     return key ? translate(key) : scope
 }
 
-function withChallenge(path: string, key: "login_challenge" | "consent_challenge", challenge: string) {
+function withChallenge(path: string, key: "login_challenge" | "consent_challenge" | "logout_challenge", challenge: string) {
     const params = new URLSearchParams()
     params.set(key, challenge)
     return `${path}?${params.toString()}`
@@ -209,6 +218,38 @@ export async function rejectOAuthConsentChallenge(
             data: payload,
             ...options,
         }
+    )
+}
+
+export async function getOAuthLogoutChallenge(
+    challenge: string,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<OAuthLogoutChallenge>> {
+    return await request<APIResponse<OAuthLogoutChallenge>>(
+        withChallenge("/api/oauth2/logout", "logout_challenge", challenge),
+        { method: "GET", ...options }
+    )
+}
+
+export async function acceptOAuthLogoutChallenge(
+    challenge: string,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<OAuthRedirectResponse>> {
+    return await request<APIResponse<OAuthRedirectResponse>>(
+        withChallenge("/api/oauth2/logout/accept", "logout_challenge", challenge),
+        { method: "POST", ...options }
+    )
+}
+
+// Hydra's reject-logout admin call returns no redirect; the page decides
+// where the user lands afterwards.
+export async function rejectOAuthLogoutChallenge(
+    challenge: string,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<Record<string, never> | null>> {
+    return await request<APIResponse<Record<string, never> | null>>(
+        withChallenge("/api/oauth2/logout/reject", "logout_challenge", challenge),
+        { method: "POST", ...options }
     )
 }
 

@@ -613,6 +613,25 @@ export default {
         "missingRedirect": "Redirect URL was not returned",
         "retry": "Unable to complete authorization. Please try again."
       }
+    },
+    "logout": {
+      "loadingTitle": "Loading sign-out request",
+      "title": "Sign out",
+      "descriptionPrefix": "",
+      "descriptionSuffix": " is asking to sign you out of Haruki Toolbox.",
+      "genericDescription": "A third-party app is asking to sign you out of Haruki Toolbox.",
+      "confirmHint": "Confirming ends your session on this site and on connected third-party apps.",
+      "cancel": "Cancel",
+      "confirm": "Sign out",
+      "loggingOut": "Signing out...",
+      "invalidTitle": "Invalid sign-out request",
+      "invalidDescription": "The logout challenge is missing or no longer valid.",
+      "backHome": "Back to home",
+      "toast": {
+        "failedTitle": "Sign-out failed",
+        "missingRedirect": "Redirect URL was not returned",
+        "retry": "Unable to complete sign-out. Please try again."
+      }
     }
   }
 } as const

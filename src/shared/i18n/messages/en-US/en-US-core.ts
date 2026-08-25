@@ -834,6 +834,7 @@ export default {
     "oauthAuthorizations": "OAuth authorization management",
     "oauthLogin": "Continue sign in",
     "oauthConsent": "Authorize app",
+    "oauthLogout": "Confirm sign out",
     "tickets": {
       "mine": "My tickets",
       "create": "Create ticket",

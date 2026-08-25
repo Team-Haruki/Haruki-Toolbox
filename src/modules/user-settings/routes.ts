@@ -76,4 +76,13 @@ export const oauthBrowserFlowRoutes: RouteRecordRaw[] = [
         component: () => import("@/modules/user-settings/views/OAuthConsent.vue"),
         meta: { titleKey: "route.oauthConsent", requiresAuth: true },
     },
+    {
+        // Hydra's URLS_LOGOUT target for OIDC RP-initiated logout. No auth
+        // guard: the logout_challenge is the credential, and the Kratos
+        // session may already be half-dead when the user lands here.
+        path: "/logout",
+        name: "oauth.logout",
+        component: () => import("@/modules/user-settings/views/OAuthLogout.vue"),
+        meta: { titleKey: "route.oauthLogout" },
+    },
 ]

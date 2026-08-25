@@ -13,6 +13,13 @@ test("settings dialog renders i18n controls", async ({ page }) => {
   await expect(settingsDialog.getByText("界面语言", { exact: true }).or(settingsDialog.getByText("Language", { exact: true }))).toBeVisible()
 })
 
+test("oidc logout route renders the invalid-challenge fallback", async ({ page }) => {
+  await page.goto("/logout")
+
+  await expect(page.getByText(/无效的退出请求|Invalid sign-out request/)).toBeVisible()
+  await expect(page.getByRole("button", { name: /返回首页|Back to home/ })).toBeVisible()
+})
+
 test("unknown route shows 404 page with a way back home", async ({ page }) => {
   await page.goto("/this/route/does/not/exist")
 

@@ -834,6 +834,7 @@ export default {
     "oauthAuthorizations": "OAuth 授权管理",
     "oauthLogin": "继续登录授权",
     "oauthConsent": "授权第三方应用",
+    "oauthLogout": "退出登录确认",
     "tickets": {
       "mine": "我的工单",
       "create": "创建工单",

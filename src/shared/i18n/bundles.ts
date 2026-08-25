@@ -26,7 +26,8 @@ const BUNDLE_RULES: readonly BundleRule[] = [
     ],
     bundles: ["tools"],
   },
-  { prefixes: ["/user", "/oauth2"], bundles: ["user-settings"] },
+  // `/logout` is Hydra's RP-initiated logout landing page (oauth namespace).
+  { prefixes: ["/user", "/oauth2", "/logout"], bundles: ["user-settings"] },
   { prefixes: ["/admin"], bundles: ["admin", "tickets", "tools", "user-settings"] },
   { prefixes: ["/tickets"], bundles: ["tickets"] },
   {
