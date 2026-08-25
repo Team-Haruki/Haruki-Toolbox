@@ -63,6 +63,56 @@ export async function writeUserSuiteSubsetCache(
   return record
 }
 
+export type UserSuiteCacheSummary = {
+  updatedAt: number
+  uploadTime: number
+}
+
+/**
+ * Latest cached suite record for one account across every key-subset
+ * signature. Cache records are keyed per requested subset, so an exact-key
+ * read only sees the subset the caller itself fetches — status displays use
+ * this scan instead, otherwise data cached by another page (e.g. the profile
+ * page's snapshot subsets) reports as absent.
+ */
+export async function summarizeUserSuiteSubsetCache(
+  params: Omit<UserSuiteSubsetCacheKeyParams, "keys">,
+): Promise<UserSuiteCacheSummary | null> {
+  const db = await openUserSnapshotDatabase()
+  if (!db.objectStoreNames.contains(SUITE_SUBSET_STORE)) {
+    return null
+  }
+
+  const transaction = db.transaction(SUITE_SUBSET_STORE, "readonly")
+  const store = transaction.objectStore(SUITE_SUBSET_STORE)
+  const toolboxUserId = String(params.toolboxUserId).trim()
+  const gameUserId = String(params.gameUserId).trim()
+  const summary = await new Promise<UserSuiteCacheSummary | null>((resolve, reject) => {
+    let latest: UserSuiteCacheSummary | null = null
+    const request = store.openCursor()
+    request.onerror = () => reject(request.error ?? new Error("Failed to scan user snapshot cache"))
+    request.onsuccess = () => {
+      const cursor = request.result
+      if (!cursor) {
+        resolve(latest)
+        return
+      }
+      const record = cursor.value as UserSuiteSubsetCacheRecord
+      if (
+        record.toolboxUserId === toolboxUserId
+        && record.server === params.server
+        && record.gameUserId === gameUserId
+        && (latest == null || record.updatedAt > latest.updatedAt)
+      ) {
+        latest = { updatedAt: record.updatedAt, uploadTime: record.uploadTime }
+      }
+      cursor.continue()
+    }
+  })
+  await waitForTransaction(transaction)
+  return summary
+}
+
 export async function clearUserSuiteSubsetCache(toolboxUserId?: string | number | null): Promise<void> {
   const db = await openUserSnapshotDatabase()
   if (!db.objectStoreNames.contains(SUITE_SUBSET_STORE)) {

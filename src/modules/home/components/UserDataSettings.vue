@@ -26,7 +26,6 @@ import {
 import { isVerifiedQQBinding } from "@/lib/social-platform"
 import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import {
-  DECK_RECOMMEND_SUITE_KEYS,
   fetchDeckRecommendProfileWithCache,
   fetchDeckRecommendUserDataWithCache,
 } from "@/modules/deck-recommend/lib/user-data"
@@ -36,7 +35,7 @@ import {
   readDeckRecommendUserDataCache,
 } from "@/modules/deck-recommend/lib/user-data-cache"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
-import { clearUserSuiteSubsetCache, readUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache"
+import { clearUserSuiteSubsetCache, summarizeUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache"
 import { useUserStore } from "@/shared/stores/user"
 import {
   ensureAccessibleGameAccountsLoaded,
@@ -81,14 +80,15 @@ watch(
 
 const accountOptions = computed<BoundAccountOption[]>(() => {
   // Hold until the post-login sync hydrates bindings (see selector race),
-  // and only offer granted accounts whose suite is readable — every cache
-  // pipeline in this panel (including the mysekai refresh) reads the suite
-  // subset alongside its own data.
+  // and only offer granted accounts holding at least one data type this
+  // panel can manage a cache for (suite or profile; a mysekai-only grant is
+  // unusable here — its refresh also reads the suite subset).
   if (!Array.isArray(userStore.gameAccountBindings)) {
     return []
   }
   return buildSelectableGameAccounts(userStore.gameAccountBindings, accessibleAccounts.value)
-    .filter((account) => account.ownership === "own" || account.capabilities.has("suite"))
+    .filter((account) =>
+      account.ownership === "own" || account.capabilities.has("suite") || account.capabilities.has("profile"))
     .map((account) => ({
     key: account.key,
     server: account.server,
@@ -120,14 +120,18 @@ const hasVerifiedQQ = computed(() => isVerifiedQQBinding(userStore.socialPlatfor
 const dataModeOptions = computed<Array<{ value: DeckRecommendUserCacheDataType; label: string }>>(() => {
   const account = selectedAccount.value
   if (account?.ownership === "granted") {
-    // A granted account exposes the granted data types; profile is never
-    // grantable, and the viewer's own QQ binding is irrelevant here. The
-    // mysekai refresh also fetches the suite subset, so it additionally
-    // needs the suite capability (guaranteed by the account filter above).
+    // A granted account exposes exactly the granted data types; the viewer's
+    // own QQ binding is irrelevant here. The mysekai refresh also fetches the
+    // suite subset, so it additionally needs the suite capability.
     return [
-      { value: "suite" as const, label: t("homeSettings.userData.types.suite") },
-      ...(account.capabilities.has("mysekai")
+      ...(account.capabilities.has("suite")
+        ? [{ value: "suite" as const, label: t("homeSettings.userData.types.suite") }]
+        : []),
+      ...(account.capabilities.has("mysekai") && account.capabilities.has("suite")
         ? [{ value: "mysekai" as const, label: t("homeSettings.userData.types.mysekai") }]
+        : []),
+      ...(account.capabilities.has("profile")
+        ? [{ value: "profile" as const, label: t("homeSettings.userData.types.profile") }]
         : []),
     ]
   }
@@ -260,11 +264,13 @@ async function loadCacheStatus() {
     if (selectedDataMode.value === "suite") {
       // Suite data lives in the shared snapshot cache since the deck-recommend
       // fetch migration; the module-local cache only stores mysekai records.
-      const record = await readUserSuiteSubsetCache({
+      // Records are keyed per fetched key subset, so scan every subset for
+      // this account — pages fetch different subsets (deck-recommend vs the
+      // profile page's snapshot source) and all of them count as cached.
+      const record = await summarizeUserSuiteSubsetCache({
         toolboxUserId: userStore.userId,
         server: account.server,
         gameUserId: account.uid,
-        keys: DECK_RECOMMEND_SUITE_KEYS,
       })
       cacheUpdatedAt.value = record?.updatedAt ?? null
       cacheUploadTime.value = record?.uploadTime ?? null
