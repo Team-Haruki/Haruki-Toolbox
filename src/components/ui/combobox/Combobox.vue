@@ -16,6 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
 
 export type ComboboxOption = {
   value: string
@@ -63,11 +64,7 @@ const selectedOption = computed(() =>
 )
 
 function handleIconError(event: Event, option: ComboboxOption) {
-  const image = event.target as HTMLImageElement | null
-  const fallback = option.iconFallbackUrl
-  if (image && fallback && image.src !== fallback) {
-    image.src = fallback
-  }
+  handleSekaiImageError(event, option.iconUrl, option.iconFallbackUrl)
 }
 
 watch(

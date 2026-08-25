@@ -207,13 +207,16 @@ export function resolveRarityTrainingIconUrl(rarity: string): string {
 
 /**
  * Browser runtime root of the Haruki 3D exporter output for one region,
- * served from the public asset endpoints under `/pjsk-3d-output/`.
+ * served from the public asset endpoints under `/pjsk-3d-output/`. The
+ * china_cdn endpoint does not host the 3D tree at all (exporter output is
+ * not synced there), so 3D loads fall back to the china endpoint.
  */
 export function resolvePjsk3dRuntimeBaseUrl(
   region: SekaiRegion,
   preference: SekaiAssetEndpointPreference = "china",
 ): string {
-  return `${SEKAI_ASSET_ENDPOINT_ROOTS[preference]}/pjsk-3d-output/${region}/`
+  const effective = preference === "china_cdn" ? "china" : preference
+  return `${SEKAI_ASSET_ENDPOINT_ROOTS[effective]}/pjsk-3d-output/${region}/`
 }
 
 export function resolveCardFrameImageUrl(rarity: string): string {

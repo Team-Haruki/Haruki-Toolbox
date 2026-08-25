@@ -1,4 +1,5 @@
 import {
+  appendCatalogRecords,
   normalizeCatalogNumber,
   normalizeCatalogRecords,
   normalizeCatalogString,
@@ -362,9 +363,9 @@ export function buildBondsRewardsByGroup(
 ): Map<number, BondRankRewards[]> {
   const details: Record<string, unknown>[] = []
   for (const record of normalizeCatalogRecords(rawResourceBoxes)) {
-    details.push(...normalizeCatalogRecords(record.details))
+    appendCatalogRecords(details, record.details)
   }
-  details.push(...normalizeCatalogRecords(rawResourceBoxDetails))
+  appendCatalogRecords(details, rawResourceBoxDetails)
 
   const itemsByBox = new Map<number, BondRewardItem[]>()
   for (const record of details) {

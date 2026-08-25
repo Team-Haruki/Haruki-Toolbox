@@ -14,6 +14,7 @@ import {
 import type { SekaiRegion } from "@/types"
 import { useCharacterOptions } from "../composables/useCharacterOptions"
 import type { CharacterOption } from "../lib/master-options"
+import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
 
 const props = withDefaults(defineProps<{
   modelValue: readonly number[]
@@ -90,7 +91,7 @@ function createUnknownCharacterOption(characterId: number): CharacterOption {
       </SelectTrigger>
       <SelectContent class="max-h-72">
         <SelectItem v-for="option in filteredOptions" :key="option.id" :value="option.value">
-          <img :src="option.iconUrl" alt="" aria-hidden="true" class="size-6 rounded-sm object-cover" loading="lazy">
+          <img :src="option.iconUrl" alt="" aria-hidden="true" class="size-6 rounded-sm object-cover" loading="lazy" @error="handleSekaiImageError($event, option.iconUrl)">
           <span class="truncate">{{ option.label }}</span>
         </SelectItem>
       </SelectContent>
@@ -111,6 +112,7 @@ function createUnknownCharacterOption(characterId: number): CharacterOption {
           alt=""
           class="size-10 shrink-0 rounded-md object-cover"
           loading="lazy"
+          @error="handleSekaiImageError($event, character.iconUrl)"
         >
         <div v-else class="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
           #{{ character.id }}

@@ -1,4 +1,5 @@
 import {
+  appendCatalogRecords,
   normalizeCatalogNumber,
   normalizeCatalogRecords,
   normalizeCatalogString,
@@ -83,12 +84,12 @@ export function buildChallengeBoxRewardMap(rawBoxes: unknown, rawDetails?: unkno
   const details: Record<string, unknown>[] = []
   for (const record of normalizeCatalogRecords(rawBoxes)) {
     if (Array.isArray(record.details)) {
-      details.push(...normalizeCatalogRecords(record.details))
+      appendCatalogRecords(details, record.details)
     } else {
       details.push(record)
     }
   }
-  details.push(...normalizeCatalogRecords(rawDetails))
+  appendCatalogRecords(details, rawDetails)
 
   const map = new Map<number, ChallengeBoxReward>()
   for (const record of details) {

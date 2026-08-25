@@ -44,6 +44,7 @@ import {
 } from "../lib/music-difficulties"
 import { resolveMusicTagLabelKey } from "../lib/music-labels"
 import type { MusicLibraryEntry } from "../lib/music-data"
+import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
 import {
   MUSIC_CHARACTER_FILTER_SCOPES,
   MUSIC_NOTE_COUNT_FILTER_MODES,
@@ -464,6 +465,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                             alt=""
                             class="size-4 shrink-0 rounded-full"
                             loading="lazy"
+                            @error="handleSekaiImageError($event, option.iconUrl)"
                           >
                           {{ option.label }}
                         </span>

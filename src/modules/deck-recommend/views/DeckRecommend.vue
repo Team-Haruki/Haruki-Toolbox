@@ -1567,13 +1567,13 @@ provideDeckRecommendFormContext({
       <Card v-show="!configCollapsed" class="gap-0 rounded-lg py-0">
         <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
           <div class="flex flex-wrap items-center gap-2">
-            <Tabs :model-value="recommendMode" class="min-w-0" @update:model-value="updateRecommendMode">
-              <TabsList class="h-auto max-w-full flex-wrap justify-start gap-1">
+            <Tabs :model-value="recommendMode" class="w-full min-w-0 @3xl:w-auto" @update:model-value="updateRecommendMode">
+              <TabsList class="grid h-auto w-full grid-cols-5 gap-1 @3xl:inline-flex @3xl:w-fit @3xl:max-w-full @3xl:flex-wrap @3xl:justify-start">
                 <TabsTrigger
                   v-for="option in modeOptions"
                   :key="option.value"
                   :value="option.value"
-                  class="h-7 flex-none px-2 text-xs @2xl:px-3 @2xl:text-sm"
+                  class="h-auto min-h-7 min-w-0 px-1 text-xs leading-tight whitespace-normal @2xl:text-sm @3xl:h-7 @3xl:flex-none @3xl:px-3 @3xl:whitespace-nowrap"
                 >
                   {{ option.label }}
                 </TabsTrigger>

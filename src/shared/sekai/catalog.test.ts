@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test"
 import {
+  appendCatalogRecords,
   buildCatalogCardThumbnail,
   buildCatalogCharacterMap,
   buildCatalogUnitColorMap,
@@ -141,5 +142,21 @@ describe("buildCatalogCardThumbnail", () => {
     expect(thumbnail.trainedThumbnailUrl).toBeNull()
     expect(thumbnail.rareIconUrl).toContain("rare_birthday")
     expect(thumbnail.trainedRareIconUrl).toContain("rare_birthday")
+  })
+})
+
+describe("appendCatalogRecords", () => {
+  it("merges flat detail arrays far beyond the engine argument-spread limit", () => {
+    // tw/kr/cn ship resourceBoxDetails as one flat array with 100k+ rows;
+    // push(...rows) at that size overflows mobile-browser stacks.
+    const rows = Array.from({ length: 200_000 }, (_, index) => ({ resourceBoxId: index }))
+    const target: Record<string, unknown>[] = []
+    appendCatalogRecords(target, rows)
+    appendCatalogRecords(target, [{ resourceBoxId: -1 }, null, "skip", { resourceBoxId: -2 }])
+    appendCatalogRecords(target, undefined)
+
+    expect(target.length).toBe(200_002)
+    expect(target[0]?.resourceBoxId).toBe(0)
+    expect(target[200_001]?.resourceBoxId).toBe(-2)
   })
 })

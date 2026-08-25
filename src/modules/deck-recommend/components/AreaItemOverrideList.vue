@@ -3,6 +3,7 @@ import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import LazyOverrideCombobox, { type LazyOverrideComboboxOption } from "./LazyOverrideCombobox.vue"
 import type { DeckRecommendAreaItemOption } from "../lib/area-item-options"
+import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
 
 type AreaItemOverrideAreaGroup = {
   key: string
@@ -130,6 +131,7 @@ function detailLabel(item: DeckRecommendAreaItemOption) {
               :alt="targetLabel(item)"
               class="size-8 rounded object-contain"
               loading="lazy"
+              @error="handleSekaiImageError($event, item.iconUrl)"
             >
             <span v-else class="size-8 rounded bg-muted" />
             <span class="min-w-0">

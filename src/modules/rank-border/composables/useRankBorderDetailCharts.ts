@@ -23,6 +23,7 @@ import {
   chartRecordsForTimeDomain,
   chartTimestampX,
   isSameLocalDay,
+  numericExtent,
   resolveChartTickValues,
   sampleTraceRecords,
   sparklinePath,
@@ -121,10 +122,11 @@ export function useRankBorderDetailCharts(
       ...comparisonRecords.map((record) => record.score),
       ...plannerValues,
     ]
-    const scoreDomain = scoreValues.length > 0
+    const scoreExtent = numericExtent(scoreValues)
+    const scoreDomain = scoreExtent
       ? {
-          min: scoreZeroBaseline ? 0 : Math.min(...scoreValues),
-          max: Math.max(...scoreValues),
+          min: scoreZeroBaseline ? 0 : scoreExtent.min,
+          max: scoreExtent.max,
         }
       : null
 
@@ -144,8 +146,9 @@ export function useRankBorderDetailCharts(
       ...speedRecords.map((record) => record.score),
       ...comparisonSpeedRecords.map((record) => record.score),
     ]
-    const speedDomain = speedValues.length > 0
-      ? { min: Math.min(0, ...speedValues), max: Math.max(...speedValues) }
+    const speedExtent = numericExtent(speedValues)
+    const speedDomain = speedExtent
+      ? { min: Math.min(0, speedExtent.min), max: speedExtent.max }
       : null
 
     return {
@@ -179,8 +182,9 @@ export function useRankBorderDetailCharts(
       return []
     }
 
-    const minValue = valueDomain?.min ?? (zeroBaseline && metric === "score" ? 0 : Math.min(...values))
-    const maxValue = valueDomain?.max ?? Math.max(...values)
+    const { min: valuesMin, max: valuesMax } = numericExtent(values) ?? { min: 0, max: 0 }
+    const minValue = valueDomain?.min ?? (zeroBaseline && metric === "score" ? 0 : valuesMin)
+    const maxValue = valueDomain?.max ?? valuesMax
     const tickValues = resolveChartTickValues(minValue, maxValue)
     return tickValues
       .map((value) => ({
@@ -238,8 +242,9 @@ export function useRankBorderDetailCharts(
       return []
     }
 
-    const minValue = valueDomain?.min ?? (zeroBaseline && metric === "score" ? 0 : Math.min(...values))
-    const maxValue = valueDomain?.max ?? Math.max(...values)
+    const { min: valuesMin, max: valuesMax } = numericExtent(values) ?? { min: 0, max: 0 }
+    const minValue = valueDomain?.min ?? (zeroBaseline && metric === "score" ? 0 : valuesMin)
+    const maxValue = valueDomain?.max ?? valuesMax
     const usableWidth = Math.max(1, width - xPadding * 2)
     const xStep = usableWidth / Math.max(1, values.length - 1)
     const points = sampledRecords.map((record, index) => {

@@ -5,6 +5,7 @@ import {
   resolveCardAttrIconUrl,
   resolveCharacterIconUrl,
   resolveMySekaiCanvasIconUrl,
+  resolvePjsk3dRuntimeBaseUrl,
   resolveRarityTrainingIconUrl,
   resolveSekaiMasterFetchVersion,
   resolveSekaiMasterFileUrl,
@@ -93,6 +94,18 @@ describe("Sekai data source helpers", () => {
   it("defaults game asset URLs to the China-accelerated overseas CDN", () => {
     expect(resolveSekaiCardThumbnailUrl("jp", "res005_no001", false)).toBe(
       "https://sekai-assets.haruki.seiunx.com/jp-assets/startapp/thumbnail/chara/res005_no001_normal.png",
+    )
+  })
+
+  it("serves the 3D runtime from the china endpoint when china_cdn is selected", () => {
+    expect(resolvePjsk3dRuntimeBaseUrl("jp", "china_cdn")).toBe(
+      "https://sekai-assets.haruki.seiunx.com/pjsk-3d-output/jp/",
+    )
+    expect(resolvePjsk3dRuntimeBaseUrl("jp", "global")).toBe(
+      "https://sekai-assets-bdf29c81.seiunx.net/pjsk-3d-output/jp/",
+    )
+    expect(resolvePjsk3dRuntimeBaseUrl("cn")).toBe(
+      "https://sekai-assets.haruki.seiunx.com/pjsk-3d-output/cn/",
     )
   })
 })

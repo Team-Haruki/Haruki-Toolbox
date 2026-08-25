@@ -3,6 +3,7 @@ import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import LazyOverrideCombobox, { type LazyOverrideComboboxOption } from "./LazyOverrideCombobox.vue"
 import type { CharacterRankOption } from "../lib/master-options"
+import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
 
 const props = defineProps<{
   modelValue: Record<string, string>
@@ -82,6 +83,7 @@ function createRankOptions(maxRank: number): LazyOverrideComboboxOption[] {
         :alt="character.label"
         class="size-8 rounded object-cover"
         loading="lazy"
+        @error="handleSekaiImageError($event, character.iconUrl)"
       >
       <span class="min-w-0">
         <span class="block truncate font-medium">{{ character.label }}</span>

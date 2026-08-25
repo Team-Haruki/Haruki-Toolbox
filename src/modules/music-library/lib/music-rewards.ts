@@ -1,4 +1,5 @@
 import {
+  appendCatalogRecords,
   normalizeCatalogNumber,
   normalizeCatalogRecords,
   normalizeCatalogString,
@@ -49,9 +50,9 @@ export function normalizeMusicAchievementMasters(
 ): MusicAchievementMaster[] {
   const details: Record<string, unknown>[] = []
   for (const record of normalizeCatalogRecords(rawResourceBoxes)) {
-    details.push(...normalizeCatalogRecords(record.details))
+    appendCatalogRecords(details, record.details)
   }
-  details.push(...normalizeCatalogRecords(rawResourceBoxDetails))
+  appendCatalogRecords(details, rawResourceBoxDetails)
 
   const totalsByBox = new Map<number, MusicRewardTotals>()
   for (const record of details) {
