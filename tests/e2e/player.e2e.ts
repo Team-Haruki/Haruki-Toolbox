@@ -55,7 +55,17 @@ for (const route of missingSnapshotRoutes) {
   })
 }
 
+// Keep the test hermetic (and `load` fast): the home page pulls third-party
+// scripts (gtag) whose latency from CI runners would otherwise gate goto().
+function blockExternalHosts(page: import("@playwright/test").Page) {
+  return page.route("**/*", (handler) => {
+    const url = new URL(handler.request().url())
+    return url.host === "127.0.0.1:4173" ? handler.continue() : handler.abort()
+  })
+}
+
 test("global search opens with the keyboard shortcut", async ({ page }) => {
+  await blockExternalHosts(page)
   await page.goto("/")
 
   const searchButton = page.getByRole("button", { name: /快速搜索|Quick search/ }).first()
@@ -66,6 +76,7 @@ test("global search opens with the keyboard shortcut", async ({ page }) => {
 })
 
 test("global search opens from the topbar button", async ({ page }) => {
+  await blockExternalHosts(page)
   await page.goto("/")
 
   await page.getByRole("button", { name: /快速搜索|Quick search/ }).first().click()
