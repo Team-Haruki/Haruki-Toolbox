@@ -18,10 +18,11 @@ export { buildSelectableGameAccounts, makeGameAccountKey, makeGrantedGameAccount
 export type UseGameAccountSelectionOptions = {
   /**
    * Feature gate: granted accounts appear only when this capability was
-   * granted. Own accounts are always listed (an unverified own binding is
-   * shown as present-but-unusable, matching pre-grant behavior).
+   * granted — a list means any one of them qualifies. Own accounts are always
+   * listed (an unverified own binding is shown as present-but-unusable,
+   * matching pre-grant behavior).
    */
-  capability?: GameAccountCapabilityName
+  capability?: GameAccountCapabilityName | readonly GameAccountCapabilityName[]
 }
 
 export type UseGameAccountSelectionResult = {

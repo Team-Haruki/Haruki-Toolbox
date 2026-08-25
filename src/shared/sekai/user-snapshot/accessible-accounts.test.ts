@@ -91,6 +91,16 @@ describe("buildSelectableGameAccounts", () => {
     expect(profileAccounts.map((account) => account.key)).toEqual(["jp:111"])
   })
 
+  it("accepts a capability list where any one qualifies (profile-page gate)", () => {
+    // A suite-only granted account must reach the profile page selector: the
+    // snapshot source only needs suite even though realtime needs profile.
+    const accounts = buildSelectableGameAccounts([OWN_BINDING], granted, ["profile", "suite"])
+    expect(accounts.map((account) => account.key)).toEqual(["jp:111", "grant:jp:999"])
+
+    const mysekaiOnly = buildSelectableGameAccounts([], granted, ["profile"])
+    expect(mysekaiOnly).toEqual([])
+  })
+
   it("drops a granted entry that collides with an own binding", () => {
     const colliding = [{ ...granted[0]!, gameUserId: "111" }]
     const accounts = buildSelectableGameAccounts([OWN_BINDING], colliding)

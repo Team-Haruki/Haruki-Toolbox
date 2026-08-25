@@ -105,13 +105,17 @@ const FULL_OWNED_CAPABILITIES: ReadonlySet<string> = new Set(OWNED_ACCOUNT_CAPAB
  * Merges own bindings with granted accounts from the accessible-accounts
  * aggregate into the selector list. Own accounts are always listed (an
  * unverified binding shows as present-but-unusable); granted accounts are
- * filtered by the requested capability.
+ * filtered by the requested capability — a list means any one of them
+ * qualifies (for pages with multiple data sources, each gated separately).
  */
 export function buildSelectableGameAccounts(
   bindings: readonly GameAccountBinding[],
   accessible: readonly AccessibleGameAccount[] | null,
-  capability?: GameAccountCapabilityName,
+  capability?: GameAccountCapabilityName | readonly GameAccountCapabilityName[],
 ): SelectableGameAccount[] {
+  const requiredCapabilities = capability == null
+    ? null
+    : Array.isArray(capability) ? capability as readonly GameAccountCapabilityName[] : [capability as GameAccountCapabilityName]
   const own: SelectableGameAccount[] = bindings.map((binding) => ({
     ...binding,
     key: makeGameAccountKey(binding),
@@ -126,7 +130,8 @@ export function buildSelectableGameAccounts(
   const granted: SelectableGameAccount[] = (accessible ?? [])
     .filter((account) => account.ownership === "granted")
     .filter((account) => !ownKeys.has(`${account.server}:${account.gameUserId}`))
-    .filter((account) => capability == null || account.capabilities[capability] != null)
+    .filter((account) =>
+      requiredCapabilities == null || requiredCapabilities.some((name) => account.capabilities[name] != null))
     .map((account) => ({
       server: account.server,
       userId: account.gameUserId,

@@ -11,7 +11,7 @@ import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { copyTextToClipboard } from "@/lib/clipboard"
-import { usePlayerProfile } from "@/modules/player-profile/composables/usePlayerProfile"
+import { PLAYER_PROFILE_CAPABILITIES, usePlayerProfile } from "@/modules/player-profile/composables/usePlayerProfile"
 import ProfileRadarChart from "@/modules/player-profile/components/ProfileRadarChart.vue"
 import {
   buildChallengeLiveGrid,
@@ -58,6 +58,8 @@ const { t, locale } = useI18n()
 const {
   accountRegion,
   dataSource,
+  canUseRealtime,
+  canUseSnapshot,
   profileStatus,
   profileData,
   profileError,
@@ -468,15 +470,16 @@ function retry() {
         <div class="flex flex-wrap items-center gap-2">
           <Tabs :model-value="dataSource" @update:model-value="handleSourceChange">
             <TabsList class="h-8">
-              <TabsTrigger value="realtime" class="text-xs">
+              <!-- A granted account only enables the sources its grants cover. -->
+              <TabsTrigger value="realtime" class="text-xs" :disabled="!canUseRealtime">
                 {{ t("playerProfile.source.realtime") }}
               </TabsTrigger>
-              <TabsTrigger value="snapshot" class="text-xs">
+              <TabsTrigger value="snapshot" class="text-xs" :disabled="!canUseSnapshot">
                 {{ t("playerProfile.source.snapshot") }}
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <GameAccountSelect capability="profile" />
+          <GameAccountSelect :capability="PLAYER_PROFILE_CAPABILITIES" />
         </div>
         <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
           {{ t("playerProfile.dataAsOf", { time: uploadTimeText }) }}

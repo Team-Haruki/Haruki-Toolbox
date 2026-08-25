@@ -15,7 +15,7 @@ import { useGameAccountSelection } from "@/shared/sekai/user-snapshot/use-user-s
 
 const props = defineProps<{
   /** Feature gate passed through to the selection composable — must match the capability the page's data composables use. */
-  capability?: GameAccountCapabilityName
+  capability?: GameAccountCapabilityName | readonly GameAccountCapabilityName[]
 }>()
 
 const { t } = useI18n()

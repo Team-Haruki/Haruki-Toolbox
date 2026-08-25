@@ -45,6 +45,11 @@ export const PLAYER_PROFILE_SOURCES = ["realtime", "snapshot"] as const
 
 export type PlayerProfileSource = (typeof PLAYER_PROFILE_SOURCES)[number]
 
+// Either capability admits an account into the selector: realtime needs
+// profile, the snapshot source needs suite. Each source is gated on its own
+// capability below, so a single-grant account still gets the source it can use.
+export const PLAYER_PROFILE_CAPABILITIES = ["profile", "suite"] as const
+
 /**
  * Orchestrates the profile page's data: the selected account's suite snapshot
  * plus the masterdata for that account's server (region follows the account,
@@ -55,16 +60,40 @@ export function usePlayerProfile() {
   const sekaiDataStore = useSekaiDataStore()
   const userStore = useUserStore()
 
-  const { selectedAccount } = useGameAccountSelection({ capability: "profile" })
+  const { selectedAccount } = useGameAccountSelection({ capability: PLAYER_PROFILE_CAPABILITIES })
   const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
+
+  // Per-source availability. Own accounts keep both sources enabled even when
+  // unverified (the request then errors, matching pre-grant behavior); granted
+  // accounts only get the sources their grants cover.
+  const canUseRealtime = computed(() => {
+    const account = selectedAccount.value
+    return account != null && (account.ownership === "own" || account.capabilities.has("profile"))
+  })
+  const canUseSnapshot = computed(() => {
+    const account = selectedAccount.value
+    return account != null && (account.ownership === "own" || account.capabilities.has("suite"))
+  })
 
   // Realtime game profile is the default; the suite snapshot (manual upload)
   // remains available as an alternative source.
   const dataSource = ref<PlayerProfileSource>("realtime")
 
+  // Keep the source valid for the selected account (e.g. a suite-only granted
+  // account falls back to the snapshot source). Registered before the profile
+  // loader's watcher so a correction lands ahead of any fetch on that value.
+  watch([selectedAccount, dataSource], () => {
+    if (dataSource.value === "realtime" && !canUseRealtime.value && canUseSnapshot.value) {
+      dataSource.value = "snapshot"
+    } else if (dataSource.value === "snapshot" && !canUseSnapshot.value && canUseRealtime.value) {
+      dataSource.value = "realtime"
+    }
+  }, { immediate: true })
+
   // Suite requests are gated on the snapshot source so switching to realtime
   // does not keep fetching the (potentially large) suite subset.
-  const suiteAccount = computed(() => dataSource.value === "snapshot" ? selectedAccount.value : null)
+  const suiteAccount = computed(() =>
+    dataSource.value === "snapshot" && canUseSnapshot.value ? selectedAccount.value : null)
   const suite = useUserSuite(PLAYER_PROFILE_SUITE_KEYS, suiteAccount)
 
   // Fetched separately so instances whose backend allowlist lacks the key
@@ -98,7 +127,7 @@ export function usePlayerProfile() {
   async function loadProfile(strategy: "prefer-cache" | "refresh" = "refresh") {
     const toolboxUserId = userStore.userId
     const target = selectedAccount.value
-    if (!toolboxUserId || !target || dataSource.value !== "realtime") {
+    if (!toolboxUserId || !target || dataSource.value !== "realtime" || !canUseRealtime.value) {
       profileGeneration += 1
       profileStatus.value = "idle"
       profileData.value = null
@@ -205,6 +234,8 @@ export function usePlayerProfile() {
     selectedAccount,
     accountRegion,
     dataSource,
+    canUseRealtime,
+    canUseSnapshot,
     profileStatus,
     profileData,
     profileError,
