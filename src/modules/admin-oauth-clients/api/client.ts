@@ -94,6 +94,7 @@ function normalizeOAuthClient(item: UnknownRecord): OAuthClient {
         scopes: normalizeScopeList(item),
         redirectUri: redirectUri ?? (redirectUris[0] ?? ""),
         redirectUris: redirectUris.length > 0 ? redirectUris : (redirectUri ? [redirectUri] : []),
+        postLogoutRedirectUris: readStringArray(item, ["postLogoutRedirectUris", "post_logout_redirect_uris"]),
         active: readBoolean(item, ["active"], true),
         createdAt: readString(item, ["createdAt", "created_at"]),
         updatedAt: readOptionalString(item, ["updatedAt", "updated_at"]),

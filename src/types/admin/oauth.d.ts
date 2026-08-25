@@ -6,6 +6,8 @@ export interface OAuthClient {
   scopes?: string[]
   redirectUri?: string
   redirectUris?: string[]
+  /** OIDC RP-initiated logout return targets; exact-match like redirectUris. */
+  postLogoutRedirectUris?: string[]
   active: boolean
   createdAt: string
   updatedAt?: string

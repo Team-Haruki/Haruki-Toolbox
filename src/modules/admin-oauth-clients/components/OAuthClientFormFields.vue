@@ -29,6 +29,7 @@ interface Props {
   clientType: NonNullable<OAuthClient["clientType"]>
   scopes: string[]
   redirectUris: string[]
+  postLogoutRedirectUris: string[]
   availableScopes: ScopeOption[]
   scopeIdPrefix: string
 }
@@ -42,6 +43,9 @@ const emit = defineEmits<{
   (event: "add-redirect-uri"): void
   (event: "remove-redirect-uri", index: number): void
   (event: "update-redirect-uri", payload: RedirectUriUpdatePayload): void
+  (event: "add-post-logout-redirect-uri"): void
+  (event: "remove-post-logout-redirect-uri", index: number): void
+  (event: "update-post-logout-redirect-uri", payload: RedirectUriUpdatePayload): void
 }>()
 
 function isClientType(value: unknown): value is NonNullable<OAuthClient["clientType"]> {
@@ -119,6 +123,34 @@ function handleClientTypeChange(value: unknown) {
       </Button>
     </div>
     <Button variant="outline" size="sm" class="self-start" @click="emit('add-redirect-uri')">
+      <LucidePlus class="w-4 h-4 mr-1" />
+      {{ t("adminOAuthClients.form.addRedirectUri") }}
+    </Button>
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <Label>{{ t("adminOAuthClients.form.postLogoutRedirectUrisLabel") }}</Label>
+    <p class="text-xs text-muted-foreground">{{ t("adminOAuthClients.form.postLogoutRedirectUrisHelp") }}</p>
+    <div v-for="(uri, i) in props.postLogoutRedirectUris" :key="i" class="flex gap-2">
+      <Input
+        :model-value="uri"
+        :placeholder="t('adminOAuthClients.form.postLogoutRedirectUriPlaceholder')"
+        class="flex-1"
+        @update:model-value="value => emit('update-post-logout-redirect-uri', { index: i, value: String(value ?? '') })"
+      />
+      <Button
+        v-if="props.postLogoutRedirectUris.length > 1"
+        variant="ghost"
+        size="icon"
+        class="shrink-0"
+        :title="t('adminOAuthClients.form.removeRedirectUri')"
+        :aria-label="t('adminOAuthClients.form.removeRedirectUri')"
+        @click="emit('remove-post-logout-redirect-uri', i)"
+      >
+        <LucideX class="w-4 h-4" />
+      </Button>
+    </div>
+    <Button variant="outline" size="sm" class="self-start" @click="emit('add-post-logout-redirect-uri')">
       <LucidePlus class="w-4 h-4 mr-1" />
       {{ t("adminOAuthClients.form.addRedirectUri") }}
     </Button>

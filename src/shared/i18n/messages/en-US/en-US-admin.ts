@@ -262,6 +262,9 @@ export default {
       "bindingsRead": "Game bindings (bindings:read)",
       "gameDataRead": "Game data (game-data:read)",
       "gameDataWrite": "Game upload (game-data:write)",
+      "openid": "OIDC sign-in (openid)",
+      "profile": "OIDC display name (profile)",
+      "email": "OIDC email (email)",
       "offlineAccess": "Offline access / refresh tokens (offline_access)"
     },
     "common": {
@@ -298,7 +301,10 @@ export default {
       "scopesLabel": "Scopes",
       "redirectUrisLabel": "Redirect URIs",
       "redirectUriPlaceholder": "https://example.com/callback",
-      "addRedirectUri": "Add URI"
+      "addRedirectUri": "Add URI",
+      "postLogoutRedirectUrisLabel": "Post-logout redirect URIs",
+      "postLogoutRedirectUrisHelp": "Exact-match return targets after OIDC RP-initiated logout. Only needed for sign-in clients; may be left empty.",
+      "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out"
     },
     "table": {
       "clientId": "Client ID",
@@ -442,7 +448,8 @@ export default {
         "clientIdAndNameRequired": "Client ID and name are required",
         "nameRequired": "Client name is required",
         "redirectUriRequired": "Please provide at least one redirect URI",
-        "scopeRequired": "Please select at least one scope"
+        "scopeRequired": "Please select at least one scope",
+        "oidcScopeRequiresOpenid": "profile / email must be registered together with openid"
       }
     }
   },

@@ -27,6 +27,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
   const newClientType = ref<OAuthClientType>(DEFAULT_CLIENT_TYPE)
   const newScopes = ref<string[]>([DEFAULT_SCOPE])
   const newRedirectUris = ref<string[]>([""])
+  const newPostLogoutRedirectUris = ref<string[]>([""])
   const creating = ref(false)
 
   const editOpen = ref(false)
@@ -35,6 +36,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
   const editClientType = ref<OAuthClientType>(DEFAULT_CLIENT_TYPE)
   const editScopes = ref<string[]>([])
   const editRedirectUris = ref<string[]>([])
+  const editPostLogoutRedirectUris = ref<string[]>([])
   const saving = ref(false)
 
   function resetCreateForm() {
@@ -43,6 +45,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     newClientType.value = DEFAULT_CLIENT_TYPE
     newScopes.value = [DEFAULT_SCOPE]
     newRedirectUris.value = [""]
+    newPostLogoutRedirectUris.value = [""]
   }
 
   function resetEditForm() {
@@ -51,6 +54,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     editClientType.value = DEFAULT_CLIENT_TYPE
     editScopes.value = []
     editRedirectUris.value = []
+    editPostLogoutRedirectUris.value = []
   }
 
   function setCreateOpen(value: boolean) {
@@ -119,6 +123,32 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     editRedirectUris.value.splice(index, 1)
   }
 
+  function updateNewPostLogoutRedirectUri(payload: RedirectUriUpdatePayload) {
+    newPostLogoutRedirectUris.value[payload.index] = payload.value
+  }
+
+  function addNewPostLogoutRedirectUri() {
+    newPostLogoutRedirectUris.value.push("")
+  }
+
+  function removeNewPostLogoutRedirectUri(index: number) {
+    if (newPostLogoutRedirectUris.value.length <= 1) return
+    newPostLogoutRedirectUris.value.splice(index, 1)
+  }
+
+  function updateEditPostLogoutRedirectUri(payload: RedirectUriUpdatePayload) {
+    editPostLogoutRedirectUris.value[payload.index] = payload.value
+  }
+
+  function addEditPostLogoutRedirectUri() {
+    editPostLogoutRedirectUris.value.push("")
+  }
+
+  function removeEditPostLogoutRedirectUri(index: number) {
+    if (editPostLogoutRedirectUris.value.length <= 1) return
+    editPostLogoutRedirectUris.value.splice(index, 1)
+  }
+
   function toggleNewScope(scopeId: string, checked: boolean) {
     newScopes.value = toggleScopeSelection(newScopes.value, scopeId, checked)
   }
@@ -133,12 +163,14 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
       name: newName.value,
       scopes: newScopes.value,
       redirectUris: newRedirectUris.value,
+      postLogoutRedirectUris: newPostLogoutRedirectUris.value,
     })
     if ("errorCode" in validation) {
       toast.error(t(`adminOAuthClients.toast.validation.${validation.errorCode}`))
       return
     }
     const uris = validation.normalizedUris
+    const postLogoutUris = validation.normalizedPostLogoutUris
 
     await runAsyncAction(
       creating,
@@ -148,6 +180,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
           name: newName.value.trim(),
           clientType: newClientType.value,
           redirectUris: uris,
+          postLogoutRedirectUris: postLogoutUris,
           scopes: newScopes.value,
         })
         return response?.clientSecret ?? ""
@@ -180,6 +213,10 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     if (editRedirectUris.value.length === 0) {
       editRedirectUris.value = [""]
     }
+    editPostLogoutRedirectUris.value = [...(client.postLogoutRedirectUris ?? [])]
+    if (editPostLogoutRedirectUris.value.length === 0) {
+      editPostLogoutRedirectUris.value = [""]
+    }
     editOpen.value = true
   }
 
@@ -188,6 +225,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
       name: editName.value,
       scopes: editScopes.value,
       redirectUris: editRedirectUris.value,
+      postLogoutRedirectUris: editPostLogoutRedirectUris.value,
     })
     if ("errorCode" in validation) {
       toast.error(t(`adminOAuthClients.toast.validation.${validation.errorCode}`))
@@ -203,6 +241,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
           clientType: editClientType.value,
           scopes: editScopes.value,
           redirectUris: uris,
+          postLogoutRedirectUris: validation.normalizedPostLogoutUris,
         }),
       {
         successMessage: t("adminOAuthClients.toast.saved"),
@@ -223,6 +262,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     newClientType,
     newScopes,
     newRedirectUris,
+    newPostLogoutRedirectUris,
     creating,
     editOpen,
     editClientId,
@@ -230,6 +270,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     editClientType,
     editScopes,
     editRedirectUris,
+    editPostLogoutRedirectUris,
     saving,
     toggleNewScope,
     toggleEditScope,
@@ -246,6 +287,12 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     updateEditRedirectUri,
     addEditRedirectUri,
     removeEditRedirectUri,
+    updateNewPostLogoutRedirectUri,
+    addNewPostLogoutRedirectUri,
+    removeNewPostLogoutRedirectUri,
+    updateEditPostLogoutRedirectUri,
+    addEditPostLogoutRedirectUri,
+    removeEditPostLogoutRedirectUri,
     handleCreate,
     openEdit,
     handleSaveEdit,

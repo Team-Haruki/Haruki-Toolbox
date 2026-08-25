@@ -566,6 +566,9 @@ export default {
       "bindingsRead": "读取绑定账号",
       "gameDataRead": "读取游戏数据",
       "gameDataWrite": "上传游戏数据",
+      "openid": "确认您的身份并使用 Haruki 账号登录",
+      "profile": "获取您的昵称",
+      "email": "获取您的邮箱地址",
       "offlineAccess": "保持离线访问并获取刷新令牌"
     },
     "login": {

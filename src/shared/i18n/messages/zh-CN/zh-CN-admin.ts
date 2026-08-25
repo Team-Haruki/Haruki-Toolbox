@@ -262,6 +262,9 @@ export default {
       "bindingsRead": "游戏绑定 (bindings:read)",
       "gameDataRead": "游戏数据 (game-data:read)",
       "gameDataWrite": "游戏上传 (game-data:write)",
+      "openid": "OIDC 登录 (openid)",
+      "profile": "OIDC 昵称 (profile)",
+      "email": "OIDC 邮箱 (email)",
       "offlineAccess": "离线访问 / 刷新令牌 (offline_access)"
     },
     "common": {
@@ -298,7 +301,10 @@ export default {
       "scopesLabel": "授权范围 (Scopes)",
       "redirectUrisLabel": "回调URI (Redirect URIs)",
       "redirectUriPlaceholder": "https://example.com/callback",
-      "addRedirectUri": "添加URI"
+      "addRedirectUri": "添加URI",
+      "postLogoutRedirectUrisLabel": "登出回调URI (Post-Logout Redirect URIs)",
+      "postLogoutRedirectUrisHelp": "OIDC RP-Initiated Logout 后允许跳回的地址，精确匹配。仅登录类客户端需要，可留空。",
+      "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out"
     },
     "table": {
       "clientId": "Client ID",
@@ -442,7 +448,8 @@ export default {
         "clientIdAndNameRequired": "客户端ID和名称不能为空",
         "nameRequired": "客户端名称不能为空",
         "redirectUriRequired": "请至少填写一个回调URI",
-        "scopeRequired": "请至少选择一个Scope"
+        "scopeRequired": "请至少选择一个Scope",
+        "oidcScopeRequiresOpenid": "profile / email 需要与 openid 一起登记"
       }
     }
   },

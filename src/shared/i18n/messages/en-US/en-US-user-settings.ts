@@ -566,6 +566,9 @@ export default {
       "bindingsRead": "Read linked accounts",
       "gameDataRead": "Read game data",
       "gameDataWrite": "Upload game data",
+      "openid": "Verify your identity and sign you in with your Haruki account",
+      "profile": "See your display name",
+      "email": "See your email address",
       "offlineAccess": "Maintain offline access and issue refresh tokens"
     },
     "login": {

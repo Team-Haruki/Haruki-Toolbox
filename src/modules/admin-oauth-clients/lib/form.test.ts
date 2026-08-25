@@ -32,14 +32,37 @@ describe("admin oauth form helpers", () => {
       name: "Web Client",
       scopes: ["user:read"],
       redirectUris: [" https://a.com/callback "],
+      postLogoutRedirectUris: [" https://a.com/logged-out ", ""],
     })
     expect("normalizedUris" in valid).toBe(true)
     if ("normalizedUris" in valid) {
       expect(valid.normalizedUris).toEqual(["https://a.com/callback"])
+      expect(valid.normalizedPostLogoutUris).toEqual(["https://a.com/logged-out"])
     }
   })
 
-  test("available scopes include offline access", () => {
+  test("rejects profile/email scopes without openid", () => {
+    const invalid = validateClientPayload({
+      clientId: "web-client",
+      name: "Web Client",
+      scopes: ["profile", "email"],
+      redirectUris: ["https://a.com/callback"],
+    })
+    expect("errorCode" in invalid && invalid.errorCode === "oidcScopeRequiresOpenid").toBe(true)
+
+    const valid = validateClientPayload({
+      clientId: "web-client",
+      name: "Web Client",
+      scopes: ["openid", "profile", "email"],
+      redirectUris: ["https://a.com/callback"],
+    })
+    expect("normalizedUris" in valid).toBe(true)
+  })
+
+  test("available scopes include offline access and oidc scopes", () => {
     expect(AVAILABLE_SCOPE_IDS).toContain("offline_access")
+    expect(AVAILABLE_SCOPE_IDS).toContain("openid")
+    expect(AVAILABLE_SCOPE_IDS).toContain("profile")
+    expect(AVAILABLE_SCOPE_IDS).toContain("email")
   })
 })

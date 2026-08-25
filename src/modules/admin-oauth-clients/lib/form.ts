@@ -8,6 +8,9 @@ export const AVAILABLE_SCOPE_IDS = [
   "bindings:read",
   "game-data:read",
   "game-data:write",
+  "openid",
+  "profile",
+  "email",
   "offline_access",
 ] as const
 
@@ -16,6 +19,7 @@ type ValidatePayloadParams = {
   name: string
   scopes: string[]
   redirectUris: string[]
+  postLogoutRedirectUris?: string[]
 }
 
 export type ValidatePayloadErrorCode =
@@ -23,9 +27,10 @@ export type ValidatePayloadErrorCode =
   | "nameRequired"
   | "redirectUriRequired"
   | "scopeRequired"
+  | "oidcScopeRequiresOpenid"
 
 type ValidatePayloadResult =
-  | { normalizedUris: string[] }
+  | { normalizedUris: string[]; normalizedPostLogoutUris: string[] }
   | { errorCode: ValidatePayloadErrorCode }
 
 export function toggleScopeSelection(scopes: string[], scopeId: string, checked: boolean) {
@@ -61,5 +66,15 @@ export function validateClientPayload(params: ValidatePayloadParams): ValidatePa
     return { errorCode: "scopeRequired" }
   }
 
-  return { normalizedUris }
+  // Hydra rejects `profile` / `email` outside an OIDC (`openid`) request, so
+  // registering them without `openid` produces a client that can never use them.
+  const wantsOidcClaims = params.scopes.includes("profile") || params.scopes.includes("email")
+  if (wantsOidcClaims && !params.scopes.includes("openid")) {
+    return { errorCode: "oidcScopeRequiresOpenid" }
+  }
+
+  return {
+    normalizedUris,
+    normalizedPostLogoutUris: normalizeRedirectUris(params.postLogoutRedirectUris ?? []),
+  }
 }

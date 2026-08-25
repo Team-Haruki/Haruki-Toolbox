@@ -24,6 +24,7 @@ interface Props {
   clientType: NonNullable<OAuthClient["clientType"]>
   scopes: string[]
   redirectUris: string[]
+  postLogoutRedirectUris: string[]
   availableScopes: ScopeOption[]
 }
 
@@ -37,6 +38,9 @@ const emit = defineEmits<{
   (event: "add-redirect-uri"): void
   (event: "remove-redirect-uri", index: number): void
   (event: "update-redirect-uri", payload: RedirectUriUpdatePayload): void
+  (event: "add-post-logout-redirect-uri"): void
+  (event: "remove-post-logout-redirect-uri", index: number): void
+  (event: "update-post-logout-redirect-uri", payload: RedirectUriUpdatePayload): void
   (event: "submit"): void
 }>()
 </script>
@@ -58,6 +62,7 @@ const emit = defineEmits<{
           :client-type="props.clientType"
           :scopes="props.scopes"
           :redirect-uris="props.redirectUris"
+          :post-logout-redirect-uris="props.postLogoutRedirectUris"
           :available-scopes="props.availableScopes"
           scope-id-prefix="edit-scope"
           @update:name="value => emit('update:name', value)"
@@ -66,6 +71,9 @@ const emit = defineEmits<{
           @add-redirect-uri="emit('add-redirect-uri')"
           @remove-redirect-uri="index => emit('remove-redirect-uri', index)"
           @update-redirect-uri="payload => emit('update-redirect-uri', payload)"
+          @add-post-logout-redirect-uri="emit('add-post-logout-redirect-uri')"
+          @remove-post-logout-redirect-uri="index => emit('remove-post-logout-redirect-uri', index)"
+          @update-post-logout-redirect-uri="payload => emit('update-post-logout-redirect-uri', payload)"
         />
       </div>
       <DialogFooter>

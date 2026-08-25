@@ -26,6 +26,7 @@ const {
   newClientType,
   newScopes,
   newRedirectUris,
+  newPostLogoutRedirectUris,
   creating,
   editOpen,
   editClientId,
@@ -33,6 +34,7 @@ const {
   editClientType,
   editScopes,
   editRedirectUris,
+  editPostLogoutRedirectUris,
   saving,
   statsOpen,
   statsLoading,
@@ -78,6 +80,12 @@ const {
   updateEditRedirectUri,
   addEditRedirectUri,
   removeEditRedirectUri,
+  updateNewPostLogoutRedirectUri,
+  addNewPostLogoutRedirectUri,
+  removeNewPostLogoutRedirectUri,
+  updateEditPostLogoutRedirectUri,
+  addEditPostLogoutRedirectUri,
+  removeEditPostLogoutRedirectUri,
   handleCreate,
   openEdit,
   handleSaveEdit,
@@ -113,6 +121,7 @@ const {
           :client-type="newClientType"
           :scopes="newScopes"
           :redirect-uris="newRedirectUris"
+          :post-logout-redirect-uris="newPostLogoutRedirectUris"
           :available-scopes="AVAILABLE_SCOPES"
           @update:client-id="updateNewClientId"
           @update:name="updateNewName"
@@ -121,6 +130,9 @@ const {
           @add-redirect-uri="addNewRedirectUri"
           @remove-redirect-uri="removeNewRedirectUri"
           @update-redirect-uri="updateNewRedirectUri"
+          @add-post-logout-redirect-uri="addNewPostLogoutRedirectUri"
+          @remove-post-logout-redirect-uri="removeNewPostLogoutRedirectUri"
+          @update-post-logout-redirect-uri="updateNewPostLogoutRedirectUri"
           @submit="handleCreate"
         />
       </CardHeader>
@@ -161,6 +173,7 @@ const {
       :client-type="editClientType"
       :scopes="editScopes"
       :redirect-uris="editRedirectUris"
+      :post-logout-redirect-uris="editPostLogoutRedirectUris"
       :available-scopes="AVAILABLE_SCOPES"
       @update:name="updateEditName"
       @update:client-type="updateEditClientType"
@@ -168,6 +181,9 @@ const {
       @add-redirect-uri="addEditRedirectUri"
       @remove-redirect-uri="removeEditRedirectUri"
       @update-redirect-uri="updateEditRedirectUri"
+      @add-post-logout-redirect-uri="addEditPostLogoutRedirectUri"
+      @remove-post-logout-redirect-uri="removeEditPostLogoutRedirectUri"
+      @update-post-logout-redirect-uri="updateEditPostLogoutRedirectUri"
       @submit="handleSaveEdit"
     />
 
