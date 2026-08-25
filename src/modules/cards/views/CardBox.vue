@@ -41,7 +41,7 @@ import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 
 const { t, locale } = useI18n()
 
-const { selectedAccount } = useGameAccountSelection()
+const { selectedAccount } = useGameAccountSelection({ capability: "suite" })
 const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 
 const {
@@ -305,7 +305,7 @@ function retry() {
       </div>
       <div class="flex flex-col items-start gap-1 sm:items-end">
         <div class="flex flex-wrap items-center gap-2">
-          <GameAccountSelect />
+          <GameAccountSelect capability="suite" />
           <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
             <LucideRefreshCw class="size-3.5" />
             {{ t("cardBox.refresh") }}

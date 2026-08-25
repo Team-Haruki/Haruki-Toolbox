@@ -41,7 +41,7 @@ export const TRAINING_BONDS_MASTER_FILES = [
 export function useTrainingBonds() {
   const sekaiDataStore = useSekaiDataStore()
 
-  const { selectedAccount } = useGameAccountSelection()
+  const { selectedAccount } = useGameAccountSelection({ capability: "suite" })
   const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 
   const suite = useUserSuite(TRAINING_BONDS_SUITE_KEYS, selectedAccount)

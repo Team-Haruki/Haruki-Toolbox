@@ -204,7 +204,12 @@ export default {
     "verified": "Verified",
     "default": "Default",
     "none": "No game account is bound to your profile yet.",
-    "manage": "Manage bindings"
+    "manage": "Manage bindings",
+    "grantedBadge": "Granted",
+    "groups": {
+      "own": "My bound accounts",
+      "granted": "Granted to me"
+    }
   },
   "cardBox": {
     "title": "My Cards",
@@ -260,6 +265,7 @@ export default {
     "idle": "Select a game account to view your event records.",
     "loading": "Loading account snapshot and event data...",
     "missingUserData": "No game data has been uploaded for this account yet. Upload it first to view event records.",
+    "missingGrantedData": "The account owner has not uploaded game data yet, so there is nothing to view for now.",
     "uploadData": "Upload game data",
     "noData": "No event records found in this account's snapshot.",
     "loadFailed": "Failed to load event records.",
@@ -319,6 +325,7 @@ export default {
     "noAccount": "Select or bind a game account to view your play progress.",
     "loading": "Loading account snapshot and music data...",
     "missingUserData": "No game data has been uploaded for this account yet. Upload it first to view music progress.",
+    "missingGrantedData": "The account owner has not uploaded game data yet, so there is nothing to view for now.",
     "uploadData": "Upload game data",
     "noResults": "This snapshot contains no music play results yet; all songs are shown as unplayed.",
     "suiteError": "Failed to load the account snapshot data.",

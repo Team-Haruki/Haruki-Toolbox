@@ -26,7 +26,7 @@ export const TRAINING_LEADER_MASTER_FILES = [
 export function useTrainingLeader() {
   const sekaiDataStore = useSekaiDataStore()
 
-  const { selectedAccount } = useGameAccountSelection()
+  const { selectedAccount } = useGameAccountSelection({ capability: "suite" })
   const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 
   const suite = useUserSuite(TRAINING_LEADER_SUITE_KEYS, selectedAccount)

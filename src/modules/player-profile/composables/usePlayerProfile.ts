@@ -55,7 +55,7 @@ export function usePlayerProfile() {
   const sekaiDataStore = useSekaiDataStore()
   const userStore = useUserStore()
 
-  const { selectedAccount } = useGameAccountSelection()
+  const { selectedAccount } = useGameAccountSelection({ capability: "profile" })
   const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 
   // Realtime game profile is the default; the suite snapshot (manual upload)

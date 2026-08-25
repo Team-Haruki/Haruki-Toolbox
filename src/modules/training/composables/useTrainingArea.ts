@@ -42,7 +42,7 @@ export function useTrainingArea() {
   const settingsStore = useSettingsStore()
   const sekaiDataStore = useSekaiDataStore()
 
-  const { selectedAccount } = useGameAccountSelection()
+  const { selectedAccount } = useGameAccountSelection({ capability: "suite" })
   const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 
   const suite = useUserSuite(TRAINING_AREA_SUITE_KEYS, selectedAccount)

@@ -10,7 +10,7 @@ import { TRAINING_PREFETCH_MASTER_FILES } from "../lib/prefetch-master-files"
 
 const { t, locale } = useI18n()
 
-const { selectedAccount } = useGameAccountSelection()
+const { selectedAccount } = useGameAccountSelection({ capability: "suite" })
 const uploadTime = useAccountUploadTime(selectedAccount)
 
 // Warm the master-data cache for every training tab as soon as the section
@@ -60,7 +60,7 @@ const tabs = [
         <p class="text-sm text-muted-foreground">{{ t("training.layout.description") }}</p>
       </div>
       <div class="flex flex-col items-start gap-1 sm:items-end">
-        <GameAccountSelect />
+        <GameAccountSelect capability="suite" />
         <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
           {{ t("training.layout.dataAsOf", { time: uploadTimeText }) }}
         </p>
