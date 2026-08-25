@@ -4,6 +4,10 @@ export default defineConfig({
   testDir: "tests/e2e",
   testMatch: "**/*.e2e.ts",
   timeout: 30_000,
+  // CI serves through a cold Vite dev server: the first visit to a page pays
+  // on-demand transform of its whole module graph, which on CI hardware can
+  // exceed the 5s default expect timeout before first paint.
+  expect: { timeout: process.env.CI ? 15_000 : 5_000 },
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
