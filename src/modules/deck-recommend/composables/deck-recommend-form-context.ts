@@ -141,6 +141,8 @@ export type DeckRecommendFormContext = {
     uid: string
     verified?: boolean
     isDefault?: boolean
+    ownership?: "own" | "granted"
+    ownerName?: string | null
   }>>
   selectedAccountLabel: ComputedRef<string>
   updateAccount: (value: AcceptableValue) => void

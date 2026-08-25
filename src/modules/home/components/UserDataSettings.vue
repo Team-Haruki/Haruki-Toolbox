@@ -38,6 +38,11 @@ import {
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import { clearUserSuiteSubsetCache, readUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache"
 import { useUserStore } from "@/shared/stores/user"
+import {
+  ensureAccessibleGameAccountsLoaded,
+  getAccessibleGameAccountsRef,
+} from "@/shared/sekai/user-snapshot/accessible-accounts"
+import { buildSelectableGameAccounts } from "@/shared/sekai/user-snapshot/selectable-accounts"
 import type { SekaiRegion } from "@/types"
 import type { DeckRecommendUserDataMode } from "@/modules/deck-recommend/api/recommend-data"
 
@@ -49,6 +54,9 @@ type BoundAccountOption = {
   uid: string
   verified: boolean
   isDefault: boolean
+  ownership: "own" | "granted"
+  ownerName: string | null
+  capabilities: ReadonlySet<string>
 }
 
 const { t, locale } = useI18n()
@@ -62,18 +70,35 @@ const cacheUpdatedAt = ref<number | null>(null)
 const cacheUploadTime = ref<number | null>(null)
 const lastCacheHit = ref<boolean | null>(null)
 
+const accessibleAccounts = getAccessibleGameAccountsRef()
+watch(
+  () => userStore.userId,
+  (value) => {
+    ensureAccessibleGameAccountsLoaded(value || null)
+  },
+  { immediate: true },
+)
+
 const accountOptions = computed<BoundAccountOption[]>(() => {
-  const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
-  return accounts.map((account) => {
-    const uid = String(account.userId)
-    return {
-      key: `${account.server}:${uid}`,
-      server: account.server,
-      uid,
-      verified: account.verified === true,
-      isDefault: account.isDefault === true,
-    }
-  })
+  // Hold until the post-login sync hydrates bindings (see selector race),
+  // and only offer granted accounts whose suite is readable — every cache
+  // pipeline in this panel (including the mysekai refresh) reads the suite
+  // subset alongside its own data.
+  if (!Array.isArray(userStore.gameAccountBindings)) {
+    return []
+  }
+  return buildSelectableGameAccounts(userStore.gameAccountBindings, accessibleAccounts.value)
+    .filter((account) => account.ownership === "own" || account.capabilities.has("suite"))
+    .map((account) => ({
+    key: account.key,
+    server: account.server,
+    uid: String(account.userId),
+    verified: account.verified === true,
+    isDefault: account.isDefault === true,
+    ownership: account.ownership,
+    ownerName: account.owner?.name ?? null,
+    capabilities: account.capabilities,
+  }))
 })
 
 const selectedAccount = computed(() =>
@@ -92,19 +117,34 @@ const canClear = computed(() =>
 // so the option is hidden entirely without one.
 const hasVerifiedQQ = computed(() => isVerifiedQQBinding(userStore.socialPlatformInfo))
 
-const dataModeOptions = computed<Array<{ value: DeckRecommendUserCacheDataType; label: string }>>(() => [
-  { value: "suite", label: t("homeSettings.userData.types.suite") },
-  ...(hasVerifiedQQ.value
-    ? [{ value: "mysekai" as const, label: t("homeSettings.userData.types.mysekai") }]
-    : []),
-  { value: "profile", label: t("homeSettings.userData.types.profile") },
-])
+const dataModeOptions = computed<Array<{ value: DeckRecommendUserCacheDataType; label: string }>>(() => {
+  const account = selectedAccount.value
+  if (account?.ownership === "granted") {
+    // A granted account exposes the granted data types; profile is never
+    // grantable, and the viewer's own QQ binding is irrelevant here. The
+    // mysekai refresh also fetches the suite subset, so it additionally
+    // needs the suite capability (guaranteed by the account filter above).
+    return [
+      { value: "suite" as const, label: t("homeSettings.userData.types.suite") },
+      ...(account.capabilities.has("mysekai")
+        ? [{ value: "mysekai" as const, label: t("homeSettings.userData.types.mysekai") }]
+        : []),
+    ]
+  }
+  return [
+    { value: "suite", label: t("homeSettings.userData.types.suite") },
+    ...(hasVerifiedQQ.value
+      ? [{ value: "mysekai" as const, label: t("homeSettings.userData.types.mysekai") }]
+      : []),
+    { value: "profile", label: t("homeSettings.userData.types.profile") },
+  ]
+})
 
 watch(
-  hasVerifiedQQ,
-  (verified) => {
-    if (!verified && selectedDataMode.value === "mysekai") {
-      selectedDataMode.value = "suite"
+  [hasVerifiedQQ, dataModeOptions],
+  () => {
+    if (!dataModeOptions.value.some((option) => option.value === selectedDataMode.value)) {
+      selectedDataMode.value = dataModeOptions.value[0]?.value ?? "suite"
     }
   },
   { immediate: true },
@@ -276,6 +316,7 @@ function formatTime(value: number | null) {
                 :user-id="selectedAccount.uid"
                 :verified="selectedAccount.verified"
                 :is-default="selectedAccount.isDefault"
+                :ownership="selectedAccount.ownership"
               />
               <span v-else class="text-sm text-muted-foreground">
                 {{ t("homeSettings.userData.accountPlaceholder") }}
@@ -288,6 +329,8 @@ function formatTime(value: number | null) {
                   :user-id="account.uid"
                   :verified="account.verified"
                   :is-default="account.isDefault"
+                  :ownership="account.ownership"
+                  :owner-name="account.ownerName"
                 />
               </SelectItem>
             </SelectContent>
