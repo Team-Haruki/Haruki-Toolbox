@@ -116,6 +116,7 @@ const selectedAccountOption = computed(() =>
                 :user-id="selectedAccountOption.uid"
                 :verified="selectedAccountOption.verified"
                 :is-default="selectedAccountOption.isDefault"
+                :ownership="selectedAccountOption.ownership"
               />
               <span v-else class="text-sm text-muted-foreground">
                 {{ t("deckRecommend.form.accountPlaceholder") }}
@@ -128,6 +129,8 @@ const selectedAccountOption = computed(() =>
                   :user-id="account.uid"
                   :verified="account.verified"
                   :is-default="account.isDefault"
+                  :ownership="account.ownership"
+                  :owner-name="account.ownerName"
                 />
               </SelectItem>
             </SelectContent>

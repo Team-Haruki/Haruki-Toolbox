@@ -77,9 +77,16 @@ export function useGameAccountSelection(options: UseGameAccountSelectionOptions 
     { immediate: true },
   )
 
-  const accounts = computed<SelectableGameAccount[]>(() =>
-    buildSelectableGameAccounts(gameAccountBindings.value ?? [], accessibleAccounts.value, options.capability),
-  )
+  const accounts = computed<SelectableGameAccount[]>(() => {
+    const bindings = gameAccountBindings.value
+    // Bindings are null until the post-login profile sync hydrates them.
+    // Merging grants before that could momentarily elect a granted account
+    // (and fire its data fetch) that an own default is about to displace.
+    if (!Array.isArray(bindings)) {
+      return []
+    }
+    return buildSelectableGameAccounts(bindings, accessibleAccounts.value, options.capability)
+  })
 
   const selectedAccount = computed<SelectableGameAccount | null>(() => {
     const available = accounts.value

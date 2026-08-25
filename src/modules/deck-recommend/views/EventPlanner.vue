@@ -37,7 +37,12 @@ import { useEventPlannerStore, type EventPlannerPlan } from "../stores/event-pla
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
-import type { GameAccountBinding, SekaiRegion } from "@/types"
+import {
+  ensureAccessibleGameAccountsLoaded,
+  getAccessibleGameAccountsRef,
+} from "@/shared/sekai/user-snapshot/accessible-accounts"
+import { buildSelectableGameAccounts, type SelectableGameAccount } from "@/shared/sekai/user-snapshot/selectable-accounts"
+import type { SekaiRegion } from "@/types"
 import CharacterSelect from "../components/CharacterSelect.vue"
 import EventSelect from "../components/EventSelect.vue"
 import PlannerBrushDialog from "../components/PlannerBrushDialog.vue"
@@ -69,6 +74,8 @@ type BoundAccountOption = {
   label: string
   verified?: boolean
   isDefault?: boolean
+  ownership?: "own" | "granted"
+  ownerName?: string | null
 }
 
 const ERASER_TOOL_ID = "eraser"
@@ -96,9 +103,23 @@ const brushDialogOpen = ref(false)
 const eventOptions = useEventOptions(dataRegion)
 const worldBloomCharacters = useWorldBloomCharacterOptions(dataRegion, selectedEventId)
 
+const accessibleAccounts = getAccessibleGameAccountsRef()
+watch(
+  () => userStore.userId,
+  (value) => {
+    ensureAccessibleGameAccountsLoaded(value || null)
+  },
+  { immediate: true },
+)
+
 const accountOptions = computed<BoundAccountOption[]>(() => {
-  const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
-  return accounts.map((account) => createAccountOption(account))
+  // Hold until the post-login sync hydrates bindings: a grants-only list in
+  // that window would default-select a granted account over the own default.
+  if (!Array.isArray(userStore.gameAccountBindings)) {
+    return []
+  }
+  return buildSelectableGameAccounts(userStore.gameAccountBindings, accessibleAccounts.value, "recommend")
+    .map((account) => createAccountOption(account))
 })
 const selectedAccount = computed(() =>
   accountOptions.value.find((account) => account.key === selectedAccountKey.value) ?? null,
@@ -482,14 +503,16 @@ function ensureRegionMasterData() {
   }
 }
 
-function createAccountOption(account: GameAccountBinding): BoundAccountOption {
+function createAccountOption(account: SelectableGameAccount): BoundAccountOption {
   const uid = String(account.userId)
   return {
-    key: `${account.server}:${uid}`,
+    key: account.key,
     server: account.server,
     uid,
     verified: account.verified === true,
     isDefault: account.isDefault === true,
+    ownership: account.ownership,
+    ownerName: account.owner?.name ?? null,
     label: formatGameAccountLabel({
       regionLabel: resolveSekaiRegionLabel(account.server, t),
       uid,
@@ -538,6 +561,7 @@ function formatInteger(value: number) {
                   :user-id="selectedAccount.uid"
                   :verified="selectedAccount.verified"
                   :is-default="selectedAccount.isDefault"
+                  :ownership="selectedAccount.ownership"
                 />
                 <span v-else class="text-sm text-muted-foreground">
                   {{ t("deckRecommend.form.accountPlaceholder") }}
@@ -550,6 +574,8 @@ function formatInteger(value: number) {
                     :user-id="option.uid"
                     :verified="option.verified"
                     :is-default="option.isDefault"
+                    :ownership="option.ownership"
+                    :owner-name="option.ownerName"
                   />
                 </SelectItem>
               </SelectContent>

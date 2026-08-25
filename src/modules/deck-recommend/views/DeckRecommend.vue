@@ -17,7 +17,13 @@ import {
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
-import type { GameAccountBinding, SekaiRegion } from "@/types"
+import {
+  ensureAccessibleGameAccountsLoaded,
+  getAccessibleGameAccountsRef,
+  getAccessibleGameAccountsSettledRef,
+} from "@/shared/sekai/user-snapshot/accessible-accounts"
+import { buildSelectableGameAccounts, type SelectableGameAccount } from "@/shared/sekai/user-snapshot/selectable-accounts"
+import type { SekaiRegion } from "@/types"
 import CustomBonusSimulationDialog from "../components/CustomBonusSimulationDialog.vue"
 import DeckAdvancedSection from "../components/DeckAdvancedSection.vue"
 import DeckAttributionFooter from "../components/DeckAttributionFooter.vue"
@@ -110,6 +116,8 @@ type BoundAccountOption = {
   label: string
   verified?: boolean
   isDefault?: boolean
+  ownership?: "own" | "granted"
+  ownerName?: string | null
 }
 
 const DEFAULT_MUSIC_ID = "74"
@@ -232,9 +240,30 @@ const {
   characterOptions: characterOptions.options,
 })
 
+const accessibleAccounts = getAccessibleGameAccountsRef()
+const accessibleAccountsSettled = getAccessibleGameAccountsSettledRef()
+watch(
+  () => userStore.userId,
+  (value) => {
+    ensureAccessibleGameAccountsLoaded(value || null)
+  },
+  { immediate: true },
+)
+
 const accountOptions = computed<BoundAccountOption[]>(() => {
-  const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
-  return accounts.map((account) => createAccountOption(account))
+  // Hold until the post-login sync hydrates bindings: a grants-only list in
+  // that window would steal the saved own-account selection.
+  if (!Array.isArray(userStore.gameAccountBindings)) {
+    return []
+  }
+  return buildSelectableGameAccounts(userStore.gameAccountBindings, accessibleAccounts.value, "recommend")
+    // The mysekai deck mode additionally reads mysekai data, which a
+    // suite-only grant does not cover.
+    .filter((account) =>
+      account.ownership === "own"
+      || recommendMode.value !== "mysekai"
+      || account.capabilities.has("mysekai"))
+    .map((account) => createAccountOption(account))
 })
 
 const selectedAccount = computed(() => {
@@ -450,7 +479,12 @@ const hasCharacterFilterError = computed(() =>
 const resultLimit = computed(() => parseOptionalNumberInput(resultLimitInput.value, { min: 1, max: 50, integer: true }))
 const engineTimeoutMs = computed(() => parseOptionalNumberInput(engineTimeoutMsInput.value, { min: 1_000, max: 300_000, integer: true }))
 const specificSkillOrder = computed(() => parseDeckSkillOrderInput(specificSkillOrderInput.value))
-const isCurrentDeckEnabled = computed(() => useCurrentDeck.value && recommendMode.value !== "challenge")
+// Current-deck needs the account's profile (never grantable), so the
+// feature is own-account only.
+const isCurrentDeckEnabled = computed(() =>
+  useCurrentDeck.value
+  && recommendMode.value !== "challenge"
+  && selectedAccount.value?.ownership !== "granted")
 const showSpecificSkillOrderInput = computed(() => skillOrderStrategy.value === "specific")
 const hasSpecificSkillOrderError = computed(() =>
   showSpecificSkillOrderInput.value && specificSkillOrder.value.values.length !== 5,
@@ -704,8 +738,8 @@ const {
 })
 
 watch(
-  accountOptions,
-  (accounts) => {
+  [accountOptions, accessibleAccountsSettled],
+  ([accounts]) => {
     if (accounts.length === 0) {
       if (!pendingSavedAccountKey) {
         selectedAccountKey.value = ""
@@ -713,14 +747,24 @@ watch(
       return
     }
 
-    if (pendingSavedAccountKey && accounts.some((account) => account.key === pendingSavedAccountKey)) {
-      selectedAccountKey.value = pendingSavedAccountKey
+    if (pendingSavedAccountKey) {
+      if (accounts.some((account) => account.key === pendingSavedAccountKey)) {
+        selectedAccountKey.value = pendingSavedAccountKey
+        pendingSavedAccountKey = ""
+        return
+      }
+      // A saved granted selection cannot resolve before the aggregate's
+      // first load settles — keep waiting instead of dropping it.
+      if (pendingSavedAccountKey.startsWith("grant:") && !accessibleAccountsSettled.value) {
+        return
+      }
       pendingSavedAccountKey = ""
-      return
     }
-    pendingSavedAccountKey = ""
 
     if (!accounts.some((account) => account.key === selectedAccountKey.value)) {
+      if (selectedAccountKey.value.startsWith("grant:") && !accessibleAccountsSettled.value) {
+        return
+      }
       selectedAccountKey.value = (accounts.find((account) => account.isDefault) ?? accounts[0]).key
     }
   },
@@ -732,6 +776,15 @@ watch(
   (account) => {
     if (account && !routeRegionLocked) {
       dataRegion.value = account.server
+    }
+    if (account?.ownership === "granted" && useCurrentDeck.value) {
+      useCurrentDeck.value = false
+    }
+    // Fix 3: a saved granted selection resolves after mount; re-check so the
+    // account server's honors master is ensured even when dataRegion is
+    // locked and never flips.
+    if (account) {
+      checkDeckRecommendRegionData(dataRegion.value)
     }
   },
   { immediate: true },
@@ -1000,14 +1053,16 @@ onBeforeUnmount(() => {
   void runner.disposeEngine().catch(() => undefined)
 })
 
-function createAccountOption(account: GameAccountBinding): BoundAccountOption {
+function createAccountOption(account: SelectableGameAccount): BoundAccountOption {
   const uid = String(account.userId)
   return {
-    key: `${account.server}:${uid}`,
+    key: account.key,
     server: account.server,
     uid,
     verified: account.verified === true,
     isDefault: account.isDefault === true,
+    ownership: account.ownership,
+    ownerName: account.owner?.name ?? null,
     label: formatGameAccountLabel({
       regionLabel: resolveSekaiRegionLabel(account.server, t),
       uid,
