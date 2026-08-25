@@ -71,16 +71,22 @@ export function usePlayerProfile() {
   // only lose the MVP/SuperStar chips instead of the whole profile.
   const multiLiveSuite = useUserSuite(PLAYER_PROFILE_MULTI_LIVE_KEYS, suiteAccount)
 
+  // A granted account may hold profile without suite (grants are per data
+  // type), so the ancillary suite subsets below skip accounts whose suite
+  // data would just 403 — their modules render empty instead of errored.
+  const suiteCapableAccount = computed(() =>
+    selectedAccount.value?.capabilities.has("suite") ? selectedAccount.value : null)
+
   // The realtime game profile only carries the single best challenge result
   // and the shown deck's five cards, but the challenge radar needs per-character
   // high scores and the collection chart the full card box. Fetch that small
   // suite subset in realtime mode so both sources render the same modules.
-  const extrasAccount = computed(() => dataSource.value === "realtime" ? selectedAccount.value : null)
+  const extrasAccount = computed(() => dataSource.value === "realtime" ? suiteCapableAccount.value : null)
   const extrasSuite = useUserSuite(PLAYER_PROFILE_SNAPSHOT_EXTRA_KEYS, extrasAccount)
 
   // Event participation history only exists in the suite snapshot, so the
   // trend module fetches it regardless of the selected data source.
-  const eventsSuite = useUserSuite(PLAYER_PROFILE_EVENT_KEYS, selectedAccount)
+  const eventsSuite = useUserSuite(PLAYER_PROFILE_EVENT_KEYS, suiteCapableAccount)
 
   const profileStatus = ref<"idle" | "loading" | "ready" | "error">("idle")
   const profileData = shallowRef<Record<string, unknown> | null>(null)

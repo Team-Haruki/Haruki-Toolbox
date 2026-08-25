@@ -487,7 +487,7 @@ export default {
       },
       "grants": {
         "title": "游戏账号数据授权",
-        "description": "把已验证账号的 suite / mysekai 数据临时授权给其他 Toolbox 用户读取。",
+        "description": "把已验证账号的 suite / mysekai / profile 数据临时授权给其他 Toolbox 用户读取。",
         "receivedDescription": "查看其他 Toolbox 用户授权给你的游戏账号数据。",
         "selectedAccount": "当前账号：{account}",
         "noSelectedAccount": "未选择账号",
@@ -498,7 +498,8 @@ export default {
         "fallback": "—",
         "dataType": {
           "suite": "Suite",
-          "mysekai": "MySekai"
+          "mysekai": "MySekai",
+          "profile": "Profile"
         },
         "actions": {
           "refresh": "刷新",
@@ -510,7 +511,8 @@ export default {
           "granteeUserIdPlaceholder": "例如 1234567890",
           "dataType": "数据类型",
           "expiresAt": "过期时间",
-          "expiresAtHelp": "必须是未来时间，不提供永久授权。"
+          "expiresAtHelp": "必须是未来时间，不提供永久授权。",
+          "profileHint": "Profile 是实时数据：被授权用户每次查看都会经由你的账号向游戏服务器发起请求。"
         },
         "table": {
           "owner": "授权来源",
@@ -523,7 +525,7 @@ export default {
           "verifiedOnly": "只有已验证绑定账号可以创建数据授权",
           "granteeRequired": "请填写被授权用户 ID",
           "selfGrant": "不能授权给自己",
-          "dataType": "只支持 suite 或 mysekai",
+          "dataType": "只支持 suite、mysekai 或 profile",
           "futureExpiry": "过期时间必须是未来时间"
         },
         "toast": {

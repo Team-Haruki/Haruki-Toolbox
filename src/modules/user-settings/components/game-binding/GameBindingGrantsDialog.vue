@@ -84,9 +84,7 @@ const dialogDescription = computed(() =>
 )
 
 function dataTypeLabel(value: GameAccountGrantDataType) {
-  return value === "mysekai"
-    ? t("userSettings.gameBinding.grants.dataType.mysekai")
-    : t("userSettings.gameBinding.grants.dataType.suite")
+  return t(`userSettings.gameBinding.grants.dataType.${value}`)
 }
 
 function formatDate(value: string) {
@@ -149,8 +147,12 @@ function handleDataTypeChange(value: unknown) {
                 <SelectContent>
                   <SelectItem value="suite">{{ dataTypeLabel("suite") }}</SelectItem>
                   <SelectItem value="mysekai">{{ dataTypeLabel("mysekai") }}</SelectItem>
+                  <SelectItem value="profile">{{ dataTypeLabel("profile") }}</SelectItem>
                 </SelectContent>
               </Select>
+              <p v-if="props.dataType === 'profile'" class="text-xs text-muted-foreground">
+                {{ t("userSettings.gameBinding.grants.form.profileHint") }}
+              </p>
             </div>
             <div class="space-y-1.5">
               <Label>{{ t("userSettings.gameBinding.grants.form.expiresAt") }}</Label>

@@ -11,8 +11,11 @@ describe("game account data grant helpers", () => {
   test("validates supported data types", () => {
     expect(isGrantDataType("suite")).toBe(true)
     expect(isGrantDataType("mysekai")).toBe(true)
-    expect(isGrantDataType("profile")).toBe(false)
-    expect(normalizeGrantDataType("profile")).toBe("suite")
+    expect(isGrantDataType("profile")).toBe(true)
+    // recommend is a capability derived from suite, never grantable itself.
+    expect(isGrantDataType("recommend")).toBe(false)
+    expect(normalizeGrantDataType("profile")).toBe("profile")
+    expect(normalizeGrantDataType("recommend")).toBe("suite")
   })
 
   test("normalizes backend grant fields", () => {

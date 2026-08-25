@@ -10,7 +10,7 @@ import type {
 } from "@/types"
 import { SEKAI_REGIONS } from "@/lib/sekai-region"
 
-const GRANT_DATA_TYPES = new Set<string>(["suite", "mysekai"])
+const GRANT_DATA_TYPES = new Set<string>(["suite", "mysekai", "profile"])
 const REGION_SET = new Set<string>(SEKAI_REGIONS)
 
 export function isGrantDataType(value: unknown): value is GameAccountGrantDataType {

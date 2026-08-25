@@ -487,7 +487,7 @@ export default {
       },
       "grants": {
         "title": "Game account data grants",
-        "description": "Temporarily grant another Toolbox user access to suite / mysekai data from a verified account.",
+        "description": "Temporarily grant another Toolbox user access to suite / mysekai / profile data from a verified account.",
         "receivedDescription": "View game account data granted to you by other Toolbox users.",
         "selectedAccount": "Selected account: {account}",
         "noSelectedAccount": "No account selected",
@@ -498,7 +498,8 @@ export default {
         "fallback": "—",
         "dataType": {
           "suite": "Suite",
-          "mysekai": "MySekai"
+          "mysekai": "MySekai",
+          "profile": "Profile"
         },
         "actions": {
           "refresh": "Refresh",
@@ -510,7 +511,8 @@ export default {
           "granteeUserIdPlaceholder": "For example 1234567890",
           "dataType": "Data type",
           "expiresAt": "Expires at",
-          "expiresAtHelp": "Must be a future time. Permanent grants are not available."
+          "expiresAtHelp": "Must be a future time. Permanent grants are not available.",
+          "profileHint": "Profile is live data: every view by the grantee sends a request to the game server through your account."
         },
         "table": {
           "owner": "Owner",
@@ -523,7 +525,7 @@ export default {
           "verifiedOnly": "Only verified bound accounts can create data grants",
           "granteeRequired": "Enter a grantee user ID",
           "selfGrant": "You cannot grant access to yourself",
-          "dataType": "Only suite and mysekai are supported",
+          "dataType": "Only suite, mysekai, and profile are supported",
           "futureExpiry": "Expiry must be a future time"
         },
         "toast": {
