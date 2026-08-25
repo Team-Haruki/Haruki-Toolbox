@@ -78,7 +78,7 @@ const {
 <template>
             <Dialog v-model:open="open">
               <DialogContent
-                class="flex h-[100dvh] w-full max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0 top-0 left-0 translate-x-0 translate-y-0 sm:h-auto sm:max-h-[85vh] sm:max-w-2xl sm:rounded-lg sm:border sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] lg:max-w-4xl xl:max-w-5xl"
+                class="flex h-[100dvh] w-full max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0 top-0 left-0 translate-x-0 translate-y-0 sm:h-auto sm:max-h-[85vh] sm:max-w-2xl sm:rounded-lg sm:border sm:p-0 sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] lg:max-w-4xl xl:max-w-5xl"
               >
                 <DialogHeader class="border-b px-4 py-3 pr-12 text-left">
                   <DialogTitle class="flex items-center gap-2 text-base">

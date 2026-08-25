@@ -132,7 +132,7 @@ function selectEntry(entry: SearchIndexEntry) {
 
 <template>
   <Dialog v-model:open="isOpen">
-    <DialogContent class="top-24 max-w-lg translate-y-0 gap-0 overflow-hidden p-0">
+    <DialogContent class="top-24 max-w-lg translate-y-0 gap-0 overflow-hidden p-0 sm:p-0">
       <DialogTitle class="sr-only">{{ t("globalSearch.title") }}</DialogTitle>
       <DialogDescription class="sr-only">{{ t("globalSearch.description") }}</DialogDescription>
       <!--

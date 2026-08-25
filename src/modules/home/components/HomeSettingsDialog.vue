@@ -182,7 +182,7 @@ function hasVisitedSettingsTab(tab: string) {
       </Button>
     </DialogTrigger>
     <DialogContent
-      class="flex h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:h-[min(85svh,44rem)] sm:w-full sm:max-w-4xl"
+      class="flex h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:h-[min(85svh,44rem)] sm:w-full sm:max-w-4xl sm:p-0"
     >
       <DialogTitle class="sr-only">{{ t("homeSettings.title") }}</DialogTitle>
       <DialogDescription class="sr-only">{{ t("homeSettings.description") }}</DialogDescription>
