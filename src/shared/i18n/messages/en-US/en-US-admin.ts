@@ -364,7 +364,7 @@ export default {
     "webhooks": {
       "title": "OAuth client webhooks",
       "description": "Manage data update notification endpoints for client {clientId}.",
-      "placeholderHint": "Callback URLs support {server}, {data_type}, and {user_id} placeholders.",
+      "placeholderHint": "Callback URLs support {'{server}'}, {'{data_type}'}, and {'{user_id}'} placeholders.",
       "actions": {
         "refresh": "Refresh",
         "create": "Create endpoint",
@@ -388,7 +388,7 @@ export default {
         "editTitle": "Edit webhook endpoint",
         "description": "Bearer values are not shown again; leave empty to keep the current value.",
         "callbackUrl": "Callback URL",
-        "callbackUrlPlaceholder": "https://example.com/oauth-webhook/{server}/{data_type}/{user_id}",
+        "callbackUrlPlaceholder": "https://example.com/oauth-webhook/{'{server}'}/{'{data_type}'}/{'{user_id}'}",
         "bearer": "Bearer token",
         "bearerPlaceholder": "Optional",
         "bearerReplacePlaceholder": "Leave empty to keep current bearer",

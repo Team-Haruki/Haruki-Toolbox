@@ -364,7 +364,7 @@ export default {
     "webhooks": {
       "title": "OAuth client Webhook",
       "description": "管理客户端 {clientId} 的数据更新通知 endpoint。",
-      "placeholderHint": "Callback URL 支持 {server}、{data_type}、{user_id} 占位符。",
+      "placeholderHint": "Callback URL 支持 {'{server}'}、{'{data_type}'}、{'{user_id}'} 占位符。",
       "actions": {
         "refresh": "刷新",
         "create": "创建 endpoint",
@@ -388,7 +388,7 @@ export default {
         "editTitle": "编辑 Webhook endpoint",
         "description": "Bearer 不会回显；留空表示不设置或保持当前值。",
         "callbackUrl": "Callback URL",
-        "callbackUrlPlaceholder": "https://example.com/oauth-webhook/{server}/{data_type}/{user_id}",
+        "callbackUrlPlaceholder": "https://example.com/oauth-webhook/{'{server}'}/{'{data_type}'}/{'{user_id}'}",
         "bearer": "Bearer token",
         "bearerPlaceholder": "可选",
         "bearerReplacePlaceholder": "留空保持当前 bearer",
