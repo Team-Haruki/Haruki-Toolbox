@@ -12,23 +12,24 @@ Haruki Toolbox is a frontend-only project built with:
 - Vue Router
 - Vue I18n
 - Tailwind CSS 4
+- vite-plugin-pwa (Service Worker: precache + runtime image caches)
 - Playwright for E2E smoke tests
 
 This repository is the web UI for the Haruki ecosystem. It integrates with Ory Kratos/Hydra/Oathkeeper, but it is not the backend repository.
-
-Important: some files under `docs/` describe backend or deployment topology. Use them to understand API and auth behavior, but do not treat backend directory names in those docs as frontend source layout rules.
 
 ## Source Map
 
 - `src/main.ts`: app bootstrap, Pinia setup, auth/session bootstrap, i18n initialization
 - `src/App.vue`: top-level app shell and user settings sync retry flow
+- `src/pwa.ts`: Service Worker registration, update prompt, build-info polling, old-cache cleanup
 - `src/core/`: app-wide router and HTTP infrastructure
-- `src/shared/`: shared stores, i18n, shared components
+- `src/shared/`: shared stores, i18n, shared components, and the Sekai game-data layer (`src/shared/sekai/`: master-data loading/caching via a web worker, catalog helpers, asset endpoint/URL resolution, Service-Worker image cache recovery)
 - `src/components/ui/`: reusable UI primitives
+- `src/composables/`, `src/lib/`, `src/config/`: cross-feature composables, pure helpers, and app config
 - `src/modules/<feature>/`: feature-local `api`, `components`, `composables`, `lib`, `views`, and `routes`
 - `src/types/`: shared API and domain typings
+- `scripts/`: repo tooling (`check-imports.mjs` import guard, `sync-i18n-zh-tw.mjs` zh-TW locale fill)
 - `tests/e2e/`: Playwright browser tests
-- `docs/`: API, auth, and integration references
 
 ## Architecture Conventions
 
@@ -39,6 +40,16 @@ Important: some files under `docs/` describe backend or deployment topology. Use
 - Reuse `src/components/ui/*` and shared components before introducing new UI primitives.
 - Use `@/` imports instead of deep relative paths.
 - Match the formatting/style of the file you are editing instead of reformatting unrelated code.
+
+## Import Guard
+
+`scripts/check-imports.mjs` runs before `vue-tsc` in `bun run build` and `bun run typecheck`; violations fail both. It bans legacy paths (`@/components/pages/*`, `@/api/*`, `@/store`, `@/settingsStore`, `@/router`, `@/lib/ticket-display`, old `WebLayout.vue`/`Turnstile.vue` locations) in favor of the module/shared/core layout, and enforces barrel rules:
+
+- A module's internals must not import its own `index.ts` barrel (`@/modules/<self>` or relative equivalents) — import the concrete subpath (`./api/user`, `./composables/list`).
+- A module's non-`api/` internals must not import their own `api` barrel (`@/modules/<self>/api`) — import concrete files like `./api/user`.
+- Consumers in other modules may import the public `@/modules/<feature>` or `@/modules/<feature>/api` barrels.
+
+See `CLAUDE.md` for the full banned-token table with replacements.
 
 ## HTTP, Auth, and Session Rules
 
@@ -77,9 +88,9 @@ Important: some files under `docs/` describe backend or deployment topology. Use
 
 ## Internationalization
 
-- All user-facing text must be added to both:
-  - `src/shared/i18n/messages/en-US.ts`
-  - `src/shared/i18n/messages/zh-CN.ts`
+- Three locales: `zh-CN` (default), `zh-TW`, `en-US`. Messages are split into lazy per-feature bundles (`core`, `deck`, `rank`, `tools`, `user-settings`, `admin`, `tickets`, `public-pages`); files live at `src/shared/i18n/messages/<locale>/<locale>-<bundle>.ts`.
+- All user-facing text must exist in all three locales, in the same bundle file. Write zh-CN and en-US by hand; fill zh-TW with `bun scripts/sync-i18n-zh-tw.mjs` (OpenCC, only fills missing keys).
+- `core` loads at boot; other bundles load per route prefix via `src/shared/i18n/bundles.ts`. A new top-level route prefix needs a mapping there, or its non-core strings won't load.
 - Do not leave new UI strings hardcoded in components unless there is a very strong project-specific reason.
 - Keep translation key structure aligned with the owning module.
 
@@ -88,23 +99,26 @@ Important: some files under `docs/` describe backend or deployment topology. Use
 Run the smallest relevant set, and prefer the full set for broad changes:
 
 - `bun run lint`
-- `bun run typecheck`
+- `bun run typecheck` (includes the import guard)
 - `bun run test`
 - `bun run e2e`
+- `bun run quality` — lint + typecheck + test in one command
 
 Guidelines:
 
 - Add or update `*.test.ts` files when changing pure helpers, normalizers, or domain mapping logic.
 - Consider Playwright coverage when changing routing, auth redirects, bootstrap behavior, or page-level flows.
 - `bun run build` is a good final confidence check for larger UI or type-heavy changes.
+- The Playwright webServer runs Vite under node on purpose (`bunx vite --mode e2e ...`, no `--bun`): vite under the bun runtime hangs before listening on linux-x64 CI runners. Do not reintroduce `--bun` there.
 
 ## Common Pitfalls
 
 - Do not hardcode auth or API origins when helpers/stores already resolve them.
 - Do not clear cached user data in partial-session bootstrap paths unless logout is explicit or the session is confirmed invalid.
 - Do not add new business logic directly to route views if it belongs in a composable or `lib/` helper.
-- Do not update only one locale file.
+- Do not update only some of the three locale bundles (zh-CN, zh-TW, en-US).
 - Do not bypass `request()` response handling unless you are working inside the auth/browser-flow integration layer.
+- Do not hand-roll `<img>` error handling for Sekai/CDN images: the Service Worker caches them CacheFirst with opaque responses (errors included), so recovery must go through `@/shared/sekai/image-recovery` (purge + cache-busted retry).
 - Do not commit generated artifacts like `dist/` or ephemeral Playwright output.
 
 ## Recommended Change Checklist
@@ -112,7 +126,7 @@ Guidelines:
 Before finishing a non-trivial change, verify:
 
 1. The change lives in the correct module or shared layer.
-2. New strings exist in both locales.
+2. New strings exist in all three locales (zh-TW via the sync script is fine).
 3. API calls use the shared request/auth patterns.
 4. Session/bootstrap behavior still preserves valid user context.
 5. Relevant lint, typecheck, and test commands pass.
@@ -127,9 +141,7 @@ All commits must follow `[Type] Short description`:
 - Do not end the subject line with a period.
 - Keep it short.
 - When an agent authors the commit, append a `Co-Authored-By:` trailer identifying the agent (blank line between subject and trailer).
-- Before creating any commit, ask the user whether this commit should publish a new version.
-- If the user wants a new version, bump `version` in `package.json` according to the user's requested release level. Versions must use `major.minor.patch` format.
-- If the user does not want a new version, create the commit without changing `version`.
+- Version bumps (`version` in `package.json`, `major.minor.patch`): **patch** for `[Fix]`, **minor** for `[Feat]`, **major** for breaking changes. `[Chore]`/`[Docs]` commits normally do not bump. When several commits ship together, one bump for the batch is enough.
 
 Examples (from this repo's history):
 

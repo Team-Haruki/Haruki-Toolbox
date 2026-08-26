@@ -12,6 +12,7 @@
 - Use `@/` path aliases for imports.
 - Keep route views thin; move reusable logic into `composables/` or `lib/`.
 - Reuse existing UI primitives from `src/components/ui/` and shared components before adding new ones.
+- Do not import a module's own `index.ts` or `api` barrel from inside that module — import concrete files; `scripts/check-imports.mjs` enforces this in build/typecheck.
 - Match the style and formatting of the surrounding file instead of reformatting unrelated code.
 
 ## API and Auth Rules
@@ -37,9 +38,9 @@
 
 ## Internationalization
 
-- Put all user-facing strings in both:
-  - `src/shared/i18n/messages/en-US.ts`
-  - `src/shared/i18n/messages/zh-CN.ts`
+- Three locales: `zh-CN` (default), `zh-TW`, `en-US`, split into per-feature bundle files at `src/shared/i18n/messages/<locale>/<locale>-<bundle>.ts`.
+- Put all user-facing strings in all three locales, in the same bundle file. zh-TW can be auto-filled from zh-CN with `bun scripts/sync-i18n-zh-tw.mjs`.
+- Non-`core` bundles load lazily per route prefix (`src/shared/i18n/bundles.ts`); a new top-level route prefix needs a mapping there.
 - Do not leave new UI copy hardcoded in components unless unavoidable.
 
 ## Testing Expectations
@@ -65,7 +66,7 @@ All commits must follow `[Type] Short description`:
 - Do not end the subject line with a period.
 - Keep it short.
 - When an agent (Copilot, Claude Code, etc.) authors the commit, append a `Co-Authored-By:` trailer identifying the agent (blank line between subject and trailer).
-- Bump `version` in `package.json` with every commit: **patch** (+0.0.1) for `[Fix]`, **minor** (+0.1.0) for `[Feat]`, **major** (+1.0.0) for breaking changes.
+- Bump `version` in `package.json`: **patch** (+0.0.1) for `[Fix]`, **minor** (+0.1.0) for `[Feat]`, **major** (+1.0.0) for breaking changes. `[Chore]`/`[Docs]` commits normally do not bump. One bump per batch when several commits ship together.
 
 Examples (from this repo's history):
 

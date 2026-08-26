@@ -11,14 +11,16 @@ Bun (≥ 1.2) is the required runtime and package manager. Vite is invoked via `
 - `bun i` — install dependencies
 - `bun run dev` — Vite dev server
 - `bun run build` — runs `check:imports` → `vue-tsc --noEmit` → `vite build`
-- `bun run preview` — typecheck + preview built app
+- `bun run build:edgeone` — `check:imports` + `vite build` without typecheck (EdgeOne Pages deploy)
+- `bun run preview` — `vue-tsc --noEmit` + preview built app
 - `bun run lint` — ESLint with `--max-warnings=0` over `src/**/*.{ts,vue}`, `scripts/**/*.mjs`, `vite.config.ts`
 - `bun run typecheck` — `check:imports` + `vue-tsc --noEmit`
 - `bun run check:imports` — runs `scripts/check-imports.mjs` (see "Import Guard" below)
 - `bun run test` — `bun test` (unit tests, `*.test.ts`)
-- `bun run e2e` — Playwright tests in `tests/e2e/**/*.e2e.ts`; Playwright auto-starts `bun run dev --host 127.0.0.1 --port 4173`
+- `bun run e2e` — Playwright tests in `tests/e2e/**/*.e2e.ts`; Playwright auto-starts `bunx vite --mode e2e --host 127.0.0.1 --port 4173 --strictPort`. The webServer command deliberately runs Vite under node (plain `bunx`, not `bunx --bun`): vite under the bun runtime hangs before listening on linux-x64 CI runners. Do not reintroduce `--bun` there.
 - `bun run e2e:install` — one-time `playwright install chromium`
 - `bun run quality` — lint + typecheck + test (use as a broad pre-commit check)
+- `bun scripts/sync-i18n-zh-tw.mjs` — auto-fill zh-TW locale bundles from zh-CN via OpenCC (see "I18n")
 
 Run a single unit test: `bun test path/to/file.test.ts` (or pass a pattern: `bun test -t "name"`).
 Run a single Playwright test: `bunx playwright test tests/e2e/foo.e2e.ts` (add `--headed` / `--debug` as needed).
@@ -35,13 +37,16 @@ Three-layer source layout:
 - `src/shared/` — cross-feature state and UI:
   - `shared/stores/user.ts` — `useUserStore()`, the source of truth for session/profile. `settingsSyncState` gates post-login hydration in `App.vue`.
   - `shared/stores/settings.ts` — `useSettingsStore()` owns endpoint selection, theme, locale (persisted via `pinia-plugin-persistedstate`; do not add duplicate persistence).
-  - `shared/i18n/messages/{en-US,zh-CN}.ts` — both locales must be updated for every new user-facing string.
+  - `shared/i18n/` — three locales (`zh-CN` default, `zh-TW`, `en-US`) split into lazy per-feature bundles; see "I18n".
+  - `shared/sekai/` — Sekai game-data layer: master-data loading/caching (web worker), catalog/search helpers, asset endpoint and URL resolution (`data-sources.ts`), Service-Worker image cache recovery (`image-recovery.ts`).
   - `shared/components/` — cross-feature components (e.g. `Turnstile.vue`).
-- `src/modules/<feature>/` — each feature owns its `api/`, `components/`, `composables/`, `lib/`, `views/`, and `routes.ts`. Routes are collected via `src/modules/web/routes`. Feature-level `index.ts` is the public barrel; internals must not import it (see Import Guard). `src/components/ui/` hosts reusable UI primitives (shadcn-style) — reuse before adding new ones.
+- `src/modules/<feature>/` — each feature owns its `api/`, `components/`, `composables/`, `lib/`, `views/`, and `routes.ts`. Routes are collected via `src/modules/web/routes`. Feature-level `index.ts` is the public barrel; internals must not import it (see Import Guard). `src/components/ui/` hosts reusable UI primitives (shadcn-style) — reuse before adding new ones. Top-level `src/lib/`, `src/composables/`, and `src/config/` hold cross-feature pure helpers, composables, and app config.
 
 Bootstrap is a sensitive cluster: `src/main.ts` + `src/App.vue` + `src/shared/stores/user.ts`. Kratos browser flows only return partial session data; the toolbox user profile is synced separately. When hydrating from a fallback Kratos session, preserve cached user context unless the session is definitely gone — clearing it breaks post-login sync paths that depend on `userId`.
 
-Vite build uses manual vendor chunks: `vendor-vue`, `vendor-ui`, `vendor-chart`, `vendor-monaco` (see `vite.config.ts`). `envPrefix` allows both `VITE_` and `ENABLE_` env vars.
+Vite build uses manual vendor chunks (rolldown `advancedChunks`): `vendor-vue`, `vendor-ui`, `vendor-chart`, `vendor-monaco` (see `vite.config.ts`). `envPrefix` allows both `VITE_` and `ENABLE_` env vars.
+
+The app is a PWA (`vite-plugin-pwa`, `registerType: 'prompt'`): workbox precaches the build (heavy wasm/3D/locale chunks excluded) and runtime-caches Sekai/toolbox images CacheFirst (`sekai-image-assets-v2`). Those `<img>` loads are cross-origin no-cors, so cached responses are opaque and can pin CDN errors — image error handlers must go through `@/shared/sekai/image-recovery` (purge + one cache-busted retry). `src/pwa.ts` owns SW registration, the update prompt, build-info polling, and old-cache cleanup.
 
 ## Import Guard (enforced in build/typecheck)
 
@@ -72,7 +77,12 @@ Always use `@/` aliases rather than deep relative paths.
 
 ## I18n
 
-Every new user-facing string must be added to both `src/shared/i18n/messages/en-US.ts` and `src/shared/i18n/messages/zh-CN.ts`. Keep key structure aligned with the owning module. Reuse existing keys before adding new ones.
+Three locales: `zh-CN` (default), `zh-TW`, `en-US`. Messages are split into lazy per-feature bundles (`core` always loads at boot; `deck`, `rank`, `tools`, `user-settings`, `admin`, `tickets`, `public-pages` load per route via `src/shared/i18n/bundles.ts`). Message files live at `src/shared/i18n/messages/<locale>/<locale>-<bundle>.ts`.
+
+- Every new user-facing string must exist in all three locales, in the same bundle file.
+- Write zh-CN and en-US by hand; zh-TW can then be auto-filled with `bun scripts/sync-i18n-zh-tw.mjs` (OpenCC s2twp; only fills keys missing in zh-TW, drops orphans, keeps key order aligned with zh-CN).
+- Put keys in the bundle that owns the consuming page; a new top-level route prefix needs a mapping in `bundles.ts` or its non-core strings won't load.
+- Reuse existing keys before adding new ones.
 
 ## Testing Expectations
 
@@ -91,9 +101,7 @@ All commits must follow `[Type] Short description`:
 - Do **not** end the subject line with a period.
 - Keep it short.
 - When Claude Code authors the commit, append a `Co-Authored-By` trailer naming the authoring model, e.g. `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` (blank line between subject and trailer).
-- Before creating any commit, ask the user whether this commit should publish a new version.
-- If the user wants a new version, bump `version` in `package.json` according to the user's requested release level. Versions must use `major.minor.patch` format.
-- If the user does not want a new version, create the commit without changing `version`.
+- Version bumps (`version` in `package.json`, `major.minor.patch`): **patch** for `[Fix]`, **minor** for `[Feat]`, **major** for breaking changes. `[Chore]`/`[Docs]` commits normally do not bump. When several commits ship together, one bump for the batch is enough.
 
 Examples (from this repo's history):
 - `[Feat] Add hydra oauth2 flow`
