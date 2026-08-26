@@ -228,6 +228,7 @@ export default {
   },
   "legal": {
     "common": {
+      "eyebrow": "法律条款",
       "toc": "目录"
     },
     "privacy": {

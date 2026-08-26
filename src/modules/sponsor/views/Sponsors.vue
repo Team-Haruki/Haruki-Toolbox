@@ -224,58 +224,51 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
     <div class="mx-auto flex w-full max-w-5xl flex-col gap-8">
       <!-- Hero -->
       <section
-        class="relative overflow-hidden rounded-2xl border border-pink-500/20 bg-card motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500"
+        class="flex flex-col gap-4 border-b pb-8 pt-2 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 md:pt-4"
       >
-        <div
-          class="absolute inset-0 bg-[radial-gradient(48rem_20rem_at_10%_-30%,rgba(236,72,153,0.16),transparent_70%),radial-gradient(40rem_16rem_at_105%_120%,rgba(34,211,238,0.10),transparent_70%)]"
-          aria-hidden="true"
-        />
-        <div class="relative space-y-6 px-6 py-8 md:px-10 md:py-10">
-          <div class="space-y-4">
-            <div class="inline-flex items-center gap-2 rounded-full border border-pink-500/25 bg-pink-500/10 px-3 py-1 text-xs font-semibold text-pink-600 dark:text-pink-300">
-              <Sparkles class="h-3.5 w-3.5" />
-              {{ t("sponsor.hero.badge") }}
-            </div>
-            <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">
-              {{ t("sponsor.hero.title") }}
-            </h1>
-            <p class="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              {{ t("sponsor.hero.description") }}
-            </p>
+        <p class="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-pink-600 dark:text-pink-300">
+          <span class="h-px w-8 bg-current opacity-60" aria-hidden="true" />
+          <Sparkles class="h-3.5 w-3.5" />
+          {{ t("sponsor.hero.badge") }}
+        </p>
+        <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">
+          {{ t("sponsor.hero.title") }}
+        </h1>
+        <p class="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+          {{ t("sponsor.hero.description") }}
+        </p>
+
+        <div class="mt-1 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div class="flex flex-wrap gap-3">
+            <Button
+              as-child
+              class="h-11 bg-pink-600 px-5 font-semibold text-white transition-colors hover:bg-pink-700"
+            >
+              <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
+                <Heart class="h-4 w-4 fill-current" />
+                {{ t("sponsor.hero.cta") }}
+                <ExternalLink class="h-4 w-4" />
+              </a>
+            </Button>
+            <Button variant="outline" as-child class="h-11 px-5 font-semibold">
+              <router-link to="/about">
+                <Info class="h-4 w-4" />
+                {{ t("sponsor.hero.aboutCta") }}
+              </router-link>
+            </Button>
           </div>
 
-          <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-            <div class="flex flex-wrap gap-3">
-              <Button
-                as-child
-                class="h-11 bg-pink-600 px-5 font-semibold text-white transition-colors hover:bg-pink-700"
-              >
-                <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
-                  <Heart class="h-4 w-4 fill-current" />
-                  {{ t("sponsor.hero.cta") }}
-                  <ExternalLink class="h-4 w-4" />
-                </a>
-              </Button>
-              <Button variant="outline" as-child class="h-11 px-5 font-semibold">
-                <router-link to="/about">
-                  <Info class="h-4 w-4" />
-                  {{ t("sponsor.hero.aboutCta") }}
-                </router-link>
-              </Button>
+          <!-- Numeric strip -->
+          <dl class="flex items-stretch gap-6 sm:gap-8">
+            <div
+              v-for="(card, index) in heroStats"
+              :key="card.key"
+              :class="['min-w-0', index > 0 ? 'border-l pl-6 sm:pl-8' : '']"
+            >
+              <dt class="text-xs font-medium text-muted-foreground">{{ card.label }}</dt>
+              <dd class="mt-0.5 text-2xl font-extrabold tracking-tight tabular-nums">{{ card.value }}</dd>
             </div>
-
-            <!-- Numeric strip -->
-            <dl class="flex items-stretch gap-6 sm:gap-8">
-              <div
-                v-for="(card, index) in heroStats"
-                :key="card.key"
-                :class="['min-w-0', index > 0 ? 'border-l pl-6 sm:pl-8' : '']"
-              >
-                <dt class="text-xs font-medium text-muted-foreground">{{ card.label }}</dt>
-                <dd class="mt-0.5 text-2xl font-extrabold tracking-tight tabular-nums">{{ card.value }}</dd>
-              </div>
-            </dl>
-          </div>
+          </dl>
         </div>
       </section>
 

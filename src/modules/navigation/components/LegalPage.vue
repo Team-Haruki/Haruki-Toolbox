@@ -55,47 +55,35 @@ const renderedSections = computed<RenderedSection[]>(() =>
 <template>
   <div class="w-full flex-1 px-4 py-6 max-w-5xl mx-auto flex flex-col gap-8">
     <!-- Header -->
-    <header class="relative overflow-hidden rounded-2xl border bg-card px-6 py-8 md:px-10">
-      <div
-        class="absolute inset-0 bg-[radial-gradient(56rem_18rem_at_12%_-20%,color-mix(in_oklab,var(--primary)12%,transparent),transparent_70%)]"
-        aria-hidden="true"
-      />
-      <div class="relative space-y-4">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
-          <span
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
-          >
-            <component :is="icon" class="h-6 w-6" />
-          </span>
-          <h1 class="text-3xl font-extrabold tracking-tight md:text-4xl">
-            {{ t(`${ns}.title`) }}
-          </h1>
-          <span
-            class="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground"
-          >
-            <CalendarClock class="h-3.5 w-3.5" />
-            {{ t(`${ns}.lastUpdated`) }}
-          </span>
-        </div>
-
-        <p class="max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
-          {{ t(`${ns}.intro`) }}
-        </p>
-
-        <div
-          class="flex max-w-3xl items-start gap-3 rounded-xl border border-primary/20 bg-primary/[0.04] px-4 py-3 text-sm"
-        >
-          <Mail class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <p class="leading-relaxed text-muted-foreground">
+    <header class="flex flex-col gap-3 border-b pb-8 pt-2 md:pt-4">
+      <p class="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+        <span class="h-px w-8 bg-current opacity-60" aria-hidden="true" />
+        <component :is="icon" class="h-3.5 w-3.5" />
+        {{ t("legal.common.eyebrow") }}
+      </p>
+      <h1 class="text-3xl font-extrabold tracking-tight md:text-4xl">
+        {{ t(`${ns}.title`) }}
+      </h1>
+      <p class="max-w-3xl text-sm leading-relaxed text-muted-foreground md:text-base">
+        {{ t(`${ns}.intro`) }}
+      </p>
+      <div class="mt-1 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
+        <span class="inline-flex items-center gap-1.5">
+          <CalendarClock class="h-3.5 w-3.5" />
+          {{ t(`${ns}.lastUpdated`) }}
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <Mail class="h-3.5 w-3.5" />
+          <span>
             {{ t(`${ns}.contactLead`) }}
             <a
               :href="contactHref"
-              class="font-semibold text-primary underline-offset-4 hover:underline"
+              class="font-medium text-primary underline-offset-4 hover:underline"
             >
               {{ contactEmail }}
             </a>
-          </p>
-        </div>
+          </span>
+        </span>
       </div>
     </header>
 

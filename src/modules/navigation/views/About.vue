@@ -103,52 +103,46 @@ function languageDotClass(project: Project): string {
 <template>
   <div class="w-full flex-1 px-4 py-6 max-w-5xl mx-auto flex flex-col gap-10">
     <!-- Hero -->
-    <section class="relative overflow-hidden rounded-2xl border bg-card px-6 py-8 md:px-10 md:py-10">
-      <div
-        class="absolute inset-0 bg-[radial-gradient(56rem_18rem_at_12%_-20%,color-mix(in_oklab,var(--primary)14%,transparent),transparent_70%)]"
-        aria-hidden="true"
-      />
-      <div class="relative space-y-5">
-        <div class="flex items-center gap-4">
-          <Avatar class="h-14 w-14 shrink-0 ring-2 ring-primary/25">
-            <AvatarImage :src="HARUKI_LOGO" alt="Project Haruki" />
-            <AvatarFallback class="text-base font-bold text-primary">PH</AvatarFallback>
-          </Avatar>
-          <div class="min-w-0">
-            <h1 class="text-3xl font-extrabold tracking-tight md:text-4xl">
-              {{ t("navigationPages.about.title") }}
-            </h1>
-            <p class="mt-1 text-sm font-semibold text-primary md:text-base">
-              {{ t("navigationPages.about.subtitle") }}
-            </p>
-          </div>
-        </div>
+    <section class="flex flex-col gap-4 border-b pb-8 pt-2 md:pt-4">
+      <p class="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+        <span class="h-px w-8 bg-current opacity-60" aria-hidden="true" />
+        {{ t("navigationPages.about.subtitle") }}
+      </p>
 
-        <div class="max-w-3xl space-y-2.5 text-sm leading-relaxed text-muted-foreground md:text-base">
-          <p>{{ t("navigationPages.about.projectIntro.p1Before") }}<span class="font-semibold text-foreground">{{ t("navigationPages.about.projectIntro.p1Name") }}</span>{{ t("navigationPages.about.projectIntro.p1After") }}</p>
-          <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
-          <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
-        </div>
+      <div class="flex items-center gap-3.5">
+        <Avatar class="h-12 w-12 shrink-0">
+          <AvatarImage :src="HARUKI_LOGO" alt="Project Haruki" />
+          <AvatarFallback class="text-base font-bold text-primary">PH</AvatarFallback>
+        </Avatar>
+        <h1 class="text-3xl font-extrabold tracking-tight md:text-4xl">
+          {{ t("navigationPages.about.title") }}
+        </h1>
+      </div>
 
-        <div class="flex flex-wrap gap-3 pt-1">
-          <Button as-child class="h-10 px-5 font-semibold">
-            <a :href="GITHUB_ORG_URL" target="_blank" rel="noopener noreferrer">
-              <Github class="h-4 w-4" />
-              Team-Haruki
-              <ExternalLink class="h-3.5 w-3.5" />
-            </a>
-          </Button>
-          <Button
-            as-child
-            variant="outline"
-            class="h-10 px-5 font-semibold border-pink-500/30 text-pink-600 hover:bg-pink-500/10 hover:text-pink-600 dark:text-pink-300 dark:hover:text-pink-300"
-          >
-            <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
-              <Heart class="h-4 w-4 fill-current" />
-              {{ t("navigationPages.about.support.afdianBtn") }}
-            </a>
-          </Button>
-        </div>
+      <div class="max-w-3xl space-y-2.5 text-sm leading-relaxed text-muted-foreground md:text-base">
+        <p>{{ t("navigationPages.about.projectIntro.p1Before") }}<span class="font-semibold text-foreground">{{ t("navigationPages.about.projectIntro.p1Name") }}</span>{{ t("navigationPages.about.projectIntro.p1After") }}</p>
+        <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
+        <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
+      </div>
+
+      <div class="mt-1 flex flex-wrap gap-3">
+        <Button as-child class="h-10 px-5 font-semibold">
+          <a :href="GITHUB_ORG_URL" target="_blank" rel="noopener noreferrer">
+            <Github class="h-4 w-4" />
+            Team-Haruki
+            <ExternalLink class="h-3.5 w-3.5" />
+          </a>
+        </Button>
+        <Button
+          as-child
+          variant="outline"
+          class="h-10 px-5 font-semibold border-pink-500/30 text-pink-600 hover:bg-pink-500/10 hover:text-pink-600 dark:text-pink-300 dark:hover:text-pink-300"
+        >
+          <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
+            <Heart class="h-4 w-4 fill-current" />
+            {{ t("navigationPages.about.support.afdianBtn") }}
+          </a>
+        </Button>
       </div>
     </section>
 
