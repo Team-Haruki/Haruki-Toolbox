@@ -306,14 +306,22 @@ export default {
       "postLogoutRedirectUrisHelp": "OIDC RP-Initiated Logout 後允許跳回的地址，精確匹配。僅登入類客戶端需要，可留空。",
       "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out"
     },
+    "list": {
+      "searchPlaceholder": "搜尋名稱或 Client ID",
+      "allStatuses": "全部狀態",
+      "count": "共 {count} 個客戶端",
+      "refresh": "重新整理列表",
+      "noMatch": "沒有符合篩選條件的客戶端",
+      "resetFilters": "清除篩選",
+      "copyClientId": "複製 Client ID",
+      "redirectUriCount": "{count} 個回撥URI",
+      "createdAt": "建立於 {date}",
+      "noScopes": "未配置 Scope",
+      "typePublic": "Public",
+      "typeConfidential": "Confidential"
+    },
     "table": {
-      "clientId": "Client ID",
-      "name": "名稱",
-      "redirectUris": "回撥URI",
-      "status": "狀態",
-      "createdAt": "建立時間",
       "actions": "操作",
-      "publicTag": "Public",
       "openMenu": "開啟選單",
       "empty": "暫無OAuth客戶端",
       "menu": {
@@ -350,6 +358,7 @@ export default {
     },
     "statsDialog": {
       "title": "客戶端統計",
+      "filters": "篩選範圍",
       "from": "開始時間",
       "to": "結束時間",
       "bucket": "時間粒度",

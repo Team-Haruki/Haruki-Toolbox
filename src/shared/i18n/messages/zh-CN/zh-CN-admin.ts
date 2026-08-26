@@ -306,14 +306,22 @@ export default {
       "postLogoutRedirectUrisHelp": "OIDC RP-Initiated Logout 后允许跳回的地址，精确匹配。仅登录类客户端需要，可留空。",
       "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out"
     },
+    "list": {
+      "searchPlaceholder": "搜索名称或 Client ID",
+      "allStatuses": "全部状态",
+      "count": "共 {count} 个客户端",
+      "refresh": "刷新列表",
+      "noMatch": "没有符合筛选条件的客户端",
+      "resetFilters": "清除筛选",
+      "copyClientId": "复制 Client ID",
+      "redirectUriCount": "{count} 个回调URI",
+      "createdAt": "创建于 {date}",
+      "noScopes": "未配置 Scope",
+      "typePublic": "Public",
+      "typeConfidential": "Confidential"
+    },
     "table": {
-      "clientId": "Client ID",
-      "name": "名称",
-      "redirectUris": "回调URI",
-      "status": "状态",
-      "createdAt": "创建时间",
       "actions": "操作",
-      "publicTag": "Public",
       "openMenu": "打开菜单",
       "empty": "暂无OAuth客户端",
       "menu": {
@@ -350,6 +358,7 @@ export default {
     },
     "statsDialog": {
       "title": "客户端统计",
+      "filters": "筛选范围",
       "from": "开始时间",
       "to": "结束时间",
       "bucket": "时间粒度",

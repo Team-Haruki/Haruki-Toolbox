@@ -306,14 +306,22 @@ export default {
       "postLogoutRedirectUrisHelp": "Exact-match return targets after OIDC RP-initiated logout. Only needed for sign-in clients; may be left empty.",
       "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out"
     },
+    "list": {
+      "searchPlaceholder": "Search name or client ID",
+      "allStatuses": "All statuses",
+      "count": "{count} client | {count} clients",
+      "refresh": "Refresh list",
+      "noMatch": "No clients match the current filters",
+      "resetFilters": "Clear filters",
+      "copyClientId": "Copy client ID",
+      "redirectUriCount": "{count} redirect URI | {count} redirect URIs",
+      "createdAt": "Created {date}",
+      "noScopes": "No scopes configured",
+      "typePublic": "Public",
+      "typeConfidential": "Confidential"
+    },
     "table": {
-      "clientId": "Client ID",
-      "name": "Name",
-      "redirectUris": "Redirect URIs",
-      "status": "Status",
-      "createdAt": "Created at",
       "actions": "Actions",
-      "publicTag": "Public",
       "openMenu": "Open menu",
       "empty": "No OAuth clients",
       "menu": {
@@ -350,6 +358,7 @@ export default {
     },
     "statsDialog": {
       "title": "Client statistics",
+      "filters": "Filter range",
       "from": "Start time",
       "to": "End time",
       "bucket": "Bucket",

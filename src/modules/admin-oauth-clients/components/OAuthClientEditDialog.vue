@@ -64,7 +64,6 @@ const emit = defineEmits<{
           :redirect-uris="props.redirectUris"
           :post-logout-redirect-uris="props.postLogoutRedirectUris"
           :available-scopes="props.availableScopes"
-          scope-id-prefix="edit-scope"
           @update:name="value => emit('update:name', value)"
           @update:client-type="value => emit('update:client-type', value)"
           @toggle-scope="(scopeId, checked) => emit('toggle-scope', scopeId, checked)"

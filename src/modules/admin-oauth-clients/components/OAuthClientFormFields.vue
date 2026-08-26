@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -31,7 +30,6 @@ interface Props {
   redirectUris: string[]
   postLogoutRedirectUris: string[]
   availableScopes: ScopeOption[]
-  scopeIdPrefix: string
 }
 
 const props = defineProps<Props>()
@@ -84,20 +82,22 @@ function handleClientTypeChange(value: unknown) {
 
   <div class="flex flex-col gap-2">
     <Label>{{ t("adminOAuthClients.form.scopesLabel") }}</Label>
-    <div class="flex flex-col gap-2 border rounded-md p-3 max-h-40 overflow-y-auto">
-      <div v-for="scope in props.availableScopes" :key="scope.id" class="flex items-center space-x-2">
-        <Checkbox
-          :id="`${props.scopeIdPrefix}-${scope.id}`"
-          :model-value="props.scopes.includes(scope.id)"
-          @update:model-value="checked => emit('toggle-scope', scope.id, checked === true)"
-        />
-        <label
-          :for="`${props.scopeIdPrefix}-${scope.id}`"
-          class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-        >
-          {{ scope.label }}
-        </label>
-      </div>
+    <div class="flex flex-wrap gap-1.5">
+      <button
+        v-for="scope in props.availableScopes"
+        :key="scope.id"
+        type="button"
+        :aria-pressed="props.scopes.includes(scope.id)"
+        :class="[
+          'rounded-full border px-2.5 py-1 text-xs transition-colors',
+          props.scopes.includes(scope.id)
+            ? 'border-primary/40 bg-primary/10 font-medium text-primary'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+        ]"
+        @click="emit('toggle-scope', scope.id, !props.scopes.includes(scope.id))"
+      >
+        {{ scope.label }}
+      </button>
     </div>
   </div>
 

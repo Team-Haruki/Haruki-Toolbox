@@ -5,5 +5,5 @@ export { default as OAuthClientDeleteDialog } from "./OAuthClientDeleteDialog.vu
 export { default as OAuthClientEditDialog } from "./OAuthClientEditDialog.vue"
 export { default as OAuthClientSecretDialog } from "./OAuthClientSecretDialog.vue"
 export { default as OAuthClientStatsDialog } from "./OAuthClientStatsDialog.vue"
-export { default as OAuthClientTable } from "./OAuthClientTable.vue"
+export { default as OAuthClientList } from "./OAuthClientList.vue"
 export { default as OAuthClientWebhooksDialog } from "./OAuthClientWebhooksDialog.vue"

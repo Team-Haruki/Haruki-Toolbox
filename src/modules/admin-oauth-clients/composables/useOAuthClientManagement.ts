@@ -234,5 +234,6 @@ export function useOAuthClientManagement() {
     confirmDeleteWebhook,
     deleteWebhook,
     copySecret,
+    loadClients,
   }
 }
