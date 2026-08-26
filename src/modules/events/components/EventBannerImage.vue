@@ -58,16 +58,23 @@ function handleError() {
 </script>
 
 <template>
+  <!--
+    Absolute fill instead of h-full: inside a <td>, WebKit fails to resolve
+    a child's percentage height against a parent sized by aspect-ratio, so
+    the img laid out at natural height and object-contain pushed the visible
+    pixels outside the clipped box (blank banners in Safari). Absolute
+    inset-0 sizes from the box edges directly. Wrappers must be `relative`.
+  -->
   <img
     decoding="async"
     v-if="currentUrl"
     :src="currentUrl"
     :alt="alt"
-    class="h-full w-full object-contain"
+    class="absolute inset-0 h-full w-full object-contain"
     loading="lazy"
     @error="handleError"
   >
-  <div v-else class="flex h-full w-full items-center justify-center text-muted-foreground">
+  <div v-else class="absolute inset-0 flex items-center justify-center text-muted-foreground">
     <LucideImageOff class="h-6 w-6" aria-hidden="true" />
   </div>
 </template>

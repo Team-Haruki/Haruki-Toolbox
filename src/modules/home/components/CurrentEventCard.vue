@@ -301,7 +301,7 @@ function selectEventGachas(event: SekaiEventItem, rawGachas: unknown): GachaEntr
           :to="`/events/${currentEvent.id}`"
           class="group flex items-center gap-3 rounded-lg lg:w-64 lg:shrink-0 lg:flex-col lg:items-start lg:justify-center"
         >
-          <div class="h-16 w-28 shrink-0 overflow-hidden rounded-md lg:h-24 lg:w-full">
+          <div class="relative h-16 w-28 shrink-0 overflow-hidden rounded-md lg:h-24 lg:w-full">
             <EventBannerImage
               :region="region"
               :assetbundle-name="currentEvent.assetbundleName"

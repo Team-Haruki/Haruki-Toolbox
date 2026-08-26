@@ -385,7 +385,7 @@ function formatRecordDate(value: number | null) {
                   <TableRow>
                     <TableCell>
                       <div class="flex min-w-0 items-center gap-3">
-                        <div class="aspect-[2/1] w-20 shrink-0 overflow-hidden rounded-md bg-muted">
+                        <div class="relative aspect-[2/1] w-20 shrink-0 overflow-hidden rounded-md bg-muted">
                           <EventBannerImage
                             :region="bannerRegion"
                             :assetbundle-name="row.event?.assetbundleName ?? null"

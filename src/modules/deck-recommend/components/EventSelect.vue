@@ -167,7 +167,7 @@ function formatEventDate(value: number | null) {
       @click="open = true"
     >
       <span v-if="selectedEvent" class="flex min-w-0 items-center gap-2">
-        <span class="h-9 w-[4.5rem] shrink-0 overflow-hidden rounded bg-muted">
+        <span class="relative h-9 w-[4.5rem] shrink-0 overflow-hidden rounded bg-muted">
           <EventBannerImage
             :region="props.region"
             :assetbundle-name="selectedEvent.assetbundleName"
