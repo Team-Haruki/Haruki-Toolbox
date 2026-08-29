@@ -359,8 +359,9 @@ function save() {
               <LucidePlay v-else class="mr-1 size-4" />
               {{ runnerPhaseText ?? t("eventPlanner.dialog.runDeck") }}
             </Button>
-            <label class="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+            <label for="planner-use-saved-config" class="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
               <Checkbox
+                id="planner-use-saved-config"
                 :model-value="useSavedConfig"
                 @update:model-value="useSavedConfig = $event === true"
               />
@@ -409,9 +410,13 @@ function save() {
                 v-model="searchQuery"
                 class="h-8 w-44 text-xs"
                 :placeholder="t('eventPlanner.dialog.searchPlaceholder')"
+                :aria-label="t('eventPlanner.dialog.searchPlaceholder')"
               />
-              <Select v-model="difficultyFilter">
-                <SelectTrigger class="h-8 w-28 text-xs">
+              <Label id="planner-ranking-difficulty-label" for="planner-ranking-difficulty" class="sr-only">
+                {{ t("eventPlanner.dialog.columns.difficulty") }}
+              </Label>
+              <Select id="planner-ranking-difficulty" v-model="difficultyFilter">
+                <SelectTrigger class="h-8 w-28 text-xs" aria-labelledby="planner-ranking-difficulty-label">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -481,11 +486,13 @@ function save() {
         <div v-if="selectedSong || editingBrush" class="flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
           <div class="grid items-start gap-3 sm:grid-cols-[1fr_auto]">
             <div class="grid gap-1.5">
-              <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.brushName") }}</Label>
-              <Input v-model="brushName" class="h-8" />
+              <Label for="planner-brush-name" class="text-xs text-muted-foreground">
+                {{ t("eventPlanner.dialog.brushName") }}
+              </Label>
+              <Input id="planner-brush-name" v-model="brushName" class="h-8" />
             </div>
             <div class="grid gap-1.5">
-              <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.dialog.brushColor") }}</Label>
+              <p class="text-xs font-medium text-muted-foreground">{{ t("eventPlanner.dialog.brushColor") }}</p>
               <div class="flex h-8 items-center gap-1.5">
                 <button
                   v-for="color in PLANNER_BRUSH_COLORS"

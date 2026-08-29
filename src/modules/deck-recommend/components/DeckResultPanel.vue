@@ -473,8 +473,9 @@ function formatPercentValue(value: number) {
                 </CollapsibleTrigger>
 
                 <div class="flex flex-wrap items-center gap-2 border-t bg-muted/10 px-2.5 py-1.5 sm:px-3">
-                  <label class="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+                  <label :for="`deck-compare-${deckView.index}`" class="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
                     <Checkbox
+                      :id="`deck-compare-${deckView.index}`"
                       :model-value="comparedDeckIndexes.includes(deckView.index)"
                       @update:model-value="checked => toggleDeckCompare(deckView.index, checked === true)"
                     />

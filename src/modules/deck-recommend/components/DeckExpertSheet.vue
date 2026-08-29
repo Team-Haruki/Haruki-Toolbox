@@ -105,9 +105,11 @@ const {
                           </div>
                           <div class="grid gap-3 @md:grid-cols-2">
                             <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.random.skillOrder") }}</Label>
-                              <Select :model-value="skillOrderStrategy" :disabled="running" @update:model-value="updateSkillOrderStrategy">
-                                <SelectTrigger class="w-full">
+                              <Label id="deck-skill-order-label" for="deck-skill-order">
+                                {{ t("deckRecommend.options.random.skillOrder") }}
+                              </Label>
+                              <Select id="deck-skill-order" :model-value="skillOrderStrategy" :disabled="running" @update:model-value="updateSkillOrderStrategy">
+                                <SelectTrigger class="w-full" aria-labelledby="deck-skill-order-label">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -118,9 +120,11 @@ const {
                               </Select>
                             </div>
                             <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.random.skillReference") }}</Label>
-                              <Select :model-value="skillReferenceStrategy" :disabled="running" @update:model-value="updateSkillReferenceStrategy">
-                                <SelectTrigger class="w-full">
+                              <Label id="deck-skill-reference-label" for="deck-skill-reference">
+                                {{ t("deckRecommend.options.random.skillReference") }}
+                              </Label>
+                              <Select id="deck-skill-reference" :model-value="skillReferenceStrategy" :disabled="running" @update:model-value="updateSkillReferenceStrategy">
+                                <SelectTrigger class="w-full" aria-labelledby="deck-skill-reference-label">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -148,14 +152,14 @@ const {
                               </p>
                             </div>
                           </div>
-                          <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
+                          <label for="deck-keep-training-state" class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
                             <span class="min-w-0 space-y-1">
                               <span class="block font-medium">{{ t("deckRecommend.options.random.keepAfterTrainingState") }}</span>
                               <span class="block text-xs leading-5 text-muted-foreground">
                                 {{ t("deckRecommend.options.random.keepAfterTrainingStateDescription") }}
                               </span>
                             </span>
-                            <Switch v-model="keepAfterTrainingState" :disabled="running" />
+                            <Switch id="deck-keep-training-state" v-model="keepAfterTrainingState" :disabled="running" />
                           </label>
                         </div>
 
@@ -166,23 +170,23 @@ const {
                               {{ t("deckRecommend.options.random.supportGroupDescription") }}
                             </p>
                           </div>
-                          <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
+                          <label for="deck-support-master-max" class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
                             <span class="min-w-0 space-y-1">
                               <span class="block font-medium">{{ t("deckRecommend.options.random.supportMasterMax") }}</span>
                               <span class="block text-xs leading-5 text-muted-foreground">
                                 {{ t("deckRecommend.options.random.supportMasterMaxDescription") }}
                               </span>
                             </span>
-                            <Switch v-model="supportMasterMax" :disabled="running" />
+                            <Switch id="deck-support-master-max" v-model="supportMasterMax" :disabled="running" />
                           </label>
-                          <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
+                          <label for="deck-support-skill-max" class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
                             <span class="min-w-0 space-y-1">
                               <span class="block font-medium">{{ t("deckRecommend.options.random.supportSkillMax") }}</span>
                               <span class="block text-xs leading-5 text-muted-foreground">
                                 {{ t("deckRecommend.options.random.supportSkillMaxDescription") }}
                               </span>
                             </span>
-                            <Switch v-model="supportSkillMax" :disabled="running" />
+                            <Switch id="deck-support-skill-max" v-model="supportSkillMax" :disabled="running" />
                           </label>
                         </div>
                       </div>

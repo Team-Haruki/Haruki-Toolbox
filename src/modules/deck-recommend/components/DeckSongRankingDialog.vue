@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -143,9 +144,13 @@ function formatInteger(value: number): string {
           v-model="searchQuery"
           class="h-8 w-48 text-xs"
           :placeholder="t('eventPlanner.dialog.searchPlaceholder')"
+          :aria-label="t('eventPlanner.dialog.searchPlaceholder')"
         />
-        <Select v-model="difficultyFilter">
-          <SelectTrigger class="h-8 w-28 text-xs">
+        <Label id="deck-song-ranking-difficulty-label" for="deck-song-ranking-difficulty" class="sr-only">
+          {{ t("eventPlanner.dialog.columns.difficulty") }}
+        </Label>
+        <Select id="deck-song-ranking-difficulty" v-model="difficultyFilter">
+          <SelectTrigger class="h-8 w-28 text-xs" aria-labelledby="deck-song-ranking-difficulty-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

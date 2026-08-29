@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, toRef, watch } from "vue"
+import { computed, ref, toRef, useId, watch } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
 import { ChevronsUpDown } from "lucide-vue-next"
@@ -68,6 +68,17 @@ const emit = defineEmits<{
 }>()
 
 const { t, te } = useI18n()
+const fieldId = useId()
+const difficultyId = `${fieldId}-difficulty`
+const difficultyLabelId = `${difficultyId}-label`
+const characterId = `${fieldId}-character`
+const characterLabelId = `${characterId}-label`
+const characterScopeId = `${fieldId}-character-scope`
+const characterScopeLabelId = `${characterScopeId}-label`
+const sortId = `${fieldId}-sort`
+const sortLabelId = `${sortId}-label`
+const sortDirectionId = `${fieldId}-sort-direction`
+const sortDirectionLabelId = `${sortDirectionId}-label`
 const settingsStore = useSettingsStore()
 const regionRef = toRef(props, "region")
 const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
@@ -322,13 +333,17 @@ function toNullableNumber(value: number | string | undefined | null): number | n
       <ChevronsUpDown class="size-4 shrink-0 text-muted-foreground" />
     </Button>
 
+    <Label v-if="!props.hideDifficulty" :id="difficultyLabelId" :for="difficultyId" class="sr-only">
+      {{ t("deckRecommend.form.difficultyPlaceholder") }}
+    </Label>
     <Select
       v-if="!props.hideDifficulty"
+      :id="difficultyId"
       :model-value="props.difficultyValue ?? ''"
       :disabled="props.disabled || !props.modelValue || difficultyOptions.length === 0"
       @update:model-value="handleDifficultyUpdate"
     >
-      <SelectTrigger class="w-full py-1.5 md:!h-full md:min-h-9">
+      <SelectTrigger class="w-full py-1.5 md:!h-full md:min-h-9" :aria-labelledby="difficultyLabelId">
         <span
           v-if="selectedDifficultyOption"
           class="flex flex-row items-center gap-1.5 md:flex-col md:items-start md:gap-1"
@@ -391,7 +406,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
           />
 
           <div class="grid gap-2">
-            <Label>{{ t("musicLibrary.list.filters.level") }}</Label>
+            <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.level") }}</p>
             <div class="flex items-center gap-2">
               <Input
                 v-model.number="levelMin"
@@ -399,6 +414,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                 min="1"
                 inputmode="numeric"
                 :placeholder="t('musicLibrary.list.filters.levelMin')"
+                :aria-label="t('musicLibrary.list.filters.levelMin')"
               />
               <span class="text-muted-foreground">-</span>
               <Input
@@ -407,19 +423,24 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                 min="1"
                 inputmode="numeric"
                 :placeholder="t('musicLibrary.list.filters.levelMax')"
+                :aria-label="t('musicLibrary.list.filters.levelMax')"
               />
             </div>
           </div>
 
           <div class="grid gap-2">
-            <Label>{{ t("musicLibrary.list.filters.character") }}</Label>
+            <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.character") }}</p>
             <div class="flex items-center gap-2">
+              <Label :id="characterLabelId" :for="characterId" class="sr-only">
+                {{ t("musicLibrary.list.filters.character") }}
+              </Label>
               <Select
+                :id="characterId"
                 :model-value="filterCharacterId != null ? String(filterCharacterId) : '__all__'"
                 @update:model-value="(value: AcceptableValue) =>
                   updateCharacter(typeof value === 'string' && value !== '__all__' ? value : null)"
               >
-                <SelectTrigger class="w-full">
+                <SelectTrigger class="w-full" :aria-labelledby="characterLabelId">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -445,12 +466,16 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <Label :id="characterScopeLabelId" :for="characterScopeId" class="sr-only">
+                {{ t("musicLibrary.list.filters.character") }}
+              </Label>
               <Select
+                :id="characterScopeId"
                 :model-value="characterScope"
                 :disabled="filterCharacterId == null"
                 @update:model-value="updateCharacterScope"
               >
-                <SelectTrigger class="w-32 shrink-0">
+                <SelectTrigger class="w-32 shrink-0" :aria-labelledby="characterScopeLabelId">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -481,13 +506,17 @@ function toNullableNumber(value: number | string | undefined | null): number | n
           />
 
           <div class="grid gap-2">
-            <Label>{{ t("musicLibrary.list.filters.sort") }}</Label>
+            <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.sort") }}</p>
             <div class="flex items-center gap-2">
+              <Label :id="sortLabelId" :for="sortId" class="sr-only">
+                {{ t("musicLibrary.list.filters.sort") }}
+              </Label>
               <Select
+                :id="sortId"
                 :model-value="sortKey"
                 @update:model-value="(value: AcceptableValue) => updateSortKey(typeof value === 'string' ? value : null)"
               >
-                <SelectTrigger class="w-full">
+                <SelectTrigger class="w-full" :aria-labelledby="sortLabelId">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -496,8 +525,11 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <Select :model-value="sortDirection" @update:model-value="updateSortDirection">
-                <SelectTrigger class="w-24 shrink-0">
+              <Label :id="sortDirectionLabelId" :for="sortDirectionId" class="sr-only">
+                {{ t("musicLibrary.list.filters.sort") }}
+              </Label>
+              <Select :id="sortDirectionId" :model-value="sortDirection" @update:model-value="updateSortDirection">
+                <SelectTrigger class="w-24 shrink-0" :aria-labelledby="sortDirectionLabelId">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
