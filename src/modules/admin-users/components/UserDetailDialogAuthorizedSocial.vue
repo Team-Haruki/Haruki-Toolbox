@@ -66,9 +66,9 @@ const socialPlatformOptions = computed(() => getSocialPlatformOptions(t))
       </DialogHeader>
       <div class="flex flex-col gap-4 py-2">
         <div class="flex flex-col gap-1.5">
-          <Label>{{ t("adminUsers.detail.dialog.authSocial.platform") }}</Label>
-          <Select :key="locale" :model-value="platform" @update:model-value="handlePlatformChange">
-            <SelectTrigger class="w-full">
+          <Label id="auth-social-platform-label" for="auth-social-platform">{{ t("adminUsers.detail.dialog.authSocial.platform") }}</Label>
+          <Select id="auth-social-platform" :key="locale" :model-value="platform" @update:model-value="handlePlatformChange">
+            <SelectTrigger aria-labelledby="auth-social-platform-label" class="w-full">
               <SelectValue :placeholder="t('adminUsers.detail.dialog.authSocial.platformPlaceholder')" />
             </SelectTrigger>
             <SelectContent>
@@ -82,16 +82,18 @@ const socialPlatformOptions = computed(() => getSocialPlatformOptions(t))
           </Select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label>{{ t("adminUsers.detail.dialog.authSocial.userId") }}</Label>
+          <Label for="auth-social-user-id">{{ t("adminUsers.detail.dialog.authSocial.userId") }}</Label>
           <Input
+            id="auth-social-user-id"
             :model-value="userId"
             :placeholder="t('adminUsers.detail.dialog.authSocial.userIdPlaceholder')"
             @update:model-value="emit('update:user-id', String($event ?? ''))"
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label>{{ t("adminUsers.detail.dialog.authSocial.comment") }}</Label>
+          <Label for="auth-social-comment">{{ t("adminUsers.detail.dialog.authSocial.comment") }}</Label>
           <Input
+            id="auth-social-comment"
             :model-value="comment"
             :placeholder="t('adminUsers.detail.dialog.authSocial.commentPlaceholder')"
             @update:model-value="emit('update:comment', String($event ?? ''))"

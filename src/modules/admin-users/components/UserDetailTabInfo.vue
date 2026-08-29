@@ -127,9 +127,9 @@ function handleRoleChange(value: unknown) {
 
       <div class="rounded-lg border divide-y">
         <div v-if="isSuperAdmin" class="flex items-center justify-between gap-4 p-4">
-          <Label class="text-sm font-medium">{{ t("adminUsers.detail.info.changeRole") }}</Label>
-          <Select :key="locale" :model-value="user.userData.role" @update:model-value="handleRoleChange">
-            <SelectTrigger class="w-40">
+          <Label id="admin-user-role-label" for="admin-user-role" class="text-sm font-medium">{{ t("adminUsers.detail.info.changeRole") }}</Label>
+          <Select id="admin-user-role" :key="locale" :model-value="user.userData.role" @update:model-value="handleRoleChange">
+            <SelectTrigger aria-labelledby="admin-user-role-label" class="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

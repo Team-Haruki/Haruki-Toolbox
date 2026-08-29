@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useId } from "vue"
 import { useI18n } from "vue-i18n"
 import type { MysekaiDataPrivacySettings, SekaiRegion, SuiteDataPrivacySettings } from "@/types/store"
 import { Button } from "@/components/ui/button"
@@ -50,12 +51,17 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
+const permissionIdPrefix = useId()
 const suitePermissionOptions = SUITE_PERMISSION_OPTIONS
 const mysekaiPermissionOptions = MYSEKAI_PERMISSION_OPTIONS
 
 function handleServerChange(value: unknown) {
   if (!isSekaiRegion(value)) return
   emit("update:server", value)
+}
+
+function permissionId(group: "suite" | "mysekai", key: string): string {
+  return `${permissionIdPrefix}-${group}-${key}`
 }
 </script>
 
@@ -70,9 +76,9 @@ function handleServerChange(value: unknown) {
       </DialogHeader>
       <div class="flex flex-col gap-4 py-2">
         <div class="flex flex-col gap-1.5">
-          <Label>{{ t("adminUsers.detail.dialog.gameBinding.server") }}</Label>
-          <Select :key="locale" :model-value="server" @update:model-value="handleServerChange">
-            <SelectTrigger class="w-full" :disabled="isEditMode">
+          <Label id="user-game-binding-server-label" for="user-game-binding-server">{{ t("adminUsers.detail.dialog.gameBinding.server") }}</Label>
+          <Select id="user-game-binding-server" :key="locale" :model-value="server" @update:model-value="handleServerChange">
+            <SelectTrigger aria-labelledby="user-game-binding-server-label" class="w-full" :disabled="isEditMode">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -87,8 +93,9 @@ function handleServerChange(value: unknown) {
           </Select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label>{{ t("adminUsers.detail.dialog.gameBinding.gameUserId") }}</Label>
+          <Label for="user-game-binding-game-id">{{ t("adminUsers.detail.dialog.gameBinding.gameUserId") }}</Label>
           <Input
+            id="user-game-binding-game-id"
             :model-value="gameUserId"
             :disabled="isEditMode"
             :placeholder="t('adminUsers.detail.dialog.gameBinding.gameUserIdPlaceholder')"
@@ -96,15 +103,18 @@ function handleServerChange(value: unknown) {
           />
         </div>
         <div class="border rounded-lg p-3">
-          <Label class="font-semibold text-sm">{{ t("adminUsers.detail.dialog.gameBinding.suiteSettings") }}</Label>
+          <h3 class="font-semibold text-sm">{{ t("adminUsers.detail.dialog.gameBinding.suiteSettings") }}</h3>
           <div class="grid gap-2 mt-2">
             <div
               v-for="option in suitePermissionOptions"
               :key="option.key"
               class="flex items-center justify-between"
             >
-              <span class="text-sm">{{ t(SUITE_PERMISSION_TITLE_KEYS[option.key]) }}</span>
+              <Label :for="permissionId('suite', option.key)" class="text-sm">
+                {{ t(SUITE_PERMISSION_TITLE_KEYS[option.key]) }}
+              </Label>
               <Switch
+                :id="permissionId('suite', option.key)"
                 :model-value="suite[option.key]"
                 @update:model-value="emit('update:suite', { ...suite, [option.key]: !!$event })"
               />
@@ -112,15 +122,18 @@ function handleServerChange(value: unknown) {
           </div>
         </div>
         <div class="border rounded-lg p-3">
-          <Label class="font-semibold text-sm">{{ t("adminUsers.detail.dialog.gameBinding.mysekaiSettings") }}</Label>
+          <h3 class="font-semibold text-sm">{{ t("adminUsers.detail.dialog.gameBinding.mysekaiSettings") }}</h3>
           <div class="grid gap-2 mt-2">
             <div
               v-for="option in mysekaiPermissionOptions"
               :key="option.key"
               class="flex items-center justify-between"
             >
-              <span class="text-sm">{{ t(MYSEKAI_PERMISSION_TITLE_KEYS[option.key]) }}</span>
+              <Label :for="permissionId('mysekai', option.key)" class="text-sm">
+                {{ t(MYSEKAI_PERMISSION_TITLE_KEYS[option.key]) }}
+              </Label>
               <Switch
+                :id="permissionId('mysekai', option.key)"
                 :model-value="mysekai[option.key]"
                 @update:model-value="emit('update:mysekai', { ...mysekai, [option.key]: !!$event })"
               />

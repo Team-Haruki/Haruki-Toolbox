@@ -39,8 +39,9 @@ const { t } = useI18n()
       </DialogHeader>
       <div class="flex flex-col gap-4 py-2">
         <div class="flex flex-col gap-1.5">
-          <Label>{{ t("adminUsers.detail.dialog.email.newEmail") }}</Label>
+          <Label for="admin-user-new-email">{{ t("adminUsers.detail.dialog.email.newEmail") }}</Label>
           <Input
+            id="admin-user-new-email"
             :model-value="email"
             :placeholder="t('adminUsers.detail.dialog.email.placeholder')"
             type="email"

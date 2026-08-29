@@ -59,10 +59,11 @@ function parseDate(value: unknown) {
 <template>
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
     <div class="flex flex-col gap-1.5">
-      <Label class="text-sm">{{ t("adminUsers.management.filters.searchLabel") }}</Label>
+      <Label for="admin-user-filter-search" class="text-sm">{{ t("adminUsers.management.filters.searchLabel") }}</Label>
       <div class="relative">
         <LucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
+          id="admin-user-filter-search"
           :model-value="search"
           :placeholder="t('adminUsers.management.filters.searchPlaceholder')"
           class="pl-9"
@@ -72,9 +73,9 @@ function parseDate(value: unknown) {
     </div>
 
     <div class="flex flex-col gap-1.5">
-      <Label class="text-sm">{{ t("adminUsers.management.filters.roleLabel") }}</Label>
-      <Select :key="locale" :model-value="roleFilter" @update:model-value="emit('update:roleFilter', $event as RoleFilter)">
-        <SelectTrigger class="w-full">
+      <Label id="admin-user-filter-role-label" for="admin-user-filter-role" class="text-sm">{{ t("adminUsers.management.filters.roleLabel") }}</Label>
+      <Select id="admin-user-filter-role" :key="locale" :model-value="roleFilter" @update:model-value="emit('update:roleFilter', $event as RoleFilter)">
+        <SelectTrigger aria-labelledby="admin-user-filter-role-label" class="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -102,9 +103,9 @@ function parseDate(value: unknown) {
     </div>
 
     <div class="flex flex-col gap-1.5">
-      <Label class="text-sm">{{ t("adminUsers.management.filters.statusLabel") }}</Label>
-      <Select :key="locale" :model-value="bannedFilter" @update:model-value="emit('update:bannedFilter', $event as BooleanFilter)">
-        <SelectTrigger class="w-full">
+      <Label id="admin-user-filter-status-label" for="admin-user-filter-status" class="text-sm">{{ t("adminUsers.management.filters.statusLabel") }}</Label>
+      <Select id="admin-user-filter-status" :key="locale" :model-value="bannedFilter" @update:model-value="emit('update:bannedFilter', $event as BooleanFilter)">
+        <SelectTrigger aria-labelledby="admin-user-filter-status-label" class="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -126,12 +127,12 @@ function parseDate(value: unknown) {
     </div>
 
     <div class="flex flex-col gap-1.5">
-      <Label class="text-sm">{{ t("adminUsers.management.filters.allowCNLabel") }}</Label>
-      <Select :key="locale"
+      <Label id="admin-user-filter-cn-label" for="admin-user-filter-cn" class="text-sm">{{ t("adminUsers.management.filters.allowCNLabel") }}</Label>
+      <Select id="admin-user-filter-cn" :key="locale"
         :model-value="allowCnMysekaiFilter"
         @update:model-value="emit('update:allowCnMysekaiFilter', $event as BooleanFilter)"
       >
-        <SelectTrigger class="w-full">
+        <SelectTrigger aria-labelledby="admin-user-filter-cn-label" class="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -153,9 +154,9 @@ function parseDate(value: unknown) {
     </div>
 
     <div class="flex flex-col gap-1.5">
-      <Label class="text-sm">{{ t("adminUsers.management.filters.sortLabel") }}</Label>
-      <Select :key="locale" :model-value="sortFilter" @update:model-value="emit('update:sortFilter', $event as SortFilter)">
-        <SelectTrigger class="w-full">
+      <Label id="admin-user-filter-sort-label" for="admin-user-filter-sort" class="text-sm">{{ t("adminUsers.management.filters.sortLabel") }}</Label>
+      <Select id="admin-user-filter-sort" :key="locale" :model-value="sortFilter" @update:model-value="emit('update:sortFilter', $event as SortFilter)">
+        <SelectTrigger aria-labelledby="admin-user-filter-sort-label" class="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -170,9 +171,10 @@ function parseDate(value: unknown) {
     </div>
 
     <div class="flex flex-col gap-1.5">
-      <Label class="text-sm">{{ t("adminUsers.management.filters.createdFromLabel") }}</Label>
+      <Label for="admin-user-filter-created-from" class="text-sm">{{ t("adminUsers.management.filters.createdFromLabel") }}</Label>
       <div class="w-full">
         <DateTimePicker24h
+          id="admin-user-filter-created-from"
           :model-value="createdFrom"
           :placeholder="t('adminUsers.management.filters.createdFromPlaceholder')"
           @update:model-value="emit('update:createdFrom', parseDate($event))"
@@ -181,9 +183,10 @@ function parseDate(value: unknown) {
     </div>
 
     <div class="flex flex-col gap-1.5">
-      <Label class="text-sm">{{ t("adminUsers.management.filters.createdToLabel") }}</Label>
+      <Label for="admin-user-filter-created-to" class="text-sm">{{ t("adminUsers.management.filters.createdToLabel") }}</Label>
       <div class="w-full">
         <DateTimePicker24h
+          id="admin-user-filter-created-to"
           :model-value="createdTo"
           :placeholder="t('adminUsers.management.filters.createdToPlaceholder')"
           @update:model-value="emit('update:createdTo', parseDate($event))"

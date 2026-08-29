@@ -2,6 +2,7 @@
 import { ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -135,11 +136,14 @@ function confirmAllowCN() {
           <PopoverContent class="w-64 p-4">
             <div class="space-y-4">
               <h4 class="font-medium leading-none mb-3">{{ t("adminUsers.management.batch.roleTitle") }}</h4>
-              <Select :key="locale"
+              <Label id="batch-user-role-label" for="batch-user-role" class="sr-only">
+                {{ t("adminUsers.management.batch.roleTitle") }}
+              </Label>
+              <Select id="batch-user-role" :key="locale"
                 :model-value="batchRoleTarget"
                 @update:model-value="emit('update:batchRoleTarget', $event as UserRole)"
               >
-                <SelectTrigger>
+                <SelectTrigger aria-labelledby="batch-user-role-label">
                   <SelectValue :placeholder="t('adminUsers.management.batch.rolePlaceholder')" />
                 </SelectTrigger>
                 <SelectContent>
@@ -195,11 +199,14 @@ function confirmAllowCN() {
           <PopoverContent class="w-64 p-4">
             <div class="space-y-4">
               <h4 class="font-medium leading-none mb-3">{{ t("adminUsers.management.batch.allowCNTitle") }}</h4>
-              <Select :key="locale"
+              <Label id="batch-user-cn-label" for="batch-user-cn" class="sr-only">
+                {{ t("adminUsers.management.batch.allowCNTitle") }}
+              </Label>
+              <Select id="batch-user-cn" :key="locale"
                 :model-value="batchAllowCnTarget"
                 @update:model-value="emit('update:batchAllowCnTarget', $event as 'true' | 'false')"
               >
-                <SelectTrigger>
+                <SelectTrigger aria-labelledby="batch-user-cn-label">
                   <SelectValue :placeholder="t('adminUsers.management.batch.allowCNPlaceholder')" />
                 </SelectTrigger>
                 <SelectContent>
