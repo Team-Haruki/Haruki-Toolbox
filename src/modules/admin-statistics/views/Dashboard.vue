@@ -8,6 +8,7 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -121,8 +122,11 @@ const uploadSummaryCards = computed(() => [
             <CardDescription>{{ t("adminStatistics.dashboard.chart.description") }}</CardDescription>
           </div>
           <div class="flex flex-wrap gap-2">
-            <Select :model-value="String(rangeDays)" @update:model-value="onRangeChange">
-              <SelectTrigger size="sm" class="min-w-28">
+            <Label id="statistics-chart-range-label" for="statistics-chart-range" class="sr-only">
+              {{ t("adminStatistics.dashboard.chart.rangeLabel") }}
+            </Label>
+            <Select id="statistics-chart-range" :model-value="String(rangeDays)" @update:model-value="onRangeChange">
+              <SelectTrigger aria-labelledby="statistics-chart-range-label" size="sm" class="min-w-28">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -131,8 +135,11 @@ const uploadSummaryCards = computed(() => [
                 </SelectItem>
               </SelectContent>
             </Select>
-            <Select :model-value="bucket" @update:model-value="onBucketChange">
-              <SelectTrigger size="sm" class="min-w-24">
+            <Label id="statistics-chart-bucket-label" for="statistics-chart-bucket" class="sr-only">
+              {{ t("adminStatistics.dashboard.chart.bucketLabel") }}
+            </Label>
+            <Select id="statistics-chart-bucket" :model-value="bucket" @update:model-value="onBucketChange">
+              <SelectTrigger aria-labelledby="statistics-chart-bucket-label" size="sm" class="min-w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

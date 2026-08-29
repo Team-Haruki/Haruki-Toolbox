@@ -109,22 +109,22 @@ const {
       <CardContent v-if="filtersExpanded" class="pt-0">
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           <div class="flex flex-col gap-1.5">
-            <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.from") }}</Label>
-            <DateTimePicker24h v-model="filterFrom" :placeholder="t('adminStatistics.uploadLogs.filters.fromPlaceholder')" />
+            <Label for="upload-log-filter-from" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.from") }}</Label>
+            <DateTimePicker24h id="upload-log-filter-from" v-model="filterFrom" :placeholder="t('adminStatistics.uploadLogs.filters.fromPlaceholder')" />
           </div>
           <div class="flex flex-col gap-1.5">
-            <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.to") }}</Label>
-            <DateTimePicker24h v-model="filterTo" :placeholder="t('adminStatistics.uploadLogs.filters.toPlaceholder')" />
+            <Label for="upload-log-filter-to" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.to") }}</Label>
+            <DateTimePicker24h id="upload-log-filter-to" v-model="filterTo" :placeholder="t('adminStatistics.uploadLogs.filters.toPlaceholder')" />
           </div>
           <div class="flex flex-col gap-1.5">
-            <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.gameUid") }}</Label>
-            <Input v-model="filterGameUserId" :placeholder="t('adminStatistics.uploadLogs.filters.gameUidPlaceholder')" />
+            <Label for="upload-log-filter-game-user" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.gameUid") }}</Label>
+            <Input id="upload-log-filter-game-user" v-model="filterGameUserId" :placeholder="t('adminStatistics.uploadLogs.filters.gameUidPlaceholder')" />
           </div>
           <div class="flex flex-col gap-1.5">
-            <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.method") }}</Label>
+            <Label for="upload-log-filter-method" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.method") }}</Label>
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
-                <Button variant="outline" class="w-full justify-between font-normal">
+                <Button id="upload-log-filter-method" variant="outline" class="w-full justify-between font-normal">
                   <span class="truncate">{{ filterMethodLabel }}</span>
                   <LucideChevronDown class="w-4 h-4 text-muted-foreground" />
                 </Button>
@@ -143,10 +143,10 @@ const {
             </DropdownMenu>
           </div>
           <div class="flex flex-col gap-1.5">
-            <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.dataType") }}</Label>
+            <Label for="upload-log-filter-data-type" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.dataType") }}</Label>
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
-                <Button variant="outline" class="w-full justify-between font-normal">
+                <Button id="upload-log-filter-data-type" variant="outline" class="w-full justify-between font-normal">
                   <span class="truncate">{{ filterDataTypeLabel }}</span>
                   <LucideChevronDown class="w-4 h-4 text-muted-foreground" />
                 </Button>
@@ -165,10 +165,10 @@ const {
             </DropdownMenu>
           </div>
           <div class="flex flex-col gap-1.5">
-            <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.server") }}</Label>
+            <Label for="upload-log-filter-server" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.server") }}</Label>
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
-                <Button variant="outline" class="w-full justify-between font-normal">
+                <Button id="upload-log-filter-server" variant="outline" class="w-full justify-between font-normal">
                   <span class="truncate">{{ filterServerLabel }}</span>
                   <LucideChevronDown class="w-4 h-4 text-muted-foreground" />
                 </Button>
@@ -187,9 +187,9 @@ const {
             </DropdownMenu>
           </div>
           <div class="flex flex-col gap-1.5">
-            <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.status") }}</Label>
-            <Select :key="locale" v-model="filterSuccess">
-              <SelectTrigger class="w-full">
+            <Label id="upload-log-filter-status-label" for="upload-log-filter-status" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.status") }}</Label>
+            <Select id="upload-log-filter-status" :key="locale" v-model="filterSuccess">
+              <SelectTrigger aria-labelledby="upload-log-filter-status-label" class="w-full">
                 <SelectValue :placeholder="t('adminStatistics.uploadLogs.filters.allStatuses')" />
               </SelectTrigger>
               <SelectContent>
@@ -200,9 +200,9 @@ const {
             </Select>
           </div>
           <div class="flex flex-col gap-1.5">
-            <Label class="text-sm">{{ t("adminStatistics.uploadLogs.filters.sort") }}</Label>
-            <Select :key="locale" v-model="filterSort">
-              <SelectTrigger class="w-full">
+            <Label id="upload-log-filter-sort-label" for="upload-log-filter-sort" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.sort") }}</Label>
+            <Select id="upload-log-filter-sort" :key="locale" v-model="filterSort">
+              <SelectTrigger aria-labelledby="upload-log-filter-sort-label" class="w-full">
                 <SelectValue :placeholder="t('adminStatistics.uploadLogs.filters.sortPlaceholder')" />
               </SelectTrigger>
               <SelectContent>

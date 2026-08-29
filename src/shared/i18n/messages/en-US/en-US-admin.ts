@@ -679,6 +679,8 @@ export default {
         "registrations": "Registrations",
         "failures": "Failures",
         "successRate": "Success rate",
+        "rangeLabel": "Time range",
+        "bucketLabel": "Time bucket",
         "range7d": "Last 7 days",
         "range30d": "Last 30 days",
         "range90d": "Last 90 days",

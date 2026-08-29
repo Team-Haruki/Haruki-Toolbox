@@ -87,7 +87,12 @@ const summaryCards = computed(() => [
         <div class="flex flex-wrap items-center gap-3 border-b p-4">
           <div class="relative min-w-[200px] flex-1">
             <LucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input v-model="search" :placeholder="t('adminStatistics.systemLogs.searchPlaceholder')" class="pl-9" />
+            <Input
+              v-model="search"
+              :aria-label="t('adminStatistics.systemLogs.searchPlaceholder')"
+              :placeholder="t('adminStatistics.systemLogs.searchPlaceholder')"
+              class="pl-9"
+            />
           </div>
           <Button variant="outline" size="sm" @click="handleExport">
             <LucideDownload class="w-4 h-4 mr-1" />

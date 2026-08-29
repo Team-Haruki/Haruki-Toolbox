@@ -679,6 +679,8 @@ export default {
         "registrations": "註冊",
         "failures": "上傳失敗",
         "successRate": "成功率",
+        "rangeLabel": "時間範圍",
+        "bucketLabel": "時間粒度",
         "range7d": "近 7 天",
         "range30d": "近 30 天",
         "range90d": "近 90 天",
