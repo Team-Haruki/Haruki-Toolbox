@@ -827,7 +827,7 @@ function resolveRankBorderTrackerRestEndpoint(endpoint: string): string {
 }
 
 function appendWebSocketPath(pathname: string): string {
-  const trimmed = pathname.replace(/\/+$/, "")
+  const trimmed = trimTrailingSlashes(pathname)
   if (trimmed.toLowerCase().endsWith("/ws")) {
     return trimmed || "/ws"
   }
@@ -836,7 +836,7 @@ function appendWebSocketPath(pathname: string): string {
 }
 
 function appendWebSocketTicketPath(pathname: string): string {
-  const trimmed = pathname.replace(/\/+$/, "")
+  const trimmed = trimTrailingSlashes(pathname)
   if (trimmed.toLowerCase().endsWith("/ws-ticket")) {
     return trimmed || "/ws-ticket"
   }
@@ -845,12 +845,20 @@ function appendWebSocketTicketPath(pathname: string): string {
 }
 
 function stripWebSocketPath(pathname: string): string {
-  const trimmed = pathname.replace(/\/+$/, "")
+  const trimmed = trimTrailingSlashes(pathname)
   if (!trimmed.toLowerCase().endsWith("/ws")) {
     return pathname
   }
 
   return trimmed.slice(0, -3) || "/"
+}
+
+function trimTrailingSlashes(value: string): string {
+  let end = value.length
+  while (end > 0 && value[end - 1] === "/") {
+    end -= 1
+  }
+  return value.slice(0, end)
 }
 
 function shouldAllowTrackerRestFallback(endpoint: string): boolean {

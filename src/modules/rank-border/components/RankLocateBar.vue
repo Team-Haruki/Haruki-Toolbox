@@ -50,13 +50,14 @@ const {
   <div class="rank-border-locate-panels">
     <div class="rank-border-locate-panel">
       <div class="rank-border-account-controls">
-        <Label>{{ t("rankBorder.fields.account") }}</Label>
+        <Label id="rank-locate-account-label" for="rank-locate-account">{{ t("rankBorder.fields.account") }}</Label>
         <Select
+          id="rank-locate-account"
           :model-value="selectedAccountKey"
           :disabled="accountOptions.length === 0"
           @update:model-value="updateAccount"
         >
-          <SelectTrigger class="w-full">
+          <SelectTrigger class="w-full" aria-labelledby="rank-locate-account-label">
             <GameAccountOption
               v-if="selectedAccount"
               :server="selectedAccount.server"

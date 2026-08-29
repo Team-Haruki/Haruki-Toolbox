@@ -27,12 +27,20 @@ const ASSET_ENDPOINT_TIMEOUT_MS = 5000
 const ASSET_ENDPOINT_PROBE_PATH = '/asset-probe.png'
 const ASSET_ENDPOINT_TYPES: SekaiAssetEndpointPreference[] = ['china', 'global', 'china_cdn']
 
+function trimTrailingSlashes(value: string): string {
+    let end = value.length
+    while (end > 0 && value[end - 1] === '/') {
+        end -= 1
+    }
+    return value.slice(0, end)
+}
+
 function normalizeEndpointUrl(value: unknown): string {
     if (typeof value !== 'string') {
         return ''
     }
 
-    return value.trim().replace(/\/+$/, '')
+    return trimTrailingSlashes(value.trim())
 }
 
 function createEmptyAssetEndpointLatencyResults(): Record<SekaiAssetEndpointPreference, AssetEndpointLatencyResult> {
@@ -358,7 +366,7 @@ async function measureEndpointLatency(rootUrl: string): Promise<EndpointLatencyR
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), ENDPOINT_TIMEOUT_MS)
     try {
-        const response = await fetch(`${rootUrl.replace(/\/+$/, '')}${SERVER_ENDPOINT_HEALTH_PATH}`, {
+        const response = await fetch(`${trimTrailingSlashes(rootUrl)}${SERVER_ENDPOINT_HEALTH_PATH}`, {
             method: 'GET',
             mode: 'no-cors',
             cache: 'no-store',
@@ -413,7 +421,7 @@ async function measureAssetEndpointLatency(rootUrl: string): Promise<AssetEndpoi
 }
 
 export function buildAssetEndpointProbeUrl(rootUrl: string, cacheKey = Date.now()): string {
-    const url = new URL(`${rootUrl.replace(/\/+$/, '')}${ASSET_ENDPOINT_PROBE_PATH}`)
+    const url = new URL(`${trimTrailingSlashes(rootUrl)}${ASSET_ENDPOINT_PROBE_PATH}`)
     url.searchParams.set('_latency', String(cacheKey))
     return url.toString()
 }

@@ -270,7 +270,7 @@ function hasVisitedSettingsTab(tab: string) {
                 <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
                   <div class="flex items-center justify-between gap-4 px-4 py-3">
                     <div class="min-w-0">
-                      <p id="dialog-theme-label" class="text-sm font-medium">{{ t("homeSettings.theme.label") }}</p>
+                      <Label id="dialog-theme-label" for="dialog-theme" class="text-sm font-medium">{{ t("homeSettings.theme.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.theme.help") }}</p>
                     </div>
                     <Select id="dialog-theme" v-model="selectedTheme">
@@ -292,7 +292,7 @@ function hasVisitedSettingsTab(tab: string) {
 
                   <div class="flex items-center justify-between gap-4 px-4 py-3">
                     <div class="min-w-0">
-                      <p id="dialog-locale-label" class="text-sm font-medium">{{ t("homeSettings.locale.label") }}</p>
+                      <Label id="dialog-locale-label" for="dialog-locale" class="text-sm font-medium">{{ t("homeSettings.locale.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.locale.help") }}</p>
                     </div>
                     <Select id="dialog-locale" v-model="selectedLocale">
@@ -339,7 +339,7 @@ function hasVisitedSettingsTab(tab: string) {
                 <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
                   <div class="flex items-center justify-between gap-4 px-4 py-3">
                     <div class="min-w-0">
-                      <p id="dialog-endpoint-label" class="text-sm font-medium">{{ t("homeSettings.endpoint.label") }}</p>
+                      <Label id="dialog-endpoint-label" for="dialog-endpoint" class="text-sm font-medium">{{ t("homeSettings.endpoint.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.endpoint.help") }}</p>
                       <p v-if="endpointUnavailable" class="mt-0.5 text-xs text-destructive">
                         {{ t("homeSettings.endpoint.unavailable") }}
@@ -374,7 +374,7 @@ function hasVisitedSettingsTab(tab: string) {
 
                   <div class="flex items-center justify-between gap-4 px-4 py-3">
                     <div class="min-w-0">
-                      <p id="dialog-asset-endpoint-label" class="text-sm font-medium">{{ t("homeSettings.assetEndpoint.label") }}</p>
+                      <Label id="dialog-asset-endpoint-label" for="dialog-asset-endpoint" class="text-sm font-medium">{{ t("homeSettings.assetEndpoint.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.assetEndpoint.help") }}</p>
                     </div>
                     <Select id="dialog-asset-endpoint" v-model="selectedAssetEndpoint">

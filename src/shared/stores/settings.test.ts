@@ -7,6 +7,9 @@ describe("settings endpoint helpers", () => {
     expect(buildAssetEndpointProbeUrl("https://assets.example.com/", 123)).toBe(
       "https://assets.example.com/asset-probe.png?_latency=123",
     )
+    expect(buildAssetEndpointProbeUrl("https://assets.example.com///", 123)).toBe(
+      "https://assets.example.com/asset-probe.png?_latency=123",
+    )
   })
 
   it("uses a different URL for a different measurement", () => {

@@ -69,9 +69,9 @@ const {
     <CardContent class="grid gap-2 px-2 pb-2 sm:gap-3 sm:px-4 sm:pb-4 xl:px-5 xl:pb-5">
       <div class="rank-border-query-bar rounded-md border bg-muted/10 p-2.5">
         <div class="rank-border-query-field rank-border-query-field--region">
-          <Label>{{ t("rankBorder.fields.region") }}</Label>
-          <Select :model-value="selectedRegion" :disabled="masterOptions.loading.value" @update:model-value="updateRegion">
-            <SelectTrigger class="w-full">
+          <Label id="rank-query-region-label" for="rank-query-region">{{ t("rankBorder.fields.region") }}</Label>
+          <Select id="rank-query-region" :model-value="selectedRegion" :disabled="masterOptions.loading.value" @update:model-value="updateRegion">
+            <SelectTrigger class="w-full" aria-labelledby="rank-query-region-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -83,9 +83,9 @@ const {
         </div>
 
         <div class="rank-border-query-field rank-border-query-field--mode">
-          <Label>{{ t("rankBorder.fields.mode") }}</Label>
-          <Select :model-value="mode" @update:model-value="updateMode">
-            <SelectTrigger class="w-full">
+          <Label id="rank-query-mode-label" for="rank-query-mode">{{ t("rankBorder.fields.mode") }}</Label>
+          <Select id="rank-query-mode" :model-value="mode" @update:model-value="updateMode">
+            <SelectTrigger class="w-full" aria-labelledby="rank-query-mode-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -97,8 +97,9 @@ const {
         </div>
 
         <div class="rank-border-query-field rank-border-query-field--event">
-          <Label>{{ t("rankBorder.fields.event") }}</Label>
+          <Label for="rank-query-event">{{ t("rankBorder.fields.event") }}</Label>
           <Combobox
+            trigger-id="rank-query-event"
             :model-value="selectedEventId"
             :options="eventComboboxOptions"
             :disabled="masterOptions.loading.value || eventComboboxOptions.length === 0"
@@ -114,9 +115,9 @@ const {
         </div>
 
         <div v-if="mode === 'world_bloom'" class="rank-border-query-field rank-border-query-field--world-bloom">
-          <Label>{{ t("rankBorder.fields.worldBloomCharacter") }}</Label>
-          <Select :model-value="selectedWorldBloomCharacterId ?? undefined" @update:model-value="updateWorldBloomCharacter">
-            <SelectTrigger class="rank-border-world-bloom-select-trigger w-full">
+          <Label id="rank-query-world-bloom-label" for="rank-query-world-bloom">{{ t("rankBorder.fields.worldBloomCharacter") }}</Label>
+          <Select id="rank-query-world-bloom" :model-value="selectedWorldBloomCharacterId ?? undefined" @update:model-value="updateWorldBloomCharacter">
+            <SelectTrigger class="rank-border-world-bloom-select-trigger w-full" aria-labelledby="rank-query-world-bloom-label">
               <SelectValue :placeholder="t('rankBorder.fields.worldBloomCharacterPlaceholder')">
                 {{ selectedWorldBloomCharacter?.label ?? t('rankBorder.fields.worldBloomCharacterPlaceholder') }}
               </SelectValue>
@@ -137,9 +138,9 @@ const {
         </div>
 
         <div class="rank-border-query-field rank-border-query-field--interval">
-          <Label>{{ t("rankBorder.fields.interval") }}</Label>
-          <Select :model-value="intervalSeconds" @update:model-value="updateInterval">
-            <SelectTrigger class="w-full">
+          <Label id="rank-query-interval-label" for="rank-query-interval">{{ t("rankBorder.fields.interval") }}</Label>
+          <Select id="rank-query-interval" :model-value="intervalSeconds" @update:model-value="updateInterval">
+            <SelectTrigger class="w-full" aria-labelledby="rank-query-interval-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

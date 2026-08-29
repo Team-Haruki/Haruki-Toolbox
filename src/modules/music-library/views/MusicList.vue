@@ -320,9 +320,9 @@ function toNullableNumber(value: number | string | undefined | null): number | n
       <div class="space-y-4">
           <div class="grid gap-4 md:grid-cols-2">
             <div class="grid gap-2">
-              <Label>{{ t("musicLibrary.list.filters.region") }}</Label>
-              <Select :model-value="regionSelectorValue" @update:model-value="updateRegion">
-                <SelectTrigger class="w-full">
+              <Label id="music-region-label" for="music-region">{{ t("musicLibrary.list.filters.region") }}</Label>
+              <Select id="music-region" :model-value="regionSelectorValue" @update:model-value="updateRegion">
+                <SelectTrigger class="w-full" aria-labelledby="music-region-label">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -362,7 +362,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
               />
 
               <div class="grid gap-2">
-                <Label>{{ t("musicLibrary.list.filters.level") }}</Label>
+                <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.level") }}</p>
                 <div class="flex items-center gap-2">
                   <Input
                     v-model.number="levelMin"
@@ -370,6 +370,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                     min="1"
                     inputmode="numeric"
                     :placeholder="t('musicLibrary.list.filters.levelMin')"
+                    :aria-label="t('musicLibrary.list.filters.levelMin')"
                   />
                   <span class="text-muted-foreground">-</span>
                   <Input
@@ -378,18 +379,20 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                     min="1"
                     inputmode="numeric"
                     :placeholder="t('musicLibrary.list.filters.levelMax')"
+                    :aria-label="t('musicLibrary.list.filters.levelMax')"
                   />
                 </div>
               </div>
 
               <div class="grid gap-2">
-                <Label>{{ t("musicLibrary.list.filters.noteCount") }}</Label>
+                <Label id="music-note-count-label" for="music-note-count-mode">{{ t("musicLibrary.list.filters.noteCount") }}</Label>
                 <div class="flex items-center gap-2">
                   <Select
+                    id="music-note-count-mode"
                     :model-value="noteCountMode"
                     @update:model-value="updateNoteCountMode"
                   >
-                    <SelectTrigger class="w-28 shrink-0">
+                    <SelectTrigger class="w-28 shrink-0" aria-labelledby="music-note-count-label">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -409,6 +412,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                       min="1"
                       inputmode="numeric"
                       :placeholder="t('musicLibrary.list.filters.noteCountExactPlaceholder')"
+                      :aria-label="t('musicLibrary.list.filters.noteCountExactPlaceholder')"
                     />
                   </template>
                   <template v-else>
@@ -418,6 +422,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                       min="1"
                       inputmode="numeric"
                       :placeholder="t('musicLibrary.list.filters.noteCountMin')"
+                      :aria-label="t('musicLibrary.list.filters.noteCountMin')"
                     />
                     <span class="text-muted-foreground">-</span>
                     <Input
@@ -426,6 +431,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                       min="1"
                       inputmode="numeric"
                       :placeholder="t('musicLibrary.list.filters.noteCountMax')"
+                      :aria-label="t('musicLibrary.list.filters.noteCountMax')"
                     />
                   </template>
                 </div>
@@ -438,14 +444,15 @@ function toNullableNumber(value: number | string | undefined | null): number | n
               />
 
               <div class="grid gap-2">
-                <Label>{{ t("musicLibrary.list.filters.character") }}</Label>
+                <Label id="music-character-label" for="music-character">{{ t("musicLibrary.list.filters.character") }}</Label>
                 <div class="flex items-center gap-2">
                   <Select
+                    id="music-character"
                     :model-value="selectedCharacterId != null ? String(selectedCharacterId) : ALL_OPTION"
                     @update:model-value="(value: AcceptableValue) =>
                       updateCharacter(typeof value === 'string' && value !== ALL_OPTION ? value : null)"
                   >
-                    <SelectTrigger class="w-full">
+                    <SelectTrigger class="w-full" aria-labelledby="music-character-label">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -472,12 +479,16 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  <Label id="music-character-scope-label" for="music-character-scope" class="sr-only">
+                    {{ t("musicLibrary.list.filters.character") }}
+                  </Label>
                   <Select
+                    id="music-character-scope"
                     :model-value="characterScope"
                     :disabled="selectedCharacterId == null"
                     @update:model-value="updateCharacterScope"
                   >
-                    <SelectTrigger class="w-32 shrink-0">
+                    <SelectTrigger class="w-32 shrink-0" aria-labelledby="music-character-scope-label">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -502,10 +513,10 @@ function toNullableNumber(value: number | string | undefined | null): number | n
               />
 
               <div class="grid gap-2">
-                <Label>{{ t("musicLibrary.list.filters.sort") }}</Label>
+                <Label id="music-sort-label" for="music-sort">{{ t("musicLibrary.list.filters.sort") }}</Label>
                 <div class="flex items-center gap-2">
-                  <Select :model-value="sortKey" @update:model-value="updateSortKey">
-                    <SelectTrigger class="w-full">
+                  <Select id="music-sort" :model-value="sortKey" @update:model-value="updateSortKey">
+                    <SelectTrigger class="w-full" aria-labelledby="music-sort-label">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

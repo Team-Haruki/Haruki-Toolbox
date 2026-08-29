@@ -572,7 +572,12 @@ export function normalizeTrackerEndpoint(value: unknown): string {
     return ""
   }
 
-  return value.trim().replace(/\/+$/, "")
+  const normalized = value.trim()
+  let end = normalized.length
+  while (end > 0 && normalized[end - 1] === "/") {
+    end -= 1
+  }
+  return normalized.slice(0, end)
 }
 
 export function formatRankBorderPathSegment(value: string | number): string {

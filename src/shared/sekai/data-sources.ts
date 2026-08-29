@@ -285,7 +285,16 @@ function normalizeVersionValue(value: unknown): string {
 }
 
 function joinUrl(base: string, path: string): string {
-  return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`
+  let baseEnd = base.length
+  while (baseEnd > 0 && base[baseEnd - 1] === "/") {
+    baseEnd -= 1
+  }
+
+  let pathStart = 0
+  while (pathStart < path.length && path[pathStart] === "/") {
+    pathStart += 1
+  }
+  return `${base.slice(0, baseEnd)}/${path.slice(pathStart)}`
 }
 
 function appendQueryParam(url: string, key: string, value: string): string {

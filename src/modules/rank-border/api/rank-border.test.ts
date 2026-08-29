@@ -38,6 +38,9 @@ describe("rank border tracker api", () => {
     expect(resolveRankBorderTrackerWebSocketUrl("ws://tracker.example/base/ws", "https://toolbox.example")).toBe(
       "ws://tracker.example/base/ws",
     )
+    expect(resolveRankBorderTrackerWebSocketUrl("https://tracker.example/base///", "https://toolbox.example")).toBe(
+      "wss://tracker.example/base/ws",
+    )
   })
 
   it("passes owner identity on private bound account lookups over websocket", async () => {

@@ -116,7 +116,7 @@ function parseScoreData(data: string): Array<[number, string]> {
   return pairs
 }
 
-const SCORE_LINE = /^#(\w+):\s*(.*)$/
+const SCORE_LINE = /^#(\w+):(.*)$/
 const EVENT_HEADER = /^(\d{3})02$/
 const BPM_DEF_HEADER = /^BPM(..)$/
 const BPM_REF_HEADER = /^(\d{3})08$/

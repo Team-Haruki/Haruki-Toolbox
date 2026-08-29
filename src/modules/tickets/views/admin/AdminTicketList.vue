@@ -153,10 +153,11 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div class="relative">
             <LucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input v-model="search" :placeholder="t('tickets.adminList.searchPlaceholder')" class="pl-9" />
+            <Input v-model="search" :placeholder="t('tickets.adminList.searchPlaceholder')" :aria-label="t('tickets.adminList.searchPlaceholder')" class="pl-9" />
           </div>
-          <Select :key="locale" v-model="quickFilter">
-            <SelectTrigger class="w-full">
+          <Label id="admin-ticket-quick-filter-label" for="admin-ticket-quick-filter" class="sr-only">{{ t("tickets.adminList.quickFilters.all") }}</Label>
+          <Select id="admin-ticket-quick-filter" :key="locale" v-model="quickFilter">
+            <SelectTrigger class="w-full" aria-labelledby="admin-ticket-quick-filter-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -165,8 +166,9 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
               </SelectItem>
             </SelectContent>
           </Select>
-          <Select :key="locale" v-model="statusFilter">
-            <SelectTrigger class="w-full">
+          <Label id="admin-ticket-status-filter-label" for="admin-ticket-status-filter" class="sr-only">{{ t("tickets.filters.allStatus") }}</Label>
+          <Select id="admin-ticket-status-filter" :key="locale" v-model="statusFilter">
+            <SelectTrigger class="w-full" aria-labelledby="admin-ticket-status-filter-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -175,8 +177,9 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
               </SelectItem>
             </SelectContent>
           </Select>
-          <Select :key="locale" v-model="priorityFilter">
-            <SelectTrigger class="w-full">
+          <Label id="admin-ticket-priority-filter-label" for="admin-ticket-priority-filter" class="sr-only">{{ t("tickets.filters.allPriorities") }}</Label>
+          <Select id="admin-ticket-priority-filter" :key="locale" v-model="priorityFilter">
+            <SelectTrigger class="w-full" aria-labelledby="admin-ticket-priority-filter-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

@@ -37,12 +37,15 @@ const renderedSections = computed<RenderedSection[]>(() =>
   props.sections.map((section, index) => {
     const base = `${props.ns}.sections.${section.key}`
     const rawTitle = t(`${base}.title`)
-    const match = rawTitle.match(/^(\d+)[.、]\s*(.+)$/)
+    const match = rawTitle.match(/^(\d+)[.、](.*)$/)
+    const matchedHeading = match?.[2].trimStart()
+    const hasMatchedHeading = Boolean(matchedHeading)
+    const sectionNumber = match && hasMatchedHeading ? match[1] : String(index + 1)
     return {
       key: section.key,
       anchorId: `section-${section.key}`,
-      number: (match ? match[1] : String(index + 1)).padStart(2, "0"),
-      heading: match ? match[2] : rawTitle,
+      number: sectionNumber.padStart(2, "0"),
+      heading: hasMatchedHeading ? matchedHeading : rawTitle,
       paragraphs: section.paragraphKeys.map((paragraphKey) =>
         t(`${base}.paragraphs.${paragraphKey}`),
       ),

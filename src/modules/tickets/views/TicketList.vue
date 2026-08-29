@@ -6,6 +6,7 @@ import {
   CardContent,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
@@ -78,8 +79,9 @@ function handleTicketCardKeydown(event: KeyboardEvent, ticketId: string) {
 
     <!-- Filters -->
     <div class="flex items-center gap-3">
-      <Select :key="locale" v-model="statusFilter">
-        <SelectTrigger class="w-36">
+      <Label id="ticket-status-label" for="ticket-status" class="sr-only">{{ t("tickets.filters.allStatus") }}</Label>
+      <Select id="ticket-status" :key="locale" v-model="statusFilter">
+        <SelectTrigger class="w-36" aria-labelledby="ticket-status-label">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

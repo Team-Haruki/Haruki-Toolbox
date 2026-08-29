@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n"
 import { ChevronDown } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -49,8 +50,11 @@ const comparisonOpen = ref(false)
     </button>
     <div v-show="comparisonOpen" class="grid gap-2 border-t px-3 py-2.5">
       <div class="flex min-w-0 flex-wrap items-center gap-1.5">
-        <Select :model-value="comparisonSelectValue" @update:model-value="updateComparisonSelect">
-          <SelectTrigger class="h-8 w-28 text-xs">
+        <Label id="rank-comparison-preset-label" for="rank-comparison-preset" class="sr-only">
+          {{ t("rankBorder.comparison.label") }}
+        </Label>
+        <Select id="rank-comparison-preset" :model-value="comparisonSelectValue" @update:model-value="updateComparisonSelect">
+          <SelectTrigger class="h-8 w-28 text-xs" aria-labelledby="rank-comparison-preset-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -64,6 +68,7 @@ const comparisonOpen = ref(false)
           v-model="comparisonRankInput"
           class="h-8 w-24 text-xs"
           :placeholder="t('rankBorder.comparison.customPlaceholder')"
+          :aria-label="t('rankBorder.comparison.customPlaceholder')"
           @keyup.enter="applyComparisonInput"
         />
         <Button variant="outline" size="sm" class="h-8 px-2 text-xs" @click="applyComparisonInput">

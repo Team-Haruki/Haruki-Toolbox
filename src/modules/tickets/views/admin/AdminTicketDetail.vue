@@ -184,9 +184,9 @@ function messageSenderLabel(message: TicketMessage) {
         </CardHeader>
         <CardContent class="flex flex-col gap-4 border-t pt-4 lg:flex-row lg:items-end">
           <div class="flex flex-col gap-1.5">
-            <Label class="text-xs">{{ t("tickets.adminDetail.statusChangeLabel") }}</Label>
-            <Select :key="locale" :model-value="ticket.status" @update:model-value="handleStatusChange" :disabled="actionLoading">
-              <SelectTrigger class="w-full lg:w-40">
+            <Label id="admin-ticket-status-label" for="admin-ticket-status" class="text-xs">{{ t("tickets.adminDetail.statusChangeLabel") }}</Label>
+            <Select id="admin-ticket-status" :key="locale" :model-value="ticket.status" @update:model-value="handleStatusChange" :disabled="actionLoading">
+              <SelectTrigger class="w-full lg:w-40" aria-labelledby="admin-ticket-status-label">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -198,14 +198,15 @@ function messageSenderLabel(message: TicketMessage) {
           </div>
 
           <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-            <Label class="text-xs">{{ t("tickets.adminDetail.assigneeLabel") }}</Label>
+            <Label id="admin-ticket-assignee-label" for="admin-ticket-assignee" class="text-xs">{{ t("tickets.adminDetail.assigneeLabel") }}</Label>
             <div class="flex flex-col gap-2 sm:flex-row">
               <Select
+                id="admin-ticket-assignee"
                 :key="locale"
                 v-model="assigneeId"
                 :disabled="adminUsersLoading || adminUsersLoadFailed || actionLoading"
               >
-                <SelectTrigger class="w-full sm:w-72">
+                <SelectTrigger class="w-full sm:w-72" aria-labelledby="admin-ticket-assignee-label">
                   <SelectValue :placeholder="t('tickets.adminDetail.assigneePlaceholder')" />
                 </SelectTrigger>
                 <SelectContent>
@@ -314,6 +315,7 @@ function messageSenderLabel(message: TicketMessage) {
               <textarea
                 v-model="newMessage"
                 :placeholder="isInternal ? t('tickets.adminDetail.internalInputPlaceholder') : t('tickets.adminDetail.replyInputPlaceholder')"
+                :aria-label="isInternal ? t('tickets.adminDetail.internalInputPlaceholder') : t('tickets.adminDetail.replyInputPlaceholder')"
                 rows="2"
                 :class="[
                   'flex-1 rounded-md border px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 resize-none',

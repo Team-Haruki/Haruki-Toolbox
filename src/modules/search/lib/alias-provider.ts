@@ -138,5 +138,9 @@ function readEnvBaseUrl(): string | undefined {
 }
 
 function trimTrailingSlash(value: string): string {
-  return value.replace(/\/+$/, "")
+  let end = value.length
+  while (end > 0 && value[end - 1] === "/") {
+    end -= 1
+  }
+  return value.slice(0, end)
 }

@@ -65,9 +65,9 @@ const {
         <!-- Category and priority -->
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="flex flex-col gap-2">
-            <Label>{{ t("tickets.create.fields.category") }}</Label>
-            <Select :key="locale" v-model="category">
-              <SelectTrigger class="h-10">
+            <Label id="ticket-category-label" for="ticket-category">{{ t("tickets.create.fields.category") }}</Label>
+            <Select id="ticket-category" :key="locale" v-model="category">
+              <SelectTrigger class="h-10" aria-labelledby="ticket-category-label">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -79,9 +79,9 @@ const {
             <p class="text-xs text-muted-foreground">{{ t("tickets.create.fields.categoryHint") }}</p>
           </div>
           <div class="flex flex-col gap-2">
-            <Label>{{ t("tickets.create.fields.priority") }}</Label>
-            <Select :key="locale" v-model="priority">
-              <SelectTrigger class="h-10">
+            <Label id="ticket-priority-label" for="ticket-priority">{{ t("tickets.create.fields.priority") }}</Label>
+            <Select id="ticket-priority" :key="locale" v-model="priority">
+              <SelectTrigger class="h-10" aria-labelledby="ticket-priority-label">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -175,6 +175,7 @@ function formatCategory(category: string) {
             <textarea
               v-model="newMessage"
               :placeholder="t('tickets.detail.inputPlaceholder')"
+              :aria-label="t('tickets.detail.inputPlaceholder')"
               rows="2"
               class="flex-1 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
               @keydown.enter.exact="handleComposeEnter"
