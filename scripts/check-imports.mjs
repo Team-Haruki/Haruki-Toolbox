@@ -105,109 +105,130 @@ function extractImportPaths(line) {
     return paths
 }
 
-function scanFile(filePath, content) {
+function createViolation(filePath, line, token, message) {
+    return { filePath, line, token, message }
+}
+
+function createScanContext(filePath) {
     const currentModule = getModuleNameFromFilePath(filePath)
-    const inCurrentModuleApiDir = currentModule ? isModuleApiFile(filePath, currentModule) : false
-    const isCurrentModuleIndex = currentModule ? isModuleIndexFile(filePath, currentModule) : false
     const moduleRootPath = currentModule
         ? normalizePath(path.join(ROOT, "src", "modules", currentModule))
         : ""
-    const moduleApiRootPath = `${moduleRootPath}/api`
-    const lines = content.split(/\r?\n/)
+    return {
+        filePath,
+        currentModule,
+        inCurrentModuleApiDir: currentModule ? isModuleApiFile(filePath, currentModule) : false,
+        isCurrentModuleIndex: currentModule ? isModuleIndexFile(filePath, currentModule) : false,
+        moduleRootPath,
+        moduleApiRootPath: `${moduleRootPath}/api`,
+    }
+}
+
+function scanBannedTokens(context, line, lineNumber) {
     const violations = []
-    for (let i = 0; i < lines.length; i += 1) {
-        const line = lines[i]
-        for (const rule of BANNED_TOKENS) {
-            if (line.includes(rule.token)) {
-                violations.push({
-                    filePath,
-                    line: i + 1,
-                    token: rule.token,
-                    message: rule.message,
-                })
-            }
+    for (const rule of BANNED_TOKENS) {
+        if (line.includes(rule.token)) {
+            violations.push(createViolation(context.filePath, lineNumber, rule.token, rule.message))
         }
-        if (!currentModule) {
+    }
+    return violations
+}
+
+function findImportedCurrentModule(line, patterns, currentModule) {
+    for (const pattern of patterns) {
+        const match = line.match(pattern)
+        if (match?.[1] === currentModule) {
+            return match[1]
+        }
+    }
+    return null
+}
+
+function scanOwnModuleBarrel(context, line, lineNumber) {
+    const importedModule = findImportedCurrentModule(line, MODULE_BARREL_PATTERNS, context.currentModule)
+    if (!importedModule) {
+        return []
+    }
+    return [createViolation(
+        context.filePath,
+        lineNumber,
+        `@/modules/${importedModule}`,
+        "Module internals must not import their own index barrel. Import concrete subpaths such as ./api, ./components, or ./composables.",
+    )]
+}
+
+function isOwnModuleIndexTarget(context, targetPath) {
+    return targetPath === context.moduleRootPath || targetPath === `${context.moduleRootPath}/index`
+}
+
+function isOwnApiBarrelTarget(context, targetPath) {
+    return targetPath === context.moduleApiRootPath || targetPath === `${context.moduleApiRootPath}/index`
+}
+
+function scanRelativeImports(context, line, lineNumber) {
+    for (const importPath of extractImportPaths(line)) {
+        if (!importPath.startsWith(".")) {
             continue
         }
 
-        for (const pattern of MODULE_BARREL_PATTERNS) {
-            const match = line.match(pattern)
-            if (!match) {
-                continue
-            }
-
-            const importedModule = match[1]
-            if (importedModule !== currentModule) {
-                continue
-            }
-
-            violations.push({
-                filePath,
-                line: i + 1,
-                token: `@/modules/${importedModule}`,
-                message: "Module internals must not import their own index barrel. Import concrete subpaths such as ./api, ./components, or ./composables.",
-            })
-            break
+        const targetPath = resolveImportTarget(context.filePath, importPath)
+        if (isOwnModuleIndexTarget(context, targetPath)) {
+            return [createViolation(
+                context.filePath,
+                lineNumber,
+                importPath,
+                "Module internals must not import their own index barrel via relative paths. Import concrete subpaths such as ./api/user or ./composables/list.",
+            )]
         }
 
-        for (const importPath of extractImportPaths(line)) {
-            if (!importPath.startsWith(".")) {
-                continue
-            }
-
-            const normalizedTargetPath = resolveImportTarget(filePath, importPath)
-            if (normalizedTargetPath === moduleRootPath || normalizedTargetPath === `${moduleRootPath}/index`) {
-                violations.push({
-                    filePath,
-                    line: i + 1,
-                    token: importPath,
-                    message: "Module internals must not import their own index barrel via relative paths. Import concrete subpaths such as ./api/user or ./composables/list.",
-                })
-                break
-            }
-
-            if (inCurrentModuleApiDir) {
-                continue
-            }
-
-            if (
-                !isCurrentModuleIndex &&
-                (normalizedTargetPath === moduleApiRootPath || normalizedTargetPath === `${moduleApiRootPath}/index`)
-            ) {
-                violations.push({
-                    filePath,
-                    line: i + 1,
-                    token: importPath,
-                    message: "Module internals must not import their own api barrel via relative paths. Import concrete api files such as ./api/user or ./api/list.",
-                })
-                break
-            }
+        const canImportApiBarrel = context.inCurrentModuleApiDir || context.isCurrentModuleIndex
+        if (!canImportApiBarrel && isOwnApiBarrelTarget(context, targetPath)) {
+            return [createViolation(
+                context.filePath,
+                lineNumber,
+                importPath,
+                "Module internals must not import their own api barrel via relative paths. Import concrete api files such as ./api/user or ./api/list.",
+            )]
         }
+    }
+    return []
+}
 
-        if (inCurrentModuleApiDir) {
-            continue
-        }
+function scanOwnApiBarrel(context, line, lineNumber) {
+    if (context.inCurrentModuleApiDir) {
+        return []
+    }
 
-        for (const pattern of MODULE_API_BARREL_PATTERNS) {
-            const match = line.match(pattern)
-            if (!match) {
-                continue
-            }
+    const importedModule = findImportedCurrentModule(line, MODULE_API_BARREL_PATTERNS, context.currentModule)
+    if (!importedModule) {
+        return []
+    }
+    return [createViolation(
+        context.filePath,
+        lineNumber,
+        `@/modules/${importedModule}/api`,
+        "Module internals must not import their own api barrel. Import concrete api files such as ./api/user or ./api/list.",
+    )]
+}
 
-            const importedModule = match[1]
-            if (importedModule !== currentModule) {
-                continue
-            }
+function scanModuleLine(context, line, lineNumber) {
+    if (!context.currentModule) {
+        return []
+    }
+    return [
+        ...scanOwnModuleBarrel(context, line, lineNumber),
+        ...scanRelativeImports(context, line, lineNumber),
+        ...scanOwnApiBarrel(context, line, lineNumber),
+    ]
+}
 
-            violations.push({
-                filePath,
-                line: i + 1,
-                token: `@/modules/${importedModule}/api`,
-                message: "Module internals must not import their own api barrel. Import concrete api files such as ./api/user or ./api/list.",
-            })
-            break
-        }
+function scanFile(filePath, content) {
+    const context = createScanContext(filePath)
+    const violations = []
+    for (const [index, line] of content.split(/\r?\n/).entries()) {
+        const lineNumber = index + 1
+        violations.push(...scanBannedTokens(context, line, lineNumber))
+        violations.push(...scanModuleLine(context, line, lineNumber))
     }
     return violations
 }
