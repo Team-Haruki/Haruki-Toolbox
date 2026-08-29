@@ -165,59 +165,62 @@ export type BuildChallengeGridInput = {
   claimedRewardIds: ReadonlySet<number>
 }
 
+function buildChallengeScoreMap(rawResults: unknown): Map<number, number> {
+  const map = new Map<number, number>()
+  for (const record of normalizeCatalogRecords(rawResults)) {
+    const characterId = normalizeCatalogNumber(record.characterId)
+    if (characterId != null) {
+      map.set(characterId, normalizeCatalogNumber(record.highScore) ?? 0)
+    }
+  }
+  return map
+}
+
+function groupChallengeRewardsByCharacter(
+  rewards: readonly ChallengeRewardMaster[],
+): Map<number, ChallengeRewardMaster[]> {
+  const map = new Map<number, ChallengeRewardMaster[]>()
+  for (const reward of rewards) {
+    const group = map.get(reward.characterId) ?? []
+    group.push(reward)
+    map.set(reward.characterId, group)
+  }
+  return map
+}
+
+function sumUnclaimedChallengeRewards(
+  rewards: readonly ChallengeRewardMaster[],
+  boxRewards: ReadonlyMap<number, ChallengeBoxReward>,
+  claimedRewardIds: ReadonlySet<number>,
+): ChallengeBoxReward {
+  const total = { jewel: 0, shard: 0 }
+  for (const reward of rewards) {
+    const box = claimedRewardIds.has(reward.id) ? undefined : boxRewards.get(reward.resourceBoxId)
+    if (box) {
+      total.jewel += box.jewel
+      total.shard += box.shard
+    }
+  }
+  return total
+}
+
 /**
  * Ports `BuildChallengeLiveDetailsRequest`: always 26 cells (zeros when the
  * character has no data), high score from results, stage = max stage rank,
  * and unclaimed jewel/shard totals from the not-yet-claimed reward rows.
  */
 export function buildChallengeGrid(input: BuildChallengeGridInput): ChallengeCell[] {
-  const scoreByCharacter = new Map<number, number>()
-  for (const record of normalizeCatalogRecords(input.results)) {
-    const characterId = normalizeCatalogNumber(record.characterId)
-    if (characterId == null) {
-      continue
-    }
-    scoreByCharacter.set(characterId, normalizeCatalogNumber(record.highScore) ?? 0)
-  }
-
-  const rankByCharacter = new Map<number, number>()
-  for (const record of normalizeCatalogRecords(input.stages)) {
-    const characterId = normalizeCatalogNumber(record.characterId)
-    const rank = normalizeCatalogNumber(record.rank) ?? 0
-    if (characterId == null) {
-      continue
-    }
-    if (rank > (rankByCharacter.get(characterId) ?? 0)) {
-      rankByCharacter.set(characterId, rank)
-    }
-  }
-
-  const rewardsByCharacter = new Map<number, ChallengeRewardMaster[]>()
-  for (const reward of input.rewardMasters) {
-    const list = rewardsByCharacter.get(reward.characterId)
-    if (list == null) {
-      rewardsByCharacter.set(reward.characterId, [reward])
-    } else {
-      list.push(reward)
-    }
-  }
+  const scoreByCharacter = buildChallengeScoreMap(input.results)
+  const rankByCharacter = buildChallengeStageCapMap(input.stages)
+  const rewardsByCharacter = groupChallengeRewardsByCharacter(input.rewardMasters)
 
   const cells: ChallengeCell[] = []
   for (let characterId = 1; characterId <= CHALLENGE_CHARACTER_COUNT; characterId += 1) {
-    let unclaimedJewel = 0
-    let unclaimedShard = 0
-    for (const reward of rewardsByCharacter.get(characterId) ?? []) {
-      if (input.claimedRewardIds.has(reward.id)) {
-        continue
-      }
-      const box = input.boxRewards.get(reward.resourceBoxId)
-      if (box == null) {
-        continue
-      }
-      unclaimedJewel += box.jewel
-      unclaimedShard += box.shard
-    }
-
+    const unclaimed = sumUnclaimedChallengeRewards(
+      rewardsByCharacter.get(characterId) ?? [],
+      input.boxRewards,
+      input.claimedRewardIds,
+    )
     const highScore = scoreByCharacter.get(characterId) ?? 0
     const stage = rankByCharacter.get(characterId) ?? 0
     cells.push({
@@ -225,8 +228,8 @@ export function buildChallengeGrid(input: BuildChallengeGridInput): ChallengeCel
       highScore,
       stage,
       hasData: highScore > 0 || stage > 0,
-      unclaimedJewel,
-      unclaimedShard,
+      unclaimedJewel: unclaimed.jewel,
+      unclaimedShard: unclaimed.shard,
     })
   }
 

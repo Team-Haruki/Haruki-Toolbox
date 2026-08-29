@@ -160,181 +160,159 @@ export type BuildBondEntriesInput = {
   filterCharacterId?: number | null
 }
 
+type SelectedBondPair = {
+  groupId: number
+  charaId1: number
+  charaId2: number
+  state: UserBondState | null
+}
+
+function indexUserBonds(bonds: readonly UserBondState[]): Map<number, UserBondState> {
+  return new Map(bonds.map((bond) => [bond.bondsGroupId, bond]))
+}
+
+function selectFilteredBondPairs(
+  input: BuildBondEntriesInput,
+  filterCharacterId: number,
+  userBondByGroupId: ReadonlyMap<number, UserBondState>,
+): SelectedBondPair[] {
+  const selected: SelectedBondPair[] = []
+  for (const master of input.bondMasters) {
+    const leftBaseId = resolveBondBaseCharacterId(master.characterId1, input.styleMap)
+    const rightBaseId = resolveBondBaseCharacterId(master.characterId2, input.styleMap)
+    if (leftBaseId !== filterCharacterId && rightBaseId !== filterCharacterId) {
+      continue
+    }
+    const shouldSwap = leftBaseId !== filterCharacterId
+    selected.push({
+      groupId: master.groupId,
+      charaId1: shouldSwap ? master.characterId2 : master.characterId1,
+      charaId2: shouldSwap ? master.characterId1 : master.characterId2,
+      state: userBondByGroupId.get(master.groupId) ?? null,
+    })
+  }
+  return selected
+}
+
+function selectOwnedBondPairs(
+  input: BuildBondEntriesInput,
+  userBondByGroupId: ReadonlyMap<number, UserBondState>,
+): SelectedBondPair[] {
+  const masterByGroupId = new Map(input.bondMasters.map((master) => [master.groupId, master]))
+  return [...userBondByGroupId.values()].flatMap((bond) => {
+    const master = masterByGroupId.get(bond.bondsGroupId)
+    return master
+      ? [{
+          groupId: master.groupId,
+          charaId1: master.characterId1,
+          charaId2: master.characterId2,
+          state: bond,
+        }]
+      : []
+  })
+}
+
+function resolveBondLevelProgress(
+  rank: number,
+  exp: number,
+  levelTable: BondLevelTable,
+): { needExp: number | null; levelExpSpan: number | null } {
+  if (rank <= 0 || rank >= levelTable.maxLevel) {
+    return { needExp: null, levelExpSpan: null }
+  }
+  const currentTotalExp = levelTable.totalExpByLevel.get(rank)
+  const nextTotalExp = levelTable.totalExpByLevel.get(rank + 1)
+  if (currentTotalExp == null || nextTotalExp == null) {
+    return { needExp: null, levelExpSpan: null }
+  }
+  const levelExpSpan = nextTotalExp - currentTotalExp
+  return { needExp: Math.max(levelExpSpan - exp, 0), levelExpSpan }
+}
+
+function buildBondEntry(
+  pair: SelectedBondPair,
+  input: BuildBondEntriesInput,
+  charRankMap: ReadonlyMap<number, number>,
+): BondEntry {
+  const rank = pair.state?.rank ?? 0
+  const exp = pair.state?.exp ?? 0
+  const style1 = input.styleMap.get(pair.charaId1) ?? null
+  const style2 = input.styleMap.get(pair.charaId2) ?? null
+  const baseCharaId1 = resolveBondBaseCharacterId(pair.charaId1, input.styleMap)
+  const baseCharaId2 = resolveBondBaseCharacterId(pair.charaId2, input.styleMap)
+  const progress = resolveBondLevelProgress(rank, exp, input.levelTable)
+  return {
+    groupId: pair.groupId,
+    charaId1: pair.charaId1,
+    charaId2: pair.charaId2,
+    baseCharaId1,
+    baseCharaId2,
+    colorCode1: style1?.colorCode || null,
+    colorCode2: style2?.colorCode || null,
+    charaRank1: charRankMap.get(baseCharaId1) ?? 0,
+    charaRank2: charRankMap.get(baseCharaId2) ?? 0,
+    bondLevel: rank,
+    exp,
+    hasBond: pair.state != null,
+    ...progress,
+  }
+}
+
+function isBetterFilteredBondEntry(current: BondEntry, candidate: BondEntry): boolean {
+  if (candidate.bondLevel !== current.bondLevel) {
+    return candidate.bondLevel > current.bondLevel
+  }
+  if (candidate.hasBond !== current.hasBond) {
+    return candidate.hasBond
+  }
+  if (candidate.baseCharaId2 !== current.baseCharaId2) {
+    return candidate.baseCharaId2 < current.baseCharaId2
+  }
+  return candidate.charaId2 < current.charaId2
+}
+
+function dedupeFilteredBondEntries(entries: readonly BondEntry[]): BondEntry[] {
+  const byPartner = new Map<number, BondEntry>()
+  for (const entry of entries) {
+    const existing = byPartner.get(entry.baseCharaId2)
+    if (!existing || isBetterFilteredBondEntry(existing, entry)) {
+      byPartner.set(entry.baseCharaId2, entry)
+    }
+  }
+  return [...byPartner.values()]
+}
+
+function compareFilteredBondEntries(a: BondEntry, b: BondEntry): number {
+  if (a.bondLevel !== b.bondLevel) return b.bondLevel - a.bondLevel
+  if (a.hasBond !== b.hasBond) return a.hasBond ? -1 : 1
+  if (a.baseCharaId2 !== b.baseCharaId2) return a.baseCharaId2 - b.baseCharaId2
+  if (a.charaId2 !== b.charaId2) return a.charaId2 - b.charaId2
+  return a.charaId1 - b.charaId1
+}
+
+function compareOwnedBondEntries(a: BondEntry, b: BondEntry): number {
+  if (a.bondLevel !== b.bondLevel) return b.bondLevel - a.bondLevel
+  if (a.charaId1 !== b.charaId1) return a.charaId1 - b.charaId1
+  return a.charaId2 - b.charaId2
+}
+
 /**
  * Ports `BuildBondsRequestFromSnapshot`. Intentional web deviations: no
  * 20-entry render cap and the character filter is a UI select instead of a
  * command argument.
  */
 export function buildBondEntries(input: BuildBondEntriesInput): BondEntriesResult {
-  const { levelTable, styleMap } = input
   const filterCid = input.filterCharacterId ?? 0
-
-  const userBondByGroupId = new Map<number, UserBondState>()
-  for (const bond of input.userBonds) {
-    userBondByGroupId.set(bond.bondsGroupId, bond)
-  }
-
-  const groupToPair = new Map<number, BondMaster>()
-  for (const master of input.bondMasters) {
-    groupToPair.set(master.groupId, master)
-  }
-
-  const charRankMap = new Map<number, number>()
-  for (const character of input.userCharacters) {
-    charRankMap.set(character.characterId, character.characterRank)
-  }
-
-  const resolveBase = (gameId: number): number => resolveBondBaseCharacterId(gameId, styleMap)
-
-  type SelectedPair = {
-    groupId: number
-    charaId1: number
-    charaId2: number
-    state: UserBondState | null
-  }
-
-  const selected: SelectedPair[] = []
-  if (filterCid > 0) {
-    for (const master of input.bondMasters) {
-      let charaId1 = master.characterId1
-      let charaId2 = master.characterId2
-      const leftBaseId = resolveBase(charaId1)
-      const rightBaseId = resolveBase(charaId2)
-      if (leftBaseId !== filterCid && rightBaseId !== filterCid) {
-        continue
-      }
-      if (leftBaseId !== filterCid) {
-        const swapped = charaId1
-        charaId1 = charaId2
-        charaId2 = swapped
-      }
-      selected.push({
-        groupId: master.groupId,
-        charaId1,
-        charaId2,
-        state: userBondByGroupId.get(master.groupId) ?? null,
-      })
-    }
-  } else {
-    for (const bond of input.userBonds) {
-      const master = groupToPair.get(bond.bondsGroupId)
-      if (master == null) {
-        continue
-      }
-      selected.push({
-        groupId: master.groupId,
-        charaId1: master.characterId1,
-        charaId2: master.characterId2,
-        state: bond,
-      })
-    }
-  }
-
-  let entries: BondEntry[] = []
-  let userMaxLevel = 0
-  for (const pair of selected) {
-    const rank = pair.state?.rank ?? 0
-    const exp = pair.state?.exp ?? 0
-    if (rank > userMaxLevel) {
-      userMaxLevel = rank
-    }
-
-    let needExp: number | null = null
-    let levelExpSpan: number | null = null
-    if (rank > 0 && rank < levelTable.maxLevel) {
-      const currentTotalExp = levelTable.totalExpByLevel.get(rank)
-      const nextTotalExp = levelTable.totalExpByLevel.get(rank + 1)
-      if (currentTotalExp != null && nextTotalExp != null) {
-        levelExpSpan = nextTotalExp - currentTotalExp
-        needExp = Math.max(levelExpSpan - exp, 0)
-      }
-    }
-
-    const style1 = styleMap.get(pair.charaId1) ?? null
-    const style2 = styleMap.get(pair.charaId2) ?? null
-    entries.push({
-      groupId: pair.groupId,
-      charaId1: pair.charaId1,
-      charaId2: pair.charaId2,
-      baseCharaId1: resolveBase(pair.charaId1),
-      baseCharaId2: resolveBase(pair.charaId2),
-      colorCode1: style1 != null && style1.colorCode !== "" ? style1.colorCode : null,
-      colorCode2: style2 != null && style2.colorCode !== "" ? style2.colorCode : null,
-      charaRank1: charRankMap.get(resolveBase(pair.charaId1)) ?? 0,
-      charaRank2: charRankMap.get(resolveBase(pair.charaId2)) ?? 0,
-      bondLevel: rank,
-      exp,
-      hasBond: pair.state != null,
-      needExp,
-      levelExpSpan,
-    })
-  }
-
-  if (filterCid > 0) {
-    // Dedup by displayed partner (base char), keeping the better entry:
-    // higher bond level, then owned, then lower base/raw partner id.
-    const better = (current: BondEntry, candidate: BondEntry): boolean => {
-      if (candidate.bondLevel !== current.bondLevel) {
-        return candidate.bondLevel > current.bondLevel
-      }
-      if (candidate.hasBond !== current.hasBond) {
-        return candidate.hasBond
-      }
-      if (candidate.baseCharaId2 !== current.baseCharaId2) {
-        return candidate.baseCharaId2 < current.baseCharaId2
-      }
-      return candidate.charaId2 < current.charaId2
-    }
-
-    const deduped: BondEntry[] = []
-    const indexByPartner = new Map<number, number>()
-    for (const entry of entries) {
-      const partner = entry.baseCharaId2
-      const existingIndex = indexByPartner.get(partner)
-      if (existingIndex != null) {
-        const existing = deduped[existingIndex]
-        if (existing != null && better(existing, entry)) {
-          deduped[existingIndex] = entry
-        }
-        continue
-      }
-      indexByPartner.set(partner, deduped.length)
-      deduped.push(entry)
-    }
-    entries = deduped
-  }
-
-  let maxLevel = levelTable.maxLevel
-  if (maxLevel === 0) {
-    maxLevel = userMaxLevel
-  }
-
-  entries.sort((a, b) => {
-    if (filterCid > 0) {
-      if (a.bondLevel !== b.bondLevel) {
-        return b.bondLevel - a.bondLevel
-      }
-      if (a.hasBond !== b.hasBond) {
-        return a.hasBond ? -1 : 1
-      }
-      if (a.baseCharaId2 !== b.baseCharaId2) {
-        return a.baseCharaId2 - b.baseCharaId2
-      }
-      if (a.charaId2 !== b.charaId2) {
-        return a.charaId2 - b.charaId2
-      }
-      return a.charaId1 - b.charaId1
-    }
-    if (a.bondLevel !== b.bondLevel) {
-      return b.bondLevel - a.bondLevel
-    }
-    if (a.charaId1 !== b.charaId1) {
-      return a.charaId1 - b.charaId1
-    }
-    return a.charaId2 - b.charaId2
-  })
-
-  return { entries, maxLevel }
+  const userBondByGroupId = indexUserBonds(input.userBonds)
+  const selected = filterCid > 0
+    ? selectFilteredBondPairs(input, filterCid, userBondByGroupId)
+    : selectOwnedBondPairs(input, userBondByGroupId)
+  const charRankMap = new Map(input.userCharacters.map((character) => [character.characterId, character.characterRank]))
+  const builtEntries = selected.map((pair) => buildBondEntry(pair, input, charRankMap))
+  const entries = filterCid > 0 ? dedupeFilteredBondEntries(builtEntries) : builtEntries
+  entries.sort(filterCid > 0 ? compareFilteredBondEntries : compareOwnedBondEntries)
+  const userMaxLevel = entries.reduce((maximum, entry) => Math.max(maximum, entry.bondLevel), 0)
+  return { entries, maxLevel: input.levelTable.maxLevel || userMaxLevel }
 }
 
 /** One reward granted at a bond rank. */
@@ -351,6 +329,98 @@ export type BondRankRewards = {
   items: BondRewardItem[]
 }
 
+function collectBondRewardDetails(
+  rawResourceBoxes: unknown,
+  rawResourceBoxDetails: unknown,
+): Record<string, unknown>[] {
+  const details: Record<string, unknown>[] = []
+  for (const record of normalizeCatalogRecords(rawResourceBoxes)) {
+    appendCatalogRecords(details, record.details)
+  }
+  appendCatalogRecords(details, rawResourceBoxDetails)
+  return details
+}
+
+function normalizeBoxReward(
+  record: Record<string, unknown>,
+): { boxId: number; item: BondRewardItem } | null {
+  if (normalizeCatalogString(record.resourceBoxPurpose) !== "bonds_reward") {
+    return null
+  }
+  const boxId = normalizeCatalogNumber(record.resourceBoxId)
+  const resourceType = normalizeCatalogString(record.resourceType)
+  if (boxId == null || boxId <= 0 || resourceType === "") {
+    return null
+  }
+  return {
+    boxId,
+    item: {
+      type: resourceType,
+      resourceId: normalizeCatalogNumber(record.resourceId),
+      quantity: normalizeCatalogNumber(record.resourceQuantity) ?? 1,
+      level: normalizeCatalogNumber(record.resourceLevel),
+    },
+  }
+}
+
+function buildBondRewardItemsByBox(
+  rawResourceBoxes: unknown,
+  rawResourceBoxDetails: unknown,
+): Map<number, BondRewardItem[]> {
+  const itemsByBox = new Map<number, BondRewardItem[]>()
+  for (const record of collectBondRewardDetails(rawResourceBoxes, rawResourceBoxDetails)) {
+    const reward = normalizeBoxReward(record)
+    if (!reward) {
+      continue
+    }
+    const items = itemsByBox.get(reward.boxId) ?? []
+    items.push(reward.item)
+    itemsByBox.set(reward.boxId, items)
+  }
+  return itemsByBox
+}
+
+function normalizeBondRewardRank(
+  record: Record<string, unknown>,
+): { groupId: number; rank: number } | null {
+  const groupId = normalizeCatalogNumber(record.bondsGroupId)
+  const rank = normalizeCatalogNumber(record.rank)
+  if (groupId == null || groupId <= 0 || rank == null || rank <= 0) {
+    return null
+  }
+  return { groupId, rank }
+}
+
+function resolveBondRewardItems(
+  record: Record<string, unknown>,
+  itemsByBox: ReadonlyMap<number, BondRewardItem[]>,
+): BondRewardItem[] {
+  if (normalizeCatalogString(record.bondsRewardType) === "cut_in_voice") {
+    return [{ type: "cut_in_voice", resourceId: null, quantity: 1, level: null }]
+  }
+  const boxId = normalizeCatalogNumber(record.resourceBoxId)
+  return boxId == null ? [] : [...(itemsByBox.get(boxId) ?? [])]
+}
+
+function buildBondRankItemsByGroup(
+  rawBondsRewards: unknown,
+  itemsByBox: ReadonlyMap<number, BondRewardItem[]>,
+): Map<number, Map<number, BondRewardItem[]>> {
+  const rankMapByGroup = new Map<number, Map<number, BondRewardItem[]>>()
+  for (const record of normalizeCatalogRecords(rawBondsRewards)) {
+    const rewardRank = normalizeBondRewardRank(record)
+    if (!rewardRank) {
+      continue
+    }
+    const rankMap = rankMapByGroup.get(rewardRank.groupId) ?? new Map<number, BondRewardItem[]>()
+    const items = rankMap.get(rewardRank.rank) ?? []
+    items.push(...resolveBondRewardItems(record, itemsByBox))
+    rankMap.set(rewardRank.rank, items)
+    rankMapByGroup.set(rewardRank.groupId, rankMap)
+  }
+  return rankMapByGroup
+}
+
 /**
  * bondsGroupId -> per-rank rewards, resolved through the `bonds_reward`
  * resource boxes. Accepts the nested `resourceBoxes` dump (jp/en) and merges
@@ -361,66 +431,8 @@ export function buildBondsRewardsByGroup(
   rawResourceBoxes: unknown,
   rawResourceBoxDetails?: unknown,
 ): Map<number, BondRankRewards[]> {
-  const details: Record<string, unknown>[] = []
-  for (const record of normalizeCatalogRecords(rawResourceBoxes)) {
-    appendCatalogRecords(details, record.details)
-  }
-  appendCatalogRecords(details, rawResourceBoxDetails)
-
-  const itemsByBox = new Map<number, BondRewardItem[]>()
-  for (const record of details) {
-    if (normalizeCatalogString(record.resourceBoxPurpose) !== "bonds_reward") {
-      continue
-    }
-
-    const boxId = normalizeCatalogNumber(record.resourceBoxId)
-    const resourceType = normalizeCatalogString(record.resourceType)
-    if (boxId == null || boxId <= 0 || resourceType === "") {
-      continue
-    }
-
-    let items = itemsByBox.get(boxId)
-    if (!items) {
-      items = []
-      itemsByBox.set(boxId, items)
-    }
-    items.push({
-      type: resourceType,
-      resourceId: normalizeCatalogNumber(record.resourceId),
-      quantity: normalizeCatalogNumber(record.resourceQuantity) ?? 1,
-      level: normalizeCatalogNumber(record.resourceLevel),
-    })
-  }
-
-  const rankMapByGroup = new Map<number, Map<number, BondRewardItem[]>>()
-  for (const record of normalizeCatalogRecords(rawBondsRewards)) {
-    const groupId = normalizeCatalogNumber(record.bondsGroupId)
-    const rank = normalizeCatalogNumber(record.rank)
-    if (groupId == null || groupId <= 0 || rank == null || rank <= 0) {
-      continue
-    }
-
-    let rankMap = rankMapByGroup.get(groupId)
-    if (!rankMap) {
-      rankMap = new Map()
-      rankMapByGroup.set(groupId, rankMap)
-    }
-    let items = rankMap.get(rank)
-    if (!items) {
-      items = []
-      rankMap.set(rank, items)
-    }
-
-    if (normalizeCatalogString(record.bondsRewardType) === "cut_in_voice") {
-      items.push({ type: "cut_in_voice", resourceId: null, quantity: 1, level: null })
-      continue
-    }
-
-    const boxId = normalizeCatalogNumber(record.resourceBoxId)
-    if (boxId != null) {
-      items.push(...(itemsByBox.get(boxId) ?? []))
-    }
-  }
+  const itemsByBox = buildBondRewardItemsByBox(rawResourceBoxes, rawResourceBoxDetails)
+  const rankMapByGroup = buildBondRankItemsByGroup(rawBondsRewards, itemsByBox)
 
   const result = new Map<number, BondRankRewards[]>()
   for (const [groupId, rankMap] of rankMapByGroup) {

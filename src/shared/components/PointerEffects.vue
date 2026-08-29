@@ -36,7 +36,7 @@ let enabled = false
 function clearActiveTarget() {
   if (!activeTarget) return
 
-  activeTarget.removeAttribute("data-cursor-active")
+  delete activeTarget.dataset.cursorActive
   activeTarget.style.removeProperty("--cursor-local-x")
   activeTarget.style.removeProperty("--cursor-local-y")
   activeTarget = null
@@ -96,7 +96,7 @@ function updatePointerTarget(event: PointerEvent) {
   const rect = activeTargetRect
   target.style.setProperty("--cursor-local-x", `${event.clientX - rect.left}px`)
   target.style.setProperty("--cursor-local-y", `${event.clientY - rect.top}px`)
-  target.setAttribute("data-cursor-active", "true")
+  target.dataset.cursorActive = "true"
   activeTarget = target
 }
 
