@@ -16,6 +16,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { type DateValue, CalendarDate } from "@internationalized/date"
 
 const props = defineProps<{
+  id?: string
   modelValue?: Date
   placeholder?: string
 }>()
@@ -90,6 +91,7 @@ const handleTimeChange = (type: "hour" | "minute", value: string) => {
   <Popover v-model:open="isOpen">
     <PopoverTrigger asChild>
       <Button
+        :id="props.id"
         variant="outline"
         :class="cn(
           'w-full justify-start text-left font-normal',

@@ -63,8 +63,9 @@ const emit = defineEmits<{
       </DialogHeader>
       <div class="flex flex-col gap-4 py-4">
         <div class="flex flex-col gap-2">
-          <Label>{{ t("adminOAuthClients.createDialog.clientIdLabel") }}</Label>
+          <Label for="oauth-client-create-id">{{ t("adminOAuthClients.createDialog.clientIdLabel") }}</Label>
           <Input
+            id="oauth-client-create-id"
             :model-value="props.clientId"
             :placeholder="t('adminOAuthClients.createDialog.clientIdPlaceholder')"
             @update:model-value="value => emit('update:client-id', String(value ?? ''))"

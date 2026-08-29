@@ -50,7 +50,6 @@ defineProps<{
 const { t, locale } = useI18n()
 const FIELD_IDS = {
   toolboxUser: "game-binding-edit-toolbox-user",
-  server: "game-binding-edit-server",
   gameUser: "game-binding-edit-game-user",
 } as const
 
@@ -117,9 +116,9 @@ const mysekaiPermissionOptions = computed(() =>
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label :for="FIELD_IDS.server">{{ t("adminGameBindings.editDialog.server") }}</Label>
+          <Label for="game-binding-edit-server">{{ t("adminGameBindings.editDialog.server") }}</Label>
           <Select :key="locale" :model-value="editServer" @update:model-value="handleServerChange">
-            <SelectTrigger :id="FIELD_IDS.server" class="w-full" :disabled="isEditMode">
+            <SelectTrigger id="game-binding-edit-server" class="w-full" :disabled="isEditMode">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

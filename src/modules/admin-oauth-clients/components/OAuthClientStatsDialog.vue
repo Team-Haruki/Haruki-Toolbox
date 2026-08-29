@@ -94,16 +94,18 @@ const tiles = [
         </p>
         <div class="grid gap-3 sm:grid-cols-2">
           <div class="flex flex-col gap-1.5">
-            <Label class="text-sm">{{ t("adminOAuthClients.statsDialog.from") }}</Label>
+            <Label for="oauth-stats-from" class="text-sm">{{ t("adminOAuthClients.statsDialog.from") }}</Label>
             <DateTimePicker24h
+              id="oauth-stats-from"
               :model-value="props.statsFrom"
               :placeholder="t('adminOAuthClients.statsDialog.from')"
               @update:model-value="emit('update:statsFrom', $event)"
             />
           </div>
           <div class="flex flex-col gap-1.5">
-            <Label class="text-sm">{{ t("adminOAuthClients.statsDialog.to") }}</Label>
+            <Label for="oauth-stats-to" class="text-sm">{{ t("adminOAuthClients.statsDialog.to") }}</Label>
             <DateTimePicker24h
+              id="oauth-stats-to"
               :model-value="props.statsTo"
               :placeholder="t('adminOAuthClients.statsDialog.to')"
               @update:model-value="emit('update:statsTo', $event)"
@@ -112,9 +114,9 @@ const tiles = [
         </div>
         <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
           <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-            <Label class="text-sm">{{ t("adminOAuthClients.statsDialog.bucket") }}</Label>
+            <Label for="oauth-stats-bucket" class="text-sm">{{ t("adminOAuthClients.statsDialog.bucket") }}</Label>
             <Select :model-value="props.statsBucket" @update:model-value="value => emit('update:statsBucket', value === 'day' ? 'day' : 'hour')">
-              <SelectTrigger class="w-full">
+              <SelectTrigger id="oauth-stats-bucket" class="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

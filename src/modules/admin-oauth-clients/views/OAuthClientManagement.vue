@@ -163,12 +163,13 @@ function resetFilters() {
         <LucideSearch class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           v-model="search"
+          :aria-label="t('adminOAuthClients.list.searchPlaceholder')"
           class="pl-8"
           :placeholder="t('adminOAuthClients.list.searchPlaceholder')"
         />
       </div>
       <Select :model-value="statusFilter" @update:model-value="handleStatusFilterChange">
-        <SelectTrigger class="w-full sm:w-36">
+        <SelectTrigger class="w-full sm:w-36" :aria-label="t('adminOAuthClients.list.allStatuses')">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

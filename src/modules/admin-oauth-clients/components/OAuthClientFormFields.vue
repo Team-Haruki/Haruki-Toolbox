@@ -59,17 +59,18 @@ function handleClientTypeChange(value: unknown) {
 <template>
   <div class="grid gap-4 sm:grid-cols-2">
     <div class="flex flex-col gap-2">
-      <Label>{{ t("adminOAuthClients.form.nameLabel") }}</Label>
+      <Label for="oauth-client-form-name">{{ t("adminOAuthClients.form.nameLabel") }}</Label>
       <Input
+        id="oauth-client-form-name"
         :model-value="props.name"
         :placeholder="t('adminOAuthClients.form.namePlaceholder')"
         @update:model-value="value => emit('update:name', String(value ?? ''))"
       />
     </div>
     <div class="flex flex-col gap-2">
-      <Label>{{ t("adminOAuthClients.form.clientTypeLabel") }}</Label>
+      <Label for="oauth-client-form-type">{{ t("adminOAuthClients.form.clientTypeLabel") }}</Label>
       <Select :key="locale" :model-value="props.clientType" @update:model-value="handleClientTypeChange">
-        <SelectTrigger>
+        <SelectTrigger id="oauth-client-form-type">
           <SelectValue :placeholder="t('adminOAuthClients.form.clientTypePlaceholder')" />
         </SelectTrigger>
         <SelectContent>
@@ -81,7 +82,7 @@ function handleClientTypeChange(value: unknown) {
   </div>
 
   <div class="flex flex-col gap-2">
-    <Label>{{ t("adminOAuthClients.form.scopesLabel") }}</Label>
+    <h3 class="text-sm font-medium">{{ t("adminOAuthClients.form.scopesLabel") }}</h3>
     <div class="flex flex-wrap gap-1.5">
       <button
         v-for="scope in props.availableScopes"
@@ -102,9 +103,10 @@ function handleClientTypeChange(value: unknown) {
   </div>
 
   <div class="flex flex-col gap-2">
-    <Label>{{ t("adminOAuthClients.form.redirectUrisLabel") }}</Label>
+    <h3 class="text-sm font-medium">{{ t("adminOAuthClients.form.redirectUrisLabel") }}</h3>
     <div v-for="(uri, i) in props.redirectUris" :key="i" class="flex gap-2">
       <Input
+        :aria-label="`${t('adminOAuthClients.form.redirectUrisLabel')} ${i + 1}`"
         :model-value="uri"
         :placeholder="t('adminOAuthClients.form.redirectUriPlaceholder')"
         class="flex-1"
@@ -129,10 +131,11 @@ function handleClientTypeChange(value: unknown) {
   </div>
 
   <div class="flex flex-col gap-2">
-    <Label>{{ t("adminOAuthClients.form.postLogoutRedirectUrisLabel") }}</Label>
+    <h3 class="text-sm font-medium">{{ t("adminOAuthClients.form.postLogoutRedirectUrisLabel") }}</h3>
     <p class="text-xs text-muted-foreground">{{ t("adminOAuthClients.form.postLogoutRedirectUrisHelp") }}</p>
     <div v-for="(uri, i) in props.postLogoutRedirectUris" :key="i" class="flex gap-2">
       <Input
+        :aria-label="`${t('adminOAuthClients.form.postLogoutRedirectUrisLabel')} ${i + 1}`"
         :model-value="uri"
         :placeholder="t('adminOAuthClients.form.postLogoutRedirectUriPlaceholder')"
         class="flex-1"

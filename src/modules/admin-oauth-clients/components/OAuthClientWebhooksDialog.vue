@@ -194,16 +194,18 @@ function formatDate(value: string | undefined) {
       </DialogHeader>
       <div class="space-y-4 py-2">
         <div class="space-y-1.5">
-          <Label>{{ t("adminOAuthClients.webhooks.form.callbackUrl") }}</Label>
+          <Label for="oauth-webhook-callback-url">{{ t("adminOAuthClients.webhooks.form.callbackUrl") }}</Label>
           <Input
+            id="oauth-webhook-callback-url"
             :model-value="props.callbackUrl"
             :placeholder="t('adminOAuthClients.webhooks.form.callbackUrlPlaceholder')"
             @update:model-value="emit('update:callback-url', String($event ?? ''))"
           />
         </div>
         <div class="space-y-1.5">
-          <Label>{{ t("adminOAuthClients.webhooks.form.bearer") }}</Label>
+          <Label for="oauth-webhook-bearer">{{ t("adminOAuthClients.webhooks.form.bearer") }}</Label>
           <Input
+            id="oauth-webhook-bearer"
             type="password"
             :model-value="props.bearer"
             :disabled="props.saving || props.clearBearer"
@@ -216,17 +218,17 @@ function formatDate(value: string | undefined) {
         </div>
         <div class="flex items-center justify-between gap-3 rounded-md border p-3">
           <div>
-            <Label>{{ t("adminOAuthClients.webhooks.form.enabled") }}</Label>
+            <Label for="oauth-webhook-enabled">{{ t("adminOAuthClients.webhooks.form.enabled") }}</Label>
             <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.webhooks.form.enabledHelp") }}</p>
           </div>
-          <Switch :model-value="props.enabled" @update:model-value="emit('update:enabled', Boolean($event))" />
+          <Switch id="oauth-webhook-enabled" :model-value="props.enabled" @update:model-value="emit('update:enabled', Boolean($event))" />
         </div>
         <div v-if="props.editingWebhook?.bearerSet" class="flex items-center justify-between gap-3 rounded-md border p-3">
           <div>
-            <Label>{{ t("adminOAuthClients.webhooks.form.clearBearer") }}</Label>
+            <Label for="oauth-webhook-clear-bearer">{{ t("adminOAuthClients.webhooks.form.clearBearer") }}</Label>
             <p class="text-sm text-muted-foreground">{{ t("adminOAuthClients.webhooks.form.clearBearerHelp") }}</p>
           </div>
-          <Switch :model-value="props.clearBearer" @update:model-value="emit('update:clear-bearer', Boolean($event))" />
+          <Switch id="oauth-webhook-clear-bearer" :model-value="props.clearBearer" @update:model-value="emit('update:clear-bearer', Boolean($event))" />
         </div>
       </div>
       <DialogFooter>

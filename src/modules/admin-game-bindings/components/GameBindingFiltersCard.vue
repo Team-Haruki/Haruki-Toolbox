@@ -41,8 +41,6 @@ const FILTER_IDS = {
   query: "game-binding-filter-query",
   gameUser: "game-binding-filter-game-user",
   toolboxUser: "game-binding-filter-toolbox-user",
-  server: "game-binding-filter-server",
-  sort: "game-binding-filter-sort",
 } as const
 
 const emit = defineEmits<{
@@ -101,9 +99,9 @@ const emit = defineEmits<{
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label :for="FILTER_IDS.server" class="text-sm">{{ t("adminGameBindings.filters.server") }}</Label>
+          <Label for="game-binding-filter-server" class="text-sm">{{ t("adminGameBindings.filters.server") }}</Label>
           <Select :key="locale" :model-value="filterServer" @update:model-value="emit('update:filterServer', String($event ?? ''))">
-            <SelectTrigger :id="FILTER_IDS.server" class="w-full">
+            <SelectTrigger id="game-binding-filter-server" class="w-full">
               <SelectValue :placeholder="t('adminGameBindings.filters.allServers')" />
             </SelectTrigger>
             <SelectContent>
@@ -114,9 +112,9 @@ const emit = defineEmits<{
           </Select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label :for="FILTER_IDS.sort" class="text-sm">{{ t("adminGameBindings.filters.sort") }}</Label>
+          <Label for="game-binding-filter-sort" class="text-sm">{{ t("adminGameBindings.filters.sort") }}</Label>
           <Select :key="locale" :model-value="filterSort" @update:model-value="emit('update:filterSort', String($event ?? ''))">
-            <SelectTrigger :id="FILTER_IDS.sort" class="w-full">
+            <SelectTrigger id="game-binding-filter-sort" class="w-full">
               <SelectValue :placeholder="t('adminGameBindings.filters.sortPlaceholder')" />
             </SelectTrigger>
             <SelectContent>
