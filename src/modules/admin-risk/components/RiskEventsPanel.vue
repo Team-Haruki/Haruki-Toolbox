@@ -125,9 +125,9 @@ function statusLabel(status: string) {
           </DialogHeader>
           <div class="flex flex-col gap-3 py-4">
             <div class="flex flex-col gap-1.5">
-              <Label for="risk-event-severity">{{ t("adminRisk.events.fields.severity") }}</Label>
+              <Label id="risk-event-severity-label" for="risk-event-severity">{{ t("adminRisk.events.fields.severity") }}</Label>
               <Select id="risk-event-severity" :model-value="props.newSeverity" @update:model-value="updateSeverity">
-                <SelectTrigger id="risk-event-severity" class="w-full">
+                <SelectTrigger aria-labelledby="risk-event-severity-label" class="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

@@ -169,9 +169,9 @@ function resetFilters() {
           :placeholder="t('adminOAuthClients.list.searchPlaceholder')"
         />
       </div>
-      <Label for="oauth-client-status-filter" class="sr-only">{{ t("adminOAuthClients.list.allStatuses") }}</Label>
+      <Label id="oauth-client-status-filter-label" for="oauth-client-status-filter" class="sr-only">{{ t("adminOAuthClients.list.allStatuses") }}</Label>
       <Select id="oauth-client-status-filter" :model-value="statusFilter" @update:model-value="handleStatusFilterChange">
-        <SelectTrigger id="oauth-client-status-filter" class="w-full sm:w-36">
+        <SelectTrigger aria-labelledby="oauth-client-status-filter-label" class="w-full sm:w-36">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

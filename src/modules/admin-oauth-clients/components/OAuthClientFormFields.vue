@@ -68,9 +68,9 @@ function handleClientTypeChange(value: unknown) {
       />
     </div>
     <div class="flex flex-col gap-2">
-      <Label for="oauth-client-form-type">{{ t("adminOAuthClients.form.clientTypeLabel") }}</Label>
+      <Label id="oauth-client-form-type-label" for="oauth-client-form-type">{{ t("adminOAuthClients.form.clientTypeLabel") }}</Label>
       <Select id="oauth-client-form-type" :key="locale" :model-value="props.clientType" @update:model-value="handleClientTypeChange">
-        <SelectTrigger id="oauth-client-form-type">
+        <SelectTrigger aria-labelledby="oauth-client-form-type-label">
           <SelectValue :placeholder="t('adminOAuthClients.form.clientTypePlaceholder')" />
         </SelectTrigger>
         <SelectContent>
