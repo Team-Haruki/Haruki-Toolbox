@@ -37,6 +37,13 @@ defineProps<{
   sortOptions: ReadonlyArray<FilterOption>
 }>()
 const { t, locale } = useI18n()
+const FILTER_IDS = {
+  query: "game-binding-filter-query",
+  gameUser: "game-binding-filter-game-user",
+  toolboxUser: "game-binding-filter-toolbox-user",
+  server: "game-binding-filter-server",
+  sort: "game-binding-filter-sort",
+} as const
 
 const emit = defineEmits<{
   (e: "update:filterQ", value: string): void
@@ -67,33 +74,36 @@ const emit = defineEmits<{
     <CardContent class="pt-0">
       <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         <div class="flex flex-col gap-1.5">
-          <Label class="text-sm">{{ t("adminGameBindings.filters.fuzzySearch") }}</Label>
+          <Label :for="FILTER_IDS.query" class="text-sm">{{ t("adminGameBindings.filters.fuzzySearch") }}</Label>
           <Input
+            :id="FILTER_IDS.query"
             :model-value="filterQ"
             :placeholder="t('adminGameBindings.filters.fuzzySearchPlaceholder')"
             @update:model-value="emit('update:filterQ', String($event ?? ''))"
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label class="text-sm">{{ t("adminGameBindings.filters.exactGameId") }}</Label>
+          <Label :for="FILTER_IDS.gameUser" class="text-sm">{{ t("adminGameBindings.filters.exactGameId") }}</Label>
           <Input
+            :id="FILTER_IDS.gameUser"
             :model-value="filterGameUserId"
             :placeholder="t('adminGameBindings.filters.exactGameIdPlaceholder')"
             @update:model-value="emit('update:filterGameUserId', String($event ?? ''))"
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label class="text-sm">{{ t("adminGameBindings.filters.toolboxUserId") }}</Label>
+          <Label :for="FILTER_IDS.toolboxUser" class="text-sm">{{ t("adminGameBindings.filters.toolboxUserId") }}</Label>
           <Input
+            :id="FILTER_IDS.toolboxUser"
             :model-value="filterUserId"
             :placeholder="t('adminGameBindings.filters.toolboxUserIdPlaceholder')"
             @update:model-value="emit('update:filterUserId', String($event ?? ''))"
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label class="text-sm">{{ t("adminGameBindings.filters.server") }}</Label>
+          <Label :for="FILTER_IDS.server" class="text-sm">{{ t("adminGameBindings.filters.server") }}</Label>
           <Select :key="locale" :model-value="filterServer" @update:model-value="emit('update:filterServer', String($event ?? ''))">
-            <SelectTrigger class="w-full">
+            <SelectTrigger :id="FILTER_IDS.server" class="w-full">
               <SelectValue :placeholder="t('adminGameBindings.filters.allServers')" />
             </SelectTrigger>
             <SelectContent>
@@ -104,9 +114,9 @@ const emit = defineEmits<{
           </Select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label class="text-sm">{{ t("adminGameBindings.filters.sort") }}</Label>
+          <Label :for="FILTER_IDS.sort" class="text-sm">{{ t("adminGameBindings.filters.sort") }}</Label>
           <Select :key="locale" :model-value="filterSort" @update:model-value="emit('update:filterSort', String($event ?? ''))">
-            <SelectTrigger class="w-full">
+            <SelectTrigger :id="FILTER_IDS.sort" class="w-full">
               <SelectValue :placeholder="t('adminGameBindings.filters.sortPlaceholder')" />
             </SelectTrigger>
             <SelectContent>

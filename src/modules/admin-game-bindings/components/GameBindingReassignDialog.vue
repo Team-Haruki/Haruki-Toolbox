@@ -22,6 +22,7 @@ defineProps<{
   serverLabel: (server: string) => string
 }>()
 const { t } = useI18n()
+const TARGET_USER_ID = "game-binding-reassign-target-user"
 
 const emit = defineEmits<{
   (e: "update:open", value: boolean): void
@@ -44,8 +45,9 @@ const emit = defineEmits<{
         </DialogDescription>
       </DialogHeader>
       <div class="flex flex-col gap-2 py-2">
-        <Label>{{ t("adminGameBindings.reassignDialog.targetUserIdLabel") }}</Label>
+        <Label :for="TARGET_USER_ID">{{ t("adminGameBindings.reassignDialog.targetUserIdLabel") }}</Label>
         <Input
+          :id="TARGET_USER_ID"
           :model-value="targetUserId"
           :placeholder="t('adminGameBindings.reassignDialog.targetUserIdPlaceholder')"
           @update:model-value="emit('update:targetUserId', String($event ?? ''))"

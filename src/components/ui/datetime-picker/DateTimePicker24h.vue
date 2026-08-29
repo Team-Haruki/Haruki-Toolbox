@@ -78,9 +78,9 @@ const calendarDate = computed({
 const handleTimeChange = (type: "hour" | "minute", value: string) => {
   const newDate = props.modelValue ? new Date(props.modelValue) : new Date(new Date().setHours(0, 0, 0, 0))
   if (type === "hour") {
-    newDate.setHours(parseInt(value))
+    newDate.setHours(Number.parseInt(value, 10))
   } else if (type === "minute") {
-    newDate.setMinutes(parseInt(value))
+    newDate.setMinutes(Number.parseInt(value, 10))
   }
   emit('update:modelValue', newDate)
 }

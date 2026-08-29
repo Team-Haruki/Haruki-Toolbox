@@ -48,6 +48,11 @@ defineProps<{
   editServers: ReadonlyArray<ServerOption>
 }>()
 const { t, locale } = useI18n()
+const FIELD_IDS = {
+  toolboxUser: "game-binding-edit-toolbox-user",
+  server: "game-binding-edit-server",
+  gameUser: "game-binding-edit-game-user",
+} as const
 
 const emit = defineEmits<{
   (e: "update:open", value: boolean): void
@@ -102,8 +107,9 @@ const mysekaiPermissionOptions = computed(() =>
       </DialogHeader>
       <div class="flex flex-col gap-4 py-2">
         <div class="flex flex-col gap-1.5">
-          <Label>{{ t("adminGameBindings.editDialog.toolboxUserId") }}</Label>
+          <Label :for="FIELD_IDS.toolboxUser">{{ t("adminGameBindings.editDialog.toolboxUserId") }}</Label>
           <Input
+            :id="FIELD_IDS.toolboxUser"
             :model-value="editTargetUserId"
             :placeholder="t('adminGameBindings.editDialog.toolboxUserIdPlaceholder')"
             :disabled="isEditMode"
@@ -111,9 +117,9 @@ const mysekaiPermissionOptions = computed(() =>
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label>{{ t("adminGameBindings.editDialog.server") }}</Label>
+          <Label :for="FIELD_IDS.server">{{ t("adminGameBindings.editDialog.server") }}</Label>
           <Select :key="locale" :model-value="editServer" @update:model-value="handleServerChange">
-            <SelectTrigger class="w-full" :disabled="isEditMode">
+            <SelectTrigger :id="FIELD_IDS.server" class="w-full" :disabled="isEditMode">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -128,8 +134,9 @@ const mysekaiPermissionOptions = computed(() =>
           </Select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label>{{ t("adminGameBindings.editDialog.gameUserId") }}</Label>
+          <Label :for="FIELD_IDS.gameUser">{{ t("adminGameBindings.editDialog.gameUserId") }}</Label>
           <Input
+            :id="FIELD_IDS.gameUser"
             :model-value="editGameUserId"
             :placeholder="t('adminGameBindings.editDialog.gameUserIdPlaceholder')"
             :disabled="isEditMode"

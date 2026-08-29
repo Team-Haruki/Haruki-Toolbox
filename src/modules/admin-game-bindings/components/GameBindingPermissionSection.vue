@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useId } from "vue"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import type { PermissionOption } from "@/lib/game-binding-permission-meta"
@@ -10,6 +11,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const fieldIdPrefix = useId()
 const emit = defineEmits<{
   (event: "update", payload: { key: string; value: boolean }): void
 }>()
@@ -17,15 +19,20 @@ const emit = defineEmits<{
 function handleUpdate(key: string, value: boolean) {
   emit("update", { key, value })
 }
+
+function fieldId(key: string): string {
+  return `${fieldIdPrefix}-${key}`
+}
 </script>
 
 <template>
   <div class="border rounded-lg p-3">
-    <Label class="font-semibold text-sm">{{ props.title }}</Label>
+    <h3 class="font-semibold text-sm">{{ props.title }}</h3>
     <div class="grid gap-2 mt-2">
       <div v-for="option in props.options" :key="option.key" class="flex items-center justify-between">
-        <span class="text-sm">{{ option.label }}</span>
+        <Label :for="fieldId(option.key)" class="text-sm">{{ option.label }}</Label>
         <Switch
+          :id="fieldId(option.key)"
           :model-value="Boolean(props.values[option.key])"
           @update:model-value="value => handleUpdate(option.key, value)"
         />
