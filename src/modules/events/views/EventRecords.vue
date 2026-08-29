@@ -332,6 +332,7 @@ function formatRecordDate(value: number | null) {
           <label
             v-for="eventType in EVENT_TYPE_OPTIONS"
             :key="eventType"
+            :for="`event-record-type-${eventType}`"
             :class="[
               'flex cursor-pointer items-center gap-2 rounded-md border bg-background/70 px-2 py-1.5 text-xs transition-colors hover:bg-muted/40',
               typeFilters.includes(eventType)
@@ -340,6 +341,7 @@ function formatRecordDate(value: number | null) {
             ]"
           >
             <Checkbox
+              :id="`event-record-type-${eventType}`"
               :model-value="typeFilters.includes(eventType)"
               @update:model-value="checked => toggleTypeFilter(eventType, checked === true)"
             />

@@ -209,8 +209,11 @@ function nextPage() {
         <p class="text-sm text-muted-foreground">{{ t("gachas.list.description") }}</p>
       </div>
       <div class="flex items-center gap-2">
-        <Select :key="locale" v-model="selectedRegion">
-          <SelectTrigger class="w-32" :aria-label="t('gachas.common.region')">
+        <Label id="gacha-list-region-label" for="gacha-list-region" class="sr-only">
+          {{ t("gachas.common.region") }}
+        </Label>
+        <Select id="gacha-list-region" :key="locale" v-model="selectedRegion">
+          <SelectTrigger class="w-32" aria-labelledby="gacha-list-region-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -228,6 +231,7 @@ function nextPage() {
             v-model="search"
             class="pl-8"
             :placeholder="t('gachas.list.searchPlaceholder')"
+            :aria-label="t('gachas.list.searchPlaceholder')"
           />
         </div>
       </div>
@@ -242,9 +246,9 @@ function nextPage() {
     >
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
       <div class="grid gap-1.5">
-        <Label class="text-xs text-muted-foreground">{{ t("gachas.list.typeLabel") }}</Label>
-        <Select :key="locale" v-model="typeFilter">
-          <SelectTrigger class="w-full">
+        <Label id="gacha-type-label" for="gacha-type" class="text-xs text-muted-foreground">{{ t("gachas.list.typeLabel") }}</Label>
+        <Select id="gacha-type" :key="locale" v-model="typeFilter">
+          <SelectTrigger class="w-full" aria-labelledby="gacha-type-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -256,9 +260,9 @@ function nextPage() {
         </Select>
       </div>
       <div class="grid gap-1.5">
-        <Label class="text-xs text-muted-foreground">{{ t("gachas.list.statusLabel") }}</Label>
-        <Select :key="locale" v-model="statusFilter">
-          <SelectTrigger class="w-full">
+        <Label id="gacha-status-label" for="gacha-status" class="text-xs text-muted-foreground">{{ t("gachas.list.statusLabel") }}</Label>
+        <Select id="gacha-status" :key="locale" v-model="statusFilter">
+          <SelectTrigger class="w-full" aria-labelledby="gacha-status-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -270,9 +274,9 @@ function nextPage() {
         </Select>
       </div>
       <div class="grid gap-1.5">
-        <Label class="text-xs text-muted-foreground">{{ t("gachas.list.yearLabel") }}</Label>
-        <Select :key="locale" v-model="yearFilter">
-          <SelectTrigger class="w-full">
+        <Label id="gacha-year-label" for="gacha-year" class="text-xs text-muted-foreground">{{ t("gachas.list.yearLabel") }}</Label>
+        <Select id="gacha-year" :key="locale" v-model="yearFilter">
+          <SelectTrigger class="w-full" aria-labelledby="gacha-year-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -284,8 +288,9 @@ function nextPage() {
         </Select>
       </div>
       <div class="grid gap-1.5">
-        <Label class="text-xs text-muted-foreground">{{ t("gachas.list.cardLabel") }}</Label>
+        <Label for="gacha-card" class="text-xs text-muted-foreground">{{ t("gachas.list.cardLabel") }}</Label>
         <Combobox
+          trigger-id="gacha-card"
           :model-value="null"
           :options="cardFilterOptions"
           :placeholder="t('gachas.list.allCards')"
@@ -296,9 +301,9 @@ function nextPage() {
         />
       </div>
       <div class="grid gap-1.5">
-        <Label class="text-xs text-muted-foreground">{{ t("gachas.list.sortLabel") }}</Label>
-        <Select :key="locale" v-model="sortKey">
-          <SelectTrigger class="w-full">
+        <Label id="gacha-sort-label" for="gacha-sort" class="text-xs text-muted-foreground">{{ t("gachas.list.sortLabel") }}</Label>
+        <Select id="gacha-sort" :key="locale" v-model="sortKey">
+          <SelectTrigger class="w-full" aria-labelledby="gacha-sort-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

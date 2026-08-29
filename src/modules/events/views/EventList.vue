@@ -164,9 +164,9 @@ function eventUnreleased(event: SekaiEventItem) {
     <!-- Region + search -->
     <div class="grid gap-3 sm:grid-cols-[12rem_1fr]">
       <div class="grid gap-1.5">
-        <Label class="text-xs text-muted-foreground">{{ t("events.list.regionLabel") }}</Label>
-        <Select :key="locale" :model-value="regionSelectorValue" @update:model-value="updateRegion">
-          <SelectTrigger class="w-full">
+        <Label id="event-list-region-label" for="event-list-region" class="text-xs text-muted-foreground">{{ t("events.list.regionLabel") }}</Label>
+        <Select id="event-list-region" :key="locale" :model-value="regionSelectorValue" @update:model-value="updateRegion">
+          <SelectTrigger class="w-full" aria-labelledby="event-list-region-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

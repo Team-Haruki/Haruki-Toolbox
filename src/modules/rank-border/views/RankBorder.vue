@@ -245,6 +245,27 @@ const activeQuickJumpRank = computed(() =>
   visibleRank.value ?? detail.value?.result.rank ?? null,
 )
 const activeQuickJumpTarget = computed(() => quickJumpTargetByRank(activeQuickJumpRank.value))
+const activeQuickJumpIndex = computed(() => {
+  const targets = quickJumpTargets.value
+  if (targets.length === 0) {
+    return 0
+  }
+
+  const activeRank = activeQuickJumpRank.value
+  if (activeRank == null) {
+    return 0
+  }
+
+  const exactIndex = targets.findIndex((target) => target.rank === activeRank)
+  if (exactIndex >= 0) {
+    return exactIndex
+  }
+
+  return targets.reduce((closestIndex, target, index) =>
+    Math.abs(target.rank - activeRank) < Math.abs(targets[closestIndex].rank - activeRank)
+      ? index
+      : closestIndex, 0)
+})
 const hoveredQuickJumpTarget = computed(() => quickJumpTargetByRank(hoveredQuickJumpRank.value))
 const mobileQuickJumpFillStyle = computed(() => {
   const target = hoveredQuickJumpTarget.value ?? activeQuickJumpTarget.value ?? quickJumpTargets.value[0] ?? null
@@ -553,6 +574,36 @@ function handleQuickJumpClick(event: MouseEvent) {
   const rank = resolveQuickJumpRankFromPointer(event)
   if (rank) {
     void jumpToRank(rank)
+  }
+}
+
+function handleQuickJumpKeydown(event: KeyboardEvent) {
+  const lastIndex = quickJumpTargets.value.length - 1
+  let nextIndex = activeQuickJumpIndex.value
+
+  switch (event.key) {
+    case "ArrowLeft":
+    case "ArrowDown":
+      nextIndex = Math.max(0, nextIndex - 1)
+      break
+    case "ArrowRight":
+    case "ArrowUp":
+      nextIndex = Math.min(lastIndex, nextIndex + 1)
+      break
+    case "Home":
+      nextIndex = 0
+      break
+    case "End":
+      nextIndex = lastIndex
+      break
+    default:
+      return
+  }
+
+  event.preventDefault()
+  const target = quickJumpTargets.value[nextIndex]
+  if (target) {
+    void jumpToRank(target.rank)
   }
 }
 
@@ -961,11 +1012,16 @@ function normalizeTextValue(value: unknown) {
               <span class="shrink-0 text-xs font-medium text-muted-foreground">{{ t("rankBorder.sections.quickJump") }}</span>
               <div
                 class="rank-border-jump-rail__bars"
-                role="group"
+                role="slider"
                 tabindex="0"
                 :aria-label="t('rankBorder.sections.quickJump')"
+                aria-valuemin="0"
+                :aria-valuemax="quickJumpTargets.length - 1"
+                :aria-valuenow="activeQuickJumpIndex"
+                :aria-valuetext="activeQuickJumpTarget?.label ?? quickJumpTargets[activeQuickJumpIndex]?.label"
                 :style="mobileQuickJumpFillStyle"
                 @click="handleQuickJumpClick"
+                @keydown="handleQuickJumpKeydown"
                 @pointerdown="handleQuickJumpPointerDown"
                 @pointermove="handleQuickJumpPointerMove"
                 @pointerup="handleQuickJumpPointerEnd"
@@ -980,19 +1036,16 @@ function normalizeTextValue(value: unknown) {
                 >
                   {{ hoveredQuickJumpTarget.label }}
                 </span>
-                <button
+                <span
                   v-for="target in quickJumpTargets"
                   :key="target.rank"
-                  type="button"
                   :class="[
                     'rank-border-jump-bar',
                     activeQuickJumpRank === target.rank ? 'rank-border-jump-bar--active' : '',
                     hoveredQuickJumpRank === target.rank ? 'rank-border-jump-bar--hovered' : '',
                   ]"
                   :style="{ left: target.position }"
-                  :aria-label="target.label"
-                  :aria-current="activeQuickJumpRank === target.rank ? 'true' : undefined"
-                  tabindex="-1"
+                  aria-hidden="true"
                 />
               </div>
             </div>

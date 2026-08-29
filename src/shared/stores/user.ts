@@ -11,6 +11,14 @@ import type {
 
 export type UserSettingsSyncState = "idle" | "loading" | "synced" | "failed"
 
+type SetUserOptions = {
+    resetExpiration?: boolean
+}
+
+const DEFAULT_SET_USER_OPTIONS: Readonly<SetUserOptions> = {
+    resetExpiration: true,
+}
+
 function normalizeTokenExpiration(value: string | number | null | undefined): number | null {
     if (value == null) {
         return null
@@ -70,7 +78,7 @@ export const useUserStore = defineStore("user", () => {
         iosUploadCode?: string | null
         sessionToken?: string
         sessionExpiresAt?: string | number | null
-    }, options: { resetExpiration?: boolean } = { resetExpiration: true }) {
+    }, options: Readonly<SetUserOptions> = DEFAULT_SET_USER_OPTIONS) {
         setRefIfDefined(name, payload.name)
         setRefIfDefined(userId, payload.userId)
         setRefIfDefined(kratosIdentityId, payload.kratosIdentityId)

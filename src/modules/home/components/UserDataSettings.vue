@@ -313,9 +313,9 @@ function formatTime(value: number | null) {
     <section class="rounded-lg border bg-muted/20">
       <div class="grid gap-4 p-4 md:grid-cols-2">
         <div class="grid content-start gap-2">
-          <Label>{{ t("homeSettings.userData.account") }}</Label>
-          <Select v-model="selectedAccountKey" :disabled="accountOptions.length === 0 || refreshing || clearing">
-            <SelectTrigger class="w-full">
+          <Label id="user-data-account-label" for="user-data-account">{{ t("homeSettings.userData.account") }}</Label>
+          <Select id="user-data-account" v-model="selectedAccountKey" :disabled="accountOptions.length === 0 || refreshing || clearing">
+            <SelectTrigger class="w-full" aria-labelledby="user-data-account-label">
               <GameAccountOption
                 v-if="selectedAccount"
                 :server="selectedAccount.server"
@@ -347,9 +347,9 @@ function formatTime(value: number | null) {
         </div>
 
         <div class="grid content-start gap-2">
-          <Label>{{ t("homeSettings.userData.dataType") }}</Label>
-          <Select v-model="selectedDataMode" :disabled="refreshing || clearing">
-            <SelectTrigger class="w-full">
+          <Label id="user-data-mode-label" for="user-data-mode">{{ t("homeSettings.userData.dataType") }}</Label>
+          <Select id="user-data-mode" v-model="selectedDataMode" :disabled="refreshing || clearing">
+            <SelectTrigger class="w-full" aria-labelledby="user-data-mode-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

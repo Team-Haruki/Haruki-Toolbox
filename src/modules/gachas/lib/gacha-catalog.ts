@@ -538,7 +538,25 @@ function rarityOrder(rarity: string): number {
 
 /** Strips HTML-ish markup; the result is rendered as plain text (never v-html). */
 export function stripGachaMarkup(text: string): string {
-  return text.replace(/<[^>]*>/g, "").trim()
+  let cursor = 0
+  let result = ""
+  while (cursor < text.length) {
+    const opening = text.indexOf("<", cursor)
+    if (opening < 0) {
+      result += text.slice(cursor)
+      break
+    }
+
+    const closing = text.indexOf(">", opening + 1)
+    if (closing < 0) {
+      result += text.slice(cursor)
+      break
+    }
+
+    result += text.slice(cursor, opening)
+    cursor = closing + 1
+  }
+  return result.trim()
 }
 
 // ---------------------------------------------------------------------------

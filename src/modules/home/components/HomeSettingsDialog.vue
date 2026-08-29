@@ -273,8 +273,8 @@ function hasVisitedSettingsTab(tab: string) {
                       <p id="dialog-theme-label" class="text-sm font-medium">{{ t("homeSettings.theme.label") }}</p>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.theme.help") }}</p>
                     </div>
-                    <Select v-model="selectedTheme">
-                      <SelectTrigger id="dialog-theme" aria-labelledby="dialog-theme-label dialog-theme" class="w-36 shrink-0 sm:w-40">
+                    <Select id="dialog-theme" v-model="selectedTheme">
+                      <SelectTrigger aria-labelledby="dialog-theme-label" class="w-36 shrink-0 sm:w-40">
                         <SelectValue :placeholder="t('homeSettings.theme.placeholder')">
                           <span class="truncate">{{ selectedThemeLabel }}</span>
                         </SelectValue>
@@ -295,8 +295,8 @@ function hasVisitedSettingsTab(tab: string) {
                       <p id="dialog-locale-label" class="text-sm font-medium">{{ t("homeSettings.locale.label") }}</p>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.locale.help") }}</p>
                     </div>
-                    <Select v-model="selectedLocale">
-                      <SelectTrigger id="dialog-locale" aria-labelledby="dialog-locale-label dialog-locale" class="w-36 shrink-0 sm:w-40">
+                    <Select id="dialog-locale" v-model="selectedLocale">
+                      <SelectTrigger aria-labelledby="dialog-locale-label" class="w-36 shrink-0 sm:w-40">
                         <SelectValue :placeholder="t('homeSettings.locale.placeholder')">
                           <span class="truncate">{{ selectedLocaleLabel }}</span>
                         </SelectValue>
@@ -345,8 +345,8 @@ function hasVisitedSettingsTab(tab: string) {
                         {{ t("homeSettings.endpoint.unavailable") }}
                       </p>
                     </div>
-                    <Select v-model="selectedEndpoint" :disabled="endpointSelectionDisabled || endpointUnavailable">
-                      <SelectTrigger id="dialog-endpoint" aria-labelledby="dialog-endpoint-label dialog-endpoint" class="w-40 shrink-0 sm:w-56">
+                    <Select id="dialog-endpoint" v-model="selectedEndpoint" :disabled="endpointSelectionDisabled || endpointUnavailable">
+                      <SelectTrigger aria-labelledby="dialog-endpoint-label" class="w-40 shrink-0 sm:w-56">
                         <SelectValue :placeholder="t('homeSettings.endpoint.placeholder')">
                           <span class="truncate">{{ selectedEndpointLabel }}</span>
                         </SelectValue>
@@ -377,8 +377,8 @@ function hasVisitedSettingsTab(tab: string) {
                       <p id="dialog-asset-endpoint-label" class="text-sm font-medium">{{ t("homeSettings.assetEndpoint.label") }}</p>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.assetEndpoint.help") }}</p>
                     </div>
-                    <Select v-model="selectedAssetEndpoint">
-                      <SelectTrigger id="dialog-asset-endpoint" aria-labelledby="dialog-asset-endpoint-label dialog-asset-endpoint" class="w-40 shrink-0 sm:w-56">
+                    <Select id="dialog-asset-endpoint" v-model="selectedAssetEndpoint">
+                      <SelectTrigger aria-labelledby="dialog-asset-endpoint-label" class="w-40 shrink-0 sm:w-56">
                         <SelectValue :placeholder="t('homeSettings.assetEndpoint.placeholder')">
                           <span class="truncate">{{ selectedAssetEndpointLabel }}</span>
                         </SelectValue>

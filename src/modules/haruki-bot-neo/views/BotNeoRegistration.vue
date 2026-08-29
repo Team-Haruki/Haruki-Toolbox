@@ -117,9 +117,10 @@ function normalizeRouteValue(value: unknown): string {
           </Alert>
 
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium">{{ t("botNeo.input.qqLabel") }}</label>
+            <label for="bot-neo-qq" class="text-sm font-medium">{{ t("botNeo.input.qqLabel") }}</label>
             <div class="relative w-full items-center">
               <Input
+                id="bot-neo-qq"
                 v-model="qqNumber"
                 :placeholder="t('botNeo.input.qqPlaceholder')"
                 class="pl-10"
@@ -159,9 +160,10 @@ function normalizeRouteValue(value: unknown): string {
           </div>
 
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium">{{ t("botNeo.verify.codeLabel") }}</label>
+            <label for="bot-neo-code" class="text-sm font-medium">{{ t("botNeo.verify.codeLabel") }}</label>
             <div class="relative w-full items-center">
               <Input
+                id="bot-neo-code"
                 v-model="verificationCode"
                 :placeholder="t('botNeo.verify.codePlaceholder')"
                 class="pl-10"

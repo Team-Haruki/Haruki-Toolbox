@@ -484,6 +484,7 @@ const canGoBack = computed(() => {
                 v-model="poolFilters.query"
                 class="h-8 pl-8"
                 :placeholder="t('cards.list.searchPlaceholder')"
+                :aria-label="t('cards.list.searchPlaceholder')"
               />
             </div>
             <Button

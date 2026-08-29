@@ -363,6 +363,7 @@ describe("stripGachaMarkup", () => {
     expect(stripGachaMarkup("<color=#ff0000>Hot!</color>\nLine two "))
       .toBe("Hot!\nLine two")
     expect(stripGachaMarkup("plain text")).toBe("plain text")
+    expect(stripGachaMarkup("keep <unfinished")).toBe("keep <unfinished")
   })
 })
 
