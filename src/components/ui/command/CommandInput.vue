@@ -20,6 +20,7 @@ const context = inject(COMMAND_CONTEXT_KEY)
       v-model="context!.search.value"
       data-slot="command-input"
       :placeholder="props.placeholder"
+      :aria-label="props.placeholder"
       :class="cn('placeholder:text-muted-foreground flex h-9 w-full rounded-md bg-transparent py-3 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50', props.class)"
     >
   </div>
