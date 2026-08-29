@@ -364,6 +364,83 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     }
   }
 
+  function buildLatestDetailOverview(
+    latestEntries: RankBorderLatest[],
+    profiles: ReadonlyMap<string, RankBorderUserProfile>,
+    previousDetails: Map<number, RankBorderLatest>,
+  ) {
+    const nextDetails = new Map<number, RankBorderLatest>()
+    const previousDetailsByKey = latestDetailsByRowKey(previousDetails)
+    const nextDetailChanges = new Set<number>()
+    const nextScoreChanges = new Set<number>()
+    for (const latest of latestEntries) {
+      const profile = latest.userId ? profiles.get(latest.userId) ?? null : null
+      const nextDetail = mergeLatestWithProfile(latest, profile)
+      const previousDetail = previousDetailsByKey.get(top100RowKey(nextDetail.rank, nextDetail))
+      nextDetails.set(nextDetail.rank, nextDetail)
+      if (!previousDetail || isLineDetailChanged(previousDetail, nextDetail)) {
+        nextDetailChanges.add(nextDetail.rank)
+        if (!previousDetail || previousDetail.score !== nextDetail.score) {
+          nextScoreChanges.add(nextDetail.rank)
+        }
+      }
+    }
+    return { nextDetails, nextDetailChanges, nextScoreChanges }
+  }
+
+  function buildPlayerGrowthOverview(
+    playerGrowths: RankBorderTopPlayerGrowth[],
+    nextDetails: ReadonlyMap<number, RankBorderLatest>,
+    previousGrowths: ReadonlyMap<number, RankBorderGrowth>,
+  ) {
+    const nextGrowths = new Map<number, RankBorderGrowth>()
+    const nextGrowthChanges = new Set<number>()
+    for (const growth of playerGrowths) {
+      const detail = nextDetails.get(growth.rank)
+      if (detail?.userId && detail.userId !== growth.userId) {
+        continue
+      }
+      nextGrowths.set(growth.rank, growth)
+      const previousGrowth = previousGrowths.get(growth.rank)
+      if (!previousGrowth || isGrowthChanged(previousGrowth, growth)) {
+        nextGrowthChanges.add(growth.rank)
+      }
+    }
+    return { nextGrowths, nextGrowthChanges }
+  }
+
+  function buildRankGrowthOverview(
+    rankGrowths: RankBorderGrowth[],
+    previousGrowths: ReadonlyMap<number, RankBorderGrowth>,
+    nextGrowthChanges: Set<number>,
+  ) {
+    const nextRankGrowths = new Map<number, RankBorderGrowth>()
+    for (const growth of rankGrowths) {
+      nextRankGrowths.set(growth.rank, growth)
+      const previousGrowth = previousGrowths.get(growth.rank)
+      if (!previousGrowth || isGrowthChanged(previousGrowth, growth)) {
+        nextGrowthChanges.add(growth.rank)
+      }
+    }
+    return nextRankGrowths
+  }
+
+  function flashTop100OverviewChanges(
+    nextScoreChanges: Set<number>,
+    nextDetailChanges: Set<number>,
+    nextGrowthChanges: Set<number>,
+  ) {
+    if (nextScoreChanges.size > 0) {
+      restartRankFlash(scoreChangedRanks, nextScoreChanges)
+    }
+    if (nextDetailChanges.size > 0) {
+      restartRankFlash(detailChangedRanks, nextDetailChanges)
+    }
+    if (nextGrowthChanges.size > 0) {
+      restartRankFlash(growthChangedRanks, nextGrowthChanges)
+    }
+  }
+
   function applyTop100Overview(
     rankings: RankBorderLatest[],
     playerGrowths: RankBorderTopPlayerGrowth[],
@@ -378,63 +455,24 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     }
 
     const nextProfiles = seedProfilesFromLatestEntries(latestEntries)
-    const nextDetails = new Map<number, RankBorderLatest>()
-    const previousDetailsByKey = latestDetailsByRowKey(previousDetails)
-    const nextDetailChanges = new Set<number>()
-    const nextScoreChanges = new Set<number>()
-
-    for (const latest of latestEntries) {
-      const profile = latest.userId ? nextProfiles.get(latest.userId) ?? null : null
-      const nextDetail = mergeLatestWithProfile(latest, profile)
-      const rowKey = top100RowKey(nextDetail.rank, nextDetail)
-      const previousDetail = previousDetailsByKey.get(rowKey)
-      nextDetails.set(nextDetail.rank, nextDetail)
-
-      if (!previousDetail || isLineDetailChanged(previousDetail, nextDetail)) {
-        nextDetailChanges.add(nextDetail.rank)
-        if (!previousDetail || previousDetail.score !== nextDetail.score) {
-          nextScoreChanges.add(nextDetail.rank)
-        }
-      }
-    }
-
-    const nextGrowths = new Map<number, RankBorderGrowth>()
-    const nextGrowthChanges = new Set<number>()
-    for (const growth of playerGrowths) {
-      const detail = nextDetails.get(growth.rank)
-      if (detail?.userId && detail.userId !== growth.userId) {
-        continue
-      }
-      nextGrowths.set(growth.rank, growth)
-      const previousGrowth = previousPlayerGrowths.get(growth.rank)
-      if (!previousGrowth || isGrowthChanged(previousGrowth, growth)) {
-        nextGrowthChanges.add(growth.rank)
-      }
-    }
-
-    const nextRankGrowths = new Map<number, RankBorderGrowth>()
-    for (const growth of rankGrowths) {
-      nextRankGrowths.set(growth.rank, growth)
-      const previousGrowth = previousRankGrowths.get(growth.rank)
-      if (!previousGrowth || isGrowthChanged(previousGrowth, growth)) {
-        nextGrowthChanges.add(growth.rank)
-      }
-    }
+    const { nextDetails, nextDetailChanges, nextScoreChanges } = buildLatestDetailOverview(
+      latestEntries,
+      nextProfiles,
+      previousDetails,
+    )
+    const { nextGrowths, nextGrowthChanges } = buildPlayerGrowthOverview(
+      playerGrowths,
+      nextDetails,
+      previousPlayerGrowths,
+    )
+    const nextRankGrowths = buildRankGrowthOverview(rankGrowths, previousRankGrowths, nextGrowthChanges)
 
     top100Details.value = nextDetails
     top100GrowthByRank.value = nextGrowths
     top100RankGrowthByRank.value = nextRankGrowths
     top100GrowthIntervalSeconds.value = selectedIntervalSeconds.value
     writeTop100DetailsCache(nextDetails)
-    if (nextScoreChanges.size > 0) {
-      restartRankFlash(scoreChangedRanks, nextScoreChanges)
-    }
-    if (nextDetailChanges.size > 0) {
-      restartRankFlash(detailChangedRanks, nextDetailChanges)
-    }
-    if (nextGrowthChanges.size > 0) {
-      restartRankFlash(growthChangedRanks, nextGrowthChanges)
-    }
+    flashTop100OverviewChanges(nextScoreChanges, nextDetailChanges, nextGrowthChanges)
   }
 
   function seedProfilesFromLatestEntries(items: RankBorderLatest[]) {

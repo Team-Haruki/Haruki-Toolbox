@@ -171,6 +171,38 @@ export function useRankBorderDetailLoaders(
     await loadRankDetail(rank, false, requestToken)
   }
 
+  async function resolveRankDetailLookup(rank: number, trackedUserId: string | null) {
+    const rankDetail = trackedUserId
+      ? null
+      : await fetchRankBorderWebRankDetailV2({
+          ...detailScope.value,
+          rank,
+          intervalSeconds: selectedIntervalSeconds.value,
+        }).catch(() => null)
+    if (rankDetail?.current) {
+      return {
+        rankDetail,
+        result: await maybeEnrichLatestProfile(rankDetail.current, { enrichProfile: true }),
+      }
+    }
+    if (trackedUserId) {
+      return {
+        rankDetail,
+        result: await fetchLatestPublicUser(trackedUserId, { enrichProfile: true }),
+      }
+    }
+    return {
+      rankDetail,
+      result: await fetchLatestPublicRank(rank, { enrichProfile: true }),
+    }
+  }
+
+  function finishDetailLoading(silent: boolean, requestToken: number) {
+    if (!silent && requestToken === detailRequestToken) {
+      detailLoading.value = false
+    }
+  }
+
   async function loadRankDetail(
     rank: number,
     silent: boolean,
@@ -188,18 +220,7 @@ export function useRankBorderDetailLoaders(
     detailError.value = null
     try {
       const trackedUserId = normalizeTextValue(options.trackedUserId)
-      const rankDetail = trackedUserId
-        ? null
-        : await fetchRankBorderWebRankDetailV2({
-            ...detailScope.value,
-            rank,
-            intervalSeconds: selectedIntervalSeconds.value,
-          }).catch(() => null)
-      const result = rankDetail?.current
-        ? await maybeEnrichLatestProfile(rankDetail.current, { enrichProfile: true })
-        : trackedUserId
-          ? await fetchLatestPublicUser(trackedUserId, { enrichProfile: true })
-          : await fetchLatestPublicRank(rank, { enrichProfile: true })
+      const { rankDetail, result } = await resolveRankDetailLookup(rank, trackedUserId)
       if (requestToken !== detailRequestToken) {
         return
       }
@@ -232,9 +253,7 @@ export function useRankBorderDetailLoaders(
         detailError.value = error instanceof Error ? error.message : String(error)
       }
     } finally {
-      if (!silent && requestToken === detailRequestToken) {
-        detailLoading.value = false
-      }
+      finishDetailLoading(silent, requestToken)
     }
   }
 
@@ -288,6 +307,41 @@ export function useRankBorderDetailLoaders(
     await loadUserDetail(userId, false, ++detailRequestToken, options)
   }
 
+  async function resolveUserDetailLookup(userId: string, privateLookup: boolean) {
+    if (privateLookup) {
+      return {
+        webDetail: null,
+        result: await fetchPrivateLatestByUser(userId),
+      }
+    }
+    const webDetail = await fetchRankBorderWebUserDetailV2({
+      ...detailScope.value,
+      userId,
+      includeProfile: true,
+    })
+    return { webDetail, result: webDetail?.current ?? null }
+  }
+
+  async function handleUserDetailError(
+    error: unknown,
+    userId: string,
+    silent: boolean,
+    privateLookup: boolean,
+    requestToken: number,
+  ) {
+    if (requestToken !== detailRequestToken) {
+      return
+    }
+    if (silent && privateLookup && isRankBorderTrackerUnauthorizedError(error)) {
+      await refreshUserDetailFromPublicFallback(userId, requestToken)
+      return
+    }
+    if (!silent) {
+      detail.value = null
+    }
+    detailError.value = resolveDetailErrorMessage(error, privateLookup)
+  }
+
   async function updateDetailDialogTab(value: AcceptableValue) {
     if (value !== "player" && value !== "border") {
       return
@@ -332,20 +386,12 @@ export function useRankBorderDetailLoaders(
     }
     detailError.value = null
     try {
-      const webDetail = options.privateLookup
-        ? null
-        : await fetchRankBorderWebUserDetailV2({
-            ...detailScope.value,
-            userId,
-            includeProfile: true,
-          })
-      const result = options.privateLookup
-        ? await fetchPrivateLatestByUser(userId)
-        : webDetail?.current ?? null
+      const privateLookup = options.privateLookup === true
+      const { webDetail, result } = await resolveUserDetailLookup(userId, privateLookup)
       if (!result) {
         throw new Error(t("rankBorder.result.accountOutOfRange"))
       }
-      if (!options.privateLookup && shouldRejectMismatchedAccountLookup(userId, result)) {
+      if (!privateLookup && shouldRejectMismatchedAccountLookup(userId, result)) {
         throw new Error(t("rankBorder.result.accountOutOfRange"))
       }
 
@@ -365,21 +411,9 @@ export function useRankBorderDetailLoaders(
       refreshDetailTrace(detail.value)
       markDetailScoreChange(previousScore, result.score)
     } catch (error) {
-      if (requestToken !== detailRequestToken) {
-        return
-      }
-      if (silent && options.privateLookup && isRankBorderTrackerUnauthorizedError(error)) {
-        await refreshUserDetailFromPublicFallback(userId, requestToken)
-        return
-      }
-      if (!silent) {
-        detail.value = null
-      }
-      detailError.value = resolveDetailErrorMessage(error, options.privateLookup)
+      await handleUserDetailError(error, userId, silent, options.privateLookup === true, requestToken)
     } finally {
-      if (!silent && requestToken === detailRequestToken) {
-        detailLoading.value = false
-      }
+      finishDetailLoading(silent, requestToken)
     }
   }
 
