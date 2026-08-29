@@ -108,9 +108,11 @@ function isSupportUnit(value: string): value is DeckRecommendSupportUnitType {
       <label
         v-for="option in options"
         :key="option.id"
+        :for="`custom-bonus-character-${option.id}`"
         class="flex min-w-0 items-center gap-2 rounded-md border bg-muted/20 px-2 py-1.5 text-sm transition-colors hover:bg-muted/40"
       >
         <Checkbox
+          :id="`custom-bonus-character-${option.id}`"
           :model-value="isSelected(option.id)"
           :disabled="props.disabled || loading"
           @update:model-value="checked => toggleCharacter(option.id, checked === true)"
@@ -129,7 +131,7 @@ function isSupportUnit(value: string): value is DeckRecommendSupportUnitType {
     </p>
 
     <div class="grid gap-2">
-      <Label>{{ t("deckRecommend.form.customBonusSupportUnits") }}</Label>
+      <p class="text-sm font-medium">{{ t("deckRecommend.form.customBonusSupportUnits") }}</p>
       <div v-if="supportCharacterOptions.length > 0" class="grid gap-2 sm:grid-cols-2">
         <div
           v-for="option in supportCharacterOptions"
@@ -140,12 +142,20 @@ function isSupportUnit(value: string): value is DeckRecommendSupportUnitType {
             <img :src="option.iconUrl" alt="" aria-hidden="true" class="size-6 rounded-sm object-cover" loading="lazy" @error="handleSekaiImageError($event, option.iconUrl)">
             <span class="min-w-0 truncate">{{ option.label }}</span>
           </div>
+          <Label
+            :id="`custom-bonus-support-${option.id}-label`"
+            :for="`custom-bonus-support-${option.id}`"
+            class="sr-only"
+          >
+            {{ t("deckRecommend.form.customBonusSupportUnits") }} · {{ option.label }}
+          </Label>
           <Select
+            :id="`custom-bonus-support-${option.id}`"
             :model-value="props.supportUnits[String(option.id)] ?? 'none'"
             :disabled="props.disabled || loading"
             @update:model-value="value => updateSupportUnit(option.id, value)"
           >
-            <SelectTrigger class="w-full">
+            <SelectTrigger class="w-full" :aria-labelledby="`custom-bonus-support-${option.id}-label`">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

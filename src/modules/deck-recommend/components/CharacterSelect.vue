@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, toRef } from "vue"
+import { computed, toRef, useId } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
 import type { SekaiRegion } from "@/types"
@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import { useCharacterOptions } from "../composables/useCharacterOptions"
 import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
 
@@ -27,6 +28,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const fieldId = useId()
+const fieldLabelId = `${fieldId}-label`
 const regionRef = toRef(props, "region")
 const { options, loading } = useCharacterOptions(regionRef)
 const NONE_OPTION_VALUE = "__none__"
@@ -53,8 +56,16 @@ function handleUpdate(value: AcceptableValue) {
 </script>
 
 <template>
-  <Select :model-value="selectedValue" :disabled="props.disabled || loading" @update:model-value="handleUpdate">
-    <SelectTrigger :class="['w-full', props.triggerClass]">
+  <Label :id="fieldLabelId" :for="fieldId" class="sr-only">
+    {{ t("deckRecommend.form.characterPlaceholder") }}
+  </Label>
+  <Select
+    :id="fieldId"
+    :model-value="selectedValue"
+    :disabled="props.disabled || loading"
+    @update:model-value="handleUpdate"
+  >
+    <SelectTrigger :class="['w-full', props.triggerClass]" :aria-labelledby="fieldLabelId">
       <SelectValue :placeholder="loading ? t('deckRecommend.select.loading') : t('deckRecommend.form.characterPlaceholder')" />
     </SelectTrigger>
     <SelectContent class="max-h-72">

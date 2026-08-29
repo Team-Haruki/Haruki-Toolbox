@@ -123,13 +123,14 @@ const {
                             <div class="grid gap-3 @3xl:grid-cols-2">
                               <div class="grid gap-2">
                                 <div class="flex items-center justify-between gap-2">
-                                  <Label>{{ t("deckRecommend.options.filters.unit") }}</Label>
+                                  <p class="text-sm font-medium">{{ t("deckRecommend.options.filters.unit") }}</p>
                                   <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(unitFilters.length) }}</span>
                                 </div>
                                 <div class="grid gap-2 @xs:grid-cols-2">
                                   <label
                                     v-for="option in unitFilterOptions"
                                     :key="option.value"
+                                    :for="`deck-unit-filter-${option.value}`"
                                     :class="[
                                       'flex min-w-0 items-center gap-2 rounded-md border bg-background/70 px-2 py-1.5 text-sm transition-colors hover:bg-muted/40',
                                       unitFilters.includes(option.value) ? 'border-cyan-300 bg-cyan-50 text-cyan-900 dark:border-cyan-500/40 dark:bg-cyan-500/10 dark:text-cyan-100' : '',
@@ -137,6 +138,7 @@ const {
                                     ]"
                                   >
                                     <Checkbox
+                                      :id="`deck-unit-filter-${option.value}`"
                                       :model-value="unitFilters.includes(option.value)"
                                       :disabled="running"
                                       @update:model-value="checked => toggleUnitFilter(option.value, checked === true)"
@@ -153,13 +155,14 @@ const {
                               </div>
                               <div class="grid gap-2">
                                 <div class="flex items-center justify-between gap-2">
-                                  <Label>{{ t("deckRecommend.options.filters.attr") }}</Label>
+                                  <p class="text-sm font-medium">{{ t("deckRecommend.options.filters.attr") }}</p>
                                   <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(attrFilters.length) }}</span>
                                 </div>
                                 <div class="grid gap-2 @xs:grid-cols-2">
                                   <label
                                     v-for="option in eventAttrOptions"
                                     :key="option.value"
+                                    :for="`deck-attr-filter-${option.value}`"
                                     :class="[
                                       'flex min-w-0 items-center gap-2 rounded-md border bg-background/70 px-2 py-1.5 text-sm transition-colors hover:bg-muted/40',
                                       attrFilters.includes(option.value) ? 'border-fuchsia-300 bg-fuchsia-50 text-fuchsia-900 dark:border-fuchsia-500/40 dark:bg-fuchsia-500/10 dark:text-fuchsia-100' : '',
@@ -167,6 +170,7 @@ const {
                                     ]"
                                   >
                                     <Checkbox
+                                      :id="`deck-attr-filter-${option.value}`"
                                       :model-value="attrFilters.includes(option.value)"
                                       :disabled="running"
                                       @update:model-value="checked => toggleAttrFilter(option.value, checked === true)"
@@ -184,7 +188,7 @@ const {
                             </div>
                             <div class="grid gap-2">
                               <div class="flex items-center justify-between gap-2">
-                                <Label>{{ t("deckRecommend.options.filters.character") }}</Label>
+                                <p class="text-sm font-medium">{{ t("deckRecommend.options.filters.character") }}</p>
                                 <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(characterFilters.length) }}</span>
                               </div>
                               <CharacterMultiPicker
@@ -218,13 +222,16 @@ const {
                           </div>
                           <div class="grid gap-3 @sm:grid-cols-2">
                             <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.filters.areaItemLevel") }}</Label>
+                              <Label id="deck-area-item-level-label" for="deck-area-item-level">
+                                {{ t("deckRecommend.options.filters.areaItemLevel") }}
+                              </Label>
                               <Select
+                                id="deck-area-item-level"
                                 :model-value="areaItemLevelInput === '' ? 'default' : String(areaItemLevelInput)"
                                 :disabled="running"
                                 @update:model-value="updateAreaItemLevelInput"
                               >
-                                <SelectTrigger class="w-full">
+                                <SelectTrigger class="w-full" aria-labelledby="deck-area-item-level-label">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -235,13 +242,16 @@ const {
                               </Select>
                             </div>
                             <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.filters.characterRank") }}</Label>
+                              <Label id="deck-character-rank-label" for="deck-character-rank">
+                                {{ t("deckRecommend.options.filters.characterRank") }}
+                              </Label>
                               <Select
+                                id="deck-character-rank"
                                 :model-value="characterRankInput === '' ? 'default' : String(characterRankInput)"
                                 :disabled="running || characterRankMax === 0"
                                 @update:model-value="updateCharacterRankInput"
                               >
-                                <SelectTrigger class="w-full">
+                                <SelectTrigger class="w-full" aria-labelledby="deck-character-rank-label">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -252,13 +262,16 @@ const {
                               </Select>
                             </div>
                             <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.filters.mysekaiGateLevel") }}</Label>
+                              <Label id="deck-mysekai-gate-level-label" for="deck-mysekai-gate-level">
+                                {{ t("deckRecommend.options.filters.mysekaiGateLevel") }}
+                              </Label>
                               <Select
+                                id="deck-mysekai-gate-level"
                                 :model-value="mysekaiGateLevelInput === '' ? 'default' : String(mysekaiGateLevelInput)"
                                 :disabled="running || mysekaiGateMaxLevel === 0"
                                 @update:model-value="updateMysekaiGateLevelInput"
                               >
-                                <SelectTrigger class="w-full">
+                                <SelectTrigger class="w-full" aria-labelledby="deck-mysekai-gate-level-label">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -269,8 +282,11 @@ const {
                               </Select>
                             </div>
                             <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.filters.mysekaiFixtureBonusRate") }}</Label>
+                              <Label for="deck-mysekai-fixture-bonus-rate">
+                                {{ t("deckRecommend.options.filters.mysekaiFixtureBonusRate") }}
+                              </Label>
                               <Combobox
+                                trigger-id="deck-mysekai-fixture-bonus-rate"
                                 :model-value="mysekaiFixtureBonusRateInput === '' ? 'default' : String(mysekaiFixtureBonusRateInput)"
                                 :options="mysekaiFixtureBonusRateComboboxOptions"
                                 :disabled="running || mysekaiFixtureBonusCharacterOptions.length === 0"
@@ -293,9 +309,11 @@ const {
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.runParameters.description") }}</p>
                           </div>
                           <div class="grid gap-2">
-                            <Label>{{ t("deckRecommend.options.filters.boost") }}</Label>
-                            <Select :model-value="String(boostInput)" :disabled="running" @update:model-value="updateBoostInput">
-                              <SelectTrigger class="w-full">
+                            <Label id="deck-boost-label" for="deck-boost">
+                              {{ t("deckRecommend.options.filters.boost") }}
+                            </Label>
+                            <Select id="deck-boost" :model-value="String(boostInput)" :disabled="running" @update:model-value="updateBoostInput">
+                              <SelectTrigger class="w-full" aria-labelledby="deck-boost-label">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -372,7 +390,7 @@ const {
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.constraints.description") }}</p>
                       </div>
                       <div class="grid gap-3">
-                        <label class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
+                        <label for="deck-use-current" class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
                           <span class="min-w-0 space-y-1">
                             <span class="block font-medium">{{ t("deckRecommend.options.constraints.useCurrentDeck") }}</span>
                             <span class="block text-xs leading-5 text-muted-foreground">
@@ -380,6 +398,7 @@ const {
                             </span>
                           </span>
                           <Switch
+                            id="deck-use-current"
                             v-model="useCurrentDeck"
                             :aria-label="t('deckRecommend.options.constraints.useCurrentDeck')"
                             :disabled="running || recommendMode === 'challenge'"
@@ -395,7 +414,7 @@ const {
                               </p>
                             </div>
                             <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.constraints.fixedCards") }}</Label>
+                              <p class="text-sm font-medium">{{ t("deckRecommend.options.constraints.fixedCards") }}</p>
                               <CardMultiPicker
                                 v-model="fixedCardIds"
                                 :card-options="cardOptions"
@@ -406,7 +425,7 @@ const {
                               />
                             </div>
                             <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.constraints.fixedCharacters") }}</Label>
+                              <p class="text-sm font-medium">{{ t("deckRecommend.options.constraints.fixedCharacters") }}</p>
                               <CharacterMultiPicker
                                 v-model="fixedCharacterIds"
                                 :region="dataRegion"
@@ -424,7 +443,7 @@ const {
                               </p>
                             </div>
                             <div class="grid gap-2">
-                              <Label>{{ t("deckRecommend.options.constraints.excludedCards") }}</Label>
+                              <p class="text-sm font-medium">{{ t("deckRecommend.options.constraints.excludedCards") }}</p>
                               <CardMultiPicker
                                 v-model="excludedCardIds"
                                 :card-options="cardOptions"
