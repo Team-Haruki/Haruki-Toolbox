@@ -311,61 +311,52 @@ export function hasAreaItemFilter(filter: AreaItemFilter | null | undefined): bo
 }
 
 /** Go: areaItemMatchesFilter — exact port including VS-item exclusion. */
+function isVirtualSingerAreaLevel(level: AreaItemLevelMaster): boolean {
+  return normalizeAreaUnit(level.targetUnit) === "piapro"
+    || PIAPRO_CHARACTER_IDS.has(level.targetGameCharacterId)
+}
+
+function areaLevelMatchesFilter(
+  level: AreaItemLevelMaster,
+  filterPiapro: boolean,
+  filterCharacterId: number,
+  filterAttr: string,
+): boolean {
+  if (filterPiapro && isVirtualSingerAreaLevel(level)) {
+    return true
+  }
+  if (filterCharacterId > 0 && level.targetGameCharacterId === filterCharacterId) {
+    return true
+  }
+  return filterAttr !== "" && normalizeAreaAttr(level.targetCardAttr) === filterAttr
+}
+
+function matchesSpecialArea(item: AreaItemMaster, filter: AreaItemFilter): boolean {
+  return (filter.tree === true && item.areaId === AREA_TREE_AREA_ID)
+    || (filter.flower === true && item.areaId === AREA_FLOWER_AREA_ID)
+}
+
+function matchesUnitArea(item: AreaItemMaster, filterUnit: string, isVSItem: boolean): boolean {
+  if (filterUnit === "" || isVSItem) {
+    return false
+  }
+  const areaId = AREA_FILTER_UNIT_AREA_IDS[filterUnit]
+  return areaId != null && item.areaId === areaId
+}
+
 export function areaItemMatchesFilter(
   item: AreaItemMaster,
   levels: readonly AreaItemLevelMaster[],
   filter: AreaItemFilter,
 ): boolean {
-  let filterUnit = normalizeAreaUnit(filter.unit)
+  const normalizedUnit = normalizeAreaUnit(filter.unit)
   const filterAttr = normalizeAreaAttr(filter.attr)
-  const filterPiapro = filterUnit === "piapro"
-  if (filterPiapro) {
-    filterUnit = ""
-  }
+  const filterPiapro = normalizedUnit === "piapro"
+  const filterUnit = filterPiapro ? "" : normalizedUnit
   const filterCid = filter.characterId ?? 0
-
-  let matched = false
-  let isVSItem = false
-
-  for (const level of levels) {
-    if (normalizeAreaUnit(level.targetUnit) === "piapro") {
-      isVSItem = true
-      if (filterPiapro) {
-        matched = true
-      }
-    }
-
-    if (level.targetGameCharacterId > 0) {
-      if (PIAPRO_CHARACTER_IDS.has(level.targetGameCharacterId)) {
-        isVSItem = true
-        if (filterPiapro) {
-          matched = true
-        }
-      }
-      if (filterCid > 0 && level.targetGameCharacterId === filterCid) {
-        matched = true
-      }
-    }
-
-    if (filterAttr !== "" && normalizeAreaAttr(level.targetCardAttr) === filterAttr) {
-      matched = true
-    }
-  }
-
-  if (filter.tree === true && item.areaId === AREA_TREE_AREA_ID) {
-    matched = true
-  }
-  if (filter.flower === true && item.areaId === AREA_FLOWER_AREA_ID) {
-    matched = true
-  }
-  if (filterUnit !== "") {
-    const areaId = AREA_FILTER_UNIT_AREA_IDS[filterUnit]
-    if (areaId != null && item.areaId === areaId && !isVSItem) {
-      matched = true
-    }
-  }
-
-  return matched
+  const matchesLevel = levels.some((level) => areaLevelMatchesFilter(level, filterPiapro, filterCid, filterAttr))
+  const isVSItem = levels.some(isVirtualSingerAreaLevel)
+  return matchesLevel || matchesSpecialArea(item, filter) || matchesUnitArea(item, filterUnit, isVSItem)
 }
 
 /** Go: sortedAreaItemLevels — unique positive level numbers ascending. */
@@ -378,6 +369,38 @@ export function sortedAreaItemLevelNumbers(levels: readonly AreaItemLevelMaster[
   }
 
   return [...seen].sort((a, b) => a - b)
+}
+
+function indexAreaShopItemsByBox(shopItems: readonly AreaShopItem[]): Map<number, AreaShopItem> {
+  const byBoxId = new Map<number, AreaShopItem>()
+  for (const shopItem of shopItems) {
+    if (shopItem.resourceBoxId > 0) {
+      byBoxId.set(shopItem.resourceBoxId, shopItem)
+    }
+  }
+  return byBoxId
+}
+
+function mapAreaShopDetails(
+  itemIds: readonly number[],
+  shopDetails: readonly AreaShopResourceBoxDetail[],
+  shopItemByBoxId: ReadonlyMap<number, AreaShopItem>,
+  nowMs: number,
+): Map<number, Map<number, AreaShopItem>> {
+  const itemSet = new Set(itemIds)
+  const result = new Map<number, Map<number, AreaShopItem>>()
+  for (const detail of shopDetails) {
+    const shopItem = shopItemByBoxId.get(detail.resourceBoxId)
+    if (!itemSet.has(detail.areaItemId) || !shopItem || (shopItem.startAt > 0 && shopItem.startAt > nowMs)) {
+      continue
+    }
+    const levelMap = result.get(detail.areaItemId) ?? new Map<number, AreaShopItem>()
+    if (!levelMap.has(detail.level)) {
+      levelMap.set(detail.level, shopItem)
+    }
+    result.set(detail.areaItemId, levelMap)
+  }
+  return result
 }
 
 /**
@@ -394,41 +417,73 @@ export function buildAreaItemShopItems(args: {
 }): Map<number, Map<number, AreaShopItem>> {
   const { itemIds, areaItemById, levelsByItem, shopItems, shopDetails } = args
   const nowMs = args.nowMs > 0 ? args.nowMs : Date.now()
-
-  const itemSet = new Set(itemIds)
-  const shopItemByBoxId = new Map<number, AreaShopItem>()
-  for (const shopItem of shopItems) {
-    if (shopItem.resourceBoxId > 0) {
-      shopItemByBoxId.set(shopItem.resourceBoxId, shopItem)
-    }
-  }
-
-  const result = new Map<number, Map<number, AreaShopItem>>()
-  for (const detail of shopDetails) {
-    if (!itemSet.has(detail.areaItemId)) {
-      continue
-    }
-
-    const shopItem = shopItemByBoxId.get(detail.resourceBoxId)
-    if (shopItem == null) {
-      continue
-    }
-    if (shopItem.startAt > 0 && shopItem.startAt > nowMs) {
-      continue
-    }
-
-    let levelMap = result.get(detail.areaItemId)
-    if (levelMap == null) {
-      levelMap = new Map()
-      result.set(detail.areaItemId, levelMap)
-    }
-    if (!levelMap.has(detail.level)) {
-      levelMap.set(detail.level, shopItem)
-    }
-  }
+  const shopItemByBoxId = indexAreaShopItemsByBox(shopItems)
+  const result = mapAreaShopDetails(itemIds, shopDetails, shopItemByBoxId, nowMs)
 
   fillAreaItemShopItemsByShopSequence({ itemIds, areaItemById, levelsByItem, shopItems, result, nowMs })
   return result
+}
+
+type ShopTarget = { itemId: number; sortedLevels: number[] }
+
+function groupAreaTargetsByShop(args: {
+  itemIds: readonly number[]
+  areaItemById: Map<number, AreaItemMaster>
+  levelsByItem: Map<number, AreaItemLevelMaster[]>
+}): Map<number, ShopTarget[]> {
+  const targetsByShopId = new Map<number, ShopTarget[]>()
+  for (const itemId of args.itemIds) {
+    const item = args.areaItemById.get(itemId)
+    const shopId = item ? AREA_ITEM_SHOP_ID_BY_AREA_ID[item.areaId] ?? 0 : 0
+    const sortedLevels = sortedAreaItemLevelNumbers(args.levelsByItem.get(itemId) ?? [])
+    if (shopId <= 0 || sortedLevels.length === 0) {
+      continue
+    }
+    const targets = targetsByShopId.get(shopId) ?? []
+    targets.push({ itemId, sortedLevels })
+    targetsByShopId.set(shopId, targets)
+  }
+  return targetsByShopId
+}
+
+function groupAvailableShopItems(
+  shopItems: readonly AreaShopItem[],
+  nowMs: number,
+): Map<number, AreaShopItem[]> {
+  const shopItemsByShopId = new Map<number, AreaShopItem[]>()
+  for (const shopItem of shopItems) {
+    if (shopItem.shopId <= 0 || (shopItem.startAt > 0 && shopItem.startAt > nowMs)) {
+      continue
+    }
+    const group = shopItemsByShopId.get(shopItem.shopId) ?? []
+    group.push(shopItem)
+    shopItemsByShopId.set(shopItem.shopId, group)
+  }
+  return shopItemsByShopId
+}
+
+function fillShopTargetGroup(
+  targets: ShopTarget[],
+  group: readonly AreaShopItem[],
+  result: Map<number, Map<number, AreaShopItem>>,
+) {
+  if (group.length === 0 || targets.length === 0 || group.length < targets.length || group.length % targets.length !== 0) {
+    return
+  }
+  targets.sort((a, b) => a.itemId - b.itemId)
+  const orderedShopItems = [...group].sort((a, b) => (a.seq !== b.seq ? a.seq - b.seq : a.id - b.id))
+  const blockSize = orderedShopItems.length / targets.length
+  targets.forEach((target, targetIndex) => {
+    const levelMap = result.get(target.itemId) ?? new Map<number, AreaShopItem>()
+    const levelsToMap = Math.min(blockSize, target.sortedLevels.length)
+    for (let index = 0; index < levelsToMap; index++) {
+      const level = target.sortedLevels[index]
+      if (!levelMap.has(level)) {
+        levelMap.set(level, orderedShopItems[(targetIndex * blockSize) + index])
+      }
+    }
+    result.set(target.itemId, levelMap)
+  })
 }
 
 /**
@@ -449,78 +504,16 @@ export function fillAreaItemShopItemsByShopSequence(args: {
     return
   }
 
-  type ShopTarget = { itemId: number; sortedLevels: number[] }
-  const targetsByShopId = new Map<number, ShopTarget[]>()
-  for (const itemId of itemIds) {
-    const item = areaItemById.get(itemId)
-    if (item == null) {
-      continue
-    }
-
-    const shopId = AREA_ITEM_SHOP_ID_BY_AREA_ID[item.areaId] ?? 0
-    if (shopId <= 0) {
-      continue
-    }
-
-    const sortedLevels = sortedAreaItemLevelNumbers(levelsByItem.get(itemId) ?? [])
-    if (sortedLevels.length === 0) {
-      continue
-    }
-
-    const targets = targetsByShopId.get(shopId) ?? []
-    targets.push({ itemId, sortedLevels })
-    targetsByShopId.set(shopId, targets)
-  }
+  const targetsByShopId = groupAreaTargetsByShop({ itemIds, areaItemById, levelsByItem })
   if (targetsByShopId.size === 0) {
     return
   }
-
-  const shopItemsByShopId = new Map<number, AreaShopItem[]>()
-  for (const shopItem of shopItems) {
-    if (shopItem.shopId <= 0) {
-      continue
-    }
-    if (shopItem.startAt > 0 && shopItem.startAt > nowMs) {
-      continue
-    }
-    const group = shopItemsByShopId.get(shopItem.shopId) ?? []
-    group.push(shopItem)
-    shopItemsByShopId.set(shopItem.shopId, group)
-  }
+  const shopItemsByShopId = groupAvailableShopItems(shopItems, nowMs)
   if (shopItemsByShopId.size === 0) {
     return
   }
-
   for (const [shopId, targets] of targetsByShopId) {
-    const group = shopItemsByShopId.get(shopId) ?? []
-    if (group.length === 0 || targets.length === 0) {
-      continue
-    }
-    if (group.length < targets.length || group.length % targets.length !== 0) {
-      continue
-    }
-
-    targets.sort((a, b) => a.itemId - b.itemId)
-    const orderedShopItems = [...group].sort((a, b) => (a.seq !== b.seq ? a.seq - b.seq : a.id - b.id))
-
-    const blockSize = orderedShopItems.length / targets.length
-    let offset = 0
-    for (const target of targets) {
-      let levelMap = result.get(target.itemId)
-      if (levelMap == null) {
-        levelMap = new Map()
-        result.set(target.itemId, levelMap)
-      }
-
-      const levelsToMap = Math.min(blockSize, target.sortedLevels.length)
-      for (let idx = 0; idx < levelsToMap; idx++) {
-        const level = target.sortedLevels[idx]
-        if (!levelMap.has(level)) {
-          levelMap.set(level, orderedShopItems[offset + idx])
-        }
-      }
-      offset += blockSize
-    }
+    fillShopTargetGroup(targets, shopItemsByShopId.get(shopId) ?? [], result)
   }
 }
 
@@ -634,12 +627,7 @@ export type AreaItemView = {
   levels: AreaItemLevelView[]
 }
 
-/**
- * Go: buildAreaItemUpgradeMaterialsRequest (snapshot mode, hasProfile=true).
- * Without a filter the candidate set is the owned items; with a filter the
- * whole matched catalog is shown (unowned items render from level 0).
- */
-export function buildAreaItemViews(args: {
+type BuildAreaItemViewsArgs = {
   areaItems: readonly AreaItemMaster[]
   areaItemLevels: readonly AreaItemLevelMaster[]
   shopItems: readonly AreaShopItem[]
@@ -648,41 +636,163 @@ export function buildAreaItemViews(args: {
   userMaterials: Map<number, number>
   filter?: AreaItemFilter | null
   nowMs?: number
-}): AreaItemView[] {
-  const nowMs = args.nowMs != null && args.nowMs > 0 ? args.nowMs : Date.now()
+}
 
-  const areaItemById = new Map<number, AreaItemMaster>()
-  for (const item of args.areaItems) {
-    areaItemById.set(item.id, item)
-  }
+type AreaItemRenderState = {
+  item: AreaItemMaster
+  levels: AreaItemLevelMaster[]
+  levelMap: Map<number, AreaItemLevelMaster>
+  shopLevels: Map<number, AreaShopItem> | undefined
+  currentLevel: number
+  maxVisibleLevel: number
+}
 
+function indexAreaItemMasters(areaItems: readonly AreaItemMaster[]): Map<number, AreaItemMaster> {
+  return new Map(areaItems.map((item) => [item.id, item]))
+}
+
+function groupAreaItemLevels(
+  areaItemLevels: readonly AreaItemLevelMaster[],
+): Map<number, AreaItemLevelMaster[]> {
   const levelsByItem = new Map<number, AreaItemLevelMaster[]>()
-  for (const level of args.areaItemLevels) {
+  for (const level of areaItemLevels) {
     const levels = levelsByItem.get(level.areaItemId) ?? []
     levels.push(level)
     levelsByItem.set(level.areaItemId, levels)
   }
+  return levelsByItem
+}
 
-  // Go: resolveAreaItemIDs.
+function resolveAreaItemIds(
+  args: BuildAreaItemViewsArgs,
+  levelsByItem: ReadonlyMap<number, AreaItemLevelMaster[]>,
+): number[] {
   const filter = args.filter ?? null
-  let itemIds: number[]
   if (!hasAreaItemFilter(filter)) {
-    itemIds = [...args.userAreaLevels.keys()]
+    return [...args.userAreaLevels.keys()]
       .filter((itemId) => (levelsByItem.get(itemId)?.length ?? 0) > 0)
       .sort((a, b) => a - b)
-  } else {
-    itemIds = args.areaItems
-      .filter((item) => {
-        const levels = levelsByItem.get(item.id) ?? []
-        return levels.length > 0 && areaItemMatchesFilter(item, levels, filter as AreaItemFilter)
-      })
-      .map((item) => item.id)
-      .sort((a, b) => a - b)
   }
+  return args.areaItems
+    .filter((item) => {
+      const levels = levelsByItem.get(item.id) ?? []
+      return levels.length > 0 && areaItemMatchesFilter(item, levels, filter as AreaItemFilter)
+    })
+    .map((item) => item.id)
+    .sort((a, b) => a - b)
+}
+
+function buildAreaItemRenderStates(args: {
+  itemIds: readonly number[]
+  areaItemById: ReadonlyMap<number, AreaItemMaster>
+  levelsByItem: ReadonlyMap<number, AreaItemLevelMaster[]>
+  levelShopItems: ReadonlyMap<number, Map<number, AreaShopItem>>
+  userAreaLevels: ReadonlyMap<number, number>
+}): { states: AreaItemRenderState[]; minCurrentLevel: number } {
+  const shopDataAvailable = [...args.levelShopItems.values()].some((map) => map.size > 0)
+  const states: AreaItemRenderState[] = []
+  let minCurrentLevel = -1
+  for (const itemId of args.itemIds) {
+    const item = args.areaItemById.get(itemId)
+    const levels = args.levelsByItem.get(itemId) ?? []
+    if (!item || levels.length === 0) {
+      continue
+    }
+    const levelMap = new Map(levels.map((level) => [level.level, level]))
+    const shopLevels = args.levelShopItems.get(itemId)
+    const releasedCap = shopDataAvailable
+      ? releasedAreaItemLevelCap(levels, shopLevels)
+      : masterAreaItemLevelCap(levels)
+    const ownedLevel = args.userAreaLevels.get(itemId) ?? 0
+    const currentLevel = releasedCap > 0 ? Math.min(ownedLevel, releasedCap) : ownedLevel
+    const maxVisibleLevel = Math.max(currentLevel, releasedCap)
+    if (maxVisibleLevel <= 0) {
+      continue
+    }
+    minCurrentLevel = minCurrentLevel < 0 ? currentLevel : Math.min(minCurrentLevel, currentLevel)
+    states.push({ item, levels, levelMap, shopLevels, currentLevel, maxVisibleLevel })
+  }
+  return { states, minCurrentLevel: Math.max(minCurrentLevel, 0) }
+}
+
+function buildAreaItemMaterialViews(
+  shopItem: AreaShopItem,
+  sumMaterials: Map<number, number>,
+  userMaterials: ReadonlyMap<number, number>,
+): AreaItemMaterialView[] {
+  return shopItem.costs.map((cost) => {
+    const resourceType = cost.resourceType.trim().toLowerCase()
+    const materialId = resourceType === "coin" ? AREA_COIN_MATERIAL_ID : cost.resourceId
+    const sumQuantity = (sumMaterials.get(materialId) ?? 0) + cost.quantity
+    sumMaterials.set(materialId, sumQuantity)
+    const haveQuantity = userMaterials.get(materialId) ?? 0
+    return {
+      materialId,
+      resourceType,
+      quantity: cost.quantity,
+      haveQuantity,
+      sumQuantity,
+      isEnough: haveQuantity >= sumQuantity,
+    }
+  })
+}
+
+function buildAreaItemLevelViews(
+  state: AreaItemRenderState,
+  minCurrentLevel: number,
+  userMaterials: ReadonlyMap<number, number>,
+): AreaItemLevelView[] {
+  const sumMaterials = new Map<number, number>()
+  const levelViews: AreaItemLevelView[] = []
+  for (let level = minCurrentLevel + 1; level <= state.maxVisibleLevel; level++) {
+    const levelMaster = state.levelMap.get(level)
+    if (!levelMaster) {
+      levelViews.push({ level, bonus: 0, canUpgrade: false, materials: [] })
+      continue
+    }
+    const shopItem = level > state.currentLevel ? state.shopLevels?.get(level) : null
+    const materials = shopItem ? buildAreaItemMaterialViews(shopItem, sumMaterials, userMaterials) : []
+    levelViews.push({
+      level,
+      bonus: levelMaster.power1BonusRate,
+      canUpgrade: level <= state.currentLevel || (shopItem != null && materials.every((material) => material.isEnough)),
+      materials,
+    })
+  }
+  return levelViews
+}
+
+function buildAreaItemView(
+  state: AreaItemRenderState,
+  minCurrentLevel: number,
+  userMaterials: ReadonlyMap<number, number>,
+): AreaItemView {
+  return {
+    itemId: state.item.id,
+    areaId: state.item.areaId,
+    name: state.item.name,
+    assetbundleName: state.item.assetbundleName,
+    currentLevel: state.currentLevel,
+    currentBonus: state.levelMap.get(state.currentLevel)?.power1BonusRate ?? 0,
+    maxVisibleLevel: state.maxVisibleLevel,
+    target: resolveAreaItemTarget(state.levels),
+    levels: buildAreaItemLevelViews(state, minCurrentLevel, userMaterials),
+  }
+}
+
+/**
+ * Go: buildAreaItemUpgradeMaterialsRequest (snapshot mode, hasProfile=true).
+ * Without a filter the candidate set is the owned items; with a filter the
+ * whole matched catalog is shown (unowned items render from level 0).
+ */
+export function buildAreaItemViews(args: BuildAreaItemViewsArgs): AreaItemView[] {
+  const nowMs = args.nowMs != null && args.nowMs > 0 ? args.nowMs : Date.now()
+  const areaItemById = indexAreaItemMasters(args.areaItems)
+  const levelsByItem = groupAreaItemLevels(args.areaItemLevels)
+  const itemIds = resolveAreaItemIds(args, levelsByItem)
   if (itemIds.length === 0) {
     return []
   }
-
   const levelShopItems = buildAreaItemShopItems({
     itemIds,
     areaItemById,
@@ -691,123 +801,14 @@ export function buildAreaItemViews(args: {
     shopDetails: args.shopDetails,
     nowMs,
   })
-
-  type AreaItemRenderState = {
-    item: AreaItemMaster
-    levels: AreaItemLevelMaster[]
-    levelMap: Map<number, AreaItemLevelMaster>
-    shopLevels: Map<number, AreaShopItem> | undefined
-    currentLevel: number
-    maxVisibleLevel: number
-  }
-
-  // With no shop mapping at all (cn dumps ship no resource box data), the
-  // released-level walk would cap everything at the current level; fall back
-  // to the plain masterdata cap instead.
-  const shopDataAvailable = [...levelShopItems.values()].some((map) => map.size > 0)
-
-  const states: AreaItemRenderState[] = []
-  let minCurrentLevel = -1
-  for (const itemId of itemIds) {
-    const item = areaItemById.get(itemId)
-    const levels = levelsByItem.get(itemId) ?? []
-    if (item == null || levels.length === 0) {
-      continue
-    }
-
-    const levelMap = new Map<number, AreaItemLevelMaster>()
-    for (const level of levels) {
-      levelMap.set(level.level, level)
-    }
-
-    const shopLevels = levelShopItems.get(itemId)
-    const releasedCap = shopDataAvailable
-      ? releasedAreaItemLevelCap(levels, shopLevels)
-      : masterAreaItemLevelCap(levels)
-
-    let currentLevel = args.userAreaLevels.get(itemId) ?? 0
-    if (releasedCap > 0 && currentLevel > releasedCap) {
-      currentLevel = releasedCap
-    }
-    let maxVisibleLevel = currentLevel
-    if (releasedCap > maxVisibleLevel) {
-      maxVisibleLevel = releasedCap
-    }
-    if (maxVisibleLevel <= 0) {
-      continue
-    }
-    if (minCurrentLevel === -1 || currentLevel < minCurrentLevel) {
-      minCurrentLevel = currentLevel
-    }
-
-    states.push({ item, levels, levelMap, shopLevels, currentLevel, maxVisibleLevel })
-  }
-  if (minCurrentLevel < 0) {
-    minCurrentLevel = 0
-  }
-
-  const views: AreaItemView[] = []
-  for (const state of states) {
-    const sumMaterials = new Map<number, number>()
-    const levelViews: AreaItemLevelView[] = []
-    for (let level = minCurrentLevel + 1; level <= state.maxVisibleLevel; level++) {
-      const levelMaster = state.levelMap.get(level)
-      if (levelMaster == null) {
-        levelViews.push({ level, bonus: 0, canUpgrade: false, materials: [] })
-        continue
-      }
-
-      const row: AreaItemLevelView = {
-        level,
-        bonus: levelMaster.power1BonusRate,
-        canUpgrade: true,
-        materials: [],
-      }
-
-      if (level > state.currentLevel) {
-        const shopItem = state.shopLevels?.get(level)
-        if (shopItem == null) {
-          row.canUpgrade = false
-        } else {
-          for (const cost of shopItem.costs) {
-            const resourceType = cost.resourceType.trim().toLowerCase()
-            const materialId = resourceType === "coin" ? AREA_COIN_MATERIAL_ID : cost.resourceId
-            const sumQuantity = (sumMaterials.get(materialId) ?? 0) + cost.quantity
-            sumMaterials.set(materialId, sumQuantity)
-            const haveQuantity = args.userMaterials.get(materialId) ?? 0
-            const isEnough = haveQuantity >= sumQuantity
-            if (!isEnough) {
-              row.canUpgrade = false
-            }
-            row.materials.push({
-              materialId,
-              resourceType,
-              quantity: cost.quantity,
-              haveQuantity,
-              sumQuantity,
-              isEnough,
-            })
-          }
-        }
-      }
-
-      levelViews.push(row)
-    }
-
-    views.push({
-      itemId: state.item.id,
-      areaId: state.item.areaId,
-      name: state.item.name,
-      assetbundleName: state.item.assetbundleName,
-      currentLevel: state.currentLevel,
-      currentBonus: state.levelMap.get(state.currentLevel)?.power1BonusRate ?? 0,
-      maxVisibleLevel: state.maxVisibleLevel,
-      target: resolveAreaItemTarget(state.levels),
-      levels: levelViews,
-    })
-  }
-
-  return views
+  const { states, minCurrentLevel } = buildAreaItemRenderStates({
+    itemIds,
+    areaItemById,
+    levelsByItem,
+    levelShopItems,
+    userAreaLevels: args.userAreaLevels,
+  })
+  return states.map((state) => buildAreaItemView(state, minCurrentLevel, args.userMaterials))
 }
 
 /** Relative game asset path for an area item's icon. */
