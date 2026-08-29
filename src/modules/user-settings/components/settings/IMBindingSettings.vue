@@ -157,9 +157,9 @@ const { t, locale } = useI18n()
       <template v-else>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium">{{ t("userSettings.imBinding.selectPlatformLabel") }}</label>
-            <Select :key="locale" v-model="platform">
-              <SelectTrigger class="w-full">
+            <label id="im-binding-platform-label" for="im-binding-platform" class="text-sm font-medium">{{ t("userSettings.imBinding.selectPlatformLabel") }}</label>
+            <Select id="im-binding-platform" :key="locale" v-model="platform">
+              <SelectTrigger class="w-full" aria-labelledby="im-binding-platform-label">
                 <SelectValue :placeholder="t('userSettings.imBinding.selectPlatformPlaceholder')"/>
               </SelectTrigger>
               <SelectContent>
@@ -173,9 +173,9 @@ const { t, locale } = useI18n()
             </Select>
           </div>
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium">{{ t("userSettings.imBinding.fields.account") }}</label>
+            <label for="im-binding-account" class="text-sm font-medium">{{ t("userSettings.imBinding.fields.account") }}</label>
             <div class="relative w-full items-center">
-              <Input v-model="account" :placeholder="t('userSettings.imBinding.accountPlaceholder')" class="pl-10"/>
+              <Input id="im-binding-account" v-model="account" :placeholder="t('userSettings.imBinding.accountPlaceholder')" class="pl-10"/>
               <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                 <User class="size-4 text-muted-foreground" />
               </span>
@@ -223,7 +223,7 @@ const { t, locale } = useI18n()
           <div class="py-4 text-center font-mono text-lg">
             <template v-if="dialogMode === 'qq'">
               <div class="relative w-full items-center">
-                <Input v-model="qqInputCode" :placeholder="t('userSettings.imBinding.dialog.qqCodePlaceholder')" class="pl-10 text-base"/>
+                <Input v-model="qqInputCode" :placeholder="t('userSettings.imBinding.dialog.qqCodePlaceholder')" :aria-label="t('userSettings.imBinding.dialog.qqCodePlaceholder')" class="pl-10 text-base"/>
                 <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                   <Key class="size-4 text-muted-foreground" />
                 </span>

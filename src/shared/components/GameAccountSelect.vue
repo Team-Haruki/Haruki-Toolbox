@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, useId } from "vue"
 import { useI18n } from "vue-i18n"
 import {
   Select,
@@ -9,6 +9,7 @@ import {
   SelectLabel,
   SelectTrigger,
 } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import type { GameAccountCapabilityName } from "@/shared/sekai/user-snapshot/accessible-accounts"
 import { useGameAccountSelection } from "@/shared/sekai/user-snapshot/use-user-suite"
@@ -19,6 +20,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const selectId = useId()
 const { accounts, selectedAccount, selectedAccountKey, selectAccount } = useGameAccountSelection({
   capability: props.capability,
 })
@@ -33,8 +35,9 @@ function handleUpdate(value: unknown) {
 
 <template>
   <div v-if="accounts.length > 0" class="grid gap-2">
-    <Select :model-value="selectedAccountKey ?? undefined" @update:model-value="handleUpdate">
-      <SelectTrigger class="w-full sm:w-72">
+    <Label :id="`${selectId}-label`" :for="selectId" class="sr-only">{{ t("gameAccountSelect.placeholder") }}</Label>
+    <Select :id="selectId" :model-value="selectedAccountKey ?? undefined" @update:model-value="handleUpdate">
+      <SelectTrigger class="w-full sm:w-72" :aria-labelledby="`${selectId}-label`">
         <!-- No owner name in the always-visible trigger: it would crush the
              uid in the fixed-width trigger and stay visible even with the
              hide-game-uid privacy toggle on. The badge still marks the

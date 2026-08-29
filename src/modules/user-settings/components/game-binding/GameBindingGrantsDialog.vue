@@ -159,17 +159,18 @@ async function copyOwnUserId() {
           <h3 class="text-sm font-medium">{{ t("userSettings.gameBinding.grants.form.title") }}</h3>
           <div class="mt-4 space-y-3">
             <div class="space-y-1.5">
-              <Label>{{ t("userSettings.gameBinding.grants.form.granteeUserId") }}</Label>
+              <Label for="grant-user-id">{{ t("userSettings.gameBinding.grants.form.granteeUserId") }}</Label>
               <Input
+                id="grant-user-id"
                 :model-value="props.granteeUserId"
                 :placeholder="t('userSettings.gameBinding.grants.form.granteeUserIdPlaceholder')"
                 @update:model-value="emit('update:grantee-user-id', String($event ?? ''))"
               />
             </div>
             <div class="space-y-1.5">
-              <Label>{{ t("userSettings.gameBinding.grants.form.dataType") }}</Label>
-              <Select :key="locale" :model-value="props.dataType" @update:model-value="handleDataTypeChange">
-                <SelectTrigger class="w-full">
+              <Label id="grant-data-type-label" for="grant-data-type">{{ t("userSettings.gameBinding.grants.form.dataType") }}</Label>
+              <Select id="grant-data-type" :key="locale" :model-value="props.dataType" @update:model-value="handleDataTypeChange">
+                <SelectTrigger class="w-full" aria-labelledby="grant-data-type-label">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -183,8 +184,9 @@ async function copyOwnUserId() {
               </p>
             </div>
             <div class="space-y-1.5">
-              <Label>{{ t("userSettings.gameBinding.grants.form.expiresAt") }}</Label>
+              <Label for="grant-expires-at">{{ t("userSettings.gameBinding.grants.form.expiresAt") }}</Label>
               <Input
+                id="grant-expires-at"
                 type="datetime-local"
                 :model-value="props.expiresAtLocal"
                 @update:model-value="emit('update:expires-at-local', String($event ?? ''))"

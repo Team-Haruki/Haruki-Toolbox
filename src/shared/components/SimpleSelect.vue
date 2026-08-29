@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, useId } from "vue"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -35,6 +36,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: "update:modelValue", value: string): void
 }>()
+const selectId = useId()
 
 // reka-ui reserves the empty string for clearing a selection, so a "" option
 // value (the common "all" filter) is tunneled through a sentinel instead.
@@ -60,8 +62,9 @@ function handleUpdate(value: unknown) {
 </script>
 
 <template>
-  <Select :model-value="internalValue" :disabled="disabled" @update:model-value="handleUpdate">
-    <SelectTrigger :class="triggerClass" :size="size" :aria-label="ariaLabel">
+  <Label :id="`${selectId}-label`" :for="selectId" class="sr-only">{{ ariaLabel || placeholder }}</Label>
+  <Select :id="selectId" :model-value="internalValue" :disabled="disabled" @update:model-value="handleUpdate">
+    <SelectTrigger :class="triggerClass" :size="size" :aria-labelledby="`${selectId}-label`">
       <SelectValue :placeholder="placeholder">
         <template v-if="selectedOption">
           <img

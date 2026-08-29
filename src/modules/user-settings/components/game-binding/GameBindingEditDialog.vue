@@ -177,9 +177,9 @@ const mysekaiPermissionOptions = computed(() =>
           </h3>
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="grid gap-1.5">
-              <Label for="binding-server">{{ t("userSettings.gameBinding.editDialog.fields.server") }}</Label>
-              <Select :key="locale" :model-value="editTarget?.server" @update:model-value="handleServerChange">
-                <SelectTrigger id="binding-server" class="w-full" :disabled="!isCreating || editTarget?.verified">
+              <Label id="binding-server-label" for="binding-server">{{ t("userSettings.gameBinding.editDialog.fields.server") }}</Label>
+              <Select id="binding-server" :key="locale" :model-value="editTarget?.server" @update:model-value="handleServerChange">
+                <SelectTrigger class="w-full" :disabled="!isCreating || editTarget?.verified" aria-labelledby="binding-server-label">
                   <SelectValue :placeholder="t('userSettings.gameBinding.editDialog.serverPlaceholder')" />
                 </SelectTrigger>
                 <SelectContent>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Label } from "@/components/ui/label"
 import type { CatalogFieldOption } from "./types"
 
 defineProps<{
@@ -21,8 +20,8 @@ function toggle(value: string) {
 
 <template>
   <div class="grid gap-2 sm:col-span-2 lg:col-span-3">
-    <Label>{{ label }}</Label>
-    <div class="flex flex-wrap items-center gap-1.5">
+    <p class="text-sm font-medium">{{ label }}</p>
+    <div class="flex flex-wrap items-center gap-1.5" role="group" :aria-label="label">
       <button
         v-for="option in options"
         :key="option.value"

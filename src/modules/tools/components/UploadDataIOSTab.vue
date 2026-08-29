@@ -104,11 +104,11 @@ function handleCopyScriptUrl() {
 
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="flex flex-col gap-1.5">
-            <Label>{{ t("tools.iosModules.sections.software.title") }}</Label>
+            <Label id="ios-software-label" for="ios-software">{{ t("tools.iosModules.sections.software.title") }}</Label>
             <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.sections.software.description") }}</p>
             <div class="mt-auto pt-1">
-              <Select v-model="selectedSoftware">
-                <SelectTrigger class="w-full">
+              <Select id="ios-software" v-model="selectedSoftware">
+                <SelectTrigger class="w-full" aria-labelledby="ios-software-label">
                   <SelectValue :placeholder="t('tools.iosModules.sections.software.placeholder')" />
                 </SelectTrigger>
                 <SelectContent>
@@ -126,11 +126,11 @@ function handleCopyScriptUrl() {
           </div>
 
           <div class="flex flex-col gap-1.5">
-            <Label>{{ t("tools.iosModules.sections.endpoint.title") }}</Label>
+            <Label id="ios-endpoint-label" for="ios-endpoint">{{ t("tools.iosModules.sections.endpoint.title") }}</Label>
             <p class="whitespace-pre-line text-xs text-muted-foreground">{{ t("tools.iosModules.sections.endpoint.description") }}</p>
             <div class="mt-auto pt-1">
-              <Select v-model="selectedEndpoint">
-                <SelectTrigger class="w-full">
+              <Select id="ios-endpoint" v-model="selectedEndpoint">
+                <SelectTrigger class="w-full" aria-labelledby="ios-endpoint-label">
                   <SelectValue :placeholder="t('tools.iosModules.sections.endpoint.placeholder')" />
                 </SelectTrigger>
                 <SelectContent>
@@ -148,11 +148,11 @@ function handleCopyScriptUrl() {
           </div>
 
           <div class="flex flex-col gap-1.5">
-            <Label>{{ t("tools.iosModules.sections.mode.title") }}</Label>
+            <Label id="ios-mode-label" for="ios-mode">{{ t("tools.iosModules.sections.mode.title") }}</Label>
             <p class="whitespace-pre-line text-xs text-muted-foreground">{{ t("tools.iosModules.sections.mode.description") }}</p>
             <div class="mt-auto space-y-1.5 pt-1">
-              <Select v-model="selectedMode">
-                <SelectTrigger class="w-full">
+              <Select id="ios-mode" v-model="selectedMode">
+                <SelectTrigger class="w-full" aria-labelledby="ios-mode-label">
                   <SelectValue :placeholder="t('tools.iosModules.sections.mode.placeholder')" />
                 </SelectTrigger>
                 <SelectContent>
@@ -173,10 +173,10 @@ function handleCopyScriptUrl() {
           </div>
 
           <div v-if="selectedMode === 'script'" class="flex flex-col gap-1.5">
-            <Label>{{ t("tools.iosModules.sections.chunk.title") }}</Label>
+            <Label for="ios-chunk-size">{{ t("tools.iosModules.sections.chunk.title") }}</Label>
             <p class="whitespace-pre-line text-xs text-muted-foreground">{{ t("tools.iosModules.sections.chunk.description") }}</p>
             <div class="mt-auto flex items-center gap-2 pt-1">
-              <Input v-model.number="chunkSize" type="number" min="1" max="10" class="min-w-0 flex-1" />
+              <Input id="ios-chunk-size" v-model.number="chunkSize" type="number" min="1" max="10" class="min-w-0 flex-1" />
               <span class="whitespace-nowrap text-sm text-muted-foreground">{{ t("tools.iosModules.sections.chunk.unit") }}</span>
             </div>
           </div>
@@ -195,9 +195,9 @@ function handleCopyScriptUrl() {
         </header>
 
         <div class="flex flex-col gap-1.5">
-          <Label>{{ t("tools.iosModules.sections.regions.title") }}</Label>
+          <p class="text-sm font-medium">{{ t("tools.iosModules.sections.regions.title") }}</p>
           <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.sections.regions.description") }}</p>
-          <div class="flex flex-wrap gap-2 pt-1">
+          <div class="flex flex-wrap gap-2 pt-1" role="group" :aria-label="t('tools.iosModules.sections.regions.title')">
             <button
               v-for="opt in regionOptions"
               :key="opt.value"
@@ -220,9 +220,9 @@ function handleCopyScriptUrl() {
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <Label>{{ t("tools.iosModules.sections.dataTypes.title") }}</Label>
+          <p class="text-sm font-medium">{{ t("tools.iosModules.sections.dataTypes.title") }}</p>
           <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.sections.dataTypes.description") }}</p>
-          <div class="grid gap-2 pt-1 sm:grid-cols-2">
+          <div class="grid gap-2 pt-1 sm:grid-cols-2" role="group" :aria-label="t('tools.iosModules.sections.dataTypes.title')">
             <button
               v-for="opt in dataTypeOptionsWithDesc"
               :key="opt.value"
@@ -267,7 +267,7 @@ function handleCopyScriptUrl() {
         </header>
 
         <div class="flex flex-col gap-1.5">
-          <Label class="flex items-center gap-2">
+          <Label for="ios-upload-code" class="flex items-center gap-2">
             <KeyRound class="size-4" />
             {{ t("tools.iosModules.uploadCode.title") }}
           </Label>
@@ -275,6 +275,7 @@ function handleCopyScriptUrl() {
           <div v-if="hasUploadCode" class="flex flex-col gap-2 pt-1 sm:flex-row">
             <div class="flex min-w-0 flex-1 items-center rounded-md border bg-muted/20">
               <Input
+                id="ios-upload-code"
                 :model-value="userStore.iosUploadCode ?? ''"
                 readonly
                 class="min-w-0 flex-1 border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0"
@@ -306,10 +307,10 @@ function handleCopyScriptUrl() {
         </div>
 
         <div v-if="moduleUrl" class="flex flex-col gap-1.5">
-          <Label class="flex items-center gap-2">
+          <p class="flex items-center gap-2 text-sm font-medium">
             <Link2 class="size-4" />
             {{ t("tools.iosModules.generatedUrls.title") }}
-          </Label>
+          </p>
           <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.generatedUrls.description") }}</p>
           <div class="space-y-2 pt-1">
             <div class="space-y-1">
@@ -318,6 +319,7 @@ function handleCopyScriptUrl() {
                 <Input
                   :model-value="moduleUrl"
                   readonly
+                  :aria-label="t('tools.iosModules.generatedUrls.moduleUrl')"
                   class="min-w-0 flex-1 border-0 bg-transparent font-mono text-xs shadow-none focus-visible:ring-0"
                 />
                 <Button class="mr-1 shrink-0" variant="ghost" size="icon" @click="handleCopyModuleUrl">
@@ -331,6 +333,7 @@ function handleCopyScriptUrl() {
                 <Input
                   :model-value="scriptUrl"
                   readonly
+                  :aria-label="t('tools.iosModules.generatedUrls.scriptUrl')"
                   class="min-w-0 flex-1 border-0 bg-transparent font-mono text-xs shadow-none focus-visible:ring-0"
                 />
                 <Button class="mr-1 shrink-0" variant="ghost" size="icon" @click="handleCopyScriptUrl">

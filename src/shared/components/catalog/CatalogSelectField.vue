@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useId } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { Label } from "@/components/ui/label"
 import {
@@ -21,6 +22,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ "update:modelValue": [value: string | null] }>()
+const selectId = useId()
 
 function handleUpdate(value: AcceptableValue) {
   if (typeof value !== "string" || value === ALL_OPTION) {
@@ -34,9 +36,9 @@ function handleUpdate(value: AcceptableValue) {
 
 <template>
   <div class="grid gap-2">
-    <Label>{{ label }}</Label>
-    <Select :model-value="modelValue ?? ALL_OPTION" @update:model-value="handleUpdate">
-      <SelectTrigger class="w-full">
+    <Label :id="`${selectId}-label`" :for="selectId">{{ label }}</Label>
+    <Select :id="selectId" :model-value="modelValue ?? ALL_OPTION" @update:model-value="handleUpdate">
+      <SelectTrigger class="w-full" :aria-labelledby="`${selectId}-label`">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

@@ -618,7 +618,7 @@ watch(
 
               <div v-if="section.displayFields.length > 0" class="space-y-3">
                 <div v-for="field in section.displayFields" :key="field.key" class="space-y-2">
-                  <Label v-if="field.label">{{ field.label }}</Label>
+                  <p v-if="field.label" class="text-sm font-medium">{{ field.label }}</p>
                   <div v-if="field.kind === 'image'" class="rounded-md border bg-muted/30 p-3">
                     <img
                       :src="field.src"

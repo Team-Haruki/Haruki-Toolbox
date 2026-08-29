@@ -72,7 +72,7 @@ function openVerification() {
           </div>
           <p class="mt-0.5 text-sm text-muted-foreground break-all">{{ currentEmail }}</p>
         </div>
-        <input ref="fileInputRef" type="file" accept="image/*" class="hidden" @change="onAvatarChange" />
+        <input ref="fileInputRef" type="file" accept="image/*" class="hidden" :aria-label="t('userSettings.account.changeAvatar')" @change="onAvatarChange" />
         <Button variant="outline" size="sm" class="shrink-0" :disabled="isSaving" @click="triggerFileInput">
           <Loader2 v-if="isSaving" class="mr-2 h-4 w-4 animate-spin" />
           <Upload v-else class="mr-2 h-4 w-4" />

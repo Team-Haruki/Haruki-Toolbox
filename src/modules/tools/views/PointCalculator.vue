@@ -326,9 +326,9 @@ function normalizeBonusBound(value: unknown, fallback: number) {
           <CardContent class="space-y-4">
             <!-- Primary inputs: region context + the song and target Pt that define the problem. -->
             <div class="grid gap-2">
-              <Label>{{ t("tools.pointCalculator.fields.region") }}</Label>
-              <Select :model-value="selectedRegion" :disabled="loading" @update:model-value="updateRegion">
-                <SelectTrigger class="w-full">
+              <Label id="point-calculator-region-label" for="point-calculator-region">{{ t("tools.pointCalculator.fields.region") }}</Label>
+              <Select id="point-calculator-region" :model-value="selectedRegion" :disabled="loading" @update:model-value="updateRegion">
+                <SelectTrigger class="w-full" aria-labelledby="point-calculator-region-label">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -340,7 +340,7 @@ function normalizeBonusBound(value: unknown, fallback: number) {
             </div>
 
             <div class="grid gap-2">
-              <Label>{{ t("tools.pointCalculator.fields.music") }}</Label>
+              <p class="text-sm font-medium">{{ t("tools.pointCalculator.fields.music") }}</p>
               <MusicSelect
                 :model-value="selectedMusicId"
                 :region="selectedRegion"
@@ -397,10 +397,10 @@ function normalizeBonusBound(value: unknown, fallback: number) {
               <div v-show="advancedOpen" class="grid gap-4 border-t p-3">
                 <div class="grid gap-4 md:grid-cols-2">
                   <div class="grid gap-2">
-                    <Label>{{ t("tools.pointCalculator.fields.boostIndex") }}</Label>
+                    <Label id="point-calculator-boost-label" for="point-calculator-boost">{{ t("tools.pointCalculator.fields.boostIndex") }}</Label>
                     <div class="relative w-full items-center">
-                      <Select :model-value="selectedBoost" @update:model-value="updateBoost">
-                        <SelectTrigger class="w-full pl-10">
+                      <Select id="point-calculator-boost" :model-value="selectedBoost" @update:model-value="updateBoost">
+                        <SelectTrigger class="w-full pl-10" aria-labelledby="point-calculator-boost-label">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -416,9 +416,10 @@ function normalizeBonusBound(value: unknown, fallback: number) {
                   </div>
 
                   <div class="grid gap-2">
-                    <Label>{{ t("tools.pointCalculator.fields.maxResults") }}</Label>
+                    <Label for="point-calculator-max-results">{{ t("tools.pointCalculator.fields.maxResults") }}</Label>
                     <div class="relative w-full items-center">
                       <Input
+                        id="point-calculator-max-results"
                         v-model.number="maxResults"
                         class="pl-10"
                         type="number"
@@ -436,7 +437,7 @@ function normalizeBonusBound(value: unknown, fallback: number) {
 
                 <div class="grid gap-2">
                   <div class="space-y-0.5">
-                    <Label>{{ t("tools.pointCalculator.fields.bonusRange") }}</Label>
+                    <p class="text-sm font-medium">{{ t("tools.pointCalculator.fields.bonusRange") }}</p>
                     <p class="text-xs leading-5 text-muted-foreground">
                       {{ t("tools.pointCalculator.fields.bonusRangeHelp") }}
                     </p>
@@ -452,6 +453,7 @@ function normalizeBonusBound(value: unknown, fallback: number) {
                         inputmode="numeric"
                         :aria-invalid="customBonusFloorInvalid || undefined"
                         :placeholder="t('tools.pointCalculator.fields.customBonusFloorPlaceholder')"
+                        :aria-label="t('tools.pointCalculator.fields.customBonusFloorPlaceholder')"
                       />
                       <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                         <Percent class="size-4 text-muted-foreground" />
@@ -468,6 +470,7 @@ function normalizeBonusBound(value: unknown, fallback: number) {
                         inputmode="numeric"
                         :aria-invalid="customBonusCapInvalid || undefined"
                         :placeholder="t('tools.pointCalculator.fields.customBonusCapPlaceholder')"
+                        :aria-label="t('tools.pointCalculator.fields.customBonusCapPlaceholder')"
                       />
                       <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                         <Percent class="size-4 text-muted-foreground" />

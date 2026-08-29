@@ -183,9 +183,9 @@ function getPlatformIcon(platform: SocialPlatform) {
       </DialogHeader>
       <div v-if="editTarget" class="flex flex-col gap-4 py-2">
         <div class="grid gap-1.5">
-          <Label for="im-auth-platform">{{ t("userSettings.imAuthorization.fields.platform") }}</Label>
-          <Select :key="locale" v-model="editTarget.platform">
-            <SelectTrigger id="im-auth-platform" class="w-full">
+          <Label id="im-auth-platform-label" for="im-auth-platform">{{ t("userSettings.imAuthorization.fields.platform") }}</Label>
+          <Select id="im-auth-platform" :key="locale" v-model="editTarget.platform">
+            <SelectTrigger class="w-full" aria-labelledby="im-auth-platform-label">
               <SelectValue :placeholder="t('userSettings.imAuthorization.platformPlaceholder')"/>
             </SelectTrigger>
             <SelectContent>
