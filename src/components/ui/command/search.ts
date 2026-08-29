@@ -316,11 +316,11 @@ function readKanaSyllable(kana: string, index: number) {
   const digraph = `${current}${kana[index + 1] ?? ""}`
   const digraphRomaji = KANA_DIGRAPH_ROMAJI[digraph]
   if (digraphRomaji) {
-    return { romaji: digraphRomaji, nextIndex: index + 1, isKana: true }
+    return { romaji: digraphRomaji, extraCharacters: 1, isKana: true }
   }
 
   const romaji = KANA_ROMAJI[current] ?? current
-  return { romaji, nextIndex: index, isKana: Boolean(KANA_ROMAJI[current]) || romaji !== current }
+  return { romaji, extraCharacters: 0, isKana: Boolean(KANA_ROMAJI[current]) || romaji !== current }
 }
 
 function appendDoubledConsonant(result: string, romaji: string, doubleNext: boolean): string {
@@ -358,7 +358,7 @@ function kanaToRomaji(value: string): string | null {
     }
 
     const syllable = readKanaSyllable(kana, index)
-    index = syllable.nextIndex
+    index += syllable.extraCharacters
     if (syllable.isKana) {
       sawKana = true
     }
