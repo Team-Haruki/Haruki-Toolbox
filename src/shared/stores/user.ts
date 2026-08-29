@@ -30,6 +30,12 @@ function normalizeTokenExpiration(value: string | number | null | undefined): nu
     return null
 }
 
+function setRefIfDefined<T>(target: { value: T }, value: T | undefined): void {
+    if (value !== undefined) {
+        target.value = value
+    }
+}
+
 export const useUserStore = defineStore("user", () => {
     const name = ref<string>("")
     const userId = ref<string | null>(null)
@@ -65,28 +71,24 @@ export const useUserStore = defineStore("user", () => {
         sessionToken?: string
         sessionExpiresAt?: string | number | null
     }, options: { resetExpiration?: boolean } = { resetExpiration: true }) {
-        if (payload.name !== undefined) name.value = payload.name
-        if (payload.userId !== undefined) userId.value = payload.userId
-        if (payload.kratosIdentityId !== undefined) kratosIdentityId.value = payload.kratosIdentityId
-        if (payload.avatarPath !== undefined) avatarPath.value = payload.avatarPath
-        if (payload.allowCNMysekai !== undefined) allowCNMysekai.value = payload.allowCNMysekai
-        if (payload.role !== undefined) role.value = payload.role
-        if (payload.emailInfo !== undefined) emailInfo.value = payload.emailInfo
-        if (payload.socialPlatformInfo !== undefined) socialPlatformInfo.value = payload.socialPlatformInfo
-        if (payload.authorizeSocialPlatformInfo !== undefined) authorizeSocialPlatformInfo.value = payload.authorizeSocialPlatformInfo
-        if (payload.gameAccountBindings !== undefined) gameAccountBindings.value = payload.gameAccountBindings
-        if (payload.iosUploadCode !== undefined) iosUploadCode.value = payload.iosUploadCode
+        setRefIfDefined(name, payload.name)
+        setRefIfDefined(userId, payload.userId)
+        setRefIfDefined(kratosIdentityId, payload.kratosIdentityId)
+        setRefIfDefined(avatarPath, payload.avatarPath)
+        setRefIfDefined(allowCNMysekai, payload.allowCNMysekai)
+        setRefIfDefined(role, payload.role)
+        setRefIfDefined(emailInfo, payload.emailInfo)
+        setRefIfDefined(socialPlatformInfo, payload.socialPlatformInfo)
+        setRefIfDefined(authorizeSocialPlatformInfo, payload.authorizeSocialPlatformInfo)
+        setRefIfDefined(gameAccountBindings, payload.gameAccountBindings)
+        setRefIfDefined(iosUploadCode, payload.iosUploadCode)
 
         if (payload.sessionToken !== undefined) {
             sessionToken.value = payload.sessionToken
-            if (options.resetExpiration) {
-                tokenExpiration.value = payload.sessionToken
-                    ? normalizeTokenExpiration(payload.sessionExpiresAt)
-                    : null
-            }
         }
 
-        if (payload.sessionExpiresAt !== undefined && options.resetExpiration) {
+        const sessionChanged = payload.sessionToken !== undefined || payload.sessionExpiresAt !== undefined
+        if (options.resetExpiration && sessionChanged) {
             tokenExpiration.value = sessionToken.value
                 ? normalizeTokenExpiration(payload.sessionExpiresAt)
                 : null
