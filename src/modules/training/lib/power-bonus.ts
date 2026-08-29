@@ -289,6 +289,148 @@ export type PowerBonusResult = {
   attrs: AttrPowerBonus[]
 }
 
+type MutablePowerBonuses = {
+  characters: Map<number, CharacterPowerBonus>
+  units: Map<PowerBonusUnit, UnitPowerBonus>
+  attrs: Map<PowerBonusAttr, AttrPowerBonus>
+}
+
+function createMutablePowerBonuses(): MutablePowerBonuses {
+  const characters = new Map<number, CharacterPowerBonus>()
+  for (let characterId = 1; characterId <= POWER_BONUS_CHARACTER_COUNT; characterId += 1) {
+    characters.set(characterId, { characterId, areaItem: 0, rank: 0, fixture: 0, total: 0 })
+  }
+
+  const units = new Map<PowerBonusUnit, UnitPowerBonus>()
+  for (const unit of POWER_BONUS_UNIT_ORDER) {
+    units.set(unit, { unit, areaItem: 0, gate: 0, total: 0 })
+  }
+
+  const attrs = new Map<PowerBonusAttr, AttrPowerBonus>()
+  for (const attr of POWER_BONUS_ATTR_ORDER) {
+    attrs.set(attr, { attr, areaItem: 0, total: 0 })
+  }
+
+  return { characters, units, attrs }
+}
+
+function buildAreaItemLevelIndex(levels: readonly AreaItemLevelMaster[]): Map<string, AreaItemLevelMaster> {
+  const index = new Map<string, AreaItemLevelMaster>()
+  for (const level of levels) {
+    index.set(`${level.areaItemId}:${level.level}`, level)
+  }
+  return index
+}
+
+function addAreaItemBonus(level: AreaItemLevelMaster, bonuses: MutablePowerBonuses): void {
+  const characterBonus = bonuses.characters.get(level.targetGameCharacterId)
+  if (level.targetGameCharacterId > 0 && characterBonus) {
+    characterBonus.areaItem += level.power1BonusRate
+  }
+
+  const unitBonus = bonuses.units.get(normalizeUnitName(level.targetUnit) as PowerBonusUnit)
+  if (unitBonus) {
+    unitBonus.areaItem += level.power1BonusRate
+  }
+
+  const attrBonus = bonuses.attrs.get(normalizeAttrName(level.targetCardAttr) as PowerBonusAttr)
+  if (attrBonus) {
+    attrBonus.areaItem += level.power1BonusRate
+  }
+}
+
+function applyAreaItemBonuses(input: BuildPowerBonusesInput, bonuses: MutablePowerBonuses): void {
+  const levelIndex = buildAreaItemLevelIndex(input.areaItemLevels)
+  for (const [areaItemId, itemLevel] of input.userAreaItemLevels) {
+    if (itemLevel <= 0) {
+      continue
+    }
+
+    const level = levelIndex.get(`${areaItemId}:${itemLevel}`)
+    if (level) {
+      addAreaItemBonus(level, bonuses)
+    }
+  }
+}
+
+function buildCharacterRankIndex(ranks: readonly CharacterRankBonusMaster[]): Map<string, CharacterRankBonusMaster> {
+  const index = new Map<string, CharacterRankBonusMaster>()
+  for (const rank of ranks) {
+    index.set(`${rank.characterId}:${rank.characterRank}`, rank)
+  }
+  return index
+}
+
+function applyCharacterRankBonuses(input: BuildPowerBonusesInput, bonuses: MutablePowerBonuses): void {
+  const rankIndex = buildCharacterRankIndex(input.characterRanks)
+  for (const character of input.userCharacters) {
+    const rank = rankIndex.get(`${character.characterId}:${character.characterRank}`)
+    const characterBonus = bonuses.characters.get(character.characterId)
+    if (rank && characterBonus) {
+      characterBonus.rank += rank.power1BonusRate
+    }
+  }
+}
+
+function applyFixtureBonuses(input: BuildPowerBonusesInput, bonuses: MutablePowerBonuses): void {
+  for (const fixture of input.userMysekaiFixtureBonuses ?? []) {
+    const characterBonus = bonuses.characters.get(fixture.gameCharacterId)
+    if (characterBonus) {
+      characterBonus.fixture += fixture.totalBonusRate * 0.1
+    }
+  }
+}
+
+function buildGateLevelIndex(levels: readonly MysekaiGateLevelMaster[]): Map<string, MysekaiGateLevelMaster> {
+  const index = new Map<string, MysekaiGateLevelMaster>()
+  for (const level of levels) {
+    index.set(`${level.mysekaiGateId}:${level.level}`, level)
+  }
+  return index
+}
+
+function applyGateBonuses(input: BuildPowerBonusesInput, bonuses: MutablePowerBonuses): void {
+  const levelIndex = buildGateLevelIndex(input.mysekaiGateLevels ?? [])
+  let maxGateBonus = 0
+  for (const gate of input.userMysekaiGates ?? []) {
+    const level = levelIndex.get(`${gate.mysekaiGateId}:${gate.mysekaiGateLevel}`)
+    if (!level) {
+      continue
+    }
+
+    const unit = MYSEKAI_GATE_UNITS[gate.mysekaiGateId]
+    const unitBonus = unit ? bonuses.units.get(unit) : null
+    if (unitBonus) {
+      unitBonus.gate += level.powerBonusRate
+    }
+    maxGateBonus = Math.max(maxGateBonus, level.powerBonusRate)
+  }
+
+  const piaproBonus = bonuses.units.get("piapro")
+  if (piaproBonus) {
+    piaproBonus.gate += maxGateBonus
+  }
+}
+
+function finalizePowerBonuses(bonuses: MutablePowerBonuses): PowerBonusResult {
+  const characters = Array.from({ length: POWER_BONUS_CHARACTER_COUNT }, (_, index) => {
+    const bonus = bonuses.characters.get(index + 1)!
+    bonus.total = bonus.areaItem + bonus.rank + bonus.fixture
+    return bonus
+  })
+  const units = POWER_BONUS_UNIT_ORDER.map((unit) => {
+    const bonus = bonuses.units.get(unit)!
+    bonus.total = bonus.areaItem + bonus.gate
+    return bonus
+  })
+  const attrs = POWER_BONUS_ATTR_ORDER.map((attr) => {
+    const bonus = bonuses.attrs.get(attr)!
+    bonus.total = bonus.areaItem
+    return bonus
+  })
+  return { characters, units, attrs }
+}
+
 /**
  * Ports `BuildPowerBonusDetailRequestFromSnapshot` including the MYSEKAI
  * contributions:
@@ -302,132 +444,12 @@ export type PowerBonusResult = {
  *   total = areaItem.
  */
 export function buildPowerBonuses(input: BuildPowerBonusesInput): PowerBonusResult {
-  const characters = new Map<number, CharacterPowerBonus>()
-  for (let characterId = 1; characterId <= POWER_BONUS_CHARACTER_COUNT; characterId += 1) {
-    characters.set(characterId, { characterId, areaItem: 0, rank: 0, fixture: 0, total: 0 })
-  }
-  const units = new Map<PowerBonusUnit, UnitPowerBonus>()
-  for (const unit of POWER_BONUS_UNIT_ORDER) {
-    units.set(unit, { unit, areaItem: 0, gate: 0, total: 0 })
-  }
-  const attrs = new Map<PowerBonusAttr, AttrPowerBonus>()
-  for (const attr of POWER_BONUS_ATTR_ORDER) {
-    attrs.set(attr, { attr, areaItem: 0, total: 0 })
-  }
-
-  const levelByItemAndLevel = new Map<string, AreaItemLevelMaster>()
-  for (const level of input.areaItemLevels) {
-    levelByItemAndLevel.set(`${level.areaItemId}:${level.level}`, level)
-  }
-
-  for (const [areaItemId, itemLevel] of input.userAreaItemLevels) {
-    if (itemLevel <= 0) {
-      continue
-    }
-    const level = levelByItemAndLevel.get(`${areaItemId}:${itemLevel}`)
-    if (level == null) {
-      continue
-    }
-
-    if (level.targetGameCharacterId > 0) {
-      const bonus = characters.get(level.targetGameCharacterId)
-      if (bonus != null) {
-        bonus.areaItem += level.power1BonusRate
-      }
-    }
-    const normalizedUnit = normalizeUnitName(level.targetUnit)
-    if (normalizedUnit !== "") {
-      const bonus = units.get(normalizedUnit as PowerBonusUnit)
-      if (bonus != null) {
-        bonus.areaItem += level.power1BonusRate
-      }
-    }
-    const normalizedAttr = normalizeAttrName(level.targetCardAttr)
-    if (normalizedAttr !== "") {
-      const bonus = attrs.get(normalizedAttr as PowerBonusAttr)
-      if (bonus != null) {
-        bonus.areaItem += level.power1BonusRate
-      }
-    }
-  }
-
-  const rankByCharacterAndRank = new Map<string, CharacterRankBonusMaster>()
-  for (const rank of input.characterRanks) {
-    rankByCharacterAndRank.set(`${rank.characterId}:${rank.characterRank}`, rank)
-  }
-
-  for (const character of input.userCharacters) {
-    const rank = rankByCharacterAndRank.get(`${character.characterId}:${character.characterRank}`)
-    if (rank == null) {
-      continue
-    }
-    const bonus = characters.get(character.characterId)
-    if (bonus != null) {
-      bonus.rank += rank.power1BonusRate
-    }
-  }
-
-  // MYSEKAI fixtures: the suite stores `totalBonusRate` in tenths of a percent.
-  for (const fixture of input.userMysekaiFixtureBonuses ?? []) {
-    const bonus = characters.get(fixture.gameCharacterId)
-    if (bonus != null) {
-      bonus.fixture += fixture.totalBonusRate * 0.1
-    }
-  }
-
-  // MYSEKAI gates boost their unit; piapro gets the best gate across units.
-  const gateLevelByIdAndLevel = new Map<string, MysekaiGateLevelMaster>()
-  for (const level of input.mysekaiGateLevels ?? []) {
-    gateLevelByIdAndLevel.set(`${level.mysekaiGateId}:${level.level}`, level)
-  }
-  let maxGateBonus = 0
-  for (const gate of input.userMysekaiGates ?? []) {
-    const level = gateLevelByIdAndLevel.get(`${gate.mysekaiGateId}:${gate.mysekaiGateLevel}`)
-    if (level == null) {
-      continue
-    }
-    const unit = MYSEKAI_GATE_UNITS[gate.mysekaiGateId]
-    const bonus = unit != null ? units.get(unit) : null
-    if (bonus != null) {
-      bonus.gate += level.powerBonusRate
-    }
-    if (level.powerBonusRate > maxGateBonus) {
-      maxGateBonus = level.powerBonusRate
-    }
-  }
-  const piaproBonus = units.get("piapro")
-  if (piaproBonus != null) {
-    piaproBonus.gate += maxGateBonus
-  }
-
-  const characterList: CharacterPowerBonus[] = []
-  for (let characterId = 1; characterId <= POWER_BONUS_CHARACTER_COUNT; characterId += 1) {
-    const bonus = characters.get(characterId)
-    if (bonus != null) {
-      bonus.total = bonus.areaItem + bonus.rank + bonus.fixture
-      characterList.push(bonus)
-    }
-  }
-
-  const unitList: UnitPowerBonus[] = []
-  for (const unit of POWER_BONUS_UNIT_ORDER) {
-    const bonus = units.get(unit)
-    if (bonus != null) {
-      bonus.total = bonus.areaItem + bonus.gate
-      unitList.push(bonus)
-    }
-  }
-
-  const attrList: AttrPowerBonus[] = []
-  for (const attr of POWER_BONUS_ATTR_ORDER) {
-    const bonus = attrs.get(attr)
-    if (bonus != null) {
-      bonus.total = bonus.areaItem
-      attrList.push(bonus)
-    }
-  }
-
-  return { characters: characterList, units: unitList, attrs: attrList }
+  const bonuses = createMutablePowerBonuses()
+  applyAreaItemBonuses(input, bonuses)
+  applyCharacterRankBonuses(input, bonuses)
+  applyFixtureBonuses(input, bonuses)
+  applyGateBonuses(input, bonuses)
+  return finalizePowerBonuses(bonuses)
 }
 
 /** Formats a bonus percentage with one decimal, e.g. `12.5%`. */
