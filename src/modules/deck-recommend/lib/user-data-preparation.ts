@@ -526,52 +526,62 @@ function buildAreaItemAreaMap(areaItems: unknown): Map<number, number> {
   return areaMap
 }
 
-function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, areaItemLevels: unknown, targetLevel: number): UserAreaRecord[] {
-  const targetLevels = new Map<number, number>()
-  const maxLevels = buildAreaItemMaxLevelMap(areaItemLevels)
-  const areaItemAreaMap = buildAreaItemAreaMap(areaItems)
-  const sourceAreas = Array.isArray(userAreas) ? userAreas.filter(isRecord) as UserAreaRecord[] : []
+function collectExistingAreaItemLevels(sourceAreas: readonly UserAreaRecord[]): Map<number, number> {
+  const levels = new Map<number, number>()
   for (const area of sourceAreas) {
-    if (!Array.isArray(area.areaItems)) {
-      continue
-    }
-
-    for (const item of area.areaItems) {
+    const areaItems = Array.isArray(area.areaItems) ? area.areaItems : []
+    for (const item of areaItems) {
       if (!isRecord(item)) {
         continue
       }
 
       const itemId = normalizePositiveInteger(item.areaItemId)
       const level = normalizePositiveInteger(item.level) ?? 0
-      if (itemId && level > (targetLevels.get(itemId) ?? 0)) {
-        targetLevels.set(itemId, level)
+      if (itemId && level > (levels.get(itemId) ?? 0)) {
+        levels.set(itemId, level)
       }
     }
   }
+  return levels
+}
 
-  if (Array.isArray(areaItems)) {
-    for (const item of areaItems) {
-      if (!isRecord(item)) {
-        continue
-      }
+function addAvailableAreaItems(
+  targetLevels: Map<number, number>,
+  areaItems: unknown,
+  maxLevels: ReadonlyMap<number, number>,
+): void {
+  if (!Array.isArray(areaItems)) {
+    return
+  }
 
-      const itemId = normalizePositiveInteger(item.id)
-      if (itemId && maxLevels.has(itemId) && !targetLevels.has(itemId)) {
-        targetLevels.set(itemId, 0)
-      }
+  for (const item of areaItems) {
+    if (!isRecord(item)) {
+      continue
+    }
+
+    const itemId = normalizePositiveInteger(item.id)
+    if (itemId && maxLevels.has(itemId) && !targetLevels.has(itemId)) {
+      targetLevels.set(itemId, 0)
     }
   }
+}
 
-  if (targetLevels.size === 0) {
-    return sourceAreas
-  }
-
+function setUniformAreaItemLevels(
+  targetLevels: Map<number, number>,
+  targetLevel: number,
+  maxLevels: ReadonlyMap<number, number>,
+): void {
   for (const areaItemId of targetLevels.keys()) {
     targetLevels.set(areaItemId, clampAreaItemLevel(targetLevel, maxLevels.get(areaItemId)))
   }
+}
 
-  const emittedAreaItemIds = new Set<number>()
-  const preparedAreas = sourceAreas.map((area) => {
+function prepareUniformAreaItems(
+  sourceAreas: readonly UserAreaRecord[],
+  targetLevels: ReadonlyMap<number, number>,
+  emittedAreaItemIds: Set<number>,
+): UserAreaRecord[] {
+  return sourceAreas.map((area) => {
     const preparedAreaItems: Record<string, unknown>[] = []
     const sourceAreaItems = Array.isArray(area.areaItems) ? area.areaItems : []
     for (const item of sourceAreaItems) {
@@ -596,14 +606,38 @@ function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, areaItemLeve
       areaItems: preparedAreaItems,
     }
   })
-  const preparedAreaById = new Map<number, UserAreaRecord>()
-  for (const area of preparedAreas) {
+}
+
+function indexAreasById(areas: readonly UserAreaRecord[]): Map<number, UserAreaRecord> {
+  const areaById = new Map<number, UserAreaRecord>()
+  for (const area of areas) {
     const areaId = normalizePositiveInteger(area.areaId)
     if (areaId) {
-      preparedAreaById.set(areaId, area)
+      areaById.set(areaId, area)
     }
   }
+  return areaById
+}
 
+function createReleasedArea(areaId: number): UserAreaRecord {
+  return {
+    areaId,
+    actionSets: [],
+    areaItems: [],
+    userAreaStatus: {
+      areaId,
+      status: "released",
+    },
+  }
+}
+
+function appendMissingAreaItems(
+  preparedAreas: UserAreaRecord[],
+  targetLevels: ReadonlyMap<number, number>,
+  areaItemAreaMap: ReadonlyMap<number, number>,
+  emittedAreaItemIds: Set<number>,
+): void {
+  const preparedAreaById = indexAreasById(preparedAreas)
   for (const [areaItemId, level] of [...targetLevels.entries()].sort(([left], [right]) => left - right)) {
     if (emittedAreaItemIds.has(areaItemId)) {
       continue
@@ -616,15 +650,7 @@ function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, areaItemLeve
 
     let area = preparedAreaById.get(areaId)
     if (!area) {
-      area = {
-        areaId,
-        actionSets: [],
-        areaItems: [],
-        userAreaStatus: {
-          areaId,
-          status: "released",
-        },
-      }
+      area = createReleasedArea(areaId)
       preparedAreaById.set(areaId, area)
       preparedAreas.push(area)
     }
@@ -633,6 +659,23 @@ function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, areaItemLeve
     area.areaItems.push({ areaItemId, level })
     emittedAreaItemIds.add(areaItemId)
   }
+}
+
+function applyAreaItemLevel(userAreas: unknown, areaItems: unknown, areaItemLevels: unknown, targetLevel: number): UserAreaRecord[] {
+  const maxLevels = buildAreaItemMaxLevelMap(areaItemLevels)
+  const areaItemAreaMap = buildAreaItemAreaMap(areaItems)
+  const sourceAreas = Array.isArray(userAreas) ? userAreas.filter(isRecord) as UserAreaRecord[] : []
+  const targetLevels = collectExistingAreaItemLevels(sourceAreas)
+  addAvailableAreaItems(targetLevels, areaItems, maxLevels)
+
+  if (targetLevels.size === 0) {
+    return sourceAreas
+  }
+
+  setUniformAreaItemLevels(targetLevels, targetLevel, maxLevels)
+  const emittedAreaItemIds = new Set<number>()
+  const preparedAreas = prepareUniformAreaItems(sourceAreas, targetLevels, emittedAreaItemIds)
+  appendMissingAreaItems(preparedAreas, targetLevels, areaItemAreaMap, emittedAreaItemIds)
 
   return preparedAreas
 }
@@ -689,43 +732,7 @@ function applyAreaItemLevelOverrides(
     }
   })
 
-  const preparedAreaById = new Map<number, UserAreaRecord>()
-  for (const area of preparedAreas) {
-    const areaId = normalizePositiveInteger(area.areaId)
-    if (areaId) {
-      preparedAreaById.set(areaId, area)
-    }
-  }
-
-  for (const [areaItemId, level] of [...targetLevels.entries()].sort(([left], [right]) => left - right)) {
-    if (emittedAreaItemIds.has(areaItemId)) {
-      continue
-    }
-
-    const areaId = areaItemAreaMap.get(areaItemId)
-    if (!areaId) {
-      continue
-    }
-
-    let area = preparedAreaById.get(areaId)
-    if (!area) {
-      area = {
-        areaId,
-        actionSets: [],
-        areaItems: [],
-        userAreaStatus: {
-          areaId,
-          status: "released",
-        },
-      }
-      preparedAreaById.set(areaId, area)
-      preparedAreas.push(area)
-    }
-
-    area.areaItems ??= []
-    area.areaItems.push({ areaItemId, level })
-    emittedAreaItemIds.add(areaItemId)
-  }
+  appendMissingAreaItems(preparedAreas, targetLevels, areaItemAreaMap, emittedAreaItemIds)
 
   return preparedAreas
 }
@@ -908,68 +915,92 @@ function applyMysekaiFixtureBonusRateOverrides(
 
 function buildCharacterMaxRankMap(gameCharacters: unknown, characterRanks: unknown): Map<number, number> {
   const map = new Map<number, number>()
-  if (Array.isArray(gameCharacters)) {
-    for (const item of gameCharacters) {
-      if (!isRecord(item)) {
-        continue
-      }
-
-      const characterId = normalizePositiveInteger(item.id)
-      if (characterId) {
-        map.set(characterId, 0)
-      }
-    }
-  }
-
-  if (Array.isArray(characterRanks)) {
-    for (const item of characterRanks) {
-      if (!isRecord(item)) {
-        continue
-      }
-
-      const rankItem = item as MasterCharacterRankRecord
-      const characterId = normalizePositiveInteger(rankItem.characterId) ?? normalizePositiveInteger(rankItem.gameCharacterId)
-      const rank = normalizePositiveInteger(rankItem.characterRank) ?? normalizePositiveInteger(rankItem.rank)
-      if (characterId && rank) {
-        map.set(characterId, Math.max(map.get(characterId) ?? 0, rank))
-      }
-    }
-  }
-
-  return new Map([...map.entries()].filter(([, maxRank]) => maxRank > 0))
+  seedCharacterMaxRanks(map, gameCharacters)
+  applyCharacterMaxRanks(map, characterRanks)
+  return filterPositiveMapValues(map)
 }
 
 function buildMysekaiGateMaxLevelMap(mysekaiGates: unknown, mysekaiGateLevels: unknown): Map<number, number> {
   const map = new Map<number, number>()
-  if (Array.isArray(mysekaiGates)) {
-    for (const item of mysekaiGates) {
-      if (!isRecord(item)) {
-        continue
-      }
+  seedMysekaiGateMaxLevels(map, mysekaiGates)
+  applyMysekaiGateMaxLevels(map, mysekaiGateLevels)
+  return filterPositiveMapValues(map)
+}
 
-      const gateId = normalizePositiveInteger((item as MasterMysekaiGateRecord).id)
-      if (gateId) {
-        map.set(gateId, 0)
-      }
-    }
+function seedCharacterMaxRanks(map: Map<number, number>, gameCharacters: unknown): void {
+  if (!Array.isArray(gameCharacters)) {
+    return
   }
 
-  if (Array.isArray(mysekaiGateLevels)) {
-    for (const item of mysekaiGateLevels) {
-      if (!isRecord(item)) {
-        continue
-      }
+  for (const item of gameCharacters) {
+    if (!isRecord(item)) {
+      continue
+    }
 
-      const levelItem = item as MasterMysekaiGateLevelRecord
-      const gateId = normalizePositiveInteger(levelItem.mysekaiGateId)
-      const level = normalizePositiveInteger(levelItem.mysekaiGateLevel) ?? normalizePositiveInteger(levelItem.level)
-      if (gateId && level) {
-        map.set(gateId, Math.max(map.get(gateId) ?? 0, level))
-      }
+    const characterId = normalizePositiveInteger(item.id)
+    if (characterId) {
+      map.set(characterId, 0)
     }
   }
+}
 
-  return new Map([...map.entries()].filter(([, maxLevel]) => maxLevel > 0))
+function applyCharacterMaxRanks(map: Map<number, number>, characterRanks: unknown): void {
+  if (!Array.isArray(characterRanks)) {
+    return
+  }
+
+  for (const item of characterRanks) {
+    if (!isRecord(item)) {
+      continue
+    }
+
+    const rankItem = item as MasterCharacterRankRecord
+    const characterId = normalizePositiveInteger(rankItem.characterId) ?? normalizePositiveInteger(rankItem.gameCharacterId)
+    const rank = normalizePositiveInteger(rankItem.characterRank) ?? normalizePositiveInteger(rankItem.rank)
+    if (characterId && rank) {
+      map.set(characterId, Math.max(map.get(characterId) ?? 0, rank))
+    }
+  }
+}
+
+function seedMysekaiGateMaxLevels(map: Map<number, number>, mysekaiGates: unknown): void {
+  if (!Array.isArray(mysekaiGates)) {
+    return
+  }
+
+  for (const item of mysekaiGates) {
+    if (!isRecord(item)) {
+      continue
+    }
+
+    const gateId = normalizePositiveInteger((item as MasterMysekaiGateRecord).id)
+    if (gateId) {
+      map.set(gateId, 0)
+    }
+  }
+}
+
+function applyMysekaiGateMaxLevels(map: Map<number, number>, mysekaiGateLevels: unknown): void {
+  if (!Array.isArray(mysekaiGateLevels)) {
+    return
+  }
+
+  for (const item of mysekaiGateLevels) {
+    if (!isRecord(item)) {
+      continue
+    }
+
+    const levelItem = item as MasterMysekaiGateLevelRecord
+    const gateId = normalizePositiveInteger(levelItem.mysekaiGateId)
+    const level = normalizePositiveInteger(levelItem.mysekaiGateLevel) ?? normalizePositiveInteger(levelItem.level)
+    if (gateId && level) {
+      map.set(gateId, Math.max(map.get(gateId) ?? 0, level))
+    }
+  }
+}
+
+function filterPositiveMapValues(map: ReadonlyMap<number, number>): Map<number, number> {
+  return new Map([...map.entries()].filter(([, value]) => value > 0))
 }
 
 function buildGameCharacterIdSet(gameCharacters: unknown): Set<number> {
