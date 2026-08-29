@@ -81,6 +81,95 @@ async function hasActiveKratosSession(): Promise<boolean | null> {
     return await kratosSessionCheckInProgress
 }
 
+type UserStore = ReturnType<typeof useUserStore>
+
+function resetAuthTracking(response: AxiosResponse): void {
+    const userStore = useUserStore()
+    if (response.config?.skipAuthRedirect !== true || userStore.isLoggedIn) {
+        authRedirectInProgress = false
+        sessionExpiredHandled = false
+    }
+}
+
+function shouldHandleSessionExpiration(error: AxiosError): boolean {
+    return !error.config?.skipAuthRedirect && !authRedirectInProgress && !sessionExpiredHandled
+}
+
+async function handleUnauthorized(error: AxiosError, userStore: UserStore, router: Router): Promise<void> {
+    if (!userStore.isLoggedIn) {
+        authRedirectInProgress = false
+        return
+    }
+    if (!shouldHandleSessionExpiration(error)) {
+        return
+    }
+
+    const kratosSessionActive = await hasActiveKratosSession()
+    if (kratosSessionActive !== false) {
+        if (kratosSessionActive) {
+            userStore.setSessionActive(true)
+        }
+        return
+    }
+
+    authRedirectInProgress = true
+    sessionExpiredHandled = true
+    toast.error(translate("core.auth.sessionExpiredTitle"), {
+        description: translate("core.auth.sessionExpiredDescription"),
+    })
+    userStore.clearUser()
+    await redirectToLogin(router, {
+        redirect: router.currentRoute.value.fullPath,
+        reason: "session-expired",
+    })
+}
+
+async function handleForbidden(error: AxiosError, userStore: UserStore, router: Router): Promise<void> {
+    const message = getApiErrorMessage(error.response?.data) || translate("core.auth.permissionDeniedTitle")
+    if (!isAccountBannedMessage(message)) {
+        if (!error.config?.skipErrorToast) {
+            toast.error(translate("core.auth.permissionDeniedTitle"), { description: message })
+        }
+        return
+    }
+
+    // Always surface banned reason before forcing logout redirect.
+    // This should not be suppressed by local skipErrorToast defaults.
+    toast.error(translate("core.auth.accountBannedTitle"), { description: message })
+    if (userStore.isLoggedIn) {
+        userStore.clearUser()
+        await redirectToLogin(router)
+    }
+}
+
+function handleOtherResponseError(error: AxiosError): void {
+    if (!error.response || error.config?.skipErrorToast) {
+        return
+    }
+
+    const message = getApiErrorMessage(error.response.data) || error.message
+    toast.error(translate("core.auth.apiRequestFailedTitle"), {
+        description: translate("core.auth.apiRequestFailedDescription", {
+            status: error.response.status,
+            message,
+        }),
+    })
+}
+
+async function handleResponseError(error: AxiosError, router: Router): Promise<void> {
+    const userStore = useUserStore()
+    const status = error.response?.status
+    if (status === 401) {
+        await handleUnauthorized(error, userStore, router)
+        return
+    }
+    if (status === 403) {
+        await handleForbidden(error, userStore, router)
+        return
+    }
+    handleOtherResponseError(error)
+}
+
 export function setupInterceptors(router: Router) {
     apiClient.interceptors.request.use((config) => {
         const settingsStore = useSettingsStore()
@@ -92,14 +181,10 @@ export function setupInterceptors(router: Router) {
     })
     apiClient.interceptors.response.use(
         (response) => {
-            const userStore = useUserStore()
-            if (response.config?.skipAuthRedirect !== true || userStore.isLoggedIn) {
-                authRedirectInProgress = false
-                sessionExpiredHandled = false
-            }
+            resetAuthTracking(response)
             return response
         },
-        async (error) => {
+        async (error: AxiosError) => {
             const retryAttempt = Number(error.config?.retryAttempt ?? 0)
             const retryMax = Number(error.config?.retryMax ?? 0)
             const willRetry = shouldRetry(error) && retryAttempt < retryMax
@@ -107,56 +192,7 @@ export function setupInterceptors(router: Router) {
                 throw error
             }
 
-            const userStore = useUserStore()
-            if (error.response?.status === 401) {
-                if (userStore.isLoggedIn) {
-                    if (!error.config?.skipAuthRedirect && !authRedirectInProgress && !sessionExpiredHandled) {
-                        const kratosSessionActive = await hasActiveKratosSession()
-                        if (kratosSessionActive !== false) {
-                            if (kratosSessionActive === true) {
-                                userStore.setSessionActive(true)
-                            }
-                            throw error
-                        }
-
-                        authRedirectInProgress = true
-                        sessionExpiredHandled = true
-                        toast.error(translate("core.auth.sessionExpiredTitle"), {
-                            description: translate("core.auth.sessionExpiredDescription"),
-                        })
-                        userStore.clearUser()
-                        await redirectToLogin(router, {
-                            redirect: router.currentRoute.value.fullPath,
-                            reason: "session-expired",
-                        })
-                    }
-                } else {
-                    authRedirectInProgress = false
-                }
-            } else if (error.response?.status === 403) {
-                const message = getApiErrorMessage(error.response.data) || translate("core.auth.permissionDeniedTitle")
-                const isBanned = isAccountBannedMessage(message)
-
-                if (isBanned) {
-                    // Always surface banned reason before forcing logout redirect.
-                    // This should not be suppressed by local skipErrorToast defaults.
-                    toast.error(translate("core.auth.accountBannedTitle"), { description: message })
-                    if (userStore.isLoggedIn) {
-                        userStore.clearUser()
-                        await redirectToLogin(router)
-                    }
-                } else if (!error.config?.skipErrorToast) {
-                    toast.error(translate("core.auth.permissionDeniedTitle"), { description: message })
-                }
-            } else if (error.response && !error.config?.skipErrorToast) {
-                const message = getApiErrorMessage(error.response.data) || error.message
-                toast.error(translate("core.auth.apiRequestFailedTitle"), {
-                    description: translate("core.auth.apiRequestFailedDescription", {
-                        status: error.response.status,
-                        message,
-                    }),
-                })
-            }
+            await handleResponseError(error, router)
             throw error
         }
     )
