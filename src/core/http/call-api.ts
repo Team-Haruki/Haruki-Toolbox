@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import { redirectToLogin } from "@/core/router/navigation"
 import { getApiErrorMessage } from "@/lib/error-utils"
 import { isAccountBannedMessage } from "@/lib/account-status"
+import { createRequestId } from "@/lib/request-id"
 import type { Router } from "vue-router"
 import type { APIResponse } from "@/types/response"
 import { translate } from "@/shared/i18n"
@@ -30,13 +31,6 @@ export const apiClient: AxiosInstance = axios.create({
 let authRedirectInProgress = false
 let sessionExpiredHandled = false
 let kratosSessionCheckInProgress: Promise<boolean | null> | null = null
-
-function generateRequestId(): string {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-        return crypto.randomUUID()
-    }
-    return `${Date.now()}-${Math.random().toString(16).slice(2)}`
-}
 
 function isCrossOriginBrowserRequest(baseURL: string | undefined): boolean {
     if (typeof window === "undefined" || !baseURL) {
@@ -92,7 +86,7 @@ export function setupInterceptors(router: Router) {
         const settingsStore = useSettingsStore()
         config.baseURL = settingsStore.currentEndpoint
         if (!isCrossOriginBrowserRequest(config.baseURL) && !config.headers.get("X-Request-ID")) {
-            config.headers.set("X-Request-ID", generateRequestId())
+            config.headers.set("X-Request-ID", createRequestId())
         }
         return config
     })
@@ -110,7 +104,7 @@ export function setupInterceptors(router: Router) {
             const retryMax = Number(error.config?.retryMax ?? 0)
             const willRetry = shouldRetry(error) && retryAttempt < retryMax
             if (willRetry) {
-                return Promise.reject(error)
+                throw error
             }
 
             const userStore = useUserStore()
@@ -122,7 +116,7 @@ export function setupInterceptors(router: Router) {
                             if (kratosSessionActive === true) {
                                 userStore.setSessionActive(true)
                             }
-                            return Promise.reject(error)
+                            throw error
                         }
 
                         authRedirectInProgress = true
@@ -163,7 +157,7 @@ export function setupInterceptors(router: Router) {
                     }),
                 })
             }
-            return Promise.reject(error)
+            throw error
         }
     )
 }

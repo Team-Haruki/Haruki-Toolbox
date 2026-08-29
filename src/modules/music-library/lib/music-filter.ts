@@ -172,7 +172,9 @@ export function listMusicTagOptions(
     }
   }
 
-  const extraTags = [...tags].filter((tag) => !knownTags.includes(tag)).sort()
+  const extraTags = [...tags]
+    .filter((tag) => !knownTags.includes(tag))
+    .sort((left, right) => left.localeCompare(right))
   return [...knownTags, ...extraTags]
 }
 

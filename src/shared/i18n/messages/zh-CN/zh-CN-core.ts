@@ -99,7 +99,7 @@ export default {
         "registerFailedTitle": "注册失败",
         "registerFailedDescription": "注册失败",
         "incompleteInfo": "请完整填写注册信息",
-        "passwordMinLength": "密码长度至少为{min}位",
+        "passwordMinLength": "密码长度至少为{min}位", // NOSONAR -- translation key, not a credential
         "emailVerificationRequired": "请先为当前邮箱发送验证码",
         "registerSuccessTitle": "注册成功",
         "registerSuccessDescription": "欢迎来到Haruki工具箱"
@@ -117,8 +117,8 @@ export default {
       "toast": {
         "invalidLink": "重置链接无效，请重新发起找回密码流程",
         "incompleteInfo": "请输入完整信息",
-        "passwordMismatch": "两次密码输入不一致",
-        "passwordMinLength": "密码长度至少为{min}位",
+        "passwordMismatch": "两次密码输入不一致", // NOSONAR -- translation key, not a credential
+        "passwordMinLength": "密码长度至少为{min}位", // NOSONAR -- translation key, not a credential
         "resetSuccessTitle": "密码重置成功",
         "resetSuccessDescription": "请重新登录",
         "resetFailedTitle": "重置失败",

@@ -80,7 +80,7 @@ export function useDeckRecommendDataPreload(input: {
       input.selectedAccountServer.value ?? "",
       regionState.masterFetchVersion ?? "",
       regionState.musicMetasUpdatedAt ?? "",
-      regionState.files.slice().sort().join(","),
+      regionState.files.slice().sort((left, right) => left.localeCompare(right)).join(","),
       input.executionMode.value,
       input.activeAlgorithms.value.join(","),
     ].join(":")

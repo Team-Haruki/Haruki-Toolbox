@@ -164,8 +164,7 @@ const route = useRoute()
 
 /** Track the route so in-component navigation re-checks the history state. */
 const canGoBack = computed(() => {
-  void route.fullPath
-  return hasInAppHistory()
+  return route.fullPath.length > 0 && hasInAppHistory()
 })
 </script>
 

@@ -3,7 +3,7 @@ import { normalizeTrackerEndpoint } from "./rank-border"
 export const STORAGE_KEY = "haruki:rank-border:state"
 export const DEFAULT_TRACKER_ENDPOINT = normalizeTrackerEndpoint(import.meta.env.VITE_HARUKI_EVENT_TRACKER_URL) || "/event-tracker"
 export const LEGACY_DIRECT_TRACKER_ENDPOINTS = new Set([
-  "http://100.111.213.59:8777",
+  "http://100.111.213.59:8777", // NOSONAR -- migration match only; this endpoint is never requested
   "http://127.0.0.1:8777",
   "http://127.0.0.1:18777",
   "http://localhost:8777",

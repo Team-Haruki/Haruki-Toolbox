@@ -68,7 +68,7 @@ function resolveGitCommit() {
 
     try {
         return shortenGitCommit(
-            execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], {
+            execFileSync('/usr/bin/git', ['rev-parse', '--short=12', 'HEAD'], {
                 encoding: 'utf8',
                 stdio: ['ignore', 'pipe', 'ignore'],
             }),

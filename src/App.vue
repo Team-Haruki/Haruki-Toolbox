@@ -47,7 +47,7 @@ const boundGameAccountSignature = computed(() => {
   const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
   return accounts
     .map((account) => `${account.server}:${String(account.userId).trim()}`)
-    .sort()
+    .sort((left, right) => left.localeCompare(right))
     .join("|")
 })
 

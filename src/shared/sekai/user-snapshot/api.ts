@@ -37,7 +37,7 @@ export function normalizeSuiteSubsetKeys(keys: readonly string[]): string[] {
       normalized.add(trimmed)
     }
   }
-  return [...normalized].sort()
+  return [...normalized].sort((left, right) => left.localeCompare(right))
 }
 
 export function makeSuiteSubsetSignature(keys: readonly string[]): string {

@@ -4,6 +4,7 @@ import type {
   DeckRecommendWorkerRequest,
   DeckRecommendWorkerRequestWithoutId,
 } from "./worker-protocol"
+import { createRequestId } from "@/lib/request-id"
 
 type Listener = (event: DeckRecommendWorkerEvent) => void
 
@@ -197,14 +198,6 @@ function runLifecycleRequest(
       finish(error instanceof Error ? error : new Error(normalizeWorkerClientErrorMessage(error)))
     }
   })
-}
-
-function createRequestId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID()
-  }
-
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 function normalizeWorkerClientErrorMessage(error: unknown): string {

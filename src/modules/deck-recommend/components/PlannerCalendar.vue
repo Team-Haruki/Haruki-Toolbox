@@ -100,16 +100,16 @@ type PlannerCellHit = PlannerCellCoordinate & { hourKey: string }
 
 function cellHitFromEvent(event: PointerEvent): PlannerCellHit | null {
   const element = document.elementFromPoint(event.clientX, event.clientY)
-  const cell = element?.closest("[data-hour]")
-  const hourKey = cell?.getAttribute("data-hour")
+  const cell = element?.closest<HTMLElement>("[data-hour]")
+  const hourKey = cell?.dataset.hour
   if (cell == null || hourKey == null) {
     return null
   }
 
   return {
     hourKey,
-    dayIndex: Number(cell.getAttribute("data-day-index")),
-    hourOfDay: Number(cell.getAttribute("data-hour-of-day")),
+    dayIndex: Number(cell.dataset.dayIndex),
+    hourOfDay: Number(cell.dataset.hourOfDay),
   }
 }
 

@@ -183,7 +183,7 @@ function createDataKey(
   return [
     request.masterVersion,
     request.musicMetasKey ?? "unknown-music-metas",
-    request.masterFileNames.slice().sort().join(","),
+    request.masterFileNames.slice().sort((left, right) => left.localeCompare(right)).join(","),
   ].join(":")
 }
 

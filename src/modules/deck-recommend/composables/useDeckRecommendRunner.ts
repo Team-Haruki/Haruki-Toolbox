@@ -7,6 +7,7 @@ import type {
   RecommendResult,
 } from "haruki-sekai-deck-recommend-cpp"
 import type { SekaiRegion } from "@/types"
+import { createRequestId } from "@/lib/request-id"
 import { readSekaiMasterFile, readSekaiMasterFiles, readSekaiMusicMetas } from "@/shared/sekai/cache"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useUserStore } from "@/shared/stores/user"
@@ -752,7 +753,7 @@ function createRecommendDataKey(
     masterVersion,
     `honors:${accountHonorRegion}:${accountHonorMasterVersion}`,
     musicMetasKey ?? "unknown-music-metas",
-    masterFileNames.slice().sort().join(","),
+    masterFileNames.slice().sort((left, right) => left.localeCompare(right)).join(","),
   ].join(":")
 }
 
@@ -1095,14 +1096,6 @@ function runDedicatedWorkerLifecycleRequest(
 
 function normalizeParallelWorkerCount(count: number): number {
   return Math.max(0, Math.floor(count))
-}
-
-function createRequestId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID()
-  }
-
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 function normalizeErrorMessage(error: unknown): string {

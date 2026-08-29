@@ -358,9 +358,9 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       if (pendingRefresh) {
         pendingRefresh = false
         void refreshData(true)
-        return
+      } else {
+        resetLiveRefreshTimer()
       }
-      resetLiveRefreshTimer()
     }
   }
 

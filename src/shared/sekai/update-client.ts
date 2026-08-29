@@ -1,4 +1,5 @@
 import type { SekaiRegion } from "@/types"
+import { createRequestId } from "@/lib/request-id"
 import type { SekaiDataWorkerEvent, SekaiDataWorkerRequest } from "./worker-protocol"
 
 type SekaiDataWorkerListener = (event: SekaiDataWorkerEvent) => void
@@ -67,12 +68,4 @@ function ensureWorker(): Worker {
     }
   })
   return worker
-}
-
-function createRequestId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID()
-  }
-
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
