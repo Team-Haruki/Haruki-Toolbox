@@ -333,22 +333,28 @@ export function characterMissionNextTarget(
   isEx: boolean,
 ): [number | null, number | null] {
   if (isEx) {
-    const [roundNo, inRoundProgress, roundNeed] = characterMissionCurrentRound(groups, current)
-    if (roundNeed <= 0) {
-      return [null, null]
-    }
-    const nextNeed = current + Math.max(roundNeed - inRoundProgress, 0)
-    const nextExp = characterMissionExpForRound(groups, roundNo)
-    return [nextNeed > 0 ? nextNeed : null, nextExp > 0 ? nextExp : null]
+    return characterMissionExNextTarget(groups, current)
   }
 
-  for (const group of groups) {
-    if (group.requirement > current) {
-      return [group.requirement > 0 ? group.requirement : null, group.exp > 0 ? group.exp : null]
-    }
-  }
+  const next = groups.find((group) => group.requirement > current)
+  return next ? [positiveOrNull(next.requirement), positiveOrNull(next.exp)] : [null, null]
+}
 
-  return [null, null]
+function positiveOrNull(value: number): number | null {
+  return value > 0 ? value : null
+}
+
+function characterMissionExNextTarget(
+  groups: readonly CharacterMissionParameterGroupRow[],
+  current: number,
+): [number | null, number | null] {
+  const [roundNo, inRoundProgress, roundNeed] = characterMissionCurrentRound(groups, current)
+  if (roundNeed <= 0) {
+    return [null, null]
+  }
+  const nextNeed = current + Math.max(roundNeed - inRoundProgress, 0)
+  const nextExp = characterMissionExpForRound(groups, roundNo)
+  return [positiveOrNull(nextNeed), positiveOrNull(nextExp)]
 }
 
 export type CharacterMissionRowView = {
@@ -378,20 +384,208 @@ export type CharacterMissionSummary = {
   achievementRows: CharacterMissionRowView[]
 }
 
+type CharacterMissionSummaryInput = {
+  missions: readonly CharacterMissionMaster[]
+  parameterGroups: readonly CharacterMissionParameterGroupRow[]
+  characterLevels: readonly CharacterLevelRow[]
+  userCharacters: unknown
+  userCharacterMissionV2s: unknown
+  userCharacterMissionV2Statuses: unknown
+}
+
+type CharacterProgress = {
+  currentLevel: number
+  currentExp: number
+  currentTotalExp: number
+}
+
+function groupCharacterMissionParameters(
+  rows: readonly CharacterMissionParameterGroupRow[],
+): Map<number, CharacterMissionParameterGroupRow[]> {
+  const grouped = new Map<number, CharacterMissionParameterGroupRow[]>()
+  for (const row of rows) {
+    const group = grouped.get(row.groupId) ?? []
+    group.push(row)
+    grouped.set(row.groupId, group)
+  }
+  for (const group of grouped.values()) {
+    group.sort((a, b) => a.seq - b.seq)
+  }
+  return grouped
+}
+
+function readCharacterProgress(characterId: number, rawUserCharacters: unknown): CharacterProgress {
+  const record = normalizeCatalogRecords(rawUserCharacters)
+    .find((candidate) => normalizeCatalogNumber(candidate.characterId) === characterId)
+  return {
+    currentLevel: normalizeCatalogNumber(record?.characterRank) ?? 0,
+    currentExp: normalizeCatalogNumber(record?.exp) ?? 0,
+    currentTotalExp: normalizeCatalogNumber(record?.totalExp) ?? 0,
+  }
+}
+
+function buildCharacterLevelIndex(characterLevels: readonly CharacterLevelRow[]) {
+  const sortedLevels = [...characterLevels].sort((a, b) => a.level - b.level)
+  const totalExpByLevel = new Map<number, number>()
+  for (const row of sortedLevels) {
+    if (row.level > 0) {
+      totalExpByLevel.set(row.level, row.totalExp)
+    }
+  }
+  return { sortedLevels, totalExpByLevel }
+}
+
+function resolveCurrentLevelExp(
+  progress: CharacterProgress,
+  totalExpByLevel: ReadonlyMap<number, number>,
+): number {
+  const { currentLevel, currentExp, currentTotalExp } = progress
+  if (currentLevel <= 0 || currentTotalExp <= 0) {
+    return currentExp
+  }
+  const baseTotalExp = totalExpByLevel.get(currentLevel)
+  return baseTotalExp != null && currentTotalExp >= baseTotalExp
+    ? currentTotalExp - baseTotalExp
+    : currentExp
+}
+
+function sumPendingCharacterMissionExp(
+  statuses: readonly UserCharacterMissionStatusRow[],
+  groupsByGroupId: ReadonlyMap<number, readonly CharacterMissionParameterGroupRow[]>,
+): number {
+  let pendingExp = 0
+  for (const status of statuses) {
+    if (status.missionStatus.trim().toLowerCase() === "achieved") {
+      pendingExp += characterMissionGroupExp(groupsByGroupId.get(status.parameterGroupId) ?? [], status.seq)
+    }
+  }
+  return pendingExp
+}
+
+function projectCharacterProgress(
+  progress: CharacterProgress,
+  currentExp: number,
+  pendingExp: number,
+  sortedLevels: readonly CharacterLevelRow[],
+  totalExpByLevel: ReadonlyMap<number, number>,
+): { finalLevel: number; finalExp: number } {
+  if (sortedLevels.length === 0) {
+    return { finalLevel: progress.currentLevel, finalExp: currentExp + pendingExp }
+  }
+
+  let baseTotalExp = progress.currentTotalExp
+  if (baseTotalExp <= 0 && progress.currentLevel > 0) {
+    const levelStart = totalExpByLevel.get(progress.currentLevel)
+    if (levelStart != null) {
+      baseTotalExp = levelStart + currentExp
+    }
+  }
+
+  const finalTotalExp = Math.max(baseTotalExp, 0) + pendingExp
+  let finalLevel = 1
+  let finalLevelStart = 0
+  for (const row of sortedLevels) {
+    if (row.level <= 0) {
+      continue
+    }
+    if (row.totalExp > finalTotalExp) {
+      break
+    }
+    finalLevel = row.level
+    finalLevelStart = row.totalExp
+  }
+  return { finalLevel, finalExp: finalTotalExp - finalLevelStart }
+}
+
+function buildCharacterMissionProgressByType(
+  characterId: number,
+  rawUserMissions: unknown,
+): Map<string, number> {
+  const progressByType = new Map<string, number>()
+  for (const row of normalizeUserCharacterMissions(rawUserMissions)) {
+    if (row.characterId === characterId) {
+      progressByType.set(
+        row.characterMissionType,
+        Math.max(progressByType.get(row.characterMissionType) ?? 0, row.progress),
+      )
+    }
+  }
+  return progressByType
+}
+
+function buildCharacterMissionStatusSequences(statuses: readonly UserCharacterMissionStatusRow[]) {
+  const byMissionId = new Map<number, number>()
+  const byGroupId = new Map<number, number>()
+  for (const status of statuses) {
+    byMissionId.set(status.missionId, Math.max(byMissionId.get(status.missionId) ?? 0, status.seq))
+    byGroupId.set(status.parameterGroupId, Math.max(byGroupId.get(status.parameterGroupId) ?? 0, status.seq))
+  }
+  return { byMissionId, byGroupId }
+}
+
+function resolveCharacterMissionCurrent(
+  groups: readonly CharacterMissionParameterGroupRow[],
+  current: number,
+  receivedSeq: number,
+  isEx: boolean,
+): number {
+  if (!isEx) {
+    return current <= 0 && receivedSeq > 0
+      ? characterMissionRequirementBySeq(groups, receivedSeq)
+      : current
+  }
+  const clearedTotal = characterMissionClearedTotal(groups, receivedSeq)
+  return current > 0 && current < clearedTotal ? clearedTotal + current : Math.max(current, clearedTotal)
+}
+
+function buildCharacterMissionRow(
+  mission: CharacterMissionMaster,
+  groups: readonly CharacterMissionParameterGroupRow[],
+  initialCurrent: number,
+  receivedSeq: number,
+): CharacterMissionRowView {
+  const isEx = CHARACTER_MISSION_EX_TYPES.has(mission.characterMissionType)
+  const current = resolveCharacterMissionCurrent(groups, initialCurrent, receivedSeq, isEx)
+  const upper = characterMissionUpper(groups, isEx)
+  const ratio = upper != null && upper > 0 ? Math.min(current / upper, 1) : 0
+  const [nextNeed, nextExp] = characterMissionNextTarget(groups, current, isEx)
+  const [currentRound, currentRoundProgress, currentRoundNeed] = isEx
+    ? characterMissionCurrentRound(groups, current)
+    : [0, 0, 0]
+  return {
+    missionId: mission.id,
+    missionType: mission.characterMissionType,
+    isAchievement: mission.isAchievementMission,
+    isEx,
+    current,
+    upper,
+    ratio,
+    nextNeed,
+    nextExp,
+    currentRound: positiveOrNull(currentRound),
+    currentRoundProgress: positiveOrNull(currentRoundProgress),
+    currentRoundNeed: positiveOrNull(currentRoundNeed),
+  }
+}
+
+function pickCharacterMissionRows(
+  rows: readonly CharacterMissionRowView[],
+  types: readonly string[],
+): CharacterMissionRowView[] {
+  const byType = new Map(rows.map((row) => [row.missionType, row]))
+  return types.flatMap((type) => {
+    const row = byType.get(type)
+    return row ? [row] : []
+  })
+}
+
 /**
  * Go: buildCharacterMissionRows + buildCharacterMissionOverview group split.
  * Returns null when there is no mission masterdata for the character.
  */
 export function buildCharacterMissionSummary(
   characterId: number,
-  input: {
-    missions: readonly CharacterMissionMaster[]
-    parameterGroups: readonly CharacterMissionParameterGroupRow[]
-    characterLevels: readonly CharacterLevelRow[]
-    userCharacters: unknown
-    userCharacterMissionV2s: unknown
-    userCharacterMissionV2Statuses: unknown
-  },
+  input: CharacterMissionSummaryInput,
 ): CharacterMissionSummary | null {
   const missions = input.missions
     .filter((mission) => mission.characterId === characterId)
@@ -400,178 +594,47 @@ export function buildCharacterMissionSummary(
     return null
   }
 
-  const groupsByGroupId = new Map<number, CharacterMissionParameterGroupRow[]>()
-  for (const row of input.parameterGroups) {
-    const rows = groupsByGroupId.get(row.groupId) ?? []
-    rows.push(row)
-    groupsByGroupId.set(row.groupId, rows)
-  }
-  for (const rows of groupsByGroupId.values()) {
-    rows.sort((a, b) => a.seq - b.seq)
-  }
-  const groupsFor = (parameterGroupId: number): CharacterMissionParameterGroupRow[] =>
-    groupsByGroupId.get(parameterGroupId) ?? []
-
-  const userCharacter = normalizeCatalogRecords(input.userCharacters)
-    .find((record) => normalizeCatalogNumber(record.characterId) === characterId)
-  let currentLevel = 0
-  let currentExp = 0
-  let currentTotalExp = 0
-  if (userCharacter != null) {
-    currentLevel = normalizeCatalogNumber(userCharacter.characterRank) ?? 0
-    currentExp = normalizeCatalogNumber(userCharacter.exp) ?? 0
-    currentTotalExp = normalizeCatalogNumber(userCharacter.totalExp) ?? 0
-  }
-
-  const characterLevels = [...input.characterLevels].sort((a, b) => a.level - b.level)
-  const levelTotalExpByLevel = new Map<number, number>()
-  for (const row of characterLevels) {
-    if (row.level > 0) {
-      levelTotalExpByLevel.set(row.level, row.totalExp)
-    }
-  }
-  if (currentLevel > 0 && currentTotalExp > 0) {
-    const baseTotalExp = levelTotalExpByLevel.get(currentLevel)
-    if (baseTotalExp != null && currentTotalExp >= baseTotalExp) {
-      currentExp = currentTotalExp - baseTotalExp
-    }
-  }
+  const groupsByGroupId = groupCharacterMissionParameters(input.parameterGroups)
+  const progress = readCharacterProgress(characterId, input.userCharacters)
+  const { sortedLevels, totalExpByLevel } = buildCharacterLevelIndex(input.characterLevels)
+  const currentExp = resolveCurrentLevelExp(progress, totalExpByLevel)
 
   const statuses = normalizeUserCharacterMissionStatuses(input.userCharacterMissionV2Statuses)
     .filter((row) => row.characterId === characterId)
-  let pendingExp = 0
-  for (const status of statuses) {
-    if (status.missionStatus.trim().toLowerCase() === "achieved") {
-      pendingExp += characterMissionGroupExp(groupsFor(status.parameterGroupId), status.seq)
-    }
-  }
-
-  let finalLevel = currentLevel
-  let finalExp = currentExp + pendingExp
-  let baseTotalExp = currentTotalExp
-  if (baseTotalExp <= 0 && currentLevel > 0) {
-    const levelStart = levelTotalExpByLevel.get(currentLevel)
-    if (levelStart != null) {
-      baseTotalExp = levelStart + currentExp
-    }
-  }
-  if (characterLevels.length > 0) {
-    const finalTotalExp = Math.max(baseTotalExp, 0) + pendingExp
-    finalLevel = 1
-    let levelStart = 0
-    for (const row of characterLevels) {
-      if (row.level <= 0) {
-        continue
-      }
-      if (row.totalExp <= finalTotalExp) {
-        finalLevel = row.level
-        levelStart = row.totalExp
-        continue
-      }
-      break
-    }
-    finalExp = finalTotalExp - levelStart
-  }
-
-  const userByTypeProgress = new Map<string, number>()
-  for (const row of normalizeUserCharacterMissions(input.userCharacterMissionV2s)) {
-    if (row.characterId !== characterId) {
-      continue
-    }
-    userByTypeProgress.set(
-      row.characterMissionType,
-      Math.max(userByTypeProgress.get(row.characterMissionType) ?? 0, row.progress),
-    )
-  }
-
-  const statusSeqByMissionId = new Map<number, number>()
-  const statusSeqByGroupId = new Map<number, number>()
-  for (const status of statuses) {
-    statusSeqByMissionId.set(status.missionId, Math.max(statusSeqByMissionId.get(status.missionId) ?? 0, status.seq))
-    statusSeqByGroupId.set(
-      status.parameterGroupId,
-      Math.max(statusSeqByGroupId.get(status.parameterGroupId) ?? 0, status.seq),
-    )
-  }
+  const pendingExp = sumPendingCharacterMissionExp(statuses, groupsByGroupId)
+  const { finalLevel, finalExp } = projectCharacterProgress(
+    progress,
+    currentExp,
+    pendingExp,
+    sortedLevels,
+    totalExpByLevel,
+  )
+  const userByTypeProgress = buildCharacterMissionProgressByType(characterId, input.userCharacterMissionV2s)
+  const { byMissionId, byGroupId } = buildCharacterMissionStatusSequences(statuses)
 
   const rows: CharacterMissionRowView[] = []
   for (const mission of missions) {
-    const groups = groupsFor(mission.parameterGroupId)
-    const isEx = CHARACTER_MISSION_EX_TYPES.has(mission.characterMissionType)
-
-    let current = userByTypeProgress.get(mission.characterMissionType) ?? 0
     const receivedSeq = Math.max(
-      statusSeqByMissionId.get(mission.id) ?? 0,
-      statusSeqByGroupId.get(mission.parameterGroupId) ?? 0,
+      byMissionId.get(mission.id) ?? 0,
+      byGroupId.get(mission.parameterGroupId) ?? 0,
     )
-    if (isEx) {
-      const clearedTotal = characterMissionClearedTotal(groups, receivedSeq)
-      if (current > 0) {
-        if (current < clearedTotal) {
-          current = clearedTotal + current
-        }
-      } else {
-        current = clearedTotal
-      }
-    } else if (current <= 0 && receivedSeq > 0) {
-      current = characterMissionRequirementBySeq(groups, receivedSeq)
-    }
-
-    const upper = characterMissionUpper(groups, isEx)
-    let ratio = 0
-    if (upper != null && upper > 0) {
-      ratio = current > upper ? 1 : current / upper
-    }
-
-    const [nextNeed, nextExp] = characterMissionNextTarget(groups, current, isEx)
-    let currentRound = 0
-    let currentRoundProgress = 0
-    let currentRoundNeed = 0
-    if (isEx) {
-      [currentRound, currentRoundProgress, currentRoundNeed] = characterMissionCurrentRound(groups, current)
-    }
-
-    rows.push({
-      missionId: mission.id,
-      missionType: mission.characterMissionType,
-      isAchievement: mission.isAchievementMission,
-      isEx,
-      current,
-      upper,
-      ratio,
-      nextNeed,
-      nextExp,
-      currentRound: currentRound > 0 ? currentRound : null,
-      currentRoundProgress: currentRoundProgress > 0 ? currentRoundProgress : null,
-      currentRoundNeed: currentRoundNeed > 0 ? currentRoundNeed : null,
-    })
-  }
-
-  const byType = new Map<string, CharacterMissionRowView>()
-  for (const row of rows) {
-    byType.set(row.missionType, row)
-  }
-
-  const pickRows = (types: readonly string[]): CharacterMissionRowView[] => {
-    const picked: CharacterMissionRowView[] = []
-    for (const missionType of types) {
-      const row = byType.get(missionType)
-      if (row != null) {
-        picked.push(row)
-      }
-    }
-    return picked
+    rows.push(buildCharacterMissionRow(
+      mission,
+      groupsByGroupId.get(mission.parameterGroupId) ?? [],
+      userByTypeProgress.get(mission.characterMissionType) ?? 0,
+      receivedSeq,
+    ))
   }
 
   return {
     characterId,
-    currentLevel,
+    currentLevel: progress.currentLevel,
     currentExp,
     pendingExp,
     finalLevel,
     finalExp,
     rows,
-    basicRows: pickRows(CHARACTER_MISSION_BASIC_TYPES),
-    achievementRows: pickRows(CHARACTER_MISSION_ACHIEVEMENT_TYPES),
+    basicRows: pickCharacterMissionRows(rows, CHARACTER_MISSION_BASIC_TYPES),
+    achievementRows: pickCharacterMissionRows(rows, CHARACTER_MISSION_ACHIEVEMENT_TYPES),
   }
 }

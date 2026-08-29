@@ -273,34 +273,30 @@ export function removeDeckRecommendSavedConfig() {
   }
 }
 
-export function normalizeDeckRecommendSavedConfig(value: Record<string, unknown>): DeckRecommendSavedConfig {
-  const config: DeckRecommendSavedConfig = {}
+function normalizeDeckRecommendSelectionFields(
+  config: DeckRecommendSavedConfig,
+  value: Record<string, unknown>,
+): void {
   const selectedAccount = optionalString(value.selectedAccountKey)
   if (selectedAccount != null) {
     config.selectedAccountKey = selectedAccount
   }
-
   const region = optionalString(value.dataRegion)
   if (region && isSekaiRegionValue(region)) {
     config.dataRegion = region
   }
-
   const mode = optionalString(value.recommendMode)
   if (mode && isDeckRecommendMode(mode)) {
     config.recommendMode = mode
   }
-
   const target = optionalString(value.recommendTarget)
   if (target && isDeckRecommendTarget(target)) {
     config.recommendTarget = target
   }
-
   const live = optionalString(value.liveType)
   if (live && isDeckRecommendLiveType(live)) {
     config.liveType = live
   }
-
-  config.selectedAlgorithms = normalizePersistedAlgorithms(value.selectedAlgorithms)
   const algorithmSelectionMode = optionalString(value.algorithmSelectionMode)
   if (algorithmSelectionMode === "auto" || algorithmSelectionMode === "manual") {
     config.algorithmSelectionMode = algorithmSelectionMode
@@ -309,7 +305,44 @@ export function normalizeDeckRecommendSavedConfig(value: Record<string, unknown>
   if (execution && isDeckRecommendExecutionMode(execution)) {
     config.executionMode = execution
   }
+}
 
+function normalizeDeckRecommendSimulationFields(
+  config: DeckRecommendSavedConfig,
+  value: Record<string, unknown>,
+): void {
+  const simulationMode = optionalString(value.simulatedEventMode)
+  if (simulationMode && isDeckRecommendEventSimulationMode(simulationMode)) {
+    config.simulatedEventMode = simulationMode
+  }
+  const simulationAttr = optionalNullableString(value.simulatedEventAttr)
+  if (simulationAttr == null || isDeckRecommendEventAttr(simulationAttr)) {
+    config.simulatedEventAttr = simulationAttr
+  }
+  const simulationUnit = optionalNullableString(value.simulatedEventUnit)
+  if (simulationUnit == null || isDeckRecommendSimulatedEventUnit(simulationUnit)) {
+    config.simulatedEventUnit = simulationUnit
+  }
+}
+
+function normalizeDeckRecommendSkillFields(
+  config: DeckRecommendSavedConfig,
+  value: Record<string, unknown>,
+): void {
+  const skillOrder = optionalString(value.skillOrderStrategy)
+  if (skillOrder && isDeckRecommendSkillOrderStrategy(skillOrder)) {
+    config.skillOrderStrategy = skillOrder
+  }
+  const skillReference = optionalString(value.skillReferenceStrategy)
+  if (skillReference && isDeckRecommendSkillReferenceStrategy(skillReference)) {
+    config.skillReferenceStrategy = skillReference
+  }
+}
+
+export function normalizeDeckRecommendSavedConfig(value: Record<string, unknown>): DeckRecommendSavedConfig {
+  const config: DeckRecommendSavedConfig = {}
+  normalizeDeckRecommendSelectionFields(config, value)
+  config.selectedAlgorithms = normalizePersistedAlgorithms(value.selectedAlgorithms)
   config.selectedEventId = optionalNullableString(value.selectedEventId)
   config.selectedCharacterId = optionalNullableString(value.selectedCharacterId)
   config.selectedMusicId = optionalNullableString(value.selectedMusicId)
@@ -319,22 +352,7 @@ export function normalizeDeckRecommendSavedConfig(value: Record<string, unknown>
   config.customBonusSupportUnits = normalizeSupportUnitRecord(value.customBonusSupportUnits)
   config.filterOtherUnit = optionalBoolean(value.filterOtherUnit)
   config.eventSimulationEnabled = optionalBoolean(value.eventSimulationEnabled)
-
-  const simulationMode = optionalString(value.simulatedEventMode)
-  if (simulationMode && isDeckRecommendEventSimulationMode(simulationMode)) {
-    config.simulatedEventMode = simulationMode
-  }
-
-  const simulationAttr = optionalNullableString(value.simulatedEventAttr)
-  if (simulationAttr == null || isDeckRecommendEventAttr(simulationAttr)) {
-    config.simulatedEventAttr = simulationAttr
-  }
-
-  const simulationUnit = optionalNullableString(value.simulatedEventUnit)
-  if (simulationUnit == null || isDeckRecommendSimulatedEventUnit(simulationUnit)) {
-    config.simulatedEventUnit = simulationUnit
-  }
-
+  normalizeDeckRecommendSimulationFields(config, value)
   config.simulatedWorldBloomTurn = optionalNullableString(value.simulatedWorldBloomTurn)
   config.simulatedWorldBloomCharacterId = optionalNullableString(value.simulatedWorldBloomCharacterId)
   config.multiLiveTeammatePowerInput = optionalString(value.multiLiveTeammatePowerInput)
@@ -359,17 +377,7 @@ export function normalizeDeckRecommendSavedConfig(value: Record<string, unknown>
   config.fixedCharacterIds = normalizePositiveIntegerArray(value.fixedCharacterIds)
   config.excludedCardIds = normalizePositiveIntegerArray(value.excludedCardIds)
   config.singleCardOverrides = normalizeSingleCardOverrides(value.singleCardOverrides)
-
-  const skillOrder = optionalString(value.skillOrderStrategy)
-  if (skillOrder && isDeckRecommendSkillOrderStrategy(skillOrder)) {
-    config.skillOrderStrategy = skillOrder
-  }
-
-  const skillReference = optionalString(value.skillReferenceStrategy)
-  if (skillReference && isDeckRecommendSkillReferenceStrategy(skillReference)) {
-    config.skillReferenceStrategy = skillReference
-  }
-
+  normalizeDeckRecommendSkillFields(config, value)
   config.specificSkillOrderInput = optionalString(value.specificSkillOrderInput)
   config.keepAfterTrainingState = optionalBoolean(value.keepAfterTrainingState)
   config.supportMasterMax = optionalBoolean(value.supportMasterMax)
