@@ -115,7 +115,7 @@ const tiles = [
         <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
           <div class="flex min-w-0 flex-1 flex-col gap-1.5">
             <Label for="oauth-stats-bucket" class="text-sm">{{ t("adminOAuthClients.statsDialog.bucket") }}</Label>
-            <Select :model-value="props.statsBucket" @update:model-value="value => emit('update:statsBucket', value === 'day' ? 'day' : 'hour')">
+            <Select id="oauth-stats-bucket" :model-value="props.statsBucket" @update:model-value="value => emit('update:statsBucket', value === 'day' ? 'day' : 'hour')">
               <SelectTrigger id="oauth-stats-bucket" class="w-full">
                 <SelectValue />
               </SelectTrigger>

@@ -125,9 +125,9 @@ function statusLabel(status: string) {
           </DialogHeader>
           <div class="flex flex-col gap-3 py-4">
             <div class="flex flex-col gap-1.5">
-              <Label>{{ t("adminRisk.events.fields.severity") }}</Label>
-              <Select :model-value="props.newSeverity" @update:model-value="updateSeverity">
-                <SelectTrigger class="w-full">
+              <Label for="risk-event-severity">{{ t("adminRisk.events.fields.severity") }}</Label>
+              <Select id="risk-event-severity" :model-value="props.newSeverity" @update:model-value="updateSeverity">
+                <SelectTrigger id="risk-event-severity" class="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -138,24 +138,27 @@ function statusLabel(status: string) {
               </Select>
             </div>
             <div class="flex flex-col gap-1.5">
-              <Label>{{ t("adminRisk.events.fields.source") }}</Label>
+              <Label for="risk-event-source">{{ t("adminRisk.events.fields.source") }}</Label>
               <Input
+                id="risk-event-source"
                 :model-value="props.newSource"
                 :placeholder="t('adminRisk.events.placeholders.source')"
                 @update:model-value="updateSource"
               />
             </div>
             <div class="flex flex-col gap-1.5">
-              <Label>{{ t("adminRisk.events.fields.action") }}</Label>
+              <Label for="risk-event-action">{{ t("adminRisk.events.fields.action") }}</Label>
               <Input
+                id="risk-event-action"
                 :model-value="props.newAction"
                 :placeholder="t('adminRisk.events.placeholders.action')"
                 @update:model-value="updateAction"
               />
             </div>
             <div class="flex flex-col gap-1.5">
-              <Label>{{ t("adminRisk.events.fields.reason") }}</Label>
+              <Label for="risk-event-reason">{{ t("adminRisk.events.fields.reason") }}</Label>
               <textarea
+                id="risk-event-reason"
                 :value="props.newReason"
                 :placeholder="t('adminRisk.events.placeholders.reason')"
                 rows="3"
@@ -164,8 +167,9 @@ function statusLabel(status: string) {
               />
             </div>
             <div class="flex flex-col gap-1.5">
-              <Label>{{ t("adminRisk.events.fields.targetUserIdOptional") }}</Label>
+              <Label for="risk-event-target-user">{{ t("adminRisk.events.fields.targetUserIdOptional") }}</Label>
               <Input
+                id="risk-event-target-user"
                 :model-value="props.newTargetUserId"
                 :placeholder="t('adminRisk.events.placeholders.targetUserId')"
                 @update:model-value="updateTargetUserId"

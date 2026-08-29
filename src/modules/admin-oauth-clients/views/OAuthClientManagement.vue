@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n"
 import { LucideKey, LucideRefreshCw, LucideSearch } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -168,8 +169,9 @@ function resetFilters() {
           :placeholder="t('adminOAuthClients.list.searchPlaceholder')"
         />
       </div>
-      <Select :model-value="statusFilter" @update:model-value="handleStatusFilterChange">
-        <SelectTrigger class="w-full sm:w-36" :aria-label="t('adminOAuthClients.list.allStatuses')">
+      <Label for="oauth-client-status-filter" class="sr-only">{{ t("adminOAuthClients.list.allStatuses") }}</Label>
+      <Select id="oauth-client-status-filter" :model-value="statusFilter" @update:model-value="handleStatusFilterChange">
+        <SelectTrigger id="oauth-client-status-filter" class="w-full sm:w-36">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
