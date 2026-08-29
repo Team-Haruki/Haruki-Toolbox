@@ -381,6 +381,62 @@ function buildHonorIdsByResourceBox(
   return map
 }
 
+function indexEventHonorRange(
+  index: Map<number, HonorRankSource>,
+  eventId: number,
+  tier: EventRankTier,
+  range: Record<string, unknown>,
+  honorsByBox: ReadonlyMap<number, readonly number[]>,
+): void {
+  for (const reward of normalizeCatalogRecords(range.eventRankingRewards)) {
+    const resourceBoxId = normalizeCatalogNumber(reward.resourceBoxId)
+    const honorIds = resourceBoxId != null ? honorsByBox.get(resourceBoxId) ?? [] : []
+    for (const honorId of honorIds) {
+      index.set(honorId, { key: derivedEventRankKey(eventId), tier })
+    }
+  }
+}
+
+function indexEventRankingHonors(
+  index: Map<number, HonorRankSource>,
+  rawEvents: unknown,
+  honorsByBox: ReadonlyMap<number, readonly number[]>,
+): void {
+  for (const eventRecord of normalizeCatalogRecords(rawEvents)) {
+    const eventId = normalizeCatalogNumber(eventRecord.id)
+    if (eventId == null) {
+      continue
+    }
+    for (const range of normalizeCatalogRecords(eventRecord.eventRankingRewardRanges)) {
+      const tier = normalizeRankTier(range)
+      if (tier != null) {
+        indexEventHonorRange(index, eventId, tier, range, honorsByBox)
+      }
+    }
+  }
+}
+
+function indexChapterRankingHonors(
+  index: Map<number, HonorRankSource>,
+  rawChapterRanges: unknown,
+  honorsByBox: ReadonlyMap<number, readonly number[]>,
+): void {
+  for (const range of normalizeCatalogRecords(rawChapterRanges)) {
+    const eventId = normalizeCatalogNumber(range.eventId)
+    const tier = normalizeRankTier(range)
+    const resourceBoxId = normalizeCatalogNumber(range.resourceBoxId)
+    if (eventId == null || tier == null || resourceBoxId == null) {
+      continue
+    }
+    for (const honorId of honorsByBox.get(resourceBoxId) ?? []) {
+      index.set(honorId, {
+        key: derivedChapterRankKey(eventId, normalizeCatalogNumber(range.gameCharacterId)),
+        tier,
+      })
+    }
+  }
+}
+
 /**
  * Maps ranking honor ids to the event (or World Link chapter) rank bracket
  * they are awarded for. Main event brackets come embedded in `events.json`
@@ -401,47 +457,14 @@ export function buildHonorRankIndex(
     rawResourceBoxDetails,
     EVENT_RANKING_BOX_PURPOSE,
   )
-  for (const eventRecord of normalizeCatalogRecords(rawEvents)) {
-    const eventId = normalizeCatalogNumber(eventRecord.id)
-    if (eventId == null) {
-      continue
-    }
-
-    for (const range of normalizeCatalogRecords(eventRecord.eventRankingRewardRanges)) {
-      const tier = normalizeRankTier(range)
-      if (tier == null) {
-        continue
-      }
-
-      for (const reward of normalizeCatalogRecords(range.eventRankingRewards)) {
-        const resourceBoxId = normalizeCatalogNumber(reward.resourceBoxId)
-        for (const honorId of (resourceBoxId != null ? eventHonorsByBox.get(resourceBoxId) : undefined) ?? []) {
-          index.set(honorId, { key: derivedEventRankKey(eventId), tier })
-        }
-      }
-    }
-  }
+  indexEventRankingHonors(index, rawEvents, eventHonorsByBox)
 
   const chapterHonorsByBox = buildHonorIdsByResourceBox(
     rawResourceBoxes,
     rawResourceBoxDetails,
     WORLD_BLOOM_CHAPTER_RANKING_BOX_PURPOSE,
   )
-  for (const range of normalizeCatalogRecords(rawChapterRanges)) {
-    const eventId = normalizeCatalogNumber(range.eventId)
-    const tier = normalizeRankTier(range)
-    const resourceBoxId = normalizeCatalogNumber(range.resourceBoxId)
-    if (eventId == null || tier == null || resourceBoxId == null) {
-      continue
-    }
-
-    for (const honorId of chapterHonorsByBox.get(resourceBoxId) ?? []) {
-      index.set(honorId, {
-        key: derivedChapterRankKey(eventId, normalizeCatalogNumber(range.gameCharacterId)),
-        tier,
-      })
-    }
-  }
+  indexChapterRankingHonors(index, rawChapterRanges, chapterHonorsByBox)
 
   return index
 }

@@ -239,12 +239,12 @@ class TrackerWsClient {
 
   private async ensureOpen(): Promise<void> {
     if (typeof WebSocket === "undefined") {
-      return Promise.reject(new Error("Tracker WebSocket is unavailable"))
+      throw new Error("Tracker WebSocket is unavailable")
     }
 
     const current = this.socket
     if (current?.readyState === WebSocket.OPEN) {
-      return Promise.resolve()
+      return
     }
     if (current?.readyState === WebSocket.CONNECTING && this.opening) {
       return this.opening

@@ -48,34 +48,37 @@ function readFirstString(record: Record<string, unknown> | null, keys: readonly 
   return ""
 }
 
+function timestampToIsoString(value: number): string | null {
+  const milliseconds = value > 9_999_999_999 ? value : value * 1000
+  const date = new Date(milliseconds)
+  return Number.isNaN(date.valueOf()) ? null : date.toISOString()
+}
+
+function normalizeDateValue(value: unknown): string | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return timestampToIsoString(value)
+  }
+  if (typeof value !== "string") {
+    return null
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+  const numeric = Number(trimmed)
+  return Number.isFinite(numeric) ? timestampToIsoString(numeric) ?? trimmed : trimmed
+}
+
 function readDateString(record: Record<string, unknown> | null, keys: readonly string[]): string {
   if (!record) {
     return ""
   }
 
   for (const key of keys) {
-    const value = record[key]
-    if (typeof value === "number" && Number.isFinite(value)) {
-      const date = new Date(value > 9_999_999_999 ? value : value * 1000)
-      if (!Number.isNaN(date.valueOf())) {
-        return date.toISOString()
-      }
-    }
-    if (typeof value === "string") {
-      const trimmed = value.trim()
-      if (!trimmed) {
-        continue
-      }
-
-      const numeric = Number(trimmed)
-      if (Number.isFinite(numeric)) {
-        const date = new Date(numeric > 9_999_999_999 ? numeric : numeric * 1000)
-        if (!Number.isNaN(date.valueOf())) {
-          return date.toISOString()
-        }
-      }
-
-      return trimmed
+    const normalized = normalizeDateValue(record[key])
+    if (normalized) {
+      return normalized
     }
   }
 

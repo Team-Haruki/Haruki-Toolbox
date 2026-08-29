@@ -27,14 +27,7 @@ function parseDecimalInt(value: string): number | null {
   return /^\d+$/.test(value) ? Number(value) : null
 }
 
-/**
- * Extracts BPM info from a SUS chart text — a port of the bot's
- * `parseChartBPM`: `#BPMxx` lines define the palette, `#nnn08` lines place
- * palette references on bars, consecutive duplicate events collapse, and the
- * main BPM is the one active for the longest total duration (4 beats/bar).
- * Returns null when the chart has no usable BPM data.
- */
-export function parseChartBpm(chartText: string): ChartBpmInfo | null {
+function parseChartScore(chartText: string): { score: Map<string, string>; barCount: number } {
   const score = new Map<string, string>()
   let barCount = 0
   for (const rawLine of chartText.split(/\r?\n/)) {
@@ -42,7 +35,6 @@ export function parseChartBpm(chartText: string): ChartBpmInfo | null {
     if (!match) {
       continue
     }
-
     const bar = match[1].toUpperCase()
     const key = match[2].toUpperCase()
     score.set(`${bar}|${key}`, match[3].trim())
@@ -51,72 +43,67 @@ export function parseChartBpm(chartText: string): ChartBpmInfo | null {
       barCount = barNumber + 1
     }
   }
+  return { score, barCount }
+}
 
+function buildBpmPalette(score: ReadonlyMap<string, string>): Map<string, number> {
   const palette = new Map<string, number>()
   for (const [token, value] of score) {
     const [bar, key] = token.split("|")
-    if (bar !== "BPM") {
-      continue
-    }
-
     const bpm = Number(value)
-    if (Number.isFinite(bpm)) {
+    if (bar === "BPM" && Number.isFinite(bpm)) {
       palette.set(key, bpm)
     }
   }
+  return palette
+}
 
-  const rawEvents: Array<{ bar: number; bpm: number }> = []
+function listRawBpmEvents(
+  score: ReadonlyMap<string, string>,
+  palette: ReadonlyMap<string, number>,
+): Array<{ bar: number; bpm: number }> {
+  const events: Array<{ bar: number; bpm: number }> = []
   for (const [token, value] of score) {
     const [bar, key] = token.split("|")
-    if (key !== "08") {
-      continue
-    }
-
-    const barNumber = parseDecimalInt(bar)
+    const barNumber = key === "08" ? parseDecimalInt(bar) : null
     if (barNumber == null) {
       continue
     }
-
     const length = Math.floor(value.length / 2)
     for (let index = 0; index < length; index += 1) {
       const reference = value.slice(index * 2, index * 2 + 2).toUpperCase()
-      if (reference === "00") {
-        continue
+      const bpm = reference === "00" ? undefined : palette.get(reference)
+      if (bpm != null) {
+        events.push({ bar: barNumber + index / length, bpm })
       }
-
-      const bpm = palette.get(reference)
-      if (bpm == null) {
-        continue
-      }
-
-      rawEvents.push({ bar: barNumber + index / length, bpm })
     }
   }
+  return events.sort((a, b) => a.bar - b.bar)
+}
 
-  if (rawEvents.length === 0) {
-    return null
-  }
-
-  rawEvents.sort((a, b) => a.bar - b.bar)
-
+function collapseBpmEvents(rawEvents: readonly { bar: number; bpm: number }[]): ChartBpmEvent[] {
   const events: ChartBpmEvent[] = []
   for (const item of rawEvents) {
-    if (events.length > 0 && events[events.length - 1].bpm === item.bpm) {
-      continue
+    if (events.at(-1)?.bpm !== item.bpm) {
+      events.push({ bar: item.bar, bpm: item.bpm, duration: 0 })
     }
-
-    events.push({ bar: item.bar, bpm: item.bpm, duration: 0 })
   }
+  return events
+}
 
+function calculateBpmDurations(events: ChartBpmEvent[], barCount: number) {
   const durationByBpm = new Map<number, number>()
   let totalDuration = 0
   events.forEach((event, index) => {
-    const nextBar = index + 1 < events.length ? events[index + 1].bar : barCount
+    const nextBar = events[index + 1]?.bar ?? barCount
     event.duration = ((nextBar - event.bar) / event.bpm) * 4 * 60
     totalDuration += event.duration
     durationByBpm.set(event.bpm, (durationByBpm.get(event.bpm) ?? 0) + event.duration)
   })
+  return { durationByBpm, totalDuration }
+}
 
+function findMainBpm(durationByBpm: ReadonlyMap<number, number>): number {
   let mainBpm = 0
   let mainDuration = -1
   for (const [bpm, duration] of durationByBpm) {
@@ -125,6 +112,27 @@ export function parseChartBpm(chartText: string): ChartBpmInfo | null {
       mainDuration = duration
     }
   }
+  return mainBpm
+}
+
+/**
+ * Extracts BPM info from a SUS chart text — a port of the bot's
+ * `parseChartBPM`: `#BPMxx` lines define the palette, `#nnn08` lines place
+ * palette references on bars, consecutive duplicate events collapse, and the
+ * main BPM is the one active for the longest total duration (4 beats/bar).
+ * Returns null when the chart has no usable BPM data.
+ */
+export function parseChartBpm(chartText: string): ChartBpmInfo | null {
+  const { score, barCount } = parseChartScore(chartText)
+  const rawEvents = listRawBpmEvents(score, buildBpmPalette(score))
+
+  if (rawEvents.length === 0) {
+    return null
+  }
+
+  const events = collapseBpmEvents(rawEvents)
+  const { durationByBpm, totalDuration } = calculateBpmDurations(events, barCount)
+  const mainBpm = findMainBpm(durationByBpm)
 
   return { mainBpm, events, barCount, duration: totalDuration }
 }

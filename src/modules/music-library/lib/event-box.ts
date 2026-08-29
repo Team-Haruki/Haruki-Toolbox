@@ -11,6 +11,81 @@ export type EventBoxInfo = {
   boxNumber: number
 }
 
+type EventBoxCard = { characterId: number; rarity: string }
+type EventBoxCandidate = { id: number; startAt: number }
+
+function buildUnitByCharacter(rawGameCharacters: unknown): Map<number, string> {
+  const map = new Map<number, string>()
+  for (const record of normalizeCatalogRecords(rawGameCharacters)) {
+    const id = normalizeCatalogNumber(record.id)
+    const unit = normalizeCatalogString(record.unit)
+    if (id && unit) {
+      map.set(id, unit)
+    }
+  }
+  return map
+}
+
+function buildEventBoxCardMap(rawCards: unknown): Map<number, EventBoxCard> {
+  const map = new Map<number, EventBoxCard>()
+  for (const record of normalizeCatalogRecords(rawCards)) {
+    const id = normalizeCatalogNumber(record.id)
+    const characterId = normalizeCatalogNumber(record.characterId)
+    if (id && characterId) {
+      map.set(id, { characterId, rarity: normalizeCatalogString(record.cardRarityType) })
+    }
+  }
+  return map
+}
+
+function addEventCardUnit(
+  unitsByEvent: Map<number, Set<string>>,
+  eventId: number,
+  unit: string | undefined,
+): void {
+  if (!unit || unit === "piapro") {
+    return
+  }
+  const units = unitsByEvent.get(eventId) ?? new Set<string>()
+  units.add(unit)
+  unitsByEvent.set(eventId, units)
+}
+
+function collectEventCardInfo(
+  rawEventCards: unknown,
+  cardById: ReadonlyMap<number, EventBoxCard>,
+  unitByCharacter: ReadonlyMap<number, string>,
+) {
+  const bannerCardByEvent = new Map<number, number>()
+  const unitsByEvent = new Map<number, Set<string>>()
+  for (const record of normalizeCatalogRecords(rawEventCards)) {
+    const eventId = normalizeCatalogNumber(record.eventId)
+    const cardId = normalizeCatalogNumber(record.cardId)
+    const card = cardId ? cardById.get(cardId) : undefined
+    if (!eventId || !cardId || !card) {
+      continue
+    }
+
+    addEventCardUnit(unitsByEvent, eventId, unitByCharacter.get(card.characterId))
+    const existing = bannerCardByEvent.get(eventId)
+    if (card.rarity === "rarity_4" && (existing == null || cardId < existing)) {
+      bannerCardByEvent.set(eventId, cardId)
+    }
+  }
+  return { bannerCardByEvent, unitsByEvent }
+}
+
+function listEventBoxCandidates(rawEvents: unknown): EventBoxCandidate[] {
+  const events: EventBoxCandidate[] = []
+  for (const record of normalizeCatalogRecords(rawEvents)) {
+    const id = normalizeCatalogNumber(record.id)
+    if (id && normalizeCatalogString(record.eventType) !== "world_bloom") {
+      events.push({ id, startAt: normalizeCatalogNumber(record.startAt) ?? 0 })
+    }
+  }
+  return events.sort((a, b) => (a.startAt - b.startAt) || (a.id - b.id))
+}
+
 /**
  * Community "N箱" (box) counting: a unit event's banner character is the
  * character of its lowest-id 4★ event card, and the box number is the ordinal
@@ -24,70 +99,17 @@ export function buildEventBoxMap(
   rawCards: unknown,
   rawGameCharacters: unknown,
 ): Map<number, EventBoxInfo> {
-  const unitByCharacter = new Map<number, string>()
-  for (const record of normalizeCatalogRecords(rawGameCharacters)) {
-    const id = normalizeCatalogNumber(record.id)
-    const unit = normalizeCatalogString(record.unit)
-    if (id && unit) {
-      unitByCharacter.set(id, unit)
-    }
-  }
-
-  const cardById = new Map<number, { characterId: number; rarity: string }>()
-  for (const record of normalizeCatalogRecords(rawCards)) {
-    const id = normalizeCatalogNumber(record.id)
-    const characterId = normalizeCatalogNumber(record.characterId)
-    if (id && characterId) {
-      cardById.set(id, { characterId, rarity: normalizeCatalogString(record.cardRarityType) })
-    }
-  }
+  const unitByCharacter = buildUnitByCharacter(rawGameCharacters)
+  const cardById = buildEventBoxCardMap(rawCards)
 
   // eventId -> lowest 4★ cardId, plus the distinct non-VS units of all event
   // cards (two or more units means a mixed event, which is not a box).
-  const bannerCardByEvent = new Map<number, number>()
-  const unitsByEvent = new Map<number, Set<string>>()
-  for (const record of normalizeCatalogRecords(rawEventCards)) {
-    const eventId = normalizeCatalogNumber(record.eventId)
-    const cardId = normalizeCatalogNumber(record.cardId)
-    if (!eventId || !cardId) {
-      continue
-    }
-
-    const card = cardById.get(cardId)
-    if (card == null) {
-      continue
-    }
-
-    const unit = unitByCharacter.get(card.characterId)
-    if (unit && unit !== "piapro") {
-      let units = unitsByEvent.get(eventId)
-      if (!units) {
-        units = new Set()
-        unitsByEvent.set(eventId, units)
-      }
-      units.add(unit)
-    }
-
-    if (card.rarity !== "rarity_4") {
-      continue
-    }
-
-    const existing = bannerCardByEvent.get(eventId)
-    if (existing == null || cardId < existing) {
-      bannerCardByEvent.set(eventId, cardId)
-    }
-  }
-
-  const events: Array<{ id: number; startAt: number }> = []
-  for (const record of normalizeCatalogRecords(rawEvents)) {
-    const id = normalizeCatalogNumber(record.id)
-    if (!id || normalizeCatalogString(record.eventType) === "world_bloom") {
-      continue
-    }
-
-    events.push({ id, startAt: normalizeCatalogNumber(record.startAt) ?? 0 })
-  }
-  events.sort((a, b) => (a.startAt - b.startAt) || (a.id - b.id))
+  const { bannerCardByEvent, unitsByEvent } = collectEventCardInfo(
+    rawEventCards,
+    cardById,
+    unitByCharacter,
+  )
+  const events = listEventBoxCandidates(rawEvents)
 
   const counters = new Map<number, number>()
   const map = new Map<number, EventBoxInfo>()

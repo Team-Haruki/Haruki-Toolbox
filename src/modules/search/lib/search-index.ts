@@ -172,44 +172,56 @@ export function resolveAliasMatches(
     return []
   }
 
-  const byKey = new Map<string, SearchIndexEntry>()
-  const cardsByCharacter = new Map<number, SearchIndexEntry[]>()
-  for (const entry of entries) {
-    byKey.set(`${entry.type}-${entry.id}`, entry)
-    if (entry.type === "card" && entry.characterId) {
-      const bucket = cardsByCharacter.get(entry.characterId)
-      if (bucket) {
-        bucket.push(entry)
-      } else {
-        cardsByCharacter.set(entry.characterId, [entry])
-      }
-    }
-  }
+  const { byKey, cardsByCharacter } = buildAliasEntryIndexes(entries)
 
   const resolved: SearchIndexEntry[] = []
   const seen = new Set<string>()
-  const append = (entry: SearchIndexEntry) => {
-    const key = `${entry.type}-${entry.id}`
-    if (!seen.has(key)) {
-      seen.add(key)
-      resolved.push(entry)
-    }
-  }
-
   for (const match of matches) {
-    if (match.type === "character") {
-      for (const card of cardsByCharacter.get(match.id) ?? []) {
-        append(card)
-      }
-    } else {
-      const entry = byKey.get(`${match.type}-${match.id}`)
-      if (entry) {
-        append(entry)
-      }
+    for (const entry of resolveAliasMatchEntries(match, byKey, cardsByCharacter)) {
+      appendUniqueSearchEntry(resolved, seen, entry)
     }
   }
 
   return resolved
+}
+
+function buildAliasEntryIndexes(entries: readonly SearchIndexEntry[]) {
+  const byKey = new Map<string, SearchIndexEntry>()
+  const cardsByCharacter = new Map<number, SearchIndexEntry[]>()
+  for (const entry of entries) {
+    byKey.set(`${entry.type}-${entry.id}`, entry)
+    if (entry.type !== "card" || !entry.characterId) {
+      continue
+    }
+    const cards = cardsByCharacter.get(entry.characterId) ?? []
+    cards.push(entry)
+    cardsByCharacter.set(entry.characterId, cards)
+  }
+  return { byKey, cardsByCharacter }
+}
+
+function resolveAliasMatchEntries(
+  match: SearchAliasMatch,
+  byKey: ReadonlyMap<string, SearchIndexEntry>,
+  cardsByCharacter: ReadonlyMap<number, readonly SearchIndexEntry[]>,
+): readonly SearchIndexEntry[] {
+  if (match.type === "character") {
+    return cardsByCharacter.get(match.id) ?? []
+  }
+  const entry = byKey.get(`${match.type}-${match.id}`)
+  return entry ? [entry] : []
+}
+
+function appendUniqueSearchEntry(
+  resolved: SearchIndexEntry[],
+  seen: Set<string>,
+  entry: SearchIndexEntry,
+): void {
+  const key = `${entry.type}-${entry.id}`
+  if (!seen.has(key)) {
+    seen.add(key)
+    resolved.push(entry)
+  }
 }
 
 /**

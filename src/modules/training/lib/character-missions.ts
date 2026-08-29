@@ -82,6 +82,11 @@ export type UserCharacterMissionStatusRow = {
   missionStatus: string
 }
 
+function normalizePositiveCatalogNumber(value: unknown): number | null {
+  const normalized = normalizeCatalogNumber(value)
+  return normalized != null && normalized > 0 ? normalized : null
+}
+
 export function normalizeCharacterMissionMasters(raw: unknown): CharacterMissionMaster[] {
   const missions: CharacterMissionMaster[] = []
   for (const record of normalizeCatalogRecords(raw)) {
@@ -163,8 +168,8 @@ export function normalizeUserCharacterMissions(raw: unknown): UserCharacterMissi
 export function normalizeUserCharacterMissionStatuses(raw: unknown): UserCharacterMissionStatusRow[] {
   const rows: UserCharacterMissionStatusRow[] = []
   for (const record of normalizeCatalogRecords(raw)) {
-    const characterId = normalizeCatalogNumber(record.characterId)
-    if (characterId == null || characterId <= 0) {
+    const characterId = normalizePositiveCatalogNumber(record.characterId)
+    if (characterId == null) {
       continue
     }
 
