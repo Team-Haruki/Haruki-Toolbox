@@ -28,6 +28,45 @@ export function readString(
     return String(value)
 }
 
+function timestampToIsoString(value: number): string | null {
+    const milliseconds = value > 9_999_999_999 ? value : value * 1000
+    const date = new Date(milliseconds)
+    return Number.isNaN(date.valueOf()) ? null : date.toISOString()
+}
+
+function normalizeDateValue(value: unknown): string | null {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return timestampToIsoString(value)
+    }
+    if (typeof value !== "string") {
+        return null
+    }
+
+    const trimmed = value.trim()
+    if (!trimmed) {
+        return null
+    }
+    const numeric = Number(trimmed)
+    return Number.isFinite(numeric) ? timestampToIsoString(numeric) ?? trimmed : trimmed
+}
+
+export function readDateString(
+    record: UnknownRecord | null,
+    keys: readonly string[]
+): string {
+    if (!record) {
+        return ""
+    }
+
+    for (const key of keys) {
+        const normalized = normalizeDateValue(record[key])
+        if (normalized) {
+            return normalized
+        }
+    }
+    return ""
+}
+
 export function readOptionalString(
     record: UnknownRecord,
     keys: readonly string[]

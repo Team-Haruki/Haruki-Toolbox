@@ -311,6 +311,25 @@ function compactSearchText(value: string): string {
   return value.replace(SEPARATOR_PATTERN, "")
 }
 
+function readKanaSyllable(kana: string, index: number) {
+  const current = kana[index] ?? ""
+  const digraph = `${current}${kana[index + 1] ?? ""}`
+  const digraphRomaji = KANA_DIGRAPH_ROMAJI[digraph]
+  if (digraphRomaji) {
+    return { romaji: digraphRomaji, nextIndex: index + 1, isKana: true }
+  }
+
+  const romaji = KANA_ROMAJI[current] ?? current
+  return { romaji, nextIndex: index, isKana: Boolean(KANA_ROMAJI[current]) || romaji !== current }
+}
+
+function appendDoubledConsonant(result: string, romaji: string, doubleNext: boolean): string {
+  if (!doubleNext || !/^[bcdfghjklmnpqrstvwxyz]/.test(romaji)) {
+    return result
+  }
+  return result + (romaji.startsWith("ch") ? "t" : romaji[0])
+}
+
 function kanaToRomaji(value: string): string | null {
   const kana = toHiragana(value.normalize("NFKC"))
   let result = ""
@@ -338,22 +357,13 @@ function kanaToRomaji(value: string): string | null {
       continue
     }
 
-    const digraph = `${current}${kana[index + 1] ?? ""}`
-    let romaji = KANA_DIGRAPH_ROMAJI[digraph]
-    if (romaji) {
-      index += 1
-    } else {
-      romaji = KANA_ROMAJI[current] ?? current
-    }
-
-    if (KANA_ROMAJI[current] || romaji !== current) {
+    const syllable = readKanaSyllable(kana, index)
+    index = syllable.nextIndex
+    if (syllable.isKana) {
       sawKana = true
     }
-
-    if (doubleNext && /^[bcdfghjklmnpqrstvwxyz]/.test(romaji)) {
-      result += romaji.startsWith("ch") ? "t" : romaji[0]
-    }
-    result += romaji
+    result = appendDoubledConsonant(result, syllable.romaji, doubleNext)
+    result += syllable.romaji
     doubleNext = false
   }
 

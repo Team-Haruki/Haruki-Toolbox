@@ -1,6 +1,6 @@
 import { request, unwrapUpdatedData } from "@/core/http/call-api"
 import { encodePathSegment } from "@/core/http/url"
-import { asRecord, readBoolean, readRecord, readString } from "@/lib/record-utils"
+import { asRecord, readBoolean, readDateString, readRecord, readString } from "@/lib/record-utils"
 import { translate } from "@/shared/i18n"
 import type { AdminSponsorListResponse, AdminSponsorProfile, AdminSponsorUpdatePayload } from "@/types/admin"
 import type { APIResponse } from "@/types/response"
@@ -37,40 +37,6 @@ function readFirstString(record: Record<string, unknown> | null, keys: readonly 
     const value = readString(record, [key]).trim()
     if (value) {
       return value
-    }
-  }
-
-  return ""
-}
-
-function readDateString(record: Record<string, unknown> | null, keys: readonly string[]): string {
-  if (!record) {
-    return ""
-  }
-
-  for (const key of keys) {
-    const value = record[key]
-    if (typeof value === "number" && Number.isFinite(value)) {
-      const date = new Date(value > 9_999_999_999 ? value : value * 1000)
-      if (!Number.isNaN(date.valueOf())) {
-        return date.toISOString()
-      }
-    }
-    if (typeof value === "string") {
-      const trimmed = value.trim()
-      if (!trimmed) {
-        continue
-      }
-
-      const numeric = Number(trimmed)
-      if (Number.isFinite(numeric)) {
-        const date = new Date(numeric > 9_999_999_999 ? numeric : numeric * 1000)
-        if (!Number.isNaN(date.valueOf())) {
-          return date.toISOString()
-        }
-      }
-
-      return trimmed
     }
   }
 

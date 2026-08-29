@@ -1,4 +1,4 @@
-import { asRecord, readRecord, readString } from "@/lib/record-utils"
+import { asRecord, readDateString, readRecord, readString } from "@/lib/record-utils"
 import type { SponsorPageData, SponsorSummary, SponsorSupporter } from "@/modules/sponsor/types"
 
 const SUCCESS_ORDER_STATUS = 2
@@ -42,43 +42,6 @@ function readFirstString(record: Record<string, unknown> | null, keys: readonly 
     const value = readString(record, [key]).trim()
     if (value) {
       return value
-    }
-  }
-
-  return ""
-}
-
-function timestampToIsoString(value: number): string | null {
-  const milliseconds = value > 9_999_999_999 ? value : value * 1000
-  const date = new Date(milliseconds)
-  return Number.isNaN(date.valueOf()) ? null : date.toISOString()
-}
-
-function normalizeDateValue(value: unknown): string | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return timestampToIsoString(value)
-  }
-  if (typeof value !== "string") {
-    return null
-  }
-
-  const trimmed = value.trim()
-  if (!trimmed) {
-    return null
-  }
-  const numeric = Number(trimmed)
-  return Number.isFinite(numeric) ? timestampToIsoString(numeric) ?? trimmed : trimmed
-}
-
-function readDateString(record: Record<string, unknown> | null, keys: readonly string[]): string {
-  if (!record) {
-    return ""
-  }
-
-  for (const key of keys) {
-    const normalized = normalizeDateValue(record[key])
-    if (normalized) {
-      return normalized
     }
   }
 
