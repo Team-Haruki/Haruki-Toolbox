@@ -107,9 +107,9 @@ const selectedAccountOption = computed(() =>
       </h2>
       <div class="grid gap-3 @lg:grid-cols-2 @5xl:grid-cols-4">
         <div class="grid content-start gap-2">
-          <Label>{{ t("deckRecommend.form.account") }}</Label>
-          <Select :model-value="selectedAccountKey" :disabled="accountOptions.length === 0" @update:model-value="updateAccount">
-            <SelectTrigger class="w-full">
+          <Label id="deck-account-label" for="deck-account">{{ t("deckRecommend.form.account") }}</Label>
+          <Select id="deck-account" :model-value="selectedAccountKey" :disabled="accountOptions.length === 0" @update:model-value="updateAccount">
+            <SelectTrigger class="w-full" aria-labelledby="deck-account-label">
               <GameAccountOption
                 v-if="selectedAccountOption"
                 :server="selectedAccountOption.server"
@@ -141,9 +141,9 @@ const selectedAccountOption = computed(() =>
         </div>
 
         <div class="grid content-start gap-2">
-          <Label>{{ t("deckRecommend.form.dataRegion") }}</Label>
-          <Select :model-value="dataRegion" @update:model-value="updateDataRegion">
-            <SelectTrigger class="w-full">
+          <Label id="deck-data-region-label" for="deck-data-region">{{ t("deckRecommend.form.dataRegion") }}</Label>
+          <Select id="deck-data-region" :model-value="dataRegion" @update:model-value="updateDataRegion">
+            <SelectTrigger class="w-full" aria-labelledby="deck-data-region-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -155,9 +155,9 @@ const selectedAccountOption = computed(() =>
         </div>
 
         <div v-if="showRecommendTargetSelect" class="grid content-start gap-2">
-          <Label>{{ t("deckRecommend.form.target") }}</Label>
-          <Select :model-value="activeRecommendTarget" @update:model-value="updateRecommendTarget">
-            <SelectTrigger class="w-full">
+          <Label id="deck-target-label" for="deck-target">{{ t("deckRecommend.form.target") }}</Label>
+          <Select id="deck-target" :model-value="activeRecommendTarget" @update:model-value="updateRecommendTarget">
+            <SelectTrigger class="w-full" aria-labelledby="deck-target-label">
               <SelectValue :key="`recommend-target-${recommendMode}-${activeRecommendTarget}-${locale}`">
                 {{ activeRecommendTargetLabel }}
               </SelectValue>
@@ -171,13 +171,14 @@ const selectedAccountOption = computed(() =>
         </div>
 
         <div v-if="showLiveTypeSelect" class="grid content-start gap-2">
-          <Label>{{ t("deckRecommend.form.liveType") }}</Label>
+          <Label id="deck-live-type-label" for="deck-live-type">{{ t("deckRecommend.form.liveType") }}</Label>
           <Select
+            id="deck-live-type"
             :model-value="liveType"
             :disabled="running || isLiveTypeLocked"
             @update:model-value="updateLiveType"
           >
-            <SelectTrigger class="w-full">
+            <SelectTrigger class="w-full" aria-labelledby="deck-live-type-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -189,7 +190,7 @@ const selectedAccountOption = computed(() =>
         </div>
 
         <div v-if="showChallengeCharacterSelect" class="grid content-start gap-2">
-          <Label>{{ t("deckRecommend.form.character") }}</Label>
+          <p class="text-sm font-medium">{{ t("deckRecommend.form.character") }}</p>
           <CharacterSelect
             v-model="selectedCharacterId"
             :region="dataRegion"
@@ -205,7 +206,7 @@ const selectedAccountOption = computed(() =>
       </h2>
       <div class="grid gap-3 @3xl:grid-cols-2">
         <div class="grid content-start gap-2">
-          <Label>{{ t("deckRecommend.form.music") }}</Label>
+          <p class="text-sm font-medium">{{ t("deckRecommend.form.music") }}</p>
           <MusicSelect
             v-model="selectedMusicId"
             v-model:difficulty-value="selectedDifficulty"
@@ -217,7 +218,7 @@ const selectedAccountOption = computed(() =>
         <div class="grid content-start gap-3">
           <div class="grid gap-2">
             <div class="flex flex-wrap items-center gap-1.5">
-              <Label>{{ t("deckRecommend.form.algorithm") }}</Label>
+              <p class="text-sm font-medium">{{ t("deckRecommend.form.algorithm") }}</p>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger as-child>
@@ -237,13 +238,16 @@ const selectedAccountOption = computed(() =>
                 </Tooltip>
               </TooltipProvider>
               <div class="ml-auto flex items-center gap-1.5">
-                <span class="text-xs text-muted-foreground">{{ t("deckRecommend.form.executionMode") }}</span>
+                <Label id="deck-execution-mode-label" for="deck-execution-mode" class="text-xs text-muted-foreground">
+                  {{ t("deckRecommend.form.executionMode") }}
+                </Label>
                 <Select
+                  id="deck-execution-mode"
                   :model-value="executionMode"
                   :disabled="running || activeAlgorithms.length <= 1"
                   @update:model-value="updateExecutionMode"
                 >
-                  <SelectTrigger size="sm" class="h-7 gap-1 px-2 text-xs">
+                  <SelectTrigger size="sm" class="h-7 gap-1 px-2 text-xs" aria-labelledby="deck-execution-mode-label">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -258,9 +262,11 @@ const selectedAccountOption = computed(() =>
               <label
                 v-for="option in algorithmOptions"
                 :key="option.value"
+                :for="`deck-algorithm-${option.value}`"
                 class="flex items-center gap-2 text-sm"
               >
                 <Checkbox
+                  :id="`deck-algorithm-${option.value}`"
                   :model-value="isAlgorithmSelected(option.value)"
                   :disabled="isAlgorithmDisabled()"
                   @update:model-value="checked => toggleAlgorithm(option.value, checked === true)"
@@ -284,9 +290,10 @@ const selectedAccountOption = computed(() =>
             {{ t("deckRecommend.options.eventCondition.description") }}
           </p>
         </div>
-        <label class="flex shrink-0 items-center gap-2 text-sm">
+        <label for="deck-event-simulation" class="flex shrink-0 items-center gap-2 text-sm">
           <span>{{ t("deckRecommend.options.eventSimulation.title") }}</span>
           <Switch
+            id="deck-event-simulation"
             v-model="eventSimulationEnabled"
             class="shrink-0"
             :disabled="running || !isEventSimulationAvailable"
@@ -295,7 +302,7 @@ const selectedAccountOption = computed(() =>
       </div>
       <div class="grid gap-3 @3xl:grid-cols-2">
         <div class="grid content-start gap-2">
-          <Label>{{ t("deckRecommend.form.event") }}</Label>
+          <p class="text-sm font-medium">{{ t("deckRecommend.form.event") }}</p>
           <EventSelect
             v-model="selectedEventId"
             v-model:event-type="selectedEventType"
@@ -308,7 +315,7 @@ const selectedAccountOption = computed(() =>
         </div>
 
         <div v-if="showWorldBloomCharacterSelect" class="grid content-start gap-2 @3xl:grid-rows-[auto_1fr] @3xl:content-stretch">
-          <Label>{{ t("deckRecommend.form.character") }}</Label>
+          <p class="text-sm font-medium">{{ t("deckRecommend.form.character") }}</p>
           <CharacterSelect
             v-model="selectedCharacterId"
             :region="dataRegion"
@@ -324,13 +331,16 @@ const selectedAccountOption = computed(() =>
       </p>
       <div v-else-if="eventSimulationEnabled" class="grid gap-3 @lg:grid-cols-2 @3xl:grid-cols-3">
         <div class="grid content-start gap-2">
-          <Label>{{ t("deckRecommend.options.eventSimulation.type") }}</Label>
+          <Label id="deck-simulation-type-label" for="deck-simulation-type">
+            {{ t("deckRecommend.options.eventSimulation.type") }}
+          </Label>
           <Select
+            id="deck-simulation-type"
             :model-value="simulatedEventMode"
             :disabled="running"
             @update:model-value="updateEventSimulationMode"
           >
-            <SelectTrigger class="w-full">
+            <SelectTrigger class="w-full" aria-labelledby="deck-simulation-type-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -343,13 +353,16 @@ const selectedAccountOption = computed(() =>
 
         <template v-if="!isWorldBloomSimulation">
           <div class="grid content-start gap-2">
-            <Label>{{ t("deckRecommend.options.eventSimulation.attr") }}</Label>
+            <Label id="deck-simulation-attr-label" for="deck-simulation-attr">
+              {{ t("deckRecommend.options.eventSimulation.attr") }}
+            </Label>
             <Select
+              id="deck-simulation-attr"
               :model-value="simulatedEventAttr"
               :disabled="running"
               @update:model-value="updateSimulatedEventAttr"
             >
-              <SelectTrigger class="w-full">
+              <SelectTrigger class="w-full" aria-labelledby="deck-simulation-attr-label">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -360,13 +373,16 @@ const selectedAccountOption = computed(() =>
             </Select>
           </div>
           <div class="grid content-start gap-2">
-            <Label>{{ t("deckRecommend.options.eventSimulation.unit") }}</Label>
+            <Label id="deck-simulation-unit-label" for="deck-simulation-unit">
+              {{ t("deckRecommend.options.eventSimulation.unit") }}
+            </Label>
             <Select
+              id="deck-simulation-unit"
               :model-value="simulatedEventUnit"
               :disabled="running"
               @update:model-value="updateSimulatedEventUnit"
             >
-              <SelectTrigger class="w-full">
+              <SelectTrigger class="w-full" aria-labelledby="deck-simulation-unit-label">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -404,13 +420,16 @@ const selectedAccountOption = computed(() =>
 
         <template v-else>
           <div class="grid content-start gap-2">
-            <Label>{{ t("deckRecommend.options.eventSimulation.worldBloomTurn") }}</Label>
+            <Label id="deck-world-bloom-turn-label" for="deck-world-bloom-turn">
+              {{ t("deckRecommend.options.eventSimulation.worldBloomTurn") }}
+            </Label>
             <Select
+              id="deck-world-bloom-turn"
               :model-value="simulatedWorldBloomTurn"
               :disabled="running"
               @update:model-value="updateSimulatedWorldBloomTurn"
             >
-              <SelectTrigger class="w-full">
+              <SelectTrigger class="w-full" aria-labelledby="deck-world-bloom-turn-label">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -421,7 +440,7 @@ const selectedAccountOption = computed(() =>
             </Select>
           </div>
           <div class="grid content-start gap-2">
-            <Label>{{ t("deckRecommend.options.eventSimulation.worldBloomCharacter") }}</Label>
+            <p class="text-sm font-medium">{{ t("deckRecommend.options.eventSimulation.worldBloomCharacter") }}</p>
             <CharacterSelect
               v-model="simulatedWorldBloomCharacterId"
               :region="dataRegion"
