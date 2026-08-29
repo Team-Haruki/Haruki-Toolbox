@@ -257,18 +257,20 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
           </div>
 
           <div class="grid min-w-0 gap-2 sm:grid-cols-2">
-            <label class="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-2.5 py-2 text-sm">
+            <label :for="`single-card-disabled-${item.cardId}`" class="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-2.5 py-2 text-sm">
               <span class="font-medium">{{ t("deckRecommend.training.disabled") }}</span>
               <Checkbox
+                :id="`single-card-disabled-${item.cardId}`"
                 :model-value="item.disabled"
                 :disabled="props.disabled"
                 @update:model-value="checked => updateOverride(item.cardId, { disabled: checked === true })"
               />
             </label>
 
-            <label class="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-2.5 py-2 text-sm">
+            <label :for="`single-card-canvas-${item.cardId}`" class="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-2.5 py-2 text-sm">
               <span class="font-medium">{{ t("deckRecommend.training.mySekaiCanvas") }}</span>
               <Checkbox
+                :id="`single-card-canvas-${item.cardId}`"
                 :model-value="item.canvas === true"
                 :disabled="props.disabled || item.disabled"
                 @update:model-value="checked => updateOverride(item.cardId, { canvas: checked === true })"
@@ -276,8 +278,9 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
             </label>
 
             <div class="grid min-w-0 gap-1.5">
-              <Label>{{ t("deckRecommend.singleCard.level") }}</Label>
+              <Label :for="`single-card-level-${item.cardId}`">{{ t("deckRecommend.singleCard.level") }}</Label>
               <Combobox
+                :trigger-id="`single-card-level-${item.cardId}`"
                 :model-value="numberComboboxValue(item.level)"
                 :options="levelOptions(item.cardId)"
                 :disabled="props.disabled || item.disabled"
@@ -291,8 +294,9 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
             </div>
 
             <div class="grid min-w-0 gap-1.5">
-              <Label>{{ t("deckRecommend.singleCard.skillLevel") }}</Label>
+              <Label :for="`single-card-skill-${item.cardId}`">{{ t("deckRecommend.singleCard.skillLevel") }}</Label>
               <Combobox
+                :trigger-id="`single-card-skill-${item.cardId}`"
                 :model-value="numberComboboxValue(item.skillLevel)"
                 :options="skillLevelOptions(item.cardId)"
                 :disabled="props.disabled || item.disabled"
@@ -306,8 +310,9 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
             </div>
 
             <div class="grid min-w-0 gap-1.5">
-              <Label>{{ t("deckRecommend.singleCard.masterRank") }}</Label>
+              <Label :for="`single-card-master-${item.cardId}`">{{ t("deckRecommend.singleCard.masterRank") }}</Label>
               <Combobox
+                :trigger-id="`single-card-master-${item.cardId}`"
                 :model-value="numberComboboxValue(item.masterRank)"
                 :options="masterRankOptions()"
                 :disabled="props.disabled || item.disabled"
@@ -321,13 +326,16 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
             </div>
 
             <div class="grid min-w-0 gap-1.5">
-              <Label>{{ t("deckRecommend.singleCard.episodes") }}</Label>
+              <Label :id="`single-card-episodes-${item.cardId}-label`" :for="`single-card-episodes-${item.cardId}`">
+                {{ t("deckRecommend.singleCard.episodes") }}
+              </Label>
               <Select
+                :id="`single-card-episodes-${item.cardId}`"
                 :model-value="item.episodeState ?? 'inherit'"
                 :disabled="props.disabled || item.disabled"
                 @update:model-value="value => updateEpisodeState(item.cardId, value)"
               >
-                <SelectTrigger class="h-9 w-full">
+                <SelectTrigger class="h-9 w-full" :aria-labelledby="`single-card-episodes-${item.cardId}-label`">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -437,12 +445,16 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
                 />
               </TableCell>
               <TableCell>
+                <Label :id="`single-card-table-episodes-${item.cardId}-label`" :for="`single-card-table-episodes-${item.cardId}`" class="sr-only">
+                  {{ t("deckRecommend.singleCard.episodes") }}
+                </Label>
                 <Select
+                  :id="`single-card-table-episodes-${item.cardId}`"
                   :model-value="item.episodeState ?? 'inherit'"
                   :disabled="props.disabled || item.disabled"
                   @update:model-value="value => updateEpisodeState(item.cardId, value)"
                 >
-                  <SelectTrigger class="h-8 w-full">
+                  <SelectTrigger class="h-8 w-full" :aria-labelledby="`single-card-table-episodes-${item.cardId}-label`">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

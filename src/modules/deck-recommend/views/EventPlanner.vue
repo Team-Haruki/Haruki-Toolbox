@@ -552,9 +552,9 @@ function formatInteger(value: number) {
         </CardHeader>
         <CardContent class="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div class="grid content-start gap-1.5">
-            <Label class="text-xs text-muted-foreground">{{ t("deckRecommend.form.account") }}</Label>
-            <Select :key="locale" :model-value="selectedAccountKey" @update:model-value="updateAccount">
-              <SelectTrigger class="w-full">
+            <Label id="planner-account-label" for="planner-account" class="text-xs text-muted-foreground">{{ t("deckRecommend.form.account") }}</Label>
+            <Select id="planner-account" :key="locale" :model-value="selectedAccountKey" @update:model-value="updateAccount">
+              <SelectTrigger class="w-full" aria-labelledby="planner-account-label">
                 <GameAccountOption
                   v-if="selectedAccount"
                   :server="selectedAccount.server"
@@ -582,9 +582,9 @@ function formatInteger(value: number) {
             </Select>
           </div>
           <div class="grid content-start gap-1.5">
-            <Label class="text-xs text-muted-foreground">{{ t("deckRecommend.form.dataRegion") }}</Label>
-            <Select :key="locale" :model-value="dataRegion" @update:model-value="updateDataRegion">
-              <SelectTrigger class="w-full">
+            <Label id="planner-region-label" for="planner-region" class="text-xs text-muted-foreground">{{ t("deckRecommend.form.dataRegion") }}</Label>
+            <Select id="planner-region" :key="locale" :model-value="dataRegion" @update:model-value="updateDataRegion">
+              <SelectTrigger class="w-full" aria-labelledby="planner-region-label">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -595,7 +595,7 @@ function formatInteger(value: number) {
             </Select>
           </div>
           <div class="grid content-start gap-1.5">
-            <Label class="text-xs text-muted-foreground">{{ t("deckRecommend.form.event") }}</Label>
+            <p class="text-xs font-medium text-muted-foreground">{{ t("deckRecommend.form.event") }}</p>
             <EventSelect
               v-model="selectedEventId"
               :region="dataRegion"
@@ -603,7 +603,7 @@ function formatInteger(value: number) {
             />
           </div>
           <div v-if="showWorldBloomCharacterSelect" class="grid content-start gap-1.5">
-            <Label class="text-xs text-muted-foreground">{{ t("deckRecommend.form.character") }}</Label>
+            <p class="text-xs font-medium text-muted-foreground">{{ t("deckRecommend.form.character") }}</p>
             <CharacterSelect
               :model-value="activeCharacterId"
               :region="dataRegion"
@@ -613,8 +613,9 @@ function formatInteger(value: number) {
             />
           </div>
           <div class="grid content-start gap-1.5">
-            <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.form.targetPoint") }}</Label>
+            <Label for="planner-target-point" class="text-xs text-muted-foreground">{{ t("eventPlanner.form.targetPoint") }}</Label>
             <Input
+              id="planner-target-point"
               v-model="targetPointInput"
               :placeholder="t('eventPlanner.form.targetPointPlaceholder')"
             />
@@ -626,8 +627,9 @@ function formatInteger(value: number) {
             </p>
           </div>
           <div class="grid content-start gap-1.5">
-            <Label class="text-xs text-muted-foreground">{{ t("eventPlanner.form.currentPoint") }}</Label>
+            <Label for="planner-current-point" class="text-xs text-muted-foreground">{{ t("eventPlanner.form.currentPoint") }}</Label>
             <Input
+              id="planner-current-point"
               v-model="currentPointInput"
               :placeholder="t('eventPlanner.form.currentPointPlaceholder')"
             />
@@ -731,15 +733,20 @@ function formatInteger(value: number) {
                 :model-value="brush.playsPerHour ?? undefined"
                 class="h-6 w-14 px-1.5 text-center text-[11px] tabular-nums"
                 :title="t('eventPlanner.brushes.playsTitle')"
+                :aria-label="t('eventPlanner.brushes.playsTitle')"
                 @input="handleBrushPlaysInput(brush.id, $event)"
               />
               {{ t("eventPlanner.brushes.playsUnit") }}
             </span>
+            <Label :id="`planner-brush-boost-${brush.id}-label`" :for="`planner-brush-boost-${brush.id}`" class="sr-only">
+              {{ t("eventPlanner.brushes.boostTitle") }}
+            </Label>
             <Select
+              :id="`planner-brush-boost-${brush.id}`"
               :model-value="String(brush.boostCount ?? 0)"
               @update:model-value="updateBrushBoost(brush.id, $event)"
             >
-              <SelectTrigger class="h-6 w-24 px-1.5 text-[11px]" :title="t('eventPlanner.brushes.boostTitle')">
+              <SelectTrigger class="h-6 w-24 px-1.5 text-[11px]" :title="t('eventPlanner.brushes.boostTitle')" :aria-labelledby="`planner-brush-boost-${brush.id}-label`">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -804,9 +811,9 @@ function formatInteger(value: number) {
               <span class="text-xs font-medium">{{ t("eventPlanner.batch.title") }}</span>
               <div class="flex flex-wrap items-end gap-2">
                 <div class="grid gap-1">
-                  <Label class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.fromDay") }}</Label>
-                  <Select :model-value="batchFromDay" @update:model-value="batchFromDay = typeof $event === 'string' ? $event : batchFromDay">
-                    <SelectTrigger class="h-8 w-36 text-xs">
+                  <Label id="planner-batch-from-day-label" for="planner-batch-from-day" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.fromDay") }}</Label>
+                  <Select id="planner-batch-from-day" :model-value="batchFromDay" @update:model-value="batchFromDay = typeof $event === 'string' ? $event : batchFromDay">
+                    <SelectTrigger class="h-8 w-36 text-xs" aria-labelledby="planner-batch-from-day-label">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -817,9 +824,9 @@ function formatInteger(value: number) {
                   </Select>
                 </div>
                 <div class="grid gap-1">
-                  <Label class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.toDay") }}</Label>
-                  <Select :model-value="batchToDay" @update:model-value="batchToDay = typeof $event === 'string' ? $event : batchToDay">
-                    <SelectTrigger class="h-8 w-36 text-xs">
+                  <Label id="planner-batch-to-day-label" for="planner-batch-to-day" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.toDay") }}</Label>
+                  <Select id="planner-batch-to-day" :model-value="batchToDay" @update:model-value="batchToDay = typeof $event === 'string' ? $event : batchToDay">
+                    <SelectTrigger class="h-8 w-36 text-xs" aria-labelledby="planner-batch-to-day-label">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -830,9 +837,9 @@ function formatInteger(value: number) {
                   </Select>
                 </div>
                 <div class="grid gap-1">
-                  <Label class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.fromHour") }}</Label>
-                  <Select :model-value="batchFromHour" @update:model-value="batchFromHour = typeof $event === 'string' ? $event : batchFromHour">
-                    <SelectTrigger class="h-8 w-24 text-xs">
+                  <Label id="planner-batch-from-hour-label" for="planner-batch-from-hour" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.fromHour") }}</Label>
+                  <Select id="planner-batch-from-hour" :model-value="batchFromHour" @update:model-value="batchFromHour = typeof $event === 'string' ? $event : batchFromHour">
+                    <SelectTrigger class="h-8 w-24 text-xs" aria-labelledby="planner-batch-from-hour-label">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -843,9 +850,9 @@ function formatInteger(value: number) {
                   </Select>
                 </div>
                 <div class="grid gap-1">
-                  <Label class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.toHour") }}</Label>
-                  <Select :model-value="batchToHour" @update:model-value="batchToHour = typeof $event === 'string' ? $event : batchToHour">
-                    <SelectTrigger class="h-8 w-24 text-xs">
+                  <Label id="planner-batch-to-hour-label" for="planner-batch-to-hour" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.toHour") }}</Label>
+                  <Select id="planner-batch-to-hour" :model-value="batchToHour" @update:model-value="batchToHour = typeof $event === 'string' ? $event : batchToHour">
+                    <SelectTrigger class="h-8 w-24 text-xs" aria-labelledby="planner-batch-to-hour-label">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -856,9 +863,9 @@ function formatInteger(value: number) {
                   </Select>
                 </div>
                 <div class="grid gap-1">
-                  <Label class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.brush") }}</Label>
-                  <Select :model-value="batchBrushId" @update:model-value="batchBrushId = typeof $event === 'string' ? $event : batchBrushId">
-                    <SelectTrigger class="h-8 w-44 text-xs">
+                  <Label id="planner-batch-brush-label" for="planner-batch-brush" class="text-[11px] text-muted-foreground">{{ t("eventPlanner.batch.brush") }}</Label>
+                  <Select id="planner-batch-brush" :model-value="batchBrushId" @update:model-value="batchBrushId = typeof $event === 'string' ? $event : batchBrushId">
+                    <SelectTrigger class="h-8 w-44 text-xs" aria-labelledby="planner-batch-brush-label">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
