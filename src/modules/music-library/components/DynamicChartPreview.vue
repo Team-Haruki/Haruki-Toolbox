@@ -3,7 +3,13 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { Pause, Play } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import { holdEdgesAtTime, type ChartVisHold, type ChartVisTap, type DynamicChart } from "../lib/chart-dynamic"
+import {
+  holdEdgesAtTime,
+  type ChartHoldPoint,
+  type ChartVisHold,
+  type ChartVisTap,
+  type DynamicChart,
+} from "../lib/chart-dynamic"
 
 const props = defineProps<{
   chart: DynamicChart
@@ -237,51 +243,57 @@ function drawTap(
   }
 }
 
-function drawHold(
-  context: CanvasRenderingContext2D,
+type LaneGeometry = { left: number; laneWidth: number }
+type HoldEdgeSample = { time: number; edge: { left: number; right: number } }
+
+function isTimeVisible(time: number, windowStart: number, windowEnd: number): boolean {
+  return time >= windowStart && time <= windowEnd
+}
+
+function buildHoldEdgeSamples(
   hold: ChartVisHold,
-  geometry: { left: number; laneWidth: number },
-  timeToY: (time: number) => number,
   windowStart: number,
   windowEnd: number,
-) {
-  const points = hold.points
-  const first = points[0]
-  const last = points[points.length - 1]
+): HoldEdgeSample[] {
+  const first = hold.points[0]
+  const last = hold.points[hold.points.length - 1]
   if (last.time < windowStart || first.time > windowEnd) {
-    return
+    return []
   }
 
-  // Body polygon: down the left edges, back up the right edges. Sample the
-  // clipped window bounds so partially visible holds still render.
-  const sampleTimes: number[] = []
   const start = Math.max(first.time, windowStart)
   const end = Math.min(last.time, windowEnd)
-  sampleTimes.push(start)
-  for (const point of points) {
-    if (point.time > start && point.time < end) {
-      sampleTimes.push(point.time)
-    }
-  }
-  sampleTimes.push(end)
-
-  const edges = sampleTimes
+  const sampleTimes = [
+    start,
+    ...hold.points
+      .filter((point) => point.time > start && point.time < end)
+      .map((point) => point.time),
+    end,
+  ]
+  return sampleTimes
     .map((time) => ({ time, edge: holdEdgesAtTime(hold, time) }))
-    .filter((entry): entry is { time: number; edge: { left: number; right: number } } => entry.edge != null)
-  if (edges.length < 2) {
+    .filter((entry): entry is HoldEdgeSample => entry.edge != null)
+}
+
+function drawHoldBody(
+  context: CanvasRenderingContext2D,
+  hold: ChartVisHold,
+  geometry: LaneGeometry,
+  timeToY: (time: number) => number,
+  edges: readonly HoldEdgeSample[],
+) {
+  const first = edges[0]
+  if (!first) {
     return
   }
 
   context.beginPath()
-  for (let index = 0; index < edges.length; index += 1) {
-    const { time, edge } = edges[index]
-    const x = geometry.left + edge.left * geometry.laneWidth + 1.5
-    const y = timeToY(time)
-    if (index === 0) {
-      context.moveTo(x, y)
-    } else {
-      context.lineTo(x, y)
-    }
+  context.moveTo(
+    geometry.left + first.edge.left * geometry.laneWidth + 1.5,
+    timeToY(first.time),
+  )
+  for (const { time, edge } of edges.slice(1)) {
+    context.lineTo(geometry.left + edge.left * geometry.laneWidth + 1.5, timeToY(time))
   }
   for (let index = edges.length - 1; index >= 0; index -= 1) {
     const { time, edge } = edges[index]
@@ -290,10 +302,18 @@ function drawHold(
   context.closePath()
   context.fillStyle = hold.critical ? COLORS.holdCritical : COLORS.hold
   context.fill()
+}
 
-  // Relay ticks.
-  for (const point of points) {
-    if (!point.tick || point.time < windowStart || point.time > windowEnd) {
+function drawHoldTicks(
+  context: CanvasRenderingContext2D,
+  hold: ChartVisHold,
+  geometry: LaneGeometry,
+  timeToY: (time: number) => number,
+  windowStart: number,
+  windowEnd: number,
+) {
+  for (const point of hold.points) {
+    if (!point.tick || !isTimeVisible(point.time, windowStart, windowEnd)) {
       continue
     }
     const centerX = geometry.left + (point.lane + point.width / 2) * geometry.laneWidth
@@ -307,27 +327,65 @@ function drawHold(
     context.fillStyle = hold.critical ? COLORS.critical : COLORS.tick
     context.fill()
   }
+}
 
-  // Head / end note bars.
-  const headColor = hold.critical ? COLORS.critical : COLORS.holdHead
-  for (const [point, visible] of [[first, hold.startVisible], [last, hold.endVisible]] as const) {
-    if (!visible || point.time < windowStart || point.time > windowEnd) {
-      continue
-    }
-    const x = geometry.left + point.lane * geometry.laneWidth
-    const width = point.width * geometry.laneWidth
-    const y = timeToY(point.time)
-    context.beginPath()
-    context.roundRect(x + 1.5, y - NOTE_HEIGHT / 2, width - 3, NOTE_HEIGHT, 5)
-    context.fillStyle = point === last && hold.endFlick != null ? COLORS.flick : headColor
-    context.fill()
-    context.strokeStyle = "rgba(255,255,255,0.55)"
-    context.lineWidth = 1
-    context.stroke()
-    if (point === last && hold.endFlick != null) {
-      drawFlickArrow(context, x + width / 2, y - NOTE_HEIGHT / 2, width, hold.endFlick, COLORS.flick)
-    }
+function drawHoldEndpoint(
+  context: CanvasRenderingContext2D,
+  point: ChartHoldPoint,
+  geometry: LaneGeometry,
+  timeToY: (time: number) => number,
+  windowStart: number,
+  windowEnd: number,
+  options: { visible: boolean; color: string; flick: ChartVisHold["endFlick"] },
+) {
+  if (!options.visible || !isTimeVisible(point.time, windowStart, windowEnd)) {
+    return
   }
+
+  const x = geometry.left + point.lane * geometry.laneWidth
+  const width = point.width * geometry.laneWidth
+  const y = timeToY(point.time)
+  context.beginPath()
+  context.roundRect(x + 1.5, y - NOTE_HEIGHT / 2, width - 3, NOTE_HEIGHT, 5)
+  context.fillStyle = options.flick == null ? options.color : COLORS.flick
+  context.fill()
+  context.strokeStyle = "rgba(255,255,255,0.55)"
+  context.lineWidth = 1
+  context.stroke()
+  if (options.flick != null) {
+    drawFlickArrow(context, x + width / 2, y - NOTE_HEIGHT / 2, width, options.flick, COLORS.flick)
+  }
+}
+
+function drawHold(
+  context: CanvasRenderingContext2D,
+  hold: ChartVisHold,
+  geometry: LaneGeometry,
+  timeToY: (time: number) => number,
+  windowStart: number,
+  windowEnd: number,
+) {
+  // Body polygon: down the left edges, back up the right edges. Sample the
+  // clipped window bounds so partially visible holds still render.
+  const edges = buildHoldEdgeSamples(hold, windowStart, windowEnd)
+  if (edges.length < 2) {
+    return
+  }
+
+  drawHoldBody(context, hold, geometry, timeToY, edges)
+  drawHoldTicks(context, hold, geometry, timeToY, windowStart, windowEnd)
+
+  const headColor = hold.critical ? COLORS.critical : COLORS.holdHead
+  drawHoldEndpoint(context, hold.points[0], geometry, timeToY, windowStart, windowEnd, {
+    visible: hold.startVisible,
+    color: headColor,
+    flick: null,
+  })
+  drawHoldEndpoint(context, hold.points[hold.points.length - 1], geometry, timeToY, windowStart, windowEnd, {
+    visible: hold.endVisible,
+    color: headColor,
+    flick: hold.endFlick,
+  })
 }
 
 function draw() {

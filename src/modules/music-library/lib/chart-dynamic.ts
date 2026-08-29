@@ -150,105 +150,129 @@ function makeRawNote(
   }
 }
 
-export function parseDynamicChart(sus: string): DynamicChart {
-  const notes: RawNote[] = []
-  const events: TimingEvent[] = []
-  const bpmDefinitions = new Map<number, number>()
-  const bpmReferences: Array<{ bar: number; id: number }> = []
-
-  for (const rawLine of sus.split(/\r?\n/)) {
-    const match = SCORE_LINE.exec(rawLine.trim())
-    if (!match) {
-      continue
-    }
-
-    const header = match[1]
-    const data = match[2].trim()
-
-    const eventMatch = EVENT_HEADER.exec(header)
-    if (eventMatch) {
-      events.push({ bar: Number(eventMatch[1]), bpm: null, barLength: Number(data) || 4 })
-      continue
-    }
-
-    const bpmDefMatch = BPM_DEF_HEADER.exec(header)
-    if (bpmDefMatch) {
-      const bpm = Number(data)
-      if (Number.isFinite(bpm) && bpm > 0) {
-        bpmDefinitions.set(base36Two(bpmDefMatch[1]), bpm)
-      }
-      continue
-    }
-
-    const bpmRefMatch = BPM_REF_HEADER.exec(header)
-    if (bpmRefMatch) {
-      for (const [beat, token] of parseScoreData(data)) {
-        bpmReferences.push({ bar: Number(bpmRefMatch[1]) + beat, id: base36Two(token) })
-      }
-      continue
-    }
-
-    const tapMatch = TAP_HEADER.exec(header)
-    if (tapMatch) {
-      for (const [beat, token] of parseScoreData(data)) {
-        notes.push(makeRawNote(
-          "tap",
-          Number(tapMatch[1]) + beat,
-          base36Char(tapMatch[2]),
-          base36Char(token[1]),
-          base36Char(token[0]),
-        ))
-      }
-      continue
-    }
-
-    const slideMatch = SLIDE_HEADER.exec(header) ?? DECO_SLIDE_HEADER.exec(header)
-    if (slideMatch) {
-      const decoration = header[3] === "9"
-      for (const [beat, token] of parseScoreData(data)) {
-        notes.push(makeRawNote(
-          "slide",
-          Number(slideMatch[1]) + beat,
-          base36Char(slideMatch[2]),
-          base36Char(token[1]),
-          base36Char(token[0]),
-          base36Char(slideMatch[3]),
-          decoration,
-        ))
-      }
-      continue
-    }
-
-    const directionalMatch = DIRECTIONAL_HEADER.exec(header)
-    if (directionalMatch) {
-      for (const [beat, token] of parseScoreData(data)) {
-        notes.push(makeRawNote(
-          "directional",
-          Number(directionalMatch[1]) + beat,
-          base36Char(directionalMatch[2]),
-          base36Char(token[1]),
-          base36Char(token[0]),
-        ))
-      }
-    }
-  }
-
-  for (const reference of bpmReferences) {
-    const bpm = bpmDefinitions.get(reference.id)
-    if (bpm != null) {
-      events.push({ bar: reference.bar, bpm, barLength: null })
-    }
-  }
-
-  linkNotes(notes)
-  const timing = buildTiming(events)
-  return buildVisualization(notes, timing)
+type ChartParseState = {
+  notes: RawNote[]
+  events: TimingEvent[]
+  bpmDefinitions: Map<number, number>
+  bpmReferences: Array<{ bar: number; id: number }>
 }
 
-/** Port of the upstream multi-pass linking (`Score::init_notes`). */
-function linkNotes(notes: RawNote[]): void {
-  notes.sort((a, b) => a.bar - b.bar)
+function appendScoreNotes(data: string, createNote: (beat: number, token: string) => RawNote): RawNote[] {
+  return parseScoreData(data).map(([beat, token]) => createNote(beat, token))
+}
 
+function parseTimingLine(header: string, data: string, state: ChartParseState): boolean {
+  const eventMatch = EVENT_HEADER.exec(header)
+  if (eventMatch) {
+    state.events.push({ bar: Number(eventMatch[1]), bpm: null, barLength: Number(data) || 4 })
+    return true
+  }
+
+  const bpmDefMatch = BPM_DEF_HEADER.exec(header)
+  if (bpmDefMatch) {
+    const bpm = Number(data)
+    if (Number.isFinite(bpm) && bpm > 0) {
+      state.bpmDefinitions.set(base36Two(bpmDefMatch[1]), bpm)
+    }
+    return true
+  }
+
+  const bpmRefMatch = BPM_REF_HEADER.exec(header)
+  if (!bpmRefMatch) {
+    return false
+  }
+  const baseBar = Number(bpmRefMatch[1])
+  state.bpmReferences.push(...parseScoreData(data).map(([beat, token]) => ({
+    bar: baseBar + beat,
+    id: base36Two(token),
+  })))
+  return true
+}
+
+function parseNoteLine(header: string, data: string, notes: RawNote[]): void {
+  const tapMatch = TAP_HEADER.exec(header)
+  if (tapMatch) {
+    const baseBar = Number(tapMatch[1])
+    notes.push(...appendScoreNotes(data, (beat, token) => makeRawNote(
+      "tap",
+      baseBar + beat,
+      base36Char(tapMatch[2]),
+      base36Char(token[1]),
+      base36Char(token[0]),
+    )))
+    return
+  }
+
+  const slideMatch = SLIDE_HEADER.exec(header) ?? DECO_SLIDE_HEADER.exec(header)
+  if (slideMatch) {
+    const baseBar = Number(slideMatch[1])
+    const decoration = header[3] === "9"
+    notes.push(...appendScoreNotes(data, (beat, token) => makeRawNote(
+      "slide",
+      baseBar + beat,
+      base36Char(slideMatch[2]),
+      base36Char(token[1]),
+      base36Char(token[0]),
+      base36Char(slideMatch[3]),
+      decoration,
+    )))
+    return
+  }
+
+  const directionalMatch = DIRECTIONAL_HEADER.exec(header)
+  if (directionalMatch) {
+    const baseBar = Number(directionalMatch[1])
+    notes.push(...appendScoreNotes(data, (beat, token) => makeRawNote(
+      "directional",
+      baseBar + beat,
+      base36Char(directionalMatch[2]),
+      base36Char(token[1]),
+      base36Char(token[0]),
+    )))
+  }
+}
+
+function parseChartLine(rawLine: string, state: ChartParseState): void {
+  const match = SCORE_LINE.exec(rawLine.trim())
+  if (!match) {
+    return
+  }
+
+  const header = match[1]
+  const data = match[2].trim()
+  if (!parseTimingLine(header, data, state)) {
+    parseNoteLine(header, data, state.notes)
+  }
+}
+
+function appendReferencedBpmEvents(state: ChartParseState): void {
+  for (const reference of state.bpmReferences) {
+    const bpm = state.bpmDefinitions.get(reference.id)
+    if (bpm != null) {
+      state.events.push({ bar: reference.bar, bpm, barLength: null })
+    }
+  }
+}
+
+export function parseDynamicChart(sus: string): DynamicChart {
+  const state: ChartParseState = {
+    notes: [],
+    events: [],
+    bpmDefinitions: new Map(),
+    bpmReferences: [],
+  }
+
+  for (const rawLine of sus.split(/\r?\n/)) {
+    parseChartLine(rawLine, state)
+  }
+
+  appendReferencedBpmEvents(state)
+  linkNotes(state.notes)
+  const timing = buildTiming(state.events)
+  return buildVisualization(state.notes, timing)
+}
+
+function indexNotesByBar(notes: RawNote[]): Map<number, number[]> {
   const notesByBar = new Map<number, number[]>()
   for (let index = 0; index < notes.length; index += 1) {
     const note = notes[index]
@@ -266,8 +290,14 @@ function linkNotes(notes: RawNote[]): void {
       notesByBar.set(note.bar, [index])
     }
   }
+  return notesByBar
+}
 
-  // Attach directional (flick) notes to the tap at the same position.
+function notesSharePosition(left: RawNote, right: RawNote): boolean {
+  return left.lane === right.lane && left.width === right.width
+}
+
+function attachDirectionalNotes(notes: RawNote[], notesByBar: ReadonlyMap<number, number[]>): void {
   for (let index = 0; index < notes.length; index += 1) {
     const note = notes[index]
     if (note.deleted || note.kind !== "directional") {
@@ -276,64 +306,79 @@ function linkNotes(notes: RawNote[]): void {
 
     for (const other of notesByBar.get(note.bar) ?? []) {
       const tap = notes[other]
-      if (!tap.deleted && tap.kind === "tap"
-        && tap.lane === note.lane && tap.width === note.width) {
+      if (!tap.deleted && tap.kind === "tap" && notesSharePosition(tap, note)) {
         tap.deleted = true
         note.tapIdx = other
       }
     }
   }
+}
 
-  // Attach taps/directionals to slides, then chain slides by channel.
+function attachSlideTap(note: RawNote, notes: RawNote[], noteIndices: readonly number[]): void {
+  for (const other of noteIndices) {
+    const candidate = notes[other]
+    if (!candidate.deleted && candidate.kind === "tap" && notesSharePosition(candidate, note)) {
+      candidate.deleted = true
+      note.tapIdx = other
+    }
+  }
+}
+
+function attachSlideDirectional(note: RawNote, notes: RawNote[], noteIndices: readonly number[]): void {
+  for (const other of noteIndices) {
+    const candidate = notes[other]
+    if (candidate.deleted || candidate.kind !== "directional" || !notesSharePosition(candidate, note)) {
+      continue
+    }
+
+    candidate.deleted = true
+    note.directionalIdx = other
+    if (candidate.tapIdx !== -1) {
+      note.tapIdx = candidate.tapIdx
+    }
+  }
+}
+
+function linkNextSlide(note: RawNote, index: number, notes: RawNote[]): void {
+  if (note.noteType === 2) {
+    return
+  }
+
+  for (let next = index + 1; next < notes.length; next += 1) {
+    const candidate = notes[next]
+    if (candidate.deleted || candidate.kind !== "slide") {
+      continue
+    }
+    if (candidate.channel === note.channel && candidate.decoration === note.decoration) {
+      note.nextIdx = next
+      candidate.headIdx = note.headIdx
+      return
+    }
+  }
+}
+
+function linkSlideNotes(notes: RawNote[], notesByBar: ReadonlyMap<number, number[]>): void {
   for (let index = 0; index < notes.length; index += 1) {
     const note = notes[index]
     if (note.deleted || note.kind !== "slide") {
       continue
     }
 
-    if (note.headIdx === -1) {
-      note.headIdx = index
-    }
-
-    for (const other of notesByBar.get(note.bar) ?? []) {
-      const candidate = notes[other]
-      if (candidate.deleted || candidate.kind !== "tap") {
-        continue
-      }
-      if (candidate.lane === note.lane && candidate.width === note.width) {
-        candidate.deleted = true
-        note.tapIdx = other
-      }
-    }
-
-    for (const other of notesByBar.get(note.bar) ?? []) {
-      const candidate = notes[other]
-      if (candidate.deleted || candidate.kind !== "directional") {
-        continue
-      }
-      if (candidate.lane === note.lane && candidate.width === note.width) {
-        candidate.deleted = true
-        note.directionalIdx = other
-        if (candidate.tapIdx !== -1) {
-          note.tapIdx = candidate.tapIdx
-        }
-      }
-    }
-
-    if (note.noteType !== 2) {
-      for (let next = index + 1; next < notes.length; next += 1) {
-        const candidate = notes[next]
-        if (candidate.deleted || candidate.kind !== "slide") {
-          continue
-        }
-        if (candidate.channel === note.channel && candidate.decoration === note.decoration) {
-          note.nextIdx = next
-          candidate.headIdx = note.headIdx
-          break
-        }
-      }
-    }
+    note.headIdx = note.headIdx === -1 ? index : note.headIdx
+    const noteIndices = notesByBar.get(note.bar) ?? []
+    attachSlideTap(note, notes, noteIndices)
+    attachSlideDirectional(note, notes, noteIndices)
+    linkNextSlide(note, index, notes)
   }
+}
+
+/** Port of the upstream multi-pass linking (`Score::init_notes`). */
+function linkNotes(notes: RawNote[]): void {
+  notes.sort((a, b) => a.bar - b.bar)
+  const notesByBar = indexNotesByBar(notes)
+  // Attach directional flicks first, then taps/directionals to slide chains.
+  attachDirectionalNotes(notes, notesByBar)
+  linkSlideNotes(notes, notesByBar)
 }
 
 type Timing = {
@@ -394,102 +439,79 @@ function tapIsCritical(noteType: number): boolean {
   return TAP_CRITICAL_TYPES.has(noteType)
 }
 
-function buildVisualization(notes: RawNote[], timing: Timing): DynamicChart {
-  const taps: ChartVisTap[] = []
-  const holds: ChartVisHold[] = []
+function buildTapVisualization(note: RawNote, time: number): ChartVisTap | null {
+  if (TAP_NONE_TYPES.has(note.noteType)) {
+    return null
+  }
+  return {
+    time,
+    lane: note.lane - 2,
+    width: note.width,
+    critical: tapIsCritical(note.noteType),
+    trace: TAP_TREND_TYPES.has(note.noteType),
+    damage: note.noteType === TAP_DAMAGE_TYPE,
+    flick: note.noteType === TAP_FLICK_TYPE ? "up" : null,
+  }
+}
+
+function buildDirectionalVisualization(note: RawNote, time: number, notes: RawNote[]): ChartVisTap {
+  const attachedTap = note.tapIdx !== -1 ? notes[note.tapIdx] : null
+  return {
+    time,
+    lane: note.lane - 2,
+    width: note.width,
+    critical: attachedTap != null && tapIsCritical(attachedTap.noteType),
+    trace: attachedTap != null && TAP_TREND_TYPES.has(attachedTap.noteType),
+    damage: false,
+    flick: flickDirection(note.noteType),
+  }
+}
+
+function buildSlideHold(
+  note: RawNote,
+  notes: RawNote[],
+  timing: Timing,
+): { hold: ChartVisHold | null; duration: number } {
+  const points: ChartHoldPoint[] = []
+  let critical = false
+  let endFlick: ChartFlickDirection | null = null
   let duration = 0
+  let cursor: RawNote | null = note
+  let guard = 0
+  while (cursor != null && guard < 10_000) {
+    guard += 1
+    const pointTime = timeAtBar(timing, cursor.bar)
+    points.push({
+      time: pointTime,
+      lane: cursor.lane - 2,
+      width: cursor.width,
+      tick: cursor.noteType === 3,
+    })
+    duration = Math.max(duration, pointTime)
 
-  const trackTime = (time: number) => {
-    duration = Math.max(duration, time)
+    const cursorTap = cursor.tapIdx !== -1 ? notes[cursor.tapIdx] : null
+    if (cursorTap != null && tapIsCritical(cursorTap.noteType)) {
+      critical = true
+    }
+    if (cursor.noteType === 2 && cursor.directionalIdx !== -1) {
+      endFlick = flickDirection(notes[cursor.directionalIdx].noteType)
+    }
+    cursor = cursor.nextIdx !== -1 ? notes[cursor.nextIdx] : null
   }
 
-  for (let index = 0; index < notes.length; index += 1) {
-    const note = notes[index]
-    if (note.deleted) {
-      continue
-    }
-
-    const lane = note.lane - 2
-    const time = timeAtBar(timing, note.bar)
-
-    if (note.kind === "tap") {
-      if (TAP_NONE_TYPES.has(note.noteType)) {
-        continue
+  const hold = points.length >= 2
+    ? {
+        critical,
+        points,
+        endFlick,
+        startVisible: !note.decoration,
+        endVisible: !note.decoration,
       }
+    : null
+  return { hold, duration }
+}
 
-      taps.push({
-        time,
-        lane,
-        width: note.width,
-        critical: tapIsCritical(note.noteType),
-        trace: TAP_TREND_TYPES.has(note.noteType),
-        damage: note.noteType === TAP_DAMAGE_TYPE,
-        flick: note.noteType === TAP_FLICK_TYPE ? "up" : null,
-      })
-      trackTime(time)
-      continue
-    }
-
-    if (note.kind === "directional") {
-      const attachedTap = note.tapIdx !== -1 ? notes[note.tapIdx] : null
-      taps.push({
-        time,
-        lane,
-        width: note.width,
-        critical: attachedTap != null && tapIsCritical(attachedTap.noteType),
-        trace: attachedTap != null && TAP_TREND_TYPES.has(attachedTap.noteType),
-        damage: false,
-        flick: flickDirection(note.noteType),
-      })
-      trackTime(time)
-      continue
-    }
-
-    // Slides: emit one hold per chain, walking from its head.
-    if (note.kind === "slide" && note.headIdx === index) {
-      const points: ChartHoldPoint[] = []
-      let critical = false
-      let endFlick: ChartFlickDirection | null = null
-      let cursor: RawNote | null = note
-      let guard = 0
-      while (cursor != null && guard < 10_000) {
-        guard += 1
-        const pointTime = timeAtBar(timing, cursor.bar)
-        points.push({
-          time: pointTime,
-          lane: cursor.lane - 2,
-          width: cursor.width,
-          tick: cursor.noteType === 3,
-        })
-        trackTime(pointTime)
-
-        const cursorTap = cursor.tapIdx !== -1 ? notes[cursor.tapIdx] : null
-        if (cursorTap != null && tapIsCritical(cursorTap.noteType)) {
-          critical = true
-        }
-        if (cursor.noteType === 2 && cursor.directionalIdx !== -1) {
-          endFlick = flickDirection(notes[cursor.directionalIdx].noteType)
-        }
-
-        cursor = cursor.nextIdx !== -1 ? notes[cursor.nextIdx] : null
-      }
-
-      if (points.length >= 2) {
-        // Guide (decoration) chains carry no tappable heads.
-        holds.push({
-          critical,
-          points,
-          endFlick,
-          startVisible: !note.decoration,
-          endVisible: !note.decoration,
-        })
-      }
-    }
-  }
-
-  taps.sort((a, b) => a.time - b.time)
-  holds.sort((a, b) => a.points[0].time - b.points[0].time)
-
+function buildBarLines(timing: Timing, duration: number): ChartBarLine[] {
   const barLines: ChartBarLine[] = []
   for (let bar = 0; bar <= 5000; bar += 1) {
     const time = timeAtBar(timing, bar)
@@ -498,19 +520,70 @@ function buildVisualization(notes: RawNote[], timing: Timing): DynamicChart {
     }
     barLines.push({ time, bar })
   }
+  return barLines
+}
 
+function buildBpmEvents(timing: Timing): { time: number; bpm: number }[] {
   const bpmEvents: { time: number; bpm: number }[] = []
   for (const checkpoint of timing.checkpoints) {
     const last = bpmEvents[bpmEvents.length - 1]
-    if (last && last.time === checkpoint.time) {
+    if (last?.time === checkpoint.time) {
       // Later checkpoints at the same instant win (e.g. over the 120 default).
       last.bpm = checkpoint.bpm
     } else if (!last || last.bpm !== checkpoint.bpm) {
       bpmEvents.push({ time: checkpoint.time, bpm: checkpoint.bpm })
     }
   }
+  return bpmEvents
+}
 
-  return { taps, holds, barLines, bpmEvents, duration }
+function buildVisualization(notes: RawNote[], timing: Timing): DynamicChart {
+  const taps: ChartVisTap[] = []
+  const holds: ChartVisHold[] = []
+  let duration = 0
+
+  for (let index = 0; index < notes.length; index += 1) {
+    const note = notes[index]
+    if (note.deleted) {
+      continue
+    }
+
+    const time = timeAtBar(timing, note.bar)
+    if (note.kind === "tap") {
+      const tap = buildTapVisualization(note, time)
+      if (tap) {
+        taps.push(tap)
+        duration = Math.max(duration, time)
+      }
+      continue
+    }
+
+    if (note.kind === "directional") {
+      taps.push(buildDirectionalVisualization(note, time, notes))
+      duration = Math.max(duration, time)
+      continue
+    }
+
+    // Slides: emit one hold per chain, walking from its head.
+    if (note.headIdx === index) {
+      const result = buildSlideHold(note, notes, timing)
+      duration = Math.max(duration, result.duration)
+      if (result.hold) {
+        holds.push(result.hold)
+      }
+    }
+  }
+
+  taps.sort((a, b) => a.time - b.time)
+  holds.sort((a, b) => a.points[0].time - b.points[0].time)
+
+  return {
+    taps,
+    holds,
+    barLines: buildBarLines(timing, duration),
+    bpmEvents: buildBpmEvents(timing),
+    duration,
+  }
 }
 
 /** Linear lane interpolation along a hold's points at the given time. */
