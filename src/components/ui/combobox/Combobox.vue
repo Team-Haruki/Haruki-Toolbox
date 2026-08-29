@@ -43,6 +43,8 @@ const props = withDefaults(defineProps<{
   emptyText: string
   disabled?: boolean
   clearable?: boolean
+  triggerId?: string
+  triggerAriaLabelledby?: string
   triggerClass?: string
   contentClass?: string
   iconComponent?: Component | null
@@ -86,10 +88,12 @@ function selectOption(value: string) {
   <Popover v-model:open="open">
     <PopoverTrigger as-child>
       <Button
+        :id="props.triggerId"
         type="button"
         variant="outline"
         role="combobox"
         :aria-expanded="open"
+        :aria-labelledby="props.triggerAriaLabelledby"
         :disabled="props.disabled"
         :class="cn('min-w-0 max-w-full w-full justify-between overflow-hidden', props.triggerClass)"
       >

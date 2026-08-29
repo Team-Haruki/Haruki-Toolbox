@@ -247,8 +247,11 @@ watch(() => route.query, () => {
         <h1 class="text-2xl font-bold">{{ t("costumes.dressup.title") }}</h1>
         <p class="text-sm text-muted-foreground">{{ t("costumes.dressup.description") }}</p>
       </div>
-      <Select :key="locale" v-model="selectedRegion">
-        <SelectTrigger class="w-32" :aria-label="t('costumes.dressup.region')">
+      <Label id="costume-region-label" for="costume-region" class="sr-only">
+        {{ t("costumes.dressup.region") }}
+      </Label>
+      <Select id="costume-region" :key="locale" v-model="selectedRegion">
+        <SelectTrigger class="w-32" aria-labelledby="costume-region-label">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -283,8 +286,11 @@ watch(() => route.query, () => {
       <Card class="min-w-0 h-fit">
         <CardContent class="flex min-w-0 flex-col gap-4 px-3 pt-5 sm:px-6 sm:pt-6">
           <div class="grid gap-1.5">
-            <Label class="text-xs text-muted-foreground">{{ t("costumes.dressup.character") }}</Label>
+            <Label for="costume-character" class="text-xs text-muted-foreground">
+              {{ t("costumes.dressup.character") }}
+            </Label>
             <Combobox
+              trigger-id="costume-character"
               :model-value="String(characterId)"
               :options="characterOptions"
               :placeholder="t('costumes.dressup.characterPlaceholder')"
@@ -312,8 +318,11 @@ watch(() => route.query, () => {
           </template>
           <template v-else>
             <div class="grid gap-1.5">
-              <Label class="text-xs text-muted-foreground">{{ t("costumes.dressup.body") }}</Label>
+              <Label for="costume-body" class="text-xs text-muted-foreground">
+                {{ t("costumes.dressup.body") }}
+              </Label>
               <Combobox
+                trigger-id="costume-body"
                 :model-value="bodyId != null ? String(bodyId) : null"
                 :options="partComboboxOptions('body')"
                 :placeholder="t('costumes.dressup.partPlaceholder')"
@@ -325,8 +334,11 @@ watch(() => route.query, () => {
               />
             </div>
             <div class="grid gap-1.5">
-              <Label class="text-xs text-muted-foreground">{{ t("costumes.dressup.head") }}</Label>
+              <Label for="costume-head" class="text-xs text-muted-foreground">
+                {{ t("costumes.dressup.head") }}
+              </Label>
               <Combobox
+                trigger-id="costume-head"
                 :model-value="headId != null ? String(headId) : null"
                 :options="partComboboxOptions('head')"
                 :placeholder="t('costumes.dressup.partPlaceholder')"
@@ -338,8 +350,11 @@ watch(() => route.query, () => {
               />
             </div>
             <div class="grid gap-1.5">
-              <Label class="text-xs text-muted-foreground">{{ t("costumes.dressup.hair") }}</Label>
+              <Label for="costume-hair" class="text-xs text-muted-foreground">
+                {{ t("costumes.dressup.hair") }}
+              </Label>
               <Combobox
+                trigger-id="costume-hair"
                 :model-value="hairId != null ? String(hairId) : null"
                 :options="partComboboxOptions('hair')"
                 :placeholder="t('costumes.dressup.partPlaceholder')"

@@ -584,19 +584,24 @@ function removeAllModuleRows() {
 
                 <div class="grid gap-3 rounded-md bg-muted/25 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                   <div class="min-w-0 space-y-1">
-                    <Label class="text-sm">{{ t("tools.clientConfigGenerator.fields.controlApiAccessToken.label") }}</Label>
+                    <Label for="client-use-control-token" class="text-sm">
+                      {{ t("tools.clientConfigGenerator.fields.controlApiAccessToken.label") }}
+                    </Label>
                     <p class="text-xs leading-relaxed text-muted-foreground">
                       {{ t("tools.clientConfigGenerator.fields.controlApiAccessToken.description") }}
                     </p>
                   </div>
                   <Switch
+                    id="client-use-control-token"
                     :model-value="form.useControlApiAccessToken"
                     @update:model-value="form.useControlApiAccessToken = Boolean($event)"
                   />
                   <Input
                     v-if="form.useControlApiAccessToken"
+                    id="client-control-token"
                     v-model="form.controlApiAccessToken"
                     class="sm:col-span-2"
+                    :aria-label="t('tools.clientConfigGenerator.fields.controlApiAccessToken.label')"
                     :placeholder="t('tools.clientConfigGenerator.fields.controlApiAccessToken.placeholder')"
                   />
                 </div>
@@ -671,9 +676,11 @@ function removeAllModuleRows() {
 
                 <div class="grid gap-3 lg:grid-cols-[15rem_minmax(0,1fr)]">
                   <div class="grid gap-1.5">
-                    <Label>{{ t("tools.clientConfigGenerator.fields.runMode.label") }}</Label>
-                    <Select :model-value="form.runMode" @update:model-value="updateRunMode">
-                      <SelectTrigger class="w-full">
+                    <Label id="client-run-mode-label" for="client-run-mode">
+                      {{ t("tools.clientConfigGenerator.fields.runMode.label") }}
+                    </Label>
+                    <Select id="client-run-mode" :model-value="form.runMode" @update:model-value="updateRunMode">
+                      <SelectTrigger class="w-full" aria-labelledby="client-run-mode-label">
                         <SelectValue :placeholder="t('tools.clientConfigGenerator.fields.runMode.placeholder')" />
                       </SelectTrigger>
                       <SelectContent>
@@ -707,7 +714,7 @@ function removeAllModuleRows() {
                 <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_10rem_10rem]">
                   <div class="flex items-start justify-between gap-3 rounded-md bg-muted/25 p-3">
                     <div class="min-w-0 space-y-1">
-                      <Label class="text-sm">
+                      <Label for="client-group-command-limit" class="text-sm">
                         {{ t("tools.clientConfigGenerator.fields.enableGroupCommandLimit.label") }}
                       </Label>
                       <p class="text-xs leading-relaxed text-muted-foreground">
@@ -715,6 +722,7 @@ function removeAllModuleRows() {
                       </p>
                     </div>
                     <Switch
+                      id="client-group-command-limit"
                       :model-value="form.enableGroupCommandLimit"
                       @update:model-value="form.enableGroupCommandLimit = Boolean($event)"
                     />
@@ -758,7 +766,7 @@ function removeAllModuleRows() {
                 <div class="grid gap-3 lg:grid-cols-2 lg:items-stretch">
                   <div class="grid gap-2 lg:grid-rows-[2.5rem_minmax(12rem,1fr)_auto]">
                     <div class="flex min-h-10 items-center justify-between gap-2">
-                      <Label>{{ t("tools.clientConfigGenerator.fields.enableModules.label") }}</Label>
+                      <p class="text-sm font-medium">{{ t("tools.clientConfigGenerator.fields.enableModules.label") }}</p>
                       <Button type="button" variant="outline" size="sm" class="h-9 gap-1.5" @click="addModuleRow">
                         <Plus class="size-3.5" />
                         {{ t("tools.clientConfigGenerator.actions.addModule") }}
@@ -770,8 +778,19 @@ function removeAllModuleRows() {
                         :key="row.key"
                         class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_2.25rem]"
                       >
-                        <Select :model-value="row.module" @update:model-value="updateModuleRow(row, $event)">
-                          <SelectTrigger class="w-full">
+                        <Label
+                          :id="`client-module-${row.key}-label`"
+                          :for="`client-module-${row.key}`"
+                          class="sr-only"
+                        >
+                          {{ t("tools.clientConfigGenerator.fields.enableModules.label") }}
+                        </Label>
+                        <Select
+                          :id="`client-module-${row.key}`"
+                          :model-value="row.module"
+                          @update:model-value="updateModuleRow(row, $event)"
+                        >
+                          <SelectTrigger class="w-full" :aria-labelledby="`client-module-${row.key}-label`">
                             <SelectValue :placeholder="t('tools.clientConfigGenerator.moduleSelector.placeholder')" />
                           </SelectTrigger>
                           <SelectContent>
@@ -802,7 +821,7 @@ function removeAllModuleRows() {
                   </div>
                   <div class="grid gap-2 lg:grid-rows-[2.5rem_minmax(12rem,1fr)_auto]">
                     <div class="flex min-h-10 items-center justify-between gap-2">
-                      <Label>{{ t("tools.clientConfigGenerator.fields.featurePolicyModes.label") }}</Label>
+                      <p class="text-sm font-medium">{{ t("tools.clientConfigGenerator.fields.featurePolicyModes.label") }}</p>
                       <Button type="button" variant="outline" size="sm" class="h-9 gap-1.5" @click="addFeaturePolicyRow">
                         <Plus class="size-3.5" />
                         {{ t("tools.clientConfigGenerator.actions.addFeaturePolicy") }}
@@ -820,8 +839,19 @@ function removeAllModuleRows() {
                         :key="row.key"
                         class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_10rem_2.25rem]"
                       >
-                        <Select :model-value="row.scope" @update:model-value="updateFeaturePolicyScope(row, $event)">
-                          <SelectTrigger class="w-full">
+                        <Label
+                          :id="`client-policy-scope-${row.key}-label`"
+                          :for="`client-policy-scope-${row.key}`"
+                          class="sr-only"
+                        >
+                          {{ t("tools.clientConfigGenerator.policyEditor.scopePlaceholder") }}
+                        </Label>
+                        <Select
+                          :id="`client-policy-scope-${row.key}`"
+                          :model-value="row.scope"
+                          @update:model-value="updateFeaturePolicyScope(row, $event)"
+                        >
+                          <SelectTrigger class="w-full" :aria-labelledby="`client-policy-scope-${row.key}-label`">
                             <SelectValue :placeholder="t('tools.clientConfigGenerator.policyEditor.scopePlaceholder')" />
                           </SelectTrigger>
                           <SelectContent>
@@ -834,8 +864,19 @@ function removeAllModuleRows() {
                             </SelectItem>
                           </SelectContent>
                         </Select>
-                        <Select :model-value="row.mode" @update:model-value="updateFeaturePolicyMode(row, $event)">
-                          <SelectTrigger class="w-full">
+                        <Label
+                          :id="`client-policy-mode-${row.key}-label`"
+                          :for="`client-policy-mode-${row.key}`"
+                          class="sr-only"
+                        >
+                          {{ t("tools.clientConfigGenerator.policyEditor.modePlaceholder") }}
+                        </Label>
+                        <Select
+                          :id="`client-policy-mode-${row.key}`"
+                          :model-value="row.mode"
+                          @update:model-value="updateFeaturePolicyMode(row, $event)"
+                        >
+                          <SelectTrigger class="w-full" :aria-labelledby="`client-policy-mode-${row.key}-label`">
                             <SelectValue :placeholder="t('tools.clientConfigGenerator.policyEditor.modePlaceholder')" />
                           </SelectTrigger>
                           <SelectContent>
@@ -880,7 +921,7 @@ function removeAllModuleRows() {
                     class="grid gap-1.5"
                   >
                     <div class="flex items-center justify-between gap-2">
-                      <Label>{{ editor.label }}</Label>
+                      <p class="text-sm font-medium">{{ editor.label }}</p>
                       <Button type="button" variant="outline" size="sm" class="h-8 gap-1.5" @click="addScopedAccessRow(editor.rows)">
                         <Plus class="size-3.5" />
                         {{ t("tools.clientConfigGenerator.actions.addAccessRow") }}
@@ -892,8 +933,19 @@ function removeAllModuleRows() {
                         :key="row.key"
                         class="grid gap-2 sm:grid-cols-[minmax(7rem,0.85fr)_minmax(8rem,1fr)_2.25rem]"
                       >
-                        <Select :model-value="row.scope" @update:model-value="updateScopedAccessScope(row, $event)">
-                          <SelectTrigger class="w-full">
+                        <Label
+                          :id="`client-access-${editor.key}-${row.key}-label`"
+                          :for="`client-access-${editor.key}-${row.key}`"
+                          class="sr-only"
+                        >
+                          {{ t("tools.clientConfigGenerator.accessEditor.scopePlaceholder") }}
+                        </Label>
+                        <Select
+                          :id="`client-access-${editor.key}-${row.key}`"
+                          :model-value="row.scope"
+                          @update:model-value="updateScopedAccessScope(row, $event)"
+                        >
+                          <SelectTrigger class="w-full" :aria-labelledby="`client-access-${editor.key}-${row.key}-label`">
                             <SelectValue :placeholder="t('tools.clientConfigGenerator.accessEditor.scopePlaceholder')" />
                           </SelectTrigger>
                           <SelectContent>
@@ -952,7 +1004,7 @@ function removeAllModuleRows() {
 
                   <div class="grid gap-1.5">
                     <div class="flex items-center justify-between gap-2">
-                      <Label>{{ t("tools.clientConfigGenerator.fields.botAdmins.label") }}</Label>
+                      <p class="text-sm font-medium">{{ t("tools.clientConfigGenerator.fields.botAdmins.label") }}</p>
                       <Button type="button" variant="outline" size="sm" class="h-8 gap-1.5" @click="addAccessIdRow">
                         <Plus class="size-3.5" />
                         {{ t("tools.clientConfigGenerator.actions.addBotAdmin") }}
