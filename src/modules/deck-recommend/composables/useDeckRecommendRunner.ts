@@ -53,6 +53,7 @@ import type {
   DeckRecommendWorkerRecommendRequest,
 } from "../lib/worker-protocol"
 import type { CardTrainingConfig } from "../lib/training-config"
+import { normalizeDeckRecommendWorkerError } from "../lib/worker-error"
 import {
   fetchDeckRecommendProfileWithCache,
   fetchDeckRecommendUserDataWithCache,
@@ -298,7 +299,7 @@ export function useDeckRecommendRunner() {
       recommendElapsedMs.value = createElapsedMs(recommendStartedAt)
       elapsedMs.value = createElapsedMs(runStartedAt)
     } catch (runError) {
-      const message = normalizeErrorMessage(runError)
+      const message = normalizeDeckRecommendWorkerError(runError)
       error.value = message
       throw runError
     } finally {
@@ -988,7 +989,7 @@ function recommendWithPooledWorker(
       })
       .catch((error) => {
         cleanup()
-        reject(error instanceof Error ? error : new Error(normalizeErrorMessage(error)))
+        reject(error instanceof Error ? error : new Error(normalizeDeckRecommendWorkerError(error)))
       })
   })
 }
@@ -1096,25 +1097,4 @@ function runDedicatedWorkerLifecycleRequest(
 
 function normalizeParallelWorkerCount(count: number): number {
   return Math.max(0, Math.floor(count))
-}
-
-function normalizeErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message
-  }
-  if (typeof error === "object" && error !== null) {
-    const message = "message" in error && typeof error.message === "string" ? error.message : ""
-    const name = error.constructor?.name
-    if (message) {
-      return name && name !== "Object" ? `${name}: ${message}` : message
-    }
-    if (name === "Exception") {
-      return "wasm engine failed to execute recommendation"
-    }
-    if (name && name !== "Object") {
-      return name
-    }
-  }
-
-  return String(error)
 }

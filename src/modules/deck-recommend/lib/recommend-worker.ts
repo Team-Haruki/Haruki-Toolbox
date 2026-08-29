@@ -12,6 +12,7 @@ import type {
   DeckRecommendWorkerRecommendRequest,
   DeckRecommendWorkerRequest,
 } from "./worker-protocol"
+import { normalizeDeckRecommendWorkerError } from "./worker-error"
 
 const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
 let enginePromise: Promise<SekaiDeckRecommendWasm> | null = null
@@ -112,7 +113,7 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
     postEvent({
       type: "error",
       requestId: request.requestId,
-      message: normalizeWorkerErrorMessage(error),
+      message: normalizeDeckRecommendWorkerError(error),
     })
   }
 }
@@ -201,25 +202,4 @@ async function disposeEngine() {
 
 function postEvent(event: DeckRecommendWorkerEvent) {
   workerScope.postMessage(event)
-}
-
-function normalizeWorkerErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message
-  }
-  if (typeof error === "object" && error !== null) {
-    const message = "message" in error && typeof error.message === "string" ? error.message : ""
-    const name = error.constructor?.name
-    if (message) {
-      return name && name !== "Object" ? `${name}: ${message}` : message
-    }
-    if (name === "Exception") {
-      return "wasm engine failed to execute recommendation"
-    }
-    if (name && name !== "Object") {
-      return name
-    }
-  }
-
-  return String(error)
 }

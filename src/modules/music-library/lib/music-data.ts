@@ -136,6 +136,27 @@ export type MusicVocalCharacterSummary = {
   anotherVocalCharacterIds: Set<number>
 }
 
+function getGameCharacterId(character: Record<string, unknown>): number | null {
+  if (normalizeCatalogString(character.characterType) !== MUSIC_VOCAL_CHARACTER_TYPE_GAME) {
+    return null
+  }
+  return normalizeCatalogNumber(character.characterId)
+}
+
+function getOrCreateVocalCharacterSummary(
+  map: Map<number, MusicVocalCharacterSummary>,
+  musicId: number,
+): MusicVocalCharacterSummary {
+  const existing = map.get(musicId)
+  if (existing) {
+    return existing
+  }
+
+  const summary = { vocalCharacterIds: new Set<number>(), anotherVocalCharacterIds: new Set<number>() }
+  map.set(musicId, summary)
+  return summary
+}
+
 export function buildMusicVocalCharacterMap(
   rawVocals: unknown,
 ): Map<number, MusicVocalCharacterSummary> {
@@ -149,20 +170,12 @@ export function buildMusicVocalCharacterMap(
     const isAnotherVocal =
       normalizeCatalogString(record.musicVocalType) === MUSIC_VOCAL_TYPE_ANOTHER_VOCAL
     for (const character of normalizeCatalogRecords(record.characters)) {
-      if (normalizeCatalogString(character.characterType) !== MUSIC_VOCAL_CHARACTER_TYPE_GAME) {
-        continue
-      }
-
-      const characterId = normalizeCatalogNumber(character.characterId)
+      const characterId = getGameCharacterId(character)
       if (!characterId) {
         continue
       }
 
-      let summary = map.get(musicId)
-      if (!summary) {
-        summary = { vocalCharacterIds: new Set(), anotherVocalCharacterIds: new Set() }
-        map.set(musicId, summary)
-      }
+      const summary = getOrCreateVocalCharacterSummary(map, musicId)
       ;(isAnotherVocal ? summary.anotherVocalCharacterIds : summary.vocalCharacterIds).add(characterId)
     }
   }

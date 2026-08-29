@@ -5,6 +5,7 @@ import type {
   DeckRecommendWorkerRequestWithoutId,
 } from "./worker-protocol"
 import { createRequestId } from "@/lib/request-id"
+import { normalizeDeckRecommendWorkerError } from "./worker-error"
 
 type Listener = (event: DeckRecommendWorkerEvent) => void
 
@@ -195,28 +196,7 @@ function runLifecycleRequest(
       }, timeoutMs)
       postDeckRecommendWorkerRequest({ type, requestId, ...input } as DeckRecommendWorkerRequestWithoutId & { requestId: string })
     } catch (error) {
-      finish(error instanceof Error ? error : new Error(normalizeWorkerClientErrorMessage(error)))
+      finish(error instanceof Error ? error : new Error(normalizeDeckRecommendWorkerError(error)))
     }
   })
-}
-
-function normalizeWorkerClientErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message
-  }
-  if (typeof error === "object" && error !== null) {
-    const message = "message" in error && typeof error.message === "string" ? error.message : ""
-    const name = error.constructor?.name
-    if (message) {
-      return name && name !== "Object" ? `${name}: ${message}` : message
-    }
-    if (name === "Exception") {
-      return "wasm engine failed to execute recommendation"
-    }
-    if (name && name !== "Object") {
-      return name
-    }
-  }
-
-  return String(error)
 }

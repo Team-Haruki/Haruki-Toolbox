@@ -1,9 +1,14 @@
-export function createRequestId(): string {
-  if (typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID()
+type RequestIdCrypto = {
+  randomUUID?: () => string
+  getRandomValues: (array: Uint8Array) => Uint8Array
+}
+
+export function createRequestId(source: RequestIdCrypto = crypto): string {
+  if (typeof source.randomUUID === "function") {
+    return source.randomUUID()
   }
 
-  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  const bytes = source.getRandomValues(new Uint8Array(16))
   bytes[6] = (bytes[6] & 0x0f) | 0x40
   bytes[8] = (bytes[8] & 0x3f) | 0x80
   const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0"))

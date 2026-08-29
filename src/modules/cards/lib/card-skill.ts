@@ -39,6 +39,83 @@ type SkillEffect = {
 // the multi-id Bloom Fes forms `{{54,103;r}}` / `{{53,103;s}}`.
 const SKILL_PLACEHOLDER_PATTERN = /\{\{\s*(\d+(?:\s*,\s*\d+)*)\s*;\s*([a-z])\s*\}\}/g
 
+function listSkillEffectValues(
+  effect: SkillEffect | undefined,
+  kind: "value" | "duration",
+): number[] {
+  return (effect?.details ?? [])
+    .map((detail) => (kind === "duration" ? detail.duration : detail.value))
+    .filter((value): value is number => value != null)
+}
+
+function collapseSkillValues(values: readonly number[]): string | null {
+  if (values.length === 0) {
+    return null
+  }
+  const unique = [...new Set(values.map(formatSkillNumber))]
+  return unique.length === 1 ? unique[0] : unique.join("/")
+}
+
+function resolveUnitFesMaximum(effect: SkillEffect | undefined): string {
+  const enhance = effect?.enhanceValue
+  const values = listSkillEffectValues(effect, "value")
+  if (enhance == null || values.length === 0) {
+    return "?"
+  }
+  return collapseSkillValues(values.map((value) => value + enhance * 5)) ?? "?"
+}
+
+function resolveSkillValueRange(
+  ids: readonly number[],
+  byId: ReadonlyMap<number, SkillEffect>,
+): string {
+  const low = collapseSkillValues(listSkillEffectValues(byId.get(ids[0]), "value"))
+  const high = collapseSkillValues(listSkillEffectValues(byId.get(ids[ids.length - 1]), "value"))
+  return low != null && high != null ? `${low}~${high}` : "?"
+}
+
+function resolveSkillValueSum(
+  ids: readonly number[],
+  byId: ReadonlyMap<number, SkillEffect>,
+): string {
+  const lists = ids.map((id) => listSkillEffectValues(byId.get(id), "value"))
+  if (lists.some((list) => list.length === 0)) {
+    return "?"
+  }
+  const levels = Math.max(...lists.map((list) => list.length))
+  const sums = Array.from({ length: levels }, (_, index) =>
+    lists.reduce((total, list) => total + (list[Math.min(index, list.length - 1)] ?? 0), 0),
+  )
+  return collapseSkillValues(sums) ?? "?"
+}
+
+function resolveSkillPlaceholder(
+  idsText: string,
+  kind: string,
+  byId: ReadonlyMap<number, SkillEffect>,
+  context: CardSkillContext,
+): string {
+  const ids = idsText.split(",").map((part) => Number(part.trim()))
+  if (kind === "c") {
+    return context.characterName ?? "?"
+  }
+  if (kind === "d" || (kind === "v" && ids.length === 1)) {
+    const valueKind = kind === "d" ? "duration" : "value"
+    return collapseSkillValues(listSkillEffectValues(byId.get(ids[0]), valueKind)) ?? "?"
+  }
+  if (kind === "e") {
+    const enhance = byId.get(ids[0])?.enhanceValue
+    return enhance != null ? formatSkillNumber(enhance) : "?"
+  }
+  if (kind === "m") {
+    return resolveUnitFesMaximum(byId.get(ids[0]))
+  }
+  if (kind === "r") {
+    return resolveSkillValueRange(ids, byId)
+  }
+  return ids.length > 1 ? resolveSkillValueSum(ids, byId) : "?"
+}
+
 export function normalizeCardSkill(
   rawSkills: unknown,
   skillId: number | null,
@@ -79,74 +156,9 @@ export function formatSkillDescription(
   context: CardSkillContext = {},
 ): string {
   const byId = new Map(effects.map((effect) => [effect.id, effect]))
-
-  const valueList = (effect: SkillEffect | undefined, kind: "value" | "duration") => {
-    const values = (effect?.details ?? [])
-      .map((detail) => (kind === "duration" ? detail.duration : detail.value))
-      .filter((value): value is number => value != null)
-    return values
-  }
-
-  const collapse = (values: readonly number[]) => {
-    if (values.length === 0) {
-      return null
-    }
-    const unique = [...new Set(values.map(formatSkillNumber))]
-    return unique.length === 1 ? unique[0] : unique.join("/")
-  }
-
-  return description.replace(SKILL_PLACEHOLDER_PATTERN, (match, idsText: string, kind: string) => {
-    const ids = idsText.split(",").map((part) => Number(part.trim()))
-
-    if (kind === "c") {
-      return context.characterName ?? "?"
-    }
-
-    if (kind === "d" || (kind === "v" && ids.length === 1)) {
-      const collapsed = collapse(valueList(byId.get(ids[0]), kind === "d" ? "duration" : "value"))
-      return collapsed ?? "?"
-    }
-
-    if (kind === "e") {
-      const enhance = byId.get(ids[0])?.enhanceValue
-      return enhance != null ? formatSkillNumber(enhance) : "?"
-    }
-
-    if (kind === "m") {
-      // Unit-Fes maximum: base value plus the enhance bonus applied for the
-      // four other unit members and once more on a full unit match.
-      const effect = byId.get(ids[0])
-      const enhance = effect?.enhanceValue
-      const values = valueList(effect, "value")
-      if (enhance == null || values.length === 0) {
-        return "?"
-      }
-      return collapse(values.map((value) => value + enhance * 5)) ?? "?"
-    }
-
-    if (kind === "r") {
-      // Range across the listed effects, e.g. rank bonus "1~50".
-      const low = collapse(valueList(byId.get(ids[0]), "value"))
-      const high = collapse(valueList(byId.get(ids[ids.length - 1]), "value"))
-      return low != null && high != null ? `${low}~${high}` : "?"
-    }
-
-    // Multi-id sums (`s`/`o`/`u` and multi-id `v`): base effect plus the max
-    // bonus effect per level — the static ceiling of a dynamic in-game total.
-    if (ids.length > 1) {
-      const lists = ids.map((id) => valueList(byId.get(id), "value"))
-      if (lists.some((list) => list.length === 0)) {
-        return "?"
-      }
-      const levels = Math.max(...lists.map((list) => list.length))
-      const sums = Array.from({ length: levels }, (_, index) =>
-        lists.reduce((total, list) => total + (list[Math.min(index, list.length - 1)] ?? 0), 0),
-      )
-      return collapse(sums) ?? "?"
-    }
-
-    return "?"
-  })
+  return description.replace(SKILL_PLACEHOLDER_PATTERN, (_match, idsText: string, kind: string) =>
+    resolveSkillPlaceholder(idsText, kind, byId, context),
+  )
 }
 
 /**

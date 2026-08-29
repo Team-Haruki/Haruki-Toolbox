@@ -37,17 +37,28 @@ export function hasMusicRewardTotals(totals: MusicRewardTotals): boolean {
   return totals.jewel > 0 || totals.coin > 0 || totals.shard > 0
 }
 
-/**
- * Resolves `musicAchievements` rows into typed masters with their rewards,
- * summed from the `music_achievement` resource boxes. Accepts the nested
- * `resourceBoxes` dump (jp/en) and merges the flat `resourceBoxDetails`
- * rows shipped by tw/kr/cn.
- */
-export function normalizeMusicAchievementMasters(
-  rawMusicAchievements: unknown,
+function addMusicRewardRecord(
+  totals: MusicRewardTotals,
+  record: Record<string, unknown>,
+): void {
+  const resourceType = normalizeCatalogString(record.resourceType)
+  const quantity = normalizeCatalogNumber(record.resourceQuantity) ?? 0
+  if (resourceType === "jewel") {
+    totals.jewel += quantity
+  } else if (resourceType === "coin") {
+    totals.coin += quantity
+  } else if (
+    resourceType === "material"
+    && normalizeCatalogNumber(record.resourceId) === MUSIC_SHARD_MATERIAL_ID
+  ) {
+    totals.shard += quantity
+  }
+}
+
+function buildMusicRewardTotalsByBox(
   rawResourceBoxes: unknown,
-  rawResourceBoxDetails?: unknown,
-): MusicAchievementMaster[] {
+  rawResourceBoxDetails: unknown,
+): Map<number, MusicRewardTotals> {
   const details: Record<string, unknown>[] = []
   for (const record of normalizeCatalogRecords(rawResourceBoxes)) {
     appendCatalogRecords(details, record.details)
@@ -65,41 +76,51 @@ export function normalizeMusicAchievementMasters(
       continue
     }
 
-    let totals = totalsByBox.get(boxId)
-    if (!totals) {
-      totals = emptyMusicRewardTotals()
-      totalsByBox.set(boxId, totals)
-    }
-
-    const resourceType = normalizeCatalogString(record.resourceType)
-    const quantity = normalizeCatalogNumber(record.resourceQuantity) ?? 0
-    if (resourceType === "jewel") {
-      totals.jewel += quantity
-    } else if (resourceType === "coin") {
-      totals.coin += quantity
-    } else if (
-      resourceType === "material"
-      && normalizeCatalogNumber(record.resourceId) === MUSIC_SHARD_MATERIAL_ID
-    ) {
-      totals.shard += quantity
-    }
+    const totals = totalsByBox.get(boxId) ?? emptyMusicRewardTotals()
+    addMusicRewardRecord(totals, record)
+    totalsByBox.set(boxId, totals)
   }
+  return totalsByBox
+}
+
+function normalizeMusicAchievementRecord(
+  record: Record<string, unknown>,
+  totalsByBox: ReadonlyMap<number, MusicRewardTotals>,
+): MusicAchievementMaster | null {
+  const id = normalizeCatalogNumber(record.id)
+  const type = normalizeCatalogString(record.musicAchievementType)
+  if (id == null || id <= 0 || type === "") {
+    return null
+  }
+
+  const boxId = normalizeCatalogNumber(record.resourceBoxId)
+  return {
+    id,
+    type,
+    difficulty: normalizeMusicDifficulty(normalizeCatalogString(record.musicDifficultyType)),
+    rewards: (boxId != null ? totalsByBox.get(boxId) : null) ?? emptyMusicRewardTotals(),
+  }
+}
+
+/**
+ * Resolves `musicAchievements` rows into typed masters with their rewards,
+ * summed from the `music_achievement` resource boxes. Accepts the nested
+ * `resourceBoxes` dump (jp/en) and merges the flat `resourceBoxDetails`
+ * rows shipped by tw/kr/cn.
+ */
+export function normalizeMusicAchievementMasters(
+  rawMusicAchievements: unknown,
+  rawResourceBoxes: unknown,
+  rawResourceBoxDetails?: unknown,
+): MusicAchievementMaster[] {
+  const totalsByBox = buildMusicRewardTotalsByBox(rawResourceBoxes, rawResourceBoxDetails)
 
   const masters: MusicAchievementMaster[] = []
   for (const record of normalizeCatalogRecords(rawMusicAchievements)) {
-    const id = normalizeCatalogNumber(record.id)
-    const type = normalizeCatalogString(record.musicAchievementType)
-    if (id == null || id <= 0 || type === "") {
-      continue
+    const master = normalizeMusicAchievementRecord(record, totalsByBox)
+    if (master) {
+      masters.push(master)
     }
-
-    const boxId = normalizeCatalogNumber(record.resourceBoxId)
-    masters.push({
-      id,
-      type,
-      difficulty: normalizeMusicDifficulty(normalizeCatalogString(record.musicDifficultyType)),
-      rewards: (boxId != null ? totalsByBox.get(boxId) : null) ?? emptyMusicRewardTotals(),
-    })
   }
 
   return masters
