@@ -53,21 +53,15 @@ export function useDeckRecommendRouteQuery(input: {
   const route = useRoute()
   let routeQueryHydrationSignature = ""
 
-  function applyDeckRecommendRouteQuery() {
-    const signature = createDeckRecommendRouteQuerySignature()
-    if (!signature || signature === routeQueryHydrationSignature) {
-      return
-    }
-
-    routeQueryHydrationSignature = signature
-    input.routeHydrationInProgress.value = true
-
+  function applyRegionQuery() {
     const queryRegion = readRouteQueryString("dataRegion") ?? readRouteQueryString("region")
     if (queryRegion && isSekaiRegionValue(queryRegion)) {
       input.lockRegion()
       input.dataRegion.value = queryRegion
     }
+  }
 
+  function applyModeAndTargetQuery() {
     const queryMode = readRouteQueryString("mode")
     const legacyModeTarget = normalizeLegacyRecommendModeTarget(queryMode)
     if (legacyModeTarget) {
@@ -76,75 +70,84 @@ export function useDeckRecommendRouteQuery(input: {
     } else if (queryMode && isDeckRecommendMode(queryMode)) {
       input.recommendMode.value = queryMode
     }
-
     const queryTarget = readRouteQueryString("target") ?? readRouteQueryString("recommendTarget")
     if (queryTarget && isDeckRecommendTarget(queryTarget) && isAllowedRecommendTarget(queryTarget, input.recommendMode.value)) {
       input.recommendTarget.value = queryTarget
     }
+  }
 
-    const queryLiveType = readRouteQueryString("liveType")
-    if (input.isLiveTypeLocked.value) {
-      input.liveType.value = "solo"
-    } else {
-      const normalizedLiveType = normalizeDeckRecommendLiveType(queryLiveType)
-      if (normalizedLiveType) {
-        input.liveType.value = normalizedLiveType
-      }
-    }
-
+  function applyLiveAndMusicQuery() {
+    const normalizedLiveType = normalizeDeckRecommendLiveType(readRouteQueryString("liveType"))
+    input.liveType.value = input.isLiveTypeLocked.value ? "solo" : normalizedLiveType ?? input.liveType.value
     const queryMusicId = readPositiveIntegerRouteQuery("musicId")
     if (queryMusicId) {
       input.selectedMusicId.value = String(queryMusicId)
     }
-
-    const queryMusicDifficulty = normalizeRouteMusicDifficulty(readRouteQueryString("musicDifficulty"))
+    const difficulty = normalizeRouteMusicDifficulty(readRouteQueryString("musicDifficulty"))
       ?? normalizeRouteMusicDifficulty(readRouteQueryString("difficulty"))
-    if (queryMusicDifficulty) {
-      input.selectedDifficulty.value = queryMusicDifficulty
+    if (difficulty) {
+      input.selectedDifficulty.value = difficulty
     }
+  }
 
+  function applyBonusTargetQuery() {
     const queryBonusTargets = readRouteQueryString("bonusTargets")
       ?? readRouteQueryString("targetBonuses")
       ?? readRouteQueryString("target_bonus_list")
     if (queryBonusTargets) {
       input.bonusTargetsInput.value = queryBonusTargets
     }
+  }
 
-    const queryCustomBonusAttr = readRouteQueryString("customBonusAttr")
-    if (queryCustomBonusAttr && isDeckRecommendEventAttr(queryCustomBonusAttr)) {
-      input.simulatedEventAttr.value = queryCustomBonusAttr
+  function applyCustomBonusQuery(): boolean {
+    const queryAttr = readRouteQueryString("customBonusAttr")
+    if (queryAttr && isDeckRecommendEventAttr(queryAttr)) {
+      input.simulatedEventAttr.value = queryAttr
     }
-
-    const queryCustomBonusCharacters = readRouteQueryString("customBonusCharacters")
+    const queryCharacters = readRouteQueryString("customBonusCharacters")
       ?? readRouteQueryString("customBonusCharacterIds")
-    if (queryCustomBonusCharacters) {
-      input.customBonusCharacterIds.value = parseDeckCustomBonusCharacterIdsInput(queryCustomBonusCharacters).values
+    if (queryCharacters) {
+      input.customBonusCharacterIds.value = parseDeckCustomBonusCharacterIdsInput(queryCharacters).values
     }
-
-    const queryCustomBonusSupportUnits = readRouteQueryString("customBonusSupportUnits")
-    if (queryCustomBonusSupportUnits) {
-      input.customBonusSupportUnits.value = parseDeckCustomBonusSupportUnitsInput(queryCustomBonusSupportUnits).values
+    const querySupportUnits = readRouteQueryString("customBonusSupportUnits")
+    if (querySupportUnits) {
+      input.customBonusSupportUnits.value = parseDeckCustomBonusSupportUnitsInput(querySupportUnits).values
     }
-
     const queryFilterOtherUnit = readRouteQueryBoolean("filterOtherUnit")
     if (queryFilterOtherUnit != null) {
       input.filterOtherUnit.value = queryFilterOtherUnit
     }
+    return Boolean(queryCharacters || querySupportUnits)
+  }
 
-    const querySimulatedEventUnit = readRouteQueryString("simulatedEventUnit")
-    const hasCustomBonusQuery = Boolean(queryCustomBonusCharacters || queryCustomBonusSupportUnits)
-    if (querySimulatedEventUnit && isDeckRecommendSimulatedEventUnit(querySimulatedEventUnit)) {
-      input.simulatedEventUnit.value = querySimulatedEventUnit
+  function applySimulationAndBoostQuery(hasCustomBonusQuery: boolean) {
+    const queryUnit = readRouteQueryString("simulatedEventUnit")
+    if (queryUnit && isDeckRecommendSimulatedEventUnit(queryUnit)) {
+      input.simulatedEventUnit.value = queryUnit
       input.eventSimulationEnabled.value = true
     } else if (hasCustomBonusQuery) {
       input.simulatedEventUnit.value = DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT
       input.eventSimulationEnabled.value = true
     }
-
     const queryBoost = readIntegerRouteQuery("boost")
     if (queryBoost != null && queryBoost >= 0 && queryBoost <= 10) {
       input.boostInput.value = String(queryBoost)
     }
+  }
+
+  function applyDeckRecommendRouteQuery() {
+    const signature = createDeckRecommendRouteQuerySignature()
+    if (!signature || signature === routeQueryHydrationSignature) {
+      return
+    }
+
+    routeQueryHydrationSignature = signature
+    input.routeHydrationInProgress.value = true
+    applyRegionQuery()
+    applyModeAndTargetQuery()
+    applyLiveAndMusicQuery()
+    applyBonusTargetQuery()
+    applySimulationAndBoostQuery(applyCustomBonusQuery())
 
     void nextTick(() => {
       input.routeHydrationInProgress.value = false

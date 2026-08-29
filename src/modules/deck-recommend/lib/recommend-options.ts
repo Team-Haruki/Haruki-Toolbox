@@ -125,6 +125,104 @@ export function resolveWasmLiveType(
   return liveType
 }
 
+function applyEventContextOptions(
+  options: RecommendOptions,
+  input: BuildDeckRecommendOptionsInput,
+  simulatedEvent: Partial<RecommendOptions> | null,
+) {
+  if (simulatedEvent) {
+    Object.assign(options, simulatedEvent)
+    return
+  }
+  if (input.mode !== "event" && input.mode !== "bonus" && input.mode !== "mysekai") {
+    return
+  }
+  const eventId = normalizePositiveInteger(input.eventId)
+  const worldBloomCharacterId = normalizePositiveInteger(input.characterId)
+  const forcedLeaderCharacterId = normalizePositiveInteger(input.forcedLeaderCharacterId)
+  if (eventId) options.event_id = eventId
+  if (worldBloomCharacterId) options.world_bloom_character_id = worldBloomCharacterId
+  if (forcedLeaderCharacterId) options.forcedLeaderCharacterId = forcedLeaderCharacterId
+}
+
+function applyBonusTargetOptions(options: RecommendOptions, input: BuildDeckRecommendOptionsInput) {
+  if (input.mode !== "bonus") {
+    return
+  }
+  const targetBonuses = normalizeTargetBonuses(input.targetBonuses)
+  if (targetBonuses.length === 0) {
+    throw new Error("target_bonus_list is required")
+  }
+  options.target_bonus_list = targetBonuses
+}
+
+function applyCustomBonusOptions(options: RecommendOptions, input: BuildDeckRecommendOptionsInput) {
+  const enabled = isCustomBonusSimulation(input.eventSimulation)
+  if (enabled && input.customBonusAttr) {
+    options.custom_bonus_attr = input.customBonusAttr
+  }
+  const characterIds = enabled ? normalizeCustomBonusCharacterIds(input.customBonusCharacterIds) : []
+  if (characterIds.length > 0) {
+    options.custom_bonus_character_ids = characterIds
+  }
+  const supportUnits = normalizeCustomBonusSupportUnits(input.customBonusCharacterSupportUnits, characterIds)
+  if (Object.keys(supportUnits).length > 0) {
+    options.custom_bonus_character_support_units = supportUnits
+  }
+  if (enabled && input.filterOtherUnit === true) {
+    options.filter_other_unit = true
+  }
+}
+
+function applyDeckConstraintOptions(options: RecommendOptions, input: BuildDeckRecommendOptionsInput) {
+  const fixedCards = input.useCurrentDeck
+    ? normalizeCompleteDeckCards(input.currentDeckCards)
+    : normalizePositiveIntegers(input.fixedCards)
+  if (fixedCards.length > 0) {
+    options.fixed_cards = fixedCards
+    if (input.useCurrentDeck) {
+      options.best_skill_as_leader = false
+    }
+  }
+  const fixedCharacters = normalizePositiveIntegers(input.fixedCharacters)
+  if (input.mode !== "challenge" && !input.useCurrentDeck && fixedCharacters.length > 0) {
+    options.fixed_characters = fixedCharacters
+  }
+  const singleCardConfigs = mergeSingleCardConfigs(input.singleCardConfigs, buildExcludedCardConfigs(input.excludedCards))
+  if (singleCardConfigs.length > 0) {
+    options.single_card_configs = singleCardConfigs
+  }
+}
+
+function applySkillAndSupportOptions(options: RecommendOptions, input: BuildDeckRecommendOptionsInput) {
+  if (input.supportMasterMax === true) options.support_master_max = true
+  if (input.supportSkillMax === true) options.support_skill_max = true
+  if (options.skill_order_choose_strategy !== "specific") {
+    return
+  }
+  const specificSkillOrder = normalizeSpecificSkillOrder(input.specificSkillOrder)
+  if (specificSkillOrder.length !== 5) {
+    throw new Error("specific_skill_order is required")
+  }
+  options.specific_skill_order = specificSkillOrder
+}
+
+function applyMultiLiveOptions(
+  options: RecommendOptions,
+  input: BuildDeckRecommendOptionsInput,
+  liveType: WasmRecommendLiveType,
+) {
+  if (!isWasmMultiLiveType(liveType)) {
+    return
+  }
+  const teammatePower = normalizeNumber(input.multiLiveTeammatePower)
+  const teammateScoreUp = normalizeNumber(input.multiLiveTeammateScoreUp)
+  const lowerBound = normalizeNumber(input.multiLiveScoreUpLowerBound)
+  if (teammatePower != null) options.multi_live_teammate_power = teammatePower
+  if (teammateScoreUp != null) options.multi_live_teammate_score_up = teammateScoreUp
+  if (lowerBound != null) options.multi_live_score_up_lower_bound = lowerBound
+}
+
 export function buildDeckRecommendOptions(input: BuildDeckRecommendOptionsInput): RecommendOptions {
   const musicId = normalizePositiveInteger(input.musicId)
   const musicDiff = normalizeMusicDifficulty(input.musicDifficulty)
@@ -158,60 +256,9 @@ export function buildDeckRecommendOptions(input: BuildDeckRecommendOptionsInput)
     ...buildRarityConfigs(input.trainingConfig),
   }
 
-  const simulatedEvent = buildSimulatedEventOptions(input.eventSimulation)
-  if (simulatedEvent) {
-    Object.assign(options, simulatedEvent)
-  }
-
-  if ((input.mode === "event" || input.mode === "bonus" || input.mode === "mysekai") && !simulatedEvent) {
-    const eventId = normalizePositiveInteger(input.eventId)
-    if (eventId) {
-      options.event_id = eventId
-    }
-
-    const worldBloomCharacterId = normalizePositiveInteger(input.characterId)
-    if (worldBloomCharacterId) {
-      options.world_bloom_character_id = worldBloomCharacterId
-    }
-
-    const forcedLeaderCharacterId = normalizePositiveInteger(input.forcedLeaderCharacterId)
-    if (forcedLeaderCharacterId) {
-      options.forcedLeaderCharacterId = forcedLeaderCharacterId
-    }
-  }
-
-  if (input.mode === "bonus") {
-    const targetBonuses = normalizeTargetBonuses(input.targetBonuses)
-    if (targetBonuses.length === 0) {
-      throw new Error("target_bonus_list is required")
-    }
-    options.target_bonus_list = targetBonuses
-  }
-
-  const customBonusEnabled = isCustomBonusSimulation(input.eventSimulation)
-
-  if (customBonusEnabled && input.customBonusAttr) {
-    options.custom_bonus_attr = input.customBonusAttr
-  }
-
-  const customBonusCharacterIds = customBonusEnabled
-    ? normalizeCustomBonusCharacterIds(input.customBonusCharacterIds)
-    : []
-  if (customBonusCharacterIds.length > 0) {
-    options.custom_bonus_character_ids = customBonusCharacterIds
-  }
-
-  const customBonusCharacterSupportUnits = normalizeCustomBonusSupportUnits(
-    input.customBonusCharacterSupportUnits,
-    customBonusCharacterIds,
-  )
-  if (Object.keys(customBonusCharacterSupportUnits).length > 0) {
-    options.custom_bonus_character_support_units = customBonusCharacterSupportUnits
-  }
-
-  if (customBonusEnabled && input.filterOtherUnit === true) {
-    options.filter_other_unit = true
-  }
+  applyEventContextOptions(options, input, buildSimulatedEventOptions(input.eventSimulation))
+  applyBonusTargetOptions(options, input)
+  applyCustomBonusOptions(options, input)
 
   if (input.mode === "challenge") {
     const characterId = normalizePositiveInteger(input.characterId)
@@ -219,56 +266,9 @@ export function buildDeckRecommendOptions(input: BuildDeckRecommendOptionsInput)
       options.challenge_live_character_id = characterId
     }
   }
-
-  const fixedCards = input.useCurrentDeck
-    ? normalizeCompleteDeckCards(input.currentDeckCards)
-    : normalizePositiveIntegers(input.fixedCards)
-  if (fixedCards.length > 0) {
-    options.fixed_cards = fixedCards
-    if (input.useCurrentDeck) {
-      options.best_skill_as_leader = false
-    }
-  }
-
-  const fixedCharacters = normalizePositiveIntegers(input.fixedCharacters)
-  if (input.mode !== "challenge" && !input.useCurrentDeck && fixedCharacters.length > 0) {
-    options.fixed_characters = fixedCharacters
-  }
-
-  const singleCardConfigs = mergeSingleCardConfigs(input.singleCardConfigs, buildExcludedCardConfigs(input.excludedCards))
-  if (singleCardConfigs.length > 0) {
-    options.single_card_configs = singleCardConfigs
-  }
-
-  if (input.supportMasterMax === true) {
-    options.support_master_max = true
-  }
-  if (input.supportSkillMax === true) {
-    options.support_skill_max = true
-  }
-
-  const specificSkillOrder = normalizeSpecificSkillOrder(input.specificSkillOrder)
-  if (options.skill_order_choose_strategy === "specific") {
-    if (specificSkillOrder.length !== 5) {
-      throw new Error("specific_skill_order is required")
-    }
-    options.specific_skill_order = specificSkillOrder
-  }
-
-  if (isWasmMultiLiveType(liveType)) {
-    const teammatePower = normalizeNumber(input.multiLiveTeammatePower)
-    if (teammatePower != null) {
-      options.multi_live_teammate_power = teammatePower
-    }
-    const teammateScoreUp = normalizeNumber(input.multiLiveTeammateScoreUp)
-    if (teammateScoreUp != null) {
-      options.multi_live_teammate_score_up = teammateScoreUp
-    }
-    const lowerBound = normalizeNumber(input.multiLiveScoreUpLowerBound)
-    if (lowerBound != null) {
-      options.multi_live_score_up_lower_bound = lowerBound
-    }
-  }
+  applyDeckConstraintOptions(options, input)
+  applySkillAndSupportOptions(options, input)
+  applyMultiLiveOptions(options, input, liveType)
 
   return options
 }
