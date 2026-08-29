@@ -8,7 +8,6 @@ import {
   DialogScrollContent,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import { LucideCopy } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 
@@ -39,14 +38,14 @@ const { t } = useI18n()
 
       <div class="space-y-4">
         <div class="space-y-2">
-          <Label>{{ t("adminWebhooks.tokenDialog.headerNameLabel") }}</Label>
+          <p class="text-sm font-medium">{{ t("adminWebhooks.tokenDialog.headerNameLabel") }}</p>
           <div class="rounded-md border bg-muted/20 px-3 py-2 text-sm font-mono">
             {{ props.tokenHeaderName }}
           </div>
         </div>
 
         <div class="space-y-2">
-          <Label>{{ t("adminWebhooks.tokenDialog.tokenLabel") }}</Label>
+          <p class="text-sm font-medium">{{ t("adminWebhooks.tokenDialog.tokenLabel") }}</p>
           <div class="max-h-56 overflow-auto rounded-md border bg-muted/20 px-3 py-2 text-sm font-mono break-all select-all">
             {{ props.token }}
           </div>

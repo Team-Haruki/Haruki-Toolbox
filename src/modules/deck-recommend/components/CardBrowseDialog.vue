@@ -165,9 +165,10 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
       <div class="grid gap-3 rounded-md border bg-muted/20 p-3">
         <div class="grid gap-3 sm:grid-cols-2">
           <div class="grid gap-2">
-            <Label>{{ t("deckRecommend.picker.cardSearchLabel") }}</Label>
+            <Label for="deck-card-browse-search">{{ t("deckRecommend.picker.cardSearchLabel") }}</Label>
             <div class="relative w-full items-center">
               <Input
+                id="deck-card-browse-search"
                 v-model="browseSearch"
                 class="pl-10"
                 type="text"

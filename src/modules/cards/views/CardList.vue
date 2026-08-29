@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
@@ -211,8 +212,11 @@ function nextPage() {
             {{ t("cardBox.entryLink") }}
           </RouterLink>
         </Button>
-        <Select :key="locale" v-model="selectedRegion">
-          <SelectTrigger class="w-32" :aria-label="t('cards.common.region')">
+        <Label id="card-list-region-label" for="card-list-region" class="sr-only">
+          {{ t("cards.common.region") }}
+        </Label>
+        <Select id="card-list-region" :key="locale" v-model="selectedRegion">
+          <SelectTrigger class="w-32" aria-labelledby="card-list-region-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -230,6 +234,7 @@ function nextPage() {
             v-model="filters.query"
             class="pl-8"
             :placeholder="t('cards.list.searchPlaceholder')"
+            :aria-label="t('cards.list.searchPlaceholder')"
           />
         </div>
       </div>
@@ -243,8 +248,11 @@ function nextPage() {
       @reset="clearFilters"
     >
         <div class="flex flex-wrap items-center gap-2">
-          <Select v-model="selectedYear">
-            <SelectTrigger class="h-8 w-28 text-sm" :aria-label="t('cards.filter.year')">
+          <Label id="card-list-year-label" for="card-list-year" class="sr-only">
+            {{ t("cards.filter.year") }}
+          </Label>
+          <Select id="card-list-year" v-model="selectedYear">
+            <SelectTrigger class="h-8 w-28 text-sm" aria-labelledby="card-list-year-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -255,8 +263,11 @@ function nextPage() {
             </SelectContent>
           </Select>
 
-          <Select v-model="sortKey">
-            <SelectTrigger class="h-8 w-40 text-sm" :aria-label="t('cards.list.sortLabel')">
+          <Label id="card-list-sort-label" for="card-list-sort" class="sr-only">
+            {{ t("cards.list.sortLabel") }}
+          </Label>
+          <Select id="card-list-sort" v-model="sortKey">
+            <SelectTrigger class="h-8 w-40 text-sm" aria-labelledby="card-list-sort-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

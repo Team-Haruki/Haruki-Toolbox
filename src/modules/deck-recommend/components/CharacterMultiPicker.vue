@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, toRef } from "vue"
+import { computed, ref, toRef, useId } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { XIcon } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -33,6 +34,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const fieldId = useId()
+const fieldLabelId = `${fieldId}-label`
 const regionRef = toRef(props, "region")
 const { options, loading } = useCharacterOptions(regionRef)
 const pendingCharacterId = ref("")
@@ -81,12 +84,16 @@ function createUnknownCharacterOption(characterId: number): CharacterOption {
 
 <template>
   <div class="grid gap-3">
+    <Label :id="fieldLabelId" :for="fieldId" class="sr-only">
+      {{ props.placeholder ?? t("deckRecommend.options.constraints.characterSelectPlaceholder") }}
+    </Label>
     <Select
+      :id="fieldId"
       :model-value="pendingCharacterId"
       :disabled="props.disabled || loading || !canSelectMore"
       @update:model-value="handleUpdate"
     >
-      <SelectTrigger class="w-full">
+      <SelectTrigger class="w-full" :aria-labelledby="fieldLabelId">
         <SelectValue :placeholder="loading ? t('deckRecommend.select.loading') : (props.placeholder ?? t('deckRecommend.options.constraints.characterSelectPlaceholder'))" />
       </SelectTrigger>
       <SelectContent class="max-h-72">

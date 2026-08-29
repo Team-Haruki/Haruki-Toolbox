@@ -70,7 +70,7 @@ const formTitle = computed(() =>
         </div>
 
         <div v-else class="space-y-2">
-          <Label>{{ t("adminWebhooks.form.idLabel") }}</Label>
+          <p class="text-sm font-medium">{{ t("adminWebhooks.form.idLabel") }}</p>
           <div class="rounded-md border bg-muted/20 px-3 py-2 text-sm font-medium">{{ props.formId }}</div>
         </div>
 

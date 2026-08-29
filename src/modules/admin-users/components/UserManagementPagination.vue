@@ -3,6 +3,7 @@ import { ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -69,11 +70,20 @@ function commitPageInput() {
         {{ t("adminUsers.management.pagination.totalUsers", { total }) }}
       </span>
       <div class="flex items-center gap-2">
-        <span class="text-sm text-muted-foreground hidden sm:inline">
+        <Label
+          id="admin-user-page-size-label"
+          for="admin-user-page-size"
+          class="text-sm text-muted-foreground hidden sm:inline"
+        >
           {{ t("adminUsers.management.pagination.pageSize") }}
-        </span>
-        <Select :key="locale" :model-value="String(pageSize)" @update:model-value="handlePageSizeChange">
-          <SelectTrigger class="w-20 h-8">
+        </Label>
+        <Select
+          id="admin-user-page-size"
+          :key="locale"
+          :model-value="String(pageSize)"
+          @update:model-value="handlePageSizeChange"
+        >
+          <SelectTrigger class="w-20 h-8" aria-labelledby="admin-user-page-size-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
