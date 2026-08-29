@@ -161,10 +161,43 @@ const durationLabel = computed(() => formatMusicDurationLabel(durationSeconds.va
 
 const bpmInfo = ref<ChartBpmInfo | null>(null)
 let bpmLoadToken = 0
+const BPM_LOAD_CANCELLED = Symbol("bpm-load-cancelled")
+
+async function fetchChartBpmCandidate(url: string, token: number) {
+  try {
+    const response = await fetch(url)
+    if (token !== bpmLoadToken) {
+      return BPM_LOAD_CANCELLED
+    }
+    if (!response.ok) {
+      return null
+    }
+    const parsed = parseChartBpm(await response.text())
+    if (token !== bpmLoadToken) {
+      return BPM_LOAD_CANCELLED
+    }
+    return parsed != null && parsed.mainBpm > 0 ? parsed : null
+  } catch {
+    return token === bpmLoadToken ? null : BPM_LOAD_CANCELLED
+  }
+}
+
+async function loadFirstAvailableBpm(urls: readonly string[], token: number) {
+  for (const url of urls) {
+    const parsed = await fetchChartBpmCandidate(url, token)
+    if (parsed === BPM_LOAD_CANCELLED) {
+      return
+    }
+    if (parsed) {
+      bpmInfo.value = parsed
+      return
+    }
+  }
+}
 
 // Chart scores are plain public assets; failures (missing chart, CORS) just
 // hide the BPM row instead of surfacing an error.
-watch([entry, region, () => settingsStore.currentAssetEndpoint], async ([nextEntry, nextRegion, preference]) => {
+watch([entry, region, () => settingsStore.currentAssetEndpoint], ([nextEntry, nextRegion, preference]) => {
   const token = ++bpmLoadToken
   bpmInfo.value = null
   if (!nextEntry) {
@@ -174,37 +207,10 @@ watch([entry, region, () => settingsStore.currentAssetEndpoint], async ([nextEnt
   const available = BPM_DIFFICULTY_CANDIDATES
     .filter((difficulty) => nextEntry.difficulties[difficulty as MusicDifficulty] != null)
   const candidates = available.length > 0 ? available : [...BPM_DIFFICULTY_CANDIDATES]
-  for (const difficulty of candidates) {
-    const url = resolveMusicScoreUrl(nextRegion, nextEntry.id, difficulty, preference)
-    if (!url) {
-      continue
-    }
-
-    try {
-      const response = await fetch(url)
-      if (token !== bpmLoadToken) {
-        return
-      }
-
-      if (!response.ok) {
-        continue
-      }
-
-      const parsed = parseChartBpm(await response.text())
-      if (token !== bpmLoadToken) {
-        return
-      }
-
-      if (parsed != null && parsed.mainBpm > 0) {
-        bpmInfo.value = parsed
-        return
-      }
-    } catch {
-      if (token !== bpmLoadToken) {
-        return
-      }
-    }
-  }
+  const urls = candidates
+    .map((difficulty) => resolveMusicScoreUrl(nextRegion, nextEntry.id, difficulty, preference))
+    .filter((url): url is string => url != null)
+  void loadFirstAvailableBpm(urls, token)
 }, { immediate: true })
 
 const bpmLabel = computed(() => {

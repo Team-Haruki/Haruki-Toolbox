@@ -97,6 +97,7 @@ import { provideDeckRecommendFormContext } from "../composables/deck-recommend-f
 import {
   useDeckRecommendRunner,
   type DeckRecommendExecutionMode,
+  type DeckRecommendRunnerInput,
 } from "../composables/useDeckRecommendRunner"
 import { useCharacterOptions } from "../composables/useCharacterOptions"
 import { useDeckRecommendDataOverrides } from "../composables/useDeckRecommendDataOverrides"
@@ -1196,58 +1197,81 @@ function filterSelectionLabel(count: number) {
     : t("deckRecommend.options.filters.selectedCount", { count })
 }
 
+function customBonusRunnerOptions() {
+  return {
+    customBonusAttr: isCustomBonusSimulation.value ? simulatedEventAttr.value : null,
+    customBonusCharacterIds: isCustomBonusSimulation.value ? customBonusCharacterIds.value : [],
+    customBonusCharacterSupportUnits: isCustomBonusSimulation.value ? customBonusSupportUnits.value : {},
+    filterOtherUnit: isCustomBonusSimulation.value && filterOtherUnit.value,
+  }
+}
+
+function multiLiveRunnerOptions() {
+  return {
+    multiLiveTeammatePower: isMultiLiveOptionsEnabled.value ? multiLiveTeammatePower.value.value : null,
+    multiLiveTeammateScoreUp: isMultiLiveOptionsEnabled.value ? multiLiveTeammateScoreUp.value.value : null,
+    multiLiveScoreUpLowerBound: isMultiLiveOptionsEnabled.value ? multiLiveScoreUpLowerBound.value.value : null,
+  }
+}
+
+function deckSelectionRunnerOptions() {
+  const useCurrentDeck = isCurrentDeckEnabled.value
+  return {
+    fixedCards: useCurrentDeck ? [] : fixedCardIds.value,
+    useCurrentDeck,
+    fixedCharacters: recommendMode.value === "challenge" || useCurrentDeck ? [] : fixedCharacterIds.value,
+    excludedCards: useCurrentDeck ? [] : excludedCardIds.value,
+  }
+}
+
+function createDeckRecommendRunnerInput(): DeckRecommendRunnerInput {
+  return {
+    account: selectedAccount.value,
+    dataRegion: dataRegion.value,
+    mode: recommendMode.value,
+    target: activeRecommendTarget.value,
+    liveType: liveType.value,
+    algorithms: activeAlgorithms.value,
+    executionMode: executionMode.value,
+    eventId: selectedEventId.value,
+    characterId: activeForcedLeaderCharacterId.value ? null : activeCharacterId.value,
+    forcedLeaderCharacterId: activeForcedLeaderCharacterId.value,
+    eventSimulation: eventSimulation.value,
+    targetBonuses: bonusTargets.value.targets,
+    ...customBonusRunnerOptions(),
+    ...multiLiveRunnerOptions(),
+    boost: boost.value.value,
+    areaItemLevel: areaItemLevel.value.value,
+    areaItemLevelOverrides: areaItemLevelOverrides.value,
+    characterRank: characterRank.value.value,
+    characterRankOverrides: characterRankOverrides.value,
+    mysekaiGateLevel: mysekaiGateLevel.value.value,
+    mysekaiGateLevelOverrides: mysekaiGateLevelOverrides.value,
+    mysekaiFixtureBonusRate: mysekaiFixtureBonusRate.value.value,
+    mysekaiFixtureBonusRateOverrides: mysekaiFixtureBonusRateOverrides.value,
+    resultLimit: resultLimit.value.value,
+    timeoutMs: engineTimeoutMs.value.value,
+    unitFilters: unitFilters.value,
+    attrFilters: attrFilters.value,
+    characterFilters: characterFilters.value,
+    ...deckSelectionRunnerOptions(),
+    singleCardOverrides: singleCardOverrides.value,
+    skillOrderStrategy: skillOrderStrategy.value,
+    skillReferenceStrategy: skillReferenceStrategy.value,
+    specificSkillOrder: showSpecificSkillOrderInput.value ? specificSkillOrder.value.values : [],
+    keepAfterTrainingState: keepAfterTrainingState.value,
+    supportMasterMax: supportMasterMax.value,
+    supportSkillMax: supportSkillMax.value,
+    musicId: selectedMusicId.value,
+    difficulty: selectedDifficulty.value,
+    trainingConfig: trainingConfig.value,
+  }
+}
+
 async function runRecommend() {
   configCollapsed.value = true
   try {
-    await runner.run({
-      account: selectedAccount.value,
-      dataRegion: dataRegion.value,
-      mode: recommendMode.value,
-      target: activeRecommendTarget.value,
-      liveType: liveType.value,
-      algorithms: activeAlgorithms.value,
-      executionMode: executionMode.value,
-      eventId: selectedEventId.value,
-      characterId: activeForcedLeaderCharacterId.value ? null : activeCharacterId.value,
-      forcedLeaderCharacterId: activeForcedLeaderCharacterId.value,
-      eventSimulation: eventSimulation.value,
-      targetBonuses: bonusTargets.value.targets,
-      customBonusAttr: isCustomBonusSimulation.value ? simulatedEventAttr.value : null,
-      customBonusCharacterIds: isCustomBonusSimulation.value ? customBonusCharacterIds.value : [],
-      customBonusCharacterSupportUnits: isCustomBonusSimulation.value ? customBonusSupportUnits.value : {},
-      filterOtherUnit: isCustomBonusSimulation.value && filterOtherUnit.value,
-      multiLiveTeammatePower: isMultiLiveOptionsEnabled.value ? multiLiveTeammatePower.value.value : null,
-      multiLiveTeammateScoreUp: isMultiLiveOptionsEnabled.value ? multiLiveTeammateScoreUp.value.value : null,
-      multiLiveScoreUpLowerBound: isMultiLiveOptionsEnabled.value ? multiLiveScoreUpLowerBound.value.value : null,
-      boost: boost.value.value,
-      areaItemLevel: areaItemLevel.value.value,
-      areaItemLevelOverrides: areaItemLevelOverrides.value,
-      characterRank: characterRank.value.value,
-      characterRankOverrides: characterRankOverrides.value,
-      mysekaiGateLevel: mysekaiGateLevel.value.value,
-      mysekaiGateLevelOverrides: mysekaiGateLevelOverrides.value,
-      mysekaiFixtureBonusRate: mysekaiFixtureBonusRate.value.value,
-      mysekaiFixtureBonusRateOverrides: mysekaiFixtureBonusRateOverrides.value,
-      resultLimit: resultLimit.value.value,
-      timeoutMs: engineTimeoutMs.value.value,
-      unitFilters: unitFilters.value,
-      attrFilters: attrFilters.value,
-      characterFilters: characterFilters.value,
-      fixedCards: isCurrentDeckEnabled.value ? [] : fixedCardIds.value,
-      useCurrentDeck: isCurrentDeckEnabled.value,
-      fixedCharacters: recommendMode.value === "challenge" || isCurrentDeckEnabled.value ? [] : fixedCharacterIds.value,
-      excludedCards: isCurrentDeckEnabled.value ? [] : excludedCardIds.value,
-      singleCardOverrides: singleCardOverrides.value,
-      skillOrderStrategy: skillOrderStrategy.value,
-      skillReferenceStrategy: skillReferenceStrategy.value,
-      specificSkillOrder: showSpecificSkillOrderInput.value ? specificSkillOrder.value.values : [],
-      keepAfterTrainingState: keepAfterTrainingState.value,
-      supportMasterMax: supportMasterMax.value,
-      supportSkillMax: supportSkillMax.value,
-      musicId: selectedMusicId.value,
-      difficulty: selectedDifficulty.value,
-      trainingConfig: trainingConfig.value,
-    })
+    await runner.run(createDeckRecommendRunnerInput())
     toast.success(t("deckRecommend.toast.runSuccessTitle"))
   } catch (error) {
     if (runner.userDataMissing.value) {
