@@ -321,7 +321,7 @@ const {
 .rank-border-update-log__header,
 .rank-border-update-log__row {
   display: grid;
-  grid-template-columns: 3.8rem 3rem 5rem minmax(7.25rem, 1fr);
+  grid-template-columns: 4.6rem 3rem 5rem minmax(7.25rem, 1fr);
   gap: 0.5rem;
   align-items: center;
   min-width: 0;
@@ -376,7 +376,7 @@ const {
 
   .rank-border-update-log__header,
   .rank-border-update-log__row {
-    grid-template-columns: 3.4rem 2.8rem 4.8rem minmax(6.8rem, 1fr);
+    grid-template-columns: 4.3rem 2.8rem 4.8rem minmax(6.8rem, 1fr);
     gap: 0.25rem;
     padding: 0.2rem 0.375rem;
   }
@@ -471,7 +471,7 @@ const {
 
   .rank-border-update-log__header,
   .rank-border-update-log__row {
-    grid-template-columns: 3.25rem 2.75rem 4.25rem minmax(5.5rem, 1fr);
+    grid-template-columns: 4.2rem 2.75rem 4.25rem minmax(5.5rem, 1fr);
     gap: 0.25rem;
     padding-inline: 0.375rem;
   }
@@ -480,7 +480,7 @@ const {
 @media (max-width: 380px) {
   .rank-border-update-log__header,
   .rank-border-update-log__row {
-    grid-template-columns: 3rem 2.35rem 3.75rem minmax(4.8rem, 1fr);
+    grid-template-columns: 3.9rem 2.35rem 3.75rem minmax(4.8rem, 1fr);
     font-size: 0.6875rem;
   }
 }

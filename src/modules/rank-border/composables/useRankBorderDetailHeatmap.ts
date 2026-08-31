@@ -147,6 +147,18 @@ export function useRankBorderDetailHeatmap(
     return `${formatHourPoint(startTimestamp)}-${formatHourPoint(endTimestamp)}`
   }
 
+  function formatRecordTime(timestamp: number | null | undefined) {
+    if (!timestamp) {
+      return "-"
+    }
+
+    return new Date(timestamp * 1000).toLocaleTimeString(getI18nLocale(), {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
+  }
+
   function selectHeatmapWindow(cell: RankBorderHeatmapCell) {
     if (!cell.selectable) {
       return
@@ -252,7 +264,7 @@ export function useRankBorderDetailHeatmap(
 
       result.push({
         key: `${record.timestamp}:${record.rank}:${index}`,
-        time: formatHourPoint(record.timestamp),
+        time: formatRecordTime(record.timestamp),
         rank: formatRank(record.rank),
         score: formatPt(record.score),
         growth: formatGrowth(delta),
