@@ -1,3 +1,4 @@
+import { matchesCommandSearch } from "@/lib/search-match"
 import { isUnreleasedContent } from "@/shared/sekai/unreleased"
 import type { EventBoxInfo } from "./event-box"
 import type { MusicDifficulty } from "./music-difficulties"
@@ -30,9 +31,13 @@ export type MusicLibraryFilter = {
   noteCountMax: number | null
   /** Selected tags; an entry matches when it has any of them (empty = no tag filter). */
   tags: string[]
+  /** Selected MV categories; an entry matches when it has any of them (empty = no filter). */
+  categories: string[]
   year: number | null
   characterId: number | null
   characterScope: MusicCharacterFilterScope
+  /** Only songs with an APPEND chart. */
+  hasAppend: boolean
 }
 
 /** Lookup maps the character filter matches against; missing maps match nothing. */
@@ -54,25 +59,31 @@ export function createDefaultMusicLibraryFilter(): MusicLibraryFilter {
     noteCountMin: null,
     noteCountMax: null,
     tags: [],
+    categories: [],
     year: null,
     characterId: null,
     characterScope: "any",
+    hasAppend: false,
   }
 }
 
+/**
+ * Title, pronunciation and `#id` go through the shared command-search matcher
+ * (NFKC folding, kana → romaji, pinyin, `#123` / `123` ids); community
+ * aliases resolved by the alias API are merged in by id.
+ */
 export function matchesMusicSearch(
   entry: MusicLibraryEntry,
   search: string,
   aliasMatchedIds?: ReadonlySet<number>,
 ): boolean {
-  const query = search.trim().toLowerCase()
+  const query = search.trim()
   if (!query) {
     return true
   }
 
-  return entry.title.toLowerCase().includes(query)
-    || entry.pronunciation.toLowerCase().includes(query)
-    || (aliasMatchedIds?.has(entry.id) ?? false)
+  return (aliasMatchedIds?.has(entry.id) ?? false)
+    || matchesCommandSearch([`#${entry.id}`, entry.title, entry.pronunciation], query)
 }
 
 /** A music counts as unreleased while its publish timestamp is in the future. */
@@ -106,6 +117,14 @@ export function filterMusicEntries(
     }
 
     if (filter.tags.length > 0 && !filter.tags.some((tag) => entry.tags.includes(tag))) {
+      return false
+    }
+
+    if (filter.categories.length > 0 && !filter.categories.some((category) => entry.categories.includes(category))) {
+      return false
+    }
+
+    if (filter.hasAppend && entry.difficulties.append == null) {
       return false
     }
 
@@ -178,6 +197,25 @@ export function listMusicTagOptions(
   return [...knownTags, ...extraTags]
 }
 
+/** Known MV categories in canonical order (only those present), then extras found in the data. */
+export function listMusicCategoryOptions(
+  entries: readonly MusicLibraryEntry[],
+  knownCategories: readonly string[] = [],
+): string[] {
+  const categories = new Set<string>()
+  for (const entry of entries) {
+    for (const category of entry.categories) {
+      categories.add(category)
+    }
+  }
+
+  const known = knownCategories.filter((category) => categories.has(category))
+  const extras = [...categories]
+    .filter((category) => !knownCategories.includes(category))
+    .sort((left, right) => left.localeCompare(right))
+  return [...known, ...extras]
+}
+
 export function listMusicYearOptions(entries: readonly MusicLibraryEntry[]): number[] {
   const years = new Set<number>()
   for (const entry of entries) {
@@ -190,23 +228,21 @@ export function listMusicYearOptions(entries: readonly MusicLibraryEntry[]): num
   return [...years].sort((a, b) => b - a)
 }
 
-export function countMusicPages(total: number, pageSize: number): number {
-  if (pageSize <= 0) {
-    return 1
+/** Lowest and highest `playLevel` across every chart (slider bounds); null when no level is known. */
+export function resolveMusicLevelBounds(entries: readonly MusicLibraryEntry[]): { min: number; max: number } | null {
+  let min = Number.POSITIVE_INFINITY
+  let max = Number.NEGATIVE_INFINITY
+  for (const entry of entries) {
+    for (const stat of Object.values(entry.difficulties)) {
+      const level = stat?.playLevel
+      if (level == null || !Number.isFinite(level)) {
+        continue
+      }
+      min = Math.min(min, level)
+      max = Math.max(max, level)
+    }
   }
-
-  return Math.max(1, Math.ceil(total / pageSize))
-}
-
-export function paginateMusicEntries<T>(items: readonly T[], page: number, pageSize: number): T[] {
-  if (pageSize <= 0) {
-    return [...items]
-  }
-
-  const totalPages = countMusicPages(items.length, pageSize)
-  const safePage = Math.min(Math.max(1, page), totalPages)
-  const start = (safePage - 1) * pageSize
-  return items.slice(start, start + pageSize)
+  return Number.isFinite(min) && Number.isFinite(max) ? { min, max } : null
 }
 
 function matchesCharacter(

@@ -22,6 +22,8 @@ export type MusicLibraryEntry = {
   publishedAt: number | null
   /** Leading silence (seconds) baked into the long audio assets. */
   fillerSec: number | null
+  /** `releaseConditions.id` describing how the song is unlocked (null when absent). */
+  releaseConditionId: number | null
   tags: string[]
   difficulties: Partial<Record<MusicDifficulty, MusicDifficultyStat>>
 }
@@ -38,14 +40,6 @@ export type MusicVocalEntry = {
   seq: number | null
   assetbundleName: string
   characters: MusicVocalCharacter[]
-}
-
-export type MusicEventLink = {
-  eventId: number
-  name: string
-  assetbundleName: string | null
-  startAt: number | null
-  aggregateAt: number | null
 }
 
 /** The catch-all `all` tag applies to every music, so it is excluded from entry tags. */
@@ -86,34 +80,13 @@ export function buildMusicLibraryEntries(
       assetbundleName: normalizeCatalogString(record.assetbundleName),
       publishedAt: normalizeCatalogNumber(record.publishedAt),
       fillerSec: normalizeCatalogNumber(record.fillerSec),
+      releaseConditionId: normalizeCatalogNumber(record.releaseConditionId),
       tags: tagMap.get(id) ?? [],
       difficulties: difficultyMap.get(id) ?? {},
     })
   }
 
   return entries
-}
-
-/** Music ids linked (via eventMusics) to a World Link (world_bloom) event. */
-export function listWorldLinkMusicIds(rawEvents: unknown, rawEventMusics: unknown): Set<number> {
-  const worldLinkEventIds = new Set<number>()
-  for (const record of normalizeCatalogRecords(rawEvents)) {
-    const id = normalizeCatalogNumber(record.id)
-    if (id && normalizeCatalogString(record.eventType) === "world_bloom") {
-      worldLinkEventIds.add(id)
-    }
-  }
-
-  const musicIds = new Set<number>()
-  for (const record of normalizeCatalogRecords(rawEventMusics)) {
-    const eventId = normalizeCatalogNumber(record.eventId)
-    const musicId = normalizeCatalogNumber(record.musicId)
-    if (eventId && musicId && worldLinkEventIds.has(eventId)) {
-      musicIds.add(musicId)
-    }
-  }
-
-  return musicIds
 }
 
 /** Appends a synthetic tag to the entries whose id is in `musicIds`. */
@@ -183,13 +156,6 @@ export function buildMusicVocalCharacterMap(
   return map
 }
 
-export function findMusicLibraryEntry(
-  entries: readonly MusicLibraryEntry[],
-  musicId: number,
-): MusicLibraryEntry | null {
-  return entries.find((entry) => entry.id === musicId) ?? null
-}
-
 /**
  * `categories` is an array of strings in some regions and an array of
  * `{ musicCategoryName }` objects in others; normalize both shapes.
@@ -212,29 +178,46 @@ export function normalizeMusicCategories(rawCategories: unknown): string[] {
   return categories
 }
 
-export function listMusicVocalEntries(rawVocals: unknown, musicId: number): MusicVocalEntry[] {
-  const vocals: MusicVocalEntry[] = []
-  for (const record of normalizeCatalogRecords(rawVocals)) {
-    const id = normalizeCatalogNumber(record.id)
-    const vocalMusicId = normalizeCatalogNumber(record.musicId)
-    if (!id || vocalMusicId !== musicId) {
-      continue
-    }
-
-    vocals.push({
-      id,
-      musicVocalType: normalizeCatalogString(record.musicVocalType),
-      caption: normalizeCatalogString(record.caption),
-      seq: normalizeCatalogNumber(record.seq),
-      assetbundleName: normalizeCatalogString(record.assetbundleName),
-      characters: normalizeCatalogRecords(record.characters).map((character) => ({
-        characterType: normalizeCatalogString(character.characterType),
-        characterId: normalizeCatalogNumber(character.characterId),
-      })),
-    })
+/** One `musicVocals` row, or null when it has no usable id. */
+function normalizeMusicVocalEntry(record: Record<string, unknown>): MusicVocalEntry | null {
+  const id = normalizeCatalogNumber(record.id)
+  if (!id) {
+    return null
   }
 
-  return vocals.sort((a, b) => (a.seq ?? a.id) - (b.seq ?? b.id))
+  return {
+    id,
+    musicVocalType: normalizeCatalogString(record.musicVocalType),
+    caption: normalizeCatalogString(record.caption),
+    seq: normalizeCatalogNumber(record.seq),
+    assetbundleName: normalizeCatalogString(record.assetbundleName),
+    characters: normalizeCatalogRecords(record.characters).map((character) => ({
+      characterType: normalizeCatalogString(character.characterType),
+      characterId: normalizeCatalogNumber(character.characterId),
+    })),
+  }
+}
+
+/** Every vocal version grouped by music id, each group in `seq` order. */
+export function buildMusicVocalsByMusic(rawVocals: unknown): Map<number, MusicVocalEntry[]> {
+  const map = new Map<number, MusicVocalEntry[]>()
+  for (const record of normalizeCatalogRecords(rawVocals)) {
+    const musicId = normalizeCatalogNumber(record.musicId)
+    const vocal = musicId ? normalizeMusicVocalEntry(record) : null
+    if (!musicId || !vocal) {
+      continue
+    }
+    const group = map.get(musicId)
+    if (group) {
+      group.push(vocal)
+    } else {
+      map.set(musicId, [vocal])
+    }
+  }
+  for (const group of map.values()) {
+    group.sort((a, b) => (a.seq ?? a.id) - (b.seq ?? b.id))
+  }
+  return map
 }
 
 export function buildOutsideCharacterNameMap(rawOutsideCharacters: unknown): Map<number, string> {
@@ -250,58 +233,17 @@ export function buildOutsideCharacterNameMap(rawOutsideCharacters: unknown): Map
   return map
 }
 
-export function listMusicEventLinks(
-  rawEventMusics: unknown,
-  rawEvents: unknown,
-  musicId: number,
-): MusicEventLink[] {
-  const eventIds = new Set<number>()
-  for (const record of normalizeCatalogRecords(rawEventMusics)) {
-    const eventId = normalizeCatalogNumber(record.eventId)
-    const linkedMusicId = normalizeCatalogNumber(record.musicId)
-    if (eventId && linkedMusicId === musicId) {
-      eventIds.add(eventId)
-    }
-  }
-
-  if (eventIds.size === 0) {
-    return []
-  }
-
-  const links: MusicEventLink[] = []
-  for (const record of normalizeCatalogRecords(rawEvents)) {
-    const eventId = normalizeCatalogNumber(record.id)
-    if (!eventId || !eventIds.has(eventId)) {
-      continue
-    }
-
-    links.push({
-      eventId,
-      name: normalizeCatalogString(record.name) || `#${eventId}`,
-      assetbundleName: normalizeCatalogString(record.assetbundleName) || null,
-      startAt: normalizeCatalogNumber(record.startAt),
-      aggregateAt: normalizeCatalogNumber(record.aggregateAt),
-    })
-  }
-
-  return links.sort((a, b) => a.eventId - b.eventId)
-}
-
-/** `music_metas` rows are per-difficulty; `music_time` is the same across a music's rows. */
-export function findMusicDurationSeconds(rawMusicMetas: unknown, musicId: number): number | null {
+/** musicId → `music_time` seconds, from the per-difficulty `music_metas` rows. */
+export function buildMusicDurationMap(rawMusicMetas: unknown): Map<number, number> {
+  const map = new Map<number, number>()
   for (const record of normalizeCatalogRecords(rawMusicMetas)) {
-    const metaMusicId = normalizeCatalogNumber(record.music_id)
-    if (metaMusicId !== musicId) {
-      continue
-    }
-
+    const musicId = normalizeCatalogNumber(record.music_id)
     const musicTime = normalizeCatalogNumber(record.music_time)
-    if (musicTime != null && musicTime > 0) {
-      return musicTime
+    if (musicId && musicTime != null && musicTime > 0 && !map.has(musicId)) {
+      map.set(musicId, musicTime)
     }
   }
-
-  return null
+  return map
 }
 
 export function formatMusicDurationLabel(seconds: number | null): string | null {

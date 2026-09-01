@@ -320,5 +320,43 @@ export default {
   // ---------------------------------------------------------------------
   // musicCatalog — owned by the music-library module (src/modules/music-library)
   // ---------------------------------------------------------------------
-  "musicCatalog": {}
+  "musicCatalog": {
+    "chips": {
+      "search": "Search: {query}",
+      "level": "Lv.{range}",
+      "notes": "Notes {value}",
+      "character": "{name} ({scope})",
+      "append": "APPEND only"
+    },
+    "filters": {
+      "levelAny": "Any",
+      "appendOnly": "Only songs with an APPEND chart",
+      "mvType": "MV type",
+      "scope": "Relation",
+      "scopeHint": "Pick a character to narrow down by box song / vocal"
+    },
+    "detail": {
+      "jacket": "Jacket",
+      "sections": {
+        "info": "Overview"
+      },
+      "difficulties": {
+        "empty": "No chart data."
+      },
+      "player": {
+        "seek": "Playback position",
+        "error": "Audio failed to load. Try again later."
+      },
+      "unlock": {
+        "title": "Unlock condition"
+      },
+      "original": {
+        "title": "Original MV",
+        "open": "Open on {host}"
+      },
+      "events": {
+        "empty": "This song is not linked to any event."
+      }
+    }
+  }
 } as const

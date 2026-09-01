@@ -3,15 +3,12 @@ import {
   MUSIC_TAG_EVENT_BOX,
   MUSIC_TAG_WORLD_LINK,
   applyMusicTagByIds,
+  buildMusicDurationMap,
   buildMusicLibraryEntries,
   buildMusicVocalCharacterMap,
+  buildMusicVocalsByMusic,
   buildOutsideCharacterNameMap,
-  findMusicDurationSeconds,
-  findMusicLibraryEntry,
   formatMusicDurationLabel,
-  listMusicEventLinks,
-  listMusicVocalEntries,
-  listWorldLinkMusicIds,
   normalizeMusicCategories,
 } from "./music-data"
 
@@ -27,6 +24,7 @@ const RAW_MUSICS = [
     arranger: "kz",
     assetbundleName: "jacket_s_001",
     publishedAt: 1653026400000,
+    releaseConditionId: 5,
   },
   {
     id: 2,
@@ -62,37 +60,35 @@ describe("buildMusicLibraryEntries", () => {
   it("builds entries with difficulties and tags keyed by music id", () => {
     const entries = buildMusicLibraryEntries(RAW_MUSICS, RAW_DIFFICULTIES, RAW_TAGS)
     expect(entries).toHaveLength(2)
-
-    const first = entries[0]
-    expect(first.id).toBe(1)
-    expect(first.title).toBe("Tell Your World")
-    expect(first.composer).toBe("kz")
-    expect(first.assetbundleName).toBe("jacket_s_001")
-    expect(first.publishedAt).toBe(1653026400000)
-    expect(first.categories).toEqual(["mv"])
-    expect(first.tags).toEqual(["vocaloid"])
-    expect(first.difficulties.easy).toEqual({ playLevel: 5, totalNoteCount: 220 })
-    expect(first.difficulties.master).toEqual({ playLevel: 26, totalNoteCount: 886 })
-    expect(first.difficulties.append).toBeUndefined()
+    expect(entries[0]).toMatchObject({
+      id: 1,
+      title: "Tell Your World",
+      pronunciation: "てるゆあわーるど",
+      lyricist: "kz",
+      categories: ["mv"],
+      assetbundleName: "jacket_s_001",
+      publishedAt: 1653026400000,
+      fillerSec: null,
+      releaseConditionId: 5,
+      tags: ["vocaloid"],
+    })
+    expect(entries[0].difficulties).toEqual({
+      easy: { playLevel: 5, totalNoteCount: 220 },
+      master: { playLevel: 26, totalNoteCount: 886 },
+    })
+    expect(entries[1].categories).toEqual(["mv_2d", "image"])
+    expect(entries[1].releaseConditionId).toBeNull()
   })
 
   it("excludes the catch-all tag, deduplicates tags, and drops unknown difficulties", () => {
     const entries = buildMusicLibraryEntries(RAW_MUSICS, RAW_DIFFICULTIES, RAW_TAGS)
-    const second = entries[1]
-    expect(second.tags).toEqual(["street"])
-    expect(Object.keys(second.difficulties)).toEqual(["append"])
+    expect(entries[1].tags).toEqual(["street"])
+    expect(entries[1].difficulties).toEqual({ append: { playLevel: 29, totalNoteCount: 1002 } })
   })
 
   it("tolerates malformed payloads", () => {
-    expect(buildMusicLibraryEntries(null, undefined, "oops")).toEqual([])
-  })
-})
-
-describe("findMusicLibraryEntry", () => {
-  it("finds an entry by id and returns null for missing ids", () => {
-    const entries = buildMusicLibraryEntries(RAW_MUSICS, RAW_DIFFICULTIES, RAW_TAGS)
-    expect(findMusicLibraryEntry(entries, 2)?.title).toBe("Bitter Choco Decoration")
-    expect(findMusicLibraryEntry(entries, 999)).toBeNull()
+    expect(buildMusicLibraryEntries(null, "x", 42)).toEqual([])
+    expect(buildMusicLibraryEntries([{ id: 3 }], null, null)[0].title).toBe("#3")
   })
 })
 
@@ -107,7 +103,7 @@ describe("normalizeMusicCategories", () => {
   })
 })
 
-describe("listMusicVocalEntries", () => {
+describe("buildMusicVocalsByMusic", () => {
   const rawVocals = [
     {
       id: 3,
@@ -115,6 +111,7 @@ describe("listMusicVocalEntries", () => {
       musicVocalType: "sekai",
       seq: 2,
       caption: "セカイver.",
+      assetbundleName: "vs_0001_01",
       characters: [
         { id: 5, musicId: 1, musicVocalId: 3, characterType: "game_character", characterId: 1, seq: 10 },
         { id: 6, musicId: 1, musicVocalId: 3, characterType: "outside_character", characterId: 2, seq: 20 },
@@ -133,39 +130,28 @@ describe("listMusicVocalEntries", () => {
     { id: 2, musicId: 2, musicVocalType: "original_song", seq: 1, caption: "other music", characters: [] },
   ]
 
-  it("filters by music id and sorts by seq", () => {
-    const vocals = listMusicVocalEntries(rawVocals, 1)
-    expect(vocals.map((vocal) => vocal.id)).toEqual([1, 3])
-    expect(vocals[0].musicVocalType).toBe("original_song")
-    expect(vocals[1].characters).toEqual([
-      { characterType: "game_character", characterId: 1 },
-      { characterType: "outside_character", characterId: 2 },
-    ])
+  it("groups every version by music id in seq order", () => {
+    const byMusic = buildMusicVocalsByMusic(rawVocals)
+    expect([...byMusic.keys()]).toEqual([1, 2])
+    expect(byMusic.get(1)?.map((vocal) => vocal.id)).toEqual([1, 3])
+    expect(byMusic.get(1)?.[0].musicVocalType).toBe("original_song")
+    expect(byMusic.get(1)?.[1]).toMatchObject({
+      assetbundleName: "vs_0001_01",
+      characters: [
+        { characterType: "game_character", characterId: 1 },
+        { characterType: "outside_character", characterId: 2 },
+      ],
+    })
+    expect(byMusic.get(2)?.[0].caption).toBe("other music")
   })
 
-  it("returns an empty list for unknown music ids", () => {
-    expect(listMusicVocalEntries(rawVocals, 42)).toEqual([])
+  it("tolerates malformed payloads", () => {
+    expect(buildMusicVocalsByMusic([{ id: 9 }, null, "x"]).size).toBe(0)
+    expect(buildMusicVocalsByMusic(undefined).size).toBe(0)
   })
 })
 
-describe("world link music tagging", () => {
-  const rawEvents = [
-    { id: 1, eventType: "marathon" },
-    { id: 2, eventType: "world_bloom" },
-    { id: 3, eventType: "world_bloom" },
-  ]
-  const rawEventMusics = [
-    { eventId: 1, musicId: 1 },
-    { eventId: 2, musicId: 2 },
-    { eventId: 3, musicId: 2 },
-    { eventId: 3, musicId: 74 },
-  ]
-
-  it("collects music ids linked to world_bloom events", () => {
-    expect([...listWorldLinkMusicIds(rawEvents, rawEventMusics)].sort((a, b) => a - b)).toEqual([2, 74])
-    expect(listWorldLinkMusicIds(null, undefined).size).toBe(0)
-  })
-
+describe("synthetic tags", () => {
   it("appends a synthetic tag without duplicating it or mutating untagged entries", () => {
     const entries = buildMusicLibraryEntries(RAW_MUSICS, RAW_DIFFICULTIES, RAW_TAGS)
     const tagged = applyMusicTagByIds(entries, new Set([2]), MUSIC_TAG_WORLD_LINK)
@@ -241,46 +227,17 @@ describe("buildOutsideCharacterNameMap", () => {
   })
 })
 
-describe("listMusicEventLinks", () => {
-  const rawEventMusics = [
-    { eventId: 1, musicId: 64, releaseConditionId: 1, seq: 1 },
-    { eventId: 2, musicId: 62, releaseConditionId: 1, seq: 1 },
-    { eventId: 3, musicId: 64, releaseConditionId: 1, seq: 1 },
-  ]
-  const rawEvents = [
-    { id: 1, eventType: "marathon", name: "Event One", assetbundleName: "event_one", startAt: 1653112800000, aggregateAt: 1653652799000 },
-    { id: 2, eventType: "marathon", name: "Event Two", assetbundleName: "event_two", startAt: 1654000000000, aggregateAt: 1654500000000 },
-    { id: 3, eventType: "cheerful_carnival", name: "Event Three", startAt: 1655000000000, aggregateAt: 1655500000000 },
-  ]
-
-  it("collects all events linked to a music", () => {
-    const links = listMusicEventLinks(rawEventMusics, rawEvents, 64)
-    expect(links).toEqual([
-      { eventId: 1, name: "Event One", assetbundleName: "event_one", startAt: 1653112800000, aggregateAt: 1653652799000 },
-      { eventId: 3, name: "Event Three", assetbundleName: null, startAt: 1655000000000, aggregateAt: 1655500000000 },
-    ])
-  })
-
-  it("returns an empty list when the music has no linked events", () => {
-    expect(listMusicEventLinks(rawEventMusics, rawEvents, 1)).toEqual([])
-  })
-})
-
-describe("findMusicDurationSeconds", () => {
+describe("buildMusicDurationMap", () => {
   const rawMetas = [
     { music_id: 1, difficulty: "easy", music_time: 123.2 },
     { music_id: 1, difficulty: "master", music_time: 123.2 },
     { music_id: 2, difficulty: "easy", music_time: 95.5 },
   ]
 
-  it("finds the duration for a music id", () => {
-    expect(findMusicDurationSeconds(rawMetas, 1)).toBe(123.2)
-    expect(findMusicDurationSeconds(rawMetas, 2)).toBe(95.5)
-  })
-
-  it("returns null when metas are missing", () => {
-    expect(findMusicDurationSeconds(rawMetas, 3)).toBeNull()
-    expect(findMusicDurationSeconds(null, 1)).toBeNull()
+  it("builds a duration map keyed by music id, skipping non-positive times", () => {
+    const map = buildMusicDurationMap([...rawMetas, { music_id: 3, music_time: 0 }, { music_id: "x" }])
+    expect([...map.entries()]).toEqual([[1, 123.2], [2, 95.5]])
+    expect(buildMusicDurationMap(null).size).toBe(0)
   })
 })
 
