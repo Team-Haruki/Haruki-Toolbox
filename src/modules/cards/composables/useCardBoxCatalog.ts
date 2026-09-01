@@ -18,7 +18,7 @@ export const CARD_BOX_MASTER_FILES = [
 ] as const
 
 /**
- * Masterdata loader for the card box page. Unlike `useCardCatalog`, the region
+ * Masterdata loader for the card box page. Unlike the catalog pages, the region
  * is driven by the selected game account's server (not the catalog region
  * setting) and reloads whenever the account changes.
  */

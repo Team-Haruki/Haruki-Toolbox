@@ -4,95 +4,57 @@ import {
   normalizeCatalogRecords,
   normalizeCatalogString,
 } from "@/shared/sekai/catalog"
-import type { CatalogGacha } from "@/modules/gachas/lib/gacha-catalog"
+import type { EventCardLink, SekaiEventItem } from "@/modules/events"
+import type { CatalogGachaSummary } from "@/modules/gachas"
 import { buildCostumeThumbnailAssetbundleName } from "@/modules/costumes/lib/costume-options"
 
-export type CardDetailExtras = {
-  cardSkillName: string | null
-  gachaPhrase: string | null
-  /** Bloom Fes cards switch to a second skill after special training. */
-  specialTrainingSkillId: number | null
-  specialTrainingSkillName: string | null
+export type CardRelatedEvent = {
+  event: SekaiEventItem
+  /** `eventCards.bonusRate`; null when the dump does not carry it. */
+  bonusRate: number | null
+  /** `eventCards.leaderBonusRate`; absent on the en dump. */
+  leaderBonusRate: number | null
+  hasStory: boolean
 }
 
-export type CardEventSummary = {
-  id: number
-  name: string
-  assetbundleName: string | null
-  startAt: number | null
-  aggregateAt: number | null
-}
-
-/**
- * Fields the shared CatalogMasterCard normalizer intentionally drops but the
- * detail page still needs. `-` is the master data convention for "no phrase".
- */
-export function extractCardDetailExtras(rawCards: unknown, cardId: number): CardDetailExtras {
-  const record = normalizeCatalogRecords(rawCards)
-    .find((candidate) => normalizeCatalogNumber(candidate.id) === cardId)
-  return {
-    cardSkillName: normalizeMasterText(record?.cardSkillName),
-    gachaPhrase: normalizeMasterText(record?.gachaPhrase),
-    specialTrainingSkillId: normalizeCatalogNumber(record?.specialTrainingSkillId),
-    specialTrainingSkillName: normalizeMasterText(record?.specialTrainingSkillName),
-  }
-}
-
-export function buildCardEventIndex(rawEventCards: unknown): Map<number, number[]> {
-  const index = new Map<number, number[]>()
-  for (const record of normalizeCatalogRecords(rawEventCards)) {
-    const cardId = normalizeCatalogNumber(record.cardId)
-    const eventId = normalizeCatalogNumber(record.eventId)
-    if (cardId == null || eventId == null) {
+/** Events the card was featured in, newest first, with its bonus rates. */
+export function selectCardRelatedEvents(
+  cardId: number,
+  cardLinksByCard: ReadonlyMap<number, readonly EventCardLink[]>,
+  eventsById: ReadonlyMap<number, SekaiEventItem>,
+): CardRelatedEvent[] {
+  const seen = new Set<number>()
+  const rows: CardRelatedEvent[] = []
+  for (const link of cardLinksByCard.get(cardId) ?? []) {
+    const event = eventsById.get(link.eventId)
+    if (!event || seen.has(event.id)) {
       continue
     }
-
-    const eventIds = index.get(cardId)
-    if (eventIds) {
-      if (!eventIds.includes(eventId)) {
-        eventIds.push(eventId)
-      }
-    } else {
-      index.set(cardId, [eventId])
-    }
+    seen.add(event.id)
+    rows.push({
+      event,
+      bonusRate: link.bonusRate,
+      leaderBonusRate: link.leaderBonusRate,
+      hasStory: link.isDisplayCardStory,
+    })
   }
-
-  return index
+  return rows.sort((a, b) => (b.event.startAt ?? 0) - (a.event.startAt ?? 0) || b.event.id - a.event.id)
 }
 
-export function resolveCardEventSummaries(
-  rawEvents: unknown,
-  eventIds: readonly number[],
-): CardEventSummary[] {
-  if (eventIds.length === 0) {
-    return []
-  }
-
-  const records = new Map<number, Omit<CardEventSummary, "id">>()
-  for (const record of normalizeCatalogRecords(rawEvents)) {
-    const id = normalizeCatalogNumber(record.id)
-    if (id != null && eventIds.includes(id)) {
-      records.set(id, {
-        name: normalizeCatalogString(record.name),
-        assetbundleName: normalizeCatalogString(record.assetbundleName) || null,
-        startAt: normalizeCatalogNumber(record.startAt),
-        aggregateAt: normalizeCatalogNumber(record.aggregateAt),
-      })
+/** Gachas that pick up the card, original run first. */
+export function selectCardRelatedGachas(
+  cardId: number,
+  gachaIdsByPickupCard: ReadonlyMap<number, readonly number[]>,
+  gachasById: ReadonlyMap<number, CatalogGachaSummary>,
+): CatalogGachaSummary[] {
+  const gachas: CatalogGachaSummary[] = []
+  for (const gachaId of gachaIdsByPickupCard.get(cardId) ?? []) {
+    const gacha = gachasById.get(gachaId)
+    if (gacha) {
+      gachas.push(gacha)
     }
   }
-
-  return [...eventIds]
-    .sort((a, b) => a - b)
-    .map((id) => {
-      const record = records.get(id)
-      return {
-        id,
-        name: record?.name || `#${id}`,
-        assetbundleName: record?.assetbundleName ?? null,
-        startAt: record?.startAt ?? null,
-        aggregateAt: record?.aggregateAt ?? null,
-      }
-    })
+  return gachas.sort((a, b) => (a.startAt ?? 0) - (b.startAt ?? 0) || a.id - b.id)
 }
 
 export type CardCostumeColor = {
@@ -304,16 +266,6 @@ export function resolveCardCostumeGroups(
   return groups
 }
 
-/** Gachas that pick up the card, ordered by start time. */
-export function selectCardPickupGachas(
-  gachas: readonly CatalogGacha[],
-  cardId: number,
-): CatalogGacha[] {
-  return gachas
-    .filter((gacha) => gacha.pickups.some((pickup) => pickup.cardId === cardId))
-    .sort((a, b) => (a.startAt ?? 0) - (b.startAt ?? 0) || a.id - b.id)
-}
-
 export function selectSameCharacterCards(
   cards: readonly CatalogMasterCard[],
   card: CatalogMasterCard,
@@ -327,9 +279,4 @@ export function selectSameCharacterCards(
     .filter((candidate) => candidate.characterId === card.characterId && candidate.id !== card.id)
     .sort((a, b) => (b.releaseAt ?? 0) - (a.releaseAt ?? 0) || b.id - a.id)
     .slice(0, Math.max(0, limit))
-}
-
-function normalizeMasterText(value: unknown): string | null {
-  const text = normalizeCatalogString(value)
-  return text && text !== "-" ? text : null
 }

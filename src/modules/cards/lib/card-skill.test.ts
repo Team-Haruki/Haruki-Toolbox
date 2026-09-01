@@ -1,5 +1,12 @@
 import { describe, expect, it } from "bun:test"
-import { normalizeCardSkill } from "./card-skill"
+import {
+  CARD_SKILL_FILTER_TYPES,
+  buildCardSkillIndex,
+  buildCardSkillView,
+  classifyCardSkillFilterType,
+  formatCardSkillAtLevel,
+  normalizeCardSkill,
+} from "./card-skill"
 
 const rawSkills = [
   {
@@ -149,5 +156,48 @@ describe("normalizeCardSkill", () => {
   it("resolves enhance and unit-fes maximum placeholders from skillEnhance", () => {
     const skill = normalizeCardSkill(rawSkills, 15)
     expect(skill?.formattedDescription).toBe("스코어 80/85% UP, 멤버당 스코어 10% UP (최대 130/135%)")
+  })
+})
+
+describe("skill records and level-aware formatting", () => {
+  it("indexes records with effect types, filter type and max level", () => {
+    const index = buildCardSkillIndex(rawSkills)
+    expect(index.size).toBe(5)
+    expect(index.get(1)).toMatchObject({ effectTypes: ["score_up"], filterType: "score_up", maxLevel: 4 })
+    expect(index.get(14)).toMatchObject({ effectTypes: ["life_recovery", "score_up"], filterType: "life_recovery" })
+    expect(index.get(22)).toMatchObject({ filterType: "score_up_character_rank" })
+    expect(index.get(2)).toMatchObject({ effectTypes: [], filterType: "score_up", maxLevel: 1 })
+  })
+
+  it("classifies the filter type by the distinguishing effect", () => {
+    expect(classifyCardSkillFilterType(["score_up", "judgment_up"])).toBe("judgment_up")
+    expect(classifyCardSkillFilterType(["score_up"])).toBe("score_up")
+    expect(classifyCardSkillFilterType([])).toBe("score_up")
+    expect(CARD_SKILL_FILTER_TYPES).toHaveLength(8)
+  })
+
+  it("formats a single level", () => {
+    const index = buildCardSkillIndex(rawSkills)
+    expect(formatCardSkillAtLevel(index.get(1)!, 3)).toBe("5초 동안 스코어가 30% 상승한다.")
+    expect(formatCardSkillAtLevel(index.get(14)!, 2)).toBe("라이프를 200 회복하고 5초 동안 스코어가 60% 상승한다.")
+    expect(formatCardSkillAtLevel(index.get(22)!, 2, { characterName: "미쿠" })).toBe(
+      "5초 동안 스코어가 95% 상승하며, '미쿠'의 랭크에 의해 1~50% 상승한다. (최대 145%/145%)",
+    )
+    expect(formatCardSkillAtLevel(index.get(15)!, 1)).toBe("스코어 80% UP, 멤버당 스코어 10% UP (최대 130%)")
+  })
+
+  it("falls back to the nearest lower level when a level is missing", () => {
+    const index = buildCardSkillIndex(rawSkills)
+    // Skill 14 only has levels 1-2; level 4 resolves to level 2.
+    expect(formatCardSkillAtLevel(index.get(14)!, 4)).toBe("라이프를 200 회복하고 5초 동안 스코어가 60% 상승한다.")
+    expect(formatCardSkillAtLevel(index.get(14)!, 0)).toBe("라이프를 150 회복하고 5초 동안 스코어가 55% 상승한다.")
+  })
+
+  it("keeps the per-level list form on the view", () => {
+    const index = buildCardSkillIndex(rawSkills)
+    const view = buildCardSkillView(index.get(1)!)
+    expect(view.formattedDescription).toBe("5초 동안 스코어가 20/25/30/40% 상승한다.")
+    expect(view.effectTypes).toEqual(["score_up"])
+    expect(view.maxLevel).toBe(4)
   })
 })
