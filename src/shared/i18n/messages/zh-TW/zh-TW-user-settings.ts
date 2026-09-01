@@ -180,8 +180,8 @@ export default {
         "validateFailedTitle": "驗證失敗",
         "oldPasswordRequired": "請輸入當前密碼",
         "newPasswordRequired": "請輸入新密碼",
-        "passwordMismatch": "兩次輸入的新密碼不一致", // NOSONAR -- translation key, not a credential
-        "passwordMinLength": "新密碼長度至少為8位", // NOSONAR -- translation key, not a credential
+        "passwordMismatch": "兩次輸入的新密碼不一致",
+        "passwordMinLength": "新密碼長度至少為8位",
         "changeSuccessTitle": "密碼修改成功",
         "changeSuccessDescription": "請重新登入",
         "changeFailedTitle": "密碼修改失敗",

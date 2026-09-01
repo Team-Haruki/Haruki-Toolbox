@@ -168,8 +168,23 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
 }
 
 // Transient network failures ("Failed to fetch") and gateway hiccups are
-// common on flaky CDN paths; retry briefly before surfacing an error.
-const FETCH_RETRY_DELAYS_MS = [500, 1500]
+// common on flaky CDN paths; retry briefly before surfacing an error. The
+// master CDN also sits behind a WAF that answers bursts with a transient 403
+// or an HTML challenge page (HTTP 200, text/html) — both clear on a paced
+// retry, so they are treated as retryable rather than as hard failures.
+const FETCH_RETRY_DELAYS_MS = [600, 1500, 3000]
+
+function isTransientStatus(status: number): boolean {
+  return status >= 500 || status === 429 || status === 403
+}
+
+function isHtmlChallengeResponse(response: Response): boolean {
+  if (!response.ok) {
+    return false
+  }
+  const contentType = response.headers.get("content-type") ?? ""
+  return /text\/html/i.test(contentType)
+}
 
 async function fetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
   let lastError: unknown
@@ -179,8 +194,12 @@ async function fetchWithRetry(url: string, init?: RequestInit): Promise<Response
     }
     try {
       const response = await fetch(url, init)
-      if (response.status >= 500 || response.status === 429) {
+      if (isTransientStatus(response.status)) {
         lastError = new Error(`Failed to fetch ${url}: ${response.status}`)
+        continue
+      }
+      if (isHtmlChallengeResponse(response)) {
+        lastError = new Error(`Unexpected HTML response from ${url}`)
         continue
       }
       return response

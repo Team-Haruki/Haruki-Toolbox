@@ -33,6 +33,20 @@ export const SEKAI_CARD_ATTR_COLORS: Record<string, string> = {
 
 export type SekaiCardAttr = (typeof SEKAI_CARD_ATTRS)[number]
 
+/**
+ * Representative unit colors (from `unitProfiles.colorCode`) used when the
+ * master-driven unit color map is not loaded, e.g. logo fallbacks in shared
+ * components.
+ */
+export const SEKAI_UNIT_FALLBACK_COLORS: Record<SekaiUnit, string> = {
+  light_sound: "#4455DD",
+  idol: "#88DD44",
+  street: "#EE1166",
+  theme_park: "#FF9900",
+  school_refusal: "#884499",
+  piapro: "#33CCBB",
+}
+
 export type CatalogCharacter = {
   id: number
   name: string
@@ -51,6 +65,10 @@ export type CatalogMasterCard = {
   releaseAt: number | null
   skillId: number | null
   cardSupplyId: number | null
+  /** `cardSkillName` — searchable and shown on tiles. */
+  skillName?: string | null
+  /** `initialSpecialTrainingStatus === "done"`: the card only has trained art. */
+  trainedByDefault?: boolean
 }
 
 export type CatalogCardThumbnail = {
@@ -233,7 +251,14 @@ export function normalizeCatalogMasterCard(value: unknown): CatalogMasterCard | 
     releaseAt: normalizeCatalogNumber(record.releaseAt),
     skillId: normalizeCatalogNumber(record.skillId),
     cardSupplyId: normalizeCatalogNumber(record.cardSupplyId),
+    skillName: normalizeCatalogString(record.cardSkillName) || null,
+    trainedByDefault: normalizeCatalogString(record.initialSpecialTrainingStatus) === "done",
   }
+}
+
+/** Cards whose only artwork is the trained one (`initialSpecialTrainingStatus: done`). */
+export function cardShowsOnlyTrainedArt(card: Pick<CatalogMasterCard, "cardRarityType" | "trainedByDefault">): boolean {
+  return card.trainedByDefault === true && cardRarityHasTrainedArt(card.cardRarityType)
 }
 
 export function cardRarityHasTrainedArt(cardRarityType: string): boolean {
