@@ -1,148 +1,126 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
-import { RouterLink } from "vue-router"
+import { computed, onMounted, ref, toRef } from "vue"
 import { useI18n } from "vue-i18n"
-import type { AcceptableValue } from "reka-ui"
-import {
-  ArrowDown,
-  ArrowUp,
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-vue-next"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { LayoutGrid, List } from "lucide-vue-next"
 import { Progress } from "@/components/ui/progress"
-import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
+import { useCatalogScrollMemory } from "@/composables/useCatalogScrollMemory"
+import { useCatalogViewPreference } from "@/composables/useCatalogViewPreference"
+import { useNowTick } from "@/composables/useNowTick"
+import { usePagedSlice } from "@/composables/usePagedSlice"
+import { useRouteQueryState } from "@/composables/useRouteQueryState"
+import { preloadSearchPinyin } from "@/lib/search-match"
+import CatalogEmptyState from "@/shared/components/catalog/CatalogEmptyState.vue"
+import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
 import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import CatalogPageShell from "@/shared/components/catalog/CatalogPageShell.vue"
+import CatalogPagination from "@/shared/components/catalog/CatalogPagination.vue"
+import CatalogRegionSelect from "@/shared/components/catalog/CatalogRegionSelect.vue"
+import CatalogResultsBar from "@/shared/components/catalog/CatalogResultsBar.vue"
 import CatalogSearchField from "@/shared/components/catalog/CatalogSearchField.vue"
-import CatalogSelectField from "@/shared/components/catalog/CatalogSelectField.vue"
-import type { CatalogFieldOption } from "@/shared/components/catalog/types"
+import type { CatalogFieldOption, CatalogSortOption, CatalogViewOption } from "@/shared/components/catalog/types"
+import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
-import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
-import { getI18nLocale } from "@/shared/i18n"
-import { useSettingsStore } from "@/shared/stores/settings"
-import { SEKAI_CATALOG_REGION_FOLLOW_VALUE, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
-import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
+  resolveSekaiDifficultyLabel,
+  resolveSekaiMusicCategoryLabel,
+  resolveSekaiMusicTagLabel,
+} from "@/shared/sekai/labels"
 import { useMusicAliasMatches } from "@/shared/sekai/music-alias"
-import MusicJacket from "../components/MusicJacket.vue"
-import { useMusicLibraryList } from "../composables/useMusicLibraryList"
-import { resolveMusicJacketUrl } from "../lib/music-assets"
+import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
+import { useSettingsStore } from "@/shared/stores/settings"
+import MusicFilterFields from "@/modules/music-library/components/MusicFilterFields.vue"
+import MusicResults from "@/modules/music-library/components/MusicResults.vue"
+import { useMusicCatalogList } from "@/modules/music-library/composables/useMusicCatalogList"
+import { useMusicDateFormatter } from "@/modules/music-library/composables/useMusicDateFormatter"
+import { resolveMusicJacketUrl } from "@/modules/music-library/lib/music-assets"
+import { MUSIC_DIFFICULTIES, MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
 import {
-  MUSIC_DIFFICULTIES,
-  MUSIC_DIFFICULTY_COLORS,
-  isMusicDifficulty,
-  type MusicDifficulty,
-} from "../lib/music-difficulties"
-import { resolveMusicTagLabelKey } from "../lib/music-labels"
-import type { MusicLibraryEntry } from "../lib/music-data"
-import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
-import {
-  MUSIC_CHARACTER_FILTER_SCOPES,
-  MUSIC_NOTE_COUNT_FILTER_MODES,
-  MUSIC_SORT_KEYS,
-  countMusicPages,
-  createDefaultMusicLibraryFilter,
   excludeUnreleasedMusicEntries,
   filterMusicEntries,
   isMusicEntryUnreleased,
-  paginateMusicEntries,
   sortMusicEntries,
-  type MusicCharacterFilterScope,
-  type MusicLibraryFilter,
-  type MusicNoteCountFilterMode,
-  type MusicSortDirection,
-  type MusicSortKey,
-} from "../lib/music-filter"
+} from "@/modules/music-library/lib/music-filter"
+import {
+  MUSIC_QUERY_SORTS,
+  buildMusicActiveChips,
+  musicQueryCodec,
+  removeMusicChip,
+  resolveMusicSortKey,
+  toMusicLibraryFilter,
+  type MusicQuerySort,
+} from "@/modules/music-library/lib/music-query"
+import {
+  formatMusicDate,
+  listMusicDifficultyPills,
+  resolveMusicEventBoxView,
+  type MusicListRow,
+} from "@/modules/music-library/lib/music-view"
 
-const ALL_OPTION = "all"
-const PAGE_SIZE = 60
+const MUSIC_VIEWS = ["grid", "list"] as const
+type MusicView = (typeof MUSIC_VIEWS)[number]
 
-const { t, te, locale } = useI18n()
+const { t, te } = useI18n()
+const labels = { t, te }
 const settingsStore = useSettingsStore()
-
-const { region, selectorValue: regionSelectorValue, updateSelectorValue: updateRegionSelector } = useEffectiveCatalogRegion()
+const { region } = useEffectiveCatalogRegion()
 const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
 const {
   entries,
+  characters,
   characterMap,
+  unitColorMap,
   musicEventBoxes,
   musicVocalCharacters,
-  tagOptions,
-  yearOptions,
+  tagOptions: tagValues,
+  categoryOptions: categoryValues,
+  yearOptions: yearValues,
+  levelBounds,
+  hasCategories,
   loading,
+  refreshing,
   error,
+  ready: listReady,
   regionState,
-} = useMusicLibraryList(region)
+  reload,
+} = useMusicCatalogList(region)
 
-const search = ref("")
-const { matchedIds: aliasMatchedIds, pending: aliasPending } = useMusicAliasMatches(search)
-const selectedDifficulty = ref<MusicDifficulty | null>(null)
-const levelMin = ref<number | undefined>(undefined)
-const levelMax = ref<number | undefined>(undefined)
-const noteCountMode = ref<MusicNoteCountFilterMode>("exact")
-const noteCountExact = ref<number | undefined>(undefined)
-const noteCountMin = ref<number | undefined>(undefined)
-const noteCountMax = ref<number | undefined>(undefined)
-const selectedTags = ref<string[]>([])
-const selectedYear = ref<number | null>(null)
-const selectedCharacterId = ref<number | null>(null)
-const characterScope = ref<MusicCharacterFilterScope>("any")
-const sortKey = ref<MusicSortKey>("publishedAt")
-const sortDirection = ref<MusicSortDirection>("desc")
-const page = ref(1)
+// The URL is the state; layout preferences stay on the device.
+const { state, reset, activeFilterCount } = useRouteQueryState(musicQueryCodec, {
+  debounceKeys: ["q"],
+  pageKey: "page",
+  pageNeutralKeys: ["size"],
+})
+const view = useCatalogViewPreference<MusicView>("music", "view", () => "grid", MUSIC_VIEWS)
+const now = useNowTick(30_000)
+const dateFormatter = useMusicDateFormatter()
+const { matchedIds: aliasMatchedIds, pending: aliasPending } = useMusicAliasMatches(toRef(state, "q"))
 
-const filter = computed<MusicLibraryFilter>(() => ({
-  ...createDefaultMusicLibraryFilter(),
-  search: search.value,
-  difficulty: selectedDifficulty.value,
-  levelMin: toNullableNumber(levelMin.value),
-  levelMax: toNullableNumber(levelMax.value),
-  noteCountMode: noteCountMode.value,
-  noteCountExact: toNullableNumber(noteCountExact.value),
-  noteCountMin: toNullableNumber(noteCountMin.value),
-  noteCountMax: toNullableNumber(noteCountMax.value),
-  tags: selectedTags.value,
-  year: selectedYear.value,
-  characterId: selectedCharacterId.value,
-  characterScope: characterScope.value,
-}))
+const difficultyOptions = computed<CatalogFieldOption[]>(() => MUSIC_DIFFICULTIES.map((difficulty) => ({
+  value: difficulty,
+  label: resolveSekaiDifficultyLabel(labels, difficulty),
+  color: MUSIC_DIFFICULTY_COLORS[difficulty],
+})))
+const tagOptions = computed<CatalogFieldOption[]>(() => tagValues.value.map((tag) => ({
+  value: tag,
+  label: resolveSekaiMusicTagLabel(labels, tag),
+})))
+const categoryOptions = computed<CatalogFieldOption[]>(() => categoryValues.value.map((category) => ({
+  value: category,
+  label: resolveSekaiMusicCategoryLabel(labels, category),
+})))
+const yearOptions = computed<CatalogFieldOption[]>(() => yearValues.value.map((year) => ({
+  value: String(year),
+  label: String(year),
+})))
+const sortOptions = computed<CatalogSortOption[]>(() => MUSIC_QUERY_SORTS.map((sort) => ({
+  value: sort,
+  label: t(`musicLibrary.list.sort.${resolveMusicSortKey(sort)}`),
+})))
+const viewOptions = computed<CatalogViewOption[]>(() => [
+  { value: "grid", label: t("catalog.view.grid"), icon: LayoutGrid },
+  { value: "list", label: t("catalog.view.list"), icon: List },
+])
 
-const characterOptions = computed(() =>
-  [...characterMap.value.values()].sort((a, b) => a.id - b.id),
-)
-
-const difficultyFieldOptions = computed<CatalogFieldOption[]>(() =>
-  MUSIC_DIFFICULTIES.map((difficulty) => ({
-    value: difficulty,
-    label: difficultyLabel(difficulty),
-    color: MUSIC_DIFFICULTY_COLORS[difficulty],
-  })),
-)
-
-const tagFieldOptions = computed<CatalogFieldOption[]>(() =>
-  tagOptions.value.map((tag) => ({ value: tag, label: tagLabel(tag) })),
-)
-
-const characterFieldOptions = computed<CatalogFieldOption[]>(() =>
-  characterOptions.value.map((character) => ({
-    value: String(character.id),
-    label: character.name,
-    iconUrl: character.iconUrl,
-  })),
-)
-
-const yearFieldOptions = computed<CatalogFieldOption[]>(() =>
-  yearOptions.value.map((year) => ({ value: String(year), label: String(year) })),
-)
+const filter = computed(() => toMusicLibraryFilter(state, { hasCategories: hasCategories.value }))
 
 const visibleEntries = computed(() => {
   const filtered = filterMusicEntries(entries.value, filter.value, {
@@ -150,506 +128,144 @@ const visibleEntries = computed(() => {
     vocalCharacters: musicVocalCharacters.value,
     aliasMatchedIds: aliasMatchedIds.value,
   })
-  return sortMusicEntries(
-    hideUnreleased.value ? excludeUnreleasedMusicEntries(filtered) : filtered,
-    sortKey.value,
-    sortDirection.value,
-    selectedDifficulty.value,
-  )
+  const released = hideUnreleased.value ? excludeUnreleasedMusicEntries(filtered, now.value) : filtered
+  return sortMusicEntries(released, resolveMusicSortKey(state.sort), state.dir, state.diff)
 })
 
-const totalPages = computed(() => countMusicPages(visibleEntries.value.length, PAGE_SIZE))
+const { pageItems, totalPages } = usePagedSlice(visibleEntries, toRef(state, "page"), toRef(state, "size"))
 
-const pagedEntryViews = computed(() => {
-  const now = Date.now()
-  return paginateMusicEntries(visibleEntries.value, page.value, PAGE_SIZE)
-    .map((entry) => ({
-      entry,
-      jacketUrl: jacketUrl(entry),
-      dateLabel: formatDateLabel(entry.publishedAt),
-      unreleased: isMusicEntryUnreleased(entry, now),
-      eventBox: entryEventBox(entry),
-      difficulties: entryDifficulties(entry),
-    }))
-})
+const rows = computed<MusicListRow[]>(() => pageItems.value.map((entry) => ({
+  entry,
+  jacketUrl: resolveMusicJacketUrl(region.value, entry.assetbundleName, settingsStore.currentAssetEndpoint),
+  dateLabel: formatMusicDate(entry.publishedAt, dateFormatter.value),
+  unreleased: isMusicEntryUnreleased(entry, now.value),
+  eventBox: resolveMusicEventBoxView(musicEventBoxes.value.get(entry.id), characterMap.value),
+  pills: listMusicDifficultyPills(entry),
+})))
 
-watch([filter, sortKey, sortDirection, region, hideUnreleased, aliasMatchedIds], () => {
-  page.value = 1
-})
+const activeChips = computed(() => buildMusicActiveChips(state, {
+  difficultyLabel: (difficulty) => resolveSekaiDifficultyLabel(labels, difficulty),
+  tagLabel: (tag) => resolveSekaiMusicTagLabel(labels, tag),
+  categoryLabel: (category) => resolveSekaiMusicCategoryLabel(labels, category),
+  characterName: (characterId) => characterMap.value.get(characterId)?.name ?? null,
+  scopeLabel: (scope) => t(`musicLibrary.list.filters.characterScope.${scope}`),
+  hasCategories: hasCategories.value,
+}, (key, params) => t(key, params ?? {})))
 
+const countLabel = computed(() => t("musicLibrary.list.results.count", { count: visibleEntries.value.length }))
 const showSkeleton = computed(() => loading.value && entries.value.length === 0)
-const showDownloadProgress = computed(
-  () => regionState.value.refreshing && entries.value.length === 0,
-)
-const dateFormatter = computed(() =>
-  new Intl.DateTimeFormat(locale.value || getI18nLocale(), { dateStyle: "medium" }),
-)
+const showError = computed(() => error.value != null && entries.value.length === 0)
+const showDownloadProgress = computed(() => regionState.value.refreshing && entries.value.length === 0)
+const emptyMessage = computed(() => (
+  aliasPending.value ? t("musicLibrary.list.results.aliasSearching") : t("musicLibrary.list.results.empty")
+))
 
-function updateRegion(value: AcceptableValue) {
-  updateRegionSelector(value)
-}
+const resultsEl = ref<HTMLElement | null>(null)
+const ready = computed(() => !showSkeleton.value && !showError.value && (rows.value.length > 0 || listReady.value))
+useCatalogScrollMemory(ready)
 
-function updateDifficulty(value: string | null) {
-  selectedDifficulty.value = value != null && isMusicDifficulty(value) ? value : null
-}
+onMounted(() => {
+  void preloadSearchPinyin()
+})
 
-function updateNoteCountMode(value: AcceptableValue) {
-  noteCountMode.value = value === "range" ? "range" : "exact"
-}
-
-function updateYear(value: string | null) {
-  const parsed = value != null ? Number(value) : null
-  selectedYear.value = parsed != null && Number.isInteger(parsed) ? parsed : null
-}
-
-function updateCharacter(value: string | null) {
-  const parsed = value != null ? Number(value) : null
-  selectedCharacterId.value = parsed != null && Number.isInteger(parsed) ? parsed : null
-}
-
-function updateCharacterScope(value: AcceptableValue) {
-  characterScope.value = typeof value === "string"
-    && (MUSIC_CHARACTER_FILTER_SCOPES as readonly string[]).includes(value)
-    ? value as MusicCharacterFilterScope
-    : "any"
-}
-
-function updateSortKey(value: AcceptableValue) {
-  if (typeof value === "string" && (MUSIC_SORT_KEYS as readonly string[]).includes(value)) {
-    sortKey.value = value as MusicSortKey
+function handleSortUpdate(value: string) {
+  if ((MUSIC_QUERY_SORTS as readonly string[]).includes(value)) {
+    state.sort = value as MusicQuerySort
   }
 }
 
-function toggleSortDirection() {
-  sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc"
-}
-
-function resetFilters() {
-  search.value = ""
-  selectedDifficulty.value = null
-  levelMin.value = undefined
-  levelMax.value = undefined
-  noteCountMode.value = "exact"
-  noteCountExact.value = undefined
-  noteCountMin.value = undefined
-  noteCountMax.value = undefined
-  selectedTags.value = []
-  selectedYear.value = null
-  selectedCharacterId.value = null
-  characterScope.value = "any"
-  sortKey.value = "publishedAt"
-  sortDirection.value = "desc"
-}
-
-function prevPage() {
-  page.value = Math.max(1, page.value - 1)
-}
-
-function nextPage() {
-  page.value = Math.min(totalPages.value, page.value + 1)
-}
-
-function jacketUrl(entry: MusicLibraryEntry): string | null {
-  return resolveMusicJacketUrl(region.value, entry.assetbundleName, settingsStore.currentAssetEndpoint)
-}
-
-/** "某角色几箱活动曲" hint when the entry is a known event song. */
-function entryEventBox(entry: MusicLibraryEntry) {
-  const info = musicEventBoxes.value.get(entry.id)
-  if (info == null) {
-    return null
+function handleViewUpdate(value: string) {
+  if ((MUSIC_VIEWS as readonly string[]).includes(value)) {
+    view.value = value as MusicView
   }
-
-  const character = characterMap.value.get(info.characterId) ?? null
-  if (character == null) {
-    return null
-  }
-
-  return {
-    name: character.name,
-    iconUrl: character.iconUrl,
-    boxNumber: info.boxNumber,
-  }
-}
-
-function entryDifficulties(entry: MusicLibraryEntry) {
-  return MUSIC_DIFFICULTIES
-    .filter((difficulty) => entry.difficulties[difficulty] != null)
-    .map((difficulty) => ({
-      difficulty,
-      color: MUSIC_DIFFICULTY_COLORS[difficulty],
-      playLevel: entry.difficulties[difficulty]?.playLevel ?? null,
-    }))
-}
-
-function difficultyLabel(difficulty: MusicDifficulty): string {
-  return t(`musicLibrary.difficulty.${difficulty}`)
-}
-
-function tagLabel(tag: string): string {
-  const key = resolveMusicTagLabelKey(tag)
-  return key && te(key) ? t(key) : tag
-}
-
-function formatDateLabel(timestamp: number | null): string | null {
-  if (timestamp == null) {
-    return null
-  }
-
-  return dateFormatter.value.format(new Date(timestamp))
-}
-
-function toNullableNumber(value: number | string | undefined | null): number | null {
-  if (value == null || String(value).trim() === "") {
-    return null
-  }
-
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : null
 }
 </script>
 
 <template>
-  <div class="flex w-full flex-1 items-center justify-center px-0 py-4">
-    <div class="mx-auto w-full max-w-6xl space-y-4">
-      <div>
-        <h1 class="text-2xl font-bold">{{ t("musicLibrary.list.title") }}</h1>
-        <p class="text-sm text-muted-foreground">{{ t("musicLibrary.list.description") }}</p>
-      </div>
+  <CatalogPageShell :title="t('musicLibrary.list.title')" :description="t('musicLibrary.list.description')" class="py-4">
+    <template #toolbar>
+      <CatalogSearchField
+        v-model="state.q"
+        compact
+        :label="t('musicLibrary.list.filters.search')"
+        :placeholder="t('musicLibrary.list.filters.searchPlaceholder')"
+      />
+      <CatalogRegionSelect />
+    </template>
 
-      <div class="space-y-4">
-          <div class="grid gap-4 md:grid-cols-2">
-            <div class="grid gap-2">
-              <Label id="music-region-label" for="music-region">{{ t("musicLibrary.list.filters.region") }}</Label>
-              <Select id="music-region" :model-value="regionSelectorValue" @update:model-value="updateRegion">
-                <SelectTrigger class="w-full" aria-labelledby="music-region-label">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem :value="SEKAI_CATALOG_REGION_FOLLOW_VALUE">
-                    {{ t("sekaiRegion.followAccount") }}
-                  </SelectItem>
-                  <SelectItem
-                    v-for="option in SEKAI_REGION_OPTIONS"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ resolveSekaiRegionLabel(option.value, t) }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <CatalogSearchField
-              v-model="search"
-              :label="t('musicLibrary.list.filters.search')"
-              :placeholder="t('musicLibrary.list.filters.searchPlaceholder')"
-            />
-          </div>
-
-          <CatalogFilterPanel
-            :title="t('musicLibrary.list.filters.title')"
-            :count-label="t('musicLibrary.list.results.count', { count: visibleEntries.length })"
-            :reset-label="t('musicLibrary.list.filters.reset')"
-            @reset="resetFilters"
-          >
-              <CatalogSelectField
-                :label="t('musicLibrary.list.filters.difficulty')"
-                :all-label="t('musicLibrary.list.filters.difficultyAll')"
-                :options="difficultyFieldOptions"
-                :model-value="selectedDifficulty"
-                @update:model-value="updateDifficulty"
-              />
-
-              <div class="grid gap-2">
-                <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.level") }}</p>
-                <div class="flex items-center gap-2">
-                  <Input
-                    v-model.number="levelMin"
-                    type="number"
-                    min="1"
-                    inputmode="numeric"
-                    :placeholder="t('musicLibrary.list.filters.levelMin')"
-                    :aria-label="t('musicLibrary.list.filters.levelMin')"
-                  />
-                  <span class="text-muted-foreground">-</span>
-                  <Input
-                    v-model.number="levelMax"
-                    type="number"
-                    min="1"
-                    inputmode="numeric"
-                    :placeholder="t('musicLibrary.list.filters.levelMax')"
-                    :aria-label="t('musicLibrary.list.filters.levelMax')"
-                  />
-                </div>
-              </div>
-
-              <div class="grid gap-2">
-                <Label id="music-note-count-label" for="music-note-count-mode">{{ t("musicLibrary.list.filters.noteCount") }}</Label>
-                <div class="flex items-center gap-2">
-                  <Select
-                    id="music-note-count-mode"
-                    :model-value="noteCountMode"
-                    @update:model-value="updateNoteCountMode"
-                  >
-                    <SelectTrigger class="w-28 shrink-0" aria-labelledby="music-note-count-label">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        v-for="mode in MUSIC_NOTE_COUNT_FILTER_MODES"
-                        :key="mode"
-                        :value="mode"
-                      >
-                        {{ t(`musicLibrary.list.filters.noteCountMode.${mode}`) }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <template v-if="noteCountMode === 'exact'">
-                    <Input
-                      v-model.number="noteCountExact"
-                      type="number"
-                      min="1"
-                      inputmode="numeric"
-                      :placeholder="t('musicLibrary.list.filters.noteCountExactPlaceholder')"
-                      :aria-label="t('musicLibrary.list.filters.noteCountExactPlaceholder')"
-                    />
-                  </template>
-                  <template v-else>
-                    <Input
-                      v-model.number="noteCountMin"
-                      type="number"
-                      min="1"
-                      inputmode="numeric"
-                      :placeholder="t('musicLibrary.list.filters.noteCountMin')"
-                      :aria-label="t('musicLibrary.list.filters.noteCountMin')"
-                    />
-                    <span class="text-muted-foreground">-</span>
-                    <Input
-                      v-model.number="noteCountMax"
-                      type="number"
-                      min="1"
-                      inputmode="numeric"
-                      :placeholder="t('musicLibrary.list.filters.noteCountMax')"
-                      :aria-label="t('musicLibrary.list.filters.noteCountMax')"
-                    />
-                  </template>
-                </div>
-              </div>
-
-              <CatalogChipsField
-                v-model="selectedTags"
-                :label="t('musicLibrary.list.filters.tag')"
-                :options="tagFieldOptions"
-              />
-
-              <div class="grid gap-2">
-                <Label id="music-character-label" for="music-character">{{ t("musicLibrary.list.filters.character") }}</Label>
-                <div class="flex items-center gap-2">
-                  <Select
-                    id="music-character"
-                    :model-value="selectedCharacterId != null ? String(selectedCharacterId) : ALL_OPTION"
-                    @update:model-value="(value: AcceptableValue) =>
-                      updateCharacter(typeof value === 'string' && value !== ALL_OPTION ? value : null)"
-                  >
-                    <SelectTrigger class="w-full" aria-labelledby="music-character-label">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem :value="ALL_OPTION">
-                        {{ t("musicLibrary.list.filters.characterAll") }}
-                      </SelectItem>
-                      <SelectItem
-                        v-for="option in characterFieldOptions"
-                        :key="option.value"
-                        :value="option.value"
-                      >
-                        <span class="flex items-center gap-2">
-                          <img
-                            decoding="async"
-                            v-if="option.iconUrl"
-                            :src="option.iconUrl"
-                            alt=""
-                            class="size-4 shrink-0 rounded-full"
-                            loading="lazy"
-                            @error="handleSekaiImageError($event, option.iconUrl)"
-                          >
-                          {{ option.label }}
-                        </span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Label id="music-character-scope-label" for="music-character-scope" class="sr-only">
-                    {{ t("musicLibrary.list.filters.character") }}
-                  </Label>
-                  <Select
-                    id="music-character-scope"
-                    :model-value="characterScope"
-                    :disabled="selectedCharacterId == null"
-                    @update:model-value="updateCharacterScope"
-                  >
-                    <SelectTrigger class="w-32 shrink-0" aria-labelledby="music-character-scope-label">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        v-for="scope in MUSIC_CHARACTER_FILTER_SCOPES"
-                        :key="scope"
-                        :value="scope"
-                      >
-                        {{ t(`musicLibrary.list.filters.characterScope.${scope}`) }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <CatalogSelectField
-                :label="t('musicLibrary.list.filters.year')"
-                :all-label="t('musicLibrary.list.filters.yearAll')"
-                :options="yearFieldOptions"
-                :model-value="selectedYear != null ? String(selectedYear) : null"
-                @update:model-value="updateYear"
-              />
-
-              <div class="grid gap-2">
-                <Label id="music-sort-label" for="music-sort">{{ t("musicLibrary.list.filters.sort") }}</Label>
-                <div class="flex items-center gap-2">
-                  <Select id="music-sort" :model-value="sortKey" @update:model-value="updateSortKey">
-                    <SelectTrigger class="w-full" aria-labelledby="music-sort-label">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="key in MUSIC_SORT_KEYS" :key="key" :value="key">
-                        {{ t(`musicLibrary.list.sort.${key}`) }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    class="shrink-0"
-                    :aria-label="t(`musicLibrary.list.filters.sortDirection.${sortDirection}`)"
-                    :title="t(`musicLibrary.list.filters.sortDirection.${sortDirection}`)"
-                    @click="toggleSortDirection"
-                  >
-                    <ArrowUp v-if="sortDirection === 'asc'" class="size-4" />
-                    <ArrowDown v-else class="size-4" />
-                  </Button>
-                </div>
-              </div>
-          </CatalogFilterPanel>
-
-          <div
-            v-if="showDownloadProgress"
-            class="grid gap-2 rounded-md border bg-muted/20 p-3"
-          >
-            <p class="text-xs text-muted-foreground">
-              {{ t("musicLibrary.list.downloading", { progress: Math.round(regionState.progress) }) }}
-            </p>
-            <Progress :model-value="regionState.progress" />
-          </div>
-
-          <p v-if="error" class="text-sm text-destructive">
-            {{ t("musicLibrary.list.loadError", { message: error }) }}
-          </p>
-      </div>
-
-      <div
-        v-if="showSkeleton"
-        class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+    <template #filters>
+      <CatalogFilterPanel
+        :title="t('musicLibrary.list.filters.title')"
+        :count-label="countLabel"
+        :reset-label="t('musicLibrary.list.filters.reset')"
+        page-key="music"
+        :active-count="activeFilterCount"
+        :active-chips="activeChips"
+        @reset="reset()"
+        @remove-chip="removeMusicChip(state, $event)"
       >
-        <div v-for="index in 8" :key="index" class="space-y-2 rounded-lg border p-3">
-          <Skeleton class="aspect-square w-full rounded-md" />
-          <Skeleton class="h-4 w-3/4" />
-          <Skeleton class="h-3 w-1/2" />
-        </div>
-      </div>
+        <MusicFilterFields
+          :state="state"
+          :difficulty-options="difficultyOptions"
+          :tag-options="tagOptions"
+          :category-options="categoryOptions"
+          :year-options="yearOptions"
+          :characters="characters"
+          :unit-color-map="unitColorMap"
+          :level-bounds="levelBounds"
+          :has-categories="hasCategories"
+        />
+      </CatalogFilterPanel>
+    </template>
 
-      <template v-else-if="visibleEntries.length > 0">
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          <RouterLink
-            v-for="view in pagedEntryViews"
-            :key="view.entry.id"
-            :to="`/music/${view.entry.id}`"
-            class="group flex flex-col gap-2 rounded-lg border bg-card p-3 shadow-xs transition-colors hover:bg-accent/50 dark:hover:bg-accent/30"
-          >
-            <div class="relative aspect-square w-full overflow-hidden rounded-md">
-              <MusicJacket
-                :url="view.jacketUrl"
-                :alt="view.entry.title"
-                class="size-full"
-                :class="view.unreleased && blurUnreleased ? 'blur-md scale-105' : ''"
-              />
-              <span
-                v-if="view.unreleased"
-                class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm"
-              >
-                {{ t("sekaiUnreleased.badge") }}
-              </span>
-            </div>
-            <div class="min-w-0 space-y-1">
-              <p class="truncate text-sm font-medium" :title="view.entry.title">{{ view.entry.title }}</p>
-              <p class="flex items-center gap-1 text-xs text-muted-foreground">
-                <CalendarDays class="size-3.5 shrink-0" />
-                {{ view.dateLabel ?? t("musicLibrary.list.unknownDate") }}
-              </p>
-              <p
-                v-if="view.eventBox"
-                class="flex items-center gap-1 truncate text-xs text-muted-foreground"
-                :title="t('musicLibrary.eventBox.title', {
-                  name: view.eventBox.name,
-                  count: view.eventBox.boxNumber,
-                })"
-              >
-                <img
-                  v-if="view.eventBox.iconUrl"
-                  decoding="async"
-                  :src="view.eventBox.iconUrl ?? undefined"
-                  alt=""
-                  class="size-3.5 shrink-0 rounded-full"
-                  loading="lazy"
-                >
-                <span class="truncate">
-                  {{ t("musicLibrary.eventBox.short", {
-                    name: view.eventBox.name,
-                    count: view.eventBox.boxNumber,
-                  }) }}
-                </span>
-              </p>
-            </div>
-            <div class="mt-auto flex flex-wrap gap-1">
-              <span
-                v-for="item in view.difficulties"
-                :key="item.difficulty"
-                class="inline-flex min-w-7 items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold text-white"
-                :style="{ backgroundColor: item.color }"
-                :title="difficultyLabel(item.difficulty)"
-              >
-                {{ item.playLevel ?? "-" }}
-              </span>
-            </div>
-          </RouterLink>
-        </div>
-
-        <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 pb-4">
-          <Button variant="outline" size="sm" :disabled="page <= 1" @click="prevPage">
-            <ChevronLeft class="size-4" />
-          </Button>
-          <span class="text-sm tabular-nums">{{ page }} / {{ totalPages }}</span>
-          <Button variant="outline" size="sm" :disabled="page >= totalPages" @click="nextPage">
-            <ChevronRight class="size-4" />
-          </Button>
-        </div>
-      </template>
-
-      <div
-        v-else-if="!loading"
-        class="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground"
-      >
-        {{ aliasPending ? t("musicLibrary.list.results.aliasSearching") : t("musicLibrary.list.results.empty") }}
-      </div>
+    <div v-if="showDownloadProgress" class="grid gap-2 rounded-md border bg-muted/20 p-3">
+      <p class="text-xs text-muted-foreground">
+        {{ t("catalog.results.downloading", { progress: Math.round(regionState.progress) }) }}
+      </p>
+      <Progress :model-value="regionState.progress" />
     </div>
-  </div>
+
+    <CatalogErrorState
+      v-if="showError"
+      :message="t('catalog.results.loadError')"
+      :detail="error"
+      :retrying="refreshing"
+      @retry="reload"
+    />
+    <template v-else>
+      <CatalogResultsBar
+        v-model:direction="state.dir"
+        :sort="state.sort"
+        :view="view"
+        :count-label="countLabel"
+        :sort-options="sortOptions"
+        :view-options="viewOptions"
+        @update:sort="handleSortUpdate"
+        @update:view="handleViewUpdate"
+      />
+
+      <div ref="resultsEl">
+        <MusicResults
+          v-if="showSkeleton || rows.length > 0"
+          :rows="rows"
+          :view="view"
+          :skeleton="showSkeleton"
+          :blur="blurUnreleased"
+        />
+        <CatalogEmptyState v-else :message="emptyMessage" :hint="t('catalog.results.emptyHint')" />
+      </div>
+    </template>
+
+    <template #footer>
+      <CatalogPagination
+        v-if="!showError && rows.length > 0"
+        v-model:page="state.page"
+        v-model:page-size="state.size"
+        :total="visibleEntries.length"
+        :total-pages="totalPages"
+        :anchor="resultsEl"
+        hide-when-single-page
+      />
+    </template>
+  </CatalogPageShell>
 </template>

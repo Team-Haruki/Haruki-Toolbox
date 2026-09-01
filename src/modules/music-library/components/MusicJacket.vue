@@ -1,35 +1,38 @@
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { computed } from "vue"
 import { Music } from "lucide-vue-next"
+import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 
-const props = defineProps<{
+/**
+ * Square jacket art over the shared Sekai image pipeline (purge-and-retry
+ * on CDN errors, note-icon placeholder). Size it from the parent via
+ * `class`; the root stays `relative` for the absolutely positioned image.
+ */
+const props = withDefaults(defineProps<{
   url: string | null
   alt: string
-}>()
+  /** Blur the artwork (unreleased content). */
+  blur?: boolean
+  /** Above-the-fold hero art. */
+  eager?: boolean
+}>(), {
+  blur: false,
+  eager: false,
+})
 
-const failed = ref(false)
-
-watch(
-  () => props.url,
-  () => {
-    failed.value = false
-  },
-)
+const sources = computed(() => [props.url])
 </script>
 
 <template>
   <div class="relative overflow-hidden bg-muted">
-    <img
-      decoding="async"
-      v-if="props.url && !failed"
-      :src="props.url"
-      :alt="props.alt"
-      loading="lazy"
-      class="size-full object-cover"
-      @error="failed = true"
-    >
-    <div v-else class="flex size-full items-center justify-center text-muted-foreground">
-      <Music class="size-1/3 min-h-6 min-w-6 max-h-12 max-w-12" />
-    </div>
+    <SekaiAssetImage
+      :sources="sources"
+      :alt="alt"
+      fit="cover"
+      :blur="blur"
+      :eager="eager"
+      :placeholder-icon="Music"
+      placeholder-class="[&>svg]:size-1/3 [&>svg]:max-h-12 [&>svg]:min-h-6 [&>svg]:max-w-12 [&>svg]:min-w-6"
+    />
   </div>
 </template>

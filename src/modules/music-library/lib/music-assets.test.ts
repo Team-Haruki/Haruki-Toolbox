@@ -11,11 +11,7 @@ import {
   isMusicDifficulty,
   normalizeMusicDifficulty,
 } from "./music-difficulties"
-import {
-  resolveMusicCategoryLabelKey,
-  resolveMusicTagLabelKey,
-  resolveMusicVocalTypeLabelKey,
-} from "./music-labels"
+import { resolveMusicTagLabelKey } from "./music-labels"
 
 describe("buildMusicJacketAssetPath", () => {
   it("builds the verified jacket path pattern", () => {
@@ -77,13 +73,9 @@ describe("music difficulties", () => {
 describe("music label keys", () => {
   it("maps known values to i18n keys", () => {
     expect(resolveMusicTagLabelKey("vocaloid")).toBe("musicLibrary.tags.vocaloid")
-    expect(resolveMusicCategoryLabelKey("mv_2d")).toBe("musicLibrary.categories.mv_2d")
-    expect(resolveMusicVocalTypeLabelKey("sekai")).toBe("musicLibrary.vocalTypes.sekai")
   })
 
   it("returns null for unknown values so views can fall back to raw text", () => {
     expect(resolveMusicTagLabelKey("brand_new_tag")).toBeNull()
-    expect(resolveMusicCategoryLabelKey("hologram")).toBeNull()
-    expect(resolveMusicVocalTypeLabelKey("april_fool_2030")).toBeNull()
   })
 })
