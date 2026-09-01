@@ -1,16 +1,16 @@
 import { describe, expect, it } from "bun:test"
 import type { MusicLibraryEntry } from "./music-data"
 import {
-  countMusicPages,
   createDefaultMusicLibraryFilter,
   excludeUnreleasedMusicEntries,
   filterMusicEntries,
   getMusicPublishedYear,
   isMusicEntryUnreleased,
+  listMusicCategoryOptions,
   listMusicTagOptions,
   listMusicYearOptions,
   matchesMusicSearch,
-  paginateMusicEntries,
+  resolveMusicLevelBounds,
   sortMusicEntries,
 } from "./music-filter"
 
@@ -25,6 +25,8 @@ function makeEntry(overrides: Partial<MusicLibraryEntry>): MusicLibraryEntry {
     categories: [],
     assetbundleName: "",
     publishedAt: null,
+    fillerSec: null,
+    releaseConditionId: null,
     tags: [],
     difficulties: {},
     ...overrides,
@@ -76,6 +78,13 @@ describe("matchesMusicSearch", () => {
     expect(matchesMusicSearch(ENTRIES[0], "虾", new Set([ENTRIES[0].id]))).toBe(true)
     expect(matchesMusicSearch(ENTRIES[0], "虾", new Set([999]))).toBe(false)
     expect(matchesMusicSearch(ENTRIES[0], "虾")).toBe(false)
+  })
+
+  it("matches ids with or without the hash prefix and romaji of the pronunciation", () => {
+    expect(matchesMusicSearch(ENTRIES[1], "#2")).toBe(true)
+    expect(matchesMusicSearch(ENTRIES[1], "2")).toBe(true)
+    expect(matchesMusicSearch(ENTRIES[0], "teruyua")).toBe(true)
+    expect(matchesMusicSearch(ENTRIES[0], "#3")).toBe(false)
   })
 })
 
@@ -146,6 +155,29 @@ describe("filterMusicEntries", () => {
   it("combines search with other filters", () => {
     const filter = { ...createDefaultMusicLibraryFilter(), search: "another", tags: ["street"] }
     expect(filterMusicEntries(ENTRIES, filter).map((entry) => entry.id)).toEqual([3])
+  })
+
+  it("filters by MV category and by the presence of an APPEND chart", () => {
+    const entries = [
+      makeEntry({ id: 1, categories: ["mv"], difficulties: { append: { playLevel: 30, totalNoteCount: 1 } } }),
+      makeEntry({ id: 2, categories: ["mv_2d", "image"] }),
+      makeEntry({ id: 3, categories: [] }),
+    ]
+    const byCategory = { ...createDefaultMusicLibraryFilter(), categories: ["mv", "image"] }
+    expect(filterMusicEntries(entries, byCategory).map((entry) => entry.id)).toEqual([1, 2])
+    const appendOnly = { ...createDefaultMusicLibraryFilter(), hasAppend: true }
+    expect(filterMusicEntries(entries, appendOnly).map((entry) => entry.id)).toEqual([1])
+  })
+})
+
+describe("resolveMusicLevelBounds", () => {
+  it("spans the lowest and highest known level", () => {
+    expect(resolveMusicLevelBounds(ENTRIES)).toEqual({ min: 5, max: 30 })
+  })
+
+  it("returns null when no level is known", () => {
+    expect(resolveMusicLevelBounds([makeEntry({ difficulties: { easy: { playLevel: null, totalNoteCount: 1 } } })])).toBeNull()
+    expect(resolveMusicLevelBounds([])).toBeNull()
   })
 })
 
@@ -248,6 +280,15 @@ describe("option helpers", () => {
     expect(listMusicYearOptions(ENTRIES)).toEqual([2021, 2020])
   })
 
+  it("lists MV categories present in the data, known ones first", () => {
+    const entries = [
+      makeEntry({ id: 1, categories: ["image", "zz_custom"] }),
+      makeEntry({ id: 2, categories: ["mv"] }),
+    ]
+    expect(listMusicCategoryOptions(entries, ["mv", "mv_2d", "image"])).toEqual(["mv", "image", "zz_custom"])
+    expect(listMusicCategoryOptions(ENTRIES, ["mv"])).toEqual([])
+  })
+
   it("resolves published year in UTC", () => {
     expect(getMusicPublishedYear(Date.UTC(2022, 0, 1))).toBe(2022)
     expect(getMusicPublishedYear(null)).toBeNull()
@@ -272,23 +313,5 @@ describe("unreleased helpers", () => {
     ]
     expect(excludeUnreleasedMusicEntries(input, now).map((entry) => entry.id)).toEqual([1, 3])
     expect(input.map((entry) => entry.id)).toEqual([1, 2, 3])
-  })
-})
-
-describe("pagination", () => {
-  const items = Array.from({ length: 130 }, (_, index) => index + 1)
-
-  it("counts pages", () => {
-    expect(countMusicPages(0, 60)).toBe(1)
-    expect(countMusicPages(60, 60)).toBe(1)
-    expect(countMusicPages(61, 60)).toBe(2)
-    expect(countMusicPages(130, 60)).toBe(3)
-  })
-
-  it("slices pages and clamps out-of-range pages", () => {
-    expect(paginateMusicEntries(items, 1, 60)).toHaveLength(60)
-    expect(paginateMusicEntries(items, 3, 60)).toHaveLength(10)
-    expect(paginateMusicEntries(items, 99, 60)).toHaveLength(10)
-    expect(paginateMusicEntries(items, 0, 60)[0]).toBe(1)
   })
 })

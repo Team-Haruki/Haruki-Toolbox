@@ -285,8 +285,8 @@ watch([staticZoom, zoomPercent], () => {
             {{ zoomPercent }}%
           </span>
         </div>
-        <div class="overflow-x-auto rounded-md border bg-white">
-          <div ref="svgHost" class="mx-auto w-fit [&_svg]:block [&_svg]:max-w-none" />
+        <div class="overflow-x-auto rounded-md border bg-white dark:bg-zinc-950">
+          <div ref="svgHost" class="mx-auto w-fit bg-white [&_svg]:block [&_svg]:max-w-none" />
         </div>
       </div>
     </template>

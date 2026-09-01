@@ -10,6 +10,7 @@ import {
   type ChartVisTap,
   type DynamicChart,
 } from "../lib/chart-dynamic"
+import { useAudioExclusive } from "@/modules/music-library/composables/useAudioExclusive"
 
 const props = defineProps<{
   chart: DynamicChart
@@ -73,6 +74,8 @@ let audio: HTMLAudioElement | null = null
 let rafHandle = 0
 /** performance.now() based clock origin for silent (no audio) playback. */
 let silentClockOrigin: number | null = null
+// One thing plays at a time: starting the preview pauses the vocal player and vice versa.
+const exclusive = useAudioExclusive(() => stop())
 
 function ensureAudio(): HTMLAudioElement | null {
   if (props.audioUrl == null) {
@@ -98,6 +101,7 @@ function disposeAudio() {
 
 function play() {
   const element = ensureAudio()
+  exclusive.claim()
   playing.value = true
   if (element) {
     element.currentTime = currentTime.value + props.fillerSec
@@ -115,6 +119,7 @@ function stop() {
   playing.value = false
   silentClockOrigin = null
   audio?.pause()
+  exclusive.release()
   draw()
 }
 
