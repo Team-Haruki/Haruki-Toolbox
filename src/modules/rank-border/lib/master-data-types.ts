@@ -1,9 +1,9 @@
-import { computed, ref, watch, type Ref } from "vue"
-import type { SekaiRegion } from "@/types"
-import { readSekaiMasterFile } from "@/shared/sekai/cache"
-import { useSekaiDataStore } from "@/shared/stores/sekai-data"
+/**
+ * Master-data record shapes and pure option builders for the rank-border
+ * module. Loading/caching lives in `../composables/useRankBorderMasterData`.
+ */
 
-type SekaiEvent = {
+export type SekaiEvent = {
   id?: number
   name?: string
   eventType?: string
@@ -13,7 +13,7 @@ type SekaiEvent = {
   assetbundleName?: string
 }
 
-type SekaiWorldBloom = {
+export type SekaiWorldBloom = {
   id?: number
   name?: string
   chapterName?: string
@@ -26,7 +26,7 @@ type SekaiWorldBloom = {
   aggregateAt?: number
 }
 
-type SekaiGameCharacter = {
+export type SekaiGameCharacter = {
   id?: number
   firstName?: string
   givenName?: string
@@ -115,122 +115,7 @@ export type RankBorderWorldBloomCharacterOption = {
   aggregateAt: number | null
 }
 
-const REQUIRED_FILES = ["events", "worldBlooms", "gameCharacters"] as const
-const PROFILE_ASSET_FILES = ["cards", "honors", "honorGroups", "bondsHonors", "bondsHonorWords", "gameCharacterUnits"] as const
-
-export function useRankBorderMasterOptions(region: Ref<SekaiRegion>, selectedEventId: Ref<string | null>) {
-  const sekaiDataStore = useSekaiDataStore()
-  const events = ref<SekaiEvent[]>([])
-  const worldBlooms = ref<SekaiWorldBloom[]>([])
-  const gameCharacters = ref<SekaiGameCharacter[]>([])
-  const cards = ref<RankBorderMasterCard[]>([])
-  const honors = ref<RankBorderMasterHonor[]>([])
-  const honorGroups = ref<RankBorderMasterHonorGroup[]>([])
-  const bondsHonors = ref<RankBorderMasterBondsHonor[]>([])
-  const bondsHonorWords = ref<RankBorderMasterBondsHonorWord[]>([])
-  const gameCharacterUnits = ref<RankBorderMasterGameCharacterUnit[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-
-  const regionState = computed(() => sekaiDataStore.regionStates[region.value])
-  const eventOptions = computed<RankBorderEventOption[]>(() =>
-    buildEventOptions(events.value, worldBlooms.value),
-  )
-  const selectedEvent = computed(() =>
-    eventOptions.value.find((option) => option.value === selectedEventId.value) ?? null,
-  )
-  const worldBloomCharacterOptions = computed<RankBorderWorldBloomCharacterOption[]>(() =>
-    buildWorldBloomCharacterOptions(selectedEventId.value, worldBlooms.value, gameCharacters.value),
-  )
-
-  watch(
-    () => [region.value, regionState.value.masterFetchVersion],
-    () => {
-      void loadOptions()
-    },
-    { immediate: true },
-  )
-
-  async function loadOptions(force = false) {
-    loading.value = true
-    error.value = null
-    try {
-      if (force || !hasRequiredFiles(regionState.value.files, REQUIRED_FILES)) {
-        await sekaiDataStore.ensureRegionData(region.value, { force, files: REQUIRED_FILES })
-      }
-
-      const [eventData, worldBloomData, characterData] = await Promise.all([
-        readSekaiMasterFile<SekaiEvent[]>(region.value, "events"),
-        readSekaiMasterFile<SekaiWorldBloom[]>(region.value, "worldBlooms"),
-        readSekaiMasterFile<SekaiGameCharacter[]>(region.value, "gameCharacters"),
-      ])
-      events.value = Array.isArray(eventData) ? eventData : []
-      worldBlooms.value = Array.isArray(worldBloomData) ? worldBloomData : []
-      gameCharacters.value = Array.isArray(characterData) ? characterData : []
-    } catch (loadError) {
-      events.value = []
-      worldBlooms.value = []
-      gameCharacters.value = []
-      cards.value = []
-      honors.value = []
-      honorGroups.value = []
-      bondsHonors.value = []
-      bondsHonorWords.value = []
-      gameCharacterUnits.value = []
-      error.value = loadError instanceof Error ? loadError.message : String(loadError)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function loadProfileAssets(force = false) {
-    try {
-      if (force || !hasRequiredFiles(regionState.value.files, PROFILE_ASSET_FILES)) {
-        await sekaiDataStore.ensureRegionData(region.value, { force, files: PROFILE_ASSET_FILES })
-      }
-
-      const [cardData, honorData, honorGroupData, bondsHonorData, bondsHonorWordData, gameCharacterUnitData] = await Promise.all([
-        readOptionalMasterFile<RankBorderMasterCard[]>(region.value, "cards"),
-        readOptionalMasterFile<RankBorderMasterHonor[]>(region.value, "honors"),
-        readOptionalMasterFile<RankBorderMasterHonorGroup[]>(region.value, "honorGroups"),
-        readOptionalMasterFile<RankBorderMasterBondsHonor[]>(region.value, "bondsHonors"),
-        readOptionalMasterFile<RankBorderMasterBondsHonorWord[]>(region.value, "bondsHonorWords"),
-        readOptionalMasterFile<RankBorderMasterGameCharacterUnit[]>(region.value, "gameCharacterUnits"),
-      ])
-      cards.value = Array.isArray(cardData) ? cardData : []
-      honors.value = Array.isArray(honorData) ? honorData : []
-      honorGroups.value = Array.isArray(honorGroupData) ? honorGroupData : []
-      bondsHonors.value = Array.isArray(bondsHonorData) ? bondsHonorData : []
-      bondsHonorWords.value = Array.isArray(bondsHonorWordData) ? bondsHonorWordData : []
-      gameCharacterUnits.value = Array.isArray(gameCharacterUnitData) ? gameCharacterUnitData : []
-    } catch {
-      cards.value = []
-      honors.value = []
-      honorGroups.value = []
-      bondsHonors.value = []
-      bondsHonorWords.value = []
-      gameCharacterUnits.value = []
-    }
-  }
-
-  return {
-    eventOptions,
-    selectedEvent,
-    worldBloomCharacterOptions,
-    cards,
-    honors,
-    honorGroups,
-    bondsHonors,
-    bondsHonorWords,
-    gameCharacterUnits,
-    loading,
-    error,
-    reload: () => loadOptions(true),
-    loadProfileAssets,
-  }
-}
-
-function buildEventOptions(events: SekaiEvent[], worldBlooms: SekaiWorldBloom[]): RankBorderEventOption[] {
+export function buildEventOptions(events: SekaiEvent[], worldBlooms: SekaiWorldBloom[]): RankBorderEventOption[] {
   const now = Math.floor(Date.now() / 1000)
   const worldBloomEventIds = new Set(
     worldBlooms
@@ -267,7 +152,7 @@ function buildEventOptions(events: SekaiEvent[], worldBlooms: SekaiWorldBloom[])
     .sort((a, b) => (b.startAt ?? 0) - (a.startAt ?? 0))
 }
 
-function buildWorldBloomCharacterOptions(
+export function buildWorldBloomCharacterOptions(
   selectedEventId: string | null,
   worldBlooms: SekaiWorldBloom[],
   gameCharacters: SekaiGameCharacter[],
@@ -345,16 +230,14 @@ function resolveCharacterName(character: SekaiGameCharacter, fallbackId: number)
   return englishName || `#${fallbackId}`
 }
 
-function hasRequiredFiles(cachedFiles: readonly string[], requiredFiles: readonly string[]): boolean {
-  return requiredFiles.every((fileName) => cachedFiles.includes(fileName))
-}
-
-async function readOptionalMasterFile<T>(region: SekaiRegion, fileName: string): Promise<T | null> {
-  try {
-    return await readSekaiMasterFile<T>(region, fileName)
-  } catch {
-    return null
+export function buildMasterRecordMap<T extends { id?: number }>(items: T[]) {
+  const map = new Map<number, T>()
+  for (const item of items) {
+    if (typeof item.id === "number" && item.id > 0) {
+      map.set(item.id, item)
+    }
   }
+  return map
 }
 
 function normalizePositiveNumber(value: unknown): number | null {

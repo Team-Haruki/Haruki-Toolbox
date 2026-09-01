@@ -814,6 +814,7 @@ export default {
     "sponsors": "Sponsors",
     "deckRecommend": "Deck recommend",
     "rankBorder": "Rank border",
+    "rankBorderDetail": "Rank border detail",
     "ptCalculator": "Event Pt calculator",
     "clientConfigGenerator": "Client config generator",
     "uploadData": "Upload data",

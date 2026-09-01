@@ -2,7 +2,6 @@ import type { SekaiRegion } from "@/types"
 import type {
   RankBorderGrowth,
   RankBorderLatest,
-  RankBorderLine,
   RankBorderMode,
 } from "./rank-border"
 
@@ -38,10 +37,8 @@ export type RankBorderLineRow = {
   displayGrowthChanged: boolean
   displayRankGrowthChanged: boolean
   detail: RankBorderLatest | null
-  selected: boolean
   scoreChanged: boolean
   growthChanged: boolean
-  detailChanged: boolean
   top100: boolean
 }
 
@@ -50,9 +47,25 @@ export type RankBorderSegmentRow = {
   score: number
   timestamp: number | null
   growth: RankBorderGrowth | null
-  selected: boolean
   scoreChanged: boolean
   growthChanged: boolean
+}
+
+/** Inline quick-view card data, derived entirely from already-loaded overview data. */
+export type RankBorderQuickFacts = {
+  kind: "rank" | "line"
+  rank: number
+  scoreLabel: string
+  timestamp: number | null
+  playerGrowthLabel: string | null
+  playerGrowthPositive: boolean
+  rankGrowthLabel: string | null
+  rankGrowthPositive: boolean
+  hourlySpeedLabel: string | null
+  prevGapLabel: string | null
+  prevLabel: string
+  nextGapLabel: string | null
+  nextLabel: string
 }
 
 export type RankBorderChartMetric = "score" | "rank" | "speed"
@@ -84,6 +97,8 @@ export type RankBorderHeatmapCell = {
 export type RankBorderHeatmapDay = {
   key: string
   label: string
+  /** True for filler rows past the tracked range (wide-layout row floor). */
+  padded: boolean
   cells: RankBorderHeatmapCell[]
 }
 
@@ -114,6 +129,10 @@ export type RankBorderChartTimeTick = {
   key: string
   left: string
   label: string
+  /** Quarter-position ticks: shown on wide charts, hidden when the card is narrow. */
+  minor?: boolean
+  /** Label anchoring: the edge ticks hug inward instead of centering past the border. */
+  align: "start" | "center" | "end"
 }
 
 export type RankBorderChartTimeDomain = {
@@ -127,22 +146,6 @@ export type RankBorderScoreOverlayLine = {
   y: number
   label: string
   tone: "target" | "planned"
-}
-
-export type RankBorderDetailCharts = {
-  rankReferenceLines: RankBorderChartReferenceLine[]
-  scoreReferenceLines: RankBorderChartReferenceLine[]
-  speedReferenceLines: RankBorderChartReferenceLine[]
-  rankPoints: RankBorderChartPoint[]
-  scorePoints: RankBorderChartPoint[]
-  speedPoints: RankBorderChartPoint[]
-  timeTicks: RankBorderChartTimeTick[]
-  rankPath: string
-  scorePath: string
-  speedPath: string
-  comparisonScorePath: string
-  comparisonSpeedPath: string
-  plannerLines: RankBorderScoreOverlayLine[]
 }
 
 export type RankBorderUpdateRecord = {
@@ -189,28 +192,6 @@ export type RichNameSegment = {
 }
 
 export type RecoverableImageTarget = HTMLImageElement | SVGImageElement
-
-export type PlayerDetailSource = "rank" | "user"
-
-export type PlayerDetailState = {
-  source: PlayerDetailSource
-  query: string
-  trackedUserId: string | null
-  result: RankBorderLatest
-  previous: RankBorderLatest | null
-  next: RankBorderLatest | null
-}
-
-export type LineDetailState = {
-  source: "line"
-  query: string
-  result: RankBorderLine
-  growth: RankBorderGrowth | null
-  previous: RankBorderLine | null
-  next: RankBorderLine | null
-}
-
-export type DetailState = PlayerDetailState | LineDetailState
 
 export type RankBorderTooltipState = {
   visible: boolean

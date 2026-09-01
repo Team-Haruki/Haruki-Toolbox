@@ -6,4 +6,9 @@ export const rankBorderRoutes: RouteRecordRaw[] = [
     component: () => import("@/modules/rank-border/views/RankBorder.vue"),
     meta: { titleKey: "route.rankBorder" },
   },
+  {
+    path: "/rank-border/detail",
+    component: () => import("@/modules/rank-border/views/RankBorderDetail.vue"),
+    meta: { titleKey: "route.rankBorderDetail" },
+  },
 ]

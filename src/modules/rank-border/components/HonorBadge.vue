@@ -1,60 +1,63 @@
 <script setup lang="ts">
-import { useRankBorderContext } from "../composables/rank-border-context"
+import { computed } from "vue"
+import {
+  honorFrameSvgAttrs,
+  honorLevelStars,
+  honorRankSvgAttrs,
+  honorSvgId,
+} from "../lib/honor-visuals"
+import { hideBrokenImage, resetRecoveredImage } from "../lib/image-retry"
 import { HONOR_BONDS_MASK_URL } from "../lib/rank-border-constants"
 import type { RankBorderHonorView } from "../lib/rank-border-types"
 
-defineProps<{ honor: RankBorderHonorView }>()
+/**
+ * One composited profile honor (称号). Layers load lazily as plain SVG images
+ * with the shared purge-and-retry error handling — there is deliberately no
+ * preload gate; the fixed-aspect frame keeps layout stable while layers land.
+ */
+const props = defineProps<{
+  honor: RankBorderHonorView
+  variant?: "row" | "detail"
+}>()
 
-const { honors } = useRankBorderContext()
-
-const {
-  honorSvgId,
-  honorFrameSvgAttrs,
-  honorRankSvgAttrs,
-  loadedHonorLevelStars,
-  preloadedRankBorderImageUrl,
-  isRankBorderImageLoaded,
-  areRankBorderImagesLoaded,
-  hideBrokenImage,
-  resetRecoveredImage,
-} = honors
+const stars = computed(() => honorLevelStars(props.honor))
+const frameAttrs = computed(() => honorFrameSvgAttrs(props.honor))
+const rankAttrs = computed(() => honorRankSvgAttrs(props.honor))
 </script>
 
 <template>
-  <span class="rank-border-honor rank-border-honor--detail">
+  <span :class="['rank-border-honor', variant === 'detail' ? 'rank-border-honor--detail' : 'rank-border-honor--row']">
     <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
       <svg
-        v-if="isRankBorderImageLoaded(honor.baseUrl)"
         class="rank-border-honor-svg"
         viewBox="0 0 180 80"
         aria-hidden="true"
         focusable="false"
       >
         <image
-          v-if="preloadedRankBorderImageUrl(honor.baseUrl)"
-          :href="preloadedRankBorderImageUrl(honor.baseUrl) ?? ''" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+          :href="honor.baseUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
           @load="resetRecoveredImage"
           @error="hideBrokenImage"
         />
         <image
-          v-if="preloadedRankBorderImageUrl(honor.frameUrl)"
-          :href="preloadedRankBorderImageUrl(honor.frameUrl) ?? ''"
-          v-bind="honorFrameSvgAttrs(honor)"
+          v-if="honor.frameUrl"
+          :href="honor.frameUrl"
+          v-bind="frameAttrs"
           preserveAspectRatio="none"
           @load="resetRecoveredImage"
           @error="hideBrokenImage"
         />
         <image
-          v-if="preloadedRankBorderImageUrl(honor.rankUrl)"
-          :href="preloadedRankBorderImageUrl(honor.rankUrl) ?? ''"
-          v-bind="honorRankSvgAttrs(honor)"
+          v-if="honor.rankUrl"
+          :href="honor.rankUrl"
+          v-bind="rankAttrs"
           preserveAspectRatio="none"
           @load="resetRecoveredImage"
           @error="hideBrokenImage"
         />
         <image
-          v-if="preloadedRankBorderImageUrl(honor.scrollUrl)"
-          :href="preloadedRankBorderImageUrl(honor.scrollUrl) ?? ''"
+          v-if="honor.scrollUrl"
+          :href="honor.scrollUrl"
           x="37"
           y="3"
           width="101"
@@ -64,7 +67,7 @@ const {
           @error="hideBrokenImage"
         />
         <image
-          v-for="star in loadedHonorLevelStars(honor)"
+          v-for="star in stars"
           :key="star.key"
           :href="star.url"
           :x="50 + star.slot * 16"
@@ -89,7 +92,6 @@ const {
     </span>
     <span v-else-if="honor.type === 'bonds' && honor.bondsLeftBgUrl && honor.bondsRightBgUrl" class="rank-border-honor-visual rank-border-honor-visual--bonds">
       <svg
-        v-if="areRankBorderImagesLoaded(honor.bondsLeftBgUrl, honor.bondsRightBgUrl, HONOR_BONDS_MASK_URL)"
         class="rank-border-honor-svg"
         viewBox="0 0 180 80"
         aria-hidden="true"
@@ -98,8 +100,7 @@ const {
         <defs>
           <mask :id="honorSvgId(honor, 'mask')" maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="80" style="mask-type: alpha">
             <image
-              v-if="preloadedRankBorderImageUrl(HONOR_BONDS_MASK_URL)"
-              :href="preloadedRankBorderImageUrl(HONOR_BONDS_MASK_URL) ?? ''" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+              :href="HONOR_BONDS_MASK_URL" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
               @load="resetRecoveredImage"
               @error="hideBrokenImage"
             />
@@ -116,14 +117,12 @@ const {
         </defs>
         <g :mask="`url(#${honorSvgId(honor, 'mask')})`">
           <image
-            v-if="preloadedRankBorderImageUrl(honor.bondsRightBgUrl)"
-            :href="preloadedRankBorderImageUrl(honor.bondsRightBgUrl) ?? ''" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
+            :href="honor.bondsRightBgUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
             @load="resetRecoveredImage"
             @error="hideBrokenImage"
           />
           <image
-            v-if="preloadedRankBorderImageUrl(honor.bondsLeftBgUrl)"
-            :href="preloadedRankBorderImageUrl(honor.bondsLeftBgUrl) ?? ''"
+            :href="honor.bondsLeftBgUrl"
             x="0"
             y="0"
             width="180"
@@ -134,8 +133,8 @@ const {
             @error="hideBrokenImage"
           />
           <image
-            v-if="preloadedRankBorderImageUrl(honor.bondsLeftIconUrl)"
-            :href="preloadedRankBorderImageUrl(honor.bondsLeftIconUrl) ?? ''"
+            v-if="honor.bondsLeftIconUrl"
+            :href="honor.bondsLeftIconUrl"
             x="-4"
             y="-29"
             width="128"
@@ -146,8 +145,8 @@ const {
             @error="hideBrokenImage"
           />
           <image
-            v-if="preloadedRankBorderImageUrl(honor.bondsRightIconUrl)"
-            :href="preloadedRankBorderImageUrl(honor.bondsRightIconUrl) ?? ''"
+            v-if="honor.bondsRightIconUrl"
+            :href="honor.bondsRightIconUrl"
             x="56"
             y="-29"
             width="128"
@@ -159,15 +158,15 @@ const {
           />
         </g>
         <image
-          v-if="preloadedRankBorderImageUrl(honor.frameUrl)"
-          :href="preloadedRankBorderImageUrl(honor.frameUrl) ?? ''"
-          v-bind="honorFrameSvgAttrs(honor)"
+          v-if="honor.frameUrl"
+          :href="honor.frameUrl"
+          v-bind="frameAttrs"
           preserveAspectRatio="none"
           @load="resetRecoveredImage"
           @error="hideBrokenImage"
         />
         <image
-          v-for="star in loadedHonorLevelStars(honor)"
+          v-for="star in stars"
           :key="star.key"
           :href="star.url"
           :x="50 + star.slot * 16"
@@ -185,6 +184,14 @@ const {
 </template>
 
 <style scoped>
+@font-face {
+  font-family: "RankBorderSourceHanSansSC";
+  font-display: swap;
+  font-style: normal;
+  font-weight: 700;
+  src: url("/rank-border/fonts/SourceHanSansSC-Bold.ttf") format("truetype");
+}
+
 .rank-border-honor {
   display: inline-flex;
   min-width: 0;
@@ -198,9 +205,34 @@ const {
   line-height: 1;
 }
 
+.rank-border-honor--row {
+  width: 5rem;
+  aspect-ratio: 9 / 4;
+}
+
+.rank-border-honor--detail {
+  width: 6rem;
+  aspect-ratio: 9 / 4;
+}
+
+@media (max-width: 767px) {
+  .rank-border-honor--detail {
+    width: 4.75rem;
+  }
+
+  .rank-border-honor--row {
+    width: 3.9rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .rank-border-honor--row {
+    width: 3.35rem;
+  }
+}
+
 .rank-border-honor-visual {
   position: relative;
-  container-type: inline-size;
   display: block;
   width: 100%;
   height: 100%;
@@ -240,28 +272,5 @@ const {
   padding: 0 0.25rem;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.rank-border-honor--detail {
-  width: 6rem;
-  aspect-ratio: 9 / 4;
-}
-
-@media (min-width: 768px) and (max-width: 1180px) {
-  .rank-border-honor--detail {
-    width: 4.75rem;
-  }
-}
-
-@media (min-width: 768px) and (max-height: 840px) {
-  .rank-border-honor--detail {
-    width: 4.25rem;
-  }
-}
-
-@media (max-width: 767px) {
-  .rank-border-honor--detail {
-    width: 4.6rem;
-  }
 }
 </style>

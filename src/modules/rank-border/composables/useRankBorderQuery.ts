@@ -7,15 +7,16 @@ import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-regio
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUserStore } from "@/shared/stores/user"
 import type { SekaiRegion } from "@/types"
+import { useRankBorderMasterData } from "./useRankBorderMasterData"
 import {
-  useRankBorderMasterOptions,
+  buildMasterRecordMap,
   type RankBorderMasterBondsHonor,
   type RankBorderMasterBondsHonorWord,
   type RankBorderMasterCard,
   type RankBorderMasterGameCharacterUnit,
   type RankBorderMasterHonor,
   type RankBorderMasterHonorGroup,
-} from "./useRankBorderMasterOptions"
+} from "../lib/master-data-types"
 import {
   normalizeTrackerEndpoint,
   type RankBorderMode,
@@ -37,16 +38,6 @@ import type { AccountOption, PersistedState } from "../lib/rank-border-types"
  * everything returned here; the names deliberately match the originals so the
  * `<template>` and the remaining view code keep referencing them unchanged.
  */
-function buildMasterRecordMap<T extends { id?: number }>(items: T[]) {
-  const map = new Map<number, T>()
-  for (const item of items) {
-    if (typeof item.id === "number" && item.id > 0) {
-      map.set(item.id, item)
-    }
-  }
-  return map
-}
-
 export function useRankBorderQuery() {
   const { t } = useI18n()
   const userStore = useUserStore()
@@ -63,7 +54,7 @@ export function useRankBorderQuery() {
   const selectedAccountKey = ref(persistedState.accountKey ?? "")
   const hideProfileAssets = ref(persistedState.hideProfileAssets ?? false)
 
-  const masterOptions = useRankBorderMasterOptions(selectedRegion, selectedEventId)
+  const masterOptions = useRankBorderMasterData(selectedRegion, selectedEventId)
 
   const eventComboboxOptions = computed<ComboboxOption[]>(() =>
     masterOptions.eventOptions.value.map((event) => ({

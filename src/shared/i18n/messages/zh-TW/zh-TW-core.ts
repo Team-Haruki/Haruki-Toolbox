@@ -814,6 +814,7 @@ export default {
     "sponsors": "贊助者名單",
     "deckRecommend": "組卡推薦",
     "rankBorder": "榜線查詢",
+    "rankBorderDetail": "榜線詳情",
     "ptCalculator": "活動Pt計算器",
     "clientConfigGenerator": "Client 配置生成器",
     "uploadData": "上傳資料",

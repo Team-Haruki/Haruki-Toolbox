@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from "vue"
+import { computed, onBeforeUnmount, shallowRef, watch, type ComputedRef, type Ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
 import type { SekaiRegion } from "@/types"
@@ -11,7 +11,6 @@ import {
 } from "../api/rank-border"
 import { useRankBorderTracker } from "./useRankBorderTracker"
 import {
-  normalizeRankBorderWebRankings,
   normalizeTrackerEndpoint,
   resolveRankBorderTraceGrowth,
   type RankBorderGrowth,
@@ -27,13 +26,11 @@ import {
   MIN_LIVE_REFRESH_MS,
   NUMBER_FLASH_MS,
   PERSONAL_COLLECTION_LIMIT,
-  TOP_100_DETAIL_CACHE_PREFIX,
   TOP_100_DETAIL_CACHE_TTL_MS,
   TOP_100_RANKS,
   TRACKER_UPDATE_INTERVAL_SECONDS,
 } from "../lib/rank-border-constants"
 import type {
-  DetailState,
   RankBorderLineRow,
   RankBorderSegmentRow,
 } from "../lib/rank-border-types"
@@ -43,11 +40,16 @@ import type {
  *
  * Owns the tracker subscription, the realtime WebSocket + local live-refresh
  * fallback timers, the top-100 leaderboard data + growth caches, the number
- * flash state, and the refresh orchestration that keeps them coherent. The
- * detail subsystem stays in the view; this composable reaches it only through
- * the `refreshActiveDetail` / `resetDetailData` callbacks. Everything returned
- * keeps the original declaration names so the view's <template> and remaining
- * script reference them unchanged.
+ * flash marks, and the refresh orchestration that keeps them coherent.
+ *
+ * Perf contract (deliberate differences from the first implementation):
+ * - No per-second clock: nothing here re-renders on wall-time alone. Relative
+ *   times are rendered by leaf components subscribing to `useNowSecond`.
+ * - Change flashes are one-shot: each refresh replaces the changed-rank sets
+ *   once and a single timer clears them after the CSS animation finished, so
+ *   one data refresh causes at most two list re-renders.
+ * - The top-100 snapshot is cached in module memory (not sessionStorage), so
+ *   returning to the page repaints instantly without JSON round-trips.
  */
 export interface UseRankBorderLiveDeps {
   trackerEndpoint: Ref<string>
@@ -61,19 +63,16 @@ export interface UseRankBorderLiveDeps {
   selectedIntervalSeconds: ComputedRef<number>
   trackerEndpointReady: ComputedRef<boolean>
   playbackAt: Ref<number | null>
-  detail: Ref<DetailState | null>
-  publicProfileByUserId: Ref<Map<string, RankBorderUserProfile>>
-  detailScoreChanged: Ref<boolean>
-  refreshActiveDetail: () => void | Promise<void>
-  resetDetailData: () => void
-  normalizeTextValue: (value: unknown) => string | null
-  mergeLatestWithProfile: (
-    latest: RankBorderLatest,
-    profile: RankBorderUserProfile | null,
-  ) => RankBorderLatest
-  hasProfileFields: (latest: RankBorderLatest) => boolean
   isLocalMockTrackerEndpoint: (endpoint: string) => boolean
 }
+
+type Top100MemoryCacheEntry = {
+  cachedAt: number
+  details: Map<number, RankBorderLatest>
+}
+
+const TOP_100_MEMORY_CACHE_LIMIT = 4
+const top100MemoryCache = new Map<string, Top100MemoryCacheEntry>()
 
 export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
   const {
@@ -88,14 +87,6 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     selectedIntervalSeconds,
     trackerEndpointReady,
     playbackAt,
-    detail,
-    publicProfileByUserId,
-    detailScoreChanged,
-    refreshActiveDetail,
-    resetDetailData,
-    normalizeTextValue,
-    mergeLatestWithProfile,
-    hasProfileFields,
     isLocalMockTrackerEndpoint,
   } = deps
 
@@ -104,19 +95,18 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
 
   const tracker = useRankBorderTracker()
 
-  const liveRefreshing = ref(false)
-  const realtimeState = ref<RankBorderRealtimeState>("closed")
-  const realtimeOnline = ref<RankBorderRealtimeOnline | null>(null)
-  const currentUnixSecond = ref(Math.floor(Date.now() / 1000))
-  const top100Details = ref<Map<number, RankBorderLatest>>(new Map())
-  const top100GrowthByRank = ref<Map<number, RankBorderGrowth>>(new Map())
-  const top100RankGrowthByRank = ref<Map<number, RankBorderGrowth>>(new Map())
-  const top100GrowthIntervalSeconds = ref<number | null>(null)
-  const top100TraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
-  const segmentTraceByRank = ref<Map<number, RankBorderTracePoint[]>>(new Map())
-  const scoreChangedRanks = ref<Set<number>>(new Set())
-  const growthChangedRanks = ref<Set<number>>(new Set())
-  const detailChangedRanks = ref<Set<number>>(new Set())
+  const liveRefreshing = shallowRef(false)
+  const publicProfileByUserId = shallowRef<Map<string, RankBorderUserProfile>>(new Map())
+  const realtimeState = shallowRef<RankBorderRealtimeState>("closed")
+  const realtimeOnline = shallowRef<RankBorderRealtimeOnline | null>(null)
+  const top100Details = shallowRef<Map<number, RankBorderLatest>>(new Map())
+  const top100GrowthByRank = shallowRef<Map<number, RankBorderGrowth>>(new Map())
+  const top100RankGrowthByRank = shallowRef<Map<number, RankBorderGrowth>>(new Map())
+  const top100GrowthIntervalSeconds = shallowRef<number | null>(null)
+  const top100TraceByRank = shallowRef<Map<number, RankBorderTracePoint[]>>(new Map())
+  const segmentTraceByRank = shallowRef<Map<number, RankBorderTracePoint[]>>(new Map())
+  const scoreChangedRanks = shallowRef<Set<number>>(new Set())
+  const growthChangedRanks = shallowRef<Set<number>>(new Set())
 
   let liveRefreshTimer: ReturnType<typeof setTimeout> | null = null
   let realtimeSubscription: RankBorderRealtimeSubscription | null = null
@@ -124,9 +114,6 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
   let realtimeSubscriptionToken = 0
   let numberFlashTimer: ReturnType<typeof setTimeout> | null = null
   let pendingRefresh = false
-  const clockTimer = setInterval(() => {
-    currentUnixSecond.value = Math.floor(Date.now() / 1000)
-  }, 1000)
 
   const isPlaybackLive = computed(() => playbackAt.value == null)
 
@@ -156,7 +143,6 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
           score: line.score,
           timestamp: line.timestamp,
           growth,
-          selected: detail.value?.source === "line" && detail.value.result.rank === line.rank,
           scoreChanged: scoreChangedRanks.value.has(line.rank),
           growthChanged: growthChangedRanks.value.has(line.rank),
         }
@@ -233,7 +219,6 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
   onBeforeUnmount(() => {
     stopLiveRefreshTimer()
     stopRealtimeSubscription()
-    clearInterval(clockTimer)
     clearNumberFlashTimer()
   })
 
@@ -246,9 +231,8 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       : null
     const growth = localGrowth ?? null
     const rankGrowth = localRankGrowth ?? selectedTrackerGrowthByRank.value.get(rank) ?? null
-    const rowKey = top100RowKey(rank, rowDetail)
     return {
-      key: rowKey,
+      key: top100RowKey(rank, rowDetail),
       rank,
       score: rowDetail?.score ?? null,
       timestamp: rowDetail?.timestamp ?? null,
@@ -257,13 +241,49 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       displayGrowth: growth?.growth ?? null,
       displayRankGrowth: rankGrowth?.growth ?? null,
       detail: rowDetail,
-      selected: detail.value?.result.rank === rank,
       scoreChanged: scoreChangedRanks.value.has(rank),
       growthChanged: growthChangedRanks.value.has(rank),
       displayGrowthChanged: growthChangedRanks.value.has(rank),
       displayRankGrowthChanged: growthChangedRanks.value.has(rank),
-      detailChanged: detailChangedRanks.value.has(rank),
       top100: rank <= PERSONAL_COLLECTION_LIMIT,
+    }
+  }
+
+  function normalizeTextValue(value: unknown) {
+    if (typeof value !== "string") {
+      return null
+    }
+
+    const trimmed = value.trim()
+    return trimmed ? trimmed : null
+  }
+
+  function hasProfileFields(latest: RankBorderLatest) {
+    return latest.name != null
+      || latest.cardId != null
+      || latest.profileWord != null
+      || latest.profileHonors.length > 0
+      || latest.userPlayerFrames.length > 0
+  }
+
+  function mergeLatestWithProfile(latest: RankBorderLatest, profile: RankBorderUserProfile | null): RankBorderLatest {
+    if (!profile) {
+      return latest
+    }
+
+    return {
+      ...latest,
+      userId: latest.userId ?? profile.userId,
+      name: profile.name ?? latest.name,
+      cheerfulTeamId: profile.cheerfulTeamId ?? latest.cheerfulTeamId,
+      cardId: profile.cardId ?? latest.cardId,
+      cardLevel: profile.cardLevel ?? latest.cardLevel,
+      cardMasterRank: profile.cardMasterRank ?? latest.cardMasterRank,
+      cardSpecialTrainingStatus: profile.cardSpecialTrainingStatus ?? latest.cardSpecialTrainingStatus,
+      cardDefaultImage: profile.cardDefaultImage ?? latest.cardDefaultImage,
+      profileWord: profile.profileWord ?? latest.profileWord,
+      profileHonors: profile.profileHonors.length > 0 ? profile.profileHonors : latest.profileHonors,
+      userPlayerFrames: profile.userPlayerFrames.length > 0 ? profile.userPlayerFrames : latest.userPlayerFrames,
     }
   }
 
@@ -282,13 +302,15 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
   }
 
   function resetRankBorderData() {
-    resetDetailData()
+    publicProfileByUserId.value = new Map()
     top100Details.value = new Map()
     top100GrowthByRank.value = new Map()
     top100RankGrowthByRank.value = new Map()
     top100GrowthIntervalSeconds.value = null
     top100TraceByRank.value = new Map()
     segmentTraceByRank.value = new Map()
+    scoreChangedRanks.value = new Set()
+    growthChangedRanks.value = new Set()
     tracker.lines.value = []
     tracker.growths.value = []
     tracker.growthIntervalSeconds.value = null
@@ -324,7 +346,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       const previousGrowths = new Map(tracker.growths.value.map((growth) => [growth.rank, growth.growth]))
       const requestedIntervalSeconds = selectedIntervalSeconds.value
       hydrateTop100DetailsFromCache()
-      const trackerRefresh = tracker.refresh({
+      await tracker.refresh({
         endpoint: trackerEndpoint.value,
         region: selectedRegion.value,
         eventId: selectedEventIdNumber.value,
@@ -337,7 +359,6 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
         playbackAt: playbackAt.value,
         useWebSocket: canUseRealtimeAutoRefresh.value,
       })
-      await trackerRefresh
       if (tracker.error.value) {
         return
       }
@@ -349,10 +370,9 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
         previousDetails,
         previousTop100Growths,
         previousTop100RankGrowths,
+        previousLines,
+        previousGrowths,
       )
-      markChangedLines(previousLines)
-      markChangedGrowths(previousGrowths)
-      await refreshActiveDetail()
     } finally {
       liveRefreshing.value = false
       if (pendingRefresh) {
@@ -371,21 +391,17 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
   ) {
     const nextDetails = new Map<number, RankBorderLatest>()
     const previousDetailsByKey = latestDetailsByRowKey(previousDetails)
-    const nextDetailChanges = new Set<number>()
     const nextScoreChanges = new Set<number>()
     for (const latest of latestEntries) {
       const profile = latest.userId ? profiles.get(latest.userId) ?? null : null
       const nextDetail = mergeLatestWithProfile(latest, profile)
       const previousDetail = previousDetailsByKey.get(top100RowKey(nextDetail.rank, nextDetail))
       nextDetails.set(nextDetail.rank, nextDetail)
-      if (!previousDetail || isLineDetailChanged(previousDetail, nextDetail)) {
-        nextDetailChanges.add(nextDetail.rank)
-        if (!previousDetail || previousDetail.score !== nextDetail.score) {
-          nextScoreChanges.add(nextDetail.rank)
-        }
+      if (previousDetail && previousDetail.score !== nextDetail.score) {
+        nextScoreChanges.add(nextDetail.rank)
       }
     }
-    return { nextDetails, nextDetailChanges, nextScoreChanges }
+    return { nextDetails, nextScoreChanges }
   }
 
   function buildPlayerGrowthOverview(
@@ -396,13 +412,13 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     const nextGrowths = new Map<number, RankBorderGrowth>()
     const nextGrowthChanges = new Set<number>()
     for (const growth of playerGrowths) {
-      const detail = nextDetails.get(growth.rank)
-      if (detail?.userId && detail.userId !== growth.userId) {
+      const detailEntry = nextDetails.get(growth.rank)
+      if (detailEntry?.userId && detailEntry.userId !== growth.userId) {
         continue
       }
       nextGrowths.set(growth.rank, growth)
       const previousGrowth = previousGrowths.get(growth.rank)
-      if (!previousGrowth || isGrowthChanged(previousGrowth, growth)) {
+      if (previousGrowth && isGrowthChanged(previousGrowth, growth)) {
         nextGrowthChanges.add(growth.rank)
       }
     }
@@ -418,27 +434,11 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     for (const growth of rankGrowths) {
       nextRankGrowths.set(growth.rank, growth)
       const previousGrowth = previousGrowths.get(growth.rank)
-      if (!previousGrowth || isGrowthChanged(previousGrowth, growth)) {
+      if (previousGrowth && isGrowthChanged(previousGrowth, growth)) {
         nextGrowthChanges.add(growth.rank)
       }
     }
     return nextRankGrowths
-  }
-
-  function flashTop100OverviewChanges(
-    nextScoreChanges: Set<number>,
-    nextDetailChanges: Set<number>,
-    nextGrowthChanges: Set<number>,
-  ) {
-    if (nextScoreChanges.size > 0) {
-      restartRankFlash(scoreChangedRanks, nextScoreChanges)
-    }
-    if (nextDetailChanges.size > 0) {
-      restartRankFlash(detailChangedRanks, nextDetailChanges)
-    }
-    if (nextGrowthChanges.size > 0) {
-      restartRankFlash(growthChangedRanks, nextGrowthChanges)
-    }
   }
 
   function applyTop100Overview(
@@ -448,6 +448,8 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     previousDetails: Map<number, RankBorderLatest>,
     previousPlayerGrowths: Map<number, RankBorderGrowth>,
     previousRankGrowths: Map<number, RankBorderGrowth>,
+    previousLines: Map<number, RankBorderLine>,
+    previousLineGrowths: Map<number, number | null>,
   ) {
     const latestEntries = latestRankingEntriesByRank(rankings)
     if (latestEntries.length === 0 && previousDetails.size > 0) {
@@ -455,7 +457,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     }
 
     const nextProfiles = seedProfilesFromLatestEntries(latestEntries)
-    const { nextDetails, nextDetailChanges, nextScoreChanges } = buildLatestDetailOverview(
+    const { nextDetails, nextScoreChanges } = buildLatestDetailOverview(
       latestEntries,
       nextProfiles,
       previousDetails,
@@ -467,12 +469,40 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     )
     const nextRankGrowths = buildRankGrowthOverview(rankGrowths, previousRankGrowths, nextGrowthChanges)
 
+    for (const line of tracker.lines.value) {
+      const previousLine = previousLines.get(line.rank)
+      if (previousLine && previousLine.score !== line.score) {
+        nextScoreChanges.add(line.rank)
+      }
+    }
+    for (const growth of tracker.growths.value) {
+      if (previousLineGrowths.has(growth.rank) && previousLineGrowths.get(growth.rank) !== growth.growth) {
+        nextGrowthChanges.add(growth.rank)
+      }
+    }
+
     top100Details.value = nextDetails
     top100GrowthByRank.value = nextGrowths
     top100RankGrowthByRank.value = nextRankGrowths
     top100GrowthIntervalSeconds.value = selectedIntervalSeconds.value
     writeTop100DetailsCache(nextDetails)
-    flashTop100OverviewChanges(nextScoreChanges, nextDetailChanges, nextGrowthChanges)
+    applyFlashMarks(nextScoreChanges, nextGrowthChanges)
+  }
+
+  /**
+   * Publish the change marks exactly once per refresh; the value spans in the
+   * rows are keyed by their value, so a changed value remounts its span and
+   * restarts the one-shot CSS animation without any rAF class juggling. One
+   * timer clears the marks after the animation so the highlight color drops.
+   */
+  function applyFlashMarks(nextScoreChanges: Set<number>, nextGrowthChanges: Set<number>) {
+    if (nextScoreChanges.size === 0 && nextGrowthChanges.size === 0) {
+      return
+    }
+
+    scoreChangedRanks.value = nextScoreChanges
+    growthChangedRanks.value = nextGrowthChanges
+    scheduleNumberFlashReset()
   }
 
   function seedProfilesFromLatestEntries(items: RankBorderLatest[]) {
@@ -519,7 +549,6 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
 
   function top100DetailsCacheKey() {
     return [
-      TOP_100_DETAIL_CACHE_PREFIX,
       normalizeTrackerEndpoint(trackerEndpoint.value),
       selectedRegion.value,
       selectedEventIdNumber.value,
@@ -534,33 +563,13 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       return
     }
 
-    try {
-      const raw = sessionStorage.getItem(top100DetailsCacheKey())
-      if (!raw) {
-        return
-      }
-
-      const parsed = JSON.parse(raw) as { cachedAt?: unknown; items?: unknown }
-      if (typeof parsed.cachedAt !== "number" || Date.now() - parsed.cachedAt > TOP_100_DETAIL_CACHE_TTL_MS) {
-        return
-      }
-
-      const cachedItems = Array.isArray(parsed.items)
-        ? parsed.items.map((item) => ({ rankData: item, userData: item }))
-        : []
-      const items = normalizeRankBorderWebRankings({ items: cachedItems }).items
-      if (items.length === 0) {
-        return
-      }
-
-      const nextDetails = new Map<number, RankBorderLatest>()
-      for (const item of latestRankingEntriesByRank(items)) {
-        nextDetails.set(item.rank, item)
-      }
-      top100Details.value = nextDetails
-      seedProfilesFromLatestEntries(items)
-    } catch {
+    const cached = top100MemoryCache.get(top100DetailsCacheKey())
+    if (!cached || Date.now() - cached.cachedAt > TOP_100_DETAIL_CACHE_TTL_MS) {
+      return
     }
+
+    top100Details.value = new Map(cached.details)
+    seedProfilesFromLatestEntries(Array.from(cached.details.values()))
   }
 
   function writeTop100DetailsCache(details: Map<number, RankBorderLatest>) {
@@ -568,12 +577,18 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       return
     }
 
-    try {
-      sessionStorage.setItem(top100DetailsCacheKey(), JSON.stringify({
-        cachedAt: Date.now(),
-        items: Array.from(details.values()),
-      }))
-    } catch {
+    const key = top100DetailsCacheKey()
+    top100MemoryCache.delete(key)
+    top100MemoryCache.set(key, {
+      cachedAt: Date.now(),
+      details,
+    })
+    while (top100MemoryCache.size > TOP_100_MEMORY_CACHE_LIMIT) {
+      const oldestKey = top100MemoryCache.keys().next().value
+      if (oldestKey == null) {
+        break
+      }
+      top100MemoryCache.delete(oldestKey)
     }
   }
 
@@ -604,7 +619,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
 
       const previousGrowth = previousGrowths.get(rank)
       nextGrowths.set(rank, growth)
-      if (!previousGrowth || isGrowthChanged(previousGrowth, growth)) {
+      if (previousGrowth && isGrowthChanged(previousGrowth, growth)) {
         nextGrowthChanges.add(rank)
       }
     }
@@ -613,7 +628,8 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     top100RankGrowthByRank.value = nextRankGrowths
     top100GrowthIntervalSeconds.value = selectedIntervalSeconds.value
     if (nextGrowthChanges.size > 0) {
-      restartRankFlash(growthChangedRanks, nextGrowthChanges)
+      growthChangedRanks.value = nextGrowthChanges
+      scheduleNumberFlashReset()
     }
   }
 
@@ -735,7 +751,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       return MAX_LIVE_REFRESH_MS
     }
 
-    const ageSeconds = Math.max(0, currentUnixSecond.value - latestTimestamp)
+    const ageSeconds = Math.max(0, Math.floor(Date.now() / 1000) - latestTimestamp)
     const secondsUntilNextTrackerTick = TRACKER_UPDATE_INTERVAL_SECONDS - (ageSeconds % TRACKER_UPDATE_INTERVAL_SECONDS)
     return Math.min(
       MAX_LIVE_REFRESH_MS,
@@ -743,55 +759,15 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     )
   }
 
-  function markChangedLines(previousLines: Map<number, RankBorderLine>) {
-    const changedRanks = new Set<number>()
-
-    for (const line of tracker.lines.value) {
-      const previousLine = previousLines.get(line.rank)
-      if (previousLine && previousLine.score !== line.score) {
-        changedRanks.add(line.rank)
-      }
-    }
-
-    if (changedRanks.size > 0) {
-      restartRankFlash(scoreChangedRanks, changedRanks)
-    }
-  }
-
-  function markChangedGrowths(previousGrowths: Map<number, number | null>) {
-    const nextGrowthChanges = new Set<number>()
-
-    for (const growth of tracker.growths.value) {
-      const previousGrowth = previousGrowths.get(growth.rank)
-      if (!previousGrowths.has(growth.rank) || previousGrowth !== growth.growth) {
-        nextGrowthChanges.add(growth.rank)
-      }
-    }
-
-    if (nextGrowthChanges.size > 0) {
-      restartRankFlash(growthChangedRanks, nextGrowthChanges)
-    }
-  }
-
-  function restartRankFlash(target: typeof scoreChangedRanks, changedRanks: Set<number>) {
-    const current = new Set(target.value)
-    for (const rank of changedRanks) {
-      current.delete(rank)
-    }
-    target.value = current
-    requestAnimationFrame(() => {
-      target.value = new Set([...target.value, ...changedRanks])
-      scheduleNumberFlashReset()
-    })
-  }
-
   function scheduleNumberFlashReset() {
     clearNumberFlashTimer()
     numberFlashTimer = setTimeout(() => {
-      scoreChangedRanks.value = new Set()
-      growthChangedRanks.value = new Set()
-      detailChangedRanks.value = new Set()
-      detailScoreChanged.value = false
+      if (scoreChangedRanks.value.size > 0) {
+        scoreChangedRanks.value = new Set()
+      }
+      if (growthChangedRanks.value.size > 0) {
+        growthChangedRanks.value = new Set()
+      }
       numberFlashTimer = null
     }, NUMBER_FLASH_MS)
   }
@@ -835,18 +811,6 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       || playerFrameSignature(previous) !== playerFrameSignature(next)
   }
 
-  function isLineDetailChanged(previous: RankBorderLatest, next: RankBorderLatest) {
-    return previous.score !== next.score
-      || previous.userId !== next.userId
-      || previous.name !== next.name
-      || previous.timestamp !== next.timestamp
-      || previous.cardId !== next.cardId
-      || previous.cardDefaultImage !== next.cardDefaultImage
-      || previous.cardSpecialTrainingStatus !== next.cardSpecialTrainingStatus
-      || previous.profileWord !== next.profileWord
-      || profileHonorSignature(previous) !== profileHonorSignature(next)
-  }
-
   function isGrowthChanged(previous: RankBorderGrowth, next: RankBorderGrowth) {
     return previous.growth !== next.growth
       || previous.scoreLatest !== next.scoreLatest
@@ -884,7 +848,6 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     liveRefreshing,
     realtimeState,
     realtimeOnline,
-    currentUnixSecond,
     top100Details,
     top100GrowthByRank,
     top100RankGrowthByRank,
@@ -893,7 +856,6 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     segmentTraceByRank,
     scoreChangedRanks,
     growthChangedRanks,
-    detailChangedRanks,
     canRefresh,
     top100Rows,
     hasTop100Data,
@@ -904,32 +866,11 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     canUseRealtimeAutoRefresh,
     trackerStatusTone,
     trackerStatusLabel,
-    createTop100Row,
-    top100RowKey,
     resetRankBorderData,
-    realtimeKey,
     refreshData,
-    applyTop100Overview,
-    seedProfilesFromLatestEntries,
-    latestRankingEntriesByRank,
-    latestDetailsByRowKey,
-    top100DetailsCacheKey,
-    hydrateTop100DetailsFromCache,
-    writeTop100DetailsCache,
     refreshTop100GrowthsFromCachedTraces,
     resetLiveRefreshTimer,
-    resetRealtimeSubscription,
     stopRealtimeSubscription,
-    handleRealtimeEvent,
-    scheduleLocalLiveRefreshFallback,
-    scheduleNextLiveRefresh,
-    shouldAllowLocalLiveRefreshFallback,
-    stopLiveRefreshTimer,
-    resolveNextLiveRefreshDelay,
-    markChangedLines,
-    markChangedGrowths,
-    restartRankFlash,
     scheduleNumberFlashReset,
-    clearNumberFlashTimer,
   }
 }

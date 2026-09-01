@@ -814,6 +814,7 @@ export default {
     "sponsors": "赞助者名单",
     "deckRecommend": "组卡推荐",
     "rankBorder": "榜线查询",
+    "rankBorderDetail": "榜线详情",
     "ptCalculator": "活动Pt计算器",
     "clientConfigGenerator": "Client 配置生成器",
     "uploadData": "上传数据",

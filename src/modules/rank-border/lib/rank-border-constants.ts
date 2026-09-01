@@ -20,8 +20,10 @@ export const MAX_LIVE_REFRESH_MS = 30_000
 export const DETAIL_CHART_WIDTH = 260
 export const DETAIL_CHART_HEIGHT = 84
 export const DETAIL_CHART_X_PADDING = 10
-export const DETAIL_CHART_Y_PADDING = 14
-export const DETAIL_CHART_Y_BOTTOM_PADDING = 32
+/* The detail page renders its time axis outside the SVG, so the plot only
+   needs breathing room for the stroke and hover points. */
+export const DETAIL_CHART_Y_PADDING = 8
+export const DETAIL_CHART_Y_BOTTOM_PADDING = 10
 export const ROW_SPARKLINE_MAX_POINTS = 48
 export const DETAIL_CHART_MAX_POINTS = 96
 export const DETAIL_HEATMAP_HOURS_PER_DAY = 24
@@ -29,12 +31,10 @@ export const DETAIL_RECENT_POINT_COUNT = 10
 export const DETAIL_UPDATE_RECORD_LIMIT = 8
 export const DETAIL_CSB_WINDOW_SECONDS = 20 * 60 * 3
 export const TOP_100_DETAIL_CACHE_TTL_MS = 2 * 60 * 1000
-export const TOP_100_DETAIL_CACHE_PREFIX = "haruki:rank-border:top100:v2:"
 export const IMAGE_RETRY_LIMIT = 6
 export const IMAGE_RETRY_DELAY_MS = 260
 export const IMAGE_RETRY_BACKOFF_LIMIT = 8
 export const IMAGE_RETRY_MAX_DELAY_MS = 30_000
-export const IMAGE_PRELOAD_CACHE_LIMIT = 600
 export const IMAGE_RETRY_PARAM = "hrk_image_retry"
 export const IMAGE_RETRY_ORIGINAL_ATTRIBUTE = "data-rank-border-original-src"
 export const IMAGE_RETRY_COUNT_ATTRIBUTE = "data-rank-border-retry-count"
