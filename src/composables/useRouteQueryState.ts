@@ -156,9 +156,17 @@ export function useRouteQueryState<T extends object>(
     }
   })
 
+  // An aborted/cancelled navigation leaves the page mounted; resume syncing.
+  const removeAfterEach = router.afterEach((_to, _from, failure) => {
+    if (failure && router.currentRoute.value.path === ownedPath) {
+      leaving = false
+    }
+  })
+
   onScopeDispose(() => {
     leaving = true
     cancelPending()
+    removeAfterEach()
   })
 
   const defaultRecord = codec.serialize(codec.defaults())

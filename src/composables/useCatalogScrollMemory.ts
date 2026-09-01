@@ -1,4 +1,4 @@
-import { nextTick, onMounted, watch, type Ref } from "vue"
+import { nextTick, watch, type Ref } from "vue"
 import { onBeforeRouteLeave, useRoute } from "vue-router"
 import { consumeScrollMemoryArrival } from "@/core/router/scroll-memory"
 
@@ -65,8 +65,14 @@ function pruneEntries(store: Storage): void {
  */
 export function useCatalogScrollMemory(ready: Ref<boolean>): void {
   const route = useRoute()
-  let pendingKey: string | null = null
-  let shouldRestore = false
+  // Resolved synchronously in setup: when the list data is already cached
+  // `ready` is true from the first render, and the immediate watcher below
+  // must already know the key and whether this arrival restores.
+  let pendingKey: string | null = `${STORAGE_PREFIX}${route.fullPath}`
+  // No arrival record means the page mounted without a routed navigation
+  // (hard reload): sessionStorage survives reloads, so restore in that case.
+  const arrival = consumeScrollMemoryArrival()
+  const shouldRestore = arrival == null ? true : arrival.restore
   let restoreTimer: ReturnType<typeof setTimeout> | null = null
 
   function cancelRestore() {
@@ -95,14 +101,6 @@ export function useCatalogScrollMemory(ready: Ref<boolean>): void {
       requestAnimationFrame(attempt)
     }, 180)
   }
-
-  onMounted(() => {
-    pendingKey = `${STORAGE_PREFIX}${route.fullPath}`
-    // No arrival record means the page mounted without a routed navigation
-    // (hard reload): sessionStorage survives reloads, so restore in that case.
-    const arrival = consumeScrollMemoryArrival()
-    shouldRestore = arrival == null ? true : arrival.restore
-  })
 
   watch(ready, async (isReady) => {
     if (!isReady || pendingKey == null) {

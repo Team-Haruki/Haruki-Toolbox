@@ -52,7 +52,9 @@ function rawCacheLimit(): number {
   const memory = typeof navigator !== "undefined"
     ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory
     : undefined
-  return memory != null && memory <= 4 ? 2 : 4
+  // Detail pages read a handful of small files next to one big one; the
+  // limit must leave room for both so the big array is not flushed by them.
+  return memory != null && memory <= 4 ? 5 : 10
 }
 
 /**
