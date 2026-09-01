@@ -9,7 +9,6 @@ import {
   buildGachaRateSummary,
   collectGachaRarities,
   collectGachaYears,
-  countGachaPages,
   dedupGachaPickupCardIds,
   excludeUnreleasedGachas,
   filterGachas,
@@ -19,7 +18,6 @@ import {
   normalizeCatalogGachas,
   normalizeGachaCeilItems,
   normalizeGachaTimestamp,
-  paginateGachas,
   resolveGachaCardRate,
   resolveGachaGuaranteedRarity,
   resolveGachaStatus,
@@ -66,7 +64,7 @@ describe("normalizeCatalogGacha", () => {
       gachaCardRarityRates: [
         { cardRarityType: "rarity_2", lotteryType: "normal", rate: 88.5 },
       ],
-      gachaDetails: [{ id: 1, gachaId: 145, cardId: 2, weight: 1 }],
+      gachaDetails: [{ id: 1, gachaId: 145, cardId: 2, weight: 1, isWish: false }],
       gachaBehaviors: [
         {
           id: 404,
@@ -89,7 +87,7 @@ describe("normalizeCatalogGacha", () => {
     expect(gacha?.rarityRates).toEqual([
       { cardRarityType: "rarity_2", lotteryType: "normal", rate: 88.5 },
     ])
-    expect(gacha?.details).toEqual([{ cardId: 2, weight: 1 }])
+    expect(gacha?.details).toEqual([{ cardId: 2, weight: 1, isWish: false }])
     expect(gacha?.behaviors[0]?.gachaBehaviorType).toBe("over_rarity_3_once")
     expect(gacha?.behaviors[0]?.gachaSpinnableType).toBe("any")
     expect(gacha?.pickups).toEqual([{ cardId: 4, gachaPickupType: null }])
@@ -154,7 +152,7 @@ describe("normalizeGachaCeilItems", () => {
       { name: "no id" },
     ])
     expect(map.size).toBe(1)
-    expect(map.get(1)).toEqual({ id: 1, name: "Sticker", assetbundleName: "ceil_item", gachaId: 4 })
+    expect(map.get(1)).toEqual({ id: 1, name: "Sticker", assetbundleName: "ceil_item", gachaId: 4, convertStartAt: null })
   })
 })
 
@@ -211,10 +209,10 @@ describe("filterGachas / sortGachas", () => {
 
   it("filters by cards in the pool or pickups", () => {
     const withCards = [
-      makeGacha({ id: 1, details: [{ cardId: 100, weight: 1 }] }),
+      makeGacha({ id: 1, details: [{ cardId: 100, weight: 1, isWish: false }] }),
       makeGacha({ id: 2, pickups: [{ cardId: 100, gachaPickupType: null }] }),
-      makeGacha({ id: 3, details: [{ cardId: 200, weight: 1 }] }),
-      makeGacha({ id: 4, details: [{ cardId: 100, weight: 1 }, { cardId: 200, weight: 1 }] }),
+      makeGacha({ id: 3, details: [{ cardId: 200, weight: 1, isWish: false }] }),
+      makeGacha({ id: 4, details: [{ cardId: 100, weight: 1, isWish: false }, { cardId: 200, weight: 1, isWish: false }] }),
     ]
     expect(filterGachas(withCards, { cardIds: [100] }).map((g) => g.id)).toEqual([1, 2, 4])
     // Multiple selections require every card to be present.
@@ -232,15 +230,6 @@ describe("filterGachas / sortGachas", () => {
 
   it("collects years descending", () => {
     expect(collectGachaYears(gachas)).toEqual([2023, 2022, 1970])
-  })
-})
-
-describe("pagination", () => {
-  it("counts and slices pages", () => {
-    expect(countGachaPages(0, 24)).toBe(1)
-    expect(countGachaPages(25, 24)).toBe(2)
-    expect(paginateGachas([1, 2, 3, 4, 5], 2, 2)).toEqual([3, 4])
-    expect(paginateGachas([1, 2, 3], 99, 2)).toEqual([3])
   })
 })
 
@@ -271,13 +260,13 @@ describe("gacha rate math", () => {
       { cardRarityType: "rarity_4", lotteryType: "guarantee", rate: 100 },
     ],
     details: [
-      { cardId: 1, weight: 1 },
-      { cardId: 2, weight: 1 },
-      { cardId: 3, weight: 1 },
-      { cardId: 4, weight: 3 },
-      { cardId: 5, weight: 1 },
+      { cardId: 1, weight: 1, isWish: false },
+      { cardId: 2, weight: 1, isWish: false },
+      { cardId: 3, weight: 1, isWish: false },
+      { cardId: 4, weight: 3, isWish: false },
+      { cardId: 5, weight: 1, isWish: false },
       // duplicate row for card 5: weights accumulate, card counted once
-      { cardId: 5, weight: 1 },
+      { cardId: 5, weight: 1, isWish: false },
     ],
   })
 

@@ -1,798 +1,208 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref, watch } from "vue"
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { useRoute, useRouter } from "vue-router"
-import { goBackOr, hasInAppHistory } from "@/lib/router-back"
-import {
-  LucideArrowLeft,
-  LucideCalendarDays,
-  LucideChevronLeft,
-  LucideChevronRight,
-  LucideRefreshCcw,
-  LucideRotateCcw,
-  LucideSearch,
-} from "lucide-vue-next"
+import { LucideUsers } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatLocalizedDateTime } from "@/lib/date-time"
-import {
-  SEKAI_CARD_ATTRS,
-  SEKAI_UNITS,
-  buildCatalogCardThumbnail,
-  type CatalogMasterCard,
-  type SekaiCardAttr,
-  type SekaiUnit,
-} from "@/shared/sekai/catalog"
-import { resolveCardAttrRoundIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
-import {
-  CARD_RARITY_TYPES,
-  countCardPages,
-  createDefaultCardFilters,
-  filterCards,
-  paginateCards,
-  sortCards,
-  type CardRarityType,
-} from "@/modules/cards/lib/card-filter"
-import { isUnreleasedContent, useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
-import {
-  buildGachaBannerAliasMap,
-  buildGachaCeilItemIconCandidates,
-  buildGachaImageCandidates,
-  buildGachaRateSummary,
-  collectGachaRarities,
-  dedupGachaPickupCardIds,
-  formatGachaRatePercent,
-  isGachaType,
-  isGachaUnreleased,
-  resolveGachaCardRate,
-  resolveGachaStatus,
-  stripGachaMarkup,
-} from "@/modules/gachas/lib/gacha-catalog"
-import { useGachaCatalog } from "@/modules/gachas/composables/useGachaCatalog"
-import GachaAssetImage from "@/modules/gachas/components/GachaAssetImage.vue"
-import SekaiCardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
-import GachaStatusBadge from "@/modules/gachas/components/GachaStatusBadge.vue"
-
-const KNOWN_BEHAVIOR_TYPES = [
-  "normal",
-  "over_rarity_3_once",
-  "over_rarity_4_once",
-  "once_a_day",
-  "once_a_week",
-] as const
-
-const KNOWN_COST_RESOURCES = ["jewel", "paid_jewel", "gacha_ticket"] as const
+import CatalogDetailShell from "@/shared/components/catalog/CatalogDetailShell.vue"
+import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
+import GachaBehaviorsSection from "@/modules/gachas/components/GachaBehaviorsSection.vue"
+import GachaCeilSection from "@/modules/gachas/components/GachaCeilSection.vue"
+import GachaHero from "@/modules/gachas/components/GachaHero.vue"
+import GachaInformationSection from "@/modules/gachas/components/GachaInformationSection.vue"
+import GachaPickupsSection from "@/modules/gachas/components/GachaPickupsSection.vue"
+import GachaPoolSection from "@/modules/gachas/components/GachaPoolSection.vue"
+import GachaRatesSection from "@/modules/gachas/components/GachaRatesSection.vue"
+import GachaRelatedEventsSection from "@/modules/gachas/components/GachaRelatedEventsSection.vue"
+import GachaSimulatorSection from "@/modules/gachas/components/GachaSimulatorSection.vue"
+import GachaTypeBadge from "@/modules/gachas/components/GachaTypeBadge.vue"
+import { useGachaDetail } from "@/modules/gachas/composables/useGachaDetail"
 
 const props = defineProps<{
   gachaId: string
 }>()
 
 const { t } = useI18n()
-const router = useRouter()
+
+const gachaId = computed(() => {
+  const parsed = Number(props.gachaId)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+})
 
 const {
-  loading,
-  error,
   region,
   assetEndpoint,
-  gachas,
-  cardsById,
-  cardRarityByCardId,
-  characterMap,
-  ceilItemMap,
+  summary,
+  gacha,
+  sectionsLoading,
+  loading,
+  error,
+  notFound,
+  retrying,
   reload,
-} = useGachaCatalog()
+  status,
+  unreleased,
+  blurArt,
+  blurUnreleased,
+  nowMs,
+  heroSources,
+  bannerSources,
+  logoSources,
+  cardsById,
+  characterMap,
+  unitColorMap,
+  simulatorModel,
+  rateTable,
+  rateSegments,
+  pickupCards,
+  pickupCharacterIds,
+  poolCards,
+  poolCharacters,
+  ceilItem,
+  ceilItemSources,
+  ceilItemsLoading,
+  ceilExchangeSummary,
+  ceilExchangeRows,
+  ceilBoxesAvailable,
+  ceilExchangeLoading,
+  ceilExchangeError,
+  openCeilExchange,
+  relatedEvents,
+  eventsLoading,
+  summaryText,
+  descriptionText,
+} = useGachaDetail(gachaId)
 
-const nowMs = ref(Date.now())
-const nowTimer = setInterval(() => {
-  nowMs.value = Date.now()
-}, 30_000)
+const wishSelectCount = computed(() => gacha.value?.wishSelectCount ?? summary.value?.wishSelectCount ?? 0)
+const behaviors = computed(() => gacha.value?.behaviors ?? summary.value?.behaviors ?? [])
+const showCeil = computed(() => ceilItem.value != null || summary.value?.gachaType === "ceil")
+const showInformation = computed(() => gacha.value == null || summaryText.value !== "" || descriptionText.value !== "")
 
-onBeforeUnmount(() => {
-  clearInterval(nowTimer)
-})
-
-const gachaIdNumber = computed(() => Number(props.gachaId))
-
-const gacha = computed(() => gachas.value.find((candidate) => candidate.id === gachaIdNumber.value) ?? null)
-
-const notFound = computed(() => !loading.value && !error.value && gachas.value.length > 0 && gacha.value == null)
-
-const status = computed(() => (gacha.value ? resolveGachaStatus(gacha.value, nowMs.value) : null))
-
-const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
-
-const unreleased = computed(() => gacha.value != null && isGachaUnreleased(gacha.value, nowMs.value))
-
-const blurArt = computed(() => unreleased.value && blurUnreleased.value)
-
-const bannerAliases = computed(() => buildGachaBannerAliasMap(gachas.value))
-
-const bannerSources = computed(() => (gacha.value
-  ? buildGachaImageCandidates(
-      gacha.value,
-      region.value,
-      assetEndpoint.value,
-      bannerAliases.value.get(gacha.value.id),
-    )
-  : []))
-
-const summaryText = computed(() => (gacha.value ? stripGachaMarkup(gacha.value.information.summary) : ""))
-
-const descriptionText = computed(() => (gacha.value ? stripGachaMarkup(gacha.value.information.description) : ""))
-
-const rateSummary = computed(() => (gacha.value
-  ? buildGachaRateSummary(gacha.value, cardRarityByCardId.value)
+const pickupCardsRoute = computed(() => (pickupCharacterIds.value.length > 0
+  ? { name: "cards.list", query: { chars: pickupCharacterIds.value.join(",") } }
   : null))
-
-const rateRows = computed(() => {
-  const summary = rateSummary.value
-  if (!summary) {
-    return []
-  }
-
-  return collectGachaRarities(summary).map((rarity) => ({
-    rarity,
-    baseRate: summary.baseRates.get(rarity) ?? null,
-    guaranteedRate: summary.guaranteedRates?.get(rarity) ?? null,
-    cardCount: summary.rarityCardCounts.get(rarity) ?? 0,
-  }))
-})
-
-const pickupViews = computed(() => {
-  const currentGacha = gacha.value
-  const summary = rateSummary.value
-  if (!currentGacha || !summary) {
-    return []
-  }
-
-  return dedupGachaPickupCardIds(currentGacha.pickups)
-    .map((cardId) => {
-      const card = cardsById.value.get(cardId) ?? null
-      return {
-        cardId,
-        card,
-        unreleased: card != null && isUnreleasedContent(card.releaseAt, nowMs.value),
-        thumbnail: card ? buildCatalogCardThumbnail(card, region.value, assetEndpoint.value) : null,
-        characterName: card?.characterId != null
-          ? characterMap.value.get(card.characterId)?.name ?? null
-          : null,
-        rate: resolveGachaCardRate(summary, cardId),
-      }
-    })
-    .filter((view) => !(hideUnreleased.value && view.unreleased))
-})
-
-// --- Full pool listing with the cards-style filter toolbar ---
-
-const POOL_PAGE_SIZE = 30
-
-const poolFilters = reactive(createDefaultCardFilters())
-const poolPage = ref(1)
-const emptySupplyTypeMap = new Map<number, string>()
-
-const poolCards = computed<CatalogMasterCard[]>(() => {
-  const currentGacha = gacha.value
-  if (!currentGacha) {
-    return []
-  }
-
-  const seen = new Set<number>()
-  const cards: CatalogMasterCard[] = []
-  for (const detail of currentGacha.details) {
-    if (seen.has(detail.cardId)) {
-      continue
-    }
-
-    seen.add(detail.cardId)
-    const card = cardsById.value.get(detail.cardId)
-    if (card != null && !(hideUnreleased.value && isUnreleasedContent(card.releaseAt, nowMs.value))) {
-      cards.push(card)
-    }
-  }
-
-  return cards
-})
-
-/** Characters that actually appear in this pool, grouped by unit with the unit logo as marker. */
-const poolCharacterGroups = computed(() => {
-  const ids = new Set<number>()
-  for (const card of poolCards.value) {
-    if (card.characterId != null) {
-      ids.add(card.characterId)
-    }
-  }
-
-  const byUnit = new Map<SekaiUnit | null, Array<{ id: number; name: string; iconUrl: string | null }>>()
-  for (const id of [...ids].sort((a, b) => a - b)) {
-    const character = characterMap.value.get(id) ?? null
-    const unit = character?.unit ?? null
-    const entry = {
-      id,
-      name: character?.name ?? `#${id}`,
-      iconUrl: character?.iconUrl ?? null,
-    }
-    const group = byUnit.get(unit)
-    if (group) {
-      group.push(entry)
-    } else {
-      byUnit.set(unit, [entry])
-    }
-  }
-
-  return [...SEKAI_UNITS, null as SekaiUnit | null]
-    .map((unit) => ({
-      unit,
-      logoUrl: unit != null ? resolveUnitLogoUrl(unit) : null,
-      characters: byUnit.get(unit) ?? [],
-    }))
-    .filter((group) => group.characters.length > 0)
-})
-
-const filteredPoolCards = computed(() => sortCards(
-  filterCards(poolCards.value, poolFilters, {
-    characterMap: characterMap.value,
-    supplyTypeMap: emptySupplyTypeMap,
-  }),
-  "rarityDesc",
-))
-
-watch(poolFilters, () => {
-  poolPage.value = 1
-})
-
-const poolTotalPages = computed(() => countCardPages(filteredPoolCards.value.length, POOL_PAGE_SIZE))
-
-const pagedPoolViews = computed(() => paginateCards(filteredPoolCards.value, poolPage.value, POOL_PAGE_SIZE)
-  .map((card) => ({
-    card,
-    unreleased: isUnreleasedContent(card.releaseAt, nowMs.value),
-    thumbnail: buildCatalogCardThumbnail(card, region.value, assetEndpoint.value),
-    characterName: card.characterId != null
-      ? characterMap.value.get(card.characterId)?.name ?? null
-      : null,
-  })))
-
-const poolHasActiveFilters = computed(() => poolFilters.query.trim() !== ""
-  || poolFilters.characterIds.length > 0
-  || poolFilters.units.length > 0
-  || poolFilters.attrs.length > 0
-  || poolFilters.rarities.length > 0)
-
-function togglePoolListValue<T>(list: T[], value: T) {
-  const index = list.indexOf(value)
-  if (index >= 0) {
-    list.splice(index, 1)
-  } else {
-    list.push(value)
-  }
-}
-
-function togglePoolCharacter(characterId: number) {
-  togglePoolListValue(poolFilters.characterIds, characterId)
-}
-
-function togglePoolUnit(unit: SekaiUnit) {
-  togglePoolListValue(poolFilters.units, unit)
-}
-
-function togglePoolAttr(attr: SekaiCardAttr) {
-  togglePoolListValue(poolFilters.attrs, attr)
-}
-
-function togglePoolRarity(rarity: CardRarityType) {
-  togglePoolListValue(poolFilters.rarities, rarity)
-}
-
-function clearPoolFilters() {
-  Object.assign(poolFilters, createDefaultCardFilters())
-}
-
-// Units whose logo image failed to load fall back to a neutral dot.
-const failedUnitLogos = ref<Set<SekaiUnit>>(new Set())
-
-function markUnitLogoFailed(unit: SekaiUnit) {
-  const next = new Set(failedUnitLogos.value)
-  next.add(unit)
-  failedUnitLogos.value = next
-}
-
-const ceilItem = computed(() => (gacha.value?.gachaCeilItemId != null
-  ? ceilItemMap.value.get(gacha.value.gachaCeilItemId) ?? null
-  : null))
-
-const ceilItemIconSources = computed(() => (ceilItem.value
-  ? buildGachaCeilItemIconCandidates(ceilItem.value.assetbundleName, region.value, assetEndpoint.value)
-  : []))
-
-function gachaTypeLabel(gachaType: string): string {
-  return isGachaType(gachaType) ? t(`gachas.type.${gachaType}`) : gachaType || t("gachas.type.unknown")
-}
-
-function rarityLabel(rarity: string): string {
-  return (["rarity_1", "rarity_2", "rarity_3", "rarity_4", "rarity_birthday"] as readonly string[]).includes(rarity)
-    ? t(`gachas.rarity.${rarity}`)
-    : rarity
-}
-
-function behaviorTypeLabel(behaviorType: string): string {
-  return (KNOWN_BEHAVIOR_TYPES as readonly string[]).includes(behaviorType)
-    ? t(`gachas.behaviorType.${behaviorType}`)
-    : behaviorType
-}
-
-function behaviorCostLabel(costResourceType: string | null, costResourceQuantity: number | null): string {
-  if (!costResourceType) {
-    return "—"
-  }
-
-  const resource = (KNOWN_COST_RESOURCES as readonly string[]).includes(costResourceType)
-    ? t(`gachas.costResource.${costResourceType}`)
-    : costResourceType
-  return costResourceQuantity != null ? `${costResourceQuantity} ${resource}` : resource
-}
-
-function goBack() {
-  goBackOr(router, { name: "gachas.list" })
-}
-
-const route = useRoute()
-
-/** Track the route so in-component navigation re-checks the history state. */
-const canGoBack = computed(() => {
-  return route.fullPath.length > 0 && hasInAppHistory()
-})
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center gap-4">
-    <div>
-      <Button variant="ghost" size="sm" class="-ml-2 gap-1" @click="goBack">
-        <LucideArrowLeft class="size-4" />
-        {{ canGoBack ? t("common.back") : t("gachas.detail.back") }}
+  <CatalogDetailShell
+    :title="summary?.name ?? null"
+    :entity-id="summary?.id ?? gachaId"
+    :list-title="t('gachas.list.title')"
+    :list-route="{ name: 'gachas.list' }"
+    :loading="loading"
+    :error="error"
+    :not-found="notFound"
+    :retrying="retrying"
+    :unreleased="unreleased"
+    @retry="reload"
+  >
+    <template #badges>
+      <GachaTypeBadge v-if="summary" :gacha-type="summary.gachaType" />
+      <CatalogStatusBadge v-if="status" :status="status" />
+    </template>
+
+    <template #actions>
+      <Button v-if="pickupCardsRoute" as-child variant="outline" size="sm">
+        <RouterLink :to="pickupCardsRoute">
+          <LucideUsers class="size-4" />
+          {{ t("gachaCatalog.detail.pickupCards") }}
+        </RouterLink>
       </Button>
-    </div>
+    </template>
 
-    <!-- Error -->
-    <Card v-if="error && !loading">
-      <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <p class="text-sm text-muted-foreground">{{ t("gachas.common.loadError") }}</p>
-        <p class="max-w-full truncate font-mono text-xs text-muted-foreground">{{ error }}</p>
-        <Button variant="outline" size="sm" @click="reload">
-          <LucideRefreshCcw class="mr-1 size-4" /> {{ t("gachas.common.retry") }}
-        </Button>
-      </CardContent>
-    </Card>
-
-    <!-- Loading -->
-    <template v-else-if="loading">
-      <Skeleton class="aspect-[5/2] w-full rounded-lg" />
+    <template #skeleton>
+      <Skeleton class="mx-auto aspect-[2/1] w-full max-w-3xl rounded-lg" />
       <div class="flex flex-col gap-2">
         <Skeleton class="h-6 w-2/3" />
         <Skeleton class="h-4 w-1/3" />
-        <Skeleton class="h-24 w-full" />
+        <Skeleton class="h-40 w-full" />
       </div>
     </template>
 
-    <!-- Not found -->
-    <Card v-else-if="notFound">
-      <CardContent class="py-12 text-center text-muted-foreground">
-        {{ t("gachas.detail.notFound", { gachaId: props.gachaId }) }}
-      </CardContent>
-    </Card>
+    <template v-if="summary">
+      <GachaHero
+        :name="summary.name"
+        :hero-sources="heroSources"
+        :banner-sources="bannerSources"
+        :logo-sources="logoSources"
+        :start-at="summary.startAt"
+        :end-at="summary.endAt"
+        :status="status"
+        :blur="blurArt"
+      />
 
-    <template v-else-if="gacha">
-      <!-- Header -->
-      <div class="aspect-[5/2] w-full overflow-hidden rounded-lg bg-muted ring-1 ring-border">
-        <GachaAssetImage
-          :sources="bannerSources"
-          :alt="gacha.name"
-          :class="blurArt ? 'blur-md scale-105' : ''"
-        />
-      </div>
+      <GachaPickupsSection
+        :cards="pickupCards"
+        :region="region"
+        :asset-endpoint="assetEndpoint"
+        :blur-unreleased="blurUnreleased"
+        :loading="sectionsLoading"
+        :wish-select-count="wishSelectCount"
+      />
 
-      <div class="flex flex-col gap-2">
-        <div class="flex flex-wrap items-center gap-2">
-          <h1 class="text-2xl font-bold">{{ gacha.name }}</h1>
-          <span
-            v-if="unreleased"
-            class="rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold text-white"
-          >
-            {{ t("sekaiUnreleased.badge") }}
-          </span>
-          <span class="font-mono text-sm text-muted-foreground">#{{ gacha.id }}</span>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="inline-flex items-center whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-            {{ gachaTypeLabel(gacha.gachaType) }}
-          </span>
-          <GachaStatusBadge v-if="status" :status="status" />
-        </div>
-        <div class="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <LucideCalendarDays class="size-4" />
-          {{ formatLocalizedDateTime(gacha.startAt, undefined, t("gachas.common.dateFallback")) }}
-          –
-          {{ formatLocalizedDateTime(gacha.endAt, undefined, t("gachas.common.dateFallback")) }}
-        </div>
-      </div>
+      <GachaRatesSection
+        :table="rateTable"
+        :segments="rateSegments"
+        :guarantee-rarity="simulatorModel?.ten?.guaranteeRarity ?? null"
+        :wish-select-count="wishSelectCount"
+        :loading="sectionsLoading"
+      />
 
-      <!-- Pickup cards -->
-      <Card v-if="pickupViews.length > 0">
-        <CardHeader>
-          <CardTitle class="text-base">{{ t("gachas.detail.pickups") }}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="flex gap-3 overflow-x-auto pb-2">
-            <RouterLink
-              v-for="view in pickupViews"
-              :key="view.cardId"
-              :to="{ name: 'cards.detail', params: { cardId: view.cardId } }"
-              class="flex w-28 shrink-0 flex-col gap-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <div :class="['relative', view.unreleased && blurUnreleased ? 'overflow-hidden rounded-md' : '']">
-                <SekaiCardThumbnail
-                  v-if="view.thumbnail"
-                  :thumbnail="view.thumbnail"
-                  :unreleased="view.unreleased && !blurUnreleased"
-                  :title="view.card?.prefix ?? `#${view.cardId}`"
-                  :class="view.unreleased && blurUnreleased ? 'blur-md scale-105' : ''"
-                />
-                <div
-                  v-else
-                  class="flex aspect-square w-full items-center justify-center rounded-md bg-muted font-mono text-xs text-muted-foreground ring-1 ring-border"
-                >
-                  #{{ view.cardId }}
-                </div>
-                <span
-                  v-if="view.unreleased && blurUnreleased"
-                  class="absolute right-1 top-1 rounded bg-background/80 px-1 py-0.5 text-[10px] font-semibold"
-                >
-                  {{ t("sekaiUnreleased.badge") }}
-                </span>
-              </div>
-              <span class="line-clamp-2 text-[11px] leading-tight">
-                {{ view.card?.prefix ?? `#${view.cardId}` }}
-              </span>
-              <span v-if="view.characterName" class="truncate text-[11px] text-muted-foreground">
-                {{ view.characterName }}
-              </span>
-              <span v-if="view.rate != null" class="text-[11px] font-medium tabular-nums text-primary">
-                {{ formatGachaRatePercent(view.rate) }}
-              </span>
-            </RouterLink>
-          </div>
-        </CardContent>
-      </Card>
+      <GachaSimulatorSection
+        :model="simulatorModel"
+        :cards-by-id="cardsById"
+        :character-map="characterMap"
+        :region="region"
+        :asset-endpoint="assetEndpoint"
+        :blur-unreleased="blurUnreleased"
+        :now-ms="nowMs"
+        :loading="sectionsLoading"
+      />
 
-      <!-- Full card pool -->
-      <Card v-if="poolCards.length > 0">
-        <CardHeader>
-          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-            <span>{{ t("gachas.detail.poolCards") }}</span>
-            <span class="text-sm font-normal tabular-nums text-muted-foreground">
-              {{ t("cards.list.total", { total: filteredPoolCards.length }) }}
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-3">
-          <div class="flex flex-wrap items-center gap-2">
-            <div class="relative w-full sm:w-64">
-              <LucideSearch class="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                v-model="poolFilters.query"
-                class="h-8 pl-8"
-                :placeholder="t('cards.list.searchPlaceholder')"
-                :aria-label="t('cards.list.searchPlaceholder')"
-              />
-            </div>
-            <Button
-              v-if="poolHasActiveFilters"
-              variant="ghost"
-              size="sm"
-              class="ml-auto h-7 gap-1 text-xs text-muted-foreground"
-              @click="clearPoolFilters"
-            >
-              <LucideRotateCcw class="size-3.5" />
-              {{ t("cards.filter.clear") }}
-            </Button>
-          </div>
+      <GachaPoolSection
+        :cards="poolCards"
+        :characters="poolCharacters"
+        :unit-color-map="unitColorMap"
+        :region="region"
+        :asset-endpoint="assetEndpoint"
+        :blur-unreleased="blurUnreleased"
+        :loading="sectionsLoading"
+        :wish-select-count="wishSelectCount"
+      />
 
-          <div v-if="poolCharacterGroups.length > 0" class="flex flex-wrap items-center gap-1.5">
-            <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cards.filter.characters") }}</span>
-            <template v-for="group in poolCharacterGroups" :key="group.unit ?? 'other'">
-              <span
-                v-if="group.unit"
-                class="ml-1 inline-flex shrink-0 items-center"
-                :title="t(`cards.unit.${group.unit}`)"
-              >
-                <img
-                  decoding="async"
-                  v-if="!failedUnitLogos.has(group.unit)"
-                  :src="group.logoUrl ?? undefined"
-                  alt=""
-                  class="h-4 w-auto max-w-10 object-contain"
-                  loading="lazy"
-                  @error="markUnitLogoFailed(group.unit)"
-                >
-                <span v-else class="size-2.5 rounded-full bg-muted-foreground/40" />
-              </span>
-              <button
-                v-for="character in group.characters"
-                :key="character.id"
-                type="button"
-                :class="[
-                  'relative shrink-0 rounded-full ring-2 transition',
-                  poolFilters.characterIds.includes(character.id)
-                    ? 'ring-primary'
-                    : 'ring-transparent hover:ring-border',
-                  poolFilters.characterIds.length > 0 && !poolFilters.characterIds.includes(character.id)
-                    ? 'opacity-40 hover:opacity-100'
-                    : '',
-                ]"
-                :title="character.name"
-                :aria-pressed="poolFilters.characterIds.includes(character.id)"
-                @click="togglePoolCharacter(character.id)"
-              >
-                <img
-                  decoding="async"
-                  v-if="character.iconUrl"
-                  :src="character.iconUrl"
-                  :alt="character.name"
-                  class="size-8 rounded-full"
-                  loading="lazy"
-                >
-                <span
-                  v-else
-                  class="flex size-8 items-center justify-center rounded-full bg-muted font-mono text-[10px] text-muted-foreground"
-                >
-                  {{ character.id }}
-                </span>
-              </button>
-            </template>
-          </div>
+      <GachaBehaviorsSection :behaviors="behaviors" :loading="false" />
 
-          <div class="flex flex-wrap items-center gap-1.5">
-            <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cards.filter.units") }}</span>
-            <button
-              v-for="unit in SEKAI_UNITS"
-              :key="unit"
-              type="button"
-              :class="[
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
-                poolFilters.units.includes(unit)
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border hover:bg-muted',
-              ]"
-              @click="togglePoolUnit(unit)"
-            >
-              <img
-                decoding="async"
-                v-if="!failedUnitLogos.has(unit)"
-                :src="resolveUnitLogoUrl(unit)"
-                alt=""
-                class="h-4 w-auto max-w-9 object-contain"
-                loading="lazy"
-                @error="markUnitLogoFailed(unit)"
-              >
-              <span v-else class="size-2 rounded-full bg-muted-foreground/40" />
-              {{ t(`cards.unit.${unit}`) }}
-            </button>
-          </div>
+      <GachaCeilSection
+        v-if="showCeil"
+        :ceil-item="ceilItem"
+        :ceil-item-sources="ceilItemSources"
+        :items-loading="ceilItemsLoading"
+        :exchange-summary="ceilExchangeSummary"
+        :rows="ceilExchangeRows"
+        :boxes-available="ceilBoxesAvailable"
+        :exchange-loading="ceilExchangeLoading"
+        :exchange-error="ceilExchangeError"
+        :cards-by-id="cardsById"
+        :region="region"
+        :asset-endpoint="assetEndpoint"
+        @open="openCeilExchange"
+        @retry="reload"
+      />
 
-          <div class="flex flex-wrap items-center gap-1.5">
-            <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cards.filter.attrs") }}</span>
-            <button
-              v-for="attr in SEKAI_CARD_ATTRS"
-              :key="attr"
-              type="button"
-              :class="[
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
-                poolFilters.attrs.includes(attr)
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border hover:bg-muted',
-              ]"
-              @click="togglePoolAttr(attr)"
-            >
-              <img :src="resolveCardAttrRoundIconUrl(attr)" alt="" class="size-4" loading="lazy" decoding="async">
-              {{ t(`cards.attr.${attr}`) }}
-            </button>
-          </div>
+      <GachaRelatedEventsSection
+        :events="relatedEvents"
+        :region="region"
+        :asset-endpoint="assetEndpoint"
+        :loading="eventsLoading"
+        :now-ms="nowMs"
+      />
 
-          <div class="flex flex-wrap items-center gap-1.5">
-            <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cards.filter.rarity") }}</span>
-            <button
-              v-for="rarity in CARD_RARITY_TYPES"
-              :key="rarity"
-              type="button"
-              :class="[
-                'rounded-full border px-2.5 py-1 text-xs transition-colors',
-                poolFilters.rarities.includes(rarity)
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border hover:bg-muted',
-              ]"
-              @click="togglePoolRarity(rarity)"
-            >
-              {{ t(`cards.rarity.${rarity}`) }}
-            </button>
-          </div>
-
-          <div
-            v-if="pagedPoolViews.length > 0"
-            class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
-          >
-            <RouterLink
-              v-for="view in pagedPoolViews"
-              :key="view.card.id"
-              :to="{ name: 'cards.detail', params: { cardId: view.card.id } }"
-              class="group flex flex-col gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <div :class="['relative', view.unreleased && blurUnreleased ? 'overflow-hidden rounded-md' : '']">
-                <SekaiCardThumbnail
-                  :thumbnail="view.thumbnail"
-                  :unreleased="view.unreleased && !blurUnreleased"
-                  :title="view.card.prefix"
-                  :class="view.unreleased && blurUnreleased
-                    ? 'blur-md scale-105'
-                    : 'transition-transform group-hover:scale-[1.02]'"
-                />
-                <span
-                  v-if="view.unreleased && blurUnreleased"
-                  class="absolute right-1 top-1 rounded bg-background/80 px-1.5 py-0.5 text-xs font-semibold"
-                >
-                  {{ t("sekaiUnreleased.badge") }}
-                </span>
-              </div>
-              <span class="line-clamp-2 text-xs leading-tight group-hover:underline">
-                {{ view.card.prefix ?? `#${view.card.id}` }}
-              </span>
-              <span v-if="view.characterName" class="truncate text-[11px] text-muted-foreground">
-                {{ view.characterName }}
-              </span>
-            </RouterLink>
-          </div>
-          <p v-else class="py-8 text-center text-sm text-muted-foreground">
-            {{ t("cards.list.empty") }}
-          </p>
-
-          <div v-if="poolTotalPages > 1" class="flex items-center justify-center gap-2">
-            <Button variant="outline" size="sm" :disabled="poolPage <= 1" @click="poolPage = Math.max(1, poolPage - 1)">
-              <LucideChevronLeft class="size-4" />
-            </Button>
-            <span class="text-sm tabular-nums">{{ poolPage }} / {{ poolTotalPages }}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="poolPage >= poolTotalPages"
-              @click="poolPage = Math.min(poolTotalPages, poolPage + 1)"
-            >
-              <LucideChevronRight class="size-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div class="grid gap-4 lg:grid-cols-2">
-        <!-- Rates -->
-        <Card v-if="rateRows.length > 0">
-          <CardHeader>
-            <CardTitle class="text-base">{{ t("gachas.detail.rates") }}</CardTitle>
-          </CardHeader>
-          <CardContent class="flex flex-col gap-3">
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
-                <thead>
-                  <tr class="border-b text-muted-foreground">
-                    <th class="py-1.5 pr-3 font-medium">{{ t("gachas.detail.rarity") }}</th>
-                    <th class="py-1.5 pr-3 font-medium">{{ t("gachas.detail.cardCount") }}</th>
-                    <th class="py-1.5 pr-3 font-medium">{{ t("gachas.detail.baseRate") }}</th>
-                    <th v-if="rateSummary?.guaranteedRarity" class="py-1.5 font-medium">
-                      {{ t("gachas.detail.guaranteedRate") }}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="row in rateRows" :key="row.rarity" class="border-b last:border-b-0">
-                    <td class="py-1.5 pr-3">{{ rarityLabel(row.rarity) }}</td>
-                    <td class="py-1.5 pr-3 tabular-nums">{{ row.cardCount }}</td>
-                    <td class="py-1.5 pr-3 tabular-nums">
-                      {{ row.baseRate != null ? formatGachaRatePercent(row.baseRate, 1) : "—" }}
-                    </td>
-                    <td v-if="rateSummary?.guaranteedRarity" class="py-1.5 tabular-nums">
-                      {{ row.guaranteedRate != null ? formatGachaRatePercent(row.guaranteedRate, 1) : "—" }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p v-if="rateSummary?.guaranteedRarity" class="text-xs text-muted-foreground">
-              {{ t("gachas.detail.guaranteedNote", { rarity: rarityLabel(rateSummary.guaranteedRarity) }) }}
-            </p>
-          </CardContent>
-        </Card>
-
-        <!-- Behaviors -->
-        <Card v-if="gacha.behaviors.length > 0">
-          <CardHeader>
-            <CardTitle class="text-base">{{ t("gachas.detail.behaviors") }}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
-                <thead>
-                  <tr class="border-b text-muted-foreground">
-                    <th class="py-1.5 pr-3 font-medium">{{ t("gachas.detail.behaviorType") }}</th>
-                    <th class="py-1.5 pr-3 font-medium">{{ t("gachas.detail.spinCount") }}</th>
-                    <th class="py-1.5 pr-3 font-medium">{{ t("gachas.detail.cost") }}</th>
-                    <th class="py-1.5 font-medium">{{ t("gachas.detail.executeLimit") }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="(behavior, index) in gacha.behaviors"
-                    :key="behavior.id ?? `behavior-${index}`"
-                    class="border-b last:border-b-0"
-                  >
-                    <td class="py-1.5 pr-3">
-                      <span class="inline-flex flex-wrap items-center gap-1.5">
-                        {{ behaviorTypeLabel(behavior.gachaBehaviorType) }}
-                        <span
-                          v-if="behavior.gachaSpinnableType === 'colorful_pass'"
-                          class="inline-flex items-center whitespace-nowrap rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-[10px] font-medium text-fuchsia-700 dark:text-fuchsia-300"
-                        >
-                          {{ t("gachas.detail.colorfulPass") }}
-                        </span>
-                      </span>
-                    </td>
-                    <td class="py-1.5 pr-3 tabular-nums">{{ behavior.spinCount ?? "—" }}</td>
-                    <td class="py-1.5 pr-3 tabular-nums">
-                      {{ behaviorCostLabel(behavior.costResourceType, behavior.costResourceQuantity) }}
-                    </td>
-                    <td class="py-1.5 tabular-nums">{{ behavior.executeLimit ?? "—" }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <!-- Ceil item -->
-      <Card v-if="ceilItem">
-        <CardHeader>
-          <CardTitle class="text-base">{{ t("gachas.detail.ceilItem") }}</CardTitle>
-        </CardHeader>
-        <CardContent class="flex items-center gap-3">
-          <div class="size-14 shrink-0 overflow-hidden rounded-md bg-muted">
-            <GachaAssetImage :sources="ceilItemIconSources" :alt="ceilItem.name" />
-          </div>
-          <div class="min-w-0">
-            <p class="truncate text-sm font-medium">{{ ceilItem.name || `#${ceilItem.id}` }}</p>
-            <p class="text-xs text-muted-foreground">#{{ ceilItem.id }}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- Summary -->
-      <Card v-if="summaryText">
-        <CardHeader>
-          <CardTitle class="text-base">{{ t("gachas.detail.summary") }}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p class="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{{ summaryText }}</p>
-        </CardContent>
-      </Card>
-
-      <!-- Description -->
-      <Card v-if="descriptionText">
-        <CardHeader>
-          <CardTitle class="text-base">{{ t("gachas.detail.description") }}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p class="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{{ descriptionText }}</p>
-        </CardContent>
-      </Card>
+      <GachaInformationSection
+        v-if="showInformation"
+        :summary="summaryText"
+        :description="descriptionText"
+        :loading="sectionsLoading"
+      />
     </template>
-  </div>
+  </CatalogDetailShell>
 </template>

@@ -20,11 +20,6 @@ export type GachaType = (typeof GACHA_TYPES)[number]
 
 export type GachaStatus = "upcoming" | "ongoing" | "ended"
 
-// "upcoming" stays a resolvable status (startAt in the future) but is no
-// longer offered as a filter option or badge — the unreleased-content
-// handling covers that state.
-export const GACHA_STATUSES: readonly GachaStatus[] = ["ongoing", "ended"]
-
 export const GACHA_SORT_KEYS = ["startDesc", "startAsc", "idAsc"] as const
 
 export type GachaSortKey = (typeof GACHA_SORT_KEYS)[number]
@@ -38,6 +33,8 @@ export type CatalogGachaRarityRate = {
 export type CatalogGachaDetail = {
   cardId: number
   weight: number
+  /** Eligible for the wish (dream pick) selection of wish-enabled gachas. */
+  isWish: boolean
 }
 
 export type CatalogGachaPickup = {
@@ -84,6 +81,8 @@ export type CatalogGachaCeilItem = {
   name: string
   assetbundleName: string
   gachaId: number | null
+  /** When leftover stickers convert into the generic sticker (jp/en). */
+  convertStartAt: number | null
 }
 
 export function isGachaType(value: string): value is GachaType {
@@ -184,6 +183,7 @@ export function normalizeGachaDetails(value: unknown): CatalogGachaDetail[] {
       return {
         cardId,
         weight: normalizeCatalogNumber(record.weight) ?? 1,
+        isWish: record.isWish === true,
       }
     })
     .filter((detail): detail is CatalogGachaDetail => detail != null)
@@ -235,6 +235,7 @@ export function normalizeGachaCeilItems(value: unknown): Map<number, CatalogGach
       name: normalizeCatalogString(record.name),
       assetbundleName: normalizeCatalogString(record.assetbundleName),
       gachaId: normalizeCatalogNumber(record.gachaId),
+      convertStartAt: normalizeGachaTimestamp(record.convertStartAt),
     })
   }
 
@@ -352,25 +353,6 @@ export function sortGachas(gachas: readonly CatalogGacha[], sortKey: GachaSortKe
   }
 
   return sorted.sort((a, b) => (b.startAt ?? 0) - (a.startAt ?? 0) || b.id - a.id)
-}
-
-export function countGachaPages(total: number, pageSize: number): number {
-  if (pageSize <= 0) {
-    return 1
-  }
-
-  return Math.max(1, Math.ceil(total / pageSize))
-}
-
-export function paginateGachas<T>(items: readonly T[], page: number, pageSize: number): T[] {
-  if (pageSize <= 0) {
-    return [...items]
-  }
-
-  const totalPages = countGachaPages(items.length, pageSize)
-  const safePage = Math.min(Math.max(1, page), totalPages)
-  const start = (safePage - 1) * pageSize
-  return items.slice(start, start + pageSize)
 }
 
 /** Dedup pickup card ids by first occurrence, preserving order. */
