@@ -5,6 +5,7 @@ import {
   normalizeCatalogString,
   resolveCardRareCount,
 } from "@/shared/sekai/catalog"
+import { matchesCommandSearch } from "@/lib/search-match"
 
 export const CARD_RARITY_TYPES = [
   "rarity_1",
@@ -15,6 +16,15 @@ export const CARD_RARITY_TYPES = [
 ] as const
 
 export type CardRarityType = (typeof CARD_RARITY_TYPES)[number]
+
+/** Display order of rarities (`cardRarities.seq`): birthday sits between 3★ and 4★. */
+const CARD_RARITY_RANK: Record<CardRarityType, number> = {
+  rarity_1: 1,
+  rarity_2: 2,
+  rarity_3: 3,
+  rarity_birthday: 4,
+  rarity_4: 5,
+}
 
 export const CARD_SUPPLY_TYPES = [
   "normal",
@@ -28,9 +38,16 @@ export const CARD_SUPPLY_TYPES = [
 
 export type CardSupplyType = (typeof CARD_SUPPLY_TYPES)[number]
 
+/** Legacy sort keys (kept for the gacha pool grid). The list page uses `CardSort` + direction. */
 export const CARD_SORT_KEYS = ["releaseDesc", "rarityDesc", "idAsc"] as const
 
 export type CardSortKey = (typeof CARD_SORT_KEYS)[number]
+
+export const CARD_SORTS = ["release", "rarity", "id", "power"] as const
+
+export type CardSort = (typeof CARD_SORTS)[number]
+
+export type CardSortDirection = "asc" | "desc"
 
 export type CardListFilters = {
   query: string
@@ -39,6 +56,8 @@ export type CardListFilters = {
   attrs: SekaiCardAttr[]
   rarities: CardRarityType[]
   supplyTypes: CardSupplyType[]
+  /** Skill filter types (see `card-skill.ts`); empty means any. */
+  skillTypes: string[]
   year: number | null
 }
 
@@ -46,6 +65,8 @@ export type CardFilterContext = {
   characterMap: Map<number, CatalogCharacter>
   supplyTypeMap: Map<number, string>
   worldBloomCardIds?: ReadonlySet<number>
+  /** skillId → skill filter type; cards whose skill is unknown never match a skill filter. */
+  skillTypeBySkillId?: ReadonlyMap<number, string>
 }
 
 export function createDefaultCardFilters(): CardListFilters {
@@ -56,6 +77,7 @@ export function createDefaultCardFilters(): CardListFilters {
     attrs: [],
     rarities: [],
     supplyTypes: [],
+    skillTypes: [],
     year: null,
   }
 }
@@ -66,6 +88,10 @@ export function isCardRarityType(value: string): value is CardRarityType {
 
 export function isCardSupplyType(value: string): value is CardSupplyType {
   return (CARD_SUPPLY_TYPES as readonly string[]).includes(value)
+}
+
+export function isCardSort(value: unknown): value is CardSort {
+  return typeof value === "string" && (CARD_SORTS as readonly string[]).includes(value)
 }
 
 export function buildCardSupplyTypeMap(rawCardSupplies: unknown): Map<number, string> {
@@ -105,6 +131,26 @@ export function buildWorldBloomCardIds(rawEvents: unknown, rawEventCards: unknow
     }
   }
 
+  return cardIds
+}
+
+/**
+ * Same as `buildWorldBloomCardIds` but fed from the canonical events index
+ * (normalized events + per-event card links) instead of raw master rows.
+ */
+export function collectWorldBloomCardIds(
+  events: readonly { id: number; eventType: string | null }[],
+  cardLinksByEvent: ReadonlyMap<number, readonly { cardId: number }[]>,
+): Set<number> {
+  const cardIds = new Set<number>()
+  for (const event of events) {
+    if (event.eventType !== "world_bloom") {
+      continue
+    }
+    for (const link of cardLinksByEvent.get(event.id) ?? []) {
+      cardIds.add(link.cardId)
+    }
+  }
   return cardIds
 }
 
@@ -161,13 +207,28 @@ export function cardMatchesUnit(
   return card.supportUnit !== "none" && card.supportUnit === unit
 }
 
-export function cardMatchesQuery(card: CatalogMasterCard, query: string): boolean {
-  const normalized = query.trim().toLowerCase()
+/** Searchable text parts of a card: title, skill name, character name and `#id`. */
+export function buildCardSearchParts(card: CatalogMasterCard, characterName?: string | null): string[] {
+  const parts = [card.prefix ?? "", card.skillName ?? "", characterName ?? "", `#${card.id}`]
+  return parts.filter((part) => part !== "")
+}
+
+/**
+ * Free-text match over the card's title, skill name, character name and id
+ * with the shared command-search normalization (kana → romaji, Han →
+ * pinyin, `#123` / `123` id forms).
+ */
+export function cardMatchesQuery(
+  card: CatalogMasterCard,
+  query: string,
+  characterName?: string | null,
+): boolean {
+  const normalized = query.trim()
   if (!normalized) {
     return true
   }
 
-  return (card.prefix ?? "").toLowerCase().includes(normalized)
+  return matchesCommandSearch(buildCardSearchParts(card, characterName), normalized)
 }
 
 export function resolveCardReleaseYear(releaseAt: number | null): number | null {
@@ -212,8 +273,12 @@ export function filterCards(
   filters: CardListFilters,
   context: CardFilterContext,
 ): CatalogMasterCard[] {
+  const skillTypes = filters.skillTypes ?? []
   return cards.filter((card) => {
-    if (!cardMatchesQuery(card, filters.query)) {
+    const characterName = card.characterId != null
+      ? context.characterMap.get(card.characterId)?.name ?? null
+      : null
+    if (!cardMatchesQuery(card, filters.query, characterName)) {
       return false
     }
 
@@ -239,6 +304,13 @@ export function filterCards(
     if (filters.supplyTypes.length > 0) {
       const supplyType = resolveCardSupplyType(card, context.supplyTypeMap, context.worldBloomCardIds)
       if (supplyType == null || !filters.supplyTypes.includes(supplyType)) {
+        return false
+      }
+    }
+
+    if (skillTypes.length > 0) {
+      const skillType = card.skillId != null ? context.skillTypeBySkillId?.get(card.skillId) : undefined
+      if (skillType == null || !skillTypes.includes(skillType)) {
         return false
       }
     }
@@ -272,6 +344,59 @@ export function sortCards(
   }
 
   return sorted.sort(compareReleaseDesc)
+}
+
+export function resolveCardRarityRank(cardRarityType: string): number {
+  return isCardRarityType(cardRarityType) ? CARD_RARITY_RANK[cardRarityType] : 0
+}
+
+/**
+ * List-page sort: one key plus a direction. Cards without a release time or
+ * power table sort last in both directions; ties fall back to the id.
+ */
+export function sortCardsBy(
+  cards: readonly CatalogMasterCard[],
+  sort: CardSort,
+  direction: CardSortDirection,
+  powerById?: ReadonlyMap<number, number>,
+): CatalogMasterCard[] {
+  const sign = direction === "asc" ? 1 : -1
+  const sorted = [...cards]
+
+  if (sort === "id") {
+    return sorted.sort((a, b) => sign * (a.id - b.id))
+  }
+
+  if (sort === "rarity") {
+    return sorted.sort((a, b) => {
+      const diff = resolveCardRarityRank(a.cardRarityType) - resolveCardRarityRank(b.cardRarityType)
+      return diff !== 0 ? sign * diff : compareReleaseDesc(a, b)
+    })
+  }
+
+  if (sort === "power") {
+    return sorted.sort((a, b) => {
+      const aPower = powerById?.get(a.id) ?? null
+      const bPower = powerById?.get(b.id) ?? null
+      if (aPower == null || bPower == null) {
+        if (aPower == null && bPower == null) {
+          return compareReleaseDesc(a, b)
+        }
+        return aPower == null ? 1 : -1
+      }
+      return aPower !== bPower ? sign * (aPower - bPower) : compareReleaseDesc(a, b)
+    })
+  }
+
+  return sorted.sort((a, b) => {
+    if (a.releaseAt == null || b.releaseAt == null) {
+      if (a.releaseAt == null && b.releaseAt == null) {
+        return sign * (a.id - b.id)
+      }
+      return a.releaseAt == null ? 1 : -1
+    }
+    return a.releaseAt !== b.releaseAt ? sign * (a.releaseAt - b.releaseAt) : sign * (a.id - b.id)
+  })
 }
 
 export function countCardPages(total: number, pageSize: number): number {

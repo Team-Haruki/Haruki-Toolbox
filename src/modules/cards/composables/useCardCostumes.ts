@@ -1,27 +1,31 @@
-import { computed, ref, watch, type Ref } from "vue"
+import { ref, shallowRef, watch, type Ref } from "vue"
 import type { SekaiRegion } from "@/types"
-import { readSekaiMasterFiles } from "@/shared/sekai/cache"
+import { useSekaiCatalogStore } from "@/shared/sekai/catalog-store"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
-import { resolveCardCostumeGroups, type CardCostumeGroup } from "../lib/card-detail"
+import { resolveCardCostumeGroups, type CardCostumeGroup } from "@/modules/cards/lib/card-detail"
 
 /**
- * Costume master files are heavyweight (costume3ds is tens of MB), so they are
- * loaded on demand for the detail page instead of via the shared card catalog.
+ * Costume master files are heavyweight (costume3ds is tens of MB), so they
+ * are read on demand through the catalog store's raw-file LRU (never kept as
+ * a built resource) and reduced to the one card's groups.
  */
 const CARD_COSTUME_MASTER_FILES = ["cardCostume3ds", "costume3ds"] as const
 
 export function useCardCostumes(region: Ref<SekaiRegion>, cardId: Ref<number | null>) {
+  const catalogStore = useSekaiCatalogStore()
   const sekaiDataStore = useSekaiDataStore()
-  const groups = ref<CardCostumeGroup[]>([])
+  const groups = shallowRef<CardCostumeGroup[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
-
-  const regionState = computed(() => sekaiDataStore.regionStates[region.value])
 
   let loadToken = 0
 
   watch(
-    () => [region.value, cardId.value, regionState.value.masterFetchVersion] as const,
+    () => [
+      region.value,
+      cardId.value,
+      sekaiDataStore.regionStates[region.value]?.masterFetchVersion ?? null,
+    ] as const,
     () => {
       void load()
     },
@@ -30,6 +34,7 @@ export function useCardCostumes(region: Ref<SekaiRegion>, cardId: Ref<number | n
 
   async function load() {
     const targetCardId = cardId.value
+    const targetRegion = region.value
     if (targetCardId == null) {
       groups.value = []
       return
@@ -39,10 +44,7 @@ export function useCardCostumes(region: Ref<SekaiRegion>, cardId: Ref<number | n
     loading.value = true
     error.value = null
     try {
-      if (!CARD_COSTUME_MASTER_FILES.every((fileName) => regionState.value.files.includes(fileName))) {
-        await sekaiDataStore.ensureRegionData(region.value, { files: CARD_COSTUME_MASTER_FILES })
-      }
-      const files = await readSekaiMasterFiles(region.value, CARD_COSTUME_MASTER_FILES)
+      const files = await catalogStore.readFiles(targetRegion, CARD_COSTUME_MASTER_FILES)
       if (token !== loadToken) {
         return
       }

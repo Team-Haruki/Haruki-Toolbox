@@ -1,12 +1,11 @@
 import { describe, expect, it } from "bun:test"
-import { normalizeCatalogGachas } from "@/modules/gachas/lib/gacha-catalog"
+import type { EventCardLink, SekaiEventItem } from "@/modules/events"
+import type { CatalogGachaSummary } from "@/modules/gachas"
 import type { CatalogMasterCard } from "@/shared/sekai/catalog"
 import {
-  buildCardEventIndex,
-  extractCardDetailExtras,
   resolveCardCostumeGroups,
-  resolveCardEventSummaries,
-  selectCardPickupGachas,
+  selectCardRelatedEvents,
+  selectCardRelatedGachas,
   selectSameCharacterCards,
 } from "./card-detail"
 
@@ -26,109 +25,76 @@ function makeCard(overrides: Partial<CatalogMasterCard> = {}): CatalogMasterCard
   }
 }
 
-describe("extractCardDetailExtras", () => {
-  const rawCards = [
-    { id: 1, cardSkillName: "Tiny flower", gachaPhrase: "-" },
-    { id: 2, cardSkillName: "  ", gachaPhrase: "Let's go!" },
-    { id: 3, cardSkillName: "Base", gachaPhrase: "-", specialTrainingSkillId: 22, specialTrainingSkillName: "Awakened" },
-  ]
-  const emptyExtras = {
-    cardSkillName: null,
-    gachaPhrase: null,
-    specialTrainingSkillId: null,
-    specialTrainingSkillName: null,
+function makeEvent(overrides: Partial<SekaiEventItem> = {}): SekaiEventItem {
+  return {
+    id: 1,
+    name: "Event",
+    eventType: "marathon",
+    assetbundleName: "event_1",
+    unit: null,
+    startAt: 100,
+    aggregateAt: 200,
+    closedAt: 300,
+    ...overrides,
   }
+}
 
-  it("extracts skill name and treats '-' as missing", () => {
-    expect(extractCardDetailExtras(rawCards, 1)).toEqual({
-      ...emptyExtras,
-      cardSkillName: "Tiny flower",
-    })
+describe("selectCardRelatedEvents", () => {
+  const eventsById = new Map<number, SekaiEventItem>([
+    [1, makeEvent({ id: 1, startAt: 100 })],
+    [5, makeEvent({ id: 5, startAt: 500 })],
+  ])
+  const links = new Map<number, EventCardLink[]>([
+    [109, [
+      { eventId: 1, cardId: 109, bonusRate: 25, leaderBonusRate: null, isDisplayCardStory: true },
+      { eventId: 5, cardId: 109, bonusRate: 20, leaderBonusRate: 5, isDisplayCardStory: false },
+      { eventId: 5, cardId: 109, bonusRate: 20, leaderBonusRate: 5, isDisplayCardStory: false },
+      { eventId: 999, cardId: 109, bonusRate: null, leaderBonusRate: null, isDisplayCardStory: false },
+    ]],
+  ])
+
+  it("resolves linked events newest first with their bonus rates", () => {
+    const rows = selectCardRelatedEvents(109, links, eventsById)
+    expect(rows.map((row) => row.event.id)).toEqual([5, 1])
+    expect(rows[0]).toMatchObject({ bonusRate: 20, leaderBonusRate: 5, hasStory: false })
+    expect(rows[1]).toMatchObject({ bonusRate: 25, leaderBonusRate: null, hasStory: true })
   })
 
-  it("extracts gacha phrase and drops blank skill names", () => {
-    expect(extractCardDetailExtras(rawCards, 2)).toEqual({
-      ...emptyExtras,
-      gachaPhrase: "Let's go!",
-    })
-  })
-
-  it("extracts the Bloom Fes special-training skill", () => {
-    expect(extractCardDetailExtras(rawCards, 3)).toEqual({
-      ...emptyExtras,
-      cardSkillName: "Base",
-      specialTrainingSkillId: 22,
-      specialTrainingSkillName: "Awakened",
-    })
-  })
-
-  it("handles missing records", () => {
-    expect(extractCardDetailExtras(rawCards, 99)).toEqual(emptyExtras)
-    expect(extractCardDetailExtras(undefined, 1)).toEqual(emptyExtras)
+  it("returns nothing for cards without links", () => {
+    expect(selectCardRelatedEvents(42, links, eventsById)).toEqual([])
   })
 })
 
-describe("card event lookup", () => {
-  const rawEventCards = [
-    { cardId: 109, eventId: 1 },
-    { cardId: 110, eventId: 1 },
-    { cardId: 109, eventId: 5 },
-    { cardId: 109, eventId: 5 },
-    { cardId: null, eventId: 2 },
-  ]
-  const rawEvents = [
-    { id: 1, name: "First Star", assetbundleName: "event_first", startAt: 100, aggregateAt: 200 },
-    { id: 5, name: "" },
-  ]
-
-  it("indexes event ids per card without duplicates", () => {
-    const index = buildCardEventIndex(rawEventCards)
-    expect(index.get(109)).toEqual([1, 5])
-    expect(index.get(110)).toEqual([1])
-    expect(index.has(2)).toBe(false)
+describe("selectCardRelatedGachas", () => {
+  const summary = (id: number, startAt: number): CatalogGachaSummary => ({
+    id,
+    gachaType: "ceil",
+    name: `Gacha ${id}`,
+    seq: id,
+    assetbundleName: "",
+    startAt,
+    endAt: null,
+    gachaCeilItemId: null,
+    wishSelectCount: 0,
+    wishFixedSelectCount: 0,
+    wishLimitedSelectCount: 0,
+    rarityRates: [],
+    pickups: [],
+    pickupCardIds: [],
+    behaviors: [],
   })
+  const gachasById = new Map<number, CatalogGachaSummary>([
+    [2, summary(2, 5_000)],
+    [1, summary(1, 4_000)],
+  ])
+  const gachaIdsByPickupCard = new Map<number, number[]>([[109, [2, 1, 77]]])
 
-  it("resolves event summaries with id fallback names", () => {
-    expect(resolveCardEventSummaries(rawEvents, [5, 1])).toEqual([
-      { id: 1, name: "First Star", assetbundleName: "event_first", startAt: 100, aggregateAt: 200 },
-      { id: 5, name: "#5", assetbundleName: null, startAt: null, aggregateAt: null },
-    ])
-    expect(resolveCardEventSummaries(rawEvents, [])).toEqual([])
-  })
-})
-
-describe("selectCardPickupGachas", () => {
-  const rawGachas = [
-    {
-      id: 2,
-      name: "Later Gacha",
-      startAt: 5_000_000_000_000,
-      gachaPickups: [{ cardId: 109 }],
-    },
-    {
-      id: 1,
-      name: "Early Gacha",
-      startAt: 4_000_000_000_000,
-      gachaPickups: [{ cardId: 109 }, { cardId: 110 }],
-    },
-    {
-      id: 3,
-      name: "Unrelated Gacha",
-      startAt: 6_000_000_000_000,
-      gachaPickups: [{ cardId: 999 }],
-    },
-  ]
-
-  const gachas = normalizeCatalogGachas(rawGachas)
-
-  it("returns gachas picking up the card, ordered by start time", () => {
-    expect(selectCardPickupGachas(gachas, 109).map((gacha) => gacha.id)).toEqual([1, 2])
-    expect(selectCardPickupGachas(gachas, 110).map((gacha) => gacha.id)).toEqual([1])
+  it("returns the pickup gachas ordered by start time", () => {
+    expect(selectCardRelatedGachas(109, gachaIdsByPickupCard, gachasById).map((gacha) => gacha.id)).toEqual([1, 2])
   })
 
   it("returns an empty list for cards without pickups", () => {
-    expect(selectCardPickupGachas(gachas, 42)).toEqual([])
-    expect(selectCardPickupGachas([], 109)).toEqual([])
+    expect(selectCardRelatedGachas(42, gachaIdsByPickupCard, gachasById)).toEqual([])
   })
 })
 
