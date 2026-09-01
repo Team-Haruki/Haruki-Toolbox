@@ -44,7 +44,9 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const open = ref(props.collapsible ? props.defaultOpen : true)
-let opened = open.value
+// `open` is emitted the first time the body becomes visible — including a
+// section that starts open — so lazy consumers can always key off it.
+let opened = false
 
 const bodyVisible = computed(() => !props.collapsible || open.value)
 
