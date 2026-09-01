@@ -1,5 +1,5 @@
 // AUTO-GENERATED split of the former monolithic en-US locale file.
-// Namespaces: app, common, turnstile, auth, sidebarUser, home, gameAccountSelect, cardBox, eventRecords, musicProgress, globalSearch, costumes, gachas, playerProfile, training, searchAlias, sekaiRegion, sekaiUnreleased, navigation, webLayout, route, musicLibrary, cards, events, homeSettings, core
+// Namespaces: app, common, turnstile, auth, sidebarUser, home, gameAccountSelect, cardBox, eventRecords, musicProgress, globalSearch, costumes, gachas, playerProfile, training, searchAlias, sekaiRegion, sekaiUnreleased, navigation, webLayout, route, musicLibrary, cards, events, homeSettings, core, catalog
 export default {
   "app": {
     "name": "Haruki Toolbox"
@@ -1380,6 +1380,121 @@ export default {
       "offlineReadyDescription": "The app shell is cached and can open faster next time.",
       "devTitle": "Development mode",
       "devDescription": "PWA updates are not registered in development mode."
+    }
+  },
+  "catalog": {
+    "region": {
+      "label": "Server"
+    },
+    "search": {
+      "label": "Search",
+      "placeholder": "Search…",
+      "clear": "Clear search"
+    },
+    "filters": {
+      "title": "Filters",
+      "reset": "Reset filters",
+      "active": "{count} active",
+      "clearAll": "Clear all",
+      "showPanel": "Filters",
+      "hidePanel": "Hide filters"
+    },
+    "results": {
+      "count": "{count} results",
+      "empty": "Nothing matches the current filters.",
+      "emptyHint": "Try loosening the filters or switching server.",
+      "loadError": "Failed to load data",
+      "retry": "Retry",
+      "downloading": "Downloading master data… {progress}%"
+    },
+    "sort": {
+      "label": "Sort",
+      "asc": "Ascending",
+      "desc": "Descending"
+    },
+    "view": {
+      "label": "View",
+      "grid": "Grid",
+      "list": "List"
+    },
+    "pagination": {
+      "label": "Pagination",
+      "first": "First page",
+      "prev": "Previous page",
+      "next": "Next page",
+      "last": "Last page",
+      "page": "Page {page}",
+      "pageOf": "{page} / {total}",
+      "pageSize": "Items per page",
+      "perPage": "{size} / page",
+      "jump": "Jump to page",
+      "summary": "{total} items · page {page} of {pages}"
+    },
+    "status": {
+      "upcoming": "Upcoming",
+      "ongoing": "Ongoing",
+      "ended": "Ended",
+      "upcomingHidden": "Upcoming content is hidden. Enable “show unreleased content” to see it.",
+      "showUnreleased": "Show unreleased content",
+      "endsIn": "{time} left",
+      "startsIn": "Starts in {time}"
+    },
+    "countdown": {
+      "toStart": "Starts in",
+      "toEnd": "Ends in",
+      "toAggregate": "Aggregates in",
+      "reached": "Reached",
+      "days": "{days}d",
+      "hours": "{hours}h",
+      "minutes": "{minutes}m",
+      "seconds": "{seconds}s"
+    },
+    "detail": {
+      "backToList": "Back to {list}",
+      "breadcrumb": "Breadcrumb",
+      "notFound": "This entry does not exist in the selected server's data.",
+      "loadError": "Failed to load details",
+      "id": "ID",
+      "assetName": "Asset name",
+      "releaseAt": "Release time",
+      "period": "Period",
+      "viewAll": "View all",
+      "viewAllCount": "View all ({count})",
+      "zoom": "Click to enlarge",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "unknown": "Unknown",
+      "tryOtherRegion": "This entry may exist on another server; switch and retry."
+    },
+    "lightbox": {
+      "description": "Image preview",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "openInNewTab": "Open in new tab",
+      "items": "Images"
+    },
+    "character": {
+      "label": "Characters",
+      "toggleUnit": "Toggle all members of {unit}"
+    },
+    "unit": {
+      "label": "Units"
+    },
+    "attr": {
+      "label": "Attributes"
+    },
+    "rarity": {
+      "label": "Rarity"
+    },
+    "year": {
+      "label": "Year",
+      "all": "All years"
+    },
+    "type": {
+      "label": "Type"
+    },
+    "statusFilter": {
+      "label": "Status"
     }
   }
 } as const

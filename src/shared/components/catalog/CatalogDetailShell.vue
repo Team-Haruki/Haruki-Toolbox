@@ -10,6 +10,7 @@ import { goBackOr, hasInAppHistory } from "@/lib/router-back"
 import { useDocumentTitle } from "@/composables/useDocumentTitle"
 import CatalogEmptyState from "./CatalogEmptyState.vue"
 import CatalogErrorState from "./CatalogErrorState.vue"
+import CatalogRegionSelect from "./CatalogRegionSelect.vue"
 
 /**
  * Standard frame for catalog detail pages: back row with breadcrumb, title
@@ -101,11 +102,15 @@ const showContent = computed(() => !props.loading && !props.error && !props.notF
     <CatalogEmptyState
       v-else-if="notFound || title == null"
       :message="notFoundMessage ?? t('catalog.detail.notFound')"
+      :hint="t('catalog.detail.tryOtherRegion')"
     >
       <template #action>
-        <Button as-child variant="outline" size="sm">
-          <RouterLink :to="listRoute">{{ t("catalog.detail.backToList", { list: listTitle }) }}</RouterLink>
-        </Button>
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <CatalogRegionSelect size="sm" />
+          <Button as-child variant="outline" size="sm">
+            <RouterLink :to="listRoute">{{ t("catalog.detail.backToList", { list: listTitle }) }}</RouterLink>
+          </Button>
+        </div>
       </template>
     </CatalogEmptyState>
 

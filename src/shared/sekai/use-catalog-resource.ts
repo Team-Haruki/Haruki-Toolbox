@@ -5,6 +5,8 @@ import { useSekaiCatalogStore, type CatalogResourceBuilder } from "@/shared/seka
 
 export type UseCatalogResourceOptions = {
   musicMetas?: boolean
+  /** Files that may be absent for some regions; they resolve to `[]`. */
+  optional?: readonly string[]
   /** When false the resource is not loaded (e.g. detail extras for a missing id). */
   enabled?: Ref<boolean>
 }
@@ -16,6 +18,8 @@ export type CatalogResource<T> = {
   /** True during any load, including background refreshes that keep stale data visible. */
   refreshing: Ref<boolean>
   error: Ref<string | null>
+  /** Non-fatal: the remote version check failed and cached data is shown. */
+  warning: Ref<string | null>
   ready: ComputedRef<boolean>
   reload: () => Promise<void>
 }
@@ -24,6 +28,9 @@ export type CatalogResource<T> = {
  * Reactive wrapper around `useSekaiCatalogStore().getResource`: loads the
  * built value for the current catalog region, reloads when the region or its
  * master version changes, and keeps stale data on screen while refreshing.
+ *
+ * `key` is a contract (see the store): declare each key once, next to its
+ * files and builder, and import that declaration everywhere it is needed.
  */
 export function useCatalogResource<T>(
   region: Ref<SekaiRegion>,
@@ -39,6 +46,7 @@ export function useCatalogResource<T>(
   const loading = ref(false)
   const refreshing = ref(false)
   const error = ref<string | null>(null)
+  const warning = ref<string | null>(null)
   let loadToken = 0
   let loadedRegion: SekaiRegion | null = data.value ? region.value : null
 
@@ -57,14 +65,16 @@ export function useCatalogResource<T>(
     refreshing.value = true
     error.value = null
     try {
-      const value = await catalogStore.getResource<T>(targetRegion, key, files, build, {
+      const result = await catalogStore.getResource<T>(targetRegion, key, files, build, {
         force,
         musicMetas: options.musicMetas,
+        optional: options.optional,
       })
       if (token !== loadToken) {
         return
       }
-      data.value = value
+      data.value = result.value
+      warning.value = result.warning
       loadedRegion = targetRegion
     } catch (loadError) {
       if (token !== loadToken) {
@@ -99,6 +109,7 @@ export function useCatalogResource<T>(
     loading,
     refreshing,
     error,
+    warning,
     ready: computed(() => data.value != null && !loading.value),
     reload: () => load(true),
   }

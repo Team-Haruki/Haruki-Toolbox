@@ -1,5 +1,5 @@
 import { computed, onScopeDispose, reactive, watch, type ComputedRef } from "vue"
-import { useRoute, useRouter, type LocationQuery } from "vue-router"
+import { onBeforeRouteLeave, useRoute, useRouter, type LocationQuery } from "vue-router"
 import { mergeQuery, serializeQueryRecord, type QueryWriteRecord } from "@/lib/query-codec"
 
 export type QueryCodec<T extends object> = {
@@ -18,7 +18,7 @@ export type UseRouteQueryStateOptions<T extends object> = {
   debounceMs?: number
   /**
    * When any owned key other than these changes, `pageKey` is reset to 1
-   * (filters changed → back to the first page).
+   * (filters changed → back to the first page) in the same URL write.
    */
   pageKey?: keyof T & string
   pageNeutralKeys?: readonly string[]
@@ -38,8 +38,8 @@ export type RouteQueryState<T extends object> = {
  * - state → URL via `router.replace` (no history entries), only when the
  *   serialized form actually changed, optionally debounced per key;
  * - URL → state on back/forward or external navigation to the same path;
- * - navigation away from the page cancels pending writes so a debounced
- *   search never lands on the next route.
+ * - leaving the page cancels pending writes so a debounced search never
+ *   aborts the navigation the user just started.
  */
 export function useRouteQueryState<T extends object>(
   codec: QueryCodec<T>,
@@ -60,10 +60,13 @@ export function useRouteQueryState<T extends object>(
   let lastRecord = codec.serialize(state)
   let lastWritten = serializeQueryRecord(lastRecord)
   let timer: ReturnType<typeof setTimeout> | null = null
-  let disposed = false
+  // Remembers that the change which triggered a page reset was debounced,
+  // so the follow-up run (only `page` changed) keeps the debounce.
+  let pendingDebounce = false
+  let leaving = false
 
   function isOwnedRoute(): boolean {
-    return !disposed && route.path === ownedPath
+    return !leaving && router.currentRoute.value.path === ownedPath
   }
 
   function cancelPending() {
@@ -92,24 +95,28 @@ export function useRouteQueryState<T extends object>(
       const serialized = serializeQueryRecord(record)
       if (serialized === lastWritten && timer == null) {
         lastRecord = record
+        pendingDebounce = false
         return
       }
 
       const changedKeys = codec.keys.filter((key) => record[key] !== lastRecord[key])
       lastRecord = record
+      const debounced = pendingDebounce || changedKeys.some((key) => debounceKeys.has(key))
 
       if (
         options.pageKey
         && changedKeys.some((key) => !pageNeutral.has(key))
         && (state as Record<string, unknown>)[options.pageKey] !== 1
       ) {
+        pendingDebounce = debounced
         ;(state as Record<string, unknown>)[options.pageKey] = 1
         // The page reset re-triggers this watcher with the final record.
         return
       }
 
+      pendingDebounce = false
       cancelPending()
-      if (changedKeys.some((key) => debounceKeys.has(key))) {
+      if (debounced) {
         timer = setTimeout(() => flush(codec.serialize(state)), debounceMs)
       } else {
         flush(record)
@@ -133,14 +140,24 @@ export function useRouteQueryState<T extends object>(
       // External change (back/forward, a link with a different query): the
       // URL wins over any pending debounced write.
       cancelPending()
+      pendingDebounce = false
       lastWritten = serialized
       lastRecord = record
       Object.assign(state as object, parsed)
     },
   )
 
+  onBeforeRouteLeave((to, from) => {
+    if (to.path !== from.path) {
+      // Navigation start (before async chunks load): a debounced replace
+      // firing now would abort the user's navigation.
+      leaving = true
+      cancelPending()
+    }
+  })
+
   onScopeDispose(() => {
-    disposed = true
+    leaving = true
     cancelPending()
   })
 

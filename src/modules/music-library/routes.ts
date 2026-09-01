@@ -5,7 +5,7 @@ export const musicLibraryRoutes: RouteRecordRaw[] = [
         path: "/music",
         name: "musicLibrary.list",
         component: () => import("@/modules/music-library/views/MusicList.vue"),
-        meta: { titleKey: "route.musicLibrary.list" },
+        meta: { titleKey: "route.musicLibrary.list", scrollMemory: true },
     },
     {
         // Must stay before the /music/:musicId catch-all so "progress" is not

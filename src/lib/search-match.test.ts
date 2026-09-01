@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "bun:test"
-import { buildSearchVariants, matchesCommandSearch, preloadSearchPinyin } from "./search"
+import { buildSearchVariants, matchesCommandSearch, preloadSearchPinyin } from "./search-match"
 
 // The pinyin dictionary is a lazy chunk in production; load it up front so
 // CJK expectations below are deterministic.
