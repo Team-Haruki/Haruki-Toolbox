@@ -3,6 +3,7 @@ import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
 import { WEB_NAV_SECTIONS, type NavItem } from "@/config/navigation"
+import { documentTitleOverride } from "@/composables/useDocumentTitle"
 import { getUserTickets } from "@/modules/tickets/api/user"
 
 const APP_TITLE_KEY = "app.name"
@@ -51,7 +52,9 @@ export function useWebLayout() {
 
   watchEffect(() => {
     const appTitle = t(APP_TITLE_KEY)
-    const currentPageTitle = pageTitle.value
+    // Detail pages publish their entity name through the override; the
+    // topbar keeps showing the route title.
+    const currentPageTitle = documentTitleOverride.value ?? pageTitle.value
     document.title = currentPageTitle ? `${currentPageTitle} | ${appTitle}` : appTitle
   })
 

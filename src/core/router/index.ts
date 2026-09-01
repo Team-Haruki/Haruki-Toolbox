@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router"
 import { webRoutes } from "@/modules/web/routes"
 import { setupRouteGuards } from "@/core/router/guards"
+import { recordScrollMemoryArrival } from "@/core/router/scroll-memory"
 
 declare module 'vue-router' {
     interface RouteMeta {
@@ -10,6 +11,11 @@ declare module 'vue-router' {
         requiresAdmin?: boolean
         requiresSuperAdmin?: boolean
         guestOnly?: boolean
+        /**
+         * The page restores its own scroll position once its data has
+         * rendered (see useCatalogScrollMemory); the router must not scroll.
+         */
+        scrollMemory?: boolean
     }
 }
 
@@ -17,6 +23,12 @@ const router = createRouter({
     history: createWebHistory(),
     routes: webRoutes,
     scrollBehavior(to, from, savedPosition) {
+        if (to.meta.scrollMemory && to.path !== from.path && !to.hash) {
+            // Restoring onto a not-yet-rendered list lands on a skeleton that
+            // is shorter than the final content; the page restores itself.
+            recordScrollMemoryArrival(savedPosition != null)
+            return savedPosition ? false : { top: 0 }
+        }
         if (savedPosition) {
             return savedPosition
         }

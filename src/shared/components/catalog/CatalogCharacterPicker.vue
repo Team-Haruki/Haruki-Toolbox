@@ -16,12 +16,13 @@ const props = withDefaults(defineProps<{
   characters: readonly CatalogCharacter[]
   label?: string | null
   unitColorMap?: ReadonlyMap<SekaiUnit, string> | null
-  size?: "sm" | "md"
+  /** `default` renders 40 px avatars on phones (touch target) and 32 px from `md` up. */
+  size?: "sm" | "default"
   class?: string
 }>(), {
   label: null,
   unitColorMap: null,
-  size: "md",
+  size: "default",
   class: undefined,
 })
 
@@ -80,7 +81,7 @@ function unitLabel(unit: SekaiUnit): string {
   return resolveSekaiUnitLabel({ t, te }, unit)
 }
 
-const avatarSize = computed(() => (props.size === "sm" ? "sm" : "md"))
+const avatarClass = computed(() => (props.size === "sm" ? "size-7 ring-0" : "size-10 ring-0 md:size-8"))
 </script>
 
 <template>
@@ -91,7 +92,7 @@ const avatarSize = computed(() => (props.size === "sm" ? "sm" : "md"))
         v-if="group.unit"
         type="button"
         :class="[
-          'ml-1 inline-flex shrink-0 items-center rounded-md px-1 py-0.5 transition-colors hover:bg-muted',
+          'ml-1 inline-flex h-8 shrink-0 items-center rounded-md px-1.5 transition-colors hover:bg-muted',
           groupSelected(group.characters) ? 'bg-primary/10' : '',
         ]"
         :title="t('catalog.character.toggleUnit', { unit: unitLabel(group.unit) })"
@@ -108,14 +109,14 @@ const avatarSize = computed(() => (props.size === "sm" ? "sm" : "md"))
         :class="[
           'relative shrink-0 rounded-full ring-2 transition',
           selected.has(character.id) ? 'ring-primary' : 'ring-transparent hover:ring-border',
-          hasSelection && !selected.has(character.id) ? 'opacity-40 hover:opacity-100' : '',
+          hasSelection && !selected.has(character.id) ? 'opacity-60' : '',
         ]"
         :title="character.name"
         :aria-label="character.name"
         :aria-pressed="selected.has(character.id)"
         @click="toggleCharacter(character.id)"
       >
-        <SekaiCharacterAvatar :character-id="character.id" :name="character.name" :size="avatarSize" class="ring-0" />
+        <SekaiCharacterAvatar :character-id="character.id" :name="character.name" :class="avatarClass" />
       </button>
     </template>
   </div>

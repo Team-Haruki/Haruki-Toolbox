@@ -1,5 +1,6 @@
 import { nextTick, onMounted, watch, type Ref } from "vue"
 import { onBeforeRouteLeave, useRoute } from "vue-router"
+import { consumeScrollMemoryArrival } from "@/core/router/scroll-memory"
 
 const STORAGE_PREFIX = "catalog-scroll:"
 const MAX_ENTRIES = 24
@@ -43,8 +44,8 @@ function pruneEntries(store: Storage): void {
       keys.push(key)
     }
   }
-  // sessionStorage has no ordering guarantee; dropping the oldest inserted
-  // entries is approximated by dropping the first reported ones.
+  // sessionStorage has no ordering guarantee; dropping the first reported
+  // entries approximates dropping the oldest.
   while (keys.length > MAX_ENTRIES) {
     const key = keys.shift()
     if (key) {
@@ -54,16 +55,18 @@ function pruneEntries(store: Storage): void {
 }
 
 /**
- * Remembers the window scroll position of a catalog list per `fullPath`
- * (filters live in the query, so the key identifies the exact listing) and
- * restores it once the list has rendered real content. The router's own
- * `savedPosition` cannot do this: the list remounts behind the page-fade
- * transition and the saved offset lands on a skeleton that is shorter than
- * the eventual content.
+ * Scroll position memory for catalog lists whose routes carry
+ * `meta.scrollMemory`. The router skips its own restoration for those routes
+ * and only tells us whether the arrival came with a saved position (back /
+ * forward / reload); the list then restores the remembered `scrollY` for its
+ * exact `fullPath` (filters live in the query) once real content has
+ * rendered — the router's `savedPosition` would land on the loading skeleton.
+ * A fresh navigation (sidebar link) always starts at the top.
  */
 export function useCatalogScrollMemory(ready: Ref<boolean>): void {
   const route = useRoute()
   let pendingKey: string | null = null
+  let shouldRestore = false
   let restoreTimer: ReturnType<typeof setTimeout> | null = null
 
   function cancelRestore() {
@@ -83,7 +86,7 @@ export function useCatalogScrollMemory(ready: Ref<boolean>): void {
         window.scrollTo({ top: Math.min(target, maxScroll), behavior: "auto" })
         return
       }
-      // Content (thumbnails, fonts) may still be laying out; retry briefly.
+      // Thumbnails and fonts may still be laying out; retry briefly.
       attempts += 1
       restoreTimer = setTimeout(attempt, 60)
     }
@@ -95,6 +98,10 @@ export function useCatalogScrollMemory(ready: Ref<boolean>): void {
 
   onMounted(() => {
     pendingKey = `${STORAGE_PREFIX}${route.fullPath}`
+    // No arrival record means the page mounted without a routed navigation
+    // (hard reload): sessionStorage survives reloads, so restore in that case.
+    const arrival = consumeScrollMemoryArrival()
+    shouldRestore = arrival == null ? true : arrival.restore
   })
 
   watch(ready, async (isReady) => {
@@ -103,7 +110,7 @@ export function useCatalogScrollMemory(ready: Ref<boolean>): void {
     }
     const key = pendingKey
     pendingKey = null
-    const target = readEntry(key)
+    const target = shouldRestore ? readEntry(key) : null
     storage()?.removeItem(key)
     if (target == null) {
       return

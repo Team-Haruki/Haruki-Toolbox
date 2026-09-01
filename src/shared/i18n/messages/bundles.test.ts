@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test"
 
-const BUNDLE_NAMES = ["core", "deck", "rank", "tools", "user-settings", "admin", "tickets", "public-pages"] as const
+const BUNDLE_NAMES = ["core", "catalog", "deck", "rank", "tools", "user-settings", "admin", "tickets", "public-pages"] as const
 
 async function loadMerged(locale: "zh-CN" | "zh-TW" | "en-US"): Promise<Record<string, unknown>> {
   const merged: Record<string, unknown> = {}

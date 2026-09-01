@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import {
   Select,
   SelectContent,
@@ -21,14 +22,19 @@ import {
 import { buildPaginationWindow, clampPage } from "@/lib/pagination-window"
 import { CATALOG_PAGE_SIZES } from "./types"
 
+/**
+ * Numbered pagination. Wide viewports get first/prev/window/next/last, a
+ * page-size select and a jump field; phones get prev · native page select ·
+ * next with taller touch targets.
+ */
 const props = withDefaults(defineProps<{
   totalPages: number
   /** Total item count, for the summary line. */
   total?: number | null
   pageSizeOptions?: readonly number[]
-  /** Scrolled to the top of the viewport (below the sticky topbar) after a page change. */
+  /** Scrolled below the sticky topbar after a page change. */
   anchor?: HTMLElement | null
-  /** Hide the whole control when there is a single page and no page-size choice to make. */
+  /** Hide the whole control when everything fits on one page of the smallest size. */
   hideWhenSinglePage?: boolean
 }>(), {
   total: null,
@@ -45,7 +51,12 @@ const id = useId()
 
 const currentPage = computed(() => clampPage(page.value, props.totalPages))
 const windowItems = computed(() => buildPaginationWindow(currentPage.value, props.totalPages, 1))
-const visible = computed(() => !(props.hideWhenSinglePage && props.totalPages <= 1 && (props.total ?? 0) <= Math.min(...props.pageSizeOptions)))
+const pageNumbers = computed(() => Array.from({ length: Math.max(1, props.totalPages) }, (_, index) => index + 1))
+const visible = computed(() => !(
+  props.hideWhenSinglePage
+  && props.totalPages <= 1
+  && (props.total ?? 0) <= Math.min(...props.pageSizeOptions)
+))
 
 const jumpValue = ref(String(currentPage.value))
 watch(currentPage, (value) => {
@@ -80,11 +91,19 @@ function submitJump() {
   jumpValue.value = String(clampPage(Number.isFinite(parsed) ? parsed : currentPage.value, props.totalPages))
 }
 
+function handleMobilePageChange(value: AcceptableValue | AcceptableValue[]) {
+  const parsed = Number(Array.isArray(value) ? value[0] : value)
+  if (Number.isFinite(parsed)) {
+    goTo(parsed)
+  }
+}
+
 function handlePageSizeUpdate(value: AcceptableValue) {
   const parsed = Number(value)
-  if (Number.isFinite(parsed) && parsed > 0) {
+  if (Number.isFinite(parsed) && parsed > 0 && parsed !== pageSize.value) {
     pageSize.value = parsed
     page.value = 1
+    scrollToAnchor()
   }
 }
 </script>
@@ -110,7 +129,7 @@ function handlePageSizeUpdate(value: AcceptableValue) {
       <Button
         variant="outline"
         size="sm"
-        class="size-8 p-0"
+        class="h-10 w-10 p-0 sm:size-8"
         :disabled="currentPage <= 1"
         :aria-label="t('catalog.pagination.prev')"
         @click="goTo(currentPage - 1)"
@@ -118,9 +137,18 @@ function handlePageSizeUpdate(value: AcceptableValue) {
         <LucideChevronLeft class="size-4" />
       </Button>
 
-      <span class="px-2 text-sm tabular-nums sm:hidden">
-        {{ t("catalog.pagination.pageOf", { page: currentPage, total: totalPages }) }}
-      </span>
+      <div class="sm:hidden">
+        <NativeSelect
+          :model-value="String(currentPage)"
+          class="h-10 text-sm tabular-nums"
+          :aria-label="t('catalog.pagination.jump')"
+          @update:model-value="handleMobilePageChange"
+        >
+          <NativeSelectOption v-for="number in pageNumbers" :key="number" :value="String(number)">
+            {{ t("catalog.pagination.pageOf", { page: number, total: totalPages }) }}
+          </NativeSelectOption>
+        </NativeSelect>
+      </div>
 
       <div class="hidden items-center gap-1 sm:flex">
         <template v-for="(item, index) in windowItems" :key="`${item}-${index}`">
@@ -142,7 +170,7 @@ function handlePageSizeUpdate(value: AcceptableValue) {
       <Button
         variant="outline"
         size="sm"
-        class="size-8 p-0"
+        class="h-10 w-10 p-0 sm:size-8"
         :disabled="currentPage >= totalPages"
         :aria-label="t('catalog.pagination.next')"
         @click="goTo(currentPage + 1)"
@@ -167,7 +195,7 @@ function handlePageSizeUpdate(value: AcceptableValue) {
       </span>
       <Label :id="`${id}-size-label`" :for="`${id}-size`" class="sr-only">{{ t("catalog.pagination.pageSize") }}</Label>
       <Select :id="`${id}-size`" :model-value="String(pageSize)" @update:model-value="handlePageSizeUpdate">
-        <SelectTrigger size="sm" class="h-8 w-24 text-xs" :aria-labelledby="`${id}-size-label`">
+        <SelectTrigger size="sm" class="h-10 w-24 text-xs sm:h-8" :aria-labelledby="`${id}-size-label`">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

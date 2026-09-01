@@ -5,7 +5,7 @@ export const cardsRoutes: RouteRecordRaw[] = [
         path: "/cards",
         name: "cards.list",
         component: () => import("@/modules/cards/views/CardList.vue"),
-        meta: { titleKey: "route.cards.list" },
+        meta: { titleKey: "route.cards.list", scrollMemory: true },
     },
     {
         path: "/cards/box",

@@ -5,7 +5,7 @@ export const eventsRoutes: RouteRecordRaw[] = [
         path: "/events",
         name: "events.list",
         component: () => import("@/modules/events/views/EventList.vue"),
-        meta: { titleKey: "route.events.list" },
+        meta: { titleKey: "route.events.list", scrollMemory: true },
     },
     {
         path: "/events/records",

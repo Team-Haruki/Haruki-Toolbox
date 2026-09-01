@@ -25,3 +25,12 @@ export {
   type SekaiEventStatus,
   type SekaiEventType,
 } from "./lib/event-filter"
+
+export {
+  EVENTS_INDEX_FILES,
+  EVENTS_INDEX_KEY,
+  buildEventsIndex,
+  useEventsIndex,
+  type EventCardLink,
+  type EventsIndex,
+} from "./composables/useEventsIndex"

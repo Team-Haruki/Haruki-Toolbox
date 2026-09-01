@@ -43,15 +43,19 @@ export function appendImageRetryParam(url: string, attempt: number): string {
  * URL first (when given), then retries the original URL with backoff and a
  * cache-busting param. Per-URL state lives on the element's dataset because
  * Vue reuses the same `<img>` element across option/selection changes.
+ *
+ * Returns `true` while a fallback or retry has been scheduled and `false`
+ * once recovery is exhausted, so callers can switch to a placeholder only
+ * when the image is really gone.
  */
 export function handleSekaiImageError(
   event: Event,
   sourceUrl: string | null | undefined,
   fallbackUrl?: string | null,
-): void {
+): boolean {
   const image = event.target as HTMLImageElement | null
   if (!image || !sourceUrl) {
-    return
+    return false
   }
 
   if (image.dataset.recoveryFor !== sourceUrl) {
@@ -64,13 +68,13 @@ export function handleSekaiImageError(
     image.dataset.usedFallback = "1"
     if (image.src !== fallbackUrl) {
       image.src = fallbackUrl
-      return
+      return true
     }
   }
 
   const retries = Number(image.dataset.retryCount ?? "0")
   if (retries >= IMAGE_RETRY_LIMIT) {
-    return
+    return false
   }
   image.dataset.retryCount = String(retries + 1)
   void purgeCachedSekaiImage(sourceUrl)
@@ -84,4 +88,5 @@ export function handleSekaiImageError(
       image.src = retryUrl
     }
   }, IMAGE_RETRY_DELAY_MS * (retries + 1))
+  return true
 }

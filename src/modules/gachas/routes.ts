@@ -5,7 +5,7 @@ export const gachasRoutes: RouteRecordRaw[] = [
         path: "/gachas",
         name: "gachas.list",
         component: () => import("@/modules/gachas/views/GachaList.vue"),
-        meta: { titleKey: "route.gachas.list" },
+        meta: { titleKey: "route.gachas.list", scrollMemory: true },
     },
     {
         path: "/gachas/:gachaId",

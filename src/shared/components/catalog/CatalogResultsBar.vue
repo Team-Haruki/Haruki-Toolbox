@@ -23,9 +23,12 @@ withDefaults(defineProps<{
   countLabel: string
   sortOptions?: readonly CatalogSortOption[]
   viewOptions?: readonly CatalogViewOption[]
+  /** Stick below the topbar while the results scroll (long grids). */
+  sticky?: boolean
 }>(), {
   sortOptions: () => [],
   viewOptions: () => [],
+  sticky: false,
 })
 
 const sort = defineModel<string>("sort", { default: "" })
@@ -53,8 +56,14 @@ function toggleDirection() {
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2 text-sm" data-slot="catalog-results-bar">
-    <p class="min-w-0 flex-1 text-muted-foreground tabular-nums" aria-live="polite">{{ countLabel }}</p>
+  <div
+    :class="[
+      'flex flex-wrap items-center gap-2 text-sm',
+      sticky ? 'sticky top-13 z-30 -mx-1 rounded-md border bg-background/90 px-2 py-1.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/75' : '',
+    ]"
+    data-slot="catalog-results-bar"
+  >
+    <p class="min-w-0 flex-1 truncate text-muted-foreground tabular-nums" aria-live="polite">{{ countLabel }}</p>
     <slot name="extra" />
     <template v-if="sortOptions.length > 0">
       <Label :id="`${id}-sort-label`" :for="`${id}-sort`" class="sr-only">{{ t("catalog.sort.label") }}</Label>

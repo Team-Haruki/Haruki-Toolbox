@@ -26,19 +26,15 @@ const props = withDefaults(defineProps<{
   class: undefined,
 })
 
-const MAX_IMAGE_ERRORS = 3
-
 const { t, te } = useI18n()
 
 const url = computed(() => resolveUnitLogoUrl(props.unit))
 const label = computed(() => resolveSekaiUnitLabel({ t, te }, props.unit))
 const dotColor = computed(() => props.color ?? SEKAI_UNIT_FALLBACK_COLORS[props.unit as SekaiUnit] ?? null)
 
-const errorCount = ref(0)
 const failed = ref(false)
 
 watch(url, () => {
-  errorCount.value = 0
   failed.value = false
 })
 
@@ -69,12 +65,7 @@ const dotClass = computed(() => {
 })
 
 function handleError(event: Event) {
-  errorCount.value += 1
-  if (errorCount.value >= MAX_IMAGE_ERRORS) {
-    failed.value = true
-    return
-  }
-  handleSekaiImageError(event, url.value)
+  failed.value = !handleSekaiImageError(event, url.value)
 }
 </script>
 

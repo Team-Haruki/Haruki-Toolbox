@@ -27,3 +27,11 @@ export {
   type MusicSortDirection,
   type MusicSortKey,
 } from "./lib/music-filter"
+
+export {
+  MUSICS_INDEX_FILES,
+  MUSICS_INDEX_KEY,
+  buildMusicsIndex,
+  useMusicsIndex,
+  type MusicsIndex,
+} from "./composables/useMusicsIndex"

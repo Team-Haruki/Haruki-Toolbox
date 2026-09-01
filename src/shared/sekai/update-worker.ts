@@ -25,7 +25,7 @@ import type { SekaiMasterCacheState, SekaiMusicMetasCacheState } from "./types"
 
 const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
 const OPTIONAL_MASTER_FILE_SET = new Set<string>(SEKAI_DATA_OPTIONAL_MASTER_FILES)
-const MASTER_FILE_FETCH_CONCURRENCY = 4
+const MASTER_FILE_FETCH_CONCURRENCY = 3
 
 workerScope.onmessage = (event: MessageEvent<SekaiDataWorkerRequest>) => {
   void handleRequest(event.data)
@@ -100,6 +100,9 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
     ? files
     : files.filter((fileName) => !cachedMasterFiles.includes(fileName))
 
+  // Optional files that failed transiently are neither written nor listed
+  // as cached, so the next ensure requests them again.
+  let skippedFiles: string[] = []
   if (!masterCacheHit) {
     const masterFiles = await fetchMasterFilesConcurrently({
       filesToFetch,
@@ -107,6 +110,7 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
       requestId: request.requestId,
       versionInfo,
     })
+    skippedFiles = filesToFetch.filter((fileName) => !(fileName in masterFiles))
 
     if (Object.keys(masterFiles).length > 0) {
       await writeSekaiMasterFiles(region, fetchVersion, masterFiles)
@@ -125,7 +129,7 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
     cachedMaster: cachedMeta?.master ?? null,
     displayVersion,
     fetchVersion,
-    files,
+    files: files.filter((fileName) => !skippedFiles.includes(fileName)),
     filesToFetch,
     region,
     versionInfo,
@@ -172,7 +176,12 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
 // master CDN also sits behind a WAF that answers bursts with a transient 403
 // or an HTML challenge page (HTTP 200, text/html) — both clear on a paced
 // retry, so they are treated as retryable rather than as hard failures.
-const FETCH_RETRY_DELAYS_MS = [600, 1500, 3000]
+const FETCH_RETRY_DELAYS_MS = [800, 1800, 3500]
+
+/** ±30 % jitter so parallel file workers do not re-burst in lockstep. */
+function jitter(delayMs: number): number {
+  return Math.round(delayMs * (0.7 + Math.random() * 0.6))
+}
 
 function isTransientStatus(status: number): boolean {
   return status >= 500 || status === 429 || status === 403
@@ -190,7 +199,7 @@ async function fetchWithRetry(url: string, init?: RequestInit): Promise<Response
   let lastError: unknown
   for (let attempt = 0; attempt <= FETCH_RETRY_DELAYS_MS.length; attempt += 1) {
     if (attempt > 0) {
-      await new Promise((resolve) => setTimeout(resolve, FETCH_RETRY_DELAYS_MS[attempt - 1]))
+      await new Promise((resolve) => setTimeout(resolve, jitter(FETCH_RETRY_DELAYS_MS[attempt - 1])))
     }
     try {
       const response = await fetch(url, init)
@@ -219,15 +228,21 @@ async function fetchJson(url: string): Promise<unknown> {
   return response.json()
 }
 
-async function fetchMasterFileJson(url: string, fileName: string): Promise<unknown> {
+/** Marker for an optional file that failed transiently: not persisted, retried next ensure. */
+const SKIP_FILE = Symbol("skip-file")
+
+async function fetchMasterFileJson(url: string, fileName: string): Promise<unknown | typeof SKIP_FILE> {
   const normalizedFileName = normalizeSekaiMasterFileName(fileName)
   const isOptionalFile = OPTIONAL_MASTER_FILE_SET.has(normalizedFileName)
   let response: Response
   try {
     response = await fetchWithRetry(url, { cache: "no-store" })
   } catch (error) {
+    // A transient failure must not be persisted as "this region has no such
+    // file" for the whole master version; leave it out so the next ensure
+    // fetches it again.
     if (isOptionalFile) {
-      return []
+      return SKIP_FILE
     }
     throw error
   }
@@ -236,6 +251,9 @@ async function fetchMasterFileJson(url: string, fileName: string): Promise<unkno
     return []
   }
   if (!response.ok) {
+    if (isOptionalFile) {
+      return SKIP_FILE
+    }
     throw new Error(`Failed to fetch ${url}: ${response.status}`)
   }
 
@@ -269,10 +287,13 @@ async function fetchMasterFilesConcurrently(input: {
         current: completed + 1,
         total,
       })
-      masterFiles[fileName] = await fetchMasterFileJson(
+      const data = await fetchMasterFileJson(
         resolveSekaiMasterFileUrl(region, fileName, versionInfo),
         fileName,
       )
+      if (data !== SKIP_FILE) {
+        masterFiles[fileName] = data
+      }
       completed += 1
       postProgress(requestId, region, "fetching-master", 10 + Math.round((completed / total) * 55), {
         fileName,

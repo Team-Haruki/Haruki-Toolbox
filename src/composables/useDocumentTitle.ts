@@ -1,42 +1,30 @@
-import { onBeforeUnmount, watch, type Ref } from "vue"
-import { useI18n } from "vue-i18n"
-
-const APP_TITLE_KEY = "app.name"
+import { onBeforeUnmount, ref, watch, type Ref } from "vue"
 
 /**
- * Overrides `document.title` with an entity name (card, event, song…) while
- * the calling component is mounted. The layout keeps owning the route-level
- * title: it only rewrites `document.title` when the route title changes, so
- * this override survives for the lifetime of the detail page and the layout
- * takes over again on the next navigation. The previous title is restored on
- * unmount to cover same-route-title transitions.
+ * Entity-name override for the document title. The web layout is the single
+ * writer of `document.title` (route title + app name); detail pages publish
+ * their entity name here and the layout's watcher renders it instead of the
+ * generic route title. Keeping one writer avoids the races a second
+ * `document.title` assignment would have with route/locale changes and the
+ * out-in page transition (the previous page unmounts after the next route
+ * title was already written).
  */
-export function useDocumentTitle(title: Ref<string | null | undefined>): void {
-  if (typeof document === "undefined") {
-    return
-  }
+export const documentTitleOverride: Ref<string | null> = ref(null)
 
-  const { t } = useI18n()
-  const previous = document.title
-  let applied = false
+export function useDocumentTitle(title: Ref<string | null | undefined>): void {
+  let ownValue: string | null = null
 
   watch(title, (value) => {
-    const trimmed = value?.trim()
-    if (!trimmed) {
-      if (applied) {
-        document.title = previous
-        applied = false
-      }
-      return
-    }
-    document.title = `${trimmed} | ${t(APP_TITLE_KEY)}`
-    applied = true
+    const trimmed = value?.trim() || null
+    ownValue = trimmed
+    documentTitleOverride.value = trimmed
   }, { immediate: true })
 
   onBeforeUnmount(() => {
-    if (applied) {
-      document.title = previous
-      applied = false
+    // Only clear the override if it is still ours: a sibling detail page may
+    // already have published its own title during the page transition.
+    if (ownValue != null && documentTitleOverride.value === ownValue) {
+      documentTitleOverride.value = null
     }
   })
 }
