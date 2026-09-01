@@ -118,7 +118,10 @@ function openAppSettings() {
             <AvatarImage :src="harukiLogo" alt="@haruki"/>
             <AvatarFallback>HT</AvatarFallback>
           </Avatar>
-          <span class="text-xl font-semibold tracking-tight">{{ t("app.name") }}</span>
+          <span class="flex flex-col leading-tight">
+            <span class="text-lg font-semibold tracking-tight">{{ t("app.name") }}</span>
+            <span class="text-[10px] font-medium text-muted-foreground">by Seiunx Network</span>
+          </span>
         </router-link>
       </SidebarHeader>
 
@@ -236,10 +239,11 @@ function openAppSettings() {
       >
         <SidebarTrigger class="flex-shrink-0"/>
         <div class="flex items-center flex-shrink-0 whitespace-nowrap">
-          <router-link to="/" class="flex items-center flex-shrink-0 whitespace-nowrap">
-            <div class="text-lg font-bold leading-none flex-shrink-0 whitespace-nowrap">
+          <router-link to="/" class="flex items-baseline gap-1.5 flex-shrink-0 whitespace-nowrap">
+            <span class="text-lg font-bold leading-none flex-shrink-0 whitespace-nowrap">
               {{ t("app.name") }}
-            </div>
+            </span>
+            <span class="hidden md:inline text-[10px] font-medium text-muted-foreground">by Seiunx Network</span>
           </router-link>
         </div>
         <Separator

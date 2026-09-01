@@ -790,7 +790,7 @@ export default {
       "settings": "设置"
     },
     "footer": {
-      "copyright": "Haruki Dev Team. 保留所有权利。",
+      "copyright": "Seiunx Network & Haruki Dev Team. 保留所有权利。",
       "privacyPolicy": "隐私政策",
       "termsOfService": "服务条款",
       "legalLinks": "法律条款",

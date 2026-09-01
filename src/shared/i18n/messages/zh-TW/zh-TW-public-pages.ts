@@ -32,15 +32,16 @@ export default {
       "subtitle": "服務於世界計劃玩家的社群計劃",
       "projectIntro": {
         "title": "關於專案",
-        "p1Before": "Project Haruki 是由",
-        "p1Name": "星雲希凪 (SeiunKinagi)",
-        "p1After": "發起的社群計劃，旨在為《世界計劃 繽紛舞臺！ feat. 初音未來》的玩家提供更優質的遊戲服務與社群支援。",
+        "p1Before": "Project Haruki 是",
+        "p1Name": "星雲網路 (Seiunx Network)",
+        "p1After": "旗下的社群計劃，由專屬的 Haruki Dev Team 負責開發與維護，旨在為《世界計劃 繽紛舞臺！ feat. 初音未來》的玩家提供更優質的遊戲服務與社群支援。",
         "p2": "我們的核心專案包括 HarukiBot NEO 和 Haruki 工具箱。其中，HarukiBot NEO 專注於為中文玩家提供便捷、智慧的各種遊戲輔助與實用功能。",
-        "p3": "此外，我們也自主開發並維護了一系列高效能的開源底層程式與微服務，為整個 Haruki 生態系統注入強大且穩定的效能支撐，讓每位玩家都能享受流暢、舒適的使用體驗。"
+        "p3": "此外，我們也自主開發並維護了一系列高效能的開源底層程式與微服務，為整個 Haruki 生態系統注入強大且穩定的效能支撐，讓每位玩家都能享受流暢、舒適的使用體驗。",
+        "p4": "星雲網路旗下另設 Seiunx Dev Team，負責 Haruki 計劃之外其他開源專案的開發。"
       },
       "team": {
         "title": "開發團隊",
-        "subtitle": "Project Haruki 的開發與維護離不開 Haruki Dev Team 以下成員的大力支援",
+        "subtitle": "Haruki Dev Team 是星雲網路旗下專注於本計劃的開發團隊，Project Haruki 的開發與維護離不開以下成員的大力支援",
         "roles": {
           "core": "主開發",
           "doc": "文件維護",
@@ -120,6 +121,16 @@ export default {
         "title": "開源專案",
         "subtitle": "我們編寫並維護了一系列開源高效能工具、微服務與應用棧",
         "techStack": "技術棧",
+        "groups": {
+          "haruki": {
+            "title": "Haruki Dev Team",
+            "desc": "Haruki 計劃專屬的專案與服務"
+          },
+          "seiunx": {
+            "title": "Seiunx Dev Team",
+            "desc": "星雲網路旗下的通用開源專案"
+          }
+        },
         "list": {
           "drawingEngine": {
             "name": "HarukiBot NEO Drawing Engine",
@@ -164,6 +175,10 @@ export default {
           "cridecoder": {
             "name": "Cridecoder",
             "desc": "基於 Rust 編寫的高效能 CriWare 音影片與封包中介軟體解密解碼依賴庫。"
+          },
+          "unityRs": {
+            "name": "Unity RS",
+            "desc": "基於 Rust 編寫的高效能 Unity 資產解包庫，修改自 AssetStudio & AssetStudioMod。"
           }
         }
       },

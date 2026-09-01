@@ -32,15 +32,16 @@ export default {
       "subtitle": "A community initiative serving Project Sekai players",
       "projectIntro": {
         "title": "About the Project",
-        "p1Before": "Project Haruki is a community initiative started by ",
-        "p1Name": "SeiunKinagi",
-        "p1After": ", dedicated to providing players of Project Sekai: Colorful Stage! feat. Hatsune Miku with high-quality game services and community support.",
+        "p1Before": "Project Haruki is a community initiative under ",
+        "p1Name": "Seiunx Network",
+        "p1After": ", developed and maintained by its dedicated Haruki Dev Team, providing players of Project Sekai: Colorful Stage! feat. Hatsune Miku with high-quality game services and community support.",
         "p2": "Our core projects include HarukiBot NEO and Haruki Toolbox. Among them, HarukiBot NEO focuses on providing Chinese-speaking players with a wide range of convenient, intelligent game-helper features.",
-        "p3": "In addition, we independently develop and maintain a series of high-performance open-source underlying utilities and microservices. These serve as a robust, stable foundation for the entire Haruki ecosystem, ensuring a smooth and responsive experience for all players."
+        "p3": "In addition, we independently develop and maintain a series of high-performance open-source underlying utilities and microservices. These serve as a robust, stable foundation for the entire Haruki ecosystem, ensuring a smooth and responsive experience for all players.",
+        "p4": "Seiunx Network also runs the Seiunx Dev Team, which develops open-source projects beyond Project Haruki."
       },
       "team": {
         "title": "Dev Team",
-        "subtitle": "The development and maintenance of Project Haruki would not be possible without the support of the following members of the Haruki Dev Team",
+        "subtitle": "Haruki Dev Team is Seiunx Network's team dedicated to this project — the development and maintenance of Project Haruki would not be possible without the support of the following members",
         "roles": {
           "core": "Core Developers",
           "doc": "Documentation",
@@ -120,6 +121,16 @@ export default {
         "title": "Open Source Projects",
         "subtitle": "A collection of high-performance open-source tools, microservices, and applications authored by us",
         "techStack": "Tech Stack",
+        "groups": {
+          "haruki": {
+            "title": "Haruki Dev Team",
+            "desc": "Projects and services dedicated to Project Haruki"
+          },
+          "seiunx": {
+            "title": "Seiunx Dev Team",
+            "desc": "General-purpose open-source projects under Seiunx Network"
+          }
+        },
         "list": {
           "drawingEngine": {
             "name": "HarukiBot NEO Drawing Engine",
@@ -164,6 +175,10 @@ export default {
           "cridecoder": {
             "name": "Cridecoder",
             "desc": "A high-performance Rust library for decrypting and decoding CriWare audio, video, and package middleware."
+          },
+          "unityRs": {
+            "name": "Unity RS",
+            "desc": "A high-performance Rust library for extracting Unity assets, adapted from AssetStudio & AssetStudioMod."
           }
         }
       },

@@ -71,18 +71,29 @@ interface Project {
   githubUrl: string
 }
 
-const projectsList: Project[] = [
-  { key: "toolbox", tags: ["TypeScript", "Vue 3", "Vite", "Shadcn-Vue", "Tailwind"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox" },
-  { key: "toolboxBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL", "MongoDB"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox-Backend" },
-  { key: "botBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL"], githubUrl: "https://github.com/Team-Haruki/Haruki-Cloud" },
-  { key: "sekaiApi", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-API" },
-  { key: "eventTracker", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Event-Tracker" },
-  { key: "assetUpdater", tags: ["Rust", "Axum", "Tokio", "Cridecoder"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-Asset-Updater" },
-  { key: "deckService", tags: ["Rust", "Axum", "Tokio"], githubUrl: "https://github.com/Team-Haruki/deck-service" },
-  { key: "deckCpp", tags: ["C++", "yyjson"], githubUrl: "https://github.com/Team-Haruki/sekai-deck-recommend-cpp" },
-  { key: "scoresRs", tags: ["Rust", "Skia"], githubUrl: "https://github.com/Team-Haruki/pjsekai-scores-rs" },
-  { key: "drawingEngine", tags: ["Python", "FastAPI", "Pillow"], githubUrl: "https://github.com/Team-Haruki/Haruki-Drawing-API" },
-  { key: "cridecoder", tags: ["Rust"], githubUrl: "https://github.com/Team-Haruki/cridecoder" },
+const projectGroups: { key: "haruki" | "seiunx"; projects: Project[] }[] = [
+  {
+    key: "haruki",
+    projects: [
+      { key: "toolbox", tags: ["TypeScript", "Vue 3", "Vite", "Shadcn-Vue", "Tailwind"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox" },
+      { key: "toolboxBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL", "MongoDB"], githubUrl: "https://github.com/Team-Haruki/Haruki-Toolbox-Backend" },
+      { key: "botBackend", tags: ["Go", "Fiber", "EntGo", "PostgreSQL"], githubUrl: "https://github.com/Team-Haruki/Haruki-Cloud" },
+      { key: "sekaiApi", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-API" },
+      { key: "eventTracker", tags: ["Rust", "Axum", "Tokio", "SeaORM"], githubUrl: "https://github.com/Team-Haruki/Haruki-Event-Tracker" },
+      { key: "assetUpdater", tags: ["Rust", "Axum", "Tokio", "Cridecoder"], githubUrl: "https://github.com/Team-Haruki/Haruki-Sekai-Asset-Updater" },
+      { key: "deckService", tags: ["Rust", "Axum", "Tokio"], githubUrl: "https://github.com/Team-Haruki/deck-service" },
+      { key: "deckCpp", tags: ["C++", "yyjson"], githubUrl: "https://github.com/Team-Haruki/sekai-deck-recommend-cpp" },
+      { key: "scoresRs", tags: ["Rust", "Skia"], githubUrl: "https://github.com/Team-Haruki/pjsekai-scores-rs" },
+      { key: "drawingEngine", tags: ["Python", "FastAPI", "Pillow"], githubUrl: "https://github.com/Team-Haruki/Haruki-Drawing-API" },
+    ],
+  },
+  {
+    key: "seiunx",
+    projects: [
+      { key: "cridecoder", tags: ["Rust"], githubUrl: "https://github.com/seiunx-dev/cridecoder" },
+      { key: "unityRs", tags: ["Rust"], githubUrl: "https://github.com/seiunx-dev/unity-rs" },
+    ],
+  },
 ]
 
 // One dot color per primary language keeps the tag row quiet; the first tag
@@ -123,6 +134,7 @@ function languageDotClass(project: Project): string {
         <p>{{ t("navigationPages.about.projectIntro.p1Before") }}<span class="font-semibold text-foreground">{{ t("navigationPages.about.projectIntro.p1Name") }}</span>{{ t("navigationPages.about.projectIntro.p1After") }}</p>
         <p>{{ t("navigationPages.about.projectIntro.p2") }}</p>
         <p>{{ t("navigationPages.about.projectIntro.p3") }}</p>
+        <p>{{ t("navigationPages.about.projectIntro.p4") }}</p>
       </div>
 
       <div class="mt-1 flex flex-wrap gap-3">
@@ -228,31 +240,42 @@ function languageDotClass(project: Project): string {
         </p>
       </header>
 
-      <div class="overflow-hidden rounded-xl border bg-card">
-        <a
-          v-for="project in projectsList"
-          :key="project.key"
-          :href="project.githubUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="group flex items-start gap-3 border-b px-4 py-3.5 outline-none transition-colors last:border-b-0 hover:bg-muted/40 focus-visible:bg-muted/40 sm:px-5"
-        >
-          <span :class="['mt-1.5 h-2 w-2 shrink-0 rounded-full', languageDotClass(project)]" aria-hidden="true" />
-          <span class="min-w-0 flex-1">
-            <span class="flex flex-wrap items-baseline gap-x-2">
-              <span class="text-sm font-semibold transition-colors group-hover:text-primary">
-                {{ t(`navigationPages.about.projects.list.${project.key}.name`) }}
+      <div v-for="group in projectGroups" :key="group.key" class="space-y-3">
+        <div class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+          <h3 class="text-base font-semibold">
+            {{ t(`navigationPages.about.projects.groups.${group.key}.title`) }}
+          </h3>
+          <p class="text-xs text-muted-foreground">
+            {{ t(`navigationPages.about.projects.groups.${group.key}.desc`) }}
+          </p>
+        </div>
+
+        <div class="overflow-hidden rounded-xl border bg-card">
+          <a
+            v-for="project in group.projects"
+            :key="project.key"
+            :href="project.githubUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group flex items-start gap-3 border-b px-4 py-3.5 outline-none transition-colors last:border-b-0 hover:bg-muted/40 focus-visible:bg-muted/40 sm:px-5"
+          >
+            <span :class="['mt-1.5 h-2 w-2 shrink-0 rounded-full', languageDotClass(project)]" aria-hidden="true" />
+            <span class="min-w-0 flex-1">
+              <span class="flex flex-wrap items-baseline gap-x-2">
+                <span class="text-sm font-semibold transition-colors group-hover:text-primary">
+                  {{ t(`navigationPages.about.projects.list.${project.key}.name`) }}
+                </span>
+                <span class="text-[11px] font-medium text-muted-foreground/70">
+                  {{ project.tags.join(" · ") }}
+                </span>
               </span>
-              <span class="text-[11px] font-medium text-muted-foreground/70">
-                {{ project.tags.join(" · ") }}
+              <span class="mt-0.5 block text-xs leading-relaxed text-muted-foreground line-clamp-2 sm:line-clamp-1">
+                {{ t(`navigationPages.about.projects.list.${project.key}.desc`) }}
               </span>
             </span>
-            <span class="mt-0.5 block text-xs leading-relaxed text-muted-foreground line-clamp-2 sm:line-clamp-1">
-              {{ t(`navigationPages.about.projects.list.${project.key}.desc`) }}
-            </span>
-          </span>
-          <ExternalLink class="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" />
-        </a>
+            <ExternalLink class="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" />
+          </a>
+        </div>
       </div>
     </section>
 
