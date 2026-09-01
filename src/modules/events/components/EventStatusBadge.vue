@@ -1,33 +1,24 @@
 <script setup lang="ts">
-import { computed } from "vue"
-import { useI18n } from "vue-i18n"
-import type { SekaiEventStatus } from "../lib/event-filter"
+import type { BadgeVariants } from "@/components/ui/badge"
+import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
+import type { SekaiEventStatus } from "@/modules/events/lib/event-filter"
 
-const props = defineProps<{
+/**
+ * Event status pill for pickers outside the catalog (deck recommend). The
+ * catalog pages use `CatalogStatusBadge` directly; this keeps the legacy
+ * contract where `upcoming` renders nothing because the unreleased badge
+ * already covers that state.
+ */
+withDefaults(defineProps<{
   status: SekaiEventStatus
-}>()
-
-const { t } = useI18n()
-
-const badgeClass = computed(() => {
-  if (props.status === "ongoing") {
-    return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-  }
-
-  return "bg-muted text-muted-foreground"
+  untilMs?: number | null
+  size?: BadgeVariants["size"]
+}>(), {
+  untilMs: null,
+  size: "default",
 })
 </script>
 
 <template>
-  <!-- "upcoming" is covered by the unreleased-content badge, so it renders nothing here. -->
-  <span
-    v-if="status !== 'upcoming'"
-    :class="['inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium', badgeClass]"
-  >
-    <span v-if="status === 'ongoing'" class="relative flex h-1.5 w-1.5" aria-hidden="true">
-      <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
-      <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-    </span>
-    {{ t(`events.status.${status}`) }}
-  </span>
+  <CatalogStatusBadge v-if="status !== 'upcoming'" :status="status" :until-ms="untilMs" :size="size" />
 </template>

@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
-import { LucideImageOff } from "lucide-vue-next"
+import { computed, useAttrs } from "vue"
 import type { SekaiRegion } from "@/types"
+import { cn } from "@/lib/utils"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
-import { appendImageRetryParam, purgeCachedSekaiImage } from "@/shared/sekai/image-recovery"
-import { resolveEventBannerUrl, resolveEventLogoUrl } from "../lib/event-assets"
+import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
+import { resolveEventBannerUrl, resolveEventLogoUrl } from "@/modules/events/lib/event-assets"
+
+/**
+ * Event artwork over the shared candidate/retry image. Stays on the
+ * selected server and asset endpoint; the other image type is a structural
+ * fallback only (some events ship a logo but no story banner). Wrappers
+ * must be `relative` and sized; `class` is forwarded to the `<img>`.
+ */
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<{
   region: SekaiRegion
@@ -13,68 +21,35 @@ const props = withDefaults(defineProps<{
   preference?: SekaiAssetEndpointPreference
   /** Preferred source: the wide story banner or the transparent event logo. */
   variant?: "banner" | "logo"
+  fit?: "contain" | "cover"
+  eager?: boolean
+  blur?: boolean
 }>(), {
   preference: "china",
   variant: "banner",
+  fit: "contain",
+  eager: false,
+  blur: false,
 })
 
-// Stay on the selected server and asset endpoint. The other image type is a
-// structural fallback only (some events ship a logo but no story banner).
+const attrs = useAttrs()
+
 const sources = computed(() => {
   const banner = resolveEventBannerUrl(props.region, props.assetbundleName, props.preference)
   const logo = resolveEventLogoUrl(props.region, props.assetbundleName, props.preference)
-  const ordered = props.variant === "logo" ? [logo, banner] : [banner, logo]
-  return ordered.filter((url): url is string => url != null)
+  return props.variant === "logo" ? [logo, banner] : [banner, logo]
 })
 
-const sourceIndex = ref(0)
-const retrying = ref(false)
-
-watch(sources, () => {
-  sourceIndex.value = 0
-  retrying.value = false
-})
-
-const currentUrl = computed(() => {
-  const url = sources.value[sourceIndex.value] ?? null
-  return url && retrying.value ? appendImageRetryParam(url, 1) : url
-})
-
-function handleError() {
-  // A failure may be a Service-Worker-cached transient error (opaque
-  // responses hide CDN/WAF errors): purge the entry and retry the same
-  // source once with a cache-busting param before advancing.
-  const failed = sources.value[sourceIndex.value]
-  if (failed) {
-    void purgeCachedSekaiImage(failed)
-  }
-  if (failed && !retrying.value) {
-    retrying.value = true
-    return
-  }
-  retrying.value = false
-  sourceIndex.value += 1
-}
+const imgClass = computed(() => cn(attrs.class as string | undefined))
 </script>
 
 <template>
-  <!--
-    Absolute fill instead of h-full: inside a <td>, WebKit fails to resolve
-    a child's percentage height against a parent sized by aspect-ratio, so
-    the img laid out at natural height and object-contain pushed the visible
-    pixels outside the clipped box (blank banners in Safari). Absolute
-    inset-0 sizes from the box edges directly. Wrappers must be `relative`.
-  -->
-  <img
-    decoding="async"
-    v-if="currentUrl"
-    :src="currentUrl"
+  <SekaiAssetImage
+    :sources="sources"
     :alt="alt"
-    class="absolute inset-0 h-full w-full object-contain"
-    loading="lazy"
-    @error="handleError"
-  >
-  <div v-else class="absolute inset-0 flex items-center justify-center text-muted-foreground">
-    <LucideImageOff class="h-6 w-6" aria-hidden="true" />
-  </div>
+    :fit="fit"
+    :eager="eager"
+    :blur="blur"
+    :img-class="imgClass"
+  />
 </template>

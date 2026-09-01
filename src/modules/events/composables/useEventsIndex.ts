@@ -2,8 +2,9 @@ import type { Ref } from "vue"
 import type { SekaiRegion } from "@/types"
 import { normalizeCatalogNumber, normalizeCatalogRecords } from "@/shared/sekai/catalog"
 import { useCatalogResource, type CatalogResource } from "@/shared/sekai/use-catalog-resource"
-import { buildEventBonusAttrMap } from "@/modules/events/lib/event-bonus"
+import { buildEventBonusAttrMap, normalizeEventDeckBonus, type EventDeckBonusRow } from "@/modules/events/lib/event-bonus"
 import { normalizeEventItems, sortEventsByStartAtDesc, type SekaiEventItem } from "@/modules/events/lib/event-filter"
+import { normalizeEventRankingRewardRanges, type EventRankingRewardRange } from "@/modules/events/lib/event-rewards"
 
 /**
  * The only resource that reads `events.json`, `eventCards.json` and
@@ -32,13 +33,30 @@ export type EventsIndex = {
   bonusAttrMap: Map<number, Set<string>>
   /** eventId → `gameCharacterUnitId`s carrying a character bonus (list character filter). */
   bonusCharacterUnitIdsByEvent: Map<number, Set<number>>
+  /** eventId → normalized `eventDeckBonuses` rows (detail bonus section). */
+  deckBonusesByEvent: Map<number, EventDeckBonusRow[]>
+  /** eventId → ranking reward ranges, ascending by `fromRank` (detail rewards section). */
+  rankingRewardRangesByEvent: Map<number, EventRankingRewardRange[]>
 }
 
 export function buildEventsIndex(files: Record<string, unknown>): EventsIndex {
-  const list = sortEventsByStartAtDesc(normalizeEventItems(files.events))
+  const rawEvents = normalizeCatalogRecords(files.events)
+  const list = sortEventsByStartAtDesc(normalizeEventItems(rawEvents))
   const byId = new Map<number, SekaiEventItem>()
   for (const event of list) {
     byId.set(event.id, event)
+  }
+
+  const rankingRewardRangesByEvent = new Map<number, EventRankingRewardRange[]>()
+  for (const record of rawEvents) {
+    const eventId = normalizeCatalogNumber(record.id)
+    if (!eventId || !byId.has(eventId)) {
+      continue
+    }
+    const ranges = normalizeEventRankingRewardRanges(record.eventRankingRewardRanges)
+    if (ranges.length > 0) {
+      rankingRewardRangesByEvent.set(eventId, ranges)
+    }
   }
 
   const cardLinksByEvent = new Map<number, EventCardLink[]>()
@@ -71,17 +89,31 @@ export function buildEventsIndex(files: Record<string, unknown>): EventsIndex {
   }
 
   const bonusCharacterUnitIdsByEvent = new Map<number, Set<number>>()
+  const deckBonusesByEvent = new Map<number, EventDeckBonusRow[]>()
   for (const record of normalizeCatalogRecords(files.eventDeckBonuses)) {
-    const eventId = normalizeCatalogNumber(record.eventId)
-    const unitId = normalizeCatalogNumber(record.gameCharacterUnitId)
-    if (!eventId || !unitId || unitId <= 0) {
+    const bonus = normalizeEventDeckBonus(record)
+    if (!bonus) {
       continue
     }
-    const ids = bonusCharacterUnitIdsByEvent.get(eventId)
-    if (ids) {
-      ids.add(unitId)
+    const rows = deckBonusesByEvent.get(bonus.eventId)
+    const row: EventDeckBonusRow = {
+      gameCharacterUnitId: bonus.gameCharacterUnitId,
+      cardAttr: bonus.cardAttr,
+      bonusRate: bonus.bonusRate,
+    }
+    if (rows) {
+      rows.push(row)
     } else {
-      bonusCharacterUnitIdsByEvent.set(eventId, new Set([unitId]))
+      deckBonusesByEvent.set(bonus.eventId, [row])
+    }
+    if (bonus.gameCharacterUnitId == null) {
+      continue
+    }
+    const ids = bonusCharacterUnitIdsByEvent.get(bonus.eventId)
+    if (ids) {
+      ids.add(bonus.gameCharacterUnitId)
+    } else {
+      bonusCharacterUnitIdsByEvent.set(bonus.eventId, new Set([bonus.gameCharacterUnitId]))
     }
   }
 
@@ -92,6 +124,8 @@ export function buildEventsIndex(files: Record<string, unknown>): EventsIndex {
     cardLinksByCard,
     bonusAttrMap: buildEventBonusAttrMap(files.eventDeckBonuses),
     bonusCharacterUnitIdsByEvent,
+    deckBonusesByEvent,
+    rankingRewardRangesByEvent,
   }
 }
 

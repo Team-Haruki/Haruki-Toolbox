@@ -1,54 +1,33 @@
-import { computed, ref, watch, type Ref } from "vue"
+import { computed, type ComputedRef, type Ref } from "vue"
 import type { SekaiRegion } from "@/types"
-import { readSekaiMasterFiles } from "@/shared/sekai/cache"
-import { useSekaiDataStore } from "@/shared/stores/sekai-data"
-import { buildEventBonusAttrMap } from "../lib/event-bonus"
-import { normalizeEventItems, sortEventsByStartAtDesc, type SekaiEventItem } from "../lib/event-filter"
+import type { SekaiEventItem } from "@/modules/events/lib/event-filter"
+import { useEventsIndex } from "@/modules/events/composables/useEventsIndex"
 
-const LIST_FILES = ["events", "eventDeckBonuses"] as const
+const EMPTY_ATTR_MAP: ReadonlyMap<number, Set<string>> = new Map()
 
-export function useEventCatalog(region: Ref<SekaiRegion>) {
-  const sekaiDataStore = useSekaiDataStore()
-  const events = ref<SekaiEventItem[]>([])
-  const bonusAttrMap = ref<Map<number, Set<string>>>(new Map())
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+export type UseEventCatalogResult = {
+  /** Every event of the region, newest first. */
+  events: ComputedRef<SekaiEventItem[]>
+  /** eventId → bonus card attributes. */
+  bonusAttrMap: ComputedRef<ReadonlyMap<number, Set<string>>>
+  loading: Ref<boolean>
+  error: Ref<string | null>
+  reload: () => Promise<void>
+}
 
-  const regionState = computed(() => sekaiDataStore.regionStates[region.value])
-
-  watch(
-    () => [region.value, regionState.value.masterFetchVersion],
-    () => {
-      void load()
-    },
-    { immediate: true },
-  )
-
-  async function load(force = false) {
-    loading.value = true
-    error.value = null
-    try {
-      if (force || !LIST_FILES.every((file) => regionState.value.files.includes(file))) {
-        await sekaiDataStore.ensureRegionData(region.value, { force, files: LIST_FILES })
-      }
-
-      const files = await readSekaiMasterFiles(region.value, LIST_FILES)
-      events.value = sortEventsByStartAtDesc(normalizeEventItems(files.events))
-      bonusAttrMap.value = buildEventBonusAttrMap(files.eventDeckBonuses)
-    } catch (loadError) {
-      events.value = []
-      bonusAttrMap.value = new Map()
-      error.value = loadError instanceof Error ? loadError.message : String(loadError)
-    } finally {
-      loading.value = false
-    }
-  }
+/**
+ * Lightweight event catalog for pickers outside the events module (deck
+ * recommend). A thin view over the shared events index, so the picker and
+ * the catalog pages share one build of `events.json`.
+ */
+export function useEventCatalog(region: Ref<SekaiRegion>): UseEventCatalogResult {
+  const index = useEventsIndex(region)
 
   return {
-    events,
-    bonusAttrMap,
-    loading,
-    error,
-    reload: () => load(true),
+    events: computed(() => index.data.value?.list ?? []),
+    bonusAttrMap: computed(() => index.data.value?.bonusAttrMap ?? EMPTY_ATTR_MAP),
+    loading: index.loading,
+    error: index.error,
+    reload: index.reload,
   }
 }

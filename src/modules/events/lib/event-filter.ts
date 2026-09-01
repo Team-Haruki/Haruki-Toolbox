@@ -16,6 +16,10 @@ export type SekaiEventItem = {
   startAt: number | null
   aggregateAt: number | null
   closedAt: number | null
+  /** When the final ranking is published (after aggregation). */
+  rankingAnnounceAt: number | null
+  /** When ranking rewards start being distributed. */
+  distributionStartAt: number | null
 }
 
 export type SekaiWorldBloomChapter = {
@@ -73,6 +77,8 @@ export function normalizeEventItem(value: unknown): SekaiEventItem | null {
     startAt: normalizeEventTimestamp(record.startAt),
     aggregateAt: normalizeEventTimestamp(record.aggregateAt),
     closedAt: normalizeEventTimestamp(record.closedAt),
+    rankingAnnounceAt: normalizeEventTimestamp(record.rankingAnnounceAt),
+    distributionStartAt: normalizeEventTimestamp(record.distributionStartAt),
   }
 }
 
@@ -162,50 +168,34 @@ export function filterEvents(
   })
 }
 
-export type EventCountdownParts = {
-  days: number
-  hours: number
-  minutes: number
-  seconds: number
-}
-
-/** Splits a positive millisecond delta into countdown parts; null when already elapsed. */
-export function splitEventCountdown(targetMs: number, nowMs = Date.now()): EventCountdownParts | null {
-  const diff = targetMs - nowMs
-  if (diff <= 0) {
+export function normalizeWorldBloomChapter(value: unknown): SekaiWorldBloomChapter | null {
+  if (value == null || typeof value !== "object") {
     return null
   }
 
-  const totalSeconds = Math.floor(diff / 1000)
+  const record = value as Record<string, unknown>
+  const id = normalizeCatalogNumber(record.id)
+  const eventId = normalizeCatalogNumber(record.eventId)
+  if (!id || !eventId) {
+    return null
+  }
+
   return {
-    days: Math.floor(totalSeconds / 86_400),
-    hours: Math.floor((totalSeconds % 86_400) / 3600),
-    minutes: Math.floor((totalSeconds % 3600) / 60),
-    seconds: totalSeconds % 60,
+    id,
+    eventId,
+    gameCharacterId: normalizeCatalogNumber(record.gameCharacterId),
+    chapterNo: normalizeCatalogNumber(record.chapterNo),
+    chapterStartAt: normalizeEventTimestamp(record.chapterStartAt),
+    aggregateAt: normalizeEventTimestamp(record.aggregateAt),
+    chapterEndAt: normalizeEventTimestamp(record.chapterEndAt),
+    chapterType: normalizeCatalogString(record.worldBloomChapterType) || null,
+    isSupplemental: record.isSupplemental === true,
   }
 }
 
 export function normalizeWorldBloomChapters(value: unknown, eventId: number): SekaiWorldBloomChapter[] {
   return normalizeCatalogRecords(value)
-    .map((record): SekaiWorldBloomChapter | null => {
-      const id = normalizeCatalogNumber(record.id)
-      const chapterEventId = normalizeCatalogNumber(record.eventId)
-      if (!id || chapterEventId !== eventId) {
-        return null
-      }
-
-      return {
-        id,
-        eventId,
-        gameCharacterId: normalizeCatalogNumber(record.gameCharacterId),
-        chapterNo: normalizeCatalogNumber(record.chapterNo),
-        chapterStartAt: normalizeEventTimestamp(record.chapterStartAt),
-        aggregateAt: normalizeEventTimestamp(record.aggregateAt),
-        chapterEndAt: normalizeEventTimestamp(record.chapterEndAt),
-        chapterType: normalizeCatalogString(record.worldBloomChapterType) || null,
-        isSupplemental: record.isSupplemental === true,
-      }
-    })
-    .filter((chapter): chapter is SekaiWorldBloomChapter => chapter != null)
+    .map((record) => normalizeWorldBloomChapter(record))
+    .filter((chapter): chapter is SekaiWorldBloomChapter => chapter != null && chapter.eventId === eventId)
     .sort((a, b) => (a.chapterNo ?? Number.MAX_SAFE_INTEGER) - (b.chapterNo ?? Number.MAX_SAFE_INTEGER) || a.id - b.id)
 }
