@@ -12,7 +12,6 @@ import {
   resolveEventStatus,
   resolveEventYear,
   sortEventsByStartAtDesc,
-  splitEventCountdown,
   type SekaiEventItem,
 } from "./event-filter"
 
@@ -28,6 +27,8 @@ function makeEvent(overrides: Partial<SekaiEventItem> = {}): SekaiEventItem {
     startAt: Date.UTC(2024, 0, 10),
     aggregateAt: Date.UTC(2024, 0, 18),
     closedAt: Date.UTC(2024, 0, 20),
+    rankingAnnounceAt: Date.UTC(2024, 0, 18, 1),
+    distributionStartAt: Date.UTC(2024, 0, 19),
     ...overrides,
   }
 }
@@ -58,6 +59,8 @@ describe("normalizeEventItem", () => {
       assetbundleName: "event_stella_2020",
       startAt: 1653112800000,
       aggregateAt: 1653652799000,
+      rankingAnnounceAt: 1653653400000,
+      distributionStartAt: 1653674400000,
       closedAt: 1653803998000,
       unit: "none",
     })
@@ -70,6 +73,8 @@ describe("normalizeEventItem", () => {
       startAt: 1653112800000,
       aggregateAt: 1653652799000,
       closedAt: 1653803998000,
+      rankingAnnounceAt: 1653653400000,
+      distributionStartAt: 1653674400000,
     })
   })
 
@@ -235,20 +240,6 @@ describe("filterEvents", () => {
     expect(
       filterEvents(events, { search: "carnival", eventType: "marathon" }, bonusAttrs),
     ).toEqual([])
-  })
-})
-
-describe("splitEventCountdown", () => {
-  test("splits a delta into days/hours/minutes/seconds", () => {
-    const now = Date.UTC(2024, 0, 1)
-    const target = now + DAY + 2 * 3600_000 + 3 * 60_000 + 4_000
-    expect(splitEventCountdown(target, now)).toEqual({ days: 1, hours: 2, minutes: 3, seconds: 4 })
-  })
-
-  test("returns null once the target has passed", () => {
-    const now = Date.UTC(2024, 0, 1)
-    expect(splitEventCountdown(now, now)).toBeNull()
-    expect(splitEventCountdown(now - 1, now)).toBeNull()
   })
 })
 

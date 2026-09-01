@@ -1,289 +1,260 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from "vue"
+import { computed, onMounted, ref, toRef } from "vue"
 import { useI18n } from "vue-i18n"
-import { useRouter } from "vue-router"
-import type { AcceptableValue } from "reka-ui"
-import { LucideRefreshCcw } from "lucide-vue-next"
+import { LucideLayoutGrid, LucideList } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
-import CatalogSearchField from "@/shared/components/catalog/CatalogSearchField.vue"
-import CatalogSelectField from "@/shared/components/catalog/CatalogSelectField.vue"
-import type { CatalogFieldOption } from "@/shared/components/catalog/types"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatLocalizedDate } from "@/lib/date-time"
-import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
-import { SEKAI_CARD_ATTRS } from "@/shared/sekai/catalog"
-import { resolveCardAttrRoundIconUrl } from "@/shared/sekai/data-sources"
-import { useSettingsStore } from "@/shared/stores/settings"
-import { SEKAI_CATALOG_REGION_FOLLOW_VALUE, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
-import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
-import EventBannerImage from "../components/EventBannerImage.vue"
-import EventStatusBadge from "../components/EventStatusBadge.vue"
-import EventTypeBadge from "../components/EventTypeBadge.vue"
-import { useEventCatalog } from "../composables/useEventCatalog"
+import { useCatalogScrollMemory } from "@/composables/useCatalogScrollMemory"
+import { useCatalogViewPreference } from "@/composables/useCatalogViewPreference"
+import { usePagedSlice } from "@/composables/usePagedSlice"
+import { useRouteQueryState } from "@/composables/useRouteQueryState"
+import { preloadSearchPinyin } from "@/lib/search-match"
+import CatalogEmptyState from "@/shared/components/catalog/CatalogEmptyState.vue"
+import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
+import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import CatalogPageShell from "@/shared/components/catalog/CatalogPageShell.vue"
+import CatalogPagination from "@/shared/components/catalog/CatalogPagination.vue"
+import CatalogRegionSelect from "@/shared/components/catalog/CatalogRegionSelect.vue"
+import CatalogResultsBar from "@/shared/components/catalog/CatalogResultsBar.vue"
+import CatalogSearchField from "@/shared/components/catalog/CatalogSearchField.vue"
 import {
-  collectEventYears,
-  excludeUnreleasedEvents,
-  filterEvents,
-  isEventUnreleased,
-  isSekaiEventType,
-  resolveEventStatus,
-  SEKAI_EVENT_TYPES,
-  type SekaiEventItem,
-} from "../lib/event-filter"
+  isCatalogSortDirection,
+  type CatalogSortOption,
+  type CatalogViewOption,
+} from "@/shared/components/catalog/types"
+import { SEKAI_CARD_ATTRS, type CatalogCharacter } from "@/shared/sekai/catalog"
+import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { resolveSekaiAttrLabel, resolveSekaiEventTypeLabel, resolveSekaiUnitLabel } from "@/shared/sekai/labels"
+import { useSettingsStore } from "@/shared/stores/settings"
+import EventCatalogTile from "@/modules/events/components/EventCatalogTile.vue"
+import EventListFilters from "@/modules/events/components/EventListFilters.vue"
+import { useEventList } from "@/modules/events/composables/useEventList"
+import { isEventUnreleased, type SekaiEventItem } from "@/modules/events/lib/event-filter"
+import { buildEventsActiveChips, EVENT_SORT_KEYS, eventsQueryCodec, type EventSortKey } from "@/modules/events/lib/event-query"
 
-const { t, locale } = useI18n()
-const router = useRouter()
+const NO_CHARACTERS: readonly CatalogCharacter[] = []
+
+const { t, te } = useI18n()
 const settingsStore = useSettingsStore()
-
-const { region, selectorValue: regionSelectorValue, updateSelectorValue: updateRegionSelector } = useEffectiveCatalogRegion()
-const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
+const { region } = useEffectiveCatalogRegion()
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 
-const { events, bonusAttrMap, loading, error, reload } = useEventCatalog(region)
-
-const search = ref("")
-const typeFilter = ref<string | null>(null)
-const attrFilter = ref<string | null>(null)
-const yearFilter = ref<string | null>(null)
-
-function resetFilters() {
-  search.value = ""
-  typeFilter.value = null
-  attrFilter.value = null
-  yearFilter.value = null
-}
-
-const nowMs = ref(Date.now())
-const nowTimer = setInterval(() => {
-  nowMs.value = Date.now()
-}, 30_000)
-
-onBeforeUnmount(() => {
-  clearInterval(nowTimer)
+const { state, reset, activeFilterCount } = useRouteQueryState(eventsQueryCodec, {
+  debounceKeys: ["q"],
+  pageKey: "page",
+  pageNeutralKeys: ["size"],
 })
 
-const years = computed(() => collectEventYears(events.value))
+const list = useEventList(region, state)
+const view = useCatalogViewPreference<"grid" | "list">("events", "view", () => "grid", ["grid", "list"])
 
-const typeFieldOptions = computed<CatalogFieldOption[]>(() =>
-  SEKAI_EVENT_TYPES.map((eventType) => ({ value: eventType, label: t(`events.type.${eventType}`) })),
-)
+const { pageItems, totalPages } = usePagedSlice(list.events, toRef(state, "page"), toRef(state, "size"))
 
-const attrFieldOptions = computed<CatalogFieldOption[]>(() =>
-  SEKAI_CARD_ATTRS.map((attr) => ({
-    value: attr,
-    label: t(`events.attr.${attr}`),
-    iconUrl: resolveCardAttrRoundIconUrl(attr),
-  })),
-)
+const resultsEl = ref<HTMLElement | null>(null)
+useCatalogScrollMemory(list.eventsIndex.ready)
 
-const yearFieldOptions = computed<CatalogFieldOption[]>(() =>
-  years.value.map((year) => ({ value: String(year), label: String(year) })),
-)
-
-const filteredEvents = computed(() => {
-  const year = yearFilter.value != null ? Number(yearFilter.value) : null
-  const visibleEvents = hideUnreleased.value
-    ? excludeUnreleasedEvents(events.value, nowMs.value)
-    : events.value
-  return filterEvents(
-    visibleEvents,
-    {
-      search: search.value,
-      eventType: typeFilter.value != null && isSekaiEventType(typeFilter.value) ? typeFilter.value : null,
-      bonusAttr: attrFilter.value,
-      year: year != null && Number.isFinite(year) ? year : null,
-    },
-    bonusAttrMap.value,
-  )
+onMounted(() => {
+  void preloadSearchPinyin()
 })
 
-const ongoingIds = computed(() => {
-  const ids = new Set<number>()
-  for (const event of filteredEvents.value) {
-    if (resolveEventStatus(event, nowMs.value) === "ongoing") {
-      ids.add(event.id)
+const characters = computed(() => list.charactersIndex.data.value?.characters ?? NO_CHARACTERS)
+const unitColorMap = computed(() => list.charactersIndex.data.value?.unitColorMap ?? null)
+
+const sortOptions = computed<CatalogSortOption[]>(() =>
+  EVENT_SORT_KEYS.map((key) => ({ value: key, label: t(`eventCatalog.sort.${key}`) })),
+)
+
+const viewOptions = computed<CatalogViewOption[]>(() => [
+  { value: "grid", label: t("catalog.view.grid"), icon: LucideLayoutGrid },
+  { value: "list", label: t("catalog.view.list"), icon: LucideList },
+])
+
+const sortModel = computed<string>({
+  get: () => state.sort,
+  set: (value) => {
+    if ((EVENT_SORT_KEYS as readonly string[]).includes(value)) {
+      state.sort = value as EventSortKey
     }
-  }
-  return ids
+  },
 })
 
-// Ongoing events are pinned to the top; the rest keep their startAt-desc order.
-const displayEvents = computed(() => {
-  const ongoing = filteredEvents.value.filter((event) => ongoingIds.value.has(event.id))
-  const others = filteredEvents.value.filter((event) => !ongoingIds.value.has(event.id))
-  return [...ongoing, ...others]
+const directionModel = computed({
+  get: () => state.dir,
+  set: (value: string) => {
+    if (isCatalogSortDirection(value)) {
+      state.dir = value
+    }
+  },
 })
 
-function updateRegion(value: AcceptableValue) {
-  updateRegionSelector(value)
+const viewModel = computed<string>({
+  get: () => view.value,
+  set: (value) => {
+    if (value === "grid" || value === "list") {
+      view.value = value
+    }
+  },
+})
+
+const countLabel = computed(() => t("events.list.resultsCount", { count: list.events.value.length }))
+
+const activeChips = computed(() => buildEventsActiveChips(state, {
+  typeLabel: (value) => resolveSekaiEventTypeLabel({ t, te }, value),
+  statusLabel: (value) => t(`catalog.status.${value}`),
+  unitLabel: (value) => resolveSekaiUnitLabel({ t, te }, value),
+  attrLabel: (value) => resolveSekaiAttrLabel({ t, te }, value),
+  characterName: (id) => list.charactersIndex.data.value?.characterMap.get(id)?.name ?? `#${id}`,
+}, t))
+
+function removeChip(key: string) {
+  reset([key])
 }
 
-function formatEventDate(value: number | null) {
-  return formatLocalizedDate(value, { year: "numeric", month: "2-digit", day: "2-digit" }, t("events.common.dateFallback"))
+function bonusAttrs(event: SekaiEventItem): string[] {
+  const attrs = list.eventsIndex.data.value?.bonusAttrMap.get(event.id)
+  return attrs ? SEKAI_CARD_ATTRS.filter((attr) => attrs.has(attr)) : []
 }
 
-function openEventDetail(eventId: number) {
-  void router.push({ name: "events.detail", params: { eventId: String(eventId) } })
+function showUnreleased() {
+  settingsStore.setShowUnreleasedContent(true)
 }
 
-function handleEventKeydown(keyboardEvent: KeyboardEvent, eventId: number) {
-  if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
-    keyboardEvent.preventDefault()
-    openEventDetail(eventId)
-  }
-}
-
-function eventStatus(event: SekaiEventItem) {
-  return resolveEventStatus(event, nowMs.value)
-}
-
-function eventUnreleased(event: SekaiEventItem) {
-  return isEventUnreleased(event, nowMs.value)
-}
+const showSkeleton = computed(() => list.eventsIndex.loading.value && list.eventsIndex.data.value == null)
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center gap-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">{{ t("events.list.title") }}</h1>
-        <p class="text-sm text-muted-foreground">{{ t("events.list.description") }}</p>
+  <CatalogPageShell :title="t('events.list.title')" :description="t('events.list.description')">
+    <template #toolbar>
+      <div class="flex w-full items-center gap-2">
+        <CatalogSearchField
+          v-model="state.q"
+          :label="t('events.list.searchLabel')"
+          :placeholder="t('events.list.searchPlaceholder')"
+          compact
+          class="min-w-0 flex-1"
+        />
+        <CatalogRegionSelect class="w-32 shrink-0 sm:w-36" />
       </div>
-    </div>
-
-    <!-- Region + search -->
-    <div class="grid gap-3 sm:grid-cols-[12rem_1fr]">
-      <div class="grid gap-1.5">
-        <Label id="event-list-region-label" for="event-list-region" class="text-xs text-muted-foreground">{{ t("events.list.regionLabel") }}</Label>
-        <Select id="event-list-region" :key="locale" :model-value="regionSelectorValue" @update:model-value="updateRegion">
-          <SelectTrigger class="w-full" aria-labelledby="event-list-region-label">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem :value="SEKAI_CATALOG_REGION_FOLLOW_VALUE">
-              {{ t("sekaiRegion.followAccount") }}
-            </SelectItem>
-            <SelectItem v-for="option in SEKAI_REGION_OPTIONS" :key="option.value" :value="option.value">
-              {{ resolveSekaiRegionLabel(option.value, t) }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <CatalogSearchField
-        v-model="search"
-        :label="t('events.list.searchLabel')"
-        :placeholder="t('events.list.searchPlaceholder')"
-      />
-    </div>
-
-    <!-- Filters -->
-    <CatalogFilterPanel
-      :title="t('events.list.filtersTitle')"
-      :count-label="t('events.list.resultsCount', { count: filteredEvents.length })"
-      :reset-label="t('events.list.resetFilters')"
-      @reset="resetFilters"
-    >
-      <CatalogSelectField
-        :key="`type-${locale}`"
-        v-model="typeFilter"
-        :label="t('events.list.typeLabel')"
-        :all-label="t('events.list.allTypes')"
-        :options="typeFieldOptions"
-      />
-      <CatalogSelectField
-        :key="`attr-${locale}`"
-        v-model="attrFilter"
-        :label="t('events.list.attrLabel')"
-        :all-label="t('events.list.allAttrs')"
-        :options="attrFieldOptions"
-      />
-      <CatalogSelectField
-        :key="`year-${locale}`"
-        v-model="yearFilter"
-        :label="t('events.list.yearLabel')"
-        :all-label="t('events.list.allYears')"
-        :options="yearFieldOptions"
-      />
-    </CatalogFilterPanel>
-
-    <!-- Loading -->
-    <template v-if="loading">
-      <Skeleton v-for="index in 6" :key="index" class="h-28 w-full" />
     </template>
 
-    <!-- Error -->
-    <Card v-else-if="error">
-      <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <p class="text-sm text-muted-foreground">{{ t("events.list.loadFailed") }}</p>
-        <Button variant="outline" size="sm" @click="reload">
-          <LucideRefreshCcw class="mr-1 h-4 w-4" /> {{ t("events.list.retry") }}
-        </Button>
-      </CardContent>
-    </Card>
-
-    <!-- Events -->
-    <template v-else-if="displayEvents.length > 0">
-      <Card
-        v-for="event in displayEvents"
-        :key="event.id"
-        :class="[
-          'cursor-pointer overflow-hidden py-0 transition-shadow hover:shadow-md',
-          ongoingIds.has(event.id) ? 'ring-2 ring-emerald-500/60' : '',
-        ]"
-        role="button"
-        tabindex="0"
-        :aria-label="event.name"
-        @click="openEventDetail(event.id)"
-        @keydown="handleEventKeydown($event, event.id)"
+    <template #filters>
+      <CatalogFilterPanel
+        :title="t('catalog.filters.title')"
+        :count-label="countLabel"
+        :reset-label="t('catalog.filters.reset')"
+        page-key="events"
+        :active-count="activeFilterCount"
+        :active-chips="activeChips"
+        content-class="flex flex-col gap-4"
+        @reset="reset()"
+        @remove-chip="removeChip"
       >
-        <CardContent class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-          <div class="relative aspect-[2/1] w-full shrink-0 overflow-hidden rounded-md bg-muted sm:w-44">
-            <EventBannerImage
-              :region="region"
-              :assetbundle-name="event.assetbundleName"
-              :alt="event.name"
-              :preference="assetEndpoint"
-              :class="eventUnreleased(event) && blurUnreleased ? 'blur-md scale-105' : ''"
-            />
-            <span
-              v-if="eventUnreleased(event)"
-              class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm"
-            >
-              {{ t("sekaiUnreleased.badge") }}
-            </span>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <h3 class="min-w-0 flex-1 truncate text-base font-semibold">{{ event.name }}</h3>
-            </div>
-            <div class="mt-1 text-xs text-muted-foreground">{{ t("events.common.idLabel", { id: event.id }) }}</div>
-            <div class="mt-2 flex flex-wrap items-center gap-2">
-              <EventTypeBadge :event-type="event.eventType" />
-              <EventStatusBadge :status="eventStatus(event)" />
-            </div>
-            <div class="mt-2 text-xs text-muted-foreground">
-              {{ formatEventDate(event.startAt) }} – {{ formatEventDate(event.aggregateAt) }}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <EventListFilters
+          :state="state"
+          :characters="characters"
+          :unit-color-map="unitColorMap"
+          :years="list.years.value"
+        />
+      </CatalogFilterPanel>
     </template>
 
-    <!-- Empty -->
-    <Card v-else>
-      <CardContent class="py-12 text-center text-muted-foreground">
-        {{ t("events.list.empty") }}
-      </CardContent>
-    </Card>
-  </div>
+    <CatalogResultsBar
+      v-model:sort="sortModel"
+      v-model:direction="directionModel"
+      v-model:view="viewModel"
+      :count-label="countLabel"
+      :sort-options="sortOptions"
+      :view-options="viewOptions"
+    />
+
+    <div ref="resultsEl" class="flex flex-col gap-3">
+      <template v-if="showSkeleton">
+        <div v-if="view === 'grid'" class="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <div v-for="index in 6" :key="index" class="flex flex-col gap-2 overflow-hidden rounded-lg border">
+            <Skeleton class="aspect-[2/1] w-full rounded-none" />
+            <div class="flex flex-col gap-2 p-2.5">
+              <Skeleton class="h-4 w-3/4" />
+              <Skeleton class="h-3 w-1/2" />
+            </div>
+          </div>
+        </div>
+        <div v-else class="flex flex-col gap-2">
+          <div v-for="index in 8" :key="index" class="flex items-center gap-3 rounded-lg border p-2">
+            <Skeleton class="aspect-[2/1] w-24 shrink-0" />
+            <div class="flex flex-1 flex-col gap-2">
+              <Skeleton class="h-4 w-1/2" />
+              <Skeleton class="h-3 w-1/3" />
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <CatalogErrorState
+        v-else-if="list.eventsIndex.error.value && list.eventsIndex.data.value == null"
+        :message="t('events.list.loadFailed')"
+        :detail="list.eventsIndex.error.value"
+        :retrying="list.eventsIndex.refreshing.value"
+        @retry="list.eventsIndex.reload"
+      />
+
+      <CatalogEmptyState
+        v-else-if="list.upcomingHidden.value"
+        :message="t('catalog.status.upcomingHidden')"
+      >
+        <template #action>
+          <Button variant="outline" size="sm" @click="showUnreleased">
+            {{ t("catalog.status.showUnreleased") }}
+          </Button>
+        </template>
+      </CatalogEmptyState>
+
+      <CatalogEmptyState
+        v-else-if="pageItems.length === 0"
+        :message="t('events.list.empty')"
+        :hint="t('catalog.results.emptyHint')"
+      />
+
+      <div v-else-if="view === 'grid'" class="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <EventCatalogTile
+          v-for="event in pageItems"
+          :key="event.id"
+          :event="event"
+          :region="region"
+          :asset-endpoint="assetEndpoint"
+          :now-ms="list.now.value"
+          view="grid"
+          :unreleased="isEventUnreleased(event, list.now.value)"
+          :blur="list.blurUnreleased.value"
+          :bonus-attrs="bonusAttrs(event)"
+        />
+      </div>
+
+      <div v-else class="flex flex-col gap-2">
+        <EventCatalogTile
+          v-for="event in pageItems"
+          :key="event.id"
+          :event="event"
+          :region="region"
+          :asset-endpoint="assetEndpoint"
+          :now-ms="list.now.value"
+          view="list"
+          :unreleased="isEventUnreleased(event, list.now.value)"
+          :blur="list.blurUnreleased.value"
+          :bonus-attrs="bonusAttrs(event)"
+        />
+      </div>
+    </div>
+
+    <template #footer>
+      <CatalogPagination
+        v-if="list.events.value.length > 0"
+        v-model:page="state.page"
+        v-model:page-size="state.size"
+        :total-pages="totalPages"
+        :total="list.events.value.length"
+        :anchor="resultsEl"
+        hide-when-single-page
+      />
+    </template>
+  </CatalogPageShell>
 </template>

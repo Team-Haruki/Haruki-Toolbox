@@ -14,14 +14,18 @@ export type EventBonusGroup = {
   characters: EventBonusCharacter[]
 }
 
-type NormalizedDeckBonus = {
-  eventId: number
+/** One normalized `eventDeckBonuses` row (kept per event by the events index). */
+export type EventDeckBonusRow = {
   gameCharacterUnitId: number | null
   cardAttr: string | null
   bonusRate: number
 }
 
-type CharacterUnitEntry = {
+type NormalizedDeckBonus = EventDeckBonusRow & {
+  eventId: number
+}
+
+export type CharacterUnitEntry = {
   gameCharacterId: number
   unit: string | null
 }
@@ -35,7 +39,7 @@ const MIKU_UNIT_ICON_IDS: Record<string, number> = {
   school_refusal: 31,
 }
 
-function normalizeDeckBonus(record: Record<string, unknown>): NormalizedDeckBonus | null {
+export function normalizeEventDeckBonus(record: Record<string, unknown>): NormalizedDeckBonus | null {
   const eventId = normalizeCatalogNumber(record.eventId)
   const bonusRate = normalizeCatalogNumber(record.bonusRate)
   if (!eventId || eventId <= 0 || bonusRate == null || bonusRate <= 0) {
@@ -92,6 +96,28 @@ export function aggregateEventDeckBonuses(
   rawGameCharacterUnits: unknown,
 ): EventBonusGroup[] {
   const characterUnits = buildCharacterUnitMap(rawGameCharacterUnits)
+  const rows: EventDeckBonusRow[] = []
+
+  for (const record of normalizeCatalogRecords(rawEventDeckBonuses)) {
+    const bonus = normalizeEventDeckBonus(record)
+    if (!bonus || bonus.eventId !== eventId) {
+      continue
+    }
+    rows.push(bonus)
+  }
+
+  return aggregateEventDeckBonusRows(rows, characterUnits)
+}
+
+/**
+ * Same aggregation over rows already scoped to one event (the events index
+ * keeps them per event) and a character-unit lookup such as
+ * `CharactersIndex.characterUnitById`.
+ */
+export function aggregateEventDeckBonusRows(
+  rows: readonly EventDeckBonusRow[],
+  characterUnits: ReadonlyMap<number, CharacterUnitEntry>,
+): EventBonusGroup[] {
   const groups = new Map<string, {
     cardAttr: string | null
     bonusRate: number
@@ -99,12 +125,7 @@ export function aggregateEventDeckBonuses(
     hasAttrOnlyRow: boolean
   }>()
 
-  for (const record of normalizeCatalogRecords(rawEventDeckBonuses)) {
-    const bonus = normalizeDeckBonus(record)
-    if (!bonus || bonus.eventId !== eventId) {
-      continue
-    }
-
+  for (const bonus of rows) {
     const key = `${bonus.cardAttr ?? ""}|${bonus.bonusRate}`
     let group = groups.get(key)
     if (!group) {
@@ -158,7 +179,7 @@ export function aggregateEventDeckBonuses(
 export function buildEventBonusAttrMap(rawEventDeckBonuses: unknown): Map<number, Set<string>> {
   const map = new Map<number, Set<string>>()
   for (const record of normalizeCatalogRecords(rawEventDeckBonuses)) {
-    const bonus = normalizeDeckBonus(record)
+    const bonus = normalizeEventDeckBonus(record)
     if (!bonus || bonus.cardAttr == null) {
       continue
     }

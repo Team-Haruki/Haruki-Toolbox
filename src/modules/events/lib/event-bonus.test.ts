@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test"
 import {
+  aggregateEventDeckBonusRows,
   aggregateEventDeckBonuses,
   buildCharacterUnitMap,
   buildEventBonusAttrMap,
   formatBonusRate,
+  normalizeEventDeckBonus,
   resolveBonusCharacterIconId,
 } from "./event-bonus"
 
@@ -126,6 +128,35 @@ describe("aggregateEventDeckBonuses", () => {
   test("handles malformed input", () => {
     expect(aggregateEventDeckBonuses(1, null, null)).toEqual([])
     expect(aggregateEventDeckBonuses(1, [{ eventId: 1 }], GAME_CHARACTER_UNITS)).toEqual([])
+  })
+})
+
+describe("normalizeEventDeckBonus", () => {
+  test("normalizes a combo row and rejects empty rows", () => {
+    expect(normalizeEventDeckBonus({ id: 1, eventId: 30, gameCharacterUnitId: 2, cardAttr: "Pure", bonusRate: 50 }))
+      .toEqual({ eventId: 30, gameCharacterUnitId: 2, cardAttr: "pure", bonusRate: 50 })
+    expect(normalizeEventDeckBonus({ id: 2, eventId: 30, bonusRate: 50 })).toBeNull()
+    expect(normalizeEventDeckBonus({ id: 3, eventId: 30, cardAttr: "pure", bonusRate: 0 })).toBeNull()
+  })
+})
+
+describe("aggregateEventDeckBonusRows", () => {
+  test("matches the raw-file aggregation over pre-scoped rows", () => {
+    const rows = [
+      { gameCharacterUnitId: 2, cardAttr: "pure", bonusRate: 50 },
+      { gameCharacterUnitId: 30, cardAttr: "pure", bonusRate: 50 },
+      { gameCharacterUnitId: 2, cardAttr: null, bonusRate: 20 },
+      { gameCharacterUnitId: null, cardAttr: "pure", bonusRate: 20 },
+    ]
+    const characterUnits = new Map([
+      [2, { gameCharacterId: 2, unit: "light_sound" }],
+      [30, { gameCharacterId: 21, unit: "idol" }],
+    ])
+    expect(aggregateEventDeckBonusRows(rows, characterUnits)).toEqual([
+      { cardAttr: "pure", bonusRate: 50, characters: [{ gameCharacterId: 2, unit: "light_sound" }, { gameCharacterId: 21, unit: "idol" }] },
+      { cardAttr: null, bonusRate: 20, characters: [{ gameCharacterId: 2, unit: "light_sound" }] },
+      { cardAttr: "pure", bonusRate: 20, characters: [] },
+    ])
   })
 })
 
