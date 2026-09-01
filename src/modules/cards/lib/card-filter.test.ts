@@ -1,21 +1,25 @@
 import { describe, expect, it } from "bun:test"
 import type { CatalogCharacter, CatalogMasterCard } from "@/shared/sekai/catalog"
 import {
+  buildCardSearchParts,
   buildCardSupplyTypeMap,
   buildWorldBloomCardIds,
   cardMatchesQuery,
   cardMatchesUnit,
   collectCardReleaseYears,
+  collectWorldBloomCardIds,
   countCardPages,
   createDefaultCardFilters,
   excludeUnreleasedCards,
   filterCards,
   isCardUnreleased,
   paginateCards,
+  resolveCardRarityRank,
   resolveCardReleaseYear,
   resolveCardSupplyType,
   resolveCardUnit,
   sortCards,
+  sortCardsBy,
 } from "./card-filter"
 
 function makeCard(overrides: Partial<CatalogMasterCard> = {}): CatalogMasterCard {
@@ -133,6 +137,27 @@ describe("card query matching", () => {
     expect(cardMatchesQuery(card, "missing")).toBe(false)
     expect(cardMatchesQuery(makeCard({ prefix: null }), "x")).toBe(false)
   })
+
+  it("matches the skill name, character name and id forms", () => {
+    const card = makeCard({ id: 1234, prefix: "Morning Star", skillName: "Tiny flower" })
+    expect(buildCardSearchParts(card, "Ichika")).toEqual(["Morning Star", "Tiny flower", "Ichika", "#1234"])
+    expect(cardMatchesQuery(card, "flower")).toBe(true)
+    expect(cardMatchesQuery(card, "ichika", "Ichika")).toBe(true)
+    expect(cardMatchesQuery(card, "#1234")).toBe(true)
+    expect(cardMatchesQuery(card, "1234")).toBe(true)
+    expect(cardMatchesQuery(card, "ichika")).toBe(false)
+  })
+
+  it("collects world link card ids from the events index shapes", () => {
+    const ids = collectWorldBloomCardIds(
+      [{ id: 202, eventType: "world_bloom" }, { id: 203, eventType: "marathon" }],
+      new Map([
+        [202, [{ cardId: 1374 }, { cardId: 1375 }]],
+        [203, [{ cardId: 1380 }]],
+      ]),
+    )
+    expect(ids).toEqual(new Set([1374, 1375]))
+  })
 })
 
 describe("release helpers", () => {
@@ -229,6 +254,64 @@ describe("filterCards", () => {
   it("filters by prefix query", () => {
     const filters = { ...createDefaultCardFilters(), query: "sekai" }
     expect(filterCards(cards, filters, context).map((card) => card.id)).toEqual([82])
+  })
+
+  it("filters by character name query through the context", () => {
+    const filters = { ...createDefaultCardFilters(), query: "miku" }
+    expect(filterCards(cards, filters, context).map((card) => card.id)).toEqual([82, 200])
+  })
+
+  it("filters by skill type and drops cards whose skill is unknown", () => {
+    const withSkills = [
+      makeCard({ id: 1, skillId: 1 }),
+      makeCard({ id: 2, skillId: 5 }),
+      makeCard({ id: 3, skillId: 99 }),
+      makeCard({ id: 4, skillId: null }),
+    ]
+    const skillTypeBySkillId = new Map([[1, "score_up"], [5, "judgment_up"]])
+    const filters = { ...createDefaultCardFilters(), skillTypes: ["judgment_up"] }
+    expect(filterCards(withSkills, filters, { ...context, skillTypeBySkillId }).map((card) => card.id)).toEqual([2])
+    expect(filterCards(withSkills, filters, context)).toEqual([])
+  })
+})
+
+describe("sortCardsBy", () => {
+  const cards = [
+    makeCard({ id: 5, cardRarityType: "rarity_2", releaseAt: 3000 }),
+    makeCard({ id: 9, cardRarityType: "rarity_4", releaseAt: 1000 }),
+    makeCard({ id: 2, cardRarityType: "rarity_birthday", releaseAt: 2000 }),
+    makeCard({ id: 7, cardRarityType: "rarity_3", releaseAt: null }),
+  ]
+
+  it("ranks birthday between 3★ and 4★", () => {
+    expect(resolveCardRarityRank("rarity_3")).toBeLessThan(resolveCardRarityRank("rarity_birthday"))
+    expect(resolveCardRarityRank("rarity_birthday")).toBeLessThan(resolveCardRarityRank("rarity_4"))
+    expect(resolveCardRarityRank("rarity_9")).toBe(0)
+  })
+
+  it("sorts by release in both directions with unknown releases last", () => {
+    expect(sortCardsBy(cards, "release", "desc").map((card) => card.id)).toEqual([5, 2, 9, 7])
+    expect(sortCardsBy(cards, "release", "asc").map((card) => card.id)).toEqual([9, 2, 5, 7])
+  })
+
+  it("sorts by rarity and id", () => {
+    expect(sortCardsBy(cards, "rarity", "desc").map((card) => card.id)).toEqual([9, 2, 7, 5])
+    expect(sortCardsBy(cards, "rarity", "asc").map((card) => card.id)).toEqual([5, 7, 2, 9])
+    expect(sortCardsBy(cards, "id", "asc").map((card) => card.id)).toEqual([2, 5, 7, 9])
+    expect(sortCardsBy(cards, "id", "desc").map((card) => card.id)).toEqual([9, 7, 5, 2])
+  })
+
+  it("sorts by power with cards lacking a table last", () => {
+    const powerById = new Map([[5, 100], [9, 300], [2, 200]])
+    expect(sortCardsBy(cards, "power", "desc", powerById).map((card) => card.id)).toEqual([9, 2, 5, 7])
+    expect(sortCardsBy(cards, "power", "asc", powerById).map((card) => card.id)).toEqual([5, 2, 9, 7])
+    expect(sortCardsBy(cards, "power", "desc").map((card) => card.id)).toEqual([5, 2, 9, 7])
+  })
+
+  it("does not mutate the input", () => {
+    const input = [...cards]
+    sortCardsBy(input, "id", "asc")
+    expect(input.map((card) => card.id)).toEqual([5, 9, 2, 7])
   })
 })
 
