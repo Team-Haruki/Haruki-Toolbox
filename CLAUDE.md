@@ -40,6 +40,7 @@ Three-layer source layout:
   - `shared/i18n/` — three locales (`zh-CN` default, `zh-TW`, `en-US`) split into lazy per-feature bundles; see "I18n".
   - `shared/sekai/` — Sekai game-data layer: master-data loading/caching (web worker), catalog/search helpers, asset endpoint and URL resolution (`data-sources.ts`), Service-Worker image cache recovery (`image-recovery.ts`).
   - `shared/components/` — cross-feature components (e.g. `Turnstile.vue`).
+- `src/shared/components/catalog/` + `src/shared/components/Sekai*.vue` — the Sekai catalog foundation (page/detail shells, filter panel, results bar, pagination, status badge, countdown, entity visuals, lightbox). Catalog pages keep filter state in `route.query` via `useRouteQueryState` and read master data through `useCatalogResource` + the canonical index resources (`useCardsIndex`, `useEventsIndex`, `useGachasIndex`, `useMusicsIndex`, `useCharactersIndex`). See "Sekai Catalog Conventions" in `AGENTS.md`.
 - `src/modules/<feature>/` — each feature owns its `api/`, `components/`, `composables/`, `lib/`, `views/`, and `routes.ts`. Routes are collected via `src/modules/web/routes`. Feature-level `index.ts` is the public barrel; internals must not import it (see Import Guard). `src/components/ui/` hosts reusable UI primitives (shadcn-style) — reuse before adding new ones. Top-level `src/lib/`, `src/composables/`, and `src/config/` hold cross-feature pure helpers, composables, and app config.
 
 Bootstrap is a sensitive cluster: `src/main.ts` + `src/App.vue` + `src/shared/stores/user.ts`. Kratos browser flows only return partial session data; the toolbox user profile is synced separately. When hydrating from a fallback Kratos session, preserve cached user context unless the session is definitely gone — clearing it breaks post-login sync paths that depend on `userId`.
@@ -77,7 +78,7 @@ Always use `@/` aliases rather than deep relative paths.
 
 ## I18n
 
-Three locales: `zh-CN` (default), `zh-TW`, `en-US`. Messages are split into lazy per-feature bundles (`core` always loads at boot; `deck`, `rank`, `tools`, `user-settings`, `admin`, `tickets`, `public-pages` load per route via `src/shared/i18n/bundles.ts`). Message files live at `src/shared/i18n/messages/<locale>/<locale>-<bundle>.ts`.
+Three locales: `zh-CN` (default), `zh-TW`, `en-US`. Messages are split into lazy per-feature bundles (`core` always loads at boot; `catalog`, `deck`, `rank`, `tools`, `user-settings`, `admin`, `tickets`, `public-pages` load per route via `src/shared/i18n/bundles.ts`). Message files live at `src/shared/i18n/messages/<locale>/<locale>-<bundle>.ts`. Catalog page strings go in the `catalog` bundle (`cardCatalog`, `eventCatalog`, `gachaCatalog`, `musicCatalog`); shared shell strings (`catalog.*`) and game enum labels stay in `core`.
 
 - Every new user-facing string must exist in all three locales, in the same bundle file.
 - Write zh-CN and en-US by hand; zh-TW can then be auto-filled with `bun scripts/sync-i18n-zh-tw.mjs` (OpenCC s2twp; only fills keys missing in zh-TW, drops orphans, keeps key order aligned with zh-CN).

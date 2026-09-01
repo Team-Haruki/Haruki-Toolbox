@@ -41,6 +41,18 @@ This repository is the web UI for the Haruki ecosystem. It integrates with Ory K
 - Use `@/` imports instead of deep relative paths.
 - Match the formatting/style of the file you are editing instead of reformatting unrelated code.
 
+## Sekai Catalog Conventions
+
+The catalog pages (`/cards`, `/events`, `/gachas`, `/music` list + detail) share one foundation; new catalog-like pages must build on it rather than re-implementing the pieces.
+
+- **Shells and sections**: `src/shared/components/catalog/` — `CatalogPageShell` (list column: title row, toolbar, filters, results, footer), `CatalogDetailShell` (back/breadcrumb row, title row, loading/error/not-found states, document-title override), `CatalogDetailSection` (titled Card; `collapsible` sections emit `open` once — heavy/lazy data loads on that event, never on mount), `CatalogFilterPanel` (collapsed by default on phones, remembers its state per `pageKey`, shows removable `activeChips` while collapsed), `CatalogResultsBar`, `CatalogPagination`, `CatalogRegionSelect`, `CatalogCharacterPicker`, `CatalogStatusBadge`, `CatalogCountdown`, `CatalogEmptyState`, `CatalogErrorState`, `CatalogInfoList`/`CatalogInfoRow`, `CatalogEntityGrid`.
+- **Entity visuals**: `src/shared/components/Sekai*.vue` (`SekaiAssetImage` for any ordered-candidate image, `SekaiCardThumbnail`, `SekaiCharacterAvatar`, `SekaiUnitLogo`, `SekaiAttrIcon`, `SekaiRarityStars`) and `ImageLightbox`. They all route errors through `@/shared/sekai/image-recovery`; `handleSekaiImageError` returns `false` once retries are exhausted — only then switch to a placeholder.
+- **URL is the state**: list filters/sort/page/size live in `route.query` through `useRouteQueryState(codec, …)` (`src/composables/`), with the page's codec in `lib/<module>-query.ts` (+ tests) built from `@/lib/query-codec` readers/writers. Layout preferences (grid/list view, art mode, filter panel open) are per-device localStorage values via `useCatalogViewPreference`, never query keys.
+- **Scroll memory**: list routes carry `meta.scrollMemory`; the router then leaves scrolling to the page, which calls `useCatalogScrollMemory(ready)` and restores its position once real results rendered.
+- **Data**: `useCatalogResource(region, key, files, build, options)` over `useSekaiCatalogStore` caches one built value per region + master version and keeps a small LRU of raw master arrays. Canonical index resources are the only code allowed to read the big files: `useCharactersIndex` (`@/shared/sekai/catalog-resources`), `useCardsIndex` (`@/modules/cards`), `useEventsIndex` (`@/modules/events`), `useGachasIndex` (`@/modules/gachas`), `useMusicsIndex` (`@/modules/music-library`). Other resources declare their own `"<module>/<name>"` key exactly once with their file list and builder; builders return plain data (no reactivity, no asset URLs, no `t()`); region-conditional files go in `optional`.
+- **Labels**: enum values from master data go through `resolveSekai*Label({ t, te }, value)` (`@/shared/sekai/labels`) so unknown members render as raw text instead of i18n keys.
+- **Cross-module imports** between catalog modules go through the public barrels (`@/modules/<feature>`) or `lib/` files only, never another module's `components/` or `composables/`.
+
 ## Import Guard
 
 `scripts/check-imports.mjs` runs before `vue-tsc` in `bun run build` and `bun run typecheck`; violations fail both. It bans legacy paths (`@/components/pages/*`, `@/api/*`, `@/store`, `@/settingsStore`, `@/router`, `@/lib/ticket-display`, old `WebLayout.vue`/`Turnstile.vue` locations) in favor of the module/shared/core layout, and enforces barrel rules:
@@ -88,7 +100,7 @@ See `CLAUDE.md` for the full banned-token table with replacements.
 
 ## Internationalization
 
-- Three locales: `zh-CN` (default), `zh-TW`, `en-US`. Messages are split into lazy per-feature bundles (`core`, `deck`, `rank`, `tools`, `user-settings`, `admin`, `tickets`, `public-pages`); files live at `src/shared/i18n/messages/<locale>/<locale>-<bundle>.ts`.
+- Three locales: `zh-CN` (default), `zh-TW`, `en-US`. Messages are split into lazy per-feature bundles (`core`, `catalog`, `deck`, `rank`, `tools`, `user-settings`, `admin`, `tickets`, `public-pages`); files live at `src/shared/i18n/messages/<locale>/<locale>-<bundle>.ts`. The `catalog` bundle (routes `/cards`, `/events`, `/gachas`, `/music`) holds the page-level namespaces `cardCatalog`, `eventCatalog`, `gachaCatalog`, `musicCatalog`; the shared shell strings (`catalog.*`) and every game enum label (`cards.unit/attr/rarity/supply`, `events.type`, `gachas.type`, `musicLibrary.difficulty`, …) stay in `core` because other features render them.
 - All user-facing text must exist in all three locales, in the same bundle file. Write zh-CN and en-US by hand; fill zh-TW with `bun scripts/sync-i18n-zh-tw.mjs` (OpenCC, only fills missing keys).
 - `core` loads at boot; other bundles load per route prefix via `src/shared/i18n/bundles.ts`. A new top-level route prefix needs a mapping there, or its non-core strings won't load.
 - Do not leave new UI strings hardcoded in components unless there is a very strong project-specific reason.
