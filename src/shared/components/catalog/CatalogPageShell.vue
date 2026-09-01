@@ -29,7 +29,8 @@ const props = withDefaults(defineProps<{
       </div>
     </header>
 
-    <div v-if="$slots.toolbar" class="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <!-- One row on every viewport: search stretches, the region select keeps its width. -->
+    <div v-if="$slots.toolbar" class="flex flex-row items-center gap-2 sm:gap-3">
       <slot name="toolbar" />
     </div>
 
