@@ -47,7 +47,7 @@ function handleUpdate(value: AcceptableValue) {
     <Select :id="id" :key="locale" :model-value="selectorValue" @update:model-value="handleUpdate">
       <SelectTrigger
         :size="size"
-        :class="cn('w-full sm:w-36', showLabel ? '' : props.class)"
+        :class="cn('w-auto min-w-28 shrink-0 sm:w-36', showLabel ? 'w-full' : props.class)"
         :aria-labelledby="`${id}-label`"
       >
         <SelectValue />

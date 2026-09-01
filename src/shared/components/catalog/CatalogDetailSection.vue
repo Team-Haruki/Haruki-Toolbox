@@ -78,8 +78,8 @@ defineExpose({ open: () => { open.value = true } })
           :aria-expanded="open"
           @click="toggle"
         >
-          <span class="min-w-0 flex-1">{{ title }}</span>
-          <span v-if="!open && $slots.summary" class="text-xs font-normal text-muted-foreground">
+          <span class="min-w-0 flex-1 truncate">{{ title }}</span>
+          <span v-if="!open && $slots.summary" class="min-w-0 max-w-[45%] truncate text-xs font-normal text-muted-foreground">
             <slot name="summary" />
           </span>
           <ChevronDown
