@@ -16,9 +16,15 @@ declare module 'vue-router' {
 const router = createRouter({
     history: createWebHistory(),
     routes: webRoutes,
-    scrollBehavior(to, _from, savedPosition) {
+    scrollBehavior(to, from, savedPosition) {
         if (savedPosition) {
             return savedPosition
+        }
+        if (to.path === from.path && !to.hash) {
+            // Query-only navigation (catalog filters, sort, page written with
+            // router.replace) keeps the reader where they are; pages scroll to
+            // their own results anchor when it matters.
+            return false
         }
         if (to.hash) {
             // The routed view mounts behind a 150ms page-fade transition, so

@@ -99,7 +99,7 @@ export default {
         "registerFailedTitle": "註冊失敗",
         "registerFailedDescription": "註冊失敗",
         "incompleteInfo": "請完整填寫註冊資訊",
-        "passwordMinLength": "密碼長度至少為{min}位", // NOSONAR -- translation key, not a credential
+        "passwordMinLength": "密碼長度至少為{min}位",
         "emailVerificationRequired": "請先為當前郵箱傳送驗證碼",
         "registerSuccessTitle": "註冊成功",
         "registerSuccessDescription": "歡迎來到Haruki工具箱"
@@ -117,8 +117,8 @@ export default {
       "toast": {
         "invalidLink": "重置連結無效，請重新發起找回密碼流程",
         "incompleteInfo": "請輸入完整資訊",
-        "passwordMismatch": "兩次密碼輸入不一致", // NOSONAR -- translation key, not a credential
-        "passwordMinLength": "密碼長度至少為{min}位", // NOSONAR -- translation key, not a credential
+        "passwordMismatch": "兩次密碼輸入不一致",
+        "passwordMinLength": "密碼長度至少為{min}位",
         "resetSuccessTitle": "密碼重置成功",
         "resetSuccessDescription": "請重新登入",
         "resetFailedTitle": "重置失敗",

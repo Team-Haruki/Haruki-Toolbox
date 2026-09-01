@@ -6,7 +6,7 @@ import { writeFileSync } from "node:fs"
 import * as OpenCC from "opencc-js"
 
 const convert = OpenCC.Converter({ from: "cn", to: "twp" })
-const BUNDLES = ["core", "deck", "rank", "tools", "user-settings", "admin", "tickets", "public-pages"]
+const BUNDLES = ["core", "catalog", "deck", "rank", "tools", "user-settings", "admin", "tickets", "public-pages"]
 
 function fillMissing(source, target, stats) {
   for (const [key, value] of Object.entries(source)) {

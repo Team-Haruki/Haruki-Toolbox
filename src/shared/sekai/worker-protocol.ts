@@ -64,6 +64,17 @@ export const SEKAI_DATA_OPTIONAL_MASTER_FILES = [
   // degrade gracefully when either file is missing.
   "resourceBoxes",
   "worldBloomChapterRankingRewardRanges",
+  // Catalog detail extras that only some regional dumps ship (tw/kr lack
+  // several Colorful-Palette-only tables); pages render without them.
+  "gachaCeilExchangeSummaries",
+  "gachaPickupCostumes",
+  "releaseConditions",
+  "musicOriginals",
+  "musicArtists",
+  "musicTags",
+  "outsideCharacters",
+  "eventStories",
+  "cheerfulCarnivalSummaries",
 ] as const
 
 export type SekaiDataUpdatePhase =

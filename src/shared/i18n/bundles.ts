@@ -10,6 +10,10 @@ type BundleRule = {
 // audit are encoded per rule (e.g. admin renders upload-type labels from the
 // tools namespace and permission meta from user-settings).
 const BUNDLE_RULES: readonly BundleRule[] = [
+  // Sekai catalog pages (list + detail). Player pages under the same
+  // prefixes (/cards/box, /events/records, /music/progress) load it too,
+  // which is harmless.
+  { prefixes: ["/cards", "/events", "/gachas", "/music"], bundles: ["catalog"] },
   { prefixes: ["/deck-recommend", "/event-planner"], bundles: ["deck"] },
   { prefixes: ["/rank-border"], bundles: ["rank"] },
   {

@@ -18,6 +18,7 @@ export function isAppLocale(value: unknown): value is AppLocale {
  */
 export const I18N_BUNDLES = [
   "core",
+  "catalog",
   "deck",
   "rank",
   "tools",
@@ -33,6 +34,7 @@ type BundleLoader = () => Promise<{ default: Record<string, unknown> }>
 const bundleLoaders: Record<AppLocale, Record<I18nBundle, BundleLoader>> = {
   "zh-CN": {
     "core": () => import("@/shared/i18n/messages/zh-CN/zh-CN-core"),
+    "catalog": () => import("@/shared/i18n/messages/zh-CN/zh-CN-catalog"),
     "deck": () => import("@/shared/i18n/messages/zh-CN/zh-CN-deck"),
     "rank": () => import("@/shared/i18n/messages/zh-CN/zh-CN-rank"),
     "tools": () => import("@/shared/i18n/messages/zh-CN/zh-CN-tools"),
@@ -43,6 +45,7 @@ const bundleLoaders: Record<AppLocale, Record<I18nBundle, BundleLoader>> = {
   },
   "zh-TW": {
     "core": () => import("@/shared/i18n/messages/zh-TW/zh-TW-core"),
+    "catalog": () => import("@/shared/i18n/messages/zh-TW/zh-TW-catalog"),
     "deck": () => import("@/shared/i18n/messages/zh-TW/zh-TW-deck"),
     "rank": () => import("@/shared/i18n/messages/zh-TW/zh-TW-rank"),
     "tools": () => import("@/shared/i18n/messages/zh-TW/zh-TW-tools"),
@@ -53,6 +56,7 @@ const bundleLoaders: Record<AppLocale, Record<I18nBundle, BundleLoader>> = {
   },
   "en-US": {
     "core": () => import("@/shared/i18n/messages/en-US/en-US-core"),
+    "catalog": () => import("@/shared/i18n/messages/en-US/en-US-catalog"),
     "deck": () => import("@/shared/i18n/messages/en-US/en-US-deck"),
     "rank": () => import("@/shared/i18n/messages/en-US/en-US-rank"),
     "tools": () => import("@/shared/i18n/messages/en-US/en-US-tools"),

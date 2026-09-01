@@ -2,6 +2,11 @@
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import type { SekaiCardThumbnailView } from "@/shared/sekai/catalog"
+import { handleSekaiImageError } from "@/shared/sekai/image-recovery"
+
+// Art failures first run the shared purge-and-retry recovery; the numeric
+// placeholder only takes over once the retries are exhausted.
+const ART_ERROR_LIMIT = 3
 
 const props = withDefaults(defineProps<{
   thumbnail: SekaiCardThumbnailView
@@ -58,10 +63,21 @@ const artUrl = computed(() => {
 })
 
 const artFailed = ref(false)
+const artErrorCount = ref(0)
 
 watch(artUrl, () => {
   artFailed.value = false
+  artErrorCount.value = 0
 })
+
+function handleArtError(event: Event) {
+  artErrorCount.value += 1
+  if (artErrorCount.value >= ART_ERROR_LIMIT) {
+    artFailed.value = true
+    return
+  }
+  handleSekaiImageError(event, artUrl.value)
+}
 
 const rareIndexes = computed(() => Array.from({ length: props.thumbnail.rareCount }, (_, index) => index))
 
@@ -91,7 +107,7 @@ const showBand = computed(() => props.levelBand || props.levelLabel != null)
       alt=""
       class="absolute inset-0 h-full w-full object-cover"
       loading="lazy"
-      @error="artFailed = true"
+      @error="handleArtError"
     >
     <div v-else class="absolute inset-0 flex items-center justify-center px-1 text-center font-mono text-xs">
       #{{ thumbnail.cardId }}
