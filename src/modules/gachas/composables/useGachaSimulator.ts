@@ -1,10 +1,11 @@
 import { computed, ref, shallowRef, watch, type ComputedRef, type Ref, type ShallowRef } from "vue"
 import {
+  addDrawResultsToCounts,
   addSimulatorCost,
   drawBatch,
   drawTen,
   mulberry32,
-  tallyDrawResults,
+  tallyFromCounts,
   type GachaDrawResult,
   type GachaRng,
   type GachaSimulatorModel,
@@ -57,11 +58,15 @@ function randomSeed(): number {
  * Session state of the fan-made pull simulator: the last batch, cumulative
  * tally, spend by resource and the "NEW" bookkeeping. Resets whenever the
  * model (gacha, region or wish picks) changes.
+ *
+ * Nothing here grows with the number of pulls: the tally is kept as running
+ * per-rarity counts, the grid only ever shows the most recent batch, and the
+ * "seen" set is bounded by the pool size — so each pull stays O(batch).
  */
 export function useGachaSimulator(model: Ref<GachaSimulatorModel | null>): GachaSimulatorState {
   const lastBatch = shallowRef<GachaSimulatorDraw[]>([])
   const lastPull = shallowRef<GachaSimulatorPull | null>(null)
-  const history = shallowRef<GachaDrawResult[]>([])
+  const rarityCounts = shallowRef<ReadonlyMap<string, number>>(new Map())
   const spent = shallowRef<ReadonlyMap<string, number>>(new Map())
   const drawCount = ref(0)
   const batchCount = ref(0)
@@ -71,7 +76,7 @@ export function useGachaSimulator(model: Ref<GachaSimulatorModel | null>): Gacha
   function reset() {
     lastBatch.value = []
     lastPull.value = null
-    history.value = []
+    rarityCounts.value = new Map()
     spent.value = new Map()
     drawCount.value = 0
     batchCount.value = 0
@@ -90,7 +95,7 @@ export function useGachaSimulator(model: Ref<GachaSimulatorModel | null>): Gacha
     })
     lastBatch.value = batch
     lastPull.value = pull
-    history.value = [...history.value, ...results]
+    rarityCounts.value = addDrawResultsToCounts(rarityCounts.value, results)
     spent.value = addSimulatorCost(spent.value, pull)
     drawCount.value += results.length
     batchCount.value += 1
@@ -121,7 +126,7 @@ export function useGachaSimulator(model: Ref<GachaSimulatorModel | null>): Gacha
   return {
     lastBatch,
     lastPull,
-    tally: computed(() => tallyDrawResults(history.value)),
+    tally: computed(() => tallyFromCounts(rarityCounts.value)),
     drawCount,
     batchCount,
     spent,

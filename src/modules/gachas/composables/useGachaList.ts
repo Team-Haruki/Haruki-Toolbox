@@ -8,6 +8,7 @@ import { useCharactersIndex } from "@/shared/sekai/catalog-resources"
 import { isUnreleasedContent, useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useCardsIndex } from "@/modules/cards"
+import { isUpcomingHiddenByFilter } from "@/modules/events/lib/event-list"
 import { useGachasIndex, type CatalogGachaSummary } from "@/modules/gachas/composables/useGachasIndex"
 import { buildGachaImageCandidates } from "@/modules/gachas/lib/gacha-catalog"
 import {
@@ -171,11 +172,9 @@ export function useGachaList(query: GachaListQuery): GachaListModel {
     })
   })
 
-  const upcomingHidden = computed(() => (
-    filtered.value.length === 0
-    && hideUnreleased.value
-    && query.status.includes("upcoming")
-  ))
+  // Same rule as the events list: only when every selected status is
+  // `upcoming` is the hidden-unreleased setting the reason for zero rows.
+  const upcomingHidden = computed(() => isUpcomingHiddenByFilter(query, hideUnreleased.value, filtered.value.length))
 
   return {
     region,

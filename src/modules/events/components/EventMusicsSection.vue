@@ -5,6 +5,7 @@ import { LucideMusic } from "lucide-vue-next"
 import type { SekaiRegion } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
+import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import { resolveSekaiDifficultyLabel } from "@/shared/sekai/labels"
@@ -16,9 +17,16 @@ const props = withDefaults(defineProps<{
   region: SekaiRegion
   assetEndpoint: SekaiAssetEndpointPreference
   loading?: boolean
+  /** Musics index / event extras failure; renders an error state with retry. */
+  error?: string | null
+  retrying?: boolean
 }>(), {
   loading: false,
+  error: null,
+  retrying: false,
 })
+
+const emit = defineEmits<{ retry: [] }>()
 
 const { t, te } = useI18n()
 
@@ -37,7 +45,7 @@ const rows = computed(() => props.musics.map(({ seq, entry }) => ({
     :title="t('eventCatalog.musics.title')"
     :icon="LucideMusic"
     :loading="loading && musics.length === 0"
-    :empty="musics.length === 0"
+    :empty="!error && musics.length === 0"
     :empty-message="t('eventCatalog.musics.empty')"
     content-class="flex flex-col gap-2"
   >
@@ -50,30 +58,39 @@ const rows = computed(() => props.musics.map(({ seq, entry }) => ({
         </div>
       </div>
     </template>
-    <RouterLink
-      v-for="row in rows"
-      :key="row.entry.id"
-      :to="`/music/${row.entry.id}`"
-      class="group flex items-center gap-3 rounded-md border bg-muted/20 p-2 transition-colors hover:bg-accent/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none dark:hover:bg-accent/30"
-    >
-      <div class="relative size-14 shrink-0 overflow-hidden rounded-md bg-muted">
-        <SekaiAssetImage :sources="[row.jacket]" :alt="row.entry.title" :placeholder-icon="LucideMusic" />
-      </div>
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <p class="truncate text-sm font-medium group-hover:text-primary">{{ row.entry.title }}</p>
-        <div class="flex flex-wrap items-center gap-1">
-          <span
-            v-for="item in row.difficulties"
-            :key="item.difficulty"
-            class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white tabular-nums"
-            :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[item.difficulty] }"
-            :title="resolveSekaiDifficultyLabel({ t, te }, item.difficulty)"
-          >
-            {{ item.level }}
-          </span>
+    <CatalogErrorState
+      v-if="error"
+      :message="t('catalog.detail.loadError')"
+      :detail="error"
+      :retrying="retrying"
+      @retry="emit('retry')"
+    />
+    <template v-else>
+      <RouterLink
+        v-for="row in rows"
+        :key="row.entry.id"
+        :to="`/music/${row.entry.id}`"
+        class="group flex items-center gap-3 rounded-md border bg-muted/20 p-2 transition-colors hover:bg-accent/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none dark:hover:bg-accent/30"
+      >
+        <div class="relative size-14 shrink-0 overflow-hidden rounded-md bg-muted">
+          <SekaiAssetImage :sources="[row.jacket]" :alt="row.entry.title" :placeholder-icon="LucideMusic" />
         </div>
-      </div>
-      <span class="font-mono text-xs text-muted-foreground">#{{ row.entry.id }}</span>
-    </RouterLink>
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <p class="truncate text-sm font-medium group-hover:text-primary">{{ row.entry.title }}</p>
+          <div class="flex flex-wrap items-center gap-1">
+            <span
+              v-for="item in row.difficulties"
+              :key="item.difficulty"
+              class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white tabular-nums"
+              :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[item.difficulty] }"
+              :title="resolveSekaiDifficultyLabel({ t, te }, item.difficulty)"
+            >
+              {{ item.level }}
+            </span>
+          </div>
+        </div>
+        <span class="font-mono text-xs text-muted-foreground">#{{ row.entry.id }}</span>
+      </RouterLink>
+    </template>
   </CatalogDetailSection>
 </template>

@@ -63,6 +63,24 @@ describe("buildGachaRateTable", () => {
     expect(table.lotteryTypes).toEqual(["normal"])
   })
 
+  it("keys rates by lottery type and rarity without cross-talk between columns", () => {
+    const table = buildGachaRateTable([
+      { cardRarityType: "rarity_4", lotteryType: "normal", rate: 2 },
+      // Duplicate (lottery, rarity) rows are summed …
+      { cardRarityType: "rarity_4", lotteryType: "normal", rate: 1 },
+      // … while the same rarity under another lottery stays in its own column.
+      { cardRarityType: "rarity_4", lotteryType: "rate_choice_first", rate: 0.8 },
+      { cardRarityType: "rarity_3", lotteryType: "rate_choice_first", rate: 0.2 },
+    ], details, cardRarities)
+    expect(table.lotteryTypes).toEqual(["normal", "rate_choice_first"])
+    const four = table.rows.find((row) => row.rarity === "rarity_4")!
+    expect(four.rates.normal).toBeCloseTo(0.03, 10)
+    expect(four.rates.rate_choice_first).toBeCloseTo(0.008, 10)
+    const three = table.rows.find((row) => row.rarity === "rarity_3")!
+    expect(three.rates.normal).toBeNull()
+    expect(three.rates.rate_choice_first).toBeCloseTo(0.002, 10)
+  })
+
   it("includes rarities that only appear in the pool", () => {
     const table = buildGachaRateTable(normalRates, [{ cardId: 9, weight: 1, isWish: false }], new Map([[9, "rarity_birthday"]]))
     expect(table.rows.map((row) => row.rarity)).toEqual(["rarity_4", "rarity_3", "rarity_birthday", "rarity_2"])

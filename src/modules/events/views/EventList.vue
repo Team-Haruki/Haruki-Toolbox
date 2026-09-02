@@ -96,7 +96,11 @@ const viewModel = computed<string>({
   },
 })
 
-const countLabel = computed(() => t("events.list.resultsCount", { count: list.events.value.length }))
+// Null until the index resolves so the panel header and results bar never
+// announce "0 results" next to the loading skeleton.
+const countLabel = computed(() => (
+  list.eventsIndex.ready.value ? t("events.list.resultsCount", { count: list.events.value.length }) : null
+))
 
 const activeChips = computed(() => buildEventsActiveChips(state, {
   typeLabel: (value) => resolveSekaiEventTypeLabel({ t, te }, value),

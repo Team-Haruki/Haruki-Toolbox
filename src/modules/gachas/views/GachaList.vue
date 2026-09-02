@@ -98,7 +98,9 @@ const activeChips = computed(() => buildGachaActiveChips(state, {
   statusLabel: (status) => t(`catalog.status.${status}`),
 }, (key, params) => t(key, params ?? {})))
 
-const countLabel = computed(() => t("catalog.results.count", { count: total.value }))
+// Null until the index resolves so the panel header and the live-region
+// results bar never announce "0 results" next to a skeleton grid.
+const countLabel = computed(() => (ready.value ? t("catalog.results.count", { count: total.value }) : null))
 
 function updateSort(value: string) {
   if ((GACHA_LIST_SORT_KEYS as readonly string[]).includes(value)) {

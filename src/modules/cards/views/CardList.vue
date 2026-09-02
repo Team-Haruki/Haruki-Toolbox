@@ -170,7 +170,7 @@ function setArtMode(value: AcceptableValue | AcceptableValue[] | undefined) {
 
     <div ref="resultsRef" class="flex flex-col gap-3">
       <CatalogResultsBar
-        :count-label="countLabel"
+        :count-label="ready ? countLabel : null"
         :sort-options="sortOptions"
         :sort="state.sort"
         v-model:direction="state.dir"
@@ -178,6 +178,7 @@ function setArtMode(value: AcceptableValue | AcceptableValue[] | undefined) {
         @update:sort="setSort"
       >
         <template #extra>
+          <!-- Items go compact below `sm` so sort + direction + art mode share one row on phones. -->
           <ToggleGroup
             type="single"
             variant="segment"
@@ -186,7 +187,12 @@ function setArtMode(value: AcceptableValue | AcceptableValue[] | undefined) {
             :aria-label="t('cardCatalog.artMode.label')"
             @update:model-value="setArtMode"
           >
-            <ToggleGroupItem v-for="mode in CARD_ART_MODES" :key="mode" :value="mode" class="px-2">
+            <ToggleGroupItem
+              v-for="mode in CARD_ART_MODES"
+              :key="mode"
+              :value="mode"
+              class="px-1.5 text-[11px] sm:px-2 sm:text-xs"
+            >
               {{ t(`cardCatalog.artMode.${mode}`) }}
             </ToggleGroupItem>
           </ToggleGroup>

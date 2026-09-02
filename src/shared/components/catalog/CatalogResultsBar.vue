@@ -72,7 +72,7 @@ function toggleDirection() {
     <template v-if="sortOptions.length > 0">
       <Label :id="`${id}-sort-label`" :for="`${id}-sort`" class="sr-only">{{ t("catalog.sort.label") }}</Label>
       <Select :id="`${id}-sort`" :key="locale" :model-value="sort" @update:model-value="handleSortUpdate">
-        <SelectTrigger size="sm" class="w-36 text-xs sm:text-sm" :aria-labelledby="`${id}-sort-label`">
+        <SelectTrigger size="sm" class="w-32 text-xs sm:w-36 sm:text-sm" :aria-labelledby="`${id}-sort-label`">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

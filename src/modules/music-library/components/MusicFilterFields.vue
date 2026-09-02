@@ -247,9 +247,9 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
   />
 
   <div class="grid gap-2 sm:col-span-2 lg:col-span-3">
-    <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.character") }}</p>
     <CatalogCharacterPicker
       v-model="pickerModel"
+      :label="t('musicLibrary.list.filters.character')"
       :characters="characters"
       :unit-color-map="unitColorMap"
     />

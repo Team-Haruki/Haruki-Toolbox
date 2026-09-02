@@ -21,7 +21,8 @@ const props = defineProps<{
   unitColorMap: ReadonlyMap<SekaiUnit, string> | null
   activeCount: number
   activeChips: readonly CatalogActiveChip[]
-  countLabel: string
+  /** Result-count line; null while the list is still loading. */
+  countLabel: string | null
 }>()
 
 const emit = defineEmits<{

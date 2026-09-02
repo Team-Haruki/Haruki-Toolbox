@@ -391,15 +391,31 @@ export type GachaSimulatorTally = {
   count: number
 }
 
-/** Counts per rarity, highest rarity first. */
-export function tallyDrawResults(results: readonly GachaDrawResult[]): GachaSimulatorTally[] {
-  const counts = new Map<string, number>()
+/**
+ * Adds one batch to running per-rarity counts without mutating the input.
+ * Cost is O(batch + rarities), independent of how many pulls came before.
+ */
+export function addDrawResultsToCounts(
+  counts: ReadonlyMap<string, number>,
+  results: readonly GachaDrawResult[],
+): Map<string, number> {
+  const next = new Map(counts)
   for (const result of results) {
-    counts.set(result.rarity, (counts.get(result.rarity) ?? 0) + 1)
+    next.set(result.rarity, (next.get(result.rarity) ?? 0) + 1)
   }
+  return next
+}
+
+/** Tally rows from running per-rarity counts, highest rarity first. */
+export function tallyFromCounts(counts: ReadonlyMap<string, number>): GachaSimulatorTally[] {
   return [...counts.entries()]
     .map(([rarity, count]) => ({ rarity, count }))
     .sort((a, b) => resolveGachaRarityOrder(b.rarity) - resolveGachaRarityOrder(a.rarity))
+}
+
+/** Counts per rarity, highest rarity first. */
+export function tallyDrawResults(results: readonly GachaDrawResult[]): GachaSimulatorTally[] {
+  return tallyFromCounts(addDrawResultsToCounts(new Map(), results))
 }
 
 /** Adds one pull's cost to the running per-resource total. */
