@@ -4,6 +4,7 @@ import {
   normalizeCatalogRecords,
   normalizeCatalogString,
 } from "@/shared/sekai/catalog"
+import type { RankBorderMasterHonor, RankBorderMasterHonorGroup } from "@/modules/rank-border/lib/master-data-types"
 
 /**
  * Ranking-reward resolution:
@@ -39,6 +40,9 @@ export type EventRewardHonor = {
   honorRarity: string | null
   /** Event honors: the group background the rank plate is drawn on. */
   backgroundAssetbundleName: string | null
+  /** The master rows the badge renderer composes from (`buildHonorView`). */
+  master: RankBorderMasterHonor
+  group: RankBorderMasterHonorGroup | null
 }
 
 export type EventRewardResource = {
@@ -112,12 +116,11 @@ function pushBoxResource(boxes: Map<number, EventRewardResource[]>, boxId: numbe
 }
 
 export function buildEventRewardsIndex(files: Record<string, unknown>): EventRewardsIndex {
-  const backgrounds = new Map<number, string>()
+  const groups = new Map<number, RankBorderMasterHonorGroup>()
   for (const record of normalizeCatalogRecords(files.honorGroups)) {
     const id = normalizeCatalogNumber(record.id)
-    const background = normalizeCatalogString(record.backgroundAssetbundleName)
-    if (id != null && background) {
-      backgrounds.set(id, background)
+    if (id != null) {
+      groups.set(id, record as RankBorderMasterHonorGroup)
     }
   }
 
@@ -129,12 +132,15 @@ export function buildEventRewardsIndex(files: Record<string, unknown>): EventRew
       continue
     }
     const groupId = normalizeCatalogNumber(record.groupId)
+    const group = groupId != null ? groups.get(groupId) ?? null : null
     honors.set(id, {
       id,
       name: normalizeCatalogString(record.name) || `#${id}`,
       assetbundleName,
       honorRarity: normalizeCatalogString(record.honorRarity) || null,
-      backgroundAssetbundleName: groupId != null ? backgrounds.get(groupId) ?? null : null,
+      backgroundAssetbundleName: normalizeCatalogString(group?.backgroundAssetbundleName) || null,
+      master: record as RankBorderMasterHonor,
+      group,
     })
   }
 

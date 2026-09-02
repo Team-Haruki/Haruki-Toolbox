@@ -47,6 +47,9 @@ export interface HonorVisualContext {
   localMockAssets: boolean
 }
 
+/** What the asset-path resolvers actually need; the full context satisfies it. */
+export type HonorAssetContext = Pick<HonorVisualContext, "region" | "assetEndpoint">
+
 export type ProfileResult = RankBorderLatest | RankBorderLine | null
 
 export type RankBorderLeaderVisual = {
@@ -209,6 +212,43 @@ export function buildProfileHonorViews(
     })
 }
 
+/**
+ * One honor as the badge renderer draws it, from its master row and group.
+ * This is the same composition `Haruki-Drawing-API`'s `HonorBadgeBox` uses:
+ * base art, rarity frame, the rank plate at its `sub`/`main` offset, then the
+ * scroll or level stars. Callers outside the rank-border page (event rewards)
+ * build views through here instead of stacking raw images.
+ */
+export function buildHonorView(
+  input: {
+    key: string
+    label: string
+    honor: RankBorderMasterHonor | null
+    group: RankBorderMasterHonorGroup | null
+    honorId: number | null
+    level: number | null
+    /** FC / AP honors only: the count drawn on the scroll. */
+    count?: number | null
+    mode?: "main" | "sub"
+  },
+  ctx: HonorAssetContext,
+): RankBorderHonorView {
+  return {
+    key: input.key,
+    label: input.label,
+    ...resolveHonorVisual(
+      input.honor,
+      input.group,
+      input.honorId,
+      input.level,
+      resolveFcApHonorCount(input.honorId, input.count ?? null),
+      input.mode ?? "sub",
+      ctx,
+    ),
+    level: input.level,
+  }
+}
+
 function resolveFcApHonorCount(honorId: number | null, count: number | null) {
   if (honorId == null || !FC_AP_HONOR_IDS.has(honorId)) {
     return null
@@ -224,7 +264,7 @@ function resolveHonorVisual(
   level: number | null,
   count: number | null,
   mode: "main" | "sub",
-  ctx: HonorVisualContext,
+  ctx: HonorAssetContext,
 ): Omit<RankBorderHonorView, "key" | "label" | "level"> {
   const levelVisual = resolveHonorLevelVisual(honor, level)
   const assetBundleName = normalizeTextValue(honor?.assetbundleName) ?? normalizeTextValue(levelVisual?.assetbundleName)
@@ -445,7 +485,7 @@ function resolveHonorBaseUrl(
   backgroundAssetBundleName: string | null,
   assetBundleName: string | null,
   mode: "main" | "sub",
-  ctx: HonorVisualContext,
+  ctx: HonorAssetContext,
 ) {
   if (groupType === "rank_match" && backgroundAssetBundleName) {
     return resolveSekaiGameAssetUrl(
@@ -473,7 +513,7 @@ function resolveHonorBaseUrl(
   return resolveSekaiGameAssetUrl(ctx.region, `startapp/honor/${assetBundleName}/degree_${mode}.png`, ctx.assetEndpoint)
 }
 
-function resolveHonorRankUrl(groupType: string, assetBundleName: string, mode: "main" | "sub", ctx: HonorVisualContext) {
+function resolveHonorRankUrl(groupType: string, assetBundleName: string, mode: "main" | "sub", ctx: HonorAssetContext) {
   const path = groupType === "rank_match"
     ? `startapp/rank_live/honor/${assetBundleName}/${mode}.png`
     : `startapp/honor/${assetBundleName}/rank_${mode}.png`
@@ -494,7 +534,7 @@ function resolveHonorFrameUrl(
   assetBundleName: string | null,
   rarity: string | null,
   mode: "main" | "sub",
-  ctx: HonorVisualContext,
+  ctx: HonorAssetContext,
 ) {
   if (!rarity) {
     return null

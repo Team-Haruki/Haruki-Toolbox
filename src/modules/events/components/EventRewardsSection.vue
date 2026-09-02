@@ -7,13 +7,13 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
-import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
-import { resolveSekaiHonorImageUrl } from "@/shared/sekai/data-sources"
 import { resolveSekaiEnumLabel } from "@/shared/sekai/labels"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import { useEventRewards } from "@/modules/events/composables/useEventRewards"
-import { resolveEventHonorRankOverlayUrl } from "@/modules/events/lib/event-assets"
-import type { EventRankingReward, EventRankingRewardRange, EventRewardHonor } from "@/modules/events/lib/event-rewards"
+import HonorBadge from "@/modules/rank-border/components/HonorBadge.vue"
+import { buildHonorView } from "@/modules/rank-border/lib/honor-visuals"
+import type { EventRankingReward, EventRankingRewardRange } from "@/modules/events/lib/event-rewards"
+import type { RankBorderHonorView } from "@/modules/rank-border/lib/rank-border-types"
 
 /**
  * Ranking rewards per rank range. The honors / resource-box tables are heavy
@@ -39,14 +39,42 @@ function rankLabel(range: EventRankingRewardRange): string {
     : t("eventCatalog.rewards.rankRange", { from: range.fromRank.toLocaleString(), to: range.toRank.toLocaleString() })
 }
 
-function honorSources(honor: EventRewardHonor): string[] {
-  return [resolveSekaiHonorImageUrl(props.region, honor.backgroundAssetbundleName ?? honor.assetbundleName, props.assetEndpoint)]
-}
+/**
+ * Honor views, memoized per reward key. Composed the way the game (and the
+ * drawing API's `HonorBadgeBox`) draws a sub honor: background, rarity frame,
+ * the `TOP n` rank plate at its offset — not two images stretched over a box.
+ */
+const honorViews = computed(() => {
+  const views = new Map<string, RankBorderHonorView>()
+  for (const row of rewards.rows.value) {
+    for (const reward of row.rewards) {
+      if (reward.kind !== "honor") {
+        continue
+      }
+      views.set(reward.key, buildHonorView({
+        key: `event-reward:${reward.key}`,
+        label: reward.honor.name,
+        honor: reward.honor.master,
+        group: reward.honor.group,
+        honorId: reward.honor.id,
+        level: reward.level,
+        mode: "sub",
+      }, { region: props.region, assetEndpoint: props.assetEndpoint }))
+    }
+  }
+  return views
+})
 
-function honorOverlay(honor: EventRewardHonor): string | null {
-  return honor.backgroundAssetbundleName
-    ? resolveEventHonorRankOverlayUrl(props.region, honor.assetbundleName, props.assetEndpoint)
-    : null
+function honorView(reward: Extract<EventRankingReward, { kind: "honor" }>): RankBorderHonorView {
+  return honorViews.value.get(reward.key) ?? buildHonorView({
+    key: `event-reward:${reward.key}`,
+    label: reward.honor.name,
+    honor: reward.honor.master,
+    group: reward.honor.group,
+    honorId: reward.honor.id,
+    level: reward.level,
+    mode: "sub",
+  }, { region: props.region, assetEndpoint: props.assetEndpoint })
 }
 
 function resourceLabel(reward: Extract<EventRankingReward, { kind: "resource" }>): string {
@@ -87,13 +115,16 @@ function resourceLabel(reward: Extract<EventRankingReward, { kind: "resource" }>
       <p v-if="rewards.unavailable.value" class="text-xs text-muted-foreground">
         {{ t("eventCatalog.rewards.unavailable") }}
       </p>
-      <div class="flex flex-col divide-y divide-border/60 rounded-md border border-border/60">
+      <!-- Container queries, not viewport breakpoints: this card sits in the
+           detail page's 20rem sidebar, where a rank label beside a badge
+           overflows the card at any viewport width. -->
+      <div class="flex flex-col divide-y divide-border/60 rounded-md border border-border/60 @container">
         <div
           v-for="row in rewards.rows.value"
           :key="`${row.fromRank}-${row.toRank}`"
-          class="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center"
+          class="flex flex-col gap-2 px-3 py-2 @lg:flex-row @lg:items-center"
         >
-          <div class="flex shrink-0 items-center gap-1.5 sm:w-40">
+          <div class="flex shrink-0 items-center gap-1.5 @lg:w-40">
             <span class="text-sm font-medium tabular-nums">{{ rankLabel(row) }}</span>
             <Badge v-if="row.isToRankBorder" variant="amber" size="sm">{{ t("eventCatalog.rewards.border") }}</Badge>
           </div>
@@ -101,20 +132,12 @@ function resourceLabel(reward: Extract<EventRankingReward, { kind: "resource" }>
             <template v-for="reward in row.rewards" :key="reward.key">
               <span
                 v-if="reward.kind === 'honor'"
-                class="relative h-8 w-[9.5rem] shrink-0 overflow-hidden rounded-sm bg-muted/40"
+                class="inline-flex shrink-0 items-center"
                 :title="reward.honor.name"
                 role="img"
                 :aria-label="reward.honor.name"
               >
-                <SekaiAssetImage :sources="honorSources(reward.honor)" :alt="reward.honor.name" fit="contain" />
-                <SekaiAssetImage
-                  v-if="honorOverlay(reward.honor)"
-                  :sources="[honorOverlay(reward.honor)]"
-                  alt=""
-                  fit="contain"
-                  img-class="object-right"
-                  placeholder-class="hidden"
-                />
+                <HonorBadge :honor="honorView(reward)" variant="reward" />
               </span>
               <Badge v-else variant="muted" size="sm" class="tabular-nums">{{ resourceLabel(reward) }}</Badge>
             </template>

@@ -106,7 +106,7 @@ describe("buildEventRewardsIndex", () => {
   test("indexes honors with group backgrounds and embedded box details", () => {
     const index = buildEventRewardsIndex({ honors: HONORS, honorGroups: HONOR_GROUPS, resourceBoxes: JP_BOXES, resourceBoxDetails: [] })
     expect(index.hasBoxData).toBe(true)
-    expect(index.honors.get(8631)).toEqual({
+    expect(index.honors.get(8631)).toMatchObject({
       id: 8631,
       name: "1位",
       assetbundleName: "honor_top_000001",
@@ -114,6 +114,9 @@ describe("buildEventRewardsIndex", () => {
       backgroundAssetbundleName: "honor_bg_event_partytime",
     })
     expect(index.honors.get(657)?.backgroundAssetbundleName).toBeNull()
+    // The renderer composes from the master rows, so they ride along.
+    expect(index.honors.get(8631)?.group).toMatchObject({ honorType: "event", backgroundAssetbundleName: "honor_bg_event_partytime" })
+    expect(index.honors.get(8631)?.master).toMatchObject({ assetbundleName: "honor_top_000001", honorRarity: "highest" })
     expect(index.honors.has(999)).toBe(false)
     expect(index.boxes.get(6849)).toEqual([
       { resourceType: "honor", resourceId: 8631, resourceLevel: 1, quantity: 1 },
