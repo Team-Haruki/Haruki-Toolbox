@@ -393,6 +393,8 @@ export default {
       "rotateLeft": "Turn left",
       "rotateRight": "Turn right",
       "resetView": "Face front",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
       "copyLink": "Copy link",
       "linkCopied": "Link copied",
       "colorCount": "{count} colors",

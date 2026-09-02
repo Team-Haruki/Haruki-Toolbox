@@ -190,7 +190,7 @@ function togglePreview(costume3dId: number) {
     </div>
 
     <div v-if="viewerRecipe" class="mx-auto w-full max-w-xl">
-      <CostumeViewer :region="region" :preference="assetEndpoint" :recipe="viewerRecipe" />
+      <CostumeViewer :region="region" :preference="assetEndpoint" :recipe="viewerRecipe" :wheel-zoom="false" />
     </div>
   </CatalogDetailSection>
 </template>

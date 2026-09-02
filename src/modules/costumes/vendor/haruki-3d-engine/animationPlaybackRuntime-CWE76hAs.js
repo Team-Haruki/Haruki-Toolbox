@@ -51,6 +51,12 @@ function r(e, r) {
 		setViewYawDegrees(t) {
 			m(), e.setViewYawDegrees(t), o || e.renderFrame();
 		},
+		setViewZoom(t) {
+			m(), e.setViewZoom(t), o || e.renderFrame();
+		},
+		setViewHeightOffset(t) {
+			m(), e.setViewHeightOffset(t), o || e.renderFrame();
+		},
 		destroy() {
 			return l || (s = !0, u = null, o = !1, cancelAnimationFrame(a), a = 0, l = c.then(() => {
 				e.destroy();

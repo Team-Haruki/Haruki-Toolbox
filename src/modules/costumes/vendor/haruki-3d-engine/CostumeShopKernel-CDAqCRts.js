@@ -1,4 +1,4 @@
-import { C as e, S as t, T as n, X as r, Z as i, _ as a, c as o, d as s, f as c, i as l, it as u, l as d, p as f, rt as p, t as m, u as h, v as g, w as _, y as v } from "./animationPlaybackRuntime-B0IJpBvZ.js";
+import { C as e, S as t, T as n, X as r, Z as i, _ as a, c as o, d as s, f as c, i as l, it as u, l as d, p as f, rt as p, t as m, u as h, v as g, w as _, y as v } from "./animationPlaybackRuntime-CWE76hAs.js";
 import * as y from "three";
 import { CompressedArrayTexture as ee, CompressedCubeTexture as te, CompressedTexture as ne, Data3DTexture as re, DataTexture as ie, FileLoader as ae, FloatType as b, HalfFloatType as x, LinearFilter as oe, LinearMipmapLinearFilter as se, LinearSRGBColorSpace as ce, Loader as le, NoColorSpace as ue, RGBAFormat as S, RGBA_ASTC_4x4_Format as de, RGBA_ASTC_6x6_Format as fe, RGBA_BPTC_Format as pe, RGBA_ETC2_EAC_Format as me, RGBA_PVRTC_4BPPV1_Format as he, RGBA_S3TC_DXT1_Format as ge, RGBA_S3TC_DXT3_Format as _e, RGBA_S3TC_DXT5_Format as ve, RGB_BPTC_UNSIGNED_Format as ye, RGB_ETC1_Format as be, RGB_ETC2_Format as xe, RGB_PVRTC_4BPPV1_Format as Se, RGB_S3TC_DXT1_Format as Ce, RGFormat as we, RedFormat as Te, SRGBColorSpace as Ee, UnsignedByteType as C } from "three";
 //#region src/data/sampleScene.ts
@@ -1121,17 +1121,17 @@ var it = Math.PI / 180, at = [
 		n.updateMatrixWorld(!0);
 		let i = ft(n), a = [];
 		for (let e of r) {
-			let t = e.GameObject ?? e.gameObject ?? null, n = e.ReferenceBone ?? e.referenceBone ?? null, r = ht(i, bt(t?.TransformPath ?? t?.transformPath), bt(t?.Name ?? t?.name)), o = ht(i, bt(n?.TransformPath ?? n?.transformPath), bt(n?.Name ?? n?.name));
+			let t = e.GameObject ?? e.gameObject ?? null, n = e.ReferenceBone ?? e.referenceBone ?? null, r = ht(i, yt(t?.TransformPath ?? t?.transformPath), yt(t?.Name ?? t?.name)), o = ht(i, yt(n?.TransformPath ?? n?.transformPath), yt(n?.Name ?? n?.name));
 			if (!r || !o) continue;
-			let s = at[yt(e.RotationOrder ?? e.rotationOrder, 4)] ?? "ZXY";
+			let s = at[M(e.RotationOrder ?? e.rotationOrder, 4)] ?? "ZXY";
 			a.push({
 				node: r,
 				referenceNode: o,
-				coefficient: yt(e.Coefficient ?? e.coefficient, 1),
+				coefficient: M(e.Coefficient ?? e.coefficient, 1),
 				defaultQuaternion: lt(e),
-				axisX: xt(e.AxisX ?? e.axisX, !0),
-				axisY: xt(e.AxisY ?? e.axisY, !0),
-				axisZ: xt(e.AxisZ ?? e.axisZ, !0),
+				axisX: bt(e.AxisX ?? e.axisX, !0),
+				axisY: bt(e.AxisY ?? e.axisY, !0),
+				axisZ: bt(e.AxisZ ?? e.axisZ, !0),
 				order: s
 			});
 		}
@@ -1161,7 +1161,7 @@ function ct(e) {
 	return i;
 }
 function lt(e) {
-	let t = j(e.DefaultEulerAngles ?? e.defaultEulerAngles) ?? {}, n = yt(t.X ?? t.x, 0), r = yt(t.Y ?? t.y, 0), i = yt(t.Z ?? t.z, 0);
+	let t = j(e.DefaultEulerAngles ?? e.defaultEulerAngles) ?? {}, n = M(t.X ?? t.x, 0), r = M(t.Y ?? t.y, 0), i = M(t.Z ?? t.z, 0);
 	return _(new y.Quaternion().setFromEuler(new y.Euler(n * it, r * it, i * it, "ZXY")));
 }
 function ut(e) {
@@ -1218,18 +1218,18 @@ function j(e) {
 function vt(e) {
 	return !!j(e);
 }
-function yt(e, t) {
+function M(e, t) {
 	return typeof e == "number" && Number.isFinite(e) ? e : t;
 }
-function bt(e) {
+function yt(e) {
 	return typeof e == "string" ? e : null;
 }
-function xt(e, t) {
+function bt(e, t) {
 	return typeof e == "boolean" ? e : typeof e == "number" ? e !== 0 : t;
 }
 //#endregion
 //#region src/costume_shop/cameraPolicy.ts
-var St = new y.Vector3(.04835, .48222, .07241), Ct = new y.Vector3(-.08532, .12848, 1.93551), wt = 35, Tt = .46, Et = 2.74, Dt = -.0245, Ot = .765, M = {
+var xt = new y.Vector3(.04835, .48222, .07241), St = new y.Vector3(-.08532, .12848, 1.93551), Ct = 35, wt = .46, Tt = 2.74, Et = -.0245, Dt = .765, N = {
 	zoomDuration: .35,
 	bottomLowerLimitPosition: .4,
 	bottomUpperLimitPosition: .85,
@@ -1239,23 +1239,23 @@ var St = new y.Vector3(.04835, .48222, .07241), Ct = new y.Vector3(-.08532, .128
 	farZ: 4.5,
 	fov: 25
 };
-function kt(e) {
-	let t = St.clone().multiplyScalar(e);
+function Ot(e) {
+	let t = xt.clone().multiplyScalar(e);
 	return {
 		target: t,
-		position: t.clone().add(Ct.clone().multiplyScalar(e)),
-		fov: wt,
+		position: t.clone().add(St.clone().multiplyScalar(e)),
+		fov: Ct,
 		costumeShopState: null
 	};
 }
-function At(e, t = 0, n = 1.6) {
+function kt(e, t = 0, n = 1.6) {
 	let r = Number.isFinite(t) ? t : 0;
 	if (e === "legacy-cloud") {
-		let e = new y.Vector3(0, Tt, 0), t = new y.Vector3(0, 0, Et).applyAxisAngle(new y.Vector3(0, 1, 0), y.MathUtils.degToRad(r));
+		let e = new y.Vector3(0, wt, 0), t = new y.Vector3(0, 0, Tt).applyAxisAngle(new y.Vector3(0, 1, 0), y.MathUtils.degToRad(r));
 		return {
 			target: e,
 			position: e.clone().add(t),
-			fov: M.fov,
+			fov: N.fov,
 			costumeShopState: null
 		};
 	}
@@ -1265,13 +1265,13 @@ function At(e, t = 0, n = 1.6) {
 		zoomMoveValue: 1
 	} : {
 		cameraRootYawDegrees: r,
-		zoomValue: M.zoomDuration,
+		zoomValue: N.zoomDuration,
 		zoomMoveValue: 0
-	}, a = y.MathUtils.clamp(i.zoomValue, 0, M.zoomDuration), o = M.zoomDuration > 0 ? a / M.zoomDuration : 0, s = y.MathUtils.lerp(M.bottomLowerLimitPosition, M.bottomUpperLimitPosition, o), c = y.MathUtils.lerp(M.topLowerLimitPosition, M.topUpperLimitPosition, o), l = y.MathUtils.clamp(i.zoomMoveValue, 0, 1), u = e === "full-body" ? Ot : y.MathUtils.lerp(s, c, l), d = y.MathUtils.lerp(M.nearZ, M.farZ, o), f = y.MathUtils.degToRad(i.cameraRootYawDegrees), p = new y.Vector3(0, u, d);
+	}, a = y.MathUtils.clamp(i.zoomValue, 0, N.zoomDuration), o = N.zoomDuration > 0 ? a / N.zoomDuration : 0, s = y.MathUtils.lerp(N.bottomLowerLimitPosition, N.bottomUpperLimitPosition, o), c = y.MathUtils.lerp(N.topLowerLimitPosition, N.topUpperLimitPosition, o), l = y.MathUtils.clamp(i.zoomMoveValue, 0, 1), u = e === "full-body" ? Dt : y.MathUtils.lerp(s, c, l), d = y.MathUtils.lerp(N.nearZ, N.farZ, o), f = y.MathUtils.degToRad(i.cameraRootYawDegrees), p = new y.Vector3(0, u, d);
 	return {
 		target: new y.Vector3(0, u, 0),
 		position: p.clone().applyAxisAngle(new y.Vector3(0, 1, 0), f),
-		fov: M.fov,
+		fov: N.fov,
 		costumeShopState: {
 			cameraRootYawDegrees: i.cameraRootYawDegrees,
 			zoomValue: a,
@@ -1282,24 +1282,49 @@ function At(e, t = 0, n = 1.6) {
 		}
 	};
 }
-function jt(e, t, n, r) {
-	let i = t.clone().sub(e).normalize(), a = new y.Vector3().crossVectors(i, new y.Vector3(0, 1, 0)).normalize().multiplyScalar(Dt * n * r);
+function At(e, t, n, r) {
+	let i = t.clone().sub(e).normalize(), a = new y.Vector3().crossVectors(i, new y.Vector3(0, 1, 0)).normalize().multiplyScalar(Et * n * r);
 	return {
 		target: t.clone().add(a),
 		position: e.clone().add(a)
 	};
 }
+var jt = {
+	minZoom: .5,
+	maxZoom: 3,
+	minHeightOffset: -.5,
+	maxHeightOffset: .8
+}, Mt = {
+	zoom: 1,
+	heightOffset: 0
+};
+function Nt(e) {
+	let t = jt, n = Number.isFinite(e.zoom) ? e.zoom : Mt.zoom, r = Number.isFinite(e.heightOffset) ? e.heightOffset : Mt.heightOffset;
+	return {
+		zoom: y.MathUtils.clamp(n, t.minZoom, t.maxZoom),
+		heightOffset: y.MathUtils.clamp(r, t.minHeightOffset, t.maxHeightOffset)
+	};
+}
+function Pt(e, t) {
+	let { zoom: n, heightOffset: r } = Nt(t), i = e.target.clone();
+	i.y += r;
+	let a = e.position.clone().sub(e.target).divideScalar(n);
+	return {
+		target: i,
+		position: i.clone().add(a)
+	};
+}
 //#endregion
 //#region src/engine/captureBackground.ts
-function Mt(e, t) {
-	let n = Pt(e, t), r = new y.CanvasTexture(n);
+function Ft(e, t) {
+	let n = Lt(e, t), r = new y.CanvasTexture(n);
 	return r.colorSpace = y.SRGBColorSpace, r;
 }
-function Nt(e) {
+function It(e) {
 	let t = e >>> 0;
 	return () => (t = t * 1664525 + 1013904223 >>> 0, t / 4294967296);
 }
-function Pt(e, t) {
+function Lt(e, t) {
 	let n = document.createElement("canvas");
 	n.width = e, n.height = t;
 	let r = n.getContext("2d");
@@ -1308,7 +1333,7 @@ function Pt(e, t) {
 	i.addColorStop(0, "#f9fffe"), i.addColorStop(.52, "#edfaff"), i.addColorStop(1, "#fff8fe"), r.fillStyle = i, r.fillRect(0, 0, e, t);
 	let a = r.createLinearGradient(0, 0, e, t);
 	a.addColorStop(0, "rgba(255, 246, 252, 0.34)"), a.addColorStop(1, "rgba(219, 246, 255, 0.40)"), r.fillStyle = a, r.fillRect(0, 0, e, t), r.fillStyle = "rgba(255, 255, 255, 0.48)", r.fillRect(0, 0, e, t);
-	let o = Nt(e * 73856093 ^ t * 19349663), s = [
+	let o = It(e * 73856093 ^ t * 19349663), s = [
 		[
 			166,
 			236,
@@ -1351,7 +1376,7 @@ function Pt(e, t) {
 }
 //#endregion
 //#region src/engine/projectedShadow.ts
-var Ft = ["Left_Toe", "Right_Toe"], It = .015, Lt = .01, Rt = {
+var Rt = ["Left_Toe", "Right_Toe"], zt = .015, Bt = .01, Vt = {
 	width: .72,
 	height: 1.06,
 	opacity: .28,
@@ -1362,14 +1387,14 @@ var Ft = ["Left_Toe", "Right_Toe"], It = .015, Lt = .01, Rt = {
 	adjustAlpha: !0,
 	invisibleHeight: .2,
 	directionalShadow: !1
-}, zt = class {
+}, Ht = class {
 	group = new y.Group();
 	defaultDirection = new y.Vector3(-.35, 0, .94).normalize();
-	settings = { ...Rt };
+	settings = { ...Vt };
 	pairs = [];
 	constructor() {
-		let e = Bt();
-		for (let t of Ft) {
+		let e = Ut();
+		for (let t of Rt) {
 			let n = this.createShadowMaterial(e, this.settings.opacity), r = this.createShadowMaterial(e, this.settings.crossOpacity), i = new y.Group(), a = new y.Group(), o = new y.Mesh(new y.PlaneGeometry(1, 1), n);
 			o.name = `CharacterDirectionalShadow_${t}`, o.rotation.x = -Math.PI / 2, o.renderOrder = -100, o.scale.set(this.settings.width, this.settings.height, 1), i.add(o);
 			let s = new y.Mesh(new y.PlaneGeometry(1, 1), r);
@@ -1386,7 +1411,7 @@ var Ft = ["Left_Toe", "Right_Toe"], It = .015, Lt = .01, Rt = {
 		this.group.name = "CharacterProjectedShadow", this.group.visible = !1;
 	}
 	setSettings(e = {}) {
-		this.settings = Vt(e, this.settings);
+		this.settings = Wt(e, this.settings);
 		for (let e of this.pairs) e.directionalAnchor.children[0]?.scale.set(this.settings.width, this.settings.height, 1), e.crossAnchor.children[0]?.scale.set(this.settings.crossSize, this.settings.crossSize, 1), e.directionalAnchor.visible = this.settings.directionalShadow, e.crossAnchor.visible = !this.settings.directionalShadow;
 	}
 	update(e) {
@@ -1403,9 +1428,9 @@ var Ft = ["Left_Toe", "Right_Toe"], It = .015, Lt = .01, Rt = {
 			}
 			r.targetWorldPosition.copy(i), r.initialToeHeight ??= i.y, r.directionalAnchor.visible = this.settings.directionalShadow, r.crossAnchor.visible = !this.settings.directionalShadow;
 			let a = this.resolveDirection(i, e.lightWorldPosition), o = (i.y - this.settings.floorY) / Math.max(.001, e.characterModelScale), s = this.settings.height * o, c = i.x + a.x * s, l = i.z + a.z * s;
-			r.directionalAnchor.position.set(this.settings.adjustShadow ? i.x : c, this.settings.floorY + Lt, this.settings.adjustShadow ? i.z : l), r.directionalAnchor.rotation.y = Math.atan2(a.x, a.z), r.directionalAlpha = this.calculateDirectionalAlpha(r, i.y), r.directionalMaterial.opacity = r.directionalAlpha;
+			r.directionalAnchor.position.set(this.settings.adjustShadow ? i.x : c, this.settings.floorY + Bt, this.settings.adjustShadow ? i.z : l), r.directionalAnchor.rotation.y = Math.atan2(a.x, a.z), r.directionalAlpha = this.calculateDirectionalAlpha(r, i.y), r.directionalMaterial.opacity = r.directionalAlpha;
 			let u = (i.y - this.settings.floorY) / this.settings.invisibleHeight, d = u < 0 ? 1 : 1 - Math.min(u, 1);
-			r.crossAnchor.position.set(i.x, this.settings.floorY + It, i.z), r.crossMaterial.opacity = this.settings.crossOpacity * d;
+			r.crossAnchor.position.set(i.x, this.settings.floorY + zt, i.z), r.crossMaterial.opacity = this.settings.crossOpacity * d;
 		}
 	}
 	getDebugSnapshot(e) {
@@ -1417,22 +1442,22 @@ var Ft = ["Left_Toe", "Right_Toe"], It = .015, Lt = .01, Rt = {
 			floorY: Number(this.settings.floorY.toFixed(4)),
 			characterModelScale: Number(e.toFixed(4)),
 			settings: { ...this.settings },
-			targetPosition: N(r),
-			targetPositions: this.pairs.map((e) => N(e.targetWorldPosition)),
+			targetPosition: P(r),
+			targetPositions: this.pairs.map((e) => P(e.targetWorldPosition)),
 			directional: {
-				position: N(t.directionalAnchor.position),
-				forward: N(n),
-				scale: N(new y.Vector3(this.settings.width, 1, this.settings.height)),
+				position: P(t.directionalAnchor.position),
+				forward: P(n),
+				scale: P(new y.Vector3(this.settings.width, 1, this.settings.height)),
 				opacity: Number(t.directionalMaterial.opacity.toFixed(4)),
 				alpha: Number(t.directionalAlpha.toFixed(4))
 			},
 			cross: {
-				position: N(t.crossAnchor.position),
-				scale: N(new y.Vector3(this.settings.crossSize, 1, this.settings.crossSize)),
+				position: P(t.crossAnchor.position),
+				scale: P(new y.Vector3(this.settings.crossSize, 1, this.settings.crossSize)),
 				opacity: Number(t.crossMaterial.opacity.toFixed(4))
 			},
 			pairs: this.pairs.map((e) => ({
-				targetPosition: N(e.targetWorldPosition),
+				targetPosition: P(e.targetWorldPosition),
 				directionalOpacity: Number(e.directionalMaterial.opacity.toFixed(4)),
 				crossOpacity: Number(e.crossMaterial.opacity.toFixed(4))
 			}))
@@ -1476,7 +1501,7 @@ var Ft = ["Left_Toe", "Right_Toe"], It = .015, Lt = .01, Rt = {
 		return n.lengthSq() < 1e-6 ? this.defaultDirection.clone() : n.normalize();
 	}
 };
-function Bt(e = 128) {
+function Ut(e = 128) {
 	let t = document.createElement("canvas");
 	t.width = e, t.height = e;
 	let n = t.getContext("2d");
@@ -1486,7 +1511,7 @@ function Bt(e = 128) {
 	let i = new y.CanvasTexture(t);
 	return i.colorSpace = y.NoColorSpace, i.wrapS = y.ClampToEdgeWrapping, i.wrapT = y.ClampToEdgeWrapping, i.needsUpdate = !0, i;
 }
-function Vt(e, t) {
+function Wt(e, t) {
 	let n = (e, t, n = 0) => Number.isFinite(e) ? Math.max(e, n) : t, r = (e, t) => Number.isFinite(e) ? y.MathUtils.clamp(e, 0, 1) : t;
 	return {
 		width: n(e.width, t.width, .001),
@@ -1501,7 +1526,7 @@ function Vt(e, t) {
 		directionalShadow: e.directionalShadow ?? t.directionalShadow
 	};
 }
-function N(e) {
+function P(e) {
 	return {
 		x: Number(e.x.toFixed(5)),
 		y: Number(e.y.toFixed(5)),
@@ -1510,26 +1535,26 @@ function N(e) {
 }
 //#endregion
 //#region src/costume_shop/heightPolicy.ts
-var Ht = 1.6;
-function Ut(e) {
-	return .5 + .8 / Gt(e);
+var Gt = 1.6;
+function Kt(e) {
+	return .5 + .8 / Jt(e);
 }
-function Wt(e) {
-	return Ut(e);
+function qt(e) {
+	return Kt(e);
 }
-function Gt(e) {
-	return y.MathUtils.clamp(e || Ht, .5, 2);
+function Jt(e) {
+	return y.MathUtils.clamp(e || Gt, .5, 2);
 }
 //#endregion
 //#region src/engine/faceMotionRuntime.ts
-function Kt(e) {
+function Yt(e) {
 	return e && typeof e == "object" ? e : {};
 }
-function qt(e) {
+function Xt(e) {
 	let t = e;
 	return !!t.isMesh && Array.isArray(t.morphTargetInfluences);
 }
-function Jt(e, t) {
+function Zt(e, t) {
 	if (!e.length) return 0;
 	if (t <= e[0].time) return e[0].value;
 	for (let n = 1; n < e.length; n += 1) {
@@ -1542,11 +1567,11 @@ function Jt(e, t) {
 	}
 	return e[e.length - 1].value;
 }
-function Yt(e) {
-	let t = Kt(Kt(e).motionPackage ?? Kt(e).MotionPackage);
+function Qt(e) {
+	let t = Yt(Yt(e).motionPackage ?? Yt(e).MotionPackage);
 	return (t.faceMotion ?? t.FaceMotion) || null;
 }
-var Xt = class {
+var $t = class {
 	motionSet = null;
 	clip = null;
 	loopClip = null;
@@ -1557,7 +1582,7 @@ var Xt = class {
 	bind(e, t) {
 		let n = t.morphChannels ?? [], r = t.morphChannelBindings ?? [], i = [];
 		return this.bindings.length = 0, e.traverse((e) => {
-			if (e.userData.pjskEyeThroughHairOverlay || e.userData.pjskEyeThroughHairStencilPrepass || !qt(e)) return;
+			if (e.userData.pjskEyeThroughHairOverlay || e.userData.pjskEyeThroughHairStencilPrepass || !Xt(e)) return;
 			let t = e, a = t.morphTargetInfluences?.length ?? 0;
 			if (!a) return;
 			(!t.morphTargetDictionary || !Object.keys(t.morphTargetDictionary).length) && n.length === a && (t.morphTargetDictionary = Object.fromEntries(n.map((e, t) => [e, t])));
@@ -1619,7 +1644,7 @@ var Xt = class {
 				for (let n of e.controlledIndices) t[n] = 0;
 				for (let n of this.clip.curves) {
 					let r = e.curveIndexByHash.get(n.curveHash);
-					r !== void 0 && (t[r] = Jt(n.keyframes, this.time) / 100);
+					r !== void 0 && (t[r] = Zt(n.keyframes, this.time) / 100);
 				}
 			}
 		}
@@ -1646,21 +1671,21 @@ var Xt = class {
 };
 //#endregion
 //#region src/engine/rawMaterialRuntime.ts
-function P(e, t) {
+function F(e, t) {
 	return e.toLowerCase() === t.toLowerCase();
 }
-function F(e, t) {
-	let n = e?.floatProperties?.find((e) => P(e.name, t));
+function I(e, t) {
+	let n = e?.floatProperties?.find((e) => F(e.name, t));
 	if (Number.isFinite(n?.value)) return n.value;
-	let r = e?.intProperties?.find((e) => P(e.name, t));
+	let r = e?.intProperties?.find((e) => F(e.name, t));
 	return Number.isFinite(r?.value) ? r.value : null;
 }
-function Zt(e, t, n) {
-	let r = F(e, t);
-	return r === null ? n && (e?.validKeywords?.some((e) => P(e, n)) || e?.invalidKeywords?.some((e) => P(e, n))) ? !0 : null : r > .5;
+function en(e, t, n) {
+	let r = I(e, t);
+	return r === null ? n && (e?.validKeywords?.some((e) => F(e, n)) || e?.invalidKeywords?.some((e) => F(e, n))) ? !0 : null : r > .5;
 }
-function Qt(e, t) {
-	let n = e?.colorProperties?.find((e) => P(e.name, t));
+function L(e, t) {
+	let n = e?.colorProperties?.find((e) => F(e.name, t));
 	return !n || !Number.isFinite(n.r) || !Number.isFinite(n.g) || !Number.isFinite(n.b) || !Number.isFinite(n.a) ? null : {
 		r: n.r,
 		g: n.g,
@@ -1668,15 +1693,15 @@ function Qt(e, t) {
 		a: n.a
 	};
 }
-function $t(e, t) {
-	return e?.textureProperties?.find((e) => P(e.name, t)) ?? null;
+function tn(e, t) {
+	return e?.textureProperties?.find((e) => F(e.name, t)) ?? null;
 }
-function I(e, t, n) {
+function R(e, t, n) {
 	if (!e) return;
-	let r = $t(t, n);
-	r && (e.repeat.set(r.scaleX, r.scaleY), e.offset.set(r.offsetX, r.offsetY), e.wrapS = en(r.wrapU), e.wrapT = en(r.wrapV), e.anisotropy = Math.max(1, r.anisoLevel || 1), r.filterMode === 0 ? (e.magFilter = y.NearestFilter, e.minFilter = y.NearestMipmapNearestFilter) : (e.magFilter = y.LinearFilter, e.minFilter = r.filterMode === 2 ? y.LinearMipmapLinearFilter : y.LinearMipmapNearestFilter)), e.updateMatrix(), e.needsUpdate = !0;
+	let r = tn(t, n);
+	r && (e.repeat.set(r.scaleX, r.scaleY), e.offset.set(r.offsetX, r.offsetY), e.wrapS = nn(r.wrapU), e.wrapT = nn(r.wrapV), e.anisotropy = Math.max(1, r.anisoLevel || 1), r.filterMode === 0 ? (e.magFilter = y.NearestFilter, e.minFilter = y.NearestMipmapNearestFilter) : (e.magFilter = y.LinearFilter, e.minFilter = r.filterMode === 2 ? y.LinearMipmapLinearFilter : y.LinearMipmapNearestFilter)), e.updateMatrix(), e.needsUpdate = !0;
 }
-function en(e) {
+function nn(e) {
 	switch (e) {
 		case 1: return y.ClampToEdgeWrapping;
 		case 2: return y.MirroredRepeatWrapping;
@@ -1686,7 +1711,7 @@ function en(e) {
 }
 //#endregion
 //#region src/engine/characterMaterialRuntime.ts
-var tn = {
+var rn = {
 	eye: {
 		opacity: .2,
 		edge1: .9,
@@ -1708,10 +1733,10 @@ var tn = {
 		edge2: .2
 	}
 };
-function L() {
+function z() {
 	return new y.Vector3(w.x, w.y, w.z);
 }
-function nn(e, t) {
+function an(e, t) {
 	let n = e.clone();
 	return Be(n, {
 		baseColor: t.baseColor ?? e.uniforms.uBaseColor.value.clone(),
@@ -1734,7 +1759,7 @@ function nn(e, t) {
 		controllerRimEdgeSmoothness: e.uniforms.uControllerRimEdgeSmoothness?.value ?? T.rimEdgeSmoothness,
 		controllerRimEmission: e.uniforms.uControllerRimEmission?.value ?? T.rimEmission,
 		controllerRimLightInfluence: e.uniforms.uControllerRimLightInfluence?.value ?? T.rimLightInfluence,
-		rimDirection: e.uniforms.uRimDirection?.value.clone() ?? L(),
+		rimDirection: e.uniforms.uRimDirection?.value.clone() ?? z(),
 		specularPower: t.lighting?.specularPower ?? e.uniforms.uSpecularPower.value,
 		rimThreshold: t.lighting?.rimThreshold ?? e.uniforms.uRimThreshold.value,
 		shadowTexWeight: t.lighting?.shadowTexWeight ?? e.uniforms.uShadowTexWeight.value,
@@ -1769,10 +1794,10 @@ function nn(e, t) {
 		alphaCutoff: t.alphaCutoff ?? e.uniforms.uAlphaCutoff?.value ?? 0
 	}), n;
 }
-async function R(e, t, n = y.SRGBColorSpace) {
+async function B(e, t, n = y.SRGBColorSpace) {
 	if (!t) return null;
-	let r = `${n}\u0000${t}`, i = rn.get(e);
-	i || (i = /* @__PURE__ */ new Map(), rn.set(e, i));
+	let r = `${n}\u0000${t}`, i = on.get(e);
+	i || (i = /* @__PURE__ */ new Map(), on.set(e, i));
 	let a = i.get(r);
 	if (a) return a;
 	let o = e.loadAsync(t).then((e) => (e.wrapS = y.RepeatWrapping, e.wrapT = y.RepeatWrapping, e.flipY = !1, e.colorSpace = n, e.needsUpdate = !0, e), () => null).finally(() => {
@@ -1780,11 +1805,11 @@ async function R(e, t, n = y.SRGBColorSpace) {
 	});
 	return i.set(r, o), o;
 }
-var rn = /* @__PURE__ */ new WeakMap();
-function an(e) {
+var on = /* @__PURE__ */ new WeakMap();
+function sn(e) {
 	return e.map ?? null;
 }
-function on(e, t) {
+function cn(e, t) {
 	if (!t) return;
 	let n = (e) => {
 		e && (e.wrapS = t.wrapS, e.wrapT = t.wrapT, e.offset.copy(t.offset), e.repeat.copy(t.repeat), e.center.copy(t.center), e.rotation = t.rotation, e.magFilter = t.magFilter, e.minFilter = t.minFilter, e.anisotropy = t.anisotropy, e.flipY = t.flipY, e.updateMatrix(), e.needsUpdate = !0);
@@ -1795,14 +1820,14 @@ function on(e, t) {
 		n(t), t && e.uniforms.uMainTexTransform?.value instanceof y.Matrix3 && e.uniforms.uMainTexTransform.value.copy(t.matrix);
 	}
 }
-function z(e) {
+function V(e) {
 	let t = e.toLowerCase();
 	return t.includes("face") ? "face" : t.includes("hair") ? "hair" : t.includes("acc") ? "acc" : t.includes("body") ? "body" : t;
 }
-function sn(e, t, n) {
+function ln(e, t, n) {
 	if (!t) return;
-	let r = (e, t) => F(n, e) ?? t, i = (e, t, r) => Zt(n, e, t) ?? r, a = (e) => Math.round(y.MathUtils.clamp(e, 0, 1) * 255).toString(16).padStart(2, "0"), o = (e, t) => {
-		let r = Qt(n, e);
+	let r = (e, t) => I(n, e) ?? t, i = (e, t, r) => en(n, e, t) ?? r, a = (e) => Math.round(y.MathUtils.clamp(e, 0, 1) * 255).toString(16).padStart(2, "0"), o = (e, t) => {
+		let r = L(n, e);
 		return r ? `#${a(r.r)}${a(r.g)}${a(r.b)}` : t;
 	};
 	return {
@@ -1822,36 +1847,36 @@ function sn(e, t, n) {
 		outlineOffset: r("_OutlineOffset", t.outlineOffset),
 		outlineLightness: r("_OutlineL", t.outlineLightness),
 		shadowWidth: r("_ShadowWidth", t.shadowWidth),
-		useOutlineSecondNormal: F(n, "_UseOutlineSecondNormal") ?? (Zt(n, "_UseOutlineSecondNormal", "_OUTLINE_SECOND_NORMAL") === !0 ? 1 : t.useOutlineSecondNormal),
-		sekaiShadowThreshold: F(n, "_SekaiShadowThreshold") ?? t.sekaiShadowThreshold,
+		useOutlineSecondNormal: I(n, "_UseOutlineSecondNormal") ?? (en(n, "_UseOutlineSecondNormal", "_OUTLINE_SECOND_NORMAL") === !0 ? 1 : t.useOutlineSecondNormal),
+		sekaiShadowThreshold: I(n, "_SekaiShadowThreshold") ?? t.sekaiShadowThreshold,
 		useLambert: i("_UseLambert", "_LAMBERT", t.useLambert),
 		useValueTex: i("_UseValueTex", void 0, t.useValueTex),
 		useFaceSdf: i("_UseFaceSDF", "_USE_FACE_SDF", t.useFaceSdf),
 		useFaceShadowLimiter: i("_UseFaceShadowLimiter", "_FACE_SHADOW_RANGE_LIMIT", t.useFaceShadowLimiter),
-		rangeLimit: F(n, "_RangeLimit") ?? t.rangeLimit,
+		rangeLimit: I(n, "_RangeLimit") ?? t.rangeLimit,
 		hairShadow: i("_HairShadow", "_HAIR_SHADOW", t.hairShadow),
 		headNormalBlend: r("_HeadNormalBlend", t.headNormalBlend ?? .7)
 	};
 }
-function cn(e, t) {
+function un(e, t) {
 	if (!(e instanceof y.ShaderMaterial) || !t) return;
 	let n = e.uniforms, r = (e, r) => {
-		let i = F(t, r);
+		let i = I(t, r);
 		i !== null && n[e] && (n[e].value = i);
 	}, i = (e, r, i) => {
-		let a = Qt(t, r);
+		let a = L(t, r);
 		a && (n[e]?.value?.setRGB(a.r, a.g, a.b), i && n[i] && (n[i].value = a.a));
 	};
 	i("uPartsAmbientColor", "_PartsAmbientColor", "uPartsAmbientAlpha"), i("uReflectionBlendColor", "_ReflectionBlendColor"), i("uSkinColorDefault", "_DefaultSkinColor"), i("uSkinColor1", "_Shadow1SkinColor"), i("uSkinColor2", "_Shadow2SkinColor"), r("uUseLambert", "_UseLambert"), r("uUseValueTex", "_UseValueTex"), r("uHeadNormalBlend", "_HeadNormalBlend");
-	let a = Zt(t, "_UseAlphaClip", "_ALPHATEST_ON");
-	a !== null && n.uAlphaCutoff && (n.uAlphaCutoff.value = a ? y.MathUtils.clamp(F(t, "_Cutoff") ?? .5, 0, 1) : 0);
+	let a = en(t, "_UseAlphaClip", "_ALPHATEST_ON");
+	a !== null && n.uAlphaCutoff && (n.uAlphaCutoff.value = a ? y.MathUtils.clamp(I(t, "_Cutoff") ?? .5, 0, 1) : 0);
 }
-function ln(e) {
+function dn(e) {
 	e.stencilWrite = !0, e.stencilRef = 0, e.stencilFunc = y.AlwaysStencilFunc, e.stencilFuncMask = 255, e.stencilWriteMask = 255, e.stencilFail = y.KeepStencilOp, e.stencilZFail = y.KeepStencilOp, e.stencilZPass = y.ReplaceStencilOp;
 }
-function un(e, t, n, r) {
+function fn(e, t, n, r) {
 	if (e.side = y.FrontSide, e.transparent = !0, e.stencilWrite = !0, e.stencilRef = t, e.stencilFunc = y.EqualStencilFunc, e.stencilFuncMask = t, e.stencilWriteMask = t, e.stencilFail = y.KeepStencilOp, e.stencilZFail = y.KeepStencilOp, e.stencilZPass = y.KeepStencilOp, e.depthTest = !0, e.depthWrite = !1, e.depthFunc = y.AlwaysDepth, e.blending = y.CustomBlending, e.blendSrc = y.SrcAlphaFactor, e.blendDst = y.OneMinusSrcAlphaFactor, e.blendEquation = y.AddEquation, e.blendSrcAlpha = y.ZeroFactor, e.blendDstAlpha = y.OneFactor, e.blendEquationAlpha = y.AddEquation, e.polygonOffset = !1, n) {
-		let t = tn[n], i = (e, t) => F(r, e) ?? Qt(r, e)?.r ?? t, a = {
+		let t = rn[n], i = (e, t) => I(r, e) ?? L(r, e)?.r ?? t, a = {
 			opacity: i("_EyelashTransparent", t.opacity),
 			edge1: i("_EyelashFaceCameraEdge1", t.edge1),
 			edge2: i("_EyelashFaceCameraEdge2", t.edge2)
@@ -1859,19 +1884,19 @@ function un(e, t, n, r) {
 		e.userData.pjskSekaiEyelashViewSettings = { ...a }, e instanceof y.ShaderMaterial && e.uniforms.uAlphaScale && (e.uniforms.uAlphaScale.value = a.opacity), e instanceof y.ShaderMaterial && e.uniforms.uAlphaSource && (e.uniforms.uAlphaSource.value = n === "eyelight" ? 2 : 1);
 	}
 }
-function dn(e, t) {
+function pn(e, t) {
 	let n = e.userData.pjskSekaiEyelashViewSettings;
 	if (!n) return null;
 	let r = n.edge1 - n.edge2, i = r === 0 ? +(t >= n.edge1) : y.MathUtils.clamp((t - n.edge2) / r, 0, 1), a = i * i * (3 - 2 * i) * n.opacity;
 	return e instanceof y.ShaderMaterial && e.uniforms.uAlphaScale && (e.uniforms.uAlphaScale.value = a), a;
 }
-function fn(e, t) {
+function mn(e, t) {
 	e.transparent = !1, e.colorWrite = !1, e.stencilWrite = !0, e.stencilRef = t, e.stencilFunc = y.AlwaysStencilFunc, e.stencilFuncMask = 255, e.stencilWriteMask = t, e.stencilFail = y.KeepStencilOp, e.stencilZFail = y.KeepStencilOp, e.stencilZPass = y.ReplaceStencilOp, e.depthTest = !0, e.depthWrite = !1, e.depthFunc = y.LessEqualDepth;
 }
-function pn(e, t) {
+function hn(e, t) {
 	e.stencilWrite = !0, e.stencilRef = 0, e.stencilFunc = y.AlwaysStencilFunc, e.stencilFuncMask = 255, e.stencilWriteMask = 255 & ~t, e.stencilFail = y.KeepStencilOp, e.stencilZFail = y.KeepStencilOp, e.stencilZPass = y.ReplaceStencilOp;
 }
-function B(e) {
+function H(e) {
 	switch (e) {
 		case "face_sdf":
 		case "face":
@@ -1892,7 +1917,7 @@ function B(e) {
 		default: return 2e3;
 	}
 }
-function mn(e, t) {
+function gn(e, t) {
 	if (t.length < 2 || e.geometry.groups.length < 2) return;
 	let n = e.geometry.groups.map((e, n) => {
 		let r = t[e.materialIndex ?? 0], i = typeof r?.userData.pjskMaterialKind == "string" ? r.userData.pjskMaterialKind : "";
@@ -1900,41 +1925,41 @@ function mn(e, t) {
 			start: e.start,
 			count: e.count,
 			materialIndex: e.materialIndex ?? 0,
-			order: B(i),
+			order: H(i),
 			index: n
 		};
 	}).sort((e, t) => e.order - t.order || e.index - t.index);
 	e.geometry.clearGroups();
 	for (let t of n) e.geometry.addGroup(t.start, t.count, t.materialIndex);
 }
-function hn(e, t, n, r) {
+function _n(e, t, n, r) {
 	if (t.length === 0 || n.length === 0) return null;
 	let i = e.geometry.clone();
 	i.clearGroups();
 	for (let e of t) i.addGroup(e.start, e.count, e.materialIndex);
 	let a = e, o = a.isSkinnedMesh ? new y.SkinnedMesh(i, n) : new y.Mesh(i, n);
-	if (o.name = `${e.name}_${r}`, o.position.copy(e.position), o.quaternion.copy(e.quaternion), o.scale.copy(e.scale), o.matrix.copy(e.matrix), o.matrixAutoUpdate = e.matrixAutoUpdate, o.matrixWorldAutoUpdate = e.matrixWorldAutoUpdate, o.layers.mask = e.layers.mask, o.visible = e.visible, o.renderOrder = Math.min(...n.map((e) => B(typeof e.userData.pjskMaterialKind == "string" ? e.userData.pjskMaterialKind : ""))), o.frustumCulled = e.frustumCulled, o.castShadow = !1, o.receiveShadow = !1, o.morphTargetDictionary = e.morphTargetDictionary, o.morphTargetInfluences = e.morphTargetInfluences, mn(o, n), o.isSkinnedMesh && a.isSkinnedMesh) {
+	if (o.name = `${e.name}_${r}`, o.position.copy(e.position), o.quaternion.copy(e.quaternion), o.scale.copy(e.scale), o.matrix.copy(e.matrix), o.matrixAutoUpdate = e.matrixAutoUpdate, o.matrixWorldAutoUpdate = e.matrixWorldAutoUpdate, o.layers.mask = e.layers.mask, o.visible = e.visible, o.renderOrder = Math.min(...n.map((e) => H(typeof e.userData.pjskMaterialKind == "string" ? e.userData.pjskMaterialKind : ""))), o.frustumCulled = e.frustumCulled, o.castShadow = !1, o.receiveShadow = !1, o.morphTargetDictionary = e.morphTargetDictionary, o.morphTargetInfluences = e.morphTargetInfluences, gn(o, n), o.isSkinnedMesh && a.isSkinnedMesh) {
 		let e = o;
 		e.bind(a.skeleton, a.bindMatrix), e.bindMode = a.bindMode, e.bindMatrix.copy(a.bindMatrix), e.bindMatrixInverse.copy(a.bindMatrixInverse);
 	}
 	return o;
 }
-function gn(e, t, n) {
-	let r = hn(e, t, n, "through_hair_overlay");
+function vn(e, t, n) {
+	let r = _n(e, t, n, "through_hair_overlay");
 	if (!r) return null;
 	let i = typeof n[0]?.userData.pjskMaterialKind == "string" ? n[0].userData.pjskMaterialKind : "", a = i.startsWith("eyelash_") ? "eyelash" : i.startsWith("eyebrow_") ? "eyebrow" : i.startsWith("eyelight_") ? "eyelight" : i.startsWith("eye_") ? "eye" : "";
 	return r.userData.pjskEyeThroughHairSource = e, r.userData.pjskEyeThroughHairSourceKind = a, r.userData.pjskEyeThroughHairPassKind = "overlay", r.userData.pjskEyeThroughHairOverlay = !0, r;
 }
-async function _n({ root: e, bodyAsset: t, headAsset: n, textureLoader: r, template: i, bodyDebugMode: a, debug: o = [] }) {
+async function yn({ root: e, bodyAsset: t, headAsset: n, textureLoader: r, template: i, bodyDebugMode: a, debug: o = [] }) {
 	let s = await Promise.all(t.bodyMaterials.map(async (e) => {
 		if (!e.materialKind) throw Error(`Body material ${e.materialName ?? e.materialKey} is missing materialKind.`);
 		let [o, s, c] = await Promise.all([
-			R(r, e.mainTex),
-			R(r, e.shadowTex),
-			R(r, e.valueTex, y.NoColorSpace)
+			B(r, e.mainTex),
+			B(r, e.shadowTex),
+			B(r, e.valueTex, y.NoColorSpace)
 		]);
-		I(o, e.rawMaterial, "_MainTex"), I(s, e.rawMaterial, "_ShadowTex"), I(c, e.rawMaterial, "_ValueTex");
-		let l = sn(e.materialKind, e.lighting, e.rawMaterial), u = nn(i, {
+		R(o, e.rawMaterial, "_MainTex"), R(s, e.rawMaterial, "_ShadowTex"), R(c, e.rawMaterial, "_ValueTex");
+		let l = ln(e.materialKind, e.lighting, e.rawMaterial), u = an(i, {
 			mainTex: o,
 			shadowTex: s,
 			valueTex: c,
@@ -1946,9 +1971,9 @@ async function _n({ root: e, bodyAsset: t, headAsset: n, textureLoader: r, templ
 			lighting: l,
 			bodyDebugMode: a
 		});
-		return cn(u, e.rawMaterial), ln(u), u.userData.pjskLighting = l, u.userData.pjskRawMaterial = e.rawMaterial, u.userData.pjskMaterialKind = e.materialKind, u.userData.pjskMaterialKey = e.materialKey, u.userData.pjskMaterialSlotIndex = e.slotIndex, {
+		return un(u, e.rawMaterial), dn(u), u.userData.pjskLighting = l, u.userData.pjskRawMaterial = e.rawMaterial, u.userData.pjskMaterialKind = e.materialKind, u.userData.pjskMaterialKey = e.materialKey, u.userData.pjskMaterialSlotIndex = e.slotIndex, {
 			key: e.materialKey,
-			meshKey: z(e.meshName),
+			meshKey: V(e.meshName),
 			materialKey: e.materialKey,
 			materialKind: e.materialKind,
 			mainTex: e.mainTex ?? null,
@@ -1960,15 +1985,15 @@ async function _n({ root: e, bodyAsset: t, headAsset: n, textureLoader: r, templ
 	return e.traverse((e) => {
 		let t = e;
 		if (!t.isMesh) return;
-		let n = Array.isArray(t.material) ? t.material : [t.material], r = s.filter((e) => e.meshKey === z(t.name));
+		let n = Array.isArray(t.material) ? t.material : [t.material], r = s.filter((e) => e.meshKey === V(t.name));
 		if (r.length === 0) return;
 		let i = n.map((e) => {
 			let n = typeof e.userData.pjskMaterialKey == "string" ? e.userData.pjskMaterialKey : "";
 			if (!n) throw Error(`Body mesh '${t.name}' material '${e.name}' is missing pjskMaterialKey; regenerate it with Haruki-3D-Exporter materialKey runtime support.`);
 			let i = r.find((e) => e.materialKey === n);
 			if (!i) throw Error(`Body mesh '${t.name}' material key '${n}' was not found in body material slots.`);
-			let a = an(e);
-			on(i.material, a), t.userData.pjskMaterialKind = i.materialKind;
+			let a = sn(e);
+			cn(i.material, a), t.userData.pjskMaterialKind = i.materialKind;
 			let s = !1;
 			!i.material.uniforms.uMainTex.value && a && (i.material.uniforms.uMainTex.value = a, i.material.uniforms.uMainTexTransform.value.copy(a.matrix), i.material.uniforms.uUseMainTex.value = 1, i.material.uniforms.uBaseColor.value.set("#ffffff"), s = !0);
 			let c = i.material.uniforms;
@@ -2019,8 +2044,8 @@ async function _n({ root: e, bodyAsset: t, headAsset: n, textureLoader: r, templ
 }
 //#endregion
 //#region src/engine/headMaterialRuntime.ts
-var V = 1, vn = .02, yn = .02;
-function bn(e, t, n, r, i, a, o) {
+var U = 1, bn = .02, xn = .02;
+function Sn(e, t, n, r, i, a, o) {
 	let s = r.material instanceof y.ShaderMaterial ? r.material.uniforms : null;
 	e.push({
 		meshName: t.name,
@@ -2085,7 +2110,7 @@ function bn(e, t, n, r, i, a, o) {
 		renderOrder: t.renderOrder
 	});
 }
-function xn(e, t, n, r, i = !0) {
+function Cn(e, t, n, r, i = !0) {
 	let a = r instanceof y.ShaderMaterial ? r.uniforms : null;
 	e.push({
 		meshName: t,
@@ -2117,10 +2142,10 @@ function xn(e, t, n, r, i = !0) {
 		shaderDepthFunc: r.depthFunc ?? null,
 		shaderDepthWrite: r.depthWrite ?? null,
 		shaderTransparent: r.transparent ?? null,
-		renderOrder: B(typeof r.userData.pjskMaterialKind == "string" ? r.userData.pjskMaterialKind : "")
+		renderOrder: H(typeof r.userData.pjskMaterialKind == "string" ? r.userData.pjskMaterialKind : "")
 	});
 }
-function Sn(e, t) {
+function wn(e, t) {
 	let n = e.clone();
 	return $e(n, {
 		baseColor: t.baseColor ?? e.uniforms.uBaseColor.value.clone(),
@@ -2175,14 +2200,14 @@ function Sn(e, t) {
 		globalShadowAlpha: e.uniforms.uGlobalShadowAlpha?.value ?? 1
 	}), n;
 }
-function Cn(e, t) {
+function Tn(e, t) {
 	let n = new Set(t);
 	for (let t of e) n.has(t) || t.dispose();
 }
-function wn(e) {
+function En(e) {
 	return !!e.geometry?.getAttribute("uv1");
 }
-function Tn(e, t) {
+function Dn(e, t) {
 	return {
 		tintColor: e?.tintColor,
 		emissionColor: e?.emissionColor,
@@ -2201,39 +2226,39 @@ function Tn(e, t) {
 		threshold: t?.threshold
 	};
 }
-function En(e, t) {
+function On(e, t) {
 	return {
-		...Tn(e, t),
+		...Dn(e, t),
 		highlightInfluence: e?.lightInfluenceForEyeHighlight ?? t?.lightInfluenceForEyeHighlight
 	};
 }
-function Dn(e, t, n, r, i, a, o, s) {
+function kn(e, t, n, r, i, a, o, s) {
 	let { mainTex: c, shadowTex: l, valueTex: u, faceShadowTex: d } = t, f = e.materialKind, p, m = null, h = null;
 	if (f === "eye") {
-		let t = Tn(o, s);
+		let t = Dn(o, s);
 		p = A(c, "eye", o?.baseTiling, {
 			...t,
 			strictAlpha: !0
 		}), p.side = y.FrontSide;
 		let n = A(c, "eye", o?.baseTiling, t);
-		n.side = y.FrontSide, fn(n, V), n.userData.pjskMaterialKind = "eye_stencil_prepass";
+		n.side = y.FrontSide, mn(n, U), n.userData.pjskMaterialKind = "eye_stencil_prepass";
 		let r = A(c, "eye", o?.baseTiling, {
 			...t,
 			strictAlpha: !0
 		});
-		r.side = y.FrontSide, un(r, V, "eye", e.rawMaterial), r.userData.pjskMaterialKind = "eye_through_hair", p.userData.pjskOverlayMaterial = r, p.userData.pjskStencilPrepassMaterial = n;
+		r.side = y.FrontSide, fn(r, U, "eye", e.rawMaterial), r.userData.pjskMaterialKind = "eye_through_hair", p.userData.pjskOverlayMaterial = r, p.userData.pjskStencilPrepassMaterial = n;
 	} else if (f === "eyelight") {
-		let t = En(o, s);
+		let t = On(o, s);
 		m = A(c, "eyelight", o?.highlightTiling, t), m.side = y.FrontSide, p = m.clone(), p.visible = !1, p.colorWrite = !1, p.depthWrite = !1;
 		let n = A(c, "eyelight", o?.highlightTiling, t);
-		n.side = y.FrontSide, un(n, V, "eyelight", e.rawMaterial), n.userData.pjskMaterialKind = "eyelight_through_hair", p.userData.pjskOverlayMaterial = n;
+		n.side = y.FrontSide, fn(n, U, "eyelight", e.rawMaterial), n.userData.pjskMaterialKind = "eyelight_through_hair", p.userData.pjskOverlayMaterial = n;
 	} else if (f === "eyelash" || f === "eyebrow") {
-		p = A(c, "alpha", null, { vertexBViewOffset: .015 }), h = On(t, n, r.face, s), p.side = y.FrontSide;
+		p = A(c, "alpha", null, { vertexBViewOffset: .015 }), h = An(t, n, r.face, s), p.side = y.FrontSide;
 		let i = A(c, "alpha", null, { strictAlpha: !0 });
-		i.side = y.FrontSide, fn(i, V), i.userData.pjskMaterialKind = `${f}_stencil_prepass`;
+		i.side = y.FrontSide, mn(i, U), i.userData.pjskMaterialKind = `${f}_stencil_prepass`;
 		let a = A(c, "alpha", null, { strictAlpha: !0 });
-		a.side = y.FrontSide, un(a, V, f, e.rawMaterial), a.userData.pjskMaterialKind = `${f}_through_hair`, p.userData.pjskOverlayMaterial = a, p.userData.pjskStencilPrepassMaterial = i;
-	} else if (f === "hair") p = nn(r.hair, {
+		a.side = y.FrontSide, fn(a, U, f, e.rawMaterial), a.userData.pjskMaterialKind = `${f}_through_hair`, p.userData.pjskOverlayMaterial = a, p.userData.pjskStencilPrepassMaterial = i;
+	} else if (f === "hair") p = an(r.hair, {
 		mainTex: c,
 		shadowTex: l,
 		valueTex: u,
@@ -2244,9 +2269,9 @@ function Dn(e, t, n, r, i, a, o, s) {
 		useLambert: a.controllerPresent ? !0 : s?.useLambert ?? !0,
 		headPosition: a.headPosition,
 		bodyDebugMode: i.bodyDebugMode,
-		alphaCutoff: vn
-	}), pn(p, V);
-	else if (f === "accessory" || f === "body") p = nn(r.body, {
+		alphaCutoff: bn
+	}), hn(p, U);
+	else if (f === "accessory" || f === "body") p = an(r.body, {
 		mainTex: c,
 		shadowTex: l,
 		valueTex: u,
@@ -2257,11 +2282,11 @@ function Dn(e, t, n, r, i, a, o, s) {
 		skinColor2: n.proxy.skinColor2 ?? n.proxy.faceShadeColor,
 		lighting: s,
 		bodyDebugMode: i.bodyDebugMode,
-		alphaCutoff: f === "accessory" ? yn : 0
-	}), ln(p);
+		alphaCutoff: f === "accessory" ? xn : 0
+	}), dn(p);
 	else {
-		let e = On(t, n, r.face, s);
-		e.uniforms.uFaceDebugMode && (e.uniforms.uFaceDebugMode.value = i.faceDebugMode), e.side = y.FrontSide, ln(e), p = e;
+		let e = An(t, n, r.face, s);
+		e.uniforms.uFaceDebugMode && (e.uniforms.uFaceDebugMode.value = i.faceDebugMode), e.side = y.FrontSide, dn(e), p = e;
 	}
 	return {
 		material: p,
@@ -2269,8 +2294,8 @@ function Dn(e, t, n, r, i, a, o, s) {
 		outlineSourceMaterial: h
 	};
 }
-function On(e, t, n, r) {
-	return Sn(n, {
+function An(e, t, n, r) {
+	return wn(n, {
 		...e,
 		baseColor: t.proxy.faceColor,
 		warmColor: t.proxy.faceShadeColor,
@@ -2280,47 +2305,47 @@ function On(e, t, n, r) {
 		lighting: r
 	});
 }
-function kn(e, t, n, r, i, a, o) {
+function jn(e, t, n, r, i, a, o) {
 	let s = typeof t.userData.pjskMaterialKey == "string" ? t.userData.pjskMaterialKey : "";
 	if (!s) throw Error(`Head mesh '${e.name}' material '${t.name}' is missing pjskMaterialKey; regenerate it with Haruki-3D-Exporter materialKey runtime support.`);
 	let c = r.find((e) => e.materialKey === s);
 	if (!c) throw Error(`Head mesh '${e.name}' material key '${s}' was not found in head material slots.`);
-	let l = an(t);
-	An(c, l);
-	let u = jn(c, l);
-	e.renderOrder = B(c.materialKind), e.userData.pjskMaterialKind = c.materialKind;
-	let d = wn(e), f = c.material.userData.pjskLighting, p = c.materialKind === "face_sdf" && !!c.faceShadowTex && f?.useFaceSdf !== !1;
-	return Nn(c.material, { faceSdfEnabled: i }, p, d), o[n] = c, bn(a, e, t, c, u, p, d), c.material;
+	let l = sn(t);
+	Mn(c, l);
+	let u = Nn(c, l);
+	e.renderOrder = H(c.materialKind), e.userData.pjskMaterialKind = c.materialKind;
+	let d = En(e), f = c.material.userData.pjskLighting, p = c.materialKind === "face_sdf" && !!c.faceShadowTex && f?.useFaceSdf !== !1;
+	return Fn(c.material, { faceSdfEnabled: i }, p, d), o[n] = c, Sn(a, e, t, c, u, p, d), c.material;
 }
-function An(e, t) {
-	on(e.material, t);
+function Mn(e, t) {
+	cn(e.material, t);
 	for (let n of [
 		e.overlayMaterial,
 		e.stencilPrepassMaterial,
 		e.topLayerMaterial
-	]) n && on(n, t);
+	]) n && cn(n, t);
 }
-function jn(e, t) {
+function Nn(e, t) {
 	if (e.material instanceof y.ShaderMaterial && !e.material.uniforms.uMainTex.value && t) {
-		Mn(e.material, t);
+		Pn(e.material, t);
 		for (let n of [
 			e.overlayMaterial,
 			e.stencilPrepassMaterial,
 			e.topLayerMaterial
-		]) n instanceof y.ShaderMaterial && Mn(n, t);
+		]) n instanceof y.ShaderMaterial && Pn(n, t);
 		return "uBaseColor" in e.material.uniforms && e.material.uniforms.uBaseColor.value.set("#ffffff"), !0;
 	}
 	return e.material instanceof y.MeshBasicMaterial && !e.material.map && t ? (e.material.map = t, e.material.needsUpdate = !0, !0) : !1;
 }
-function Mn(e, t) {
+function Pn(e, t) {
 	e.uniforms.uMainTex.value = t, e.uniforms.uMainTexTransform && (e.uniforms.uMainTexTransform.value = t.matrix), e.uniforms.uUseMainTex.value = 1;
 }
-function Nn(e, t, n, r) {
+function Fn(e, t, n, r) {
 	if (!(e instanceof y.ShaderMaterial) || !e.uniforms.uFaceShadowTex) return;
 	let i = e.uniforms;
 	e.userData.pjskFaceSdfCapable = n, e.userData.pjskFaceSdfUv1Available = r, i.uFaceSdfEnabled.value = t.faceSdfEnabled && n ? 1 : 0;
 }
-function Pn(e, t, n, r, i) {
+function In(e, t, n, r, i) {
 	let a = {
 		materials: [],
 		groups: []
@@ -2333,9 +2358,9 @@ function Pn(e, t, n, r, i) {
 	};
 	for (let c of e) {
 		let e = t[c.materialIndex];
-		Fn(a, c, e?.topLayerMaterial ?? null), Fn(o, c, e?.overlayMaterial ?? null), Fn(s, c, e?.stencilPrepassMaterial ?? null);
+		Ln(a, c, e?.topLayerMaterial ?? null), Ln(o, c, e?.overlayMaterial ?? null), Ln(s, c, e?.stencilPrepassMaterial ?? null);
 		let l = n[c.materialIndex]?.name ?? "";
-		e?.topLayerMaterial && xn(i, r, l, e.topLayerMaterial), e?.stencilPrepassMaterial && xn(i, r, l, e.stencilPrepassMaterial, !1), e?.overlayMaterial && xn(i, r, l, e.overlayMaterial);
+		e?.topLayerMaterial && Cn(i, r, l, e.topLayerMaterial), e?.stencilPrepassMaterial && Cn(i, r, l, e.stencilPrepassMaterial, !1), e?.overlayMaterial && Cn(i, r, l, e.overlayMaterial);
 	}
 	return {
 		top: a,
@@ -2343,7 +2368,7 @@ function Pn(e, t, n, r, i) {
 		stencil: s
 	};
 }
-function Fn(e, t, n) {
+function Ln(e, t, n) {
 	if (!n) return;
 	let r = e.materials.length;
 	e.materials.push(n), e.groups.push({
@@ -2352,11 +2377,11 @@ function Fn(e, t, n) {
 		materialIndex: r
 	});
 }
-function In(e, t, n, r) {
+function Rn(e, t, n, r) {
 	for (let i of t.groups) {
 		let a = t.materials[i.materialIndex];
 		if (!a) continue;
-		let o = gn(e, [{
+		let o = vn(e, [{
 			start: i.start,
 			count: i.count,
 			materialIndex: 0
@@ -2367,11 +2392,11 @@ function In(e, t, n, r) {
 		}));
 	}
 }
-function Ln(e, t, n) {
+function zn(e, t, n) {
 	for (let r of t.groups) {
 		let i = t.materials[r.materialIndex];
 		if (!i) continue;
-		let a = hn(e, [{
+		let a = _n(e, [{
 			start: r.start,
 			count: r.count,
 			materialIndex: 0
@@ -2382,24 +2407,24 @@ function Ln(e, t, n) {
 		}));
 	}
 }
-async function Rn({ root: e, headAsset: t, textureLoader: n, templates: r, view: i, hair: a, eyeController: o, debug: s = [] }) {
+async function Bn({ root: e, headAsset: t, textureLoader: n, templates: r, view: i, hair: a, eyeController: o, debug: s = [] }) {
 	let c = [], l = [], u = [], d = await Promise.all(t.faceMaterials.map(async (e) => {
 		let [s, c, l, u] = await Promise.all([
-			R(n, e.mainTex),
-			R(n, e.shadowTex),
-			R(n, e.valueTex, y.NoColorSpace),
-			R(n, e.faceShadowTex, y.NoColorSpace)
+			B(n, e.mainTex),
+			B(n, e.shadowTex),
+			B(n, e.valueTex, y.NoColorSpace),
+			B(n, e.faceShadowTex, y.NoColorSpace)
 		]);
-		if (I(s, e.rawMaterial, "_MainTex"), I(c, e.rawMaterial, "_ShadowTex"), I(l, e.rawMaterial, "_ValueTex"), I(u, e.rawMaterial, "_FaceShadowTex"), !e.materialKind) throw Error(`Head material ${e.materialName ?? e.materialKey} is missing materialKind.`);
-		let d = e.materialKind, f = !!e.isAccessory || d === "accessory", p = sn(d, e.lighting, e.rawMaterial), { material: m, topLayerMaterial: h, outlineSourceMaterial: g } = Dn(e, {
+		if (R(s, e.rawMaterial, "_MainTex"), R(c, e.rawMaterial, "_ShadowTex"), R(l, e.rawMaterial, "_ValueTex"), R(u, e.rawMaterial, "_FaceShadowTex"), !e.materialKind) throw Error(`Head material ${e.materialName ?? e.materialKey} is missing materialKind.`);
+		let d = e.materialKind, f = !!e.isAccessory || d === "accessory", p = ln(d, e.lighting, e.rawMaterial), { material: m, topLayerMaterial: h, outlineSourceMaterial: g } = kn(e, {
 			mainTex: s,
 			shadowTex: c,
 			valueTex: l,
 			faceShadowTex: u
 		}, t, r, i, a, o, p);
-		return cn(m, e.rawMaterial), g && (cn(g, e.rawMaterial), m.userData.pjskOutlineSourceMaterial = g), m.userData.pjskLighting = p, m.userData.pjskRawMaterial = e.rawMaterial, m.userData.pjskMaterialKind = d, m.userData.pjskIsAccessory = f, m.userData.pjskMaterialKey = e.materialKey, m.userData.pjskMaterialSlotIndex = e.slotIndex, h && (h.userData.pjskLighting = p, h.userData.pjskRawMaterial = e.rawMaterial, h.userData.pjskMaterialKind = d, h.userData.pjskIsAccessory = f, h.userData.pjskMaterialKey = e.materialKey, h.userData.pjskMaterialSlotIndex = e.slotIndex), {
+		return un(m, e.rawMaterial), g && (un(g, e.rawMaterial), m.userData.pjskOutlineSourceMaterial = g), m.userData.pjskLighting = p, m.userData.pjskRawMaterial = e.rawMaterial, m.userData.pjskMaterialKind = d, m.userData.pjskIsAccessory = f, m.userData.pjskMaterialKey = e.materialKey, m.userData.pjskMaterialSlotIndex = e.slotIndex, h && (h.userData.pjskLighting = p, h.userData.pjskRawMaterial = e.rawMaterial, h.userData.pjskMaterialKind = d, h.userData.pjskIsAccessory = f, h.userData.pjskMaterialKey = e.materialKey, h.userData.pjskMaterialSlotIndex = e.slotIndex), {
 			key: e.materialKey,
-			meshKey: z(e.meshName),
+			meshKey: V(e.meshName),
 			materialKey: e.materialKey,
 			materialKind: d,
 			mainTex: e.mainTex ?? null,
@@ -2415,11 +2440,11 @@ async function Rn({ root: e, headAsset: t, textureLoader: n, templates: r, view:
 	e.traverse((e) => {
 		let t = e;
 		if (!t.isMesh || t.userData.pjskEyeThroughHairOverlay || t.userData.pjskEyeThroughHairStencilPrepass) return;
-		let n = Array.isArray(t.material) ? t.material : [t.material], r = z(t.name), a = d.filter((e) => e.meshKey === r);
+		let n = Array.isArray(t.material) ? t.material : [t.material], r = V(t.name), a = d.filter((e) => e.meshKey === r);
 		if (a.length === 0) return;
-		let o = [], f = n.map((e, n) => kn(t, e, n, a, i.faceSdfEnabled, s, o)), p = o.reduce((e, t) => t ? Math.min(e, B(t.materialKind)) : e, Infinity);
+		let o = [], f = n.map((e, n) => jn(t, e, n, a, i.faceSdfEnabled, s, o)), p = o.reduce((e, t) => t ? Math.min(e, H(t.materialKind)) : e, Infinity);
 		Number.isFinite(p) && (t.renderOrder = p);
-		let m = Pn(t.geometry.groups.length > 0 ? t.geometry.groups.map((e) => ({
+		let m = In(t.geometry.groups.length > 0 ? t.geometry.groups.map((e) => ({
 			start: e.start,
 			count: e.count,
 			materialIndex: e.materialIndex ?? 0
@@ -2428,37 +2453,37 @@ async function Rn({ root: e, headAsset: t, textureLoader: n, templates: r, view:
 			count: t.geometry.index?.count ?? t.geometry.getAttribute("position")?.count ?? 0,
 			materialIndex: 0
 		}], o, n, t.name, s);
-		Cn(n, f), mn(t, f), t.material = Array.isArray(t.material) || f.length > 1 ? f : f[0], t.castShadow = !1, t.receiveShadow = !1, In(t, m.stencil, "stencil_prepass", l), In(t, m.overlay, "overlay", c), Ln(t, m.top, u);
+		Tn(n, f), gn(t, f), t.material = Array.isArray(t.material) || f.length > 1 ? f : f[0], t.castShadow = !1, t.receiveShadow = !1, Rn(t, m.stencil, "stencil_prepass", l), Rn(t, m.overlay, "overlay", c), zn(t, m.top, u);
 	});
 	for (let e of l) e.parent.add(e.mesh);
 	for (let e of c) e.parent.add(e.mesh);
 	for (let e of u) e.parent.add(e.mesh);
 	return s;
 }
-var zn = {
-	pushBoundMaterialDebug: bn,
-	pushLayerMaterialDebug: xn,
-	cloneFaceShaderMaterial: Sn,
-	disposeReplacedMaterials: Cn,
-	hasFaceSdfUv1Attribute: wn,
-	createEyeLayerOptions: Tn,
-	createHighlightLayerOptions: En,
-	createHeadSlotMaterials: Dn,
-	createHeadFaceMaterial: On,
-	syncHeadSlotTextures: An,
-	applyOriginalHeadMap: jn,
-	applyOriginalMapToShader: Mn,
-	updateHeadFaceSdfState: Nn,
-	collectHeadLayerPasses: Pn,
-	addHeadLayerPass: Fn,
-	queueThroughHairPasses: In,
-	queueTopLayerPasses: Ln
-}, H = {
+var Vn = {
+	pushBoundMaterialDebug: Sn,
+	pushLayerMaterialDebug: Cn,
+	cloneFaceShaderMaterial: wn,
+	disposeReplacedMaterials: Tn,
+	hasFaceSdfUv1Attribute: En,
+	createEyeLayerOptions: Dn,
+	createHighlightLayerOptions: On,
+	createHeadSlotMaterials: kn,
+	createHeadFaceMaterial: An,
+	syncHeadSlotTextures: Mn,
+	applyOriginalHeadMap: Nn,
+	applyOriginalMapToShader: Pn,
+	updateHeadFaceSdfState: Fn,
+	collectHeadLayerPasses: In,
+	addHeadLayerPass: Ln,
+	queueThroughHairPasses: Rn,
+	queueTopLayerPasses: zn
+}, W = {
 	widthMin: 4e-4,
 	widthMax: .0095,
 	distanceNear: .45,
 	distanceFar: 20
-}, Bn = {
+}, Hn = {
 	startTime: -.013763427734375,
 	startValue: 27.81246566772461,
 	startOutTangent: -.13214513659477234,
@@ -2466,8 +2491,8 @@ var zn = {
 	endValue: -.03620624542236328,
 	endInTangent: -.5713597536087036
 };
-function Vn(e) {
-	let t = Number.isFinite(e) ? e : 25, n = Bn, r;
+function Un(e) {
+	let t = Number.isFinite(e) ? e : 25, n = Hn, r;
 	if (t <= n.startTime) r = n.startValue;
 	else if (t >= n.endTime) r = n.endValue;
 	else {
@@ -2476,7 +2501,7 @@ function Vn(e) {
 	}
 	return Math.abs(r) > 2 ** -52 ? t / r : 1;
 }
-var U = {
+var G = {
 	color: {
 		r: 0,
 		g: 0,
@@ -2484,19 +2509,19 @@ var U = {
 	},
 	blending: .5
 };
-function Hn() {
-	return new y.Vector2(H.widthMin, H.widthMax);
+function Wn() {
+	return new y.Vector2(W.widthMin, W.widthMax);
 }
-function Un(e) {
+function Gn(e) {
 	return !e?.disabledShaderPasses?.some((e) => e.toLowerCase() === "outline");
 }
-var Wn = {
+var Kn = {
 	r: .52,
 	g: .47,
 	b: .55,
 	a: 1
 };
-function Gn(e, t, n, r) {
+function qn(e, t, n, r) {
 	let i = y.MathUtils.clamp(r, 0, 1), a = {
 		r: e.r * t.r,
 		g: e.g * t.g,
@@ -2508,16 +2533,16 @@ function Gn(e, t, n, r) {
 		b: a.b + i * (n.b - a.b)
 	};
 }
-function Kn(e, t, n) {
+function Jn(e, t, n) {
 	if (e.name !== "pjsk_shell_outline") return;
 	let r = e.userData.pjskOutlineController;
-	r && (t && typeof t == "object" && "r" in t && "g" in t && "b" in t ? r.color.setRGB(t.r, t.g, t.b) : D(r.color, t ?? new y.Color().setRGB(U.color.r, U.color.g, U.color.b)), r.blending = y.MathUtils.clamp(n ?? U.blending, 0, 1));
+	r && (t && typeof t == "object" && "r" in t && "g" in t && "b" in t ? r.color.setRGB(t.r, t.g, t.b) : D(r.color, t ?? new y.Color().setRGB(G.color.r, G.color.g, G.color.b)), r.blending = y.MathUtils.clamp(n ?? G.blending, 0, 1));
 }
-function qn(e, t, n, r) {
-	let i = new y.Vector3(H.distanceNear, 1 / (H.distanceFar - H.distanceNear), Vn(25)), a = {
-		color: new y.Color().setRGB(U.color.r, U.color.g, U.color.b),
-		blending: U.blending
-	}, o = F(n, "_OutlineOffset") ?? 0, s = e.clone();
+function Yn(e, t, n, r) {
+	let i = new y.Vector3(W.distanceNear, 1 / (W.distanceFar - W.distanceNear), Un(25)), a = {
+		color: new y.Color().setRGB(G.color.r, G.color.g, G.color.b),
+		blending: G.blending
+	}, o = I(n, "_OutlineOffset") ?? 0, s = e.clone();
 	s.name = "pjsk_shell_outline", s.side = y.BackSide, s.transparent = !1, s.opacity = 1, s.depthFunc = y.LessDepth, s.depthWrite = !0, s.depthTest = !0, s.blending = y.NoBlending, s.polygonOffset = !1, s.userData = {
 		...e.userData,
 		pjskOutlineController: a
@@ -2531,7 +2556,7 @@ function qn(e, t, n, r) {
 	return s.uniforms = {
 		...e.uniforms,
 		...c,
-		uSekaiOutlineWidth: { value: Hn() },
+		uSekaiOutlineWidth: { value: Wn() },
 		uSekaiOutlineFactor: { value: i },
 		uSekaiOutlineOffset: { value: o },
 		uSekaiCharacterOutlineColor: { value: a.color },
@@ -2578,14 +2603,14 @@ function qn(e, t, n, r) {
 		"  );",
 		"}"
 	].join("\n")), s.customProgramCacheKey = () => `sekai-toon-outline:${+!!t}:${+!!r}`, s.onBeforeRender = (e, t, n) => {
-		n instanceof y.PerspectiveCamera && (i.z = Vn(n.fov));
+		n instanceof y.PerspectiveCamera && (i.z = Un(n.fov));
 	}, s;
 }
-function Jn(e, t, n = !1, r = null, i = null) {
-	if (i instanceof y.ShaderMaterial && /vec3 outputColor\s*\(\s*vec3 color\s*\)/.test(i.fragmentShader)) return qn(i, e, t, n);
-	let a = Qt(t, "_OutlineColor") ?? Wn, o = $t(t, "_MainTex"), s = new y.Vector4(o?.scaleX ?? 1, o?.scaleY ?? 1, o?.offsetX ?? 0, o?.offsetY ?? 0), c = (F(t, "_UseAlphaClip") ?? 0) > .5, l = y.MathUtils.clamp(F(t, "_Cutoff") ?? .5, 0, 1), u = F(t, "_OutlineOffset") ?? 0, d = new y.Color().setRGB(a.r, a.g, a.b), f = {
-		color: new y.Color().setRGB(U.color.r, U.color.g, U.color.b),
-		blending: U.blending
+function Xn(e, t, n = !1, r = null, i = null) {
+	if (i instanceof y.ShaderMaterial && /vec3 outputColor\s*\(\s*vec3 color\s*\)/.test(i.fragmentShader)) return Yn(i, e, t, n);
+	let a = L(t, "_OutlineColor") ?? Kn, o = tn(t, "_MainTex"), s = new y.Vector4(o?.scaleX ?? 1, o?.scaleY ?? 1, o?.offsetX ?? 0, o?.offsetY ?? 0), c = (I(t, "_UseAlphaClip") ?? 0) > .5, l = y.MathUtils.clamp(I(t, "_Cutoff") ?? .5, 0, 1), u = I(t, "_OutlineOffset") ?? 0, d = new y.Color().setRGB(a.r, a.g, a.b), f = {
+		color: new y.Color().setRGB(G.color.r, G.color.g, G.color.b),
+		blending: G.blending
 	}, p = new y.MeshBasicMaterial({
 		color: d,
 		map: r,
@@ -2598,9 +2623,9 @@ function Jn(e, t, n = !1, r = null, i = null) {
 		blending: y.NoBlending,
 		vertexColors: !1,
 		alphaTest: c ? l : 0
-	}), m = new y.Vector3(H.distanceNear, 1 / (H.distanceFar - H.distanceNear), Vn(25));
+	}), m = new y.Vector3(W.distanceNear, 1 / (W.distanceFar - W.distanceNear), Un(25));
 	return p.name = "pjsk_shell_outline", p.userData.pjskOutlineController = f, p.onBeforeCompile = (t) => {
-		t.uniforms.uSekaiOutlineWidth = { value: Hn() }, t.uniforms.uSekaiOutlineFactor = { value: m }, t.uniforms.uSekaiOutlineOffset = { value: u }, t.uniforms.uSekaiMainTexST = { value: s }, t.uniforms.uSekaiCharacterOutlineColor = { value: f.color }, t.uniforms.uSekaiCharacterOutlineBlending = { get value() {
+		t.uniforms.uSekaiOutlineWidth = { value: Wn() }, t.uniforms.uSekaiOutlineFactor = { value: m }, t.uniforms.uSekaiOutlineOffset = { value: u }, t.uniforms.uSekaiMainTexST = { value: s }, t.uniforms.uSekaiCharacterOutlineColor = { value: f.color }, t.uniforms.uSekaiCharacterOutlineBlending = { get value() {
 			return f.blending;
 		} }, t.vertexShader = t.vertexShader.replace("#include <common>", [
 			"#include <common>",
@@ -2660,45 +2685,45 @@ function Jn(e, t, n = !1, r = null, i = null) {
 			");"
 		].join("\n")), t.fragmentShader = t.fragmentShader.replace("#include <colorspace_fragment>", "");
 	}, p.customProgramCacheKey = () => `sekai-outline:${+!!e}:${+!!n}`, p.onBeforeRender = (e, t, n) => {
-		n instanceof y.PerspectiveCamera && (m.z = Vn(n.fov));
+		n instanceof y.PerspectiveCamera && (m.z = Un(n.fov));
 	}, p;
 }
 //#endregion
 //#region src/engine/characterLightingRuntime.ts
-function Yn(e, t) {
+function Zn(e, t) {
 	let n = e;
 	if (n.isMesh) {
 		if (n.userData.pjskEyeThroughHairOverlay || n.userData.pjskEyeThroughHairStencilPrepass) {
-			Xn(n, t);
+			Qn(n, t);
 			return;
 		}
 		if (n.userData.pjskOutlineShell) {
-			Zn(n, t);
+			$n(n, t);
 			return;
 		}
-		Qn(n, t);
+		er(n, t);
 	}
 }
-function Xn(e, t) {
+function Qn(e, t) {
 	let n = e.userData.pjskEyeThroughHairSource, r = typeof e.userData.pjskEyeThroughHairSourceKind == "string" ? e.userData.pjskEyeThroughHairSourceKind : "", i = typeof e.userData.pjskEyeThroughHairPassKind == "string" ? e.userData.pjskEyeThroughHairPassKind : "", a = n instanceof y.Object3D ? n.visible : !0;
-	n instanceof y.Object3D && (e.layers.mask = n.layers.mask), e.visible = a && !t.outlineOnly && !t.eyelightOnly && !t.noEyeThroughHair && lr(r, t.mode) && ur(r, i, t.mode) && t.faceLayersVisible && (!t.noEyelight || r !== "eyelight"), e.userData.pjskEyeThroughHairBaseVisible = e.visible;
+	n instanceof y.Object3D && (e.layers.mask = n.layers.mask), e.visible = a && !t.outlineOnly && !t.eyelightOnly && !t.noEyeThroughHair && dr(r, t.mode) && fr(r, i, t.mode) && t.faceLayersVisible && (!t.noEyelight || r !== "eyelight"), e.userData.pjskEyeThroughHairBaseVisible = e.visible;
 }
-function Zn(e, t) {
+function $n(e, t) {
 	let n = typeof e.userData.pjskSourceMaterialKind == "string" ? e.userData.pjskSourceMaterialKind : "";
 	if (t.eyelightOnly) {
 		e.visible = n === "eye" || n === "eyelight";
 		return;
 	}
-	let r = cr(n);
-	e.visible = !t.eyeThroughHairOnly && t.outlineVisible && !dr(n, t.mode) && (!t.noEyelight || n !== "eyelight") && (!r || t.faceLayersVisible);
+	let r = ur(n);
+	e.visible = !t.eyeThroughHairOnly && t.outlineVisible && !pr(n, t.mode) && (!t.noEyelight || n !== "eyelight") && (!r || t.faceLayersVisible);
 }
-function Qn(e, t) {
-	let n = Array.isArray(e.material) ? e.material : [e.material], r = $n(n, t.faceSdfEnabled);
+function er(e, t) {
+	let n = Array.isArray(e.material) ? e.material : [e.material], r = tr(n, t.faceSdfEnabled);
 	t.outlineOnly || t.eyeThroughHairOnly ? e.visible = !1 : t.eyelightOnly ? e.visible = r.faceLayer && n.some((e) => e.userData.pjskMaterialKind === "eye" || e.userData.pjskMaterialKind === "eyelight") : r.faceLayer ? e.visible = t.faceLayersVisible && (!t.noEyelight || !r.eyelightLayer) : e.visible = !0;
 	let i = e.userData.pjskEyeThroughHairSource;
 	i instanceof y.Object3D && (e.visible = e.visible && i.visible, e.layers.mask = i.layers.mask);
 }
-function $n(e, t) {
+function tr(e, t) {
 	let n = !1, r = !1;
 	for (let i of e) {
 		if (!(i instanceof y.ShaderMaterial)) continue;
@@ -2710,17 +2735,17 @@ function $n(e, t) {
 		eyelightLayer: r
 	};
 }
-function er(e, t) {
+function nr(e, t) {
 	let n = e.uniforms;
 	n.uSkinColorDefault && D(n.uSkinColorDefault.value, t.default), n.uSkinColor1 && D(n.uSkinColor1.value, t.shadow1), n.uSkinColor2 && D(n.uSkinColor2.value, t.shadow2);
 }
-function tr(e, t) {
+function rr(e, t) {
 	e.shaderSkinColorDefault !== void 0 && e.shaderSkinColorDefault !== null && (e.shaderSkinColorDefault = t.default.toLowerCase()), e.shaderSkinColor1 !== void 0 && e.shaderSkinColor1 !== null && (e.shaderSkinColor1 = t.shadow1.toLowerCase()), e.shaderSkinColor2 !== void 0 && e.shaderSkinColor2 !== null && (e.shaderSkinColor2 = t.shadow2.toLowerCase());
 }
-function nr(e) {
+function ir(e) {
 	return e === "head_proximity" ? "sekai_head_position" : e;
 }
-var rr = {
+var ar = {
 	skin: 1,
 	main_color: 2,
 	skin_color: 3,
@@ -2747,26 +2772,26 @@ var rr = {
 	toon_luma: 24,
 	shadow_mask: 25,
 	shadow_target: 26
-}, ir = {
+}, or = {
 	sdf: 1,
 	mask: 2,
 	limit: 3,
 	basis: 4,
 	range: 5
 };
-function ar(e) {
-	return rr[e] ?? 0;
-}
-function or(e) {
-	return ir[e] ?? 0;
-}
 function sr(e) {
-	return e === "eyelash" || e === "eyebrow" || e === "eye" || e === "eyelight";
+	return ar[e] ?? 0;
 }
 function cr(e) {
-	return e === "face" || e === "face_sdf" || sr(e);
+	return or[e] ?? 0;
 }
-function lr(e, t) {
+function lr(e) {
+	return e === "eyelash" || e === "eyebrow" || e === "eye" || e === "eyelight";
+}
+function ur(e) {
+	return e === "face" || e === "face_sdf" || lr(e);
+}
+function dr(e, t) {
 	switch (t) {
 		case "eye_through_hair_eye_only": return e === "eye";
 		case "eye_through_hair_eyebrow_only": return e === "eyebrow";
@@ -2777,19 +2802,19 @@ function lr(e, t) {
 		default: return !0;
 	}
 }
-function ur(e, t, n) {
+function fr(e, t, n) {
 	return n === "no_eye_through_hair_eyelash_overlay" ? e !== "eyelash" || t !== "overlay" : n !== "no_eye_through_hair_eyelash_prepass" || e !== "eyelash" || t !== "stencil_prepass";
 }
-function dr(e, t) {
+function pr(e, t) {
 	switch (t) {
 		case "no_body_outline": return e === "body";
 		case "no_hair_outline": return e === "hair";
 		case "no_face_layers":
-		case "no_face_outline": return cr(e);
+		case "no_face_outline": return ur(e);
 		default: return !1;
 	}
 }
-var fr = class {
+var mr = class {
 	options;
 	cameraDirection = new y.Vector3();
 	hairShadowMode = "sekai_head_position";
@@ -2800,8 +2825,8 @@ var fr = class {
 	faceSdfDebugMode = "off";
 	faceSdfDebugLightMode = "scene";
 	renderIsolationMode = "normal";
-	controllerOutlineColor = new y.Color().setRGB(U.color.r, U.color.g, U.color.b);
-	controllerOutlineBlending = U.blending;
+	controllerOutlineColor = new y.Color().setRGB(G.color.r, G.color.g, G.color.b);
+	controllerOutlineBlending = G.blending;
 	skinColors = null;
 	constructor(e) {
 		this.options = e, this.toonValueShadowInfluence = e.valueShadowInfluence ?? 1, e.debug.hairShadowMode = this.hairShadowMode;
@@ -2822,8 +2847,8 @@ var fr = class {
 	}
 	getBindingView() {
 		return {
-			bodyDebugMode: ar(this.bodyDebugMode),
-			faceDebugMode: or(this.faceSdfDebugMode),
+			bodyDebugMode: sr(this.bodyDebugMode),
+			faceDebugMode: cr(this.faceSdfDebugMode),
 			faceSdfEnabled: this.shouldEnableFaceSdf(),
 			shadowWidthOverride: this.toonShadowWidthOverride,
 			valueShadowInfluence: this.toonValueShadowInfluence,
@@ -2837,7 +2862,7 @@ var fr = class {
 		return this.hairShadowMode === "sekai_head_position";
 	}
 	setHairShadowMode(e) {
-		this.hairShadowMode = nr(e), this.options.debug.hairShadowMode = this.hairShadowMode, this.applyHairShadowMode();
+		this.hairShadowMode = ir(e), this.options.debug.hairShadowMode = this.hairShadowMode, this.applyHairShadowMode();
 	}
 	setFaceSdfDebugMode(e) {
 		this.faceSdfDebugMode = e, this.applyFaceSdfDebug();
@@ -2875,13 +2900,13 @@ var fr = class {
 	applyCharacterSkinColors() {
 		let e = this.skinColors;
 		if (!e) return;
-		let t = (t) => er(t, e);
+		let t = (t) => nr(t, e);
 		[
 			this.options.bodyMaterial,
 			this.options.hairMaterial,
 			this.options.faceMaterial
 		].forEach(t), this.forEachShaderMaterial(t);
-		for (let t of this.debugEntries) for (let n of t) tr(n, e);
+		for (let t of this.debugEntries) for (let n of t) rr(n, e);
 	}
 	shouldEnableFaceSdf() {
 		return this.renderIsolationMode === "no_face_sdf" ? !1 : this.faceSdfEnabled || this.renderIsolationMode === "face_sdf";
@@ -2894,14 +2919,14 @@ var fr = class {
 		for (let t of this.debugEntries) for (let n of t) (n.shaderFaceSdfEnabled !== void 0 || n.resolvedKind === "face_sdf") && (n.shaderFaceSdfEnabled = e && n.faceSdfCapable === !0 ? 1 : 0);
 	}
 	applyFaceSdfDebug() {
-		let e = or(this.faceSdfDebugMode);
+		let e = cr(this.faceSdfDebugMode);
 		this.options.faceMaterial.uniforms.uFaceDebugMode.value = e, this.forEachShaderMaterial((t) => {
 			t.uniforms.uFaceDebugMode && (t.uniforms.uFaceDebugMode.value = e);
 		});
 		for (let t of this.debugEntries) for (let n of t) (n.resolvedKind === "face_sdf" || n.shaderFaceDebugMode !== void 0) && (n.shaderFaceDebugMode = e);
 	}
 	applyBodyDebug() {
-		let e = ar(this.bodyDebugMode), t = (t) => {
+		let e = sr(this.bodyDebugMode), t = (t) => {
 			t.uniforms.uBodyDebugMode && (t.uniforms.uBodyDebugMode.value = e);
 		};
 		t(this.options.bodyMaterial), t(this.options.hairMaterial), this.forEachShaderMaterial(t);
@@ -2933,7 +2958,7 @@ var fr = class {
 			noEyeThroughHair: t === "no_eye_through_hair",
 			eyeThroughHairOnly: t === "eye_through_hair_only" || t === "eye_through_hair_eye_only" || t === "eye_through_hair_eyebrow_only" || t === "eye_through_hair_eyelash_only"
 		};
-		for (let e of this.slots) e.traverse((e) => Yn(e, n));
+		for (let e of this.slots) e.traverse((e) => Zn(e, n));
 		for (let t of this.debugEntries) for (let n of t) (n.shaderFaceSdfEnabled !== void 0 || n.resolvedKind === "face_sdf") && (n.shaderFaceSdfEnabled = e && n.faceSdfCapable === !0 ? 1 : 0);
 	}
 	updateEyeThroughHairView(e, t, n) {
@@ -2948,7 +2973,7 @@ var fr = class {
 			}
 			let a = Array.isArray(t.material) ? t.material : [t.material], o = !1;
 			for (let e of a) {
-				let t = dn(e, i);
+				let t = pn(e, i);
 				o ||= t === null || t > .001;
 			}
 			t.visible = r && o;
@@ -2964,7 +2989,7 @@ var fr = class {
 			r.uniforms.uHeadDotDirectionalLight && et(r, e, t, !0, 0), r.uniforms.uHeadPosition && r.uniforms.uHeadPosition.value.copy(n);
 		});
 	}
-	updatePreviewLight(e, t, n, r, i, a = L()) {
+	updatePreviewLight(e, t, n, r, i, a = z()) {
 		let o = this.getBindingView(), { bodyMaterial: s, hairMaterial: c, faceMaterial: l, directionalLight: u, fillLight: d } = this.options;
 		u.position.set(e.x, e.y, e.z), u.intensity = e.intensity, d.intensity = e.ambient, Be(s, {
 			baseColor: t?.proxy.bodyColor ?? "#f5d6d0",
@@ -3076,7 +3101,7 @@ var fr = class {
 			globalShadowAlpha: l.uniforms.uGlobalShadowAlpha.value
 		}), this.updateLoadedMaterialLight(e, i, a), this.applyCharacterSkinColors();
 	}
-	updateLoadedMaterialLight(e, t, n = L()) {
+	updateLoadedMaterialLight(e, t, n = z()) {
 		let r = this.options.directionalLight.position.clone().normalize();
 		this.forEachShaderMaterial((i) => {
 			let a = i.uniforms, o = i.userData.pjskLighting, s = !!(a.uFaceShadowTex || a.uHeadDotDirectionalLight);
@@ -3105,7 +3130,7 @@ var fr = class {
 		this.forEachShaderMaterial(i);
 	}
 	updateControllerOutline(e) {
-		this.controllerOutlineColor = e.color ? D(new y.Color(), e.color) : new y.Color().setRGB(U.color.r, U.color.g, U.color.b), this.controllerOutlineBlending = y.MathUtils.clamp(e.blending ?? U.blending, 0, 1);
+		this.controllerOutlineColor = e.color ? D(new y.Color(), e.color) : new y.Color().setRGB(G.color.r, G.color.g, G.color.b), this.controllerOutlineBlending = y.MathUtils.clamp(e.blending ?? G.blending, 0, 1);
 		for (let e of this.slots) e.traverse((e) => {
 			let t = e;
 			if (!t.isMesh || !t.userData.pjskOutlineShell) return;
@@ -3114,23 +3139,23 @@ var fr = class {
 		});
 	}
 	applyOutlineMaterial(e) {
-		Kn(e, this.controllerOutlineColor, this.controllerOutlineBlending);
+		Jn(e, this.controllerOutlineColor, this.controllerOutlineBlending);
 	}
-}, pr = {
-	applyRenderIsolationToNode: Yn,
-	applyEyeThroughHairIsolation: Xn,
-	applyOutlineIsolation: Zn,
-	applyBaseMeshIsolation: Qn,
-	inspectFaceLayers: $n,
-	applySkinColors: er,
-	applyDebugEntrySkinColors: tr,
-	normalizeHairShadowMode: nr,
-	isFaceLayerMaterialKind: sr,
-	isFaceOrFaceLayerMaterialKind: cr,
-	isEyeThroughHairSourceAllowed: lr,
-	isEyeThroughHairPassAllowed: ur,
-	isOutlineHiddenByIsolation: dr
-}, mr = class {
+}, hr = {
+	applyRenderIsolationToNode: Zn,
+	applyEyeThroughHairIsolation: Qn,
+	applyOutlineIsolation: $n,
+	applyBaseMeshIsolation: er,
+	inspectFaceLayers: tr,
+	applySkinColors: nr,
+	applyDebugEntrySkinColors: rr,
+	normalizeHairShadowMode: ir,
+	isFaceLayerMaterialKind: lr,
+	isFaceOrFaceLayerMaterialKind: ur,
+	isEyeThroughHairSourceAllowed: dr,
+	isEyeThroughHairPassAllowed: fr,
+	isOutlineHiddenByIsolation: pr
+}, gr = class {
 	constructor(e = 4) {
 		this.pool = e, this.queue = [], this.workers = [], this.workersResolve = [], this.workerStatus = 0, this.workerCreator = null;
 	}
@@ -3170,7 +3195,7 @@ var fr = class {
 	dispose() {
 		this.workers.forEach((e) => e.terminate()), this.workersResolve.length = 0, this.workers.length = 0, this.queue.length = 0, this.workerStatus = 0;
 	}
-}, hr = 1000066e3, gr = class {
+}, _r = 1000066e3, vr = class {
 	constructor() {
 		this.vkFormat = 0, this.typeSize = 1, this.pixelWidth = 0, this.pixelHeight = 0, this.pixelDepth = 0, this.layerCount = 0, this.faceCount = 1, this.supercompressionScheme = 0, this.levels = [], this.dataFormatDescriptor = [{
 			vendorId: 0,
@@ -3200,7 +3225,7 @@ var fr = class {
 			samples: []
 		}], this.keyValue = {}, this.globalData = null;
 	}
-}, W = class {
+}, yr = class {
 	constructor(e, t, n, r) {
 		this._dataView = void 0, this._littleEndian = void 0, this._offset = void 0, this._dataView = new DataView(e.buffer, e.byteOffset + t, n), this._littleEndian = r, this._offset = 0;
 	}
@@ -3239,7 +3264,7 @@ var fr = class {
 	}
 };
 new Uint8Array([0]);
-var G = [
+var K = [
 	171,
 	75,
 	84,
@@ -3253,22 +3278,22 @@ var G = [
 	26,
 	10
 ];
-function _r(e) {
+function br(e) {
 	return new TextDecoder().decode(e);
 }
-function vr(e) {
-	let t = new Uint8Array(e.buffer, e.byteOffset, G.length);
-	if (t[0] !== G[0] || t[1] !== G[1] || t[2] !== G[2] || t[3] !== G[3] || t[4] !== G[4] || t[5] !== G[5] || t[6] !== G[6] || t[7] !== G[7] || t[8] !== G[8] || t[9] !== G[9] || t[10] !== G[10] || t[11] !== G[11]) throw Error("Missing KTX 2.0 identifier.");
-	let n = new gr(), r = 17 * Uint32Array.BYTES_PER_ELEMENT, i = new W(e, G.length, r, !0);
+function xr(e) {
+	let t = new Uint8Array(e.buffer, e.byteOffset, K.length);
+	if (t[0] !== K[0] || t[1] !== K[1] || t[2] !== K[2] || t[3] !== K[3] || t[4] !== K[4] || t[5] !== K[5] || t[6] !== K[6] || t[7] !== K[7] || t[8] !== K[8] || t[9] !== K[9] || t[10] !== K[10] || t[11] !== K[11]) throw Error("Missing KTX 2.0 identifier.");
+	let n = new vr(), r = 17 * Uint32Array.BYTES_PER_ELEMENT, i = new yr(e, K.length, r, !0);
 	n.vkFormat = i._nextUint32(), n.typeSize = i._nextUint32(), n.pixelWidth = i._nextUint32(), n.pixelHeight = i._nextUint32(), n.pixelDepth = i._nextUint32(), n.layerCount = i._nextUint32(), n.faceCount = i._nextUint32();
 	let a = i._nextUint32();
 	n.supercompressionScheme = i._nextUint32();
-	let o = i._nextUint32(), s = i._nextUint32(), c = i._nextUint32(), l = i._nextUint32(), u = i._nextUint64(), d = i._nextUint64(), f = new W(e, G.length + r, 3 * a * 8, !0);
+	let o = i._nextUint32(), s = i._nextUint32(), c = i._nextUint32(), l = i._nextUint32(), u = i._nextUint64(), d = i._nextUint64(), f = new yr(e, K.length + r, 3 * a * 8, !0);
 	for (let t = 0; t < a; t++) n.levels.push({
 		levelData: new Uint8Array(e.buffer, e.byteOffset + f._nextUint64(), f._nextUint64()),
 		uncompressedByteLength: f._nextUint64()
 	});
-	let p = new W(e, o, s, !0), m = {
+	let p = new yr(e, o, s, !0), m = {
 		vendorId: p._skip(4)._nextUint16(),
 		descriptorType: p._nextUint16(),
 		versionNumber: p._nextUint16(),
@@ -3312,17 +3337,17 @@ function vr(e) {
 		64 & t.channelType ? (t.sampleLower = p._nextInt32(), t.sampleUpper = p._nextInt32()) : (t.sampleLower = p._nextUint32(), t.sampleUpper = p._nextUint32()), m.samples[e] = t;
 	}
 	n.dataFormatDescriptor.length = 0, n.dataFormatDescriptor.push(m);
-	let g = new W(e, c, l, !0);
+	let g = new yr(e, c, l, !0);
 	for (; g._offset < l;) {
-		let e = g._nextUint32(), t = g._scan(e), r = _r(t);
+		let e = g._nextUint32(), t = g._scan(e), r = br(t);
 		if (n.keyValue[r] = g._nextUint8Array(e - t.byteLength - 1), r.match(/^ktx/i)) {
-			let e = _r(n.keyValue[r]);
+			let e = br(n.keyValue[r]);
 			n.keyValue[r] = e.substring(0, e.lastIndexOf("\0"));
 		}
 		g._skip(e % 4 ? 4 - e % 4 : 0);
 	}
 	if (d <= 0) return n;
-	let _ = new W(e, u, d, !0), v = _._nextUint16(), y = _._nextUint16(), ee = _._nextUint32(), te = _._nextUint32(), ne = _._nextUint32(), re = _._nextUint32(), ie = [];
+	let _ = new yr(e, u, d, !0), v = _._nextUint16(), y = _._nextUint16(), ee = _._nextUint32(), te = _._nextUint32(), ne = _._nextUint32(), re = _._nextUint32(), ie = [];
 	for (let e = 0; e < a; e++) ie.push({
 		imageFlags: _._nextUint32(),
 		rgbSliceByteOffset: _._nextUint32(),
@@ -3343,25 +3368,25 @@ function vr(e) {
 }
 //#endregion
 //#region node_modules/three/examples/jsm/libs/zstddec.module.js
-var yr, K, br, xr = { env: { emscripten_notify_memory_growth: function(e) {
-	br = new Uint8Array(K.exports.memory.buffer);
-} } }, Sr = class {
+var Sr, q, Cr, wr = { env: { emscripten_notify_memory_growth: function(e) {
+	Cr = new Uint8Array(q.exports.memory.buffer);
+} } }, Tr = class {
 	init() {
-		return yr || (yr = typeof fetch < "u" ? fetch("data:application/wasm;base64," + Cr).then((e) => e.arrayBuffer()).then((e) => WebAssembly.instantiate(e, xr)).then(this._init) : WebAssembly.instantiate(Buffer.from(Cr, "base64"), xr).then(this._init), yr);
+		return Sr || (Sr = typeof fetch < "u" ? fetch("data:application/wasm;base64," + Er).then((e) => e.arrayBuffer()).then((e) => WebAssembly.instantiate(e, wr)).then(this._init) : WebAssembly.instantiate(Buffer.from(Er, "base64"), wr).then(this._init), Sr);
 	}
 	_init(e) {
-		K = e.instance, xr.env.emscripten_notify_memory_growth(0);
+		q = e.instance, wr.env.emscripten_notify_memory_growth(0);
 	}
 	decode(e, t = 0) {
-		if (!K) throw Error("ZSTDDecoder: Await .init() before decoding.");
-		let n = e.byteLength, r = K.exports.malloc(n);
-		br.set(e, r), t ||= Number(K.exports.ZSTD_findDecompressedSize(r, n));
-		let i = K.exports.malloc(t), a = K.exports.ZSTD_decompress(i, t, r, n), o = br.slice(i, i + a);
-		return K.exports.free(r), K.exports.free(i), o;
+		if (!q) throw Error("ZSTDDecoder: Await .init() before decoding.");
+		let n = e.byteLength, r = q.exports.malloc(n);
+		Cr.set(e, r), t ||= Number(q.exports.ZSTD_findDecompressedSize(r, n));
+		let i = q.exports.malloc(t), a = q.exports.ZSTD_decompress(i, t, r, n), o = Cr.slice(i, i + a);
+		return q.exports.free(r), q.exports.free(i), o;
 	}
-}, Cr = "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IAMNACAEQQNxBEADQCACRQ0FIAAgAkF/aiICaiIDIAEgAmotAAA6AAAgA0EDcQ0ACwsgAkEDTQ0AA0AgACACQXxqIgJqIAEgAmooAgA2AgAgAkEDSw0ACwsgAkUNAgNAIAAgAkF/aiICaiABIAJqLQAAOgAAIAINAAsMAgsgAkEDTQ0AIAIhBANAIAMgASgCADYCACABQQRqIQEgA0EEaiEDIARBfGoiBEEDSw0ACyACQQNxIQILIAJFDQADQCADIAEtAAA6AAAgA0EBaiEDIAFBAWohASACQX9qIgINAAsLIAAL8wICAn8BfgJAIAJFDQAgACACaiIDQX9qIAE6AAAgACABOgAAIAJBA0kNACADQX5qIAE6AAAgACABOgABIANBfWogAToAACAAIAE6AAIgAkEHSQ0AIANBfGogAToAACAAIAE6AAMgAkEJSQ0AIABBACAAa0EDcSIEaiIDIAFB/wFxQYGChAhsIgE2AgAgAyACIARrQXxxIgRqIgJBfGogATYCACAEQQlJDQAgAyABNgIIIAMgATYCBCACQXhqIAE2AgAgAkF0aiABNgIAIARBGUkNACADIAE2AhggAyABNgIUIAMgATYCECADIAE2AgwgAkFwaiABNgIAIAJBbGogATYCACACQWhqIAE2AgAgAkFkaiABNgIAIAQgA0EEcUEYciIEayICQSBJDQAgAa0iBUIghiAFhCEFIAMgBGohAQNAIAEgBTcDGCABIAU3AxAgASAFNwMIIAEgBTcDACABQSBqIQEgAkFgaiICQR9LDQALCyAACy8BAn8gACgCBCAAKAIAQQJ0aiICLQACIQMgACACLwEAIAEgAi0AAxAIajYCACADCy8BAn8gACgCBCAAKAIAQQJ0aiICLQACIQMgACACLwEAIAEgAi0AAxAFajYCACADCx8AIAAgASACKAIEEAg2AgAgARAEGiAAIAJBCGo2AgQLCAAgAGdBH3MLugUBDX8jAEEQayIKJAACfyAEQQNNBEAgCkEANgIMIApBDGogAyAEEAsaIAAgASACIApBDGpBBBAVIgBBbCAAEAMbIAAgACAESxsMAQsgAEEAIAEoAgBBAXRBAmoQECENQVQgAygAACIGQQ9xIgBBCksNABogAiAAQQVqNgIAIAMgBGoiAkF8aiEMIAJBeWohDiACQXtqIRAgAEEGaiELQQQh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ASIDNgLE4AEgACgCvOABIQQgACABNgK84AEgACABIAJqNgK44AEgACABIAQgA2tqNgLA4AELpgEBAX8gACAAKALs4QEQFjYCyOABIABCADcD+OABIABCADcDuOABIABBwOABakIANwMAIABBqNAAaiIBQYyAgOAANgIAIABBADYCmOIBIABCADcDiOEBIABCAzcDgOEBIABBrNABakHgEikCADcCACAAQbTQAWpB6BIoAgA2AgAgACABNgIMIAAgAEGYIGo2AgggACAAQaAwajYCBCAAIABBEGo2AgALYQEBf0G4fyEDAkAgAUEDSQ0AIAIgABAhIgFBA3YiADYCCCACIAFBAXE2AgQgAiABQQF2QQNxIgM2AgACQCADQX9qIgFBAksNAAJAIAFBAWsOAgEAAgtBbA8LIAAhAwsgAwsMACAAIAEgAkEAEC4LiAQCA38CfiADEBYhBCAAQQBBKBAQIQAgBCACSwRAIAQPCyABRQRAQX8PCwJAAkAgA0EBRg0AIAEoAAAiBkGo6r5pRg0AQXYhAyAGQXBxQdDUtMIBRw0BQQghAyACQQhJDQEgAEEAQSgQECEAIAEoAAQhASAAQQE2AhQgACABrTcDAEEADwsgASACIAMQLyIDIAJLDQAgACADNgIYQXIhAyABIARqIgVBf2otAAAiAkEIcQ0AIAJBIHEiBkUEQEFwIQMgBS0AACIFQacBSw0BIAVBB3GtQgEgBUEDdkEKaq2GIgdCA4h+IAd8IQggBEEBaiEECyACQQZ2IQMgAkECdiEFAkAgAkEDcUF/aiICQQJLBEBBACECDAELAkACQAJAIAJBAWsOAgECAAsgASAEai0AACECIARBAWohBAwCCyABIARqLwAAIQIgBEECaiEEDAELIAEgBGooAAAhAiAEQQRqIQQLIAVBAXEhBQJ+AkACQAJAIANBf2oiA0ECTQRAIANBAWsOAgIDAQtCfyAGRQ0DGiABIARqMQAADAMLIAEgBGovAACtQoACfAwCCyABIARqKAAArQwBCyABIARqKQAACyEHIAAgBTYCICAAIAI2AhwgACAHNwMAQQAhAyAAQQA2AhQgACAHIAggBhsiBzcDCCAAIAdCgIAIIAdCgIAIVBs+AhALIAMLWwEBf0G4fyEDIAIQFiICIAFNBH8gACACakF/ai0AACIAQQNxQQJ0QaAeaigCACACaiAAQQZ2IgFBAnRBsB5qKAIAaiAAQSBxIgBFaiABRSAAQQV2cWoFQbh/CwsdACAAKAKQ4gEQWiAAQQA2AqDiASAAQgA3A5DiAQu1AwEFfyMAQZACayIKJABBuH8hBgJAIAVFDQAgBCwAACIIQf8BcSEHAkAgCEF/TARAIAdBgn9qQQF2IgggBU8NAkFsIQYgB0GBf2oiBUGAAk8NAiAEQQFqIQdBACEGA0AgBiAFTwRAIAUhBiAIIQcMAwUgACAGaiAHIAZBAXZqIgQtAABBBHY6AAAgACAGQQFyaiAELQAAQQ9xOgAAIAZBAmohBgwBCwAACwALIAcgBU8NASAAIARBAWogByAKEFMiBhADDQELIAYhBEEAIQYgAUEAQTQQECEJQQAhBQNAIAQgBkcEQCAAIAZqIggtAAAiAUELSwRAQWwhBgwDBSAJIAFBAnRqIgEgASgCAEEBajYCACAGQQFqIQZBASAILQAAdEEBdSAFaiEFDAILAAsLQWwhBiAFRQ0AIAUQFEEBaiIBQQxLDQAgAyABNgIAQQFBASABdCAFayIDEBQiAXQgA0cNACAAIARqIAFBAWoiADoAACAJIABBAnRqIgAgACgCAEEBajYCACAJKAIEIgBBAkkgAEEBcXINACACIARBAWo2AgAgB0EBaiEGCyAKQZACaiQAIAYLxhEBDH8jAEHwAGsiBSQAQWwhCwJAIANBCkkNACACLwAAIQogAi8AAiEJIAIvAAQhByAFQQhqIAQQDgJAIAMgByAJIApqakEGaiIMSQ0AIAUtAAohCCAFQdgAaiACQQZqIgIgChAGIgsQAw0BIAVBQGsgAiAKaiICIAkQBiILEAMNASAFQShqIAIgCWoiAiAHEAYiCxADDQEgBUEQaiACIAdqIAMgDGsQBiILEAMNASAAIAFqIg9BfWohECAEQQRqIQZBASELIAAgAUEDakECdiIDaiIMIANqIgIgA2oiDiEDIAIhBCAMIQcDQCALIAMgEElxBEAgACAGIAVB2ABqIAgQAkECdGoiCS8BADsAACAFQdgAaiAJLQACEAEgCS0AAyELIAcgBiAFQUBrIAgQAkECdGoiCS8BADsAACAFQUBrIAktAAIQASAJLQADIQogBCAGIAVBKGogCBACQQJ0aiIJLwEAOwAAIAVBKGogCS0AAhABIAktAAMhCSADIAYgBUEQaiAIEAJBAnRqIg0vAQA7AAAgBUEQaiANLQACEAEgDS0AAyENIAAgC2oiCyAGIAVB2ABqIAgQAkECdGoiAC8BADsAACAFQdgAaiAALQACEAEgAC0AAyEAIAcgCmoiCiAGIAVBQGsgCBACQQJ0aiIHLwEAOwAAIAVBQGsgBy0AAhABIActAAMhByAEIAlqIgkgBiAFQShqIAgQAkECdGoiBC8BADsAACAFQShqIAQtAAIQASAELQADIQQgAyANaiIDIAYgBUEQaiAIEAJBAnRqIg0vAQA7AAAgBUEQaiANLQACEAEgACALaiEAIAcgCmohByAEIAlqIQQgAyANLQADaiEDIAVB2ABqEA0gBUFAaxANciAFQShqEA1yIAVBEGoQDXJFIQsMAQsLIAQgDksgByACS3INAEFsIQsgACAMSw0BIAxBfWohCQNAQQAgACAJSSAFQdgAahAEGwRAIAAgBiAFQdgAaiAIEAJBAnRqIgovAQA7AAAgBUHYAGogCi0AAhABIAAgCi0AA2oiACAGIAVB2ABqIAgQAkECdGoiCi8BADsAACAFQdgAaiAKLQACEAEgACAKLQADaiEADAEFIAxBfmohCgNAIAVB2ABqEAQgACAKS3JFBEAgACAGIAVB2ABqIAgQAkECdGoiCS8BADsAACAFQdgAaiAJLQACEAEgACAJLQADaiEADAELCwNAIAAgCk0EQCAAIAYgBUHYAGogCBACQQJ0aiIJLwEAOwAAIAVB2ABqIAktAAIQASAAIAktAANqIQAMAQsLAkAgACAMTw0AIAAgBiAFQdgAaiAIEAIiAEECdGoiDC0AADoAACAMLQADQQFGBEAgBUHYAGogDC0AAhABDAELIAUoAlxBH0sNACAFQdgAaiAGIABBAnRqLQACEAEgBSgCXEEhSQ0AIAVBIDYCXAsgAkF9aiEMA0BBACAHIAxJIAVBQGsQBBsEQCAHIAYgBUFAayAIEAJBAnRqIgAvAQA7AAAgBUFAayAALQACEAEgByAALQADaiIAIAYgBUFAayAIEAJBAnRqIgcvAQA7AAAgBUFAayAHLQACEAEgACAHLQADaiEHDAEFIAJBfmohDANAIAVBQGsQBCAHIAxLckUEQCAHIAYgBUFAayAIEAJBAnRqIgAvAQA7AAAgBUFAayAALQACEAEgByAALQADaiEHDAELCwNAIAcgDE0EQCAHIAYgBUFAayAIEAJBAnRqIgAvAQA7AAAgBUFAayAALQACEAEgByAALQADaiEHDAELCwJAIAcgAk8NACAHIAYgBUFAayAIEAIiAEECdGoiAi0AADoAACACLQADQQFGBEAgBUFAayACLQACEAEMAQsgBSgCREEfSw0AIAVBQGsgBiAAQQJ0ai0AAhABIAUoAkRBIUkNACAFQSA2AkQLIA5BfWohAgNAQQAgBCACSSAFQShqEAQbBEAgBCAGIAVBKGogCBACQQJ0aiIALwEAOwAAIAVBKGogAC0AAhABIAQgAC0AA2oiACAGIAVBKGogCBACQQJ0aiIELwEAOwAAIAVBKGogBC0AAhABIAAgBC0AA2ohBAwBBSAOQX5qIQIDQCAFQShqEAQgBCACS3JFBEAgBCAGIAVBKGogCBACQQJ0aiIALwEAOwAAIAVBKGogAC0AAhABIAQgAC0AA2ohBAwBCwsDQCAEIAJNBEAgBCAGIAVBKGogCBACQQJ0aiIALwEAOwAAIAVBKGogAC0AAhABIAQgAC0AA2ohBAwBCwsCQCAEIA5PDQAgBCAGIAVBKGogCBACIgBBAnRqIgItAAA6AAAgAi0AA0EBRgRAIAVBKGogAi0AAhABDAELIAUoAixBH0sNACAFQShqIAYgAEECdGotAAIQASAFKAIsQSFJDQAgBUEgNgIsCwNAQQAgAyAQSSAFQRBqEAQbBEAgAyAGIAVBEGogCBACQQJ0aiIALwEAOwAAIAVBEGogAC0AAhABIAMgAC0AA2oiACAGIAVBEGogCBACQQJ0aiICLwEAOwAAIAVBEGogAi0AAhABIAAgAi0AA2ohAwwBBSAPQX5qIQIDQCAFQRBqEAQgAyACS3JFBEAgAyAGIAVBEGogCBACQQJ0aiIALwEAOwAAIAVBEGogAC0AAhABIAMgAC0AA2ohAwwBCwsDQCADIAJNBEAgAyAGIAVBEGogCBACQQJ0aiIALwEAOwAAIAVBEGogAC0AAhABIAMgAC0AA2ohAwwBCwsCQCADIA9PDQAgAyAGIAVBEGogCBACIgBBAnRqIgItAAA6AAAgAi0AA0EBRgRAIAVBEGogAi0AAhABDAELIAUoAhRBH0sNACAFQRBqIAYgAEECdGotAAIQASAFKAIUQSFJDQAgBUEgNgIUCyABQWwgBUHYAGoQCiAFQUBrEApxIAVBKGoQCnEgBUEQahAKcRshCwwJCwAACwALAAALAAsAAAsACwAACwALQWwhCwsgBUHwAGokACALC7UEAQ5/IwBBEGsiBiQAIAZBBGogABAOQVQhBQJAIARB3AtJDQAgBi0ABCEHIANB8ARqQQBB7AAQECEIIAdBDEsNACADQdwJaiIJIAggBkEIaiAGQQxqIAEgAhAxIhAQA0UEQCAGKAIMIgQgB0sNASADQdwFaiEPIANBpAVqIREgAEEEaiESIANBqAVqIQEgBCEFA0AgBSICQX9qIQUgCCACQQJ0aigCAEUNAAsgAkEBaiEOQQEhBQNAIAUgDk9FBEAgCCAFQQJ0IgtqKAIAIQwgASALaiAKNgIAIAVBAWohBSAKIAxqIQoMAQsLIAEgCjYCAEEAIQUgBigCCCELA0AgBSALRkUEQCABIAUgCWotAAAiDEECdGoiDSANKAIAIg1BAWo2AgAgDyANQQF0aiINIAw6AAEgDSAFOgAAIAVBAWohBQwBCwtBACEBIANBADYCqAUgBEF/cyAHaiEJQQEhBQNAIAUgDk9FBEAgCCAFQQJ0IgtqKAIAIQwgAyALaiABNgIAIAwgBSAJanQgAWohASAFQQFqIQUMAQsLIAcgBEEBaiIBIAJrIgRrQQFqIQgDQEEBIQUgBCAIT0UEQANAIAUgDk9FBEAgBUECdCIJIAMgBEE0bGpqIAMgCWooAgAgBHY2AgAgBUEBaiEFDAELCyAEQQFqIQQMAQsLIBIgByAPIAogESADIAIgARBkIAZBAToABSAGIAc6AAYgACAGKAIENgIACyAQIQULIAZBEGokACAFC8ENAQt/IwBB8ABrIgUkAEFsIQkCQCADQQpJDQAgAi8AACEKIAIvAAIhDCACLwAEIQYgBUEIaiAEEA4CQCADIAYgCiAMampBBmoiDUkNACAFLQAKIQcgBUHYAGogAkEGaiICIAoQBiIJEAMNASAFQUBrIAIgCmoiAiAMEAYiCRADDQEgBUEoaiACIAxqIgIgBhAGIgkQAw0BIAVBEGogAiAGaiADIA1rEAYiCRADDQEgACABaiIOQX1qIQ8gBEEEaiEGQQEhCSAAIAFBA2pBAnYiAmoiCiACaiIMIAJqIg0hAyAMIQQgCiECA0AgCSADIA9JcQRAIAYgBUHYAGogBxACQQF0aiIILQAAIQsgBUHYAGogCC0AARABIAAgCzoAACAGIAVBQGsgBxACQQF0aiIILQAAIQsgBUFAayAILQABEAEgAiALOgAAIAYgBUEoaiAHEAJBAXRqIggtAAAhCyAFQShqIAgtAAEQASAEIAs6AAAgBiAFQRBqIAcQAkEBdGoiCC0AACELIAVBEGogCC0AARABIAMgCzoAACAGIAVB2ABqIAcQAkEBdGoiCC0AACELIAVB2ABqIAgtAAEQASAAIAs6AAEgBiAFQUBrIAcQAkEBdGoiCC0AACELIAVBQGsgCC0AARABIAIgCzoAASAGIAVBKGogBxACQQF0aiIILQAAIQsgBUEoaiAILQABEAEgBCALOgABIAYgBUEQaiAHEAJBAXRqIggtAAAhCyAFQRBqIAgtAAEQASADIAs6AAEgA0ECaiEDIARBAmohBCACQQJqIQIgAEECaiEAIAkgBUHYAGoQDUVxIAVBQGsQDUVxIAVBKGoQDUVxIAVBEGoQDUVxIQkMAQsLIAQgDUsgAiAMS3INAEFsIQkgACAKSw0BIApBfWohCQNAIAVB2ABqEAQgACAJT3JFBEAgBiAFQdgAaiAHEAJBAXRqIggtAAAhCyAFQdgAaiAILQABEAEgACALOgAAIAYgBUHYAGogBxACQQF0aiIILQAAIQsgBUHYAGogCC0AARABIAAgCzoAASAAQQJqIQAMAQsLA0AgBUHYAGoQBCAAIApPckUEQCAGIAVB2ABqIAcQAkEBdGoiCS0AACEIIAVB2ABqIAktAAEQASAAIAg6AAAgAEEBaiEADAELCwNAIAAgCkkEQCAGIAVB2ABqIAcQAkEBdGoiCS0AACEIIAVB2ABqIAktAAEQASAAIAg6AAAgAEEBaiEADAELCyAMQX1qIQADQCAFQUBrEAQgAiAAT3JFBEAgBiAFQUBrIAcQAkEBdGoiCi0AACEJIAVBQGsgCi0AARABIAIgCToAACAGIAVBQGsgBxACQQF0aiIKLQAAIQkgBUFAayAKLQABEAEgAiAJOgABIAJBAmohAgwBCwsDQCAFQUBrEAQgAiAMT3JFBEAgBiAFQUBrIAcQAkEBdGoiAC0AACEKIAVBQGsgAC0AARABIAIgCjoAACACQQFqIQIMAQsLA0AgAiAMSQRAIAYgBUFAayAHEAJBAXRqIgAtAAAhCiAFQUBrIAAtAAEQASACIAo6AAAgAkEBaiECDAELCyANQX1qIQADQCAFQShqEAQgBCAAT3JFBEAgBiAFQShqIAcQAkEBdGoiAi0AACEKIAVBKGogAi0AARABIAQgCjoAACAGIAVBKGogBxACQQF0aiICLQAAIQogBUEoaiACLQABEAEgBCAKOgABIARBAmohBAwBCwsDQCAFQShqEAQgBCANT3JFBEAgBiAFQShqIAcQAkEBdGoiAC0AACECIAVBKGogAC0AARABIAQgAjoAACAEQQFqIQQMAQsLA0AgBCANSQRAIAYgBUEoaiAHEAJBAXRqIgAtAAAhAiAFQShqIAAtAAEQASAEIAI6AAAgBEEBaiEEDAELCwNAIAVBEGoQBCADIA9PckUEQCAGIAVBEGogBxACQQF0aiIALQAAIQIgBUEQaiAALQABEAEgAyACOgAAIAYgBUEQaiAHEAJBAXRqIgAtAAAhAiAFQRBqIAAtAAEQASADIAI6AAEgA0ECaiEDDAELCwNAIAVBEGoQBCADIA5PckUEQCAGIAVBEGogBxACQQF0aiIALQAAIQIgBUEQaiAALQABEAEgAyACOgAAIANBAWohAwwBCwsDQCADIA5JBEAgBiAFQRBqIAcQAkEBdGoiAC0AACECIAVBEGogAC0AARABIAMgAjoAACADQQFqIQMMAQsLIAFBbCAFQdgAahAKIAVBQGsQCnEgBUEoahAKcSAFQRBqEApxGyEJDAELQWwhCQsgBUHwAGokACAJC8oCAQR/IwBBIGsiBSQAIAUgBBAOIAUtAAIhByAFQQhqIAIgAxAGIgIQA0UEQCAEQQRqIQIgACABaiIDQX1qIQQDQCAFQQhqEAQgACAET3JFBEAgAiAFQQhqIAcQAkEBdGoiBi0AACEIIAVBCGogBi0AARABIAAgCDoAACACIAVBCGogBxACQQF0aiIGLQAAIQggBUEIaiAGLQABEAEgACAIOgABIABBAmohAAwBCwsDQCAFQQhqEAQgACADT3JFBEAgAiAFQQhqIAcQAkEBdGoiBC0AACEGIAVBCGogBC0AARABIAAgBjoAACAAQQFqIQAMAQsLA0AgACADT0UEQCACIAVBCGogBxACQQF0aiIELQAAIQYgBUEIaiAELQABEAEgACAGOgAAIABBAWohAAwBCwsgAUFsIAVBCGoQChshAgsgBUEgaiQAIAILtgMBCX8jAEEQayIGJAAgBkEANgIMIAZBADYCCEFUIQQCQAJAIANBQGsiDCADIAZBCGogBkEMaiABIAIQMSICEAMNACAGQQRqIAAQDiAGKAIMIgcgBi0ABEEBaksNASAAQQRqIQogBkEAOgAFIAYgBzoABiAAIAYoAgQ2AgAgB0EBaiEJQQEhBANAIAQgCUkEQCADIARBAnRqIgEoAgAhACABIAU2AgAgACAEQX9qdCAFaiEFIARBAWohBAwBCwsgB0EBaiEHQQAhBSAGKAIIIQkDQCAFIAlGDQEgAyAFIAxqLQAAIgRBAnRqIgBBASAEdEEBdSILIAAoAgAiAWoiADYCACAHIARrIQhBACEEAkAgC0EDTQRAA0AgBCALRg0CIAogASAEakEBdGoiACAIOgABIAAgBToAACAEQQFqIQQMAAALAAsDQCABIABPDQEgCiABQQF0aiIEIAg6AAEgBCAFOgAAIAQgCDoAAyAEIAU6AAIgBCAIOgAFIAQgBToABCAEIAg6AAcgBCAFOgAGIAFBBGohAQwAAAsACyAFQQFqIQUMAAALAAsgAiEECyAGQRBqJAAgBAutAQECfwJAQYQgKAIAIABHIAAoAgBBAXYiAyABa0F4aiICQXhxQQhHcgR/IAIFIAMQJ0UNASACQQhqC0EQSQ0AIAAgACgCACICQQFxIAAgAWpBD2pBeHEiASAAa0EBdHI2AgAgASAANgIEIAEgASgCAEEBcSAAIAJBAXZqIAFrIgJBAXRyNgIAQYQgIAEgAkH/////B3FqQQRqQYQgKAIAIABGGyABNgIAIAEQJQsLygIBBX8CQAJAAkAgAEEIIABBCEsbZ0EfcyAAaUEBR2oiAUEESSAAIAF2cg0AIAFBAnRB/B5qKAIAIgJFDQADQCACQXhqIgMoAgBBAXZBeGoiBSAATwRAIAIgBUEIIAVBCEsbZ0Efc0ECdEGAH2oiASgCAEYEQCABIAIoAgQ2AgALDAMLIARBHksNASAEQQFqIQQgAigCBCICDQALC0EAIQMgAUEgTw0BA0AgAUECdEGAH2ooAgAiAkUEQCABQR5LIQIgAUEBaiEBIAJFDQEMAwsLIAIgAkF4aiIDKAIAQQF2QXhqIgFBCCABQQhLG2dBH3NBAnRBgB9qIgEoAgBGBEAgASACKAIENgIACwsgAigCACIBBEAgASACKAIENgIECyACKAIEIgEEQCABIAIoAgA2AgALIAMgAygCAEEBcjYCACADIAAQNwsgAwvhCwINfwV+IwBB8ABrIgckACAHIAAoAvDhASIINgJcIAEgAmohDSAIIAAoAoDiAWohDwJAAkAgBUUEQCABIQQMAQsgACgCxOABIRAgACgCwOABIREgACgCvOABIQ4gAEEBNgKM4QFBACEIA0AgCEEDRwRAIAcgCEECdCICaiAAIAJqQazQAWooAgA2AkQgCEEBaiEIDAELC0FsIQwgB0EYaiADIAQQBhADDQEgB0EsaiAHQRhqIAAoAgAQEyAHQTRqIAdBGGogACgCCBATIAdBPGogB0EYaiAAKAIEEBMgDUFgaiESIAEhBEEAIQwDQCAHKAIwIAcoAixBA3RqKQIAIhRCEIinQf8BcSEIIAcoAkAgBygCPEEDdGopAgAiFUIQiKdB/wFxIQsgBygCOCAHKAI0QQN0aikCACIWQiCIpyEJIBVCIIghFyAUQiCIpyECAkAgFkIQiKdB/wFxIgNBAk8EQAJAIAZFIANBGUlyRQRAIAkgB0EYaiADQSAgBygCHGsiCiAKIANLGyIKEAUgAyAKayIDdGohCSAHQRhqEAQaIANFDQEgB0EYaiADEAUgCWohCQwBCyAHQRhqIAMQBSAJaiEJIAdBGGoQBBoLIAcpAkQhGCAHIAk2AkQgByAYNwNIDAELAkAgA0UEQCACBEAgBygCRCEJDAMLIAcoAkghCQwBCwJAAkAgB0EYakEBEAUgCSACRWpqIgNBA0YEQCAHKAJEQX9qIgMgA0VqIQkMAQsgA0ECdCAHaigCRCIJIAlFaiEJIANBAUYNAQsgByAHKAJINgJMCwsgByAHKAJENgJIIAcgCTYCRAsgF6chAyALBEAgB0EYaiALEAUgA2ohAwsgCCALakEUTwRAIAdBGGoQBBoLIAgEQCAHQRhqIAgQBSACaiECCyAHQRhqEAQaIAcgB0EYaiAUQhiIp0H/AXEQCCAUp0H//wNxajYCLCAHIAdBGGogFUIYiKdB/wFxEAggFadB//8DcWo2AjwgB0EYahAEGiAHIAdBGGogFkIYiKdB/wFxEAggFqdB//8DcWo2AjQgByACNgJgIAcoAlwhCiAHIAk2AmggByADNgJkAkACQAJAIAQgAiADaiILaiASSw0AIAIgCmoiEyAPSw0AIA0gBGsgC0Egak8NAQsgByAHKQNoNwMQIAcgBykDYDcDCCAEIA0gB0EIaiAHQdwAaiAPIA4gESAQEB4hCwwBCyACIARqIQggBCAKEAcgAkERTwRAIARBEGohAgNAIAIgCkEQaiIKEAcgAkEQaiICIAhJDQALCyAIIAlrIQIgByATNgJcIAkgCCAOa0sEQCAJIAggEWtLBEBBbCELDAILIBAgAiAOayICaiIKIANqIBBNBEAgCCAKIAMQDxoMAgsgCCAKQQAgAmsQDyEIIAcgAiADaiIDNgJkIAggAmshCCAOIQILIAlBEE8EQCADIAhqIQMDQCAIIAIQByACQRBqIQIgCEEQaiIIIANJDQALDAELAkAgCUEHTQRAIAggAi0AADoAACAIIAItAAE6AAEgCCACLQACOgACIAggAi0AAzoAAyAIQQRqIAIgCUECdCIDQcAeaigCAGoiAhAXIAIgA0HgHmooAgBrIQIgBygCZCEDDAELIAggAhAMCyADQQlJDQAgAyAIaiEDIAhBCGoiCCACQQhqIgJrQQ9MBEADQCAIIAIQDCACQQhqIQIgCEEIaiIIIANJDQAMAgALAAsDQCAIIAIQByACQRBqIQIgCEEQaiIIIANJDQALCyAHQRhqEAQaIAsgDCALEAMiAhshDCAEIAQgC2ogAhshBCAFQX9qIgUNAAsgDBADDQFBbCEMIAdBGGoQBEECSQ0BQQAhCANAIAhBA0cEQCAAIAhBAnQiAmpBrNABaiACIAdqKAJENgIAIAhBAWohCAwBCwsgBygCXCEIC0G6fyEMIA8gCGsiACANIARrSw0AIAQEfyAEIAggABALIABqBUEACyABayEMCyAHQfAAaiQAIAwLkRcCFn8FfiMAQdABayIHJAAgByAAKALw4QEiCDYCvAEgASACaiESIAggACgCgOIBaiETAkACQCAFRQRAIAEhAwwBCyAAKALE4AEhESAAKALA4AEhFSAAKAK84AEhDyAAQQE2AozhAUEAIQgDQCAIQQNHBEAgByAIQQJ0IgJqIAAgAmpBrNABaigCADYCVCAIQQFqIQgMAQsLIAcgETYCZCAHIA82AmAgByABIA9rNgJoQWwhECAHQShqIAMgBBAGEAMNASAFQQQgBUEESBshFyAHQTxqIAdBKGogACgCABATIAdBxABqIAdBKGogACgCCBATIAdBzABqIAdB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IAdB0AFqJAAgEAslACAAQgA3AgAgAEEAOwEIIABBADoACyAAIAE2AgwgACACOgAKC7QFAQN/IwBBMGsiBCQAIABB/wFqIgVBfWohBgJAIAMvAQIEQCAEQRhqIAEgAhAGIgIQAw0BIARBEGogBEEYaiADEBwgBEEIaiAEQRhqIAMQHCAAIQMDQAJAIARBGGoQBCADIAZPckUEQCADIARBEGogBEEYahASOgAAIAMgBEEIaiAEQRhqEBI6AAEgBEEYahAERQ0BIANBAmohAwsgBUF+aiEFAn8DQEG6fyECIAMiASAFSw0FIAEgBEEQaiAEQRhqEBI6AAAgAUEBaiEDIARBGGoQBEEDRgRAQQIhAiAEQQhqDAILIAMgBUsNBSABIARBCGogBEEYahASOgABIAFBAmohA0EDIQIgBEEYahAEQQNHDQALIARBEGoLIQUgAyAFIARBGGoQEjoAACABIAJqIABrIQIMAwsgAyAEQRBqIARBGGoQEjoAAiADIARBCGogBEEYahASOgADIANBBGohAwwAAAsACyAEQRhqIAEgAhAGIgIQAw0AIARBEGogBEEYaiADEBwgBEEIaiAEQRhqIAMQHCAAIQMDQAJAIARBGGoQBCADIAZPckUEQCADIARBEGogBEEYahAROgAAIAMgBEEIaiAEQRhqEBE6AAEgBEEYahAERQ0BIANBAmohAwsgBUF+aiEFAn8DQEG6fyECIAMiASAFSw0EIAEgBEEQaiAEQRhqEBE6AAAgAUEBaiEDIARBGGoQBEEDRgRAQQIhAiAEQQhqDAILIAMgBUsNBCABIARBCGogBEEYahAROgABIAFBAmohA0EDIQIgBEEYahAEQQNHDQALIARBEGoLIQUgAyAFIARBGGoQEToAACABIAJqIABrIQIMAgsgAyAEQRBqIARBGGoQEToAAiADIARBCGogBEEYahAROgADIANBBGohAwwAAAsACyAEQTBqJAAgAgtpAQF/An8CQAJAIAJBB00NACABKAAAQbfIwuF+Rw0AIAAgASgABDYCmOIBQWIgAEEQaiABIAIQPiIDEAMNAhogAEKBgICAEDcDiOEBIAAgASADaiACIANrECoMAQsgACABIAIQKgtBAAsLrQMBBn8jAEGAAWsiAyQAQWIhCAJAIAJBCUkNACAAQZjQAGogAUEIaiIEIAJBeGogAEGY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wOABCwutAgIEfwF+IwBBQGoiBCQAAkACQCACQQhJDQAgASgAAEFwcUHQ1LTCAUcNACABIAIQIiEBIABCADcDCCAAQQA2AgQgACABNgIADAELIARBGGogASACEC0iAxADBEAgACADEBoMAQsgAwRAIABBuH8QGgwBCyACIAQoAjAiA2shAiABIANqIQMDQAJAIAAgAyACIARBCGoQLCIFEAMEfyAFBSACIAVBA2oiBU8NAUG4fwsQGgwCCyAGQQFqIQYgAiAFayECIAMgBWohAyAEKAIMRQ0ACyAEKAI4BEAgAkEDTQRAIABBuH8QGgwCCyADQQRqIQMLIAQoAighAiAEKQMYIQcgAEEANgIEIAAgAyABazYCACAAIAIgBmytIAcgB0J/URs3AwgLIARBQGskAAslAQF/IwBBEGsiAiQAIAIgACABEFEgAigCACEAIAJBEGokACAAC30BBH8jAEGQBGsiBCQAIARB/wE2AggCQCAEQRBqIARBCGogBEEMaiABIAIQFSIGEAMEQCAGIQUMAQtBVCEFIAQoAgwiB0EGSw0AIAMgBEEQaiAEKAIIIAcQQSIFEAMNACAAIAEgBmogAiAGayADEDwhBQsgBEGQBGokACAFC4cBAgJ/An5BABAWIQMCQANAIAEgA08EQAJAIAAoAABBcHFB0NS0wgFGBEAgACABECIiAhADRQ0BQn4PCyAAIAEQVSIEQn1WDQMgBCAFfCIFIARUIQJCfiEEIAINAyAAIAEQUiICEAMNAwsgASACayEBIAAgAmohAAwBCwtCfiAFIAEbIQQLIAQLPwIBfwF+IwBBMGsiAiQAAn5CfiACQQhqIAAgARAtDQAaQgAgAigCHEEBRg0AGiACKQMICyEDIAJBMGokACADC40BAQJ/IwBBMGsiASQAAkAgAEUNACAAKAKI4gENACABIABB/OEBaigCADYCKCABIAApAvThATcDICAAEDAgACgCqOIBIQIgASABKAIoNgIYIAEgASkDIDcDECACIAFBEGoQGyAAQQA2AqjiASABIAEoAig2AgggASABKQMgNwMAIAAgARAbCyABQTBqJAALKgECfyMAQRBrIgAkACAAQQA2AgggAEIANwMAIAAQWCEBIABBEGokACABC4cBAQN/IwBBEGsiAiQAAkAgACgCAEUgACgCBEVzDQAgAiAAKAIINgIIIAIgACkCADcDAAJ/IAIoAgAiAQRAIAIoAghBqOMJIAERBQAMAQtBqOMJECgLIgFFDQAgASAAKQIANwL04QEgAUH84QFqIAAoAgg2AgAgARBZIAEhAwsgAkEQaiQAIAMLywEBAn8jAEEgayIBJAAgAEGBgIDAADYCtOIBIABBADYCiOIBIABBADYC7OEBIABCADcDkOIBIABBADYCpOMJIABBADYC3OIBIABCADcCzOIBIABBADYCvOIBIABBADYCxOABIABCADcCnOIBIABBpOIBakIANwIAIABBrOIBakEANgIAIAFCADcCECABQgA3AhggASABKQMYNwMIIAEgASkDEDcDACABKAIIQQh2QQFxIQIgAEEANgLg4gEgACACNgKM4gEgAUEgaiQAC3YBA38jAEEwayIBJAAgAARAIAEgAEHE0AFqIgIoAgA2AiggASAAKQK80AE3AyAgACgCACEDIAEgAigCADYCGCABIAApArzQATcDECADIAFBEGoQGyABIAEoAig2AgggASABKQMgNwMAIAAgARAbCyABQTBqJAALzAEBAX8gACABKAK00AE2ApjiASAAIAEoAgQiAjYCwOABIAAgAjYCvOABIAAgAiABKAIIaiICNgK44AEgACACNgLE4AEgASgCuNABBEAgAEKBgICAEDcDiOEBIAAgAUGk0ABqNgIMIAAgAUGUIGo2AgggACABQZwwajYCBCAAIAFBDGo2AgAgAEGs0AFqIAFBqNABaigCADYCACAAQbDQAWogAUGs0AFqKAIANgIAIABBtNABaiABQbDQAWooAgA2AgAPCyAAQgA3A4jhAQs7ACACRQRAQbp/DwsgBEUEQEFsDwsgAiAEEGAEQCAAIAEgAiADIAQgBRBhDwsgACABIAIgAyAEIAUQZQtGAQF/IwBBEGsiBSQAIAVBCGogBBAOAn8gBS0ACQRAIAAgASACIAMgBBAyDAELIAAgASACIAMgBBA0CyEAIAVBEGokACAACzQAIAAgAyAEIAUQNiIFEAMEQCAFDwsgBSAESQR/IAEgAiADIAVqIAQgBWsgABA1BUG4fwsLRgEBfyMAQRBrIgUkACAFQQhqIAQQDgJ/IAUtAAkEQCAAIAEgAiADIAQQYgwBCyAAIAEgAiADIAQQNQshACAFQRBqJAAgAAtZAQF/QQ8hAiABIABJBEAgAUEE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", wr = "display-p3", Tr = "display-p3-linear", Er = /* @__PURE__ */ new WeakMap(), Dr = 0, Or, q = class e extends le {
+}, Er = "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IAMNACAEQQNxBEADQCACRQ0FIAAgAkF/aiICaiIDIAEgAmotAAA6AAAgA0EDcQ0ACwsgAkEDTQ0AA0AgACACQXxqIgJqIAEgAmooAgA2AgAgAkEDSw0ACwsgAkUNAgNAIAAgAkF/aiICaiABIAJqLQAAOgAAIAINAAsMAgsgAkEDTQ0AIAIhBANAIAMgASgCADYCACABQQRqIQEgA0EEaiEDIARBfGoiBEEDSw0ACyACQQNxIQILIAJFDQADQCADIAEtAAA6AAAgA0EBaiEDIAFBAWohASACQX9qIgINAAsLIAAL8wICAn8BfgJAIAJFDQAgACACaiIDQX9qIAE6AAAgACABOgAAIAJBA0kNACADQX5qIAE6AAAgACABOgABIANBfWogAToAACAAIAE6AAIgAkEHSQ0AIANBfGogAToAACAAIAE6AAMgAkEJSQ0AIABBACAAa0EDcSIEaiIDIAFB/wFxQYGChAhsIgE2AgAgAyACIARrQXxxIgRqIgJBfGogATYCACAEQQlJDQAgAyABNgIIIAMgATYCBCACQXhqIAE2AgAgAkF0aiABNgIAIARBGUkNACADIAE2AhggAyABNgIUIAMgATYCECADIAE2AgwgAkFwaiABNgIAIAJBbGogATYCACACQWhqIAE2AgAgAkFkaiABNgIAIAQgA0EEcUEYciIEayICQSBJDQAgAa0iBUIghiAFhCEFIAMgBGohAQNAIAEgBTcDGCABIAU3AxAgASAFNwMIIAEgBTcDACABQSBqIQEgAkFgaiICQR9LDQALCyAACy8BAn8gACgCBCAAKAIAQQJ0aiICLQACIQMgACACLwEAIAEgAi0AAxAIajYCACADCy8BAn8gACgCBCAAKAIAQQJ0aiICLQACIQMgACACLwEAIAEgAi0AAxAFajYCACADCx8AIAAgASACKAIEEAg2AgAgARAEGiAAIAJBCGo2AgQLCAAgAGdBH3MLugUBDX8jAEEQayIKJAACfyAEQQNNBEAgCkEANgIMIApBDGogAyAEEAsaIAAgASACIApBDGpBBBAVIgBBbCAAEAMbIAAgACAESxsMAQsgAEEAIAEoAgBBAXRBAmoQECENQVQgAygAACIGQQ9xIgBBCksNABogAiAAQQVqNgIAIAMgBGoiAkF8aiEMIAJBeWohDiACQXtqIRAgAEEGaiELQQQh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ASIDNgLE4AEgACgCvOABIQQgACABNgK84AEgACABIAJqNgK44AEgACABIAQgA2tqNgLA4AELpgEBAX8gACAAKALs4QEQFjYCyOABIABCADcD+OABIABCADcDuOABIABBwOABakIANwMAIABBqNAAaiIBQYyAgOAANgIAIABBADYCmOIBIABCADcDiOEBIABCAzcDgOEBIABBrNABakHgEikCADcCACAAQbTQAWpB6BIoAgA2AgAgACABNgIMIAAgAEGYIGo2AgggACAAQaAwajYCBCAAIABBEGo2AgALYQEBf0G4fyEDAkAgAUEDSQ0AIAIgABAhIgFBA3YiADYCCCACIAFBAXE2AgQgAiABQQF2QQNxIgM2AgACQCADQX9qIgFBAksNAAJAIAFBAWsOAgEAAgtBbA8LIAAhAwsgAwsMACAAIAEgAkEAEC4LiAQCA38CfiADEBYhBCAAQQBBKBAQIQAgBCACSwRAIAQPCyABRQRAQX8PCwJAAkAgA0EBRg0AIAEoAAAiBkGo6r5pRg0AQXYhAyAGQXBxQdDUtMIBRw0BQQghAyACQQhJDQEgAEEAQSgQECEAIAEoAAQhASAAQQE2AhQgACABrTcDAEEADwsgASACIAMQLyIDIAJLDQAgACADNgIYQXIhAyABIARqIgVBf2otAAAiAkEIcQ0AIAJBIHEiBkUEQEFwIQMgBS0AACIFQacBSw0BIAVBB3GtQgEgBUEDdkEKaq2GIgdCA4h+IAd8IQggBEEBaiEECyACQQZ2IQMgAkECdiEFAkAgAkEDcUF/aiICQQJLBEBBACECDAELAkACQAJAIAJBAWsOAgECAAsgASAEai0AACECIARBAWohBAwCCyABIARqLwAAIQIgBEECaiEEDAELIAEgBGooAAAhAiAEQQRqIQQLIAVBAXEhBQJ+AkACQAJAIANBf2oiA0ECTQRAIANBAWsOAgIDAQtCfyAGRQ0DGiABIARqMQAADAMLIAEgBGovAACtQoACfAwCCyABIARqKAAArQwBCyABIARqKQAACyEHIAAgBTYCICAAIAI2AhwgACAHNwMAQQAhAyAAQQA2AhQgACAHIAggBhsiBzcDCCAAIAdCgIAIIAdCgIAIVBs+AhALIAMLWwEBf0G4fyEDIAIQFiICIAFNBH8gACACakF/ai0AACIAQQNxQQJ0QaAeaigC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C0Egak8NAQsgByAHKQNoNwMQIAcgBykDYDcDCCAEIA0gB0EIaiAHQdwAaiAPIA4gESAQEB4hCwwBCyACIARqIQggBCAKEAcgAkERTwRAIARBEGohAgNAIAIgCkEQaiIKEAcgAkEQaiICIAhJDQALCyAIIAlrIQIgByATNgJcIAkgCCAOa0sEQCAJIAggEWtLBEBBbCELDAILIBAgAiAOayICaiIKIANqIBBNBEAgCCAKIAMQDxoMAgsgCCAKQQAgAmsQDyEIIAcgAiADaiIDNgJkIAggAmshCCAOIQILIAlBEE8EQCADIAhqIQMDQCAIIAIQByACQRBqIQIgCEEQaiIIIANJDQALDAELAkAgCUEHTQRAIAggAi0AADoAACAIIAItAAE6AAEgCCACLQACOgACIAggAi0AAzoAAyAIQQRqIAIgCUECdCIDQcAeaigCAGoiAhAXIAIgA0HgHmooAgBrIQIgBygCZCEDDAELIAggAhAMCyADQQlJDQAgAyAIaiEDIAhBCGoiCCACQQhqIgJrQQ9MBEADQCAIIAIQDCACQQhqIQIgCEEIaiIIIANJDQAMAgALAAsDQCAIIAIQByACQRBqIQIgCEEQaiIIIANJDQALCyAHQRhqEAQaIAsgDCALEAMiAhshDCAEIAQgC2ogAhshBCAFQX9qIgUNAAsgDBADDQFBbCEMIAdBGGoQBEECSQ0BQQAhCANAIAhBA0cEQCAAIAhBAnQiAmpBrNABaiACIAdqKAJENgIAIAhBAWohCAwBCwsgBygCXCEIC0G6fyEMIA8gCGsiACANIARrSw0AIAQEfyAEIAggABALIABqBUEACyABayEMCyAHQfAAaiQAIAwLkRcCFn8FfiMAQdABayIHJAAgByAAKALw4QEiCDYCvAEgASACaiESIAggACgCgOIBaiETAkACQCAFRQRAIAEhAwwBCyAAKALE4AEhESAAKALA4AEhFSAAKAK84AEhDyAAQQE2AozhAUEAIQgDQCAIQQNHBEAgByAIQQJ0IgJqIAAgAmpBrNABaigCADYCVCAIQQFqIQgMAQsLIAcgETYCZCAHIA82AmAgByABIA9rNgJoQWwhECAHQShqIAMgBBAGEAMNASAFQQQgBUEESBshFyAHQTxqIAdBKGogACgCABATIAdBxABqIAdBKGogACgCCBATIAdBzABqIAdBKGogACgCBBATQQAhBCAHQeAAaiEMIAdB5ABqIQoDQCAHQShqEARBAksgBCAXTnJFBEAgBygCQCAHKAI8QQN0aikCACIdQhCIp0H/AXEhCyAHKAJQIAcoAkxBA3RqKQIAIh5CEIinQf8BcSEJIAcoAkggBygCREEDdGopAgAiH0IgiKchCCAeQiCIISAgHUIgiKchAgJAIB9CEIinQf8BcSIDQQJPBEACQCAGRSADQRlJckUEQCAIIAdBKGogA0EgIAcoAixrIg0gDSADSxsiDRAFIAMgDWsiA3RqIQggB0EoahAEGiADRQ0BIAdBKGogAxAFIAhqIQgMAQsgB0EoaiADEAUgCGohCCAHQShqEAQaCyAHKQJUISEgByAINgJUIAcgITcDWAwBCwJAIANFBEAgAgRAIAcoAlQhCAwDCyAHKAJYIQgMAQsCQAJAIAdBKGpBARAFIAggAkVqaiIDQQNGBEAgBygCVEF/aiIDIANFaiEIDAELIANBAnQgB2ooAlQiCCAIRWohCCADQQFGDQELIAcgBygCWDYCXAsLIAcgBygCVDYCWCAHIAg2AlQLICCnIQMgCQRAIAdBKGogCRAFIANqIQMLIAkgC2pBFE8EQCAHQShqEAQaCyALBEAgB0EoaiALEAUgAmohAgsgB0EoahAEGiAHIAcoAmggAmoiCSADajYCaCAKIAwgCCAJSxsoAgAhDSAHIAdBKGogHUIYiKdB/wFxEAggHadB//8DcWo2AjwgByAHQShqIB5CGIinQf8BcRAIIB6nQf//A3FqNgJMIAdBKGoQBBogB0EoaiAfQhiIp0H/AXEQCCEOIAdB8ABqIARBBHRqIgsgCSANaiAIazYCDCALIAg2AgggCyADNgIEIAsgAjYCACAHIA4gH6dB//8DcWo2AkQgBEEBaiEEDAELCyAEIBdIDQEgEkFgaiEYIAdB4ABqIRogB0HkAGohGyABIQMDQCAHQShqEARBAksgBCAFTnJFBEAgBygCQCAHKAI8QQN0aikCACIdQhCIp0H/AXEhCyAHKAJQIAcoAkxBA3RqKQIAIh5CEIinQf8BcSEIIAcoAkggBygCREEDdGopAgAiH0IgiKchCSAeQiCIISAgHUIgiKchDAJAIB9CEIinQf8BcSICQQJPBEACQCAGRSACQRlJckUEQCAJIAdBKGogAkEgIAcoAixrIgogCiACSxsiChAFIAIgCmsiAnRqIQkgB0EoahAEGiACRQ0BIAdBKGogAhAFIAlqIQkMAQsgB0EoaiACEAUgCWohCSAHQShqEAQaCyAHKQJUISEgByAJNgJUIAcgITcDWAwBCwJAIAJFBEAgDARAIAcoAlQhCQwDCyAHKAJYIQkMAQsCQAJAIAdBKGpBARAFIAkgDEVqaiICQQNGBEAgBygCVEF/aiICIAJFaiEJDAELIAJBAnQgB2ooAlQiCSAJRWohCSACQQFGDQELIAcgBygCWDYCXAsLIAcgBygCVDYCWCAHIAk2AlQLICCnIRQgCARAIAdBKGogCBAFIBRqIRQLIAggC2pBFE8EQCAHQShqEAQaCyALBEAgB0EoaiALEAUgDGohDAsgB0EoahAEGiAHIAcoAmggDGoiGSAUajYCaCAbIBogCSAZSxsoAgAhHCAHIAdBKGogHUIYiKdB/wFxEAggHadB//8DcWo2AjwgByAHQShqIB5CGIinQf8BcRAIIB6nQf//A3FqNgJMIAdBKGoQBBogByAHQShqIB9CGIinQf8BcRAIIB+nQf//A3FqNgJEIAcgB0HwAGogBEEDcUEEdGoiDSkDCCIdNwPIASAHIA0pAwAiHjcDwAECQAJAAkAgBygCvAEiDiAepyICaiIWIBNLDQAgAyAHKALEASIKIAJqIgtqIBhLDQAgEiADayALQSBqTw0BCyAHIAcpA8gBNwMQIAcgBykDwAE3AwggAyASIAdBCGogB0G8AWogEyAPIBUgERAeIQsMAQsgAiADaiEIIAMgDhAHIAJBEU8EQCADQRBqIQIDQCACIA5BEGoiDhAHIAJBEGoiAiAISQ0ACwsgCCAdpyIOayECIAcgFjYCvAEgDiAIIA9rSwRAIA4gCCAVa0sEQEFsIQsMAgsgESACIA9rIgJqIhYgCmogEU0EQCAIIBYgChAPGgwCCyAIIBZBACACaxAPIQggByACIApqIgo2AsQBIAggAmshCCAPIQILIA5BEE8EQCAIIApqIQoDQCAIIAIQByACQRBqIQIgCEEQaiIIIApJDQALDAELAkAgDkEHTQRAIAggAi0AADoAACAIIAItAAE6AAEgCCACLQACOgACIAggAi0AAzoAAyAIQQRqIAIgDkECdCIKQcAeaigCAGoiAhAXIAIgCkHgHmooAgBrIQIgBygCxAEhCgwBCyAIIAIQDAsgCkEJSQ0AIAggCmohCiAIQQhqIgggAkEIaiICa0EPTARAA0AgCCACEAwgAkEIaiECIAhBCGoiCCAKSQ0ADAIACwALA0AgCCACEAcgAkEQaiECIAhBEGoiCCAKSQ0ACwsgCxADBEAgCyEQDAQFIA0gDDYCACANIBkgHGogCWs2AgwgDSAJNgIIIA0gFDYCBCAEQQFqIQQgAyALaiEDDAILAAsLIAQgBUgNASAEIBdrIQtBACEEA0AgCyAFSARAIAcgB0HwAGogC0EDcUEEdGoiAikDCCIdNwPIASAHIAIpAwAiHjcDwAECQAJAAkAgBygCvAEiDCAepyICaiIKIBNLDQAgAyAHKALEASIJIAJqIhBqIBhLDQAgEiADayAQQSBqTw0BCyAHIAcpA8gBNwMgIAcgBykDwAE3AxggAyASIAdBGGogB0G8AWogEyAPIBUgERAeIRAMAQsgAiADaiEIIAMgDBAHIAJBEU8EQCADQRBqIQIDQCACIAxBEGoiDBAHIAJBEGoiAiAISQ0ACwsgCCAdpyIGayECIAcgCjYCvAEgBiAIIA9rSwRAIAYgCCAVa0sEQEFsIRAMAgsgESACIA9rIgJqIgwgCWogEU0EQCAIIAwgCRAPGgwCCyAIIAxBACACaxAPIQggByACIAlqIgk2AsQBIAggAmshCCAPIQILIAZBEE8EQCAIIAlqIQYDQCAIIAIQByACQRBqIQIgCEEQaiIIIAZJDQALDAELAkAgBkEHTQRAIAggAi0AADoAACAIIAItAAE6AAEgCCACLQACOgACIAggAi0AAzoAAyAIQQRqIAIgBkECdCIGQcAeaigCAGoiAhAXIAIgBkHgHmooAgBrIQIgBygCxAEhCQwBCyAIIAIQDAsgCUEJSQ0AIAggCWohBiAIQQhqIgggAkEIaiICa0EPTARAA0AgCCACEAwgAkEIaiECIAhBCGoiCCAGSQ0ADAIACwALA0AgCCACEAcgAkEQaiECIAhBEGoiCCAGSQ0ACwsgEBADDQMgC0EBaiELIAMgEGohAwwBCwsDQCAEQQNHBEAgACAEQQJ0IgJqQazQAWogAiAHaigCVDYCACAEQQFqIQQMAQsLIAcoArwBIQgLQbp/IRAgEyAIayIAIBIgA2tLDQAgAwR/IAMgCCAAEAsgAGoFQQALIAFrIRALIAdB0AFqJAAgEAslACAAQgA3AgAgAEEAOwEIIABBADoACyAAIAE2AgwgACACOgAKC7QFAQN/IwBBMGsiBCQAIABB/wFqIgVBfWohBgJAIAMvAQIEQCAEQRhqIAEgAhAGIgIQAw0BIARBEGogBEEYaiADEBwgBEEIaiAEQRhqIAMQHCAAIQMDQAJAIARBGGoQBCADIAZPckUEQCADIARBEGogBEEYahASOgAAIAMgBEEIaiAEQRhqEBI6AAEgBEEYahAERQ0BIANBAmohAwsgBUF+aiEFAn8DQEG6fyECIAMiASAFSw0FIAEgBEEQaiAEQRhqEBI6AAAgAUEBaiEDIARBGGoQBEEDRgRAQQIhAiAEQQhqDAILIAMgBUsNBSABIARBCGogBEEYahASOgABIAFBAmohA0EDIQIgBEEYahAEQQNHDQALIARBEGoLIQUgAyAFIARBGGoQEjoAACABIAJqIABrIQIMAwsgAyAEQRBqIARBGGoQEjoAAiADIARBCGogBEEYahASOgADIANBBGohAwwAAAsACyAEQRhqIAEgAhAGIgIQAw0AIARBEGogBEEYaiADEBwgBEEIaiAEQRhqIAMQHCAAIQMDQAJAIARBGGoQBCADIAZPckUEQCADIARBEGogBEEYahAROgAAIAMgBEEIaiAEQRhqEBE6AAEgBEEYahAERQ0BIANBAmohAwsgBUF+aiEFAn8DQEG6fyECIAMiASAFSw0EIAEgBEEQaiAEQRhqEBE6AAAgAUEBaiEDIARBGGoQBEEDRgRAQQIhAiAEQQhqDAILIAMgBUsNBCABIARBCGogBEEYahAROgABIAFBAmohA0EDIQIgBEEYahAEQQNHDQALIARBEGoLIQUgAyAFIARBGGoQEToAACABIAJqIABrIQIMAgsgAyAEQRBqIARBGGoQEToAAiADIARBCGogBEEYahAROgADIANBBGohAwwAAAsACyAEQTBqJAAgAgtpAQF/An8CQAJAIAJBB00NACABKAAAQbfIwuF+Rw0AIAAgASgABDYCmOIBQWIgAEEQaiABIAIQPiIDEAMNAhogAEKBgICAEDcDiOEBIAAgASADaiACIANrECoMAQsgACABIAIQKgtBAAsLrQMBBn8jAEGAAWsiAyQAQWIhCAJAIAJBCUkNACAAQZjQAGogAUEIaiIEIAJBeGogAEGY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wOABCwutAgIEfwF+IwBBQGoiBCQAAkACQCACQQhJDQAgASgAAEFwcUHQ1LTCAUcNACABIAIQIiEBIABCADcDCCAAQQA2AgQgACABNgIADAELIARBGGogASACEC0iAxADBEAgACADEBoMAQsgAwRAIABBuH8QGgwBCyACIAQoAjAiA2shAiABIANqIQMDQAJAIAAgAyACIARBCGoQLCIFEAMEfyAFBSACIAVBA2oiBU8NAUG4fwsQGgwCCyAGQQFqIQYgAiAFayECIAMgBWohAyAEKAIMRQ0ACyAEKAI4BEAgAkEDTQRAIABBuH8QGgwCCyADQQRqIQMLIAQoAighAiAEKQMYIQcgAEEANgIEIAAgAyABazYCACAAIAIgBmytIAcgB0J/URs3AwgLIARBQGskAAslAQF/IwBBEGsiAiQAIAIgACABEFEgAigCACEAIAJBEGokACAAC30BBH8jAEGQBGsiBCQAIARB/wE2AggCQCAEQRBqIARBCGogBEEMaiABIAIQFSIGEAMEQCAGIQUMAQtBVCEFIAQoAgwiB0EGSw0AIAMgBEEQaiAEKAIIIAcQQSIFEAMNACAAIAEgBmogAiAGayADEDwhBQsgBEGQBGokACAFC4cBAgJ/An5BABAWIQMCQANAIAEgA08EQAJAIAAoAABBcHFB0NS0wgFGBEAgACABECIiAhADRQ0BQn4PCyAAIAEQVSIEQn1WDQMgBCAFfCIFIARUIQJCfiEEIAINAyAAIAEQUiICEAMNAwsgASACayEBIAAgAmohAAwBCwtCfiAFIAEbIQQLIAQLPwIBfwF+IwBBMGsiAiQAAn5CfiACQQhqIAAgARAtDQAaQgAgAigCHEEBRg0AGiACKQMICyEDIAJBMGokACADC40BAQJ/IwBBMGsiASQAAkAgAEUNACAAKAKI4gENACABIABB/OEBaigCADYCKCABIAApAvThATcDICAAEDAgACgCqOIBIQIgASABKAIoNgIYIAEgASkDIDcDECACIAFBEGoQGyAAQQA2AqjiASABIAEoAig2AgggASABKQMgNwMAIAAgARAbCyABQTBqJAALKgECfyMAQRBrIgAkACAAQQA2AgggAEIANwMAIAAQWCEBIABBEGokACABC4cBAQN/IwBBEGsiAiQAAkAgACgCAEUgACgCBEVzDQAgAiAAKAIINgIIIAIgACkCADcDAAJ/IAIoAgAiAQRAIAIoAghBqOMJIAERBQAMAQtBqOMJECgLIgFFDQAgASAAKQIANwL04QEgAUH84QFqIAAoAgg2AgAgARBZIAEhAwsgAkEQaiQAIAMLywEBAn8jAEEgayIBJAAgAEGBgIDAADYCtOIBIABBADYCiOIBIABBADYC7OEBIABCADcDkOIBIABBADYCpOMJIABBADYC3OIBIABCADcCzOIBIABBADYCvOIBIABBADYCxOABIABCADcCnOIBIABBpOIBakIANwIAIABBrOIBakEANgIAIAFCADcCECABQgA3AhggASABKQMYNwMIIAEgASkDEDcDACABKAIIQQh2QQFxIQIgAEEANgLg4gEgACACNgKM4gEgAUEgaiQAC3YBA38jAEEwayIBJAAgAARAIAEgAEHE0AFqIgIoAgA2AiggASAAKQK80AE3AyAgACgCACEDIAEgAigCADYCGCABIAApArzQATcDECADIAFBEGoQGyABIAEoAig2AgggASABKQMgNwMAIAAgARAbCyABQTBqJAALzAEBAX8gACABKAK00AE2ApjiASAAIAEoAgQiAjYCwOABIAAgAjYCvOABIAAgAiABKAIIaiICNgK44AEgACACNgLE4AEgASgCuNABBEAgAEKBgICAEDcDiOEBIAAgAUGk0ABqNgIMIAAgAUGUIGo2AgggACABQZwwajYCBCAAIAFBDGo2AgAgAEGs0AFqIAFBqNABaigCADYCACAAQbDQAWogAUGs0AFqKAIANgIAIABBtNABaiABQbDQAWooAgA2AgAPCyAAQgA3A4jhAQs7ACACRQRAQbp/DwsgBEUEQEFsDwsgAiAEEGAEQCAAIAEgAiADIAQgBRBhDwsgACABIAIgAyAEIAUQZQtGAQF/IwBBEGsiBSQAIAVBCGogBBAOAn8gBS0ACQRAIAAgASACIAMgBBAyDAELIAAgASACIAMgBBA0CyEAIAVBEGokACAACzQAIAAgAyAEIAUQNiIFEAMEQCAFDwsgBSAESQR/IAEgAiADIAVqIAQgBWsgABA1BUG4fwsLRgEBfyMAQRBrIgUkACAFQQhqIAQQDgJ/IAUtAAkEQCAAIAEgAiADIAQQYgwBCyAAIAEgAiADIAQQNQshACAFQRBqJAAgAAtZAQF/QQ8hAiABIABJBEAgAUEE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", Dr = "display-p3", Or = "display-p3-linear", kr = /* @__PURE__ */ new WeakMap(), Ar = 0, jr, J = class e extends le {
 	constructor(e) {
-		super(e), this.transcoderPath = "", this.transcoderBinary = null, this.transcoderPending = null, this.workerPool = new mr(), this.workerSourceURL = "", this.workerConfig = null, typeof MSC_TRANSCODER < "u" && console.warn("THREE.KTX2Loader: Please update to latest \"basis_transcoder\". \"msc_basis_transcoder\" is no longer supported in three.js r125+.");
+		super(e), this.transcoderPath = "", this.transcoderBinary = null, this.transcoderPending = null, this.workerPool = new gr(), this.workerSourceURL = "", this.workerConfig = null, typeof MSC_TRANSCODER < "u" && console.warn("THREE.KTX2Loader: Please update to latest \"basis_transcoder\". \"msc_basis_transcoder\" is no longer supported in three.js r125+.");
 	}
 	setTranscoderPath(e) {
 		return this.transcoderPath = e, this;
@@ -3426,7 +3451,7 @@ var yr, K, br, xr = { env: { emscripten_notify_memory_growth: function(e) {
 						transcoderBinary: t
 					}, [t]), e;
 				});
-			}), Dr > 0 && console.warn("THREE.KTX2Loader: Multiple active KTX2 loaders may cause performance issues. Use a single KTX2Loader instance, or call .dispose() on old instances."), Dr++;
+			}), Ar > 0 && console.warn("THREE.KTX2Loader: Multiple active KTX2 loaders may cause performance issues. Use a single KTX2Loader instance, or call .dispose() on old instances."), Ar++;
 		}
 		return this.transcoderPending;
 	}
@@ -3439,7 +3464,7 @@ var yr, K, br, xr = { env: { emscripten_notify_memory_growth: function(e) {
 	}
 	parse(e, t, n) {
 		if (this.workerConfig === null) throw Error("THREE.KTX2Loader: Missing initialization with `.detectSupport( renderer )`.");
-		if (Er.has(e)) return Er.get(e).promise.then(t).catch(n);
+		if (kr.has(e)) return kr.get(e).promise.then(t).catch(n);
 		this._createTexture(e).then((e) => t ? t(e) : null).catch(n);
 	}
 	_createTextureFrom(e, t) {
@@ -3451,27 +3476,27 @@ var yr, K, br, xr = { env: { emscripten_notify_memory_growth: function(e) {
 			let e = i[0].mipmaps;
 			u = t.layerCount > 1 ? new ee(e, a, o, t.layerCount, s, c) : new ne(e, a, o, s, c);
 		}
-		return u.minFilter = i[0].mipmaps.length === 1 ? oe : se, u.magFilter = oe, u.generateMipmaps = !1, u.needsUpdate = !0, u.colorSpace = Nr(t), u.premultiplyAlpha = !!(l & 1), u;
+		return u.minFilter = i[0].mipmaps.length === 1 ? oe : se, u.magFilter = oe, u.generateMipmaps = !1, u.needsUpdate = !0, u.colorSpace = Ir(t), u.premultiplyAlpha = !!(l & 1), u;
 	}
 	async _createTexture(e, t = {}) {
-		let n = vr(new Uint8Array(e)), r = n.vkFormat === 1000066e3 && n.dataFormatDescriptor[0].colorModel === 167;
-		if (!(n.vkFormat === 0 || r && !this.workerConfig.astcHDRSupported)) return Mr(n);
+		let n = xr(new Uint8Array(e)), r = n.vkFormat === 1000066e3 && n.dataFormatDescriptor[0].colorModel === 167;
+		if (!(n.vkFormat === 0 || r && !this.workerConfig.astcHDRSupported)) return Fr(n);
 		let i = t, a = this.init().then(() => this.workerPool.postMessage({
 			type: "transcode",
 			buffer: e,
 			taskConfig: i
 		}, [e])).then((e) => this._createTextureFrom(e.data, n));
-		return Er.set(e, { promise: a }), a;
+		return kr.set(e, { promise: a }), a;
 	}
 	dispose() {
-		this.workerPool.dispose(), this.workerSourceURL && URL.revokeObjectURL(this.workerSourceURL), Dr--;
+		this.workerPool.dispose(), this.workerSourceURL && URL.revokeObjectURL(this.workerSourceURL), Ar--;
 	}
 };
-q.BasisFormat = {
+J.BasisFormat = {
 	ETC1S: 0,
 	UASTC: 1,
 	UASTC_HDR: 2
-}, q.TranscoderFormat = {
+}, J.TranscoderFormat = {
 	ETC1: 0,
 	ETC2: 1,
 	BC1: 2,
@@ -3492,7 +3517,7 @@ q.BasisFormat = {
 	BC6H: 22,
 	RGB_HALF: 24,
 	RGBA_HALF: 25
-}, q.EngineFormat = {
+}, J.EngineFormat = {
 	RGBAFormat: S,
 	RGBA_ASTC_4x4_Format: de,
 	RGB_BPTC_UNSIGNED_Format: ye,
@@ -3504,11 +3529,11 @@ q.BasisFormat = {
 	RGB_ETC2_Format: xe,
 	RGB_PVRTC_4BPPV1_Format: Se,
 	RGBA_S3TC_DXT1_Format: ge
-}, q.EngineType = {
+}, J.EngineType = {
 	UnsignedByteType: C,
 	HalfFloatType: x,
 	FloatType: b
-}, q.BasisWorker = function() {
+}, J.BasisWorker = function() {
 	let e, t, n, r = _EngineFormat, i = _EngineType, a = _TranscoderFormat, o = _BasisFormat;
 	self.addEventListener("message", function(n) {
 		let r = n.data;
@@ -3728,11 +3753,11 @@ q.BasisFormat = {
 		return n;
 	}
 };
-var kr = /* @__PURE__ */ new Set([
+var Mr = /* @__PURE__ */ new Set([
 	S,
 	we,
 	Te
-]), Ar = {
+]), Nr = {
 	109: S,
 	97: S,
 	37: S,
@@ -3747,7 +3772,7 @@ var kr = /* @__PURE__ */ new Set([
 	9: Te,
 	148: xe,
 	152: me,
-	[hr]: de,
+	[_r]: de,
 	158: de,
 	157: de,
 	166: fe,
@@ -3762,7 +3787,7 @@ var kr = /* @__PURE__ */ new Set([
 	141: ve,
 	146: pe,
 	145: pe
-}, jr = {
+}, Pr = {
 	109: b,
 	97: x,
 	37: C,
@@ -3777,18 +3802,18 @@ var kr = /* @__PURE__ */ new Set([
 	9: C,
 	148: C,
 	152: C,
-	[hr]: x,
+	[_r]: x,
 	166: C,
 	165: C
 };
-async function Mr(e) {
+async function Fr(e) {
 	let { vkFormat: t } = e;
-	if (Ar[t] === void 0) throw Error("THREE.KTX2Loader: Unsupported vkFormat.");
+	if (Nr[t] === void 0) throw Error("THREE.KTX2Loader: Unsupported vkFormat.");
 	let n;
-	e.supercompressionScheme === 2 && (Or ||= new Promise(async (e) => {
-		let t = new Sr();
+	e.supercompressionScheme === 2 && (jr ||= new Promise(async (e) => {
+		let t = new Tr();
 		await t.init(), e(t);
-	}), n = await Or);
+	}), n = await jr);
 	let r = [];
 	for (let i = 0; i < e.levels.length; i++) {
 		let a = Math.max(1, e.pixelWidth >> i), o = Math.max(1, e.pixelHeight >> i), s = e.pixelDepth ? Math.max(1, e.pixelDepth >> i) : 0, c = e.levels[i], l;
@@ -3796,7 +3821,7 @@ async function Mr(e) {
 		else if (e.supercompressionScheme === 2) l = n.decode(c.levelData, c.uncompressedByteLength);
 		else throw Error("THREE.KTX2Loader: Unsupported supercompressionScheme.");
 		let u;
-		u = jr[t] === b ? new Float32Array(l.buffer, l.byteOffset, l.byteLength / Float32Array.BYTES_PER_ELEMENT) : jr[t] === x ? new Uint16Array(l.buffer, l.byteOffset, l.byteLength / Uint16Array.BYTES_PER_ELEMENT) : l, r.push({
+		u = Pr[t] === b ? new Float32Array(l.buffer, l.byteOffset, l.byteLength / Float32Array.BYTES_PER_ELEMENT) : Pr[t] === x ? new Uint16Array(l.buffer, l.byteOffset, l.byteLength / Uint16Array.BYTES_PER_ELEMENT) : l, r.push({
 			data: u,
 			width: a,
 			height: o,
@@ -3804,24 +3829,24 @@ async function Mr(e) {
 		});
 	}
 	let i;
-	if (kr.has(Ar[t])) i = e.pixelDepth === 0 ? new ie(r[0].data, e.pixelWidth, e.pixelHeight) : new re(r[0].data, e.pixelWidth, e.pixelHeight, e.pixelDepth);
+	if (Mr.has(Nr[t])) i = e.pixelDepth === 0 ? new ie(r[0].data, e.pixelWidth, e.pixelHeight) : new re(r[0].data, e.pixelWidth, e.pixelHeight, e.pixelDepth);
 	else {
 		if (e.pixelDepth > 0) throw Error("THREE.KTX2Loader: Unsupported pixelDepth.");
 		i = new ne(r, e.pixelWidth, e.pixelHeight), i.minFilter = r.length === 1 ? oe : se, i.magFilter = oe;
 	}
-	return i.mipmaps = r, i.type = jr[t], i.format = Ar[t], i.colorSpace = Nr(e), i.needsUpdate = !0, Promise.resolve(i);
+	return i.mipmaps = r, i.type = Pr[t], i.format = Nr[t], i.colorSpace = Ir(e), i.needsUpdate = !0, Promise.resolve(i);
 }
-function Nr(e) {
+function Ir(e) {
 	let t = e.dataFormatDescriptor[0];
-	return t.colorPrimaries === 1 ? t.transferFunction === 2 ? Ee : ce : t.colorPrimaries === 10 ? t.transferFunction === 2 ? wr : Tr : (t.colorPrimaries === 0 || console.warn(`THREE.KTX2Loader: Unsupported color primaries, "${t.colorPrimaries}"`), ue);
+	return t.colorPrimaries === 1 ? t.transferFunction === 2 ? Ee : ce : t.colorPrimaries === 10 ? t.transferFunction === 2 ? Dr : Or : (t.colorPrimaries === 0 || console.warn(`THREE.KTX2Loader: Unsupported color primaries, "${t.colorPrimaries}"`), ue);
 }
 //#endregion
 //#region src/engine/runtimeTextureLoader.ts
-var Pr = class {
+var Lr = class {
 	imageLoader = new y.TextureLoader();
 	ktx2Loader;
 	constructor(e, t = "/basis/") {
-		this.ktx2Loader = new q().setTranscoderPath(t).detectSupport(e);
+		this.ktx2Loader = new J().setTranscoderPath(t).detectSupport(e);
 	}
 	loadAsync(e) {
 		return /\.ktx2(?:[?#]|$)/i.test(e) ? this.ktx2Loader.loadAsync(e) : this.imageLoader.loadAsync(e);
@@ -3829,25 +3854,25 @@ var Pr = class {
 	dispose() {
 		this.ktx2Loader.dispose();
 	}
-}, Fr = {
+}, Rr = {
 	maxOutputSize: 1024,
 	enabled: !1
 };
-function Ir(e, t, n, r = Fr) {
+function zr(e, t, n, r = Rr) {
 	let i = Math.max(1, Number.isFinite(e) ? e : 1), a = Math.max(1, Number.isFinite(t) ? t : 1), o = Math.min(Math.max(.1, Number.isFinite(n) ? n : 1), 2);
 	return r.enabled ? Math.min(o, r.maxOutputSize / Math.max(i, a)) : o;
 }
 //#endregion
 //#region src/engine/Haruki3DEngine.ts
-var Lr = 1, Rr = new y.Vector3(De.x, De.y, De.z), zr = new y.Vector3(Oe.x, Oe.y, Oe.z).normalize(), J = new y.Vector3(0, 1, 0), Br = !0, Vr = 0, Hr = 1e-5, Ur = t("up");
-function Wr(e) {
+var Br = 1, Vr = new y.Vector3(De.x, De.y, De.z), Hr = new y.Vector3(Oe.x, Oe.y, Oe.z).normalize(), Ur = new y.Vector3(0, 1, 0), Wr = !0, Gr = 0, Kr = 1e-5, qr = t("up");
+function Jr(e) {
 	return e && typeof e == "object" ? e : {};
 }
 function Y(e) {
 	return Array.isArray(e) ? e.length : 0;
 }
-function Gr(e) {
-	let t = Wr(e);
+function Yr(e) {
+	let t = Jr(e);
 	return {
 		managers: Y(t.managers ?? t.Managers),
 		bones: Y(t.bones ?? t.Bones),
@@ -3859,8 +3884,8 @@ function Gr(e) {
 		characterEyePresent: !!(t.characterEye ?? t.CharacterEye)
 	};
 }
-function Kr(e, t, n) {
-	let r = Wr(e), i = Wr(r.pjskSpringBone ?? r.PjskSpringBone), a = Wr(i.raw ?? i.Raw), o = Gr(a.body ?? a.Body), s = Gr(a.head ?? a.Head), c = !!(a.body ?? a.Body ?? a.head ?? a.Head);
+function Xr(e, t, n) {
+	let r = Jr(e), i = Jr(r.pjskSpringBone ?? r.PjskSpringBone), a = Jr(i.raw ?? i.Raw), o = Yr(a.body ?? a.Body), s = Yr(a.head ?? a.Head), c = !!(a.body ?? a.Body ?? a.head ?? a.Head);
 	return {
 		present: c,
 		runtimePresent: !!n,
@@ -3884,7 +3909,7 @@ function Kr(e, t, n) {
 		source: c ? "PJSK_sekai_runtime" : "none"
 	};
 }
-function qr(e, t, n = /* @__PURE__ */ new Set()) {
+function Zr(e, t, n = /* @__PURE__ */ new Set()) {
 	if (!(!e || typeof e != "object" || n.has(e))) {
 		if (n.add(e), e instanceof y.Texture) {
 			t.add(e);
@@ -3892,59 +3917,59 @@ function qr(e, t, n = /* @__PURE__ */ new Set()) {
 		}
 		if (!(e instanceof y.Color || e instanceof y.Vector2 || e instanceof y.Vector3 || e instanceof y.Vector4 || e instanceof y.Matrix3 || e instanceof y.Matrix4 || ArrayBuffer.isView(e) || e instanceof ArrayBuffer)) {
 			if (Array.isArray(e)) {
-				for (let r of e) qr(r, t, n);
+				for (let r of e) Zr(r, t, n);
 				return;
 			}
-			for (let r of Object.values(e)) qr(r, t, n);
+			for (let r of Object.values(e)) Zr(r, t, n);
 		}
 	}
 }
-function Jr(e, t = !0, n = /* @__PURE__ */ new Set(), r = /* @__PURE__ */ new Set()) {
+function Qr(e, t = !0, n = /* @__PURE__ */ new Set(), r = /* @__PURE__ */ new Set()) {
 	let i = Array.isArray(e) ? e : [e];
 	for (let e of i) if (!n.has(e)) {
 		if (t) {
 			let t = /* @__PURE__ */ new Set();
-			qr(e, t);
+			Zr(e, t);
 			for (let e of t) r.has(e) || (e.dispose(), r.add(e));
 		}
 		e.dispose();
 	}
 }
-function Yr(e, t = /* @__PURE__ */ new Set()) {
+function $r(e, t = /* @__PURE__ */ new Set()) {
 	let n = /* @__PURE__ */ new Set(), r = /* @__PURE__ */ new Set();
 	e.traverse((e) => {
 		let i = e;
-		i.isMesh && (i.geometry && !i.userData.pjskOutlineShell && !n.has(i.geometry) && (i.geometry.dispose(), n.add(i.geometry)), i.material && Jr(i.material, !0, t, r));
+		i.isMesh && (i.geometry && !i.userData.pjskOutlineShell && !n.has(i.geometry) && (i.geometry.dispose(), n.add(i.geometry)), i.material && Qr(i.material, !0, t, r));
 	});
 }
-function Xr(e, t = /* @__PURE__ */ new Set()) {
-	for (let n of [...e.children]) Yr(n, t), e.remove(n);
+function ei(e, t = /* @__PURE__ */ new Set()) {
+	for (let n of [...e.children]) $r(n, t), e.remove(n);
 }
-function Zr(e) {
+function ti(e) {
 	let t = e.getAttribute("color");
 	if (!t) return null;
 	let n = 0;
 	for (let e = 0; e < t.count; e += 1) if (n = Math.max(n, t.getX(e)), n > .01) return n;
 	return n;
 }
-function Qr(e) {
+function ni(e) {
 	return e === "eye" || e === "eyelight";
 }
-function $r(e) {
+function ri(e) {
 	let t = /* @__PURE__ */ new Set();
 	typeof e.userData.pjskMaterialKind == "string" && t.add(e.userData.pjskMaterialKind);
 	let n = Array.isArray(e.material) ? e.material : [e.material];
 	for (let e of n) typeof e?.userData.pjskMaterialKind == "string" && t.add(e.userData.pjskMaterialKind);
 	let r = n.map((e) => e.name.toLowerCase()), i = e.name.toLowerCase();
-	return (z(e.name) === "acc" || i.includes("/acc") || r.some((e) => e.includes("_acc") || e.startsWith("mtl_acc"))) && t.add("accessory"), [...t];
+	return (V(e.name) === "acc" || i.includes("/acc") || r.some((e) => e.includes("_acc") || e.startsWith("mtl_acc"))) && t.add("accessory"), [...t];
 }
-function ei(e) {
-	return e.find((e) => !Qr(e)) ?? e[0] ?? null;
+function ii(e) {
+	return e.find((e) => !ni(e)) ?? e[0] ?? null;
 }
-function ti(e) {
-	return e.length > 0 && e.every(Qr);
+function ai(e) {
+	return e.length > 0 && e.every(ni);
 }
-function ni(e) {
+function oi(e) {
 	if (e instanceof y.ShaderMaterial) {
 		let t = e.uniforms.uMainTex?.value;
 		if (t instanceof y.Texture) return t;
@@ -3953,9 +3978,9 @@ function ni(e) {
 }
 function X(e, t, n, r = 0, i = 1) {
 	let a = Math.hypot(t, n);
-	return a <= Hr ? e.set(r, i) : e.set(t / a, n / a);
+	return a <= Kr ? e.set(r, i) : e.set(t / a, n / a);
 }
-function ri(e, t) {
+function si(e, t) {
 	let n = Math.abs(t - e);
 	return y.MathUtils.clamp(1 - Math.abs(n - 180) / 180, 0, 1);
 }
@@ -3965,11 +3990,11 @@ function Z(e) {
 function Q(e) {
 	return typeof e == "number" && Number.isFinite(e) ? e : null;
 }
-function ii(e) {
+function ci(e) {
 	let t = Z(e), n = Q(t.r ?? t.R), r = Q(t.g ?? t.G), i = Q(t.b ?? t.B);
 	return n === null || r === null || i === null ? null : `#${new y.Color(n, r, i).getHexString()}`;
 }
-function ai(e, t = !0) {
+function li(e, t = !0) {
 	let n = Z(e), r = Q(n.tileX ?? n.TileX), i = Q(n.tileY ?? n.TileY), a = Q(n.sample ?? n.Sample);
 	return r && i && a !== null ? {
 		tileX: r,
@@ -3978,18 +4003,18 @@ function ai(e, t = !0) {
 		enabled: t
 	} : null;
 }
-function oi(e) {
+function ui(e) {
 	let t = Z(e), n = Z(t.characterControllers ?? t.CharacterControllers), r = Z(n.eye ?? n.Eye);
 	return Object.keys(r).length ? {
 		lightInfluence: Q(r.lightInfluence ?? r.LightInfluence),
 		lightInfluenceForEyeHighlight: Q(r.lightInfluenceForEyeHighlight ?? r.LightInfluenceForEyeHighlight),
-		tintColor: ii(r.tintColor ?? r.TintColor),
-		emissionColor: ii(r.emissionColor ?? r.EmissionColor),
-		baseTiling: ai(r.baseTiling ?? r.BaseTiling),
-		highlightTiling: ai(r.highlightTiling ?? r.HighlightTiling)
+		tintColor: ci(r.tintColor ?? r.TintColor),
+		emissionColor: ci(r.emissionColor ?? r.EmissionColor),
+		baseTiling: li(r.baseTiling ?? r.BaseTiling),
+		highlightTiling: li(r.highlightTiling ?? r.HighlightTiling)
 	} : null;
 }
-function si(e) {
+function di(e) {
 	let t = Z(e), n = Z(t.pjskSpringBone ?? t.PjskSpringBone), r = Z(t.runtimeUnitySetup ?? t.RuntimeUnitySetup ?? n.runtimeUnitySetup ?? n.RuntimeUnitySetup), i = Z(t.funit ?? t.FUnit ?? n.funit ?? n.FUnit ?? r.funit ?? r.FUnit), a = i.detectedScripts ?? i.DetectedScripts, o = Array.isArray(a) ? a.filter((e) => typeof e == "string") : [], s = (e, t) => Math.max(Math.trunc(Q(i[e] ?? i[t]) ?? 0), 0);
 	return {
 		present: !!(i.present ?? i.Present),
@@ -4003,7 +4028,7 @@ function si(e) {
 		policy: typeof (i.policy ?? i.Policy) == "string" ? String(i.policy ?? i.Policy) : "metadata_only; do not merge with UTJ/Sekai SpringBone runtime"
 	};
 }
-function ci(t) {
+function fi(t) {
 	let r = Z(t), i = Z(r.characterControllers ?? r.CharacterControllers), a = Z(i.hair ?? i.Hair);
 	if (!Object.keys(a).length) return null;
 	let o = Z(a.headTransform ?? a.HeadTransform);
@@ -4013,7 +4038,7 @@ function ci(t) {
 		headTransformPath: typeof (o.transformPath ?? o.TransformPath) == "string" ? String(o.transformPath ?? o.TransformPath) : null
 	};
 }
-function li(e, t) {
+function pi(e, t) {
 	for (let n of t) {
 		let t = e.get(n);
 		if (t) return {
@@ -4030,7 +4055,7 @@ function $(e) {
 		z: Number(e.z.toFixed(5))
 	};
 }
-function ui(e) {
+function mi(e) {
 	let [t, ...n] = e.split(":"), r = Number(t);
 	if (!Number.isInteger(r) || r <= 0) throw Error(`Invalid roleId ${e}: expected "<characterId>:<unit>".`);
 	return {
@@ -4038,11 +4063,11 @@ function ui(e) {
 		unit: n.length > 0 && n.join(":").trim() || null
 	};
 }
-function di() {
+function hi() {
 	let e = /* @__PURE__ */ Error("Custom part selection was superseded by a newer request.");
 	return e.name = "AbortError", e;
 }
-var fi = class {
+var gi = class {
 	container;
 	ownsCanvas;
 	scene;
@@ -4086,7 +4111,7 @@ var fi = class {
 		missingHeadBones: []
 	};
 	currentBodyAnimationRoot = null;
-	faceMotion = new Xt();
+	faceMotion = new $t();
 	animationPlayback;
 	currentRuntimeExtension = null;
 	currentSpringRuntime = null;
@@ -4123,6 +4148,7 @@ var fi = class {
 	currentCameraPreset = "default";
 	currentCameraProfile = null;
 	cameraRootYawDegrees = 0;
+	viewFraming = { ...Mt };
 	cameraDebugChangeCallback = null;
 	currentLoadedRuntimePackage = null;
 	lastNativeMeshInstallDiagnostics = null;
@@ -4132,7 +4158,7 @@ var fi = class {
 		hairShadowMode: "sekai_head_position",
 		hairShadowOffset: $(this.currentHairOffset),
 		hairShadowWorldPosition: $(this.hairHeadPosition),
-		funit: si(null),
+		funit: di(null),
 		body: [],
 		head: [],
 		headMaterialSlots: [],
@@ -4148,13 +4174,13 @@ var fi = class {
 		let r = n.initialLight;
 		if (this.previewLightBase = { ...r }, !n.container && !n.canvas) throw Error("Haruki 3D engine requires a container or canvas.");
 		this.animationPlayback = new m({ onLoopPromoted: () => this.faceMotion.promoteLoop() }), this.container = n.container ?? null, this.ownsCanvas = n.canvas === void 0, this.autoRender = n.autoRender ?? !0, this.manageResize = n.manageResize ?? n.canvas === void 0, this.scene = new y.Scene(), this.scene.background = new y.Color("#7f8d95"), this.scene.fog = new y.Fog("#7f8d95", 5.5, 15);
-		let i = n.canvas ?? n.container, a = this.ownsCanvas ? 320 : 1, o = Math.max(i.clientWidth, a), s = Math.max(i.clientHeight, a), c = kt(this.characterModelScaleMeters);
+		let i = n.canvas ?? n.container, a = this.ownsCanvas ? 320 : 1, o = Math.max(i.clientWidth, a), s = Math.max(i.clientHeight, a), c = Ot(this.characterModelScaleMeters);
 		this.camera = new y.PerspectiveCamera(c.fov, o / s, .1, 100), this.camera.position.copy(c.position), this.renderer = new y.WebGLRenderer({
 			antialias: !1,
 			stencil: !0,
 			canvas: n.canvas
 		}), this.renderer.autoClearStencil = !0;
-		let l = Ir(o, s, window.devicePixelRatio);
+		let l = zr(o, s, window.devicePixelRatio);
 		this.renderer.setPixelRatio(l), this.renderer.setSize(o, s, this.ownsCanvas), this.viewportWidth = o, this.viewportHeight = s, this.viewportPixelRatio = l, this.renderer.outputColorSpace = y.SRGBColorSpace, this.container && this.renderer.domElement.parentElement !== this.container && this.container.appendChild(this.renderer.domElement), this.updateCaptureBackgroundTexture(), this.cameraTarget.copy(c.target), n.controlsFactory ? (this.controls = n.controlsFactory({
 			camera: this.camera,
 			canvas: this.renderer.domElement,
@@ -4162,7 +4188,7 @@ var fi = class {
 			onChange: (e) => {
 				this.cameraTarget.copy(e), this.cameraDebugChangeCallback?.();
 			}
-		}), this.controls.update()) : (this.controls = null, this.camera.lookAt(this.cameraTarget)), this.directionalLight = new y.DirectionalLight("#fffaf2", r.intensity), this.directionalLight.position.set(r.x, r.y, r.z), this.scene.add(this.directionalLight), this.fillLight = new y.AmbientLight("#fff8f0", r.ambient), this.scene.add(this.fillLight), this.textureLoader = new Pr(this.renderer, n.ktx2TranscoderPath), this.bodyMaterial = ze({
+		}), this.controls.update()) : (this.controls = null, this.camera.lookAt(this.cameraTarget)), this.directionalLight = new y.DirectionalLight("#fffaf2", r.intensity), this.directionalLight.position.set(r.x, r.y, r.z), this.scene.add(this.directionalLight), this.fillLight = new y.AmbientLight("#fff8f0", r.ambient), this.scene.add(this.fillLight), this.textureLoader = new Lr(this.renderer, n.ktx2TranscoderPath), this.bodyMaterial = ze({
 			baseColor: "#f5d6d0",
 			shadowColor: "#c79b95",
 			lightDirection: this.directionalLight.position.clone(),
@@ -4170,7 +4196,7 @@ var fi = class {
 			ambientIntensity: r.ambient,
 			shadowThreshold: r.shadowThreshold,
 			shadowWeight: r.shadowWeight,
-			valueShadowInfluence: Lr,
+			valueShadowInfluence: Br,
 			characterAmbientIntensity: r.characterAmbient,
 			rimColorAlpha: r.rimColorAlpha,
 			controllerRimRange: r.rimRange,
@@ -4178,7 +4204,7 @@ var fi = class {
 			controllerRimEmission: r.rimEmission,
 			controllerRimLightInfluence: r.rimLightInfluence,
 			controllerRimShadowSharpness: r.rimShadowSharpness,
-			rimDirection: L()
+			rimDirection: z()
 		}), this.hairMaterial = ze({
 			baseColor: "#7b5b4a",
 			shadowColor: "#513d33",
@@ -4187,7 +4213,7 @@ var fi = class {
 			ambientIntensity: r.ambient,
 			shadowThreshold: r.shadowThreshold,
 			shadowWeight: r.shadowWeight,
-			valueShadowInfluence: Lr,
+			valueShadowInfluence: Br,
 			characterAmbientIntensity: r.characterAmbient,
 			rimColorAlpha: r.rimColorAlpha,
 			controllerRimRange: r.rimRange,
@@ -4195,23 +4221,23 @@ var fi = class {
 			controllerRimEmission: r.rimEmission,
 			controllerRimLightInfluence: r.rimLightInfluence,
 			controllerRimShadowSharpness: r.rimShadowSharpness,
-			rimDirection: L(),
+			rimDirection: z(),
 			hairShadowEnabled: !1,
 			useLambert: !0,
 			headPosition: this.hairHeadPosition
 		}), this.faceMaterial = Xe({
 			baseColor: "#ffe4dc",
 			warmColor: "#ffd4c8",
-			lightDirection: zr.clone(),
+			lightDirection: Hr.clone(),
 			lightIntensity: r.intensity,
 			ambientIntensity: r.ambient,
 			headDotDirectionalLight: this.headDotDirectionalLight,
-			useFaceShadowLimiter: Br,
-			faceShadowLimitRange: Vr,
+			useFaceShadowLimiter: Wr,
+			faceShadowLimitRange: Gr,
 			shadowThreshold: r.shadowThreshold,
 			shadowWeight: r.shadowWeight,
 			useLambert: !0
-		}), this.characterRoot = new y.Group(), this.bodySlot = new y.Group(), this.headSlot = new y.Group(), this.characterRoot.add(this.bodySlot), this.characterRoot.add(this.headSlot), this.characterLighting = new fr({
+		}), this.characterRoot = new y.Group(), this.bodySlot = new y.Group(), this.headSlot = new y.Group(), this.characterRoot.add(this.bodySlot), this.characterRoot.add(this.headSlot), this.characterLighting = new mr({
 			bodyMaterial: this.bodyMaterial,
 			hairMaterial: this.hairMaterial,
 			faceMaterial: this.faceMaterial,
@@ -4220,8 +4246,8 @@ var fi = class {
 			directionalLight: this.directionalLight,
 			fillLight: this.fillLight,
 			debug: this.runtimeDebug,
-			valueShadowInfluence: Lr
-		}), this.scene.add(this.characterRoot), this.projectedShadow = new zt(), this.scene.add(this.projectedShadow.group), this.setPresentationMode(n.presentationMode ?? "interactive"), this.applyCameraPreset(n.cameraPreset ?? "default", n.cameraProfile), this.handleResize = this.handleResize.bind(this), this.manageResize && (window.addEventListener("resize", this.handleResize), this.handleResize()), this.autoRender && this.render();
+			valueShadowInfluence: Br
+		}), this.scene.add(this.characterRoot), this.projectedShadow = new Ht(), this.scene.add(this.projectedShadow.group), this.setPresentationMode(n.presentationMode ?? "interactive"), this.applyCameraPreset(n.cameraPreset ?? "default", n.cameraProfile), this.handleResize = this.handleResize.bind(this), this.manageResize && (window.addEventListener("resize", this.handleResize), this.handleResize()), this.autoRender && this.render();
 	}
 	async importCombinedCharacter(e, t = {}) {
 		let n = ++this.importRevision, r = t.preserveAnimation ? this.animationPlayback.capturePosition() : null;
@@ -4287,20 +4313,42 @@ var fi = class {
 		this.characterRoot.rotation.y = t, this.characterRoot.updateMatrixWorld(!0), this.syncOfficialModelCombineSetup(), this.characterRoot.updateMatrixWorld(!0), this.resetCurrentSpringRuntimeState(), this.updateShaderFaceBasis();
 	}
 	setViewYawDegrees(e) {
-		if (this.cameraRootYawDegrees = Number.isFinite(e) ? e : 0, this.currentCameraPreset === "capture") {
-			let e = At(this.currentCameraProfile ?? "full-body", this.cameraRootYawDegrees, this.masterCharacterHeightMeters);
-			this.setCameraTarget(e.target), this.camera.position.copy(e.position), this.camera.fov = e.fov;
-		} else {
-			let e = kt(this.characterModelScaleMeters), t = e.position.clone().sub(e.target).applyAxisAngle(J, y.MathUtils.degToRad(this.cameraRootYawDegrees));
-			this.setCameraTarget(e.target), this.camera.position.copy(e.target).add(t), this.camera.fov = e.fov;
+		this.cameraRootYawDegrees = Number.isFinite(e) ? e : 0, this.applyCostumeShopView();
+	}
+	setViewZoom(e) {
+		this.viewFraming = Nt({
+			...this.viewFraming,
+			zoom: e
+		}), this.applyCostumeShopView();
+	}
+	setViewHeightOffset(e) {
+		this.viewFraming = Nt({
+			...this.viewFraming,
+			heightOffset: e
+		}), this.applyCostumeShopView();
+	}
+	getViewFraming() {
+		return { ...this.viewFraming };
+	}
+	applyCostumeShopView() {
+		let e;
+		if (this.currentCameraPreset === "capture") e = kt(this.currentCameraProfile ?? "full-body", this.cameraRootYawDegrees, this.masterCharacterHeightMeters);
+		else {
+			let t = Ot(this.characterModelScaleMeters), n = t.position.clone().sub(t.target).applyAxisAngle(Ur, y.MathUtils.degToRad(this.cameraRootYawDegrees));
+			e = {
+				target: t.target,
+				position: t.target.clone().add(n),
+				fov: t.fov
+			};
 		}
-		this.camera.updateProjectionMatrix(), this.syncCameraTarget(), this.applyPreviewLightForCameraRoot(), this.updateShaderFaceBasis(), this.cameraDebugChangeCallback?.();
+		let t = Pt(e, this.viewFraming);
+		this.setCameraTarget(t.target), this.camera.position.copy(t.position), this.camera.fov = e.fov, this.camera.updateProjectionMatrix(), this.syncCameraTarget(), this.applyPreviewLightForCameraRoot(), this.updateShaderFaceBasis(), this.cameraDebugChangeCallback?.();
 	}
 	faceCharacterTowardCamera() {
 		this.characterRoot.updateMatrixWorld(!0);
 		let e = this.currentBodyAnimationRoot ?? this.characterRoot;
 		e.updateMatrixWorld(!0);
-		let t = li(a(e), [
+		let t = pi(a(e), [
 			"body/Position",
 			"body/Position/PositionOffset",
 			"body/Position/PositionOffset/Hip",
@@ -4335,7 +4383,7 @@ var fi = class {
 			})) ?? [],
 			nativeMeshes: this.lastNativeMeshInstallDiagnostics,
 			constraints: this.lastConstraintSetupDiagnostics,
-			funit: si(this.currentRuntimeExtension),
+			funit: di(this.currentRuntimeExtension),
 			hairShadowOffset: $(this.currentHairOffset),
 			hairShadowWorldPosition: $(this.hairHeadPosition),
 			camera: this.getCameraDebugSnapshot(),
@@ -4350,7 +4398,7 @@ var fi = class {
 		return {
 			lightDirection: $(t),
 			previewLightDirection: $(e),
-			costumeShopLightRotationDegrees: $(Rr),
+			costumeShopLightRotationDegrees: $(Vr),
 			faceRightWorld: $(l),
 			faceUpWorld: $(u),
 			faceForwardWorld: $(c),
@@ -4385,7 +4433,7 @@ var fi = class {
 		};
 	}
 	getCameraDebugSnapshot() {
-		let e = this.camera.position, t = this.controls?.target ?? this.cameraTarget, n = e.clone().sub(t), r = new y.Spherical().setFromVector3(n), i = (this.currentCameraPreset === "capture" ? At(this.currentCameraProfile ?? "full-body", this.cameraRootYawDegrees, this.masterCharacterHeightMeters) : null)?.costumeShopState ?? null;
+		let e = this.camera.position, t = this.controls?.target ?? this.cameraTarget, n = e.clone().sub(t), r = new y.Spherical().setFromVector3(n), i = (this.currentCameraPreset === "capture" ? kt(this.currentCameraProfile ?? "full-body", this.cameraRootYawDegrees, this.masterCharacterHeightMeters) : null)?.costumeShopState ?? null;
 		return {
 			preset: this.currentCameraPreset,
 			profile: this.currentCameraProfile,
@@ -4433,7 +4481,7 @@ var fi = class {
 		this.cameraDebugChangeCallback = e;
 	}
 	getSpringBoneSnapshot(e) {
-		return Kr(this.currentRuntimeExtension, !1, this.currentSpringRuntime?.getSnapshot(this.isSpringRuntimeEnabled(), e) ?? null);
+		return Xr(this.currentRuntimeExtension, !1, this.currentSpringRuntime?.getSnapshot(this.isSpringRuntimeEnabled(), e) ?? null);
 	}
 	setUtjSpringBoneTraceFilters(e, t) {
 		this.currentSpringRuntime?.setTraceBoneFilters(e, t);
@@ -4547,7 +4595,7 @@ var fi = class {
 	}
 	resolveProjectedShadowTargetWorldPositions() {
 		let e = this.currentBodyAnimationRoot ?? this.characterRoot;
-		return e.updateMatrixWorld(!0), Ft.map((t) => this.findNodeByImportedName(e, t)).filter((e) => e !== null).map((e) => e.getWorldPosition(new y.Vector3()));
+		return e.updateMatrixWorld(!0), Rt.map((t) => this.findNodeByImportedName(e, t)).filter((e) => e !== null).map((e) => e.getWorldPosition(new y.Vector3()));
 	}
 	getCanvas() {
 		return this.renderer.domElement;
@@ -4556,7 +4604,7 @@ var fi = class {
 		return Promise.resolve();
 	}
 	setViewportSize(e, t) {
-		let n = this.ownsCanvas ? 320 : 1, r = Math.max(Math.trunc(e) || 0, n), i = Math.max(Math.trunc(t) || 0, n), a = Ir(r, i, window.devicePixelRatio);
+		let n = this.ownsCanvas ? 320 : 1, r = Math.max(Math.trunc(e) || 0, n), i = Math.max(Math.trunc(t) || 0, n), a = zr(r, i, window.devicePixelRatio);
 		this.viewportWidth === r && this.viewportHeight === i && this.viewportPixelRatio === a || (this.camera.aspect = r / i, this.camera.updateProjectionMatrix(), this.renderer.setPixelRatio(a), this.renderer.setSize(r, i, this.ownsCanvas), this.updateCaptureBackgroundTexture(r, i), this.viewportWidth = r, this.viewportHeight = i, this.viewportPixelRatio = a);
 	}
 	renderFrame() {
@@ -4577,7 +4625,7 @@ var fi = class {
 		let r = await i(e.baseUrl, e);
 		if (this.currentLoadedRuntimePackage = r, r.previewLight && this.updatePreviewLight(r.previewLight), await this.setAnimationSelection(null), this.setFaceMotionSet(null, null, null), !r.combinedCharacter) return r;
 		await this.importCombinedCharacter(r.combinedCharacter);
-		let a = r.combinedCharacter.bodyAsset.source.animationUrls?.[0], o = l(a ?? null), s = a && (o === "unity-json" || /body[_-]?motion/i.test(a.split(/[/?#]/)[0] ?? "")) ? a : null, c = Yt(r.combinedCharacter.runtimeExtension);
+		let a = r.combinedCharacter.bodyAsset.source.animationUrls?.[0], o = l(a ?? null), s = a && (o === "unity-json" || /body[_-]?motion/i.test(a.split(/[/?#]/)[0] ?? "")) ? a : null, c = Qt(r.combinedCharacter.runtimeExtension);
 		return e.applyFaceMotion !== !1 && (r.faceMotion ?? c) && this.setFaceMotionSet(r.faceMotion ?? c, "face", s ? "face_loop" : null), e.applyDefaultAnimation !== !1 && a && await this.setAnimationSelection({
 			motionUrl: a,
 			motionKind: o,
@@ -4609,7 +4657,7 @@ var fi = class {
 	}
 	enqueueCustomSelectionMutation(e) {
 		let t = ++this.customSelectionGeneration, n = () => t === this.customSelectionGeneration, r = () => {
-			if (!n()) throw di();
+			if (!n()) throw hi();
 			return e(n);
 		}, i = this.customSelectionQueue.then(r, r);
 		return this.customSelectionQueue = i.catch(() => void 0), i;
@@ -4618,7 +4666,7 @@ var fi = class {
 		let n = this.currentLoadedRuntimePackage?.wardrobe;
 		if (!n) throw Error("No custom part package is loaded.");
 		let r = n.getCustomSelection(), i = n.getCombinedCharacter()?.id ?? null, a = await n.setCustomSelection(e, t);
-		if (!t()) throw di();
+		if (!t()) throw hi();
 		let o = i !== null && i === a.id, s = a.bodyAsset.source.animationUrls?.[0] ?? null, c = l(s), u = s && (c === "unity-json" || /body[_-]?motion/i.test(s.split(/[/?#]/)[0] ?? "")) ? s : null, d = i !== null && r !== null && p(r.characterId, r.unit) === p(e.characterId, e.unit) && this.animationPlayback.matchesSelection(s, u);
 		return o || await this.importCombinedCharacter(a, {
 			preserveAnimation: d,
@@ -4629,7 +4677,7 @@ var fi = class {
 	async loadRenderRecipeInternal(e, t) {
 		let n = String(e.baseUrl ?? "").trim();
 		if (!n) throw Error("baseUrl is required to load a render recipe.");
-		let i = g(e), a = ui(i.roleId), o = p(a.characterId, a.unit), s = this.currentLoadedRuntimePackage, c = s?.partSet?.baseUrl ?? null, l = s?.wardrobe?.getActiveRoleId() ?? null;
+		let i = g(e), a = mi(i.roleId), o = p(a.characterId, a.unit), s = this.currentLoadedRuntimePackage, c = s?.partSet?.baseUrl ?? null, l = s?.wardrobe?.getActiveRoleId() ?? null;
 		(!s?.wardrobe || c !== n || l !== o) && await this.loadRuntimePackage({
 			baseUrl: n,
 			roleId: o,
@@ -4657,7 +4705,7 @@ var fi = class {
 		};
 	}
 	async applyCustomRoleDefaultMotion(e, t) {
-		let n = e.bodyAsset.source.animationUrls?.[0], r = l(n ?? null), i = n && (r === "unity-json" || /body[_-]?motion/i.test(n.split(/[/?#]/)[0] ?? "")) ? n : null, a = Yt(e.runtimeExtension);
+		let n = e.bodyAsset.source.animationUrls?.[0], r = l(n ?? null), i = n && (r === "unity-json" || /body[_-]?motion/i.test(n.split(/[/?#]/)[0] ?? "")) ? n : null, a = Qt(e.runtimeExtension);
 		a && (t || !this.faceMotion.hasMotion()) && this.setFaceMotionSet(a, "face", i ? "face_loop" : null), n && (t || !this.animationPlayback.hasSelection()) && await this.setAnimationSelection({
 			motionUrl: n,
 			motionKind: r,
@@ -4685,7 +4733,7 @@ var fi = class {
 		this.previewLightBase = { ...e }, this.applyPreviewLightForCameraRoot();
 	}
 	applyPreviewLightForCameraRoot() {
-		let e = y.MathUtils.degToRad(this.cameraRootYawDegrees), t = new y.Vector3(this.previewLightBase.x, this.previewLightBase.y, this.previewLightBase.z).applyAxisAngle(J, e), n = L().applyAxisAngle(J, e);
+		let e = y.MathUtils.degToRad(this.cameraRootYawDegrees), t = new y.Vector3(this.previewLightBase.x, this.previewLightBase.y, this.previewLightBase.z).applyAxisAngle(Ur, e), n = z().applyAxisAngle(Ur, e);
 		this.characterLighting.updatePreviewLight({
 			...this.previewLightBase,
 			x: t.x,
@@ -4694,7 +4742,7 @@ var fi = class {
 		}, this.currentBodyAsset, this.currentHeadAsset, this.headDotDirectionalLight, this.getCameraRootFaceShadowLightDirection(), n);
 	}
 	getCameraRootFaceShadowLightDirection() {
-		return zr.clone().applyAxisAngle(J, y.MathUtils.degToRad(this.cameraRootYawDegrees));
+		return Hr.clone().applyAxisAngle(Ur, y.MathUtils.degToRad(this.cameraRootYawDegrees));
 	}
 	updateGlobalShadowColor(e, t = 1) {
 		this.characterLighting.updateGlobalShadowColor(e, t);
@@ -4725,26 +4773,20 @@ var fi = class {
 		this.camera.lookAt(this.cameraTarget);
 	}
 	applyCostumeShopCharacterHeight(e) {
-		let t = y.MathUtils.clamp(e || 1.6, .5, 2), n = Wt(t), r = Math.abs(n - this.characterModelScaleMeters) >= 1e-4;
+		let t = y.MathUtils.clamp(e || 1.6, .5, 2), n = qt(t), r = Math.abs(n - this.characterModelScaleMeters) >= 1e-4;
 		if (this.masterCharacterHeightMeters = t, this.characterModelScaleMeters = n, this.characterRoot.scale.setScalar(1), this.currentPrefabSourceGraph && o(this.currentPrefabSourceGraph, n), !r || this.currentCameraPreset !== "default" && this.currentCameraProfile !== "legacy-cloud") return;
-		let i = this.currentCameraProfile === "legacy-cloud" ? At("legacy-cloud", this.cameraRootYawDegrees, t) : kt(n), a = i.position.clone().sub(i.target).applyAxisAngle(J, this.currentCameraProfile === "legacy-cloud" ? 0 : y.MathUtils.degToRad(this.cameraRootYawDegrees));
-		this.setCameraTarget(i.target), this.camera.position.copy(i.target).add(a), this.syncCameraTarget();
+		let i = this.currentCameraProfile === "legacy-cloud" ? kt("legacy-cloud", this.cameraRootYawDegrees, t) : Ot(n), a = i.position.clone().sub(i.target).applyAxisAngle(Ur, this.currentCameraProfile === "legacy-cloud" ? 0 : y.MathUtils.degToRad(this.cameraRootYawDegrees)), s = Pt({
+			target: i.target,
+			position: i.target.clone().add(a)
+		}, this.viewFraming);
+		this.setCameraTarget(s.target), this.camera.position.copy(s.position), this.syncCameraTarget();
 	}
 	applyCameraPreset(e, t = "full-body") {
-		if (this.currentCameraPreset = e, e === "capture") {
-			this.currentCameraProfile = t;
-			let e = At(t, this.cameraRootYawDegrees, this.masterCharacterHeightMeters);
-			this.setCameraTarget(e.target), this.camera.position.copy(e.position), this.camera.fov = e.fov;
-		} else {
-			this.currentCameraProfile = null;
-			let e = kt(this.characterModelScaleMeters), t = e.position.clone().sub(e.target).applyAxisAngle(J, y.MathUtils.degToRad(this.cameraRootYawDegrees));
-			this.setCameraTarget(e.target), this.camera.position.copy(e.target).add(t), this.camera.fov = e.fov;
-		}
-		this.camera.updateProjectionMatrix(), this.syncCameraTarget(), this.applyPreviewLightForCameraRoot(), this.updateShaderFaceBasis(), this.cameraDebugChangeCallback?.();
+		this.currentCameraPreset = e, this.currentCameraProfile = e === "capture" ? t : null, this.applyCostumeShopView();
 	}
 	shiftCameraRight(e = 1) {
 		if (!Number.isFinite(e) || e === 0) return;
-		let t = this.controls?.target ?? this.cameraTarget, n = jt(this.camera.position, t, e, this.characterModelScaleMeters);
+		let t = this.controls?.target ?? this.cameraTarget, n = At(this.camera.position, t, e, this.characterModelScaleMeters);
 		this.setCameraTarget(n.target), this.camera.position.copy(n.position), this.syncCameraTarget(), this.cameraDebugChangeCallback?.();
 	}
 	makeImportStatus(e, t) {
@@ -4769,7 +4811,7 @@ var fi = class {
 		]);
 	}
 	clearCharacterSlot(e) {
-		Xr(e, this.getPersistentCharacterMaterials());
+		ei(e, this.getPersistentCharacterMaterials());
 	}
 	releaseCurrentCharacterResources(e = {}) {
 		this.animationPlayback.release({
@@ -4825,8 +4867,8 @@ var fi = class {
 		let n = s(t, e.runtimeExtension);
 		if (this.lastNativeMeshInstallDiagnostics = n, n.error) throw Error(`${n.error}${n.warnings.length ? ` ${n.warnings.slice(0, 3).join(" ")}` : ""}`);
 		return this.syncUnityPrefabSourceGraph(), await Promise.all([this.overrideBodyMaterials(t.root, e.bodyAsset), this.overrideHeadMaterials(t.root, e.headAsset, {
-			eyeController: oi(e.runtimeExtension),
-			hairController: ci(e.runtimeExtension)
+			eyeController: ui(e.runtimeExtension),
+			hairController: fi(e.runtimeExtension)
 		})]), this.installSekaiOutlineShells(t.root), {
 			root: t.root,
 			sourceMode: "unity-runtime",
@@ -4846,16 +4888,16 @@ var fi = class {
 		for (let e of t) this.installSekaiOutlineShell(e);
 	}
 	installSekaiOutlineShell(e) {
-		let t = $r(e);
-		if (ti(t)) return;
-		let n = Zr(e.geometry);
+		let t = ri(e);
+		if (ai(t)) return;
+		let n = ti(e.geometry);
 		if (n === null || n <= .01) return;
 		let r = Array.isArray(e.material) ? e.material : [e.material], i = this.createSekaiOutlineMaterials(e, r);
 		if (!i.some((e) => e.visible)) {
 			for (let e of i) e.dispose();
 			return;
 		}
-		let a = ei(t), o = Array.isArray(e.material) ? i : i[0], s = e instanceof y.SkinnedMesh ? new y.SkinnedMesh(e.geometry, o) : new y.Mesh(e.geometry, o);
+		let a = ii(t), o = Array.isArray(e.material) ? i : i[0], s = e instanceof y.SkinnedMesh ? new y.SkinnedMesh(e.geometry, o) : new y.Mesh(e.geometry, o);
 		s.name = `${e.name}_outline`, s.renderOrder = Math.max(e.renderOrder - 2, 0), s.frustumCulled = e.frustumCulled, s.userData.pjskOutlineShell = !0, s.userData.pjskSourceMaterialKind = a, s.matrixAutoUpdate = e.matrixAutoUpdate, s.position.copy(e.position), s.quaternion.copy(e.quaternion), s.scale.copy(e.scale), s instanceof y.SkinnedMesh && e instanceof y.SkinnedMesh && s.bind(e.skeleton, e.bindMatrix), this.runtimeDebug.outlineShells.push({
 			meshName: e.name,
 			outlineName: s.name,
@@ -4876,25 +4918,25 @@ var fi = class {
 	createSekaiOutlineMaterials(e, t) {
 		return t.map((t) => {
 			let n = t.userData.pjskOutlineSourceMaterial instanceof y.ShaderMaterial ? t.userData.pjskOutlineSourceMaterial : null;
-			if (delete t.userData.pjskOutlineSourceMaterial, Qr(t.userData.pjskMaterialKind)) {
+			if (delete t.userData.pjskOutlineSourceMaterial, ni(t.userData.pjskMaterialKind)) {
 				n?.dispose();
 				let e = new y.MeshBasicMaterial();
 				return e.name = "pjsk_shell_outline_skipped", e.visible = !1, e;
 			}
 			let r = t.userData.pjskRawMaterial;
-			if (!Un(r)) {
+			if (!Gn(r)) {
 				n?.dispose();
 				let e = new y.MeshBasicMaterial();
 				return e.name = "pjsk_shell_outline_disabled", e.visible = !1, e;
 			}
-			let i = (t.userData.pjskLighting?.useOutlineSecondNormal ?? 0) > .5, a = i && !!e.geometry.getAttribute("tangent") && !!e.geometry.getAttribute("uv1") && !!e.geometry.getAttribute("uv2"), o = Jn(!!e.geometry.getAttribute("color"), r, a, ni(t), n ?? t);
+			let i = (t.userData.pjskLighting?.useOutlineSecondNormal ?? 0) > .5, a = i && !!e.geometry.getAttribute("tangent") && !!e.geometry.getAttribute("uv1") && !!e.geometry.getAttribute("uv2"), o = Xn(!!e.geometry.getAttribute("color"), r, a, oi(t), n ?? t);
 			return o.userData.pjskOutlineUseSecondNormal = a, o.userData.pjskOutlineWantsSecondNormal = i, n?.dispose(), this.characterLighting.applyOutlineMaterial(o), o;
 		});
 	}
 	async overrideBodyMaterials(e, t) {
 		this.runtimeDebug.body = [];
 		let n = this.characterLighting.getBindingView();
-		await _n({
+		await yn({
 			root: e,
 			bodyAsset: t,
 			headAsset: this.currentHeadAsset,
@@ -4910,7 +4952,7 @@ var fi = class {
 		let i = n.hairController?.headTransformPath;
 		i && e.traverse((e) => {
 			!this.currentHairHeadTransform && e.userData.pjskTransformPath === i && (this.currentHairHeadTransform = e);
-		}), this.currentHairHeadTransform ??= n.hairController?.headTransformName ? this.findNodeByImportedName(e, n.hairController.headTransformName) : null, await Rn({
+		}), this.currentHairHeadTransform ??= n.hairController?.headTransformName ? this.findNodeByImportedName(e, n.hairController.headTransformName) : null, await Bn({
 			root: e,
 			headAsset: t,
 			textureLoader: this.textureLoader,
@@ -4939,18 +4981,18 @@ var fi = class {
 	}
 	updateCaptureBackgroundTexture(e, t) {
 		let n = this.container ?? this.renderer.domElement, r = Math.max(Math.round(e ?? n.clientWidth), 320), i = Math.max(Math.round(t ?? n.clientHeight), 320);
-		this.captureBackgroundTexture?.dispose(), this.captureBackgroundTexture = Mt(r, i), this.scene.background = this.captureBackgroundTexture;
+		this.captureBackgroundTexture?.dispose(), this.captureBackgroundTexture = Ft(r, i), this.scene.background = this.captureBackgroundTexture;
 	}
 	updateShaderCameraPositions() {
 		this.characterLighting.updateCamera(this.camera.position);
 	}
 	updateShaderFaceBasis() {
 		let e = this.currentHairHeadTransform ?? this.findFaceSdfHeadBone() ?? this.findNodeByImportedName(this.bodySlot, "Head") ?? this.findNodeByImportedName(this.headSlot, "Head") ?? this.currentBodyAnimationRoot ?? this.characterRoot;
-		e.getWorldQuaternion(this.tempQuaternion), e.getWorldPosition(this.faceHeadWorldPosition), this.headTransformUpWorld.copy(Ur).applyQuaternion(this.tempQuaternion).normalize(), this.faceUpWorld.set(1, 0, 0).applyQuaternion(this.tempQuaternion).normalize(), this.faceForwardWorld.set(0, 0, 1).applyQuaternion(this.tempQuaternion).normalize(), this.faceRightWorld.crossVectors(this.faceUpWorld, this.faceForwardWorld).normalize(), this.faceUpWorld.crossVectors(this.faceForwardWorld, this.faceRightWorld).normalize();
+		e.getWorldQuaternion(this.tempQuaternion), e.getWorldPosition(this.faceHeadWorldPosition), this.headTransformUpWorld.copy(qr).applyQuaternion(this.tempQuaternion).normalize(), this.faceUpWorld.set(1, 0, 0).applyQuaternion(this.tempQuaternion).normalize(), this.faceForwardWorld.set(0, 0, 1).applyQuaternion(this.tempQuaternion).normalize(), this.faceRightWorld.crossVectors(this.faceUpWorld, this.faceForwardWorld).normalize(), this.faceUpWorld.crossVectors(this.faceForwardWorld, this.faceRightWorld).normalize();
 		let t = this.characterLighting.resolveFaceShadowLightDirection(this.getCameraRootFaceShadowLightDirection(), this.faceRightWorld, this.faceForwardWorld);
 		X(this.faceShadowHeadHorizontal, -this.headTransformUpWorld.x, -this.headTransformUpWorld.z), X(this.faceShadowLightHorizontal, t.x, t.z);
 		let n = y.MathUtils.radToDeg(Math.atan2(this.faceForwardWorld.x, this.faceForwardWorld.z)), r = y.MathUtils.radToDeg(Math.atan2(this.faceShadowLightHorizontal.x, this.faceShadowLightHorizontal.y));
-		this.headDotDirectionalLight.set(this.faceShadowHeadHorizontal.dot(this.faceShadowLightHorizontal), ri(n, r)), this.hairHeadPosition.copy(this.currentHairOffset), e.localToWorld(this.hairHeadPosition), this.runtimeDebug.hairShadowOffset = $(this.currentHairOffset), this.runtimeDebug.hairShadowWorldPosition = $(this.hairHeadPosition), this.characterLighting.updateFaceBasis(t, this.headDotDirectionalLight, this.hairHeadPosition), this.characterLighting.updateEyeThroughHairView(this.camera.position, this.faceHeadWorldPosition, this.faceForwardWorld);
+		this.headDotDirectionalLight.set(this.faceShadowHeadHorizontal.dot(this.faceShadowLightHorizontal), si(n, r)), this.hairHeadPosition.copy(this.currentHairOffset), e.localToWorld(this.hairHeadPosition), this.runtimeDebug.hairShadowOffset = $(this.currentHairOffset), this.runtimeDebug.hairShadowWorldPosition = $(this.hairHeadPosition), this.characterLighting.updateFaceBasis(t, this.headDotDirectionalLight, this.hairHeadPosition), this.characterLighting.updateEyeThroughHairView(this.camera.position, this.faceHeadWorldPosition, this.faceForwardWorld);
 	}
 	findFaceSdfHeadBone() {
 		for (let e of [this.headSlot, this.bodySlot]) {
@@ -5005,10 +5047,10 @@ var fi = class {
 };
 //#endregion
 //#region src/costume_shop/CostumeShopKernel.ts
-function pi(e) {
+function _i(e) {
 	let t = String(e.assetBaseUrl ?? "").trim();
 	if (!t) throw Error("assetBaseUrl is required to create the CostumeShop kernel.");
-	return mi(new fi({
+	return vi(new gi({
 		canvas: e.canvas,
 		initialLight: { ...e.initialLight ?? Ae },
 		autoRender: !1,
@@ -5016,14 +5058,14 @@ function pi(e) {
 		ktx2TranscoderPath: e.ktx2TranscoderPath
 	}), t);
 }
-function mi(e, t) {
+function vi(e, t) {
 	let n = u(e, t);
 	return {
 		...n,
 		setCharacterYawDegrees: n.setViewYawDegrees
 	};
 }
-var hi = pi, gi = mi;
+var yi = _i, bi = vi;
 //#endregion
-export { jt as $, an as A, Zt as B, nn as C, pn as D, fn as E, mn as F, Yt as G, F as H, on as I, zt as J, Ut as K, sn as L, L as M, R as N, hn as O, z as P, kt as Q, dn as R, _n as S, un as T, $t as U, Qt as V, Xt as W, Mt as X, Rt as Y, At as Z, U as _, fi as a, Ne as at, zn as b, Fr as c, T as ct, pr as d, w as dt, ot as et, or as f, Un as g, Vn as h, gi as i, Me as it, B as j, gn as k, fr as l, Oe as lt, Gn as m, mi as n, Xe as nt, ci as o, Pe as ot, Jn as p, Wt as q, hi as r, A as rt, Ir as s, Ae as st, pi as t, ze as tt, ar as u, De as ut, H as v, ln as w, cn as x, Rn as y, I as z };
+export { Pt as $, sn as A, en as B, an as C, hn as D, mn as E, gn as F, Qt as G, I as H, cn as I, Ht as J, Kt as K, ln as L, z as M, B as N, _n as O, V as P, jt as Q, pn as R, yn as S, fn as T, tn as U, L as V, $t as W, Ft as X, Vt as Y, Mt as Z, G as _, gi as a, ze as at, Vn as b, Rr as c, Me as ct, hr as d, Ae as dt, Nt as et, cr as f, T as ft, Gn as g, Un as h, w as ht, bi as i, ot as it, H as j, vn as k, mr as l, Ne as lt, qn as m, De as mt, vi as n, Ot as nt, fi as o, Xe as ot, Xn as p, Oe as pt, qt as q, yi as r, At as rt, zr as s, A as st, _i as t, kt as tt, sr as u, Pe as ut, W as v, dn as w, un as x, Bn as y, R as z };
 

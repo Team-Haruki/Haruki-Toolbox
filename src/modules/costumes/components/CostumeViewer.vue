@@ -23,8 +23,15 @@ const props = withDefaults(defineProps<{
   recipe: CostumeViewerRecipe | null
   /** Sizing lives with the caller; the default keeps the card-detail embed as it was. */
   class?: string
+  /**
+   * Zoom with the mouse wheel. Off for viewers embedded in a scrolling page,
+   * where a wheel-capturing canvas would hijack the scroll; pinch, drag and
+   * the exposed `zoomBy` keep working.
+   */
+  wheelZoom?: boolean
 }>(), {
   class: "aspect-[7/5]",
+  wheelZoom: true,
 })
 
 const { t } = useI18n()
@@ -115,7 +122,7 @@ async function loadRecipe() {
     }
 
     // Loading resets CameraRoot; restore the user's view without moving the model.
-    activeKernel.setViewYawDegrees(yawDegrees)
+    applyView(activeKernel)
     activeKernel.play()
     status.value = "ready"
   } catch (loadError) {
@@ -126,35 +133,105 @@ async function loadRecipe() {
   }
 }
 
-// --- Drag to rotate ---------------------------------------------------------
+// --- View: drag to orbit / pan, wheel or pinch to zoom -----------------------
+// Mirrors the game's CostumeShop: every gesture moves CameraRoot, never the
+// character, so authored spring chains do not pick up false inertia.
+
+const ZOOM_MIN = 0.5
+const ZOOM_MAX = 3
+const HEIGHT_MIN = -0.5
+const HEIGHT_MAX = 0.8
 
 let yawDegrees = 0
-let dragPointerId: number | null = null
-let dragLastX = 0
+let zoom = 1
+let heightOffset = 0
+
+function applyView(target: Haruki3DKernel | null = kernel) {
+  if (target == null) {
+    return
+  }
+  target.setViewYawDegrees(yawDegrees)
+  target.setViewZoom(zoom)
+  target.setViewHeightOffset(heightOffset)
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+/** Multiply the zoom by `factor` (>1 moves closer). */
+function zoomBy(factor: number) {
+  zoom = clamp(zoom * factor, ZOOM_MIN, ZOOM_MAX)
+  kernel?.setViewZoom(zoom)
+}
+
+function panBy(metres: number) {
+  heightOffset = clamp(heightOffset + metres, HEIGHT_MIN, HEIGHT_MAX)
+  kernel?.setViewHeightOffset(heightOffset)
+}
+
+const activePointers = new Map<number, { x: number; y: number }>()
+let pinchDistance: number | null = null
+
+function pointerDistance() {
+  const [a, b] = [...activePointers.values()]
+  return a != null && b != null ? Math.hypot(b.x - a.x, b.y - a.y) : null
+}
 
 function handlePointerDown(event: PointerEvent) {
   if (status.value !== "ready" || kernel == null) {
     return
   }
-  dragPointerId = event.pointerId
-  dragLastX = event.clientX
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+  pinchDistance = pointerDistance()
   ;(event.currentTarget as HTMLElement | null)?.setPointerCapture?.(event.pointerId)
 }
 
 function handlePointerMove(event: PointerEvent) {
-  if (dragPointerId !== event.pointerId || kernel == null) {
+  const previous = activePointers.get(event.pointerId)
+  if (previous == null || kernel == null) {
     return
   }
-  const deltaX = event.clientX - dragLastX
-  dragLastX = event.clientX
-  yawDegrees = (yawDegrees - deltaX * 0.33) % 360
-  kernel.setViewYawDegrees(yawDegrees)
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+  if (activePointers.size >= 2) {
+    // Pinch: the change in finger distance scales the zoom.
+    const distance = pointerDistance()
+    if (distance != null && pinchDistance != null && pinchDistance > 0) {
+      zoomBy(distance / pinchDistance)
+    }
+    pinchDistance = distance
+    return
+  }
+
+  const deltaX = event.clientX - previous.x
+  const deltaY = event.clientY - previous.y
+  if (deltaX !== 0) {
+    yawDegrees = (yawDegrees - deltaX * 0.33) % 360
+    kernel.setViewYawDegrees(yawDegrees)
+  }
+  if (deltaY !== 0) {
+    // The scene follows the finger: dragging down lifts the camera.
+    const host = hostRef.value
+    const metresPerPixel = host != null && host.clientHeight > 0 ? 1.6 / host.clientHeight / zoom : 0.003
+    panBy(deltaY * metresPerPixel)
+  }
 }
 
 function handlePointerUp(event: PointerEvent) {
-  if (dragPointerId === event.pointerId) {
-    dragPointerId = null
+  activePointers.delete(event.pointerId)
+  pinchDistance = pointerDistance()
+}
+
+function handleWheel(event: WheelEvent) {
+  if (!props.wheelZoom || status.value !== "ready" || kernel == null) {
+    return
   }
+  event.preventDefault()
+  // Trackpads report small pixel deltas, mice ~100 per notch; normalise to a
+  // smooth exponential so both feel alike.
+  const delta = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 16 : event.deltaY
+  zoomBy(Math.exp(-delta * 0.002))
 }
 
 /** Turn the view by `degrees` (the character stays put; the camera orbits). */
@@ -165,10 +242,12 @@ function rotateBy(degrees: number) {
 
 function resetView() {
   yawDegrees = 0
-  kernel?.setViewYawDegrees(0)
+  zoom = 1
+  heightOffset = 0
+  applyView()
 }
 
-defineExpose({ rotateBy, resetView })
+defineExpose({ rotateBy, zoomBy, resetView })
 
 function handleVisibilityChange() {
   if (kernel == null || status.value !== "ready") {
@@ -211,6 +290,7 @@ onBeforeUnmount(() => {
       @pointermove="handlePointerMove"
       @pointerup="handlePointerUp"
       @pointercancel="handlePointerUp"
+      @wheel="handleWheel"
     />
     <div
       v-if="status === 'loading'"
