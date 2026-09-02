@@ -1,4 +1,4 @@
-import type { CatalogMasterCard, SekaiUnit } from "@/shared/sekai/catalog"
+import type { CatalogMasterCard, SekaiCardThumbnailView, SekaiUnit } from "@/shared/sekai/catalog"
 import {
   SEKAI_CARD_ATTRS,
   SEKAI_UNITS,
@@ -25,6 +25,50 @@ export type CardOwnershipFilter = (typeof CARD_OWNERSHIP_FILTERS)[number]
 export const CARD_BOX_GROUP_MODES = ["character", "attr", "all"] as const
 
 export type CardBoxGroupMode = (typeof CARD_BOX_GROUP_MODES)[number]
+
+/** `id` ascends; the others put the strongest / most levelled cards first. */
+export const CARD_BOX_SORTS = ["id", "rarity", "level", "masterRank"] as const
+
+export type CardBoxSort = (typeof CARD_BOX_SORTS)[number]
+
+export function isCardBoxSort(value: string): value is CardBoxSort {
+  return (CARD_BOX_SORTS as readonly string[]).includes(value)
+}
+
+export function isCardBoxGroupMode(value: string): value is CardBoxGroupMode {
+  return (CARD_BOX_GROUP_MODES as readonly string[]).includes(value)
+}
+
+/** Every filter on the card box page; all of them apply in every grouping mode. */
+export type CardBoxFilters = {
+  characterIds: number[]
+  units: SekaiUnit[]
+  attrs: string[]
+  rarities: CardRarityType[]
+  ownership: CardOwnershipFilter
+}
+
+export function createCardBoxFilters(): CardBoxFilters {
+  return { characterIds: [], units: [], attrs: [], rarities: [], ownership: "all" }
+}
+
+export function countActiveCardBoxFilters(filters: CardBoxFilters): number {
+  return [
+    filters.characterIds.length > 0,
+    filters.units.length > 0,
+    filters.attrs.length > 0,
+    filters.rarities.length > 0,
+    filters.ownership !== "all",
+  ].filter(Boolean).length
+}
+
+/** One tile on the page: the master card, its thumbnail, and the player's copy if owned. */
+export type CardBoxCardView = {
+  card: CatalogMasterCard
+  thumbnail: SekaiCardThumbnailView
+  record: UserCardRecord | null
+  trained: boolean
+}
 
 export type CardBoxGroup<K> = {
   key: K
@@ -340,6 +384,106 @@ export function buildRarityDistribution(
   }
 
   return sorted
+}
+
+/** Restricts to the given characters; an empty selection keeps every card. */
+export function filterCardsByCharacter(
+  cards: readonly CatalogMasterCard[],
+  characterIds: readonly number[],
+): CatalogMasterCard[] {
+  if (characterIds.length === 0) {
+    return [...cards]
+  }
+
+  return cards.filter((card) => card.characterId != null && characterIds.includes(card.characterId))
+}
+
+/** Restricts to the given attributes; an empty selection keeps every card. */
+export function filterCardsByAttr(
+  cards: readonly CatalogMasterCard[],
+  attrs: readonly string[],
+): CatalogMasterCard[] {
+  if (attrs.length === 0) {
+    return [...cards]
+  }
+
+  return cards.filter((card) => attrs.includes(card.attr))
+}
+
+/** Restricts to the given units by the card's character; an empty selection keeps every card. */
+export function filterCardsByUnit(
+  cards: readonly CatalogMasterCard[],
+  units: readonly SekaiUnit[],
+  unitOf: (characterId: number) => SekaiUnit | null,
+): CatalogMasterCard[] {
+  if (units.length === 0) {
+    return [...cards]
+  }
+
+  return cards.filter((card) => {
+    const unit = card.characterId != null ? unitOf(card.characterId) : null
+    return unit != null && units.includes(unit)
+  })
+}
+
+/**
+ * Applies every page filter. Ownership comes last so the distribution rows a
+ * caller derives from the intermediate lists still count both owned and
+ * missing cards.
+ */
+export function applyCardBoxFilters(
+  cards: readonly CatalogMasterCard[],
+  ownedMap: ReadonlyMap<number, UserCardRecord>,
+  filters: CardBoxFilters,
+  unitOf: (characterId: number) => SekaiUnit | null,
+): { scoped: CatalogMasterCard[]; visible: CatalogMasterCard[] } {
+  const scoped = filterCardsByRarity(
+    filterCardsByAttr(
+      filterCardsByUnit(
+        filterCardsByCharacter(cards, filters.characterIds),
+        filters.units,
+        unitOf,
+      ),
+      filters.attrs,
+    ),
+    filters.rarities,
+  )
+  return { scoped, visible: applyOwnershipFilter(scoped, ownedMap, filters.ownership) }
+}
+
+const RARITY_RANK: Record<CardRarityType, number> = {
+  rarity_1: 1,
+  rarity_2: 2,
+  rarity_3: 3,
+  rarity_birthday: 3.5,
+  rarity_4: 4,
+}
+
+/**
+ * Sorted copy. `id` is the catalog order; the other keys put the player's
+ * strongest copies first and fall back to id, with unowned cards after owned
+ * ones for the level / master rank sorts.
+ */
+export function sortCardBoxCards(
+  cards: readonly CatalogMasterCard[],
+  ownedMap: ReadonlyMap<number, UserCardRecord>,
+  sort: CardBoxSort,
+): CatalogMasterCard[] {
+  const sorted = [...cards]
+  if (sort === "id") {
+    return sorted.sort((a, b) => a.id - b.id)
+  }
+
+  if (sort === "rarity") {
+    return sorted.sort((a, b) =>
+      (RARITY_RANK[b.cardRarityType as CardRarityType] ?? 0) - (RARITY_RANK[a.cardRarityType as CardRarityType] ?? 0)
+      || a.id - b.id)
+  }
+
+  const value = sort === "level"
+    ? (card: CatalogMasterCard) => ownedMap.get(card.id)?.level ?? -1
+    : (card: CatalogMasterCard) => ownedMap.get(card.id)?.masterRank ?? -1
+  return sorted.sort((a, b) => value(b) - value(a) || a.id - b.id)
 }
 
 /** Restricts to the given rarities; an empty selection keeps every card. */

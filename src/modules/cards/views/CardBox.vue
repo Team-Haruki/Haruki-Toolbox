@@ -1,45 +1,68 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
+import { LucideChevronsDownUp, LucideChevronsUpDown, LucideRefreshCw } from "lucide-vue-next"
+import type { AcceptableValue } from "reka-ui"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { LucideChartPie, LucideRefreshCw } from "lucide-vue-next"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
+import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import type { CatalogActiveChip } from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import { useCatalogViewPreference } from "@/composables/useCatalogViewPreference"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
-import type { CatalogMasterCard } from "@/shared/sekai/catalog"
-import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, buildCatalogCardThumbnail, resolveCardRareCount, resolveSekaiCharacterColor, type SekaiCardThumbnailView, type SekaiUnit } from "@/shared/sekai/catalog"
-import { resolveRarityTrainingIconUrl, resolveTrainRankImageUrl } from "@/shared/sekai/data-sources"
-import { resolveCardAttrRoundIconUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
+import {
+  SEKAI_CARD_ATTR_COLORS,
+  buildCatalogCardThumbnail,
+  resolveCardRareCount,
+  resolveSekaiCharacterColor,
+  type CatalogMasterCard,
+  type SekaiUnit,
+} from "@/shared/sekai/catalog"
+import {
+  resolveCardAttrRoundIconUrl,
+  resolveRarityTrainingIconUrl,
+  resolveTrainRankImageUrl,
+  resolveUnitLogoUrl,
+} from "@/shared/sekai/data-sources"
+import { resolveSekaiAttrLabel, resolveSekaiRarityLabel, resolveSekaiUnitLabel } from "@/shared/sekai/labels"
 import type { SekaiRegion } from "@/types"
-import { CARD_RARITY_TYPES, sortCards, type CardRarityType } from "@/modules/cards/lib/card-filter"
+import type { CardRarityType } from "@/modules/cards/lib/card-filter"
 import {
   CARD_BOX_GROUP_MODES,
-  CARD_OWNERSHIP_FILTERS,
-  applyOwnershipFilter,
+  CARD_BOX_SORTS,
+  applyCardBoxFilters,
   buildAttrDistribution,
   buildCharacterDistribution,
   buildOwnedCardMap,
   buildRarityDistribution,
   buildUnitDistribution,
-  filterCardsByRarity,
+  countActiveCardBoxFilters,
+  createCardBoxFilters,
   filterReleasedCards,
   groupCardsByAttr,
   groupCardsByCharacter,
+  isCardBoxGroupMode,
+  isCardBoxSort,
   isCardTrained,
   normalizeUserCards,
+  sortCardBoxCards,
   summarizeCollection,
+  type CardBoxCardView,
   type CardBoxGroupMode,
-  type CardOwnershipFilter,
-  type UserCardRecord,
+  type CardBoxSort,
 } from "@/modules/cards/lib/card-box"
 import { useCardBoxCatalog } from "@/modules/cards/composables/useCardBoxCatalog"
-import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
+import CardBoxCardGrid from "@/modules/cards/components/CardBoxCardGrid.vue"
+import CardBoxCharacterStrip, { type CardBoxCharacterNavRow } from "@/modules/cards/components/CardBoxCharacterStrip.vue"
+import CardBoxFilterFields from "@/modules/cards/components/CardBoxFilterFields.vue"
+import CardBoxOverview, { type CardBoxOverviewGroup } from "@/modules/cards/components/CardBoxOverview.vue"
+import CardBoxSection from "@/modules/cards/components/CardBoxSection.vue"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 
-const { t, locale } = useI18n()
+const { t, te, locale } = useI18n()
+const labels = { t, te }
 
 const { selectedAccount } = useGameAccountSelection({ capability: "suite" })
 const accountRegion = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
@@ -62,29 +85,58 @@ const {
   reload: reloadCatalog,
 } = useCardBoxCatalog(accountRegion)
 
-const groupMode = ref<CardBoxGroupMode>("character")
-const ownership = ref<CardOwnershipFilter>("all")
-const flatAttrs = ref<string[]>([])
-const rarityFilter = ref<CardRarityType[]>([])
-const showStats = ref(false)
+// --- View state ---------------------------------------------------------------
+// Filters are per visit; grouping and sort are remembered like the catalog's
+// view preferences.
+const filters = reactive(createCardBoxFilters())
+const groupMode = useCatalogViewPreference<CardBoxGroupMode>("card-box", "group", () => "character", CARD_BOX_GROUP_MODES)
+const sort = useCatalogViewPreference<CardBoxSort>("card-box", "sort", () => "id", CARD_BOX_SORTS)
+const collapsedKeys = ref<Set<string>>(new Set())
 
 const now = Date.now()
 
+// --- Data pipeline -----------------------------------------------------------------
 const userCards = computed(() => normalizeUserCards(suiteData.value?.userCards))
 const ownedMap = computed(() => buildOwnedCardMap(userCards.value))
-const releasedCards = computed(() => sortCards(filterReleasedCards(cards.value, now), "idAsc"))
-const rarityCards = computed(() => filterCardsByRarity(releasedCards.value, rarityFilter.value))
-const visibleCards = computed(() => applyOwnershipFilter(rarityCards.value, ownedMap.value, ownership.value))
+const releasedCards = computed(() => filterReleasedCards(cards.value, now))
+const characters = computed(() => [...characterMap.value.values()])
 
-const overall = computed(() => summarizeCollection(rarityCards.value, ownedMap.value))
-const characterDistribution = computed(() => buildCharacterDistribution(rarityCards.value, ownedMap.value))
-const attrDistribution = computed(() => buildAttrDistribution(rarityCards.value, ownedMap.value))
-const rarityDistribution = computed(() => buildRarityDistribution(rarityCards.value, ownedMap.value))
-const unitDistribution = computed(() => buildUnitDistribution(
-  rarityCards.value,
-  ownedMap.value,
-  (characterId) => characterMap.value.get(characterId)?.unit ?? null,
-))
+function unitOf(characterId: number): SekaiUnit | null {
+  return characterMap.value.get(characterId)?.unit ?? null
+}
+
+const filtered = computed(() => applyCardBoxFilters(releasedCards.value, ownedMap.value, filters, unitOf))
+/** Every card the filters admit, owned or not: the denominator of all progress figures. */
+const scopedCards = computed(() => filtered.value.scoped)
+const visibleCards = computed(() => sortCardBoxCards(filtered.value.visible, ownedMap.value, sort.value))
+
+const overall = computed(() => summarizeCollection(scopedCards.value, ownedMap.value))
+const characterDistribution = computed(() => buildCharacterDistribution(scopedCards.value, ownedMap.value))
+const attrDistribution = computed(() => buildAttrDistribution(scopedCards.value, ownedMap.value))
+
+// The roster strip ignores the character filter so it always shows the
+// whole cast; everything else the filters say still applies to its rings.
+const rosterScope = computed(() =>
+  applyCardBoxFilters(releasedCards.value, ownedMap.value, { ...filters, characterIds: [] }, unitOf).scoped,
+)
+const rosterRows = computed<CardBoxCharacterNavRow[]>(() =>
+  buildCharacterDistribution(rosterScope.value, ownedMap.value)
+    .filter((row) => row.characterId > 0)
+    .map((row) => {
+      const character = characterMap.value.get(row.characterId) ?? null
+      return {
+        characterId: row.characterId,
+        name: character?.name ?? t("cardBox.unknownCharacter"),
+        iconUrl: character?.iconUrl ?? null,
+        color: resolveSekaiCharacterColor(row.characterId)
+          ?? (character?.unit != null ? unitColorMap.value.get(character.unit) ?? null : null)
+          ?? "#94a3b8",
+        owned: row.owned,
+        total: row.total,
+        percent: row.percent,
+      }
+    }),
+)
 
 const isLoading = computed(() => suiteStatus.value === "loading" || catalogLoading.value)
 const hasError = computed(() => suiteStatus.value === "error" || catalogError.value != null)
@@ -112,14 +164,8 @@ const uploadTimeText = computed(() => {
     .format(suiteUploadTimeToMillis(uploadTime.value))
 })
 
-type CardView = {
-  card: CatalogMasterCard
-  thumbnail: SekaiCardThumbnailView
-  record: UserCardRecord | null
-  trained: boolean
-}
-
-function makeCardView(card: CatalogMasterCard): CardView {
+// --- Tiles ---------------------------------------------------------------------------
+function makeCardView(card: CatalogMasterCard): CardBoxCardView {
   const record = ownedMap.value.get(card.id) ?? null
   return {
     card,
@@ -132,21 +178,25 @@ function makeCardView(card: CatalogMasterCard): CardView {
   }
 }
 
+function sectionKey(kind: "character" | "attr", key: number | string): string {
+  return `card-box-${kind}-${key}`
+}
+
 const characterSections = computed(() => {
   const progressByCharacter = new Map(characterDistribution.value.map((row) => [row.characterId, row]))
   return groupCardsByCharacter(visibleCards.value, ownedMap.value).map((group) => {
     const character = characterMap.value.get(group.key) ?? null
     const progress = progressByCharacter.get(group.key) ?? null
     const unitColor = character?.unit != null ? unitColorMap.value.get(character.unit) ?? null : null
-    const stripeColor = resolveSekaiCharacterColor(group.key) ?? unitColor
     return {
-      key: group.key,
+      key: sectionKey("character", group.key),
+      characterId: group.key,
       name: character?.name ?? t("cardBox.unknownCharacter"),
       iconUrl: character?.iconUrl ?? null,
+      color: resolveSekaiCharacterColor(group.key) ?? unitColor,
       owned: progress?.owned ?? group.owned,
       total: progress?.total ?? group.total,
       percent: progress?.percent ?? 0,
-      stripeColor,
       views: group.cards.map(makeCardView),
     }
   })
@@ -157,9 +207,10 @@ const attrSections = computed(() => {
   return groupCardsByAttr(visibleCards.value, ownedMap.value).map((group) => {
     const progress = progressByAttr.get(group.key) ?? null
     return {
-      key: group.key,
-      name: attrLabel(group.key),
+      key: sectionKey("attr", group.key),
+      name: resolveSekaiAttrLabel(labels, group.key),
       iconUrl: resolveCardAttrRoundIconUrl(group.key),
+      color: SEKAI_CARD_ATTR_COLORS[group.key] ?? null,
       owned: progress?.owned ?? group.owned,
       total: progress?.total ?? group.total,
       percent: progress?.percent ?? 0,
@@ -168,39 +219,12 @@ const attrSections = computed(() => {
   })
 })
 
-const flatViews = computed(() => {
-  const flatCards = flatAttrs.value.length > 0
-    ? visibleCards.value.filter((card) => flatAttrs.value.includes(card.attr))
-    : visibleCards.value
-  return flatCards.map(makeCardView)
-})
+const flatViews = computed(() => visibleCards.value.map(makeCardView))
 
-const statsRarityColumns = computed(() => CARD_RARITY_TYPES.filter((rarity) =>
-  characterDistribution.value.some((row) => row.rarityBuckets[rarity].total > 0),
-))
+const visibleEmpty = computed(() => visibleCards.value.length === 0)
 
-const statsCharacterRows = computed(() => characterDistribution.value.map((row) => {
-  const character = characterMap.value.get(row.characterId) ?? null
-  return {
-    characterId: row.characterId,
-    name: character?.name ?? t("cardBox.unknownCharacter"),
-    iconUrl: character?.iconUrl ?? null,
-    owned: row.owned,
-    total: row.total,
-    percent: row.percent,
-    color: resolveSekaiCharacterColor(row.characterId),
-    buckets: statsRarityColumns.value.map((rarity) => ({ rarity, ...row.rarityBuckets[rarity] })),
-  }
-}))
-
-const statsUnitRows = computed(() => unitDistribution.value.map((row) => ({
-  ...row,
-  name: t(`cards.unit.${row.unit}`),
-  logoUrl: resolveUnitLogoUrl(row.unit),
-  color: unitColorMap.value.get(row.unit) ?? null,
-})))
-
-const RARITY_STRIPE_COLORS: Record<CardRarityType, string> = {
+// --- Overview -------------------------------------------------------------------------
+const RARITY_COLORS: Record<CardRarityType, string> = {
   rarity_1: "#9ca3af",
   rarity_2: "#60a5fa",
   rarity_3: "#a78bfa",
@@ -208,76 +232,219 @@ const RARITY_STRIPE_COLORS: Record<CardRarityType, string> = {
   rarity_birthday: "#f472b6",
 }
 
-const statsRarityRows = computed(() => rarityDistribution.value.map((row) => ({
-  ...row,
-  name: t(`cardBox.stats.rarities.${row.rarity}`),
-  iconUrls: Array.from(
-    { length: Math.max(1, resolveCardRareCount(row.rarity)) },
-    () => resolveRarityTrainingIconUrl(row.rarity),
-  ),
-  color: RARITY_STRIPE_COLORS[row.rarity],
-})))
+const overviewGroups = computed<CardBoxOverviewGroup[]>(() => [
+  {
+    key: "rarity",
+    title: t("cardBox.stats.byRarity"),
+    rows: buildRarityDistribution(scopedCards.value, ownedMap.value).map((row) => ({
+      key: row.rarity,
+      label: resolveSekaiRarityLabel(labels, row.rarity),
+      iconUrls: Array.from({ length: Math.max(1, resolveCardRareCount(row.rarity)) }, () => resolveRarityTrainingIconUrl(row.rarity)),
+      color: RARITY_COLORS[row.rarity],
+      owned: row.owned,
+      total: row.total,
+      percent: row.percent,
+    })),
+  },
+  {
+    key: "attr",
+    title: t("cardBox.stats.byAttr"),
+    rows: attrDistribution.value.map((row) => ({
+      key: row.attr,
+      label: resolveSekaiAttrLabel(labels, row.attr),
+      iconUrls: [resolveCardAttrRoundIconUrl(row.attr)],
+      color: SEKAI_CARD_ATTR_COLORS[row.attr] ?? null,
+      owned: row.owned,
+      total: row.total,
+      percent: row.percent,
+    })),
+  },
+  {
+    key: "unit",
+    title: t("cardBox.stats.byUnit"),
+    rows: buildUnitDistribution(scopedCards.value, ownedMap.value, unitOf).map((row) => ({
+      key: row.unit,
+      label: resolveSekaiUnitLabel(labels, row.unit),
+      iconUrls: [resolveUnitLogoUrl(row.unit)],
+      color: unitColorMap.value.get(row.unit) ?? null,
+      owned: row.owned,
+      total: row.total,
+      percent: row.percent,
+    })),
+  },
+])
 
-const statsAttrRows = computed(() => attrDistribution.value.map((row) => ({
-  ...row,
-  name: attrLabel(row.attr),
-  iconUrl: resolveCardAttrRoundIconUrl(row.attr),
-  color: SEKAI_CARD_ATTR_COLORS[row.attr] ?? null,
-})))
+// --- Filter panel chrome -------------------------------------------------------------
+const activeFilterCount = computed(() => countActiveCardBoxFilters(filters))
 
-const visibleEmpty = computed(() => {
+const activeChips = computed<CatalogActiveChip[]>(() => [
+  ...filters.characterIds.map((characterId) => ({
+    key: `char:${characterId}`,
+    label: characterMap.value.get(characterId)?.name ?? `#${characterId}`,
+  })),
+  ...filters.units.map((unit) => ({ key: `unit:${unit}`, label: resolveSekaiUnitLabel(labels, unit) })),
+  ...filters.attrs.map((attr) => ({ key: `attr:${attr}`, label: resolveSekaiAttrLabel(labels, attr) })),
+  ...filters.rarities.map((rarity) => ({ key: `rar:${rarity}`, label: resolveSekaiRarityLabel(labels, rarity) })),
+  ...(filters.ownership === "all" ? [] : [{ key: "own", label: t(`cardBox.ownership.${filters.ownership}`) }]),
+])
+
+function removeChip(key: string) {
+  const [kind, value] = key.split(":")
+  if (kind === "char") {
+    filters.characterIds = filters.characterIds.filter((id) => String(id) !== value)
+  } else if (kind === "unit") {
+    filters.units = filters.units.filter((unit) => unit !== value)
+  } else if (kind === "attr") {
+    filters.attrs = filters.attrs.filter((attr) => attr !== value)
+  } else if (kind === "rar") {
+    filters.rarities = filters.rarities.filter((rarity) => rarity !== value)
+  } else if (kind === "own") {
+    filters.ownership = "all"
+  }
+}
+
+function resetFilters() {
+  Object.assign(filters, createCardBoxFilters())
+}
+
+const countLabel = computed(() => t("cardBox.total", { total: visibleCards.value.length }))
+
+function setGroupMode(value: AcceptableValue | AcceptableValue[] | undefined) {
+  if (typeof value === "string" && isCardBoxGroupMode(value)) {
+    groupMode.value = value
+  }
+}
+
+function setSort(value: AcceptableValue | AcceptableValue[] | undefined) {
+  if (typeof value === "string" && isCardBoxSort(value)) {
+    sort.value = value
+  }
+}
+
+// --- Sections: collapse + roster navigation --------------------------------------------
+const currentSectionKeys = computed(() =>
+  groupMode.value === "character"
+    ? characterSections.value.map((section) => section.key)
+    : groupMode.value === "attr" ? attrSections.value.map((section) => section.key) : [],
+)
+
+const allCollapsed = computed(() =>
+  currentSectionKeys.value.length > 0 && currentSectionKeys.value.every((key) => collapsedKeys.value.has(key)),
+)
+
+function toggleSection(key: string) {
+  const next = new Set(collapsedKeys.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  collapsedKeys.value = next
+}
+
+function toggleAllSections() {
+  collapsedKeys.value = allCollapsed.value ? new Set() : new Set(currentSectionKeys.value)
+}
+
+/** Character whose section is in view (character grouping) or is the sole character filter. */
+const activeCharacterId = ref<number | null>(null)
+
+const rosterActiveId = computed(() => {
   if (groupMode.value === "character") {
-    return characterSections.value.length === 0
+    return activeCharacterId.value
   }
 
-  if (groupMode.value === "attr") {
-    return attrSections.value.length === 0
-  }
-
-  return flatViews.value.length === 0
+  return filters.characterIds.length === 1 ? filters.characterIds[0] ?? null : null
 })
 
-function attrLabel(attr: string): string {
-  return (SEKAI_CARD_ATTRS as readonly string[]).includes(attr) ? t(`cards.attr.${attr}`) : attr
+function handleRosterSelect(characterId: number) {
+  if (groupMode.value !== "character") {
+    filters.characterIds = filters.characterIds.length === 1 && filters.characterIds[0] === characterId ? [] : [characterId]
+    return
+  }
+
+  const key = sectionKey("character", characterId)
+  if (collapsedKeys.value.has(key)) {
+    toggleSection(key)
+  }
+  if (filters.characterIds.length > 0 && !filters.characterIds.includes(characterId)) {
+    // The section is filtered away; widen the filter rather than scrolling nowhere.
+    filters.characterIds = []
+  }
+  void nextTick(() => scrollToSection(key))
 }
 
-function handleGroupModeChange(value: unknown) {
-  if (typeof value === "string" && (CARD_BOX_GROUP_MODES as readonly string[]).includes(value)) {
-    groupMode.value = value as CardBoxGroupMode
+/** Sticky app header + roster strip; matches the sections' `scroll-mt-28`. */
+const SECTION_SCROLL_OFFSET = 112
+
+/**
+ * Sections above the target are `content-visibility: auto` placeholders
+ * until they render, so one scroll lands short. Re-align for a few frames
+ * while their real heights settle.
+ */
+function scrollToSection(key: string) {
+  const element = document.getElementById(key)
+  if (element == null) {
+    return
+  }
+
+  let attempts = 0
+  const align = () => {
+    const delta = element.getBoundingClientRect().top - SECTION_SCROLL_OFFSET
+    if (Math.abs(delta) > 1) {
+      window.scrollBy(0, delta)
+    }
+    attempts += 1
+    if (attempts < 12) {
+      requestAnimationFrame(align)
+    }
+  }
+  align()
+}
+
+let sectionObserver: IntersectionObserver | null = null
+
+function observeSections() {
+  sectionObserver?.disconnect()
+  sectionObserver = null
+  if (groupMode.value !== "character" || typeof IntersectionObserver === "undefined") {
+    activeCharacterId.value = null
+    return
+  }
+
+  const inView = new Map<number, number>()
+  sectionObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      const characterId = Number((entry.target as HTMLElement).dataset.characterId)
+      if (entry.isIntersecting) {
+        inView.set(characterId, entry.boundingClientRect.top)
+      } else {
+        inView.delete(characterId)
+      }
+    }
+    // Topmost visible section wins.
+    const first = [...inView.entries()].sort((a, b) => a[1] - b[1])[0]
+    if (first) {
+      activeCharacterId.value = first[0]
+    }
+  }, { rootMargin: "-112px 0px -55% 0px" })
+
+  for (const section of characterSections.value) {
+    const element = document.getElementById(section.key)
+    if (element) {
+      element.dataset.characterId = String(section.characterId)
+      sectionObserver.observe(element)
+    }
   }
 }
 
-function handleOwnershipChange(value: unknown) {
-  if (typeof value === "string" && (CARD_OWNERSHIP_FILTERS as readonly string[]).includes(value)) {
-    ownership.value = value as CardOwnershipFilter
-  }
-}
+watch([groupMode, () => characterSections.value.map((section) => section.key).join(","), isReady], () => {
+  void nextTick(observeSections)
+}, { immediate: true })
 
-function toggleFlatAttr(attr: string) {
-  const index = flatAttrs.value.indexOf(attr)
-  if (index >= 0) {
-    flatAttrs.value.splice(index, 1)
-  } else {
-    flatAttrs.value.push(attr)
-  }
-}
-
-function toggleRarity(rarity: CardRarityType) {
-  const index = rarityFilter.value.indexOf(rarity)
-  if (index >= 0) {
-    rarityFilter.value.splice(index, 1)
-  } else {
-    rarityFilter.value.push(rarity)
-  }
-}
-
-const failedUnitLogos = ref<Set<SekaiUnit>>(new Set())
-
-function markUnitLogoFailed(unit: SekaiUnit) {
-  const next = new Set(failedUnitLogos.value)
-  next.add(unit)
-  failedUnitLogos.value = next
-}
+onBeforeUnmount(() => {
+  sectionObserver?.disconnect()
+})
 
 function refresh() {
   void reloadSuite("check-remote")
@@ -306,7 +473,7 @@ function retry() {
       <div class="flex flex-col items-start gap-1 sm:items-end">
         <div class="flex flex-wrap items-center gap-2">
           <GameAccountSelect capability="suite" />
-          <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
+          <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" :disabled="isLoading" @click="refresh">
             <LucideRefreshCw class="size-3.5" />
             {{ t("cardBox.refresh") }}
           </Button>
@@ -346,216 +513,56 @@ function retry() {
     </template>
 
     <template v-else-if="isReady">
-      <!-- Controls -->
-      <Card>
-        <CardContent class="flex flex-col gap-3 py-4">
-          <div class="flex flex-wrap items-center gap-3">
-            <Tabs :model-value="groupMode" class="w-full sm:w-auto" @update:model-value="handleGroupModeChange">
-              <TabsList class="grid w-full grid-cols-3 sm:w-auto">
-                <TabsTrigger v-for="mode in CARD_BOX_GROUP_MODES" :key="mode" :value="mode">
-                  {{ t(`cardBox.group.${mode}`) }}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+      <!-- Roster: sticky navigation with a progress ring per character -->
+      <CardBoxCharacterStrip :rows="rosterRows" :active-id="rosterActiveId" @select="handleRosterSelect" />
 
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.ownership.label") }}</span>
-              <Tabs :model-value="ownership" @update:model-value="handleOwnershipChange">
-                <TabsList class="h-8">
-                  <TabsTrigger
-                    v-for="filterOption in CARD_OWNERSHIP_FILTERS"
-                    :key="filterOption"
-                    :value="filterOption"
-                    class="text-xs"
-                  >
-                    {{ t(`cardBox.ownership.${filterOption}`) }}
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+      <CatalogFilterPanel
+        :title="t('catalog.filters.title')"
+        :reset-label="t('catalog.filters.reset')"
+        :count-label="countLabel"
+        page-key="card-box"
+        :active-count="activeFilterCount"
+        :active-chips="activeChips"
+        content-class="flex flex-col gap-3"
+        @reset="resetFilters"
+        @remove-chip="removeChip"
+      >
+        <CardBoxFilterFields :state="filters" :characters="characters" :unit-color-map="unitColorMap" />
+      </CatalogFilterPanel>
 
-            <div class="ml-auto flex items-center gap-1.5">
-              <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="showStats = !showStats">
-                <LucideChartPie class="size-3.5" />
-                {{ t("cardBox.stats.toggle") }}
-              </Button>
-            </div>
-          </div>
+      <CardBoxOverview :summary="overall" :groups="overviewGroups" />
 
-          <div class="flex flex-wrap items-center gap-1.5">
-            <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.filter.rarity") }}</span>
-            <button
-              v-for="rarity in CARD_RARITY_TYPES"
-              :key="rarity"
-              type="button"
-              :class="[
-                'rounded-full border px-2.5 py-1 text-xs transition-colors',
-                rarityFilter.includes(rarity)
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border hover:bg-muted',
-              ]"
-              @click="toggleRarity(rarity)"
-            >
-              {{ t(`cards.rarity.${rarity}`) }}
-            </button>
-          </div>
-
-          <!-- Flat-mode filters -->
-          <template v-if="groupMode === 'all'">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.filter.attrs") }}</span>
-              <button
-                v-for="attr in SEKAI_CARD_ATTRS"
-                :key="attr"
-                type="button"
-                :class="[
-                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
-                  flatAttrs.includes(attr)
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border hover:bg-muted',
-                ]"
-                @click="toggleFlatAttr(attr)"
-              >
-                <img :src="resolveCardAttrRoundIconUrl(attr)" alt="" class="size-4" loading="lazy" decoding="async">
-                {{ t(`cards.attr.${attr}`) }}
-              </button>
-            </div>
-          </template>
-        </CardContent>
-      </Card>
-
-      <!-- Collection stats -->
-      <Card v-if="showStats">
-        <CardHeader class="pb-2">
-          <CardTitle class="flex flex-wrap items-baseline justify-between gap-2 text-base">
-            <span>{{ t("cardBox.stats.title") }}</span>
-            <span class="text-sm font-normal tabular-nums text-muted-foreground">
-              {{ t("cardBox.stats.ownedOfTotal", { owned: overall.owned, total: overall.total }) }}
-              · {{ t("cardBox.stats.percent", { percent: overall.percent }) }}
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-4">
-          <div class="flex flex-col gap-2">
-            <h3 class="text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byCharacter") }}</h3>
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-              <div
-                v-for="row in statsCharacterRows"
-                :key="row.characterId"
-                class="flex flex-col gap-1.5 rounded-md border border-l-4 p-2"
-                :style="row.color ? { borderLeftColor: row.color } : {}"
-              >
-                <div class="flex items-center gap-2">
-                  <img v-if="row.iconUrl" :src="row.iconUrl" alt="" class="size-7 shrink-0 rounded-full" loading="lazy" decoding="async">
-                  <span class="min-w-0 flex-1 truncate text-xs font-medium" :title="row.name">{{ row.name }}</span>
-                  <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
-                    · {{ t("cardBox.stats.percent", { percent: row.percent }) }}
-                  </span>
-                </div>
-                <Progress :model-value="row.percent" :color="row.color ?? undefined" class="h-1.5" />
-                <p class="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] tabular-nums text-muted-foreground">
-                  <span v-for="bucket in row.buckets" :key="bucket.rarity">
-                    {{ t(`cards.rarity.${bucket.rarity}`) }}
-                    {{ bucket.total > 0 ? `${bucket.owned}/${bucket.total}` : "—" }}
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <h3 class="text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byUnit") }}</h3>
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-              <div
-                v-for="row in statsUnitRows"
-                :key="row.unit"
-                class="flex flex-col gap-1.5 rounded-md border border-l-4 p-2"
-                :style="row.color ? { borderLeftColor: row.color } : {}"
-              >
-                <div class="flex items-center gap-2">
-                  <span class="flex w-9 shrink-0 justify-center">
-                    <img
-                      decoding="async"
-                      v-if="!failedUnitLogos.has(row.unit)"
-                      :src="row.logoUrl"
-                      alt=""
-                      class="h-4 w-auto max-w-9 object-contain"
-                      loading="lazy"
-                      @error="markUnitLogoFailed(row.unit)"
-                    >
-                    <span
-                      v-else
-                      class="size-2.5 rounded-full"
-                      :style="{ backgroundColor: row.color ?? 'var(--muted-foreground)' }"
-                    />
-                  </span>
-                  <span class="min-w-0 flex-1 truncate text-xs font-medium" :title="row.name">{{ row.name }}</span>
-                  <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
-                    · {{ t("cardBox.stats.percent", { percent: row.percent }) }}
-                  </span>
-                </div>
-                <Progress :model-value="row.percent" :color="row.color ?? undefined" class="h-1.5" />
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <h3 class="text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byAttr") }}</h3>
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-              <div
-                v-for="row in statsAttrRows"
-                :key="row.attr"
-                class="flex flex-col gap-1.5 rounded-md border border-l-4 p-2"
-                :style="row.color ? { borderLeftColor: row.color } : {}"
-              >
-                <div class="flex items-center gap-2">
-                  <img :src="row.iconUrl" alt="" class="size-5 shrink-0" loading="lazy" decoding="async">
-                  <span class="min-w-0 flex-1 truncate text-xs font-medium">{{ row.name }}</span>
-                  <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
-                    · {{ t("cardBox.stats.percent", { percent: row.percent }) }}
-                  </span>
-                </div>
-                <Progress :model-value="row.percent" :color="row.color ?? undefined" class="h-1.5" />
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <h3 class="text-xs font-medium text-muted-foreground">{{ t("cardBox.stats.byRarity") }}</h3>
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-              <div
-                v-for="row in statsRarityRows"
-                :key="row.rarity"
-                class="flex flex-col gap-1.5 rounded-md border border-l-4 p-2"
-                :style="{ borderLeftColor: row.color }"
-              >
-                <div class="flex items-center gap-2">
-                  <span class="inline-flex shrink-0 items-center">
-                    <img
-                      decoding="async"
-                      v-for="(iconUrl, index) in row.iconUrls"
-                      :key="`${row.rarity}-${index}`"
-                      :src="iconUrl"
-                      alt=""
-                      class="size-4"
-                      loading="lazy"
-                    >
-                  </span>
-                  <span class="min-w-0 flex-1 truncate text-xs font-medium">{{ row.name }}</span>
-                  <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
-                    · {{ t("cardBox.stats.percent", { percent: row.percent }) }}
-                  </span>
-                </div>
-                <Progress :model-value="row.percent" :color="row.color" class="h-1.5" />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <!-- View toolbar: grouping, sort, collapse -->
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.group.label") }}</span>
+          <ToggleGroup type="single" variant="segment" size="sm" :model-value="groupMode" :aria-label="t('cardBox.group.label')" @update:model-value="setGroupMode">
+            <ToggleGroupItem v-for="mode in CARD_BOX_GROUP_MODES" :key="mode" :value="mode">
+              {{ t(`cardBox.group.${mode}`) }}
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("catalog.sort.label") }}</span>
+          <ToggleGroup type="single" variant="segment" size="sm" :model-value="sort" :aria-label="t('catalog.sort.label')" @update:model-value="setSort">
+            <ToggleGroupItem v-for="option in CARD_BOX_SORTS" :key="option" :value="option">
+              {{ t(`cardBox.sort.${option}`) }}
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <span class="text-xs tabular-nums text-muted-foreground">{{ countLabel }}</span>
+        <Button
+          v-if="currentSectionKeys.length > 1"
+          variant="ghost"
+          size="sm"
+          class="ml-auto h-7 gap-1 text-xs text-muted-foreground"
+          @click="toggleAllSections"
+        >
+          <LucideChevronsUpDown v-if="allCollapsed" class="size-3.5" />
+          <LucideChevronsDownUp v-else class="size-3.5" />
+          {{ allCollapsed ? t("cardBox.sections.expandAll") : t("cardBox.sections.collapseAll") }}
+        </Button>
+      </div>
 
       <!-- Empty -->
       <Card v-if="visibleEmpty">
@@ -566,115 +573,42 @@ function retry() {
 
       <!-- Grouped by character -->
       <template v-else-if="groupMode === 'character'">
-        <section v-for="section in characterSections" :key="section.key" class="flex flex-col gap-2">
-          <div class="flex items-center gap-3">
-            <img v-if="section.iconUrl" :src="section.iconUrl" alt="" class="size-8 shrink-0 rounded-full" loading="lazy" decoding="async">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-baseline justify-between gap-2">
-                <h2 class="truncate text-sm font-semibold">{{ section.name }}</h2>
-                <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
-                  {{ t("cardBox.stats.ownedOfTotal", { owned: section.owned, total: section.total }) }}
-                  · {{ t("cardBox.stats.percent", { percent: section.percent }) }}
-                </span>
-              </div>
-              <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  class="h-full rounded-full bg-primary transition-all"
-                  :style="{ width: `${section.percent}%`, ...(section.stripeColor ? { backgroundColor: section.stripeColor } : {}) }"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-            <RouterLink
-              v-for="view in section.views"
-              :key="view.card.id"
-              :to="{ name: 'cards.detail', params: { cardId: view.card.id } }"
-              class="group relative rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              :title="view.card.prefix ?? `#${view.card.id}`"
-            >
-              <CardThumbnail
-                :thumbnail="view.thumbnail"
-                :trained="view.trained"
-                :title="view.card.prefix"
-                :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
-                :class="[
-                  'transition-transform group-hover:scale-[1.02]',
-                  view.record == null ? 'opacity-40 grayscale' : '',
-                ]"
-              />
-            </RouterLink>
-          </div>
-        </section>
+        <CardBoxSection
+          v-for="section in characterSections"
+          :id="section.key"
+          :key="section.key"
+          :name="section.name"
+          :icon-url="section.iconUrl"
+          :color="section.color"
+          :owned="section.owned"
+          :total="section.total"
+          :percent="section.percent"
+          :views="section.views"
+          :collapsed="collapsedKeys.has(section.key)"
+          @toggle="toggleSection(section.key)"
+        />
       </template>
 
       <!-- Grouped by attribute -->
       <template v-else-if="groupMode === 'attr'">
-        <section v-for="section in attrSections" :key="section.key" class="flex flex-col gap-2">
-          <div class="flex items-center gap-3">
-            <img :src="section.iconUrl" alt="" class="size-7 shrink-0" loading="lazy" decoding="async">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-baseline justify-between gap-2">
-                <h2 class="truncate text-sm font-semibold">{{ section.name }}</h2>
-                <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
-                  {{ t("cardBox.stats.ownedOfTotal", { owned: section.owned, total: section.total }) }}
-                  · {{ t("cardBox.stats.percent", { percent: section.percent }) }}
-                </span>
-              </div>
-              <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div class="h-full rounded-full bg-primary transition-all" :style="{ width: `${section.percent}%` }" />
-              </div>
-            </div>
-          </div>
-          <div class="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-            <RouterLink
-              v-for="view in section.views"
-              :key="view.card.id"
-              :to="{ name: 'cards.detail', params: { cardId: view.card.id } }"
-              class="group relative rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              :title="view.card.prefix ?? `#${view.card.id}`"
-            >
-              <CardThumbnail
-                :thumbnail="view.thumbnail"
-                :trained="view.trained"
-                :title="view.card.prefix"
-                :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
-                :class="[
-                  'transition-transform group-hover:scale-[1.02]',
-                  view.record == null ? 'opacity-40 grayscale' : '',
-                ]"
-              />
-            </RouterLink>
-          </div>
-        </section>
+        <CardBoxSection
+          v-for="section in attrSections"
+          :id="section.key"
+          :key="section.key"
+          :name="section.name"
+          :icon-url="section.iconUrl"
+          :color="section.color"
+          :owned="section.owned"
+          :total="section.total"
+          :percent="section.percent"
+          :views="section.views"
+          :collapsed="collapsedKeys.has(section.key)"
+          @toggle="toggleSection(section.key)"
+        />
       </template>
 
       <!-- Flat grid -->
-      <template v-else>
-        <div class="text-sm text-muted-foreground">
-          {{ t("cardBox.total", { total: flatViews.length }) }}
-        </div>
-        <div class="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-          <RouterLink
-            v-for="view in flatViews"
-            :key="view.card.id"
-            :to="{ name: 'cards.detail', params: { cardId: view.card.id } }"
-            class="group relative rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            :title="view.card.prefix ?? `#${view.card.id}`"
-          >
-            <CardThumbnail
-              :thumbnail="view.thumbnail"
-              :trained="view.trained"
-              :title="view.card.prefix"
-              :level-label="view.record ? t('cardBox.badge.level', { level: view.record.level }) : null"
-              :class="[
-                'transition-transform group-hover:scale-[1.02]',
-                view.record == null ? 'opacity-40 grayscale' : '',
-              ]"
-            />
-          </RouterLink>
-        </div>
-      </template>
+      <CardBoxCardGrid v-else :views="flatViews" />
     </template>
   </div>
 </template>

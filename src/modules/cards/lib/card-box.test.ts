@@ -1,7 +1,11 @@
 import { describe, expect, it } from "bun:test"
 import type { CatalogMasterCard } from "@/shared/sekai/catalog"
 import {
+  applyCardBoxFilters,
   applyOwnershipFilter,
+  countActiveCardBoxFilters,
+  createCardBoxFilters,
+  sortCardBoxCards,
   buildAttrDistribution,
   buildCharacterDistribution,
   buildOwnedCardMap,
@@ -307,5 +311,63 @@ describe("computeCollectionPercent", () => {
     expect(computeCollectionPercent(2, 3)).toBe(66.7)
     expect(computeCollectionPercent(0, 0)).toBe(0)
     expect(computeCollectionPercent(5, 5)).toBe(100)
+  })
+})
+
+describe("applyCardBoxFilters", () => {
+  const cards = [
+    makeCard({ id: 1, characterId: 1, attr: "cool", cardRarityType: "rarity_4" }),
+    makeCard({ id: 2, characterId: 1, attr: "cute", cardRarityType: "rarity_3" }),
+    makeCard({ id: 3, characterId: 21, attr: "cool", cardRarityType: "rarity_4" }),
+    makeCard({ id: 4, characterId: null, attr: "cool", cardRarityType: "rarity_1" }),
+  ]
+  const owned = buildOwnedCardMap(normalizeUserCards([{ cardId: 1, level: 60, masterRank: 5 }, { cardId: 3, level: 20, masterRank: 0 }]))
+  const unitOf = (characterId: number) => (characterId === 21 ? "piapro" : "light_sound") as const
+
+  it("keeps everything with fresh filters and counts none active", () => {
+    const filters = createCardBoxFilters()
+    expect(countActiveCardBoxFilters(filters)).toBe(0)
+    const { scoped, visible } = applyCardBoxFilters(cards, owned, filters, unitOf)
+    expect(scoped.map((card) => card.id)).toEqual([1, 2, 3, 4])
+    expect(visible).toEqual(scoped)
+  })
+
+  it("intersects character, unit, attribute, rarity and ownership", () => {
+    const filters = { ...createCardBoxFilters(), units: ["light_sound" as const], attrs: ["cool"], ownership: "missing" as const }
+    expect(countActiveCardBoxFilters(filters)).toBe(3)
+    const { scoped, visible } = applyCardBoxFilters(cards, owned, filters, unitOf)
+    // Scoped ignores ownership so progress can still be computed against it.
+    expect(scoped.map((card) => card.id)).toEqual([1])
+    expect(visible).toEqual([])
+
+    const byCharacter = applyCardBoxFilters(cards, owned, { ...createCardBoxFilters(), characterIds: [21], rarities: ["rarity_4"] }, unitOf)
+    expect(byCharacter.visible.map((card) => card.id)).toEqual([3])
+  })
+})
+
+describe("sortCardBoxCards", () => {
+  const cards = [
+    makeCard({ id: 3, cardRarityType: "rarity_3" }),
+    makeCard({ id: 1, cardRarityType: "rarity_4" }),
+    makeCard({ id: 2, cardRarityType: "rarity_birthday" }),
+    makeCard({ id: 4, cardRarityType: "rarity_4" }),
+  ]
+  const owned = buildOwnedCardMap(normalizeUserCards([
+    { cardId: 3, level: 50, masterRank: 5 },
+    { cardId: 4, level: 60, masterRank: 0 },
+  ]))
+
+  it("orders by id, by rarity with birthday between 3 and 4 stars, and by the player's copies", () => {
+    expect(sortCardBoxCards(cards, owned, "id").map((card) => card.id)).toEqual([1, 2, 3, 4])
+    expect(sortCardBoxCards(cards, owned, "rarity").map((card) => card.id)).toEqual([1, 4, 2, 3])
+    // Unowned cards trail the owned ones in id order.
+    expect(sortCardBoxCards(cards, owned, "level").map((card) => card.id)).toEqual([4, 3, 1, 2])
+    expect(sortCardBoxCards(cards, owned, "masterRank").map((card) => card.id)).toEqual([3, 4, 1, 2])
+  })
+
+  it("does not mutate its input", () => {
+    const input = [...cards]
+    sortCardBoxCards(input, owned, "rarity")
+    expect(input.map((card) => card.id)).toEqual([3, 1, 2, 4])
   })
 })

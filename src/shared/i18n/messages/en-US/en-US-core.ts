@@ -226,7 +226,22 @@ export default {
     "unknownCharacter": "Unknown character",
     "empty": "No cards match the current view.",
     "total": "{total} cards",
+    "summary": "{owned}/{total} collected · {percent}%",
+    "nav": {
+      "label": "Jump to character"
+    },
+    "sections": {
+      "collapseAll": "Collapse all",
+      "expandAll": "Expand all"
+    },
+    "sort": {
+      "id": "ID",
+      "rarity": "Rarity",
+      "level": "Level",
+      "masterRank": "Master rank"
+    },
     "group": {
+      "label": "Group by",
       "character": "By character",
       "attr": "By attribute",
       "all": "All cards"
@@ -243,8 +258,6 @@ export default {
     },
     "stats": {
       "title": "Collection stats",
-      "toggle": "Stats",
-      "byCharacter": "By character",
       "byUnit": "By unit",
       "byAttr": "By attribute",
       "byRarity": "By rarity",
