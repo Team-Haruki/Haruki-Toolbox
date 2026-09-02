@@ -90,9 +90,15 @@ const sectionsOpen = !isNarrowViewport()
 
     <template #skeleton>
       <Skeleton :class="['w-full rounded-lg', CARD_FULL_ART_ASPECT_CLASS]" />
-      <div class="grid gap-4 lg:grid-cols-2">
-        <Skeleton class="h-56 w-full rounded-xl" />
-        <Skeleton class="h-56 w-full rounded-xl" />
+      <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div class="flex flex-col gap-4">
+          <Skeleton class="h-64 w-full rounded-xl" />
+          <Skeleton class="h-40 w-full rounded-xl" />
+        </div>
+        <div class="flex flex-col gap-4">
+          <Skeleton class="h-80 w-full rounded-xl" />
+          <Skeleton class="h-72 w-full rounded-xl" />
+        </div>
       </div>
     </template>
 
@@ -104,59 +110,64 @@ const sectionsOpen = !isNarrowViewport()
         :blur="blurArt"
       />
 
+      <!-- Two independent stacks, not three rows of pairs. Every section's
+           height is decided by its data (an episode list, N events, N gachas,
+           a skill table), so row-pairing always left one side of each row
+           short. Each column flows on its own; only the column totals differ,
+           and those are close: facts + episodes + related on the left, the
+           two calculators on the right. -->
       <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
-        <CardInfoSection
-          :card="card"
-          :character="detail.character.value"
-          :unit="detail.unit.value"
-          :support-unit="detail.supportUnit.value"
-          :supply-type="detail.supplyType.value"
-          :unit-color-map="detail.unitColorMap.value"
-          :extras="detail.extras.value"
-        />
-        <CardPowerSection
-          :table="detail.powerTable.value"
-          :extras="detail.extras.value"
-          :rarity="detail.rarityInfo.value"
-          :episodes="detail.episodes.value"
-          :master-lessons="detail.masterLessons.value"
-          :canvas-bonus="detail.canvasBonus.value"
-          :can-train="detail.hasTrainedArt.value"
-          :trained-by-default="card.trainedByDefault === true"
-          :loading="detail.detailExtrasLoading.value"
-        />
-      </div>
+        <div class="flex min-w-0 flex-col gap-4">
+          <CardInfoSection
+            :card="card"
+            :character="detail.character.value"
+            :unit="detail.unit.value"
+            :support-unit="detail.supportUnit.value"
+            :supply-type="detail.supplyType.value"
+            :unit-color-map="detail.unitColorMap.value"
+            :extras="detail.extras.value"
+          />
+          <CardEpisodesSection
+            :episodes="detail.episodes.value"
+            :loading="detail.detailExtrasLoading.value"
+            :default-open="sectionsOpen"
+          />
+          <CardRelatedEventsSection
+            :events="detail.relatedEvents.value"
+            :region="detail.region.value"
+            :asset-endpoint="detail.assetEndpoint.value"
+            :loading="detail.eventsLoading.value"
+          />
+          <CardRelatedGachasSection
+            :gachas="detail.relatedGachas.value"
+            :banner-alias-map="detail.gachaBannerAliasMap.value"
+            :region="detail.region.value"
+            :asset-endpoint="detail.assetEndpoint.value"
+            :loading="detail.gachasLoading.value"
+          />
+        </div>
 
-      <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
-        <CardSkillSection
-          :skill="detail.skill.value"
-          :trained-skill="detail.trainedSkill.value"
-          :skill-name="card.skillName ?? null"
-          :trained-skill-name="detail.extras.value?.specialTrainingSkillName ?? null"
-          :character-name="detail.character.value?.name ?? null"
-          :loading="detail.skillsLoading.value"
-        />
-        <CardEpisodesSection
-          :episodes="detail.episodes.value"
-          :loading="detail.detailExtrasLoading.value"
-          :default-open="sectionsOpen"
-        />
-      </div>
-
-      <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
-        <CardRelatedEventsSection
-          :events="detail.relatedEvents.value"
-          :region="detail.region.value"
-          :asset-endpoint="detail.assetEndpoint.value"
-          :loading="detail.eventsLoading.value"
-        />
-        <CardRelatedGachasSection
-          :gachas="detail.relatedGachas.value"
-          :banner-alias-map="detail.gachaBannerAliasMap.value"
-          :region="detail.region.value"
-          :asset-endpoint="detail.assetEndpoint.value"
-          :loading="detail.gachasLoading.value"
-        />
+        <div class="flex min-w-0 flex-col gap-4">
+          <CardPowerSection
+            :table="detail.powerTable.value"
+            :extras="detail.extras.value"
+            :rarity="detail.rarityInfo.value"
+            :episodes="detail.episodes.value"
+            :master-lessons="detail.masterLessons.value"
+            :canvas-bonus="detail.canvasBonus.value"
+            :can-train="detail.hasTrainedArt.value"
+            :trained-by-default="card.trainedByDefault === true"
+            :loading="detail.detailExtrasLoading.value"
+          />
+          <CardSkillSection
+            :skill="detail.skill.value"
+            :trained-skill="detail.trainedSkill.value"
+            :skill-name="card.skillName ?? null"
+            :trained-skill-name="detail.extras.value?.specialTrainingSkillName ?? null"
+            :character-name="detail.character.value?.name ?? null"
+            :loading="detail.skillsLoading.value"
+          />
+        </div>
       </div>
 
       <CardCostumesSection
