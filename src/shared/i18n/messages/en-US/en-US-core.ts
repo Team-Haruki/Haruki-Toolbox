@@ -289,11 +289,14 @@ export default {
     "refresh": "Refresh",
     "dataAsOf": "Data as of {time}",
     "summary": {
+      "bestRank": "Best rank",
+      "ranked": "Ranked events",
       "participated": "Events participated",
       "bestPoint": "Best event PT",
       "averagePoint": "Average event PT"
     },
     "filters": {
+      "time": "Time",
       "lastYear": "Past year",
       "all": "All",
       "custom": "Custom",
@@ -309,7 +312,13 @@ export default {
       "showAll": "Show all",
       "zoomHint": "Drag or resize the selection below to focus on a range of events"
     },
+    "sort": {
+      "time": "Date",
+      "point": "Event PT",
+      "rank": "Rank"
+    },
     "table": {
+      "count": "{count} events",
       "title": "Event history",
       "event": "Event",
       "type": "Type",
@@ -318,6 +327,9 @@ export default {
       "rankFromHonor": "No exact rank data; tier derived from the event honor"
     },
     "worldLink": {
+      "chapters": "{count} chapters",
+      "showChapters": "Show chapters",
+      "hideChapters": "Hide chapters",
       "chapterLabel": "Chapter {no}",
       "finale": "Finale"
     }

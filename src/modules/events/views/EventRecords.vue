@@ -1,59 +1,56 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, reactive } from "vue"
 import { RouterLink } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { isAxiosError } from "axios"
+import type { AcceptableValue } from "reka-ui"
 import { LucideCloudUpload, LucideRefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import DateTimePicker24h from "@/components/ui/datetime-picker/DateTimePicker24h.vue"
+import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { formatLocalizedDate, formatLocalizedDateTime } from "@/lib/date-time"
 import { formatNumberCN } from "@/lib/number-format"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
+import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import type { CatalogActiveChip } from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import { useCatalogViewPreference } from "@/composables/useCatalogViewPreference"
 import { resolveCharacterIconUrl } from "@/shared/sekai/data-sources"
+import { resolveSekaiUnitLabel } from "@/shared/sekai/labels"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
-import EventBannerImage from "../components/EventBannerImage.vue"
 import EventPointTrendChart from "../components/EventPointTrendChart.vue"
-import EventTypeBadge from "../components/EventTypeBadge.vue"
-import type { SekaiEventType } from "../lib/event-filter"
+import EventRecordRow, { type EventRecordChapterView } from "../components/EventRecordRow.vue"
+import EventRecordsFilterFields, { type EventRecordsFilterState } from "../components/EventRecordsFilterFields.vue"
+import EventRecordsSummary, { type EventRecordsSummaryItem } from "../components/EventRecordsSummary.vue"
 import { useEventRecordsMaster } from "../composables/useEventRecordsMaster"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
+  EVENT_RECORD_SORTS,
   buildDerivedRankMap,
   buildEventPointTrend,
   buildEventRecordRows,
   buildWorldBloomGroups,
   derivedChapterRankKey,
   derivedEventRankKey,
+  filterEventRecordTableRows,
   formatDerivedRankTier,
+  isEventRecordSort,
   mergeWorldBloomIntoRows,
   normalizeUserEventRecords,
   normalizeUserHonorIds,
   normalizeUserWorldBloomRecords,
-  summarizeEventRecords,
+  sortEventRecordTableRows,
+  summarizeEventRecordTableRows,
   worldBloomChapterKey,
+  type EventRecordSort,
+  type EventRecordTableRow,
 } from "../lib/event-records"
 
-const { t } = useI18n()
+const { t, te } = useI18n()
+const labels = { t, te }
 const settingsStore = useSettingsStore()
 
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
@@ -92,8 +89,56 @@ const state = computed<"idle" | "loading" | "error" | "ready">(() => {
   return "ready"
 })
 
-const userEvents = computed(() => normalizeUserEventRecords(suite.data.value?.userEvents))
+// --- Filters + view options ------------------------------------------------------------
+const filters = reactive<EventRecordsFilterState>({ time: "year", from: undefined, to: undefined, types: [], units: [] })
+const sort = useCatalogViewPreference<EventRecordSort>("event-records", "sort", () => "time", EVENT_RECORD_SORTS)
 
+const timeWindow = computed<{ from: number | null; to: number | null }>(() => {
+  if (filters.time === "all") {
+    return { from: null, to: null }
+  }
+  if (filters.time === "year") {
+    return { from: Date.now() - 365 * 24 * 60 * 60 * 1000, to: null }
+  }
+  return { from: filters.from?.getTime() ?? null, to: filters.to?.getTime() ?? null }
+})
+
+const activeFilterCount = computed(() =>
+  [filters.time !== "year", filters.types.length > 0, filters.units.length > 0].filter(Boolean).length)
+
+const activeChips = computed<CatalogActiveChip[]>(() => [
+  ...(filters.time === "year" ? [] : [{ key: "time", label: t(`eventRecords.filters.${filters.time}`) }]),
+  ...filters.types.map((type) => ({ key: `type:${type}`, label: t(`events.type.${type}`) })),
+  ...filters.units.map((unit) => ({ key: `unit:${unit}`, label: resolveSekaiUnitLabel(labels, unit) })),
+])
+
+function removeChip(key: string) {
+  const [kind, value] = key.split(":")
+  if (kind === "time") {
+    filters.time = "year"
+  } else if (kind === "type") {
+    filters.types = filters.types.filter((type) => type !== value)
+  } else if (kind === "unit") {
+    filters.units = filters.units.filter((unit) => unit !== value)
+  }
+}
+
+function resetFilters() {
+  filters.time = "year"
+  filters.from = undefined
+  filters.to = undefined
+  filters.types = []
+  filters.units = []
+}
+
+function setSort(value: AcceptableValue | AcceptableValue[] | undefined) {
+  if (typeof value === "string" && isEventRecordSort(value)) {
+    sort.value = value
+  }
+}
+
+// --- Data pipeline -------------------------------------------------------------------
+const userEvents = computed(() => normalizeUserEventRecords(suite.data.value?.userEvents))
 const rows = computed(() => buildEventRecordRows(userEvents.value, master.eventsById.value))
 
 /** Rank brackets reverse-derived from owned event ranking honors (badges). */
@@ -101,86 +146,6 @@ const derivedRanks = computed(() => buildDerivedRankMap(
   normalizeUserHonorIds(suite.data.value?.userHonors),
   master.honorRankIndex.value,
 ))
-
-function displayEventRank(eventId: number, rank: number | null): string {
-  if (rank != null) {
-    return formatNumberCN(rank)
-  }
-
-  const tier = derivedRanks.value.get(derivedEventRankKey(eventId))
-  return tier != null ? formatDerivedRankTier(tier) : "—"
-}
-
-function displayChapterRank(eventId: number, gameCharacterId: number | null, rank: number | null): string {
-  if (rank != null) {
-    return formatNumberCN(rank)
-  }
-
-  const tier = derivedRanks.value.get(derivedChapterRankKey(eventId, gameCharacterId))
-  return tier != null ? formatDerivedRankTier(tier) : "—"
-}
-
-const TIME_MODES = ["year", "all", "custom"] as const
-type TimeMode = (typeof TIME_MODES)[number]
-
-const EVENT_TYPE_OPTIONS: readonly SekaiEventType[] = ["marathon", "cheerful_carnival", "world_bloom"]
-
-const timeMode = ref<TimeMode>("year")
-const customStart = ref<Date | undefined>(undefined)
-const customEnd = ref<Date | undefined>(undefined)
-const typeFilters = ref<SekaiEventType[]>([])
-
-function handleTimeModeChange(value: unknown) {
-  if (typeof value === "string" && (TIME_MODES as readonly string[]).includes(value)) {
-    timeMode.value = value as TimeMode
-  }
-}
-
-function toggleTypeFilter(value: SekaiEventType, checked: boolean) {
-  const current = typeFilters.value.filter((item) => item !== value)
-  typeFilters.value = checked ? [...current, value] : current
-}
-
-const timeWindow = computed<{ from: number | null; to: number | null }>(() => {
-  if (timeMode.value === "all") {
-    return { from: null, to: null }
-  }
-  if (timeMode.value === "year") {
-    return { from: Date.now() - 365 * 24 * 60 * 60 * 1000, to: null }
-  }
-  return {
-    from: customStart.value?.getTime() ?? null,
-    to: customEnd.value?.getTime() ?? null,
-  }
-})
-
-// Rows without a dated master event only survive the unfiltered "all" view.
-const filteredRows = computed(() => rows.value.filter((row) => {
-  const { from, to } = timeWindow.value
-  const startAt = row.event?.startAt ?? null
-  if (from != null || to != null) {
-    if (startAt == null) {
-      return false
-    }
-    if (from != null && startAt < from) {
-      return false
-    }
-    if (to != null && startAt > to) {
-      return false
-    }
-  }
-
-  if (typeFilters.value.length > 0) {
-    const eventType = row.event?.eventType ?? null
-    if (eventType == null || !typeFilters.value.includes(eventType)) {
-      return false
-    }
-  }
-
-  return true
-}))
-
-const filteredEventIds = computed(() => new Set(filteredRows.value.map((row) => row.eventId)))
 
 const worldGroups = computed(() =>
   buildWorldBloomGroups(
@@ -190,18 +155,72 @@ const worldGroups = computed(() =>
   ),
 )
 
-const tableRows = computed(() => mergeWorldBloomIntoRows(filteredRows.value, worldGroups.value))
+// World Link chapters merge first so standalone chapter rows obey the same filters.
+const mergedRows = computed(() => mergeWorldBloomIntoRows(rows.value, worldGroups.value))
+const filteredRows = computed(() => filterEventRecordTableRows(mergedRows.value, {
+  from: timeWindow.value.from,
+  to: timeWindow.value.to,
+  types: filters.types,
+  units: filters.units,
+}))
 
-const trend = computed(() => buildEventPointTrend(filteredRows.value, derivedRanks.value))
-const summary = computed(() => summarizeEventRecords(
-  userEvents.value.filter((record) => filteredEventIds.value.has(record.eventId)),
+function rankOf(row: EventRecordTableRow): number | null {
+  return row.rank ?? derivedRanks.value.get(derivedEventRankKey(row.eventId))?.toRank ?? null
+}
+
+const sortedRows = computed(() => sortEventRecordTableRows(filteredRows.value, sort.value, rankOf))
+
+const trend = computed(() => buildEventPointTrend(
+  filteredRows.value.flatMap((row) => row.eventPoint == null ? [] : [{ ...row, eventPoint: row.eventPoint }]),
+  derivedRanks.value,
 ))
 
-const summaryChips = computed(() => [
+const summary = computed(() => summarizeEventRecordTableRows(filteredRows.value))
+
+const summaryItems = computed<EventRecordsSummaryItem[]>(() => [
   { key: "participated", label: t("eventRecords.summary.participated"), value: formatNumberCN(summary.value.participated) },
   { key: "bestPoint", label: t("eventRecords.summary.bestPoint"), value: formatNumberCN(summary.value.bestPoint) },
   { key: "averagePoint", label: t("eventRecords.summary.averagePoint"), value: formatNumberCN(summary.value.averagePoint) },
+  ...(summary.value.rankedCount > 0
+    ? [
+        { key: "bestRank", label: t("eventRecords.summary.bestRank"), value: formatNumberCN(summary.value.bestRank) },
+        { key: "ranked", label: t("eventRecords.summary.ranked"), value: formatNumberCN(summary.value.rankedCount) },
+      ]
+    : []),
 ])
+
+const countLabel = computed(() => t("eventRecords.table.count", { count: filteredRows.value.length }))
+
+// --- Row presentation ------------------------------------------------------------------
+function eventRankText(row: EventRecordTableRow): { text: string; fromHonor: boolean } {
+  if (row.rank != null) {
+    return { text: formatNumberCN(row.rank), fromHonor: false }
+  }
+
+  const tier = derivedRanks.value.get(derivedEventRankKey(row.eventId))
+  return tier != null ? { text: formatDerivedRankTier(tier), fromHonor: true } : { text: "—", fromHonor: false }
+}
+
+function chapterViews(row: EventRecordTableRow): EventRecordChapterView[] {
+  return row.chapters.map((chapter) => {
+    const tier = chapter.rank == null ? derivedRanks.value.get(derivedChapterRankKey(row.eventId, chapter.gameCharacterId)) : null
+    return {
+      key: worldBloomChapterKey(row.eventId, chapter.gameCharacterId),
+      name: chapter.gameCharacterId == null
+        ? t("eventRecords.worldLink.finale")
+        : master.characterMap.value.get(chapter.gameCharacterId)?.name ?? `#${chapter.gameCharacterId}`,
+      iconUrl: chapter.gameCharacterId == null ? null : resolveCharacterIconUrl(chapter.gameCharacterId),
+      chapterLabel: chapter.chapterNo != null ? t("eventRecords.worldLink.chapterLabel", { no: chapter.chapterNo }) : null,
+      pointText: formatNumberCN(chapter.chapterPoint),
+      rankText: chapter.rank != null ? formatNumberCN(chapter.rank) : tier != null ? formatDerivedRankTier(tier) : "—",
+      rankFromHonor: chapter.rank == null && tier != null,
+    }
+  })
+}
+
+function formatRecordDate(value: number | null) {
+  return formatLocalizedDate(value, { year: "numeric", month: "2-digit", day: "2-digit" }, t("events.common.dateFallback"))
+}
 
 const uploadTimeText = computed(() =>
   formatLocalizedDateTime(
@@ -215,43 +234,24 @@ function reloadAll() {
   void suite.reload()
   void master.reload()
 }
-
-function characterName(gameCharacterId: number | null) {
-  if (gameCharacterId == null) {
-    return t("eventRecords.worldLink.finale")
-  }
-
-  return master.characterMap.value.get(gameCharacterId)?.name ?? `#${gameCharacterId}`
-}
-
-function formatRecordDate(value: number | null) {
-  return formatLocalizedDate(
-    value,
-    { year: "numeric", month: "2-digit", day: "2-digit" },
-    t("events.common.dateFallback"),
-  )
-}
-
 </script>
 
 <template>
-  <div class="mx-auto flex min-w-0 w-full max-w-4xl flex-1 flex-col justify-center gap-4">
+  <div class="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col justify-center gap-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold">{{ t("eventRecords.title") }}</h1>
         <p class="text-sm text-muted-foreground">{{ t("eventRecords.description") }}</p>
       </div>
-      <div class="flex flex-col items-start gap-1 sm:items-end">
-        <div class="flex flex-wrap items-center gap-2">
-          <GameAccountSelect capability="suite" />
-          <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="reloadAll">
+      <div class="flex flex-col items-start gap-1.5 sm:items-end">
+        <GameAccountSelect capability="suite" />
+        <div v-if="state !== 'idle'" class="flex items-center gap-1 text-xs text-muted-foreground">
+          <span v-if="state === 'ready'">{{ t("eventRecords.dataAsOf", { time: uploadTimeText }) }}</span>
+          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="state === 'loading'" @click="reloadAll">
             <LucideRefreshCcw class="size-3.5" />
             {{ t("eventRecords.refresh") }}
           </Button>
         </div>
-        <p v-if="state === 'ready'" class="text-xs text-muted-foreground">
-          {{ t("eventRecords.dataAsOf", { time: uploadTimeText }) }}
-        </p>
       </div>
     </div>
 
@@ -265,12 +265,10 @@ function formatRecordDate(value: number | null) {
     <!-- Loading -->
     <template v-else-if="state === 'loading'">
       <div class="grid gap-2 rounded-md border bg-muted/20 p-3">
-        <p class="text-xs text-muted-foreground">
-          {{ t("eventRecords.loading") }}
-        </p>
+        <p class="text-xs text-muted-foreground">{{ t("eventRecords.loading") }}</p>
         <Progress :model-value="master.regionState.value?.progress ?? 0" />
       </div>
-      <Skeleton class="h-20 w-full" />
+      <Skeleton class="h-12 w-full" />
       <Skeleton class="h-64 w-full" />
       <Skeleton class="h-96 w-full" />
     </template>
@@ -281,15 +279,11 @@ function formatRecordDate(value: number | null) {
         <!-- A grantee cannot upload the owner's data, so no upload CTA there. -->
         <template v-if="suiteDataMissing && selectedAccount?.ownership === 'granted'">
           <LucideCloudUpload class="size-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-          <p class="max-w-md text-sm text-muted-foreground">
-            {{ t("eventRecords.missingGrantedData") }}
-          </p>
+          <p class="max-w-md text-sm text-muted-foreground">{{ t("eventRecords.missingGrantedData") }}</p>
         </template>
         <template v-else-if="suiteDataMissing">
           <LucideCloudUpload class="size-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-          <p class="max-w-md text-sm text-muted-foreground">
-            {{ t("eventRecords.missingUserData") }}
-          </p>
+          <p class="max-w-md text-sm text-muted-foreground">{{ t("eventRecords.missingUserData") }}</p>
           <Button as-child size="sm">
             <RouterLink to="/upload-data">
               <LucideCloudUpload class="size-4" aria-hidden="true" />
@@ -307,166 +301,63 @@ function formatRecordDate(value: number | null) {
     </Card>
 
     <template v-else>
-      <!-- Filters -->
-      <div class="flex flex-col gap-2">
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <Tabs :model-value="timeMode" @update:model-value="handleTimeModeChange">
-            <TabsList class="h-8">
-              <TabsTrigger value="year" class="text-xs">{{ t("eventRecords.filters.lastYear") }}</TabsTrigger>
-              <TabsTrigger value="all" class="text-xs">{{ t("eventRecords.filters.all") }}</TabsTrigger>
-              <TabsTrigger value="custom" class="text-xs">{{ t("eventRecords.filters.custom") }}</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <div v-if="timeMode === 'custom'" class="flex flex-wrap items-center gap-2">
-            <div class="w-48">
-              <DateTimePicker24h v-model="customStart" :placeholder="t('eventRecords.filters.from')" :aria-label="t('eventRecords.filters.from')" />
-            </div>
-            <span class="text-xs text-muted-foreground">—</span>
-            <div class="w-48">
-              <DateTimePicker24h v-model="customEnd" :placeholder="t('eventRecords.filters.to')" :aria-label="t('eventRecords.filters.to')" />
-            </div>
-          </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-xs text-muted-foreground">{{ t("eventRecords.filters.type") }}</span>
-          <label
-            v-for="eventType in EVENT_TYPE_OPTIONS"
-            :key="eventType"
-            :for="`event-record-type-${eventType}`"
-            :class="[
-              'flex cursor-pointer items-center gap-2 rounded-md border bg-background/70 px-2 py-1.5 text-xs transition-colors hover:bg-muted/40',
-              typeFilters.includes(eventType)
-                ? 'border-cyan-300 bg-cyan-50 text-cyan-900 dark:border-cyan-500/40 dark:bg-cyan-500/10 dark:text-cyan-100'
-                : '',
-            ]"
-          >
-            <Checkbox
-              :id="`event-record-type-${eventType}`"
-              :model-value="typeFilters.includes(eventType)"
-              @update:model-value="checked => toggleTypeFilter(eventType, checked === true)"
-            />
-            {{ t(`events.type.${eventType}`) }}
-          </label>
-        </div>
-      </div>
+      <CatalogFilterPanel
+        :title="t('catalog.filters.title')"
+        :reset-label="t('catalog.filters.reset')"
+        :count-label="countLabel"
+        page-key="event-records"
+        :active-count="activeFilterCount"
+        :active-chips="activeChips"
+        content-class="flex flex-col gap-3"
+        @reset="resetFilters"
+        @remove-chip="removeChip"
+      >
+        <EventRecordsFilterFields :state="filters" :unit-color-map="null" />
+      </CatalogFilterPanel>
 
-      <!-- Summary chips -->
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Card v-for="chip in summaryChips" :key="chip.key">
-          <CardContent class="p-4">
-            <div class="text-xs text-muted-foreground">{{ chip.label }}</div>
-            <div class="mt-1 text-xl font-bold tabular-nums">{{ chip.value }}</div>
-          </CardContent>
-        </Card>
-      </div>
+      <EventRecordsSummary :items="summaryItems" />
 
-      <!-- PT trend -->
       <EventPointTrendChart :trend="trend" />
 
-      <!-- Normal event records -->
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-base">{{ t("eventRecords.table.title") }}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p v-if="tableRows.length === 0" class="text-sm text-muted-foreground">
-            {{ t("eventRecords.noData") }}
-          </p>
-          <div v-else class="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{{ t("eventRecords.table.event") }}</TableHead>
-                  <TableHead>{{ t("eventRecords.table.type") }}</TableHead>
-                  <TableHead class="text-right">{{ t("eventRecords.table.point") }}</TableHead>
-                  <TableHead class="text-right">{{ t("eventRecords.table.rank") }}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <template v-for="row in tableRows" :key="row.eventId">
-                  <TableRow>
-                    <TableCell>
-                      <div class="flex min-w-0 items-center gap-3">
-                        <div class="relative aspect-[2/1] w-20 shrink-0 overflow-hidden rounded-md bg-muted">
-                          <EventBannerImage
-                            :region="bannerRegion"
-                            :assetbundle-name="row.event?.assetbundleName ?? null"
-                            :alt="row.name"
-                            :preference="assetEndpoint"
-                          />
-                        </div>
-                        <div class="min-w-0">
-                          <RouterLink
-                            v-if="row.event"
-                            :to="`/events/${row.eventId}`"
-                            class="block max-w-56 truncate text-sm font-medium underline-offset-4 hover:underline"
-                          >
-                            {{ row.name }}
-                          </RouterLink>
-                          <span v-else class="block max-w-56 truncate text-sm font-medium">{{ row.name }}</span>
-                          <span class="text-xs text-muted-foreground">
-                            <b class="font-semibold">#{{ row.eventId }}</b>
-                            {{ formatRecordDate(row.event?.startAt ?? null) }}
-                          </span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <EventTypeBadge :event-type="row.event?.eventType ?? null" />
-                    </TableCell>
-                    <TableCell class="text-right tabular-nums">
-                      {{ row.eventPoint != null ? formatNumberCN(row.eventPoint) : "—" }}
-                    </TableCell>
-                    <TableCell
-                      class="text-right tabular-nums"
-                      :title="row.rank == null && displayEventRank(row.eventId, row.rank) !== '—'
-                        ? t('eventRecords.table.rankFromHonor')
-                        : undefined"
-                    >
-                      {{ displayEventRank(row.eventId, row.rank) }}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow
-                    v-for="chapter in row.chapters"
-                    :key="worldBloomChapterKey(row.eventId, chapter.gameCharacterId)"
-                    class="bg-muted/20"
-                  >
-                    <TableCell class="py-1.5">
-                      <div class="flex min-w-0 items-center gap-2 pl-10">
-                        <img
-                          decoding="async"
-                          v-if="chapter.gameCharacterId != null"
-                          :src="resolveCharacterIconUrl(chapter.gameCharacterId)"
-                          :alt="characterName(chapter.gameCharacterId)"
-                          class="size-6 shrink-0 rounded-full ring-1 ring-border"
-                          loading="lazy"
-                        >
-                        <span class="truncate text-xs">{{ characterName(chapter.gameCharacterId) }}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell class="py-1.5">
-                      <span v-if="chapter.chapterNo != null" class="text-xs text-muted-foreground">
-                        {{ t("eventRecords.worldLink.chapterLabel", { no: chapter.chapterNo }) }}
-                      </span>
-                    </TableCell>
-                    <TableCell class="py-1.5 text-right text-xs tabular-nums">
-                      {{ formatNumberCN(chapter.chapterPoint) }}
-                    </TableCell>
-                    <TableCell
-                      class="py-1.5 text-right text-xs tabular-nums"
-                      :title="chapter.rank == null && displayChapterRank(row.eventId, chapter.gameCharacterId, chapter.rank) !== '—'
-                        ? t('eventRecords.table.rankFromHonor')
-                        : undefined"
-                    >
-                      {{ displayChapterRank(row.eventId, chapter.gameCharacterId, chapter.rank) }}
-                    </TableCell>
-                  </TableRow>
-                </template>
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <!-- History -->
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <h2 class="text-base font-semibold">{{ t("eventRecords.table.title") }}</h2>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("catalog.sort.label") }}</span>
+          <ToggleGroup type="single" variant="segment" size="sm" :model-value="sort" :aria-label="t('catalog.sort.label')" @update:model-value="setSort">
+            <ToggleGroupItem v-for="option in EVENT_RECORD_SORTS" :key="option" :value="option">
+              {{ t(`eventRecords.sort.${option}`) }}
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <span class="text-xs tabular-nums text-muted-foreground">{{ countLabel }}</span>
+      </div>
+
+      <p v-if="sortedRows.length === 0" class="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+        {{ t("eventRecords.noData") }}
+      </p>
+      <div v-else class="flex flex-col gap-2">
+        <!-- Column captions for the numbers; phones label each row instead. -->
+        <div class="hidden items-center gap-3 px-3 text-xs text-muted-foreground sm:flex">
+          <span class="flex-1">{{ t("eventRecords.table.event") }}</span>
+          <span class="grid w-56 grid-cols-2 gap-x-6 text-right">
+            <span>{{ t("eventRecords.table.point") }}</span>
+            <span>{{ t("eventRecords.table.rank") }}</span>
+          </span>
+        </div>
+        <EventRecordRow
+          v-for="row in sortedRows"
+          :key="row.eventId"
+          :row="row"
+          :region="bannerRegion"
+          :preference="assetEndpoint"
+          :date-text="formatRecordDate(row.event?.startAt ?? null)"
+          :point-text="row.eventPoint != null ? formatNumberCN(row.eventPoint) : '—'"
+          :rank-text="eventRankText(row).text"
+          :rank-from-honor="eventRankText(row).fromHonor"
+          :chapters="chapterViews(row)"
+        />
+      </div>
     </template>
   </div>
 </template>

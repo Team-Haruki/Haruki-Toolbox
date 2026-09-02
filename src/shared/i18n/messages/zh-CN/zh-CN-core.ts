@@ -289,11 +289,14 @@ export default {
     "refresh": "刷新",
     "dataAsOf": "数据快照时间：{time}",
     "summary": {
+      "bestRank": "最佳排名",
+      "ranked": "有排名场次",
       "participated": "参与活动数",
       "bestPoint": "最高活动 PT",
       "averagePoint": "平均活动 PT"
     },
     "filters": {
+      "time": "时间",
       "lastYear": "近一年",
       "all": "全部",
       "custom": "自定义",
@@ -309,7 +312,13 @@ export default {
       "showAll": "查看全部",
       "zoomHint": "拖动或缩放下方选区以查看指定范围的活动"
     },
+    "sort": {
+      "time": "时间",
+      "point": "活动 PT",
+      "rank": "排名"
+    },
     "table": {
+      "count": "共 {count} 场",
       "title": "活动历史",
       "event": "活动",
       "type": "类型",
@@ -318,6 +327,9 @@ export default {
       "rankFromHonor": "缺少具体排名数据，档位由活动牌子推断"
     },
     "worldLink": {
+      "chapters": "{count} 章",
+      "showChapters": "展开章节",
+      "hideChapters": "收起章节",
       "chapterLabel": "第 {no} 章",
       "finale": "终章"
     }
