@@ -353,6 +353,21 @@ export default {
     "level": "Lv.{level}",
     "levelUnknown": "Lv.?",
     "songCount": "{count} songs",
+    "songFilter": {
+      "label": "Show",
+      "all": "All",
+      "notAllPerfect": "Not AP",
+      "notFullCombo": "Not FC",
+      "notCleared": "Not cleared"
+    },
+    "sections": {
+      "collapseAll": "Collapse all",
+      "expandAll": "Expand all"
+    },
+    "matchCount": "{count} / {total} songs",
+    "noMatches": "No songs match in this level.",
+    "rewardsRemaining": "Remaining: {list}",
+    "detailSummary": "{total} songs · {cleared} cleared · {fullCombo} FC · {allPerfect} AP",
     "summary": {
       "total": "Songs",
       "cleared": "Cleared",

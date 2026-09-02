@@ -277,3 +277,27 @@ function buildPlayLevelMap(
 
   return map
 }
+
+/** "Show me what is left" filters over a level's songs. */
+export const MUSIC_PROGRESS_SONG_FILTERS = ["all", "notAllPerfect", "notFullCombo", "notCleared"] as const
+
+export type MusicProgressSongFilter = (typeof MUSIC_PROGRESS_SONG_FILTERS)[number]
+
+export function isMusicProgressSongFilter(value: string): value is MusicProgressSongFilter {
+  return (MUSIC_PROGRESS_SONG_FILTERS as readonly string[]).includes(value)
+}
+
+const SONG_FILTER_STATUSES: Record<MusicProgressSongFilter, ReadonlySet<MusicProgressStatus> | null> = {
+  all: null,
+  notAllPerfect: new Set(["fullCombo", "clear", "unplayed"]),
+  notFullCombo: new Set(["clear", "unplayed"]),
+  notCleared: new Set(["unplayed"]),
+}
+
+export function filterMusicProgressSongs<T extends Pick<MusicProgressSong, "status">>(
+  songs: readonly T[],
+  filter: MusicProgressSongFilter,
+): T[] {
+  const statuses = SONG_FILTER_STATUSES[filter]
+  return statuses == null ? [...songs] : songs.filter((song) => statuses.has(song.status))
+}

@@ -353,6 +353,21 @@ export default {
     "level": "Lv.{level}",
     "levelUnknown": "Lv.?",
     "songCount": "{count} 首",
+    "songFilter": {
+      "label": "只看",
+      "all": "全部",
+      "notAllPerfect": "未 AP",
+      "notFullCombo": "未 FC",
+      "notCleared": "未通关"
+    },
+    "sections": {
+      "collapseAll": "全部折叠",
+      "expandAll": "全部展开"
+    },
+    "matchCount": "{count} / {total} 首",
+    "noMatches": "该定数下没有符合条件的歌曲。",
+    "rewardsRemaining": "可获取：{list}",
+    "detailSummary": "共 {total} 首 · 已通关 {cleared} · FC {fullCombo} · AP {allPerfect}",
     "summary": {
       "total": "曲目数",
       "cleared": "已通关",
