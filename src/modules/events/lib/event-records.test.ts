@@ -3,6 +3,9 @@ import type { SekaiEventItem } from "./event-filter"
 import {
   buildDerivedRankMap,
   clampTrendWindow,
+  filterEventRecordTableRows,
+  sortEventRecordTableRows,
+  summarizeEventRecordTableRows,
   defaultTrendWindow,
   TREND_DEFAULT_WINDOW_SIZE,
   buildEventPointTrend,
@@ -431,5 +434,44 @@ describe("clampTrendWindow", () => {
   test("degrades gracefully on tiny series", () => {
     expect(clampTrendWindow(0, 0, 1)).toEqual({ start: 0, end: 0 })
     expect(clampTrendWindow(0, 0, 0)).toEqual({ start: 0, end: 0 })
+  })
+})
+
+describe("event record table rows: filter, sort, summary", () => {
+  const event = (id: number, startAt: number, eventType: "marathon" | "world_bloom" = "marathon", unit: string | null = null): SekaiEventItem => ({
+    id, name: `E${id}`, eventType, assetbundleName: null, unit, startAt, aggregateAt: null, closedAt: null, rankingAnnounceAt: null, distributionStartAt: null,
+  })
+  const rows = [
+    { eventId: 1, event: event(1, 1000, "marathon", "light_sound"), name: "E1", eventPoint: 500, rank: 2000, chapters: [] },
+    { eventId: 2, event: event(2, 2000, "world_bloom"), name: "E2", eventPoint: null, rank: null, chapters: [] },
+    { eventId: 3, event: event(3, 3000), name: "E3", eventPoint: 900, rank: null, chapters: [] },
+    { eventId: 4, event: null, name: "#4", eventPoint: 100, rank: 50, chapters: [] },
+  ]
+
+  test("filters by window, type and unit, dropping undated rows when a window is set", () => {
+    const open = { from: null, to: null, types: [], units: [] }
+    expect(filterEventRecordTableRows(rows, open).map((row) => row.eventId)).toEqual([1, 2, 3, 4])
+    expect(filterEventRecordTableRows(rows, { ...open, from: 1500 }).map((row) => row.eventId)).toEqual([2, 3])
+    expect(filterEventRecordTableRows(rows, { ...open, types: ["world_bloom"] }).map((row) => row.eventId)).toEqual([2])
+    expect(filterEventRecordTableRows(rows, { ...open, units: ["light_sound"] }).map((row) => row.eventId)).toEqual([1])
+  })
+
+  test("sorts by date, points and rank with unranked rows last", () => {
+    expect(sortEventRecordTableRows(rows, "time").map((row) => row.eventId)).toEqual([3, 2, 1, 4])
+    expect(sortEventRecordTableRows(rows, "point").map((row) => row.eventId)).toEqual([3, 1, 4, 2])
+    expect(sortEventRecordTableRows(rows, "rank").map((row) => row.eventId)).toEqual([4, 1, 3, 2])
+    // A derived tier can stand in for the exact rank.
+    expect(sortEventRecordTableRows(rows, "rank", (row) => row.rank ?? (row.eventId === 3 ? 100 : null)).map((row) => row.eventId)).toEqual([4, 3, 1, 2])
+  })
+
+  test("summarizes participations only, with the best exact rank", () => {
+    expect(summarizeEventRecordTableRows(rows)).toEqual({
+      participated: 3,
+      bestPoint: 900,
+      averagePoint: 500,
+      bestRank: 50,
+      rankedCount: 2,
+    })
+    expect(summarizeEventRecordTableRows([])).toEqual({ participated: 0, bestPoint: null, averagePoint: null, bestRank: null, rankedCount: 0 })
   })
 })

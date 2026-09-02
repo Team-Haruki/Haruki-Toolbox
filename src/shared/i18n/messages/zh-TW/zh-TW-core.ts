@@ -289,11 +289,14 @@ export default {
     "refresh": "重新整理",
     "dataAsOf": "資料快照時間：{time}",
     "summary": {
+      "bestRank": "最佳排名",
+      "ranked": "有排名場次",
       "participated": "參與活動數",
       "bestPoint": "最高活動 PT",
       "averagePoint": "平均活動 PT"
     },
     "filters": {
+      "time": "時間",
       "lastYear": "近一年",
       "all": "全部",
       "custom": "自定義",
@@ -309,7 +312,13 @@ export default {
       "showAll": "檢視全部",
       "zoomHint": "拖動或縮放下方選區以檢視指定範圍的活動"
     },
+    "sort": {
+      "time": "時間",
+      "point": "活動 PT",
+      "rank": "排名"
+    },
     "table": {
+      "count": "共 {count} 場",
       "title": "活動歷史",
       "event": "活動",
       "type": "型別",
@@ -318,6 +327,9 @@ export default {
       "rankFromHonor": "缺少具體排名資料，檔位由活動牌子推斷"
     },
     "worldLink": {
+      "chapters": "{count} 章",
+      "showChapters": "展開章節",
+      "hideChapters": "收起章節",
       "chapterLabel": "第 {no} 章",
       "finale": "終章"
     }

@@ -1,5 +1,5 @@
 import { appendCatalogRecords, normalizeCatalogNumber, normalizeCatalogRecords, normalizeCatalogString } from "@/shared/sekai/catalog"
-import { normalizeEventTimestamp, type SekaiEventItem } from "./event-filter"
+import { normalizeEventTimestamp, type SekaiEventItem, type SekaiEventType } from "./event-filter"
 
 /**
  * One entry of the suite `userEvents` array.
@@ -607,4 +607,128 @@ export function summarizeEventRecords(records: readonly UserEventRecord[]): Even
     bestPoint: best,
     averagePoint: Math.round(total / records.length),
   }
+}
+
+/** Page filters over the merged record rows; every field is optional/empty for "no filter". */
+export type EventRecordTableFilters = {
+  from: number | null
+  to: number | null
+  types: readonly SekaiEventType[]
+  units: readonly string[]
+}
+
+/**
+ * Applies the time window, type and unit filters. Rows whose event is
+ * missing from masterdata have no date, so they only survive an open window;
+ * type / unit filters drop them outright.
+ */
+export function filterEventRecordTableRows(
+  rows: readonly EventRecordTableRow[],
+  filters: EventRecordTableFilters,
+): EventRecordTableRow[] {
+  return rows.filter((row) => {
+    const startAt = row.event?.startAt ?? null
+    if (filters.from != null || filters.to != null) {
+      if (startAt == null) {
+        return false
+      }
+      if (filters.from != null && startAt < filters.from) {
+        return false
+      }
+      if (filters.to != null && startAt > filters.to) {
+        return false
+      }
+    }
+
+    if (filters.types.length > 0) {
+      const eventType = row.event?.eventType ?? null
+      if (eventType == null || !filters.types.includes(eventType)) {
+        return false
+      }
+    }
+
+    if (filters.units.length > 0) {
+      const unit = row.event?.unit ?? null
+      if (unit == null || !filters.units.includes(unit)) {
+        return false
+      }
+    }
+
+    return true
+  })
+}
+
+/** Time window presets of the records page. */
+export const EVENT_RECORD_TIME_MODES = ["year", "all", "custom"] as const
+
+export type EventRecordTimeMode = (typeof EVENT_RECORD_TIME_MODES)[number]
+
+export function isEventRecordTimeMode(value: string): value is EventRecordTimeMode {
+  return (EVENT_RECORD_TIME_MODES as readonly string[]).includes(value)
+}
+
+export const EVENT_RECORD_SORTS = ["time", "point", "rank"] as const
+
+export type EventRecordSort = (typeof EVENT_RECORD_SORTS)[number]
+
+export function isEventRecordSort(value: string): value is EventRecordSort {
+  return (EVENT_RECORD_SORTS as readonly string[]).includes(value)
+}
+
+/**
+ * Sorted copy: newest first, highest PT first, or best rank first. `rankOf`
+ * supplies the rank to compare (exact, or the tier ceiling derived from
+ * honors); rows without one trail the ranked rows in time order.
+ */
+export function sortEventRecordTableRows(
+  rows: readonly EventRecordTableRow[],
+  sort: EventRecordSort,
+  rankOf: (row: EventRecordTableRow) => number | null = (row) => row.rank,
+): EventRecordTableRow[] {
+  const sorted = [...rows]
+  if (sort === "point") {
+    return sorted.sort((a, b) =>
+      (b.eventPoint ?? -1) - (a.eventPoint ?? -1) || compareByEventStartDesc(a, b))
+  }
+
+  if (sort === "rank") {
+    return sorted.sort((a, b) => {
+      const rankA = rankOf(a)
+      const rankB = rankOf(b)
+      if (rankA == null || rankB == null) {
+        return (rankA == null ? 1 : 0) - (rankB == null ? 1 : 0) || compareByEventStartDesc(a, b)
+      }
+      return rankA - rankB || compareByEventStartDesc(a, b)
+    })
+  }
+
+  return sorted.sort(compareByEventStartDesc)
+}
+
+export type EventRecordRowsSummary = EventRecordsSummary & {
+  /** Best exact rank across the rows; null when no row carries one. */
+  bestRank: number | null
+  /** Rows with an exact rank. */
+  rankedCount: number
+}
+
+/** Summary over the rows on screen (after filters); World Link rows without a main record are not participations. */
+export function summarizeEventRecordTableRows(rows: readonly EventRecordTableRow[]): EventRecordRowsSummary {
+  const participations = rows.filter((row) => row.eventPoint != null)
+  const base = summarizeEventRecords(participations.map((row) => ({
+    eventId: row.eventId,
+    eventPoint: row.eventPoint ?? 0,
+    rank: row.rank,
+  })))
+
+  let bestRank: number | null = null
+  let rankedCount = 0
+  for (const row of rows) {
+    if (row.rank != null) {
+      rankedCount += 1
+      bestRank = bestRank == null ? row.rank : Math.min(bestRank, row.rank)
+    }
+  }
+
+  return { ...base, bestRank, rankedCount }
 }
