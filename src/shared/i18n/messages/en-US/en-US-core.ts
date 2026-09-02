@@ -509,6 +509,10 @@ export default {
     "refresh": "Refresh",
     "dataAsOf": "Data as of {time}",
     "unknownCharacter": "Unknown character",
+    "stats": {
+      "title": "Play stats"
+    },
+    "snapshotNote": "From snapshot · {time}",
     "unitAverage": "Unit averages",
     "header": {
       "title": "Basic Info",

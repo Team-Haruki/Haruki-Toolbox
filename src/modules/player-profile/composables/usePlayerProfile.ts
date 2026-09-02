@@ -35,6 +35,9 @@ export const PLAYER_PROFILE_SNAPSHOT_EXTRA_KEYS = [
 
 export const PLAYER_PROFILE_EVENT_KEYS = ["userEvents", "userHonors"] as const
 
+/** The three honors shown on the in-game profile card. */
+export const PLAYER_PROFILE_HONOR_KEYS = ["userProfileHonors"] as const
+
 export const PLAYER_PROFILE_MASTER_FILES = [
   "cards",
   "gameCharacters",
@@ -99,6 +102,10 @@ export function usePlayerProfile() {
   // Fetched separately so instances whose backend allowlist lacks the key
   // only lose the MVP/SuperStar chips instead of the whole profile.
   const multiLiveSuite = useUserSuite(PLAYER_PROFILE_MULTI_LIVE_KEYS, suiteAccount)
+
+  // Same isolation for the profile honors: the realtime payload carries them
+  // inline, the snapshot source needs its own (allowlist-gated) subset.
+  const honorsSuite = useUserSuite(PLAYER_PROFILE_HONOR_KEYS, suiteAccount)
 
   // A granted account may hold profile without suite (grants are per data
   // type), so the ancillary suite subsets below skip accounts whose suite
@@ -249,11 +256,16 @@ export function usePlayerProfile() {
     multiLiveStatus: multiLiveSuite.status,
     multiLiveData: multiLiveSuite.data,
     reloadMultiLive: multiLiveSuite.reload,
+    honorsStatus: honorsSuite.status,
+    honorsData: honorsSuite.data,
+    reloadHonors: honorsSuite.reload,
     extrasStatus: extrasSuite.status,
     extrasData: extrasSuite.data,
+    extrasUploadTime: extrasSuite.uploadTime,
     reloadExtras: extrasSuite.reload,
     eventsStatus: eventsSuite.status,
     eventsData: eventsSuite.data,
+    eventsUploadTime: eventsSuite.uploadTime,
     reloadEvents: eventsSuite.reload,
     masterLoading,
     masterError,
