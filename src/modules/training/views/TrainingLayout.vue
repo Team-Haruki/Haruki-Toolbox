@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed, watch } from "vue"
+import { computed, provide, shallowRef, watch } from "vue"
 import { useI18n } from "vue-i18n"
+import { LucideRefreshCw } from "lucide-vue-next"
+import { Button } from "@/components/ui/button"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useAccountUploadTime, useGameAccountSelection } from "@/shared/sekai/user-snapshot/use-user-suite"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import type { SekaiRegion } from "@/types"
+import { TRAINING_REFRESH_KEY } from "../composables/training-context"
 import { TRAINING_PREFETCH_MASTER_FILES } from "../lib/prefetch-master-files"
 
 const { t, locale } = useI18n()
@@ -42,6 +45,19 @@ const uploadTimeText = computed(() => {
     .format(suiteUploadTimeToMillis(uploadTime.value))
 })
 
+// The active tab tells the layout how to refresh itself.
+const refreshHandler = shallowRef<(() => void) | null>(null)
+provide(TRAINING_REFRESH_KEY, {
+  register(handler) {
+    refreshHandler.value = handler
+    return () => {
+      if (refreshHandler.value === handler) {
+        refreshHandler.value = null
+      }
+    }
+  },
+})
+
 const tabs = [
   { name: "training.challenge", labelKey: "training.tabs.challenge" },
   { name: "training.power", labelKey: "training.tabs.power" },
@@ -53,26 +69,40 @@ const tabs = [
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-4">
+  <div class="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col justify-center gap-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold">{{ t("training.layout.title") }}</h1>
         <p class="text-sm text-muted-foreground">{{ t("training.layout.description") }}</p>
       </div>
-      <div class="flex flex-col items-start gap-1 sm:items-end">
+      <div class="flex flex-col items-start gap-1.5 sm:items-end">
         <GameAccountSelect capability="suite" />
-        <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
-          {{ t("training.layout.dataAsOf", { time: uploadTimeText }) }}
-        </p>
+        <div v-if="selectedAccount" class="flex items-center gap-1 text-xs text-muted-foreground">
+          <span v-if="uploadTimeText">{{ t("training.layout.dataAsOf", { time: uploadTimeText }) }}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="h-6 gap-1 px-1.5 text-xs text-muted-foreground"
+            :disabled="refreshHandler == null"
+            @click="refreshHandler?.()"
+          >
+            <LucideRefreshCw class="size-3.5" />
+            {{ t("training.layout.refresh") }}
+          </Button>
+        </div>
       </div>
     </div>
 
-    <nav class="flex flex-wrap gap-1 border-b border-border" :aria-label="t('training.layout.title')">
+    <!-- One scrolling row on phones instead of wrapping into two. -->
+    <nav
+      class="-mx-1 flex gap-1 overflow-x-auto border-b border-border px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      :aria-label="t('training.layout.title')"
+    >
       <RouterLink
         v-for="tab in tabs"
         :key="tab.name"
         :to="{ name: tab.name }"
-        class="rounded-t-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        class="shrink-0 whitespace-nowrap rounded-t-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         active-class="border-b-2 border-primary font-medium text-foreground"
       >
         {{ t(tab.labelKey) }}

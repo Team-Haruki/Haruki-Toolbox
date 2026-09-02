@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
-import SimpleSelect from "@/shared/components/SimpleSelect.vue"
+import TrainingCharacterStrip, { type TrainingCharacterStripRow } from "@/modules/training/components/TrainingCharacterStrip.vue"
+import { useTrainingRefresh } from "@/modules/training/composables/training-context"
 import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { useTrainingMissions } from "@/modules/training/composables/useTrainingMissions"
 import {
@@ -72,11 +72,12 @@ const summary = computed(() => {
 const selectedCharacter = computed(() => characterMap.value.get(selectedCharacterId.value) ?? null)
 const selectedColor = computed(() => resolveSekaiCharacterColor(selectedCharacterId.value))
 
-const characterSelectOptions = computed(() =>
+const rosterRows = computed<TrainingCharacterStripRow[]>(() =>
   CHARACTER_IDS.map((characterId) => ({
-    value: String(characterId),
-    label: characterName(characterId),
+    characterId,
+    name: characterName(characterId),
     iconUrl: characterMap.value.get(characterId)?.iconUrl ?? null,
+    color: resolveSekaiCharacterColor(characterId),
   })),
 )
 
@@ -97,13 +98,6 @@ function missionProgressText(row: CharacterMissionRowView): string {
   return `${current} / ${numberFormatter.value.format(row.upper)}`
 }
 
-function handleCharacterChange(value: unknown) {
-  const parsed = typeof value === "string" ? Number(value) : Number.NaN
-  if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 26) {
-    selectedCharacterId.value = parsed
-  }
-}
-
 function formatNumber(value: number): string {
   return numberFormatter.value.format(value)
 }
@@ -112,6 +106,8 @@ function refresh() {
   void reloadSuite("check-remote")
   reloadMaster()
 }
+
+useTrainingRefresh(refresh)
 
 function retry() {
   if (masterError.value != null) {
@@ -126,30 +122,6 @@ function retry() {
 
 <template>
   <div class="flex w-full flex-col gap-4">
-    <!-- Header -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h2 class="text-xl font-bold">{{ t("training.missions.title") }}</h2>
-        <p class="text-sm text-muted-foreground">{{ t("training.missions.description") }}</p>
-      </div>
-      <div class="flex flex-col items-start gap-1 sm:items-end">
-        <div class="flex flex-wrap items-center gap-2">
-          <SimpleSelect
-            v-if="isReady"
-            :model-value="String(selectedCharacterId)"
-            :options="characterSelectOptions"
-            size="sm"
-            :aria-label="t('training.missions.character')"
-            @update:model-value="handleCharacterChange"
-          />
-          <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
-            <LucideRefreshCw class="size-3.5" />
-            {{ t("training.missions.refresh") }}
-          </Button>
-        </div>
-      </div>
-    </div>
-
     <!-- No account selected -->
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
@@ -179,6 +151,13 @@ function retry() {
     </template>
 
     <template v-else-if="isReady">
+      <TrainingCharacterStrip
+        :rows="rosterRows"
+        :active-id="selectedCharacterId"
+        :label="t('training.missions.character')"
+        @select="selectedCharacterId = $event"
+      />
+
       <!-- Rank summary -->
       <Card class="border-l-4" :style="selectedColor ? { borderLeftColor: selectedColor } : {}">
         <CardContent class="flex flex-col gap-3 px-4">

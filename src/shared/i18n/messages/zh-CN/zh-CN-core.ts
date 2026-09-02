@@ -602,7 +602,8 @@ export default {
     "layout": {
       "title": "角色养成",
       "description": "查看游戏账号的养成进度",
-      "dataAsOf": "数据时间：{time}"
+      "dataAsOf": "数据时间：{time}",
+      "refresh": "刷新"
     },
     "tabs": {
       "challenge": "挑战信息",
@@ -708,6 +709,7 @@ export default {
         "character": "角色",
         "tree": "树",
         "flower": "花",
+        "special": "其他",
         "all": "全部"
       },
       "level": "Lv.{level}",

@@ -602,7 +602,8 @@ export default {
     "layout": {
       "title": "Character training",
       "description": "View your game account's training progress",
-      "dataAsOf": "Data as of {time}"
+      "dataAsOf": "Data as of {time}",
+      "refresh": "Refresh"
     },
     "tabs": {
       "challenge": "Challenge Live",
@@ -708,6 +709,7 @@ export default {
         "character": "Character",
         "tree": "Tree",
         "flower": "Flower",
+        "special": "Other",
         "all": "All"
       },
       "level": "Lv.{level}",

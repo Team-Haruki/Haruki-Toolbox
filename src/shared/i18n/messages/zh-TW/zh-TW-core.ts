@@ -602,7 +602,8 @@ export default {
     "layout": {
       "title": "角色養成",
       "description": "檢視遊戲賬號的養成進度",
-      "dataAsOf": "資料時間：{time}"
+      "dataAsOf": "資料時間：{time}",
+      "refresh": "重新整理"
     },
     "tabs": {
       "challenge": "挑戰資訊",
@@ -708,6 +709,7 @@ export default {
         "character": "角色",
         "tree": "樹",
         "flower": "花",
+        "special": "其他",
         "all": "全部"
       },
       "level": "Lv.{level}",
