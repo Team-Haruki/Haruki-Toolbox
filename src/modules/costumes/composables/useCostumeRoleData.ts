@@ -25,7 +25,7 @@ const BROTLI_WASM_URL = new URL(
 
 async function decodeRuntimeDocument(url: string): Promise<unknown> {
   const [{ decodeRuntimeMessagePackBrotliDirect }, response] = await Promise.all([
-    import("../vendor/haruki-3d-engine/runtimeMessagePackDecodeCore-KdsU0CRg.js"),
+    import("../vendor/haruki-3d-engine/runtimeMessagePackDecodeCore-BptdOkvu.js"),
     fetch(url),
   ])
   if (!response.ok) {

@@ -1,6 +1,6 @@
 # haruki-3d-engine (vendored browser build)
 
-Prebuilt library output of [Team-Haruki/Haruki-3D-Engine](https://github.com/Team-Haruki/Haruki-3D-Engine)
+Prebuilt library output of Haruki-3D (`engine/`, formerly the Haruki-3D-Engine repo)
 (`npm run build`, lib entry only — the capture harness is not vendored).
 Includes the split model/view yaw API: CostumeShop drag rotates CameraRoot via
 `setViewYawDegrees` and does not move the assembled character or feed false
@@ -20,5 +20,7 @@ The Basis/KTX2 transcoder the kernel loads from `/basis/` lives in
 Runtime packages are consumed from the public asset endpoints under
 `/pjsk-3d-output/<region>/` (exported on JP01 by the 3D batch follower).
 
-To update: build the upstream repo and re-copy the files above; do not edit
-the generated files by hand.
+To update: build the upstream repo (`npm run build` in `engine/`), re-copy the
+files above, drop the trailing `//# sourceMappingURL=` lines (the `.map` files
+are not vendored), and point `useCostumeRoleData.ts` at the new decode-core
+hash. Do not edit the generated files by hand otherwise.
