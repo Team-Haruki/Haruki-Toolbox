@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test"
 import {
   aggregateMusicResultFlags,
   buildMusicProgress,
+  filterMusicProgressSongs,
   resolveMusicProgressStatus,
 } from "./music-progress"
 
@@ -171,5 +172,21 @@ describe("buildMusicProgress", () => {
     })
 
     expect(progress.master.summary.total).toBe(0)
+  })
+})
+
+describe("filterMusicProgressSongs", () => {
+  const songs = [
+    { musicId: 1, status: "allPerfect" as const },
+    { musicId: 2, status: "fullCombo" as const },
+    { musicId: 3, status: "clear" as const },
+    { musicId: 4, status: "unplayed" as const },
+  ]
+
+  it("keeps the songs still missing the requested milestone", () => {
+    expect(filterMusicProgressSongs(songs, "all").map((song) => song.musicId)).toEqual([1, 2, 3, 4])
+    expect(filterMusicProgressSongs(songs, "notAllPerfect").map((song) => song.musicId)).toEqual([2, 3, 4])
+    expect(filterMusicProgressSongs(songs, "notFullCombo").map((song) => song.musicId)).toEqual([3, 4])
+    expect(filterMusicProgressSongs(songs, "notCleared").map((song) => song.musicId)).toEqual([4])
   })
 })
