@@ -249,7 +249,9 @@ async function fetchMasterFileJson(
   } catch (error) {
     // A transient failure must not be persisted as "this region has no such
     // file" for the whole master version; leave it out so the next ensure
-    // fetches it again.
+    // fetches it again. Note a 404 served without CORS headers lands here
+    // too (the browser reports it as a network error), so callers must not
+    // treat an optional file's absence from the cache listing as "uncached".
     if (isOptionalFile) {
       return SKIP_FILE
     }

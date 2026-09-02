@@ -1,6 +1,7 @@
 import { computed, ref, shallowRef, watch, type Ref } from "vue"
 import type { SekaiRegion } from "@/types"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
+import { isMasterCacheCovering } from "@/shared/sekai/master-coverage"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 
 const MUSIC_PROGRESS_MASTER_FILES = ["musics", "musicDifficulties"] as const
@@ -52,8 +53,10 @@ export function useMusicProgressMasterData(
 
   let generation = 0
 
+  // Element-wise sources: a getter returning a fresh array would re-run
+  // `load()` on every progress patch of the region state.
   watch(
-    () => [region.value, regionState.value?.masterFetchVersion] as const,
+    [() => region.value, () => regionState.value?.masterFetchVersion ?? null],
     () => {
       void load()
     },
@@ -82,7 +85,7 @@ export function useMusicProgressMasterData(
     error.value = null
     try {
       const cachedFiles = sekaiDataStore.regionStates[target].files
-      if (!requiredFiles.every((fileName) => cachedFiles.includes(fileName))) {
+      if (!isMasterCacheCovering(cachedFiles, requiredFiles)) {
         await sekaiDataStore.ensureRegionData(target, {
           files: requiredFiles,
           musicMetas: false,

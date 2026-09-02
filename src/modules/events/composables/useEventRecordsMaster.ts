@@ -56,7 +56,7 @@ export function useEventRecordsMaster(region: Ref<SekaiRegion | null>) {
   )
 
   watch(
-    () => [region.value, regionState.value?.masterFetchVersion],
+    [() => region.value, () => regionState.value?.masterFetchVersion ?? null],
     () => {
       void load()
     },

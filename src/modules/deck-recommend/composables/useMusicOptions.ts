@@ -23,7 +23,7 @@ export function useMusicOptions(region: Ref<SekaiRegion>, selectedMusicId: Ref<s
   )
 
   watch(
-    () => [region.value, regionState.value.masterFetchVersion],
+    [() => region.value, () => regionState.value.masterFetchVersion],
     () => {
       void loadOptions()
     },
