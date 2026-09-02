@@ -23,6 +23,17 @@ export function resolveCardTileArts(
   return mode === "both" ? ["normal", "trained"] : [mode]
 }
 
+/**
+ * How many art slots a list tile reserves in the given mode. `both` always
+ * reserves two, even for a card that only has one artwork (1★ / 2★ / birthday,
+ * or trained-by-default cards) — otherwise those tiles rendered their single
+ * thumbnail at full tile width, twice the size of their neighbours', and the
+ * grid rows came out ragged.
+ */
+export function resolveCardTileArtSlots(mode: CardArtMode): number {
+  return mode === "both" ? 2 : 1
+}
+
 /** Supply types worth a badge on tiles (plain permanent cards stay unlabelled). */
 const HIGHLIGHTED_SUPPLY_VARIANTS: Record<string, NonNullable<BadgeVariants["variant"]>> = {
   term_limited: "amber",

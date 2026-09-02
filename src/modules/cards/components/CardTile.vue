@@ -5,7 +5,11 @@ import { Badge } from "@/components/ui/badge"
 import SekaiCardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 import type { CatalogCardThumbnail, CatalogMasterCard } from "@/shared/sekai/catalog"
 import { resolveSekaiSupplyLabel } from "@/shared/sekai/labels"
-import { resolveCardSupplyBadgeVariant, resolveCardTileArts } from "@/modules/cards/lib/card-display"
+import {
+  resolveCardSupplyBadgeVariant,
+  resolveCardTileArtSlots,
+  resolveCardTileArts,
+} from "@/modules/cards/lib/card-display"
 import type { CardArtMode } from "@/modules/cards/lib/card-query"
 
 /**
@@ -26,6 +30,11 @@ const props = defineProps<{
 const { t, te } = useI18n()
 
 const arts = computed(() => resolveCardTileArts(props.card, props.artMode))
+// Slot width, not art count: in `both` mode a card with a single artwork keeps
+// the half-width slot (centred) so every tile in the row is the same height.
+// `basis-*` rather than `w-*` because the thumbnail root already carries
+// `w-full` and the two would be an unordered conflict.
+const artClass = computed(() => (resolveCardTileArtSlots(props.artMode) > 1 ? "basis-[calc(50%-0.125rem)]" : ""))
 const supplyVariant = computed(() => resolveCardSupplyBadgeVariant(props.supplyType))
 const supplyLabel = computed(() => resolveSekaiSupplyLabel({ t, te }, props.supplyType))
 const title = computed(() => props.card.prefix ?? `#${props.card.id}`)
@@ -51,7 +60,7 @@ const title = computed(() => props.card.prefix ?? `#${props.card.id}`)
           :trained="art === 'trained'"
           :unreleased="unreleased && !blur"
           :title="title"
-          :class="arts.length > 1 ? 'max-w-[calc(50%-0.125rem)]' : ''"
+          :class="artClass"
         />
       </div>
       <span
