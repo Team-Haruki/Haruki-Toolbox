@@ -2,10 +2,23 @@
 import { computed, ref, shallowRef, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { useRoute, useRouter } from "vue-router"
-import { LucideRefreshCcw, LucideRotateCcw } from "lucide-vue-next"
+import {
+  LucideCrown,
+  LucideLink,
+  LucideRefreshCcw,
+  LucideRotateCcw,
+  LucideRotateCw,
+  LucideScissors,
+  LucideSearch,
+  LucideShirt,
+  LucideUndo2,
+} from "lucide-vue-next"
+import type { AcceptableValue } from "reka-ui"
+import { toast } from "vue-sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
+import { Input } from "@/components/ui/input"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -15,9 +28,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { usePagedSlice } from "@/composables/usePagedSlice"
+import CatalogPagination from "@/shared/components/catalog/CatalogPagination.vue"
 import { SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
-import { buildCatalogCharacterMap, type CatalogCharacter } from "@/shared/sekai/catalog"
+import { buildCatalogCharacterMap, resolveSekaiCharacterColor, type CatalogCharacter } from "@/shared/sekai/catalog"
+import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
+import SekaiCharacterAvatar from "@/shared/components/SekaiCharacterAvatar.vue"
 import { resolveCostumeThumbnailUrl } from "@/shared/sekai/data-sources"
 import { SEKAI_CATALOG_REGION_FOLLOW_VALUE, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
@@ -25,7 +42,7 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import CostumeViewer, { type CostumeViewerRecipe } from "../components/CostumeViewer.vue"
 import { useCostumeRoleData } from "../composables/useCostumeRoleData"
-import { pickDefaultOptionId, type CostumeSlot } from "../lib/costume-options"
+import { COSTUME_SLOTS, pickDefaultOptionId, type CostumeSlot, type RuntimeCostumeOption } from "../lib/costume-options"
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -131,56 +148,118 @@ function resetToDefaults() {
   hairId.value = pickDefaultOptionId(data.options.hair, data.defaults?.hairCostume3dId)
 }
 
-const characterOptions = computed<ComboboxOption[]>(() =>
-  [...characterMap.value.values()]
-    .sort((a, b) => a.id - b.id)
-    .map((character) => ({
-      value: String(character.id),
-      label: character.name,
-      description: `#${character.id}`,
-      iconUrl: character.iconUrl,
-      keywords: [String(character.id), character.name],
-    })),
+const characters = computed<CatalogCharacter[]>(() =>
+  [...characterMap.value.values()].sort((a, b) => a.id - b.id),
 )
+const characterOptions = characters
+const currentCharacter = computed(() => characterMap.value.get(characterId.value) ?? null)
 
-function partComboboxOptions(slot: CostumeSlot): ComboboxOption[] {
-  return (roleData.value?.options[slot] ?? []).map((option) => ({
-    value: String(option.id),
-    label: option.name,
-    description: option.colorName ? `#${option.id} · ${option.colorName}` : `#${option.id}`,
-    iconUrl: option.thumbnailAssetbundleName
-      ? resolveCostumeThumbnailUrl(region.value, option.thumbnailAssetbundleName, assetEndpoint.value)
-      : null,
-    // Regional asset mirrors miss some costume thumbnails; the jp mirror is the superset.
-    iconFallbackUrl: option.thumbnailAssetbundleName && region.value !== "jp"
-      ? resolveCostumeThumbnailUrl("jp", option.thumbnailAssetbundleName, assetEndpoint.value)
-      : null,
-    keywords: [String(option.id), option.name, option.colorName].filter(Boolean),
-  }))
+// --- The rack: one slot at a time, thumbnails, a search box ---------------
+
+const SLOT_ICONS = { body: LucideShirt, head: LucideCrown, hair: LucideScissors } as const
+
+const activeSlot = ref<CostumeSlot>("body")
+const query = ref("")
+
+function setActiveSlot(value: AcceptableValue | AcceptableValue[] | undefined) {
+  if (typeof value === "string" && (COSTUME_SLOTS as readonly string[]).includes(value)) {
+    activeSlot.value = value as CostumeSlot
+  }
 }
 
-function handleCharacterChange(value: string | null) {
-  const parsed = value != null ? Number(value) : null
-  if (parsed != null && Number.isInteger(parsed) && characterMap.value.has(parsed)) {
-    characterId.value = parsed
+function slotOptions(slot: CostumeSlot): RuntimeCostumeOption[] {
+  return roleData.value?.options[slot] ?? []
+}
+
+const visibleOptions = computed<RuntimeCostumeOption[]>(() => {
+  const needle = query.value.trim().toLowerCase()
+  const options = slotOptions(activeSlot.value)
+  if (!needle) {
+    return options
+  }
+  return options.filter((option) =>
+    String(option.id).includes(needle)
+    || option.name.toLowerCase().includes(needle)
+    || option.colorName.toLowerCase().includes(needle),
+  )
+})
+
+// The body and accessory slots hold every colour variant the runtime ships —
+// ~2.7k entries for a character — so the rack pages, and follows the current
+// selection to whatever page it sits on when the slot or character changes.
+const RACK_PAGE_SIZE = 48
+const page = ref(1)
+const pageSize = ref(RACK_PAGE_SIZE)
+const rackAnchor = ref<HTMLElement | null>(null)
+const { pageItems: pagedOptions, totalPages, currentPage } = usePagedSlice(visibleOptions, page, pageSize)
+
+const selectedId = computed(() => {
+  switch (activeSlot.value) {
+    case "body": return bodyId.value
+    case "head": return headId.value
+    default: return hairId.value
+  }
+})
+
+function showSelectedPage() {
+  const index = visibleOptions.value.findIndex((option) => option.id === selectedId.value)
+  page.value = index >= 0 ? Math.floor(index / pageSize.value) + 1 : 1
+}
+
+watch(query, () => {
+  page.value = 1
+})
+watch([activeSlot, () => roleData.value, selectedId], showSelectedPage, { immediate: true })
+
+function selectOption(id: number) {
+  switch (activeSlot.value) {
+    case "body": bodyId.value = id; break
+    case "head": headId.value = id; break
+    default: if (!hairLocked.value) hairId.value = id
+  }
+}
+
+function thumbnailSources(option: RuntimeCostumeOption): string[] {
+  if (!option.thumbnailAssetbundleName) {
+    return []
+  }
+  const sources = [resolveCostumeThumbnailUrl(region.value, option.thumbnailAssetbundleName, assetEndpoint.value)]
+  // Regional asset mirrors miss some costume thumbnails; the jp mirror is the superset.
+  if (region.value !== "jp") {
+    sources.push(resolveCostumeThumbnailUrl("jp", option.thumbnailAssetbundleName, assetEndpoint.value))
+  }
+  return sources
+}
+
+/** What is on the model right now, by name, for the caption under the stage. */
+const currentOutfit = computed(() => {
+  const names = roleData.value?.nameById
+  const label = (id: number | null) => (id != null ? names?.get(id)?.name ?? `#${id}` : null)
+  return { body: label(bodyId.value), head: label(headId.value), hair: label(hairId.value) }
+})
+
+// --- Stage controls ---------------------------------------------------------
+
+const viewerRef = ref<InstanceType<typeof CostumeViewer> | null>(null)
+
+async function copyLink() {
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+    toast.success(t("costumes.dressup.linkCopied"))
+  } catch {
+    toast.error(t("costumes.dressup.linkCopyFailed"))
+  }
+}
+
+function selectCharacter(id: number) {
+  if (id !== characterId.value && characterMap.value.has(id)) {
+    characterId.value = id
     bodyId.value = null
     headId.value = null
     hairId.value = null
+    query.value = ""
   }
 }
-
-function handlePartChange(selection: typeof bodyId) {
-  return (value: string | null) => {
-    const parsed = value != null ? Number(value) : null
-    if (parsed != null && Number.isInteger(parsed) && parsed > 0) {
-      selection.value = parsed
-    }
-  }
-}
-
-const handleBodyChange = handlePartChange(bodyId)
-const handleHeadChange = handlePartChange(headId)
-const handleHairChange = handlePartChange(hairId)
 
 // Full head sets ship their own hairstyle, so the hair slot has no effect
 // while one is selected (in-game behavior).
@@ -241,7 +320,7 @@ watch(() => route.query, () => {
 </script>
 
 <template>
-  <div class="mx-auto flex min-w-0 w-full max-w-7xl flex-1 flex-col justify-center gap-4">
+  <div class="mx-auto flex w-full min-w-0 max-w-7xl flex-1 flex-col gap-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold">{{ t("costumes.dressup.title") }}</h1>
@@ -266,9 +345,10 @@ watch(() => route.query, () => {
     </div>
 
     <template v-if="loading && characterOptions.length === 0">
-      <div class="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-        <Skeleton class="h-72 w-full rounded-lg" />
-        <Skeleton class="aspect-[7/5] w-full rounded-lg" />
+      <Skeleton class="h-12 w-full rounded-lg" />
+      <div class="grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+        <Skeleton class="aspect-[4/5] w-full rounded-lg sm:aspect-[7/5]" />
+        <Skeleton class="h-96 w-full rounded-lg" />
       </div>
     </template>
 
@@ -282,101 +362,176 @@ watch(() => route.query, () => {
       </CardContent>
     </Card>
 
-    <div v-else class="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-      <Card class="min-w-0 h-fit">
-        <CardContent class="flex min-w-0 flex-col gap-4 px-3 pt-5 sm:px-6 sm:pt-6">
-          <div class="grid gap-1.5">
-            <Label for="costume-character" class="text-xs text-muted-foreground">
-              {{ t("costumes.dressup.character") }}
-            </Label>
-            <Combobox
-              trigger-id="costume-character"
-              :model-value="String(characterId)"
-              :options="characterOptions"
-              :placeholder="t('costumes.dressup.characterPlaceholder')"
-              :search-placeholder="t('costumes.dressup.searchPlaceholder')"
-              :empty-text="t('costumes.dressup.empty')"
-              :clearable="false"
-              trigger-class="w-full"
-              @update:model-value="handleCharacterChange"
-            />
-          </div>
-          <div
-            v-if="roleError"
-            class="flex flex-col gap-2 rounded-md border border-dashed p-3 text-center"
-          >
-            <p class="text-xs text-muted-foreground">{{ t("costumes.dressup.roleLoadError") }}</p>
-            <p class="max-w-full truncate font-mono text-[11px] text-muted-foreground" :title="roleError">
-              {{ roleError }}
-            </p>
-            <Button variant="outline" size="sm" class="mx-auto" @click="reloadRole">
-              <LucideRefreshCcw class="mr-1 size-4" /> {{ t("costumes.dressup.retry") }}
+    <template v-else>
+      <!-- Who: every character in one strip, the current one ringed in their
+           colour. A dropdown hid the cast; a strip shows it. -->
+      <div
+        class="flex gap-1.5 overflow-x-auto rounded-lg border bg-card px-3 py-2 lg:flex-wrap"
+        role="radiogroup"
+        :aria-label="t('costumes.dressup.character')"
+      >
+        <button
+          v-for="character in characters"
+          :key="character.id"
+          type="button"
+          role="radio"
+          :aria-checked="character.id === characterId"
+          :title="character.name"
+          :class="[
+            'shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-card transition',
+            character.id === characterId ? 'ring-current' : 'ring-transparent opacity-70 hover:opacity-100 hover:ring-border',
+          ]"
+          :style="character.id === characterId ? { color: resolveSekaiCharacterColor(character.id) ?? undefined } : undefined"
+          @click="selectCharacter(character.id)"
+        >
+          <SekaiCharacterAvatar :character-id="character.id" :name="character.name" size="md" class="ring-0" />
+        </button>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start">
+        <!-- The stage. Tall, and pinned on wide screens so the model stays in
+             view while the rack scrolls. -->
+        <div class="flex flex-col gap-2 lg:sticky lg:top-17">
+          <CostumeViewer
+            ref="viewerRef"
+            :region="region"
+            :preference="assetEndpoint"
+            :recipe="recipe"
+            class="aspect-[4/5] sm:aspect-[7/5] lg:aspect-auto lg:h-[calc(100vh-11rem)] lg:min-h-96"
+          />
+          <div class="flex flex-wrap items-center gap-1.5">
+            <Button variant="outline" size="sm" :title="t('costumes.dressup.rotateLeft')" @click="viewerRef?.rotateBy(-45)">
+              <LucideRotateCcw class="size-4" />
+              <span class="sr-only">{{ t("costumes.dressup.rotateLeft") }}</span>
+            </Button>
+            <Button variant="outline" size="sm" :title="t('costumes.dressup.rotateRight')" @click="viewerRef?.rotateBy(45)">
+              <LucideRotateCw class="size-4" />
+              <span class="sr-only">{{ t("costumes.dressup.rotateRight") }}</span>
+            </Button>
+            <Button variant="outline" size="sm" @click="viewerRef?.resetView()">
+              <LucideUndo2 class="size-4" /> {{ t("costumes.dressup.resetView") }}
+            </Button>
+            <span class="flex-1" />
+            <Button variant="outline" size="sm" @click="copyLink">
+              <LucideLink class="size-4" /> {{ t("costumes.dressup.copyLink") }}
+            </Button>
+            <Button variant="ghost" size="sm" class="text-muted-foreground" @click="resetToDefaults">
+              <LucideRefreshCcw class="size-4" /> {{ t("costumes.dressup.reset") }}
             </Button>
           </div>
-          <template v-else-if="roleLoading && roleData == null">
-            <Skeleton v-for="index in 3" :key="index" class="h-14 w-full rounded-md" />
-          </template>
-          <template v-else>
-            <div class="grid gap-1.5">
-              <Label for="costume-body" class="text-xs text-muted-foreground">
-                {{ t("costumes.dressup.body") }}
-              </Label>
-              <Combobox
-                trigger-id="costume-body"
-                :model-value="bodyId != null ? String(bodyId) : null"
-                :options="partComboboxOptions('body')"
-                :placeholder="t('costumes.dressup.partPlaceholder')"
-                :search-placeholder="t('costumes.dressup.searchPlaceholder')"
-                :empty-text="t('costumes.dressup.empty')"
-                :clearable="false"
-                trigger-class="w-full"
-                @update:model-value="handleBodyChange"
-              />
+          <p v-if="currentCharacter && recipe" class="text-xs text-muted-foreground">
+            <span class="font-medium text-foreground">{{ currentCharacter.name }}</span>
+            <template v-for="slot in COSTUME_SLOTS" :key="slot">
+              <span class="mx-1.5 opacity-50">/</span>
+              <span>{{ t(`costumes.dressup.${slot}`) }} {{ currentOutfit[slot] ?? "—" }}</span>
+            </template>
+          </p>
+        </div>
+
+        <!-- The rack: one slot at a time, every option as a thumbnail. -->
+        <Card class="min-w-0">
+          <CardContent class="flex min-w-0 flex-col gap-3 px-3 pt-4 sm:px-4 sm:pt-4">
+            <div
+              v-if="roleError"
+              class="flex flex-col gap-2 rounded-md border border-dashed p-3 text-center"
+            >
+              <p class="text-xs text-muted-foreground">{{ t("costumes.dressup.roleLoadError") }}</p>
+              <p class="max-w-full truncate font-mono text-[11px] text-muted-foreground" :title="roleError">
+                {{ roleError }}
+              </p>
+              <Button variant="outline" size="sm" class="mx-auto" @click="reloadRole">
+                <LucideRefreshCcw class="mr-1 size-4" /> {{ t("costumes.dressup.retry") }}
+              </Button>
             </div>
-            <div class="grid gap-1.5">
-              <Label for="costume-head" class="text-xs text-muted-foreground">
-                {{ t("costumes.dressup.head") }}
-              </Label>
-              <Combobox
-                trigger-id="costume-head"
-                :model-value="headId != null ? String(headId) : null"
-                :options="partComboboxOptions('head')"
-                :placeholder="t('costumes.dressup.partPlaceholder')"
-                :search-placeholder="t('costumes.dressup.searchPlaceholder')"
-                :empty-text="t('costumes.dressup.empty')"
-                :clearable="false"
-                trigger-class="w-full"
-                @update:model-value="handleHeadChange"
-              />
-            </div>
-            <div class="grid gap-1.5">
-              <Label for="costume-hair" class="text-xs text-muted-foreground">
-                {{ t("costumes.dressup.hair") }}
-              </Label>
-              <Combobox
-                trigger-id="costume-hair"
-                :model-value="hairId != null ? String(hairId) : null"
-                :options="partComboboxOptions('hair')"
-                :placeholder="t('costumes.dressup.partPlaceholder')"
-                :search-placeholder="t('costumes.dressup.searchPlaceholder')"
-                :empty-text="t('costumes.dressup.empty')"
-                :clearable="false"
-                :disabled="hairLocked"
-                trigger-class="w-full"
-                @update:model-value="handleHairChange"
-              />
-              <p v-if="hairLocked" class="text-[11px] text-muted-foreground">
+            <template v-else-if="roleLoading && roleData == null">
+              <Skeleton class="h-9 w-full rounded-md" />
+              <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                <Skeleton v-for="index in 8" :key="index" class="aspect-square w-full rounded-md" />
+              </div>
+            </template>
+            <template v-else>
+              <ToggleGroup
+                type="single"
+                variant="segment"
+                size="sm"
+                :model-value="activeSlot"
+                class="w-full"
+                :aria-label="t('costumes.dressup.partPlaceholder')"
+                @update:model-value="setActiveSlot"
+              >
+                <ToggleGroupItem v-for="slot in COSTUME_SLOTS" :key="slot" :value="slot" class="flex-1 gap-1.5">
+                  <component :is="SLOT_ICONS[slot]" class="size-3.5" aria-hidden="true" />
+                  {{ t(`costumes.dressup.${slot}`) }}
+                  <span class="text-[11px] text-muted-foreground tabular-nums">{{ slotOptions(slot).length }}</span>
+                </ToggleGroupItem>
+              </ToggleGroup>
+
+              <div class="relative">
+                <LucideSearch class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                <Input
+                  v-model="query"
+                  type="search"
+                  class="h-9 pl-9"
+                  :placeholder="t('costumes.dressup.searchPlaceholder')"
+                  :aria-label="t('costumes.dressup.searchPlaceholder')"
+                />
+              </div>
+
+              <p v-if="activeSlot === 'hair' && hairLocked" class="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
                 {{ t("costumes.dressup.hairLockedHint") }}
               </p>
-            </div>
-            <Button variant="outline" size="sm" class="w-fit" @click="resetToDefaults">
-              <LucideRotateCcw class="mr-1 size-4" /> {{ t("costumes.dressup.reset") }}
-            </Button>
-          </template>
-        </CardContent>
-      </Card>
 
-      <CostumeViewer :region="region" :preference="assetEndpoint" :recipe="recipe" />
-    </div>
+              <p v-if="visibleOptions.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+                {{ t("costumes.dressup.empty") }}
+              </p>
+              <div
+                v-else
+                ref="rackAnchor"
+                class="grid grid-cols-3 gap-2 sm:grid-cols-4"
+                role="radiogroup"
+                :aria-label="t(`costumes.dressup.${activeSlot}`)"
+              >
+                <button
+                  v-for="option in pagedOptions"
+                  :key="option.id"
+                  type="button"
+                  role="radio"
+                  :aria-checked="option.id === selectedId"
+                  :disabled="activeSlot === 'hair' && hairLocked"
+                  :title="option.colorName ? `${option.name} · ${option.colorName}` : option.name"
+                  :class="[
+                    'group flex min-w-0 flex-col gap-1 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+                  ]"
+                  @click="selectOption(option.id)"
+                >
+                  <span
+                    :class="[
+                      'relative block aspect-square w-full overflow-hidden rounded-md bg-muted/40 ring-2 transition',
+                      option.id === selectedId ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
+                    ]"
+                  >
+                    <SekaiAssetImage :sources="thumbnailSources(option)" :alt="option.name" fit="contain" placeholder-class="bg-transparent" />
+                  </span>
+                  <span class="truncate text-[11px] leading-tight" :class="option.id === selectedId ? 'font-medium' : 'text-muted-foreground'">
+                    {{ option.name }}
+                  </span>
+                  <span v-if="option.colorName" class="truncate text-[10px] leading-tight text-muted-foreground">{{ option.colorName }}</span>
+                </button>
+              </div>
+              <CatalogPagination
+                v-if="totalPages > 1"
+                v-model:page="page"
+                v-model:page-size="pageSize"
+                :total-pages="totalPages"
+                :total="visibleOptions.length"
+                :page-size-options="[24, 48, 96]"
+                :anchor="rackAnchor"
+              />
+              <span class="sr-only">{{ currentPage }}</span>
+            </template>
+          </CardContent>
+        </Card>
+      </div>
+    </template>
   </div>
 </template>

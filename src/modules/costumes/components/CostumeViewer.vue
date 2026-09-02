@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideLoaderCircle, LucideRefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { resolvePjsk3dRuntimeBaseUrl } from "@/shared/sekai/data-sources"
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
@@ -16,11 +17,15 @@ export type CostumeViewerRecipe = {
   hairCostume3dId: number
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   region: SekaiRegion
   preference: SekaiAssetEndpointPreference
   recipe: CostumeViewerRecipe | null
-}>()
+  /** Sizing lives with the caller; the default keeps the card-detail embed as it was. */
+  class?: string
+}>(), {
+  class: "aspect-[7/5]",
+})
 
 const { t } = useI18n()
 
@@ -152,6 +157,19 @@ function handlePointerUp(event: PointerEvent) {
   }
 }
 
+/** Turn the view by `degrees` (the character stays put; the camera orbits). */
+function rotateBy(degrees: number) {
+  yawDegrees = (yawDegrees + degrees) % 360
+  kernel?.setViewYawDegrees(yawDegrees)
+}
+
+function resetView() {
+  yawDegrees = 0
+  kernel?.setViewYawDegrees(0)
+}
+
+defineExpose({ rotateBy, resetView })
+
 function handleVisibilityChange() {
   if (kernel == null || status.value !== "ready") {
     return
@@ -185,7 +203,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="hostRef" class="relative aspect-[7/5] w-full overflow-hidden rounded-md border bg-[#1c1e2c]">
+  <div ref="hostRef" :class="cn('relative w-full overflow-hidden rounded-md border bg-[#1c1e2c]', props.class)">
     <canvas
       ref="canvasRef"
       class="block size-full touch-none cursor-grab active:cursor-grabbing"

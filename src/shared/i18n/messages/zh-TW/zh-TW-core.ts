@@ -390,6 +390,12 @@ export default {
       "empty": "沒有找到匹配項。",
       "hairLockedHint": "該頭飾固定髮型，髮型選項不生效。",
       "reset": "恢復預設",
+      "rotateLeft": "向左轉",
+      "rotateRight": "向右轉",
+      "resetView": "回正",
+      "copyLink": "複製連結",
+      "linkCopied": "連結已複製",
+      "linkCopyFailed": "複製失敗，請手動複製位址列。",
       "loadError": "服裝資料載入失敗。",
       "roleLoadError": "該角色的 3D 部件清單載入失敗。",
       "retry": "重試"
