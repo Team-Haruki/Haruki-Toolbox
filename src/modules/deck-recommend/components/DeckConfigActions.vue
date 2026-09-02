@@ -8,8 +8,8 @@ import {
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 
+/** The config pane's action row: secondary actions on one line, the run button full width under them. */
 defineProps<{
-  variant: "desktop" | "mobile"
   running: boolean
   canRun: boolean
 }>()
@@ -25,38 +25,13 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div v-if="variant === 'desktop'" class="ml-auto hidden flex-wrap items-center gap-2 md:flex">
-    <Button type="button" variant="outline" size="sm" @click="emit('expert')">
-      <LucideSettings2 class="size-4" />
-      {{ t("deckRecommend.layers.expert.title") }}
-    </Button>
-    <Button type="button" variant="outline" size="sm" :disabled="running" @click="emit('save')">
-      <LucideSave class="size-4" />
-      {{ t("deckRecommend.configActions.save") }}
-    </Button>
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      class="text-destructive hover:bg-destructive/10 hover:text-destructive"
-      :disabled="running"
-      @click="emit('clear')"
-    >
-      <LucideTrash2 class="size-4" />
-      {{ t("deckRecommend.configActions.clear") }}
-    </Button>
-    <Button type="button" size="sm" class="min-w-28" :disabled="!canRun" @click="emit('run')">
-      <LucidePlay class="size-4" />
-      {{ running ? t("deckRecommend.runner.running") : t("deckRecommend.runner.run") }}
-    </Button>
-  </div>
-  <div v-else class="grid gap-2 border-t px-3 py-3 md:hidden">
+  <div class="grid gap-2 px-3 py-3 sm:px-4">
     <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
-      <Button type="button" variant="outline" size="sm" class="min-w-0 px-1.5 text-xs sm:px-2.5 sm:text-sm" @click="emit('expert')">
+      <Button type="button" variant="outline" size="sm" class="min-w-0 px-1.5 text-xs sm:px-2.5" @click="emit('expert')">
         <LucideSettings2 class="size-4" />
         {{ t("deckRecommend.layers.expert.title") }}
       </Button>
-      <Button type="button" variant="outline" size="sm" class="min-w-0 px-1.5 text-xs sm:px-2.5 sm:text-sm" :disabled="running" @click="emit('save')">
+      <Button type="button" variant="outline" size="sm" class="min-w-0 px-1.5 text-xs sm:px-2.5" :disabled="running" @click="emit('save')">
         <LucideSave class="size-4" />
         {{ t("deckRecommend.configActions.save") }}
       </Button>
@@ -64,7 +39,7 @@ const { t } = useI18n()
         type="button"
         variant="ghost"
         size="sm"
-        class="min-w-0 px-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive sm:px-2.5 sm:text-sm"
+        class="min-w-0 px-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive sm:px-2.5"
         :disabled="running"
         @click="emit('clear')"
       >

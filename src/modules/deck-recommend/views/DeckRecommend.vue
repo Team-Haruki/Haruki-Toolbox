@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
+import { useMediaQuery } from "@vueuse/core"
 import { toast } from "vue-sonner"
 import {
   Card,
@@ -189,6 +190,13 @@ const mysekaiGateOverrideOpen = ref(false)
 const mysekaiFixtureBonusOverrideOpen = ref(false)
 const clearConfigConfirmOpen = ref(false)
 const configCollapsed = ref(false)
+
+// Wide screens show config and results side by side, so the config card
+// never collapses there; narrow screens fold it into the summary bar after
+// a run so the results are the first thing on screen.
+const isTwoPane = useMediaQuery("(min-width: 1280px)")
+const showConfigCard = computed(() => isTwoPane.value || !configCollapsed.value)
+const showSummaryBar = computed(() => !isTwoPane.value && configCollapsed.value)
 const trainingConfig = ref(initialSavedConfig.trainingConfig ?? createDefaultCardTrainingConfig())
 const characterOptions = useCharacterOptions(dataRegion)
 const worldBloomCharacters = useWorldBloomCharacterOptions(dataRegion, selectedEventId)
@@ -1641,74 +1649,72 @@ provideDeckRecommendFormContext({
 </script>
 
 <template>
-  <div class="flex min-w-0 w-full flex-1 flex-col items-center justify-center py-1 sm:px-2 sm:py-4">
+  <div class="flex min-w-0 w-full flex-1 flex-col py-1 sm:px-2 sm:py-4">
     <div class="mx-auto w-full max-w-[100rem] space-y-3 sm:space-y-4">
-      <Card v-show="!configCollapsed" class="gap-0 rounded-lg py-0">
-        <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
-          <div class="flex flex-wrap items-center gap-2">
-            <Tabs :model-value="recommendMode" class="w-full min-w-0 @3xl:w-auto" @update:model-value="updateRecommendMode">
-              <TabsList class="grid h-auto w-full grid-cols-5 gap-1 @3xl:inline-flex @3xl:w-fit @3xl:max-w-full @3xl:flex-wrap @3xl:justify-start">
-                <TabsTrigger
-                  v-for="option in modeOptions"
-                  :key="option.value"
-                  :value="option.value"
-                  class="h-auto min-h-7 min-w-0 px-1 text-xs leading-tight whitespace-normal @2xl:text-sm @3xl:h-7 @3xl:flex-none @3xl:px-3 @3xl:whitespace-nowrap"
-                >
-                  {{ option.label }}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <DeckConfigActions
-              variant="desktop"
-              :running="runner.running.value"
-              :can-run="canRunRecommend"
-              @expert="expertConfigOpen = true"
-              @save="saveDeckRecommendConfig"
-              @clear="clearConfigConfirmOpen = true"
-              @run="runRecommend"
-            />
-          </div>
-        </CardHeader>
-        <CardContent class="@container grid gap-5 px-3 py-4 sm:px-5 sm:py-5">
-          <DeckBasicSection />
+      <!-- Wide screens: config pane on the left stays put while the results scroll on the right. -->
+      <div class="grid gap-3 sm:gap-4 xl:grid-cols-[minmax(22rem,27rem)_minmax(0,1fr)] xl:items-start">
+        <div class="min-w-0 xl:sticky xl:top-16 xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto xl:overscroll-contain xl:rounded-lg">
+          <Card v-show="showConfigCard" class="gap-0 rounded-lg py-0">
+            <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
+              <Tabs :model-value="recommendMode" class="w-full min-w-0" @update:model-value="updateRecommendMode">
+                <TabsList class="grid h-auto w-full grid-cols-5 gap-1">
+                  <TabsTrigger
+                    v-for="option in modeOptions"
+                    :key="option.value"
+                    :value="option.value"
+                    class="h-auto min-h-7 min-w-0 px-1 text-xs leading-tight whitespace-normal @2xl:text-sm"
+                  >
+                    {{ option.label }}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </CardHeader>
+            <CardContent class="@container grid gap-5 px-3 py-4 sm:px-5 sm:py-5">
+              <DeckBasicSection />
 
-          <DeckAdvancedSection v-model:open="advancedConfigOpen" />
+              <DeckAdvancedSection v-model:open="advancedConfigOpen" />
 
-          <DeckExpertSheet v-model:open="expertConfigOpen" />
-        </CardContent>
-        <DeckConfigActions
-          variant="mobile"
-          :running="runner.running.value"
-          :can-run="canRunRecommend"
-          @expert="expertConfigOpen = true"
-          @save="saveDeckRecommendConfig"
-          @clear="clearConfigConfirmOpen = true"
-          @run="runRecommend"
-        />
-      </Card>
+              <DeckExpertSheet v-model:open="expertConfigOpen" />
+            </CardContent>
+            <!-- Sticks to the bottom of the scrolling pane, so the run button is always reachable. -->
+            <div class="sticky bottom-0 z-10 rounded-b-lg border-t bg-card">
+              <DeckConfigActions
+                :running="runner.running.value"
+                :can-run="canRunRecommend"
+                @expert="expertConfigOpen = true"
+                @save="saveDeckRecommendConfig"
+                @clear="clearConfigConfirmOpen = true"
+                @run="runRecommend"
+              />
+            </div>
+          </Card>
 
-      <DeckConfigSummaryBar
-        v-show="configCollapsed"
-        :items="configSummaryItems"
-        :running="runner.running.value"
-        :can-run="canRunRecommend"
-        @edit="configCollapsed = false"
-        @run="runRecommend"
-      />
+          <DeckConfigSummaryBar
+            v-show="showSummaryBar"
+            :items="configSummaryItems"
+            :running="runner.running.value"
+            :can-run="canRunRecommend"
+            @edit="configCollapsed = false"
+            @run="runRecommend"
+          />
+        </div>
 
-      <DeckResultPanel
-        :runner="runner"
-        :result-decks="resultDecks"
-        :warnings="eventRuleWarnings"
-        :mode="recommendMode"
-        :target="activeRecommendTarget"
-        :assume-world-bloom="assumeWorldBloomResult"
-        :data-region="dataRegion"
-        :account-server="selectedAccount?.server ?? null"
-        :event-id="selectedEventId"
-        :live-type="songRankingLiveType"
-        :song-ranking-available="songRankingAvailable"
-      />
+        <div class="min-w-0">
+          <DeckResultPanel
+            :runner="runner"
+            :result-decks="resultDecks"
+            :warnings="eventRuleWarnings"
+            :mode="recommendMode"
+            :target="activeRecommendTarget"
+            :assume-world-bloom="assumeWorldBloomResult"
+            :data-region="dataRegion"
+            :account-server="selectedAccount?.server ?? null"
+            :event-id="selectedEventId"
+            :live-type="songRankingLiveType"
+            :song-ranking-available="songRankingAvailable"
+          />
+        </div>
+      </div>
 
       <DeckAttributionFooter />
 
