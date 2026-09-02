@@ -19,7 +19,11 @@ export type CardSkillEffectDetail = {
 export type CardSkillEffect = {
   id: number
   effectType: string
+  /** `activateNotesJudgmentType`: `perfect` marks the PERFECT-only score up ("P分"). */
+  judgmentType: string
   enhanceValue: number | null
+  /** `skillEnhance.skillEnhanceType`: `sub_unit_score_up` marks a unit-Fes skill ("团分"). */
+  enhanceType: string | null
   details: CardSkillEffectDetail[]
 }
 
@@ -55,20 +59,29 @@ export type CardSkillContext = {
 }
 
 /**
- * Every `skillEffects[].skillEffectType` in the jp `skills.json` (22 skills).
- * The list filter classifies a skill under its distinguishing type: the first
- * non-`score_up` effect when it has one (judgment boost, life recovery, Bloom
- * Fes character rank…), plain `score_up` otherwise.
+ * The skill buckets the list filter offers, named after the aliases the Haruki
+ * Cloud bot accepts (分卡 / P分 / 判卡 / 奶卡 / 血分 / 判分 / 团分 …). Two of
+ * them are not `skillEffectType` values at all: unit-Fes skills carry a plain
+ * `score_up` effect and are only distinguishable by their
+ * `skillEnhance.skillEnhanceType`, and the PERFECT-only score up by its
+ * `activateNotesJudgmentType`. See `classifyCardSkillFilterType`.
+ *
+ * `score_up_character_rank` is deliberately absent: it is only ever a Bloom Fes
+ * card's `specialTrainingSkillId`, never a `skillId`, so as a filter it matched
+ * nothing while duplicating `other_member_score_up_reference_rate` +
+ * `score_up_unit_count` — the two base skills those same cards carry. The
+ * classifier can still return it, and the detail page still labels it.
  */
 export const CARD_SKILL_FILTER_TYPES = [
   "score_up",
+  "score_up_perfect",
   "judgment_up",
   "life_recovery",
   "score_up_condition_life",
   "score_up_keep",
-  "score_up_character_rank",
-  "other_member_score_up_reference_rate",
+  "sub_unit_score_up",
   "score_up_unit_count",
+  "other_member_score_up_reference_rate",
 ] as const
 
 export type CardSkillFilterType = (typeof CARD_SKILL_FILTER_TYPES)[number]
@@ -77,8 +90,25 @@ export function isCardSkillFilterType(value: unknown): value is CardSkillFilterT
   return typeof value === "string" && (CARD_SKILL_FILTER_TYPES as readonly string[]).includes(value)
 }
 
-export function classifyCardSkillFilterType(effectTypes: readonly string[]): string {
-  return effectTypes.find((type) => type !== "score_up") ?? effectTypes[0] ?? "score_up"
+/**
+ * The single bucket a skill is filed under, most distinguishing trait first:
+ * a non-`score_up` effect type (judgment boost, life recovery, life-scaled or
+ * streak score up, Bloom Fes character rank, teammate reference, mixed-unit
+ * count), then the unit-Fes `skillEnhance`, then a PERFECT-only score up, and
+ * finally the plain score up every basic card shares.
+ */
+export function classifyCardSkillFilterType(effects: readonly CardSkillEffect[]): string {
+  const distinguishing = effects.find((effect) => effect.effectType !== "score_up" && effect.effectType !== "")
+  if (distinguishing) {
+    return distinguishing.effectType
+  }
+  if (effects.some((effect) => effect.enhanceType === "sub_unit_score_up")) {
+    return "sub_unit_score_up"
+  }
+  if (effects.some((effect) => effect.judgmentType === "perfect")) {
+    return "score_up_perfect"
+  }
+  return "score_up"
 }
 
 // Master data placeholders: `{{6;v}}`, `{{6;d}}`, `{{44;e}}`, `{{0;c}}` and
@@ -203,7 +233,7 @@ export function normalizeCardSkillRecord(value: unknown): CardSkillRecord | null
     description: normalizeCatalogString(record.description),
     effects,
     effectTypes,
-    filterType: classifyCardSkillFilterType(effectTypes),
+    filterType: classifyCardSkillFilterType(effects),
     maxLevel: Math.max(1, maxLevel),
   }
 }
@@ -301,9 +331,9 @@ function normalizeSkillEffects(rawSkillEffects: unknown): CardSkillEffect[] {
     }
 
     const enhance = record.skillEnhance
-    const enhanceValue = enhance && typeof enhance === "object"
-      ? normalizeCatalogNumber((enhance as Record<string, unknown>).activateEffectValue)
-      : null
+    const enhanceRecord = enhance && typeof enhance === "object" ? enhance as Record<string, unknown> : null
+    const enhanceValue = enhanceRecord ? normalizeCatalogNumber(enhanceRecord.activateEffectValue) : null
+    const enhanceType = enhanceRecord ? normalizeCatalogString(enhanceRecord.skillEnhanceType) || null : null
 
     const details = normalizeCatalogRecords(record.skillEffectDetails)
       .flatMap((detail) => {
@@ -322,7 +352,9 @@ function normalizeSkillEffects(rawSkillEffects: unknown): CardSkillEffect[] {
     return [{
       id,
       effectType: normalizeCatalogString(record.skillEffectType),
+      judgmentType: normalizeCatalogString(record.activateNotesJudgmentType),
       enhanceValue,
+      enhanceType,
       details,
     }]
   })
