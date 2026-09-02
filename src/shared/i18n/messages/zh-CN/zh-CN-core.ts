@@ -393,6 +393,8 @@ export default {
       "rotateLeft": "向左转",
       "rotateRight": "向右转",
       "resetView": "回正",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
       "copyLink": "复制链接",
       "linkCopied": "链接已复制",
       "colorCount": "{count} 色",

@@ -8,6 +8,8 @@ import {
   LucideRefreshCcw,
   LucideRotateCcw,
   LucideRotateCw,
+  LucideZoomIn,
+  LucideZoomOut,
   LucideScissors,
   LucideSearch,
   LucideShirt,
@@ -441,6 +443,14 @@ watch(() => route.query, () => {
             <Button variant="outline" size="sm" :title="t('costumes.dressup.rotateRight')" @click="viewerRef?.rotateBy(45)">
               <LucideRotateCw class="size-4" />
               <span class="sr-only">{{ t("costumes.dressup.rotateRight") }}</span>
+            </Button>
+            <Button variant="outline" size="sm" :title="t('costumes.dressup.zoomIn')" @click="viewerRef?.zoomBy(1.25)">
+              <LucideZoomIn class="size-4" />
+              <span class="sr-only">{{ t("costumes.dressup.zoomIn") }}</span>
+            </Button>
+            <Button variant="outline" size="sm" :title="t('costumes.dressup.zoomOut')" @click="viewerRef?.zoomBy(1 / 1.25)">
+              <LucideZoomOut class="size-4" />
+              <span class="sr-only">{{ t("costumes.dressup.zoomOut") }}</span>
             </Button>
             <Button variant="outline" size="sm" @click="viewerRef?.resetView()">
               <LucideUndo2 class="size-4" /> {{ t("costumes.dressup.resetView") }}

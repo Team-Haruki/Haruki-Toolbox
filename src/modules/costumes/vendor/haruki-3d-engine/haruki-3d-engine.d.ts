@@ -34,6 +34,10 @@ export interface Haruki3DKernel {
   setCharacterYawDegrees(degrees: number): void
   /** Rotates the CostumeShop CameraRoot without moving the character skeleton. */
   setViewYawDegrees(degrees: number): void
+  /** Dollies the camera: 1 keeps the profile distance, 2 is twice as close. Clamped to 0.5..3. */
+  setViewZoom(zoom: number): void
+  /** Slides target and camera up or down by the given metres. Clamped to -0.5..0.8. */
+  setViewHeightOffset(metres: number): void
   destroy(): Promise<void>
 }
 
