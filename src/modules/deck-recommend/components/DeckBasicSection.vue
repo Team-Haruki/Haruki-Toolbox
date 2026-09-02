@@ -2,8 +2,8 @@
 import { computed } from "vue"
 import { LucideInfo, LucideSettings2 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import type { AcceptableValue } from "reka-ui"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   Tooltip,
   TooltipContent,
@@ -97,6 +98,20 @@ const {
 const selectedAccountOption = computed(() =>
   accountOptions.value.find((account) => account.key === selectedAccountKey.value) ?? null,
 )
+
+const selectedAlgorithmValues = computed(() =>
+  algorithmOptions.value.filter((option) => isAlgorithmSelected(option.value)).map((option) => option.value))
+
+/** Chips report the whole selection; forward the changed entries to the existing toggle. */
+function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
+  const next = new Set(Array.isArray(value) ? value.map(String) : value == null ? [] : [String(value)])
+  for (const option of algorithmOptions.value) {
+    const selected = next.has(option.value)
+    if (selected !== isAlgorithmSelected(option.value)) {
+      toggleAlgorithm(option.value, selected)
+    }
+  }
+}
 </script>
 
 <template>
@@ -105,8 +120,9 @@ const selectedAccountOption = computed(() =>
       <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {{ t("deckRecommend.groups.accountTarget") }}
       </h2>
-      <div class="grid gap-3 @lg:grid-cols-2 @5xl:grid-cols-4">
-        <div class="grid content-start gap-2">
+      <div class="grid gap-3 @sm:grid-cols-2 @5xl:grid-cols-4">
+        <!-- The account option (server, id, badges) needs the full pane width; it shares a row only on wide forms. -->
+        <div class="grid content-start gap-2 @sm:col-span-2 @5xl:col-span-1">
           <Label id="deck-account-label" for="deck-account">{{ t("deckRecommend.form.account") }}</Label>
           <Select id="deck-account" :model-value="selectedAccountKey" :disabled="accountOptions.length === 0" @update:model-value="updateAccount">
             <SelectTrigger class="w-full" aria-labelledby="deck-account-label">
@@ -258,22 +274,20 @@ const selectedAccountOption = computed(() =>
                 </Select>
               </div>
             </div>
-            <div class="flex min-h-9 flex-wrap items-center gap-x-5 gap-y-2">
-              <label
-                v-for="option in algorithmOptions"
-                :key="option.value"
-                :for="`deck-algorithm-${option.value}`"
-                class="flex items-center gap-2 text-sm"
-              >
-                <Checkbox
-                  :id="`deck-algorithm-${option.value}`"
-                  :model-value="isAlgorithmSelected(option.value)"
-                  :disabled="isAlgorithmDisabled()"
-                  @update:model-value="checked => toggleAlgorithm(option.value, checked === true)"
-                />
-                <span>{{ option.label }}</span>
-              </label>
-            </div>
+            <ToggleGroup
+              type="multiple"
+              variant="chip"
+              size="sm"
+              :model-value="selectedAlgorithmValues"
+              :disabled="isAlgorithmDisabled()"
+              :aria-label="t('deckRecommend.form.algorithm')"
+              class="min-h-9"
+              @update:model-value="setAlgorithms"
+            >
+              <ToggleGroupItem v-for="option in algorithmOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
 
         </div>

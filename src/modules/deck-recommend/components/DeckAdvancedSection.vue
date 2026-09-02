@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { LucideChevronDown, LucideSettings2 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
-import { Checkbox } from "@/components/ui/checkbox"
+import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
+import type { CatalogFieldOption } from "@/shared/components/catalog/types"
 import { Combobox } from "@/components/ui/combobox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -75,6 +77,39 @@ const {
   fixedCharacterIds,
   excludedCardIds,
 } = useDeckRecommendFormContext()
+
+const unitChipOptions = computed<CatalogFieldOption[]>(() => unitFilterOptions.value.map((option) => ({
+  value: option.value,
+  label: option.label,
+  iconUrl: resolveUnitIconUrl(option.value),
+})))
+
+const attrChipOptions = computed<CatalogFieldOption[]>(() => eventAttrOptions.value.map((option) => ({
+  value: option.value,
+  label: option.label,
+  iconUrl: resolveAreaItemAttrIconUrl(option.value),
+})))
+
+/** Chips report the whole selection; forward the changed entries to the existing toggles. */
+function setUnitFilters(values: string[]) {
+  const next = new Set(values)
+  for (const option of unitFilterOptions.value) {
+    const selected = next.has(option.value)
+    if (selected !== unitFilters.value.includes(option.value)) {
+      toggleUnitFilter(option.value, selected)
+    }
+  }
+}
+
+function setAttrFilters(values: string[]) {
+  const next = new Set(values)
+  for (const option of eventAttrOptions.value) {
+    const selected = next.has(option.value)
+    if (selected !== attrFilters.value.includes(option.value)) {
+      toggleAttrFilter(option.value, selected)
+    }
+  }
+}
 </script>
 
 <template>
@@ -120,70 +155,22 @@ const {
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.filters.description") }}</p>
                           </div>
                           <div class="grid gap-3 sm:gap-4">
-                            <div class="grid gap-3 @3xl:grid-cols-2">
-                              <div class="grid gap-2">
-                                <div class="flex items-center justify-between gap-2">
-                                  <p class="text-sm font-medium">{{ t("deckRecommend.options.filters.unit") }}</p>
-                                  <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(unitFilters.length) }}</span>
-                                </div>
-                                <div class="grid gap-2 @xs:grid-cols-2">
-                                  <label
-                                    v-for="option in unitFilterOptions"
-                                    :key="option.value"
-                                    :for="`deck-unit-filter-${option.value}`"
-                                    :class="[
-                                      'flex min-w-0 items-center gap-2 rounded-md border bg-background/70 px-2 py-1.5 text-sm transition-colors hover:bg-muted/40',
-                                      unitFilters.includes(option.value) ? 'border-cyan-300 bg-cyan-50 text-cyan-900 dark:border-cyan-500/40 dark:bg-cyan-500/10 dark:text-cyan-100' : '',
-                                      running ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
-                                    ]"
-                                  >
-                                    <Checkbox
-                                      :id="`deck-unit-filter-${option.value}`"
-                                      :model-value="unitFilters.includes(option.value)"
-                                      :disabled="running"
-                                      @update:model-value="checked => toggleUnitFilter(option.value, checked === true)"
-                                    />
-                                    <img
-                                      :src="resolveUnitIconUrl(option.value)"
-                                      alt=""
-                                      class="size-5 shrink-0 object-contain"
-                                      loading="lazy"
-                                    >
-                                    <span class="min-w-0 truncate">{{ option.label }}</span>
-                                  </label>
-                                </div>
-                              </div>
-                              <div class="grid gap-2">
-                                <div class="flex items-center justify-between gap-2">
-                                  <p class="text-sm font-medium">{{ t("deckRecommend.options.filters.attr") }}</p>
-                                  <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(attrFilters.length) }}</span>
-                                </div>
-                                <div class="grid gap-2 @xs:grid-cols-2">
-                                  <label
-                                    v-for="option in eventAttrOptions"
-                                    :key="option.value"
-                                    :for="`deck-attr-filter-${option.value}`"
-                                    :class="[
-                                      'flex min-w-0 items-center gap-2 rounded-md border bg-background/70 px-2 py-1.5 text-sm transition-colors hover:bg-muted/40',
-                                      attrFilters.includes(option.value) ? 'border-fuchsia-300 bg-fuchsia-50 text-fuchsia-900 dark:border-fuchsia-500/40 dark:bg-fuchsia-500/10 dark:text-fuchsia-100' : '',
-                                      running ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
-                                    ]"
-                                  >
-                                    <Checkbox
-                                      :id="`deck-attr-filter-${option.value}`"
-                                      :model-value="attrFilters.includes(option.value)"
-                                      :disabled="running"
-                                      @update:model-value="checked => toggleAttrFilter(option.value, checked === true)"
-                                    />
-                                    <img
-                                      :src="resolveAreaItemAttrIconUrl(option.value)"
-                                      alt=""
-                                      class="size-5 shrink-0 object-contain"
-                                      loading="lazy"
-                                    >
-                                    <span class="min-w-0 truncate">{{ option.label }}</span>
-                                  </label>
-                                </div>
+                            <div :class="running ? 'pointer-events-none opacity-60' : ''">
+                              <div class="flex flex-col gap-3">
+                                <CatalogChipsField
+                                  :model-value="unitFilters"
+                                  :label="`${t('deckRecommend.options.filters.unit')} · ${filterSelectionLabel(unitFilters.length)}`"
+                                  :options="unitChipOptions"
+                                  compact
+                                  @update:model-value="setUnitFilters"
+                                />
+                                <CatalogChipsField
+                                  :model-value="attrFilters"
+                                  :label="`${t('deckRecommend.options.filters.attr')} · ${filterSelectionLabel(attrFilters.length)}`"
+                                  :options="attrChipOptions"
+                                  compact
+                                  @update:model-value="setAttrFilters"
+                                />
                               </div>
                             </div>
                             <div class="grid gap-2">
