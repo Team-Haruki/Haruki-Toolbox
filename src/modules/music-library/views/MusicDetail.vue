@@ -105,70 +105,83 @@ const lightboxItems = computed<ImageLightboxItem[]>(() => [
     </template>
 
     <template #skeleton>
-      <div class="grid gap-4 md:grid-cols-[14rem_minmax(0,1fr)]">
-        <Skeleton class="mx-auto aspect-square w-full max-w-56 rounded-lg" />
-        <div class="space-y-3">
-          <Skeleton class="h-7 w-2/3" />
-          <Skeleton class="h-4 w-1/2" />
-          <Skeleton class="h-4 w-1/2" />
-          <Skeleton class="h-4 w-1/3" />
+      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
+        <div class="flex flex-col gap-4">
+          <Skeleton class="mx-auto aspect-square w-full max-w-80 rounded-lg" />
+          <Skeleton class="h-72 w-full rounded-xl" />
+        </div>
+        <div class="flex flex-col gap-4">
+          <Skeleton class="h-36 w-full rounded-xl" />
+          <Skeleton class="h-56 w-full rounded-xl" />
         </div>
       </div>
-      <Skeleton class="h-40 w-full rounded-lg" />
     </template>
 
     <template v-if="entry">
-      <div class="grid gap-4 md:grid-cols-[14rem_minmax(0,1fr)]">
-        <button
-          type="button"
-          class="relative mx-auto aspect-square w-full max-w-56 overflow-hidden rounded-lg shadow-sm transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-default disabled:hover:opacity-100"
-          :title="t('catalog.detail.zoom')"
-          :aria-label="t('catalog.detail.zoom')"
-          :disabled="blurred || jacketUrl == null"
-          @click="lightboxOpen = true"
-        >
-          <MusicJacket :url="jacketUrl" :alt="entry.title" class="size-full" :blur="blurred" eager />
-        </button>
-        <MusicInfoSection
-          :entry="entry"
-          :date-label="dateLabel"
-          :duration-seconds="durationSeconds"
-          :bpm-label="bpmLabel"
-          :aliases="aliases"
-        />
+      <!-- Sidebar + main, not paired cards: every section here has a height
+           the data decides (six or five difficulties, one or ten vocals, any
+           number of events, seventy aliases), so two columns of matched pairs
+           always left one side short. The sidebar holds what the song *is*,
+           the main column stacks what it *has*, and neither has to line up. -->
+      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
+        <div class="flex min-w-0 flex-col gap-4">
+          <button
+            type="button"
+            class="relative mx-auto aspect-square w-full max-w-80 overflow-hidden rounded-lg shadow-sm transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-default disabled:hover:opacity-100"
+            :title="t('catalog.detail.zoom')"
+            :aria-label="t('catalog.detail.zoom')"
+            :disabled="blurred || jacketUrl == null"
+            @click="lightboxOpen = true"
+          >
+            <MusicJacket :url="jacketUrl" :alt="entry.title" class="size-full" :blur="blurred" eager />
+          </button>
+          <MusicInfoSection
+            :entry="entry"
+            :date-label="dateLabel"
+            :duration-seconds="durationSeconds"
+            :bpm-label="bpmLabel"
+            :aliases="aliases"
+          />
+        </div>
+
+        <div class="flex min-w-0 flex-col gap-4">
+          <MusicDifficultiesSection :entry="entry" />
+
+          <MusicVocalPlayer
+            :music-id="musicId"
+            :region="region"
+            :preference="preference"
+            :filler-sec="entry.fillerSec"
+            :vocals="vocals"
+            :character-map="characterMap"
+            :outside-character-names="outsideCharacterNames"
+            :loading="vocalsLoading"
+          />
+
+          <MusicEventsSection
+            :events="relatedEvents"
+            :region="region"
+            :preference="preference"
+            :character-map="characterMap"
+            :loading="eventsLoading"
+          />
+
+          <MusicUnlockSection v-if="releaseCondition" :condition="releaseCondition" />
+
+          <MusicOriginalSection v-if="originalLink" :link="originalLink" />
+        </div>
       </div>
 
-      <MusicDifficultiesSection :entry="entry" />
-
+      <!-- Last and full width: the score and its transport want the whole
+           row, and it is the one section a reader scrolls to on purpose. It is
+           already self-contained, so moving it to its own route later (custom
+           charts) is a matter of mounting it elsewhere. -->
       <MusicChartSection
         :entry="entry"
         :region="region"
         :preference="preference"
         :jacket-url="jacketUrl"
         :vocals="vocals"
-      />
-
-      <MusicVocalPlayer
-        :music-id="musicId"
-        :region="region"
-        :preference="preference"
-        :filler-sec="entry.fillerSec"
-        :vocals="vocals"
-        :character-map="characterMap"
-        :outside-character-names="outsideCharacterNames"
-        :loading="vocalsLoading"
-      />
-
-      <MusicUnlockSection v-if="releaseCondition" :condition="releaseCondition" />
-
-      <MusicOriginalSection v-if="originalLink" :link="originalLink" />
-
-      <MusicEventsSection
-        :events="relatedEvents"
-        :region="region"
-        :preference="preference"
-        :character-map="characterMap"
-        :loading="eventsLoading"
       />
 
       <ImageLightbox v-model:open="lightboxOpen" :items="lightboxItems" :title="entry.title" />
