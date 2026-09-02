@@ -1,5 +1,6 @@
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference, SekaiMasterVersionInfo } from "./types"
+import { resolveUnitEmblemDataUrl } from "./unit-emblems"
 
 export const SEKAI_MASTER_REPOS: Record<SekaiRegion, string> = {
   jp: "haruki-sekai-master",
@@ -262,9 +263,15 @@ export function resolveMySekaiCanvasIconUrl(): string {
   return resolveToolboxStaticImageUrl("static_images/mysekai/icon/icon_canvas.png")
 }
 
-/** Unit emblem from the toolbox static bucket (`static_images/icon_{unit}.png`). */
+/**
+ * The hosted PNG, unless the unit has an inline SVG emblem (see
+ * `unit-emblems.ts`) — in which case it resolves to a request-free `data:`
+ * URL. The emblem table is empty today, so this is the PNG for every unit;
+ * it is the single point where dropping emblem SVGs in switches every
+ * consumer over.
+ */
 export function resolveUnitLogoUrl(unit: string): string {
-  return resolveToolboxStaticImageUrl(`static_images/icon_${unit}.png`)
+  return resolveUnitEmblemDataUrl(unit) ?? resolveToolboxStaticImageUrl(`static_images/icon_${unit}.png`)
 }
 
 export function resolveCharacterIconUrl(characterId: number): string {

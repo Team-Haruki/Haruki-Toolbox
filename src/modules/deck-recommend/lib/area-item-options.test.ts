@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test"
+import { resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import {
   buildDeckRecommendAreaItemOptions,
   resolveAreaItemAttrIconUrl,
@@ -68,7 +69,8 @@ describe("deck recommend area item options", () => {
   })
 
   it("uses toolbox static images for unit and attribute icons", () => {
-    expect(resolveUnitIconUrl("light_sound")).toBe("https://images.haruki.seiunx.com/sekai-toolbox/static_images/icon_light_sound.png")
+    // Goes through the shared resolver, so it picks up the inline SVG emblems.
+    expect(resolveUnitIconUrl("light_sound")).toBe(resolveUnitLogoUrl("light_sound"))
     expect(resolveAreaItemAttrIconUrl("cool")).toBe("https://images.haruki.seiunx.com/sekai-toolbox/static_images/card/attr_icon_cool.png")
   })
 })
