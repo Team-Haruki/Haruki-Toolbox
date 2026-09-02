@@ -16,7 +16,7 @@ export function useEventOptions(region: Ref<SekaiRegion>) {
   const regionState = computed(() => sekaiDataStore.regionStates[region.value])
 
   watch(
-    () => [region.value, regionState.value.masterFetchVersion],
+    [() => region.value, () => regionState.value.masterFetchVersion],
     () => {
       void loadOptions()
     },

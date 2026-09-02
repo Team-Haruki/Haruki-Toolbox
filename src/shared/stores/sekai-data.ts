@@ -9,6 +9,7 @@ import {
   resolveSekaiMasterVersionUrl,
 } from "@/shared/sekai/data-sources"
 import { readSekaiRegionCacheMeta } from "@/shared/sekai/cache"
+import { isMasterCacheCovering } from "@/shared/sekai/master-coverage"
 import { postSekaiDataWorkerRequest, subscribeSekaiDataWorker } from "@/shared/sekai/update-client"
 import {
   SEKAI_DATA_DEFAULT_MASTER_FILES,
@@ -212,8 +213,10 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
       return false
     }
 
+    // Optional files a dump never ships are not in the listing; they must
+    // not turn every ensure into a new worker round-trip within the TTL.
     const state = regionStates.value[region]
-    return Boolean(state.masterFetchVersion) && isFileSubset(requestedFiles, state.files)
+    return Boolean(state.masterFetchVersion) && isMasterCacheCovering(state.files, requestedFiles)
   }
 
   async function checkRegionRemoteVersion(region: SekaiRegion) {

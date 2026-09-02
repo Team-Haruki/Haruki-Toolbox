@@ -104,7 +104,7 @@ export function useRankBorderMasterData(region: Ref<SekaiRegion>, selectedEventI
   )
 
   watch(
-    () => [region.value, regionState.value.masterFetchVersion] as const,
+    [() => region.value, () => regionState.value.masterFetchVersion],
     () => {
       void loadCore()
     },
