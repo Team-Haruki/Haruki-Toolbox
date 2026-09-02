@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test"
-import { resolveCardSupplyBadgeVariant, resolveCardTileArts } from "./card-display"
+import {
+  resolveCardSupplyBadgeVariant,
+  resolveCardTileArtSlots,
+  resolveCardTileArts,
+} from "./card-display"
 
 describe("resolveCardTileArts", () => {
   it("follows the art mode for 3★ / 4★ cards", () => {
@@ -20,6 +24,20 @@ describe("resolveCardTileArts", () => {
     expect(resolveCardTileArts({ cardRarityType: "rarity_4", trainedByDefault: true }, "both")).toEqual(["trained"])
     // The flag is meaningless without trained art.
     expect(resolveCardTileArts({ cardRarityType: "rarity_2", trainedByDefault: true }, "both")).toEqual(["normal"])
+  })
+})
+
+describe("resolveCardTileArtSlots", () => {
+  it("reserves two slots in `both` mode regardless of how many arts a card has", () => {
+    expect(resolveCardTileArtSlots("both")).toBe(2)
+    expect(resolveCardTileArtSlots("normal")).toBe(1)
+    expect(resolveCardTileArtSlots("trained")).toBe(1)
+  })
+
+  it("keeps a single-art card on a half-width slot in `both` mode", () => {
+    // The pairing that used to render at double size: one art, two slots.
+    expect(resolveCardTileArts({ cardRarityType: "rarity_2" }, "both")).toHaveLength(1)
+    expect(resolveCardTileArtSlots("both")).toBe(2)
   })
 })
 

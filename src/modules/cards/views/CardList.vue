@@ -104,6 +104,9 @@ const gridClass = computed(() => (artMode.value === "both"
   ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
   : undefined))
 
+/** Matches a tile's art box: one square in the single-art modes, two side by side in `both`. */
+const skeletonArtClass = computed(() => (artMode.value === "both" ? "aspect-[2/1] w-full" : "aspect-square w-full"))
+
 const ready = computed(() => list.ready.value && !list.error.value)
 const resultsRef = ref<HTMLElement | null>(null)
 
@@ -209,7 +212,7 @@ function setArtMode(value: AcceptableValue | AcceptableValue[] | undefined) {
 
       <CatalogEntityGrid v-else-if="list.loading.value" columns="cards" :class="gridClass">
         <div v-for="index in 18" :key="index" class="flex flex-col gap-1.5">
-          <Skeleton class="aspect-square w-full rounded-md" />
+          <Skeleton :class="[skeletonArtClass, 'rounded-md']" />
           <Skeleton class="h-3 w-4/5" />
           <Skeleton class="h-3 w-1/2" />
         </div>
