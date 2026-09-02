@@ -111,98 +111,119 @@ const pickupCardsRoute = computed(() => (pickupCharacterIds.value.length > 0
     </template>
 
     <template #skeleton>
-      <Skeleton class="mx-auto aspect-[2/1] w-full max-w-3xl rounded-lg" />
-      <div class="flex flex-col gap-2">
-        <Skeleton class="h-6 w-2/3" />
-        <Skeleton class="h-4 w-1/3" />
-        <Skeleton class="h-40 w-full" />
+      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
+        <div class="flex flex-col gap-4">
+          <Skeleton class="aspect-[2/1] w-full rounded-lg" />
+          <Skeleton class="h-40 w-full rounded-xl" />
+        </div>
+        <div class="flex flex-col gap-4">
+          <Skeleton class="h-64 w-full rounded-xl" />
+          <Skeleton class="h-48 w-full rounded-xl" />
+        </div>
       </div>
     </template>
 
     <template v-if="summary">
-      <GachaHero
-        :name="summary.name"
-        :hero-sources="heroSources"
-        :banner-sources="bannerSources"
-        :logo-sources="logoSources"
-        :start-at="summary.startAt"
-        :end-at="summary.endAt"
-        :status="status"
-        :blur="blurArt"
-      />
+      <!-- Sidebar + main, like the event and music pages: no two sections
+           ever have to line up. The sidebar is what the gacha *is* — its
+           banner, dates and PICK UP members — with the on-demand references
+           (behaviors, ceil exchange, information) directly beneath. The main
+           column is what it *does*: rates, the simulator, the full pool and
+           the related events. It spans both grid rows; `auto 1fr` keeps the
+           references hugging the sidebar instead of floating mid-column. -->
+      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-start">
+        <div class="flex min-w-0 flex-col gap-4">
+          <GachaHero
+            :name="summary.name"
+            :hero-sources="heroSources"
+            :banner-sources="bannerSources"
+            :logo-sources="logoSources"
+            :start-at="summary.startAt"
+            :end-at="summary.endAt"
+            :status="status"
+            :blur="blurArt"
+            stacked
+          />
 
-      <GachaPickupsSection
-        :cards="pickupCards"
-        :region="region"
-        :asset-endpoint="assetEndpoint"
-        :blur-unreleased="blurUnreleased"
-        :loading="sectionsLoading"
-        :wish-select-count="wishSelectCount"
-      />
+          <GachaPickupsSection
+            :cards="pickupCards"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            :blur-unreleased="blurUnreleased"
+            :loading="sectionsLoading"
+            :wish-select-count="wishSelectCount"
+            compact
+          />
+        </div>
 
-      <GachaRatesSection
-        :table="rateTable"
-        :segments="rateSegments"
-        :guarantee-rarity="simulatorModel?.ten?.guaranteeRarity ?? null"
-        :wish-select-count="wishSelectCount"
-        :loading="sectionsLoading"
-      />
+        <div class="flex min-w-0 flex-col gap-4 lg:row-span-2">
+          <GachaRatesSection
+            :table="rateTable"
+            :segments="rateSegments"
+            :guarantee-rarity="simulatorModel?.ten?.guaranteeRarity ?? null"
+            :wish-select-count="wishSelectCount"
+            :loading="sectionsLoading"
+          />
 
-      <GachaSimulatorSection
-        :model="simulatorModel"
-        :cards-by-id="cardsById"
-        :character-map="characterMap"
-        :region="region"
-        :asset-endpoint="assetEndpoint"
-        :blur-unreleased="blurUnreleased"
-        :now-ms="nowMs"
-        :loading="sectionsLoading"
-      />
+          <GachaSimulatorSection
+            :model="simulatorModel"
+            :cards-by-id="cardsById"
+            :character-map="characterMap"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            :blur-unreleased="blurUnreleased"
+            :now-ms="nowMs"
+            :loading="sectionsLoading"
+          />
 
-      <GachaPoolSection
-        :cards="poolCards"
-        :characters="poolCharacters"
-        :unit-color-map="unitColorMap"
-        :region="region"
-        :asset-endpoint="assetEndpoint"
-        :blur-unreleased="blurUnreleased"
-        :loading="sectionsLoading"
-        :wish-select-count="wishSelectCount"
-      />
+          <GachaPoolSection
+            :cards="poolCards"
+            :characters="poolCharacters"
+            :unit-color-map="unitColorMap"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            :blur-unreleased="blurUnreleased"
+            :loading="sectionsLoading"
+            :wish-select-count="wishSelectCount"
+          />
 
-      <GachaBehaviorsSection :behaviors="behaviors" :loading="false" />
+          <GachaRelatedEventsSection
+            :events="relatedEvents"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            :loading="eventsLoading"
+            :now-ms="nowMs"
+          />
+        </div>
 
-      <GachaCeilSection
-        v-if="showCeil"
-        :ceil-item="ceilItem"
-        :ceil-item-sources="ceilItemSources"
-        :items-loading="ceilItemsLoading"
-        :exchange-summary="ceilExchangeSummary"
-        :rows="ceilExchangeRows"
-        :boxes-available="ceilBoxesAvailable"
-        :exchange-loading="ceilExchangeLoading"
-        :exchange-error="ceilExchangeError"
-        :cards-by-id="cardsById"
-        :region="region"
-        :asset-endpoint="assetEndpoint"
-        @open="openCeilExchange"
-        @retry="reload"
-      />
+        <div class="flex min-w-0 flex-col gap-4 lg:col-start-1">
+          <GachaBehaviorsSection :behaviors="behaviors" :loading="false" />
 
-      <GachaRelatedEventsSection
-        :events="relatedEvents"
-        :region="region"
-        :asset-endpoint="assetEndpoint"
-        :loading="eventsLoading"
-        :now-ms="nowMs"
-      />
+          <GachaCeilSection
+            v-if="showCeil"
+            :ceil-item="ceilItem"
+            :ceil-item-sources="ceilItemSources"
+            :items-loading="ceilItemsLoading"
+            :exchange-summary="ceilExchangeSummary"
+            :rows="ceilExchangeRows"
+            :boxes-available="ceilBoxesAvailable"
+            :exchange-loading="ceilExchangeLoading"
+            :exchange-error="ceilExchangeError"
+            :cards-by-id="cardsById"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            @open="openCeilExchange"
+            @retry="reload"
+          />
 
-      <GachaInformationSection
-        v-if="showInformation"
-        :summary="summaryText"
-        :description="descriptionText"
-        :loading="sectionsLoading"
-      />
+          <GachaInformationSection
+            v-if="showInformation"
+            :summary="summaryText"
+            :description="descriptionText"
+            :loading="sectionsLoading"
+          />
+        </div>
+      </div>
     </template>
   </CatalogDetailShell>
 </template>

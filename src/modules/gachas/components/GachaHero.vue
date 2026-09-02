@@ -18,8 +18,11 @@ const props = withDefaults(defineProps<{
   endAt: number | null
   status: CatalogStatus | null
   blur?: boolean
+  /** Sidebar layout: full-width banner, dates and countdown stacked. */
+  stacked?: boolean
 }>(), {
   blur: false,
+  stacked: false,
 })
 
 const { t } = useI18n()
@@ -63,7 +66,10 @@ function openLightbox() {
   <div class="flex flex-col gap-3" data-slot="gacha-hero">
     <button
       type="button"
-      class="group relative mx-auto aspect-[2/1] w-full max-w-3xl overflow-hidden rounded-lg bg-muted ring-1 ring-border outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default"
+      :class="[
+        'group relative aspect-[2/1] w-full overflow-hidden rounded-lg bg-muted ring-1 ring-border outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default',
+        stacked ? '' : 'mx-auto max-w-3xl',
+      ]"
       :aria-label="t('catalog.detail.zoom')"
       :disabled="blur"
       @click="openLightbox"
@@ -78,7 +84,7 @@ function openLightbox() {
       </span>
     </button>
 
-    <div class="flex flex-col gap-2 rounded-md border bg-card px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+    <div :class="['flex flex-col gap-2 rounded-md border bg-card px-3 py-2.5', stacked ? '' : 'sm:flex-row sm:items-center sm:justify-between']">
       <p class="flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums">
         <LucideCalendarDays class="size-4 shrink-0" aria-hidden="true" />
         <span>{{ formatDate(startAt) }} – {{ formatDate(endAt) }}</span>
@@ -88,7 +94,7 @@ function openLightbox() {
         :target-ms="countdownTarget"
         :label="countdownLabel"
         :start-ms="status === 'ongoing' ? startAt : null"
-        class="sm:min-w-64"
+        :class="stacked ? '' : 'sm:min-w-64'"
       />
     </div>
 
