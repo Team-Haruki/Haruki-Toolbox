@@ -184,6 +184,31 @@ const visibleOptions = computed<RuntimeCostumeOption[]>(() => {
   )
 })
 
+/**
+ * One rack tile per costume, its colour variants folded in. The runtime
+ * registry lists every colour as its own `costume3dId`, which is what the
+ * old dropdown showed as four adjacent "スクールロック" rows; the shared
+ * `costume3dGroupId` is the costume.
+ */
+type RackGroup = { key: string; name: string; options: RuntimeCostumeOption[] }
+
+const visibleGroups = computed<RackGroup[]>(() => {
+  const groups = new Map<string, RackGroup>()
+  for (const option of visibleOptions.value) {
+    const key = option.costume3dGroupId != null ? `g:${option.costume3dGroupId}` : `id:${option.id}`
+    const group = groups.get(key)
+    if (group) {
+      group.options.push(option)
+    } else {
+      groups.set(key, { key, name: option.name, options: [option] })
+    }
+  }
+  for (const group of groups.values()) {
+    group.options.sort((a, b) => (a.colorId ?? 0) - (b.colorId ?? 0) || a.id - b.id)
+  }
+  return [...groups.values()]
+})
+
 // The body and accessory slots hold every colour variant the runtime ships —
 // ~2.7k entries for a character — so the rack pages, and follows the current
 // selection to whatever page it sits on when the slot or character changes.
@@ -191,7 +216,7 @@ const RACK_PAGE_SIZE = 48
 const page = ref(1)
 const pageSize = ref(RACK_PAGE_SIZE)
 const rackAnchor = ref<HTMLElement | null>(null)
-const { pageItems: pagedOptions, totalPages, currentPage } = usePagedSlice(visibleOptions, page, pageSize)
+const { pageItems: pagedGroups, totalPages, currentPage } = usePagedSlice(visibleGroups, page, pageSize)
 
 const selectedId = computed(() => {
   switch (activeSlot.value) {
@@ -202,8 +227,17 @@ const selectedId = computed(() => {
 })
 
 function showSelectedPage() {
-  const index = visibleOptions.value.findIndex((option) => option.id === selectedId.value)
+  const index = visibleGroups.value.findIndex((group) => group.options.some((option) => option.id === selectedId.value))
   page.value = index >= 0 ? Math.floor(index / pageSize.value) + 1 : 1
+}
+
+/** The colour a tile shows: the selected one when the group is worn, else its first. */
+function activeOption(group: RackGroup): RuntimeCostumeOption {
+  return group.options.find((option) => option.id === selectedId.value) ?? group.options[0]
+}
+
+function isGroupSelected(group: RackGroup): boolean {
+  return group.options.some((option) => option.id === selectedId.value)
 }
 
 watch(query, () => {
@@ -491,39 +525,68 @@ watch(() => route.query, () => {
                 role="radiogroup"
                 :aria-label="t(`costumes.dressup.${activeSlot}`)"
               >
-                <button
-                  v-for="option in pagedOptions"
-                  :key="option.id"
-                  type="button"
-                  role="radio"
-                  :aria-checked="option.id === selectedId"
-                  :disabled="activeSlot === 'hair' && hairLocked"
-                  :title="option.colorName ? `${option.name} · ${option.colorName}` : option.name"
-                  :class="[
-                    'group flex min-w-0 flex-col gap-1 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
-                  ]"
-                  @click="selectOption(option.id)"
+                <div
+                  v-for="group in pagedGroups"
+                  :key="group.key"
+                  class="flex min-w-0 flex-col gap-1"
                 >
-                  <span
-                    :class="[
-                      'relative block aspect-square w-full overflow-hidden rounded-md bg-muted/40 ring-2 transition',
-                      option.id === selectedId ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
-                    ]"
+                  <button
+                    type="button"
+                    role="radio"
+                    :aria-checked="isGroupSelected(group)"
+                    :disabled="activeSlot === 'hair' && hairLocked"
+                    :title="activeOption(group).colorName ? `${group.name} · ${activeOption(group).colorName}` : group.name"
+                    class="group flex min-w-0 flex-col gap-1 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    @click="selectOption(activeOption(group).id)"
                   >
-                    <SekaiAssetImage :sources="thumbnailSources(option)" :alt="option.name" fit="contain" placeholder-class="bg-transparent" />
+                    <span
+                      :class="[
+                        'relative block aspect-square w-full overflow-hidden rounded-md bg-muted/40 ring-2 transition',
+                        isGroupSelected(group) ? 'ring-primary' : 'ring-transparent group-hover:ring-border',
+                      ]"
+                    >
+                      <SekaiAssetImage :sources="thumbnailSources(activeOption(group))" :alt="group.name" fit="contain" placeholder-class="bg-transparent" />
+                      <span
+                        v-if="group.options.length > 1"
+                        class="absolute top-1 right-1 rounded bg-background/85 px-1 text-[10px] leading-4 text-muted-foreground tabular-nums shadow-sm"
+                      >
+                        {{ t("costumes.dressup.colorCount", { count: group.options.length }) }}
+                      </span>
+                    </span>
+                    <span class="truncate text-[11px] leading-tight" :class="isGroupSelected(group) ? 'font-medium' : 'text-muted-foreground'">
+                      {{ group.name }}
+                    </span>
+                  </button>
+                  <!-- Colour variants, one tap each; the worn one is ringed. -->
+                  <div v-if="group.options.length > 1" class="flex flex-wrap gap-1" role="radiogroup" :aria-label="group.name">
+                    <button
+                      v-for="option in group.options"
+                      :key="option.id"
+                      type="button"
+                      role="radio"
+                      :aria-checked="option.id === selectedId"
+                      :disabled="activeSlot === 'hair' && hairLocked"
+                      :title="option.colorName || option.name"
+                      :class="[
+                        'relative size-6 shrink-0 overflow-hidden rounded bg-muted/40 ring-2 transition disabled:cursor-not-allowed',
+                        option.id === selectedId ? 'ring-primary' : 'ring-transparent hover:ring-border',
+                      ]"
+                      @click="selectOption(option.id)"
+                    >
+                      <SekaiAssetImage :sources="thumbnailSources(option)" :alt="option.colorName || option.name" fit="contain" placeholder-class="bg-transparent" />
+                    </button>
+                  </div>
+                  <span v-else-if="activeOption(group).colorName" class="truncate text-[10px] leading-tight text-muted-foreground">
+                    {{ activeOption(group).colorName }}
                   </span>
-                  <span class="truncate text-[11px] leading-tight" :class="option.id === selectedId ? 'font-medium' : 'text-muted-foreground'">
-                    {{ option.name }}
-                  </span>
-                  <span v-if="option.colorName" class="truncate text-[10px] leading-tight text-muted-foreground">{{ option.colorName }}</span>
-                </button>
+                </div>
               </div>
               <CatalogPagination
                 v-if="totalPages > 1"
                 v-model:page="page"
                 v-model:page-size="pageSize"
                 :total-pages="totalPages"
-                :total="visibleOptions.length"
+                :total="visibleGroups.length"
                 :page-size-options="[24, 48, 96]"
                 :anchor="rackAnchor"
               />

@@ -395,6 +395,7 @@ export default {
       "resetView": "回正",
       "copyLink": "複製連結",
       "linkCopied": "連結已複製",
+      "colorCount": "{count} 色",
       "linkCopyFailed": "複製失敗，請手動複製位址列。",
       "loadError": "服裝資料載入失敗。",
       "roleLoadError": "該角色的 3D 部件清單載入失敗。",
