@@ -395,6 +395,7 @@ export default {
       "resetView": "Face front",
       "copyLink": "Copy link",
       "linkCopied": "Link copied",
+      "colorCount": "{count} colors",
       "linkCopyFailed": "Could not copy. Copy the address bar instead.",
       "loadError": "Failed to load costume data.",
       "roleLoadError": "Failed to load the character's 3D part list.",
