@@ -8,14 +8,16 @@ import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSecti
 import GachaCardTile from "@/modules/gachas/components/GachaCardTile.vue"
 import type { GachaPoolCard } from "@/modules/gachas/lib/gacha-pool"
 
-defineProps<{
+withDefaults(defineProps<{
   cards: readonly GachaPoolCard[]
   region: SekaiRegion
   assetEndpoint: SekaiAssetEndpointPreference
   blurUnreleased: boolean
   loading: boolean
   wishSelectCount: number
-}>()
+  /** Sidebar layout: a fixed three-column grid instead of wrapped fixed-width tiles. */
+  compact?: boolean
+}>(), { compact: false })
 
 const { t } = useI18n()
 </script>
@@ -38,7 +40,7 @@ const { t } = useI18n()
         </div>
       </div>
     </template>
-    <div class="flex flex-wrap gap-3">
+    <div :class="compact ? 'grid grid-cols-3 gap-2' : 'flex flex-wrap gap-3'">
       <GachaCardTile
         v-for="entry in cards"
         :key="entry.card.id"
@@ -50,7 +52,7 @@ const { t } = useI18n()
         :unreleased="entry.unreleased"
         :blur-unreleased="blurUnreleased"
         :wish="entry.isWish && wishSelectCount > 0"
-        class="w-24 sm:w-28"
+        :class="compact ? 'w-full' : 'w-24 sm:w-28'"
       />
     </div>
   </CatalogDetailSection>
