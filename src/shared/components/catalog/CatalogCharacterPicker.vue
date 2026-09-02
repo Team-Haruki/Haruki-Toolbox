@@ -119,5 +119,8 @@ const avatarClass = computed(() => (props.size === "sm" ? "size-7 ring-0" : "siz
         <SekaiCharacterAvatar :character-id="character.id" :name="character.name" :class="avatarClass" />
       </button>
     </template>
+    <!-- Trails the avatars on the same wrapping line: a scope toggle or a hint
+         fills the stub of the last row instead of taking a row of its own. -->
+    <slot />
   </div>
 </template>

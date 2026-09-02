@@ -188,7 +188,7 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
          ~1100px panel empty, which read as ragged beside the full-width
          character picker; a wrapping flow rather than a grid, so hiding a
          control never leaves a hole. -->
-    <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+    <div class="flex flex-wrap items-center gap-x-10 gap-y-3">
       <div class="flex min-w-64 flex-wrap items-center gap-x-3 gap-y-2">
         <p :id="`${id}-level-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
           {{ t("musicLibrary.list.filters.level") }}
@@ -289,7 +289,7 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
       compact
     />
 
-    <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+    <div class="flex flex-wrap items-center gap-x-10 gap-y-3">
       <!-- Chips, not a select: the years come from the dump like every other
            option here, and a lone select left the row stubby. -->
       <div class="flex flex-wrap items-center gap-1.5">
@@ -320,35 +320,32 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
       />
     </div>
 
-    <div class="grid gap-2">
-      <CatalogCharacterPicker
-        v-model="pickerModel"
-        :label="t('musicLibrary.list.filters.character')"
-        :characters="characters"
-        :unit-color-map="unitColorMap"
-      />
-      <!-- The scope only exists once a character is picked; until then the row
-           explains why it is missing rather than showing a dead control. -->
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <template v-if="state.chars.length > 0">
-          <p :id="`${id}-scope-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
-            {{ t("musicCatalog.filters.scope") }}
-          </p>
-          <ToggleGroup
-            type="single"
-            variant="segment"
-            size="sm"
-            :model-value="state.scope"
-            :aria-labelledby="`${id}-scope-label`"
-            @update:model-value="updateScope"
-          >
-            <ToggleGroupItem v-for="scope in MUSIC_CHARACTER_FILTER_SCOPES" :key="scope" :value="scope">
-              {{ t(`musicLibrary.list.filters.characterScope.${scope}`) }}
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </template>
-        <p v-else class="text-xs text-muted-foreground">{{ t("musicCatalog.filters.scopeHint") }}</p>
-      </div>
-    </div>
+    <CatalogCharacterPicker
+      v-model="pickerModel"
+      :label="t('musicLibrary.list.filters.character')"
+      :characters="characters"
+      :unit-color-map="unitColorMap"
+    >
+      <!-- Trails the avatars. The scope only exists once a character is
+           picked; until then the same spot explains why. -->
+      <template v-if="state.chars.length > 0">
+        <p :id="`${id}-scope-label`" class="ml-3 text-xs font-medium text-muted-foreground">
+          {{ t("musicCatalog.filters.scope") }}
+        </p>
+        <ToggleGroup
+          type="single"
+          variant="segment"
+          size="sm"
+          :model-value="state.scope"
+          :aria-labelledby="`${id}-scope-label`"
+          @update:model-value="updateScope"
+        >
+          <ToggleGroupItem v-for="scope in MUSIC_CHARACTER_FILTER_SCOPES" :key="scope" :value="scope">
+            {{ t(`musicLibrary.list.filters.characterScope.${scope}`) }}
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </template>
+      <p v-else class="ml-3 text-xs text-muted-foreground">{{ t("musicCatalog.filters.scopeHint") }}</p>
+    </CatalogCharacterPicker>
   </div>
 </template>
