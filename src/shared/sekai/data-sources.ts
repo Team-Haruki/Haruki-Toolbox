@@ -25,6 +25,8 @@ export const SEKAI_ASSET_ENDPOINT_ROOTS: Record<SekaiAssetEndpointPreference, st
   china_cdn: "https://toolbox-sekai-assets.haruki.seiunx.com",
 }
 const TOOLBOX_STATIC_IMAGE_BASE_URL = "https://images.haruki.seiunx.com/sekai-toolbox"
+/** Vite's base path; `import.meta.env.BASE_URL` is not defined under `bun test`. */
+const APP_BASE_URL: string = import.meta.env.BASE_URL ?? "/"
 const CDN_VERSION_REGIONS: readonly SekaiRegion[] = ["tw", "kr", "cn"]
 const CHARACTER_ICON_NICKNAMES: Record<number, string> = {
   1: "ick",
@@ -229,8 +231,16 @@ export function resolveCardAttrIconUrl(attribute: string): string {
 }
 
 /** Round badge variant of the attribute icon (`attr_icon_{attr}.png`). */
+/**
+ * Bundled with the app (`public/assets/attr/`), not fetched from the image
+ * host: the round attribute icons appear on nearly every page — filter chips,
+ * detail badges, deck and honor views — so they are precached with the build
+ * and never hit the runtime image cache or its purge-and-retry path. The
+ * thumbnail-corner icon (`resolveCardAttrIconUrl`) is a different asset and
+ * still comes from the host.
+ */
 export function resolveCardAttrRoundIconUrl(attribute: string): string {
-  return resolveToolboxStaticImageUrl(`static_images/card/attr_icon_${attribute}.png`)
+  return `${APP_BASE_URL}assets/attr/attr_icon_${attribute}.png`
 }
 
 export function resolveCostumeThumbnailUrl(
