@@ -1,6 +1,7 @@
 import {
   resolveCharacterIconUrl,
   resolveToolboxStaticImageUrl,
+  resolveUnitLogoUrl,
 } from "@/shared/sekai/data-sources"
 import type { DeckRecommendEventAttr, DeckRecommendUnitType } from "./recommend-options"
 
@@ -129,8 +130,9 @@ export function buildDeckRecommendAreaItemOptions(masterData: Record<string, unk
     .sort(compareAreaItemOptions)
 }
 
+/** Shared resolver, so this page gets the inline SVG emblems too. */
 export function resolveUnitIconUrl(unit: DeckRecommendUnitType): string {
-  return resolveToolboxStaticImageUrl(`static_images/icon_${unit}.png`)
+  return resolveUnitLogoUrl(unit)
 }
 
 export function resolveAreaItemAttrIconUrl(attr: DeckRecommendEventAttr): string {
