@@ -13,9 +13,10 @@ export type CatalogResourceOptions = {
   /** Also ensure the region's music_metas (only music pages need it). */
   musicMetas?: boolean
   /**
-   * Files that may be absent for this region; they resolve to `[]` instead
-   * of failing the resource. Files in SEKAI_DATA_OPTIONAL_MASTER_FILES are
-   * always treated as optional.
+   * Files that may be absent for this region; a 404 stores `[]` (the worker
+   * is told they are optional for this request) and a missing record never
+   * fails the resource. Files in SEKAI_DATA_OPTIONAL_MASTER_FILES are always
+   * treated as optional.
    */
   optional?: readonly string[]
 }
@@ -220,6 +221,7 @@ export const useSekaiCatalogStore = defineStore("sekai-catalog", () => {
       await sekaiDataStore.ensureRegionData(region, {
         force: options.force === true,
         files,
+        optionalFiles: (options.optional ?? []).map(normalizeSekaiMasterFileName),
         musicMetas: options.musicMetas ?? false,
       })
       return null
@@ -295,6 +297,7 @@ export const useSekaiCatalogStore = defineStore("sekai-catalog", () => {
         try {
           await sekaiDataStore.ensureRegionData(region, {
             files: requestedFiles,
+            optionalFiles: (options.optional ?? []).map(normalizeSekaiMasterFileName),
             musicMetas: options.musicMetas ?? false,
           })
         } catch (ensureError) {

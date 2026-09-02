@@ -99,7 +99,7 @@ export default {
         "registerFailedTitle": "註冊失敗",
         "registerFailedDescription": "註冊失敗",
         "incompleteInfo": "請完整填寫註冊資訊",
-        "passwordMinLength": "密碼長度至少為{min}位",
+        "passwordMinLength": "密碼長度至少為{min}位", // NOSONAR -- translation key, not a credential
         "emailVerificationRequired": "請先為當前郵箱傳送驗證碼",
         "registerSuccessTitle": "註冊成功",
         "registerSuccessDescription": "歡迎來到Haruki工具箱"
@@ -117,8 +117,8 @@ export default {
       "toast": {
         "invalidLink": "重置連結無效，請重新發起找回密碼流程",
         "incompleteInfo": "請輸入完整資訊",
-        "passwordMismatch": "兩次密碼輸入不一致",
-        "passwordMinLength": "密碼長度至少為{min}位",
+        "passwordMismatch": "兩次密碼輸入不一致", // NOSONAR -- translation key, not a credential
+        "passwordMinLength": "密碼長度至少為{min}位", // NOSONAR -- translation key, not a credential
         "resetSuccessTitle": "密碼重置成功",
         "resetSuccessDescription": "請重新登入",
         "resetFailedTitle": "重置失敗",
@@ -1388,16 +1388,12 @@ export default {
     },
     "search": {
       "label": "搜尋",
-      "placeholder": "搜尋…",
       "clear": "清除搜尋"
     },
     "filters": {
       "title": "篩選",
       "reset": "重置篩選",
-      "active": "{count} 項篩選生效",
-      "clearAll": "清除全部",
-      "showPanel": "篩選",
-      "hidePanel": "收起篩選"
+      "clearAll": "清除全部"
     },
     "results": {
       "count": "共 {count} 項",
@@ -1454,16 +1450,12 @@ export default {
       "breadcrumb": "頁面路徑",
       "notFound": "在當前伺服器的資料中找不到該條目。",
       "loadError": "詳情資料載入失敗",
-      "id": "ID",
       "assetName": "資源名",
-      "releaseAt": "上線時間",
       "period": "期間",
-      "viewAll": "檢視全部",
       "viewAllCount": "檢視全部 ({count})",
       "zoom": "點選放大檢視",
       "showMore": "展開",
       "showLess": "收起",
-      "unknown": "未知",
       "tryOtherRegion": "該條目可能存在於其他伺服器，可切換後重試。"
     },
     "lightbox": {

@@ -54,6 +54,10 @@ async function handleRequest(request: SekaiDataWorkerRequest): Promise<void> {
 async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "ensure-region" }>) {
   const region = request.region
   const files = normalizeFileList(request.files)
+  const optionalFiles = new Set<string>([
+    ...OPTIONAL_MASTER_FILE_SET,
+    ...(request.optionalFiles ?? []).map(normalizeSekaiMasterFileName),
+  ])
   const includeMusicMetas = request.musicMetas !== false
 
   postProgress(request.requestId, region, "checking", 5)
@@ -106,6 +110,7 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
   if (!masterCacheHit) {
     const masterFiles = await fetchMasterFilesConcurrently({
       filesToFetch,
+      optionalFiles,
       region,
       requestId: request.requestId,
       versionInfo,
@@ -231,9 +236,13 @@ async function fetchJson(url: string): Promise<unknown> {
 /** Marker for an optional file that failed transiently: not persisted, retried next ensure. */
 const SKIP_FILE = Symbol("skip-file")
 
-async function fetchMasterFileJson(url: string, fileName: string): Promise<unknown | typeof SKIP_FILE> {
+async function fetchMasterFileJson(
+  url: string,
+  fileName: string,
+  optionalFiles: ReadonlySet<string> = OPTIONAL_MASTER_FILE_SET,
+): Promise<unknown | typeof SKIP_FILE> {
   const normalizedFileName = normalizeSekaiMasterFileName(fileName)
-  const isOptionalFile = OPTIONAL_MASTER_FILE_SET.has(normalizedFileName)
+  const isOptionalFile = optionalFiles.has(normalizedFileName)
   let response: Response
   try {
     response = await fetchWithRetry(url, { cache: "no-store" })
@@ -262,11 +271,12 @@ async function fetchMasterFileJson(url: string, fileName: string): Promise<unkno
 
 async function fetchMasterFilesConcurrently(input: {
   filesToFetch: string[]
+  optionalFiles: ReadonlySet<string>
   region: SekaiDataWorkerRequest["region"]
   requestId: string
   versionInfo: ReturnType<typeof normalizeSekaiMasterVersionInfo>
 }): Promise<Record<string, unknown>> {
-  const { filesToFetch, region, requestId, versionInfo } = input
+  const { filesToFetch, optionalFiles, region, requestId, versionInfo } = input
   const masterFiles: Record<string, unknown> = {}
   let nextIndex = 0
   let completed = 0
@@ -290,6 +300,7 @@ async function fetchMasterFilesConcurrently(input: {
       const data = await fetchMasterFileJson(
         resolveSekaiMasterFileUrl(region, fileName, versionInfo),
         fileName,
+        optionalFiles,
       )
       if (data !== SKIP_FILE) {
         masterFiles[fileName] = data

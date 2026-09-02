@@ -93,6 +93,12 @@ export type SekaiDataWorkerRequest =
     region: SekaiRegion
     force?: boolean
     files?: string[]
+    /**
+     * Files (a subset of `files`) that may not exist for this region: a 404
+     * stores `[]` instead of failing the request, in addition to the global
+     * SEKAI_DATA_OPTIONAL_MASTER_FILES.
+     */
+    optionalFiles?: string[]
     /** Set false to skip the music-metas freshness check (pages that never read musicMetas). */
     musicMetas?: boolean
   }

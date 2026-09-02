@@ -110,6 +110,7 @@ function toggleZoom(event: MouseEvent) {
           size="sm"
           class="hidden h-8 gap-1 px-2 text-xs [@media(pointer:fine)]:inline-flex"
           :aria-pressed="zoomed"
+          :aria-label="zoomed ? t('catalog.lightbox.zoomOut') : t('catalog.lightbox.zoomIn')"
           @click="zoomed = !zoomed"
         >
           <LucideZoomOut v-if="zoomed" class="size-4" />
@@ -117,7 +118,13 @@ function toggleZoom(event: MouseEvent) {
           <span class="hidden sm:inline">{{ zoomed ? t("catalog.lightbox.zoomOut") : t("catalog.lightbox.zoomIn") }}</span>
         </Button>
         <Button v-if="openUrl" as-child variant="ghost" size="sm" class="h-8 gap-1 px-2 text-xs">
-          <a :href="openUrl" target="_blank" rel="noopener noreferrer">
+          <a
+            :href="openUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            :aria-label="t('catalog.lightbox.openInNewTab')"
+            :title="t('catalog.lightbox.openInNewTab')"
+          >
             <LucideExternalLink class="size-4" />
             <span class="hidden sm:inline">{{ t("catalog.lightbox.openInNewTab") }}</span>
           </a>

@@ -52,6 +52,7 @@ export type SekaiDataQueueItem = {
 
 type ActiveRegionRequest = {
   files: string[]
+  optionalFiles: string[]
   force: boolean
   musicMetas: boolean
   promise: Promise<void>
@@ -59,6 +60,7 @@ type ActiveRegionRequest = {
 
 type QueuedRegionRequest = {
   files: string[]
+  optionalFiles: string[]
   force: boolean
   musicMetas: boolean
   promise: Promise<void>
@@ -157,10 +159,17 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
 
   async function ensureRegionData(
     region: SekaiRegion,
-    options: { force?: boolean; files?: readonly string[]; musicMetas?: boolean } = {},
+    options: {
+      force?: boolean
+      files?: readonly string[]
+      /** Files (subset of `files`) whose 404 must not fail the request; stored as `[]`. */
+      optionalFiles?: readonly string[]
+      musicMetas?: boolean
+    } = {},
   ) {
     await ensureRegionCacheStateLoaded(region)
     const requestedFiles = normalizeFileList(options.files)
+    const optionalFiles = mergeFileLists([], options.optionalFiles ?? [])
     const force = options.force === true
     const musicMetas = options.musicMetas !== false
     if (!force && isRegionVerificationFresh(region, requestedFiles, musicMetas)) {
@@ -178,10 +187,10 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
         return activeRequest.promise
       }
 
-      return queueRegionRequest(region, { force, files: requestedFiles, musicMetas })
+      return queueRegionRequest(region, { force, files: requestedFiles, optionalFiles, musicMetas })
     }
 
-    return startRegionDataRequest(region, { force, files: requestedFiles, musicMetas })
+    return startRegionDataRequest(region, { force, files: requestedFiles, optionalFiles, musicMetas })
   }
 
   /**
@@ -233,7 +242,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
 
   function startRegionDataRequest(
     region: SekaiRegion,
-    options: { force: boolean; files: string[]; musicMetas: boolean },
+    options: { force: boolean; files: string[]; optionalFiles: string[]; musicMetas: boolean },
   ) {
     const requestedFiles = options.files
     const hasCache = Boolean(regionStates.value[region].masterFetchVersion)
@@ -247,6 +256,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
     })
     activeRequests.set(region, {
       files: requestedFiles,
+      optionalFiles: options.optionalFiles,
       force: options.force,
       musicMetas: options.musicMetas,
       promise,
@@ -259,6 +269,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
         region,
         force: options.force,
         files: requestedFiles,
+        optionalFiles: options.optionalFiles.length > 0 ? options.optionalFiles : undefined,
         musicMetas: options.musicMetas,
       })
       requestResolvers.delete(requestId)
@@ -286,12 +297,13 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
 
   function queueRegionRequest(
     region: SekaiRegion,
-    request: { force: boolean; files: string[]; musicMetas: boolean },
+    request: { force: boolean; files: string[]; optionalFiles: string[]; musicMetas: boolean },
   ) {
     const existing = queuedRequests.get(region)
     if (existing) {
       existing.force = existing.force || request.force
       existing.files = mergeFileLists(existing.files, request.files)
+      existing.optionalFiles = mergeFileLists(existing.optionalFiles, request.optionalFiles)
       existing.musicMetas = existing.musicMetas || request.musicMetas
       return existing.promise
     }
@@ -301,6 +313,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
     const queuedRequest: QueuedRegionRequest = {
       force: request.force,
       files: request.files,
+      optionalFiles: request.optionalFiles,
       musicMetas: request.musicMetas,
       promise: new Promise<void>((resolve, reject) => {
         resolveQueued = resolve
@@ -319,6 +332,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
       startRegionDataRequest(region, {
         force: queuedRequest.force,
         files: queuedRequest.files,
+        optionalFiles: queuedRequest.optionalFiles,
         musicMetas: queuedRequest.musicMetas,
       }).then(queuedRequest.resolve, queuedRequest.reject)
     }).catch(() => {})
