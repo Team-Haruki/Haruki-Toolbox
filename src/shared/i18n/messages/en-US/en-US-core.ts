@@ -390,6 +390,12 @@ export default {
       "empty": "No matches found.",
       "hairLockedHint": "This accessory has a fixed hairstyle, so the hairstyle slot has no effect.",
       "reset": "Reset to defaults",
+      "rotateLeft": "Turn left",
+      "rotateRight": "Turn right",
+      "resetView": "Face front",
+      "copyLink": "Copy link",
+      "linkCopied": "Link copied",
+      "linkCopyFailed": "Could not copy. Copy the address bar instead.",
       "loadError": "Failed to load costume data.",
       "roleLoadError": "Failed to load the character's 3D part list.",
       "retry": "Retry"

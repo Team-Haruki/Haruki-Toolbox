@@ -390,6 +390,12 @@ export default {
       "empty": "没有找到匹配项。",
       "hairLockedHint": "该头饰固定发型，发型选项不生效。",
       "reset": "恢复默认",
+      "rotateLeft": "向左转",
+      "rotateRight": "向右转",
+      "resetView": "回正",
+      "copyLink": "复制链接",
+      "linkCopied": "链接已复制",
+      "linkCopyFailed": "复制失败，请手动复制地址栏。",
       "loadError": "服装数据加载失败。",
       "roleLoadError": "该角色的 3D 部件清单加载失败。",
       "retry": "重试"
