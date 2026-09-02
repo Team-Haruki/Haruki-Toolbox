@@ -122,7 +122,7 @@ describe("active chips", () => {
       { key: "attrs:cute", label: "t:cards.attr.cute" },
       { key: "rar:rarity_4", label: "t:cards.rarity.rarity_4" },
       { key: "supply:birthday", label: "t:cards.supply.birthday" },
-      { key: "skill:life_recovery", label: "t:cardCatalog.skillTypes.life_recovery" },
+      { key: "skill:life_recovery", label: "t:cardCatalog.skillFilters.life_recovery" },
       { key: "year", label: "2021" },
     ])
   })

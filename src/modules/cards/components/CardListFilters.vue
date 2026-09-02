@@ -67,7 +67,7 @@ const supplyOptions = computed<CatalogFieldOption[]>(() => CARD_SUPPLY_TYPES.map
 
 const skillOptions = computed<CatalogFieldOption[]>(() => CARD_SKILL_FILTER_TYPES.map((type) => ({
   value: type,
-  label: resolveSekaiEnumLabel(labels, "cardCatalog.skillTypes", type),
+  label: resolveSekaiEnumLabel(labels, "cardCatalog.skillFilters", type),
 })))
 
 const yearOptions = computed<CatalogFieldOption[]>(() => props.years.map((year) => ({

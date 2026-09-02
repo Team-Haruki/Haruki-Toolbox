@@ -206,7 +206,7 @@ export function buildCardsActiveChips(state: CardsQueryState, ctx: CardsActiveCh
     chips.push({ key: `supply:${supply}`, label: resolveSekaiSupplyLabel(labels, supply) })
   }
   for (const skill of state.skill) {
-    chips.push({ key: `skill:${skill}`, label: resolveSekaiEnumLabel(labels, "cardCatalog.skillTypes", skill) })
+    chips.push({ key: `skill:${skill}`, label: resolveSekaiEnumLabel(labels, "cardCatalog.skillFilters", skill) })
   }
   if (state.year != null) {
     chips.push({ key: "year", label: String(state.year) })

@@ -23,6 +23,17 @@ export default {
       "trained": "特训后",
       "both": "两者"
     },
+    "skillFilters": {
+      "score_up": "分卡",
+      "score_up_perfect": "P分",
+      "judgment_up": "判卡",
+      "life_recovery": "奶卡",
+      "score_up_condition_life": "血分",
+      "score_up_keep": "判分",
+      "sub_unit_score_up": "团分",
+      "score_up_unit_count": "混团分",
+      "other_member_score_up_reference_rate": "参照分"
+    },
     "skillTypes": {
       "score_up": "分数提升",
       "judgment_up": "判定强化",
@@ -31,7 +42,7 @@ export default {
       "score_up_keep": "持续型分数提升",
       "score_up_character_rank": "角色等级分数提升",
       "other_member_score_up_reference_rate": "参照队友分数提升",
-      "score_up_unit_count": "同团人数分数提升"
+      "score_up_unit_count": "异团人数分数提升"
     },
     "detail": {
       "viewCharacterCards": "该角色的全部卡牌",

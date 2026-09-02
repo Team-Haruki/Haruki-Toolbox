@@ -23,6 +23,17 @@ export default {
       "trained": "Trained",
       "both": "Both"
     },
+    "skillFilters": {
+      "score_up": "Score up",
+      "score_up_perfect": "Perfect-only score up",
+      "judgment_up": "Judgment up",
+      "life_recovery": "Life recovery",
+      "score_up_condition_life": "Life-conditional score up",
+      "score_up_keep": "Sustained score up",
+      "sub_unit_score_up": "Same-unit score up",
+      "score_up_unit_count": "Mixed-unit score up",
+      "other_member_score_up_reference_rate": "Teammate-referencing score up"
+    },
     "skillTypes": {
       "score_up": "Score up",
       "judgment_up": "Judgment up",
@@ -31,7 +42,7 @@ export default {
       "score_up_keep": "Sustained score up",
       "score_up_character_rank": "Character-rank score up",
       "other_member_score_up_reference_rate": "Teammate-referencing score up",
-      "score_up_unit_count": "Unit-count score up"
+      "score_up_unit_count": "Different-unit score up"
     },
     "detail": {
       "viewCharacterCards": "All cards of this character",

@@ -6,6 +6,7 @@ import {
   classifyCardSkillFilterType,
   formatCardSkillAtLevel,
   normalizeCardSkill,
+  type CardSkillEffect,
 } from "./card-skill"
 
 const rawSkills = [
@@ -80,6 +81,23 @@ const rawSkills = [
         skillEffectDetails: [
           { id: 5, level: 1, activateEffectDuration: 5.0, activateEffectValue: 50 },
           { id: 6, level: 2, activateEffectDuration: 5.0, activateEffectValue: 50 },
+        ],
+      },
+    ],
+  },
+  {
+    // PERFECT-only score up: a plain `score_up` effect, told apart only by
+    // `activateNotesJudgmentType`.
+    id: 11,
+    description: "{{17;d}}초 동안 PERFECT일 때만 스코어가 {{17;v}}% 상승한다.",
+    skillEffects: [
+      {
+        id: 17,
+        skillEffectType: "score_up",
+        activateNotesJudgmentType: "perfect",
+        skillEffectDetails: [
+          { id: 1, level: 1, activateEffectDuration: 5.0, activateEffectValue: 110 },
+          { id: 2, level: 2, activateEffectDuration: 5.0, activateEffectValue: 115 },
         ],
       },
     ],
@@ -162,18 +180,41 @@ describe("normalizeCardSkill", () => {
 describe("skill records and level-aware formatting", () => {
   it("indexes records with effect types, filter type and max level", () => {
     const index = buildCardSkillIndex(rawSkills)
-    expect(index.size).toBe(5)
+    expect(index.size).toBe(6)
     expect(index.get(1)).toMatchObject({ effectTypes: ["score_up"], filterType: "score_up", maxLevel: 4 })
     expect(index.get(14)).toMatchObject({ effectTypes: ["life_recovery", "score_up"], filterType: "life_recovery" })
     expect(index.get(22)).toMatchObject({ filterType: "score_up_character_rank" })
+    // Unit Fes and PERFECT-only score ups share the plain `score_up` effect type.
+    expect(index.get(15)).toMatchObject({ effectTypes: ["score_up"], filterType: "sub_unit_score_up" })
+    expect(index.get(11)).toMatchObject({ effectTypes: ["score_up"], filterType: "score_up_perfect" })
     expect(index.get(2)).toMatchObject({ effectTypes: [], filterType: "score_up", maxLevel: 1 })
   })
 
   it("classifies the filter type by the distinguishing effect", () => {
-    expect(classifyCardSkillFilterType(["score_up", "judgment_up"])).toBe("judgment_up")
-    expect(classifyCardSkillFilterType(["score_up"])).toBe("score_up")
+    const effect = (overrides: Partial<CardSkillEffect>): CardSkillEffect => ({
+      id: 1,
+      effectType: "score_up",
+      judgmentType: "good",
+      enhanceValue: null,
+      enhanceType: null,
+      details: [],
+      ...overrides,
+    })
+
+    // A non-score_up effect type always wins, wherever it sits in the list.
+    expect(classifyCardSkillFilterType([effect({}), effect({ effectType: "judgment_up" })])).toBe("judgment_up")
+    expect(classifyCardSkillFilterType([effect({ effectType: "life_recovery" }), effect({})])).toBe("life_recovery")
+    // Then the unit-Fes enhance, then the PERFECT-only judgment, then plain score up.
+    expect(classifyCardSkillFilterType([effect({ enhanceType: "sub_unit_score_up" })])).toBe("sub_unit_score_up")
+    expect(classifyCardSkillFilterType([effect({ judgmentType: "perfect" })])).toBe("score_up_perfect")
+    expect(classifyCardSkillFilterType([effect({})])).toBe("score_up")
     expect(classifyCardSkillFilterType([])).toBe("score_up")
-    expect(CARD_SKILL_FILTER_TYPES).toHaveLength(8)
+    // An unnamed effect type never wins over a real one.
+    expect(classifyCardSkillFilterType([effect({ effectType: "" })])).toBe("score_up")
+    expect(CARD_SKILL_FILTER_TYPES).toHaveLength(9)
+    // The Bloom Fes character-rank skill is a `specialTrainingSkillId` only, so it
+    // is classified but not offered as a filter.
+    expect(CARD_SKILL_FILTER_TYPES).not.toContain("score_up_character_rank")
   })
 
   it("formats a single level", () => {
