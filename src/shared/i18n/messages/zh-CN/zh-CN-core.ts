@@ -1388,16 +1388,12 @@ export default {
     },
     "search": {
       "label": "搜索",
-      "placeholder": "搜索…",
       "clear": "清除搜索"
     },
     "filters": {
       "title": "筛选",
       "reset": "重置筛选",
-      "active": "{count} 项筛选生效",
       "clearAll": "清除全部",
-      "showPanel": "筛选",
-      "hidePanel": "收起筛选"
     },
     "results": {
       "count": "共 {count} 项",
@@ -1454,16 +1450,12 @@ export default {
       "breadcrumb": "页面路径",
       "notFound": "在当前服务器的数据中找不到该条目。",
       "loadError": "详情数据加载失败",
-      "id": "ID",
       "assetName": "资源名",
-      "releaseAt": "上线时间",
       "period": "期间",
-      "viewAll": "查看全部",
       "viewAllCount": "查看全部 ({count})",
       "zoom": "点击放大查看",
       "showMore": "展开",
       "showLess": "收起",
-      "unknown": "未知",
       "tryOtherRegion": "该条目可能存在于其他服务器，可切换后重试。"
     },
     "lightbox": {

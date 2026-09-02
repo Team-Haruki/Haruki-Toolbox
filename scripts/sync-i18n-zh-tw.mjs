@@ -63,6 +63,10 @@ for (const bundle of BUNDLES) {
   dropOrphans(zh, tw, stats)
   const ordered = reorderLikeSource(zh, tw)
   const header = "// AUTO-GENERATED zh-TW locale bundle (OpenCC s2twp from zh-CN).\n// Namespaces: " + Object.keys(ordered).join(", ") + "\n"
-  writeFileSync(new URL(twPath, import.meta.url), header + "export default " + JSON.stringify(ordered, null, 2) + " as const\n")
+  // Password-related UI strings trip credential detectors; keep the same
+  // suppression marker the hand-written zh-CN bundles carry.
+  const body = JSON.stringify(ordered, null, 2)
+    .replace(/^(\s*"(?:passwordMinLength|passwordMismatch)": ".*",?)$/gm, "$1 // NOSONAR -- translation key, not a credential")
+  writeFileSync(new URL(twPath, import.meta.url), header + "export default " + body + " as const\n")
   console.log(`zh-TW ${bundle}: +${stats.added} filled, -${stats.removed} orphaned`)
 }

@@ -1388,16 +1388,12 @@ export default {
     },
     "search": {
       "label": "Search",
-      "placeholder": "Search…",
       "clear": "Clear search"
     },
     "filters": {
       "title": "Filters",
       "reset": "Reset filters",
-      "active": "{count} active",
       "clearAll": "Clear all",
-      "showPanel": "Filters",
-      "hidePanel": "Hide filters"
     },
     "results": {
       "count": "{count} results",
@@ -1454,16 +1450,12 @@ export default {
       "breadcrumb": "Breadcrumb",
       "notFound": "This entry does not exist in the selected server's data.",
       "loadError": "Failed to load details",
-      "id": "ID",
       "assetName": "Asset name",
-      "releaseAt": "Release time",
       "period": "Period",
-      "viewAll": "View all",
       "viewAllCount": "View all ({count})",
       "zoom": "Click to enlarge",
       "showMore": "Show more",
       "showLess": "Show less",
-      "unknown": "Unknown",
       "tryOtherRegion": "This entry may exist on another server; switch and retry."
     },
     "lightbox": {

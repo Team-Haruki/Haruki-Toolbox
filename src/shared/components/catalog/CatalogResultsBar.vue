@@ -20,7 +20,8 @@ import type { CatalogSortDirection, CatalogSortOption, CatalogViewOption } from 
  * sort + direction + optional view switch on the right.
  */
 withDefaults(defineProps<{
-  countLabel: string
+  /** Result count line; pass null while the list is still loading. */
+  countLabel: string | null
   sortOptions?: readonly CatalogSortOption[]
   viewOptions?: readonly CatalogViewOption[]
   /** Stick below the topbar while the results scroll (long grids). */
@@ -59,11 +60,14 @@ function toggleDirection() {
   <div
     :class="[
       'flex flex-wrap items-center gap-2 text-sm',
-      sticky ? 'sticky top-13 z-30 -mx-1 rounded-md border bg-background/90 px-2 py-1.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/75' : '',
+      // Sticky only from `sm`: on phones a pinned two-row bar would eat a
+      // large share of the viewport.
+      sticky ? 'sm:sticky sm:top-13 sm:z-30 sm:-mx-1 sm:rounded-md sm:border sm:bg-background/90 sm:px-2 sm:py-1.5 sm:shadow-sm sm:backdrop-blur sm:supports-[backdrop-filter]:bg-background/75' : '',
     ]"
     data-slot="catalog-results-bar"
   >
-    <p class="min-w-0 flex-1 truncate text-muted-foreground tabular-nums" aria-live="polite">{{ countLabel }}</p>
+    <!-- The count takes its own row on phones instead of being crushed by the controls. -->
+    <p class="min-w-0 basis-full truncate text-muted-foreground tabular-nums sm:flex-1 sm:basis-auto" aria-live="polite">{{ countLabel ?? "" }}</p>
     <slot name="extra" />
     <template v-if="sortOptions.length > 0">
       <Label :id="`${id}-sort-label`" :for="`${id}-sort`" class="sr-only">{{ t("catalog.sort.label") }}</Label>

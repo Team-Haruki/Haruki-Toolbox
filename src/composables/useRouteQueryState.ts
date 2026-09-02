@@ -7,6 +7,11 @@ export type QueryCodec<T extends object> = {
   keys: readonly string[]
   /** Keys that count as user filters (for `activeFilterCount` / `reset`). Defaults to `keys`. */
   filterKeys?: readonly string[]
+  /**
+   * Keys counted in `activeFilterCount`. Defaults to `filterKeys`; use it to
+   * fold companion keys (a scope that only qualifies another filter) into one.
+   */
+  countKeys?: readonly string[]
   defaults: () => T
   parse: (query: LocationQuery) => T
   serialize: (state: T) => QueryWriteRecord
@@ -55,6 +60,7 @@ export function useRouteQueryState<T extends object>(
     ...(options.pageKey ? [options.pageKey] : []),
   ])
   const filterKeys = codec.filterKeys ?? codec.keys
+  const countKeys = codec.countKeys ?? filterKeys
 
   const state = reactive(codec.parse(route.query)) as T
   let lastRecord = codec.serialize(state)
@@ -174,7 +180,7 @@ export function useRouteQueryState<T extends object>(
   const activeFilterCount = computed(() => {
     const record = codec.serialize(state)
     let count = 0
-    for (const key of filterKeys) {
+    for (const key of countKeys) {
       if ((record[key] ?? "") !== (defaultRecord[key] ?? "")) {
         count += 1
       }

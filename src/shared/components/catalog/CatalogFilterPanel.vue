@@ -46,7 +46,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const initialOpen = () => (props.defaultCollapsed ? false : !isNarrowViewport())
+// Only pages that opt into memory (`pageKey`) start collapsed on phones; other
+// consumers (the deck-recommend pickers) keep the historical open default.
+const initialOpen = () => (props.defaultCollapsed ? false : (props.pageKey ? !isNarrowViewport() : true))
 const remembered = props.pageKey ? useCatalogViewPreference<boolean>(props.pageKey, "filtersOpen", initialOpen) : null
 const local = ref(initialOpen())
 
@@ -99,25 +101,22 @@ defineExpose({ open, expanded })
     </button>
 
     <div v-if="showChips" class="flex flex-wrap items-center gap-1.5" role="list" :aria-label="t('catalog.filters.title')">
-      <span
+      <!-- The whole chip removes the filter: a comfortable touch target on phones. -->
+      <button
         v-for="chip in activeChips"
         :key="chip.key"
+        type="button"
         role="listitem"
-        class="inline-flex max-w-full items-center gap-1 rounded-full border bg-background py-0.5 pr-1 pl-2.5 text-xs dark:bg-input/30"
+        class="inline-flex min-h-8 max-w-full items-center gap-1 rounded-full border bg-background py-1 pr-2 pl-2.5 text-xs transition-colors hover:bg-muted dark:bg-input/30"
+        :aria-label="`${t('catalog.filters.reset')}: ${chip.label}`"
+        @click="emit('removeChip', chip.key)"
       >
         <span class="truncate">{{ chip.label }}</span>
-        <button
-          type="button"
-          class="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          :aria-label="`${t('catalog.filters.reset')}: ${chip.label}`"
-          @click="emit('removeChip', chip.key)"
-        >
-          <X class="size-3" />
-        </button>
-      </span>
+        <X class="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </button>
       <button
         type="button"
-        class="inline-flex items-center gap-1 rounded-full border border-dashed px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        class="inline-flex min-h-8 items-center gap-1 rounded-full border border-dashed px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         @click="emit('reset')"
       >
         <RotateCcw class="size-3" />

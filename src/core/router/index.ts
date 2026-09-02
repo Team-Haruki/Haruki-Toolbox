@@ -32,10 +32,11 @@ const router = createRouter({
         if (savedPosition) {
             return savedPosition
         }
-        if (to.path === from.path && !to.hash) {
-            // Query-only navigation (catalog filters, sort, page written with
-            // router.replace) keeps the reader where they are; pages scroll to
-            // their own results anchor when it matters.
+        if (to.meta.scrollMemory && to.path === from.path && !to.hash) {
+            // Query-only navigation on catalog lists (filters, sort, page
+            // written with router.replace) keeps the reader where they are;
+            // the list scrolls to its own results anchor when it matters.
+            // Other pages keep the historical scroll-to-top behaviour.
             return false
         }
         if (to.hash) {
