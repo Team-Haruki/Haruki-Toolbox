@@ -20,7 +20,9 @@ const gridClass = computed(() => {
     case "tiles":
       return "grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
     case "wide":
-      return "grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+      // Jackets carry a title, a date and up to six level pills underneath;
+      // ~180-220px is where that fits without the art dominating the page.
+      return "grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
     case "thumbs":
       return "grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10"
     default:
