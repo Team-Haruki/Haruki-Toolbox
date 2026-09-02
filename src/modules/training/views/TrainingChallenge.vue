@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideGem, LucideRefreshCw, LucideTrophy } from "lucide-vue-next"
+import { LucideGem, LucideTrophy } from "lucide-vue-next"
+import type { AcceptableValue } from "reka-ui"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { useTrainingRefresh } from "@/modules/training/composables/training-context"
 import { useTrainingChallenge } from "@/modules/training/composables/useTrainingChallenge"
 import {
   CHALLENGE_SORT_MODES,
@@ -99,7 +101,7 @@ function formatNumber(value: number): string {
   return numberFormatter.value.format(value)
 }
 
-function handleSortChange(value: unknown) {
+function handleSortChange(value: AcceptableValue | AcceptableValue[] | undefined) {
   if (typeof value === "string" && (CHALLENGE_SORT_MODES as readonly string[]).includes(value)) {
     sortMode.value = value as ChallengeSortMode
   }
@@ -109,6 +111,8 @@ function refresh() {
   void reloadSuite("check-remote")
   reloadMaster()
 }
+
+useTrainingRefresh(refresh)
 
 function retry() {
   if (masterError.value != null) {
@@ -123,18 +127,6 @@ function retry() {
 
 <template>
   <div class="flex flex-col gap-4">
-    <!-- Header -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h2 class="text-xl font-bold">{{ t("training.challenge.title") }}</h2>
-        <p class="text-sm text-muted-foreground">{{ t("training.challenge.description") }}</p>
-      </div>
-      <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
-        <LucideRefreshCw class="size-3.5" />
-        {{ t("training.challenge.refresh") }}
-      </Button>
-    </div>
-
     <!-- No account selected -->
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
@@ -172,16 +164,10 @@ function retry() {
           </p>
           <p v-else>{{ t("training.challenge.empty") }}</p>
           <p>{{ t("training.challenge.charactersWithData", { count: summary.withDataCount, total: cells.length }) }}</p>
-          <Tabs :model-value="sortMode" class="ml-auto" @update:model-value="handleSortChange">
-            <TabsList class="h-8">
-              <TabsTrigger value="character" class="text-xs">
-                {{ t("training.challenge.sortByCharacter") }}
-              </TabsTrigger>
-              <TabsTrigger value="score" class="text-xs">
-                {{ t("training.challenge.sortByScore") }}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <ToggleGroup type="single" variant="segment" size="sm" class="ml-auto" :model-value="sortMode" :aria-label="t('catalog.sort.label')" @update:model-value="handleSortChange">
+            <ToggleGroupItem value="character">{{ t("training.challenge.sortByCharacter") }}</ToggleGroupItem>
+            <ToggleGroupItem value="score">{{ t("training.challenge.sortByScore") }}</ToggleGroupItem>
+          </ToggleGroup>
         </div>
 
         <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">

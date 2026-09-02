@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideCheck, LucideChevronRight, LucideHeart, LucideRefreshCw } from "lucide-vue-next"
+import { LucideCheck, LucideChevronRight, LucideHeart } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
-import SimpleSelect from "@/shared/components/SimpleSelect.vue"
+import CatalogCharacterPicker from "@/shared/components/catalog/CatalogCharacterPicker.vue"
+import { useTrainingRefresh } from "@/modules/training/composables/training-context"
 import { useTrainingBonds } from "@/modules/training/composables/useTrainingBonds"
 import {
   bondLevelProgressPercent,
@@ -35,8 +36,8 @@ const {
   reloadMaster,
 } = useTrainingBonds()
 
-/** "" means no filter; otherwise a base character id as string. */
-const filterValue = ref("")
+/** Selected base characters; a pair shows when either side is selected. */
+const filterCharacterIds = ref<number[]>([])
 
 const isLoading = computed(() => suiteStatus.value === "loading" || masterLoading.value)
 const hasError = computed(() => suiteStatus.value === "error" || masterError.value != null)
@@ -58,22 +59,7 @@ const errorDetail = computed(() => {
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 
-const filterOptions = computed(() => {
-  const options: { value: string; label: string; iconUrl?: string | null }[] = [
-    { value: "", label: t("training.bonds.filterAll") },
-  ]
-  const characterEntries: { value: string; label: string; iconUrl?: string | null }[] = []
-  for (const [id, character] of characterMap.value) {
-    characterEntries.push({ value: String(id), label: character.name, iconUrl: character.iconUrl })
-  }
-  characterEntries.sort((a, b) => Number(a.value) - Number(b.value))
-  return [...options, ...characterEntries]
-})
-
-const filterCharacterId = computed(() => {
-  const parsed = Number(filterValue.value)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
-})
+const characterOptions = computed(() => [...characterMap.value.values()].sort((a, b) => a.id - b.id))
 
 const bondsResult = computed(() => buildBondEntries({
   userBonds: normalizeUserBonds(suiteData.value?.userBonds),
@@ -81,10 +67,19 @@ const bondsResult = computed(() => buildBondEntries({
   levelTable: bondLevelTable.value,
   styleMap: styleMap.value,
   userCharacters: normalizeUserCharacterRanks(suiteData.value?.userCharacters),
-  filterCharacterId: filterCharacterId.value,
+  filterCharacterId: null,
 }))
 
-const bondRows = computed(() => bondsResult.value.entries.map((entry) => {
+const filteredEntries = computed(() => {
+  const ids = filterCharacterIds.value
+  if (ids.length === 0) {
+    return bondsResult.value.entries
+  }
+
+  return bondsResult.value.entries.filter((entry) => ids.includes(entry.baseCharaId1) || ids.includes(entry.baseCharaId2))
+})
+
+const bondRows = computed(() => filteredEntries.value.map((entry) => {
   const character1 = characterMap.value.get(entry.baseCharaId1) ?? null
   const character2 = characterMap.value.get(entry.baseCharaId2) ?? null
   const color1 = resolveSekaiCharacterColor(entry.baseCharaId1)
@@ -159,6 +154,8 @@ function refresh() {
   reloadMaster()
 }
 
+useTrainingRefresh(refresh)
+
 function retry() {
   if (masterError.value != null) {
     reloadMaster()
@@ -172,18 +169,6 @@ function retry() {
 
 <template>
   <div class="flex flex-col gap-4">
-    <!-- Header -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h2 class="text-xl font-bold">{{ t("training.bonds.title") }}</h2>
-        <p class="text-sm text-muted-foreground">{{ t("training.bonds.description") }}</p>
-      </div>
-      <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
-        <LucideRefreshCw class="size-3.5" />
-        {{ t("training.bonds.refresh") }}
-      </Button>
-    </div>
-
     <!-- No account selected -->
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
@@ -214,23 +199,17 @@ function retry() {
 
     <Card v-else-if="isReady">
       <CardContent class="flex flex-col gap-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <p class="text-sm text-muted-foreground">
+        <CatalogCharacterPicker
+          v-if="characterOptions.length > 0"
+          v-model="filterCharacterIds"
+          :characters="characterOptions"
+          :label="t('training.bonds.filterLabel')"
+          size="sm"
+        >
+          <span class="ml-auto text-xs tabular-nums text-muted-foreground">
             {{ t("training.bonds.count", { count: bondRows.length }) }}
-          </p>
-          <span class="flex flex-wrap items-center gap-2">
-            <span class="text-xs text-muted-foreground">
-              {{ t("training.bonds.filterLabel") }}
-            </span>
-            <SimpleSelect
-              v-model="filterValue"
-              :options="filterOptions"
-              size="sm"
-              trigger-class="text-xs"
-              :aria-label="t('training.bonds.filterLabel')"
-            />
           </span>
-        </div>
+        </CatalogCharacterPicker>
 
         <p v-if="bondRows.length === 0" class="py-4 text-center text-sm text-muted-foreground">
           {{ t("training.bonds.empty") }}

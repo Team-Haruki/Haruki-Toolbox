@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, reactive, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideList, LucideRefreshCw } from "lucide-vue-next"
+import { LucideList } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
-import SimpleSelect from "@/shared/components/SimpleSelect.vue"
+import CatalogCharacterPicker from "@/shared/components/catalog/CatalogCharacterPicker.vue"
+import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
+import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import type { CatalogActiveChip } from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import type { CatalogFieldOption } from "@/shared/components/catalog/types"
+import { resolveSekaiAttrLabel, resolveSekaiUnitLabel } from "@/shared/sekai/labels"
+import { useTrainingRefresh } from "@/modules/training/composables/training-context"
 import { SEKAI_CARD_ATTRS, SEKAI_CARD_ATTR_COLORS, SEKAI_UNITS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
 import { resolveCardAttrRoundIconUrl, resolveSekaiGameAssetUrl, resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { useTrainingArea } from "@/modules/training/composables/useTrainingArea"
@@ -23,7 +29,8 @@ import {
   type AreaItemView,
 } from "@/modules/training/lib/area-items"
 
-const { t, locale } = useI18n()
+const { t, te, locale } = useI18n()
+const labels = { t, te }
 
 const {
   accountRegion,
@@ -43,11 +50,14 @@ const {
   reloadMaster,
 } = useTrainingArea()
 
-const filterUnit = ref("")
-const filterAttr = ref("")
-const filterCharacterId = ref(0)
-const filterTree = ref(false)
-const filterFlower = ref(false)
+/** Page filters; every field empty means "show everything". */
+const filters = reactive({
+  units: [] as string[],
+  attrs: [] as string[],
+  characterIds: [] as number[],
+  special: [] as string[],
+  upgradeableOnly: false,
+})
 const dialogItemId = ref<number | null>(null)
 
 const nowMs = Date.now()
@@ -74,49 +84,116 @@ const characterOptions = computed(() =>
   [...characterMap.value.values()].sort((a, b) => a.id - b.id),
 )
 
-const unitFilterOptions = computed(() => [
-  { value: "", label: `${t("training.area.filters.unit")}: ${t("training.area.filters.all")}` },
-  ...SEKAI_UNITS.map((unit) => ({ value: unit, label: t(`cards.unit.${unit}`) })),
+const unitOptions = computed<CatalogFieldOption[]>(() => SEKAI_UNITS.map((unit) => ({
+  value: unit,
+  label: resolveSekaiUnitLabel(labels, unit),
+  iconUrl: resolveUnitLogoUrl(unit),
+  color: unitColorMap.value.get(unit) ?? null,
+})))
+
+const attrOptions = computed<CatalogFieldOption[]>(() => SEKAI_CARD_ATTRS.map((attr) => ({
+  value: attr,
+  label: resolveSekaiAttrLabel(labels, attr),
+  iconUrl: resolveCardAttrRoundIconUrl(attr),
+})))
+
+const specialOptions = computed<CatalogFieldOption[]>(() => [
+  { value: "tree", label: t("training.area.filters.tree") },
+  { value: "flower", label: t("training.area.filters.flower") },
+  { value: "upgradeable", label: t("training.area.canUpgrade") },
 ])
 
-const attrFilterOptions = computed(() => [
-  { value: "", label: `${t("training.area.filters.attr")}: ${t("training.area.filters.all")}` },
-  ...SEKAI_CARD_ATTRS.map((attr) => ({ value: attr, label: t(`cards.attr.${attr}`) })),
-])
+function setSpecial(values: string[]) {
+  filters.special = values.filter((value) => value === "tree" || value === "flower")
+  filters.upgradeableOnly = values.includes("upgradeable")
+}
 
-const characterFilterOptions = computed(() => [
-  { value: "0", label: `${t("training.area.filters.character")}: ${t("training.area.filters.all")}` },
-  ...characterOptions.value.map((character) => ({
-    value: String(character.id),
-    label: character.name,
-    iconUrl: character.iconUrl,
-  })),
-])
+const specialModel = computed(() => [...filters.special, ...(filters.upgradeableOnly ? ["upgradeable"] : [])])
 
-const filter = computed<AreaItemFilter>(() => ({
-  unit: filterUnit.value,
-  attr: filterAttr.value,
-  characterId: filterCharacterId.value,
-  tree: filterTree.value,
-  flower: filterFlower.value,
-}))
+/**
+ * The bot's filter takes one unit / attribute / character and ORs them; a
+ * multi-selection runs it once per combination and unions the results.
+ */
+const libFilters = computed<AreaItemFilter[]>(() => {
+  const units = filters.units.length > 0 ? filters.units : [""]
+  const attrs = filters.attrs.length > 0 ? filters.attrs : [""]
+  const characterIds = filters.characterIds.length > 0 ? filters.characterIds : [0]
+  const tree = filters.special.includes("tree")
+  const flower = filters.special.includes("flower")
+  const combos: AreaItemFilter[] = []
+  for (const unit of units) {
+    for (const attr of attrs) {
+      for (const characterId of characterIds) {
+        combos.push({ unit, attr, characterId, tree, flower })
+      }
+    }
+  }
+  return combos
+})
 
 const itemViews = computed<AreaItemView[]>(() => {
   if (suiteStatus.value !== "ready") {
     return []
   }
 
-  return buildAreaItemViews({
+  const base = {
     areaItems: areaItems.value,
     areaItemLevels: areaItemLevels.value,
     shopItems: shopItems.value,
     shopDetails: shopDetails.value,
     userAreaLevels: collectUserAreaItemLevels(suiteData.value?.userAreas),
     userMaterials: collectUserMaterials(suiteData.value?.userMaterials, suiteData.value?.userGamedata),
-    filter: filter.value,
     nowMs,
-  })
+  }
+  const seen = new Map<number, AreaItemView>()
+  for (const filter of libFilters.value) {
+    for (const view of buildAreaItemViews({ ...base, filter })) {
+      if (!seen.has(view.itemId)) {
+        seen.set(view.itemId, view)
+      }
+    }
+  }
+
+  const views = [...seen.values()].sort((a, b) => a.itemId - b.itemId)
+  return filters.upgradeableOnly ? views.filter((view) => nextRow(view)?.canUpgrade === true) : views
 })
+
+const activeFilterCount = computed(() =>
+  [filters.units.length > 0, filters.attrs.length > 0, filters.characterIds.length > 0, filters.special.length > 0, filters.upgradeableOnly]
+    .filter(Boolean).length)
+
+const activeChips = computed<CatalogActiveChip[]>(() => [
+  ...filters.characterIds.map((id) => ({ key: `char:${id}`, label: characterMap.value.get(id)?.name ?? `#${id}` })),
+  ...filters.units.map((unit) => ({ key: `unit:${unit}`, label: resolveSekaiUnitLabel(labels, unit) })),
+  ...filters.attrs.map((attr) => ({ key: `attr:${attr}`, label: resolveSekaiAttrLabel(labels, attr) })),
+  ...filters.special.map((key) => ({ key: `special:${key}`, label: t(`training.area.filters.${key}`) })),
+  ...(filters.upgradeableOnly ? [{ key: "upgradeable", label: t("training.area.canUpgrade") }] : []),
+])
+
+function removeChip(key: string) {
+  const [kind, value] = key.split(":")
+  if (kind === "char") {
+    filters.characterIds = filters.characterIds.filter((id) => String(id) !== value)
+  } else if (kind === "unit") {
+    filters.units = filters.units.filter((unit) => unit !== value)
+  } else if (kind === "attr") {
+    filters.attrs = filters.attrs.filter((attr) => attr !== value)
+  } else if (kind === "special") {
+    filters.special = filters.special.filter((item) => item !== value)
+  } else if (kind === "upgradeable") {
+    filters.upgradeableOnly = false
+  }
+}
+
+function resetFilters() {
+  filters.units = []
+  filters.attrs = []
+  filters.characterIds = []
+  filters.special = []
+  filters.upgradeableOnly = false
+}
+
+const countLabel = computed(() => t("catalog.results.count", { count: itemViews.value.length }))
 
 function upgradeRows(view: AreaItemView): AreaItemLevelView[] {
   return view.levels.filter((row) => row.level > view.currentLevel)
@@ -236,14 +313,12 @@ function formatQuantity(value: number): string {
   return formatCompactQuantity(value, locale.value)
 }
 
-function handleCharacterFilterChange(value: unknown) {
-  filterCharacterId.value = typeof value === "string" ? Number(value) || 0 : 0
-}
-
 function refresh() {
   void reloadSuite("check-remote")
   reloadMaster()
 }
+
+useTrainingRefresh(refresh)
 
 function retry() {
   if (masterError.value != null) {
@@ -258,20 +333,6 @@ function retry() {
 
 <template>
   <div class="flex w-full flex-col gap-4">
-    <!-- Header -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h2 class="text-xl font-bold">{{ t("training.area.title") }}</h2>
-        <p class="text-sm text-muted-foreground">{{ t("training.area.description") }}</p>
-      </div>
-      <div class="flex flex-col items-start gap-1 sm:items-end">
-        <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
-          <LucideRefreshCw class="size-3.5" />
-          {{ t("training.area.refresh") }}
-        </Button>
-      </div>
-    </div>
-
     <!-- No account selected -->
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
@@ -301,44 +362,30 @@ function retry() {
     </template>
 
     <template v-else-if="isReady">
-      <!-- Filters -->
-      <div class="flex flex-wrap items-center gap-2">
-        <SimpleSelect
-          v-model="filterUnit"
-          :options="unitFilterOptions"
-          trigger-class="text-xs"
-          :aria-label="t('training.area.filters.unit')"
+      <CatalogFilterPanel
+        :title="t('catalog.filters.title')"
+        :reset-label="t('catalog.filters.reset')"
+        :count-label="countLabel"
+        page-key="training-area"
+        :active-count="activeFilterCount"
+        :active-chips="activeChips"
+        content-class="flex flex-col gap-3"
+        @reset="resetFilters"
+        @remove-chip="removeChip"
+      >
+        <CatalogCharacterPicker
+          v-if="characterOptions.length > 0"
+          v-model="filters.characterIds"
+          :characters="characterOptions"
+          :unit-color-map="unitColorMap"
+          :label="t('training.area.filters.character')"
         />
-        <SimpleSelect
-          v-model="filterAttr"
-          :options="attrFilterOptions"
-          trigger-class="text-xs"
-          :aria-label="t('training.area.filters.attr')"
-        />
-        <SimpleSelect
-          :model-value="String(filterCharacterId)"
-          :options="characterFilterOptions"
-          trigger-class="text-xs"
-          :aria-label="t('training.area.filters.character')"
-          @update:model-value="handleCharacterFilterChange"
-        />
-        <Button
-          :variant="filterTree ? 'default' : 'outline'"
-          size="sm"
-          class="h-9 text-xs"
-          @click="filterTree = !filterTree"
-        >
-          {{ t("training.area.filters.tree") }}
-        </Button>
-        <Button
-          :variant="filterFlower ? 'default' : 'outline'"
-          size="sm"
-          class="h-9 text-xs"
-          @click="filterFlower = !filterFlower"
-        >
-          {{ t("training.area.filters.flower") }}
-        </Button>
-      </div>
+        <CatalogChipsField v-model="filters.units" :label="t('training.area.filters.unit')" :options="unitOptions" compact />
+        <div class="flex flex-wrap items-center gap-x-10 gap-y-3">
+          <CatalogChipsField v-model="filters.attrs" :label="t('training.area.filters.attr')" :options="attrOptions" compact />
+          <CatalogChipsField :model-value="specialModel" :label="t('training.area.filters.special')" :options="specialOptions" compact @update:model-value="setSpecial" />
+        </div>
+      </CatalogFilterPanel>
 
       <Card v-if="itemViews.length === 0">
         <CardContent class="py-10 text-center text-sm text-muted-foreground">

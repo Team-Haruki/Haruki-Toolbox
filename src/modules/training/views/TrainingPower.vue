@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
+import { useTrainingRefresh } from "@/modules/training/composables/training-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SEKAI_CARD_ATTR_COLORS, resolveSekaiCharacterColor, type SekaiUnit } from "@/shared/sekai/catalog"
@@ -107,6 +107,8 @@ function refresh() {
   reloadMaster()
 }
 
+useTrainingRefresh(refresh)
+
 function retry() {
   if (masterError.value != null) {
     reloadMaster()
@@ -120,18 +122,6 @@ function retry() {
 
 <template>
   <div class="flex flex-col gap-4">
-    <!-- Header -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h2 class="text-xl font-bold">{{ t("training.power.title") }}</h2>
-        <p class="text-sm text-muted-foreground">{{ t("training.power.description") }}</p>
-      </div>
-      <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
-        <LucideRefreshCw class="size-3.5" />
-        {{ t("training.power.refresh") }}
-      </Button>
-    </div>
-
     <!-- No account selected -->
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
