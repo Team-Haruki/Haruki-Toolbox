@@ -17,7 +17,7 @@ import type { RankBorderHonorView } from "../lib/rank-border-types"
  */
 const props = defineProps<{
   honor: RankBorderHonorView
-  variant?: "row" | "detail"
+  variant?: "row" | "detail" | "reward"
 }>()
 
 const stars = computed(() => honorLevelStars(props.honor))
@@ -26,7 +26,7 @@ const rankAttrs = computed(() => honorRankSvgAttrs(props.honor))
 </script>
 
 <template>
-  <span :class="['rank-border-honor', variant === 'detail' ? 'rank-border-honor--detail' : 'rank-border-honor--row']">
+  <span :class="['rank-border-honor', `rank-border-honor--${variant ?? 'row'}`]">
     <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
       <svg
         class="rank-border-honor-svg"
@@ -215,9 +215,19 @@ const rankAttrs = computed(() => honorRankSvgAttrs(props.honor))
   aspect-ratio: 9 / 4;
 }
 
+/* Event reward lists: wide enough to read the rank plate at a glance. */
+.rank-border-honor--reward {
+  width: 8.5rem;
+  aspect-ratio: 9 / 4;
+}
+
 @media (max-width: 767px) {
   .rank-border-honor--detail {
     width: 4.75rem;
+  }
+
+  .rank-border-honor--reward {
+    width: 6.5rem;
   }
 
   .rank-border-honor--row {
