@@ -1,6 +1,6 @@
 import {
+  resolveCardAttrRoundIconUrl,
   resolveCharacterIconUrl,
-  resolveToolboxStaticImageUrl,
   resolveUnitLogoUrl,
 } from "@/shared/sekai/data-sources"
 import type { DeckRecommendEventAttr, DeckRecommendUnitType } from "./recommend-options"
@@ -135,8 +135,9 @@ export function resolveUnitIconUrl(unit: DeckRecommendUnitType): string {
   return resolveUnitLogoUrl(unit)
 }
 
+/** Shared resolver, so this page shows the same round icon as everywhere else. */
 export function resolveAreaItemAttrIconUrl(attr: DeckRecommendEventAttr): string {
-  return resolveToolboxStaticImageUrl(`static_images/card/attr_icon_${attr}.png`)
+  return resolveCardAttrRoundIconUrl(attr)
 }
 
 function buildAreaItemTargetInfoMap(areaItemLevels: unknown): Map<number, AreaItemTargetInfo> {
