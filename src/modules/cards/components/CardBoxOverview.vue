@@ -2,11 +2,14 @@
 import { useI18n } from "vue-i18n"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import SekaiRarityStars from "@/shared/components/SekaiRarityStars.vue"
 import type { CollectionSummary } from "@/modules/cards/lib/card-box"
 
 export type CardBoxOverviewRow = {
   key: string
   label: string
+  /** Rarity rows draw their stars with the shared component instead of stacked icons. */
+  rarity?: string | null
   iconUrls: readonly string[]
   color: string | null
   owned: number
@@ -18,6 +21,8 @@ export type CardBoxOverviewGroup = {
   key: string
   title: string
   rows: readonly CardBoxOverviewRow[]
+  /** Spans the card and lays its rows out in two columns; for long labels such as unit names. */
+  wide?: boolean
 }
 
 /**
@@ -44,28 +49,32 @@ const { t } = useI18n()
       </CardTitle>
       <Progress :model-value="summary.percent" class="mt-2 h-2" />
     </CardHeader>
-    <CardContent class="grid gap-x-10 gap-y-4 lg:grid-cols-3">
-      <div v-for="group in groups" :key="group.key" class="flex min-w-0 flex-col gap-1.5">
+    <CardContent class="grid gap-x-10 gap-y-4 lg:grid-cols-2">
+      <div v-for="group in groups" :key="group.key" class="flex min-w-0 flex-col gap-1.5" :class="group.wide ? 'lg:col-span-2' : ''">
         <h3 class="text-xs font-medium text-muted-foreground">{{ group.title }}</h3>
-        <div v-for="row in group.rows" :key="row.key" class="flex items-center gap-2 text-xs" :title="`${row.label} ${row.owned}/${row.total}`">
-          <span class="flex w-9 shrink-0 items-center justify-center">
-            <img
-              v-for="(iconUrl, index) in row.iconUrls"
-              :key="`${row.key}-${index}`"
-              :src="iconUrl"
-              alt=""
-              class="h-4 w-auto max-w-9 object-contain"
-              :class="row.iconUrls.length > 1 ? '-ml-1 first:ml-0' : ''"
-              loading="lazy"
-              decoding="async"
-            >
-          </span>
-          <span class="w-24 shrink-0 truncate sm:w-28">{{ row.label }}</span>
-          <Progress :model-value="row.percent" :color="row.color ?? undefined" class="h-1.5 min-w-8 flex-1" />
-          <span class="w-28 shrink-0 whitespace-nowrap text-right tabular-nums text-muted-foreground">
-            {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
-            · {{ t("cardBox.stats.percent", { percent: row.percent }) }}
-          </span>
+        <div :class="group.wide ? 'grid gap-x-10 gap-y-1.5 sm:grid-cols-2' : 'flex flex-col gap-1.5'">
+          <div v-for="row in group.rows" :key="row.key" class="flex items-center gap-2 text-xs" :title="`${row.label} ${row.owned}/${row.total}`">
+            <span class="flex w-14 shrink-0 items-center justify-center">
+              <SekaiRarityStars v-if="row.rarity" :card-rarity-type="row.rarity" size="xs" />
+              <template v-else>
+                <img
+                  v-for="(iconUrl, index) in row.iconUrls"
+                  :key="`${row.key}-${index}`"
+                  :src="iconUrl"
+                  alt=""
+                  class="h-4 w-auto max-w-9 object-contain"
+                  loading="lazy"
+                  decoding="async"
+                >
+              </template>
+            </span>
+            <span class="w-20 shrink-0 truncate" :class="group.wide ? 'sm:w-40' : 'sm:w-28'">{{ row.label }}</span>
+            <Progress :model-value="row.percent" :color="row.color ?? undefined" class="h-1.5 min-w-8 flex-1" />
+            <span class="w-28 shrink-0 whitespace-nowrap text-right tabular-nums text-muted-foreground">
+              {{ t("cardBox.stats.ownedOfTotal", { owned: row.owned, total: row.total }) }}
+              · {{ t("cardBox.stats.percent", { percent: row.percent }) }}
+            </span>
+          </div>
         </div>
       </div>
     </CardContent>

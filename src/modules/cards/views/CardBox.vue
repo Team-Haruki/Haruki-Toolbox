@@ -15,14 +15,12 @@ import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snaps
 import {
   SEKAI_CARD_ATTR_COLORS,
   buildCatalogCardThumbnail,
-  resolveCardRareCount,
   resolveSekaiCharacterColor,
   type CatalogMasterCard,
   type SekaiUnit,
 } from "@/shared/sekai/catalog"
 import {
   resolveCardAttrRoundIconUrl,
-  resolveRarityTrainingIconUrl,
   resolveTrainRankImageUrl,
   resolveUnitLogoUrl,
 } from "@/shared/sekai/data-sources"
@@ -239,7 +237,8 @@ const overviewGroups = computed<CardBoxOverviewGroup[]>(() => [
     rows: buildRarityDistribution(scopedCards.value, ownedMap.value).map((row) => ({
       key: row.rarity,
       label: resolveSekaiRarityLabel(labels, row.rarity),
-      iconUrls: Array.from({ length: Math.max(1, resolveCardRareCount(row.rarity)) }, () => resolveRarityTrainingIconUrl(row.rarity)),
+      rarity: row.rarity,
+      iconUrls: [],
       color: RARITY_COLORS[row.rarity],
       owned: row.owned,
       total: row.total,
@@ -262,6 +261,7 @@ const overviewGroups = computed<CardBoxOverviewGroup[]>(() => [
   {
     key: "unit",
     title: t("cardBox.stats.byUnit"),
+    wide: true,
     rows: buildUnitDistribution(scopedCards.value, ownedMap.value, unitOf).map((row) => ({
       key: row.unit,
       label: resolveSekaiUnitLabel(labels, row.unit),
