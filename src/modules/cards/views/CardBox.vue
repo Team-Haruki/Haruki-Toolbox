@@ -470,17 +470,16 @@ function retry() {
         <h1 class="text-2xl font-bold">{{ t("cardBox.title") }}</h1>
         <p class="text-sm text-muted-foreground">{{ t("cardBox.description") }}</p>
       </div>
-      <div class="flex flex-col items-start gap-1 sm:items-end">
-        <div class="flex flex-wrap items-center gap-2">
-          <GameAccountSelect capability="suite" />
-          <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" :disabled="isLoading" @click="refresh">
+      <div class="flex flex-col items-start gap-1.5 sm:items-end">
+        <GameAccountSelect capability="suite" />
+        <!-- Same placement as the profile page: the data time and its refresh sit together. -->
+        <div v-if="suiteStatus !== 'idle'" class="flex items-center gap-1 text-xs text-muted-foreground">
+          <span v-if="uploadTimeText">{{ t("cardBox.dataAsOf", { time: uploadTimeText }) }}</span>
+          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="isLoading" @click="refresh">
             <LucideRefreshCw class="size-3.5" />
             {{ t("cardBox.refresh") }}
           </Button>
         </div>
-        <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
-          {{ t("cardBox.dataAsOf", { time: uploadTimeText }) }}
-        </p>
       </div>
     </div>
 
