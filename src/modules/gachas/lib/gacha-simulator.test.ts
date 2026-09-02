@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test"
 import type { CatalogGacha, CatalogGachaBehavior } from "./gacha-catalog"
 import {
+  addDrawResultsToCounts,
   addSimulatorCost,
   applyGuarantee,
   buildGachaCardRateMap,
@@ -12,6 +13,7 @@ import {
   resolveSimulatorPulls,
   selectDefaultWishCards,
   tallyDrawResults,
+  tallyFromCounts,
 } from "./gacha-simulator"
 
 function behavior(overrides: Partial<CatalogGachaBehavior>): CatalogGachaBehavior {
@@ -259,6 +261,47 @@ describe("drawing", () => {
 
   it("returns null without buckets", () => {
     expect(drawOnce([], mulberry32(1))).toBeNull()
+  })
+})
+
+describe("running tally", () => {
+  const draw = (rarity: string, cardId = 1) => ({ cardId, rarity, lotteryType: "normal", guaranteed: false })
+
+  it("accumulates batches into per-rarity counts without mutating the previous map", () => {
+    const first = addDrawResultsToCounts(new Map(), [draw("rarity_2"), draw("rarity_2"), draw("rarity_4")])
+    expect([...first.entries()]).toEqual([["rarity_2", 2], ["rarity_4", 1]])
+    const second = addDrawResultsToCounts(first, [draw("rarity_3"), draw("rarity_2")])
+    expect([...first.entries()]).toEqual([["rarity_2", 2], ["rarity_4", 1]])
+    expect([...second.entries()]).toEqual([["rarity_2", 3], ["rarity_4", 1], ["rarity_3", 1]])
+  })
+
+  it("returns an equal copy for an empty batch", () => {
+    const counts = new Map([["rarity_3", 4]])
+    const next = addDrawResultsToCounts(counts, [])
+    expect(next).not.toBe(counts)
+    expect([...next.entries()]).toEqual([["rarity_3", 4]])
+  })
+
+  it("orders tally rows highest rarity first with birthday between 2 and 3", () => {
+    const counts = new Map([["rarity_2", 5], ["rarity_birthday", 1], ["rarity_4", 2], ["rarity_3", 3]])
+    expect(tallyFromCounts(counts)).toEqual([
+      { rarity: "rarity_4", count: 2 },
+      { rarity: "rarity_3", count: 3 },
+      { rarity: "rarity_birthday", count: 1 },
+      { rarity: "rarity_2", count: 5 },
+    ])
+    expect(tallyFromCounts(new Map())).toEqual([])
+  })
+
+  it("matches the one-shot tally over the same draws", () => {
+    const draws = [draw("rarity_2"), draw("rarity_4"), draw("rarity_2"), draw("rarity_3"), draw("rarity_4")]
+    const incremental = tallyFromCounts(addDrawResultsToCounts(addDrawResultsToCounts(new Map(), draws.slice(0, 2)), draws.slice(2)))
+    expect(incremental).toEqual(tallyDrawResults(draws))
+    expect(incremental).toEqual([
+      { rarity: "rarity_4", count: 2 },
+      { rarity: "rarity_3", count: 1 },
+      { rarity: "rarity_2", count: 2 },
+    ])
   })
 })
 

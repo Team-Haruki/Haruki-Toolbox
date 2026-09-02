@@ -33,6 +33,50 @@ export type EventDetailMusic = {
   entry: MusicLibraryEntry
 }
 
+/**
+ * Load state of the resources one detail section depends on, so the
+ * section can show a skeleton, an error with retry, or its content.
+ */
+export type EventDetailSectionState = {
+  /** A first load is in flight and there is nothing to show yet. */
+  loading: ComputedRef<boolean>
+  /** A backing resource failed and has no (stale) data to fall back on. */
+  error: ComputedRef<string | null>
+  /** A retry or background refresh is running. */
+  retrying: ComputedRef<boolean>
+  /** Force-reloads every backing resource of the section. */
+  reload: () => Promise<void>
+}
+
+type SectionResource = Pick<CatalogResource<unknown>, "loading" | "refreshing" | "error" | "reload"> & {
+  data: { value: unknown }
+}
+
+/**
+ * Combines the resources behind one section. `relevant` lets a section opt
+ * out when it has nothing to resolve (an event without cards does not care
+ * whether the cards index loaded).
+ */
+function combineSectionState(
+  resources: readonly SectionResource[],
+  relevant: () => boolean = () => true,
+): EventDetailSectionState {
+  return {
+    loading: computed(() => relevant() && resources.some((resource) => resource.loading.value)),
+    error: computed(() => {
+      if (!relevant()) {
+        return null
+      }
+      const failed = resources.find((resource) => resource.data.value == null && resource.error.value != null)
+      return failed?.error.value ?? null
+    }),
+    retrying: computed(() => resources.some((resource) => resource.refreshing.value)),
+    reload: async () => {
+      await Promise.all(resources.map((resource) => resource.reload()))
+    },
+  }
+}
+
 export type UseEventDetailResult = {
   eventsIndex: CatalogResource<EventsIndex>
   extras: CatalogResource<EventDetailExtras>
@@ -47,13 +91,17 @@ export type UseEventDetailResult = {
   bonusGroups: ComputedRef<EventBonusGroup[]>
   rarityBonusTable: ComputedRef<EventRarityBonusRow[]>
   cards: ComputedRef<EventDetailCard[]>
-  cardsLoading: ComputedRef<boolean>
+  /** Cards index state, only while the event has cards to resolve. */
+  cardsSection: EventDetailSectionState
   musics: ComputedRef<EventDetailMusic[]>
-  musicsLoading: ComputedRef<boolean>
+  /** Musics index + detail extras (`eventMusics`) state. */
+  musicsSection: EventDetailSectionState
   chapters: ComputedRef<SekaiWorldBloomChapter[]>
   teams: ComputedRef<CheerfulCarnivalTeam[]>
   story: ComputedRef<EventStory | null>
   relatedGachas: ComputedRef<RelatedGachasResult<CatalogGachaSummary>>
+  /** Gachas index state for the related-gachas section. */
+  gachasSection: EventDetailSectionState
   rewardRanges: ComputedRef<EventRankingRewardRange[]>
 }
 
@@ -169,13 +217,14 @@ export function useEventDetail(region: Ref<SekaiRegion>, eventId: Ref<number | n
     bonusGroups,
     rarityBonusTable,
     cards,
-    cardsLoading: computed(() => cardsIndex.data.value == null && cardLinks.value.length > 0),
+    cardsSection: combineSectionState([cardsIndex], () => cardLinks.value.length > 0),
     musics,
-    musicsLoading: computed(() => musicsIndex.data.value == null || extras.data.value == null),
+    musicsSection: combineSectionState([musicsIndex, extras]),
     chapters,
     teams,
     story,
     relatedGachas,
+    gachasSection: combineSectionState([gachasIndex]),
     rewardRanges,
   }
 }

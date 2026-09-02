@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import CatalogEntityGrid from "@/shared/components/catalog/CatalogEntityGrid.vue"
+import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
 import SekaiCardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
 import { buildCatalogCardThumbnail, type CatalogCharacter } from "@/shared/sekai/catalog"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
@@ -21,11 +22,18 @@ const props = withDefaults(defineProps<{
   characterMap: ReadonlyMap<number, CatalogCharacter>
   nowMs: number
   loading?: boolean
+  /** Cards index failure; renders an error state with retry instead of the grid. */
+  error?: string | null
+  retrying?: boolean
   blurUnreleased?: boolean
 }>(), {
   loading: false,
+  error: null,
+  retrying: false,
   blurUnreleased: false,
 })
+
+const emit = defineEmits<{ retry: [] }>()
 
 const { t } = useI18n()
 
@@ -49,7 +57,7 @@ const entries = computed(() => props.cards.map(({ card, link }) => {
     :title="t('events.detail.cardsTitle')"
     :icon="LucideWalletCards"
     :loading="loading"
-    :empty="cards.length === 0"
+    :empty="!error && cards.length === 0"
     :empty-message="t('events.detail.cardsEmpty')"
   >
     <template #action>
@@ -60,7 +68,14 @@ const entries = computed(() => props.cards.map(({ card, link }) => {
         <Skeleton v-for="index in 6" :key="index" class="aspect-square w-full rounded-md" />
       </CatalogEntityGrid>
     </template>
-    <CatalogEntityGrid columns="cards">
+    <CatalogErrorState
+      v-if="error"
+      :message="t('catalog.detail.loadError')"
+      :detail="error"
+      :retrying="retrying"
+      @retry="emit('retry')"
+    />
+    <CatalogEntityGrid v-else columns="cards">
       <RouterLink
         v-for="entry in entries"
         :key="entry.card.id"

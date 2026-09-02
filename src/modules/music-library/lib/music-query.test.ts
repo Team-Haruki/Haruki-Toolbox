@@ -82,8 +82,8 @@ describe("musicQueryCodec", () => {
       lvmin: "abc",
       lvmax: "500",
       notes: "x-y",
-      tags: "vocaloid,bogus,,vocaloid",
-      mv: "mv,mv_9d",
+      tags: "vocaloid,Bogus,,vocaloid,9lives,no-dash,../x",
+      mv: "mv,MV_2D,mv 2d,",
       year: "1999",
       char: "-3",
       scope: "box",
@@ -108,12 +108,31 @@ describe("musicQueryCodec", () => {
     expect(musicQueryCodec.serialize({ ...createDefaultMusicQueryState(), scope: "vocal" }).scope).toBeUndefined()
   })
 
+  it("round-trips well-formed tags and MV types the codec does not know", () => {
+    // The list offers every tag / category found in the dump, so a value
+    // outside the canonical order must survive parse(serialize(state)).
+    const state = { ...createDefaultMusicQueryState(), tags: ["vocaloid", "tsukuyomi_2"], mv: ["mv_3d", "image"] }
+    const record = musicQueryCodec.serialize(state)
+    expect(record.tags).toBe("vocaloid,tsukuyomi_2")
+    expect(record.mv).toBe("mv_3d,image")
+    expect(musicQueryCodec.parse(record as Record<string, string>)).toEqual(state)
+  })
+
   it("keeps the page-neutral keys out of the filter keys", () => {
     expect(musicQueryCodec.filterKeys).not.toContain("sort")
     expect(musicQueryCodec.filterKeys).not.toContain("dir")
     expect(musicQueryCodec.filterKeys).not.toContain("page")
     expect(musicQueryCodec.filterKeys).not.toContain("size")
     expect(musicQueryCodec.filterKeys).toContain("notes")
+  })
+
+  it("resets the scope with the filters but does not count it as one", () => {
+    expect(musicQueryCodec.filterKeys).toContain("scope")
+    expect(musicQueryCodec.countKeys).not.toContain("scope")
+    expect(musicQueryCodec.countKeys).toContain("char")
+    for (const key of musicQueryCodec.countKeys ?? []) {
+      expect(musicQueryCodec.filterKeys).toContain(key)
+    }
   })
 })
 

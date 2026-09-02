@@ -139,15 +139,21 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
         :asset-endpoint="assetEndpoint"
         :character-map="detail.characterMap.value"
         :now-ms="now"
-        :loading="detail.cardsLoading.value"
+        :loading="detail.cardsSection.loading.value"
+        :error="detail.cardsSection.error.value"
+        :retrying="detail.cardsSection.retrying.value"
         :blur-unreleased="detail.blurUnreleased.value"
+        @retry="detail.cardsSection.reload"
       />
 
       <EventMusicsSection
         :musics="detail.musics.value"
         :region="region"
         :asset-endpoint="assetEndpoint"
-        :loading="detail.musicsLoading.value"
+        :loading="detail.musicsSection.loading.value"
+        :error="detail.musicsSection.error.value"
+        :retrying="detail.musicsSection.retrying.value"
+        @retry="detail.musicsSection.reload"
       />
 
       <EventChaptersSection
@@ -171,7 +177,10 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
         :asset-endpoint="assetEndpoint"
         :banner-alias-map="bannerAliasMap"
         :now-ms="now"
-        :loading="detail.gachasIndex.data.value == null"
+        :loading="detail.gachasSection.loading.value"
+        :error="detail.gachasSection.error.value"
+        :retrying="detail.gachasSection.retrying.value"
+        @retry="detail.gachasSection.reload"
       />
 
       <EventRewardsSection

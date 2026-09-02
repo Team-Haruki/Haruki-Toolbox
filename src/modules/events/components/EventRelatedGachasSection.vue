@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatLocalizedDate } from "@/lib/date-time"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
+import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
 import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
 import { resolveCatalogStatus } from "@/shared/components/catalog/types"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
@@ -27,10 +28,17 @@ const props = withDefaults(defineProps<{
   bannerAliasMap?: ReadonlyMap<number, number> | null
   nowMs: number
   loading?: boolean
+  /** Gachas index failure; renders an error state with retry. */
+  error?: string | null
+  retrying?: boolean
 }>(), {
   bannerAliasMap: null,
   loading: false,
+  error: null,
+  retrying: false,
 })
+
+const emit = defineEmits<{ retry: [] }>()
 
 const { t, te } = useI18n()
 
@@ -69,7 +77,7 @@ const description = computed(() => {
     collapsible
     :default-open="false"
     :loading="loading"
-    :empty="result.gachas.length === 0"
+    :empty="!error && result.gachas.length === 0"
     :empty-message="t('eventCatalog.gachas.empty')"
     content-class="flex flex-col gap-2"
   >
@@ -85,25 +93,34 @@ const description = computed(() => {
         </div>
       </div>
     </template>
-    <RouterLink
-      v-for="row in rows"
-      :key="row.gacha.id"
-      :to="`/gachas/${row.gacha.id}`"
-      class="group flex items-center gap-3 rounded-md border bg-muted/20 p-2 transition-colors hover:bg-accent/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none dark:hover:bg-accent/30"
-    >
-      <div class="relative aspect-[2/1] w-28 shrink-0 overflow-hidden rounded-md bg-muted sm:w-36">
-        <SekaiAssetImage :sources="row.sources" :alt="row.gacha.name" fit="contain" :placeholder-icon="LucideTicket" />
-      </div>
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <p class="truncate text-sm font-medium group-hover:text-primary">{{ row.gacha.name }}</p>
-        <div class="flex flex-wrap items-center gap-1">
-          <Badge variant="muted" size="sm">{{ row.typeLabel }}</Badge>
-          <CatalogStatusBadge :status="row.status" :until-ms="row.untilMs" size="sm" />
+    <CatalogErrorState
+      v-if="error"
+      :message="t('catalog.detail.loadError')"
+      :detail="error"
+      :retrying="retrying"
+      @retry="emit('retry')"
+    />
+    <template v-else>
+      <RouterLink
+        v-for="row in rows"
+        :key="row.gacha.id"
+        :to="`/gachas/${row.gacha.id}`"
+        class="group flex items-center gap-3 rounded-md border bg-muted/20 p-2 transition-colors hover:bg-accent/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none dark:hover:bg-accent/30"
+      >
+        <div class="relative aspect-[2/1] w-28 shrink-0 overflow-hidden rounded-md bg-muted sm:w-36">
+          <SekaiAssetImage :sources="row.sources" :alt="row.gacha.name" fit="contain" :placeholder-icon="LucideTicket" />
         </div>
-        <p class="text-[11px] text-muted-foreground tabular-nums">
-          <span class="font-mono">#{{ row.gacha.id }}</span> · {{ row.period }}
-        </p>
-      </div>
-    </RouterLink>
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <p class="truncate text-sm font-medium group-hover:text-primary">{{ row.gacha.name }}</p>
+          <div class="flex flex-wrap items-center gap-1">
+            <Badge variant="muted" size="sm">{{ row.typeLabel }}</Badge>
+            <CatalogStatusBadge :status="row.status" :until-ms="row.untilMs" size="sm" />
+          </div>
+          <p class="text-[11px] text-muted-foreground tabular-nums">
+            <span class="font-mono">#{{ row.gacha.id }}</span> · {{ row.period }}
+          </p>
+        </div>
+      </RouterLink>
+    </template>
   </CatalogDetailSection>
 </template>

@@ -196,7 +196,7 @@ function handleViewUpdate(value: string) {
     <template #filters>
       <CatalogFilterPanel
         :title="t('musicLibrary.list.filters.title')"
-        :count-label="countLabel"
+        :count-label="ready ? countLabel : null"
         :reset-label="t('musicLibrary.list.filters.reset')"
         page-key="music"
         :active-count="activeFilterCount"
@@ -237,7 +237,7 @@ function handleViewUpdate(value: string) {
         v-model:direction="state.dir"
         :sort="state.sort"
         :view="view"
-        :count-label="countLabel"
+        :count-label="ready ? countLabel : null"
         :sort-options="sortOptions"
         :view-options="viewOptions"
         @update:sort="handleSortUpdate"

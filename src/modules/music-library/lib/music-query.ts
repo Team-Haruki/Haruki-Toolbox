@@ -3,8 +3,8 @@ import type { QueryCodec } from "@/composables/useRouteQueryState"
 import {
   readQueryBoolean,
   readQueryEnum,
-  readQueryEnumList,
   readQueryInt,
+  readQueryList,
   readQueryString,
   writeQueryList,
   writeQueryValue,
@@ -26,7 +26,6 @@ import {
   type MusicNoteCountFilterMode,
   type MusicSortKey,
 } from "./music-filter"
-import { MUSIC_CATEGORY_ORDER, MUSIC_TAG_ORDER } from "./music-labels"
 
 /**
  * `/music` list state ⇄ `route.query`. Keys are short and stable; defaults
@@ -62,6 +61,7 @@ export type MusicQueryState = {
   lvmin: number | null
   lvmax: number | null
   notes: MusicNoteCountQuery
+  /** Tag tokens as offered by the list (known tags plus any extra found in the dump). */
   tags: string[]
   /** MV categories; only honoured on servers whose master ships `categories`. */
   mv: string[]
@@ -99,11 +99,23 @@ const NON_FILTER_KEYS: ReadonlySet<string> = new Set(["sort", "dir", "page", "si
 
 export const MUSIC_QUERY_FILTER_KEYS: readonly string[] = MUSIC_QUERY_KEYS.filter((key) => !NON_FILTER_KEYS.has(key))
 
+/**
+ * Keys behind the active-filter badge. `scope` only qualifies `char` (one
+ * chip, one control), so it is reset with the filters but never counted.
+ */
+export const MUSIC_QUERY_COUNT_KEYS: readonly string[] = MUSIC_QUERY_FILTER_KEYS.filter((key) => key !== "scope")
+
 const LEVEL_MAX = 99
 const NOTE_COUNT_MAX = 99_999
 const YEAR_MIN = 2000
 const YEAR_MAX = 2100
 const NOTE_RANGE_PATTERN = /^(\d*)-(\d*)$/
+/**
+ * Tag / MV-type tokens are not restricted to the known enums: the list offers
+ * every value found in the dump, so the codec must round-trip them too. Only
+ * malformed tokens are dropped.
+ */
+const LIST_TOKEN_PATTERN = /^[a-z][a-z0-9_]*$/
 
 export function createDefaultMusicNoteCountQuery(): MusicNoteCountQuery {
   return { mode: "exact", exact: null, min: null, max: null }
@@ -174,6 +186,10 @@ function orderedPair(min: number | null, max: number | null): [number | null, nu
   return min != null && max != null && min > max ? [max, min] : [min, max]
 }
 
+function readTokenList(value: LocationQuery[string]): string[] {
+  return readQueryList(value).filter((item) => LIST_TOKEN_PATTERN.test(item))
+}
+
 function parsePageSize(value: LocationQuery[string]): number {
   const parsed = readQueryInt(value, { min: 1 })
   return parsed != null && CATALOG_PAGE_SIZES.includes(parsed) ? parsed : CATALOG_DEFAULT_PAGE_SIZE
@@ -182,6 +198,7 @@ function parsePageSize(value: LocationQuery[string]): number {
 export const musicQueryCodec: QueryCodec<MusicQueryState> = {
   keys: MUSIC_QUERY_KEYS,
   filterKeys: MUSIC_QUERY_FILTER_KEYS,
+  countKeys: MUSIC_QUERY_COUNT_KEYS,
   defaults: createDefaultMusicQueryState,
   parse(query: LocationQuery): MusicQueryState {
     const defaults = createDefaultMusicQueryState()
@@ -196,8 +213,8 @@ export const musicQueryCodec: QueryCodec<MusicQueryState> = {
       lvmin,
       lvmax,
       notes: parseMusicNoteCountQuery(readQueryString(query.notes)),
-      tags: readQueryEnumList(query.tags, MUSIC_TAG_ORDER),
-      mv: readQueryEnumList(query.mv, MUSIC_CATEGORY_ORDER),
+      tags: readTokenList(query.tags),
+      mv: readTokenList(query.mv),
       year: readQueryInt(query.year, { min: YEAR_MIN, max: YEAR_MAX }),
       char,
       scope: char != null ? readQueryEnum(query.scope, MUSIC_CHARACTER_FILTER_SCOPES) ?? "any" : "any",

@@ -10,6 +10,7 @@ import {
   type GachaListItem,
 } from "./gacha-list"
 import { gachasQueryCodec } from "./gachas-query"
+import { isUpcomingHiddenByFilter } from "@/modules/events/lib/event-list"
 
 function item(overrides: Partial<GachaListItem> & { id: number }): GachaListItem {
   return {
@@ -96,5 +97,25 @@ describe("status helpers", () => {
 
   it("collects years descending", () => {
     expect(collectGachaListYears(gachas)).toEqual([2030, 2023, 2022])
+  })
+})
+
+describe("upcoming-hidden empty state", () => {
+  // The gacha list reuses the events rule, so the two catalogs cannot drift.
+  it("only fires when every selected status is upcoming and nothing matched", () => {
+    expect(isUpcomingHiddenByFilter(query({ status: ["upcoming"] }), true, 0)).toBe(true)
+    expect(isUpcomingHiddenByFilter(query({ status: ["upcoming", "ended"] }), true, 0)).toBe(false)
+    expect(isUpcomingHiddenByFilter(query({ status: ["ongoing"] }), true, 0)).toBe(false)
+    expect(isUpcomingHiddenByFilter(query({ status: [] }), true, 0)).toBe(false)
+    expect(isUpcomingHiddenByFilter(query({ status: ["upcoming"] }), false, 0)).toBe(false)
+    expect(isUpcomingHiddenByFilter(query({ status: ["upcoming"] }), true, 1)).toBe(false)
+  })
+
+  it("matches the filter output for an upcoming-only query with unreleased rows removed", () => {
+    const released = gachas.filter((gacha) => gacha.id !== 4)
+    const upcomingOnly = query({ status: ["upcoming"] })
+    const rows = filterGachaList(released, upcomingOnly, ctx)
+    expect(rows).toEqual([])
+    expect(isUpcomingHiddenByFilter(upcomingOnly, true, rows.length)).toBe(true)
   })
 })
