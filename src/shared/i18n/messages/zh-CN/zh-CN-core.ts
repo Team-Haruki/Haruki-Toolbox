@@ -226,7 +226,22 @@ export default {
     "unknownCharacter": "未知角色",
     "empty": "当前筛选条件下没有卡牌。",
     "total": "共 {total} 张",
+    "summary": "已收集 {owned}/{total} · {percent}%",
+    "nav": {
+      "label": "角色导航"
+    },
+    "sections": {
+      "collapseAll": "全部折叠",
+      "expandAll": "全部展开"
+    },
+    "sort": {
+      "id": "ID",
+      "rarity": "稀有度",
+      "level": "等级",
+      "masterRank": "突破"
+    },
     "group": {
+      "label": "分组",
       "character": "按角色",
       "attr": "按属性",
       "all": "全部卡牌"
@@ -243,8 +258,6 @@ export default {
     },
     "stats": {
       "title": "收集统计",
-      "toggle": "统计",
-      "byCharacter": "按角色",
       "byUnit": "按团体",
       "byAttr": "按属性",
       "byRarity": "按星级",
