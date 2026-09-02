@@ -20,6 +20,7 @@ import {
   isRankBorderLatestResult,
   type RankBorderLatest,
   type RankBorderLine,
+  type RankBorderProfileHonor,
 } from "./rank-border"
 import { FC_AP_HONOR_IDS } from "./rank-border-constants"
 import type {
@@ -183,7 +184,21 @@ export function buildProfileHonorViews(
     return []
   }
 
-  return result.profileHonors
+  return resolveProfileHonorViews(result.profileHonors, ctx, limit, keyScope)
+}
+
+/**
+ * The three honors a player shows on their profile, from normalized
+ * `userProfileHonors` rows. Shared by the rank tracker rows and the player
+ * profile page; bonds honors resolve through the bonds master tables.
+ */
+export function resolveProfileHonorViews(
+  honors: readonly RankBorderProfileHonor[],
+  ctx: HonorVisualContext,
+  limit = 3,
+  keyScope = "profile",
+): RankBorderHonorView[] {
+  return honors
     .slice(0, limit)
     .map((honor, index) => {
       const honorId = honor.honorId ?? honor.honorId2

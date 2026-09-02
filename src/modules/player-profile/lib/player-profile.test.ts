@@ -16,6 +16,7 @@ import {
   summarizeChallengeLiveTop,
   normalizeProfileSnapshot,
   normalizeMusicDifficultyClearCounts,
+  buildUnitLegend,
 } from "./player-profile"
 
 describe("cleanProfileWord", () => {
@@ -263,6 +264,40 @@ describe("normalizeProfileSnapshot", () => {
     expect(empty.userGamedata).toBeNull()
     expect(empty.userDecks).toEqual([])
     expect(empty.userChallengeLiveSoloResults).toEqual([])
+  })
+})
+
+describe("normalizeProfileSnapshot profile honors", () => {
+  it("passes the realtime profile honors through under the suite key", () => {
+    const honors = [{ seq: 1, honorId: 12, honorLevel: 3, profileHonorType: "normal" }]
+    expect(normalizeProfileSnapshot({ userProfileHonors: honors })!.userProfileHonors).toBe(honors)
+    expect(normalizeProfileSnapshot({})!.userProfileHonors).toBeUndefined()
+  })
+})
+
+describe("buildUnitLegend", () => {
+  const format = (value: number) => value.toFixed(1)
+
+  it("averages per unit and ranks the units highest first", () => {
+    const legend = buildUnitLegend([
+      { groupKey: "light_sound", groupColor: "#4455dd", value: 60 },
+      { groupKey: "light_sound", groupColor: "#4455dd", value: 80 },
+      { groupKey: "idol", groupColor: "#88dd44", value: 90 },
+      { groupKey: null, groupColor: null, value: 999 },
+    ], format)
+    expect(legend.map((item) => [item.unit, item.detail, item.top])).toEqual([
+      ["idol", "90.0", true],
+      ["light_sound", "70.0", false],
+    ])
+    expect(legend[0]?.color).toBe("#88dd44")
+  })
+
+  it("marks no leader for a single unit or all-zero values", () => {
+    expect(buildUnitLegend([{ groupKey: "idol", groupColor: null, value: 5 }], format)[0]?.top).toBe(false)
+    expect(buildUnitLegend([
+      { groupKey: "idol", groupColor: null, value: 0 },
+      { groupKey: "street", groupColor: null, value: 0 },
+    ], format).every((item) => !item.top)).toBe(true)
   })
 })
 

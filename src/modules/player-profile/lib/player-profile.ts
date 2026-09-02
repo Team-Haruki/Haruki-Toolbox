@@ -381,7 +381,52 @@ export function normalizeProfileSnapshot(raw: unknown): Record<string, unknown> 
     userChallengeLiveSoloStages: record.userChallengeLiveSoloStages,
     userMultiLiveTopScoreCount: record.userMultiLiveTopScoreCount,
     userMusicDifficultyClearCount: record.userMusicDifficultyClearCount,
+    userProfileHonors: record.userProfileHonors,
   }
+}
+
+export type UnitLegendItem = {
+  unit: string
+  color: string | null
+  average: number
+  detail: string
+  /** The unit with the highest average; never set when only one unit is present. */
+  top: boolean
+}
+
+/**
+ * Per-unit average of radar values, highest unit first, so the legend under
+ * a radar reads as a ranking instead of master-data order.
+ */
+export function buildUnitLegend(
+  entries: ReadonlyArray<{ groupKey: string | null; groupColor: string | null; value: number }>,
+  formatValue: (value: number) => string,
+): UnitLegendItem[] {
+  const rows = new Map<string, { unit: string; color: string | null; sum: number; count: number }>()
+  for (const entry of entries) {
+    if (entry.groupKey == null) {
+      continue
+    }
+
+    let row = rows.get(entry.groupKey)
+    if (!row) {
+      row = { unit: entry.groupKey, color: entry.groupColor, sum: 0, count: 0 }
+      rows.set(entry.groupKey, row)
+    }
+
+    row.sum += entry.value
+    row.count += 1
+  }
+
+  const items = [...rows.values()]
+    .map((row) => ({ unit: row.unit, color: row.color, average: row.count > 0 ? row.sum / row.count : 0 }))
+    .sort((a, b) => b.average - a.average)
+  const maxAverage = items[0]?.average ?? 0
+  return items.map((item) => ({
+    ...item,
+    detail: formatValue(item.average),
+    top: items.length > 1 && maxAverage > 0 && item.average === maxAverage,
+  }))
 }
 
 /** Parses `userMusicDifficultyClearCount` rows into a per-difficulty map. */

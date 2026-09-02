@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test"
-import { buildHonorView } from "./honor-visuals"
+import { buildHonorView, resolveProfileHonorViews, type HonorVisualContext } from "./honor-visuals"
+import { normalizeProfileHonors } from "./rank-border"
 
 const ctx = { region: "jp" as const, assetEndpoint: "china" }
 
@@ -49,5 +50,41 @@ describe("buildHonorView", () => {
     expect(view.baseUrl).toContain("startapp/honor/honor_0657/degree_sub.png")
     expect(view.rankUrl).toBeNull()
     expect(view.frameUrl).toBe("/rank-border/honor/frame_degree_s_3.png")
+  })
+})
+
+describe("resolveProfileHonorViews", () => {
+  const honor = { id: 657, groupId: 9, name: "ハロー、セカイ", honorRarity: "high", assetbundleName: "honor_0657", levels: [] }
+  const group = { id: 9, honorType: "character", backgroundAssetbundleName: "honor_bg_character" }
+  const visualCtx: HonorVisualContext = {
+    cardById: new Map(),
+    honorById: new Map([[657, honor]]),
+    honorGroupById: new Map([[9, group]]),
+    bondsHonorById: new Map(),
+    bondsHonorWordById: new Map(),
+    gameCharacterUnitById: new Map(),
+    region: "jp",
+    assetEndpoint: "china",
+    localMockAssets: false,
+  }
+
+  it("draws the profile's honors in seq order, capped at the profile's three slots", () => {
+    const honors = normalizeProfileHonors([
+      { seq: 2, honorId: 657, honorLevel: 2, profileHonorType: "normal" },
+      { seq: 1, honorId: 657, honorLevel: 5, profileHonorType: "normal" },
+      { seq: 3, honorId: 999, honorLevel: 1, profileHonorType: "normal" },
+      { seq: 4, honorId: 657, honorLevel: 1, profileHonorType: "normal" },
+    ])
+    const views = resolveProfileHonorViews(honors, visualCtx, 3, "test")
+    expect(views.map((view) => view.level)).toEqual([5, 2, 1])
+    expect(views[0]?.label).toBe("ハロー、セカイ")
+    expect(views[0]?.baseUrl).toContain("startapp/honor/honor_bg_character/degree_sub.png")
+    // Unknown ids still render a placeholder slot rather than shifting the row.
+    expect(views[2]?.label).toBe("#999")
+  })
+
+  it("returns nothing for an empty or malformed honor list", () => {
+    expect(resolveProfileHonorViews(normalizeProfileHonors(null), visualCtx)).toEqual([])
+    expect(resolveProfileHonorViews(normalizeProfileHonors(["junk", 3]), visualCtx)).toEqual([])
   })
 })

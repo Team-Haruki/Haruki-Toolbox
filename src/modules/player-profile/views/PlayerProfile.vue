@@ -9,15 +9,18 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
-import { resolveUnitLogoUrl } from "@/shared/sekai/data-sources"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import { PLAYER_PROFILE_CAPABILITIES, usePlayerProfile } from "@/modules/player-profile/composables/usePlayerProfile"
 import ProfileRadarChart from "@/modules/player-profile/components/ProfileRadarChart.vue"
+import ProfileUnitLegend from "@/modules/player-profile/components/ProfileUnitLegend.vue"
+import { useProfileHonors } from "@/modules/player-profile/composables/useProfileHonors"
+import HonorBadge from "@/modules/rank-border/components/HonorBadge.vue"
 import {
   buildChallengeLiveGrid,
   buildCharacterRanks,
   buildDeckThumbnailCard,
   buildPlayerCardMap,
+  buildUnitLegend,
   normalizeMultiLiveTopScoreCount,
   normalizeMusicDifficultyClearCounts,
   normalizePlayerCards,
@@ -76,10 +79,14 @@ const {
   multiLiveStatus,
   multiLiveData,
   reloadMultiLive,
+  honorsData,
+  reloadHonors,
   extrasData,
+  extrasUploadTime,
   reloadExtras,
   eventsStatus,
   eventsData,
+  eventsUploadTime,
   reloadEvents,
   cardMap,
   characterMap,
@@ -117,19 +124,32 @@ const errorDetail = computed(() => {
   return raw instanceof Error ? raw.message : String(raw)
 })
 
+const dateTimeFormatter = computed(() => new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" }))
+
 const uploadTimeText = computed(() => {
   const millis = isRealtime.value
     ? profileUpdatedAt.value
     : uploadTime.value != null
       ? suiteUploadTimeToMillis(uploadTime.value)
       : null
-  if (millis == null) {
+  return millis == null ? null : dateTimeFormatter.value.format(millis)
+})
+
+/**
+ * In realtime mode the collection, challenge and event modules still read
+ * the uploaded snapshot, so each of them names its own data time instead of
+ * borrowing the page-level realtime timestamp.
+ */
+function snapshotNote(snapshotUploadTime: number | null): string | null {
+  if (!isRealtime.value || snapshotUploadTime == null) {
     return null
   }
 
-  return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(millis)
-})
+  return t("playerProfile.snapshotNote", { time: dateTimeFormatter.value.format(suiteUploadTimeToMillis(snapshotUploadTime)) })
+}
+
+const extrasNote = computed(() => snapshotNote(extrasUploadTime.value))
+const eventsNote = computed(() => snapshotNote(eventsUploadTime.value))
 
 function handleSourceChange(value: unknown) {
   if (value === "realtime" || value === "snapshot") {
@@ -144,6 +164,13 @@ const nameSegments = computed(() => parseSekaiColoredText(gamedata.value?.name))
 const profileInfo = computed(() => normalizePlayerProfile(snapshotData.value?.userProfile))
 const wordSegments = computed(() => parseSekaiColoredText(profileInfo.value.rawWord))
 const playerCardMap = computed(() => buildPlayerCardMap(normalizePlayerCards(snapshotData.value?.userCards)))
+
+// The realtime payload carries the profile honors inline; the snapshot
+// source fetches them as their own suite subset.
+const profileHonorsRaw = computed(() =>
+  isRealtime.value ? snapshotData.value?.userProfileHonors : honorsData.value?.userProfileHonors,
+)
+const { honorViews } = useProfileHonors(accountRegion, profileHonorsRaw, assetEndpoint)
 
 const deckViews = computed(() => {
   const cardIds = resolveActiveDeckCardIds(snapshotData.value?.userDecks, gamedata.value?.deck ?? null)
@@ -280,54 +307,6 @@ const challengeRadarEntries = computed(() => challengeCells.value.map((cell) => 
   }
 }))
 
-type UnitLegendItem = {
-  unit: string
-  color: string | null
-  detail: string
-  top: boolean
-}
-
-/** Per-unit average of the radar values; the highest unit gets `top`. */
-const failedUnitLogos = ref<Set<string>>(new Set())
-
-function markUnitLogoFailed(unit: string) {
-  failedUnitLogos.value = new Set(failedUnitLogos.value).add(unit)
-}
-
-function buildUnitLegend(
-  entries: ReadonlyArray<{ groupKey: string | null; groupColor: string | null; value: number }>,
-  formatValue: (value: number) => string,
-): UnitLegendItem[] {
-  const rows = new Map<string, { unit: string; color: string | null; sum: number; count: number }>()
-  for (const entry of entries) {
-    if (entry.groupKey == null) {
-      continue
-    }
-
-    let row = rows.get(entry.groupKey)
-    if (!row) {
-      row = { unit: entry.groupKey, color: entry.groupColor, sum: 0, count: 0 }
-      rows.set(entry.groupKey, row)
-    }
-
-    row.sum += entry.value
-    row.count += 1
-  }
-
-  const items = [...rows.values()].map((row) => ({
-    unit: row.unit,
-    color: row.color,
-    average: row.count > 0 ? row.sum / row.count : 0,
-  }))
-  const maxAverage = Math.max(0, ...items.map((item) => item.average))
-  return items.map((item) => ({
-    unit: item.unit,
-    color: item.color,
-    detail: formatValue(item.average),
-    top: items.length > 1 && maxAverage > 0 && item.average === maxAverage,
-  }))
-}
-
 const characterUnitLegend = computed(() => buildUnitLegend(
   characterRadarEntries.value,
   (value) => (Math.round(value * 10) / 10).toFixed(1),
@@ -397,7 +376,6 @@ const COLLECTION_RING_TRACK = "rgba(148, 163, 184, 0.3)"
 const collectionColumns = computed(() => {
   const rows = buildCharacterDistribution(collectionCards.value, collectionOwnedMap.value)
     .filter((row) => row.characterId > 0)
-  const maxOwned = Math.max(1, ...rows.map((row) => row.owned))
   return rows.map((row) => {
     const character = characterMap.value.get(row.characterId) ?? null
     return {
@@ -408,7 +386,8 @@ const collectionColumns = computed(() => {
       owned: row.owned,
       total: row.total,
       percent: row.percent,
-      barHeight: row.owned > 0 ? `${Math.max(4, Math.round((row.owned / maxOwned) * 100))}%` : "0%",
+      // The bar and the ring read the same value: share of that character's cards owned.
+      barHeight: row.owned > 0 ? `${Math.max(3, row.percent)}%` : "0%",
     }
   })
 })
@@ -438,6 +417,7 @@ function refresh() {
   } else {
     void reloadSuite("check-remote")
     void reloadMultiLive("check-remote")
+    void reloadHonors("check-remote")
   }
   void reloadEvents("check-remote")
   reloadMaster()
@@ -481,9 +461,14 @@ function retry() {
           </Tabs>
           <GameAccountSelect :capability="PLAYER_PROFILE_CAPABILITIES" />
         </div>
-        <p v-if="uploadTimeText" class="text-xs text-muted-foreground">
-          {{ t("playerProfile.dataAsOf", { time: uploadTimeText }) }}
-        </p>
+        <!-- Refresh reloads every module, so it lives with the page-level data time. -->
+        <div v-if="sourceStatus !== 'idle'" class="flex items-center gap-1 text-xs text-muted-foreground">
+          <span v-if="uploadTimeText">{{ t("playerProfile.dataAsOf", { time: uploadTimeText }) }}</span>
+          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="isLoading" @click="refresh">
+            <LucideRefreshCw class="size-3.5" />
+            {{ t("playerProfile.refresh") }}
+          </Button>
+        </div>
       </div>
     </div>
 
@@ -519,22 +504,12 @@ function retry() {
     </template>
 
     <template v-else-if="isReady">
-      <!-- Basic info -->
+      <!-- Identity: the in-game profile card (name, honors, bio, id) next to the shown deck -->
       <Card>
-        <CardHeader class="pb-2">
-          <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-            <span>{{ t("playerProfile.header.title") }}</span>
-            <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground" @click="refresh">
-              <LucideRefreshCw class="size-3.5" />
-              {{ t("playerProfile.refresh") }}
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent class="grid gap-6 lg:grid-cols-2">
-          <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-1">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="text-xl font-semibold">
+        <CardContent class="flex flex-col gap-5 py-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+          <div class="flex min-w-0 flex-1 flex-col gap-3">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span class="text-2xl font-bold leading-tight">
                 <template v-if="nameSegments.length > 0">
                   <span
                     v-for="(segment, index) in nameSegments"
@@ -548,6 +523,9 @@ function retry() {
                 {{ t("playerProfile.header.rank", { rank: gamedata?.rank ?? 0 }) }}
               </span>
             </div>
+            <div v-if="honorViews.length > 0" class="flex flex-wrap items-center gap-2">
+              <HonorBadge v-for="honor in honorViews" :key="honor.key" :honor="honor" variant="detail" />
+            </div>
             <p v-if="profileInfo.word" class="whitespace-pre-wrap break-words text-sm text-muted-foreground">
               <span
                 v-for="(segment, index) in wordSegments"
@@ -555,25 +533,25 @@ function retry() {
                 :style="segment.color ? { color: segment.color } : {}"
               >{{ segment.text }}</span>
             </p>
-            <p v-if="profileInfo.twitterId" class="text-xs text-muted-foreground">
-              @{{ profileInfo.twitterId }}
-            </p>
-            <div v-if="gamedata?.userId" class="flex items-center gap-1 text-xs text-muted-foreground">
-              <span>{{ t("playerProfile.header.gameId") }}</span>
-              <span class="font-mono tabular-nums">{{ gamedata.userId }}</span>
-              <button
-                type="button"
-                class="inline-flex items-center rounded p-1 transition-colors hover:bg-muted hover:text-foreground"
-                :aria-label="t('playerProfile.header.copy')"
-                @click="copyGameId"
-              >
-                <LucideCopy class="size-3.5" />
-              </button>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span v-if="profileInfo.twitterId">@{{ profileInfo.twitterId }}</span>
+              <span v-if="gamedata?.userId" class="flex items-center gap-1">
+                <span>{{ t("playerProfile.header.gameId") }}</span>
+                <span class="font-mono tabular-nums">{{ gamedata.userId }}</span>
+                <button
+                  type="button"
+                  class="inline-flex items-center rounded p-1 transition-colors hover:bg-muted hover:text-foreground"
+                  :aria-label="t('playerProfile.header.copy')"
+                  @click="copyGameId"
+                >
+                  <LucideCopy class="size-3.5" />
+                </button>
+              </span>
             </div>
           </div>
 
           <!-- Active deck -->
-          <div class="flex flex-col gap-2">
+          <div class="flex w-full flex-col gap-2 lg:w-[26rem] lg:shrink-0">
             <h3 class="text-xs font-medium text-muted-foreground">{{ t("playerProfile.deck.title") }}</h3>
             <p v-if="deckViews.length === 0" class="text-sm text-muted-foreground">
               {{ t("playerProfile.deck.empty") }}
@@ -591,72 +569,67 @@ function retry() {
               />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <!-- Play stats: multi-live counts + per-difficulty clear bars -->
+      <Card v-if="multiLiveCounts || musicStatRows.length > 0">
+        <CardHeader class="pb-2">
+          <CardTitle class="text-base">{{ t("playerProfile.stats.title") }}</CardTitle>
+        </CardHeader>
+        <CardContent class="flex flex-col gap-6 lg:flex-row lg:gap-10">
+          <div v-if="multiLiveCounts" class="flex flex-col gap-2 lg:shrink-0">
+            <h3 class="text-xs font-medium text-muted-foreground">{{ t("playerProfile.multiLive.title") }}</h3>
+            <div class="flex flex-wrap gap-2 lg:flex-col">
+              <span class="inline-flex items-baseline justify-between gap-3 rounded-md border px-3 py-1.5">
+                <span class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.mvp") }}</span>
+                <span class="text-sm font-semibold tabular-nums">{{ formatScore(multiLiveCounts.mvp) }}</span>
+              </span>
+              <span class="inline-flex items-baseline justify-between gap-3 rounded-md border px-3 py-1.5">
+                <span class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.superStar") }}</span>
+                <span class="text-sm font-semibold tabular-nums">{{ formatScore(multiLiveCounts.superStar) }}</span>
+              </span>
+            </div>
           </div>
 
-          <!-- Multi-live counts + music stats -->
-          <div class="flex flex-col gap-4">
-            <div v-if="multiLiveCounts" class="flex flex-col gap-2">
-              <h3 class="text-xs font-medium text-muted-foreground">{{ t("playerProfile.multiLive.title") }}</h3>
-              <div class="flex flex-wrap gap-2">
-                <span class="inline-flex items-baseline gap-1.5 rounded-md border px-3 py-1.5">
-                  <span class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.mvp") }}</span>
-                  <span class="text-sm font-semibold tabular-nums">{{ formatScore(multiLiveCounts.mvp) }}</span>
-                </span>
-                <span class="inline-flex items-baseline gap-1.5 rounded-md border px-3 py-1.5">
-                  <span class="text-xs text-muted-foreground">{{ t("playerProfile.multiLive.superStar") }}</span>
-                  <span class="text-sm font-semibold tabular-nums">{{ formatScore(multiLiveCounts.superStar) }}</span>
-                </span>
-              </div>
-            </div>
-
-            <div v-if="musicStatRows.length > 0" class="flex flex-col gap-2">
-              <h3 class="text-xs font-medium text-muted-foreground">{{ t("playerProfile.music.title") }}</h3>
-              <div
-                v-for="row in musicStatRows"
-                :key="row.difficulty"
-                class="flex flex-wrap items-center gap-x-2 gap-y-1"
+          <div v-if="musicStatRows.length > 0" class="flex min-w-0 flex-1 flex-col gap-2">
+            <h3 class="text-xs font-medium text-muted-foreground">{{ t("playerProfile.music.title") }}</h3>
+            <div
+              v-for="row in musicStatRows"
+              :key="row.difficulty"
+              class="flex flex-wrap items-center gap-x-2 gap-y-1"
+            >
+              <span
+                class="inline-flex w-16 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
+                :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[row.difficulty] }"
               >
+                {{ t(`musicLibrary.difficulty.${row.difficulty}`) }}
+              </span>
+              <span class="flex h-2.5 min-w-24 flex-1 gap-px overflow-hidden rounded-full bg-muted">
                 <span
-                  class="inline-flex w-16 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
-                  :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[row.difficulty] }"
-                >
-                  {{ t(`musicLibrary.difficulty.${row.difficulty}`) }}
-                </span>
-                <span class="flex h-2.5 min-w-24 flex-1 gap-px overflow-hidden rounded-full bg-muted">
-                  <span
-                    v-for="segment in row.segments"
-                    :key="segment.key"
-                    class="h-full"
-                    :style="{ backgroundColor: segment.color, width: `${(segment.count / row.summary.total) * 100}%` }"
-                  />
-                </span>
-                <span class="w-44 shrink-0 whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
-                  AP {{ row.summary.allPerfect }} · FC {{ row.summary.fullCombo }} ·
-                  CL {{ row.summary.cleared }} / {{ row.summary.total }}
-                </span>
-              </div>
+                  v-for="segment in row.segments"
+                  :key="segment.key"
+                  class="h-full"
+                  :style="{ backgroundColor: segment.color, width: `${(segment.count / row.summary.total) * 100}%` }"
+                />
+              </span>
+              <span class="w-44 shrink-0 whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
+                AP {{ row.summary.allPerfect }} · FC {{ row.summary.fullCombo }} ·
+                CL {{ row.summary.cleared }} / {{ row.summary.total }}
+              </span>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <!-- Event PT trend (always sourced from the suite snapshot) -->
-      <EventPointTrendChart :trend="eventTrend" :loading="eventTrendLoading">
-        <template #actions>
-          <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
-            <RouterLink :to="{ name: 'events.records' }">
-              {{ t("playerProfile.links.eventRecords") }}
-              <LucideArrowUpRight class="size-3.5" />
-            </RouterLink>
-          </Button>
-        </template>
-      </EventPointTrendChart>
-
       <!-- Card collection by character -->
       <Card>
         <CardHeader class="pb-2">
           <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-            <span>{{ t("playerProfile.collection.title") }}</span>
+            <span class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span>{{ t("playerProfile.collection.title") }}</span>
+              <span v-if="extrasNote" class="text-xs font-normal text-muted-foreground">{{ extrasNote }}</span>
+            </span>
             <span class="flex flex-wrap items-center gap-1.5">
               <button
                 v-for="rarity in CARD_RARITY_TYPES"
@@ -693,42 +666,51 @@ function retry() {
           <p v-if="!hasCollectionData" class="py-4 text-center text-sm text-muted-foreground">
             {{ t("playerProfile.collection.empty") }}
           </p>
-          <div v-else class="overflow-x-auto">
-            <div class="flex min-w-[42rem] items-end gap-1 pt-1 sm:gap-1.5">
-              <div
-                v-for="column in collectionColumns"
-                :key="column.characterId"
-                class="group flex min-w-0 flex-1 flex-col items-center gap-1"
-                :title="`${column.name} ${column.owned}/${column.total}`"
+          <!-- One column per character; wraps into rows on narrow screens instead of scrolling sideways. -->
+          <div v-else class="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-x-1 gap-y-3 pt-1">
+            <div
+              v-for="column in collectionColumns"
+              :key="column.characterId"
+              class="group flex min-w-0 flex-col items-center gap-1"
+              :title="`${column.name} ${column.owned}/${column.total} · ${column.percent}%`"
+            >
+              <span
+                class="flex size-8 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-125"
+                :style="{ background: `conic-gradient(${column.color} ${column.percent * 3.6}deg, ${COLLECTION_RING_TRACK} 0deg)` }"
               >
-                <span class="h-4 shrink-0 whitespace-nowrap text-[10px] font-semibold tabular-nums text-muted-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                  {{ column.owned }}/{{ column.total }} · {{ column.percent }}%
-                </span>
-                <span
-                  class="flex size-8 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-125"
-                  :style="{ background: `conic-gradient(${column.color} ${column.percent * 3.6}deg, ${COLLECTION_RING_TRACK} 0deg)` }"
+                <img
+                  v-if="column.iconUrl"
+                  :src="column.iconUrl"
+                  :alt="column.name"
+                  class="size-[26px] rounded-full border border-background bg-background object-cover"
+                  loading="lazy"
                 >
-                  <img
-                    v-if="column.iconUrl"
-                    :src="column.iconUrl"
-                    :alt="column.name"
-                    class="size-[26px] rounded-full border border-background bg-background object-cover"
-                    loading="lazy"
-                  >
-                  <span v-else class="size-[26px] rounded-full bg-background" />
-                </span>
-                <span class="flex h-24 w-full max-w-5 items-end overflow-hidden rounded-t-sm bg-muted/40 sm:max-w-6">
-                  <span
-                    class="w-full rounded-t-sm opacity-85 transition-[height] duration-300"
-                    :style="{ height: column.barHeight, backgroundColor: column.color }"
-                  />
-                </span>
-                <span class="text-[10px] tabular-nums text-muted-foreground">{{ column.owned }}</span>
-              </div>
+                <span v-else class="size-[26px] rounded-full bg-background" />
+              </span>
+              <span class="flex h-20 w-full max-w-5 items-end overflow-hidden rounded-t-sm bg-muted/40 sm:max-w-6">
+                <span
+                  class="w-full rounded-t-sm opacity-85 transition-[height] duration-300"
+                  :style="{ height: column.barHeight, backgroundColor: column.color }"
+                />
+              </span>
+              <span class="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">{{ column.owned }}/{{ column.total }}</span>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      <!-- Event PT trend (always sourced from the suite snapshot); the full chart is on the records page -->
+      <EventPointTrendChart :trend="eventTrend" :loading="eventTrendLoading" compact>
+        <template #actions>
+          <span v-if="eventsNote" class="text-xs font-normal text-muted-foreground">{{ eventsNote }}</span>
+          <Button as-child variant="ghost" size="sm" class="h-7 gap-1 text-xs font-normal text-muted-foreground">
+            <RouterLink :to="{ name: 'events.records' }">
+              {{ t("playerProfile.links.eventRecords") }}
+              <LucideArrowUpRight class="size-3.5" />
+            </RouterLink>
+          </Button>
+        </template>
+      </EventPointTrendChart>
 
       <!-- Character levels + challenge live radars, side by side on large screens -->
       <div class="grid gap-4 lg:grid-cols-2">
@@ -750,27 +732,7 @@ function retry() {
             </p>
             <template v-else>
               <ProfileRadarChart :entries="characterRadarEntries" />
-              <div v-if="characterUnitLegend.length > 0" class="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
-                <span class="text-muted-foreground">{{ t("playerProfile.unitAverage") }}</span>
-                <span
-                  v-for="item in characterUnitLegend"
-                  :key="item.unit"
-                  :class="['inline-flex items-center gap-1', item.top ? 'font-semibold' : 'text-muted-foreground']"
-                >
-                  <img
-                    v-if="!failedUnitLogos.has(item.unit)"
-                    :src="resolveUnitLogoUrl(item.unit)"
-                    alt=""
-                    class="h-3.5 w-auto max-w-8 object-contain"
-                    loading="lazy"
-                    @error="markUnitLogoFailed(item.unit)"
-                  >
-                  <span v-else class="size-2.5 rounded-full" :style="{ backgroundColor: item.color ?? 'currentColor' }" />
-                  {{ t(`cards.unit.${item.unit}`) }}
-                  <span class="tabular-nums">{{ item.detail }}</span>
-                  <LucideTrophy v-if="item.top" class="size-3 text-amber-500" />
-                </span>
-              </div>
+              <ProfileUnitLegend :items="characterUnitLegend" />
             </template>
           </CardContent>
         </Card>
@@ -778,7 +740,10 @@ function retry() {
         <Card>
           <CardHeader class="pb-2">
             <CardTitle class="flex flex-wrap items-center justify-between gap-2 text-base">
-              <span>{{ t("playerProfile.challenge.title") }}</span>
+              <span class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <span>{{ t("playerProfile.challenge.title") }}</span>
+                <span v-if="extrasNote" class="text-xs font-normal text-muted-foreground">{{ extrasNote }}</span>
+              </span>
               <span class="flex flex-wrap items-center gap-1.5">
                 <span
                   v-if="challengeTop"
@@ -801,27 +766,7 @@ function retry() {
               {{ t("playerProfile.challenge.empty") }}
             </p>
             <ProfileRadarChart :entries="challengeRadarEntries" />
-            <div v-if="challengeUnitLegend.length > 0" class="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
-              <span class="text-muted-foreground">{{ t("playerProfile.unitAverage") }}</span>
-              <span
-                v-for="item in challengeUnitLegend"
-                :key="item.unit"
-                :class="['inline-flex items-center gap-1', item.top ? 'font-semibold' : 'text-muted-foreground']"
-              >
-                <img
-                  v-if="!failedUnitLogos.has(item.unit)"
-                  :src="resolveUnitLogoUrl(item.unit)"
-                  alt=""
-                  class="h-3.5 w-auto max-w-8 object-contain"
-                  loading="lazy"
-                  @error="markUnitLogoFailed(item.unit)"
-                >
-                <span v-else class="size-2.5 rounded-full" :style="{ backgroundColor: item.color ?? 'currentColor' }" />
-                {{ t(`cards.unit.${item.unit}`) }}
-                <span class="tabular-nums">{{ item.detail }}</span>
-                <LucideTrophy v-if="item.top" class="size-3 text-amber-500" />
-              </span>
-            </div>
+            <ProfileUnitLegend :items="challengeUnitLegend" />
           </CardContent>
         </Card>
       </div>

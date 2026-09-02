@@ -667,7 +667,8 @@ function normalizeRankBorderUserProfile(value: unknown): RankBorderUserProfile |
   }
 }
 
-function normalizeProfileHonors(value: unknown): RankBorderProfileHonor[] {
+/** Sorted `userProfileHonors` rows (seq order); tolerant of partial rows. */
+export function normalizeProfileHonors(value: unknown): RankBorderProfileHonor[] {
   if (!Array.isArray(value)) {
     return []
   }

@@ -509,6 +509,10 @@ export default {
     "refresh": "重新整理",
     "dataAsOf": "資料更新於 {time}",
     "unknownCharacter": "未知角色",
+    "stats": {
+      "title": "遊玩統計"
+    },
+    "snapshotNote": "資料來自快照 · {time}",
     "unitAverage": "各團均值",
     "header": {
       "title": "基本資訊",

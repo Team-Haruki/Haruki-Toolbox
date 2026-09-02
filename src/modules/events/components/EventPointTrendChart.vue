@@ -28,10 +28,19 @@ const props = withDefaults(defineProps<{
   trend: readonly EventPointTrendPoint[]
   title?: string | null
   loading?: boolean
+  /** Overview embed: shorter plot, no brush strip (the full chart lives on the records page). */
+  compact?: boolean
 }>(), {
   title: null,
   loading: false,
+  compact: false,
 })
+
+const chartHeight = computed(() => props.compact ? 200 : 240)
+
+/** No rank on any point (no honors uploaded) leaves nothing to draw on the right axis. */
+const hasRankData = computed(() => props.trend.some((point) => point.rank != null || point.derivedRank != null))
+const showRankOverlay = computed(() => showRankSeries.value && hasRankData.value)
 
 const { t } = useI18n()
 
@@ -64,7 +73,7 @@ const chartMargin = computed(() => {
   const rightSide = isNarrow.value ? 48 : 56
   return {
     left: showPointSeries.value ? side : COLLAPSED_SIDE_MARGIN,
-    right: showRankSeries.value ? rightSide : COLLAPSED_SIDE_MARGIN,
+    right: showRankOverlay.value ? rightSide : COLLAPSED_SIDE_MARGIN,
     top: 10,
     bottom: 28,
   }
@@ -100,7 +109,7 @@ watch(
   },
 )
 
-const brushEnabled = computed(() => props.trend.length > TREND_DEFAULT_WINDOW_SIZE)
+const brushEnabled = computed(() => !props.compact && props.trend.length > TREND_DEFAULT_WINDOW_SIZE)
 
 const visibleTrend = computed<EventPointTrendPoint[]>(() =>
   brushEnabled.value
@@ -222,6 +231,7 @@ function crosshairTemplate(point: EventPointTrendPoint) {
             {{ t("eventRecords.trend.point") }}
           </button>
           <button
+            v-if="hasRankData"
             type="button"
             :class="[
               'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-normal transition-colors',
@@ -248,10 +258,10 @@ function crosshairTemplate(point: EventPointTrendPoint) {
     </CardHeader>
     <CardContent>
       <div ref="chartWrapEl">
-        <Skeleton v-if="loading" class="h-60 w-full rounded-lg" />
+        <Skeleton v-if="loading" class="w-full rounded-lg" :style="{ height: `${chartHeight}px` }" />
         <template v-else-if="trend.length >= 2">
-          <div class="relative h-60">
-            <VisXYContainer :data="visibleTrend" :height="240" :auto-margin="false" :margin="chartMargin">
+          <div class="relative" :style="{ height: `${chartHeight}px` }">
+            <VisXYContainer :data="visibleTrend" :height="chartHeight" :auto-margin="false" :margin="chartMargin">
               <template v-if="showPointSeries">
                 <VisArea :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :opacity="0.15" curve-type="monotoneX" />
                 <VisLine :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" curve-type="monotoneX" />
@@ -262,10 +272,10 @@ function crosshairTemplate(point: EventPointTrendPoint) {
               <VisAxis type="x" :tick-format="xTickFormat" :num-ticks="xNumTicks" />
               <VisAxis v-if="showPointSeries" type="y" :tick-format="yTickFormat" :tick-text-color="TREND_POINT_COLOR" />
             </VisXYContainer>
-            <div v-if="showRankSeries" class="pointer-events-none absolute inset-0">
+            <div v-if="showRankOverlay" class="pointer-events-none absolute inset-0">
               <VisXYContainer
                 :data="visibleTrend"
-                :height="240"
+                :height="chartHeight"
                 :auto-margin="false"
                 :margin="chartMargin"
               >
