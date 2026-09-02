@@ -193,14 +193,14 @@ describe("filterMusicEntries character scopes", () => {
   }
 
   it("matches box, vocal and another vocal songs with the any scope", () => {
-    const filter = { ...createDefaultMusicLibraryFilter(), characterId: 5 }
+    const filter = { ...createDefaultMusicLibraryFilter(), characterIds: [5] }
     expect(filterMusicEntries(ENTRIES, filter, context).map((entry) => entry.id)).toEqual([1, 2, 3])
   })
 
   it("restricts to box songs", () => {
     const filter = {
       ...createDefaultMusicLibraryFilter(),
-      characterId: 5,
+      characterIds: [5],
       characterScope: "box" as const,
     }
     expect(filterMusicEntries(ENTRIES, filter, context).map((entry) => entry.id)).toEqual([1])
@@ -209,7 +209,7 @@ describe("filterMusicEntries character scopes", () => {
   it("restricts to vocal versions", () => {
     const filter = {
       ...createDefaultMusicLibraryFilter(),
-      characterId: 5,
+      characterIds: [5],
       characterScope: "vocal" as const,
     }
     expect(filterMusicEntries(ENTRIES, filter, context).map((entry) => entry.id)).toEqual([2])
@@ -218,20 +218,20 @@ describe("filterMusicEntries character scopes", () => {
   it("restricts to another vocal versions", () => {
     const filter = {
       ...createDefaultMusicLibraryFilter(),
-      characterId: 5,
+      characterIds: [5],
       characterScope: "anotherVocal" as const,
     }
     expect(filterMusicEntries(ENTRIES, filter, context).map((entry) => entry.id)).toEqual([3])
   })
 
   it("matches nothing for a character without songs and everything without a character", () => {
-    const filter = { ...createDefaultMusicLibraryFilter(), characterId: 42 }
+    const filter = { ...createDefaultMusicLibraryFilter(), characterIds: [42] }
     expect(filterMusicEntries(ENTRIES, filter, context)).toEqual([])
     expect(filterMusicEntries(ENTRIES, createDefaultMusicLibraryFilter(), context)).toHaveLength(3)
   })
 
   it("matches nothing when the lookup context is missing", () => {
-    const filter = { ...createDefaultMusicLibraryFilter(), characterId: 5 }
+    const filter = { ...createDefaultMusicLibraryFilter(), characterIds: [5] }
     expect(filterMusicEntries(ENTRIES, filter)).toEqual([])
   })
 })

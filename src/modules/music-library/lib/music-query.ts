@@ -4,6 +4,7 @@ import {
   readQueryBoolean,
   readQueryEnum,
   readQueryInt,
+  readQueryIntList,
   readQueryList,
   readQueryString,
   writeQueryList,
@@ -66,8 +67,9 @@ export type MusicQueryState = {
   /** MV categories; only honoured on servers whose master ships `categories`. */
   mv: string[]
   year: number | null
-  /** Single character id (the scope below refines the relation). */
-  char: number | null
+  /** Character ids; empty means any, several match as a union. */
+  chars: number[]
+  /** Refines how a selected character has to relate to the track. */
   scope: MusicCharacterFilterScope
   /** Only songs with an APPEND chart. */
   append: boolean
@@ -86,7 +88,7 @@ export const MUSIC_QUERY_KEYS = [
   "tags",
   "mv",
   "year",
-  "char",
+  "chars",
   "scope",
   "append",
   "sort",
@@ -100,8 +102,8 @@ const NON_FILTER_KEYS: ReadonlySet<string> = new Set(["sort", "dir", "page", "si
 export const MUSIC_QUERY_FILTER_KEYS: readonly string[] = MUSIC_QUERY_KEYS.filter((key) => !NON_FILTER_KEYS.has(key))
 
 /**
- * Keys behind the active-filter badge. `scope` only qualifies `char` (one
- * chip, one control), so it is reset with the filters but never counted.
+ * Keys behind the active-filter badge. `scope` only qualifies `chars`, so it
+ * is reset with the filters but never counted on its own.
  */
 export const MUSIC_QUERY_COUNT_KEYS: readonly string[] = MUSIC_QUERY_FILTER_KEYS.filter((key) => key !== "scope")
 
@@ -131,7 +133,7 @@ export function createDefaultMusicQueryState(): MusicQueryState {
     tags: [],
     mv: [],
     year: null,
-    char: null,
+    chars: [],
     scope: "any",
     append: false,
     sort: "published",
@@ -206,7 +208,7 @@ export const musicQueryCodec: QueryCodec<MusicQueryState> = {
       readQueryInt(query.lvmin, { min: 1, max: LEVEL_MAX }),
       readQueryInt(query.lvmax, { min: 1, max: LEVEL_MAX }),
     )
-    const char = readQueryInt(query.char, { min: 1 })
+    const chars = readQueryIntList(query.chars, { min: 1 })
     return {
       q: readQueryString(query.q) ?? "",
       diff: readQueryEnum(query.diff, MUSIC_DIFFICULTIES),
@@ -216,8 +218,8 @@ export const musicQueryCodec: QueryCodec<MusicQueryState> = {
       tags: readTokenList(query.tags),
       mv: readTokenList(query.mv),
       year: readQueryInt(query.year, { min: YEAR_MIN, max: YEAR_MAX }),
-      char,
-      scope: char != null ? readQueryEnum(query.scope, MUSIC_CHARACTER_FILTER_SCOPES) ?? "any" : "any",
+      chars,
+      scope: chars.length > 0 ? readQueryEnum(query.scope, MUSIC_CHARACTER_FILTER_SCOPES) ?? "any" : "any",
       append: readQueryBoolean(query.append),
       sort: readQueryEnum(query.sort, MUSIC_QUERY_SORTS) ?? defaults.sort,
       dir: readQueryEnum(query.dir, CATALOG_SORT_DIRECTIONS) ?? defaults.dir,
@@ -235,8 +237,8 @@ export const musicQueryCodec: QueryCodec<MusicQueryState> = {
       tags: writeQueryList(state.tags),
       mv: writeQueryList(state.mv),
       year: writeQueryValue(state.year),
-      char: writeQueryValue(state.char),
-      scope: state.char != null ? writeQueryValue(state.scope, "any") : undefined,
+      chars: writeQueryList(state.chars),
+      scope: state.chars.length > 0 ? writeQueryValue(state.scope, "any") : undefined,
       append: writeQueryValue(state.append),
       sort: writeQueryValue(state.sort, "published"),
       dir: writeQueryValue(state.dir, "desc"),
@@ -264,8 +266,8 @@ export function toMusicLibraryFilter(
     tags: [...state.tags],
     categories: options.hasCategories ? [...state.mv] : [],
     year: state.year,
-    characterId: state.char,
-    characterScope: state.char != null ? state.scope : "any",
+    characterIds: state.chars,
+    characterScope: state.chars.length > 0 ? state.scope : "any",
     hasAppend: state.append,
   }
 }
@@ -331,10 +333,10 @@ export function buildMusicActiveChips(
   if (state.year != null) {
     chips.push({ key: "year", label: String(state.year) })
   }
-  if (state.char != null) {
-    const name = ctx.characterName(state.char) ?? `#${state.char}`
+  for (const id of state.chars) {
+    const name = ctx.characterName(id) ?? `#${id}`
     chips.push({
-      key: "char",
+      key: `chars:${id}`,
       label: state.scope === "any" ? name : t("musicCatalog.chips.character", { name, scope: ctx.scopeLabel(state.scope) }),
     })
   }
@@ -356,6 +358,14 @@ export function removeMusicChip(state: MusicQueryState, key: string): void {
     state.mv = state.mv.filter((item) => item !== category)
     return
   }
+  if (key.startsWith("chars:")) {
+    const value = key.slice("chars:".length)
+    state.chars = state.chars.filter((id) => String(id) !== value)
+    if (state.chars.length === 0) {
+      state.scope = "any"
+    }
+    return
+  }
   switch (key) {
     case "q":
       state.q = ""
@@ -372,10 +382,6 @@ export function removeMusicChip(state: MusicQueryState, key: string): void {
       return
     case "year":
       state.year = null
-      return
-    case "char":
-      state.char = null
-      state.scope = "any"
       return
     case "append":
       state.append = false

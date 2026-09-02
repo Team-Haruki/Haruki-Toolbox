@@ -133,13 +133,10 @@ function updateYear(value: string | null) {
 // --- Character + scope ------------------------------------------------------
 
 const pickerModel = computed<number[]>({
-  get: () => (props.state.char != null ? [props.state.char] : []),
+  get: () => props.state.chars,
   set: (ids) => {
-    // Single-select on top of the shared multi-select picker: a newly added
-    // id replaces the selection; deselecting the current one clears it.
-    const next = ids.find((candidate) => candidate !== props.state.char) ?? null
-    props.state.char = next
-    if (next == null) {
+    props.state.chars = ids
+    if (ids.length === 0) {
       props.state.scope = "any"
     }
   },
@@ -151,7 +148,6 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
   }
 }
 </script>
-
 <template>
   <!-- Chart: difficulty scopes the level and note-count filters below it. -->
   <div class="grid gap-3" role="group" :aria-labelledby="`${id}-chart-group`">
@@ -186,89 +182,95 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
       </ToggleGroup>
     </div>
 
-    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <p :id="`${id}-level-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
-        {{ t("musicLibrary.list.filters.level") }}
-      </p>
-      <!-- Capped: a slider stretched over the whole panel is unreadable. -->
-      <div class="flex min-w-48 flex-1 items-center gap-3 sm:max-w-sm">
-        <Slider
-          :model-value="levelModel"
-          :min="sliderBounds.min"
-          :max="sliderBounds.max"
-          :step="1"
-          :min-steps-between-thumbs="0"
-          :aria-labelledby="`${id}-level-label`"
-          class="flex-1"
-          @update:model-value="handleLevelInput"
-          @value-commit="commitLevel"
-        />
-        <span class="shrink-0 text-xs text-muted-foreground tabular-nums">{{ levelSummary }}</span>
+    <!-- The narrow controls share wrapping lines. One row each left most of a
+         ~1100px panel empty, which read as ragged beside the full-width
+         character picker; a wrapping flow rather than a grid, so hiding a
+         control never leaves a hole. -->
+    <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+      <div class="flex min-w-64 flex-wrap items-center gap-x-3 gap-y-2">
+        <p :id="`${id}-level-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
+          {{ t("musicLibrary.list.filters.level") }}
+        </p>
+        <!-- Capped: a slider stretched over the whole panel is unreadable. -->
+        <div class="flex min-w-40 flex-1 items-center gap-3 sm:max-w-64">
+          <Slider
+            :model-value="levelModel"
+            :min="sliderBounds.min"
+            :max="sliderBounds.max"
+            :step="1"
+            :min-steps-between-thumbs="0"
+            :aria-labelledby="`${id}-level-label`"
+            class="flex-1"
+            @update:model-value="handleLevelInput"
+            @value-commit="commitLevel"
+          />
+          <span class="shrink-0 text-xs text-muted-foreground tabular-nums">{{ levelSummary }}</span>
+        </div>
       </div>
-    </div>
 
-    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <p :id="`${id}-notes-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
-        {{ t("musicLibrary.list.filters.noteCount") }}
-      </p>
-      <ToggleGroup
-        type="single"
-        variant="segment"
-        size="sm"
-        :model-value="state.notes.mode"
-        :aria-labelledby="`${id}-notes-label`"
-        class="shrink-0"
-        @update:model-value="updateNoteMode"
-      >
-        <ToggleGroupItem v-for="mode in MUSIC_NOTE_COUNT_FILTER_MODES" :key="mode" :value="mode">
-          {{ t(`musicLibrary.list.filters.noteCountMode.${mode}`) }}
-        </ToggleGroupItem>
-      </ToggleGroup>
-      <Input
-        v-if="state.notes.mode === 'exact'"
-        type="number"
-        min="1"
-        inputmode="numeric"
-        class="h-8 w-28"
-        :model-value="state.notes.exact ?? ''"
-        :placeholder="t('musicLibrary.list.filters.noteCountExactPlaceholder')"
-        :aria-label="t('musicLibrary.list.filters.noteCountExactPlaceholder')"
-        @input="updateNoteField('exact', $event)"
-      />
-      <template v-else>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <p :id="`${id}-notes-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
+          {{ t("musicLibrary.list.filters.noteCount") }}
+        </p>
+        <ToggleGroup
+          type="single"
+          variant="segment"
+          size="sm"
+          :model-value="state.notes.mode"
+          :aria-labelledby="`${id}-notes-label`"
+          class="shrink-0"
+          @update:model-value="updateNoteMode"
+        >
+          <ToggleGroupItem v-for="mode in MUSIC_NOTE_COUNT_FILTER_MODES" :key="mode" :value="mode">
+            {{ t(`musicLibrary.list.filters.noteCountMode.${mode}`) }}
+          </ToggleGroupItem>
+        </ToggleGroup>
         <Input
+          v-if="state.notes.mode === 'exact'"
           type="number"
           min="1"
           inputmode="numeric"
-          class="h-8 w-24"
-          :model-value="state.notes.min ?? ''"
-          :placeholder="t('musicLibrary.list.filters.noteCountMin')"
-          :aria-label="t('musicLibrary.list.filters.noteCountMin')"
-          @input="updateNoteField('min', $event)"
+          class="h-8 w-28"
+          :model-value="state.notes.exact ?? ''"
+          :placeholder="t('musicLibrary.list.filters.noteCountExactPlaceholder')"
+          :aria-label="t('musicLibrary.list.filters.noteCountExactPlaceholder')"
+          @input="updateNoteField('exact', $event)"
         />
-        <span class="text-xs text-muted-foreground">–</span>
-        <Input
-          type="number"
-          min="1"
-          inputmode="numeric"
-          class="h-8 w-24"
-          :model-value="state.notes.max ?? ''"
-          :placeholder="t('musicLibrary.list.filters.noteCountMax')"
-          :aria-label="t('musicLibrary.list.filters.noteCountMax')"
-          @input="updateNoteField('max', $event)"
-        />
-      </template>
-    </div>
+        <template v-else>
+          <Input
+            type="number"
+            min="1"
+            inputmode="numeric"
+            class="h-8 w-24"
+            :model-value="state.notes.min ?? ''"
+            :placeholder="t('musicLibrary.list.filters.noteCountMin')"
+            :aria-label="t('musicLibrary.list.filters.noteCountMin')"
+            @input="updateNoteField('min', $event)"
+          />
+          <span class="text-xs text-muted-foreground">–</span>
+          <Input
+            type="number"
+            min="1"
+            inputmode="numeric"
+            class="h-8 w-24"
+            :model-value="state.notes.max ?? ''"
+            :placeholder="t('musicLibrary.list.filters.noteCountMax')"
+            :aria-label="t('musicLibrary.list.filters.noteCountMax')"
+            @input="updateNoteField('max', $event)"
+          />
+        </template>
+      </div>
 
-    <div class="flex items-center gap-2">
-      <Switch
-        :id="`${id}-append`"
-        :model-value="state.append"
-        @update:model-value="state.append = $event"
-      />
-      <Label :for="`${id}-append`" class="cursor-pointer text-xs font-normal text-muted-foreground">
-        {{ t("musicCatalog.filters.appendOnly") }}
-      </Label>
+      <div class="flex items-center gap-2">
+        <Switch
+          :id="`${id}-append`"
+          :model-value="state.append"
+          @update:model-value="state.append = $event"
+        />
+        <Label :for="`${id}-append`" class="cursor-pointer text-xs font-normal text-muted-foreground">
+          {{ t("musicCatalog.filters.appendOnly") }}
+        </Label>
+      </div>
     </div>
   </div>
 
@@ -285,22 +287,24 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
       compact
     />
 
-    <CatalogChipsField
-      v-if="hasCategories && categoryOptions.length > 0"
-      v-model="state.mv"
-      :label="t('musicCatalog.filters.mvType')"
-      :options="categoryOptions"
-      compact
-    />
+    <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+      <CatalogSelectField
+        :label="t('musicLibrary.list.filters.year')"
+        :all-label="t('catalog.year.all')"
+        :options="yearOptions"
+        :model-value="state.year != null ? String(state.year) : null"
+        compact
+        @update:model-value="updateYear"
+      />
 
-    <CatalogSelectField
-      :label="t('musicLibrary.list.filters.year')"
-      :all-label="t('catalog.year.all')"
-      :options="yearOptions"
-      :model-value="state.year != null ? String(state.year) : null"
-      compact
-      @update:model-value="updateYear"
-    />
+      <CatalogChipsField
+        v-if="hasCategories && categoryOptions.length > 0"
+        v-model="state.mv"
+        :label="t('musicCatalog.filters.mvType')"
+        :options="categoryOptions"
+        compact
+      />
+    </div>
 
     <div class="grid gap-2">
       <CatalogCharacterPicker
@@ -312,7 +316,7 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
       <!-- The scope only exists once a character is picked; until then the row
            explains why it is missing rather than showing a dead control. -->
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <template v-if="state.char != null">
+        <template v-if="state.chars.length > 0">
           <p :id="`${id}-scope-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
             {{ t("musicCatalog.filters.scope") }}
           </p>

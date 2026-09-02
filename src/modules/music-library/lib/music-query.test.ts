@@ -35,7 +35,7 @@ function fullState(): MusicQueryState {
     tags: ["vocaloid", "event_box"],
     mv: ["mv", "image"],
     year: 2021,
-    char: 1,
+    chars: [1],
     scope: "box",
     append: true,
     sort: "level",
@@ -58,7 +58,7 @@ describe("musicQueryCodec", () => {
       tags: "vocaloid,event_box",
       mv: "mv,image",
       year: "2021",
-      char: "1",
+      chars: "1",
       scope: "box",
       append: "1",
       sort: "level",
@@ -85,7 +85,7 @@ describe("musicQueryCodec", () => {
       tags: "vocaloid,Bogus,,vocaloid,9lives,no-dash,../x",
       mv: "mv,MV_2D,mv 2d,",
       year: "1999",
-      char: "-3",
+      chars: "-3",
       scope: "box",
       append: "yes",
       sort: "weird",
@@ -129,7 +129,7 @@ describe("musicQueryCodec", () => {
   it("resets the scope with the filters but does not count it as one", () => {
     expect(musicQueryCodec.filterKeys).toContain("scope")
     expect(musicQueryCodec.countKeys).not.toContain("scope")
-    expect(musicQueryCodec.countKeys).toContain("char")
+    expect(musicQueryCodec.countKeys).toContain("chars")
     for (const key of musicQueryCodec.countKeys ?? []) {
       expect(musicQueryCodec.filterKeys).toContain(key)
     }
@@ -168,13 +168,13 @@ describe("toMusicLibraryFilter", () => {
     expect(filter.noteCountMin).toBe(800)
     expect(filter.noteCountExact).toBeNull()
     expect(filter.categories).toEqual(["mv", "image"])
-    expect(filter.characterId).toBe(1)
+    expect(filter.characterIds).toEqual([1])
     expect(filter.characterScope).toBe("box")
     expect(filter.hasAppend).toBe(true)
   })
 
   it("drops categories on servers without them and the scope without a character", () => {
-    const filter = toMusicLibraryFilter({ ...fullState(), char: null }, { hasCategories: false })
+    const filter = toMusicLibraryFilter({ ...fullState(), chars: [] }, { hasCategories: false })
     expect(filter.categories).toEqual([])
     expect(filter.characterScope).toBe("any")
   })
@@ -198,22 +198,22 @@ describe("active chips", () => {
       "mv:mv",
       "mv:image",
       "year",
-      "char",
+      "chars:1",
       "append",
     ])
     expect(chips.find((chip) => chip.key === "lv")?.label).toBe("musicCatalog.chips.level:26–32")
-    expect(chips.find((chip) => chip.key === "char")?.label).toBe("musicCatalog.chips.character:Ichika|scope-box")
+    expect(chips.find((chip) => chip.key === "chars:1")?.label).toBe("musicCatalog.chips.character:Ichika|scope-box")
     expect(chips.find((chip) => chip.key === "diff")?.label).toBe("MASTER")
   })
 
   it("hides MV chips on servers without categories and falls back to #id for unknown characters", () => {
     const chips = buildMusicActiveChips(
-      { ...fullState(), char: 9, scope: "any" },
+      { ...fullState(), chars: [9], scope: "any" },
       { ...chipContext, hasCategories: false },
       t,
     )
     expect(chips.some((chip) => chip.key.startsWith("mv:"))).toBe(false)
-    expect(chips.find((chip) => chip.key === "char")?.label).toBe("#9")
+    expect(chips.find((chip) => chip.key === "chars:9")?.label).toBe("#9")
   })
 
   it("returns no chips for the default state", () => {
@@ -229,8 +229,8 @@ describe("active chips", () => {
     removeMusicChip(state, "lv")
     expect(state.lvmin).toBeNull()
     expect(state.lvmax).toBeNull()
-    removeMusicChip(state, "char")
-    expect(state.char).toBeNull()
+    removeMusicChip(state, "chars:1")
+    expect(state.chars).toEqual([])
     expect(state.scope).toBe("any")
     removeMusicChip(state, "notes")
     expect(state.notes.mode).toBe("exact")

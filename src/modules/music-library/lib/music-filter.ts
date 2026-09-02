@@ -34,7 +34,8 @@ export type MusicLibraryFilter = {
   /** Selected MV categories; an entry matches when it has any of them (empty = no filter). */
   categories: string[]
   year: number | null
-  characterId: number | null
+  /** Empty means any; several characters match as a union. */
+  characterIds: number[]
   characterScope: MusicCharacterFilterScope
   /** Only songs with an APPEND chart. */
   hasAppend: boolean
@@ -61,7 +62,7 @@ export function createDefaultMusicLibraryFilter(): MusicLibraryFilter {
     tags: [],
     categories: [],
     year: null,
-    characterId: null,
+    characterIds: [],
     characterScope: "any",
     hasAppend: false,
   }
@@ -250,25 +251,30 @@ function matchesCharacter(
   filter: MusicLibraryFilter,
   context: MusicFilterContext,
 ): boolean {
-  if (filter.characterId == null) {
+  const ids = filter.characterIds
+  if (ids.length === 0) {
     return true
   }
 
-  const boxMatch = context.eventBoxes?.get(entry.id)?.characterId === filter.characterId
-  const summary = context.vocalCharacters?.get(entry.id)
-  const vocalMatch = summary?.vocalCharacterIds.has(filter.characterId) ?? false
-  const anotherVocalMatch = summary?.anotherVocalCharacterIds.has(filter.characterId) ?? false
+  // A union, like every other multi-select filter: the scope narrows *how* a
+  // character has to relate to the track, not how many must.
+  return ids.some((characterId) => {
+    const boxMatch = context.eventBoxes?.get(entry.id)?.characterId === characterId
+    const summary = context.vocalCharacters?.get(entry.id)
+    const vocalMatch = summary?.vocalCharacterIds.has(characterId) ?? false
+    const anotherVocalMatch = summary?.anotherVocalCharacterIds.has(characterId) ?? false
 
-  switch (filter.characterScope) {
-    case "box":
-      return boxMatch
-    case "vocal":
-      return vocalMatch
-    case "anotherVocal":
-      return anotherVocalMatch
-    default:
-      return boxMatch || vocalMatch || anotherVocalMatch
-  }
+    switch (filter.characterScope) {
+      case "box":
+        return boxMatch
+      case "vocal":
+        return vocalMatch
+      case "anotherVocal":
+        return anotherVocalMatch
+      default:
+        return boxMatch || vocalMatch || anotherVocalMatch
+    }
+  })
 }
 
 function resolveCandidateStats(
