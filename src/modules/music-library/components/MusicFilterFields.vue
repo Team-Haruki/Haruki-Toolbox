@@ -9,7 +9,6 @@ import { Switch } from "@/components/ui/switch"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import CatalogCharacterPicker from "@/shared/components/catalog/CatalogCharacterPicker.vue"
 import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
-import CatalogSelectField from "@/shared/components/catalog/CatalogSelectField.vue"
 import type { CatalogFieldOption } from "@/shared/components/catalog/types"
 import type { CatalogCharacter, SekaiUnit } from "@/shared/sekai/catalog"
 import { isMusicDifficulty } from "@/modules/music-library/lib/music-difficulties"
@@ -50,10 +49,10 @@ const id = useId()
 
 // --- Difficulty -------------------------------------------------------------
 
-/** Toggle-group value standing in for "no difficulty filter". */
-const ANY_DIFFICULTY = "__any__"
+/** Toggle-group value standing in for "no filter", shared by the chip rows. */
+const ANY_OPTION = "__any__"
 
-const difficultyModel = computed(() => props.state.diff ?? ANY_DIFFICULTY)
+const difficultyModel = computed(() => props.state.diff ?? ANY_OPTION)
 
 function updateDifficulty(value: AcceptableValue | AcceptableValue[] | undefined) {
   // Anything that is not a difficulty — the "all" chip, or deselecting the
@@ -125,9 +124,12 @@ function updateNoteField(field: "exact" | "min" | "max", event: Event) {
 
 // --- Year -------------------------------------------------------------------
 
-function updateYear(value: string | null) {
-  const parsed = value != null ? Number(value) : null
-  props.state.year = parsed != null && Number.isInteger(parsed) ? parsed : null
+const yearModel = computed(() => (props.state.year == null ? ANY_OPTION : String(props.state.year)))
+
+function updateYear(value: AcceptableValue | AcceptableValue[] | undefined) {
+  // The "all" chip, and deselecting the active year, both clear the filter.
+  const parsed = typeof value === "string" ? Number(value) : Number.NaN
+  props.state.year = Number.isInteger(parsed) ? parsed : null
 }
 
 // --- Character + scope ------------------------------------------------------
@@ -167,7 +169,7 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
         :aria-labelledby="`${id}-difficulty-label`"
         @update:model-value="updateDifficulty"
       >
-        <ToggleGroupItem :value="ANY_DIFFICULTY">
+        <ToggleGroupItem :value="ANY_OPTION">
           {{ t("musicLibrary.list.filters.difficultyAll") }}
         </ToggleGroupItem>
         <ToggleGroupItem v-for="option in difficultyOptions" :key="option.value" :value="option.value">
@@ -288,14 +290,26 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
     />
 
     <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
-      <CatalogSelectField
-        :label="t('musicLibrary.list.filters.year')"
-        :all-label="t('catalog.year.all')"
-        :options="yearOptions"
-        :model-value="state.year != null ? String(state.year) : null"
-        compact
-        @update:model-value="updateYear"
-      />
+      <!-- Chips, not a select: the years come from the dump like every other
+           option here, and a lone select left the row stubby. -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <p :id="`${id}-year-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
+          {{ t("musicLibrary.list.filters.year") }}
+        </p>
+        <ToggleGroup
+          type="single"
+          variant="chip"
+          size="sm"
+          :model-value="yearModel"
+          :aria-labelledby="`${id}-year-label`"
+          @update:model-value="updateYear"
+        >
+          <ToggleGroupItem :value="ANY_OPTION">{{ t("catalog.year.all") }}</ToggleGroupItem>
+          <ToggleGroupItem v-for="option in yearOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
 
       <CatalogChipsField
         v-if="hasCategories && categoryOptions.length > 0"
