@@ -107,89 +107,111 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
     </template>
 
     <template #skeleton>
-      <Skeleton class="h-40 w-full rounded-xl sm:h-48" />
-      <div class="flex flex-col gap-2">
-        <Skeleton class="h-6 w-2/3" />
-        <Skeleton class="h-4 w-1/3" />
+      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
+        <div class="flex flex-col gap-4">
+          <Skeleton class="h-56 w-full rounded-xl" />
+          <Skeleton class="h-72 w-full rounded-xl" />
+        </div>
+        <div class="flex flex-col gap-4">
+          <Skeleton class="h-64 w-full rounded-xl" />
+          <Skeleton class="h-56 w-full rounded-xl" />
+        </div>
       </div>
-      <Skeleton class="h-32 w-full" />
-      <Skeleton class="h-32 w-full" />
     </template>
 
     <template v-if="event && status">
-      <EventHero
-        :event="event"
-        :region="region"
-        :asset-endpoint="assetEndpoint"
-        :blur="detail.unreleased.value && detail.blurUnreleased.value"
-      />
+      <!-- Sidebar + main, like the music page: no two sections ever have to
+           line up. The sidebar is what the event *is* — its art and its
+           dates — and, under that, the reference sections that open on
+           demand (gachas, rewards, story). The main column is what it
+           *contains*: bonuses, cards, songs, chapters, teams. The main column
+           spans both grid rows, so the references sit directly under the
+           timeline on wide screens and after everything else on narrow ones.
+           `auto 1fr` rows matter: without them the spanning main column
+           spreads its height into row 1 and pushes the references ~130px
+           below the timeline. -->
+      <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-start">
+        <div class="flex min-w-0 flex-col gap-4">
+          <EventHero
+            :event="event"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            :blur="detail.unreleased.value && detail.blurUnreleased.value"
+            stacked
+          />
 
-      <EventTimelineSection :event="event" :status="status" :now-ms="now" />
+          <EventTimelineSection :event="event" :status="status" :now-ms="now" />
+        </div>
 
-      <EventBonusSection
-        :groups="detail.bonusGroups.value"
-        :character-map="detail.characterMap.value"
-        :rarity-table="detail.rarityBonusTable.value"
-        :table-loading="detail.extras.loading.value"
-      />
+        <div class="flex min-w-0 flex-col gap-4 lg:row-span-2">
+          <EventBonusSection
+            :groups="detail.bonusGroups.value"
+            :character-map="detail.characterMap.value"
+            :rarity-table="detail.rarityBonusTable.value"
+            :table-loading="detail.extras.loading.value"
+          />
 
-      <EventCardsSection
-        :cards="detail.cards.value"
-        :region="region"
-        :asset-endpoint="assetEndpoint"
-        :character-map="detail.characterMap.value"
-        :now-ms="now"
-        :loading="detail.cardsSection.loading.value"
-        :error="detail.cardsSection.error.value"
-        :retrying="detail.cardsSection.retrying.value"
-        :blur-unreleased="detail.blurUnreleased.value"
-        @retry="detail.cardsSection.reload"
-      />
+          <EventCardsSection
+            :cards="detail.cards.value"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            :character-map="detail.characterMap.value"
+            :now-ms="now"
+            :loading="detail.cardsSection.loading.value"
+            :error="detail.cardsSection.error.value"
+            :retrying="detail.cardsSection.retrying.value"
+            :blur-unreleased="detail.blurUnreleased.value"
+            @retry="detail.cardsSection.reload"
+          />
 
-      <EventMusicsSection
-        :musics="detail.musics.value"
-        :region="region"
-        :asset-endpoint="assetEndpoint"
-        :loading="detail.musicsSection.loading.value"
-        :error="detail.musicsSection.error.value"
-        :retrying="detail.musicsSection.retrying.value"
-        @retry="detail.musicsSection.reload"
-      />
+          <EventMusicsSection
+            :musics="detail.musics.value"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            :loading="detail.musicsSection.loading.value"
+            :error="detail.musicsSection.error.value"
+            :retrying="detail.musicsSection.retrying.value"
+            @retry="detail.musicsSection.reload"
+          />
 
-      <EventChaptersSection
-        v-if="isWorldBloom && detail.chapters.value.length > 0"
-        :chapters="detail.chapters.value"
-        :character-map="detail.characterMap.value"
-        :now-ms="now"
-      />
+          <EventChaptersSection
+            v-if="isWorldBloom && detail.chapters.value.length > 0"
+            :chapters="detail.chapters.value"
+            :character-map="detail.characterMap.value"
+            :now-ms="now"
+          />
 
-      <EventTeamsSection
-        v-if="isCheerfulCarnival && detail.teams.value.length > 0"
-        :teams="detail.teams.value"
-        :event-assetbundle-name="event.assetbundleName"
-        :region="region"
-        :asset-endpoint="assetEndpoint"
-      />
+          <EventTeamsSection
+            v-if="isCheerfulCarnival && detail.teams.value.length > 0"
+            :teams="detail.teams.value"
+            :event-assetbundle-name="event.assetbundleName"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+          />
+        </div>
 
-      <EventRelatedGachasSection
-        :result="detail.relatedGachas.value"
-        :region="region"
-        :asset-endpoint="assetEndpoint"
-        :banner-alias-map="bannerAliasMap"
-        :now-ms="now"
-        :loading="detail.gachasSection.loading.value"
-        :error="detail.gachasSection.error.value"
-        :retrying="detail.gachasSection.retrying.value"
-        @retry="detail.gachasSection.reload"
-      />
+        <div class="flex min-w-0 flex-col gap-4 lg:col-start-1">
+          <EventRelatedGachasSection
+            :result="detail.relatedGachas.value"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+            :banner-alias-map="bannerAliasMap"
+            :now-ms="now"
+            :loading="detail.gachasSection.loading.value"
+            :error="detail.gachasSection.error.value"
+            :retrying="detail.gachasSection.retrying.value"
+            @retry="detail.gachasSection.reload"
+          />
 
-      <EventRewardsSection
-        :ranges="detail.rewardRanges.value"
-        :region="region"
-        :asset-endpoint="assetEndpoint"
-      />
+          <EventRewardsSection
+            :ranges="detail.rewardRanges.value"
+            :region="region"
+            :asset-endpoint="assetEndpoint"
+          />
 
-      <EventStorySection v-if="detail.story.value" :story="detail.story.value" />
+          <EventStorySection v-if="detail.story.value" :story="detail.story.value" />
+        </div>
+      </div>
     </template>
   </CatalogDetailShell>
 </template>

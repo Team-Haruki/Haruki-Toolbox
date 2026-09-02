@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, useId } from "vue"
 import { useI18n } from "vue-i18n"
+import type { AcceptableValue } from "reka-ui"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import CatalogCharacterPicker from "@/shared/components/catalog/CatalogCharacterPicker.vue"
 import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
-import CatalogSelectField from "@/shared/components/catalog/CatalogSelectField.vue"
 import { CATALOG_STATUSES, isCatalogStatus, type CatalogFieldOption } from "@/shared/components/catalog/types"
 import {
   SEKAI_CARD_ATTRS,
@@ -32,6 +33,10 @@ const props = withDefaults(defineProps<{
 })
 
 const { t, te } = useI18n()
+const id = useId()
+
+/** Toggle-group value standing in for "no year filter". */
+const ANY_YEAR = "__any__"
 
 function isUnit(value: string): value is SekaiUnit {
   return (SEKAI_UNITS as readonly string[]).includes(value)
@@ -76,13 +81,13 @@ const charsModel = computed<number[]>({
   },
 })
 
-const yearModel = computed<string | null>({
-  get: () => (props.state.year != null ? String(props.state.year) : null),
-  set: (value) => {
-    const parsed = value != null ? Number(value) : Number.NaN
-    props.state.year = Number.isInteger(parsed) ? parsed : null
-  },
-})
+const yearModel = computed(() => (props.state.year == null ? ANY_YEAR : String(props.state.year)))
+
+function setYear(value: AcceptableValue | AcceptableValue[] | undefined) {
+  // The "all" chip, and deselecting the active year, both clear the filter.
+  const parsed = typeof value === "string" ? Number(value) : Number.NaN
+  props.state.year = Number.isInteger(parsed) ? parsed : null
+}
 
 const typeOptions = computed<CatalogFieldOption[]>(() =>
   SEKAI_EVENT_TYPES.map((eventType) => ({ value: eventType, label: resolveSekaiEventTypeLabel({ t, te }, eventType) })),
@@ -115,22 +120,44 @@ const yearOptions = computed<CatalogFieldOption[]>(() =>
 </script>
 
 <template>
-  <CatalogChipsField v-model="typeModel" :label="t('events.list.typeLabel')" :options="typeOptions" compact />
-  <CatalogChipsField v-model="statusModel" :label="t('catalog.statusFilter.label')" :options="statusOptions" compact />
+  <!-- Short rows share wrapping lines (see the music and card panels): type,
+       status, attribute and year each ended well inside the panel's left
+       third. A wrapping flow, not a grid, so hiding a row never leaves a hole. -->
+  <div class="flex flex-wrap items-center gap-x-10 gap-y-3">
+    <CatalogChipsField v-model="typeModel" :label="t('events.list.typeLabel')" :options="typeOptions" compact />
+    <CatalogChipsField v-model="statusModel" :label="t('catalog.statusFilter.label')" :options="statusOptions" compact />
+  </div>
+
   <CatalogChipsField v-model="unitModel" :label="t('catalog.unit.label')" :options="unitOptions" compact />
-  <CatalogChipsField v-model="attrModel" :label="t('events.list.attrLabel')" :options="attrOptions" compact />
+
+  <div class="flex flex-wrap items-center gap-x-10 gap-y-3">
+    <CatalogChipsField v-model="attrModel" :label="t('events.list.attrLabel')" :options="attrOptions" compact />
+
+    <!-- Chips, not a select, like every other option here and on the other panels. -->
+    <div class="flex flex-wrap items-center gap-1.5">
+      <p :id="`${id}-year-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
+        {{ t("events.list.yearLabel") }}
+      </p>
+      <ToggleGroup
+        type="single"
+        variant="chip"
+        size="sm"
+        :model-value="yearModel"
+        :aria-labelledby="`${id}-year-label`"
+        @update:model-value="setYear"
+      >
+        <ToggleGroupItem :value="ANY_YEAR">{{ t("catalog.year.all") }}</ToggleGroupItem>
+        <ToggleGroupItem v-for="option in yearOptions" :key="option.value" :value="option.value">
+          {{ option.label }}
+        </ToggleGroupItem>
+      </ToggleGroup>
+    </div>
+  </div>
+
   <CatalogCharacterPicker
     v-model="charsModel"
     :characters="characters"
     :unit-color-map="unitColorMap"
     :label="t('eventCatalog.filters.bonusCharacters')"
   />
-  <div class="grid gap-4 sm:max-w-xs">
-    <CatalogSelectField
-      v-model="yearModel"
-      :label="t('events.list.yearLabel')"
-      :all-label="t('catalog.year.all')"
-      :options="yearOptions"
-    />
-  </div>
 </template>
