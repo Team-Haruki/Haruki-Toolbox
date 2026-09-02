@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test"
-import { MUSICS_INDEX_FILES, MUSICS_INDEX_KEY, buildMusicsIndex } from "./useMusicsIndex"
+import {
+  MUSICS_INDEX_FILES,
+  MUSICS_INDEX_KEY,
+  MUSICS_INDEX_OPTIONAL,
+  buildMusicsIndex,
+} from "./useMusicsIndex"
 
 /** jp-shaped rows: no `categories` on any music. */
 const JP_MUSICS = [
@@ -23,7 +28,11 @@ const TAGS = [
 describe("buildMusicsIndex", () => {
   it("declares the canonical key and files", () => {
     expect(MUSICS_INDEX_KEY).toBe("music-library/index")
-    expect([...MUSICS_INDEX_FILES]).toEqual(["musics", "musicDifficulties", "musicTags"])
+    expect([...MUSICS_INDEX_FILES]).toEqual(["musics", "musicDifficulties", "musicTags", "musicCategories"])
+    // Optional files must be a subset, or the resource fails where they are absent.
+    for (const file of MUSICS_INDEX_OPTIONAL) {
+      expect([...MUSICS_INDEX_FILES]).toContain(file)
+    }
   })
 
   it("sorts entries by id and indexes them by id", () => {
@@ -40,6 +49,22 @@ describe("buildMusicsIndex", () => {
     expect(index.byId.get(3)?.difficulties).toEqual({ append: { playLevel: 30, totalNoteCount: 1100 } })
     expect(index.byId.get(2)?.tags).toEqual([])
     expect(index.byId.has(4)).toBe(false)
+  })
+
+  it("takes categories from the standalone table jp ships since client 6.8.1", () => {
+    const index = buildMusicsIndex({
+      musics: JP_MUSICS,
+      musicDifficulties: DIFFICULTIES,
+      musicTags: TAGS,
+      musicCategories: [
+        { id: 1, musicId: 1, musicCategoryName: "mv" },
+        { id: 2, musicId: 1, musicCategoryName: "image" },
+        { id: 3, musicId: 2, musicCategoryName: "original" },
+      ],
+    })
+    expect(index.byId.get(1)?.categories).toEqual(["mv", "image"])
+    expect(index.byId.get(3)?.categories).toEqual([])
+    expect(index.hasCategories).toBe(true)
   })
 
   it("reports hasCategories false for jp-like dumps without categories", () => {

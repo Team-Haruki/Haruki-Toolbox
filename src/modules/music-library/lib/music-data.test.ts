@@ -3,6 +3,7 @@ import {
   MUSIC_TAG_EVENT_BOX,
   MUSIC_TAG_WORLD_LINK,
   applyMusicTagByIds,
+  buildMusicCategoryMap,
   buildMusicDurationMap,
   buildMusicLibraryEntries,
   buildMusicVocalCharacterMap,
@@ -253,5 +254,54 @@ describe("formatMusicDurationLabel", () => {
     expect(formatMusicDurationLabel(null)).toBeNull()
     expect(formatMusicDurationLabel(0)).toBeNull()
     expect(formatMusicDurationLabel(-5)).toBeNull()
+  })
+})
+
+describe("buildMusicCategoryMap", () => {
+  it("groups the standalone table by music id and de-duplicates", () => {
+    const map = buildMusicCategoryMap([
+      { id: 1, musicId: 1, musicCategoryName: "mv" },
+      { id: 2, musicId: 1, musicCategoryName: "mv_2d" },
+      { id: 3, musicId: 1, musicCategoryName: "mv" },
+      { id: 4, musicId: 2, musicCategoryName: "original" },
+      { id: 5, musicCategoryName: "orphan" },
+      { id: 6, musicId: 3, musicCategoryName: "  " },
+    ])
+    expect(map.get(1)).toEqual(["mv", "mv_2d"])
+    expect(map.get(2)).toEqual(["original"])
+    expect(map.has(3)).toBe(false)
+    expect(buildMusicCategoryMap(undefined).size).toBe(0)
+  })
+})
+
+describe("music categories across the 6.8.1 split", () => {
+  const musics = [
+    { id: 1, title: "Split", publishedAt: 1 },
+    { id: 2, title: "Inline", categories: ["image"], publishedAt: 1 },
+    { id: 3, title: "Neither", publishedAt: 1 },
+  ]
+
+  it("takes categories from the standalone table when a region ships one", () => {
+    // jp: `musics.categories` is gone, `musicCategories.json` carries them.
+    const entries = buildMusicLibraryEntries(musics, [], [], [
+      { id: 1, musicId: 1, musicCategoryName: "mv" },
+      { id: 2, musicId: 1, musicCategoryName: "mv_2d" },
+    ])
+    expect(entries.find((entry) => entry.id === 1)?.categories).toEqual(["mv", "mv_2d"])
+  })
+
+  it("still reads the inline field on regions that have not migrated", () => {
+    const entries = buildMusicLibraryEntries(musics, [], [], undefined)
+    expect(entries.find((entry) => entry.id === 2)?.categories).toEqual(["image"])
+    expect(entries.find((entry) => entry.id === 1)?.categories).toEqual([])
+  })
+
+  it("prefers the table but leaves untouched songs on their inline value", () => {
+    const entries = buildMusicLibraryEntries(musics, [], [], [
+      { id: 1, musicId: 1, musicCategoryName: "mv" },
+    ])
+    expect(entries.find((entry) => entry.id === 1)?.categories).toEqual(["mv"])
+    expect(entries.find((entry) => entry.id === 2)?.categories).toEqual(["image"])
+    expect(entries.find((entry) => entry.id === 3)?.categories).toEqual([])
   })
 })

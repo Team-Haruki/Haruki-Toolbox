@@ -4,23 +4,33 @@ import { useCatalogResource, type CatalogResource } from "@/shared/sekai/use-cat
 import { buildMusicLibraryEntries, type MusicLibraryEntry } from "@/modules/music-library/lib/music-data"
 
 /**
- * The only resource that reads `musics.json`, `musicDifficulties.json` and
- * `musicTags.json` (optional on some regions). Event-box / World Link tags
+ * The only resource that reads `musics.json`, `musicDifficulties.json`,
+ * `musicTags.json` and `musicCategories.json`. Event-box / World Link tags
  * are derived by the music list composable from the events index.
  */
 export const MUSICS_INDEX_KEY = "music-library/index"
-export const MUSICS_INDEX_FILES = ["musics", "musicDifficulties", "musicTags"] as const
+export const MUSICS_INDEX_FILES = ["musics", "musicDifficulties", "musicTags", "musicCategories"] as const
+/**
+ * `musicTags` is absent on some regions, and `musicCategories` only exists on
+ * jp so far — the other four still carry `musics.categories` inline.
+ */
+export const MUSICS_INDEX_OPTIONAL = ["musicTags", "musicCategories"] as const
 
 export type MusicsIndex = {
   /** Every song, in id order. */
   entries: MusicLibraryEntry[]
   byId: Map<number, MusicLibraryEntry>
-  /** jp ships no `categories`; MV-type filters must hide themselves when false. */
+  /** False on a region shipping neither shape; MV-type filters hide themselves. */
   hasCategories: boolean
 }
 
 export function buildMusicsIndex(files: Record<string, unknown>): MusicsIndex {
-  const entries = buildMusicLibraryEntries(files.musics, files.musicDifficulties, files.musicTags)
+  const entries = buildMusicLibraryEntries(
+    files.musics,
+    files.musicDifficulties,
+    files.musicTags,
+    files.musicCategories,
+  )
   entries.sort((a, b) => a.id - b.id)
   const byId = new Map<number, MusicLibraryEntry>()
   let hasCategories = false
@@ -34,5 +44,7 @@ export function buildMusicsIndex(files: Record<string, unknown>): MusicsIndex {
 }
 
 export function useMusicsIndex(region: Ref<SekaiRegion>): CatalogResource<MusicsIndex> {
-  return useCatalogResource(region, MUSICS_INDEX_KEY, MUSICS_INDEX_FILES, buildMusicsIndex)
+  return useCatalogResource(region, MUSICS_INDEX_KEY, MUSICS_INDEX_FILES, buildMusicsIndex, {
+    optional: MUSICS_INDEX_OPTIONAL,
+  })
 }

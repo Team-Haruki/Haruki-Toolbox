@@ -58,9 +58,11 @@ export function buildMusicLibraryEntries(
   rawMusics: unknown,
   rawDifficulties: unknown,
   rawTags: unknown,
+  rawCategories?: unknown,
 ): MusicLibraryEntry[] {
   const difficultyMap = buildMusicDifficultyMap(rawDifficulties)
   const tagMap = buildMusicTagMap(rawTags)
+  const categoryMap = buildMusicCategoryMap(rawCategories)
 
   const entries: MusicLibraryEntry[] = []
   for (const record of normalizeCatalogRecords(rawMusics)) {
@@ -76,7 +78,7 @@ export function buildMusicLibraryEntries(
       lyricist: normalizeCatalogString(record.lyricist),
       composer: normalizeCatalogString(record.composer),
       arranger: normalizeCatalogString(record.arranger),
-      categories: normalizeMusicCategories(record.categories),
+      categories: categoryMap.get(id) ?? normalizeMusicCategories(record.categories),
       assetbundleName: normalizeCatalogString(record.assetbundleName),
       publishedAt: normalizeCatalogNumber(record.publishedAt),
       fillerSec: normalizeCatalogNumber(record.fillerSec),
@@ -153,6 +155,36 @@ export function buildMusicVocalCharacterMap(
     }
   }
 
+  return map
+}
+
+/**
+ * musicId → category names, from the standalone `musicCategories` table.
+ *
+ * As of client 6.8.1 `musics.categories` is gone and the categories live in
+ * their own table; jp master has already made the move (0 of 714 songs carry
+ * the inline field, 853 rows in `musicCategories.json`) while the other four
+ * regions still ship it inline, so both shapes have to work. The table also
+ * declares `musicAssetVariantId` and `publishedAt`, which jp does not populate
+ * yet — once it does, unpublished rows have to be filtered out here.
+ */
+export function buildMusicCategoryMap(rawCategories: unknown): Map<number, string[]> {
+  const map = new Map<number, string[]>()
+  for (const record of normalizeCatalogRecords(rawCategories)) {
+    const musicId = normalizeCatalogNumber(record.musicId)
+    const name = normalizeCatalogString(record.musicCategoryName)
+    if (!musicId || !name) {
+      continue
+    }
+    const names = map.get(musicId)
+    if (names) {
+      if (!names.includes(name)) {
+        names.push(name)
+      }
+    } else {
+      map.set(musicId, [name])
+    }
+  }
   return map
 }
 
