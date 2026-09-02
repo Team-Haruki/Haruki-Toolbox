@@ -340,6 +340,8 @@ export default {
       "append": "仅 APPEND"
     },
     "filters": {
+      "chartGroup": "谱面",
+      "songGroup": "歌曲",
       "levelAny": "不限",
       "appendOnly": "仅显示有 APPEND 谱面的歌曲",
       "mvType": "MV 类型",

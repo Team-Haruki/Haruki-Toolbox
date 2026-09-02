@@ -340,6 +340,8 @@ export default {
       "append": "APPEND only"
     },
     "filters": {
+      "chartGroup": "Chart",
+      "songGroup": "Song",
       "levelAny": "Any",
       "appendOnly": "Only songs with an APPEND chart",
       "mvType": "MV type",

@@ -26,7 +26,10 @@ function handleUpdate(value: AcceptableValue | AcceptableValue[] | undefined) {
 
 <template>
   <div :class="cn(compact ? 'flex flex-wrap items-center gap-1.5' : 'grid gap-2 sm:col-span-2 lg:col-span-3', props.class)">
-    <p :class="compact ? 'mr-1 text-xs font-medium text-muted-foreground' : 'text-sm font-medium'">{{ label }}</p>
+    <!-- `min-w-14` lines the controls of stacked compact rows up into a column. -->
+    <p :class="compact ? 'mr-1 min-w-14 text-xs font-medium text-muted-foreground' : 'text-sm font-medium'">
+      {{ label }}
+    </p>
     <ToggleGroup
       type="multiple"
       variant="chip"

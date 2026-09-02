@@ -199,6 +199,7 @@ function handleViewUpdate(value: string) {
         :count-label="ready ? countLabel : null"
         :reset-label="t('musicLibrary.list.filters.reset')"
         page-key="music"
+        content-class="flex flex-col gap-4"
         :active-count="activeFilterCount"
         :active-chips="activeChips"
         @reset="reset()"

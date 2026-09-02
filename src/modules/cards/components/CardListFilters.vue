@@ -180,13 +180,12 @@ function rarityLabel(rarity: CardRarityType): string {
     @update:model-value="setSkill"
   />
 
-  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-    <CatalogSelectField
-      :model-value="yearValue"
-      :label="t('catalog.year.label')"
-      :all-label="t('catalog.year.all')"
-      :options="yearOptions"
-      @update:model-value="setYear"
-    />
-  </div>
+  <CatalogSelectField
+    :model-value="yearValue"
+    :label="t('catalog.year.label')"
+    :all-label="t('catalog.year.all')"
+    :options="yearOptions"
+    compact
+    @update:model-value="setYear"
+  />
 </template>
