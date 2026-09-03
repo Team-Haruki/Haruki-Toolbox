@@ -280,11 +280,16 @@ export function buildCatalogCardThumbnail(
   assetEndpoint: SekaiAssetEndpointPreference = "china",
 ): CatalogCardThumbnail {
   const hasTrainedArt = cardRarityHasTrainedArt(card.cardRarityType)
+  // Trained-by-default cards (`initialSpecialTrainingStatus: done`) ship no
+  // `_normal` thumbnail at all, so the untrained slot also resolves to the
+  // trained art. Consumers that never pass `trained` (gacha / event / home
+  // tiles) then still get an image that exists.
+  const trainedOnly = cardShowsOnlyTrainedArt(card)
   const assetbundleName = card.assetbundleName
   return {
     cardId: card.id,
     thumbnailUrl: assetbundleName
-      ? resolveSekaiCardThumbnailUrl(region, assetbundleName, false, assetEndpoint)
+      ? resolveSekaiCardThumbnailUrl(region, assetbundleName, trainedOnly, assetEndpoint)
       : null,
     trainedThumbnailUrl: assetbundleName && hasTrainedArt
       ? resolveSekaiCardThumbnailUrl(region, assetbundleName, true, assetEndpoint)
@@ -293,7 +298,7 @@ export function buildCatalogCardThumbnail(
     attrIconUrl: card.attr ? resolveCardAttrIconUrl(card.attr) : null,
     rareIconUrl: card.cardRarityType === "rarity_birthday"
       ? resolveRareBirthdayImageUrl()
-      : resolveRareStarImageUrl(false),
+      : resolveRareStarImageUrl(trainedOnly),
     trainedRareIconUrl: card.cardRarityType === "rarity_birthday"
       ? resolveRareBirthdayImageUrl()
       : resolveRareStarImageUrl(true),

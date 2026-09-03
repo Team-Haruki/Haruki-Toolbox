@@ -130,6 +130,25 @@ describe("buildCatalogCardThumbnail", () => {
     expect(thumbnail.hasTrainedArt).toBe(true)
   })
 
+  it("uses the trained art for the untrained slot of trained-by-default cards", () => {
+    // Touhou collab 4★ (card 1167): `initialSpecialTrainingStatus: done`,
+    // the `_normal` thumbnail does not exist on the asset server.
+    const card = normalizeCatalogMasterCard({
+      id: 1167,
+      characterId: 21,
+      cardRarityType: "rarity_4",
+      attr: "happy",
+      assetbundleName: "res021_no054",
+      initialSpecialTrainingStatus: "done",
+    })
+    const thumbnail = buildCatalogCardThumbnail(card!, "jp")
+
+    expect(thumbnail.thumbnailUrl).toContain("res021_no054_after_training.png")
+    expect(thumbnail.trainedThumbnailUrl).toContain("res021_no054_after_training.png")
+    expect(thumbnail.rareIconUrl).toContain("rare_star_after_training.png")
+    expect(thumbnail.hasTrainedArt).toBe(true)
+  })
+
   it("omits trained art for birthday cards", () => {
     const card = normalizeCatalogMasterCard({
       id: 1,
