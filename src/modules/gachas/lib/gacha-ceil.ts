@@ -137,17 +137,17 @@ export type GachaCeilResourceBoxes = {
  * resourceBoxDetails.json instead (100k+ rows — appended without spreading).
  * Only the sticker-exchange purpose is kept, so the built value stays small.
  */
-export function buildGachaCeilResourceBoxes(rawBoxes: unknown, rawDetails: unknown): GachaCeilResourceBoxes {
-  const boxes = new Map<number, GachaResourceBoxReward[]>()
-  let sawAnyBox = false
+function isCeilExchangeBox(record: Record<string, unknown>): boolean {
+  return normalizeCatalogString(record.resourceBoxPurpose) === GACHA_CEIL_EXCHANGE_BOX_PURPOSE
+}
 
+/** Embedded `details` rows (jp/en). Returns whether any box row existed at all. */
+function collectEmbeddedCeilBoxes(boxes: Map<number, GachaResourceBoxReward[]>, rawBoxes: unknown): boolean {
+  let sawAnyBox = false
   for (const record of normalizeCatalogRecords(rawBoxes)) {
     sawAnyBox = true
-    if (normalizeCatalogString(record.resourceBoxPurpose) !== GACHA_CEIL_EXCHANGE_BOX_PURPOSE) {
-      continue
-    }
     const id = normalizeCatalogNumber(record.id)
-    if (!id) {
+    if (!isCeilExchangeBox(record) || !id) {
       continue
     }
     const rewards: GachaResourceBoxReward[] = []
@@ -159,30 +159,42 @@ export function buildGachaCeilResourceBoxes(rawBoxes: unknown, rawDetails: unkno
     }
     boxes.set(id, rewards)
   }
+  return sawAnyBox
+}
 
+function addUniqueCeilReward(boxes: Map<number, GachaResourceBoxReward[]>, boxId: number, reward: GachaResourceBoxReward) {
+  const rewards = boxes.get(boxId)
+  if (!rewards) {
+    boxes.set(boxId, [reward])
+    return
+  }
+  if (!rewards.some((row) => row.resourceType === reward.resourceType && row.resourceId === reward.resourceId)) {
+    rewards.push(reward)
+  }
+}
+
+/** Flat resourceBoxDetails rows (tw/kr). Returns whether any row existed at all. */
+function collectFlatCeilBoxDetails(boxes: Map<number, GachaResourceBoxReward[]>, rawDetails: unknown): boolean {
   const flatDetails: Record<string, unknown>[] = []
   appendCatalogRecords(flatDetails, rawDetails)
   for (const detail of flatDetails) {
-    sawAnyBox = true
-    if (normalizeCatalogString(detail.resourceBoxPurpose) !== GACHA_CEIL_EXCHANGE_BOX_PURPOSE) {
-      continue
-    }
     const boxId = normalizeCatalogNumber(detail.resourceBoxId)
-    const reward = normalizeReward(detail)
-    if (!boxId || !reward) {
+    if (!isCeilExchangeBox(detail) || !boxId) {
       continue
     }
-    const rewards = boxes.get(boxId)
-    if (rewards) {
-      if (!rewards.some((row) => row.resourceType === reward.resourceType && row.resourceId === reward.resourceId)) {
-        rewards.push(reward)
-      }
-    } else {
-      boxes.set(boxId, [reward])
+    const reward = normalizeReward(detail)
+    if (reward) {
+      addUniqueCeilReward(boxes, boxId, reward)
     }
   }
+  return flatDetails.length > 0
+}
 
-  return { boxes, available: sawAnyBox }
+export function buildGachaCeilResourceBoxes(rawBoxes: unknown, rawDetails: unknown): GachaCeilResourceBoxes {
+  const boxes = new Map<number, GachaResourceBoxReward[]>()
+  const sawEmbedded = collectEmbeddedCeilBoxes(boxes, rawBoxes)
+  const sawFlat = collectFlatCeilBoxDetails(boxes, rawDetails)
+  return { boxes, available: sawEmbedded || sawFlat }
 }
 
 export type GachaCeilItemsIndex = {

@@ -68,46 +68,53 @@ export function filterEventList(
   state: EventsQueryState,
   ctx: EventListContext,
 ): SekaiEventItem[] {
-  const query = state.q.trim()
-  const types = new Set<string>(state.type)
-  const statuses = new Set<CatalogStatus>(state.status)
-  const units = new Set<string>(state.units)
-  const attrs = state.attrs
-  const chars = state.chars
+  const predicates = buildEventPredicates(state, ctx)
+  return events.filter((event) => predicates.every((matches) => matches(event)))
+}
 
-  return events.filter((event) => {
-    if (ctx.hideUnreleased && isEventUnreleased(event, ctx.nowMs)) {
-      return false
-    }
-    if (query && !matchesEventSearch(event, query)) {
-      return false
-    }
-    if (types.size > 0 && (event.eventType == null || !types.has(event.eventType))) {
-      return false
-    }
-    if (statuses.size > 0 && !statuses.has(resolveEventCatalogStatus(event, ctx.nowMs))) {
-      return false
-    }
-    if (units.size > 0 && (event.unit == null || !units.has(event.unit))) {
-      return false
-    }
-    if (attrs.length > 0) {
+type EventPredicate = (event: SekaiEventItem) => boolean
+
+/** One predicate per active filter; an inactive filter contributes nothing. */
+function buildEventPredicates(state: EventsQueryState, ctx: EventListContext): EventPredicate[] {
+  const predicates: EventPredicate[] = []
+  if (ctx.hideUnreleased) {
+    predicates.push((event) => !isEventUnreleased(event, ctx.nowMs))
+  }
+  const query = state.q.trim()
+  if (query) {
+    predicates.push((event) => matchesEventSearch(event, query))
+  }
+  const types = new Set<string>(state.type)
+  if (types.size > 0) {
+    predicates.push((event) => event.eventType != null && types.has(event.eventType))
+  }
+  const statuses = new Set<CatalogStatus>(state.status)
+  if (statuses.size > 0) {
+    predicates.push((event) => statuses.has(resolveEventCatalogStatus(event, ctx.nowMs)))
+  }
+  const units = new Set<string>(state.units)
+  if (units.size > 0) {
+    predicates.push((event) => event.unit != null && units.has(event.unit))
+  }
+  const attrs = state.attrs
+  if (attrs.length > 0) {
+    predicates.push((event) => {
       const eventAttrs = ctx.bonusAttrMap.get(event.id)
-      if (!eventAttrs || !attrs.some((attr) => eventAttrs.has(attr))) {
-        return false
-      }
-    }
-    if (chars.length > 0) {
+      return eventAttrs != null && attrs.some((attr) => eventAttrs.has(attr))
+    })
+  }
+  const chars = state.chars
+  if (chars.length > 0) {
+    predicates.push((event) => {
       const characterIds = resolveEventBonusCharacterIds(event.id, ctx.bonusCharacterUnitIdsByEvent, ctx.characterUnitById)
-      if (!chars.some((id) => characterIds.has(id))) {
-        return false
-      }
-    }
-    if (state.year != null && resolveEventYear(event) !== state.year) {
-      return false
-    }
-    return true
-  })
+      return chars.some((id) => characterIds.has(id))
+    })
+  }
+  const year = state.year
+  if (year != null) {
+    predicates.push((event) => resolveEventYear(event) === year)
+  }
+  return predicates
 }
 
 /**

@@ -256,6 +256,16 @@ export function normalizeCatalogMasterCard(value: unknown): CatalogMasterCard | 
   }
 }
 
+/** Appends `value` to the list stored under `key`, creating the list on first use. */
+export function pushCatalogGroup<K, V>(groups: Map<K, V[]>, key: K, value: V): void {
+  const group = groups.get(key)
+  if (group) {
+    group.push(value)
+  } else {
+    groups.set(key, [value])
+  }
+}
+
 /** Cards whose only artwork is the trained one (`initialSpecialTrainingStatus: done`). */
 export function cardShowsOnlyTrainedArt(card: Pick<CatalogMasterCard, "cardRarityType" | "trainedByDefault">): boolean {
   return card.trainedByDefault === true && cardRarityHasTrainedArt(card.cardRarityType)

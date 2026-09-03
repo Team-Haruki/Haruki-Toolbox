@@ -5,6 +5,7 @@ import {
   normalizeCatalogNumber,
   normalizeCatalogRecords,
   normalizeCatalogString,
+  pushCatalogGroup,
   type CatalogMasterCard,
 } from "@/shared/sekai/catalog"
 import { useCatalogResource, type CatalogResource } from "@/shared/sekai/use-catalog-resource"
@@ -97,6 +98,21 @@ function normalizePowerTable(raw: unknown): CardPowerTable | null {
   return { maxLevel, p1, p2, p3 }
 }
 
+function normalizeCardExtras(record: Record<string, unknown>): CardIndexExtras {
+  return {
+    gachaPhrase: normalizeMasterText(record.gachaPhrase),
+    flavorText: normalizeMasterText(record.flavorText),
+    specialTrainingSkillId: normalizeCatalogNumber(record.specialTrainingSkillId),
+    specialTrainingSkillName: normalizeMasterText(record.specialTrainingSkillName),
+    specialTrainingPowerBonus: {
+      p1: normalizeCatalogNumber(record.specialTrainingPower1BonusFixed) ?? 0,
+      p2: normalizeCatalogNumber(record.specialTrainingPower2BonusFixed) ?? 0,
+      p3: normalizeCatalogNumber(record.specialTrainingPower3BonusFixed) ?? 0,
+    },
+    archivePublishedAt: normalizeCatalogNumber(record.archivePublishedAt),
+  }
+}
+
 export function buildCardsIndex(files: Record<string, unknown>): CardsIndex {
   const list: CatalogMasterCard[] = []
   const byId = new Map<number, CatalogMasterCard>()
@@ -112,25 +128,9 @@ export function buildCardsIndex(files: Record<string, unknown>): CardsIndex {
     list.push(card)
     byId.set(card.id, card)
     if (card.characterId != null) {
-      const group = byCharacter.get(card.characterId)
-      if (group) {
-        group.push(card)
-      } else {
-        byCharacter.set(card.characterId, [card])
-      }
+      pushCatalogGroup(byCharacter, card.characterId, card)
     }
-    extrasById.set(card.id, {
-      gachaPhrase: normalizeMasterText(record.gachaPhrase),
-      flavorText: normalizeMasterText(record.flavorText),
-      specialTrainingSkillId: normalizeCatalogNumber(record.specialTrainingSkillId),
-      specialTrainingSkillName: normalizeMasterText(record.specialTrainingSkillName),
-      specialTrainingPowerBonus: {
-        p1: normalizeCatalogNumber(record.specialTrainingPower1BonusFixed) ?? 0,
-        p2: normalizeCatalogNumber(record.specialTrainingPower2BonusFixed) ?? 0,
-        p3: normalizeCatalogNumber(record.specialTrainingPower3BonusFixed) ?? 0,
-      },
-      archivePublishedAt: normalizeCatalogNumber(record.archivePublishedAt),
-    })
+    extrasById.set(card.id, normalizeCardExtras(record))
     const table = normalizePowerTable(record.cardParameters)
     if (table) {
       powerTables.set(card.id, table)

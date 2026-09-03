@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test"
 import {
   appendCatalogRecords,
   buildCatalogCardThumbnail,
+  pushCatalogGroup,
   buildCatalogCharacterMap,
   buildCatalogUnitColorMap,
   cardRarityHasTrainedArt,
@@ -161,6 +162,17 @@ describe("buildCatalogCardThumbnail", () => {
     expect(thumbnail.trainedThumbnailUrl).toBeNull()
     expect(thumbnail.rareIconUrl).toContain("rare_birthday")
     expect(thumbnail.trainedRareIconUrl).toContain("rare_birthday")
+  })
+})
+
+describe("pushCatalogGroup", () => {
+  it("creates the list on first use and appends afterwards", () => {
+    const groups = new Map<number, string[]>()
+    pushCatalogGroup(groups, 1, "a")
+    pushCatalogGroup(groups, 1, "b")
+    pushCatalogGroup(groups, 2, "c")
+    expect(groups.get(1)).toEqual(["a", "b"])
+    expect(groups.get(2)).toEqual(["c"])
   })
 })
 

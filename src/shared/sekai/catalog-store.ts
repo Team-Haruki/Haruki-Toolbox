@@ -277,6 +277,40 @@ export const useSekaiCatalogStore = defineStore("sekai-catalog", () => {
     return { version, files: fileMap, warning }
   }
 
+  /**
+   * Serves the cached build when it is still current after a cheap freshness
+   * check (rate limited inside the data store). A failed check keeps serving
+   * the cached value; a newer master version returns null so the caller
+   * rebuilds.
+   */
+  async function serveCachedResource<T>(
+    region: SekaiRegion,
+    key: string,
+    requestedFiles: readonly string[],
+    options: CatalogResourceOptions,
+  ): Promise<CatalogResourceResult<T> | null> {
+    const entries = regionCache(region)
+    const cached = entries.get(key)
+    if (!cached?.version || cached.version !== currentVersion(region)) {
+      return null
+    }
+    let warning: string | null = null
+    try {
+      await sekaiDataStore.ensureRegionData(region, {
+        files: requestedFiles,
+        optionalFiles: (options.optional ?? []).map(normalizeSekaiMasterFileName),
+        musicMetas: options.musicMetas ?? false,
+      })
+    } catch (ensureError) {
+      warning = ensureError instanceof Error ? ensureError.message : String(ensureError)
+    }
+    if (cached.version !== currentVersion(region) || entries.get(key) !== cached) {
+      return null
+    }
+    cached.touchedAt = tick()
+    return { value: cached.value as T, warning }
+  }
+
   async function getResource<T>(
     region: SekaiRegion,
     key: string,
@@ -288,25 +322,9 @@ export const useSekaiCatalogStore = defineStore("sekai-catalog", () => {
     const entries = regionCache(region)
 
     if (!options.force) {
-      const cached = entries.get(key)
-      if (cached && cached.version && cached.version === currentVersion(region)) {
-        // Cheap freshness check (rate limited inside the data store); a newer
-        // master version invalidates below. A failed check keeps serving the
-        // cached value.
-        let warning: string | null = null
-        try {
-          await sekaiDataStore.ensureRegionData(region, {
-            files: requestedFiles,
-            optionalFiles: (options.optional ?? []).map(normalizeSekaiMasterFileName),
-            musicMetas: options.musicMetas ?? false,
-          })
-        } catch (ensureError) {
-          warning = ensureError instanceof Error ? ensureError.message : String(ensureError)
-        }
-        if (cached.version === currentVersion(region) && entries.get(key) === cached) {
-          cached.touchedAt = tick()
-          return { value: cached.value as T, warning }
-        }
+      const served = await serveCachedResource<T>(region, key, requestedFiles, options)
+      if (served) {
+        return served
       }
     }
 
