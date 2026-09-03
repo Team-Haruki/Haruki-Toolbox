@@ -64,36 +64,56 @@ function normalizeMasterText(value: unknown): string | null {
   return text && text !== "-" ? text : null
 }
 
-function normalizePowerTable(raw: unknown): CardPowerTable | null {
-  const p1: number[] = []
-  const p2: number[] = []
-  const p3: number[] = []
+type PowerColumn = "p1" | "p2" | "p3"
+
+function powerColumnOf(parameterType: string): PowerColumn | null {
+  switch (parameterType) {
+    case "param1":
+      return "p1"
+    case "param2":
+      return "p2"
+    case "param3":
+      return "p3"
+    default:
+      return null
+  }
+}
+
+/** `cardParameters` rows → per-parameter power by level index (level 1 at index 0). */
+function collectPowerColumns(raw: unknown): Record<PowerColumn, number[]> {
+  const columns: Record<PowerColumn, number[]> = { p1: [], p2: [], p3: [] }
   for (const row of normalizeCatalogRecords(raw)) {
     const level = normalizeCatalogNumber(row.cardLevel)
     const power = normalizeCatalogNumber(row.power)
-    if (!level || level < 1 || power == null) {
+    const column = powerColumnOf(normalizeCatalogString(row.cardParameterType))
+    if (!level || level < 1 || power == null || !column) {
       continue
     }
-    const type = normalizeCatalogString(row.cardParameterType)
-    const target = type === "param1" ? p1 : type === "param2" ? p2 : type === "param3" ? p3 : null
-    if (target) {
-      target[level - 1] = power
+    columns[column][level - 1] = power
+  }
+  return columns
+}
+
+/** Fills gaps (missing levels) with the previous value so lookups are total. */
+function fillPowerGaps(table: number[], maxLevel: number) {
+  let last = 0
+  for (let index = 0; index < maxLevel; index += 1) {
+    if (table[index] == null) {
+      table[index] = last
+    } else {
+      last = table[index]
     }
   }
+}
+
+function normalizePowerTable(raw: unknown): CardPowerTable | null {
+  const { p1, p2, p3 } = collectPowerColumns(raw)
   const maxLevel = Math.max(p1.length, p2.length, p3.length)
   if (maxLevel === 0) {
     return null
   }
-  // Fill gaps (missing levels) with the previous value so lookups are total.
   for (const table of [p1, p2, p3]) {
-    let last = 0
-    for (let index = 0; index < maxLevel; index += 1) {
-      if (table[index] == null) {
-        table[index] = last
-      } else {
-        last = table[index]
-      }
-    }
+    fillPowerGaps(table, maxLevel)
   }
   return { maxLevel, p1, p2, p3 }
 }
