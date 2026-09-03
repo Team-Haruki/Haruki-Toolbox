@@ -176,11 +176,10 @@ function wishPoolForLottery(lotteryType: string, wished: readonly PoolCard[]): P
   return [...wished]
 }
 
-export function buildGachaSimulatorModel(
-  gacha: CatalogGacha,
-  cardRarityByCardId: ReadonlyMap<number, string>,
-  options: GachaSimulatorOptions = {},
-): GachaSimulatorModel {
+type RarityCardWeights = ReadonlyMap<string, Map<number, number>>
+
+/** rarity → cardId → summed weight, for every card with a known rarity and a positive weight. */
+function groupCardsByRarity(gacha: CatalogGacha, cardRarityByCardId: ReadonlyMap<number, string>): RarityCardWeights {
   const cardsByRarity = new Map<string, Map<number, number>>()
   for (const detail of gacha.details) {
     const rarity = cardRarityByCardId.get(detail.cardId)?.toLowerCase()
@@ -194,25 +193,31 @@ export function buildGachaSimulatorModel(
     }
     cards.set(detail.cardId, (cards.get(detail.cardId) ?? 0) + detail.weight)
   }
+  return cardsByRarity
+}
 
-  const wishCardIds = gacha.wishSelectCount > 0
-    ? [...(options.wishCardIds ?? selectDefaultWishCards(gacha))]
-    : []
+type SpecialLotteryPools = {
+  /** `lotteryType rarity` → pool, in wish-pick order. */
+  specialPools: ReadonlyMap<string, PoolCard[]>
+  /** rarity → cards a special lottery claims away from the normal lottery. */
+  claimedByRarity: ReadonlyMap<string, Set<number>>
+}
 
-  // Special lottery pools per `lotteryType rarity` (in wish-pick order) and
-  // the cards they claim away from the normal lottery of that rarity.
+function specialPoolKey(row: { lotteryType: string; cardRarityType: string }): string {
+  return `${row.lotteryType} ${row.cardRarityType}`
+}
+
+function buildSpecialPools(
+  gacha: CatalogGacha,
+  cardsByRarity: RarityCardWeights,
+  wishCardIds: readonly number[],
+): SpecialLotteryPools {
   const specialPools = new Map<string, PoolCard[]>()
   const claimedByRarity = new Map<string, Set<number>>()
   for (const row of gacha.rarityRates) {
-    if (row.lotteryType === GACHA_NORMAL_LOTTERY) {
-      continue
-    }
     const rarityCards = cardsByRarity.get(row.cardRarityType)
-    if (!rarityCards) {
-      continue
-    }
-    const key = `${row.lotteryType} ${row.cardRarityType}`
-    if (specialPools.has(key)) {
+    const key = specialPoolKey(row)
+    if (row.lotteryType === GACHA_NORMAL_LOTTERY || !rarityCards || specialPools.has(key)) {
       continue
     }
     const wished = wishCardIds
@@ -229,27 +234,37 @@ export function buildGachaSimulatorModel(
       claimed.add(card.cardId)
     }
   }
+  return { specialPools, claimedByRarity }
+}
 
+/** The normal lottery draws from the rarity minus the claimed cards, or the whole rarity if that leaves nothing. */
+function normalLotteryPool(rarityCards: ReadonlyMap<number, number>, claimed: ReadonlySet<number> | undefined): PoolCard[] {
+  const all = toPoolCards(rarityCards)
+  const rest = claimed && claimed.size > 0 ? all.filter((card) => !claimed.has(card.cardId)) : all
+  return rest.length > 0 ? rest : all
+}
+
+function resolveBucketPool(
+  row: CatalogGacha["rarityRates"][number],
+  rarityCards: ReadonlyMap<number, number>,
+  pools: SpecialLotteryPools,
+): PoolCard[] {
+  if (row.lotteryType === GACHA_NORMAL_LOTTERY) {
+    return normalLotteryPool(rarityCards, pools.claimedByRarity.get(row.cardRarityType))
+  }
+  // A wish lottery without any wished card of this rarity draws from the whole rarity.
+  const special = pools.specialPools.get(specialPoolKey(row)) ?? []
+  return special.length > 0 ? special : toPoolCards(rarityCards)
+}
+
+function buildSimulatorBuckets(gacha: CatalogGacha, cardsByRarity: RarityCardWeights, pools: SpecialLotteryPools): GachaSimulatorBucket[] {
   const buckets: GachaSimulatorBucket[] = []
   for (const row of gacha.rarityRates) {
-    if (row.rate <= 0) {
-      continue
-    }
     const rarityCards = cardsByRarity.get(row.cardRarityType)
-    if (!rarityCards || rarityCards.size === 0) {
+    if (row.rate <= 0 || !rarityCards || rarityCards.size === 0) {
       continue
     }
-    let pool: PoolCard[]
-    if (row.lotteryType === GACHA_NORMAL_LOTTERY) {
-      const claimed = claimedByRarity.get(row.cardRarityType)
-      const all = toPoolCards(rarityCards)
-      const rest = claimed && claimed.size > 0 ? all.filter((card) => !claimed.has(card.cardId)) : all
-      pool = rest.length > 0 ? rest : all
-    } else {
-      // A wish lottery without any wished card of this rarity draws from the whole rarity.
-      const special = specialPools.get(`${row.lotteryType} ${row.cardRarityType}`) ?? []
-      pool = special.length > 0 ? special : toPoolCards(rarityCards)
-    }
+    const pool = resolveBucketPool(row, rarityCards, pools)
     if (pool.length === 0) {
       continue
     }
@@ -262,7 +277,19 @@ export function buildGachaSimulatorModel(
       totalWeight: pool.reduce((sum, card) => sum + card.weight, 0),
     })
   }
+  return buckets
+}
 
+export function buildGachaSimulatorModel(
+  gacha: CatalogGacha,
+  cardRarityByCardId: ReadonlyMap<number, string>,
+  options: GachaSimulatorOptions = {},
+): GachaSimulatorModel {
+  const cardsByRarity = groupCardsByRarity(gacha, cardRarityByCardId)
+  const wishCardIds = gacha.wishSelectCount > 0
+    ? [...(options.wishCardIds ?? selectDefaultWishCards(gacha))]
+    : []
+  const buckets = buildSimulatorBuckets(gacha, cardsByRarity, buildSpecialPools(gacha, cardsByRarity, wishCardIds))
   const { single, ten } = resolveSimulatorPulls(gacha.behaviors)
 
   return {

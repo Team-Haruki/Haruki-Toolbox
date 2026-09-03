@@ -268,59 +268,60 @@ export function excludeUnreleasedCards(
   return cards.filter((card) => !isCardUnreleased(card.releaseAt, now))
 }
 
+type CardPredicate = (card: CatalogMasterCard) => boolean
+
+function resolveCardCharacterName(card: CatalogMasterCard, context: CardFilterContext): string | null {
+  return card.characterId != null ? context.characterMap.get(card.characterId)?.name ?? null : null
+}
+
+function resolveCardSkillType(card: CatalogMasterCard, context: CardFilterContext): string | null {
+  return card.skillId != null ? context.skillTypeBySkillId?.get(card.skillId) ?? null : null
+}
+
+/** One predicate per active filter; an inactive filter contributes nothing. */
+function buildCardPredicates(filters: CardListFilters, context: CardFilterContext): CardPredicate[] {
+  const predicates: CardPredicate[] = [
+    (card) => cardMatchesQuery(card, filters.query, resolveCardCharacterName(card, context)),
+  ]
+  if (filters.characterIds.length > 0) {
+    predicates.push((card) => card.characterId != null && filters.characterIds.includes(card.characterId))
+  }
+  if (filters.units.length > 0) {
+    predicates.push((card) => filters.units.some((unit) => cardMatchesUnit(card, unit, context.characterMap)))
+  }
+  if (filters.attrs.length > 0) {
+    predicates.push((card) => (filters.attrs as readonly string[]).includes(card.attr))
+  }
+  if (filters.rarities.length > 0) {
+    predicates.push((card) => (filters.rarities as readonly string[]).includes(card.cardRarityType))
+  }
+  if (filters.supplyTypes.length > 0) {
+    predicates.push((card) => {
+      const supplyType = resolveCardSupplyType(card, context.supplyTypeMap, context.worldBloomCardIds)
+      return supplyType != null && filters.supplyTypes.includes(supplyType)
+    })
+  }
+  const skillTypes = filters.skillTypes ?? []
+  if (skillTypes.length > 0) {
+    predicates.push((card) => {
+      const skillType = resolveCardSkillType(card, context)
+      return skillType != null && skillTypes.includes(skillType)
+    })
+  }
+  const year = filters.year
+  if (year != null) {
+    predicates.push((card) => resolveCardReleaseYear(card.releaseAt) === year)
+  }
+  return predicates
+}
+
 export function filterCards(
   cards: readonly CatalogMasterCard[],
   filters: CardListFilters,
   context: CardFilterContext,
 ): CatalogMasterCard[] {
-  const skillTypes = filters.skillTypes ?? []
-  return cards.filter((card) => {
-    const characterName = card.characterId != null
-      ? context.characterMap.get(card.characterId)?.name ?? null
-      : null
-    if (!cardMatchesQuery(card, filters.query, characterName)) {
-      return false
-    }
-
-    if (filters.characterIds.length > 0
-      && (card.characterId == null || !filters.characterIds.includes(card.characterId))) {
-      return false
-    }
-
-    if (filters.units.length > 0
-      && !filters.units.some((unit) => cardMatchesUnit(card, unit, context.characterMap))) {
-      return false
-    }
-
-    if (filters.attrs.length > 0 && !(filters.attrs as readonly string[]).includes(card.attr)) {
-      return false
-    }
-
-    if (filters.rarities.length > 0
-      && !(filters.rarities as readonly string[]).includes(card.cardRarityType)) {
-      return false
-    }
-
-    if (filters.supplyTypes.length > 0) {
-      const supplyType = resolveCardSupplyType(card, context.supplyTypeMap, context.worldBloomCardIds)
-      if (supplyType == null || !filters.supplyTypes.includes(supplyType)) {
-        return false
-      }
-    }
-
-    if (skillTypes.length > 0) {
-      const skillType = card.skillId != null ? context.skillTypeBySkillId?.get(card.skillId) : undefined
-      if (skillType == null || !skillTypes.includes(skillType)) {
-        return false
-      }
-    }
-
-    if (filters.year != null && resolveCardReleaseYear(card.releaseAt) !== filters.year) {
-      return false
-    }
-
-    return true
-  })
+  const predicates = buildCardPredicates(filters, context)
+  return cards.filter((card) => predicates.every((matches) => matches(card)))
 }
 
 export function sortCards(

@@ -3,6 +3,7 @@ import {
   normalizeCatalogNumber,
   normalizeCatalogRecords,
   normalizeCatalogString,
+  pushCatalogGroup,
 } from "@/shared/sekai/catalog"
 import type { RankBorderMasterHonor, RankBorderMasterHonorGroup } from "@/modules/rank-border/lib/master-data-types"
 
@@ -106,26 +107,20 @@ function normalizeRewardResource(record: Record<string, unknown>): EventRewardRe
   }
 }
 
-function pushBoxResource(boxes: Map<number, EventRewardResource[]>, boxId: number, resource: EventRewardResource) {
-  const list = boxes.get(boxId)
-  if (list) {
-    list.push(resource)
-  } else {
-    boxes.set(boxId, [resource])
-  }
-}
-
-export function buildEventRewardsIndex(files: Record<string, unknown>): EventRewardsIndex {
+function buildHonorGroups(rawGroups: unknown): Map<number, RankBorderMasterHonorGroup> {
   const groups = new Map<number, RankBorderMasterHonorGroup>()
-  for (const record of normalizeCatalogRecords(files.honorGroups)) {
+  for (const record of normalizeCatalogRecords(rawGroups)) {
     const id = normalizeCatalogNumber(record.id)
     if (id != null) {
       groups.set(id, record as RankBorderMasterHonorGroup)
     }
   }
+  return groups
+}
 
+function buildHonors(rawHonors: unknown, groups: ReadonlyMap<number, RankBorderMasterHonorGroup>): Map<number, EventRewardHonor> {
   const honors = new Map<number, EventRewardHonor>()
-  for (const record of normalizeCatalogRecords(files.honors)) {
+  for (const record of normalizeCatalogRecords(rawHonors)) {
     const id = normalizeCatalogNumber(record.id)
     const assetbundleName = normalizeCatalogString(record.assetbundleName)
     if (id == null || !assetbundleName) {
@@ -143,38 +138,50 @@ export function buildEventRewardsIndex(files: Record<string, unknown>): EventRew
       group,
     })
   }
+  return honors
+}
 
-  const boxes = new Map<number, EventRewardResource[]>()
-  // jp/en: details embedded in the box record.
-  for (const record of normalizeCatalogRecords(files.resourceBoxes)) {
-    if (normalizeCatalogString(record.resourceBoxPurpose) !== EVENT_RANKING_REWARD_PURPOSE) {
-      continue
-    }
+function isRankingRewardBox(record: Record<string, unknown>): boolean {
+  return normalizeCatalogString(record.resourceBoxPurpose) === EVENT_RANKING_REWARD_PURPOSE
+}
+
+/** jp/en: details embedded in the box record. */
+function collectEmbeddedBoxResources(boxes: Map<number, EventRewardResource[]>, rawBoxes: unknown) {
+  for (const record of normalizeCatalogRecords(rawBoxes)) {
     const boxId = normalizeCatalogNumber(record.id)
-    if (boxId == null) {
+    if (!isRankingRewardBox(record) || boxId == null) {
       continue
     }
     for (const detail of normalizeCatalogRecords(record.details)) {
       const resource = normalizeRewardResource(detail)
       if (resource) {
-        pushBoxResource(boxes, boxId, resource)
+        pushCatalogGroup(boxes, boxId, resource)
       }
     }
   }
-  // tw/kr/cn: one flat table with 100k+ rows; append instead of spreading.
+}
+
+/** tw/kr/cn: one flat table with 100k+ rows; append instead of spreading. */
+function collectFlatBoxResources(boxes: Map<number, EventRewardResource[]>, rawDetails: unknown) {
   const detailRows: Record<string, unknown>[] = []
-  appendCatalogRecords(detailRows, files.resourceBoxDetails)
+  appendCatalogRecords(detailRows, rawDetails)
   for (const record of detailRows) {
-    if (normalizeCatalogString(record.resourceBoxPurpose) !== EVENT_RANKING_REWARD_PURPOSE) {
+    const boxId = normalizeCatalogNumber(record.resourceBoxId)
+    if (!isRankingRewardBox(record) || boxId == null) {
       continue
     }
-    const boxId = normalizeCatalogNumber(record.resourceBoxId)
-    const resource = boxId != null ? normalizeRewardResource(record) : null
-    if (boxId != null && resource) {
-      pushBoxResource(boxes, boxId, resource)
+    const resource = normalizeRewardResource(record)
+    if (resource) {
+      pushCatalogGroup(boxes, boxId, resource)
     }
   }
+}
 
+export function buildEventRewardsIndex(files: Record<string, unknown>): EventRewardsIndex {
+  const honors = buildHonors(files.honors, buildHonorGroups(files.honorGroups))
+  const boxes = new Map<number, EventRewardResource[]>()
+  collectEmbeddedBoxResources(boxes, files.resourceBoxes)
+  collectFlatBoxResources(boxes, files.resourceBoxDetails)
   return { honors, boxes, hasBoxData: boxes.size > 0 }
 }
 
