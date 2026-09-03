@@ -16,6 +16,8 @@ export type DeckRecommendMasterCard = {
   attr: string
   prefix: string | null
   assetbundleName: string
+  /** `initialSpecialTrainingStatus === "done"`: only the trained art exists. */
+  trainedByDefault: boolean
 }
 
 export type CardThumbnailView = {
@@ -160,6 +162,7 @@ export function buildCardThumbnailView(
     releaseAt: null,
     skillId: null,
     cardSupplyId: null,
+    trainedByDefault: masterCard?.trainedByDefault ?? false,
   }, region, assetEndpoint)
 
   return {
@@ -277,6 +280,7 @@ function normalizeMasterCard(rawCard: unknown, characterNameMap: ReadonlyMap<num
     attr: normalizeString(record.attr),
     prefix: normalizeString(record.prefix) || null,
     assetbundleName: normalizeString(record.assetbundleName),
+    trainedByDefault: normalizeString(record.initialSpecialTrainingStatus) === "done",
   }
 }
 
