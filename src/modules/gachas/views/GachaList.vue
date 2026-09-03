@@ -41,7 +41,7 @@ const { t, te } = useI18n()
 const ctx = { t, te }
 const settingsStore = useSettingsStore()
 
-const { state, reset, activeFilterCount } = useRouteQueryState(gachasQueryCodec, {
+const { state, patch, reset, activeFilterCount } = useRouteQueryState(gachasQueryCodec, {
   debounceKeys: ["q"],
   pageKey: "page",
   pageNeutralKeys: ["size"],
@@ -134,6 +134,7 @@ function showUnreleased() {
     <template #filters>
       <GachaListFilters
         :state="state"
+        @patch="patch"
         :type-options="typeOptions"
         :status-options="statusOptions"
         :year-options="yearOptions"

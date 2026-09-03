@@ -20,10 +20,14 @@ export type EventRecordsFilterState = {
   units: SekaiUnit[]
 }
 
-/** The filter-panel body of the event records page; mutates the page's reactive state. */
+/** The filter-panel body of the event records page; emits patches the page applies. */
 const props = defineProps<{
   state: EventRecordsFilterState
   unitColorMap: ReadonlyMap<SekaiUnit, string> | null
+}>()
+
+const emit = defineEmits<{
+  patch: [next: Partial<EventRecordsFilterState>]
 }>()
 
 const { t, te } = useI18n()
@@ -44,16 +48,16 @@ const unitOptions = computed<CatalogFieldOption[]>(() => SEKAI_UNITS.map((unit) 
 
 function setTime(value: AcceptableValue | AcceptableValue[] | undefined) {
   if (typeof value === "string" && isEventRecordTimeMode(value)) {
-    props.state.time = value
+    emit("patch", { time: value })
   }
 }
 
 function setTypes(values: string[]) {
-  props.state.types = values.filter(isSekaiEventType)
+  emit("patch", { types: values.filter(isSekaiEventType) })
 }
 
 function setUnits(values: string[]) {
-  props.state.units = values.filter((value): value is SekaiUnit => (SEKAI_UNITS as readonly string[]).includes(value))
+  emit("patch", { units: values.filter((value): value is SekaiUnit => (SEKAI_UNITS as readonly string[]).includes(value)) })
 }
 </script>
 
@@ -77,11 +81,21 @@ function setUnits(values: string[]) {
       </ToggleGroup>
       <div v-if="state.time === 'custom'" class="flex flex-wrap items-center gap-2">
         <div class="w-44">
-          <DateTimePicker24h v-model="state.from" :placeholder="t('eventRecords.filters.from')" :aria-label="t('eventRecords.filters.from')" />
+          <DateTimePicker24h
+            :model-value="state.from"
+            :placeholder="t('eventRecords.filters.from')"
+            :aria-label="t('eventRecords.filters.from')"
+            @update:model-value="emit('patch', { from: $event })"
+          />
         </div>
         <span class="text-xs text-muted-foreground">—</span>
         <div class="w-44">
-          <DateTimePicker24h v-model="state.to" :placeholder="t('eventRecords.filters.to')" :aria-label="t('eventRecords.filters.to')" />
+          <DateTimePicker24h
+            :model-value="state.to"
+            :placeholder="t('eventRecords.filters.to')"
+            :aria-label="t('eventRecords.filters.to')"
+            @update:model-value="emit('patch', { to: $event })"
+          />
         </div>
       </div>
     </div>

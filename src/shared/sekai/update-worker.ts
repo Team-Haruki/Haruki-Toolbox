@@ -185,7 +185,10 @@ const FETCH_RETRY_DELAYS_MS = [800, 1800, 3500]
 
 /** ±30 % jitter so parallel file workers do not re-burst in lockstep. */
 function jitter(delayMs: number): number {
-  return Math.round(delayMs * (0.7 + Math.random() * 0.6))
+  // Not a security decision, but Web Crypto is always there in a worker and
+  // keeps the PRNG lint quiet.
+  const unit = crypto.getRandomValues(new Uint32Array(1))[0] / 0x1_0000_0000
+  return Math.round(delayMs * (0.7 + unit * 0.6))
 }
 
 function isTransientStatus(status: number): boolean {

@@ -141,7 +141,8 @@ export function mergeQuery(
 /** Stable string form of a write record, for change detection. */
 export function serializeQueryRecord(record: QueryWriteRecord): string {
   return Object.keys(record)
-    .sort()
+    // Code-unit order, not locale order: the string is compared, never shown.
+    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
     .filter((key) => record[key] != null && record[key] !== "")
     .map((key) => `${key}=${record[key]}`)
     .join("&")

@@ -39,7 +39,7 @@ const settingsStore = useSettingsStore()
 const { region } = useEffectiveCatalogRegion()
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 
-const { state, reset, activeFilterCount } = useRouteQueryState(eventsQueryCodec, {
+const { state, patch, reset, activeFilterCount } = useRouteQueryState(eventsQueryCodec, {
   debounceKeys: ["q"],
   pageKey: "page",
   pageNeutralKeys: ["size"],
@@ -155,6 +155,7 @@ const showSkeleton = computed(() => list.eventsIndex.loading.value && list.event
       >
         <EventListFilters
           :state="state"
+          @patch="patch"
           :characters="characters"
           :unit-color-map="unitColorMap"
           :years="list.years.value"

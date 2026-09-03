@@ -296,7 +296,7 @@ function chartTimeTicks(
       timestamp: index === segments
         ? timeDomain.end
         : Math.round(timeDomain.start + (duration * index) / segments),
-      minor: density === "detailed" ? index % 2 === 1 : index % 2 === 1,
+      minor: index % 2 === 1,
     }),
   )
   const seen = new Set<number>()

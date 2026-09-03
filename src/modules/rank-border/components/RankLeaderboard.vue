@@ -100,8 +100,8 @@ const intervalLabel = computed(() =>
 // Derived entirely from the overview payload already in memory: neighbors come
 // from the comparable-points list, speed from the interval growth. Zero fetches.
 
-const comparablePoints = computed<Array<{ rank: number; score: number }>>(() => {
-  const points: Array<{ rank: number; score: number }> = []
+const comparablePoints = computed<ComparablePoint[]>(() => {
+  const points: ComparablePoint[] = []
   for (const row of top100Rows.value) {
     if (row.score != null) {
       points.push({ rank: row.rank, score: row.score })
@@ -113,49 +113,45 @@ const comparablePoints = computed<Array<{ rank: number; score: number }>>(() => 
   return points.sort((a, b) => a.rank - b.rank)
 })
 
-const expandedFacts = computed<RankBorderQuickFacts | null>(() => {
-  const rank = expandedRank.value
-  if (rank == null) {
-    return null
+type ComparablePoint = { rank: number; score: number }
+
+/** The expanded point with its nearest comparable neighbours on either side. */
+type PointNeighbours = {
+  point: ComparablePoint
+  previous: ComparablePoint | null
+  next: ComparablePoint | null
+}
+
+function hourlySpeedLabel(growth: { growth: number | null; timeDiff: number | null } | null): string | null {
+  return growth?.growth != null && growth.timeDiff
+    ? formatPerHour(Math.round((growth.growth / growth.timeDiff) * 3600))
+    : null
+}
+
+function buildSeatFacts(rank: number, { point, previous, next }: PointNeighbours): RankBorderQuickFacts {
+  const row = top100Rows.value[rank - 1]
+  return {
+    kind: "rank",
+    rank,
+    scoreLabel: formatPt(point.score),
+    timestamp: row?.timestamp ?? null,
+    playerGrowthLabel: row?.displayGrowth != null ? formatGrowth(row.displayGrowth) : null,
+    playerGrowthPositive: (row?.displayGrowth ?? 0) > 0,
+    rankGrowthLabel: row?.displayRankGrowth != null ? formatGrowth(row.displayRankGrowth) : null,
+    rankGrowthPositive: (row?.displayRankGrowth ?? 0) > 0,
+    hourlySpeedLabel: hourlySpeedLabel(top100GrowthByRank.value.get(rank) ?? null),
+    prevGapLabel: previous ? formatGrowth(previous.score - point.score) : null,
+    prevLabel: t("rankBorder.result.previousRank"),
+    nextGapLabel: next ? formatGrowth(point.score - next.score) : null,
+    nextLabel: t("rankBorder.result.nextRank"),
   }
+}
 
-  const kind: RankBorderQuickFacts["kind"] = rank <= PERSONAL_COLLECTION_LIMIT ? "rank" : "line"
-  const points = comparablePoints.value
-  const index = points.findIndex((point) => point.rank === rank)
-  if (index < 0) {
-    return null
-  }
-
-  const point = points[index]
-  const previous = index > 0 ? points[index - 1] : null
-  const next = index + 1 < points.length ? points[index + 1] : null
-
-  if (kind === "rank") {
-    const row = top100Rows.value[rank - 1]
-    const growth = top100GrowthByRank.value.get(rank) ?? null
-    return {
-      kind,
-      rank,
-      scoreLabel: formatPt(point.score),
-      timestamp: row?.timestamp ?? null,
-      playerGrowthLabel: row?.displayGrowth != null ? formatGrowth(row.displayGrowth) : null,
-      playerGrowthPositive: (row?.displayGrowth ?? 0) > 0,
-      rankGrowthLabel: row?.displayRankGrowth != null ? formatGrowth(row.displayRankGrowth) : null,
-      rankGrowthPositive: (row?.displayRankGrowth ?? 0) > 0,
-      hourlySpeedLabel: growth?.growth != null && growth.timeDiff
-        ? formatPerHour(Math.round((growth.growth / growth.timeDiff) * 3600))
-        : null,
-      prevGapLabel: previous ? formatGrowth(previous.score - point.score) : null,
-      prevLabel: t("rankBorder.result.previousRank"),
-      nextGapLabel: next ? formatGrowth(point.score - next.score) : null,
-      nextLabel: t("rankBorder.result.nextRank"),
-    }
-  }
-
+function buildLineFacts(rank: number, { point, previous, next }: PointNeighbours): RankBorderQuickFacts {
   const segment = segmentRows.value.find((row) => row.rank === rank) ?? null
   const growth = segment?.growth ?? null
   return {
-    kind,
+    kind: "line",
     rank,
     scoreLabel: formatPt(point.score),
     timestamp: segment?.timestamp ?? null,
@@ -163,14 +159,32 @@ const expandedFacts = computed<RankBorderQuickFacts | null>(() => {
     playerGrowthPositive: false,
     rankGrowthLabel: growth?.growth != null ? formatGrowth(growth.growth) : null,
     rankGrowthPositive: (growth?.growth ?? 0) > 0,
-    hourlySpeedLabel: growth?.growth != null && growth.timeDiff
-      ? formatPerHour(Math.round((growth.growth / growth.timeDiff) * 3600))
-      : null,
+    hourlySpeedLabel: hourlySpeedLabel(growth),
     prevGapLabel: previous ? formatGrowth(previous.score - point.score) : null,
     prevLabel: t("rankBorder.result.previousLine"),
     nextGapLabel: next ? formatGrowth(point.score - next.score) : null,
     nextLabel: t("rankBorder.result.nextLine"),
   }
+}
+
+const expandedFacts = computed<RankBorderQuickFacts | null>(() => {
+  const rank = expandedRank.value
+  if (rank == null) {
+    return null
+  }
+
+  const points = comparablePoints.value
+  const index = points.findIndex((point) => point.rank === rank)
+  if (index < 0) {
+    return null
+  }
+
+  const neighbours: PointNeighbours = {
+    point: points[index],
+    previous: index > 0 ? points[index - 1] : null,
+    next: index + 1 < points.length ? points[index + 1] : null,
+  }
+  return rank <= PERSONAL_COLLECTION_LIMIT ? buildSeatFacts(rank, neighbours) : buildLineFacts(rank, neighbours)
 })
 
 // --- Visible-rank tracking (jump-rail sync) via IntersectionObserver ---------

@@ -20,13 +20,17 @@ import { CARD_OWNERSHIP_FILTERS, type CardBoxFilters, type CardOwnershipFilter }
 
 /**
  * The filter-panel body of `/cards/box`, the card catalog's panel minus the
- * catalog-only fields (skill, supply, year) plus the ownership switch. Mutates
- * the page's reactive filter object directly.
+ * catalog-only fields (skill, supply, year) plus the ownership switch. Emits
+ * typed patches; the page owns the filter object.
  */
 const props = defineProps<{
   state: CardBoxFilters
   characters: readonly CatalogCharacter[]
   unitColorMap: ReadonlyMap<SekaiUnit, string> | null
+}>()
+
+const emit = defineEmits<{
+  patch: [next: Partial<CardBoxFilters>]
 }>()
 
 const { t, te } = useI18n()
@@ -47,21 +51,21 @@ const attrOptions = computed<CatalogFieldOption[]>(() => SEKAI_CARD_ATTRS.map((a
 })))
 
 function setUnits(values: string[]) {
-  props.state.units = values.filter((value): value is SekaiUnit => (SEKAI_UNITS as readonly string[]).includes(value))
+  emit("patch", { units: values.filter((value): value is SekaiUnit => (SEKAI_UNITS as readonly string[]).includes(value)) })
 }
 
 function setAttrs(values: string[]) {
-  props.state.attrs = values.filter((value) => (SEKAI_CARD_ATTRS as readonly string[]).includes(value))
+  emit("patch", { attrs: values.filter((value) => (SEKAI_CARD_ATTRS as readonly string[]).includes(value)) })
 }
 
 function setRarities(value: AcceptableValue | AcceptableValue[] | undefined) {
   const list = Array.isArray(value) ? value : (value == null ? [] : [value])
-  props.state.rarities = list.filter((item): item is CardRarityType => typeof item === "string" && isCardRarityType(item))
+  emit("patch", { rarities: list.filter((item): item is CardRarityType => typeof item === "string" && isCardRarityType(item)) })
 }
 
 function setOwnership(value: AcceptableValue | AcceptableValue[] | undefined) {
   if (typeof value === "string" && (CARD_OWNERSHIP_FILTERS as readonly string[]).includes(value)) {
-    props.state.ownership = value as CardOwnershipFilter
+    emit("patch", { ownership: value as CardOwnershipFilter })
   }
 }
 </script>
@@ -69,10 +73,11 @@ function setOwnership(value: AcceptableValue | AcceptableValue[] | undefined) {
 <template>
   <CatalogCharacterPicker
     v-if="characters.length > 0"
-    v-model="state.characterIds"
+    :model-value="state.characterIds"
     :characters="characters"
     :unit-color-map="unitColorMap"
     :label="t('catalog.character.label')"
+    @update:model-value="emit('patch', { characterIds: $event })"
   />
 
   <CatalogChipsField

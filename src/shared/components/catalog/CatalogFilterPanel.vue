@@ -100,29 +100,30 @@ defineExpose({ open, expanded })
       />
     </button>
 
-    <div v-if="showChips" class="flex flex-wrap items-center gap-1.5" role="list" :aria-label="t('catalog.filters.title')">
+    <ul v-if="showChips" class="m-0 flex list-none flex-wrap items-center gap-1.5 p-0" :aria-label="t('catalog.filters.title')">
       <!-- The whole chip removes the filter: a comfortable touch target on phones. -->
-      <button
-        v-for="chip in activeChips"
-        :key="chip.key"
-        type="button"
-        role="listitem"
-        class="inline-flex min-h-8 max-w-full items-center gap-1 rounded-full border bg-background py-1 pr-2 pl-2.5 text-xs transition-colors hover:bg-muted dark:bg-input/30"
-        :aria-label="`${t('catalog.filters.reset')}: ${chip.label}`"
-        @click="emit('removeChip', chip.key)"
-      >
-        <span class="truncate">{{ chip.label }}</span>
-        <X class="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        class="inline-flex min-h-8 items-center gap-1 rounded-full border border-dashed px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        @click="emit('reset')"
-      >
-        <RotateCcw class="size-3" />
-        {{ t("catalog.filters.clearAll") }}
-      </button>
-    </div>
+      <li v-for="chip in activeChips" :key="chip.key" class="flex max-w-full">
+        <button
+          type="button"
+          class="inline-flex min-h-8 max-w-full items-center gap-1 rounded-full border bg-background py-1 pr-2 pl-2.5 text-xs transition-colors hover:bg-muted dark:bg-input/30"
+          :aria-label="`${t('catalog.filters.reset')}: ${chip.label}`"
+          @click="emit('removeChip', chip.key)"
+        >
+          <span class="truncate">{{ chip.label }}</span>
+          <X class="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        </button>
+      </li>
+      <li class="flex">
+        <button
+          type="button"
+          class="inline-flex min-h-8 items-center gap-1 rounded-full border border-dashed px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          @click="emit('reset')"
+        >
+          <RotateCcw class="size-3" />
+          {{ t("catalog.filters.clearAll") }}
+        </button>
+      </li>
+    </ul>
 
     <template v-if="expanded">
       <div :class="contentClass">

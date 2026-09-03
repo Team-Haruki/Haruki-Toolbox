@@ -33,14 +33,18 @@ import type { CardsQueryState } from "@/modules/cards/lib/card-query"
 import { CARD_SKILL_FILTER_TYPES, isCardSkillFilterType } from "@/modules/cards/lib/card-skill"
 
 /**
- * The filter-panel body of `/cards`. Mutates the route-query state object
- * directly (it is the page's reactive source of truth).
+ * The filter-panel body of `/cards`. Reads the route-query state and emits
+ * typed patches; the page applies them, so a stray value never enters the URL.
  */
 const props = defineProps<{
   state: CardsQueryState
   characters: readonly CatalogCharacter[]
   unitColorMap: ReadonlyMap<SekaiUnit, string> | null
   years: readonly number[]
+}>()
+
+const emit = defineEmits<{
+  patch: [next: Partial<CardsQueryState>]
 }>()
 
 const { t, te } = useI18n()
@@ -89,30 +93,30 @@ function isSekaiCardAttr(value: string): value is SekaiCardAttr {
 }
 
 function setUnits(values: string[]) {
-  props.state.units = values.filter(isSekaiUnit)
+  emit("patch", { units: values.filter(isSekaiUnit) })
 }
 
 function setAttrs(values: string[]) {
-  props.state.attrs = values.filter(isSekaiCardAttr)
+  emit("patch", { attrs: values.filter(isSekaiCardAttr) })
 }
 
 function setSupply(values: string[]) {
-  props.state.supply = values.filter(isCardSupplyType)
+  emit("patch", { supply: values.filter(isCardSupplyType) })
 }
 
 function setSkill(values: string[]) {
-  props.state.skill = values.filter(isCardSkillFilterType)
+  emit("patch", { skill: values.filter(isCardSkillFilterType) })
 }
 
 function setRarities(value: AcceptableValue | AcceptableValue[] | undefined) {
   const list = Array.isArray(value) ? value : (value == null ? [] : [value])
-  props.state.rar = list.filter((item): item is CardRarityType => typeof item === "string" && isCardRarityType(item))
+  emit("patch", { rar: list.filter((item): item is CardRarityType => typeof item === "string" && isCardRarityType(item)) })
 }
 
 function setYear(value: AcceptableValue | AcceptableValue[] | undefined) {
   // The "all" chip, and deselecting the active year, both clear the filter.
   const parsed = typeof value === "string" ? Number(value) : Number.NaN
-  props.state.year = Number.isInteger(parsed) ? parsed : null
+  emit("patch", { year: Number.isInteger(parsed) ? parsed : null })
 }
 
 function rarityLabel(rarity: CardRarityType): string {
@@ -123,10 +127,11 @@ function rarityLabel(rarity: CardRarityType): string {
 <template>
   <CatalogCharacterPicker
     v-if="characters.length > 0"
-    v-model="state.chars"
+    :model-value="state.chars"
     :characters="characters"
     :unit-color-map="unitColorMap"
     :label="t('catalog.character.label')"
+    @update:model-value="emit('patch', { chars: $event })"
   />
 
   <CatalogChipsField

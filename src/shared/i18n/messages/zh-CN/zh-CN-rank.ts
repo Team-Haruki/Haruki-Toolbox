@@ -46,6 +46,7 @@ export default {
       "duplicateTarget": "该对象已在对比列表中",
       "selfTarget": "页面主体本身不能作为对比对象",
       "tableTarget": "对象",
+      "tableActions": "操作",
       "current": "当前",
       "apply": "对比",
       "loading": "正在加载 {rank} 的对比数据...",

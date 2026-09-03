@@ -31,6 +31,11 @@ export type UseRouteQueryStateOptions<T extends object> = {
 
 export type RouteQueryState<T extends object> = {
   state: T
+  /**
+   * Applies a partial update. Filter-field components emit patches instead of
+   * writing into `state` themselves, so the page stays the only writer.
+   */
+  patch: (next: Partial<T>) => void
   /** Resets the given keys (default: `filterKeys`) to their defaults. */
   reset: (keys?: readonly string[]) => void
   isDefault: ComputedRef<boolean>
@@ -200,5 +205,9 @@ export function useRouteQueryState<T extends object>(
     }
   }
 
-  return { state, reset, isDefault, activeFilterCount }
+  function patch(next: Partial<T>) {
+    Object.assign(state as object, next)
+  }
+
+  return { state, patch, reset, isDefault, activeFilterCount }
 }

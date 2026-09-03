@@ -91,6 +91,10 @@ const state = computed<"idle" | "loading" | "error" | "ready">(() => {
 
 // --- Filters + view options ------------------------------------------------------------
 const filters = reactive<EventRecordsFilterState>({ time: "year", from: undefined, to: undefined, types: [], units: [] })
+
+function patchFilters(next: Partial<EventRecordsFilterState>) {
+  Object.assign(filters, next)
+}
 const sort = useCatalogViewPreference<EventRecordSort>("event-records", "sort", () => "time", EVENT_RECORD_SORTS)
 
 const timeWindow = computed<{ from: number | null; to: number | null }>(() => {
@@ -312,7 +316,7 @@ function reloadAll() {
         @reset="resetFilters"
         @remove-chip="removeChip"
       >
-        <EventRecordsFilterFields :state="filters" :unit-color-map="null" />
+        <EventRecordsFilterFields :state="filters" :unit-color-map="null" @patch="patchFilters" />
       </CatalogFilterPanel>
 
       <EventRecordsSummary :items="summaryItems" />

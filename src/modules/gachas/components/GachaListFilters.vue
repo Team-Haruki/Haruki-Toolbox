@@ -11,8 +11,8 @@ import type { CatalogFieldOption, CatalogStatus } from "@/shared/components/cata
 import type { GachaListQuery } from "@/modules/gachas/lib/gachas-query"
 
 /**
- * The `/gachas` filter panel: type chips, status chips, year select and the
- * pickup character picker. Writes straight into the route-query state.
+ * The `/gachas` filter panel: type chips, status chips, year chips and the
+ * pickup character picker. Emits typed patches of the route-query state.
  */
 const props = defineProps<{
   state: GachaListQuery
@@ -28,6 +28,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  patch: [next: Partial<GachaListQuery>]
   reset: []
   removeChip: [key: string]
 }>()
@@ -41,13 +42,13 @@ const ANY_YEAR = "__any__"
 const yearModel = computed(() => (props.state.year == null ? ANY_YEAR : String(props.state.year)))
 
 function updateStatuses(values: string[]) {
-  props.state.status = values.filter((value): value is CatalogStatus => value === "upcoming" || value === "ongoing" || value === "ended")
+  emit("patch", { status: values.filter((value): value is CatalogStatus => value === "upcoming" || value === "ongoing" || value === "ended") })
 }
 
 function updateYear(value: AcceptableValue | AcceptableValue[] | undefined) {
   // The "all" chip, and deselecting the active year, both clear the filter.
   const parsed = typeof value === "string" ? Number(value) : Number.NaN
-  props.state.year = Number.isInteger(parsed) ? parsed : null
+  emit("patch", { year: Number.isInteger(parsed) ? parsed : null })
 }
 </script>
 
@@ -69,10 +70,11 @@ function updateYear(value: AcceptableValue | AcceptableValue[] | undefined) {
          hanging when a row is hidden. -->
     <div class="flex flex-wrap items-center gap-x-10 gap-y-3">
       <CatalogChipsField
-        v-model="state.type"
+        :model-value="state.type"
         :label="t('catalog.type.label')"
         :options="typeOptions"
         compact
+        @update:model-value="emit('patch', { type: $event })"
       />
       <CatalogChipsField
         :model-value="state.status"
@@ -101,10 +103,11 @@ function updateYear(value: AcceptableValue | AcceptableValue[] | undefined) {
       </div>
     </div>
     <CatalogCharacterPicker
-      v-model="state.chars"
+      :model-value="state.chars"
       :characters="characters"
       :unit-color-map="unitColorMap"
       :label="t('gachaCatalog.list.pickupCharacters')"
+      @update:model-value="emit('patch', { chars: $event })"
     />
   </CatalogFilterPanel>
 </template>

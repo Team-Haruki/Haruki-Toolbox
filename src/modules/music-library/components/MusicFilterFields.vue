@@ -21,9 +21,9 @@ import {
 import type { MusicQueryState } from "@/modules/music-library/lib/music-query"
 
 /**
- * The `/music` filter panel body. Writes straight into the page's reactive
- * query state (the URL is the state); the level slider only commits on
- * release so dragging does not churn the address bar.
+ * The `/music` filter panel body. Emits typed patches of the page's query
+ * state (the URL is the state); the level slider only commits on release so
+ * dragging does not churn the address bar.
  *
  * Laid out as two labelled groups of full-width rows rather than a column
  * grid: difficulty scopes both the level range and the note count
@@ -44,6 +44,10 @@ const props = defineProps<{
   hasCategories: boolean
 }>()
 
+const emit = defineEmits<{
+  patch: [next: Partial<MusicQueryState>]
+}>()
+
 const { t } = useI18n()
 const id = useId()
 
@@ -57,7 +61,7 @@ const difficultyModel = computed(() => props.state.diff ?? ANY_OPTION)
 function updateDifficulty(value: AcceptableValue | AcceptableValue[] | undefined) {
   // Anything that is not a difficulty — the "all" chip, or deselecting the
   // active one — clears the filter.
-  props.state.diff = typeof value === "string" && isMusicDifficulty(value) ? value : null
+  emit("patch", { diff: typeof value === "string" && isMusicDifficulty(value) ? value : null })
 }
 
 // --- Level range (two-thumb slider, committed on release) -------------------
@@ -89,8 +93,7 @@ function commitLevel(value: number[] | undefined) {
   const low = Math.min(value[0], value[1])
   const high = Math.max(value[0], value[1])
   const { min, max } = sliderBounds.value
-  props.state.lvmin = low <= min ? null : low
-  props.state.lvmax = high >= max ? null : high
+  emit("patch", { lvmin: low <= min ? null : low, lvmax: high >= max ? null : high })
 }
 
 function handleLevelInput(value: number[] | undefined) {
@@ -105,7 +108,7 @@ function updateNoteMode(value: AcceptableValue | AcceptableValue[] | undefined) 
   const mode = (MUSIC_NOTE_COUNT_FILTER_MODES as readonly string[]).includes(String(value))
     ? (value as MusicNoteCountFilterMode)
     : "exact"
-  props.state.notes = { ...props.state.notes, mode }
+  emit("patch", { notes: { ...props.state.notes, mode } })
 }
 
 function parseCount(raw: string): number | null {
@@ -119,7 +122,7 @@ function parseCount(raw: string): number | null {
 
 function updateNoteField(field: "exact" | "min" | "max", event: Event) {
   const raw = (event.target as HTMLInputElement).value
-  props.state.notes = { ...props.state.notes, [field]: parseCount(raw) }
+  emit("patch", { notes: { ...props.state.notes, [field]: parseCount(raw) } })
 }
 
 // --- Year -------------------------------------------------------------------
@@ -129,7 +132,7 @@ const yearModel = computed(() => (props.state.year == null ? ANY_OPTION : String
 function updateYear(value: AcceptableValue | AcceptableValue[] | undefined) {
   // The "all" chip, and deselecting the active year, both clear the filter.
   const parsed = typeof value === "string" ? Number(value) : Number.NaN
-  props.state.year = Number.isInteger(parsed) ? parsed : null
+  emit("patch", { year: Number.isInteger(parsed) ? parsed : null })
 }
 
 // --- Character + scope ------------------------------------------------------
@@ -137,16 +140,14 @@ function updateYear(value: AcceptableValue | AcceptableValue[] | undefined) {
 const pickerModel = computed<number[]>({
   get: () => props.state.chars,
   set: (ids) => {
-    props.state.chars = ids
-    if (ids.length === 0) {
-      props.state.scope = "any"
-    }
+    // The scope only qualifies a character pick; it resets with the last one.
+    emit("patch", ids.length === 0 ? { chars: ids, scope: "any" } : { chars: ids })
   },
 })
 
 function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
   if (typeof value === "string" && (MUSIC_CHARACTER_FILTER_SCOPES as readonly string[]).includes(value)) {
-    props.state.scope = value as MusicCharacterFilterScope
+    emit("patch", { scope: value as MusicCharacterFilterScope })
   }
 }
 </script>
@@ -267,7 +268,7 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
         <Switch
           :id="`${id}-append`"
           :model-value="state.append"
-          @update:model-value="state.append = $event"
+          @update:model-value="emit('patch', { append: $event })"
         />
         <Label :for="`${id}-append`" class="cursor-pointer text-xs font-normal text-muted-foreground">
           {{ t("musicCatalog.filters.appendOnly") }}
@@ -283,10 +284,11 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
     </p>
 
     <CatalogChipsField
-      v-model="state.tags"
+      :model-value="state.tags"
       :label="t('musicLibrary.list.filters.tag')"
       :options="tagOptions"
       compact
+      @update:model-value="emit('patch', { tags: $event })"
     />
 
     <div class="flex flex-wrap items-center gap-x-10 gap-y-3">
@@ -313,10 +315,11 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
 
       <CatalogChipsField
         v-if="hasCategories && categoryOptions.length > 0"
-        v-model="state.mv"
+        :model-value="state.mv"
         :label="t('musicCatalog.filters.mvType')"
         :options="categoryOptions"
         compact
+        @update:model-value="emit('patch', { mv: $event })"
       />
     </div>
 

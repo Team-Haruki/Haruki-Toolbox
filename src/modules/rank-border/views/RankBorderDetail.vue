@@ -686,7 +686,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
           <span v-if="regionLabel"> · {{ regionLabel }}</span>
         </div>
         <div class="ml-auto flex shrink-0 items-center gap-2">
-          <Select :model-value="String(intervalSeconds)" @update:model-value="updateInterval">
+          <Select :model-value="String(intervalSeconds)" :aria-label="t('rankBorder.fields.interval')" @update:model-value="updateInterval">
             <SelectTrigger class="h-8 w-28 text-xs" :aria-label="t('rankBorder.fields.interval')">
               <SelectValue />
             </SelectTrigger>
