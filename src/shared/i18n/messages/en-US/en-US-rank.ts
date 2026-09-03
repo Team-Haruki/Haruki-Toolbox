@@ -44,6 +44,7 @@ export default {
       "remove": "Remove {label}",
       "limitReached": "At most {max} comparison targets at once",
       "duplicateTarget": "This target is already being compared",
+      "selfTarget": "The page's own target can't be compared with itself",
       "tableTarget": "Target",
       "current": "Current",
       "apply": "Compare",

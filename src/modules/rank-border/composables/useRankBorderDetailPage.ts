@@ -16,6 +16,11 @@ import {
   type RankBorderTracePoint,
 } from "../lib/rank-border"
 import type { RankBorderDetailParams, RankBorderDetailTargetInput } from "../lib/detail-link"
+import {
+  isSelfComparisonTarget,
+  resolveComparisonSelfIdentity,
+  type ComparisonTargetKind,
+} from "../lib/comparison-target"
 import { TRACE_PAGE_LIMIT } from "../lib/rank-border-constants"
 
 export type DetailComparisonKind = "rank" | "line" | "user"
@@ -32,7 +37,7 @@ export type DetailPageComparison = {
   error: boolean
 }
 
-export type AddComparisonResult = "added" | "duplicate" | "limit" | "invalid"
+export type AddComparisonResult = "added" | "duplicate" | "limit" | "invalid" | "self"
 
 export const DETAIL_COMPARISON_LIMIT = 3
 
@@ -405,10 +410,20 @@ export function useRankBorderDetailPage(
 
   // --- Comparisons -------------------------------------------------------------
 
+  const selfIdentity = computed(() => resolveComparisonSelfIdentity(params.value?.target, current.value))
+
+  /** True when the target is the page's own seat / line / player. */
+  function isSelfComparison(kind: ComparisonTargetKind, query: string): boolean {
+    return isSelfComparisonTarget(selfIdentity.value, kind, query)
+  }
+
   function addComparisonTarget(kind: DetailComparisonKind, query: string, label: string): AddComparisonResult {
     const normalized = query.trim()
     if (!normalized) {
       return "invalid"
+    }
+    if (isSelfComparison(kind, normalized)) {
+      return "self"
     }
 
     const id = `${kind}:${normalized}`
@@ -591,6 +606,7 @@ export function useRankBorderDetailPage(
     setTraceSource,
     overview,
     comparisons,
+    isSelfComparison,
     addComparisonTarget,
     addComparisonPlayer,
     removeComparison,

@@ -22,6 +22,8 @@ withDefaults(defineProps<{
   svgClass: string
   chart: DetailMetricChart
   timeTicks: RankBorderChartTimeTick[]
+  /** Legend label for the main series (the page's own target). */
+  primaryLabel?: string | null
   comparisonMeta: Array<{ key: string; label: string; color: string }>
   plannerLines?: RankBorderScoreOverlayLine[]
   /** Shows the expand button and emits `expand` when pressed. */
@@ -32,6 +34,7 @@ withDefaults(defineProps<{
   moveTooltip: (event: MouseEvent) => void
   hideTooltip: () => void
 }>(), {
+  primaryLabel: null,
   plannerLines: () => [],
   expandable: false,
   large: false,
@@ -141,10 +144,16 @@ function pointStyle(point: RankBorderChartPoint) {
         {{ tick.label }}
       </span>
     </div>
+    <!-- The main series is only worth naming once there is something to tell
+         it apart from: overlays on the card, or the expanded dialog. -->
     <div
-      v-if="plannerLines.length > 0 || chart.comparisonPaths.length > 0"
+      v-if="plannerLines.length > 0 || chart.comparisonPaths.length > 0 || (large && primaryLabel)"
       class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground"
     >
+      <span v-if="primaryLabel" class="inline-flex items-center gap-1">
+        <span :class="['inline-block h-0.5 w-4 rounded-full bg-current', svgClass]" />
+        {{ primaryLabel }}
+      </span>
       <span
         v-for="(series, index) in chart.comparisonPaths"
         :key="`legend-${series.key}`"

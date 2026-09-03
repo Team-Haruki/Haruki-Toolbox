@@ -125,6 +125,7 @@ const {
   setTraceSource,
   overview,
   comparisons,
+  isSelfComparison,
   addComparisonTarget,
   addComparisonPlayer,
   removeComparison,
@@ -287,16 +288,21 @@ const comparisonChartSeries = computed(() =>
   })),
 )
 
+/** The page's own target as it appears in the comparison table and chart legends. */
+const primaryLabel = computed(() => {
+  if (isLineTarget.value) {
+    return formatTargetRank(params.value?.target.kind === "line" ? params.value.target.rank : null)
+  }
+  const name = current.value && isLatestResult(current.value) ? plainNameText(current.value.name) : null
+  return name ?? formatRank(current.value?.rank ?? null)
+})
+
 const comparisonRows = computed<ComparisonTableRow[]>(() => {
   const primaryScore = primaryStats.value.latest?.score ?? current.value?.score ?? null
-  const primaryLabel = isLineTarget.value
-    ? formatTargetRank(params.value?.target.kind === "line" ? params.value.target.rank : null)
-    : (current.value && isLatestResult(current.value) ? current.value.name : null)
-      ?? formatRank(current.value?.rank ?? null)
 
   const primaryRow: ComparisonTableRow = {
     id: "primary",
-    label: primaryLabel,
+    label: primaryLabel.value,
     color: null,
     removable: false,
     loading: false,
@@ -351,15 +357,19 @@ const comparisonTargetOptions = computed<ComboboxOption[]>(() => {
     return []
   }
 
-  const seatOptions = data.topRankings.map((entry) => {
-    const name = plainNameText(entry.name)
-    return {
-      value: `rank:${entry.rank}`,
-      label: name ? `#${entry.rank} ${name}` : `#${entry.rank}`,
-      keywords: [`t${entry.rank}`, `#${entry.rank}`, String(entry.rank), name ?? ""],
-    }
-  })
-  const lineOptions = data.borderLines.map((line) => ({
+  // The page's own seat / line / player is not a comparison target.
+  const seatOptions = data.topRankings
+    .filter((entry) => !isSelfComparison("rank", String(entry.rank))
+      && !(entry.userId != null && isSelfComparison("user", entry.userId)))
+    .map((entry) => {
+      const name = plainNameText(entry.name)
+      return {
+        value: `rank:${entry.rank}`,
+        label: name ? `#${entry.rank} ${name}` : `#${entry.rank}`,
+        keywords: [`t${entry.rank}`, `#${entry.rank}`, String(entry.rank), name ?? ""],
+      }
+    })
+  const lineOptions = data.borderLines.filter((line) => !isSelfComparison("line", String(line.rank))).map((line) => ({
     value: `line:${line.rank}`,
     label: `T${line.rank}`,
     tags: [{
@@ -398,6 +408,8 @@ function reportAddResult(result: ReturnType<typeof addComparisonTarget>) {
     toast.warning(t("rankBorder.comparison.limitReached", { max: DETAIL_COMPARISON_LIMIT }))
   } else if (result === "duplicate") {
     toast.info(t("rankBorder.comparison.duplicateTarget"))
+  } else if (result === "self") {
+    toast.info(t("rankBorder.comparison.selfTarget"))
   } else if (result === "invalid") {
     toast.warning(t("rankBorder.result.invalidLocator"))
   }
@@ -804,6 +816,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
             svg-class="text-sky-600 dark:text-sky-300"
             :chart="detailCharts.rank"
             :time-ticks="detailCharts.timeTicks"
+            :primary-label="primaryLabel"
             :comparison-meta="comparisonMeta"
             expandable
             :show-tooltip="showTooltip"
@@ -817,6 +830,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
             svg-class="text-cyan-600 dark:text-cyan-300"
             :chart="detailCharts.score"
             :time-ticks="detailCharts.timeTicks"
+            :primary-label="primaryLabel"
             :comparison-meta="comparisonMeta"
             :planner-lines="detailCharts.plannerLines"
             expandable
@@ -845,6 +859,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
             svg-class="text-emerald-600 dark:text-emerald-300"
             :chart="detailCharts.speed"
             :time-ticks="detailCharts.timeTicks"
+            :primary-label="primaryLabel"
             :comparison-meta="comparisonMeta"
             expandable
             :show-tooltip="showTooltip"
@@ -875,7 +890,8 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
               :svg-class="chartMeta[expandedMetric].svgClass"
               :chart="expandedCharts[expandedMetric]"
               :time-ticks="expandedCharts.timeTicks"
-              :comparison-meta="comparisonMeta"
+              :primary-label="primaryLabel"
+            :comparison-meta="comparisonMeta"
               :planner-lines="expandedMetric === 'score' ? expandedCharts.plannerLines : []"
               :show-tooltip="showTooltip"
               :move-tooltip="moveTooltip"
