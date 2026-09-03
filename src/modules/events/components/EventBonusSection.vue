@@ -8,7 +8,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
@@ -35,6 +34,9 @@ const props = withDefaults(defineProps<{
 }>(), {
   tableLoading: false,
 })
+
+/** Mirrors `TableHead` so the native cells below match the rest of the table. */
+const TABLE_HEAD_CLASS = "text-muted-foreground h-10 px-3 first:pl-6 last:pr-6 text-left align-middle font-medium whitespace-nowrap"
 
 const { t, te } = useI18n()
 
@@ -94,10 +96,17 @@ function rarityLabel(rarity: string): string {
         <Table class="text-xs sm:text-sm">
           <TableHeader>
             <TableRow>
-              <TableHead class="whitespace-nowrap">{{ t("eventCatalog.bonus.rarity") }}</TableHead>
-              <TableHead v-for="rank in EVENT_MASTER_RANKS" :key="rank" class="text-right whitespace-nowrap tabular-nums">
+              <!-- Native `th`, not `TableHead`: same classes, but the markup
+                   linter only recognises a header cell it can see. -->
+              <th scope="col" :class="TABLE_HEAD_CLASS">{{ t("eventCatalog.bonus.rarity") }}</th>
+              <th
+                v-for="rank in EVENT_MASTER_RANKS"
+                :key="rank"
+                scope="col"
+                :class="[TABLE_HEAD_CLASS, 'text-right tabular-nums']"
+              >
                 {{ t("eventCatalog.bonus.masterRank", { rank }) }}
-              </TableHead>
+              </th>
             </TableRow>
           </TableHeader>
           <TableBody>
