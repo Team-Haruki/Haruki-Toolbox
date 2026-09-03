@@ -44,6 +44,7 @@ export default {
       "remove": "移除 {label}",
       "limitReached": "最多同時對比 {max} 個物件",
       "duplicateTarget": "該物件已在對比列表中",
+      "selfTarget": "頁面主體本身不能作為對比物件",
       "tableTarget": "物件",
       "current": "當前",
       "apply": "對比",

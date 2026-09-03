@@ -44,6 +44,7 @@ export default {
       "remove": "移除 {label}",
       "limitReached": "最多同时对比 {max} 个对象",
       "duplicateTarget": "该对象已在对比列表中",
+      "selfTarget": "页面主体本身不能作为对比对象",
       "tableTarget": "对象",
       "current": "当前",
       "apply": "对比",
