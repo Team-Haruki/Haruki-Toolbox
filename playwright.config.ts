@@ -27,5 +27,10 @@ export default defineConfig({
     url: "http://127.0.0.1:4173",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // On CI the dev server's own log lands in the job output, so a dependency
+    // re-optimisation or a forced page reload mid-suite is visible next to
+    // the test that it broke.
+    stdout: process.env.CI ? "pipe" : "ignore",
+    stderr: "pipe",
   },
 })
