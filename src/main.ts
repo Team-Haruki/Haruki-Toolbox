@@ -14,6 +14,9 @@ import { bootstrapUserSettingsFromKratosSession } from "@/modules/auth/lib/krato
 import { registerAppServiceWorker } from "@/pwa";
 import { isRestrictedBrowser } from "@/lib/restricted-browser";
 
+/** Longest the splash waits for the session bootstrap before mounting anyway. */
+const SESSION_BOOTSTRAP_WAIT_MS = 4000
+
 if (isRestrictedBrowser()) {
     await setI18nLocale(DEFAULT_LOCALE)
     createApp(UnsupportedBrowserPage)
@@ -44,29 +47,40 @@ if (isRestrictedBrowser()) {
     setupInterceptors(router)
     userStore.checkExpiration()
     const hadCachedUserContext = userStore.isLoggedIn || !!userStore.userId
-    try {
-        const { sessionUser, fullUser, hasKratosSession } = await bootstrapUserSettingsFromKratosSession()
-        if (fullUser) {
-            userStore.clearUser()
-            userStore.setUser(fullUser)
-            userStore.setSessionActive(true)
-            userStore.setSettingsSyncState("synced")
-        } else if (sessionUser) {
-            // The `whoami` fallback is intentionally partial, so keep cached toolbox fields
-            // until the post-login settings sync can refresh them.
-            userStore.setUser(sessionUser, { resetExpiration: false })
-            userStore.setSessionActive(true)
-            userStore.setSettingsSyncState("loading")
-        } else if (hasKratosSession === false) {
-            userStore.clearUser()
-        } else {
-            userStore.setSessionActive(false)
-        }
-    } catch {
-        if (!hadCachedUserContext) {
-            userStore.clearUser()
-        }
-    }
+    const sessionBootstrap = bootstrapUserSettingsFromKratosSession().then(
+        ({ sessionUser, fullUser, hasKratosSession }) => {
+            if (fullUser) {
+                userStore.clearUser()
+                userStore.setUser(fullUser)
+                userStore.setSessionActive(true)
+                userStore.setSettingsSyncState("synced")
+            } else if (sessionUser) {
+                // The `whoami` fallback is intentionally partial, so keep cached toolbox fields
+                // until the post-login settings sync can refresh them.
+                userStore.setUser(sessionUser, { resetExpiration: false })
+                userStore.setSessionActive(true)
+                userStore.setSettingsSyncState("loading")
+            } else if (hasKratosSession === false) {
+                userStore.clearUser()
+            } else {
+                userStore.setSessionActive(false)
+            }
+        },
+        () => {
+            if (!hadCachedUserContext) {
+                userStore.clearUser()
+            }
+        },
+    )
+    // The bootstrap talks to the backend before first paint, with a 60s
+    // request timeout and a retry behind it. Cap the wait: past this the app
+    // mounts with whatever context is cached and the result is applied when
+    // it lands (App.vue reacts to the store), so an unreachable backend costs
+    // a late sync rather than a blank splash for minutes.
+    await Promise.race([
+        sessionBootstrap,
+        new Promise<void>((resolve) => setTimeout(resolve, SESSION_BOOTSTRAP_WAIT_MS)),
+    ])
     app.use(i18n)
     app.use(router)
     app.mount('#app')

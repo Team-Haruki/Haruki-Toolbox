@@ -70,3 +70,14 @@ jobs:
 
       - name: Run E2E
         run: bun run e2e
+
+      # Traces are recorded on the first retry, so a flaky test leaves one
+      # behind even when the job ends green; keep them for diagnosis.
+      - name: Upload Playwright traces
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-test-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
