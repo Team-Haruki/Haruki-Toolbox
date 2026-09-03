@@ -46,6 +46,7 @@ export default {
       "duplicateTarget": "該物件已在對比列表中",
       "selfTarget": "頁面主體本身不能作為對比物件",
       "tableTarget": "物件",
+      "tableActions": "操作",
       "current": "當前",
       "apply": "對比",
       "loading": "正在載入 {rank} 的對比資料...",

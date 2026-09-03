@@ -125,7 +125,7 @@ function submitPlayer() {
               <th>{{ t("rankBorder.result.latestPointGrowth") }}</th>
               <th>{{ t("rankBorder.result.twentyMinTripleSpeed") }}</th>
               <th>{{ t("rankBorder.result.loopCount") }}</th>
-              <th aria-hidden="true" />
+              <th><span class="sr-only">{{ t("rankBorder.comparison.tableActions") }}</span></th>
             </tr>
           </thead>
           <tbody>

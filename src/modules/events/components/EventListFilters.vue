@@ -19,9 +19,9 @@ import { isSekaiEventType, SEKAI_EVENT_TYPES } from "@/modules/events/lib/event-
 import type { EventsQueryState } from "@/modules/events/lib/event-query"
 
 /**
- * The `/events` filter fields, bound straight to the route query state.
- * Each chip row writes back through a typed setter so a stray value can
- * never enter the URL.
+ * The `/events` filter fields. Each chip row emits a typed patch of the
+ * route query state so a stray value can never enter the URL; the page
+ * applies the patch.
  */
 const props = withDefaults(defineProps<{
   state: EventsQueryState
@@ -31,6 +31,10 @@ const props = withDefaults(defineProps<{
 }>(), {
   unitColorMap: null,
 })
+
+const emit = defineEmits<{
+  patch: [next: Partial<EventsQueryState>]
+}>()
 
 const { t, te } = useI18n()
 const id = useId()
@@ -49,35 +53,35 @@ function isAttr(value: string): value is SekaiCardAttr {
 const typeModel = computed<string[]>({
   get: () => props.state.type,
   set: (value) => {
-    props.state.type = value.filter(isSekaiEventType)
+    emit("patch", { type: value.filter(isSekaiEventType) })
   },
 })
 
 const statusModel = computed<string[]>({
   get: () => props.state.status,
   set: (value) => {
-    props.state.status = value.filter(isCatalogStatus)
+    emit("patch", { status: value.filter(isCatalogStatus) })
   },
 })
 
 const unitModel = computed<string[]>({
   get: () => props.state.units,
   set: (value) => {
-    props.state.units = value.filter(isUnit)
+    emit("patch", { units: value.filter(isUnit) })
   },
 })
 
 const attrModel = computed<string[]>({
   get: () => props.state.attrs,
   set: (value) => {
-    props.state.attrs = value.filter(isAttr)
+    emit("patch", { attrs: value.filter(isAttr) })
   },
 })
 
 const charsModel = computed<number[]>({
   get: () => props.state.chars,
   set: (value) => {
-    props.state.chars = value
+    emit("patch", { chars: value })
   },
 })
 
@@ -86,7 +90,7 @@ const yearModel = computed(() => (props.state.year == null ? ANY_YEAR : String(p
 function setYear(value: AcceptableValue | AcceptableValue[] | undefined) {
   // The "all" chip, and deselecting the active year, both clear the filter.
   const parsed = typeof value === "string" ? Number(value) : Number.NaN
-  props.state.year = Number.isInteger(parsed) ? parsed : null
+  emit("patch", { year: Number.isInteger(parsed) ? parsed : null })
 }
 
 const typeOptions = computed<CatalogFieldOption[]>(() =>

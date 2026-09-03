@@ -84,7 +84,7 @@ const {
 } = useMusicCatalogList(region)
 
 // The URL is the state; layout preferences stay on the device.
-const { state, reset, activeFilterCount } = useRouteQueryState(musicQueryCodec, {
+const { state, patch, reset, activeFilterCount } = useRouteQueryState(musicQueryCodec, {
   debounceKeys: ["q"],
   pageKey: "page",
   pageNeutralKeys: ["size"],
@@ -207,6 +207,7 @@ function handleViewUpdate(value: string) {
       >
         <MusicFilterFields
           :state="state"
+          @patch="patch"
           :difficulty-options="difficultyOptions"
           :tag-options="tagOptions"
           :category-options="categoryOptions"

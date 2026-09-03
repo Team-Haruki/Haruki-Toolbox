@@ -97,6 +97,19 @@ describe("useRouteQueryState", () => {
     ctx.scope.stop()
   })
 
+  test("patch applies a partial update and writes it like a direct assignment", async () => {
+    const ctx = await setup("/cards?page=3")
+    ctx.patch({ ids: [7, 8], sort: "id" })
+    await settle()
+    expect(ctx.state.ids).toEqual([7, 8])
+    expect(ctx.state.sort).toBe("id")
+    expect(ctx.query().ids).toBe("7,8")
+    expect(ctx.query().sort).toBe("id")
+    // A filter change resets the page in the same write.
+    expect(ctx.query().page).toBeUndefined()
+    ctx.scope.stop()
+  })
+
   test("writes non-debounced changes immediately and omits defaults", async () => {
     const ctx = await setup("/cards")
     ctx.state.ids = [5]

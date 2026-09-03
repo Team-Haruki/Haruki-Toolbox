@@ -163,7 +163,7 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
           />
         </div>
 
-        <Select :model-value="selectedRegion" :disabled="masterOptions.loading.value" @update:model-value="updateRegion">
+        <Select :model-value="selectedRegion" :disabled="masterOptions.loading.value" :aria-label="t('rankBorder.fields.region')" @update:model-value="updateRegion">
           <SelectTrigger class="rank-border-toolbar-field" :aria-label="t('rankBorder.fields.region')">
             <SelectValue />
           </SelectTrigger>
@@ -174,7 +174,7 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
           </SelectContent>
         </Select>
 
-        <Select :model-value="mode" @update:model-value="updateMode">
+        <Select :model-value="mode" :aria-label="t('rankBorder.fields.mode')" @update:model-value="updateMode">
           <SelectTrigger class="rank-border-toolbar-field" :aria-label="t('rankBorder.fields.mode')">
             <SelectValue />
           </SelectTrigger>
@@ -188,6 +188,7 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
         <Select
           v-if="mode === 'world_bloom'"
           :model-value="selectedWorldBloomCharacterId ?? undefined"
+          :aria-label="t('rankBorder.fields.worldBloomCharacter')"
           @update:model-value="updateWorldBloomCharacter"
         >
           <SelectTrigger class="rank-border-toolbar-field rank-border-toolbar-field--wl" :aria-label="t('rankBorder.fields.worldBloomCharacter')">
@@ -209,7 +210,7 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
           </SelectContent>
         </Select>
 
-        <Select :model-value="intervalSeconds" @update:model-value="updateInterval">
+        <Select :model-value="intervalSeconds" :aria-label="t('rankBorder.fields.interval')" @update:model-value="updateInterval">
           <SelectTrigger class="rank-border-toolbar-field" :aria-label="t('rankBorder.fields.interval')">
             <SelectValue />
           </SelectTrigger>

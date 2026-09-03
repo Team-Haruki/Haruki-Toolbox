@@ -51,7 +51,7 @@ const list = useCardsList()
 const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
 const now = useNowTick(60_000)
 
-const { state, reset, activeFilterCount } = useRouteQueryState(cardsQueryCodec, {
+const { state, patch, reset, activeFilterCount } = useRouteQueryState(cardsQueryCodec, {
   debounceKeys: ["q"],
   pageKey: "page",
   pageNeutralKeys: ["size"],
@@ -164,6 +164,7 @@ function setArtMode(value: AcceptableValue | AcceptableValue[] | undefined) {
       >
         <CardListFilters
           :state="state"
+          @patch="patch"
           :characters="list.characters.value"
           :unit-color-map="list.unitColorMap.value"
           :years="years"

@@ -46,6 +46,7 @@ export default {
       "duplicateTarget": "This target is already being compared",
       "selfTarget": "The page's own target can't be compared with itself",
       "tableTarget": "Target",
+      "tableActions": "Actions",
       "current": "Current",
       "apply": "Compare",
       "loading": "Loading comparison data for {rank}...",

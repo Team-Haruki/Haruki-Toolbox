@@ -185,6 +185,55 @@ export function useRankBorderDetailPage(
     return normalizeRankBorderTraceTimeline([...existing, ...fresh])
   }
 
+  function clearTargetState() {
+    current.value = null
+    previous.value = null
+    next.value = null
+    playerTrace.value = []
+    borderTrace.value = []
+  }
+
+  function resolveCachedTraceSource(target: RankBorderDetailTargetInput, cached: DetailTargetCacheEntry): "player" | "border" {
+    if (target.kind === "line" || cached.playerTrace.length < 2) {
+      return "border"
+    }
+    return traceSource.value === "border" && cached.borderTrace.length >= 2 ? "border" : "player"
+  }
+
+  /** Repaints from module memory; false (and a cleared page) when nothing is cached. */
+  function hydrateTargetFromCache(target: RankBorderDetailTargetInput, cacheKey: string | null): boolean {
+    const cached = cacheKey ? detailTargetCache.get(cacheKey) : undefined
+    if (!cached) {
+      clearTargetState()
+      return false
+    }
+    current.value = cached.current
+    previous.value = cached.previous
+    next.value = cached.next
+    playerTrace.value = cached.playerTrace
+    borderTrace.value = cached.borderTrace
+    traceSource.value = resolveCachedTraceSource(target, cached)
+    return true
+  }
+
+  function settleTargetLoad() {
+    if (!current.value && playerTrace.value.length === 0 && borderTrace.value.length === 0) {
+      error.value = "not_found"
+      return
+    }
+    error.value = null
+    writeTargetCache()
+  }
+
+  function failTargetLoad(loadError: unknown, silent: boolean) {
+    if (!silent) {
+      current.value = null
+      playerTrace.value = []
+      borderTrace.value = []
+    }
+    error.value = loadError instanceof Error ? loadError.message : String(loadError)
+  }
+
   async function loadTarget(options: { hydrateFromCache?: boolean; silent?: boolean } = {}) {
     const activeScope = scope.value
     const target = params.value?.target
@@ -196,27 +245,7 @@ export function useRankBorderDetailPage(
       return
     }
 
-    const cacheKey = targetCacheKey()
-    let hydrated = false
-    if (options.hydrateFromCache && cacheKey) {
-      const cached = detailTargetCache.get(cacheKey)
-      if (cached) {
-        current.value = cached.current
-        previous.value = cached.previous
-        next.value = cached.next
-        playerTrace.value = cached.playerTrace
-        borderTrace.value = cached.borderTrace
-        traceSource.value = target.kind === "line" || cached.playerTrace.length < 2 ? "border" : traceSource.value === "border" && cached.borderTrace.length >= 2 ? "border" : "player"
-        hydrated = true
-      } else {
-        current.value = null
-        previous.value = null
-        next.value = null
-        playerTrace.value = []
-        borderTrace.value = []
-      }
-    }
-
+    const hydrated = options.hydrateFromCache === true && hydrateTargetFromCache(target, targetCacheKey())
     const silent = options.silent ?? hydrated
     const incremental = hydrated || (options.silent === true && playerTrace.value.length + borderTrace.value.length > 0)
     if (!silent) {
@@ -224,30 +253,16 @@ export function useRankBorderDetailPage(
       error.value = null
     }
     try {
-      if (target.kind === "user") {
-        await loadUserTarget(activeScope, target, token, incremental)
-      } else {
-        await loadRankTarget(activeScope, target, token, incremental)
-      }
-      if (token !== requestToken) {
-        return
-      }
-      if (!current.value && playerTrace.value.length === 0 && borderTrace.value.length === 0) {
-        error.value = "not_found"
-      } else {
-        error.value = null
-        writeTargetCache()
+      await (target.kind === "user"
+        ? loadUserTarget(activeScope, target, token, incremental)
+        : loadRankTarget(activeScope, target, token, incremental))
+      if (token === requestToken) {
+        settleTargetLoad()
       }
     } catch (loadError) {
-      if (token !== requestToken) {
-        return
+      if (token === requestToken) {
+        failTargetLoad(loadError, silent)
       }
-      if (!silent) {
-        current.value = null
-        playerTrace.value = []
-        borderTrace.value = []
-      }
-      error.value = loadError instanceof Error ? loadError.message : String(loadError)
     } finally {
       if (token === requestToken && !silent) {
         loading.value = false

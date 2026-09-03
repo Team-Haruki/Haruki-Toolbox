@@ -38,6 +38,7 @@ import {
   buildUnitDistribution,
   countActiveCardBoxFilters,
   createCardBoxFilters,
+  type CardBoxFilters,
   filterReleasedCards,
   groupCardsByAttr,
   groupCardsByCharacter,
@@ -87,6 +88,10 @@ const {
 // Filters are per visit; grouping and sort are remembered like the catalog's
 // view preferences.
 const filters = reactive(createCardBoxFilters())
+
+function patchFilters(next: Partial<CardBoxFilters>) {
+  Object.assign(filters, next)
+}
 const groupMode = useCatalogViewPreference<CardBoxGroupMode>("card-box", "group", () => "character", CARD_BOX_GROUP_MODES)
 const sort = useCatalogViewPreference<CardBoxSort>("card-box", "sort", () => "id", CARD_BOX_SORTS)
 const collapsedKeys = ref<Set<string>>(new Set())
@@ -526,7 +531,7 @@ function retry() {
         @reset="resetFilters"
         @remove-chip="removeChip"
       >
-        <CardBoxFilterFields :state="filters" :characters="characters" :unit-color-map="unitColorMap" />
+        <CardBoxFilterFields :state="filters" :characters="characters" :unit-color-map="unitColorMap" @patch="patchFilters" />
       </CatalogFilterPanel>
 
       <CardBoxOverview :summary="overall" :groups="overviewGroups" />
