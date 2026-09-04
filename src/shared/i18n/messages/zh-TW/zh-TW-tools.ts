@@ -13,7 +13,7 @@ export default {
       "sections": {
         "identity": {
           "title": "基礎身份",
-          "description": "填寫本地監聽埠、Bot ID、登入憑證和可選加密引數。"
+          "description": "填寫本地監聽埠、Bot ID、登入憑證和可選安全校驗引數。"
         },
         "routing": {
           "title": "網路路由",
@@ -21,7 +21,7 @@ export default {
         },
         "runtime": {
           "title": "執行策略",
-          "description": "控制幫助、國服功能、回覆引用和全域性指令限流。"
+          "description": "控制私聊響應、幫助、國服功能、回覆引用和全域性指令限流。"
         },
         "modules": {
           "title": "模組與功能範圍",
@@ -51,13 +51,17 @@ export default {
           "label": "登入憑證",
           "placeholder": "貼上 Haruki Client credential"
         },
-        "authEncryptionKey": {
-          "label": "認證加密金鑰",
-          "placeholder": "可留空，或填 64 位 hex AES-256 key"
-        },
         "noiseServerPubkey": {
           "label": "Noise 服務端公鑰",
-          "placeholder": "通常由認證響應自動獲取，可留空"
+          "placeholder": "留空使用 client 內建預設公鑰"
+        },
+        "noiseServerKeyId": {
+          "label": "Noise 公鑰 Key ID",
+          "placeholder": "使用內建公鑰時留空"
+        },
+        "trustRootPubkey": {
+          "label": "信任根 Ed25519 公鑰",
+          "placeholder": "留空使用 client 內建根公鑰"
         },
         "controlApiAccessToken": {
           "label": "控制 API 訪問令牌",
@@ -71,8 +75,12 @@ export default {
         },
         "routingConfigURL": {
           "label": "動態路由配置 URL",
-          "placeholder": "留空使用 client 內建 EdgeOne 預設地址",
+          "placeholder": "留空使用 client 內建 routing-v3.json 地址",
           "help": "用於生產/備用節點 failover。固定端點非空時不會生效。"
+        },
+        "enableDynamicRouting": {
+          "label": "啟用動態路由",
+          "description": "預設開啟；關閉後僅使用 client 內建端點和 keyset 允許的端點。"
         },
         "runMode": {
           "label": "執行模式",
@@ -91,6 +99,19 @@ export default {
         },
         "globalCommandDailyLimit": {
           "label": "每日上限"
+        },
+        "mysekaiBirthdayMonitorMode": {
+          "label": "生日材料推送模式",
+          "placeholder": "選擇名單模式",
+          "help": "只控制生日材料監聽推送，不影響普通指令的執行模式。"
+        },
+        "mysekaiBirthdayMonitorBlacklist": {
+          "label": "生日推送群黑名單",
+          "placeholder": "每行或用逗號填寫一個群號"
+        },
+        "mysekaiBirthdayMonitorWhitelist": {
+          "label": "生日推送群白名單",
+          "placeholder": "每行或用逗號填寫一個群號"
         },
         "enableModules": {
           "label": "啟用模組",
@@ -129,6 +150,10 @@ export default {
           "label": "國服功能",
           "description": "啟用 CN 相關功能。"
         },
+        "enablePrivateMessage": {
+          "label": "響應私聊指令",
+          "description": "私聊不受群黑白名單限制，但仍受使用者黑名單和限流約束。"
+        },
         "enableReplyMessage": {
           "label": "引用回覆",
           "description": "回覆結果時引用原訊息。"
@@ -144,6 +169,10 @@ export default {
         "enableParamEcho": {
           "label": "引數錯誤回顯",
           "description": "Cloud 引數解析錯誤時允許回顯具體引數。"
+        },
+        "strictConfigPermissions": {
+          "label": "嚴格檢查配置許可權",
+          "description": "若 configs.yaml 可被同組或其他使用者讀取則拒絕啟動；啟用後請設為 0600。"
         }
       },
       "actions": {
@@ -192,8 +221,10 @@ export default {
       "routingState": {
         "dynamic": "當前使用動態路由",
         "pinned": "當前固定服務端端點",
-        "dynamicDescription": "serverEndpointOverride 為空時，client 會讀取 routingConfigURL；routingConfigURL 為空則使用內建 EdgeOne 預設地址。",
-        "pinnedDescription": "serverEndpointOverride 非空時，client 會直接使用該端點，不再讀取動態路由配置。"
+        "builtIn": "當前使用內建端點",
+        "dynamicDescription": "client 會讀取 routingConfigURL；留空時使用內建 EdgeOne routing-v3.json 地址。",
+        "pinnedDescription": "serverEndpointOverride 非空時，client 會直接使用該端點，不再讀取動態路由配置。",
+        "builtInDescription": "動態路由已關閉，client 只使用內建端點和 keyset 允許的端點。"
       },
       "preview": {
         "title": "configs.yaml 預覽",
@@ -210,7 +241,7 @@ export default {
         "title": "填寫說明",
         "description": "生成器只在瀏覽器本地處理內容，不會提交憑證。",
         "items": {
-          "dynamicRouting": "routingConfigURL 是新版 client 的動態路由入口，留空即可走預設生產配置。",
+          "dynamicRouting": "新版 client 預設啟用動態路由；routingConfigURL 留空即可使用內建 routing-v3.json。",
           "accessToken": "controlApiAccessToken 不需要鑑權時保持關閉，YAML 會寫成 null。",
           "listSyntax": "名單可以逐行新增 scope 和群號/QQ，生成器會自動合併為 client 需要的 YAML。"
         }

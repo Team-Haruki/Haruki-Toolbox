@@ -10,17 +10,24 @@ export interface ClientConfigForm {
   useControlApiAccessToken: boolean
   botId: number
   credential: string
-  authEncryptionKey: string
   noiseServerPubkey: string
+  noiseServerKeyId: string
+  trustRootPubkey: string
   serverEndpointOverride: string
+  enableDynamicRouting: boolean
   routingConfigURL: string
   enableHelp: boolean
   helpContent: string
   enableCN: boolean
+  enablePrivateMessage: boolean
   enableReplyMessage: boolean
   sendBase64Image: boolean
   mysekaiBirthdayMonitorNotifyEmpty: boolean
+  mysekaiBirthdayMonitorMode: ClientRunMode
+  mysekaiBirthdayMonitorBlacklistText: string
+  mysekaiBirthdayMonitorWhitelistText: string
   enableParamEcho: boolean
+  strictConfigPermissions: boolean
   enableGroupCommandLimit: boolean
   globalCommandHourlyLimit: number
   globalCommandDailyLimit: number
@@ -41,17 +48,24 @@ export const DEFAULT_CLIENT_CONFIG_FORM: ClientConfigForm = {
   useControlApiAccessToken: false,
   botId: 0,
   credential: "",
-  authEncryptionKey: "",
   noiseServerPubkey: "",
+  noiseServerKeyId: "",
+  trustRootPubkey: "",
   serverEndpointOverride: "",
+  enableDynamicRouting: true,
   routingConfigURL: "",
   enableHelp: true,
   helpContent: "",
   enableCN: true,
+  enablePrivateMessage: true,
   enableReplyMessage: false,
   sendBase64Image: false,
   mysekaiBirthdayMonitorNotifyEmpty: false,
+  mysekaiBirthdayMonitorMode: "blacklist",
+  mysekaiBirthdayMonitorBlacklistText: "",
+  mysekaiBirthdayMonitorWhitelistText: "",
   enableParamEcho: false,
+  strictConfigPermissions: false,
   enableGroupCommandLimit: false,
   globalCommandHourlyLimit: 0,
   globalCommandDailyLimit: 0,
@@ -96,6 +110,8 @@ export interface ParsedClientConfigLists {
   blacklists: Record<string, number[]>
   whitelists: Record<string, number[]>
   userBlacklists: Record<string, number[]>
+  mysekaiBirthdayMonitorBlacklist: number[]
+  mysekaiBirthdayMonitorWhitelist: number[]
   botAdmins: number[]
 }
 
@@ -140,27 +156,34 @@ export function buildClientConfigYaml(form: ClientConfigForm): ClientConfigBuild
       : "controlApiAccessToken: null",
     `botId: ${normalizeInteger(form.botId, 0)}`,
     `credential: ${quoteYamlString(form.credential)}`,
-    `authEncryptionKey: ${quoteYamlString(form.authEncryptionKey)}`,
     `noiseServerPubkey: ${quoteYamlString(form.noiseServerPubkey)}`,
+    `noiseServerKeyId: ${quoteYamlString(form.noiseServerKeyId)}`,
+    `trustRootPubkey: ${quoteYamlString(form.trustRootPubkey)}`,
     `serverEndpointOverride: ${quoteYamlString(form.serverEndpointOverride)}`,
+    `enableDynamicRouting: ${form.enableDynamicRouting}`,
     `routingConfigURL: ${quoteYamlString(form.routingConfigURL)}`,
     `enableHelp: ${form.enableHelp}`,
     `helpContent: ${quoteYamlString(form.helpContent)}`,
     `enableCN: ${form.enableCN}`,
-    `enableReplyMessage: ${form.enableReplyMessage}`,
-    `sendBase64Image: ${form.sendBase64Image}`,
-    `mysekaiBirthdayMonitorNotifyEmpty: ${form.mysekaiBirthdayMonitorNotifyEmpty}`,
-    `enableParamEcho: ${form.enableParamEcho}`,
     `enableGroupCommandLimit: ${form.enableGroupCommandLimit}`,
     `globalCommandHourlyLimit: ${normalizeInteger(form.globalCommandHourlyLimit, 0)}`,
     `globalCommandDailyLimit: ${normalizeInteger(form.globalCommandDailyLimit, 0)}`,
     `runMode: ${form.runMode}`,
-    formatYamlStringList("enableModules", parsed.enableModules),
+    `enablePrivateMessage: ${form.enablePrivateMessage}`,
     formatYamlPolicyModes("featurePolicyModes", parsed.featurePolicyModes),
+    `enableReplyMessage: ${form.enableReplyMessage}`,
+    `sendBase64Image: ${form.sendBase64Image}`,
+    `mysekaiBirthdayMonitorNotifyEmpty: ${form.mysekaiBirthdayMonitorNotifyEmpty}`,
+    `mysekaiBirthdayMonitorMode: ${form.mysekaiBirthdayMonitorMode}`,
+    formatYamlNumberList("mysekaiBirthdayMonitorBlacklist", parsed.mysekaiBirthdayMonitorBlacklist),
+    formatYamlNumberList("mysekaiBirthdayMonitorWhitelist", parsed.mysekaiBirthdayMonitorWhitelist),
+    `enableParamEcho: ${form.enableParamEcho}`,
+    `strictConfigPermissions: ${form.strictConfigPermissions}`,
+    formatYamlNumberList("botAdmins", parsed.botAdmins),
+    formatYamlStringList("enableModules", parsed.enableModules),
     formatYamlNumberMap("blacklists", parsed.blacklists),
     formatYamlNumberMap("whitelists", parsed.whitelists),
     formatYamlNumberMap("userBlacklists", parsed.userBlacklists),
-    formatYamlNumberList("botAdmins", parsed.botAdmins),
   ]
 
   return {
@@ -176,6 +199,8 @@ export function parseClientConfigLists(form: ClientConfigForm): ParsedClientConf
     blacklists: ensureAllScope(parseNumberMap(form.blacklistsText)),
     whitelists: ensureAllScope(parseNumberMap(form.whitelistsText)),
     userBlacklists: ensureAllScope(parseNumberMap(form.userBlacklistsText)),
+    mysekaiBirthdayMonitorBlacklist: parseNumberList(form.mysekaiBirthdayMonitorBlacklistText),
+    mysekaiBirthdayMonitorWhitelist: parseNumberList(form.mysekaiBirthdayMonitorWhitelistText),
     botAdmins: parseNumberList(form.botAdminsText),
   }
 }

@@ -100,7 +100,30 @@ const enabledModuleCount = computed(() => generated.value.parsed.enableModules.l
 const adminCount = computed(() => generated.value.parsed.botAdmins.length)
 const scopedPolicyCount = computed(() => Object.keys(generated.value.parsed.featurePolicyModes).length)
 const pinnedEndpoint = computed(() => form.serverEndpointOverride.trim().length > 0)
-const usesDynamicRouting = computed(() => !pinnedEndpoint.value)
+const usesDynamicRouting = computed(() => !pinnedEndpoint.value && form.enableDynamicRouting)
+const routingState = computed(() => {
+  if (pinnedEndpoint.value) {
+    return {
+      class: "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200",
+      title: t("tools.clientConfigGenerator.routingState.pinned"),
+      description: t("tools.clientConfigGenerator.routingState.pinnedDescription"),
+    }
+  }
+
+  if (usesDynamicRouting.value) {
+    return {
+      class: "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200",
+      title: t("tools.clientConfigGenerator.routingState.dynamic"),
+      description: t("tools.clientConfigGenerator.routingState.dynamicDescription"),
+    }
+  }
+
+  return {
+    class: "bg-sky-50 text-sky-800 dark:bg-sky-950/30 dark:text-sky-200",
+    title: t("tools.clientConfigGenerator.routingState.builtIn"),
+    description: t("tools.clientConfigGenerator.routingState.builtInDescription"),
+  }
+})
 const queryPrefillItems = computed(() => [
   queryPrefill.ownerId
     ? t("tools.clientConfigGenerator.prefill.ownerId", { value: queryPrefill.ownerId })
@@ -127,6 +150,11 @@ const toggleItems = computed(() => [
     description: t("tools.clientConfigGenerator.toggles.enableCN.description"),
   },
   {
+    key: "enablePrivateMessage",
+    label: t("tools.clientConfigGenerator.toggles.enablePrivateMessage.label"),
+    description: t("tools.clientConfigGenerator.toggles.enablePrivateMessage.description"),
+  },
+  {
     key: "enableReplyMessage",
     label: t("tools.clientConfigGenerator.toggles.enableReplyMessage.label"),
     description: t("tools.clientConfigGenerator.toggles.enableReplyMessage.description"),
@@ -145,6 +173,11 @@ const toggleItems = computed(() => [
     key: "enableParamEcho",
     label: t("tools.clientConfigGenerator.toggles.enableParamEcho.label"),
     description: t("tools.clientConfigGenerator.toggles.enableParamEcho.description"),
+  },
+  {
+    key: "strictConfigPermissions",
+    label: t("tools.clientConfigGenerator.toggles.strictConfigPermissions.label"),
+    description: t("tools.clientConfigGenerator.toggles.strictConfigPermissions.description"),
   },
 ] as const)
 
@@ -294,6 +327,10 @@ function downloadYaml() {
 
 function updateRunMode(value: unknown) {
   form.runMode = value === "whitelist" ? "whitelist" : "blacklist"
+}
+
+function updateBirthdayMonitorMode(value: unknown) {
+  form.mysekaiBirthdayMonitorMode = value === "whitelist" ? "whitelist" : "blacklist"
 }
 
 function updateFeaturePolicyMode(row: FeaturePolicyRow, value: unknown) {
@@ -561,16 +598,6 @@ function removeAllModuleRows() {
 
                 <div class="grid gap-3 lg:grid-cols-2">
                   <div class="grid gap-1.5">
-                    <Label for="client-auth-key">
-                      {{ t("tools.clientConfigGenerator.fields.authEncryptionKey.label") }}
-                    </Label>
-                    <Input
-                      id="client-auth-key"
-                      v-model="form.authEncryptionKey"
-                      :placeholder="t('tools.clientConfigGenerator.fields.authEncryptionKey.placeholder')"
-                    />
-                  </div>
-                  <div class="grid gap-1.5">
                     <Label for="client-noise-key">
                       {{ t("tools.clientConfigGenerator.fields.noiseServerPubkey.label") }}
                     </Label>
@@ -578,6 +605,26 @@ function removeAllModuleRows() {
                       id="client-noise-key"
                       v-model="form.noiseServerPubkey"
                       :placeholder="t('tools.clientConfigGenerator.fields.noiseServerPubkey.placeholder')"
+                    />
+                  </div>
+                  <div class="grid gap-1.5">
+                    <Label for="client-noise-key-id">
+                      {{ t("tools.clientConfigGenerator.fields.noiseServerKeyId.label") }}
+                    </Label>
+                    <Input
+                      id="client-noise-key-id"
+                      v-model="form.noiseServerKeyId"
+                      :placeholder="t('tools.clientConfigGenerator.fields.noiseServerKeyId.placeholder')"
+                    />
+                  </div>
+                  <div class="grid gap-1.5 lg:col-span-2">
+                    <Label for="client-trust-root-key">
+                      {{ t("tools.clientConfigGenerator.fields.trustRootPubkey.label") }}
+                    </Label>
+                    <Input
+                      id="client-trust-root-key"
+                      v-model="form.trustRootPubkey"
+                      :placeholder="t('tools.clientConfigGenerator.fields.trustRootPubkey.placeholder')"
                     />
                   </div>
                 </div>
@@ -639,6 +686,7 @@ function removeAllModuleRows() {
                     <Input
                       id="client-routing-url"
                       v-model="form.routingConfigURL"
+                      :disabled="pinnedEndpoint || !form.enableDynamicRouting"
                       :placeholder="t('tools.clientConfigGenerator.fields.routingConfigURL.placeholder')"
                     />
                     <p class="text-xs text-muted-foreground">
@@ -647,17 +695,34 @@ function removeAllModuleRows() {
                   </div>
                 </div>
 
+                <div class="flex items-start justify-between gap-3 rounded-md bg-muted/25 p-3">
+                  <div class="min-w-0 space-y-1">
+                    <Label for="client-dynamic-routing" class="text-sm">
+                      {{ t("tools.clientConfigGenerator.fields.enableDynamicRouting.label") }}
+                    </Label>
+                    <p class="text-xs leading-relaxed text-muted-foreground">
+                      {{ t("tools.clientConfigGenerator.fields.enableDynamicRouting.description") }}
+                    </p>
+                  </div>
+                  <Switch
+                    id="client-dynamic-routing"
+                    :model-value="form.enableDynamicRouting"
+                    :disabled="pinnedEndpoint"
+                    @update:model-value="form.enableDynamicRouting = Boolean($event)"
+                  />
+                </div>
+
                 <div
                   class="flex items-start gap-2 rounded-md px-3 py-2.5 text-sm"
-                  :class="pinnedEndpoint ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200' : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'"
+                  :class="routingState.class"
                 >
                   <CheckCircle2 class="mt-0.5 size-4 shrink-0" />
                   <div class="min-w-0">
                     <div class="font-medium">
-                      {{ usesDynamicRouting ? t("tools.clientConfigGenerator.routingState.dynamic") : t("tools.clientConfigGenerator.routingState.pinned") }}
+                      {{ routingState.title }}
                     </div>
                     <p class="mt-0.5 text-xs leading-relaxed opacity-90">
-                      {{ usesDynamicRouting ? t("tools.clientConfigGenerator.routingState.dynamicDescription") : t("tools.clientConfigGenerator.routingState.pinnedDescription") }}
+                      {{ routingState.description }}
                     </p>
                   </div>
                 </div>
@@ -738,6 +803,52 @@ function removeAllModuleRows() {
                       {{ t("tools.clientConfigGenerator.fields.globalCommandDailyLimit.label") }}
                     </Label>
                     <Input id="client-day-limit" v-model.number="form.globalCommandDailyLimit" type="number" min="0" />
+                  </div>
+                </div>
+
+                <div class="grid gap-3 rounded-md border bg-muted/10 p-3 lg:grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)]">
+                  <div class="grid content-start gap-1.5">
+                    <Label id="client-birthday-monitor-mode-label" for="client-birthday-monitor-mode">
+                      {{ t("tools.clientConfigGenerator.fields.mysekaiBirthdayMonitorMode.label") }}
+                    </Label>
+                    <Select
+                      id="client-birthday-monitor-mode"
+                      :model-value="form.mysekaiBirthdayMonitorMode"
+                      @update:model-value="updateBirthdayMonitorMode"
+                    >
+                      <SelectTrigger class="w-full" aria-labelledby="client-birthday-monitor-mode-label">
+                        <SelectValue :placeholder="t('tools.clientConfigGenerator.fields.mysekaiBirthdayMonitorMode.placeholder')" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="blacklist">{{ t("tools.clientConfigGenerator.runMode.blacklist") }}</SelectItem>
+                        <SelectItem value="whitelist">{{ t("tools.clientConfigGenerator.runMode.whitelist") }}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p class="text-xs leading-relaxed text-muted-foreground">
+                      {{ t("tools.clientConfigGenerator.fields.mysekaiBirthdayMonitorMode.help") }}
+                    </p>
+                  </div>
+                  <div class="grid content-start gap-1.5">
+                    <Label for="client-birthday-monitor-blacklist">
+                      {{ t("tools.clientConfigGenerator.fields.mysekaiBirthdayMonitorBlacklist.label") }}
+                    </Label>
+                    <textarea
+                      id="client-birthday-monitor-blacklist"
+                      v-model="form.mysekaiBirthdayMonitorBlacklistText"
+                      :placeholder="t('tools.clientConfigGenerator.fields.mysekaiBirthdayMonitorBlacklist.placeholder')"
+                      :class="textareaClass"
+                    />
+                  </div>
+                  <div class="grid content-start gap-1.5">
+                    <Label for="client-birthday-monitor-whitelist">
+                      {{ t("tools.clientConfigGenerator.fields.mysekaiBirthdayMonitorWhitelist.label") }}
+                    </Label>
+                    <textarea
+                      id="client-birthday-monitor-whitelist"
+                      v-model="form.mysekaiBirthdayMonitorWhitelistText"
+                      :placeholder="t('tools.clientConfigGenerator.fields.mysekaiBirthdayMonitorWhitelist.placeholder')"
+                      :class="textareaClass"
+                    />
                   </div>
                 </div>
 
