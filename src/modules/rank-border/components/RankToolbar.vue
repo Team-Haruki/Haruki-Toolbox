@@ -5,6 +5,7 @@ import { Activity, RefreshCcw, Trophy, UserSearch } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Combobox } from "@/components/ui/combobox"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Popover,
@@ -60,6 +61,14 @@ const { openDetailPage } = ui
 
 const locateOpen = ref(false)
 const locating = ref(false)
+const manualUserId = ref("")
+const validManualUserId = computed(() => /^[1-9]\d*$/.test(manualUserId.value.trim()))
+
+function locateManualUser() {
+  if (!validManualUserId.value || !canRefresh.value) return
+  locateOpen.value = false
+  openDetailPage({ kind: "user", userId: manualUserId.value.trim() })
+}
 
 const locateDisabled = computed(() =>
   accountOptions.value.length === 0 || !canRefresh.value || locating.value,
@@ -274,6 +283,16 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
                   {{ t("rankBorder.actions.locate") }}
                 </Button>
               </div>
+
+              <form class="grid gap-1.5 border-t pt-3" @submit.prevent="locateManualUser">
+                <Label for="rank-toolbar-uid">{{ t("rankBorder.fields.gameUid") }}</Label>
+                <Input id="rank-toolbar-uid" v-model="manualUserId" inputmode="numeric" :placeholder="t('rankBorder.fields.gameUidPlaceholder')" />
+                <p class="text-xs leading-5 text-muted-foreground">{{ t("rankBorder.fields.gameUidHint") }}</p>
+                <Button type="submit" :disabled="!validManualUserId || !canRefresh">
+                  <UserSearch class="size-4" />
+                  {{ t("rankBorder.actions.locate") }}
+                </Button>
+              </form>
 
               <div class="grid gap-1.5 border-t pt-3">
                 <div class="flex min-w-0 items-center gap-2">

@@ -99,6 +99,9 @@ export default {
       "emptyHint": "點選左側榜位檢視玩家/檔線詳情"
     },
     "fields": {
+      "gameUidHint": "依目前伺服器與活動查詢遊戲 UID，無需綁定該帳號。",
+      "gameUid": "遊戲 UID",
+      "gameUidPlaceholder": "輸入遊戲 UID",
       "endpoint": "Tracker 介面地址",
       "endpointPlaceholder": "/event-tracker 或 https://tracker.example.com",
       "region": "區服",
@@ -174,7 +177,7 @@ export default {
       "unknownPlayer": "未知玩家",
       "borderLine": "檔線點",
       "borderLineTitle": "{rank} 檔線",
-      "userNotFound": "未找到該玩家的排名資料，可能尚未進入當前採集範圍。",
+      "userNotFound": "沒有找到你的資料，請確認是否進入前 100。",
       "noBoundAccount": "當前賬號還沒有繫結遊戲賬號。",
       "accountOutOfRange": "不在可查詢範圍。",
       "privateLookupLoginRequired": "請先登入後再用繫結賬號定位。",

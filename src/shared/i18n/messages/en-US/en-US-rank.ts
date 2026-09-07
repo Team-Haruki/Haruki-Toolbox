@@ -99,6 +99,9 @@ export default {
       "emptyHint": "Click a rank on the left to view player or border details"
     },
     "fields": {
+      "gameUidHint": "Look up a game UID in the selected server and event. No account binding is required.",
+      "gameUid": "Game UID",
+      "gameUidPlaceholder": "Enter a game UID",
       "endpoint": "Tracker endpoint",
       "endpointPlaceholder": "/event-tracker or https://tracker.example.com",
       "region": "Region",
@@ -174,7 +177,7 @@ export default {
       "unknownPlayer": "Unknown player",
       "borderLine": "Border point",
       "borderLineTitle": "{rank} border",
-      "userNotFound": "No ranking data found for this player. They may be outside the current collection range.",
+      "userNotFound": "Your data was not found. Please check whether you are in the top 100.",
       "noBoundAccount": "No bound game account is available.",
       "accountOutOfRange": "Outside the queryable range.",
       "privateLookupLoginRequired": "Log in before locating a bound account.",

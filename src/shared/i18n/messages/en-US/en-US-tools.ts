@@ -13,7 +13,7 @@ export default {
       "sections": {
         "identity": {
           "title": "Identity",
-          "description": "Set local ports, Bot ID, credential, and optional crypto fields."
+          "description": "Set local ports, Bot ID, credential, and optional trust-verification fields."
         },
         "routing": {
           "title": "Network routing",
@@ -21,7 +21,7 @@ export default {
         },
         "runtime": {
           "title": "Runtime policy",
-          "description": "Control help, CN features, reply quoting, and global command limits."
+          "description": "Control private-chat replies, help, CN features, reply quoting, and global command limits."
         },
         "modules": {
           "title": "Modules and feature scopes",
@@ -51,13 +51,17 @@ export default {
           "label": "Credential",
           "placeholder": "Paste Haruki Client credential"
         },
-        "authEncryptionKey": {
-          "label": "Auth encryption key",
-          "placeholder": "Optional 64-char hex AES-256 key"
-        },
         "noiseServerPubkey": {
           "label": "Noise server public key",
-          "placeholder": "Usually received from auth response"
+          "placeholder": "Leave empty to use the built-in public key"
+        },
+        "noiseServerKeyId": {
+          "label": "Noise public key ID",
+          "placeholder": "Leave empty when using the built-in key"
+        },
+        "trustRootPubkey": {
+          "label": "Trust-root Ed25519 public key",
+          "placeholder": "Leave empty to use the built-in root key"
         },
         "controlApiAccessToken": {
           "label": "Control API access token",
@@ -71,8 +75,12 @@ export default {
         },
         "routingConfigURL": {
           "label": "Routing config URL",
-          "placeholder": "Leave empty to use the built-in EdgeOne default",
+          "placeholder": "Leave empty to use the built-in routing-v3.json URL",
           "help": "Used for production/alternative failover. Ignored when a pinned endpoint is set."
+        },
+        "enableDynamicRouting": {
+          "label": "Enable dynamic routing",
+          "description": "Enabled by default. Turn it off to use only the built-in endpoint and keyset-approved endpoints."
         },
         "runMode": {
           "label": "Run mode",
@@ -91,6 +99,19 @@ export default {
         },
         "globalCommandDailyLimit": {
           "label": "Daily limit"
+        },
+        "mysekaiBirthdayMonitorMode": {
+          "label": "Birthday material delivery mode",
+          "placeholder": "Select list mode",
+          "help": "Controls birthday material monitor deliveries only, independently of the command run mode."
+        },
+        "mysekaiBirthdayMonitorBlacklist": {
+          "label": "Birthday delivery group blacklist",
+          "placeholder": "One group ID per line or comma-separated"
+        },
+        "mysekaiBirthdayMonitorWhitelist": {
+          "label": "Birthday delivery group whitelist",
+          "placeholder": "One group ID per line or comma-separated"
         },
         "enableModules": {
           "label": "Enabled modules",
@@ -129,6 +150,10 @@ export default {
           "label": "CN features",
           "description": "Enable CN-related features."
         },
+        "enablePrivateMessage": {
+          "label": "Reply to private chats",
+          "description": "Private chats bypass group lists but still obey user blacklists and rate limits."
+        },
         "enableReplyMessage": {
           "label": "Quote replies",
           "description": "Quote the original message in replies."
@@ -144,6 +169,10 @@ export default {
         "enableParamEcho": {
           "label": "Parameter echo",
           "description": "Allow Cloud parse errors to echo concrete parameters."
+        },
+        "strictConfigPermissions": {
+          "label": "Enforce config permissions",
+          "description": "Refuse to start when configs.yaml is group/world-readable. Set it to mode 0600 before enabling."
         }
       },
       "actions": {
@@ -192,8 +221,10 @@ export default {
       "routingState": {
         "dynamic": "Dynamic routing enabled",
         "pinned": "Server endpoint pinned",
-        "dynamicDescription": "When serverEndpointOverride is empty, the client reads routingConfigURL. If routingConfigURL is empty, it uses the built-in EdgeOne default.",
-        "pinnedDescription": "When serverEndpointOverride is non-empty, the client uses that endpoint directly and does not read dynamic routing config."
+        "builtIn": "Using built-in routing",
+        "dynamicDescription": "The client reads routingConfigURL; when empty, it uses the built-in EdgeOne routing-v3.json URL.",
+        "pinnedDescription": "When serverEndpointOverride is non-empty, the client uses that endpoint directly and does not read dynamic routing config.",
+        "builtInDescription": "Dynamic routing is disabled, so the client uses only its built-in endpoint and keyset-approved endpoints."
       },
       "preview": {
         "title": "configs.yaml preview",
@@ -210,7 +241,7 @@ export default {
         "title": "Notes",
         "description": "This generator handles values locally in your browser and does not submit credentials.",
         "items": {
-          "dynamicRouting": "routingConfigURL is the new dynamic routing entry. Leave it empty for the default production config.",
+          "dynamicRouting": "The new client enables dynamic routing by default; leave routingConfigURL empty to use its built-in routing-v3.json.",
           "accessToken": "Keep controlApiAccessToken disabled when auth is not needed; YAML will write null.",
           "listSyntax": "Access lists can be added row by row; the generator merges scopes and IDs into client YAML."
         }

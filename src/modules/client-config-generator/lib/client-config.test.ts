@@ -9,11 +9,13 @@ import {
 } from "./client-config"
 
 describe("client config generator", () => {
-  it("builds current Haruki Client YAML with dynamic routing fields", () => {
+  it("builds current Haruki Client v3 YAML", () => {
     const form = cloneDefaultClientConfigForm()
     form.botId = 91145149
     form.credential = "jwt-token"
     form.routingConfigURL = "https://example.com/routing.json"
+    form.mysekaiBirthdayMonitorMode = "whitelist"
+    form.mysekaiBirthdayMonitorWhitelistText = "10001\n10002"
     form.enableModulesText = "all\npjsk"
     form.blacklistsText = "all: 123,456"
     form.botAdminsText = "1145\n1919"
@@ -24,25 +26,37 @@ controlApiPort: 8112
 controlApiAccessToken: null
 botId: 91145149
 credential: "jwt-token"
-authEncryptionKey: ""
 noiseServerPubkey: ""
+noiseServerKeyId: ""
+trustRootPubkey: ""
 serverEndpointOverride: ""
+enableDynamicRouting: true
 routingConfigURL: "https://example.com/routing.json"
 enableHelp: true
 helpContent: ""
 enableCN: true
-enableReplyMessage: false
-sendBase64Image: false
-mysekaiBirthdayMonitorNotifyEmpty: false
-enableParamEcho: false
 enableGroupCommandLimit: false
 globalCommandHourlyLimit: 0
 globalCommandDailyLimit: 0
 runMode: blacklist
+enablePrivateMessage: true
+featurePolicyModes: {}
+enableReplyMessage: false
+sendBase64Image: false
+mysekaiBirthdayMonitorNotifyEmpty: false
+mysekaiBirthdayMonitorMode: whitelist
+mysekaiBirthdayMonitorBlacklist: []
+mysekaiBirthdayMonitorWhitelist:
+  - 10001
+  - 10002
+enableParamEcho: false
+strictConfigPermissions: false
+botAdmins:
+  - 1145
+  - 1919
 enableModules:
   - "all"
   - "pjsk"
-featurePolicyModes: {}
 blacklists:
   all:
     - 123
@@ -51,9 +65,6 @@ whitelists:
   all: []
 userBlacklists:
   all: []
-botAdmins:
-  - 1145
-  - 1919
 `)
   })
 
@@ -67,7 +78,26 @@ botAdmins:
 
     expect(yaml).toContain('controlApiAccessToken: "local-token"')
     expect(yaml).toContain('serverEndpointOverride: "https://example.com/pinned-endpoint"')
+    expect(yaml).toContain("enableDynamicRouting: true")
     expect(yaml).toContain('routingConfigURL: ""')
+    expect(yaml).not.toContain("authEncryptionKey")
+  })
+
+  it("serializes the new routing, private-chat, trust, and permission fields", () => {
+    const form = cloneDefaultClientConfigForm()
+    form.noiseServerKeyId = "noise-2026-09"
+    form.trustRootPubkey = "ab".repeat(32)
+    form.enableDynamicRouting = false
+    form.enablePrivateMessage = false
+    form.strictConfigPermissions = true
+
+    const yaml = buildClientConfigYaml(form).yaml
+
+    expect(yaml).toContain('noiseServerKeyId: "noise-2026-09"')
+    expect(yaml).toContain(`trustRootPubkey: "${"ab".repeat(32)}"`)
+    expect(yaml).toContain("enableDynamicRouting: false")
+    expect(yaml).toContain("enablePrivateMessage: false")
+    expect(yaml).toContain("strictConfigPermissions: true")
   })
 
   it("parses scoped policy modes and number maps", () => {

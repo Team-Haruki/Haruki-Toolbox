@@ -402,12 +402,25 @@ export function normalizeRankBorderWebRankDetail(value: unknown): RankBorderWebR
 
 export function normalizeRankBorderWebUserDetail(value: unknown): RankBorderWebUserDetail {
   const record = isRecord(value) ? value : {}
+  const profile = normalizeRankBorderUserProfile(record.profile)
+  const currentItem = normalizeWebRankingItem(record.current)
+  let current = normalizeRankBorderLatest(currentItem)
+  if (current && profile?.userId === current.userId && isRecord(currentItem)) {
+    const embeddedProfile = isRecord(currentItem.userData) ? currentItem.userData : {}
+    current = normalizeRankBorderLatest({
+      ...currentItem,
+      userData: {
+        ...profile,
+        ...Object.fromEntries(Object.entries(embeddedProfile).filter(([, field]) => field != null)),
+      },
+    })
+  }
   return {
-    current: normalizeRankBorderLatest(normalizeWebRankingItem(record.current)),
+    current,
     previous: normalizeRankBorderLatest(normalizeWebRankingItem(record.previous)),
     next: normalizeRankBorderLatest(normalizeWebRankingItem(record.next)),
     playerTrace: normalizeRankBorderTrace(record.playerTrace),
-    profile: normalizeRankBorderUserProfile(record.profile),
+    profile,
   }
 }
 
