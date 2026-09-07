@@ -244,7 +244,10 @@ export function useRankBorderDetailPage(
       playerTrace.value = []
       borderTrace.value = []
     }
-    error.value = loadError instanceof Error ? loadError.message : String(loadError)
+    const notFound = loadError instanceof Error && "status" in loadError && loadError.status === 404
+    error.value = notFound
+      ? "not_found"
+      : loadError instanceof Error ? loadError.message : String(loadError)
   }
 
   async function loadTarget(options: { hydrateFromCache?: boolean; silent?: boolean } = {}) {

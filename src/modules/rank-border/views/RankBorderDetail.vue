@@ -724,7 +724,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
         <Card class="gap-0 py-0">
           <CardContent class="grid gap-3 p-3 sm:p-4">
             <div v-if="error && !current" class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-              {{ error === "not_found" ? t("rankBorder.result.rankNotFound") : error }}
+              {{ error === "not_found" ? t(params.target.kind === "user" ? "rankBorder.result.userNotFound" : "rankBorder.result.rankNotFound") : error }}
             </div>
             <div v-else class="rank-border-detail-hero">
               <LeaderCard v-if="!isLineTarget" :leader="leaderVisual" variant="detail" />

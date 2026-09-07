@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test"
 import {
   buildRankBorderTraceHeatmapBuckets,
   normalizeRankBorderLatest,
+  normalizeRankBorderWebUserDetail,
   normalizeRankBorderLines,
   normalizeRankBorderOverview,
   normalizeRankBorderStatus,
@@ -727,5 +728,33 @@ describe("numericExtent", () => {
     expect(numericExtent(values)).toEqual({ min: -100_000, max: 99_999 })
     expect(numericExtent([7])).toEqual({ min: 7, max: 7 })
     expect(numericExtent([])).toBeNull()
+  })
+})
+
+
+describe("player detail profile merging", () => {
+  const rankData = { userId: "123456789012345678", rank: 25, score: 10000, timestamp: 100 }
+  const profile = { userId: rankData.userId, name: "Located player", cardId: 1404, cardLevel: 60, profileHonors: [{ seq: 1, honorId: 8071, honorLevel: 1 }] }
+
+  it("uses a separate profile for bound-account names, avatars and honors", () => {
+    const detail = normalizeRankBorderWebUserDetail({ current: { rankData }, profile })
+    expect(detail.current?.name).toBe("Located player")
+    expect(detail.current?.cardId).toBe(1404)
+    expect(detail.current?.cardLevel).toBe(60)
+    expect(detail.current?.profileHonors[0]?.honorId).toBe(8071)
+    expect(detail.current?.rank).toBe(25)
+  })
+
+  it("keeps embedded data and fills missing profile fields", () => {
+    const detail = normalizeRankBorderWebUserDetail({ current: { rankData, userData: { name: "Embedded name", cardId: null } }, profile })
+    expect(detail.current?.name).toBe("Embedded name")
+    expect(detail.current?.cardId).toBe(1404)
+  })
+
+  it("does not attach another player's profile or invent missing rankings", () => {
+    const detail = normalizeRankBorderWebUserDetail({ current: { rankData }, profile: { ...profile, userId: "other-player" } })
+    expect(detail.current?.name).toBeNull()
+    expect(detail.current?.cardId).toBeNull()
+    expect(normalizeRankBorderWebUserDetail({ profile }).current).toBeNull()
   })
 })

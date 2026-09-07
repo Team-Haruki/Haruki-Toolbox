@@ -51,3 +51,27 @@ test("player tracking keeps the selected player when the seat changes occupants"
     scope.stop()
   }
 })
+
+for (const status of [404, 503]) {
+  test(`player lookup maps HTTP ${status} without confusing missing data with service errors`, async () => {
+    setActivePinia(createPinia())
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input).includes("details/user/")) {
+        return new Response(status === 404 ? "Not Found" : "Service unavailable", { status })
+      }
+      return new Response(JSON.stringify({}))
+    }) as typeof fetch
+    const scope = effectScope()
+    const page = scope.run(() => useRankBorderDetailPage(
+      computed<RankBorderDetailParams>(() => ({ region: "jp", eventId: 987000 + status, mode: "normal", worldBloomCharacterId: null, intervalSeconds: 3600, target: { kind: "user", userId: "123456789012345678" } })),
+      ref("https://missing-player-test.example"),
+    ))!
+    try {
+      await page.refresh(false)
+      expect(page.current.value).toBeNull()
+      expect(page.error.value).toBe(status === 404 ? "not_found" : "Service unavailable")
+    } finally {
+      scope.stop()
+    }
+  })
+}

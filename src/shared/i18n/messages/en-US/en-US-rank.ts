@@ -177,7 +177,7 @@ export default {
       "unknownPlayer": "Unknown player",
       "borderLine": "Border point",
       "borderLineTitle": "{rank} border",
-      "userNotFound": "No ranking data found for this player. They may be outside the current collection range.",
+      "userNotFound": "Your data was not found. Please check whether you are in the top 100.",
       "noBoundAccount": "No bound game account is available.",
       "accountOutOfRange": "Outside the queryable range.",
       "privateLookupLoginRequired": "Log in before locating a bound account.",

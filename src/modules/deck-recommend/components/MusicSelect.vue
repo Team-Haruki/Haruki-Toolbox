@@ -380,222 +380,225 @@ function toNullableNumber(value: number | string | undefined | null): number | n
     </Select>
 
     <Dialog v-model:open="open">
-      <DialogContent class="flex max-h-[85vh] flex-col gap-3 overflow-hidden sm:max-w-4xl">
-        <DialogHeader>
+      <DialogContent class="flex h-[85dvh] flex-col gap-3 overflow-hidden sm:max-w-4xl">
+        <DialogHeader class="shrink-0">
           <DialogTitle>{{ t("deckRecommend.picker.musicDialogTitle") }}</DialogTitle>
         </DialogHeader>
 
         <CatalogSearchField
           v-model="search"
+          class="shrink-0"
           :label="t('musicLibrary.list.filters.search')"
           :placeholder="t('musicLibrary.list.filters.searchPlaceholder')"
         />
 
-        <CatalogFilterPanel
-          :title="t('musicLibrary.list.filters.title')"
-          :count-label="t('musicLibrary.list.results.count', { count: visibleEntries.length })"
-          :reset-label="t('musicLibrary.list.filters.reset')"
-          @reset="resetFilters"
-        >
-          <CatalogSelectField
-            :label="t('musicLibrary.list.filters.difficulty')"
-            :all-label="t('musicLibrary.list.filters.difficultyAll')"
-            :options="difficultyFieldOptions"
-            :model-value="filterDifficulty"
-            @update:model-value="updateFilterDifficulty"
-          />
-
-          <div class="grid gap-2">
-            <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.level") }}</p>
-            <div class="flex items-center gap-2">
-              <Input
-                v-model.number="levelMin"
-                type="number"
-                min="1"
-                inputmode="numeric"
-                :placeholder="t('musicLibrary.list.filters.levelMin')"
-                :aria-label="t('musicLibrary.list.filters.levelMin')"
-              />
-              <span class="text-muted-foreground">-</span>
-              <Input
-                v-model.number="levelMax"
-                type="number"
-                min="1"
-                inputmode="numeric"
-                :placeholder="t('musicLibrary.list.filters.levelMax')"
-                :aria-label="t('musicLibrary.list.filters.levelMax')"
-              />
-            </div>
-          </div>
-
-          <div class="grid gap-2">
-            <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.character") }}</p>
-            <div class="flex items-center gap-2">
-              <Label :id="characterLabelId" :for="characterId" class="sr-only">
-                {{ t("musicLibrary.list.filters.character") }}
-              </Label>
-              <Select
-                :id="characterId"
-                :model-value="filterCharacterId != null ? String(filterCharacterId) : '__all__'"
-                @update:model-value="(value: AcceptableValue) =>
-                  updateCharacter(typeof value === 'string' && value !== '__all__' ? value : null)"
-              >
-                <SelectTrigger class="w-full" :aria-labelledby="characterLabelId">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">
-                    {{ t("musicLibrary.list.filters.characterAll") }}
-                  </SelectItem>
-                  <SelectItem
-                    v-for="option in characterFieldOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    <span class="flex items-center gap-2">
-                      <img
-                        v-if="option.iconUrl"
-                        :src="option.iconUrl"
-                        alt=""
-                        class="size-4 shrink-0 rounded-full"
-                        loading="lazy"
-                        @error="handleSekaiImageError($event, option.iconUrl)"
-                      >
-                      {{ option.label }}
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Label :id="characterScopeLabelId" :for="characterScopeId" class="sr-only">
-                {{ t("musicLibrary.list.filters.character") }}
-              </Label>
-              <Select
-                :id="characterScopeId"
-                :model-value="characterScope"
-                :disabled="filterCharacterId == null"
-                @update:model-value="updateCharacterScope"
-              >
-                <SelectTrigger class="w-32 shrink-0" :aria-labelledby="characterScopeLabelId">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="scope in MUSIC_CHARACTER_FILTER_SCOPES"
-                    :key="scope"
-                    :value="scope"
-                  >
-                    {{ t(`musicLibrary.list.filters.characterScope.${scope}`) }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <CatalogChipsField
-            v-model="selectedTags"
-            :label="t('musicLibrary.list.filters.tag')"
-            :options="tagFieldOptions"
-          />
-
-          <CatalogSelectField
-            :label="t('musicLibrary.list.filters.year')"
-            :all-label="t('musicLibrary.list.filters.yearAll')"
-            :options="yearFieldOptions"
-            :model-value="selectedYear != null ? String(selectedYear) : null"
-            @update:model-value="updateYear"
-          />
-
-          <div class="grid gap-2">
-            <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.sort") }}</p>
-            <div class="flex items-center gap-2">
-              <Label :id="sortLabelId" :for="sortId" class="sr-only">
-                {{ t("musicLibrary.list.filters.sort") }}
-              </Label>
-              <Select
-                :id="sortId"
-                :model-value="sortKey"
-                @update:model-value="(value: AcceptableValue) => updateSortKey(typeof value === 'string' ? value : null)"
-              >
-                <SelectTrigger class="w-full" :aria-labelledby="sortLabelId">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="key in MUSIC_SORT_KEYS" :key="key" :value="key">
-                    {{ t(`musicLibrary.list.sort.${key}`) }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Label :id="sortDirectionLabelId" :for="sortDirectionId" class="sr-only">
-                {{ t("musicLibrary.list.filters.sort") }}
-              </Label>
-              <Select :id="sortDirectionId" :model-value="sortDirection" @update:model-value="updateSortDirection">
-                <SelectTrigger class="w-24 shrink-0" :aria-labelledby="sortDirectionLabelId">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="desc">{{ t("musicLibrary.list.filters.sortDirection.desc") }}</SelectItem>
-                  <SelectItem value="asc">{{ t("musicLibrary.list.filters.sortDirection.asc") }}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CatalogFilterPanel>
-
-        <div class="min-h-0 flex-1 overflow-y-auto" @scroll="handleListScroll">
-          <div
-            v-if="visibleEntries.length > 0"
-            class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6"
+        <div class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain" @scroll="handleListScroll">
+          <CatalogFilterPanel
+            :title="t('musicLibrary.list.filters.title')"
+            :count-label="t('musicLibrary.list.results.count', { count: visibleEntries.length })"
+            :reset-label="t('musicLibrary.list.filters.reset')"
+            @reset="resetFilters"
           >
-            <button
-              v-for="entry in renderedEntries"
-              :key="entry.id"
-              type="button"
-              :class="[
-                'group flex flex-col gap-1.5 rounded-lg border bg-card p-2 text-left transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_180px] hover:bg-accent/50 dark:hover:bg-accent/30',
-                selectedEntry?.id === entry.id ? 'ring-2 ring-primary' : '',
-              ]"
-              @click="selectEntry(entry)"
-            >
-              <div class="relative aspect-square w-full overflow-hidden rounded-md">
-                <MusicJacket
-                  :url="jacketUrl(entry)"
-                  :alt="entry.title"
-                  class="size-full"
-                  :class="isMusicEntryUnreleased(entry) && blurUnreleased ? 'blur-md scale-105' : ''"
+            <CatalogSelectField
+              :label="t('musicLibrary.list.filters.difficulty')"
+              :all-label="t('musicLibrary.list.filters.difficultyAll')"
+              :options="difficultyFieldOptions"
+              :model-value="filterDifficulty"
+              @update:model-value="updateFilterDifficulty"
+            />
+
+            <div class="grid gap-2">
+              <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.level") }}</p>
+              <div class="flex items-center gap-2">
+                <Input
+                  v-model.number="levelMin"
+                  type="number"
+                  min="1"
+                  inputmode="numeric"
+                  :placeholder="t('musicLibrary.list.filters.levelMin')"
+                  :aria-label="t('musicLibrary.list.filters.levelMin')"
                 />
-                <span
-                  v-if="isMusicEntryUnreleased(entry)"
-                  class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm"
-                >
-                  {{ t("sekaiUnreleased.badge") }}
-                </span>
+                <span class="text-muted-foreground">-</span>
+                <Input
+                  v-model.number="levelMax"
+                  type="number"
+                  min="1"
+                  inputmode="numeric"
+                  :placeholder="t('musicLibrary.list.filters.levelMax')"
+                  :aria-label="t('musicLibrary.list.filters.levelMax')"
+                />
               </div>
-              <p class="truncate text-xs font-medium" :title="entry.title">{{ entry.title }}</p>
-              <div class="mt-auto flex flex-wrap gap-1">
-                <span
-                  v-for="item in entryDifficultyBadges(entry)"
-                  :key="item.difficulty"
-                  class="inline-flex min-w-6 cursor-pointer items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold text-white hover:opacity-80"
-                  :style="{ backgroundColor: item.color }"
-                  :title="difficultyLabel(item.difficulty)"
-                  @click.stop="selectEntry(entry, item.difficulty)"
+            </div>
+
+            <div class="grid gap-2">
+              <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.character") }}</p>
+              <div class="flex items-center gap-2">
+                <Label :id="characterLabelId" :for="characterId" class="sr-only">
+                  {{ t("musicLibrary.list.filters.character") }}
+                </Label>
+                <Select
+                  :id="characterId"
+                  :model-value="filterCharacterId != null ? String(filterCharacterId) : '__all__'"
+                  @update:model-value="(value: AcceptableValue) =>
+                    updateCharacter(typeof value === 'string' && value !== '__all__' ? value : null)"
                 >
-                  {{ item.playLevel ?? "-" }}
-                </span>
+                  <SelectTrigger class="w-full" :aria-labelledby="characterLabelId">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">
+                      {{ t("musicLibrary.list.filters.characterAll") }}
+                    </SelectItem>
+                    <SelectItem
+                      v-for="option in characterFieldOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      <span class="flex items-center gap-2">
+                        <img
+                          v-if="option.iconUrl"
+                          :src="option.iconUrl"
+                          alt=""
+                          class="size-4 shrink-0 rounded-full"
+                          loading="lazy"
+                          @error="handleSekaiImageError($event, option.iconUrl)"
+                        >
+                        {{ option.label }}
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Label :id="characterScopeLabelId" :for="characterScopeId" class="sr-only">
+                  {{ t("musicLibrary.list.filters.character") }}
+                </Label>
+                <Select
+                  :id="characterScopeId"
+                  :model-value="characterScope"
+                  :disabled="filterCharacterId == null"
+                  @update:model-value="updateCharacterScope"
+                >
+                  <SelectTrigger class="w-32 shrink-0" :aria-labelledby="characterScopeLabelId">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="scope in MUSIC_CHARACTER_FILTER_SCOPES"
+                      :key="scope"
+                      :value="scope"
+                    >
+                      {{ t(`musicLibrary.list.filters.characterScope.${scope}`) }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </button>
-          </div>
-          <div
-            v-else
-            class="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground"
-          >
-            {{
-              loading
-                ? t("deckRecommend.select.loading")
-                : aliasPending
-                  ? t("musicLibrary.list.results.aliasSearching")
-                  : t("musicLibrary.list.results.empty")
-            }}
+            </div>
+
+            <CatalogChipsField
+              v-model="selectedTags"
+              :label="t('musicLibrary.list.filters.tag')"
+              :options="tagFieldOptions"
+            />
+
+            <CatalogSelectField
+              :label="t('musicLibrary.list.filters.year')"
+              :all-label="t('musicLibrary.list.filters.yearAll')"
+              :options="yearFieldOptions"
+              :model-value="selectedYear != null ? String(selectedYear) : null"
+              @update:model-value="updateYear"
+            />
+
+            <div class="grid gap-2">
+              <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.sort") }}</p>
+              <div class="flex items-center gap-2">
+                <Label :id="sortLabelId" :for="sortId" class="sr-only">
+                  {{ t("musicLibrary.list.filters.sort") }}
+                </Label>
+                <Select
+                  :id="sortId"
+                  :model-value="sortKey"
+                  @update:model-value="(value: AcceptableValue) => updateSortKey(typeof value === 'string' ? value : null)"
+                >
+                  <SelectTrigger class="w-full" :aria-labelledby="sortLabelId">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="key in MUSIC_SORT_KEYS" :key="key" :value="key">
+                      {{ t(`musicLibrary.list.sort.${key}`) }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Label :id="sortDirectionLabelId" :for="sortDirectionId" class="sr-only">
+                  {{ t("musicLibrary.list.filters.sort") }}
+                </Label>
+                <Select :id="sortDirectionId" :model-value="sortDirection" @update:model-value="updateSortDirection">
+                  <SelectTrigger class="w-24 shrink-0" :aria-labelledby="sortDirectionLabelId">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="desc">{{ t("musicLibrary.list.filters.sortDirection.desc") }}</SelectItem>
+                    <SelectItem value="asc">{{ t("musicLibrary.list.filters.sortDirection.asc") }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CatalogFilterPanel>
+
+          <div>
+            <div
+              v-if="visibleEntries.length > 0"
+              class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6"
+            >
+              <button
+                v-for="entry in renderedEntries"
+                :key="entry.id"
+                type="button"
+                :class="[
+                  'group flex flex-col gap-1.5 rounded-lg border bg-card p-2 text-left transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_180px] hover:bg-accent/50 dark:hover:bg-accent/30',
+                  selectedEntry?.id === entry.id ? 'ring-2 ring-primary' : '',
+                ]"
+                @click="selectEntry(entry)"
+              >
+                <div class="relative aspect-square w-full overflow-hidden rounded-md">
+                  <MusicJacket
+                    :url="jacketUrl(entry)"
+                    :alt="entry.title"
+                    class="size-full"
+                    :class="isMusicEntryUnreleased(entry) && blurUnreleased ? 'blur-md scale-105' : ''"
+                  />
+                  <span
+                    v-if="isMusicEntryUnreleased(entry)"
+                    class="absolute right-1 top-1 rounded bg-red-600 px-1 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm"
+                  >
+                    {{ t("sekaiUnreleased.badge") }}
+                  </span>
+                </div>
+                <p class="truncate text-xs font-medium" :title="entry.title">{{ entry.title }}</p>
+                <div class="mt-auto flex flex-wrap gap-1">
+                  <span
+                    v-for="item in entryDifficultyBadges(entry)"
+                    :key="item.difficulty"
+                    class="inline-flex min-w-6 cursor-pointer items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold text-white hover:opacity-80"
+                    :style="{ backgroundColor: item.color }"
+                    :title="difficultyLabel(item.difficulty)"
+                    @click.stop="selectEntry(entry, item.difficulty)"
+                  >
+                    {{ item.playLevel ?? "-" }}
+                  </span>
+                </div>
+              </button>
+            </div>
+            <div
+              v-else
+              class="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground"
+            >
+              {{
+                loading
+                  ? t("deckRecommend.select.loading")
+                  : aliasPending
+                    ? t("musicLibrary.list.results.aliasSearching")
+                    : t("musicLibrary.list.results.empty")
+              }}
+            </div>
           </div>
         </div>
       </DialogContent>

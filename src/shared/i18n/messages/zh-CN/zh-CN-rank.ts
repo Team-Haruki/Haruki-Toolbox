@@ -177,7 +177,7 @@ export default {
       "unknownPlayer": "未知玩家",
       "borderLine": "档线点",
       "borderLineTitle": "{rank} 档线",
-      "userNotFound": "未找到该玩家的排名数据，可能尚未进入当前采集范围。",
+      "userNotFound": "没有找到你的数据，请确认是否进入前 100。",
       "noBoundAccount": "当前账号还没有绑定游戏账号。",
       "accountOutOfRange": "不在可查询范围。",
       "privateLookupLoginRequired": "请先登录后再用绑定账号定位。",
