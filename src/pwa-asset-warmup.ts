@@ -1,37 +1,23 @@
 import { createLogger } from "@/lib/logger"
+import {
+  isConstrainedConnection,
+  mapWithConcurrency,
+  normalizeAssetManifest,
+  selectAssetsToWarm,
+  WARMUP_CONCURRENCY,
+  type ConnectionHint,
+} from "@/lib/asset-warmup-plan"
 
 const ASSET_CACHE_NAME = "app-assets-v1"
 const ASSET_MANIFEST_URL = `${import.meta.env.BASE_URL}asset-manifest.json`
-
-// Workbox's precache installed entries one at a time, which is what made
-// updates take a minute. This warms the same files from the page instead:
-// after load, off the critical path, several at a time, and skipping whatever
-// the runtime cache already holds.
-const WARMUP_CONCURRENCY = 6
-const WARMUP_MAX_FILE_BYTES = 600 * 1024
-const WARMUP_MAX_TOTAL_BYTES = 6 * 1024 * 1024
-
-type AssetManifestEntry = {
-  url: string
-  bytes: number
-}
-
-type AssetManifest = {
-  gitCommit?: string
-  files: AssetManifestEntry[]
-}
-
-type NetworkInformation = {
-  saveData?: boolean
-  effectiveType?: string
-}
+const CONTROLLER_WAIT_MS = 20000
 
 const logger = createLogger("pwa-warmup")
 let warmupInFlight: Promise<void> | null = null
 let warmedCommit: string | null = null
 
-function readConnection(): NetworkInformation | undefined {
-  return (navigator as Navigator & { connection?: NetworkInformation }).connection
+function readConnection(): ConnectionHint | undefined {
+  return (navigator as Navigator & { connection?: ConnectionHint }).connection
 }
 
 function shouldSkipWarmup() {
@@ -47,72 +33,14 @@ function shouldSkipWarmup() {
     return true
   }
 
-  const connection = readConnection()
-  return Boolean(
-    connection?.saveData
-    || connection?.effectiveType === "slow-2g"
-    || connection?.effectiveType === "2g",
-  )
-}
-
-function normalizeManifest(value: unknown): AssetManifest | null {
-  if (!value || typeof value !== "object") {
-    return null
-  }
-
-  const candidate = value as { gitCommit?: unknown, files?: unknown }
-  if (!Array.isArray(candidate.files)) {
-    return null
-  }
-
-  const files: AssetManifestEntry[] = []
-  for (const entry of candidate.files) {
-    if (!entry || typeof entry !== "object") {
-      continue
-    }
-    const { url, bytes } = entry as { url?: unknown, bytes?: unknown }
-    if (typeof url === "string" && url.startsWith("/") && typeof bytes === "number") {
-      files.push({ url, bytes })
-    }
-  }
-
-  return {
-    gitCommit: typeof candidate.gitCommit === "string" ? candidate.gitCommit : undefined,
-    files,
-  }
-}
-
-async function runWithConcurrency(urls: string[], limit: number) {
-  let cursor = 0
-  const workers = Array.from({ length: Math.min(limit, urls.length) }, async () => {
-    while (cursor < urls.length) {
-      const url = urls[cursor]
-      cursor += 1
-      try {
-        const response = await fetch(url, {
-          cache: "default",
-          credentials: "same-origin",
-          // Chromium honours this and keeps the warmup behind anything the
-          // page itself is loading.
-          priority: "low",
-        } as RequestInit)
-        // Draining the body is what actually completes the transfer, and the
-        // Service Worker caches its own clone independently.
-        await response.arrayBuffer()
-      } catch (error) {
-        logger.warn("Failed to warm asset", url, error)
-      }
-    }
-  })
-
-  await Promise.all(workers)
+  return isConstrainedConnection(readConnection())
 }
 
 // Without a controlling worker the warmup fetches bypass the runtime cache
 // route and download without caching anything. On the visit that first
 // installs the worker the controller arrives a moment later, so wait for it
 // rather than skipping the session entirely.
-async function waitForController(timeoutMs = 20000) {
+async function waitForController(timeoutMs = CONTROLLER_WAIT_MS) {
   if (navigator.serviceWorker.controller) {
     return true
   }
@@ -131,43 +59,53 @@ async function waitForController(timeoutMs = 20000) {
   })
 }
 
-async function runWarmup() {
-  if (!(await waitForController())) {
-    return
-  }
-
+async function fetchAssetManifest() {
   const response = await fetch(`${ASSET_MANIFEST_URL}?t=${Date.now()}`, { cache: "no-store" })
   if (!response.ok) {
     throw new Error(`asset-manifest.json returned ${response.status}`)
   }
 
-  const manifest = normalizeManifest(await response.json() as unknown)
+  const manifest = normalizeAssetManifest(await response.json() as unknown)
   if (!manifest) {
     throw new Error("asset-manifest.json is invalid")
   }
 
+  return manifest
+}
+
+async function readCachedPaths() {
+  const cache = await caches.open(ASSET_CACHE_NAME)
+  return new Set((await cache.keys()).map((request) => new URL(request.url).pathname))
+}
+
+async function warmOne(url: string) {
+  const response = await fetch(url, {
+    cache: "default",
+    credentials: "same-origin",
+    // Chromium honours this and keeps the warmup behind anything the page
+    // itself is loading.
+    priority: "low",
+  } as RequestInit)
+  // Draining the body is what actually completes the transfer, and the
+  // Service Worker caches its own clone independently.
+  await response.arrayBuffer()
+}
+
+async function runWarmup() {
+  if (!(await waitForController())) {
+    return
+  }
+
+  const manifest = await fetchAssetManifest()
   if (manifest.gitCommit && manifest.gitCommit === warmedCommit) {
     return
   }
 
-  const cache = await caches.open(ASSET_CACHE_NAME)
-  const cached = new Set((await cache.keys()).map((request) => new URL(request.url).pathname))
-
-  let budget = WARMUP_MAX_TOTAL_BYTES
-  const pending: string[] = []
-  for (const file of manifest.files) {
-    if (cached.has(file.url) || file.bytes > WARMUP_MAX_FILE_BYTES) {
-      continue
-    }
-    if (file.bytes > budget) {
-      break
-    }
-    budget -= file.bytes
-    pending.push(file.url)
-  }
-
+  const pending = selectAssetsToWarm(manifest.files, await readCachedPaths())
   if (pending.length > 0) {
-    await runWithConcurrency(pending, WARMUP_CONCURRENCY)
+    await mapWithConcurrency(pending, WARMUP_CONCURRENCY, warmOne, (url, error) => {
+      logger.warn("Failed to warm asset", url, error)
+    })
   }
 
   warmedCommit = manifest.gitCommit ?? null
