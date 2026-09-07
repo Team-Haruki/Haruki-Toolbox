@@ -35,3 +35,7 @@ haruki-sekai-kr-master/
 sekai-deck-recommend-cpp/
 test-results/
 coverage/
+
+# The toolbox installs with bun; a stray npm lockfile only produced
+# dependabot alerts for versions nothing ever installs.
+package-lock.json
