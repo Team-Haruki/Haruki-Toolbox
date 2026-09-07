@@ -26,7 +26,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "fast-uri": "^4.1.4",
-    "haruki-sekai-deck-recommend-cpp": "0.3.4",
+    "haruki-sekai-deck-recommend-cpp": "0.3.5",
     "lucide-vue-next": "^1.0.0",
     "nanoid": "^6.0.1",
     "pinia": "^4.0.3",
