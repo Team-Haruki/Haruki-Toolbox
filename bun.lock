@@ -13,7 +13,7 @@
         "axios": "1.20.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
-        "fast-uri": "^4.1.3",
+        "fast-uri": "^4.1.4",
         "haruki-sekai-deck-recommend-cpp": "0.3.4",
         "lucide-vue-next": "^1.0.0",
         "nanoid": "^6.0.1",
@@ -956,7 +956,7 @@
 
     "fast-levenshtein": ["fast-levenshtein@2.0.6", "", {}, "sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw=="],
 
-    "fast-uri": ["fast-uri@4.1.3", "", {}, "sha512-7+72G6vLt7jjNas8SmSATx2qeyRIjxeqO3i4IkmDTxlqYZRKANhOe1bnovcp4WZmvsYrp60WyqPyHqgRiX0yXw=="],
+    "fast-uri": ["fast-uri@4.1.4", "", {}, "sha512-dODXrIxlS9JSdgAnhIUKOosKV1oMtU2VtVw87QRaHzyl5jxO290Ii5tEZfCfzfWNHi3jKWwBSdQj0qIyshdZdQ=="],
 
     "fdir": ["fdir@6.5.0", "", { "peerDependencies": { "picomatch": "^3 || ^4" }, "optionalPeers": ["picomatch"] }, "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg=="],
 
