@@ -67,6 +67,11 @@ Barrel rules:
 - A module's internals must not import its own `index.ts` barrel (`@/modules/<self>` or relative equivalents). Import the concrete subpath instead (`./api/user`, `./composables/list`, etc.).
 - A module's non-`api/` internals must not import their own `api` barrel (`@/modules/<self>/api`). Import concrete files like `./api/user`.
 - Consumers in other modules **may** import the public `@/modules/<feature>` or `@/modules/<feature>/api` barrels.
+- A module barrel must **not** re-export `./routes`. The route table names every lazily-loaded view in that
+  module, so a barrel that carries it welds each consumer to all of those chunks: editing one view then
+  rehashes every chunk that imports the barrel (measured: 32 chunks / 742KB instead of 1 for a single view
+  edit), and the PWA re-downloads all of them. `@/modules/web/routes` imports each module's `routes` by
+  concrete subpath; keep it that way.
 
 Always use `@/` aliases rather than deep relative paths.
 

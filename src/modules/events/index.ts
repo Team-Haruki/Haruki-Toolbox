@@ -1,5 +1,3 @@
-export * from "./routes"
-
 export { default as EventBannerImage } from "./components/EventBannerImage.vue"
 export {
   resolveEventBackgroundUrl,

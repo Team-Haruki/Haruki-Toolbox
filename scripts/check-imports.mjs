@@ -211,6 +211,28 @@ function scanOwnApiBarrel(context, line, lineNumber) {
     )]
 }
 
+function scanIndexRoutesReexport(context, line, lineNumber) {
+    if (!context.isCurrentModuleIndex) {
+        return []
+    }
+
+    for (const importPath of extractImportPaths(line)) {
+        if (!importPath.startsWith(".")) {
+            continue
+        }
+        if (resolveImportTarget(context.filePath, importPath) !== `${context.moduleRootPath}/routes`) {
+            continue
+        }
+        return [createViolation(
+            context.filePath,
+            lineNumber,
+            importPath,
+            "Module barrels must not re-export ./routes. The route table names every lazily-loaded view in the module, so a barrel carrying it welds each consumer to all of those chunks: editing one view then rehashes every chunk that imports the barrel, and the PWA re-downloads all of them. @/modules/web/routes imports each module's routes by concrete subpath.",
+        )]
+    }
+    return []
+}
+
 function scanModuleLine(context, line, lineNumber) {
     if (!context.currentModule) {
         return []
@@ -219,6 +241,7 @@ function scanModuleLine(context, line, lineNumber) {
         ...scanOwnModuleBarrel(context, line, lineNumber),
         ...scanRelativeImports(context, line, lineNumber),
         ...scanOwnApiBarrel(context, line, lineNumber),
+        ...scanIndexRoutesReexport(context, line, lineNumber),
     ]
 }
 
