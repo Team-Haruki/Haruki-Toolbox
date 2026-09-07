@@ -1,5 +1,3 @@
-export * from "./routes"
-
 export {
   buildGachaLogoCandidates,
   normalizeCatalogGachas,

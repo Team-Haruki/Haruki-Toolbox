@@ -1,5 +1,3 @@
-export * from "./routes"
-
 export {
   CARDS_INDEX_FILES,
   CARDS_INDEX_KEY,

@@ -1,7 +1,6 @@
 export * from "./api"
 export * from "./lib/display"
 export * from "./lib/meta"
-export * from "./routes"
 export * from "./composables/useAdminTicketList"
 export * from "./composables/useAdminTicketDetail"
 export * from "./composables/useTicketList"

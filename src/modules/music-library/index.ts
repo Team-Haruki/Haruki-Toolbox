@@ -1,5 +1,3 @@
-export * from "./routes"
-
 export { default as MusicJacket } from "./components/MusicJacket.vue"
 export { useMusicLibraryList } from "./composables/useMusicLibraryList"
 export { resolveMusicJacketUrl } from "./lib/music-assets"
