@@ -1,4 +1,5 @@
 import { computed, onBeforeUnmount, shallowRef, watch, type ComputedRef, type Ref } from "vue"
+import { translate } from "@/shared/i18n"
 import { useUserStore } from "@/shared/stores/user"
 import {
   fetchRankBorderOverview,
@@ -48,6 +49,7 @@ type DetailTargetCacheEntry = {
   playerTrace: RankBorderTracePoint[]
   borderTrace: RankBorderTracePoint[]
   cachedAt: number
+  trackedUserId: string | null
 }
 
 const DETAIL_CACHE_LIMIT = 8
@@ -82,6 +84,7 @@ export function useRankBorderDetailPage(
   const comparisons = shallowRef<DetailPageComparison[]>([])
   const overview = shallowRef<RankBorderOverview | null>(null)
 
+  let trackedUserId: string | null = null
   let requestToken = 0
   let realtimeSubscription: RankBorderRealtimeSubscription | null = null
   let realtimeKey = ""
@@ -119,7 +122,13 @@ export function useRankBorderDetailPage(
   })
 
   watch(
-    () => [scope.value, params.value?.target] as const,
+    () => [
+      scope.value,
+      params.value?.target,
+      params.value?.target.kind === "user" && params.value.target.own
+        ? `${userStore.isLoggedIn}:${userStore.kratosIdentityId ?? ""}`
+        : null,
+    ] as const,
     () => {
       void loadTarget({ hydrateFromCache: true })
       void loadOverview()
@@ -162,6 +171,7 @@ export function useRankBorderDetailPage(
       playerTrace: playerTrace.value,
       borderTrace: borderTrace.value,
       cachedAt: Date.now(),
+      trackedUserId,
     })
     while (detailTargetCache.size > DETAIL_CACHE_LIMIT) {
       const oldestKey = detailTargetCache.keys().next().value
@@ -186,6 +196,8 @@ export function useRankBorderDetailPage(
   }
 
   function clearTargetState() {
+    trackedUserId = null
+    traceSource.value = params.value?.target.kind === "line" ? "border" : "player"
     current.value = null
     previous.value = null
     next.value = null
@@ -194,7 +206,7 @@ export function useRankBorderDetailPage(
   }
 
   function resolveCachedTraceSource(target: RankBorderDetailTargetInput, cached: DetailTargetCacheEntry): "player" | "border" {
-    if (target.kind === "line" || cached.playerTrace.length < 2) {
+    if (target.kind === "line") {
       return "border"
     }
     return traceSource.value === "border" && cached.borderTrace.length >= 2 ? "border" : "player"
@@ -207,6 +219,7 @@ export function useRankBorderDetailPage(
       clearTargetState()
       return false
     }
+    trackedUserId = cached.trackedUserId
     current.value = cached.current
     previous.value = cached.previous
     next.value = cached.next
@@ -276,7 +289,10 @@ export function useRankBorderDetailPage(
     token: number,
     incremental: boolean,
   ) {
-    const usePrivate = target.own === true && userStore.isLoggedIn
+    if (target.own && !userStore.isLoggedIn) {
+      throw new Error(translate("rankBorder.result.privateLookupLoginRequired"))
+    }
+    const usePrivate = target.own === true
     if (usePrivate) {
       // The private endpoint has no trace cursor; its own-account trace is
       // small enough that a full refetch stays cheap.
@@ -284,6 +300,7 @@ export function useRankBorderDetailPage(
         ...activeScope,
         userId: target.userId,
         ownerId: userStore.kratosIdentityId,
+        useWebSocket: true,
         includeTrace: true,
         includeProfile: true,
       })
@@ -330,11 +347,9 @@ export function useRankBorderDetailPage(
     token: number,
     incremental: boolean,
   ) {
-    const wantPlayerTrace = target.kind === "rank"
     const playerCursor = playerTrace.value[playerTrace.value.length - 1]?.timestamp ?? null
     const borderCursor = borderTrace.value[borderTrace.value.length - 1]?.timestamp ?? null
-    // Both traces share one request; incremental mode resumes from the older
-    // tail so neither series misses points.
+    // Resume the border from the older tail; the player has its own cursor.
     const cursor = incremental
       ? Math.min(playerCursor ?? Number.POSITIVE_INFINITY, borderCursor ?? Number.POSITIVE_INFINITY)
       : null
@@ -343,7 +358,7 @@ export function useRankBorderDetailPage(
       ...activeScope,
       rank: target.rank,
       includeTrace: true,
-      includePlayerTrace: wantPlayerTrace,
+      includePlayerTrace: false,
       cursor: incremental ? normalizedCursor : null,
       fetchAllTrace: !incremental,
       limit: TRACE_PAGE_LIMIT,
@@ -351,18 +366,35 @@ export function useRankBorderDetailPage(
     if (token !== requestToken) {
       return
     }
-    current.value = detail.current ?? current.value
-    previous.value = detail.previous ?? previous.value
-    next.value = detail.next ?? next.value
+    // Resolve the seat once, then fetch that player's history by stable ID.
+    // The border series continues to follow the originally selected rank.
+    trackedUserId ??= target.kind === "rank" ? detail.current?.userId ?? null : null
+    const playerDetail = trackedUserId
+      ? await fetchRankBorderWebUserDetailV2({
+          ...activeScope,
+          userId: trackedUserId,
+          includeTrace: true,
+          includeProfile: true,
+          cursor: incremental ? playerCursor : null,
+          fetchAllTrace: !incremental,
+          limit: TRACE_PAGE_LIMIT,
+        })
+      : null
+    if (token !== requestToken) {
+      return
+    }
+    const displayed = target.kind === "rank" && traceSource.value === "player" && playerDetail
+      ? playerDetail
+      : detail
+    current.value = displayed.current ?? null
+    previous.value = displayed.previous ?? null
+    next.value = displayed.next ?? null
     playerTrace.value = incremental
-      ? appendTrace(playerTrace.value, detail.playerTrace)
-      : normalizeRankBorderTraceTimeline(detail.playerTrace)
+      ? appendTrace(playerTrace.value, playerDetail?.playerTrace ?? detail.playerTrace)
+      : normalizeRankBorderTraceTimeline(playerDetail?.playerTrace ?? detail.playerTrace)
     borderTrace.value = incremental
       ? appendTrace(borderTrace.value, detail.rankTrace)
       : normalizeRankBorderTraceTimeline(detail.rankTrace)
-    if (!incremental) {
-      traceSource.value = target.kind === "line" || playerTrace.value.length < 2 ? "border" : "player"
-    }
   }
 
   // --- Overview (comparison picker + shared context) ---------------------------
@@ -421,6 +453,7 @@ export function useRankBorderDetailPage(
 
   function setTraceSource(source: "player" | "border") {
     traceSource.value = source
+    void loadTarget({ silent: true })
   }
 
   // --- Comparisons -------------------------------------------------------------

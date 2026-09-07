@@ -99,6 +99,9 @@ export default {
       "emptyHint": "點選左側榜位檢視玩家/檔線詳情"
     },
     "fields": {
+      "gameUidHint": "依目前伺服器與活動查詢遊戲 UID，無需綁定該帳號。",
+      "gameUid": "遊戲 UID",
+      "gameUidPlaceholder": "輸入遊戲 UID",
       "endpoint": "Tracker 介面地址",
       "endpointPlaceholder": "/event-tracker 或 https://tracker.example.com",
       "region": "區服",

@@ -99,6 +99,9 @@ export default {
       "emptyHint": "点击左侧榜位查看玩家/档线详情"
     },
     "fields": {
+      "gameUidHint": "按当前区服和活动查询游戏 UID，无需绑定该账号。",
+      "gameUid": "游戏 UID",
+      "gameUidPlaceholder": "输入游戏 UID",
       "endpoint": "Tracker 接口地址",
       "endpointPlaceholder": "/event-tracker 或 https://tracker.example.com",
       "region": "区服",

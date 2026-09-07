@@ -99,6 +99,9 @@ export default {
       "emptyHint": "Click a rank on the left to view player or border details"
     },
     "fields": {
+      "gameUidHint": "Look up a game UID in the selected server and event. No account binding is required.",
+      "gameUid": "Game UID",
+      "gameUidPlaceholder": "Enter a game UID",
       "endpoint": "Tracker endpoint",
       "endpointPlaceholder": "/event-tracker or https://tracker.example.com",
       "region": "Region",
