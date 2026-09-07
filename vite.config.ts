@@ -30,21 +30,6 @@ const manualChunkGroups = [
     },
 ]
 
-const adminPrecacheGlobIgnores = [
-    '**/assets/{admin,AdminLayout,Dashboard,SystemLogs,UploadLogs,UserManagement,UserDetail,OAuthClientManagement,AdminWebhookManagement,ContentManagement,AdminSponsorManagement,SystemConfig,GameAccountBindings,RiskManagement,AdminTicketList,AdminTicketDetail}-*.js',
-]
-
-// Niche heavyweights (deck-recommend/score wasm, 3D costume engine, the
-// non-default locale) are cached at runtime on first use instead of being
-// force-downloaded to every visitor during SW install (~6MB of the old
-// ~11MB precache).
-const heavyAssetPrecacheGlobIgnores = [
-    '**/*.wasm',
-    '**/assets/haruki-3d-engine-*.js',
-    '**/assets/en-US-*.js',
-    '**/assets/zh-TW-*.js',
-]
-
 const packageJson = JSON.parse(
     readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
 ) as { version?: string }
@@ -107,6 +92,39 @@ function resolveLocalDevServer(command: string, mode: string) {
     }
 }
 
+// The Service Worker no longer precaches the build, so nothing pulls the
+// lazily-loaded route chunks until the user navigates to them. This manifest
+// lets the running app warm them in the background, in parallel — including
+// the chunks of a *newer* deployment, so the reload after an update prompt
+// lands on an already-cached build.
+function assetManifestPlugin(): Plugin {
+    return {
+        name: 'haruki-asset-manifest',
+        generateBundle(_options, bundle) {
+            const files = Object.entries(bundle)
+                .filter(([fileName]) => /^assets\/.+\.(?:js|css)$/.test(fileName))
+                // The 3D costume engine is a megabyte that most visitors never
+                // open; it stays a pay-on-use download.
+                .filter(([fileName]) => !fileName.includes('/haruki-3d-engine-'))
+                .map(([fileName, output]) => ({
+                    url: `${'/'}${fileName}`,
+                    bytes: output.type === 'chunk'
+                        ? Buffer.byteLength(output.code)
+                        : Buffer.byteLength(
+                            typeof output.source === 'string' ? output.source : Buffer.from(output.source),
+                        ),
+                }))
+                .sort((left, right) => left.url.localeCompare(right.url))
+
+            this.emitFile({
+                type: 'asset',
+                fileName: 'asset-manifest.json',
+                source: `${JSON.stringify({ gitCommit: appBuildInfo.gitCommit, files }, null, 2)}\n`,
+            })
+        },
+    }
+}
+
 function buildInfoPlugin(): Plugin {
     return {
         name: 'haruki-build-info',
@@ -164,6 +182,7 @@ export default defineConfig(({ command, mode }) => {
             vue(),
             tailwindcss(),
             buildInfoPlugin(),
+            assetManifestPlugin(),
             VitePWA({
                 registerType: 'prompt',
                 includeManifestIcons: false,
@@ -194,34 +213,68 @@ export default defineConfig(({ command, mode }) => {
                 workbox: {
                     cleanupOutdatedCaches: true,
                     clientsClaim: true,
-                    globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,wasm}'],
-                    globIgnores: [...adminPrecacheGlobIgnores, ...heavyAssetPrecacheGlobIgnores],
+                    // Workbox installs precache entries strictly one at a time
+                    // (upstream issue #2528), so every entry costs a full
+                    // round-trip no matter how fast the connection is. Globbing
+                    // the whole build produced ~395 entries / 5.4MB, and a real
+                    // release renames ~170 of the content-hashed chunks — that
+                    // serial queue is what made an update take about a minute.
+                    // Precache only the navigation shell; everything under
+                    // /assets/ is content-hashed and therefore immutable, so it
+                    // is cached at runtime on first use, in parallel, by the
+                    // browser's normal loading of the page.
+                    // manifest.webmanifest is injected by vite-plugin-pwa itself.
+                    globPatterns: ['index.html', '*.{ico,png,svg}'],
                     maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
                     navigateFallbackDenylist: [/^\/api\//],
-                    // Sekai game-asset and toolbox static images (music jackets, card
-                    // art, icons) are content-addressed and immutable. Cache them at
-                    // runtime so re-opening pickers or revisiting pages reuses them
-                    // instead of re-downloading — independent of the CDN's headers.
-                    // Scoped to image extensions to avoid caching large 3D bundles.
                     runtimeCaching: [
                         {
-                            // Hashed heavyweights excluded from the precache above:
-                            // immutable by filename, so cache-first on first use.
-                            urlPattern: /\/assets\/(?:[^/]+\.wasm|haruki-3d-engine-[^/]+\.js|en-US-[^/]+\.js|zh-TW-[^/]+\.js)$/i,
+                            // The whole build output is content-hashed, so a URL
+                            // here never changes meaning: cache-first, never
+                            // revalidated. This replaces the precache for every
+                            // chunk, stylesheet, font and wasm blob.
+                            urlPattern: ({ url, sameOrigin }: { url: URL, sameOrigin: boolean }) =>
+                                sameOrigin && url.pathname.startsWith('/assets/'),
                             handler: 'CacheFirst',
                             options: {
-                                cacheName: 'heavy-immutable-assets',
+                                cacheName: 'app-assets-v1',
                                 expiration: {
-                                    maxEntries: 24,
+                                    maxEntries: 600,
                                     maxAgeSeconds: 60 * 60 * 24 * 60,
                                     purgeOnQuotaError: true,
                                 },
                                 cacheableResponse: {
-                                    statuses: [0, 200],
+                                    statuses: [200],
                                 },
                             },
                         },
                         {
+                            // public/ assets keep stable URLs across builds, so
+                            // they have to revalidate instead of pinning forever.
+                            urlPattern: ({ url, sameOrigin }: { url: URL, sameOrigin: boolean }) =>
+                                sameOrigin
+                                && (url.pathname.startsWith('/rank-border/') || url.pathname.startsWith('/basis/')),
+                            handler: 'StaleWhileRevalidate',
+                            options: {
+                                cacheName: 'app-static-v1',
+                                expiration: {
+                                    maxEntries: 300,
+                                    maxAgeSeconds: 60 * 60 * 24 * 30,
+                                    purgeOnQuotaError: true,
+                                },
+                                cacheableResponse: {
+                                    statuses: [200],
+                                },
+                            },
+                        },
+                        {
+                            // Sekai game-asset and toolbox static images (music
+                            // jackets, card art, icons) are content-addressed and
+                            // immutable. Cache them at runtime so re-opening pickers
+                            // or revisiting pages reuses them instead of
+                            // re-downloading — independent of the CDN's headers.
+                            // Scoped to image extensions to avoid caching large 3D
+                            // bundles.
                             // Keep latency probes on the network. Caching them makes
                             // endpoint re-tests measure Service Worker cache reads.
                             urlPattern: /^https:\/\/(sekai-assets\.haruki\.seiunx\.com|sekai-assets-bdf29c81\.seiunx\.net|toolbox-sekai-assets\.haruki\.seiunx\.com|images\.haruki\.seiunx\.com)\/(?!asset-probe\.png(?:\?|$)).*\.(?:png|jpe?g|webp|avif)(?:\?.*)?$/i,

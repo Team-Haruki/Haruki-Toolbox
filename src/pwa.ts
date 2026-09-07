@@ -1,6 +1,7 @@
 import { reactive } from "vue"
 import { toast } from "vue-sonner"
 import { createLogger } from "@/lib/logger"
+import { scheduleAssetWarmup, warmAssetCache } from "@/pwa-asset-warmup"
 import { translate } from "@/shared/i18n"
 
 const SERVICE_WORKER_UPDATE_INTERVAL_MS = 60 * 60 * 1000
@@ -72,6 +73,7 @@ export async function registerAppServiceWorker() {
       serviceWorkerRegistration = registration ?? null
       appUpdateState.serviceWorkerReady = !!registration
       startUpdateChecks(registration)
+      scheduleAssetWarmup()
     },
     onRegisterError(error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -107,6 +109,9 @@ export async function checkForAppUpdate(options: { silent?: boolean } = {}) {
     if (isNewBuild(remote)) {
       appUpdateState.updateAvailable = true
       showAppUpdatePrompt(remote)
+      // Pull the new build's chunks down in the background while the prompt is
+      // up, so accepting it reloads into an already-cached build.
+      void warmAssetCache()
     } else {
       appUpdateState.updateAvailable = false
       updatePromptCommit = null
@@ -286,7 +291,7 @@ function showAppUpdatePrompt(remote: AppBuildInfo | null) {
 
 function waitForWaitingServiceWorker(
   registration: ServiceWorkerRegistration,
-  timeoutMs = 4000,
+  timeoutMs = 15000,
 ) {
   if (registration.waiting) {
     return Promise.resolve()
@@ -294,19 +299,34 @@ function waitForWaitingServiceWorker(
 
   return new Promise<void>((resolve) => {
     const timeout = window.setTimeout(resolve, timeoutMs)
+    const finish = () => {
+      window.clearTimeout(timeout)
+      resolve()
+    }
 
-    registration.addEventListener("updatefound", () => {
-      const worker = registration.installing
+    const watchInstall = (worker: ServiceWorker | null) => {
       if (!worker) {
-        return
+        return false
       }
 
       worker.addEventListener("statechange", () => {
-        if (worker.state === "installed" && registration.waiting) {
-          window.clearTimeout(timeout)
-          resolve()
+        if (worker.state === "redundant" || (worker.state === "installed" && registration.waiting)) {
+          finish()
         }
       })
+      return true
+    }
+
+    // The periodic checks in startUpdateChecks() already call update(), so the
+    // new worker is usually installing by the time we get here and no further
+    // "updatefound" fires. Without this, the wait always hit the timeout and
+    // the reload below dropped the user back on the old build.
+    if (watchInstall(registration.installing)) {
+      return
+    }
+
+    registration.addEventListener("updatefound", () => {
+      watchInstall(registration.installing)
     }, { once: true })
   })
 }
