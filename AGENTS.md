@@ -23,7 +23,7 @@ This repository is the web UI for the Haruki ecosystem. It integrates with Ory K
 - `src/App.vue`: top-level app shell and user settings sync retry flow
 - `src/pwa.ts`: Service Worker registration, update prompt, build-info polling, old-cache cleanup
 - `src/core/`: app-wide router and HTTP infrastructure
-- `src/shared/`: shared stores, i18n, shared components, and the Sekai game-data layer (`src/shared/sekai/`: master-data loading/caching via a web worker, catalog helpers, asset endpoint/URL resolution, Service-Worker image cache recovery)
+- `src/shared/`: shared stores, i18n, shared components, and the Sekai game-data layer (`src/shared/sekai/`: master-data loading/caching via a web worker, catalog helpers, asset endpoint/URL resolution, Service-Worker image cache recovery). Master data and music_metas come from the Haruki master registry's CDN face (`https://sekai-api-cdn.haruki.seiunx.com`, see `data-sources.ts`): `/v1/master/{region}/current` is the manifest (its `contentHash` is the IndexedDB cache version), listed files load from the immutable `blob/{sha256}`, unlisted ones from `files/{name}.json`, and music_metas from `/v1/metas/{region}/music_metas.json`
 - `src/components/ui/`: reusable UI primitives
 - `src/composables/`, `src/lib/`, `src/config/`: cross-feature composables, pure helpers, and app config
 - `src/modules/<feature>/`: feature-local `api`, `components`, `composables`, `lib`, `views`, and `routes`
