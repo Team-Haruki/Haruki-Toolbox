@@ -10,15 +10,21 @@ export const SEKAI_MASTER_REPOS: Record<SekaiRegion, string> = {
   cn: "haruki-sekai-sc-master",
 }
 
+/**
+ * Master data comes from the Haruki master registry through its public CDN
+ * face: `current` is the per-region manifest (revalidated on every check),
+ * `blob/{sha256}` is an immutable file, `files/{name}.json` the mutable
+ * fallback for files the manifest does not list.
+ */
+const SEKAI_REGISTRY_BASE_URL = "https://sekai-api-cdn.haruki.seiunx.com"
 export const SEKAI_MUSIC_METAS_URLS: Record<SekaiRegion, string> = {
-  jp: "https://sekai-master-cdn.haruki.seiunx.com/music_metas.json",
-  en: "https://sekai-master-cdn.haruki.seiunx.com/music_metas-en.json",
-  tw: "https://sekai-master-cdn.haruki.seiunx.com/music_metas-tc.json",
-  kr: "https://sekai-master-cdn.haruki.seiunx.com/music_metas-kr.json",
-  cn: "https://sekai-master-cdn.haruki.seiunx.com/music_metas-cn.json",
+  jp: `${SEKAI_REGISTRY_BASE_URL}/v1/metas/jp/music_metas.json`,
+  en: `${SEKAI_REGISTRY_BASE_URL}/v1/metas/en/music_metas.json`,
+  tw: `${SEKAI_REGISTRY_BASE_URL}/v1/metas/tw/music_metas.json`,
+  kr: `${SEKAI_REGISTRY_BASE_URL}/v1/metas/kr/music_metas.json`,
+  cn: `${SEKAI_REGISTRY_BASE_URL}/v1/metas/cn/music_metas.json`,
 }
 
-const SEKAI_MASTER_CDN_BASE_URL = "https://sekai-master-cdn.haruki.seiunx.com"
 export const SEKAI_ASSET_ENDPOINT_ROOTS: Record<SekaiAssetEndpointPreference, string> = {
   china: "https://sekai-assets.haruki.seiunx.com",
   global: "https://sekai-assets-bdf29c81.seiunx.net",
@@ -74,10 +80,10 @@ export function regionUsesCdnVersion(region: SekaiRegion): boolean {
   return CDN_VERSION_REGIONS.includes(region)
 }
 
+/** The registry manifest; the cache-buster defeats an edge that ignores `no-cache`. */
 export function resolveSekaiMasterVersionUrl(region: SekaiRegion, now = Date.now()): string {
-  const repo = resolveSekaiMasterRepo(region)
   const nanoseconds = Math.trunc(now * 1_000_000)
-  return `${SEKAI_MASTER_CDN_BASE_URL}/${repo}/versions/current_version.json?t=${nanoseconds}`
+  return `${SEKAI_REGISTRY_BASE_URL}/v1/master/${region}/current?t=${nanoseconds}`
 }
 
 export function normalizeSekaiMasterVersionInfo(raw: unknown): SekaiMasterVersionInfo {
@@ -95,18 +101,44 @@ export function normalizeSekaiMasterVersionInfo(raw: unknown): SekaiMasterVersio
   return {
     dataVersion,
     cdnVersion: cdnVersion || null,
+    contentHash: normalizeVersionValue(record.contentHash) || null,
+    files: normalizeManifestFiles(record.files),
   }
 }
 
+/**
+ * The version the cache is keyed by. The registry's `contentHash` covers the
+ * whole file set, so it wins; the dataVersion/cdnVersion rule is kept for a
+ * manifest without one.
+ */
 export function resolveSekaiMasterFetchVersion(
   region: SekaiRegion,
   versionInfo: SekaiMasterVersionInfo,
 ): string {
+  if (versionInfo.contentHash) {
+    return versionInfo.contentHash
+  }
+
   if (regionUsesCdnVersion(region) && versionInfo.cdnVersion) {
     return versionInfo.cdnVersion
   }
 
   return versionInfo.dataVersion
+}
+
+/**
+ * Whether the manifest lists `name`; `null` when the manifest carries no
+ * file list at all (nothing can be concluded).
+ */
+export function manifestListsSekaiMasterFile(
+  versionInfo: SekaiMasterVersionInfo,
+  name: string,
+): boolean | null {
+  if (Object.keys(versionInfo.files).length === 0) {
+    return null
+  }
+
+  return normalizeSekaiMasterFileName(name) in versionInfo.files
 }
 
 export function formatSekaiMasterVersionLabel(
@@ -125,17 +157,28 @@ export function formatSekaiMasterVersionLabel(
   return dataVersion
 }
 
+/**
+ * Immutable `blob/{sha256}` when the manifest lists the file (cacheable for
+ * a year by every layer), otherwise the mutable `files/{name}.json` pointer
+ * with the version as a cache key.
+ */
 export function resolveSekaiMasterFileUrl(
   region: SekaiRegion,
   name: string,
   versionInfo: SekaiMasterVersionInfo | string,
 ): string {
-  const repo = resolveSekaiMasterRepo(region)
   const fileName = normalizeSekaiMasterFileName(name)
+  if (typeof versionInfo !== "string") {
+    const sha256 = versionInfo.files[fileName]
+    if (sha256) {
+      return `${SEKAI_REGISTRY_BASE_URL}/v1/master/${region}/blob/${sha256}`
+    }
+  }
+
   const version = typeof versionInfo === "string"
     ? versionInfo
     : resolveSekaiMasterFetchVersion(region, versionInfo)
-  return `${SEKAI_MASTER_CDN_BASE_URL}/${repo}/master/${fileName}.json?version=${encodeURIComponent(version)}`
+  return `${SEKAI_REGISTRY_BASE_URL}/v1/master/${region}/files/${fileName}.json?version=${encodeURIComponent(version)}`
 }
 
 export function resolveSekaiMusicMetasUrl(region: SekaiRegion, cacheKey?: string | number): string {
@@ -287,6 +330,30 @@ export function resolveUnitLogoUrl(unit: string): string {
 export function resolveCharacterIconUrl(characterId: number): string {
   const nickname = CHARACTER_ICON_NICKNAMES[characterId] ?? `chr_icon_${characterId}`
   return resolveToolboxStaticImageUrl(`static_images/chara_icon/${nickname}.png`)
+}
+
+function normalizeManifestFiles(value: unknown): Record<string, string> {
+  const files: Record<string, string> = {}
+  if (!Array.isArray(value)) {
+    return files
+  }
+
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") {
+      continue
+    }
+    const { name, sha256 } = entry as Record<string, unknown>
+    if (typeof name !== "string" || typeof sha256 !== "string") {
+      continue
+    }
+    const fileName = normalizeSekaiMasterFileName(name)
+    const digest = sha256.trim()
+    if (fileName && /^[0-9a-f]{64}$/i.test(digest)) {
+      files[fileName] = digest
+    }
+  }
+
+  return files
 }
 
 function normalizeVersionValue(value: unknown): string {
