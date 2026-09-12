@@ -5,6 +5,10 @@ export type SekaiAssetEndpointPreference = "china" | "global" | "china_cdn"
 export type SekaiMasterVersionInfo = {
   dataVersion: string
   cdnVersion: string | null
+  /** Registry manifest digest of the whole file set; the cache key when present. */
+  contentHash: string | null
+  /** Normalized file name (no `.json`) → sha256 of its current bytes. */
+  files: Record<string, string>
 }
 
 export type SekaiMasterCacheState = {
