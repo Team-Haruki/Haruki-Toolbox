@@ -12,6 +12,7 @@ import {
 } from "../api/rank-border"
 import {
   normalizeRankBorderTraceTimeline,
+  type RankBorderLine,
   type RankBorderLatest,
   type RankBorderOverview,
   type RankBorderTracePoint,
@@ -22,7 +23,7 @@ import {
   resolveComparisonSelfIdentity,
   type ComparisonTargetKind,
 } from "../lib/comparison-target"
-import { TRACE_PAGE_LIMIT } from "../lib/rank-border-constants"
+import { PERSONAL_COLLECTION_LIMIT, TRACE_PAGE_LIMIT } from "../lib/rank-border-constants"
 
 export type DetailComparisonKind = "rank" | "line" | "user"
 
@@ -83,6 +84,27 @@ export function useRankBorderDetailPage(
   const traceSource = shallowRef<"player" | "border">("player")
   const comparisons = shallowRef<DetailPageComparison[]>([])
   const overview = shallowRef<RankBorderOverview | null>(null)
+
+  // Sparse border lines have adjacent tracked tiers, not rank +/- 1 players.
+  // Use the same overview points as the leaderboard's inline quick facts.
+  const lineNeighbours = computed(() => {
+    const target = params.value?.target
+    let previous: RankBorderLine | null = null
+    let next: RankBorderLine | null = null
+    if (target?.kind === "line" && overview.value) {
+      const points = [
+        ...overview.value.topRankings,
+        ...overview.value.borderLines.filter((line) => line.rank > PERSONAL_COLLECTION_LIMIT),
+      ]
+      for (const point of points) {
+        if (point.rank < target.rank && (!previous || point.rank > previous.rank)) previous = point
+        if (point.rank > target.rank && (!next || point.rank < next.rank)) next = point
+      }
+    }
+    return { previous, next }
+  })
+  const displayedPrevious = computed(() => params.value?.target.kind === "line" ? lineNeighbours.value.previous : previous.value)
+  const displayedNext = computed(() => params.value?.target.kind === "line" ? lineNeighbours.value.next : next.value)
 
   let trackedUserId: string | null = null
   let requestToken = 0
@@ -426,6 +448,7 @@ export function useRankBorderDetailPage(
     }
 
     const cached = overviewCache.get(key)
+    overview.value = cached?.overview ?? null
     if (cached) {
       overview.value = cached.overview
       if (!force && Date.now() - cached.cachedAt < OVERVIEW_CACHE_TTL_MS) {
@@ -579,11 +602,10 @@ export function useRankBorderDetailPage(
   }
 
   async function refresh(silent = true) {
-    await loadTarget({ silent })
+    await Promise.all([loadTarget({ silent }), loadOverview(true)])
     for (const entry of comparisons.value) {
       void loadComparison(entry.id, silent && entry.trace.length > 0)
     }
-    void loadOverview(true)
   }
 
   // Comparison traces belong to the scope: a scope change reloads them fully.
@@ -646,8 +668,8 @@ export function useRankBorderDetailPage(
     loading,
     error,
     current,
-    previous,
-    next,
+    previous: displayedPrevious,
+    next: displayedNext,
     playerTrace,
     borderTrace,
     hasPlayerTrace,
