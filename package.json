@@ -55,7 +55,7 @@
     "@types/node": "26.4.1",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/tsconfig": "^0.9.1",
-    "eslint": "^10.9.1",
+    "eslint": "^10.10.0",
     "eslint-plugin-vue": "^10.10.0",
     "globals": "^17.12.0",
     "opencc-js": "^1.4.2",
