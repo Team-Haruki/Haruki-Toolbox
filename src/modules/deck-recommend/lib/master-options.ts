@@ -356,6 +356,10 @@ export function resolveEventSkillScoreUpLimit(
   items: unknown,
 ): number | null {
   const targetEventId = normalizeSelectNumber(eventId)
+  // Keep the legacy WL2 finale cap aligned with the recommendation engine.
+  if (targetEventId === 180) {
+    return 140
+  }
   if (!targetEventId || !Array.isArray(items)) {
     return null
   }
@@ -366,7 +370,7 @@ export function resolveEventSkillScoreUpLimit(
     && normalizePositiveNumber(item.scoreUpRateLimit) != null,
   )
   const scoreUpRateLimit = normalizePositiveNumber(matched?.scoreUpRateLimit)
-  return scoreUpRateLimit == null ? null : Math.max(0, scoreUpRateLimit - 100)
+  return scoreUpRateLimit
 }
 
 function resolveCharacterName(item: SekaiGameCharacter, id: number): string {

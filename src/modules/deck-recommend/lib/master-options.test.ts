@@ -141,13 +141,19 @@ describe("deck recommend master option helpers", () => {
     expect(resolveEventCardBonusLimit("180", null)).toBeNull()
   })
 
-  it("resolves event skill score up limits as bonus percentage caps", () => {
-    expect(resolveEventSkillScoreUpLimit("180", [
-      { id: 1, eventId: 180, scoreUpRateLimit: 300 },
-    ])).toBe(200)
+  it("uses direct event skill caps and preserves the legacy finale cap", () => {
+    for (const rawCap of [140, 240, 300]) {
+      expect(resolveEventSkillScoreUpLimit("180", [
+        { id: 1, eventId: 180, scoreUpRateLimit: rawCap },
+      ])).toBe(140)
+      expect(resolveEventSkillScoreUpLimit("218", [
+        { id: 2, eventId: 218, scoreUpRateLimit: rawCap },
+      ])).toBe(rawCap)
+    }
+    expect(resolveEventSkillScoreUpLimit("180", null)).toBe(140)
+    expect(resolveEventSkillScoreUpLimit("218", null)).toBeNull()
     expect(resolveEventSkillScoreUpLimit("181", [
-      { id: 1, eventId: 180, scoreUpRateLimit: 300 },
+      { id: 2, eventId: 218, scoreUpRateLimit: 140 },
     ])).toBeNull()
-    expect(resolveEventSkillScoreUpLimit("180", null)).toBeNull()
   })
 })
