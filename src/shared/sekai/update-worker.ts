@@ -1,4 +1,5 @@
 import {
+  manifestListsSekaiMasterFile,
   normalizeSekaiMasterFileName,
   normalizeSekaiMasterVersionInfo,
   resolveSekaiMasterFetchVersion,
@@ -302,11 +303,17 @@ async function fetchMasterFilesConcurrently(input: {
         current: completed + 1,
         total,
       })
-      const data = await fetchMasterFileJson(
-        resolveSekaiMasterFileUrl(region, fileName, versionInfo),
-        fileName,
-        optionalFiles,
-      )
+      // An optional file the manifest does not list is a known miss for this
+      // version: record it as empty without a round trip (the same outcome a
+      // 404 would produce). Required files still go to the fallback URL so a
+      // manifest gap surfaces as an error instead of silent empty data.
+      const data = optionalFiles.has(fileName) && manifestListsSekaiMasterFile(versionInfo, fileName) === false
+        ? []
+        : await fetchMasterFileJson(
+            resolveSekaiMasterFileUrl(region, fileName, versionInfo),
+            fileName,
+            optionalFiles,
+          )
       if (data !== SKIP_FILE) {
         masterFiles[fileName] = data
       }
