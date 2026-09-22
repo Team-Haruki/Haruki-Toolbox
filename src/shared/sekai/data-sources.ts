@@ -138,7 +138,7 @@ export function manifestListsSekaiMasterFile(
     return null
   }
 
-  return normalizeSekaiMasterFileName(name) in versionInfo.files
+  return Object.hasOwn(versionInfo.files, normalizeSekaiMasterFileName(name))
 }
 
 export function formatSekaiMasterVersionLabel(
@@ -169,7 +169,8 @@ export function resolveSekaiMasterFileUrl(
 ): string {
   const fileName = normalizeSekaiMasterFileName(name)
   if (typeof versionInfo !== "string") {
-    const sha256 = versionInfo.files[fileName]
+    // Own properties only: an inherited name such as `toString` must fall back, not build a blob URL.
+    const sha256 = Object.hasOwn(versionInfo.files, fileName) ? versionInfo.files[fileName] : undefined
     if (sha256) {
       return `${SEKAI_REGISTRY_BASE_URL}/v1/master/${region}/blob/${sha256}`
     }

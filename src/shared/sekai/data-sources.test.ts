@@ -82,6 +82,15 @@ describe("Sekai data source helpers", () => {
     expect(manifestListsSekaiMasterFile(legacyVersionInfo("1", null), "events")).toBeNull()
   })
 
+  it("ignores inherited object keys when reading the manifest", () => {
+    const manifest = { ...legacyVersionInfo("1", "2"), contentHash: CONTENT_HASH, files: { events: EVENTS_SHA } }
+    expect(manifestListsSekaiMasterFile(manifest, "toString")).toBe(false)
+    expect(manifestListsSekaiMasterFile(manifest, "constructor")).toBe(false)
+    expect(resolveSekaiMasterFileUrl("cn", "toString", manifest)).toBe(
+      `https://sekai-api-cdn.haruki.seiunx.com/v1/master/cn/files/toString.json?version=${CONTENT_HASH}`,
+    )
+  })
+
   it("builds music metas URLs with optional cache keys", () => {
     expect(resolveSekaiMusicMetasUrl("jp")).toBe(
       "https://sekai-api-cdn.haruki.seiunx.com/v1/metas/jp/music_metas.json",
