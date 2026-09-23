@@ -19,6 +19,7 @@ export const SEKAI_DATA_RECOMMEND_MASTER_FILES = [
   "eventCards",
   "eventDeckBonuses",
   "eventExchangeSummaries",
+  "eventHonorBonuses",
   "events",
   "eventItems",
   "eventRarityBonusRates",

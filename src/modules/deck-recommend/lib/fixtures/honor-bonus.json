@@ -1,0 +1,194 @@
+{
+  "master": {
+    "areaItemLevels": [],
+    "areaItems": [],
+    "areas": [],
+    "cardEpisodes": [],
+    "cards": [
+      {"id": 1,"characterId": 1,"cardRarityType": "rarity_4","attr": "cute","supportUnit": "none","skillId": 1,"cardParameters": [{"cardLevel": 1,"cardParameterType": "param1","power": 30000},{"cardLevel": 1,"cardParameterType": "param2","power": 30000},{"cardLevel": 1,"cardParameterType": "param3","power": 30000}]},
+      {"id": 2,"characterId": 5,"cardRarityType": "rarity_4","attr": "cute","supportUnit": "none","skillId": 1,"cardParameters": [{"cardLevel": 1,"cardParameterType": "param1","power": 30000},{"cardLevel": 1,"cardParameterType": "param2","power": 30000},{"cardLevel": 1,"cardParameterType": "param3","power": 30000}]},
+      {"id": 3,"characterId": 9,"cardRarityType": "rarity_4","attr": "cute","supportUnit": "none","skillId": 1,"cardParameters": [{"cardLevel": 1,"cardParameterType": "param1","power": 30000},{"cardLevel": 1,"cardParameterType": "param2","power": 30000},{"cardLevel": 1,"cardParameterType": "param3","power": 30000}]},
+      {"id": 4,"characterId": 13,"cardRarityType": "rarity_4","attr": "cute","supportUnit": "none","skillId": 1,"cardParameters": [{"cardLevel": 1,"cardParameterType": "param1","power": 30000},{"cardLevel": 1,"cardParameterType": "param2","power": 30000},{"cardLevel": 1,"cardParameterType": "param3","power": 30000}]},
+      {"id": 5,"characterId": 17,"cardRarityType": "rarity_4","attr": "cute","supportUnit": "none","skillId": 1,"cardParameters": [{"cardLevel": 1,"cardParameterType": "param1","power": 30000},{"cardLevel": 1,"cardParameterType": "param2","power": 30000},{"cardLevel": 1,"cardParameterType": "param3","power": 30000}]}
+    ],
+    "cardRarities": [
+      {"cardRarityType": "rarity_4","maxLevel": 1,"trainingMaxLevel": 1,"maxSkillLevel": 1}
+    ],
+    "characterRanks": [
+      {"id": 1,"characterId": 1,"characterRank": 1},
+      {"id": 2,"characterId": 2,"characterRank": 1},
+      {"id": 3,"characterId": 3,"characterRank": 1},
+      {"id": 4,"characterId": 4,"characterRank": 1},
+      {"id": 5,"characterId": 5,"characterRank": 1},
+      {"id": 6,"characterId": 6,"characterRank": 1},
+      {"id": 7,"characterId": 7,"characterRank": 1},
+      {"id": 8,"characterId": 8,"characterRank": 1},
+      {"id": 9,"characterId": 9,"characterRank": 1},
+      {"id": 10,"characterId": 10,"characterRank": 1},
+      {"id": 11,"characterId": 11,"characterRank": 1},
+      {"id": 12,"characterId": 12,"characterRank": 1},
+      {"id": 13,"characterId": 13,"characterRank": 1},
+      {"id": 14,"characterId": 14,"characterRank": 1},
+      {"id": 15,"characterId": 15,"characterRank": 1},
+      {"id": 16,"characterId": 16,"characterRank": 1},
+      {"id": 17,"characterId": 17,"characterRank": 1},
+      {"id": 18,"characterId": 18,"characterRank": 1},
+      {"id": 19,"characterId": 19,"characterRank": 1},
+      {"id": 20,"characterId": 20,"characterRank": 1},
+      {"id": 21,"characterId": 21,"characterRank": 1},
+      {"id": 22,"characterId": 22,"characterRank": 1},
+      {"id": 23,"characterId": 23,"characterRank": 1},
+      {"id": 24,"characterId": 24,"characterRank": 1},
+      {"id": 25,"characterId": 25,"characterRank": 1},
+      {"id": 26,"characterId": 26,"characterRank": 1}
+    ],
+    "eventCards": [
+      {"id": 1,"eventId": 202,"cardId": 1,"bonusRate": 30,"leaderBonusRate": 0},
+      {"id": 2,"eventId": 202,"cardId": 2,"bonusRate": 30,"leaderBonusRate": 0},
+      {"id": 3,"eventId": 202,"cardId": 3,"bonusRate": 30,"leaderBonusRate": 0},
+      {"id": 4,"eventId": 202,"cardId": 4,"bonusRate": 30,"leaderBonusRate": 0},
+      {"id": 5,"eventId": 202,"cardId": 5,"bonusRate": 30,"leaderBonusRate": 0}
+    ],
+    "eventDeckBonuses": [],
+    "eventExchangeSummaries": [],
+    "events": [
+      {"id": 163,"eventType": "world_bloom"},
+      {"id": 202,"eventType": "world_bloom"}
+    ],
+    "eventItems": [],
+    "eventRarityBonusRates": [
+      {"id": 1,"cardRarityType": "rarity_4","masterRank": 0,"bonusRate": 10}
+    ],
+    "gameCharacters": [
+      {"id": 1,"unit": "light_sound"},
+      {"id": 2,"unit": "light_sound"},
+      {"id": 3,"unit": "light_sound"},
+      {"id": 4,"unit": "light_sound"},
+      {"id": 5,"unit": "idol"},
+      {"id": 6,"unit": "idol"},
+      {"id": 7,"unit": "idol"},
+      {"id": 8,"unit": "idol"},
+      {"id": 9,"unit": "street"},
+      {"id": 10,"unit": "street"},
+      {"id": 11,"unit": "street"},
+      {"id": 12,"unit": "street"},
+      {"id": 13,"unit": "theme_park"},
+      {"id": 14,"unit": "theme_park"},
+      {"id": 15,"unit": "theme_park"},
+      {"id": 16,"unit": "theme_park"},
+      {"id": 17,"unit": "school_refusal"},
+      {"id": 18,"unit": "school_refusal"},
+      {"id": 19,"unit": "school_refusal"},
+      {"id": 20,"unit": "school_refusal"},
+      {"id": 21,"unit": "piapro"},
+      {"id": 22,"unit": "piapro"},
+      {"id": 23,"unit": "piapro"},
+      {"id": 24,"unit": "piapro"},
+      {"id": 25,"unit": "piapro"},
+      {"id": 26,"unit": "piapro"}
+    ],
+    "gameCharacterUnits": [
+      {"id": 1,"gameCharacterId": 1,"unit": "light_sound"},
+      {"id": 2,"gameCharacterId": 2,"unit": "light_sound"},
+      {"id": 3,"gameCharacterId": 3,"unit": "light_sound"},
+      {"id": 4,"gameCharacterId": 4,"unit": "light_sound"},
+      {"id": 5,"gameCharacterId": 5,"unit": "idol"},
+      {"id": 6,"gameCharacterId": 6,"unit": "idol"},
+      {"id": 7,"gameCharacterId": 7,"unit": "idol"},
+      {"id": 8,"gameCharacterId": 8,"unit": "idol"},
+      {"id": 9,"gameCharacterId": 9,"unit": "street"},
+      {"id": 10,"gameCharacterId": 10,"unit": "street"},
+      {"id": 11,"gameCharacterId": 11,"unit": "street"},
+      {"id": 12,"gameCharacterId": 12,"unit": "street"},
+      {"id": 13,"gameCharacterId": 13,"unit": "theme_park"},
+      {"id": 14,"gameCharacterId": 14,"unit": "theme_park"},
+      {"id": 15,"gameCharacterId": 15,"unit": "theme_park"},
+      {"id": 16,"gameCharacterId": 16,"unit": "theme_park"},
+      {"id": 17,"gameCharacterId": 17,"unit": "school_refusal"},
+      {"id": 18,"gameCharacterId": 18,"unit": "school_refusal"},
+      {"id": 19,"gameCharacterId": 19,"unit": "school_refusal"},
+      {"id": 20,"gameCharacterId": 20,"unit": "school_refusal"},
+      {"id": 21,"gameCharacterId": 21,"unit": "piapro"},
+      {"id": 22,"gameCharacterId": 22,"unit": "piapro"},
+      {"id": 23,"gameCharacterId": 23,"unit": "piapro"},
+      {"id": 24,"gameCharacterId": 24,"unit": "piapro"},
+      {"id": 25,"gameCharacterId": 25,"unit": "piapro"},
+      {"id": 26,"gameCharacterId": 26,"unit": "piapro"},
+      {"id": 101,"gameCharacterId": 21,"unit": "light_sound"}
+    ],
+    "honors": [
+      {"id": 301,"assetbundleName": "honor_top_001000_event_wl_3rd_part1_cp1","levels": [{"honorId": 301,"level": 1,"bonus": 100}]}
+    ],
+    "masterLessons": [],
+    "musicDifficulties": [],
+    "musics": [],
+    "musicVocals": [],
+    "shopItems": [],
+    "skills": [
+      {"id": 1,"skillEffects": [{"id": 1,"skillEffectType": "score_up","skillEffectDetails": [{"id": 1,"level": 1,"activateEffectValue": 200}]}]}
+    ],
+    "worldBloomDifferentAttributeBonuses": [
+      {"attributeCount": 1,"bonusRate": 0},
+      {"attributeCount": 2,"bonusRate": 0},
+      {"attributeCount": 3,"bonusRate": 0},
+      {"attributeCount": 4,"bonusRate": 0},
+      {"attributeCount": 5,"bonusRate": 0}
+    ],
+    "worldBlooms": [
+      {"id": 1,"eventId": 202,"worldBloomChapterType": "finale","chapterNo": 1}
+    ],
+    "worldBloomSupportDeckBonuses": [],
+    "worldBloomSupportDeckUnitEventLimitedBonuses": [
+      {"id": 1,"eventId": 202,"gameCharacterId": 1,"cardId": 201,"bonusRate": 20},
+      {"id": 2,"eventId": 163,"gameCharacterId": 1,"cardId": 203,"bonusRate": 20}
+    ],
+    "cardMysekaiCanvasBonuses": [],
+    "eventCardBonusLimits": [],
+    "eventHonorBonuses": [
+      {"id": 1,"eventId": 202,"honorId": 301,"leaderGameCharacterId": 1,"bonusRate": 50}
+    ],
+    "eventMysekaiFixtureGameCharacterPerformanceBonusLimits": [],
+    "eventSkillScoreUpLimits": [
+      {"id": 2,"eventId": 202,"scoreUpRateLimit": 140}
+    ],
+    "ingameCombos": [],
+    "ingameNotes": [],
+    "mysekaiFixtureGameCharacterGroups": [],
+    "mysekaiFixtureGameCharacterGroupPerformanceBonuses": [],
+    "mysekaiGates": [],
+    "mysekaiGateLevels": []
+  },
+  "user": {
+    "userGamedata": {"userId": 1},
+    "userAreas": [],
+    "userCards": [
+      {"userId": 1,"cardId": 1,"level": 1,"skillLevel": 1,"masterRank": 0,"specialTrainingStatus": "not_doing","defaultImage": "original","episodes": []},
+      {"userId": 1,"cardId": 2,"level": 1,"skillLevel": 1,"masterRank": 0,"specialTrainingStatus": "not_doing","defaultImage": "original","episodes": []},
+      {"userId": 1,"cardId": 3,"level": 1,"skillLevel": 1,"masterRank": 0,"specialTrainingStatus": "not_doing","defaultImage": "original","episodes": []},
+      {"userId": 1,"cardId": 4,"level": 1,"skillLevel": 1,"masterRank": 0,"specialTrainingStatus": "not_doing","defaultImage": "original","episodes": []},
+      {"userId": 1,"cardId": 5,"level": 1,"skillLevel": 1,"masterRank": 0,"specialTrainingStatus": "not_doing","defaultImage": "original","episodes": []}
+    ],
+    "userChallengeLiveSoloDecks": [],
+    "userCharacters": [
+      {"characterId": 1,"characterRank": 1},
+      {"characterId": 5,"characterRank": 1},
+      {"characterId": 9,"characterRank": 1},
+      {"characterId": 13,"characterRank": 1},
+      {"characterId": 17,"characterRank": 1}
+    ],
+    "userDecks": [],
+    "userHonors": [
+      {"honorId": 301,"level": 1}
+    ],
+    "userMysekaiCanvases": [],
+    "userMysekaiFixtureGameCharacterPerformanceBonuses": [
+      {"gameCharacterId": 1,"totalBonusRate": 100},
+      {"gameCharacterId": 5,"totalBonusRate": 100},
+      {"gameCharacterId": 9,"totalBonusRate": 100},
+      {"gameCharacterId": 13,"totalBonusRate": 100},
+      {"gameCharacterId": 17,"totalBonusRate": 100}
+    ],
+    "userMysekaiGates": [],
+    "userWorldBloomSupportDecks": []
+  }
+}

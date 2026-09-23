@@ -19,13 +19,12 @@ let enginePromise: Promise<SekaiDeckRecommendWasm> | null = null
 const loadedDataKeys = new Map<SekaiRegion, string>()
 
 // The engine reads a few optional master tables that the toolbox intentionally
-// does not ship (ingameNotes/ingameCombos are huge; eventHonorBonuses and the
-// mysekai fixture bonus limits are niche). It degrades gracefully when they are
+// does not ship (ingameNotes/ingameCombos are huge; the mysekai fixture bonus
+// limits are niche). It degrades gracefully when they are
 // absent but prints a "master data key not found" warning per key on every load,
 // which floods the console. Filter only these known-optional keys so genuinely
 // missing required tables still surface.
 const IGNORED_MISSING_MASTER_KEYS = [
-  "eventHonorBonuses",
   "eventMysekaiFixtureGameCharacterPerformanceBonusLimits",
   "ingameCombos",
   "ingameNotes",
