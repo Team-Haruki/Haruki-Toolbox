@@ -71,6 +71,7 @@ import type {
   RankBorderTooltipState,
 } from "../lib/rank-border-types"
 import { resolveTraceMetricStats } from "../lib/trace-stats"
+import { resolveWorldBloomModeSelection } from "../lib/world-bloom-mode"
 import { parseRichNameSegments, richNameSegmentStyle } from "../lib/rich-name"
 
 const COMPARISON_COLORS = [
@@ -91,6 +92,37 @@ const trackerEndpoint = ref(resolvePersistedTrackerEndpoint())
 const regionRef = computed(() => params.value?.region ?? "cn")
 const eventIdRef = computed(() => (params.value ? String(params.value.eventId) : null))
 const masterData = useRankBorderMasterData(regionRef, eventIdRef)
+
+// A shared or stale link can name a chapter the event does not have, or ask
+// for chapter mode on an event without chapters: once the event's master data
+// is known, rewrite it to the default chapter or the total leaderboard.
+watch(
+  [params, masterData.selectedEvent, masterData.worldBloomCharacterOptions],
+  ([value, event, chapters]) => {
+    if (!value || value.mode !== "world_bloom") {
+      return
+    }
+    const nextSelection = resolveWorldBloomModeSelection(
+      { mode: value.mode, worldBloomCharacterId: value.worldBloomCharacterId != null ? String(value.worldBloomCharacterId) : null },
+      event,
+      chapters,
+    )
+    const nextCharacterId = nextSelection.worldBloomCharacterId
+    if (nextSelection.mode === "world_bloom" && nextCharacterId === String(value.worldBloomCharacterId)) {
+      return
+    }
+    const query = { ...route.query }
+    if (nextSelection.mode === "world_bloom" && nextCharacterId) {
+      query.mode = "world_bloom"
+      query.wl = nextCharacterId
+    } else {
+      delete query.mode
+      delete query.wl
+    }
+    void router.replace({ query })
+  },
+  { immediate: true },
+)
 
 const cardById = computed(() => buildMasterRecordMap(masterData.cards.value))
 const honorById = computed(() => buildMasterRecordMap(masterData.honors.value))

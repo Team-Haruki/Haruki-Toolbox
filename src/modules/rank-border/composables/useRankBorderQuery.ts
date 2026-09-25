@@ -28,6 +28,10 @@ import {
   STORAGE_KEY,
 } from "../lib/rank-border-constants"
 import type { AccountOption, PersistedState } from "../lib/rank-border-types"
+import {
+  hasWorldBloomChapters,
+  resolveWorldBloomModeSelection,
+} from "../lib/world-bloom-mode"
 
 /**
  * QUERY / FILTER state cluster for the rank-border view.
@@ -141,7 +145,11 @@ export function useRankBorderQuery() {
   )
   const trackerEndpointReady = computed(() => normalizeTrackerEndpoint(trackerEndpoint.value) !== "")
 
-  const isSelectedWorldBloomEvent = computed(() => selectedEvent.value?.isWorldBloom === true)
+  // Chapters exist only for a World Link event with started chapters; the
+  // chapter switch is hidden (and total mode forced) for every other event.
+  const isSelectedWorldBloomEvent = computed(() =>
+    hasWorldBloomChapters(selectedEvent.value, masterOptions.worldBloomCharacterOptions.value),
+  )
 
   const modeOptions = computed(() => {
     const options = [{ value: "normal" as const, label: t("rankBorder.modes.normal") }]
@@ -173,37 +181,26 @@ export function useRankBorderQuery() {
     { immediate: true },
   )
 
+  // Keep mode + chapter valid for the selected event: this also repairs a
+  // persisted chapter selection from an earlier World Link event once the
+  // master data for the (possibly auto-selected) current event is known.
   watch(
-    () => masterOptions.worldBloomCharacterOptions.value,
-    (options) => {
-      if (mode.value !== "world_bloom") {
-        return
+    [selectedEvent, () => masterOptions.worldBloomCharacterOptions.value, mode, selectedWorldBloomCharacterId],
+    () => {
+      const next = resolveWorldBloomModeSelection(
+        { mode: mode.value, worldBloomCharacterId: selectedWorldBloomCharacterId.value },
+        selectedEvent.value,
+        masterOptions.worldBloomCharacterOptions.value,
+      )
+      if (next.mode !== mode.value) {
+        mode.value = next.mode
       }
-
-      if (options.length === 0) {
-        selectedWorldBloomCharacterId.value = null
-        return
-      }
-
-      if (!selectedWorldBloomCharacterId.value || !options.some((option) => option.value === selectedWorldBloomCharacterId.value)) {
-        selectedWorldBloomCharacterId.value = resolveDefaultWorldBloomCharacterId(options)
+      if (next.worldBloomCharacterId !== selectedWorldBloomCharacterId.value) {
+        selectedWorldBloomCharacterId.value = next.worldBloomCharacterId
       }
     },
     { immediate: true },
   )
-
-  watch(mode, () => {
-    if (mode.value === "world_bloom" && !selectedWorldBloomCharacterId.value) {
-      selectedWorldBloomCharacterId.value = resolveDefaultWorldBloomCharacterId(masterOptions.worldBloomCharacterOptions.value)
-    }
-  })
-
-  watch(isSelectedWorldBloomEvent, (isWorldBloom) => {
-    if (!isWorldBloom && mode.value === "world_bloom") {
-      mode.value = "normal"
-      selectedWorldBloomCharacterId.value = null
-    }
-  })
 
   watch(
     [
@@ -334,22 +331,6 @@ export function useRankBorderQuery() {
     )
 
     return active?.value ?? options[0]?.value ?? null
-  }
-
-  function resolveDefaultWorldBloomCharacterId(
-    options: Array<{ value: string; active?: boolean; chapterStartAt: number | null; aggregateAt: number | null }>,
-  ): string | null {
-    const active = options.find((option) => option.active)
-    if (active) {
-      return active.value
-    }
-
-    const now = Math.floor(Date.now() / 1000)
-    const started = options
-      .filter((option) => option.chapterStartAt != null && option.chapterStartAt <= now)
-      .sort((a, b) => (b.chapterStartAt ?? 0) - (a.chapterStartAt ?? 0))
-
-    return started[0]?.value ?? options[0]?.value ?? null
   }
 
   function isSekaiRegionValue(value: string): value is SekaiRegion {
