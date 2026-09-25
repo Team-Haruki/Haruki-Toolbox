@@ -626,4 +626,53 @@ describe("rank border tracker api", () => {
     const updates = events.filter((event) => event.type === "updated")
     expect(updates.map((event) => event.type === "updated" ? event.version : undefined)).toEqual([77, null])
   })
+
+  it("unsubscribes a topic only when its last subscriber on the socket leaves", async () => {
+    const originalFetch = globalThis.fetch
+    const originalWebSocket = globalThis.WebSocket
+    globalThis.fetch = (async () => new Response(JSON.stringify({ ticket: "ticket-1" }), { status: 200 })) as typeof fetch
+
+    const sent: Array<{ type?: string }> = []
+    class MockWebSocket extends EventTarget {
+      static CONNECTING = 0
+      static OPEN = 1
+      static CLOSED = 3
+      readyState = MockWebSocket.CONNECTING
+
+      constructor() {
+        super()
+        setTimeout(() => {
+          this.readyState = MockWebSocket.OPEN
+          this.dispatchEvent(new Event("open"))
+        }, 0)
+      }
+
+      send(payload: string) {
+        const message = JSON.parse(payload) as { id: string; type?: string }
+        sent.push(message)
+        this.dispatchEvent(new MessageEvent("message", {
+          data: JSON.stringify({ id: message.id, ok: true, status: 200, data: { total: 1, topic: 1 } }),
+        }))
+      }
+
+      close() {
+        this.readyState = MockWebSocket.CLOSED
+      }
+    }
+    globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket
+
+    try {
+      const scope = { endpoint: "https://tracker-refcount.example/base", region: "cn" as const, eventId: 180 }
+      const older = await subscribeRankBorderRealtime(scope, () => {})
+      const newer = await subscribeRankBorderRealtime(scope, () => {})
+      older.unsubscribe()
+      expect(sent.map((message) => message.type)).toEqual(["subscribe", "subscribe"])
+      newer.unsubscribe()
+      newer.unsubscribe()
+      expect(sent.map((message) => message.type)).toEqual(["subscribe", "subscribe", "unsubscribe"])
+    } finally {
+      globalThis.fetch = originalFetch
+      globalThis.WebSocket = originalWebSocket
+    }
+  })
 })
