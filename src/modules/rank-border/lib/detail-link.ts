@@ -27,6 +27,24 @@ export type RankBorderDetailParams = RankBorderDetailScopeInput & {
 
 const SEKAI_REGIONS = new Set(["jp", "en", "tw", "cn", "kr"])
 
+/**
+ * Detail target for the quick-facts "full details" button. A T100 seat pins
+ * the player who holds it right now (the public per-user detail), so the page
+ * keeps showing that player while ranks shuffle; only an empty seat falls back
+ * to following the rank. Border lines always follow the line.
+ */
+export function resolveQuickFactsDetailTarget(facts: {
+  kind: "rank" | "line"
+  rank: number
+  userId?: string | null
+}): RankBorderDetailTargetInput {
+  if (facts.kind === "line") {
+    return { kind: "line", rank: facts.rank }
+  }
+  const userId = facts.userId?.trim()
+  return userId ? { kind: "user", userId } : { kind: "rank", rank: facts.rank }
+}
+
 export function buildRankBorderDetailQuery(
   scope: RankBorderDetailScopeInput,
   target: RankBorderDetailTargetInput,
