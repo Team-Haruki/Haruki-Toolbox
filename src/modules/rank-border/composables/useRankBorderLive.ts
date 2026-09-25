@@ -119,6 +119,11 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
   let realtimeReconnectTimer: ReturnType<typeof setTimeout> | null = null
   let realtimeReconnectDelayMs = REALTIME_RECONNECT_MIN_MS
   let realtimeCatchUpOnReady = false
+  // Bumped whenever the scope (endpoint/region/event/mode/chapter/replay)
+  // changes: a refresh started for an older generation is aborted and its
+  // result dropped, so the previous event's data never flashes.
+  let refreshGeneration = 0
+  let refreshController: AbortController | null = null
 
   // One refresh at a time; pushes that land mid-fetch collapse into a single
   // follow-up, and hidden tabs defer realtime refreshes until visible again.
@@ -194,7 +199,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       return t("rankBorder.status.replaying")
     }
     if (!userStore.hasActiveSession) {
-      return t("rankBorder.status.loginRequired")
+      return t("rankBorder.status.pollingLoginForLive")
     }
     if (realtimeState.value === "ready") {
       return t("rankBorder.status.liveWs")
@@ -216,6 +221,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       () => userStore.isLoggedIn,
     ],
     () => {
+      cancelInFlightRefresh()
       resetRankBorderData()
       resetLiveRefreshTimer()
       void refreshData()
@@ -236,10 +242,17 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     if (typeof document !== "undefined") {
       document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
+    cancelInFlightRefresh()
     stopLiveRefreshTimer()
     stopRealtimeSubscription()
     clearNumberFlashTimer()
   })
+
+  function cancelInFlightRefresh() {
+    refreshGeneration += 1
+    refreshController?.abort()
+    refreshController = null
+  }
 
   /** Hidden tabs skip pushes; becoming visible again does one catch-up refresh. */
   function handleVisibilityChange() {
@@ -254,7 +267,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       void refreshGate.resume()
       return
     }
-    if (shouldAllowLocalLiveRefreshFallback()) {
+    if (shouldPollWithoutRealtime() || shouldAllowLocalLiveRefreshFallback()) {
       void refreshGate.request("direct")
     }
   }
@@ -382,6 +395,9 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     }
 
     stopLiveRefreshTimer()
+    const generation = refreshGeneration
+    const controller = new AbortController()
+    refreshController = controller
     liveRefreshing.value = true
     try {
       const previousDetails = top100Details.value
@@ -400,12 +416,11 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
         intervalSeconds: requestedIntervalSeconds,
         userId: null,
         rank: null,
-        cacheBust: true,
         playbackAt: playbackAt.value,
-        useWebSocket: canUseRealtimeAutoRefresh.value,
         version: isPlaybackLive.value ? version : null,
+        signal: controller.signal,
       })
-      if (tracker.error.value) {
+      if (controller.signal.aborted || generation !== refreshGeneration || tracker.error.value) {
         return
       }
 
@@ -420,6 +435,9 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
         previousGrowths,
       )
     } finally {
+      if (refreshController === controller) {
+        refreshController = null
+      }
       liveRefreshing.value = false
     }
   }
@@ -676,6 +694,18 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
   function resetLiveRefreshTimer() {
     stopLiveRefreshTimer()
     resetRealtimeSubscription()
+    if (shouldPollWithoutRealtime()) {
+      scheduleNextLiveRefresh()
+    }
+  }
+
+  /**
+   * Signed-out visitors cannot open the tracker socket (its ticket needs a
+   * session), so they poll the public overview instead. Each poll revalidates
+   * with the ETag, so an unchanged overview costs a 304.
+   */
+  function shouldPollWithoutRealtime() {
+    return canRefresh.value && isPlaybackLive.value && !userStore.hasActiveSession
   }
 
   function resetRealtimeSubscription() {

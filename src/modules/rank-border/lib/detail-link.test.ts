@@ -12,6 +12,17 @@ describe("rank border detail links", () => {
     expect(resolveQuickFactsDetailTarget({ kind: "line", rank: 500, userId: "abc" })).toEqual({ kind: "line", rank: 500 })
   })
 
+  it("keeps a chapter-mode link without a chapter so the page can resolve it", () => {
+    expect(parseRankBorderDetailQuery({ region: "cn", event: "170", mode: "world_bloom", target: "rank:1" })).toEqual({
+      region: "cn",
+      eventId: 170,
+      mode: "world_bloom",
+      worldBloomCharacterId: null,
+      intervalSeconds: 3600,
+      target: { kind: "rank", rank: 1 },
+    })
+  })
+
   it("round-trips a pinned World Link player through the URL", () => {
     const query = buildRankBorderDetailQuery(
       { region: "cn", eventId: 170, mode: "world_bloom", worldBloomCharacterId: 20, intervalSeconds: 3600 },

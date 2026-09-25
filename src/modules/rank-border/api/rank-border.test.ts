@@ -9,6 +9,7 @@ import {
   isRankBorderTrackerUnauthorizedError,
   fetchRankBorderWebUserDetailV2,
   normalizeTrackerVersion,
+  resetRankBorderSplitPartsSupport,
   subscribeRankBorderRealtime,
   type RankBorderRealtimeEvent,
   resolveRankBorderTrackerWebSocketTicketUrl,
@@ -395,28 +396,39 @@ describe("rank border tracker api", () => {
     ])
   })
 
-  it("reads versioned overviews over cacheable HTTP instead of the socket", async () => {
+  it("reads versioned live parts from the split resources over cacheable HTTP", async () => {
+    resetRankBorderSplitPartsSupport()
     const originalFetch = globalThis.fetch
     const originalWebSocket = globalThis.WebSocket
     const requests: Array<{ url: string; credentials?: RequestCredentials; cache?: RequestCache }> = []
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      requests.push({ url: String(input), credentials: init?.credentials, cache: init?.cache })
-      return new Response(JSON.stringify({ topRankings: [], borderLines: [] }), { status: 200 })
+      const url = String(input)
+      requests.push({ url, credentials: init?.credentials, cache: init?.cache })
+      if (url.includes("/top100?")) {
+        return new Response(JSON.stringify({ topRankings: [{ rank: 1, userId: "a", score: 10, timestamp: 5 }], status: { timestamp: 5 } }))
+      }
+      if (url.includes("/borders?")) {
+        return new Response(JSON.stringify({ borderLines: [{ rank: 200, score: 3, timestamp: 5 }] }))
+      }
+      if (url.includes("/growth?")) {
+        return new Response(JSON.stringify({ topPlayerGrowths: [], topRankGrowths: [], borderGrowths: [], intervalSeconds: 3600 }))
+      }
+      return new Response("unexpected", { status: 500 })
     }) as typeof fetch
     globalThis.WebSocket = class {
       constructor() {
-        throw new Error("versioned reads must not open a socket")
+        throw new Error("public reads must not open a socket")
       }
     } as unknown as typeof WebSocket
 
+    let overview
     try {
-      await fetchRankBorderOverview({
-        endpoint: "https://tracker.example/base",
+      overview = await fetchRankBorderOverview({
+        endpoint: "https://tracker-split.example/base",
         region: "cn",
         eventId: 180,
         mode: "normal",
         intervalSeconds: 3600,
-        cacheBust: true,
         useWebSocket: true,
         version: 42,
       })
@@ -425,20 +437,60 @@ describe("rank border tracker api", () => {
       globalThis.WebSocket = originalWebSocket
     }
 
+    const base = "https://tracker-split.example/base/api/v2/web/events/cn/180/leaderboards/total"
+    expect(requests).toEqual(["top100", "borders", "growth"].map((part) => ({
+      url: `${base}/${part}?interval=3600&v=42`,
+      credentials: "omit",
+      cache: "default",
+    })))
+    expect(overview.topRankings.map((entry) => entry.rank)).toEqual([1])
+    expect(overview.borderLines.map((line) => line.rank)).toEqual([200])
+    expect(overview.intervalSeconds).toBe(3600)
+  })
+
+  it("falls back to the overview for the session when the split resources are missing", async () => {
+    resetRankBorderSplitPartsSupport()
+    const originalFetch = globalThis.fetch
+    const requests: string[] = []
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      requests.push(url)
+      if (url.includes("/overview?")) {
+        return new Response(JSON.stringify({ topRankings: [], borderLines: [] }))
+      }
+      return new Response("Not Found", { status: 404 })
+    }) as typeof fetch
+
+    const scope = {
+      endpoint: "https://tracker-old.example",
+      region: "jp" as const,
+      eventId: 1,
+      mode: "world_bloom" as const,
+      worldBloomCharacterId: 20,
+      intervalSeconds: 900,
+      parts: ["top100", "borders"] as const,
+    }
+    try {
+      await fetchRankBorderOverview({ ...scope, version: 7 })
+      await fetchRankBorderOverview({ ...scope, version: 8 })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    const base = "https://tracker-old.example/api/v2/web/events/jp/1/leaderboards/world-bloom/20"
     expect(requests).toEqual([
-      {
-        url: "https://tracker.example/base/api/v2/web/events/cn/180/leaderboards/total/overview?interval=3600&v=42",
-        credentials: "omit",
-        cache: "default",
-      },
+      `${base}/top100?interval=900&v=7`,
+      `${base}/borders?interval=900&v=7`,
+      `${base}/overview?interval=900&v=7`,
+      `${base}/overview?interval=900&v=8`,
     ])
   })
 
-  it("keeps the cache-busted request when no version is known or replaying", async () => {
+  it("revalidates unversioned public reads instead of cache-busting them", async () => {
     const originalFetch = globalThis.fetch
-    const requests: Array<{ url: string; cache?: RequestCache }> = []
+    const requests: Array<{ url: string; cache?: RequestCache; credentials?: RequestCredentials }> = []
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      requests.push({ url: String(input), cache: init?.cache })
+      requests.push({ url: String(input), cache: init?.cache, credentials: init?.credentials })
       return new Response(JSON.stringify({ topRankings: [], borderLines: [] }), { status: 200 })
     }) as typeof fetch
 
@@ -449,7 +501,7 @@ describe("rank border tracker api", () => {
         eventId: 180,
         mode: "normal" as const,
         intervalSeconds: 3600,
-        cacheBust: true,
+        useWebSocket: true,
       }
       await fetchRankBorderOverview({ ...scope, version: null })
       await fetchRankBorderOverview({ ...scope, version: 42, playbackAt: 1_700_000_000 })
@@ -459,11 +511,35 @@ describe("rank border tracker api", () => {
 
     expect(requests).toHaveLength(2)
     for (const request of requests) {
-      expect(request.cache).toBe("no-store")
-      expect(request.url).toContain("_t=")
+      expect(request.cache).toBe("no-cache")
+      expect(request.credentials).toBe("omit")
+      expect(request.url).not.toContain("_t=")
       expect(request.url).not.toContain("v=42")
     }
     expect(requests[1]?.url).toContain("at=1700000000")
+  })
+
+  it("aborts superseded public reads", async () => {
+    const originalFetch = globalThis.fetch
+    let seenSignal: AbortSignal | undefined
+    globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      seenSignal = init?.signal ?? undefined
+      return new Response(JSON.stringify({}), { status: 200 })
+    }) as typeof fetch
+    const controller = new AbortController()
+    try {
+      await fetchRankBorderWebUserDetailV2({
+        endpoint: "https://tracker.example",
+        region: "cn",
+        eventId: 1,
+        mode: "normal",
+        userId: "u1",
+        signal: controller.signal,
+      })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+    expect(seenSignal).toBe(controller.signal)
   })
 
   it("normalizes tracker versions", () => {

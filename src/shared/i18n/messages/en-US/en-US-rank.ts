@@ -138,6 +138,13 @@ export default {
       "coverage": "Tracked range",
       "trackerCadence": "Tracker cadence"
     },
+    "detailIssues": {
+      "title": "Some data could not be updated; showing the last successful data.",
+      "overview": "Leaderboard overview",
+      "comparisons": "Comparisons: {names}",
+      "realtime": "Live updates disconnected, reconnecting",
+      "retry": "Retry"
+    },
     "status": {
       "unknown": "Unknown",
       "live": "Live updating",
@@ -145,6 +152,7 @@ export default {
       "connecting": "Connecting live push",
       "waitingWs": "Waiting for live push",
       "loginRequired": "Log in to enable auto refresh",
+      "pollingLoginForLive": "Refreshing periodically; log in for live updates",
       "replaying": "Replaying"
     },
     "time": {

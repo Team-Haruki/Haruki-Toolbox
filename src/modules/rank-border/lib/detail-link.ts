@@ -72,11 +72,10 @@ export function parseRankBorderDetailQuery(query: LocationQuery): RankBorderDeta
     return null
   }
 
+  // `mode=world_bloom` without a usable `wl` still parses: the page resolves
+  // the chapter (current / latest started, or total) once master data loads.
   const mode: RankBorderMode = firstQueryValue(query.mode) === "world_bloom" ? "world_bloom" : "normal"
   const worldBloomCharacterId = parsePositiveInt(firstQueryValue(query.wl))
-  if (mode === "world_bloom" && !worldBloomCharacterId) {
-    return null
-  }
 
   const interval = parsePositiveInt(firstQueryValue(query.interval)) ?? 3600
   const target = parseTarget(firstQueryValue(query.target), firstQueryValue(query.own) === "1")

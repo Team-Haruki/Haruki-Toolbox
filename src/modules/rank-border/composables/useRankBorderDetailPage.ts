@@ -29,6 +29,8 @@ import { createRealtimeRefreshGate, isDocumentHidden } from "../lib/realtime-ref
 export type DetailComparisonKind = "rank" | "line" | "user"
 
 export type DetailPageComparison = {
+  /** True when the last incremental refresh failed (the trace shown is stale). */
+  stale?: boolean
   id: string
   kind: DetailComparisonKind
   query: string
@@ -58,6 +60,10 @@ const DETAIL_CACHE_LIMIT = 8
 const OVERVIEW_CACHE_TTL_MS = 60_000
 const REALTIME_RECONNECT_MIN_MS = 1_000
 const REALTIME_RECONNECT_MAX_MS = 30_000
+/** Comparison traces follow pushes at most this often; the target follows every push. */
+const COMPARISON_PUSH_REFRESH_MS = 10_000
+/** Signed-out visitors have no socket: poll (ETag-revalidated) this often. */
+const SIGNED_OUT_POLL_MS = 10_000
 
 // Module-level caches survive navigation, so list -> detail -> back -> detail
 // repaints instantly from memory and only the missing tail is fetched.
@@ -115,16 +121,28 @@ export function useRankBorderDetailPage(
   let realtimeKey = ""
   let realtimeReconnectTimer: ReturnType<typeof setTimeout> | null = null
   let realtimeReconnectDelayMs = REALTIME_RECONNECT_MIN_MS
+  let comparisonsRefreshedAt = 0
+  let pollTimer: ReturnType<typeof setTimeout> | null = null
+  // Aborts the requests of superseded loads; the tokens below drop their results.
+  let targetController: AbortController | null = null
+  let overviewController: AbortController | null = null
+  let comparisonGeneration = 0
+
+  /** Non-fatal problems: the page keeps its last data and offers a retry. */
+  const overviewError = shallowRef<string | null>(null)
+  const realtimeError = shallowRef(false)
 
   // Realtime refreshes run one at a time: pushes that land mid-refresh fold
   // into one follow-up, and hidden tabs wait for visibility to catch up.
   const realtimeRefresh = createRealtimeRefreshGate({
-    run: (version) => refreshAll(true, version),
+    run: (version) => refreshForPush(version),
+    onIdle: schedulePoll,
   })
 
   const scope = computed<RankBorderTrackerScope | null>(() => {
     const value = params.value
-    if (!value) {
+    // Chapter mode without a chapter waits until the view resolves one.
+    if (!value || (value.mode === "world_bloom" && !value.worldBloomCharacterId)) {
       return null
     }
     return {
@@ -133,7 +151,6 @@ export function useRankBorderDetailPage(
       eventId: value.eventId,
       mode: value.mode,
       worldBloomCharacterId: value.worldBloomCharacterId,
-      cacheBust: true,
       playbackAt: null,
       useWebSocket: false,
     }
@@ -166,6 +183,7 @@ export function useRankBorderDetailPage(
       void loadTarget({ hydrateFromCache: true })
       void loadOverview()
       resetRealtime()
+      schedulePoll()
     },
     { immediate: true },
   )
@@ -179,10 +197,44 @@ export function useRankBorderDetailPage(
       document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
     stopRealtime()
+    stopPoll()
+    targetController?.abort()
+    overviewController?.abort()
   })
 
+  /**
+   * Signed-out visitors cannot subscribe (the socket ticket needs a session),
+   * so the page polls; each request revalidates with the ETag.
+   */
+  function schedulePoll() {
+    stopPoll()
+    if (!params.value || userStore.hasActiveSession) {
+      return
+    }
+    pollTimer = setTimeout(() => {
+      pollTimer = null
+      if (isDocumentHidden()) {
+        return
+      }
+      void realtimeRefresh.request("realtime")
+    }, SIGNED_OUT_POLL_MS)
+  }
+
+  function stopPoll() {
+    if (pollTimer) {
+      clearTimeout(pollTimer)
+      pollTimer = null
+    }
+  }
+
   function handleVisibilityChange() {
-    if (isDocumentHidden() || !realtimeKey) {
+    if (isDocumentHidden()) {
+      return
+    }
+    if (!realtimeKey) {
+      if (params.value && !userStore.hasActiveSession) {
+        void realtimeRefresh.request("realtime")
+      }
       return
     }
     if (!realtimeSubscription && realtimeReconnectTimer) {
@@ -303,10 +355,15 @@ export function useRankBorderDetailPage(
       : loadError instanceof Error ? loadError.message : String(loadError)
   }
 
-  async function loadTarget(options: { hydrateFromCache?: boolean; silent?: boolean } = {}) {
-    const activeScope = scope.value
+  async function loadTarget(options: { hydrateFromCache?: boolean; silent?: boolean; version?: number | null } = {}) {
     const target = params.value?.target
     const token = ++requestToken
+    targetController?.abort()
+    const controller = new AbortController()
+    targetController = controller
+    const activeScope = scope.value
+      ? { ...scope.value, version: options.version ?? null, signal: controller.signal }
+      : null
     if (!activeScope || !target) {
       current.value = null
       playerTrace.value = []
@@ -329,7 +386,7 @@ export function useRankBorderDetailPage(
         settleTargetLoad()
       }
     } catch (loadError) {
-      if (token === requestToken) {
+      if (token === requestToken && !controller.signal.aborted) {
         failTargetLoad(loadError, silent)
       }
     } finally {
@@ -487,17 +544,22 @@ export function useRankBorderDetailPage(
       }
     }
 
+    overviewController?.abort()
+    const controller = new AbortController()
+    overviewController = controller
     try {
       const data = await fetchRankBorderOverview({
         ...activeScope,
+        signal: controller.signal,
         intervalSeconds: value.intervalSeconds,
         version,
         // Neighbour lines and the comparison picker only read these parts.
         parts: ["top100", "borders"],
       })
-      if (overviewCacheKey() !== key) {
+      if (overviewCacheKey() !== key || controller.signal.aborted) {
         return
       }
+      overviewError.value = null
       overview.value = data
       overviewCache.set(key, { cachedAt: Date.now(), overview: data })
       while (overviewCache.size > 4) {
@@ -507,7 +569,12 @@ export function useRankBorderDetailPage(
         }
         overviewCache.delete(oldestKey)
       }
-    } catch {
+    } catch (loadError) {
+      if (overviewCacheKey() !== key || controller.signal.aborted) {
+        return
+      }
+      console.error("[rank-border] overview load failed", loadError)
+      overviewError.value = loadError instanceof Error ? loadError.message : String(loadError)
     }
   }
 
@@ -566,12 +633,13 @@ export function useRankBorderDetailPage(
     comparisons.value = comparisons.value.filter((item) => item.id !== id)
   }
 
-  async function loadComparison(id: string, incremental: boolean) {
-    const activeScope = scope.value
+  async function loadComparison(id: string, incremental: boolean, version: number | null = null) {
+    const activeScope = scope.value ? { ...scope.value, version } : null
     const entry = comparisons.value.find((item) => item.id === id)
     if (!activeScope || !entry) {
       return
     }
+    const generation = comparisonGeneration
 
     const cursor = incremental
       ? entry.trace[entry.trace.length - 1]?.timestamp ?? null
@@ -599,7 +667,8 @@ export function useRankBorderDetailPage(
           label: detail.current?.name ?? detail.profile?.name ?? entry.label,
           loading: false,
           error: nextTrace.length === 0,
-        })
+          stale: false,
+        }, generation)
       } else {
         const rank = Number(entry.query)
         const detail = await fetchRankBorderWebRankDetailV2({
@@ -620,35 +689,89 @@ export function useRankBorderDetailPage(
           current: detail.current ?? entry.current,
           loading: false,
           error: nextTrace.length === 0,
-        })
+          stale: false,
+        }, generation)
       }
-    } catch {
-      if (!incremental) {
-        patchComparison(id, { loading: false, error: true })
+    } catch (loadError) {
+      if (generation !== comparisonGeneration) {
+        return
       }
+      console.error(`[rank-border] comparison ${id} load failed`, loadError)
+      patchComparison(id, incremental ? { stale: true } : { loading: false, error: true }, generation)
     }
   }
 
-  function patchComparison(id: string, patch: Partial<DetailPageComparison>) {
+  /** Results of a load started before the last scope change are dropped. */
+  function patchComparison(id: string, patch: Partial<DetailPageComparison>, generation = comparisonGeneration) {
+    if (generation !== comparisonGeneration) {
+      return
+    }
     comparisons.value = comparisons.value.map((item) =>
       item.id === id ? { ...item, ...patch } : item,
     )
   }
 
-  function refresh(silent = true) {
-    return refreshAll(silent, null)
+  /** Manual refresh: the target, the overview and every comparison. */
+  async function refresh(silent = true) {
+    await Promise.all([loadTarget({ silent }), loadOverview(true)])
+    comparisonsRefreshedAt = Date.now()
+    await Promise.all(comparisons.value.map((entry) => loadComparison(entry.id, silent && entry.trace.length > 0)))
   }
 
-  /** `version` (from a realtime push) lets the overview use the cacheable versioned GET. */
-  async function refreshAll(silent: boolean, version: number | null) {
-    await Promise.all([loadTarget({ silent }), loadOverview(true, version)])
+  /**
+   * Push-driven refresh for `version`: the target always (incrementally, on
+   * the versioned GET), the overview only when the page shows its neighbour
+   * lines (other readers use the TTL cache), comparisons at most every
+   * COMPARISON_PUSH_REFRESH_MS.
+   */
+  async function refreshForPush(version: number | null) {
+    const tasks: Promise<unknown>[] = [loadTarget({ silent: true, version })]
+    if (params.value?.target.kind === "line") {
+      tasks.push(loadOverview(true, version))
+    } else {
+      tasks.push(loadOverview(false, version))
+    }
+    if (Date.now() - comparisonsRefreshedAt >= COMPARISON_PUSH_REFRESH_MS) {
+      comparisonsRefreshedAt = Date.now()
+      for (const entry of comparisons.value) {
+        tasks.push(loadComparison(entry.id, entry.trace.length > 0, version))
+      }
+    }
+    await Promise.all(tasks)
+  }
+
+  /** Retry whatever failed: the overview, stale/failed comparisons, the socket. */
+  function retryIssues() {
+    if (overviewError.value) {
+      void loadOverview(true)
+    }
     for (const entry of comparisons.value) {
-      void loadComparison(entry.id, silent && entry.trace.length > 0)
+      if (entry.error || entry.stale) {
+        void loadComparison(entry.id, entry.stale === true && entry.trace.length > 0)
+      }
+    }
+    if (realtimeError.value && realtimeKey) {
+      if (realtimeReconnectTimer) {
+        clearTimeout(realtimeReconnectTimer)
+        realtimeReconnectTimer = null
+      }
+      realtimeKey = ""
+      resetRealtime()
     }
   }
 
-  // Comparison traces belong to the scope: a scope change reloads them fully.
+  const issues = computed(() => ({
+    overview: overviewError.value != null,
+    comparisons: comparisons.value.filter((entry) => !entry.loading && (entry.error || entry.stale)).map((entry) => entry.label),
+    realtime: realtimeError.value,
+  }))
+  const hasIssues = computed(() => issues.value.overview || issues.value.comparisons.length > 0 || issues.value.realtime)
+
+  // Comparison traces belong to the scope: a scope change drops in-flight
+  // results and reloads them fully.
   watch(scope, () => {
+    comparisonGeneration += 1
+    overviewError.value = null
     for (const entry of comparisons.value) {
       void loadComparison(entry.id, false)
     }
@@ -683,6 +806,7 @@ export function useRankBorderDetailPage(
       if (event.type === "state") {
         // A closed socket forgets its subscriptions: subscribe again.
         if (event.state === "closed" && subscription && realtimeSubscription === subscription) {
+          realtimeError.value = true
           scheduleRealtimeReconnect(key)
         }
         return
@@ -706,14 +830,17 @@ export function useRankBorderDetailPage(
         }
         subscription = created
         realtimeSubscription = created
+        realtimeError.value = false
         if (reconnecting) {
           // Pushes sent while the socket was down are lost: catch up once.
           realtimeReconnectDelayMs = REALTIME_RECONNECT_MIN_MS
           void realtimeRefresh.request("realtime")
         }
       })
-      .catch(() => {
+      .catch((subscribeError) => {
         if (realtimeKey === key) {
+          console.error("[rank-border] realtime subscription failed", subscribeError)
+          realtimeError.value = true
           scheduleRealtimeReconnect(key)
         }
       })
@@ -737,6 +864,9 @@ export function useRankBorderDetailPage(
   }
 
   function stopRealtime(options: { keepBackoff?: boolean } = {}) {
+    if (!options.keepBackoff) {
+      realtimeError.value = false
+    }
     realtimeSubscription?.unsubscribe()
     realtimeSubscription = null
     realtimeKey = ""
@@ -765,6 +895,11 @@ export function useRankBorderDetailPage(
     setTraceSource,
     overview,
     comparisons,
+    issues,
+    hasIssues,
+    retryIssues,
+    /** Push-driven refresh (exposed for tests). */
+    refreshForPush,
     isSelfComparison,
     addComparisonTarget,
     addComparisonPlayer,

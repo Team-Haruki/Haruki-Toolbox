@@ -102,13 +102,14 @@ watch(
     if (!value || value.mode !== "world_bloom") {
       return
     }
+    const currentCharacterId = value.worldBloomCharacterId != null ? String(value.worldBloomCharacterId) : null
     const nextSelection = resolveWorldBloomModeSelection(
-      { mode: value.mode, worldBloomCharacterId: value.worldBloomCharacterId != null ? String(value.worldBloomCharacterId) : null },
+      { mode: value.mode, worldBloomCharacterId: currentCharacterId },
       event,
       chapters,
     )
     const nextCharacterId = nextSelection.worldBloomCharacterId
-    if (nextSelection.mode === "world_bloom" && nextCharacterId === String(value.worldBloomCharacterId)) {
+    if (nextSelection.mode === value.mode && nextCharacterId === currentCharacterId) {
       return
     }
     const query = { ...route.query }
@@ -157,6 +158,9 @@ const {
   setTraceSource,
   overview,
   comparisons,
+  issues,
+  hasIssues,
+  retryIssues,
   isSelfComparison,
   addComparisonTarget,
   addComparisonPlayer,
@@ -751,6 +755,20 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
       </Card>
 
       <template v-else>
+        <div
+          v-if="hasIssues"
+          role="status"
+          class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
+        >
+          <span class="font-medium">{{ t("rankBorder.detailIssues.title") }}</span>
+          <span v-if="issues.overview">{{ t("rankBorder.detailIssues.overview") }}</span>
+          <span v-if="issues.comparisons.length > 0">{{ t("rankBorder.detailIssues.comparisons", { names: issues.comparisons.join(", ") }) }}</span>
+          <span v-if="issues.realtime">{{ t("rankBorder.detailIssues.realtime") }}</span>
+          <Button type="button" variant="outline" size="sm" class="ml-auto h-7" @click="retryIssues">
+            <RefreshCcw class="size-3.5" />
+            {{ t("rankBorder.detailIssues.retry") }}
+          </Button>
+        </div>
         <div class="rank-border-detail-top">
         <!-- Hero -->
         <Card class="gap-0 py-0">

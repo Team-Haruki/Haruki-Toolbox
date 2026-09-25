@@ -39,7 +39,13 @@ export function useRankBorderTracker() {
     new Map(growths.value.map((growth) => [growth.rank, growth])),
   )
 
+  /**
+   * Loads the overview (plus optional user/rank lookups) for `input`. A
+   * refresh whose `input.signal` is aborted before it settles writes nothing:
+   * neither data nor an error, so a superseded scope never flashes.
+   */
   async function refresh(input: RankBorderRefreshInput) {
+    const signal = input.signal
     loading.value = true
     error.value = null
     userError.value = null
@@ -52,15 +58,18 @@ export function useRankBorderTracker() {
         eventId: input.eventId,
         mode: input.mode,
         worldBloomCharacterId: input.worldBloomCharacterId,
-        cacheBust: input.cacheBust,
         playbackAt: input.playbackAt,
         useWebSocket: input.useWebSocket,
+        signal,
       }
       const overview = await fetchRankBorderOverview({
         ...baseScope,
         intervalSeconds: input.intervalSeconds,
         version: input.version,
       })
+      if (signal?.aborted) {
+        return
+      }
 
       if (overview.borderLines.length > 0 || lines.value.length === 0) {
         lines.value = overview.borderLines
@@ -78,6 +87,9 @@ export function useRankBorderTracker() {
       ])
       refreshedAt.value = Date.now()
     } catch (refreshError) {
+      if (signal?.aborted) {
+        return
+      }
       error.value = refreshError instanceof Error ? refreshError.message : String(refreshError)
     } finally {
       loading.value = false

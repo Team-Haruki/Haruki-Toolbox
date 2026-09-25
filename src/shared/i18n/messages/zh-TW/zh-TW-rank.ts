@@ -138,6 +138,13 @@ export default {
       "coverage": "採集範圍",
       "trackerCadence": "跟隨 Tracker"
     },
+    "detailIssues": {
+      "title": "部分資料暫時無法更新，頁面顯示的是最近一次成功的資料。",
+      "overview": "榜單概覽",
+      "comparisons": "對比：{names}",
+      "realtime": "即時推送已中斷，正在重新連線",
+      "retry": "重試"
+    },
     "status": {
       "unknown": "未知",
       "live": "即時更新中",
@@ -145,6 +152,7 @@ export default {
       "connecting": "正在連線即時推送",
       "waitingWs": "等待即時推送",
       "loginRequired": "登入後開啟自動重新整理",
+      "pollingLoginForLive": "定時重新整理中，登入後可即時推送",
       "replaying": "回放中"
     },
     "time": {

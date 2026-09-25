@@ -27,6 +27,7 @@ import type {
   RichNameSegment,
 } from "../lib/rank-border-types"
 import { parseRichNameSegments, richNameSegmentStyle } from "../lib/rich-name"
+import { resolveExpandedRank, resolveRowExpansionKey, type RowExpansionKey } from "../lib/row-expansion"
 
 const { t } = useI18n()
 const router = useRouter()
@@ -81,7 +82,8 @@ const rankBorderTooltip = ref<RankBorderTooltipState>({
   y: 0,
   label: "",
 })
-const expandedRank = ref<number | null>(null)
+// Seats stay expanded for the player, not the rank (see lib/row-expansion).
+const expandedRowKey = ref<RowExpansionKey | null>(null)
 const visibleRank = ref<number | null>(null)
 
 const live = useRankBorderLive({
@@ -100,6 +102,7 @@ const live = useRankBorderLive({
 })
 const {
   top100Details,
+  top100Rows,
   canRefresh,
   latestTrackerTimestamp,
 } = live
@@ -137,8 +140,10 @@ const hasProfileAssetPayload = computed(() => {
   return values.some((item) => item.cardId != null || item.profileHonors.length > 0)
 })
 
+const expandedRank = computed(() => resolveExpandedRank(expandedRowKey.value, top100Rows.value))
+
 function toggleRowExpansion(rank: number) {
-  expandedRank.value = expandedRank.value === rank ? null : rank
+  expandedRowKey.value = expandedRank.value === rank ? null : resolveRowExpansionKey(rank, top100Rows.value)
 }
 
 function openDetailPage(target: RankBorderDetailTargetInput) {
@@ -164,7 +169,7 @@ function jumpToRank(rank: number) {
   }
 
   visibleRank.value = rank
-  expandedRank.value = rank
+  expandedRowKey.value = resolveRowExpansionKey(rank, top100Rows.value)
   void nextTick(() => {
     document.querySelector<HTMLElement>(`[data-rank-border-row="${rank}"]`)?.scrollIntoView({
       behavior: "smooth",
@@ -217,7 +222,7 @@ provide(RANK_BORDER_CONTEXT_KEY, {
 watch([selectedRegion, selectedEventId, mode, selectedWorldBloomCharacterId], () => {
   playbackAt.value = null
   playbackDraftAt.value = null
-  expandedRank.value = null
+  expandedRowKey.value = null
 })
 
 watch(replayBounds, (bounds) => {

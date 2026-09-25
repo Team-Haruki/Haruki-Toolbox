@@ -21,13 +21,18 @@ export type RankBorderTrackerScope = {
   eventId: number
   mode: RankBorderMode
   worldBloomCharacterId?: number | null
-  cacheBust?: boolean
   playbackAt?: number | null
+  /**
+   * Private (own-account) lookups only: resolve the subject through the
+   * tracker WebSocket. Public data always goes over compressed HTTP.
+   */
   useWebSocket?: boolean
+  /** Aborts the HTTP requests of a superseded refresh. */
+  signal?: AbortSignal
   /**
    * Tracker cache version announced by a realtime `updated` push. When set,
-   * live overview reads go over a plain cacheable HTTP GET carrying `v=`
-   * instead of a WebSocket request frame (see `fetchRankBorderOverview`).
+   * live public reads carry `v=` and use the browser's default cache mode, so
+   * every read of one version is a single shared, cacheable URL.
    */
   version?: number | null
 }
@@ -57,21 +62,24 @@ export const RANK_BORDER_LIVE_PARTS: readonly RankBorderLivePart[] = ["top100", 
 const RANK_BORDER_LIVE_PART_FIELDS = {
   top100: ["topRankings"],
   borders: ["borderLines"],
-  growths: ["topPlayerGrowths", "topRankGrowths", "borderGrowths"],
+  growths: ["topPlayerGrowths", "topRankGrowths", "borderGrowths", "intervalSeconds"],
 } as const satisfies Record<RankBorderLivePart, ReadonlyArray<keyof RankBorderOverview>>
 
 /**
- * Which versioned resource (path suffix under `.../leaderboards/{total|world-bloom/{c}}/`)
- * serves each part. Today every part comes from the single `overview`, so a
- * versioned read is one request. When the tracker serves the parts as their
- * own resources, point them here: the distinct resources a view needs are
- * then fetched in parallel for the same `v` and merged by field ownership.
+ * The split versioned resource (path suffix under
+ * `.../leaderboards/{total|world-bloom/{c}}/`) serving each part. All parts of
+ * one view are fetched in parallel with the same `interval` and `v`, then
+ * merged by field ownership. Trackers (or edge rules) without these routes
+ * fall back to the deprecated `overview` for the rest of the session.
  */
 const RANK_BORDER_LIVE_PART_RESOURCES: Record<RankBorderLivePart, string> = {
-  top100: "overview",
-  borders: "overview",
-  growths: "overview",
+  top100: "top100",
+  borders: "borders",
+  growths: "growth",
 }
+
+/** Per tracker endpoint: whether the split part resources are reachable. */
+const trackerSplitPartsSupport = new Map<string, "yes" | "no">()
 
 export type FetchRankBorderWebDetailParams = RankBorderTrackerScope & {
   rank?: string | number
@@ -497,6 +505,7 @@ class TrackerWsClient {
   }
 }
 
+
 export async function fetchRankBorderOverview(params: FetchRankBorderOverviewParams): Promise<RankBorderOverview> {
   const interval = normalizePositiveInteger(params.intervalSeconds)
   const search = new URLSearchParams()
@@ -506,34 +515,67 @@ export async function fetchRankBorderOverview(params: FetchRankBorderOverviewPar
   if (version != null && normalizePlaybackTimestamp(params.playbackAt) == null) {
     return fetchRankBorderLivePartsVersioned(params, search, version)
   }
-  return normalizeRankBorderOverview(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
+  return normalizeRankBorderOverview(await fetchPublicTrackerJson(path, params))
 }
 
 /**
- * Versioned read of the parts a view needs: one GET per distinct resource,
- * all for the same `version`, merged into one overview. Parts the view did not
- * ask for stay empty unless a fetched resource happens to carry them.
+ * Versioned read of the parts a view needs: one GET per part resource, all
+ * for the same `version`, merged into one overview. The first split request
+ * doubles as the capability probe: if it fails before this endpoint was ever
+ * seen serving parts (older tracker, or the edge rule is not deployed — a
+ * rule miss can also surface as a CORS network error), the endpoint is marked
+ * as overview-only and the view reads the monolithic `overview` instead.
  */
 async function fetchRankBorderLivePartsVersioned(
   params: FetchRankBorderOverviewParams,
   search: URLSearchParams,
   version: number,
 ): Promise<RankBorderOverview> {
-  const parts = params.parts?.length ? params.parts : RANK_BORDER_LIVE_PARTS
-  const resources = Array.from(new Set(parts.map((part) => RANK_BORDER_LIVE_PART_RESOURCES[part])))
-  const payloads = await Promise.all(resources.map(async (resource) =>
-    normalizeRankBorderOverview(await fetchTrackerJsonVersioned(
-      params.endpoint,
-      `${buildWebLeaderboardV2Path(params, resource)}?${search}`,
-      version,
-    )),
-  ))
-  const byResource = new Map(resources.map((resource, index) => [resource, payloads[index]!]))
-  if (byResource.size === 1) {
-    return payloads[0]!
+  const supportKey = normalizeTrackerEndpoint(params.endpoint)
+  const scope = { ...params, version }
+  if (trackerSplitPartsSupport.get(supportKey) !== "no") {
+    try {
+      const overview = await fetchRankBorderLiveParts(params.parts?.length ? params.parts : RANK_BORDER_LIVE_PARTS, scope, search)
+      trackerSplitPartsSupport.set(supportKey, "yes")
+      return overview
+    } catch (error) {
+      const known = trackerSplitPartsSupport.get(supportKey) === "yes"
+      if (params.signal?.aborted || (known && !(isRecord(error) && error.status === 404))) {
+        throw error
+      }
+      trackerSplitPartsSupport.set(supportKey, "no")
+    }
   }
 
-  const merged: RankBorderOverview = { ...payloads[0]! }
+  return normalizeRankBorderOverview(await fetchPublicTrackerJson(
+    `${buildWebLeaderboardV2Path(params, "overview")}?${search}`,
+    scope,
+  ))
+}
+
+async function fetchRankBorderLiveParts(
+  parts: readonly RankBorderLivePart[],
+  scope: FetchRankBorderOverviewParams,
+  search: URLSearchParams,
+): Promise<RankBorderOverview> {
+  const resources = Array.from(new Set(parts.map((part) => RANK_BORDER_LIVE_PART_RESOURCES[part])))
+  const payloads = await Promise.all(resources.map(async (resource) =>
+    normalizeRankBorderOverview(await fetchPublicTrackerJson(
+      `${buildWebLeaderboardV2Path(scope, resource)}?${search}`,
+      scope,
+    )),
+  ))
+  return mergeRankBorderLiveParts(parts, resources, payloads)
+}
+
+/** Merge part payloads: each overview field comes from the resource of the part that owns it. */
+export function mergeRankBorderLiveParts(
+  parts: readonly RankBorderLivePart[],
+  resources: readonly string[],
+  payloads: readonly RankBorderOverview[],
+): RankBorderOverview {
+  const byResource = new Map(resources.map((resource, index) => [resource, payloads[index]]))
+  const merged: RankBorderOverview = normalizeRankBorderOverview(null)
   for (const part of parts) {
     const source = byResource.get(RANK_BORDER_LIVE_PART_RESOURCES[part])
     if (!source) {
@@ -543,8 +585,13 @@ async function fetchRankBorderLivePartsVersioned(
       Object.assign(merged, { [field]: source[field] })
     }
   }
-  merged.status = payloads.find((payload) => payload.status)?.status ?? null
+  merged.status = payloads.find((payload) => payload?.status)?.status ?? null
   return merged
+}
+
+/** Test hook: forget which trackers serve the split part resources. */
+export function resetRankBorderSplitPartsSupport() {
+  trackerSplitPartsSupport.clear()
 }
 
 export async function fetchRankBorderReplayOverviewV2(params: FetchRankBorderOverviewParams): Promise<RankBorderOverview> {
@@ -552,7 +599,7 @@ export async function fetchRankBorderReplayOverviewV2(params: FetchRankBorderOve
   const search = new URLSearchParams()
   search.set("interval", String(interval))
   const path = `${buildWebLeaderboardV2Path(params, "replay/overview")}?${search}`
-  return normalizeRankBorderOverview(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
+  return normalizeRankBorderOverview(await fetchPublicTrackerJson(path, params))
 }
 
 export async function fetchRankBorderWebRankDetailV2(params: FetchRankBorderWebDetailParams & { rank: string | number }): Promise<RankBorderWebRankDetail> {
@@ -611,7 +658,7 @@ async function fetchRankBorderWebRankDetailPageV2(params: FetchRankBorderWebDeta
   const rank = normalizePositiveInteger(params.rank)
   const query = search.toString()
   const path = `${buildWebLeaderboardV2Path(params, `details/rank/${rank}`)}${query ? `?${query}` : ""}`
-  return normalizeRankBorderWebRankDetail(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
+  return normalizeRankBorderWebRankDetail(await fetchPublicTrackerJson(path, params))
 }
 
 export async function fetchRankBorderWebUserDetailV2(params: FetchRankBorderWebDetailParams & { userId: string | number }): Promise<RankBorderWebUserDetail> {
@@ -653,7 +700,7 @@ async function fetchRankBorderWebUserDetailPageV2(params: FetchRankBorderWebDeta
   const userId = formatRankBorderPathSegment(params.userId)
   const query = search.toString()
   const path = `${buildWebLeaderboardV2Path(params, `details/user/${userId}`)}${query ? `?${query}` : ""}`
-  return normalizeRankBorderWebUserDetail(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
+  return normalizeRankBorderWebUserDetail(await fetchPublicTrackerJson(path, params))
 }
 
 export async function fetchRankBorderPrivateWebUserDetailV2(params: FetchRankBorderPrivateWebDetailParams): Promise<RankBorderWebUserDetail> {
@@ -674,7 +721,7 @@ export async function fetchRankBorderPrivateWebUserDetailV2(params: FetchRankBor
   const userId = formatRankBorderPathSegment(params.userId)
   const query = search.toString()
   const path = `${buildWebLeaderboardV2Path(params, `private/details/user/${userId}`)}${query ? `?${query}` : ""}`
-  return normalizeRankBorderWebUserDetail(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket, "include"))
+  return normalizeRankBorderWebUserDetail(await fetchPrivateTrackerJson(params.endpoint, path, params))
 }
 
 export async function fetchRankBorderWebTraceByUser(params: FetchRankBorderUserParams): Promise<RankBorderTracePoint[]> {
@@ -697,7 +744,7 @@ export async function fetchRankBorderUserProfiles(params: FetchRankBorderUserSea
   search.set(isPublicUniqueId(query) ? "uniqueId" : "name", query)
   search.set("limit", String(normalizeSearchLimit(params.limit)))
   return normalizeRankBorderUserProfiles(
-    await fetchTrackerJson(params.endpoint, `${buildWebLeaderboardV2Path(params, "users/search")}?${search}`, params.cacheBust, params.playbackAt, params.useWebSocket),
+    await fetchPublicTrackerJson(`${buildWebLeaderboardV2Path(params, "users/search")}?${search}`, { ...params, version: null }),
   )
 }
 
@@ -711,7 +758,7 @@ export async function fetchRankBorderPublicUserProfile(params: FetchRankBorderPu
   search.set("uniqueId", uniqueId)
   search.set("limit", String(normalizeSearchLimit(params.limit)))
   const users = normalizeRankBorderUserProfiles(
-    await fetchTrackerJson(params.endpoint, `${buildWebLeaderboardV2Path(params, "users/search")}?${search}`, params.cacheBust, params.playbackAt, params.useWebSocket),
+    await fetchPublicTrackerJson(`${buildWebLeaderboardV2Path(params, "users/search")}?${search}`, { ...params, version: null }),
   )
   return users.find((user) => user.userId === uniqueId) ?? users[0] ?? null
 }
@@ -750,22 +797,44 @@ export function isRankBorderTrackerUnauthorizedError(error: unknown): boolean {
   return isRecord(error) && error.status === 401
 }
 
-async function fetchTrackerJson(
+/**
+ * Public tracker data over plain HTTP (compressed by the tracker, no
+ * credentials). With a live `version` the URL carries `v=` and the browser's
+ * default cache mode applies: the tracker marks the current version immutable,
+ * so repeated reads of one version (other tabs, visibility catch-ups) are
+ * answered from the HTTP cache. Without one the request revalidates
+ * (`no-cache`), so a matching ETag costs a 304 instead of the body.
+ */
+async function fetchPublicTrackerJson(path: string, scope: RankBorderTrackerScope): Promise<unknown> {
+  const baseUrl = normalizeTrackerEndpoint(scope.endpoint)
+  if (!baseUrl) {
+    throw new Error("Tracker endpoint is empty")
+  }
+
+  const playbackPath = appendPlaybackQuery(path, scope.playbackAt)
+  const version = normalizePlaybackTimestamp(scope.playbackAt) == null ? normalizeTrackerVersion(scope.version) : null
+  return version != null
+    ? fetchTrackerJsonViaRest(baseUrl, appendVersionQuery(playbackPath, version), "omit", "default", scope.signal)
+    : fetchTrackerJsonViaRest(baseUrl, playbackPath, "omit", "no-cache", scope.signal)
+}
+
+/**
+ * Private (own-account) lookups: over the WebSocket, whose ticket carries the
+ * session subject, or with browser credentials where REST fallback is allowed.
+ */
+async function fetchPrivateTrackerJson(
   endpoint: string,
   path: string,
-  cacheBust = false,
-  playbackAt?: number | null,
-  useWebSocket = false,
-  credentials: TrackerFetchCredentials = "omit",
+  scope: RankBorderTrackerScope,
 ): Promise<unknown> {
   const baseUrl = normalizeTrackerEndpoint(endpoint)
   if (!baseUrl) {
     throw new Error("Tracker endpoint is empty")
   }
 
-  const requestPath = appendCacheBustQuery(appendPlaybackQuery(path, playbackAt), cacheBust)
-  if (!useWebSocket) {
-    return fetchTrackerJsonViaRest(baseUrl, requestPath, credentials)
+  const requestPath = appendPlaybackQuery(path, scope.playbackAt)
+  if (!scope.useWebSocket) {
+    return fetchTrackerJsonViaRest(baseUrl, requestPath, "include", "no-store", scope.signal)
   }
 
   const wsUrl = resolveRankBorderTrackerWebSocketUrl(baseUrl)
@@ -788,36 +857,21 @@ async function fetchTrackerJson(
     throw toError(wsError, "Tracker WebSocket endpoint is unavailable")
   }
 
-  return fetchTrackerJsonViaRest(baseUrl, requestPath, credentials)
-}
-
-/**
- * Versioned public read: `path` plus `v=<version>`, over plain HTTP with the
- * browser's default cache mode. The server marks a response for its current
- * version immutable, so repeated reads of one version (other tabs, the
- * visibility catch-up) are answered by the HTTP cache, and compression comes
- * from the normal `Accept-Encoding` negotiation. Public data only: no
- * credentials, no `_t` cache-buster.
- */
-async function fetchTrackerJsonVersioned(endpoint: string, path: string, version: number): Promise<unknown> {
-  const baseUrl = normalizeTrackerEndpoint(endpoint)
-  if (!baseUrl) {
-    throw new Error("Tracker endpoint is empty")
-  }
-
-  return fetchTrackerJsonViaRest(baseUrl, appendVersionQuery(path, version), "omit", "default")
+  return fetchTrackerJsonViaRest(baseUrl, requestPath, "include", "no-store", scope.signal)
 }
 
 async function fetchTrackerJsonViaRest(
   baseUrl: string,
   path: string,
   credentials: TrackerFetchCredentials,
-  cache: RequestCache = "no-store",
+  cache: RequestCache,
+  signal?: AbortSignal,
 ): Promise<unknown> {
   const restBaseUrl = resolveRankBorderTrackerRestEndpoint(baseUrl)
   const response = await fetch(`${restBaseUrl}${path}`, {
     credentials,
     cache,
+    ...(signal ? { signal } : {}),
   })
   if (!response.ok) {
     const message = await readErrorMessage(response)
@@ -1040,18 +1094,6 @@ function appendVersionQuery(path: string, version: number): string {
   const basePath = questionIndex >= 0 ? path.slice(0, questionIndex) : path
   const search = new URLSearchParams(questionIndex >= 0 ? path.slice(questionIndex + 1) : "")
   search.set("v", String(version))
-  return `${basePath}?${search}`
-}
-
-function appendCacheBustQuery(path: string, cacheBust: boolean): string {
-  if (!cacheBust) {
-    return path
-  }
-
-  const questionIndex = path.indexOf("?")
-  const basePath = questionIndex >= 0 ? path.slice(0, questionIndex) : path
-  const search = new URLSearchParams(questionIndex >= 0 ? path.slice(questionIndex + 1) : "")
-  search.set("_t", String(Date.now()))
   return `${basePath}?${search}`
 }
 
