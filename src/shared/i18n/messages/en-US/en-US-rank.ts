@@ -186,6 +186,8 @@ export default {
       "unknownPlayer": "Unknown player",
       "borderLine": "Border point",
       "borderLineTitle": "{rank} border",
+      "notRanked": "Not ranked",
+      "notRankedHint": "Left the tracked ranks; showing their history.",
       "userNotFound": "Your data was not found. Please check whether you are in the top 100.",
       "noBoundAccount": "No bound game account is available.",
       "accountOutOfRange": "Outside the queryable range.",

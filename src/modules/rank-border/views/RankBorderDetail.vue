@@ -149,6 +149,8 @@ const {
   loading,
   error,
   current,
+  notRanked,
+  profile,
   previous,
   next,
   activeTrace,
@@ -233,12 +235,15 @@ const titleSegments = computed(() => {
   }
 
   const name = current.value && isLatestResult(current.value) ? current.value.name : null
-  return parseRichNameSegments(name ?? t("rankBorder.result.unknownPlayer"))
+  return parseRichNameSegments(name ?? profile.value?.name ?? t("rankBorder.result.unknownPlayer"))
 })
 
 const statusBadge = computed(() => {
   if (isLineTarget.value) {
     return { label: t("rankBorder.result.lineTracked"), tone: "line" as const }
+  }
+  if (notRanked.value) {
+    return { label: t("rankBorder.result.notRanked"), tone: "out" as const }
   }
   const rank = current.value?.rank ?? null
   if (rank == null) {
@@ -773,7 +778,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
         <!-- Hero -->
         <Card class="gap-0 py-0">
           <CardContent class="grid gap-3 p-3 sm:p-4">
-            <div v-if="error && !current" class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            <div v-if="error && !current && !notRanked" class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
               {{ error === "not_found" ? t(params.target.kind === "user" ? "rankBorder.result.userNotFound" : "rankBorder.result.rankNotFound") : error }}
             </div>
             <div v-else class="rank-border-detail-hero">
@@ -811,6 +816,9 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
                 </div>
                 <p class="truncate text-xs text-muted-foreground">
                   {{ t("rankBorder.result.latest", { value: formatTimestamp(current?.timestamp ?? primaryStats.latest?.timestamp ?? null) }) }}
+                </p>
+                <p v-if="notRanked" class="text-xs text-amber-700 dark:text-amber-200">
+                  {{ t("rankBorder.result.notRankedHint") }}
                 </p>
               </div>
               <div v-if="honorViews.length > 0" class="rank-border-detail-hero__honors">

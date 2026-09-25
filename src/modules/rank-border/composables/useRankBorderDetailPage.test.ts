@@ -190,3 +190,111 @@ test("overview and comparison failures surface as retryable issues", async () =>
     scope.stop()
   }
 })
+
+test("a followed player who leaves the ranks keeps their history and shows as not ranked", async () => {
+  setActivePinia(createPinia())
+  let ranked = true
+  const row = (userId: string, rank: number, timestamp: number) => ({ userId, rank, score: timestamp, timestamp })
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input)
+    let data: unknown = {}
+    if (url.includes("details/rank/")) {
+      data = { current: { rankData: row(ranked ? "player-a" : "player-b", 200, 20) }, rankTrace: [row("player-a", 200, 10), row("player-b", 200, 20)] }
+    } else if (url.includes("details/user/player-a")) {
+      data = ranked
+        ? { ranked: true, current: { rankData: row("player-a", 200, 10) }, playerTrace: [row("player-a", 200, 10)] }
+        : { ranked: false, playerTrace: url.includes("cursor=") ? [] : [row("player-a", 200, 10)], profile: { userId: "player-a", name: "Alpha" } }
+    }
+    return new Response(JSON.stringify(data))
+  }) as typeof fetch
+  const scope = effectScope()
+  const page = scope.run(() => useRankBorderDetailPage(
+    computed<RankBorderDetailParams>(() => ({ region: "cn", eventId: 989101, mode: "normal", worldBloomCharacterId: null, intervalSeconds: 3600, target: { kind: "rank", rank: 200 } })),
+    ref("https://not-ranked-test.example"),
+  ))!
+  try {
+    await page.refresh()
+    expect(page.current.value?.userId).toBe("player-a")
+    expect(page.notRanked.value).toBe(false)
+    ranked = false
+    await page.refresh()
+    // Never the new occupant, and the history stays.
+    expect(page.current.value).toBeNull()
+    expect(page.notRanked.value).toBe(true)
+    expect(page.error.value).toBeNull()
+    expect(page.playerTrace.value.map((point) => point.timestamp)).toEqual([10])
+  } finally {
+    scope.stop()
+  }
+})
+
+test("a user target that is no longer ranked loads its history without an error", async () => {
+  setActivePinia(createPinia())
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    if (String(input).includes("details/user/")) {
+      return new Response(JSON.stringify({ ranked: false, playerTrace: [{ userId: "gone", rank: 90, score: 5, timestamp: 10 }, { userId: "gone", rank: 99, score: 6, timestamp: 20 }], profile: { userId: "gone", name: "Gone" } }))
+    }
+    return new Response(JSON.stringify({}))
+  }) as typeof fetch
+  const scope = effectScope()
+  const page = scope.run(() => useRankBorderDetailPage(
+    computed<RankBorderDetailParams>(() => ({ region: "cn", eventId: 989102, mode: "normal", worldBloomCharacterId: null, intervalSeconds: 3600, target: { kind: "user", userId: "gone" } })),
+    ref("https://not-ranked-user-test.example"),
+  ))!
+  try {
+    await page.refresh(false)
+    expect(page.error.value).toBeNull()
+    expect(page.current.value).toBeNull()
+    expect(page.notRanked.value).toBe(true)
+    expect(page.profile.value?.name).toBe("Gone")
+    expect(page.playerTrace.value).toHaveLength(2)
+  } finally {
+    scope.stop()
+  }
+})
+
+// Trackers up to 4.1.0 answer a cursor poll with nothing newer with 404.
+for (const kind of ["rank", "user"] as const) {
+  test(`a ${kind} cursor poll answered 404 is "no new data", not an error`, async () => {
+    setActivePinia(createPinia())
+    const originalConsoleError = console.error
+    console.error = () => {}
+    const cursorRequests: string[] = []
+    const row = (userId: string, timestamp: number) => ({ userId, rank: 200, score: timestamp, timestamp })
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes("cursor=")) {
+        cursorRequests.push(url)
+        return new Response(JSON.stringify({ error: "not found" }), { status: 404 })
+      }
+      if (url.includes("details/rank/")) {
+        return new Response(JSON.stringify({ current: { rankData: row("p1", 10) }, rankTrace: [row("p1", 10)] }))
+      }
+      if (url.includes("details/user/")) {
+        return new Response(JSON.stringify({ current: { rankData: row("p1", 10) }, playerTrace: [row("p1", 10)] }))
+      }
+      return new Response(JSON.stringify({ topRankings: [], borderLines: [] }))
+    }) as typeof fetch
+    const scope = effectScope()
+    const page = scope.run(() => useRankBorderDetailPage(
+      computed<RankBorderDetailParams>(() => ({
+        region: "cn", eventId: kind === "rank" ? 989103 : 989104, mode: "normal", worldBloomCharacterId: null, intervalSeconds: 3600,
+        target: kind === "rank" ? { kind: "rank", rank: 200 } : { kind: "user", userId: "p1" },
+      })),
+      ref(`https://cursor-404-${kind}-test.example`),
+    ))!
+    try {
+      page.addComparisonTarget("rank", "500", "T500")
+      await page.refresh()
+      await page.refresh()
+      expect(cursorRequests.length).toBeGreaterThan(0)
+      expect(page.error.value).toBeNull()
+      expect(page.current.value?.userId).toBe("p1")
+      expect(page.playerTrace.value).toHaveLength(1)
+      expect(page.hasIssues.value).toBe(false)
+    } finally {
+      console.error = originalConsoleError
+      scope.stop()
+    }
+  })
+}

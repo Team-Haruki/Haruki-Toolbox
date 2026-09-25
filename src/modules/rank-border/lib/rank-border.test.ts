@@ -758,4 +758,14 @@ describe("player detail profile merging", () => {
     expect(detail.current?.cardId).toBeNull()
     expect(normalizeRankBorderWebUserDetail({ profile }).current).toBeNull()
   })
+
+  it("reads ranked, defaulting to true for trackers that omit it", () => {
+    expect(normalizeRankBorderWebUserDetail({ current: { rankData }, profile }).ranked).toBe(true)
+    const gone = normalizeRankBorderWebUserDetail({ ranked: false, current: { rankData }, next: { rankData }, playerTrace: [rankData], profile })
+    expect(gone.ranked).toBe(false)
+    expect(gone.current).toBeNull()
+    expect(gone.next).toBeNull()
+    expect(gone.playerTrace).toHaveLength(1)
+    expect(gone.profile?.name).toBe("Located player")
+  })
 })

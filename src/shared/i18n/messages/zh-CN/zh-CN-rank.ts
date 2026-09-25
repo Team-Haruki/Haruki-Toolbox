@@ -186,6 +186,8 @@ export default {
       "unknownPlayer": "未知玩家",
       "borderLine": "档线点",
       "borderLineTitle": "{rank} 档线",
+      "notRanked": "当前不在榜内",
+      "notRankedHint": "已离开追踪名次，以下为其历史记录。",
       "userNotFound": "没有找到你的数据，请确认是否进入前 100。",
       "noBoundAccount": "当前账号还没有绑定游戏账号。",
       "accountOutOfRange": "不在可查询范围。",
