@@ -189,6 +189,11 @@ class TrackerWsClient {
   private nextId = 1
   private readonly pending = new Map<string, TrackerWsPendingRequest>()
   private readonly eventHandlers = new Set<TrackerWsEventHandler>()
+  // The tracker keeps one subscription per socket and topic, so a single
+  // `unsubscribe` ends it for every consumer. Count consumers per topic on
+  // the current socket and only unsubscribe when the last one leaves.
+  private readonly topicRefs = new Map<string, number>()
+  private socketGeneration = 0
 
   constructor(url: string, ticketUrl: string) {
     this.url = url
@@ -233,14 +238,20 @@ class TrackerWsClient {
     handler: TrackerWsEventHandler,
   ): Promise<RankBorderRealtimeSubscription> {
     const eventId = normalizePositiveInteger(scope.eventId)
+    const topicKey = `${scope.region}:${eventId}`
     this.eventHandlers.add(handler)
     handler({
       type: "state",
       state: "connecting",
     })
 
+    let generation: number | null = null
     try {
       await this.ensureOpen()
+      // Take the reference before sending, so an older subscription released
+      // while this one is in flight does not unsubscribe the topic.
+      generation = this.socketGeneration
+      this.retainTopic(topicKey)
       const data = await this.sendControl({
         type: "subscribe",
         server: scope.region,
@@ -262,6 +273,9 @@ class TrackerWsClient {
       }
     } catch (error) {
       this.eventHandlers.delete(handler)
+      if (generation != null) {
+        this.releaseTopic(topicKey, generation)
+      }
       handler({
         type: "state",
         state: "error",
@@ -270,6 +284,7 @@ class TrackerWsClient {
     }
 
     let active = true
+    const subscribedGeneration = generation
     return {
       unsubscribe: () => {
         if (!active) {
@@ -277,6 +292,9 @@ class TrackerWsClient {
         }
         active = false
         this.eventHandlers.delete(handler)
+        if (!this.releaseTopic(topicKey, subscribedGeneration)) {
+          return
+        }
         if (this.socket?.readyState === WebSocket.OPEN) {
           void this.sendControl({
             type: "unsubscribe",
@@ -286,6 +304,28 @@ class TrackerWsClient {
         }
       },
     }
+  }
+
+  private retainTopic(topicKey: string) {
+    this.topicRefs.set(topicKey, (this.topicRefs.get(topicKey) ?? 0) + 1)
+  }
+
+  /**
+   * Drops one reference taken on socket `generation`; true when it was the
+   * last one on the live socket. A reference from a closed socket has
+   * nothing left to unsubscribe (and must not touch the new socket's).
+   */
+  private releaseTopic(topicKey: string, generation: number): boolean {
+    if (generation !== this.socketGeneration) {
+      return false
+    }
+    const remaining = (this.topicRefs.get(topicKey) ?? 0) - 1
+    if (remaining > 0) {
+      this.topicRefs.set(topicKey, remaining)
+      return false
+    }
+    this.topicRefs.delete(topicKey)
+    return true
   }
 
   private async ensureOpen(): Promise<void> {
@@ -320,6 +360,9 @@ class TrackerWsClient {
     const socketUrl = await resolveTicketedWebSocketUrl(this.url, this.ticketUrl)
     const socket = new WebSocket(socketUrl)
     this.socket = socket
+    // A new socket starts with no server-side subscriptions.
+    this.socketGeneration += 1
+    this.topicRefs.clear()
 
     return new Promise<void>((resolve, reject) => {
       let settled = false
