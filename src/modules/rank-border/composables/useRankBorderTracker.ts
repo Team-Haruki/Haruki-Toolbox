@@ -59,6 +59,7 @@ export function useRankBorderTracker() {
       const overview = await fetchRankBorderOverview({
         ...baseScope,
         intervalSeconds: input.intervalSeconds,
+        version: input.version,
       })
 
       if (overview.borderLines.length > 0 || lines.value.length === 0) {

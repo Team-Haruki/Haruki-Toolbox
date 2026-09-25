@@ -24,6 +24,7 @@ import {
   type ComparisonTargetKind,
 } from "../lib/comparison-target"
 import { PERSONAL_COLLECTION_LIMIT, TRACE_PAGE_LIMIT } from "../lib/rank-border-constants"
+import { createRealtimeRefreshGate, isDocumentHidden } from "../lib/realtime-refresh"
 
 export type DetailComparisonKind = "rank" | "line" | "user"
 
@@ -55,6 +56,8 @@ type DetailTargetCacheEntry = {
 
 const DETAIL_CACHE_LIMIT = 8
 const OVERVIEW_CACHE_TTL_MS = 60_000
+const REALTIME_RECONNECT_MIN_MS = 1_000
+const REALTIME_RECONNECT_MAX_MS = 30_000
 
 // Module-level caches survive navigation, so list -> detail -> back -> detail
 // repaints instantly from memory and only the missing tail is fetched.
@@ -110,6 +113,14 @@ export function useRankBorderDetailPage(
   let requestToken = 0
   let realtimeSubscription: RankBorderRealtimeSubscription | null = null
   let realtimeKey = ""
+  let realtimeReconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let realtimeReconnectDelayMs = REALTIME_RECONNECT_MIN_MS
+
+  // Realtime refreshes run one at a time: pushes that land mid-refresh fold
+  // into one follow-up, and hidden tabs wait for visibility to catch up.
+  const realtimeRefresh = createRealtimeRefreshGate({
+    run: (version) => refreshAll(true, version),
+  })
 
   const scope = computed<RankBorderTrackerScope | null>(() => {
     const value = params.value
@@ -159,9 +170,29 @@ export function useRankBorderDetailPage(
     { immediate: true },
   )
 
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+  }
+
   onBeforeUnmount(() => {
+    if (typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
     stopRealtime()
   })
+
+  function handleVisibilityChange() {
+    if (isDocumentHidden() || !realtimeKey) {
+      return
+    }
+    if (!realtimeSubscription && realtimeReconnectTimer) {
+      clearTimeout(realtimeReconnectTimer)
+      realtimeReconnectTimer = null
+      realtimeKey = ""
+      resetRealtime()
+    }
+    void realtimeRefresh.resume()
+  }
 
   function targetCacheKey(): string | null {
     const activeScope = scope.value
@@ -438,7 +469,7 @@ export function useRankBorderDetailPage(
     ].join("|")
   }
 
-  async function loadOverview(force = false) {
+  async function loadOverview(force = false, version: number | null = null) {
     const activeScope = scope.value
     const value = params.value
     const key = overviewCacheKey()
@@ -460,6 +491,7 @@ export function useRankBorderDetailPage(
       const data = await fetchRankBorderOverview({
         ...activeScope,
         intervalSeconds: value.intervalSeconds,
+        version,
       })
       if (overviewCacheKey() !== key) {
         return
@@ -601,8 +633,13 @@ export function useRankBorderDetailPage(
     )
   }
 
-  async function refresh(silent = true) {
-    await Promise.all([loadTarget({ silent }), loadOverview(true)])
+  function refresh(silent = true) {
+    return refreshAll(silent, null)
+  }
+
+  /** `version` (from a realtime push) lets the overview use the cacheable versioned GET. */
+  async function refreshAll(silent: boolean, version: number | null) {
+    await Promise.all([loadTarget({ silent }), loadOverview(true, version)])
     for (const entry of comparisons.value) {
       void loadComparison(entry.id, silent && entry.trace.length > 0)
     }
@@ -629,13 +666,25 @@ export function useRankBorderDetailPage(
       return
     }
 
-    stopRealtime()
+    const reconnecting = realtimeKey === key && realtimeReconnectTimer == null && realtimeReconnectDelayMs > REALTIME_RECONNECT_MIN_MS
+    stopRealtime({ keepBackoff: reconnecting })
     realtimeKey = key
+    let subscription: RankBorderRealtimeSubscription | null = null
     void subscribeRankBorderRealtime({
       endpoint: trackerEndpoint.value,
       region: value.region,
       eventId: value.eventId,
     }, (event) => {
+      if (realtimeKey !== key) {
+        return
+      }
+      if (event.type === "state") {
+        // A closed socket forgets its subscriptions: subscribe again.
+        if (event.state === "closed" && subscription && realtimeSubscription === subscription) {
+          scheduleRealtimeReconnect(key)
+        }
+        return
+      }
       if (event.type !== "updated" || event.server !== value.region || event.eventId !== value.eventId) {
         return
       }
@@ -646,22 +695,57 @@ export function useRankBorderDetailPage(
       if (event.timestamp != null && known != null && event.timestamp <= known) {
         return
       }
-      void refresh(true)
+      realtimeRefresh.notify(event.version)
     })
-      .then((subscription) => {
+      .then((created) => {
         if (realtimeKey !== key) {
-          subscription.unsubscribe()
+          created.unsubscribe()
           return
         }
-        realtimeSubscription = subscription
+        subscription = created
+        realtimeSubscription = created
+        if (reconnecting) {
+          // Pushes sent while the socket was down are lost: catch up once.
+          realtimeReconnectDelayMs = REALTIME_RECONNECT_MIN_MS
+          void realtimeRefresh.request("realtime")
+        }
       })
-      .catch(() => {})
+      .catch(() => {
+        if (realtimeKey === key) {
+          scheduleRealtimeReconnect(key)
+        }
+      })
   }
 
-  function stopRealtime() {
+  function scheduleRealtimeReconnect(key: string) {
+    realtimeSubscription?.unsubscribe()
+    realtimeSubscription = null
+    realtimeRefresh.resetVersion()
+    if (realtimeReconnectTimer) {
+      clearTimeout(realtimeReconnectTimer)
+    }
+    const delay = realtimeReconnectDelayMs
+    realtimeReconnectDelayMs = Math.min(REALTIME_RECONNECT_MAX_MS, realtimeReconnectDelayMs * 2)
+    realtimeReconnectTimer = setTimeout(() => {
+      realtimeReconnectTimer = null
+      if (realtimeKey === key) {
+        resetRealtime()
+      }
+    }, delay)
+  }
+
+  function stopRealtime(options: { keepBackoff?: boolean } = {}) {
     realtimeSubscription?.unsubscribe()
     realtimeSubscription = null
     realtimeKey = ""
+    if (realtimeReconnectTimer) {
+      clearTimeout(realtimeReconnectTimer)
+      realtimeReconnectTimer = null
+    }
+    if (!options.keepBackoff) {
+      realtimeReconnectDelayMs = REALTIME_RECONNECT_MIN_MS
+    }
+    realtimeRefresh.resetVersion()
   }
 
   return {

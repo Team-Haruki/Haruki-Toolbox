@@ -8,6 +8,9 @@ import {
   fetchRankBorderWebTraceByUser,
   isRankBorderTrackerUnauthorizedError,
   fetchRankBorderWebUserDetailV2,
+  normalizeTrackerVersion,
+  subscribeRankBorderRealtime,
+  type RankBorderRealtimeEvent,
   resolveRankBorderTrackerWebSocketTicketUrl,
   resolveRankBorderTrackerWebSocketUrl,
 } from "./rank-border"
@@ -390,5 +393,144 @@ describe("rank border tracker api", () => {
       "https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/users/search?name=Alice&limit=5",
       `https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/users/search?uniqueId=${"a".repeat(64)}&limit=5`,
     ])
+  })
+
+  it("reads versioned overviews over cacheable HTTP instead of the socket", async () => {
+    const originalFetch = globalThis.fetch
+    const originalWebSocket = globalThis.WebSocket
+    const requests: Array<{ url: string; credentials?: RequestCredentials; cache?: RequestCache }> = []
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      requests.push({ url: String(input), credentials: init?.credentials, cache: init?.cache })
+      return new Response(JSON.stringify({ topRankings: [], borderLines: [] }), { status: 200 })
+    }) as typeof fetch
+    globalThis.WebSocket = class {
+      constructor() {
+        throw new Error("versioned reads must not open a socket")
+      }
+    } as unknown as typeof WebSocket
+
+    try {
+      await fetchRankBorderOverview({
+        endpoint: "https://tracker.example/base",
+        region: "cn",
+        eventId: 180,
+        mode: "normal",
+        intervalSeconds: 3600,
+        cacheBust: true,
+        useWebSocket: true,
+        version: 42,
+      })
+    } finally {
+      globalThis.fetch = originalFetch
+      globalThis.WebSocket = originalWebSocket
+    }
+
+    expect(requests).toEqual([
+      {
+        url: "https://tracker.example/base/api/v2/web/events/cn/180/leaderboards/total/overview?interval=3600&v=42",
+        credentials: "omit",
+        cache: "default",
+      },
+    ])
+  })
+
+  it("keeps the cache-busted request when no version is known or replaying", async () => {
+    const originalFetch = globalThis.fetch
+    const requests: Array<{ url: string; cache?: RequestCache }> = []
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      requests.push({ url: String(input), cache: init?.cache })
+      return new Response(JSON.stringify({ topRankings: [], borderLines: [] }), { status: 200 })
+    }) as typeof fetch
+
+    try {
+      const scope = {
+        endpoint: "https://tracker.example/base",
+        region: "cn" as const,
+        eventId: 180,
+        mode: "normal" as const,
+        intervalSeconds: 3600,
+        cacheBust: true,
+      }
+      await fetchRankBorderOverview({ ...scope, version: null })
+      await fetchRankBorderOverview({ ...scope, version: 42, playbackAt: 1_700_000_000 })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    expect(requests).toHaveLength(2)
+    for (const request of requests) {
+      expect(request.cache).toBe("no-store")
+      expect(request.url).toContain("_t=")
+      expect(request.url).not.toContain("v=42")
+    }
+    expect(requests[1]?.url).toContain("at=1700000000")
+  })
+
+  it("normalizes tracker versions", () => {
+    expect(normalizeTrackerVersion(0)).toBe(0)
+    expect(normalizeTrackerVersion(123)).toBe(123)
+    expect(normalizeTrackerVersion("456")).toBe(456)
+    expect(normalizeTrackerVersion(-1)).toBeNull()
+    expect(normalizeTrackerVersion(1.5)).toBeNull()
+    expect(normalizeTrackerVersion("12a")).toBeNull()
+    expect(normalizeTrackerVersion(undefined)).toBeNull()
+  })
+
+  it("surfaces the version of updated pushes and null from older trackers", async () => {
+    const originalFetch = globalThis.fetch
+    const originalWebSocket = globalThis.WebSocket
+    globalThis.fetch = (async () => new Response(JSON.stringify({ ticket: "ticket-1" }), { status: 200 })) as typeof fetch
+
+    const sockets: MockWebSocket[] = []
+    class MockWebSocket extends EventTarget {
+      static CONNECTING = 0
+      static OPEN = 1
+      static CLOSED = 3
+      readyState = MockWebSocket.CONNECTING
+
+      constructor() {
+        super()
+        sockets.push(this)
+        setTimeout(() => {
+          this.readyState = MockWebSocket.OPEN
+          this.dispatchEvent(new Event("open"))
+        }, 0)
+      }
+
+      send(payload: string) {
+        const message = JSON.parse(payload) as { id: string }
+        this.dispatchEvent(new MessageEvent("message", {
+          data: JSON.stringify({ id: message.id, ok: true, status: 200, data: { total: 1, topic: 1 } }),
+        }))
+      }
+
+      push(data: unknown) {
+        this.dispatchEvent(new MessageEvent("message", { data: JSON.stringify(data) }))
+      }
+
+      close() {
+        this.readyState = MockWebSocket.CLOSED
+      }
+    }
+    globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket
+
+    const events: RankBorderRealtimeEvent[] = []
+    try {
+      const subscription = await subscribeRankBorderRealtime({
+        endpoint: "https://tracker-version.example/base",
+        region: "cn",
+        eventId: 180,
+      }, (event) => events.push(event))
+      const active = sockets[0]
+      active?.push({ type: "updated", server: "cn", eventId: 180, timestamp: 1_700_000_000, version: 77 })
+      active?.push({ type: "updated", server: "cn", eventId: 180, timestamp: 1_700_000_001 })
+      subscription.unsubscribe()
+    } finally {
+      globalThis.fetch = originalFetch
+      globalThis.WebSocket = originalWebSocket
+    }
+
+    const updates = events.filter((event) => event.type === "updated")
+    expect(updates.map((event) => event.type === "updated" ? event.version : undefined)).toEqual([77, null])
   })
 })

@@ -38,6 +38,7 @@ const {
   eventComboboxOptions,
   selectedWorldBloomCharacter,
   modeOptions,
+  isSelectedWorldBloomEvent,
   intervalOptions,
   accountOptions,
   selectedAccountKey,
@@ -146,7 +147,7 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
             <span class="rank-border-live-dot" />
             {{ trackerStatusLabel }}
           </span>
-          <Button type="button" size="sm" :disabled="!canRefresh || liveRefreshing" @click="refreshData(true)">
+          <Button type="button" size="sm" :disabled="!canRefresh || liveRefreshing" @click="refreshData()">
             <RefreshCcw :class="['size-4', liveRefreshing ? 'animate-spin' : '']" />
             <span class="hidden sm:inline">{{ liveRefreshing ? t("rankBorder.actions.refreshing") : t("rankBorder.actions.refresh") }}</span>
           </Button>
@@ -183,7 +184,7 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
           </SelectContent>
         </Select>
 
-        <Select :model-value="mode" :aria-label="t('rankBorder.fields.mode')" @update:model-value="updateMode">
+        <Select v-if="isSelectedWorldBloomEvent" :model-value="mode" :aria-label="t('rankBorder.fields.mode')" @update:model-value="updateMode">
           <SelectTrigger class="rank-border-toolbar-field" :aria-label="t('rankBorder.fields.mode')">
             <SelectValue />
           </SelectTrigger>
@@ -195,7 +196,7 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
         </Select>
 
         <Select
-          v-if="mode === 'world_bloom'"
+          v-if="isSelectedWorldBloomEvent && mode === 'world_bloom'"
           :model-value="selectedWorldBloomCharacterId ?? undefined"
           :aria-label="t('rankBorder.fields.worldBloomCharacter')"
           @update:model-value="updateWorldBloomCharacter"

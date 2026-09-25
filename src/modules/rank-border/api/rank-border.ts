@@ -24,6 +24,12 @@ export type RankBorderTrackerScope = {
   cacheBust?: boolean
   playbackAt?: number | null
   useWebSocket?: boolean
+  /**
+   * Tracker cache version announced by a realtime `updated` push. When set,
+   * live overview reads go over a plain cacheable HTTP GET carrying `v=`
+   * instead of a WebSocket request frame (see `fetchRankBorderOverview`).
+   */
+  version?: number | null
 }
 
 export type FetchRankBorderUserParams = RankBorderTrackerScope & {
@@ -78,6 +84,8 @@ export type RankBorderRealtimeEvent =
       server: SekaiRegion
       eventId: number
       timestamp: number | null
+      /** Tracker cache epoch for this push; null from servers that predate it. */
+      version: number | null
     }
   | {
       type: "online"
@@ -423,6 +431,7 @@ class TrackerWsClient {
         server,
         eventId,
         timestamp: normalizeOptionalPositiveInteger(response.timestamp),
+        version: normalizeTrackerVersion(response.version),
       })
       return
     }
@@ -463,6 +472,10 @@ export async function fetchRankBorderOverview(params: FetchRankBorderOverviewPar
   const search = new URLSearchParams()
   search.set("interval", String(interval))
   const path = `${buildWebLeaderboardV2Path(params, "overview")}?${search}`
+  const version = normalizeTrackerVersion(params.version)
+  if (version != null && normalizePlaybackTimestamp(params.playbackAt) == null) {
+    return normalizeRankBorderOverview(await fetchTrackerJsonVersioned(params.endpoint, path, version))
+  }
   return normalizeRankBorderOverview(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
 }
 
@@ -710,15 +723,33 @@ async function fetchTrackerJson(
   return fetchTrackerJsonViaRest(baseUrl, requestPath, credentials)
 }
 
+/**
+ * Versioned public read: `path` plus `v=<version>`, over plain HTTP with the
+ * browser's default cache mode. The server marks a response for its current
+ * version immutable, so repeated reads of one version (other tabs, the
+ * visibility catch-up) are answered by the HTTP cache, and compression comes
+ * from the normal `Accept-Encoding` negotiation. Public data only: no
+ * credentials, no `_t` cache-buster.
+ */
+async function fetchTrackerJsonVersioned(endpoint: string, path: string, version: number): Promise<unknown> {
+  const baseUrl = normalizeTrackerEndpoint(endpoint)
+  if (!baseUrl) {
+    throw new Error("Tracker endpoint is empty")
+  }
+
+  return fetchTrackerJsonViaRest(baseUrl, appendVersionQuery(path, version), "omit", "default")
+}
+
 async function fetchTrackerJsonViaRest(
   baseUrl: string,
   path: string,
   credentials: TrackerFetchCredentials,
+  cache: RequestCache = "no-store",
 ): Promise<unknown> {
   const restBaseUrl = resolveRankBorderTrackerRestEndpoint(baseUrl)
   const response = await fetch(`${restBaseUrl}${path}`, {
     credentials,
-    cache: "no-store",
+    cache,
   })
   if (!response.ok) {
     const message = await readErrorMessage(response)
@@ -936,6 +967,14 @@ function appendPlaybackQuery(path: string, playbackAt: number | null | undefined
   return `${basePath}?${search}`
 }
 
+function appendVersionQuery(path: string, version: number): string {
+  const questionIndex = path.indexOf("?")
+  const basePath = questionIndex >= 0 ? path.slice(0, questionIndex) : path
+  const search = new URLSearchParams(questionIndex >= 0 ? path.slice(questionIndex + 1) : "")
+  search.set("v", String(version))
+  return `${basePath}?${search}`
+}
+
 function appendCacheBustQuery(path: string, cacheBust: boolean): string {
   if (!cacheBust) {
     return path
@@ -1020,6 +1059,12 @@ function normalizePositiveInteger(value: unknown): number {
 function normalizeOptionalPositiveInteger(value: unknown): number | null {
   const parsed = Number(value)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+/** The tracker's per-event cache epoch: a non-negative integer (number or digit string). */
+export function normalizeTrackerVersion(value: unknown): number | null {
+  const parsed = typeof value === "string" && /^\d+$/.test(value.trim()) ? Number(value.trim()) : value
+  return typeof parsed === "number" && Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null
 }
 
 function normalizeSekaiRegion(value: unknown): SekaiRegion | null {
