@@ -71,6 +71,7 @@ import type {
   RankBorderTooltipState,
 } from "../lib/rank-border-types"
 import { resolveTraceMetricStats } from "../lib/trace-stats"
+import { resolveWorldBloomModeSelection } from "../lib/world-bloom-mode"
 import { parseRichNameSegments, richNameSegmentStyle } from "../lib/rich-name"
 
 const COMPARISON_COLORS = [
@@ -91,6 +92,38 @@ const trackerEndpoint = ref(resolvePersistedTrackerEndpoint())
 const regionRef = computed(() => params.value?.region ?? "cn")
 const eventIdRef = computed(() => (params.value ? String(params.value.eventId) : null))
 const masterData = useRankBorderMasterData(regionRef, eventIdRef)
+
+// A shared or stale link can name a chapter the event does not have, or ask
+// for chapter mode on an event without chapters: once the event's master data
+// is known, rewrite it to the default chapter or the total leaderboard.
+watch(
+  [params, masterData.selectedEvent, masterData.worldBloomCharacterOptions],
+  ([value, event, chapters]) => {
+    if (!value || value.mode !== "world_bloom") {
+      return
+    }
+    const currentCharacterId = value.worldBloomCharacterId != null ? String(value.worldBloomCharacterId) : null
+    const nextSelection = resolveWorldBloomModeSelection(
+      { mode: value.mode, worldBloomCharacterId: currentCharacterId },
+      event,
+      chapters,
+    )
+    const nextCharacterId = nextSelection.worldBloomCharacterId
+    if (nextSelection.mode === value.mode && nextCharacterId === currentCharacterId) {
+      return
+    }
+    const query = { ...route.query }
+    if (nextSelection.mode === "world_bloom" && nextCharacterId) {
+      query.mode = "world_bloom"
+      query.wl = nextCharacterId
+    } else {
+      delete query.mode
+      delete query.wl
+    }
+    void router.replace({ query })
+  },
+  { immediate: true },
+)
 
 const cardById = computed(() => buildMasterRecordMap(masterData.cards.value))
 const honorById = computed(() => buildMasterRecordMap(masterData.honors.value))
@@ -125,6 +158,9 @@ const {
   setTraceSource,
   overview,
   comparisons,
+  issues,
+  hasIssues,
+  retryIssues,
   isSelfComparison,
   addComparisonTarget,
   addComparisonPlayer,
@@ -719,6 +755,20 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
       </Card>
 
       <template v-else>
+        <div
+          v-if="hasIssues"
+          role="status"
+          class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
+        >
+          <span class="font-medium">{{ t("rankBorder.detailIssues.title") }}</span>
+          <span v-if="issues.overview">{{ t("rankBorder.detailIssues.overview") }}</span>
+          <span v-if="issues.comparisons.length > 0">{{ t("rankBorder.detailIssues.comparisons", { names: issues.comparisons.join(", ") }) }}</span>
+          <span v-if="issues.realtime">{{ t("rankBorder.detailIssues.realtime") }}</span>
+          <Button type="button" variant="outline" size="sm" class="ml-auto h-7" @click="retryIssues">
+            <RefreshCcw class="size-3.5" />
+            {{ t("rankBorder.detailIssues.retry") }}
+          </Button>
+        </div>
         <div class="rank-border-detail-top">
         <!-- Hero -->
         <Card class="gap-0 py-0">

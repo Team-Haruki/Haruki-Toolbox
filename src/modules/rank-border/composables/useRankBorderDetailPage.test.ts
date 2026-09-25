@@ -86,7 +86,7 @@ for (const mode of ["normal", "world_bloom"] as const) {
       globalThis.fetch = (async (input: RequestInfo | URL) => {
         const url = String(input)
         requests.push(url)
-        const data = url.includes("overview?")
+        const data = /\/(overview|top100|borders|growth|status)\?/.test(url)
           ? {
               topRankings: [{ rankData: point(100) }],
               borderLines: [point(1000), point(200), point(500)],
@@ -122,3 +122,71 @@ for (const mode of ["normal", "world_bloom"] as const) {
     })
   }
 }
+
+test("push refreshes read the target on the versioned GET and leave the overview to its TTL", async () => {
+  setActivePinia(createPinia())
+  const requests: Array<{ url: string; cache?: RequestCache }> = []
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    requests.push({ url, cache: init?.cache })
+    if (url.includes("/overview?") || url.includes("/top100?") || url.includes("/borders?")) {
+      return new Response(JSON.stringify({ topRankings: [], borderLines: [] }))
+    }
+    return new Response(JSON.stringify({ current: { rankData: { userId: "u1", rank: 3, score: 100, timestamp: 10 } }, playerTrace: [{ userId: "u1", rank: 3, score: 100, timestamp: 10 }] }))
+  }) as typeof fetch
+  const scope = effectScope()
+  const page = scope.run(() => useRankBorderDetailPage(
+    computed<RankBorderDetailParams>(() => ({ region: "cn", eventId: 989001, mode: "normal", worldBloomCharacterId: null, intervalSeconds: 3600, target: { kind: "user", userId: "u1" } })),
+    ref("https://push-refresh-test.example"),
+  ))!
+  try {
+    await page.refresh(false)
+    requests.length = 0
+    await page.refreshForPush(77)
+    expect(requests.length).toBe(1)
+    expect(requests[0]?.url).toContain("details/user/u1?")
+    expect(requests[0]?.url).toContain("v=77")
+    expect(requests[0]?.url).not.toContain("_t=")
+    expect(requests[0]?.cache).toBe("default")
+  } finally {
+    scope.stop()
+  }
+})
+
+test("overview and comparison failures surface as retryable issues", async () => {
+  setActivePinia(createPinia())
+  let failing = true
+  const originalConsoleError = console.error
+  console.error = () => {}
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (/\/(overview|top100|borders)\?/.test(url)) {
+      return failing ? new Response("down", { status: 503 }) : new Response(JSON.stringify({ topRankings: [], borderLines: [] }))
+    }
+    if (url.includes("details/user/cmp")) {
+      return failing ? new Response("down", { status: 503 }) : new Response(JSON.stringify({ current: { rankData: { userId: "cmp", rank: 9, score: 5, timestamp: 10 } }, playerTrace: [{ userId: "cmp", rank: 9, score: 5, timestamp: 10 }] }))
+    }
+    return new Response(JSON.stringify({ current: { rankData: { userId: "u2", rank: 3, score: 100, timestamp: 10 } }, playerTrace: [{ userId: "u2", rank: 3, score: 100, timestamp: 10 }] }))
+  }) as typeof fetch
+  const scope = effectScope()
+  const page = scope.run(() => useRankBorderDetailPage(
+    computed<RankBorderDetailParams>(() => ({ region: "cn", eventId: 989002, mode: "normal", worldBloomCharacterId: null, intervalSeconds: 3600, target: { kind: "user", userId: "u2" } })),
+    ref("https://issues-test.example"),
+  ))!
+  try {
+    page.addComparisonPlayer("cmp")
+    await page.refresh(false)
+    expect(page.hasIssues.value).toBe(true)
+    expect(page.issues.value.overview).toBe(true)
+    expect(page.issues.value.comparisons).toEqual(["cmp"])
+    failing = false
+    page.retryIssues()
+    for (let index = 0; index < 20 && page.hasIssues.value; index += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+    expect(page.hasIssues.value).toBe(false)
+  } finally {
+    console.error = originalConsoleError
+    scope.stop()
+  }
+})

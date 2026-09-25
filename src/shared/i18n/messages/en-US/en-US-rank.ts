@@ -133,10 +133,18 @@ export default {
       "status": "Tracker status",
       "trackerLag": "Data lag",
       "refreshedAt": "Tracker updated at",
+      "dataAsOf": "Data as of {time}",
       "interval": "Growth interval: {value}",
       "topScore": "Top score",
       "coverage": "Tracked range",
       "trackerCadence": "Tracker cadence"
+    },
+    "detailIssues": {
+      "title": "Some data could not be updated; showing the last successful data.",
+      "overview": "Leaderboard overview",
+      "comparisons": "Comparisons: {names}",
+      "realtime": "Live updates disconnected, reconnecting",
+      "retry": "Retry"
     },
     "status": {
       "unknown": "Unknown",
@@ -145,6 +153,7 @@ export default {
       "connecting": "Connecting live push",
       "waitingWs": "Waiting for live push",
       "loginRequired": "Log in to enable auto refresh",
+      "pollingLoginForLive": "Refreshing periodically; log in for live updates",
       "replaying": "Replaying"
     },
     "time": {

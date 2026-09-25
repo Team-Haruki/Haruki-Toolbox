@@ -55,6 +55,8 @@ export type RankBorderSegmentRow = {
 export type RankBorderQuickFacts = {
   kind: "rank" | "line"
   rank: number
+  /** Public id of the player holding the seat when the facts were built (seats only). */
+  userId: string | null
   scoreLabel: string
   timestamp: number | null
   playerGrowthLabel: string | null

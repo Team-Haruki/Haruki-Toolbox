@@ -34,6 +34,7 @@ import type {
   RankBorderLineRow,
   RankBorderSegmentRow,
 } from "../lib/rank-border-types"
+import { createRealtimeRefreshGate, isDocumentHidden } from "../lib/realtime-refresh"
 
 /**
  * LIVE DATA ENGINE for the rank-border view.
@@ -72,6 +73,8 @@ type Top100MemoryCacheEntry = {
 }
 
 const TOP_100_MEMORY_CACHE_LIMIT = 4
+const REALTIME_RECONNECT_MIN_MS = 1_000
+const REALTIME_RECONNECT_MAX_MS = 30_000
 const top100MemoryCache = new Map<string, Top100MemoryCacheEntry>()
 
 export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
@@ -113,7 +116,21 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
   let realtimeSubscriptionKey = ""
   let realtimeSubscriptionToken = 0
   let numberFlashTimer: ReturnType<typeof setTimeout> | null = null
-  let pendingRefresh = false
+  let realtimeReconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let realtimeReconnectDelayMs = REALTIME_RECONNECT_MIN_MS
+  let realtimeCatchUpOnReady = false
+  // Bumped whenever the scope (endpoint/region/event/mode/chapter/replay)
+  // changes: a refresh started for an older generation is aborted and its
+  // result dropped, so the previous event's data never flashes.
+  let refreshGeneration = 0
+  let refreshController: AbortController | null = null
+
+  // One refresh at a time; pushes that land mid-fetch collapse into a single
+  // follow-up, and hidden tabs defer realtime refreshes until visible again.
+  const refreshGate = createRealtimeRefreshGate({
+    run: runRefresh,
+    onIdle: resetLiveRefreshTimer,
+  })
 
   const isPlaybackLive = computed(() => playbackAt.value == null)
 
@@ -182,7 +199,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       return t("rankBorder.status.replaying")
     }
     if (!userStore.hasActiveSession) {
-      return t("rankBorder.status.loginRequired")
+      return t("rankBorder.status.pollingLoginForLive")
     }
     if (realtimeState.value === "ready") {
       return t("rankBorder.status.liveWs")
@@ -204,23 +221,56 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       () => userStore.isLoggedIn,
     ],
     () => {
+      cancelInFlightRefresh()
       resetRankBorderData()
       resetLiveRefreshTimer()
-      void refreshData(true)
+      void refreshData()
     },
     { immediate: true },
   )
 
   watch(intervalSeconds, () => {
     refreshTop100GrowthsFromCachedTraces(top100GrowthByRank.value)
-    void refreshData(true)
+    void refreshData()
   })
 
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+  }
+
   onBeforeUnmount(() => {
+    if (typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
+    cancelInFlightRefresh()
     stopLiveRefreshTimer()
     stopRealtimeSubscription()
     clearNumberFlashTimer()
   })
+
+  function cancelInFlightRefresh() {
+    refreshGeneration += 1
+    refreshController?.abort()
+    refreshController = null
+  }
+
+  /** Hidden tabs skip pushes; becoming visible again does one catch-up refresh. */
+  function handleVisibilityChange() {
+    if (isDocumentHidden() || !canRefresh.value || !isPlaybackLive.value) {
+      return
+    }
+    if (canUseRealtimeAutoRefresh.value) {
+      if (!realtimeSubscription && realtimeReconnectTimer) {
+        clearRealtimeReconnectTimer()
+        resetRealtimeSubscription()
+      }
+      void refreshGate.resume()
+      return
+    }
+    if (shouldPollWithoutRealtime() || shouldAllowLocalLiveRefreshFallback()) {
+      void refreshGate.request("direct")
+    }
+  }
 
   function createTop100Row(rank: number, rowDetail: RankBorderLatest | null): RankBorderLineRow {
     const localGrowth = top100GrowthIntervalSeconds.value === selectedIntervalSeconds.value
@@ -326,17 +376,28 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     ].join(":")
   }
 
-  async function refreshData(cacheBust = true) {
+  /**
+   * Refresh now (or once more after the in-flight refresh). Direct refreshes
+   * always use the unversioned path; realtime pushes go through the gate.
+   */
+  function refreshData() {
+    return refreshGate.request("direct")
+  }
+
+  /**
+   * `version` is the tracker cache epoch from the latest `updated` push. With a
+   * version the overview is read over cacheable HTTP (`v=`); without one it
+   * keeps the cache-busted request (WebSocket frame for signed-in users).
+   */
+  async function runRefresh(version: number | null) {
     if (!canRefresh.value) {
       return
     }
 
-    if (liveRefreshing.value) {
-      pendingRefresh = true
-      return
-    }
-
     stopLiveRefreshTimer()
+    const generation = refreshGeneration
+    const controller = new AbortController()
+    refreshController = controller
     liveRefreshing.value = true
     try {
       const previousDetails = top100Details.value
@@ -355,11 +416,11 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
         intervalSeconds: requestedIntervalSeconds,
         userId: null,
         rank: null,
-        cacheBust,
         playbackAt: playbackAt.value,
-        useWebSocket: canUseRealtimeAutoRefresh.value,
+        version: isPlaybackLive.value ? version : null,
+        signal: controller.signal,
       })
-      if (tracker.error.value) {
+      if (controller.signal.aborted || generation !== refreshGeneration || tracker.error.value) {
         return
       }
 
@@ -374,13 +435,10 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
         previousGrowths,
       )
     } finally {
-      liveRefreshing.value = false
-      if (pendingRefresh) {
-        pendingRefresh = false
-        void refreshData(true)
-      } else {
-        resetLiveRefreshTimer()
+      if (refreshController === controller) {
+        refreshController = null
       }
+      liveRefreshing.value = false
     }
   }
 
@@ -636,6 +694,18 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
   function resetLiveRefreshTimer() {
     stopLiveRefreshTimer()
     resetRealtimeSubscription()
+    if (shouldPollWithoutRealtime()) {
+      scheduleNextLiveRefresh()
+    }
+  }
+
+  /**
+   * Signed-out visitors cannot open the tracker socket (its ticket needs a
+   * session), so they poll the public overview instead. Each poll revalidates
+   * with the ETag, so an unchanged overview costs a 304.
+   */
+  function shouldPollWithoutRealtime() {
+    return canRefresh.value && isPlaybackLive.value && !userStore.hasActiveSession
   }
 
   function resetRealtimeSubscription() {
@@ -645,7 +715,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     }
 
     const key = realtimeKey()
-    if (realtimeSubscription && realtimeSubscriptionKey === key) {
+    if (realtimeSubscriptionKey === key && (realtimeSubscription || realtimeReconnectTimer)) {
       return
     }
 
@@ -664,6 +734,12 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
           return
         }
         realtimeSubscription = subscription
+        realtimeReconnectDelayMs = REALTIME_RECONNECT_MIN_MS
+        if (realtimeCatchUpOnReady) {
+          // Pushes sent while the socket was down are lost: catch up once.
+          realtimeCatchUpOnReady = false
+          void refreshGate.request("realtime")
+        }
       })
       .catch(() => {
         if (token !== realtimeSubscriptionToken) {
@@ -671,6 +747,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
         }
         realtimeState.value = "error"
         realtimeOnline.value = null
+        scheduleRealtimeReconnect(key)
         scheduleLocalLiveRefreshFallback()
       })
   }
@@ -682,6 +759,46 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     realtimeSubscriptionKey = ""
     realtimeOnline.value = null
     realtimeState.value = "closed"
+    clearRealtimeReconnectTimer()
+    realtimeReconnectDelayMs = REALTIME_RECONNECT_MIN_MS
+    realtimeCatchUpOnReady = false
+    refreshGate.resetVersion()
+  }
+
+  /**
+   * The socket closed (or the subscribe failed): the server has forgotten this
+   * subscription, so drop it and subscribe again with exponential backoff.
+   */
+  function scheduleRealtimeReconnect(key: string) {
+    realtimeSubscriptionToken += 1
+    realtimeSubscription?.unsubscribe()
+    realtimeSubscription = null
+    realtimeSubscriptionKey = key
+    realtimeCatchUpOnReady = true
+    refreshGate.resetVersion()
+    clearRealtimeReconnectTimer()
+    const delay = realtimeReconnectDelayMs
+    realtimeReconnectDelayMs = Math.min(REALTIME_RECONNECT_MAX_MS, realtimeReconnectDelayMs * 2)
+    realtimeReconnectTimer = setTimeout(() => {
+      realtimeReconnectTimer = null
+      if (realtimeSubscriptionKey !== key) {
+        return
+      }
+      // resetRealtimeSubscription() clears the backoff state; keep it.
+      const nextDelay = realtimeReconnectDelayMs
+      const catchUp = realtimeCatchUpOnReady
+      realtimeSubscriptionKey = ""
+      resetRealtimeSubscription()
+      realtimeReconnectDelayMs = nextDelay
+      realtimeCatchUpOnReady = catchUp
+    }, delay)
+  }
+
+  function clearRealtimeReconnectTimer() {
+    if (realtimeReconnectTimer) {
+      clearTimeout(realtimeReconnectTimer)
+      realtimeReconnectTimer = null
+    }
   }
 
   function handleRealtimeEvent(event: RankBorderRealtimeEvent, token: number) {
@@ -692,6 +809,9 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     if (event.type === "state") {
       realtimeState.value = event.state
       realtimeOnline.value = event.online ?? realtimeOnline.value
+      if (event.state === "closed" && realtimeSubscription) {
+        scheduleRealtimeReconnect(realtimeSubscriptionKey)
+      }
       return
     }
 
@@ -706,7 +826,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     }
 
     if (event.type === "updated" && playbackAt.value == null && canRefresh.value) {
-      void refreshData(true)
+      refreshGate.notify(event.version)
     }
   }
 
@@ -726,8 +846,9 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     }
 
     liveRefreshTimer = setTimeout(() => {
-      if (canRefresh.value && !liveRefreshing.value) {
-        void refreshData(true)
+      // Hidden tabs stop polling; the visibility handler refreshes on return.
+      if (canRefresh.value && !liveRefreshing.value && !isDocumentHidden()) {
+        void refreshData()
       }
     }, resolveNextLiveRefreshDelay())
   }

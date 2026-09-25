@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n"
 import { ChartLine } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { useRankBorderContext } from "../composables/rank-border-context"
+import { resolveQuickFactsDetailTarget } from "../lib/detail-link"
 import type { RankBorderQuickFacts } from "../lib/rank-border-types"
 import RelativeTime from "./RelativeTime.vue"
 
@@ -18,9 +19,7 @@ const { ui } = useRankBorderContext()
 const { openDetailPage } = ui
 
 function openFullDetail() {
-  openDetailPage(props.facts.kind === "line"
-    ? { kind: "line", rank: props.facts.rank }
-    : { kind: "rank", rank: props.facts.rank })
+  openDetailPage(resolveQuickFactsDetailTarget(props.facts))
 }
 </script>
 

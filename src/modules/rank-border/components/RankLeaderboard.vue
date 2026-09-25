@@ -133,6 +133,7 @@ function buildSeatFacts(rank: number, { point, previous, next }: PointNeighbours
   return {
     kind: "rank",
     rank,
+    userId: row?.detail?.userId?.trim() || null,
     scoreLabel: formatPt(point.score),
     timestamp: row?.timestamp ?? null,
     playerGrowthLabel: row?.displayGrowth != null ? formatGrowth(row.displayGrowth) : null,
@@ -153,6 +154,7 @@ function buildLineFacts(rank: number, { point, previous, next }: PointNeighbours
   return {
     kind: "line",
     rank,
+    userId: null,
     scoreLabel: formatPt(point.score),
     timestamp: segment?.timestamp ?? null,
     playerGrowthLabel: null,
@@ -269,7 +271,7 @@ onBeforeUnmount(() => {
         <p class="text-xs text-muted-foreground">{{ t("rankBorder.result.loadErrorHint") }}</p>
         <p class="break-all text-xs text-destructive/70">{{ tracker.error.value }}</p>
       </div>
-      <Button variant="outline" size="sm" class="shrink-0" :disabled="!canRefresh || liveRefreshing" @click="refreshData(true)">
+      <Button variant="outline" size="sm" class="shrink-0" :disabled="!canRefresh || liveRefreshing" @click="refreshData()">
         <RefreshCcw :class="['size-4', liveRefreshing ? 'animate-spin' : '']" />
         {{ t("rankBorder.actions.retry") }}
       </Button>
