@@ -86,7 +86,7 @@ for (const mode of ["normal", "world_bloom"] as const) {
       globalThis.fetch = (async (input: RequestInfo | URL) => {
         const url = String(input)
         requests.push(url)
-        const data = url.includes("overview?")
+        const data = /\/(overview|top100|borders|growth|status)\?/.test(url)
           ? {
               topRankings: [{ rankData: point(100) }],
               borderLines: [point(1000), point(200), point(500)],
@@ -160,7 +160,7 @@ test("overview and comparison failures surface as retryable issues", async () =>
   console.error = () => {}
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input)
-    if (url.includes("/overview?")) {
+    if (/\/(overview|top100|borders)\?/.test(url)) {
       return failing ? new Response("down", { status: 503 }) : new Response(JSON.stringify({ topRankings: [], borderLines: [] }))
     }
     if (url.includes("details/user/cmp")) {

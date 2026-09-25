@@ -133,6 +133,7 @@ export default {
       "status": "Tracker 状态",
       "trackerLag": "数据延迟",
       "refreshedAt": "Tracker 更新时间",
+      "dataAsOf": "数据截至 {time}",
       "interval": "增长区间：{value}",
       "topScore": "最高分",
       "coverage": "采集范围",

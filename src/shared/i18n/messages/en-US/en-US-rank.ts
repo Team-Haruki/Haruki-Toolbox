@@ -133,6 +133,7 @@ export default {
       "status": "Tracker status",
       "trackerLag": "Data lag",
       "refreshedAt": "Tracker updated at",
+      "dataAsOf": "Data as of {time}",
       "interval": "Growth interval: {value}",
       "topScore": "Top score",
       "coverage": "Tracked range",

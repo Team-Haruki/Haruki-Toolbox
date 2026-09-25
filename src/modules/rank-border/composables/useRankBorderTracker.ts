@@ -34,6 +34,8 @@ export function useRankBorderTracker() {
   const userError = ref<string | null>(null)
   const rankError = ref<string | null>(null)
   const refreshedAt = ref<number | null>(null)
+  /** Unix seconds the leaderboard data is as of (`meta.fetchedAt`). */
+  const asOf = ref<number | null>(null)
 
   const growthByRank = computed(() =>
     new Map(growths.value.map((growth) => [growth.rank, growth])),
@@ -77,6 +79,7 @@ export function useRankBorderTracker() {
       growths.value = overview.borderGrowths
       growthIntervalSeconds.value = input.intervalSeconds
       status.value = overview.status
+      asOf.value = overview.asOf
       topRankings.value = overview.topRankings
       topPlayerGrowths.value = overview.topPlayerGrowths
       topRankGrowths.value = overview.topRankGrowths
@@ -157,6 +160,7 @@ export function useRankBorderTracker() {
     userError,
     rankError,
     refreshedAt,
+    asOf,
     refresh,
   }
 }

@@ -405,6 +405,7 @@ describe("rank border helpers", () => {
         timeAgo: 1,
       },
       intervalSeconds: 3600,
+      asOf: null,
     })
   })
 

@@ -97,6 +97,8 @@ export type RankBorderOverview = {
   borderGrowths: RankBorderGrowth[]
   status: RankBorderStatus | null
   intervalSeconds: number | null
+  /** Unix seconds the data is as of (`meta.fetchedAt`: newest ranking sample on split parts). */
+  asOf: number | null
 }
 
 export type RankBorderSnapshot = {
@@ -323,7 +325,17 @@ export function normalizeRankBorderOverview(value: unknown): RankBorderOverview 
     borderGrowths: normalizeRankBorderGrowths(record.borderGrowths),
     status: normalizeRankBorderStatus(record.status),
     intervalSeconds: normalizePositiveInteger(record.intervalSeconds),
+    asOf: normalizeUnixSeconds(isRecord(record.meta) ? record.meta.fetchedAt : null),
   }
+}
+
+/** Accepts unix seconds or milliseconds; returns seconds. */
+function normalizeUnixSeconds(value: unknown): number | null {
+  const parsed = normalizeNullableTimestamp(value)
+  if (parsed == null) {
+    return null
+  }
+  return parsed > 1e12 ? Math.floor(parsed / 1000) : parsed
 }
 
 export function normalizeRankBorderSnapshots(value: unknown): RankBorderSnapshotResponse {

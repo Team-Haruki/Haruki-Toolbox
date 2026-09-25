@@ -269,7 +269,9 @@ describe("rank border tracker api", () => {
       globalThis.fetch = originalFetch
     }
 
+    // The split parts answer 500 here, so this read falls back to the overview.
     expect(requests).toEqual([
+      ...["top100", "borders", "growth", "status"].map((part) => `https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/${part}?interval=3600`),
       "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/overview?interval=3600",
       "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/rank/100?includeTrace=true&includePlayerTrace=false&limit=5000",
       "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/user/u100?includeTrace=true&includeProfile=false&limit=5000",
@@ -405,13 +407,16 @@ describe("rank border tracker api", () => {
       const url = String(input)
       requests.push({ url, credentials: init?.credentials, cache: init?.cache })
       if (url.includes("/top100?")) {
-        return new Response(JSON.stringify({ topRankings: [{ rank: 1, userId: "a", score: 10, timestamp: 5 }], status: { timestamp: 5 } }))
+        return new Response(JSON.stringify({ meta: { fetchedAt: 1_700_000_005 }, topRankings: [{ rank: 1, userId: "a", score: 10, timestamp: 5 }] }))
       }
       if (url.includes("/borders?")) {
         return new Response(JSON.stringify({ borderLines: [{ rank: 200, score: 3, timestamp: 5 }] }))
       }
       if (url.includes("/growth?")) {
-        return new Response(JSON.stringify({ topPlayerGrowths: [], topRankGrowths: [], borderGrowths: [], intervalSeconds: 3600 }))
+        return new Response(JSON.stringify({ meta: { fetchedAt: 1_700_000_005 }, topPlayerGrowths: [], topRankGrowths: [], borderGrowths: [], intervalSeconds: 3600 }))
+      }
+      if (url.includes("/status?")) {
+        return new Response(JSON.stringify({ meta: { fetchedAt: 1_800_000_000 }, status: { timestamp: 1_700_000_004, status: 0 } }))
       }
       return new Response("unexpected", { status: 500 })
     }) as typeof fetch
@@ -438,11 +443,17 @@ describe("rank border tracker api", () => {
     }
 
     const base = "https://tracker-split.example/base/api/v2/web/events/cn/180/leaderboards/total"
-    expect(requests).toEqual(["top100", "borders", "growth"].map((part) => ({
-      url: `${base}/${part}?interval=3600&v=42`,
-      credentials: "omit",
-      cache: "default",
-    })))
+    expect(requests).toEqual([
+      ...["top100", "borders", "growth"].map((part) => ({
+        url: `${base}/${part}?interval=3600&v=42`,
+        credentials: "omit",
+        cache: "default",
+      })),
+      // Status is per request: never versioned, always revalidated.
+      { url: `${base}/status?interval=3600`, credentials: "omit", cache: "no-cache" },
+    ])
+    expect(overview.status?.timestamp).toBe(1_700_000_004)
+    expect(overview.asOf).toBe(1_700_000_005)
     expect(overview.topRankings.map((entry) => entry.rank)).toEqual([1])
     expect(overview.borderLines.map((line) => line.rank)).toEqual([200])
     expect(overview.intervalSeconds).toBe(3600)
@@ -486,7 +497,8 @@ describe("rank border tracker api", () => {
     ])
   })
 
-  it("revalidates unversioned public reads instead of cache-busting them", async () => {
+  it("reads split parts without v when a push carries no version, and replay keeps the overview", async () => {
+    resetRankBorderSplitPartsSupport()
     const originalFetch = globalThis.fetch
     const requests: Array<{ url: string; cache?: RequestCache; credentials?: RequestCredentials }> = []
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -496,7 +508,7 @@ describe("rank border tracker api", () => {
 
     try {
       const scope = {
-        endpoint: "https://tracker.example/base",
+        endpoint: "https://tracker-unversioned.example",
         region: "cn" as const,
         eventId: 180,
         mode: "normal" as const,
@@ -509,14 +521,19 @@ describe("rank border tracker api", () => {
       globalThis.fetch = originalFetch
     }
 
-    expect(requests).toHaveLength(2)
+    const base = "https://tracker-unversioned.example/api/v2/web/events/cn/180/leaderboards/total"
+    expect(requests.map((request) => request.url)).toEqual([
+      `${base}/top100?interval=3600`,
+      `${base}/borders?interval=3600`,
+      `${base}/growth?interval=3600`,
+      `${base}/status?interval=3600`,
+      `${base}/overview?interval=3600&at=1700000000&timestamp=1700000000`,
+    ])
     for (const request of requests) {
       expect(request.cache).toBe("no-cache")
       expect(request.credentials).toBe("omit")
       expect(request.url).not.toContain("_t=")
-      expect(request.url).not.toContain("v=42")
     }
-    expect(requests[1]?.url).toContain("at=1700000000")
   })
 
   it("aborts superseded public reads", async () => {

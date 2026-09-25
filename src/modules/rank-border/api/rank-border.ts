@@ -53,16 +53,20 @@ export type FetchRankBorderOverviewParams = RankBorderTrackerScope & {
   parts?: readonly RankBorderLivePart[]
 }
 
-/** Independently cacheable slices of the live leaderboard. */
-export type RankBorderLivePart = "top100" | "borders" | "growths"
+/**
+ * Independently cacheable slices of the live leaderboard. `status` (tracker
+ * freshness) is per request and never versioned.
+ */
+export type RankBorderLivePart = "top100" | "borders" | "growths" | "status"
 
-export const RANK_BORDER_LIVE_PARTS: readonly RankBorderLivePart[] = ["top100", "borders", "growths"]
+export const RANK_BORDER_LIVE_PARTS: readonly RankBorderLivePart[] = ["top100", "borders", "growths", "status"]
 
 /** The overview fields each part owns. */
 const RANK_BORDER_LIVE_PART_FIELDS = {
   top100: ["topRankings"],
   borders: ["borderLines"],
   growths: ["topPlayerGrowths", "topRankGrowths", "borderGrowths", "intervalSeconds"],
+  status: ["status"],
 } as const satisfies Record<RankBorderLivePart, ReadonlyArray<keyof RankBorderOverview>>
 
 /**
@@ -76,6 +80,7 @@ const RANK_BORDER_LIVE_PART_RESOURCES: Record<RankBorderLivePart, string> = {
   top100: "top100",
   borders: "borders",
   growths: "growth",
+  status: "status",
 }
 
 /** Per tracker endpoint: whether the split part resources are reachable. */
@@ -511,25 +516,29 @@ export async function fetchRankBorderOverview(params: FetchRankBorderOverviewPar
   const search = new URLSearchParams()
   search.set("interval", String(interval))
   const path = `${buildWebLeaderboardV2Path(params, "overview")}?${search}`
-  const version = normalizeTrackerVersion(params.version)
-  if (version != null && normalizePlaybackTimestamp(params.playbackAt) == null) {
-    return fetchRankBorderLivePartsVersioned(params, search, version)
+  // Live reads use the split parts (versioned when the push carried a
+  // version, short-cached otherwise); replay keeps the monolithic overview.
+  if (normalizePlaybackTimestamp(params.playbackAt) == null) {
+    return fetchRankBorderLivePartsVersioned(params, search, normalizeTrackerVersion(params.version))
   }
   return normalizeRankBorderOverview(await fetchPublicTrackerJson(path, params))
 }
 
 /**
- * Versioned read of the parts a view needs: one GET per part resource, all
- * for the same `version`, merged into one overview. The first split request
- * doubles as the capability probe: if it fails before this endpoint was ever
- * seen serving parts (older tracker, or the edge rule is not deployed — a
- * rule miss can also surface as a CORS network error), the endpoint is marked
- * as overview-only and the view reads the monolithic `overview` instead.
+ * Live read of the parts a view needs: one GET per part resource, all with
+ * the same `interval` and `v` (no `v` when the push carried none — a replica
+ * catching up — which takes the short-cache path), merged into one overview.
+ *
+ * The split resources are the default. The first request doubles as the
+ * capability probe: a 404 (older tracker, or the edge rule is not deployed)
+ * or a network/CORS failure before the endpoint was ever seen serving parts
+ * switches this endpoint to the monolithic `overview` for the session. Other
+ * failures fall back to `overview` for this read only.
  */
 async function fetchRankBorderLivePartsVersioned(
   params: FetchRankBorderOverviewParams,
   search: URLSearchParams,
-  version: number,
+  version: number | null,
 ): Promise<RankBorderOverview> {
   const supportKey = normalizeTrackerEndpoint(params.endpoint)
   const scope = { ...params, version }
@@ -539,11 +548,14 @@ async function fetchRankBorderLivePartsVersioned(
       trackerSplitPartsSupport.set(supportKey, "yes")
       return overview
     } catch (error) {
+      const missing = isRecord(error) && error.status === 404
       const known = trackerSplitPartsSupport.get(supportKey) === "yes"
-      if (params.signal?.aborted || (known && !(isRecord(error) && error.status === 404))) {
+      if (params.signal?.aborted || (known && !missing)) {
         throw error
       }
-      trackerSplitPartsSupport.set(supportKey, "no")
+      if (missing || error instanceof TypeError) {
+        trackerSplitPartsSupport.set(supportKey, "no")
+      }
     }
   }
 
@@ -562,7 +574,8 @@ async function fetchRankBorderLiveParts(
   const payloads = await Promise.all(resources.map(async (resource) =>
     normalizeRankBorderOverview(await fetchPublicTrackerJson(
       `${buildWebLeaderboardV2Path(scope, resource)}?${search}`,
-      scope,
+      // Status is per request and never immutable: read it unversioned.
+      resource === RANK_BORDER_LIVE_PART_RESOURCES.status ? { ...scope, version: null } : scope,
     )),
   ))
   return mergeRankBorderLiveParts(parts, resources, payloads)
@@ -586,6 +599,11 @@ export function mergeRankBorderLiveParts(
     }
   }
   merged.status = payloads.find((payload) => payload?.status)?.status ?? null
+  // All parts of one version share `meta.fetchedAt` (the data's as-of time);
+  // the status resource's meta describes the request, so it is skipped.
+  merged.asOf = resources
+    .map((resource, index) => resource === RANK_BORDER_LIVE_PART_RESOURCES.status ? null : payloads[index]?.asOf ?? null)
+    .find((value) => value != null) ?? null
   return merged
 }
 

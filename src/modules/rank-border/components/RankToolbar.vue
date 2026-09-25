@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch"
 import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import { useRankBorderContext } from "../composables/rank-border-context"
+import TrackerFreshness from "./TrackerFreshness.vue"
 
 const { t } = useI18n()
 
@@ -56,6 +57,7 @@ const {
   canRefresh,
   trackerStatusTone,
   trackerStatusLabel,
+  tracker,
   refreshData,
 } = live
 const { openDetailPage } = ui
@@ -147,6 +149,7 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
             <span class="rank-border-live-dot" />
             {{ trackerStatusLabel }}
           </span>
+          <TrackerFreshness :status-timestamp="tracker.status.value?.timestamp ?? null" :as-of="tracker.asOf.value" />
           <Button type="button" size="sm" :disabled="!canRefresh || liveRefreshing" @click="refreshData()">
             <RefreshCcw :class="['size-4', liveRefreshing ? 'animate-spin' : '']" />
             <span class="hidden sm:inline">{{ liveRefreshing ? t("rankBorder.actions.refreshing") : t("rankBorder.actions.refresh") }}</span>
