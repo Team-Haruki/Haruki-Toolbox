@@ -815,6 +815,10 @@ export function isRankBorderTrackerUnauthorizedError(error: unknown): boolean {
   return isRecord(error) && error.status === 401
 }
 
+export function isRankBorderTrackerNotFoundError(error: unknown): boolean {
+  return isRecord(error) && error.status === 404
+}
+
 /**
  * Public tracker data over plain HTTP (compressed by the tracker, no
  * credentials). With a live `version` the URL carries `v=` and the browser's

@@ -125,6 +125,12 @@ export type RankBorderWebRankDetail = {
 }
 
 export type RankBorderWebUserDetail = {
+  /**
+   * False when the tracker saw the player in this event but they no longer
+   * hold a tracked rank: `current`/`previous`/`next` are then null while the
+   * trace and profile still describe them. Older trackers omit the field.
+   */
+  ranked: boolean
   current: RankBorderLatest | null
   previous: RankBorderLatest | null
   next: RankBorderLatest | null
@@ -427,10 +433,12 @@ export function normalizeRankBorderWebUserDetail(value: unknown): RankBorderWebU
       },
     })
   }
+  const ranked = record.ranked !== false
   return {
-    current,
-    previous: normalizeRankBorderLatest(normalizeWebRankingItem(record.previous)),
-    next: normalizeRankBorderLatest(normalizeWebRankingItem(record.next)),
+    ranked,
+    current: ranked ? current : null,
+    previous: ranked ? normalizeRankBorderLatest(normalizeWebRankingItem(record.previous)) : null,
+    next: ranked ? normalizeRankBorderLatest(normalizeWebRankingItem(record.next)) : null,
     playerTrace: normalizeRankBorderTrace(record.playerTrace),
     profile,
   }
