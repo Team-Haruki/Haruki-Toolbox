@@ -492,6 +492,8 @@ export function useRankBorderDetailPage(
         ...activeScope,
         intervalSeconds: value.intervalSeconds,
         version,
+        // Neighbour lines and the comparison picker only read these parts.
+        parts: ["top100", "borders"],
       })
       if (overviewCacheKey() !== key) {
         return

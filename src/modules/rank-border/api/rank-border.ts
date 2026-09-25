@@ -41,6 +41,36 @@ export type FetchRankBorderUserParams = RankBorderTrackerScope & {
 
 export type FetchRankBorderOverviewParams = RankBorderTrackerScope & {
   intervalSeconds: number
+  /**
+   * The parts of the live overview the view renders (default: all). Only
+   * consulted for versioned reads; see `RANK_BORDER_LIVE_PART_RESOURCES`.
+   */
+  parts?: readonly RankBorderLivePart[]
+}
+
+/** Independently cacheable slices of the live leaderboard. */
+export type RankBorderLivePart = "top100" | "borders" | "growths"
+
+export const RANK_BORDER_LIVE_PARTS: readonly RankBorderLivePart[] = ["top100", "borders", "growths"]
+
+/** The overview fields each part owns. */
+const RANK_BORDER_LIVE_PART_FIELDS = {
+  top100: ["topRankings"],
+  borders: ["borderLines"],
+  growths: ["topPlayerGrowths", "topRankGrowths", "borderGrowths"],
+} as const satisfies Record<RankBorderLivePart, ReadonlyArray<keyof RankBorderOverview>>
+
+/**
+ * Which versioned resource (path suffix under `.../leaderboards/{total|world-bloom/{c}}/`)
+ * serves each part. Today every part comes from the single `overview`, so a
+ * versioned read is one request. When the tracker serves the parts as their
+ * own resources, point them here: the distinct resources a view needs are
+ * then fetched in parallel for the same `v` and merged by field ownership.
+ */
+const RANK_BORDER_LIVE_PART_RESOURCES: Record<RankBorderLivePart, string> = {
+  top100: "overview",
+  borders: "overview",
+  growths: "overview",
 }
 
 export type FetchRankBorderWebDetailParams = RankBorderTrackerScope & {
@@ -474,9 +504,47 @@ export async function fetchRankBorderOverview(params: FetchRankBorderOverviewPar
   const path = `${buildWebLeaderboardV2Path(params, "overview")}?${search}`
   const version = normalizeTrackerVersion(params.version)
   if (version != null && normalizePlaybackTimestamp(params.playbackAt) == null) {
-    return normalizeRankBorderOverview(await fetchTrackerJsonVersioned(params.endpoint, path, version))
+    return fetchRankBorderLivePartsVersioned(params, search, version)
   }
   return normalizeRankBorderOverview(await fetchTrackerJson(params.endpoint, path, params.cacheBust, params.playbackAt, params.useWebSocket))
+}
+
+/**
+ * Versioned read of the parts a view needs: one GET per distinct resource,
+ * all for the same `version`, merged into one overview. Parts the view did not
+ * ask for stay empty unless a fetched resource happens to carry them.
+ */
+async function fetchRankBorderLivePartsVersioned(
+  params: FetchRankBorderOverviewParams,
+  search: URLSearchParams,
+  version: number,
+): Promise<RankBorderOverview> {
+  const parts = params.parts?.length ? params.parts : RANK_BORDER_LIVE_PARTS
+  const resources = Array.from(new Set(parts.map((part) => RANK_BORDER_LIVE_PART_RESOURCES[part])))
+  const payloads = await Promise.all(resources.map(async (resource) =>
+    normalizeRankBorderOverview(await fetchTrackerJsonVersioned(
+      params.endpoint,
+      `${buildWebLeaderboardV2Path(params, resource)}?${search}`,
+      version,
+    )),
+  ))
+  const byResource = new Map(resources.map((resource, index) => [resource, payloads[index]!]))
+  if (byResource.size === 1) {
+    return payloads[0]!
+  }
+
+  const merged: RankBorderOverview = { ...payloads[0]! }
+  for (const part of parts) {
+    const source = byResource.get(RANK_BORDER_LIVE_PART_RESOURCES[part])
+    if (!source) {
+      continue
+    }
+    for (const field of RANK_BORDER_LIVE_PART_FIELDS[part]) {
+      Object.assign(merged, { [field]: source[field] })
+    }
+  }
+  merged.status = payloads.find((payload) => payload.status)?.status ?? null
+  return merged
 }
 
 export async function fetchRankBorderReplayOverviewV2(params: FetchRankBorderOverviewParams): Promise<RankBorderOverview> {
