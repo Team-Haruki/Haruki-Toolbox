@@ -118,7 +118,7 @@ describe("rank border tracker api", () => {
     }
 
     expect(requests.some((url) => url.includes("/ws-ticket"))).toBe(true)
-    expect(requests.some((url) => url === "/api/v2/web/events/jp/1/leaderboards/total/private/details/user/123456789?includeTrace=false&includeProfile=false&limit=5000&owner=kratos-1")).toBe(true)
+    expect(requests.some((url) => url === "/api/v2/web/events/jp/1/leaderboards/total/private/details/user/123456789?includeTrace=false&includeProfile=false&limit=10000&owner=kratos-1")).toBe(true)
   })
 
   it("includes browser credentials for private REST lookup fallbacks", async () => {
@@ -158,7 +158,7 @@ describe("rank border tracker api", () => {
 
     expect(requests).toEqual([
       {
-        url: "https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/private/details/user/123456789?includeTrace=false&includeProfile=false&limit=5000&owner=kratos-1",
+        url: "https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/private/details/user/123456789?includeTrace=false&includeProfile=false&limit=10000&owner=kratos-1",
         credentials: "include",
       },
     ])
@@ -273,8 +273,8 @@ describe("rank border tracker api", () => {
     expect(requests).toEqual([
       ...["top100", "borders", "growth", "status"].map((part) => `https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/${part}?interval=3600`),
       "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/overview?interval=3600",
-      "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/rank/100?includeTrace=true&includePlayerTrace=false&limit=5000",
-      "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/user/u100?includeTrace=true&includeProfile=false&limit=5000",
+      "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/rank/100?includeTrace=true&includePlayerTrace=false&limit=10000",
+      "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/user/u100?includeTrace=true&includeProfile=false&limit=10000",
     ])
   })
 
@@ -318,6 +318,40 @@ describe("rank border tracker api", () => {
     ])
   })
 
+  it("hands the first seat page to the caller before paging the rest of its trace", async () => {
+    const originalFetch = globalThis.fetch
+    const order: string[] = []
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const cursor = new URL(String(input)).searchParams.get("cursor")
+      order.push(cursor == null ? "page-1" : `page@${cursor}`)
+      const rankTrace = cursor == null
+        ? [{ timestamp: 1, userId: "u1", score: 100, rank: 1 }, { timestamp: 2, userId: "u1", score: 200, rank: 1 }]
+        : cursor === "2" ? [{ timestamp: 3, userId: "u2", score: 300, rank: 1 }] : []
+      return new Response(JSON.stringify({ current: { rankData: { timestamp: 2, userId: "u1", score: 200, rank: 1 } }, rankTrace }), { status: 200 })
+    }) as typeof fetch
+
+    try {
+      const detail = await fetchRankBorderWebRankDetailV2({
+        endpoint: "https://tracker.example/base",
+        region: "cn",
+        eventId: 176,
+        mode: "normal",
+        rank: 1,
+        includeTrace: true,
+        fetchAllTrace: true,
+        limit: 2,
+        onFirstPage: (page) => {
+          order.push(`first-page:${page.current?.userId}:${page.rankTrace.length}`)
+        },
+      })
+      expect(detail.rankTrace.map((record) => record.timestamp)).toEqual([1, 2, 3])
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    expect(order).toEqual(["page-1", "first-page:u1:2", "page@2"])
+  })
+
   it("requests user traces through v2 web user details", async () => {
     const originalFetch = globalThis.fetch
     const requests: string[] = []
@@ -351,7 +385,7 @@ describe("rank border tracker api", () => {
     }
 
     expect(requests).toEqual([
-      "https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/details/user/public-user?includeTrace=true&includeProfile=false&limit=5000",
+      "https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/details/user/public-user?includeTrace=true&includeProfile=false&limit=10000",
     ])
   })
 

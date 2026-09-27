@@ -103,6 +103,16 @@ export type FetchRankBorderPrivateWebDetailParams = FetchRankBorderWebDetailPara
   ownerId?: string | null
 }
 
+export type FetchRankBorderWebRankDetailParams = FetchRankBorderWebDetailParams & {
+  rank: string | number
+  /**
+   * Called with the first page as soon as it arrives, before the remaining
+   * trace pages are requested, so dependent reads (the seat holder's own
+   * history) can start while the seat trace is still paging.
+   */
+  onFirstPage?: (detail: RankBorderWebRankDetail) => void
+}
+
 export type FetchRankBorderUserSearchParams = RankBorderTrackerScope & {
   query: string
   limit?: number
@@ -153,7 +163,8 @@ export type RankBorderTrackerError = Error & {
 const TRACKER_WS_OPEN_TIMEOUT_MS = 4_000
 const TRACKER_WS_REQUEST_TIMEOUT_MS = 15_000
 const TRACKER_WS_FAILURE_COOLDOWN_MS = 2_000
-const TRACE_PAGE_LIMIT = 5_000
+/** Rows per trace page; the tracker caps `limit` at 10000. */
+const TRACE_PAGE_LIMIT = 10_000
 const LOCAL_TRACKER_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"])
 
 type TrackerWsPendingRequest = {
@@ -663,8 +674,9 @@ export async function fetchRankBorderReplayOverviewV2(params: FetchRankBorderOve
   return normalizeRankBorderOverview(await fetchPublicTrackerJson(path, params))
 }
 
-export async function fetchRankBorderWebRankDetailV2(params: FetchRankBorderWebDetailParams & { rank: string | number }): Promise<RankBorderWebRankDetail> {
+export async function fetchRankBorderWebRankDetailV2(params: FetchRankBorderWebRankDetailParams): Promise<RankBorderWebRankDetail> {
   const detail = await fetchRankBorderWebRankDetailPageV2(params)
+  params.onFirstPage?.(detail)
   const pageLimit = resolveTracePageLimit(params)
   if (!params.fetchAllTrace || params.cursor != null || pageLimit == null) {
     return detail

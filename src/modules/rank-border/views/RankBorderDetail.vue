@@ -154,9 +154,9 @@ const {
   previous,
   next,
   activeTrace,
-  hasPlayerTrace,
-  hasBorderTrace,
   traceSource,
+  canSwitchTraceSource,
+  borderTraceLoading,
   setTraceSource,
   overview,
   comparisons,
@@ -833,7 +833,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
 
             <div class="flex flex-wrap items-center gap-2">
               <Tabs
-                v-if="hasPlayerTrace && hasBorderTrace"
+                v-if="canSwitchTraceSource"
                 :model-value="traceSource"
                 @update:model-value="(value) => (value === 'player' || value === 'border') && setTraceSource(value)"
               >
@@ -842,6 +842,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
                   <TabsTrigger value="border" class="h-7 px-2.5 text-xs">{{ t("rankBorder.sections.borderTracking") }}</TabsTrigger>
                 </TabsList>
               </Tabs>
+              <RefreshCcw v-if="borderTraceLoading" class="size-3.5 animate-spin text-muted-foreground" />
               <span class="text-xs text-muted-foreground">{{ traceScopeLabel }}</span>
             </div>
 
