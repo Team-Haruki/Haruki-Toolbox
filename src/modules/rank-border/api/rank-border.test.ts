@@ -273,8 +273,8 @@ describe("rank border tracker api", () => {
     expect(requests).toEqual([
       ...["top100", "borders", "growth", "status"].map((part) => `https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/${part}?interval=3600`),
       "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/overview?interval=3600",
-      "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/rank/100?includeTrace=true&includePlayerTrace=false&limit=10000",
-      "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/user/u100?includeTrace=true&includeProfile=false&limit=10000",
+      "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/rank/100?includeTrace=true&includePlayerTrace=false&traceFormat=columns&limit=10000",
+      "https://tracker.example/base/api/v2/web/events/cn/170/leaderboards/world-bloom/20/details/user/u100?includeTrace=true&includeProfile=false&traceFormat=columns&limit=10000",
     ])
   })
 
@@ -313,8 +313,8 @@ describe("rank border tracker api", () => {
     }
 
     expect(requests).toEqual([
-      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/details/rank/1?includeTrace=false&includePlayerTrace=true&limit=2",
-      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/details/rank/1?includeTrace=false&includePlayerTrace=true&cursor=2&limit=2",
+      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/details/rank/1?includeTrace=false&includePlayerTrace=true&traceFormat=columns&limit=2",
+      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/details/rank/1?includeTrace=false&includePlayerTrace=true&traceFormat=columns&cursor=2&limit=2",
     ])
   })
 
@@ -376,11 +376,69 @@ describe("rank border tracker api", () => {
     }
 
     expect(requests).toEqual([
-      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/private/details/user/me?includeTrace=true&includeProfile=true&limit=2&owner=kratos-1",
-      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/private/details/user/me?includeTrace=true&includeProfile=false&cursor=2&limit=2&owner=kratos-1",
-      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/private/details/user/me?includeTrace=true&includeProfile=false&cursor=3&limit=2&owner=kratos-1",
+      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/private/details/user/me?includeTrace=true&includeProfile=true&traceFormat=columns&limit=2&owner=kratos-1",
+      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/private/details/user/me?includeTrace=true&includeProfile=false&traceFormat=columns&cursor=2&limit=2&owner=kratos-1",
+      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/private/details/user/me?includeTrace=true&includeProfile=false&traceFormat=columns&cursor=3&limit=2&owner=kratos-1",
     ])
   })
+
+  for (const server of ["columns", "rows"] as const) {
+    it(`asks for compact traces and reads a ${server}-answering tracker into the same rows`, async () => {
+      const originalFetch = globalThis.fetch
+      const requests: string[] = []
+      const rowsFor = (cursor: number | null) => [
+        { timestamp: 1, userId: "u1", score: 100, rank: 1 },
+        { timestamp: 2, userId: "u2", score: 200, rank: 1 },
+        { timestamp: 3, userId: "u1", score: 300, rank: 1 },
+      ].filter((row) => cursor == null || row.timestamp > cursor)
+      const encode = (rows: ReturnType<typeof rowsFor>) => {
+        if (rows.length === 0) {
+          return undefined
+        }
+        if (server === "rows") {
+          return rows
+        }
+        const users = [...new Set(rows.map((row) => row.userId))]
+        return {
+          format: "columns", n: rows.length, t0: rows[0]!.timestamp, dt: rows.slice(1).map((row, index) => row.timestamp - rows[index]!.timestamp),
+          s0: rows[0]!.score, ds: rows.slice(1).map((row, index) => row.score - rows[index]!.score), rank: 1,
+          users, u: rows.flatMap((row, index) => index === 0 || row.userId !== rows[index - 1]!.userId ? [[index, users.indexOf(row.userId)]] : []),
+        }
+      }
+      globalThis.fetch = (async (input: RequestInfo | URL) => {
+        const url = String(input)
+        requests.push(url)
+        const params = new URL(url).searchParams
+        expect(params.get("traceFormat")).toBe("columns")
+        const cursor = params.has("cursor") ? Number(params.get("cursor")) : null
+        const rows = rowsFor(cursor).slice(0, 2)
+        const body = url.includes("details/rank/")
+          ? { current: { rankData: { timestamp: 3, userId: "u1", score: 300, rank: 1 } }, rankTrace: encode(rows) }
+          : { current: { rankData: { timestamp: 3, userId: "u1", score: 300, rank: 1 } }, playerTrace: encode(rows) }
+        return new Response(JSON.stringify(body), { status: 200 })
+      }) as typeof fetch
+
+      const scope = { endpoint: "https://tracker.example/base", region: "cn", eventId: 176, mode: "normal" } as const
+      try {
+        const seat = await fetchRankBorderWebRankDetailV2({ ...scope, rank: 1, includeTrace: true, fetchAllTrace: true, limit: 2 })
+        expect(seat.rankTrace).toEqual([
+          { timestamp: 1, userId: "u1", score: 100, rank: 1, characterId: null },
+          { timestamp: 2, userId: "u2", score: 200, rank: 1, characterId: null },
+          { timestamp: 3, userId: "u1", score: 300, rank: 1, characterId: null },
+        ])
+        const player = await fetchRankBorderWebUserDetailV2({ ...scope, userId: "u1", includeTrace: true, cursor: 2 })
+        expect(player.playerTrace.map((row) => row.timestamp)).toEqual([3])
+        const own = await fetchRankBorderPrivateWebUserDetailV2({ ...scope, userId: "u1", ownerId: "kratos-1", useWebSocket: false, includeTrace: true, cursor: 3 })
+        expect(own.playerTrace).toEqual([])
+        expect(own.current?.userId).toBe("u1")
+      } finally {
+        globalThis.fetch = originalFetch
+      }
+
+      // Pages continue from the last decoded row's timestamp.
+      expect(requests.map((url) => new URL(url).searchParams.get("cursor"))).toEqual([null, "2", "2", "3"])
+    })
+  }
 
   it("requests user traces through v2 web user details", async () => {
     const originalFetch = globalThis.fetch
@@ -415,7 +473,7 @@ describe("rank border tracker api", () => {
     }
 
     expect(requests).toEqual([
-      "https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/details/user/public-user?includeTrace=true&includeProfile=false&limit=10000",
+      "https://tracker.example/base/api/v2/web/events/jp/1/leaderboards/total/details/user/public-user?includeTrace=true&includeProfile=false&traceFormat=columns&limit=10000",
     ])
   })
 

@@ -693,7 +693,7 @@ for (const server of ["new", "old"] as const) {
       await settleInitialLoad(page)
       expect(socket.paths).toHaveLength(1)
       expect(socket.paths[0]).toContain("/private/details/user/mine?")
-      expect(socket.paths[0]).toContain("includeTrace=true&includeProfile=true")
+      expect(socket.paths[0]).toContain("includeTrace=true&includeProfile=true&traceFormat=columns")
       expect(socket.paths[0]).toContain("owner=kratos-1")
       expect(socket.paths[0]).not.toContain("cursor=")
       expect(page.profile.value?.name).toBe("Me")

@@ -165,6 +165,11 @@ const TRACKER_WS_REQUEST_TIMEOUT_MS = 15_000
 const TRACKER_WS_FAILURE_COOLDOWN_MS = 2_000
 /** Rows per trace page; the tracker caps `limit` at 10000. */
 const TRACE_PAGE_LIMIT = 10_000
+/**
+ * Compact trace encoding, decoded back into rows by the normalizers. Older
+ * trackers ignore the parameter and answer with rows.
+ */
+const TRACE_FORMAT = "columns"
 const LOCAL_TRACKER_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"])
 
 type TrackerWsPendingRequest = {
@@ -720,6 +725,9 @@ async function fetchRankBorderWebRankDetailPageV2(params: FetchRankBorderWebDeta
   }
   search.set("includeTrace", params.includeTrace ? "true" : "false")
   search.set("includePlayerTrace", params.includePlayerTrace ? "true" : "false")
+  if (params.includeTrace || params.includePlayerTrace) {
+    search.set("traceFormat", TRACE_FORMAT)
+  }
   const cursor = normalizeOptionalPositiveInteger(params.cursor)
   if (cursor != null) {
     search.set("cursor", String(cursor))
@@ -762,6 +770,9 @@ async function fetchRankBorderWebUserDetailPageV2(params: FetchRankBorderWebDeta
   }
   search.set("includeTrace", params.includeTrace ? "true" : "false")
   search.set("includeProfile", params.includeProfile ? "true" : "false")
+  if (params.includeTrace) {
+    search.set("traceFormat", TRACE_FORMAT)
+  }
   const cursor = normalizeOptionalPositiveInteger(params.cursor)
   if (cursor != null) {
     search.set("cursor", String(cursor))
@@ -809,6 +820,9 @@ async function fetchRankBorderPrivateWebUserDetailPageV2(params: FetchRankBorder
   }
   search.set("includeTrace", params.includeTrace ? "true" : "false")
   search.set("includeProfile", params.includeProfile ? "true" : "false")
+  if (params.includeTrace) {
+    search.set("traceFormat", TRACE_FORMAT)
+  }
   const cursor = normalizeOptionalPositiveInteger(params.cursor)
   if (cursor != null) {
     search.set("cursor", String(cursor))

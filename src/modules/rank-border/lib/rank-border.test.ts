@@ -543,6 +543,32 @@ describe("rank border helpers", () => {
     })
   })
 
+  it("normalizes compact column traces like row traces and drops unknown shapes", () => {
+    const columns = {
+      format: "columns", n: 3, t0: 1710000000, dt: [60, 60], s0: 100, ds: [50, 0], r0: 3, dr: [0, -1],
+      users: ["1", "2"], u: [[0, 0], [2, 1]], characterId: 4,
+    }
+    const rows = [
+      { rank: 3, score: 100, timestamp: 1710000000, userId: "1", characterId: 4 },
+      { rank: 3, score: 150, timestamp: 1710000060, userId: "1", characterId: 4 },
+      { rank: 2, score: 150, timestamp: 1710000120, userId: "2", characterId: 4 },
+    ]
+    expect(normalizeRankBorderTrace(columns)).toEqual(normalizeRankBorderTrace(rows))
+    expect(normalizeRankBorderTrace(columns)).toEqual(rows)
+    expect(normalizeRankBorderTrace(undefined)).toEqual([])
+
+    const warnings: unknown[] = []
+    const originalWarn = console.warn
+    console.warn = (...args: unknown[]) => { warnings.push(args) }
+    try {
+      expect(normalizeRankBorderTrace({ format: "columns", n: 2, t0: 1, dt: [], s0: 0, ds: [], rank: 1, users: ["a"], u: [[0, 0]] })).toEqual([])
+      expect(normalizeRankBorderTrace({ format: "sparse" })).toEqual([])
+    } finally {
+      console.warn = originalWarn
+    }
+    expect(warnings).toHaveLength(2)
+  })
+
   it("deduplicates trace timeline points by timestamp", () => {
     expect(normalizeRankBorderTraceTimeline([
       { rank: 1, score: 100, timestamp: 1710000000, userId: "u1", characterId: null },

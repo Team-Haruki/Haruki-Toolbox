@@ -1,3 +1,5 @@
+import { decodeRankBorderTraceColumns, isRankBorderTraceColumns } from "./trace-columns"
+
 export type RankBorderMode = "normal" | "world_bloom"
 
 export type RankBorderLine = {
@@ -378,7 +380,7 @@ export function normalizeRankBorderTrace(value: unknown): RankBorderTracePoint[]
       ? value.items
     : Array.isArray(value)
       ? value
-      : []
+      : resolveTraceRows(value)
 
   return rankData
     .map((item) => {
@@ -403,6 +405,27 @@ export function normalizeRankBorderTrace(value: unknown): RankBorderTracePoint[]
     })
     .filter((item): item is RankBorderTracePoint => item != null)
     .sort((a, b) => a.timestamp - b.timestamp)
+}
+
+/**
+ * Traces requested with `traceFormat=columns` arrive as a columns object from
+ * trackers that support it and as rows from older ones; an omitted field is
+ * an empty trace. Any other shape is treated as empty and reported.
+ */
+function resolveTraceRows(value: unknown): unknown[] {
+  if (value == null) {
+    return []
+  }
+  if (isRankBorderTraceColumns(value)) {
+    try {
+      return decodeRankBorderTraceColumns(value)
+    } catch (error) {
+      console.warn("[rank-border] dropping undecodable columns trace", error)
+      return []
+    }
+  }
+  console.warn("[rank-border] dropping trace of unknown shape", value)
+  return []
 }
 
 export function normalizeRankBorderWebRankDetail(value: unknown): RankBorderWebRankDetail {
