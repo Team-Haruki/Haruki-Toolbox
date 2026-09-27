@@ -28,7 +28,7 @@ import {
   type ComparisonTargetKind,
 } from "../lib/comparison-target"
 import { PERSONAL_COLLECTION_LIMIT, TRACE_PAGE_LIMIT } from "../lib/rank-border-constants"
-import { createRealtimeRefreshGate, isDocumentHidden } from "../lib/realtime-refresh"
+import { createRealtimeRefreshGate, isDocumentHidden, jitterReconnectDelay } from "../lib/realtime-refresh"
 
 export type DetailComparisonKind = "rank" | "line" | "user"
 
@@ -947,7 +947,7 @@ export function useRankBorderDetailPage(
     if (realtimeReconnectTimer) {
       clearTimeout(realtimeReconnectTimer)
     }
-    const delay = realtimeReconnectDelayMs
+    const delay = jitterReconnectDelay(realtimeReconnectDelayMs)
     realtimeReconnectDelayMs = Math.min(REALTIME_RECONNECT_MAX_MS, realtimeReconnectDelayMs * 2)
     realtimeReconnectTimer = setTimeout(() => {
       realtimeReconnectTimer = null

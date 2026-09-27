@@ -112,3 +112,11 @@ export function createRealtimeRefreshGate(options: RealtimeRefreshGateOptions): 
 export function isDocumentHidden(): boolean {
   return typeof document !== "undefined" && document.hidden === true
 }
+
+/**
+ * Reconnect delay with jitter: `delayMs` scaled into [0.5, 1.5), so the
+ * clients dropped by one outage do not all dial back on the same tick.
+ */
+export function jitterReconnectDelay(delayMs: number, random: () => number = Math.random): number {
+  return Math.round(delayMs * (0.5 + random()))
+}

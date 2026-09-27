@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { createRealtimeRefreshGate } from "./realtime-refresh"
+import { createRealtimeRefreshGate, jitterReconnectDelay } from "./realtime-refresh"
 
 function deferred() {
   let resolve!: () => void
@@ -120,5 +120,18 @@ describe("realtime refresh gate", () => {
     harness.gate.resetVersion()
     void harness.gate.request("realtime")
     expect(harness.runs).toEqual([9, null])
+  })
+})
+
+describe("jitterReconnectDelay", () => {
+  it("spreads a delay over [0.5, 1.5) of its value", () => {
+    expect(jitterReconnectDelay(1_000, () => 0)).toBe(500)
+    expect(jitterReconnectDelay(1_000, () => 0.5)).toBe(1_000)
+    expect(jitterReconnectDelay(1_000, () => 0.999)).toBe(1_499)
+    for (let index = 0; index < 50; index += 1) {
+      const delay = jitterReconnectDelay(8_000)
+      expect(delay).toBeGreaterThanOrEqual(4_000)
+      expect(delay).toBeLessThan(12_000)
+    }
   })
 })
