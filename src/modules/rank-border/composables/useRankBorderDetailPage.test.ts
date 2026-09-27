@@ -577,3 +577,106 @@ test("a cached border view requests the seat trace it never loaded", async () =>
     scope.stop()
   }
 })
+
+// Own-account reads go over the socket: mock it like the API tests do.
+function installMockTrackerSocket(answer: (path: string) => unknown) {
+  const paths: string[] = []
+  class MockWebSocket extends EventTarget {
+    static CONNECTING = 0
+    static OPEN = 1
+    static CLOSED = 3
+    readyState = MockWebSocket.CONNECTING
+
+    constructor() {
+      super()
+      setTimeout(() => {
+        this.readyState = MockWebSocket.OPEN
+        this.dispatchEvent(new Event("open"))
+      }, 0)
+    }
+
+    send(payload: string) {
+      const message = JSON.parse(payload) as { id: string; path?: string }
+      if (!message.path) {
+        return
+      }
+      paths.push(message.path)
+      this.dispatchEvent(new MessageEvent("message", {
+        data: JSON.stringify({ id: message.id, ok: true, status: 200, data: answer(message.path) }),
+      }))
+    }
+
+    close() {
+      this.readyState = MockWebSocket.CLOSED
+    }
+  }
+  const originalWebSocket = globalThis.WebSocket
+  globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket
+  return { paths, restore: () => { globalThis.WebSocket = originalWebSocket } }
+}
+
+for (const server of ["new", "old"] as const) {
+  test(`own-account pushes poll by cursor and merge what a ${server} tracker answers`, async () => {
+    setActivePinia(createPinia())
+    const { useUserStore } = await import("@/shared/stores/user")
+    useUserStore().setUser({ kratosIdentityId: "kratos-1", sessionToken: "session-token" })
+    const row = (timestamp: number) => ({ userId: "mine", rank: 42, score: timestamp * 10, timestamp })
+    let history = [row(10), row(20)]
+    const socket = installMockTrackerSocket((path) => {
+      const params = new URL(path, "https://tracker.example").searchParams
+      const cursor = Number(params.get("cursor") ?? 0)
+      // Older trackers ignore the cursor and answer with the whole history.
+      const playerTrace = server === "new" ? history.filter((point) => point.timestamp > cursor) : history
+      return {
+        ranked: true,
+        current: { rankData: history[history.length - 1] },
+        playerTrace,
+        profile: params.get("includeProfile") === "true" ? { userId: "mine", name: "Me" } : null,
+      }
+    })
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith("/ws-ticket")) {
+        return new Response(JSON.stringify({ ticket: "ticket-1" }))
+      }
+      if (/\/(overview|top100|borders)\?/.test(url)) {
+        return new Response(JSON.stringify({ topRankings: [], borderLines: [] }))
+      }
+      throw new Error(`unexpected REST request ${url}`)
+    }) as typeof fetch
+    const scope = effectScope()
+    const page = scope.run(() => useRankBorderDetailPage(
+      computed<RankBorderDetailParams>(() => ({ region: "jp", eventId: server === "new" ? 989206 : 989207, mode: "normal", worldBloomCharacterId: null, intervalSeconds: 3600, target: { kind: "user", userId: "mine", own: true } })),
+      ref(`https://private-cursor-${server}-test.example`),
+    ))!
+    try {
+      await settleInitialLoad(page)
+      expect(socket.paths).toHaveLength(1)
+      expect(socket.paths[0]).toContain("/private/details/user/mine?")
+      expect(socket.paths[0]).toContain("includeTrace=true&includeProfile=true")
+      expect(socket.paths[0]).toContain("owner=kratos-1")
+      expect(socket.paths[0]).not.toContain("cursor=")
+      expect(page.profile.value?.name).toBe("Me")
+      expect(page.playerTrace.value.map((point) => point.timestamp)).toEqual([10, 20])
+
+      history = [...history, row(30)]
+      await page.refreshForPush(5)
+      expect(socket.paths).toHaveLength(2)
+      expect(socket.paths[1]).toContain("includeProfile=false")
+      expect(socket.paths[1]).toContain("cursor=20")
+      expect(page.playerTrace.value.map((point) => point.timestamp)).toEqual([10, 20, 30])
+      expect(page.playerTrace.value.map((point) => point.score)).toEqual([100, 200, 300])
+      expect(page.current.value?.timestamp).toBe(30)
+      expect(page.profile.value?.name).toBe("Me")
+      expect(page.error.value).toBeNull()
+
+      // Nothing newer: the trace is left alone.
+      await page.refreshForPush(6)
+      expect(socket.paths[2]).toContain("cursor=30")
+      expect(page.playerTrace.value).toHaveLength(3)
+    } finally {
+      socket.restore()
+      scope.stop()
+    }
+  })
+}

@@ -461,32 +461,10 @@ export function useRankBorderDetailPage(
     if (target.own && !userStore.isLoggedIn) {
       throw new Error(translate("rankBorder.result.privateLookupLoginRequired"))
     }
-    const usePrivate = target.own === true
-    if (usePrivate) {
-      // The private endpoint has no trace cursor; its own-account trace is
-      // small enough that a full refetch stays cheap.
-      const detail = await fetchRankBorderPrivateWebUserDetailV2({
-        ...activeScope,
-        userId: target.userId,
-        ownerId: userStore.kratosIdentityId,
-        useWebSocket: true,
-        includeTrace: true,
-        includeProfile: true,
-      })
-      if (token !== requestToken) {
-        return
-      }
-      applyUserDetail(detail)
-      playerTrace.value = normalizeRankBorderTraceTimeline(detail.playerTrace)
-      borderTrace.value = []
-      traceSource.value = "player"
-      return
-    }
-
     const cursor = incremental
       ? playerTrace.value[playerTrace.value.length - 1]?.timestamp ?? null
       : null
-    const detail = await withoutCursorNotFound(cursor != null, () => fetchRankBorderWebUserDetailV2({
+    const request = {
       ...activeScope,
       userId: target.userId,
       includeTrace: true,
@@ -494,7 +472,13 @@ export function useRankBorderDetailPage(
       cursor,
       fetchAllTrace: cursor == null,
       limit: TRACE_PAGE_LIMIT,
-    }))
+    }
+    // Own-account reads go over the socket. Trackers that predate the private
+    // cursor answer it with the whole history; appendTrace keeps only the rows
+    // newer than the known tail either way.
+    const detail = await withoutCursorNotFound(cursor != null, () => target.own
+      ? fetchRankBorderPrivateWebUserDetailV2({ ...request, ownerId: userStore.kratosIdentityId, useWebSocket: true })
+      : fetchRankBorderWebUserDetailV2(request))
     if (token !== requestToken || !detail) {
       return
     }

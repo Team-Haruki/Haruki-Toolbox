@@ -352,6 +352,36 @@ describe("rank border tracker api", () => {
     expect(order).toEqual(["page-1", "first-page:u1:2", "page@2"])
   })
 
+  it("polls and pages own-account traces by cursor over the private route", async () => {
+    const originalFetch = globalThis.fetch
+    const requests: string[] = []
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      requests.push(url)
+      const cursor = new URL(url).searchParams.get("cursor")
+      const playerTrace = cursor == null
+        ? [{ timestamp: 1, userId: "me", score: 100, rank: 1 }, { timestamp: 2, userId: "me", score: 200, rank: 1 }]
+        : cursor === "2" ? [{ timestamp: 3, userId: "me", score: 300, rank: 1 }] : []
+      return new Response(JSON.stringify({ playerTrace }), { status: 200 })
+    }) as typeof fetch
+
+    const scope = { endpoint: "https://tracker.example/base", region: "cn", eventId: 176, mode: "normal", userId: "me", ownerId: "kratos-1", useWebSocket: false } as const
+    try {
+      const full = await fetchRankBorderPrivateWebUserDetailV2({ ...scope, includeTrace: true, includeProfile: true, fetchAllTrace: true, limit: 2 })
+      expect(full.playerTrace.map((record) => record.timestamp)).toEqual([1, 2, 3])
+      const increment = await fetchRankBorderPrivateWebUserDetailV2({ ...scope, includeTrace: true, cursor: 3, limit: 2 })
+      expect(increment.playerTrace).toEqual([])
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    expect(requests).toEqual([
+      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/private/details/user/me?includeTrace=true&includeProfile=true&limit=2&owner=kratos-1",
+      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/private/details/user/me?includeTrace=true&includeProfile=false&cursor=2&limit=2&owner=kratos-1",
+      "https://tracker.example/base/api/v2/web/events/cn/176/leaderboards/total/private/details/user/me?includeTrace=true&includeProfile=false&cursor=3&limit=2&owner=kratos-1",
+    ])
+  })
+
   it("requests user traces through v2 web user details", async () => {
     const originalFetch = globalThis.fetch
     const requests: string[] = []
