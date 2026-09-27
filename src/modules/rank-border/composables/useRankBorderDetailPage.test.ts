@@ -578,6 +578,46 @@ test("a cached border view requests the seat trace it never loaded", async () =>
   }
 })
 
+test("a rank comparison draws the seat's series and never appends the occupant's rows", async () => {
+  setActivePinia(createPinia())
+  const requests: DetailRequest[] = []
+  const row = (userId: string, timestamp: number) => ({ userId, rank: 5, score: timestamp, timestamp })
+  let polled = false
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const request = parseRequest(String(input))
+    requests.push(request)
+    if (request.url.includes("details/rank/5")) {
+      // An older tracker answers a cursor poll with a fresh player row but no seat row.
+      return new Response(JSON.stringify(polled
+        ? { current: { rankData: row("seat-holder", 30) }, rankTrace: [], playerTrace: [row("seat-holder", 30)] }
+        : { current: { rankData: row("seat-holder", 20) }, rankTrace: [row("previous-holder", 10), row("seat-holder", 20)], playerTrace: [row("seat-holder", 20)] }))
+    }
+    if (request.url.includes("details/user/")) {
+      return new Response(JSON.stringify({ ranked: true, current: { rankData: { userId: "me", rank: 1, score: 100, timestamp: 20 } }, playerTrace: [{ userId: "me", rank: 1, score: 100, timestamp: 20 }] }))
+    }
+    return new Response(JSON.stringify({ topRankings: [], borderLines: [] }))
+  }) as typeof fetch
+  const scope = effectScope()
+  const page = scope.run(() => useRankBorderDetailPage(
+    computed<RankBorderDetailParams>(() => ({ region: "jp", eventId: 989205, mode: "normal", worldBloomCharacterId: null, intervalSeconds: 3600, target: { kind: "user", userId: "me" } })),
+    ref("https://rank-comparison-test.example"),
+  ))!
+  try {
+    expect(page.addComparisonTarget("rank", "5", "#5")).toBe("added")
+    await page.refresh(false)
+    const comparisonLoads = requests.filter((request) => request.url.includes("details/rank/5"))
+    expect(comparisonLoads.every((request) => request.params.get("includePlayerTrace") === "false")).toBe(true)
+    expect(page.comparisons.value[0]?.trace.map((point) => point.timestamp)).toEqual([10, 20])
+    expect(page.comparisons.value[0]?.label).toBe("#5")
+    polled = true
+    await page.refresh()
+    expect(page.comparisons.value[0]?.trace.map((point) => point.timestamp)).toEqual([10, 20])
+    expect(page.comparisons.value[0]?.current?.timestamp).toBe(30)
+  } finally {
+    scope.stop()
+  }
+})
+
 // Own-account reads go over the socket: mock it like the API tests do.
 function installMockTrackerSocket(answer: (path: string) => unknown) {
   const paths: string[] = []

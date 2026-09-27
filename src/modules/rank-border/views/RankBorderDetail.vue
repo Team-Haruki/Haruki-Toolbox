@@ -430,14 +430,9 @@ function handleAddTarget(value: string) {
     return
   }
 
-  const seat = kind === "rank"
-    ? overview.value?.topRankings.find((entry) => String(entry.rank) === rank)
-    : null
-  const seatName = plainNameText(seat?.name)
-  const label = kind === "rank"
-    ? (seatName ? `#${rank} ${seatName}` : `#${rank}`)
-    : `T${rank}`
-  reportAddResult(addComparisonTarget(kind, rank, label))
+  // The comparison follows the seat (whoever holds it), so it is labelled as
+  // the seat rather than after its current occupant.
+  reportAddResult(addComparisonTarget(kind, rank, kind === "rank" ? `#${rank}` : `T${rank}`))
 }
 
 function handleAddPlayer(input: string) {

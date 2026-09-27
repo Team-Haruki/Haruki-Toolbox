@@ -38,7 +38,7 @@ export type DetailPageComparison = {
   id: string
   kind: DetailComparisonKind
   query: string
-  /** Resolved display label (#5 名前 / T500 / player name). */
+  /** Resolved display label (#5 for a seat / T500 / player name). */
   label: string
   trace: RankBorderTracePoint[]
   current: RankBorderLatest | null
@@ -761,11 +761,12 @@ export function useRankBorderDetailPage(
         }, generation)
       } else {
         const rank = Number(entry.query)
+        // Seat and line comparisons draw the seat's series, whoever holds it.
         const detail = await withoutCursorNotFound(cursor != null, () => fetchRankBorderWebRankDetailV2({
           ...activeScope,
           rank,
           includeTrace: true,
-          includePlayerTrace: entry.kind === "rank",
+          includePlayerTrace: false,
           cursor,
           fetchAllTrace: cursor == null,
           limit: TRACE_PAGE_LIMIT,
@@ -774,10 +775,9 @@ export function useRankBorderDetailPage(
           patchComparison(id, { stale: false }, generation)
           return
         }
-        const incoming = detail.rankTrace.length > 0 ? detail.rankTrace : detail.playerTrace
         const nextTrace = cursor == null
-          ? normalizeRankBorderTraceTimeline(incoming)
-          : appendTrace(entry.trace, incoming)
+          ? normalizeRankBorderTraceTimeline(detail.rankTrace)
+          : appendTrace(entry.trace, detail.rankTrace)
         patchComparison(id, {
           trace: nextTrace,
           current: detail.current ?? entry.current,
