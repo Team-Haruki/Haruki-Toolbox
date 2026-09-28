@@ -18,6 +18,7 @@ import {
   type RankBorderOverview,
   type RankBorderTracePoint,
   type RankBorderUserProfile,
+  type RankBorderWebRankDetail,
   type RankBorderWebUserDetail,
 } from "../lib/rank-border"
 import type { RankBorderDetailParams, RankBorderDetailTargetInput } from "../lib/detail-link"
@@ -27,7 +28,7 @@ import {
   type ComparisonTargetKind,
 } from "../lib/comparison-target"
 import { PERSONAL_COLLECTION_LIMIT, TRACE_PAGE_LIMIT } from "../lib/rank-border-constants"
-import { createRealtimeRefreshGate, isDocumentHidden } from "../lib/realtime-refresh"
+import { createRealtimeRefreshGate, isDocumentHidden, jitterReconnectDelay } from "../lib/realtime-refresh"
 
 export type DetailComparisonKind = "rank" | "line" | "user"
 
@@ -37,7 +38,7 @@ export type DetailPageComparison = {
   id: string
   kind: DetailComparisonKind
   query: string
-  /** Resolved display label (#5 名前 / T500 / player name). */
+  /** Resolved display label (#5 for a seat / T500 / player name). */
   label: string
   trace: RankBorderTracePoint[]
   current: RankBorderLatest | null
@@ -115,6 +116,8 @@ export function useRankBorderDetailPage(
   const notRanked = shallowRef(false)
   const profile = shallowRef<RankBorderUserProfile | null>(null)
   const traceSource = shallowRef<"player" | "border">("player")
+  /** A rank seat's own trace is being fetched for the border view. */
+  const borderTraceLoading = shallowRef(false)
   const comparisons = shallowRef<DetailPageComparison[]>([])
   const overview = shallowRef<RankBorderOverview | null>(null)
 
@@ -184,6 +187,10 @@ export function useRankBorderDetailPage(
   const hasBorderTrace = computed(() => borderTrace.value.length >= 2)
   const activeTrace = computed(() =>
     traceSource.value === "border" && hasBorderTrace.value ? borderTrace.value : playerTrace.value,
+  )
+  /** Rank seats switch between the occupant's history and the seat's own. */
+  const canSwitchTraceSource = computed(() =>
+    params.value?.target.kind === "rank" && (hasPlayerTrace.value || hasBorderTrace.value),
   )
 
   const latestKnownTimestamp = computed(() => {
@@ -353,11 +360,13 @@ export function useRankBorderDetailPage(
     next.value = detail.next ?? next.value
   }
 
-  function resolveCachedTraceSource(target: RankBorderDetailTargetInput, cached: DetailTargetCacheEntry): "player" | "border" {
+  function resolveCachedTraceSource(target: RankBorderDetailTargetInput): "player" | "border" {
     if (target.kind === "line") {
       return "border"
     }
-    return traceSource.value === "border" && cached.borderTrace.length >= 2 ? "border" : "player"
+    // The seat trace loads on demand, so a border view is kept even when the
+    // cached entry never fetched it: the follow-up load requests it.
+    return target.kind === "rank" && traceSource.value === "border" ? "border" : "player"
   }
 
   /** Repaints from module memory; false (and a cleared page) when nothing is cached. */
@@ -375,7 +384,7 @@ export function useRankBorderDetailPage(
     borderTrace.value = cached.borderTrace
     notRanked.value = cached.notRanked
     profile.value = cached.profile
-    traceSource.value = resolveCachedTraceSource(target, cached)
+    traceSource.value = resolveCachedTraceSource(target)
     return true
   }
 
@@ -417,6 +426,8 @@ export function useRankBorderDetailPage(
     }
 
     const hydrated = options.hydrateFromCache === true && hydrateTargetFromCache(target, targetCacheKey())
+    // A superseded seat fetch must not leave the indicator on; this load owns it now.
+    borderTraceLoading.value = false
     const silent = options.silent ?? hydrated
     const incremental = hydrated || (options.silent === true && playerTrace.value.length + borderTrace.value.length > 0)
     if (!silent) {
@@ -450,32 +461,10 @@ export function useRankBorderDetailPage(
     if (target.own && !userStore.isLoggedIn) {
       throw new Error(translate("rankBorder.result.privateLookupLoginRequired"))
     }
-    const usePrivate = target.own === true
-    if (usePrivate) {
-      // The private endpoint has no trace cursor; its own-account trace is
-      // small enough that a full refetch stays cheap.
-      const detail = await fetchRankBorderPrivateWebUserDetailV2({
-        ...activeScope,
-        userId: target.userId,
-        ownerId: userStore.kratosIdentityId,
-        useWebSocket: true,
-        includeTrace: true,
-        includeProfile: true,
-      })
-      if (token !== requestToken) {
-        return
-      }
-      applyUserDetail(detail)
-      playerTrace.value = normalizeRankBorderTraceTimeline(detail.playerTrace)
-      borderTrace.value = []
-      traceSource.value = "player"
-      return
-    }
-
     const cursor = incremental
       ? playerTrace.value[playerTrace.value.length - 1]?.timestamp ?? null
       : null
-    const detail = await withoutCursorNotFound(cursor != null, () => fetchRankBorderWebUserDetailV2({
+    const request = {
       ...activeScope,
       userId: target.userId,
       includeTrace: true,
@@ -483,7 +472,13 @@ export function useRankBorderDetailPage(
       cursor,
       fetchAllTrace: cursor == null,
       limit: TRACE_PAGE_LIMIT,
-    }))
+    }
+    // Own-account reads go over the socket. Trackers that predate the private
+    // cursor answer it with the whole history; appendTrace keeps only the rows
+    // newer than the known tail either way.
+    const detail = await withoutCursorNotFound(cursor != null, () => target.own
+      ? fetchRankBorderPrivateWebUserDetailV2({ ...request, ownerId: userStore.kratosIdentityId, useWebSocket: true })
+      : fetchRankBorderWebUserDetailV2(request))
     if (token !== requestToken || !detail) {
       return
     }
@@ -495,6 +490,14 @@ export function useRankBorderDetailPage(
     traceSource.value = "player"
   }
 
+  /**
+   * Rank seats show the occupant's own history first; the seat's trace is
+   * requested once the border view asks for it and kept current from then on.
+   */
+  function wantsBorderTrace(target: Extract<RankBorderDetailTargetInput, { kind: "rank" | "line" }>): boolean {
+    return target.kind === "line" || traceSource.value === "border" || borderTrace.value.length > 0
+  }
+
   async function loadRankTarget(
     activeScope: RankBorderTrackerScope,
     target: Extract<RankBorderDetailTargetInput, { kind: "rank" | "line" }>,
@@ -503,39 +506,64 @@ export function useRankBorderDetailPage(
   ) {
     const playerCursor = playerTrace.value[playerTrace.value.length - 1]?.timestamp ?? null
     const borderCursor = borderTrace.value[borderTrace.value.length - 1]?.timestamp ?? null
-    // Resume the border from the older tail; the player has its own cursor.
-    const cursor = incremental
-      ? Math.min(playerCursor ?? Number.POSITIVE_INFINITY, borderCursor ?? Number.POSITIVE_INFINITY)
-      : null
-    const normalizedCursor = cursor != null && Number.isFinite(cursor) ? cursor : null
-    const rankIncremental = incremental && normalizedCursor != null
-    const detail = await withoutCursorNotFound(rankIncremental, () => fetchRankBorderWebRankDetailV2({
-      ...activeScope,
-      rank: target.rank,
-      includeTrace: true,
-      includePlayerTrace: false,
-      cursor: incremental ? normalizedCursor : null,
-      fetchAllTrace: !incremental,
-      limit: TRACE_PAGE_LIMIT,
-    }))
+    const includeBorderTrace = wantsBorderTrace(target)
+    const borderIncremental = incremental && borderCursor != null
+    const playerIncremental = incremental && playerCursor != null
+    // Following a resolved player without the seat trace needs no seat read.
+    const needsRankDetail = includeBorderTrace || trackedUserId == null
+
+    // The player's history is fetched by stable ID as soon as the seat holder
+    // is known: on the first seat page, while the seat trace may still page.
+    let playerLoad: Promise<RankBorderWebUserDetail | null> | null = null
+    const resolveSeatHolder = (seat: RankBorderWebRankDetail | null) => {
+      trackedUserId ??= target.kind === "rank" ? seat?.current?.userId ?? null : null
+      const userId = trackedUserId
+      if (playerLoad || !userId) {
+        return
+      }
+      playerLoad = withoutCursorNotFound(playerIncremental, () => fetchRankBorderWebUserDetailV2({
+        ...activeScope,
+        userId,
+        includeTrace: true,
+        includeProfile: !incremental,
+        cursor: incremental ? playerCursor : null,
+        fetchAllTrace: !incremental,
+        limit: TRACE_PAGE_LIMIT,
+      }))
+      // Awaited below; until then a rejection must not count as unhandled.
+      playerLoad.catch(() => {})
+    }
+
+    const fullBorderLoad = target.kind === "rank" && includeBorderTrace && !borderIncremental
+    if (fullBorderLoad) {
+      borderTraceLoading.value = true
+    }
+    let detail: RankBorderWebRankDetail | null
+    try {
+      detail = needsRankDetail
+        ? await withoutCursorNotFound(borderIncremental, () => fetchRankBorderWebRankDetailV2({
+            ...activeScope,
+            rank: target.rank,
+            includeTrace: includeBorderTrace,
+            includePlayerTrace: false,
+            cursor: borderIncremental ? borderCursor : null,
+            fetchAllTrace: includeBorderTrace && !borderIncremental,
+            limit: TRACE_PAGE_LIMIT,
+            onFirstPage: resolveSeatHolder,
+          }))
+        : null
+    } finally {
+      if (fullBorderLoad && token === requestToken) {
+        borderTraceLoading.value = false
+      }
+    }
     if (token !== requestToken) {
       return
     }
-    // Resolve the seat once, then fetch that player's history by stable ID.
-    // The border series continues to follow the originally selected rank.
-    trackedUserId ??= target.kind === "rank" ? detail?.current?.userId ?? null : null
-    const playerIncremental = incremental && playerCursor != null
-    const playerDetail = trackedUserId
-      ? await withoutCursorNotFound(playerIncremental, () => fetchRankBorderWebUserDetailV2({
-          ...activeScope,
-          userId: trackedUserId as string,
-          includeTrace: true,
-          includeProfile: true,
-          cursor: incremental ? playerCursor : null,
-          fetchAllTrace: !incremental,
-          limit: TRACE_PAGE_LIMIT,
-        }))
-      : null
+    // The border series keeps following the originally selected rank; the
+    // player series follows whoever held it when the page was opened.
+    resolveSeatHolder(detail)
+    const playerDetail = playerLoad ? await playerLoad : null
     if (token !== requestToken) {
       return
     }
@@ -556,13 +584,16 @@ export function useRankBorderDetailPage(
       previous.value = detail.previous ?? null
       next.value = detail.next ?? null
     }
-    const incomingPlayerTrace = playerDetail?.playerTrace ?? (trackedUserId ? [] : detail?.playerTrace ?? [])
-    playerTrace.value = incremental
-      ? appendTrace(playerTrace.value, incomingPlayerTrace)
-      : normalizeRankBorderTraceTimeline(incomingPlayerTrace)
-    borderTrace.value = incremental
-      ? appendTrace(borderTrace.value, detail?.rankTrace ?? [])
-      : normalizeRankBorderTraceTimeline(detail?.rankTrace ?? [])
+    if (playerDetail) {
+      playerTrace.value = playerIncremental
+        ? appendTrace(playerTrace.value, playerDetail.playerTrace)
+        : normalizeRankBorderTraceTimeline(playerDetail.playerTrace)
+    }
+    if (detail) {
+      borderTrace.value = borderIncremental
+        ? appendTrace(borderTrace.value, detail.rankTrace)
+        : normalizeRankBorderTraceTimeline(detail.rankTrace)
+    }
   }
 
   // --- Overview (comparison picker + shared context) ---------------------------
@@ -730,11 +761,12 @@ export function useRankBorderDetailPage(
         }, generation)
       } else {
         const rank = Number(entry.query)
+        // Seat and line comparisons draw the seat's series, whoever holds it.
         const detail = await withoutCursorNotFound(cursor != null, () => fetchRankBorderWebRankDetailV2({
           ...activeScope,
           rank,
           includeTrace: true,
-          includePlayerTrace: entry.kind === "rank",
+          includePlayerTrace: false,
           cursor,
           fetchAllTrace: cursor == null,
           limit: TRACE_PAGE_LIMIT,
@@ -743,10 +775,9 @@ export function useRankBorderDetailPage(
           patchComparison(id, { stale: false }, generation)
           return
         }
-        const incoming = detail.rankTrace.length > 0 ? detail.rankTrace : detail.playerTrace
         const nextTrace = cursor == null
-          ? normalizeRankBorderTraceTimeline(incoming)
-          : appendTrace(entry.trace, incoming)
+          ? normalizeRankBorderTraceTimeline(detail.rankTrace)
+          : appendTrace(entry.trace, detail.rankTrace)
         patchComparison(id, {
           trace: nextTrace,
           current: detail.current ?? entry.current,
@@ -916,7 +947,7 @@ export function useRankBorderDetailPage(
     if (realtimeReconnectTimer) {
       clearTimeout(realtimeReconnectTimer)
     }
-    const delay = realtimeReconnectDelayMs
+    const delay = jitterReconnectDelay(realtimeReconnectDelayMs)
     realtimeReconnectDelayMs = Math.min(REALTIME_RECONNECT_MAX_MS, realtimeReconnectDelayMs * 2)
     realtimeReconnectTimer = setTimeout(() => {
       realtimeReconnectTimer = null
@@ -957,6 +988,8 @@ export function useRankBorderDetailPage(
     hasBorderTrace,
     activeTrace,
     traceSource,
+    canSwitchTraceSource,
+    borderTraceLoading,
     setTraceSource,
     overview,
     comparisons,

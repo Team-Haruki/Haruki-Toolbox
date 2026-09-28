@@ -103,6 +103,16 @@ export type FetchRankBorderPrivateWebDetailParams = FetchRankBorderWebDetailPara
   ownerId?: string | null
 }
 
+export type FetchRankBorderWebRankDetailParams = FetchRankBorderWebDetailParams & {
+  rank: string | number
+  /**
+   * Called with the first page as soon as it arrives, before the remaining
+   * trace pages are requested, so dependent reads (the seat holder's own
+   * history) can start while the seat trace is still paging.
+   */
+  onFirstPage?: (detail: RankBorderWebRankDetail) => void
+}
+
 export type FetchRankBorderUserSearchParams = RankBorderTrackerScope & {
   query: string
   limit?: number
@@ -153,7 +163,13 @@ export type RankBorderTrackerError = Error & {
 const TRACKER_WS_OPEN_TIMEOUT_MS = 4_000
 const TRACKER_WS_REQUEST_TIMEOUT_MS = 15_000
 const TRACKER_WS_FAILURE_COOLDOWN_MS = 2_000
-const TRACE_PAGE_LIMIT = 5_000
+/** Rows per trace page; the tracker caps `limit` at 10000. */
+const TRACE_PAGE_LIMIT = 10_000
+/**
+ * Compact trace encoding, decoded back into rows by the normalizers. Older
+ * trackers ignore the parameter and answer with rows.
+ */
+const TRACE_FORMAT = "columns"
 const LOCAL_TRACKER_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"])
 
 type TrackerWsPendingRequest = {
@@ -663,8 +679,9 @@ export async function fetchRankBorderReplayOverviewV2(params: FetchRankBorderOve
   return normalizeRankBorderOverview(await fetchPublicTrackerJson(path, params))
 }
 
-export async function fetchRankBorderWebRankDetailV2(params: FetchRankBorderWebDetailParams & { rank: string | number }): Promise<RankBorderWebRankDetail> {
+export async function fetchRankBorderWebRankDetailV2(params: FetchRankBorderWebRankDetailParams): Promise<RankBorderWebRankDetail> {
   const detail = await fetchRankBorderWebRankDetailPageV2(params)
+  params.onFirstPage?.(detail)
   const pageLimit = resolveTracePageLimit(params)
   if (!params.fetchAllTrace || params.cursor != null || pageLimit == null) {
     return detail
@@ -708,6 +725,9 @@ async function fetchRankBorderWebRankDetailPageV2(params: FetchRankBorderWebDeta
   }
   search.set("includeTrace", params.includeTrace ? "true" : "false")
   search.set("includePlayerTrace", params.includePlayerTrace ? "true" : "false")
+  if (params.includeTrace || params.includePlayerTrace) {
+    search.set("traceFormat", TRACE_FORMAT)
+  }
   const cursor = normalizeOptionalPositiveInteger(params.cursor)
   if (cursor != null) {
     search.set("cursor", String(cursor))
@@ -750,6 +770,9 @@ async function fetchRankBorderWebUserDetailPageV2(params: FetchRankBorderWebDeta
   }
   search.set("includeTrace", params.includeTrace ? "true" : "false")
   search.set("includeProfile", params.includeProfile ? "true" : "false")
+  if (params.includeTrace) {
+    search.set("traceFormat", TRACE_FORMAT)
+  }
   const cursor = normalizeOptionalPositiveInteger(params.cursor)
   if (cursor != null) {
     search.set("cursor", String(cursor))
@@ -764,13 +787,46 @@ async function fetchRankBorderWebUserDetailPageV2(params: FetchRankBorderWebDeta
   return normalizeRankBorderWebUserDetail(await fetchPublicTrackerJson(path, params))
 }
 
+/**
+ * Own-account detail. Newer trackers honour `cursor` (rows strictly newer
+ * than it) and `limit`; older ones ignore both and answer with the whole
+ * history, so callers must merge incremental answers by timestamp.
+ */
 export async function fetchRankBorderPrivateWebUserDetailV2(params: FetchRankBorderPrivateWebDetailParams): Promise<RankBorderWebUserDetail> {
+  const detail = await fetchRankBorderPrivateWebUserDetailPageV2(params)
+  const pageLimit = resolveTracePageLimit(params)
+  if (!params.fetchAllTrace || !params.includeTrace || params.cursor != null || pageLimit == null) {
+    return detail
+  }
+
+  const playerTrace = await fetchRemainingTracePages(detail.playerTrace, pageLimit, async (cursor) => {
+    const page = await fetchRankBorderPrivateWebUserDetailPageV2({
+      ...params,
+      cursor,
+      fetchAllTrace: false,
+      includeTrace: true,
+      includeProfile: false,
+      limit: pageLimit,
+    })
+    return page.playerTrace
+  })
+  return { ...detail, playerTrace }
+}
+
+async function fetchRankBorderPrivateWebUserDetailPageV2(params: FetchRankBorderPrivateWebDetailParams): Promise<RankBorderWebUserDetail> {
   const search = new URLSearchParams()
   if (params.intervalSeconds != null) {
     search.set("interval", String(normalizePositiveInteger(params.intervalSeconds)))
   }
   search.set("includeTrace", params.includeTrace ? "true" : "false")
   search.set("includeProfile", params.includeProfile ? "true" : "false")
+  if (params.includeTrace) {
+    search.set("traceFormat", TRACE_FORMAT)
+  }
+  const cursor = normalizeOptionalPositiveInteger(params.cursor)
+  if (cursor != null) {
+    search.set("cursor", String(cursor))
+  }
   const limit = normalizeTraceLimit(params.limit ?? TRACE_PAGE_LIMIT)
   if (limit != null) {
     search.set("limit", String(limit))

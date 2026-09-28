@@ -34,7 +34,7 @@ import type {
   RankBorderLineRow,
   RankBorderSegmentRow,
 } from "../lib/rank-border-types"
-import { createRealtimeRefreshGate, isDocumentHidden } from "../lib/realtime-refresh"
+import { createRealtimeRefreshGate, isDocumentHidden, jitterReconnectDelay } from "../lib/realtime-refresh"
 
 /**
  * LIVE DATA ENGINE for the rank-border view.
@@ -777,7 +777,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     realtimeCatchUpOnReady = true
     refreshGate.resetVersion()
     clearRealtimeReconnectTimer()
-    const delay = realtimeReconnectDelayMs
+    const delay = jitterReconnectDelay(realtimeReconnectDelayMs)
     realtimeReconnectDelayMs = Math.min(REALTIME_RECONNECT_MAX_MS, realtimeReconnectDelayMs * 2)
     realtimeReconnectTimer = setTimeout(() => {
       realtimeReconnectTimer = null

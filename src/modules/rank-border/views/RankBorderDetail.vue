@@ -154,9 +154,9 @@ const {
   previous,
   next,
   activeTrace,
-  hasPlayerTrace,
-  hasBorderTrace,
   traceSource,
+  canSwitchTraceSource,
+  borderTraceLoading,
   setTraceSource,
   overview,
   comparisons,
@@ -430,14 +430,9 @@ function handleAddTarget(value: string) {
     return
   }
 
-  const seat = kind === "rank"
-    ? overview.value?.topRankings.find((entry) => String(entry.rank) === rank)
-    : null
-  const seatName = plainNameText(seat?.name)
-  const label = kind === "rank"
-    ? (seatName ? `#${rank} ${seatName}` : `#${rank}`)
-    : `T${rank}`
-  reportAddResult(addComparisonTarget(kind, rank, label))
+  // The comparison follows the seat (whoever holds it), so it is labelled as
+  // the seat rather than after its current occupant.
+  reportAddResult(addComparisonTarget(kind, rank, kind === "rank" ? `#${rank}` : `T${rank}`))
 }
 
 function handleAddPlayer(input: string) {
@@ -833,7 +828,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
 
             <div class="flex flex-wrap items-center gap-2">
               <Tabs
-                v-if="hasPlayerTrace && hasBorderTrace"
+                v-if="canSwitchTraceSource"
                 :model-value="traceSource"
                 @update:model-value="(value) => (value === 'player' || value === 'border') && setTraceSource(value)"
               >
@@ -842,6 +837,7 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
                   <TabsTrigger value="border" class="h-7 px-2.5 text-xs">{{ t("rankBorder.sections.borderTracking") }}</TabsTrigger>
                 </TabsList>
               </Tabs>
+              <RefreshCcw v-if="borderTraceLoading" class="size-3.5 animate-spin text-muted-foreground" />
               <span class="text-xs text-muted-foreground">{{ traceScopeLabel }}</span>
             </div>
 
