@@ -402,11 +402,6 @@ export default {
         "editTitle": "Edit account",
         "subtitle": "Bind your game account and configure data permissions.",
         "verifyHint": "Verification is required before the binding can be saved.",
-        "qqGate": {
-          "title": "Verified QQ binding required",
-          "description": "Before adding a game account, bind and verify your QQ number in HarukiBot data authorization.",
-          "action": "Go to QQ binding"
-        },
         "basicInfoTitle": "Basic account info",
         "serverPlaceholder": "Select server",
         "verifyButton": "Verify",

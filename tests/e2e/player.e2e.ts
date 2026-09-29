@@ -142,3 +142,29 @@ test("account selector groups granted accounts and filters them by capability", 
   await expect(trigger).toContainText("987654321")
   await expect(trigger).toContainText(/授权|Granted/)
 })
+
+for (const platform of [null, "discord"] as const) {
+  test(`game binding form is available with ${platform ?? "no"} social binding`, async ({ page }) => {
+    await page.addInitScript((socialPlatform) => {
+      sessionStorage.setItem("user", JSON.stringify({
+        name: "Binding test",
+        userId: "toolbox-test",
+        gameAccountBindings: [],
+        socialPlatformInfo: socialPlatform
+          ? { platform: socialPlatform, userId: "discord-test", verified: true }
+          : null,
+        sessionToken: "test-token",
+        tokenExpiration: 4_102_444_800,
+      }))
+    }, platform)
+    await blockExternalHosts(page)
+    await page.goto("/user/game-account-bindings")
+    await page.getByRole("button", { name: /绑定新账号|Bind new account/ }).first().click()
+
+    const dialog = page.getByRole("dialog")
+    await expect(dialog.locator("#binding-user-id")).toBeEnabled()
+    await dialog.locator("#binding-user-id").fill("123456")
+    await expect(dialog.getByRole("button", { name: /验证|Verify/, exact: true })).toBeEnabled()
+    await expect(dialog.getByRole("button", { name: /保存|Save/, exact: true })).toBeDisabled()
+  })
+}

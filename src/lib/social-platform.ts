@@ -19,8 +19,7 @@ export function isSocialPlatform(value: unknown): value is SocialPlatform {
 
 /**
  * Whether the toolbox account's HarukiBot social binding is a verified QQ
- * number — the prerequisite for adding game bindings and for any MySekai
- * upload feature.
+ * number — the prerequisite for MySekai upload features.
  */
 export function isVerifiedQQBinding(
     info: { platform: string; verified: boolean } | null | undefined,

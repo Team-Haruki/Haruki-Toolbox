@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { useRouter } from "vue-router"
 import { Button } from "@/components/ui/button"
 import VerificationStatusBadge from "@/modules/user-settings/components/VerificationStatusBadge.vue"
 import {
@@ -23,9 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  Bot,
   Save,
-  ShieldAlert,
   ShieldCheck,
   X,
 } from "lucide-vue-next"
@@ -40,8 +37,6 @@ import {
   type SuitePermissionKey,
 } from "@/lib/game-binding-permission-meta"
 import { isSekaiRegion } from "@/lib/sekai-region"
-import { isVerifiedQQBinding } from "@/lib/social-platform"
-import { useUserStore } from "@/shared/stores/user"
 import GameBindingPermissionCard from "./GameBindingPermissionCard.vue"
 import type { GameAccountBinding, SekaiRegion } from "@/types/store"
 
@@ -66,19 +61,6 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
-const router = useRouter()
-const userStore = useUserStore()
-
-// Adding a game binding requires a verified QQ on the HarukiBot social
-// binding; without it the create dialog shows only the guidance panel.
-const qqGateActive = computed(() =>
-  props.isCreating && !isVerifiedQQBinding(userStore.socialPlatformInfo),
-)
-
-function goToQQBinding() {
-  emit("update:open", false)
-  void router.push("/user/harukibot-authorization")
-}
 
 function cloneEditTarget(target: GameAccountBinding) {
   return {
@@ -144,32 +126,12 @@ const mysekaiPermissionOptions = computed(() =>
         <DialogTitle>
           {{ isCreating ? t("userSettings.gameBinding.editDialog.createTitle") : t("userSettings.gameBinding.editDialog.editTitle") }}
         </DialogTitle>
-        <DialogDescription v-if="!qqGateActive">
+        <DialogDescription>
           {{ t("userSettings.gameBinding.editDialog.subtitle") }}
         </DialogDescription>
       </DialogHeader>
 
-      <!-- QQ prerequisite gate: no other settings until a verified QQ exists. -->
-      <div
-        v-if="qqGateActive"
-        class="flex flex-col items-center gap-3 rounded-xl border border-dashed bg-muted/20 px-6 py-10 text-center"
-      >
-        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
-          <ShieldAlert class="h-5 w-5" />
-        </span>
-        <h3 class="text-base font-semibold">
-          {{ t("userSettings.gameBinding.editDialog.qqGate.title") }}
-        </h3>
-        <p class="max-w-sm text-sm leading-relaxed text-muted-foreground">
-          {{ t("userSettings.gameBinding.editDialog.qqGate.description") }}
-        </p>
-        <Button class="mt-1" @click="goToQQBinding">
-          <Bot class="h-4 w-4 mr-2" />
-          {{ t("userSettings.gameBinding.editDialog.qqGate.action") }}
-        </Button>
-      </div>
-
-      <div v-else class="flex flex-col gap-6 py-2">
+      <div class="flex flex-col gap-6 py-2">
         <!-- Basic info -->
         <section class="space-y-3">
           <h3 class="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -281,7 +243,6 @@ const mysekaiPermissionOptions = computed(() =>
           </Button>
         </DialogClose>
         <Button
-          v-if="!qqGateActive"
           :disabled="isSaving || (isCreating && !verificationTriggered)"
           @click="emit('save')"
         >

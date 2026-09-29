@@ -402,11 +402,6 @@ export default {
         "editTitle": "編輯賬號",
         "subtitle": "繫結你的遊戲賬號並配置資料許可權。",
         "verifyHint": "完成驗證後才能儲存繫結。",
-        "qqGate": {
-          "title": "需要先繫結並驗證 QQ",
-          "description": "新增遊戲賬號前，請先在「HarukiBot 資料授權」中繫結並驗證你的 QQ 號。",
-          "action": "前往繫結 QQ"
-        },
         "basicInfoTitle": "賬號基本資訊",
         "serverPlaceholder": "選擇區服",
         "verifyButton": "驗證",
