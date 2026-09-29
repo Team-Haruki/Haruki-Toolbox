@@ -165,6 +165,10 @@ export type RankBorderHonorView = {
   groupType: string | null
   honorId: number | null
   baseUrl: string | null
+  /** JP 7 style backgrounds, with baseUrl retained as an image fallback. */
+  customBackgroundUrl?: string | null
+  /** Optional medal for groups that opt into the new ten-level tiers. */
+  medalUrl?: string | null
   rankUrl: string | null
   rankPlacement: "event" | "full" | "rank_match"
   frameUrl: string | null

@@ -145,6 +145,8 @@ export type RankBorderProfileHonor = {
   profileHonorType: string | null
   honorId: number | null
   honorId2: number | null
+  honorBackgroundId?: number | null
+  honorWordId?: number | null
   honorLevel: number | null
   honorCount: number | null
   bondsHonorViewType: string | null
@@ -740,6 +742,8 @@ export function normalizeProfileHonors(value: unknown): RankBorderProfileHonor[]
         profileHonorType: normalizeText(item.profileHonorType),
         honorId: normalizePositiveInteger(item.honorId),
         honorId2: normalizePositiveInteger(item.honorId2),
+        honorBackgroundId: normalizePositiveInteger(item.honorBackgroundId),
+        honorWordId: normalizePositiveInteger(item.honorWordId),
         honorLevel: normalizeNonNegativeInteger(item.honorLevel),
         honorCount: normalizeHonorCount(item),
         bondsHonorViewType: normalizeText(item.bondsHonorViewType),
@@ -748,6 +752,23 @@ export function normalizeProfileHonors(value: unknown): RankBorderProfileHonor[]
     })
     .filter((item): item is RankBorderProfileHonor => item != null)
     .sort((a, b) => (a.seq ?? 999) - (b.seq ?? 999))
+}
+
+export function rankBorderProfileHonorSignature(value: Pick<RankBorderLatest, "profileHonors">) {
+  return value.profileHonors
+    .map((honor) => [
+      honor.seq,
+      honor.honorId,
+      honor.honorId2,
+      honor.honorBackgroundId,
+      honor.honorWordId,
+      honor.honorLevel,
+      honor.honorCount,
+      honor.profileHonorType,
+      honor.bondsHonorViewType,
+      honor.bondsHonorWordId,
+    ].join(":"))
+    .join("|")
 }
 
 function normalizeHonorCount(item: Record<string, unknown>): number | null {

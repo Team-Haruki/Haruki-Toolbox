@@ -308,7 +308,13 @@ export default {
         "kinds": {
           "character": "角色道具",
           "unit": "团体道具",
-          "attr": "属性道具"
+          "attr": "属性道具",
+          "all": "全角色道具"
+        },
+        "targets": {
+          "all": "全角色",
+          "multiUnit": "多团体编成",
+          "allAndMultiUnit": "全角色 · 多团体编成"
         }
       },
       "characterRankOverride": {

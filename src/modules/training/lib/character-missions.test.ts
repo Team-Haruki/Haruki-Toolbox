@@ -266,4 +266,22 @@ describe("buildCharacterMissionSummary", () => {
     expect(summary?.achievementRows.map((row) => row.missionType)).toEqual(["play_live", "play_live_ex"])
     expect(summary?.rows).toHaveLength(4)
   })
+
+  test("includes the data-provided all-character area-item mission in achievements", () => {
+    const type = "area_item_level_up_all_character"
+    const summary = buildCharacterMissionSummary(1, {
+      missions: [...missions, { id: 1200, characterId: 1, characterMissionType: type, parameterGroupId: 23, isAchievementMission: true }],
+      parameterGroups: [...parameterGroups, makeRow(23, 1, 1), makeRow(23, 2, 20)],
+      characterLevels,
+      userCharacters: [],
+      userCharacterMissionV2s: [{ characterId: 1, characterMissionType: type, progress: 10 }],
+      userCharacterMissionV2Statuses: [],
+    })
+    const row = summary?.achievementRows.find((row) => row.missionType === type)
+    expect(row?.current).toBe(10)
+    expect(row?.upper).toBe(20)
+    expect(row?.nextNeed).toBe(20)
+    expect(row?.ratio).toBe(0.5)
+    expect(summary?.basicRows.some((row) => row.missionType === type)).toBe(false)
+  })
 })

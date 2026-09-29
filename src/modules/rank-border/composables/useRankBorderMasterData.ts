@@ -12,6 +12,8 @@ import {
   type RankBorderMasterGameCharacterUnit,
   type RankBorderMasterHonor,
   type RankBorderMasterHonorGroup,
+  type RankBorderMasterHonorBackground,
+  type RankBorderMasterHonorWord,
   type RankBorderWorldBloomCharacterOption,
   type SekaiEvent,
   type SekaiGameCharacter,
@@ -19,7 +21,8 @@ import {
 } from "../lib/master-data-types"
 
 const REQUIRED_FILES = ["events", "worldBlooms", "gameCharacters"] as const
-const PROFILE_ASSET_FILES = ["cards", "honors", "honorGroups", "bondsHonors", "bondsHonorWords", "gameCharacterUnits"] as const
+const PROFILE_CUSTOMIZATION_FILES = ["honorBackgrounds", "honorWords"] as const
+const PROFILE_ASSET_FILES = ["cards", "honors", "honorGroups", "bondsHonors", "bondsHonorWords", "gameCharacterUnits", ...PROFILE_CUSTOMIZATION_FILES] as const
 
 /**
  * MODULE-LEVEL master-data cache for the rank-border feature.
@@ -37,6 +40,8 @@ type RegionMasterEntry = {
   cards: ShallowRef<RankBorderMasterCard[]>
   honors: ShallowRef<RankBorderMasterHonor[]>
   honorGroups: ShallowRef<RankBorderMasterHonorGroup[]>
+  honorBackgrounds: ShallowRef<RankBorderMasterHonorBackground[]>
+  honorWords: ShallowRef<RankBorderMasterHonorWord[]>
   bondsHonors: ShallowRef<RankBorderMasterBondsHonor[]>
   bondsHonorWords: ShallowRef<RankBorderMasterBondsHonorWord[]>
   gameCharacterUnits: ShallowRef<RankBorderMasterGameCharacterUnit[]>
@@ -60,6 +65,8 @@ function getRegionEntry(region: SekaiRegion): RegionMasterEntry {
       cards: shallowRef([]),
       honors: shallowRef([]),
       honorGroups: shallowRef([]),
+      honorBackgrounds: shallowRef([]),
+      honorWords: shallowRef([]),
       bondsHonors: shallowRef([]),
       bondsHonorWords: shallowRef([]),
       gameCharacterUnits: shallowRef([]),
@@ -87,6 +94,8 @@ export function useRankBorderMasterData(region: Ref<SekaiRegion>, selectedEventI
   const cards = computed(() => entry.value.cards.value)
   const honors = computed(() => entry.value.honors.value)
   const honorGroups = computed(() => entry.value.honorGroups.value)
+  const honorBackgrounds = computed(() => entry.value.honorBackgrounds.value)
+  const honorWords = computed(() => entry.value.honorWords.value)
   const bondsHonors = computed(() => entry.value.bondsHonors.value)
   const bondsHonorWords = computed(() => entry.value.bondsHonorWords.value)
   const gameCharacterUnits = computed(() => entry.value.gameCharacterUnits.value)
@@ -170,20 +179,24 @@ export function useRankBorderMasterData(region: Ref<SekaiRegion>, selectedEventI
     const promise = (async () => {
       try {
         if (force || !hasRequiredFiles(regionState.value.files, PROFILE_ASSET_FILES)) {
-          await sekaiDataStore.ensureRegionData(targetRegion, { force, files: PROFILE_ASSET_FILES })
+          await sekaiDataStore.ensureRegionData(targetRegion, { force, files: PROFILE_ASSET_FILES, optionalFiles: PROFILE_CUSTOMIZATION_FILES })
         }
 
-        const [cardData, honorData, honorGroupData, bondsHonorData, bondsHonorWordData, gameCharacterUnitData] = await Promise.all([
+        const [cardData, honorData, honorGroupData, bondsHonorData, bondsHonorWordData, gameCharacterUnitData, honorBackgroundData, honorWordData] = await Promise.all([
           readOptionalMasterFile<RankBorderMasterCard[]>(targetRegion, "cards"),
           readOptionalMasterFile<RankBorderMasterHonor[]>(targetRegion, "honors"),
           readOptionalMasterFile<RankBorderMasterHonorGroup[]>(targetRegion, "honorGroups"),
           readOptionalMasterFile<RankBorderMasterBondsHonor[]>(targetRegion, "bondsHonors"),
           readOptionalMasterFile<RankBorderMasterBondsHonorWord[]>(targetRegion, "bondsHonorWords"),
           readOptionalMasterFile<RankBorderMasterGameCharacterUnit[]>(targetRegion, "gameCharacterUnits"),
+          readOptionalMasterFile<RankBorderMasterHonorBackground[]>(targetRegion, "honorBackgrounds"),
+          readOptionalMasterFile<RankBorderMasterHonorWord[]>(targetRegion, "honorWords"),
         ])
         target.cards.value = Array.isArray(cardData) ? cardData : []
         target.honors.value = Array.isArray(honorData) ? honorData : []
         target.honorGroups.value = Array.isArray(honorGroupData) ? honorGroupData : []
+        target.honorBackgrounds.value = Array.isArray(honorBackgroundData) ? honorBackgroundData : []
+        target.honorWords.value = Array.isArray(honorWordData) ? honorWordData : []
         target.bondsHonors.value = Array.isArray(bondsHonorData) ? bondsHonorData : []
         target.bondsHonorWords.value = Array.isArray(bondsHonorWordData) ? bondsHonorWordData : []
         target.gameCharacterUnits.value = Array.isArray(gameCharacterUnitData) ? gameCharacterUnitData : []
@@ -207,6 +220,8 @@ export function useRankBorderMasterData(region: Ref<SekaiRegion>, selectedEventI
     cards,
     honors,
     honorGroups,
+    honorBackgrounds,
+    honorWords,
     bondsHonors,
     bondsHonorWords,
     gameCharacterUnits,

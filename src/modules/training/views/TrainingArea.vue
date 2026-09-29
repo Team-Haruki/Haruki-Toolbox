@@ -23,6 +23,7 @@ import {
   collectUserMaterials,
   formatAreaBonusRate,
   formatCompactQuantity,
+  isAllCharacterAreaItemLevel,
   materialIconAssetPath,
   type AreaItemFilter,
   type AreaItemLevelView,
@@ -100,11 +101,14 @@ const attrOptions = computed<CatalogFieldOption[]>(() => SEKAI_CARD_ATTRS.map((a
 const specialOptions = computed<CatalogFieldOption[]>(() => [
   { value: "tree", label: t("training.area.filters.tree") },
   { value: "flower", label: t("training.area.filters.flower") },
+  ...(areaItemLevels.value.some(isAllCharacterAreaItemLevel)
+    ? [{ value: "allCharacters", label: t("training.area.filters.allCharacters") }]
+    : []),
   { value: "upgradeable", label: t("training.area.canUpgrade") },
 ])
 
 function setSpecial(values: string[]) {
-  filters.special = values.filter((value) => value === "tree" || value === "flower")
+  filters.special = values.filter((value) => value === "tree" || value === "flower" || value === "allCharacters")
   filters.upgradeableOnly = values.includes("upgradeable")
 }
 
@@ -120,11 +124,12 @@ const libFilters = computed<AreaItemFilter[]>(() => {
   const characterIds = filters.characterIds.length > 0 ? filters.characterIds : [0]
   const tree = filters.special.includes("tree")
   const flower = filters.special.includes("flower")
+  const allCharacters = filters.special.includes("allCharacters")
   const combos: AreaItemFilter[] = []
   for (const unit of units) {
     for (const attr of attrs) {
       for (const characterId of characterIds) {
-        combos.push({ unit, attr, characterId, tree, flower })
+        combos.push({ unit, attr, characterId, tree, flower, allCharacters })
       }
     }
   }
@@ -242,9 +247,15 @@ function targetLabel(view: AreaItemView): string | null {
     return characterMap.value.get(target.characterId)?.name ?? null
   }
   if (target.type === "unit") {
-    return t(`cards.unit.${target.unit}`)
+    return resolveSekaiUnitLabel(labels, target.unit)
   }
-  return t(`cards.attr.${target.attr}`)
+  if (target.type === "all") {
+    return t("training.area.filters.allCharacters")
+  }
+  if (target.type === "multi_unit") {
+    return t("training.area.multiUnitTarget")
+  }
+  return resolveSekaiAttrLabel(labels, target.attr)
 }
 
 function targetIconUrl(view: AreaItemView): string | null {
@@ -297,7 +308,7 @@ function targetColor(view: AreaItemView): string | null {
   if (target.type === "attr") {
     return SEKAI_CARD_ATTR_COLORS[target.attr] ?? null
   }
-  return unitColorMap.value.get(target.unit as SekaiUnit) ?? null
+  return target.type === "unit" ? unitColorMap.value.get(target.unit as SekaiUnit) ?? null : null
 }
 
 function maxLevel(view: AreaItemView): number {
@@ -453,6 +464,10 @@ function retry() {
               </Button>
             </div>
 
+            <p v-if="view.currentMultiUnitBonus > 0" class="text-xs text-muted-foreground">
+              {{ t("training.area.multiUnitBonus", { bonus: formatAreaBonusRate(view.currentMultiUnitBonus) }) }}
+            </p>
+
             <!-- Level progress -->
             <div class="flex items-center gap-2">
               <span class="shrink-0 text-[11px] font-semibold tabular-nums">
@@ -495,6 +510,9 @@ function retry() {
                   <span class="font-semibold tabular-nums text-foreground">
                     {{ t("training.area.bonus", { bonus: formatAreaBonusRate(row.bonus) }) }}
                   </span>
+                </span>
+                <span v-if="row.multiUnitBonus > 0" class="text-xs text-muted-foreground">
+                  {{ t("training.area.multiUnitBonus", { bonus: formatAreaBonusRate(row.multiUnitBonus) }) }}
                 </span>
                 <span
                   v-if="row.canUpgrade"
@@ -562,6 +580,9 @@ function retry() {
               </span>
               <span class="w-12 shrink-0 text-xs tabular-nums text-muted-foreground">
                 {{ row.bonus > 0 ? t("training.area.bonus", { bonus: formatAreaBonusRate(row.bonus) }) : "" }}
+              </span>
+              <span v-if="row.multiUnitBonus > 0" class="text-xs tabular-nums text-muted-foreground">
+                {{ t("training.area.multiUnitBonus", { bonus: formatAreaBonusRate(row.multiUnitBonus) }) }}
               </span>
               <span v-if="row.materials.length === 0" class="text-xs text-muted-foreground">
                 {{ t("training.area.notInShop") }}

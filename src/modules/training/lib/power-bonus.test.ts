@@ -153,7 +153,7 @@ describe("buildPowerBonuses", () => {
     expect(piapro?.total).toBe(3)
   })
 
-  it("adds mysekai gate bonuses to units and the best gate to piapro", () => {
+  it("adds mysekai gate bonuses to units and the highest-level gate to piapro", () => {
     const withMysekai = buildPowerBonuses({
       userAreaItemLevels: new Map(),
       areaItemLevels: [],
@@ -167,7 +167,7 @@ describe("buildPowerBonuses", () => {
         { mysekaiGateId: 1, mysekaiGateLevel: 5 },
         { mysekaiGateId: 2, mysekaiGateLevel: 2 },
         // No masterdata row for this gate level — must be ignored.
-        { mysekaiGateId: 3, mysekaiGateLevel: 9 },
+        { mysekaiGateId: 3, mysekaiGateLevel: 4 },
       ]),
     })
 
@@ -178,7 +178,7 @@ describe("buildPowerBonuses", () => {
     expect(idol?.gate).toBe(1.5)
     const street = withMysekai.units[2]
     expect(street?.gate).toBe(0)
-    // piapro receives the highest gate bonus across all owned gates.
+    // piapro receives the rate at the highest owned gate level.
     const piapro = withMysekai.units[5]
     expect(piapro?.gate).toBe(3)
     expect(piapro?.total).toBe(3)
@@ -218,6 +218,76 @@ describe("buildPowerBonuses", () => {
       characterRanks: [],
     })
     expect(sparse.characters[0]?.total).toBe(0)
+  })
+
+  it("preserves both effects at one level without assuming a multi-unit deck", () => {
+    const treeLevels = normalizeAreaItemLevels([
+      { areaItemId: 56, level: 19, targetUnit: "any", targetCardAttr: "any", power1BonusRate: 9.5 },
+      { areaItemId: 56, level: 20, targetUnit: "any", targetCardAttr: "any", power1BonusRate: 10 },
+      { areaItemId: 56, level: 20, targetUnit: "multi_unit", targetCardAttr: "any", power1BonusRate: 10 },
+    ])
+    const input = {
+      userAreaItemLevels: new Map([[1, 2], [56, 20]]),
+      areaItemLevels: [...areaItemLevels, ...treeLevels],
+      userCharacters: [],
+      characterRanks: [],
+    }
+    const actual = buildPowerBonuses(input)
+    expect(actual.allCharacterAreaItem).toBe(10)
+    expect(actual.multiUnitAreaItem).toBe(10)
+    expect(actual.characters[0]?.areaItem).toBe(14)
+    expect(actual.characters[0]?.total).toBe(14)
+    expect(actual.characters.slice(1).every((row) => row.total === 10)).toBe(true)
+    expect(actual.units.every((row) => row.total === 0)).toBe(true)
+    expect(actual.attrs.every((row) => row.total === 0)).toBe(true)
+    expect(buildPowerBonuses({ ...input, areaItemLevels: [...input.areaItemLevels].reverse() })).toEqual(actual)
+  })
+
+  it("does not interpret missing targets or unknown units as an all-character effect", () => {
+    const actual = buildPowerBonuses({
+      userAreaItemLevels: new Map([[56, 1], [57, 1]]),
+      areaItemLevels: normalizeAreaItemLevels([
+        { areaItemId: 56, level: 1, power1BonusRate: 10 },
+        { areaItemId: 57, level: 1, targetUnit: "unknown_unit", targetCardAttr: "any", power1BonusRate: 10 },
+      ]),
+      userCharacters: [],
+      characterRanks: [],
+    })
+    expect(actual.allCharacterAreaItem).toBe(0)
+    expect(actual.characters.every((row) => row.total === 0)).toBe(true)
+  })
+
+  it("reads level 70 and chooses the highest gate level even if another rate is larger", () => {
+    const actual = buildPowerBonuses({
+      userAreaItemLevels: new Map(), areaItemLevels: [], userCharacters: [], characterRanks: [],
+      mysekaiGateLevels: normalizeMysekaiGateLevels([
+        { mysekaiGateId: 1, level: 70, powerBonusRate: 7 },
+        { mysekaiGateId: 2, level: 40, powerBonusRate: 8 },
+      ]),
+      userMysekaiGates: normalizeUserMysekaiGates([
+        { mysekaiGateId: 2, mysekaiGateLevel: 40 },
+        { mysekaiGateId: 1, mysekaiGateLevel: 70 },
+        { mysekaiGateId: 6, mysekaiGateLevel: 1 },
+      ]),
+    })
+    expect(actual.units[0]?.gate).toBe(7)
+    expect(actual.units[1]?.gate).toBe(8)
+    expect(actual.units[5]?.gate).toBe(7)
+  })
+
+  it("uses zero when the highest owned gate has no level data", () => {
+    const input = {
+      userAreaItemLevels: new Map<number, number>(), areaItemLevels: [], userCharacters: [], characterRanks: [],
+      mysekaiGateLevels: normalizeMysekaiGateLevels([{ mysekaiGateId: 1, level: 1, powerBonusRate: 1 }]),
+      userMysekaiGates: normalizeUserMysekaiGates([
+        { mysekaiGateId: 6, mysekaiGateLevel: 2 },
+        { mysekaiGateId: 1, mysekaiGateLevel: 1 },
+      ]),
+    }
+    expect(buildPowerBonuses(input).units[5]?.gate).toBe(0)
+    // Equal levels retain the first gate, including a shuffle gate with no row.
+    input.userMysekaiGates[0]!.mysekaiGateLevel = 1
+    expect(buildPowerBonuses(input).units[5]?.gate).toBe(0)
   })
 })
 

@@ -10,6 +10,7 @@ import type {
   RankBorderMasterHonor,
   RankBorderMasterHonorGroup,
 } from "../lib/master-data-types"
+import { buildMasterRecordMap } from "../lib/master-data-types"
 import type { HonorVisualContext } from "../lib/honor-visuals"
 import { normalizeTrackerEndpoint } from "../lib/rank-border"
 
@@ -56,6 +57,8 @@ export function useRankBorderHonors(deps: UseRankBorderHonorsDeps) {
     cardById: cardById.value,
     honorById: honorById.value,
     honorGroupById: honorGroupById.value,
+    honorBackgroundById: buildMasterRecordMap(masterData.honorBackgrounds.value),
+    honorWordById: buildMasterRecordMap(masterData.honorWords.value),
     bondsHonorById: bondsHonorById.value,
     bondsHonorWordById: bondsHonorWordById.value,
     gameCharacterUnitById: gameCharacterUnitById.value,

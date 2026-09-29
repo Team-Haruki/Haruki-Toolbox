@@ -35,6 +35,7 @@ export const CHARACTER_MISSION_ACHIEVEMENT_TYPES = [
   "area_item_level_up_character",
   "area_item_level_up_unit",
   "area_item_level_up_reality_world",
+  "area_item_level_up_all_character",
   "skill_level_up_rare",
   "skill_level_up_standard",
   "master_rank_up_rare",

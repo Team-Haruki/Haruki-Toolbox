@@ -191,6 +191,9 @@ export default {
         "material": "Material",
         "boost_item": "Energy item",
         "stamp": "Stamp",
+        "honor_background": "Title background",
+        "honor_word": "Title text",
+        "virtual_item": "Virtual item",
         "honor": "Title",
         "bonds_honor": "Bond title",
         "skill_practice_ticket": "Skill practice ticket",
@@ -313,6 +316,9 @@ export default {
         "material": "Material",
         "gacha_ceil_item": "Sticker",
         "jewel": "Crystals",
+        "honor_background": "Title background",
+        "honor_word": "Title text",
+        "virtual_item": "Virtual item",
         "honor": "Title"
       }
     },

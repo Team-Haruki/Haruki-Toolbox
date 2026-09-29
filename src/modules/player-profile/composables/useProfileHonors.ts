@@ -10,9 +10,13 @@ import {
   type RankBorderMasterGameCharacterUnit,
   type RankBorderMasterHonor,
   type RankBorderMasterHonorGroup,
+  type RankBorderMasterHonorBackground,
+  type RankBorderMasterHonorWord,
 } from "@/modules/rank-border/lib/master-data-types"
 import { normalizeProfileHonors } from "@/modules/rank-border/lib/rank-border"
 import type { RankBorderHonorView } from "@/modules/rank-border/lib/rank-border-types"
+
+const PROFILE_CUSTOMIZATION_FILES = ["honorBackgrounds", "honorWords"] as const
 
 export const PROFILE_HONOR_MASTER_FILES = [
   "honors",
@@ -20,6 +24,7 @@ export const PROFILE_HONOR_MASTER_FILES = [
   "bondsHonors",
   "bondsHonorWords",
   "gameCharacterUnits",
+  ...PROFILE_CUSTOMIZATION_FILES,
 ] as const
 
 /**
@@ -36,6 +41,8 @@ export function useProfileHonors(
 
   const honorById = shallowRef<Map<number, RankBorderMasterHonor>>(new Map())
   const honorGroupById = shallowRef<Map<number, RankBorderMasterHonorGroup>>(new Map())
+  const honorBackgroundById = shallowRef<Map<number, RankBorderMasterHonorBackground>>(new Map())
+  const honorWordById = shallowRef<Map<number, RankBorderMasterHonorWord>>(new Map())
   const bondsHonorById = shallowRef<Map<number, RankBorderMasterBondsHonor>>(new Map())
   const bondsHonorWordById = shallowRef<Map<number, RankBorderMasterBondsHonorWord>>(new Map())
   const gameCharacterUnitById = shallowRef<Map<number, RankBorderMasterGameCharacterUnit>>(new Map())
@@ -45,19 +52,26 @@ export function useProfileHonors(
 
   async function load(targetRegion: SekaiRegion | null) {
     const token = ++loadToken
+    // Do not display maps from the previous account region while reloading.
+    honorById.value = new Map()
+    honorGroupById.value = new Map()
+    honorBackgroundById.value = new Map()
+    honorWordById.value = new Map()
+    bondsHonorById.value = new Map()
+    bondsHonorWordById.value = new Map()
+    gameCharacterUnitById.value = new Map()
     if (targetRegion == null) {
-      honorById.value = new Map()
-      honorGroupById.value = new Map()
-      bondsHonorById.value = new Map()
-      bondsHonorWordById.value = new Map()
-      gameCharacterUnitById.value = new Map()
       loading.value = false
       return
     }
 
     loading.value = true
     try {
-      await sekaiDataStore.ensureRegionData(targetRegion, { files: PROFILE_HONOR_MASTER_FILES, musicMetas: false })
+      await sekaiDataStore.ensureRegionData(targetRegion, {
+        files: PROFILE_HONOR_MASTER_FILES,
+        optionalFiles: PROFILE_CUSTOMIZATION_FILES,
+        musicMetas: false,
+      })
       const files = await readSekaiMasterFiles(targetRegion, PROFILE_HONOR_MASTER_FILES)
       if (token !== loadToken) {
         return
@@ -65,6 +79,8 @@ export function useProfileHonors(
 
       honorById.value = buildMasterRecordMap(asRecords<RankBorderMasterHonor>(files.honors))
       honorGroupById.value = buildMasterRecordMap(asRecords<RankBorderMasterHonorGroup>(files.honorGroups))
+      honorBackgroundById.value = buildMasterRecordMap(asRecords<RankBorderMasterHonorBackground>(files.honorBackgrounds))
+      honorWordById.value = buildMasterRecordMap(asRecords<RankBorderMasterHonorWord>(files.honorWords))
       bondsHonorById.value = buildMasterRecordMap(asRecords<RankBorderMasterBondsHonor>(files.bondsHonors))
       bondsHonorWordById.value = buildMasterRecordMap(asRecords<RankBorderMasterBondsHonorWord>(files.bondsHonorWords))
       gameCharacterUnitById.value = buildMasterRecordMap(asRecords<RankBorderMasterGameCharacterUnit>(files.gameCharacterUnits))
@@ -97,6 +113,8 @@ export function useProfileHonors(
       cardById: new Map(),
       honorById: honorById.value,
       honorGroupById: honorGroupById.value,
+      honorBackgroundById: honorBackgroundById.value,
+      honorWordById: honorWordById.value,
       bondsHonorById: bondsHonorById.value,
       bondsHonorWordById: bondsHonorWordById.value,
       gameCharacterUnitById: gameCharacterUnitById.value,

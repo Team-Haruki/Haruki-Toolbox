@@ -81,6 +81,13 @@ function createLevelOptions(maxLevel: number): LazyOverrideComboboxOption[] {
 }
 
 function targetLabel(item: DeckRecommendAreaItemOption) {
+  if (item.kind === "all") {
+    const key = item.targetsAllCharacters && item.targetsMultiUnit
+      ? "allAndMultiUnit"
+      : item.targetsMultiUnit ? "multiUnit" : "all"
+    return t(`deckRecommend.options.areaItemOverride.targets.${key}`)
+  }
+
   if (item.kind === "attr" && item.targetAttr) {
     return t(`deckRecommend.cardTags.attrs.${item.targetAttr}`)
   }

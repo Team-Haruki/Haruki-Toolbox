@@ -15,6 +15,8 @@ import type {
   RankBorderMasterGameCharacterUnit,
   RankBorderMasterHonor,
   RankBorderMasterHonorGroup,
+  RankBorderMasterHonorBackground,
+  RankBorderMasterHonorWord,
 } from "./master-data-types"
 import {
   isRankBorderLatestResult,
@@ -39,6 +41,8 @@ export interface HonorVisualContext {
   cardById: ReadonlyMap<number, RankBorderMasterCard>
   honorById: ReadonlyMap<number, RankBorderMasterHonor>
   honorGroupById: ReadonlyMap<number, RankBorderMasterHonorGroup>
+  honorBackgroundById?: ReadonlyMap<number, RankBorderMasterHonorBackground>
+  honorWordById?: ReadonlyMap<number, RankBorderMasterHonorWord>
   bondsHonorById: ReadonlyMap<number, RankBorderMasterBondsHonor>
   bondsHonorWordById: ReadonlyMap<number, RankBorderMasterBondsHonorWord>
   gameCharacterUnitById: ReadonlyMap<number, RankBorderMasterGameCharacterUnit>
@@ -210,9 +214,12 @@ export function resolveProfileHonorViews(
 
       const groupId = normalizePositiveNumber(masterHonor?.groupId ?? masterHonor?.groupID)
       const masterGroup = groupId ? ctx.honorGroupById.get(groupId) ?? null : null
+      const customization = resolveHonorCustomization(honor, masterGroup, ctx)
       return {
         key: `${keyScope}:${honor.seq ?? index}:${honorId ?? "unknown"}`,
-        label: normalizeTextValue(masterHonor?.name) ?? (honorId ? `#${honorId}` : "-"),
+        label: normalizeTextValue(customization.word?.name)
+          ?? normalizeTextValue(masterHonor?.name)
+          ?? (honorId ? `#${honorId}` : "-"),
         ...resolveHonorVisual(
           masterHonor,
           masterGroup,
@@ -222,9 +229,55 @@ export function resolveProfileHonorViews(
           "sub",
           ctx,
         ),
+        customBackgroundUrl: customization.background?.assetbundleName
+          ? resolveSekaiGameAssetUrl(
+              ctx.region,
+              `startapp/honor_background/${customization.background.assetbundleName}/degree_sub.png`,
+              ctx.assetEndpoint,
+            )
+          : null,
         level: honor.honorLevel,
       }
     })
+}
+
+function resolveHonorCustomization(
+  honor: RankBorderProfileHonor,
+  group: RankBorderMasterHonorGroup | null,
+  ctx: HonorVisualContext,
+) {
+  // The compact profile slot has no word image; retain the selected word's
+  // name for its accessible label while replacing only the background art.
+  if (group?.honorType !== "character" || !group.id) {
+    return { background: null, word: null }
+  }
+  return {
+    background: resolveCustomizationRow(ctx.honorBackgroundById, honor.honorBackgroundId, group.id),
+    word: resolveCustomizationRow(ctx.honorWordById, honor.honorWordId, group.id),
+  }
+}
+
+function resolveCustomizationRow<T extends RankBorderMasterHonorBackground>(
+  records: ReadonlyMap<number, T> | undefined,
+  selectedId: number | null | undefined,
+  groupId: number,
+): T | null {
+  const selected = selectedId ? records?.get(selectedId) : null
+  if (selected?.honorGroupId === groupId && normalizeTextValue(selected.assetbundleName)) {
+    return selected
+  }
+
+  let first: T | null = null
+  for (const row of records?.values() ?? []) {
+    if (row.honorGroupId !== groupId || !normalizeTextValue(row.assetbundleName)) {
+      continue
+    }
+    if (!first || (row.seq ?? Infinity) < (first.seq ?? Infinity)
+      || (row.seq === first.seq && (row.id ?? Infinity) < (first.id ?? Infinity))) {
+      first = row
+    }
+  }
+  return first
 }
 
 /**
@@ -293,12 +346,18 @@ function resolveHonorVisual(
   const rankUrl = assetBundleName && honorUsesRankLayer(groupType, assetBundleName)
     ? resolveHonorRankUrl(groupType, assetBundleName, mode, ctx)
     : null
+  const medalTier = group?.isMedalDisplayed && honor?.levels?.length && level != null && level >= 11
+    ? Math.min(Math.floor((level - 1) / 10), 9)
+    : null
 
   return {
     type: "normal",
     groupType,
     honorId,
     baseUrl,
+    medalUrl: medalTier != null
+      ? resolveSekaiGameAssetUrl(ctx.region, `startapp/honor_medal/medal/icon_degree_medal${medalTier}.png`, ctx.assetEndpoint)
+      : null,
     rankUrl: rankUrl && rankUrl !== baseUrl ? rankUrl : null,
     rankPlacement: resolveHonorRankPlacement(groupType, assetBundleName),
     frameUrl: resolveHonorFrameUrl(group, backgroundAssetBundleName, assetBundleName, resolvedRarity, mode, ctx),
@@ -698,7 +757,9 @@ export function honorLevelStars(honor: RankBorderHonorView): RankBorderHonorLeve
   }
 
   const level = Math.max(0, honor.level ?? 0)
-  const normalizedLevel = level > 10 ? level - 10 : level
+  const normalizedLevel = honor.medalUrl
+    ? (level - 1) % 10 + 1
+    : level > 10 ? level - 10 : level
   const stars: RankBorderHonorLevelStar[] = []
   if (honor.levelIconUrl) {
     for (let index = 0; index < Math.min(normalizedLevel, 5); index += 1) {

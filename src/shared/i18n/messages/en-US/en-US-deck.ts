@@ -308,7 +308,13 @@ export default {
         "kinds": {
           "character": "Character items",
           "unit": "Unit items",
-          "attr": "Attribute items"
+          "attr": "Attribute items",
+          "all": "All-character items"
+        },
+        "targets": {
+          "all": "All characters",
+          "multiUnit": "Mixed-unit teams",
+          "allAndMultiUnit": "All characters · Mixed-unit teams"
         }
       },
       "characterRankOverride": {

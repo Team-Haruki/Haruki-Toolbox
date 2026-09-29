@@ -65,7 +65,19 @@ export type RankBorderMasterHonorGroup = {
   backgroundAssetbundleName?: string
   backgroundAssetBundleName?: string
   frameName?: string
+  isMedalDisplayed?: boolean
 }
+
+/** Optional, region-dependent profile honor customization tables. */
+export type RankBorderMasterHonorBackground = {
+  id?: number
+  seq?: number
+  honorGroupId?: number
+  assetbundleName?: string
+  name?: string
+}
+
+export type RankBorderMasterHonorWord = RankBorderMasterHonorBackground
 
 export type RankBorderMasterBondsHonor = {
   id?: number

@@ -152,7 +152,7 @@ export function useDeckRecommendDataOverrides(input: {
       ),
   )
   const areaItemOverrideSections = computed<AreaItemOverrideSection[]>(() =>
-    (["character", "unit", "attr"] as const)
+    (["character", "unit", "attr", "all"] as const)
       .map((kind) => ({
         kind,
         label: t(`deckRecommend.options.areaItemOverride.kinds.${kind}`),

@@ -13,6 +13,18 @@ import {
 } from "./master-options"
 
 describe("deck recommend master option helpers", () => {
+  it("uses each region's actual gate levels and omits gates with no upgrade levels", () => {
+    for (const maxLevel of [40, 70]) {
+      expect(buildMysekaiGateOptions({
+        mysekaiGates: [
+          { id: 1, unit: "light_sound", mysekaiGateType: "unit" },
+          { id: 6, unit: "none", mysekaiGateType: "shuffle" },
+        ],
+        mysekaiGateLevels: [{ mysekaiGateId: 1, level: 1 }, { mysekaiGateId: 1, level: maxLevel }],
+      }).map((option) => ({ id: option.id, maxLevel: option.maxLevel }))).toEqual([{ id: 1, maxLevel }])
+    }
+  })
+
   it("builds character rank options with per-character max ranks", () => {
     expect(buildCharacterRankOptions({
       gameCharacters: [

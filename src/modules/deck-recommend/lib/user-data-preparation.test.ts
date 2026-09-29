@@ -396,6 +396,42 @@ describe("deck recommend user data preparation", () => {
     ])
   })
 
+  it("keeps non-upgradable gates unchanged while clamping level overrides to regional master data", () => {
+    const shuffleGate = { mysekaiGateId: 6, mysekaiGateLevel: 1, isSettingAtHomeSite: true }
+    for (const maxLevel of [40, 70]) {
+      const prepared = createPreparedDeckRecommendUserDataString({
+        masterData: {
+          ...masterData,
+          mysekaiGates: [{ id: 1 }, { id: 6, unit: "none", mysekaiGateType: "shuffle" }],
+          mysekaiGateLevels: [{ mysekaiGateId: 1, level: 1 }, { mysekaiGateId: 1, level: maxLevel }],
+        },
+        userData: { userCards: [], userMysekaiGates: [shuffleGate] },
+        mysekaiGateLevel: 99,
+        mysekaiGateLevelOverrides: [{ mysekaiGateId: 6, level: 99 }],
+      })
+      const userData = JSON.parse(prepared.userDataString) as {
+        userMysekaiGates: Array<{ mysekaiGateId: number; mysekaiGateLevel: number }>
+      }
+      expect(userData.userMysekaiGates).toHaveLength(2)
+      expect(userData.userMysekaiGates[0]).toEqual(shuffleGate)
+      expect(userData.userMysekaiGates[1]).toMatchObject({ mysekaiGateId: 1, mysekaiGateLevel: maxLevel })
+    }
+  })
+
+  it("does not synthesize a gate without level data", () => {
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData: {
+        ...masterData,
+        mysekaiGates: [{ id: 6, unit: "none", mysekaiGateType: "shuffle" }],
+        mysekaiGateLevels: [],
+      },
+      userData: { userCards: [], userMysekaiGates: [] },
+      mysekaiGateLevel: 70,
+      mysekaiGateLevelOverrides: [{ mysekaiGateId: 6, level: 70 }],
+    })
+    expect(JSON.parse(prepared.userDataString).userMysekaiGates).toEqual([])
+  })
+
   it("applies uniform mysekai fixture bonus rates to all master characters", () => {
     const prepared = createPreparedDeckRecommendUserDataString({
       masterData,
@@ -528,6 +564,32 @@ describe("deck recommend user data preparation", () => {
         userAreaStatus: { areaId: 12, status: "released" },
       },
     ])
+  })
+
+  it("applies one level override for a multi-effect item without changing master effect rows", () => {
+    const areaItemLevels = [1, 20].flatMap((level) => [
+      { areaItemId: 56, level, targetUnit: "any", targetCardAttr: "any" },
+      { areaItemId: 56, level, targetUnit: "multi_unit", targetCardAttr: "any" },
+    ])
+    const originalLevels = structuredClone(areaItemLevels)
+    const prepared = createPreparedDeckRecommendUserDataString({
+      masterData: {
+        ...masterData,
+        areaItems: [{ id: 56, areaId: 27 }],
+        areaItemLevels,
+      },
+      userData: { userCards: [], userAreas: [] },
+      areaItemLevel: 20,
+      areaItemLevelOverrides: [{ areaItemId: 56, level: 12 }],
+    })
+
+    expect(JSON.parse(prepared.userDataString).userAreas).toEqual([{
+      areaId: 27,
+      actionSets: [],
+      areaItems: [{ areaItemId: 56, level: 12 }],
+      userAreaStatus: { areaId: 27, status: "released" },
+    }])
+    expect(areaItemLevels).toEqual(originalLevels)
   })
 
   it("overrides existing area item levels exactly instead of only raising them", () => {

@@ -13,6 +13,8 @@ export type CardSkillEffectRow = {
 export type CardSkillEffectDetail = {
   level: number
   value: number | null
+  /** Maximum added score for teammate-reference effects; `value` is the reference rate. */
+  value2: number | null
   duration: number | null
 }
 
@@ -131,13 +133,19 @@ function pickSkillDetail(details: readonly CardSkillEffectDetail[], level: numbe
 
 function listSkillEffectValues(
   effect: CardSkillEffect | undefined,
-  kind: "value" | "duration",
+  kind: "value" | "duration" | "maximum",
   level?: number,
 ): number[] {
   const details = effect?.details ?? []
   const selected = level != null ? [pickSkillDetail(details, level)].filter((detail) => detail != null) : details
   return selected
-    .map((detail) => (kind === "duration" ? detail.duration : detail.value))
+    .map((detail) => {
+      if (kind === "duration") return detail.duration
+      if (kind === "maximum" && effect?.effectType === "other_member_score_up_reference_rate") {
+        return detail.value2
+      }
+      return detail.value
+    })
     .filter((value): value is number => value != null)
 }
 
@@ -173,7 +181,7 @@ function resolveSkillValueSum(
   byId: ReadonlyMap<number, CardSkillEffect>,
   level?: number,
 ): string {
-  const lists = ids.map((id) => listSkillEffectValues(byId.get(id), "value", level))
+  const lists = ids.map((id) => listSkillEffectValues(byId.get(id), "maximum", level))
   if (lists.some((list) => list.length === 0)) {
     return "?"
   }
@@ -345,6 +353,7 @@ function normalizeSkillEffects(rawSkillEffects: unknown): CardSkillEffect[] {
         return [{
           level,
           value: normalizeCatalogNumber(detail.activateEffectValue),
+          value2: normalizeCatalogNumber(detail.activateEffectValue2),
           duration: normalizeCatalogNumber(detail.activateEffectDuration),
         }]
       })

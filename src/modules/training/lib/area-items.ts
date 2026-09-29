@@ -295,6 +295,7 @@ export type AreaItemFilter = {
   characterId?: number
   tree?: boolean
   flower?: boolean
+  allCharacters?: boolean
 }
 
 /** Go: hasAreaItemFilter. */
@@ -308,6 +309,13 @@ export function hasAreaItemFilter(filter: AreaItemFilter | null | undefined): bo
     || (filter.characterId ?? 0) > 0
     || filter.tree === true
     || filter.flower === true
+    || filter.allCharacters === true
+}
+
+export function isAllCharacterAreaItemLevel(level: AreaItemLevelMaster): boolean {
+  return level.targetGameCharacterId <= 0
+    && level.targetUnit.trim().toLowerCase() === "any"
+    && level.targetCardAttr.trim().toLowerCase() === "any"
 }
 
 /** Go: areaItemMatchesFilter — exact port including VS-item exclusion. */
@@ -356,7 +364,10 @@ export function areaItemMatchesFilter(
   const filterCid = filter.characterId ?? 0
   const matchesLevel = levels.some((level) => areaLevelMatchesFilter(level, filterPiapro, filterCid, filterAttr))
   const isVSItem = levels.some(isVirtualSingerAreaLevel)
-  return matchesLevel || matchesSpecialArea(item, filter) || matchesUnitArea(item, filterUnit, isVSItem)
+  return matchesLevel
+    || matchesSpecialArea(item, filter)
+    || matchesUnitArea(item, filterUnit, isVSItem)
+    || (filter.allCharacters === true && levels.some(isAllCharacterAreaItemLevel))
 }
 
 /** Go: sortedAreaItemLevels — unique positive level numbers ascending. */
@@ -578,14 +589,22 @@ export type AreaItemTarget =
   | { type: "character"; characterId: number }
   | { type: "unit"; unit: string }
   | { type: "attr"; attr: string }
+  | { type: "all" }
+  | { type: "multi_unit" }
 
 /** Go: areaItemTargetIcon — first target found across the item's levels. */
 export function resolveAreaItemTarget(levels: readonly AreaItemLevelMaster[]): AreaItemTarget | null {
+  if (levels.some(isAllCharacterAreaItemLevel)) {
+    return { type: "all" }
+  }
   for (const level of levels) {
     if (level.targetGameCharacterId > 0) {
       return { type: "character", characterId: level.targetGameCharacterId }
     }
     const unit = normalizeAreaUnit(level.targetUnit)
+    if (unit === "multi_unit") {
+      return { type: "multi_unit" }
+    }
     if (unit !== "") {
       return { type: "unit", unit }
     }
@@ -610,6 +629,7 @@ export type AreaItemMaterialView = {
 export type AreaItemLevelView = {
   level: number
   bonus: number
+  multiUnitBonus: number
   canUpgrade: boolean
   materials: AreaItemMaterialView[]
 }
@@ -622,6 +642,8 @@ export type AreaItemView = {
   currentLevel: number
   /** Bonus rate at the current level; 0 when the item is not owned yet. */
   currentBonus: number
+  /** Additional conditional rate, never folded into the unconditional bonus. */
+  currentMultiUnitBonus: number
   maxVisibleLevel: number
   target: AreaItemTarget | null
   levels: AreaItemLevelView[]
@@ -641,7 +663,7 @@ type BuildAreaItemViewsArgs = {
 type AreaItemRenderState = {
   item: AreaItemMaster
   levels: AreaItemLevelMaster[]
-  levelMap: Map<number, AreaItemLevelMaster>
+  levelMap: Map<number, AreaItemLevelMaster[]>
   shopLevels: Map<number, AreaShopItem> | undefined
   currentLevel: number
   maxVisibleLevel: number
@@ -698,7 +720,12 @@ function buildAreaItemRenderStates(args: {
     if (!item || levels.length === 0) {
       continue
     }
-    const levelMap = new Map(levels.map((level) => [level.level, level]))
+    const levelMap = new Map<number, AreaItemLevelMaster[]>()
+    for (const level of levels) {
+      const effects = levelMap.get(level.level) ?? []
+      effects.push(level)
+      levelMap.set(level.level, effects)
+    }
     const shopLevels = args.levelShopItems.get(itemId)
     const releasedCap = shopDataAvailable
       ? releasedAreaItemLevelCap(levels, shopLevels)
@@ -745,16 +772,16 @@ function buildAreaItemLevelViews(
   const sumMaterials = new Map<number, number>()
   const levelViews: AreaItemLevelView[] = []
   for (let level = minCurrentLevel + 1; level <= state.maxVisibleLevel; level++) {
-    const levelMaster = state.levelMap.get(level)
-    if (!levelMaster) {
-      levelViews.push({ level, bonus: 0, canUpgrade: false, materials: [] })
+    const levelMasters = state.levelMap.get(level)
+    if (!levelMasters) {
+      levelViews.push({ level, bonus: 0, multiUnitBonus: 0, canUpgrade: false, materials: [] })
       continue
     }
     const shopItem = level > state.currentLevel ? state.shopLevels?.get(level) : null
     const materials = shopItem ? buildAreaItemMaterialViews(shopItem, sumMaterials, userMaterials) : []
     levelViews.push({
       level,
-      bonus: levelMaster.power1BonusRate,
+      ...areaItemLevelBonuses(levelMasters),
       canUpgrade: level <= state.currentLevel || (shopItem != null && materials.every((material) => material.isEnough)),
       materials,
     })
@@ -762,18 +789,33 @@ function buildAreaItemLevelViews(
   return levelViews
 }
 
+function areaItemLevelBonuses(levels: readonly AreaItemLevelMaster[]) {
+  let bonus = 0
+  let multiUnitBonus = 0
+  for (const level of levels) {
+    if (normalizeAreaUnit(level.targetUnit) === "multi_unit") {
+      multiUnitBonus += level.power1BonusRate
+    } else {
+      bonus += level.power1BonusRate
+    }
+  }
+  return { bonus, multiUnitBonus }
+}
+
 function buildAreaItemView(
   state: AreaItemRenderState,
   minCurrentLevel: number,
   userMaterials: ReadonlyMap<number, number>,
 ): AreaItemView {
+  const current = areaItemLevelBonuses(state.levelMap.get(state.currentLevel) ?? [])
   return {
     itemId: state.item.id,
     areaId: state.item.areaId,
     name: state.item.name,
     assetbundleName: state.item.assetbundleName,
     currentLevel: state.currentLevel,
-    currentBonus: state.levelMap.get(state.currentLevel)?.power1BonusRate ?? 0,
+    currentBonus: current.bonus,
+    currentMultiUnitBonus: current.multiUnitBonus,
     maxVisibleLevel: state.maxVisibleLevel,
     target: resolveAreaItemTarget(state.levels),
     levels: buildAreaItemLevelViews(state, minCurrentLevel, userMaterials),

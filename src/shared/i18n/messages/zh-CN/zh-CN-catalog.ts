@@ -191,6 +191,9 @@ export default {
         "material": "素材",
         "boost_item": "体力道具",
         "stamp": "表情",
+        "honor_background": "称号背景",
+        "honor_word": "称号文字",
+        "virtual_item": "虚拟道具",
         "honor": "称号",
         "bonds_honor": "羁绊称号",
         "skill_practice_ticket": "技能练习券",
@@ -313,6 +316,9 @@ export default {
         "material": "素材",
         "gacha_ceil_item": "贴纸",
         "jewel": "水晶",
+        "honor_background": "称号背景",
+        "honor_word": "称号文字",
+        "virtual_item": "虚拟道具",
         "honor": "称号"
       }
     },

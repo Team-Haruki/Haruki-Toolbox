@@ -12,6 +12,7 @@ import {
 import { useRankBorderTracker } from "./useRankBorderTracker"
 import {
   normalizeTrackerEndpoint,
+  rankBorderProfileHonorSignature,
   resolveRankBorderTraceGrowth,
   type RankBorderGrowth,
   type RankBorderLatest,
@@ -928,7 +929,7 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       || previous.cardSpecialTrainingStatus !== next.cardSpecialTrainingStatus
       || previous.cardDefaultImage !== next.cardDefaultImage
       || previous.profileWord !== next.profileWord
-      || profileHonorSignature(previous) !== profileHonorSignature(next)
+      || rankBorderProfileHonorSignature(previous) !== rankBorderProfileHonorSignature(next)
       || playerFrameSignature(previous) !== playerFrameSignature(next)
   }
 
@@ -938,21 +939,6 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       || previous.scoreEarlier !== next.scoreEarlier
       || previous.timestampLatest !== next.timestampLatest
       || previous.timestampEarlier !== next.timestampEarlier
-  }
-
-  function profileHonorSignature(value: Pick<RankBorderLatest, "profileHonors">) {
-    return value.profileHonors
-      .map((honor) => [
-        honor.seq,
-        honor.honorId,
-        honor.honorId2,
-        honor.honorLevel,
-        honor.honorCount,
-        honor.profileHonorType,
-        honor.bondsHonorViewType,
-        honor.bondsHonorWordId,
-      ].join(":"))
-      .join("|")
   }
 
   function playerFrameSignature(value: Pick<RankBorderLatest, "userPlayerFrames">) {

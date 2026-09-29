@@ -2,6 +2,8 @@ import { describe, expect, it } from "bun:test"
 import {
   buildRankBorderTraceHeatmapBuckets,
   normalizeRankBorderLatest,
+  normalizeProfileHonors,
+  rankBorderProfileHonorSignature,
   normalizeRankBorderWebUserDetail,
   normalizeRankBorderLines,
   normalizeRankBorderOverview,
@@ -21,6 +23,20 @@ import {
 import { numericExtent } from "./rank-border-chart"
 
 describe("rank border helpers", () => {
+  it("refreshes live honor visuals when only a customization choice changes", () => {
+    const profile = (honorBackgroundId: unknown, honorWordId: unknown) => ({
+      profileHonors: normalizeProfileHonors([
+        { seq: 1, honorId: 1, honorLevel: 5, honorBackgroundId, honorWordId },
+      ]),
+    })
+    const original = rankBorderProfileHonorSignature(profile(10101, 10101))
+    expect(rankBorderProfileHonorSignature(profile(10102, 10101))).not.toBe(original)
+    expect(rankBorderProfileHonorSignature(profile(10101, 10102))).not.toBe(original)
+    expect(rankBorderProfileHonorSignature(profile("10101", "10101"))).toBe(original)
+    expect(rankBorderProfileHonorSignature(profile(undefined, undefined)))
+      .toBe(rankBorderProfileHonorSignature(profile(null, null)))
+  })
+
   it("normalizes and sorts ranking line payloads", () => {
     expect(normalizeRankBorderLines([
       { rank: 100, score: 1234567, timestamp: 1710000000 },
@@ -79,6 +95,8 @@ describe("rank border helpers", () => {
           profileHonorType: "normal",
           honorId: 10,
           honorId2: null,
+          honorBackgroundId: null,
+          honorWordId: null,
           honorLevel: 1,
           honorCount: null,
           bondsHonorViewType: null,
@@ -89,6 +107,8 @@ describe("rank border helpers", () => {
           profileHonorType: null,
           honorId: 20,
           honorId2: null,
+          honorBackgroundId: null,
+          honorWordId: null,
           honorLevel: 3,
           honorCount: null,
           bondsHonorViewType: null,
@@ -99,6 +119,8 @@ describe("rank border helpers", () => {
           profileHonorType: null,
           honorId: null,
           honorId2: 30,
+          honorBackgroundId: null,
+          honorWordId: null,
           honorLevel: 5,
           honorCount: null,
           bondsHonorViewType: null,
@@ -127,6 +149,8 @@ describe("rank border helpers", () => {
         profileHonorType: null,
         honorId: 3009,
         honorId2: null,
+        honorBackgroundId: null,
+        honorWordId: null,
         honorLevel: 2,
         honorCount: 148,
         bondsHonorViewType: null,
@@ -137,6 +161,8 @@ describe("rank border helpers", () => {
         profileHonorType: null,
         honorId: 3010,
         honorId2: null,
+        honorBackgroundId: null,
+        honorWordId: null,
         honorLevel: 1,
         honorCount: 37,
         bondsHonorViewType: null,
@@ -218,6 +244,8 @@ describe("rank border helpers", () => {
             profileHonorType: null,
             honorId: 8071,
             honorId2: null,
+            honorBackgroundId: null,
+            honorWordId: null,
             honorLevel: 1,
             honorCount: null,
             bondsHonorViewType: null,
@@ -228,6 +256,8 @@ describe("rank border helpers", () => {
             profileHonorType: null,
             honorId: 8104,
             honorId2: null,
+            honorBackgroundId: null,
+            honorWordId: null,
             honorLevel: 1,
             honorCount: null,
             bondsHonorViewType: null,

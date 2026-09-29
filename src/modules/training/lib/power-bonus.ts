@@ -287,12 +287,18 @@ export type PowerBonusResult = {
   characters: CharacterPowerBonus[]
   units: UnitPowerBonus[]
   attrs: AttrPowerBonus[]
+  /** The unconditional rate is included in every character's area-item total. */
+  allCharacterAreaItem: number
+  /** Available conditional rate only; requires a deck to resolve stacking. */
+  multiUnitAreaItem: number
 }
 
 type MutablePowerBonuses = {
   characters: Map<number, CharacterPowerBonus>
   units: Map<PowerBonusUnit, UnitPowerBonus>
   attrs: Map<PowerBonusAttr, AttrPowerBonus>
+  allCharacterAreaItem: number
+  multiUnitAreaItem: number
 }
 
 function createMutablePowerBonuses(): MutablePowerBonuses {
@@ -311,29 +317,49 @@ function createMutablePowerBonuses(): MutablePowerBonuses {
     attrs.set(attr, { attr, areaItem: 0, total: 0 })
   }
 
-  return { characters, units, attrs }
+  return { characters, units, attrs, allCharacterAreaItem: 0, multiUnitAreaItem: 0 }
 }
 
-function buildAreaItemLevelIndex(levels: readonly AreaItemLevelMaster[]): Map<string, AreaItemLevelMaster> {
-  const index = new Map<string, AreaItemLevelMaster>()
+function buildAreaItemLevelIndex(levels: readonly AreaItemLevelMaster[]): Map<string, AreaItemLevelMaster[]> {
+  const index = new Map<string, AreaItemLevelMaster[]>()
   for (const level of levels) {
-    index.set(`${level.areaItemId}:${level.level}`, level)
+    const key = `${level.areaItemId}:${level.level}`
+    const effects = index.get(key) ?? []
+    effects.push(level)
+    index.set(key, effects)
   }
   return index
 }
 
 function addAreaItemBonus(level: AreaItemLevelMaster, bonuses: MutablePowerBonuses): void {
+  const unit = normalizeUnitName(level.targetUnit)
+  const attr = normalizeAttrName(level.targetCardAttr)
+  // `multi_unit` is a deck condition, not a seventh unit. This overview has
+  // no deck and cannot decide its interaction with same-unit bonuses.
+  if (unit === "multi_unit") {
+    bonuses.multiUnitAreaItem += level.power1BonusRate
+    return
+  }
+  if (level.targetUnit.trim().toLowerCase() === "any"
+    && level.targetCardAttr.trim().toLowerCase() === "any"
+    && level.targetGameCharacterId <= 0) {
+    bonuses.allCharacterAreaItem += level.power1BonusRate
+    for (const bonus of bonuses.characters.values()) {
+      bonus.areaItem += level.power1BonusRate
+    }
+    return
+  }
   const characterBonus = bonuses.characters.get(level.targetGameCharacterId)
   if (level.targetGameCharacterId > 0 && characterBonus) {
     characterBonus.areaItem += level.power1BonusRate
   }
 
-  const unitBonus = bonuses.units.get(normalizeUnitName(level.targetUnit) as PowerBonusUnit)
+  const unitBonus = bonuses.units.get(unit as PowerBonusUnit)
   if (unitBonus) {
     unitBonus.areaItem += level.power1BonusRate
   }
 
-  const attrBonus = bonuses.attrs.get(normalizeAttrName(level.targetCardAttr) as PowerBonusAttr)
+  const attrBonus = bonuses.attrs.get(attr as PowerBonusAttr)
   if (attrBonus) {
     attrBonus.areaItem += level.power1BonusRate
   }
@@ -346,8 +372,7 @@ function applyAreaItemBonuses(input: BuildPowerBonusesInput, bonuses: MutablePow
       continue
     }
 
-    const level = levelIndex.get(`${areaItemId}:${itemLevel}`)
-    if (level) {
+    for (const level of levelIndex.get(`${areaItemId}:${itemLevel}`) ?? []) {
       addAreaItemBonus(level, bonuses)
     }
   }
@@ -391,9 +416,16 @@ function buildGateLevelIndex(levels: readonly MysekaiGateLevelMaster[]): Map<str
 
 function applyGateBonuses(input: BuildPowerBonusesInput, bonuses: MutablePowerBonuses): void {
   const levelIndex = buildGateLevelIndex(input.mysekaiGateLevels ?? [])
-  let maxGateBonus = 0
+  let highestGateLevel = -1
+  let highestGateBonus = 0
   for (const gate of input.userMysekaiGates ?? []) {
     const level = levelIndex.get(`${gate.mysekaiGateId}:${gate.mysekaiGateLevel}`)
+    // The client selects the highest owned level first, then looks up its
+    // rate. A shuffle gate has no level row and contributes zero.
+    if (gate.mysekaiGateLevel > highestGateLevel) {
+      highestGateLevel = gate.mysekaiGateLevel
+      highestGateBonus = level?.powerBonusRate ?? 0
+    }
     if (!level) {
       continue
     }
@@ -403,12 +435,11 @@ function applyGateBonuses(input: BuildPowerBonusesInput, bonuses: MutablePowerBo
     if (unitBonus) {
       unitBonus.gate += level.powerBonusRate
     }
-    maxGateBonus = Math.max(maxGateBonus, level.powerBonusRate)
   }
 
   const piaproBonus = bonuses.units.get("piapro")
   if (piaproBonus) {
-    piaproBonus.gate += maxGateBonus
+    piaproBonus.gate += highestGateBonus
   }
 }
 
@@ -428,20 +459,27 @@ function finalizePowerBonuses(bonuses: MutablePowerBonuses): PowerBonusResult {
     bonus.total = bonus.areaItem
     return bonus
   })
-  return { characters, units, attrs }
+  return {
+    characters,
+    units,
+    attrs,
+    allCharacterAreaItem: bonuses.allCharacterAreaItem,
+    multiUnitAreaItem: bonuses.multiUnitAreaItem,
+  }
 }
 
 /**
  * Ports `BuildPowerBonusDetailRequestFromSnapshot` including the MYSEKAI
  * contributions:
- * - per-character: area-item bonus (rows targeting `targetGameCharacterId`)
+ * - per-character: area-item bonus (character-specific and unconditional rows)
  *   plus character-rank bonus plus fixture bonus (`totalBonusRate` × 0.1);
  *   total = areaItem + rank + fixture.
  * - per-unit: area-item bonus from rows targeting `targetUnit` plus the
- *   unit's gate bonus; piapro receives the highest gate bonus across all
- *   gates; total = areaItem + gate.
+ *   unit's gate bonus; piapro (without a support unit) uses the highest
+ *   owned gate level, with zero for missing master rows; total = areaItem + gate.
  * - per-attribute: area-item bonus from rows targeting `targetCardAttr`;
  *   total = areaItem.
+ * - multi-unit: reported separately without assuming any deck composition.
  */
 export function buildPowerBonuses(input: BuildPowerBonusesInput): PowerBonusResult {
   const bonuses = createMutablePowerBonuses()

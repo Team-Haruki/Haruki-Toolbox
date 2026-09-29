@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test"
+import bloomReferenceSkill from "./card-skill-bloom.fixture.json"
 import {
   CARD_SKILL_FILTER_TYPES,
   buildCardSkillIndex,
@@ -240,5 +241,38 @@ describe("skill records and level-aware formatting", () => {
     expect(view.formattedDescription).toBe("5초 동안 스코어가 20/25/30/40% 상승한다.")
     expect(view.effectTypes).toEqual(["score_up"])
     expect(view.maxLevel).toBe(4)
+  })
+})
+
+describe("OC Bloom Fes before-training reference skill", () => {
+  const record = buildCardSkillIndex([bloomReferenceSkill]).get(23)!
+
+  it.each([
+    [1, 60, 60, 120],
+    [2, 65, 65, 130],
+    [3, 70, 70, 140],
+    [4, 80, 70, 150],
+  ])("uses the bonus cap at level %i while preserving the reference rate", (level, base, bonus, maximum) => {
+    expect(record.effects[1]?.details[level - 1]).toMatchObject({ value: 50, value2: bonus })
+    expect(formatCardSkillAtLevel(record, level)).toBe(
+      `5秒間  スコアが${base}%UP、更に編成からランダムに選んだ他メンバー1人が持つスキルのスコアUP最大値の50%をUP（最大で合計${maximum}%）`,
+    )
+  })
+
+  it("formats all four total caps in the overview", () => {
+    expect(buildCardSkillView(record).formattedDescription).toBe(
+      "5秒間  スコアが60/65/70/80%UP、更に編成からランダムに選んだ他メンバー1人が持つスキルのスコアUP最大値の50%をUP（最大で合計120/130/140/150%）",
+    )
+  })
+
+  it("does not substitute the reference rate when the bonus cap is missing", () => {
+    const raw = structuredClone(bloomReferenceSkill)
+    for (const effect of raw.skillEffects) {
+      for (const detail of effect.skillEffectDetails) {
+        delete detail.activateEffectValue2
+      }
+    }
+    const missingCap = buildCardSkillIndex([raw]).get(23)!
+    expect(formatCardSkillAtLevel(missingCap, 4)).toContain("最大で合計?%")
   })
 })

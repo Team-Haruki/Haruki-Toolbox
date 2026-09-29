@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
+import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 import {
   honorFrameSvgAttrs,
   honorLevelStars,
@@ -26,8 +27,14 @@ const rankAttrs = computed(() => honorRankSvgAttrs(props.honor))
 </script>
 
 <template>
-  <span :class="['rank-border-honor', `rank-border-honor--${variant ?? 'row'}`]">
+  <span :class="['rank-border-honor', `rank-border-honor--${variant ?? 'row'}`]" :aria-label="honor.label" role="img">
     <span v-if="honor.type === 'normal' && honor.baseUrl" class="rank-border-honor-visual">
+      <SekaiAssetImage
+        v-if="honor.customBackgroundUrl"
+        :sources="[honor.customBackgroundUrl, honor.baseUrl]"
+        :alt="honor.label"
+        fit="contain"
+      />
       <svg
         class="rank-border-honor-svg"
         viewBox="0 0 180 80"
@@ -35,6 +42,7 @@ const rankAttrs = computed(() => honorRankSvgAttrs(props.honor))
         focusable="false"
       >
         <image
+          v-if="!honor.customBackgroundUrl"
           :href="honor.baseUrl" x="0" y="0" width="180" height="80" preserveAspectRatio="none"
           @load="resetRecoveredImage"
           @error="hideBrokenImage"
@@ -63,6 +71,19 @@ const rankAttrs = computed(() => honorRankSvgAttrs(props.honor))
           width="101"
           height="75"
           preserveAspectRatio="none"
+          @load="resetRecoveredImage"
+          @error="hideBrokenImage"
+        />
+        <!-- Toolbox compact layout: 24px tall with the original 64:72 aspect
+             ratio, just left of the stars; these are not Unity prefab offsets. -->
+        <image
+          v-if="honor.medalUrl"
+          :href="honor.medalUrl"
+          :x="48 - 24 * 64 / 72"
+          y="53"
+          :width="24 * 64 / 72"
+          height="24"
+          preserveAspectRatio="xMidYMid meet"
           @load="resetRecoveredImage"
           @error="hideBrokenImage"
         />
@@ -257,6 +278,7 @@ const rankAttrs = computed(() => honorRankSvgAttrs(props.honor))
 }
 
 .rank-border-honor-svg {
+  position: relative;
   display: block;
   width: 100%;
   height: 100%;

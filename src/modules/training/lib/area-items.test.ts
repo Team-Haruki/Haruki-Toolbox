@@ -9,11 +9,14 @@ import {
   collectUserMaterials,
   formatAreaBonusRate,
   formatCompactQuantity,
+  isAllCharacterAreaItemLevel,
   materialIconAssetPath,
+  normalizeAreaItemLevels,
   normalizeAreaShopItems,
   normalizeAreaShopResourceBoxDetails,
   masterAreaItemLevelCap,
   releasedAreaItemLevelCap,
+  resolveAreaItemTarget,
   type AreaItemLevelMaster,
   type AreaItemMaster,
   type AreaShopItem,
@@ -464,6 +467,52 @@ describe("buildAreaItemViews", () => {
     expect(views.map((view) => view.itemId)).toEqual([1])
     expect(views[0].currentLevel).toBe(0)
     expect(views[0].currentBonus).toBe(0)
+  })
+
+  test("shows both tree effects at each level while charging upgrade materials once", () => {
+    const levels = normalizeAreaItemLevels([1, 2, 3].flatMap((level) => [
+      { areaItemId: 56, level, targetUnit: "multi_unit", targetCardAttr: "any", power1BonusRate: level * 0.5 },
+      { areaItemId: 56, level, targetUnit: "any", targetCardAttr: "any", power1BonusRate: level * 0.5 },
+    ]))
+    const input = {
+      areaItems: [makeItem(56, 27)],
+      areaItemLevels: levels,
+      shopItems: [1, 2, 3].map((level) => makeShopItem(2100 + level, {
+        resourceBoxId: 2100 + level,
+        costs: [{ resourceType: "coin", resourceId: 0, quantity: 100 }],
+      })),
+      shopDetails: [1, 2, 3].map((level) => ({ resourceBoxId: 2100 + level, areaItemId: 56, level })),
+      userAreaLevels: new Map([[56, 1]]),
+      userMaterials: new Map([[AREA_COIN_MATERIAL_ID, 150]]),
+      nowMs: 1000,
+    }
+    const view = buildAreaItemViews(input)[0]!
+    expect(view.target).toEqual({ type: "all" })
+    expect(view.currentBonus).toBe(0.5)
+    expect(view.currentMultiUnitBonus).toBe(0.5)
+    expect(view.levels.map((row) => [row.level, row.bonus, row.multiUnitBonus])).toEqual([[2, 1, 1], [3, 1.5, 1.5]])
+    expect(view.levels.map((row) => row.materials[0]?.sumQuantity)).toEqual([100, 200])
+    expect(view.levels.map((row) => row.canUpgrade)).toEqual([true, false])
+    expect(buildAreaItemViews({ ...input, areaItemLevels: [...levels].reverse() })).toEqual([view])
+
+    const unowned = buildAreaItemViews({ ...input, userAreaLevels: new Map(), filter: { allCharacters: true } })[0]!
+    expect(unowned.itemId).toBe(56)
+    expect(unowned.currentBonus).toBe(0)
+    expect(unowned.currentMultiUnitBonus).toBe(0)
+  })
+})
+
+describe("area item effect targets", () => {
+  test("treats multi_unit as a condition instead of a unit", () => {
+    expect(resolveAreaItemTarget([makeLevel(56, 1, { targetUnit: "multi_unit" })])).toEqual({ type: "multi_unit" })
+  })
+
+  test("requires explicit any targets before labeling an effect all-character", () => {
+    const [missing] = normalizeAreaItemLevels([{ areaItemId: 56, level: 1, power1BonusRate: 1 }])
+    expect(isAllCharacterAreaItemLevel(missing!)).toBe(false)
+    expect(resolveAreaItemTarget([missing!])).toBeNull()
+    expect(isAllCharacterAreaItemLevel(makeLevel(56, 1))).toBe(true)
+    expect(isAllCharacterAreaItemLevel(makeLevel(56, 1, { targetGameCharacterId: 1 }))).toBe(false)
   })
 })
 

@@ -5,7 +5,7 @@ import {
 } from "@/shared/sekai/data-sources"
 import type { DeckRecommendEventAttr, DeckRecommendUnitType } from "./recommend-options"
 
-export type DeckRecommendAreaItemKind = "character" | "unit" | "attr"
+export type DeckRecommendAreaItemKind = "character" | "unit" | "attr" | "all"
 
 export type DeckRecommendAreaItemOption = {
   id: number
@@ -19,6 +19,8 @@ export type DeckRecommendAreaItemOption = {
   targetCharacterId: number | null
   targetUnit: DeckRecommendUnitType | null
   targetAttr: DeckRecommendEventAttr | null
+  targetsAllCharacters: boolean
+  targetsMultiUnit: boolean
   targetLabel: string | null
   iconUrl: string | null
 }
@@ -63,6 +65,8 @@ type AreaItemTargetInfo = {
   targetCharacterId: number | null
   targetUnit: DeckRecommendUnitType | null
   targetAttr: DeckRecommendEventAttr | null
+  targetsAllCharacters: boolean
+  targetsMultiUnit: boolean
 }
 
 type AreaInfo = {
@@ -74,6 +78,7 @@ const AREA_ITEM_KIND_ORDER: Record<DeckRecommendAreaItemKind, number> = {
   character: 0,
   unit: 1,
   attr: 2,
+  all: 3,
 }
 
 const UNIT_ORDER: DeckRecommendUnitType[] = [
@@ -122,6 +127,8 @@ export function buildDeckRecommendAreaItemOptions(masterData: Record<string, unk
         targetCharacterId: targetInfo.targetCharacterId,
         targetUnit: targetInfo.targetUnit,
         targetAttr: targetInfo.targetAttr,
+        targetsAllCharacters: targetInfo.targetsAllCharacters,
+        targetsMultiUnit: targetInfo.targetsMultiUnit,
         targetLabel,
         iconUrl: resolveAreaItemIconUrl(targetInfo),
       }
@@ -154,7 +161,8 @@ function buildAreaItemTargetInfoMap(areaItemLevels: unknown): Map<number, AreaIt
     }
 
     const existing = map.get(areaItemId)
-    const targetInfo = existing ?? createAreaItemTargetInfo(item)
+    const rowTargetInfo = createAreaItemTargetInfo(item)
+    const targetInfo = existing ?? rowTargetInfo
     if (!targetInfo) {
       continue
     }
@@ -162,6 +170,8 @@ function buildAreaItemTargetInfoMap(areaItemLevels: unknown): Map<number, AreaIt
     map.set(areaItemId, {
       ...targetInfo,
       maxLevel: Math.max(existing?.maxLevel ?? 0, level),
+      targetsAllCharacters: targetInfo.targetsAllCharacters || rowTargetInfo?.targetsAllCharacters === true,
+      targetsMultiUnit: targetInfo.targetsMultiUnit || rowTargetInfo?.targetsMultiUnit === true,
     })
   }
 
@@ -180,6 +190,8 @@ function createAreaItemTargetInfo(item: RawAreaItemLevel): AreaItemTargetInfo | 
       targetCharacterId,
       targetUnit: null,
       targetAttr: null,
+      targetsAllCharacters: false,
+      targetsMultiUnit: false,
     }
   }
 
@@ -190,6 +202,8 @@ function createAreaItemTargetInfo(item: RawAreaItemLevel): AreaItemTargetInfo | 
       targetCharacterId: null,
       targetUnit,
       targetAttr: null,
+      targetsAllCharacters: false,
+      targetsMultiUnit: false,
     }
   }
 
@@ -200,6 +214,22 @@ function createAreaItemTargetInfo(item: RawAreaItemLevel): AreaItemTargetInfo | 
       targetCharacterId: null,
       targetUnit: null,
       targetAttr,
+      targetsAllCharacters: false,
+      targetsMultiUnit: false,
+    }
+  }
+
+  // JP 7.0 adds two effects at each level of the same item: one for all
+  // characters, another for mixed-unit decks. Neither is a playable unit.
+  if (item.targetCardAttr === "any" && (item.targetUnit === "any" || item.targetUnit === "multi_unit")) {
+    return {
+      kind: "all",
+      maxLevel: 0,
+      targetCharacterId: null,
+      targetUnit: null,
+      targetAttr: null,
+      targetsAllCharacters: item.targetUnit === "any",
+      targetsMultiUnit: item.targetUnit === "multi_unit",
     }
   }
 

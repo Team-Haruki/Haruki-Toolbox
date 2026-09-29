@@ -73,4 +73,41 @@ describe("deck recommend area item options", () => {
     expect(resolveUnitIconUrl("light_sound")).toBe(resolveUnitLogoUrl("light_sound"))
     expect(resolveAreaItemAttrIconUrl("cool")).toBe(resolveCardAttrRoundIconUrl("cool"))
   })
+
+  it.each([false, true])("keeps one override for all-character and multi-unit effects regardless of row order (reversed=%s)", (reverse) => {
+    const levels = [1, 20].flatMap((level) => [
+      { areaItemId: 56, level, targetGameCharacterId: null, targetUnit: "any", targetCardAttr: "any" },
+      { areaItemId: 56, level, targetGameCharacterId: null, targetUnit: "multi_unit", targetCardAttr: "any" },
+    ])
+    const options = buildDeckRecommendAreaItemOptions({
+      areas: [{ id: 27, name: "？？？のセカイ" }],
+      areaItems: [{ id: 56, areaId: 27, name: "想いの大樹" }],
+      areaItemLevels: reverse ? levels.toReversed() : levels,
+    })
+
+    expect(options).toHaveLength(1)
+    expect(options[0]).toMatchObject({
+      id: 56,
+      kind: "all",
+      maxLevel: 20,
+      targetsAllCharacters: true,
+      targetsMultiUnit: true,
+      targetUnit: null,
+      targetLabel: null,
+      iconUrl: null,
+    })
+  })
+
+  it("supports a multi-unit-only item without accepting unknown units as all-character effects", () => {
+    const options = buildDeckRecommendAreaItemOptions({
+      areaItems: [{ id: 56, areaId: 27 }, { id: 57, areaId: 27 }],
+      areaItemLevels: [
+        { areaItemId: 56, level: 20, targetUnit: "multi_unit", targetCardAttr: "any" },
+        { areaItemId: 57, level: 20, targetUnit: "future_unit", targetCardAttr: "any" },
+      ],
+    })
+
+    expect(options).toHaveLength(1)
+    expect(options[0]).toMatchObject({ kind: "all", targetsAllCharacters: false, targetsMultiUnit: true })
+  })
 })

@@ -152,6 +152,23 @@ function retry() {
     </template>
 
     <template v-else-if="isReady">
+      <Card v-if="bonuses.allCharacterAreaItem > 0 || bonuses.multiUnitAreaItem > 0">
+        <CardHeader class="pb-2">
+          <CardTitle class="text-base">{{ t("training.power.sharedAreaTitle") }}</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-2 text-sm">
+          <p v-if="bonuses.allCharacterAreaItem > 0">
+            {{ t("training.power.allCharacterBonus") }}
+            <span class="font-semibold tabular-nums">{{ formatPercent(bonuses.allCharacterAreaItem) }}</span>
+          </p>
+          <p v-if="bonuses.multiUnitAreaItem > 0">
+            {{ t("training.power.multiUnitBonus") }}
+            <span class="font-semibold tabular-nums">{{ formatPercent(bonuses.multiUnitAreaItem) }}</span>
+          </p>
+          <p class="text-xs text-muted-foreground">{{ t("training.power.sharedAreaHint") }}</p>
+        </CardContent>
+      </Card>
+
       <!-- Character bonuses -->
       <Card>
         <CardHeader class="pb-2">
@@ -221,6 +238,7 @@ function retry() {
               </span>
             </div>
           </div>
+          <p class="text-xs text-muted-foreground">{{ t("training.power.gateHint") }}</p>
         </CardContent>
       </Card>
 
