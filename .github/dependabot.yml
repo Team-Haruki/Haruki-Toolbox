@@ -12,6 +12,9 @@ updates:
       prefix: "[Chore] "
     cooldown:
       default-days: 3
+    ignore:
+      - dependency-name: typescript
+        versions: [">=7"]
     groups:
       bun-minor-patch:
         update-types: ["minor", "patch"]
