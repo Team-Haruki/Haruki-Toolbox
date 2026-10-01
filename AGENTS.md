@@ -123,6 +123,21 @@ Guidelines:
 - `bun run build` is a good final confidence check for larger UI or type-heavy changes.
 - The Playwright webServer runs Vite under node on purpose (`bunx vite --mode e2e ...`, no `--bun`): vite under the bun runtime hangs before listening on linux-x64 CI runners. Do not reintroduce `--bun` there.
 
+## CI
+
+`.github/workflows/ci.yml` is a thin caller of the shared templates in [seiunx-dev/ci-templates](https://github.com/seiunx-dev/ci-templates) (`@v1`):
+
+- **Web** (`node-ci.yml`): install, lint, typecheck, `bun test` with lcov coverage, build; then Playwright e2e (chromium, browsers cached). Bun is pinned to 1.3.14 in the caller (1.4.0 breaks the Playwright webServer on linux-x64).
+- **Sonar** (`sonar.yml`): scans with the lcov artifact from the Web job (the tests are not rerun); skips green on Dependabot and fork PRs, which get no `SONAR_TOKEN`.
+- **Workflow lint** (`actionlint.yml`).
+- **CI OK**: the aggregate job and the only check to require.
+
+Rules:
+
+- Reuse the shared templates first. Add a custom job or step only when a template genuinely cannot meet the need, keep it in the caller file, and comment why.
+- Template bugs and missing features get fixed upstream in seiunx-dev/ci-templates, not patched around here.
+- Deployment is not done by CI: Vercel / EdgeOne Pages build the site from the repo (`vercel.json`, `edgeone.json`).
+
 ## Common Pitfalls
 
 - Do not hardcode auth or API origins when helpers/stores already resolve them.
