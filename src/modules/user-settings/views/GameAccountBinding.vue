@@ -54,6 +54,8 @@ const {
   selectedAccountGrants,
   granteeUserId,
   grantDataType,
+  grantCanRead,
+  grantCanWrite,
   expiresAtLocal,
   loadGrants,
   openGrantManager,
@@ -124,6 +126,8 @@ const {
       v-model:open="grantsOpen"
       v-model:grantee-user-id="granteeUserId"
       v-model:data-type="grantDataType"
+      v-model:can-read="grantCanRead"
+      v-model:can-write="grantCanWrite"
       v-model:expires-at-local="expiresAtLocal"
       :loading="grantsLoading"
       :saving="grantSaving"

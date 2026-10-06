@@ -482,12 +482,13 @@ export default {
       },
       "grants": {
         "title": "游戏账号数据授权",
-        "description": "把已验证账号的 suite / mysekai / profile 数据临时授权给其他 Toolbox 用户读取。",
+        "description": "把已验证账号的 suite / mysekai / profile 数据临时授权给其他 Toolbox 用户读取，或允许对方代为上传 suite / mysekai 数据。",
         "receivedDescription": "查看其他 Toolbox 用户授权给你的游戏账号数据。",
         "selectedAccount": "当前账号：{account}",
         "noSelectedAccount": "未选择账号",
         "ownedTitle": "此账号授权出去的数据",
         "receivedTitle": "别人授权给我的数据",
+        "receivedHint": "收到的授权只能使用，不能转授或修改；如需变更请联系授权方。",
         "emptyOwned": "该账号暂无授权",
         "emptyReceived": "暂无收到的授权",
         "fallback": "—",
@@ -496,6 +497,13 @@ export default {
           "suite": "Suite",
           "mysekai": "MySekai",
           "profile": "Profile"
+        },
+        "permission": {
+          "read": "只读",
+          "write": "只写（允许代传）",
+          "readOnly": "只读",
+          "writeOnly": "只写",
+          "readWrite": "读写"
         },
         "actions": {
           "refresh": "刷新",
@@ -508,12 +516,18 @@ export default {
           "dataType": "数据类型",
           "expiresAt": "过期时间",
           "expiresAtHelp": "必须是未来时间，不提供永久授权。",
-          "profileHint": "Profile 是实时数据：被授权用户每次查看都会经由你的账号向游戏服务器发起请求。"
+          "profileHint": "Profile 是实时数据：被授权用户每次查看都会经由你的账号向游戏服务器发起请求。",
+          "permissions": "权限",
+          "writeHint": "只写允许对方上传并更新该游戏账号的数据，不允许读取已有数据，也不允许修改绑定、隐私设置或转授。",
+          "profileReadOnlyHint": "Profile 仅支持只读授权。",
+          "writeTargetNotice": "对方上传的数据将直接更新 {account} 的 {dataType} 数据，请确认区服和游戏账号无误。",
+          "writeOnlyNotice": "未勾选读取：对方只能上传，不能查看该账号已有的数据。"
         },
         "table": {
           "owner": "授权来源",
           "grantee": "被授权用户",
           "dataType": "数据类型",
+          "permissions": "权限",
           "expiresAt": "过期时间",
           "actions": "操作"
         },
@@ -522,6 +536,8 @@ export default {
           "granteeRequired": "请填写被授权用户 ID",
           "selfGrant": "不能授权给自己",
           "dataType": "只支持 suite、mysekai 或 profile",
+          "permissionRequired": "请至少选择一种权限；撤销授权请使用删除按钮",
+          "profileReadOnly": "Profile 不支持写权限",
           "futureExpiry": "过期时间必须是未来时间"
         },
         "toast": {
@@ -565,6 +581,11 @@ export default {
       "profile": "获取您的昵称",
       "email": "获取您的邮箱地址",
       "offlineAccess": "保持离线访问并获取刷新令牌"
+    },
+    "scopeDescription": {
+      "gameDataRead": "读取你拥有或获读授权的游戏账号数据。不包含上传权限。",
+      "gameDataWrite": "上传你拥有或获写授权的游戏账号数据。不包含读取已有数据的权限。",
+      "offlineAccess": "应用可在你未打开页面时持续使用上述授权，直到你在设置中撤销。"
     },
     "login": {
       "unknownApp": "未知应用",

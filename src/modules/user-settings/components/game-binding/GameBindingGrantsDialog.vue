@@ -2,6 +2,7 @@
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -37,12 +38,14 @@ import { toast } from "vue-sonner"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import { formatLocalizedDate } from "@/lib/date-time"
 import {
+  canGrantWrite,
   isGrantDataType,
 } from "@/modules/user-settings/lib/game-account-grants"
 import type {
   GameAccountBinding,
   GameAccountDataGrant,
   GameAccountGrantDataType,
+  GameAccountGrantPermission,
   SekaiRegion,
 } from "@/types"
 
@@ -56,6 +59,8 @@ const props = defineProps<{
   receivedGrants: GameAccountDataGrant[]
   granteeUserId: string
   dataType: GameAccountGrantDataType
+  canRead: boolean
+  canWrite: boolean
   expiresAtLocal: string
   regionLabels: Record<SekaiRegion, string>
   currentUserId: string | null
@@ -65,6 +70,8 @@ const emit = defineEmits<{
   (event: "update:open", value: boolean): void
   (event: "update:grantee-user-id", value: string): void
   (event: "update:data-type", value: GameAccountGrantDataType): void
+  (event: "update:can-read", value: boolean): void
+  (event: "update:can-write", value: boolean): void
   (event: "update:expires-at-local", value: string): void
   (event: "refresh"): void
   (event: "save"): void
@@ -87,8 +94,26 @@ const dialogDescription = computed(() =>
     : t("userSettings.gameBinding.grants.receivedDescription")
 )
 
+const writeAllowedForDataType = computed(() => canGrantWrite(props.dataType))
+
 function dataTypeLabel(value: GameAccountGrantDataType) {
   return t(`userSettings.gameBinding.grants.dataType.${value}`)
+}
+
+function permissionLabel(value: GameAccountGrantPermission) {
+  return t(`userSettings.gameBinding.grants.permission.${value}`)
+}
+
+function permissionsLabel(permissions: readonly GameAccountGrantPermission[]) {
+  const hasRead = permissions.includes("read")
+  const hasWrite = permissions.includes("write")
+  if (hasRead && hasWrite) return t("userSettings.gameBinding.grants.permission.readWrite")
+  if (hasWrite) return t("userSettings.gameBinding.grants.permission.writeOnly")
+  return t("userSettings.gameBinding.grants.permission.readOnly")
+}
+
+function toChecked(value: unknown): boolean {
+  return value === true
 }
 
 function formatDate(value: string) {
@@ -184,6 +209,44 @@ async function copyOwnUserId() {
               </p>
             </div>
             <div class="space-y-1.5">
+              <Label>{{ t("userSettings.gameBinding.grants.form.permissions") }}</Label>
+              <div class="flex flex-wrap gap-4">
+                <label class="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    id="grant-permission-read"
+                    :model-value="props.canRead"
+                    @update:model-value="emit('update:can-read', toChecked($event))"
+                  />
+                  <span>{{ permissionLabel("read") }}</span>
+                </label>
+                <label class="flex items-center gap-2 text-sm" :class="{ 'text-muted-foreground': !writeAllowedForDataType }">
+                  <Checkbox
+                    id="grant-permission-write"
+                    :model-value="props.canWrite"
+                    :disabled="!writeAllowedForDataType"
+                    @update:model-value="emit('update:can-write', toChecked($event))"
+                  />
+                  <span>{{ permissionLabel("write") }}</span>
+                </label>
+              </div>
+              <p class="text-xs text-muted-foreground">
+                {{ writeAllowedForDataType
+                  ? t("userSettings.gameBinding.grants.form.writeHint")
+                  : t("userSettings.gameBinding.grants.form.profileReadOnlyHint") }}
+              </p>
+              <div
+                v-if="props.canWrite"
+                class="rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+              >
+                <p class="font-medium">
+                  {{ t("userSettings.gameBinding.grants.form.writeTargetNotice", { account: selectedAccountLabel, dataType: dataTypeLabel(props.dataType) }) }}
+                </p>
+                <p v-if="!props.canRead" class="mt-1">
+                  {{ t("userSettings.gameBinding.grants.form.writeOnlyNotice") }}
+                </p>
+              </div>
+            </div>
+            <div class="space-y-1.5">
               <Label for="grant-expires-at">{{ t("userSettings.gameBinding.grants.form.expiresAt") }}</Label>
               <Input
                 id="grant-expires-at"
@@ -211,6 +274,7 @@ async function copyOwnUserId() {
               <TableRow>
                 <TableHead>{{ t("userSettings.gameBinding.grants.table.grantee") }}</TableHead>
                 <TableHead>{{ t("userSettings.gameBinding.grants.table.dataType") }}</TableHead>
+                <TableHead>{{ t("userSettings.gameBinding.grants.table.permissions") }}</TableHead>
                 <TableHead>{{ t("userSettings.gameBinding.grants.table.expiresAt") }}</TableHead>
                 <TableHead>{{ t("userSettings.gameBinding.grants.table.actions") }}</TableHead>
               </TableRow>
@@ -219,6 +283,7 @@ async function copyOwnUserId() {
               <TableRow v-for="grant in props.selectedAccountGrants" :key="grant.id">
                 <TableCell class="font-mono text-xs">{{ grant.granteeUserId }}</TableCell>
                 <TableCell>{{ dataTypeLabel(grant.dataType) }}</TableCell>
+                <TableCell>{{ permissionsLabel(grant.permissions) }}</TableCell>
                 <TableCell>{{ formatDate(grant.expiresAt) }}</TableCell>
                 <TableCell>
                   <div class="flex gap-1">
@@ -238,7 +303,7 @@ async function copyOwnUserId() {
                 </TableCell>
               </TableRow>
               <TableRow v-if="props.selectedAccountGrants.length === 0">
-                <TableCell :colspan="4" class="py-6 text-center text-muted-foreground">
+                <TableCell :colspan="5" class="py-6 text-center text-muted-foreground">
                   {{ t("userSettings.gameBinding.grants.emptyOwned") }}
                 </TableCell>
               </TableRow>
@@ -250,6 +315,7 @@ async function copyOwnUserId() {
       <div class="rounded-md border overflow-x-auto">
         <div class="border-b px-4 py-3">
           <h3 class="text-sm font-medium">{{ t("userSettings.gameBinding.grants.receivedTitle") }}</h3>
+          <p class="mt-0.5 text-xs text-muted-foreground">{{ t("userSettings.gameBinding.grants.receivedHint") }}</p>
         </div>
         <div v-if="props.loading" class="space-y-2 p-4">
           <Skeleton v-for="i in 2" :key="i" class="h-10 w-full" />
@@ -261,6 +327,7 @@ async function copyOwnUserId() {
               <TableHead>{{ t("userSettings.gameBinding.table.server") }}</TableHead>
               <TableHead>{{ t("userSettings.gameBinding.table.userId") }}</TableHead>
               <TableHead>{{ t("userSettings.gameBinding.grants.table.dataType") }}</TableHead>
+              <TableHead>{{ t("userSettings.gameBinding.grants.table.permissions") }}</TableHead>
               <TableHead>{{ t("userSettings.gameBinding.grants.table.expiresAt") }}</TableHead>
             </TableRow>
           </TableHeader>
@@ -270,10 +337,11 @@ async function copyOwnUserId() {
               <TableCell>{{ props.regionLabels[grant.server] ?? grant.server }}</TableCell>
               <TableCell class="font-mono text-xs">{{ grant.gameUserId }}</TableCell>
               <TableCell>{{ dataTypeLabel(grant.dataType) }}</TableCell>
+              <TableCell>{{ permissionsLabel(grant.permissions) }}</TableCell>
               <TableCell>{{ formatDate(grant.expiresAt) }}</TableCell>
             </TableRow>
             <TableRow v-if="props.receivedGrants.length === 0">
-              <TableCell :colspan="5" class="py-6 text-center text-muted-foreground">
+              <TableCell :colspan="6" class="py-6 text-center text-muted-foreground">
                 {{ t("userSettings.gameBinding.grants.emptyReceived") }}
               </TableCell>
             </TableRow>

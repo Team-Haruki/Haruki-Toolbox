@@ -16,6 +16,7 @@ import {
 import {
   acceptOAuthConsentChallenge,
   getOAuthConsentChallenge,
+  getScopeDescription,
   getScopeLabel,
   rejectOAuthConsentChallenge,
   resolveOAuthRedirectUrl,
@@ -244,10 +245,15 @@ watch(
               <li
                 v-for="scope in scopes"
                 :key="scope"
-                class="flex items-center gap-2 text-sm"
+                class="flex items-start gap-2 text-sm"
               >
-                <span class="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                {{ getScopeLabel(scope) }}
+                <span class="mt-2 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span class="min-w-0">
+                  <span class="block">{{ getScopeLabel(scope) }}</span>
+                  <span v-if="getScopeDescription(scope)" class="block text-xs text-muted-foreground">
+                    {{ getScopeDescription(scope) }}
+                  </span>
+                </span>
               </li>
             </ul>
             <p v-else class="text-sm text-muted-foreground">

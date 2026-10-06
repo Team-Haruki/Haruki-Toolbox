@@ -15,6 +15,7 @@ export interface GameAccountBindingPayload {
 export type UploadDataType = "suite" | "mysekai"
 export type InheritServer = Extract<SekaiRegion, "jp" | "en">
 export type GameAccountGrantDataType = "suite" | "mysekai" | "profile"
+export type GameAccountGrantPermission = "read" | "write"
 
 // Used for create/update binding endpoints (server and game_user_id come from URL params)
 export interface CreateGameAccountBindingPayload {
@@ -47,6 +48,8 @@ export interface GameAccountDataGrant {
     server: SekaiRegion
     gameUserId: string
     dataType: GameAccountGrantDataType
+    /** Normalized, deduplicated, ordered read-before-write; legacy grants without the field are read-only. */
+    permissions: GameAccountGrantPermission[]
     expiresAt: string
     createdAt: string
     updatedAt: string

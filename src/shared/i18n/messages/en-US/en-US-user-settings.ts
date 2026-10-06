@@ -482,12 +482,13 @@ export default {
       },
       "grants": {
         "title": "Game account data grants",
-        "description": "Temporarily grant another Toolbox user access to suite / mysekai / profile data from a verified account.",
+        "description": "Temporarily let another Toolbox user read suite / mysekai / profile data from a verified account, or upload suite / mysekai data on its behalf.",
         "receivedDescription": "View game account data granted to you by other Toolbox users.",
         "selectedAccount": "Selected account: {account}",
         "noSelectedAccount": "No account selected",
         "ownedTitle": "Data granted from this account",
         "receivedTitle": "Data granted to me",
+        "receivedHint": "Received grants can only be used, not re-granted or edited; ask the owner for changes.",
         "emptyOwned": "No grants for this account",
         "emptyReceived": "No received grants",
         "fallback": "—",
@@ -496,6 +497,13 @@ export default {
           "suite": "Suite",
           "mysekai": "MySekai",
           "profile": "Profile"
+        },
+        "permission": {
+          "read": "Read",
+          "write": "Write (upload on my behalf)",
+          "readOnly": "Read only",
+          "writeOnly": "Write only",
+          "readWrite": "Read & write"
         },
         "actions": {
           "refresh": "Refresh",
@@ -508,12 +516,18 @@ export default {
           "dataType": "Data type",
           "expiresAt": "Expires at",
           "expiresAtHelp": "Must be a future time. Permanent grants are not available.",
-          "profileHint": "Profile is live data: every view by the grantee sends a request to the game server through your account."
+          "profileHint": "Profile is live data: every view by the grantee sends a request to the game server through your account.",
+          "permissions": "Permissions",
+          "writeHint": "Write lets the grantee upload and update this game account's data. It does not allow reading existing data, changing bindings or privacy settings, or re-granting.",
+          "profileReadOnlyHint": "Profile grants are read-only.",
+          "writeTargetNotice": "Uploads by the grantee will directly update {dataType} data for {account}. Double-check the region and game account.",
+          "writeOnlyNotice": "Read is unchecked: the grantee can upload but cannot view this account's existing data."
         },
         "table": {
           "owner": "Owner",
           "grantee": "Grantee",
           "dataType": "Data type",
+          "permissions": "Permissions",
           "expiresAt": "Expires at",
           "actions": "Actions"
         },
@@ -522,6 +536,8 @@ export default {
           "granteeRequired": "Enter a grantee user ID",
           "selfGrant": "You cannot grant access to yourself",
           "dataType": "Only suite, mysekai, and profile are supported",
+          "permissionRequired": "Select at least one permission; use the delete button to revoke a grant",
+          "profileReadOnly": "Profile does not support write permission",
           "futureExpiry": "Expiry must be a future time"
         },
         "toast": {
@@ -565,6 +581,11 @@ export default {
       "profile": "See your display name",
       "email": "See your email address",
       "offlineAccess": "Maintain offline access and issue refresh tokens"
+    },
+    "scopeDescription": {
+      "gameDataRead": "Read data of game accounts you own or were granted read access to. Does not include uploading.",
+      "gameDataWrite": "Upload data for game accounts you own or were granted write access to. Does not include reading existing data.",
+      "offlineAccess": "The app can keep using the permissions above while you are away, until you revoke it in settings."
     },
     "login": {
       "unknownApp": "Unknown app",

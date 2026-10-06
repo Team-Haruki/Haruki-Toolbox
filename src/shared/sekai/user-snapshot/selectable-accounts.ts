@@ -18,6 +18,11 @@ export type AccessibleGameAccount = {
   isDefault: boolean
   /** Present key = readable data type; a null expiresAt never expires. */
   capabilities: Partial<Record<string, { expiresAt: string | null }>>
+  /**
+   * Present key = uploadable data type (suite / mysekai only). Populated only
+   * by the `action=write` listing; the read listing leaves it empty.
+   */
+  writeCapabilities: Partial<Record<string, { expiresAt: string | null }>>
   owner: AccessibleGameAccountOwner | null
 }
 
@@ -50,6 +55,7 @@ function normalizeAccessibleGameAccount(record: UnknownRecord): AccessibleGameAc
     verified: readBoolean(record, ["verified"], false),
     isDefault: readBoolean(record, ["isDefault", "is_default"], false),
     capabilities: normalizeCapabilities(record.capabilities),
+    writeCapabilities: normalizeCapabilities(record.writeCapabilities ?? record.write_capabilities),
     owner: ownerRecord
       ? {
           userId: readString(ownerRecord, ["userId", "user_id"]),

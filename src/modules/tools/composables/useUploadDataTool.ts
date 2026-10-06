@@ -1,4 +1,5 @@
 import { ref, watch } from "vue"
+import { isAxiosError } from "axios"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
@@ -33,12 +34,16 @@ export function useUploadDataTool() {
 
   const {
     selectedAccountKey,
-    boundAccounts,
+    uploadAccounts,
     selectedAccount,
+    targetsLoading,
+    targetsFailed,
     disabledReason,
     hasVerifiedQQ,
     isCNMySekaiForbidden,
+    canSelectSuiteDataType,
     canSelectMySekaiDataType,
+    loadUploadTargets,
   } = useUploadDataAccounts(userStore, fileDataType)
 
   const savedInherit = loadInheritFromStorage()
@@ -105,8 +110,12 @@ export function useUploadDataTool() {
     }
 
     const account = selectedAccount.value
-    if (!account) {
+    if (!account || !account.canUpload) {
       toast.warning(t("tools.uploadData.toast.selectAccount"))
+      return
+    }
+    if (!account.writable.has(fileDataType.value)) {
+      toast.warning(t("tools.uploadData.toast.dataTypeNotWritable"))
       return
     }
 
@@ -132,7 +141,7 @@ export function useUploadDataTool() {
     try {
       const response = await uploadManualData(
         account.server,
-        String(account.uid),
+        account.uid,
         fileDataType.value,
         file,
         (progress) => {
@@ -152,6 +161,16 @@ export function useUploadDataTool() {
       })
     } catch (error: unknown) {
       uploadStatus.value = t("tools.uploadData.uploadStatus.failed")
+      // A 403 means the target is no longer writable for this user (grant
+      // lapsed or revoked, binding changed): the list is stale, not the
+      // session. Re-read the targets once and say why; never force a login.
+      if (isAxiosError(error) && error.response?.status === 403) {
+        void loadUploadTargets()
+        toast.error(t("tools.uploadData.toast.uploadForbiddenTitle"), {
+          description: extractErrorMessage(error, t("tools.uploadData.toast.uploadForbiddenDescription")),
+        })
+        return
+      }
       toast.error(t("tools.uploadData.toast.uploadFailedTitle"), {
         description: extractErrorMessage(error, t("tools.uploadData.toast.uploadFailedFallback")),
       })
@@ -240,12 +259,17 @@ export function useUploadDataTool() {
     isInheritConfirmOpen,
     uploadProgress,
     uploadStatus,
-    boundAccounts,
+    uploadAccounts,
+    selectedAccount,
     selectedAccountKey,
+    targetsLoading,
+    targetsFailed,
     disabledReason,
     hasVerifiedQQ,
     isCNMySekaiForbidden,
+    canSelectSuiteDataType,
     canSelectMySekaiDataType,
+    loadUploadTargets,
     onFileChange,
     setRememberInherit,
     submitFileUpload,

@@ -767,13 +767,50 @@ export default {
       "table": {
         "status": "状态",
         "user": "用户",
+        "owner": "所属用户",
+        "actor": "实际上传者",
+        "noOwner": "未关联用户",
         "server": "区服",
         "method": "方式",
         "dataType": "数据类型",
         "error": "错误信息",
+        "details": "详情",
+        "viewDetails": "查看详情",
         "viewError": "查看错误",
         "time": "时间",
         "empty": "暂无上传日志"
+      },
+      "actor": {
+        "owner": "本人",
+        "delegate": "代传",
+        "unknown": "无工具箱用户"
+      },
+      "authMethod": {
+        "browserSession": "浏览器会话",
+        "oauth2": "OAuth2 应用",
+        "iosUserCode": "iOS 用户码",
+        "gameSessionProxy": "游戏会话代理"
+      },
+      "authorizationSource": {
+        "owner": "账号所有者",
+        "grant": "写授权"
+      },
+      "detail": {
+        "title": "上传记录详情",
+        "description": "所属用户为数据归属方，实际上传者为发起本次上传的工具箱用户。",
+        "gameUserId": "游戏 UID",
+        "authMethod": "身份方式",
+        "authorizationSource": "授权来源",
+        "grantId": "授权 ID",
+        "grantIdHint": "审计快照，对应授权可能已不存在。",
+        "actorKind": "上传者关系",
+        "oauthClientId": "OAuth 客户端",
+        "client": "客户端 / 版本",
+        "platform": "平台",
+        "requestId": "请求 ID",
+        "claimedGameUserId": "载荷声明 UID",
+        "failureStage": "失败阶段",
+        "errorCode": "错误码"
       },
       "errorDialog": {
         "title": "上传失败详情",

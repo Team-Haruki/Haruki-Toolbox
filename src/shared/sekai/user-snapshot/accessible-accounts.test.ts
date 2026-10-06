@@ -41,6 +41,36 @@ describe("normalizeAccessibleGameAccounts", () => {
     expect(accounts[1]?.capabilities.suite?.expiresAt).toBe("2026-09-30T00:00:00Z")
     expect(accounts[1]?.capabilities.recommend?.expiresAt).toBe("2026-09-30T00:00:00Z")
     expect(accounts[1]?.owner).toEqual({ userId: "owner-1", name: "某某", avatarPath: null })
+    expect(accounts[0]?.writeCapabilities).toEqual({})
+  })
+
+  it("reads writeCapabilities from the write-action listing", () => {
+    const accounts = normalizeAccessibleGameAccounts({
+      accounts: [
+        {
+          server: "jp",
+          gameUserId: "456",
+          ownership: "granted",
+          verified: true,
+          isDefault: false,
+          capabilities: {},
+          writeCapabilities: { suite: { expiresAt: "2026-11-01T00:00:00Z" } },
+          owner: null,
+        },
+        {
+          server: "en",
+          gameUserId: "789",
+          ownership: "own",
+          verified: false,
+          isDefault: false,
+          capabilities: {},
+          owner: null,
+        },
+      ],
+    })
+    expect(accounts[0]?.capabilities).toEqual({})
+    expect(accounts[0]?.writeCapabilities).toEqual({ suite: { expiresAt: "2026-11-01T00:00:00Z" } })
+    expect(accounts[1]?.writeCapabilities).toEqual({})
   })
 
   it("returns an empty list for a malformed payload", () => {
@@ -58,6 +88,7 @@ describe("buildSelectableGameAccounts", () => {
       verified: true,
       isDefault: false,
       capabilities: { suite: { expiresAt: "2026-09-30T00:00:00Z" }, recommend: { expiresAt: "2026-09-30T00:00:00Z" } },
+      writeCapabilities: {},
       owner: { userId: "owner-1", name: "某某", avatarPath: null },
     },
     {
@@ -67,6 +98,7 @@ describe("buildSelectableGameAccounts", () => {
       verified: true,
       isDefault: false,
       capabilities: { mysekai: { expiresAt: "2026-09-01T00:00:00Z" } },
+      writeCapabilities: {},
       owner: { userId: "owner-2", name: "另一位", avatarPath: null },
     },
   ]

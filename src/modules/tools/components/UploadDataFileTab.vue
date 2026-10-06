@@ -7,33 +7,38 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import GameAccountOption from "@/shared/components/GameAccountOption.vue"
+import type { UploadTargetAccount } from "@/modules/tools/lib/upload-targets"
 import {
   Database,
   Loader2,
   LucideAlertTriangle,
+  LucideRefreshCw,
   LucideShieldAlert,
   Upload,
   UploadCloud,
 } from "lucide-vue-next"
 
-type BoundAccount = {
-  key: string
-  server: string
-  uid: string
-  label: string
-  verified?: boolean
-  isDefault?: boolean
-}
-
 const props = withDefaults(
   defineProps<{
     dataType: UploadDataType
-    boundAccounts: BoundAccount[]
+    uploadAccounts: UploadTargetAccount[]
+    selectedAccount: UploadTargetAccount | null
     selectedAccountKey: string | null
+    targetsLoading: boolean
+    targetsFailed: boolean
     canShowMySekaiDataType: boolean
+    canSelectSuiteDataType: boolean
     canSelectMySekaiDataType: boolean
     disabledReason: string | null
     isCnMySekaiForbidden: boolean
@@ -48,25 +53,34 @@ const props = withDefaults(
 )
 
 const { t, locale } = useI18n()
-const selectedAccountOption = computed(() =>
-  props.boundAccounts.find((account) => account.key === props.selectedAccountKey) ?? null,
-)
+
+const ownAccounts = computed(() => props.uploadAccounts.filter((account) => account.ownership === "own"))
+const grantedAccounts = computed(() => props.uploadAccounts.filter((account) => account.ownership === "granted"))
+const isGrantedTarget = computed(() => props.selectedAccount?.ownership === "granted")
+const controlsDisabled = computed(() => !!props.disabledReason || props.targetsLoading)
 
 const emit = defineEmits<{
   (event: "update:dataType", value: UploadDataType): void
   (event: "update:selectedAccountKey", value: string | null): void
   (event: "fileChange", payload: Event): void
+  (event: "refreshTargets"): void
   (event: "submit"): void
 }>()
 
-function handleAccountChange(value: string) {
-  emit("update:selectedAccountKey", value || null)
+function handleAccountChange(value: unknown) {
+  emit("update:selectedAccountKey", typeof value === "string" && value !== "" ? value : null)
 }
 
-function handleDataTypeChange(value: string) {
-  if (value === "suite" || (value === "mysekai" && props.canSelectMySekaiDataType)) {
+function handleDataTypeChange(value: unknown) {
+  if (value === "suite" && props.canSelectSuiteDataType) {
+    emit("update:dataType", value)
+  } else if (value === "mysekai" && props.canSelectMySekaiDataType) {
     emit("update:dataType", value)
   }
+}
+
+function accountOptionTitle(account: UploadTargetAccount): string | undefined {
+  return account.canUpload ? undefined : t("tools.uploadData.fileTab.accountNotWritable")
 }
 </script>
 
@@ -90,6 +104,11 @@ function handleDataTypeChange(value: string) {
         <AlertTitle>{{ t("tools.uploadData.fileTab.forbiddenTitle") }}</AlertTitle>
         <AlertDescription>{{ t("tools.uploadData.fileTab.forbiddenDescription") }}</AlertDescription>
       </Alert>
+      <Alert v-if="targetsFailed" variant="default" class="mb-3 bg-muted/20">
+        <LucideAlertTriangle class="h-5 w-5" />
+        <AlertTitle>{{ t("tools.uploadData.fileTab.targetsFailedTitle") }}</AlertTitle>
+        <AlertDescription>{{ t("tools.uploadData.fileTab.targetsFailedDescription") }}</AlertDescription>
+      </Alert>
       <form id="upload-data-file-form" @submit.prevent="emit('submit')">
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="flex flex-col space-y-1.5 sm:col-span-2">
@@ -98,41 +117,106 @@ function handleDataTypeChange(value: string) {
               id="file-upload"
               type="file"
               class="w-full"
-              :disabled="!!disabledReason"
+              :disabled="controlsDisabled"
               @change="emit('fileChange', $event)"
             />
           </div>
           <div class="flex flex-col space-y-1.5">
-            <Label for="account-select">{{ t("tools.uploadData.fileTab.fields.account") }}</Label>
+            <div class="flex items-center justify-between gap-2">
+              <Label for="account-select">{{ t("tools.uploadData.fileTab.fields.account") }}</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="h-7 px-2 text-xs"
+                :disabled="targetsLoading"
+                :title="t('tools.uploadData.fileTab.refreshTargets')"
+                @click="emit('refreshTargets')"
+              >
+                <LucideRefreshCw class="h-3.5 w-3.5" :class="{ 'animate-spin': targetsLoading }" />
+                {{ t("tools.uploadData.fileTab.refreshTargets") }}
+              </Button>
+            </div>
             <Select :key="locale"
               id="account-select"
               :model-value="selectedAccountKey ?? ''"
-              :disabled="!!disabledReason"
+              :disabled="controlsDisabled"
               @update:model-value="handleAccountChange"
             >
               <SelectTrigger class="w-full">
                 <GameAccountOption
-                  v-if="selectedAccountOption"
-                  :server="selectedAccountOption.server"
-                  :user-id="selectedAccountOption.uid"
-                  :verified="selectedAccountOption.verified"
-                  :is-default="selectedAccountOption.isDefault"
+                  v-if="selectedAccount"
+                  :server="selectedAccount.server"
+                  :user-id="selectedAccount.uid"
+                  :verified="selectedAccount.verified"
+                  :is-default="selectedAccount.isDefault"
+                  :ownership="selectedAccount.ownership"
                 />
                 <span v-else class="text-sm text-muted-foreground">
-                  {{ t("tools.uploadData.fileTab.fields.accountPlaceholder") }}
+                  {{ targetsLoading ? t("tools.uploadData.fileTab.targetsLoading") : t("tools.uploadData.fileTab.fields.accountPlaceholder") }}
                 </span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="acc in boundAccounts" :key="acc.key" :value="acc.key">
-                  <GameAccountOption
-                    :server="acc.server"
-                    :user-id="acc.uid"
-                    :verified="acc.verified"
-                    :is-default="acc.isDefault"
-                  />
-                </SelectItem>
+                <template v-if="grantedAccounts.length === 0">
+                  <SelectItem
+                    v-for="acc in ownAccounts"
+                    :key="acc.key"
+                    :value="acc.key"
+                    :disabled="!acc.canUpload"
+                    :title="accountOptionTitle(acc)"
+                  >
+                    <GameAccountOption
+                      :server="acc.server"
+                      :user-id="acc.uid"
+                      :verified="acc.verified"
+                      :is-default="acc.isDefault"
+                    />
+                  </SelectItem>
+                </template>
+                <template v-else>
+                  <SelectGroup v-if="ownAccounts.length > 0">
+                    <SelectLabel class="text-xs text-muted-foreground">{{ t("gameAccountSelect.groups.own") }}</SelectLabel>
+                    <SelectItem
+                      v-for="acc in ownAccounts"
+                      :key="acc.key"
+                      :value="acc.key"
+                      :disabled="!acc.canUpload"
+                      :title="accountOptionTitle(acc)"
+                    >
+                      <GameAccountOption
+                        :server="acc.server"
+                        :user-id="acc.uid"
+                        :verified="acc.verified"
+                        :is-default="acc.isDefault"
+                      />
+                    </SelectItem>
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel class="text-xs text-muted-foreground">{{ t("gameAccountSelect.groups.granted") }}</SelectLabel>
+                    <SelectItem
+                      v-for="acc in grantedAccounts"
+                      :key="acc.key"
+                      :value="acc.key"
+                      :disabled="!acc.canUpload"
+                      :title="accountOptionTitle(acc)"
+                    >
+                      <GameAccountOption
+                        :server="acc.server"
+                        :user-id="acc.uid"
+                        :verified="acc.verified"
+                        ownership="granted"
+                      />
+                    </SelectItem>
+                  </SelectGroup>
+                </template>
               </SelectContent>
             </Select>
+            <p v-if="selectedAccount && !selectedAccount.canUpload" class="text-xs text-destructive">
+              {{ t("tools.uploadData.fileTab.accountNotWritable") }}
+            </p>
+            <p v-else-if="isGrantedTarget" class="text-xs text-muted-foreground">
+              {{ t("tools.uploadData.fileTab.grantedTargetNotice") }}
+            </p>
           </div>
           <div class="flex flex-col space-y-1.5">
             <Label for="data-type-select">{{ t("tools.uploadData.fileTab.fields.dataType") }}</Label>
@@ -140,14 +224,16 @@ function handleDataTypeChange(value: string) {
               <Select :key="locale"
                 id="data-type-select"
                 :model-value="dataType"
-                :disabled="!!disabledReason"
+                :disabled="controlsDisabled"
                 @update:model-value="handleDataTypeChange"
               >
                 <SelectTrigger class="w-full pl-10">
                   <SelectValue :placeholder="t('tools.uploadData.fileTab.fields.dataTypePlaceholder')" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="suite">{{ t("tools.uploadData.dataTypes.suite") }}</SelectItem>
+                  <SelectItem value="suite" :disabled="!canSelectSuiteDataType">
+                    {{ t("tools.uploadData.dataTypes.suite") }}
+                  </SelectItem>
                   <SelectItem v-if="canShowMySekaiDataType" value="mysekai" :disabled="!canSelectMySekaiDataType">
                     {{ t("tools.uploadData.dataTypes.mysekai") }}
                   </SelectItem>
@@ -157,6 +243,12 @@ function handleDataTypeChange(value: string) {
                 <Database class="size-4 text-muted-foreground" />
               </span>
             </div>
+            <p
+              v-if="selectedAccount?.canUpload && (!canSelectSuiteDataType || (canShowMySekaiDataType && !canSelectMySekaiDataType && selectedAccount.server !== 'cn'))"
+              class="text-xs text-muted-foreground"
+            >
+              {{ t("tools.uploadData.fileTab.dataTypeLimited") }}
+            </p>
           </div>
         </div>
       </form>
@@ -166,7 +258,7 @@ function handleDataTypeChange(value: string) {
         type="submit"
         form="upload-data-file-form"
         variant="default"
-        :disabled="isSubmittingFile || !!disabledReason || isCnMySekaiForbidden"
+        :disabled="isSubmittingFile || controlsDisabled || isCnMySekaiForbidden || !selectedAccount?.canUpload"
       >
         <Loader2 v-if="isSubmittingFile" class="mr-2 h-4 w-4 animate-spin" />
         <UploadCloud v-else class="mr-2 h-4 w-4" />

@@ -15,6 +15,7 @@ import type {
   GameAccountDataGrantListResponse,
   GameAccountDataGrantMutationResponse,
   GameAccountGrantDataType,
+  GameAccountGrantPermission,
   SekaiRegion,
 } from "@/types"
 
@@ -66,11 +67,14 @@ export async function upsertGameAccountDataGrant(
   gameUserId: string,
   dataType: GameAccountGrantDataType,
   granteeUserId: string,
-  expiresAt: string
+  expiresAt: string,
+  permissions: readonly GameAccountGrantPermission[]
 ): Promise<GameAccountDataGrantMutationResponse> {
+  // Always explicit: an omitted list means "keep current permissions" on the
+  // backend, which would silently preserve a write bit the form unchecked.
   const res = await request<APIResponse<UnknownRecord>>(
     grantPath(toolboxUserId, server, gameUserId, dataType, granteeUserId),
-    { method: "PUT", data: { expiresAt } }
+    { method: "PUT", data: { expiresAt, permissions: [...permissions] } }
   )
   const updatedData = unwrapUpdatedData(res, translate("userSettings.gameBinding.grants.toast.saveFailedTitle"))
   return {

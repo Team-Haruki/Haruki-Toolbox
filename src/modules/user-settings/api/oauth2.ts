@@ -108,9 +108,22 @@ const scopeLabelKeys: Record<string, string> = {
     "offline_access": "oauth.scope.offlineAccess",
 }
 
+// Scopes whose consequences deserve a second line on the consent page.
+// read and write are explained separately: granting one never implies the other.
+const scopeDescriptionKeys: Record<string, string> = {
+    "game-data:read": "oauth.scopeDescription.gameDataRead",
+    "game-data:write": "oauth.scopeDescription.gameDataWrite",
+    "offline_access": "oauth.scopeDescription.offlineAccess",
+}
+
 export function getScopeLabel(scope: string): string {
     const key = scopeLabelKeys[scope]
     return key ? translate(key) : scope
+}
+
+export function getScopeDescription(scope: string): string | null {
+    const key = scopeDescriptionKeys[scope]
+    return key ? translate(key) : null
 }
 
 function withChallenge(path: string, key: "login_challenge" | "consent_challenge" | "logout_challenge", challenge: string) {

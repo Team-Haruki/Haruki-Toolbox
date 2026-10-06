@@ -417,7 +417,8 @@ export default {
       },
       "disabledReason": {
         "loginRequired": "请先登录再使用此功能",
-        "noBoundAccount": "您还没有绑定任何账号，请先绑定账号"
+        "noBoundAccount": "您还没有绑定任何账号，请先绑定账号",
+        "noWritableAccount": "当前没有可上传的账号：请先完成账号验证，或获取他人的写授权"
       },
       "uploadStatus": {
         "uploading": "正在上传您的{dataType}数据...",
@@ -425,8 +426,11 @@ export default {
         "failed": "上传失败"
       },
       "toast": {
-        "selectAccount": "请选择一个账号",
+        "selectAccount": "请选择一个可上传的账号",
         "selectFile": "请选择一个文件",
+        "dataTypeNotWritable": "所选账号没有该数据类型的上传权限",
+        "uploadForbiddenTitle": "无权上传到该账号",
+        "uploadForbiddenDescription": "授权可能已过期、被撤销或绑定已变更，已重新加载可上传账号列表",
         "operationForbiddenTitle": "提交被禁止",
         "operationForbiddenDescription": "由于相关法律法规限制，不允许进行此操作",
         "uploadSuccessTitle": "上传成功",
@@ -448,10 +452,17 @@ export default {
         "fields": {
           "file": "上传文件",
           "account": "选择账号（区服 / UID）",
-          "accountPlaceholder": "请选择已绑定的账号",
+          "accountPlaceholder": "请选择可上传的账号",
           "dataType": "选择数据类型",
           "dataTypePlaceholder": "请选择数据类型"
         },
+        "refreshTargets": "刷新账号",
+        "targetsLoading": "正在加载可上传账号...",
+        "targetsFailedTitle": "无法获取可上传账号列表",
+        "targetsFailedDescription": "已暂时显示你本人的已验证账号；他人授权的账号需刷新后才会出现。",
+        "accountNotWritable": "该账号暂无上传权限（未验证或授权不含写权限）",
+        "grantedTargetNotice": "这是他人授权给你的账号，上传会直接更新对方账号在工具箱中的数据。",
+        "dataTypeLimited": "该账号仅允许上传部分数据类型。",
         "submit": "提交",
         "submitting": "提交中..."
       },

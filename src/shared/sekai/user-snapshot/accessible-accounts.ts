@@ -26,6 +26,20 @@ export async function fetchAccessibleGameAccounts(toolboxUserId: string): Promis
   return normalizeAccessibleGameAccounts(unwrapUpdatedData(res))
 }
 
+/**
+ * Write-side listing for the manual upload page: `writeCapabilities` is the
+ * only gate (own verified bindings and received write grants both appear
+ * there), `capabilities` and `owner` are intentionally empty. Not cached —
+ * grants lapse server-side, so each upload page visit re-reads it.
+ */
+export async function fetchWritableGameAccounts(toolboxUserId: string): Promise<AccessibleGameAccount[]> {
+  const res = await request<APIResponse<UnknownRecord>>(
+    buildUserApiPath(toolboxUserId, "accessible-game-accounts"),
+    { method: "GET", params: { action: "write" } },
+  )
+  return normalizeAccessibleGameAccounts(unwrapUpdatedData(res))
+}
+
 // Shared across every selector instance: the aggregate is fetched once per
 // login and refreshed only when a grant or binding mutation invalidates it.
 const accessibleAccounts = shallowRef<AccessibleGameAccount[] | null>(null)

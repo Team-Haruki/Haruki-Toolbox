@@ -488,6 +488,7 @@ export default {
         "noSelectedAccount": "未選擇賬號",
         "ownedTitle": "此賬號授權出去的資料",
         "receivedTitle": "別人授權給我的資料",
+        "receivedHint": "收到的授權只能使用，不能轉授或修改；如需變更請聯絡授權方。",
         "emptyOwned": "該賬號暫無授權",
         "emptyReceived": "暫無收到的授權",
         "fallback": "—",
@@ -496,6 +497,13 @@ export default {
           "suite": "Suite",
           "mysekai": "MySekai",
           "profile": "Profile"
+        },
+        "permission": {
+          "read": "只讀",
+          "write": "只寫（允許代傳）",
+          "readOnly": "只讀",
+          "writeOnly": "只寫",
+          "readWrite": "讀寫"
         },
         "actions": {
           "refresh": "重新整理",
@@ -508,12 +516,18 @@ export default {
           "dataType": "資料型別",
           "expiresAt": "過期時間",
           "expiresAtHelp": "必須是未來時間，不提供永久授權。",
-          "profileHint": "Profile 是即時資料：被授權使用者每次查看都會經由你的賬號向遊戲伺服器發起請求。"
+          "profileHint": "Profile 是即時資料：被授權使用者每次查看都會經由你的賬號向遊戲伺服器發起請求。",
+          "permissions": "許可權",
+          "writeHint": "只寫允許對方上傳並更新該遊戲賬號的資料，不允許讀取已有資料，也不允許修改繫結、隱私設定或轉授。",
+          "profileReadOnlyHint": "Profile 僅支援只讀授權。",
+          "writeTargetNotice": "對方上傳的資料將直接更新 {account} 的 {dataType} 資料，請確認區服和遊戲賬號無誤。",
+          "writeOnlyNotice": "未勾選讀取：對方只能上傳，不能檢視該賬號已有的資料。"
         },
         "table": {
           "owner": "授權來源",
           "grantee": "被授權使用者",
           "dataType": "資料型別",
+          "permissions": "許可權",
           "expiresAt": "過期時間",
           "actions": "操作"
         },
@@ -522,6 +536,8 @@ export default {
           "granteeRequired": "請填寫被授權使用者 ID",
           "selfGrant": "不能授權給自己",
           "dataType": "只支援 suite、mysekai 或 profile",
+          "permissionRequired": "請至少選擇一種許可權；撤銷授權請使用刪除按鈕",
+          "profileReadOnly": "Profile 不支援寫許可權",
           "futureExpiry": "過期時間必須是未來時間"
         },
         "toast": {
@@ -565,6 +581,11 @@ export default {
       "profile": "獲取您的暱稱",
       "email": "獲取您的信箱地址",
       "offlineAccess": "保持離線訪問並獲取重新整理令牌"
+    },
+    "scopeDescription": {
+      "gameDataRead": "讀取你擁有或獲讀授權的遊戲賬號資料。不包含上傳許可權。",
+      "gameDataWrite": "上傳你擁有或獲寫授權的遊戲賬號資料。不包含讀取已有資料的許可權。",
+      "offlineAccess": "應用可在你未開啟頁面時持續使用上述授權，直到你在設定中撤銷。"
     },
     "login": {
       "unknownApp": "未知應用",

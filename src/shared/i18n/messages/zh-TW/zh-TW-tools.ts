@@ -417,7 +417,8 @@ export default {
       },
       "disabledReason": {
         "loginRequired": "請先登入再使用此功能",
-        "noBoundAccount": "您還沒有繫結任何賬號，請先繫結賬號"
+        "noBoundAccount": "您還沒有繫結任何賬號，請先繫結賬號",
+        "noWritableAccount": "當前沒有可上傳的賬號：請先完成賬號驗證，或獲取他人的寫授權"
       },
       "uploadStatus": {
         "uploading": "正在上傳您的{dataType}資料...",
@@ -427,6 +428,9 @@ export default {
       "toast": {
         "selectAccount": "請選擇一個賬號",
         "selectFile": "請選擇一個檔案",
+        "dataTypeNotWritable": "所選賬號沒有該資料型別的上傳許可權",
+        "uploadForbiddenTitle": "無權上傳到該賬號",
+        "uploadForbiddenDescription": "授權可能已過期、被撤銷或繫結已變更，已重新載入可上傳賬號列表",
         "operationForbiddenTitle": "提交被禁止",
         "operationForbiddenDescription": "由於相關法律法規限制，不允許進行此操作",
         "uploadSuccessTitle": "上傳成功",
@@ -452,6 +456,13 @@ export default {
           "dataType": "選擇資料型別",
           "dataTypePlaceholder": "請選擇資料型別"
         },
+        "refreshTargets": "重新整理賬號",
+        "targetsLoading": "正在載入可上傳賬號...",
+        "targetsFailedTitle": "無法獲取可上傳賬號列表",
+        "targetsFailedDescription": "已暫時顯示你本人的已驗證賬號；他人授權的賬號需重新整理後才會出現。",
+        "accountNotWritable": "該賬號暫無上傳許可權（未驗證或授權不含寫許可權）",
+        "grantedTargetNotice": "這是他人授權給你的賬號，上傳會直接更新對方賬號在工具箱中的資料。",
+        "dataTypeLimited": "該賬號僅允許上傳部分資料型別。",
         "submit": "提交",
         "submitting": "提交中..."
       },

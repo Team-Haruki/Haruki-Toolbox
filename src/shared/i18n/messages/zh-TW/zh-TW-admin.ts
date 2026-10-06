@@ -767,13 +767,50 @@ export default {
       "table": {
         "status": "狀態",
         "user": "使用者",
+        "owner": "所屬使用者",
+        "actor": "實際上傳者",
+        "noOwner": "未關聯使用者",
         "server": "區服",
         "method": "方式",
         "dataType": "資料型別",
         "error": "錯誤資訊",
+        "details": "詳情",
+        "viewDetails": "檢視詳情",
         "viewError": "檢視錯誤",
         "time": "時間",
         "empty": "暫無上傳日誌"
+      },
+      "actor": {
+        "owner": "本人",
+        "delegate": "代傳",
+        "unknown": "無工具箱使用者"
+      },
+      "authMethod": {
+        "browserSession": "瀏覽器會話",
+        "oauth2": "OAuth2 應用",
+        "iosUserCode": "iOS 使用者碼",
+        "gameSessionProxy": "遊戲會話代理"
+      },
+      "authorizationSource": {
+        "owner": "賬號所有者",
+        "grant": "寫授權"
+      },
+      "detail": {
+        "title": "上傳記錄詳情",
+        "description": "所屬使用者為資料歸屬方，實際上傳者為發起本次上傳的工具箱使用者。",
+        "gameUserId": "遊戲 UID",
+        "authMethod": "身份方式",
+        "authorizationSource": "授權來源",
+        "grantId": "授權 ID",
+        "grantIdHint": "審計快照，對應授權可能已不存在。",
+        "actorKind": "上傳者關係",
+        "oauthClientId": "OAuth 客戶端",
+        "client": "客戶端 / 版本",
+        "platform": "平臺",
+        "requestId": "請求 ID",
+        "claimedGameUserId": "載荷宣告 UID",
+        "failureStage": "失敗階段",
+        "errorCode": "錯誤碼"
       },
       "errorDialog": {
         "title": "上傳失敗詳情",

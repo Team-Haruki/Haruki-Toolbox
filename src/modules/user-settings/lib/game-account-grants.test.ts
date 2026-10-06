@@ -1,9 +1,12 @@
 import { describe, expect, test } from "bun:test"
 import {
+  buildGrantPermissions,
+  canGrantWrite,
   isFutureIsoDateTime,
   isGrantDataType,
   normalizeGameAccountDataGrant,
   normalizeGrantDataType,
+  normalizeGrantPermissions,
   readGameAccountDataGrantMutation,
 } from "./game-account-grants"
 
@@ -26,6 +29,7 @@ describe("game account data grant helpers", () => {
       server: "en",
       game_user_id: "123456",
       data_type: "mysekai",
+      permissions: ["write", "read", "write"],
       expires_at: "2026-07-01T00:00:00Z",
       created_at: "2026-06-01T00:00:00Z",
       updated_at: "2026-06-02T00:00:00Z",
@@ -36,10 +40,30 @@ describe("game account data grant helpers", () => {
       server: "en",
       gameUserId: "123456",
       dataType: "mysekai",
+      permissions: ["read", "write"],
       expiresAt: "2026-07-01T00:00:00Z",
       createdAt: "2026-06-01T00:00:00Z",
       updatedAt: "2026-06-02T00:00:00Z",
     })
+  })
+
+  test("legacy grants without permissions are read-only", () => {
+    expect(normalizeGameAccountDataGrant({ id: 1, server: "jp", gameUserId: "1" }).permissions).toEqual(["read"])
+    expect(normalizeGrantPermissions(undefined)).toEqual(["read"])
+    expect(normalizeGrantPermissions([])).toEqual(["read"])
+    expect(normalizeGrantPermissions(["bogus"])).toEqual(["read"])
+    expect(normalizeGrantPermissions(["write"])).toEqual(["write"])
+    expect(normalizeGrantPermissions(["write", "read"])).toEqual(["read", "write"])
+  })
+
+  test("builds permission arrays in canonical order and blocks profile write", () => {
+    expect(buildGrantPermissions(true, false)).toEqual(["read"])
+    expect(buildGrantPermissions(false, true)).toEqual(["write"])
+    expect(buildGrantPermissions(true, true)).toEqual(["read", "write"])
+    expect(buildGrantPermissions(false, false)).toEqual([])
+    expect(canGrantWrite("suite")).toBe(true)
+    expect(canGrantWrite("mysekai")).toBe(true)
+    expect(canGrantWrite("profile")).toBe(false)
   })
 
   test("reads mutation wrapper", () => {

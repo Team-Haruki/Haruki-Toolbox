@@ -1,4 +1,4 @@
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
@@ -12,6 +12,8 @@ import {
   upsertGameAccountDataGrant,
 } from "@/modules/user-settings/api/game-account-grants"
 import {
+  buildGrantPermissions,
+  canGrantWrite,
   isFutureIsoDateTime,
   isGrantDataType,
 } from "@/modules/user-settings/lib/game-account-grants"
@@ -54,7 +56,19 @@ export function useGameAccountDataGrants(currentUserId: () => string | null | un
   const receivedGrants = ref<GameAccountDataGrant[]>([])
   const granteeUserId = ref("")
   const grantDataType = ref<GameAccountGrantDataType>("suite")
+  // New grants default to read-only; write is always an explicit opt-in.
+  const grantCanRead = ref(true)
+  const grantCanWrite = ref(false)
   const expiresAtLocal = ref(defaultExpiryValue())
+
+  const grantPermissions = computed(() => buildGrantPermissions(grantCanRead.value, grantCanWrite.value))
+
+  // profile is live data and never writable: switching to it drops a pending write tick.
+  watch(grantDataType, (dataType) => {
+    if (!canGrantWrite(dataType)) {
+      grantCanWrite.value = false
+    }
+  })
 
   const selectedAccountGrants = computed(() => {
     const account = selectedAccount.value
@@ -97,11 +111,17 @@ export function useGameAccountDataGrants(currentUserId: () => string | null | un
     invalidateAccessibleGameAccounts()
   }
 
-  function openGrantManager(account?: GameAccountBinding) {
-    selectedAccount.value = account ?? null
+  function resetForm() {
     granteeUserId.value = ""
     grantDataType.value = "suite"
+    grantCanRead.value = true
+    grantCanWrite.value = false
     expiresAtLocal.value = defaultExpiryValue()
+  }
+
+  function openGrantManager(account?: GameAccountBinding) {
+    selectedAccount.value = account ?? null
+    resetForm()
     grantsOpen.value = true
     void loadGrants()
   }
@@ -121,6 +141,8 @@ export function useGameAccountDataGrants(currentUserId: () => string | null | un
     }
     granteeUserId.value = grant.granteeUserId
     grantDataType.value = grant.dataType
+    grantCanRead.value = grant.permissions.includes("read")
+    grantCanWrite.value = grant.permissions.includes("write") && canGrantWrite(grant.dataType)
     expiresAtLocal.value = toDateTimeLocal(new Date(grant.expiresAt))
   }
 
@@ -150,6 +172,18 @@ export function useGameAccountDataGrants(currentUserId: () => string | null | un
       })
       return false
     }
+    if (grantPermissions.value.length === 0) {
+      toast.error(t("userSettings.gameBinding.grants.toast.saveFailedTitle"), {
+        description: t("userSettings.gameBinding.grants.validation.permissionRequired"),
+      })
+      return false
+    }
+    if (grantCanWrite.value && !canGrantWrite(grantDataType.value)) {
+      toast.error(t("userSettings.gameBinding.grants.toast.saveFailedTitle"), {
+        description: t("userSettings.gameBinding.grants.validation.profileReadOnly"),
+      })
+      return false
+    }
     if (!canParseDateTimeLocal(expiresAtLocal.value) || !isFutureIsoDateTime(fromDateTimeLocal(expiresAtLocal.value))) {
       toast.error(t("userSettings.gameBinding.grants.toast.saveFailedTitle"), {
         description: t("userSettings.gameBinding.grants.validation.futureExpiry"),
@@ -173,7 +207,8 @@ export function useGameAccountDataGrants(currentUserId: () => string | null | un
           String(account.userId),
           grantDataType.value,
           granteeUserId.value.trim(),
-          fromDateTimeLocal(expiresAtLocal.value)
+          fromDateTimeLocal(expiresAtLocal.value),
+          grantPermissions.value
         ),
       {
         errorTitle: t("userSettings.gameBinding.grants.toast.saveFailedTitle"),
@@ -187,9 +222,10 @@ export function useGameAccountDataGrants(currentUserId: () => string | null | un
     )
     if (!response) return
 
+    // Re-read the list rather than patching it: the backend normalizes
+    // permissions and expiry, so the form must not keep its pre-save values.
     await loadGrants()
-    granteeUserId.value = ""
-    expiresAtLocal.value = defaultExpiryValue()
+    resetForm()
     toast.success(t("userSettings.gameBinding.grants.toast.saved"))
   }
 
@@ -229,6 +265,8 @@ export function useGameAccountDataGrants(currentUserId: () => string | null | un
     selectedAccountGrants,
     granteeUserId,
     grantDataType,
+    grantCanRead,
+    grantCanWrite,
     expiresAtLocal,
     loadGrants,
     openGrantManager,

@@ -767,13 +767,50 @@ export default {
       "table": {
         "status": "Status",
         "user": "User",
+        "owner": "Data owner",
+        "actor": "Uploaded by",
+        "noOwner": "No linked user",
         "server": "Server",
         "method": "Method",
         "dataType": "Data type",
         "error": "Error",
+        "details": "Details",
+        "viewDetails": "View details",
         "viewError": "View error",
         "time": "Time",
         "empty": "No upload logs"
+      },
+      "actor": {
+        "owner": "Owner",
+        "delegate": "Delegate",
+        "unknown": "No toolbox user"
+      },
+      "authMethod": {
+        "browserSession": "Browser session",
+        "oauth2": "OAuth2 app",
+        "iosUserCode": "iOS user code",
+        "gameSessionProxy": "Game session proxy"
+      },
+      "authorizationSource": {
+        "owner": "Account owner",
+        "grant": "Write grant"
+      },
+      "detail": {
+        "title": "Upload record details",
+        "description": "Data owner is who the data belongs to; uploaded by is the toolbox user who performed this upload.",
+        "gameUserId": "Game UID",
+        "authMethod": "Auth method",
+        "authorizationSource": "Authorization source",
+        "grantId": "Grant ID",
+        "grantIdHint": "Audit snapshot; the grant may no longer exist.",
+        "actorKind": "Uploader relation",
+        "oauthClientId": "OAuth client",
+        "client": "Client / version",
+        "platform": "Platform",
+        "requestId": "Request ID",
+        "claimedGameUserId": "Claimed UID in payload",
+        "failureStage": "Failure stage",
+        "errorCode": "Error code"
       },
       "errorDialog": {
         "title": "Upload failure detail",

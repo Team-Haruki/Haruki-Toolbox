@@ -417,7 +417,8 @@ export default {
       },
       "disabledReason": {
         "loginRequired": "Please sign in to use this feature",
-        "noBoundAccount": "No bound accounts found. Please bind an account first."
+        "noBoundAccount": "No bound accounts found. Please bind an account first.",
+        "noWritableAccount": "No account can be uploaded to right now: verify a binding first or obtain a write grant from another user"
       },
       "uploadStatus": {
         "uploading": "Uploading your {dataType} data...",
@@ -425,8 +426,11 @@ export default {
         "failed": "Upload failed"
       },
       "toast": {
-        "selectAccount": "Please select an account",
+        "selectAccount": "Please select an account you can upload to",
         "selectFile": "Please select a file",
+        "dataTypeNotWritable": "The selected account has no upload permission for this data type",
+        "uploadForbiddenTitle": "Not allowed to upload to this account",
+        "uploadForbiddenDescription": "The grant may have expired, been revoked, or the binding changed. The list of upload targets was reloaded.",
         "operationForbiddenTitle": "Submission forbidden",
         "operationForbiddenDescription": "This action is not allowed due to legal restrictions",
         "uploadSuccessTitle": "Upload successful",
@@ -448,10 +452,17 @@ export default {
         "fields": {
           "file": "Upload file",
           "account": "Select account (region / UID)",
-          "accountPlaceholder": "Select a bound account",
+          "accountPlaceholder": "Select an account you can upload to",
           "dataType": "Select data type",
           "dataTypePlaceholder": "Select data type"
         },
+        "refreshTargets": "Refresh accounts",
+        "targetsLoading": "Loading upload targets...",
+        "targetsFailedTitle": "Could not load upload targets",
+        "targetsFailedDescription": "Showing your own verified accounts for now; accounts granted by others appear after a refresh.",
+        "accountNotWritable": "This account cannot be uploaded to (unverified, or the grant has no write permission)",
+        "grantedTargetNotice": "This account was granted to you by another user. Uploads directly update their data in the toolbox.",
+        "dataTypeLimited": "Only some data types can be uploaded to this account.",
         "submit": "Submit",
         "submitting": "Submitting..."
       },

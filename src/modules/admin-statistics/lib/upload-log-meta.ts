@@ -68,6 +68,18 @@ const UPLOAD_SORT_LABEL_KEY: Record<(typeof UPLOAD_SORT_VALUES)[number], string>
   id_asc: "adminStatistics.uploadLogs.sort.idAsc",
 }
 
+const UPLOAD_AUTH_METHOD_LABEL_KEY: Record<string, string> = {
+  browser_session: "adminStatistics.uploadLogs.authMethod.browserSession",
+  oauth2: "adminStatistics.uploadLogs.authMethod.oauth2",
+  ios_user_code: "adminStatistics.uploadLogs.authMethod.iosUserCode",
+  game_session_proxy: "adminStatistics.uploadLogs.authMethod.gameSessionProxy",
+}
+
+const UPLOAD_AUTHORIZATION_SOURCE_LABEL_KEY: Record<string, string> = {
+  owner: "adminStatistics.uploadLogs.authorizationSource.owner",
+  grant: "adminStatistics.uploadLogs.authorizationSource.grant",
+}
+
 const UPLOAD_SUCCESS_VALUES = ["all", "true", "false"] as const
 
 const UPLOAD_SUCCESS_LABEL_KEY: Record<(typeof UPLOAD_SUCCESS_VALUES)[number], string> = {
@@ -129,4 +141,41 @@ export function resolveUploadServerLabel(server: string | undefined, t: Translat
 
 export function resolveUploadDataTypeLabel(type: string | undefined, t: TranslateFn) {
   return resolveLabel(type, UPLOAD_DATA_TYPE_LABEL_KEY, t)
+}
+
+export function resolveUploadAuthMethodLabel(method: string | undefined, t: TranslateFn) {
+  return resolveLabel(method, UPLOAD_AUTH_METHOD_LABEL_KEY, t)
+}
+
+export function resolveUploadAuthorizationSourceLabel(source: string | undefined, t: TranslateFn) {
+  return resolveLabel(source, UPLOAD_AUTHORIZATION_SOURCE_LABEL_KEY, t)
+}
+
+/** The user the data belongs to; older payloads carried it as `userId`. */
+export function resolveUploadLogOwnerId(log: { toolboxUserId?: string; userId?: string }): string | null {
+  return log.toolboxUserId || log.userId || null
+}
+
+export type UploadLogActorKind = "owner" | "delegate" | "unknown"
+
+/**
+ * Who actually performed the upload, relative to the owner. A module proxy
+ * (no toolbox user) and historical rows have no actor at all — they are never
+ * presented as the owner uploading in person.
+ */
+export function resolveUploadLogActor(log: {
+  toolboxUserId?: string
+  userId?: string
+  actorUserId?: string
+  authorizationSource?: string
+}): { kind: UploadLogActorKind; actorUserId: string | null } {
+  const actorUserId = log.actorUserId || null
+  if (!actorUserId) {
+    return { kind: "unknown", actorUserId: null }
+  }
+  const ownerId = resolveUploadLogOwnerId(log)
+  if (ownerId && actorUserId === ownerId && log.authorizationSource !== "grant") {
+    return { kind: "owner", actorUserId }
+  }
+  return { kind: "delegate", actorUserId }
 }

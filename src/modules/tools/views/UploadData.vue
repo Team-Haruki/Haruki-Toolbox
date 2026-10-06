@@ -34,12 +34,17 @@ const {
   isInheritConfirmOpen,
   uploadProgress,
   uploadStatus,
-  boundAccounts,
+  uploadAccounts,
+  selectedAccount,
   selectedAccountKey,
+  targetsLoading,
+  targetsFailed,
   disabledReason,
   hasVerifiedQQ,
   isCNMySekaiForbidden,
+  canSelectSuiteDataType,
   canSelectMySekaiDataType,
+  loadUploadTargets,
   onFileChange,
   setRememberInherit,
   submitFileUpload,
@@ -114,8 +119,12 @@ const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 te
         <UploadDataFileTab
           v-model:data-type="fileDataType"
           v-model:selected-account-key="selectedAccountKey"
-          :bound-accounts="boundAccounts"
+          :upload-accounts="uploadAccounts"
+          :selected-account="selectedAccount"
+          :targets-loading="targetsLoading"
+          :targets-failed="targetsFailed"
           :can-show-my-sekai-data-type="hasVerifiedQQ"
+          :can-select-suite-data-type="canSelectSuiteDataType"
           :can-select-my-sekai-data-type="canSelectMySekaiDataType"
           :disabled-reason="disabledReason"
           :is-cn-my-sekai-forbidden="isCNMySekaiForbidden"
@@ -123,6 +132,7 @@ const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 te
           :upload-progress="uploadProgress"
           :upload-status="uploadStatus"
           @file-change="onFileChange"
+          @refresh-targets="loadUploadTargets"
           @submit="submitFileUpload"
         />
       </TabsContent>
