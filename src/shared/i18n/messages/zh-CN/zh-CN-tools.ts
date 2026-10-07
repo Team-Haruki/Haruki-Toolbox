@@ -1,5 +1,5 @@
 // AUTO-GENERATED split of the former monolithic zh-CN locale file.
-// Namespaces: tools, botNeo
+// Namespaces: tools, botNeo, sekaiStation
 export default {
   "tools": {
     "clientConfigGenerator": {
@@ -634,6 +634,70 @@ export default {
       "clipboardUnsupported": "当前环境不支持剪贴板",
       "copySuccess": "{label} 已复制到剪贴板",
       "copyFailed": "复制到剪贴板失败"
+    }
+  },
+  "sekaiStation": {
+    "title": "协力车站",
+    "description": "实时汇总社交平台上发布的国服协力房间号。",
+    "viewOnSekaiStation": "在Sekai Station中查看",
+    "notConfigured": "当前构建没有配置 Sekai Station 的 API 地址，无法加载房间。",
+    "connection": {
+      "connected": "已连接",
+      "connecting": "连接中…",
+      "disconnected": "已断开",
+      "failed": "无法连接到服务器",
+      "retryIn": "{n} 秒后重试",
+      "reconnecting": "正在重新连接…",
+      "online": "{n} 人在线"
+    },
+    "rooms": {
+      "list": "房间列表",
+      "empty": "暂无房间",
+      "emptyFiltered": "当前筛选条件下没有房间",
+      "loading": "加载中…",
+      "copyId": "复制房间号",
+      "copyText": "复制文本",
+      "openOriginal": "打开原帖",
+      "pin": "置顶",
+      "unpin": "取消置顶",
+      "copied": "已复制",
+      "copyFailed": "复制失败",
+      "more": "更多操作",
+      "idHint": "点击复制 · 长按 1 秒屏蔽 10 分钟",
+      "block": "屏蔽 10 分钟",
+      "blocked": "已屏蔽 {id}，10 分钟后恢复",
+      "undo": "撤销"
+    },
+    "settings": {
+      "title": "筛选与显示",
+      "filter": "筛选",
+      "mode": "模式",
+      "blacklist": "黑名单",
+      "blacklistDesc": "隐藏包含以下关键词的房间",
+      "whitelist": "白名单",
+      "whitelistDesc": "只显示包含以下关键词的房间",
+      "presetTags": "预设标签",
+      "keywordPlaceholder": "添加关键词",
+      "add": "添加",
+      "clear": "清空",
+      "removeFilter": "移除过滤词“{name}”",
+      "display": "显示",
+      "expireTime": "房间显示时长",
+      "durationSeconds": "{n} 秒",
+      "durationMinutes": "{n} 分钟",
+      "fontSize": "字号",
+      "lineHeight": "行距",
+      "decrease": "减小",
+      "increase": "增大"
+    },
+    "blocked": {
+      "title": "临时屏蔽",
+      "hint": "10 分钟后自动恢复",
+      "empty": "长按房间号 1 秒即可屏蔽",
+      "minutesLeft": "剩 {n} 分钟",
+      "unblock": "取消屏蔽 {id}",
+      "unblockOne": "解除",
+      "unblockAll": "全部解除"
     }
   }
 } as const

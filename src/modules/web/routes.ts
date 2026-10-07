@@ -13,6 +13,7 @@ import { playerProfileRoutes } from "@/modules/player-profile/routes"
 import { trainingRoutes } from "@/modules/training/routes"
 import { clientConfigGeneratorRoutes } from "@/modules/client-config-generator/routes"
 import { toolRoutes } from "@/modules/tools/routes"
+import { sekaiStationRoutes } from "@/modules/sekai-station/routes"
 import { userRoutes } from "@/modules/user/routes"
 import { userTicketRoutes } from "@/modules/tickets/routes"
 import { adminRoutes } from "@/modules/admin/routes"
@@ -32,6 +33,7 @@ export const webChildRoutes: RouteRecordRaw[] = [
     ...trainingRoutes,
     ...clientConfigGeneratorRoutes,
     ...toolRoutes,
+    ...sekaiStationRoutes,
     ...userRoutes,
     ...userTicketRoutes,
     ...adminRoutes,

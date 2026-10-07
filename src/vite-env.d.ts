@@ -9,6 +9,7 @@ interface ImportMetaEnv {
   readonly VITE_HARUKI_TOOLBOX_ALLOWED_RETURN_TO_ORIGINS?: string
   readonly VITE_HARUKI_EVENT_TRACKER_URL?: string
   readonly VITE_HARUKI_EVENT_TRACKER_ALLOW_REST_FALLBACK?: string
+  readonly VITE_SEKAI_STATION_API_URL?: string
   readonly VITE_ENABLE_CLOUDFLARE_TURNSTILE?: string
   readonly VITE_HARUKI_TOOLBOX_WEB_URL?: string
   readonly VITE_TURNSTILE_SITE_KEY: string

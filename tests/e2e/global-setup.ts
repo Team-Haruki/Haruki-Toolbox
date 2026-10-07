@@ -31,6 +31,7 @@ const WARM_ROUTES = [
   "/user/login",
   "/user/register",
   "/user/verification",
+  "/sekai-station",
 ]
 
 export default async function globalSetup(config: FullConfig) {
