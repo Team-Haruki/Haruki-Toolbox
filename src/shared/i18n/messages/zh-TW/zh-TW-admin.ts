@@ -2,6 +2,19 @@
 // Namespaces: admin, adminConfig, adminRisk, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
 export default {
   "admin": {
+    "reauth": {
+      "title": "驗證管理員密碼",
+      "description": "敏感的管理操作需要再次確認你的賬號密碼。驗證通過後會自動繼續剛才的操作。",
+      "passwordLabel": "當前密碼",
+      "submit": "驗證並繼續",
+      "passwordRequired": "請輸入密碼",
+      "passwordMismatch": "密碼不正確，請重試", // NOSONAR -- translation key, not a credential
+      "rejected": "無法通過密碼驗證此賬號",
+      "invalidInput": "輸入無效，請重新輸入密碼",
+      "failedTitle": "無法驗證密碼",
+      "failedDescription": "驗證服務暫時不可用，請稍後重試",
+      "sessionInvalid": "當前登入會話無效，請重新登入後再試"
+    },
     "layout": {
       "superAdmin": "超級管理員"
     },
@@ -53,6 +66,21 @@ export default {
       "saveDialogDescription": "此更改將立即生效並應用於整個系統。請在繼續前確認 JSON 內容正確。",
       "saveDialogConfirm": "應用"
     },
+    "runtimeSwitches": {
+      "title": "執行時開關",
+      "description": "切換後約 1 秒內生效，無需重啟後端。",
+      "dirtyHint": "下方執行時配置有未儲存的修改，請先儲存或重新整理後再切換開關。",
+      "oauth2DeviceFlow": {
+        "label": "OAuth2 裝置授權",
+        "description": "開啟後，開通了裝置碼授權型別的客戶端可以申請裝置碼，由使用者在 /device 頁批准。關閉後立即停止簽發裝置碼和受理批准；已簽發的令牌仍然有效，需要時按客戶端撤銷授權。後端沒有返回該項時顯示為關閉。",
+        "enableTitle": "開啟 OAuth2 裝置授權？",
+        "enableDescription": "開通了裝置碼授權型別的客戶端將可以申請裝置碼。此更改立即應用於整個系統。",
+        "disableTitle": "關閉 OAuth2 裝置授權？",
+        "disableDescription": "將立即停止簽發裝置碼和受理 /device 頁的批准。已簽發的令牌不受影響，需要時請按客戶端撤銷授權。",
+        "confirmEnable": "開啟",
+        "confirmDisable": "關閉"
+      }
+    },
     "toast": {
       "loadApiKeysFailedTitle": "載入 Public API Keys 失敗",
       "loadRuntimeFailedTitle": "載入執行時配置失敗",
@@ -63,7 +91,10 @@ export default {
       "invalidApiKeysSchema": "公共 API 金鑰必須是字串值組成的 JSON 物件",
       "invalidRuntimeSchema": "執行時配置必須是一個 JSON 物件",
       "saveFailedTitle": "儲存失敗",
-      "saveFailedFallback": "儲存失敗"
+      "saveFailedFallback": "儲存失敗",
+      "deviceFlowEnabled": "OAuth2 裝置授權已開啟",
+      "deviceFlowDisabled": "OAuth2 裝置授權已關閉",
+      "switchNotApplied": "後端沒有應用該開關（可能尚不支援），目前仍顯示後端返回的值。"
     },
     "loadError": "載入配置失敗",
     "retry": "重試",
@@ -262,6 +293,7 @@ export default {
       "bindingsRead": "遊戲繫結 (bindings:read)",
       "gameDataRead": "遊戲資料 (game-data:read)",
       "gameDataWrite": "遊戲上傳 (game-data:write)",
+      "stationRoomWrite": "提交車牌 Sekai Station (station:room:write)",
       "openid": "OIDC 登入 (openid)",
       "profile": "OIDC 暱稱 (profile)",
       "email": "OIDC 信箱 (email)",
@@ -304,7 +336,27 @@ export default {
       "addRedirectUri": "新增URI",
       "postLogoutRedirectUrisLabel": "登出回撥URI (Post-Logout Redirect URIs)",
       "postLogoutRedirectUrisHelp": "OIDC RP-Initiated Logout 後允許跳回的地址，精確匹配。僅登入類客戶端需要，可留空。",
-      "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out"
+      "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out",
+      "grantTypesLabel": "授權型別 (Grant types)",
+      "grantTypesHelp": "授權碼用於有瀏覽器回撥的應用；裝置碼用於沒有瀏覽器的程式（RFC 8628），由使用者在 /device 頁批准；重新整理令牌須與其中之一同時選擇，登記 offline_access 時必選。",
+      "grantType": {
+        "authorizationCode": "授權碼 (authorization_code)",
+        "deviceCode": "裝置碼 (device_code)",
+        "refreshToken": "重新整理令牌 (refresh_token)"
+      },
+      "redirectUrisOptionalHelp": "未選擇授權碼時不需要回撥URI，僅裝置碼客戶端可以留空。",
+      "writeScopeHint": "寫入權限：允許客戶端以使用者身份提交或上傳資料",
+      "devicePolicy": {
+        "title": "裝置碼策略",
+        "firstParty": "官方客戶端",
+        "firstPartyHelp": "在裝置授權頁上顯示「官方」徽章。",
+        "firstPartyPublicHelp": "只對 Confidential 客戶端生效，Public 客戶端不顯示「官方」徽章。",
+        "allowWrite": "允許經裝置碼申請 game-data:write",
+        "allowWriteHelp": "僅限登記了 game-data:write 的 Public 客戶端。",
+        "maxCodesPer10m": "每 10 分鐘裝置碼上限",
+        "maxCodesPer10mHelp": "該客戶端每 10 分鐘最多可申請的裝置碼數量，範圍 {min}–{max}，預設 {default}。",
+        "emailNeverGranted": "裝置碼授權永遠不會授予 email，登記了也只對授權碼生效。"
+      }
     },
     "list": {
       "searchPlaceholder": "搜尋名稱或 Client ID",
@@ -318,7 +370,9 @@ export default {
       "createdAt": "建立於 {date}",
       "noScopes": "未配置 Scope",
       "typePublic": "Public",
-      "typeConfidential": "Confidential"
+      "typeConfidential": "Confidential",
+      "deviceBadge": "裝置碼",
+      "deviceBadgeTitle": "已開通裝置碼授權型別"
     },
     "table": {
       "actions": "操作",
@@ -447,6 +501,10 @@ export default {
       "secretRotated": "已成功重新生成 Secret",
       "restored": "已恢復",
       "revokedAll": "已撤銷所有授權",
+      "disabledRevocationIncompleteTitle": "客戶端已停用，但部分授權未能撤銷",
+      "revokedPartiallyTitle": "授權僅部分撤銷",
+      "revocationFailedSubjects": "有 {count} 個使用者標識（subject）撤銷失敗，可執行“撤銷全部授權”重試。",
+      "revocationIncomplete": "部分授權未能撤銷，可執行“撤銷全部授權”重試。",
       "webhookSaved": "Webhook endpoint 已儲存",
       "webhookDeleted": "Webhook endpoint 已刪除",
       "copyFailedTitle": "複製失敗",
@@ -456,9 +514,19 @@ export default {
       "validation": {
         "clientIdAndNameRequired": "客戶端ID和名稱不能為空",
         "nameRequired": "客戶端名稱不能為空",
-        "redirectUriRequired": "請至少填寫一個回撥URI",
+        "redirectUriRequired": "選擇了授權碼時請至少填寫一個回撥URI",
         "scopeRequired": "請至少選擇一個Scope",
-        "oidcScopeRequiresOpenid": "profile / email 需要與 openid 一起登記"
+        "oidcScopeRequiresOpenid": "profile / email 需要與 openid 一起登記",
+        "grantTypeRequired": "請至少選擇授權碼或裝置碼（重新整理令牌不能單獨使用）",
+        "postLogoutRequiresRedirectUris": "沒有回撥URI的客戶端不能登記登出回撥URI，請清空登出回撥URI",
+        "offlineAccessRequiresRefreshToken": "登記 offline_access 時須同時選擇重新整理令牌",
+        "deviceRequiresUserRead": "裝置碼客戶端須登記 user:read（裝置頁要顯示授權的賬號）",
+        "deviceWriteRequiresPublicClient": "“允許經裝置碼申請 game-data:write”只適用於選擇了裝置碼並登記了 game-data:write 的 Public 客戶端",
+        "invalidDevicePolicy": "每 10 分鐘裝置碼上限須為 1–600 之間的整數"
+      },
+      "apiErrors": {
+        "publicClientHasNoSecret": "Public 客戶端沒有可輪換的 Secret。如需 Secret，請把客戶端型別改為 Confidential，儲存時會生成一次。",
+        "unsupportedGrantType": "授權型別只能是授權碼、裝置碼和重新整理令牌"
       }
     }
   },

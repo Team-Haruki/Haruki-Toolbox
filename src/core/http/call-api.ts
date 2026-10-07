@@ -9,6 +9,9 @@ import { createRequestId } from "@/lib/request-id"
 import type { Router } from "vue-router"
 import type { APIResponse } from "@/types/response"
 import { translate } from "@/shared/i18n"
+import { isAdminReauthRequiredError, withAdminReauthRetry } from "@/lib/admin-reauth"
+import { requestAdminReauth } from "@/core/http/admin-reauth"
+import { resolveRequestBaseURL } from "@/core/http/url"
 
 declare module 'axios' {
     export interface AxiosRequestConfig {
@@ -17,6 +20,8 @@ declare module 'axios' {
         retry?: number
         retryAttempt?: number
         retryMax?: number
+        /** Do not open the admin re-authentication prompt for this request. */
+        skipAdminReauth?: boolean
     }
 }
 
@@ -125,6 +130,11 @@ async function handleUnauthorized(error: AxiosError, userStore: UserStore, route
 }
 
 async function handleForbidden(error: AxiosError, userStore: UserStore, router: Router): Promise<void> {
+    // `request()` turns this one into the re-authentication prompt; the caller
+    // reports it if the admin cancels.
+    if (!error.config?.skipAdminReauth && isAdminReauthRequiredError(error)) {
+        return
+    }
     const message = getApiErrorMessage(error.response?.data) || translate("core.auth.permissionDeniedTitle")
     if (!isAccountBannedMessage(message)) {
         if (!error.config?.skipErrorToast) {
@@ -173,7 +183,7 @@ async function handleResponseError(error: AxiosError, router: Router): Promise<v
 export function setupInterceptors(router: Router) {
     apiClient.interceptors.request.use((config) => {
         const settingsStore = useSettingsStore()
-        config.baseURL = settingsStore.currentEndpoint
+        config.baseURL = resolveRequestBaseURL(config.baseURL, settingsStore.currentEndpoint)
         if (!isCrossOriginBrowserRequest(config.baseURL) && !config.headers.get("X-Request-ID")) {
             config.headers.set("X-Request-ID", createRequestId())
         }
@@ -219,6 +229,20 @@ export async function requestWithResponse<T = unknown>(
     }
     const method = (requestOptions.method ?? "GET").toUpperCase()
     const maxRetries = retry ?? (isIdempotentMethod(method) ? 1 : 0)
+    const send = () => sendWithTransientRetry<T>(url, requestOptions, maxRetries)
+    if (requestOptions.skipAdminReauth) {
+        return await send()
+    }
+    // Admin routes behind a recent-reauth check: ask for the password, then
+    // resend once. The guarded handler never ran, so resending a PUT/POST is safe.
+    return await withAdminReauthRetry(send, requestAdminReauth)
+}
+
+async function sendWithTransientRetry<T>(
+    url: string,
+    requestOptions: AxiosRequestConfig,
+    maxRetries: number
+): Promise<AxiosResponse<T>> {
     let attempt = 0
 
     while (true) {

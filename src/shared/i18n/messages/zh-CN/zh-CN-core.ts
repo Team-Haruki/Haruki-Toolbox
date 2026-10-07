@@ -38,7 +38,9 @@ export default {
       "tryLater": "请稍后再试",
       "logoutSuccessTitle": "注销成功",
       "invalidReturnToTitle": "登录流程已重置",
-      "invalidReturnToDescription": "检测到异常跳转目标，已为您重新发起安全登录流程。"
+      "invalidReturnToDescription": "检测到异常跳转目标，已为您重新发起安全登录流程。",
+      "invalidRegistrationReturnToTitle": "注册流程已重置",
+      "invalidRegistrationReturnToDescription": "检测到异常跳转目标，已为您重新发起安全注册流程。"
     },
     "login": {
       "title": "登录到 Haruki 工具箱",
@@ -128,7 +130,8 @@ export default {
     "verification": {
       "title": "验证邮箱",
       "description": "完成身份验证流程以激活当前邮箱地址。",
-      "submit": "提交验证"
+      "submit": "提交验证",
+      "continue": "继续"
     },
     "error": {
       "title": "身份流程异常",
@@ -900,6 +903,7 @@ export default {
     "oauthLogin": "继续登录授权",
     "oauthConsent": "授权第三方应用",
     "oauthLogout": "退出登录确认",
+    "oauthDevice": "设备授权",
     "tickets": {
       "mine": "我的工单",
       "create": "创建工单",
@@ -1405,7 +1409,8 @@ export default {
       "requireAdminDescription": "需要管理员权限",
       "requireSuperAdminDescription": "需要超级管理员权限",
       "apiRequestFailedTitle": "API请求失败",
-      "apiRequestFailedDescription": "状态码: {status}，信息: {message}"
+      "apiRequestFailedDescription": "状态码: {status}，信息: {message}",
+      "reauthRequired": "需要重新验证密码"
     },
     "sync": {
       "successTitle": "同步设置成功",
@@ -1427,7 +1432,11 @@ export default {
     "unsupportedBrowser": {
       "title": "不受支持的浏览器",
       "description": "您正在尝试使用不受支持的浏览器访问Haruki工具箱",
-      "suggestion": "请改用Chrome、Safari、Firefox等浏览器再使用Haruki工具箱"
+      "suggestion": "请改用Chrome、Safari、Firefox等浏览器再使用Haruki工具箱",
+      "deviceHint": "要授权设备，请复制下面的页面地址，在系统浏览器中打开后再手动输入设备上显示的代码。",
+      "copyDeviceLink": "复制页面地址",
+      "copied": "已复制",
+      "copyFailed": "复制失败，请手动输入地址"
     },
     "pwa": {
       "updateAvailableTitle": "发现新版本",

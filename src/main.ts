@@ -13,9 +13,14 @@ import { DEFAULT_LOCALE, i18n, isAppLocale, setI18nLocale } from "@/shared/i18n"
 import { bootstrapUserSettingsFromKratosSession } from "@/modules/auth/lib/kratos";
 import { registerAppServiceWorker } from "@/pwa";
 import { isRestrictedBrowser } from "@/lib/restricted-browser";
+import { configureAnalytics } from "@/lib/analytics";
 
 /** Longest the splash waits for the session bootstrap before mounting anyway. */
 const SESSION_BOOTSTRAP_WAIT_MS = 4000
+
+// The first page view, sent before the router runs (index.html used to send it);
+// its address never carries a device ?user_code= or an OAuth challenge.
+configureAnalytics()
 
 if (isRestrictedBrowser()) {
     await setI18nLocale(DEFAULT_LOCALE)

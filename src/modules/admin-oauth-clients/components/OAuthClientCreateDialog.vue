@@ -5,11 +5,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LucideLoader2, LucidePlus } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
-import type { OAuthClient } from "@/types/admin"
+import type { OAuthClient, OAuthClientDevicePolicy } from "@/types/admin"
+import type { ManagedGrantType } from "@/modules/admin-oauth-clients/lib/grant-types"
 import OAuthClientFormFields from "./OAuthClientFormFields.vue"
 
 interface ScopeOption {
   id: string
+  label: string
+  write?: boolean
+}
+
+interface GrantTypeOption {
+  id: ManagedGrantType
   label: string
 }
 
@@ -27,7 +34,10 @@ interface Props {
   scopes: string[]
   redirectUris: string[]
   postLogoutRedirectUris: string[]
+  grantTypes: ManagedGrantType[]
+  devicePolicy: OAuthClientDevicePolicy
   availableScopes: ScopeOption[]
+  availableGrantTypes: GrantTypeOption[]
 }
 
 const props = defineProps<Props>()
@@ -38,6 +48,8 @@ const emit = defineEmits<{
   (event: "update:name", value: string): void
   (event: "update:client-type", value: NonNullable<OAuthClient["clientType"]>): void
   (event: "toggle-scope", scopeId: string, checked: boolean): void
+  (event: "toggle-grant-type", grantType: ManagedGrantType, checked: boolean): void
+  (event: "update-device-policy", update: Partial<OAuthClientDevicePolicy>): void
   (event: "add-redirect-uri"): void
   (event: "remove-redirect-uri", index: number): void
   (event: "update-redirect-uri", payload: RedirectUriUpdatePayload): void
@@ -77,10 +89,15 @@ const emit = defineEmits<{
           :scopes="props.scopes"
           :redirect-uris="props.redirectUris"
           :post-logout-redirect-uris="props.postLogoutRedirectUris"
+          :grant-types="props.grantTypes"
+          :device-policy="props.devicePolicy"
           :available-scopes="props.availableScopes"
+          :available-grant-types="props.availableGrantTypes"
           @update:name="value => emit('update:name', value)"
           @update:client-type="value => emit('update:client-type', value)"
           @toggle-scope="(scopeId, checked) => emit('toggle-scope', scopeId, checked)"
+          @toggle-grant-type="(grantType, checked) => emit('toggle-grant-type', grantType, checked)"
+          @update-device-policy="update => emit('update-device-policy', update)"
           @add-redirect-uri="emit('add-redirect-uri')"
           @remove-redirect-uri="index => emit('remove-redirect-uri', index)"
           @update-redirect-uri="payload => emit('update-redirect-uri', payload)"

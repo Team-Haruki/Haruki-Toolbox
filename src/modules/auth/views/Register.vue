@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
+import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,7 +14,16 @@ import {
   CardDescription
 } from "@/components/ui/card"
 import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
+import { useFlowReturnToGuard } from "@/modules/auth/composables/useFlowReturnToGuard"
+import {
+  buildAuthPageLink,
+  buildFlowReturnTo,
+  resolveAuthPageRedirect,
+  resolveBrowserOrigin,
+} from "@/modules/auth/lib/return-to"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
+
+const route = useRoute()
 
 const {
   loading,
@@ -26,11 +36,31 @@ const {
   submitFields,
   submitLabel,
   action,
+  flowReturnTo,
   method,
   invokeVisibleFieldAction,
   restartFlow,
-} = useKratosBrowserFlow("registration")
+} = useKratosBrowserFlow("registration", {
+  // Only a safe ?redirect (forwarded by the sign-in page) becomes return_to;
+  // without one the flow keeps the Kratos default return URL.
+  getReturnTo: () => buildFlowReturnTo(route.query.redirect, resolveBrowserOrigin()),
+})
 const { t } = useI18n()
+
+useFlowReturnToGuard(
+  { loading, loadError, flowReturnTo, restartFlow },
+  {
+    titleKey: "auth.toast.invalidRegistrationReturnToTitle",
+    descriptionKey: "auth.toast.invalidRegistrationReturnToDescription",
+  }
+)
+
+const loginLink = computed(() =>
+  buildAuthPageLink(
+    "/user/login",
+    resolveAuthPageRedirect(route.query.redirect, flowReturnTo.value, resolveBrowserOrigin())
+  )
+)
 
 function iconForField(name: string) {
   if (name.endsWith("email")) {
@@ -153,7 +183,7 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
           </Button>
           <div class="text-center text-sm">
             {{ t("auth.register.hasAccount") }}
-            <router-link to="/user/login" class="underline underline-offset-4">
+            <router-link :to="loginLink" class="underline underline-offset-4">
               {{ t("auth.register.goLogin") }}
             </router-link>
           </div>

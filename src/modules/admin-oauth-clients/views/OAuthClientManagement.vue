@@ -54,6 +54,8 @@ const {
   newScopes,
   newRedirectUris,
   newPostLogoutRedirectUris,
+  newGrantTypes,
+  newDevicePolicy,
   creating,
   editOpen,
   editClientId,
@@ -62,6 +64,8 @@ const {
   editScopes,
   editRedirectUris,
   editPostLogoutRedirectUris,
+  editGrantTypes,
+  editDevicePolicy,
   saving,
   statsOpen,
   statsLoading,
@@ -93,10 +97,15 @@ const {
   webhookDeleteConfirmOpen,
   webhookToDelete,
   AVAILABLE_SCOPES,
+  AVAILABLE_GRANT_TYPE_OPTIONS,
   confirmDelete,
   executeDelete,
   toggleNewScope,
   toggleEditScope,
+  toggleNewGrantType,
+  toggleEditGrantType,
+  updateNewDevicePolicy,
+  updateEditDevicePolicy,
   updateNewClientId,
   updateNewName,
   updateEditName,
@@ -206,11 +215,16 @@ function resetFilters() {
             :scopes="newScopes"
             :redirect-uris="newRedirectUris"
             :post-logout-redirect-uris="newPostLogoutRedirectUris"
+            :grant-types="newGrantTypes"
+            :device-policy="newDevicePolicy"
             :available-scopes="AVAILABLE_SCOPES"
+            :available-grant-types="AVAILABLE_GRANT_TYPE_OPTIONS"
             @update:client-id="updateNewClientId"
             @update:name="updateNewName"
             @update:client-type="updateNewClientType"
             @toggle-scope="toggleNewScope"
+            @toggle-grant-type="toggleNewGrantType"
+            @update-device-policy="updateNewDevicePolicy"
             @add-redirect-uri="addNewRedirectUri"
             @remove-redirect-uri="removeNewRedirectUri"
             @update-redirect-uri="updateNewRedirectUri"
@@ -279,10 +293,15 @@ function resetFilters() {
       :scopes="editScopes"
       :redirect-uris="editRedirectUris"
       :post-logout-redirect-uris="editPostLogoutRedirectUris"
+      :grant-types="editGrantTypes"
+      :device-policy="editDevicePolicy"
       :available-scopes="AVAILABLE_SCOPES"
+      :available-grant-types="AVAILABLE_GRANT_TYPE_OPTIONS"
       @update:name="updateEditName"
       @update:client-type="updateEditClientType"
       @toggle-scope="toggleEditScope"
+      @toggle-grant-type="toggleEditGrantType"
+      @update-device-policy="updateEditDevicePolicy"
       @add-redirect-uri="addEditRedirectUri"
       @remove-redirect-uri="removeEditRedirectUri"
       @update-redirect-uri="updateEditRedirectUri"

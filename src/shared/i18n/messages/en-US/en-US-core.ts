@@ -38,7 +38,9 @@ export default {
       "tryLater": "Please try again later",
       "logoutSuccessTitle": "Signed out",
       "invalidReturnToTitle": "Sign-in flow restarted",
-      "invalidReturnToDescription": "An unexpected return target was detected. A safe sign-in flow has been started."
+      "invalidReturnToDescription": "An unexpected return target was detected. A safe sign-in flow has been started.",
+      "invalidRegistrationReturnToTitle": "Registration flow restarted",
+      "invalidRegistrationReturnToDescription": "An unexpected return target was detected. A safe registration flow has been started."
     },
     "login": {
       "title": "Sign in to Haruki Toolbox",
@@ -128,7 +130,8 @@ export default {
     "verification": {
       "title": "Verify email",
       "description": "Complete the identity verification flow to activate your current email address.",
-      "submit": "Submit verification"
+      "submit": "Submit verification",
+      "continue": "Continue"
     },
     "error": {
       "title": "Identity flow error",
@@ -900,6 +903,7 @@ export default {
     "oauthLogin": "Continue sign in",
     "oauthConsent": "Authorize app",
     "oauthLogout": "Confirm sign out",
+    "oauthDevice": "Authorize device",
     "tickets": {
       "mine": "My tickets",
       "create": "Create ticket",
@@ -1405,7 +1409,8 @@ export default {
       "requireAdminDescription": "Admin permission required",
       "requireSuperAdminDescription": "Super admin permission required",
       "apiRequestFailedTitle": "API request failed",
-      "apiRequestFailedDescription": "Status: {status}, message: {message}"
+      "apiRequestFailedDescription": "Status: {status}, message: {message}",
+      "reauthRequired": "Password re-verification required"
     },
     "sync": {
       "successTitle": "Settings synced",
@@ -1427,7 +1432,11 @@ export default {
     "unsupportedBrowser": {
       "title": "Unsupported browser",
       "description": "You are trying to access Haruki Toolbox from an unsupported browser.",
-      "suggestion": "Please use Chrome, Safari, Firefox, or another supported browser."
+      "suggestion": "Please use Chrome, Safari, Firefox, or another supported browser.",
+      "deviceHint": "To authorize a device, copy the page address below, open it in your system browser, then type the code shown on your device.",
+      "copyDeviceLink": "Copy page address",
+      "copied": "Copied",
+      "copyFailed": "Could not copy. Please type the address manually."
     },
     "pwa": {
       "updateAvailableTitle": "New version available",

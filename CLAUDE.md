@@ -32,7 +32,7 @@ Frontend-only SPA (Vue 3 + `<script setup lang="ts">` + Pinia + Vue Router + vue
 Three-layer source layout:
 
 - `src/core/` — app-wide infrastructure that truly spans features:
-  - `core/http/call-api.ts` exports the shared `request()` / `apiClient` used for all business API calls. It reads the base URL from `useSettingsStore().currentEndpoint`, handles `skipErrorToast` (default `true`), retries, and redirect-to-login on 401.
+  - `core/http/call-api.ts` exports the shared `request()` / `apiClient` used for all business API calls. It reads the base URL from `useSettingsStore().currentEndpoint` unless a request passes its own `baseURL` (only the OAuth2 device endpoints do, pinned to the direct host), handles `skipErrorToast` (default `true`), retries, and redirect-to-login on 401.
   - `core/router/` builds the router from `@/modules/web/routes` and installs guards (`requiresAuth`, `requiresAdmin`, `requiresSuperAdmin`, `guestOnly`, `meta.titleKey`).
 - `src/shared/` — cross-feature state and UI:
   - `shared/stores/user.ts` — `useUserStore()`, the source of truth for session/profile. `settingsSyncState` gates post-login hydration in `App.vue`.

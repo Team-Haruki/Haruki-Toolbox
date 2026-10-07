@@ -4,7 +4,7 @@ import { useI18n } from "vue-i18n"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, MailCheck, Mail, KeyRound } from "lucide-vue-next"
+import { ArrowRight, Loader2, MailCheck, Mail, KeyRound } from "lucide-vue-next"
 import {
   Card,
   CardTitle,
@@ -13,6 +13,8 @@ import {
   CardDescription
 } from "@/components/ui/card"
 import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
+import { resolveBrowserOrigin } from "@/modules/auth/lib/return-to"
+import { resolveVerificationContinuePath } from "@/modules/auth/lib/verification-flow"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 
 const {
@@ -24,8 +26,11 @@ const {
   visibleFields,
   buttonFields,
   submitFields,
+  anchorFields,
   submitLabel,
   action,
+  flowReturnTo,
+  flowState,
   method,
   invokeVisibleFieldAction,
   restartFlow,
@@ -42,6 +47,19 @@ function iconForField(name: string) {
 }
 
 const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
+
+// Once the code is accepted, Kratos turns the flow into a GET form whose action
+// is the return URL and adds a "continue" link. Submitting that form would
+// replace the return URL's query (dropping ?user_code= or ?login_challenge=),
+// so the page shows a plain link to the same-origin target instead. It is a
+// full page load: the app was bootstrapped while the address was unverified
+// and needs to sync the account again.
+const continuePath = computed(() =>
+  resolveVerificationContinuePath(
+    { state: flowState.value, returnTo: flowReturnTo.value, anchors: anchorFields.value },
+    resolveBrowserOrigin()
+  )
+)
 </script>
 
 <template>
@@ -64,6 +82,15 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
           <Button class="w-full" @click="restartFlow">
             <MailCheck class="mr-2 h-4 w-4" />
             {{ t("auth.common.restartFlow") }}
+          </Button>
+        </div>
+        <div v-else-if="continuePath" class="space-y-4">
+          <KratosFlowMessages :messages="generalMessages" />
+          <Button as-child class="w-full">
+            <a :href="continuePath">
+              <ArrowRight class="mr-2 h-4 w-4" />
+              {{ t("auth.verification.continue") }}
+            </a>
           </Button>
         </div>
         <form v-else :action="action" :method="method" class="space-y-4" novalidate>

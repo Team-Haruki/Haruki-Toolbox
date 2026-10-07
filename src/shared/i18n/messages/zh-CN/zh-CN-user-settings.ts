@@ -340,15 +340,26 @@ export default {
       "emptyTitle": "暂无已授权的应用",
       "emptyDescription": "当你授权第三方应用访问账号数据后，它们会显示在这里。",
       "authorizedAtPrefix": "授权于",
+      "revokeApp": "撤销此应用的全部授权",
+      "devices": {
+        "title": "已授权设备（{count}）",
+        "unnamed": "未命名设备",
+        "revoke": "撤销此设备"
+      },
       "clientType": {
         "bot": "Bot",
         "website": "网站"
+      },
+      "deviceDialog": {
+        "title": "撤销此设备",
+        "description": "确认撤销设备「{label}」对 {clientName} 的授权吗？这台设备将无法再访问你的账号；该应用的其他设备和网页授权不受影响。"
       },
       "dialog": {
         "title": "撤销授权",
         "description": "确认撤销 {clientName} 的所有访问权限吗？该应用将无法再访问您的数据。",
         "revoke": "撤销",
-        "revoking": "撤销中..."
+        "revoking": "撤销中...",
+        "devicesNote": "这也会撤销它在 {count} 台设备上的授权。"
       },
       "toast": {
         "fetchFailedTitle": "获取授权列表失败",
@@ -356,7 +367,12 @@ export default {
         "revokeSuccessTitle": "已撤销授权",
         "revokeSuccessDescription": "已撤销 {clientName} 的访问权限",
         "revokeFailedTitle": "撤销失败",
-        "revokeFailedFallback": "撤销失败"
+        "revokeFailedFallback": "撤销失败",
+        "deviceRevokeSuccessTitle": "已撤销设备",
+        "deviceRevokeSuccessDescription": "「{label}」已无法再访问你的账号",
+        "deviceNotFound": "该设备的授权已不存在，列表已刷新",
+        "deviceRevokeFailedTitle": "撤销设备失败",
+        "deviceRevokeRetry": "暂时无法撤销，请稍后重试"
       }
     },
     "gameBinding": {
@@ -577,6 +593,7 @@ export default {
       "bindingsRead": "读取绑定账号",
       "gameDataRead": "读取游戏数据",
       "gameDataWrite": "上传游戏数据",
+      "stationRoomWrite": "提交车牌（Sekai Station）",
       "openid": "确认您的身份并使用 Haruki 账号登录",
       "profile": "获取您的昵称",
       "email": "获取您的邮箱地址",
@@ -585,6 +602,7 @@ export default {
     "scopeDescription": {
       "gameDataRead": "读取你拥有或获读授权的游戏账号数据。不包含上传权限。",
       "gameDataWrite": "上传你拥有或获写授权的游戏账号数据。不包含读取已有数据的权限。",
+      "stationRoomWrite": "以你的身份向 Sekai Station 提交车牌（房间号）。",
       "offlineAccess": "应用可在你未打开页面时持续使用上述授权，直到你在设置中撤销。"
     },
     "login": {
@@ -650,6 +668,106 @@ export default {
         "failedTitle": "退出登录失败",
         "missingRedirect": "未收到重定向地址",
         "retry": "无法完成退出，请重试"
+      }
+    },
+    "device": {
+      "framed": {
+        "title": "请在新窗口打开",
+        "description": "为保护你的账号，设备授权页面不能嵌在其他页面中使用。",
+        "open": "在新窗口打开"
+      },
+      "signedOut": {
+        "title": "登录以授权设备",
+        "description": "必须先登录 Haruki Toolbox 账号才能输入设备代码。登录后会回到这里，代码会保留在输入框中。",
+        "signIn": "去登录"
+      },
+      "unavailable": {
+        "title": "设备登录暂未开放",
+        "description": "设备授权当前不可用，请稍后再试。"
+      },
+      "inAppBrowser": {
+        "title": "请在系统浏览器中打开",
+        "description": "你正在应用内浏览器中访问，这里的登录状态可能与系统浏览器不同。请复制页面地址，在系统浏览器中打开后再手动输入设备上显示的代码。",
+        "copy": "复制页面地址",
+        "copied": "已复制页面地址",
+        "copyFailed": "复制失败，请手动复制地址"
+      },
+      "entry": {
+        "title": "授权设备",
+        "description": "输入设备或程序上显示的代码，核对后决定是否授权。",
+        "codeLabel": "设备代码",
+        "codeHint": "形如 BCDF-GHJK，不区分大小写，连字符可以省略。",
+        "submit": "继续",
+        "submitting": "正在核对..."
+      },
+      "review": {
+        "title": "设备授权请求",
+        "description": "{client} 请求以你的身份访问 Haruki Toolbox",
+        "clientId": "客户端 ID",
+        "badge": {
+          "official": "官方",
+          "public": "公开应用",
+          "verified": "已验证客户端"
+        },
+        "publicHint": "任何人都可以以此应用的名义发起请求；只有你本人刚刚在自己的设备上发起时才继续",
+        "scopesTitle": "该应用将能够：",
+        "noScopes": "该应用未请求额外权限。",
+        "risk": {
+          "identity": "身份",
+          "offline": "离线",
+          "read": "读取",
+          "write": "写入"
+        },
+        "writeWarning": "此授权包含写入权限：应用将能以你的身份提交数据。只有在你信任此应用时才允许。",
+        "deviceLabelTitle": "应用自述",
+        "deviceLabelHint": "由设备自行提供，未经核实",
+        "deviceLabelEmpty": "设备未提供说明",
+        "requestedAt": "发起时间",
+        "remaining": "剩余时间",
+        "account": "当前账号",
+        "switchAccount": "切换账号",
+        "phishingWarning": "只有在你本人刚刚发起时才继续；不要输入他人发给你的代码",
+        "confirmCode": "请确认设备上显示的是 {code}",
+        "labelTitle": "设备名称（可选）",
+        "labelHint": "用于在「已授权应用」中区分设备，最多 64 个字符；留空则使用应用自述。",
+        "acknowledge": "我确认这是我本人刚刚在自己的设备或程序上发起的",
+        "approve": "允许",
+        "approving": "正在授权...",
+        "deny": "拒绝",
+        "notMe": "不是我发起的",
+        "outcomeUnknown": "无法确认授权是否已经完成。请先查看设备；如果设备没有显示成功，可以再次点击「允许」。"
+      },
+      "result": {
+        "approvedTitle": "已授权",
+        "approved": "请回到设备，它应显示『已授权为 {name}』。如果不是你本人操作，请立即到「已授权应用」撤销",
+        "unconfirmedTitle": "授权结果待确认",
+        "unconfirmed": "授权可能已完成，请查看设备；若设备未显示成功，请重新获取代码",
+        "deniedTitle": "已拒绝授权",
+        "expiredTitle": "代码已过期",
+        "failedTitle": "授权未能完成",
+        "errorTitle": "无法继续授权",
+        "retryOnDevice": "请在设备上重新获取代码",
+        "newCode": "输入新代码",
+        "authorizedApps": "查看已授权应用"
+      },
+      "rateLimited": "操作过于频繁，请在 {seconds} 秒后重试",
+      "error": {
+        "feature_disabled": "设备登录暂未开放",
+        "unsupported_media_type": "请求格式不受支持，请刷新页面后重试",
+        "origin_rejected": "请求来源未被允许，请从 Haruki Toolbox 网站打开此页面",
+        "invalid_request": "请求无效，请检查输入后重试",
+        "malformed_code": "代码格式不正确，请核对设备上显示的代码",
+        "invalid_code": "代码无效、已过期或已被其他账号使用；请在设备上重新获取",
+        "rate_limited": "操作过于频繁，请稍后再试",
+        "code_expired": "代码已过期，请在设备上重新获取",
+        "already_handled": "这个代码已经处理过了",
+        "flow_conflict": "授权状态已变化，请再次点击「继续」",
+        "session_changed": "登录会话已变化，请再次点击「继续」",
+        "ack_required": "请先勾选下方的确认框",
+        "client_unavailable": "该应用当前不可用",
+        "approval_failed": "授权未能完成，请重试",
+        "temporarily_unavailable": "服务暂时不可用，请稍后再试",
+        "unknown": "网络错误或未知错误，请稍后再试"
       }
     }
   }

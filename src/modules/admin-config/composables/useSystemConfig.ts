@@ -3,6 +3,11 @@ import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { getPublicApiKeys, updatePublicApiKeys } from "@/modules/admin-config/api/public-api-keys"
 import { getRuntimeConfig, updateRuntimeConfig } from "@/modules/admin-config/api/runtime"
+import {
+  RUNTIME_SWITCH_KEYS,
+  buildRuntimeSwitchPayload,
+  readRuntimeSwitch,
+} from "@/modules/admin-config/lib/runtime-switch"
 import { isJsonRecord, isStringRecord } from "@/lib/json-utils"
 import type { PublicApiKeys, RuntimeConfig } from "@/types/admin"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
@@ -34,6 +39,12 @@ export function useSystemConfig() {
 
   const apiKeysDirty = computed(() => apiKeysJson.value !== JSON.stringify(apiKeys.value, null, 2))
   const runtimeDirty = computed(() => runtimeJson.value !== JSON.stringify(runtimeConfig.value, null, 2))
+
+  const deviceFlowEnabled = computed(() => readRuntimeSwitch(runtimeConfig.value, RUNTIME_SWITCH_KEYS.oauth2DeviceFlow))
+  const deviceFlowDialogOpen = ref(false)
+  // The value the confirm dialog applies; kept after closing so its text does not flip mid-animation.
+  const deviceFlowTarget = ref(false)
+  const deviceFlowSaving = ref(false)
 
   async function loadApiKeys() {
     apiKeysLoading.value = true
@@ -139,6 +150,46 @@ export function useSystemConfig() {
     }
   }
 
+  function requestDeviceFlowChange(enabled: boolean) {
+    // Reloading after the switch would overwrite unsaved edits in the editor.
+    if (runtimeLoading.value || runtimeLoadError.value || runtimeDirty.value || deviceFlowSaving.value) return
+    deviceFlowTarget.value = enabled
+    deviceFlowDialogOpen.value = true
+  }
+
+  function setDeviceFlowDialogOpen(open: boolean) {
+    deviceFlowDialogOpen.value = open
+  }
+
+  /** Applies the confirmed switch with the runtime PUT the editor uses, so it passes the same backend checks. */
+  async function confirmDeviceFlowChange() {
+    const enabled = deviceFlowTarget.value
+    deviceFlowDialogOpen.value = false
+    if (deviceFlowSaving.value) return
+
+    deviceFlowSaving.value = true
+    try {
+      await updateRuntimeConfig(buildRuntimeSwitchPayload(RUNTIME_SWITCH_KEYS.oauth2DeviceFlow, enabled))
+    } catch (error: unknown) {
+      toastErrorWithExtractedMessage(
+        t("adminConfig.toast.saveFailedTitle"),
+        error,
+        t("adminConfig.toast.saveFailedFallback")
+      )
+      deviceFlowSaving.value = false
+      return
+    }
+    await loadRuntimeConfig()
+    deviceFlowSaving.value = false
+    if (runtimeLoadError.value) return
+    // A backend that does not know the switch accepts the PUT and ignores it.
+    if (deviceFlowEnabled.value !== enabled) {
+      toast.warning(t("adminConfig.toast.switchNotApplied"))
+      return
+    }
+    toast.success(enabled ? t("adminConfig.toast.deviceFlowEnabled") : t("adminConfig.toast.deviceFlowDisabled"))
+  }
+
   onMounted(() => {
     void loadApiKeys()
     void loadRuntimeConfig()
@@ -156,9 +207,16 @@ export function useSystemConfig() {
     runtimeJson,
     runtimeSaving,
     runtimeDirty,
+    deviceFlowEnabled,
+    deviceFlowDialogOpen,
+    deviceFlowTarget,
+    deviceFlowSaving,
     loadApiKeys,
     loadRuntimeConfig,
     saveApiKeys,
     saveRuntimeConfig,
+    requestDeviceFlowChange,
+    setDeviceFlowDialogOpen,
+    confirmDeviceFlowChange,
   }
 }

@@ -340,15 +340,26 @@ export default {
       "emptyTitle": "暫無已授權的應用",
       "emptyDescription": "當你授權第三方應用訪問賬號資料後，它們會顯示在這裡。",
       "authorizedAtPrefix": "授權於",
+      "revokeApp": "撤銷此應用的全部授權",
+      "devices": {
+        "title": "已授權裝置（{count}）",
+        "unnamed": "未命名裝置",
+        "revoke": "撤銷此裝置"
+      },
       "clientType": {
         "bot": "Bot",
         "website": "網站"
+      },
+      "deviceDialog": {
+        "title": "撤銷此裝置",
+        "description": "確認撤銷裝置「{label}」對 {clientName} 的授權嗎？這臺裝置將無法再訪問你的賬號；該應用的其他裝置和網頁授權不受影響。"
       },
       "dialog": {
         "title": "撤銷授權",
         "description": "確認撤銷 {clientName} 的所有訪問許可權嗎？該應用將無法再訪問您的資料。",
         "revoke": "撤銷",
-        "revoking": "撤銷中..."
+        "revoking": "撤銷中...",
+        "devicesNote": "這也會撤銷它在 {count} 臺裝置上的授權。"
       },
       "toast": {
         "fetchFailedTitle": "獲取授權列表失敗",
@@ -356,7 +367,12 @@ export default {
         "revokeSuccessTitle": "已撤銷授權",
         "revokeSuccessDescription": "已撤銷 {clientName} 的訪問許可權",
         "revokeFailedTitle": "撤銷失敗",
-        "revokeFailedFallback": "撤銷失敗"
+        "revokeFailedFallback": "撤銷失敗",
+        "deviceRevokeSuccessTitle": "已撤銷裝置",
+        "deviceRevokeSuccessDescription": "「{label}」已無法再訪問你的賬號",
+        "deviceNotFound": "該裝置的授權已不存在，列表已重新整理",
+        "deviceRevokeFailedTitle": "撤銷裝置失敗",
+        "deviceRevokeRetry": "暫時無法撤銷，請稍後重試"
       }
     },
     "gameBinding": {
@@ -577,6 +593,7 @@ export default {
       "bindingsRead": "讀取繫結賬號",
       "gameDataRead": "讀取遊戲資料",
       "gameDataWrite": "上傳遊戲資料",
+      "stationRoomWrite": "提交車牌（Sekai Station）",
       "openid": "確認您的身份並使用 Haruki 賬號登入",
       "profile": "獲取您的暱稱",
       "email": "獲取您的信箱地址",
@@ -585,6 +602,7 @@ export default {
     "scopeDescription": {
       "gameDataRead": "讀取你擁有或獲讀授權的遊戲賬號資料。不包含上傳許可權。",
       "gameDataWrite": "上傳你擁有或獲寫授權的遊戲賬號資料。不包含讀取已有資料的許可權。",
+      "stationRoomWrite": "以你的身份向 Sekai Station 提交車牌（房間號）。",
       "offlineAccess": "應用可在你未開啟頁面時持續使用上述授權，直到你在設定中撤銷。"
     },
     "login": {
@@ -650,6 +668,106 @@ export default {
         "failedTitle": "登出失敗",
         "missingRedirect": "未收到重定向地址",
         "retry": "無法完成登出，請重試"
+      }
+    },
+    "device": {
+      "framed": {
+        "title": "請在新視窗開啟",
+        "description": "為保護你的賬號，裝置授權頁面不能嵌在其他頁面中使用。",
+        "open": "在新視窗開啟"
+      },
+      "signedOut": {
+        "title": "登入以授權裝置",
+        "description": "必須先登入 Haruki Toolbox 賬號才能輸入裝置代碼。登入後會回到這裡，代碼會保留在輸入框中。",
+        "signIn": "去登入"
+      },
+      "unavailable": {
+        "title": "裝置登入暫未開放",
+        "description": "裝置授權當前不可用，請稍後再試。"
+      },
+      "inAppBrowser": {
+        "title": "請在系統瀏覽器中開啟",
+        "description": "你正在應用內瀏覽器中訪問，這裡的登入狀態可能與系統瀏覽器不同。請複製頁面地址，在系統瀏覽器中開啟後再手動輸入裝置上顯示的代碼。",
+        "copy": "複製頁面地址",
+        "copied": "已複製頁面地址",
+        "copyFailed": "複製失敗，請手動複製地址"
+      },
+      "entry": {
+        "title": "授權裝置",
+        "description": "輸入裝置或程式上顯示的代碼，核對後決定是否授權。",
+        "codeLabel": "裝置代碼",
+        "codeHint": "形如 BCDF-GHJK，不區分大小寫，連字元可以省略。",
+        "submit": "繼續",
+        "submitting": "正在核對..."
+      },
+      "review": {
+        "title": "裝置授權請求",
+        "description": "{client} 請求以你的身份訪問 Haruki Toolbox",
+        "clientId": "客戶端 ID",
+        "badge": {
+          "official": "官方",
+          "public": "公開應用",
+          "verified": "已驗證客戶端"
+        },
+        "publicHint": "任何人都可以以此應用的名義發起請求；只有你本人剛剛在自己的裝置上發起時才繼續",
+        "scopesTitle": "該應用將能夠：",
+        "noScopes": "該應用未請求額外許可權。",
+        "risk": {
+          "identity": "身份",
+          "offline": "離線",
+          "read": "讀取",
+          "write": "寫入"
+        },
+        "writeWarning": "此授權包含寫入許可權：應用將能以你的身份提交資料。只有在你信任此應用時才允許。",
+        "deviceLabelTitle": "應用自述",
+        "deviceLabelHint": "由裝置自行提供，未經核實",
+        "deviceLabelEmpty": "裝置未提供說明",
+        "requestedAt": "發起時間",
+        "remaining": "剩餘時間",
+        "account": "當前賬號",
+        "switchAccount": "切換賬號",
+        "phishingWarning": "只有在你本人剛剛發起時才繼續；不要輸入他人發給你的代碼",
+        "confirmCode": "請確認裝置上顯示的是 {code}",
+        "labelTitle": "裝置名稱（可選）",
+        "labelHint": "用於在「已授權應用」中區分裝置，最多 64 個字元；留空則使用應用自述。",
+        "acknowledge": "我確認這是我本人剛剛在自己的裝置或程式上發起的",
+        "approve": "允許",
+        "approving": "正在授權...",
+        "deny": "拒絕",
+        "notMe": "不是我發起的",
+        "outcomeUnknown": "無法確認授權是否已經完成。請先檢視裝置；如果裝置沒有顯示成功，可以再次點選「允許」。"
+      },
+      "result": {
+        "approvedTitle": "已授權",
+        "approved": "請回到裝置，它應顯示『已授權為 {name}』。如果不是你本人操作，請立即到「已授權應用」撤銷",
+        "unconfirmedTitle": "授權結果待確認",
+        "unconfirmed": "授權可能已完成，請檢視裝置；若裝置未顯示成功，請重新獲取代碼",
+        "deniedTitle": "已拒絕授權",
+        "expiredTitle": "代碼已過期",
+        "failedTitle": "授權未能完成",
+        "errorTitle": "無法繼續授權",
+        "retryOnDevice": "請在裝置上重新獲取代碼",
+        "newCode": "輸入新代碼",
+        "authorizedApps": "檢視已授權應用"
+      },
+      "rateLimited": "操作過於頻繁，請在 {seconds} 秒後重試",
+      "error": {
+        "feature_disabled": "裝置登入暫未開放",
+        "unsupported_media_type": "請求格式不受支援，請重新整理頁面後重試",
+        "origin_rejected": "請求來源未被允許，請從 Haruki Toolbox 網站開啟此頁面",
+        "invalid_request": "請求無效，請檢查輸入後重試",
+        "malformed_code": "代碼格式不正確，請核對裝置上顯示的代碼",
+        "invalid_code": "代碼無效、已過期或已被其他賬號使用；請在裝置上重新獲取",
+        "rate_limited": "操作過於頻繁，請稍後再試",
+        "code_expired": "代碼已過期，請在裝置上重新獲取",
+        "already_handled": "這個代碼已經處理過了",
+        "flow_conflict": "授權狀態已變化，請再次點選「繼續」",
+        "session_changed": "登入會話已變化，請再次點選「繼續」",
+        "ack_required": "請先勾選下方的確認框",
+        "client_unavailable": "該應用當前不可用",
+        "approval_failed": "授權未能完成，請重試",
+        "temporarily_unavailable": "服務暫時不可用，請稍後再試",
+        "unknown": "網路錯誤或未知錯誤，請稍後再試"
       }
     }
   }

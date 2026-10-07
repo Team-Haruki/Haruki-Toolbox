@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +31,7 @@ import {
   LucideSettings2,
   LucideRefreshCw,
   LucideAlertCircle,
+  LucideToggleRight,
 } from "lucide-vue-next"
 import { VueMonacoEditor } from "@guolao/vue-monaco-editor"
 import { useI18n } from "vue-i18n"
@@ -62,14 +65,25 @@ const {
   runtimeJson,
   runtimeSaving,
   runtimeDirty,
+  deviceFlowEnabled,
+  deviceFlowDialogOpen,
+  deviceFlowTarget,
+  deviceFlowSaving,
   loadApiKeys,
   loadRuntimeConfig,
   saveApiKeys,
   saveRuntimeConfig,
+  requestDeviceFlowChange,
+  setDeviceFlowDialogOpen,
+  confirmDeviceFlowChange,
 } = useSystemConfig()
 
 // UI-only: let the editors follow their resizable containers.
 const monacoOptions = { ...editorOptions, automaticLayout: true }
+
+const deviceFlowSwitchDisabled = computed(() =>
+  runtimeLoading.value || runtimeLoadError.value || runtimeDirty.value || deviceFlowSaving.value
+)
 </script>
 
 <template>
@@ -126,6 +140,56 @@ const monacoOptions = { ...editorOptions, automaticLayout: true }
         </Button>
       </CardFooter>
     </Card>
+
+    <!-- Runtime switches -->
+    <Card class="rounded-lg">
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2">
+          <LucideToggleRight class="h-4 w-4 shrink-0 text-muted-foreground" />
+          {{ t("adminConfig.runtimeSwitches.title") }}
+        </CardTitle>
+        <CardDescription>{{ t("adminConfig.runtimeSwitches.description") }}</CardDescription>
+      </CardHeader>
+      <CardContent class="flex flex-col gap-3">
+        <div class="flex items-center justify-between gap-3 rounded-md border p-3">
+          <div class="min-w-0">
+            <Label for="runtime-switch-oauth2-device-flow">{{ t("adminConfig.runtimeSwitches.oauth2DeviceFlow.label") }}</Label>
+            <p class="text-sm text-muted-foreground">{{ t("adminConfig.runtimeSwitches.oauth2DeviceFlow.description") }}</p>
+          </div>
+          <LucideLoader2 v-if="runtimeLoading || deviceFlowSaving" class="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+          <Switch
+            v-else
+            id="runtime-switch-oauth2-device-flow"
+            class="shrink-0"
+            :model-value="deviceFlowEnabled"
+            :disabled="deviceFlowSwitchDisabled"
+            @update:model-value="requestDeviceFlowChange(Boolean($event))"
+          />
+        </div>
+        <p v-if="runtimeDirty && !runtimeLoading" class="text-xs text-amber-600 dark:text-amber-400">
+          {{ t("adminConfig.runtimeSwitches.dirtyHint") }}
+        </p>
+      </CardContent>
+    </Card>
+
+    <AlertDialog :open="deviceFlowDialogOpen" @update:open="setDeviceFlowDialogOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {{ deviceFlowTarget ? t("adminConfig.runtimeSwitches.oauth2DeviceFlow.enableTitle") : t("adminConfig.runtimeSwitches.oauth2DeviceFlow.disableTitle") }}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ deviceFlowTarget ? t("adminConfig.runtimeSwitches.oauth2DeviceFlow.enableDescription") : t("adminConfig.runtimeSwitches.oauth2DeviceFlow.disableDescription") }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{{ t("common.cancel") }}</AlertDialogCancel>
+          <AlertDialogAction @click="confirmDeviceFlowChange">
+            {{ deviceFlowTarget ? t("adminConfig.runtimeSwitches.oauth2DeviceFlow.confirmEnable") : t("adminConfig.runtimeSwitches.oauth2DeviceFlow.confirmDisable") }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     <!-- Runtime Config -->
     <Card class="rounded-lg">

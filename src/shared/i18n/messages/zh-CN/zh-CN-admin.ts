@@ -2,6 +2,19 @@
 // Namespaces: admin, adminConfig, adminRisk, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
 export default {
   "admin": {
+    "reauth": {
+      "title": "验证管理员密码",
+      "description": "敏感的管理操作需要再次确认你的账号密码。验证通过后会自动继续刚才的操作。",
+      "passwordLabel": "当前密码",
+      "submit": "验证并继续",
+      "passwordRequired": "请输入密码",
+      "passwordMismatch": "密码不正确，请重试", // NOSONAR -- translation key, not a credential
+      "rejected": "无法通过密码验证此账号",
+      "invalidInput": "输入无效，请重新输入密码",
+      "failedTitle": "无法验证密码",
+      "failedDescription": "验证服务暂时不可用，请稍后重试",
+      "sessionInvalid": "当前登录会话无效，请重新登录后再试"
+    },
     "layout": {
       "superAdmin": "超级管理员"
     },
@@ -53,6 +66,21 @@ export default {
       "saveDialogDescription": "此更改将立即生效并应用于整个系统。请在继续前确认 JSON 内容正确。",
       "saveDialogConfirm": "应用"
     },
+    "runtimeSwitches": {
+      "title": "运行时开关",
+      "description": "切换后约 1 秒内生效，无需重启后端。",
+      "dirtyHint": "下方运行时配置有未保存的修改，请先保存或刷新后再切换开关。",
+      "oauth2DeviceFlow": {
+        "label": "OAuth2 设备授权",
+        "description": "开启后，开通了设备码授权类型的客户端可以申请设备码，由用户在 /device 页批准。关闭后立即停止签发设备码和受理批准；已签发的令牌仍然有效，需要时按客户端撤销授权。后端没有返回该项时显示为关闭。",
+        "enableTitle": "开启 OAuth2 设备授权？",
+        "enableDescription": "开通了设备码授权类型的客户端将可以申请设备码。此更改立即应用于整个系统。",
+        "disableTitle": "关闭 OAuth2 设备授权？",
+        "disableDescription": "将立即停止签发设备码和受理 /device 页的批准。已签发的令牌不受影响，需要时请按客户端撤销授权。",
+        "confirmEnable": "开启",
+        "confirmDisable": "关闭"
+      }
+    },
     "toast": {
       "loadApiKeysFailedTitle": "加载 Public API Keys 失败",
       "loadRuntimeFailedTitle": "加载运行时配置失败",
@@ -63,7 +91,10 @@ export default {
       "invalidApiKeysSchema": "公共 API 密钥必须是字符串值组成的 JSON 对象",
       "invalidRuntimeSchema": "运行时配置必须是一个 JSON 对象",
       "saveFailedTitle": "保存失败",
-      "saveFailedFallback": "保存失败"
+      "saveFailedFallback": "保存失败",
+      "deviceFlowEnabled": "OAuth2 设备授权已开启",
+      "deviceFlowDisabled": "OAuth2 设备授权已关闭",
+      "switchNotApplied": "后端没有应用该开关（可能尚不支持），当前仍显示后端返回的值。"
     },
     "loadError": "加载配置失败",
     "retry": "重试",
@@ -262,6 +293,7 @@ export default {
       "bindingsRead": "游戏绑定 (bindings:read)",
       "gameDataRead": "游戏数据 (game-data:read)",
       "gameDataWrite": "游戏上传 (game-data:write)",
+      "stationRoomWrite": "提交车牌 Sekai Station (station:room:write)",
       "openid": "OIDC 登录 (openid)",
       "profile": "OIDC 昵称 (profile)",
       "email": "OIDC 邮箱 (email)",
@@ -304,7 +336,27 @@ export default {
       "addRedirectUri": "添加URI",
       "postLogoutRedirectUrisLabel": "登出回调URI (Post-Logout Redirect URIs)",
       "postLogoutRedirectUrisHelp": "OIDC RP-Initiated Logout 后允许跳回的地址，精确匹配。仅登录类客户端需要，可留空。",
-      "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out"
+      "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out",
+      "grantTypesLabel": "授权类型 (Grant types)",
+      "grantTypesHelp": "授权码用于有浏览器回调的应用；设备码用于没有浏览器的程序（RFC 8628），由用户在 /device 页批准；刷新令牌须与其中之一同时选择，登记 offline_access 时必选。",
+      "grantType": {
+        "authorizationCode": "授权码 (authorization_code)",
+        "deviceCode": "设备码 (device_code)",
+        "refreshToken": "刷新令牌 (refresh_token)"
+      },
+      "redirectUrisOptionalHelp": "未选择授权码时不需要回调URI，仅设备码客户端可以留空。",
+      "writeScopeHint": "写入权限：允许客户端以用户身份提交或上传数据",
+      "devicePolicy": {
+        "title": "设备码策略",
+        "firstParty": "官方客户端",
+        "firstPartyHelp": "在设备授权页上显示「官方」徽章。",
+        "firstPartyPublicHelp": "只对 Confidential 客户端生效，Public 客户端不显示「官方」徽章。",
+        "allowWrite": "允许经设备码申请 game-data:write",
+        "allowWriteHelp": "仅限登记了 game-data:write 的 Public 客户端。",
+        "maxCodesPer10m": "每 10 分钟设备码上限",
+        "maxCodesPer10mHelp": "该客户端每 10 分钟最多可申请的设备码数量，范围 {min}–{max}，默认 {default}。",
+        "emailNeverGranted": "设备码授权永远不会授予 email，登记了也只对授权码生效。"
+      }
     },
     "list": {
       "searchPlaceholder": "搜索名称或 Client ID",
@@ -318,7 +370,9 @@ export default {
       "createdAt": "创建于 {date}",
       "noScopes": "未配置 Scope",
       "typePublic": "Public",
-      "typeConfidential": "Confidential"
+      "typeConfidential": "Confidential",
+      "deviceBadge": "设备码",
+      "deviceBadgeTitle": "已开通设备码授权类型"
     },
     "table": {
       "actions": "操作",
@@ -447,6 +501,10 @@ export default {
       "secretRotated": "已成功重新生成 Secret",
       "restored": "已恢复",
       "revokedAll": "已撤销所有授权",
+      "disabledRevocationIncompleteTitle": "客户端已禁用，但部分授权未能撤销",
+      "revokedPartiallyTitle": "授权仅部分撤销",
+      "revocationFailedSubjects": "有 {count} 个用户标识（subject）撤销失败，可执行“撤销全部授权”重试。",
+      "revocationIncomplete": "部分授权未能撤销，可执行“撤销全部授权”重试。",
       "webhookSaved": "Webhook endpoint 已保存",
       "webhookDeleted": "Webhook endpoint 已删除",
       "copyFailedTitle": "复制失败",
@@ -456,9 +514,19 @@ export default {
       "validation": {
         "clientIdAndNameRequired": "客户端ID和名称不能为空",
         "nameRequired": "客户端名称不能为空",
-        "redirectUriRequired": "请至少填写一个回调URI",
+        "redirectUriRequired": "选择了授权码时请至少填写一个回调URI",
         "scopeRequired": "请至少选择一个Scope",
-        "oidcScopeRequiresOpenid": "profile / email 需要与 openid 一起登记"
+        "oidcScopeRequiresOpenid": "profile / email 需要与 openid 一起登记",
+        "grantTypeRequired": "请至少选择授权码或设备码（刷新令牌不能单独使用）",
+        "postLogoutRequiresRedirectUris": "没有回调URI的客户端不能登记登出回调URI，请清空登出回调URI",
+        "offlineAccessRequiresRefreshToken": "登记 offline_access 时须同时选择刷新令牌",
+        "deviceRequiresUserRead": "设备码客户端须登记 user:read（设备页要显示授权的账号）",
+        "deviceWriteRequiresPublicClient": "“允许经设备码申请 game-data:write”只适用于选择了设备码并登记了 game-data:write 的 Public 客户端",
+        "invalidDevicePolicy": "每 10 分钟设备码上限须为 1–600 之间的整数"
+      },
+      "apiErrors": {
+        "publicClientHasNoSecret": "Public 客户端没有可轮换的 Secret。如需 Secret，请把客户端类型改为 Confidential，保存时会生成一次。",
+        "unsupportedGrantType": "授权类型只能是授权码、设备码和刷新令牌"
       }
     }
   },

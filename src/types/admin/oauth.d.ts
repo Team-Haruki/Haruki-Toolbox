@@ -1,3 +1,16 @@
+/**
+ * Per-client device grant policy, stored by the backend in the Hydra client's
+ * `metadata.haruki.device`. Unsaved members read as their defaults.
+ */
+export interface OAuthClientDevicePolicy {
+  /** "Official" badge on the device approval card; shown for confidential clients only. */
+  firstParty: boolean
+  /** Lets a public device client request `game-data:write`. */
+  allowWrite: boolean
+  /** Device codes the client may obtain per 10 minutes (1-600, default 60). */
+  maxCodesPer10m: number
+}
+
 export interface OAuthClient {
   clientId: string
   clientSecret?: string
@@ -8,6 +21,11 @@ export interface OAuthClient {
   redirectUris?: string[]
   /** OIDC RP-initiated logout return targets; exact-match like redirectUris. */
   postLogoutRedirectUris?: string[]
+  /** Hydra grant types: authorization_code, refresh_token and/or the device code grant. */
+  grantTypes?: string[]
+  /** Whether grantTypes include the device code grant. */
+  deviceEnabled?: boolean
+  devicePolicy?: OAuthClientDevicePolicy
   active: boolean
   createdAt: string
   updatedAt?: string

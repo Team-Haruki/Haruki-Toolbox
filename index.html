@@ -10,8 +10,8 @@
         dataLayer.push(arguments);
       }
       gtag('js', new Date());
-
-      gtag('config', 'G-3VHNZT3G3P');
+      // gtag('config', …) runs from src/lib/analytics.ts so the first page view
+      // never records a device user code or an OAuth challenge.
     </script>
     <link rel="icon" type="image/x-icon" href="/assets/haruki.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

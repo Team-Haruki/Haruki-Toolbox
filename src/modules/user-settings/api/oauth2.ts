@@ -4,13 +4,31 @@ import { translate } from "@/shared/i18n"
 import type { APIResponse } from "@/types"
 import type { AxiosRequestConfig } from "axios"
 
+export type OAuthAuthorizationFlowType = "device" | "browser"
+
 export interface OAuthAuthorization {
+    /** Hydra consent session id; one client can hold several. Omitted by the backend when empty. */
+    consentRequestId?: string
     clientId: string
     clientName: string
     clientType: string
     scopes: string[]
     createdAt: string
+    /** How the grant was made; a backend without the device flow leaves it out (read as "browser"). */
+    flowType?: OAuthAuthorizationFlowType | string
+    /** The device's name for a device grant; "" for browser grants. */
+    deviceLabel?: string
 }
+
+/** `updatedData` of a per-device revoke. */
+export interface OAuthConsentRevokeResult {
+    revoked: boolean
+}
+
+/** `updatedData.code` of a per-device revoke that found no such grant (404). */
+export const AUTHORIZATION_NOT_FOUND = "authorization_not_found"
+/** `updatedData.code` of a per-device revoke that Hydra refused (502). */
+export const REVOKE_FAILED = "revoke_failed"
 
 export interface OAuthChallengeClient {
     client_id?: string
@@ -31,6 +49,8 @@ export interface OAuthLoginChallenge {
 
 export interface OAuthConsentChallenge {
     challenge?: string
+    /** Sent since the device flow (its approval chain records it); the consent page does not use it. */
+    consent_request_id?: string
     skip?: boolean
     subject?: string
     request_url?: string
@@ -102,6 +122,7 @@ const scopeLabelKeys: Record<string, string> = {
     "bindings:read": "oauth.scope.bindingsRead",
     "game-data:read": "oauth.scope.gameDataRead",
     "game-data:write": "oauth.scope.gameDataWrite",
+    "station:room:write": "oauth.scope.stationRoomWrite",
     "openid": "oauth.scope.openid",
     "profile": "oauth.scope.profile",
     "email": "oauth.scope.email",
@@ -113,6 +134,7 @@ const scopeLabelKeys: Record<string, string> = {
 const scopeDescriptionKeys: Record<string, string> = {
     "game-data:read": "oauth.scopeDescription.gameDataRead",
     "game-data:write": "oauth.scopeDescription.gameDataWrite",
+    "station:room:write": "oauth.scopeDescription.stationRoomWrite",
     "offline_access": "oauth.scopeDescription.offlineAccess",
 }
 
@@ -153,6 +175,22 @@ export async function revokeOAuthAuthorization(
 ): Promise<APIResponse<string>> {
     return await request<APIResponse<string>>(
         buildUserApiPath(toolboxUserId, "oauth2", "authorizations", clientId),
+        { method: "DELETE", ...options }
+    )
+}
+
+/**
+ * Revokes one grant (one consent session) of a client, such as a single
+ * device, and leaves the client's other grants alone.
+ */
+export async function revokeOAuthAuthorizationConsent(
+    toolboxUserId: string,
+    clientId: string,
+    consentRequestId: string,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<OAuthConsentRevokeResult>> {
+    return await request<APIResponse<OAuthConsentRevokeResult>>(
+        buildUserApiPath(toolboxUserId, "oauth2", "authorizations", clientId, "consents", consentRequestId),
         { method: "DELETE", ...options }
     )
 }

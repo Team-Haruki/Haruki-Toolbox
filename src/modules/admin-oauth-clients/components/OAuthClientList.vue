@@ -27,6 +27,7 @@ import {
 import { copyTextToClipboard, isClipboardSupported } from "@/lib/clipboard"
 import { formatLocalizedDate } from "@/lib/date-time"
 import type { OAuthClient } from "@/types/admin"
+import { canRotateClientSecret } from "@/modules/admin-oauth-clients/lib/client-actions"
 
 interface Props {
   clients: OAuthClient[]
@@ -102,6 +103,13 @@ async function copyClientId(clientId: string) {
             </h3>
             <span class="rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
               {{ client.clientType === "public" ? t("adminOAuthClients.list.typePublic") : t("adminOAuthClients.list.typeConfidential") }}
+            </span>
+            <span
+              v-if="client.deviceEnabled"
+              class="rounded border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:text-sky-400"
+              :title="t('adminOAuthClients.list.deviceBadgeTitle')"
+            >
+              {{ t("adminOAuthClients.list.deviceBadge") }}
             </span>
             <span
               :class="[
@@ -208,7 +216,11 @@ async function copyClientId(clientId: string) {
                 <DropdownMenuLabel class="text-xs text-muted-foreground">
                   {{ t("adminOAuthClients.table.menu.dangerZone") }}
                 </DropdownMenuLabel>
-                <DropdownMenuItem :disabled="props.actionLoading" @click="emit('rotate-secret', client.clientId)">
+                <DropdownMenuItem
+                  v-if="canRotateClientSecret(client)"
+                  :disabled="props.actionLoading"
+                  @click="emit('rotate-secret', client.clientId)"
+                >
                   <LucideKey class="mr-2 h-4 w-4" />
                   {{ t("adminOAuthClients.table.menu.rotateSecret") }}
                 </DropdownMenuItem>

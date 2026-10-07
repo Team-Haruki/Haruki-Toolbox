@@ -15,6 +15,7 @@ import { chromium, type FullConfig } from "@playwright/test"
 const WARM_ROUTES = [
   "/",
   "/logout",
+  "/device",
   "/this/route/does/not/exist",
   "/cards",
   "/events",
@@ -27,6 +28,9 @@ const WARM_ROUTES = [
   "/training/challenge",
   "/event-planner",
   "/user/harukibot-authorization",
+  "/user/login",
+  "/user/register",
+  "/user/verification",
 ]
 
 export default async function globalSetup(config: FullConfig) {

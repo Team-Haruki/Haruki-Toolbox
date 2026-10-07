@@ -53,6 +53,8 @@ export interface KratosUiNode {
 export interface KratosBrowserFlow {
   id: string
   return_to?: string
+  /** Flow state, e.g. "choose_method", "sent_email" or "passed_challenge" for verification. */
+  state?: string
   ui: {
     action: string
     method: string
