@@ -1,5 +1,5 @@
 // AUTO-GENERATED split of the former monolithic zh-CN locale file.
-// Namespaces: admin, adminConfig, adminRisk, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
+// Namespaces: admin, adminConfig, adminRisk, adminBotSecurity, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
 export default {
   "admin": {
     "reauth": {
@@ -30,6 +30,7 @@ export default {
         "users": "查看、搜索与管理工具箱用户。",
         "gameBindings": "查询与调整用户的游戏账号绑定。",
         "risk": "维护风控规则并处置风险事件。",
+        "botSecurity": "查看 Haruki Cloud 上报的 Bot 客户端安全告警并标记处理结果。",
         "tickets": "处理用户提交的工单与回复。",
         "content": "维护友情链接与推荐群聊等站点内容。",
         "sponsors": "管理赞助者名单的展示。",
@@ -50,6 +51,7 @@ export default {
       "config": "系统配置",
       "gameBindings": "游戏绑定",
       "risk": "风控管理",
+      "botSecurity": "Bot 安全告警",
       "tickets": "工单管理",
       "pendingTickets": "{total} 个待管理员处理的工单"
     }
@@ -177,6 +179,137 @@ export default {
       "rulesMustBeJsonArray": "规则内容必须是 JSON 数组",
       "rulesUpdated": "风控规则已更新",
       "invalidJson": "JSON 格式错误"
+    }
+  },
+  "adminBotSecurity": {
+    "common": {
+      "fallback": "—"
+    },
+    "kind": {
+      "authFailed": "认证失败",
+      "replayDetected": "检测到重放请求",
+      "rateLimited": "触发限流",
+      "buildRejected": "客户端构建被拒绝",
+      "sessionRevoked": "会话已吊销",
+      "loginSourceChanged": "登录来源变化",
+      "clientChanged": "客户端变更",
+      "policyUnavailable": "安全策略不可用"
+    },
+    "status": {
+      "open": "待处理",
+      "resolved": "已处理",
+      "ignored": "已忽略"
+    },
+    "enforcement": {
+      "enforced": "已拦截",
+      "logOnly": "仅记录",
+      "enforcedHint": "Haruki Cloud 已拦截这次操作",
+      "logOnlyHint": "Haruki Cloud 只记录了这次操作，没有拦截"
+    },
+    "window": {
+      "seconds": "{count} 秒",
+      "minutes": "{count} 分钟",
+      "hours": "{count} 小时",
+      "days": "{count} 天"
+    },
+    "summary": {
+      "open": "待处理",
+      "last24h": "近 24 小时告警",
+      "last7d": "近 7 天告警",
+      "byKind": "待处理告警（按类型）",
+      "noOpen": "暂无待处理的告警",
+      "unavailable": "统计暂不可用",
+      "filterByKind": "只看待处理的「{kind}」告警"
+    },
+    "filters": {
+      "title": "筛选条件",
+      "expand": "展开",
+      "collapse": "收起",
+      "status": "状态",
+      "kind": "类型",
+      "botId": "Bot ID",
+      "botIdPlaceholder": "精确匹配 Bot ID",
+      "from": "开始时间",
+      "fromPlaceholder": "不限",
+      "to": "结束时间",
+      "toPlaceholder": "不限",
+      "allStatuses": "全部状态",
+      "allKinds": "全部类型"
+    },
+    "actions": {
+      "search": "查询",
+      "refresh": "刷新",
+      "retry": "重试",
+      "resolve": "标记已处理",
+      "ignore": "忽略",
+      "reopen": "重新打开",
+      "details": "查看详情"
+    },
+    "table": {
+      "title": "告警列表",
+      "alertTime": "告警时间",
+      "kind": "类型",
+      "bot": "Bot / 所有者 / 来源",
+      "sourceIp": "来源 IP",
+      "client": "客户端版本 / 构建",
+      "count": "次数 / 阈值",
+      "status": "状态",
+      "handler": "处理人",
+      "actions": "操作",
+      "within": "{window}内",
+      "ownerQq": "QQ {qq}",
+      "botShort": "Bot {botId}",
+      "sourceIpShort": "IP {ip}",
+      "handledByShort": "处理人：{name}",
+      "openMenu": "告警 #{id} 的操作",
+      "empty": "没有符合条件的告警",
+      "loadError": "告警列表加载失败"
+    },
+    "pagination": {
+      "total": "共 {total} 条",
+      "prev": "上一页",
+      "next": "下一页"
+    },
+    "detail": {
+      "title": "告警 #{id}",
+      "description": "以下内容来自 Bot 客户端或 Haruki Cloud，按原文显示。",
+      "receivedAt": "接收时间",
+      "botId": "Bot ID",
+      "ownerQq": "所有者 QQ",
+      "node": "上报节点",
+      "clientVersion": "客户端版本",
+      "buildId": "构建 ID",
+      "reason": "原因",
+      "note": "处理备注",
+      "noNote": "暂无备注",
+      "countValue": "{window}内 {count} 次，阈值 {threshold}",
+      "handledAt": "处理时间",
+      "handlerNameUnavailable": "（用户名不可用，可能已删除）"
+    },
+    "actionDialog": {
+      "title": {
+        "resolve": "标记告警为已处理",
+        "ignore": "忽略告警",
+        "reopen": "重新打开告警"
+      },
+      "subject": "告警 #{id} · {kind}",
+      "subjectWithBot": "告警 #{id} · {kind} · Bot {botId}",
+      "noteLabel": "处理备注（可选）",
+      "notePlaceholder": "记录处理方式或判断依据",
+      "noteHint": "不修改则保留原备注。",
+      "noteWillClear": "备注已清空，保存后将删除原备注。"
+    },
+    "toast": {
+      "loadFailedTitle": "加载告警失败",
+      "loadFailedFallback": "请稍后重试",
+      "loadSummaryFailedTitle": "加载告警统计失败",
+      "filterFailedTitle": "筛选条件有误",
+      "invalidTimeRange": "开始时间不能晚于结束时间",
+      "updateFailedTitle": "更新告警失败",
+      "updateFailedFallback": "请稍后重试",
+      "resolveSuccess": "告警已标记为已处理",
+      "ignoreSuccess": "告警已忽略",
+      "reopenSuccess": "告警已重新打开"
     }
   },
   "adminContent": {
