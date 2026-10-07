@@ -38,7 +38,9 @@ export default {
       "tryLater": "請稍後再試",
       "logoutSuccessTitle": "登出成功",
       "invalidReturnToTitle": "登入流程已重置",
-      "invalidReturnToDescription": "檢測到異常跳轉目標，已為您重新發起安全登入流程。"
+      "invalidReturnToDescription": "檢測到異常跳轉目標，已為您重新發起安全登入流程。",
+      "invalidRegistrationReturnToTitle": "註冊流程已重置",
+      "invalidRegistrationReturnToDescription": "檢測到異常跳轉目標，已為您重新發起安全註冊流程。"
     },
     "login": {
       "title": "登入到 Haruki 工具箱",
@@ -128,7 +130,8 @@ export default {
     "verification": {
       "title": "驗證郵箱",
       "description": "完成身份驗證流程以啟用當前郵箱地址。",
-      "submit": "提交驗證"
+      "submit": "提交驗證",
+      "continue": "繼續"
     },
     "error": {
       "title": "身份流程異常",

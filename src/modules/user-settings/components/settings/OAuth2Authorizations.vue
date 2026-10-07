@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Bot, Clock, Globe, KeyRound, Loader2, RefreshCw, Trash2, X } from "lucide-vue-next"
 import { formatLocalizedDateTime } from "@/lib/date-time"
 import { extractErrorMessage } from "@/lib/error-utils"
+import { oauthAuthorizationKey } from "@/modules/user-settings/lib/oauth-authorizations"
 
 import { ref, onMounted } from "vue"
 import {
@@ -162,8 +163,8 @@ onMounted(() => {
 
       <ul v-else class="flex flex-col gap-2">
         <li
-          v-for="auth in authorizations"
-          :key="auth.clientId"
+          v-for="(auth, index) in authorizations"
+          :key="oauthAuthorizationKey(auth, index)"
           class="flex items-start gap-3 rounded-md border bg-muted/20 p-3"
         >
           <div class="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed } from "vue"
 import { useRoute } from "vue-router"
-import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,53 +14,19 @@ import {
   CardDescription
 } from "@/components/ui/card"
 import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
-import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
+import { useFlowReturnToGuard } from "@/modules/auth/composables/useFlowReturnToGuard"
 import { markLoginSuccessPending } from "@/modules/auth/lib/login-success"
-import { createAllowedReturnToOrigins, isAllowedFlowReturnTo } from "@/modules/auth/lib/return-to"
+import {
+  LOGIN_SUCCESS_QUERY_PARAM,
+  buildAuthPageLink,
+  buildFlowReturnTo,
+  resolveAuthPageRedirect,
+  resolveBrowserOrigin,
+} from "@/modules/auth/lib/return-to"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
-import { resolveSafeRedirectTarget } from "@/core/router/navigation"
 
 const route = useRoute()
 const { t } = useI18n()
-
-function resolveKratosOrigin(): string {
-  if (typeof window === "undefined") {
-    return ""
-  }
-
-  try {
-    return new URL(getKratosPublicUrl(), window.location.origin).origin
-  } catch {
-    return ""
-  }
-}
-
-function resolveLoginRedirectPath(): string {
-  return resolveSafeRedirectTarget(route.query.redirect) ?? "/"
-}
-
-function resolveLoginReturnTo(): string {
-  const redirectPath = resolveLoginRedirectPath()
-  if (typeof window === "undefined") {
-    return redirectPath
-  }
-
-  const url = new URL(redirectPath, window.location.origin)
-  url.searchParams.set("_login_success", "1")
-  return url.toString()
-}
-
-function isAllowedLoginFlowReturnTo(value: string): boolean {
-  if (typeof window === "undefined") {
-    return false
-  }
-
-  return isAllowedFlowReturnTo(value, {
-    currentOrigin: window.location.origin,
-    kratosOrigin: resolveKratosOrigin(),
-    allowedOrigins: createAllowedReturnToOrigins(window.location.origin),
-  })
-}
 
 const {
   loading,
@@ -79,34 +44,27 @@ const {
   invokeVisibleFieldAction,
   restartFlow,
 } = useKratosBrowserFlow("login", {
-  getReturnTo: () => resolveLoginReturnTo(),
+  getReturnTo: () => buildFlowReturnTo(route.query.redirect, resolveBrowserOrigin(), {
+    fallbackPath: "/",
+    params: { [LOGIN_SUCCESS_QUERY_PARAM]: "1" },
+  }),
 })
 
-const hasForcedSafeReturnTo = ref(false)
+useFlowReturnToGuard(
+  { loading, loadError, flowReturnTo, restartFlow },
+  {
+    titleKey: "auth.toast.invalidReturnToTitle",
+    descriptionKey: "auth.toast.invalidReturnToDescription",
+  }
+)
 
-watch(
-  [loading, loadError, flowReturnTo],
-  ([isLoading, error, returnTo]) => {
-    if (isLoading || error || hasForcedSafeReturnTo.value) {
-      return
-    }
-
-    const normalizedReturnTo = returnTo.trim()
-    if (!normalizedReturnTo) {
-      return
-    }
-
-    if (isAllowedLoginFlowReturnTo(normalizedReturnTo)) {
-      return
-    }
-
-    hasForcedSafeReturnTo.value = true
-    toast.warning(t("auth.toast.invalidReturnToTitle"), {
-      description: t("auth.toast.invalidReturnToDescription"),
-    })
-    restartFlow()
-  },
-  { immediate: true }
+// A new account should land where the sign-in was heading (an OAuth login
+// challenge, for example), so the register link forwards the redirect.
+const registerLink = computed(() =>
+  buildAuthPageLink(
+    "/user/register",
+    resolveAuthPageRedirect(route.query.redirect, flowReturnTo.value, resolveBrowserOrigin())
+  )
 )
 
 type LoginActionKind = "submit" | "trigger"
@@ -350,7 +308,7 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
             </Button>
             <div class="text-center text-sm">
               {{ t("auth.login.noAccount") }}
-              <router-link to="/user/register" class="underline underline-offset-4">
+              <router-link :to="registerLink" class="underline underline-offset-4">
                 {{ t("auth.login.registerLink") }}
               </router-link>
             </div>

@@ -81,6 +81,12 @@ interface ScriptField {
   defer: boolean
 }
 
+interface AnchorField {
+  key: string
+  id: string
+  href: string
+}
+
 type DisplayFieldKind = "text" | "image"
 
 interface DisplayField {
@@ -554,6 +560,30 @@ export function useKratosBrowserFlow(
       .filter((field): field is DisplayField => field !== null)
   )
 
+  // Link nodes, such as the "continue" link Kratos adds to a passed
+  // verification flow. Their href is untrusted: callers must validate it.
+  const anchorFields = computed<AnchorField[]>(() =>
+    (flow.value?.ui.nodes ?? [])
+      .map((node, index) => {
+        if (node.type !== "a") {
+          return null
+        }
+
+        const href = readOptionalString(node.attributes?.href)
+        if (!href) {
+          return null
+        }
+
+        const id = readOptionalString(node.attributes?.id)
+        return {
+          key: `${id || "a"}-${index}`,
+          id,
+          href,
+        }
+      })
+      .filter((field): field is AnchorField => field !== null)
+  )
+
   function clearInjectedScripts() {
     injectedScripts.value.forEach((script) => {
       script.remove()
@@ -684,6 +714,9 @@ export function useKratosBrowserFlow(
   const flowReturnTo = computed(() =>
     typeof flow.value?.return_to === "string" ? flow.value.return_to : ""
   )
+  const flowState = computed(() =>
+    typeof flow.value?.state === "string" ? flow.value.state : ""
+  )
   const method = computed(() => {
     const rawMethod = flow.value?.ui.method?.toLowerCase()
     return rawMethod === "get" ? "get" : "post"
@@ -703,11 +736,13 @@ export function useKratosBrowserFlow(
     buttonFields,
     submitFields,
     displayFields,
+    anchorFields,
     submitLabel,
     submitName,
     submitValue,
     action,
     flowReturnTo,
+    flowState,
     method,
     invokeVisibleFieldAction,
     restartFlow,

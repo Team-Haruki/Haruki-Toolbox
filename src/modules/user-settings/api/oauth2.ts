@@ -5,6 +5,8 @@ import type { APIResponse } from "@/types"
 import type { AxiosRequestConfig } from "axios"
 
 export interface OAuthAuthorization {
+    /** Hydra consent session id; one client can hold several. Omitted by the backend when empty. */
+    consentRequestId?: string
     clientId: string
     clientName: string
     clientType: string

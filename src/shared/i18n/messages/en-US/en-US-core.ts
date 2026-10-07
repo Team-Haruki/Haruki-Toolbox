@@ -38,7 +38,9 @@ export default {
       "tryLater": "Please try again later",
       "logoutSuccessTitle": "Signed out",
       "invalidReturnToTitle": "Sign-in flow restarted",
-      "invalidReturnToDescription": "An unexpected return target was detected. A safe sign-in flow has been started."
+      "invalidReturnToDescription": "An unexpected return target was detected. A safe sign-in flow has been started.",
+      "invalidRegistrationReturnToTitle": "Registration flow restarted",
+      "invalidRegistrationReturnToDescription": "An unexpected return target was detected. A safe registration flow has been started."
     },
     "login": {
       "title": "Sign in to Haruki Toolbox",
@@ -128,7 +130,8 @@ export default {
     "verification": {
       "title": "Verify email",
       "description": "Complete the identity verification flow to activate your current email address.",
-      "submit": "Submit verification"
+      "submit": "Submit verification",
+      "continue": "Continue"
     },
     "error": {
       "title": "Identity flow error",

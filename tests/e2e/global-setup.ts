@@ -27,6 +27,9 @@ const WARM_ROUTES = [
   "/training/challenge",
   "/event-planner",
   "/user/harukibot-authorization",
+  "/user/login",
+  "/user/register",
+  "/user/verification",
 ]
 
 export default async function globalSetup(config: FullConfig) {

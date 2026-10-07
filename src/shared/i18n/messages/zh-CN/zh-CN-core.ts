@@ -38,7 +38,9 @@ export default {
       "tryLater": "请稍后再试",
       "logoutSuccessTitle": "注销成功",
       "invalidReturnToTitle": "登录流程已重置",
-      "invalidReturnToDescription": "检测到异常跳转目标，已为您重新发起安全登录流程。"
+      "invalidReturnToDescription": "检测到异常跳转目标，已为您重新发起安全登录流程。",
+      "invalidRegistrationReturnToTitle": "注册流程已重置",
+      "invalidRegistrationReturnToDescription": "检测到异常跳转目标，已为您重新发起安全注册流程。"
     },
     "login": {
       "title": "登录到 Haruki 工具箱",
@@ -128,7 +130,8 @@ export default {
     "verification": {
       "title": "验证邮箱",
       "description": "完成身份验证流程以激活当前邮箱地址。",
-      "submit": "提交验证"
+      "submit": "提交验证",
+      "continue": "继续"
     },
     "error": {
       "title": "身份流程异常",
