@@ -903,6 +903,7 @@ export default {
     "oauthLogin": "Continue sign in",
     "oauthConsent": "Authorize app",
     "oauthLogout": "Confirm sign out",
+    "oauthDevice": "Authorize device",
     "tickets": {
       "mine": "My tickets",
       "create": "Create ticket",
@@ -1431,7 +1432,11 @@ export default {
     "unsupportedBrowser": {
       "title": "Unsupported browser",
       "description": "You are trying to access Haruki Toolbox from an unsupported browser.",
-      "suggestion": "Please use Chrome, Safari, Firefox, or another supported browser."
+      "suggestion": "Please use Chrome, Safari, Firefox, or another supported browser.",
+      "deviceHint": "To authorize a device, copy the page address below, open it in your system browser, then type the code shown on your device.",
+      "copyDeviceLink": "Copy page address",
+      "copied": "Copied",
+      "copyFailed": "Could not copy. Please type the address manually."
     },
     "pwa": {
       "updateAvailableTitle": "New version available",

@@ -903,6 +903,7 @@ export default {
     "oauthLogin": "继续登录授权",
     "oauthConsent": "授权第三方应用",
     "oauthLogout": "退出登录确认",
+    "oauthDevice": "设备授权",
     "tickets": {
       "mine": "我的工单",
       "create": "创建工单",
@@ -1431,7 +1432,11 @@ export default {
     "unsupportedBrowser": {
       "title": "不受支持的浏览器",
       "description": "您正在尝试使用不受支持的浏览器访问Haruki工具箱",
-      "suggestion": "请改用Chrome、Safari、Firefox等浏览器再使用Haruki工具箱"
+      "suggestion": "请改用Chrome、Safari、Firefox等浏览器再使用Haruki工具箱",
+      "deviceHint": "要授权设备，请复制下面的页面地址，在系统浏览器中打开后再手动输入设备上显示的代码。",
+      "copyDeviceLink": "复制页面地址",
+      "copied": "已复制",
+      "copyFailed": "复制失败，请手动输入地址"
     },
     "pwa": {
       "updateAvailableTitle": "发现新版本",

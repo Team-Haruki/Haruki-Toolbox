@@ -15,6 +15,7 @@ import { chromium, type FullConfig } from "@playwright/test"
 const WARM_ROUTES = [
   "/",
   "/logout",
+  "/device",
   "/this/route/does/not/exist",
   "/cards",
   "/events",

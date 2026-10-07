@@ -11,6 +11,7 @@ import type { APIResponse } from "@/types/response"
 import { translate } from "@/shared/i18n"
 import { isAdminReauthRequiredError, withAdminReauthRetry } from "@/lib/admin-reauth"
 import { requestAdminReauth } from "@/core/http/admin-reauth"
+import { resolveRequestBaseURL } from "@/core/http/url"
 
 declare module 'axios' {
     export interface AxiosRequestConfig {
@@ -182,7 +183,7 @@ async function handleResponseError(error: AxiosError, router: Router): Promise<v
 export function setupInterceptors(router: Router) {
     apiClient.interceptors.request.use((config) => {
         const settingsStore = useSettingsStore()
-        config.baseURL = settingsStore.currentEndpoint
+        config.baseURL = resolveRequestBaseURL(config.baseURL, settingsStore.currentEndpoint)
         if (!isCrossOriginBrowserRequest(config.baseURL) && !config.headers.get("X-Request-ID")) {
             config.headers.set("X-Request-ID", createRequestId())
         }

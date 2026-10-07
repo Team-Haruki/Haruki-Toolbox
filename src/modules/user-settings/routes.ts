@@ -77,6 +77,22 @@ export const oauthBrowserFlowRoutes: RouteRecordRaw[] = [
         meta: { titleKey: "route.oauthConsent", requiresAuth: true },
     },
     {
+        // OAuth2 device authorization (RFC 8628) verification page. No auth
+        // guard on purpose: the page shows its own sign-in card and returns
+        // here with ?user_code= kept (design §5, "must log in first").
+        path: "/device",
+        name: "oauth.device",
+        component: () => import("@/modules/user-settings/views/OAuthDevice.vue"),
+        meta: { titleKey: "route.oauthDevice" },
+    },
+    {
+        // Where Hydra's device chain ends (H9j). The backend only checks that
+        // the chain reaches it and never follows it; a browser that lands
+        // here anyway goes back to the page, without the query.
+        path: "/device/done",
+        redirect: { name: "oauth.device", query: {} },
+    },
+    {
         // Hydra's URLS_LOGOUT target for OIDC RP-initiated logout. No auth
         // guard: the logout_challenge is the credential, and the Kratos
         // session may already be half-dead when the user lands here.

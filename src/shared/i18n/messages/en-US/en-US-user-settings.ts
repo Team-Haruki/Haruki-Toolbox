@@ -653,6 +653,106 @@ export default {
         "missingRedirect": "Redirect URL was not returned",
         "retry": "Unable to complete sign-out. Please try again."
       }
+    },
+    "device": {
+      "framed": {
+        "title": "Open this page in a new window",
+        "description": "To protect your account, the device authorization page cannot be shown inside another page.",
+        "open": "Open in a new window"
+      },
+      "signedOut": {
+        "title": "Sign in to authorize a device",
+        "description": "You need to sign in to your Haruki Toolbox account before entering a device code. You will come back here afterwards, with the code kept in the field.",
+        "signIn": "Sign in"
+      },
+      "unavailable": {
+        "title": "Device sign-in is not available yet",
+        "description": "Device authorization is currently unavailable. Please try again later."
+      },
+      "inAppBrowser": {
+        "title": "Open this page in your system browser",
+        "description": "You are using an in-app browser, which may not share your sign-in with the system browser. Copy the page address, open it in your system browser, then type the code shown on your device.",
+        "copy": "Copy page address",
+        "copied": "Page address copied",
+        "copyFailed": "Could not copy. Please copy the address manually."
+      },
+      "entry": {
+        "title": "Authorize a device",
+        "description": "Enter the code shown on your device or program, then check the request before you decide.",
+        "codeLabel": "Device code",
+        "codeHint": "Looks like BCDF-GHJK. Not case-sensitive; the hyphen is optional.",
+        "submit": "Continue",
+        "submitting": "Checking..."
+      },
+      "review": {
+        "title": "Device authorization request",
+        "description": "{client} is asking to access Haruki Toolbox as you",
+        "clientId": "Client ID",
+        "badge": {
+          "official": "Official",
+          "public": "Public app",
+          "verified": "Verified client"
+        },
+        "publicHint": "Anyone can start a request in this app's name. Only continue if you started it on your own device just now.",
+        "scopesTitle": "This app will be able to:",
+        "noScopes": "This app requested no additional permissions.",
+        "risk": {
+          "identity": "Identity",
+          "offline": "Offline",
+          "read": "Read",
+          "write": "Write"
+        },
+        "writeWarning": "This authorization includes write access: the app will be able to submit data as you. Only allow it if you trust this app.",
+        "deviceLabelTitle": "App's own description",
+        "deviceLabelHint": "Provided by the device and not verified",
+        "deviceLabelEmpty": "The device gave no description",
+        "requestedAt": "Requested at",
+        "remaining": "Time left",
+        "account": "Signed in as",
+        "switchAccount": "Switch account",
+        "phishingWarning": "Only continue if you started this yourself just now. Never enter a code someone else sent you.",
+        "confirmCode": "Check that your device shows {code}",
+        "labelTitle": "Device name (optional)",
+        "labelHint": "Tells your devices apart in Authorized apps, up to 64 characters. Leave empty to use the app's own description.",
+        "acknowledge": "I confirm that I started this myself just now, on my own device or program",
+        "approve": "Allow",
+        "approving": "Authorizing...",
+        "deny": "Deny",
+        "notMe": "I didn't start this",
+        "outcomeUnknown": "We could not confirm whether the authorization went through. Check your device first; if it does not show success, you can select Allow again."
+      },
+      "result": {
+        "approvedTitle": "Authorized",
+        "approved": "Go back to your device. It should show “Authorized as {name}”. If this wasn't you, revoke it in Authorized apps right away.",
+        "unconfirmedTitle": "Authorization not confirmed",
+        "unconfirmed": "The authorization may have gone through. Check your device; if it does not show success, get a new code on the device.",
+        "deniedTitle": "Authorization denied",
+        "expiredTitle": "Code expired",
+        "failedTitle": "Authorization failed",
+        "errorTitle": "Cannot continue",
+        "retryOnDevice": "Get a new code on your device.",
+        "newCode": "Enter a new code",
+        "authorizedApps": "View authorized apps"
+      },
+      "rateLimited": "Too many attempts. Try again in {seconds} s.",
+      "error": {
+        "feature_disabled": "Device sign-in is not available yet",
+        "unsupported_media_type": "The request format is not supported. Reload the page and try again.",
+        "origin_rejected": "This request origin is not allowed. Open this page from the Haruki Toolbox site.",
+        "invalid_request": "The request is invalid. Check your input and try again.",
+        "malformed_code": "That doesn't look like a device code. Check the code shown on your device.",
+        "invalid_code": "The code is invalid, expired or already used by another account. Get a new code on your device.",
+        "rate_limited": "Too many attempts. Please try again later.",
+        "code_expired": "The code has expired. Get a new code on your device.",
+        "already_handled": "This code has already been handled.",
+        "flow_conflict": "The request changed. Select Continue again.",
+        "session_changed": "Your sign-in session changed. Select Continue again.",
+        "ack_required": "Tick the confirmation box first.",
+        "client_unavailable": "This app is currently unavailable.",
+        "approval_failed": "The authorization could not be completed. Please try again.",
+        "temporarily_unavailable": "The service is temporarily unavailable. Please try again later.",
+        "unknown": "Network or unknown error. Please try again later."
+      }
     }
   }
 } as const

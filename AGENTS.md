@@ -67,7 +67,7 @@ See `CLAUDE.md` for the full banned-token table with replacements.
 
 - For business API requests, use `request()` from `src/core/http/call-api.ts`.
 - Do not create ad-hoc Axios instances or hardcode API base URLs in feature code.
-- API base URL is resolved centrally from `useSettingsStore().currentEndpoint`.
+- API base URL is resolved centrally from `useSettingsStore().currentEndpoint`. A request may pass its own `baseURL` to override it; only the OAuth2 device endpoints do (`user-settings/api/oauth2.device.ts`, always the direct host, never the CDN).
 - Kratos browser flows belong in `src/modules/auth/lib/kratos.ts` and related auth composables.
 - Do not replace Kratos browser flow logic with generic `request()` calls unless the existing auth layer is being intentionally redesigned.
 - `request()` defaults `skipErrorToast` to `true`; features should opt into local, user-meaningful toasts where appropriate.
