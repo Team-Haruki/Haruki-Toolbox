@@ -27,6 +27,7 @@ import {
 import { copyTextToClipboard, isClipboardSupported } from "@/lib/clipboard"
 import { formatLocalizedDate } from "@/lib/date-time"
 import type { OAuthClient } from "@/types/admin"
+import { canRotateClientSecret } from "@/modules/admin-oauth-clients/lib/client-actions"
 
 interface Props {
   clients: OAuthClient[]
@@ -208,7 +209,11 @@ async function copyClientId(clientId: string) {
                 <DropdownMenuLabel class="text-xs text-muted-foreground">
                   {{ t("adminOAuthClients.table.menu.dangerZone") }}
                 </DropdownMenuLabel>
-                <DropdownMenuItem :disabled="props.actionLoading" @click="emit('rotate-secret', client.clientId)">
+                <DropdownMenuItem
+                  v-if="canRotateClientSecret(client)"
+                  :disabled="props.actionLoading"
+                  @click="emit('rotate-secret', client.clientId)"
+                >
                   <LucideKey class="mr-2 h-4 w-4" />
                   {{ t("adminOAuthClients.table.menu.rotateSecret") }}
                 </DropdownMenuItem>

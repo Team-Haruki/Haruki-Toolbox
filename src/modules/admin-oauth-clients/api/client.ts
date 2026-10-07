@@ -25,6 +25,11 @@ import {
     normalizeOAuthClientWebhook,
     readOAuthClientWebhookMutation,
 } from "@/modules/admin-oauth-clients/lib/webhook"
+import {
+    type RevocationOutcome,
+    readIssuedClientSecret,
+    readRevocationOutcome,
+} from "@/modules/admin-oauth-clients/lib/client-actions"
 
 const BASE = "/api/admin/oauth-clients"
 
@@ -119,15 +124,28 @@ export async function getOAuthClients(params?: QueryParams) {
     }
 }
 
-export function updateOAuthClient(clientId: string, data: Partial<OAuthClient>) {
-    return request(`${BASE}/${encodePathSegment(clientId)}`, { method: "PUT", data })
+/**
+ * `clientSecret` is the one-time secret issued when the edit switched a public
+ * client to confidential, and "" otherwise.
+ */
+export async function updateOAuthClient(
+    clientId: string,
+    data: Partial<OAuthClient>
+): Promise<{ clientSecret: string }> {
+    const res = await request<APIResponse<UnknownRecord>>(`${BASE}/${encodePathSegment(clientId)}`, {
+        method: "PUT",
+        data,
+    })
+    return { clientSecret: readIssuedClientSecret(res?.updatedData) }
 }
 
-export function setOAuthClientActive(clientId: string, active: boolean) {
-    return request(`${BASE}/${encodePathSegment(clientId)}/active`, {
+/** Disabling also revokes the client's grants; the outcome says whether that completed. */
+export async function setOAuthClientActive(clientId: string, active: boolean): Promise<RevocationOutcome> {
+    const res = await request<APIResponse<UnknownRecord>>(`${BASE}/${encodePathSegment(clientId)}/active`, {
         method: "PUT",
         data: { active },
     })
+    return readRevocationOutcome(res?.updatedData)
 }
 
 export async function rotateClientSecret(clientId: string) {
@@ -163,8 +181,11 @@ export async function getOAuthClientAuthorizations(clientId: string, params?: Qu
     return unwrapUpdatedData(res, translate("adminOAuthClients.toast.loadAuthorizationsFailedTitle"))
 }
 
-export function revokeOAuthClient(clientId: string) {
-    return request(`${BASE}/${encodePathSegment(clientId)}/revoke`, { method: "POST" })
+export async function revokeOAuthClient(clientId: string): Promise<RevocationOutcome> {
+    const res = await request<APIResponse<UnknownRecord>>(`${BASE}/${encodePathSegment(clientId)}/revoke`, {
+        method: "POST",
+    })
+    return readRevocationOutcome(res?.updatedData)
 }
 
 export function restoreOAuthClient(clientId: string) {

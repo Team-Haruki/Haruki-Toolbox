@@ -1,4 +1,5 @@
 import { ref } from "vue"
+import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
 import type { OAuthClient } from "@/types/admin"
@@ -9,6 +10,13 @@ import {
   rotateClientSecret,
   setOAuthClientActive,
 } from "@/modules/admin-oauth-clients/api/client"
+import {
+  PUBLIC_CLIENT_HAS_NO_SECRET,
+  type RevocationOutcome,
+  describeIncompleteRevocation,
+  describeOAuthClientActionError,
+  readApiErrorCode,
+} from "@/modules/admin-oauth-clients/lib/client-actions"
 
 type UseOAuthClientRowActionsOptions = {
   loadClients: () => Promise<void>
@@ -46,14 +54,35 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
     })
   }
 
+  /**
+   * Shows a warning, in place of the success toast, when grants were left behind.
+   * It stays until the admin closes it: the leftover grants need a retry, and
+   * nothing else on the page shows that they exist.
+   */
+  function warnIfRevocationIncomplete(outcome: RevocationOutcome, title: string) {
+    const description = describeIncompleteRevocation(outcome, t)
+    if (description) {
+      toast.warning(title, {
+        description,
+        duration: Number.POSITIVE_INFINITY,
+        cancel: { label: t("common.close"), onClick: () => undefined },
+      })
+    }
+  }
+
   async function toggleActive(client: OAuthClient) {
+    const successMessage = client.active
+      ? t("adminOAuthClients.toast.disabled")
+      : t("adminOAuthClients.toast.enabled")
     await runAsyncAction(actionLoading, () => setOAuthClientActive(client.clientId, !client.active), {
-      successMessage: client.active
-        ? t("adminOAuthClients.toast.disabled")
-        : t("adminOAuthClients.toast.enabled"),
+      successMessage: (outcome) => (outcome.complete ? successMessage : null),
       successAfterOnSuccess: true,
       errorTitle: t("adminOAuthClients.toast.actionFailedTitle"),
-      onSuccess: options.loadClients,
+      onSuccess: async (outcome) => {
+        // The client is disabled either way; the warning must not depend on the refresh.
+        warnIfRevocationIncomplete(outcome, t("adminOAuthClients.toast.disabledRevocationIncompleteTitle"))
+        await options.loadClients()
+      },
     })
   }
 
@@ -66,8 +95,19 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
     const targetClientId = clientToRotate.value
     if (!targetClientId) return
 
+    const errorTitle = t("adminOAuthClients.toast.rotateFailedTitle")
     await runAsyncAction(actionLoading, () => rotateClientSecret(targetClientId), {
-      errorTitle: t("adminOAuthClients.toast.rotateFailedTitle"),
+      errorTitle,
+      onError: async (error) => {
+        toast.error(errorTitle, { description: describeOAuthClientActionError(error, t, errorTitle) })
+        if (readApiErrorCode(error) === PUBLIC_CLIENT_HAS_NO_SECRET) {
+          // The list still showed this client as confidential: refresh it so the
+          // rotate action disappears for the public client.
+          rotateConfirmOpen.value = false
+          clientToRotate.value = null
+          await options.loadClients().catch(() => undefined)
+        }
+      },
       onSuccess: (rotatedSecret) => {
         options.onSecretGenerated(rotatedSecret)
         rotateConfirmOpen.value = false
@@ -95,12 +135,13 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
     if (!targetClientId) return
 
     await runAsyncAction(actionLoading, () => revokeOAuthClient(targetClientId), {
-      successMessage: t("adminOAuthClients.toast.revokedAll"),
+      successMessage: (outcome) => (outcome.complete ? t("adminOAuthClients.toast.revokedAll") : null),
       successAfterOnSuccess: true,
       errorTitle: t("adminOAuthClients.toast.revokeFailedTitle"),
-      onSuccess: () => {
+      onSuccess: (outcome) => {
         revokeConfirmOpen.value = false
         clientToRevoke.value = null
+        warnIfRevocationIncomplete(outcome, t("adminOAuthClients.toast.revokedPartiallyTitle"))
       },
     })
   }

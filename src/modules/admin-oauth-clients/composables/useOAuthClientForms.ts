@@ -244,11 +244,16 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
           postLogoutRedirectUris: validation.normalizedPostLogoutUris,
         }),
       {
-        successMessage: t("adminOAuthClients.toast.saved"),
+        // A switch to confidential issues a secret that is returned only once:
+        // show it like create does, instead of the plain toast.
+        successMessage: ({ clientSecret }) => (clientSecret ? null : t("adminOAuthClients.toast.saved")),
         successAfterOnSuccess: true,
         errorTitle: t("adminOAuthClients.toast.saveFailedTitle"),
-        onSuccess: async () => {
+        onSuccess: async ({ clientSecret }) => {
           editOpen.value = false
+          if (clientSecret) {
+            options.onSecretGenerated(clientSecret)
+          }
           await options.loadClients()
         },
       }

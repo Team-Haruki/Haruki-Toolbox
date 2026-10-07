@@ -447,6 +447,10 @@ export default {
       "secretRotated": "Secret regenerated successfully",
       "restored": "Restored",
       "revokedAll": "All authorizations revoked",
+      "disabledRevocationIncompleteTitle": "Client disabled, but some grants were not revoked",
+      "revokedPartiallyTitle": "Authorizations only partly revoked",
+      "revocationFailedSubjects": "{count} subject (user identity) could not be revoked. Run “Revoke all authorizations” to retry. | {count} subjects (user identities) could not be revoked. Run “Revoke all authorizations” to retry.",
+      "revocationIncomplete": "Some grants could not be revoked. Run “Revoke all authorizations” to retry.",
       "webhookSaved": "Webhook endpoint saved",
       "webhookDeleted": "Webhook endpoint deleted",
       "copyFailedTitle": "Copy failed",
@@ -459,6 +463,9 @@ export default {
         "redirectUriRequired": "Please provide at least one redirect URI",
         "scopeRequired": "Please select at least one scope",
         "oidcScopeRequiresOpenid": "profile / email must be registered together with openid"
+      },
+      "apiErrors": {
+        "publicClientHasNoSecret": "Public clients have no secret to rotate. To get one, change the client type to confidential: saving issues a secret once."
       }
     }
   },

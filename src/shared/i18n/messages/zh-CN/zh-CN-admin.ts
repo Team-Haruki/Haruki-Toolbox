@@ -447,6 +447,10 @@ export default {
       "secretRotated": "已成功重新生成 Secret",
       "restored": "已恢复",
       "revokedAll": "已撤销所有授权",
+      "disabledRevocationIncompleteTitle": "客户端已禁用，但部分授权未能撤销",
+      "revokedPartiallyTitle": "授权仅部分撤销",
+      "revocationFailedSubjects": "有 {count} 个用户标识（subject）撤销失败，可执行“撤销全部授权”重试。",
+      "revocationIncomplete": "部分授权未能撤销，可执行“撤销全部授权”重试。",
       "webhookSaved": "Webhook endpoint 已保存",
       "webhookDeleted": "Webhook endpoint 已删除",
       "copyFailedTitle": "复制失败",
@@ -459,6 +463,9 @@ export default {
         "redirectUriRequired": "请至少填写一个回调URI",
         "scopeRequired": "请至少选择一个Scope",
         "oidcScopeRequiresOpenid": "profile / email 需要与 openid 一起登记"
+      },
+      "apiErrors": {
+        "publicClientHasNoSecret": "Public 客户端没有可轮换的 Secret。如需 Secret，请把客户端类型改为 Confidential，保存时会生成一次。"
       }
     }
   },
