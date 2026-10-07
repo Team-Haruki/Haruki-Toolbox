@@ -298,3 +298,8 @@ describe("device requests", () => {
     expect(JSON.parse(String(sent[0]?.data))).toEqual({ flowHandle: "dfh_abc", userCode: "BCDF-GHJK", acknowledged: true, label: "My NAS" })
   })
 })
+
+it("never lets a reply downgrade station:room:write", () => {
+  expect(api.resolveScopeRisk("station:room:write", "read")).toBe("write")
+  expect(api.resolveScopeRisk("station:room:write")).toBe("write")
+})

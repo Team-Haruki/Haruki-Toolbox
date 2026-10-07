@@ -80,10 +80,12 @@ export interface DeviceApiError {
 // The backend classifies every scope on the review card (`deviceScopeRisks`)
 // and the page shows the class it sends: station:room:write is red because
 // BE-12 registered it as write there. The page keeps only two things of its
-// own: the scope it has always known to be a write, which a reply can never
-// downgrade, and the classes to fall back to when a reply carries no usable
-// class (an unknown scope then counts as a write, the most cautious class).
-const KNOWN_WRITE_SCOPES: ReadonlySet<string> = new Set(["game-data:write"])
+// own: the scopes it knows to be writes, which a reply can never downgrade
+// (station:room:write submits on the user's behalf, so it is pinned here as
+// well as classified by the backend), and the classes to fall back to when a
+// reply carries no usable class (an unknown scope then counts as a write, the
+// most cautious class).
+const KNOWN_WRITE_SCOPES: ReadonlySet<string> = new Set(["game-data:write", "station:room:write"])
 
 const FALLBACK_RISKS: Record<string, DeviceScopeRisk> = {
   "openid": "identity",
