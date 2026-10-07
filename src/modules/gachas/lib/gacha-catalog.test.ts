@@ -18,6 +18,7 @@ import {
   normalizeCatalogGachas,
   normalizeGachaCeilItems,
   normalizeGachaTimestamp,
+  resolveGachaAssetKey,
   resolveGachaCardRate,
   resolveGachaGuaranteedRarity,
   resolveGachaStatus,
@@ -359,22 +360,22 @@ describe("stripGachaMarkup", () => {
 describe("asset candidates", () => {
   const gacha = makeGacha({ id: 145, seq: 1000, assetbundleName: "ab_gacha_145" })
 
-  it("builds ordered deduped logo candidates", () => {
-    const urls = buildGachaLogoCandidates(gacha, "kr", "china")
-    expect(urls[0]).toBe("https://sekai-assets.haruki.seiunx.com/kr-assets/ondemand/gacha/ab_gacha_145/logo/logo.png")
-    expect(urls).toContain("https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/gacha/ab_gacha_145/logo/logo.png")
-    expect(urls).toContain("https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/logo/ab_gacha_145.png")
-    expect(urls).toContain("https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/logo/banner_logo145.png")
-    expect(urls).toContain("https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/logo/banner_logo1000.png")
-    expect(new Set(urls).size).toBe(urls.length)
+  it("builds the bundle logo as the only logo candidate", () => {
+    expect(buildGachaLogoCandidates(gacha, "kr", "china")).toEqual([
+      "https://sekai-assets.haruki.seiunx.com/kr-assets/ondemand/gacha/ab_gacha_145/logo/logo.png",
+    ])
   })
 
-  it("falls back to id-based logo paths without an assetbundleName", () => {
-    const urls = buildGachaLogoCandidates(makeGacha({ id: 9, seq: null, assetbundleName: "" }), "jp")
-    expect(urls).toEqual([
-      "https://sekai-assets.haruki.seiunx.com/jp-assets/startapp/gacha/ab_gacha_9/logo/logo.png",
-      "https://sekai-assets.haruki.seiunx.com/jp-assets/startapp/logo/banner_logo9.png",
+  it("falls back to the id-derived bundle without an assetbundleName", () => {
+    expect(buildGachaLogoCandidates(makeGacha({ id: 9, seq: null, assetbundleName: "" }), "jp")).toEqual([
+      "https://sekai-assets.haruki.seiunx.com/jp-assets/ondemand/gacha/ab_gacha_9/logo/logo.png",
     ])
+  })
+
+  it("never requests startapp gacha/logo paths, which exist in no region", () => {
+    const urls = buildGachaImageCandidates(gacha, "cn", "china", 60)
+    expect(urls.some((url) => /\/startapp\/(gacha|logo)\//.test(url))).toBe(false)
+    expect(urls.some((url) => url.includes("/startapp/home/banner/ab_gacha_"))).toBe(false)
   })
 
   it("builds banner candidates", () => {
@@ -382,8 +383,29 @@ describe("asset candidates", () => {
     expect(urls).toEqual([
       "https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/home/banner/banner_gacha145/banner_gacha145.png",
       "https://sekai-assets.haruki.seiunx.com/kr-assets/ondemand/gacha/ab_gacha_145/screen/texture/bg_gacha145.png",
-      "https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/gacha/ab_gacha_145/screen/texture/bg_gacha145.png",
-      "https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/home/banner/ab_gacha_145/ab_gacha_145.png",
+    ])
+  })
+
+  it("keys banner art by the shared bundle, not the gacha id", () => {
+    // cn step-up pools 10021-10023 ship on ab_gacha_10020.
+    expect(buildGachaBannerCandidates({ id: 10021, assetbundleName: "ab_gacha_10020" }, "cn")).toEqual([
+      "https://sekai-assets.haruki.seiunx.com/cn-assets/startapp/home/banner/banner_gacha10021/banner_gacha10021.png",
+      "https://sekai-assets.haruki.seiunx.com/cn-assets/ondemand/gacha/ab_gacha_10020/screen/texture/bg_gacha10020.png",
+      "https://sekai-assets.haruki.seiunx.com/cn-assets/startapp/home/banner/banner_gacha10020/banner_gacha10020.png",
+    ])
+  })
+
+  it("keeps the separator for named cn bundles", () => {
+    expect(buildGachaBannerCandidates({ id: 30014, assetbundleName: "ab_gacha_cn_fz3" }, "cn")).toEqual([
+      "https://sekai-assets.haruki.seiunx.com/cn-assets/startapp/home/banner/banner_gacha30014/banner_gacha30014.png",
+      "https://sekai-assets.haruki.seiunx.com/cn-assets/ondemand/gacha/ab_gacha_cn_fz3/screen/texture/bg_gacha_cn_fz3.png",
+      "https://sekai-assets.haruki.seiunx.com/cn-assets/startapp/home/banner/banner_gacha_cn_fz3/banner_gacha_cn_fz3.png",
+    ])
+  })
+
+  it("only builds the id-keyed home banner without an assetbundleName", () => {
+    expect(buildGachaBannerCandidates({ id: 60, assetbundleName: "" }, "jp")).toEqual([
+      "https://sekai-assets.haruki.seiunx.com/jp-assets/startapp/home/banner/banner_gacha60/banner_gacha60.png",
     ])
   })
 
@@ -395,6 +417,15 @@ describe("asset candidates", () => {
       "https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/thumbnail/common_material/ceil_item.png",
     ])
     expect(buildGachaCeilItemIconCandidates("  ", "kr")).toEqual([])
+  })
+})
+
+describe("resolveGachaAssetKey", () => {
+  it("drops the separator for numeric bundles and keeps it for named ones", () => {
+    expect(resolveGachaAssetKey("ab_gacha_145")).toBe("gacha145")
+    expect(resolveGachaAssetKey("ab_gacha_cn_fz3")).toBe("gacha_cn_fz3")
+    expect(resolveGachaAssetKey("something_else")).toBeNull()
+    expect(resolveGachaAssetKey("")).toBeNull()
   })
 })
 
