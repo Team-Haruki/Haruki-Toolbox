@@ -104,6 +104,7 @@ const scopeLabelKeys: Record<string, string> = {
     "bindings:read": "oauth.scope.bindingsRead",
     "game-data:read": "oauth.scope.gameDataRead",
     "game-data:write": "oauth.scope.gameDataWrite",
+    "station:room:write": "oauth.scope.stationRoomWrite",
     "openid": "oauth.scope.openid",
     "profile": "oauth.scope.profile",
     "email": "oauth.scope.email",
@@ -115,6 +116,7 @@ const scopeLabelKeys: Record<string, string> = {
 const scopeDescriptionKeys: Record<string, string> = {
     "game-data:read": "oauth.scopeDescription.gameDataRead",
     "game-data:write": "oauth.scopeDescription.gameDataWrite",
+    "station:room:write": "oauth.scopeDescription.stationRoomWrite",
     "offline_access": "oauth.scopeDescription.offlineAccess",
 }
 

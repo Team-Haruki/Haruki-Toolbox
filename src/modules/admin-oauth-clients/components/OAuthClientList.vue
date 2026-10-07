@@ -105,6 +105,13 @@ async function copyClientId(clientId: string) {
               {{ client.clientType === "public" ? t("adminOAuthClients.list.typePublic") : t("adminOAuthClients.list.typeConfidential") }}
             </span>
             <span
+              v-if="client.deviceEnabled"
+              class="rounded border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:text-sky-400"
+              :title="t('adminOAuthClients.list.deviceBadgeTitle')"
+            >
+              {{ t("adminOAuthClients.list.deviceBadge") }}
+            </span>
+            <span
               :class="[
                 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium',
                 client.deleted ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'

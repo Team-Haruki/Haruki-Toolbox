@@ -30,6 +30,7 @@ import {
     readIssuedClientSecret,
     readRevocationOutcome,
 } from "@/modules/admin-oauth-clients/lib/client-actions"
+import { readOAuthClientDeviceFields } from "@/modules/admin-oauth-clients/lib/grant-types"
 
 const BASE = "/api/admin/oauth-clients"
 
@@ -100,6 +101,7 @@ function normalizeOAuthClient(item: UnknownRecord): OAuthClient {
         redirectUri: redirectUri ?? (redirectUris[0] ?? ""),
         redirectUris: redirectUris.length > 0 ? redirectUris : (redirectUri ? [redirectUri] : []),
         postLogoutRedirectUris: readStringArray(item, ["postLogoutRedirectUris", "post_logout_redirect_uris"]),
+        ...readOAuthClientDeviceFields(item),
         active: readBoolean(item, ["active"], true),
         createdAt: readString(item, ["createdAt", "created_at"]),
         updatedAt: readOptionalString(item, ["updatedAt", "updated_at"]),

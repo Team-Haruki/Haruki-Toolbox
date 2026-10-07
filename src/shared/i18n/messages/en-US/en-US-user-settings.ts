@@ -577,6 +577,7 @@ export default {
       "bindingsRead": "Read linked accounts",
       "gameDataRead": "Read game data",
       "gameDataWrite": "Upload game data",
+      "stationRoomWrite": "Submit room numbers (Sekai Station)",
       "openid": "Verify your identity and sign you in with your Haruki account",
       "profile": "See your display name",
       "email": "See your email address",
@@ -585,6 +586,7 @@ export default {
     "scopeDescription": {
       "gameDataRead": "Read data of game accounts you own or were granted read access to. Does not include uploading.",
       "gameDataWrite": "Upload data for game accounts you own or were granted write access to. Does not include reading existing data.",
+      "stationRoomWrite": "Submit room numbers to Sekai Station on your behalf.",
       "offlineAccess": "The app can keep using the permissions above while you are away, until you revoke it in settings."
     },
     "login": {

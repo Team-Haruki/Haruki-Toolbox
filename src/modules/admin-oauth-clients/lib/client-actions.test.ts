@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test"
 import { AxiosError, AxiosHeaders, type AxiosResponse } from "axios"
+import zhCNAdmin from "@/shared/i18n/messages/zh-CN/zh-CN-admin"
+import zhTWAdmin from "@/shared/i18n/messages/zh-TW/zh-TW-admin"
+import enUSAdmin from "@/shared/i18n/messages/en-US/en-US-admin"
 import {
+  OAUTH_CLIENT_PAYLOAD_ERROR_MESSAGE_KEYS,
   PUBLIC_CLIENT_HAS_NO_SECRET,
   canRotateClientSecret,
   describeIncompleteRevocation,
@@ -9,6 +13,7 @@ import {
   readIssuedClientSecret,
   readRevocationOutcome,
 } from "./client-actions"
+import type { ValidatePayloadErrorCode } from "./form"
 
 // Echoes the key and arguments, so the tests see what the view would translate.
 function fakeT(key: string, params?: Record<string, unknown>, plural?: number) {
@@ -141,5 +146,66 @@ describe("describeOAuthClientActionError", () => {
     )).toBe("unknown")
     expect(describeOAuthClientActionError(new Error("Network Error"), fakeT, "Rotate failed")).toBe("Network Error")
     expect(describeOAuthClientActionError("weird", fakeT, "Rotate failed")).toBe("Rotate failed")
+  })
+})
+
+// Every 400 code a client create or update answers with (adminoauth/oauth_clients.go).
+const BACKEND_PAYLOAD_ERROR_CODES = [
+  "unsupported_grant_type",
+  "grant_type_required",
+  "redirect_uris_required",
+  "post_logout_requires_redirect_uris",
+  "offline_access_requires_refresh_token",
+  "device_requires_user_read",
+  "device_write_requires_public_client",
+  "invalid_device_policy",
+]
+
+function messageAt(bundle: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((node, key) => (node as Record<string, unknown> | undefined)?.[key], bundle)
+}
+
+describe("client payload error codes", () => {
+  test("every backend code has a message", () => {
+    expect([...OAUTH_CLIENT_PAYLOAD_ERROR_MESSAGE_KEYS.keys()].sort()).toEqual([...BACKEND_PAYLOAD_ERROR_CODES].sort())
+  })
+
+  test("each message exists in all three locales", () => {
+    for (const key of [...OAUTH_CLIENT_PAYLOAD_ERROR_MESSAGE_KEYS.values(), "adminOAuthClients.toast.apiErrors.publicClientHasNoSecret"]) {
+      for (const bundle of [zhCNAdmin, zhTWAdmin, enUSAdmin]) {
+        expect(typeof messageAt(bundle, key)).toBe("string")
+      }
+    }
+  })
+
+  test("a create or update 400 is explained in the admin's language", () => {
+    for (const code of BACKEND_PAYLOAD_ERROR_CODES) {
+      const error = apiError(400, { status: 400, message: "raw backend message", updatedData: { code } })
+      expect(JSON.parse(describeOAuthClientActionError(error, fakeT, "Save failed"))).toEqual({
+        key: OAUTH_CLIENT_PAYLOAD_ERROR_MESSAGE_KEYS.get(code),
+      })
+    }
+  })
+
+  test("form validation codes have messages in all three locales", () => {
+    // A Record keyed by the union makes the type checker flag a code missing here.
+    const codes: Record<ValidatePayloadErrorCode, true> = {
+      clientIdAndNameRequired: true,
+      nameRequired: true,
+      grantTypeRequired: true,
+      redirectUriRequired: true,
+      scopeRequired: true,
+      oidcScopeRequiresOpenid: true,
+      postLogoutRequiresRedirectUris: true,
+      offlineAccessRequiresRefreshToken: true,
+      deviceRequiresUserRead: true,
+      deviceWriteRequiresPublicClient: true,
+      invalidDevicePolicy: true,
+    }
+    for (const code of Object.keys(codes)) {
+      for (const bundle of [zhCNAdmin, zhTWAdmin, enUSAdmin]) {
+        expect(typeof messageAt(bundle, `adminOAuthClients.toast.validation.${code}`)).toBe("string")
+      }
+    }
   })
 })

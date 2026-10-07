@@ -2,17 +2,27 @@ import { ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
-import type { OAuthClient } from "@/types/admin"
+import type { OAuthClient, OAuthClientDevicePolicy } from "@/types/admin"
 import { createOAuthClient, updateOAuthClient } from "@/modules/admin-oauth-clients/api/client"
+import { describeOAuthClientActionError } from "@/modules/admin-oauth-clients/lib/client-actions"
 import {
   DEFAULT_CLIENT_TYPE,
   DEFAULT_SCOPE,
+  diffGrantFields,
+  toggleGrantTypeSelection,
   toggleScopeSelection,
   validateClientPayload,
 } from "@/modules/admin-oauth-clients/lib/form"
+import {
+  DEFAULT_DEVICE_POLICY,
+  DEFAULT_GRANT_TYPES,
+  type ManagedGrantType,
+  toManagedGrantTypes,
+} from "@/modules/admin-oauth-clients/lib/grant-types"
 
 type OAuthClientType = NonNullable<OAuthClient["clientType"]>
 type RedirectUriUpdatePayload = { index: number; value: string }
+type DevicePolicyUpdate = Partial<OAuthClientDevicePolicy>
 
 type UseOAuthClientFormsOptions = {
   loadClients: () => Promise<void>
@@ -28,6 +38,8 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
   const newScopes = ref<string[]>([DEFAULT_SCOPE])
   const newRedirectUris = ref<string[]>([""])
   const newPostLogoutRedirectUris = ref<string[]>([""])
+  const newGrantTypes = ref<ManagedGrantType[]>([...DEFAULT_GRANT_TYPES])
+  const newDevicePolicy = ref<OAuthClientDevicePolicy>({ ...DEFAULT_DEVICE_POLICY })
   const creating = ref(false)
 
   const editOpen = ref(false)
@@ -37,6 +49,11 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
   const editScopes = ref<string[]>([])
   const editRedirectUris = ref<string[]>([])
   const editPostLogoutRedirectUris = ref<string[]>([])
+  const editGrantTypes = ref<ManagedGrantType[]>([...DEFAULT_GRANT_TYPES])
+  const editDevicePolicy = ref<OAuthClientDevicePolicy>({ ...DEFAULT_DEVICE_POLICY })
+  // What the edited client has registered: an edit sends only the grant members that differ.
+  let editInitialGrantTypes: string[] = [...DEFAULT_GRANT_TYPES]
+  let editInitialDevicePolicy: OAuthClientDevicePolicy = { ...DEFAULT_DEVICE_POLICY }
   const saving = ref(false)
 
   function resetCreateForm() {
@@ -46,6 +63,8 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     newScopes.value = [DEFAULT_SCOPE]
     newRedirectUris.value = [""]
     newPostLogoutRedirectUris.value = [""]
+    newGrantTypes.value = [...DEFAULT_GRANT_TYPES]
+    newDevicePolicy.value = { ...DEFAULT_DEVICE_POLICY }
   }
 
   function resetEditForm() {
@@ -55,6 +74,10 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     editScopes.value = []
     editRedirectUris.value = []
     editPostLogoutRedirectUris.value = []
+    editGrantTypes.value = [...DEFAULT_GRANT_TYPES]
+    editDevicePolicy.value = { ...DEFAULT_DEVICE_POLICY }
+    editInitialGrantTypes = [...DEFAULT_GRANT_TYPES]
+    editInitialDevicePolicy = { ...DEFAULT_DEVICE_POLICY }
   }
 
   function setCreateOpen(value: boolean) {
@@ -157,13 +180,32 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     editScopes.value = toggleScopeSelection(editScopes.value, scopeId, checked)
   }
 
+  function toggleNewGrantType(grantType: ManagedGrantType, checked: boolean) {
+    newGrantTypes.value = toggleGrantTypeSelection(newGrantTypes.value, grantType, checked)
+  }
+
+  function toggleEditGrantType(grantType: ManagedGrantType, checked: boolean) {
+    editGrantTypes.value = toggleGrantTypeSelection(editGrantTypes.value, grantType, checked)
+  }
+
+  function updateNewDevicePolicy(update: DevicePolicyUpdate) {
+    newDevicePolicy.value = { ...newDevicePolicy.value, ...update }
+  }
+
+  function updateEditDevicePolicy(update: DevicePolicyUpdate) {
+    editDevicePolicy.value = { ...editDevicePolicy.value, ...update }
+  }
+
   async function handleCreate() {
     const validation = validateClientPayload({
       clientId: newClientId.value,
       name: newName.value,
+      clientType: newClientType.value,
       scopes: newScopes.value,
+      grantTypes: newGrantTypes.value,
       redirectUris: newRedirectUris.value,
       postLogoutRedirectUris: newPostLogoutRedirectUris.value,
+      devicePolicy: newDevicePolicy.value,
     })
     if ("errorCode" in validation) {
       toast.error(t(`adminOAuthClients.toast.validation.${validation.errorCode}`))
@@ -171,6 +213,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     }
     const uris = validation.normalizedUris
     const postLogoutUris = validation.normalizedPostLogoutUris
+    const errorTitle = t("adminOAuthClients.toast.createFailedTitle")
 
     await runAsyncAction(
       creating,
@@ -182,11 +225,16 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
           redirectUris: uris,
           postLogoutRedirectUris: postLogoutUris,
           scopes: newScopes.value,
+          grantTypes: validation.grantTypes,
+          devicePolicy: validation.devicePolicy,
         })
         return response?.clientSecret ?? ""
       },
       {
-        errorTitle: t("adminOAuthClients.toast.createFailedTitle"),
+        errorTitle,
+        onError: (error) => {
+          toast.error(errorTitle, { description: describeOAuthClientActionError(error, t, errorTitle) })
+        },
         onSuccess: async (createdSecret) => {
           createOpen.value = false
           resetCreateForm()
@@ -217,21 +265,34 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     if (editPostLogoutRedirectUris.value.length === 0) {
       editPostLogoutRedirectUris.value = [""]
     }
+    editInitialGrantTypes = [...(client.grantTypes ?? DEFAULT_GRANT_TYPES)]
+    editInitialDevicePolicy = { ...(client.devicePolicy ?? DEFAULT_DEVICE_POLICY) }
+    editGrantTypes.value = toManagedGrantTypes(editInitialGrantTypes)
+    editDevicePolicy.value = { ...editInitialDevicePolicy }
     editOpen.value = true
   }
 
   async function handleSaveEdit() {
     const validation = validateClientPayload({
       name: editName.value,
+      clientType: editClientType.value,
       scopes: editScopes.value,
+      grantTypes: editGrantTypes.value,
       redirectUris: editRedirectUris.value,
       postLogoutRedirectUris: editPostLogoutRedirectUris.value,
+      devicePolicy: editDevicePolicy.value,
+      initialDevicePolicy: editInitialDevicePolicy,
     })
     if ("errorCode" in validation) {
       toast.error(t(`adminOAuthClients.toast.validation.${validation.errorCode}`))
       return
     }
     const uris = validation.normalizedUris
+    const grantPatch = diffGrantFields(validation, {
+      grantTypes: editInitialGrantTypes,
+      devicePolicy: editInitialDevicePolicy,
+    })
+    const errorTitle = t("adminOAuthClients.toast.saveFailedTitle")
 
     await runAsyncAction(
       saving,
@@ -242,13 +303,17 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
           scopes: editScopes.value,
           redirectUris: uris,
           postLogoutRedirectUris: validation.normalizedPostLogoutUris,
+          ...grantPatch,
         }),
       {
         // A switch to confidential issues a secret that is returned only once:
         // show it like create does, instead of the plain toast.
         successMessage: ({ clientSecret }) => (clientSecret ? null : t("adminOAuthClients.toast.saved")),
         successAfterOnSuccess: true,
-        errorTitle: t("adminOAuthClients.toast.saveFailedTitle"),
+        errorTitle,
+        onError: (error) => {
+          toast.error(errorTitle, { description: describeOAuthClientActionError(error, t, errorTitle) })
+        },
         onSuccess: async ({ clientSecret }) => {
           editOpen.value = false
           if (clientSecret) {
@@ -268,6 +333,8 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     newScopes,
     newRedirectUris,
     newPostLogoutRedirectUris,
+    newGrantTypes,
+    newDevicePolicy,
     creating,
     editOpen,
     editClientId,
@@ -276,9 +343,15 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     editScopes,
     editRedirectUris,
     editPostLogoutRedirectUris,
+    editGrantTypes,
+    editDevicePolicy,
     saving,
     toggleNewScope,
     toggleEditScope,
+    toggleNewGrantType,
+    toggleEditGrantType,
+    updateNewDevicePolicy,
+    updateEditDevicePolicy,
     setCreateOpen,
     setEditOpen,
     updateNewClientId,

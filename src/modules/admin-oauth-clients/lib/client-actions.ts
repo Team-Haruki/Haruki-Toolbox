@@ -8,9 +8,27 @@ type TranslateFn = (key: string, params?: Record<string, unknown>, plural?: numb
 /** `updatedData.code` of the 400 that rotate-secret returns for a public client. */
 export const PUBLIC_CLIENT_HAS_NO_SECRET = "public_client_has_no_secret"
 
+/**
+ * `updatedData.code` of the 400s a client create or update answers with, and
+ * the message each one shows. The form checks the same rules before sending
+ * (validateClientPayload), so a code the form can also raise reuses that
+ * message; only `unsupported_grant_type` cannot come from the form.
+ */
+export const OAUTH_CLIENT_PAYLOAD_ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
+  ["unsupported_grant_type", "adminOAuthClients.toast.apiErrors.unsupportedGrantType"],
+  ["grant_type_required", "adminOAuthClients.toast.validation.grantTypeRequired"],
+  ["redirect_uris_required", "adminOAuthClients.toast.validation.redirectUriRequired"],
+  ["post_logout_requires_redirect_uris", "adminOAuthClients.toast.validation.postLogoutRequiresRedirectUris"],
+  ["offline_access_requires_refresh_token", "adminOAuthClients.toast.validation.offlineAccessRequiresRefreshToken"],
+  ["device_requires_user_read", "adminOAuthClients.toast.validation.deviceRequiresUserRead"],
+  ["device_write_requires_public_client", "adminOAuthClients.toast.validation.deviceWriteRequiresPublicClient"],
+  ["invalid_device_policy", "adminOAuthClients.toast.validation.invalidDevicePolicy"],
+])
+
 /** Backend error codes (`updatedData.code`) this module explains in the admin's language. */
 const API_ERROR_MESSAGE_KEYS: ReadonlyMap<string, string> = new Map([
   [PUBLIC_CLIENT_HAS_NO_SECRET, "adminOAuthClients.toast.apiErrors.publicClientHasNoSecret"],
+  ...OAUTH_CLIENT_PAYLOAD_ERROR_MESSAGE_KEYS,
 ])
 
 /**

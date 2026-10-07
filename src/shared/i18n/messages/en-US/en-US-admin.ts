@@ -53,6 +53,21 @@ export default {
       "saveDialogDescription": "This change takes effect immediately and applies system-wide. Make sure the JSON is correct before continuing.",
       "saveDialogConfirm": "Apply"
     },
+    "runtimeSwitches": {
+      "title": "Runtime switches",
+      "description": "Takes effect within about a second, without restarting the backend.",
+      "dirtyHint": "The runtime configuration below has unsaved changes. Save or reload it before using a switch.",
+      "oauth2DeviceFlow": {
+        "label": "OAuth2 device authorization",
+        "description": "When on, clients with the device code grant can request device codes, which users approve on /device. Turning it off stops issuing device codes and accepting approvals at once; tokens already issued stay valid, so revoke a client's authorizations if needed. Shown as off when the backend does not report it.",
+        "enableTitle": "Turn on OAuth2 device authorization?",
+        "enableDescription": "Clients with the device code grant will be able to request device codes. This change applies system-wide immediately.",
+        "disableTitle": "Turn off OAuth2 device authorization?",
+        "disableDescription": "Issuing device codes and accepting approvals on /device stop immediately. Tokens already issued are not affected; revoke a client's authorizations if needed.",
+        "confirmEnable": "Turn on",
+        "confirmDisable": "Turn off"
+      }
+    },
     "toast": {
       "loadApiKeysFailedTitle": "Failed to load Public API Keys",
       "loadRuntimeFailedTitle": "Failed to load runtime configuration",
@@ -63,7 +78,10 @@ export default {
       "invalidApiKeysSchema": "Public API Keys must be a JSON object of string values",
       "invalidRuntimeSchema": "Runtime configuration must be a JSON object",
       "saveFailedTitle": "Failed to save",
-      "saveFailedFallback": "Save failed"
+      "saveFailedFallback": "Save failed",
+      "deviceFlowEnabled": "OAuth2 device authorization turned on",
+      "deviceFlowDisabled": "OAuth2 device authorization turned off",
+      "switchNotApplied": "The backend did not apply the switch (it may not support it yet); the value it reports is shown."
     },
     "loadError": "Failed to load configuration",
     "retry": "Retry",
@@ -262,6 +280,7 @@ export default {
       "bindingsRead": "Game bindings (bindings:read)",
       "gameDataRead": "Game data (game-data:read)",
       "gameDataWrite": "Game upload (game-data:write)",
+      "stationRoomWrite": "Room number submission to Sekai Station (station:room:write)",
       "openid": "OIDC sign-in (openid)",
       "profile": "OIDC display name (profile)",
       "email": "OIDC email (email)",
@@ -304,7 +323,27 @@ export default {
       "addRedirectUri": "Add URI",
       "postLogoutRedirectUrisLabel": "Post-logout redirect URIs",
       "postLogoutRedirectUrisHelp": "Exact-match return targets after OIDC RP-initiated logout. Only needed for sign-in clients; may be left empty.",
-      "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out"
+      "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out",
+      "grantTypesLabel": "Grant types",
+      "grantTypesHelp": "Authorization code is for apps with a browser callback; device code is for programs without a browser (RFC 8628), approved by the user on /device. Refresh token goes with one of them and is required for offline_access.",
+      "grantType": {
+        "authorizationCode": "Authorization code (authorization_code)",
+        "deviceCode": "Device code (device_code)",
+        "refreshToken": "Refresh token (refresh_token)"
+      },
+      "redirectUrisOptionalHelp": "Without authorization code no redirect URI is needed; device-only clients can leave this empty.",
+      "writeScopeHint": "Write permission: lets the client submit or upload data as the user",
+      "devicePolicy": {
+        "title": "Device code policy",
+        "firstParty": "First-party client",
+        "firstPartyHelp": "Shows an \"Official\" badge on the device authorization page.",
+        "firstPartyPublicHelp": "Only applies to confidential clients; public clients never show the \"Official\" badge.",
+        "allowWrite": "Allow game-data:write over device code",
+        "allowWriteHelp": "Only for public clients that register game-data:write.",
+        "maxCodesPer10m": "Device codes per 10 minutes",
+        "maxCodesPer10mHelp": "How many device codes this client may request every 10 minutes: {min}–{max}, default {default}.",
+        "emailNeverGranted": "The device code grant never grants email; registering it only affects authorization code."
+      }
     },
     "list": {
       "searchPlaceholder": "Search name or client ID",
@@ -318,7 +357,9 @@ export default {
       "createdAt": "Created {date}",
       "noScopes": "No scopes configured",
       "typePublic": "Public",
-      "typeConfidential": "Confidential"
+      "typeConfidential": "Confidential",
+      "deviceBadge": "Device code",
+      "deviceBadgeTitle": "Device code grant enabled"
     },
     "table": {
       "actions": "Actions",
@@ -460,12 +501,19 @@ export default {
       "validation": {
         "clientIdAndNameRequired": "Client ID and name are required",
         "nameRequired": "Client name is required",
-        "redirectUriRequired": "Please provide at least one redirect URI",
+        "redirectUriRequired": "Provide at least one redirect URI when authorization code is selected",
         "scopeRequired": "Please select at least one scope",
-        "oidcScopeRequiresOpenid": "profile / email must be registered together with openid"
+        "oidcScopeRequiresOpenid": "profile / email must be registered together with openid",
+        "grantTypeRequired": "Select authorization code or device code (refresh token cannot be used alone)",
+        "postLogoutRequiresRedirectUris": "A client without redirect URIs cannot register post-logout redirect URIs; clear them",
+        "offlineAccessRequiresRefreshToken": "offline_access requires the refresh token grant type",
+        "deviceRequiresUserRead": "Device code clients must register user:read (the device page shows the authorized account)",
+        "deviceWriteRequiresPublicClient": "\"Allow game-data:write over device code\" only applies to public clients with device code and game-data:write",
+        "invalidDevicePolicy": "Device codes per 10 minutes must be a whole number from 1 to 600"
       },
       "apiErrors": {
-        "publicClientHasNoSecret": "Public clients have no secret to rotate. To get one, change the client type to confidential: saving issues a secret once."
+        "publicClientHasNoSecret": "Public clients have no secret to rotate. To get one, change the client type to confidential: saving issues a secret once.",
+        "unsupportedGrantType": "Grant types can only be authorization code, device code and refresh token"
       }
     }
   },

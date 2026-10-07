@@ -3,8 +3,9 @@ import { expect, test, type Page } from "@playwright/test"
 // The admin OAuth client page against a mocked backend that answers like the
 // per-subject revocation and JSON Patch lifecycle do: an edit that switches a
 // client to confidential returns a one-time clientSecret, disable / revoke-all
-// report revocationComplete, and rotate-secret refuses public clients with
-// 400 updatedData.code=public_client_has_no_secret.
+// report revocationComplete, rotate-secret refuses public clients with
+// 400 updatedData.code=public_client_has_no_secret, and client create / update
+// answer the grant and device policy rules with 400 updatedData.code.
 const APP_HOST = "127.0.0.1:4173"
 const CLIENTS_PATH = "/api/admin/oauth-clients"
 const ADMIN_USER_ID = "admin-1"
@@ -14,6 +15,9 @@ type MockClient = {
   name: string
   clientType: "public" | "confidential"
   active: boolean
+  grantTypes?: string[]
+  redirectUris?: string[]
+  scopes?: string[]
 }
 
 type ApiCall = {
@@ -30,14 +34,29 @@ type MockReply = {
 
 const PUBLIC_CLIENT: MockClient = { clientId: "cli-public", name: "Public CLI", clientType: "public", active: true }
 const CONFIDENTIAL_CLIENT: MockClient = { clientId: "bot-confidential", name: "Confidential Bot", clientType: "confidential", active: true }
+const DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code"
+const DEVICE_CLIENT: MockClient = {
+  clientId: "haruki-client",
+  name: "Haruki Client",
+  clientType: "public",
+  active: true,
+  grantTypes: [DEVICE_GRANT, "refresh_token"],
+  redirectUris: [],
+  scopes: ["user:read", "offline_access", "station:room:write"],
+}
 
+// Like the backend: clients without stored grant fields echo the defaults.
 function toListItem(client: MockClient) {
+  const grantTypes = client.grantTypes ?? ["authorization_code", "refresh_token"]
   return {
     ...client,
     createdAt: "2026-10-01T00:00:00Z",
-    redirectUris: [`https://${client.clientId}.example/callback`],
+    redirectUris: client.redirectUris ?? [`https://${client.clientId}.example/callback`],
     postLogoutRedirectUris: [],
-    scopes: ["user:read"],
+    scopes: client.scopes ?? ["user:read"],
+    grantTypes,
+    deviceEnabled: grantTypes.includes(DEVICE_GRANT),
+    devicePolicy: { firstParty: false, allowWrite: false, maxCodesPer10m: 60 },
     usage: { totalAuthorizations: 0, activeAuthorizations: 0, last30DaysAuthorizations: 0 },
   }
 }
@@ -157,6 +176,9 @@ const DISABLED_TOAST = /已禁用|Disabled/
 const REVOKED_ALL_TOAST = /已撤销所有授权|All authorizations revoked/
 const DISABLE_WARNING = /客户端已禁用，但部分授权未能撤销|Client disabled, but some grants were not revoked/
 const REVOKE_WARNING = /授权仅部分撤销|Authorizations only partly revoked/
+
+const DEVICE_BADGE = /^(设备码|Device code)$/
+const CREATED_TOAST = /OAuth客户端已创建|OAuth client created/
 
 const EDIT_BUTTON = /^(编辑|Edit)$/
 const CLOSE_BUTTON = /^(关闭|Close)$/
@@ -363,5 +385,125 @@ test.describe("admin OAuth clients", () => {
     const refreshedMenu = await openClientMenu(page, CONFIDENTIAL_CLIENT.clientId)
     await expect(refreshedMenu.getByRole("menuitem", { name: REVOKE_ALL_ITEM })).toBeVisible()
     await expect(refreshedMenu.getByRole("menuitem", { name: ROTATE_ITEM })).toHaveCount(0)
+  })
+
+  test("marks device clients in the list", async ({ page }) => {
+    await openOAuthClientAdmin(page, { current: [DEVICE_CLIENT, CONFIDENTIAL_CLIENT] }, () => undefined)
+
+    await expect(clientCard(page, DEVICE_CLIENT.clientId).getByText(DEVICE_BADGE)).toBeVisible()
+    // A client listed without grantTypes is an authorization code client.
+    await expect(clientCard(page, CONFIDENTIAL_CLIENT.clientId).getByText(DEVICE_BADGE)).toHaveCount(0)
+  })
+
+  test("creates a device-only client without redirect URIs", async ({ page }) => {
+    const clients = { current: [CONFIDENTIAL_CLIENT] }
+    const calls = await openOAuthClientAdmin(page, clients, (call) => {
+      if (call.method === "POST" && call.path === CLIENTS_PATH) {
+        clients.current = [DEVICE_CLIENT, CONFIDENTIAL_CLIENT]
+        return { status: 200, message: "oauth client created", updatedData: { ...toListItem(DEVICE_CLIENT), clientSecret: "" } }
+      }
+      return undefined
+    })
+
+    await page.getByRole("button", { name: /^(创建客户端|Create client)$/ }).click()
+    const dialog = page.getByRole("dialog", { name: /创建OAuth客户端|Create OAuth client/ })
+    await dialog.getByLabel(/客户端ID|Client ID/).fill(DEVICE_CLIENT.clientId)
+    await dialog.getByLabel(/^(客户端名称|Client name)$/).fill(DEVICE_CLIENT.name)
+    await dialog.getByRole("combobox", { name: /客户端类型|Client type/ }).click()
+    await page.getByRole("option", { name: /^Public/ }).click()
+
+    // Device policy controls appear with the device grant.
+    const maxCodes = dialog.getByLabel(/每 10 分钟设备码上限|Device codes per 10 minutes/)
+    await expect(maxCodes).toHaveCount(0)
+    await dialog.getByRole("button", { name: /authorization_code/ }).click()
+    await dialog.getByRole("button", { name: /device_code/ }).click()
+    await expect(maxCodes).toHaveValue("60")
+    await maxCodes.fill("120")
+    await expect(dialog.getByText(/仅设备码客户端可以留空|device-only clients can leave this empty/)).toBeVisible()
+    // firstParty only applies to confidential clients; allowWrite needs game-data:write.
+    await expect(dialog.getByRole("switch", { name: /官方客户端|First-party client/ })).toBeDisabled()
+    await expect(dialog.getByRole("switch", { name: /game-data:write/ })).toBeDisabled()
+    await dialog.getByRole("button", { name: /offline_access/ }).click()
+    await dialog.getByRole("button", { name: /station:room:write/ }).click()
+    await expect(dialog.getByRole("button", { name: /station:room:write/ })).toHaveAttribute("aria-pressed", "true")
+
+    await dialog.getByRole("button", { name: /^(创建|Create)$/ }).click()
+
+    await expect(toast(page, "success", CREATED_TOAST)).toBeVisible()
+    await expect(dialog).toBeHidden()
+    expect(calls.find((call) => call.method === "POST")?.body).toEqual({
+      clientId: DEVICE_CLIENT.clientId,
+      name: DEVICE_CLIENT.name,
+      clientType: "public",
+      redirectUris: [],
+      postLogoutRedirectUris: [],
+      scopes: ["user:read", "offline_access", "station:room:write"],
+      grantTypes: [DEVICE_GRANT, "refresh_token"],
+      devicePolicy: { firstParty: false, allowWrite: false, maxCodesPer10m: 120 },
+    })
+    await expect(clientCard(page, DEVICE_CLIENT.clientId).getByText(DEVICE_BADGE)).toBeVisible()
+  })
+
+  test("checks the device grant rules before sending", async ({ page }) => {
+    const calls = await openOAuthClientAdmin(page, { current: [CONFIDENTIAL_CLIENT] }, () => undefined)
+
+    await page.getByRole("button", { name: /^(创建客户端|Create client)$/ }).click()
+    const dialog = page.getByRole("dialog", { name: /创建OAuth客户端|Create OAuth client/ })
+    await dialog.getByLabel(/客户端ID|Client ID/).fill("device-without-user-read")
+    await dialog.getByLabel(/^(客户端名称|Client name)$/).fill("No user:read")
+    await dialog.getByRole("button", { name: /authorization_code/ }).click()
+    await dialog.getByRole("button", { name: /device_code/ }).click()
+    await dialog.getByRole("button", { name: /user:read/ }).click()
+    await dialog.getByRole("button", { name: /game-data:read/ }).click()
+    await dialog.getByRole("button", { name: /^(创建|Create)$/ }).click()
+
+    await expect(toast(page, "error", /设备码客户端须登记 user:read|Device code clients must register user:read/)).toBeVisible()
+    await expect(dialog).toBeVisible()
+    expect(calls.filter((call) => call.method === "POST")).toEqual([])
+  })
+
+  test("keeps the grants of an untouched device-only client on edit", async ({ page }) => {
+    const calls = await openOAuthClientAdmin(page, { current: [DEVICE_CLIENT, CONFIDENTIAL_CLIENT] }, (call) => {
+      if (call.method === "PUT" && call.path === `${CLIENTS_PATH}/${DEVICE_CLIENT.clientId}`) {
+        return { status: 200, message: "oauth client updated", updatedData: toListItem(DEVICE_CLIENT) }
+      }
+      return undefined
+    })
+
+    await clientCard(page, DEVICE_CLIENT.clientId).getByRole("button", { name: EDIT_BUTTON }).click()
+    const editDialog = page.getByRole("dialog", { name: /编辑OAuth客户端|Edit OAuth client/ })
+    await expect(editDialog.getByRole("button", { name: /device_code/ })).toHaveAttribute("aria-pressed", "true")
+    await expect(editDialog.getByRole("button", { name: /authorization_code/ })).toHaveAttribute("aria-pressed", "false")
+    await editDialog.getByRole("button", { name: /^(保存|Save)$/ }).click()
+
+    await expect(toast(page, "success", SAVED_TOAST)).toBeVisible()
+    // Omitted grantTypes / devicePolicy keep the registered ones on the backend.
+    const update = calls.find((call) => call.method === "PUT")?.body
+    expect(update).toMatchObject({ clientType: "public", redirectUris: [], postLogoutRedirectUris: [] })
+    expect(update).not.toHaveProperty("grantTypes")
+    expect(update).not.toHaveProperty("devicePolicy")
+  })
+
+  test("explains a refused device policy in the admin's language", async ({ page }) => {
+    await openOAuthClientAdmin(page, { current: [DEVICE_CLIENT, CONFIDENTIAL_CLIENT] }, (call) => {
+      if (call.method === "PUT" && call.path === `${CLIENTS_PATH}/${DEVICE_CLIENT.clientId}`) {
+        return {
+          status: 400,
+          message: "devicePolicy.maxCodesPer10m must be between 1 and 600",
+          updatedData: { code: "invalid_device_policy" },
+        }
+      }
+      return undefined
+    })
+
+    await clientCard(page, DEVICE_CLIENT.clientId).getByRole("button", { name: EDIT_BUTTON }).click()
+    const editDialog = page.getByRole("dialog", { name: /编辑OAuth客户端|Edit OAuth client/ })
+    await editDialog.getByLabel(/每 10 分钟设备码上限|Device codes per 10 minutes/).fill("30")
+    await editDialog.getByRole("button", { name: /^(保存|Save)$/ }).click()
+
+    const error = toast(page, "error", /保存失败|Save failed/)
+    await expect(error).toBeVisible()
+    await expect(error).toContainText(/每 10 分钟设备码上限须为 1–600 之间的整数|Device codes per 10 minutes must be a whole number/)
+    await expect(editDialog).toBeVisible()
   })
 })

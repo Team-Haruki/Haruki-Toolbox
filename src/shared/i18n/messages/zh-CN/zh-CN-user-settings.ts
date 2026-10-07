@@ -577,6 +577,7 @@ export default {
       "bindingsRead": "读取绑定账号",
       "gameDataRead": "读取游戏数据",
       "gameDataWrite": "上传游戏数据",
+      "stationRoomWrite": "提交车牌（Sekai Station）",
       "openid": "确认您的身份并使用 Haruki 账号登录",
       "profile": "获取您的昵称",
       "email": "获取您的邮箱地址",
@@ -585,6 +586,7 @@ export default {
     "scopeDescription": {
       "gameDataRead": "读取你拥有或获读授权的游戏账号数据。不包含上传权限。",
       "gameDataWrite": "上传你拥有或获写授权的游戏账号数据。不包含读取已有数据的权限。",
+      "stationRoomWrite": "以你的身份向 Sekai Station 提交车牌（房间号）。",
       "offlineAccess": "应用可在你未打开页面时持续使用上述授权，直到你在设置中撤销。"
     },
     "login": {

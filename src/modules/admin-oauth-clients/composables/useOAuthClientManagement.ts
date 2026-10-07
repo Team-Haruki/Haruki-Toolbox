@@ -1,7 +1,14 @@
 import { computed, onMounted } from "vue"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
-import { AVAILABLE_SCOPE_IDS } from "@/modules/admin-oauth-clients/lib/form"
+import { AVAILABLE_SCOPE_IDS, WRITE_SCOPE_IDS } from "@/modules/admin-oauth-clients/lib/form"
+import {
+  AVAILABLE_GRANT_TYPES,
+  GRANT_TYPE_AUTHORIZATION_CODE,
+  GRANT_TYPE_DEVICE_CODE,
+  GRANT_TYPE_REFRESH_TOKEN,
+  type ManagedGrantType,
+} from "@/modules/admin-oauth-clients/lib/grant-types"
 import { useOAuthClientForms } from "@/modules/admin-oauth-clients/composables/useOAuthClientForms"
 import { useOAuthClientList } from "@/modules/admin-oauth-clients/composables/useOAuthClientList"
 import { useOAuthClientRowActions } from "@/modules/admin-oauth-clients/composables/useOAuthClientRowActions"
@@ -14,10 +21,17 @@ const SCOPE_LABEL_KEY: Record<(typeof AVAILABLE_SCOPE_IDS)[number], string> = {
   "bindings:read": "adminOAuthClients.scope.bindingsRead",
   "game-data:read": "adminOAuthClients.scope.gameDataRead",
   "game-data:write": "adminOAuthClients.scope.gameDataWrite",
+  "station:room:write": "adminOAuthClients.scope.stationRoomWrite",
   "openid": "adminOAuthClients.scope.openid",
   "profile": "adminOAuthClients.scope.profile",
   "email": "adminOAuthClients.scope.email",
   "offline_access": "adminOAuthClients.scope.offlineAccess",
+}
+
+const GRANT_TYPE_LABEL_KEY: Record<ManagedGrantType, string> = {
+  [GRANT_TYPE_AUTHORIZATION_CODE]: "adminOAuthClients.form.grantType.authorizationCode",
+  [GRANT_TYPE_DEVICE_CODE]: "adminOAuthClients.form.grantType.deviceCode",
+  [GRANT_TYPE_REFRESH_TOKEN]: "adminOAuthClients.form.grantType.refreshToken",
 }
 
 export function useOAuthClientManagement() {
@@ -27,6 +41,13 @@ export function useOAuthClientManagement() {
     AVAILABLE_SCOPE_IDS.map((id) => ({
       id,
       label: t(SCOPE_LABEL_KEY[id]),
+      write: WRITE_SCOPE_IDS.has(id),
+    }))
+  )
+  const AVAILABLE_GRANT_TYPE_OPTIONS = computed(() =>
+    AVAILABLE_GRANT_TYPES.map((id) => ({
+      id,
+      label: t(GRANT_TYPE_LABEL_KEY[id]),
     }))
   )
 
@@ -63,6 +84,8 @@ export function useOAuthClientManagement() {
     newScopes,
     newRedirectUris,
     newPostLogoutRedirectUris,
+    newGrantTypes,
+    newDevicePolicy,
     creating,
     editOpen,
     editClientId,
@@ -71,9 +94,15 @@ export function useOAuthClientManagement() {
     editScopes,
     editRedirectUris,
     editPostLogoutRedirectUris,
+    editGrantTypes,
+    editDevicePolicy,
     saving,
     toggleNewScope,
     toggleEditScope,
+    toggleNewGrantType,
+    toggleEditGrantType,
+    updateNewDevicePolicy,
+    updateEditDevicePolicy,
     setCreateOpen,
     setEditOpen,
     updateNewClientId,
@@ -152,6 +181,8 @@ export function useOAuthClientManagement() {
     newScopes,
     newRedirectUris,
     newPostLogoutRedirectUris,
+    newGrantTypes,
+    newDevicePolicy,
     creating,
     editOpen,
     editClientId,
@@ -160,6 +191,8 @@ export function useOAuthClientManagement() {
     editScopes,
     editRedirectUris,
     editPostLogoutRedirectUris,
+    editGrantTypes,
+    editDevicePolicy,
     saving,
     statsOpen,
     statsLoading,
@@ -191,10 +224,15 @@ export function useOAuthClientManagement() {
     webhookDeleteConfirmOpen,
     webhookToDelete,
     AVAILABLE_SCOPES,
+    AVAILABLE_GRANT_TYPE_OPTIONS,
     confirmDelete,
     executeDelete,
     toggleNewScope,
     toggleEditScope,
+    toggleNewGrantType,
+    toggleEditGrantType,
+    updateNewDevicePolicy,
+    updateEditDevicePolicy,
     setCreateOpen,
     setEditOpen,
     updateNewClientId,
