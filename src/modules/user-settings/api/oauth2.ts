@@ -33,6 +33,8 @@ export interface OAuthLoginChallenge {
 
 export interface OAuthConsentChallenge {
     challenge?: string
+    /** Sent since the device flow (its approval chain records it); the consent page does not use it. */
+    consent_request_id?: string
     skip?: boolean
     subject?: string
     request_url?: string

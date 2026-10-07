@@ -123,6 +123,8 @@ describe("countdowns", () => {
     expect(secondsUntil("2026-10-07T08:10:00Z", now)).toBe(600)
     expect(secondsUntil("2026-10-07T08:00:00.400Z", now)).toBe(1)
     expect(secondsUntil("2026-10-07T07:59:00Z", now)).toBe(0)
+    // The backend formats in its process time zone, so an offset is the same instant.
+    expect(secondsUntil("2026-10-07T16:10:00+08:00", now)).toBe(600)
     expect(secondsUntil("", now)).toBeNull()
   })
 

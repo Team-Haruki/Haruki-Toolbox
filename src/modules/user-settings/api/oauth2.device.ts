@@ -4,11 +4,13 @@ import { asRecord, readString, type UnknownRecord } from "@/lib/record-utils"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { APIResponse } from "@/types"
 
-// Browser endpoints of the OAuth2 device authorization grant (backend design
-// §6.4 / §6.5): claim a user code (lookup), then approve or deny the flow.
-// They answer in the usual {status, message, updatedData} envelope; an error
-// carries its machine-readable code in updatedData.code and the page never
-// shows the English message.
+// Browser endpoints of the OAuth2 device authorization grant (backend
+// `hydra_device_browser.go`): claim a user code (lookup), then approve or deny
+// the flow. They answer in the usual {status, message, updatedData} envelope:
+// lookup 200 with the review card; approve 200 {status: "approved", …} or 202
+// {status: "unconfirmed"}; deny 200 {status: "denied"}. An error carries its
+// machine-readable code in updatedData.code (plus retryAfter on 429 and
+// retryable on 502 approval_failed); the page never shows the message.
 
 export const DEVICE_LOOKUP_PATH = "/api/oauth2/device/lookup"
 export const DEVICE_APPROVE_PATH = "/api/oauth2/device/approve"
@@ -52,6 +54,7 @@ export interface DeviceLookupResult {
   writeWarning: boolean
 }
 
+/** The backend leaves out an empty clientName, consentRequestId or accountName; they read as "". */
 export type DeviceApproveResult =
   | { status: "approved"; clientName: string; consentRequestId: string; accountName: string }
   | { status: "unconfirmed" }
@@ -74,17 +77,21 @@ export interface DeviceApiError {
   retryable: boolean | null
 }
 
-// The risk classes of the backend's scope table (§6.4, BE-12). The page
-// prefers the class the backend sends and only falls back to this table.
-const SCOPE_RISKS: Record<string, DeviceScopeRisk> = {
+// The backend classifies every scope on the review card (`deviceScopeRisks`)
+// and the page shows the class it sends: station:room:write is red because
+// BE-12 registered it as write there. The page keeps only two things of its
+// own: the scope it has always known to be a write, which a reply can never
+// downgrade, and the classes to fall back to when a reply carries no usable
+// class (an unknown scope then counts as a write, the most cautious class).
+const KNOWN_WRITE_SCOPES: ReadonlySet<string> = new Set(["game-data:write"])
+
+const FALLBACK_RISKS: Record<string, DeviceScopeRisk> = {
   "openid": "identity",
   "profile": "identity",
   "offline_access": "offline",
   "user:read": "read",
   "bindings:read": "read",
   "game-data:read": "read",
-  "game-data:write": "write",
-  "station:room:write": "write",
 }
 
 const RISKS: readonly DeviceScopeRisk[] = ["identity", "offline", "read", "write"]
@@ -93,15 +100,19 @@ function isRisk(value: unknown): value is DeviceScopeRisk {
   return typeof value === "string" && (RISKS as readonly string[]).includes(value)
 }
 
-/** The risk class of a scope: known scopes by the table, unknown ones as write. */
+/**
+ * The risk class of a scope: the backend's `risk`, except that a known write
+ * scope is never downgraded. Without a usable class, known scopes use the
+ * fallback table and unknown ones count as writes, the most cautious class.
+ */
 export function resolveScopeRisk(scope: string, reported?: unknown): DeviceScopeRisk {
-  const known = SCOPE_RISKS[scope]
-  if (known) {
-    // Never let a reply downgrade a scope the page knows to be a write.
-    return known === "write" ? "write" : isRisk(reported) ? reported : known
+  if (KNOWN_WRITE_SCOPES.has(scope)) {
+    return "write"
   }
-  // An unknown scope is treated as the most dangerous class.
-  return isRisk(reported) ? reported : "write"
+  if (isRisk(reported)) {
+    return reported
+  }
+  return FALLBACK_RISKS[scope] ?? "write"
 }
 
 function readBoolean(record: UnknownRecord | null, key: string): boolean {

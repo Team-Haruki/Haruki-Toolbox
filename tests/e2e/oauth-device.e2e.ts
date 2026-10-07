@@ -1,10 +1,11 @@
 import { expect, test, type Page } from "@playwright/test"
 
 // The /device verification page of the OAuth2 device authorization grant
-// against a mocked backend that answers lookup / approve / deny like the
-// browser endpoints of the backend design (§6.4, error codes in §6.5): an
-// envelope {status, message, updatedData} whose updatedData.code carries the
-// machine-readable error.
+// against a mocked backend that answers lookup / approve / deny byte for byte
+// like the backend's browser endpoints (`hydra_device_browser.go`): an
+// envelope {status, message, updatedData} without updatedData when there is
+// none, the fixed English message of each code, and updatedData.code carrying
+// the machine-readable error with its fixed HTTP status.
 const APP_HOST = "127.0.0.1:4173"
 const USER_ID = "toolbox-device"
 const DEVICE_API = "/api/oauth2/device/"
@@ -12,40 +13,70 @@ const USER_CODE = "BCDF-GHJK"
 const FLOW_HANDLE = "dfh_e2e-flow"
 
 type Endpoint = "lookup" | "approve" | "deny"
-type Reply = { status: number; updatedData?: unknown; message?: string } | "abort"
+type Reply = { status: number; body: unknown } | "abort"
 type DeviceCall = { endpoint: Endpoint; body: Record<string, unknown>; contentType: string | null }
+
+/** RFC 3339 to the second, as the backend formats requestedAt / expiresAt. */
+function rfc3339(at: number): string {
+  return new Date(Math.floor(at / 1000) * 1000).toISOString().replace(".000Z", "Z")
+}
 
 function lookupReply(overrides: Record<string, unknown> = {}) {
   const now = Date.now()
   return {
     flowHandle: FLOW_HANDLE,
     userCode: USER_CODE,
-    client: { clientId: "haruki-client", clientName: "Haruki Client", clientType: "public", firstParty: true, initiatorVerified: false },
+    // A public client: the backend never reports it as first party or verified.
+    client: { clientId: "haruki-client", clientName: "Haruki Client", clientType: "public", firstParty: false, initiatorVerified: false },
     scopes: [
       { scope: "user:read", risk: "read" },
       { scope: "offline_access", risk: "offline" },
       { scope: "station:room:write", risk: "write" },
     ],
     deviceLabel: "<b>bold</b> @ home-server",
-    requestedAt: new Date(now - 30_000).toISOString(),
-    expiresAt: new Date(now + 9 * 60_000).toISOString(),
+    requestedAt: rfc3339(now - 30_000),
+    expiresAt: rfc3339(now + 9 * 60_000),
     account: { userId: USER_ID, name: "Seiun" },
     writeWarning: true,
     ...overrides,
   }
 }
 
-function errorReply(status: number, code?: string, extra: Record<string, unknown> = {}): Reply {
-  return { status, message: "error", updatedData: code ? { code, ...extra } : undefined }
+function envelope(status: number, message: string, updatedData?: unknown): Reply {
+  return { status, body: updatedData === undefined ? { status, message } : { status, message, updatedData } }
+}
+
+// The backend's fixed status and message of every browser error code.
+const DEVICE_ERRORS: Record<string, [number, string]> = {
+  feature_disabled: [403, "device authorization is not available"],
+  invalid_code: [400, "the code is invalid, expired or already used by another account; get a new code on the device"],
+  rate_limited: [429, "too many requests, retry later"],
+  code_expired: [410, "the code has expired; get a new code on the device"],
+  already_handled: [409, "this request has already been handled"],
+  flow_conflict: [409, "this request is no longer current; enter the code again"],
+  approval_failed: [502, "the authorization could not be completed"],
+}
+
+function errorReply(code: keyof typeof DEVICE_ERRORS, extra: Record<string, unknown> = {}): Reply {
+  const [status, message] = DEVICE_ERRORS[code] ?? [500, "unknown"]
+  return envelope(status, message, { code, ...extra })
+}
+
+/** Oathkeeper's own answer when the session cookie is gone. */
+const GATEWAY_UNAUTHORIZED: Reply = {
+  status: 401,
+  body: { error: { code: 401, status: "Unauthorized", message: "Access credentials are invalid" } },
 }
 
 const DEFAULT_REPLIES: Record<Endpoint, () => Reply> = {
-  lookup: () => ({ status: 200, updatedData: lookupReply() }),
-  approve: () => ({
-    status: 200,
-    updatedData: { status: "approved", clientName: "Haruki Client", consentRequestId: "consent-1", accountName: "Seiun" },
+  lookup: () => envelope(200, "ok", lookupReply()),
+  approve: () => envelope(200, "device approved", {
+    status: "approved",
+    clientName: "Haruki Client",
+    consentRequestId: "consent-1",
+    accountName: "Seiun",
   }),
-  deny: () => ({ status: 200, updatedData: { status: "denied" } }),
+  deny: () => envelope(200, "device denied", { status: "denied" }),
 }
 
 /**
@@ -102,7 +133,8 @@ async function mockDeviceBackend(
     return route.fulfill({
       status: reply.status,
       contentType: "application/json",
-      body: JSON.stringify({ status: reply.status, message: reply.message ?? "ok", updatedData: reply.updatedData ?? null }),
+      headers: { "Cache-Control": "no-store" },
+      body: JSON.stringify(reply.body),
     })
   })
   return calls
@@ -176,7 +208,7 @@ test.describe("OAuth2 device authorization page", () => {
     const client = page.getByTestId("device-client")
     await expect(client).toContainText("Haruki Client")
     await expect(client.locator("code")).toHaveText("haruki-client")
-    // A public client is never "official", whatever the reply says.
+    // A public client gets the public-app badge and its fixed hint, never "official".
     await expect(client.getByText(/^(公开应用|Public app)$/)).toBeVisible()
     await expect(client.getByText(/^(官方|Official)$/)).toHaveCount(0)
     await expect(client).toContainText(/任何人都可以以此应用的名义发起请求|Anyone can start a request/)
@@ -240,7 +272,7 @@ test.describe("OAuth2 device authorization page", () => {
 
   test("an unusable code keeps the input, and Continue looks it up again", async ({ page }) => {
     const calls = await mockDeviceBackend(page, {
-      replies: { lookup: [errorReply(400, "invalid_code"), errorReply(409, "flow_conflict")] },
+      replies: { lookup: [errorReply("invalid_code"), errorReply("flow_conflict")] },
     })
     await page.goto(`/device?user_code=${USER_CODE}`)
     const input = page.getByLabel(CODE_INPUT)
@@ -261,7 +293,7 @@ test.describe("OAuth2 device authorization page", () => {
   })
 
   test("rate limiting disables the buttons for updatedData.retryAfter seconds", async ({ page }) => {
-    await mockDeviceBackend(page, { replies: { lookup: [errorReply(429, "rate_limited", { retryAfter: 2 })] } })
+    await mockDeviceBackend(page, { replies: { lookup: [errorReply("rate_limited", { retryAfter: 2 })] } })
     await page.goto(`/device?user_code=${USER_CODE}`)
     await expect(page.getByLabel(CODE_INPUT)).toHaveValue(USER_CODE, { timeout: 30_000 })
 
@@ -276,7 +308,7 @@ test.describe("OAuth2 device authorization page", () => {
   })
 
   test("an approve without response is never retried and a later already_handled reads as unconfirmed", async ({ page }) => {
-    const calls = await mockDeviceBackend(page, { replies: { approve: ["abort", errorReply(409, "already_handled")] } })
+    const calls = await mockDeviceBackend(page, { replies: { approve: ["abort", errorReply("already_handled")] } })
     await openReview(page)
     await page.getByRole("checkbox", { name: ACKNOWLEDGE }).click()
 
@@ -294,11 +326,34 @@ test.describe("OAuth2 device authorization page", () => {
     expect(callsTo(calls, "approve")).toHaveLength(2)
   })
 
+  test("a 202 reads as unconfirmed and an approved reply without accountName names the reviewed account", async ({ page }) => {
+    await mockDeviceBackend(page, {
+      replies: {
+        approve: [
+          envelope(202, "device approval outcome unknown", { status: "unconfirmed" }),
+          envelope(200, "device approved", { status: "approved", clientName: "Haruki Client" }),
+        ],
+      },
+    })
+    await openReview(page)
+    await page.getByRole("checkbox", { name: ACKNOWLEDGE }).click()
+    await page.getByRole("button", { name: APPROVE }).click()
+    await expect(page.getByText(/授权结果待确认|Authorization not confirmed/)).toBeVisible()
+
+    await page.getByRole("button", { name: NEW_CODE }).click()
+    await page.getByLabel(CODE_INPUT).fill(USER_CODE)
+    await page.getByRole("button", { name: CONTINUE }).click()
+    await expect(page.getByText(REVIEW_TITLE)).toBeVisible()
+    await page.getByRole("checkbox", { name: ACKNOWLEDGE }).click()
+    await page.getByRole("button", { name: APPROVE }).click()
+    await expect(page.getByText(/请回到设备，它应显示『已授权为 Seiun』|It should show “Authorized as Seiun”/)).toBeVisible()
+  })
+
   test("error codes move the page to the state the code table names", async ({ page }) => {
     await mockDeviceBackend(page, {
       replies: {
-        lookup: [errorReply(403, "feature_disabled"), { status: 200, updatedData: lookupReply() }, errorReply(401)],
-        approve: [errorReply(502, "approval_failed", { retryable: true }), errorReply(410, "code_expired")],
+        lookup: [errorReply("feature_disabled"), DEFAULT_REPLIES.lookup(), GATEWAY_UNAUTHORIZED],
+        approve: [errorReply("approval_failed", { retryable: true }), errorReply("code_expired")],
       },
     })
 
