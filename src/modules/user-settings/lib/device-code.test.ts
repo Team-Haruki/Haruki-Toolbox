@@ -80,9 +80,9 @@ describe("device user code normalisation", () => {
 describe("device labels", () => {
   it("sanitizes like the backend", () => {
     expect(sanitizeDeviceLabel("  home   server  ")).toBe("home server")
-    expect(sanitizeDeviceLabel("a​b‮c⁦d")).toBe("abcd")
+    expect(sanitizeDeviceLabel("a\u200Bb\u202Ec\u2066d")).toBe("abcd")
     expect(sanitizeDeviceLabel("line\nbreak\ttab")).toBe("linebreaktab")
-    expect(sanitizeDeviceLabel("​‏")).toBe("")
+    expect(sanitizeDeviceLabel("\u200B\u200F")).toBe("")
     const long = "家".repeat(70)
     expect(Array.from(sanitizeDeviceLabel(long))).toHaveLength(64)
     // Code points, not UTF-16 units.
@@ -95,7 +95,7 @@ describe("device labels", () => {
     expect(resolveApproveLabel("Haruki-Client  @ home ", "Haruki-Client @ home")).toBeUndefined()
     expect(resolveApproveLabel("My NAS", "Haruki-Client @ home")).toBe("My NAS")
     expect(resolveApproveLabel("My NAS", "")).toBe("My NAS")
-    expect(resolveApproveLabel("​", "")).toBeUndefined()
+    expect(resolveApproveLabel("\u200B", "")).toBeUndefined()
   })
 })
 
