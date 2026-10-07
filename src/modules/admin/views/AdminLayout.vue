@@ -2,6 +2,7 @@
 import { useI18n } from "vue-i18n"
 import { LucideShieldCheck } from "lucide-vue-next"
 import { useAdminLayout } from "@/modules/admin/composables/useAdminLayout"
+import AdminReauthDialog from "@/modules/admin/components/AdminReauthDialog.vue"
 
 const { userStore, visibleSections, visibleNavItems, activeItem, showPageHeader, pendingTicketCount } = useAdminLayout()
 const { t } = useI18n()
@@ -89,5 +90,8 @@ function ticketBadge(count: number): string {
         </Transition>
       </router-view>
     </div>
+
+    <!-- Password prompt for admin routes behind a recent-reauth check (see @/core/http/admin-reauth). -->
+    <AdminReauthDialog />
   </div>
 </template>

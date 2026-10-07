@@ -2,6 +2,19 @@
 // Namespaces: admin, adminConfig, adminRisk, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
 export default {
   "admin": {
+    "reauth": {
+      "title": "验证管理员密码",
+      "description": "敏感的管理操作需要再次确认你的账号密码。验证通过后会自动继续刚才的操作。",
+      "passwordLabel": "当前密码",
+      "submit": "验证并继续",
+      "passwordRequired": "请输入密码",
+      "passwordMismatch": "密码不正确，请重试", // NOSONAR -- translation key, not a credential
+      "rejected": "无法通过密码验证此账号",
+      "invalidInput": "输入无效，请重新输入密码",
+      "failedTitle": "无法验证密码",
+      "failedDescription": "验证服务暂时不可用，请稍后重试",
+      "sessionInvalid": "当前登录会话无效，请重新登录后再试"
+    },
     "layout": {
       "superAdmin": "超级管理员"
     },

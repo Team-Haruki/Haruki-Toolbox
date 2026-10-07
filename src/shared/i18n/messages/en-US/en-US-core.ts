@@ -1408,7 +1408,8 @@ export default {
       "requireAdminDescription": "Admin permission required",
       "requireSuperAdminDescription": "Super admin permission required",
       "apiRequestFailedTitle": "API request failed",
-      "apiRequestFailedDescription": "Status: {status}, message: {message}"
+      "apiRequestFailedDescription": "Status: {status}, message: {message}",
+      "reauthRequired": "Password re-verification required"
     },
     "sync": {
       "successTitle": "Settings synced",

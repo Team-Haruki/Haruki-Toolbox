@@ -1408,7 +1408,8 @@ export default {
       "requireAdminDescription": "需要管理員許可權",
       "requireSuperAdminDescription": "需要超級管理員許可權",
       "apiRequestFailedTitle": "API請求失敗",
-      "apiRequestFailedDescription": "狀態碼: {status}，資訊: {message}"
+      "apiRequestFailedDescription": "狀態碼: {status}，資訊: {message}",
+      "reauthRequired": "需要重新驗證密碼"
     },
     "sync": {
       "successTitle": "同步設定成功",

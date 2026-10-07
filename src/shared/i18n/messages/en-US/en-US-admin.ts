@@ -2,6 +2,19 @@
 // Namespaces: admin, adminConfig, adminRisk, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
 export default {
   "admin": {
+    "reauth": {
+      "title": "Confirm your password",
+      "description": "Sensitive admin actions need your account password again. Once confirmed, the action you started continues automatically.",
+      "passwordLabel": "Current password",
+      "submit": "Confirm and continue",
+      "passwordRequired": "Enter your password",
+      "passwordMismatch": "Incorrect password. Try again.", // NOSONAR -- translation key, not a credential
+      "rejected": "This account cannot be verified with a password",
+      "invalidInput": "Invalid input. Enter your password again.",
+      "failedTitle": "Could not verify password",
+      "failedDescription": "Verification is unavailable right now. Try again later.",
+      "sessionInvalid": "Your session is no longer valid. Sign in again and retry."
+    },
     "layout": {
       "superAdmin": "Super admin"
     },

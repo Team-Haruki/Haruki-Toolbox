@@ -1,6 +1,7 @@
 import { isAxiosError } from "axios"
 import { asRecord, readOptionalString } from "@/lib/record-utils"
 import { translate } from "@/shared/i18n"
+import { isAdminReauthRequiredError } from "@/lib/admin-reauth"
 
 export function getApiErrorMessage(payload: unknown): string | undefined {
     const record = asRecord(payload)
@@ -14,6 +15,10 @@ export function getApiErrorMessage(payload: unknown): string | undefined {
 }
 
 export function extractErrorMessage(err: unknown, defaultMessage: string = translate("common.actionFailed")): string {
+    if (isAdminReauthRequiredError(err)) {
+        // Left over when the admin cancels the password prompt.
+        return translate("core.auth.reauthRequired")
+    }
     if (isAxiosError(err)) {
         return getApiErrorMessage(err.response?.data) || err.message
     } else if (err instanceof Error) {

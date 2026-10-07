@@ -9,6 +9,8 @@ import { createRequestId } from "@/lib/request-id"
 import type { Router } from "vue-router"
 import type { APIResponse } from "@/types/response"
 import { translate } from "@/shared/i18n"
+import { isAdminReauthRequiredError, withAdminReauthRetry } from "@/lib/admin-reauth"
+import { requestAdminReauth } from "@/core/http/admin-reauth"
 
 declare module 'axios' {
     export interface AxiosRequestConfig {
@@ -17,6 +19,8 @@ declare module 'axios' {
         retry?: number
         retryAttempt?: number
         retryMax?: number
+        /** Do not open the admin re-authentication prompt for this request. */
+        skipAdminReauth?: boolean
     }
 }
 
@@ -125,6 +129,11 @@ async function handleUnauthorized(error: AxiosError, userStore: UserStore, route
 }
 
 async function handleForbidden(error: AxiosError, userStore: UserStore, router: Router): Promise<void> {
+    // `request()` turns this one into the re-authentication prompt; the caller
+    // reports it if the admin cancels.
+    if (!error.config?.skipAdminReauth && isAdminReauthRequiredError(error)) {
+        return
+    }
     const message = getApiErrorMessage(error.response?.data) || translate("core.auth.permissionDeniedTitle")
     if (!isAccountBannedMessage(message)) {
         if (!error.config?.skipErrorToast) {
@@ -219,6 +228,20 @@ export async function requestWithResponse<T = unknown>(
     }
     const method = (requestOptions.method ?? "GET").toUpperCase()
     const maxRetries = retry ?? (isIdempotentMethod(method) ? 1 : 0)
+    const send = () => sendWithTransientRetry<T>(url, requestOptions, maxRetries)
+    if (requestOptions.skipAdminReauth) {
+        return await send()
+    }
+    // Admin routes behind a recent-reauth check: ask for the password, then
+    // resend once. The guarded handler never ran, so resending a PUT/POST is safe.
+    return await withAdminReauthRetry(send, requestAdminReauth)
+}
+
+async function sendWithTransientRetry<T>(
+    url: string,
+    requestOptions: AxiosRequestConfig,
+    maxRetries: number
+): Promise<AxiosResponse<T>> {
     let attempt = 0
 
     while (true) {
