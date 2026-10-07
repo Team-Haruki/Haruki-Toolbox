@@ -28,7 +28,7 @@ export const SEKAI_MUSIC_METAS_URLS: Record<SekaiRegion, string> = {
 export const SEKAI_ASSET_ENDPOINT_ROOTS: Record<SekaiAssetEndpointPreference, string> = {
   china: "https://sekai-assets.haruki.seiunx.com",
   global: "https://sekai-assets-bdf29c81.seiunx.net",
-  china_cdn: "https://toolbox-sekai-assets.haruki.seiunx.com",
+  china_cdn: "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com",
 }
 const TOOLBOX_STATIC_IMAGE_BASE_URL = "https://images.haruki.seiunx.com/sekai-toolbox"
 /** Vite's base path; `import.meta.env.BASE_URL` is not defined under `bun test`. */
@@ -255,8 +255,9 @@ export function resolveRarityTrainingIconUrl(rarity: string): string {
 /**
  * Browser runtime root of the Haruki 3D exporter output for one region,
  * served from the public asset endpoints under `/pjsk-3d-output/`. The
- * china_cdn endpoint does not host the 3D tree at all (exporter output is
- * not synced there), so 3D loads fall back to the china endpoint.
+ * china_cdn endpoint (a Garage asset-edge node) does not host the 3D tree at
+ * all (exporter output is not synced there), so 3D loads fall back to the
+ * china endpoint.
  */
 export function resolvePjsk3dRuntimeBaseUrl(
   region: SekaiRegion,
