@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
-import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -158,16 +158,29 @@ function buildTrackerProxy(target: string) {
     }
 }
 
-function buildDevServerConfig(command: string, mode: string, trackerProxy: ReturnType<typeof buildTrackerProxy> | undefined) {
+// Local stand-in for the Sekai Station API relay: point VITE_SEKAI_STATION_API_URL
+// at /sekai-station-api and SEKAI_STATION_PROXY_TARGET at a Mafuyu v2 base such
+// as http://127.0.0.1:8888/station/api/v2. Distinct from the /sekai-station page.
+function buildSekaiStationProxy(target: string) {
+    return {
+        '/sekai-station-api': {
+            target,
+            changeOrigin: true,
+            rewrite: (proxyPath: string) => proxyPath.replace(/^\/sekai-station-api/, ''),
+        },
+    }
+}
+
+function buildDevServerConfig(command: string, mode: string, proxy: Record<string, ProxyOptions> | undefined) {
     const localDevServer = resolveLocalDevServer(command, mode)
 
-    if (!localDevServer && !trackerProxy) {
+    if (!localDevServer && !proxy) {
         return undefined
     }
 
     return {
         ...localDevServer,
-        ...(trackerProxy ? { proxy: trackerProxy } : {}),
+        ...(proxy ? { proxy } : {}),
     }
 }
 
@@ -175,6 +188,12 @@ export default defineConfig(({ command, mode }) => {
     const env = loadEnv(mode, process.cwd(), '')
     const trackerProxyTarget = normalizeProxyTarget(env.HARUKI_EVENT_TRACKER_PROXY_TARGET)
     const trackerProxy = trackerProxyTarget ? buildTrackerProxy(trackerProxyTarget) : undefined
+    const sekaiStationProxyTarget = normalizeProxyTarget(env.SEKAI_STATION_PROXY_TARGET)
+    const mergedProxy = {
+        ...trackerProxy,
+        ...(sekaiStationProxyTarget ? buildSekaiStationProxy(sekaiStationProxyTarget) : {}),
+    }
+    const devProxy = Object.keys(mergedProxy).length > 0 ? mergedProxy : undefined
 
     return {
         envPrefix: ['VITE_', 'ENABLE_'],
@@ -320,9 +339,9 @@ export default defineConfig(({ command, mode }) => {
                 '@': path.resolve(import.meta.dirname, './src'),
             },
         },
-        server: buildDevServerConfig(command, mode, trackerProxy),
-        preview: trackerProxy
-            ? { proxy: trackerProxy }
+        server: buildDevServerConfig(command, mode, devProxy),
+        preview: devProxy
+            ? { proxy: devProxy }
             : undefined,
         build: {
             rolldownOptions: {

@@ -27,6 +27,7 @@ const BUNDLE_RULES: readonly BundleRule[] = [
       "/client-config-generator",
       "/client_config_generator",
       "/haruki-bot-neo",
+      "/sekai-station",
     ],
     bundles: ["tools"],
   },
