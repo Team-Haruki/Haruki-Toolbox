@@ -1,5 +1,5 @@
 import { isAxiosError } from "axios"
-import { asRecord, readOptionalString } from "@/lib/record-utils"
+import { asRecord, readOptionalString, readString } from "@/lib/record-utils"
 import { translate } from "@/shared/i18n"
 import { isAdminReauthRequiredError } from "@/lib/admin-reauth"
 
@@ -25,4 +25,14 @@ export function extractErrorMessage(err: unknown, defaultMessage: string = trans
         return err.message
     }
     return defaultMessage
+}
+
+/** `updatedData.code` of a failed API call, or "" when it has none. */
+export function readApiErrorCode(error: unknown): string {
+    if (!isAxiosError(error)) {
+        return ""
+    }
+    const body = asRecord(error.response?.data)
+    const updatedData = body ? asRecord(body.updatedData) : null
+    return updatedData ? readString(updatedData, ["code"]).trim() : ""
 }

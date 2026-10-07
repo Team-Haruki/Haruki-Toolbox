@@ -327,12 +327,9 @@ test("verification page keeps the code form until the flow has passed", async ({
 })
 
 test("authorized apps list one row per consent of the same client", async ({ page }) => {
-  // A rendering smoke check, not a guard for the v-for key: Vue reports
-  // duplicate keys only while it patches a keyed list in place, and this list
-  // is remounted (skeleton first) on every fetch, so the warning check below
-  // also passes with the old clientId key. The key itself is covered by
-  // oauth-authorizations.test.ts; an in-place update assertion belongs with
-  // FE-4, which groups and patches the rows.
+  // Both consents of one client sit in that client's group, one row each.
+  // In-place updates of the grouped rows (and device rows) are covered by
+  // oauth-authorizations.e2e.ts; the v-for key by oauth-authorizations.test.ts.
   const duplicateKeyWarnings: string[] = []
   page.on("console", (message) => {
     if (message.text().includes("Duplicate keys")) {
@@ -372,6 +369,7 @@ test("authorized apps list one row per consent of the same client", async ({ pag
 
   await page.goto("/user/oauth-authorizations")
 
-  await expect(page.getByRole("listitem").filter({ hasText: "E2E Client" })).toHaveCount(2)
+  await expect(page.getByTestId("oauth-client-group")).toHaveCount(1)
+  await expect(page.getByTestId("oauth-client-group").getByTestId("oauth-browser-grant")).toHaveCount(2)
   expect(duplicateKeyWarnings).toEqual([])
 })

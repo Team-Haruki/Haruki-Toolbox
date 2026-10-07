@@ -340,15 +340,26 @@ export default {
       "emptyTitle": "暫無已授權的應用",
       "emptyDescription": "當你授權第三方應用訪問賬號資料後，它們會顯示在這裡。",
       "authorizedAtPrefix": "授權於",
+      "revokeApp": "撤銷此應用的全部授權",
+      "devices": {
+        "title": "已授權裝置（{count}）",
+        "unnamed": "未命名裝置",
+        "revoke": "撤銷此裝置"
+      },
       "clientType": {
         "bot": "Bot",
         "website": "網站"
+      },
+      "deviceDialog": {
+        "title": "撤銷此裝置",
+        "description": "確認撤銷裝置「{label}」對 {clientName} 的授權嗎？這臺裝置將無法再訪問你的賬號；該應用的其他裝置和網頁授權不受影響。"
       },
       "dialog": {
         "title": "撤銷授權",
         "description": "確認撤銷 {clientName} 的所有訪問許可權嗎？該應用將無法再訪問您的資料。",
         "revoke": "撤銷",
-        "revoking": "撤銷中..."
+        "revoking": "撤銷中...",
+        "devicesNote": "這也會撤銷它在 {count} 臺裝置上的授權。"
       },
       "toast": {
         "fetchFailedTitle": "獲取授權列表失敗",
@@ -356,7 +367,12 @@ export default {
         "revokeSuccessTitle": "已撤銷授權",
         "revokeSuccessDescription": "已撤銷 {clientName} 的訪問許可權",
         "revokeFailedTitle": "撤銷失敗",
-        "revokeFailedFallback": "撤銷失敗"
+        "revokeFailedFallback": "撤銷失敗",
+        "deviceRevokeSuccessTitle": "已撤銷裝置",
+        "deviceRevokeSuccessDescription": "「{label}」已無法再訪問你的賬號",
+        "deviceNotFound": "該裝置的授權已不存在，列表已重新整理",
+        "deviceRevokeFailedTitle": "撤銷裝置失敗",
+        "deviceRevokeRetry": "暫時無法撤銷，請稍後重試"
       }
     },
     "gameBinding": {

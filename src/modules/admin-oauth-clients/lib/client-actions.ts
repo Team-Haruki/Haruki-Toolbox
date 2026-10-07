@@ -1,7 +1,8 @@
-import { isAxiosError } from "axios"
 import { asRecord, readBoolean, readString, readStringArray } from "@/lib/record-utils"
-import { extractErrorMessage } from "@/lib/error-utils"
+import { extractErrorMessage, readApiErrorCode } from "@/lib/error-utils"
 import type { OAuthClient } from "@/types/admin"
+
+export { readApiErrorCode }
 
 type TranslateFn = (key: string, params?: Record<string, unknown>, plural?: number) => string
 
@@ -88,15 +89,6 @@ export function describeIncompleteRevocation(outcome: RevocationOutcome, t: Tran
   return t("adminOAuthClients.toast.revocationIncomplete")
 }
 
-/** `updatedData.code` of a failed API call, or "" when it has none. */
-export function readApiErrorCode(error: unknown): string {
-  if (!isAxiosError(error)) {
-    return ""
-  }
-  const body = asRecord(error.response?.data)
-  const updatedData = body ? asRecord(body.updatedData) : null
-  return updatedData ? readString(updatedData, ["code"]).trim() : ""
-}
 
 /**
  * The toast description for a failed client action: a localized message for

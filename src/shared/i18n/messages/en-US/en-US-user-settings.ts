@@ -340,15 +340,26 @@ export default {
       "emptyTitle": "No authorized applications",
       "emptyDescription": "Third-party applications you authorize to access your account data will appear here.",
       "authorizedAtPrefix": "Authorized at",
+      "revokeApp": "Revoke all access for this app",
+      "devices": {
+        "title": "Authorized devices ({count})",
+        "unnamed": "Unnamed device",
+        "revoke": "Revoke this device"
+      },
       "clientType": {
         "bot": "Bot",
         "website": "Website"
+      },
+      "deviceDialog": {
+        "title": "Revoke this device",
+        "description": "Revoke the authorization of the device “{label}” for {clientName}? That device will no longer access your account; the app's other devices and browser authorizations stay as they are."
       },
       "dialog": {
         "title": "Revoke authorization",
         "description": "Revoke all access for {clientName}? The app will no longer access your data.",
         "revoke": "Revoke",
-        "revoking": "Revoking..."
+        "revoking": "Revoking...",
+        "devicesNote": "This also revokes it on {count} device. | This also revokes it on {count} devices."
       },
       "toast": {
         "fetchFailedTitle": "Failed to load authorization list",
@@ -356,7 +367,12 @@ export default {
         "revokeSuccessTitle": "Authorization revoked",
         "revokeSuccessDescription": "Access for {clientName} has been revoked",
         "revokeFailedTitle": "Revoke failed",
-        "revokeFailedFallback": "Revoke failed"
+        "revokeFailedFallback": "Revoke failed",
+        "deviceRevokeSuccessTitle": "Device revoked",
+        "deviceRevokeSuccessDescription": "“{label}” can no longer access your account",
+        "deviceNotFound": "This device's authorization no longer exists; the list was refreshed",
+        "deviceRevokeFailedTitle": "Could not revoke the device",
+        "deviceRevokeRetry": "The device could not be revoked right now. Try again later."
       }
     },
     "gameBinding": {

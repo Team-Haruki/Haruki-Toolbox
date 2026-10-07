@@ -340,15 +340,26 @@ export default {
       "emptyTitle": "暂无已授权的应用",
       "emptyDescription": "当你授权第三方应用访问账号数据后，它们会显示在这里。",
       "authorizedAtPrefix": "授权于",
+      "revokeApp": "撤销此应用的全部授权",
+      "devices": {
+        "title": "已授权设备（{count}）",
+        "unnamed": "未命名设备",
+        "revoke": "撤销此设备"
+      },
       "clientType": {
         "bot": "Bot",
         "website": "网站"
+      },
+      "deviceDialog": {
+        "title": "撤销此设备",
+        "description": "确认撤销设备「{label}」对 {clientName} 的授权吗？这台设备将无法再访问你的账号；该应用的其他设备和网页授权不受影响。"
       },
       "dialog": {
         "title": "撤销授权",
         "description": "确认撤销 {clientName} 的所有访问权限吗？该应用将无法再访问您的数据。",
         "revoke": "撤销",
-        "revoking": "撤销中..."
+        "revoking": "撤销中...",
+        "devicesNote": "这也会撤销它在 {count} 台设备上的授权。"
       },
       "toast": {
         "fetchFailedTitle": "获取授权列表失败",
@@ -356,7 +367,12 @@ export default {
         "revokeSuccessTitle": "已撤销授权",
         "revokeSuccessDescription": "已撤销 {clientName} 的访问权限",
         "revokeFailedTitle": "撤销失败",
-        "revokeFailedFallback": "撤销失败"
+        "revokeFailedFallback": "撤销失败",
+        "deviceRevokeSuccessTitle": "已撤销设备",
+        "deviceRevokeSuccessDescription": "「{label}」已无法再访问你的账号",
+        "deviceNotFound": "该设备的授权已不存在，列表已刷新",
+        "deviceRevokeFailedTitle": "撤销设备失败",
+        "deviceRevokeRetry": "暂时无法撤销，请稍后重试"
       }
     },
     "gameBinding": {
