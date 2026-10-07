@@ -29,6 +29,15 @@ describe("buildCostumeThumbnailAssetbundleName", () => {
   it("reconstructs from a blank (whitespace-only) override once a part type is known", () => {
     expect(buildCostumeThumbnailAssetbundleName(1002, "body", 1, "  ")).toBe("cos0001_body")
   })
+
+  it("names registry head_optional/accessory parts as the master's head thumbnails", () => {
+    // `cos0025_head_optional*.png` never exists; the master row is partType `head`.
+    expect(buildCostumeThumbnailAssetbundleName(25001, "head_optional", 1, "")).toBe("cos0025_head")
+    expect(buildCostumeThumbnailAssetbundleName(58003, "head_optional", 2, "")).toBe("cos0058_head_01")
+    expect(buildCostumeThumbnailAssetbundleName(35007, "accessory", 4, "")).toBe("cos0035_head_03")
+    // A Nuverse-only bundle base from the registry is kept.
+    expect(buildCostumeThumbnailAssetbundleName(913003, "head_optional", 2, "01016")).toBe("cos01016_head_01")
+  })
 })
 
 const REGISTRY = {
@@ -70,6 +79,15 @@ describe("listRuntimeCostumeOptions", () => {
     const options = listRuntimeCostumeOptions(REGISTRY, 1, "body")
     expect(options.map((option) => option.id)).toEqual([2])
     expect(options[0]).toMatchObject({ name: "制服", thumbnailAssetbundleName: "body_seifuku_a" })
+  })
+
+  it("derives head thumbnails for head_optional entries without a bundle name", () => {
+    const options = listRuntimeCostumeOptions({
+      entries: [
+        { costume3dId: 25005, partType: "head_optional", characterId: 1, unit: "light_sound", colorId: 3, costumeAssetbundleName: null, headCostume3dAssetbundleType: "head_only", packagePath: "parts/_sources/head_optional/x/" },
+      ],
+    }, 1, "head")
+    expect(options.map((option) => option.thumbnailAssetbundleName)).toEqual(["cos0025_head_02"])
   })
 
   it("combines full heads and accessories, skipping ambiguous ids", () => {
