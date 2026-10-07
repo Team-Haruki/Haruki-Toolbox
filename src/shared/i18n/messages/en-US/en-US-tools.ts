@@ -1,5 +1,5 @@
 // AUTO-GENERATED split of the former monolithic en-US locale file.
-// Namespaces: tools, botNeo
+// Namespaces: tools, botNeo, sekaiStation
 export default {
   "tools": {
     "clientConfigGenerator": {
@@ -634,6 +634,70 @@ export default {
       "clipboardUnsupported": "Clipboard is not supported in this environment",
       "copySuccess": "{label} copied to clipboard",
       "copyFailed": "Failed to copy to clipboard"
+    }
+  },
+  "sekaiStation": {
+    "title": "Sekai Station",
+    "description": "Real-time CN-server Multi Live room numbers collected from social media.",
+    "viewOnSekaiStation": "View on Sekai Station",
+    "notConfigured": "This build has no Sekai Station API address, so rooms cannot be loaded.",
+    "connection": {
+      "connected": "Connected",
+      "connecting": "Connecting…",
+      "disconnected": "Disconnected",
+      "failed": "Unable to reach the server",
+      "retryIn": "Retrying in {n}s",
+      "reconnecting": "Reconnecting…",
+      "online": "{n} online"
+    },
+    "rooms": {
+      "list": "Room list",
+      "empty": "No rooms right now",
+      "emptyFiltered": "No rooms match your filters",
+      "loading": "Loading…",
+      "copyId": "Copy room number",
+      "copyText": "Copy text",
+      "openOriginal": "Open original post",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "copied": "Copied",
+      "copyFailed": "Copy failed",
+      "more": "More actions",
+      "idHint": "Click to copy · hold 1 s to hide for 10 min",
+      "block": "Hide for 10 min",
+      "blocked": "Hid {id} for 10 minutes",
+      "undo": "Undo"
+    },
+    "settings": {
+      "title": "Filter & display",
+      "filter": "Filter",
+      "mode": "Mode",
+      "blacklist": "Blacklist",
+      "blacklistDesc": "Hide rooms containing these keywords",
+      "whitelist": "Whitelist",
+      "whitelistDesc": "Only show rooms containing these keywords",
+      "presetTags": "Presets",
+      "keywordPlaceholder": "Add keyword",
+      "add": "Add",
+      "clear": "Clear",
+      "removeFilter": "Remove filter \"{name}\"",
+      "display": "Display",
+      "expireTime": "Keep rooms for",
+      "durationSeconds": "{n} s",
+      "durationMinutes": "{n} min",
+      "fontSize": "Font size",
+      "lineHeight": "Line height",
+      "decrease": "Decrease",
+      "increase": "Increase"
+    },
+    "blocked": {
+      "title": "Hidden for now",
+      "hint": "Shown again after 10 minutes",
+      "empty": "Hold a room number for 1 s to hide it",
+      "minutesLeft": "{n} min left",
+      "unblock": "Unhide {id}",
+      "unblockOne": "Unhide",
+      "unblockAll": "Unhide all"
     }
   }
 } as const
