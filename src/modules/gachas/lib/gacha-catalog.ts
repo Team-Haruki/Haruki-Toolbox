@@ -544,50 +544,59 @@ export function stripGachaMarkup(text: string): string {
 // ---------------------------------------------------------------------------
 // Asset URL candidates (probed client-side with an onerror fallback chain)
 // ---------------------------------------------------------------------------
+//
+// Probing every candidate of every gacha in all five regions' asset buckets
+// shows exactly three image paths ever exist:
+//
+//   startapp/home/banner/banner_{key}/banner_{key}.png   (home banner)
+//   ondemand/gacha/{assetbundleName}/screen/texture/bg_{key}.png
+//   ondemand/gacha/{assetbundleName}/logo/logo.png
+//
+// `startapp/gacha/…`, `startapp/logo/…` and `startapp/home/banner/{ab}/…`
+// never resolve anywhere, so they are not requested: each would be a
+// guaranteed 404 in front of the next real candidate.
+
+/**
+ * Texture key the client derives from a gacha bundle name: numeric bundles
+ * drop the separator (`ab_gacha_145` → `gacha145`), named ones keep it
+ * (`ab_gacha_cn_fz3` → `gacha_cn_fz3`). `null` for any other shape.
+ */
+export function resolveGachaAssetKey(assetbundleName: string): string | null {
+  const suffix = /^ab_gacha_(.+)$/.exec(assetbundleName.trim())?.[1]
+  if (!suffix) {
+    return null
+  }
+  return /^\d+$/.test(suffix) ? `gacha${suffix}` : `gacha_${suffix}`
+}
 
 export function buildGachaLogoCandidates(
   gacha: Pick<CatalogGacha, "id" | "seq" | "assetbundleName">,
   region: SekaiRegion,
   preference: SekaiAssetEndpointPreference = "china",
 ): string[] {
-  const paths: string[] = []
-  const assetbundleName = gacha.assetbundleName
-  if (assetbundleName) {
-    // Non-jp dumps (and newer jp gachas) ship gacha art under ondemand/.
-    paths.push(`ondemand/gacha/${assetbundleName}/logo/logo.png`)
-    paths.push(`startapp/gacha/${assetbundleName}/logo/logo.png`)
-    paths.push(`startapp/logo/${assetbundleName}.png`)
-  }
-
-  paths.push(`startapp/gacha/ab_gacha_${gacha.id}/logo/logo.png`)
-  const digits = assetbundleName.match(/\d+/)?.[0]
-  if (digits) {
-    paths.push(`startapp/logo/banner_logo${digits}.png`)
-  }
-
-  if (gacha.seq != null) {
-    paths.push(`startapp/logo/banner_logo${gacha.seq}.png`)
-  }
-
-  paths.push(`startapp/logo/banner_logo${gacha.id}.png`)
-  return dedupAssetPaths(paths).map((path) => resolveSekaiGameAssetUrl(region, path, preference))
+  const assetbundleName = gacha.assetbundleName.trim() || `ab_gacha_${gacha.id}`
+  return [resolveSekaiGameAssetUrl(region, `ondemand/gacha/${assetbundleName}/logo/logo.png`, preference)]
 }
 
+/**
+ * Banner-like art, own id first. Gachas that share another gacha's bundle
+ * (step-up pools such as cn 10021–10023 on `ab_gacha_10020`) and named cn
+ * bundles (`ab_gacha_cn_fz3`) ship their banner and background under the
+ * bundle's key, not their own id. Callers pass an empty `assetbundleName`
+ * to get only the id-keyed home banner (used for rerun aliases).
+ */
 export function buildGachaBannerCandidates(
   gacha: Pick<CatalogGacha, "id" | "assetbundleName">,
   region: SekaiRegion,
   preference: SekaiAssetEndpointPreference = "china",
 ): string[] {
-  const paths = [
-    `startapp/home/banner/banner_gacha${gacha.id}/banner_gacha${gacha.id}.png`,
-  ]
-  if (gacha.assetbundleName) {
-    // Non-jp dumps (and newer jp gachas) ship gacha art under ondemand/.
-    paths.push(`ondemand/gacha/${gacha.assetbundleName}/screen/texture/bg_gacha${gacha.id}.png`)
-  }
-  paths.push(`startapp/gacha/ab_gacha_${gacha.id}/screen/texture/bg_gacha${gacha.id}.png`)
-  if (gacha.assetbundleName) {
-    paths.push(`startapp/home/banner/${gacha.assetbundleName}/${gacha.assetbundleName}.png`)
+  const homeBanner = (key: string) => `startapp/home/banner/banner_${key}/banner_${key}.png`
+  const paths = [homeBanner(`gacha${gacha.id}`)]
+  const assetbundleName = gacha.assetbundleName.trim()
+  if (assetbundleName) {
+    const key = resolveGachaAssetKey(assetbundleName) ?? `gacha${gacha.id}`
+    paths.push(`ondemand/gacha/${assetbundleName}/screen/texture/bg_${key}.png`)
+    paths.push(homeBanner(key))
   }
 
   return dedupAssetPaths(paths).map((path) => resolveSekaiGameAssetUrl(region, path, preference))
@@ -635,10 +644,10 @@ export function buildGachaBannerAliasMap(
 
 /**
  * Combined display-image candidates, most-likely-first: probing the asset CDN
- * shows the home banner (`banner_gacha{id}`) is the only asset that reliably
- * exists, so it leads and the logo variants serve as fallbacks. Reruns get the
- * aliased original's banner right after their own. Some gachas (very old or
- * not yet mirrored) have no assets at all.
+ * shows the home banner (`banner_gacha{id}`) is the asset that most often
+ * exists, so it leads and the bundle logo serves as the fallback. Reruns get
+ * the aliased original's banner right after their own. Some gachas (very old
+ * or not yet mirrored) have no assets at all.
  */
 export function buildGachaImageCandidates(
   gacha: Pick<CatalogGacha, "id" | "seq" | "assetbundleName">,

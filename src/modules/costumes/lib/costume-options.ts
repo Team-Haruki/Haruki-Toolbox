@@ -42,6 +42,18 @@ type RegistryEntry = {
 const HEAD_ONLY_TYPES = new Set(["head_only", "head_all", "head_front", "head_back"])
 
 /**
+ * Part segment of a thumbnail name. The runtime registry files head-only
+ * accessories under `head_optional` (`accessory` in older exports), but the
+ * master — and so the thumbnail — calls them `head`: `cos0025_head` exists,
+ * `cos0025_head_optional` never does.
+ */
+function thumbnailPartType(partType: string): string {
+  const part = partType.trim()
+  const lowered = part.toLowerCase()
+  return lowered === "head_optional" || lowered === "accessory" ? "head" : part
+}
+
+/**
  * Reconstruct a costume thumbnail asset name when the master ships it empty.
  *
  * Nuverse regions (cn/tw/kr) leave `costume3ds.assetbundleName` blank for ~95%
@@ -64,7 +76,7 @@ export function buildCostumeThumbnailAssetbundleName(
     return trimmed
   }
 
-  const part = partType.trim()
+  const part = thumbnailPartType(partType)
   if (part === "") {
     return trimmed
   }
