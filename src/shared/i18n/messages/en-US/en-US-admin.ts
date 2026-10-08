@@ -1,5 +1,5 @@
 // AUTO-GENERATED split of the former monolithic en-US locale file.
-// Namespaces: admin, adminConfig, adminRisk, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
+// Namespaces: admin, adminConfig, adminRisk, adminBotSecurity, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
 export default {
   "admin": {
     "reauth": {
@@ -30,6 +30,7 @@ export default {
         "users": "Browse, search and manage toolbox users.",
         "gameBindings": "Query and adjust user game-account bindings.",
         "risk": "Maintain risk rules and handle risk events.",
+        "botSecurity": "Review bot-client security alerts reported by Haruki Cloud and record how they were handled.",
         "tickets": "Handle user tickets and replies.",
         "content": "Maintain friend links, recommended groups and other site content.",
         "sponsors": "Manage how the sponsor list is displayed.",
@@ -50,6 +51,7 @@ export default {
       "config": "System config",
       "gameBindings": "Game bindings",
       "risk": "Risk control",
+      "botSecurity": "Bot security alerts",
       "tickets": "Tickets",
       "pendingTickets": "{total} tickets pending admin action"
     }
@@ -177,6 +179,137 @@ export default {
       "rulesMustBeJsonArray": "Rules content must be a JSON array",
       "rulesUpdated": "Risk rules updated",
       "invalidJson": "Invalid JSON format"
+    }
+  },
+  "adminBotSecurity": {
+    "common": {
+      "fallback": "—"
+    },
+    "kind": {
+      "authFailed": "Authentication failed",
+      "replayDetected": "Replay detected",
+      "rateLimited": "Rate limited",
+      "buildRejected": "Client build rejected",
+      "sessionRevoked": "Session revoked",
+      "loginSourceChanged": "Login source changed",
+      "clientChanged": "Client changed",
+      "policyUnavailable": "Security policy unavailable"
+    },
+    "status": {
+      "open": "Open",
+      "resolved": "Resolved",
+      "ignored": "Ignored"
+    },
+    "enforcement": {
+      "enforced": "Blocked",
+      "logOnly": "Log only",
+      "enforcedHint": "Haruki Cloud blocked this action",
+      "logOnlyHint": "Haruki Cloud only logged this action and did not block it"
+    },
+    "window": {
+      "seconds": "{count} s",
+      "minutes": "{count} min",
+      "hours": "{count} h",
+      "days": "{count} d"
+    },
+    "summary": {
+      "open": "Open",
+      "last24h": "Alerts (24 h)",
+      "last7d": "Alerts (7 days)",
+      "byKind": "Open alerts by kind",
+      "noOpen": "No open alerts",
+      "unavailable": "Summary unavailable",
+      "filterByKind": "Show open \"{kind}\" alerts"
+    },
+    "filters": {
+      "title": "Filters",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "status": "Status",
+      "kind": "Kind",
+      "botId": "Bot ID",
+      "botIdPlaceholder": "Exact bot ID",
+      "from": "From",
+      "fromPlaceholder": "Any time",
+      "to": "To",
+      "toPlaceholder": "Any time",
+      "allStatuses": "All statuses",
+      "allKinds": "All kinds"
+    },
+    "actions": {
+      "search": "Search",
+      "refresh": "Refresh",
+      "retry": "Retry",
+      "resolve": "Resolve",
+      "ignore": "Ignore",
+      "reopen": "Reopen",
+      "details": "View details"
+    },
+    "table": {
+      "title": "Alerts",
+      "alertTime": "Alert time",
+      "kind": "Kind",
+      "bot": "Bot / owner / source",
+      "sourceIp": "Source IP",
+      "client": "Client version / build",
+      "count": "Count / threshold",
+      "status": "Status",
+      "handler": "Handled by",
+      "actions": "Actions",
+      "within": "within {window}",
+      "ownerQq": "QQ {qq}",
+      "botShort": "Bot {botId}",
+      "sourceIpShort": "IP {ip}",
+      "handledByShort": "by {name}",
+      "openMenu": "Actions for alert #{id}",
+      "empty": "No alerts match these filters",
+      "loadError": "Could not load alerts"
+    },
+    "pagination": {
+      "total": "{total} total",
+      "prev": "Previous page",
+      "next": "Next page"
+    },
+    "detail": {
+      "title": "Alert #{id}",
+      "description": "Values come from the bot client or Haruki Cloud and are shown as received.",
+      "receivedAt": "Received at",
+      "botId": "Bot ID",
+      "ownerQq": "Owner QQ",
+      "node": "Reporting node",
+      "clientVersion": "Client version",
+      "buildId": "Build ID",
+      "reason": "Reason",
+      "note": "Note",
+      "noNote": "No note",
+      "countValue": "{count} within {window}, threshold {threshold}",
+      "handledAt": "Handled at",
+      "handlerNameUnavailable": "(name unavailable, possibly a deleted user)"
+    },
+    "actionDialog": {
+      "title": {
+        "resolve": "Resolve alert",
+        "ignore": "Ignore alert",
+        "reopen": "Reopen alert"
+      },
+      "subject": "Alert #{id} · {kind}",
+      "subjectWithBot": "Alert #{id} · {kind} · bot {botId}",
+      "noteLabel": "Note (optional)",
+      "notePlaceholder": "How it was handled, or why",
+      "noteHint": "Leave it unchanged to keep the current note.",
+      "noteWillClear": "The note is empty; saving removes the current note."
+    },
+    "toast": {
+      "loadFailedTitle": "Failed to load alerts",
+      "loadFailedFallback": "Please try again later",
+      "loadSummaryFailedTitle": "Failed to load the alert summary",
+      "filterFailedTitle": "Invalid filters",
+      "invalidTimeRange": "The start time must not be after the end time",
+      "updateFailedTitle": "Failed to update the alert",
+      "updateFailedFallback": "Please try again later",
+      "resolveSuccess": "Alert resolved",
+      "ignoreSuccess": "Alert ignored",
+      "reopenSuccess": "Alert reopened"
     }
   },
   "adminContent": {

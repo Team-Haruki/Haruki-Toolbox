@@ -1,6 +1,7 @@
 import type { Component } from "vue"
 import {
   LucideBox,
+  LucideBot,
   LucideCalculator,
   LucideCalendarClock,
   LucideCalendarDays,
@@ -167,6 +168,15 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         segment: "risk",
         routeName: "admin.risk",
         titleKey: "route.admin.risk",
+      },
+      {
+        value: "bot-security",
+        labelKey: "admin.nav.botSecurity",
+        descriptionKey: "admin.nav.descriptions.botSecurity",
+        icon: LucideBot,
+        segment: "bot-security",
+        routeName: "admin.botSecurity",
+        titleKey: "route.admin.botSecurity",
       },
       {
         value: "tickets",

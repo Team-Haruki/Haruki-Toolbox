@@ -1,5 +1,5 @@
 // AUTO-GENERATED zh-TW locale bundle (OpenCC s2twp from zh-CN).
-// Namespaces: admin, adminConfig, adminRisk, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
+// Namespaces: admin, adminConfig, adminRisk, adminBotSecurity, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
 export default {
   "admin": {
     "reauth": {
@@ -30,6 +30,7 @@ export default {
         "users": "檢視、搜尋與管理工具箱使用者。",
         "gameBindings": "查詢與調整使用者的遊戲賬號繫結。",
         "risk": "維護風控規則並處置風險事件。",
+        "botSecurity": "檢視 Haruki Cloud 上報的 Bot 客戶端安全告警並標記處理結果。",
         "tickets": "處理使用者提交的工單與回覆。",
         "content": "維護友情連結與推薦群聊等站點內容。",
         "sponsors": "管理贊助者名單的展示。",
@@ -50,6 +51,7 @@ export default {
       "config": "系統配置",
       "gameBindings": "遊戲繫結",
       "risk": "風控管理",
+      "botSecurity": "Bot 安全告警",
       "tickets": "工單管理",
       "pendingTickets": "{total} 個待管理員處理的工單"
     }
@@ -177,6 +179,137 @@ export default {
       "rulesMustBeJsonArray": "規則內容必須是 JSON 陣列",
       "rulesUpdated": "風控規則已更新",
       "invalidJson": "JSON 格式錯誤"
+    }
+  },
+  "adminBotSecurity": {
+    "common": {
+      "fallback": "—"
+    },
+    "kind": {
+      "authFailed": "認證失敗",
+      "replayDetected": "檢測到重放請求",
+      "rateLimited": "觸發限流",
+      "buildRejected": "客戶端構建被拒絕",
+      "sessionRevoked": "會話已吊銷",
+      "loginSourceChanged": "登入來源變化",
+      "clientChanged": "客戶端變更",
+      "policyUnavailable": "安全策略不可用"
+    },
+    "status": {
+      "open": "待處理",
+      "resolved": "已處理",
+      "ignored": "已忽略"
+    },
+    "enforcement": {
+      "enforced": "已攔截",
+      "logOnly": "僅記錄",
+      "enforcedHint": "Haruki Cloud 已攔截這次操作",
+      "logOnlyHint": "Haruki Cloud 只記錄了這次操作，沒有攔截"
+    },
+    "window": {
+      "seconds": "{count} 秒",
+      "minutes": "{count} 分鐘",
+      "hours": "{count} 小時",
+      "days": "{count} 天"
+    },
+    "summary": {
+      "open": "待處理",
+      "last24h": "近 24 小時告警",
+      "last7d": "近 7 天告警",
+      "byKind": "待處理告警（按型別）",
+      "noOpen": "暫無待處理的告警",
+      "unavailable": "統計暫不可用",
+      "filterByKind": "只看待處理的「{kind}」告警"
+    },
+    "filters": {
+      "title": "篩選條件",
+      "expand": "展開",
+      "collapse": "收起",
+      "status": "狀態",
+      "kind": "型別",
+      "botId": "Bot ID",
+      "botIdPlaceholder": "精確匹配 Bot ID",
+      "from": "開始時間",
+      "fromPlaceholder": "不限",
+      "to": "結束時間",
+      "toPlaceholder": "不限",
+      "allStatuses": "全部狀態",
+      "allKinds": "全部型別"
+    },
+    "actions": {
+      "search": "查詢",
+      "refresh": "重新整理",
+      "retry": "重試",
+      "resolve": "標記已處理",
+      "ignore": "忽略",
+      "reopen": "重新開啟",
+      "details": "檢視詳情"
+    },
+    "table": {
+      "title": "告警列表",
+      "alertTime": "告警時間",
+      "kind": "型別",
+      "bot": "Bot / 所有者 / 來源",
+      "sourceIp": "來源 IP",
+      "client": "客戶端版本 / 構建",
+      "count": "次數 / 閾值",
+      "status": "狀態",
+      "handler": "處理人",
+      "actions": "操作",
+      "within": "{window}內",
+      "ownerQq": "QQ {qq}",
+      "botShort": "Bot {botId}",
+      "sourceIpShort": "IP {ip}",
+      "handledByShort": "處理人：{name}",
+      "openMenu": "告警 #{id} 的操作",
+      "empty": "沒有符合條件的告警",
+      "loadError": "告警列表載入失敗"
+    },
+    "pagination": {
+      "total": "共 {total} 條",
+      "prev": "上一頁",
+      "next": "下一頁"
+    },
+    "detail": {
+      "title": "告警 #{id}",
+      "description": "以下內容來自 Bot 客戶端或 Haruki Cloud，按原文顯示。",
+      "receivedAt": "接收時間",
+      "botId": "Bot ID",
+      "ownerQq": "所有者 QQ",
+      "node": "上報節點",
+      "clientVersion": "客戶端版本",
+      "buildId": "構建 ID",
+      "reason": "原因",
+      "note": "處理備註",
+      "noNote": "暫無備註",
+      "countValue": "{window}內 {count} 次，閾值 {threshold}",
+      "handledAt": "處理時間",
+      "handlerNameUnavailable": "（使用者名稱不可用，可能已刪除）"
+    },
+    "actionDialog": {
+      "title": {
+        "resolve": "標記告警為已處理",
+        "ignore": "忽略告警",
+        "reopen": "重新開啟告警"
+      },
+      "subject": "告警 #{id} · {kind}",
+      "subjectWithBot": "告警 #{id} · {kind} · Bot {botId}",
+      "noteLabel": "處理備註（可選）",
+      "notePlaceholder": "記錄處理方式或判斷依據",
+      "noteHint": "不修改則保留原備註。",
+      "noteWillClear": "備註已清空，儲存後將刪除原備註。"
+    },
+    "toast": {
+      "loadFailedTitle": "載入告警失敗",
+      "loadFailedFallback": "請稍後重試",
+      "loadSummaryFailedTitle": "載入告警統計失敗",
+      "filterFailedTitle": "篩選條件有誤",
+      "invalidTimeRange": "開始時間不能晚於結束時間",
+      "updateFailedTitle": "更新告警失敗",
+      "updateFailedFallback": "請稍後重試",
+      "resolveSuccess": "告警已標記為已處理",
+      "ignoreSuccess": "告警已忽略",
+      "reopenSuccess": "告警已重新開啟"
     }
   },
   "adminContent": {

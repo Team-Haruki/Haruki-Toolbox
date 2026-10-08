@@ -959,6 +959,7 @@ export default {
       "config": "系统配置",
       "gameBindings": "游戏绑定管理",
       "risk": "风控管理",
+      "botSecurity": "Bot 安全告警",
       "tickets": "工单管理"
     }
   },
