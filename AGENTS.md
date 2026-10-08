@@ -24,12 +24,36 @@ This repository is the web UI for the Haruki ecosystem. It integrates with Ory K
 - `src/pwa.ts`: Service Worker registration, update prompt, build-info polling, old-cache cleanup
 - `src/core/`: app-wide router and HTTP infrastructure
 - `src/shared/`: shared stores, i18n, shared components, and the Sekai game-data layer (`src/shared/sekai/`: master-data loading/caching via a web worker, catalog helpers, asset endpoint/URL resolution, Service-Worker image cache recovery). Master data and music_metas come from the Haruki master registry's CDN face (`https://sekai-api-cdn.haruki.seiunx.com`, see `data-sources.ts`): `/v1/master/{region}/current` is the manifest (its `contentHash` is the IndexedDB cache version), listed files load from the immutable `blob/{sha256}`; an unlisted *required* file loads from `files/{name}.json` (so a manifest gap surfaces as an error), while an unlisted *optional* file is recorded as empty without a request, and music_metas from `/v1/metas/{region}/music_metas.json`
-- `src/components/ui/`: reusable UI primitives
+- `src/components/ui/`: reusable UI primitives (shadcn-vue style, `components.json`)
 - `src/composables/`, `src/lib/`, `src/config/`: cross-feature composables, pure helpers, and app config
 - `src/modules/<feature>/`: feature-local `api`, `components`, `composables`, `lib`, `views`, and `routes`
 - `src/types/`: shared API and domain typings
-- `scripts/`: repo tooling (`check-imports.mjs` import guard, `sync-i18n-zh-tw.mjs` zh-TW locale fill)
-- `tests/e2e/`: Playwright browser tests
+- `scripts/`: repo tooling — `check-imports.mjs` (import guard), `sync-i18n-zh-tw.mjs` (zh-TW locale fill), `build-unit-emblems.mjs` (regenerates `src/shared/sekai/unit-emblems.data.ts` from `assets/unit-emblems/*.svg`; see `assets/unit-emblems/README.md`), `verify-jp7-deck-engine.mjs` (JP 7.0 deck-engine validation against a private baseline; see `docs/jp-7.0.0-engine-validation.md`)
+- `docs/`: JP 7.0.0 adaptation and deck-engine validation notes
+- `tests/e2e/`: Playwright browser tests (`*.e2e.ts`)
+
+## Runtime and Commands
+
+Bun is the runtime and package manager (README: Bun ≥ 1.2; CI pins 1.3.14). Scripts from `package.json`:
+
+- `bun i` — install dependencies
+- `bun run dev` — Vite dev server (`bunx --bun vite`)
+- `bun run build` — `check:imports` → `vue-tsc --noEmit` → `vite build`
+- `bun run build:edgeone` — `check:imports` + `vite build` without typecheck (the EdgeOne Pages build command in `edgeone.json`)
+- `bun run preview` — `vue-tsc --noEmit` + `bunx --bun vite preview`
+- `bun run lint` — ESLint with `--max-warnings=0` over `src/**/*.{ts,vue}`, `scripts/**/*.mjs`, `vite.config.ts`
+- `bun run typecheck` — `check:imports` + `vue-tsc --noEmit`
+- `bun run check:imports` — runs `scripts/check-imports.mjs` (see "Import Guard")
+- `bun run test` — `bun test` (unit tests, `*.test.ts`); single file: `bun test path/to/file.test.ts`, by name: `bun test -t "name"`
+- `bun run e2e` — Playwright tests in `tests/e2e/**/*.e2e.ts`; single file: `bunx playwright test tests/e2e/foo.e2e.ts` (add `--headed` / `--debug` as needed)
+- `bun run e2e:install` — one-time `playwright install chromium`
+- `bun run quality` — lint + typecheck + test
+
+## Build and PWA
+
+- `vite.config.ts` splits vendor code into rolldown `advancedChunks` groups: `vendor-vue`, `vendor-ui`, `vendor-chart`, `vendor-monaco`. `envPrefix` exposes both `VITE_` and `ENABLE_` env vars.
+- The app is a PWA (`vite-plugin-pwa`, `registerType: 'prompt'`). Workbox precaches only the navigation shell (`index.html` and root icons); the content-hashed `/assets/` build output is cached at runtime CacheFirst (`app-assets-v1`), `public/` `/rank-border/` and `/basis/` files StaleWhileRevalidate (`app-static-v1`), and Sekai/toolbox CDN images CacheFirst (`sekai-image-assets-v2`).
+- Those CDN `<img>` loads are cross-origin no-cors, so cached responses are opaque and can pin CDN errors — see the image-recovery rule under "Common Pitfalls". `src/pwa.ts` owns SW registration, the update prompt, build-info polling, and old-cache cleanup.
 
 ## Architecture Conventions
 
@@ -55,13 +79,25 @@ The catalog pages (`/cards`, `/events`, `/gachas`, `/music` list + detail) share
 
 ## Import Guard
 
-`scripts/check-imports.mjs` runs before `vue-tsc` in `bun run build` and `bun run typecheck`; violations fail both. It bans legacy paths (`@/components/pages/*`, `@/api/*`, `@/store`, `@/settingsStore`, `@/router`, `@/lib/ticket-display`, old `WebLayout.vue`/`Turnstile.vue` locations) in favor of the module/shared/core layout, and enforces barrel rules:
+`scripts/check-imports.mjs` (`bun run check:imports`) is the first step of `bun run build`, `bun run build:edgeone` and `bun run typecheck`; violations fail all of them.
+
+Banned import tokens (legacy paths) and their replacements:
+
+- `@/components/pages/*` → module-local `views/` / `components/`
+- `@/components/WebLayout.vue` → `@/modules/web/views/WebLayout.vue`
+- `@/components/Turnstile.vue` → `@/shared/components/Turnstile.vue`
+- `@/api/*` / `from "@/api"` → `@/modules/<feature>/api` (or `@/core/http/call-api` for the HTTP client)
+- `@/store` → `@/shared/stores/user`
+- `@/settingsStore` → `@/shared/stores/settings`
+- `@/router` / `./router` → `@/core/router`
+- `@/lib/ticket-display` → `@/modules/tickets/lib/display`
+
+Barrel rules:
 
 - A module's internals must not import its own `index.ts` barrel (`@/modules/<self>` or relative equivalents) — import the concrete subpath (`./api/user`, `./composables/list`).
 - A module's non-`api/` internals must not import their own `api` barrel (`@/modules/<self>/api`) — import concrete files like `./api/user`.
 - Consumers in other modules may import the public `@/modules/<feature>` or `@/modules/<feature>/api` barrels.
-
-See `CLAUDE.md` for the full banned-token table with replacements.
+- A module barrel (`index.ts`) must not re-export `./routes`. The route table names every lazily-loaded view in the module, so a barrel carrying it welds each consumer to all of those chunks: editing one view then rehashes every chunk that imports the barrel, and the PWA re-downloads all of them. `@/modules/web/routes` imports each module's `routes` by concrete subpath; keep it that way.
 
 ## HTTP, Auth, and Session Rules
 
@@ -71,6 +107,7 @@ See `CLAUDE.md` for the full banned-token table with replacements.
 - Kratos browser flows belong in `src/modules/auth/lib/kratos.ts` and related auth composables.
 - Do not replace Kratos browser flow logic with generic `request()` calls unless the existing auth layer is being intentionally redesigned.
 - `request()` defaults `skipErrorToast` to `true`; features should opt into local, user-meaningful toasts where appropriate.
+- `request()` retries GET/HEAD/OPTIONS once by default on 5xx, timeout or network errors (override with `retry`). On a 401 for a logged-in user (unless `skipAuthRedirect`) it checks the Kratos session and, only if that is gone, clears the user and redirects to login.
 - `src/main.ts`, `src/App.vue`, and `src/shared/stores/user.ts` are a sensitive cluster. Partial Kratos session data is not a full substitute for synced toolbox user data.
 - When hydrating from a fallback Kratos session, preserve cached user context unless the session is definitely gone. Otherwise post-login sync paths that depend on `userId` can break.
 
@@ -79,12 +116,12 @@ See `CLAUDE.md` for the full banned-token table with replacements.
 - `useUserStore()` is the source of truth for current user/session state.
 - `settingsSyncState` is meaningful. If you change bootstrap or sync flows, verify how it affects `App.vue`.
 - `useSettingsStore()` owns endpoint selection, theme, and locale.
-- Theme and locale are persisted; do not add duplicate persistence elsewhere without a strong reason.
+- Theme and locale are persisted (`pinia-plugin-persistedstate`); do not add duplicate persistence elsewhere without a strong reason.
 - Avoid clearing the user store on recoverable bootstrap errors unless you are certain the session is invalid.
 
 ## Routing Rules
 
-- Route definitions live with the owning feature and are assembled through the web route tree.
+- Route definitions live in the owning feature's `routes.ts`; `@/modules/web/routes` collects them and `src/core/router/` builds the router from that tree and installs the guards.
 - Use route `meta.titleKey` values for page titles when adding routes.
 - Respect `requiresAuth`, `requiresAdmin`, `requiresSuperAdmin`, and `guestOnly` semantics already handled by `src/core/router/guards.ts`.
 - If you change auth routing, review existing auth flow code in `src/modules/auth/` carefully first.
@@ -101,7 +138,7 @@ See `CLAUDE.md` for the full banned-token table with replacements.
 ## Internationalization
 
 - Three locales: `zh-CN` (default), `zh-TW`, `en-US`. Messages are split into lazy per-feature bundles (`core`, `catalog`, `deck`, `rank`, `tools`, `user-settings`, `admin`, `tickets`, `public-pages`); files live at `src/shared/i18n/messages/<locale>/<locale>-<bundle>.ts`. The `catalog` bundle (routes `/cards`, `/events`, `/gachas`, `/music`) holds the page-level namespaces `cardCatalog`, `eventCatalog`, `gachaCatalog`, `musicCatalog`; the shared shell strings (`catalog.*`) and every game enum label (`cards.unit/attr/rarity/supply`, `events.type`, `gachas.type`, `musicLibrary.difficulty`, …) stay in `core` because other features render them.
-- All user-facing text must exist in all three locales, in the same bundle file. Write zh-CN and en-US by hand; fill zh-TW with `bun scripts/sync-i18n-zh-tw.mjs` (OpenCC, only fills missing keys).
+- All user-facing text must exist in all three locales, in the same bundle file. Write zh-CN and en-US by hand; fill zh-TW with `bun scripts/sync-i18n-zh-tw.mjs` (OpenCC s2twp; only fills keys missing in zh-TW, never overwrites existing ones, drops orphaned keys, and keeps key order aligned with zh-CN).
 - `core` loads at boot; other bundles load per route prefix via `src/shared/i18n/bundles.ts`. A new top-level route prefix needs a mapping there, or its non-core strings won't load.
 - Do not leave new UI strings hardcoded in components unless there is a very strong project-specific reason.
 - Keep translation key structure aligned with the owning module.
@@ -146,7 +183,7 @@ Rules:
 - Do not update only some of the three locale bundles (zh-CN, zh-TW, en-US).
 - Do not bypass `request()` response handling unless you are working inside the auth/browser-flow integration layer.
 - Do not hand-roll `<img>` error handling for Sekai/CDN images: the Service Worker caches them CacheFirst with opaque responses (errors included), so recovery must go through `@/shared/sekai/image-recovery` (purge + cache-busted retry).
-- Do not commit generated artifacts like `dist/` or ephemeral Playwright output.
+- Do not commit generated artifacts like `dist/`, `coverage/` or Playwright `test-results/`.
 
 ## Recommended Change Checklist
 
