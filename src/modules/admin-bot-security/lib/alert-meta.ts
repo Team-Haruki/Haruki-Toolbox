@@ -110,7 +110,7 @@ export function getBotSecurityKindOptions(t: TranslateFn, extraKinds: readonly s
     extraKinds
       .map((kind) => kind.trim())
       .filter((kind) => kind !== "" && kind !== BOT_SECURITY_FILTER_ALL && !known.has(kind)),
-  )).sort()
+  )).sort((a, b) => a.localeCompare(b))
 
   return [
     { value: BOT_SECURITY_FILTER_ALL, label: t("adminBotSecurity.filters.allKinds") },
