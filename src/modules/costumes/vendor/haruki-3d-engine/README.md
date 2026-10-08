@@ -9,18 +9,22 @@ inertia into SpringBone.
 Files:
 
 - `haruki-3d-engine.js` — public entry (`createHaruki3DKernel`)
+- `haruki-3d-engine-costume-shop.js` — CostumeShop entry module (imported by `haruki-3d-engine.js`)
 - `CostumeShopKernel-*.js` — CostumeShop kernel chunk
 - `animationPlaybackRuntime-*.js` — shared animation/runtime package loader
 - `runtimeMessagePackDecodeCore-*.js` + `assets/` — runtime decode core, worker, Brotli WASM
 - `haruki-3d-engine.d.ts` — hand-written declarations mirroring upstream `docs/api.md`
+- `runtimeMessagePackDecodeCore-*.d.ts` — hand-written declaration for the decode core chunk
 
 The Basis/KTX2 transcoder the kernel loads from `/basis/` lives in
 `public/basis/` (copied from the same upstream build).
 
 Runtime packages are consumed from the public asset endpoints under
-`/pjsk-3d-output/<region>/` (exported on JP01 by the 3D batch follower).
+`/pjsk-3d-output/<region>/` (exported by the 3D batch follower).
 
 To update: build the upstream repo (`npm run build` in `engine/`), re-copy the
-files above, drop the trailing `//# sourceMappingURL=` lines (the `.map` files
-are not vendored), and point `useCostumeRoleData.ts` at the new decode-core
-hash. Do not edit the generated files by hand otherwise.
+generated `.js` files and `assets/` above (the `.d.ts` files are hand-written;
+rename the decode-core one to the new hash), drop the trailing
+`//# sourceMappingURL=` lines (the `.map` files are not vendored), and point
+`useCostumeRoleData.ts` at the new decode-core and Brotli WASM hashes. Do not
+edit the generated files by hand otherwise.
