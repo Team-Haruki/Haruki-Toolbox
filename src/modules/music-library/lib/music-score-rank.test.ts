@@ -65,7 +65,7 @@ describe("buildMusicScoreRankProgress", () => {
       expect(result.obtained).toEqual(jewels(expected.obtained))
       expect(result.remaining).toEqual(jewels(expected.remaining))
       expect(result.complete).toBe(expected.next === null)
-      expect(result.steps.filter((step) => step.reached).map((step) => step.rank)).toEqual(expected.ids.map((id) => ["C", "B", "A", "S"][id - 1]))
+      expect(result.steps.filter((step) => step.reached).map((step) => step.rank)).toEqual(expected.ids.map((id) => (["C", "B", "A", "S"] as const)[id - 1]))
     })
   }
 
