@@ -115,10 +115,12 @@ export function useAdminSponsorManagement() {
 
   function replaceSponsor(updated: AdminSponsorProfile) {
     const exists = sponsors.value.some((item) => item.id === updated.id)
-    sponsors.value = exists
-      ? sponsors.value.map((item) => item.id === updated.id ? updated : item)
-      : [updated, ...sponsors.value]
-    total.value = sponsors.value.length
+    if (exists) {
+      sponsors.value = sponsors.value.map((item) => item.id === updated.id ? updated : item)
+    } else {
+      sponsors.value = [updated, ...sponsors.value]
+      total.value += 1
+    }
     if (editingSponsor.value?.id === updated.id) {
       editingSponsor.value = updated
     }
@@ -250,6 +252,11 @@ export function useAdminSponsorManagement() {
         errorTitle: t("adminSponsors.toast.manualSaveFailedTitle"),
         fallbackError: t("adminSponsors.toast.actionFailedFallback"),
         onSuccess: (next) => {
+          // The editor may have moved on to another sponsor meanwhile.
+          if (editingSponsor.value?.id !== sponsor.id) {
+            replaceSponsor(next.sponsor)
+            return
+          }
           applyDetail(next)
           closeManualForm()
         },
@@ -268,6 +275,10 @@ export function useAdminSponsorManagement() {
       errorTitle: t("adminSponsors.toast.manualDeleteFailedTitle"),
       fallbackError: t("adminSponsors.toast.actionFailedFallback"),
       onSuccess: (next) => {
+        if (editingSponsor.value?.id !== sponsor.id) {
+          replaceSponsor(next.sponsor)
+          return
+        }
         applyDetail(next)
         if (editingEntryId.value === entry.id) {
           closeManualForm()

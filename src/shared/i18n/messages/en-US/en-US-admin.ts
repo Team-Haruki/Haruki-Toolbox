@@ -893,7 +893,7 @@ export default {
           "day": "Days"
         },
         "startsAt": "Earliest start",
-        "startsAtHelp": "Leave empty for now. The time only starts after the Afdian time and earlier manual time end; it starts here only if the sponsorship had lapsed.",
+        "startsAtHelp": "Leave empty for now. The time only starts after the Afdian time and earlier manual time end; it starts here only if the sponsorship had lapsed, and then it cannot be in the future.",
         "note": "Note / reason",
         "notePlaceholder": "e.g. WeChat transfer, 30 CNY"
       },
