@@ -213,3 +213,12 @@ Examples (from this repo's history):
 - `[Fix] Sidebar option big gap issue in Safari`
 - `[Chore] Add AGENTS.md and copilot-instructions.md`
 - `[Docs] Update CLAUDE.md with commit format`
+
+## Release notes
+
+Release notes follow the org standard in [seiunx-dev/ci-templates/RELEASE_NOTES.md](https://github.com/seiunx-dev/ci-templates/blob/main/RELEASE_NOTES.md) and are written in English.
+
+- Title every release with the tag only, for example `v9.4.0`.
+- Publish tags with an `-alpha`, `-beta` or `-rc` suffix as pre-releases and every other tag as a regular release; every tag gets a release.
+- Omit empty sections, and end every item with its PR number `(#123)`, or the short commit SHA when there is no PR.
+- No workflow publishes releases here; if a release is created with GitHub's auto-generated notes, rewrite them to the standard right after it is published.
