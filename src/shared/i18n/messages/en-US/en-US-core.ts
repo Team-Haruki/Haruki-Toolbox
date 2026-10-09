@@ -342,13 +342,39 @@ export default {
     "description": "View your game account's music play progress and claimable rewards",
     "rewards": {
       "title": "Obtainable rewards",
-      "hint": "Unclaimed song achievement rewards (score ranks + per-difficulty combo milestones).",
+      "hint": "Unclaimed song achievement rewards (score ranks + per-difficulty combo milestones); any live mode counts.",
       "unavailable": "This snapshot has no achievement claim data (userMusicAchievements), so obtainable rewards cannot be computed.",
       "jewel": "Crystals",
       "coin": "Coins",
       "shard": "Shards",
       "scoreRank": "Score rank",
       "allClaimed": "All claimed"
+    },
+    "scoreRank": {
+      "title": "Score rank rewards by song",
+      "description": "Score rank is progressive (C → B → A → S): each song has one current rank, and reaching a higher rank also pays the lower ones. Any live mode (solo, multi, ...) counts. The current rank follows the achievement records in the data snapshot.",
+      "summary": "Obtained: {obtained} · Remaining: {remaining} · {complete} / {total} songs complete",
+      "none": "none",
+      "filter": {
+        "label": "Show",
+        "all": "All",
+        "remaining": "Incomplete",
+        "none": "No rank"
+      },
+      "sort": {
+        "label": "Sort",
+        "remaining": "Remaining crystals",
+        "music": "Song order",
+        "rank": "Current rank"
+      },
+      "visible": "Showing {shown} / {total} songs",
+      "current": "Current rank {rank}",
+      "currentNone": "No rank reached yet",
+      "step": "Rank {rank}: {rewards}",
+      "stepReached": "Rank {rank}: {rewards} (reached)",
+      "complete": "Complete",
+      "empty": "No songs match.",
+      "showMore": "Show more ({count} left)"
     },
     "dataAsOf": "Data as of {time}",
     "refresh": "Refresh",

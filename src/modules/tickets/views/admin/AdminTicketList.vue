@@ -193,7 +193,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
     </Card>
 
     <Dialog v-model:open="ticketNotificationRecipientsDialogOpen">
-      <DialogContent class="max-w-4xl">
+      <DialogContent class="sm:max-w-[min(72rem,90vw)]">
         <DialogHeader>
           <DialogTitle>{{ t("tickets.adminList.notifications.manageDialogTitle") }}</DialogTitle>
           <DialogDescription>

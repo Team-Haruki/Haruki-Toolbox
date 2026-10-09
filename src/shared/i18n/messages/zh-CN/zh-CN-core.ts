@@ -342,13 +342,39 @@ export default {
     "description": "查看账号的打歌进度与可获取奖励",
     "rewards": {
       "title": "可获取资源",
-      "hint": "统计尚未领取的歌曲成就奖励（评分达标 + 各难度连击里程碑）。",
+      "hint": "统计尚未领取的歌曲成就奖励（评分达标 + 各难度连击里程碑），任意模式达成均计入。",
       "unavailable": "当前数据快照不包含成就领取记录（userMusicAchievements），无法统计可获取资源。",
       "jewel": "水晶",
       "coin": "金币",
       "shard": "碎片",
       "scoreRank": "评分奖励",
       "allClaimed": "已全部领取"
+    },
+    "scoreRank": {
+      "title": "评分奖励明细",
+      "description": "评分是递进的（C → B → A → S），每首歌只有一个当前评分，达到更高评分即同时取得较低评分的奖励；任意模式（单人、多人等）达成均计入。当前评分以数据快照中的成就记录为准。",
+      "summary": "已获得：{obtained} · 可获取：{remaining} · 已拿满 {complete} / {total} 首",
+      "none": "无",
+      "filter": {
+        "label": "只看",
+        "all": "全部",
+        "remaining": "未拿满",
+        "none": "未达成"
+      },
+      "sort": {
+        "label": "排序",
+        "remaining": "可获取水晶",
+        "music": "歌曲顺序",
+        "rank": "当前评分"
+      },
+      "visible": "显示 {shown} / {total} 首",
+      "current": "当前评分 {rank}",
+      "currentNone": "尚未达成任何评分",
+      "step": "{rank} 评分：{rewards}",
+      "stepReached": "{rank} 评分：{rewards}（已达成）",
+      "complete": "已拿满",
+      "empty": "没有符合条件的歌曲。",
+      "showMore": "显示更多（还有 {count} 首）"
     },
     "dataAsOf": "数据快照时间：{time}",
     "refresh": "刷新",

@@ -251,7 +251,7 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
     </Card>
 
     <Dialog v-model:open="editOpen">
-      <DialogScrollContent class="max-w-2xl">
+      <DialogScrollContent class="sm:max-w-[min(42rem,90vw)]">
         <DialogHeader>
           <DialogTitle>{{ t("adminSponsors.edit.title") }}</DialogTitle>
         </DialogHeader>

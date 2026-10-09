@@ -133,8 +133,9 @@ export type BuildMusicProgressOptions = {
  * Build per-difficulty progress from masterdata + user results.
  *
  * A song counts toward a difficulty's totals only if that difficulty exists in
- * masterdata and the music is released on the server (`releasedAt <= now`,
- * falling back to `publishedAt` when `releasedAt` is missing). Result rows for
+ * masterdata and the music is published in the game (`publishedAt <= now`).
+ * `releasedAt` is the original song's release date, which is usually earlier
+ * than the in-game publication, so it is never consulted. Result rows for
  * musics absent from masterdata are ignored.
  */
 export function buildMusicProgress(options: BuildMusicProgressOptions): MusicProgress {
@@ -153,9 +154,8 @@ export function buildMusicProgress(options: BuildMusicProgressOptions): MusicPro
       continue
     }
 
-    const releasedAt = normalizeCatalogNumber(record.releasedAt)
-      ?? normalizeCatalogNumber(record.publishedAt)
-    if (releasedAt == null || releasedAt > now) {
+    const publishedAt = normalizeCatalogNumber(record.publishedAt)
+    if (publishedAt == null || publishedAt > now) {
       continue
     }
 

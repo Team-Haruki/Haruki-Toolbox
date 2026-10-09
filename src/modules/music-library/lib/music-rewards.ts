@@ -15,10 +15,27 @@ export type MusicRewardTotals = {
   shard: number
 }
 
+/** Score ranks a song can reach, lowest first. */
+export const MUSIC_SCORE_RANKS = ["C", "B", "A", "S"] as const
+
+export type MusicScoreRank = (typeof MUSIC_SCORE_RANKS)[number]
+
+/** "RANK_S" / "rank_s" / "S" -> "S"; null for anything else. */
+export function normalizeMusicScoreRank(value: unknown): MusicScoreRank | null {
+  const normalized = normalizeCatalogString(value).toUpperCase().replace(/^RANK_/, "")
+  return (MUSIC_SCORE_RANKS as readonly string[]).includes(normalized)
+    ? (normalized as MusicScoreRank)
+    : null
+}
+
 export type MusicAchievementMaster = {
   id: number
   /** "score_rank" (per music) or "combo" (per music+difficulty). */
   type: string
+  /** Raw `musicAchievementTypeValue` ("RANK_S", "0.25", ...). */
+  value: string
+  /** The rank of a "score_rank" achievement; null for other types or unknown values. */
+  scoreRank: MusicScoreRank | null
   difficulty: MusicDifficulty | null
   rewards: MusicRewardTotals
 }
@@ -94,9 +111,12 @@ function normalizeMusicAchievementRecord(
   }
 
   const boxId = normalizeCatalogNumber(record.resourceBoxId)
+  const value = normalizeCatalogString(record.musicAchievementTypeValue)
   return {
     id,
     type,
+    value,
+    scoreRank: type === "score_rank" ? normalizeMusicScoreRank(value) : null,
     difficulty: normalizeMusicDifficulty(normalizeCatalogString(record.musicDifficultyType)),
     rewards: (boxId != null ? totalsByBox.get(boxId) : null) ?? emptyMusicRewardTotals(),
   }
@@ -126,7 +146,12 @@ export function normalizeMusicAchievementMasters(
   return masters
 }
 
-/** musicId -> claimed musicAchievementIds from the suite `userMusicAchievements`. */
+/**
+ * musicId -> claimed musicAchievementIds from the suite `userMusicAchievements`.
+ * Achievements are per song, not per live mode: a rank or combo reached in
+ * any mode (solo, multi, ...) is the song's, so only the ids are read and any
+ * mode or play-type field on a record is ignored.
+ */
 export function buildClaimedMusicAchievementMap(raw: unknown): Map<number, Set<number>> {
   const map = new Map<number, Set<number>>()
   for (const record of normalizeCatalogRecords(raw)) {
