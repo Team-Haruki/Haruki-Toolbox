@@ -223,6 +223,10 @@ describe("updateAdminSponsorProfile", () => {
     installStorageStub("sessionStorage")
 
     const actual = await import("@/core/http/call-api")
+
+    // mock.module patches `actual` in place, so keep the real request to restore.
+
+    const realRequest = actual.request
     const requestMock = mock(async () => ({
       updatedData: {
         sponsor: {
@@ -245,7 +249,7 @@ describe("updateAdminSponsorProfile", () => {
     expect(result?.name).toBe("Wrapped")
     expect(result?.isActive).toBe(true)
 
-    mock.module("@/core/http/call-api", () => actual)
+    mock.module("@/core/http/call-api", () => ({ ...actual, request: realRequest }))
   })
 
   it("normalizes a flat sponsor response when no sponsor sub-record exists", async () => {
@@ -253,6 +257,10 @@ describe("updateAdminSponsorProfile", () => {
     installStorageStub("sessionStorage")
 
     const actual = await import("@/core/http/call-api")
+
+    // mock.module patches `actual` in place, so keep the real request to restore.
+
+    const realRequest = actual.request
     const requestMock = mock(async () => ({
       updatedData: {
         id: "flat-1",
@@ -270,6 +278,6 @@ describe("updateAdminSponsorProfile", () => {
     expect(result?.id).toBe("flat-1")
     expect(result?.name).toBe("Flat")
 
-    mock.module("@/core/http/call-api", () => actual)
+    mock.module("@/core/http/call-api", () => ({ ...actual, request: realRequest }))
   })
 })

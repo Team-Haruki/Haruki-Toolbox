@@ -153,6 +153,10 @@ describe("bot security alert requests", () => {
     installStorageStub("sessionStorage")
 
     const actual = await import("@/core/http/call-api")
+
+    // mock.module patches `actual` in place, so keep the real request to restore.
+
+    const realRequest = actual.request
     const requestMock = mock(async () => ({
       status: 200,
       message: "bot security alert updated",
@@ -174,7 +178,7 @@ describe("bot security alert requests", () => {
     expect(updated?.status).toBe("ignored")
     expect(updated?.handledBy).toEqual({ userId: "1001", name: "Admin" })
 
-    mock.module("@/core/http/call-api", () => actual)
+    mock.module("@/core/http/call-api", () => ({ ...actual, request: realRequest }))
   })
 
   it("passes list filters through as query params", async () => {
@@ -182,6 +186,10 @@ describe("bot security alert requests", () => {
     installStorageStub("sessionStorage")
 
     const actual = await import("@/core/http/call-api")
+
+    // mock.module patches `actual` in place, so keep the real request to restore.
+
+    const realRequest = actual.request
     const requestMock = mock(async () => ({
       status: 200,
       message: "success",
@@ -202,6 +210,6 @@ describe("bot security alert requests", () => {
     expect(list.items).toHaveLength(1)
     expect(list.items[0]?.botId).toBeNull()
 
-    mock.module("@/core/http/call-api", () => actual)
+    mock.module("@/core/http/call-api", () => ({ ...actual, request: realRequest }))
   })
 })

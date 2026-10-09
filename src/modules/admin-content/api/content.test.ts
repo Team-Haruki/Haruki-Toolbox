@@ -1,4 +1,5 @@
-import { describe, expect, it, mock } from "bun:test"
+import { afterAll, beforeAll, describe, expect, it } from "bun:test"
+import type { InternalAxiosRequestConfig } from "axios"
 
 function installStorageStub(name: "localStorage" | "sessionStorage") {
   const store = new Map<string, string>()
@@ -13,19 +14,35 @@ function installStorageStub(name: "localStorage" | "sessionStorage") {
   })
 }
 
-async function mockRequest(updatedData: unknown) {
+let originalAdapter: InternalAxiosRequestConfig["adapter"]
+
+beforeAll(async () => {
   installStorageStub("localStorage")
   installStorageStub("sessionStorage")
-  const actual = await import("@/core/http/call-api")
-  mock.module("@/core/http/call-api", () => ({
-    ...actual,
-    request: mock(async () => ({ status: 200, message: "ok", updatedData })),
-  }))
+  const { apiClient } = await import("@/core/http/call-api")
+  originalAdapter = apiClient.defaults.adapter
+})
+
+// Test files share one process: leave the HTTP client as found.
+afterAll(async () => {
+  const { apiClient } = await import("@/core/http/call-api")
+  apiClient.defaults.adapter = originalAdapter
+})
+
+async function respondWith(updatedData: unknown) {
+  const { apiClient } = await import("@/core/http/call-api")
+  apiClient.defaults.adapter = async (config) => ({
+    data: { status: 200, message: "ok", updatedData },
+    status: 200,
+    statusText: "OK",
+    headers: {},
+    config,
+  })
 }
 
 describe("admin content api normalizers", () => {
   it("normalizes friend groups and drops unnamed or malformed entries", async () => {
-    await mockRequest({
+    await respondWith({
       items: [
         {
           id: 3,
@@ -58,7 +75,7 @@ describe("admin content api normalizers", () => {
   })
 
   it("normalizes friend links", async () => {
-    await mockRequest({
+    await respondWith({
       items: [
         { id: 5, name: "Link", detail: "desc", avatar: "a.png", url: "https://example.com", tags: ["t"], sortOrder: 3 },
         { id: 6, name: "" },
