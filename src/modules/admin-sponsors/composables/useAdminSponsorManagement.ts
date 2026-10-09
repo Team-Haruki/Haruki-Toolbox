@@ -5,13 +5,29 @@ import { runAsyncAction } from "@/composables/useAsyncAction"
 import { formatLocalizedDateTime } from "@/lib/date-time"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
 import {
+  addAdminSponsorManualDuration,
+  createAdminSponsor,
+  deleteAdminSponsorManualDuration,
+  getAdminSponsorDetail,
   listAdminSponsors,
   syncAdminSponsorsFromAfdian,
+  updateAdminSponsorManualDuration,
   updateAdminSponsorProfile,
 } from "@/modules/admin-sponsors/api/sponsors"
-import type { AdminSponsorProfile, AdminSponsorUpdatePayload } from "@/types/admin"
-
-const DATE_TIME_LOCAL_LENGTH = 16
+import {
+  emptyManualDurationForm,
+  fromDateTimeLocalValue,
+  manualDurationFormFromEntry,
+  manualDurationPayload,
+  toDateTimeLocalValue,
+  type ManualDurationForm,
+} from "@/modules/admin-sponsors/lib/manual-duration"
+import type {
+  AdminManualDuration,
+  AdminSponsorDetail,
+  AdminSponsorProfile,
+  AdminSponsorUpdatePayload,
+} from "@/types/admin"
 
 type SponsorForm = {
   name: string
@@ -19,34 +35,15 @@ type SponsorForm = {
   planName: string
   message: string
   source: string
-  isActive: boolean
   afdianSyncDisabled: boolean
   paidAt: string
-  planExpiresAt: string
 }
 
-function toDateTimeLocalValue(value: string) {
-  if (!value) {
-    return ""
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.valueOf())) {
-    return value.slice(0, DATE_TIME_LOCAL_LENGTH)
-  }
-
-  const timezoneOffsetMs = date.getTimezoneOffset() * 60_000
-  return new Date(date.valueOf() - timezoneOffsetMs).toISOString().slice(0, DATE_TIME_LOCAL_LENGTH)
-}
-
-function fromDateTimeLocalValue(value: string) {
-  const trimmed = value.trim()
-  if (!trimmed) {
-    return ""
-  }
-
-  const date = new Date(trimmed)
-  return Number.isNaN(date.valueOf()) ? trimmed : date.toISOString()
+type CreateSponsorForm = {
+  name: string
+  avatar: string
+  planName: string
+  message: string
 }
 
 function formFromSponsor(sponsor: AdminSponsorProfile): SponsorForm {
@@ -56,10 +53,8 @@ function formFromSponsor(sponsor: AdminSponsorProfile): SponsorForm {
     planName: sponsor.planName,
     message: sponsor.message,
     source: sponsor.source,
-    isActive: sponsor.isActive,
     afdianSyncDisabled: sponsor.afdianSyncDisabled,
     paidAt: toDateTimeLocalValue(sponsor.paidAt),
-    planExpiresAt: toDateTimeLocalValue(sponsor.planExpiresAt),
   }
 }
 
@@ -70,11 +65,13 @@ function createPayload(form: SponsorForm): AdminSponsorUpdatePayload {
     planName: form.planName.trim(),
     message: form.message.trim(),
     source: form.source.trim(),
-    isActive: form.isActive,
     afdianSyncDisabled: form.afdianSyncDisabled,
     paidAt: fromDateTimeLocalValue(form.paidAt),
-    planExpiresAt: fromDateTimeLocalValue(form.planExpiresAt),
   }
+}
+
+function emptyCreateForm(): CreateSponsorForm {
+  return { name: "", avatar: "", planName: "", message: "" }
 }
 
 export function useAdminSponsorManagement() {
@@ -97,14 +94,40 @@ export function useAdminSponsorManagement() {
     planName: "",
     message: "",
     source: "",
-    isActive: false,
     afdianSyncDisabled: false,
     paidAt: "",
-    planExpiresAt: "",
   })
 
-  const activeCount = computed(() => sponsors.value.filter((sponsor) => sponsor.isActive).length)
+  const detail = ref<AdminSponsorDetail | null>(null)
+  const detailLoading = ref(false)
+  const manualFormOpen = ref(false)
+  const editingEntryId = ref<number | null>(null)
+  const manualForm = ref<ManualDurationForm>(emptyManualDurationForm())
+  const manualSaving = ref(false)
+  const deletingEntry = ref(false)
+
+  const createOpen = ref(false)
+  const creating = ref(false)
+  const createForm = ref<CreateSponsorForm>(emptyCreateForm())
+
+  const activeCount = computed(() => sponsors.value.filter((sponsor) => sponsor.category === "current").length)
   const manualProfileCount = computed(() => sponsors.value.filter((sponsor) => sponsor.afdianSyncDisabled).length)
+
+  function replaceSponsor(updated: AdminSponsorProfile) {
+    const exists = sponsors.value.some((item) => item.id === updated.id)
+    sponsors.value = exists
+      ? sponsors.value.map((item) => item.id === updated.id ? updated : item)
+      : [updated, ...sponsors.value]
+    total.value = sponsors.value.length
+    if (editingSponsor.value?.id === updated.id) {
+      editingSponsor.value = updated
+    }
+  }
+
+  function applyDetail(next: AdminSponsorDetail) {
+    detail.value = next
+    replaceSponsor(next.sponsor)
+  }
 
   async function loadSponsors(options: { silent?: boolean } = {}) {
     const targetLoading = options.silent ? refreshing : loading
@@ -129,10 +152,37 @@ export function useAdminSponsorManagement() {
     return loadSponsors({ silent: true })
   }
 
+  async function loadDetail(sponsorId: string) {
+    detailLoading.value = true
+    try {
+      const next = await getAdminSponsorDetail(sponsorId)
+      if (editingSponsor.value?.id === sponsorId) {
+        applyDetail(next)
+      }
+    } catch (error: unknown) {
+      toastErrorWithExtractedMessage(
+        t("adminSponsors.toast.loadFailedTitle"),
+        error,
+        t("adminSponsors.toast.actionFailedFallback")
+      )
+    } finally {
+      detailLoading.value = false
+    }
+  }
+
+  function closeManualForm() {
+    manualFormOpen.value = false
+    editingEntryId.value = null
+    manualForm.value = emptyManualDurationForm()
+  }
+
   function openEditDialog(sponsor: AdminSponsorProfile) {
     editingSponsor.value = sponsor
     form.value = formFromSponsor(sponsor)
+    detail.value = null
+    closeManualForm()
     editOpen.value = true
+    void loadDetail(sponsor.id)
   }
 
   function validateForm() {
@@ -157,11 +207,100 @@ export function useAdminSponsorManagement() {
       fallbackError: t("adminSponsors.toast.actionFailedFallback"),
       onSuccess: async (updatedSponsor) => {
         if (updatedSponsor) {
-          sponsors.value = sponsors.value.map((item) => item.id === sponsor.id ? updatedSponsor : item)
+          replaceSponsor(updatedSponsor)
         } else {
           await loadSponsors({ silent: true })
         }
         editOpen.value = false
+      },
+    })
+  }
+
+  function startNewManualEntry() {
+    editingEntryId.value = null
+    manualForm.value = emptyManualDurationForm()
+    manualFormOpen.value = true
+  }
+
+  function startEditManualEntry(entry: AdminManualDuration) {
+    editingEntryId.value = entry.id
+    manualForm.value = manualDurationFormFromEntry(entry)
+    manualFormOpen.value = true
+  }
+
+  async function saveManualEntry() {
+    const sponsor = editingSponsor.value
+    if (!sponsor) {
+      return
+    }
+    const result = manualDurationPayload(manualForm.value)
+    if (!result.ok) {
+      toast.error(t(`adminSponsors.duration.validation.${result.error}`))
+      return
+    }
+    const entryId = editingEntryId.value
+    await runAsyncAction(
+      manualSaving,
+      () => entryId === null
+        ? addAdminSponsorManualDuration(sponsor.id, result.payload)
+        : updateAdminSponsorManualDuration(sponsor.id, entryId, result.payload),
+      {
+        successMessage: t("adminSponsors.toast.manualSaved"),
+        successAfterOnSuccess: true,
+        errorTitle: t("adminSponsors.toast.manualSaveFailedTitle"),
+        fallbackError: t("adminSponsors.toast.actionFailedFallback"),
+        onSuccess: (next) => {
+          applyDetail(next)
+          closeManualForm()
+        },
+      },
+    )
+  }
+
+  async function deleteManualEntry(entry: AdminManualDuration) {
+    const sponsor = editingSponsor.value
+    if (!sponsor) {
+      return
+    }
+    await runAsyncAction(deletingEntry, () => deleteAdminSponsorManualDuration(sponsor.id, entry.id), {
+      successMessage: t("adminSponsors.toast.manualDeleted"),
+      successAfterOnSuccess: true,
+      errorTitle: t("adminSponsors.toast.manualDeleteFailedTitle"),
+      fallbackError: t("adminSponsors.toast.actionFailedFallback"),
+      onSuccess: (next) => {
+        applyDetail(next)
+        if (editingEntryId.value === entry.id) {
+          closeManualForm()
+        }
+      },
+    })
+  }
+
+  function openCreateDialog() {
+    createForm.value = emptyCreateForm()
+    createOpen.value = true
+  }
+
+  async function createSponsor() {
+    if (!createForm.value.name.trim()) {
+      toast.error(t("adminSponsors.toast.validation.nameRequired"))
+      return
+    }
+    await runAsyncAction(creating, () => createAdminSponsor({
+      name: createForm.value.name.trim(),
+      avatar: createForm.value.avatar.trim(),
+      planName: createForm.value.planName.trim(),
+      message: createForm.value.message.trim(),
+    }), {
+      successMessage: t("adminSponsors.toast.created"),
+      successAfterOnSuccess: true,
+      errorTitle: t("adminSponsors.toast.saveFailedTitle"),
+      fallbackError: t("adminSponsors.toast.actionFailedFallback"),
+      onSuccess: (next) => {
+        replaceSponsor(next.sponsor)
+        createOpen.value = false
+        // Go straight to the editor so time can be added.
+        openEditDialog(next.sponsor)
       },
     })
   }
@@ -199,7 +338,7 @@ export function useAdminSponsorManagement() {
       fallbackError: t("adminSponsors.toast.actionFailedFallback"),
       onSuccess: async (updatedSponsor) => {
         if (updatedSponsor) {
-          sponsors.value = sponsors.value.map((item) => item.id === sponsor.id ? updatedSponsor : item)
+          replaceSponsor(updatedSponsor)
         } else {
           await loadSponsors({ silent: true })
         }
@@ -238,9 +377,26 @@ export function useAdminSponsorManagement() {
     editOpen,
     editingSponsor,
     form,
+    detail,
+    detailLoading,
+    manualFormOpen,
+    editingEntryId,
+    manualForm,
+    manualSaving,
+    deletingEntry,
+    createOpen,
+    creating,
+    createForm,
     refreshSponsors,
     openEditDialog,
     saveSponsor,
+    startNewManualEntry,
+    startEditManualEntry,
+    closeManualForm,
+    saveManualEntry,
+    deleteManualEntry,
+    openCreateDialog,
+    createSponsor,
     isToggling,
     toggleAfdianSync,
     syncFromAfdian,

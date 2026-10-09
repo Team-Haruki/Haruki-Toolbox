@@ -61,12 +61,16 @@ describe("admin sponsor api normalizers", () => {
           planName: "Spark tier",
           message: "thank you",
           source: "",
+          category: "current",
           isActive: true,
           afdianSyncDisabled: true,
           totalAmount: 39,
           month: 3,
           paidAt: "2026-06-20T12:00:00.000Z",
           planExpiresAt: FUTURE_EXPIRE_ISO,
+          afdianExpiresAt: "",
+          afdianMonths: 0,
+          durationMigrationPending: false,
           createdAt: "",
           updatedAt: "",
         },
@@ -164,6 +168,52 @@ describe("admin sponsor api normalizers", () => {
       },
     ])
     expect(iso.items[0]?.paidAt).toBe("2026-06-20T12:00:00.000Z")
+  })
+})
+
+describe("normalizeAdminSponsorDetail", () => {
+  it("reads both duration sources and the backend category", async () => {
+    installStorageStub("localStorage")
+    installStorageStub("sessionStorage")
+    const { normalizeAdminSponsorDetail, normalizeAdminSponsorList } = await import("./sponsors")
+
+    const detail = normalizeAdminSponsorDetail({
+      sponsor: {
+        id: "afdian_u",
+        name: "U",
+        category: "former",
+        isActive: false,
+        planExpiresAt: "2026-01-11T00:00:00Z",
+        afdianExpiresAt: "2026-01-01T00:00:00Z",
+        afdianMonths: 4,
+        durationMigrationPending: false,
+      },
+      afdian: {
+        expiresAt: "2026-01-01T00:00:00Z",
+        months: 4,
+        orders: [
+          { outTradeNo: "o1", planId: "", planTitle: "", productType: 0, month: 3, kind: "duration", totalAmount: 15, paidAt: "2025-09-01T00:00:00Z" },
+          { outTradeNo: "o2", planId: "item", planTitle: "周边", productType: 1, month: 1, kind: "one_time", paidAt: "2025-10-01T00:00:00Z" },
+          { planId: "missing-trade-no" },
+        ],
+      },
+      manualDurations: [
+        { id: 7, amount: 10, unit: "day", startsAt: "2026-01-01T00:00:00Z", note: "迁移自旧版手动调整", origin: "migration", createdBy: "system:migration", createdAt: "2026-10-10T00:00:00Z" },
+      ],
+      effectiveExpiresAt: "2026-01-11T00:00:00Z",
+    })
+
+    expect(detail?.sponsor.category).toBe("former")
+    expect(detail?.sponsor.afdianMonths).toBe(4)
+    expect(detail?.afdian.orders.map((order) => [order.outTradeNo, order.kind])).toEqual([["o1", "duration"], ["o2", "one_time"]])
+    expect(detail?.manualDurations[0]).toMatchObject({ id: 7, amount: 10, unit: "day", origin: "migration" })
+    expect(detail?.effectiveExpiresAt).toBe("2026-01-11T00:00:00Z")
+    expect(normalizeAdminSponsorDetail({ afdian: {} })).toBeNull()
+
+    // The backend category wins over an expiry that is still in the future.
+    const list = normalizeAdminSponsorList([{ id: "x", category: "one_time", planExpiresAt: FUTURE_EXPIRE_ISO }])
+    expect(list.items[0]?.category).toBe("one_time")
+    expect(list.items[0]?.isActive).toBe(false)
   })
 })
 

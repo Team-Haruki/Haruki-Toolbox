@@ -201,21 +201,21 @@ export default {
     "summary": {
       "supporters": "贊助者",
       "pending": "待同步",
-      "duration": "長期贊助",
+      "current": "當前贊助",
       "oneTime": "一次性"
     },
     "sections": {
+      "current": {
+        "title": "當前贊助",
+        "empty": "暫無正在贊助的贊助者。"
+      },
       "oneTime": {
         "title": "一次性贊助",
         "empty": "暫無一次性贊助記錄。"
       },
-      "duration": {
-        "title": "時長贊助",
-        "empty": "暫無按時長記錄的贊助者。"
-      },
-      "manual": {
+      "former": {
         "title": "曾經贊助",
-        "empty": "暫無手動錄入的歷史贊助者。"
+        "empty": "暫無贊助時長已到期的贊助者。"
       }
     },
     "list": {
@@ -230,7 +230,6 @@ export default {
       "expired": "贊助時長到期",
       "expiredAt": "已於 {date} 到期",
       "oneTime": "一次性贊助",
-      "manual": "手動記錄",
       "recent": "近期贊助",
       "months": "{month} 個月"
     },

@@ -1,4 +1,5 @@
-import { asRecord, readDateString, readRecord, readString } from "@/lib/record-utils"
+import { asRecord, readBoolean, readDateString, readRecord, readString } from "@/lib/record-utils"
+import { readSponsorCategory } from "@/modules/sponsor/lib/categories"
 import type { SponsorPageData, SponsorSummary, SponsorSupporter } from "@/modules/sponsor/types"
 
 const SUCCESS_ORDER_STATUS = 2
@@ -94,8 +95,13 @@ function normalizeSponsorItem(value: unknown, index: number): SponsorSupporter |
     || readFirstString(record, ["name", "nickname", "userName", "user_name", "displayName", "display_name"])
   const planName = readFirstString(plan, ["name", "title"])
     || readFirstString(record, ["planName", "plan_name", "title"])
-  const planId = readFirstString(plan, ["id", "planId", "plan_id"])
-  const source = readFirstString(record, ["source", "origin", "category", "kind", "type"])
+  const source = readFirstString(record, ["source", "origin", "kind", "type"])
+  const planExpiresAt = readDateString(plan, ["expiresAt", "expires_at", "expireTime", "expire_time"])
+    || readDateString(record, ["planExpiresAt", "plan_expires_at"])
+  const category = readSponsorCategory(record.category, {
+    isActive: readBoolean(record, ["isActive", "is_active"], false),
+    planExpiresAt,
+  })
 
   return {
     id,
@@ -106,9 +112,10 @@ function normalizeSponsorItem(value: unknown, index: number): SponsorSupporter |
     planPrice: readNumber(plan, ["price", "showPrice", "show_price"]),
     planRank: readNumber(plan, ["rank", "rankType", "rank_type"]),
     planPayMonths: readNumber(plan, ["payMonth", "pay_month", "month", "months"]),
-    planExpiresAt: readDateString(plan, ["expiresAt", "expires_at", "expireTime", "expire_time"]),
+    planExpiresAt,
     source,
-    isActive: Boolean(planName || planId),
+    category,
+    isActive: category === "current",
     totalAmount: readNumber(record, ["totalAmount", "total_amount", "allSumAmount", "all_sum_amount", "showAmount", "show_amount", "amount"]),
     month: readNumber(record, ["month", "months"]),
     paidAt: readDateString(record, [

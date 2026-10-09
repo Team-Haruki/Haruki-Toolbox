@@ -784,7 +784,7 @@ export default {
   },
   "adminSponsors": {
     "title": "Sponsor management",
-    "description": "Maintain public sponsor profiles and control whether manual profile edits may be overwritten by Afdian sync.",
+    "description": "Maintain sponsor profiles and sponsorship time: Afdian time is computed from orders, support received through other channels is recorded here by hand.",
     "generatedAt": "Generated at {date}",
     "common": {
       "fallback": "—",
@@ -792,21 +792,23 @@ export default {
     },
     "contribution": {
       "amount": "¥{amount}",
-      "month": "{count} mo"
+      "month": "Afdian {count} mo"
     },
     "actions": {
       "refresh": "Refresh list",
       "syncAfdian": "Sync from Afdian",
-      "edit": "Edit profile"
+      "edit": "Edit profile",
+      "create": "Add sponsor"
     },
     "stats": {
       "total": "Total sponsors",
-      "active": "Currently supporting",
+      "active": "Current",
       "manualProfile": "Protected profiles"
     },
-    "status": {
-      "active": "Currently supporting",
-      "past": "Past support"
+    "category": {
+      "current": "Current",
+      "former": "Past",
+      "one_time": "One-time"
     },
     "afdianSync": {
       "enabled": "Allow updates",
@@ -814,7 +816,7 @@ export default {
     },
     "list": {
       "title": "Sponsor list",
-      "description": "Rows follow the backend order. Edit public profiles here or protect manual profile data."
+      "description": "Rows follow the backend order. The backend computes category and expiry from Afdian orders and manual time."
     },
     "table": {
       "supporter": "Supporter",
@@ -822,6 +824,7 @@ export default {
       "status": "Status",
       "source": "Source",
       "lastSupport": "Last support",
+      "effectiveExpiry": "Effective expiry",
       "contribution": "Contribution",
       "afdianSync": "Afdian updates",
       "actions": "Actions",
@@ -835,12 +838,74 @@ export default {
       "planName": "Sponsor tier",
       "source": "Source",
       "paidAt": "Last support time",
-      "planExpiresAt": "Support expires at",
       "message": "Message",
-      "isActive": "Mark as currently supporting",
       "afdianSyncDisabled": "Do not update this profile from Afdian",
-      "afdianSyncHelp": "When enabled, manually edited name, avatar, tier, and message should not be overwritten by later Afdian syncs.",
+      "afdianSyncHelp": "When enabled, the manually edited name, avatar, tier and message are not overwritten by later Afdian syncs; Afdian orders still count toward the time.",
       "manualProfileHint": "This only saves display profile data and sync policy. Afdian API keys and webhook configuration should remain backend-only."
+    },
+    "duration": {
+      "title": "Sponsorship time",
+      "migrationPending": "This sponsor still has the old single expiry. It is split into Afdian time and manual time on the next Afdian sync; manual time can be added after that.",
+      "afdianPart": "Afdian time ends",
+      "afdianMonths": "{count} months in total",
+      "manualPart": "Manual time",
+      "manualCount": "{count} entries",
+      "stackRule": "Added after the Afdian time, one after another",
+      "effective": "Effective expiry",
+      "none": "None",
+      "reported": "Plan expiry last reported by Afdian: {date}",
+      "amount": {
+        "day": "{count} days",
+        "month": "{count} months"
+      },
+      "orders": {
+        "title": "Afdian orders (read-only)",
+        "empty": "No Afdian orders.",
+        "paidAt": "Time",
+        "plan": "Plan",
+        "kind": "Time",
+        "amount": "Paid",
+        "customPlan": "Custom plan",
+        "months": "{count} mo",
+        "kinds": {
+          "one_time": "One-time",
+          "ignored": "Not counted"
+        }
+      },
+      "manual": {
+        "title": "Manual time",
+        "add": "Add manual time",
+        "empty": "No manual time yet.",
+        "migrated": "Migrated",
+        "startsAt": "Earliest start: {date}",
+        "createdBy": "Added by {user} on {date}",
+        "updatedBy": "Edited by {user} on {date}",
+        "edit": "Edit",
+        "delete": "Delete",
+        "deleteTitle": "Delete this manual time?",
+        "deleteDescription": "{amount} of manual time will be removed and the effective expiry moves earlier accordingly."
+      },
+      "form": {
+        "amount": "Amount",
+        "unit": "Unit",
+        "units": {
+          "month": "Months (31 days)",
+          "day": "Days"
+        },
+        "startsAt": "Earliest start",
+        "startsAtHelp": "Leave empty for now. The time only starts after the Afdian time and earlier manual time end; it starts here only if the sponsorship had lapsed.",
+        "note": "Note / reason",
+        "notePlaceholder": "e.g. WeChat transfer, 30 CNY"
+      },
+      "validation": {
+        "amount": "Amount must be a positive whole number (at most 1200 months or 36600 days)",
+        "note": "A note is required (at most 500 bytes)"
+      }
+    },
+    "create": {
+      "title": "Add sponsor",
+      "description": "For people who supported through channels other than Afdian. Add manual time in their profile after creating them.",
+      "submit": "Create"
     },
     "toast": {
       "actionFailedFallback": "Operation failed",
@@ -848,9 +913,14 @@ export default {
       "saveFailedTitle": "Failed to save sponsor",
       "syncFailedTitle": "Failed to sync from Afdian",
       "saved": "Sponsor profile saved",
+      "created": "Sponsor created",
       "synced": "Afdian sync requested",
       "afdianSyncDisabled": "Afdian updates disabled for this profile",
       "afdianSyncEnabled": "Afdian updates allowed for this profile",
+      "manualSaved": "Manual time saved",
+      "manualSaveFailedTitle": "Failed to save manual time",
+      "manualDeleted": "Manual time deleted",
+      "manualDeleteFailedTitle": "Failed to delete manual time",
       "validation": {
         "nameRequired": "Display name is required"
       }

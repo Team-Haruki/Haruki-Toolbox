@@ -1,3 +1,6 @@
+/** Decided by the backend: 当前赞助 / 曾经赞助 / 一次性赞助. */
+export type SponsorCategory = "current" | "former" | "one_time"
+
 export interface SponsorSupporter {
   id: string
   name: string
@@ -8,6 +11,7 @@ export interface SponsorSupporter {
   planPayMonths: number | null
   planExpiresAt: string
   source: string
+  category: SponsorCategory
   isActive: boolean
   totalAmount: number | null
   month: number | null
