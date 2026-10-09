@@ -34,7 +34,7 @@ import {
     LucideTrash2,
 } from "lucide-vue-next"
 import type { AuthorizedSocialPlatform } from "@/types/admin"
-import { getSocialPlatforms } from "@/modules/admin-users/constants"
+import { getSocialPlatforms, isSocialPlatform } from "@/modules/admin-users/constants"
 
 defineProps<{
     loading: boolean
@@ -50,6 +50,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const socialPlatforms = computed(() => getSocialPlatforms(t))
+
+function platformMeta(platform: string) {
+  return isSocialPlatform(platform) ? socialPlatforms.value[platform] : undefined
+}
 </script>
 
 <template>
@@ -78,8 +82,8 @@ const socialPlatforms = computed(() => getSocialPlatforms(t))
             <TableRow v-for="social in authorizedSocials" :key="social.id">
               <TableCell class="font-medium">
                 <div class="flex items-center gap-2">
-                  <component :is="socialPlatforms[social.platform]?.icon || LucideGlobe" class="w-4 h-4 text-muted-foreground" />
-                  {{ socialPlatforms[social.platform]?.label || social.platform }}
+                  <component :is="platformMeta(social.platform)?.icon || LucideGlobe" class="w-4 h-4 text-muted-foreground" />
+                  {{ platformMeta(social.platform)?.label || social.platform }}
                 </div>
               </TableCell>
               <TableCell>{{ social.userId }}</TableCell>

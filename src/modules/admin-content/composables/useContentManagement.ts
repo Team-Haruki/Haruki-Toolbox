@@ -283,7 +283,8 @@ export function useContentManagement() {
             bg: itemForm.value.bg.trim(),
             groupInfo: itemForm.value.groupInfo.trim() || undefined,
             detail: itemForm.value.detail.trim() || undefined,
-            url: normalizedUrl,
+            // null (an invalid URL) returned above
+            url: normalizedUrl ?? undefined,
             sortOrder: Number.isFinite(itemSortOrder) && itemSortOrder >= 0 ? itemSortOrder : 0,
         }
         const editingItemId = editingItem.value?.id

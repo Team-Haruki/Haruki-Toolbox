@@ -26,6 +26,8 @@ import {
   SUITE_PERMISSION_TITLE_KEYS,
   MYSEKAI_PERMISSION_OPTIONS,
   SUITE_PERMISSION_OPTIONS,
+  type MysekaiPermissionKey,
+  type SuitePermissionKey,
 } from "@/lib/game-binding-permission-meta"
 import { isSekaiRegion } from "@/lib/sekai-region"
 import type { SekaiRegion } from "@/types/store"
@@ -58,8 +60,8 @@ const emit = defineEmits<{
   (e: "update:editTargetUserId", value: string): void
   (e: "update:editServer", value: SekaiRegion): void
   (e: "update:editGameUserId", value: string): void
-  (e: "update:suite", payload: { key: string; value: boolean }): void
-  (e: "update:mysekai", payload: { key: string; value: boolean }): void
+  (e: "update:suite", payload: { key: SuitePermissionKey; value: boolean }): void
+  (e: "update:mysekai", payload: { key: MysekaiPermissionKey; value: boolean }): void
   (e: "save"): void
 }>()
 
@@ -70,12 +72,12 @@ function handleServerChange(value: unknown) {
 
 function handleSuitePermissionUpdate(payload: { key: string; value: boolean }) {
   if (!isSuitePermissionKey(payload.key)) return
-  emit("update:suite", payload)
+  emit("update:suite", { key: payload.key, value: payload.value })
 }
 
 function handleMysekaiPermissionUpdate(payload: { key: string; value: boolean }) {
   if (!isMysekaiPermissionKey(payload.key)) return
-  emit("update:mysekai", payload)
+  emit("update:mysekai", { key: payload.key, value: payload.value })
 }
 
 const suitePermissionOptions = computed(() =>

@@ -18,7 +18,7 @@ import {
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string
 
-const USER_ROLE_SET = new Set<UserRole>(["user", "admin", "super_admin"])
+const USER_ROLE_SET = new Set<string>(["user", "admin", "super_admin"] satisfies UserRole[])
 
 const USER_ROLE_LABEL_KEYS: Record<UserRole, string> = {
   user: "adminUsers.role.user",

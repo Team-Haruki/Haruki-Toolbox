@@ -1,27 +1,27 @@
 import { request, unwrapUpdatedData } from "@/core/http/call-api"
 import { encodePathSegment } from "@/core/http/url"
 import { normalizeExternalHttpUrl } from "@/lib/external-url"
-import { normalizeEntityId, readOptionalString, readString, readStringArray } from "@/lib/record-utils"
+import { asRecord, normalizeEntityId, readOptionalString, readString, readStringArray } from "@/lib/record-utils"
 import { translate } from "@/shared/i18n"
 import type { AdminFriendLink } from "@/types/admin"
 import type { APIResponse } from "@/types/response"
 
 const BASE = "/api/admin/content"
 
-function normalizeFriendLink(link: unknown): AdminFriendLink | null {
-  if (!link || typeof link !== "object" || Array.isArray(link)) return null
+function normalizeFriendLink(value: unknown): AdminFriendLink | null {
+  const link = asRecord(value)
+  if (!link) return null
 
   const name = readString(link, ["name"]).trim()
   if (!name) return null
 
   const url = readOptionalString(link, ["url"])
   const tags = readStringArray(link, ["tags"])
-  const rawSortOrder
-    = (link as { sortOrder?: unknown }).sortOrder ?? (link as { sort_order?: unknown }).sort_order
+  const rawSortOrder = link.sortOrder ?? link.sort_order
   const sortOrder = Number(rawSortOrder)
 
   return {
-    id: String(normalizeEntityId((link as { id?: unknown }).id)),
+    id: String(normalizeEntityId(link.id)),
     name,
     description: readString(link, ["description", "detail"]),
     avatar: readString(link, ["avatar"]),
