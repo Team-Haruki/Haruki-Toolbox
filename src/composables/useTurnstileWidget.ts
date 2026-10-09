@@ -1,4 +1,4 @@
-import { onMounted, onUnmounted, ref } from "vue"
+import { onMounted, onUnmounted, ref, useTemplateRef } from "vue"
 
 interface UseTurnstileWidgetOptions {
   enabled?: boolean
@@ -69,7 +69,8 @@ function ensureTurnstileScript(): Promise<void> {
 }
 
 export function useTurnstileWidget(options: UseTurnstileWidgetOptions) {
-  const container = ref<HTMLDivElement | null>(null)
+  // Bound to the caller's `ref="container"` element.
+  const container = useTemplateRef<HTMLDivElement>("container")
   const isLoading = ref(true)
   const isUnavailable = ref(false)
   let widgetId: string | null = null
@@ -216,7 +217,6 @@ export function useTurnstileWidget(options: UseTurnstileWidgetOptions) {
   })
 
   return {
-    container,
     isLoading,
     isUnavailable,
     reset,

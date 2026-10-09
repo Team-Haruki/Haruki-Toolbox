@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue"
+import { ref, shallowRef, computed, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { CalendarIcon } from "lucide-vue-next"
 // Local zero-dep replacement for date-fns `format(date, "yyyy/MM/dd HH:mm")`.
@@ -36,7 +36,7 @@ function placeholderFromModel(): CalendarDate {
 
 // Controlled placeholder so reopening the popover lands on the selected
 // month/year (the Calendar unmounts on close and would otherwise reset to today).
-const calendarPlaceholder = ref<DateValue>(placeholderFromModel())
+const calendarPlaceholder = shallowRef<DateValue>(placeholderFromModel())
 
 // The game launched in 2020 — keep the year dropdown to a sensible window
 // instead of the Calendar default (-100..+10 years). The navigated

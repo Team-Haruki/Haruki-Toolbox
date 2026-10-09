@@ -16,9 +16,12 @@ export function subscribeSekaiDataWorker(listener: SekaiDataWorkerListener): () 
   }
 }
 
-export function postSekaiDataWorkerRequest(
-  request: Omit<SekaiDataWorkerRequest, "requestId"> & { requestId?: string },
-): string {
+// Omit<Union, K> keeps only the keys common to every member, so omit per member.
+type SekaiDataWorkerRequestInput<Request = SekaiDataWorkerRequest> = Request extends SekaiDataWorkerRequest
+  ? Omit<Request, "requestId"> & { requestId?: string }
+  : never
+
+export function postSekaiDataWorkerRequest(request: SekaiDataWorkerRequestInput): string {
   const requestId = request.requestId ?? createRequestId()
   const workerRequest = { ...request, requestId } as SekaiDataWorkerRequest
   pendingRequests.set(requestId, workerRequest.region)

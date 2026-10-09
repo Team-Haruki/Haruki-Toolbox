@@ -1,6 +1,6 @@
 type RequestIdCrypto = {
   randomUUID?: () => string
-  getRandomValues: (array: Uint8Array) => Uint8Array
+  getRandomValues: (array: Uint8Array<ArrayBuffer>) => Uint8Array<ArrayBuffer>
 }
 
 export function createRequestId(source: RequestIdCrypto = crypto): string {
