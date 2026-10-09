@@ -18,6 +18,7 @@ import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import MusicProgressLevelRow, { type MusicProgressSongView } from "../components/MusicProgressLevelRow.vue"
 import MusicProgressOverview, { type MusicProgressOverviewRow } from "../components/MusicProgressOverview.vue"
+import MusicProgressScoreRankCard, { type MusicProgressScoreRankRow } from "../components/MusicProgressScoreRankCard.vue"
 import { useMusicProgressMasterData } from "../composables/useMusicProgressMasterData"
 import { resolveMusicJacketUrl } from "../lib/music-assets"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
@@ -44,6 +45,7 @@ import {
   sumRemainingMusicRewards,
   type MusicRewardTotals,
 } from "../lib/music-rewards"
+import { buildMusicScoreRankProgress, type MusicScoreRankSongInput } from "../lib/music-score-rank"
 
 const { t, locale } = useI18n()
 const settingsStore = useSettingsStore()
@@ -165,6 +167,80 @@ const rewardTotalsText = computed(() => {
   const stats = rewardStats.value
   return stats == null ? null : t("musicProgress.rewardsRemaining", { list: rewardsText(stats.total) })
 })
+
+// --- Score ranks (C/B/A/S) per song -------------------------------------------------------
+
+/** Every released song once, whichever difficulties it has. */
+const scoreRankSongs = computed<MusicScoreRankSongInput[]>(() => {
+  const current = progress.value
+  if (current == null) {
+    return []
+  }
+
+  const songs = new Map<number, MusicScoreRankSongInput>()
+  for (const difficulty of MUSIC_DIFFICULTIES) {
+    for (const row of current[difficulty].levels) {
+      for (const song of row.songs) {
+        if (!songs.has(song.musicId)) {
+          songs.set(song.musicId, { musicId: song.musicId, title: song.title, assetbundleName: song.assetbundleName })
+        }
+      }
+    }
+  }
+  return [...songs.values()]
+})
+
+/** null without claim data or when the region's master has no score-rank achievements. */
+const scoreRankProgress = computed(() => {
+  const claimed = claimedAchievements.value
+  if (claimed == null || scoreRankSongs.value.length === 0) {
+    return null
+  }
+
+  return buildMusicScoreRankProgress(scoreRankSongs.value, achievementMasters.value, claimed)
+})
+
+const scoreRankRows = computed<MusicProgressScoreRankRow[]>(() => {
+  const current = scoreRankProgress.value
+  if (current == null) {
+    return []
+  }
+
+  return current.songs.map((song) => ({
+    musicId: song.musicId,
+    title: song.title,
+    jacketUrl: jacketUrl(song.assetbundleName),
+    ranks: song.ranks.map((state) => ({
+      rank: state.rank,
+      reached: state.reached,
+      title: state.reached
+        ? t("musicProgress.scoreRank.rankReached", { rank: state.rank })
+        : t("musicProgress.scoreRank.rankNotReached", { rank: state.rank, rewards: formatRewardTotals(state.rewards) }),
+    })),
+    remaining: song.remaining,
+    remainingText: song.complete
+      ? t("musicProgress.scoreRank.complete")
+      : t("musicProgress.rewardsRemaining", { list: formatRewardTotals(song.remaining) }),
+    complete: song.complete,
+  }))
+})
+
+const scoreRankSummaryText = computed(() => {
+  const summary = scoreRankProgress.value?.summary
+  if (summary == null) {
+    return ""
+  }
+
+  const none = t("musicProgress.scoreRank.none")
+  return t("musicProgress.scoreRank.summary", {
+    obtained: hasMusicRewardTotals(summary.obtained) ? formatRewardTotals(summary.obtained) : none,
+    remaining: hasMusicRewardTotals(summary.remaining) ? formatRewardTotals(summary.remaining) : none,
+    complete: summary.complete,
+    total: summary.songs,
+  })
+})
+
+const scoreRankResetKey = computed(() => `${selectedAccount.value?.key ?? ""}:${suite.uploadTime.value ?? ""}`)
 
 // --- Overview rows ---------------------------------------------------------------------
 
@@ -407,6 +483,14 @@ function refresh() {
         :score-rank-has-remaining="rewardStats != null && hasMusicRewardTotals(rewardStats.scoreRank)"
         :hint="rewardsAvailable ? t('musicProgress.rewards.hint') : (claimedAchievements == null ? t('musicProgress.rewards.unavailable') : null)"
         @select="selectDifficulty"
+      />
+
+      <!-- Which score ranks each song reached and what is left to get -->
+      <MusicProgressScoreRankCard
+        v-if="scoreRankProgress"
+        :rows="scoreRankRows"
+        :summary-text="scoreRankSummaryText"
+        :reset-key="scoreRankResetKey"
       />
 
       <!-- Level breakdown of the selected difficulty -->

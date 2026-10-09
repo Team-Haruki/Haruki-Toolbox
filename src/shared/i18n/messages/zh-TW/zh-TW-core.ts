@@ -350,6 +350,28 @@ export default {
       "scoreRank": "評分獎勵",
       "allClaimed": "已全部領取"
     },
+    "scoreRank": {
+      "title": "評分獎勵明細",
+      "description": "按歌曲檢視已達成的評分（C / B / A / S）與仍可獲取的水晶。評分是否達成以資料快照中的成就記錄為準。",
+      "summary": "已獲得：{obtained} · 可獲取：{remaining} · 已拿滿 {complete} / {total} 首",
+      "none": "無",
+      "filter": {
+        "label": "只看",
+        "all": "全部",
+        "remaining": "未拿滿"
+      },
+      "sort": {
+        "label": "排序",
+        "remaining": "可獲取水晶",
+        "music": "歌曲順序"
+      },
+      "visible": "顯示 {shown} / {total} 首",
+      "rankReached": "{rank} 評分已達成",
+      "rankNotReached": "{rank} 評分未達成（{rewards}）",
+      "complete": "已拿滿",
+      "empty": "沒有符合條件的歌曲。",
+      "showMore": "顯示更多（還有 {count} 首）"
+    },
     "dataAsOf": "資料快照時間：{time}",
     "refresh": "重新整理",
     "retry": "重試",

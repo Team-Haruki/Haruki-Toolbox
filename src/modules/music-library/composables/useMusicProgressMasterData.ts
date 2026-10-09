@@ -7,7 +7,9 @@ import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 const MUSIC_PROGRESS_MASTER_FILES = ["musics", "musicDifficulties"] as const
 
 // Reward statistics additionally need the achievement table and its resource
-// boxes (resourceBoxDetails only exists on tw/kr/cn and is optional).
+// boxes. All three are optional: resourceBoxDetails only exists on tw/kr/cn,
+// and a dump without musicAchievements must still render the play progress
+// (the reward sections then simply stay hidden).
 const MUSIC_ACHIEVEMENT_MASTER_FILES = [
   "musicAchievements",
   "resourceBoxes",
@@ -37,6 +39,7 @@ export function useMusicProgressMasterData(
   const requiredFiles = withAchievements
     ? [...MUSIC_PROGRESS_MASTER_FILES, ...MUSIC_ACHIEVEMENT_MASTER_FILES]
     : [...MUSIC_PROGRESS_MASTER_FILES]
+  const optionalFiles = withAchievements ? [...MUSIC_ACHIEVEMENT_MASTER_FILES] : []
 
   const sekaiDataStore = useSekaiDataStore()
   const rawMusics = shallowRef<unknown>(null)
@@ -85,9 +88,10 @@ export function useMusicProgressMasterData(
     error.value = null
     try {
       const cachedFiles = sekaiDataStore.regionStates[target].files
-      if (!isMasterCacheCovering(cachedFiles, requiredFiles)) {
+      if (!isMasterCacheCovering(cachedFiles, requiredFiles, optionalFiles)) {
         await sekaiDataStore.ensureRegionData(target, {
           files: requiredFiles,
+          optionalFiles,
           musicMetas: false,
         })
       }
@@ -100,6 +104,7 @@ export function useMusicProgressMasterData(
         await sekaiDataStore.ensureRegionData(target, {
           force: true,
           files: requiredFiles,
+          optionalFiles,
           musicMetas: false,
         })
         files = await readSekaiMasterFiles(target, requiredFiles)

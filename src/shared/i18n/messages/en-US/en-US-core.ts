@@ -350,6 +350,28 @@ export default {
       "scoreRank": "Score rank",
       "allClaimed": "All claimed"
     },
+    "scoreRank": {
+      "title": "Score rank rewards by song",
+      "description": "Which score ranks (C / B / A / S) each song has reached and the crystals still obtainable. A rank counts as reached when the snapshot records its achievement.",
+      "summary": "Obtained: {obtained} · Remaining: {remaining} · {complete} / {total} songs complete",
+      "none": "none",
+      "filter": {
+        "label": "Show",
+        "all": "All",
+        "remaining": "Incomplete only"
+      },
+      "sort": {
+        "label": "Sort",
+        "remaining": "Remaining crystals",
+        "music": "Song order"
+      },
+      "visible": "Showing {shown} / {total} songs",
+      "rankReached": "Rank {rank} reached",
+      "rankNotReached": "Rank {rank} not reached ({rewards})",
+      "complete": "Complete",
+      "empty": "No songs match.",
+      "showMore": "Show more ({count} left)"
+    },
     "dataAsOf": "Data as of {time}",
     "refresh": "Refresh",
     "retry": "Retry",
