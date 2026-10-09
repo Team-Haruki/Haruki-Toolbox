@@ -64,7 +64,8 @@ export async function renderChartSvg(request: ChartSvgRequest): Promise<string> 
 }
 
 function setMetaField(
-  score: InstanceType<ChartEngine["Score"]>,
+  // Score has a private constructor, which InstanceType<> rejects.
+  score: ChartEngine["Score"]["prototype"],
   name: string,
   value: string | null | undefined,
 ): void {

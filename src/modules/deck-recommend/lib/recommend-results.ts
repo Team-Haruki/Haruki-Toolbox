@@ -13,7 +13,12 @@ export type DeckRecommendLiveBoostFields = {
   live_boost_original_mysekai_event_point?: number
 }
 
-export type DeckRecommendResultDeck = RecommendDeck & DeckRecommendLiveBoostFields
+/** Set on challenge-live results: live score minus the character's high score. */
+export type DeckRecommendChallengeFields = {
+  challenge_score_delta?: number
+}
+
+export type DeckRecommendResultDeck = RecommendDeck & DeckRecommendLiveBoostFields & DeckRecommendChallengeFields
 
 export type TaggedRecommendDeck = DeckRecommendResultDeck & {
   source_algorithms: DeckRecommendAlgorithm[]

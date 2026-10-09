@@ -215,7 +215,7 @@ export function applyChallengeScoreDelta<T extends { score: number; live_score?:
   decks: T[],
   userData: unknown,
   characterId: string | number | null,
-): T[] {
+): Array<T & { challenge_score_delta: number }> {
   const highScore = resolveChallengeHighScore(userData, characterId)
   return decks.map((deck) => ({
     ...deck,
@@ -1076,7 +1076,7 @@ function normalizeMysekaiFixtureBonusRateOverrides(
 
 function normalizeFixtureBonusRate(value: unknown): number | null {
   const numericValue = typeof value === "string" ? Number(value) : value
-  if (!Number.isInteger(numericValue) || numericValue < 0 || numericValue > 100) {
+  if (typeof numericValue !== "number" || !Number.isInteger(numericValue) || numericValue < 0 || numericValue > 100) {
     return null
   }
 
@@ -1111,7 +1111,7 @@ function resolveChallengeHighScore(userData: unknown, characterId: string | numb
 
 function normalizeNonNegativeInteger(value: unknown): number | null {
   const numericValue = typeof value === "string" ? Number(value) : value
-  if (!Number.isInteger(numericValue) || numericValue < 0) {
+  if (typeof numericValue !== "number" || !Number.isInteger(numericValue) || numericValue < 0) {
     return null
   }
 

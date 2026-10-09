@@ -132,7 +132,7 @@ const rosterRows = computed<CardBoxCharacterNavRow[]>(() =>
         name: character?.name ?? t("cardBox.unknownCharacter"),
         iconUrl: character?.iconUrl ?? null,
         color: resolveSekaiCharacterColor(row.characterId)
-          ?? (character?.unit != null ? unitColorMap.value.get(character.unit) ?? null : null)
+          ?? (character?.unit != null ? unitColorMap.value.get(character.unit) : undefined)
           ?? "#94a3b8",
         owned: row.owned,
         total: row.total,
