@@ -37,6 +37,8 @@ function makeEvent(overrides: Partial<SekaiEventItem> = {}): SekaiEventItem {
     startAt: Date.UTC(2024, 0, 10),
     aggregateAt: Date.UTC(2024, 0, 18),
     closedAt: Date.UTC(2024, 0, 20),
+    rankingAnnounceAt: null,
+    distributionStartAt: null,
     ...overrides,
   }
 }

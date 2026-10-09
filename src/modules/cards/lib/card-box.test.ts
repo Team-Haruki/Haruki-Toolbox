@@ -322,7 +322,7 @@ describe("applyCardBoxFilters", () => {
     makeCard({ id: 4, characterId: null, attr: "cool", cardRarityType: "rarity_1" }),
   ]
   const owned = buildOwnedCardMap(normalizeUserCards([{ cardId: 1, level: 60, masterRank: 5 }, { cardId: 3, level: 20, masterRank: 0 }]))
-  const unitOf = (characterId: number) => (characterId === 21 ? "piapro" : "light_sound") as const
+  const unitOf = (characterId: number) => (characterId === 21 ? ("piapro" as const) : ("light_sound" as const))
 
   it("keeps everything with fresh filters and counts none active", () => {
     const filters = createCardBoxFilters()

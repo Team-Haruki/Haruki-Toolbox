@@ -45,7 +45,7 @@ describe("unit emblems", () => {
       expect(buildSekaiUnitEmblemSvg(unit)).toBe(svg)
 
       const url = resolveUnitLogoUrl(unit)
-      expect(url).toBe(resolveUnitEmblemDataUrl(unit))
+      expect(resolveUnitEmblemDataUrl(unit)).toBe(url)
       expect(url).toStartWith("data:image/svg+xml,")
       expect(decodeURIComponent(url.slice("data:image/svg+xml,".length))).toBe(svg)
     }

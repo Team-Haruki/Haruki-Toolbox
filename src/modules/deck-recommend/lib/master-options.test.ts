@@ -71,8 +71,8 @@ describe("deck recommend master option helpers", () => {
 
   it("selects the currently active event by default", () => {
     expect(resolveDefaultEventOption([
-      { id: 2, value: "2", label: "future", eventType: null, startAt: 3_000, aggregateAt: 4_000, closedAt: null },
-      { id: 1, value: "1", label: "active", eventType: null, startAt: 1_000, aggregateAt: 2_000, closedAt: null },
+      { id: 2, value: "2", label: "future", eventType: null, assetbundleName: null, startAt: 3_000, aggregateAt: 4_000, closedAt: null },
+      { id: 1, value: "1", label: "active", eventType: null, assetbundleName: null, startAt: 1_000, aggregateAt: 2_000, closedAt: null },
     ], 1_500)?.value).toBe("1")
   })
 

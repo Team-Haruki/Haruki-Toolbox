@@ -35,6 +35,8 @@ function makeEvent(overrides: Partial<SekaiEventItem> = {}): SekaiEventItem {
     startAt: 100,
     aggregateAt: 200,
     closedAt: 300,
+    rankingAnnounceAt: null,
+    distributionStartAt: null,
     ...overrides,
   }
 }

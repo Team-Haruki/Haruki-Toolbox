@@ -76,7 +76,9 @@ describe("fetchCachedUserSuite", () => {
 
   test("writes fresh complete data to the cache", async () => {
     const freshData = { userCards: [{ cardId: 2 }], upload_time: 42 }
-    let written: { uploadTime: number } | null = null
+    // `as` keeps the declared type: it is assigned in a callback, which
+    // control-flow narrowing does not see.
+    let written = null as { uploadTime: number } | null
     const result = await fetchCachedUserSuite(params, "check-remote", makeDependencies({
       fetchSubset: () => Promise.resolve({ kind: "data", data: freshData, uploadTime: 42 }),
       writeCache: (_cacheParams, data, uploadTime) => {

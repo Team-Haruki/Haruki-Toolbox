@@ -17,7 +17,7 @@ describe("mapDeviceErrorCode (§6.5 page-state column)", () => {
   })
 
   it("ends on the error card for request and client problems", () => {
-    for (const code of ["unsupported_media_type", "origin_rejected", "client_unavailable"]) {
+    for (const code of ["unsupported_media_type", "origin_rejected", "client_unavailable"] as const) {
       expect(mapDeviceErrorCode(apiError(code === "unsupported_media_type" ? 415 : 403, code), settled)).toEqual({ target: "error", message: code })
     }
   })

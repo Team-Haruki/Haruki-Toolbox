@@ -25,6 +25,8 @@ function makeEvent(id: number, eventType: SekaiEventItem["eventType"]): SekaiEve
     startAt: id * 1000,
     aggregateAt: null,
     closedAt: null,
+    rankingAnnounceAt: null,
+    distributionStartAt: null,
   }
 }
 

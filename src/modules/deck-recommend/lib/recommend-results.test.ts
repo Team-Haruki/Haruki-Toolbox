@@ -7,11 +7,11 @@ describe("deck recommend result helpers", () => {
     const result = mergeDeckRecommendResults([
       {
         algorithm: "dfs_ga",
-        result: { decks: [createDeck([1, 2, 3, 4, 5], 100), createDeck([6, 7, 8, 9, 10], 90)] },
+        result: { cost_ms: 0, decks: [createDeck([1, 2, 3, 4, 5], 100), createDeck([6, 7, 8, 9, 10], 90)] },
       },
       {
         algorithm: "ga",
-        result: { decks: [createDeck([5, 4, 3, 2, 1], 120), createDeck([11, 12, 13, 14, 15], 110)] },
+        result: { cost_ms: 0, decks: [createDeck([5, 4, 3, 2, 1], 120), createDeck([11, 12, 13, 14, 15], 110)] },
       },
     ])
 
@@ -30,6 +30,7 @@ describe("deck recommend result helpers", () => {
       {
         algorithm: "dfs",
         result: {
+          cost_ms: 0,
           decks: [
             createDeck([1, 2, 3, 4, 5], 100, { event_bonus_rate: 110 }),
             createDeck([6, 7, 8, 9, 10], 120, { event_bonus_rate: 100 }),
@@ -46,6 +47,7 @@ describe("deck recommend result helpers", () => {
       {
         algorithm: "dfs_ga" as const,
         result: {
+          cost_ms: 0,
           decks: [
             createDeck([1, 2, 3, 4, 5], 300, {
               total_power: 1000,
@@ -77,6 +79,7 @@ describe("deck recommend result helpers", () => {
       {
         algorithm: "dfs_ga",
         result: {
+          cost_ms: 0,
           decks: [
             createDeck([1, 2, 3, 4, 5], 300, { live_score: 1000 }),
             createDeck([6, 7, 8, 9, 10], 200, { live_score: 3000 }),
@@ -93,6 +96,7 @@ describe("deck recommend result helpers", () => {
       {
         algorithm: "ga",
         result: {
+          cost_ms: 0,
           decks: [
             createDeck([1, 2, 3, 4, 5], 100, {
               mysekai_event_point: 1000,
@@ -124,6 +128,7 @@ describe("deck recommend result helpers", () => {
       {
         algorithm: "dfs",
         result: {
+          cost_ms: 0,
           decks: [
             createDeck([1, 2, 3, 4, 5], 123, {
               live_score: 456789,
@@ -144,6 +149,7 @@ describe("deck recommend result helpers", () => {
       {
         algorithm: "dfs",
         result: {
+          cost_ms: 0,
           decks: [createDeck([1, 2, 3, 4, 5], 123)],
         },
       },

@@ -35,6 +35,7 @@ const masterCard: DeckRecommendMasterCard = {
   attr: "cute",
   prefix: "Test card",
   assetbundleName: "res005_no001",
+  trainedByDefault: false,
 }
 
 describe("deck recommend card thumbnail helpers", () => {
@@ -91,6 +92,7 @@ describe("deck recommend card thumbnail helpers", () => {
         multi_live_score_up: 0,
         cards: [baseRecommendCard],
       }],
+      cost_ms: 0,
     }
 
     const views = buildDeckResultViews(result, {
