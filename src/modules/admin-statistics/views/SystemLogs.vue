@@ -194,7 +194,7 @@ const summaryCards = computed(() => [
     </Card>
 
     <Dialog v-model:open="detailOpen">
-      <DialogContent class="max-w-lg">
+      <DialogContent class="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{{ t("adminStatistics.systemLogs.detail.title") }}</DialogTitle>
         </DialogHeader>

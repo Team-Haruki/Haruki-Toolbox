@@ -77,7 +77,7 @@ function formatDate(value: string | undefined) {
 
 <template>
   <Dialog :open="props.open" @update:open="emit('update:open', $event)">
-    <DialogContent class="max-w-4xl">
+    <DialogContent class="sm:max-w-[min(72rem,90vw)]">
       <DialogHeader>
         <DialogTitle>{{ t("adminOAuthClients.webhooks.title") }}</DialogTitle>
         <DialogDescription>
@@ -115,7 +115,7 @@ function formatDate(value: string | undefined) {
           {{ t("adminOAuthClients.webhooks.actions.create") }}
         </Button>
       </div>
-      <div v-else class="rounded-md border">
+      <div v-else class="min-w-0 rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -128,10 +128,10 @@ function formatDate(value: string | undefined) {
           </TableHeader>
           <TableBody>
             <TableRow v-for="webhook in props.webhooks" :key="webhook.id">
-              <TableCell class="max-w-[280px]">
+              <TableCell class="min-w-56 whitespace-normal">
                 <div class="flex flex-col gap-1">
-                  <code class="truncate text-xs">{{ webhook.callbackUrl }}</code>
-                  <span class="text-xs text-muted-foreground">{{ webhook.id }}</span>
+                  <code class="text-xs break-all [overflow-wrap:anywhere]">{{ webhook.callbackUrl }}</code>
+                  <span class="text-xs break-all text-muted-foreground">{{ webhook.id }}</span>
                 </div>
               </TableCell>
               <TableCell>

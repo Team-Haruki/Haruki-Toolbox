@@ -95,7 +95,7 @@ const mysekaiPermissionOptions = computed(() =>
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="max-w-lg max-h-[80vh] overflow-y-auto">
+    <DialogContent class="sm:max-w-lg max-h-[80vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>
           {{ isEditMode ? t("adminGameBindings.editDialog.editTitle") : t("adminGameBindings.editDialog.createTitle") }}
