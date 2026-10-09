@@ -84,6 +84,17 @@ describe("sumRemainingMusicRewards", () => {
     expect(sumRemainingMusicRewards([1], combos, claimed)).toEqual({ jewel: 0, coin: 0, shard: 0 })
   })
 
+  it("counts a combo reached in any live mode once per song", () => {
+    const combos = masters.filter((master) => master.type === "combo" && master.difficulty === "master")
+    const byMode = buildClaimedMusicAchievementMap([
+      { musicId: 1, musicAchievementId: 21, playType: "solo" },
+      { musicId: 1, musicAchievementId: 24, playType: "multi" },
+      // The same achievement reported again from another mode changes nothing.
+      { musicId: 1, musicAchievementId: 24, playType: "solo" },
+    ])
+    expect(sumRemainingMusicRewards([1], combos, byMode)).toEqual({ jewel: 0, coin: 0, shard: 0 })
+  })
+
   it("hasMusicRewardTotals reflects emptiness", () => {
     expect(hasMusicRewardTotals({ jewel: 0, coin: 0, shard: 0 })).toBe(false)
     expect(hasMusicRewardTotals({ jewel: 1, coin: 0, shard: 0 })).toBe(true)

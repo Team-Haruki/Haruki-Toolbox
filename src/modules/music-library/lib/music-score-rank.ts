@@ -2,7 +2,6 @@ import {
   MUSIC_SCORE_RANKS,
   addMusicRewardTotals,
   emptyMusicRewardTotals,
-  hasMusicRewardTotals,
   type MusicAchievementMaster,
   type MusicRewardTotals,
   type MusicScoreRank,
@@ -14,32 +13,41 @@ export type MusicScoreRankSongInput = {
   assetbundleName: string
 }
 
-export type MusicScoreRankState = {
+export type MusicScoreRankStep = {
   rank: MusicScoreRank
-  /** The rank's achievement is recorded in the snapshot (`userMusicAchievements`). */
+  /** At or below the song's current rank. */
   reached: boolean
   /** Reward of this rank's achievement(s). */
   rewards: MusicRewardTotals
 }
 
 export type MusicScoreRankSong = MusicScoreRankSongInput & {
-  /** One entry per rank present in the master, lowest rank first. */
-  ranks: MusicScoreRankState[]
-  /** Highest reached rank; null when none is reached. */
-  highestRank: MusicScoreRank | null
-  /** Rewards of the score-rank achievements already recorded for this song. */
+  /** One step per rank the master defines, lowest first. */
+  steps: MusicScoreRankStep[]
+  /** Highest rank recorded in the snapshot; null when none is. */
+  currentRank: MusicScoreRank | null
+  /** The rank after `currentRank`; null once the song is maxed. */
+  nextRank: MusicScoreRank | null
+  /** Reward of `nextRank`; null once the song is maxed. */
+  nextRewards: MusicRewardTotals | null
+  /** Rewards of the ranks up to `currentRank`. */
   obtained: MusicRewardTotals
-  /** Rewards of the score-rank achievements not yet recorded for this song. */
+  /** Rewards of the ranks above `currentRank`. */
   remaining: MusicRewardTotals
-  /** Nothing left to obtain from score ranks on this song. */
+  /** `currentRank` is the top rank. */
   complete: boolean
 }
+
+/** "none" for songs without any recorded rank, else the current rank. */
+export type MusicScoreRankBucket = "none" | MusicScoreRank
 
 export type MusicScoreRankSummary = {
   songs: number
   complete: number
   obtained: MusicRewardTotals
   remaining: MusicRewardTotals
+  /** Songs per current rank. */
+  byRank: Record<MusicScoreRankBucket, number>
 }
 
 export type MusicScoreRankProgress = {
@@ -50,29 +58,32 @@ export type MusicScoreRankProgress = {
   summary: MusicScoreRankSummary
 }
 
+const RANK_ORDER: Record<MusicScoreRank, number> = { C: 0, B: 1, A: 2, S: 3 }
+
+/** Position in the C → S progression; -1 for none. */
+export function musicScoreRankOrder(rank: MusicScoreRank | null): number {
+  return rank == null ? -1 : RANK_ORDER[rank]
+}
+
 /**
- * Per-song score-rank (C/B/A/S) progress: which rank achievements the
- * snapshot records for each song and what their rewards still add up to.
+ * Per-song score-rank progress. Score rank is progressive (C → B → A → S),
+ * so a song has one current rank: the highest `score_rank` achievement the
+ * snapshot records for it. Reaching a rank implies the ranks below, so a
+ * record with a gap (S without C) still counts as S with everything below
+ * obtained. Remaining rewards are those of the ranks above the current one.
  *
  * `achievements` may contain every achievement type; only `score_rank`
- * rows count. Rows whose value is not a known rank still contribute to the
- * obtained / remaining totals (so they agree with the page total) but get no
- * rank entry. Returns null when the master has no score-rank achievements at
- * all, so a region without the table renders nothing.
+ * rows with a known rank value count. Returns null when the master defines
+ * no score rank, so a region without the table renders nothing.
  */
 export function buildMusicScoreRankProgress(
   songs: readonly MusicScoreRankSongInput[],
   achievements: readonly MusicAchievementMaster[],
   claimed: ReadonlyMap<number, ReadonlySet<number>>,
 ): MusicScoreRankProgress | null {
-  const scoreRankMasters = achievements.filter((achievement) => achievement.type === "score_rank")
-  if (scoreRankMasters.length === 0) {
-    return null
-  }
-
   const mastersByRank = new Map<MusicScoreRank, MusicAchievementMaster[]>()
-  for (const master of scoreRankMasters) {
-    if (master.scoreRank == null) {
+  for (const master of achievements) {
+    if (master.type !== "score_rank" || master.scoreRank == null) {
       continue
     }
     const list = mastersByRank.get(master.scoreRank) ?? []
@@ -80,12 +91,25 @@ export function buildMusicScoreRankProgress(
     mastersByRank.set(master.scoreRank, list)
   }
   const ranks = MUSIC_SCORE_RANKS.filter((rank) => mastersByRank.has(rank))
+  if (ranks.length === 0) {
+    return null
+  }
+
+  const rewardsByRank = new Map<MusicScoreRank, MusicRewardTotals>()
+  for (const rank of ranks) {
+    const rewards = emptyMusicRewardTotals()
+    for (const master of mastersByRank.get(rank) ?? []) {
+      addMusicRewardTotals(rewards, master.rewards)
+    }
+    rewardsByRank.set(rank, rewards)
+  }
 
   const summary: MusicScoreRankSummary = {
     songs: 0,
     complete: 0,
     obtained: emptyMusicRewardTotals(),
     remaining: emptyMusicRewardTotals(),
+    byRank: { none: 0, C: 0, B: 0, A: 0, S: 0 },
   }
   const seen = new Set<number>()
   const result: MusicScoreRankSong[] = []
@@ -96,39 +120,43 @@ export function buildMusicScoreRankProgress(
     seen.add(song.musicId)
 
     const claimedSet = claimed.get(song.musicId)
-    const obtained = emptyMusicRewardTotals()
-    const remaining = emptyMusicRewardTotals()
-    for (const master of scoreRankMasters) {
-      addMusicRewardTotals(claimedSet?.has(master.id) ? obtained : remaining, master.rewards)
+    let currentRank: MusicScoreRank | null = null
+    for (const rank of ranks) {
+      if ((mastersByRank.get(rank) ?? []).some((master) => claimedSet?.has(master.id) === true)) {
+        currentRank = rank
+      }
     }
 
-    let highestRank: MusicScoreRank | null = null
-    const states = ranks.map((rank): MusicScoreRankState => {
-      const masters = mastersByRank.get(rank) ?? []
-      const rewards = emptyMusicRewardTotals()
-      for (const master of masters) {
-        addMusicRewardTotals(rewards, master.rewards)
-      }
-      const reached = masters.every((master) => claimedSet?.has(master.id) === true)
-      if (reached) {
-        highestRank = rank
+    const currentOrder = musicScoreRankOrder(currentRank)
+    const obtained = emptyMusicRewardTotals()
+    const remaining = emptyMusicRewardTotals()
+    let nextRank: MusicScoreRank | null = null
+    const steps = ranks.map((rank): MusicScoreRankStep => {
+      const rewards = rewardsByRank.get(rank) ?? emptyMusicRewardTotals()
+      const reached = RANK_ORDER[rank] <= currentOrder
+      addMusicRewardTotals(reached ? obtained : remaining, rewards)
+      if (!reached && nextRank == null) {
+        nextRank = rank
       }
       return { rank, reached, rewards }
     })
 
-    const complete = !hasMusicRewardTotals(remaining)
+    const complete = nextRank == null
     result.push({
       musicId: song.musicId,
       title: song.title,
       assetbundleName: song.assetbundleName,
-      ranks: states,
-      highestRank,
+      steps,
+      currentRank,
+      nextRank,
+      nextRewards: nextRank == null ? null : (rewardsByRank.get(nextRank) ?? null),
       obtained,
       remaining,
       complete,
     })
 
     summary.songs += 1
+    summary.byRank[currentRank ?? "none"] += 1
     if (complete) {
       summary.complete += 1
     }
@@ -139,7 +167,7 @@ export function buildMusicScoreRankProgress(
   return { ranks, songs: result, summary }
 }
 
-export const MUSIC_SCORE_RANK_FILTERS = ["all", "remaining"] as const
+export const MUSIC_SCORE_RANK_FILTERS = ["all", "remaining", "none", ...MUSIC_SCORE_RANKS] as const
 
 export type MusicScoreRankFilter = (typeof MUSIC_SCORE_RANK_FILTERS)[number]
 
@@ -147,7 +175,7 @@ export function isMusicScoreRankFilter(value: string): value is MusicScoreRankFi
   return (MUSIC_SCORE_RANK_FILTERS as readonly string[]).includes(value)
 }
 
-export const MUSIC_SCORE_RANK_SORTS = ["remaining", "music"] as const
+export const MUSIC_SCORE_RANK_SORTS = ["remaining", "music", "rank"] as const
 
 export type MusicScoreRankSort = (typeof MUSIC_SCORE_RANK_SORTS)[number]
 
@@ -155,11 +183,20 @@ export function isMusicScoreRankSort(value: string): value is MusicScoreRankSort
   return (MUSIC_SCORE_RANK_SORTS as readonly string[]).includes(value)
 }
 
-export function filterMusicScoreRankSongs<T extends Pick<MusicScoreRankSong, "complete">>(
+export function filterMusicScoreRankSongs<T extends Pick<MusicScoreRankSong, "complete" | "currentRank">>(
   songs: readonly T[],
   filter: MusicScoreRankFilter,
 ): T[] {
-  return filter === "remaining" ? songs.filter((song) => !song.complete) : [...songs]
+  switch (filter) {
+    case "all":
+      return [...songs]
+    case "remaining":
+      return songs.filter((song) => !song.complete)
+    case "none":
+      return songs.filter((song) => song.currentRank == null)
+    default:
+      return songs.filter((song) => song.currentRank === filter)
+  }
 }
 
 /** Most crystals left first (then coins, shards), ties by music id. */
@@ -173,13 +210,24 @@ export function compareMusicScoreRankRemaining(
     || left.musicId - right.musicId
 }
 
-export function sortMusicScoreRankSongs<T extends Pick<MusicScoreRankSong, "musicId" | "remaining">>(
+/** Lowest current rank first (none, C, B, A, S), ties by music id. */
+export function compareMusicScoreRankCurrent(
+  left: Pick<MusicScoreRankSong, "musicId" | "currentRank">,
+  right: Pick<MusicScoreRankSong, "musicId" | "currentRank">,
+): number {
+  return musicScoreRankOrder(left.currentRank) - musicScoreRankOrder(right.currentRank)
+    || left.musicId - right.musicId
+}
+
+export function sortMusicScoreRankSongs<T extends Pick<MusicScoreRankSong, "musicId" | "remaining" | "currentRank">>(
   songs: readonly T[],
   sort: MusicScoreRankSort,
 ): T[] {
   const sorted = [...songs]
   if (sort === "remaining") {
     sorted.sort(compareMusicScoreRankRemaining)
+  } else if (sort === "rank") {
+    sorted.sort(compareMusicScoreRankCurrent)
   } else {
     sorted.sort((left, right) => left.musicId - right.musicId)
   }

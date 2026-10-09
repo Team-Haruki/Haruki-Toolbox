@@ -16,14 +16,15 @@ import {
   isMusicScoreRankFilter,
   isMusicScoreRankSort,
   sortMusicScoreRankSongs,
+  type MusicScoreRankBucket,
   type MusicScoreRankFilter,
   type MusicScoreRankSort,
 } from "@/modules/music-library/lib/music-score-rank"
 
-export type MusicProgressScoreRankBadge = {
+export type MusicProgressScoreRankStepView = {
   rank: MusicScoreRank
   reached: boolean
-  /** Tooltip, already formatted ("S reached" / "S not reached (Crystals 50)"). */
+  /** Tooltip with this rank's reward, already formatted. */
   title: string
 }
 
@@ -31,21 +32,31 @@ export type MusicProgressScoreRankRow = {
   musicId: number
   title: string
   jacketUrl: string | null
-  ranks: readonly MusicProgressScoreRankBadge[]
+  /** C → S, lowest first. */
+  steps: readonly MusicProgressScoreRankStepView[]
+  currentRank: MusicScoreRank | null
+  /** "Current rank B" / "No rank yet", for the badge tooltip and screen readers. */
+  currentLabel: string
   /** Sort key; `remainingText` is the formatted version. */
   remaining: MusicRewardTotals
+  /** "Remaining: Crystals 70" or "Complete". */
   remainingText: string
+  /** "Next: A for Crystals 20"; null once maxed. */
+  nextText: string | null
   complete: boolean
 }
 
 /**
- * Per-song score-rank (C/B/A/S) rewards: which ranks the snapshot records
- * for each song and the crystals still obtainable. Filter, sort and the
- * paging of the long list are local UI state; the rows come in prepared
- * from the page so this component only lays them out.
+ * Per-song score-rank progress. Score rank is progressive (C → B → A → S),
+ * so each row shows one current rank: a stepper filled up to it, a badge
+ * coloured by it, and what the next rank and the remaining ranks still pay.
+ * Filter, sort and the paging of the long list are local UI state; the rows
+ * come in prepared from the page so this component only lays them out.
  */
 const props = defineProps<{
   rows: readonly MusicProgressScoreRankRow[]
+  /** Songs per filter, for the chip counts. */
+  counts: Readonly<Record<MusicScoreRankFilter, number>>
   /** Obtained vs remaining totals, already formatted. */
   summaryText: string
   /** Reset the local state when the account / snapshot changes. */
@@ -90,17 +101,47 @@ function setSort(value: AcceptableValue | AcceptableValue[] | undefined) {
   }
 }
 
-const RANK_REACHED_CLASSES: Record<MusicScoreRank, string> = {
-  C: "border-sky-500/40 bg-sky-500/15 text-sky-700 dark:text-sky-300",
-  B: "border-violet-500/40 bg-violet-500/15 text-violet-700 dark:text-violet-300",
-  A: "border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  S: "border-rose-500/40 bg-rose-500/15 text-rose-700 dark:text-rose-300",
+function filterLabel(option: MusicScoreRankFilter): string {
+  return option === "all" || option === "remaining" || option === "none"
+    ? t(`musicProgress.scoreRank.filter.${option}`)
+    : option
 }
 
-function badgeClass(badge: MusicProgressScoreRankBadge): string {
-  return badge.reached
-    ? RANK_REACHED_CLASSES[badge.rank]
-    : "border-dashed border-border text-muted-foreground/50"
+/**
+ * One palette per current rank, escalating from muted (none) through cool
+ * hues to a solid gold S that reads as "maxed". The stepper fill and the
+ * badge share the hue so the colour alone encodes the progress.
+ */
+const RANK_STYLES: Record<MusicScoreRankBucket, { badge: string; fill: string; row: string }> = {
+  none: {
+    badge: "border-border bg-muted text-muted-foreground",
+    fill: "bg-muted-foreground/40 text-background",
+    row: "",
+  },
+  C: {
+    badge: "border-sky-500/40 bg-sky-500/15 text-sky-700 dark:text-sky-300",
+    fill: "bg-sky-500 text-white",
+    row: "border-sky-500/30",
+  },
+  B: {
+    badge: "border-indigo-500/40 bg-indigo-500/15 text-indigo-700 dark:text-indigo-300",
+    fill: "bg-indigo-500 text-white",
+    row: "border-indigo-500/30",
+  },
+  A: {
+    badge: "border-violet-500/40 bg-violet-500/15 text-violet-700 dark:text-violet-300",
+    fill: "bg-violet-500 text-white",
+    row: "border-violet-500/30",
+  },
+  S: {
+    badge: "border-amber-500/60 bg-amber-500 text-white dark:bg-amber-400 dark:text-amber-950",
+    fill: "bg-amber-500 text-white dark:bg-amber-400 dark:text-amber-950",
+    row: "border-amber-500/50 bg-amber-500/5",
+  },
+}
+
+function styleOf(row: MusicProgressScoreRankRow) {
+  return RANK_STYLES[row.currentRank ?? "none"]
 }
 </script>
 
@@ -121,26 +162,29 @@ function badgeClass(badge: MusicProgressScoreRankBadge): string {
         <span class="basis-full text-xs tabular-nums text-muted-foreground sm:ml-auto sm:basis-auto sm:text-right">{{ summaryText }}</span>
       </button>
       <CardDescription class="text-xs">{{ t("musicProgress.scoreRank.description") }}</CardDescription>
-      <div v-if="expanded" class="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2">
+      <div v-if="expanded" class="mt-2 flex flex-col gap-2">
         <div class="flex flex-wrap items-center gap-1.5">
           <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("musicProgress.scoreRank.filter.label") }}</span>
-          <ToggleGroup type="single" variant="segment" size="sm" :model-value="filter" :aria-label="t('musicProgress.scoreRank.filter.label')" @update:model-value="setFilter">
-            <ToggleGroupItem v-for="option in MUSIC_SCORE_RANK_FILTERS" :key="option" :value="option">
-              {{ t(`musicProgress.scoreRank.filter.${option}`) }}
+          <ToggleGroup type="single" variant="chip" size="sm" :model-value="filter" :aria-label="t('musicProgress.scoreRank.filter.label')" @update:model-value="setFilter">
+            <ToggleGroupItem v-for="option in MUSIC_SCORE_RANK_FILTERS" :key="option" :value="option" class="gap-1 tabular-nums">
+              {{ filterLabel(option) }}
+              <span class="opacity-70">{{ counts[option] }}</span>
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
-        <div class="flex flex-wrap items-center gap-1.5">
-          <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("musicProgress.scoreRank.sort.label") }}</span>
-          <ToggleGroup type="single" variant="segment" size="sm" :model-value="sort" :aria-label="t('musicProgress.scoreRank.sort.label')" @update:model-value="setSort">
-            <ToggleGroupItem v-for="option in MUSIC_SCORE_RANK_SORTS" :key="option" :value="option">
-              {{ t(`musicProgress.scoreRank.sort.${option}`) }}
-            </ToggleGroupItem>
-          </ToggleGroup>
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("musicProgress.scoreRank.sort.label") }}</span>
+            <ToggleGroup type="single" variant="segment" size="sm" :model-value="sort" :aria-label="t('musicProgress.scoreRank.sort.label')" @update:model-value="setSort">
+              <ToggleGroupItem v-for="option in MUSIC_SCORE_RANK_SORTS" :key="option" :value="option">
+                {{ t(`musicProgress.scoreRank.sort.${option}`) }}
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+          <span class="text-xs tabular-nums text-muted-foreground sm:ml-auto">
+            {{ t("musicProgress.scoreRank.visible", { shown: pagedRows.length, total: visibleRows.length }) }}
+          </span>
         </div>
-        <span class="text-xs tabular-nums text-muted-foreground sm:ml-auto">
-          {{ t("musicProgress.scoreRank.visible", { shown: pagedRows.length, total: visibleRows.length }) }}
-        </span>
       </div>
     </CardHeader>
     <CardContent v-if="expanded" class="space-y-2">
@@ -153,29 +197,37 @@ function badgeClass(badge: MusicProgressScoreRankBadge): string {
           :key="row.musicId"
           :to="`/music/${row.musicId}`"
           class="flex items-center gap-2 rounded-md border bg-card p-1.5 pr-2 transition-colors hover:bg-accent/50 dark:hover:bg-accent/30"
+          :class="styleOf(row).row"
         >
           <MusicJacket :url="row.jacketUrl" :alt="row.title" class="size-10 shrink-0 rounded" />
           <span class="flex min-w-0 flex-1 flex-col gap-1">
             <span class="truncate text-sm" :title="row.title">{{ row.title }}</span>
-            <span class="flex items-center gap-1" role="list">
+            <!-- Stepper: C → S, filled up to the current rank. -->
+            <span class="flex h-4 gap-0.5" role="img" :aria-label="row.currentLabel">
               <span
-                v-for="badge in row.ranks"
-                :key="badge.rank"
-                role="listitem"
-                class="inline-flex size-5 items-center justify-center rounded border text-[11px] font-semibold leading-none"
-                :class="badgeClass(badge)"
-                :title="badge.title"
-                :aria-label="badge.title"
+                v-for="step in row.steps"
+                :key="step.rank"
+                class="flex flex-1 items-center justify-center rounded-sm text-[10px] font-semibold leading-none first:rounded-l-md last:rounded-r-md"
+                :class="step.reached ? styleOf(row).fill : 'bg-muted text-muted-foreground/50'"
+                :title="step.title"
               >
-                {{ badge.rank }}
+                {{ step.rank }}
               </span>
             </span>
           </span>
-          <span
-            class="shrink-0 text-right text-xs tabular-nums"
-            :class="row.complete ? 'text-muted-foreground/70' : 'text-emerald-600 dark:text-emerald-400'"
-          >
-            {{ row.remainingText }}
+          <span class="flex shrink-0 items-center gap-2">
+            <span class="flex flex-col items-end gap-0.5 text-right text-xs tabular-nums">
+              <span :class="row.complete ? 'text-muted-foreground/70' : 'text-emerald-600 dark:text-emerald-400'">{{ row.remainingText }}</span>
+              <span v-if="row.nextText" class="text-muted-foreground">{{ row.nextText }}</span>
+            </span>
+            <span
+              class="inline-flex size-8 items-center justify-center rounded-md border text-sm font-bold leading-none"
+              :class="styleOf(row).badge"
+              :title="row.currentLabel"
+              :aria-label="row.currentLabel"
+            >
+              {{ row.currentRank ?? "—" }}
+            </span>
           </span>
         </RouterLink>
       </div>

@@ -342,7 +342,7 @@ export default {
     "description": "View your game account's music play progress and claimable rewards",
     "rewards": {
       "title": "Obtainable rewards",
-      "hint": "Unclaimed song achievement rewards (score ranks + per-difficulty combo milestones).",
+      "hint": "Unclaimed song achievement rewards (score ranks + per-difficulty combo milestones); any live mode counts.",
       "unavailable": "This snapshot has no achievement claim data (userMusicAchievements), so obtainable rewards cannot be computed.",
       "jewel": "Crystals",
       "coin": "Coins",
@@ -352,22 +352,27 @@ export default {
     },
     "scoreRank": {
       "title": "Score rank rewards by song",
-      "description": "Which score ranks (C / B / A / S) each song has reached and the crystals still obtainable. A rank counts as reached when the snapshot records its achievement.",
+      "description": "Score rank is progressive (C → B → A → S): each song has one current rank, and reaching a higher rank also pays the lower ones. Any live mode (solo, multi, ...) counts. The current rank follows the achievement records in the data snapshot.",
       "summary": "Obtained: {obtained} · Remaining: {remaining} · {complete} / {total} songs complete",
       "none": "none",
       "filter": {
         "label": "Show",
         "all": "All",
-        "remaining": "Incomplete only"
+        "remaining": "Incomplete",
+        "none": "No rank"
       },
       "sort": {
         "label": "Sort",
         "remaining": "Remaining crystals",
-        "music": "Song order"
+        "music": "Song order",
+        "rank": "Current rank"
       },
       "visible": "Showing {shown} / {total} songs",
-      "rankReached": "Rank {rank} reached",
-      "rankNotReached": "Rank {rank} not reached ({rewards})",
+      "current": "Current rank {rank}",
+      "currentNone": "No rank reached yet",
+      "step": "Rank {rank}: {rewards}",
+      "stepReached": "Rank {rank}: {rewards} (reached)",
+      "next": "Next: {rank} for {rewards}",
       "complete": "Complete",
       "empty": "No songs match.",
       "showMore": "Show more ({count} left)"

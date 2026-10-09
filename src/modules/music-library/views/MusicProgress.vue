@@ -40,12 +40,19 @@ import {
 } from "../lib/music-progress"
 import {
   buildClaimedMusicAchievementMap,
+  emptyMusicRewardTotals,
   hasMusicRewardTotals,
   normalizeMusicAchievementMasters,
   sumRemainingMusicRewards,
   type MusicRewardTotals,
 } from "../lib/music-rewards"
-import { buildMusicScoreRankProgress, type MusicScoreRankSongInput } from "../lib/music-score-rank"
+import {
+  MUSIC_SCORE_RANK_FILTERS,
+  buildMusicScoreRankProgress,
+  filterMusicScoreRankSongs,
+  type MusicScoreRankFilter,
+  type MusicScoreRankSongInput,
+} from "../lib/music-score-rank"
 
 const { t, locale } = useI18n()
 const settingsStore = useSettingsStore()
@@ -111,6 +118,103 @@ function comboMastersOf(difficulty: MusicDifficulty) {
   return achievementMasters.value.filter((achievement) => achievement.type === "combo" && achievement.difficulty === difficulty)
 }
 
+// --- Score ranks (C/B/A/S) per song -------------------------------------------------------
+
+/** Every released song once, whichever difficulties it has. */
+const scoreRankSongs = computed<MusicScoreRankSongInput[]>(() => {
+  const current = progress.value
+  if (current == null) {
+    return []
+  }
+
+  const songs = new Map<number, MusicScoreRankSongInput>()
+  for (const difficulty of MUSIC_DIFFICULTIES) {
+    for (const row of current[difficulty].levels) {
+      for (const song of row.songs) {
+        if (!songs.has(song.musicId)) {
+          songs.set(song.musicId, { musicId: song.musicId, title: song.title, assetbundleName: song.assetbundleName })
+        }
+      }
+    }
+  }
+  return [...songs.values()]
+})
+
+/**
+ * Score rank is progressive: each song has one current rank (its highest
+ * recorded score_rank achievement), and only the ranks above it still pay.
+ * The page total for score ranks is derived from this same model.
+ * null without claim data or when the region's master has no score-rank
+ * achievements.
+ */
+const scoreRankProgress = computed(() => {
+  const claimed = claimedAchievements.value
+  if (claimed == null || scoreRankSongs.value.length === 0) {
+    return null
+  }
+
+  return buildMusicScoreRankProgress(scoreRankSongs.value, achievementMasters.value, claimed)
+})
+
+const scoreRankRows = computed<MusicProgressScoreRankRow[]>(() => {
+  const current = scoreRankProgress.value
+  if (current == null) {
+    return []
+  }
+
+  return current.songs.map((song) => ({
+    musicId: song.musicId,
+    title: song.title,
+    jacketUrl: jacketUrl(song.assetbundleName),
+    steps: song.steps.map((step) => ({
+      rank: step.rank,
+      reached: step.reached,
+      title: t(step.reached ? "musicProgress.scoreRank.stepReached" : "musicProgress.scoreRank.step", {
+        rank: step.rank,
+        rewards: formatRewardTotals(step.rewards),
+      }),
+    })),
+    currentRank: song.currentRank,
+    currentLabel: song.currentRank == null
+      ? t("musicProgress.scoreRank.currentNone")
+      : t("musicProgress.scoreRank.current", { rank: song.currentRank }),
+    remaining: song.remaining,
+    remainingText: song.complete
+      ? t("musicProgress.scoreRank.complete")
+      : t("musicProgress.rewardsRemaining", { list: formatRewardTotals(song.remaining) }),
+    nextText: song.nextRank != null && song.nextRewards != null
+      ? t("musicProgress.scoreRank.next", { rank: song.nextRank, rewards: formatRewardTotals(song.nextRewards) })
+      : null,
+    complete: song.complete,
+  }))
+})
+
+const scoreRankCounts = computed(() => {
+  const songs = scoreRankProgress.value?.songs ?? []
+  const counts = {} as Record<MusicScoreRankFilter, number>
+  for (const option of MUSIC_SCORE_RANK_FILTERS) {
+    counts[option] = filterMusicScoreRankSongs(songs, option).length
+  }
+  return counts
+})
+
+const scoreRankSummaryText = computed(() => {
+  const summary = scoreRankProgress.value?.summary
+  if (summary == null) {
+    return ""
+  }
+
+  const none = t("musicProgress.scoreRank.none")
+  return t("musicProgress.scoreRank.summary", {
+    obtained: hasMusicRewardTotals(summary.obtained) ? formatRewardTotals(summary.obtained) : none,
+    remaining: hasMusicRewardTotals(summary.remaining) ? formatRewardTotals(summary.remaining) : none,
+    complete: summary.complete,
+    total: summary.songs,
+  })
+})
+
+const scoreRankResetKey = computed(() => `${selectedAccount.value?.key ?? ""}:${suite.uploadTime.value ?? ""}`)
+
 const rewardStats = computed(() => {
   const current = progress.value
   const claimed = claimedAchievements.value
@@ -118,19 +222,17 @@ const rewardStats = computed(() => {
     return null
   }
 
-  const allMusicIds = new Set<number>()
   const perDifficulty = new Map<MusicDifficulty, MusicRewardTotals>()
   for (const difficulty of MUSIC_DIFFICULTIES) {
     const musicIds = current[difficulty].levels.flatMap((row) => row.songs.map((song) => song.musicId))
-    for (const musicId of musicIds) {
-      allMusicIds.add(musicId)
-    }
     if (musicIds.length > 0) {
       perDifficulty.set(difficulty, sumRemainingMusicRewards(musicIds, comboMastersOf(difficulty), claimed))
     }
   }
 
-  const scoreRank = sumRemainingMusicRewards([...allMusicIds], achievementMasters.value.filter((achievement) => achievement.type === "score_rank"), claimed)
+  // Score ranks are progressive, so their remainder comes from the per-song
+  // model (ranks above each song's current rank) instead of the raw records.
+  const scoreRank = scoreRankProgress.value?.summary.remaining ?? emptyMusicRewardTotals()
   const total = { ...scoreRank }
   for (const totals of perDifficulty.values()) {
     total.jewel += totals.jewel
@@ -167,80 +269,6 @@ const rewardTotalsText = computed(() => {
   const stats = rewardStats.value
   return stats == null ? null : t("musicProgress.rewardsRemaining", { list: rewardsText(stats.total) })
 })
-
-// --- Score ranks (C/B/A/S) per song -------------------------------------------------------
-
-/** Every released song once, whichever difficulties it has. */
-const scoreRankSongs = computed<MusicScoreRankSongInput[]>(() => {
-  const current = progress.value
-  if (current == null) {
-    return []
-  }
-
-  const songs = new Map<number, MusicScoreRankSongInput>()
-  for (const difficulty of MUSIC_DIFFICULTIES) {
-    for (const row of current[difficulty].levels) {
-      for (const song of row.songs) {
-        if (!songs.has(song.musicId)) {
-          songs.set(song.musicId, { musicId: song.musicId, title: song.title, assetbundleName: song.assetbundleName })
-        }
-      }
-    }
-  }
-  return [...songs.values()]
-})
-
-/** null without claim data or when the region's master has no score-rank achievements. */
-const scoreRankProgress = computed(() => {
-  const claimed = claimedAchievements.value
-  if (claimed == null || scoreRankSongs.value.length === 0) {
-    return null
-  }
-
-  return buildMusicScoreRankProgress(scoreRankSongs.value, achievementMasters.value, claimed)
-})
-
-const scoreRankRows = computed<MusicProgressScoreRankRow[]>(() => {
-  const current = scoreRankProgress.value
-  if (current == null) {
-    return []
-  }
-
-  return current.songs.map((song) => ({
-    musicId: song.musicId,
-    title: song.title,
-    jacketUrl: jacketUrl(song.assetbundleName),
-    ranks: song.ranks.map((state) => ({
-      rank: state.rank,
-      reached: state.reached,
-      title: state.reached
-        ? t("musicProgress.scoreRank.rankReached", { rank: state.rank })
-        : t("musicProgress.scoreRank.rankNotReached", { rank: state.rank, rewards: formatRewardTotals(state.rewards) }),
-    })),
-    remaining: song.remaining,
-    remainingText: song.complete
-      ? t("musicProgress.scoreRank.complete")
-      : t("musicProgress.rewardsRemaining", { list: formatRewardTotals(song.remaining) }),
-    complete: song.complete,
-  }))
-})
-
-const scoreRankSummaryText = computed(() => {
-  const summary = scoreRankProgress.value?.summary
-  if (summary == null) {
-    return ""
-  }
-
-  const none = t("musicProgress.scoreRank.none")
-  return t("musicProgress.scoreRank.summary", {
-    obtained: hasMusicRewardTotals(summary.obtained) ? formatRewardTotals(summary.obtained) : none,
-    remaining: hasMusicRewardTotals(summary.remaining) ? formatRewardTotals(summary.remaining) : none,
-    complete: summary.complete,
-    total: summary.songs,
-  })
-})
-
-const scoreRankResetKey = computed(() => `${selectedAccount.value?.key ?? ""}:${suite.uploadTime.value ?? ""}`)
 
 // --- Overview rows ---------------------------------------------------------------------
 
@@ -489,6 +517,7 @@ function refresh() {
       <MusicProgressScoreRankCard
         v-if="scoreRankProgress"
         :rows="scoreRankRows"
+        :counts="scoreRankCounts"
         :summary-text="scoreRankSummaryText"
         :reset-key="scoreRankResetKey"
       />

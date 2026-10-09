@@ -146,7 +146,12 @@ export function normalizeMusicAchievementMasters(
   return masters
 }
 
-/** musicId -> claimed musicAchievementIds from the suite `userMusicAchievements`. */
+/**
+ * musicId -> claimed musicAchievementIds from the suite `userMusicAchievements`.
+ * Achievements are per song, not per live mode: a rank or combo reached in
+ * any mode (solo, multi, ...) is the song's, so only the ids are read and any
+ * mode or play-type field on a record is ignored.
+ */
 export function buildClaimedMusicAchievementMap(raw: unknown): Map<number, Set<number>> {
   const map = new Map<number, Set<number>>()
   for (const record of normalizeCatalogRecords(raw)) {
