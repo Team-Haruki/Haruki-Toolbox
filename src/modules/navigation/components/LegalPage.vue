@@ -39,13 +39,12 @@ const renderedSections = computed<RenderedSection[]>(() =>
     const rawTitle = t(`${base}.title`)
     const match = rawTitle.match(/^(\d+)[.、](.*)$/)
     const matchedHeading = match?.[2].trimStart()
-    const hasMatchedHeading = Boolean(matchedHeading)
-    const sectionNumber = match && hasMatchedHeading ? match[1] : String(index + 1)
+    const sectionNumber = match && matchedHeading ? match[1] : String(index + 1)
     return {
       key: section.key,
       anchorId: `section-${section.key}`,
       number: sectionNumber.padStart(2, "0"),
-      heading: hasMatchedHeading ? matchedHeading : rawTitle,
+      heading: matchedHeading || rawTitle,
       paragraphs: section.paragraphKeys.map((paragraphKey) =>
         t(`${base}.paragraphs.${paragraphKey}`),
       ),

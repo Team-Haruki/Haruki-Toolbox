@@ -1,4 +1,4 @@
-import { ref } from "vue"
+import { ref, useTemplateRef } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { unwrapUpdatedData } from "@/core/http/call-api"
@@ -13,7 +13,8 @@ export function useAccountSettings() {
   const { t } = useI18n()
   const userStore = useUserStore()
   const previewAvatar = ref<string | null>(null)
-  const fileInputRef = ref<HTMLInputElement | null>(null)
+  // Bound to the view's `ref="fileInputRef"` element.
+  const fileInputRef = useTemplateRef<HTMLInputElement>("fileInputRef")
   const isSaving = ref(false)
 
   function triggerFileInput() {
@@ -116,7 +117,6 @@ export function useAccountSettings() {
   return {
     userStore,
     previewAvatar,
-    fileInputRef,
     isSaving,
     triggerFileInput,
     onAvatarChange,

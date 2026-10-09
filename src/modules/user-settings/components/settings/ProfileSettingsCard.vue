@@ -23,7 +23,6 @@ import { ArrowRightLeft, Loader2, ShieldCheck, Upload, UserCog } from "lucide-vu
 const {
   userStore,
   previewAvatar,
-  fileInputRef,
   isSaving,
   triggerFileInput,
   onAvatarChange,

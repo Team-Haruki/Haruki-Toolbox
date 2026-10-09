@@ -1,4 +1,4 @@
-import { ref } from "vue"
+import { ref, useTemplateRef } from "vue"
 
 export type TurnstileInstance = {
   execute?: () => void
@@ -7,7 +7,8 @@ export type TurnstileInstance = {
 
 export function useIMBindingTurnstile() {
   const turnstileToken = ref<string | null>(null)
-  const turnstileRef = ref<TurnstileInstance | null>(null)
+  // Bound to the view's `ref="turnstileRef"` widget.
+  const turnstileRef = useTemplateRef<TurnstileInstance>("turnstileRef")
 
   function onTurnstileVerify(token: string) {
     turnstileToken.value = token
@@ -34,7 +35,6 @@ export function useIMBindingTurnstile() {
 
   return {
     turnstileToken,
-    turnstileRef,
     onTurnstileVerify,
     onTurnstileInvalid,
     resetTurnstileState,

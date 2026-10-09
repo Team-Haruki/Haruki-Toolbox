@@ -198,13 +198,6 @@ export function useUploadDataTool() {
       return
     }
 
-    if (inheritServer.value === "cn" && inheritDataType.value === "mysekai" && userStore.allowCNMysekai !== true) {
-      toast.error(t("tools.uploadData.toast.operationForbiddenTitle"), {
-        description: t("tools.uploadData.toast.operationForbiddenDescription"),
-      })
-      return
-    }
-
     isInheritConfirmOpen.value = true
   }
 

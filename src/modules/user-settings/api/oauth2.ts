@@ -97,6 +97,7 @@ export interface OAuthConsentPayload {
 }
 
 export interface OAuthConsentResponse {
+    redirect_to?: string
     redirectUrl?: string
     redirect_url?: string
     message?: string

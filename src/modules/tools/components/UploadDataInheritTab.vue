@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
+import type { AcceptableValue } from "reka-ui"
 import type { InheritServer, UploadDataType } from "@/types"
 import { useI18n } from "vue-i18n"
 import { Label } from "@/components/ui/label"
@@ -43,13 +44,13 @@ const emit = defineEmits<{
   (event: "submit"): void
 }>()
 
-function handleDataTypeChange(value: string) {
+function handleDataTypeChange(value: AcceptableValue) {
   if (value === "suite" || (value === "mysekai" && props.canShowMySekaiDataType)) {
     emit("update:dataType", value)
   }
 }
 
-function handleServerChange(value: string) {
+function handleServerChange(value: AcceptableValue) {
     if (value === "jp" || value === "en") {
       emit("update:inheritServer", value)
     }
@@ -124,7 +125,7 @@ const notesOpen = ref(false)
                 class="pl-10"
                 :placeholder="t('tools.uploadData.inheritTab.fields.inheritIdPlaceholder')"
                 :model-value="inheritId"
-                @update:model-value="emit('update:inheritId', $event)"
+                @update:model-value="emit('update:inheritId', String($event))"
               />
               <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                 <User class="size-4 text-muted-foreground" />
@@ -139,7 +140,7 @@ const notesOpen = ref(false)
                 class="w-full pl-10"
                 :placeholder="t('tools.uploadData.inheritTab.fields.inheritPasswordPlaceholder')"
                 :model-value="inheritPassword"
-                @update:model-value="emit('update:inheritPassword', $event)"
+                @update:model-value="emit('update:inheritPassword', String($event))"
               />
               <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                 <Lock class="size-4 text-muted-foreground" />
