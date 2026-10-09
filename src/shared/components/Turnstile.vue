@@ -33,7 +33,7 @@ function resolveSitekey() {
   return undefined
 }
 
-const { container, isLoading, isUnavailable, reset, execute, retry } = useTurnstileWidget({
+const { isLoading, isUnavailable, reset, execute, retry } = useTurnstileWidget({
   enabled: isTurnstileEnabled,
   getSitekey: resolveSitekey,
   getCallback: () => props.callback,

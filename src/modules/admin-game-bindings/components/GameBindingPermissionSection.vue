@@ -6,7 +6,7 @@ import type { PermissionOption } from "@/lib/game-binding-permission-meta"
 
 interface Props {
   title: string
-  options: ReadonlyArray<PermissionOption<string>>
+  options: ReadonlyArray<PermissionOption<string> & { label: string }>
   values: Record<string, boolean>
 }
 

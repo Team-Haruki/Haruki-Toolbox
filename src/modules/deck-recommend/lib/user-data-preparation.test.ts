@@ -361,7 +361,13 @@ describe("deck recommend user data preparation", () => {
     })
 
     const userData = JSON.parse(prepared.userDataString) as {
-      userMysekaiGates: Array<{ mysekaiGateId: number; mysekaiGateLevel: number; isSettingAtHomeSite?: boolean }>
+      userMysekaiGates: Array<{
+        mysekaiGateId: number
+        mysekaiGateSkinId?: number
+        mysekaiGateLevel: number
+        visitCount?: number
+        isSettingAtHomeSite?: boolean
+      }>
     }
 
     expect(userData.userMysekaiGates).toEqual([
@@ -618,7 +624,9 @@ describe("deck recommend user data preparation", () => {
     const userData = JSON.parse(prepared.userDataString) as {
       userAreas: Array<{
         areaId: number
+        actionSets?: Array<{ id: number; status: string }>
         areaItems: Array<{ areaItemId: number; level: number }>
+        userAreaStatus?: { areaId: number; status: string }
       }>
     }
 
@@ -670,7 +678,9 @@ describe("deck recommend user data preparation", () => {
     const userData = JSON.parse(prepared.userDataString) as {
       userAreas: Array<{
         areaId: number
+        actionSets?: Array<{ id: number; status: string }>
         areaItems: Array<{ areaItemId: number; level: number }>
+        userAreaStatus?: { areaId: number; status: string }
       }>
     }
 

@@ -50,7 +50,6 @@ const {
   isInternal,
   sending,
   actionLoading,
-  messageContainer,
   assigneeId,
   adminUsers,
   adminUsersLoading,

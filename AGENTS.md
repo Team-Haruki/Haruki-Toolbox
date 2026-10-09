@@ -38,16 +38,29 @@ Bun is the runtime and package manager (README: Bun ≥ 1.2; CI pins 1.3.14). Sc
 
 - `bun i` — install dependencies
 - `bun run dev` — Vite dev server (`bunx --bun vite`)
-- `bun run build` — `check:imports` → `vue-tsc --noEmit` → `vite build`
+- `bun run build` — `check:imports` → `vue-tsc -b` → `vite build`
 - `bun run build:edgeone` — `check:imports` + `vite build` without typecheck (the EdgeOne Pages build command in `edgeone.json`)
-- `bun run preview` — `vue-tsc --noEmit` + `bunx --bun vite preview`
+- `bun run preview` — `vue-tsc -b` + `bunx --bun vite preview`
 - `bun run lint` — ESLint with `--max-warnings=0` over `src/**/*.{ts,vue}`, `scripts/**/*.mjs`, `vite.config.ts`
-- `bun run typecheck` — `check:imports` + `vue-tsc --noEmit`
+- `bun run typecheck` — `check:imports` + `vue-tsc -b` (see "Type Checking")
 - `bun run check:imports` — runs `scripts/check-imports.mjs` (see "Import Guard")
 - `bun run test` — `bun test` (unit tests, `*.test.ts`); single file: `bun test path/to/file.test.ts`, by name: `bun test -t "name"`
 - `bun run e2e` — Playwright tests in `tests/e2e/**/*.e2e.ts`; single file: `bunx playwright test tests/e2e/foo.e2e.ts` (add `--headed` / `--debug` as needed)
 - `bun run e2e:install` — one-time `playwright install chromium`
 - `bun run quality` — lint + typecheck + test
+
+## Type Checking
+
+`tsconfig.json` is a solution file with no sources of its own (`files: []`); `vue-tsc -b` checks each referenced project. Plain `vue-tsc --noEmit` on it checks nothing, so never go back to that.
+
+- `tsconfig.app.json` — app sources: `src/**/*.{ts,tsx,vue}` except `*.test.ts`; DOM lib, no ambient `types`.
+- `tsconfig.test.json` — unit tests (`src/**/*.test.ts`), extends the app config and adds `bun` types (`@types/bun`, pinned to the CI Bun version).
+- `tsconfig.node.json` — `vite.config.ts` and `playwright.config.ts` with `node` types.
+- `tsconfig.e2e.json` — `tests/e2e/**` (node types plus DOM for `page.evaluate` callbacks).
+- The root `compilerOptions.paths` stays: `bun test` resolves `@/` through the root `tsconfig.json`.
+- Module workers are checked with the DOM lib (the WebWorker lib conflicts with it); type their `self` with `DedicatedWorkerScope` from `@/lib/worker-scope`.
+- Elements bound only through a template `ref="name"` belong in `useTemplateRef("name")` (in the component or its composable): vue-tsc does not count a string template ref as a use of a plain `ref()` variable.
+- Fix type errors properly; no `any` or `@ts-ignore`. A `@ts-expect-error` needs a reason and a genuine third-party typing gap.
 
 ## Build and PWA
 

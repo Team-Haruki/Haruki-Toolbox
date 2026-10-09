@@ -222,7 +222,7 @@ export function normalizeRankBorderTopPlayerGrowths(value: unknown): RankBorderT
   }
 
   return value
-    .map((item) => {
+    .map((item): RankBorderTopPlayerGrowth | null => {
       if (!isRecord(item)) {
         return null
       }
@@ -353,7 +353,7 @@ export function normalizeRankBorderSnapshots(value: unknown): RankBorderSnapshot
   const items = Array.isArray(record.items) ? record.items : []
   return {
     items: items
-      .map((item) => {
+      .map((item): RankBorderSnapshot | null => {
         if (!isRecord(item)) {
           return null
         }
@@ -732,7 +732,7 @@ export function normalizeProfileHonors(value: unknown): RankBorderProfileHonor[]
   }
 
   return value
-    .map((item) => {
+    .map((item): RankBorderProfileHonor | null => {
       if (!isRecord(item)) {
         return null
       }

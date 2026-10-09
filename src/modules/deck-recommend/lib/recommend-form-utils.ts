@@ -170,7 +170,7 @@ export function normalizeDeckRecommendUnit(value: string | null | undefined): De
 
 export function parseWorldBloomTurn(value: string | null): number | null {
   const parsed = typeof value === "string" ? Number(value) : null
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 3) {
+  if (parsed == null || !Number.isInteger(parsed) || parsed < 1 || parsed > 3) {
     return null
   }
 

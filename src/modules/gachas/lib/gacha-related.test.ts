@@ -14,6 +14,8 @@ function event(id: number, startAt: number, aggregateAt: number): SekaiEventItem
     startAt,
     aggregateAt,
     closedAt: aggregateAt + DAY,
+    rankingAnnounceAt: null,
+    distributionStartAt: null,
   }
 }
 

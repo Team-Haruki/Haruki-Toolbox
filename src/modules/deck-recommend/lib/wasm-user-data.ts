@@ -143,8 +143,8 @@ function compactRecord<T extends readonly string[]>(value: unknown, fields: T): 
   return pickRecord(value, fields)
 }
 
-function pickRecord<T extends readonly string[]>(value: unknown, fields: T): Record<T[number], unknown> {
-  const picked = {} as Record<T[number], unknown>
+function pickRecord<K extends string>(value: unknown, fields: readonly K[]): Record<K, unknown> {
+  const picked = {} as Record<K, unknown>
   if (!isRecord(value)) {
     return picked
   }

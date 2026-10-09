@@ -26,7 +26,7 @@ import {
     LucideTrash2,
 } from "lucide-vue-next"
 import type { UserSocialPlatform } from "@/types/admin"
-import { getSocialPlatforms } from "@/modules/admin-users/constants"
+import { getSocialPlatforms, isSocialPlatform } from "@/modules/admin-users/constants"
 
 defineProps<{
     loading: boolean
@@ -41,6 +41,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const socialPlatforms = computed(() => getSocialPlatforms(t))
+
+function platformMeta(platform: string) {
+  return isSocialPlatform(platform) ? socialPlatforms.value[platform] : undefined
+}
 </script>
 
 <template>
@@ -56,11 +60,11 @@ const socialPlatforms = computed(() => getSocialPlatforms(t))
         <div class="flex flex-wrap items-center justify-between gap-3 p-4 border rounded-lg bg-card hover:bg-muted/30 transition-colors">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <component :is="socialPlatforms[socialPlatform.platform]?.icon || LucideGlobe" class="w-6 h-6" />
+              <component :is="platformMeta(socialPlatform.platform)?.icon || LucideGlobe" class="w-6 h-6" />
             </div>
             <div>
               <div class="font-semibold text-base">
-                {{ socialPlatforms[socialPlatform.platform]?.label || socialPlatform.platform }}
+                {{ platformMeta(socialPlatform.platform)?.label || socialPlatform.platform }}
               </div>
               <div class="text-sm text-muted-foreground font-mono mt-0.5">ID: {{ socialPlatform.userId }}</div>
               <div class="mt-1.5">

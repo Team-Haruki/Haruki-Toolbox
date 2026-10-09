@@ -13,8 +13,9 @@ import type {
   DeckRecommendWorkerRequest,
 } from "./worker-protocol"
 import { normalizeDeckRecommendWorkerError } from "./worker-error"
+import type { DedicatedWorkerScope } from "@/lib/worker-scope"
 
-const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
+const workerScope = globalThis as unknown as DedicatedWorkerScope<DeckRecommendWorkerRequest, DeckRecommendWorkerEvent>
 let enginePromise: Promise<SekaiDeckRecommendWasm> | null = null
 const loadedDataKeys = new Map<SekaiRegion, string>()
 

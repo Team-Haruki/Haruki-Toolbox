@@ -492,7 +492,9 @@ test("the seat holder's history starts loading after the first seat page, before
 
 test("switching back to the player while the seat trace loads clears its indicator", async () => {
   setActivePinia(createPinia())
-  let releaseBorder: (() => void) | null = null
+  // `as` keeps the declared type: the assignment happens in a callback, which
+  // control-flow narrowing does not see.
+  let releaseBorder = null as (() => void) | null
   const row = (timestamp: number) => ({ userId: "holder", rank: 2, score: timestamp, timestamp })
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const request = parseRequest(String(input))

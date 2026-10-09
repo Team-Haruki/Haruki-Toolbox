@@ -7,6 +7,7 @@ import {
   GameBindingsTable,
 } from "@/modules/admin-game-bindings/components"
 import { useGameBindingManagement } from "@/modules/admin-game-bindings/composables/useGameBindingManagement"
+import type { MysekaiPermissionKey, SuitePermissionKey } from "@/lib/game-binding-permission-meta"
 
 const {
   loading,
@@ -55,11 +56,11 @@ const {
   handleSaveBinding,
 } = useGameBindingManagement()
 
-function updateSuitePermission(payload: { key: string; value: boolean }) {
+function updateSuitePermission(payload: { key: SuitePermissionKey; value: boolean }) {
   editSuite.value[payload.key] = payload.value
 }
 
-function updateMysekaiPermission(payload: { key: string; value: boolean }) {
+function updateMysekaiPermission(payload: { key: MysekaiPermissionKey; value: boolean }) {
   editMysekai.value[payload.key] = payload.value
 }
 </script>

@@ -7,11 +7,11 @@ export type UploadMode = "proxy" | "script"
 export type RegionType = SekaiRegion
 export type IOSUploadDataType = "suite" | "mysekai" | "mysekai_force" | "mysekai_birthday_party"
 
-export interface Option {
-  value: string
+export interface Option<T extends string = string> {
+  value: T
 }
 
-export interface DataTypeOption extends Option {}
+export interface DataTypeOption extends Option<IOSUploadDataType> {}
 
 export const CHUNK_SIZE_MIN = 1
 export const CHUNK_SIZE_MAX = 10
@@ -19,7 +19,7 @@ export const CHUNK_SIZE_MAX = 10
 export const IOS_DATA_TYPE_SET = new Set<string>(["suite", "mysekai", "mysekai_force", "mysekai_birthday_party"])
 const MYSEKAI_TYPES = new Set<IOSUploadDataType>(["mysekai", "mysekai_force", "mysekai_birthday_party"])
 
-export const SOFTWARE_OPTIONS: Option[] = [
+export const SOFTWARE_OPTIONS: Option<ClientSoftware>[] = [
   { value: "surge" },
   { value: "shadowrocket" },
   { value: "loon" },
@@ -27,17 +27,17 @@ export const SOFTWARE_OPTIONS: Option[] = [
   { value: "stash" },
 ]
 
-export const ENDPOINT_OPTIONS: Option[] = [
+export const ENDPOINT_OPTIONS: Option<EndpointType>[] = [
   { value: "direct" },
   { value: "cdn" },
 ]
 
-export const UPLOAD_MODE_OPTIONS: Option[] = [
+export const UPLOAD_MODE_OPTIONS: Option<UploadMode>[] = [
   { value: "proxy" },
   { value: "script" },
 ]
 
-export const REGION_OPTIONS: Option[] = SEKAI_REGION_OPTIONS.map(({ value }) => ({ value }))
+export const REGION_OPTIONS: Option<RegionType>[] = SEKAI_REGION_OPTIONS.map(({ value }) => ({ value }))
 
 export const IOS_DATA_TYPE_OPTIONS: DataTypeOption[] = [
   { value: "suite" },

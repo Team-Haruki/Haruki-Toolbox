@@ -59,7 +59,8 @@ describe("createHarukiAliasProvider", () => {
   })
 
   it("returns an empty result on network errors", async () => {
-    const fetchImpl = (() => Promise.reject(new TypeError("Failed to fetch"))) as typeof fetch
+    const failing: (input: RequestInfo | URL) => Promise<Response> = () => Promise.reject(new TypeError("Failed to fetch"))
+    const fetchImpl = failing as typeof fetch
     const provider = createHarukiAliasProvider({ fetchImpl })
 
     expect(await provider.lookup("miku")).toEqual([])

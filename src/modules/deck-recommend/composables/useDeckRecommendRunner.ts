@@ -49,6 +49,7 @@ import type {
   DeckRecommendWorkerLoadDataRequest,
   DeckRecommendWorkerMusicRequest,
   DeckRecommendWorkerRequest,
+  DeckRecommendWorkerRequestWithoutId,
   DeckRecommendWorkerRecommendBatchRequest,
   DeckRecommendWorkerRecommendRequest,
 } from "../lib/worker-protocol"
@@ -1029,7 +1030,7 @@ function loadDataOnDedicatedWorker(
 
 function runDedicatedWorkerLifecycleRequest(
   worker: Worker,
-  request: Omit<DeckRecommendWorkerRequest, "requestId">,
+  request: DeckRecommendWorkerRequestWithoutId,
   successType: Extract<DeckRecommendWorkerEvent["type"], "ready" | "data-loaded" | "disposed">,
   timeoutMs = 30000,
 ): Promise<void> {

@@ -23,8 +23,9 @@ import {
   type SekaiDataUpdatePhase,
 } from "./worker-protocol"
 import type { SekaiMasterCacheState, SekaiMusicMetasCacheState } from "./types"
+import type { DedicatedWorkerScope } from "@/lib/worker-scope"
 
-const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
+const workerScope = globalThis as unknown as DedicatedWorkerScope<SekaiDataWorkerRequest, SekaiDataWorkerEvent>
 const OPTIONAL_MASTER_FILE_SET = new Set<string>(SEKAI_DATA_OPTIONAL_MASTER_FILES)
 const MASTER_FILE_FETCH_CONCURRENCY = 3
 

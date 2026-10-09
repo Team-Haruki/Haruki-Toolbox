@@ -47,7 +47,6 @@ const {
   newMessage,
   sending,
   closing,
-  messageContainer,
   isOpen,
   sendMessage,
   handleClose,

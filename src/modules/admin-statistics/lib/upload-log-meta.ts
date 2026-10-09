@@ -88,9 +88,9 @@ const UPLOAD_SUCCESS_LABEL_KEY: Record<(typeof UPLOAD_SUCCESS_VALUES)[number], s
   false: "adminStatistics.common.failure",
 }
 
-function toOption<T extends readonly string[]>(
-  values: T,
-  labels: Record<T[number], string>,
+function toOption<K extends string>(
+  values: readonly K[],
+  labels: Record<K, string>,
   t: TranslateFn
 ): Option[] {
   return values.map((value) => ({

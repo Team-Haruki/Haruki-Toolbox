@@ -1,6 +1,7 @@
 import { request, unwrapUpdatedData } from "@/core/http/call-api"
 import type { QueryParams } from "@/core/http/query"
 import { userBase } from "@/modules/admin-users/api/shared"
+import { withSoftDeleteFlag } from "@/modules/admin-users/lib/soft-delete"
 import { translate } from "@/shared/i18n"
 import type {
   AdminUser,
@@ -18,12 +19,13 @@ export async function getUsers(params?: QueryParams) {
     method: "GET",
     params,
   })
-  return unwrapUpdatedData(res, translate("adminUsers.management.toast.loadFailedTitle"))
+  const data = unwrapUpdatedData(res, translate("adminUsers.management.toast.loadFailedTitle"))
+  return Array.isArray(data.items) ? { ...data, items: data.items.map(withSoftDeleteFlag) } : data
 }
 
 export async function getUserDetail(userId: string) {
   const res = await request<APIResponse<AdminUserDetail>>(`${userBase(userId)}/detail`, { method: "GET" })
-  return unwrapUpdatedData(res, translate("adminUsers.detail.toast.loadUserFailedTitle"))
+  return withSoftDeleteFlag(unwrapUpdatedData(res, translate("adminUsers.detail.toast.loadUserFailedTitle")))
 }
 
 export async function getUserActivity(userId: string, params?: QueryParams) {

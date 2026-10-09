@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 /// <reference types="vite-plugin-pwa/client" />
+/// <reference types="pinia-plugin-persistedstate" />
 
 interface ImportMetaEnv {
   readonly ENABLE_CLOUDFLARE_TURNSTILE?: string

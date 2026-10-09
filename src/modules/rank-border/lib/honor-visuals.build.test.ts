@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test"
 import { buildHonorView, honorLevelStars, resolveProfileHonorViews, type HonorVisualContext } from "./honor-visuals"
 import { normalizeProfileHonors } from "./rank-border"
 
-const ctx = { region: "jp" as const, assetEndpoint: "china" }
+const ctx = { region: "jp" as const, assetEndpoint: "china" as const }
 
 describe("buildHonorView", () => {
   it("composes an event rank honor the way the badge is drawn: background, frame, rank plate", () => {

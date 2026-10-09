@@ -56,7 +56,6 @@ const {
   showCodeDialog,
   platform,
   dialogMode,
-  turnstileRef,
   onTurnstileVerify,
   onTurnstileInvalid,
   handleVerify,

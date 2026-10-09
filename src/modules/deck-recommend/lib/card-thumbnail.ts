@@ -6,7 +6,7 @@ import {
   resolveTrainRankImageUrl,
 } from "@/shared/sekai/data-sources"
 import { buildCatalogCardThumbnail } from "@/shared/sekai/catalog"
-import type { TaggedRecommendDeck, TaggedRecommendResult } from "./recommend-results"
+import type { DeckRecommendResultDeck, TaggedRecommendDeck, TaggedRecommendResult } from "./recommend-results"
 
 export type DeckRecommendMasterCard = {
   id: number
@@ -71,7 +71,7 @@ export type DeckResultSupportCardView = {
 
 export type DeckResultDeckView = {
   index: number
-  deck: RecommendDeck | TaggedRecommendDeck
+  deck: DeckRecommendResultDeck | TaggedRecommendDeck
   cards: DeckResultCardView[]
 }
 

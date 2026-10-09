@@ -108,9 +108,9 @@ describe("browser context", () => {
   })
 
   it("detects frames, including ones that refuse the comparison", () => {
-    const self = {} as Window
+    const self = {} as Window & typeof globalThis
     expect(isFramedWindow({ top: self, self })).toBe(false)
-    expect(isFramedWindow({ top: {} as Window, self })).toBe(true)
+    expect(isFramedWindow({ top: {} as Window & typeof globalThis, self })).toBe(true)
     const hostile = { self } as Pick<Window, "top" | "self">
     Object.defineProperty(hostile, "top", { get: () => { throw new Error("SecurityError") } })
     expect(isFramedWindow(hostile)).toBe(true)

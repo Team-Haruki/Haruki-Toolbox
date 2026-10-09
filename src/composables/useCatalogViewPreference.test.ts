@@ -65,11 +65,11 @@ describe("useCatalogViewPreference", () => {
   })
 
   test("handles booleans", async () => {
-    const open = useCatalogViewPreference("cards", "filtersOpen", () => true)
+    const open = useCatalogViewPreference("cards", "filtersOpen", (): boolean => true)
     expect(open.value).toBe(true)
     open.value = false
     await nextTick()
     expect(globalRef.localStorage?.getItem("catalog:cards:filtersOpen")).toBe("0")
-    expect(useCatalogViewPreference("cards", "filtersOpen", () => true).value).toBe(false)
+    expect(useCatalogViewPreference("cards", "filtersOpen", (): boolean => true).value).toBe(false)
   })
 })

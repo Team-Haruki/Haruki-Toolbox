@@ -11,6 +11,7 @@ import {
   FILTER_SERVER_ALL,
   getServerOptions,
   getSortOptions,
+  isServerOption,
 } from "@/modules/admin-game-bindings/lib/management-meta"
 
 export function useGameBindingFilters() {
@@ -22,7 +23,7 @@ export function useGameBindingFilters() {
   const filterSort = ref(DEFAULT_SORT)
 
   const servers = computed(() => getServerOptions(t))
-  const editServers = computed(() => servers.value.filter((item) => item.value !== FILTER_SERVER_ALL))
+  const editServers = computed(() => servers.value.filter(isServerOption))
   const sortOptions = computed(() => getSortOptions(t))
 
   function buildQueryParams(currentPage: number, currentPageSize: number) {

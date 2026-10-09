@@ -47,8 +47,8 @@ type RegionMasterEntry = {
   gameCharacterUnits: ShallowRef<RankBorderMasterGameCharacterUnit[]>
   loading: Ref<boolean>
   error: Ref<string | null>
-  coreLoadedVersion: number | null
-  assetsLoadedVersion: number | null
+  coreLoadedVersion: string | null
+  assetsLoadedVersion: string | null
   corePromise: Promise<void> | null
   assetsPromise: Promise<void> | null
 }
@@ -131,7 +131,7 @@ export function useRankBorderMasterData(region: Ref<SekaiRegion>, selectedEventI
     }
 
     const targetRegion = region.value
-    const promise = (async () => {
+    const load = async () => {
       target.loading.value = true
       target.error.value = null
       try {
@@ -160,7 +160,8 @@ export function useRankBorderMasterData(region: Ref<SekaiRegion>, selectedEventI
           target.corePromise = null
         }
       }
-    })()
+    }
+    const promise = load()
     target.corePromise = promise
     return promise
   }
@@ -176,7 +177,7 @@ export function useRankBorderMasterData(region: Ref<SekaiRegion>, selectedEventI
     }
 
     const targetRegion = region.value
-    const promise = (async () => {
+    const load = async () => {
       try {
         if (force || !hasRequiredFiles(regionState.value.files, PROFILE_ASSET_FILES)) {
           await sekaiDataStore.ensureRegionData(targetRegion, { force, files: PROFILE_ASSET_FILES, optionalFiles: PROFILE_CUSTOMIZATION_FILES })
@@ -208,7 +209,8 @@ export function useRankBorderMasterData(region: Ref<SekaiRegion>, selectedEventI
           target.assetsPromise = null
         }
       }
-    })()
+    }
+    const promise = load()
     target.assetsPromise = promise
     return promise
   }

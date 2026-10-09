@@ -24,9 +24,10 @@ const {
   unwrapSuiteSubsetResponse,
 } = await import("./api")
 
-function makeResponse<T>(data: T, status = 200): AxiosResponse<T> {
+// Typed by the caller: a UserSuiteRequester is generic in its response data.
+function makeResponse<T>(data: unknown, status = 200): AxiosResponse<T> {
   return {
-    data,
+    data: data as T,
     status,
     statusText: "",
     headers: {},

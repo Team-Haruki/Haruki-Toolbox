@@ -16,6 +16,9 @@ import {
   resolveRankBorderTrackerWebSocketUrl,
 } from "./rank-border"
 
+/** A fetch replacement that ignores its arguments. */
+type FetchStub = (input: RequestInfo | URL) => Promise<Response>
+
 describe("rank border tracker api", () => {
   it("resolves relative tracker endpoints to same-origin websocket urls", () => {
     expect(resolveRankBorderTrackerWebSocketUrl("/event-tracker", "https://toolbox.example/rank-border")).toBe(
@@ -166,15 +169,14 @@ describe("rank border tracker api", () => {
 
   it("extracts nested private lookup auth errors", async () => {
     const originalFetch = globalThis.fetch
-    globalThis.fetch = (async () => {
-      return new Response(JSON.stringify({
-        error: {
-          code: 401,
-          status: "Unauthorized",
-          message: "Access credentials are invalid",
-        },
-      }), { status: 401 })
-    }) as typeof fetch
+    const unauthorized: FetchStub = async () => new Response(JSON.stringify({
+      error: {
+        code: 401,
+        status: "Unauthorized",
+        message: "Access credentials are invalid",
+      },
+    }), { status: 401 })
+    globalThis.fetch = unauthorized as typeof fetch
 
     try {
       await fetchRankBorderPrivateWebUserDetailV2({
@@ -568,8 +570,8 @@ describe("rank border tracker api", () => {
     expect(requests).toEqual([
       ...["top100", "borders", "growth"].map((part) => ({
         url: `${base}/${part}?interval=3600&v=42`,
-        credentials: "omit",
-        cache: "default",
+        credentials: "omit" as const,
+        cache: "default" as const,
       })),
       // Status is per request: never versioned, always revalidated.
       { url: `${base}/status?interval=3600`, credentials: "omit", cache: "no-cache" },
@@ -694,7 +696,8 @@ describe("rank border tracker api", () => {
   it("surfaces the version of updated pushes and null from older trackers", async () => {
     const originalFetch = globalThis.fetch
     const originalWebSocket = globalThis.WebSocket
-    globalThis.fetch = (async () => new Response(JSON.stringify({ ticket: "ticket-1" }), { status: 200 })) as typeof fetch
+    const issueTicket: FetchStub = async () => new Response(JSON.stringify({ ticket: "ticket-1" }), { status: 200 })
+    globalThis.fetch = issueTicket as typeof fetch
 
     const sockets: MockWebSocket[] = []
     class MockWebSocket extends EventTarget {
@@ -752,7 +755,8 @@ describe("rank border tracker api", () => {
   it("unsubscribes a topic only when its last subscriber on the socket leaves", async () => {
     const originalFetch = globalThis.fetch
     const originalWebSocket = globalThis.WebSocket
-    globalThis.fetch = (async () => new Response(JSON.stringify({ ticket: "ticket-1" }), { status: 200 })) as typeof fetch
+    const issueTicket: FetchStub = async () => new Response(JSON.stringify({ ticket: "ticket-1" }), { status: 200 })
+    globalThis.fetch = issueTicket as typeof fetch
 
     const sent: Array<{ type?: string }> = []
     class MockWebSocket extends EventTarget {

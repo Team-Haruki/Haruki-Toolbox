@@ -8,6 +8,7 @@ import {
   unwrapGameAccountDataResponse,
 } from "../api/recommend-data"
 import { fetchUserSuiteWithCache } from "@/shared/sekai/user-snapshot/fetch"
+import type { SekaiRegion } from "@/types/store"
 import {
   makeDeckRecommendUserDataCacheKey,
   readDeckRecommendProfileCache,

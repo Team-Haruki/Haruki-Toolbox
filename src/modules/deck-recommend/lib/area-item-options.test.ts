@@ -82,7 +82,7 @@ describe("deck recommend area item options", () => {
     const options = buildDeckRecommendAreaItemOptions({
       areas: [{ id: 27, name: "？？？のセカイ" }],
       areaItems: [{ id: 56, areaId: 27, name: "想いの大樹" }],
-      areaItemLevels: reverse ? levels.toReversed() : levels,
+      areaItemLevels: reverse ? [...levels].reverse() : levels,
     })
 
     expect(options).toHaveLength(1)

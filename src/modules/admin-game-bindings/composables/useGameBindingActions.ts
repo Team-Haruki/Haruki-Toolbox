@@ -47,7 +47,7 @@ export function useGameBindingActions(options: UseGameBindingActionsOptions) {
   const deleteDialogOpen = ref(false)
   const deleteTarget = ref<GlobalGameBinding | null>(null)
 
-  async function runAction(task: () => Promise<void>, actionOptions: RunActionOptions) {
+  async function runAction(task: () => Promise<unknown>, actionOptions: RunActionOptions) {
     await runAsyncAction(actionLoading, task, {
       successMessage: actionOptions.successMessage,
       successAfterOnSuccess: true,

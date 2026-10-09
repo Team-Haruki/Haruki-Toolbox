@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "bun:test"
 import type { RecommendResult } from "haruki-sekai-deck-recommend-cpp"
 import { mapRecommendBatchResults } from "./recommend-batch"
 

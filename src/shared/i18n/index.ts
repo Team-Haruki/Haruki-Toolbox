@@ -90,20 +90,13 @@ function syncDocumentLanguage(locale: AppLocale) {
   document.documentElement.lang = locale
 }
 
+// Composition mode (`legacy: false`): the global locale is always a ref.
 function readGlobalLocale(): AppLocale {
-  const globalLocale = i18n.global.locale
-  return (typeof globalLocale === "string" ? globalLocale : globalLocale.value) as AppLocale
+  return i18n.global.locale.value as AppLocale
 }
 
 function writeGlobalLocale(locale: AppLocale) {
-  const globalLocale = i18n.global.locale
-  if (typeof globalLocale === "string") {
-    ;(i18n.global as typeof i18n.global & { locale: AppLocale }).locale = locale
-    syncDocumentLanguage(locale)
-    return
-  }
-
-  globalLocale.value = locale
+  i18n.global.locale.value = locale
   syncDocumentLanguage(locale)
 }
 
@@ -166,7 +159,7 @@ export function getI18nLocale(): AppLocale {
 }
 
 export function translate(key: string, params?: Record<string, unknown>) {
-  return i18n.global.t(key, params) as string
+  return (params ? i18n.global.t(key, params) : i18n.global.t(key)) as string
 }
 
 syncDocumentLanguage(DEFAULT_LOCALE)

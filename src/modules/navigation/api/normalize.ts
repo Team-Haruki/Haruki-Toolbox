@@ -56,7 +56,7 @@ function normalizeFriendGroupItem(item: unknown): FriendGroupItem | null {
   }
 
   const rawUrl = readOptionalString(record, ["url"])
-  const safeUrl = rawUrl ? normalizeExternalHttpUrl(rawUrl) : undefined
+  const safeUrl = rawUrl ? normalizeExternalHttpUrl(rawUrl) ?? undefined : undefined
 
   return {
     name,

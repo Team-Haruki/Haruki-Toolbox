@@ -12,7 +12,7 @@ export function createDeckRecommendCardTags(
   option: DeckRecommendMasterCardOption,
   t: ComposerTranslation,
 ): DeckRecommendCardTag[] {
-  return [
+  const tags: Array<DeckRecommendCardTag | null> = [
     option.rarity
       ? {
           label: t(`deckRecommend.training.rarities.${option.rarity}`),
@@ -37,7 +37,8 @@ export function createDeckRecommendCardTags(
           style: createColorTagStyle(option.unitColorCode),
         }
       : null,
-  ].filter((tag): tag is DeckRecommendCardTag => tag != null)
+  ]
+  return tags.filter((tag): tag is DeckRecommendCardTag => tag != null)
 }
 
 function resolveAttrTagClass(attr: NonNullable<DeckRecommendMasterCardOption["attr"]>) {

@@ -808,9 +808,9 @@ function normalizeWorldBloomTurn(value: number | null): number | null {
   return value
 }
 
-function normalizePositiveInteger(value: string | number | null): number | null {
+function normalizePositiveInteger(value: unknown): number | null {
   const raw = typeof value === "string" ? Number(value) : value
-  if (!Number.isInteger(raw) || raw <= 0) {
+  if (typeof raw !== "number" || !Number.isInteger(raw) || raw <= 0) {
     return null
   }
 

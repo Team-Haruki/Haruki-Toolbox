@@ -1,4 +1,4 @@
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue"
 import { useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
@@ -23,7 +23,8 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
   const newMessage = ref("")
   const sending = ref(false)
   const closing = ref(false)
-  const messageContainer = ref<HTMLElement | null>(null)
+  // Bound to the view's `ref="messageContainer"` element.
+  const messageContainer = useTemplateRef<HTMLElement>("messageContainer")
   let latestLoadRequestId = 0
   let actionGeneration = 0
 
@@ -185,7 +186,6 @@ export function useTicketDetail(ticketId: ValueOrGetter<string>) {
     newMessage,
     sending,
     closing,
-    messageContainer,
     isOpen,
     sendMessage,
     handleClose,

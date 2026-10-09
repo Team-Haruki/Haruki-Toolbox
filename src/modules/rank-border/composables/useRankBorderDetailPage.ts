@@ -514,7 +514,9 @@ export function useRankBorderDetailPage(
 
     // The player's history is fetched by stable ID as soon as the seat holder
     // is known: on the first seat page, while the seat trace may still page.
-    let playerLoad: Promise<RankBorderWebUserDetail | null> | null = null
+    // Initialised through `as` so TS keeps the declared type: it is assigned in
+    // the closure below, which control-flow narrowing does not see.
+    let playerLoad = null as Promise<RankBorderWebUserDetail | null> | null
     const resolveSeatHolder = (seat: RankBorderWebRankDetail | null) => {
       trackedUserId ??= target.kind === "rank" ? seat?.current?.userId ?? null : null
       const userId = trackedUserId

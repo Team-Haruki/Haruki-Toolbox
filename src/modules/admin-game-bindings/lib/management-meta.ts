@@ -17,6 +17,8 @@ type ServerFilterOption = {
   label: string
 }
 
+export type ServerOption = ServerFilterOption & { value: SekaiRegion }
+
 type SortFilterOption = {
   value: string
   label: string
@@ -52,6 +54,10 @@ export function getServerOptions(t: TranslateFn): ReadonlyArray<ServerFilterOpti
     value,
     label: t(SERVER_LABEL_KEYS[value]),
   }))
+}
+
+export function isServerOption(option: ServerFilterOption): option is ServerOption {
+  return option.value !== FILTER_SERVER_ALL
 }
 
 export function getSortOptions(t: TranslateFn): ReadonlyArray<SortFilterOption> {

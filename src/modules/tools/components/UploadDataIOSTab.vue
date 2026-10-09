@@ -116,7 +116,6 @@ function handleCopyScriptUrl() {
                     v-for="option in softwareOptions"
                     :key="option.value"
                     :value="option.value"
-                    :disabled="option.disabled"
                   >
                     {{ option.label }}
                   </SelectItem>
@@ -138,7 +137,6 @@ function handleCopyScriptUrl() {
                     v-for="option in endpointOptions"
                     :key="option.value"
                     :value="option.value"
-                    :disabled="option.disabled"
                   >
                     {{ option.label }}
                   </SelectItem>

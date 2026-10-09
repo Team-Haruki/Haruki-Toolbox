@@ -1,5 +1,6 @@
 import { computed, ref, shallowRef, watch, type Ref } from "vue"
 import type { SekaiRegion } from "@/types"
+import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import { readSekaiMasterFiles } from "@/shared/sekai/cache"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { resolveProfileHonorViews, type HonorVisualContext } from "@/modules/rank-border/lib/honor-visuals"
@@ -35,7 +36,7 @@ export const PROFILE_HONOR_MASTER_FILES = [
 export function useProfileHonors(
   region: Ref<SekaiRegion | null>,
   rawHonors: Ref<unknown>,
-  assetEndpoint: Ref<string>,
+  assetEndpoint: Ref<SekaiAssetEndpointPreference>,
 ) {
   const sekaiDataStore = useSekaiDataStore()
 

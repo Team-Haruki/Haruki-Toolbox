@@ -12,6 +12,7 @@ export interface AdminUser {
   banReason?: string
   createdAt?: string
   lastLoginAt?: string
+  /** Derived client-side from `banReason` (see admin-users/lib/soft-delete). */
   deleted?: boolean
   allowCNMysekai?: boolean
 }
@@ -47,6 +48,9 @@ export interface AdminUserDetail {
     iosUploadCode?: string | null
   }
   banned: boolean
+  banReason?: string
+  /** Derived client-side from `banReason` (see admin-users/lib/soft-delete). */
+  deleted?: boolean
   createdAt?: string
   activitySummary?: {
     windowHours: number

@@ -1,4 +1,4 @@
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue"
 import { useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
@@ -50,7 +50,8 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
   const isInternal = ref(false)
   const sending = ref(false)
   const actionLoading = ref(false)
-  const messageContainer = ref<HTMLElement | null>(null)
+  // Bound to the view's `ref="messageContainer"` element.
+  const messageContainer = useTemplateRef<HTMLElement>("messageContainer")
   const assigneeId = ref("__none__")
   const adminUsers = ref<AdminUser[]>([])
   const adminUsersLoading = ref(false)
@@ -306,7 +307,6 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     isInternal,
     sending,
     actionLoading,
-    messageContainer,
     assigneeId,
     adminUsers,
     adminUsersLoading,

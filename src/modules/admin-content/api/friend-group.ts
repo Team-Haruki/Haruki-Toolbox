@@ -1,21 +1,22 @@
 import { request, unwrapUpdatedData } from "@/core/http/call-api"
 import { encodePathSegment } from "@/core/http/url"
 import { normalizeExternalHttpUrl } from "@/lib/external-url"
-import { normalizeEntityId, readOptionalString, readString } from "@/lib/record-utils"
+import { asRecord, normalizeEntityId, readOptionalString, readString, type UnknownRecord } from "@/lib/record-utils"
 import { translate } from "@/shared/i18n"
 import type { AdminFriendGroup, AdminFriendGroupItem } from "@/types/admin"
 import type { APIResponse } from "@/types/response"
 
 const BASE = "/api/admin/content"
 
-function readSortOrder(record: object): number {
-  const raw = (record as { sortOrder?: unknown }).sortOrder ?? (record as { sort_order?: unknown }).sort_order
+function readSortOrder(record: UnknownRecord): number {
+  const raw = record.sortOrder ?? record.sort_order
   const value = Number(raw)
   return Number.isFinite(value) ? value : 0
 }
 
-function normalizeFriendGroupItem(item: unknown): AdminFriendGroupItem | null {
-  if (!item || typeof item !== "object" || Array.isArray(item)) return null
+function normalizeFriendGroupItem(value: unknown): AdminFriendGroupItem | null {
+  const item = asRecord(value)
+  if (!item) return null
 
   const name = readString(item, ["name"]).trim()
   if (!name) return null
@@ -23,7 +24,7 @@ function normalizeFriendGroupItem(item: unknown): AdminFriendGroupItem | null {
   const url = readOptionalString(item, ["url"])
 
   return {
-    id: normalizeEntityId((item as { id?: unknown }).id),
+    id: normalizeEntityId(item.id),
     name,
     avatar: readString(item, ["avatar"]),
     bg: readString(item, ["bg"]),
@@ -34,20 +35,21 @@ function normalizeFriendGroupItem(item: unknown): AdminFriendGroupItem | null {
   }
 }
 
-function normalizeFriendGroup(group: unknown): AdminFriendGroup | null {
-  if (!group || typeof group !== "object" || Array.isArray(group)) return null
+function normalizeFriendGroup(value: unknown): AdminFriendGroup | null {
+  const group = asRecord(value)
+  if (!group) return null
 
   const normalizedGroup = readString(group, ["group", "name"]).trim()
   if (!normalizedGroup) return null
 
-  const rawItems = Array.isArray((group as { groupList?: unknown[]; group_list?: unknown[] }).groupList)
-    ? (group as { groupList: unknown[] }).groupList
-    : Array.isArray((group as { group_list?: unknown[] }).group_list)
-      ? (group as { group_list: unknown[] }).group_list
+  const rawItems = Array.isArray(group.groupList)
+    ? group.groupList
+    : Array.isArray(group.group_list)
+      ? group.group_list
       : []
 
   return {
-    id: normalizeEntityId((group as { id?: unknown }).id),
+    id: normalizeEntityId(group.id),
     group: normalizedGroup,
     sortOrder: readSortOrder(group),
     groupList: rawItems

@@ -189,6 +189,7 @@ const deckViews = computed(() => {
           attr: master.attr,
           prefix: master.prefix,
           assetbundleName: master.assetbundleName,
+          trainedByDefault: master.trainedByDefault ?? false,
         }
       : null
     return {

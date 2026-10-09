@@ -269,7 +269,8 @@ describe("OC Bloom Fes before-training reference skill", () => {
     const raw = structuredClone(bloomReferenceSkill)
     for (const effect of raw.skillEffects) {
       for (const detail of effect.skillEffectDetails) {
-        delete detail.activateEffectValue2
+        // Not every fixture detail declares the field, so plain `delete` does not type-check.
+        Reflect.deleteProperty(detail, "activateEffectValue2")
       }
     }
     const missingCap = buildCardSkillIndex([raw]).get(23)!

@@ -47,7 +47,6 @@ export function useIMBindingSettings() {
   const dialogMode = ref<DialogMode>("other")
   const {
     turnstileToken,
-    turnstileRef,
     onTurnstileVerify,
     onTurnstileInvalid,
     resetTurnstileState,
@@ -335,7 +334,6 @@ export function useIMBindingSettings() {
     statusToken,
     dialogMode,
     turnstileToken,
-    turnstileRef,
     onTurnstileVerify,
     onTurnstileInvalid,
     handleVerify,
