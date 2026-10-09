@@ -152,9 +152,11 @@ export function useRankBorderQuery() {
   )
 
   const modeOptions = computed(() => {
-    const options = [{ value: "normal" as const, label: t("rankBorder.modes.normal") }]
+    const options: Array<{ value: "normal" | "world_bloom"; label: string }> = [
+      { value: "normal", label: t("rankBorder.modes.normal") },
+    ]
     if (isSelectedWorldBloomEvent.value) {
-      options.push({ value: "world_bloom" as const, label: t("rankBorder.modes.worldBloom") })
+      options.push({ value: "world_bloom", label: t("rankBorder.modes.worldBloom") })
     }
     return options
   })

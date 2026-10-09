@@ -8,6 +8,7 @@ import {
   resolveTrainRankImageUrl,
 } from "@/shared/sekai/data-sources"
 import type { SekaiRegion } from "@/types"
+import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import type {
   RankBorderMasterBondsHonor,
   RankBorderMasterBondsHonorWord,
@@ -47,7 +48,7 @@ export interface HonorVisualContext {
   bondsHonorWordById: ReadonlyMap<number, RankBorderMasterBondsHonorWord>
   gameCharacterUnitById: ReadonlyMap<number, RankBorderMasterGameCharacterUnit>
   region: SekaiRegion
-  assetEndpoint: string
+  assetEndpoint: SekaiAssetEndpointPreference
   /** True when the tracker endpoint is the local mock (uses bundled card art). */
   localMockAssets: boolean
 }
