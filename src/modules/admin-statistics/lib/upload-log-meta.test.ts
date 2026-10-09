@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test"
 import {
+  getUploadDataTypeOptions,
+  getUploadMethodOptions,
+  getUploadServerOptions,
+  getUploadSortOptions,
+  getUploadSuccessOptions,
   resolveUploadAuthMethodLabel,
   resolveUploadAuthorizationSourceLabel,
   resolveUploadDataTypeLabel,
@@ -59,5 +64,24 @@ describe("upload log meta helpers", () => {
       .toEqual({ kind: "unknown", actorUserId: null })
     // An unowned record with an actor (e.g. identity not verified) is still a distinct actor.
     expect(resolveUploadLogActor({ actorUserId: "a" })).toEqual({ kind: "delegate", actorUserId: "a" })
+  })
+})
+
+describe("upload log filter options", () => {
+  const identity = (key: string) => key
+
+  test("label every option through its translation key", () => {
+    const options = [
+      ...getUploadMethodOptions(identity),
+      ...getUploadServerOptions(identity),
+      ...getUploadDataTypeOptions(identity),
+      ...getUploadSortOptions(identity),
+      ...getUploadSuccessOptions(identity),
+    ]
+    expect(options.length).toBeGreaterThan(0)
+    for (const option of options) {
+      expect(option.label).toMatch(/^[\w-]+(\.[\w-]+)+$/)
+    }
+    expect(getUploadSuccessOptions(identity).map((option) => option.value)).toEqual(["all", "true", "false"])
   })
 })

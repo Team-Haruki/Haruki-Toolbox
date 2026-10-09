@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test"
 import {
+  getServerOptions,
+  isServerOption,
   parseBindingKey,
   resolveServerLabel,
   toBindingKey,
@@ -29,5 +31,13 @@ describe("game binding management meta", () => {
   it("resolveServerLabel returns localized label or fallback", () => {
     expect(resolveServerLabel("jp", t)).toBe("JP")
     expect(resolveServerLabel("unknown", t)).toBe("unknown")
+  })
+})
+
+describe("isServerOption", () => {
+  it("keeps the concrete regions and drops the all-servers filter", () => {
+    const values = getServerOptions((key) => key).filter(isServerOption).map((option) => option.value)
+    expect(values).toContain("jp")
+    expect(values).not.toContain("all")
   })
 })
