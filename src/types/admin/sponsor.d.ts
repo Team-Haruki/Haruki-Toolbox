@@ -1,5 +1,5 @@
-/** Decided by the backend: 当前赞助 / 曾经赞助 / 一次性赞助. */
-export type AdminSponsorCategory = "current" | "former" | "one_time"
+/** Decided by the backend: 当前赞助 / 曾经赞助. */
+export type AdminSponsorCategory = "current" | "former"
 
 export interface AdminSponsorProfile {
   id: string
@@ -49,7 +49,8 @@ export interface AdminSponsorCreatePayload {
   message?: string
 }
 
-export type AdminAfdianOrderKind = "duration" | "one_time" | "ignored"
+/** no_time: a paid order that grants no time (a sale plan). */
+export type AdminAfdianOrderKind = "duration" | "no_time" | "ignored"
 
 export interface AdminAfdianOrder {
   outTradeNo: string

@@ -100,7 +100,6 @@ function normalizeSponsorItem(value: unknown, index: number): SponsorSupporter |
     || readDateString(record, ["planExpiresAt", "plan_expires_at"])
   const category = readSponsorCategory(record.category, {
     isActive: readBoolean(record, ["isActive", "is_active"], false),
-    planExpiresAt,
   })
 
   return {

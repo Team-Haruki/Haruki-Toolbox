@@ -2,7 +2,7 @@ import { expect, test, type Page, type Route } from "@playwright/test"
 
 // The public sponsor wall and the admin sponsor manager against a mocked
 // backend. The mock answers like the backend: the category is decided there
-// (current / former / one_time) and the admin detail carries the Afdian part,
+// (current / former) and the admin detail carries the Afdian part,
 // the manual entries and the effective expiry.
 const APP_HOST = "127.0.0.1:4173"
 const ADMIN_USER_ID = "admin-1"
@@ -22,7 +22,8 @@ const publicSupporters = [
   { id: "afdian_current", name: "Current Fan", planName: "支持一下", source: "afdian", category: "current", isActive: true, planExpiresAt: "2099-01-01T00:00:00Z", supportCount: 1 },
   // A lapsed plan the old wall listed as one-time because of its stored label.
   { id: "afdian_lapsed", name: "Lapsed Fan", planName: "支持一下", source: "afdian", category: "former", isActive: false, planExpiresAt: "2026-01-01T00:00:00Z", supportCount: 1 },
-  { id: "afdian_shop", name: "Shop Fan", planName: "一次性赞助", source: "afdian", category: "one_time", isActive: false, supportCount: 1 },
+  // A sale-plan-only buyer: supported once, so former.
+  { id: "afdian_shop", name: "Shop Fan", planName: "周边", source: "afdian", category: "former", isActive: false, supportCount: 1 },
 ]
 
 test.describe("public sponsor wall", () => {
@@ -32,7 +33,7 @@ test.describe("public sponsor wall", () => {
       if (url.host === APP_HOST) return route.continue()
       if (url.pathname === "/api/misc/sponsors") {
         return reply(route, {
-          summary: { supporterCount: 3, activeCount: 1, pastCount: 1, oneTimeCount: 1, generatedAt: "2026-10-10T00:00:00Z" },
+          summary: { supporterCount: 3, activeCount: 1, pastCount: 2, generatedAt: "2026-10-10T00:00:00Z" },
           supporters: publicSupporters,
         })
       }
@@ -43,8 +44,10 @@ test.describe("public sponsor wall", () => {
     const section = (title: RegExp) => page.locator("div.space-y-3").filter({ has: page.getByRole("heading", { level: 3, name: title }) })
     await expect(section(/当前赞助|Current sponsors/)).toContainText("Current Fan", { timeout: 30_000 })
     await expect(section(/曾经赞助|Past sponsors/)).toContainText("Lapsed Fan")
-    await expect(section(/一次性赞助|One-time support/)).toContainText("Shop Fan")
-    await expect(section(/一次性赞助|One-time support/)).not.toContainText("Lapsed Fan")
+    await expect(section(/曾经赞助|Past sponsors/)).toContainText("Shop Fan")
+    // There is no one-time section or count any more.
+    await expect(page.getByRole("heading", { level: 3 })).toHaveCount(2)
+    await expect(page.getByText(/一次性|One-time/)).toHaveCount(0)
   })
 })
 
@@ -106,7 +109,7 @@ function createAdminMock() {
         orders: [
           { outTradeNo: "o2", planId: "", planTitle: "", productType: 0, month: 1, kind: "duration", totalAmount: 5, paidAt: "2026-07-01T00:00:00Z" },
           { outTradeNo: "o1", planId: "plan", planTitle: "支持一下", productType: 0, month: 1, kind: "duration", totalAmount: 5, paidAt: "2026-06-01T00:00:00Z" },
-          { outTradeNo: "o0", planId: "item", planTitle: "周边", productType: 1, month: 1, kind: "one_time", totalAmount: 5, paidAt: "2026-05-01T00:00:00Z" },
+          { outTradeNo: "o0", planId: "item", planTitle: "周边", productType: 1, month: 1, kind: "no_time", totalAmount: 5, paidAt: "2026-05-01T00:00:00Z" },
         ],
       },
       manualDurations: entries,
@@ -186,7 +189,7 @@ test.describe("admin sponsor durations", () => {
     const dialog = page.getByRole("dialog")
     await expect(dialog).toContainText(/爱发电订单|Afdian orders/)
     await expect(dialog).toContainText(/自选方案|Custom plan/)
-    await expect(dialog).toContainText(/一次性|One-time/)
+    await expect(dialog).toContainText(/不计时长|No time/)
     await expect(dialog).toContainText("迁移自旧版手动调整")
     // The expiry is no longer an editable field.
     await expect(dialog.getByLabel(/赞助到期时间|Support expires at/)).toHaveCount(0)

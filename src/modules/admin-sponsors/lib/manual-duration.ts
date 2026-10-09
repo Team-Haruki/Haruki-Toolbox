@@ -82,12 +82,5 @@ export function manualDurationPayload(form: ManualDurationForm):
 
 /** Badge variant per category; the label comes from i18n. */
 export function categoryBadgeVariant(category: AdminSponsorCategory) {
-  switch (category) {
-    case "current":
-      return "emerald" as const
-    case "former":
-      return "muted" as const
-    default:
-      return "rose" as const
-  }
+  return category === "current" ? "emerald" as const : "muted" as const
 }

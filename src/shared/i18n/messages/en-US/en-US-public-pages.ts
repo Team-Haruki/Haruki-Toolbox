@@ -201,17 +201,12 @@ export default {
     "summary": {
       "supporters": "Supporters",
       "pending": "Pending",
-      "current": "Current",
-      "oneTime": "One-time"
+      "current": "Current"
     },
     "sections": {
       "current": {
         "title": "Current sponsors",
         "empty": "No one is sponsoring right now."
-      },
-      "oneTime": {
-        "title": "One-time support",
-        "empty": "No one-time support records yet."
       },
       "former": {
         "title": "Past sponsors",
@@ -229,7 +224,6 @@ export default {
       "activeUntil": "Active until {date}",
       "expired": "Support duration expired",
       "expiredAt": "Expired on {date}",
-      "oneTime": "One-time support",
       "recent": "Recent support",
       "months": "{month} mo"
     },

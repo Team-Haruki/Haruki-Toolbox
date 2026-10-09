@@ -807,8 +807,7 @@ export default {
     },
     "category": {
       "current": "Current",
-      "former": "Past",
-      "one_time": "One-time"
+      "former": "Past"
     },
     "afdianSync": {
       "enabled": "Allow updates",
@@ -868,7 +867,7 @@ export default {
         "customPlan": "Custom plan",
         "months": "{count} mo",
         "kinds": {
-          "one_time": "One-time",
+          "no_time": "No time",
           "ignored": "Not counted"
         }
       },

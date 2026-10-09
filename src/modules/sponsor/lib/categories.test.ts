@@ -24,14 +24,15 @@ function supporter(id: string, category: SponsorCategory, planExpiresAt = ""): S
 
 describe("sponsor categories", () => {
   it("uses the backend category as is", () => {
-    expect(readSponsorCategory("former", { isActive: true, planExpiresAt: "" })).toBe("former")
-    expect(readSponsorCategory("one_time", { isActive: false, planExpiresAt: "2026-01-01T00:00:00Z" })).toBe("one_time")
+    expect(readSponsorCategory("former", { isActive: true })).toBe("former")
+    expect(readSponsorCategory("current", { isActive: false })).toBe("current")
   })
 
-  it("falls back to the backend isActive flag when category is missing", () => {
-    expect(readSponsorCategory(undefined, { isActive: true, planExpiresAt: "" })).toBe("current")
-    expect(readSponsorCategory("bogus", { isActive: false, planExpiresAt: "2026-01-01T00:00:00Z" })).toBe("former")
-    expect(readSponsorCategory(null, { isActive: false, planExpiresAt: "" })).toBe("one_time")
+  it("falls back to the backend isActive flag for anything else", () => {
+    expect(readSponsorCategory(undefined, { isActive: true })).toBe("current")
+    expect(readSponsorCategory("bogus", { isActive: false })).toBe("former")
+    // An older backend's one-time sponsor is a former supporter.
+    expect(readSponsorCategory("one_time", { isActive: false })).toBe("former")
   })
 
   it("groups supporters without reordering them", () => {
@@ -39,26 +40,16 @@ describe("sponsor categories", () => {
       supporter("a", "current"),
       supporter("b", "former"),
       supporter("c", "current"),
-      supporter("d", "one_time"),
     ])
     expect(groups.current.map((s) => s.id)).toEqual(["a", "c"])
     expect(groups.former.map((s) => s.id)).toEqual(["b"])
-    expect(groups.one_time.map((s) => s.id)).toEqual(["d"])
-  })
-
-  it("never lists an expired duration sponsor as one-time", () => {
-    // A lapsed plan used to arrive with the plan name 一次性赞助.
-    const lapsed = { ...supporter("lapsed", "former", "2026-01-01T00:00:00Z"), planName: "一次性赞助" }
-    const groups = groupSponsorsByCategory([lapsed])
-    expect(groups.one_time).toHaveLength(0)
-    expect(groups.former).toHaveLength(1)
+    expect(Object.keys(groups)).toEqual(["current", "former"])
   })
 
   it("derives the status line from category and effective expiry", () => {
     expect(sponsorStatus(supporter("a", "current", "2027-01-01T00:00:00Z"))).toEqual({ key: "activeUntil", date: "2027-01-01T00:00:00Z" })
     expect(sponsorStatus(supporter("b", "former", "2026-01-01T00:00:00Z"))).toEqual({ key: "expiredAt", date: "2026-01-01T00:00:00Z" })
-    expect(sponsorStatus(supporter("c", "former"))).toEqual({ key: "expired" })
-    expect(sponsorStatus(supporter("d", "one_time", "2026-01-01T00:00:00Z"))).toEqual({ key: "oneTime" })
+    expect(sponsorStatus(supporter("c", "former"))).toEqual({ key: "pastPlan" })
     expect(sponsorStatus(supporter("e", "current"))).toEqual({ key: "active" })
   })
 })
