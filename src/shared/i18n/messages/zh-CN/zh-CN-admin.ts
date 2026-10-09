@@ -784,7 +784,7 @@ export default {
   },
   "adminSponsors": {
     "title": "赞助者管理",
-    "description": "维护赞助者名单展示资料，并控制手动资料是否允许被爱发电同步覆盖。",
+    "description": "维护赞助者名单展示资料与赞助时长：爱发电时长由订单自动计算，其他渠道的赞助在这里手动录入。",
     "generatedAt": "生成时间：{date}",
     "common": {
       "fallback": "—",
@@ -792,21 +792,23 @@ export default {
     },
     "contribution": {
       "amount": "¥{amount}",
-      "month": "{count} 个月"
+      "month": "爱发电 {count} 个月"
     },
     "actions": {
       "refresh": "刷新名单",
       "syncAfdian": "从爱发电同步",
-      "edit": "编辑资料"
+      "edit": "编辑资料",
+      "create": "新增赞助者"
     },
     "stats": {
       "total": "赞助者总数",
-      "active": "正在赞助",
+      "active": "当前赞助",
       "manualProfile": "手动保护资料"
     },
-    "status": {
-      "active": "正在赞助",
-      "past": "曾经赞助"
+    "category": {
+      "current": "当前赞助",
+      "former": "曾经赞助",
+      "one_time": "一次性赞助"
     },
     "afdianSync": {
       "enabled": "允许更新",
@@ -814,7 +816,7 @@ export default {
     },
     "list": {
       "title": "赞助者名单",
-      "description": "列表按后端返回顺序展示；可直接编辑公开资料或保护手动资料。"
+      "description": "列表按后端返回顺序展示；分类与到期时间由后端根据爱发电订单和手动时长计算。"
     },
     "table": {
       "supporter": "赞助者",
@@ -822,6 +824,7 @@ export default {
       "status": "状态",
       "source": "来源",
       "lastSupport": "最近赞助",
+      "effectiveExpiry": "实际到期时间",
       "contribution": "赞助贡献",
       "afdianSync": "爱发电更新",
       "actions": "操作",
@@ -835,12 +838,74 @@ export default {
       "planName": "赞助档位",
       "source": "来源",
       "paidAt": "最近赞助时间",
-      "planExpiresAt": "赞助到期时间",
       "message": "留言",
-      "isActive": "标记为正在赞助",
       "afdianSyncDisabled": "不从爱发电更新这个资料",
-      "afdianSyncHelp": "开启后，手动编辑的昵称、头像、档位和留言不会被后续爱发电同步覆盖。",
+      "afdianSyncHelp": "开启后，手动编辑的昵称、头像、档位和留言不会被后续爱发电同步覆盖；爱发电订单仍会计入时长。",
       "manualProfileHint": "此处只保存展示用资料和同步策略；爱发电 API key 与 webhook 配置仍应只存在后端。"
+    },
+    "duration": {
+      "title": "赞助时长",
+      "migrationPending": "这位赞助者还保留着旧版的单一到期时间，完成一次爱发电同步后才会拆分为爱发电时长和手动时长，届时才能录入手动时长。",
+      "afdianPart": "爱发电时长到期",
+      "afdianMonths": "共 {count} 个月",
+      "manualPart": "手动时长",
+      "manualCount": "{count} 条记录",
+      "stackRule": "接在爱发电时长之后依次累加",
+      "effective": "实际到期时间",
+      "none": "无",
+      "reported": "爱发电最近一次报告的方案到期时间：{date}",
+      "amount": {
+        "day": "{count} 天",
+        "month": "{count} 个月"
+      },
+      "orders": {
+        "title": "爱发电订单（只读）",
+        "empty": "没有爱发电订单。",
+        "paidAt": "时间",
+        "plan": "方案",
+        "kind": "时长",
+        "amount": "实付",
+        "customPlan": "自选方案",
+        "months": "{count} 个月",
+        "kinds": {
+          "one_time": "一次性",
+          "ignored": "不计入"
+        }
+      },
+      "manual": {
+        "title": "手动时长",
+        "add": "添加手动时长",
+        "empty": "还没有手动时长。",
+        "migrated": "迁移",
+        "startsAt": "最早开始：{date}",
+        "createdBy": "{user} 录入于 {date}",
+        "updatedBy": "{user} 修改于 {date}",
+        "edit": "编辑",
+        "delete": "删除",
+        "deleteTitle": "删除这条手动时长？",
+        "deleteDescription": "将删除 {amount} 的手动时长，实际到期时间会随之缩短。"
+      },
+      "form": {
+        "amount": "数量",
+        "unit": "单位",
+        "units": {
+          "month": "月（31 天）",
+          "day": "天"
+        },
+        "startsAt": "最早开始时间",
+        "startsAtHelp": "留空即为现在。实际从爱发电时长和之前的手动时长结束后才开始计算；只有赞助已中断时才从这里开始，此时不能晚于现在。",
+        "note": "备注 / 原因",
+        "notePlaceholder": "例如：微信转账 30 元"
+      },
+      "validation": {
+        "amount": "数量必须是正整数（最多 1200 个月或 36600 天）",
+        "note": "请填写备注（最多 500 字节）"
+      }
+    },
+    "create": {
+      "title": "新增赞助者",
+      "description": "用于通过爱发电以外渠道赞助的人。创建后可以在资料里添加手动时长。",
+      "submit": "创建"
     },
     "toast": {
       "actionFailedFallback": "操作失败",
@@ -848,9 +913,14 @@ export default {
       "saveFailedTitle": "保存赞助者失败",
       "syncFailedTitle": "爱发电同步失败",
       "saved": "赞助者资料已保存",
+      "created": "赞助者已创建",
       "synced": "已请求从爱发电同步",
       "afdianSyncDisabled": "已设为不从爱发电更新",
       "afdianSyncEnabled": "已允许从爱发电更新",
+      "manualSaved": "手动时长已保存",
+      "manualSaveFailedTitle": "保存手动时长失败",
+      "manualDeleted": "手动时长已删除",
+      "manualDeleteFailedTitle": "删除手动时长失败",
       "validation": {
         "nameRequired": "显示名称不能为空"
       }

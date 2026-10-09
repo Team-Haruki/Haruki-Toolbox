@@ -44,7 +44,8 @@ describe("sponsor normalizers", () => {
           planPayMonths: null,
           planExpiresAt: "",
           source: "",
-          isActive: true,
+          category: "one_time",
+          isActive: false,
           totalAmount: 13,
           month: 2,
           paidAt: "2026-06-19T08:00:00Z",
@@ -60,6 +61,7 @@ describe("sponsor normalizers", () => {
           planPayMonths: null,
           planExpiresAt: "",
           source: "",
+          category: "one_time",
           isActive: false,
           totalAmount: 5,
           month: null,
@@ -99,6 +101,7 @@ describe("sponsor normalizers", () => {
         planPayMonths: null,
         planExpiresAt: "",
         source: "",
+        category: "one_time",
         isActive: false,
         totalAmount: 5,
         month: 1,
@@ -148,7 +151,8 @@ describe("sponsor normalizers", () => {
           planPayMonths: 1,
           planExpiresAt: "2020-02-07T13:45:07.000Z",
           source: "",
-          isActive: true,
+          category: "former",
+          isActive: false,
           totalAmount: 13,
           month: null,
           paidAt: "2020-02-07T13:45:07.000Z",
@@ -156,5 +160,40 @@ describe("sponsor normalizers", () => {
         },
       ],
     })
+  })
+
+  it("reads the backend category and effective expiry", () => {
+    const normalized = normalizeSponsorPageData({
+      updatedData: {
+        summary: { supporterCount: 3, activeCount: 1, pastCount: 1, oneTimeCount: 1, generatedAt: "2026-10-10T00:00:00Z" },
+        supporters: [
+          {
+            id: "afdian_a",
+            name: "A",
+            plan: { name: "支持一下", title: "支持一下", payMonth: 1, expiresAt: "2026-11-01T00:00:00Z" },
+            planName: "支持一下",
+            source: "afdian",
+            category: "current",
+            isActive: true,
+            planExpiresAt: "2026-11-01T00:00:00Z",
+          },
+          {
+            id: "afdian_b",
+            name: "B",
+            planName: "支持一下",
+            source: "afdian",
+            category: "former",
+            isActive: false,
+            planExpiresAt: "2026-01-01T00:00:00Z",
+          },
+          { id: "afdian_c", name: "C", planName: "一次性赞助", source: "afdian", category: "one_time", isActive: false },
+        ],
+      },
+    })
+    expect(normalized.supporters.map((s) => [s.id, s.category, s.isActive, s.planExpiresAt])).toEqual([
+      ["afdian_a", "current", true, "2026-11-01T00:00:00Z"],
+      ["afdian_b", "former", false, "2026-01-01T00:00:00Z"],
+      ["afdian_c", "one_time", false, ""],
+    ])
   })
 })

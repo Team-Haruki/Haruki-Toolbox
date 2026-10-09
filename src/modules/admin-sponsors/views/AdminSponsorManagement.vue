@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
 import {
-  LucideBan,
-  LucideCheckCircle2,
   LucideHeartHandshake,
   LucideLoader2,
   LucidePencil,
@@ -10,8 +8,10 @@ import {
   LucideSave,
   LucideShieldCheck,
   LucideSparkles,
+  LucideUserPlus,
 } from "lucide-vue-next"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -39,7 +39,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import SponsorDurationPanel from "@/modules/admin-sponsors/components/SponsorDurationPanel.vue"
 import { useAdminSponsorManagement } from "@/modules/admin-sponsors/composables/useAdminSponsorManagement"
+import { categoryBadgeVariant } from "@/modules/admin-sponsors/lib/manual-duration"
 import type { AdminSponsorProfile } from "@/types/admin"
 
 const { t } = useI18n()
@@ -57,9 +59,26 @@ const {
   editOpen,
   editingSponsor,
   form,
+  detail,
+  detailLoading,
+  manualFormOpen,
+  editingEntryId,
+  manualForm,
+  manualSaving,
+  deletingEntry,
+  createOpen,
+  creating,
+  createForm,
   refreshSponsors,
   openEditDialog,
   saveSponsor,
+  startNewManualEntry,
+  startEditManualEntry,
+  closeManualForm,
+  saveManualEntry,
+  deleteManualEntry,
+  openCreateDialog,
+  createSponsor,
   isToggling,
   toggleAfdianSync,
   syncFromAfdian,
@@ -74,12 +93,6 @@ function fallbackInitial(sponsor: AdminSponsorProfile | null) {
   return fallbackName(sponsor).charAt(0).toUpperCase()
 }
 
-function statusClass(active: boolean) {
-  return active
-    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
-}
-
 function sourceLabel(source: string) {
   return source || t("adminSponsors.common.fallback")
 }
@@ -89,8 +102,8 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
   if (sponsor.totalAmount !== null) {
     parts.push(t("adminSponsors.contribution.amount", { amount: sponsor.totalAmount }))
   }
-  if (sponsor.month !== null) {
-    parts.push(t("adminSponsors.contribution.month", { count: sponsor.month }))
+  if (sponsor.afdianMonths > 0) {
+    parts.push(t("adminSponsors.contribution.month", { count: sponsor.afdianMonths }))
   }
   return parts.length > 0 ? parts.join(" · ") : t("adminSponsors.common.fallback")
 }
@@ -137,6 +150,10 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
             <LucideLoader2 v-if="syncing" class="mr-2 h-4 w-4 animate-spin" />
             <LucideSparkles v-else class="mr-2 h-4 w-4" />
             {{ t("adminSponsors.actions.syncAfdian") }}
+          </Button>
+          <Button size="sm" :disabled="loading" @click="openCreateDialog">
+            <LucideUserPlus class="mr-2 h-4 w-4" />
+            {{ t("adminSponsors.actions.create") }}
           </Button>
         </div>
       </CardHeader>
@@ -185,21 +202,15 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
                 </TableCell>
                 <TableCell>
                   <div class="flex flex-col items-start gap-1">
+                    <Badge :variant="categoryBadgeVariant(sponsor.category)" class="px-2.5 py-1 text-xs">
+                      {{ t(`adminSponsors.category.${sponsor.category}`) }}
+                    </Badge>
                     <span
-                      :class="[
-                        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                        statusClass(sponsor.isActive),
-                      ]"
-                    >
-                      <LucideCheckCircle2 v-if="sponsor.isActive" class="h-3.5 w-3.5" />
-                      <LucideBan v-else class="h-3.5 w-3.5" />
-                      {{ sponsor.isActive ? t("adminSponsors.status.active") : t("adminSponsors.status.past") }}
-                    </span>
-                    <span
+                      v-if="sponsor.planExpiresAt"
                       class="hidden xl:block text-xs text-muted-foreground tabular-nums"
-                      :title="t('adminSponsors.table.lastSupport')"
+                      :title="t('adminSponsors.table.effectiveExpiry')"
                     >
-                      {{ formatDate(sponsor.paidAt) }}
+                      {{ formatDate(sponsor.planExpiresAt) }}
                     </span>
                   </div>
                 </TableCell>
@@ -251,7 +262,7 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
     </Card>
 
     <Dialog v-model:open="editOpen">
-      <DialogScrollContent class="sm:max-w-[min(42rem,90vw)]">
+      <DialogScrollContent class="sm:max-w-[min(56rem,92vw)]">
         <DialogHeader>
           <DialogTitle>{{ t("adminSponsors.edit.title") }}</DialogTitle>
         </DialogHeader>
@@ -295,10 +306,6 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
               <Label for="admin-sponsor-paid-at">{{ t("adminSponsors.edit.paidAt") }}</Label>
               <Input id="admin-sponsor-paid-at" v-model="form.paidAt" type="datetime-local" />
             </div>
-            <div class="space-y-2">
-              <Label for="admin-sponsor-expires-at">{{ t("adminSponsors.edit.planExpiresAt") }}</Label>
-              <Input id="admin-sponsor-expires-at" v-model="form.planExpiresAt" type="datetime-local" />
-            </div>
           </div>
 
           <div class="space-y-2">
@@ -311,15 +318,7 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
             />
           </div>
 
-          <div class="grid gap-3 rounded-xl border bg-muted/20 p-4 sm:grid-cols-2">
-            <div class="flex items-center gap-3">
-              <Switch
-                id="admin-sponsor-active"
-                :model-value="form.isActive"
-                @update:model-value="form.isActive = !!$event"
-              />
-              <Label for="admin-sponsor-active">{{ t("adminSponsors.edit.isActive") }}</Label>
-            </div>
+          <div class="rounded-xl border bg-muted/20 p-4">
             <div class="flex items-center gap-3">
               <Switch
                 id="admin-sponsor-afdian-sync"
@@ -337,6 +336,22 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
             <LucideShieldCheck class="mt-0.5 h-4 w-4 shrink-0 text-pink-500" />
             <span>{{ t("adminSponsors.edit.manualProfileHint") }}</span>
           </div>
+
+          <SponsorDurationPanel
+            v-model:manual-form="manualForm"
+            :detail="detail"
+            :loading="detailLoading"
+            :form-open="manualFormOpen"
+            :editing-entry-id="editingEntryId"
+            :saving="manualSaving"
+            :deleting="deletingEntry"
+            :format-date="formatDate"
+            @new="startNewManualEntry"
+            @edit="startEditManualEntry"
+            @cancel="closeManualForm"
+            @save="saveManualEntry"
+            @delete="deleteManualEntry"
+          />
         </div>
 
         <DialogFooter>
@@ -347,6 +362,43 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
             <LucideLoader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
             <LucideSave v-else class="mr-2 h-4 w-4" />
             {{ t("common.save") }}
+          </Button>
+        </DialogFooter>
+      </DialogScrollContent>
+    </Dialog>
+
+    <Dialog v-model:open="createOpen">
+      <DialogScrollContent class="sm:max-w-[min(32rem,92vw)]">
+        <DialogHeader>
+          <DialogTitle>{{ t("adminSponsors.create.title") }}</DialogTitle>
+        </DialogHeader>
+        <form id="admin-sponsor-create-form" class="grid gap-4 py-2" @submit.prevent="createSponsor">
+          <p class="text-sm text-muted-foreground">{{ t("adminSponsors.create.description") }}</p>
+          <div class="space-y-2">
+            <Label for="admin-sponsor-create-name">{{ t("adminSponsors.edit.name") }}</Label>
+            <Input id="admin-sponsor-create-name" v-model="createForm.name" />
+          </div>
+          <div class="space-y-2">
+            <Label for="admin-sponsor-create-avatar">{{ t("adminSponsors.edit.avatar") }}</Label>
+            <Input id="admin-sponsor-create-avatar" v-model="createForm.avatar" :placeholder="t('adminSponsors.edit.avatarPlaceholder')" />
+          </div>
+          <div class="space-y-2">
+            <Label for="admin-sponsor-create-plan">{{ t("adminSponsors.edit.planName") }}</Label>
+            <Input id="admin-sponsor-create-plan" v-model="createForm.planName" />
+          </div>
+          <div class="space-y-2">
+            <Label for="admin-sponsor-create-message">{{ t("adminSponsors.edit.message") }}</Label>
+            <Input id="admin-sponsor-create-message" v-model="createForm.message" />
+          </div>
+        </form>
+        <DialogFooter>
+          <Button variant="outline" :disabled="creating" @click="createOpen = false">
+            {{ t("common.cancel") }}
+          </Button>
+          <Button type="submit" form="admin-sponsor-create-form" :disabled="creating">
+            <LucideLoader2 v-if="creating" class="mr-2 h-4 w-4 animate-spin" />
+            <LucideUserPlus v-else class="mr-2 h-4 w-4" />
+            {{ t("adminSponsors.create.submit") }}
           </Button>
         </DialogFooter>
       </DialogScrollContent>

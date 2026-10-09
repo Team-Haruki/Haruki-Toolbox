@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useSponsors } from "@/modules/sponsor/composables/useSponsors"
+import { groupSponsorsByCategory, sponsorStatus } from "@/modules/sponsor/lib/categories"
 import type { SponsorSupporter } from "@/modules/sponsor/types"
 
 const AFDIAN_URL = "https://afdian.com/a/seiunx"
@@ -43,31 +44,18 @@ const heroStats = computed(() => {
   ]
 
   if (summary.value.supporterCount > 0) {
-    const sectionCount = (key: SponsorSectionKey) =>
-      sponsorSections.value.find((section) => section.key === key)?.supporters.length ?? 0
-    stats.push({ key: "duration", label: t("sponsor.summary.duration"), value: String(sectionCount("duration")) })
-    stats.push({ key: "oneTime", label: t("sponsor.summary.oneTime"), value: String(sectionCount("oneTime")) })
+    stats.push({ key: "current", label: t("sponsor.summary.current"), value: String(groups.value.current.length) })
+    stats.push({ key: "oneTime", label: t("sponsor.summary.oneTime"), value: String(groups.value.one_time.length) })
   }
 
   return stats
 })
 
-type SponsorSectionKey = "oneTime" | "duration" | "manual"
+type SponsorSectionKey = "current" | "former" | "oneTime"
 type SponsorSection = {
   key: SponsorSectionKey
   title: string
   supporters: SponsorSupporter[]
-}
-
-const nowMs = computed(() => Date.now())
-
-function timestampValue(value: string) {
-  if (!value) {
-    return 0
-  }
-
-  const date = new Date(value)
-  return Number.isNaN(date.valueOf()) ? 0 : date.valueOf()
 }
 
 function utcOffsetLabel(date: Date) {
@@ -93,86 +81,27 @@ const generatedAtLabel = computed(() => {
   return `${dateTimeFormatter.value.format(date)} (${utcOffsetLabel(date)})`
 })
 
-function isManualSponsor(sponsor: SponsorSupporter) {
-  return ["manual", "legacy", "imported"].includes(sponsor.source.toLowerCase())
-}
+// The backend decides each supporter's category and already orders them by
+// tier, then by expiry, so every section renders in server order.
+const groups = computed(() => groupSponsorsByCategory(supporters.value))
 
-function hasCurrentDurationSponsor(sponsor: SponsorSupporter) {
-  return sponsor.planName.trim() !== "" && sponsor.planExpiresAt !== ""
-}
-
-function isOneTimeSponsor(sponsor: SponsorSupporter) {
-  const planName = sponsor.planName.trim()
-  if (planName === "自选方案" || planName === "一次性赞助") {
-    return true
-  }
-
-  return planName !== "" && sponsor.planPayMonths === null && sponsor.planExpiresAt !== ""
-}
-
-function isExpiredSponsor(sponsor: SponsorSupporter) {
-  if (isOneTimeSponsor(sponsor)) {
-    return false
-  }
-
-  const expiresAt = timestampValue(sponsor.planExpiresAt)
-  return !hasCurrentDurationSponsor(sponsor) || (expiresAt > 0 && expiresAt < nowMs.value)
-}
-
-function compareSponsorTier(a: SponsorSupporter, b: SponsorSupporter) {
-  const priceDelta = (b.planPrice ?? 0) - (a.planPrice ?? 0)
-  if (priceDelta !== 0) {
-    return priceDelta
-  }
-
-  const rankDelta = (b.planRank ?? 0) - (a.planRank ?? 0)
-  if (rankDelta !== 0) {
-    return rankDelta
-  }
-
-  const planDelta = sponsorSubtitle(a).localeCompare(sponsorSubtitle(b), locale.value)
-  if (planDelta !== 0) {
-    return planDelta
-  }
-
-  return timestampValue(b.paidAt) - timestampValue(a.paidAt)
-}
-
-const sponsorSections = computed<SponsorSection[]>(() => {
-  const oneTime: SponsorSupporter[] = []
-  const duration: SponsorSupporter[] = []
-  const manual: SponsorSupporter[] = []
-
-  for (const sponsor of supporters.value) {
-    if (isOneTimeSponsor(sponsor)) {
-      oneTime.push(sponsor)
-    } else if (isManualSponsor(sponsor) || isExpiredSponsor(sponsor)) {
-      manual.push(sponsor)
-    } else {
-      duration.push(sponsor)
-    }
-  }
-
-  return [
-    {
-      // Backend already orders supporters by tier (plan rank) desc, then duration
-      // (expiry) desc, so the duration list is rendered in server order as-is.
-      key: "duration",
-      title: t("sponsor.sections.duration.title"),
-      supporters: duration,
-    },
-    {
-      key: "oneTime",
-      title: t("sponsor.sections.oneTime.title"),
-      supporters: oneTime.sort(compareSponsorTier),
-    },
-    {
-      key: "manual",
-      title: t("sponsor.sections.manual.title"),
-      supporters: manual.sort(compareSponsorTier),
-    },
-  ]
-})
+const sponsorSections = computed<SponsorSection[]>(() => [
+  {
+    key: "current",
+    title: t("sponsor.sections.current.title"),
+    supporters: groups.value.current,
+  },
+  {
+    key: "oneTime",
+    title: t("sponsor.sections.oneTime.title"),
+    supporters: groups.value.one_time,
+  },
+  {
+    key: "former",
+    title: t("sponsor.sections.former.title"),
+    supporters: groups.value.former,
+  },
+])
 
 function fallbackName(sponsor: SponsorSupporter) {
   return sponsor.name || t("sponsor.supporter.anonymous")
@@ -182,13 +111,9 @@ function fallbackInitial(sponsor: SponsorSupporter) {
   return fallbackName(sponsor).charAt(0).toUpperCase()
 }
 
-function formatSponsorDate(sponsor: SponsorSupporter) {
-  if (!sponsor.paidAt) {
-    return t("sponsor.supporter.recent")
-  }
-
-  const date = new Date(sponsor.paidAt)
-  if (Number.isNaN(date.valueOf())) {
+function formatDate(value: string) {
+  const date = new Date(value)
+  if (!value || Number.isNaN(date.valueOf())) {
     return t("sponsor.supporter.recent")
   }
 
@@ -200,22 +125,11 @@ function sponsorSubtitle(sponsor: SponsorSupporter) {
 }
 
 function sponsorStatusLabel(sponsor: SponsorSupporter) {
-  if (isManualSponsor(sponsor)) {
-    return t("sponsor.supporter.manual")
+  const status = sponsorStatus(sponsor)
+  if ("date" in status) {
+    return t(`sponsor.supporter.${status.key}`, { date: formatDate(status.date) })
   }
-
-  if (isOneTimeSponsor(sponsor)) {
-    return t("sponsor.supporter.oneTime")
-  }
-
-  if (sponsor.planExpiresAt) {
-    const date = formatSponsorDate({ ...sponsor, paidAt: sponsor.planExpiresAt })
-    return timestampValue(sponsor.planExpiresAt) < nowMs.value
-      ? t("sponsor.supporter.expiredAt", { date })
-      : t("sponsor.supporter.activeUntil", { date })
-  }
-
-  return t("sponsor.supporter.expired")
+  return t(`sponsor.supporter.${status.key}`)
 }
 </script>
 
@@ -323,8 +237,8 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
               {{ t(`sponsor.sections.${section.key}.empty`) }}
             </div>
 
-            <!-- Past / manual supporters: quiet chip wall -->
-            <div v-else-if="section.key === 'manual'" class="flex flex-wrap gap-2">
+            <!-- Former supporters: quiet chip wall -->
+            <div v-else-if="section.key === 'former'" class="flex flex-wrap gap-2">
               <span
                 v-for="sponsor in section.supporters"
                 :key="sponsor.id"
@@ -341,12 +255,12 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
               </span>
             </div>
 
-            <!-- Active / one-time supporters: cards -->
+            <!-- Current / one-time supporters: cards -->
             <div
               v-else
               :class="[
                 'grid grid-cols-1 gap-3',
-                section.key === 'duration' ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-4',
+                section.key === 'current' ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-4',
               ]"
             >
               <article
@@ -355,7 +269,7 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
                 class="flex h-full flex-col gap-2.5 rounded-xl border bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-pink-500/45 hover:shadow-md"
               >
                 <div class="flex items-center gap-3">
-                  <Avatar :class="section.key === 'duration' ? 'h-11 w-11 border' : 'h-9 w-9 border'">
+                  <Avatar :class="section.key === 'current' ? 'h-11 w-11 border' : 'h-9 w-9 border'">
                     <AvatarImage :src="sponsor.avatar" :alt="fallbackName(sponsor)" loading="lazy" decoding="async" />
                     <AvatarFallback class="bg-pink-500/5 text-sm font-semibold text-pink-600 dark:text-pink-300">
                       {{ fallbackInitial(sponsor) }}

@@ -201,21 +201,21 @@ export default {
     "summary": {
       "supporters": "赞助者",
       "pending": "待同步",
-      "duration": "长期赞助",
+      "current": "当前赞助",
       "oneTime": "一次性"
     },
     "sections": {
+      "current": {
+        "title": "当前赞助",
+        "empty": "暂无正在赞助的赞助者。"
+      },
       "oneTime": {
         "title": "一次性赞助",
         "empty": "暂无一次性赞助记录。"
       },
-      "duration": {
-        "title": "时长赞助",
-        "empty": "暂无按时长记录的赞助者。"
-      },
-      "manual": {
+      "former": {
         "title": "曾经赞助",
-        "empty": "暂无手动录入的历史赞助者。"
+        "empty": "暂无赞助时长已到期的赞助者。"
       }
     },
     "list": {
@@ -230,7 +230,6 @@ export default {
       "expired": "赞助时长到期",
       "expiredAt": "已于 {date} 到期",
       "oneTime": "一次性赞助",
-      "manual": "手动记录",
       "recent": "近期赞助",
       "months": "{month} 个月"
     },

@@ -784,7 +784,7 @@ export default {
   },
   "adminSponsors": {
     "title": "贊助者管理",
-    "description": "維護贊助者名單展示資料，並控制手動資料是否允許被愛發電同步覆蓋。",
+    "description": "維護贊助者名單展示資料與贊助時長：愛發電時長由訂單自動計算，其他渠道的贊助在這裡手動錄入。",
     "generatedAt": "生成時間：{date}",
     "common": {
       "fallback": "—",
@@ -792,21 +792,23 @@ export default {
     },
     "contribution": {
       "amount": "¥{amount}",
-      "month": "{count} 個月"
+      "month": "愛發電 {count} 個月"
     },
     "actions": {
       "refresh": "重新整理名單",
       "syncAfdian": "從愛發電同步",
-      "edit": "編輯資料"
+      "edit": "編輯資料",
+      "create": "新增贊助者"
     },
     "stats": {
       "total": "贊助者總數",
-      "active": "正在贊助",
+      "active": "當前贊助",
       "manualProfile": "手動保護資料"
     },
-    "status": {
-      "active": "正在贊助",
-      "past": "曾經贊助"
+    "category": {
+      "current": "當前贊助",
+      "former": "曾經贊助",
+      "one_time": "一次性贊助"
     },
     "afdianSync": {
       "enabled": "允許更新",
@@ -814,7 +816,7 @@ export default {
     },
     "list": {
       "title": "贊助者名單",
-      "description": "列表按後端返回順序展示；可直接編輯公開資料或保護手動資料。"
+      "description": "列表按後端返回順序展示；分類與到期時間由後端根據愛發電訂單和手動時長計算。"
     },
     "table": {
       "supporter": "贊助者",
@@ -822,6 +824,7 @@ export default {
       "status": "狀態",
       "source": "來源",
       "lastSupport": "最近贊助",
+      "effectiveExpiry": "實際到期時間",
       "contribution": "贊助貢獻",
       "afdianSync": "愛發電更新",
       "actions": "操作",
@@ -835,12 +838,74 @@ export default {
       "planName": "贊助檔位",
       "source": "來源",
       "paidAt": "最近贊助時間",
-      "planExpiresAt": "贊助到期時間",
       "message": "留言",
-      "isActive": "標記為正在贊助",
       "afdianSyncDisabled": "不從愛發電更新這個資料",
-      "afdianSyncHelp": "開啟後，手動編輯的暱稱、頭像、檔位和留言不會被後續愛發電同步覆蓋。",
+      "afdianSyncHelp": "開啟後，手動編輯的暱稱、頭像、檔位和留言不會被後續愛發電同步覆蓋；愛發電訂單仍會計入時長。",
       "manualProfileHint": "此處只儲存展示用資料和同步策略；愛發電 API key 與 webhook 配置仍應只存在後端。"
+    },
+    "duration": {
+      "title": "贊助時長",
+      "migrationPending": "這位贊助者還保留著舊版的單一到期時間，完成一次愛發電同步後才會拆分為愛發電時長和手動時長，屆時才能錄入手動時長。",
+      "afdianPart": "愛發電時長到期",
+      "afdianMonths": "共 {count} 個月",
+      "manualPart": "手動時長",
+      "manualCount": "{count} 條記錄",
+      "stackRule": "接在愛發電時長之後依次累加",
+      "effective": "實際到期時間",
+      "none": "無",
+      "reported": "愛發電最近一次報告的方案到期時間：{date}",
+      "amount": {
+        "day": "{count} 天",
+        "month": "{count} 個月"
+      },
+      "orders": {
+        "title": "愛發電訂單（只讀）",
+        "empty": "沒有愛發電訂單。",
+        "paidAt": "時間",
+        "plan": "方案",
+        "kind": "時長",
+        "amount": "實付",
+        "customPlan": "自選方案",
+        "months": "{count} 個月",
+        "kinds": {
+          "one_time": "一次性",
+          "ignored": "不計入"
+        }
+      },
+      "manual": {
+        "title": "手動時長",
+        "add": "新增手動時長",
+        "empty": "還沒有手動時長。",
+        "migrated": "遷移",
+        "startsAt": "最早開始：{date}",
+        "createdBy": "{user} 錄入於 {date}",
+        "updatedBy": "{user} 修改於 {date}",
+        "edit": "編輯",
+        "delete": "刪除",
+        "deleteTitle": "刪除這條手動時長？",
+        "deleteDescription": "將刪除 {amount} 的手動時長，實際到期時間會隨之縮短。"
+      },
+      "form": {
+        "amount": "數量",
+        "unit": "單位",
+        "units": {
+          "month": "月（31 天）",
+          "day": "天"
+        },
+        "startsAt": "最早開始時間",
+        "startsAtHelp": "留空即為現在。實際從愛發電時長和之前的手動時長結束後才開始計算；只有贊助已中斷時才從這裡開始，此時不能晚於現在。",
+        "note": "備註 / 原因",
+        "notePlaceholder": "例如：微信轉賬 30 元"
+      },
+      "validation": {
+        "amount": "數量必須是正整數（最多 1200 個月或 36600 天）",
+        "note": "請填寫備註（最多 500 位元組）"
+      }
+    },
+    "create": {
+      "title": "新增贊助者",
+      "description": "用於通過愛發電以外渠道贊助的人。建立後可以在資料裡新增手動時長。",
+      "submit": "建立"
     },
     "toast": {
       "actionFailedFallback": "操作失敗",
@@ -848,9 +913,14 @@ export default {
       "saveFailedTitle": "儲存贊助者失敗",
       "syncFailedTitle": "愛發電同步失敗",
       "saved": "贊助者資料已儲存",
+      "created": "贊助者已建立",
       "synced": "已請求從愛發電同步",
       "afdianSyncDisabled": "已設為不從愛發電更新",
       "afdianSyncEnabled": "已允許從愛發電更新",
+      "manualSaved": "手動時長已儲存",
+      "manualSaveFailedTitle": "儲存手動時長失敗",
+      "manualDeleted": "手動時長已刪除",
+      "manualDeleteFailedTitle": "刪除手動時長失敗",
       "validation": {
         "nameRequired": "顯示名稱不能為空"
       }
