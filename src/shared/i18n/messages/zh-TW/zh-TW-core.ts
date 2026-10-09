@@ -372,7 +372,6 @@ export default {
       "currentNone": "尚未達成任何評分",
       "step": "{rank} 評分：{rewards}",
       "stepReached": "{rank} 評分：{rewards}（已達成）",
-      "next": "下一級 {rank}：{rewards}",
       "complete": "已拿滿",
       "empty": "沒有符合條件的歌曲。",
       "showMore": "顯示更多（還有 {count} 首）"

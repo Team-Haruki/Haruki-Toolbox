@@ -372,7 +372,6 @@ export default {
       "currentNone": "No rank reached yet",
       "step": "Rank {rank}: {rewards}",
       "stepReached": "Rank {rank}: {rewards} (reached)",
-      "next": "Next: {rank} for {rewards}",
       "complete": "Complete",
       "empty": "No songs match.",
       "showMore": "Show more ({count} left)"

@@ -8,12 +8,16 @@ import {
 
 const NOW = 1_700_000_000_000
 
+// Availability follows `publishedAt` (in-game publication). `releasedAt` is
+// the original song's release date and is ignored.
 const RAW_MUSICS = [
   { id: 1, title: "Tell Your World", assetbundleName: "jacket_s_001", releasedAt: NOW - 1000, publishedAt: NOW - 2000 },
-  { id: 2, title: "Bitter Choco Decoration", assetbundleName: "jacket_s_002", releasedAt: NOW - 1000 },
-  // Not yet released on this server: excluded from every total.
-  { id: 3, title: "Future Song", assetbundleName: "jacket_s_003", releasedAt: NOW + 1000 },
-  // No releasedAt: falls back to publishedAt.
+  { id: 2, title: "Bitter Choco Decoration", assetbundleName: "jacket_s_002", releasedAt: NOW - 5000, publishedAt: NOW - 1000 },
+  // The original song is out, but it is not published in the game yet
+  // (like JP music 813 "at": releasedAt 2026-10-10, publishedAt 2026-10-11):
+  // excluded from every total.
+  { id: 3, title: "Future Song", assetbundleName: "jacket_s_003", releasedAt: NOW - 1000, publishedAt: NOW + 1000 },
+  // No releasedAt at all: publishedAt alone decides.
   { id: 4, title: "Legacy Song", assetbundleName: "jacket_s_004", publishedAt: NOW - 1000 },
   { title: "broken record without id" },
 ]
@@ -163,15 +167,41 @@ describe("buildMusicProgress", () => {
     expect(progress.master.levels.map((row) => row.playLevel)).toEqual([26, 24])
   })
 
-  it("excludes musics without any release timestamp", () => {
+  it("excludes musics without a publishedAt, even when releasedAt has passed", () => {
     const progress = buildMusicProgress({
-      rawMusics: [{ id: 5, title: "No dates", assetbundleName: "jacket_s_005" }],
-      rawMusicDifficulties: [{ id: 9, musicId: 5, musicDifficulty: "master", playLevel: 20 }],
+      rawMusics: [
+        { id: 5, title: "No dates", assetbundleName: "jacket_s_005" },
+        { id: 6, title: "Only releasedAt", assetbundleName: "jacket_s_006", releasedAt: NOW - 1000 },
+      ],
+      rawMusicDifficulties: [
+        { id: 9, musicId: 5, musicDifficulty: "master", playLevel: 20 },
+        { id: 10, musicId: 6, musicDifficulty: "master", playLevel: 20 },
+      ],
       rawUserMusicResults: [],
       now: NOW,
     })
 
     expect(progress.master.summary.total).toBe(0)
+  })
+
+  it("decides availability by publishedAt alone, never releasedAt", () => {
+    const progress = buildMusicProgress({
+      rawMusics: [
+        // Original song out, not yet published in the game: unavailable.
+        { id: 813, title: "at", assetbundleName: "jacket_s_813", releasedAt: NOW - 1000, publishedAt: NOW + 1000 },
+        // Published in the game before the original song's date: available.
+        { id: 814, title: "Early", assetbundleName: "jacket_s_814", releasedAt: NOW + 1000, publishedAt: NOW - 1000 },
+      ],
+      rawMusicDifficulties: [
+        { id: 11, musicId: 813, musicDifficulty: "master", playLevel: 30 },
+        { id: 12, musicId: 814, musicDifficulty: "master", playLevel: 30 },
+      ],
+      rawUserMusicResults: [],
+      now: NOW,
+    })
+
+    const ids = progress.master.levels.flatMap((row) => row.songs.map((song) => song.musicId))
+    expect(ids).toEqual([814])
   })
 })
 

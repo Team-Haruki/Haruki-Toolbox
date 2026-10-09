@@ -372,7 +372,6 @@ export default {
       "currentNone": "尚未达成任何评分",
       "step": "{rank} 评分：{rewards}",
       "stepReached": "{rank} 评分：{rewards}（已达成）",
-      "next": "下一级 {rank}：{rewards}",
       "complete": "已拿满",
       "empty": "没有符合条件的歌曲。",
       "showMore": "显示更多（还有 {count} 首）"

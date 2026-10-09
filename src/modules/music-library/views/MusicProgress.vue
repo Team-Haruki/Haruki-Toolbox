@@ -182,9 +182,6 @@ const scoreRankRows = computed<MusicProgressScoreRankRow[]>(() => {
     remainingText: song.complete
       ? t("musicProgress.scoreRank.complete")
       : t("musicProgress.rewardsRemaining", { list: formatRewardTotals(song.remaining) }),
-    nextText: song.nextRank != null && song.nextRewards != null
-      ? t("musicProgress.scoreRank.next", { rank: song.nextRank, rewards: formatRewardTotals(song.nextRewards) })
-      : null,
     complete: song.complete,
   }))
 })

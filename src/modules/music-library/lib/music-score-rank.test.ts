@@ -43,7 +43,6 @@ describe("buildMusicScoreRankProgress", () => {
     const [result] = buildMusicScoreRankProgress([song(1)], masters, new Map())!.songs
     expect(result.currentRank).toBeNull()
     expect(result.nextRank).toBe("C")
-    expect(result.nextRewards).toEqual(jewels(10))
     expect(result.steps.map((step) => step.reached)).toEqual([false, false, false, false])
     expect(result.obtained).toEqual(jewels(0))
     expect(result.remaining).toEqual(jewels(90))

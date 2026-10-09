@@ -39,17 +39,15 @@ export type MusicProgressScoreRankRow = {
   currentLabel: string
   /** Sort key; `remainingText` is the formatted version. */
   remaining: MusicRewardTotals
-  /** "Remaining: Crystals 70" or "Complete". */
+  /** Rewards of every rank above the current one ("Remaining: Crystals 70"), or "Complete". */
   remainingText: string
-  /** "Next: A for Crystals 20"; null once maxed. */
-  nextText: string | null
   complete: boolean
 }
 
 /**
  * Per-song score-rank progress. Score rank is progressive (C → B → A → S),
  * so each row shows one current rank: a stepper filled up to it, a badge
- * coloured by it, and what the next rank and the remaining ranks still pay.
+ * coloured by it, and what the ranks above it still pay in total.
  * Filter, sort and the paging of the long list are local UI state; the rows
  * come in prepared from the page so this component only lays them out.
  */
@@ -216,9 +214,11 @@ function styleOf(row: MusicProgressScoreRankRow) {
             </span>
           </span>
           <span class="flex shrink-0 items-center gap-2">
-            <span class="flex flex-col items-end gap-0.5 text-right text-xs tabular-nums">
-              <span :class="row.complete ? 'text-muted-foreground/70' : 'text-emerald-600 dark:text-emerald-400'">{{ row.remainingText }}</span>
-              <span v-if="row.nextText" class="text-muted-foreground">{{ row.nextText }}</span>
+            <span
+              class="text-right text-xs tabular-nums"
+              :class="row.complete ? 'text-muted-foreground/70' : 'font-medium text-emerald-600 dark:text-emerald-400'"
+            >
+              {{ row.remainingText }}
             </span>
             <span
               class="inline-flex size-8 items-center justify-center rounded-md border text-sm font-bold leading-none"

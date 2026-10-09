@@ -28,8 +28,6 @@ export type MusicScoreRankSong = MusicScoreRankSongInput & {
   currentRank: MusicScoreRank | null
   /** The rank after `currentRank`; null once the song is maxed. */
   nextRank: MusicScoreRank | null
-  /** Reward of `nextRank`; null once the song is maxed. */
-  nextRewards: MusicRewardTotals | null
   /** Rewards of the ranks up to `currentRank`. */
   obtained: MusicRewardTotals
   /** Rewards of the ranks above `currentRank`. */
@@ -149,7 +147,6 @@ export function buildMusicScoreRankProgress(
       steps,
       currentRank,
       nextRank,
-      nextRewards: nextRank == null ? null : (rewardsByRank.get(nextRank) ?? null),
       obtained,
       remaining,
       complete,
