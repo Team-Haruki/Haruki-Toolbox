@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.e2e.tsbuildinfo",
+    /* Specs run in node, but page.evaluate() callbacks run in the browser. */
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+  },
+  "include": ["tests/e2e/**/*.ts"]
+}
