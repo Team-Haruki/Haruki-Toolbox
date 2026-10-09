@@ -1,5 +1,5 @@
-/** Decided by the backend: 当前赞助 / 曾经赞助 / 一次性赞助. */
-export type SponsorCategory = "current" | "former" | "one_time"
+/** Decided by the backend: 当前赞助 / 曾经赞助. */
+export type SponsorCategory = "current" | "former"
 
 export interface SponsorSupporter {
   id: string

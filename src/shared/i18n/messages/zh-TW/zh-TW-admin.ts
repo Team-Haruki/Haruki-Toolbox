@@ -807,8 +807,7 @@ export default {
     },
     "category": {
       "current": "當前贊助",
-      "former": "曾經贊助",
-      "one_time": "一次性贊助"
+      "former": "曾經贊助"
     },
     "afdianSync": {
       "enabled": "允許更新",
@@ -868,7 +867,7 @@ export default {
         "customPlan": "自選方案",
         "months": "{count} 個月",
         "kinds": {
-          "one_time": "一次性",
+          "no_time": "不計時長",
           "ignored": "不計入"
         }
       },

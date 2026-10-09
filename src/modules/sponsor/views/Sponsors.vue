@@ -45,13 +45,12 @@ const heroStats = computed(() => {
 
   if (summary.value.supporterCount > 0) {
     stats.push({ key: "current", label: t("sponsor.summary.current"), value: String(groups.value.current.length) })
-    stats.push({ key: "oneTime", label: t("sponsor.summary.oneTime"), value: String(groups.value.one_time.length) })
   }
 
   return stats
 })
 
-type SponsorSectionKey = "current" | "former" | "oneTime"
+type SponsorSectionKey = "current" | "former"
 type SponsorSection = {
   key: SponsorSectionKey
   title: string
@@ -90,11 +89,6 @@ const sponsorSections = computed<SponsorSection[]>(() => [
     key: "current",
     title: t("sponsor.sections.current.title"),
     supporters: groups.value.current,
-  },
-  {
-    key: "oneTime",
-    title: t("sponsor.sections.oneTime.title"),
-    supporters: groups.value.one_time,
   },
   {
     key: "former",
@@ -255,13 +249,10 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
               </span>
             </div>
 
-            <!-- Current / one-time supporters: cards -->
+            <!-- Current supporters: cards -->
             <div
               v-else
-              :class="[
-                'grid grid-cols-1 gap-3',
-                section.key === 'current' ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-4',
-              ]"
+              class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
             >
               <article
                 v-for="sponsor in section.supporters"
@@ -269,7 +260,7 @@ function sponsorStatusLabel(sponsor: SponsorSupporter) {
                 class="flex h-full flex-col gap-2.5 rounded-xl border bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-pink-500/45 hover:shadow-md"
               >
                 <div class="flex items-center gap-3">
-                  <Avatar :class="section.key === 'current' ? 'h-11 w-11 border' : 'h-9 w-9 border'">
+                  <Avatar class="h-11 w-11 border">
                     <AvatarImage :src="sponsor.avatar" :alt="fallbackName(sponsor)" loading="lazy" decoding="async" />
                     <AvatarFallback class="bg-pink-500/5 text-sm font-semibold text-pink-600 dark:text-pink-300">
                       {{ fallbackInitial(sponsor) }}

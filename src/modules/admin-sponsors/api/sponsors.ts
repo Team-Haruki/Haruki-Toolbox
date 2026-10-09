@@ -81,7 +81,6 @@ function normalizeSponsorProfile(value: unknown): AdminSponsorProfile | null {
   // payloads without one.
   const category = readSponsorCategory(record.category, {
     isActive: readBoolean(record, ["isActive", "is_active", "active"], activeFallback),
-    planExpiresAt,
   })
 
   return {
@@ -137,7 +136,7 @@ export function normalizeAdminSponsorList(value: unknown): AdminSponsorListRespo
   }
 }
 
-const ORDER_KINDS: readonly AdminAfdianOrderKind[] = ["duration", "one_time", "ignored"]
+const ORDER_KINDS: readonly AdminAfdianOrderKind[] = ["duration", "no_time", "ignored"]
 
 function normalizeAfdianOrder(value: unknown): AdminAfdianOrder | null {
   const record = asRecord(value)

@@ -193,7 +193,7 @@ describe("normalizeAdminSponsorDetail", () => {
         months: 4,
         orders: [
           { outTradeNo: "o1", planId: "", planTitle: "", productType: 0, month: 3, kind: "duration", totalAmount: 15, paidAt: "2025-09-01T00:00:00Z" },
-          { outTradeNo: "o2", planId: "item", planTitle: "周边", productType: 1, month: 1, kind: "one_time", paidAt: "2025-10-01T00:00:00Z" },
+          { outTradeNo: "o2", planId: "item", planTitle: "周边", productType: 1, month: 1, kind: "no_time", paidAt: "2025-10-01T00:00:00Z" },
           { planId: "missing-trade-no" },
         ],
       },
@@ -205,14 +205,14 @@ describe("normalizeAdminSponsorDetail", () => {
 
     expect(detail?.sponsor.category).toBe("former")
     expect(detail?.sponsor.afdianMonths).toBe(4)
-    expect(detail?.afdian.orders.map((order) => [order.outTradeNo, order.kind])).toEqual([["o1", "duration"], ["o2", "one_time"]])
+    expect(detail?.afdian.orders.map((order) => [order.outTradeNo, order.kind])).toEqual([["o1", "duration"], ["o2", "no_time"]])
     expect(detail?.manualDurations[0]).toMatchObject({ id: 7, amount: 10, unit: "day", origin: "migration" })
     expect(detail?.effectiveExpiresAt).toBe("2026-01-11T00:00:00Z")
     expect(normalizeAdminSponsorDetail({ afdian: {} })).toBeNull()
 
     // The backend category wins over an expiry that is still in the future.
-    const list = normalizeAdminSponsorList([{ id: "x", category: "one_time", planExpiresAt: FUTURE_EXPIRE_ISO }])
-    expect(list.items[0]?.category).toBe("one_time")
+    const list = normalizeAdminSponsorList([{ id: "x", category: "former", planExpiresAt: FUTURE_EXPIRE_ISO }])
+    expect(list.items[0]?.category).toBe("former")
     expect(list.items[0]?.isActive).toBe(false)
   })
 })
