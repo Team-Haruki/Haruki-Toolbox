@@ -44,5 +44,12 @@ export function readAppUpdateMessage(data: unknown): AppUpdateMessage | null {
     return null
   }
 
+  if (type === APP_UPDATE_MESSAGE_HELLO || type === APP_UPDATE_MESSAGE_ACK) {
+    const build = (data as { build?: unknown }).build as Partial<Record<keyof AppUpdateClientBuild, unknown>> | null
+    if (!build || typeof build !== "object" || typeof build.version !== "string" || typeof build.gitCommit !== "string") {
+      return null
+    }
+  }
+
   return data as AppUpdateMessage
 }

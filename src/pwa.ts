@@ -294,7 +294,7 @@ export async function checkForAppUpdate(options: { silent?: boolean, hiddenForMs
       case "apply":
         appUpdateState.updateAvailable = true
         if (consumeReloadGuard(`update:${remote.gitCommit}`)) {
-          void reloadIntoDeployedBuild()
+          void reloadIntoDeployedBuild(undefined, { keepUnsavedInput: true })
         } else {
           showAppUpdatePrompt(remote)
         }
@@ -391,7 +391,7 @@ function startForcedUpdate(remote: AppBuildInfo) {
  * itself is what matters: navigations are network-first, so it fetches the
  * deployed index.html even if the worker update has not finished.
  */
-async function reloadIntoDeployedBuild(target?: string) {
+async function reloadIntoDeployedBuild(target?: string, options: { keepUnsavedInput?: boolean } = {}) {
   if (reloading) {
     return
   }
@@ -404,6 +404,13 @@ async function reloadIntoDeployedBuild(target?: string) {
       new Promise((resolve) => window.setTimeout(resolve, SERVICE_WORKER_UPDATE_TIMEOUT_MS)),
     ])
     registration.waiting?.postMessage({ type: APP_UPDATE_MESSAGE_SKIP_WAITING })
+  }
+
+  // A silent update must not discard what the reader typed meanwhile.
+  if (options.keepUnsavedInput && hasUnsavedInput()) {
+    reloading = false
+    showAppUpdatePrompt(appUpdateState.remote)
+    return
   }
 
   if (target && target !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {

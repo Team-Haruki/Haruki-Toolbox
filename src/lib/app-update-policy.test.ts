@@ -219,6 +219,11 @@ describe("readAppUpdateMessage", () => {
   test("accepts only the update protocol's messages", () => {
     expect(readAppUpdateMessage({ type: "haruki-app-update:probe" })).toEqual({ type: "haruki-app-update:probe" })
     expect(readAppUpdateMessage({ type: "SKIP_WAITING" })).toEqual({ type: "SKIP_WAITING" })
+    const build = { version: "9.9.0", gitCommit: "abc" }
+    expect(readAppUpdateMessage({ type: "haruki-app-update:ack", build })).toEqual({ type: "haruki-app-update:ack", build })
+    expect(readAppUpdateMessage({ type: "haruki-app-update:hello", build })).toEqual({ type: "haruki-app-update:hello", build })
+    expect(readAppUpdateMessage({ type: "haruki-app-update:ack" })).toBeNull()
+    expect(readAppUpdateMessage({ type: "haruki-app-update:hello", build: { version: 9 } })).toBeNull()
     expect(readAppUpdateMessage({ type: "other" })).toBeNull()
     expect(readAppUpdateMessage("haruki-app-update:probe")).toBeNull()
     expect(readAppUpdateMessage(null)).toBeNull()
