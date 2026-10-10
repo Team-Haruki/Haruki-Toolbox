@@ -59,7 +59,10 @@ export const IOS_URI_SCHEMES: Record<ClientSoftware, (url: string) => string> = 
   surge: (url) => `surge:///install-module?url=${encodeURIComponent(url)}`,
   qx: (url) => `quantumult-x:///add-resource?remote-resource={"rewrite_remote":["${encodeURIComponent(url)}"]}`,
   loon: (url) => `loon://import?plugin=${encodeURIComponent(url)}`,
-  stash: (url) => `https://link.stash.ws/install-override/${encodeURIComponent(url)}`,
+  // https://stash.wiki/faq/url-schema: the stash:// scheme takes the full, percent-encoded URL.
+  // link.stash.ws expects the URL without its scheme and unencoded, and drops the
+  // module URL's own query string, so it cannot carry mode / endpoint / chunk.
+  stash: (url) => `stash://install-override?url=${encodeURIComponent(url)}`,
 }
 
 export function isIOSUploadDataType(value: unknown): value is IOSUploadDataType {
