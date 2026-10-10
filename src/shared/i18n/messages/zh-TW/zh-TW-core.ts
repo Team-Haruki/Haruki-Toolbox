@@ -1479,7 +1479,13 @@ export default {
       "offlineReadyTitle": "離線快取已準備好",
       "offlineReadyDescription": "應用外殼已快取，之後可更快開啟。",
       "devTitle": "開發模式",
-      "devDescription": "開發模式下不會註冊 PWA 更新流程。"
+      "devDescription": "開發模式下不會註冊 PWA 更新流程。",
+      "forcedUpdateTitle": "目前版本已停止支援",
+      "forcedUpdateDescription": "正在更新到 {version}……",
+      "forcedUpdateWithInputDescription": "頁面將在一分鐘後重新整理並更新到 {version}，請先複製需要保留的輸入內容。",
+      "chunkErrorTitle": "部分頁面內容載入失敗",
+      "chunkErrorDescription": "可能已發布新版本，請重新整理頁面後繼續。",
+      "reloadAction": "重新整理頁面"
     }
   },
   "catalog": {

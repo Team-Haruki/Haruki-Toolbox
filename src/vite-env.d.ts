@@ -1,5 +1,4 @@
 /// <reference types="vite/client" />
-/// <reference types="vite-plugin-pwa/client" />
 /// <reference types="pinia-plugin-persistedstate" />
 
 interface ImportMetaEnv {
@@ -13,6 +12,8 @@ interface ImportMetaEnv {
   readonly VITE_ENABLE_CLOUDFLARE_TURNSTILE?: string
   readonly VITE_HARUKI_TOOLBOX_WEB_URL?: string
   readonly VITE_TURNSTILE_SITE_KEY: string
+  /** "true" enables build-info update checks outside production builds (e2e). */
+  readonly VITE_APP_UPDATE_CHECKS?: string
 }
 
 interface ImportMeta {
