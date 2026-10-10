@@ -1,0 +1,26 @@
+{
+  // The Service Worker (src/sw.ts) needs the WebWorker lib, which conflicts
+  // with the DOM lib of tsconfig.app.json, so it is its own project. Anything
+  // it imports from src/ (app-update-protocol.ts) must stay DOM-free.
+  "extends": "@vue/tsconfig/tsconfig.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.sw.tsbuildinfo",
+    "lib": ["ES2023", "WebWorker"],
+    "types": [],
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": ["src/sw.ts"]
+}

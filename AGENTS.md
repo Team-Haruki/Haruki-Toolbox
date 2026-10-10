@@ -12,7 +12,7 @@ Haruki Toolbox is a frontend-only project built with:
 - Vue Router
 - Vue I18n
 - Tailwind CSS 4
-- vite-plugin-pwa (Service Worker: precache + runtime image caches)
+- vite-plugin-pwa (custom Service Worker `src/sw.ts` via `injectManifest`: shell precache, network-first navigations, runtime caches)
 - Playwright for E2E smoke tests
 
 This repository is the web UI for the Haruki ecosystem. It integrates with Ory Kratos/Hydra/Oathkeeper, but it is not the backend repository.
@@ -21,7 +21,8 @@ This repository is the web UI for the Haruki ecosystem. It integrates with Ory K
 
 - `src/main.ts`: app bootstrap, Pinia setup, auth/session bootstrap, i18n initialization
 - `src/App.vue`: top-level app shell and user settings sync retry flow
-- `src/pwa.ts`: Service Worker registration, update prompt, build-info polling, old-cache cleanup
+- `src/pwa.ts`: Service Worker registration, update policy (build-info polling, prompt / silent / forced updates, reload guard, chunk-load recovery), old-cache cleanup; pure decisions in `src/lib/app-update-policy.ts`
+- `src/sw.ts`: the Service Worker (its own `tsconfig.sw.json`, WebWorker lib); talks to `src/pwa.ts` through `src/lib/app-update-protocol.ts`
 - `src/core/`: app-wide router and HTTP infrastructure
 - `src/shared/`: shared stores, i18n, shared components, and the Sekai game-data layer (`src/shared/sekai/`: master-data loading/caching via a web worker, catalog helpers, asset endpoint/URL resolution, Service-Worker image cache recovery). Master data and music_metas come from the Haruki master registry's CDN face (`https://sekai-api-cdn.haruki.seiunx.com`, see `data-sources.ts`): `/v1/master/{region}/current` is the manifest (its `contentHash` is the IndexedDB cache version), listed files load from the immutable `blob/{sha256}`; an unlisted *required* file loads from `files/{name}.json` (so a manifest gap surfaces as an error), while an unlisted *optional* file is recorded as empty without a request, and music_metas from `/v1/metas/{region}/music_metas.json`
 - `src/components/ui/`: reusable UI primitives (shadcn-vue style, `components.json`)
@@ -53,7 +54,8 @@ Bun is the runtime and package manager (README: Bun ≥ 1.2; CI pins 1.3.14). Sc
 
 `tsconfig.json` is a solution file with no sources of its own (`files: []`); `vue-tsc -b` checks each referenced project. Plain `vue-tsc --noEmit` on it checks nothing, so never go back to that.
 
-- `tsconfig.app.json` — app sources: `src/**/*.{ts,tsx,vue}` except `*.test.ts`; DOM lib, no ambient `types`.
+- `tsconfig.app.json` — app sources: `src/**/*.{ts,tsx,vue}` except `*.test.ts` and `src/sw.ts`; DOM lib, no ambient `types`.
+- `tsconfig.sw.json` — the Service Worker `src/sw.ts` with the WebWorker lib; whatever it imports must stay DOM-free.
 - `tsconfig.test.json` — unit tests (`src/**/*.test.ts`), extends the app config and adds `bun` types (`@types/bun`, pinned to the CI Bun version).
 - `tsconfig.node.json` — `vite.config.ts` and `playwright.config.ts` with `node` types.
 - `tsconfig.e2e.json` — `tests/e2e/**` (node types plus DOM for `page.evaluate` callbacks).
@@ -65,8 +67,13 @@ Bun is the runtime and package manager (README: Bun ≥ 1.2; CI pins 1.3.14). Sc
 ## Build and PWA
 
 - `vite.config.ts` splits vendor code into rolldown `advancedChunks` groups: `vendor-vue`, `vendor-ui`, `vendor-chart`, `vendor-monaco`. `envPrefix` exposes both `VITE_` and `ENABLE_` env vars.
-- The app is a PWA (`vite-plugin-pwa`, `registerType: 'prompt'`). Workbox precaches only the navigation shell (`index.html` and root icons); the content-hashed `/assets/` build output is cached at runtime CacheFirst (`app-assets-v1`), `public/` `/rank-border/` and `/basis/` files StaleWhileRevalidate (`app-static-v1`), and Sekai/toolbox CDN images CacheFirst (`sekai-image-assets-v2`).
-- Those CDN `<img>` loads are cross-origin no-cors, so cached responses are opaque and can pin CDN errors — see the image-recovery rule under "Common Pitfalls". `src/pwa.ts` owns SW registration, the update prompt, build-info polling, and old-cache cleanup.
+- The app is a PWA (`vite-plugin-pwa`, `strategies: 'injectManifest'`, worker source `src/sw.ts`, built as a classic IIFE to `dist/sw.js`; never rename it, every old registration points at `/sw.js`). The worker precaches only the navigation shell (`index.html` and root icons); the content-hashed `/assets/` build output is cached at runtime CacheFirst (`app-assets-v1`), `public/` `/rank-border/` and `/basis/` files StaleWhileRevalidate (`app-static-v1`), and Sekai/toolbox CDN images CacheFirst (`sekai-image-assets-v2`).
+- Those CDN `<img>` loads are cross-origin no-cors, so cached responses are opaque and can pin CDN errors — see the image-recovery rule under "Common Pitfalls".
+- Update policy: a new worker calls `skipWaiting()` + `clients.claim()`, and navigations are network-first (`/` fetched `no-cache`, precached shell only when offline or after 3 s), so a reload always lands on the deployed build. Open tabs poll `/build-info.json` (every 10 min, on becoming visible, on controller change): a newer commit shows the prompt, or reloads silently if the tab was hidden 15+ min with no unsaved input; a running version below `minSupportedVersion` is forced (1 min grace when a typed field still holds text). Chunk-load errors reload once. All automatic reloads go through the sessionStorage reload guard (2 per key per 10 min).
+- `minSupportedVersion` comes from `package.json` `harukiToolbox.minSupportedVersion` and is written into `build-info.json`. Raise it in the same change as a deploy that breaks older builds (removed hosts or backend routes, changed API contracts).
+- After activating, the worker probes open windows it has not seen announce themselves; windows that do not answer run pre-9.9 code and are reloaded. Pages answer in `installAppUpdateMessaging()`, which `src/main.ts` calls before any await.
+- `edgeone.json` / `vercel.json` serve `/`, `/index.html`, `/sw.js`, `/build-info.json`, `/asset-manifest.json` and `/manifest.webmanifest` with `Cache-Control: no-cache`; keep it that way.
+- Build-info checks only run in production builds, or with `VITE_APP_UPDATE_CHECKS=true` (set in `.env.e2e` for `tests/e2e/app-update.e2e.ts`).
 
 ## Architecture Conventions
 

@@ -32,7 +32,31 @@ const manualChunkGroups = [
 
 const packageJson = JSON.parse(
     readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
-) as { version?: string }
+) as { version?: string, harukiToolbox?: { minSupportedVersion?: string } }
+
+const RELEASE_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
+
+// The oldest app version this deployment still supports, published in
+// build-info.json. A running tab below it reloads into the deployed build
+// even when the reader has unsaved input (after a grace period); tabs at or
+// above it only get the update prompt. Bump it in package.json
+// (`harukiToolbox.minSupportedVersion`) together with any deploy that breaks
+// older builds: removed backend routes or hosts, changed API contracts.
+function resolveMinSupportedVersion(version: string) {
+    const minimum = packageJson.harukiToolbox?.minSupportedVersion?.trim()
+    if (!minimum) {
+        throw new Error('package.json harukiToolbox.minSupportedVersion is required')
+    }
+    if (!RELEASE_VERSION.test(minimum)) {
+        throw new Error(`harukiToolbox.minSupportedVersion "${minimum}" is not a major.minor.patch version`)
+    }
+    const [current, floor] = [version, minimum].map((value) => value.split('-')[0].split('.').map(Number))
+    const comparison = current.map((part, index) => part - floor[index]).find((difference) => difference !== 0) ?? 0
+    if (comparison < 0) {
+        throw new Error(`harukiToolbox.minSupportedVersion ${minimum} is newer than the app version ${version}`)
+    }
+    return minimum
+}
 
 function shortenGitCommit(hash: string) {
     return hash.trim().slice(0, 12)
@@ -63,10 +87,13 @@ function resolveGitCommit() {
     }
 }
 
+const appVersion = packageJson.version ?? '0.0.0'
+
 const appBuildInfo = {
-    version: packageJson.version ?? '0.0.0',
+    version: appVersion,
     gitCommit: resolveGitCommit(),
     buildTime: new Date().toISOString(),
+    minSupportedVersion: resolveMinSupportedVersion(appVersion),
 }
 
 const localDevHost = 'haruki-dev-local.seiunx.com'
@@ -184,7 +211,6 @@ export default defineConfig(({ command, mode }) => {
             buildInfoPlugin(),
             assetManifestPlugin(),
             VitePWA({
-                registerType: 'prompt',
                 includeManifestIcons: false,
                 manifest: {
                     name: 'Haruki Toolbox',
@@ -210,99 +236,30 @@ export default defineConfig(({ command, mode }) => {
                         },
                     ],
                 },
-                workbox: {
-                    cleanupOutdatedCaches: true,
-                    clientsClaim: true,
+                // Custom worker (src/sw.ts): it activates immediately, serves
+                // navigations network-first and reloads tabs still running a
+                // build from before the update protocol. Registration lives in
+                // src/pwa.ts, so nothing is injected into index.html.
+                strategies: 'injectManifest',
+                srcDir: 'src',
+                filename: 'sw.ts',
+                injectRegister: false,
+                injectManifest: {
+                    // Pre-9.9 tabs registered /sw.js as a classic script, and an
+                    // update keeps the registration's type: never emit ESM.
+                    rollupFormat: 'iife',
                     // Workbox installs precache entries strictly one at a time
                     // (upstream issue #2528), so every entry costs a full
                     // round-trip no matter how fast the connection is. Globbing
                     // the whole build produced ~395 entries / 5.4MB, and a real
                     // release renames ~170 of the content-hashed chunks — that
                     // serial queue is what made an update take about a minute.
-                    // Precache only the navigation shell; everything under
-                    // /assets/ is content-hashed and therefore immutable, so it
-                    // is cached at runtime on first use, in parallel, by the
-                    // browser's normal loading of the page.
+                    // Precache only the navigation shell (the offline fallback
+                    // for navigations) and root icons; everything under
+                    // /assets/ is content-hashed and cached at runtime.
                     // manifest.webmanifest is injected by vite-plugin-pwa itself.
                     globPatterns: ['index.html', '*.{ico,png,svg}'],
                     maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
-                    navigateFallbackDenylist: [/^\/api\//],
-                    runtimeCaching: [
-                        {
-                            // The whole build output is content-hashed, so a URL
-                            // here never changes meaning: cache-first, never
-                            // revalidated. This replaces the precache for every
-                            // chunk, stylesheet, font and wasm blob.
-                            urlPattern: ({ url, sameOrigin }: { url: URL, sameOrigin: boolean }) =>
-                                sameOrigin && url.pathname.startsWith('/assets/'),
-                            handler: 'CacheFirst',
-                            options: {
-                                cacheName: 'app-assets-v1',
-                                expiration: {
-                                    maxEntries: 600,
-                                    maxAgeSeconds: 60 * 60 * 24 * 60,
-                                    purgeOnQuotaError: true,
-                                },
-                                cacheableResponse: {
-                                    statuses: [200],
-                                },
-                            },
-                        },
-                        {
-                            // public/ assets keep stable URLs across builds, so
-                            // they have to revalidate instead of pinning forever.
-                            urlPattern: ({ url, sameOrigin }: { url: URL, sameOrigin: boolean }) =>
-                                sameOrigin
-                                && (url.pathname.startsWith('/rank-border/') || url.pathname.startsWith('/basis/')),
-                            handler: 'StaleWhileRevalidate',
-                            options: {
-                                cacheName: 'app-static-v1',
-                                expiration: {
-                                    maxEntries: 300,
-                                    maxAgeSeconds: 60 * 60 * 24 * 30,
-                                    purgeOnQuotaError: true,
-                                },
-                                cacheableResponse: {
-                                    statuses: [200],
-                                },
-                            },
-                        },
-                        {
-                            // Sekai game-asset and toolbox static images (music
-                            // jackets, card art, icons) are content-addressed and
-                            // immutable. Cache them at runtime so re-opening pickers
-                            // or revisiting pages reuses them instead of
-                            // re-downloading — independent of the CDN's headers.
-                            // Scoped to image extensions to avoid caching large 3D
-                            // bundles.
-                            // Keep latency probes on the network. Caching them makes
-                            // endpoint re-tests measure Service Worker cache reads.
-                            urlPattern: /^https:\/\/(sekai-assets\.haruki\.seiunx\.com|sekai-assets-bdf29c81\.seiunx\.net|sekai-assets-cn03-she01-cdn\.haruki\.seiunx\.com|images\.haruki\.seiunx\.com)\/(?!asset-probe\.png(?:\?|$)).*\.(?:png|jpe?g|webp|avif)(?:\?.*)?$/i,
-                            // These <img> loads are cross-origin no-cors, so every
-                            // response is opaque (status 0) — including CDN/WAF
-                            // errors, which statuses:[0,200] cannot filter out. A
-                            // cached error used to be pinned for 30 days (the
-                            // Safari "banner never loads" bug). CacheFirst stays
-                            // (revalidate-per-use would re-trigger the WAF's burst
-                            // limit and can overwrite good entries with errors);
-                            // instead image error handlers purge the poisoned
-                            // entry and retry (shared/sekai/image-recovery.ts).
-                            // The v2 name abandons caches poisoned before that
-                            // recovery existed; pwa.ts deletes the old cache.
-                            handler: 'CacheFirst',
-                            options: {
-                                cacheName: 'sekai-image-assets-v2',
-                                expiration: {
-                                    maxEntries: 4000,
-                                    maxAgeSeconds: 60 * 60 * 24 * 30,
-                                    purgeOnQuotaError: true,
-                                },
-                                cacheableResponse: {
-                                    statuses: [0, 200],
-                                },
-                            },
-                        },
-                    ],
                 },
                 devOptions: {
                     enabled: false,

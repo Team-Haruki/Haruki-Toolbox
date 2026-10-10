@@ -1479,7 +1479,13 @@ export default {
       "offlineReadyTitle": "离线缓存已准备好",
       "offlineReadyDescription": "应用外壳已缓存，之后可更快打开。",
       "devTitle": "开发模式",
-      "devDescription": "开发模式下不会注册 PWA 更新流程。"
+      "devDescription": "开发模式下不会注册 PWA 更新流程。",
+      "forcedUpdateTitle": "当前版本已停止支持",
+      "forcedUpdateDescription": "正在更新到 {version}……",
+      "forcedUpdateWithInputDescription": "页面将在一分钟后刷新并更新到 {version}，请先复制需要保留的输入内容。",
+      "chunkErrorTitle": "部分页面内容加载失败",
+      "chunkErrorDescription": "可能已发布新版本，请刷新页面后继续。",
+      "reloadAction": "刷新页面"
     }
   },
   "catalog": {

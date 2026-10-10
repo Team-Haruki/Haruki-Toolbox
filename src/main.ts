@@ -11,12 +11,16 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { setupInterceptors } from "@/core/http/call-api";
 import { DEFAULT_LOCALE, i18n, isAppLocale, setI18nLocale } from "@/shared/i18n";
 import { bootstrapUserSettingsFromKratosSession } from "@/modules/auth/lib/kratos";
-import { registerAppServiceWorker } from "@/pwa";
+import { installAppUpdateMessaging, installChunkLoadRecovery, registerAppServiceWorker } from "@/pwa";
 import { isRestrictedBrowser } from "@/lib/restricted-browser";
 import { configureAnalytics } from "@/lib/analytics";
 
 /** Longest the splash waits for the session bootstrap before mounting anyway. */
 const SESSION_BOOTSTRAP_WAIT_MS = 4000
+
+// First, before any await: the Service Worker probes open windows right after
+// it activates and reloads the ones that do not answer (legacy builds).
+installAppUpdateMessaging()
 
 // The first page view, sent before the router runs (index.html used to send it);
 // its address never carries a device ?user_code= or an OAuth challenge.
@@ -50,6 +54,7 @@ if (isRestrictedBrowser()) {
         { immediate: false }
     )
     setupInterceptors(router)
+    installChunkLoadRecovery(router)
     userStore.checkExpiration()
     const hadCachedUserContext = userStore.isLoggedIn || !!userStore.userId
     const sessionBootstrap = bootstrapUserSettingsFromKratosSession().then(

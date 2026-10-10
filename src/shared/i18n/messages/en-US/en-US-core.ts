@@ -1479,7 +1479,13 @@ export default {
       "offlineReadyTitle": "Offline cache ready",
       "offlineReadyDescription": "The app shell is cached and can open faster next time.",
       "devTitle": "Development mode",
-      "devDescription": "PWA updates are not registered in development mode."
+      "devDescription": "PWA updates are not registered in development mode.",
+      "forcedUpdateTitle": "This version is no longer supported",
+      "forcedUpdateDescription": "Updating to version {version}…",
+      "forcedUpdateWithInputDescription": "The page reloads in a minute to update to version {version}. Copy anything you typed that you want to keep.",
+      "chunkErrorTitle": "Part of the page failed to load",
+      "chunkErrorDescription": "A new version was probably released. Reload the page to continue.",
+      "reloadAction": "Reload page"
     }
   },
   "catalog": {
