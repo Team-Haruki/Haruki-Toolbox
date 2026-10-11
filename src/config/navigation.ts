@@ -21,6 +21,7 @@ import {
   LucideMusic,
   LucideNavigation,
   LucideScrollText,
+  LucideSend,
   LucideShieldAlert,
   LucideSprout,
   LucideTicket,
@@ -102,6 +103,7 @@ export const WEB_NAV_SECTIONS: NavSection[] = [
         ],
       },
       { titleKey: "navigation.items.uploadData", icon: LucideCloudUpload, url: "/upload-data" },
+      { titleKey: "navigation.items.sekaiStation", icon: LucideSend, url: "/sekai-station" },
     ],
   },
 ]
