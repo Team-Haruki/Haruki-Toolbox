@@ -11,6 +11,8 @@ import { useGameAccountDataGrants } from "@/modules/user-settings/composables/us
 import { useUserStore } from "@/shared/stores/user"
 import { useI18n } from "vue-i18n"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { RouterLink } from "vue-router"
+import { Button } from "@/components/ui/button"
 import { LucideInfo } from "lucide-vue-next"
 
 const {
@@ -76,6 +78,21 @@ const {
           <p><span class="font-semibold text-foreground">{{ t("userSettings.gameBinding.alert.line1Server") }}</span>{{ t("userSettings.gameBinding.alert.line1Middle") }}<span class="font-semibold text-foreground">{{ t("userSettings.gameBinding.alert.line1GameId") }}</span>{{ t("userSettings.gameBinding.alert.line1After") }}</p>
           <p>{{ t("userSettings.gameBinding.alert.line2") }}</p>
         </AlertDescription>
+      </div>
+    </Alert>
+
+    <Alert variant="default" class="flex items-start gap-2 w-full max-w-2xl bg-muted/20">
+      <LucideInfo class="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
+      <div class="space-y-2 w-full">
+        <AlertTitle>{{ t("userSettings.gameBinding.harukiBotGuide.title") }}</AlertTitle>
+        <AlertDescription class="leading-relaxed text-muted-foreground">
+          {{ t("userSettings.gameBinding.harukiBotGuide.description") }}
+        </AlertDescription>
+        <Button as-child variant="outline" size="sm" class="max-w-full whitespace-normal h-auto min-h-8">
+          <RouterLink to="/user/harukibot-authorization">
+            {{ t("userSettings.gameBinding.harukiBotGuide.action") }}
+          </RouterLink>
+        </Button>
       </div>
     </Alert>
 
