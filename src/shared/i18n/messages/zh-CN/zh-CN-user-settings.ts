@@ -7,6 +7,11 @@ export default {
       "missingUserDescription": "用户信息缺失，请重新登录",
       "cancel": "取消"
     },
+    "officialBotGuide": {
+      "title": "使用 QQ 官方 Bot",
+      "description": "如果你使用的是 QQ 官方 Bot（宵崎奏），还需要单独添加 QQ 官方 Bot 授权。请按教程获取 QID 并完成授权。",
+      "action": "查看 QQ 官方 Bot 授权流程"
+    },
     "sections": {
       "accountTitle": "账号设置",
       "accountDescription": "管理你的身份、登录与安全相关设置。",
@@ -376,6 +381,11 @@ export default {
       }
     },
     "gameBinding": {
+      "harukiBotGuide": {
+        "title": "使用 HarukiBot",
+        "description": "如果需要在 HarukiBot 中使用游戏账号数据，请前往「HarukiBot 数据授权」绑定并验证你的 QQ 号。",
+        "action": "前往绑定 QQ"
+      },
       "title": "游戏账号绑定",
       "description": "管理您的 Haruki 工具箱账号绑定的《世界计划: 缤纷舞台 feat. 初音未来》游戏账号",
       "alert": {

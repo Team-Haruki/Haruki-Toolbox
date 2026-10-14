@@ -7,6 +7,11 @@ export default {
       "missingUserDescription": "Missing user information. Please sign in again.",
       "cancel": "Cancel"
     },
+    "officialBotGuide": {
+      "title": "Use the official QQ bot",
+      "description": "If you use the official QQ bot (宵崎奏), you also need to add a separate official QQ bot authorization. Follow the guide to get your QID and complete authorization.",
+      "action": "View the official QQ bot authorization guide"
+    },
     "sections": {
       "accountTitle": "Account settings",
       "accountDescription": "Identity and login security settings for your account.",
@@ -376,6 +381,11 @@ export default {
       }
     },
     "gameBinding": {
+      "harukiBotGuide": {
+        "title": "Use HarukiBot",
+        "description": "To use your game account data with HarukiBot, go to HarukiBot Data Authorization to bind and verify your QQ account.",
+        "action": "Bind QQ account"
+      },
       "title": "Game account bindings",
       "description": "Manage Project SEKAI accounts bound to your Haruki Toolbox account",
       "alert": {
