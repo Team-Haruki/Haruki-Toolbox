@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
-import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
 
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
@@ -43,23 +43,11 @@ const {
 /** Selected base characters; a pair shows when either side is selected. */
 const filterCharacterIds = ref<number[]>([])
 
-const isLoading = computed(() => suiteStatus.value === "loading" || masterLoading.value)
-const hasError = computed(() => suiteStatus.value === "error" || masterError.value != null)
-const isReady = computed(() => suiteStatus.value === "ready" && !masterLoading.value && masterError.value == null)
-
-const suiteDataMissing = computed(() => getMissingUploadDataType(suiteError.value) != null)
-
-const errorDetail = computed(() => {
-  if (masterError.value != null) {
-    return masterError.value
-  }
-
-  const raw = suiteError.value
-  if (raw == null) {
-    return null
-  }
-
-  return raw instanceof Error ? raw.message : String(raw)
+const { isLoading, hasError, isReady, suiteDataMissing, errorDetail } = useUserDataPageState({
+  status: suiteStatus,
+  error: suiteError,
+  masterLoading: masterLoading,
+  masterError: masterError,
 })
 
 

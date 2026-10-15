@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
-import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
 
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
@@ -112,23 +112,11 @@ const snapshotData = computed(() =>
   isRealtime.value ? normalizeProfileSnapshot(profileData.value) : suiteData.value,
 )
 
-const isLoading = computed(() => sourceStatus.value === "loading" || masterLoading.value)
-const hasError = computed(() => sourceStatus.value === "error" || masterError.value != null)
-const isReady = computed(() => sourceStatus.value === "ready" && !masterLoading.value && masterError.value == null)
-
-const suiteDataMissing = computed(() => !isRealtime.value && getMissingUploadDataType(suiteError.value) != null)
-
-const errorDetail = computed(() => {
-  if (masterError.value != null) {
-    return masterError.value
-  }
-
-  const raw = sourceError.value
-  if (raw == null) {
-    return null
-  }
-
-  return raw instanceof Error ? raw.message : String(raw)
+const { isLoading, hasError, isReady, suiteDataMissing, errorDetail } = useUserDataPageState({
+  status: sourceStatus,
+  error: sourceError,
+  masterLoading: masterLoading,
+  masterError: masterError,
 })
 
 const dateTimeFormatter = computed(() => new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" }))
