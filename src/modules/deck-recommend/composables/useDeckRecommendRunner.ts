@@ -1,5 +1,5 @@
 import { computed, ref } from "vue"
-import { isAxiosError } from "axios"
+import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
 import type {
   MusicRecommendOptions,
   RecommendDeck,
@@ -339,7 +339,7 @@ export function useDeckRecommendRunner() {
       applyUserDataCacheStatus(result)
       return result.data
     } catch (fetchError) {
-      userDataMissing.value = isAxiosError(fetchError) && fetchError.response?.status === 404
+      userDataMissing.value = getMissingUploadDataType(fetchError) != null
       throw fetchError
     }
   }

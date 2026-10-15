@@ -1,3 +1,4 @@
+import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
 import {
   getUserProfile,
   fetchDeckRecommendMysekaiUserData,
@@ -43,6 +44,7 @@ export type RefreshDeckRecommendProfilesResult = {
 }
 
 export type RefreshDeckRecommendSuitesResult = {
+  missing: number
   refreshed: number
   updated: number
   failed: number
@@ -143,9 +145,10 @@ export async function refreshDeckRecommendSuitesForBoundAccounts(input: {
   toolboxUserId: string | number
   accounts: readonly { server: SekaiRegion; userId: string | number }[]
   onProgress?: (progress: RefreshDeckRecommendSuitesProgress) => void
-}): Promise<RefreshDeckRecommendSuitesResult> {
+}, fetchUserData: typeof fetchDeckRecommendUserDataWithCache = fetchDeckRecommendUserDataWithCache): Promise<RefreshDeckRecommendSuitesResult> {
   const uniqueAccounts = dedupeProfileAccounts(input.accounts)
   const result: RefreshDeckRecommendSuitesResult = {
+    missing: 0,
     refreshed: 0,
     updated: 0,
     failed: 0,
@@ -155,7 +158,7 @@ export async function refreshDeckRecommendSuitesForBoundAccounts(input: {
   let completed = 0
   for (const account of uniqueAccounts) {
     try {
-      const fetchResult = await fetchDeckRecommendUserDataWithCache({
+      const fetchResult = await fetchUserData({
         toolboxUserId: input.toolboxUserId,
         server: account.server,
         gameUserId: account.userId,
@@ -165,8 +168,9 @@ export async function refreshDeckRecommendSuitesForBoundAccounts(input: {
       if (!fetchResult.cacheHit) {
         result.updated += 1
       }
-    } catch {
-      result.failed += 1
+    } catch (error) {
+      if (getMissingUploadDataType(error)) result.missing += 1
+      else result.failed += 1
     }
     completed += 1
     input.onProgress?.({ completed, total: result.total })

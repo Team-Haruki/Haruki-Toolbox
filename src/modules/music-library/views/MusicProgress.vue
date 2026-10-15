@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { RouterLink } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { isAxiosError } from "axios"
+import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
+import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
 import type { AcceptableValue } from "reka-ui"
-import { LucideChevronsDownUp, LucideChevronsUpDown, LucideCloudUpload, LucideRefreshCw } from "lucide-vue-next"
+import { LucideChevronsDownUp, LucideChevronsUpDown, LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -63,7 +63,7 @@ const suite = useUserSuite(["userMusics", "userMusicResults", "userMusicAchievem
 const region = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 const master = useMusicProgressMasterData(region, { withAchievements: true })
 const suiteDataMissing = computed(
-  () => isAxiosError(suite.error.value) && suite.error.value.response?.status === 404,
+  () => getMissingUploadDataType(suite.error.value) != null,
 )
 
 const activeDifficulty = ref<MusicDifficulty>("master")
@@ -462,21 +462,7 @@ function refresh() {
     <!-- Errors -->
     <Card v-else-if="suite.status.value === 'error' || master.error.value">
       <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <!-- A grantee cannot upload the owner's data, so no upload CTA there. -->
-        <template v-if="suiteDataMissing && selectedAccount?.ownership === 'granted'">
-          <LucideCloudUpload class="size-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-          <p class="max-w-md text-sm text-muted-foreground">{{ t("musicProgress.missingGrantedData") }}</p>
-        </template>
-        <template v-else-if="suiteDataMissing">
-          <LucideCloudUpload class="size-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-          <p class="max-w-md text-sm text-muted-foreground">{{ t("musicProgress.missingUserData") }}</p>
-          <Button as-child type="button" size="sm">
-            <RouterLink to="/upload-data">
-              <LucideCloudUpload class="size-4" aria-hidden="true" />
-              {{ t("musicProgress.uploadData") }}
-            </RouterLink>
-          </Button>
-        </template>
+        <MissingGameDataNotice v-if="suiteDataMissing" :granted="selectedAccount?.ownership === 'granted'" />
         <template v-else>
           <p v-if="suite.status.value === 'error'" class="text-sm text-muted-foreground">{{ t("musicProgress.suiteError") }}</p>
           <p v-if="master.error.value" class="max-w-full break-words font-mono text-xs text-muted-foreground">

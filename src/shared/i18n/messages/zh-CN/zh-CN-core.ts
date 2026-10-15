@@ -1,6 +1,17 @@
 // AUTO-GENERATED split of the former monolithic zh-CN locale file.
 // Namespaces: app, common, turnstile, auth, sidebarUser, home, gameAccountSelect, cardBox, eventRecords, musicProgress, globalSearch, costumes, gachas, playerProfile, training, searchAlias, sekaiRegion, sekaiUnreleased, navigation, webLayout, route, musicLibrary, cards, events, homeSettings, core, catalog
 export default {
+  "uploadedGameData": {
+    "missingTitle": "尚未上传游戏数据",
+    "missing": {
+      "suite": "该游戏账号尚未上传 Suite 数据，请先前往数据上传页完成上传，再回来刷新。",
+      "mysekai": "该游戏账号尚未上传 MySekai 数据，请先前往数据上传页完成上传，再回来刷新。"
+    },
+    "missingGranted": "该账号的所有者尚未上传所需游戏数据，请联系所有者上传；如已获得数据上传授权，也可以前往数据上传页上传。",
+    "uploadAction": "前往数据上传页",
+    "missingAccounts": "有 {count} 个绑定账号尚未上传游戏数据，请先前往数据上传页完成上传。",
+    "otherFailures": "另有 {count} 个账号读取失败，请稍后重试。"
+  },
   "app": {
     "name": "Haruki工具箱"
   },

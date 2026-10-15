@@ -1,6 +1,17 @@
 // AUTO-GENERATED zh-TW locale bundle (OpenCC s2twp from zh-CN).
-// Namespaces: app, common, turnstile, auth, sidebarUser, home, gameAccountSelect, cardBox, eventRecords, musicProgress, globalSearch, costumes, gachas, playerProfile, training, searchAlias, sekaiRegion, sekaiUnreleased, navigation, webLayout, route, musicLibrary, cards, events, homeSettings, core, catalog
+// Namespaces: uploadedGameData, app, common, turnstile, auth, sidebarUser, home, gameAccountSelect, cardBox, eventRecords, musicProgress, globalSearch, costumes, gachas, playerProfile, training, searchAlias, sekaiRegion, sekaiUnreleased, navigation, webLayout, route, musicLibrary, cards, events, homeSettings, core, catalog
 export default {
+  "uploadedGameData": {
+    "missingTitle": "尚未上傳遊戲資料",
+    "missing": {
+      "suite": "該遊戲賬號尚未上傳 Suite 資料，請先前往資料上傳頁完成上傳，再回來重新整理。",
+      "mysekai": "該遊戲賬號尚未上傳 MySekai 資料，請先前往資料上傳頁完成上傳，再回來重新整理。"
+    },
+    "missingGranted": "該賬號的所有者尚未上傳所需遊戲資料，請聯絡所有者上傳；如已獲得資料上傳授權，也可以前往資料上傳頁上傳。",
+    "uploadAction": "前往資料上傳頁",
+    "missingAccounts": "有 {count} 個繫結賬號尚未上傳遊戲資料，請先前往資料上傳頁完成上傳。",
+    "otherFailures": "另有 {count} 個賬號讀取失敗，請稍後重試。"
+  },
   "app": {
     "name": "Haruki工具箱"
   },

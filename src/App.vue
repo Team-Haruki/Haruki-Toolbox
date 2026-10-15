@@ -258,6 +258,21 @@ async function prefetchBoundAccountSuites(
       },
     })
 
+    if (result.missing > 0) {
+      toast.info(t("uploadedGameData.missingTitle"), {
+        id: toastId,
+        description: [
+          t("uploadedGameData.missingAccounts", { count: result.missing }),
+          ...(result.failed > 0 ? [t("uploadedGameData.otherFailures", { count: result.failed })] : []),
+        ].join(" "),
+        action: {
+          label: t("uploadedGameData.uploadAction"),
+          onClick: () => { void router.push("/upload-data") },
+        },
+      })
+      return
+    }
+
     if (result.failed > 0) {
       toast.warning(t("core.suitePrefetch.partialTitle"), {
         id: toastId,

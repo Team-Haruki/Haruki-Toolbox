@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
+import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
+
 import { computed, reactive, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideList } from "lucide-vue-next"
@@ -34,6 +37,7 @@ const { t, te, locale } = useI18n()
 const labels = { t, te }
 
 const {
+  selectedAccount,
   accountRegion,
   suiteStatus,
   suiteData,
@@ -63,21 +67,11 @@ const dialogItemId = ref<number | null>(null)
 
 const nowMs = Date.now()
 
-const isLoading = computed(() => suiteStatus.value === "loading" || masterLoading.value)
-const hasError = computed(() => suiteStatus.value === "error" || masterError.value != null)
-const isReady = computed(() => suiteStatus.value === "ready" && !masterLoading.value && masterError.value == null)
-
-const errorDetail = computed(() => {
-  if (masterError.value != null) {
-    return masterError.value
-  }
-
-  const raw = suiteError.value
-  if (raw == null) {
-    return null
-  }
-
-  return raw instanceof Error ? raw.message : String(raw)
+const { isLoading, hasError, isReady, suiteDataMissing, errorDetail } = useUserDataPageState({
+  status: suiteStatus,
+  error: suiteError,
+  masterLoading: masterLoading,
+  masterError: masterError,
 })
 
 
@@ -348,6 +342,12 @@ function retry() {
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
         {{ t("training.area.noAccountHint") }}
+      </CardContent>
+    </Card>
+
+    <Card v-else-if="suiteDataMissing">
+      <CardContent class="py-10">
+        <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" />
       </CardContent>
     </Card>
 

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
+import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
+
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideChevronsDownUp, LucideChevronsUpDown, LucideRefreshCw } from "lucide-vue-next"
@@ -141,21 +144,11 @@ const rosterRows = computed<CardBoxCharacterNavRow[]>(() =>
     }),
 )
 
-const isLoading = computed(() => suiteStatus.value === "loading" || catalogLoading.value)
-const hasError = computed(() => suiteStatus.value === "error" || catalogError.value != null)
-const isReady = computed(() => suiteStatus.value === "ready" && !catalogLoading.value && catalogError.value == null)
-
-const errorDetail = computed(() => {
-  if (catalogError.value != null) {
-    return catalogError.value
-  }
-
-  const raw = suiteError.value
-  if (raw == null) {
-    return null
-  }
-
-  return raw instanceof Error ? raw.message : String(raw)
+const { isLoading, hasError, isReady, suiteDataMissing, errorDetail } = useUserDataPageState({
+  status: suiteStatus,
+  error: suiteError,
+  masterLoading: catalogLoading,
+  masterError: catalogError,
 })
 
 const uploadTimeText = computed(() => {
@@ -492,6 +485,12 @@ function retry() {
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
         {{ t("cardBox.noAccountHint") }}
+      </CardContent>
+    </Card>
+
+    <Card v-else-if="suiteDataMissing">
+      <CardContent class="py-10">
+        <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" />
       </CardContent>
     </Card>
 
