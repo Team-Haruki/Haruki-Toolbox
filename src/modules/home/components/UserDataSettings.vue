@@ -193,6 +193,7 @@ async function refreshUserData() {
     return
   }
 
+  const dataMode = selectedDataMode.value
   missingDataType.value = null
   refreshing.value = true
   try {
@@ -220,6 +221,7 @@ async function refreshUserData() {
     lastCacheHit.value = result.cacheHit
     toast.success(t(result.cacheHit ? "homeSettings.userData.toast.alreadyCurrent" : "homeSettings.userData.toast.refreshed"))
   } catch (error) {
+    if (selectedAccount.value?.key !== account.key || selectedDataMode.value !== dataMode) return
     missingDataType.value = getMissingUploadDataType(error)
     if (missingDataType.value) return
     toast.error(t("homeSettings.userData.toast.refreshFailed"), {
