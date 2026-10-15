@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
+import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
@@ -59,6 +62,8 @@ import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 const { t, locale } = useI18n()
 
 const {
+  selectedAccount,
+  ancillaryDataMissing,
   accountRegion,
   dataSource,
   canUseRealtime,
@@ -110,6 +115,8 @@ const snapshotData = computed(() =>
 const isLoading = computed(() => sourceStatus.value === "loading" || masterLoading.value)
 const hasError = computed(() => sourceStatus.value === "error" || masterError.value != null)
 const isReady = computed(() => sourceStatus.value === "ready" && !masterLoading.value && masterError.value == null)
+
+const suiteDataMissing = computed(() => !isRealtime.value && getMissingUploadDataType(suiteError.value) != null)
 
 const errorDetail = computed(() => {
   if (masterError.value != null) {
@@ -480,6 +487,12 @@ function retry() {
       </CardContent>
     </Card>
 
+    <Card v-else-if="suiteDataMissing">
+      <CardContent class="py-10">
+        <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" />
+      </CardContent>
+    </Card>
+
     <!-- Error -->
     <Card v-else-if="hasError && !isLoading">
       <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
@@ -505,6 +518,11 @@ function retry() {
     </template>
 
     <template v-else-if="isReady">
+      <Card v-if="ancillaryDataMissing">
+        <CardContent class="py-6">
+          <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" />
+        </CardContent>
+      </Card>
       <!-- Identity: the in-game profile card (name, honors, bio, id) next to the shown deck -->
       <Card>
         <CardContent class="flex flex-col gap-5 py-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">

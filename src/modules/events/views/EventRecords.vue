@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive } from "vue"
-import { RouterLink } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { isAxiosError } from "axios"
+import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
+import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
 import type { AcceptableValue } from "reka-ui"
-import { LucideCloudUpload, LucideRefreshCcw } from "lucide-vue-next"
+import { LucideRefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -64,7 +64,7 @@ const bannerRegion = computed<SekaiRegion>(() => region.value ?? "jp")
 
 const master = useEventRecordsMaster(region)
 const suiteDataMissing = computed(
-  () => isAxiosError(suite.error.value) && suite.error.value.response?.status === 404,
+  () => getMissingUploadDataType(suite.error.value) != null,
 )
 
 const state = computed<"idle" | "loading" | "error" | "ready">(() => {
@@ -280,21 +280,7 @@ function reloadAll() {
     <!-- Error -->
     <Card v-else-if="state === 'error'">
       <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <!-- A grantee cannot upload the owner's data, so no upload CTA there. -->
-        <template v-if="suiteDataMissing && selectedAccount?.ownership === 'granted'">
-          <LucideCloudUpload class="size-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-          <p class="max-w-md text-sm text-muted-foreground">{{ t("eventRecords.missingGrantedData") }}</p>
-        </template>
-        <template v-else-if="suiteDataMissing">
-          <LucideCloudUpload class="size-6 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-          <p class="max-w-md text-sm text-muted-foreground">{{ t("eventRecords.missingUserData") }}</p>
-          <Button as-child size="sm">
-            <RouterLink to="/upload-data">
-              <LucideCloudUpload class="size-4" aria-hidden="true" />
-              {{ t("eventRecords.uploadData") }}
-            </RouterLink>
-          </Button>
-        </template>
+        <MissingGameDataNotice v-if="suiteDataMissing" :granted="selectedAccount?.ownership === 'granted'" />
         <template v-else>
           <p class="text-sm text-muted-foreground">{{ t("eventRecords.loadFailed") }}</p>
           <Button variant="outline" size="sm" @click="reloadAll">

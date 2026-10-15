@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
+import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+
 import { computed, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { Eraser, RefreshCw, UserRound } from "lucide-vue-next"
@@ -57,6 +60,8 @@ type BoundAccountOption = {
   ownerName: string | null
   capabilities: ReadonlySet<string>
 }
+
+const missingDataType = ref<ReturnType<typeof getMissingUploadDataType>>(null)
 
 const { t, locale } = useI18n()
 const userStore = useUserStore()
@@ -172,6 +177,7 @@ watch(
 watch(
   [selectedAccount, selectedDataMode],
   () => {
+    missingDataType.value = null
     void loadCacheStatus()
   },
   { immediate: true },
@@ -187,6 +193,7 @@ async function refreshUserData() {
     return
   }
 
+  missingDataType.value = null
   refreshing.value = true
   try {
     if (selectedDataMode.value === "profile") {
@@ -213,6 +220,8 @@ async function refreshUserData() {
     lastCacheHit.value = result.cacheHit
     toast.success(t(result.cacheHit ? "homeSettings.userData.toast.alreadyCurrent" : "homeSettings.userData.toast.refreshed"))
   } catch (error) {
+    missingDataType.value = getMissingUploadDataType(error)
+    if (missingDataType.value) return
     toast.error(t("homeSettings.userData.toast.refreshFailed"), {
       description: error instanceof Error ? error.message : String(error),
     })
@@ -380,6 +389,12 @@ function formatTime(value: number | null) {
         </div>
       </div>
 
+      <MissingGameDataNotice
+        v-if="missingDataType"
+        :data-type="missingDataType"
+        :granted="selectedAccount?.ownership === 'granted'"
+        class="px-4 py-6"
+      />
       <div class="flex flex-wrap justify-end gap-2 border-t px-4 py-3">
         <Button type="button" size="sm" variant="outline" :disabled="!canRefresh" @click="refreshUserData">
           <RefreshCw class="size-3.5" :class="{ 'animate-spin': refreshing }" />

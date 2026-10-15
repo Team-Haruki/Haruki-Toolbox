@@ -1,6 +1,17 @@
 // AUTO-GENERATED split of the former monolithic en-US locale file.
 // Namespaces: app, common, turnstile, auth, sidebarUser, home, gameAccountSelect, cardBox, eventRecords, musicProgress, globalSearch, costumes, gachas, playerProfile, training, searchAlias, sekaiRegion, sekaiUnreleased, navigation, webLayout, route, musicLibrary, cards, events, homeSettings, core, catalog
 export default {
+  "uploadedGameData": {
+    "missingTitle": "Game data has not been uploaded",
+    "missing": {
+      "suite": "This game account has no uploaded Suite data. Go to the data upload page, upload it, then return here and refresh.",
+      "mysekai": "This game account has no uploaded MySekai data. Go to the data upload page, upload it, then return here and refresh."
+    },
+    "missingGranted": "The account owner has not uploaded the required game data. Ask them to upload it, or use the data upload page if you have permission to upload for this account.",
+    "uploadAction": "Go to data upload",
+    "missingAccounts": "{count} bound accounts have no uploaded game data. Go to the data upload page to upload it.",
+    "otherFailures": "Another {count} accounts could not be loaded. Try again later."
+  },
   "app": {
     "name": "Haruki Toolbox"
   },

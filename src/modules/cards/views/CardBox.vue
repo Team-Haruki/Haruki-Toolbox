@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
+import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideChevronsDownUp, LucideChevronsUpDown, LucideRefreshCw } from "lucide-vue-next"
@@ -144,6 +147,8 @@ const rosterRows = computed<CardBoxCharacterNavRow[]>(() =>
 const isLoading = computed(() => suiteStatus.value === "loading" || catalogLoading.value)
 const hasError = computed(() => suiteStatus.value === "error" || catalogError.value != null)
 const isReady = computed(() => suiteStatus.value === "ready" && !catalogLoading.value && catalogError.value == null)
+
+const suiteDataMissing = computed(() => getMissingUploadDataType(suiteError.value) != null)
 
 const errorDetail = computed(() => {
   if (catalogError.value != null) {
@@ -492,6 +497,12 @@ function retry() {
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
         {{ t("cardBox.noAccountHint") }}
+      </CardContent>
+    </Card>
+
+    <Card v-else-if="suiteDataMissing">
+      <CardContent class="py-10">
+        <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" />
       </CardContent>
     </Card>
 

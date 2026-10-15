@@ -1,3 +1,4 @@
+import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
 import { computed, ref, shallowRef, watch } from "vue"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
@@ -239,6 +240,8 @@ export function usePlayerProfile() {
 
   return {
     selectedAccount,
+    ancillaryDataMissing: computed(() =>
+      [extrasSuite.error.value, eventsSuite.error.value].some((error) => getMissingUploadDataType(error) != null)),
     accountRegion,
     dataSource,
     canUseRealtime,

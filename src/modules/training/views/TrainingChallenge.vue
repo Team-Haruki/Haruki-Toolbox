@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
+import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideGem, LucideTrophy } from "lucide-vue-next"
@@ -23,6 +26,7 @@ import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 const { t, locale } = useI18n()
 
 const {
+  selectedAccount,
   accountRegion,
   suiteStatus,
   suiteData,
@@ -42,6 +46,8 @@ const sortMode = ref<ChallengeSortMode>("character")
 const isLoading = computed(() => suiteStatus.value === "loading" || masterLoading.value)
 const hasError = computed(() => suiteStatus.value === "error" || masterError.value != null)
 const isReady = computed(() => suiteStatus.value === "ready" && !masterLoading.value && masterError.value == null)
+
+const suiteDataMissing = computed(() => getMissingUploadDataType(suiteError.value) != null)
 
 const errorDetail = computed(() => {
   if (masterError.value != null) {
@@ -131,6 +137,12 @@ function retry() {
     <Card v-if="suiteStatus === 'idle'">
       <CardContent class="py-12 text-center text-sm text-muted-foreground">
         {{ t("training.challenge.noAccountHint") }}
+      </CardContent>
+    </Card>
+
+    <Card v-else-if="suiteDataMissing">
+      <CardContent class="py-10">
+        <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" />
       </CardContent>
     </Card>
 

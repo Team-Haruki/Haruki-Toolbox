@@ -3,9 +3,10 @@ import { expect, test } from "@playwright/test"
 const authGatedRoutes = ["/cards/box", "/music/progress", "/events/records", "/profile/me", "/training/challenge", "/event-planner", "/user/harukibot-authorization"]
 
 const missingSnapshotRoutes = [
-  { path: "/events/records", linkName: /前往上传数据|Upload game data/ },
-  { path: "/music/progress", linkName: /前往上传数据|Upload game data/ },
-] as const
+  "/events/records", "/music/progress", "/cards/box", "/profile/me",
+  "/training/challenge", "/training/power", "/training/area",
+  "/training/bonds", "/training/leader", "/training/missions",
+].map((path) => ({ path, linkName: /前往数据上传页|Go to data upload/ }))
 
 for (const route of authGatedRoutes) {
   test(`unauthenticated visit to ${route} redirects to login`, async ({ page }) => {
@@ -42,16 +43,22 @@ for (const route of missingSnapshotRoutes) {
         return handler.continue()
       }
       if (url.pathname.includes("/api/user/toolbox-test/game-account/jp/123456/suite")) {
-        return handler.fulfill({ status: 404, contentType: "application/json", body: "{}" })
+        return handler.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ status: 404, message: "Player data not found." }) })
       }
       return handler.abort()
     })
 
     await page.goto(route.path)
 
+    if (route.path === "/profile/me") {
+      await page.getByRole("tab", { name: /快照数据|Snapshot/ }).click()
+    }
     const uploadLink = page.getByRole("link", { name: route.linkName })
     await expect(uploadLink).toBeVisible()
     await expect(uploadLink).toHaveAttribute("href", "/upload-data")
+    await expect(page.getByText(/Request failed with status code 404|Player data not found/)).toHaveCount(0)
+    await uploadLink.click()
+    await expect(page).toHaveURL(/\/upload-data$/)
   })
 }
 
@@ -120,7 +127,7 @@ test("account selector groups granted accounts and filters them by capability", 
       })
     }
     if (url.pathname.includes("/api/user/toolbox-test/game-account/") && /\/(suite|mysekai)$/.test(url.pathname)) {
-      return handler.fulfill({ status: 404, contentType: "application/json", body: "{}" })
+      return handler.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ status: 404, message: "Player data not found." }) })
     }
     return handler.abort()
   })
@@ -141,6 +148,8 @@ test("account selector groups granted accounts and filters them by capability", 
   await page.getByRole("option", { name: /Grantor/ }).click()
   await expect(trigger).toContainText("987654321")
   await expect(trigger).toContainText(/授权|Granted/)
+  await expect(page.getByText(/该账号的所有者尚未上传|The account owner has not uploaded/)).toBeVisible()
+  await expect(page.getByRole("link", { name: /前往数据上传页|Go to data upload/ })).toBeVisible()
 })
 
 for (const platform of [null, "discord"] as const) {
@@ -166,5 +175,32 @@ for (const platform of [null, "discord"] as const) {
     await dialog.locator("#binding-user-id").fill("123456")
     await expect(dialog.getByRole("button", { name: /验证|Verify/, exact: true })).toBeEnabled()
     await expect(dialog.getByRole("button", { name: /保存|Save/, exact: true })).toBeDisabled()
+  })
+}
+
+for (const failure of [
+  { status: 404, message: "binding not found" },
+  { status: 403, message: "not authorized to access this binding" },
+  { status: 500, message: "failed to get user data" },
+]) {
+  test(`snapshot ${failure.status} ${failure.message} does not claim data was never uploaded`, async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("user", JSON.stringify({
+        name: "Failure test", userId: "toolbox-test",
+        gameAccountBindings: [{ server: "jp", userId: 123456, verified: true, isDefault: true }],
+        sessionToken: "test-token", tokenExpiration: 4_102_444_800,
+      }))
+    })
+    await page.route("**/*", (handler) => {
+      const url = new URL(handler.request().url())
+      if (url.host === "127.0.0.1:4173") return handler.continue()
+      if (url.pathname.endsWith("/game-account/jp/123456/suite")) {
+        return handler.fulfill({ status: failure.status, contentType: "application/json", body: JSON.stringify(failure) })
+      }
+      return handler.abort()
+    })
+    await page.goto("/events/records")
+    await expect(page.getByRole("button", { name: /重试|Retry/, exact: true })).toBeVisible()
+    await expect(page.getByRole("link", { name: /前往数据上传页|Go to data upload/ })).toHaveCount(0)
   })
 }

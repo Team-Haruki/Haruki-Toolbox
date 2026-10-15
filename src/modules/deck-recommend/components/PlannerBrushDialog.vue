@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
+import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
 import { computed, ref, toRef, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import type { RecommendDeck } from "haruki-sekai-deck-recommend-cpp"
@@ -83,6 +85,7 @@ const rawDeck = ref<RecommendDeck | null>(null)
 const rankingRows = ref<PlannerRankedSong[]>([])
 const rankingLoading = ref(false)
 const errorMessage = ref<string | null>(null)
+const missingDataType = ref<ReturnType<typeof getMissingUploadDataType>>(null)
 
 const selectedSong = ref<PlannerRankedSong | null>(null)
 const brushName = ref("")
@@ -136,6 +139,7 @@ const canSave = computed(() =>
 watch(() => props.open, (open) => {
   if (open) {
     errorMessage.value = null
+    missingDataType.value = null
     deckView.value = null
     rawDeck.value = null
     rankingRows.value = []
@@ -174,6 +178,7 @@ async function runDeck() {
   }
 
   errorMessage.value = null
+  missingDataType.value = null
   deckView.value = null
   rawDeck.value = null
   rankingRows.value = []
@@ -258,6 +263,8 @@ async function runDeck() {
     rawDeck.value = topRawDeck as RecommendDeck
     await loadRanking(topRawDeck as RecommendDeck, config)
   } catch (error) {
+    missingDataType.value = getMissingUploadDataType(error)
+    if (missingDataType.value) return
     errorMessage.value = runner.error.value ?? (error instanceof Error ? error.message : String(error))
   }
 }
@@ -380,7 +387,8 @@ function save() {
           <p class="text-[11px] text-muted-foreground">{{ t("eventPlanner.dialog.savedConfigHint") }}</p>
         </div>
 
-        <p v-if="errorMessage" class="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+        <MissingGameDataNotice v-if="missingDataType" :data-type="missingDataType" class="py-4" />
+        <p v-else-if="errorMessage" class="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
           {{ errorMessage }}
         </p>
 

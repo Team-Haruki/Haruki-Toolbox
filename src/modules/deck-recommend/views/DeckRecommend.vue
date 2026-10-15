@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRouter } from "vue-router"
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
@@ -128,6 +129,7 @@ const DEFAULT_EXECUTION_MODE: DeckRecommendExecutionMode = "parallel"
 const DECK_RECOMMEND_WORLD_BLOOM_TURNS = ["1", "2", "3"] as const
 const CHARACTER_FILTER_MIN_COUNT = 5
 
+const router = useRouter()
 const { t, locale } = useI18n()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
@@ -1285,6 +1287,10 @@ async function runRecommend() {
     if (runner.userDataMissing.value) {
       toast.warning(t("deckRecommend.result.missingUserDataTitle"), {
         description: t("deckRecommend.result.missingUserDataDescription"),
+        action: {
+          label: t("uploadedGameData.uploadAction"),
+          onClick: () => { void router.push("/upload-data") },
+        },
       })
       return
     }
