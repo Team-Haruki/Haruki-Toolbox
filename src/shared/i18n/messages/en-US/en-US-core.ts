@@ -908,6 +908,8 @@ export default {
     }
   },
   "route": {
+    "sponsorFrames": "Supporter frames",
+    "afdianCallback": "Afdian authorization",
     "home": "Home",
     "notFound": "Page not found",
     "settings": "Settings",

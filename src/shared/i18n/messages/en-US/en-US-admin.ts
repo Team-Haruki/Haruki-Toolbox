@@ -783,6 +783,12 @@ export default {
     }
   },
   "adminSponsors": {
+    "binding": {
+      "count": "Supporters linked to Toolbox",
+      "title": "Toolbox account",
+      "bound": "Linked",
+      "unbound": "Not linked"
+    },
     "title": "Sponsor management",
     "description": "Maintain sponsor profiles and sponsorship time: Afdian time is computed from orders, support received through other channels is recorded here by hand.",
     "generatedAt": "Generated at {date}",

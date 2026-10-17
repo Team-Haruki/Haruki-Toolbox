@@ -783,6 +783,12 @@ export default {
     }
   },
   "adminSponsors": {
+    "binding": {
+      "count": "已绑定工具箱的赞助用户",
+      "title": "工具箱绑定",
+      "bound": "已绑定",
+      "unbound": "未绑定"
+    },
     "title": "赞助者管理",
     "description": "维护赞助者名单展示资料与赞助时长：爱发电时长由订单自动计算，其他渠道的赞助在这里手动录入。",
     "generatedAt": "生成时间：{date}",

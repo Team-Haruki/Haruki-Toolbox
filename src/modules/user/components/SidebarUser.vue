@@ -12,6 +12,7 @@ import {
   LogOut,
   Settings,
   Gamepad2,
+  HeartHandshake,
   UserPlus,
   ChevronsUpDown
 } from "lucide-vue-next"
@@ -153,6 +154,12 @@ const maskedEmail = computed(() => {
             <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
               <KeyRound class="mr-2 h-4 w-4"/>
               {{ t("sidebarUser.oauthAuthorizations") }}
+            </DropdownMenuItem>
+          </RouterLink>
+          <RouterLink v-if="userStore.isLoggedIn" to="/user/sponsor-frames" custom v-slot="{ navigate, href }">
+            <DropdownMenuItem :as="'a'" :href="href" @click="navigate">
+              <HeartHandshake class="mr-2 h-4 w-4" />
+              {{ t("route.sponsorFrames") }}
             </DropdownMenuItem>
           </RouterLink>
           <DropdownMenuSeparator v-if="userStore.isLoggedIn"/>

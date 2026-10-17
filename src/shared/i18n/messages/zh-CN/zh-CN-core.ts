@@ -908,6 +908,8 @@ export default {
     }
   },
   "route": {
+    "sponsorFrames": "赞助头像框",
+    "afdianCallback": "爱发电授权结果",
     "home": "主页",
     "notFound": "页面不存在",
     "settings": "设置",

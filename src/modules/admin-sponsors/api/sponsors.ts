@@ -85,6 +85,7 @@ function normalizeSponsorProfile(value: unknown): AdminSponsorProfile | null {
 
   return {
     id,
+    toolboxBound: readBoolean(record, ["toolboxBound"], false),
     name: readFirstString(user, ["name", "nickname", "userName", "user_name"])
       || readFirstString(record, ["name", "nickname", "userName", "user_name", "displayName", "display_name"]),
     avatar: readFirstString(user, ["avatar", "avatarUrl", "avatar_url"])

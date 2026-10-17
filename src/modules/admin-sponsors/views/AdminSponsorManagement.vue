@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import {
   LucideHeartHandshake,
@@ -85,6 +86,8 @@ const {
   formatDate,
 } = useAdminSponsorManagement()
 
+const boundCount = computed(() => sponsors.value.filter((sponsor) => sponsor.toolboxBound).length)
+
 function fallbackName(sponsor: AdminSponsorProfile | null) {
   return sponsor?.name || t("adminSponsors.common.anonymous")
 }
@@ -111,7 +114,12 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
 
 <template>
   <div class="w-full flex flex-col gap-4">
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="rounded-xl border bg-card p-4 shadow-sm">
+        <p class="text-sm text-muted-foreground">{{ t("adminSponsors.binding.count") }}</p>
+        <Skeleton v-if="loading" class="mt-1 h-8 w-14" />
+        <p v-else class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{{ boundCount }}</p>
+      </div>
       <div class="rounded-xl border bg-card p-4 shadow-sm">
         <p class="text-sm text-muted-foreground">{{ t("adminSponsors.stats.total") }}</p>
         <Skeleton v-if="loading" class="mt-1 h-8 w-14" />
@@ -164,6 +172,7 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
               <TableHead>{{ t("adminSponsors.table.supporter") }}</TableHead>
               <TableHead class="hidden md:table-cell">{{ t("adminSponsors.table.tier") }}</TableHead>
               <TableHead>{{ t("adminSponsors.table.status") }}</TableHead>
+              <TableHead>{{ t("adminSponsors.binding.title") }}</TableHead>
               <TableHead>{{ t("adminSponsors.table.afdianSync") }}</TableHead>
               <TableHead class="text-right">{{ t("adminSponsors.table.actions") }}</TableHead>
             </TableRow>
@@ -171,7 +180,7 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
           <TableBody>
             <template v-if="loading">
               <TableRow v-for="row in 6" :key="row">
-                <TableCell colspan="5">
+                <TableCell colspan="6">
                   <Skeleton class="h-9 w-full" />
                 </TableCell>
               </TableRow>
@@ -214,6 +223,7 @@ function contributionLabel(sponsor: AdminSponsorProfile) {
                     </span>
                   </div>
                 </TableCell>
+                <TableCell><Badge :variant="sponsor.toolboxBound ? 'default' : 'secondary'">{{ t(sponsor.toolboxBound ? "adminSponsors.binding.bound" : "adminSponsors.binding.unbound") }}</Badge></TableCell>
                 <TableCell>
                   <div
                     class="flex items-center gap-2"

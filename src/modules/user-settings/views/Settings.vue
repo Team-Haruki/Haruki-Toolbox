@@ -11,6 +11,7 @@ import {
 } from "@/modules/user-settings/components/settings"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
 import { getSettings } from "@/modules/user-settings/api/get-settings"
+import AfdianBindingCard from "@/modules/user-settings/components/settings/AfdianBindingCard.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -130,6 +131,7 @@ onMounted(() => {
 
     <div class="w-full max-w-2xl flex flex-col gap-4">
       <ProfileSettingsCard />
+      <AfdianBindingCard />
       <SecuritySettingsCard />
     </div>
   </div>
