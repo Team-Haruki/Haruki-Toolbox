@@ -24,6 +24,7 @@ import {
 } from "./worker-protocol"
 import type { SekaiMasterCacheState, SekaiMusicMetasCacheState } from "./types"
 import type { DedicatedWorkerScope } from "@/lib/worker-scope"
+import { loadSekaiMasterDownload } from "./compact-master"
 
 const workerScope = globalThis as unknown as DedicatedWorkerScope<SekaiDataWorkerRequest, SekaiDataWorkerEvent>
 const OPTIONAL_MASTER_FILE_SET = new Set<string>(SEKAI_DATA_OPTIONAL_MASTER_FILES)
@@ -310,10 +311,15 @@ async function fetchMasterFilesConcurrently(input: {
       // manifest gap surfaces as an error instead of silent empty data.
       const data = optionalFiles.has(fileName) && manifestListsSekaiMasterFile(versionInfo, fileName) === false
         ? []
-        : await fetchMasterFileJson(
-            resolveSekaiMasterFileUrl(region, fileName, versionInfo),
+        : await loadSekaiMasterDownload(
+            region,
             fileName,
-            optionalFiles,
+            versionInfo,
+            (downloadName) => fetchMasterFileJson(
+              resolveSekaiMasterFileUrl(region, downloadName, versionInfo),
+              fileName,
+              optionalFiles,
+            ),
           )
       if (data !== SKIP_FILE) {
         masterFiles[fileName] = data
