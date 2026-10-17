@@ -31,6 +31,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
 }
 
+function restoreColumn(values: unknown, dictionary: unknown, rowCount: number): unknown[] {
+  if (!Array.isArray(values) || values.length !== rowCount) {
+    throw new Error("Mismatched compact master column lengths")
+  }
+  if (dictionary === undefined) return values
+  if (!Array.isArray(dictionary)) {
+    throw new Error("Invalid compact master enum column")
+  }
+  return values.map((cell: unknown) => {
+    if (cell === null) return null
+    if (typeof cell !== "number" || !Number.isInteger(cell) || cell < 0 || cell >= dictionary.length) {
+      throw new Error("Invalid compact master enum index")
+    }
+    return dictionary[cell]
+  })
+}
+
 /** Nuverse columns + optional __ENUM__ dictionaries, decoded without truncation. */
 function restoreColumns(value: Record<string, unknown>): Record<string, unknown>[] {
   const enums = value.__ENUM__
@@ -44,23 +61,11 @@ function restoreColumns(value: Record<string, unknown>): Record<string, unknown>
   }
   const rows: Record<string, unknown>[] = Array.from({ length: first.length }, () => ({}))
   for (const [key, values] of columns) {
-    if (!Array.isArray(values) || values.length !== rows.length) {
-      throw new Error("Mismatched compact master column lengths")
-    }
     const dictionary = enums && Object.hasOwn(enums, key) ? enums[key] : undefined
-    if (dictionary !== undefined && !Array.isArray(dictionary)) {
-      throw new Error("Invalid compact master enum column")
-    }
-    for (let index = 0; index < values.length; index += 1) {
-      let cell: unknown = values[index]
-      if (Array.isArray(dictionary) && cell !== null) {
-        if (typeof cell !== "number" || !Number.isInteger(cell) || cell < 0 || cell >= dictionary.length) {
-          throw new Error("Invalid compact master enum index")
-        }
-        cell = dictionary[cell]
-      }
+    const decoded = restoreColumn(values, dictionary, rows.length)
+    for (let index = 0; index < decoded.length; index += 1) {
       // Define an own property even for a future field named __proto__.
-      Object.defineProperty(rows[index], key, { value: cell, enumerable: true, writable: true, configurable: true })
+      Object.defineProperty(rows[index], key, { value: decoded[index], enumerable: true, writable: true, configurable: true })
     }
   }
   return rows
