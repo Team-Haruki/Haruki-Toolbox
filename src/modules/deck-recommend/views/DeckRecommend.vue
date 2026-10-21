@@ -367,10 +367,12 @@ const eventRuleWarnings = computed(() => {
 
   return warnings
 })
+const isMemoryEventSimulation = computed(() => simulatedEventMode.value === "memory_event")
 const isWorldBloomSimulation = computed(() => simulatedEventMode.value === "world_bloom")
 const isCustomBonusSimulation = computed(() =>
   isEventSimulationActive.value
   && !isWorldBloomSimulation.value
+  && !isMemoryEventSimulation.value
   && simulatedEventUnit.value === DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT,
 )
 const activeSimulatedEventUnit = computed<DeckRecommendUnitType | null>(() =>
@@ -502,9 +504,10 @@ const hasSpecificSkillOrderError = computed(() =>
 )
 const eventSimulation = computed<DeckRecommendEventSimulationInput>(() => ({
   enabled: isEventSimulationActive.value,
+  memoryEventUnit: isMemoryEventSimulation.value ? activeSimulatedEventUnit.value : null,
   eventType: simulatedEventMode.value === "cheerful_carnival" ? "cheerful_carnival" : "marathon",
-  attr: isWorldBloomSimulation.value || isCustomBonusSimulation.value ? null : simulatedEventAttr.value,
-  unit: isWorldBloomSimulation.value || isCustomBonusSimulation.value ? null : activeSimulatedEventUnit.value,
+  attr: isMemoryEventSimulation.value || isWorldBloomSimulation.value || isCustomBonusSimulation.value ? null : simulatedEventAttr.value,
+  unit: isMemoryEventSimulation.value || isWorldBloomSimulation.value || isCustomBonusSimulation.value ? null : activeSimulatedEventUnit.value,
   worldBloomTurn: isWorldBloomSimulation.value ? parseWorldBloomTurn(simulatedWorldBloomTurn.value) : null,
   worldBloomCharacterId: isWorldBloomSimulation.value ? simulatedWorldBloomCharacterId.value : null,
   worldBloomCharacterUnit: isWorldBloomSimulation.value ? simulatedWorldBloomCharacterUnit.value : null,
@@ -512,6 +515,10 @@ const eventSimulation = computed<DeckRecommendEventSimulationInput>(() => ({
 const hasEventSimulationError = computed(() => {
   if (!isEventSimulationActive.value) {
     return false
+  }
+
+  if (isMemoryEventSimulation.value) {
+    return !activeSimulatedEventUnit.value
   }
 
   if (isWorldBloomSimulation.value) {
@@ -634,6 +641,7 @@ const configSummaryItems = computed<string[]>(() => {
 const eventSimulationModeOptions = computed<Array<{ value: DeckRecommendEventSimulationMode; label: string }>>(() => [
   { value: "marathon", label: t("deckRecommend.eventTypes.marathon") },
   { value: "cheerful_carnival", label: t("deckRecommend.eventTypes.cheerfulCarnival") },
+  { value: "memory_event", label: t("deckRecommend.eventTypes.memoryEvent") },
   { value: "world_bloom", label: t("deckRecommend.eventTypes.worldBloom") },
 ])
 
@@ -649,10 +657,10 @@ const eventUnitOptions = computed<Array<{ value: DeckRecommendSimulatedEventUnit
     value,
     label: t(`deckRecommend.eventUnits.${value}`),
   })),
-  {
+  ...(isMemoryEventSimulation.value ? [] : [{
     value: DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT,
     label: t("deckRecommend.options.eventSimulation.customBonusUnit"),
-  },
+  }]),
 ])
 
 const unitFilterOptions = computed<Array<{ value: DeckRecommendUnitType; label: string }>>(() =>
@@ -1159,6 +1167,9 @@ function updateBoostInput(value: AcceptableValue) {
 function updateEventSimulationMode(value: AcceptableValue) {
   if (typeof value === "string" && isDeckRecommendEventSimulationMode(value)) {
     simulatedEventMode.value = value
+    if (value === "memory_event" && !activeSimulatedEventUnit.value) {
+      simulatedEventUnit.value = null
+    }
   }
 }
 
@@ -1633,6 +1644,7 @@ provideDeckRecommendFormContext({
   updateEventSimulationMode,
   eventSimulationModeOptions,
   isWorldBloomSimulation,
+  isMemoryEventSimulation,
   simulatedEventAttr,
   updateSimulatedEventAttr,
   simulatedEventUnit,

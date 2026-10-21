@@ -184,6 +184,7 @@ export type DeckRecommendFormContext = {
   updateEventSimulationMode: (value: AcceptableValue) => void
   eventSimulationModeOptions: ComputedRef<Array<SelectOption<DeckRecommendEventSimulationMode>>>
   isWorldBloomSimulation: ComputedRef<boolean>
+  isMemoryEventSimulation: ComputedRef<boolean>
   simulatedEventAttr: Ref<DeckRecommendEventAttr | null>
   updateSimulatedEventAttr: (value: AcceptableValue) => void
   simulatedEventUnit: Ref<DeckRecommendSimulatedEventUnitValue | null>

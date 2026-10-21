@@ -75,6 +75,7 @@ const {
   updateEventSimulationMode,
   eventSimulationModeOptions,
   isWorldBloomSimulation,
+  isMemoryEventSimulation,
   simulatedEventAttr,
   updateSimulatedEventAttr,
   simulatedEventUnit,
@@ -366,7 +367,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
         </div>
 
         <template v-if="!isWorldBloomSimulation">
-          <div class="grid content-start gap-2">
+          <div v-if="!isMemoryEventSimulation" class="grid content-start gap-2">
             <Label id="deck-simulation-attr-label" for="deck-simulation-attr">
               {{ t("deckRecommend.options.eventSimulation.attr") }}
             </Label>
@@ -467,7 +468,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
         {{ eventSimulationErrorMessage }}
       </p>
       <p v-else-if="isEventSimulationActive" class="text-xs text-muted-foreground">
-        {{ t("deckRecommend.options.eventSimulation.activeHint") }}
+        {{ t(isMemoryEventSimulation ? "deckRecommend.options.eventSimulation.memoryEventHint" : "deckRecommend.options.eventSimulation.activeHint") }}
       </p>
     </div>
 
