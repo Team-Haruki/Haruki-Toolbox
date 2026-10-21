@@ -165,7 +165,7 @@ export default {
     "options": {
       "eventCondition": {
         "title": "Event Conditions",
-        "description": "Select a published event, or enable simulated event to customize event type, attribute, unit, and chapter."
+        "description": "The current official event is selected by default, using its published bonus rules. Official Memory Events do not require simulation. Enable simulation to plan for other units or events."
       },
       "bonus": {
         "title": "Bonus Conditions",

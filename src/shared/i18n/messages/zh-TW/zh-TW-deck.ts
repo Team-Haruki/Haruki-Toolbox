@@ -165,7 +165,7 @@ export default {
     "options": {
       "eventCondition": {
         "title": "活動條件",
-        "description": "選擇已釋出活動，或開啟模擬活動自定義活動型別、屬性、團體與章節。"
+        "description": "預設選擇當前正式活動，加成按該活動的官方資料計算；正式總集篇無需開啟模擬。也可開啟模擬活動，為其他團體或活動設定條件。"
       },
       "bonus": {
         "title": "加成條件",
