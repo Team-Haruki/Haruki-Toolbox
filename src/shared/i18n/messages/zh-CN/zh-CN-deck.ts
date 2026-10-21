@@ -165,7 +165,7 @@ export default {
     "options": {
       "eventCondition": {
         "title": "活动条件",
-        "description": "选择已发布活动，或开启模拟活动自定义活动类型、属性、团体与章节。"
+        "description": "默认选择当前正式活动，加成按该活动的官方数据计算；正式总集篇无需开启模拟。也可开启模拟活动，为其他团体或活动设置条件。"
       },
       "bonus": {
         "title": "加成条件",

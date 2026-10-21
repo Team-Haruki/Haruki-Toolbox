@@ -306,6 +306,26 @@ describe("deck recommend wasm option helpers", () => {
     expect(options.event_unit).toBe("idol")
   })
 
+  it("uses the official event when memory simulation is switched off", () => {
+    for (const mode of ["event", "bonus", "mysekai"] as const) {
+      const options = buildDeckRecommendOptions({
+        region: "jp", mode, liveType: "multi", algorithm: "ga",
+        musicId: "74", musicDifficulty: "expert", eventId: "221", characterId: null,
+        targetBonuses: [350],
+        eventSimulation: {
+          enabled: false, memoryEventUnit: "light_sound", eventType: "marathon",
+          attr: null, unit: null, worldBloomTurn: null,
+          worldBloomCharacterId: null, worldBloomCharacterUnit: null,
+        },
+        trainingConfig: createDefaultCardTrainingConfig(), userData: { userCards: [] },
+      })
+      expect(options.event_id).toBe(221)
+      expect(options.event_me_unit).toBeUndefined()
+      expect(options.event_unit).toBeUndefined()
+      expect(options.event_attr).toBeUndefined()
+    }
+  })
+
   it("uses memory-event rules for every unit and event-based mode without stale selectors", () => {
     for (const mode of ["event", "bonus", "mysekai"] as const) {
       for (const unit of ["light_sound", "idol", "street", "theme_park", "school_refusal", "piapro"] as const) {
