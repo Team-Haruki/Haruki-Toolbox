@@ -23,6 +23,14 @@ describe("validators", () => {
 })
 
 describe("normalizeDeckRecommendSavedConfig", () => {
+  it("preserves memory-event simulation and its unit when restoring a config", () => {
+    expect(normalizeDeckRecommendSavedConfig({
+      eventSimulationEnabled: true, simulatedEventMode: "memory_event", simulatedEventUnit: "street",
+    })).toMatchObject({
+      eventSimulationEnabled: true, simulatedEventMode: "memory_event", simulatedEventUnit: "street",
+    })
+  })
+
   it("keeps valid fields and drops unknown values", () => {
     const config = normalizeDeckRecommendSavedConfig({
       dataRegion: "jp",

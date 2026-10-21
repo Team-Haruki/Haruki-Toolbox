@@ -37,11 +37,11 @@ export const DECK_RECOMMEND_UNITS: DeckRecommendUnitType[] = [
   "piapro",
 ]
 export const DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT = "custom_bonus_characters" as const
-const DECK_RECOMMEND_EVENT_SIMULATION_MODES = ["marathon", "cheerful_carnival", "world_bloom"] as const
+const DECK_RECOMMEND_EVENT_SIMULATION_MODES = ["marathon", "cheerful_carnival", "world_bloom", "memory_event"] as const
 const DECK_RECOMMEND_SKILL_REFERENCE_STRATEGIES: DeckRecommendSkillReferenceStrategy[] = ["average", "max", "min"]
 const DECK_RECOMMEND_SKILL_ORDER_STRATEGIES: DeckRecommendSkillOrderStrategy[] = ["average", "max", "min", "specific"]
 
-export type DeckRecommendEventSimulationMode = DeckRecommendSimulatedEventType | "world_bloom"
+export type DeckRecommendEventSimulationMode = DeckRecommendSimulatedEventType | "world_bloom" | "memory_event"
 export type DeckRecommendAlgorithmSelectionMode = "auto" | "manual"
 export type DeckRecommendSimulatedEventUnitValue = DeckRecommendUnitType | typeof DECK_RECOMMEND_CUSTOM_SIMULATED_UNIT
 

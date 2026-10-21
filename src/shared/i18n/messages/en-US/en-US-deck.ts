@@ -132,6 +132,7 @@ export default {
       "specific": "Specific order"
     },
     "eventTypes": {
+      "memoryEvent": "Memory Event",
       "marathon": "Marathon",
       "cheerfulCarnival": "Cheerful Carnival",
       "worldBloom": "World Link",
@@ -171,6 +172,7 @@ export default {
         "description": "Set one or more target bonuses and generate matching Solo Live decks."
       },
       "eventSimulation": {
+        "memoryEventHint": "All attributes receive a 25% base bonus; native unit characters receive 75% in total. Human units exclude Virtual Singers; Virtual Singer includes all six singers. Master rank bonuses apply, without featured-card bonuses.",
         "title": "Simulated Event",
         "description": "Recommend against a custom event type, attribute, and unit without relying on a published event.",
         "unavailable": "The current mode does not use event data, so simulated events are unavailable.",

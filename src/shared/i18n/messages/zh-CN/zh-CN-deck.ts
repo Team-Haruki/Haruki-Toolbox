@@ -132,6 +132,7 @@ export default {
       "specific": "特定顺序"
     },
     "eventTypes": {
+      "memoryEvent": "总集篇",
       "marathon": "马拉松",
       "cheerfulCarnival": "欢乐嘉年华",
       "worldBloom": "连接世界",
@@ -171,6 +172,7 @@ export default {
         "description": "指定一个或多个目标加成，组卡会尝试生成对应加成的单人 Live 卡组。"
       },
       "eventSimulation": {
+        "memoryEventHint": "五属性基础加成均为 25%，本团原生角色合计 75%；人类团不包含团属虚拟歌手，Virtual Singer 按六位虚拟歌手计算。保留精通加成，不附加当期卡加成。",
         "title": "模拟活动",
         "description": "用自定义活动类型、属性和团体进行推荐，不依赖已发布活动。",
         "unavailable": "当前模式不使用活动信息，模拟活动不可用。",
