@@ -41,6 +41,7 @@ export default {
     },
     "detail": {
       "viewCharacterCards": "該角色的全部卡牌",
+      "playStory": "播放劇情",
       "art": {
         "normal": "特訓前",
         "trained": "特訓後"
@@ -88,6 +89,7 @@ export default {
         "costs": "解鎖消耗",
         "cost": "{resource} ×{quantity}",
         "material": "素材 #{id}",
+        "play": "播放",
         "partType": {
           "first_part": "前篇",
           "second_part": "後篇"
@@ -207,7 +209,8 @@ export default {
     "story": {
       "title": "活動劇情",
       "episodeCount": "{count} 話",
-      "episode": "第 {no} 話"
+      "episode": "第 {no} 話",
+      "play": "播放"
     }
   },
   "gachaCatalog": {

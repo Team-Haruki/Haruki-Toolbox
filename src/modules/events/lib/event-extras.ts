@@ -29,6 +29,8 @@ export type EventStoryEpisode = {
   id: number
   episodeNo: number
   title: string
+  /** The episode's ScenarioId, for the story player. */
+  scenarioId: string | null
 }
 
 /** One `eventStories` row (optional file; tw/kr may lack it). */
@@ -109,7 +111,12 @@ export function normalizeEventStories(value: unknown): EventStory[] {
       if (!episodeId || episodeNo == null) {
         continue
       }
-      episodes.push({ id: episodeId, episodeNo, title: normalizeCatalogString(episode.title) })
+      episodes.push({
+        id: episodeId,
+        episodeNo,
+        title: normalizeCatalogString(episode.title),
+        scenarioId: normalizeCatalogString(episode.scenarioId) || null,
+      })
     }
     episodes.sort((a, b) => a.episodeNo - b.episodeNo)
     rows.push({

@@ -44,6 +44,8 @@ export type CardEpisodeRow = {
   title: string
   /** `first_part` / `second_part` */
   partType: string
+  /** The episode's ScenarioId, for the story player. */
+  scenarioId: string | null
   bonus: CardPowerBonus
   costs: CardEpisodeCost[]
 }
@@ -121,6 +123,7 @@ export function buildCardEpisodesByCard(rawCardEpisodes: unknown): Map<number, C
       cardId,
       title: normalizeCatalogString(record.title),
       partType: normalizeCatalogString(record.cardEpisodePartType),
+      scenarioId: normalizeCatalogString(record.scenarioId) || null,
       bonus: readPowerBonus(record),
       costs: normalizeEpisodeCosts(record.costs),
     }

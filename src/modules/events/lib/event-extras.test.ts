@@ -28,8 +28,8 @@ const STORIES = [
     bannerGameCharacterUnitId: 24,
     assetbundleName: "event_partytime_2026",
     eventStoryEpisodes: [
-      { id: 1001736, eventStoryId: 215, episodeNo: 2, title: "作戦会議！" },
-      { id: 1001735, eventStoryId: 215, episodeNo: 1, title: "友達になりたい！" },
+      { id: 1001736, eventStoryId: 215, episodeNo: 2, title: "作戦会議！", scenarioId: "event_215_02" },
+      { id: 1001735, eventStoryId: 215, episodeNo: 1, title: "友達になりたい！", scenarioId: "event_215_01" },
       { episodeNo: 3, title: "broken" },
     ],
   },
@@ -67,6 +67,7 @@ describe("normalizeEventStories", () => {
     expect(stories[0].outline).toBe("Outline text")
     expect(stories[0].bannerGameCharacterUnitId).toBe(24)
     expect(stories[0].episodes.map((episode) => episode.episodeNo)).toEqual([1, 2])
+    expect(stories[0].episodes.map((episode) => episode.scenarioId)).toEqual(["event_215_01", "event_215_02"])
   })
 
   test("handles the optional file being absent", () => {

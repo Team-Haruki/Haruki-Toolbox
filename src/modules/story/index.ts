@@ -6,3 +6,4 @@ export {
   type StorySeries,
   type StoryTab,
 } from "./lib/story-catalog"
+export { buildStoryPlayerLink, firstPlayableScenario } from "./lib/story-link"
