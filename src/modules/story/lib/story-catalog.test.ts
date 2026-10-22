@@ -111,3 +111,20 @@ test("hideUnreleasedStories drops stories that are not out yet", () => {
   expect(out.tabs.card).toHaveLength(1)
   expect(out.tabs.unit).toHaveLength(1)
 })
+
+test("hideUnreleasedStories drops unreleased episodes and their direct links", () => {
+  const out = hideUnreleasedStories(buildStoryCatalog(sources({
+    actionSets: [
+      { id: 1234, areaId: 5, scenarioId: "areatalk_1234", characterIds: [21], archivePublishedAt: 100 },
+      { id: 1235, areaId: 5, scenarioId: "areatalk_1235", characterIds: [10], archivePublishedAt: 300 },
+      { id: 1236, areaId: 6, scenarioId: "areatalk_1236", characterIds: [10], archivePublishedAt: 300 },
+    ],
+  })), 160)
+  expect(out.tabs.area.map((s) => s.episodes.map((e) => e.sid))).toEqual([["areatalk_1234"]])
+  expect(out.bySid.has("areatalk_1234")).toBe(true)
+  for (const sid of ["areatalk_1235", "areatalk_1236", "event_151_01"]) {
+    expect(out.bySid.has(sid)).toBe(false)
+    expect(out.unreleased?.has(sid)).toBe(true)
+  }
+  expect(out.unreleased?.has("event_150_01")).toBe(false)
+})

@@ -390,6 +390,7 @@ export default {
     "aiNotice": "當前文本為 AI 翻譯，可能與官方譯文有出入。",
     "errors": {
       "notFound": "找不到這一話劇情。",
+      "unreleased": "這一話還沒有上線。可以在設定裡開啟「展示未上線內容」後再看。",
       "missing": "日服素材裡還沒有這一話的劇本。",
       "failed": "劇情載入失敗：{detail}",
       "catalog": "劇情目錄載入失敗，請重新整理重試。",

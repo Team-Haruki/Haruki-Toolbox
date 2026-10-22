@@ -199,6 +199,7 @@ const stateMessage = computed(() => {
   const s = state.value
   if (s.phase !== "error") return null
   if (s.reason === "notFound") return t("storyPlayer.errors.notFound")
+  if (s.reason === "unreleased") return t("storyPlayer.errors.unreleased")
   if (s.reason === "missing") return t("storyPlayer.errors.missing")
   return t("storyPlayer.errors.failed", { detail: s.detail ?? "" })
 })

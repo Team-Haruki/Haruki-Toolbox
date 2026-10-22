@@ -20,7 +20,7 @@ export type StoryPlaybackState =
   | { phase: "idle" }
   | { phase: "loading"; sid: string }
   | { phase: "playing"; sid: string; lang: StoryTextLang; episode: StoryEpisode }
-  | { phase: "error"; sid: string; reason: "notFound" | "missing" | "failed"; detail?: string }
+  | { phase: "error"; sid: string; reason: "notFound" | "unreleased" | "missing" | "failed"; detail?: string }
 
 export type StoryPlaybackOptions = {
   /** Selected scenario id (null = nothing picked). */
@@ -113,7 +113,7 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
     }
     const hit = catalog.bySid.get(sid)
     if (!hit) {
-      state.value = { phase: "error", sid, reason: "notFound" }
+      state.value = { phase: "error", sid, reason: catalog.unreleased?.has(sid) ? "unreleased" : "notFound" }
       return
     }
     state.value = { phase: "loading", sid }
