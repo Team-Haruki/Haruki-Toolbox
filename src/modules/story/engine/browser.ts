@@ -89,6 +89,20 @@ export class StoryBrowser {
       </div>`;
     parent.prepend(this.root);
     this.listEl = this.root.querySelector(".sb-list")!;
+    // unit and character icons: the fallback host's copy once (the list's
+    // images recover through their own handlers below)
+    this.root.addEventListener(
+      "error",
+      (e) => {
+        const img = e.target;
+        if (!(img instanceof HTMLImageElement) || this.listEl.contains(img) || img.dataset.fallback) return;
+        const fallback = storyUrls.fallback(img.src);
+        if (!fallback) return;
+        img.dataset.fallback = "1";
+        img.src = fallback;
+      },
+      true,
+    );
     this.charsEl = this.root.querySelector(".sb-chars")!;
     this.charsEl.addEventListener("click", (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>("button[data-char]");

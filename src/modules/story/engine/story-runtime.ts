@@ -110,6 +110,39 @@ function addFonts() {
     .catch((e) => console.warn("Han Sans font list unavailable", e));
 }
 
+// The Cubism core, loaded here so it can come from the fallback host: the
+// player only loads it itself when window.Live2DCubismCore is missing.
+const CUBISM_CORE_FILE = "live2dcubismcore.min.js";
+let cubismCore: Promise<void> | null = null;
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => {
+      s.remove();
+      reject(new Error(`could not load ${src}`));
+    };
+    document.head.appendChild(s);
+  });
+}
+function ensureCubismCore(): Promise<void> {
+  if ((window as { Live2DCubismCore?: unknown }).Live2DCubismCore) return Promise.resolve();
+  const url = storyUrls.lib(CUBISM_CORE_FILE);
+  const fallback = storyUrls.fallback(url);
+  cubismCore ??= loadScript(url)
+    .catch((error: unknown) => {
+      if (!fallback) throw error;
+      console.warn("Cubism core failed, loading it from the fallback host", error);
+      return loadScript(fallback);
+    })
+    .catch((error: unknown) => {
+      cubismCore = null; // the player tries its own URL, and the next episode tries again
+      console.warn(error);
+    });
+  return cubismCore;
+}
+
 // the faces above, handed to the player's talk window
 const PLAYER_FONTS: Record<string, string> = {
   "--pjsk-font-name": `"StoryJpBold", system-ui, sans-serif`,
@@ -176,7 +209,7 @@ export class StoryRuntime {
       models: () => this.models,
       menu: DEFAULT_MENU,
       fonts: false, // registered above (Source Han Sans JP, Han Sans slices)
-      cubismCoreUrl: storyUrls.lib("live2dcubismcore.min.js"),
+      cubismCoreUrl: storyUrls.lib(CUBISM_CORE_FILE),
       labels: { start: labels.start, loading: labels.loading, models: labels.models, menu: labels.menu },
     });
     for (const [k, v] of Object.entries(PLAYER_FONTS)) this.player.root.style.setProperty(k, v);
@@ -349,6 +382,7 @@ export class StoryRuntime {
     this.showPanel("log"); // narrow layout: follow the lines once an episode is picked
     this.player.showLoading();
     this.resolveModels(episode.index.models as unknown as ModelManifest);
+    const core = ensureCubismCore(); // with the icons, before the player needs it
     this.icons ??= fetch(storyUrls.ui("chr_ts/map.json"))
       .then((r) => (r.ok ? (r.json() as Promise<Record<string, string>>) : {}))
       .catch(() => ({}));
@@ -359,6 +393,8 @@ export class StoryRuntime {
     log.setVisible(this.logVisible);
     this.session = { sid, log };
     this.fit();
+    await core;
+    if (seq !== this.loadSeq || this.destroyed) return;
     await this.player.load(scn, { autoplay: play, context: episode });
   }
 
