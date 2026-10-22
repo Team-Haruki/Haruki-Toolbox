@@ -737,7 +737,7 @@ export class ScenarioPlayer {
         const gen = this.gen;
         (async () => {
           if (e.Duration > 0) await sleep(e.Duration * 1000);
-          if (gen === this.gen) this.onScenarioEffect?.(e.StringVal, play);
+          if (gen === this.gen) await this.onScenarioEffect?.(e.StringVal, play);
         })().catch((err: unknown) => console.warn("scenario effect failed", err));
         return;
       }
