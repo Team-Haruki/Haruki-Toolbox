@@ -27,7 +27,7 @@ export const SEKAI_MUSIC_METAS_URLS: Record<SekaiRegion, string> = {
 
 export const SEKAI_ASSET_ENDPOINT_ROOTS: Record<SekaiAssetEndpointPreference, string> = {
   china: "https://sekai-assets.haruki.seiunx.com",
-  global: "https://sekai-assets-bdf29c81.seiunx.net",
+  global: "https://sekai-assets-haruki.seiunx.net",
   china_cdn: "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com",
 }
 const TOOLBOX_STATIC_IMAGE_BASE_URL = "https://images.haruki.seiunx.com/sekai-toolbox"

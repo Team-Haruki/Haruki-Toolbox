@@ -28,7 +28,7 @@ describe("event-assets", () => {
 
   test("uses the global endpoint root when requested", () => {
     expect(resolveEventLogoUrl("kr", "event_stella_2020", "global")).toBe(
-      "https://sekai-assets-bdf29c81.seiunx.net/kr-assets/ondemand/event/event_stella_2020/logo/logo.png",
+      "https://sekai-assets-haruki.seiunx.net/kr-assets/ondemand/event/event_stella_2020/logo/logo.png",
     )
   })
 
