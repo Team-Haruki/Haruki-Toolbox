@@ -3,6 +3,7 @@ import type { LoadContext, ModelManifestEntry, ScenarioSceneData } from "pjsk-sc
 import {
   configureStoryRoot,
   createStoryResolver,
+  partVoiceDirs,
   storyClipUrl,
   type StoryAssetIndex,
   type StoryEpisodeContext,
@@ -68,10 +69,38 @@ describe("createStoryResolver", () => {
   })
 
   test("tries card voices first for card stories", () => {
-    expect((r.voice("s", "v", eventCtx) as string[])[0]).toBe(`${ROOT}/ondemand/sound/scenario/voice/s/v.mp3`)
-    const card = r.voice("s", "v", ctx({ index, kind: "card" })) as string[]
+    expect((r.voice("s", "v", eventCtx, {}) as string[])[0]).toBe(`${ROOT}/ondemand/sound/scenario/voice/s/v.mp3`)
+    const card = r.voice("s", "v", ctx({ index, kind: "card" }), {}) as string[]
     expect(card[0]).toBe(`${ROOT}/ondemand/sound/card_scenario/voice/s/v.mp3`)
     expect(card).toHaveLength(3)
+  })
+
+  test("looks in the additional voice pack first for area talk", () => {
+    const area = r.voice("areatalk02_007", "areatalk_2_007_001", ctx({ index, kind: "area" }), {}) as string[]
+    expect(area[0]).toBe(`${ROOT}/additionalvoice/sound/actionset/voice/areatalk02_007/areatalk_2_007_001.mp3`)
+    expect(area).toHaveLength(4)
+  })
+
+  test("files part voices by the speaker's model asset and unit", () => {
+    const character2ds = new Map([
+      [1, { assetName: "01ichika", unit: "light_sound" }],
+      [21, { assetName: "21miku", unit: "none" }],
+      [300, { assetName: "v2_10an", unit: "street" }],
+    ])
+    const sp = ctx({ index, kind: "special", character2ds })
+    const urls = r.voice("sp_01", "partvoice_01_001", sp, { character2dId: 1 }) as string[]
+    expect(urls.slice(0, 4)).toEqual([
+      `${ROOT}/startapp/sound/scenario/voice/part_voice_v2_01ichika_light_sound/partvoice_01_001.mp3`,
+      `${ROOT}/startapp/sound/scenario/voice/part_voice_01ichika_light_sound/partvoice_01_001.mp3`,
+      `${ROOT}/startapp/sound/scenario/voice/part_voice_01ichika/partvoice_01_001.mp3`,
+      `${ROOT}/tutorial/sound/scenario/part_voice/01ichika_light_sound/partvoice_01_001.mp3`,
+    ])
+    expect(urls).toHaveLength(7) // then the scenario folders
+    const ep = { index, kind: "special", character2ds }
+    expect(partVoiceDirs(ep, { character2dId: 21 })[0]).toBe("startapp/sound/scenario/voice/part_voice_v2_21miku_piapro")
+    expect(partVoiceDirs(ep, { character2dId: 300 })[0]).toBe("startapp/sound/scenario/voice/part_voice_v2_10an_street")
+    expect(partVoiceDirs(ep, { character2dId: 999 })).toEqual([])
+    expect(r.voice("s", "v001", sp, { character2dId: 1 })).toHaveLength(3) // not a part voice
   })
 
   test("maps movies through the index", () => {

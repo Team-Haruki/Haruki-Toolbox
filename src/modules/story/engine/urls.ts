@@ -7,7 +7,7 @@
 // converted files (effects, UI sprites, fonts, the Cubism core) sit under
 // "jp-assets/story-player/v1/" on the same host.
 
-import type { AssetResolver, LoadContext, ModelManifestEntry } from "pjsk-scenario-player"
+import type { AssetResolver, LoadContext, ModelManifestEntry, VoiceInfo } from "pjsk-scenario-player"
 
 /** One Live2D costume of the JP tree (the backend's jp-index entry). */
 export interface StoryModelEntry {
@@ -33,6 +33,8 @@ export interface StoryEpisodeContext {
   kind: string
   /** event stories: the event bundle (event-only SEs live next to its scenarios) */
   eventBundle?: string
+  /** character2dId → model asset and unit, for part voices (master character2ds) */
+  character2ds?: ReadonlyMap<number, { assetName: string; unit: string }>
 }
 
 const PLAYER_DIR = "story-player/v1"
@@ -85,6 +87,25 @@ function findSiblingClip(index: StoryAssetIndex, m: StoryModelEntry, clip: strin
   return undefined
 }
 
+/**
+ * Folders of a part voice (special and card stories: partvoice_*), filed by
+ * the speaker's model asset and unit ("none" is filed as piapro). Worked out
+ * from the asset tree and checked against its files, not against the client.
+ */
+export function partVoiceDirs(ep: StoryEpisodeContext, info: VoiceInfo | undefined): string[] {
+  const c = info?.character2dId != null ? ep.character2ds?.get(info.character2dId) : undefined
+  if (!c) return []
+  const asset = c.assetName
+  const unit = !c.unit || c.unit === "none" ? "piapro" : c.unit
+  const dirs = asset.startsWith("v2_") ? [] : [`startapp/sound/scenario/voice/part_voice_v2_${asset}_${unit}`]
+  dirs.push(
+    `startapp/sound/scenario/voice/part_voice_${asset}_${unit}`,
+    `startapp/sound/scenario/voice/part_voice_${asset}`,
+    `tutorial/sound/scenario/part_voice/${asset}_${unit}`,
+  )
+  return dirs
+}
+
 /** The library resolver for the JP tree (candidate folders, the episode's index). */
 export function createStoryResolver(): AssetResolver {
   return {
@@ -106,10 +127,15 @@ export function createStoryResolver(): AssetResolver {
       if (shared) return [jp(shared)]
       return ep.eventBundle ? [jp(`ondemand/event_story/${ep.eventBundle}/scenario_se/${id}.mp3`)] : []
     },
-    voice: (scenarioId, voiceId, ctx) => {
+    voice: (scenarioId, voiceId, ctx, info) => {
+      const ep = episodeOf(ctx)
       const dirs = ["ondemand/sound/scenario/voice", "ondemand/sound/card_scenario/voice", "startapp/sound/scenario/voice"]
-      if (episodeOf(ctx).kind === "card") dirs.unshift(dirs.splice(1, 1)[0])
-      return dirs.map((d) => jp(`${d}/${scenarioId}/${voiceId}.mp3`))
+      if (ep.kind === "card") dirs.unshift(dirs.splice(1, 1)[0])
+      const urls = dirs.map((d) => jp(`${d}/${scenarioId}/${voiceId}.mp3`))
+      // area talk voices sit in the additional voice pack
+      if (ep.kind === "area") urls.unshift(jp(`additionalvoice/sound/actionset/voice/${scenarioId}/${voiceId}.mp3`))
+      if (voiceId.startsWith("partvoice")) urls.unshift(...partVoiceDirs(ep, info).map((d) => jp(`${d}/${voiceId}.mp3`)))
+      return urls
     },
     background: (id) => [
       jp(`ondemand/scenario/background/${id}/${id}.png`),
