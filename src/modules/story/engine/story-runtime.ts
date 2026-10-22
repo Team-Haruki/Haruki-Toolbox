@@ -43,6 +43,8 @@ export interface RuntimeLabels {
 
 /** Below this host width the stage goes on top and the browser / log become tabs under it. */
 const NARROW = 1100;
+/** Narrow layout: the panels keep this design width and are zoomed to the host, like the desktop row. */
+const PANEL_WIDTH = 400;
 
 const ICON_EXPAND = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`;
 const ICON_SHRINK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>`;
@@ -293,16 +295,46 @@ export class StoryRuntime {
     } else if (narrow) {
       this.row.style.zoom = "1";
       stageZoom = Math.min(1, width / 1282);
+      // panels: same proportions as on desktop, scaled to the width
+      const panelZoom = Math.min(1.25, width / PANEL_WIDTH);
+      const panelHeight = Math.min(innerHeight * 0.68, 620) / panelZoom;
+      this.root.style.setProperty("--sp-panel-zoom", String(panelZoom));
+      this.root.style.setProperty("--sp-panel-height", `${Math.round(panelHeight)}px`);
     } else {
-      this.wrap.style.zoom = "1";
+      this.scaleStage(1);
       this.row.style.zoom = "1";
       const maxHeight = Math.max(360, innerHeight - this.row.getBoundingClientRect().top - 16);
       const z = Math.min(1, width / this.row.scrollWidth, maxHeight / this.row.scrollHeight);
       this.row.style.zoom = String(Math.max(0.3, z));
     }
-    this.wrap.style.zoom = String(stageZoom);
+    this.scaleStage(stageZoom);
     // keep the prompt / spinner / start button readable on a small stage
     this.overlay.style.zoom = String(stageZoom < 0.6 ? Math.min(2.6, 0.6 / stageZoom) : 1);
+  }
+
+  // Shrink the 1280x720 stage as a picture (transform), not with CSS zoom:
+  // zoom shrinks the font sizes themselves (the dialogue drops to ~7px on a
+  // phone), and mobile browsers with a minimum font size (WeChat / QQ in-app
+  // browsers, accessibility text scaling) push them back up, so the text came
+  // out oversized next to the stage. A transform keeps the game's proportions.
+  private scaleStage(z: number) {
+    const s = this.wrap.style;
+    s.zoom = "1";
+    if (z === 1) {
+      s.transform = "";
+      this.box.style.width = this.box.style.height = "";
+      return;
+    }
+    s.transform = `scale(${z})`;
+    if (this.isFullscreen()) {
+      // the box is the screen; flex centres the stage, scale about its centre
+      s.transformOrigin = "50% 50%";
+      this.box.style.width = this.box.style.height = "";
+    } else {
+      s.transformOrigin = "0 0";
+      this.box.style.width = `${this.wrap.offsetWidth * z}px`;
+      this.box.style.height = `${this.wrap.offsetHeight * z}px`;
+    }
   }
 
   private showPanel(panel: "browser" | "log") {
