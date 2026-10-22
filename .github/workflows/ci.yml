@@ -29,6 +29,9 @@ jobs:
       coverage-path: coverage/lcov.info
       e2e-command: bunx playwright test
       e2e-browsers: chromium
+      # the runner already has Chromium's libraries; apt (minutes, mostly fonts the
+      # tests don't screenshot) only if the cached browser fails to launch
+      e2e-system-deps: when-missing
 
   sonar:
     name: Sonar
