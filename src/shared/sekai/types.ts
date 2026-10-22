@@ -1,6 +1,6 @@
 import type { SekaiRegion } from "@/types"
 
-export type SekaiAssetEndpointPreference = "china" | "global" | "china_cdn"
+export type SekaiAssetEndpointPreference = "global" | "china_cdn"
 
 export type SekaiMasterVersionInfo = {
   dataVersion: string

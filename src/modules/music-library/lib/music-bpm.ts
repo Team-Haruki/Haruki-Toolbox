@@ -158,7 +158,7 @@ export function resolveMusicScoreUrl(
   region: SekaiRegion,
   musicId: number,
   difficulty: string,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string | null {
   const assetPath = buildMusicScoreAssetPath(musicId, difficulty)
   if (!assetPath) {

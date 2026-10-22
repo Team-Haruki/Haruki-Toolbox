@@ -4,7 +4,8 @@ import { useI18n } from "vue-i18n"
 import { LucideLoaderCircle, LucideRefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { resolvePjsk3dRuntimeBaseUrl } from "@/shared/sekai/data-sources"
+import { resolvePjsk3dRuntimeBaseUrl, resolvePjsk3dRuntimeFallbackBaseUrl } from "@/shared/sekai/data-sources"
+import { shouldRetryAssetOnFallback } from "@/shared/sekai/asset-fallback"
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import type { Haruki3DKernel } from "../vendor/haruki-3d-engine/haruki-3d-engine.js"
@@ -41,7 +42,15 @@ const hostRef = ref<HTMLDivElement | null>(null)
 const status = ref<"idle" | "loading" | "ready" | "error">("idle")
 const errorMessage = ref<string | null>(null)
 
-const assetBaseUrl = computed(() => resolvePjsk3dRuntimeBaseUrl(props.region, props.preference))
+const primaryBaseUrl = computed(() => resolvePjsk3dRuntimeBaseUrl(props.region, props.preference))
+const fallbackBaseUrl = computed(() => resolvePjsk3dRuntimeFallbackBaseUrl(props.region, props.preference))
+// After the chosen host fails a load (network, timeout, 5xx), this viewer
+// loads from the fallback host until the region or the asset route changes.
+const onFallback = ref(false)
+watch(primaryBaseUrl, () => {
+  onFallback.value = false
+}, { flush: "sync" })
+const assetBaseUrl = computed(() => (onFallback.value && fallbackBaseUrl.value) || primaryBaseUrl.value)
 
 let kernel: Haruki3DKernel | null = null
 let kernelBaseUrl: string | null = null
@@ -126,10 +135,16 @@ async function loadRecipe() {
     activeKernel.play()
     status.value = "ready"
   } catch (loadError) {
-    if (generation === loadGeneration) {
-      errorMessage.value = loadError instanceof Error ? loadError.message : String(loadError)
-      status.value = "error"
+    if (generation !== loadGeneration) {
+      return
     }
+    if (!onFallback.value && fallbackBaseUrl.value && shouldRetryAssetOnFallback(loadError)) {
+      console.warn("3D load failed, retrying on the fallback host", loadError)
+      onFallback.value = true // assetBaseUrl changes and the watcher below reloads
+      return
+    }
+    errorMessage.value = loadError instanceof Error ? loadError.message : String(loadError)
+    status.value = "error"
   }
 }
 

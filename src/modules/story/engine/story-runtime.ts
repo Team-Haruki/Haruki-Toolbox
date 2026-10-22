@@ -9,6 +9,7 @@ import { ScriptLog, type ScriptLogLabels } from "./scriptlog";
 import { StoryBrowser, type BrowserLabels } from "./browser";
 import { createStoryResolver, storyUrls, type StoryEpisodeContext } from "./urls";
 import type { StoryCatalog } from "../lib/story-catalog";
+import { AssetHttpError, loadWithAssetFallback } from "@/shared/sekai/asset-fallback";
 
 export type MenuLabels = Record<"fullscreen" | "auto" | "mute" | "fast" | "hide" | "log", string>;
 
@@ -58,28 +59,48 @@ let fontsAdded = false;
 // Talk window faces. The game sets JP/EN text in FOT-RodinNTLGPro (EB = name
 // plate, DB = dialogue body), a commercial font; its CN/TW/KR clients build
 // the same two faces from Source Han Sans (Bold / Medium). StoryJpBold /
-// StoryJpMedium use Source Han Sans JP and fall back to the Rodin files while
-// the asset host still has only those. CN/TW/KR text uses StoryHanSans,
+// StoryJpMedium use Source Han Sans JP. CN/TW/KR text uses StoryHanSans,
 // frequency slices with unicode-range. Faces are only registered here: the
-// browser downloads one when text first renders in it, not up front.
+// browser downloads one when text first renders in it, not up front. Each
+// face also lists the fallback host's copy, which the browser tries when the
+// first source fails.
 const JP_FACES: [family: string, files: string[]][] = [
   ["StoryJpBold", ["SourceHanSansJP-Bold.otf"]],
   ["StoryJpMedium", ["SourceHanSansJP-Medium.otf"]],
 ];
+
+/** A FontFace `src`: each URL, then its copy on the fallback host. */
+export function fontSources(urls: string[], format: string): string {
+  return urls
+    .flatMap((url) => [url, storyUrls.fallback(url)])
+    .filter((url): url is string => url !== null)
+    .map((url) => `url("${url}") format("${format}")`)
+    .join(", ");
+}
+
+async function fetchHanSansManifest(): Promise<HanSansManifest> {
+  const url = storyUrls.fonts("shs/manifest.json");
+  const { value } = await loadWithAssetFallback(url, storyUrls.fallback(url), async (u) => {
+    const r = await fetch(u);
+    if (!r.ok) throw new AssetHttpError(u, r.status);
+    return (await r.json()) as HanSansManifest;
+  });
+  return value;
+}
+
 function addFonts() {
   if (fontsAdded) return;
   fontsAdded = true;
   for (const [family, files] of JP_FACES) {
-    const src = files.map((f) => `url("${storyUrls.fonts(f)}") format("opentype")`).join(", ");
+    const src = fontSources(files.map((f) => storyUrls.fonts(f)), "opentype");
     document.fonts.add(new FontFace(family, src, { display: "swap" }));
   }
-  fetch(storyUrls.fonts("shs/manifest.json"))
-    .then((r) => (r.ok ? (r.json() as Promise<HanSansManifest>) : Promise.reject(new Error(`HTTP ${r.status}`))))
+  fetchHanSansManifest()
     .then((m) => {
       for (const [weight, slices] of Object.entries(m.weights))
         for (const s of slices)
           document.fonts.add(
-            new FontFace(m.family, `url("${storyUrls.fonts(`shs/${s.file}`)}") format("woff2")`, {
+            new FontFace(m.family, fontSources([storyUrls.fonts(`shs/${s.file}`)], "woff2"), {
               weight,
               unicodeRange: s.range,
               display: "swap",
@@ -87,6 +108,47 @@ function addFonts() {
           );
     })
     .catch((e) => console.warn("Han Sans font list unavailable", e));
+}
+
+// The Cubism core, loaded here so it can come from the fallback host: the
+// player only loads it itself when window.Live2DCubismCore is missing.
+const CUBISM_CORE_FILE = "live2dcubismcore.min.js";
+let cubismCore: Promise<void> | null = null;
+/** A host that accepts the connection and then stalls counts as failed after this. */
+const SCRIPT_TIMEOUT_MS = 20_000;
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    const fail = (message: string) => {
+      clearTimeout(timer);
+      s.remove();
+      reject(new Error(`${message} ${src}`));
+    };
+    const timer = setTimeout(() => fail("timed out loading"), SCRIPT_TIMEOUT_MS);
+    s.src = src;
+    s.onload = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    s.onerror = () => fail("could not load");
+    document.head.appendChild(s);
+  });
+}
+function ensureCubismCore(): Promise<void> {
+  if ((window as { Live2DCubismCore?: unknown }).Live2DCubismCore) return Promise.resolve();
+  const url = storyUrls.lib(CUBISM_CORE_FILE);
+  const fallback = storyUrls.fallback(url);
+  cubismCore ??= loadScript(url)
+    .catch((error: unknown) => {
+      if (!fallback) throw error;
+      console.warn("Cubism core failed, loading it from the fallback host", error);
+      return loadScript(fallback);
+    })
+    .catch((error: unknown) => {
+      cubismCore = null; // the player tries its own URL, and the next episode tries again
+      console.warn(error);
+    });
+  return cubismCore;
 }
 
 // the faces above, handed to the player's talk window
@@ -154,8 +216,8 @@ export class StoryRuntime {
       assets: createStoryResolver(),
       models: () => this.models,
       menu: DEFAULT_MENU,
-      fonts: false, // registered above (Source Han Sans JP / Rodin fallback, Han Sans slices)
-      cubismCoreUrl: storyUrls.lib("live2dcubismcore.min.js"),
+      fonts: false, // registered above (Source Han Sans JP, Han Sans slices)
+      cubismCoreUrl: storyUrls.lib(CUBISM_CORE_FILE),
       labels: { start: labels.start, loading: labels.loading, models: labels.models, menu: labels.menu },
     });
     for (const [k, v] of Object.entries(PLAYER_FONTS)) this.player.root.style.setProperty(k, v);
@@ -328,6 +390,7 @@ export class StoryRuntime {
     this.showPanel("log"); // narrow layout: follow the lines once an episode is picked
     this.player.showLoading();
     this.resolveModels(episode.index.models as unknown as ModelManifest);
+    const core = ensureCubismCore(); // with the icons, before the player needs it
     this.icons ??= fetch(storyUrls.ui("chr_ts/map.json"))
       .then((r) => (r.ok ? (r.json() as Promise<Record<string, string>>) : {}))
       .catch(() => ({}));
@@ -338,6 +401,8 @@ export class StoryRuntime {
     log.setVisible(this.logVisible);
     this.session = { sid, log };
     this.fit();
+    await core;
+    if (seq !== this.loadSeq || this.destroyed) return;
     await this.player.load(scn, { autoplay: play, context: episode });
   }
 
