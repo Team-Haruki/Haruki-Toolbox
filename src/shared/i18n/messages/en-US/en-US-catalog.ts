@@ -389,6 +389,11 @@ export default {
   // storyPlayer — owned by the story module (src/modules/story)
   // ---------------------------------------------------------------------
   "storyPlayer": {
+    "beta": {
+      "title": "In testing",
+      "body": "This page is still being tested and you may run into bugs. If something breaks or doesn't match the game, please report it in {tickets}.",
+      "tickets": "a ticket"
+    },
     "title": "Story player",
     "description": "Plays main, event, card, special stories and area talks the way the game stages them. Visuals and voices come from the JP server; text can be any server's official translation, with an AI Chinese translation for JP-only stories.",
     "textLang": "Text language",

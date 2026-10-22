@@ -2,7 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { LucideLanguages } from "lucide-vue-next"
+import { FlaskConical, LucideLanguages } from "lucide-vue-next"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import {
@@ -261,6 +262,20 @@ const langOptions = computed(() => [
         </div>
       </div>
     </div>
+
+    <Alert class="rounded-lg bg-card/90">
+      <FlaskConical aria-hidden="true" />
+      <AlertTitle>{{ t("storyPlayer.beta.title") }}</AlertTitle>
+      <AlertDescription>
+        <i18n-t keypath="storyPlayer.beta.body" scope="global" tag="p">
+          <template #tickets>
+            <router-link :to="{ name: 'tickets.create' }" class="font-medium text-primary underline-offset-4 hover:underline">
+              {{ t("storyPlayer.beta.tickets") }}
+            </router-link>
+          </template>
+        </i18n-t>
+      </AlertDescription>
+    </Alert>
 
     <div v-if="engineError" class="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
       {{ t("storyPlayer.errors.engine", { detail: engineError }) }}
