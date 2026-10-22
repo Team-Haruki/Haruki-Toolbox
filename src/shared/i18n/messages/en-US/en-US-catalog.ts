@@ -400,6 +400,7 @@ export default {
       "zhHansAi": "简体中文（AI翻译）"
     },
     "aiPending": "The AI translation of this episode is still being made. Check back later.",
+    "credit": "Developed by Deseer × 星雲希凪 (From Haruki Dev Team). Powered by Haruki Toolbox.",
     "aiNotice": "This text is an AI translation and may differ from the official one.",
     "errors": {
       "notFound": "This episode could not be found.",

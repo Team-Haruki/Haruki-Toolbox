@@ -378,6 +378,7 @@ export default {
       "zhHansAi": "簡體中文（AI翻譯）"
     },
     "aiPending": "這一話的 AI 翻譯還在生成中，請稍後再來。",
+    "credit": "Developed by Deseer × 星雲希凪 (From Haruki Dev Team). Powered by Haruki Toolbox.",
     "aiNotice": "當前文本為 AI 翻譯，可能與官方譯文有出入。",
     "errors": {
       "notFound": "找不到這一話劇情。",

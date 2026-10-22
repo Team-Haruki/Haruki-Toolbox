@@ -400,6 +400,7 @@ export default {
       "zhHansAi": "简体中文（AI翻译）"
     },
     "aiPending": "这一话的 AI 翻译还在生成中，请稍后再来。",
+    "credit": "Developed by Deseer × 星雲希凪 (From Haruki Dev Team). Powered by Haruki Toolbox.",
     "aiNotice": "当前文本为 AI 翻译，可能与官方译文有出入。",
     "errors": {
       "notFound": "找不到这一话剧情。",

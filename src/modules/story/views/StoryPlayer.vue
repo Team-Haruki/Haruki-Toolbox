@@ -261,5 +261,7 @@ const langOptions = computed(() => [
     </p>
 
     <div ref="host" class="w-full min-w-0" />
+
+    <p class="pt-1 text-center text-xs text-muted-foreground">{{ t("storyPlayer.credit") }}</p>
   </div>
 </template>
