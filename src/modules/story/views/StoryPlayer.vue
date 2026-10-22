@@ -83,7 +83,7 @@ const assetRoot = computed(() => {
 })
 watch(assetRoot, (root) => configureStoryRoot(`${root}/jp-assets`), { immediate: true })
 
-const { runtime, state, aiPending, markInteracted } = useStoryPlayback({
+const { runtime, state, aiPending, available, markInteracted } = useStoryPlayback({
   sid,
   catalog,
   langChain,
@@ -133,7 +133,11 @@ function runtimeLabels(): RuntimeLabels {
     loading: t("storyPlayer.stage.loading"),
     start: t("storyPlayer.stage.start"),
     pickBeside: t("storyPlayer.stage.pickBeside"),
-    pickAbove: t("storyPlayer.stage.pickAbove"),
+    pickBelow: t("storyPlayer.stage.pickBelow"),
+    tabBrowser: t("storyPlayer.stage.tabBrowser"),
+    tabLog: t("storyPlayer.stage.tabLog"),
+    fullscreen: t("storyPlayer.stage.fullscreen"),
+    exitFullscreen: t("storyPlayer.stage.exitFullscreen"),
   }
 }
 
@@ -183,18 +187,30 @@ watch(stateMessage, (message) => {
 })
 
 const playingLang = computed(() => (state.value.phase === "playing" ? state.value.lang : null))
-/** The episode lacks the language the user would get first. */
-const fallbackNotice = computed(() => {
-  const shown = playingLang.value
-  const wanted = langChain.value[0]
-  if (!shown || shown === wanted) return null
-  return t("storyPlayer.fallback", { lang: langLabel(wanted), shown: langLabel(shown) })
+
+// Only the languages this episode has. A remembered pick the episode lacks
+// stays saved for the next episode; meanwhile the selector shows what plays.
+const selectedLang = computed<string>({
+  get: () => {
+    const picked = pickedLang.value
+    if (picked === "auto" || !playingLang.value) return picked
+    return (available.value as string[]).includes(picked) ? picked : playingLang.value
+  },
+  set: (value) => {
+    pickedLang.value = value
+  },
 })
 
 const langSelectId = useId()
 const langOptions = computed(() => [
-  { value: "auto", label: t("storyPlayer.langAuto") },
-  ...STORY_TEXT_LANGS.map((lang) => ({ value: lang, label: langLabel(lang) })),
+  {
+    value: "auto",
+    label: pickedLang.value === "auto" && playingLang.value
+      ? t("storyPlayer.langAutoResolved", { lang: langLabel(playingLang.value) })
+      : t("storyPlayer.langAuto"),
+  },
+  ...(available.value.length > 0 ? available.value : (["ja"] as StoryTextLang[]))
+    .map((lang) => ({ value: lang, label: langLabel(lang) })),
 ])
 </script>
 
@@ -208,7 +224,7 @@ const langOptions = computed(() => [
       <div class="flex items-center gap-2">
         <LucideLanguages class="size-4 text-muted-foreground" aria-hidden="true" />
         <Label :id="`${langSelectId}-label`" :for="langSelectId" class="sr-only">{{ t("storyPlayer.textLang") }}</Label>
-        <Select :id="langSelectId" v-model="pickedLang">
+        <Select :id="langSelectId" v-model="selectedLang">
           <SelectTrigger class="w-52" :aria-labelledby="`${langSelectId}-label`">
             <SelectValue />
           </SelectTrigger>
@@ -224,15 +240,13 @@ const langOptions = computed(() => [
     <div v-if="engineError" class="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
       {{ t("storyPlayer.errors.engine", { detail: engineError }) }}
     </div>
-    <div
-      v-else-if="fallbackNotice || aiPending || playingLang === 'zh-Hans-ai'"
-      class="flex flex-col gap-1 text-sm text-muted-foreground"
+    <p
+      v-else-if="playingLang === 'zh-Hans-ai' || (aiPending && langChain.includes('zh-Hans-ai'))"
+      class="text-sm text-muted-foreground"
       aria-live="polite"
     >
-      <p v-if="fallbackNotice">{{ fallbackNotice }}</p>
-      <p v-if="aiPending && playingLang !== 'zh-Hans-ai'">{{ t("storyPlayer.aiPending") }}</p>
-      <p v-if="playingLang === 'zh-Hans-ai'">{{ t("storyPlayer.aiNotice") }}</p>
-    </div>
+      {{ playingLang === "zh-Hans-ai" ? t("storyPlayer.aiNotice") : t("storyPlayer.aiPending") }}
+    </p>
 
     <div ref="host" class="w-full min-w-0" />
   </div>

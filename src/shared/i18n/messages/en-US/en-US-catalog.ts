@@ -389,6 +389,7 @@ export default {
     "title": "Story player",
     "description": "Plays main, event, card, special stories and area talks the way the game stages them. Visuals and voices come from the JP server; text can be any server's official translation, with an AI Chinese translation for JP-only stories.",
     "textLang": "Text language",
+    "langAutoResolved": "Toolbox language ({lang})",
     "langAuto": "Follow the Toolbox language",
     "lang": {
       "ja": "日本語",
@@ -398,7 +399,6 @@ export default {
       "ko": "한국어",
       "zhHansAi": "简体中文（AI翻译）"
     },
-    "fallback": "This episode has no {lang} text; showing {shown}.",
     "aiPending": "The AI translation of this episode is still being made. Check back later.",
     "aiNotice": "This text is an AI translation and may differ from the official one.",
     "errors": {
@@ -412,7 +412,11 @@ export default {
       "loading": "Loading",
       "start": "Click to play",
       "pickBeside": "Pick a story on the left",
-      "pickAbove": "Pick a story above"
+      "pickBelow": "Pick a story below",
+      "tabBrowser": "Stories",
+      "tabLog": "Lines",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen"
     },
     "browser": {
       "tabs": {

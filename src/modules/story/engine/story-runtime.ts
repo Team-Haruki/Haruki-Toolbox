@@ -31,13 +31,21 @@ export interface RuntimeLabels {
   log: ScriptLogLabels;
   loading: string;
   start: string;
-  /** shown on the stage until an episode is picked (browser beside / above the stage) */
+  /** shown on the stage until an episode is picked (browser beside / below the stage) */
   pickBeside: string;
-  pickAbove: string;
+  pickBelow: string;
+  /** narrow layout: the panel tabs under the stage */
+  tabBrowser: string;
+  tabLog: string;
+  fullscreen: string;
+  exitFullscreen: string;
 }
 
-/** Below this host width the browser and the log stack around the stage. */
+/** Below this host width the stage goes on top and the browser / log become tabs under it. */
 const NARROW = 1100;
+
+const ICON_EXPAND = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`;
+const ICON_SHRINK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>`;
 
 // Can this page play sound without a click yet? (a silent clip either plays or
 // is rejected by the browser's autoplay policy)
@@ -85,7 +93,9 @@ interface Session {
 export class StoryRuntime {
   private root: HTMLElement;
   private row: HTMLElement;
+  private box: HTMLElement;
   private wrap: HTMLElement;
+  private fsBtn: HTMLButtonElement;
   private overlay: HTMLElement;
   private loadingEl: HTMLElement;
   private statusEl: HTMLElement;
@@ -104,6 +114,14 @@ export class StoryRuntime {
   private resizeObserver: ResizeObserver;
   private loadSeq = 0;
   private destroyed = false;
+  private readonly onViewport = () => this.fit();
+  private readonly onFullscreenChange = () => {
+    const native = document.fullscreenElement === this.box;
+    this.root.classList.toggle("fs", native);
+    if (!native) (screen.orientation as { unlock?: () => void } | undefined)?.unlock?.();
+    this.syncFullscreenButton();
+    this.fit();
+  };
   // auto / 早送り / log visibility survive scenario switches
   private modes = { auto: true, fast: false, log: true };
 
@@ -113,21 +131,31 @@ export class StoryRuntime {
     this.root = document.createElement("div");
     this.root.className = "story-player";
     for (const [k, v] of Object.entries(CSS_SPRITES)) this.root.style.setProperty(k, `url("${storyUrls.ui(v)}")`);
+    this.root.dataset.panel = "browser";
     this.root.innerHTML = `<div class="sp-row">
-        <div class="sp-stage-wrap">
-          <canvas class="sp-canvas" width="1280" height="720"></canvas>
-          <div class="sp-overlay">
-            <div class="sp-loading" hidden></div>
-            <div class="sp-status"></div>
-            <div class="sp-pick"><span class="beside"></span><span class="above"></span></div>
-            <button class="sp-start" hidden></button>
+        <div class="sp-stage-box">
+          <div class="sp-stage-wrap">
+            <canvas class="sp-canvas" width="1280" height="720"></canvas>
+            <div class="sp-overlay">
+              <div class="sp-loading" hidden></div>
+              <div class="sp-status"></div>
+              <div class="sp-pick"><span class="beside"></span><span class="below"></span></div>
+              <button class="sp-start" hidden></button>
+            </div>
           </div>
+          <button class="sp-fs-btn" type="button"></button>
+        </div>
+        <div class="sp-tabs" role="tablist">
+          <button type="button" role="tab" data-panel="browser"></button>
+          <button type="button" role="tab" data-panel="log"></button>
         </div>
       </div>`;
     host.appendChild(this.root);
     const $ = <T extends HTMLElement>(sel: string) => this.root.querySelector<T>(sel)!;
     this.row = $(".sp-row");
+    this.box = $(".sp-stage-box");
     this.wrap = $(".sp-stage-wrap");
+    this.fsBtn = $<HTMLButtonElement>(".sp-fs-btn");
     this.overlay = $(".sp-overlay");
     this.loadingEl = $(".sp-loading");
     this.statusEl = $(".sp-status");
@@ -136,7 +164,17 @@ export class StoryRuntime {
     this.loadingEl.textContent = labels.loading;
     this.startBtn.textContent = labels.start;
     $(".sp-pick .beside").textContent = labels.pickBeside;
-    $(".sp-pick .above").textContent = labels.pickAbove;
+    $(".sp-pick .below").textContent = labels.pickBelow;
+    for (const tab of this.root.querySelectorAll<HTMLButtonElement>(".sp-tabs button")) {
+      tab.textContent = tab.dataset.panel === "log" ? labels.tabLog : labels.tabBrowser;
+      tab.addEventListener("click", () => this.showPanel(tab.dataset.panel === "log" ? "log" : "browser"));
+    }
+    this.syncPanelTabs();
+    this.fsBtn.addEventListener("click", (e) => {
+      e.stopPropagation(); // not a tap on the story
+      void this.toggleFullscreen();
+    });
+    this.syncFullscreenButton();
 
     this.app = new PIXI.Application({
       view: $<HTMLCanvasElement>(".sp-canvas") as unknown as HTMLCanvasElement,
@@ -186,6 +224,8 @@ export class StoryRuntime {
 
     this.resizeObserver = new ResizeObserver(() => this.fit());
     this.resizeObserver.observe(host);
+    addEventListener("resize", this.onViewport);
+    document.addEventListener("fullscreenchange", this.onFullscreenChange);
     this.showPick();
     this.fit();
   }
@@ -205,23 +245,85 @@ export class StoryRuntime {
   }
 
   // Fit browser + stage + overview into the host (CSS zoom keeps the 1280x720
-  // layout). Narrow hosts stack the browser above and the log below the stage.
+  // layout). Narrow hosts put the stage on top at full width with the browser
+  // and the log as tabs under it; fullscreen fits the stage to the screen.
   private fit() {
     const host = this.root.parentElement;
     if (!host) return;
     const width = host.clientWidth;
     const narrow = width < NARROW;
     this.root.classList.toggle("narrow", narrow);
-    if (narrow) {
+    let stageZoom = 1;
+    if (this.isFullscreen()) {
       this.row.style.zoom = "1";
-      this.wrap.style.zoom = String(Math.min(1, width / 1282));
-      return;
+      stageZoom = Math.min(this.box.clientWidth / 1280, this.box.clientHeight / 720);
+    } else if (narrow) {
+      this.row.style.zoom = "1";
+      stageZoom = Math.min(1, width / 1282);
+    } else {
+      this.wrap.style.zoom = "1";
+      this.row.style.zoom = "1";
+      const maxHeight = Math.max(360, innerHeight - this.row.getBoundingClientRect().top - 16);
+      const z = Math.min(1, width / this.row.scrollWidth, maxHeight / this.row.scrollHeight);
+      this.row.style.zoom = String(Math.max(0.3, z));
     }
-    this.wrap.style.zoom = "1";
-    this.row.style.zoom = "1";
-    const maxHeight = Math.max(360, innerHeight - this.row.getBoundingClientRect().top - 16);
-    const z = Math.min(1, width / this.row.scrollWidth, maxHeight / this.row.scrollHeight);
-    this.row.style.zoom = String(Math.max(0.3, z));
+    this.wrap.style.zoom = String(stageZoom);
+    // keep the prompt / spinner / start button readable on a small stage
+    this.overlay.style.zoom = String(stageZoom < 0.6 ? Math.min(2.6, 0.6 / stageZoom) : 1);
+  }
+
+  private showPanel(panel: "browser" | "log") {
+    this.root.dataset.panel = panel;
+    this.syncPanelTabs();
+  }
+
+  private syncPanelTabs() {
+    for (const tab of this.root.querySelectorAll<HTMLElement>(".sp-tabs button")) {
+      const on = tab.dataset.panel === this.root.dataset.panel;
+      tab.classList.toggle("on", on);
+      tab.setAttribute("aria-selected", String(on));
+    }
+  }
+
+  isFullscreen() {
+    return document.fullscreenElement === this.box || this.root.classList.contains("pseudo-fs");
+  }
+
+  /**
+   * Native fullscreen on the stage (landscape where the browser lets us lock
+   * it); where pages cannot go fullscreen (iPhone Safari) the stage covers the
+   * viewport instead, turned sideways while the phone is held upright.
+   */
+  async toggleFullscreen() {
+    if (this.isFullscreen()) {
+      if (document.fullscreenElement === this.box) await document.exitFullscreen().catch(() => {});
+      this.root.classList.remove("pseudo-fs");
+      document.documentElement.classList.remove("story-player-fs-lock");
+    } else if (document.fullscreenEnabled && this.box.requestFullscreen) {
+      try {
+        await this.box.requestFullscreen({ navigationUI: "hide" });
+        await (screen.orientation as { lock?: (o: string) => Promise<void> } | undefined)?.lock?.("landscape").catch(() => {});
+      } catch {
+        this.enterPseudoFullscreen();
+      }
+    } else {
+      this.enterPseudoFullscreen();
+    }
+    this.syncFullscreenButton();
+    this.fit();
+  }
+
+  private enterPseudoFullscreen() {
+    this.root.classList.add("pseudo-fs");
+    document.documentElement.classList.add("story-player-fs-lock");
+  }
+
+  private syncFullscreenButton() {
+    const on = this.isFullscreen();
+    this.fsBtn.innerHTML = on ? ICON_SHRINK : ICON_EXPAND;
+    const label = on ? this.labels.exitFullscreen : this.labels.fullscreen;
+    this.fsBtn.title = label;
+    this.fsBtn.setAttribute("aria-label", label);
   }
 
   // Mirror auto / 早送り / log onto the AUTO-SKIP sign and the menu buttons.
@@ -267,6 +369,7 @@ export class StoryRuntime {
     this.loadSeq++;
     this.teardown();
     this.browser.setCurrent(null);
+    this.showPanel("browser");
     this.overlayState("pick");
   }
 
@@ -281,6 +384,7 @@ export class StoryRuntime {
     this.wrap.classList.remove("ui-hidden");
     this.menu.close();
     this.browser.setCurrent(sid);
+    this.showPanel("log"); // narrow layout: follow the lines once an episode is picked
     this.overlayState("loading");
     configureStoryEpisode(episode);
     this.icons ??= fetch(storyUrls.ui("chr_ts/map.json"))
@@ -346,6 +450,10 @@ export class StoryRuntime {
     this.destroyed = true;
     this.loadSeq++;
     this.resizeObserver.disconnect();
+    removeEventListener("resize", this.onViewport);
+    document.removeEventListener("fullscreenchange", this.onFullscreenChange);
+    if (this.root.classList.contains("pseudo-fs")) document.documentElement.classList.remove("story-player-fs-lock");
+    if (document.fullscreenElement === this.box) void document.exitFullscreen().catch(() => {});
     this.teardown();
     this.browser.destroy();
     this.app.destroy(false, { children: true, texture: false, baseTexture: false });

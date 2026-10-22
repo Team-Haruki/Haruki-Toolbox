@@ -5,6 +5,7 @@ import type { StoryCatalog, StoryEpisode } from "@/modules/story/lib/story-catal
 import { ScenarioCache, fetchScenarioJson, fetchStoryAssetIndex } from "@/modules/story/lib/story-fetch"
 import {
   STORY_LANG_REGIONS,
+  STORY_TEXT_LANGS,
   applyRegionText,
   applyTranslation,
   isPlaceholderText,
@@ -43,6 +44,8 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
   const state = ref<StoryPlaybackState>({ phase: "idle" })
   /** The AI translation of the current episode is still being made. */
   const aiPending = ref(false)
+  /** Text languages the current episode has, in selector order. */
+  const available = ref<StoryTextLang[]>([])
   const scenarios = new ScenarioCache<ScenarioSceneData>()
   let index: Promise<StoryAssetIndex> | null = null
   let seq = 0
@@ -60,30 +63,36 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
     scenarios.get(`${region}:${episode.sid}`, () =>
       fetchScenarioJson<ScenarioSceneData>(options.assetRoot.value, region, episode.paths))
 
-  async function textFor(jp: ScenarioSceneData, episode: StoryEpisode): Promise<{ scn: ScenarioSceneData; lang: StoryTextLang }> {
-    aiPending.value = false
-    for (const lang of options.langChain.value) {
-      if (lang === "ja") return { scn: jp, lang }
+  /**
+   * Every text language this episode has: JP, each region whose file holds
+   * real (aligned, non-placeholder) text, and the AI translation only when
+   * there is no official Simplified Chinese. Fetched in parallel and cached.
+   */
+  async function textsFor(jp: ScenarioSceneData, episode: StoryEpisode): Promise<Map<StoryTextLang, ScenarioSceneData>> {
+    const texts = new Map<StoryTextLang, ScenarioSceneData>([["ja", jp]])
+    await Promise.all(STORY_TEXT_LANGS.map(async (lang) => {
+      const region = STORY_LANG_REGIONS[lang]
+      if (!region || region === "jp") return
       try {
-        if (lang === "zh-Hans-ai") {
-          const result = await getStoryTranslation(episode.sid)
-          if (result.status === "pending") aiPending.value = true
-          if (result.status !== "done") continue
-          const scn = applyTranslation(jp, result.translation)
-          if (scn) return { scn, lang }
-          continue
-        }
-        const region = STORY_LANG_REGIONS[lang]
-        if (!region) continue
         const other = await scenarioOf(region, episode)
-        if (!other || isPlaceholderText(other)) continue
-        const scn = applyRegionText(jp, other)
-        if (scn) return { scn, lang }
+        const scn = other && !isPlaceholderText(other) ? applyRegionText(jp, other) : null
+        if (scn) texts.set(lang, scn)
       } catch (error) {
         console.warn("story text unavailable", lang, error)
       }
+    }))
+    aiPending.value = false
+    if (!texts.has("zh-Hans")) {
+      try {
+        const result = await getStoryTranslation(episode.sid)
+        aiPending.value = result.status === "pending"
+        const scn = result.status === "done" ? applyTranslation(jp, result.translation) : null
+        if (scn) texts.set("zh-Hans-ai", scn)
+      } catch (error) {
+        console.warn("story AI translation unavailable", error)
+      }
     }
-    return { scn: jp, lang: "ja" }
+    return texts
   }
 
   async function play(sid: string | null) {
@@ -92,6 +101,7 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
     const mine = ++seq
     if (!rt) return
     if (!sid) {
+      available.value = []
       state.value = { phase: "idle" }
       rt.showPick()
       return
@@ -115,8 +125,11 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
         state.value = { phase: "error", sid, reason: "missing" }
         return
       }
-      const { scn, lang } = await textFor(jp, hit.episode)
+      const texts = await textsFor(jp, hit.episode)
       if (mine !== seq) return
+      available.value = STORY_TEXT_LANGS.filter((l) => texts.has(l))
+      const lang = options.langChain.value.find((l) => texts.has(l)) ?? "ja"
+      const scn = texts.get(lang) ?? jp
       rt.setScript(storyFontScript(lang))
       state.value = { phase: "playing", sid, lang, episode: hit.episode }
       const { canAutoplay } = await import("@/modules/story/engine/story-runtime")
@@ -139,5 +152,5 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
     () => void play(options.sid.value),
   )
 
-  return { runtime, state, aiPending, markInteracted, replay: () => play(options.sid.value) }
+  return { runtime, state, aiPending, available, markInteracted, replay: () => play(options.sid.value) }
 }

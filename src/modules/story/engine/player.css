@@ -333,9 +333,9 @@
 /* nothing picked yet: the prompt in the middle of the stage */
 .story-player .sp-pick { font: 700 20px var(--cn-bold); color: rgb(223,223,234); letter-spacing: .06em; text-align: center; }
 .story-player .sp-pick[hidden] { display: none; }
-.story-player .sp-pick .above { display: none; }
+.story-player .sp-pick .below { display: none; }
 .story-player.narrow .sp-pick .beside { display: none; }
-.story-player.narrow .sp-pick .above { display: inline; }
+.story-player.narrow .sp-pick .below { display: inline; }
 
 /* Dialogue in other scripts: Rodin covers kana, JIS kanji and Latin only, so
    Chinese and Korean text switch to a system face of the same weight. */
@@ -348,9 +348,54 @@
 .story-player[data-script="ko"] .fx-telop-text, .story-player[data-script="ko"] .fx-place-text,
 .story-player[data-script="ko"] .fst-text, .story-player[data-script="ko"] .fx-choice-btn { font-family: var(--ko-text); font-weight: 500; }
 
-/* Narrow hosts: browser above, stage (zoomed to the width), log below. */
-.story-player.narrow .sp-row { flex-direction: column; align-items: stretch; }
-.story-player.narrow .story-browser { width: 100%; height: 420px; }
-.story-player.narrow .story-browser.collapsed { width: 100%; height: 44px; }
-.story-player.narrow .collapsed .sb-rail { top: 0; left: 52px; right: auto; width: auto; margin: 0; padding: 0; line-height: 44px; }
-.story-player.narrow .script-log { width: 100%; height: 420px; }
+/* The stage box holds the stage and the fullscreen toggle (unzoomed). */
+.story-player .sp-stage-box { position: relative; flex: none; }
+.story-player .sp-fs-btn { position: absolute; left: 10px; top: 10px; z-index: 11; width: 36px; height: 36px; padding: 7px;
+  border: 0; border-radius: 50%; background: rgba(68,68,102,.72); color: #fff; cursor: pointer; opacity: .85;
+  box-shadow: 0 1px 4px rgba(0,0,34,.35); }
+.story-player .sp-fs-btn:hover { opacity: 1; }
+.story-player .sp-fs-btn svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2.2;
+  stroke-linecap: round; stroke-linejoin: round; }
+.story-player .sp-stage-wrap.ui-hidden ~ .sp-fs-btn { visibility: hidden; }
+.story-player .sp-tabs { display: none; }
+.story-player.narrow:not(.pseudo-fs) .sp-stage-box:not(:fullscreen) .sp-fs-btn { left: 6px; top: 6px; width: 28px; height: 28px; padding: 5px; }
+
+/* Fullscreen: the box fills the screen, the stage is centred and zoomed to fit. */
+.story-player .sp-stage-box:fullscreen,
+.story-player.pseudo-fs .sp-stage-box { display: flex; align-items: center; justify-content: center; background: #000; }
+.story-player .sp-stage-box:fullscreen .sp-stage-wrap,
+.story-player.pseudo-fs .sp-stage-wrap { border: 0; border-radius: 0; }
+.story-player .sp-stage-box:fullscreen .sp-fs-btn,
+.story-player.pseudo-fs .sp-fs-btn { left: 16px; top: 16px; width: 44px; height: 44px; padding: 9px; }
+.story-player.pseudo-fs .sp-stage-box { position: fixed; z-index: 2147483000; left: 0; top: 0; width: 100vw; height: 100dvh; }
+/* a phone held upright: lay the stage sideways (iPhone Safari cannot lock the orientation) */
+@media (orientation: portrait) {
+  .story-player.pseudo-fs .sp-stage-box { width: 100dvh; height: 100vw; transform-origin: 0 0; transform: translateX(100vw) rotate(90deg); }
+}
+:root.story-player-fs-lock, :root.story-player-fs-lock body { overflow: hidden; }
+
+/* Narrow hosts: the stage on top at full width, then tabs switching between
+   the story browser and the talk log (sized for phones, not zoomed). */
+.story-player.narrow .sp-row { flex-direction: column; align-items: stretch; gap: 10px; }
+.story-player.narrow .sp-stage-box { order: 0; align-self: center; }
+.story-player.narrow .sp-tabs { order: 1; display: flex; padding: 3px; border-radius: 18px; background: rgb(58,58,88); }
+.story-player.narrow .sp-tabs button { flex: 1; height: 32px; border: 0; border-radius: 15px; background: none; cursor: pointer;
+  font: 700 14px var(--cn-bold); color: rgb(223,223,234); }
+.story-player.narrow .sp-tabs button.on { background: #fff; color: rgb(68,68,102); box-shadow: 0 1px 3px rgba(0,0,34,.3); }
+.story-player.narrow .story-browser,
+.story-player.narrow .script-log { order: 2; width: 100%; height: min(68dvh, 620px); }
+.story-player.narrow[data-panel="log"] .story-browser,
+.story-player.narrow[data-panel="browser"] .script-log { display: none; }
+.story-player.narrow .sb-toggle,
+.story-player.narrow .sb-rail { display: none; }
+.story-player.narrow .story-browser.collapsed .sb-main { display: flex; }
+.story-player.narrow .sb-tabs { margin-right: 0; }
+.story-player.narrow .sb-tabs button { font-size: 14px; height: 32px; }
+.story-player.narrow .sb-units button { width: 42px; height: 42px; }
+.story-player.narrow .sb-search, .story-player.narrow .sl-search { height: 36px; font-size: 15px; }
+.story-player.narrow .sb-title b { font-size: 14px; }
+.story-player.narrow .sb-ep-text span { font-size: 14px; }
+.story-player.narrow .sl-cell { grid-template-columns: 40px 1fr; column-gap: 10px; padding: 10px 10px 10px 14px; -webkit-text-stroke: 0; }
+.story-player.narrow .sl-icon { width: 40px; height: 40px; }
+.story-player.narrow .sl-name { font-size: 14px; }
+.story-player.narrow .sl-body { font-size: 15px; }
