@@ -21,7 +21,7 @@
         "pinia-plugin-persistedstate": "^4.7.1",
         "pinyin-pro": "^3.29.4",
         "pixi.js": "7.4.3",
-        "pjsk-scenario-player": "https://github.com/Team-Haruki/sekai-scenario-player/releases/download/v0.2.3/pjsk-scenario-player-0.2.3.tgz",
+        "pjsk-scenario-player": "https://github.com/Team-Haruki/sekai-scenario-player/releases/download/v0.2.4/pjsk-scenario-player-0.2.4.tgz",
         "postcss": "^8.5.29",
         "reka-ui": "^2.11.0",
         "tailwind-merge": "^3.7.0",
@@ -1402,7 +1402,7 @@
 
     "pixi.js": ["pixi.js@7.4.3", "", { "dependencies": { "@pixi/accessibility": "7.4.3", "@pixi/app": "7.4.3", "@pixi/assets": "7.4.3", "@pixi/compressed-textures": "7.4.3", "@pixi/core": "7.4.3", "@pixi/display": "7.4.3", "@pixi/events": "7.4.3", "@pixi/extensions": "7.4.3", "@pixi/extract": "7.4.3", "@pixi/filter-alpha": "7.4.3", "@pixi/filter-blur": "7.4.3", "@pixi/filter-color-matrix": "7.4.3", "@pixi/filter-displacement": "7.4.3", "@pixi/filter-fxaa": "7.4.3", "@pixi/filter-noise": "7.4.3", "@pixi/graphics": "7.4.3", "@pixi/mesh": "7.4.3", "@pixi/mesh-extras": "7.4.3", "@pixi/mixin-cache-as-bitmap": "7.4.3", "@pixi/mixin-get-child-by-name": "7.4.3", "@pixi/mixin-get-global-position": "7.4.3", "@pixi/particle-container": "7.4.3", "@pixi/prepare": "7.4.3", "@pixi/sprite": "7.4.3", "@pixi/sprite-animated": "7.4.3", "@pixi/sprite-tiling": "7.4.3", "@pixi/spritesheet": "7.4.3", "@pixi/text": "7.4.3", "@pixi/text-bitmap": "7.4.3", "@pixi/text-html": "7.4.3" } }, "sha512-uIWdH0EI2dVgNoqN9aFaHCmR0V65OEhMkXs2sek3c/QP2ItV6UoM+ouX9esSv3ibo20F+J5D1XwnQhUZI6wqeQ=="],
 
-    "pjsk-scenario-player": ["pjsk-scenario-player@https://github.com/Team-Haruki/sekai-scenario-player/releases/download/v0.2.3/pjsk-scenario-player-0.2.3.tgz", { "dependencies": { "@pixi/assets": "^7.4.3", "@sekai-world/pixi-live2d-display-mulmotion": "^0.5.1", "pixi.js": "^7.4.3" }, "peerDependencies": { "pixi.js": "^7.4.3" } }, "sha512-0YZLIqE/ag2rQRhP06/DOpqSMq7xuvfuL1DayWFs80GCx8z5dmjPnaT7DD96+MwLVuiBdEjJmqy4vuVFqwqFoA=="],
+    "pjsk-scenario-player": ["pjsk-scenario-player@https://github.com/Team-Haruki/sekai-scenario-player/releases/download/v0.2.4/pjsk-scenario-player-0.2.4.tgz", { "dependencies": { "@pixi/assets": "^7.4.3", "@sekai-world/pixi-live2d-display-mulmotion": "^0.5.1", "pixi.js": "^7.4.3" }, "peerDependencies": { "pixi.js": "^7.4.3" } }, "sha512-56gaAbbTl9gn4RYHHNaIkUvnsCE9+sq04PI8goEqI9BgrhMrzp1lRpKlvVLvwjD22etdoje9k4EIU8yZyiV/9w=="],
 
     "pkg-types": ["pkg-types@2.3.1", "", { "dependencies": { "confbox": "^0.2.4", "exsolve": "^1.0.8", "pathe": "^2.0.3" } }, "sha512-y+ichcgc2LrADuhLNAx8DFjVfgz91pRxfZdI3UDhxHvcVEZsenLO+7XaU5vOp0u/7V/wZ+plyuQxtrDlZJ+yeg=="],
 
