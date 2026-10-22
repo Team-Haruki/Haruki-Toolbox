@@ -389,6 +389,11 @@ export default {
   // storyPlayer — owned by the story module (src/modules/story)
   // ---------------------------------------------------------------------
   "storyPlayer": {
+    "beta": {
+      "title": "测试中",
+      "body": "本页面功能正在测试中，可能会遇到各种各样的 bug，如果遇到 bug 可以在{tickets}处反馈。",
+      "tickets": "工单"
+    },
     "title": "剧情播放",
     "description": "按游戏的演出播放主线、活动、卡面、特别剧情与区域对话。画面与语音来自日服，文本可选各服官方翻译，日服独有的剧情另有 AI 中文翻译。",
     "textLang": "文本语言",

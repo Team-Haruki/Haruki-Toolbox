@@ -244,8 +244,17 @@ export class StoryBrowser {
         if (!handleSekaiImageError(ev, src)) el.remove();
       });
     }
-    const cur = this.listEl.querySelector(".sb-ep.cur");
-    if (cur && !q) cur.scrollIntoView({ block: "nearest" });
+    const cur = this.listEl.querySelector<HTMLElement>(".sb-ep.cur");
+    if (cur && !q) this.revealInList(cur);
+  }
+
+  // Scroll only the list to the episode: scrollIntoView() also scrolls the
+  // page, which on the narrow layout pushed the stage off screen.
+  private revealInList(el: HTMLElement) {
+    const list = this.listEl.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    if (r.top < list.top) this.listEl.scrollTop += r.top - list.top;
+    else if (r.bottom > list.bottom) this.listEl.scrollTop += r.bottom - list.bottom;
   }
 
   private onListClick(e: Event) {

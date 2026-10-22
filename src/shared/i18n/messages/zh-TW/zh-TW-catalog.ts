@@ -367,6 +367,11 @@ export default {
     }
   },
   "storyPlayer": {
+    "beta": {
+      "title": "測試中",
+      "body": "本頁面功能正在測試中，可能會遇到各種各樣的 bug，如果遇到 bug 可以在{tickets}處反饋。",
+      "tickets": "工單"
+    },
     "title": "劇情播放",
     "description": "按遊戲的演出播放主線、活動、卡面、特別劇情與區域對話。畫面與語音來自日服，文本可選各服官方翻譯，日服獨有的劇情另有 AI 中文翻譯。",
     "textLang": "文本語言",
