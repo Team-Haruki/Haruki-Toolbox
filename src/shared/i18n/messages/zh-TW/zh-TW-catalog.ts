@@ -393,8 +393,8 @@ export default {
       "pickBelow": "請在下方選擇要播放的劇情",
       "tabBrowser": "劇情",
       "tabLog": "台詞",
-      "fullscreen": "全屏",
-      "exitFullscreen": "退出全屏"
+      "fullscreen": "全螢幕",
+      "exitFullscreen": "退出全螢幕"
     },
     "browser": {
       "tabs": {
@@ -415,7 +415,7 @@ export default {
       "secondPart": "後篇"
     },
     "menu": {
-      "fullscreen": "全屏",
+      "fullscreen": "全螢幕",
       "auto": "自動",
       "mute": "靜音",
       "fast": "快進",
