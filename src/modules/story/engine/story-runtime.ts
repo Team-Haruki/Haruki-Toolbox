@@ -43,6 +43,8 @@ export interface RuntimeLabels {
 
 /** Below this host width the stage goes on top and the browser / log become tabs under it. */
 const NARROW = 1100;
+/** Narrow layout: the panels keep this design width and are zoomed to the host, like the desktop row. */
+const PANEL_WIDTH = 400;
 
 const ICON_EXPAND = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`;
 const ICON_SHRINK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>`;
@@ -293,6 +295,11 @@ export class StoryRuntime {
     } else if (narrow) {
       this.row.style.zoom = "1";
       stageZoom = Math.min(1, width / 1282);
+      // panels: same proportions as on desktop, scaled to the width
+      const panelZoom = Math.min(1.25, width / PANEL_WIDTH);
+      const panelHeight = Math.min(innerHeight * 0.68, 620) / panelZoom;
+      this.root.style.setProperty("--sp-panel-zoom", String(panelZoom));
+      this.root.style.setProperty("--sp-panel-height", `${Math.round(panelHeight)}px`);
     } else {
       this.wrap.style.zoom = "1";
       this.row.style.zoom = "1";
