@@ -369,7 +369,7 @@ export default {
   "storyPlayer": {
     "beta": {
       "title": "測試中",
-      "body": "本頁面功能正在測試中，可能會遇到各種各樣的 bug，如果遇到 bug 可以在{tickets}處反饋。",
+      "body": "本頁面功能正在測試中，可能會遇到各種各樣的 bug，如果遇到 bug 或者什麼地方與遊戲內不符，可以在{tickets}處反饋。",
       "tickets": "工單"
     },
     "title": "劇情播放",

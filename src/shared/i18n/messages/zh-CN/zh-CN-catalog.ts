@@ -391,7 +391,7 @@ export default {
   "storyPlayer": {
     "beta": {
       "title": "测试中",
-      "body": "本页面功能正在测试中，可能会遇到各种各样的 bug，如果遇到 bug 可以在{tickets}处反馈。",
+      "body": "本页面功能正在测试中，可能会遇到各种各样的 bug，如果遇到 bug 或者什么地方与游戏内不符，可以在{tickets}处反馈。",
       "tickets": "工单"
     },
     "title": "剧情播放",

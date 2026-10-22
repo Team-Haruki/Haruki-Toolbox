@@ -391,7 +391,7 @@ export default {
   "storyPlayer": {
     "beta": {
       "title": "In testing",
-      "body": "This page is still being tested and you may run into bugs. If you do, please report them in {tickets}.",
+      "body": "This page is still being tested and you may run into bugs. If something breaks or doesn't match the game, please report it in {tickets}.",
       "tickets": "a ticket"
     },
     "title": "Story player",
