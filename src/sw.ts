@@ -15,6 +15,7 @@ import {
   readAppUpdateMessage,
   type AppUpdateClientBuild,
 } from "@/lib/app-update-protocol"
+import { isCachedSekaiImage } from "@/lib/sekai-image-cache"
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<PrecacheEntry | string>
@@ -135,10 +136,8 @@ registerRoute(
   }),
 )
 
-// Sekai game-asset and toolbox static images (music jackets, card art, icons)
-// are content-addressed and immutable. Scoped to image extensions to avoid
-// caching large 3D bundles, and latency probes stay on the network (caching
-// them would make endpoint re-tests measure cache reads).
+// Sekai game-asset and toolbox static images (music jackets, card art, icons);
+// see isCachedSekaiImage for what is left out (latency probes, story player files).
 //
 // These <img> loads are cross-origin no-cors, so every response is opaque
 // (status 0), including CDN/WAF errors that statuses:[0,200] cannot filter
@@ -148,7 +147,7 @@ registerRoute(
 // The v2 name abandons caches poisoned before that recovery existed; pwa.ts
 // deletes the old cache.
 registerRoute(
-  /^https:\/\/(sekai-assets\.haruki\.seiunx\.com|sekai-assets-bdf29c81\.seiunx\.net|sekai-assets-cn03-she01-cdn\.haruki\.seiunx\.com|images\.haruki\.seiunx\.com)\/(?!asset-probe\.png(?:\?|$)).*\.(?:png|jpe?g|webp|avif)(?:\?.*)?$/i,
+  ({ url }) => isCachedSekaiImage(url.href),
   new CacheFirst({
     cacheName: "sekai-image-assets-v2",
     plugins: [
