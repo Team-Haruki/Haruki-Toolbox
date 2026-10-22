@@ -56,8 +56,16 @@ export const canAutoplay = () =>
     () => false,
   );
 
+interface HanSansManifest {
+  family: string;
+  weights: Record<string, { file: string; range: string }[]>;
+}
+
 let fontsAdded = false;
-// The game's fonts (FOT-RodinNTLGPro EB = name plate, DB = dialogue body).
+// The game's fonts. JP/EN text: FOT-RodinNTLGPro (EB = name plate, DB =
+// dialogue body). CN/TW/KR clients build those same two faces from Source Han
+// Sans (Bold / Medium), served here as frequency slices with unicode-range,
+// so the browser only downloads the slices a page uses.
 function addFonts() {
   if (fontsAdded) return;
   fontsAdded = true;
@@ -69,6 +77,20 @@ function addFonts() {
     document.fonts.add(face);
     face.load().catch(() => console.warn("font load failed", family));
   }
+  fetch(storyUrls.fonts("shs/manifest.json"))
+    .then((r) => (r.ok ? (r.json() as Promise<HanSansManifest>) : Promise.reject(new Error(`HTTP ${r.status}`))))
+    .then((m) => {
+      for (const [weight, slices] of Object.entries(m.weights))
+        for (const s of slices)
+          document.fonts.add(
+            new FontFace(m.family, `url("${storyUrls.fonts(`shs/${s.file}`)}") format("woff2")`, {
+              weight,
+              unicodeRange: s.range,
+              display: "swap",
+            }),
+          );
+    })
+    .catch((e) => console.warn("Han Sans font list unavailable", e));
 }
 
 // Sprites the CSS paints (menu button, panel close, buttons, side-fade strips).
@@ -248,6 +270,11 @@ export class StoryRuntime {
   /** Font group of the dialogue text ("ja" | "zh" | "ko" | "latin"). */
   setScript(script: string) {
     this.root.dataset.script = script;
+  }
+
+  /** Font group of the story browser's titles (they follow the title region). */
+  setTitleScript(script: string) {
+    this.root.dataset.titles = script;
   }
 
   // Fit browser + stage + overview into the host (CSS zoom keeps the 1280x720

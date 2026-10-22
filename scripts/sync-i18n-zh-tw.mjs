@@ -37,6 +37,8 @@ const TERM_FIXES = [
   [/郵箱/g, "信箱"],
   // 数据 is 資料 everywhere else; phrase-table leftovers like 數據延遲 slip through.
   [/數據/g, "資料"],
+  // 全屏 (fullscreen) stays as-is through OpenCC; Taiwan says 全螢幕.
+  [/全屏/g, "全螢幕"],
 ]
 
 // Fixes that are only right inside one top-level namespace. OpenCC renders
