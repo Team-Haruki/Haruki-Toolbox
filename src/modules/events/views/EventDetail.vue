@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideChartLine, LucideLayoutGrid } from "lucide-vue-next"
+import { LucideBookOpen, LucideChartLine, LucideLayoutGrid } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatLocalizedDate } from "@/lib/date-time"
@@ -23,6 +23,7 @@ import EventTimelineSection from "@/modules/events/components/EventTimelineSecti
 import EventTypeBadge from "@/modules/events/components/EventTypeBadge.vue"
 import { useEventDetail } from "@/modules/events/composables/useEventDetail"
 import { buildEventDeckRecommendLink, buildEventRankBorderLink } from "@/modules/events/lib/event-links"
+import { buildStoryPlayerLink, firstPlayableScenario } from "@/modules/story"
 
 const props = defineProps<{
   eventId: string
@@ -61,6 +62,13 @@ const rankBorderLink = computed(() => (
 const deckRecommendLink = computed(() => (
   status.value ? buildEventDeckRecommendLink(region.value, status.value, detail.bonusGroups.value) : null
 ))
+
+// story episodes open in the player once the event has started
+const storyPlayable = computed(() => event.value != null && (event.value.startAt == null || event.value.startAt <= now.value))
+const storyLink = computed(() => {
+  const scenarioId = detail.story.value ? firstPlayableScenario(detail.story.value.episodes, event.value?.startAt, now.value) : null
+  return scenarioId ? buildStoryPlayerLink(scenarioId) : null
+})
 
 const bannerAliasMap = computed(() => detail.gachasIndex.data.value?.bannerAliasMap ?? null)
 const isWorldBloom = computed(() => event.value?.eventType === "world_bloom")
@@ -102,6 +110,12 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
         <RouterLink :to="deckRecommendLink">
           <LucideLayoutGrid class="size-4" />
           {{ t("events.detail.links.deckRecommend") }}
+        </RouterLink>
+      </Button>
+      <Button v-if="storyLink" as-child variant="outline" size="sm">
+        <RouterLink :to="storyLink">
+          <LucideBookOpen class="size-4" />
+          {{ t("events.detail.links.story") }}
         </RouterLink>
       </Button>
     </template>
@@ -209,7 +223,7 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
             :asset-endpoint="assetEndpoint"
           />
 
-          <EventStorySection v-if="detail.story.value" :story="detail.story.value" />
+          <EventStorySection v-if="detail.story.value" :story="detail.story.value" :playable="storyPlayable" />
         </div>
       </div>
     </template>

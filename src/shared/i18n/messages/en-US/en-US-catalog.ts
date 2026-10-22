@@ -47,6 +47,7 @@ export default {
     },
     "detail": {
       "viewCharacterCards": "All cards of this character",
+      "playStory": "Play story",
       "art": {
         "normal": "Normal",
         "trained": "Trained"
@@ -94,6 +95,7 @@ export default {
         "costs": "Unlock cost",
         "cost": "{resource} ×{quantity}",
         "material": "Material #{id}",
+        "play": "Play",
         "partType": {
           "first_part": "Part 1",
           "second_part": "Part 2"
@@ -217,7 +219,8 @@ export default {
     "story": {
       "title": "Event story",
       "episodeCount": "{count} episodes",
-      "episode": "Episode {no}"
+      "episode": "Episode {no}",
+      "play": "Play"
     }
   },
 

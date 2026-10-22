@@ -47,6 +47,7 @@ export default {
     },
     "detail": {
       "viewCharacterCards": "该角色的全部卡牌",
+      "playStory": "播放剧情",
       "art": {
         "normal": "特训前",
         "trained": "特训后"
@@ -94,6 +95,7 @@ export default {
         "costs": "解锁消耗",
         "cost": "{resource} ×{quantity}",
         "material": "素材 #{id}",
+        "play": "播放",
         "partType": {
           "first_part": "前篇",
           "second_part": "后篇"
@@ -217,7 +219,8 @@ export default {
     "story": {
       "title": "活动剧情",
       "episodeCount": "{count} 话",
-      "episode": "第 {no} 话"
+      "episode": "第 {no} 话",
+      "play": "播放"
     }
   },
 

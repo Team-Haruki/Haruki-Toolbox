@@ -1380,7 +1380,8 @@ export default {
       "cardsEmpty": "No cards for this event.",
       "links": {
         "rankBorder": "View rank border",
-        "deckRecommend": "Event deck recommend"
+        "deckRecommend": "Event deck recommend",
+        "story": "Play story"
       }
     }
   },

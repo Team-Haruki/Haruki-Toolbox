@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
-import { LucideBookOpen } from "lucide-vue-next"
+import { LucideBookOpen, LucidePlay } from "lucide-vue-next"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import { resolveSekaiEnumLabel } from "@/shared/sekai/labels"
+import { buildStoryPlayerLink } from "@/modules/story"
 import type { CardEpisodeCost, CardEpisodeRow } from "@/modules/cards/lib/card-power"
 
 /**
@@ -16,6 +18,8 @@ const props = defineProps<{
   materialNames: ReadonlyMap<number, string>
   loading: boolean
   defaultOpen: boolean
+  /** The card is released, so its episodes can open in the story player. */
+  playable: boolean
 }>()
 
 const { t, te } = useI18n()
@@ -58,6 +62,12 @@ function costLabel(cost: CardEpisodeCost): string {
           <Badge variant="emerald" size="sm" class="tabular-nums">
             {{ t("cardCatalog.detail.episodes.powerBonus", { value: bonusTotal(episode).toLocaleString() }) }}
           </Badge>
+          <Button v-if="playable && episode.scenarioId" as-child variant="ghost" size="sm" class="h-7 px-2">
+            <RouterLink :to="buildStoryPlayerLink(episode.scenarioId)">
+              <LucidePlay class="size-3.5" />
+              {{ t("cardCatalog.detail.episodes.play") }}
+            </RouterLink>
+          </Button>
         </div>
         <div v-if="episode.costs.length > 0" class="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
           <span>{{ t("cardCatalog.detail.episodes.costs") }}</span>

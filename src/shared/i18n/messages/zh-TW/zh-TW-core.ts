@@ -1380,7 +1380,8 @@ export default {
       "cardsEmpty": "該活動暫無卡片。",
       "links": {
         "rankBorder": "檢視榜線",
-        "deckRecommend": "活動組卡"
+        "deckRecommend": "活動組卡",
+        "story": "播放劇情"
       }
     }
   },
