@@ -39,6 +39,8 @@ export interface RuntimeLabels {
   tabLog: string;
   fullscreen: string;
   exitFullscreen: string;
+  /** credit line shown over the top of the stage */
+  credit: string;
 }
 
 /** Below this host width the stage goes on top and the browser / log become tabs under it. */
@@ -171,6 +173,7 @@ export class StoryRuntime {
             </div>
           </div>
           <button class="sp-fs-btn" type="button"></button>
+          <div class="sp-credit"></div>
         </div>
         <div class="sp-tabs" role="tablist">
           <button type="button" role="tab" data-panel="browser"></button>
@@ -190,6 +193,7 @@ export class StoryRuntime {
     this.startBtn = $<HTMLButtonElement>(".sp-start");
     this.loadingEl.textContent = labels.loading;
     this.startBtn.textContent = labels.start;
+    $(".sp-credit").textContent = labels.credit;
     $(".sp-pick .beside").textContent = labels.pickBeside;
     $(".sp-pick .below").textContent = labels.pickBelow;
     for (const tab of this.root.querySelectorAll<HTMLButtonElement>(".sp-tabs button")) {
