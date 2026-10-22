@@ -114,15 +114,23 @@ function addFonts() {
 // player only loads it itself when window.Live2DCubismCore is missing.
 const CUBISM_CORE_FILE = "live2dcubismcore.min.js";
 let cubismCore: Promise<void> | null = null;
+/** A host that accepts the connection and then stalls counts as failed after this. */
+const SCRIPT_TIMEOUT_MS = 20_000;
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
-    s.src = src;
-    s.onload = () => resolve();
-    s.onerror = () => {
+    const fail = (message: string) => {
+      clearTimeout(timer);
       s.remove();
-      reject(new Error(`could not load ${src}`));
+      reject(new Error(`${message} ${src}`));
     };
+    const timer = setTimeout(() => fail("timed out loading"), SCRIPT_TIMEOUT_MS);
+    s.src = src;
+    s.onload = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    s.onerror = () => fail("could not load");
     document.head.appendChild(s);
   });
 }

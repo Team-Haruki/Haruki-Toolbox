@@ -85,9 +85,13 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
     return index
   }
 
-  const scenarioOf = (region: SekaiRegion, episode: StoryEpisode) =>
-    scenarios.get(`${region}:${episode.sid}`, () =>
-      fetchScenarioJson<ScenarioSceneData>(activeRoot.value, region, episode.paths, undefined, activeFallback.value))
+  // Keyed by host too: a scenario missing on the chosen host is fetched again
+  // once the index moved the session to the fallback host.
+  const scenarioOf = (region: SekaiRegion, episode: StoryEpisode) => {
+    const root = activeRoot.value
+    return scenarios.get(`${root}|${region}:${episode.sid}`, () =>
+      fetchScenarioJson<ScenarioSceneData>(root, region, episode.paths, undefined, activeFallback.value))
+  }
 
   /**
    * Every text language this episode has: JP, each region whose file holds
@@ -145,7 +149,11 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
     state.value = { phase: "loading", sid }
     rt.showLoading()
     try {
-      const [idx, jp] = await Promise.all([loadIndex(), scenarioOf("jp", hit.episode)])
+      const scenarioRoot = activeRoot.value
+      const [idx, first] = await Promise.all([loadIndex(), scenarioOf("jp", hit.episode)])
+      let jp = first
+      // the index may have moved the session to the fallback host meanwhile
+      if (!jp && activeRoot.value !== scenarioRoot) jp = await scenarioOf("jp", hit.episode)
       if (mine !== seq) return
       if (!jp) {
         state.value = { phase: "error", sid, reason: "missing" }
