@@ -64,20 +64,23 @@ interface HanSansManifest {
 }
 
 let fontsAdded = false;
-// The game's fonts. JP/EN text: FOT-RodinNTLGPro (EB = name plate, DB =
-// dialogue body). CN/TW/KR clients build those same two faces from Source Han
-// Sans (Bold / Medium), served here as frequency slices with unicode-range,
-// so the browser only downloads the slices a page uses.
+// Talk window faces. The game sets JP/EN text in FOT-RodinNTLGPro (EB = name
+// plate, DB = dialogue body), a commercial font; its CN/TW/KR clients build
+// the same two faces from Source Han Sans (Bold / Medium). StoryJpBold /
+// StoryJpMedium use Source Han Sans JP and fall back to the Rodin files while
+// the asset host still has only those. CN/TW/KR text uses StoryHanSans,
+// frequency slices with unicode-range. Faces are only registered here: the
+// browser downloads one when text first renders in it, not up front.
+const JP_FACES: [family: string, files: string[]][] = [
+  ["StoryJpBold", ["SourceHanSansJP-Bold.otf", "FOT-RodinNTLGPro-EB.otf"]],
+  ["StoryJpMedium", ["SourceHanSansJP-Medium.otf", "FOT-RodinNTLGPro-DB.otf"]],
+];
 function addFonts() {
   if (fontsAdded) return;
   fontsAdded = true;
-  for (const [family, file] of [
-    ["RodinEB", "FOT-RodinNTLGPro-EB.otf"],
-    ["RodinDB", "FOT-RodinNTLGPro-DB.otf"],
-  ]) {
-    const face = new FontFace(family, `url("${storyUrls.fonts(file)}") format("opentype")`, { display: "swap" });
-    document.fonts.add(face);
-    face.load().catch(() => console.warn("font load failed", family));
+  for (const [family, files] of JP_FACES) {
+    const src = files.map((f) => `url("${storyUrls.fonts(f)}") format("opentype")`).join(", ");
+    document.fonts.add(new FontFace(family, src, { display: "swap" }));
   }
   fetch(storyUrls.fonts("shs/manifest.json"))
     .then((r) => (r.ok ? (r.json() as Promise<HanSansManifest>) : Promise.reject(new Error(`HTTP ${r.status}`))))
