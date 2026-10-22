@@ -48,6 +48,8 @@ export type StorySeries = {
   vsUnit?: string
   /** Release time (ms) when known. */
   at?: number
+  /** Card stories: the card's character (for the character filter). */
+  chars?: number[]
   /** Event logo / card thumbnail path inside "jp-assets/". */
   logo?: string
   thumb?: string
@@ -58,6 +60,8 @@ export type StoryCatalog = {
   tabs: Record<StoryTab, StorySeries[]>
   /** gameCharacterId → unit */
   units: Record<number, string>
+  /** gameCharacterId → name */
+  names: Record<number, string>
   bySid: Map<string, { series: StorySeries; episode: StoryEpisode }>
 }
 
@@ -163,6 +167,7 @@ export function buildStoryCatalog(src: StoryCatalogSources): StoryCatalog {
       title: `【${card.prefix ?? ""}】${card.characterId != null ? charName(card.characterId) : ""}`,
       unit: support ?? character?.unit ?? "none",
       vsUnit: character?.unit === "piapro" ? "piapro" : undefined,
+      chars: card.characterId != null ? [card.characterId] : undefined,
       at: card.releaseAt ?? undefined,
       thumb: `startapp/thumbnail/chara/${card.assetbundleName}_normal.png`,
       episodes: eps.flatMap((e): StoryEpisode[] => {
@@ -238,14 +243,18 @@ export function buildStoryCatalog(src: StoryCatalogSources): StoryCatalog {
   for (const t of STORY_TABS) tabs[t] = tabs[t].filter((s) => s.episodes.length > 0)
 
   const units: Record<number, string> = {}
-  for (const [id, c] of src.characters) if (c.unit) units[id] = c.unit
+  const names: Record<number, string> = {}
+  for (const [id, c] of src.characters) {
+    if (c.unit) units[id] = c.unit
+    names[id] = c.name
+  }
 
   const bySid = new Map<string, { series: StorySeries; episode: StoryEpisode }>()
   for (const t of STORY_TABS)
     for (const series of tabs[t])
       for (const episode of series.episodes) if (!bySid.has(episode.sid)) bySid.set(episode.sid, { series, episode })
 
-  return { tabs, units, bySid }
+  return { tabs, units, names, bySid }
 }
 
 /**
@@ -272,7 +281,7 @@ export function overlayStoryTitles(base: StoryCatalog, other: StoryCatalog | nul
       return series
     })
   }
-  return { tabs, units: base.units, bySid }
+  return { tabs, units: base.units, names: { ...base.names, ...other.names }, bySid }
 }
 
 /** Drops stories that are not out yet (the catalog's unreleased setting). */

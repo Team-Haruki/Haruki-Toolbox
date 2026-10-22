@@ -118,10 +118,9 @@ function runtimeLabels(): RuntimeLabels {
       episode: episodeLabel,
     },
     menu: {
-      bookmark: t("storyPlayer.menu.bookmark"),
+      fullscreen: t("storyPlayer.menu.fullscreen"),
       auto: t("storyPlayer.menu.auto"),
-      consecutive: t("storyPlayer.menu.consecutive"),
-      skip: t("storyPlayer.menu.skip"),
+      mute: t("storyPlayer.menu.mute"),
       fast: t("storyPlayer.menu.fast"),
       hide: t("storyPlayer.menu.hide"),
       log: t("storyPlayer.menu.log"),
@@ -148,19 +147,29 @@ function pick(next: string) {
 }
 
 let disposed = false
+let runtimeModule: typeof import("@/modules/story/engine/story-runtime") | null = null
+
+// The runtime's DOM carries its labels, so a Toolbox language change rebuilds it.
+function mountRuntime() {
+  if (disposed || !host.value || !runtimeModule) return
+  runtime.value?.destroy()
+  const rt = new runtimeModule.StoryRuntime(host.value, runtimeLabels(), pick)
+  if (catalog.value) rt.setCatalog(catalog.value)
+  runtime.value = rt
+}
+
 onMounted(async () => {
   try {
     const { loadCubismCore } = await import("@/modules/story/engine/cubism")
     await loadCubismCore()
-    const { StoryRuntime } = await import("@/modules/story/engine/story-runtime")
-    if (disposed || !host.value) return
-    const rt = new StoryRuntime(host.value, runtimeLabels(), pick)
-    if (catalog.value) rt.setCatalog(catalog.value)
-    runtime.value = rt
+    runtimeModule = await import("@/modules/story/engine/story-runtime")
+    mountRuntime()
   } catch (error) {
     engineError.value = error instanceof Error ? error.message : String(error)
   }
 })
+
+watch(locale, () => mountRuntime())
 
 onBeforeUnmount(() => {
   disposed = true

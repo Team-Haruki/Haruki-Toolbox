@@ -437,10 +437,9 @@ export default {
       "secondPart": "后篇"
     },
     "menu": {
-      "bookmark": "书签",
+      "fullscreen": "全屏",
       "auto": "自动",
-      "consecutive": "连续播放",
-      "skip": "跳过",
+      "mute": "静音",
       "fast": "快进",
       "hide": "隐藏",
       "log": "记录"

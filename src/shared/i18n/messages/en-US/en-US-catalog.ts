@@ -437,10 +437,9 @@ export default {
       "secondPart": "Part 2"
     },
     "menu": {
-      "bookmark": "Bookmark",
+      "fullscreen": "Fullscreen",
       "auto": "Auto",
-      "consecutive": "Continuous",
-      "skip": "Skip",
+      "mute": "Mute",
       "fast": "Fast",
       "hide": "Hide",
       "log": "Log"

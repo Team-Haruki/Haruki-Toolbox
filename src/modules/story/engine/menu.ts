@@ -2,21 +2,24 @@
 // (UIPartsMenuButton) opens the ScenarioMenu panel. Values are the prefab's
 // 1920x1080 reference rects mapped to the 1280x720 stage (x 2/3).
 //
-// Labels come from the page (i18n). Auto / fast / hide / log work (log
-// toggles the script overview); bookmark / consecutive / skip are shown like
-// the game but do nothing.
+// Labels come from the page (i18n). The game's bookmark / consecutive / skip
+// buttons are replaced by what a web player needs: fullscreen (bookmark's
+// slot) and mute; auto / fast / hide / log work as in the game (log toggles
+// the script overview).
 
 import { storyUrls } from "./urls";
 
 const S = 2 / 3; // reference px → stage px
 
-export type MenuLabelKey = "bookmark" | "auto" | "consecutive" | "skip" | "fast" | "hide" | "log";
+export type MenuLabelKey = "fullscreen" | "auto" | "mute" | "fast" | "hide" | "log";
 export type MenuLabels = Record<MenuLabelKey, string>;
 
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 export interface MenuHandlers {
+  onFullscreen(): void;
+  onMute(): void;
   onAuto(): void;
   onFast(): void;
   onHideUi(): void;
@@ -26,12 +29,17 @@ export interface MenuHandlers {
 // Wide buttons (280x96): top = Content top (72) - anchoredPosition.y - 8 is
 // folded into `top`; icon centred 77.4 left of the button centre; label centred
 // in its rect (width 280 - inset, shifted by `tx`).
+// icons drawn here (used as masks like the game's icon sprites)
+const svgMask = (body: string) =>
+  `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`)}`;
+const IC_FULLSCREEN = svgMask(`<path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6"/>`);
+const IC_MUTE = svgMask(`<path d="M4 9h4l5-4v14l-5-4H4z" fill="#000"/><path d="M17 9l5 6M22 9l-5 6"/>`);
+
 const WIDE: { key: MenuLabelKey; top: number; icon: string; iw: number; ih: number; inset: number; tx: number; sp: number }[] = [
-  { key: "bookmark", top: 64, icon: "ic_bookmark", iw: 32, ih: 36, inset: 184, tx: 12.2, sp: 0 },
+  { key: "fullscreen", top: 64, icon: IC_FULLSCREEN, iw: 34, ih: 34, inset: 152, tx: 11.3, sp: -2 },
   { key: "auto", top: 195.7, icon: "ic_auto", iw: 32, ih: 36, inset: 152, tx: 11.3, sp: -2 },
-  { key: "consecutive", top: 300.3, icon: "ic_consecutive", iw: 48, ih: 34, inset: 152, tx: 27.2, sp: -2 },
-  { key: "skip", top: 404.2, icon: "ic_skip", iw: 48, ih: 32, inset: 152, tx: 27.2, sp: -2 },
-  { key: "fast", top: 508.9, icon: "ic_fast", iw: 48, ih: 32, inset: 152, tx: 11.6, sp: -2 },
+  { key: "mute", top: 300.3, icon: IC_MUTE, iw: 38, ih: 34, inset: 152, tx: 11.3, sp: -2 },
+  { key: "fast", top: 404.2, icon: "ic_fast", iw: 48, ih: 32, inset: 152, tx: 11.6, sp: -2 },
 ];
 // Small buttons (136x112) at x ∓72 from the content centre, top 612.
 const SMALL: { key: MenuLabelKey; cx: number; icon: string; iw: number; ih: number; ix: number }[] = [
@@ -54,8 +62,10 @@ export class ScenarioMenu {
 
     this.panel = document.createElement("div");
     this.panel.className = "scn-menu-panel hidden";
-    const icon = (name: string, w: number, h: number, extra = "") =>
-      `<i class="smp-ic" style="width:${px(w)};height:${px(h)};-webkit-mask-image:url(${ICON}${name}.png);mask-image:url(${ICON}${name}.png);${extra}"></i>`;
+    const icon = (name: string, w: number, h: number, extra = "") => {
+      const url = name.startsWith("data:") ? `'${name}'` : `${ICON}${name}.png`;
+      return `<i class="smp-ic" style="width:${px(w)};height:${px(h)};-webkit-mask-image:url(${url});mask-image:url(${url});${extra}"></i>`;
+    };
     let html = `<div class="smp-close"></div><div class="smp-line"></div>`;
     for (const b of WIDE) {
       const tw = 280 - b.inset;
@@ -82,6 +92,11 @@ export class ScenarioMenu {
     on(this.button, () => this.open());
     on(this.panel.querySelector(".smp-close")!, () => this.close());
     on(this.panel, () => {}); // swallow clicks on the panel background
+    on(this.btns.get("fullscreen")!, () => {
+      this.close();
+      h.onFullscreen();
+    });
+    on(this.btns.get("mute")!, h.onMute);
     on(this.btns.get("auto")!, h.onAuto);
     on(this.btns.get("fast")!, h.onFast);
     on(this.btns.get("log")!, h.onLog);
@@ -89,7 +104,6 @@ export class ScenarioMenu {
       this.close();
       h.onHideUi();
     });
-    for (const k of ["bookmark", "consecutive", "skip"]) on(this.btns.get(k)!, () => {});
   }
 
   // ac_scenario_menu Open / Close (clip_scenario_menu_open/close, 0.167s):
@@ -120,7 +134,9 @@ export class ScenarioMenu {
   }
 
   // Toggle buttons turn pink (icon + label) while on.
-  setState(s: { auto: boolean; fast: boolean; log: boolean }) {
+  setState(s: { auto: boolean; fast: boolean; log: boolean; mute: boolean; fullscreen: boolean }) {
+    this.btns.get("mute")!.classList.toggle("on", s.mute);
+    this.btns.get("fullscreen")!.classList.toggle("on", s.fullscreen);
     this.btns.get("auto")!.classList.toggle("on", s.auto);
     this.btns.get("fast")!.classList.toggle("on", s.fast);
     this.btns.get("log")!.classList.toggle("on", s.log);

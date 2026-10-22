@@ -415,10 +415,9 @@ export default {
       "secondPart": "後篇"
     },
     "menu": {
-      "bookmark": "書籤",
+      "fullscreen": "全螢幕",
       "auto": "自動",
-      "consecutive": "連續播放",
-      "skip": "跳過",
+      "mute": "靜音",
       "fast": "快進",
       "hide": "隱藏",
       "log": "記錄"

@@ -123,7 +123,7 @@ export class StoryRuntime {
     this.fit();
   };
   // auto / 早送り / log visibility survive scenario switches
-  private modes = { auto: true, fast: false, log: true };
+  private modes = { auto: true, fast: false, log: true, mute: false };
 
   constructor(host: HTMLElement, labels: RuntimeLabels, onPick: (sid: string) => void) {
     this.labels = labels;
@@ -189,6 +189,12 @@ export class StoryRuntime {
     this.menu = new ScenarioMenu(
       this.wrap,
       {
+        onFullscreen: () => void this.toggleFullscreen(),
+        onMute: () => {
+          this.modes.mute = !this.modes.mute;
+          this.audio.setMuted(this.modes.mute);
+          this.syncModes();
+        },
         onAuto: () => {
           this.modes.auto = !this.modes.auto;
           if (this.session) this.session.player.auto = this.modes.auto;
@@ -320,6 +326,7 @@ export class StoryRuntime {
 
   private syncFullscreenButton() {
     const on = this.isFullscreen();
+    this.menu?.setState({ ...this.modes, fullscreen: on });
     this.fsBtn.innerHTML = on ? ICON_SHRINK : ICON_EXPAND;
     const label = on ? this.labels.exitFullscreen : this.labels.fullscreen;
     this.fsBtn.title = label;
@@ -329,7 +336,7 @@ export class StoryRuntime {
   // Mirror auto / 早送り / log onto the AUTO-SKIP sign and the menu buttons.
   private syncModes() {
     this.dialogue.setAuto(this.modes.fast ? "skip" : this.modes.auto ? "auto" : "off");
-    this.menu.setState(this.modes);
+    this.menu.setState({ ...this.modes, fullscreen: this.isFullscreen() });
     this.session?.log.setVisible(this.modes.log);
   }
 

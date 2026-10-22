@@ -58,6 +58,9 @@ export class StoryBrowser {
   private cat?: StoryCatalog;
   private tab: StoryTab = (STORY_TABS as readonly string[]).includes(store.get("tab") ?? "") ? (store.get("tab") as StoryTab) : "event";
   private unit = store.get("unit") || "";
+  // card stories / area talks: one game character (0 = all)
+  private char = Number(store.get("char")) || 0;
+  private charsEl!: HTMLElement;
   private open = new Set<string>(); // expanded story keys
   private current: string | null = null;
   private onPick: (sid: string) => void;
@@ -80,11 +83,21 @@ export class StoryBrowser {
           (u) =>
             `<button data-unit="${u.key}" title="${esc(u.name || labels.all)}" class="${u.key === "piapro" ? "vs" : ""}"><img src="${ui(`units/${u.icon}.png`)}" alt="" /></button>`,
         ).join("")}</div>
+        <div class="sb-chars"></div>
         <input class="sb-search" type="search" placeholder="${esc(labels.search)}" spellcheck="false" />
         <div class="sb-list"><div class="sb-empty">${esc(labels.loading)}</div></div>
       </div>`;
     parent.prepend(this.root);
     this.listEl = this.root.querySelector(".sb-list")!;
+    this.charsEl = this.root.querySelector(".sb-chars")!;
+    this.charsEl.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>("button[data-char]");
+      if (!b) return;
+      const id = Number(b.dataset.char);
+      this.char = this.char === id ? 0 : id;
+      store.set("char", String(this.char));
+      this.render();
+    });
     this.input = this.root.querySelector(".sb-search")!;
 
     this.root.querySelector(".sb-toggle")!.addEventListener("click", () => {
@@ -141,6 +154,36 @@ export class StoryBrowser {
     this.open.add(hit.series.key);
   }
 
+  // Characters offered by the filter: the selected unit's members (all 26 without one).
+  private charChoices(): number[] {
+    const units = this.cat?.units ?? {};
+    return Object.keys(units)
+      .map(Number)
+      .filter((id) => id >= 1 && id <= 26 && (!this.unit || units[id] === this.unit))
+      .sort((a, b) => a - b);
+  }
+
+  private renderChars() {
+    const show = this.tab === "card" || this.tab === "area";
+    this.charsEl.hidden = !show || !this.cat;
+    if (this.charsEl.hidden) return;
+    const choices = this.charChoices();
+    if (this.char && !choices.includes(this.char)) this.char = 0;
+    const names = this.cat!.names;
+    this.charsEl.innerHTML = choices
+      .map(
+        (id) =>
+          `<button data-char="${id}" class="${id === this.char ? "on" : ""}" title="${esc(names[id] ?? "")}"><img src="${storyUrls.ui(`chr_ts/chr_ts_${id}_g2.png`)}" alt="${esc(names[id] ?? "")}" loading="lazy" /></button>`,
+      )
+      .join("");
+  }
+
+  private matchesChar(s: StorySeries) {
+    if (!this.char || (this.tab !== "card" && this.tab !== "area")) return true;
+    if (s.chars?.includes(this.char)) return true;
+    return s.episodes.some((e) => e.chars?.includes(this.char));
+  }
+
   private matchesUnit(s: StorySeries) {
     if (!this.unit) return true;
     if (s.unit === this.unit || s.vsUnit === this.unit) return true;
@@ -153,16 +196,18 @@ export class StoryBrowser {
       b.classList.toggle("on", b.dataset.tab === this.tab);
     for (const b of this.root.querySelectorAll<HTMLElement>(".sb-units button"))
       b.classList.toggle("on", b.dataset.unit === this.unit);
+    this.renderChars();
     if (!this.cat) return;
     const img = (p: string) => storyUrls.asset(p);
     const q = this.input.value.trim().toLowerCase();
     let html = "";
     let n = 0;
     for (const s of this.cat.tabs[this.tab]) {
-      if (!this.matchesUnit(s)) continue;
+      if (!this.matchesUnit(s) || !this.matchesChar(s)) continue;
       let eps = s.episodes;
       if (this.tab === "area" && this.unit)
         eps = eps.filter((e) => e.chars?.some((id) => this.cat!.units[id] === this.unit));
+      if (this.tab === "area" && this.char) eps = eps.filter((e) => e.chars?.includes(this.char));
       const titleHit = !q || s.title.toLowerCase().includes(q);
       if (q && !titleHit) eps = eps.filter((e) => e.title.toLowerCase().includes(q));
       if (!eps.length) continue;
