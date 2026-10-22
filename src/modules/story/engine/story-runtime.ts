@@ -63,8 +63,8 @@ let fontsAdded = false;
 // frequency slices with unicode-range. Faces are only registered here: the
 // browser downloads one when text first renders in it, not up front.
 const JP_FACES: [family: string, files: string[]][] = [
-  ["StoryJpBold", ["SourceHanSansJP-Bold.otf", "FOT-RodinNTLGPro-EB.otf"]],
-  ["StoryJpMedium", ["SourceHanSansJP-Medium.otf", "FOT-RodinNTLGPro-DB.otf"]],
+  ["StoryJpBold", ["SourceHanSansJP-Bold.otf"]],
+  ["StoryJpMedium", ["SourceHanSansJP-Medium.otf"]],
 ];
 function addFonts() {
   if (fontsAdded) return;

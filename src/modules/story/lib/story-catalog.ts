@@ -13,8 +13,9 @@ export const STORY_MASTER_FILES = [
   "specialStories",
   "actionSets",
   "areas",
+  "character2ds",
 ] as const
-export const STORY_OPTIONAL_FILES = ["eventStoryUnits", "specialStories", "actionSets", "areas"] as const
+export const STORY_OPTIONAL_FILES = ["eventStoryUnits", "specialStories", "actionSets", "areas", "character2ds"] as const
 
 /** How an episode is numbered; the browser turns it into text. */
 export type StoryEpisodeLabel =
@@ -63,7 +64,11 @@ export type StoryCatalog = {
   /** gameCharacterId → name */
   names: Record<number, string>
   bySid: Map<string, { series: StorySeries; episode: StoryEpisode }>
+  /** character2dId → model asset and unit (part voices are filed by them) */
+  character2ds: ReadonlyMap<number, StoryCharacter2d>
 }
+
+export type StoryCharacter2d = { assetName: string; unit: string }
 
 /** The subset of the shared indexes the catalog needs. */
 export type StoryCatalogSources = {
@@ -254,7 +259,14 @@ export function buildStoryCatalog(src: StoryCatalogSources): StoryCatalog {
     for (const series of tabs[t])
       for (const episode of series.episodes) if (!bySid.has(episode.sid)) bySid.set(episode.sid, { series, episode })
 
-  return { tabs, units, names, bySid }
+  const character2ds = new Map<number, StoryCharacter2d>()
+  for (const c of records(files.character2ds)) {
+    const id = num(c.id)
+    const assetName = str(c.assetName)
+    if (id != null && assetName) character2ds.set(id, { assetName, unit: str(c.unit) })
+  }
+
+  return { tabs, units, names, bySid, character2ds }
 }
 
 /**
@@ -281,7 +293,7 @@ export function overlayStoryTitles(base: StoryCatalog, other: StoryCatalog | nul
       return series
     })
   }
-  return { tabs, units: base.units, names: { ...base.names, ...other.names }, bySid }
+  return { tabs, units: base.units, names: { ...base.names, ...other.names }, bySid, character2ds: base.character2ds }
 }
 
 /** Drops stories that are not out yet (the catalog's unreleased setting). */
