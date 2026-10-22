@@ -12,7 +12,7 @@ import {
   storyFontScript,
   type StoryTextLang,
 } from "@/modules/story/lib/story-text"
-import type { ScenarioSceneData } from "@/modules/story/engine/types"
+import type { ScenarioSceneData } from "pjsk-scenario-player"
 import type { StoryAssetIndex } from "@/modules/story/engine/urls"
 import type { StoryRuntime } from "@/modules/story/engine/story-runtime"
 

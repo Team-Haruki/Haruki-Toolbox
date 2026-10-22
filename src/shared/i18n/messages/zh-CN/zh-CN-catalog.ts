@@ -417,6 +417,7 @@ export default {
       "start": "点击开始播放",
       "pickBeside": "请在左侧选择要播放的剧情",
       "pickBelow": "请在下方选择要播放的剧情",
+      "models": "角色",
       "credit": "Developed by Deseer × 星雲希凪 (From Haruki Dev Team). Powered by Haruki Toolbox.",
       "tabBrowser": "剧情",
       "tabLog": "台词",

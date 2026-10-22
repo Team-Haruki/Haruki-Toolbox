@@ -4,7 +4,7 @@
 // the list doubles as the progress bar. Searchable; clicking a line (or a
 // place telop) jumps playback there.
 
-import { Action, SpecialEffectType, type ScenarioSceneData } from "./types";
+import { Action, SpecialEffectType, type ScenarioSceneData } from "pjsk-scenario-player";
 import { storyUrls } from "./urls";
 
 const MOB_ICON = "chr_ts_mob.png";

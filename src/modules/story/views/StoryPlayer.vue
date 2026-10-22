@@ -137,6 +137,7 @@ function runtimeLabels(): RuntimeLabels {
       matches: (count) => t("storyPlayer.log.matches", { count }),
     },
     loading: t("storyPlayer.stage.loading"),
+    models: t("storyPlayer.stage.models"),
     start: t("storyPlayer.stage.start"),
     pickBeside: t("storyPlayer.stage.pickBeside"),
     pickBelow: t("storyPlayer.stage.pickBelow"),
@@ -170,8 +171,6 @@ function mountRuntime() {
 
 onMounted(async () => {
   try {
-    const { loadCubismCore } = await import("@/modules/story/engine/cubism")
-    await loadCubismCore()
     runtimeModule = await import("@/modules/story/engine/story-runtime")
     mountRuntime()
   } catch (error) {
