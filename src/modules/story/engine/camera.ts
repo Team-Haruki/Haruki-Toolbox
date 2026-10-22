@@ -8,6 +8,7 @@
 
 import * as PIXI from "pixi.js";
 import { storyUrls } from "./urls";
+import { random } from "./random";
 
 export const REF = 2 / 3; // ref unit → stage px
 
@@ -50,13 +51,13 @@ export function makeShake(duration: number, strength = 10, vibrato = 16, randomn
   for (let i = 0; i < n; i++) ends[i] = acc += ((fadeOut ? i + 1 : 1) / sum) * duration;
   const px = new Float32Array(n);
   const py = new Float32Array(n);
-  let ang = Math.random() * 360;
+  let ang = random() * 360;
   let mag = strength;
   const deg = Math.PI / 180;
   for (let i = 0; i < n - 1; i++) {
-    if (i > 0) ang = ang - 180 + (Math.random() * 2 - 1) * randomness;
+    if (i > 0) ang = ang - 180 + (random() * 2 - 1) * randomness;
     let x = mag * Math.cos(ang * deg);
-    if (!ignoreZ) x *= Math.cos((Math.random() * 2 - 1) * randomness * deg);
+    if (!ignoreZ) x *= Math.cos((random() * 2 - 1) * randomness * deg);
     px[i] = x;
     py[i] = mag * Math.sin(ang * deg);
     if (fadeOut) mag -= strength / n;
@@ -192,7 +193,7 @@ export function parseDolly(s: string) {
     const kv = part.split(":");
     if (kv.length !== 2) continue;
     const k = kv[0].trim().toLowerCase();
-    const v = parseFloat(kv[1].trim());
+    const v = Number.parseFloat(kv[1].trim());
     if (Number.isNaN(v)) continue;
     if (k === "zoom") r.zoom = v;
     else if (k === "blur") r.blur = v;
@@ -230,7 +231,7 @@ void main(){
 }`;
 let holoTex: PIXI.Texture | undefined;
 export class HologramFilter extends PIXI.Filter {
-  private timer = Math.random() * 0.2 + 0.05;
+  private timer = random() * 0.2 + 0.05;
   constructor() {
     holoTex ??= PIXI.Texture.from(storyUrls.ui("scenario/holo.png"), {
       wrapMode: PIXI.WRAP_MODES.REPEAT,
@@ -244,10 +245,10 @@ export class HologramFilter extends PIXI.Filter {
   // per frame (Live2DHologramController.Update): re-roll the flicker
   update(dt: number) {
     this.uniforms.uTime += dt;
-    if (Math.random() * 10000 < 150 || this.timer <= 0) {
-      this.uniforms.uLine = 0.6 + Math.random() * 0.2;
-      this.uniforms.uSubA = 0.85 + Math.random() * 0.05;
-      this.timer = Math.random() * 0.5;
+    if (random() * 10000 < 150 || this.timer <= 0) {
+      this.uniforms.uLine = 0.6 + random() * 0.2;
+      this.uniforms.uSubA = 0.85 + random() * 0.05;
+      this.timer = random() * 0.5;
     }
     this.timer -= dt;
   }

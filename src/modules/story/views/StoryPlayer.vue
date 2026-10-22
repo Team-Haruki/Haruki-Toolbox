@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { LucideLanguages } from "lucide-vue-next"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -74,7 +75,12 @@ const catalog = computed(() => {
   return hideUnreleased.value ? hideUnreleasedStories(titled, Date.now()) : titled
 })
 
-const assetRoot = computed(() => resolveSekaiAssetRootUrl(settingsStore.currentAssetEndpoint))
+// Only the hosts in front of the full JP tree carry Live2D models, motions,
+// backgrounds and voices; the china_cdn host serves a filtered copy.
+const assetRoot = computed(() => {
+  const preference = settingsStore.currentAssetEndpoint
+  return resolveSekaiAssetRootUrl(preference === "china_cdn" ? "china" : preference)
+})
 watch(assetRoot, (root) => configureStoryRoot(`${root}/jp-assets`), { immediate: true })
 
 const { runtime, state, aiPending, markInteracted } = useStoryPlayback({
@@ -185,6 +191,7 @@ const fallbackNotice = computed(() => {
   return t("storyPlayer.fallback", { lang: langLabel(wanted), shown: langLabel(shown) })
 })
 
+const langSelectId = useId()
 const langOptions = computed(() => [
   { value: "auto", label: t("storyPlayer.langAuto") },
   ...STORY_TEXT_LANGS.map((lang) => ({ value: lang, label: langLabel(lang) })),
@@ -200,8 +207,9 @@ const langOptions = computed(() => [
       </div>
       <div class="flex items-center gap-2">
         <LucideLanguages class="size-4 text-muted-foreground" aria-hidden="true" />
-        <Select v-model="pickedLang">
-          <SelectTrigger class="w-52" :aria-label="t('storyPlayer.textLang')">
+        <Label :id="`${langSelectId}-label`" :for="langSelectId" class="sr-only">{{ t("storyPlayer.textLang") }}</Label>
+        <Select :id="langSelectId" v-model="pickedLang">
+          <SelectTrigger class="w-52" :aria-labelledby="`${langSelectId}-label`">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

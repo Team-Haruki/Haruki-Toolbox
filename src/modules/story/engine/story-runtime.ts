@@ -98,7 +98,8 @@ export class StoryRuntime {
   private menu: ScenarioMenu;
   private browser: StoryBrowser;
   private session?: Session;
-  private icons: Record<string, string> = {};
+  // Character2dId → talk-log icon (optional), fetched with the first episode
+  private icons?: Promise<Record<string, string>>;
   private labels: RuntimeLabels;
   private resizeObserver: ResizeObserver;
   private loadSeq = 0;
@@ -182,12 +183,6 @@ export class StoryRuntime {
       true,
     );
     this.wrap.addEventListener("click", () => this.session?.player.onClick());
-
-    // Character2dId → talk-log icon (optional)
-    fetch(storyUrls.ui("chr_ts/map.json"))
-      .then((r) => (r.ok ? r.json() : {}))
-      .then((m: Record<string, string>) => (this.icons = m))
-      .catch(() => {});
 
     this.resizeObserver = new ResizeObserver(() => this.fit());
     this.resizeObserver.observe(host);
@@ -288,10 +283,15 @@ export class StoryRuntime {
     this.browser.setCurrent(sid);
     this.overlayState("loading");
     configureStoryEpisode(episode);
+    this.icons ??= fetch(storyUrls.ui("chr_ts/map.json"))
+      .then((r) => (r.ok ? (r.json() as Promise<Record<string, string>>) : {}))
+      .catch(() => ({}));
+    const icons = await this.icons;
+    if (seq !== this.loadSeq) return;
 
     const stage = new Stage(this.app, buildMotionIndex(scn));
     const player = new ScenarioPlayer(scn, stage, this.dialogue, this.audio, this.effects);
-    const log = new ScriptLog(this.row, scn, this.icons, (i) => void player.jumpTo(i), this.labels.log);
+    const log = new ScriptLog(this.row, scn, icons, (i) => void player.jumpTo(i), this.labels.log);
     const fx = new FxManager(this.app.ticker, { bottom: stage.fxBottom, back: stage.fxBack, front: stage.fxLayer, top: stage.fxTop });
     // scenario/effect/<name> particles; Stop becomes ForceStop while fast-forwarding
     player.onScenarioEffect = (name, on) => (on ? void fx.play(name) : fx.stop(name, player.isFast));

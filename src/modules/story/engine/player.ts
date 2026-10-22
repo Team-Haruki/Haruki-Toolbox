@@ -380,16 +380,16 @@ export class ScenarioPlayer {
             case T.FlashbackOut: case T.SepiaOut: case T.BlurIn: case T.BlurOut: st.colorEffect = undefined; break;
             case T.AmbientColorNormal: case T.AmbientColorEvening: case T.AmbientColorNight: st.ambient = e.EffectType; break;
             case T.CameraMove: {
-              const [x, y] = e.StringVal.split(",").map((v) => parseFloat(v));
-              if (!isNaN(x) && !isNaN(y)) {
+              const [x, y] = e.StringVal.split(",").map((v) => Number.parseFloat(v));
+              if (!Number.isNaN(x) && !Number.isNaN(y)) {
                 st.cam.x = x;
                 st.cam.y = y;
               }
               break;
             }
             case T.CameraZoom: {
-              const z = parseFloat(e.StringVal);
-              if (!isNaN(z)) st.cam.zoom = z;
+              const z = Number.parseFloat(e.StringVal);
+              if (!Number.isNaN(z)) st.cam.zoom = z;
               break;
             }
             case T.BackGroundBlur: st.bgBlur = e.StringVal.trim().toLowerCase() === "true"; break;
@@ -409,7 +409,7 @@ export class ScenarioPlayer {
                 st.holo.delete(e.IntVal);
               } else if (kind === "hologram" || kind === "monitor" || kind === "blur") {
                 if (st.modelFx.get(e.IntVal)?.kind !== kind) {
-                  st.modelFx.set(e.IntVal, { kind, intensity: parseFloat(e.StringValSub) || 1 });
+                  st.modelFx.set(e.IntVal, { kind, intensity: Number.parseFloat(e.StringValSub) || 1 });
                   if (kind === "hologram") st.holo.add(e.IntVal);
                 }
               }
@@ -725,7 +725,7 @@ export class ScenarioPlayer {
           this.onCharacterEffect?.(e.IntVal, null);
         } else if (kind === "hologram" || kind === "monitor" || kind === "blur") {
           if (this.stage.modelEffectOf(e.IntVal) === kind) return;
-          this.stage.attachModelEffect(e.IntVal, kind, parseFloat(e.StringValSub) || 1);
+          this.stage.attachModelEffect(e.IntVal, kind, Number.parseFloat(e.StringValSub) || 1);
           if (kind === "hologram" && e.StringValSub) this.onCharacterEffect?.(e.IntVal, e.StringValSub);
         }
         return;
@@ -735,10 +735,10 @@ export class ScenarioPlayer {
         // FinishSnippet first; Duration is a pre-delay before Play/Stop
         const play = e.EffectType === T.PlayScenarioEffect;
         const gen = this.gen;
-        void (async () => {
+        (async () => {
           if (e.Duration > 0) await sleep(e.Duration * 1000);
           if (gen === this.gen) this.onScenarioEffect?.(e.StringVal, play);
-        })();
+        })().catch((err: unknown) => console.warn("scenario effect failed", err));
         return;
       }
       case T.PlaceInfo:
@@ -775,13 +775,13 @@ export class ScenarioPlayer {
       case T.BackGroundBlur:
         return this.stage.setBackgroundBlur(e.StringVal.trim().toLowerCase() === "true");
       case T.CameraMove: {
-        const [x, y] = e.StringVal.split(",").map((v) => parseFloat(v));
-        if (isNaN(x) || isNaN(y)) return;
+        const [x, y] = e.StringVal.split(",").map((v) => Number.parseFloat(v));
+        if (Number.isNaN(x) || Number.isNaN(y)) return;
         return this.stage.cameraMove(x, y, ms);
       }
       case T.CameraZoom: {
-        const z = parseFloat(e.StringVal);
-        if (isNaN(z)) return;
+        const z = Number.parseFloat(e.StringVal);
+        if (Number.isNaN(z)) return;
         return this.stage.cameraZoom(z, ms);
       }
       case T.DollyZoom:

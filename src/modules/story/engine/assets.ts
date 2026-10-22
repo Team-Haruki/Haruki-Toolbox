@@ -4,6 +4,7 @@
 import { Live2DModel } from "@sekai-world/pixi-live2d-display-mulmotion/cubism4";
 import type { ScenarioSceneData } from "./types";
 import { storyUrls } from "./urls";
+import { random } from "./random";
 
 // Per-Character2dId sets of motion/facial names referenced anywhere in the
 // scenario, so a loaded model lists exactly the motions it might play.
@@ -75,12 +76,12 @@ export class CharacterModel {
   // Eye-open multiplier from the |sin| blink (1 between blinks → 0 mid-blink).
   // Multiplied onto the current eye param so closed-eye expressions still win.
   private eyeFactor(nowSec: number): number {
-    if (this.blinkAt === 0) this.blinkAt = nowSec + 1 + Math.random() * 4;
+    if (this.blinkAt === 0) this.blinkAt = nowSec + 1 + random() * 4;
     const e = nowSec - this.blinkAt;
     if (e < 0) return 1; // waiting for next blink
     const r = -Math.PI / 2 + e * CharacterModel.BLINK_SPEED;
     if (r > Math.PI / 2) {
-      this.blinkAt = nowSec + CharacterModel.BLINK_MEAN + (Math.random() * 2 - 1) * CharacterModel.BLINK_DEV;
+      this.blinkAt = nowSec + CharacterModel.BLINK_MEAN + (random() * 2 - 1) * CharacterModel.BLINK_DEV;
       return 1;
     }
     return Math.abs(Math.sin(r));

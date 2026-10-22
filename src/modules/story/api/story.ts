@@ -1,18 +1,6 @@
 import { isAxiosError } from "axios"
 import { request } from "@/core/http/call-api"
-import type { StoryAssetIndex } from "@/modules/story/engine/urls"
 import type { StoryTranslation } from "@/modules/story/lib/story-text"
-
-/** Where models, motions, movies and SEs are in the JP asset tree. */
-export async function getStoryAssetIndex(): Promise<StoryAssetIndex> {
-  const raw = await request<Partial<StoryAssetIndex>>("/api/misc/story/jp-index", { method: "GET" })
-  return {
-    version: raw.version ?? "",
-    models: raw.models ?? {},
-    movies: raw.movies ?? {},
-    se: raw.se ?? {},
-  }
-}
 
 export type StoryTranslationResult =
   | { status: "done"; translation: StoryTranslation }

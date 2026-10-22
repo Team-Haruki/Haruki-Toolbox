@@ -37,8 +37,8 @@
 .story-player .collapsed .sb-toggle::after { clip-path: polygon(0 0, 100% 50%, 0 100%); left: 11px; }
 .story-player .sb-rail { display: none; }
 .story-player .collapsed .sb-rail { display: block; position: absolute; top: 52px; left: 0; right: 0; bottom: 0; cursor: pointer; box-sizing: content-box;
-  width: 1em; margin: 0 auto; padding-top: 10px; word-break: break-all; text-align: center; line-height: 1.35;
-  font: 700 16px var(--cn-bold); color: rgb(223,223,234); }
+  width: 1em; margin: 0 auto; padding-top: 10px; word-break: break-all; text-align: center;
+  font: 700 16px/1.35 var(--cn-bold); color: rgb(223,223,234); }
 .story-player .collapsed .sb-main { display: none; }
 .story-player .sb-main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 10px 12px 0; gap: 10px; }
 .story-player .sb-tabs { display: flex; margin-right: 34px; padding: 3px; border-radius: 17px; background: rgba(235,235,242,.25); }

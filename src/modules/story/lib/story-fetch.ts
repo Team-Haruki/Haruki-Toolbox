@@ -1,4 +1,17 @@
 import type { SekaiRegion } from "@/types"
+import type { StoryAssetIndex } from "@/modules/story/engine/urls"
+
+/**
+ * The JP asset index (Live2D costumes, motion libraries, movies, SEs). The
+ * asset host rebuilds it next to the tree every hour; the hour in the query
+ * keeps CDN copies from going stale for longer.
+ */
+export async function fetchStoryAssetIndex(jpRoot: string, now = Date.now()): Promise<StoryAssetIndex> {
+  const response = await fetch(`${jpRoot}/story-player/index.json?h=${Math.floor(now / 3_600_000)}`)
+  if (!response.ok) throw new Error(`story index: HTTP ${response.status}`)
+  const raw = (await response.json()) as Partial<StoryAssetIndex>
+  return { version: raw.version ?? "", models: raw.models ?? {}, movies: raw.movies ?? {}, se: raw.se ?? {} }
+}
 
 /**
  * Fetches a scenario JSON from "<root>/<region>-assets/<path>", trying the

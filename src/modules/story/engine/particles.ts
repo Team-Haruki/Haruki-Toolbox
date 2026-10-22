@@ -17,6 +17,7 @@
 
 import * as PIXI from "pixi.js";
 import { storyUrls } from "./urls";
+import { random } from "./random";
 
 // pixi 7 types GPU data as IArrayBuffer (an ArrayBuffer), which typed arrays no longer satisfy
 const gpu = (a: ArrayBufferView) => a as unknown as PIXI.IArrayBuffer;
@@ -182,7 +183,7 @@ function eulerToQuat(e: number[]): number[] {
   const cx = Math.cos(x), sx = Math.sin(x), cy = Math.cos(y), sy = Math.sin(y), cz = Math.cos(z), sz = Math.sin(z);
   return [sx * cy * cz + cx * sy * sz, cx * sy * cz - sx * cy * sz, cx * cy * sz - sx * sy * cz, cx * cy * cz + sx * sy * sz];
 }
-const rand = Math.random;
+const rand = random;
 
 // ── shaders ──────────────────────────────────────────────────────────────────
 const PART_VERT = `

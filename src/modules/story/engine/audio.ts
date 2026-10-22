@@ -49,7 +49,7 @@ export class AudioManager {
       this.analyser = analyser;
       this.timeBuf = new Uint8Array(analyser.fftSize);
     }
-    if (this.ctx.state === "suspended") this.ctx.resume();
+    if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
   }
 
   // Current voice amplitude (RMS, ~0-1) for lip-sync; 0 if no voice playing.

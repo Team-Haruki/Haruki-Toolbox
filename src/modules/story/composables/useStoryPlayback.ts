@@ -1,8 +1,8 @@
 import { ref, shallowRef, watch, type Ref } from "vue"
 import type { SekaiRegion } from "@/types"
-import { getStoryAssetIndex, getStoryTranslation } from "@/modules/story/api/story"
+import { getStoryTranslation } from "@/modules/story/api/story"
 import type { StoryCatalog, StoryEpisode } from "@/modules/story/lib/story-catalog"
-import { ScenarioCache, fetchScenarioJson } from "@/modules/story/lib/story-fetch"
+import { ScenarioCache, fetchScenarioJson, fetchStoryAssetIndex } from "@/modules/story/lib/story-fetch"
 import {
   STORY_LANG_REGIONS,
   applyRegionText,
@@ -49,7 +49,7 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
   let interacted = false
 
   const loadIndex = () => {
-    index ??= getStoryAssetIndex().catch((error: unknown) => {
+    index ??= fetchStoryAssetIndex(`${options.assetRoot.value}/jp-assets`).catch((error: unknown) => {
       index = null
       throw error
     })

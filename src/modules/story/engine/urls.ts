@@ -39,7 +39,9 @@ let episode: StoryEpisodeContext | undefined;
 
 /** e.g. "https://sekai-assets.haruki.seiunx.com/jp-assets" (the user's asset host) */
 export function configureStoryRoot(root: string) {
-  jpRoot = root.replace(/\/+$/, "");
+  let end = root.length;
+  while (end > 0 && root[end - 1] === "/") end--;
+  jpRoot = root.slice(0, end);
 }
 
 export function configureStoryEpisode(next: StoryEpisodeContext) {
