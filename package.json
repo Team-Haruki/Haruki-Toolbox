@@ -36,7 +36,7 @@
     "pinia-plugin-persistedstate": "^4.7.1",
     "pinyin-pro": "^3.29.4",
     "pixi.js": "7.4.3",
-    "pjsk-scenario-player": "https://github.com/Team-Haruki/sekai-scenario-player/releases/download/v0.2.2/pjsk-scenario-player-0.2.2.tgz",
+    "pjsk-scenario-player": "https://github.com/Team-Haruki/sekai-scenario-player/releases/download/v0.2.3/pjsk-scenario-player-0.2.3.tgz",
     "postcss": "^8.5.29",
     "reka-ui": "^2.11.0",
     "tailwind-merge": "^3.7.0",

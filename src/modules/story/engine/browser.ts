@@ -253,8 +253,10 @@ export class StoryBrowser {
   private revealInList(el: HTMLElement) {
     const list = this.listEl.getBoundingClientRect();
     const r = el.getBoundingClientRect();
-    if (r.top < list.top) this.listEl.scrollTop += r.top - list.top;
-    else if (r.bottom > list.bottom) this.listEl.scrollTop += r.bottom - list.bottom;
+    // rects include the row's CSS zoom, scrollTop doesn't
+    const zoom = list.height / this.listEl.offsetHeight || 1;
+    if (r.top < list.top) this.listEl.scrollTop += (r.top - list.top) / zoom;
+    else if (r.bottom > list.bottom) this.listEl.scrollTop += (r.bottom - list.bottom) / zoom;
   }
 
   private onListClick(e: Event) {
