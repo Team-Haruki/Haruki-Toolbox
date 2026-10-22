@@ -1,5 +1,6 @@
-// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog
-// Lazy bundle for the Sekai catalog pages (/cards, /events, /gachas, /music).
+// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog, storyPlayer
+// Lazy bundle for the Sekai catalog pages (/cards, /events, /gachas, /music)
+// and the story player (/story).
 // Shared shell strings live in the core bundle under `catalog.*`; enum labels
 // (units, attributes, rarities, event/gacha types, difficulties) stay in core too.
 export default {
@@ -378,6 +379,71 @@ export default {
       "events": {
         "empty": "这首歌曲没有关联的活动。"
       }
+    }
+  },
+
+  // ---------------------------------------------------------------------
+  // storyPlayer — owned by the story module (src/modules/story)
+  // ---------------------------------------------------------------------
+  "storyPlayer": {
+    "title": "剧情播放",
+    "description": "按游戏的演出播放主线、活动、卡面、特别剧情与区域对话。画面与语音来自日服，文本可选各服官方翻译，日服独有的剧情另有 AI 中文翻译。",
+    "textLang": "文本语言",
+    "langAuto": "跟随工具箱语言",
+    "lang": {
+      "ja": "日本語",
+      "zhHans": "简体中文",
+      "zhHant": "繁體中文",
+      "en": "English",
+      "ko": "한국어",
+      "zhHansAi": "简体中文（AI翻译）"
+    },
+    "fallback": "这一话没有{lang}文本，当前显示{shown}。",
+    "aiPending": "这一话的 AI 翻译还在生成中，请稍后再来。",
+    "aiNotice": "当前文本为 AI 翻译，可能与官方译文有出入。",
+    "errors": {
+      "notFound": "找不到这一话剧情。",
+      "missing": "日服素材里还没有这一话的剧本。",
+      "failed": "剧情加载失败：{detail}",
+      "catalog": "剧情目录加载失败，请刷新重试。",
+      "engine": "播放器加载失败：{detail}"
+    },
+    "stage": {
+      "loading": "加载中",
+      "start": "点击开始播放",
+      "pickBeside": "请在左侧选择要播放的剧情",
+      "pickAbove": "请在上方选择要播放的剧情"
+    },
+    "browser": {
+      "tabs": {
+        "unit": "主线",
+        "event": "活动",
+        "card": "卡面",
+        "special": "特别",
+        "area": "区域"
+      },
+      "all": "全部",
+      "rail": "剧情选择",
+      "toggle": "收起 / 展开",
+      "search": "搜索标题 / 角色",
+      "loading": "加载剧情目录…",
+      "empty": "没有匹配的剧情",
+      "episode": "第{no}话",
+      "firstPart": "前篇",
+      "secondPart": "后篇"
+    },
+    "menu": {
+      "bookmark": "书签",
+      "auto": "自动",
+      "consecutive": "连续播放",
+      "skip": "跳过",
+      "fast": "快进",
+      "hide": "隐藏",
+      "log": "记录"
+    },
+    "log": {
+      "search": "搜索台词 / 角色",
+      "matches": "{count} 条匹配"
     }
   }
 } as const

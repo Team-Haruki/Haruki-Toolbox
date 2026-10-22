@@ -952,6 +952,7 @@ export default {
       "musicProgress": "Music progress",
       "gachas": "Gacha catalog",
       "costumes": "Costume dressup",
+      "storyPlayer": "Story player",
       "playerProfile": "My profile",
       "training": "Character training"
     },
@@ -1047,6 +1048,9 @@ export default {
     },
     "costumes": {
       "dressup": "Costume Dressup"
+    },
+    "story": {
+      "player": "Story player"
     },
     "playerProfile": {
       "me": "My profile"

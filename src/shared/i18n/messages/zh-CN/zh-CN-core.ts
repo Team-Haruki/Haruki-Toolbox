@@ -952,6 +952,7 @@ export default {
       "musicProgress": "打歌进度",
       "gachas": "卡池图鉴",
       "costumes": "服装搭配",
+      "storyPlayer": "剧情播放",
       "playerProfile": "我的档案",
       "training": "角色养成"
     },
@@ -1047,6 +1048,9 @@ export default {
     },
     "costumes": {
       "dressup": "服装搭配"
+    },
+    "story": {
+      "player": "剧情播放"
     },
     "playerProfile": {
       "me": "我的档案"
