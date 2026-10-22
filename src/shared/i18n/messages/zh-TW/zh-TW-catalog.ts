@@ -1,5 +1,5 @@
 // AUTO-GENERATED zh-TW locale bundle (OpenCC s2twp from zh-CN).
-// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog
+// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog, storyPlayer
 export default {
   "cardCatalog": {
     "filters": {
@@ -361,6 +361,67 @@ export default {
       "events": {
         "empty": "這首歌曲沒有關聯的活動。"
       }
+    }
+  },
+  "storyPlayer": {
+    "title": "劇情播放",
+    "description": "按遊戲的演出播放主線、活動、卡面、特別劇情與區域對話。畫面與語音來自日服，文本可選各服官方翻譯，日服獨有的劇情另有 AI 中文翻譯。",
+    "textLang": "文本語言",
+    "langAuto": "跟隨工具箱語言",
+    "lang": {
+      "ja": "日本語",
+      "zhHans": "簡體中文",
+      "zhHant": "繁體中文",
+      "en": "English",
+      "ko": "한국어",
+      "zhHansAi": "簡體中文（AI翻譯）"
+    },
+    "fallback": "這一話沒有{lang}文本，當前顯示{shown}。",
+    "aiPending": "這一話的 AI 翻譯還在生成中，請稍後再來。",
+    "aiNotice": "當前文本為 AI 翻譯，可能與官方譯文有出入。",
+    "errors": {
+      "notFound": "找不到這一話劇情。",
+      "missing": "日服素材裡還沒有這一話的劇本。",
+      "failed": "劇情載入失敗：{detail}",
+      "catalog": "劇情目錄載入失敗，請重新整理重試。",
+      "engine": "播放器載入失敗：{detail}"
+    },
+    "stage": {
+      "loading": "載入中",
+      "start": "點選開始播放",
+      "pickBeside": "請在左側選擇要播放的劇情",
+      "pickAbove": "請在上方選擇要播放的劇情"
+    },
+    "browser": {
+      "tabs": {
+        "unit": "主線",
+        "event": "活動",
+        "card": "卡面",
+        "special": "特別",
+        "area": "區域"
+      },
+      "all": "全部",
+      "rail": "劇情選擇",
+      "toggle": "收起 / 展開",
+      "search": "搜尋標題 / 角色",
+      "loading": "載入劇情目錄…",
+      "empty": "沒有匹配的劇情",
+      "episode": "第{no}話",
+      "firstPart": "前篇",
+      "secondPart": "後篇"
+    },
+    "menu": {
+      "bookmark": "書籤",
+      "auto": "自動",
+      "consecutive": "連續播放",
+      "skip": "跳過",
+      "fast": "快進",
+      "hide": "隱藏",
+      "log": "記錄"
+    },
+    "log": {
+      "search": "搜尋台詞 / 角色",
+      "matches": "{count} 條匹配"
     }
   }
 } as const

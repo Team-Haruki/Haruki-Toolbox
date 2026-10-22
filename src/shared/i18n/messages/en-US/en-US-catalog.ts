@@ -1,5 +1,6 @@
-// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog
-// Lazy bundle for the Sekai catalog pages (/cards, /events, /gachas, /music).
+// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog, storyPlayer
+// Lazy bundle for the Sekai catalog pages (/cards, /events, /gachas, /music)
+// and the story player (/story).
 // Shared shell strings live in the core bundle under `catalog.*`; enum labels
 // (units, attributes, rarities, event/gacha types, difficulties) stay in core too.
 export default {
@@ -378,6 +379,71 @@ export default {
       "events": {
         "empty": "This song is not linked to any event."
       }
+    }
+  },
+
+  // ---------------------------------------------------------------------
+  // storyPlayer — owned by the story module (src/modules/story)
+  // ---------------------------------------------------------------------
+  "storyPlayer": {
+    "title": "Story player",
+    "description": "Plays main, event, card, special stories and area talks the way the game stages them. Visuals and voices come from the JP server; text can be any server's official translation, with an AI Chinese translation for JP-only stories.",
+    "textLang": "Text language",
+    "langAuto": "Follow the Toolbox language",
+    "lang": {
+      "ja": "日本語",
+      "zhHans": "简体中文",
+      "zhHant": "繁體中文",
+      "en": "English",
+      "ko": "한국어",
+      "zhHansAi": "简体中文（AI翻译）"
+    },
+    "fallback": "This episode has no {lang} text; showing {shown}.",
+    "aiPending": "The AI translation of this episode is still being made. Check back later.",
+    "aiNotice": "This text is an AI translation and may differ from the official one.",
+    "errors": {
+      "notFound": "This episode could not be found.",
+      "missing": "The JP assets do not have this episode's script yet.",
+      "failed": "The story failed to load: {detail}",
+      "catalog": "The story list failed to load. Refresh to try again.",
+      "engine": "The player failed to load: {detail}"
+    },
+    "stage": {
+      "loading": "Loading",
+      "start": "Click to play",
+      "pickBeside": "Pick a story on the left",
+      "pickAbove": "Pick a story above"
+    },
+    "browser": {
+      "tabs": {
+        "unit": "Main",
+        "event": "Event",
+        "card": "Card",
+        "special": "Special",
+        "area": "Area"
+      },
+      "all": "All",
+      "rail": "Stories",
+      "toggle": "Collapse / expand",
+      "search": "Search titles / characters",
+      "loading": "Loading stories…",
+      "empty": "No matching stories",
+      "episode": "Ep. {no}",
+      "firstPart": "Part 1",
+      "secondPart": "Part 2"
+    },
+    "menu": {
+      "bookmark": "Bookmark",
+      "auto": "Auto",
+      "consecutive": "Continuous",
+      "skip": "Skip",
+      "fast": "Fast",
+      "hide": "Hide",
+      "log": "Log"
+    },
+    "log": {
+      "search": "Search lines / characters",
+      "matches": "{count} matches"
     }
   }
 } as const

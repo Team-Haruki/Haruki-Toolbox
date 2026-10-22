@@ -1,0 +1,356 @@
+/* Story player. Ported from the standalone scenario player: the stage is a
+   fixed 1280x720 layout (values mapped from the game's 1920x1080 prefabs) that
+   the runtime scales with CSS zoom, so sizes here are stage pixels. Everything
+   is scoped under .story-player; sprites come in as --sp-* custom properties
+   (set by the runtime from the asset host). */
+
+.story-player {
+  /* Chinese UI labels: Rodin has no simplified hanzi, so use one CN bold face throughout */
+  --cn-bold: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", sans-serif;
+  --cn-text: "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", sans-serif;
+  --ko-text: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", "Noto Sans KR", sans-serif;
+  /* the fixed-size stage must not widen the page; the runtime zooms it to fit */
+  contain: inline-size;
+  display: block;
+  width: 100%;
+  color-scheme: dark;
+  color: #e6e6e6;
+  font-family: system-ui, -apple-system, "PingFang SC", "Hiragino Sans", sans-serif;
+}
+.story-player *, .story-player *::before, .story-player *::after { box-sizing: border-box; }
+
+.story-player .sp-stage-wrap { position: relative; width: 1280px; height: 720px;
+  border: 1px solid #2c2f37; border-radius: 8px; overflow: hidden; background: #000; }
+.story-player .sp-canvas { display: block; width: 1280px; height: 720px; }
+.story-player .sp-row { display: flex; gap: 12px; align-items: flex-start; }
+
+/* Story browser (left): the game's story select look — segmented pill tabs,
+   unit icons, white rounded cells (episode: 第N話 + title, thumbnail right),
+   rgb(68,68,102) text, pink for the current item. Collapses to a rail. */
+.story-player .story-browser { position: relative; width: 340px; height: 720px; flex: none; display: flex; flex-direction: column;
+  background: rgb(58,58,88); border: 1px solid #2c2f37; border-radius: 8px; overflow: hidden; }
+.story-player .story-browser.collapsed { width: 44px; }
+.story-player .sb-toggle { position: absolute; top: 10px; right: 8px; z-index: 2; width: 28px; height: 28px; border: 0; border-radius: 50%;
+  background: #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,34,.3); }
+.story-player .sb-toggle::after { content: ""; position: absolute; left: 10px; top: 9px; width: 8px; height: 10px; background: rgb(68,68,102);
+  clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+.story-player .collapsed .sb-toggle::after { clip-path: polygon(0 0, 100% 50%, 0 100%); left: 11px; }
+.story-player .sb-rail { display: none; }
+.story-player .collapsed .sb-rail { display: block; position: absolute; top: 52px; left: 0; right: 0; bottom: 0; cursor: pointer; box-sizing: content-box;
+  width: 1em; margin: 0 auto; padding-top: 10px; word-break: break-all; text-align: center; line-height: 1.35;
+  font: 700 16px var(--cn-bold); color: rgb(223,223,234); }
+.story-player .collapsed .sb-main { display: none; }
+.story-player .sb-main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 10px 12px 0; gap: 10px; }
+.story-player .sb-tabs { display: flex; margin-right: 34px; padding: 3px; border-radius: 17px; background: rgba(235,235,242,.25); }
+.story-player .sb-tabs button { flex: 1; height: 28px; border: 0; border-radius: 14px; background: none; cursor: pointer; padding: 0;
+  font: 700 13px var(--cn-bold); color: rgb(223,223,234); white-space: nowrap; }
+.story-player .sb-tabs button.on { background: #fff; color: rgb(68,68,102); box-shadow: 0 1px 3px rgba(0,0,34,.3); }
+.story-player .sb-units { display: flex; justify-content: space-between; }
+.story-player .sb-units button { width: 38px; height: 38px; padding: 3px; border: 2px solid transparent; border-radius: 10px;
+  background: none; cursor: pointer; opacity: .55; }
+.story-player .sb-units button img { display: block; width: 100%; height: 100%; }
+.story-player .sb-units button.vs img { background: #33ccbb; border-radius: 6px; padding: 4px; box-sizing: border-box; }
+.story-player .sb-units button.on { opacity: 1; border-color: rgb(255,119,170); }
+.story-player .sb-search { height: 32px; padding: 0 14px; border: 0; border-radius: 16px; outline: none; background: #fff;
+  color: rgb(68,68,102); font: 13px "RodinDB", var(--cn-bold); box-shadow: 0 2px 4px rgba(0,0,34,.25); }
+.story-player .sb-search::placeholder { color: rgb(167,167,188); }
+.story-player .sb-list { flex: 1; overflow-y: auto; overscroll-behavior: contain; margin: 0 -8px 0 0; padding: 0 6px 12px 0; }
+.story-player .sb-list::-webkit-scrollbar { width: 6px; }
+.story-player .sb-list::-webkit-scrollbar-track { background: rgba(255,255,255,.2); border-radius: 3px; }
+.story-player .sb-list::-webkit-scrollbar-thumb { background: #fff; border-radius: 3px; }
+.story-player .sb-empty { padding: 30px 10px; text-align: center; font: 13px/1.7 var(--cn-bold); color: rgb(223,223,234); }
+.story-player .sb-story { margin-bottom: 8px; border-radius: 12px; background: #fff; color: rgb(68,68,102); overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,34,.25); }
+.story-player .sb-story.cur { box-shadow: 0 0 0 2px rgb(255,119,170), 0 2px 4px rgba(0,0,34,.25); }
+.story-player .sb-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px; cursor: pointer; }
+.story-player .sb-logo { width: 96px; height: 48px; object-fit: contain; flex: none; }
+.story-player .sb-thumb { width: 48px; height: 48px; border-radius: 8px; flex: none; }
+.story-player .sb-uicon { width: 36px; height: 36px; flex: none; }
+.story-player .sb-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.story-player .sb-title b { font: 13px/1.3 "RodinEB", var(--cn-bold); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.story-player .sb-title small { font: 11px "RodinDB", sans-serif; color: rgb(167,167,188); }
+.story-player .sb-caret { flex: none; width: 8px; height: 8px; border-right: 2px solid rgb(167,167,188); border-bottom: 2px solid rgb(167,167,188);
+  transform: rotate(45deg); margin: -4px 4px 0 0; transition: transform .15s; }
+.story-player .sb-story.open .sb-caret { transform: rotate(-135deg); margin-top: 4px; }
+.story-player .sb-eps { border-top: 1px solid rgb(235,235,242); background: rgb(246,246,250); }
+.story-player .sb-ep { position: relative; display: flex; align-items: center; gap: 8px; padding: 7px 10px 7px 14px; cursor: pointer;
+  border-bottom: 1px solid rgb(235,235,242); }
+.story-player .sb-ep:last-child { border-bottom: 0; }
+.story-player .sb-ep:hover { background: #fff; }
+.story-player .sb-ep.cur { color: rgb(255,119,170); background: #fff; }
+.story-player .sb-ep.cur::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: rgb(255,119,170); }
+.story-player .sb-ep.missing { opacity: .4; cursor: not-allowed; }
+.story-player .sb-ep-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.story-player .sb-ep-text small { font: 11px "RodinEB", var(--cn-bold); color: rgb(167,167,188); }
+.story-player .sb-ep.cur .sb-ep-text small { color: rgb(255,119,170); }
+.story-player .sb-ep-text span { font: 13px/1.3 "RodinDB", var(--cn-bold); }
+.story-player .sb-ep img { width: 80px; height: 45px; object-fit: cover; border-radius: 6px; flex: none; }
+.story-player .sp-stage-wrap { flex: none; }
+
+/* Script overview (right): the game's talk log (TalkLogWindowDialog / Cell)
+   at half the reference size — base rgba(68,68,102,.8), icon chr_ts_*_g2
+   104→52, name RodinNTLG EB rgb(223,223,234), body DB white, both with the
+   scenario outline rgba(68,68,102,.6), 2px→1px rule rgb(167,167,188),
+   6px white .2 scrollbar. Later lines are dimmed; the current one is marked. */
+.story-player .script-log { width: 400px; height: 720px; flex: none; display: flex; flex-direction: column;
+  background: rgb(58,58,88); border: 1px solid #2c2f37; border-radius: 8px; overflow: hidden; box-sizing: border-box; }
+.story-player .script-log.hidden { display: none; }
+.story-player .sl-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; }
+.story-player .sl-search { flex: 1; min-width: 0; height: 34px; padding: 0 14px; border: 0; border-radius: 17px; outline: none;
+  background: #fff; color: rgb(68,68,102); font: 14px var(--cn-bold);
+  box-shadow: 0 2px 4px rgba(0,0,34,.25); }
+.story-player .sl-search::placeholder { color: rgb(167,167,188); }
+.story-player .sl-count { flex: none; font: 700 13px var(--cn-bold); color: rgb(223,223,234); }
+.story-player .sl-bar { height: 3px; margin: 0 14px 6px; border-radius: 2px; background: rgba(255,255,255,.2); }
+.story-player .sl-bar i { display: block; height: 100%; width: 0; border-radius: 2px; background: rgb(255,119,170); transition: width .3s; }
+.story-player .sl-list { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.story-player .sl-list::-webkit-scrollbar { width: 6px; }
+.story-player .sl-list::-webkit-scrollbar-track { background: rgba(255,255,255,.2); border-radius: 3px; margin: 12px 0; }
+.story-player .sl-list::-webkit-scrollbar-thumb { background: #fff; border-radius: 3px; }
+.story-player .sl-cell { position: relative; display: grid; grid-template-columns: 52px 1fr; column-gap: 14px; row-gap: 4px;
+  padding: 12px 12px 12px 18px; border-bottom: 1px solid rgb(167,167,188); cursor: pointer;
+  -webkit-text-stroke: 3.6px rgba(68,68,102,.6); paint-order: stroke fill; }
+.story-player .sl-cell:hover { background: rgba(255,255,255,.06); }
+.story-player .sl-icon { grid-row: 1 / span 2; width: 52px; height: 52px; }
+.story-player .sl-name { font: 16px/1.2 "RodinEB", system-ui, sans-serif; color: rgb(223,223,234); align-self: end; }
+.story-player .sl-body { font: 16px/1.45 "RodinDB", system-ui, sans-serif; color: #fff; white-space: pre-line; }
+.story-player .sl-body mark { background: none; color: rgb(255,119,170); }
+.story-player .sl-place { padding: 10px 18px; border-bottom: 1px solid rgb(167,167,188); cursor: pointer;
+  font: 14px "RodinDB", system-ui, sans-serif; color: rgb(223,223,234); background: rgba(68,68,102,.8); }
+.story-player .sl-place::before { content: "▸ "; color: rgb(255,119,170); }
+.story-player .sl-cell.future, .story-player .sl-place.future { opacity: .45; }
+.story-player .sl-cell.cur { background: rgba(255,255,255,.12); }
+.story-player .sl-cell.cur::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: rgb(255,119,170); }
+
+/* dialogue overlay — values from the game's Resources/scenario/prefabs/
+   TalkWindow.prefab (JP 6.8.1), mapped from its 1920x1080 reference canvas
+   to this 1280x720 stage (x 2/3):
+   - Window: bg_story_adv strip tinted rgb(0,0,34), 312 tall, alpha ramping
+     0 -> 0.5 over its top 44% (stops sampled from ScenarioAtlas).
+   - Name: RodinNTLG EB 44, rgb(235,235,242); Words: DB 40, white; line
+     height 1.2em (font lineHeight 2.0em + lineSpacing -80).
+   - Both have a second "Outline" label behind them (FaceDilate 0.5 +
+     OutlineWidth 0.5, colour rgba(68,68,102,.6), stencil-masked so
+     overlapping glyph outlines never stack). Measured on a lossless in-game
+     frame: the ring is flat and 4.8 reference px wide for both name and body.
+     Reproduced as a ::before copy of the text, opaque #444466 fill + 6.4px
+     stroke (centred, so 3.2px outside), composited once at opacity .6.
+   - NameBackground: bg_base_half_r8_wh (16x720) rotated 90deg with
+     GradientAlpha top .6 -> bottom 0: a 720x16 bar behind the name's lower
+     half, rounded left end, white fading to transparent on the right.
+   - Checked against a lossless 1600x900 in-game frame (MuMu, JP 7.1.0):
+     name ink top 286.8 / left 235.2, body top 218.4 / left 255.6 and the
+     name bar 240..256 above the bottom (reference px) all match these
+     values. (A 16:10 tablet capture shows the window 13.5px lower; that is
+     that aspect ratio, not 16:9.) */
+/* macOS browsers embolden light-on-dark text with their default font
+   smoothing; TMP renders plain greyscale coverage, so match that. */
+.story-player .dialogue, .story-player .fx-telop { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+.story-player .dialogue { position: absolute; inset: 0; pointer-events: none; transition: opacity .15s;
+  font-family: "RodinDB", system-ui, "Hiragino Sans", sans-serif;
+  background: linear-gradient(to bottom,
+    rgba(0,0,34,0) 71.11%, rgba(0,0,34,.059) 72.93%, rgba(0,0,34,.141) 74.75%,
+    rgba(0,0,34,.235) 76.54%, rgba(0,0,34,.329) 78.36%, rgba(0,0,34,.416) 80.18%,
+    rgba(0,0,34,.482) 82%, rgba(0,0,34,.502) 83.82%, rgba(0,0,34,.502) 100%); }
+.story-player .dialogue.hidden { opacity: 0; }
+.story-player .dlg-name { position: absolute; left: 153.33px; top: 526.67px; width: 395.33px;
+  font-family: "RodinEB", system-ui, sans-serif; font-size: 29.33px; line-height: 1;
+  color: rgb(235,235,242); white-space: nowrap; isolation: isolate; }
+.story-player .dlg-namebar { position: absolute; left: 140px; top: 549.33px; width: 480px; height: 10.67px;
+  border-radius: 5.33px 0 0 5.33px;
+  background: linear-gradient(to right, rgba(255,255,255,.6), rgba(255,255,255,0)); }
+.story-player .dialogue.no-name .dlg-name, .story-player .dialogue.no-name .dlg-namebar { visibility: hidden; }
+.story-player .dlg-body { position: absolute; left: 166.7px; top: 572px; width: 912.2px;
+  font-family: "RodinDB", system-ui, sans-serif; font-size: 26.67px; line-height: 1.2;
+  color: #fff; white-space: pre-wrap; isolation: isolate; }
+.story-player .dlg-name::before, .story-player .dlg-body::before { content: attr(data-text); position: absolute;
+  inset: 0; z-index: -1; color: rgb(68,68,102); -webkit-text-stroke: 6.4px rgb(68,68,102);
+  opacity: .6; pointer-events: none; }
+/* EndSign: 50x44 at x 1567..1617, 25.3 above the bottom (ref). The teal
+   note is the game's "tap to continue" mark, shown once a line is typed. */
+.story-player .dlg-note { position: absolute; left: 1044.8px; bottom: 16.87px; width: 33.33px; height: 29.33px;
+  pointer-events: none; opacity: 0; transition: opacity .2s; }
+.story-player .dlg-note.show { opacity: .95; animation: sp-bob 1.1s ease-in-out infinite; }
+@keyframes sp-bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
+/* AutoSignal (TalkWindow.prefab, measured on a 1600x900 capture): 200x48
+   bg_base_r20 pill tinted rgba(68,68,102,.8), 64 from the right and 24 from
+   the bottom; white triangle 22x29 at +40; "AUTO" RodinNTLG EB 32, spacing -4,
+   at +72. Display only; shown while auto-advance is on. */
+.story-player .dlg-auto { position: absolute; right: 42.67px; bottom: 16px; width: 133.33px; height: 32px;
+  border-radius: 13.33px; background: rgba(68,68,102,.8); pointer-events: none; display: none; }
+.story-player .dialogue.auto .dlg-auto { display: block; }
+.story-player .dlg-auto::before { content: ""; position: absolute; left: 26.4px; top: 6.33px; width: 15px; height: 19.33px;
+  background: #fff; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.story-player .dlg-auto::after { content: "AUTO"; position: absolute; left: 48px; top: 1.5px; height: 32px; display: flex; align-items: center;
+  font-family: "RodinEB", system-ui, sans-serif; font-size: 21.33px; line-height: 1; letter-spacing: -0.04em; color: #fff; }
+/* 早送り: AutoSignalIcon1+2 (two triangles) + SkipSignalText "SKIP" (spacing 2),
+   measured on a fast-forward capture. In auto/skip the tap mark is not shown. */
+.story-player .dialogue.skip .dlg-auto::before { left: 21.6px; width: 29.6px;
+  clip-path: polygon(0 0, 46% 50%, 0 100%, 0 0, 54% 0, 100% 50%, 54% 100%, 54% 0); }
+.story-player .dialogue.skip .dlg-auto::after { content: "SKIP"; left: 60px; letter-spacing: 0.02em; }
+.story-player .dialogue.auto .dlg-note { display: none; }
+
+/* UIPartsMenuButton (ScreenLayerScenario.prefab RightTop): btn_circle_h80 96x96
+   centred 64 from the top-right, MenuIcon icon_menu_story 52x12 rgb(68,68,102). */
+.story-player .scn-menu { position: absolute; right: 10.67px; top: 10.67px; width: 64px; height: 64px; z-index: 7;
+  cursor: pointer; background: var(--sp-menu-circle) center / 100% 100%; }
+.story-player .scn-menu::after { content: ""; position: absolute; left: 14.67px; top: 28px; width: 34.67px; height: 8px;
+  background: rgb(68,68,102); -webkit-mask: var(--sp-menu-dots) center / 100% 100%;
+  mask: var(--sp-menu-dots) center / 100% 100%; }
+.story-player .scn-menu { transition: opacity .1s; }
+.story-player .scn-menu.faded { opacity: 0; pointer-events: none; }
+.story-player .scn-menu-panel.hidden { display: none; }
+/* ScenarioMenu: 392 wide at the top-right, Base bg_base_half_r30 tinted
+   rgba(68,68,102,.4) down to 72 below the last row (796 ref tall). Buttons
+   btn_round_r16 (9-slice, 8px soft shadow inside the rect), labels RodinNTLG
+   EB 32 rgb(68,68,102) (しおり rgb(85,85,119)); on = rgb(255,119,170). */
+.story-player .scn-menu-panel { position: absolute; right: 0; top: 0; width: 261.33px; height: 525.33px; z-index: 8; overflow: hidden;
+  background: rgba(68,68,102,.4); border-bottom-left-radius: 20px; cursor: default; }
+/* Open/Close clips: SizeDelta.y 0↔788 and Content alpha 0↔1 over 0.167s, flat tangents (smoothstep) */
+.story-player .scn-menu-panel.opening { animation: smp-grow .167s cubic-bezier(.333,0,.667,1) both; }
+.story-player .scn-menu-panel.closing { animation: smp-shrink .167s cubic-bezier(.333,0,.667,1) both; }
+.story-player .scn-menu-panel.opening > * { animation: smp-fade-in .167s cubic-bezier(.333,0,.667,1) both; }
+.story-player .scn-menu-panel.closing > * { animation: smp-fade-out .167s cubic-bezier(.333,0,.667,1) both; }
+@keyframes smp-grow { from { height: 0; } to { height: 525.33px; } }
+@keyframes smp-shrink { from { height: 525.33px; } to { height: 0; } }
+@keyframes smp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes smp-fade-out { from { opacity: 1; } to { opacity: 0; } }
+.story-player .smp-close { position: absolute; left: 219.93px; top: 12.33px; width: 29.33px; height: 29.33px; cursor: pointer;
+  background: var(--sp-menu-close) center / 100% 100%; }
+.story-player .smp-line { position: absolute; left: 42.67px; top: 117.2px; width: 176px; height: 2.67px; background: rgb(235,235,242); }
+.story-player .smp-btn { position: absolute; left: 37.33px; width: 186.67px; height: 64px; cursor: pointer; color: rgb(68,68,102);
+  border-image: var(--sp-menu-btn) 27 fill / 18px stretch; }
+.story-player .smp-btn.small { top: 408px; width: 90.67px; height: 74.67px; }
+.story-player .smp-btn:active { filter: brightness(.92); }
+.story-player .smp-btn[data-k="bookmark"] { color: rgb(85,85,119); }
+.story-player .smp-btn.on { color: rgb(255,119,170); }
+.story-player .smp-ic { position: absolute; background: currentColor; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
+.story-player .smp-btn[data-k="bookmark"] .smp-ic { background: rgb(68,68,102); }
+.story-player .smp-btn span { position: absolute; top: 0; height: 64px; display: flex; align-items: center; justify-content: center;
+  font-family: var(--cn-bold); font-weight: 700; font-size: 21.33px; line-height: 1; white-space: nowrap; }
+.story-player .smp-btn.small span { left: 0; right: 0; top: 40.2px; height: 18.67px; font-size: 18.67px; }
+/* 非表示: everything but the scene; the next tap brings it back */
+.story-player .sp-stage-wrap.ui-hidden .dialogue, .story-player .sp-stage-wrap.ui-hidden .scn-menu, .story-player .sp-stage-wrap.ui-hidden .scn-menu-panel { visibility: hidden; }
+
+/* stacking inside the stage: canvas < movie(1) < talk window(2) < place info(5)
+   < cover fade(6) < telop(7) < menu / dialogs(8) < side fade(9) < start overlay(10) */
+.story-player .dialogue { z-index: 2; }
+/* SideFadePlayer: black panel (screen + 32 ref each side) with 512-ref feathered
+   strips (tex_transition_left/top; right/bottom mirrored), slid by translate. */
+.story-player .fx-side { position: absolute; left: -21.33px; top: -21.33px; width: 1322.67px; height: 762.67px;
+  background: #000; z-index: 9; pointer-events: none; }
+.story-player .fx-side.hidden { display: none; }
+.story-player .fx-side i { position: absolute; background-repeat: repeat; }
+.story-player .fx-side .l, .story-player .fx-side .r { top: 0; bottom: 0; width: 341.33px;
+  background-image: var(--sp-side-left); background-size: 341.33px 341.33px; }
+.story-player .fx-side .l { right: 100%; }
+.story-player .fx-side .r { left: 100%; transform: scaleX(-1); }
+.story-player .fx-side .t, .story-player .fx-side .b { left: -341.33px; right: -341.33px; height: 341.33px;
+  background-image: var(--sp-side-top); background-size: 341.33px 341.33px; }
+.story-player .fx-side .t { bottom: 100%; }
+.story-player .fx-side .b { top: 100%; transform: scaleY(-1); }
+/* PlaceInfo (UILayer/TopLeft2): 580x64 ref strip rgba(68,68,102,.8) + 152 ref
+   tail fading out, text RodinNTLG DB 40 white at x 40, width 520, auto-shrink. */
+.story-player .fx-place { position: absolute; left: 0; top: 20.67px; width: 386.67px; height: 42.67px; z-index: 5; pointer-events: none;
+  background: rgba(68,68,102,.8); }
+.story-player .fx-place::after { content: ""; position: absolute; left: 100%; top: 0; width: 101.33px; height: 100%;
+  background: linear-gradient(to right, rgba(68,68,102,.8), rgba(68,68,102,0)); }
+.story-player .fx-place.hidden { display: none; }
+.story-player .fx-place-text { position: absolute; left: 26.67px; top: 0; width: 346.67px; height: 100%; display: flex; align-items: center;
+  white-space: nowrap; overflow: hidden; font: 26.67px/1 "RodinDB", system-ui, sans-serif; color: #fff; }
+/* Movie (MovieLayer, inside the scenario root): 2338x1080 → cover the stage */
+.story-player .fx-movie { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; z-index: 1; }
+.story-player .fx-movie.hidden { display: none; }
+/* FullScreenText dialog: black base (to .5), 240-ref cinemascope bars, text
+   RodinNTLG DB 56 white, line spacing −32, hard black underlay ~6.5 ref down. */
+.story-player .fx-fst { position: absolute; inset: 0; z-index: 8; }
+.story-player .fst-base { position: absolute; inset: 0; background: #000; opacity: 0; }
+.story-player .fst-bar { position: absolute; left: 0; right: 0; height: 0; background: #000; }
+.story-player .fst-bar.top { top: 0; }
+.story-player .fst-bar.bottom { bottom: 0; }
+.story-player .fst-text { position: absolute; left: 186.67px; right: 0; top: 160px; height: 400px; display: flex; align-items: center;
+  font: 37.33px/1.68 "RodinDB", system-ui, sans-serif; color: #fff; text-shadow: 0 4.33px 0 #000; }
+.story-player .fst-text span { opacity: 0; }
+/* SimpleSelectable (AnswerChoiceDialog): two 520x96 ref pills at x ∓460 from centre */
+.story-player .fx-choice { position: absolute; inset: 0; z-index: 8; }
+.story-player .fx-choice-win { position: absolute; inset: 0; transform-origin: 640px 360px; }
+.story-player .fx-choice-btn { position: absolute; top: 328px; width: 346.67px; height: 64px; padding: 0 16px; cursor: pointer;
+  background: none; border-style: solid; border-width: 0 34px;
+  border-image: var(--sp-choice-btn) 0 51 fill / 0 34px stretch;
+  font: 21.33px/1 "RodinEB", system-ui, sans-serif; color: #444466; white-space: nowrap; }
+.story-player .fx-choice-btn span { display: block; margin: 0 -18px; overflow: hidden; }
+.story-player .fx-choice-btn[data-i="0"] { left: 160px; }
+.story-player .fx-choice-btn[data-i="1"] { left: 773.33px; }
+
+/* SpecialEffect overlays */
+/* FrontCover: colour + alpha are painted as an rgba background by Effects */
+.story-player .fx-fade { position: absolute; inset: 0; background: transparent;
+  pointer-events: none; z-index: 6; }
+/* Telop: ScenarioTelop.prefab, 1040x120 (reference px) at the screen centre.
+   Base = three bg_base_wh_0 pieces tinted rgba(68,68,102,.8): a 260 left
+   piece fading in (GradientAlpha left 0 -> right 1), a 520 middle, a 260
+   right piece fading out; it wipes in from x=2% (pivot) via scaleX.
+   Text: RodinNTLG DB 44, white, centred, plain SDF material (no outline). */
+.story-player .fx-telop { position: absolute; inset: 0; pointer-events: none; z-index: 7; }
+.story-player .fx-telop.hidden { display: none; }
+.story-player .fx-telop-box { position: absolute; left: 50%; top: 50%; width: 693.33px; height: 80px;
+  margin: -40px 0 0 -346.67px; }
+.story-player .fx-telop-base { position: absolute; inset: 0; transform-origin: 2% 50%; opacity: 0;
+  display: flex; }
+.story-player .fx-telop-base i { display: block; height: 100%; }
+.story-player .fx-telop-base .l { width: 173.33px; background: linear-gradient(to right, rgba(68,68,102,0), rgba(68,68,102,.8)); }
+.story-player .fx-telop-base .m { flex: 1; background: rgba(68,68,102,.8); }
+.story-player .fx-telop-base .r { width: 173.33px; background: linear-gradient(to right, rgba(68,68,102,.8), rgba(68,68,102,0)); }
+.story-player .fx-telop-text { position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; opacity: 0; white-space: nowrap;
+  font-family: "RodinDB", system-ui, sans-serif; font-size: 29.33px; line-height: 1; color: #fff; }
+
+/* start / status overlay */
+.story-player .sp-overlay { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px; background: rgba(8,10,14,.82); z-index: 10; }
+/* start button: game-style white pill (btn_round_r16), pink play mark */
+.story-player .sp-start { display: flex; align-items: center; gap: 14px; height: 64px; padding: 0 44px 0 34px; cursor: pointer;
+  border: 0; border-radius: 16px; background: #fff; box-shadow: 0 3px 8px rgba(0,0,34,.35);
+  color: rgb(68,68,102); font: 700 21px var(--cn-bold); letter-spacing: .08em;
+  animation: sp-start-pulse 1.6s ease-in-out infinite; }
+.story-player .sp-start::before { content: ""; width: 0; height: 0; border-style: solid;
+  border-width: 11px 0 11px 18px; border-color: transparent transparent transparent rgb(255,119,170); }
+.story-player .sp-start:hover { filter: brightness(1.04); }
+.story-player .sp-start:active { filter: brightness(.92); transform: scale(.98); }
+@keyframes sp-start-pulse { 50% { transform: scale(1.04); } }
+.story-player .sp-status { font-size: 13px; color: #8b93a7; min-height: 18px; }
+.story-player .sp-status:empty { display: none; }
+/* loading: a spinning ring + label */
+.story-player .sp-loading { display: flex; flex-direction: column; align-items: center; gap: 14px;
+  font: 700 15px var(--cn-bold); color: rgb(223,223,234); letter-spacing: .1em; }
+.story-player .sp-loading[hidden] { display: none; }
+.story-player .sp-loading::before { content: ""; width: 44px; height: 44px; border-radius: 50%;
+  border: 4px solid rgba(255,255,255,.18); border-top-color: rgb(255,119,170);
+  animation: sp-spin .8s linear infinite; }
+@keyframes sp-spin { to { transform: rotate(360deg); } }
+.story-player .sp-overlay[hidden], .story-player .sp-start[hidden] { display: none; }
+
+/* nothing picked yet: the prompt in the middle of the stage */
+.story-player .sp-pick { font: 700 20px var(--cn-bold); color: rgb(223,223,234); letter-spacing: .06em; text-align: center; }
+.story-player .sp-pick[hidden] { display: none; }
+.story-player .sp-pick .above { display: none; }
+.story-player.narrow .sp-pick .beside { display: none; }
+.story-player.narrow .sp-pick .above { display: inline; }
+
+/* Dialogue in other scripts: Rodin covers kana, JIS kanji and Latin only, so
+   Chinese and Korean text switch to a system face of the same weight. */
+.story-player[data-script="zh"] .dlg-name, .story-player[data-script="zh"] .sl-name { font-family: var(--cn-bold); font-weight: 700; }
+.story-player[data-script="zh"] .dlg-body, .story-player[data-script="zh"] .sl-body,
+.story-player[data-script="zh"] .fx-telop-text, .story-player[data-script="zh"] .fx-place-text,
+.story-player[data-script="zh"] .fst-text, .story-player[data-script="zh"] .fx-choice-btn { font-family: var(--cn-text); font-weight: 500; }
+.story-player[data-script="ko"] .dlg-name, .story-player[data-script="ko"] .sl-name { font-family: var(--ko-text); font-weight: 700; }
+.story-player[data-script="ko"] .dlg-body, .story-player[data-script="ko"] .sl-body,
+.story-player[data-script="ko"] .fx-telop-text, .story-player[data-script="ko"] .fx-place-text,
+.story-player[data-script="ko"] .fst-text, .story-player[data-script="ko"] .fx-choice-btn { font-family: var(--ko-text); font-weight: 500; }
+
+/* Narrow hosts: browser above, stage (zoomed to the width), log below. */
+.story-player.narrow .sp-row { flex-direction: column; align-items: stretch; }
+.story-player.narrow .story-browser { width: 100%; height: 420px; }
+.story-player.narrow .story-browser.collapsed { width: 100%; height: 44px; }
+.story-player.narrow .collapsed .sb-rail { top: 0; left: 52px; right: auto; width: auto; margin: 0; padding: 0; line-height: 44px; }
+.story-player.narrow .script-log { width: 100%; height: 420px; }

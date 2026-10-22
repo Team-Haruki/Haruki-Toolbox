@@ -1,5 +1,6 @@
 import type { Component } from "vue"
 import {
+  LucideBookOpen,
   LucideBox,
   LucideBot,
   LucideCalculator,
@@ -79,6 +80,7 @@ export const WEB_NAV_SECTIONS: NavSection[] = [
           { titleKey: "navigation.items.events", icon: LucideCalendarDays, url: "/events" },
           { titleKey: "navigation.items.gachas", icon: LucideGift, url: "/gachas" },
           { titleKey: "navigation.items.costumes", icon: LucideShirt, url: "/costumes" },
+          { titleKey: "navigation.items.storyPlayer", icon: LucideBookOpen, url: "/story" },
         ],
       },
       {

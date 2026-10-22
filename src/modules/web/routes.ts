@@ -9,6 +9,7 @@ import { cardsRoutes } from "@/modules/cards/routes"
 import { eventsRoutes } from "@/modules/events/routes"
 import { gachasRoutes } from "@/modules/gachas/routes"
 import { costumesRoutes } from "@/modules/costumes/routes"
+import { storyRoutes } from "@/modules/story/routes"
 import { playerProfileRoutes } from "@/modules/player-profile/routes"
 import { trainingRoutes } from "@/modules/training/routes"
 import { clientConfigGeneratorRoutes } from "@/modules/client-config-generator/routes"
@@ -29,6 +30,7 @@ export const webChildRoutes: RouteRecordRaw[] = [
     ...eventsRoutes,
     ...gachasRoutes,
     ...costumesRoutes,
+    ...storyRoutes,
     ...playerProfileRoutes,
     ...trainingRoutes,
     ...clientConfigGeneratorRoutes,

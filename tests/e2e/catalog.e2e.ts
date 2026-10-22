@@ -34,3 +34,11 @@ test("home navigation links into the sekai catalog", async ({ page }) => {
   await page.getByRole("link", { name: /^(歌曲一览|Music catalog)$/ }).first().click()
   await expect(page).toHaveURL(/\/music$/)
 })
+
+test("story player route renders with nothing picked", async ({ page }) => {
+  await page.goto("/story")
+
+  await expect(page.getByRole("heading", { name: /剧情播放|Story player/ })).toBeVisible()
+  await expect(page.getByRole("combobox", { name: /文本语言|Text language/ })).toBeVisible()
+  await expect(page).not.toHaveURL(/scenario=/)
+})
