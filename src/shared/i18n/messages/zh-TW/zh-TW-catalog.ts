@@ -367,7 +367,7 @@ export default {
     "title": "劇情播放",
     "description": "按遊戲的演出播放主線、活動、卡面、特別劇情與區域對話。畫面與語音來自日服，文本可選各服官方翻譯，日服獨有的劇情另有 AI 中文翻譯。",
     "textLang": "文本語言",
-    "langAutoResolved": "跟隨工具箱語言（{lang}）",
+    "langAutoResolved": "跟隨工具箱語言 · {lang}",
     "langAuto": "跟隨工具箱語言",
     "lang": {
       "ja": "日本語",
@@ -393,8 +393,8 @@ export default {
       "pickBelow": "請在下方選擇要播放的劇情",
       "tabBrowser": "劇情",
       "tabLog": "台詞",
-      "fullscreen": "全螢幕",
-      "exitFullscreen": "退出全螢幕"
+      "fullscreen": "全屏",
+      "exitFullscreen": "退出全屏"
     },
     "browser": {
       "tabs": {
@@ -415,7 +415,7 @@ export default {
       "secondPart": "後篇"
     },
     "menu": {
-      "fullscreen": "全螢幕",
+      "fullscreen": "全屏",
       "auto": "自動",
       "mute": "靜音",
       "fast": "快進",
