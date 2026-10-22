@@ -360,7 +360,7 @@
 .story-player[data-script="ko"] .sl-place { font-family: var(--ko-text); font-weight: 500; }
 
 /* The stage box holds the stage and the fullscreen toggle (unzoomed). */
-.story-player .sp-stage-box { position: relative; flex: none; }
+.story-player .sp-stage-box { position: relative; flex: none; overflow: hidden; }
 .story-player .sp-fs-btn { display: none; position: absolute; left: 10px; top: 10px; z-index: 11; width: 36px; height: 36px; padding: 7px;
   border: 0; border-radius: 50%; background: rgba(68,68,102,.72); color: #fff; cursor: pointer; opacity: .85;
   box-shadow: 0 1px 4px rgba(0,0,34,.35); }

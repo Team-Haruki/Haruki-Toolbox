@@ -301,15 +301,40 @@ export class StoryRuntime {
       this.root.style.setProperty("--sp-panel-zoom", String(panelZoom));
       this.root.style.setProperty("--sp-panel-height", `${Math.round(panelHeight)}px`);
     } else {
-      this.wrap.style.zoom = "1";
+      this.scaleStage(1);
       this.row.style.zoom = "1";
       const maxHeight = Math.max(360, innerHeight - this.row.getBoundingClientRect().top - 16);
       const z = Math.min(1, width / this.row.scrollWidth, maxHeight / this.row.scrollHeight);
       this.row.style.zoom = String(Math.max(0.3, z));
     }
-    this.wrap.style.zoom = String(stageZoom);
+    this.scaleStage(stageZoom);
     // keep the prompt / spinner / start button readable on a small stage
     this.overlay.style.zoom = String(stageZoom < 0.6 ? Math.min(2.6, 0.6 / stageZoom) : 1);
+  }
+
+  // Shrink the 1280x720 stage as a picture (transform), not with CSS zoom:
+  // zoom shrinks the font sizes themselves (the dialogue drops to ~7px on a
+  // phone), and mobile browsers with a minimum font size (WeChat / QQ in-app
+  // browsers, accessibility text scaling) push them back up, so the text came
+  // out oversized next to the stage. A transform keeps the game's proportions.
+  private scaleStage(z: number) {
+    const s = this.wrap.style;
+    s.zoom = "1";
+    if (z === 1) {
+      s.transform = "";
+      this.box.style.width = this.box.style.height = "";
+      return;
+    }
+    s.transform = `scale(${z})`;
+    if (this.isFullscreen()) {
+      // the box is the screen; flex centres the stage, scale about its centre
+      s.transformOrigin = "50% 50%";
+      this.box.style.width = this.box.style.height = "";
+    } else {
+      s.transformOrigin = "0 0";
+      this.box.style.width = `${this.wrap.offsetWidth * z}px`;
+      this.box.style.height = `${this.wrap.offsetHeight * z}px`;
+    }
   }
 
   private showPanel(panel: "browser" | "log") {
