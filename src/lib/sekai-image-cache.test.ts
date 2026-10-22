@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { isCachedSekaiImage } from "@/lib/sekai-image-cache"
 
 const CN = "https://sekai-assets.haruki.seiunx.com"
-const GLOBAL = "https://sekai-assets-bdf29c81.seiunx.net"
+const GLOBAL = "https://sekai-assets-haruki.seiunx.net"
 
 describe("isCachedSekaiImage", () => {
   test("caches catalog images on every asset host", () => {

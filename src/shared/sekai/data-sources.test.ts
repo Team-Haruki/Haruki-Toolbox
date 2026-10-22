@@ -156,7 +156,7 @@ describe("Sekai data source helpers", () => {
       "https://sekai-assets.haruki.seiunx.com/jp-assets/startapp/thumbnail/chara/res005_no001_after_training.png",
     )
     expect(resolveSekaiCardThumbnailUrl("jp", "res005_no001", false, "global")).toBe(
-      "https://sekai-assets-bdf29c81.seiunx.net/jp-assets/startapp/thumbnail/chara/res005_no001_normal.png",
+      "https://sekai-assets-haruki.seiunx.net/jp-assets/startapp/thumbnail/chara/res005_no001_normal.png",
     )
   })
 
@@ -171,7 +171,7 @@ describe("Sekai data source helpers", () => {
       "https://sekai-assets.haruki.seiunx.com/pjsk-3d-output/jp/",
     )
     expect(resolvePjsk3dRuntimeBaseUrl("jp", "global")).toBe(
-      "https://sekai-assets-bdf29c81.seiunx.net/pjsk-3d-output/jp/",
+      "https://sekai-assets-haruki.seiunx.net/pjsk-3d-output/jp/",
     )
     expect(resolvePjsk3dRuntimeBaseUrl("cn")).toBe(
       "https://sekai-assets.haruki.seiunx.com/pjsk-3d-output/cn/",
