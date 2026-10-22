@@ -1,7 +1,8 @@
-import { computed, ref } from "vue"
+import { computed, nextTick, ref } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
+import { describeError } from "@/lib/error-utils"
 import { useUserStore } from "@/shared/stores/user"
 import type { SocialPlatform } from "@/types/social-platform"
 import {
@@ -26,6 +27,10 @@ type DialogMode = "qq" | "other"
 
 const QQ_PLATFORM: SocialPlatform = "qq"
 
+/** DOM ids of the binding form fields; validation focuses them. */
+export const IM_BINDING_ACCOUNT_INPUT_ID = "im-binding-account"
+export const IM_BINDING_CODE_INPUT_ID = "im-binding-code"
+
 export function useIMBindingSettings() {
   const { t } = useI18n()
   const userStore = useUserStore()
@@ -45,6 +50,12 @@ export function useIMBindingSettings() {
   const platform = ref<SocialPlatform>(QQ_PLATFORM)
   const statusToken = ref<string | null>(null)
   const dialogMode = ref<DialogMode>("other")
+  /** Inline error under the account field (card); empty when valid. */
+  const accountError = ref("")
+  /** Inline error under the send/generate button (card) for server failures. */
+  const sendError = ref("")
+  /** Inline error inside the verification dialog; the dialog stays open. */
+  const dialogError = ref("")
   const {
     turnstileToken,
     onTurnstileVerify,
@@ -68,22 +79,38 @@ export function useIMBindingSettings() {
     return false
   }
 
+  function focusElement(id: string) {
+    void nextTick(() => {
+      document.getElementById(id)?.focus()
+    })
+  }
+
+  function clearAccountError() {
+    accountError.value = ""
+    sendError.value = ""
+  }
+
+  function clearDialogError() {
+    dialogError.value = ""
+  }
+
   async function sendQQVerificationCode(userId: string, accountId: string) {
     if (isTurnstileEnabled && !turnstileToken.value) {
-      toast.error(t("userSettings.imBinding.toast.sendFailedTitle"), {
-        description: t("userSettings.imBinding.toast.completeCaptchaDescription"),
-      })
+      sendError.value = t("userSettings.imBinding.toast.completeCaptchaDescription")
       triggerTurnstile()
       return
     }
 
     const challengeToken = isTurnstileEnabled ? (turnstileToken.value ?? undefined) : undefined
+    sendError.value = ""
     const response = await runAsyncAction(
       sending,
       () => sendQQMailVerificationCode(userId, accountId, challengeToken),
       {
         errorTitle: t("userSettings.imBinding.toast.sendFailedTitle"),
-        fallbackError: t("userSettings.imBinding.toast.sendFailedTitle"),
+        onError(error) {
+          sendError.value = describeError(error, t("userSettings.imBinding.toast.sendFailedFallback")).message
+        },
       }
     )
     resetTurnstileState()
@@ -94,33 +121,58 @@ export function useIMBindingSettings() {
     })
     dialogMode.value = "qq"
     qqInputCode.value = ""
+    dialogError.value = ""
     showCodeDialog.value = true
   }
 
   async function generateVerificationCode(userId: string, accountId: string) {
+    sendError.value = ""
     const response = await runAsyncAction(
       sending,
       () => generateSocialPlatformVerificationCode(userId, platform.value, accountId),
       {
         errorTitle: t("userSettings.imBinding.toast.generateFailedTitle"),
-        fallbackError: t("userSettings.imBinding.toast.generateFailedTitle"),
+        onError(error) {
+          sendError.value = describeError(error, t("userSettings.imBinding.toast.generateFailedFallback")).message
+        },
       }
     )
     if (!response) return
 
     const { statusToken: token, oneTimePassword } = extractGeneratedCodeResult(response)
     if (!token || !oneTimePassword) {
-      toast.error(t("userSettings.imBinding.toast.generateFailedTitle"), {
-        description: t("userSettings.imBinding.toast.incompleteResponseDescription"),
-      })
+      sendError.value = t("userSettings.imBinding.toast.incompleteResponseDescription")
       return
     }
 
     statusToken.value = token
     generatedCode.value = oneTimePassword
     dialogMode.value = "other"
+    dialogError.value = ""
     showCodeDialog.value = true
     toast.success(t("userSettings.imBinding.toast.codeGeneratedTitle"))
+  }
+
+  /** Validates the account field inline; returns the trimmed id or null. */
+  function validateAccount(accountId: string): string | null {
+    if (!accountId) {
+      accountError.value = platform.value === QQ_PLATFORM
+        ? t("userSettings.imBinding.toast.missingQQAccountDescription")
+        : t("userSettings.imBinding.toast.missingAccountDescription")
+      focusElement(IM_BINDING_ACCOUNT_INPUT_ID)
+      return null
+    }
+
+    const validationError = validateSocialAccountId(platform.value, accountId)
+    if (validationError) {
+      accountError.value = validationError === "qq-not-numeric"
+        ? t("userSettings.imBinding.toast.invalidQQAccountDescription")
+        : t("userSettings.imBinding.toast.invalidQQBotAccountDescription")
+      focusElement(IM_BINDING_ACCOUNT_INPUT_ID)
+      return null
+    }
+    accountError.value = ""
+    return accountId
   }
 
   async function handleVerify() {
@@ -129,36 +181,8 @@ export function useIMBindingSettings() {
     const userId = requireUserId()
     if (!userId) return
 
-    const accountId = account.value.trim()
-    if (!accountId) {
-      toast.error(
-        platform.value === QQ_PLATFORM
-          ? t("userSettings.imBinding.toast.sendFailedTitle")
-          : t("userSettings.imBinding.toast.generateFailedTitle"),
-        {
-          description:
-            platform.value === QQ_PLATFORM
-              ? t("userSettings.imBinding.toast.missingQQAccountDescription")
-              : t("userSettings.imBinding.toast.missingAccountDescription"),
-        }
-      )
-      return
-    }
-
-    const validationError = validateSocialAccountId(platform.value, accountId)
-    if (validationError) {
-      toast.error(
-        platform.value === QQ_PLATFORM
-          ? t("userSettings.imBinding.toast.sendFailedTitle")
-          : t("userSettings.imBinding.toast.generateFailedTitle"),
-        {
-          description: validationError === "qq-not-numeric"
-            ? t("userSettings.imBinding.toast.invalidQQAccountDescription")
-            : t("userSettings.imBinding.toast.invalidQQBotAccountDescription"),
-        }
-      )
-      return
-    }
+    const accountId = validateAccount(account.value.trim())
+    if (!accountId) return
 
     if (platform.value === QQ_PLATFORM) {
       await sendQQVerificationCode(userId, accountId)
@@ -177,9 +201,7 @@ export function useIMBindingSettings() {
 
     const accountId = currentBinding.userId.trim()
     if (!accountId) {
-      toast.error(t("userSettings.imBinding.toast.verifyFailedTitle"), {
-        description: t("userSettings.imBinding.toast.missingAccountDescription"),
-      })
+      sendError.value = t("userSettings.imBinding.toast.missingAccountDescription")
       return
     }
 
@@ -192,9 +214,7 @@ export function useIMBindingSettings() {
     }
 
     if (!isSocialPlatform(currentBinding.platform)) {
-      toast.error(t("userSettings.imBinding.toast.generateFailedTitle"), {
-        description: t("userSettings.imBinding.toast.missingAccountDescription"),
-      })
+      sendError.value = t("userSettings.imBinding.toast.missingAccountDescription")
       return
     }
 
@@ -205,33 +225,34 @@ export function useIMBindingSettings() {
   async function handleQQDialogVerify(userId: string) {
     const inputCode = qqInputCode.value.trim()
     if (!inputCode) {
-      toast.error(t("userSettings.imBinding.toast.verifyFailedTitle"), {
-        description: t("userSettings.imBinding.toast.inputQQCodeDescription"),
-      })
+      dialogError.value = t("userSettings.imBinding.toast.inputQQCodeDescription")
+      focusElement(IM_BINDING_CODE_INPUT_ID)
       return
     }
 
+    dialogError.value = ""
     const response = await runAsyncAction(
       verifying,
       () => verifyQQ(userId, account.value.trim(), inputCode),
       {
         errorTitle: t("userSettings.imBinding.toast.verifyFailedTitle"),
-        fallbackError: t("userSettings.imBinding.toast.verifyFailedTitle"),
+        onError(error) {
+          dialogError.value = describeError(error, t("userSettings.imBinding.toast.verifyFailedFallback")).message
+          focusElement(IM_BINDING_CODE_INPUT_ID)
+        },
       }
     )
     if (!response) return
 
     const updated = extractUpdatedSocial(response)
     if (!updated) {
-      toast.error(t("userSettings.imBinding.toast.verifyFailedTitle"), {
-        description: t("userSettings.imBinding.toast.incompleteResponseDescription"),
-      })
+      dialogError.value = t("userSettings.imBinding.toast.incompleteResponseDescription")
       return
     }
     userStore.setUser({ socialPlatformInfo: updated })
 
     toast.success(t("userSettings.imBinding.toast.verifySuccessTitle"), {
-      description: response?.message || t("userSettings.imBinding.toast.verifySuccessDefaultDescription"),
+      description: t("userSettings.imBinding.toast.verifySuccessDefaultDescription"),
     })
     showCodeDialog.value = false
     resetTurnstileState()
@@ -239,18 +260,19 @@ export function useIMBindingSettings() {
 
   async function handleStatusDialogVerify(userId: string) {
     if (!statusToken.value) {
-      toast.error(t("userSettings.imBinding.toast.verifyFailedTitle"), {
-        description: t("userSettings.imBinding.toast.missingStatusTokenDescription"),
-      })
+      dialogError.value = t("userSettings.imBinding.toast.missingStatusTokenDescription")
       return
     }
 
+    dialogError.value = ""
     const response = await runAsyncAction(
       verifying,
       () => getSocialPlatformVerificationStatus(userId, statusToken.value as string),
       {
         errorTitle: t("userSettings.imBinding.toast.verifyFailedTitle"),
-        fallbackError: t("userSettings.imBinding.toast.verifyFailedTitle"),
+        onError(error) {
+          dialogError.value = describeError(error, t("userSettings.imBinding.toast.verifyFailedFallback")).message
+        },
       }
     )
     if (!response) return
@@ -259,9 +281,7 @@ export function useIMBindingSettings() {
     const responseMessage = response?.message
 
     if (responseStatus === 400 && isNotVerifiedMessage(responseMessage)) {
-      toast.error(t("userSettings.imBinding.toast.notVerifiedTitle"), {
-        description: t("userSettings.imBinding.toast.notVerifiedDescription"),
-      })
+      dialogError.value = t("userSettings.imBinding.toast.notVerifiedDescription")
       return
     }
 
@@ -269,20 +289,15 @@ export function useIMBindingSettings() {
     if (updated) {
       userStore.setUser({ socialPlatformInfo: updated })
       toast.success(t("userSettings.imBinding.toast.verifySuccessTitle"), {
-        description: responseMessage || t("userSettings.imBinding.toast.verifySuccessDefaultDescription"),
+        description: t("userSettings.imBinding.toast.verifySuccessDefaultDescription"),
       })
       showCodeDialog.value = false
       return
     }
 
-    const description = responseMessage || t("userSettings.imBinding.toast.notVerifiedFallbackDescription")
-    if (isNotVerifiedMessage(responseMessage)) {
-      toast.error(t("userSettings.imBinding.toast.notVerifiedTitle"), {
-        description: t("userSettings.imBinding.toast.notVerifiedDescription"),
-      })
-    } else {
-      toast.error(t("userSettings.imBinding.toast.notVerifiedTitle"), { description })
-    }
+    dialogError.value = isNotVerifiedMessage(responseMessage)
+      ? t("userSettings.imBinding.toast.notVerifiedDescription")
+      : t("userSettings.imBinding.toast.notVerifiedFallbackDescription")
   }
 
   async function handleDialogVerify() {
@@ -299,6 +314,10 @@ export function useIMBindingSettings() {
     await handleStatusDialogVerify(userId)
   }
 
+  /**
+   * Removes the current social binding. Rejects on failure so the confirm
+   * dialog stays open with the reason; never toasts the failure itself.
+   */
   async function handleUnbind() {
     if (!ensureEmailVerified()) return
 
@@ -307,13 +326,13 @@ export function useIMBindingSettings() {
 
     const response = await runAsyncAction(clearing, () => clearSocialPlatformBinding(userId), {
       errorTitle: t("userSettings.common.actionFailedTitle"),
-      fallbackError: t("userSettings.common.actionFailedTitle"),
+      throwOnError: true,
     })
     if (!response) return
 
     userStore.setUser({ socialPlatformInfo: null })
     toast.success(t("userSettings.imBinding.toast.unboundSuccessTitle"), {
-      description: response?.message || t("userSettings.imBinding.toast.unboundSuccessDescription"),
+      description: t("userSettings.imBinding.toast.unboundSuccessDescription"),
     })
   }
 
@@ -329,6 +348,9 @@ export function useIMBindingSettings() {
     verifying,
     generatedCode,
     account,
+    accountError,
+    sendError,
+    dialogError,
     showCodeDialog,
     platform,
     statusToken,
@@ -336,6 +358,8 @@ export function useIMBindingSettings() {
     turnstileToken,
     onTurnstileVerify,
     onTurnstileInvalid,
+    clearAccountError,
+    clearDialogError,
     handleVerify,
     handleRetryCurrentVerification,
     handleDialogVerify,

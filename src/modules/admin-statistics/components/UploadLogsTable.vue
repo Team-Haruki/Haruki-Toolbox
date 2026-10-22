@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { RouterLink } from "vue-router"
-import { LucideCheckCircle, LucideChevronLeft, LucideChevronRight, LucideInbox, LucideInfo, LucideXCircle } from "lucide-vue-next"
+import { LucideCheckCircle, LucideInbox, LucideInfo, LucideXCircle } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -22,7 +22,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import AdminPagination from "@/modules/admin/components/AdminPagination.vue"
 import type { UploadLog } from "@/types/admin"
+import type { ErrorDescription } from "@/lib/error-utils"
 import { formatNumberCN } from "@/lib/number-format"
 import {
   resolveUploadAuthMethodLabel,
@@ -41,17 +44,23 @@ interface Props {
   serverLabel: (server?: string) => string
   dataTypeLabel: (type?: string) => string
   formatTime: (iso?: string) => string
+  /** A failed load; shown in place of the (empty) table with a retry. */
+  error?: ErrorDescription | null
+  pageSize?: number
   showPagination?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { error: null, pageSize: 20, showPagination: true })
 const { t } = useI18n()
-const shouldShowPagination = computed(() => props.showPagination !== false)
+const shouldShowPagination = computed(() => props.showPagination && !props.error)
 const showDetailDialog = ref(false)
 const selectedLog = ref<UploadLog | null>(null)
 const emit = defineEmits<{
   (event: "prev-page"): void
   (event: "next-page"): void
+  (event: "go-to-page", page: number): void
+  (event: "update:pageSize", pageSize: number): void
+  (event: "retry"): void
 }>()
 
 const fallback = computed(() => t("adminStatistics.common.fallback"))
@@ -129,6 +138,15 @@ const detailRows = computed(() => {
           <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
         </div>
       </template>
+      <template v-else-if="props.error">
+        <LoadErrorState
+          :title="t('adminStatistics.uploadLogs.toast.loadFailedTitle')"
+          :description="props.error.message"
+          :detail="props.error.detail"
+          :retrying="props.loading"
+          @retry="emit('retry')"
+        />
+      </template>
       <template v-else-if="props.logs.length === 0">
         <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
           <LucideInbox class="h-8 w-8 text-muted-foreground/60" />
@@ -146,8 +164,8 @@ const detailRows = computed(() => {
               <TableHead class="hidden lg:table-cell">{{ t("adminStatistics.uploadLogs.table.method") }}</TableHead>
               <TableHead class="hidden xl:table-cell">{{ t("adminStatistics.uploadLogs.table.dataType") }}</TableHead>
               <TableHead>
-                <span class="hidden xl:inline">{{ t("adminStatistics.uploadLogs.table.details") }}</span>
-                <span class="sr-only xl:hidden">{{ t("adminStatistics.uploadLogs.table.details") }}</span>
+                <!-- One header text: visible from xl, screen-reader only below. -->
+                <span class="sr-only xl:not-sr-only">{{ t("adminStatistics.uploadLogs.table.details") }}</span>
               </TableHead>
               <TableHead class="pr-6">{{ t("adminStatistics.uploadLogs.table.time") }}</TableHead>
             </TableRow>
@@ -245,36 +263,19 @@ const detailRows = computed(() => {
         </Table>
       </template>
     </CardContent>
-    <div
-      v-if="shouldShowPagination"
-      class="flex items-center justify-between gap-3 border-t px-4 py-3 sm:px-6"
-    >
-      <span class="text-sm text-muted-foreground">
-        {{ t("adminStatistics.uploadLogs.pagination.total", { total: formatNumberCN(props.total, '0') }) }}
-      </span>
-      <div class="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="props.page <= 1"
-          :title="t('adminStatistics.uploadLogs.pagination.prev')"
-          :aria-label="t('adminStatistics.uploadLogs.pagination.prev')"
-          @click="emit('prev-page')"
-        >
-          <LucideChevronLeft class="w-4 h-4" />
-        </Button>
-        <span class="text-sm tabular-nums">{{ props.page }} / {{ props.totalPages }}</span>
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="props.page >= props.totalPages"
-          :title="t('adminStatistics.uploadLogs.pagination.next')"
-          :aria-label="t('adminStatistics.uploadLogs.pagination.next')"
-          @click="emit('next-page')"
-        >
-          <LucideChevronRight class="w-4 h-4" />
-        </Button>
-      </div>
+    <div v-if="shouldShowPagination" class="border-t px-4 py-3 sm:px-6">
+      <AdminPagination
+        :total="props.total"
+        :page="props.page"
+        :page-size="props.pageSize"
+        :total-pages="props.totalPages"
+        :disabled="props.loading"
+        :total-label="t('adminStatistics.uploadLogs.pagination.total', { total: formatNumberCN(props.total, '0') })"
+        @update:page-size="emit('update:pageSize', $event)"
+        @prev-page="emit('prev-page')"
+        @next-page="emit('next-page')"
+        @go-to-page="emit('go-to-page', $event)"
+      />
     </div>
   </Card>
 

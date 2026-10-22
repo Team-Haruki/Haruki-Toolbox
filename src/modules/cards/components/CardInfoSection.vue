@@ -86,8 +86,9 @@ const characterRoute = computed(() => (props.character
         <span>{{ extras.flavorText }}</span>
       </CatalogInfoRow>
 
-      <CatalogInfoRow :label="t('catalog.detail.assetName')">
-        <span v-if="card.assetbundleName" class="font-mono text-xs text-muted-foreground">{{ card.assetbundleName }}</span>
+      <!-- Internal name: stays last and dimmed, it is for the curious only. -->
+      <CatalogInfoRow :label="t('catalog.detail.assetName')" muted>
+        <span v-if="card.assetbundleName" class="font-mono break-all">{{ card.assetbundleName }}</span>
       </CatalogInfoRow>
     </CatalogInfoList>
   </CatalogDetailSection>

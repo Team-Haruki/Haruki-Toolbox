@@ -18,10 +18,29 @@ export type CatalogResource<T> = {
   /** True during any load, including background refreshes that keep stale data visible. */
   refreshing: Ref<boolean>
   error: Ref<string | null>
-  /** Non-fatal: the remote version check failed and cached data is shown. */
-  warning: Ref<string | null>
+  /**
+   * Non-fatal: data is on screen but the region's last remote check failed
+   * (offline / CDN down), so it may lag behind the live game.
+   */
+  warning: ComputedRef<string | null>
   ready: ComputedRef<boolean>
   reload: () => Promise<void>
+}
+
+/**
+ * The warning a consumer should show for a resource: its own load warning
+ * when it has one, else the region's last refresh failure as long as data is
+ * on screen. Pure so the cache-first + background-refresh contract has a test.
+ */
+export function resolveCatalogResourceWarning(input: {
+  hasData: boolean
+  loadWarning: string | null
+  regionError: string | null
+}): string | null {
+  if (input.loadWarning) {
+    return input.loadWarning
+  }
+  return input.hasData && input.regionError ? input.regionError : null
 }
 
 /**
@@ -46,7 +65,14 @@ export function useCatalogResource<T>(
   const loading = ref(false)
   const refreshing = ref(false)
   const error = ref<string | null>(null)
-  const warning = ref<string | null>(null)
+  const loadWarning = ref<string | null>(null)
+  // Cache-first loads return before the remote check finishes; its outcome
+  // only shows up in the region state, hence the derived warning.
+  const warning = computed(() => resolveCatalogResourceWarning({
+    hasData: data.value != null,
+    loadWarning: loadWarning.value,
+    regionError: sekaiDataStore.regionStates[region.value]?.error ?? null,
+  }))
   let loadToken = 0
   let loadedRegion: SekaiRegion | null = data.value ? region.value : null
 
@@ -74,7 +100,7 @@ export function useCatalogResource<T>(
         return
       }
       data.value = result.value
-      warning.value = result.warning
+      loadWarning.value = result.warning
       loadedRegion = targetRegion
     } catch (loadError) {
       if (token !== loadToken) {

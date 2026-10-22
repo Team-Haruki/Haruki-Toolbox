@@ -80,7 +80,7 @@ const renderedSections = computed<RenderedSection[]>(() =>
             {{ t(`${ns}.contactLead`) }}
             <a
               :href="contactHref"
-              class="font-medium text-primary underline-offset-4 hover:underline"
+              class="inline-flex items-center py-2 font-medium text-primary underline-offset-4 hover:underline"
             >
               {{ contactEmail }}
             </a>

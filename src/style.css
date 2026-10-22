@@ -430,3 +430,25 @@ html.reduced-visual-effects .toaster {
 .page-fade-enter-active {
     transition: opacity 150ms ease-out;
 }
+
+/* Edge fade for horizontally scrolling rows (see useScrollEdges): the wrapper
+   is `relative`; the classes toggle a gradient over whichever edge still hides
+   content, so a scrolling tab strip or roster reads as scrollable. */
+.scroll-fade-left::before,
+.scroll-fade-right::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2rem;
+    pointer-events: none;
+    z-index: 1;
+}
+.scroll-fade-left::before {
+    left: 0;
+    background: linear-gradient(to right, var(--background), transparent);
+}
+.scroll-fade-right::after {
+    right: 0;
+    background: linear-gradient(to left, var(--background), transparent);
+}

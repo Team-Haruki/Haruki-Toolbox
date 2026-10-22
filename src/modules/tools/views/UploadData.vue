@@ -13,14 +13,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ExternalLink, FileUp, KeyRound, LucideInfo, Smartphone } from "lucide-vue-next"
+import { ExternalLink, FileUp, KeyRound, LucideInfo, MonitorSmartphone, Smartphone } from "lucide-vue-next"
 import { UploadDataFileTab, UploadDataInheritTab, UploadDataIOSTab } from "@/modules/tools/components"
 import { useUploadDataTool } from "@/modules/tools/composables/useUploadDataTool"
+import { useUserStore } from "@/shared/stores/user"
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
+
+const HARUKI_PROXY_TUTORIAL_URL = "https://neo.haruki.seiunx.com/haruki-proxy/"
 
 const {
   fileDataType,
@@ -28,35 +34,39 @@ const {
   inheritServer,
   inheritId,
   inheritPassword,
+  inheritFieldErrors,
   rememberInherit,
   isSubmittingFile,
   isSubmittingInherit,
   isInheritConfirmOpen,
   uploadProgress,
   uploadStatus,
+  selectedFileName,
   uploadAccounts,
   selectedAccount,
   selectedAccountKey,
   targetsLoading,
   targetsFailed,
   disabledReason,
+  disabledReasonKind,
   hasVerifiedQQ,
   isCNMySekaiForbidden,
   canSelectSuiteDataType,
   canSelectMySekaiDataType,
   loadUploadTargets,
   onFileChange,
+  clearInheritFieldError,
   setRememberInherit,
   submitFileUpload,
   requestInheritUpload,
   confirmInheritUpload,
 } = useUploadDataTool()
 
-// The iOS module tab is deep-linkable (`?tab=ios`) so the old /ios-modules
-// route and external tutorials keep working after the page merge.
-const TAB_VALUES = ["file", "inherit", "ios"] as const
+// Tabs are deep-linkable (`?tab=`): the old /ios-modules route and external
+// tutorials keep working. iOS is the recommended path and therefore the default.
+const TAB_VALUES = ["ios", "proxy", "inherit", "file"] as const
 type TabValue = (typeof TAB_VALUES)[number]
-const DEFAULT_TAB: TabValue = "inherit"
+const DEFAULT_TAB: TabValue = "ios"
 
 function normalizeTab(value: unknown): TabValue {
   return (TAB_VALUES as readonly string[]).includes(value as string) ? (value as TabValue) : DEFAULT_TAB
@@ -80,26 +90,85 @@ watch(
 )
 
 const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
-const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 text-center transition-colors hover:border-blue-200 hover:bg-blue-50 dark:hover:border-blue-900 dark:hover:bg-blue-950/40"
 </script>
 
 <template>
   <div class="w-full flex-1 flex flex-col items-center justify-center gap-3 px-0 py-4">
+    <!-- What this page is for, before any tab-specific warnings. -->
+    <Card class="w-full max-w-2xl">
+      <CardHeader class="pb-0">
+        <CardTitle class="text-base">{{ t("tools.uploadData.intro.title") }}</CardTitle>
+        <CardDescription class="leading-relaxed">{{ t("tools.uploadData.intro.description") }}</CardDescription>
+      </CardHeader>
+      <CardContent class="pt-3">
+        <div class="grid gap-2 sm:grid-cols-3">
+          <button type="button" :class="[noticeTileClass, 'transition-colors hover:bg-muted/40']" @click="activeTab = 'ios'">
+            <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.intro.iosPlatform") }}</span>
+            <span class="mt-0.5 block text-sm font-semibold">{{ t("tools.uploadData.intro.iosMethod") }}</span>
+          </button>
+          <a :href="HARUKI_PROXY_TUTORIAL_URL" target="_blank" rel="noopener noreferrer" :class="[noticeTileClass, 'transition-colors hover:bg-muted/40']">
+            <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.intro.proxyPlatform") }}</span>
+            <span class="mt-0.5 flex items-center justify-center gap-1 text-sm font-semibold">
+              {{ t("tools.uploadData.intro.proxyMethod") }}
+              <ExternalLink class="h-3.5 w-3.5" aria-hidden="true" />
+            </span>
+          </a>
+          <button type="button" :class="[noticeTileClass, 'transition-colors hover:bg-muted/40']" @click="activeTab = 'inherit'">
+            <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.intro.fallbackPlatform") }}</span>
+            <span class="mt-0.5 block text-sm font-semibold">{{ t("tools.uploadData.intro.fallbackMethod") }}</span>
+          </button>
+        </div>
+      </CardContent>
+    </Card>
+
     <Tabs v-model="activeTab" class="w-full max-w-2xl">
-      <TabsList class="grid w-full grid-cols-3">
-        <TabsTrigger value="inherit" class="flex items-center gap-2">
-          <KeyRound class="h-4 w-4" />
-          {{ t("tools.uploadData.tabs.inherit") }}
-        </TabsTrigger>
-        <TabsTrigger value="file" class="flex items-center gap-2">
-          <FileUp class="h-4 w-4" />
-          {{ t("tools.uploadData.tabs.file") }}
-        </TabsTrigger>
-        <TabsTrigger value="ios" class="flex items-center gap-2">
-          <Smartphone class="h-4 w-4" />
+      <TabsList class="grid h-auto w-full grid-cols-2 sm:grid-cols-4">
+        <TabsTrigger value="ios" class="flex min-h-9 items-center gap-1.5 whitespace-normal py-1.5 text-xs sm:text-sm">
+          <Smartphone class="h-4 w-4 shrink-0" />
           {{ t("tools.uploadData.tabs.ios") }}
         </TabsTrigger>
+        <TabsTrigger value="proxy" class="flex min-h-9 items-center gap-1.5 whitespace-normal py-1.5 text-xs sm:text-sm">
+          <MonitorSmartphone class="h-4 w-4 shrink-0" />
+          {{ t("tools.uploadData.tabs.proxy") }}
+        </TabsTrigger>
+        <TabsTrigger value="inherit" class="flex min-h-9 items-center gap-1.5 whitespace-normal py-1.5 text-xs sm:text-sm">
+          <KeyRound class="h-4 w-4 shrink-0" />
+          {{ t("tools.uploadData.tabs.inherit") }}
+        </TabsTrigger>
+        <TabsTrigger value="file" class="flex min-h-9 items-center gap-1.5 whitespace-normal py-1.5 text-xs sm:text-sm">
+          <FileUp class="h-4 w-4 shrink-0" />
+          {{ t("tools.uploadData.tabs.file") }}
+        </TabsTrigger>
       </TabsList>
+
+      <TabsContent value="ios">
+        <UploadDataIOSTab />
+      </TabsContent>
+
+      <TabsContent value="proxy">
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2">
+              <MonitorSmartphone class="h-6 w-6" />
+              {{ t("tools.uploadData.proxyTab.title") }}
+            </CardTitle>
+            <CardDescription>{{ t("tools.uploadData.proxyTab.description") }}</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-3">
+            <ol class="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+              <li>{{ t("tools.uploadData.proxyTab.steps.install") }}</li>
+              <li>{{ t("tools.uploadData.proxyTab.steps.bind") }}</li>
+              <li>{{ t("tools.uploadData.proxyTab.steps.run") }}</li>
+            </ol>
+            <Button as-child class="w-full sm:w-auto">
+              <a :href="HARUKI_PROXY_TUTORIAL_URL" target="_blank" rel="noopener noreferrer">
+                {{ t("tools.uploadData.proxyTab.tutorialButton") }}
+                <ExternalLink class="h-4 w-4" aria-hidden="true" />
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      </TabsContent>
 
       <TabsContent value="inherit">
         <UploadDataInheritTab
@@ -107,9 +176,11 @@ const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 te
           v-model:inherit-server="inheritServer"
           v-model:inherit-id="inheritId"
           v-model:inherit-password="inheritPassword"
+          :field-errors="inheritFieldErrors"
           :remember-inherit="rememberInherit"
           :is-submitting-inherit="isSubmittingInherit"
           :can-show-my-sekai-data-type="hasVerifiedQQ"
+          @clear-field-error="clearInheritFieldError"
           @update:remember-inherit="setRememberInherit"
           @submit="requestInheritUpload"
         />
@@ -121,12 +192,14 @@ const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 te
           v-model:selected-account-key="selectedAccountKey"
           :upload-accounts="uploadAccounts"
           :selected-account="selectedAccount"
+          :selected-file-name="selectedFileName"
           :targets-loading="targetsLoading"
           :targets-failed="targetsFailed"
           :can-show-my-sekai-data-type="hasVerifiedQQ"
           :can-select-suite-data-type="canSelectSuiteDataType"
           :can-select-my-sekai-data-type="canSelectMySekaiDataType"
           :disabled-reason="disabledReason"
+          :disabled-reason-kind="disabledReasonKind"
           :is-cn-my-sekai-forbidden="isCNMySekaiForbidden"
           :is-submitting-file="isSubmittingFile"
           :upload-progress="uploadProgress"
@@ -135,10 +208,6 @@ const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 te
           @refresh-targets="loadUploadTargets"
           @submit="submitFileUpload"
         />
-      </TabsContent>
-
-      <TabsContent value="ios">
-        <UploadDataIOSTab />
       </TabsContent>
     </Tabs>
 
@@ -159,33 +228,6 @@ const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 te
             <span class="mt-0.5 block text-sm font-semibold text-foreground">1023178678</span>
           </div>
         </div>
-
-        <div class="mt-2 border-t pt-2">
-          <div class="mb-2 text-center text-[11px] font-medium text-muted-foreground">
-            {{ t("tools.uploadData.tutorialNotice.title") }}
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <a href="https://neo.haruki.seiunx.com/haruki-proxy/" target="_blank" rel="noopener noreferrer" :class="tutorialLinkClass">
-              <span class="block text-[11px] font-medium text-muted-foreground">
-                {{ t("tools.uploadData.tutorialNotice.androidProxy.platform") }}
-              </span>
-              <span class="mt-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-foreground transition-colors group-hover:text-blue-700 dark:group-hover:text-blue-300">
-                {{ t("tools.uploadData.tutorialNotice.androidProxy.linkText") }}
-                <ExternalLink class="h-3.5 w-3.5" />
-              </span>
-            </a>
-
-            <button type="button" :class="tutorialLinkClass" @click="activeTab = 'ios'">
-              <span class="block text-[11px] font-medium text-muted-foreground">
-                {{ t("tools.uploadData.tutorialNotice.iosModule.platform") }}
-              </span>
-              <span class="mt-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-foreground transition-colors group-hover:text-blue-700 dark:group-hover:text-blue-300">
-                {{ t("tools.uploadData.tutorialNotice.iosModule.linkText") }}
-              </span>
-            </button>
-          </div>
-        </div>
       </AlertDescription>
     </Alert>
 
@@ -199,7 +241,11 @@ const tutorialLinkClass = "group rounded-md border bg-background/70 px-3 py-2 te
                 {{ t("tools.uploadData.inheritTab.confirmDialog.dataTypePrefix") }}
                 <strong class="font-semibold text-foreground">{{ t(`tools.uploadData.dataTypes.${inheritDataType}`) }}</strong>
               </p>
-              <p v-if="inheritDataType === 'mysekai'" class="rounded-md border bg-muted/40 p-3 text-foreground">
+              <!-- Only when the prerequisites are actually missing. -->
+              <p v-if="!userStore.isLoggedIn" class="rounded-md border bg-muted/40 p-3 text-foreground">
+                {{ t("tools.uploadData.inheritTab.confirmDialog.loginNotice") }}
+              </p>
+              <p v-else-if="inheritDataType === 'mysekai' && !hasVerifiedQQ" class="rounded-md border bg-muted/40 p-3 text-foreground">
                 {{ t("tools.uploadData.inheritTab.confirmDialog.mysekaiNotice") }}
               </p>
             </div>

@@ -31,13 +31,17 @@ export type MusicCatalogList = {
   levelBounds: ComputedRef<{ min: number; max: number } | null>
   /** jp ships no `categories`; the MV filter hides itself when false. */
   hasCategories: ComputedRef<boolean>
+  /** The characters index has data (its ids can be resolved, or found missing). */
+  charactersReady: ComputedRef<boolean>
   /** First load of the song index (no entries yet). */
   loading: ComputedRef<boolean>
   /** Any of the backing resources is (re)loading. */
   refreshing: ComputedRef<boolean>
   error: Ref<string | null>
-  warning: Ref<string | null>
+  /** Data is on screen but the last remote refresh failed (offline notice). */
+  warning: ComputedRef<string | null>
   ready: ComputedRef<boolean>
+  /** Kept for `useMusicLibraryList` (deck-recommend song picker). */
   regionState: ComputedRef<ReturnType<typeof useSekaiDataStore>["regionStates"][SekaiRegion]>
   reload: () => Promise<void>
 }
@@ -72,6 +76,7 @@ export function useMusicCatalogList(region: Ref<SekaiRegion>): MusicCatalogList 
     yearOptions: computed(() => listMusicYearOptions(entries.value)),
     levelBounds: computed(() => resolveMusicLevelBounds(entries.value)),
     hasCategories: computed(() => musics.data.value?.hasCategories ?? false),
+    charactersReady: computed(() => characters.data.value != null),
     loading: computed(() => musics.loading.value),
     refreshing: computed(() => resources.some((resource) => resource.refreshing.value)),
     error: musics.error,

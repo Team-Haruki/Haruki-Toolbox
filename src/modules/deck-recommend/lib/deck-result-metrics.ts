@@ -364,6 +364,15 @@ export function recommendElapsedTimingLabel(
     : t("deckRecommend.result.sequentialRecommendElapsed")
 }
 
+/** Engine timings in seconds with one decimal (sub-100ms steps keep two), e.g. 1234 → "1.2". */
+export function formatElapsedSeconds(ms: number): string {
+  const seconds = ms / 1000
+  if (seconds < 0.1) {
+    return seconds.toFixed(2)
+  }
+  return seconds.toFixed(1)
+}
+
 export function cardDetailTitle(cardView: DeckResultCardView): string {
   const cardTitle = cardView.thumbnail.title ?? `#${cardView.card.card_id}`
   const characterName = cardView.masterCard?.characterName

@@ -4,11 +4,16 @@ export default {
   "uploadedGameData": {
     "missingTitle": "尚未上传游戏数据",
     "missing": {
-      "suite": "该游戏账号尚未上传 Suite 数据，请先前往数据上传页完成上传，再回来刷新。",
-      "mysekai": "该游戏账号尚未上传 MySekai 数据，请先前往数据上传页完成上传，再回来刷新。"
+      "suite": "该游戏账号还没有上传过游戏数据（Suite，即账号完整数据），请先到「数据上传」页上传，再回来点刷新。",
+      "mysekai": "该游戏账号还没有上传过烤森数据（MySekai），请先到「数据上传」页上传，再回来点刷新。",
+      "profile": "还没有这个游戏账号的数据，暂时无法读取实时资料。请先到「数据上传」页上传一次游戏数据，再回来点刷新。"
     },
-    "missingGranted": "该账号的所有者尚未上传所需游戏数据，请联系所有者上传；如已获得数据上传授权，也可以前往数据上传页上传。",
+    "missingGranted": "该账号的主人还没有上传游戏数据。请联系对方上传；如果对方已允许你代传，你也可以在「数据上传」页上传。",
     "uploadAction": "前往数据上传页",
+    "uploadedAt": "数据上传时间：{time}",
+    "grantLapsed": "该账号的授权已过期或被撤销，请联系授权方重新授权。",
+    "refreshUpToDate": "数据已是最新",
+    "refreshUpdated": "已更新到 {time}",
     "missingAccounts": "有 {count} 个绑定账号尚未上传游戏数据，请先前往数据上传页完成上传。",
     "otherFailures": "另有 {count} 个账号读取失败，请稍后重试。"
   },
@@ -19,16 +24,61 @@ export default {
     "save": "保存",
     "reset": "重置",
     "cancel": "取消",
+    "confirm": "确认",
     "close": "关闭",
     "back": "返回",
     "tip": "提示",
-    "actionFailed": "操作失败",
+    "actionFailed": "操作失败，请稍后重试",
     "postSuccessWarningTitle": "操作成功，但有后续异常",
     "postSuccessWarningDescription": "后续刷新失败，如页面数据未更新请手动刷新。",
     "guest": "未登录",
     "accountIndex": "账号 {index}",
-    "apiResponse": "API响应",
-    "missingUpdatedData": "{context}缺少 updatedData"
+    "apiResponse": "请求失败",
+    "missingUpdatedData": "{context}：服务器返回的数据不完整，请刷新后重试。",
+    "selectDateTime": "请选择时间"
+  },
+  "backendMessages": {
+    "notAuthenticated": "你还没有登录，或登录状态已过期。请重新登录后再试。",
+    "uploadNotAllowed": "当前账号没有向这个游戏账号上传数据的权限。请使用绑定了该游戏账号的账号上传，或请账号所有者授予你上传权限。",
+    "writeGrantExpired": "账号所有者授予你的上传权限已过期或被撤销。请联系所有者重新授权，或改为上传自己绑定的游戏账号。",
+    "bindingAccessDenied": "你没有访问这个游戏账号数据的权限。如果是他人授权的账号，授权可能已过期或被撤销，请联系授权方重新授权。",
+    "invalidServer": "选择的游戏服务器无效。请重新选择服务器后再试。",
+    "uploadProcessFailed": "上传的数据无法处理。请确认文件是完整、未修改的抓包数据，然后重新上传。",
+    "mysekaiRetrieveFailed": "无法获取烤森数据（MySekai），可能是这个游戏账号还没有完成烤森（MySekai）教程。请在游戏里完成教程后再试。",
+    "suiteRetrieveFailed": "获取游戏数据时发生了未知错误。请稍后重试；如果持续失败，请提交工单反馈。",
+    "gameDataRetrieveFailed": "无法从游戏服务器获取数据。请确认引继码和引继密码正确且未过期，稍后再试。",
+    "verificationCodeMissing": "游戏个性签名里没有找到验证码。请确认已把整段验证码粘贴进个性签名并保存，退回游戏主页后再试。",
+    "verificationCodeMismatch": "游戏个性签名里的验证码与本次生成的不一致。请把最新生成的验证码完整粘贴进个性签名并保存，退回游戏主页后再试。",
+    "verificationCodeExpired": "验证码已过期或不存在。请重新生成验证码后再试。",
+    "verificationTooManyAttempts": "验证尝试次数过多。请重新生成一个新的验证码后再试。",
+    "gameAccountNotFound": "没有找到这个游戏账号。请检查选择的服务器和玩家 ID 是否正确。",
+    "gameServerUnavailable": "游戏服务器暂时无法访问，可能正在维护。请稍后再试。",
+    "accountBoundByAnotherUser": "这个游戏账号已被其他用户绑定。如果这是你的账号，请提交工单申请处理。",
+    "accountBoundByBannedUser": "这个游戏账号被一个已封禁的用户绑定。如果这是你的账号，请提交工单申请处理。",
+    "bindingNotVerified": "这个游戏账号的绑定还没有完成验证。请先在游戏账号管理页完成验证。",
+    "bindingLocked": "这个绑定已被管理员锁定，暂时无法修改。如有疑问请提交工单。",
+    "granteeNotFound": "没有找到要授权的用户。请检查对方的工具箱用户 ID 是否正确。",
+    "grantToSelf": "不能给自己授权。请填写其他用户的工具箱用户 ID。",
+    "expiresAtNotFuture": "到期时间必须晚于当前时间。请重新选择到期时间。",
+    "granteeBanned": "要授权的用户已被封禁，无法授权。",
+    "qqBindingExists": "当前账号已经绑定了 QQ。如需更换，请先解除现有绑定。",
+    "emailVerificationRequired": "请先完成邮箱验证，再绑定社交平台账号。",
+    "codeInvalidOrExpired": "验证码无效或已过期。请重新获取验证码后再试。",
+    "codeTooManyAttempts": "验证尝试次数过多。请重新获取验证码后再试。",
+    "ticketClosed": "这个工单已经关闭，无法继续回复。如有新问题请新建工单。",
+    "ticketNotFound": "没有找到这个工单，可能已被删除。请返回工单列表刷新。",
+    "ticketQuotaExceeded": "你的工单数量已达上限。请等待现有工单处理完毕后再新建。",
+    "messageLength": "消息内容需要在 1 到 4000 个字符之间。请调整后重新发送。",
+    "captchaFailed": "人机验证未通过。请重新完成验证后再试。",
+    "invalidVerificationCode": "验证码不正确。请检查后重新输入。",
+    "reauthRequired": "需要重新验证密码后才能继续。",
+    "consentChallengeExpired": "授权请求已过期或无效。请回到发起授权的应用重新开始。",
+    "loginChallengeRequired": "缺少授权参数。请回到发起授权的应用重新开始。",
+    "inheritFailed": "引继失败。请确认引继码和引继密码正确，并在游戏内重新生成引继码后再试。",
+    "inheritFailedWithCode": "引继失败（游戏服务器返回：{code}）。请确认引继码和引继密码正确，并在游戏内重新生成引继码后再试。",
+    "suiteParseFailed": "游戏数据解析失败。请确认上传的是完整、未修改的抓包数据；如果持续失败，请提交工单反馈。",
+    "playerDataNotFound": "没有找到这个玩家的数据。请先上传游戏数据后再试。",
+    "otpIncorrect": "一次性密码不正确。请检查后重新输入。"
   },
   "turnstile": {
     "loading": "正在加载验证码组件...",
@@ -38,8 +88,71 @@ export default {
   "auth": {
     "common": {
       "cancel": "取消",
-      "loadingFlow": "正在加载身份流程...",
-      "restartFlow": "重新开始流程"
+      "loadingFlow": "正在加载登录页面…",
+      "restartFlow": "重新开始",
+      "loadFlowFailed": "{flow}已过期或暂时无法连接，请点击下方按钮重新开始。",
+      "serviceUnavailable": "登录服务暂时无法连接，请稍后重试（错误码 {status}）。",
+      "flowNames": {
+        "login": "登录页面",
+        "registration": "注册页面",
+        "recovery": "找回密码页面",
+        "verification": "邮箱验证页面",
+        "settings": "账号安全设置页面"
+      }
+    },
+    "kratos": {
+      "labels": {
+        "code": "验证码",
+        "codePlaceholder": "请输入收到的验证码",
+        "totpCode": "动态验证码",
+        "totpCodePlaceholder": "请输入验证器中的 6 位数字",
+        "lookupSecret": "备用恢复码",
+        "savePassword": "保存密码",
+        "continueWithCode": "通过邮箱验证码登录",
+        "sendLink": "发送链接",
+        "verify": "验证",
+        "submit": "提交"
+      },
+      "messages": {
+        "reauthConfirm": "为了保护账号安全，请重新输入密码确认是你本人在操作。",
+        "mfaRequired": "请完成第二步验证后继续。",
+        "settingsSaved": "设置已保存。",
+        "recoverySucceeded": "账号已成功找回。请立即设置一个新密码。",
+        "recoveryLinkSent": "找回密码邮件已发送到你填写的邮箱。请查收并点击邮件中的链接；如果没有收到，请检查垃圾邮件并确认邮箱拼写正确。",
+        "recoveryCodeSent": "找回密码验证码已发送到你填写的邮箱。请查收并在下方输入；如果没有收到，请检查垃圾邮件并确认邮箱拼写正确。",
+        "verificationLinkSent": "验证邮件已发送到你填写的邮箱。请点击邮件中的链接完成验证；如果没有收到，请检查垃圾邮件。",
+        "verificationSucceeded": "邮箱验证成功。",
+        "verificationCodeSent": "验证码已发送到你填写的邮箱。请查收并在下方输入；如果没有收到，请检查垃圾邮件。",
+        "invalidValue": "填写的内容无效，请检查后重新填写。",
+        "requiredField": "请填写这一项。",
+        "tooShort": "内容太短，请至少输入 {min_length} 个字符。",
+        "invalidFormat": "格式不正确，请检查后重新填写。",
+        "passwordPolicy": "这个密码不符合安全要求，请换一个更长、更复杂且没有在数据泄露中出现过的密码。",
+        "invalidCredentials": "邮箱或密码不正确。请检查后重试；忘记密码可以在下方找回。",
+        "accountExists": "这个邮箱已经注册过账号。请直接登录，或使用“忘记密码”找回。",
+        "totpInvalid": "验证器中的验证码不正确，请输入最新的验证码。",
+        "identifierMissing": "请填写邮箱或用户名。",
+        "addressNotVerified": "这个邮箱还没有完成验证。请先查收验证邮件并完成验证。",
+        "noTotpDevice": "当前账号还没有设置验证器。",
+        "lookupSecretUsed": "这个备用恢复码已经使用过了，请换一个。",
+        "noLookupSecret": "当前账号还没有设置备用恢复码。",
+        "lookupSecretInvalid": "备用恢复码不正确，请检查后重新输入。",
+        "tooLong": "内容太长，请不要超过 {max_length} 个字符。",
+        "passwordBreached": "这个密码曾在已知的数据泄露中出现，请换一个密码。",
+        "passwordTooSimilar": "密码与邮箱或用户名过于相似，请换一个密码。",
+        "passwordTooShort": "密码太短，请至少输入 {min_length} 个字符。",
+        "passwordTooLong": "密码太长，请不要超过 {max_length} 个字符。",
+        "accountNotActive": "这个账号目前无法使用。如有疑问请联系管理员。",
+        "captchaFailed": "人机验证未通过，请重新完成验证。",
+        "flowExpired": "页面已过期，请点击下方按钮重新开始。",
+        "loginAlreadyCompleted": "这次登录已经完成，请刷新页面。",
+        "loginCodeInvalid": "登录验证码无效或已使用，请重新获取。",
+        "recoveryTokenInvalid": "找回密码链接无效或已使用，请重新发起找回密码。",
+        "recoveryCodeInvalid": "找回密码验证码无效或已使用，请重新获取。",
+        "verificationTokenInvalid": "验证链接无效或已使用，请重新发送验证邮件。",
+        "verificationCodeInvalid": "验证码无效或已使用，请重新获取。",
+        "systemError": "登录服务发生了内部错误，请稍后重试。"
+      }
     },
     "toast": {
       "networkError": "网络错误，请检查连接",
@@ -47,7 +160,7 @@ export default {
       "accountBannedTitle": "账号已被封禁",
       "permissionDenied": "权限不足，请检查账号状态",
       "tryLater": "请稍后再试",
-      "logoutSuccessTitle": "注销成功",
+      "logoutSuccessTitle": "已退出登录",
       "invalidReturnToTitle": "登录流程已重置",
       "invalidReturnToDescription": "检测到异常跳转目标，已为您重新发起安全登录流程。",
       "invalidRegistrationReturnToTitle": "注册流程已重置",
@@ -62,17 +175,17 @@ export default {
       "passwordPlaceholder": "请输入您的密码",
       "forgotPassword": "忘记密码？",
       "submit": "登录",
-      "noAccount": "还没有帐号？",
+      "noAccount": "还没有账号？",
       "registerLink": "注册",
-      "resetDialog": {
-        "title": "重置密码",
-        "description": "请输入您的邮箱地址以重置密码",
-        "sendResetEmail": "发送重置邮件"
+      "reasons": {
+        "authRequired": "需要登录后才能访问该页面，登录后会自动返回。",
+        "adminRequired": "该页面需要管理员账号登录，登录后会自动返回。",
+        "sessionExpired": "登录状态已过期，请重新登录，登录后会自动返回。"
       },
       "toast": {
         "enterEmail": "请输入邮箱地址",
         "completeCaptcha": "请先完成人机验证",
-        "completeLoginCaptcha": "请先完成验证码验证",
+        "completeLoginCaptcha": "请先完成人机验证",
         "resetEmailSentTitle": "重置密码邮件已发送",
         "resetEmailSentDescription": "邮件已发送到 {email}",
         "resetFailedTitle": "重置密码失败",
@@ -95,28 +208,7 @@ export default {
       "sendCode": "发送验证码",
       "submit": "注册",
       "hasAccount": "已有账号？",
-      "goLogin": "去登录",
-      "sendCodeDialog": {
-        "title": "发送邮件前人机验证",
-        "description": "请完成人机验证以发送您的注册邮件",
-        "confirmSend": "确认发送"
-      },
-      "toast": {
-        "invalidEmail": "请输入有效的邮箱地址",
-        "completeCaptcha": "请先完成人机验证",
-        "completeRegisterCaptcha": "请先完成验证码验证",
-        "codeSentTitle": "邮件已发送",
-        "codeSentDescription": "邮件已发送到 {email}",
-        "sendCodeFailedTitle": "发送验证码失败",
-        "sendCodeFailedDescription": "发送失败",
-        "registerFailedTitle": "注册失败",
-        "registerFailedDescription": "注册失败",
-        "incompleteInfo": "请完整填写注册信息",
-        "passwordMinLength": "密码长度至少为{min}位", // NOSONAR -- translation key, not a credential
-        "emailVerificationRequired": "请先为当前邮箱发送验证码",
-        "registerSuccessTitle": "注册成功",
-        "registerSuccessDescription": "欢迎来到Haruki工具箱"
-      }
+      "goLogin": "去登录"
     },
     "resetPassword": {
       "title": "重置密码",
@@ -126,17 +218,7 @@ export default {
       "newPasswordPlaceholder": "请输入新密码",
       "confirmPasswordLabel": "确认密码",
       "confirmPasswordPlaceholder": "请再次输入新密码",
-      "submit": "确认重置",
-      "toast": {
-        "invalidLink": "重置链接无效，请重新发起找回密码流程",
-        "incompleteInfo": "请输入完整信息",
-        "passwordMismatch": "两次密码输入不一致", // NOSONAR -- translation key, not a credential
-        "passwordMinLength": "密码长度至少为{min}位", // NOSONAR -- translation key, not a credential
-        "resetSuccessTitle": "密码重置成功",
-        "resetSuccessDescription": "请重新登录",
-        "resetFailedTitle": "重置失败",
-        "resetFailedDescription": "重置失败"
-      }
+      "submit": "确认重置"
     },
     "verification": {
       "title": "验证邮箱",
@@ -144,32 +226,44 @@ export default {
       "submit": "提交验证",
       "continue": "继续"
     },
+    "validation": {
+      "required": "请填写此项"
+    },
+    "password": {
+      "show": "显示密码",
+      "hide": "隐藏密码"
+    },
     "error": {
-      "title": "身份流程异常",
-      "description": "身份服务返回了错误信息，请根据提示重新发起登录或注册流程。",
+      "title": "登录服务出现问题",
+      "description": "登录服务返回了错误，请返回登录页重新开始；如果多次出现，请稍后再试。",
       "retry": "重新加载",
       "backToLogin": "返回登录",
-      "missingIdDescription": "缺少错误 ID，无法查询身份服务的具体错误信息。",
-      "loadFailedDescription": "加载身份错误详情失败，请稍后重试。",
-      "fallbackDescription": "身份流程发生异常，请重新开始流程。",
+      "missingIdDescription": "链接里缺少错误编号，无法查询具体原因。请返回登录页重新开始。",
+      "loadFailedDescription": "无法读取错误详情，请检查网络后重试。",
+      "fallbackDescription": "登录服务暂时无法完成这次操作，请返回登录页重新开始。",
       "errorIdLabel": "错误 ID",
       "statusCodeLabel": "状态码",
       "detailsLabel": "详细信息"
     }
   },
+  "sidebar": {
+    "toggle": "切换侧边栏",
+    "title": "导航菜单",
+    "description": "站点导航菜单。"
+  },
   "sidebarUser": {
     "guestInitial": "未",
     "guestName": "未登录",
-    "accountSettings": "帐号设置",
-    "identitySettings": "用户身份设置",
+    "accountSettings": "账号设置",
+    "identitySettings": "登录与安全",
     "gameAccountManagement": "游戏账号管理",
     "harukiBotAuthorization": "HarukiBot数据授权",
-    "oauthAuthorizations": "OAuth 授权管理",
-    "logout": "注销",
+    "oauthAuthorizations": "已授权的应用",
+    "logout": "退出登录",
     "register": "注册",
     "login": "登录",
-    "copyToolboxId": "复制 Toolbox 用户 ID",
-    "toolboxIdCopied": "已复制 Toolbox 用户 ID",
+    "copyToolboxId": "复制工具箱用户 ID",
+    "toolboxIdCopied": "已复制工具箱用户 ID",
     "copyFailed": "复制失败"
   },
   "home": {
@@ -190,7 +284,16 @@ export default {
       "title": "我的账号",
       "dataUpdatedAt": "数据上传于 {time}",
       "noUploadData": "该账号还没有上传过数据",
-      "guestDescription": "登录后绑定游戏账号，即可上传数据、查看档案与个性化功能。"
+      "guestDescription": "登录后绑定游戏账号，即可上传数据、查看档案与个性化功能。",
+      "onboarding": {
+        "title": "三步开始",
+        "step1": "注册并登录",
+        "step2": "在「{link}」绑定并验证你的游戏账号",
+        "step2Link": "游戏账号管理",
+        "step3": "用 iOS 模块 / HarukiProxy {link}一次游戏数据",
+        "step3Link": "上传",
+        "outro": "之后就能看卡牌、活动记录、组卡等。"
+      }
     },
     "externalLinks": "站外链接",
     "harukiBotDocs": "HarukiBot NEO帮助文档",
@@ -200,7 +303,7 @@ export default {
     "termsOfService": "服务条款",
     "currentEvent": {
       "title": "当前活动（{region}）",
-      "optInHint": "加载 Sekai 主数据后可展示当前进行中的活动。",
+      "optInHint": "加载游戏数据库后可展示当前进行中的活动。",
       "load": "加载当前活动",
       "none": "当前没有进行中的活动。",
       "error": "活动信息加载失败。",
@@ -233,7 +336,6 @@ export default {
     "description": "查看账号的卡牌收集进度",
     "entryLink": "我的卡牌",
     "noAccountHint": "绑定并选择一个游戏账号后即可查看我的卡牌。",
-    "dataAsOf": "数据更新于 {time}",
     "refresh": "刷新",
     "loadError": "卡牌数据加载失败",
     "retry": "重试",
@@ -266,22 +368,11 @@ export default {
       "owned": "仅已拥有",
       "missing": "仅未拥有"
     },
-    "filter": {
-      "attrs": "属性",
-      "rarity": "稀有度"
-    },
     "stats": {
       "title": "收集统计",
       "byUnit": "按团体",
       "byAttr": "按属性",
       "byRarity": "按星级",
-      "rarities": {
-        "rarity_1": "1星",
-        "rarity_2": "2星",
-        "rarity_3": "3星",
-        "rarity_4": "4星",
-        "rarity_birthday": "生日"
-      },
       "ownedOfTotal": "{owned}/{total}",
       "percent": "{percent}%"
     },
@@ -293,15 +384,17 @@ export default {
     "title": "活动记录",
     "description": "查看账号的活动参与记录",
     "idle": "请选择一个游戏账号以查看活动记录。",
-    "loading": "正在加载账号快照与活动数据...",
+    "loading": "正在加载上传的数据与活动数据…",
     "missingUserData": "当前账号还没有上传游戏数据，请先前往上传数据页面完成上传。",
     "missingGrantedData": "该账号的所有者还没有上传游戏数据，暂时无法查看。",
     "uploadData": "前往上传数据",
-    "noData": "该账号的快照中暂无活动记录。",
+    "noData": "你上传的数据里还没有活动记录。",
+    "noMatches": "当前筛选条件下没有活动记录。",
+    "hiddenByTime": "最近一年没有活动记录，共 {count} 场更早的记录",
+    "showAll": "查看全部",
     "loadFailed": "活动记录加载失败。",
     "retry": "重试",
     "refresh": "刷新",
-    "dataAsOf": "数据快照时间：{time}",
     "summary": {
       "bestRank": "最佳排名",
       "ranked": "有排名场次",
@@ -354,7 +447,7 @@ export default {
     "rewards": {
       "title": "可获取资源",
       "hint": "统计尚未领取的歌曲成就奖励（评分达标 + 各难度连击里程碑），任意模式达成均计入。",
-      "unavailable": "当前数据快照不包含成就领取记录（userMusicAchievements），无法统计可获取资源。",
+      "unavailable": "你上传的数据里没有歌曲成就领取记录，无法统计可领取奖励。请重新上传一次完整数据后再试。",
       "jewel": "水晶",
       "coin": "金币",
       "shard": "碎片",
@@ -363,7 +456,7 @@ export default {
     },
     "scoreRank": {
       "title": "评分奖励明细",
-      "description": "评分是递进的（C → B → A → S），每首歌只有一个当前评分，达到更高评分即同时取得较低评分的奖励；任意模式（单人、多人等）达成均计入。当前评分以数据快照中的成就记录为准。",
+      "description": "评分是递进的（C → B → A → S），每首歌只有一个当前评分，达到更高评分即同时取得较低评分的奖励；任意模式（单人、多人等）达成均计入。当前评分以你上传的数据中的成就记录为准。",
       "summary": "已获得：{obtained} · 可获取：{remaining} · 已拿满 {complete} / {total} 首",
       "none": "无",
       "filter": {
@@ -387,21 +480,19 @@ export default {
       "empty": "没有符合条件的歌曲。",
       "showMore": "显示更多（还有 {count} 首）"
     },
-    "dataAsOf": "数据快照时间：{time}",
     "refresh": "刷新",
     "retry": "重试",
     "noAccount": "请选择或绑定游戏账号以查看打歌进度。",
-    "loading": "正在加载账号快照与乐曲数据...",
+    "loading": "正在加载上传的数据与乐曲数据…",
     "missingUserData": "当前账号还没有上传游戏数据，请先前往上传数据页面完成上传。",
     "missingGrantedData": "该账号的所有者还没有上传游戏数据，暂时无法查看。",
     "uploadData": "前往上传数据",
-    "noResults": "该数据快照中暂无歌曲游玩记录，所有歌曲将显示为未游玩。",
-    "suiteError": "加载账号快照数据失败。",
-    "masterError": "加载乐曲数据失败：{message}",
-    "downloading": "正在下载 Masterdata（{progress}%）...",
+    "noResults": "你上传的数据里还没有歌曲游玩记录，所有歌曲将显示为未游玩。",
+    "suiteError": "打歌进度加载失败。",
+    "downloading": "正在下载游戏数据库（{progress}%）...",
     "overallTitle": "全难度概览",
     "levelsTitle": "按定数统计",
-    "noSongs": "所选服务器在该难度下暂无歌曲。",
+    "noSongs": "所选区服在该难度下暂无歌曲。",
     "level": "Lv.{level}",
     "levelUnknown": "Lv.?",
     "songCount": "{count} 首",
@@ -420,12 +511,6 @@ export default {
     "noMatches": "该定数下没有符合条件的歌曲。",
     "rewardsRemaining": "可获取：{list}",
     "detailSummary": "共 {total} 首 · 已通关 {cleared} · FC {fullCombo} · AP {allPerfect}",
-    "summary": {
-      "total": "曲目数",
-      "cleared": "已通关",
-      "fullCombo": "Full Combo",
-      "allPerfect": "All Perfect"
-    },
     "legend": {
       "allPerfect": "All Perfect",
       "fullCombo": "Full Combo（非 AP）",
@@ -441,10 +526,10 @@ export default {
   },
   "globalSearch": {
     "title": "快速搜索",
-    "description": "在本地 Master 数据中搜索歌曲、卡牌与活动",
+    "description": "在本地游戏数据库中搜索歌曲、卡牌与活动",
     "placeholder": "搜索歌曲、卡牌、活动…",
     "typeToSearch": "输入关键词以搜索歌曲、卡牌与活动",
-    "error": "Master 数据加载失败",
+    "error": "游戏数据库加载失败",
     "retry": "重试",
     "empty": "没有找到匹配的结果",
     "groups": {
@@ -505,10 +590,6 @@ export default {
       "return": "回归卡池",
       "unknown": "其他"
     },
-    "status": {
-      "ongoing": "进行中",
-      "ended": "已结束"
-    },
     "list": {
       "title": "卡池图鉴",
       "description": "浏览 Project Sekai 卡池及出率信息",
@@ -528,16 +609,11 @@ export default {
       "filtersTitle": "筛选",
       "resetFilters": "重置筛选",
       "total": "共 {total} 个卡池",
-      "empty": "没有符合当前筛选条件的卡池"
-    },
-    "sort": {
-      "startDesc": "最新优先",
-      "startAsc": "最早优先",
-      "idAsc": "ID 升序"
+      "empty": "没有符合筛选条件的卡池"
     },
     "detail": {
       "back": "返回卡池一览",
-      "notFound": "未找到卡池 #{gachaId}",
+      "notFound": "当前区服的数据里没有这个卡池（#{gachaId}）。可以切换区服再试。",
       "pickups": "PICK UP 成员",
       "poolCards": "卡池全部卡牌",
       "rates": "提供概率",
@@ -581,18 +657,18 @@ export default {
     "description": "查看账号的游戏档案",
     "source": {
       "realtime": "实时数据",
-      "snapshot": "快照数据"
+      "snapshot": "上传的数据"
     },
     "noAccountHint": "请先绑定并选择一个游戏账号以查看档案。",
     "loadError": "档案数据加载失败。",
     "retry": "重试",
     "refresh": "刷新",
-    "dataAsOf": "数据更新于 {time}",
+    "realtimeAsOf": "实时数据更新时间：{time}",
     "unknownCharacter": "未知角色",
     "stats": {
       "title": "游玩统计"
     },
-    "snapshotNote": "数据来自快照 · {time}",
+    "snapshotNote": "来自上传的数据 · 上传时间 {time}",
     "unitAverage": "各团均值",
     "header": {
       "title": "基本信息",
@@ -642,7 +718,6 @@ export default {
     "layout": {
       "title": "角色养成",
       "description": "查看游戏账号的养成进度",
-      "dataAsOf": "数据时间：{time}",
       "refresh": "刷新"
     },
     "tabs": {
@@ -833,6 +908,8 @@ export default {
   },
   "sekaiRegion": {
     "followAccount": "跟随当前账号",
+    "followAccountResolved": "跟随当前账号（{region}）",
+    "followBadge": "跟随账号",
     "labels": {
       "jp": "日服",
       "en": "国际服",
@@ -927,18 +1004,19 @@ export default {
     "botNeoRegistration": "HarukiBot NEO 注册",
     "login": "登录",
     "register": "注册账号",
+    "verification": "验证邮箱",
     "resetPassword": "重置密码",
     "error": "身份错误",
     "userSettings": "账号设置",
-    "userIdentitySettings": "用户身份设置",
+    "userIdentitySettings": "登录与安全",
     "userIdentityProfileSettings": "用户资料设置",
     "userIdentityPasswordSettings": "修改密码",
     "userIdentityMfaSettings": "多因素认证",
     "userIdentitySocialSettings": "社交登录设置",
-    "userIdentitySessionSettings": "身份会话管理",
+    "userIdentitySessionSettings": "登录设备",
     "gameAccountBindings": "绑定游戏账号",
     "harukiBotAuthorization": "HarukiBot数据授权",
-    "oauthAuthorizations": "OAuth 授权管理",
+    "oauthAuthorizations": "已授权的应用",
     "oauthLogin": "继续登录授权",
     "oauthConsent": "授权第三方应用",
     "oauthLogout": "退出登录确认",
@@ -1011,9 +1089,10 @@ export default {
       "title": "曲库",
       "description": "浏览 PJSK 曲库：支持搜索，并按难度、等级、物量、团体与年份筛选。",
       "filters": {
-        "region": "服务器",
+        "region": "区服",
         "search": "搜索",
         "searchPlaceholder": "按标题或别名搜索...",
+        "searchPlaceholderNoAlias": "按标题搜索...",
         "title": "筛选",
         "difficulty": "难度",
         "difficultyAll": "全部难度",
@@ -1057,7 +1136,7 @@ export default {
         "empty": "没有符合当前筛选条件的歌曲。",
         "aliasSearching": "正在匹配别名..."
       },
-      "downloading": "正在下载 Master 数据... {progress}%",
+      "downloading": "正在下载游戏数据库... {progress}%",
       "loadError": "曲库数据加载失败：{message}",
       "unknownDate": "未知"
     },
@@ -1078,7 +1157,7 @@ export default {
       "school_refusal": "25时，Nightcord见。",
       "other": "其他",
       "event_box": "箱曲",
-      "world_link": "WL曲"
+      "world_link": "WL（World Link）曲"
     },
     "categories": {
       "mv": "3D MV",
@@ -1096,7 +1175,7 @@ export default {
     },
     "detail": {
       "back": "返回曲库",
-      "notFound": "所选服务器上不存在这首歌曲。",
+      "notFound": "当前区服的数据里没有这首歌曲（#{musicId}）。可以切换区服再试。",
       "loadError": "曲目数据加载失败：{message}",
       "unknownCharacter": "未知",
       "aliases": {
@@ -1196,12 +1275,12 @@ export default {
       "term_limited": "期间限定",
       "colorful_festival_limited": "Colorful Fes 限定",
       "bloom_festival_limited": "Bloom Fes 限定",
-      "unit_event_limited": "WL活动限定",
+      "unit_event_limited": "WL（World Link）活动限定",
       "collaboration_limited": "联动限定"
     },
     "detail": {
       "back": "返回图鉴",
-      "notFound": "在当前区服数据中找不到卡牌 #{cardId}",
+      "notFound": "当前区服的数据里没有这张卡牌（#{cardId}）。可以切换区服再试。",
       "artNormal": "特训前",
       "artTrained": "特训后",
       "artLoadFailed": "卡面加载失败",
@@ -1247,10 +1326,6 @@ export default {
       "world_bloom": "连接世界",
       "unknown": "未知类型"
     },
-    "status": {
-      "ongoing": "进行中",
-      "ended": "已结束"
-    },
     "attr": {
       "cute": "可爱",
       "cool": "帅气",
@@ -1261,7 +1336,7 @@ export default {
     "list": {
       "title": "活动图鉴",
       "description": "浏览 Project SEKAI 活动、加成信息与活动卡片。",
-      "regionLabel": "服务器",
+      "regionLabel": "区服",
       "searchLabel": "搜索",
       "searchPlaceholder": "按活动名或 ID 搜索",
       "typeLabel": "活动类型",
@@ -1281,7 +1356,7 @@ export default {
       "back": "返回活动图鉴",
       "loadFailed": "活动数据加载失败。",
       "retry": "重试",
-      "notFound": "当前服务器上未找到该活动。",
+      "notFound": "当前区服的数据里没有这个活动（#{eventId}）。可以切换区服再试。",
       "timelineTitle": "时间线",
       "timeline": {
         "start": "开始",
@@ -1307,26 +1382,26 @@ export default {
   },
   "homeSettings": {
     "title": "Haruki工具箱设置",
-    "description": "配置Haruki工具箱服务器端点、游戏资源端点、外观、语言和性能偏好",
+    "description": "配置Haruki工具箱服务器线路、图片加载线路、外观、语言和性能偏好",
     "trigger": "设置",
     "tabs": {
       "preferences": "偏好设置",
       "app": "应用",
-      "sekaiData": "Master数据",
+      "sekaiData": "游戏数据库",
       "userData": "用户数据"
     },
     "resetDialog": {
       "title": "重置偏好设置？",
-      "description": "这会将工具箱服务器端点、游戏资源端点、外观、语言、低特效模式和隐私偏好恢复为默认值。",
+      "description": "这会将服务器线路、图片加载线路、外观、语言、低特效模式和隐私偏好恢复为默认值。",
       "confirm": "确认重置"
     },
     "endpoint": {
-      "label": "工具箱服务器端点",
+      "label": "服务器线路",
       "help": "选择服务器连接方式，默认使用直连。若在海外连接困难，可尝试 CDN。",
-      "placeholder": "请选择端点",
+      "placeholder": "请选择线路",
       "direct": "直连",
       "cdn": "CDN",
-      "unavailable": "当前环境未配置可用端点。",
+      "unavailable": "当前环境没有配置可用的服务器线路。",
       "checking": "测速中",
       "unknown": "未测速",
       "failed": "无法连接",
@@ -1334,12 +1409,12 @@ export default {
       "refreshLatency": "重新测速"
     },
     "assetEndpoint": {
-      "label": "游戏资源端点",
-      "help": "用于加载卡牌缩略图等游戏资源。首次进入网站会自动选择延迟最低的站点，打开设置时会重新测速。",
-      "placeholder": "请选择游戏资源端点",
-      "china": "国内加速海外CDN",
-      "global": "海外优化CDN",
-      "chinaCdn": "国内CDN",
+      "label": "图片加载线路",
+      "help": "用于加载卡牌缩略图等游戏资源。首次进入网站会自动选择延迟最低的线路，打开设置时会重新测速。",
+      "placeholder": "请选择线路",
+      "china": "国内用户推荐",
+      "global": "海外用户推荐",
+      "chinaCdn": "国内备用线路",
       "checking": "测速中",
       "unknown": "未测速",
       "failed": "无法连接",
@@ -1385,21 +1460,22 @@ export default {
       "remoteBuildTime": "远程构建时间",
       "checkedAt": "最近检查：{time}",
       "lastError": "最近一次检查失败，请稍后重试。",
+      "notCheckedYet": "尚未检查更新。",
       "check": "检查更新",
       "checking": "检查中...",
       "update": "更新应用",
       "updating": "更新中..."
     },
     "userData": {
-      "description": "管理已绑定游戏账号的 suite、mysekai 与 profile 本地数据缓存，供站内各项功能共用。suite/mysekai 刷新会先检查远程上传时间，profile 会直接拉取最新数据。",
+      "description": "这里保存的是你各游戏账号已上传数据在本浏览器的副本。点「刷新」会检查服务器上是否有更新的上传；「个人档案」会直接从游戏服务器获取最新信息。",
       "account": "账号",
       "accountPlaceholder": "请选择已绑定账号",
       "noAccount": "当前账号还没有绑定游戏账号。",
       "dataType": "数据类型",
       "types": {
-        "suite": "Suite",
-        "mysekai": "MySekai",
-        "profile": "Profile"
+        "suite": "账号数据（Suite）",
+        "mysekai": "烤森数据（MySekai）",
+        "profile": "个人档案（Profile）"
       },
       "cacheUpdatedAt": "本地缓存",
       "remoteUploadTime": "上传时间",
@@ -1430,7 +1506,7 @@ export default {
     },
     "sections": {
       "preferences": "外观、语言、网络与隐私偏好，修改后立即生效。",
-      "sekaiData": "管理各区服 Master 数据本地缓存与后台更新任务，供选择器、推荐和其他功能复用。"
+      "sekaiData": "管理各区服游戏数据库本地缓存与后台更新任务，供选择器、推荐和其他功能复用。"
     },
     "groups": {
       "appearance": "外观",
@@ -1448,26 +1524,41 @@ export default {
       "loginRequiredDescription": "该页面需要登录后访问",
       "requireAdminDescription": "需要管理员权限",
       "requireSuperAdminDescription": "需要超级管理员权限",
-      "apiRequestFailedTitle": "API请求失败",
-      "apiRequestFailedDescription": "状态码: {status}，信息: {message}",
+      "apiRequestFailedTitle": "请求失败",
+      "apiRequestFailedDescription": "服务器暂时无法处理这个请求，请稍后重试。",
+      "permissionDeniedDescription": "你没有执行这个操作的权限。如果你认为这是误判，请联系管理员。",
+      "accountBannedDescription": "你的账号已被封禁，无法继续使用。如有疑问请联系管理员。",
+      "accountBannedWithReason": "你的账号已被封禁，无法继续使用。封禁原因：{reason}",
       "reauthRequired": "需要重新验证密码"
+    },
+    "errors": {
+      "network": "网络连接失败，请检查网络后重试。",
+      "timeout": "请求超时，请稍后重试。",
+      "rateLimited": "操作太频繁，请稍等片刻后再试。",
+      "serverUnavailable": "服务器暂时不可用，请稍后重试（错误码 {status}）。",
+      "detail": "详情：{detail}"
+    },
+    "loadError": {
+      "title": "加载失败",
+      "description": "请检查网络后重试；如果多次失败，可能是服务暂时不可用。",
+      "retry": "重试"
     },
     "sync": {
       "successTitle": "同步设置成功",
       "successDescription": "已成功同步当前账号的云端设置",
       "failedTitle": "同步设置不可用",
       "failedDescription": "云端设置同步失败，请稍后重试。",
-      "missingUpdatedDataDescription": "云端设置返回数据不完整（缺少 updatedData）。",
+      "missingUpdatedDataDescription": "云端设置返回的数据不完整，请刷新后重试。",
       "unexpectedStatusDescription": "云端设置请求返回了异常状态（{status}）。"
     },
     "suitePrefetch": {
-      "progressTitle": "正在获取账号数据",
+      "progressTitle": "正在获取游戏数据",
       "progressDescription": "已完成 {completed}/{total} 个绑定账号",
-      "successTitle": "账号数据获取完成",
-      "successDescription": "已更新 {updated}/{total} 个绑定账号的抓包数据缓存",
-      "partialTitle": "部分账号数据获取失败",
+      "successTitle": "游戏数据已更新",
+      "successDescription": "已更新 {updated}/{total} 个绑定账号的游戏数据",
+      "partialTitle": "部分账号的游戏数据获取失败",
       "partialDescription": "{failed}/{total} 个账号获取失败，进入相关页面时会自动重试。",
-      "failedDescription": "获取绑定账号数据失败，进入相关页面时会自动重试。"
+      "failedDescription": "获取绑定账号的游戏数据失败，进入相关页面时会自动重试。"
     },
     "unsupportedBrowser": {
       "title": "不受支持的浏览器",
@@ -1483,6 +1574,7 @@ export default {
       "updateAvailableDescription": "新的应用版本已经准备好，可以立即更新。",
       "updateAvailableDescriptionWithVersion": "新版本 {version} 已经准备好，可以立即更新。",
       "updateAction": "更新应用",
+      "laterAction": "稍后",
       "applyingTitle": "正在更新应用",
       "applyingDescription": "更新完成后页面会自动刷新。",
       "currentTitle": "应用已是最新",
@@ -1490,7 +1582,7 @@ export default {
       "checkFailedTitle": "检查更新失败",
       "checkFailedDescription": "无法读取远程构建信息，请稍后重试。",
       "offlineReadyTitle": "离线缓存已准备好",
-      "offlineReadyDescription": "应用外壳已缓存，之后可更快打开。",
+      "offlineReadyDescription": "已缓存常用页面，下次打开更快。",
       "devTitle": "开发模式",
       "devDescription": "开发模式下不会注册 PWA 更新流程。",
       "forcedUpdateTitle": "当前版本已停止支持",
@@ -1503,7 +1595,7 @@ export default {
   },
   "catalog": {
     "region": {
-      "label": "服务器"
+      "label": "区服"
     },
     "search": {
       "label": "搜索",
@@ -1513,14 +1605,18 @@ export default {
       "title": "筛选",
       "reset": "重置筛选",
       "clearAll": "清除全部",
+      "done": "完成",
+      "sheetDescription": "调整筛选条件，结果会立即更新。",
     },
     "results": {
       "count": "共 {count} 项",
       "empty": "没有符合当前筛选条件的内容",
-      "emptyHint": "试试放宽筛选条件，或切换服务器。",
+      "emptyHint": "试试放宽筛选条件，或切换区服。",
       "loadError": "数据加载失败",
       "retry": "重试",
-      "downloading": "正在下载 Master 数据… {progress}%"
+      "downloading": "正在下载游戏数据… {progress}%",
+      "offline": "离线数据",
+      "offlineHint": "当前显示的是本地缓存的游戏数据，最新内容可能尚未同步"
     },
     "sort": {
       "label": "排序",
@@ -1552,7 +1648,8 @@ export default {
       "upcomingHidden": "即将开始的内容已被隐藏。开启「显示未上线内容」后即可查看。",
       "showUnreleased": "显示未上线内容",
       "endsIn": "剩余 {time}",
-      "startsIn": "{time} 后开始"
+      "startsIn": "{time} 后开始",
+      "permanent": "常驻"
     },
     "countdown": {
       "toStart": "距开始",
@@ -1567,22 +1664,30 @@ export default {
     "detail": {
       "backToList": "返回{list}",
       "breadcrumb": "页面路径",
-      "notFound": "在当前服务器的数据中找不到该条目。",
+      "notFound": "当前区服的数据里没有这个条目。可以切换区服再试。",
       "loadError": "详情数据加载失败",
-      "assetName": "资源名",
+      "assetName": "内部名称",
       "period": "期间",
       "viewAllCount": "查看全部 ({count})",
       "zoom": "点击放大查看",
       "showMore": "展开",
       "showLess": "收起",
-      "tryOtherRegion": "该条目可能存在于其他服务器，可切换后重试。"
+      "tryOtherRegion": "可能存在于其他区服，切换后会自动重新加载。"
     },
     "lightbox": {
       "description": "图片预览",
       "zoomIn": "放大",
       "zoomOut": "缩小",
       "openInNewTab": "新标签页打开",
-      "items": "图片"
+      "items": "图片",
+      "touchZoom": "双击放大 / 缩小",
+      "touchSwipe": "左右滑动切换图片"
+    },
+    "time": {
+      "localLabel": "当地时间",
+      "serverTime": "{region}时间：{time}",
+      "hint": "时间按你所在的时区（{zone}）显示；与{region}时间（{serverZone}）不同时，会在旁边标出{region}时间。",
+      "sameZone": "你所在的时区（{zone}）与{region}时间一致。"
     },
     "character": {
       "label": "角色",

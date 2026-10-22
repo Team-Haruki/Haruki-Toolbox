@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
 import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+import { extractErrorMessage } from "@/lib/error-utils"
+import { describeDeckRecommendError } from "../lib/engine-errors"
 import { computed, ref, toRef, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import type { RecommendDeck } from "haruki-sekai-deck-recommend-cpp"
@@ -265,7 +267,10 @@ async function runDeck() {
   } catch (error) {
     missingDataType.value = getMissingUploadDataType(error)
     if (missingDataType.value) return
-    errorMessage.value = runner.error.value ?? (error instanceof Error ? error.message : String(error))
+    const described = runner.errorDescription.value ?? describeDeckRecommendError(error)
+    errorMessage.value = described.detail
+      ? `${described.message}\n${t("core.errors.detail", { detail: described.detail })}`
+      : described.message
   }
 }
 
@@ -304,7 +309,7 @@ async function loadRanking(deck: RecommendDeck, config: PlannerDeckConfig) {
     )
     selectedSong.value = rankingRows.value[0] ?? null
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error)
+    errorMessage.value = extractErrorMessage(error, t("deckRecommend.errors.unknown"))
   } finally {
     rankingLoading.value = false
   }
@@ -388,7 +393,7 @@ function save() {
         </div>
 
         <MissingGameDataNotice v-if="missingDataType" :data-type="missingDataType" class="py-4" />
-        <p v-else-if="errorMessage" class="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+        <p v-else-if="errorMessage" class="whitespace-pre-line rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
           {{ errorMessage }}
         </p>
 

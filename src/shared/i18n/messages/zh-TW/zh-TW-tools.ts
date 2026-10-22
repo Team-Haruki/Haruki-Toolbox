@@ -13,7 +13,7 @@ export default {
       "sections": {
         "identity": {
           "title": "基礎身份",
-          "description": "填寫本地監聽埠、Bot ID、登入憑證和可選安全校驗引數。"
+          "description": "填寫本地監聽埠、Bot ID、登入憑證和可選安全校驗參數。"
         },
         "routing": {
           "title": "網路路由",
@@ -28,7 +28,7 @@ export default {
           "description": "按 manifest 的 command_module 控制基礎模組，再按 cloud 當前 client_policy_scope 設定功能級策略。"
         },
         "access": {
-          "title": "許可權名單",
+          "title": "權限名單",
           "description": "按 scope 填寫群黑名單、群白名單、使用者黑名單和 Bot 管理員 QQ。"
         }
       },
@@ -167,11 +167,11 @@ export default {
           "description": "烤森生日材料監聽無命中時也傳送通知。"
         },
         "enableParamEcho": {
-          "label": "引數錯誤回顯",
-          "description": "Cloud 引數解析錯誤時允許回顯具體引數。"
+          "label": "參數錯誤回顯",
+          "description": "Cloud 參數解析錯誤時允許回顯具體參數。"
         },
         "strictConfigPermissions": {
-          "label": "嚴格檢查配置許可權",
+          "label": "嚴格檢查配置權限",
           "description": "若 configs.yaml 可被同組或其他使用者讀取則拒絕啟動；啟用後請設為 0600。"
         }
       },
@@ -249,40 +249,42 @@ export default {
       "toast": {
         "reset": "已重置為預設配置",
         "copySuccess": "configs.yaml 已複製到剪貼簿",
-        "copyFailed": "複製失敗，請檢查瀏覽器剪貼簿許可權",
+        "copyFailed": "複製失敗，請檢查瀏覽器剪貼簿權限",
         "downloadSuccess": "configs.yaml 已開始下載"
       }
     },
     "iosModules": {
-      "title": "iOS模組生成器",
-      "description": "生成自定義的iOS代理模組",
+      "title": "iOS 模組（iPhone / iPad）",
+      "description": "生成一個代理模組裝進 Shadowrocket、Surge 等代理軟體，之後進遊戲時資料會自動上傳。",
       "tutorialAlert": {
-        "textBefore": "本文教程可以",
-        "linkText": "點選這裡",
-        "textAfter": "觀看",
+        "label": "圖文教程：",
+        "linkText": "點選檢視",
         "nonZhWarning": "本教程僅有簡體中文版本"
       },
       "qxScriptWarning": "Quantumult X 不支援指令碼上傳模式",
-      "cnRestriction": "由於相關法律法規限制，本站不提供國服的MySekai功能的安裝。",
+      "cnRestriction": "由於相關法律法規限制，本站不提供國服的烤森（MySekai）功能的安裝。",
       "installButton": "快速安裝模組",
-      "installHint": "點選後將呼叫對應軟體的安裝協議",
+      "installHint": "點選後會自動開啟你選的代理軟體並匯入模組",
+      "copyAction": "複製{label}",
       "copyLabel": {
         "uploadCode": "上傳碼",
-        "moduleUrl": "模組URL",
-        "scriptUrl": "指令碼URL"
+        "moduleUrl": "模組 URL",
+        "scriptUrl": "指令碼 URL"
       },
       "steps": {
         "configure": {
           "title": "配置",
-          "description": "選擇代理軟體、服務端域名與上傳方式。"
+          "description": "選擇代理軟體、伺服器線路與上傳方式。"
         },
         "scope": {
           "title": "範圍",
-          "description": "選擇需要上傳資料的區服和資料型別。"
+          "description": "選擇需要上傳資料的區服和資料類型。"
         },
         "install": {
           "title": "獲取與安裝",
-          "description": "生成上傳碼後，可複製 URL 手動安裝或一鍵快速安裝。"
+          "prerequisite": "需要先登入並綁定遊戲帳號。",
+          "description": "生成上傳碼後，可複製 URL 手動安裝或一鍵快速安裝。",
+          "after": "安裝後開啟遊戲並進入主頁一次，上傳成功後首頁「我的帳號」會顯示上傳時間。"
         }
       },
       "sections": {
@@ -292,18 +294,18 @@ export default {
           "placeholder": "請選擇軟體"
         },
         "endpoint": {
-          "title": "選擇工具箱域名",
-          "description": "選擇要使用的工具箱服務端域名\n預設情況下使用直連即可\n如果你人不在中國大陸使用困難的話，選擇CDN可能有改善",
-          "placeholder": "請選擇域名"
+          "title": "伺服器線路",
+          "description": "國內直連即可；人在海外可選 CDN。",
+          "placeholder": "請選擇線路"
         },
         "mode": {
           "title": "選擇上傳資料方式",
-          "description": "指令碼上傳可以和其他Bot的模組共存，也不會受到工具箱服務端代理宕機的影響，但是不一定穩定\n如果使用指令碼上傳不穩定，可以切換為重定向代理法",
+          "description": "「指令碼上傳」可與其他 Bot 的模組同時使用，但偶爾不穩定；「代理上傳」更穩定，但同一時間只能裝一個工具箱模組。不確定選「代理上傳」。",
           "placeholder": "請選擇上傳方式"
         },
         "chunk": {
           "title": "檔案分片大小",
-          "description": "分片大小越大，進遊戲速度越快，但是有可能軟體頂不住\n除非你瞭解這個東西是做什麼的，不然不需要更改",
+          "description": "一般保持預設即可。數值越大進遊戲越快，但部分代理軟體可能上傳失敗。",
           "unit": "MB"
         },
         "regions": {
@@ -311,16 +313,21 @@ export default {
           "description": "選擇需要上傳資料的遊戲伺服器（可多選）"
         },
         "dataTypes": {
-          "title": "選擇資料型別",
-          "description": "選擇需要上傳的資料型別（可多選）"
+          "title": "選擇資料類型",
+          "description": "選擇需要上傳的資料類型（可多選）"
         }
       },
       "uploadCode": {
         "title": "上傳碼",
-        "description": "用於驗證模組和指令碼的訪問許可權",
+        "description": "模組用它來證明是你在上傳；洩露後請重新生成。",
         "regenerate": "重新生成",
         "generate": "生成上傳碼",
-        "loginRequired": "請先登入"
+        "loginRequired": "請先登入",
+        "regenerateDialog": {
+          "title": "重新生成上傳碼？",
+          "description": "舊的上傳碼會立即失效，已安裝的模組需要用新 URL 重新安裝才能繼續上傳。",
+          "confirm": "重新生成"
+        }
       },
       "generatedUrls": {
         "title": "生成的 URL",
@@ -340,43 +347,43 @@ export default {
         "cdn": "CDN (加速)"
       },
       "modeOptions": {
-        "proxy": "重定向代理法",
+        "proxy": "代理上傳",
         "script": "指令碼上傳"
       },
       "region": {
         "jp": "日服",
         "en": "國際服",
-        "tw": "臺服",
+        "tw": "台服",
         "kr": "韓服",
         "cn": "國服"
       },
       "dataTypes": {
         "suite": {
-          "label": "Suite",
-          "description": "上傳你的遊戲賬號的完整資料"
+          "label": "帳號資料（Suite）",
+          "description": "上傳你的遊戲帳號的完整資料"
         },
         "mysekai": {
-          "label": "MySekai",
-          "description": "上傳你的遊戲賬號的MySekai資料"
+          "label": "烤森資料（MySekai）",
+          "description": "上傳你的遊戲帳號的烤森資料"
         },
         "mysekai_force": {
-          "label": "MySekai (強制重新整理)",
-          "description": "每次進入都強制重新整理MySekai資料"
+          "label": "烤森資料（每次進入都上傳）",
+          "description": "不管遊戲裡有沒有變化，每次進入烤森都重新上傳一次。"
         },
         "mysekai_birthday_party": {
-          "label": "MySekai生日派對",
-          "description": "上傳MySekai生日派對雙葉地圖資料"
+          "label": "烤森生日派對",
+          "description": "上傳烤森生日派對雙葉地圖資料"
         }
       },
       "toast": {
         "loginRequired": "請先登入",
         "generateCodeSuccess": "上傳碼生成成功",
         "generateCodeFailedTitle": "生成上傳碼失敗",
-        "generateCodeFailedFallback": "未知錯誤",
+        "generateCodeFailedFallback": "請先確認已登入，稍後重試。",
         "copyEmpty": "複製內容為空",
         "clipboardUnsupported": "當前環境不支援剪貼簿操作",
         "copySuccess": "{label}已複製到剪貼簿",
-        "copyFailed": "複製到剪貼簿失敗，請檢查瀏覽器許可權設定",
+        "copyFailed": "複製到剪貼簿失敗，請檢查瀏覽器權限設定",
         "qxScriptFallback": "Quantumult X 不支援指令碼上傳模式，已切換為代理模式",
         "unsupportedClient": "不支援的客戶端",
         "installUnsupported": "當前環境不支援快速安裝"
@@ -388,37 +395,47 @@ export default {
       "groupTitle": "Haruki遊樂園 QQ 群",
       "group1Label": "1 群",
       "group2Label": "2 群",
-      "tutorialNotice": {
-        "title": "其他上傳方式",
-        "androidProxy": {
-          "platform": "Android / Windows",
-          "linkText": "HarukiProxy 教程"
-        },
-        "iosModule": {
-          "platform": "iOS / iPadOS",
-          "linkText": "使用 iOS 模組"
-        }
+      "intro": {
+        "title": "上傳資料",
+        "description": "「上傳資料」是把你的遊戲帳號資料同步到工具箱，供卡牌、活動記錄、組卡等功能使用。推薦方式：iPhone/iPad 用「iOS 模組」，Android/Windows 用 HarukiProxy；兩者都不行時再用「引繼碼」。",
+        "iosPlatform": "iPhone / iPad",
+        "iosMethod": "iOS 模組（推薦）",
+        "proxyPlatform": "Android / Windows",
+        "proxyMethod": "HarukiProxy 教程",
+        "fallbackPlatform": "兩者都不行時",
+        "fallbackMethod": "引繼碼（備用）"
       },
       "tabs": {
-        "file": "檔案上傳",
-        "inherit": "繼承碼上傳",
-        "ios": "iOS模組"
+        "ios": "iOS 模組（iPhone/iPad）",
+        "proxy": "HarukiProxy（Android/電腦）",
+        "inherit": "引繼碼（備用）",
+        "file": "檔案上傳（高階）"
+      },
+      "proxyTab": {
+        "title": "HarukiProxy（Android / 電腦）",
+        "description": "在 Android 手機或電腦上執行 HarukiProxy，進遊戲時資料會自動上傳到工具箱。",
+        "steps": {
+          "install": "按教程在手機或電腦上安裝並配置 HarukiProxy。",
+          "bind": "先在「遊戲帳號管理」綁定並驗證要上傳的遊戲帳號。",
+          "run": "開啟 HarukiProxy 後進入遊戲主頁一次，首頁「我的帳號」會顯示上傳時間。"
+        },
+        "tutorialButton": "檢視 HarukiProxy 教程"
       },
       "region": {
         "jp": "日服",
         "en": "國際服",
-        "tw": "臺服",
+        "tw": "台服",
         "kr": "韓服",
         "cn": "國服"
       },
       "dataTypes": {
-        "suite": "Suite",
-        "mysekai": "MySekai"
+        "suite": "帳號資料（Suite）",
+        "mysekai": "烤森資料（MySekai）"
       },
       "disabledReason": {
         "loginRequired": "請先登入再使用此功能",
-        "noBoundAccount": "您還沒有繫結任何賬號，請先繫結賬號",
-        "noWritableAccount": "當前沒有可上傳的賬號：請先完成賬號驗證，或獲取他人的寫授權"
+        "noBoundAccount": "您還沒有綁定任何帳號，請先綁定帳號",
+        "noWritableAccount": "還沒有可以上傳的帳號。請先在「遊戲帳號管理」完成帳號驗證；如果是幫別人上傳，需要對方先授權你代傳。"
       },
       "uploadStatus": {
         "uploading": "正在上傳您的{dataType}資料...",
@@ -426,69 +443,76 @@ export default {
         "failed": "上傳失敗"
       },
       "toast": {
-        "selectAccount": "請選擇一個賬號",
+        "selectAccount": "請選擇一個可上傳的帳號",
         "selectFile": "請選擇一個檔案",
-        "dataTypeNotWritable": "所選賬號沒有該資料型別的上傳許可權",
-        "uploadForbiddenTitle": "無權上傳到該賬號",
-        "uploadForbiddenDescription": "授權可能已過期、被撤銷或繫結已變更，已重新載入可上傳賬號列表",
+        "dataTypeNotWritable": "所選帳號沒有該資料類型的上傳權限",
+        "uploadForbiddenTitle": "無權上傳到該帳號",
+        "uploadForbiddenDescription": "授權可能已過期、被撤銷或綁定已變更，已重新載入可上傳帳號列表",
         "operationForbiddenTitle": "提交被禁止",
         "operationForbiddenDescription": "由於相關法律法規限制，不允許進行此操作",
         "uploadSuccessTitle": "上傳成功",
         "uploadSuccessFileFallback": "檔案已上傳",
-        "uploadSuccessInheritFallback": "繼承碼已上傳",
+        "uploadSuccessInheritFallback": "引繼碼已提交，帳號資料已儲存",
         "uploadFailedTitle": "上傳失敗",
-        "uploadFailedFallback": "上傳失敗",
-        "inheritIncompleteTitle": "請填寫完整的繼承資訊",
-        "inheritIncompleteDescription": "繼承ID和繼承密碼均為必填項",
-        "inheritIdInvalidTitle": "繼承ID格式不正確",
-        "inheritIdInvalidDescription": "繼承ID應為16位英文字母與數字的組合（區分大小寫）"
+        "uploadFailedFallback": "上傳沒有成功，請檢查檔案和帳號後重試；多次失敗請提交工單。",
+        "inheritIdRequired": "請輸入引繼 ID",
+        "inheritPasswordRequired": "請輸入引繼密碼",
+        "inheritIdInvalidDescription": "引繼 ID 應為 16 位英文字母與數字的組合（區分大小寫）"
       },
       "fileTab": {
         "title": "手動上傳檔案",
-        "description": "此選項可以手動上傳你捕獲的資料",
+        "description": "上傳你用 HarukiProxy 或 iOS 模組儲存下來的資料檔案。不知道怎麼獲取檔案？看上方「其他上傳方式」。",
         "unavailableTitle": "無法使用",
         "forbiddenTitle": "操作已被禁止",
         "forbiddenDescription": "由於相關法律法規限制，不允許進行此操作",
         "fields": {
           "file": "上傳檔案",
-          "account": "選擇賬號（區服 / UID）",
-          "accountPlaceholder": "請選擇已繫結的賬號",
-          "dataType": "選擇資料型別",
-          "dataTypePlaceholder": "請選擇資料型別"
+          "chooseFile": "選擇檔案",
+          "noFile": "未選擇檔案",
+          "fileHint": "選擇 HarukiProxy 或 iOS 模組儲存下來的資料檔案，檔案會原樣上傳。",
+          "account": "選擇帳號（區服 / UID）",
+          "accountPlaceholder": "請選擇可上傳的帳號",
+          "dataType": "選擇資料類型",
+          "dataTypePlaceholder": "請選擇資料類型"
         },
-        "refreshTargets": "重新整理賬號",
-        "targetsLoading": "正在載入可上傳賬號...",
-        "targetsFailedTitle": "無法獲取可上傳賬號列表",
-        "targetsFailedDescription": "已暫時顯示你本人的已驗證賬號；他人授權的賬號需重新整理後才會出現。",
-        "accountNotWritable": "該賬號暫無上傳許可權（未驗證或授權不含寫許可權）",
-        "grantedTargetNotice": "這是他人授權給你的賬號，上傳會直接更新對方賬號在工具箱中的資料。",
-        "dataTypeLimited": "該賬號僅允許上傳部分資料型別。",
+        "actions": {
+          "goLogin": "去登入",
+          "goBind": "去綁定帳號"
+        },
+        "refreshTargets": "重新整理帳號",
+        "targetsLoading": "正在載入可上傳帳號...",
+        "targetsFailedTitle": "無法獲取可上傳帳號列表",
+        "targetsFailedDescription": "已暫時顯示你本人的已驗證帳號；他人授權的帳號需重新整理後才會出現。",
+        "accountNotWritable": "這個帳號還不能上傳：帳號未驗證，或對方沒有允許你代傳。",
+        "unavailableChip": "不可用",
+        "someAccountsUnavailable": "灰色的帳號暫時不能上傳：帳號未驗證，或對方沒有允許你代傳。",
+        "grantedTargetNotice": "這是他人授權給你的帳號，上傳會直接更新對方帳號在工具箱中的資料。",
+        "dataTypeLimited": "該帳號僅允許上傳部分資料類型。",
         "submit": "提交",
         "submitting": "提交中..."
       },
       "inheritTab": {
-        "title": "繼承碼上傳資料",
-        "description": "此選項可以提交你的繼承碼到Haruki工具箱後端捕獲你需要的資料",
+        "title": "引繼碼上傳資料",
+        "description": "輸入遊戲裡的引繼 ID 和密碼，工具箱會代你登入一次並儲存帳號資料。",
         "fields": {
-          "inheritId": "繼承ID",
-          "inheritIdPlaceholder": "請輸入繼承ID",
-          "inheritPassword": "繼承密碼",
-          "inheritPasswordPlaceholder": "請輸入繼承密碼",
+          "inheritId": "引繼 ID",
+          "inheritIdPlaceholder": "請輸入引繼 ID",
+          "inheritPassword": "引繼密碼",
+          "inheritPasswordPlaceholder": "請輸入引繼密碼",
           "server": "選擇區服",
           "serverPlaceholder": "請選擇區服",
-          "dataType": "選擇資料型別",
-          "dataTypePlaceholder": "請選擇資料型別"
+          "dataType": "選擇資料類型",
+          "dataTypePlaceholder": "請選擇資料類型"
         },
         "alerts": {
           "notesTitle": "使用須知",
           "warning1": {
-            "title": "警告",
-            "description": "請妥善儲存您的引繼ID與密碼！Haruki工具箱伺服器不會儲存您的引繼ID與密碼！"
+            "title": "使用前請了解",
+            "description": "請妥善儲存你的引繼 ID 與密碼；工具箱伺服器不會儲存它們。"
           },
           "warning2": {
-            "title": "警告",
-            "line1": "儘管開發者已經盡最大可能將 API 請求最佳化得儘可能像一個正常 app 請求，使用風險仍然需要自負。",
-            "line2": "如果你認為這個風險你負擔不起，請不要使用本功能。"
+            "title": "風險說明",
+            "text": "本功能會用你的引繼碼模擬遊戲客戶端登入一次。官方理論上可能將其視為異常登入，請自行評估風險；不放心請改用 HarukiProxy 或 iOS 模組。"
           },
           "reminder1": {
             "title": "提醒",
@@ -497,21 +521,19 @@ export default {
           },
           "reminder2": {
             "title": "提醒",
-            "line1": "使用該功能雖然不需要登入Haruki工具箱賬號",
-            "line2": "但是如果你沒有在Haruki工具箱繫結你要獲取資料的遊戲賬號",
-            "line3": "即使通知上傳成功，也不會寫入資料庫",
-            "line4": "請務必先在Haruki工具箱繫結你要獲取資料的遊戲賬號",
-            "bindLink": "繫結遊戲賬號"
+            "text": "使用前請先登入工具箱並在「遊戲帳號管理」綁定要上傳的遊戲帳號。未綁定時，即使提示上傳成功，資料也不會儲存。",
+            "bindLink": "去綁定"
           }
         },
         "remember": {
           "label": "在當前裝置短期記住引繼資訊",
-          "description": "僅儲存在本地瀏覽器，24 小時後自動過期；取消勾選會立即清除。"
+          "description": "提交成功後記住 24 小時（僅儲存在當前瀏覽器）；取消勾選會立即清除。"
         },
         "confirmDialog": {
           "title": "確認上傳資料",
-          "dataTypePrefix": "請再次確認您要上傳的資料型別：",
-          "mysekaiNotice": "如果您要上傳 MySekai 資料，請先登入 Haruki 工具箱，並確認已在 HarukiBot 資料授權中繫結了 QQ 號。",
+          "dataTypePrefix": "請再次確認您要上傳的資料類型：",
+          "loginNotice": "你還沒有登入工具箱。未在工具箱綁定遊戲帳號時，即使提示上傳成功，資料也不會儲存；建議先登入並綁定。",
+          "mysekaiNotice": "上傳烤森（MySekai）資料需要先登入工具箱，並在「HarukiBot 資料授權」裡綁定並驗證 QQ 號，否則 Bot 無法為你查詢烤森資料。",
           "cancel": "取消",
           "confirm": "確認上傳"
         },
@@ -539,6 +561,7 @@ export default {
         "musicEmpty": "沒有找到歌曲。",
         "targetPt": "目標活動 Pt",
         "targetPtPlaceholder": "請輸入目標活動 Pt",
+        "targetPtInvalid": "目標活動 Pt 需要是大於 0 的整數。",
         "maxResults": "輸出結果上限",
         "maxResultsPlaceholder": "預設 10",
         "bonusRange": "自定義加成範圍",
@@ -562,7 +585,7 @@ export default {
         "music": "歌曲：{value}",
         "basicPoint": "基礎 Pt：{value}",
         "bonusRange": "加成範圍：{min}% ~ {max}%",
-        "missingBasicPoint": "當前歌曲缺少 music metas 基礎 Pt，無法計算。"
+        "missingBasicPoint": "這首歌暫時沒有基礎 Pt 資料，請換一首歌或換個難度。"
       },
       "result": {
         "title": "計算結果",
@@ -591,12 +614,13 @@ export default {
       "warningGroup": "NEO 分散式QQ群: 111612548",
       "qqLabel": "QQ 號",
       "qqPlaceholder": "請輸入 QQ 號",
-      "hint": "驗證碼將傳送至您的 QQ 郵箱（{qq}{'@'}qq.com），有效期 10 分鐘。",
+      "hint": "驗證碼將傳送至您的 QQ 信箱（{qq}{'@'}qq.com），有效期 10 分鐘。",
+      "hintQqPlaceholder": "你的QQ號",
       "sendButton": "傳送驗證碼",
       "cooldownButton": "{seconds} 秒後可重試"
     },
     "verify": {
-      "codeSentHint": "驗證碼已傳送至 {qq}{'@'}qq.com，請查收郵箱。",
+      "codeSentHint": "驗證碼已傳送至 {qq}{'@'}qq.com，請查收信箱。",
       "codeLabel": "驗證碼",
       "codePlaceholder": "請輸入 6 位驗證碼",
       "backButton": "返回",
@@ -608,17 +632,21 @@ export default {
       "successTitle": "註冊成功",
       "successDescription": "您的 HarukiBot NEO 例項已建立，請儲存以下憑據資訊。",
       "botIdLabel": "Bot ID",
-      "credentialLabel": "憑據（JWT）",
+      "credentialLabel": "憑據",
+      "copyAction": "複製{label}",
       "saveWarning": "憑據僅顯示一次，請立即複製並安全儲存，之後將無法再次獲取。",
       "configGeneratorTitle": "繼續生成 Client 配置",
-      "configGeneratorDescription": "開啟配置生成器並自動帶入 ownerId、Bot ID 和 Credential，後續只需補充埠、模組和名單配置。",
+      "configGeneratorDescription": "開啟配置生成器並自動填入 Bot ID 與憑據，後續只需補充埠、模組和名單配置。",
       "configGeneratorButton": "開啟配置生成器",
       "registerAnotherButton": "註冊另一個"
     },
     "toast": {
       "statusCheckFailed": "檢查註冊狀態失敗",
+      "statusCheckFailedFallback": "請檢查網路後點選「重試」；多次失敗可能是服務暫時不可用。",
       "sendFailedTitle": "傳送失敗",
-      "invalidQQNumber": "請輸入有效的 QQ 號",
+      "sendFailedFallback": "驗證碼沒有發出去，請檢查 QQ 號後重試；多次失敗請稍後再試。",
+      "missingQQNumber": "請輸入 QQ 號",
+      "invalidQQNumber": "請輸入有效的 QQ 號（5–12 位數字）",
       "rateLimitedTitle": "請求過於頻繁",
       "rateLimitedDescription": "請求次數過多，請在 {seconds} 秒後重試。",
       "alreadyRegisteredTitle": "已註冊",
@@ -626,9 +654,11 @@ export default {
       "registrationDisabledTitle": "註冊已關閉",
       "registrationDisabledDescription": "註冊功能當前已關閉。",
       "codeSentTitle": "驗證碼已傳送",
-      "codeSentDescription": "請前往 QQ {qq} 的郵箱查收。",
+      "codeSentDescription": "請前往 QQ {qq} 的信箱查收。",
       "registerFailedTitle": "註冊失敗",
+      "registerFailedFallback": "註冊沒有完成，請確認驗證碼無誤後重試；驗證碼過期請重新發送。",
       "missingVerificationCode": "請輸入驗證碼",
+      "invalidVerificationCode": "驗證碼是 6 位數字，請檢查後重新輸入",
       "incompleteResponse": "返回資料不完整",
       "registerSuccessTitle": "註冊成功",
       "clipboardUnsupported": "當前環境不支援剪貼簿",
@@ -638,64 +668,65 @@ export default {
   },
   "sekaiStation": {
     "title": "協力車站",
-    "description": "即時彙整社群平台上發布的國服協力房間號。",
-    "viewOnSekaiStation": "在Sekai Station中查看",
-    "notConfigured": "目前建置沒有設定 Sekai Station 的 API 位址，無法載入房間。",
+    "description": "即時彙總社交平台上發布的國服協力房間號。",
+    "viewOnSekaiStation": "在Sekai Station中檢視",
+    "notConfigured": "協力車站暫不可用",
     "connection": {
       "connected": "已連線",
       "connecting": "連線中…",
-      "disconnected": "已斷線",
+      "disconnected": "已斷開",
       "failed": "無法連線到伺服器",
       "retryIn": "{n} 秒後重試",
+      "retryNow": "立即重試",
       "reconnecting": "正在重新連線…",
-      "online": "{n} 人在線"
+      "online": "{n} 人線上"
     },
     "rooms": {
       "list": "房間列表",
       "empty": "暫無房間",
-      "emptyFiltered": "目前篩選條件下沒有房間",
+      "emptyFiltered": "當前篩選條件下沒有房間",
       "loading": "載入中…",
       "copyId": "複製房間號",
-      "copyText": "複製文字",
-      "openOriginal": "開啟原貼文",
+      "copyText": "複製文本",
+      "openOriginal": "開啟原帖",
       "pin": "置頂",
       "unpin": "取消置頂",
       "copied": "已複製",
       "copyFailed": "複製失敗",
       "more": "更多操作",
-      "idHint": "點擊複製 · 長按 1 秒屏蔽 10 分鐘",
-      "block": "屏蔽 10 分鐘",
-      "blocked": "已屏蔽 {id}，10 分鐘後恢復",
-      "undo": "復原"
+      "idHint": "點選複製 · 長按 1 秒遮蔽 10 分鐘",
+      "block": "遮蔽 10 分鐘",
+      "blocked": "已遮蔽 {id}，10 分鐘後恢復",
+      "undo": "撤銷"
     },
     "settings": {
       "title": "篩選與顯示",
       "filter": "篩選",
       "mode": "模式",
       "blacklist": "黑名單",
-      "blacklistDesc": "隱藏包含以下關鍵字的房間",
+      "blacklistDesc": "隱藏包含以下關鍵詞的房間",
       "whitelist": "白名單",
-      "whitelistDesc": "只顯示包含以下關鍵字的房間",
+      "whitelistDesc": "只顯示包含以下關鍵詞的房間",
       "presetTags": "預設標籤",
-      "keywordPlaceholder": "新增關鍵字",
+      "keywordPlaceholder": "新增關鍵詞",
       "add": "新增",
       "clear": "清空",
-      "removeFilter": "移除過濾詞「{name}」",
+      "removeFilter": "移除過濾詞“{name}”",
       "display": "顯示",
       "expireTime": "房間顯示時長",
       "durationSeconds": "{n} 秒",
       "durationMinutes": "{n} 分鐘",
-      "fontSize": "字型大小",
+      "fontSize": "字號",
       "lineHeight": "行距",
       "decrease": "減小",
       "increase": "增大"
     },
     "blocked": {
-      "title": "臨時屏蔽",
+      "title": "臨時遮蔽",
       "hint": "10 分鐘後自動恢復",
-      "empty": "長按房間號 1 秒即可屏蔽",
+      "empty": "長按房間號 1 秒即可遮蔽",
       "minutesLeft": "剩 {n} 分鐘",
-      "unblock": "取消屏蔽 {id}",
+      "unblock": "取消遮蔽 {id}",
       "unblockOne": "解除",
       "unblockAll": "全部解除"
     }

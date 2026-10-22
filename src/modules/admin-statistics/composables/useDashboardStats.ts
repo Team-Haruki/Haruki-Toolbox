@@ -1,5 +1,4 @@
 import { computed, onMounted, ref, watch } from "vue"
-import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import {
   LucideLink,
@@ -8,9 +7,15 @@ import {
   LucideUsers,
 } from "lucide-vue-next"
 import { formatLocalizedDate } from "@/lib/date-time"
+import { describeError, type ErrorDescription } from "@/lib/error-utils"
 import { getDashboard, getTimeseries } from "@/modules/admin-statistics/api/dashboard"
+import { toBreakdownItems } from "@/modules/admin-statistics/lib/dashboard-breakdown"
+import {
+  resolveUploadDataTypeLabel,
+  resolveUploadMethodLabel,
+  resolveUploadServerLabel,
+} from "@/modules/admin-statistics/lib/upload-log-meta"
 import type { DashboardData, TimeseriesPoint } from "@/types/admin"
-import { extractErrorMessage } from "@/lib/error-utils"
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -18,10 +23,16 @@ export function useDashboardStats() {
   const { t } = useI18n()
   const loading = ref(true)
   const dashboard = ref<DashboardData | null>(null)
+  // A failed load is shown inline in place of the cards (no toast): zeros
+  // would read as real data.
+  const dashboardError = ref<ErrorDescription | null>(null)
   const chartData = ref<TimeseriesPoint[]>([])
   const chartLoading = ref(true)
+  const chartError = ref<ErrorDescription | null>(null)
   const rangeDays = ref(30)
   const bucket = ref("day")
+  let latestDashboardRequest = 0
+  let latestChartRequest = 0
 
   const rangeOptions = computed(() => [
     { value: "7", label: t("adminStatistics.dashboard.chart.range7d") },
@@ -35,20 +46,27 @@ export function useDashboardStats() {
   ])
 
   async function loadDashboard() {
+    const requestId = ++latestDashboardRequest
     loading.value = true
+    dashboardError.value = null
     try {
-      dashboard.value = await getDashboard()
+      const data = await getDashboard()
+      if (requestId !== latestDashboardRequest) return
+      dashboard.value = data
     } catch (error: unknown) {
-      toast.error(t("adminStatistics.dashboard.toast.loadFailedTitle"), {
-        description: extractErrorMessage(error, t("adminStatistics.dashboard.toast.loadFailedFallback")),
-      })
+      if (requestId !== latestDashboardRequest) return
+      dashboardError.value = describeError(error, t("adminStatistics.dashboard.toast.loadFailedFallback"))
     } finally {
-      loading.value = false
+      if (requestId === latestDashboardRequest) {
+        loading.value = false
+      }
     }
   }
 
   async function loadChart() {
+    const requestId = ++latestChartRequest
     chartLoading.value = true
+    chartError.value = null
     try {
       const to = new Date()
       const from = new Date(to.getTime() - rangeDays.value * DAY_MS)
@@ -59,14 +77,21 @@ export function useDashboardStats() {
         // Align day/week/month buckets to the viewer's local calendar instead of UTC.
         tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
       })
+      if (requestId !== latestChartRequest) return
       chartData.value = response.points || []
     } catch (error: unknown) {
-      toast.error(t("adminStatistics.dashboard.toast.loadChartFailedTitle"), {
-        description: extractErrorMessage(error, t("adminStatistics.dashboard.toast.loadFailedFallback")),
-      })
+      if (requestId !== latestChartRequest) return
+      chartError.value = describeError(error, t("adminStatistics.dashboard.toast.loadFailedFallback"))
     } finally {
-      chartLoading.value = false
+      if (requestId === latestChartRequest) {
+        chartLoading.value = false
+      }
     }
+  }
+
+  function reload() {
+    void loadDashboard()
+    void loadChart()
   }
 
   function onRangeChange(value: unknown) {
@@ -91,30 +116,57 @@ export function useDashboardStats() {
       label: t("adminStatistics.dashboard.stat.totalUsers"),
       icon: LucideUsers,
       color: "text-blue-500",
-      getter: () => dashboard.value?.users.total ?? 0,
+      value: dashboard.value?.users.total ?? 0,
+      secondary: null,
     },
     {
       key: "superAdmin",
       label: t("adminStatistics.dashboard.stat.superAdmin"),
       icon: LucideShield,
       color: "text-purple-500",
-      getter: () => dashboard.value?.users.superAdmin ?? 0,
+      value: dashboard.value?.users.superAdmin ?? 0,
+      secondary: {
+        label: t("adminStatistics.dashboard.stat.admin"),
+        value: dashboard.value?.users.admin ?? 0,
+      },
     },
     {
       key: "totalBindings",
       label: t("adminStatistics.dashboard.stat.totalBindings"),
       icon: LucideLink,
       color: "text-green-500",
-      getter: () => dashboard.value?.bindings.total ?? 0,
+      value: dashboard.value?.bindings.total ?? 0,
+      secondary: {
+        label: t("adminStatistics.dashboard.stat.verifiedBindings"),
+        value: dashboard.value?.bindings.verified ?? 0,
+      },
     },
     {
       key: "totalUploads",
       label: t("adminStatistics.dashboard.stat.totalUploads"),
       icon: LucideUploadCloud,
       color: "text-orange-500",
-      getter: () => dashboard.value?.uploads.totalAllTime ?? 0,
+      value: dashboard.value?.uploads.totalAllTime ?? 0,
+      secondary: null,
     },
   ])
+
+  const serverBreakdown = computed(() => toBreakdownItems(
+    dashboard.value?.bindings.byServer,
+    (entry) => ({ key: entry.server, count: entry.count }),
+    (key) => resolveUploadServerLabel(key, t),
+  ))
+  const methodBreakdown = computed(() => toBreakdownItems(
+    dashboard.value?.uploads.byMethod,
+    (entry) => ({ key: entry.method, count: entry.count }),
+    (key) => resolveUploadMethodLabel(key, t),
+  ))
+  const dataTypeBreakdown = computed(() => toBreakdownItems(
+    dashboard.value?.uploads.byDataType,
+    (entry) => ({ key: entry.dataType, count: entry.count }),
+    (key) => resolveUploadDataTypeLabel(key, t),
+  ))
+  const uploadWindowHours = computed(() => dashboard.value?.uploads.windowHours ?? 24)
 
   function x(_: TimeseriesPoint, index: number) {
     return index
@@ -160,15 +212,16 @@ export function useDashboardStats() {
   }
 
   onMounted(() => {
-    void loadDashboard()
-    void loadChart()
+    reload()
   })
 
   return {
     loading,
     dashboard,
+    dashboardError,
     chartData,
     chartLoading,
+    chartError,
     rangeDays,
     bucket,
     rangeOptions,
@@ -176,6 +229,13 @@ export function useDashboardStats() {
     onRangeChange,
     onBucketChange,
     statCards,
+    serverBreakdown,
+    methodBreakdown,
+    dataTypeBreakdown,
+    uploadWindowHours,
+    reload,
+    loadDashboard,
+    loadChart,
     x,
     yUploads,
     yRegistrations,

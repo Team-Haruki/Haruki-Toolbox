@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { useRouter } from "vue-router"
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { describeDeckRecommendError } from "../lib/engine-errors"
+import { isDeckRecommendUserDataKnownMissing } from "../lib/user-data-availability"
+import { fetchDeckRecommendUserDataWithCache } from "../lib/user-data"
+import type { DeckRecommendUserDataMode } from "../api/recommend-data"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
 import { useMediaQuery } from "@vueuse/core"
@@ -129,7 +132,6 @@ const DEFAULT_EXECUTION_MODE: DeckRecommendExecutionMode = "parallel"
 const DECK_RECOMMEND_WORLD_BLOOM_TURNS = ["1", "2", "3"] as const
 const CHARACTER_FILTER_MIN_COUNT = 5
 
-const router = useRouter()
 const { t, locale } = useI18n()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
@@ -556,8 +558,63 @@ const invalidOptionalFields = computed(() => [
   hasSpecificSkillOrderError.value,
   hasEventSimulationError.value,
 ].some(Boolean))
+const selectedAccountDataMode = computed<DeckRecommendUserDataMode>(() => (recommendMode.value === "mysekai" ? "mysekai" : "suite"))
+// Known (from this session's fetches) to have no uploaded data for the
+// mode: the run would only 404 again, so the button stays off with a hint.
+const selectedAccountDataMissing = computed(() => isDeckRecommendUserDataKnownMissing(
+  selectedAccount.value?.server,
+  selectedAccount.value?.uid,
+  selectedAccountDataMode.value,
+))
+
+// That flag is only as fresh as the last fetch: the upload page in this tab
+// clears it, but an upload from another device or the bot cannot. Re-probe a
+// flagged account once per page visit (and once per account / mode switch):
+// a success clears the flag through the fetch itself and leaves the data in
+// the cache for the run; another 404 keeps the hint, correctly.
+const revalidatedAvailabilityKeys = new Set<string>()
+function revalidateSelectedAccountAvailability() {
+  const account = selectedAccount.value
+  const mode = selectedAccountDataMode.value
+  if (!account || !userStore.userId || !isDeckRecommendUserDataKnownMissing(account.server, account.uid, mode)) {
+    return
+  }
+  const key = `${account.server}:${account.uid}:${mode}`
+  if (revalidatedAvailabilityKeys.has(key)) {
+    return
+  }
+  revalidatedAvailabilityKeys.add(key)
+  void fetchDeckRecommendUserDataWithCache({
+    toolboxUserId: userStore.userId,
+    server: account.server,
+    gameUserId: account.uid,
+    mode,
+  }, { strategy: "check-remote" }).catch(() => undefined)
+}
+watch([() => selectedAccount.value?.key ?? null, selectedAccountDataMode], revalidateSelectedAccountAvailability, { immediate: true })
+
+/** Why "开始推荐" is disabled, when the reason is something the user can fix. */
+const runBlockedHint = computed<string | null>(() => {
+  if (runner.running.value) {
+    return null
+  }
+  if (accountOptions.value.length === 0) {
+    return t("deckRecommend.runner.blocked.noAccount")
+  }
+  if (!selectedAccount.value) {
+    return t("deckRecommend.runner.blocked.selectAccount")
+  }
+  if (selectedAccountDataMissing.value) {
+    return t("deckRecommend.runner.blocked.dataMissing")
+  }
+  return null
+})
+
 const canRunRecommend = computed(() => {
   if (runner.running.value || !selectedAccount.value || !recommendDataReady.value || activeAlgorithms.value.length === 0) {
+    return false
+  }
+  if (selectedAccountDataMissing.value) {
     return false
   }
   if (invalidOptionalFields.value) {
@@ -1065,6 +1122,32 @@ onMounted(() => {
   if (recommendDataReady.value) {
     preloadCurrentRegionData()
   }
+  // Coming back to the page within the session: show the last result again
+  // when the restored config still matches it. Wait for the route query
+  // hydration (and its reset watchers) to settle first.
+  void nextTick(() => {
+    if (!routeHydrationInProgress.value) {
+      tryRestoreLastResult()
+    }
+  })
+})
+
+function tryRestoreLastResult() {
+  if (!runner.hasResult.value && selectedAccount.value) {
+    runner.restoreLastResult(createDeckRecommendRunnerInput())
+  }
+}
+
+watch(routeHydrationInProgress, (inProgress) => {
+  if (!inProgress) {
+    void nextTick(tryRestoreLastResult)
+  }
+})
+
+// Bindings and the saved account selection hydrate after mount; the restored
+// result depends on the account, so try again once it resolves.
+watch(() => selectedAccount.value?.key ?? null, () => {
+  void nextTick(tryRestoreLastResult)
 })
 
 onBeforeUnmount(() => {
@@ -1296,19 +1379,16 @@ async function runRecommend() {
     toast.success(t("deckRecommend.toast.runSuccessTitle"))
   } catch (error) {
     if (runner.userDataMissing.value) {
-      toast.warning(t("deckRecommend.result.missingUserDataTitle"), {
-        description: t("deckRecommend.result.missingUserDataDescription"),
-        action: {
-          label: t("uploadedGameData.uploadAction"),
-          onClick: () => { void router.push("/upload-data") },
-        },
-      })
+      // The result panel's inline card carries the upload guidance; no toast on top of it.
       return
     }
 
     configCollapsed.value = false
+    const described = runner.errorDescription.value ?? describeDeckRecommendError(error)
     toast.error(t("deckRecommend.toast.runFailedTitle"), {
-      description: runner.error.value ?? (error instanceof Error ? error.message : String(error)),
+      description: described.detail
+        ? `${described.message}\n${t("core.errors.detail", { detail: described.detail })}`
+        : described.message,
     })
   }
 }
@@ -1699,6 +1779,7 @@ provideDeckRecommendFormContext({
               <DeckConfigActions
                 :running="runner.running.value"
                 :can-run="canRunRecommend"
+                :hint="runBlockedHint"
                 @expert="expertConfigOpen = true"
                 @save="saveDeckRecommendConfig"
                 @clear="clearConfigConfirmOpen = true"

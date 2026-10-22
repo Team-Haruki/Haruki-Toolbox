@@ -37,6 +37,7 @@ import {
   ticketStatusTextClass,
 } from "@/modules/tickets/lib/display"
 import { isTicketCategory, ticketCategoryLabel } from "@/modules/tickets/lib/meta"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import { useAdminTicketDetail } from "@/modules/tickets/composables/useAdminTicketDetail"
 import type { TicketDetail, TicketMessage } from "@/types/ticket"
 
@@ -46,6 +47,9 @@ const {
   loading,
   refreshing,
   ticket,
+  notFound,
+  loadError,
+  retryLoad,
   newMessage,
   isInternal,
   sending,
@@ -335,6 +339,21 @@ function messageSenderLabel(message: TicketMessage) {
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
+    </template>
+
+    <!-- A failed load is retryable; a 404 is a different state with a different next step. -->
+    <template v-else-if="loadError && !notFound">
+      <Card class="rounded-lg">
+        <CardContent class="py-6">
+          <LoadErrorState
+            :title="t('tickets.adminDetail.toast.loadFailedTitle')"
+            :description="loadError.message"
+            :detail="loadError.detail"
+            :retrying="loading"
+            @retry="retryLoad"
+          />
         </CardContent>
       </Card>
     </template>

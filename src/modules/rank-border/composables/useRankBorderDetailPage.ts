@@ -29,6 +29,7 @@ import {
 } from "../lib/comparison-target"
 import { PERSONAL_COLLECTION_LIMIT, TRACE_PAGE_LIMIT } from "../lib/rank-border-constants"
 import { createRealtimeRefreshGate, isDocumentHidden, jitterReconnectDelay } from "../lib/realtime-refresh"
+import { describeTrackerError } from "../lib/tracker-error"
 
 export type DetailComparisonKind = "rank" | "line" | "user"
 
@@ -106,7 +107,10 @@ export function useRankBorderDetailPage(
   const userStore = useUserStore()
 
   const loading = shallowRef(false)
+  /** `"not_found"`, or the user-language text of the last target failure. */
   const error = shallowRef<string | null>(null)
+  /** Raw backend text behind a non-not-found `error`, for a muted detail line. */
+  const errorDetail = shallowRef<string | null>(null)
   const current = shallowRef<RankBorderLatest | null>(null)
   const previous = shallowRef<RankBorderLatest | null>(null)
   const next = shallowRef<RankBorderLatest | null>(null)
@@ -389,6 +393,7 @@ export function useRankBorderDetailPage(
   }
 
   function settleTargetLoad() {
+    errorDetail.value = null
     if (!current.value && playerTrace.value.length === 0 && borderTrace.value.length === 0) {
       error.value = "not_found"
       return
@@ -404,9 +409,16 @@ export function useRankBorderDetailPage(
       borderTrace.value = []
     }
     const notFound = loadError instanceof Error && "status" in loadError && loadError.status === 404
-    error.value = notFound
-      ? "not_found"
-      : loadError instanceof Error ? loadError.message : String(loadError)
+    if (notFound) {
+      error.value = "not_found"
+      errorDetail.value = null
+      return
+    }
+    // Tracker errors carry raw English text: keep the localized hint as
+    // the headline and show that text as the detail line.
+    const described = describeTrackerError(loadError, translate("rankBorder.result.loadErrorHint"))
+    error.value = described.message
+    errorDetail.value = described.detail ?? null
   }
 
   async function loadTarget(options: { hydrateFromCache?: boolean; silent?: boolean; version?: number | null } = {}) {
@@ -979,6 +991,7 @@ export function useRankBorderDetailPage(
   return {
     loading,
     error,
+    errorDetail,
     current,
     notRanked,
     profile,

@@ -29,7 +29,7 @@ export const authUserChildRoutes: RouteRecordRaw[] = [
         path: "verification",
         name: "user.verification",
         component: () => import("@/modules/auth/views/Verification.vue"),
-        meta: { titleKey: "route.register" },
+        meta: { titleKey: "route.verification" },
     },
     {
         path: "reset-password/:verifyHash",

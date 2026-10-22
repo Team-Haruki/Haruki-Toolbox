@@ -8,6 +8,7 @@ import { useCatalogScrollMemory } from "@/composables/useCatalogScrollMemory"
 import { useCatalogViewPreference } from "@/composables/useCatalogViewPreference"
 import { useRouteQueryState } from "@/composables/useRouteQueryState"
 import { preloadSearchPinyin } from "@/lib/search-match"
+import CatalogDownloadProgress from "@/shared/components/catalog/CatalogDownloadProgress.vue"
 import CatalogEmptyState from "@/shared/components/catalog/CatalogEmptyState.vue"
 import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
 import CatalogPageShell from "@/shared/components/catalog/CatalogPageShell.vue"
@@ -48,8 +49,10 @@ const { state, patch, reset, activeFilterCount } = useRouteQueryState(gachasQuer
 })
 
 const {
+  region,
   loading,
   error,
+  warning,
   refreshing,
   ready,
   reload,
@@ -57,6 +60,8 @@ const {
   characterMap,
   unitColorMap,
   cardNames,
+  charactersReady,
+  cardsReady,
   types,
   years,
   total,
@@ -94,6 +99,8 @@ const characterNames = computed(() => new Map([...characterMap.value.values()].m
 const activeChips = computed(() => buildGachaActiveChips(state, {
   characterNames: characterNames.value,
   cardNames: cardNames.value,
+  charactersReady: charactersReady.value,
+  cardsReady: cardsReady.value,
   typeLabel: (type) => resolveGachaTypeLabel(ctx, type),
   statusLabel: (status) => t(`catalog.status.${status}`),
 }, (key, params) => t(key, params ?? {})))
@@ -148,8 +155,10 @@ function showUnreleased() {
       />
     </template>
 
+    <!-- The error wins over the skeleton: the gachas index failing is final
+         for the list, however long the cards index still runs. -->
     <CatalogErrorState
-      v-if="error && !loading"
+      v-if="error"
       :message="t('catalog.results.loadError')"
       :detail="error"
       :retrying="refreshing"
@@ -164,21 +173,36 @@ function showUnreleased() {
         :view-options="viewOptions"
         :sort="state.sort"
         :view="view"
+        :offline="warning != null"
+        sticky
         @update:sort="updateSort"
         @update:view="updateView"
       />
 
       <div ref="resultsAnchor" class="flex flex-col gap-3">
         <template v-if="loading">
+          <CatalogDownloadProgress :region="region" />
+          <!-- Sized like GachaTile / GachaListRow (banner, two-line title,
+               badge row, date line) so the grid does not jump on arrival. -->
           <div v-if="view === 'grid'" class="grid grid-cols-2 gap-3 md:grid-cols-3">
-            <div v-for="index in 6" :key="index" class="flex flex-col gap-1.5">
-              <Skeleton class="aspect-[2/1] w-full rounded-md" />
-              <Skeleton class="h-4 w-4/5" />
-              <Skeleton class="h-3 w-1/2" />
+            <div v-for="index in 6" :key="index" class="flex flex-col overflow-hidden rounded-xl border">
+              <Skeleton class="aspect-[2/1] w-full rounded-none" />
+              <div class="flex flex-col gap-1.5 p-2.5 sm:p-3">
+                <Skeleton class="h-4 w-4/5" />
+                <Skeleton class="h-5 w-28 rounded-full" />
+                <Skeleton class="mt-0.5 h-4 w-2/3" />
+              </div>
             </div>
           </div>
           <div v-else class="flex flex-col gap-2">
-            <Skeleton v-for="index in 6" :key="index" class="h-20 w-full rounded-md" />
+            <div v-for="index in 6" :key="index" class="flex items-center gap-3 rounded-md border p-2">
+              <Skeleton class="aspect-[2/1] w-24 shrink-0 rounded-md sm:w-32" />
+              <div class="flex flex-1 flex-col gap-1">
+                <Skeleton class="h-5 w-1/2" />
+                <Skeleton class="h-5 w-28 rounded-full" />
+                <Skeleton class="h-4 w-1/3" />
+              </div>
+            </div>
           </div>
         </template>
 
@@ -199,7 +223,11 @@ function showUnreleased() {
           </template>
         </CatalogEmptyState>
 
-        <CatalogEmptyState v-else :message="t('catalog.results.empty')" :hint="t('catalog.results.emptyHint')" />
+        <CatalogEmptyState v-else :message="t('gachas.list.empty')" :hint="t('catalog.results.emptyHint')">
+          <template v-if="activeFilterCount > 0" #action>
+            <Button variant="outline" size="sm" @click="reset()">{{ t("catalog.filters.clearAll") }}</Button>
+          </template>
+        </CatalogEmptyState>
       </div>
     </template>
 

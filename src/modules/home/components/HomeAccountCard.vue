@@ -68,6 +68,32 @@ const uploadTimeText = computed(() => {
 
     <CardContent v-else class="flex flex-1 flex-col gap-3">
       <p class="text-sm text-muted-foreground">{{ t("home.accountCard.guestDescription") }}</p>
+      <!-- Three-step onboarding: the links point at the pages each step needs. -->
+      <div class="rounded-md border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+        <p class="mb-1 font-medium text-foreground">{{ t("home.accountCard.onboarding.title") }}</p>
+        <ol class="list-decimal space-y-0.5 pl-4">
+          <li>{{ t("home.accountCard.onboarding.step1") }}</li>
+          <li>
+            <i18n-t keypath="home.accountCard.onboarding.step2" scope="global" tag="span">
+              <template #link>
+                <router-link to="/user/game-account-bindings" class="font-medium text-primary underline-offset-4 hover:underline">
+                  {{ t("home.accountCard.onboarding.step2Link") }}
+                </router-link>
+              </template>
+            </i18n-t>
+          </li>
+          <li>
+            <i18n-t keypath="home.accountCard.onboarding.step3" scope="global" tag="span">
+              <template #link>
+                <router-link to="/upload-data" class="font-medium text-primary underline-offset-4 hover:underline">
+                  {{ t("home.accountCard.onboarding.step3Link") }}
+                </router-link>
+              </template>
+            </i18n-t>
+          </li>
+        </ol>
+        <p class="mt-1">{{ t("home.accountCard.onboarding.outro") }}</p>
+      </div>
       <div class="mt-auto grid grid-cols-2 gap-2">
         <router-link to="/user/login" class="flex">
           <Button class="w-full">

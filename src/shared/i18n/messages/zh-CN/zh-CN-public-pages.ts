@@ -2,9 +2,6 @@
 // Namespaces: navigationPages, sponsor, legal
 export default {
   "navigationPages": {
-    "common": {
-      "retryLater": "请稍后重试"
-    },
     "friendGroups": {
       "title": "推荐群聊",
       "description": "一些与pjsk相关的群聊推荐",
@@ -18,14 +15,10 @@ export default {
       "title": "友情链接",
       "description": "一些与Haruki项目友好的网站推荐",
       "loading": "载入中...",
+      "empty": "暂无友情链接",
       "toast": {
         "loadFailedTitle": "加载友情链接失败"
       }
-    },
-    "maintenance": {
-      "title": "页面施工中",
-      "defaultMessage": "该页面正在开发中，请等待 Haruki Dev Team 开发完成。",
-      "etaLabel": "预计维护结束时间："
     },
     "about": {
       "title": "关于 Project Haruki",
@@ -231,7 +224,7 @@ export default {
       "title": "暂无赞助数据",
       "description": "后端发布赞助记录后，名单会显示在这里。",
       "unavailableTitle": "赞助名单暂不可用",
-      "unavailableDescription": "页面已经准备好，但后端赞助名单 API 还没有可用。"
+      "unavailableDescription": "赞助名单暂时无法加载，请稍后再来看看。"
     }
   },
   "legal": {

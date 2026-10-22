@@ -23,6 +23,7 @@ import {
   LucideUserX,
 } from "lucide-vue-next"
 import { useUserStore } from "@/shared/stores/user"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import {
   UserDetailDialogs,
   UserDetailTabActivity,
@@ -33,6 +34,8 @@ import {
   UserDetailTabOAuth,
   UserDetailTabSocial,
 } from "@/modules/admin-users/components"
+import type { UserDetailInfoActions } from "@/modules/admin-users/components/UserDetailTabInfo.vue"
+import type { UserDetailIOSCodeActions } from "@/modules/admin-users/components/UserDetailTabIOSCode.vue"
 import { useAdminUserDetail } from "@/modules/admin-users/composables/useAdminUserDetail"
 import { formatDateTime, roleLabel } from "@/modules/admin-users/constants"
 
@@ -56,6 +59,8 @@ const {
   actionLoading,
   taskLoading,
   user,
+  userNotFound,
+  userLoadError,
   activities,
   uploadLogs,
   activityLoading,
@@ -70,6 +75,7 @@ const {
   iosUploadCode,
   emailDialogOpen,
   editEmail,
+  editEmailError,
   gameBindingDialogOpen,
   editGameIsEditMode,
   editGameServer,
@@ -87,7 +93,9 @@ const {
   editAuthSocialUserId,
   editAuthSocialComment,
   onTabChange,
+  reloadUser,
   openEmailEdit,
+  updateEditEmail,
   openAddGameBinding,
   openEditGameBinding,
   openEditSocial,
@@ -112,6 +120,20 @@ const {
   handleRegenerateIOS,
   handleDeleteIOS,
 } = useAdminUserDetail(() => props.userId)
+
+// Confirmed in the tabs' ConfirmDialogs; the handlers rethrow so a failure
+// stays in the dialog instead of dropping the admin back with a toast.
+const infoActions: UserDetailInfoActions = {
+  ban: handleBan,
+  delete: handleDelete,
+  forceLogout: handleForceLogout,
+  resetPassword: handleResetPassword,
+  changeRole: handleRoleChange,
+}
+const iosCodeActions: UserDetailIOSCodeActions = {
+  regenerate: handleRegenerateIOS,
+  delete: handleDeleteIOS,
+}
 </script>
 <template>
   <div class="w-full flex flex-col gap-4">
@@ -194,9 +216,10 @@ const {
                 <LucideHash class="h-3.5 w-3.5 shrink-0" />
                 {{ user.userData.userId }}
               </span>
-              <span class="inline-flex min-w-0 items-center gap-1.5">
-                <LucideMail class="h-3.5 w-3.5 shrink-0" />
-                <span class="truncate" :title="user.userData.emailInfo?.email || t('adminUsers.common.unbound')">
+              <!-- Long addresses wrap instead of truncating; the full text is also in the tooltip. -->
+              <span class="inline-flex min-w-0 max-w-full items-start gap-1.5">
+                <LucideMail class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span class="min-w-0 break-all" :title="user.userData.emailInfo?.email || t('adminUsers.common.unbound')">
                   {{ user.userData.emailInfo?.email || t("adminUsers.common.unbound") }}
                 </span>
               </span>
@@ -232,15 +255,11 @@ const {
             :is-super-admin="userStore.isSuperAdmin"
             :action-loading="actionLoading"
             :busy="taskLoading"
+            :actions="infoActions"
             @open-email-edit="openEmailEdit"
-            @role-change="handleRoleChange"
             @toggle-cn-mysekai="handleToggleCNMysekai"
             @unban="handleUnban"
-            @ban="handleBan"
-            @force-logout="handleForceLogout"
-            @reset-password="handleResetPassword"
             @restore="handleRestore"
-            @delete="handleDelete"
           />
         </TabsContent>
 
@@ -249,6 +268,7 @@ const {
             :loading="activityLoading"
             :activities="activities"
             :upload-logs="uploadLogs"
+            :game-bindings="gameBindings"
           />
         </TabsContent>
 
@@ -257,7 +277,7 @@ const {
             :loading="oauthLoading"
             :busy="taskLoading"
             :authorizations="oauthAuths"
-            @revoke-all="handleRevokeOAuth"
+            :revoke-all="handleRevokeOAuth"
           />
         </TabsContent>
 
@@ -266,9 +286,9 @@ const {
             :loading="gameBindingLoading"
             :busy="taskLoading"
             :game-bindings="gameBindings"
+            :delete-binding="handleDeleteGameBinding"
             @add="openAddGameBinding"
             @edit="openEditGameBinding"
-            @delete="({ server, gameUserId }) => handleDeleteGameBinding(server, gameUserId)"
           />
         </TabsContent>
 
@@ -277,8 +297,8 @@ const {
             :loading="socialLoading"
             :busy="taskLoading"
             :social-platform="socialPlatform"
+            :delete-social="handleDeleteSocial"
             @edit="openEditSocial"
-            @delete="handleDeleteSocial"
           />
         </TabsContent>
 
@@ -287,21 +307,36 @@ const {
             :loading="authSocialLoading"
             :busy="taskLoading"
             :authorized-socials="authorizedSocials"
+            :delete-social="handleDeleteAuthSocial"
             @add="openAddAuthSocial"
             @edit="openEditAuthSocial"
-            @delete="handleDeleteAuthSocial"
           />
         </TabsContent>
 
         <TabsContent value="ios">
           <UserDetailTabIOSCode
             :upload-code="iosUploadCode"
+            :user-name="user.userData.name"
             :busy="taskLoading"
-            @regenerate="handleRegenerateIOS"
-            @delete="handleDeleteIOS"
+            :actions="iosCodeActions"
           />
         </TabsContent>
       </Tabs>
+    </template>
+
+    <!-- A failed load is retryable; a 404 is a different state with a different next step. -->
+    <template v-else-if="userLoadError && !userNotFound">
+      <Card>
+        <CardContent>
+          <LoadErrorState
+            :title="t('adminUsers.detail.toast.loadUserFailedTitle')"
+            :description="userLoadError.message"
+            :detail="userLoadError.detail"
+            :retrying="loading"
+            @retry="reloadUser"
+          />
+        </CardContent>
+      </Card>
     </template>
 
     <template v-else>
@@ -324,7 +359,8 @@ const {
       :auth-social-create-mode="authSocialCreateMode"
       :edit-auth-social-id="editAuthSocialId"
       v-model:email-dialog-open="emailDialogOpen"
-      v-model:edit-email="editEmail"
+      :edit-email="editEmail"
+      :edit-email-error="editEmailError"
       v-model:game-binding-dialog-open="gameBindingDialogOpen"
       :edit-game-is-edit-mode="editGameIsEditMode"
       v-model:edit-game-server="editGameServer"
@@ -339,6 +375,7 @@ const {
       v-model:edit-auth-social-platform="editAuthSocialPlatform"
       v-model:edit-auth-social-user-id="editAuthSocialUserId"
       v-model:edit-auth-social-comment="editAuthSocialComment"
+      @update:edit-email="updateEditEmail"
       @save-email="handleEmailUpdate"
       @save-game-binding="handleSaveGameBinding"
       @save-social="handleSaveSocial"

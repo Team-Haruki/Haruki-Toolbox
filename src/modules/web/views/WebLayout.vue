@@ -6,6 +6,7 @@ import { defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from "vu
 import SidebarUser from "@/modules/user/components/SidebarUser.vue";
 import { useWebLayout } from "@/modules/web/composables/useWebLayout"
 import { WEB_NAV_SECTIONS } from "@/config/navigation"
+import SidebarRouteSync from "@/modules/web/components/SidebarRouteSync.vue"
 
 import HomeSettingsDialog from "@/modules/home/components/HomeSettingsDialog.vue"
 
@@ -64,6 +65,8 @@ const {
   pendingUserTicketCount,
   isNavGroupOpen,
   setNavGroupOpen,
+  isNavLinkActive,
+  isNavGroupActive,
 } = useWebLayout()
 const homeSettingsDialogOpen = ref(false)
 const homeSettingsDialogTab = ref("preferences")
@@ -108,6 +111,7 @@ function openAppSettings() {
 
 <template>
   <SidebarProvider>
+    <SidebarRouteSync />
     <!-- Visuals come from the data-glass-surface system in style.css. -->
     <Sidebar v-bind="props" data-glass-surface="sidebar" class="border-r">
       <SidebarHeader
@@ -129,16 +133,16 @@ function openAppSettings() {
         <SidebarGroup class="flex-none">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton as-child>
-                <router-link to="/" class="flex items-center gap-2">
+              <SidebarMenuButton as-child :is-active="isNavLinkActive('/')">
+                <router-link to="/" class="flex items-center gap-2" :aria-current="isNavLinkActive('/') ? 'page' : undefined">
                   <LucideHome></LucideHome>
                   <span>{{ t("webLayout.nav.home") }}</span>
                 </router-link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton as-child>
-                <router-link to="/about" class="flex items-center gap-2">
+              <SidebarMenuButton as-child :is-active="isNavLinkActive('/about')">
+                <router-link to="/about" class="flex items-center gap-2" :aria-current="isNavLinkActive('/about') ? 'page' : undefined">
                   <LucideInfo></LucideInfo>
                   <span>{{ t("navigation.items.about") }}</span>
                 </router-link>
@@ -159,7 +163,7 @@ function openAppSettings() {
                 >
                   <SidebarMenuItem>
                     <CollapsibleTrigger as-child>
-                      <SidebarMenuButton :tooltip="t(item.titleKey)">
+                      <SidebarMenuButton :tooltip="t(item.titleKey)" :is-active="isNavGroupActive(item)">
                         <component :is="item.icon" v-if="item.icon"/>
                         <span>{{ t(item.titleKey) }}</span>
                         <LucideChevronRight
@@ -169,11 +173,12 @@ function openAppSettings() {
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         <SidebarMenuSubItem v-for="subItem in item.items" :key="subItem.titleKey">
-                          <SidebarMenuSubButton as-child>
+                          <SidebarMenuSubButton as-child :is-active="isNavLinkActive(subItem.url)">
                             <router-link
                                 v-if="subItem.url"
                                 :to="subItem.url"
                                 class="flex items-center gap-2"
+                                :aria-current="isNavLinkActive(subItem.url) ? 'page' : undefined"
                             >
                               <component :is="subItem.icon" v-if="subItem.icon"/>
                               <span>{{ t(subItem.titleKey) }}</span>
@@ -185,8 +190,8 @@ function openAppSettings() {
                   </SidebarMenuItem>
                 </Collapsible>
                 <SidebarMenuItem v-else-if="item.url">
-                  <SidebarMenuButton as-child :tooltip="t(item.titleKey)">
-                    <router-link :to="item.url" class="flex items-center gap-2">
+                  <SidebarMenuButton as-child :tooltip="t(item.titleKey)" :is-active="isNavLinkActive(item.url)">
+                    <router-link :to="item.url" class="flex items-center gap-2" :aria-current="isNavLinkActive(item.url) ? 'page' : undefined">
                       <component :is="item.icon" v-if="item.icon"/>
                       <span>{{ t(item.titleKey) }}</span>
                     </router-link>
@@ -200,16 +205,16 @@ function openAppSettings() {
             <SidebarGroupLabel>{{ t("navigation.groups.accountManagement") }}</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem v-if="userStore.isAdmin">
-                <SidebarMenuButton as-child>
-                  <router-link to="/admin" class="flex items-center gap-2">
+                <SidebarMenuButton as-child :is-active="isNavLinkActive('/admin')">
+                  <router-link to="/admin" class="flex items-center gap-2" :aria-current="isNavLinkActive('/admin') ? 'page' : undefined">
                     <LucideShieldCheck></LucideShieldCheck>
                     <span>{{ t("webLayout.nav.admin") }}</span>
                   </router-link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton as-child>
-                  <router-link to="/tickets" class="flex items-center gap-2">
+                <SidebarMenuButton as-child :is-active="isNavLinkActive('/tickets')">
+                  <router-link to="/tickets" class="flex items-center gap-2" :aria-current="isNavLinkActive('/tickets') ? 'page' : undefined">
                     <LucideTicket></LucideTicket>
                     <span>{{ t("webLayout.nav.myTickets") }}</span>
                     <span
@@ -237,7 +242,7 @@ function openAppSettings() {
           data-glass-surface="topbar"
           class="sticky top-0 z-40 flex h-13 items-center px-4 gap-2 text-base-content overflow-hidden flex-nowrap border-b"
       >
-        <SidebarTrigger class="flex-shrink-0"/>
+        <SidebarTrigger class="flex-shrink-0 -ml-2 sm:ml-0"/>
         <div class="flex items-center flex-shrink-0 whitespace-nowrap">
           <router-link to="/" class="flex items-baseline gap-1.5 flex-shrink-0 whitespace-nowrap">
             <span class="text-lg font-bold leading-none flex-shrink-0 whitespace-nowrap">
@@ -248,10 +253,11 @@ function openAppSettings() {
         </div>
         <Separator
             orientation="vertical"
-            class="mx-1 !h-6 bg-slate-300/70 dark:bg-cyan-400/25 hidden sm:inline-flex"
+            class="mx-1 !h-6 bg-slate-300/70 dark:bg-cyan-400/25"
         />
+        <!-- Compact on phones so the current section stays visible next to the brand. -->
         <div
-            class="hidden sm:block text-lg font-semibold truncate whitespace-nowrap overflow-hidden min-w-0 pl-1"
+            class="text-sm sm:text-lg font-medium sm:font-semibold truncate whitespace-nowrap overflow-hidden min-w-0 pl-0.5 sm:pl-1"
         >
           {{ pageTitle }}
         </div>
@@ -270,7 +276,8 @@ function openAppSettings() {
         </div>
       </header>
 
-      <main class="flex min-w-0 flex-1 flex-col">
+      <!-- SidebarInset is the page's single <main> landmark. -->
+      <div class="flex min-w-0 flex-1 flex-col">
         <div class="flex min-w-0 w-full flex-1 flex-col items-center px-4 py-3 sm:p-4 xl:p-6">
           <router-view v-slot="{ Component, route }">
             <Transition name="page-fade" mode="out-in">
@@ -281,7 +288,7 @@ function openAppSettings() {
           </router-view>
         </div>
 
-      </main>
+      </div>
 
       <SidebarFooter
         data-glass-surface="footer"
@@ -296,19 +303,19 @@ function openAppSettings() {
             </span>
             <nav
               :aria-label="t('webLayout.footer.legalLinks')"
-              class="flex items-center gap-2 text-xs"
+              class="flex items-center gap-1 text-xs"
             >
-              <router-link to="/privacy" class="transition-colors underline-offset-4 hover:text-foreground hover:underline">
+              <router-link to="/privacy" class="inline-flex items-center px-1.5 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline">
                 {{ t("webLayout.footer.privacyPolicy") }}
               </router-link>
               <span class="h-3 w-px bg-border" aria-hidden="true"></span>
-              <router-link to="/tos" class="transition-colors underline-offset-4 hover:text-foreground hover:underline">
+              <router-link to="/tos" class="inline-flex items-center px-1.5 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline">
                 {{ t("webLayout.footer.termsOfService") }}
               </router-link>
               <span class="h-3 w-px bg-border" aria-hidden="true"></span>
               <button
                 type="button"
-                class="transition-colors underline-offset-4 hover:text-foreground hover:underline"
+                class="inline-flex items-center px-1.5 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline"
                 @click="openAppSettings"
               >
                 {{ t("webLayout.footer.appVersion") }}

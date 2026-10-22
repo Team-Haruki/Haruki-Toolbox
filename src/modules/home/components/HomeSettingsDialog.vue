@@ -171,6 +171,15 @@ function formatBuildTime(value: string) {
 function hasVisitedSettingsTab(tab: string) {
   return visitedSettingsTabs.value.has(tab)
 }
+
+// The dialog is the surface: the check runs silently and its outcome shows
+// in the status badge / inline text instead of a duplicate toast.
+const userCheckFailed = ref(false)
+async function runUserUpdateCheck() {
+  userCheckFailed.value = false
+  await checkForAppUpdate({ silent: true })
+  userCheckFailed.value = appUpdateState.lastError !== null
+}
 </script>
 
 <template>
@@ -225,11 +234,11 @@ function hasVisitedSettingsTab(tab: string) {
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col">
-          <!-- mr-10 ends the scrollport before the absolute close button so
-               pills can never scroll underneath it. -->
-          <div class="shrink-0 border-b sm:hidden">
+          <!-- Phones: four equal icon+label tabs fit a 390px dialog without
+               clipping; the row stays clear of the close button above it. -->
+          <div class="shrink-0 border-b pt-10 sm:hidden">
           <nav
-            class="mr-10 flex gap-1.5 overflow-x-auto px-4 pt-4 pb-3"
+            class="grid grid-cols-4 gap-1 px-3 pb-2"
             :aria-label="t('homeSettings.title')"
           >
             <button
@@ -237,20 +246,19 @@ function hasVisitedSettingsTab(tab: string) {
               :key="section.value"
               type="button"
               :class="[
-                'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition-colors',
+                'relative flex min-w-0 flex-col items-center gap-1 rounded-md px-1 py-1.5 text-[11px] leading-tight transition-colors',
                 settingsTab === section.value
-                  ? 'border-primary bg-primary font-medium text-primary-foreground'
-                  : 'border-border text-muted-foreground',
+                  ? 'bg-primary/10 font-medium text-primary'
+                  : 'text-muted-foreground hover:bg-accent/60',
               ]"
               :aria-current="settingsTab === section.value ? 'true' : undefined"
               @click="settingsTab = section.value"
             >
-              <component :is="section.icon" class="size-3.5" />
-              {{ section.label }}
+              <component :is="section.icon" class="size-4" />
+              <span class="w-full truncate text-center">{{ section.label }}</span>
               <span
                 v-if="section.value === 'app' && appUpdateState.updateAvailable"
-                class="size-1.5 rounded-full"
-                :class="settingsTab === section.value ? 'bg-primary-foreground' : 'bg-amber-500'"
+                class="absolute top-1 right-2 size-1.5 rounded-full bg-amber-500"
               />
             </button>
           </nav>
@@ -523,12 +531,19 @@ function hasVisitedSettingsTab(tab: string) {
                   </div>
                 </div>
 
-                <p v-if="appUpdateState.lastError" class="text-xs text-destructive">
+                <!-- A failed boot-time background check is not the user's doing:
+                     say "not checked yet" in neutral tone; only a check they
+                     asked for reports its failure, and inline rather than as
+                     a second toast. -->
+                <p v-if="appUpdateState.lastError && userCheckFailed" class="text-xs text-destructive" role="alert">
                   {{ t("homeSettings.appUpdate.lastError") }}
+                </p>
+                <p v-else-if="!appUpdateState.checkedAt && !appUpdateState.checking" class="text-xs text-muted-foreground">
+                  {{ t("homeSettings.appUpdate.notCheckedYet") }}
                 </p>
 
                 <div class="grid gap-2 sm:grid-cols-2">
-                  <Button type="button" variant="outline" :disabled="appUpdateState.checking || appUpdateState.applying" @click="checkForAppUpdate()">
+                  <Button type="button" variant="outline" :disabled="appUpdateState.checking || appUpdateState.applying" @click="runUserUpdateCheck">
                     <RefreshCw :class="['size-4', appUpdateState.checking ? 'animate-spin' : '']" />
                     {{ appUpdateState.checking ? t("homeSettings.appUpdate.checking") : t("homeSettings.appUpdate.check") }}
                   </Button>

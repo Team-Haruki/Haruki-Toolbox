@@ -27,10 +27,12 @@ const { t } = useI18n()
   <div :class="cn(compact ? 'min-w-0 flex-1' : 'grid gap-2', props.class)">
     <Label :for="inputId" :class="compact ? 'sr-only' : undefined">{{ label }}</Label>
     <div class="relative w-full items-center">
+      <!-- The native WebKit cancel button is hidden: the custom clear
+           button below is the only one, so the field never shows two. -->
       <Input
         :id="inputId"
         v-model="model"
-        class="pr-9 pl-10"
+        class="pr-9 pl-10 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
         type="search"
         autocomplete="off"
         :placeholder="placeholder"

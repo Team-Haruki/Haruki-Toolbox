@@ -2,12 +2,17 @@
 import { computed, useId } from "vue"
 import { useI18n } from "vue-i18n"
 import type { AcceptableValue } from "reka-ui"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { CatalogCharacter, SekaiUnit } from "@/shared/sekai/catalog"
 import CatalogCharacterPicker from "@/shared/components/catalog/CatalogCharacterPicker.vue"
 import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
 import CatalogFilterPanel, { type CatalogActiveChip } from "@/shared/components/catalog/CatalogFilterPanel.vue"
-import type { CatalogFieldOption, CatalogStatus } from "@/shared/components/catalog/types"
+import {
+  CATALOG_YEAR_PLACEHOLDER_COUNT,
+  type CatalogFieldOption,
+  type CatalogStatus,
+} from "@/shared/components/catalog/types"
 import type { GachaListQuery } from "@/modules/gachas/lib/gachas-query"
 
 /**
@@ -40,6 +45,9 @@ const id = useId()
 const ANY_YEAR = "__any__"
 
 const yearModel = computed(() => (props.state.year == null ? ANY_YEAR : String(props.state.year)))
+// Chip-sized placeholders hold the row's height until the dump arrives, so
+// the grid below does not jump when the years render.
+const yearPlaceholders = computed(() => (props.yearOptions.length === 0 ? CATALOG_YEAR_PLACEHOLDER_COUNT : 0))
 
 function updateStatuses(values: string[]) {
   emit("patch", { status: values.filter((value): value is CatalogStatus => value === "upcoming" || value === "ongoing" || value === "ended") })
@@ -99,6 +107,7 @@ function updateYear(value: AcceptableValue | AcceptableValue[] | undefined) {
           <ToggleGroupItem v-for="option in yearOptions" :key="option.value" :value="option.value">
             {{ option.label }}
           </ToggleGroupItem>
+          <Skeleton v-for="index in yearPlaceholders" :key="`placeholder-${index}`" class="h-7 w-12 rounded-full" aria-hidden="true" />
         </ToggleGroup>
       </div>
     </div>

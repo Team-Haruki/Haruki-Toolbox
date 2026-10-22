@@ -87,6 +87,13 @@ export type SekaiDataUpdatePhase =
   | "ready"
   | "clearing"
 
+/**
+ * Where an ensure failed. `version` means the region's manifest could not be
+ * fetched at all (CDN unreachable / offline): every other request for the
+ * region would fail the same way, so the store fails queued ones at once.
+ */
+export type SekaiDataWorkerErrorStage = "version" | "master" | "music-metas" | "cache"
+
 export type SekaiDataWorkerRequest =
   | {
     type: "ensure-region"
@@ -144,4 +151,6 @@ export type SekaiDataWorkerEvent =
     requestId: string
     region: SekaiRegion
     message: string
+    /** Optional (older workers omit it); see SekaiDataWorkerErrorStage. */
+    stage?: SekaiDataWorkerErrorStage
   }

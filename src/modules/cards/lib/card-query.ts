@@ -175,6 +175,12 @@ export function toCardListFilters(state: CardsQueryState): CardListFilters {
 
 export type CardsActiveChipContext = {
   characterNames: ReadonlyMap<number, string>
+  /**
+   * False while the characters index is still loading: unresolved ids render
+   * as skeleton chips. Once loaded, an id the index does not know is a plain
+   * removable `#id` chip (a shared link from another region, a stale id).
+   */
+  charactersReady: boolean
   labels: SekaiLabelContext
 }
 
@@ -191,7 +197,9 @@ export function buildCardsActiveChips(state: CardsQueryState, ctx: CardsActiveCh
     chips.push({ key: "q", label: `${labels.t("catalog.search.label")}: ${q}` })
   }
   for (const id of state.chars) {
-    chips.push({ key: `chars:${id}`, label: ctx.characterNames.get(id) ?? `#${id}` })
+    // Skeleton chip until the characters index names the id.
+    const name = ctx.characterNames.get(id)
+    chips.push({ key: `chars:${id}`, label: name ?? `#${id}`, pending: name == null && !ctx.charactersReady })
   }
   for (const unit of state.units) {
     chips.push({ key: `units:${unit}`, label: resolveSekaiUnitLabel(labels, unit) })

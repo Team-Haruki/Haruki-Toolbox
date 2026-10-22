@@ -31,17 +31,27 @@ import {
 import {
   LucideAlertTriangle,
   LucideCheckCircle2,
-  LucideChevronLeft,
-  LucideChevronRight,
   LucideLoader2,
   LucidePlus,
   LucideShieldCheck,
 } from "lucide-vue-next"
+import { ref } from "vue"
 import { useI18n } from "vue-i18n"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
+import FieldError from "@/shared/components/FieldError.vue"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import AdminPagination from "@/modules/admin/components/AdminPagination.vue"
+import {
+  RISK_EVENT_FIELD_IDS,
+  RISK_EVENT_SOURCE_OPTIONS,
+  type RiskEventCreateErrors,
+} from "@/modules/admin-risk/composables/useRiskManagement"
+import type { ErrorDescription } from "@/lib/error-utils"
 import type { RiskEvent } from "@/types/admin"
 
 interface Props {
   loading: boolean
+  error: ErrorDescription | null
   events: RiskEvent[]
   totalEvents: number
   eventPage: number
@@ -53,13 +63,16 @@ interface Props {
   newAction: string
   newReason: string
   newTargetUserId: string
+  createErrors: RiskEventCreateErrors
   creating: boolean
   eventTotalPages: () => number
   formatDate: (value: string) => string
+  /** Confirmed in a dialog; rejects on failure so the dialog stays open with the error. */
+  resolveEvent: (eventId: string) => Promise<void>
 }
 
 const props = defineProps<Props>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const emit = defineEmits<{
   (event: "update:createOpen", value: boolean): void
@@ -68,13 +81,29 @@ const emit = defineEmits<{
   (event: "update:newAction", value: string): void
   (event: "update:newReason", value: string): void
   (event: "update:newTargetUserId", value: string): void
+  (event: "update:eventPageSize", value: number): void
   (event: "create"): void
-  (event: "resolve", eventId: string): void
+  (event: "retry"): void
   (event: "prevPage"): void
   (event: "nextPage"): void
+  (event: "goToPage", page: number): void
 }>()
 
 const severityOptions = ["low", "medium", "high", "critical"] as const
+
+const resolveConfirmOpen = ref(false)
+// Kept after the dialog closes so its text does not change mid fade-out.
+const eventToResolve = ref<RiskEvent | null>(null)
+
+function requestResolve(eventItem: RiskEvent) {
+  eventToResolve.value = eventItem
+  resolveConfirmOpen.value = true
+}
+
+function executeResolve() {
+  const eventItem = eventToResolve.value
+  return eventItem ? props.resolveEvent(eventItem.id) : Promise.resolve()
+}
 
 function updateCreateOpen(value: boolean) {
   emit("update:createOpen", value)
@@ -84,8 +113,8 @@ function updateSeverity(value: unknown) {
   if (typeof value === "string") emit("update:newSeverity", value)
 }
 
-function updateSource(value: string | number) {
-  emit("update:newSource", String(value))
+function updateSource(value: unknown) {
+  if (typeof value === "string") emit("update:newSource", value)
 }
 
 function updateAction(value: string | number) {
@@ -115,7 +144,8 @@ function statusLabel(status: string) {
       <CardTitle class="text-base">{{ t("adminRisk.events.title") }}</CardTitle>
       <Dialog :open="props.createOpen" @update:open="updateCreateOpen">
         <DialogTrigger as-child>
-          <Button size="sm">
+          <!-- A failed list load disables creation: the new event could not be shown either way. -->
+          <Button size="sm" :disabled="!!props.error">
             <LucidePlus class="w-4 h-4" /> {{ t("adminRisk.events.createButton") }}
           </Button>
         </DialogTrigger>
@@ -123,10 +153,10 @@ function statusLabel(status: string) {
           <DialogHeader>
             <DialogTitle>{{ t("adminRisk.events.createDialogTitle") }}</DialogTitle>
           </DialogHeader>
-          <div class="flex flex-col gap-3 py-4">
+          <form id="risk-event-create-form" class="flex flex-col gap-3 py-4" novalidate @submit.prevent="emit('create')">
             <div class="flex flex-col gap-1.5">
               <Label id="risk-event-severity-label" for="risk-event-severity">{{ t("adminRisk.events.fields.severity") }}</Label>
-              <Select id="risk-event-severity" :model-value="props.newSeverity" @update:model-value="updateSeverity">
+              <Select id="risk-event-severity" :key="locale" :model-value="props.newSeverity" @update:model-value="updateSeverity">
                 <SelectTrigger aria-labelledby="risk-event-severity-label" class="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -138,33 +168,43 @@ function statusLabel(status: string) {
               </Select>
             </div>
             <div class="flex flex-col gap-1.5">
-              <Label for="risk-event-source">{{ t("adminRisk.events.fields.source") }}</Label>
-              <Input
-                id="risk-event-source"
-                :model-value="props.newSource"
-                :placeholder="t('adminRisk.events.placeholders.source')"
-                @update:model-value="updateSource"
-              />
+              <Label id="risk-event-source-label" for="risk-event-source">{{ t("adminRisk.events.fields.source") }}</Label>
+              <Select id="risk-event-source" :key="locale" :model-value="props.newSource" @update:model-value="updateSource">
+                <SelectTrigger aria-labelledby="risk-event-source-label" class="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="option in RISK_EVENT_SOURCE_OPTIONS" :key="option" :value="option">
+                    {{ t(`adminRisk.events.sourceOptions.${option}`) }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div class="flex flex-col gap-1.5">
-              <Label for="risk-event-action">{{ t("adminRisk.events.fields.action") }}</Label>
+              <Label :for="RISK_EVENT_FIELD_IDS.action">{{ t("adminRisk.events.fields.action") }}</Label>
               <Input
-                id="risk-event-action"
+                :id="RISK_EVENT_FIELD_IDS.action"
                 :model-value="props.newAction"
                 :placeholder="t('adminRisk.events.placeholders.action')"
+                :aria-invalid="!!props.createErrors.action || undefined"
+                :aria-describedby="props.createErrors.action ? `${RISK_EVENT_FIELD_IDS.action}-error` : undefined"
                 @update:model-value="updateAction"
               />
+              <FieldError :id="`${RISK_EVENT_FIELD_IDS.action}-error`" :message="props.createErrors.action" />
             </div>
             <div class="flex flex-col gap-1.5">
-              <Label for="risk-event-reason">{{ t("adminRisk.events.fields.reason") }}</Label>
+              <Label :for="RISK_EVENT_FIELD_IDS.reason">{{ t("adminRisk.events.fields.reason") }}</Label>
               <textarea
-                id="risk-event-reason"
+                :id="RISK_EVENT_FIELD_IDS.reason"
                 :value="props.newReason"
                 :placeholder="t('adminRisk.events.placeholders.reason')"
                 rows="3"
-                class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
+                :aria-invalid="!!props.createErrors.reason || undefined"
+                :aria-describedby="props.createErrors.reason ? `${RISK_EVENT_FIELD_IDS.reason}-error` : undefined"
+                class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y aria-invalid:border-destructive aria-invalid:ring-destructive/20"
                 @input="emit('update:newReason', String(($event.target as HTMLTextAreaElement).value))"
               />
+              <FieldError :id="`${RISK_EVENT_FIELD_IDS.reason}-error`" :message="props.createErrors.reason" />
             </div>
             <div class="flex flex-col gap-1.5">
               <Label for="risk-event-target-user">{{ t("adminRisk.events.fields.targetUserIdOptional") }}</Label>
@@ -175,14 +215,14 @@ function statusLabel(status: string) {
                 @update:model-value="updateTargetUserId"
               />
             </div>
-          </div>
+          </form>
           <DialogFooter>
             <DialogClose as-child>
               <Button variant="outline" :disabled="props.creating">
                 {{ t("common.cancel") }}
               </Button>
             </DialogClose>
-            <Button :disabled="props.creating" @click="emit('create')">
+            <Button type="submit" form="risk-event-create-form" :disabled="props.creating">
               <LucideLoader2 v-if="props.creating" class="w-4 h-4 animate-spin" />
               {{ t("adminRisk.events.create") }}
             </Button>
@@ -195,6 +235,15 @@ function statusLabel(status: string) {
         <div class="p-6 flex flex-col gap-3">
           <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
         </div>
+      </template>
+      <template v-else-if="props.error">
+        <LoadErrorState
+          :title="t('adminRisk.toast.loadEventsFailedTitle')"
+          :description="props.error.message"
+          :detail="props.error.detail"
+          :retrying="props.loading"
+          @retry="emit('retry')"
+        />
       </template>
       <template v-else-if="props.events.length === 0">
         <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
@@ -235,7 +284,7 @@ function statusLabel(status: string) {
                 </span>
               </TableCell>
               <TableCell class="font-medium">{{ eventItem.action }}</TableCell>
-              <TableCell class="max-w-[200px] truncate text-muted-foreground">{{ eventItem.reason }}</TableCell>
+              <TableCell class="max-w-[200px] truncate text-muted-foreground" :title="eventItem.reason">{{ eventItem.reason }}</TableCell>
               <TableCell class="hidden md:table-cell text-muted-foreground text-sm">
                 {{ eventItem.userName || eventItem.targetUserId || t("adminRisk.common.fallback") }}
               </TableCell>
@@ -262,7 +311,7 @@ function statusLabel(status: string) {
                   :disabled="props.actionLoading"
                   :title="t('adminRisk.events.resolveAction')"
                   :aria-label="t('adminRisk.events.resolveAction')"
-                  @click="emit('resolve', eventItem.id)"
+                  @click="requestResolve(eventItem)"
                 >
                   <LucideCheckCircle2 class="w-3.5 h-3.5" />
                   <span class="hidden xl:inline">{{ t("adminRisk.events.resolveAction") }}</span>
@@ -273,36 +322,27 @@ function statusLabel(status: string) {
         </Table>
       </template>
     </CardContent>
-    <div
-      v-if="props.totalEvents > 0"
-      class="flex items-center justify-between gap-3 border-t px-4 py-3 sm:px-6"
-    >
-      <span class="text-sm text-muted-foreground">
-        {{ t("adminRisk.events.total", { total: props.totalEvents }) }}
-      </span>
-      <div v-if="props.totalEvents > props.eventPageSize" class="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="props.loading || props.eventPage <= 1"
-          :title="t('adminRisk.events.pagination.prev')"
-          :aria-label="t('adminRisk.events.pagination.prev')"
-          @click="emit('prevPage')"
-        >
-          <LucideChevronLeft class="w-4 h-4" />
-        </Button>
-        <span class="text-sm tabular-nums">{{ props.eventPage }} / {{ props.eventTotalPages() }}</span>
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="props.loading || props.eventPage >= props.eventTotalPages()"
-          :title="t('adminRisk.events.pagination.next')"
-          :aria-label="t('adminRisk.events.pagination.next')"
-          @click="emit('nextPage')"
-        >
-          <LucideChevronRight class="w-4 h-4" />
-        </Button>
-      </div>
+    <div v-if="!props.error" class="border-t px-4 py-3 sm:px-6">
+      <AdminPagination
+        :total="props.totalEvents"
+        :page="props.eventPage"
+        :page-size="props.eventPageSize"
+        :total-pages="props.eventTotalPages()"
+        :disabled="props.loading"
+        :total-label="t('adminRisk.events.total', { total: props.totalEvents })"
+        @update:page-size="emit('update:eventPageSize', $event)"
+        @prev-page="emit('prevPage')"
+        @next-page="emit('nextPage')"
+        @go-to-page="emit('goToPage', $event)"
+      />
     </div>
+
+    <ConfirmDialog
+      v-model:open="resolveConfirmOpen"
+      :title="t('adminRisk.events.resolveDialog.title')"
+      :description="t('adminRisk.events.resolveDialog.description', { action: eventToResolve?.action ?? '', id: eventToResolve?.id ?? '' })"
+      :confirm-label="t('adminRisk.events.resolveDialog.confirm')"
+      :on-confirm="executeResolve"
+    />
   </Card>
 </template>

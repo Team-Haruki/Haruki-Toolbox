@@ -148,6 +148,7 @@ const page = useRankBorderDetailPage(params, trackerEndpoint)
 const {
   loading,
   error,
+  errorDetail,
   current,
   notRanked,
   profile,
@@ -717,10 +718,12 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
           <ArrowLeft class="size-4" />
           {{ t("rankBorder.actions.backToList") }}
         </Button>
-        <div class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+        <div v-if="params" class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
           <span class="font-medium text-foreground">{{ eventLabel }}</span>
           <span v-if="regionLabel"> · {{ regionLabel }}</span>
         </div>
+        <div v-else class="min-w-0 flex-1" />
+
         <div class="ml-auto flex shrink-0 items-center gap-2">
           <Select :model-value="String(intervalSeconds)" :aria-label="t('rankBorder.fields.interval')" @update:model-value="updateInterval">
             <SelectTrigger class="h-8 w-28 text-xs" :aria-label="t('rankBorder.fields.interval')">
@@ -743,13 +746,15 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
         </div>
       </div>
 
-      <!-- Invalid link -->
+      <!-- Invalid / legacy link: nothing was requested, so say so instead of "not collected yet" -->
       <Card v-if="!params">
         <CardContent class="grid justify-items-start gap-3 p-6 text-sm text-muted-foreground">
-          <p>{{ t("rankBorder.result.rankNotFound") }}</p>
-          <Button type="button" variant="outline" size="sm" @click="goBack">
-            <ArrowLeft class="size-4" />
-            {{ t("rankBorder.actions.backToList") }}
+          <p>{{ t("rankBorder.result.invalidLink") }}</p>
+          <Button as-child variant="outline" size="sm">
+            <RouterLink to="/rank-border">
+              <ArrowLeft class="size-4" />
+              {{ t("rankBorder.result.goToRankBorder") }}
+            </RouterLink>
           </Button>
         </CardContent>
       </Card>
@@ -774,7 +779,10 @@ function formatTimeTick(timestamp: number, timeDomain: RankBorderChartTimeDomain
         <Card class="gap-0 py-0">
           <CardContent class="grid gap-3 p-3 sm:p-4">
             <div v-if="error && !current && !notRanked" class="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-              {{ error === "not_found" ? t(params.target.kind === "user" ? "rankBorder.result.userNotFound" : "rankBorder.result.rankNotFound") : error }}
+              <p>{{ error === "not_found" ? t(params.target.kind === "user" ? "rankBorder.result.userNotFound" : "rankBorder.result.rankNotFound") : error }}</p>
+              <p v-if="error !== 'not_found' && errorDetail" class="mt-1 text-xs text-destructive/70">
+                {{ t("core.errors.detail", { detail: errorDetail }) }}
+              </p>
             </div>
             <div v-else class="rank-border-detail-hero">
               <LeaderCard v-if="!isLineTarget" :leader="leaderVisual" variant="detail" />

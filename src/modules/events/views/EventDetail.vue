@@ -77,7 +77,7 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
     :loading="detail.eventsIndex.loading.value"
     :error="detail.eventsIndex.error.value"
     :not-found="detail.notFound.value"
-    :not-found-message="t('events.detail.notFound')"
+    :not-found-message="t('events.detail.notFound', { eventId: props.eventId })"
     :error-message="t('events.detail.loadFailed')"
     :retrying="detail.eventsIndex.refreshing.value"
     :unreleased="detail.unreleased.value"
@@ -140,7 +140,7 @@ const isCheerfulCarnival = computed(() => event.value?.eventType === "cheerful_c
             stacked
           />
 
-          <EventTimelineSection :event="event" :status="status" :now-ms="now" />
+          <EventTimelineSection :event="event" :status="status" :now-ms="now" :region="region" />
         </div>
 
         <div class="flex min-w-0 flex-col gap-4 lg:row-span-2">

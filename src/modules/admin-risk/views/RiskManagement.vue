@@ -9,6 +9,7 @@ const { t } = useI18n()
 const {
   userStore,
   eventsLoading,
+  eventsError,
   events,
   totalEvents,
   eventPage,
@@ -20,19 +21,25 @@ const {
   newAction,
   newReason,
   newTargetUserId,
+  createErrors,
   creating,
   rulesLoading,
   rulesLoadError,
   rulesJson,
+  rulesError,
+  rulesPreview,
+  rulesDirty,
   rulesSaving,
   setCreateOpen,
   handleCreate,
   handleResolve,
   loadRules,
   saveRules,
+  reloadEvents,
   eventTotalPages,
   prevPage,
   nextPage,
+  goToPage,
   formatDate,
 } = useRiskManagement()
 </script>
@@ -48,25 +55,30 @@ const {
       <TabsContent value="events">
         <RiskEventsPanel
           :loading="eventsLoading"
+          :error="eventsError"
           :events="events"
           :total-events="totalEvents"
           :event-page="eventPage"
           :event-page-size="eventPageSize"
           :action-loading="actionLoading"
           :creating="creating"
+          :create-errors="createErrors"
           :event-total-pages="eventTotalPages"
           :format-date="formatDate"
+          :resolve-event="handleResolve"
           :create-open="createOpen"
           @update:create-open="setCreateOpen"
+          @update:event-page-size="eventPageSize = $event"
           v-model:new-severity="newSeverity"
           v-model:new-source="newSource"
           v-model:new-action="newAction"
           v-model:new-reason="newReason"
           v-model:new-target-user-id="newTargetUserId"
           @create="handleCreate"
-          @resolve="handleResolve"
+          @retry="reloadEvents"
           @prev-page="prevPage"
           @next-page="nextPage"
+          @go-to-page="goToPage"
         />
       </TabsContent>
 
@@ -75,6 +87,9 @@ const {
           :user-is-super-admin="userStore.isSuperAdmin"
           :rules-loading="rulesLoading"
           :rules-load-error="rulesLoadError"
+          :rules-error="rulesError"
+          :rules-preview="rulesPreview"
+          :rules-dirty="rulesDirty"
           :rules-saving="rulesSaving"
           v-model:rules-json="rulesJson"
           @save="saveRules"

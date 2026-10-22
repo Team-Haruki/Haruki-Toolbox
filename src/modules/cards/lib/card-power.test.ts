@@ -103,6 +103,18 @@ describe("buildCardDetailExtras", () => {
     cardMysekaiCanvasBonuses: [
       { id: 5, cardRarityType: "rarity_4", power1BonusFixed: 500, power2BonusFixed: 500, power3BonusFixed: 500 },
     ],
+    materials: [
+      { id: 2, name: "Wish piece" },
+      { id: 3, name: "" },
+      { name: "no id" },
+    ],
+  })
+
+  it("maps material ids to names and tolerates a missing dump", () => {
+    expect(extras.materialNameById.get(2)).toBe("Wish piece")
+    expect(extras.materialNameById.has(3)).toBe(false)
+    expect(extras.materialNameById.size).toBe(1)
+    expect(buildCardDetailExtras({}).materialNameById.size).toBe(0)
   })
 
   it("groups and orders episodes per card", () => {

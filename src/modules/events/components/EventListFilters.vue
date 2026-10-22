@@ -2,10 +2,16 @@
 import { computed, useId } from "vue"
 import { useI18n } from "vue-i18n"
 import type { AcceptableValue } from "reka-ui"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import CatalogCharacterPicker from "@/shared/components/catalog/CatalogCharacterPicker.vue"
 import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
-import { CATALOG_STATUSES, isCatalogStatus, type CatalogFieldOption } from "@/shared/components/catalog/types"
+import {
+  CATALOG_STATUSES,
+  CATALOG_YEAR_PLACEHOLDER_COUNT,
+  isCatalogStatus,
+  type CatalogFieldOption,
+} from "@/shared/components/catalog/types"
 import {
   SEKAI_CARD_ATTRS,
   SEKAI_UNITS,
@@ -121,6 +127,9 @@ const attrOptions = computed<CatalogFieldOption[]>(() =>
 const yearOptions = computed<CatalogFieldOption[]>(() =>
   props.years.map((year) => ({ value: String(year), label: String(year) })),
 )
+// Chip-sized placeholders hold the row's height until the dump arrives, so
+// the grid below does not jump when the years render.
+const yearPlaceholders = computed(() => (props.years.length === 0 ? CATALOG_YEAR_PLACEHOLDER_COUNT : 0))
 </script>
 
 <template>
@@ -154,6 +163,7 @@ const yearOptions = computed<CatalogFieldOption[]>(() =>
         <ToggleGroupItem v-for="option in yearOptions" :key="option.value" :value="option.value">
           {{ option.label }}
         </ToggleGroupItem>
+        <Skeleton v-for="index in yearPlaceholders" :key="`placeholder-${index}`" class="h-7 w-12 rounded-full" aria-hidden="true" />
       </ToggleGroup>
     </div>
   </div>

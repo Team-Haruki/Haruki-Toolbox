@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { useRoute } from "vue-router"
+import { RouterLink, useRoute } from "vue-router"
 import { toast } from "vue-sonner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, Lock, Mail, Save, UserRound, KeyRound, ShieldCheck } from "lucide-vue-next"
+import { ArrowLeft, ExternalLink, Loader2, Lock, Mail, Save, UserRound, KeyRound, ShieldCheck } from "lucide-vue-next"
 import {
   Card,
   CardTitle,
@@ -14,6 +14,7 @@ import {
   CardContent,
   CardDescription
 } from "@/components/ui/card"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import {
   useKratosBrowserFlow,
   type KratosFlowMessage,
@@ -21,6 +22,7 @@ import {
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
 import { createAllowedReturnToOrigins } from "@/modules/auth/lib/return-to"
+import { useKratosSettingsRedirect } from "@/modules/user-settings/composables/useKratosSettingsRedirect"
 
 const props = defineProps<{
   section?: string
@@ -130,6 +132,11 @@ const settingsReturnTo = computed(() => {
   return url.toString()
 })
 
+// Leaving for the identity service goes through a visible step: the page
+// says where it is going, probes the host, and reports an unreachable host
+// inline instead of landing on the browser's error page.
+const redirect = useKratosSettingsRedirect()
+
 const {
   loading,
   loadError,
@@ -148,9 +155,18 @@ const {
   restartFlow,
 } = useKratosBrowserFlow("settings", {
   getReturnTo: () => settingsReturnTo.value,
+  startFlow: (returnTo) => {
+    void redirect.start(returnTo)
+  },
 })
 
 const { t } = useI18n()
+
+const redirectTargetLabel = computed(() => {
+  const section = requestedSection.value || "profile"
+  const known = ["profile", "password", "mfa", "oidc"].includes(section) ? section : "profile"
+  return t(`userSettings.kratosFlow.redirect.targets.${known}`)
+})
 
 function normalizeSection(value: unknown): string {
   if (typeof value !== "string") {
@@ -511,6 +527,16 @@ function iconForField(name: string) {
 
 const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
 
+/** Host shown on the interstitial so the person knows where they are being sent. */
+const kratosHost = computed(() => {
+  const origin = resolveKratosOrigin()
+  try {
+    return origin ? new URL(origin).host : ""
+  } catch {
+    return origin
+  }
+})
+
 function isSuccessLikeMessage(message: KratosFlowMessage): boolean {
   if (message.tone === "success") {
     return true
@@ -590,7 +616,41 @@ watch(
         <CardDescription>{{ t("userSettings.kratosFlow.description") }}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div v-if="loading" class="flex items-center justify-center py-12 text-muted-foreground">
+        <div v-if="redirect.status.value === 'unreachable'" class="space-y-3" data-testid="kratos-redirect-unreachable">
+          <LoadErrorState
+            :title="t('userSettings.kratosFlow.redirect.unreachableTitle')"
+            :description="t('userSettings.kratosFlow.redirect.unreachableDescription')"
+            :detail="redirect.error.value?.detail"
+            :retrying="false"
+            @retry="redirect.retry"
+          />
+          <Button as-child variant="ghost" class="w-full">
+            <RouterLink :to="{ name: 'user.settings' }">
+              <ArrowLeft class="mr-2 h-4 w-4" />
+              {{ t("userSettings.kratosFlow.redirect.backToSettings") }}
+            </RouterLink>
+          </Button>
+        </div>
+        <div
+          v-else-if="redirect.status.value === 'probing' || redirect.status.value === 'redirecting'"
+          class="flex flex-col items-center gap-3 py-10 text-center"
+          role="status"
+          aria-live="polite"
+          data-testid="kratos-redirect-interstitial"
+        >
+          <Loader2 class="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
+          <p class="text-sm font-medium">
+            {{ t("userSettings.kratosFlow.redirect.title", { target: redirectTargetLabel }) }}
+          </p>
+          <p class="max-w-sm text-sm text-muted-foreground">
+            {{ t("userSettings.kratosFlow.redirect.description") }}
+          </p>
+          <p class="flex items-center gap-1 text-xs text-muted-foreground">
+            <ExternalLink class="h-3.5 w-3.5" aria-hidden="true" />
+            {{ t("userSettings.kratosFlow.redirect.destination", { host: kratosHost }) }}
+          </p>
+        </div>
+        <div v-else-if="loading" class="flex items-center justify-center py-12 text-muted-foreground">
           <Loader2 class="mr-2 h-4 w-4 animate-spin" />
           {{ t("auth.common.loadingFlow") }}
         </div>

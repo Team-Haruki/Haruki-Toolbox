@@ -3,8 +3,8 @@ import { toast } from "vue-sonner"
 import { useUserStore } from "@/shared/stores/user"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { redirectToLogin } from "@/core/router/navigation"
-import { getApiErrorMessage } from "@/lib/error-utils"
-import { isAccountBannedMessage } from "@/lib/account-status"
+import { extractErrorMessage, getApiErrorMessage } from "@/lib/error-utils"
+import { isAccountBannedMessage, readAccountBanReason } from "@/lib/account-status"
 import { createRequestId } from "@/lib/request-id"
 import type { Router } from "vue-router"
 import type { APIResponse } from "@/types/response"
@@ -135,17 +135,27 @@ async function handleForbidden(error: AxiosError, userStore: UserStore, router: 
     if (!error.config?.skipAdminReauth && isAdminReauthRequiredError(error)) {
         return
     }
-    const message = getApiErrorMessage(error.response?.data) || translate("core.auth.permissionDeniedTitle")
-    if (!isAccountBannedMessage(message)) {
+    // Only the backend's own-account ban message ("Your account has been
+    // banned…") ends the session; 403s about other users ("grantee user is
+    // banned", "this account is bound by a banned user") are ordinary denials.
+    const rawMessage = getApiErrorMessage(error.response?.data)
+    if (!isAccountBannedMessage(rawMessage)) {
         if (!error.config?.skipErrorToast) {
-            toast.error(translate("core.auth.permissionDeniedTitle"), { description: message })
+            toast.error(translate("core.auth.permissionDeniedTitle"), {
+                description: extractErrorMessage(error, translate("core.auth.permissionDeniedDescription")),
+            })
         }
         return
     }
 
     // Always surface banned reason before forcing logout redirect.
     // This should not be suppressed by local skipErrorToast defaults.
-    toast.error(translate("core.auth.accountBannedTitle"), { description: message })
+    const reason = readAccountBanReason(rawMessage)
+    toast.error(translate("core.auth.accountBannedTitle"), {
+        description: reason
+            ? translate("core.auth.accountBannedWithReason", { reason })
+            : translate("core.auth.accountBannedDescription"),
+    })
     if (userStore.isLoggedIn) {
         userStore.clearUser()
         await redirectToLogin(router)
@@ -157,12 +167,8 @@ function handleOtherResponseError(error: AxiosError): void {
         return
     }
 
-    const message = getApiErrorMessage(error.response.data) || error.message
     toast.error(translate("core.auth.apiRequestFailedTitle"), {
-        description: translate("core.auth.apiRequestFailedDescription", {
-            status: error.response.status,
-            message,
-        }),
+        description: extractErrorMessage(error, translate("core.auth.apiRequestFailedDescription")),
     })
 }
 

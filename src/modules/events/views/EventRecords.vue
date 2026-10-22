@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, reactive } from "vue"
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
-import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
+import { useSuiteRefresh } from "@/shared/sekai/user-snapshot/use-suite-refresh"
+import { useUploadTimeText } from "@/shared/sekai/user-snapshot/upload-time"
 import type { AcceptableValue } from "reka-ui"
 import { LucideRefreshCcw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
@@ -10,12 +13,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { formatLocalizedDate, formatLocalizedDateTime } from "@/lib/date-time"
+import { formatLocalizedDate } from "@/lib/date-time"
 import { formatNumberCN } from "@/lib/number-format"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
 import type { CatalogActiveChip } from "@/shared/components/catalog/CatalogFilterPanel.vue"
-import { useCatalogViewPreference } from "@/composables/useCatalogViewPreference"
+import { useRouteQueryState } from "@/composables/useRouteQueryState"
 import { resolveCharacterIconUrl } from "@/shared/sekai/data-sources"
 import { resolveSekaiUnitLabel } from "@/shared/sekai/labels"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
@@ -26,7 +29,7 @@ import EventRecordRow, { type EventRecordChapterView } from "../components/Event
 import EventRecordsFilterFields, { type EventRecordsFilterState } from "../components/EventRecordsFilterFields.vue"
 import EventRecordsSummary, { type EventRecordsSummaryItem } from "../components/EventRecordsSummary.vue"
 import { useEventRecordsMaster } from "../composables/useEventRecordsMaster"
-import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
+import { EVENT_RECORDS_QUERY_CODEC } from "../lib/event-records-query"
 import {
   EVENT_RECORD_SORTS,
   buildDerivedRankMap,
@@ -45,7 +48,6 @@ import {
   sortEventRecordTableRows,
   summarizeEventRecordTableRows,
   worldBloomChapterKey,
-  type EventRecordSort,
   type EventRecordTableRow,
 } from "../lib/event-records"
 
@@ -63,9 +65,14 @@ const region = computed<SekaiRegion | null>(() => selectedAccount.value?.server 
 const bannerRegion = computed<SekaiRegion>(() => region.value ?? "jp")
 
 const master = useEventRecordsMaster(region)
-const suiteDataMissing = computed(
-  () => getMissingUploadDataType(suite.error.value) != null,
-)
+const { suiteDataMissing, errorMessage, errorDetail } = useUserDataPageState({
+  status: suite.status,
+  error: suite.error,
+  masterLoading: master.loading,
+  masterError: master.error,
+  account: selectedAccount,
+  fallback: () => t("eventRecords.loadFailed"),
+})
 
 const state = computed<"idle" | "loading" | "error" | "ready">(() => {
   if (suite.status.value === "idle") {
@@ -90,12 +97,27 @@ const state = computed<"idle" | "loading" | "error" | "ready">(() => {
 })
 
 // --- Filters + view options ------------------------------------------------------------
-const filters = reactive<EventRecordsFilterState>({ time: "year", from: undefined, to: undefined, types: [], units: [] })
+// Filters and sort live in the URL so a reload or a shared link keeps them.
+const query = useRouteQueryState(EVENT_RECORDS_QUERY_CODEC)
+const filters = query.state
+
+const fieldState = computed<EventRecordsFilterState>(() => ({
+  time: filters.time,
+  from: filters.from == null ? undefined : new Date(filters.from),
+  to: filters.to == null ? undefined : new Date(filters.to),
+  types: filters.types,
+  units: filters.units,
+}))
 
 function patchFilters(next: Partial<EventRecordsFilterState>) {
-  Object.assign(filters, next)
+  query.patch({
+    ...("time" in next ? { time: next.time } : {}),
+    ...("from" in next ? { from: next.from?.getTime() ?? null } : {}),
+    ...("to" in next ? { to: next.to?.getTime() ?? null } : {}),
+    ...("types" in next ? { types: next.types } : {}),
+    ...("units" in next ? { units: next.units } : {}),
+  })
 }
-const sort = useCatalogViewPreference<EventRecordSort>("event-records", "sort", () => "time", EVENT_RECORD_SORTS)
 
 const timeWindow = computed<{ from: number | null; to: number | null }>(() => {
   if (filters.time === "all") {
@@ -104,11 +126,8 @@ const timeWindow = computed<{ from: number | null; to: number | null }>(() => {
   if (filters.time === "year") {
     return { from: Date.now() - 365 * 24 * 60 * 60 * 1000, to: null }
   }
-  return { from: filters.from?.getTime() ?? null, to: filters.to?.getTime() ?? null }
+  return { from: filters.from, to: filters.to }
 })
-
-const activeFilterCount = computed(() =>
-  [filters.time !== "year", filters.types.length > 0, filters.units.length > 0].filter(Boolean).length)
 
 const activeChips = computed<CatalogActiveChip[]>(() => [
   ...(filters.time === "year" ? [] : [{ key: "time", label: t(`eventRecords.filters.${filters.time}`) }]),
@@ -119,25 +138,25 @@ const activeChips = computed<CatalogActiveChip[]>(() => [
 function removeChip(key: string) {
   const [kind, value] = key.split(":")
   if (kind === "time") {
-    filters.time = "year"
+    query.patch({ time: "year", from: null, to: null })
   } else if (kind === "type") {
-    filters.types = filters.types.filter((type) => type !== value)
+    query.patch({ types: filters.types.filter((type) => type !== value) })
   } else if (kind === "unit") {
-    filters.units = filters.units.filter((unit) => unit !== value)
+    query.patch({ units: filters.units.filter((unit) => unit !== value) })
   }
 }
 
 function resetFilters() {
-  filters.time = "year"
-  filters.from = undefined
-  filters.to = undefined
-  filters.types = []
-  filters.units = []
+  query.reset()
+}
+
+function showAllTime() {
+  query.patch({ time: "all", from: null, to: null })
 }
 
 function setSort(value: AcceptableValue | AcceptableValue[] | undefined) {
   if (typeof value === "string" && isEventRecordSort(value)) {
-    sort.value = value
+    query.patch({ sort: value })
   }
 }
 
@@ -168,11 +187,27 @@ const filteredRows = computed(() => filterEventRecordTableRows(mergedRows.value,
   units: filters.units,
 }))
 
+/**
+ * Why the list is empty: no records at all, everything older than the
+ * default one-year window, or hidden by other filters. Each gets its own
+ * message and action so the data is never blamed for a filter.
+ */
+const emptyReason = computed<"none" | "olderThanYear" | "filtered" | null>(() => {
+  if (filteredRows.value.length > 0) {
+    return null
+  }
+  if (mergedRows.value.length === 0) {
+    return "none"
+  }
+  const onlyDefaultTime = filters.time === "year" && filters.types.length === 0 && filters.units.length === 0
+  return onlyDefaultTime ? "olderThanYear" : "filtered"
+})
+
 function rankOf(row: EventRecordTableRow): number | null {
   return row.rank ?? derivedRanks.value.get(derivedEventRankKey(row.eventId))?.toRank ?? null
 }
 
-const sortedRows = computed(() => sortEventRecordTableRows(filteredRows.value, sort.value, rankOf))
+const sortedRows = computed(() => sortEventRecordTableRows(filteredRows.value, filters.sort, rankOf))
 
 const trend = computed(() => buildEventPointTrend(
   filteredRows.value.flatMap((row) => row.eventPoint == null ? [] : [{ ...row, eventPoint: row.eventPoint }]),
@@ -226,18 +261,12 @@ function formatRecordDate(value: number | null) {
   return formatLocalizedDate(value, { year: "numeric", month: "2-digit", day: "2-digit" }, t("events.common.dateFallback"))
 }
 
-const uploadTimeText = computed(() =>
-  formatLocalizedDateTime(
-    suite.uploadTime.value == null ? null : suiteUploadTimeToMillis(suite.uploadTime.value),
-    { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" },
-    t("events.common.dateFallback"),
-  ),
-)
+const uploadTimeText = useUploadTimeText(suite.uploadTime)
 
-function reloadAll() {
-  void suite.reload()
-  void master.reload()
-}
+const { refreshing, refresh: reloadAll } = useSuiteRefresh([
+  () => suite.reload("check-remote"),
+  () => master.reload(),
+])
 </script>
 
 <template>
@@ -250,9 +279,9 @@ function reloadAll() {
       <div class="flex flex-col items-start gap-1.5 sm:items-end">
         <GameAccountSelect capability="suite" />
         <div v-if="state !== 'idle'" class="flex items-center gap-1 text-xs text-muted-foreground">
-          <span v-if="state === 'ready'">{{ t("eventRecords.dataAsOf", { time: uploadTimeText }) }}</span>
-          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="state === 'loading'" @click="reloadAll">
-            <LucideRefreshCcw class="size-3.5" />
+          <span v-if="state === 'ready' && uploadTimeText">{{ t("uploadedGameData.uploadedAt", { time: uploadTimeText }) }}</span>
+          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="state === 'loading' || refreshing" @click="reloadAll">
+            <LucideRefreshCcw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
             {{ t("eventRecords.refresh") }}
           </Button>
         </div>
@@ -277,16 +306,23 @@ function reloadAll() {
       <Skeleton class="h-96 w-full" />
     </template>
 
-    <!-- Error -->
+    <!-- Missing upload: guidance, not an error -->
+    <Card v-else-if="state === 'error' && suiteDataMissing">
+      <CardContent class="py-10">
+        <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" />
+      </CardContent>
+    </Card>
+
+    <!-- Backend / masterdata failure -->
     <Card v-else-if="state === 'error'">
-      <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <MissingGameDataNotice v-if="suiteDataMissing" :granted="selectedAccount?.ownership === 'granted'" />
-        <template v-else>
-          <p class="text-sm text-muted-foreground">{{ t("eventRecords.loadFailed") }}</p>
-          <Button variant="outline" size="sm" @click="reloadAll">
-            <LucideRefreshCcw class="mr-1 h-4 w-4" /> {{ t("eventRecords.retry") }}
-          </Button>
-        </template>
+      <CardContent>
+        <LoadErrorState
+          :description="errorMessage"
+          :detail="errorDetail"
+          :retry-label="t('eventRecords.retry')"
+          :retrying="refreshing"
+          @retry="reloadAll"
+        />
       </CardContent>
     </Card>
 
@@ -296,13 +332,13 @@ function reloadAll() {
         :reset-label="t('catalog.filters.reset')"
         :count-label="countLabel"
         page-key="event-records"
-        :active-count="activeFilterCount"
+        :active-count="query.activeFilterCount.value"
         :active-chips="activeChips"
         content-class="flex flex-col gap-3"
         @reset="resetFilters"
         @remove-chip="removeChip"
       >
-        <EventRecordsFilterFields :state="filters" :unit-color-map="null" @patch="patchFilters" />
+        <EventRecordsFilterFields :state="fieldState" :unit-color-map="null" @patch="patchFilters" />
       </CatalogFilterPanel>
 
       <EventRecordsSummary :items="summaryItems" />
@@ -314,7 +350,7 @@ function reloadAll() {
         <h2 class="text-base font-semibold">{{ t("eventRecords.table.title") }}</h2>
         <div class="flex flex-wrap items-center gap-1.5">
           <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("catalog.sort.label") }}</span>
-          <ToggleGroup type="single" variant="segment" size="sm" :model-value="sort" :aria-label="t('catalog.sort.label')" @update:model-value="setSort">
+          <ToggleGroup type="single" variant="segment" size="sm" :model-value="filters.sort" :aria-label="t('catalog.sort.label')" @update:model-value="setSort">
             <ToggleGroupItem v-for="option in EVENT_RECORD_SORTS" :key="option" :value="option">
               {{ t(`eventRecords.sort.${option}`) }}
             </ToggleGroupItem>
@@ -323,9 +359,20 @@ function reloadAll() {
         <span class="text-xs tabular-nums text-muted-foreground">{{ countLabel }}</span>
       </div>
 
-      <p v-if="sortedRows.length === 0" class="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
-        {{ t("eventRecords.noData") }}
-      </p>
+      <div
+        v-if="emptyReason != null"
+        class="flex flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground"
+      >
+        <template v-if="emptyReason === 'olderThanYear'">
+          <p>{{ t("eventRecords.hiddenByTime", { count: mergedRows.length }) }}</p>
+          <Button variant="outline" size="sm" @click="showAllTime">{{ t("eventRecords.showAll") }}</Button>
+        </template>
+        <template v-else-if="emptyReason === 'filtered'">
+          <p>{{ t("eventRecords.noMatches") }}</p>
+          <Button variant="outline" size="sm" @click="resetFilters">{{ t("catalog.filters.reset") }}</Button>
+        </template>
+        <p v-else>{{ t("eventRecords.noData") }}</p>
+      </div>
       <div v-else class="flex flex-col gap-2">
         <!-- Column captions for the numbers; phones label each row instead. -->
         <div class="hidden items-center gap-3 px-3 text-xs text-muted-foreground sm:flex">

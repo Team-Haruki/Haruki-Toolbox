@@ -1,4 +1,4 @@
-import { ref, watch } from "vue"
+import { nextTick, reactive, ref, watch } from "vue"
 import { isAxiosError } from "axios"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
@@ -6,6 +6,10 @@ import { useUserStore } from "@/shared/stores/user"
 import type { InheritServer, UploadDataType } from "@/types"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { uploadManualData } from "@/modules/user-settings/api/file-upload"
+import {
+  markDeckRecommendUserDataAvailable,
+  resetDeckRecommendUserDataAvailability,
+} from "@/modules/deck-recommend/lib/user-data-availability"
 import { submitInherit } from "@/modules/user-settings/api/inherit"
 import { useUploadDataAccounts } from "@/modules/tools/composables/useUploadDataAccounts"
 import {
@@ -14,6 +18,14 @@ import {
   saveInheritToStorage,
 } from "@/modules/tools/lib/inherit-storage"
 
+export type InheritField = "inheritId" | "inheritPassword"
+
+/** DOM ids of the inherit form fields; validation focuses the first invalid one. */
+export const INHERIT_FIELD_IDS: Record<InheritField, string> = {
+  inheritId: "inherit-id",
+  inheritPassword: "inherit-password",
+}
+
 export function useUploadDataTool() {
   const { t } = useI18n()
   const userStore = useUserStore()
@@ -21,6 +33,7 @@ export function useUploadDataTool() {
   const fileDataType = ref<UploadDataType>("mysekai")
   const inheritDataType = ref<UploadDataType>("mysekai")
   const selectedFile = ref<File | null>(null)
+  const selectedFileName = ref("")
   const inheritServer = ref<InheritServer>("jp")
   const inheritId = ref("")
   const inheritPassword = ref("")
@@ -31,6 +44,8 @@ export function useUploadDataTool() {
   const uploadProgress = ref(0)
   const uploadStatus = ref("")
   const fileInputElement = ref<HTMLInputElement | null>(null)
+  /** Inline validation messages for the inherit form; empty when valid. */
+  const inheritFieldErrors = reactive<Record<InheritField, string>>({ inheritId: "", inheritPassword: "" })
 
   const {
     selectedAccountKey,
@@ -39,6 +54,7 @@ export function useUploadDataTool() {
     targetsLoading,
     targetsFailed,
     disabledReason,
+    disabledReasonKind,
     hasVerifiedQQ,
     isCNMySekaiForbidden,
     canSelectSuiteDataType,
@@ -85,12 +101,14 @@ export function useUploadDataTool() {
     if (!(target instanceof HTMLInputElement)) {
       fileInputElement.value = null
       selectedFile.value = null
+      selectedFileName.value = ""
       return
     }
     fileInputElement.value = target
     uploadProgress.value = 0
     uploadStatus.value = ""
     selectedFile.value = target.files?.[0] ?? null
+    selectedFileName.value = selectedFile.value?.name ?? ""
   }
 
   function dataTypeLabel(value: UploadDataType): string {
@@ -139,7 +157,7 @@ export function useUploadDataTool() {
     })
 
     try {
-      const response = await uploadManualData(
+      await uploadManualData(
         account.server,
         account.uid,
         fileDataType.value,
@@ -152,14 +170,19 @@ export function useUploadDataTool() {
 
       uploadStatus.value = t("tools.uploadData.uploadStatus.success")
       uploadProgress.value = 100
+      // The deck page may have this account flagged "no data uploaded".
+      markDeckRecommendUserDataAvailable(account.server, account.uid, fileDataType.value)
       selectedFile.value = null
+      selectedFileName.value = ""
       if (fileInputElement.value) {
         fileInputElement.value.value = ""
       }
       toast.success(t("tools.uploadData.toast.uploadSuccessTitle"), {
-        description: response?.message || t("tools.uploadData.toast.uploadSuccessFileFallback"),
+        description: t("tools.uploadData.toast.uploadSuccessFileFallback"),
       })
     } catch (error: unknown) {
+      // A stuck bar at 100% after a 403 reads as "uploaded"; reset it.
+      uploadProgress.value = 0
       uploadStatus.value = t("tools.uploadData.uploadStatus.failed")
       // A 403 means the target is no longer writable for this user (grant
       // lapsed or revoked, binding changed): the list is stale, not the
@@ -179,25 +202,39 @@ export function useUploadDataTool() {
     }
   }
 
-  function requestInheritUpload() {
-    if (isSubmittingInherit.value) return
+  function clearInheritFieldError(field: InheritField) {
+    inheritFieldErrors[field] = ""
+  }
+
+  function focusInheritField(field: InheritField) {
+    void nextTick(() => {
+      document.getElementById(INHERIT_FIELD_IDS[field])?.focus()
+    })
+  }
+
+  /** Validates the inherit form inline; focuses the first invalid field. */
+  function validateInheritForm(): boolean {
     const normalizedInheritId = inheritId.value.trim()
     const normalizedInheritPassword = inheritPassword.value.trim()
 
-    if (!normalizedInheritId || !normalizedInheritPassword) {
-      toast.warning(t("tools.uploadData.toast.inheritIncompleteTitle"), {
-        description: t("tools.uploadData.toast.inheritIncompleteDescription"),
-      })
-      return
-    }
+    inheritFieldErrors.inheritId = !normalizedInheritId
+      ? t("tools.uploadData.toast.inheritIdRequired")
+      : !/^[a-zA-Z0-9]{16}$/.test(normalizedInheritId)
+        ? t("tools.uploadData.toast.inheritIdInvalidDescription")
+        : ""
+    inheritFieldErrors.inheritPassword = normalizedInheritPassword ? "" : t("tools.uploadData.toast.inheritPasswordRequired")
 
-    if (!/^[a-zA-Z0-9]{16}$/.test(normalizedInheritId)) {
-      toast.warning(t("tools.uploadData.toast.inheritIdInvalidTitle"), {
-        description: t("tools.uploadData.toast.inheritIdInvalidDescription"),
-      })
-      return
+    const firstInvalid = (["inheritId", "inheritPassword"] as const).find((field) => inheritFieldErrors[field])
+    if (firstInvalid) {
+      focusInheritField(firstInvalid)
+      return false
     }
+    return true
+  }
 
+  function requestInheritUpload() {
+    if (isSubmittingInherit.value) return
+    if (!validateInheritForm()) return
     isInheritConfirmOpen.value = true
   }
 
@@ -209,7 +246,7 @@ export function useUploadDataTool() {
     isInheritConfirmOpen.value = false
     isSubmittingInherit.value = true
     try {
-      const response = await submitInherit(
+      await submitInherit(
         inheritServer.value,
         inheritDataType.value,
         normalizedInheritId,
@@ -218,9 +255,13 @@ export function useUploadDataTool() {
       )
 
       toast.success(t("tools.uploadData.toast.uploadSuccessTitle"), {
-        description: response?.message || t("tools.uploadData.toast.uploadSuccessInheritFallback"),
+        description: t("tools.uploadData.toast.uploadSuccessInheritFallback"),
       })
+      // The uid is resolved server-side: drop the deck page's "no data
+      // uploaded" flags for this server so its next run re-probes.
+      resetDeckRecommendUserDataAvailability(inheritServer.value)
 
+      // Only a successful submission is worth remembering (the hint says so).
       if (rememberInherit.value) {
         saveInheritToStorage({
           inherit_id: normalizedInheritId,
@@ -246,24 +287,28 @@ export function useUploadDataTool() {
     inheritServer,
     inheritId,
     inheritPassword,
+    inheritFieldErrors,
     rememberInherit,
     isSubmittingFile,
     isSubmittingInherit,
     isInheritConfirmOpen,
     uploadProgress,
     uploadStatus,
+    selectedFileName,
     uploadAccounts,
     selectedAccount,
     selectedAccountKey,
     targetsLoading,
     targetsFailed,
     disabledReason,
+    disabledReasonKind,
     hasVerifiedQQ,
     isCNMySekaiForbidden,
     canSelectSuiteDataType,
     canSelectMySekaiDataType,
     loadUploadTargets,
     onFileChange,
+    clearInheritFieldError,
     setRememberInherit,
     submitFileUpload,
     requestInheritUpload,

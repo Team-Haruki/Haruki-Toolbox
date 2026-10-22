@@ -5,6 +5,7 @@ import { LucideLoader2 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
 import type { OAuthClient, OAuthClientDevicePolicy } from "@/types/admin"
 import type { ManagedGrantType } from "@/modules/admin-oauth-clients/lib/grant-types"
+import type { OAuthClientFormErrors } from "@/modules/admin-oauth-clients/lib/form"
 import OAuthClientFormFields from "./OAuthClientFormFields.vue"
 
 interface ScopeOption {
@@ -36,9 +37,13 @@ interface Props {
   devicePolicy: OAuthClientDevicePolicy
   availableScopes: ScopeOption[]
   availableGrantTypes: GrantTypeOption[]
+  /** Inline validation messages, keyed by the control they belong under. */
+  formErrors?: OAuthClientFormErrors
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  formErrors: () => ({}),
+})
 const { t } = useI18n()
 const emit = defineEmits<{
   (event: "update:open", value: boolean): void
@@ -59,7 +64,7 @@ const emit = defineEmits<{
 
 <template>
   <Dialog :open="props.open" @update:open="value => emit('update:open', value)">
-    <DialogContent>
+    <DialogContent class="max-h-[85vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{{ t("adminOAuthClients.editDialog.title") }}</DialogTitle>
         <DialogDescription>
@@ -68,39 +73,42 @@ const emit = defineEmits<{
           {{ t("adminOAuthClients.editDialog.descriptionSuffix") }}
         </DialogDescription>
       </DialogHeader>
-      <div class="flex flex-col gap-4 py-4">
-        <OAuthClientFormFields
-          :name="props.name"
-          :client-type="props.clientType"
-          :scopes="props.scopes"
-          :redirect-uris="props.redirectUris"
-          :post-logout-redirect-uris="props.postLogoutRedirectUris"
-          :grant-types="props.grantTypes"
-          :device-policy="props.devicePolicy"
-          :available-scopes="props.availableScopes"
-          :available-grant-types="props.availableGrantTypes"
-          @update:name="value => emit('update:name', value)"
-          @update:client-type="value => emit('update:client-type', value)"
-          @toggle-scope="(scopeId, checked) => emit('toggle-scope', scopeId, checked)"
-          @toggle-grant-type="(grantType, checked) => emit('toggle-grant-type', grantType, checked)"
-          @update-device-policy="update => emit('update-device-policy', update)"
-          @add-redirect-uri="emit('add-redirect-uri')"
-          @remove-redirect-uri="index => emit('remove-redirect-uri', index)"
-          @update-redirect-uri="payload => emit('update-redirect-uri', payload)"
-          @add-post-logout-redirect-uri="emit('add-post-logout-redirect-uri')"
-          @remove-post-logout-redirect-uri="index => emit('remove-post-logout-redirect-uri', index)"
-          @update-post-logout-redirect-uri="payload => emit('update-post-logout-redirect-uri', payload)"
-        />
-      </div>
-      <DialogFooter>
-        <Button variant="outline" @click="emit('update:open', false)">
-          {{ t("adminOAuthClients.editDialog.cancel") }}
-        </Button>
-        <Button :disabled="props.saving" @click="emit('submit')">
-          <LucideLoader2 v-if="props.saving" class="w-4 h-4 mr-1 animate-spin" />
-          {{ t("common.save") }}
-        </Button>
-      </DialogFooter>
+      <form novalidate @submit.prevent="emit('submit')">
+        <div class="flex flex-col gap-4 py-4">
+          <OAuthClientFormFields
+            :name="props.name"
+            :client-type="props.clientType"
+            :scopes="props.scopes"
+            :redirect-uris="props.redirectUris"
+            :post-logout-redirect-uris="props.postLogoutRedirectUris"
+            :grant-types="props.grantTypes"
+            :device-policy="props.devicePolicy"
+            :available-scopes="props.availableScopes"
+            :available-grant-types="props.availableGrantTypes"
+            :errors="props.formErrors"
+            @update:name="value => emit('update:name', value)"
+            @update:client-type="value => emit('update:client-type', value)"
+            @toggle-scope="(scopeId, checked) => emit('toggle-scope', scopeId, checked)"
+            @toggle-grant-type="(grantType, checked) => emit('toggle-grant-type', grantType, checked)"
+            @update-device-policy="update => emit('update-device-policy', update)"
+            @add-redirect-uri="emit('add-redirect-uri')"
+            @remove-redirect-uri="index => emit('remove-redirect-uri', index)"
+            @update-redirect-uri="payload => emit('update-redirect-uri', payload)"
+            @add-post-logout-redirect-uri="emit('add-post-logout-redirect-uri')"
+            @remove-post-logout-redirect-uri="index => emit('remove-post-logout-redirect-uri', index)"
+            @update-post-logout-redirect-uri="payload => emit('update-post-logout-redirect-uri', payload)"
+          />
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" @click="emit('update:open', false)">
+            {{ t("adminOAuthClients.editDialog.cancel") }}
+          </Button>
+          <Button type="submit" :disabled="props.saving">
+            <LucideLoader2 v-if="props.saving" class="w-4 h-4 mr-1 animate-spin" />
+            {{ t("common.save") }}
+          </Button>
+        </DialogFooter>
+      </form>
     </DialogContent>
   </Dialog>
 </template>

@@ -43,17 +43,11 @@ import {
   SelectContent,
   SelectTrigger
 } from "@/components/ui/select";
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import {
-  AlertDialog,
-  AlertDialogTitle,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogDescription,
-} from "@/components/ui/alert-dialog"
-import {useIMAuthorizationSettings} from "@/modules/user-settings/composables/useIMAuthorizationSettings"
+  IM_AUTH_ACCOUNT_INPUT_ID,
+  useIMAuthorizationSettings,
+} from "@/modules/user-settings/composables/useIMAuthorizationSettings"
 import type {SocialPlatform} from "@/modules/user-settings/composables/useIMAuthorizationSettings"
 
 const { t, locale } = useI18n()
@@ -65,15 +59,19 @@ const {
   showDeleteDialog,
   deleteTarget,
   isSaving,
-  isDeleting,
+  accountError,
   tableData,
+  hasVerifiedOwnBinding,
   getPlatformLabel,
   startEdit,
   startAdd,
+  clearAccountError,
   handleEditSave,
   confirmDelete,
   handleDelete,
 } = useIMAuthorizationSettings()
+
+const ACCOUNT_ERROR_ID = "im-auth-account-error"
 
 const platformIcons: Record<SocialPlatform, typeof MessageCircle> = {
   qq: MessageCircle,
@@ -178,13 +176,17 @@ function getPlatformIcon(platform: SocialPlatform) {
           {{ isCreateMode ? t("userSettings.imAuthorization.dialog.createTitle") : t("userSettings.imAuthorization.dialog.editTitle") }}
         </DialogTitle>
         <DialogDescription>
-          {{ t("userSettings.imAuthorization.dialog.descriptionMain") }}<br>{{ t("userSettings.imAuthorization.dialog.descriptionHint") }}
+          {{ isCreateMode ? t("userSettings.imAuthorization.dialog.createDescription") : t("userSettings.imAuthorization.dialog.editDescription") }}
+          <!-- Only when the person's own QQ is not yet bound and verified. -->
+          <template v-if="!hasVerifiedOwnBinding">
+            <br>{{ t("userSettings.imAuthorization.dialog.bindFirstHint") }}
+          </template>
         </DialogDescription>
       </DialogHeader>
       <div v-if="editTarget" class="flex flex-col gap-4 py-2">
         <div class="grid gap-1.5">
           <Label id="im-auth-platform-label" for="im-auth-platform">{{ t("userSettings.imAuthorization.fields.platform") }}</Label>
-          <Select id="im-auth-platform" :key="locale" v-model="editTarget.platform">
+          <Select id="im-auth-platform" :key="locale" v-model="editTarget.platform" @update:model-value="clearAccountError">
             <SelectTrigger class="w-full" aria-labelledby="im-auth-platform-label">
               <SelectValue :placeholder="t('userSettings.imAuthorization.platformPlaceholder')"/>
             </SelectTrigger>
@@ -199,13 +201,25 @@ function getPlatformIcon(platform: SocialPlatform) {
           </Select>
         </div>
         <div class="grid gap-1.5">
-          <Label for="im-auth-account">{{ t("userSettings.imAuthorization.fields.account") }}</Label>
+          <Label :for="IM_AUTH_ACCOUNT_INPUT_ID">{{ t("userSettings.imAuthorization.fields.account") }}</Label>
           <div class="relative w-full items-center">
-            <Input id="im-auth-account" v-model="editTarget.userId" class="pl-10"/>
+            <Input
+              :id="IM_AUTH_ACCOUNT_INPUT_ID"
+              v-model="editTarget.userId"
+              class="pl-10"
+              inputmode="numeric"
+              :aria-invalid="accountError ? 'true' : undefined"
+              :aria-describedby="accountError ? ACCOUNT_ERROR_ID : undefined"
+              @input="clearAccountError"
+            />
             <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
               <User class="size-4 text-muted-foreground" />
             </span>
           </div>
+          <p v-if="accountError" :id="ACCOUNT_ERROR_ID" role="alert" class="text-xs text-destructive">{{ accountError }}</p>
+          <p v-else-if="editTarget.platform === 'qqbot'" class="text-xs text-muted-foreground">
+            {{ t("userSettings.imAuthorization.fields.qqbotAccountHint") }}
+          </p>
         </div>
         <div class="grid gap-1.5">
           <Label for="im-auth-remark">{{ t("userSettings.imAuthorization.fields.remark") }}</Label>
@@ -237,28 +251,16 @@ function getPlatformIcon(platform: SocialPlatform) {
     </DialogScrollContent>
   </Dialog>
 
-  <AlertDialog v-model:open="showDeleteDialog">
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>{{ t("userSettings.imAuthorization.deleteDialog.title") }}</AlertDialogTitle>
-        <AlertDialogDescription class="break-all">
-          {{ t("userSettings.imAuthorization.deleteDialog.description", {
-            platform: deleteTarget ? getPlatformLabel(deleteTarget.platform) : "",
-            userId: deleteTarget?.userId ?? "",
-          }) }}
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>
-          <X class="h-4 w-4 mr-2" />
-          {{ t("userSettings.common.cancel") }}
-        </AlertDialogCancel>
-        <AlertDialogAction class="bg-destructive" :disabled="isDeleting" @click="handleDelete">
-          <Loader2 v-if="isDeleting" class="h-4 w-4 mr-2 animate-spin" />
-          <Trash2 v-else class="h-4 w-4 mr-2" />
-          {{ isDeleting ? t("userSettings.imAuthorization.deleteDialog.deleting") : t("userSettings.imAuthorization.actions.delete") }}
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+  <ConfirmDialog
+    v-model:open="showDeleteDialog"
+    :title="t('userSettings.imAuthorization.deleteDialog.title')"
+    :description="t('userSettings.imAuthorization.deleteDialog.description', {
+      platform: deleteTarget ? getPlatformLabel(deleteTarget.platform) : '',
+      userId: deleteTarget?.userId ?? '',
+    })"
+    :confirm-label="t('userSettings.imAuthorization.actions.delete')"
+    :cancel-label="t('userSettings.common.cancel')"
+    destructive
+    :on-confirm="handleDelete"
+  />
 </template>

@@ -93,7 +93,7 @@ const lightboxItems = computed<ImageLightboxItem[]>(() => [
     :loading="loading"
     :error="error"
     :not-found="notFound"
-    :not-found-message="t('musicLibrary.detail.notFound')"
+    :not-found-message="t('musicLibrary.detail.notFound', { musicId: props.musicId })"
     :retrying="refreshing"
     :unreleased="unreleased"
     class="py-4"

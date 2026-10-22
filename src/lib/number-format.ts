@@ -20,16 +20,21 @@ export function formatPercent(value: NumberInput, digits = 1, fallback = "—"):
 }
 
 /**
- * Compact large numbers so long values stay scannable: zh locales use the
- * 万-based `w` shorthand (16,234 → `1.6w`), other locales use `k`/`M`
- * (3,000 → `3k`, 1,172,288 → `1.2M`). Values below the first threshold keep
- * their grouped form.
+ * Compact large numbers so long values stay scannable. Chinese locales use
+ * the real 万 / 亿 units (16,234 → `1.6万`, 386,160,000 → `3.9亿`), in the
+ * traditional script (萬 / 億) for zh-TW / Hant locales; other locales use
+ * `K` / `M` (3,000 → `3K`, 1,172,288 → `1.2M`). Values below the first
+ * threshold keep their grouped form.
  */
 export function formatCompactNumber(value: number, locale: string = getI18nLocale()): string {
   const abs = Math.abs(value)
   if (locale.toLowerCase().startsWith("zh")) {
+    const [wan, yi] = isTraditionalChineseLocale(locale) ? ["萬", "億"] : ["万", "亿"]
+    if (abs >= 100_000_000) {
+      return `${trimOneDecimal(value / 100_000_000)}${yi}`
+    }
     if (abs >= 10_000) {
-      return `${trimOneDecimal(value / 10_000)}w`
+      return `${trimOneDecimal(value / 10_000)}${wan}`
     }
     return new Intl.NumberFormat(locale).format(value)
   }
@@ -38,9 +43,15 @@ export function formatCompactNumber(value: number, locale: string = getI18nLocal
     return `${trimOneDecimal(value / 1_000_000)}M`
   }
   if (abs >= 1_000) {
-    return `${trimOneDecimal(value / 1_000)}k`
+    return `${trimOneDecimal(value / 1_000)}K`
   }
   return new Intl.NumberFormat(locale).format(value)
+}
+
+/** zh-TW / zh-HK / zh-MO and any `Hant` script tag write the units in traditional characters. */
+function isTraditionalChineseLocale(locale: string): boolean {
+  const normalized = locale.toLowerCase()
+  return /hant/.test(normalized) || /^zh[-_](tw|hk|mo)\b/.test(normalized)
 }
 
 function trimOneDecimal(value: number): string {

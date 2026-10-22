@@ -3,11 +3,7 @@
 export default {
   "deckRecommend": {
     "title": "組卡推薦",
-    "description": "選擇賬號、資料區服、模式與歌曲引數，獲取（儘可能）最優活動卡組推薦。",
-    "notice": {
-      "testingPrefix": "該功能處於測試狀態，",
-      "testingSuffix": "如果遇到任何問題請聯絡 Haruki Dev Team 進行反饋。"
-    },
+    "description": "選擇帳號、資料區服、模式與歌曲參數，獲取（儘可能）最優活動卡組推薦。",
     "select": {
       "loading": "正在準備資料..."
     },
@@ -24,14 +20,16 @@ export default {
       "rerun": "重新推薦"
     },
     "form": {
-      "account": "賬號",
-      "accountPlaceholder": "請選擇已繫結賬號",
-      "noAccount": "當前賬號還沒有繫結遊戲賬號。",
-      "dataRegion": "資料伺服器",
+      "account": "帳號",
+      "accountPlaceholder": "請選擇已綁定帳號",
+      "noAccount": "當前帳號還沒有綁定遊戲帳號。",
+      "bindAccount": "前往綁定遊戲帳號",
+      "dataRegion": "資料區服",
       "mode": "組卡模式",
       "target": "組卡目標",
       "liveType": "Live 型別",
       "algorithm": "搜尋演算法",
+      "algorithmDefaultHint": "一般保持預設即可。",
       "algorithmHint": "預設演算法會隨組卡場景自動選擇：分數目標使用 DFS 精確搜尋（可證明最優），World Bloom 等複雜場景使用 DFS-GA，烤森使用強化學習。手動勾選後將保持你的選擇；同時啟用多個演算法可交叉驗證結果，但整體耗時更長。",
       "executionMode": "執行方式",
       "event": "活動",
@@ -49,7 +47,6 @@ export default {
       "customBonusCharacters": "自定義加成角色",
       "customBonusCharactersPlaceholder": "例如 1 2 21",
       "customBonusSupportUnits": "VS 支援團體",
-      "customBonusSupportUnitsPlaceholder": "例如 21:light_sound 25:school_refusal",
       "customBonusSelectedCount": "已選擇 {count} 個角色",
       "customBonusSupportUnitsEmpty": "選擇 21-26 號 Virtual Singer 角色後可指定支援團體。",
       "filterOtherUnit": "過濾其他團體",
@@ -76,13 +73,9 @@ export default {
       "browseCount": "共 {count} 張卡牌"
     },
     "layers": {
-      "default": {
-        "title": "預設配置",
-        "description": "選擇賬號、活動、Live、歌曲與搜尋方式；預設協力隊友會跟隨當前卡組。"
-      },
       "advanced": {
         "title": "進階配置",
-        "description": "調整卡牌養成、過濾條件、協力引數和卡組固定規則。"
+        "description": "調整卡牌養成、過濾條件、協力參數和卡組固定規則。"
       },
       "expert": {
         "title": "專家配置",
@@ -90,7 +83,7 @@ export default {
       }
     },
     "groups": {
-      "accountTarget": "賬號與目標",
+      "accountTarget": "帳號與目標",
       "musicAlgorithm": "歌曲與演算法"
     },
     "modes": {
@@ -159,7 +152,7 @@ export default {
       "idol": "MORE MORE JUMP!",
       "street": "Vivid BAD SQUAD",
       "theme_park": "Wonderlands×Showtime",
-      "school_refusal": "25時、ナイトコードで。",
+      "school_refusal": "25時，Nightcord見。",
       "piapro": "Virtual Singer"
     },
     "options": {
@@ -174,7 +167,7 @@ export default {
       "eventSimulation": {
         "memoryEventHint": "五屬性基礎加成均為 25%，本團原生角色合計 75%；人類團不包含團屬虛擬歌手，Virtual Singer 按六位虛擬歌手計算。保留精通加成，不附加當期卡加成。",
         "title": "模擬活動",
-        "description": "用自定義活動型別、屬性和團體進行推薦，不依賴已釋出活動。",
+        "description": "用自定義活動型別、屬性和團體進行推薦，不依賴已發布活動。",
         "unavailable": "當前模式不使用活動資訊，模擬活動不可用。",
         "realEventDisabled": "已開啟模擬活動，真實活動選擇不會參與推薦。",
         "activeHint": "模擬活動會覆蓋真實活動 ID，推薦會按當前模擬條件計算。",
@@ -184,7 +177,7 @@ export default {
         "worldBloomTurn": "章節",
         "worldBloomTurnOption": "第 {turn} 輪",
         "worldBloomCharacter": "角色",
-        "invalid": "請補全模擬活動引數。連線世界第 1/2 輪需要角色能推匯出團體。",
+        "invalid": "請補全模擬活動參數。連線世界第 1/2 輪需要角色能推匯出團體。",
         "customBonusUnit": "自定義加成角色",
         "customBonusTitle": "自定義加成角色",
         "customBonusSummary": "已選擇 {count} 個加成角色，符合角色加成的卡會獲得 25% 加成。",
@@ -194,15 +187,15 @@ export default {
         "customBonusInvalid": "請選擇屬性，並至少選擇一個自定義加成角色。"
       },
       "multiLive": {
-        "title": "協力引數",
+        "title": "協力參數",
         "description": "用於多人 Live。隊友綜合力和隊友實效留空時，會按當前卡組近似隊友。",
         "teammatePower": "隊友綜合力",
         "teammateScoreUp": "隊友實效",
         "followSelfPlaceholder": "跟隨當前卡組",
         "scoreUpLowerBound": "最低實效",
         "scoreUpLowerBoundPlaceholder": "不限制",
-        "disabled": "當前 Live 型別不會使用協力引數。",
-        "invalid": "協力引數需要填寫大於等於 0 的數字。"
+        "disabled": "當前 Live 型別不會使用協力參數。",
+        "invalid": "協力參數需要填寫大於等於 0 的數字。"
       },
       "filters": {
         "title": "高階過濾",
@@ -239,8 +232,8 @@ export default {
         "invalid": "覆蓋等級或加成需要是有效範圍內的值。"
       },
       "runParameters": {
-        "title": "計算引數",
-        "description": "調整本次推薦的基礎計算引數。",
+        "title": "計算參數",
+        "description": "調整本次推薦的基礎計算參數。",
         "invalid": "體力消耗需要是 0-10 的整數。"
       },
       "constraints": {
@@ -252,7 +245,7 @@ export default {
         "excludedGroupDescription": "從候選卡池裡排除任意數量的卡牌，不影響固定卡牌上限。",
         "fixedCards": "固定卡牌",
         "useCurrentDeck": "使用當前主隊",
-        "useCurrentDeckDescription": "啟用後直接以 profile 當前主隊作為固定卡組。",
+        "useCurrentDeckDescription": "啟用後把你遊戲裡當前的隊伍作為固定卡組。優先從遊戲即時讀取，讀取不到時用你上傳的資料。",
         "fixedCharacters": "固定角色",
         "excludedCards": "排除卡牌",
         "cardSelectPlaceholder": "搜尋並選擇卡牌",
@@ -272,7 +265,7 @@ export default {
         "characterListPlaceholder": "例如 1 2 21",
         "invalid": "角色 ID 需要填寫正整數，可用空格或逗號分隔。",
         "challengeHint": "挑戰 Live 已經由角色選擇決定目標角色，不能再固定角色。",
-        "currentDeckHint": "會優先讀取遊戲 profile 的當前主隊，失敗時回落到已上傳資料；使用當前主隊時固定上場和排除條件不會參與推薦。"
+        "currentDeckHint": "啟用後把你遊戲裡當前的隊伍作為固定卡組。優先從遊戲即時讀取，讀取不到時用你上傳的資料；使用當前隊伍時固定上場和排除條件不會參與推薦。"
       },
       "random": {
         "title": "技能與支援",
@@ -338,7 +331,7 @@ export default {
         "selectedCount": "已覆蓋 {count} 個",
         "clear": "清空覆蓋",
         "default": "不覆蓋",
-        "empty": "當前資料還沒有可覆蓋的 MySekai 大門。",
+        "empty": "當前資料還沒有可覆蓋的烤森大門。",
         "searchPlaceholder": "搜尋等級...",
         "emptySearch": "沒有找到等級。",
         "maxLevel": "最高 Lv.{value}"
@@ -356,8 +349,8 @@ export default {
         "maxRate": "最高 {value}"
       },
       "engine": {
-        "title": "組卡引擎引數",
-        "description": "只調整結果數量和超時時間；搜尋演算法內部引數保持自動配置。",
+        "title": "組卡引擎參數",
+        "description": "只調整結果數量和超時時間；搜尋演算法內部參數保持自動配置。",
         "resultLimit": "結果數量",
         "resultLimitPlaceholder": "預設 6",
         "timeoutMs": "超時時間（ms）",
@@ -412,13 +405,18 @@ export default {
       }
     },
     "runner": {
-      "ready": "選擇完整引數後即可開始推薦。",
+      "ready": "選擇完整參數後即可開始推薦。",
       "run": "開始推薦",
       "running": "推薦中...",
+      "blocked": {
+        "noAccount": "還沒有綁定遊戲帳號，綁定後才能開始推薦。",
+        "selectAccount": "請先選擇一個遊戲帳號。",
+        "dataMissing": "所選帳號還沒有上傳遊戲資料，請先前往資料上傳頁上傳。"
+      },
       "phases": {
-        "preparing-data": "正在準備 master 與 music metas...",
+        "preparing-data": "正在準備遊戲資料…",
         "fetching-user-data": "正在讀取使用者資料...",
-        "initializing": "正在初始化組卡引擎...",
+        "initializing": "正在啟動計算…",
         "loading-data": "正在載入推薦資料...",
         "recommending": "正在執行推薦..."
       }
@@ -426,26 +424,27 @@ export default {
     "result": {
       "title": "推薦結果",
       "description": "推薦完成後會在這裡顯示卡組結果。",
-      "idlePlaceholder": "完成上方配置後點擊「開始推薦」，推薦卡組會顯示在這裡。",
+      "idlePlaceholder": "完成上方配置後點選「開始推薦」，推薦卡組會顯示在這裡。",
       "actions": {
         "compare": "對比",
         "compareTitle": "卡組對比",
         "compareBaseline": "基準",
         "copy": "複製卡組",
         "copied": "卡組資訊已複製到剪貼簿。",
-        "copyFailed": "複製失敗，請檢查瀏覽器剪貼簿許可權。",
+        "copyFailed": "複製失敗，請檢查瀏覽器剪貼簿權限。",
         "songRanking": "歌曲收益"
       },
-      "elapsed": "組卡引擎合計用時 {ms} ms",
-      "totalElapsed": "推薦總耗時 {ms} ms",
+      "elapsed": "組卡引擎合計用時 {seconds} 秒",
+      "totalElapsed": "推薦總用時 {seconds} 秒",
+      "secondsUnit": "秒",
       "dataElapsed": "獲取資料",
       "engineDataElapsed": "組卡引擎資料準備",
       "sequentialRecommendElapsed": "順序執行推薦（實際等待）",
       "parallelRecommendElapsed": "並行執行推薦（實際等待）",
-      "algorithmElapsed": "{algorithm} 搜尋：{ms} ms",
+      "algorithmElapsed": "{algorithm} 搜尋：{seconds} 秒",
       "empty": "暫無推薦結果。",
       "missingUserDataTitle": "還沒有可用於組卡的遊戲資料",
-      "missingUserDataDescription": "所選遊戲賬號尚未上傳所需資料。請先前往資料上傳頁上傳 Suite 資料；使用烤森模式時還需要上傳 MySekai 資料，然後再回來重試。",
+      "missingUserDataDescription": "所選遊戲帳號尚未上傳所需資料。請先前往資料上傳頁上傳帳號資料（Suite）；使用烤森模式時還需要上傳烤森資料（MySekai），然後再回來重試。",
       "uploadDataAction": "前往上傳資料",
       "deckTitle": "卡組 #{index}",
       "score": "Live分數 {score}",
@@ -473,8 +472,8 @@ export default {
         "areaItem": "區域道具",
         "character": "角色等級",
         "honor": "稱號",
-        "fixture": "MySekai 玩偶",
-        "gate": "MySekai 大門"
+        "fixture": "烤森玩偶",
+        "gate": "烤森大門"
       },
       "eventBonus": "活動加成 {value}%",
       "bonusTag": "加成 {value}%",
@@ -486,12 +485,6 @@ export default {
       "challengeScoreDelta": "挑戰分差 {value}",
       "challengeScoreDeltaLabel": "挑戰分差",
       "unknownCard": "未知卡牌",
-      "cardGroups": {
-        "power": "綜合力",
-        "training": "養成",
-        "skillBonus": "技能與加成",
-        "storyCanvas": "劇情與畫布"
-      },
       "cardTotalPower": "綜合力 {value}",
       "cardTotalPowerShort": "總綜合力 {value}",
       "cardBasePower": "基礎 {value}",
@@ -516,6 +509,21 @@ export default {
       "canvasBonus": "畫布加成",
       "noCanvasBonus": "無畫布"
     },
+    "errors": {
+      "unknown": "推薦失敗，請稍後重試；如果持續失敗，請提交工單反饋。",
+      "notEnoughCards": "卡牌不足：當前篩選後只剩 {count} 張卡，至少需要 5 張，請放寬稀有度/屬性篩選。",
+      "currentDeckIncomplete": "讀取到的當前隊伍不足 5 張卡，請關閉「使用當前隊伍」或在遊戲裡編成完整隊伍後重新上傳資料。",
+      "musicRequired": "請先選擇歌曲和難度。",
+      "bonusTargetsRequired": "請至少填寫一個目標加成。",
+      "skillOrderRequired": "請填寫完整的技能順序，或改用自動技能順序。",
+      "worldBloomConfigInvalid": "連線世界活動的章節或團體設定不完整，請重新選擇章節角色。",
+      "eventConditionRequired": "模擬活動需要同時指定活動屬性和團體。",
+      "algorithmRequired": "請至少勾選一個搜尋演算法。",
+      "accountRequired": "請先登入並選擇一個遊戲帳號。",
+      "masterNotReady": "遊戲資料還沒有準備好，請等待資料下載完成後重試。",
+      "timeout": "計算超時，請減少啟用的演算法或在進階設定裡延長引擎超時後重試。",
+      "engineFailed": "組卡引擎執行出錯，請重新整理頁面後重試；如果持續失敗，請提交工單反饋。"
+    },
     "toast": {
       "runSuccessTitle": "推薦完成",
       "runFailedTitle": "推薦失敗",
@@ -537,11 +545,11 @@ export default {
   },
   "eventPlanner": {
     "title": "活動規劃",
-    "description": "用時速筆刷在活動日曆上安排每小時的打歌計劃，並即時對照目標 PT。",
+    "description": "用時速筆刷在活動日曆上安排每小時的打歌計畫，並即時對照目標 PT。「筆刷」= 一套卡組+歌曲的每小時 Pt；把它塗在日曆上就能算出總 Pt。",
     "sections": {
       "setup": {
-        "title": "賬號與活動",
-        "description": "選擇已繫結賬號、資料伺服器和活動；連線世界活動可選擇章節角色。"
+        "title": "帳號與活動",
+        "description": "選擇已綁定帳號、資料伺服器和活動；連線世界活動可選擇章節角色。"
       }
     },
     "form": {
@@ -581,7 +589,7 @@ export default {
       "description": "根據所選活動直接組卡，然後從歌曲 PT 排行中挑選要刷的歌。",
       "runDeck": "根據活動組卡",
       "useSavedConfig": "使用組卡頁面的詳細設定",
-      "savedConfigHint": "組卡引數（演算法、隊友、區域道具/角色等級覆蓋、固定/排除卡、養成配置等）沿用組卡頁面儲存的設定；需要調整時在組卡頁面修改後回來重新組卡即可。",
+      "savedConfigHint": "組卡參數（演算法、隊友、區域道具/角色等級覆蓋、固定/排除卡、養成配置等）沿用組卡頁面儲存的設定；需要調整時在組卡頁面修改後回來重新組卡即可。",
       "openDeckRecommend": "開啟組卡頁面調整",
       "running": "組卡中...",
       "deckTitle": "推薦卡組",
@@ -634,7 +642,7 @@ export default {
       "reached": "已規劃 {planned} PT，目標已覆蓋！"
     },
     "errors": {
-      "noResult": "組卡引擎沒有返回可用卡組，無法計算單局 PT。"
+      "noResult": "沒有算出可用卡組，無法估算單局 PT。請確認該帳號已上傳資料，並在組卡頁檢查過濾條件。"
     }
   }
 } as const

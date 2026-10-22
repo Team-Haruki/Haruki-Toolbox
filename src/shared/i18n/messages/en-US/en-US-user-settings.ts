@@ -9,7 +9,7 @@ export default {
     },
     "officialBotGuide": {
       "title": "Use the official QQ bot",
-      "description": "If you use the official QQ bot (宵崎奏), you also need to add a separate official QQ bot authorization. Follow the guide to get your QID and complete authorization.",
+      "description": "If you use the official QQ bot (the Kanade bot), you also need a separate official-bot authorization: follow the guide to get your user ID (QID) from the bot, then add it under \"Allow other QQ accounts to query my data\" below.",
       "action": "View the official QQ bot authorization guide"
     },
     "sections": {
@@ -22,9 +22,9 @@ export default {
     },
     "sekaiData": {
       "region": "Region",
-      "masterVersion": "Master version",
-      "displayVersion": "Display version",
-      "fetchVersion": "Fetch version",
+      "masterVersion": "Database version",
+      "displayVersion": "Current",
+      "fetchVersion": "Latest",
       "localVersion": "Local version",
       "remoteVersion": "Remote version",
       "updatedAt": "Updated at",
@@ -41,8 +41,8 @@ export default {
       "refreshMasterData": "Update",
       "clear": "Clear",
       "clearDialog": {
-        "title": "Clear Master data cache?",
-        "description": "This will clear local Master data and music metas caches for {region}. Related data must be downloaded again before use.",
+        "title": "Clear the game database cache?",
+        "description": "This will clear the local game database and song-constant data for {region}. Related data must be downloaded again before use.",
         "confirm": "Clear cache"
       },
       "queueTitle": "Update queue",
@@ -66,8 +66,8 @@ export default {
       "phases": {
         "queued": "Queued",
         "checking": "Checking version",
-        "fetching-master": "Fetching master",
-        "fetching-music-metas": "Fetching music metas",
+        "fetching-master": "Downloading game database",
+        "fetching-music-metas": "Downloading song-constant data",
         "writing-cache": "Writing cache",
         "ready": "Ready",
         "clearing": "Clearing cache"
@@ -80,8 +80,22 @@ export default {
       }
     },
     "kratosFlow": {
-      "title": "Identity settings",
-      "description": "Use this page to update your email, password, and profile traits.",
+      "title": "Change email, nickname or password",
+      "description": "Use the button below to open the edit page; you will be brought back automatically when done.",
+      "redirect": {
+        "title": "Taking you to the sign-in service to {target}…",
+        "description": "The change is made on the sign-in service's page; you will return to the toolbox automatically afterwards.",
+        "destination": "Destination: {host}",
+        "unreachableTitle": "The sign-in service cannot be opened right now",
+        "unreachableDescription": "The sign-in service did not respond. Check your connection and retry; if it keeps failing the service may be temporarily unavailable.",
+        "backToSettings": "Back to account settings",
+        "targets": {
+          "profile": "change your email or nickname",
+          "password": "change your password",
+          "mfa": "set up two-step verification",
+          "oidc": "manage Google sign-in"
+        }
+      },
       "toast": {
         "savedTitle": "Settings updated",
         "profileSavedDescription": "Email or nickname updated successfully",
@@ -131,79 +145,32 @@ export default {
       "unbound": "Unbound",
       "title": "Email settings",
       "description": "Manage your email binding",
-      "kratosManagedDescription": "Email updates and verification are handled by the identity center.",
-      "kratosManagedHint": "Email and nickname updates are handled in the identity center flow. Return here after completing it.",
+      "kratosManagedDescription": "Change email, nickname or password",
+      "kratosManagedHint": "Use the button below to open the edit page; you will be brought back automatically when done.",
       "currentEmailLabel": "Current email",
       "currentNicknameLabel": "Current nickname",
       "unsetNickname": "Not set",
       "changeButton": "Manage email & nickname",
-      "verifyButton": "Verify email",
-      "dialog": {
-        "title": "Change email",
-        "description": "Enter a new email, complete CAPTCHA, and send verification code.",
-        "newEmailPlaceholder": "New email address",
-        "codePlaceholder": "Email verification code",
-        "countdown": "{seconds}s",
-        "sendCodeButton": "Send code",
-        "confirmButton": "Confirm change"
-      },
-      "toast": {
-        "invalidNewEmailTitle": "Please enter a valid new email",
-        "invalidNewEmailDescription": "Please check the email format and try again",
-        "completeCaptchaTitle": "Please complete CAPTCHA first",
-        "completeCaptchaDescription": "Complete CAPTCHA below before sending email",
-        "codeSentTitle": "Verification code sent",
-        "codeSentDescription": "Sent to {email}. Please check your inbox.",
-        "sendCodeFailedTitle": "Failed to send verification code",
-        "sendCodeFailedDescription": "Failed to send verification code",
-        "inputCodeTitle": "Please enter verification code",
-        "inputCodeDescription": "Please enter the code received by email",
-        "changeSuccessTitle": "Email changed successfully",
-        "changeSuccessDescription": "Please sign in again to apply changes",
-        "changeFailedTitle": "Failed to change email",
-        "changeFailedDescription": "Failed to change email"
-      }
+      "verifyButton": "Verify email"
     },
     "password": {
       "title": "Password settings",
       "description": "Manage your Haruki Toolbox account password",
-      "kratosManagedDescription": "Password updates are handled by the identity center.",
-      "kratosManagedHint": "Use the button below to continue in the identity settings flow, then return to the toolbox when finished.",
-      "changeButton": "Change password",
-      "dialog": {
-        "title": "Change password",
-        "description": "Enter your current password and a new password",
-        "oldPasswordLabel": "Current password",
-        "oldPasswordPlaceholder": "Enter current password",
-        "newPasswordLabel": "New password",
-        "newPasswordPlaceholder": "Enter new password",
-        "confirmPasswordLabel": "Confirm password",
-        "confirmPasswordPlaceholder": "Enter new password again",
-        "submit": "Submit"
-      },
-      "toast": {
-        "validateFailedTitle": "Validation failed",
-        "oldPasswordRequired": "Please enter current password",
-        "newPasswordRequired": "Please enter new password",
-        "passwordMismatch": "The two new passwords do not match",
-        "passwordMinLength": "New password must be at least 8 characters",
-        "changeSuccessTitle": "Password changed successfully",
-        "changeSuccessDescription": "Please sign in again",
-        "changeFailedTitle": "Failed to change password",
-        "changeFailedDescription": "Failed to change password"
-      }
+      "kratosManagedDescription": "Change your sign-in password",
+      "kratosManagedHint": "Use the button below to open the edit page; you will be brought back automatically when done.",
+      "changeButton": "Change password"
     },
     "mfa": {
-      "title": "Multi-factor authentication",
-      "description": "Manage TOTP, WebAuthn, and recovery codes.",
-      "hint": "Use this page to enroll or update MFA methods for stronger account security.",
-      "manageButton": "Manage MFA"
+      "title": "Two-step verification",
+      "description": "Two-step verification: authenticator app, passkeys and backup recovery codes",
+      "hint": "Opens the setup page; you will be brought back automatically when done.",
+      "manageButton": "Manage two-step verification"
     },
     "social": {
-      "title": "Social login",
-      "description": "Manage Google and other OIDC identity providers.",
-      "hint": "Use this page to link or unlink social providers from your account.",
-      "manageButton": "Manage social providers"
+      "title": "Sign in with Google",
+      "description": "Link or unlink your Google account so you can sign in with it.",
+      "hint": "Opens the setup page; you will be brought back automatically when done.",
+      "manageButton": "Manage Google sign-in"
     },
     "sessions": {
       "title": "Session management",
@@ -219,20 +186,35 @@ export default {
         "otherSessions": "Other active sessions",
         "empty": "No other active sessions.",
         "unknownDevice": "Unknown device",
-        "issuedAt": "Issued at",
-        "authenticatedAt": "Authenticated at",
+        "loginAt": "Signed in",
+        "lastVerified": "Last verified",
         "expiresAt": "Expires at",
-        "aal": "AAL",
-        "revokeOne": "Revoke session",
+        "securityLevel": {
+          "label": "Security level",
+          "normal": "Standard",
+          "twoFactor": "Two-step verification"
+        },
+        "revokeOne": "Sign out this session",
         "revokeOthers": "Sign out other sessions",
+        "revokeOneDialog": {
+          "title": "Sign out this device?",
+          "description": "This signs out \"{device}\" ({meta}). That device must sign in again; this device is not affected."
+        },
+        "revokeOthersDialog": {
+          "title": "Sign out all other sessions?",
+          "description": "This signs out {count} session(s) other than this device; they will all need to sign in again. If you suspect someone else signed in, change your password as well."
+        },
+        "sessionExpired": "Your sign-in has expired. Please sign in again.",
+        "sessionExpiredDescription": "This session has expired or was signed out elsewhere. Sign in again to view and manage sessions.",
+        "goLogin": "Sign in",
         "loadFailed": "Failed to load sessions.",
-        "revokeFailed": "Failed to revoke this session.",
-        "revokeOthersFailed": "Failed to revoke other sessions."
+        "revokeFailed": "Failed to sign out this session.",
+        "revokeOthersFailed": "Failed to sign out other sessions."
       }
     },
     "imBinding": {
-      "title": "Social platform binding",
-      "description": "Manage social platform accounts bound to your Haruki Toolbox account",
+      "title": "Bind my QQ (verify it's you)",
+      "description": "Bind and verify your own QQ number so HarukiBot can confirm it is you querying your data.",
       "fields": {
         "platform": "Platform",
         "account": "Account",
@@ -252,7 +234,7 @@ export default {
       "selectPlatformPlaceholder": "Select platform",
       "accountPlaceholder": "Enter account ID",
       "emailVerifyRequiredHint": "Please verify your email before managing social platform bindings.",
-      "captchaHint": "To prevent abuse, complete CAPTCHA below before sending email code.",
+      "captchaHint": "To prevent abuse, complete the human verification first, then send the email code.",
       "actions": {
         "sendEmailCode": "Send email code",
         "generateCode": "Generate code"
@@ -260,7 +242,7 @@ export default {
       "dialog": {
         "title": "Social platform verification",
         "qqDescription": "Enter the code from your email to complete binding.",
-        "otherDescription": "Use the code below on the target platform, then click Verify to refresh status.",
+        "otherDescription": "Send the code below to HarukiBot in a private message on that platform, then come back and click Verify.",
         "qqCodePlaceholder": "Enter email verification code",
         "verifyButton": "Verify"
       },
@@ -268,21 +250,24 @@ export default {
         "emailNotVerifiedTitle": "Email not verified",
         "emailNotVerifiedDescription": "Please verify your email before managing social platform bindings.",
         "sendFailedTitle": "Send failed",
-        "completeCaptchaDescription": "Please complete CAPTCHA verification first",
+        "sendFailedFallback": "The code was not sent. Check the QQ number and retry; if it keeps failing, try again later.",
+        "completeCaptchaDescription": "Please complete the human verification first",
         "verificationCodeSentTitle": "Verification code sent",
         "verificationCodeSentDescription": "Please check QQ {account}'s mailbox",
         "generateFailedTitle": "Generation failed",
-        "incompleteResponseDescription": "Incomplete response data",
+        "generateFailedFallback": "The code was not generated. Try again later.",
+        "incompleteResponseDescription": "Incomplete response data; generate a new code",
         "codeGeneratedTitle": "Verification code generated",
         "missingQQAccountDescription": "Please enter QQ account first",
         "invalidQQAccountDescription": "QQ number must be digits only",
-        "invalidQQBotAccountDescription": "The QQ official-bot OpenID looks too short; please copy the full ID",
+        "invalidQQBotAccountDescription": "The official QQ bot user ID (QID) has the wrong length; copy it in full from the bot's reply",
         "missingAccountDescription": "Please enter the account ID to bind",
         "verifyFailedTitle": "Verification failed",
+        "verifyFailedFallback": "Verification did not pass. Check the code and retry; if it expired, send a new one.",
         "inputQQCodeDescription": "Please enter the code from email",
         "verifySuccessTitle": "Verification successful",
         "verifySuccessDefaultDescription": "Binding completed",
-        "missingStatusTokenDescription": "Missing status token. Please generate a new verification code.",
+        "missingStatusTokenDescription": "Verification timed out. Please generate a new code.",
         "notVerifiedTitle": "Not verified",
         "notVerifiedDescription": "Verification is not completed yet",
         "notVerifiedFallbackDescription": "Please complete verification on the social platform and try again.",
@@ -291,8 +276,8 @@ export default {
       }
     },
     "imAuthorization": {
-      "title": "Authorized social queries",
-      "description": "Manage social platforms authorized to query your game account information",
+      "title": "Allow other QQ accounts to query my data",
+      "description": "Once added, these QQ numbers or bot users can look up your game data in HarukiBot.",
       "addButton": "Add authorization",
       "emptyTitle": "No authorized platforms yet",
       "emptyDescription": "Once you add an authorization, that platform account can look up your game account data.",
@@ -308,7 +293,8 @@ export default {
         "account": "Account",
         "remark": "Remark",
         "allowFastVerification": "Allow Fast Verification",
-        "allowFastVerificationHint": "When enabled, this user can quickly pass account verification in HarukiBot"
+        "allowFastVerificationHint": "When enabled, this user can quickly pass account verification in HarukiBot",
+        "qqbotAccountHint": "Official QQ bot user ID (QID): get it from the bot by following the guide and copy it in full from the reply."
       },
       "fastVerificationBadge": "Fast verification",
       "actions": {
@@ -316,10 +302,11 @@ export default {
         "delete": "Delete"
       },
       "dialog": {
-        "createTitle": "Add social authorization",
-        "editTitle": "Edit social authorization",
-        "descriptionMain": "Modify social accounts authorized to query information",
-        "descriptionHint": "You need to finish account binding settings before using this feature"
+        "createTitle": "Add query authorization",
+        "editTitle": "Edit query authorization",
+        "createDescription": "Enter the QQ number or Discord account that may query your game data.",
+        "editDescription": "Change the account, remark or fast-verification setting of this authorization.",
+        "bindFirstHint": "Bind your own QQ above first."
       },
       "deleteDialog": {
         "title": "Confirm deletion",
@@ -328,14 +315,16 @@ export default {
       },
       "toast": {
         "saveFailedTitle": "Save failed",
+        "saveFailedFallback": "The authorization was not saved. Check the account and retry; if it keeps failing, try again later.",
         "accountRequiredDescription": "Please enter account",
         "accountQQNumericDescription": "QQ number must be digits only",
-        "accountQQBotLengthDescription": "The QQ official-bot OpenID looks too short; please copy the full ID",
+        "accountQQBotLengthDescription": "The official QQ bot user ID (QID) has the wrong length; copy it in full from the bot's reply",
         "saveSuccessTitle": "Authorization saved",
         "saveSuccessDescription": "Social authorization info has been updated",
         "deleteSuccessTitle": "Authorization removed",
         "deleteSuccessDescription": "This social authorization has been removed",
-        "deleteFailedTitle": "Delete failed"
+        "deleteFailedTitle": "Delete failed",
+        "deleteFailedFallback": "The authorization was not removed. Try again later."
       }
     },
     "oauthAuthorizations": {
@@ -368,11 +357,11 @@ export default {
       },
       "toast": {
         "fetchFailedTitle": "Failed to load authorization list",
-        "fetchFailedFallback": "Load failed",
+        "fetchFailedFallback": "Check your connection and retry; if it keeps failing the service may be temporarily unavailable.",
         "revokeSuccessTitle": "Authorization revoked",
         "revokeSuccessDescription": "Access for {clientName} has been revoked",
         "revokeFailedTitle": "Revoke failed",
-        "revokeFailedFallback": "Revoke failed",
+        "revokeFailedFallback": "The authorization is still active. Try again later; if it keeps failing, refresh the list to check its state.",
         "deviceRevokeSuccessTitle": "Device revoked",
         "deviceRevokeSuccessDescription": "“{label}” can no longer access your account",
         "deviceNotFound": "This device's authorization no longer exists; the list was refreshed",
@@ -390,11 +379,8 @@ export default {
       "description": "Manage Project SEKAI accounts bound to your Haruki Toolbox account",
       "alert": {
         "title": "Notice",
-        "line1Server": "same server",
-        "line1Middle": " and ",
-        "line1GameId": "same game ID",
-        "line1After": " can only be bound to one Haruki Toolbox account.",
-        "line2": "Account binding information in Haruki Toolbox is not shared with HarukiBot NEO. To query data on HarukiBot NEO, please first bind the corresponding game account on the Bot by following the Bot usage guide."
+        "line1": "A game account on a given server can be bound by only one toolbox user.",
+        "line2": "Bindings here are not synced to HarukiBot NEO; to query in the bot, bind separately in your group by following the bot's help."
       },
       "addButton": "Bind new account",
       "empty": "No data",
@@ -427,7 +413,8 @@ export default {
         "createTitle": "Add account",
         "editTitle": "Edit account",
         "subtitle": "Bind your game account and configure data permissions.",
-        "verifyHint": "Verification is required before the binding can be saved.",
+        "verifyHint": "How verification works: you put a short code into your in-game profile signature, and the toolbox reads your public profile to confirm the account is yours. You can change the signature back afterwards.",
+        "uidHint": "The number under your ID in the in-game Profile screen.",
         "basicInfoTitle": "Basic account info",
         "serverPlaceholder": "Select server",
         "verifyButton": "Verify",
@@ -437,13 +424,17 @@ export default {
           "verificationStatus": "Verification"
         },
         "suite": {
-          "title": "Suite data settings",
-          "description": "Manage Suite data settings for this uploaded game account"
+          "title": "Account data (Suite)",
+          "description": "Sharing settings for account data (Suite): which bots may read the data you upload."
         },
         "mysekai": {
-          "title": "MySekai data settings",
-          "description": "Manage MySekai data settings for this uploaded game account"
+          "title": "MySekai data",
+          "description": "Sharing settings for MySekai data: which bots may read the data you upload."
         }
+      },
+      "validation": {
+        "uidRequired": "Enter your game UID",
+        "uidChangedReverify": "The game UID changed; please verify again"
       },
       "deleteDialog": {
         "title": "Confirm deletion",
@@ -451,102 +442,117 @@ export default {
       },
       "verifyDialog": {
         "title": "Verification code generated",
-        "description": "Enter the verification code below in your in-game profile signature",
-        "copyHint": "Click the code below to copy it to clipboard",
-        "confirmButton": "Done, close this window",
-        "notice": {
-          "keepFullCode": "Please enter the full code in signature, including slash characters",
-          "returnHome": "After entering the code in game, return to the home page to ensure it is saved before adding account",
-          "saveAfterClose": "After entering the code, close this window and click Save to verify the account"
-        }
+        "description": "Follow the steps below to put the code into your in-game profile signature; the toolbox reads your public profile to confirm the account is yours.",
+        "codeLabel": "Verification code",
+        "copyButton": "Copy code",
+        "steps": {
+          "copy": "Click \"Copy code\" above.",
+          "paste": "Open the game → Profile → edit the signature, paste the whole code (including the slashes) and save.",
+          "returnHome": "Go back to the game's home screen and make sure the signature was saved.",
+          "save": "Return here, close this window and click Save to finish verification."
+        },
+        "afterwards": "Once verified you can change the signature back.",
+        "confirmButton": "Done, close this window"
       },
       "permissions": {
+        "sharedHint": "Only needed if you use that bot.",
         "suite": {
           "allowPublicApi": {
-            "title": "Allow public API access",
-            "description": "Allow Suite data to be accessed through Haruki Toolbox public API"
+            "title": "Allow public lookups by other sites/bots",
+            "description": "When on, anyone who knows your UID can view your uploaded account data through the toolbox API."
           },
           "allowSakura": {
-            "title": "Allow upload to SakuraBot",
-            "description": "Allow Suite data to be uploaded to SakuraBot"
+            "title": "Sync to SakuraBot (QQ group bot)",
+            "description": "Sync account data to SakuraBot. Only needed if you use that bot."
           },
           "allow8823": {
-            "title": "Allow upload to Kaosen Bot",
-            "description": "Allow Suite data to be uploaded to Kaosen Bot"
+            "title": "Sync to Kaosen Bot (QQ group bot)",
+            "description": "Sync account data to Kaosen Bot. Only needed if you use that bot."
           },
           "allowResona": {
-            "title": "Allow upload to ResonaBot",
-            "description": "Allow Suite data to be uploaded to ResonaBot"
+            "title": "Sync to ResonaBot (QQ group bot)",
+            "description": "Sync account data to ResonaBot. Only needed if you use that bot."
           },
           "allowLuna": {
-            "title": "Allow upload to LunaBot",
-            "description": "Allow Suite data to be uploaded to LunaBot"
+            "title": "Sync to LunaBot (QQ group bot)",
+            "description": "Sync account data to LunaBot. Only needed if you use that bot."
           }
         },
         "mysekai": {
           "allowPublicApi": {
-            "title": "Allow public API access",
-            "description": "Allow MySekai data to be accessed through Haruki Toolbox public API"
+            "title": "Allow public lookups by other sites/bots",
+            "description": "When on, anyone who knows your UID can view your uploaded MySekai data through the toolbox API."
           },
           "allowFixtureApi": {
-            "title": "Allow fixture sharing API",
-            "description": "Allow MySekai account UID to appear in fixture sharing API"
+            "title": "Join fixture sharing",
+            "description": "When on, your UID appears in the MySekai fixture-sharing list and other players can visit your MySekai."
           },
           "allow8823": {
-            "title": "Allow upload to Kaosen Bot",
-            "description": "Allow MySekai data to be uploaded to Kaosen Bot"
+            "title": "Sync to Kaosen Bot (QQ group bot)",
+            "description": "Sync MySekai data to Kaosen Bot. Only needed if you use that bot."
           },
           "allowResona": {
-            "title": "Allow upload to ResonaBot",
-            "description": "Allow MySekai data to be uploaded to ResonaBot"
+            "title": "Sync to ResonaBot (QQ group bot)",
+            "description": "Sync MySekai data to ResonaBot. Only needed if you use that bot."
           },
           "allowLuna": {
-            "title": "Allow upload to LunaBot",
-            "description": "Allow MySekai data to be uploaded to LunaBot"
+            "title": "Sync to LunaBot (QQ group bot)",
+            "description": "Sync MySekai data to LunaBot. Only needed if you use that bot."
           }
         }
       },
       "grants": {
         "title": "Game account data grants",
-        "description": "Temporarily let another Toolbox user read suite / mysekai / profile data from a verified account, or upload suite / mysekai data on its behalf.",
-        "receivedDescription": "View game account data granted to you by other Toolbox users.",
+        "description": "Let another toolbox user view this account's data for a limited time, or upload data on your behalf.",
+        "dataTypesExplainer": "Data types: account data (Suite) / MySekai data / profile.",
+        "receivedDescription": "View game account data granted to you by other toolbox users.",
         "selectedAccount": "Selected account: {account}",
         "noSelectedAccount": "No account selected",
         "ownedTitle": "Data granted from this account",
         "receivedTitle": "Data granted to me",
         "receivedHint": "Received grants can only be used, not re-granted or edited; ask the owner for changes.",
+        "receivedUseHint": "Available in the account selector on each feature page.",
+        "ownerFallback": "Toolbox user {id}",
         "emptyOwned": "No grants for this account",
         "emptyReceived": "No received grants",
+        "editingBadge": "Editing",
         "fallback": "—",
-        "yourUserId": "Your Toolbox user ID:",
+        "yourUserId": "Your toolbox user ID:",
         "dataType": {
-          "suite": "Suite",
-          "mysekai": "MySekai",
+          "suite": "Account data",
+          "mysekai": "MySekai data",
           "profile": "Profile"
         },
         "permission": {
-          "read": "Read",
-          "write": "Write (upload on my behalf)",
+          "read": "Allow reading",
+          "write": "Allow uploads (on my behalf)",
           "readOnly": "Read only",
           "writeOnly": "Write only",
           "readWrite": "Read & write"
         },
         "actions": {
           "refresh": "Refresh",
-          "save": "Save grant"
+          "save": "Save grant",
+          "saveChanges": "Save changes",
+          "cancelEdit": "Cancel editing",
+          "edit": "Edit grant",
+          "revoke": "Revoke grant"
         },
         "form": {
-          "title": "Create or update grant",
-          "granteeUserId": "Grantee Toolbox user ID",
+          "title": "New grant",
+          "editTitle": "Editing grant: {grantee} / {dataType}",
+          "targetAccount": "Target account: {account} (everything the grantee reads or uploads is this account's data)",
+          "lockedWhileEditing": "The grantee and data type cannot change while editing; to grant someone else or another type, cancel editing and add a new grant.",
+          "granteeUserId": "Grantee toolbox user ID",
           "granteeUserIdPlaceholder": "For example 1234567890",
           "dataType": "Data type",
           "expiresAt": "Expires at",
           "expiresAtHelp": "Must be a future time. Permanent grants are not available.",
-          "profileHint": "Profile is live data: every view by the grantee sends a request to the game server through your account.",
+          "profileHint": "Profile is a live lookup: every view by the grantee fetches from the game server through your account.",
           "permissions": "Permissions",
-          "writeHint": "Write lets the grantee upload and update this game account's data. It does not allow reading existing data, changing bindings or privacy settings, or re-granting.",
+          "writeHint": "\"Allow uploads\" lets the grantee upload and update this account's data. It does not include reading existing data, changing bindings or privacy settings, or re-granting.",
           "profileReadOnlyHint": "Profile grants are read-only.",
-          "writeTargetNotice": "Uploads by the grantee will directly update {dataType} data for {account}. Double-check the region and game account.",
+          "writeTargetNotice": "Uploads by the grantee will directly update {dataType} for {account}. Double-check the server and game account.",
           "writeOnlyNotice": "Read is unchecked: the grantee can upload but cannot view this account's existing data."
         },
         "table": {
@@ -557,20 +563,28 @@ export default {
           "expiresAt": "Expires at",
           "actions": "Actions"
         },
+        "revokeDialog": {
+          "title": "Revoke data grant",
+          "description": "This revokes {grantee}'s \"{dataType}\" grant ({permissions}) for {account}. They lose access immediately; you can grant it again later.",
+          "confirm": "Revoke grant"
+        },
         "validation": {
           "verifiedOnly": "Only verified bound accounts can create data grants",
           "granteeRequired": "Enter a grantee user ID",
           "selfGrant": "You cannot grant access to yourself",
-          "dataType": "Only suite, mysekai, and profile are supported",
-          "permissionRequired": "Select at least one permission; use the delete button to revoke a grant",
-          "profileReadOnly": "Profile does not support write permission",
+          "dataType": "Only account data, MySekai data and profile are supported",
+          "permissionRequired": "Tick at least one permission; use \"Revoke grant\" in the list to remove a grant",
+          "profileReadOnly": "Profile does not support upload permission",
+          "expiryRequired": "Pick an expiry time",
           "futureExpiry": "Expiry must be a future time"
         },
         "toast": {
           "loadFailedTitle": "Failed to load data grants",
           "saveFailedTitle": "Failed to save data grant",
+          "saveFailedFallback": "The grant was not saved. Check the grantee user ID and expiry time and retry.",
           "deleteFailedTitle": "Failed to revoke data grant",
           "saved": "Data grant saved",
+          "updated": "Data grant updated",
           "deleted": "Data grant revoked"
         }
       },
@@ -578,15 +592,18 @@ export default {
         "setDefaultSuccessTitle": "Default account updated",
         "setDefaultSuccessDescription": "Feature pages will select this account by default",
         "setDefaultFailedTitle": "Failed to set default account",
+        "setDefaultFailedFallback": "The default account was not changed. Try again later.",
         "deleteSuccessTitle": "Deleted",
         "deleteSuccessDescription": "Account binding has been removed",
         "deleteFailedTitle": "Delete failed",
         "saveSuccessTitle": "Saved",
         "saveSuccessDescription": "Account settings have been updated",
         "saveFailedTitle": "Save failed",
+        "saveFailedFallback": "The account settings were not saved. Try again later; when adding an account, make sure the code is in your in-game signature.",
         "verifyBeforeCreateDescription": "Before adding a new account, click Verify to generate a code and complete setup in game.",
         "uidMustBeNumericDescription": "Game UID must be numeric only",
         "generateCodeFailedTitle": "Unable to generate verification code",
+        "generateCodeFailedFallback": "Check the server and game UID and retry; if it keeps failing, try again later.",
         "selectServerAndUidDescription": "Select server and enter game UID first",
         "missingCodeDescription": "Verification code was not returned",
         "copySuccessTitle": "Copied",
@@ -607,7 +624,8 @@ export default {
       "openid": "Verify your identity and sign you in with your Haruki account",
       "profile": "See your display name",
       "email": "See your email address",
-      "offlineAccess": "Maintain offline access and issue refresh tokens"
+      "offlineAccess": "Keep using the permissions above while you are offline",
+      "unknown": "Other permission ({scope})"
     },
     "scopeDescription": {
       "gameDataRead": "Read data of game accounts you own or were granted read access to. Does not include uploading.",
@@ -630,7 +648,7 @@ export default {
       "cancel": "Cancel",
       "rejectDescription": "The authorization request was cancelled before login.",
       "invalidTitle": "Invalid sign-in request",
-      "invalidDescription": "A required or valid login challenge was not provided. Please restart authorization from the client application.",
+      "invalidDescription": "This authorization link has expired or is incomplete. Go back to the app that started it and click \"Sign in\" again.",
       "backHome": "Back to home",
       "toast": {
         "failedTitle": "Unable to continue sign-in",
@@ -646,14 +664,27 @@ export default {
       "continuingDescriptionPrefix": "Preparing authorization for ",
       "continuingDescriptionSuffix": ".",
       "scopeIntro": "This app will be able to:",
+      "groups": {
+        "read": "Read",
+        "write": "Upload / submit",
+        "other": "Other"
+      },
+      "writeWarning": "This authorization includes upload or submit permissions: the app will be able to submit data as you. Only allow it if you trust this app.",
+      "accountLine": "Authorizing as {name}",
+      "switchAccount": "Switch account",
+      "switchAccountHint": "Switching account signs you out and restarts this authorization from the app.",
+      "switchAccountRejectDescription": "The user chose to switch account; start the sign-in again.",
+      "subjectMismatchTitle": "This authorization request belongs to another account",
+      "subjectMismatchDescription": "This authorization request was started by a different account. Start the sign-in again from the app, or switch to the account that started it.",
+      "returnHint": "After authorizing you will be sent back to {app}.",
       "noScopesRequested": "This app did not request any additional scopes.",
-      "revokeHint": "After authorization, you can revoke it any time on the OAuth authorization management page.",
+      "revokeHint": "You can revoke it any time under Account settings → Authorized apps.",
       "reject": "Reject",
       "authorize": "Authorize",
       "authorizing": "Authorizing...",
-      "rejectDescription": "The resource owner denied the authorization request.",
+      "rejectDescription": "You declined this authorization.",
       "invalidTitle": "Invalid authorization request",
-      "invalidDescription": "Required or valid authorization parameters are missing. Please restart authorization from the client application.",
+      "invalidDescription": "This authorization link has expired or is incomplete. Go back to the app that started it and click \"Sign in\" again.",
       "backHome": "Back to home",
       "toast": {
         "failedTitle": "Authorization failed",
@@ -672,7 +703,9 @@ export default {
       "confirm": "Sign out",
       "loggingOut": "Signing out...",
       "invalidTitle": "Invalid sign-out request",
-      "invalidDescription": "The logout challenge is missing or no longer valid.",
+      "invalidDescription": "This sign-out link has expired or is incomplete. Go back to the app that started it and try again.",
+      "localDescription": "Confirming signs the current account out of this site.",
+      "localSignedOutDescription": "You are not signed in right now.",
       "backHome": "Back to home",
       "toast": {
         "failedTitle": "Sign-out failed",

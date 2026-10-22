@@ -92,7 +92,7 @@ export function describeIncompleteRevocation(outcome: RevocationOutcome, t: Tran
 
 /**
  * The toast description for a failed client action: a localized message for
- * the backend codes listed above, otherwise the API message as before.
+ * the backend codes listed above, otherwise the shared error funnel's text.
  */
 export function describeOAuthClientActionError(error: unknown, t: TranslateFn, fallback: string): string {
   const messageKey = API_ERROR_MESSAGE_KEYS.get(readApiErrorCode(error))

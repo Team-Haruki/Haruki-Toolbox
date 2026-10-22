@@ -49,6 +49,11 @@ const SORT_LABEL_KEYS: Record<(typeof SORT_VALUES)[number], string> = {
   user_id_asc: "adminGameBindings.sort.userIdAsc",
 }
 
+/** Sort values the list accepts (also from the URL). */
+export const GAME_BINDING_SORT_VALUES: readonly string[] = SORT_VALUES
+/** Server filter values the list accepts (also from the URL), including "all". */
+export const GAME_BINDING_SERVER_FILTER_VALUES: readonly string[] = SERVER_VALUES
+
 export function getServerOptions(t: TranslateFn): ReadonlyArray<ServerFilterOption> {
   return SERVER_VALUES.map((value) => ({
     value,

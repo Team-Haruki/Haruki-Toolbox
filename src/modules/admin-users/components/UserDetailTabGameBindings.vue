@@ -16,16 +16,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import {
     Table,
     TableBody,
     TableCell,
@@ -40,24 +30,27 @@ import {
     LucidePlus,
     LucideTrash2,
 } from "lucide-vue-next"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import type { AdminGameAccountBinding } from "@/types/admin"
 import { resolveServerLabel } from "@/modules/admin-users/constants"
 
-defineProps<{
+const props = defineProps<{
     loading: boolean
     busy: boolean
     gameBindings: AdminGameAccountBinding[]
+    /** Confirmed in a dialog; rejects on failure so the dialog stays open with the error. */
+    deleteBinding: (server: AdminGameAccountBinding["server"], gameUserId: string) => Promise<void>
 }>()
 
 const emit = defineEmits<{
     (e: "add"): void
     (e: "edit", binding: AdminGameAccountBinding): void
-    (e: "delete", payload: { server: AdminGameAccountBinding["server"]; gameUserId: string }): void
 }>()
 
 const { t } = useI18n()
 
 const deleteDialogOpen = ref(false)
+// Kept after the dialog closes so its text does not change mid fade-out.
 const pendingDelete = ref<{ server: AdminGameAccountBinding["server"]; gameUserId: string } | null>(null)
 
 function requestDelete(binding: AdminGameAccountBinding) {
@@ -65,12 +58,9 @@ function requestDelete(binding: AdminGameAccountBinding) {
     deleteDialogOpen.value = true
 }
 
-function confirmDelete() {
-    if (pendingDelete.value) {
-        emit("delete", pendingDelete.value)
-    }
-    deleteDialogOpen.value = false
-    pendingDelete.value = null
+function executeDelete() {
+    const target = pendingDelete.value
+    return target ? props.deleteBinding(target.server, target.gameUserId) : Promise.resolve()
 }
 </script>
 
@@ -146,18 +136,13 @@ function confirmDelete() {
     </CardContent>
   </Card>
 
-  <AlertDialog v-model:open="deleteDialogOpen">
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>{{ t("adminUsers.detail.game.unbindDialogTitle") }}</AlertDialogTitle>
-        <AlertDialogDescription>
-          {{ t("adminUsers.detail.game.unbindDialogDescription", { gameUserId: pendingDelete?.gameUserId }) }}
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
-        <AlertDialogAction @click="confirmDelete">{{ t("adminUsers.common.confirm") }}</AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+  <ConfirmDialog
+    v-model:open="deleteDialogOpen"
+    :title="t('adminUsers.detail.game.unbindDialogTitle')"
+    :description="t('adminUsers.detail.game.unbindDialogDescription', { gameUserId: pendingDelete?.gameUserId ?? '' })"
+    :cancel-label="t('adminUsers.common.cancel')"
+    :confirm-label="t('adminUsers.detail.game.unbind')"
+    destructive
+    :on-confirm="executeDelete"
+  />
 </template>

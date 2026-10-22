@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 import {
   mergeQuery,
   readQueryBoolean,
+  readQueryDate,
   readQueryEnum,
   readQueryEnumList,
   readQueryInt,
@@ -87,5 +88,15 @@ describe("query writers", () => {
   test("serializeQueryRecord is order-independent and skips blanks", () => {
     expect(serializeQueryRecord({ b: "2", a: "1", c: undefined, d: "" })).toBe("a=1&b=2")
     expect(serializeQueryRecord({})).toBe("")
+  })
+})
+
+describe("readQueryDate", () => {
+  test("parses ISO timestamps and rejects garbage", () => {
+    expect(readQueryDate("2026-01-02T03:04:05.000Z")?.toISOString()).toBe("2026-01-02T03:04:05.000Z")
+    expect(readQueryDate(["2026-01-02T03:04:05.000Z", "x"])?.toISOString()).toBe("2026-01-02T03:04:05.000Z")
+    expect(readQueryDate("not a date")).toBeNull()
+    expect(readQueryDate("")).toBeNull()
+    expect(readQueryDate(undefined)).toBeNull()
   })
 })

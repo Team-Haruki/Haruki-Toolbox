@@ -100,7 +100,7 @@ describe("cards query codec", () => {
 })
 
 describe("active chips", () => {
-  const ctx = { characterNames: new Map([[21, "Miku"]]), labels }
+  const ctx = { characterNames: new Map([[21, "Miku"]]), charactersReady: true, labels }
 
   it("produces one chip per active value with removable keys", () => {
     const chips = buildCardsActiveChips({
@@ -116,14 +116,26 @@ describe("active chips", () => {
     }, ctx)
     expect(chips).toEqual([
       { key: "q", label: "t:catalog.search.label: hello" },
-      { key: "chars:21", label: "Miku" },
-      { key: "chars:99", label: "#99" },
+      { key: "chars:21", label: "Miku", pending: false },
+      // The index is loaded and does not know 99: a removable "#99" chip, not a skeleton.
+      { key: "chars:99", label: "#99", pending: false },
       { key: "units:idol", label: "t:cards.unit.idol" },
       { key: "attrs:cute", label: "t:cards.attr.cute" },
       { key: "rar:rarity_4", label: "t:cards.rarity.rarity_4" },
       { key: "supply:birthday", label: "t:cards.supply.birthday" },
       { key: "skill:life_recovery", label: "t:cardCatalog.skillFilters.life_recovery" },
       { key: "year", label: "2021" },
+    ])
+  })
+
+  it("renders unresolved ids as skeleton chips only while the index loads", () => {
+    const loading = buildCardsActiveChips(
+      { ...createDefaultCardsQueryState(), chars: [21, 99] },
+      { characterNames: new Map(), charactersReady: false, labels },
+    )
+    expect(loading).toEqual([
+      { key: "chars:21", label: "#21", pending: true },
+      { key: "chars:99", label: "#99", pending: true },
     ])
   })
 

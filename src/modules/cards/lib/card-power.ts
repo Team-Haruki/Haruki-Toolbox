@@ -63,6 +63,8 @@ export type CardDetailExtras = {
   /** Per-rank increments (index `masterRank - 1`); the bonus at rank N is the sum of the first N. */
   masterLessonsByRarity: Map<string, CardPowerBonus[]>
   canvasBonusByRarity: Map<string, CardPowerBonus>
+  /** Material id → display name, so unlock costs read "Wish piece ×10" rather than "Material #1". */
+  materialNameById: Map<number, string>
 }
 
 export const CARD_DETAIL_EXTRAS_FILES = [
@@ -70,7 +72,11 @@ export const CARD_DETAIL_EXTRAS_FILES = [
   "cardRarities",
   "masterLessons",
   "cardMysekaiCanvasBonuses",
+  "materials",
 ] as const
+
+/** Files a region dump may lack; the builder tolerates `[]` for them. */
+export const CARD_DETAIL_EXTRAS_OPTIONAL_FILES = ["materials"] as const
 
 function readPowerBonus(record: Record<string, unknown>): CardPowerBonus {
   return {
@@ -180,12 +186,25 @@ export function buildCanvasBonusByRarity(rawCanvasBonuses: unknown): Map<string,
   return byRarity
 }
 
+export function buildMaterialNameById(raw: unknown): Map<number, string> {
+  const names = new Map<number, string>()
+  for (const record of normalizeCatalogRecords(raw)) {
+    const id = normalizeCatalogNumber(record.id)
+    const name = normalizeCatalogString(record.name)
+    if (id != null && id > 0 && name) {
+      names.set(id, name)
+    }
+  }
+  return names
+}
+
 export function buildCardDetailExtras(files: Record<string, unknown>): CardDetailExtras {
   return {
     episodesByCard: buildCardEpisodesByCard(files.cardEpisodes),
     raritiesByType: buildCardRaritiesByType(files.cardRarities),
     masterLessonsByRarity: buildMasterLessonsByRarity(files.masterLessons),
     canvasBonusByRarity: buildCanvasBonusByRarity(files.cardMysekaiCanvasBonuses),
+    materialNameById: buildMaterialNameById(files.materials),
   }
 }
 

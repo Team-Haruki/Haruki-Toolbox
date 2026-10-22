@@ -17,10 +17,10 @@ const defaultLocalizer: TicketLocalizer = (key) => translate(key)
 const TICKET_STATUS_VALUES: readonly TicketStatus[] = ["open", "pending_admin", "pending_user", "resolved", "closed"]
 const TICKET_PRIORITY_VALUES: readonly TicketPriority[] = ["low", "normal", "high", "urgent"]
 const TICKET_CATEGORY_VALUES: readonly TicketCategory[] = ["upload", "account", "bug", "feature", "other"]
-const TICKET_STATUS_FILTER_VALUES: readonly TicketStatusFilter[] = ["all", ...TICKET_STATUS_VALUES]
+export const TICKET_STATUS_FILTER_VALUES: readonly TicketStatusFilter[] = ["all", ...TICKET_STATUS_VALUES]
 const TICKET_PRIORITY_FILTER_VALUES: readonly TicketPriorityFilter[] = ["all", ...TICKET_PRIORITY_VALUES]
-const ADMIN_TICKET_PRIORITY_FILTER_VALUES: readonly TicketPriorityFilter[] = ["all", "urgent", "high", "normal", "low"]
-const ADMIN_TICKET_QUICK_FILTER_VALUES: readonly AdminTicketQuickFilter[] = [
+export const ADMIN_TICKET_PRIORITY_FILTER_VALUES: readonly TicketPriorityFilter[] = ["all", "urgent", "high", "normal", "low"]
+export const ADMIN_TICKET_QUICK_FILTER_VALUES: readonly AdminTicketQuickFilter[] = [
   "all",
   "pending_admin",
   "pending_user",

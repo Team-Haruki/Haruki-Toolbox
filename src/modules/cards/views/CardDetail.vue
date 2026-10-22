@@ -129,6 +129,7 @@ const sectionsOpen = !isNarrowViewport()
           />
           <CardEpisodesSection
             :episodes="detail.episodes.value"
+            :material-names="detail.materialNames.value"
             :loading="detail.detailExtrasLoading.value"
             :default-open="sectionsOpen"
           />

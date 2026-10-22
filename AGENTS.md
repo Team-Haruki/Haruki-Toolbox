@@ -151,6 +151,8 @@ Barrel rules:
 - Prefer `<script setup lang="ts">` for Vue components.
 - Use existing composables and UI patterns before creating new abstractions.
 - Keep forms, dialogs, and toasts consistent with surrounding modules.
+- Confirmations go through `@/shared/components/ConfirmDialog.vue`, not hand-rolled `AlertDialogAction` buttons (those close on click, so a failed request drops the user back with only a toast). Pass the action as `:on-confirm` (a function returning a promise); the dialog shows a spinner, blocks Escape/outside/cancel while pending, closes on success and stays open with the error inline on rejection. Give the action `throwOnError: true` (`runAsyncAction`, the admin user-detail `runAction`/`runTask`) so it rethrows instead of toasting. `non-dismissable` is for shown-once secrets/tokens: only its "I have saved it" button closes it.
+- A cancelled admin password prompt rejects with `AdminReauthCancelledError` (`@/lib/admin-reauth`): nothing ran, so it must not be reported. The toast helpers (`runAsyncAction`, `toastErrorWithExtractedMessage`, the admin user-detail runners) and `ConfirmDialog` already skip it through `shouldReportError` (`@/lib/error-utils`); check it before any hand-written error toast.
 - Use `vue-sonner` for toast feedback.
 - Reuse existing i18n keys/patterns where possible rather than embedding strings inline.
 - Maintain responsive behavior for both desktop and mobile.

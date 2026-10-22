@@ -65,10 +65,14 @@ export function buildGrantPermissions(canRead: boolean, canWrite: boolean): Game
 }
 
 export function normalizeGameAccountDataGrant(raw: UnknownRecord): GameAccountDataGrant {
+  const ownerUserName = readString(raw, ["ownerUserName", "owner_user_name", "ownerName", "owner_name"]).trim()
+  const granteeUserName = readString(raw, ["granteeUserName", "grantee_user_name", "granteeName", "grantee_name"]).trim()
   return {
     id: Number(raw.id ?? 0),
     ownerUserId: readString(raw, ["ownerUserId", "owner_user_id"]),
+    ...(ownerUserName ? { ownerUserName } : {}),
     granteeUserId: readString(raw, ["granteeUserId", "grantee_user_id"]),
+    ...(granteeUserName ? { granteeUserName } : {}),
     server: normalizeGrantServer(raw.server),
     gameUserId: readString(raw, ["gameUserId", "game_user_id"]),
     dataType: normalizeGrantDataType(raw.dataType ?? raw.data_type),

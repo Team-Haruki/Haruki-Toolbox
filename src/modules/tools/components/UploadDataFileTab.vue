@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import type { UploadDataType } from "@/types"
 import { useI18n } from "vue-i18n"
+import { RouterLink, useRoute } from "vue-router"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -19,8 +20,10 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import type { UploadTargetAccount } from "@/modules/tools/lib/upload-targets"
+import type { UploadDisabledReasonKind } from "@/modules/tools/composables/useUploadDataAccounts"
 import {
   Database,
+  FolderOpen,
   Loader2,
   LucideAlertTriangle,
   LucideRefreshCw,
@@ -35,12 +38,14 @@ const props = withDefaults(
     uploadAccounts: UploadTargetAccount[]
     selectedAccount: UploadTargetAccount | null
     selectedAccountKey: string | null
+    selectedFileName: string
     targetsLoading: boolean
     targetsFailed: boolean
     canShowMySekaiDataType: boolean
     canSelectSuiteDataType: boolean
     canSelectMySekaiDataType: boolean
     disabledReason: string | null
+    disabledReasonKind: UploadDisabledReasonKind | null
     isCnMySekaiForbidden: boolean
     isSubmittingFile: boolean
     uploadProgress: number
@@ -49,15 +54,26 @@ const props = withDefaults(
   {
     selectedAccountKey: null,
     disabledReason: null,
+    disabledReasonKind: null,
   }
 )
 
 const { t, locale } = useI18n()
+const route = useRoute()
+
+const FILE_INPUT_ID = "file-upload"
+const fileInput = ref<HTMLInputElement | null>(null)
+
+function openFilePicker() {
+  if (controlsDisabled.value) return
+  fileInput.value?.click()
+}
 
 const ownAccounts = computed(() => props.uploadAccounts.filter((account) => account.ownership === "own"))
 const grantedAccounts = computed(() => props.uploadAccounts.filter((account) => account.ownership === "granted"))
 const isGrantedTarget = computed(() => props.selectedAccount?.ownership === "granted")
 const controlsDisabled = computed(() => !!props.disabledReason || props.targetsLoading)
+const loginRoute = computed(() => ({ name: "user.login", query: { redirect: route.fullPath } }))
 
 const emit = defineEmits<{
   (event: "update:dataType", value: UploadDataType): void
@@ -97,7 +113,16 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
       <Alert v-if="disabledReason" variant="destructive" class="mb-3">
         <LucideAlertTriangle class="h-5 w-5" />
         <AlertTitle>{{ t("tools.uploadData.fileTab.unavailableTitle") }}</AlertTitle>
-        <AlertDescription>{{ disabledReason }}</AlertDescription>
+        <AlertDescription class="space-y-2">
+          <p>{{ disabledReason }}</p>
+          <!-- The next step, not just the reason. -->
+          <Button v-if="disabledReasonKind === 'loginRequired'" as-child variant="outline" size="sm">
+            <RouterLink :to="loginRoute">{{ t("tools.uploadData.fileTab.actions.goLogin") }}</RouterLink>
+          </Button>
+          <Button v-else-if="disabledReasonKind" as-child variant="outline" size="sm">
+            <RouterLink to="/user/game-account-bindings">{{ t("tools.uploadData.fileTab.actions.goBind") }}</RouterLink>
+          </Button>
+        </AlertDescription>
       </Alert>
       <Alert v-else-if="isCnMySekaiForbidden" variant="destructive" class="mb-3">
         <LucideShieldAlert class="h-5 w-5" />
@@ -112,14 +137,32 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
       <form id="upload-data-file-form" @submit.prevent="emit('submit')">
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="flex flex-col space-y-1.5 sm:col-span-2">
-            <Label for="file-upload">{{ t("tools.uploadData.fileTab.fields.file") }}</Label>
-            <Input
-              id="file-upload"
-              type="file"
-              class="w-full"
-              :disabled="controlsDisabled"
-              @change="emit('fileChange', $event)"
-            />
+            <Label :for="FILE_INPUT_ID">{{ t("tools.uploadData.fileTab.fields.file") }}</Label>
+            <!-- Styled picker: the native control's label is browser-language, not ours.
+                 A real button (not a label) so the disabled state is visible and announced. -->
+            <div class="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2">
+              <Button type="button" variant="outline" size="sm" :disabled="controlsDisabled" @click="openFilePicker">
+                <FolderOpen class="h-4 w-4" aria-hidden="true" />
+                {{ t("tools.uploadData.fileTab.fields.chooseFile") }}
+              </Button>
+              <span
+                class="min-w-0 flex-1 truncate text-sm"
+                :class="selectedFileName ? 'text-foreground' : 'text-muted-foreground'"
+                data-testid="upload-file-name"
+              >
+                {{ selectedFileName || t("tools.uploadData.fileTab.fields.noFile") }}
+              </span>
+              <input
+                :id="FILE_INPUT_ID"
+                ref="fileInput"
+                type="file"
+                class="sr-only"
+                tabindex="-1"
+                :disabled="controlsDisabled"
+                @change="emit('fileChange', $event)"
+              />
+            </div>
+            <p class="text-xs text-muted-foreground">{{ t("tools.uploadData.fileTab.fields.fileHint") }}</p>
           </div>
           <div class="flex flex-col space-y-1.5">
             <div class="flex items-center justify-between gap-2">
@@ -171,6 +214,7 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
                       :verified="acc.verified"
                       :is-default="acc.isDefault"
                     />
+                    <Badge v-if="!acc.canUpload" size="sm" variant="muted" class="ml-2">{{ t("tools.uploadData.fileTab.unavailableChip") }}</Badge>
                   </SelectItem>
                 </template>
                 <template v-else>
@@ -189,6 +233,7 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
                         :verified="acc.verified"
                         :is-default="acc.isDefault"
                       />
+                      <Badge v-if="!acc.canUpload" size="sm" variant="muted" class="ml-2">{{ t("tools.uploadData.fileTab.unavailableChip") }}</Badge>
                     </SelectItem>
                   </SelectGroup>
                   <SelectGroup>
@@ -206,16 +251,20 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
                         :verified="acc.verified"
                         ownership="granted"
                       />
+                      <Badge v-if="!acc.canUpload" size="sm" variant="muted" class="ml-2">{{ t("tools.uploadData.fileTab.unavailableChip") }}</Badge>
                     </SelectItem>
                   </SelectGroup>
                 </template>
               </SelectContent>
             </Select>
-            <p v-if="selectedAccount && !selectedAccount.canUpload" class="text-xs text-destructive">
+            <p v-if="selectedAccount && !selectedAccount.canUpload" class="text-xs text-destructive" role="alert">
               {{ t("tools.uploadData.fileTab.accountNotWritable") }}
             </p>
             <p v-else-if="isGrantedTarget" class="text-xs text-muted-foreground">
               {{ t("tools.uploadData.fileTab.grantedTargetNotice") }}
+            </p>
+            <p v-else-if="uploadAccounts.some((account) => !account.canUpload)" class="text-xs text-muted-foreground">
+              {{ t("tools.uploadData.fileTab.someAccountsUnavailable") }}
             </p>
           </div>
           <div class="flex flex-col space-y-1.5">

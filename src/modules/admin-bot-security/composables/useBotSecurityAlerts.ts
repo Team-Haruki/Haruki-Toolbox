@@ -1,11 +1,16 @@
-import { computed, onMounted, ref } from "vue"
-import { toast } from "vue-sonner"
+import { computed, onMounted, ref, watch } from "vue"
+import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
 import { usePagedList } from "@/composables/usePagedList"
+import { useRouteQuerySync } from "@/composables/useRouteQuerySync"
 import { isNarrowViewport } from "@/composables/useCatalogViewPreference"
 import { formatLocalizedDateTime } from "@/lib/date-time"
+import { describeError, type ErrorDescription } from "@/lib/error-utils"
+import { focusInvalidField } from "@/lib/form-focus"
+import { writeQueryValue } from "@/lib/query-codec"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
+import { ADMIN_DEFAULT_PAGE_SIZE, readAdminPage, readAdminPageSize } from "@/modules/admin/lib/pagination"
 import {
   getBotSecurityAlerts,
   getBotSecuritySummary,
@@ -13,7 +18,7 @@ import {
 } from "@/modules/admin-bot-security/api/alerts"
 import {
   BOT_SECURITY_ACTION_TARGET,
-  BOT_SECURITY_PAGE_SIZE,
+  BOT_SECURITY_QUERY_KEYS,
   type BotSecurityAlertAction,
   type BotSecurityAlertFilters,
   buildBotSecurityAlertQuery,
@@ -22,8 +27,10 @@ import {
   getBotSecurityKindOptions,
   getBotSecurityStatusOptions,
   hasInvalidBotSecurityTimeRange,
+  parseBotSecurityFiltersQuery,
   resolveBotSecurityKindLabel,
   resolveBotSecurityStatusLabel,
+  writeBotSecurityFiltersQuery,
 } from "@/modules/admin-bot-security/lib/alert-meta"
 import type { BotSecurityAlert, BotSecurityAlertListResponse, BotSecuritySummary } from "@/types/admin"
 
@@ -35,16 +42,29 @@ const SHORT_DATE_TIME: Intl.DateTimeFormatOptions = {
   minute: "2-digit",
 }
 
+export const BOT_SECURITY_FILTER_IDS = {
+  from: "bot-security-filter-from",
+  to: "bot-security-filter-to",
+} as const
+
 export function useBotSecurityAlerts() {
   const { t } = useI18n()
+  const route = useRoute()
 
   // `filters` is what the form shows; `appliedFilters` is what the list was
-  // loaded with, so paging never picks up half-edited filters.
-  const filters = ref<BotSecurityAlertFilters>(createDefaultBotSecurityFilters())
-  const appliedFilters = ref<BotSecurityAlertFilters>(createDefaultBotSecurityFilters())
+  // loaded with (and what the URL mirrors), so paging never picks up half-edited filters.
+  const filters = ref<BotSecurityAlertFilters>(parseBotSecurityFiltersQuery(route.query))
+  const appliedFilters = ref<BotSecurityAlertFilters>({ ...filters.value })
   // Collapsed on phones so the list is visible without scrolling past the form.
   const filtersExpanded = ref(!isNarrowViewport())
-  const loadError = ref(false)
+  const loadError = ref<ErrorDescription | null>(null)
+  // The range error only shows after a query was attempted with it, and clears
+  // itself as soon as the pickers are fixed, so later queries are never blocked.
+  const timeRangeAttempted = ref(false)
+  const timeRangeInvalid = computed(() => hasInvalidBotSecurityTimeRange(filters.value))
+  const timeRangeError = computed(() =>
+    timeRangeAttempted.value && timeRangeInvalid.value ? t("adminBotSecurity.toast.invalidTimeRange") : null
+  )
 
   const {
     loading,
@@ -57,23 +77,16 @@ export function useBotSecurityAlerts() {
     load: loadAlerts,
     prevPage,
     nextPage,
+    goToPage,
   } = usePagedList<BotSecurityAlert, BotSecurityAlertListResponse>({
-    initialPage: 1,
-    initialPageSize: BOT_SECURITY_PAGE_SIZE,
+    initialPage: readAdminPage(route.query.page),
+    initialPageSize: readAdminPageSize(route.query.size),
     fetchPage: ({ page, pageSize }) => getBotSecurityAlerts(buildBotSecurityAlertQuery(appliedFilters.value, page, pageSize)),
     onBeforeLoad: () => {
-      loadError.value = false
-    },
-    onSuccess: () => {
-      loadError.value = false
+      loadError.value = null
     },
     onError: (error) => {
-      loadError.value = true
-      toastErrorWithExtractedMessage(
-        t("adminBotSecurity.toast.loadFailedTitle"),
-        error,
-        t("adminBotSecurity.toast.loadFailedFallback"),
-      )
+      loadError.value = describeError(error, t("adminBotSecurity.toast.loadFailedFallback"))
     },
   })
 
@@ -104,13 +117,12 @@ export function useBotSecurityAlerts() {
   ]))
 
   function applyFilters() {
-    if (hasInvalidBotSecurityTimeRange(filters.value)) {
-      toast.error(t("adminBotSecurity.toast.filterFailedTitle"), {
-        description: t("adminBotSecurity.toast.invalidTimeRange"),
-      })
+    if (timeRangeInvalid.value) {
+      timeRangeAttempted.value = true
+      focusInvalidField(BOT_SECURITY_FILTER_IDS.from)
       return
     }
-
+    timeRangeAttempted.value = false
     appliedFilters.value = { ...filters.value }
     resetPage()
     void loadAlerts()
@@ -118,6 +130,7 @@ export function useBotSecurityAlerts() {
 
   function resetFilters() {
     filters.value = createDefaultBotSecurityFilters()
+    timeRangeAttempted.value = false
     applyFilters()
   }
 
@@ -204,6 +217,17 @@ export function useBotSecurityAlerts() {
     return formatLocalizedDateTime(value, SHORT_DATE_TIME, t("adminBotSecurity.common.fallback"))
   }
 
+  watch(pageSize, () => {
+    resetPage()
+    void loadAlerts()
+  })
+
+  useRouteQuerySync(BOT_SECURITY_QUERY_KEYS, () => ({
+    ...writeBotSecurityFiltersQuery(appliedFilters.value),
+    page: writeQueryValue(page.value, 1),
+    size: writeQueryValue(pageSize.value, ADMIN_DEFAULT_PAGE_SIZE),
+  }))
+
   onMounted(() => {
     void loadAlerts()
     void loadSummary()
@@ -212,6 +236,7 @@ export function useBotSecurityAlerts() {
   return {
     filters,
     filtersExpanded,
+    timeRangeError,
     statusOptions,
     kindOptions,
     applyFilters,
@@ -227,6 +252,7 @@ export function useBotSecurityAlerts() {
     totalPages,
     prevPage,
     nextPage,
+    goToPage,
     reload: () => void loadAlerts(),
     summary,
     summaryLoading,

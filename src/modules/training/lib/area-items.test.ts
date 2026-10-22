@@ -586,17 +586,18 @@ describe("formatAreaBonusRate", () => {
 })
 
 describe("formatCompactQuantity", () => {
-  test("uses the 万-based w shorthand for zh locales", () => {
-    expect(formatCompactQuantity(16_234, "zh-CN")).toBe("1.6w")
-    expect(formatCompactQuantity(500_000, "zh-CN")).toBe("50w")
-    expect(formatCompactQuantity(77_170_726, "zh-CN")).toBe("7717.1w")
+  test("uses 万 / 亿 units for zh locales", () => {
+    expect(formatCompactQuantity(16_234, "zh-CN")).toBe("1.6万")
+    expect(formatCompactQuantity(500_000, "zh-CN")).toBe("50万")
+    expect(formatCompactQuantity(77_170_726, "zh-CN")).toBe("7717.1万")
+    expect(formatCompactQuantity(386_160_000, "zh-CN")).toBe("3.9亿")
     expect(formatCompactQuantity(3_000, "zh-CN")).toBe("3,000")
     expect(formatCompactQuantity(29, "zh-CN")).toBe("29")
   })
 
-  test("uses k/M for non-zh locales", () => {
-    expect(formatCompactQuantity(3_000, "en-US")).toBe("3k")
-    expect(formatCompactQuantity(500_000, "en-US")).toBe("500k")
+  test("uses K/M for non-zh locales", () => {
+    expect(formatCompactQuantity(3_000, "en-US")).toBe("3K")
+    expect(formatCompactQuantity(500_000, "en-US")).toBe("500K")
     expect(formatCompactQuantity(1_172_288, "en-US")).toBe("1.2M")
     expect(formatCompactQuantity(29, "en-US")).toBe("29")
   })

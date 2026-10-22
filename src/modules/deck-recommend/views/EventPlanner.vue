@@ -580,6 +580,12 @@ function formatInteger(value: number) {
                 </SelectItem>
               </SelectContent>
             </Select>
+            <p v-if="accountOptions.length === 0" class="text-xs text-muted-foreground">
+              {{ t("deckRecommend.form.noAccount") }}
+              <RouterLink :to="{ name: 'user.gameAccountBindings' }" class="text-primary underline-offset-4 hover:underline">
+                {{ t("deckRecommend.form.bindAccount") }}
+              </RouterLink>
+            </p>
           </div>
           <div class="grid content-start gap-1.5">
             <Label id="planner-region-label" for="planner-region" class="text-xs text-muted-foreground">{{ t("deckRecommend.form.dataRegion") }}</Label>

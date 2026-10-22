@@ -325,6 +325,15 @@ export const useSekaiStationFeedStore = defineStore("sekai-station-feed", () => 
     }
   }
 
+  /** The user's "retry now": forget the backoff and reconnect immediately. */
+  function retryImmediately() {
+    if (!wanted || eventSource) {
+      return
+    }
+    retryAttempt = 0
+    openStream()
+  }
+
   function listen(on: boolean) {
     if (on === listening || typeof window === "undefined" || typeof document === "undefined") {
       return
@@ -457,6 +466,7 @@ export const useSekaiStationFeedStore = defineStore("sekai-station-feed", () => 
     blockedList,
     connect,
     disconnect,
+    retryImmediately,
     removeRoom,
     isPinned,
     pinRoom,

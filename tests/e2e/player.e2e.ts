@@ -51,7 +51,10 @@ for (const route of missingSnapshotRoutes) {
     await page.goto(route.path)
 
     if (route.path === "/profile/me") {
-      await page.getByRole("tab", { name: /快照数据|Snapshot/ }).click()
+      // The profile page defaults to the live source; the uploaded-data tab is
+      // mirrored into the URL as `?source=snapshot` so the link can be shared.
+      await page.getByRole("tab", { name: /上传的数据|Uploaded data/ }).click()
+      await expect(page).toHaveURL(/[?&]source=snapshot(?:&|$)/)
     }
     const uploadLink = page.getByRole("link", { name: route.linkName })
     await expect(uploadLink).toBeVisible()
@@ -75,8 +78,10 @@ test("global search opens with the keyboard shortcut", async ({ page }) => {
   await blockExternalHosts(page)
   await page.goto("/")
 
+  // An unauthenticated boot waits up to 4s on the dead-port Kratos session
+  // before mounting, so the first visibility check gets a boot-sized timeout.
   const searchButton = page.getByRole("button", { name: /快速搜索|Quick search/ }).first()
-  await expect(searchButton).toBeVisible()
+  await expect(searchButton).toBeVisible({ timeout: 10_000 })
 
   await page.keyboard.press("ControlOrMeta+k")
   await expect(page.getByRole("dialog")).toBeVisible()
@@ -86,7 +91,9 @@ test("global search opens from the topbar button", async ({ page }) => {
   await blockExternalHosts(page)
   await page.goto("/")
 
-  await page.getByRole("button", { name: /快速搜索|Quick search/ }).first().click()
+  const searchButton = page.getByRole("button", { name: /快速搜索|Quick search/ }).first()
+  await expect(searchButton).toBeVisible({ timeout: 10_000 })
+  await searchButton.click()
   await expect(page.getByRole("dialog")).toBeVisible()
 })
 
@@ -148,7 +155,7 @@ test("account selector groups granted accounts and filters them by capability", 
   await page.getByRole("option", { name: /Grantor/ }).click()
   await expect(trigger).toContainText("987654321")
   await expect(trigger).toContainText(/授权|Granted/)
-  await expect(page.getByText(/该账号的所有者尚未上传|The account owner has not uploaded/)).toBeVisible()
+  await expect(page.getByText(/该账号的主人还没有上传游戏数据|The owner of this account has not uploaded/)).toBeVisible()
   await expect(page.getByRole("link", { name: /前往数据上传页|Go to data upload/ })).toBeVisible()
 })
 

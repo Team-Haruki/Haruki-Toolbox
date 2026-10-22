@@ -10,8 +10,10 @@ import type { CardEpisodeCost, CardEpisodeRow } from "@/modules/cards/lib/card-p
  * Side stories (`cardEpisodes`): part, title, power bonus and unlock costs.
  * Rewards are not rendered — tw/kr/cn dumps ship no `rewardResourceBoxIds`.
  */
-defineProps<{
+const props = defineProps<{
   episodes: readonly CardEpisodeRow[]
+  /** Material id → name from the `materials` dump; ids fall back to "#id". */
+  materialNames: ReadonlyMap<number, string>
   loading: boolean
   defaultOpen: boolean
 }>()
@@ -28,7 +30,7 @@ function bonusTotal(episode: CardEpisodeRow): number {
 
 function costLabel(cost: CardEpisodeCost): string {
   const resource = cost.resourceType === "material" && cost.resourceId != null
-    ? t("cardCatalog.detail.episodes.material", { id: cost.resourceId })
+    ? props.materialNames.get(cost.resourceId) ?? t("cardCatalog.detail.episodes.material", { id: cost.resourceId })
     : `${cost.resourceType}${cost.resourceId != null ? ` #${cost.resourceId}` : ""}`
   return t("cardCatalog.detail.episodes.cost", { resource, quantity: cost.quantity })
 }

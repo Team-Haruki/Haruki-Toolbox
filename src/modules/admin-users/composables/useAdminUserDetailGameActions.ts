@@ -19,13 +19,15 @@ export function createAdminUserDetailGameActions({
   const { refs, resetGameBindingEditor } = state
   const strictRefreshOptions = { throwOnError: true, notifyOnError: false } as const
 
+  /** Runs from the game tab's ConfirmDialog, which reports a failure inline. */
   async function handleDeleteGameBinding(server: AdminGameAccountBinding["server"], gameUserId: string) {
     await runTask(
       translate("adminUsers.detail.toast.deleteGameBindingFailedTitle"),
       () => deleteGameAccountBinding(userId(), server, gameUserId),
       {
-      successMessage: translate("adminUsers.detail.toast.deleteGameBindingSuccess"),
-      afterSuccess: () => loaders.loadGameBindings(strictRefreshOptions),
+        throwOnError: true,
+        successMessage: translate("adminUsers.detail.toast.deleteGameBindingSuccess"),
+        afterSuccess: () => loaders.loadGameBindings(strictRefreshOptions),
       }
     )
   }
@@ -91,6 +93,9 @@ export function createAdminUserDetailGameActions({
   }
 
   async function handleRegenerateIOS() {
+    // Replacing an existing code is confirmed in a ConfirmDialog, which shows
+    // the failure inline; the first generation runs directly and toasts.
+    const confirmed = !!refs.iosUploadCode.value
     await runTask(
       translate("adminUsers.detail.toast.regenerateIOSFailedTitle"),
       async () => {
@@ -102,6 +107,7 @@ export function createAdminUserDetailGameActions({
         return uploadCode
       },
       {
+        throwOnError: confirmed,
         successMessage: translate("adminUsers.detail.toast.regenerateIOSSuccess"),
         afterSuccess: (uploadCode) => {
           refs.iosUploadCode.value = uploadCode
@@ -112,6 +118,7 @@ export function createAdminUserDetailGameActions({
 
   async function handleDeleteIOS() {
     await runTask(translate("adminUsers.detail.toast.deleteIOSFailedTitle"), () => deleteIOSUploadCode(userId()), {
+      throwOnError: true,
       successMessage: translate("adminUsers.detail.toast.deleteIOSSuccess"),
       afterSuccess: () => {
         refs.iosUploadCode.value = null

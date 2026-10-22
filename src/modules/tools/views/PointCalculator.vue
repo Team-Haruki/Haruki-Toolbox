@@ -378,6 +378,10 @@ function normalizeBonusBound(value: unknown, fallback: number) {
                   <Target class="size-5 text-primary" />
                 </span>
               </div>
+              <!-- Say why the button is off instead of silently accepting a negative/fractional target. -->
+              <p v-if="targetPointInvalid" class="text-xs text-destructive" role="alert">
+                {{ t("tools.pointCalculator.fields.targetPtInvalid") }}
+              </p>
             </div>
 
             <!-- Advanced options: sensible defaults, folded away so the default view stays "song → target → calculate". -->

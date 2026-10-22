@@ -65,8 +65,9 @@ const hiddenAliasCount = computed(() => Math.max(props.aliases.length - visibleA
       <CatalogInfoRow :label="t('musicLibrary.detail.info.id')" :icon="Disc3">
         <span class="font-mono">#{{ entry.id }}</span>
       </CatalogInfoRow>
-      <CatalogInfoRow :label="t('catalog.detail.assetName')" :icon="Package">
-        <span v-if="entry.assetbundleName" class="font-mono text-xs break-all">{{ entry.assetbundleName }}</span>
+      <!-- Internal name: stays last and dimmed, it is for the curious only. -->
+      <CatalogInfoRow :label="t('catalog.detail.assetName')" :icon="Package" muted>
+        <span v-if="entry.assetbundleName" class="font-mono break-all">{{ entry.assetbundleName }}</span>
       </CatalogInfoRow>
     </CatalogInfoList>
 

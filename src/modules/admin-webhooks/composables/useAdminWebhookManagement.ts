@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
 import { copyTextToClipboard, isClipboardSupported } from "@/lib/clipboard"
 import { formatLocalizedDateTime } from "@/lib/date-time"
+import { focusInvalidField } from "@/lib/form-focus"
 import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
 import {
   createAdminWebhookEndpoint,
@@ -25,6 +26,16 @@ import type {
 
 type WebhookFormMode = "create" | "edit"
 
+export type WebhookFormField = "id" | "callbackUrl" | "credential"
+export type WebhookFormErrors = Partial<Record<WebhookFormField, string>>
+
+export const WEBHOOK_FIELD_IDS: Record<WebhookFormField, string> = {
+  id: "webhook-id",
+  callbackUrl: "webhook-callback-url",
+  credential: "webhook-credential",
+}
+export const WEBHOOK_JWT_SECRET_FIELD_ID = "admin-webhooks-jwt-secret"
+
 const DEFAULT_TOKEN_HEADER_NAME = "X-Haruki-Suite-Webhook-Token"
 
 function isHttpUrl(value: string): boolean {
@@ -34,6 +45,14 @@ function isHttpUrl(value: string): boolean {
   } catch {
     return false
   }
+}
+
+type FormSnapshot = {
+  credential: string
+  callbackUrl: string
+  bearer: string
+  enabled: boolean
+  clearBearer: boolean
 }
 
 export function useAdminWebhookManagement() {
@@ -48,6 +67,8 @@ export function useAdminWebhookManagement() {
   })
   const settingsEnabled = ref(false)
   const jwtSecretInput = ref("")
+  const jwtSecretError = ref("")
+  const disableConfirmOpen = ref(false)
 
   const endpointsLoading = ref(true)
   const endpoints = ref<AdminWebhookEndpoint[]>([])
@@ -64,6 +85,9 @@ export function useAdminWebhookManagement() {
   const formEnabled = ref(true)
   const formClearBearer = ref(false)
   const formSaving = ref(false)
+  const formErrors = ref<WebhookFormErrors>({})
+  // What the edit dialog opened with: an unchanged form has nothing to PUT.
+  const formInitial = ref<FormSnapshot | null>(null)
 
   const deleteOpen = ref(false)
   const deleting = ref(false)
@@ -82,6 +106,33 @@ export function useAdminWebhookManagement() {
 
   const canMutate = computed(() => userStore.isSuperAdmin)
 
+  /** Saving with nothing changed would only re-PUT the same values. */
+  const settingsDirty = computed(() =>
+    settingsEnabled.value !== settings.value.enabled || jwtSecretInput.value.trim() !== ""
+  )
+
+  function currentFormSnapshot(): FormSnapshot {
+    return {
+      credential: formCredential.value.trim(),
+      callbackUrl: formCallbackUrl.value.trim(),
+      bearer: formBearer.value.trim(),
+      enabled: formEnabled.value,
+      clearBearer: formClearBearer.value,
+    }
+  }
+
+  const formDirty = computed(() => {
+    if (formMode.value === "create") return true
+    const initial = formInitial.value
+    if (!initial) return true
+    const current = currentFormSnapshot()
+    return current.credential !== initial.credential
+      || current.callbackUrl !== initial.callbackUrl
+      || current.bearer !== initial.bearer
+      || current.enabled !== initial.enabled
+      || current.clearBearer !== initial.clearBearer
+  })
+
   function resetForm() {
     editingWebhookId.value = ""
     formId.value = ""
@@ -90,6 +141,14 @@ export function useAdminWebhookManagement() {
     formBearer.value = ""
     formEnabled.value = true
     formClearBearer.value = false
+    formErrors.value = {}
+    formInitial.value = null
+  }
+
+  function clearFormError(field: WebhookFormField) {
+    if (formErrors.value[field]) {
+      formErrors.value = { ...formErrors.value, [field]: undefined }
+    }
   }
 
   function applySettings(next: AdminWebhookSettings) {
@@ -149,44 +208,53 @@ export function useAdminWebhookManagement() {
     formCallbackUrl.value = webhook.callbackUrl
     formBearer.value = webhook.bearer
     formEnabled.value = webhook.enabled
+    formInitial.value = currentFormSnapshot()
     formOpen.value = true
   }
 
+  /** Inline field messages; the first invalid field is scrolled to and focused. */
   function validateWebhookForm(): boolean {
+    const errors: WebhookFormErrors = {}
     const callbackUrl = formCallbackUrl.value.trim()
     if (!callbackUrl) {
-      toast.error(t("adminWebhooks.toast.validation.callbackRequired"))
-      return false
-    }
-
-    if (!isHttpUrl(callbackUrl)) {
-      toast.error(t("adminWebhooks.toast.validation.callbackInvalid"))
-      return false
+      errors.callbackUrl = t("adminWebhooks.toast.validation.callbackRequired")
+    } else if (!isHttpUrl(callbackUrl)) {
+      errors.callbackUrl = t("adminWebhooks.toast.validation.callbackInvalid")
     }
 
     const id = formId.value.trim()
     if (formMode.value === "create" && id.includes("/")) {
-      toast.error(t("adminWebhooks.toast.validation.idInvalid"))
-      return false
+      errors.id = t("adminWebhooks.toast.validation.idInvalid")
     }
 
     const credential = formCredential.value.trim()
     if (credential.includes("/")) {
-      toast.error(t("adminWebhooks.toast.validation.credentialInvalid"))
-      return false
+      errors.credential = t("adminWebhooks.toast.validation.credentialInvalid")
     }
 
+    formErrors.value = errors
+    const firstInvalid = (["id", "callbackUrl", "credential"] as const).find((field) => errors[field])
+    if (firstInvalid) {
+      focusInvalidField(WEBHOOK_FIELD_IDS[firstInvalid])
+      return false
+    }
     return true
   }
 
   function validateSettingsForm(): boolean {
     const jwtSecret = jwtSecretInput.value.trim()
     if (jwtSecretInput.value !== "" && jwtSecret === "") {
-      toast.error(t("adminWebhooks.toast.validation.jwtSecretInvalid"))
+      jwtSecretError.value = t("adminWebhooks.toast.validation.jwtSecretInvalid")
+      focusInvalidField(WEBHOOK_JWT_SECRET_FIELD_ID)
       return false
     }
-
+    jwtSecretError.value = ""
     return true
+  }
+
+  function updateJwtSecretInput(value: string) {
+    jwtSecretInput.value = value
+    jwtSecretError.value = ""
   }
 
   function showReturnedToken(result: AdminWebhookMutationResponse) {
@@ -208,6 +276,9 @@ export function useAdminWebhookManagement() {
       return
     }
     if (!validateWebhookForm()) {
+      return
+    }
+    if (!formDirty.value) {
       return
     }
 
@@ -262,6 +333,10 @@ export function useAdminWebhookManagement() {
     deleteOpen.value = true
   }
 
+  /**
+   * Runs from the delete ConfirmDialog, which closes itself on success and
+   * shows a failure inline, so this lets the error propagate instead of toasting.
+   */
   async function executeDelete() {
     if (!canMutate.value || deleting.value || !deleteTarget.value) {
       return
@@ -271,25 +346,15 @@ export function useAdminWebhookManagement() {
     try {
       await deleteAdminWebhookEndpoint(deleteTarget.value.id)
       toast.success(t("adminWebhooks.toast.deleted"))
-      deleteOpen.value = false
-      deleteTarget.value = null
       await loadEndpoints()
-    } catch (error: unknown) {
-      toastErrorWithExtractedMessage(
-        t("adminWebhooks.toast.deleteFailedTitle"),
-        error,
-        t("adminWebhooks.toast.loadFailedFallback")
-      )
     } finally {
       deleting.value = false
     }
   }
 
-  async function saveSettings() {
+  /** The PUT itself; rethrows so the disable ConfirmDialog can report inline. */
+  async function executeSaveSettings() {
     if (!canMutate.value || settingsSaving.value) {
-      return
-    }
-    if (!validateSettingsForm()) {
       return
     }
 
@@ -306,14 +371,31 @@ export function useAdminWebhookManagement() {
       toast.success(t("adminWebhooks.toast.settingsSaved"))
       jwtSecretInput.value = ""
       await loadSettings()
+    } finally {
+      settingsSaving.value = false
+    }
+  }
+
+  /** Switching global delivery off is confirmed first; everything else saves directly. */
+  async function saveSettings() {
+    if (!canMutate.value || settingsSaving.value || !settingsDirty.value) {
+      return
+    }
+    if (!validateSettingsForm()) {
+      return
+    }
+    if (settings.value.enabled && !settingsEnabled.value) {
+      disableConfirmOpen.value = true
+      return
+    }
+    try {
+      await executeSaveSettings()
     } catch (error: unknown) {
       toastErrorWithExtractedMessage(
         t("adminWebhooks.toast.saveSettingsFailedTitle"),
         error,
         t("adminWebhooks.toast.loadFailedFallback")
       )
-    } finally {
-      settingsSaving.value = false
     }
   }
 
@@ -396,7 +478,10 @@ export function useAdminWebhookManagement() {
     settingsSaving,
     settings,
     settingsEnabled,
+    settingsDirty,
     jwtSecretInput,
+    jwtSecretError,
+    disableConfirmOpen,
     endpointsLoading,
     endpoints,
     endpointsGeneratedAt,
@@ -410,6 +495,8 @@ export function useAdminWebhookManagement() {
     formEnabled,
     formClearBearer,
     formSaving,
+    formErrors,
+    formDirty,
     deleteOpen,
     deleting,
     deleteTarget,
@@ -425,10 +512,13 @@ export function useAdminWebhookManagement() {
     refreshAll,
     openCreateDialog,
     openEditDialog,
+    clearFormError,
     saveWebhook,
     confirmDelete,
     executeDelete,
     saveSettings,
+    executeSaveSettings,
+    updateJwtSecretInput,
     openSubscribers,
     copyLatestToken,
     formatDate,

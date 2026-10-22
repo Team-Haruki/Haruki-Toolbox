@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2, Lock, Mail, Check, KeyRound } from "lucide-vue-next"
@@ -14,11 +13,14 @@ import {
 } from "@/components/ui/card"
 import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
+import KratosFieldInput from "@/modules/auth/components/KratosFieldInput.vue"
 
 const {
   loading,
   loadError,
   fieldValues,
+  fieldErrors,
+  validateVisibleFields,
   generalMessages,
   hiddenFields,
   visibleFields,
@@ -45,6 +47,12 @@ function iconForField(name: string) {
 }
 
 const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
+
+function handleSubmit(event: Event) {
+  if (!validateVisibleFields(event)) {
+    event.preventDefault()
+  }
+}
 </script>
 
 <template>
@@ -69,44 +77,40 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
             {{ t("auth.common.restartFlow") }}
           </Button>
         </div>
-        <form v-else :action="action" :method="method" class="space-y-4" novalidate>
+        <form v-else :action="action" :method="method" class="space-y-4" novalidate @submit="handleSubmit">
           <input v-for="field in hiddenFields" :key="field.key" type="hidden" :name="field.name" :value="field.value" />
 
           <KratosFlowMessages :messages="generalMessages" />
 
-          <div v-for="field in visibleFields" :key="field.key" class="grid gap-2">
+          <div v-for="(field, index) in visibleFields" :key="field.key" class="grid gap-2">
             <Label :for="field.key">{{ field.label }}</Label>
-            <div class="relative w-full items-center">
-              <template v-if="field.type === 'button'">
-                <Button
-                  type="button"
-                  variant="outline"
-                  class="w-full justify-start"
-                  :name="field.name"
-                  :value="field.value || undefined"
-                  :disabled="field.disabled"
-                  @click="invokeVisibleFieldAction(field)"
-                >
-                  <component :is="iconForField(field.name)" class="size-4 mr-2" />
-                  {{ field.label }}
-                </Button>
-              </template>
-              <template v-else>
-                <Input
-                  :id="field.key"
-                  :name="field.name"
-                  :type="field.type"
-                  :autocomplete="field.autocomplete || undefined"
-                  :required="field.required"
-                  :disabled="field.disabled"
-                  class="pl-10"
-                  v-model="fieldValues[field.name]"
-                />
-                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                  <component :is="iconForField(field.name)" class="size-4 text-muted-foreground" />
-                </span>
-              </template>
-            </div>
+            <Button
+              v-if="field.type === 'button'"
+              type="button"
+              variant="outline"
+              class="w-full justify-start"
+              :name="field.name"
+              :value="field.value || undefined"
+              :disabled="field.disabled"
+              @click="invokeVisibleFieldAction(field)"
+            >
+              <component :is="iconForField(field.name)" class="size-4 mr-2" />
+              {{ field.label }}
+            </Button>
+            <KratosFieldInput
+              v-else
+              :id="field.key"
+              v-model="fieldValues[field.name]"
+              :name="field.name"
+              :type="field.type"
+              :icon="iconForField(field.name)"
+              :autocomplete="field.autocomplete"
+              :required="field.required"
+              :disabled="field.disabled"
+              :placeholder="field.placeholder"
+              :error="fieldErrors[field.name]"
+              :autofocus="index === 0 && isReady"
+            />
             <KratosFlowMessages :messages="field.messages" />
           </div>
 
@@ -135,6 +139,7 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
                 class="w-full"
                 :name="submit.name || undefined"
                 :value="submit.value || undefined"
+                :data-kratos-submit="submit.key"
                 :disabled="!isReady || submit.disabled"
               >
                 <Check class="mr-2 h-4 w-4" />

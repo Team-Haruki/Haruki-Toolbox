@@ -59,7 +59,20 @@ export const PLAYER_PROFILE_CAPABILITIES = ["profile", "suite"] as const
  * plus the masterdata for that account's server (region follows the account,
  * not the catalog region setting).
  */
-export function usePlayerProfile() {
+export type UsePlayerProfileOptions = {
+  /** Source restored from the URL; falls back to realtime. */
+  initialSource?: PlayerProfileSource | null
+}
+
+/** Outcome of a realtime profile reload, shaped like a suite reload for the shared refresh toast. */
+export type PlayerProfileReloadResult = {
+  status: "idle" | "loading" | "ready" | "error"
+  changed: boolean
+  /** Epoch milliseconds of the fetched profile. */
+  uploadTime: number | null
+}
+
+export function usePlayerProfile(options: UsePlayerProfileOptions = {}) {
   const settingsStore = useSettingsStore()
   const sekaiDataStore = useSekaiDataStore()
   const userStore = useUserStore()
@@ -81,7 +94,7 @@ export function usePlayerProfile() {
 
   // Realtime game profile is the default; the suite snapshot (manual upload)
   // remains available as an alternative source.
-  const dataSource = ref<PlayerProfileSource>("realtime")
+  const dataSource = ref<PlayerProfileSource>(options.initialSource ?? "realtime")
 
   // Keep the source valid for the selected account (e.g. a suite-only granted
   // account falls back to the snapshot source). Registered before the profile
@@ -132,7 +145,11 @@ export function usePlayerProfile() {
 
   let profileGeneration = 0
 
-  async function loadProfile(strategy: "prefer-cache" | "refresh" = "refresh") {
+  function profileSnapshot(changed = false): PlayerProfileReloadResult {
+    return { status: profileStatus.value, changed, uploadTime: profileUpdatedAt.value }
+  }
+
+  async function loadProfile(strategy: "prefer-cache" | "refresh" = "refresh"): Promise<PlayerProfileReloadResult> {
     const toolboxUserId = userStore.userId
     const target = selectedAccount.value
     if (!toolboxUserId || !target || dataSource.value !== "realtime" || !canUseRealtime.value) {
@@ -141,10 +158,11 @@ export function usePlayerProfile() {
       profileData.value = null
       profileError.value = null
       profileUpdatedAt.value = null
-      return
+      return profileSnapshot()
     }
 
     const generation = ++profileGeneration
+    const previousUpdatedAt = profileStatus.value === "ready" ? profileUpdatedAt.value : null
     profileStatus.value = "loading"
     profileError.value = null
     try {
@@ -154,19 +172,21 @@ export function usePlayerProfile() {
         gameUserId: target.userId,
       }, { strategy })
       if (generation !== profileGeneration) {
-        return
+        return profileSnapshot()
       }
 
       profileData.value = result.data as Record<string, unknown>
       profileUpdatedAt.value = result.cacheUpdatedAt
       profileStatus.value = "ready"
+      return profileSnapshot(result.cacheUpdatedAt !== previousUpdatedAt)
     } catch (loadError) {
       if (generation !== profileGeneration) {
-        return
+        return profileSnapshot()
       }
 
       profileError.value = loadError
       profileStatus.value = "error"
+      return profileSnapshot()
     }
   }
 

@@ -98,7 +98,8 @@ export function ticketPriorityLabel(priority: TicketPriorityLike): string {
         case "low":
             return translate("tickets.priority.low")
         default:
-            return String(priority)
+            // Never show a raw enum value from the backend.
+            return translate("tickets.common.unknownValue")
     }
 }
 

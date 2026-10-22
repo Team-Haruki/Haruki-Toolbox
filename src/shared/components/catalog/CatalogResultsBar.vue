@@ -2,7 +2,8 @@
 import { useId } from "vue"
 import { useI18n } from "vue-i18n"
 import type { AcceptableValue } from "reka-ui"
-import { LucideArrowDownWideNarrow, LucideArrowUpNarrowWide } from "lucide-vue-next"
+import { LucideArrowDownWideNarrow, LucideArrowUpNarrowWide, LucideCloudOff } from "lucide-vue-next"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -26,10 +27,16 @@ withDefaults(defineProps<{
   viewOptions?: readonly CatalogViewOption[]
   /** Stick below the topbar while the results scroll (long grids). */
   sticky?: boolean
+  /**
+   * The list shows locally cached game data because the last remote refresh
+   * failed; renders a small non-blocking "offline data" badge.
+   */
+  offline?: boolean
 }>(), {
   sortOptions: () => [],
   viewOptions: () => [],
   sticky: false,
+  offline: false,
 })
 
 const sort = defineModel<string>("sort", { default: "" })
@@ -66,8 +73,23 @@ function toggleDirection() {
     ]"
     data-slot="catalog-results-bar"
   >
-    <!-- The count takes its own row on phones instead of being crushed by the controls. -->
-    <p class="min-w-0 basis-full truncate text-muted-foreground tabular-nums sm:flex-1 sm:basis-auto" aria-live="polite">{{ countLabel ?? "" }}</p>
+    <!-- The count takes its own row on phones instead of being crushed by the
+         controls. `min-h-5` reserves that line while it is still empty so the
+         bar does not grow (and shift the grid) when the count arrives. -->
+    <p class="flex min-h-5 min-w-0 basis-full items-center gap-2 text-muted-foreground tabular-nums sm:flex-1 sm:basis-auto" aria-live="polite">
+      <span class="min-w-0 truncate">{{ countLabel ?? "" }}</span>
+      <Badge
+        v-if="offline"
+        variant="outline"
+        size="sm"
+        class="text-muted-foreground"
+        :title="t('catalog.results.offlineHint')"
+      >
+        <LucideCloudOff aria-hidden="true" />
+        {{ t("catalog.results.offline") }}
+        <span class="sr-only">: {{ t("catalog.results.offlineHint") }}</span>
+      </Badge>
+    </p>
     <slot name="extra" />
     <template v-if="sortOptions.length > 0">
       <Label :id="`${id}-sort-label`" :for="`${id}-sort`" class="sr-only">{{ t("catalog.sort.label") }}</Label>

@@ -10,8 +10,18 @@
  */
 
 const SEKAI_IMAGE_CACHE_NAMES = ["sekai-image-assets-v2", "sekai-image-assets"]
-const IMAGE_RETRY_LIMIT = 2
-const IMAGE_RETRY_DELAY_MS = 800
+
+/**
+ * Backoff per retry (ms): two quick retries for a flaky fetch, then two
+ * long waits that outlast a WAF burst, which keeps refusing a host for
+ * several seconds after a picker fires ~26 icon requests at once.
+ */
+export const IMAGE_RETRY_DELAYS_MS: readonly number[] = [800, 1600, 5000, 15000]
+
+/** Delay before retry number `attempt` (1-based); null once the schedule is used up. */
+export function resolveImageRetryDelayMs(attempt: number): number | null {
+  return attempt >= 1 && attempt <= IMAGE_RETRY_DELAYS_MS.length ? IMAGE_RETRY_DELAYS_MS[attempt - 1] : null
+}
 
 /** Drop a possibly-poisoned Service Worker cache entry for one image URL. */
 export async function purgeCachedSekaiImage(url: string): Promise<void> {
@@ -73,7 +83,8 @@ export function handleSekaiImageError(
   }
 
   const retries = Number(image.dataset.retryCount ?? "0")
-  if (retries >= IMAGE_RETRY_LIMIT) {
+  const delay = resolveImageRetryDelayMs(retries + 1)
+  if (delay == null) {
     return false
   }
   image.dataset.retryCount = String(retries + 1)
@@ -87,6 +98,6 @@ export function handleSekaiImageError(
     if (image.isConnected && image.src === failedSrc && image.dataset.recoveryFor === sourceUrl) {
       image.src = retryUrl
     }
-  }, IMAGE_RETRY_DELAY_MS * (retries + 1))
+  }, delay)
   return true
 }

@@ -35,6 +35,7 @@ defineProps<{
   filterSort: string
   servers: ReadonlyArray<FilterOption>
   sortOptions: ReadonlyArray<FilterOption>
+  loading?: boolean
 }>()
 const { t, locale } = useI18n()
 const FILTER_IDS = {
@@ -70,7 +71,8 @@ const emit = defineEmits<{
       </div>
     </CardHeader>
     <CardContent class="pt-0">
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <!-- A form so Enter in any input runs the query, like the 查询 button. -->
+      <form class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4" novalidate @submit.prevent="emit('apply')">
         <div class="flex flex-col gap-1.5">
           <Label :for="FILTER_IDS.query" class="text-sm">{{ t("adminGameBindings.filters.fuzzySearch") }}</Label>
           <Input
@@ -124,18 +126,18 @@ const emit = defineEmits<{
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      <div class="flex items-center gap-2 mt-4">
-        <Button size="sm" @click="emit('apply')">
-          <LucideSearch class="w-4 h-4 mr-1" />
-          {{ t("adminGameBindings.filters.searchButton") }}
-        </Button>
-        <Button variant="outline" size="sm" @click="emit('reset')">
-          <LucideRefreshCw class="w-4 h-4 mr-1" />
-          {{ t("common.reset") }}
-        </Button>
-      </div>
+        <div class="sm:col-span-2 xl:col-span-3 flex items-center gap-2">
+          <Button type="submit" size="sm" :disabled="loading">
+            <LucideSearch class="w-4 h-4 mr-1" />
+            {{ t("adminGameBindings.filters.searchButton") }}
+          </Button>
+          <Button type="button" variant="outline" size="sm" @click="emit('reset')">
+            <LucideRefreshCw class="w-4 h-4 mr-1" />
+            {{ t("admin.filters.reset") }}
+          </Button>
+        </div>
+      </form>
     </CardContent>
   </Card>
 </template>

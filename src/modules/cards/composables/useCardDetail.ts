@@ -42,6 +42,7 @@ import type { CardSkillRecord } from "@/modules/cards/lib/card-skill"
 
 const EMPTY_EPISODES: CardEpisodeRow[] = []
 const EMPTY_BONUSES: CardPowerBonus[] = []
+const EMPTY_MATERIAL_NAMES: ReadonlyMap<number, string> = new Map()
 const EMPTY_EVENTS: CardRelatedEvent[] = []
 const EMPTY_GACHAS: CatalogGachaSummary[] = []
 
@@ -76,6 +77,8 @@ export type UseCardDetailResult = {
   rarityInfo: ComputedRef<CardRarityInfo | null>
   masterLessons: ComputedRef<CardPowerBonus[]>
   canvasBonus: ComputedRef<CardPowerBonus | null>
+  /** Material id → name for the side-story unlock costs. */
+  materialNames: ComputedRef<ReadonlyMap<number, string>>
   detailExtrasLoading: ComputedRef<boolean>
   relatedEvents: ComputedRef<CardRelatedEvent[]>
   eventsLoading: ComputedRef<boolean>
@@ -161,6 +164,7 @@ export function useCardDetail(cardId: Ref<number | null>): UseCardDetailResult {
   const canvasBonus = computed(() => (card.value
     ? detailExtras.data.value?.canvasBonusByRarity.get(card.value.cardRarityType) ?? null
     : null))
+  const materialNames = computed<ReadonlyMap<number, string>>(() => detailExtras.data.value?.materialNameById ?? EMPTY_MATERIAL_NAMES)
   const detailExtrasLoading = computed(() => detailExtras.loading.value)
 
   const relatedEvents = computed(() => {
@@ -232,6 +236,7 @@ export function useCardDetail(cardId: Ref<number | null>): UseCardDetailResult {
     rarityInfo,
     masterLessons,
     canvasBonus,
+    materialNames,
     detailExtrasLoading,
     relatedEvents,
     eventsLoading,

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -13,7 +12,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
-  LucideAlertCircle,
   LucideBan,
   LucideCheckCircle2,
   LucideShield,
@@ -22,12 +20,15 @@ import {
   LucideUser,
   LucideUsers,
 } from "lucide-vue-next"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import type { ErrorDescription } from "@/lib/error-utils"
 import { formatDate, getAllowCNMysekai, roleLabel } from "@/modules/admin-users/constants"
 import type { AdminUser } from "@/types/admin"
 
 const props = defineProps<{
   loading: boolean
-  error: boolean
+  /** A failed load; shown in place of the (empty) table with a retry. */
+  error: ErrorDescription | null
   users: AdminUser[]
   selectedIds: string[]
 }>()
@@ -173,15 +174,16 @@ function handleRowKeydown(event: KeyboardEvent, userId: string) {
             {{ formatCreatedAt(user.createdAt) }}
           </TableCell>
         </TableRow>
-        <TableRow v-if="error && users.length === 0" class="hover:bg-transparent">
+        <TableRow v-if="error" class="hover:bg-transparent">
           <TableCell :colspan="7" class="p-0">
-            <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
-              <LucideAlertCircle class="h-8 w-8 text-muted-foreground/60" />
-              <p class="text-sm text-muted-foreground">{{ t("adminUsers.management.table.loadError") }}</p>
-              <Button variant="outline" size="sm" @click="emit('retry')">
-                {{ t("adminUsers.management.table.retry") }}
-              </Button>
-            </div>
+            <LoadErrorState
+              :title="t('adminUsers.management.table.loadError')"
+              :description="error.message"
+              :detail="error.detail"
+              :retry-label="t('adminUsers.management.table.retry')"
+              :retrying="loading"
+              @retry="emit('retry')"
+            />
           </TableCell>
         </TableRow>
         <TableRow v-else-if="users.length === 0" class="hover:bg-transparent">

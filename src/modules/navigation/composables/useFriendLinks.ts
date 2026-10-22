@@ -1,30 +1,26 @@
-import { onMounted, ref } from "vue"
-import { useI18n } from "vue-i18n"
+import { onMounted, ref, shallowRef } from "vue"
 import { getFriendLinks } from "@/modules/navigation/api/friend-links"
 import type { FriendLinkItem } from "@/modules/navigation/types"
-import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
 
 export function useFriendLinks() {
-  const { t } = useI18n()
   const friendLinks = ref<FriendLinkItem[]>([])
   const loading = ref(true)
+  /** The last failure, rendered inline by the page (no toast: the page itself is the feedback). */
+  const error = shallowRef<unknown>(null)
   let latestRequestId = 0
 
   async function fetchFriendLinks() {
     const requestId = ++latestRequestId
     loading.value = true
+    error.value = null
     try {
       const links = await getFriendLinks()
       if (requestId !== latestRequestId) return
       friendLinks.value = links
-    } catch (error: unknown) {
+    } catch (loadError: unknown) {
       if (requestId !== latestRequestId) return
       friendLinks.value = []
-      toastErrorWithExtractedMessage(
-        t("navigationPages.friendLinks.toast.loadFailedTitle"),
-        error,
-        t("navigationPages.common.retryLater")
-      )
+      error.value = loadError
     } finally {
       if (requestId !== latestRequestId) return
       loading.value = false
@@ -38,5 +34,7 @@ export function useFriendLinks() {
   return {
     friendLinks,
     loading,
+    error,
+    reload: fetchFriendLinks,
   }
 }

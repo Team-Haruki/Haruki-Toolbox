@@ -12,7 +12,11 @@ import { revokeUserOAuth } from "@/modules/admin-users/api/oauth"
 import type { UserRole } from "@/types/common"
 import type { CreateActionsParams } from "@/modules/admin-users/composables/useAdminUserDetailActionTypes"
 import { roleLabel } from "@/modules/admin-users/constants"
+import { isValidEmail } from "@/lib/email"
+import { focusInvalidField } from "@/lib/form-focus"
 import { translate } from "@/shared/i18n"
+
+export const ADMIN_USER_EMAIL_FIELD_ID = "admin-user-new-email"
 
 export function createAdminUserDetailPrimaryActions({
   userId,
@@ -23,9 +27,13 @@ export function createAdminUserDetailPrimaryActions({
 }: CreateActionsParams) {
   const { refs } = state
   const strictRefreshOptions = { throwOnError: true, notifyOnError: false } as const
+  // Actions the info tab runs from a ConfirmDialog: the dialog shows the
+  // failure inline and stays open, so these rethrow instead of toasting.
+  const confirmedActionOptions = { throwOnError: true } as const
 
   async function handleBan() {
     await runAction(translate("adminUsers.detail.toast.banFailedTitle"), () => banUser(userId()), {
+      ...confirmedActionOptions,
       successMessage: translate("adminUsers.detail.toast.banSuccess"),
       afterSuccess: () => loaders.loadUser(strictRefreshOptions),
     })
@@ -40,12 +48,14 @@ export function createAdminUserDetailPrimaryActions({
 
   async function handleForceLogout() {
     await runAction(translate("adminUsers.detail.toast.forceLogoutFailedTitle"), () => forceLogout(userId()), {
+      ...confirmedActionOptions,
       successMessage: translate("adminUsers.detail.toast.forceLogoutSuccess"),
     })
   }
 
   async function handleDelete() {
     await runAction(translate("adminUsers.detail.toast.deleteFailedTitle"), () => deleteUser(userId()), {
+      ...confirmedActionOptions,
       successMessage: translate("adminUsers.detail.toast.deleteSuccess"),
       afterSuccess: () => loaders.loadUser(strictRefreshOptions),
     })
@@ -60,12 +70,14 @@ export function createAdminUserDetailPrimaryActions({
 
   async function handleResetPassword() {
     await runAction(translate("adminUsers.detail.toast.resetPasswordFailedTitle"), () => resetPassword(userId()), {
+      ...confirmedActionOptions,
       successMessage: translate("adminUsers.detail.toast.resetPasswordSuccess"),
     })
   }
 
   async function handleRoleChange(role: UserRole) {
     await runAction(translate("adminUsers.detail.toast.updateRoleFailedTitle"), () => updateUserRole(userId(), role), {
+      ...confirmedActionOptions,
       successMessage: translate("adminUsers.detail.toast.updateRoleSuccess", {
         role: roleLabel(role, translate),
       }),
@@ -76,12 +88,24 @@ export function createAdminUserDetailPrimaryActions({
   function openEmailEdit() {
     if (!refs.user.value) return
     refs.editEmail.value = refs.user.value.userData.emailInfo?.email ?? ""
+    refs.editEmailError.value = ""
     refs.emailDialogOpen.value = true
+  }
+
+  /** Typing clears the inline message; the next save validates again. */
+  function updateEditEmail(value: string) {
+    refs.editEmail.value = value
+    refs.editEmailError.value = ""
   }
 
   async function handleEmailUpdate() {
     const email = refs.editEmail.value.trim()
-    if (!email) return
+    if (!isValidEmail(email)) {
+      refs.editEmailError.value = translate("adminUsers.detail.dialog.email.invalid")
+      focusInvalidField(ADMIN_USER_EMAIL_FIELD_ID)
+      return
+    }
+    refs.editEmailError.value = ""
     await runAction(translate("adminUsers.detail.toast.updateEmailFailedTitle"), () => updateUserEmail(userId(), email), {
       successMessage: translate("adminUsers.detail.toast.updateEmailSuccess"),
       afterSuccess: async () => {
@@ -91,8 +115,10 @@ export function createAdminUserDetailPrimaryActions({
     })
   }
 
+  /** Runs from the OAuth tab's ConfirmDialog, which reports a failure inline. */
   async function handleRevokeOAuth() {
     await runTask(translate("adminUsers.detail.toast.revokeOAuthFailedTitle"), () => revokeUserOAuth(userId()), {
+      ...confirmedActionOptions,
       successMessage: translate("adminUsers.detail.toast.revokeOAuthSuccess"),
       afterSuccess: () => loaders.loadOAuth(strictRefreshOptions),
     })
@@ -107,6 +133,7 @@ export function createAdminUserDetailPrimaryActions({
     handleResetPassword,
     handleRoleChange,
     openEmailEdit,
+    updateEditEmail,
     handleEmailUpdate,
     handleRevokeOAuth,
   }

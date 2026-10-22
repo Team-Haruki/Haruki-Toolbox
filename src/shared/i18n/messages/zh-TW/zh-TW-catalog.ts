@@ -68,7 +68,7 @@ export default {
         "level": "等級",
         "trained": "特訓",
         "episodes": "劇情",
-        "canvas": "MySekai 畫布",
+        "canvas": "烤森（MySekai）畫布",
         "masterRank": "突破"
       },
       "skill": {
@@ -130,7 +130,7 @@ export default {
     },
     "hero": {
       "banner": "橫幅",
-      "logo": "Logo",
+      "logo": "標誌",
       "background": "背景"
     },
     "timeline": {
@@ -170,7 +170,7 @@ export default {
       "title": "排名獎勵",
       "rangeCount": "{count} 個名次區間",
       "empty": "該活動暫無排名獎勵資料。",
-      "unavailable": "當前伺服器的資料不包含獎勵詳情，僅顯示名次區間。",
+      "unavailable": "該區服暫未提供獎勵明細，這裡只顯示名次區間。",
       "rank": "第 {rank} 名",
       "rankRange": "第 {from}–{to} 名",
       "border": "榜線",
@@ -197,7 +197,7 @@ export default {
         "avatar_motion": "虛擬動作",
         "event_item": "活動道具",
         "mysekai_item": "My SEKAI 道具",
-        "mysekai_fixture": "My SEKAI 傢俱",
+        "mysekai_fixture": "My SEKAI 家具",
         "custom_profile_collection_item": "檔案收藏品",
         "penlight": "熒光棒",
         "music": "歌曲",
@@ -229,9 +229,10 @@ export default {
     },
     "detail": {
       "pickupCards": "檢視 PICK UP 角色卡牌",
+      "permanentHint": "常駐卡池，沒有結束時間。",
       "lightbox": {
         "banner": "橫幅",
-        "logo": "Logo"
+        "logo": "標誌"
       }
     },
     "pickups": {
@@ -286,8 +287,8 @@ export default {
       "empty": "該卡池沒有兌換貼紙",
       "convertAt": "{time} 起轉換為通用貼紙",
       "exchange": "貼紙交換所",
-      "exchangeEmpty": "當前伺服器沒有該卡池的交換所資料",
-      "rewardsUnavailable": "當前伺服器未提供獎勵詳情，僅顯示獎勵箱編號。",
+      "exchangeEmpty": "該區服暫無這個卡池的交換所資料",
+      "rewardsUnavailable": "該區服暫未提供獎勵明細，這裡只顯示獎勵箱編號。",
       "reward": "獎勵",
       "cost": "所需貼紙",
       "limit": "限購",
@@ -335,7 +336,8 @@ export default {
       "appendOnly": "僅顯示有 APPEND 譜面的歌曲",
       "mvType": "MV 型別",
       "scope": "關聯方式",
-      "scopeHint": "選擇角色後可按箱曲 / Vocal 進一步篩選"
+      "scopeHint": "選擇角色後，可進一步只看該角色的箱曲（活動曲）或演唱曲（Vocal）",
+      "aliasUnavailable": "別名搜尋暫不可用，當前只按標題匹配。"
     },
     "detail": {
       "jacket": "封面",

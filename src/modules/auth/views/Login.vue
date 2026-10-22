@@ -2,10 +2,9 @@
 import { computed } from "vue"
 import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, LogIn, Mail, Lock, KeyRound } from "lucide-vue-next"
+import { Loader2, LogIn, Mail, Lock, KeyRound, Info } from "lucide-vue-next"
 import {
   Card,
   CardTitle,
@@ -24,6 +23,8 @@ import {
   resolveBrowserOrigin,
 } from "@/modules/auth/lib/return-to"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
+import KratosFieldInput from "@/modules/auth/components/KratosFieldInput.vue"
+import { resolveLoginReason } from "@/modules/auth/lib/login-reason"
 
 const route = useRoute()
 const { t } = useI18n()
@@ -32,6 +33,8 @@ const {
   loading,
   loadError,
   fieldValues,
+  fieldErrors,
+  validateVisibleFields,
   generalMessages,
   hiddenFields,
   visibleFields,
@@ -191,7 +194,11 @@ function handleActionClick(action: LoginAction) {
   invokeVisibleFieldAction({ onClickTrigger: action.onClickTrigger })
 }
 
-function handleSubmit() {
+function handleSubmit(event: Event) {
+  if (!validateVisibleFields(event)) {
+    event.preventDefault()
+    return
+  }
   markLoginSuccessPending()
 }
 
@@ -208,6 +215,22 @@ function iconForField(name: string) {
 }
 
 const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
+
+// Why the user landed here (route guard, expired session). The guard's toast
+// would be lost behind the Kratos redirect, so the page says it inline.
+const loginReason = computed(() => resolveLoginReason(route.query.reason))
+const loginReasonText = computed(() => {
+  switch (loginReason.value) {
+    case "auth-required":
+      return t("auth.login.reasons.authRequired")
+    case "admin-required":
+      return t("auth.login.reasons.adminRequired")
+    case "session-expired":
+      return t("auth.login.reasons.sessionExpired")
+    default:
+      return ""
+  }
+})
 </script>
 
 <template>
@@ -223,6 +246,14 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div
+          v-if="loginReasonText"
+          class="mb-4 flex items-start gap-2 rounded-md border border-blue-300 border-l-4 border-l-blue-500 bg-blue-50 px-3 py-2 text-sm text-blue-700 dark:border-blue-900/40 dark:border-l-blue-400 dark:bg-blue-900/20 dark:text-blue-300"
+          role="status"
+        >
+          <Info class="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{{ loginReasonText }}</span>
+        </div>
         <div v-if="loading" class="flex items-center justify-center py-12 text-muted-foreground">
           <Loader2 class="mr-2 h-4 w-4 animate-spin" />
           {{ t("auth.common.loadingFlow") }}
@@ -240,7 +271,7 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
 
             <KratosFlowMessages :messages="generalMessages" />
 
-            <div v-for="field in visibleFields" :key="field.key" class="grid gap-2">
+            <div v-for="(field, index) in visibleFields" :key="field.key" class="grid gap-2">
               <div class="flex items-center">
                 <Label :for="field.key">{{ field.label }}</Label>
                 <router-link
@@ -251,37 +282,33 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
                   {{ t("auth.login.forgotPassword") }}
                 </router-link>
               </div>
-              <div class="relative w-full items-center">
-                <template v-if="field.type === 'button'">
-                <Button
-                    type="button"
-                    variant="outline"
-                    class="w-full justify-start"
-                    :name="field.name"
-                    :value="field.value || undefined"
-                    :disabled="field.disabled"
-                    @click="invokeVisibleFieldAction(field)"
-                  >
-                    <component :is="iconForField(field.name)" class="size-4 mr-2" />
-                    {{ field.label }}
-                  </Button>
-                </template>
-                <template v-else>
-                  <Input
-                    :id="field.key"
-                  :name="field.name"
-                  :type="field.type"
-                  :autocomplete="field.autocomplete || undefined"
-                  :required="field.required"
-                  :disabled="field.disabled"
-                    class="pl-10"
-                    v-model="fieldValues[field.name]"
-                  />
-                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                    <component :is="iconForField(field.name)" class="size-4 text-muted-foreground" />
-                  </span>
-                </template>
-              </div>
+              <Button
+                v-if="field.type === 'button'"
+                type="button"
+                variant="outline"
+                class="w-full justify-start"
+                :name="field.name"
+                :value="field.value || undefined"
+                :disabled="field.disabled"
+                @click="invokeVisibleFieldAction(field)"
+              >
+                <component :is="iconForField(field.name)" class="size-4 mr-2" />
+                {{ field.label }}
+              </Button>
+              <KratosFieldInput
+                v-else
+                :id="field.key"
+                v-model="fieldValues[field.name]"
+                :name="field.name"
+                :type="field.type"
+                :icon="iconForField(field.name)"
+                :autocomplete="field.autocomplete"
+                :required="field.required"
+                :disabled="field.disabled"
+                :placeholder="field.placeholder"
+                :error="fieldErrors[field.name]"
+                :autofocus="index === 0 && isReady"
+              />
               <KratosFlowMessages :messages="field.messages" />
             </div>
 
@@ -293,6 +320,7 @@ const isReady = computed(() => !loading.value && !loadError.value && action.valu
                   :variant="actionVariant(actionItem)"
                   :name="actionItem.name || undefined"
                   :value="actionItem.value || undefined"
+                  :data-kratos-submit="actionItem.kind === 'submit' ? actionItem.key : undefined"
                   :disabled="!isReady || actionItem.disabled"
                   @click="handleActionClick(actionItem)"
                 >

@@ -437,11 +437,23 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
       return
     }
 
-    rejectRequest(event.requestId, event.region, new Error(event.message))
+    const error = new Error(event.message)
+    rejectRequest(event.requestId, event.region, error)
     patchQueueItem(event.requestId, {
       status: "error",
       error: event.message,
     })
+    // The manifest itself was unreachable: a queued follow-up (other files
+    // for the same region) would only spend another retry run on the same
+    // dead CDN while its page sits on a skeleton. Fail it now; an explicit
+    // retry (force) still goes through.
+    if (event.stage === "version") {
+      const queued = queuedRequests.get(event.region)
+      if (queued && !queued.force) {
+        queuedRequests.delete(event.region)
+        queued.reject(error)
+      }
+    }
     // A failed refresh must not take previously cached data out of service:
     // when the region still has a usable cache, stay "ready" so consumers
     // (e.g. deck recommend) keep working offline from IndexedDB.
@@ -523,6 +535,7 @@ export const useSekaiDataStore = defineStore("sekai-data", () => {
     queue,
     latestQueueItems,
     loadRegionCacheState,
+    ensureRegionCacheStateLoaded,
     checkRegionRemoteVersion,
     ensureRegionData,
     refreshRegionData,

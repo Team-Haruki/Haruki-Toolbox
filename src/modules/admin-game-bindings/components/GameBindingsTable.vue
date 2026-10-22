@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,46 +16,40 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   LucideArrowRightLeft,
-  LucideChevronLeft,
-  LucideChevronRight,
   LucideInbox,
-  LucideLoader2,
   LucideMoreHorizontal,
   LucidePencil,
   LucideTrash2,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import AdminPagination from "@/modules/admin/components/AdminPagination.vue"
 import type { GlobalGameBinding } from "@/modules/admin-game-bindings/api/binding"
+import type { ErrorDescription } from "@/lib/error-utils"
 import { formatNumberCN } from "@/lib/number-format"
 
 interface Props {
   loading: boolean
+  error: ErrorDescription | null
   bindings: GlobalGameBinding[]
   selected: Set<string>
   selectAll: boolean
   total: number
   page: number
+  pageSize: number
   totalPages: number
   actionLoading: boolean
   bindingKey: (binding: GlobalGameBinding) => string
   serverLabel: (server: string) => string
+  /** Confirmed in a dialog; rejects on failure so the dialog stays open with the error. */
+  batchDelete: () => Promise<void>
 }
 
 const props = defineProps<Props>()
@@ -65,10 +60,21 @@ const emit = defineEmits<{
   (event: "open-edit", binding: GlobalGameBinding): void
   (event: "open-reassign", binding: GlobalGameBinding): void
   (event: "open-delete", binding: GlobalGameBinding): void
-  (event: "batch-delete"): void
+  (event: "retry"): void
   (event: "prev-page"): void
   (event: "next-page"): void
+  (event: "go-to-page", page: number): void
+  (event: "update:pageSize", pageSize: number): void
 }>()
+
+const batchConfirmOpen = ref(false)
+// Kept after the dialog closes so its text does not change mid fade-out.
+const batchCount = ref(0)
+
+function requestBatchDelete() {
+  batchCount.value = props.selected.size
+  batchConfirmOpen.value = true
+}
 
 function isSelected(binding: GlobalGameBinding): boolean {
   return props.selected.has(props.bindingKey(binding))
@@ -87,39 +93,30 @@ function isSelected(binding: GlobalGameBinding): boolean {
         >
           {{ t("adminGameBindings.table.selectedCount", { count: props.selected.size }) }}
         </span>
-        <AlertDialog>
-          <AlertDialogTrigger as-child>
-            <Button
-              variant="destructive"
-              size="sm"
-              :disabled="props.selected.size === 0 || props.actionLoading"
-            >
-              <LucideTrash2 class="w-4 h-4 mr-1" />
-              {{ t("adminGameBindings.table.batchUnbind") }}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{{ t("adminGameBindings.table.batchDialog.title") }}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {{ t("adminGameBindings.table.batchDialog.description", { count: props.selected.size }) }}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{{ t("adminGameBindings.table.batchDialog.cancel") }}</AlertDialogCancel>
-              <AlertDialogAction :disabled="props.actionLoading" @click="emit('batch-delete')">
-                <LucideLoader2 v-if="props.actionLoading" class="w-4 h-4 mr-1 animate-spin" />
-                {{ t("adminGameBindings.table.batchDialog.confirm") }}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Button
+          variant="destructive"
+          size="sm"
+          :disabled="props.selected.size === 0 || props.actionLoading"
+          @click="requestBatchDelete"
+        >
+          <LucideTrash2 class="w-4 h-4 mr-1" />
+          {{ t("adminGameBindings.table.batchUnbind") }}
+        </Button>
       </div>
 
       <template v-if="props.loading">
         <div class="flex flex-col gap-3 p-6">
           <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
         </div>
+      </template>
+      <template v-else-if="props.error">
+        <LoadErrorState
+          :title="t('adminGameBindings.toast.loadFailedTitle')"
+          :description="props.error.message"
+          :detail="props.error.detail"
+          :retrying="props.loading"
+          @retry="emit('retry')"
+        />
       </template>
       <div
         v-else-if="props.bindings.length === 0"
@@ -206,34 +203,30 @@ function isSelected(binding: GlobalGameBinding): boolean {
       </template>
 
       <!-- Pagination footer attached to the table card -->
-      <div class="flex items-center justify-between gap-3 border-t px-4 py-3">
-        <span class="text-sm text-muted-foreground">
-          {{ t("adminGameBindings.table.total", { total: formatNumberCN(props.total, "0") }) }}
-        </span>
-        <div class="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="props.page <= 1"
-            :title="t('adminGameBindings.pagination.prevPage')"
-            :aria-label="t('adminGameBindings.pagination.prevPage')"
-            @click="emit('prev-page')"
-          >
-            <LucideChevronLeft class="w-4 h-4" />
-          </Button>
-          <span class="text-sm tabular-nums">{{ props.page }} / {{ props.totalPages }}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="props.page >= props.totalPages"
-            :title="t('adminGameBindings.pagination.nextPage')"
-            :aria-label="t('adminGameBindings.pagination.nextPage')"
-            @click="emit('next-page')"
-          >
-            <LucideChevronRight class="w-4 h-4" />
-          </Button>
-        </div>
+      <div v-if="!props.error" class="border-t px-4 py-3">
+        <AdminPagination
+          :total="props.total"
+          :page="props.page"
+          :page-size="props.pageSize"
+          :total-pages="props.totalPages"
+          :disabled="props.loading"
+          :total-label="t('adminGameBindings.table.total', { total: formatNumberCN(props.total, '0') })"
+          @update:page-size="emit('update:pageSize', $event)"
+          @prev-page="emit('prev-page')"
+          @next-page="emit('next-page')"
+          @go-to-page="emit('go-to-page', $event)"
+        />
       </div>
     </CardContent>
+
+    <ConfirmDialog
+      v-model:open="batchConfirmOpen"
+      :title="t('adminGameBindings.table.batchDialog.title')"
+      :description="t('adminGameBindings.table.batchDialog.description', { count: batchCount })"
+      :cancel-label="t('adminGameBindings.table.batchDialog.cancel')"
+      :confirm-label="t('adminGameBindings.table.batchDialog.confirm')"
+      destructive
+      :on-confirm="props.batchDelete"
+    />
   </Card>
 </template>

@@ -275,6 +275,8 @@ export function toMusicLibraryFilter(
 export type MusicActiveChip = {
   key: string
   label: string
+  /** The label is an id placeholder until master data resolves it. */
+  pending?: boolean
 }
 
 export type MusicChipContext = {
@@ -282,6 +284,11 @@ export type MusicChipContext = {
   tagLabel: (tag: string) => string
   categoryLabel: (category: string) => string
   characterName: (characterId: number) => string | null
+  /**
+   * False while the characters index is still loading: unresolved ids render
+   * as skeleton chips. Once loaded, an unknown id is a plain removable chip.
+   */
+  charactersReady: boolean
   scopeLabel: (scope: MusicCharacterFilterScope) => string
   /** Whether the MV-type filter applies on this server (jp ships no categories). */
   hasCategories: boolean
@@ -334,10 +341,12 @@ export function buildMusicActiveChips(
     chips.push({ key: "year", label: String(state.year) })
   }
   for (const id of state.chars) {
-    const name = ctx.characterName(id) ?? `#${id}`
+    const resolved = ctx.characterName(id)
+    const name = resolved ?? `#${id}`
     chips.push({
       key: `chars:${id}`,
       label: state.scope === "any" ? name : t("musicCatalog.chips.character", { name, scope: ctx.scopeLabel(state.scope) }),
+      pending: resolved == null && !ctx.charactersReady,
     })
   }
   if (state.append) {

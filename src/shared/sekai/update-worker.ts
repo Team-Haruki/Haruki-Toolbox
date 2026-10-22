@@ -18,6 +18,7 @@ import {
 import {
   SEKAI_DATA_DEFAULT_MASTER_FILES,
   SEKAI_DATA_OPTIONAL_MASTER_FILES,
+  type SekaiDataWorkerErrorStage,
   type SekaiDataWorkerEvent,
   type SekaiDataWorkerRequest,
   type SekaiDataUpdatePhase,
@@ -25,6 +26,7 @@ import {
 import type { SekaiMasterCacheState, SekaiMusicMetasCacheState } from "./types"
 import type { DedicatedWorkerScope } from "@/lib/worker-scope"
 import { loadSekaiMasterDownload } from "./compact-master"
+import { DEFAULT_FETCH_RETRY_POLICY, planFetchRetry } from "./fetch-retry"
 
 const workerScope = globalThis as unknown as DedicatedWorkerScope<SekaiDataWorkerRequest, SekaiDataWorkerEvent>
 const OPTIONAL_MASTER_FILE_SET = new Set<string>(SEKAI_DATA_OPTIONAL_MASTER_FILES)
@@ -34,11 +36,30 @@ workerScope.onmessage = (event: MessageEvent<SekaiDataWorkerRequest>) => {
   void handleRequest(event.data)
 }
 
+/** An ensure failure tagged with the step it died in (reported to the store). */
+class StageError extends Error {
+  readonly stage: SekaiDataWorkerErrorStage
+
+  constructor(stage: SekaiDataWorkerErrorStage, cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause))
+    this.name = "SekaiDataStageError"
+    this.stage = stage
+  }
+}
+
+async function withStage<T>(stage: SekaiDataWorkerErrorStage, task: () => Promise<T>): Promise<T> {
+  try {
+    return await task()
+  } catch (error) {
+    throw error instanceof StageError ? error : new StageError(stage, error)
+  }
+}
+
 async function handleRequest(request: SekaiDataWorkerRequest): Promise<void> {
   try {
     if (request.type === "clear-region") {
       postProgress(request.requestId, request.region, "clearing", 5)
-      await clearSekaiRegionCache(request.region)
+      await withStage("cache", () => clearSekaiRegionCache(request.region))
       postEvent({ type: "cleared", requestId: request.requestId, region: request.region })
       return
     }
@@ -50,6 +71,7 @@ async function handleRequest(request: SekaiDataWorkerRequest): Promise<void> {
       requestId: request.requestId,
       region: request.region,
       message: error instanceof Error ? error.message : String(error),
+      stage: error instanceof StageError ? error.stage : undefined,
     })
   }
 }
@@ -65,14 +87,14 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
 
   postProgress(request.requestId, region, "checking", 5)
   const versionInfo = normalizeSekaiMasterVersionInfo(
-    await fetchJson(resolveSekaiMasterVersionUrl(region)),
+    await withStage("version", () => fetchJson(resolveSekaiMasterVersionUrl(region))),
   )
   const fetchVersion = resolveSekaiMasterFetchVersion(region, versionInfo)
   const displayVersion = versionInfo.dataVersion
-  const cachedMeta = await readSekaiRegionCacheMeta(region)
+  const cachedMeta = await withStage("cache", () => readSekaiRegionCacheMeta(region))
   const musicMetasBaseUrl = resolveSekaiMusicMetasUrl(region)
   const musicMetasRemoteState = includeMusicMetas
-    ? await fetchMusicMetasRemoteState(musicMetasBaseUrl)
+    ? await withStage("music-metas", () => fetchMusicMetasRemoteState(musicMetasBaseUrl))
     : null
   const cachedMasterFiles = cachedMeta?.master?.fetchVersion === fetchVersion
     ? cachedMeta.master.files
@@ -111,24 +133,27 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
   // as cached, so the next ensure requests them again.
   let skippedFiles: string[] = []
   if (!masterCacheHit) {
-    const masterFiles = await fetchMasterFilesConcurrently({
+    const masterFiles = await withStage("master", () => fetchMasterFilesConcurrently({
       filesToFetch,
       optionalFiles,
       region,
       requestId: request.requestId,
       versionInfo,
-    })
+    }))
     skippedFiles = filesToFetch.filter((fileName) => !(fileName in masterFiles))
 
     if (Object.keys(masterFiles).length > 0) {
-      await writeSekaiMasterFiles(region, fetchVersion, masterFiles)
+      await withStage("cache", () => writeSekaiMasterFiles(region, fetchVersion, masterFiles))
     }
   }
 
   let musicMetas: unknown = null
   if (musicMetasRemoteState != null && !musicMetasCacheHit) {
     postProgress(request.requestId, region, "fetching-music-metas", 72)
-    musicMetas = await fetchJson(resolveSekaiMusicMetasUrl(region, musicMetasRemoteState.cacheKey ?? Date.now()))
+    musicMetas = await withStage(
+      "music-metas",
+      () => fetchJson(resolveSekaiMusicMetasUrl(region, musicMetasRemoteState.cacheKey ?? Date.now())),
+    )
   }
 
   postProgress(request.requestId, region, "writing-cache", 88)
@@ -154,13 +179,15 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
         updatedAt: now,
       }
 
-  if (musicMetas != null && musicMetasRemoteState != null) {
-    await writeSekaiMusicMetas(region, musicMetas, musicMetasBaseUrl, displayVersion, musicMetasRemoteState)
-  }
-  await writeSekaiRegionCacheMeta({
-    region,
-    master: nextMasterMeta,
-    musicMetas: nextMusicMetasMeta,
+  await withStage("cache", async () => {
+    if (musicMetas != null && musicMetasRemoteState != null) {
+      await writeSekaiMusicMetas(region, musicMetas, musicMetasBaseUrl, displayVersion, musicMetasRemoteState)
+    }
+    await writeSekaiRegionCacheMeta({
+      region,
+      master: nextMasterMeta,
+      musicMetas: nextMusicMetasMeta,
+    })
   })
 
   postEvent({
@@ -184,7 +211,10 @@ async function ensureRegion(request: Extract<SekaiDataWorkerRequest, { type: "en
 // master CDN also sits behind a WAF that answers bursts with a transient 403
 // or an HTML challenge page (HTTP 200, text/html) — both clear on a paced
 // retry, so they are treated as retryable rather than as hard failures.
-const FETCH_RETRY_DELAYS_MS = [800, 1800, 3500]
+// A dead CDN must still fail fast: `planFetchRetry` bounds every attempt's
+// time-to-headers and the whole retry run after the first failure, so pages
+// get their error (and cached data keeps serving) within seconds instead of
+// after the browser's own multi-minute connect timeouts.
 
 /** ±30 % jitter so parallel file workers do not re-burst in lockstep. */
 function jitter(delayMs: number): number {
@@ -206,26 +236,53 @@ function isHtmlChallengeResponse(response: Response): boolean {
   return /text\/html/i.test(contentType)
 }
 
+/**
+ * `fetch` that gives up when the response headers take longer than
+ * `timeoutMs`. Only the wait for headers is bounded: once they arrived the
+ * timer is cleared, so a slow body (cards.json is tens of megabytes) is never
+ * cut off.
+ */
+async function fetchWithHeaderTimeout(url: string, init: RequestInit | undefined, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController()
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, timeoutMs)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } catch (error) {
+    throw timedOut ? new Error(`Timed out fetching ${url} (${timeoutMs} ms)`) : error
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function fetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
   let lastError: unknown
-  for (let attempt = 0; attempt <= FETCH_RETRY_DELAYS_MS.length; attempt += 1) {
-    if (attempt > 0) {
-      await new Promise((resolve) => setTimeout(resolve, jitter(FETCH_RETRY_DELAYS_MS[attempt - 1])))
+  let firstFailureAt: number | null = null
+  for (let attempt = 0; ; attempt += 1) {
+    const elapsed = firstFailureAt == null ? 0 : Date.now() - firstFailureAt
+    const plan = planFetchRetry(attempt, elapsed, DEFAULT_FETCH_RETRY_POLICY, jitter)
+    if (!plan) {
+      break
+    }
+    if (plan.delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, plan.delayMs))
     }
     try {
-      const response = await fetch(url, init)
+      const response = await fetchWithHeaderTimeout(url, init, plan.timeoutMs)
       if (isTransientStatus(response.status)) {
         lastError = new Error(`Failed to fetch ${url}: ${response.status}`)
-        continue
-      }
-      if (isHtmlChallengeResponse(response)) {
+      } else if (isHtmlChallengeResponse(response)) {
         lastError = new Error(`Unexpected HTML response from ${url}`)
-        continue
+      } else {
+        return response
       }
-      return response
     } catch (error) {
       lastError = error
     }
+    firstFailureAt ??= Date.now()
   }
   throw lastError
 }

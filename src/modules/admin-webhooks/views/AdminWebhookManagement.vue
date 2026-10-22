@@ -3,6 +3,7 @@ import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideLoader2, LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import {
   AdminWebhookDeleteDialog,
   AdminWebhookFormDialog,
@@ -21,7 +22,10 @@ const {
   settingsSaving,
   settings,
   settingsEnabled,
+  settingsDirty,
   jwtSecretInput,
+  jwtSecretError,
+  disableConfirmOpen,
   endpointsLoading,
   endpoints,
   endpointsGeneratedAt,
@@ -35,8 +39,9 @@ const {
   formEnabled,
   formClearBearer,
   formSaving,
+  formErrors,
+  formDirty,
   deleteOpen,
-  deleting,
   deleteTarget,
   tokenDialogOpen,
   latestToken,
@@ -50,10 +55,13 @@ const {
   refreshAll,
   openCreateDialog,
   openEditDialog,
+  clearFormError,
   saveWebhook,
   confirmDelete,
   executeDelete,
   saveSettings,
+  executeSaveSettings,
+  updateJwtSecretInput,
   openSubscribers,
   copyLatestToken,
   formatDate,
@@ -80,10 +88,12 @@ const refreshing = computed(() => settingsLoading.value || endpointsLoading.valu
       :settings-saving="settingsSaving"
       :settings="settings"
       :settings-enabled="settingsEnabled"
+      :settings-dirty="settingsDirty"
       :jwt-secret-input="jwtSecretInput"
+      :jwt-secret-error="jwtSecretError"
       @save-settings="saveSettings"
       @update:settings-enabled="settingsEnabled = $event"
-      @update:jwt-secret-input="jwtSecretInput = $event"
+      @update:jwt-secret-input="updateJwtSecretInput"
     />
 
     <AdminWebhookTable
@@ -109,6 +119,8 @@ const refreshing = computed(() => settingsLoading.value || endpointsLoading.valu
       :form-enabled="formEnabled"
       :form-clear-bearer="formClearBearer"
       :form-saving="formSaving"
+      :form-errors="formErrors"
+      :form-dirty="formDirty"
       @update:open="formOpen = $event"
       @update:form-id="formId = $event"
       @update:form-credential="formCredential = $event"
@@ -116,15 +128,25 @@ const refreshing = computed(() => settingsLoading.value || endpointsLoading.valu
       @update:form-bearer="formBearer = $event"
       @update:form-enabled="formEnabled = $event"
       @update:form-clear-bearer="formClearBearer = $event"
+      @clear-error="clearFormError"
       @save="saveWebhook"
     />
 
     <AdminWebhookDeleteDialog
       :open="deleteOpen"
-      :deleting="deleting"
       :delete-target-id="deleteTarget?.id ?? ''"
+      :on-confirm="executeDelete"
       @update:open="deleteOpen = $event"
-      @confirm="executeDelete"
+    />
+
+    <!-- Turning global delivery off silences every endpoint, so it is confirmed first. -->
+    <ConfirmDialog
+      v-model:open="disableConfirmOpen"
+      :title="t('adminWebhooks.settings.disableDialog.title')"
+      :description="t('adminWebhooks.settings.disableDialog.description')"
+      :confirm-label="t('adminWebhooks.settings.disableDialog.confirm')"
+      destructive
+      :on-confirm="executeSaveSettings"
     />
 
     <AdminWebhookTokenDialog

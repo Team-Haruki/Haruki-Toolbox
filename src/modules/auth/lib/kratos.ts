@@ -3,6 +3,9 @@ import { getSettings } from "@/modules/user-settings/api/get-settings"
 import { getCurrentUser } from "@/modules/user-settings/api/me"
 import type { UserRole } from "@/types/common"
 import type { UserSettings } from "@/types/get-settings"
+import { KratosRequestError } from "@/modules/auth/lib/kratos-errors"
+
+export { KratosRequestError }
 
 export type KratosFlowType = "login" | "registration" | "recovery" | "verification" | "settings"
 interface KratosBrowserFlowRedirectOptions {
@@ -13,6 +16,7 @@ export interface KratosUiMessage {
   id?: number
   text?: string
   type?: string
+  context?: Record<string, unknown>
 }
 
 export interface KratosUiNodeAttributes {
@@ -44,6 +48,8 @@ export interface KratosUiNode {
   messages?: KratosUiMessage[]
   meta?: {
     label?: {
+      /** Kratos text id (text/message_*.go), e.g. 1070005 "Submit" or 1070008 "Resend code". */
+      id?: number
       text?: string
     }
   }
@@ -197,7 +203,7 @@ export async function performKratosLogout(): Promise<void> {
   })
 
   if (!response.ok) {
-    throw new Error(`kratos logout request failed: ${response.status}`)
+    throw new KratosRequestError("logout", response.status)
   }
 }
 
@@ -210,7 +216,7 @@ export async function createKratosLogoutUrl(): Promise<string> {
   })
 
   if (!response.ok) {
-    throw new Error(`kratos logout flow request failed: ${response.status}`)
+    throw new KratosRequestError("logout flow", response.status)
   }
 
   const data = await response.json() as KratosLogoutFlow
@@ -233,7 +239,7 @@ export async function fetchKratosBrowserFlow(flowType: KratosFlowType, flowId: s
   )
 
   if (!response.ok) {
-    throw new Error(`kratos ${flowType} flow request failed: ${response.status}`)
+    throw new KratosRequestError(`${flowType} flow`, response.status)
   }
 
   return await response.json() as KratosBrowserFlow
@@ -251,7 +257,7 @@ export async function fetchKratosFlowError(errorId: string): Promise<KratosFlowE
   )
 
   if (!response.ok) {
-    throw new Error(`kratos error flow request failed: ${response.status}`)
+    throw new KratosRequestError("error flow", response.status)
   }
 
   const payload = await response.json() as unknown
@@ -290,7 +296,7 @@ export async function fetchKratosWhoAmI(): Promise<KratosWhoAmIResponse | null> 
   }
 
   if (!response.ok) {
-    throw new Error(`kratos whoami request failed: ${response.status}`)
+    throw new KratosRequestError("whoami", response.status)
   }
 
   return await response.json() as KratosWhoAmIResponse
@@ -368,7 +374,7 @@ export async function fetchKratosMySessions(): Promise<KratosSessionInfo[]> {
   }
 
   if (!response.ok) {
-    throw new Error(`kratos sessions request failed: ${response.status}`)
+    throw new KratosRequestError("sessions", response.status)
   }
 
   const payload = await response.json() as unknown

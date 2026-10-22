@@ -151,6 +151,40 @@ export function resolveUploadAuthorizationSourceLabel(source: string | undefined
   return resolveLabel(source, UPLOAD_AUTHORIZATION_SOURCE_LABEL_KEY, t)
 }
 
+/** Filter values the page accepts (also from the URL); "all" is the select's "no filter" entry. */
+export const UPLOAD_METHOD_FILTER_VALUES: readonly string[] = UPLOAD_METHOD_VALUES.filter((value) => value !== "all")
+export const UPLOAD_DATA_TYPE_FILTER_VALUES: readonly string[] = UPLOAD_DATA_TYPE_VALUES.filter((value) => value !== "all")
+export const UPLOAD_SERVER_FILTER_VALUES: readonly string[] = UPLOAD_SERVER_VALUES.filter((value) => value !== "all")
+export const UPLOAD_SORT_FILTER_VALUES: readonly string[] = UPLOAD_SORT_VALUES
+export const UPLOAD_SUCCESS_FILTER_VALUES: readonly string[] = UPLOAD_SUCCESS_VALUES
+
+/**
+ * Summary of a multi-select: the single pick's label, or the first pick plus
+ * a "+N" count so the trigger never overflows ("日服 +2"). The full list goes
+ * in the trigger's tooltip (`describeMultiFilterSelection`).
+ */
+export function resolveMultiFilterLabel(
+  values: readonly string[],
+  options: ReadonlyArray<Option>,
+  fallback: string,
+  more: (first: string, count: number) => string,
+): string {
+  const selected = options.filter((option) => values.includes(option.value))
+  if (selected.length === 0) {
+    return fallback
+  }
+  const first = selected[0]!.label
+  return selected.length === 1 ? first : more(first, selected.length - 1)
+}
+
+/** Every selected label, for the trigger's tooltip. */
+export function describeMultiFilterSelection(values: readonly string[], options: ReadonlyArray<Option>): string {
+  return options
+    .filter((option) => values.includes(option.value))
+    .map((option) => option.label)
+    .join(", ")
+}
+
 /** The user the data belongs to; older payloads carried it as `userId`. */
 export function resolveUploadLogOwnerId(log: { toolboxUserId?: string; userId?: string }): string | null {
   return log.toolboxUserId || log.userId || null

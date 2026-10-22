@@ -5,6 +5,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
 import SheetHeader from '@/components/ui/sheet/SheetHeader.vue'
 import SheetTitle from '@/components/ui/sheet/SheetTitle.vue'
+import { useI18n } from "vue-i18n"
 import { SIDEBAR_WIDTH_MOBILE, useSidebar } from "./utils"
 
 defineOptions({
@@ -18,6 +19,7 @@ const props = withDefaults(defineProps<SidebarProps>(), {
 })
 
 const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+const { t } = useI18n()
 </script>
 
 <template>
@@ -37,7 +39,7 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
       data-mobile="true"
       :side="side"
       :class="cn(
-        'bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden border-r',
+        'bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 border-r',
         props.class,
       )"
       overlay-class="bg-black/8 backdrop-blur-[1px] dark:bg-slate-950/40"
@@ -46,8 +48,8 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
       }"
     >
       <SheetHeader class="sr-only">
-        <SheetTitle>Sidebar</SheetTitle>
-        <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+        <SheetTitle>{{ t("sidebar.title") }}</SheetTitle>
+        <SheetDescription>{{ t("sidebar.description") }}</SheetDescription>
       </SheetHeader>
       <div class="flex h-full w-full flex-col">
         <slot />

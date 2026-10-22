@@ -18,6 +18,8 @@ import {
   LucideSearch,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import FieldError from "@/shared/components/FieldError.vue"
+import { BOT_SECURITY_FILTER_IDS } from "@/modules/admin-bot-security/composables/useBotSecurityAlerts"
 import type { BotSecurityAlertFilters } from "@/modules/admin-bot-security/lib/alert-meta"
 
 type FilterOption = { value: string; label: string }
@@ -26,6 +28,8 @@ const props = defineProps<{
   statusOptions: ReadonlyArray<FilterOption>
   kindOptions: ReadonlyArray<FilterOption>
   loading: boolean
+  /** Inline message under the pickers once a query was attempted with an inverted range. */
+  timeRangeError?: string | null
 }>()
 
 const filters = defineModel<BotSecurityAlertFilters>("filters", { required: true })
@@ -77,7 +81,7 @@ function toggleExpanded() {
       </div>
     </CardHeader>
     <CardContent v-if="expanded" class="pt-0">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <form class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" novalidate @submit.prevent="emit('apply')">
         <div class="flex flex-col gap-1.5">
           <Label id="bot-security-filter-status-label" for="bot-security-filter-status" class="text-sm">
             {{ t("adminBotSecurity.filters.status") }}
@@ -130,35 +134,38 @@ function toggleExpanded() {
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label for="bot-security-filter-from" class="text-sm">{{ t("adminBotSecurity.filters.from") }}</Label>
+          <Label :for="BOT_SECURITY_FILTER_IDS.from" class="text-sm">{{ t("adminBotSecurity.filters.from") }}</Label>
           <DateTimePicker24h
-            id="bot-security-filter-from"
+            :id="BOT_SECURITY_FILTER_IDS.from"
             :model-value="filters.from"
+            :invalid="!!props.timeRangeError"
             :placeholder="t('adminBotSecurity.filters.fromPlaceholder')"
             @update:model-value="update('from', $event)"
           />
         </div>
         <div class="flex flex-col gap-1.5">
-          <Label for="bot-security-filter-to" class="text-sm">{{ t("adminBotSecurity.filters.to") }}</Label>
+          <Label :for="BOT_SECURITY_FILTER_IDS.to" class="text-sm">{{ t("adminBotSecurity.filters.to") }}</Label>
           <DateTimePicker24h
-            id="bot-security-filter-to"
+            :id="BOT_SECURITY_FILTER_IDS.to"
             :model-value="filters.to"
+            :invalid="!!props.timeRangeError"
             :placeholder="t('adminBotSecurity.filters.toPlaceholder')"
             @update:model-value="update('to', $event)"
           />
+          <FieldError id="bot-security-filter-time-range-error" :message="props.timeRangeError" />
         </div>
-      </div>
 
-      <div class="mt-4 flex flex-wrap items-center gap-2">
-        <Button size="sm" :disabled="props.loading" @click="emit('apply')">
-          <LucideSearch class="w-4 h-4 mr-1" />
-          {{ t("adminBotSecurity.actions.search") }}
-        </Button>
-        <Button variant="outline" size="sm" :disabled="props.loading" @click="emit('reset')">
-          <LucideRefreshCw class="w-4 h-4 mr-1" />
-          {{ t("common.reset") }}
-        </Button>
-      </div>
+        <div class="sm:col-span-2 xl:col-span-3 flex flex-wrap items-center gap-2">
+          <Button type="submit" size="sm" :disabled="props.loading">
+            <LucideSearch class="w-4 h-4 mr-1" />
+            {{ t("adminBotSecurity.actions.search") }}
+          </Button>
+          <Button type="button" variant="outline" size="sm" :disabled="props.loading" @click="emit('reset')">
+            <LucideRefreshCw class="w-4 h-4 mr-1" />
+            {{ t("admin.filters.reset") }}
+          </Button>
+        </div>
+      </form>
     </CardContent>
   </Card>
 </template>

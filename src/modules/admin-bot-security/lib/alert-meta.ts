@@ -1,4 +1,12 @@
+import type { LocationQuery } from "vue-router"
 import type { QueryParams } from "@/core/http/query"
+import {
+  readQueryDate,
+  readQueryEnum,
+  readQueryString,
+  writeQueryValue,
+  type QueryWriteRecord,
+} from "@/lib/query-codec"
 import type {
   BotSecurityAlert,
   BotSecurityAlertHandler,
@@ -117,6 +125,34 @@ export function getBotSecurityKindOptions(t: TranslateFn, extraKinds: readonly s
     ...BOT_SECURITY_KNOWN_KINDS.map((kind) => ({ value: kind, label: t(KIND_LABEL_KEY[kind]) })),
     ...extras.map((kind) => ({ value: kind, label: kind })),
   ]
+}
+
+/** Query keys the alerts page owns (filters, page and page size). */
+export const BOT_SECURITY_QUERY_KEYS = ["status", "kind", "bot", "from", "to", "page", "size"] as const
+
+const STATUS_FILTER_VALUES: readonly string[] = [...BOT_SECURITY_ALERT_STATUSES, BOT_SECURITY_FILTER_ALL]
+
+/** Filters from a shared or restored URL; unknown values fall back to the defaults. */
+export function parseBotSecurityFiltersQuery(query: LocationQuery): BotSecurityAlertFilters {
+  const defaults = createDefaultBotSecurityFilters()
+  return {
+    status: readQueryEnum(query.status, STATUS_FILTER_VALUES) ?? defaults.status,
+    kind: readQueryString(query.kind) ?? defaults.kind,
+    botId: readQueryString(query.bot) ?? "",
+    from: readQueryDate(query.from) ?? undefined,
+    to: readQueryDate(query.to) ?? undefined,
+  }
+}
+
+/** The URL record for the applied filters; defaults are omitted. */
+export function writeBotSecurityFiltersQuery(filters: BotSecurityAlertFilters): QueryWriteRecord {
+  return {
+    status: writeQueryValue(filters.status, BOT_SECURITY_DEFAULT_STATUS_FILTER),
+    kind: writeQueryValue(filters.kind, BOT_SECURITY_FILTER_ALL),
+    bot: writeQueryValue(filters.botId.trim()),
+    from: writeQueryValue(filters.from?.toISOString()),
+    to: writeQueryValue(filters.to?.toISOString()),
+  }
 }
 
 export function hasInvalidBotSecurityTimeRange(filters: Pick<BotSecurityAlertFilters, "from" | "to">): boolean {

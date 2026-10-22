@@ -23,6 +23,11 @@ const props = withDefaults(defineProps<{
   imgClass?: string
   placeholderClass?: string
   placeholderIcon?: Component
+  /**
+   * Pulse the box while the image loads so a grey tile reads as "loading",
+   * not "failed". Off for decorative backgrounds and the lightbox.
+   */
+  shimmer?: boolean
 }>(), {
   fit: "cover",
   eager: false,
@@ -30,6 +35,7 @@ const props = withDefaults(defineProps<{
   imgClass: undefined,
   placeholderClass: undefined,
   placeholderIcon: undefined,
+  shimmer: true,
 })
 
 const emit = defineEmits<{
@@ -42,10 +48,12 @@ const candidateKey = computed(() => candidates.value.join("\n"))
 
 const index = ref(0)
 const retrying = ref(false)
+const loaded = ref(false)
 
 watch(candidateKey, () => {
   index.value = 0
   retrying.value = false
+  loaded.value = false
 })
 
 const currentSource = computed(() => candidates.value[index.value] ?? null)
@@ -55,6 +63,7 @@ const currentUrl = computed(() => {
 })
 
 function handleError() {
+  loaded.value = false
   const failed = currentSource.value
   if (failed) {
     void purgeCachedSekaiImage(failed)
@@ -71,6 +80,7 @@ function handleError() {
 }
 
 function handleLoad() {
+  loaded.value = true
   if (currentSource.value) {
     emit("load", currentSource.value)
   }
@@ -78,6 +88,11 @@ function handleLoad() {
 </script>
 
 <template>
+  <div
+    v-if="currentUrl && shimmer && !loaded"
+    class="absolute inset-0 animate-pulse bg-muted"
+    aria-hidden="true"
+  />
   <img
     v-if="currentUrl"
     :src="currentUrl"
@@ -86,9 +101,10 @@ function handleLoad() {
     :fetchpriority="eager ? 'high' : undefined"
     decoding="async"
     :class="cn(
-      'absolute inset-0 h-full w-full',
+      'absolute inset-0 h-full w-full transition-opacity duration-200',
       fit === 'cover' ? 'object-cover' : 'object-contain',
       blur ? 'scale-105 blur-md' : '',
+      shimmer && !loaded ? 'opacity-0' : 'opacity-100',
       imgClass,
     )"
     @error="handleError"

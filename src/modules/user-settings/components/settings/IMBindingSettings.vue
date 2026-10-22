@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { ref } from "vue"
 import { useI18n } from "vue-i18n"
 import {Input} from "@/components/ui/input"
 import {Button} from "@/components/ui/button"
 import Turnstile from "@/shared/components/Turnstile.vue"
 import VerificationStatusBadge from "@/modules/user-settings/components/VerificationStatusBadge.vue"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import {Loader2, Link2, User, Send, Key, Unlink, ShieldCheck} from "lucide-vue-next"
 import {
   Card,
@@ -29,17 +31,10 @@ import {
   SelectContent,
 } from "@/components/ui/select"
 import {
-  AlertDialog,
-  AlertDialogTitle,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-  AlertDialogHeader,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogDescription,
-} from "@/components/ui/alert-dialog"
-import {useIMBindingSettings} from "@/modules/user-settings/composables/useIMBindingSettings"
+  IM_BINDING_ACCOUNT_INPUT_ID,
+  IM_BINDING_CODE_INPUT_ID,
+  useIMBindingSettings,
+} from "@/modules/user-settings/composables/useIMBindingSettings"
 
 const {
   current,
@@ -53,17 +48,27 @@ const {
   verifying,
   generatedCode,
   account,
+  accountError,
+  sendError,
+  dialogError,
   showCodeDialog,
   platform,
   dialogMode,
   onTurnstileVerify,
   onTurnstileInvalid,
+  clearAccountError,
+  clearDialogError,
   handleVerify,
   handleRetryCurrentVerification,
   handleDialogVerify,
   handleUnbind,
 } = useIMBindingSettings()
 const { t, locale } = useI18n()
+
+const ACCOUNT_ERROR_ID = "im-binding-account-error"
+const SEND_ERROR_ID = "im-binding-send-error"
+const CODE_ERROR_ID = "im-binding-code-error"
+const unbindDialogOpen = ref(false)
 </script>
 
 <template>
@@ -118,6 +123,7 @@ const { t, locale } = useI18n()
           <Button
             v-if="canRetryCurrentVerification"
             :disabled="sending || !isEmailVerified"
+            :aria-describedby="sendError ? SEND_ERROR_ID : undefined"
             @click="handleRetryCurrentVerification"
           >
             <Loader2 v-if="sending" class="mr-2 h-4 w-4 animate-spin" />
@@ -127,37 +133,20 @@ const { t, locale } = useI18n()
             </template>
           </Button>
 
-        <AlertDialog>
-          <AlertDialogTrigger as-child>
-            <Button :disabled="clearing || !isEmailVerified" variant="destructive" class="w-full">
-              <Loader2 v-if="clearing" class="mr-2 h-4 w-4 animate-spin" />
-              <Unlink v-else class="mr-2 h-4 w-4" />
-              {{ t("userSettings.imBinding.unbindButton") }}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{{ t("userSettings.imBinding.unbindDialog.title") }}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {{ t("userSettings.imBinding.unbindDialog.description") }}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{{ t("userSettings.common.cancel") }}</AlertDialogCancel>
-              <AlertDialogAction class="bg-destructive" @click="handleUnbind">
-                {{ t("userSettings.imBinding.unbindDialog.confirm") }}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          <Button :disabled="clearing || !isEmailVerified" variant="destructive" class="w-full" @click="unbindDialogOpen = true">
+            <Loader2 v-if="clearing" class="mr-2 h-4 w-4 animate-spin" />
+            <Unlink v-else class="mr-2 h-4 w-4" />
+            {{ t("userSettings.imBinding.unbindButton") }}
+          </Button>
         </div>
+        <p v-if="sendError" :id="SEND_ERROR_ID" role="alert" class="text-xs text-destructive">{{ sendError }}</p>
       </template>
 
       <template v-else>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="flex flex-col gap-2">
             <label id="im-binding-platform-label" for="im-binding-platform" class="text-sm font-medium">{{ t("userSettings.imBinding.selectPlatformLabel") }}</label>
-            <Select id="im-binding-platform" :key="locale" v-model="platform">
+            <Select id="im-binding-platform" :key="locale" v-model="platform" @update:model-value="clearAccountError">
               <SelectTrigger class="w-full" aria-labelledby="im-binding-platform-label">
                 <SelectValue :placeholder="t('userSettings.imBinding.selectPlatformPlaceholder')"/>
               </SelectTrigger>
@@ -172,13 +161,23 @@ const { t, locale } = useI18n()
             </Select>
           </div>
           <div class="flex flex-col gap-2">
-            <label for="im-binding-account" class="text-sm font-medium">{{ t("userSettings.imBinding.fields.account") }}</label>
+            <label :for="IM_BINDING_ACCOUNT_INPUT_ID" class="text-sm font-medium">{{ t("userSettings.imBinding.fields.account") }}</label>
             <div class="relative w-full items-center">
-              <Input id="im-binding-account" v-model="account" :placeholder="t('userSettings.imBinding.accountPlaceholder')" class="pl-10"/>
+              <Input
+                :id="IM_BINDING_ACCOUNT_INPUT_ID"
+                v-model="account"
+                :placeholder="t('userSettings.imBinding.accountPlaceholder')"
+                class="pl-10"
+                inputmode="numeric"
+                :aria-invalid="accountError ? 'true' : undefined"
+                :aria-describedby="accountError ? ACCOUNT_ERROR_ID : undefined"
+                @input="clearAccountError"
+              />
               <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                 <User class="size-4 text-muted-foreground" />
               </span>
             </div>
+            <p v-if="accountError" :id="ACCOUNT_ERROR_ID" role="alert" class="text-xs text-destructive">{{ accountError }}</p>
           </div>
         </div>
 
@@ -191,7 +190,12 @@ const { t, locale } = useI18n()
           />
         </div>
 
-        <Button class="w-full" :disabled="sending || !isEmailVerified" @click="handleVerify">
+        <Button
+          class="w-full"
+          :disabled="sending || !isEmailVerified"
+          :aria-describedby="sendError ? SEND_ERROR_ID : undefined"
+          @click="handleVerify"
+        >
           <Loader2 v-if="sending" class="mr-2 h-4 w-4 animate-spin" />
           <template v-else>
             <span v-if="platform === 'qq'" class="flex items-center justify-center">
@@ -204,6 +208,7 @@ const { t, locale } = useI18n()
             </span>
           </template>
         </Button>
+        <p v-if="sendError" :id="SEND_ERROR_ID" role="alert" class="text-xs text-destructive">{{ sendError }}</p>
       </template>
 
       <Dialog v-model:open="showCodeDialog">
@@ -219,18 +224,31 @@ const { t, locale } = useI18n()
             </DialogDescription>
           </DialogHeader>
 
-          <div class="py-4 text-center font-mono text-lg">
+          <div class="space-y-2 py-2">
             <template v-if="dialogMode === 'qq'">
               <div class="relative w-full items-center">
-                <Input v-model="qqInputCode" :placeholder="t('userSettings.imBinding.dialog.qqCodePlaceholder')" :aria-label="t('userSettings.imBinding.dialog.qqCodePlaceholder')" class="pl-10 text-base"/>
+                <Input
+                  :id="IM_BINDING_CODE_INPUT_ID"
+                  v-model="qqInputCode"
+                  :placeholder="t('userSettings.imBinding.dialog.qqCodePlaceholder')"
+                  :aria-label="t('userSettings.imBinding.dialog.qqCodePlaceholder')"
+                  :aria-invalid="dialogError ? 'true' : undefined"
+                  :aria-describedby="dialogError ? CODE_ERROR_ID : undefined"
+                  class="pl-10 text-base font-mono"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  @input="clearDialogError"
+                  @keydown.enter.prevent="handleDialogVerify"
+                />
                 <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                   <Key class="size-4 text-muted-foreground" />
                 </span>
               </div>
             </template>
-            <template v-else>
+            <p v-else class="select-all text-center font-mono text-lg" data-testid="im-binding-generated-code">
               {{ generatedCode }}
-            </template>
+            </p>
+            <p v-if="dialogError" :id="CODE_ERROR_ID" role="alert" class="text-sm text-destructive">{{ dialogError }}</p>
           </div>
 
           <DialogFooter>
@@ -245,6 +263,16 @@ const { t, locale } = useI18n()
           </DialogFooter>
         </DialogScrollContent>
       </Dialog>
+
+      <ConfirmDialog
+        v-model:open="unbindDialogOpen"
+        :title="t('userSettings.imBinding.unbindDialog.title')"
+        :description="t('userSettings.imBinding.unbindDialog.description')"
+        :confirm-label="t('userSettings.imBinding.unbindDialog.confirm')"
+        :cancel-label="t('userSettings.common.cancel')"
+        destructive
+        :on-confirm="handleUnbind"
+      />
     </CardContent>
   </Card>
 </template>

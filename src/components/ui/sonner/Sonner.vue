@@ -62,6 +62,11 @@ const toasterStyle = computed(() => ({
 </template>
 
 <style>
+/* Error descriptions may carry a second "Details: …" line (see extractErrorMessage). */
+.toaster [data-sonner-toast] [data-description] {
+  white-space: pre-line;
+}
+
 .toaster [data-sonner-toast][data-styled='true'] [data-button][data-action] {
   border: 1px solid color-mix(in oklab, var(--primary) 82%, var(--background) 18%);
   background: var(--primary);

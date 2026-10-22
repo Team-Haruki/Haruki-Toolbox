@@ -18,17 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import {
   LucideLink,
   LucideLoader2,
   LucidePencil,
@@ -37,16 +26,24 @@ import {
   LucideUsers,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import FieldError from "@/shared/components/FieldError.vue"
+import type { ErrorDescription } from "@/lib/error-utils"
+import { CONTENT_FIELD_IDS } from "@/modules/admin-content/lib/form-validation"
+import type { GroupFormErrorMessages } from "@/modules/admin-content/composables/useContentManagement"
 import type { AdminFriendGroup, AdminFriendGroupItem } from "@/types/admin"
 
 defineProps<{
   loading: boolean
+  /** A failed load; the empty state below is only for a real empty list. */
+  loadError: ErrorDescription | null
   groups: AdminFriendGroup[]
   groupDialogOpen: boolean
   editingGroup: AdminFriendGroup | null
   groupName: string
   groupSortOrder: number
   groupSaving: boolean
+  groupFormErrors: GroupFormErrorMessages
 }>()
 const { t } = useI18n()
 
@@ -57,11 +54,16 @@ const emit = defineEmits<{
   (e: "openCreateGroup"): void
   (e: "editGroup", group: AdminFriendGroup): void
   (e: "saveGroup"): void
-  (e: "deleteGroup", groupId: string): void
+  /** Asks the page to confirm and delete the group. */
+  (e: "deleteGroup", group: AdminFriendGroup): void
   (e: "createItem", groupId: string): void
   (e: "editItem", groupId: string, item: AdminFriendGroupItem): void
-  (e: "deleteItem", groupId: string, itemId: string): void
+  /** Asks the page to confirm and delete the item. */
+  (e: "deleteItem", groupId: string, item: AdminFriendGroupItem): void
+  (e: "retry"): void
 }>()
+
+const groupNameErrorId = `${CONTENT_FIELD_IDS.group.name}-error`
 </script>
 
 <template>
@@ -78,6 +80,14 @@ const emit = defineEmits<{
           <Skeleton v-for="i in 3" :key="i" class="h-20 w-full" />
         </div>
       </template>
+      <LoadErrorState
+        v-else-if="loadError"
+        :title="t('adminContent.toast.loadGroupsFailedTitle')"
+        :description="loadError.message"
+        :detail="loadError.detail"
+        :retrying="loading"
+        @retry="emit('retry')"
+      />
       <template v-else-if="groups.length > 0">
         <div class="flex flex-col gap-4">
           <Card v-for="group in groups" :key="group.id" class="gap-3 rounded-lg py-4 shadow-none">
@@ -100,33 +110,16 @@ const emit = defineEmits<{
                 >
                   <LucidePencil class="w-4 h-4" />
                 </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger as-child>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      class="size-8 text-destructive hover:text-destructive"
-                      :title="t('adminContent.actions.delete')"
-                      :aria-label="t('adminContent.actions.delete')"
-                    >
-                      <LucideTrash2 class="w-4 h-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{{ t("adminContent.groupsTab.deleteGroupDialog.title") }}</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {{ t("adminContent.groupsTab.deleteGroupDialog.description", { group: group.group }) }}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{{ t("adminContent.groupsTab.deleteGroupDialog.cancel") }}</AlertDialogCancel>
-                      <AlertDialogAction @click="emit('deleteGroup', String(group.id))">
-                        {{ t("adminContent.groupsTab.deleteGroupDialog.confirm") }}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="size-8 text-destructive hover:text-destructive"
+                  :title="t('adminContent.actions.delete')"
+                  :aria-label="t('adminContent.actions.delete')"
+                  @click="emit('deleteGroup', group)"
+                >
+                  <LucideTrash2 class="w-4 h-4" />
+                </Button>
               </div>
             </CardHeader>
 
@@ -159,7 +152,7 @@ const emit = defineEmits<{
                       class="size-7 text-destructive hover:text-destructive"
                       :title="t('adminContent.actions.delete')"
                       :aria-label="t('adminContent.actions.delete')"
-                      @click="emit('deleteItem', String(group.id), String(item.id))"
+                      @click="emit('deleteItem', String(group.id), item)"
                     >
                       <LucideTrash2 class="w-3.5 h-3.5" />
                     </Button>
@@ -197,38 +190,43 @@ const emit = defineEmits<{
           {{ editingGroup ? t("adminContent.groupsTab.createGroupDialog.editTitle") : t("adminContent.groupsTab.createGroupDialog.title") }}
         </DialogTitle>
       </DialogHeader>
-      <div class="-mx-1 flex max-h-[60vh] flex-col gap-4 overflow-y-auto px-1 py-1">
-        <div class="flex flex-col gap-1.5">
-          <Label for="content-group-name">{{ t("adminContent.groupsTab.createGroupDialog.groupNameLabel") }}</Label>
-          <Input
-            id="content-group-name"
-            :model-value="groupName"
-            :placeholder="t('adminContent.groupsTab.createGroupDialog.groupNamePlaceholder')"
-            @update:model-value="emit('update:groupName', String($event ?? ''))"
-          />
+      <form novalidate @submit.prevent="emit('saveGroup')">
+        <div class="-mx-1 flex max-h-[60vh] flex-col gap-4 overflow-y-auto px-1 py-1">
+          <div class="flex flex-col gap-1.5">
+            <Label :for="CONTENT_FIELD_IDS.group.name">{{ t("adminContent.groupsTab.createGroupDialog.groupNameLabel") }}</Label>
+            <Input
+              :id="CONTENT_FIELD_IDS.group.name"
+              :model-value="groupName"
+              :placeholder="t('adminContent.groupsTab.createGroupDialog.groupNamePlaceholder')"
+              :aria-invalid="groupFormErrors.name ? true : undefined"
+              :aria-describedby="groupFormErrors.name ? groupNameErrorId : undefined"
+              @update:model-value="emit('update:groupName', String($event ?? ''))"
+            />
+            <FieldError :id="groupNameErrorId" :message="groupFormErrors.name" />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <Label for="content-group-sort-order">{{ t("adminContent.linkDialog.fields.sortOrder") }}</Label>
+            <Input
+              id="content-group-sort-order"
+              :model-value="groupSortOrder"
+              type="number"
+              min="0"
+              :placeholder="t('adminContent.linkDialog.placeholders.sortOrder')"
+              @update:model-value="emit('update:groupSortOrder', Number($event ?? 0))"
+            />
+            <p class="text-xs text-muted-foreground">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
+          </div>
         </div>
-        <div class="flex flex-col gap-1.5">
-          <Label for="content-group-sort-order">{{ t("adminContent.linkDialog.fields.sortOrder") }}</Label>
-          <Input
-            id="content-group-sort-order"
-            :model-value="groupSortOrder"
-            type="number"
-            min="0"
-            :placeholder="t('adminContent.linkDialog.placeholders.sortOrder')"
-            @update:model-value="emit('update:groupSortOrder', Number($event ?? 0))"
-          />
-          <p class="text-xs text-muted-foreground">{{ t("adminContent.linkDialog.fields.sortOrderHint") }}</p>
-        </div>
-      </div>
-      <DialogFooter>
-        <DialogClose as-child>
-          <Button variant="outline" :disabled="groupSaving">{{ t("common.cancel") }}</Button>
-        </DialogClose>
-        <Button :disabled="groupSaving" @click="emit('saveGroup')">
-          <LucideLoader2 v-if="groupSaving" class="w-4 h-4 mr-1 animate-spin" />
-          {{ t("adminContent.groupsTab.createGroupDialog.create") }}
-        </Button>
-      </DialogFooter>
+        <DialogFooter class="mt-4">
+          <DialogClose as-child>
+            <Button type="button" variant="outline" :disabled="groupSaving">{{ t("common.cancel") }}</Button>
+          </DialogClose>
+          <Button type="submit" :disabled="groupSaving">
+            <LucideLoader2 v-if="groupSaving" class="w-4 h-4 mr-1 animate-spin" />
+            {{ t("adminContent.groupsTab.createGroupDialog.create") }}
+          </Button>
+        </DialogFooter>
+      </form>
     </DialogContent>
   </Dialog>
 </template>

@@ -8,11 +8,18 @@ import {
 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 
-/** The config pane's action row: secondary actions on one line, the run button full width under them. */
-defineProps<{
+/**
+ * The config pane's action row: secondary actions on one line, the run
+ * button full width under them. `hint` explains why the run button is
+ * disabled (no account bound, no uploaded data…).
+ */
+withDefaults(defineProps<{
   running: boolean
   canRun: boolean
-}>()
+  hint?: string | null
+}>(), {
+  hint: null,
+})
 
 const emit = defineEmits<{
   expert: []
@@ -51,5 +58,8 @@ const { t } = useI18n()
       <LucidePlay class="size-4" />
       {{ running ? t("deckRecommend.runner.running") : t("deckRecommend.runner.run") }}
     </Button>
+    <p v-if="hint && !running" class="text-center text-xs text-muted-foreground" role="status">
+      {{ hint }}
+    </p>
   </div>
 </template>

@@ -16,6 +16,9 @@ const BUNDLE_RULES: readonly BundleRule[] = [
   { prefixes: ["/cards", "/events", "/gachas", "/music"], bundles: ["catalog"] },
   { prefixes: ["/deck-recommend", "/event-planner"], bundles: ["deck"] },
   { prefixes: ["/rank-border"], bundles: ["rank"] },
+  // The Pt calculator reuses the deck module's song picker (MusicSelect),
+  // whose placeholder and loading strings live in the deck bundle.
+  { prefixes: ["/pt-calculator", "/pt_calc"], bundles: ["deck"] },
   {
     prefixes: [
       "/pt-calculator",

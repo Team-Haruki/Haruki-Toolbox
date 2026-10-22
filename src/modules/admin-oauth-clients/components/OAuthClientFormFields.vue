@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select"
 import { LucidePencilLine, LucidePlus, LucideX } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import FieldError from "@/shared/components/FieldError.vue"
 import type { OAuthClient, OAuthClientDevicePolicy } from "@/types/admin"
 import {
   DEVICE_MAX_CODES_PER_10M_DEFAULT,
@@ -24,6 +25,11 @@ import {
   hasDeviceGrant,
   isFirstPartyApplicable,
 } from "@/modules/admin-oauth-clients/lib/grant-types"
+import {
+  OAUTH_CLIENT_FIELD_IDS,
+  type OAuthClientFormErrors,
+  type OAuthClientFormField,
+} from "@/modules/admin-oauth-clients/lib/form"
 
 interface ScopeOption {
   id: string
@@ -52,9 +58,13 @@ interface Props {
   devicePolicy: OAuthClientDevicePolicy
   availableScopes: ScopeOption[]
   availableGrantTypes: GrantTypeOption[]
+  /** Inline validation messages, keyed by the control they belong under. */
+  errors?: OAuthClientFormErrors
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  errors: () => ({}),
+})
 const { t, locale } = useI18n()
 const emit = defineEmits<{
   (event: "update:name", value: string): void
@@ -94,18 +104,44 @@ function handleMaxCodesChange(value: string | number) {
   // silently sending the default.
   emit("update-device-policy", { maxCodesPer10m: text === "" ? Number.NaN : Number(text) })
 }
+
+const ids = OAUTH_CLIENT_FIELD_IDS
+
+function errorId(field: OAuthClientFormField) {
+  return `${ids[field]}-error`
+}
+
+function invalid(field: OAuthClientFormField) {
+  return props.errors[field] ? true : undefined
+}
+
+function describedBy(field: OAuthClientFormField) {
+  return props.errors[field] ? errorId(field) : undefined
+}
+
+/** Redirect URI inputs are numbered; the first carries the group's id so it can be focused. */
+function redirectUriId(index: number) {
+  return `oauth-client-form-redirect-uri-${index}`
+}
+
+function postLogoutUriId(index: number) {
+  return `oauth-client-form-post-logout-uri-${index}`
+}
 </script>
 
 <template>
   <div class="grid gap-4 sm:grid-cols-2">
     <div class="flex flex-col gap-2">
-      <Label for="oauth-client-form-name">{{ t("adminOAuthClients.form.nameLabel") }}</Label>
+      <Label :for="ids.name">{{ t("adminOAuthClients.form.nameLabel") }}</Label>
       <Input
-        id="oauth-client-form-name"
+        :id="ids.name"
         :model-value="props.name"
         :placeholder="t('adminOAuthClients.form.namePlaceholder')"
+        :aria-invalid="invalid('name')"
+        :aria-describedby="describedBy('name')"
         @update:model-value="value => emit('update:name', String(value ?? ''))"
       />
+      <FieldError :id="errorId('name')" :message="props.errors.name" />
     </div>
     <div class="flex flex-col gap-2">
       <Label id="oauth-client-form-type-label" for="oauth-client-form-type">{{ t("adminOAuthClients.form.clientTypeLabel") }}</Label>
@@ -121,8 +157,16 @@ function handleMaxCodesChange(value: string | number) {
     </div>
   </div>
 
-  <div class="flex flex-col gap-2">
-    <h3 class="text-sm font-medium">{{ t("adminOAuthClients.form.grantTypesLabel") }}</h3>
+  <div
+    :id="ids.grantTypes"
+    class="flex flex-col gap-2 rounded-md outline-none"
+    role="group"
+    tabindex="-1"
+    aria-labelledby="oauth-client-form-grant-types-label"
+    :aria-invalid="invalid('grantTypes')"
+    :aria-describedby="describedBy('grantTypes')"
+  >
+    <h3 id="oauth-client-form-grant-types-label" class="text-sm font-medium">{{ t("adminOAuthClients.form.grantTypesLabel") }}</h3>
     <div class="flex flex-wrap gap-1.5">
       <button
         v-for="grantType in props.availableGrantTypes"
@@ -134,17 +178,27 @@ function handleMaxCodesChange(value: string | number) {
           props.grantTypes.includes(grantType.id)
             ? 'border-primary/40 bg-primary/10 font-medium text-primary'
             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+          props.errors.grantTypes ? 'border-destructive' : '',
         ]"
         @click="emit('toggle-grant-type', grantType.id, !props.grantTypes.includes(grantType.id))"
       >
         {{ grantType.label }}
       </button>
     </div>
+    <FieldError :id="errorId('grantTypes')" :message="props.errors.grantTypes" />
     <p class="text-xs text-muted-foreground">{{ t("adminOAuthClients.form.grantTypesHelp") }}</p>
   </div>
 
-  <div class="flex flex-col gap-2">
-    <h3 class="text-sm font-medium">{{ t("adminOAuthClients.form.scopesLabel") }}</h3>
+  <div
+    :id="ids.scopes"
+    class="flex flex-col gap-2 rounded-md outline-none"
+    role="group"
+    tabindex="-1"
+    aria-labelledby="oauth-client-form-scopes-label"
+    :aria-invalid="invalid('scopes')"
+    :aria-describedby="describedBy('scopes')"
+  >
+    <h3 id="oauth-client-form-scopes-label" class="text-sm font-medium">{{ t("adminOAuthClients.form.scopesLabel") }}</h3>
     <div class="flex flex-wrap gap-1.5">
       <button
         v-for="scope in props.availableScopes"
@@ -159,6 +213,7 @@ function handleMaxCodesChange(value: string | number) {
               ? 'border-amber-500/50 bg-amber-500/10 font-medium text-amber-700 dark:text-amber-400'
               : 'border-primary/40 bg-primary/10 font-medium text-primary'
             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+          props.errors.scopes && !props.scopes.includes(scope.id) ? 'border-destructive/60' : '',
         ]"
         @click="emit('toggle-scope', scope.id, !props.scopes.includes(scope.id))"
       >
@@ -167,6 +222,7 @@ function handleMaxCodesChange(value: string | number) {
         <span v-if="scope.write" class="sr-only">{{ t("adminOAuthClients.form.writeScopeHint") }}</span>
       </button>
     </div>
+    <FieldError :id="errorId('scopes')" :message="props.errors.scopes" />
   </div>
 
   <div class="flex flex-col gap-2">
@@ -174,10 +230,13 @@ function handleMaxCodesChange(value: string | number) {
     <p v-if="!redirectUrisRequired" class="text-xs text-muted-foreground">{{ t("adminOAuthClients.form.redirectUrisOptionalHelp") }}</p>
     <div v-for="(uri, i) in props.redirectUris" :key="i" class="flex gap-2">
       <Input
+        :id="redirectUriId(i)"
         :aria-label="`${t('adminOAuthClients.form.redirectUrisLabel')} ${i + 1}`"
         :model-value="uri"
         :placeholder="t('adminOAuthClients.form.redirectUriPlaceholder')"
         class="flex-1"
+        :aria-invalid="i === 0 ? invalid('redirectUris') : undefined"
+        :aria-describedby="i === 0 ? describedBy('redirectUris') : undefined"
         @update:model-value="value => emit('update-redirect-uri', { index: i, value: String(value ?? '') })"
       />
       <Button
@@ -185,6 +244,7 @@ function handleMaxCodesChange(value: string | number) {
         variant="ghost"
         size="icon"
         class="shrink-0"
+        type="button"
         :title="t('adminOAuthClients.form.removeRedirectUri')"
         :aria-label="t('adminOAuthClients.form.removeRedirectUri')"
         @click="emit('remove-redirect-uri', i)"
@@ -192,7 +252,8 @@ function handleMaxCodesChange(value: string | number) {
         <LucideX class="w-4 h-4" />
       </Button>
     </div>
-    <Button variant="outline" size="sm" class="self-start" @click="emit('add-redirect-uri')">
+    <FieldError :id="errorId('redirectUris')" :message="props.errors.redirectUris" />
+    <Button variant="outline" size="sm" class="self-start" type="button" @click="emit('add-redirect-uri')">
       <LucidePlus class="w-4 h-4 mr-1" />
       {{ t("adminOAuthClients.form.addRedirectUri") }}
     </Button>
@@ -203,10 +264,13 @@ function handleMaxCodesChange(value: string | number) {
     <p class="text-xs text-muted-foreground">{{ t("adminOAuthClients.form.postLogoutRedirectUrisHelp") }}</p>
     <div v-for="(uri, i) in props.postLogoutRedirectUris" :key="i" class="flex gap-2">
       <Input
+        :id="postLogoutUriId(i)"
         :aria-label="`${t('adminOAuthClients.form.postLogoutRedirectUrisLabel')} ${i + 1}`"
         :model-value="uri"
         :placeholder="t('adminOAuthClients.form.postLogoutRedirectUriPlaceholder')"
         class="flex-1"
+        :aria-invalid="i === 0 ? invalid('postLogoutRedirectUris') : undefined"
+        :aria-describedby="i === 0 ? describedBy('postLogoutRedirectUris') : undefined"
         @update:model-value="value => emit('update-post-logout-redirect-uri', { index: i, value: String(value ?? '') })"
       />
       <Button
@@ -214,6 +278,7 @@ function handleMaxCodesChange(value: string | number) {
         variant="ghost"
         size="icon"
         class="shrink-0"
+        type="button"
         :title="t('adminOAuthClients.form.removeRedirectUri')"
         :aria-label="t('adminOAuthClients.form.removeRedirectUri')"
         @click="emit('remove-post-logout-redirect-uri', i)"
@@ -221,7 +286,8 @@ function handleMaxCodesChange(value: string | number) {
         <LucideX class="w-4 h-4" />
       </Button>
     </div>
-    <Button variant="outline" size="sm" class="self-start" @click="emit('add-post-logout-redirect-uri')">
+    <FieldError :id="errorId('postLogoutRedirectUris')" :message="props.errors.postLogoutRedirectUris" />
+    <Button variant="outline" size="sm" class="self-start" type="button" @click="emit('add-post-logout-redirect-uri')">
       <LucidePlus class="w-4 h-4 mr-1" />
       {{ t("adminOAuthClients.form.addRedirectUri") }}
     </Button>
@@ -246,25 +312,30 @@ function handleMaxCodesChange(value: string | number) {
         @update:model-value="emit('update-device-policy', { firstParty: Boolean($event) })"
       />
     </div>
-    <div class="flex items-center justify-between gap-3 rounded-md border p-3">
-      <div>
-        <Label for="oauth-client-form-device-allow-write">{{ t("adminOAuthClients.form.devicePolicy.allowWrite") }}</Label>
-        <p :class="['text-sm', props.devicePolicy.allowWrite && !allowWriteEligible ? 'text-destructive' : 'text-muted-foreground']">
-          {{ t("adminOAuthClients.form.devicePolicy.allowWriteHelp") }}
-        </p>
+    <div :class="['flex flex-col gap-2 rounded-md border p-3', props.errors.deviceAllowWrite ? 'border-destructive' : '']">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <Label :for="ids.deviceAllowWrite">{{ t("adminOAuthClients.form.devicePolicy.allowWrite") }}</Label>
+          <p :class="['text-sm', props.devicePolicy.allowWrite && !allowWriteEligible ? 'text-destructive' : 'text-muted-foreground']">
+            {{ t("adminOAuthClients.form.devicePolicy.allowWriteHelp") }}
+          </p>
+        </div>
+        <!-- Stays enabled while on so an ineligible client can still turn it off. -->
+        <Switch
+          :id="ids.deviceAllowWrite"
+          :model-value="props.devicePolicy.allowWrite"
+          :disabled="!allowWriteEligible && !props.devicePolicy.allowWrite"
+          :aria-invalid="invalid('deviceAllowWrite')"
+          :aria-describedby="describedBy('deviceAllowWrite')"
+          @update:model-value="emit('update-device-policy', { allowWrite: Boolean($event) })"
+        />
       </div>
-      <!-- Stays enabled while on so an ineligible client can still turn it off. -->
-      <Switch
-        id="oauth-client-form-device-allow-write"
-        :model-value="props.devicePolicy.allowWrite"
-        :disabled="!allowWriteEligible && !props.devicePolicy.allowWrite"
-        @update:model-value="emit('update-device-policy', { allowWrite: Boolean($event) })"
-      />
+      <FieldError :id="errorId('deviceAllowWrite')" :message="props.errors.deviceAllowWrite" />
     </div>
     <div class="flex flex-col gap-2">
-      <Label for="oauth-client-form-device-max-codes">{{ t("adminOAuthClients.form.devicePolicy.maxCodesPer10m") }}</Label>
+      <Label :for="ids.deviceMaxCodes">{{ t("adminOAuthClients.form.devicePolicy.maxCodesPer10m") }}</Label>
       <Input
-        id="oauth-client-form-device-max-codes"
+        :id="ids.deviceMaxCodes"
         type="number"
         inputmode="numeric"
         :min="DEVICE_MAX_CODES_PER_10M_MIN"
@@ -272,8 +343,11 @@ function handleMaxCodesChange(value: string | number) {
         step="1"
         class="sm:max-w-40"
         :model-value="Number.isNaN(props.devicePolicy.maxCodesPer10m) ? '' : props.devicePolicy.maxCodesPer10m"
+        :aria-invalid="invalid('deviceMaxCodes')"
+        :aria-describedby="describedBy('deviceMaxCodes')"
         @update:model-value="handleMaxCodesChange"
       />
+      <FieldError :id="errorId('deviceMaxCodes')" :message="props.errors.deviceMaxCodes" />
       <p class="text-xs text-muted-foreground">
         {{ t("adminOAuthClients.form.devicePolicy.maxCodesPer10mHelp", { min: DEVICE_MAX_CODES_PER_10M_MIN, max: DEVICE_MAX_CODES_PER_10M_MAX, default: DEVICE_MAX_CODES_PER_10M_DEFAULT }) }}
       </p>

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
-import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
+import { useSuiteRefresh } from "@/shared/sekai/user-snapshot/use-suite-refresh"
+import { useUploadTimeText } from "@/shared/sekai/user-snapshot/upload-time"
 import type { AcceptableValue } from "reka-ui"
 import { LucideChevronsDownUp, LucideChevronsUpDown, LucideRefreshCw } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
@@ -12,7 +15,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
-import { getI18nLocale } from "@/shared/i18n"
 import { formatCompactNumber } from "@/lib/number-format"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
@@ -21,7 +23,6 @@ import MusicProgressOverview, { type MusicProgressOverviewRow } from "../compone
 import MusicProgressScoreRankCard, { type MusicProgressScoreRankRow } from "../components/MusicProgressScoreRankCard.vue"
 import { useMusicProgressMasterData } from "../composables/useMusicProgressMasterData"
 import { resolveMusicJacketUrl } from "../lib/music-assets"
-import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import {
   MUSIC_DIFFICULTIES,
   MUSIC_DIFFICULTY_COLORS,
@@ -62,9 +63,14 @@ const suite = useUserSuite(["userMusics", "userMusicResults", "userMusicAchievem
 
 const region = computed<SekaiRegion | null>(() => selectedAccount.value?.server ?? null)
 const master = useMusicProgressMasterData(region, { withAchievements: true })
-const suiteDataMissing = computed(
-  () => getMissingUploadDataType(suite.error.value) != null,
-)
+const { suiteDataMissing, errorMessage, errorDetail } = useUserDataPageState({
+  status: suite.status,
+  error: suite.error,
+  masterLoading: master.loading,
+  masterError: master.error,
+  account: selectedAccount,
+  fallback: () => t("musicProgress.suiteError"),
+})
 
 const activeDifficulty = ref<MusicDifficulty>("master")
 const songFilter = ref<MusicProgressSongFilter>("all")
@@ -418,18 +424,12 @@ const showDownloadProgress = computed(
     && master.regionState.value?.refreshing === true,
 )
 
-const dateTimeFormatter = computed(() =>
-  new Intl.DateTimeFormat(locale.value || getI18nLocale(), { dateStyle: "medium", timeStyle: "short" }),
-)
-const uploadTimeLabel = computed(() => {
-  const timestamp = suite.uploadTime.value
-  return timestamp != null ? dateTimeFormatter.value.format(new Date(suiteUploadTimeToMillis(timestamp))) : null
-})
+const uploadTimeLabel = useUploadTimeText(suite.uploadTime)
 
-function refresh() {
-  void suite.reload()
-  void master.reload()
-}
+const { refreshing, refresh } = useSuiteRefresh([
+  () => suite.reload("check-remote"),
+  () => master.reload(),
+])
 </script>
 
 <template>
@@ -443,9 +443,9 @@ function refresh() {
       <div class="flex flex-col items-start gap-1.5 sm:items-end">
         <GameAccountSelect capability="suite" />
         <div v-if="suite.status.value !== 'idle'" class="flex items-center gap-1 text-xs text-muted-foreground">
-          <span v-if="uploadTimeLabel">{{ t("musicProgress.dataAsOf", { time: uploadTimeLabel }) }}</span>
-          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="showSkeleton" @click="refresh">
-            <LucideRefreshCw class="size-3.5" />
+          <span v-if="uploadTimeLabel">{{ t("uploadedGameData.uploadedAt", { time: uploadTimeLabel }) }}</span>
+          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="showSkeleton || refreshing" @click="refresh">
+            <LucideRefreshCw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
             {{ t("musicProgress.refresh") }}
           </Button>
         </div>
@@ -460,16 +460,21 @@ function refresh() {
     </Card>
 
     <!-- Errors -->
+    <Card v-else-if="suiteDataMissing">
+      <CardContent class="py-10">
+        <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" />
+      </CardContent>
+    </Card>
+
     <Card v-else-if="suite.status.value === 'error' || master.error.value">
-      <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <MissingGameDataNotice v-if="suiteDataMissing" :granted="selectedAccount?.ownership === 'granted'" />
-        <template v-else>
-          <p v-if="suite.status.value === 'error'" class="text-sm text-muted-foreground">{{ t("musicProgress.suiteError") }}</p>
-          <p v-if="master.error.value" class="max-w-full break-words font-mono text-xs text-muted-foreground">
-            {{ t("musicProgress.masterError", { message: master.error.value }) }}
-          </p>
-          <Button type="button" variant="outline" size="sm" @click="refresh">{{ t("musicProgress.retry") }}</Button>
-        </template>
+      <CardContent>
+        <LoadErrorState
+          :description="errorMessage"
+          :detail="errorDetail"
+          :retry-label="t('musicProgress.retry')"
+          :retrying="refreshing"
+          @retry="refresh"
+        />
       </CardContent>
     </Card>
 

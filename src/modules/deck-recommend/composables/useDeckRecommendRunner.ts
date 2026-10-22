@@ -1,5 +1,8 @@
-import { computed, ref } from "vue"
+import { computed, ref, shallowRef } from "vue"
 import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+import type { ErrorDescription } from "@/lib/error-utils"
+import { describeDeckRecommendError } from "../lib/engine-errors"
+import { markDeckRecommendUserDataAvailable, markDeckRecommendUserDataMissing } from "../lib/user-data-availability"
 import type {
   MusicRecommendOptions,
   RecommendDeck,
@@ -133,12 +136,39 @@ export type DeckRecommendAlgorithmTiming = {
   elapsedMs: number
 }
 
+/**
+ * The last successful run, kept at module level so leaving the page and
+ * coming back (same session) restores the result instead of forcing a
+ * re-run. Keyed by the serialized runner input, so any config change
+ * invalidates it.
+ */
+type DeckRecommendLastRun = {
+  key: string
+  result: TaggedRecommendResult
+  masterData: Record<string, unknown> | null
+  elapsedMs: number | null
+  dataElapsedMs: number | null
+  engineDataElapsedMs: number | null
+  recommendElapsedMs: number | null
+  resultExecutionMode: DeckRecommendExecutionMode | null
+  algorithmTimings: DeckRecommendAlgorithmTiming[]
+}
+
+let lastRun: DeckRecommendLastRun | null = null
+
+export function createDeckRecommendRunKey(input: DeckRecommendRunnerInput): string {
+  return JSON.stringify(input)
+}
+
 export function useDeckRecommendRunner() {
   const userStore = useUserStore()
   const sekaiDataStore = useSekaiDataStore()
   const running = ref(false)
   const phase = ref<Extract<DeckRecommendWorkerEvent, { type: "progress" }>["phase"] | "fetching-user-data" | "preparing-data" | null>(null)
+  /** Raw engine/transport message of the last failure (for support); render `errorDescription` instead. */
   const error = ref<string | null>(null)
+  /** The last failure in user language: what happened and what to try next. */
+  const errorDescription = shallowRef<ErrorDescription | null>(null)
   const userDataMissing = ref(false)
   const result = ref<TaggedRecommendResult | null>(null)
   const masterData = ref<Record<string, unknown> | null>(null)
@@ -168,6 +198,7 @@ export function useDeckRecommendRunner() {
     running.value = true
     phase.value = "preparing-data"
     error.value = null
+    errorDescription.value = null
     userDataMissing.value = false
     result.value = null
     masterData.value = null
@@ -177,6 +208,7 @@ export function useDeckRecommendRunner() {
     recommendElapsedMs.value = null
     resultExecutionMode.value = input.executionMode
     algorithmTimings.value = []
+    lastRun = null
 
     try {
       const runStartedAt = performance.now()
@@ -295,13 +327,26 @@ export function useDeckRecommendRunner() {
           }))
         : workerResults
       const resultWithLiveBoost = applyDeckRecommendLiveBoost(resultWithChallengeDelta, input.mode, input.boost)
-      result.value = mergeDeckRecommendResults(resultWithLiveBoost, input.mode, input.target)
+      const mergedResult = mergeDeckRecommendResults(resultWithLiveBoost, input.mode, input.target)
+      result.value = mergedResult
       algorithmTimings.value = workerResults.map(({ algorithm, elapsedMs }) => ({ algorithm, elapsedMs }))
       recommendElapsedMs.value = createElapsedMs(recommendStartedAt)
       elapsedMs.value = createElapsedMs(runStartedAt)
+      lastRun = {
+        key: createDeckRecommendRunKey(input),
+        result: mergedResult,
+        masterData: masterData.value,
+        elapsedMs: elapsedMs.value,
+        dataElapsedMs: dataElapsedMs.value,
+        engineDataElapsedMs: engineDataElapsedMs.value,
+        recommendElapsedMs: recommendElapsedMs.value,
+        resultExecutionMode: resultExecutionMode.value,
+        algorithmTimings: algorithmTimings.value,
+      }
     } catch (runError) {
       const message = normalizeDeckRecommendWorkerError(runError)
       error.value = message
+      errorDescription.value = describeDeckRecommendError(runError)
       throw runError
     } finally {
       running.value = false
@@ -316,6 +361,7 @@ export function useDeckRecommendRunner() {
 
     phase.value = null
     error.value = null
+    errorDescription.value = null
     userDataMissing.value = false
     result.value = null
     masterData.value = null
@@ -327,19 +373,49 @@ export function useDeckRecommendRunner() {
     algorithmTimings.value = []
   }
 
+  /**
+   * Puts the last successful run back on screen when the current config
+   * matches the one it was computed with (e.g. after navigating away and
+   * back). Returns true when something was restored.
+   */
+  function restoreLastResult(input: DeckRecommendRunnerInput): boolean {
+    if (running.value || lastRun == null || lastRun.key !== createDeckRecommendRunKey(input)) {
+      return false
+    }
+    error.value = null
+    errorDescription.value = null
+    userDataMissing.value = false
+    result.value = lastRun.result
+    masterData.value = lastRun.masterData
+    elapsedMs.value = lastRun.elapsedMs
+    dataElapsedMs.value = lastRun.dataElapsedMs
+    engineDataElapsedMs.value = lastRun.engineDataElapsedMs
+    recommendElapsedMs.value = lastRun.recommendElapsedMs
+    resultExecutionMode.value = lastRun.resultExecutionMode
+    algorithmTimings.value = lastRun.algorithmTimings
+    return true
+  }
+
   async function fetchUserData(input: DeckRecommendRunnerInput) {
     phase.value = "fetching-user-data"
+    const server = input.account?.server ?? input.dataRegion
+    const uid = input.account?.uid ?? ""
+    const mode = resolveRecommendDataMode(input.mode)
     try {
       const result = await fetchDeckRecommendUserDataWithCache({
         toolboxUserId: userStore.userId || "",
-        server: input.account?.server ?? input.dataRegion,
-        gameUserId: input.account?.uid ?? "",
-        mode: resolveRecommendDataMode(input.mode),
+        server,
+        gameUserId: uid,
+        mode,
       }, { strategy: "prefer-cache" })
       applyUserDataCacheStatus(result)
+      markDeckRecommendUserDataAvailable(server, uid, mode)
       return result.data
     } catch (fetchError) {
       userDataMissing.value = getMissingUploadDataType(fetchError) != null
+      if (userDataMissing.value) {
+        markDeckRecommendUserDataMissing(server, uid, mode)
+      }
       throw fetchError
     }
   }
@@ -634,6 +710,7 @@ export function useDeckRecommendRunner() {
     running,
     phase,
     error,
+    errorDescription,
     userDataMissing,
     result,
     masterData,
@@ -655,6 +732,7 @@ export function useDeckRecommendRunner() {
     disposeEngine: disposeEngines,
     run,
     reset,
+    restoreLastResult,
     refreshUserData,
     recommendMusicForDeck,
   }

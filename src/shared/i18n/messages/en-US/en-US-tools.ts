@@ -254,27 +254,27 @@ export default {
       }
     },
     "iosModules": {
-      "title": "iOS Module Generator",
-      "description": "Generate custom iOS proxy modules",
+      "title": "iOS module (iPhone / iPad)",
+      "description": "Generate a proxy module for Shadowrocket, Surge and similar apps; afterwards your data uploads automatically whenever you open the game.",
       "tutorialAlert": {
-        "textBefore": "This tutorial can be viewed by ",
-        "linkText": "clicking here",
-        "textAfter": ".",
+        "label": "Illustrated guide:",
+        "linkText": "open",
         "nonZhWarning": "Please note that this tutorial is only available in Simplified Chinese."
       },
       "qxScriptWarning": "Quantumult X does not support script upload mode",
       "cnRestriction": "Due to legal restrictions, CN MySekai module installation is not provided.",
       "installButton": "Quick Install Module",
-      "installHint": "Clicking this will invoke the target app's install scheme",
+      "installHint": "This opens the proxy app you chose and imports the module",
+      "copyAction": "Copy {label}",
       "copyLabel": {
-        "uploadCode": "Upload code",
-        "moduleUrl": "Module URL",
-        "scriptUrl": "Script URL"
+        "uploadCode": "upload code",
+        "moduleUrl": "module URL",
+        "scriptUrl": "script URL"
       },
       "steps": {
         "configure": {
           "title": "Configure",
-          "description": "Choose the proxy app, toolbox endpoint, and upload mode."
+          "description": "Choose the proxy app, server route, and upload mode."
         },
         "scope": {
           "title": "Scope",
@@ -282,7 +282,9 @@ export default {
         },
         "install": {
           "title": "Get & Install",
-          "description": "Generate an upload code, then copy the URLs or quick install the module."
+          "prerequisite": "You need to be signed in with a bound game account first.",
+          "description": "Generate an upload code, then copy the URLs or quick install the module.",
+          "after": "After installing, open the game and reach the home screen once; once the upload succeeds, \"My account\" on the toolbox home page shows the upload time."
         }
       },
       "sections": {
@@ -292,18 +294,18 @@ export default {
           "placeholder": "Select app"
         },
         "endpoint": {
-          "title": "Select toolbox endpoint",
-          "description": "Choose the toolbox backend endpoint\nDirect is recommended by default\nIf you're outside mainland China and direct access is unstable, CDN may help",
-          "placeholder": "Select endpoint"
+          "title": "Server route",
+          "description": "Direct works in mainland China; outside it, CDN may be smoother.",
+          "placeholder": "Select route"
         },
         "mode": {
           "title": "Select upload mode",
-          "description": "Script upload can coexist with other bots and avoids toolbox proxy downtime, but may be less stable\nIf script upload is unstable, switch to the redirect proxy method",
+          "description": "\"Script upload\" can run alongside other bots' modules but is occasionally unstable; \"Proxy upload\" is more stable but only one toolbox module can be installed at a time. If unsure, pick \"Proxy upload\".",
           "placeholder": "Select upload mode"
         },
         "chunk": {
           "title": "Chunk size",
-          "description": "Larger chunks can improve in-game speed, but may be less stable in some clients\nDo not change this unless you know what it does",
+          "description": "The default is fine for most people. Larger values enter the game faster, but some proxy apps may fail to upload.",
           "unit": "MB"
         },
         "regions": {
@@ -317,10 +319,15 @@ export default {
       },
       "uploadCode": {
         "title": "Upload Code",
-        "description": "Used to validate access to module and script endpoints",
+        "description": "The module uses it to prove the upload is yours; regenerate it if it leaks.",
         "regenerate": "Regenerate",
         "generate": "Generate Upload Code",
-        "loginRequired": "Sign in required"
+        "loginRequired": "Sign in required",
+        "regenerateDialog": {
+          "title": "Regenerate the upload code?",
+          "description": "The old code stops working immediately; any installed module must be reinstalled with the new URL to keep uploading.",
+          "confirm": "Regenerate"
+        }
       },
       "generatedUrls": {
         "title": "Generated URLs",
@@ -340,8 +347,8 @@ export default {
         "cdn": "CDN"
       },
       "modeOptions": {
-        "proxy": "Redirect proxy",
-        "script": "Script Upload"
+        "proxy": "Proxy upload",
+        "script": "Script upload"
       },
       "region": {
         "jp": "JP",
@@ -352,16 +359,16 @@ export default {
       },
       "dataTypes": {
         "suite": {
-          "label": "Suite",
+          "label": "Account data (Suite)",
           "description": "Upload full data for your game account"
         },
         "mysekai": {
-          "label": "MySekai",
+          "label": "MySekai data",
           "description": "Upload MySekai data for your game account"
         },
         "mysekai_force": {
-          "label": "MySekai (force refresh)",
-          "description": "Force refresh MySekai data on every launch"
+          "label": "MySekai data (upload on every visit)",
+          "description": "Re-upload every time you enter MySekai, whether or not anything changed in game."
         },
         "mysekai_birthday_party": {
           "label": "MySekai Birthday Party",
@@ -372,7 +379,7 @@ export default {
         "loginRequired": "Please sign in first",
         "generateCodeSuccess": "Upload code generated",
         "generateCodeFailedTitle": "Failed to generate upload code",
-        "generateCodeFailedFallback": "Unknown error",
+        "generateCodeFailedFallback": "Make sure you are signed in, then try again later.",
         "copyEmpty": "Nothing to copy",
         "clipboardUnsupported": "Clipboard is not supported in this environment",
         "copySuccess": "{label} copied to clipboard",
@@ -388,21 +395,31 @@ export default {
       "groupTitle": "Haruki Playground QQ Groups",
       "group1Label": "Group 1",
       "group2Label": "Group 2",
-      "tutorialNotice": {
-        "title": "Other upload methods",
-        "androidProxy": {
-          "platform": "Android / Windows",
-          "linkText": "HarukiProxy guide"
-        },
-        "iosModule": {
-          "platform": "iOS / iPadOS",
-          "linkText": "Use the iOS module"
-        }
+      "intro": {
+        "title": "Upload data",
+        "description": "\"Upload data\" syncs your game account data to the toolbox for cards, event records, deck building and more. Recommended: the iOS module on iPhone/iPad, HarukiProxy on Android/Windows; use the transfer code only when neither works.",
+        "iosPlatform": "iPhone / iPad",
+        "iosMethod": "iOS module (recommended)",
+        "proxyPlatform": "Android / Windows",
+        "proxyMethod": "HarukiProxy guide",
+        "fallbackPlatform": "When neither works",
+        "fallbackMethod": "Transfer code (fallback)"
       },
       "tabs": {
-        "file": "File upload",
-        "inherit": "Transfer-code upload",
-        "ios": "iOS module"
+        "ios": "iOS module (iPhone/iPad)",
+        "proxy": "HarukiProxy (Android/PC)",
+        "inherit": "Transfer code (fallback)",
+        "file": "File upload (advanced)"
+      },
+      "proxyTab": {
+        "title": "HarukiProxy (Android / PC)",
+        "description": "Run HarukiProxy on an Android phone or a PC; your data uploads to the toolbox automatically when you open the game.",
+        "steps": {
+          "install": "Install and configure HarukiProxy on your phone or PC by following the guide.",
+          "bind": "Bind and verify the game account to upload under Game account bindings first.",
+          "run": "With HarukiProxy on, reach the game's home screen once; \"My account\" on the toolbox home page shows the upload time."
+        },
+        "tutorialButton": "Open the HarukiProxy guide"
       },
       "region": {
         "jp": "JP",
@@ -412,13 +429,13 @@ export default {
         "cn": "CN"
       },
       "dataTypes": {
-        "suite": "Suite",
-        "mysekai": "MySekai"
+        "suite": "Account data (Suite)",
+        "mysekai": "MySekai data"
       },
       "disabledReason": {
         "loginRequired": "Please sign in to use this feature",
         "noBoundAccount": "No bound accounts found. Please bind an account first.",
-        "noWritableAccount": "No account can be uploaded to right now: verify a binding first or obtain a write grant from another user"
+        "noWritableAccount": "No account can be uploaded to yet. Verify your account under Game account bindings first; to upload for someone else, they must grant you upload access first."
       },
       "uploadStatus": {
         "uploading": "Uploading your {dataType} data...",
@@ -435,32 +452,40 @@ export default {
         "operationForbiddenDescription": "This action is not allowed due to legal restrictions",
         "uploadSuccessTitle": "Upload successful",
         "uploadSuccessFileFallback": "File uploaded",
-        "uploadSuccessInheritFallback": "Transfer code uploaded",
+        "uploadSuccessInheritFallback": "Transfer code submitted; account data saved",
         "uploadFailedTitle": "Upload failed",
-        "uploadFailedFallback": "Upload failed",
-        "inheritIncompleteTitle": "Please complete transfer-code info",
-        "inheritIncompleteDescription": "Transfer ID and password are both required",
-        "inheritIdInvalidTitle": "Invalid transfer ID",
-        "inheritIdInvalidDescription": "Transfer ID must be 16 alphanumeric characters (case-sensitive)"
+        "uploadFailedFallback": "The upload did not go through. Check the file and account and retry; if it keeps failing, open a ticket.",
+        "inheritIdRequired": "Enter the transfer ID",
+        "inheritPasswordRequired": "Enter the transfer password",
+        "inheritIdInvalidDescription": "The transfer ID must be 16 letters and digits (case-sensitive)"
       },
       "fileTab": {
         "title": "Manual file upload",
-        "description": "Upload captured data files manually",
+        "description": "Upload a data file saved by HarukiProxy or the iOS module. Not sure how to get one? See \"Other upload methods\" above.",
         "unavailableTitle": "Unavailable",
         "forbiddenTitle": "Operation forbidden",
         "forbiddenDescription": "This action is not allowed due to legal restrictions",
         "fields": {
           "file": "Upload file",
+          "chooseFile": "Choose file",
+          "noFile": "No file selected",
+          "fileHint": "Pick a data file saved by HarukiProxy or the iOS module; it is uploaded as-is.",
           "account": "Select account (region / UID)",
           "accountPlaceholder": "Select an account you can upload to",
           "dataType": "Select data type",
           "dataTypePlaceholder": "Select data type"
         },
+        "actions": {
+          "goLogin": "Sign in",
+          "goBind": "Bind an account"
+        },
         "refreshTargets": "Refresh accounts",
         "targetsLoading": "Loading upload targets...",
         "targetsFailedTitle": "Could not load upload targets",
         "targetsFailedDescription": "Showing your own verified accounts for now; accounts granted by others appear after a refresh.",
-        "accountNotWritable": "This account cannot be uploaded to (unverified, or the grant has no write permission)",
+        "accountNotWritable": "This account cannot be uploaded to yet: it is unverified, or its owner has not allowed you to upload for them.",
+        "unavailableChip": "Unavailable",
+        "someAccountsUnavailable": "Greyed-out accounts cannot be uploaded to yet: unverified, or the owner has not allowed you to upload for them.",
         "grantedTargetNotice": "This account was granted to you by another user. Uploads directly update their data in the toolbox.",
         "dataTypeLimited": "Only some data types can be uploaded to this account.",
         "submit": "Submit",
@@ -468,7 +493,7 @@ export default {
       },
       "inheritTab": {
         "title": "Transfer-code data upload",
-        "description": "Submit your transfer code so backend can capture required data",
+        "description": "Enter the in-game transfer ID and password; the toolbox signs in once on your behalf and saves the account data.",
         "fields": {
           "inheritId": "Transfer ID",
           "inheritIdPlaceholder": "Enter transfer ID",
@@ -482,13 +507,12 @@ export default {
         "alerts": {
           "notesTitle": "Before you upload",
           "warning1": {
-            "title": "Warning",
-            "description": "Keep your transfer ID and password safe. Haruki Toolbox server does not store them."
+            "title": "Please read first",
+            "description": "Keep your transfer ID and password safe; the toolbox server does not store them."
           },
           "warning2": {
-            "title": "Warning",
-            "line1": "Although requests are optimized to resemble normal app traffic, you still bear the usage risk.",
-            "line2": "If this risk is unacceptable to you, please do not use this feature."
+            "title": "Risk",
+            "text": "This feature signs in once by imitating the game client with your transfer code. The publisher could in theory treat that as an unusual login; judge the risk yourself, and prefer HarukiProxy or the iOS module if unsure."
           },
           "reminder1": {
             "title": "Reminder",
@@ -497,21 +521,19 @@ export default {
           },
           "reminder2": {
             "title": "Reminder",
-            "line1": "This feature does not require signing in to Haruki Toolbox",
-            "line2": "But if target game account is not bound in Haruki Toolbox",
-            "line3": "Data will not be written to database even if upload appears successful",
-            "line4": "Please bind your target game account first",
-            "bindLink": "Bind game account"
+            "text": "Sign in to the toolbox and bind the game account under Game account bindings first. Without a binding, the data is not saved even if the upload reports success.",
+            "bindLink": "Bind account"
           }
         },
         "remember": {
           "label": "Temporarily remember transfer info on this device",
-          "description": "Stored only in this browser, expires after 24 hours, and is cleared immediately when unchecked."
+          "description": "Remembered for 24 hours after a successful submission (this browser only); unchecking clears it immediately."
         },
         "confirmDialog": {
           "title": "Confirm data upload",
           "dataTypePrefix": "Please confirm the data type you want to upload:",
-          "mysekaiNotice": "To upload MySekai data, sign in to Haruki Toolbox first and make sure your QQ number is bound under HarukiBot data authorization.",
+          "loginNotice": "You are not signed in to the toolbox. Without a bound game account the data is not saved even if the upload reports success; sign in and bind first.",
+          "mysekaiNotice": "Uploading MySekai data requires signing in to the toolbox and binding and verifying your QQ number under HarukiBot data authorization; otherwise the bot cannot look up MySekai data for you.",
           "cancel": "Cancel",
           "confirm": "Confirm upload"
         },
@@ -539,6 +561,7 @@ export default {
         "musicEmpty": "No music found.",
         "targetPt": "Target event Pt",
         "targetPtPlaceholder": "Enter target event Pt",
+        "targetPtInvalid": "Target event Pt must be a whole number greater than 0.",
         "maxResults": "Max results",
         "maxResultsPlaceholder": "Default 10",
         "bonusRange": "Custom bonus range",
@@ -562,7 +585,7 @@ export default {
         "music": "Music: {value}",
         "basicPoint": "Basic Pt: {value}",
         "bonusRange": "Bonus range: {min}%-{max}%",
-        "missingBasicPoint": "This music has no music metas basic Pt data."
+        "missingBasicPoint": "This song has no base Pt data yet. Pick another song or difficulty."
       },
       "result": {
         "title": "Calculation result",
@@ -592,6 +615,7 @@ export default {
       "qqLabel": "QQ number",
       "qqPlaceholder": "Enter your QQ number",
       "hint": "A 6-digit verification code will be sent to your QQ mailbox ({qq}{'@'}qq.com). The code is valid for 10 minutes.",
+      "hintQqPlaceholder": "your QQ number",
       "sendButton": "Send verification code",
       "cooldownButton": "Retry in {seconds}s"
     },
@@ -608,17 +632,21 @@ export default {
       "successTitle": "Registration successful",
       "successDescription": "Your HarukiBot NEO instance has been created. Please save the credentials below.",
       "botIdLabel": "Bot ID",
-      "credentialLabel": "Credential (JWT)",
+      "credentialLabel": "Credential",
+      "copyAction": "Copy {label}",
       "saveWarning": "The credential is shown only once. Please copy and save it securely — it cannot be retrieved again.",
       "configGeneratorTitle": "Continue to Client config",
-      "configGeneratorDescription": "Open the config generator with ownerId, Bot ID, and Credential prefilled. Then complete ports, modules, and access lists.",
+      "configGeneratorDescription": "Open the config generator with the Bot ID and credential filled in. Then complete ports, modules, and access lists.",
       "configGeneratorButton": "Open config generator",
       "registerAnotherButton": "Register another"
     },
     "toast": {
       "statusCheckFailed": "Failed to check registration status",
+      "statusCheckFailedFallback": "Check your connection and click Retry; if it keeps failing the service may be temporarily unavailable.",
       "sendFailedTitle": "Send failed",
-      "invalidQQNumber": "Please enter a valid QQ number",
+      "sendFailedFallback": "The code was not sent. Check the QQ number and retry; if it keeps failing, try again later.",
+      "missingQQNumber": "Enter your QQ number",
+      "invalidQQNumber": "Please enter a valid QQ number (5–12 digits)",
       "rateLimitedTitle": "Rate limited",
       "rateLimitedDescription": "Too many requests. Please retry after {seconds} seconds.",
       "alreadyRegisteredTitle": "Already registered",
@@ -628,7 +656,9 @@ export default {
       "codeSentTitle": "Verification code sent",
       "codeSentDescription": "Please check the mailbox of QQ {qq}.",
       "registerFailedTitle": "Registration failed",
+      "registerFailedFallback": "Registration did not complete. Check the code and retry; if it expired, send a new one.",
       "missingVerificationCode": "Please enter the verification code",
+      "invalidVerificationCode": "The code is 6 digits; check it and enter it again",
       "incompleteResponse": "Incomplete response data",
       "registerSuccessTitle": "Registration successful",
       "clipboardUnsupported": "Clipboard is not supported in this environment",
@@ -640,13 +670,14 @@ export default {
     "title": "Sekai Station",
     "description": "Real-time CN-server Multi Live room numbers collected from social media.",
     "viewOnSekaiStation": "View on Sekai Station",
-    "notConfigured": "This build has no Sekai Station API address, so rooms cannot be loaded.",
+    "notConfigured": "Sekai Station is temporarily unavailable",
     "connection": {
       "connected": "Connected",
       "connecting": "Connecting…",
       "disconnected": "Disconnected",
       "failed": "Unable to reach the server",
       "retryIn": "Retrying in {n}s",
+      "retryNow": "Retry now",
       "reconnecting": "Reconnecting…",
       "online": "{n} online"
     },

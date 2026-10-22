@@ -630,19 +630,20 @@ function removeAllModuleRows() {
                 </div>
 
                 <div class="grid gap-3 rounded-md bg-muted/25 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                  <div class="min-w-0 space-y-1">
-                    <Label for="client-use-control-token" class="text-sm">
-                      {{ t("tools.clientConfigGenerator.fields.controlApiAccessToken.label") }}
-                    </Label>
-                    <p class="text-xs leading-relaxed text-muted-foreground">
+                  <!-- The text is the label: tapping it toggles the switch, so the hit area is the whole tile. -->
+                  <Label for="client-use-control-token" class="min-w-0 cursor-pointer flex-col items-start gap-1 text-sm">
+                    <span>{{ t("tools.clientConfigGenerator.fields.controlApiAccessToken.label") }}</span>
+                    <span class="text-xs font-normal leading-relaxed text-muted-foreground">
                       {{ t("tools.clientConfigGenerator.fields.controlApiAccessToken.description") }}
-                    </p>
-                  </div>
-                  <Switch
-                    id="client-use-control-token"
-                    :model-value="form.useControlApiAccessToken"
-                    @update:model-value="form.useControlApiAccessToken = Boolean($event)"
-                  />
+                    </span>
+                  </Label>
+                  <label for="client-use-control-token" class="flex min-h-11 min-w-11 cursor-pointer items-center justify-center sm:min-h-0 sm:min-w-0">
+                    <Switch
+                      id="client-use-control-token"
+                      :model-value="form.useControlApiAccessToken"
+                      @update:model-value="form.useControlApiAccessToken = Boolean($event)"
+                    />
+                  </label>
                   <Input
                     v-if="form.useControlApiAccessToken"
                     id="client-control-token"
@@ -696,20 +697,20 @@ function removeAllModuleRows() {
                 </div>
 
                 <div class="flex items-start justify-between gap-3 rounded-md bg-muted/25 p-3">
-                  <div class="min-w-0 space-y-1">
-                    <Label for="client-dynamic-routing" class="text-sm">
-                      {{ t("tools.clientConfigGenerator.fields.enableDynamicRouting.label") }}
-                    </Label>
-                    <p class="text-xs leading-relaxed text-muted-foreground">
+                  <Label for="client-dynamic-routing" class="min-w-0 cursor-pointer flex-col items-start gap-1 text-sm">
+                    <span>{{ t("tools.clientConfigGenerator.fields.enableDynamicRouting.label") }}</span>
+                    <span class="text-xs font-normal leading-relaxed text-muted-foreground">
                       {{ t("tools.clientConfigGenerator.fields.enableDynamicRouting.description") }}
-                    </p>
-                  </div>
-                  <Switch
-                    id="client-dynamic-routing"
-                    :model-value="form.enableDynamicRouting"
-                    :disabled="pinnedEndpoint"
-                    @update:model-value="form.enableDynamicRouting = Boolean($event)"
-                  />
+                    </span>
+                  </Label>
+                  <label for="client-dynamic-routing" class="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center sm:min-h-0 sm:min-w-0">
+                    <Switch
+                      id="client-dynamic-routing"
+                      :model-value="form.enableDynamicRouting"
+                      :disabled="pinnedEndpoint"
+                      @update:model-value="form.enableDynamicRouting = Boolean($event)"
+                    />
+                  </label>
                 </div>
 
                 <div
@@ -756,41 +757,42 @@ function removeAllModuleRows() {
                   </div>
 
                   <div class="grid gap-2 sm:grid-cols-3">
-                    <div
+                    <!-- Each tile is one label: the whole card toggles the box on phones. -->
+                    <label
                       v-for="item in toggleItems"
                       :key="item.key"
-                      class="flex min-h-20 items-start gap-2 rounded-md bg-muted/25 px-3 py-2.5"
+                      :for="`client-toggle-${item.key}`"
+                      class="flex min-h-20 cursor-pointer items-start gap-2 rounded-md bg-muted/25 px-3 py-2.5"
                     >
                       <Checkbox
                         :id="`client-toggle-${item.key}`"
+                        class="mt-0.5 size-5 sm:size-4"
                         :model-value="form[item.key]"
                         @update:model-value="updateToggle(item.key, Boolean($event))"
                       />
-                      <div class="grid gap-0.5">
-                        <Label :for="`client-toggle-${item.key}`" class="cursor-pointer text-sm">
-                          {{ item.label }}
-                        </Label>
-                        <p class="text-xs leading-relaxed text-muted-foreground">{{ item.description }}</p>
-                      </div>
-                    </div>
+                      <span class="grid gap-0.5">
+                        <span class="text-sm font-medium leading-none">{{ item.label }}</span>
+                        <span class="text-xs leading-relaxed text-muted-foreground">{{ item.description }}</span>
+                      </span>
+                    </label>
                   </div>
                 </div>
 
                 <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_10rem_10rem]">
                   <div class="flex items-start justify-between gap-3 rounded-md bg-muted/25 p-3">
-                    <div class="min-w-0 space-y-1">
-                      <Label for="client-group-command-limit" class="text-sm">
-                        {{ t("tools.clientConfigGenerator.fields.enableGroupCommandLimit.label") }}
-                      </Label>
-                      <p class="text-xs leading-relaxed text-muted-foreground">
+                    <Label for="client-group-command-limit" class="min-w-0 cursor-pointer flex-col items-start gap-1 text-sm">
+                      <span>{{ t("tools.clientConfigGenerator.fields.enableGroupCommandLimit.label") }}</span>
+                      <span class="text-xs font-normal leading-relaxed text-muted-foreground">
                         {{ t("tools.clientConfigGenerator.fields.enableGroupCommandLimit.description") }}
-                      </p>
-                    </div>
-                    <Switch
-                      id="client-group-command-limit"
-                      :model-value="form.enableGroupCommandLimit"
-                      @update:model-value="form.enableGroupCommandLimit = Boolean($event)"
-                    />
+                      </span>
+                    </Label>
+                    <label for="client-group-command-limit" class="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center sm:min-h-0 sm:min-w-0">
+                      <Switch
+                        id="client-group-command-limit"
+                        :model-value="form.enableGroupCommandLimit"
+                        @update:model-value="form.enableGroupCommandLimit = Boolean($event)"
+                      />
+                    </label>
                   </div>
                   <div class="grid gap-1.5">
                     <Label for="client-hour-limit">

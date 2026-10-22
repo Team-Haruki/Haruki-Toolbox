@@ -23,7 +23,9 @@ import {
   LucideSave,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import FieldError from "@/shared/components/FieldError.vue"
 import AdminWebhookStatusBadge from "./AdminWebhookStatusBadge.vue"
+import { WEBHOOK_JWT_SECRET_FIELD_ID } from "@/modules/admin-webhooks/composables/useAdminWebhookManagement"
 import type { AdminWebhookSettings } from "@/types/admin"
 
 const props = defineProps<{
@@ -32,7 +34,10 @@ const props = defineProps<{
   settingsSaving: boolean
   settings: AdminWebhookSettings
   settingsEnabled: boolean
+  /** False when nothing differs from the saved settings; the save button is then disabled. */
+  settingsDirty: boolean
   jwtSecretInput: string
+  jwtSecretError: string
 }>()
 
 const emit = defineEmits<{
@@ -97,7 +102,7 @@ const { t } = useI18n()
           <AlertDescription>{{ t("adminWebhooks.settings.secretAlertDescription") }}</AlertDescription>
         </Alert>
 
-        <div class="overflow-hidden rounded-lg border divide-y">
+        <form class="overflow-hidden rounded-lg border divide-y" novalidate @submit.prevent="emit('save-settings')">
           <div class="flex items-center justify-between gap-4 p-4">
             <Label for="admin-webhooks-enabled" class="text-sm font-medium cursor-pointer">
               {{ t("adminWebhooks.settings.enableSwitchLabel") }}
@@ -111,28 +116,34 @@ const { t } = useI18n()
           </div>
 
           <div class="space-y-2 p-4">
-            <Label for="admin-webhooks-jwt-secret" class="text-sm font-medium">
+            <Label :for="WEBHOOK_JWT_SECRET_FIELD_ID" class="text-sm font-medium">
               {{ t("adminWebhooks.settings.jwtSecretLabel") }}
             </Label>
             <InputWithToggle
-              id="admin-webhooks-jwt-secret"
+              :id="WEBHOOK_JWT_SECRET_FIELD_ID"
               :model-value="props.jwtSecretInput"
               type="password"
               :placeholder="t('adminWebhooks.settings.jwtSecretPlaceholder')"
               :disabled="!props.canMutate || props.settingsSaving"
+              :aria-invalid="!!props.jwtSecretError || undefined"
+              :aria-describedby="props.jwtSecretError ? `${WEBHOOK_JWT_SECRET_FIELD_ID}-error` : undefined"
               @update:model-value="emit('update:jwtSecretInput', String($event ?? ''))"
             />
+            <FieldError :id="`${WEBHOOK_JWT_SECRET_FIELD_ID}-error`" :message="props.jwtSecretError" />
             <p class="text-xs text-muted-foreground">{{ t("adminWebhooks.settings.jwtSecretHelp") }}</p>
           </div>
-        </div>
 
-        <div v-if="props.canMutate" class="flex justify-end">
-          <Button :disabled="props.settingsSaving" @click="emit('save-settings')">
-            <LucideLoader2 v-if="props.settingsSaving" class="w-4 h-4 mr-2 animate-spin" />
-            <LucideSave v-else class="w-4 h-4 mr-2" />
-            {{ t("common.save") }}
-          </Button>
-        </div>
+          <div v-if="props.canMutate" class="flex items-center justify-end gap-3 p-4">
+            <span v-if="!props.settingsDirty" class="text-xs text-muted-foreground">
+              {{ t("adminWebhooks.settings.noChanges") }}
+            </span>
+            <Button type="submit" :disabled="props.settingsSaving || !props.settingsDirty">
+              <LucideLoader2 v-if="props.settingsSaving" class="w-4 h-4 mr-2 animate-spin" />
+              <LucideSave v-else class="w-4 h-4 mr-2" />
+              {{ t("common.save") }}
+            </Button>
+          </div>
+        </form>
       </template>
     </CardContent>
   </Card>

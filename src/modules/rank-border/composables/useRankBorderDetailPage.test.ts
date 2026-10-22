@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test"
+import { afterEach, beforeAll, expect, test } from "bun:test"
 import { computed, effectScope, ref } from "vue"
 import { createPinia, setActivePinia } from "pinia"
 const previousSessionStorage = globalThis.sessionStorage
@@ -6,6 +6,13 @@ Object.defineProperty(globalThis, "sessionStorage", { configurable: true, value:
 const { useRankBorderDetailPage } = await import("./useRankBorderDetailPage")
 Object.defineProperty(globalThis, "sessionStorage", { configurable: true, value: previousSessionStorage })
 import type { RankBorderDetailParams } from "../lib/detail-link"
+import { i18n, setI18nLocale } from "@/shared/i18n"
+import zhCNCore from "@/shared/i18n/messages/zh-CN/zh-CN-core"
+
+beforeAll(async () => {
+  i18n.global.mergeLocaleMessage("zh-CN", zhCNCore)
+  await setI18nLocale("zh-CN")
+})
 
 const originalFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = originalFetch })
@@ -69,7 +76,14 @@ for (const status of [404, 503]) {
     try {
       await page.refresh(false)
       expect(page.current.value).toBeNull()
-      expect(page.error.value).toBe(status === 404 ? "not_found" : "Service unavailable")
+      if (status === 404) {
+        expect(page.error.value).toBe("not_found")
+        expect(page.errorDetail.value).toBeNull()
+      } else {
+        // The headline stays localized; the tracker's raw text is the detail line.
+        expect(page.error.value).toBe(zhCNCore.core.errors.serverUnavailable.replace("{status}", "503"))
+        expect(page.errorDetail.value).toBe("Service unavailable")
+      }
     } finally {
       scope.stop()
     }

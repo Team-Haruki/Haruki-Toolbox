@@ -1,5 +1,5 @@
 import { computed, onMounted, ref, watch } from "vue"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import {
@@ -13,10 +13,16 @@ import type { Ticket } from "@/types/ticket"
 import type { AdminTicketNotificationRecipient } from "@/types/admin"
 import { useDebouncedWatch } from "@/composables/useDebouncedWatch"
 import { usePagedList } from "@/composables/usePagedList"
+import { useRouteQuerySync } from "@/composables/useRouteQuerySync"
 import { createPageQuery } from "@/core/http/query"
-import { extractErrorMessage } from "@/lib/error-utils"
+import { describeError, extractErrorMessage, type ErrorDescription } from "@/lib/error-utils"
+import { readQueryEnum, readQueryString, writeQueryValue } from "@/lib/query-codec"
+import { ADMIN_DEFAULT_PAGE_SIZE, readAdminPage, readAdminPageSize } from "@/modules/admin/lib/pagination"
 import { useUserStore } from "@/shared/stores/user"
 import {
+  ADMIN_TICKET_PRIORITY_FILTER_VALUES,
+  ADMIN_TICKET_QUICK_FILTER_VALUES,
+  TICKET_STATUS_FILTER_VALUES,
   getAdminTicketQuickFilterOptions,
   getAdminTicketPriorityFilterOptions,
   getTicketStatusFilterOptions,
@@ -25,14 +31,21 @@ import {
   type TicketStatusFilter,
 } from "@/modules/tickets/lib/meta"
 
+const QUERY_KEYS = ["q", "quick", "status", "priority", "page", "size"] as const
+
 export function useAdminTicketList() {
   const { t } = useI18n()
+  const route = useRoute()
   const router = useRouter()
   const userStore = useUserStore()
-  const search = ref("")
-  const quickFilter = ref<AdminTicketQuickFilter>("all")
-  const statusFilter = ref<TicketStatusFilter>("all")
-  const priorityFilter = ref<TicketPriorityFilter>("all")
+  const search = ref(readQueryString(route.query.q) ?? "")
+  const quickFilter = ref<AdminTicketQuickFilter>(readQueryEnum(route.query.quick, ADMIN_TICKET_QUICK_FILTER_VALUES) ?? "all")
+  const statusFilter = ref<TicketStatusFilter>(readQueryEnum(route.query.status, TICKET_STATUS_FILTER_VALUES) ?? "all")
+  const priorityFilter = ref<TicketPriorityFilter>(readQueryEnum(route.query.priority, ADMIN_TICKET_PRIORITY_FILTER_VALUES) ?? "all")
+  // The search the list was last loaded with: an Enter-triggered load must not
+  // be repeated by the debounce that follows it.
+  let loadedSearch = search.value.trim()
+  const loadError = ref<ErrorDescription | null>(null)
   const ticketNotificationsEnabled = ref(false)
   const ticketNotificationsLoading = ref(false)
   const ticketNotificationsSaving = ref(false)
@@ -45,48 +58,86 @@ export function useAdminTicketList() {
   const statusOptions = computed(() => getTicketStatusFilterOptions(t))
   const priorityOptions = computed(() => getAdminTicketPriorityFilterOptions(t))
   const isSuperAdmin = computed(() => userStore.isSuperAdmin)
+  const hasActiveFilters = computed(() =>
+    search.value.trim() !== "" || quickFilter.value !== "all" || statusFilter.value !== "all" || priorityFilter.value !== "all"
+  )
   const {
     loading,
     items: tickets,
     page,
+    pageSize,
     total,
     totalPages,
     resetPage,
     load: loadTickets,
     prevPage,
     nextPage,
+    goToPage,
   } = usePagedList<Ticket>({
-    initialPage: 1,
-    initialPageSize: 20,
+    initialPage: readAdminPage(route.query.page),
+    initialPageSize: readAdminPageSize(route.query.size),
     fetchPage: async ({ page, pageSize }) => {
       const params = createPageQuery(page, pageSize)
       const keyword = search.value.trim()
+      loadedSearch = keyword
       if (keyword) params.q = keyword
       if (quickFilter.value !== "all") params.quick_filter = quickFilter.value
       if (statusFilter.value !== "all") params.status = statusFilter.value
       if (priorityFilter.value !== "all") params.priority = priorityFilter.value
       return getAdminTickets(params)
     },
+    onBeforeLoad: () => {
+      loadError.value = null
+    },
     onError: (error) => {
-      toast.error(t("tickets.adminList.toast.loadFailedTitle"), {
-        description: extractErrorMessage(error, t("tickets.adminList.toast.loadFailedFallback")),
-      })
+      loadError.value = describeError(error, t("tickets.adminList.toast.loadFailedFallback"))
     },
   })
+
+  function reloadFromFirstPage() {
+    resetPage()
+    void loadTickets()
+  }
+
+  /** Enter in the search box: query now instead of waiting for the debounce. */
+  function applySearch() {
+    reloadFromFirstPage()
+  }
+
+  function resetFilters() {
+    const selectsChanged = quickFilter.value !== "all" || statusFilter.value !== "all" || priorityFilter.value !== "all"
+    search.value = ""
+    quickFilter.value = "all"
+    statusFilter.value = "all"
+    priorityFilter.value = "all"
+    // A changed select reloads through its watcher (one batched run); otherwise
+    // reload now so clearing the search does not wait for the debounce.
+    if (!selectsChanged) {
+      reloadFromFirstPage()
+    }
+  }
 
   useDebouncedWatch(
     search,
     () => {
-      resetPage()
-      void loadTickets()
+      if (search.value.trim() === loadedSearch) return
+      reloadFromFirstPage()
     },
     400
   )
 
-  watch([quickFilter, statusFilter, priorityFilter], () => {
-    resetPage()
-    void loadTickets()
+  watch([quickFilter, statusFilter, priorityFilter, pageSize], () => {
+    reloadFromFirstPage()
   })
+
+  useRouteQuerySync(QUERY_KEYS, () => ({
+    q: writeQueryValue(search.value.trim()),
+    quick: writeQueryValue(quickFilter.value, "all"),
+    status: writeQueryValue(statusFilter.value, "all"),
+    priority: writeQueryValue(priorityFilter.value, "all"),
+    page: writeQueryValue(page.value, 1),
+    size: writeQueryValue(pageSize.value, ADMIN_DEFAULT_PAGE_SIZE),
+  }))
 
   function syncTicketNotificationRecipient(userId: string, enabled: boolean) {
     ticketNotificationRecipients.value = ticketNotificationRecipients.value.map((item) =>
@@ -221,14 +272,17 @@ export function useAdminTicketList() {
   return {
     isSuperAdmin,
     loading,
+    loadError,
     tickets,
     page,
+    pageSize,
     total,
     totalPages,
     search,
     quickFilter,
     statusFilter,
     priorityFilter,
+    hasActiveFilters,
     ticketNotificationsEnabled,
     ticketNotificationsLoading,
     ticketNotificationsSaving,
@@ -244,8 +298,11 @@ export function useAdminTicketList() {
     refreshTicketNotificationRecipients,
     setTicketNotificationRecipientEnabled,
     refreshTickets,
+    applySearch,
+    resetFilters,
     prevPage,
     nextPage,
+    goToPage,
     openTicket,
   }
 }

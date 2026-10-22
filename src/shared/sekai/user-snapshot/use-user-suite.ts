@@ -34,13 +34,21 @@ export type UseGameAccountSelectionResult = {
 
 export type UserSuiteStatus = "idle" | "loading" | "ready" | "error"
 
+/** What a `reload` found, so callers can tell the user "already up to date" vs "updated to …". */
+export type UserSuiteReloadResult = {
+  status: UserSuiteStatus
+  /** True when the server returned a newer snapshot than the one on screen. */
+  changed: boolean
+  uploadTime: number | null
+}
+
 export type UseUserSuiteResult = {
   status: Ref<UserSuiteStatus>
   data: Ref<Record<string, unknown> | null>
   uploadTime: Ref<number | null>
   cacheHit: Ref<boolean>
   error: Ref<unknown>
-  reload: (strategy?: UserSuiteFetchStrategy) => Promise<void>
+  reload: (strategy?: UserSuiteFetchStrategy) => Promise<UserSuiteReloadResult>
 }
 
 
@@ -146,7 +154,11 @@ export function useUserSuite(
 
   let generation = 0
 
-  async function load(strategy: UserSuiteFetchStrategy, options: { silent?: boolean } = {}): Promise<void> {
+  function snapshot(changed = false): UserSuiteReloadResult {
+    return { status: status.value, changed, uploadTime: uploadTime.value }
+  }
+
+  async function load(strategy: UserSuiteFetchStrategy, options: { silent?: boolean } = {}): Promise<UserSuiteReloadResult> {
     const toolboxUserId = userId.value
     const target = account.value
     if (!toolboxUserId || !target) {
@@ -156,13 +168,14 @@ export function useUserSuite(
       uploadTime.value = null
       cacheHit.value = false
       error.value = null
-      return
+      return snapshot()
     }
 
     // A silent load revalidates behind already-rendered data: no loading
     // state, and failures keep the (stale) data on screen.
     const silent = options.silent === true && status.value === "ready" && data.value != null
     const currentGeneration = ++generation
+    const previousUploadTime = status.value === "ready" ? uploadTime.value : null
     if (!silent) {
       status.value = "loading"
       error.value = null
@@ -178,7 +191,7 @@ export function useUserSuite(
         { strategy },
       )
       if (currentGeneration !== generation) {
-        return
+        return snapshot()
       }
 
       // Skip the data swap when a revalidation confirmed the rendered
@@ -195,9 +208,13 @@ export function useUserSuite(
       cacheHit.value = result.cacheHit
       status.value = "ready"
       error.value = null
+      // Newer data than what was on screen: a fresh download, a cache
+      // revalidation that moved the upload time, or a recovery from an error.
+      const changed = !result.cacheHit || result.remoteUploadTime !== previousUploadTime
+      return snapshot(changed)
     } catch (loadError) {
       if (currentGeneration !== generation || silent) {
-        return
+        return snapshot()
       }
 
       // A 403 on a granted account means the grant lapsed after it was
@@ -217,6 +234,7 @@ export function useUserSuite(
 
       error.value = loadError
       status.value = "error"
+      return snapshot()
     }
   }
 

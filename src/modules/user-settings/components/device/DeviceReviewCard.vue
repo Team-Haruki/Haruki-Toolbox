@@ -158,7 +158,14 @@ const RISK_BADGE: Record<DeviceScopeRisk, "muted" | "amber" | "sky" | "destructi
           <span class="text-muted-foreground">{{ t("oauth.device.review.account") }}</span>
           <strong class="truncate" data-testid="device-account">{{ accountName }}</strong>
         </span>
-        <Button variant="link" size="sm" class="h-auto p-0" :disabled="busy" @click="emit('switchAccount')">
+        <!-- Touch target of at least 44px tall on phones; inline on wider screens. -->
+        <Button
+          variant="link"
+          size="sm"
+          class="h-auto min-h-11 shrink-0 px-2 py-1 sm:min-h-0 sm:p-0"
+          :disabled="busy"
+          @click="emit('switchAccount')"
+        >
           {{ t("oauth.device.review.switchAccount") }}
         </Button>
       </div>
@@ -196,8 +203,9 @@ const RISK_BADGE: Record<DeviceScopeRisk, "muted" | "amber" | "sky" | "destructi
         data-testid="device-ack"
         :data-highlighted="ackHighlighted ? 'true' : undefined"
       >
-        <Checkbox :id="ACK_ID" v-model="acknowledged" class="mt-0.5" :disabled="busy" />
-        <Label :for="ACK_ID" class="leading-snug font-normal">{{ t("oauth.device.review.acknowledge") }}</Label>
+        <!-- The label is the touch target: the whole row toggles the box on phones. -->
+        <Checkbox :id="ACK_ID" v-model="acknowledged" class="mt-0.5 size-5 sm:size-4" :disabled="busy" />
+        <Label :for="ACK_ID" class="min-h-6 flex-1 cursor-pointer py-0.5 leading-snug font-normal">{{ t("oauth.device.review.acknowledge") }}</Label>
       </div>
 
       <p v-if="errorText" role="alert" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">

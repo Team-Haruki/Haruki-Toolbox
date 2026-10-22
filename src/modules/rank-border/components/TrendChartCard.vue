@@ -56,7 +56,10 @@ function pointStyle(point: RankBorderChartPoint) {
     <div class="mb-1.5 flex items-center justify-between gap-2">
       <p class="text-sm font-medium">{{ title }}</p>
       <span class="inline-flex items-center gap-1.5">
-        <span class="text-xs text-muted-foreground">{{ unitLabel }}</span>
+        <!-- Axis ticks and tooltips are in the viewer's local time zone; say so. -->
+        <span class="text-xs text-muted-foreground" :title="t('rankBorder.result.localTimeHint')">
+          {{ unitLabel }} · {{ t("rankBorder.result.localTime") }}
+        </span>
         <Button
           v-if="expandable"
           type="button"

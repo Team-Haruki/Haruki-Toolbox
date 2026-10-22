@@ -4,6 +4,7 @@ import type { QueryParams } from "@/core/http/query"
 import { translate } from "@/shared/i18n"
 import {
     type UnknownRecord,
+    asRecord,
     readBoolean,
     readOptionalString,
     readString,
@@ -12,6 +13,7 @@ import {
 import type {
     OAuthClient,
     OAuthClientStatistics,
+    OAuthClientTrendPoint,
     OAuthClientAuthorization,
     OAuthAuditLog,
     OAuthClientWebhookCreatePayload,
@@ -51,14 +53,44 @@ function readNumber(record: UnknownRecord, keys: readonly string[], fallback = 0
     return fallback
 }
 
-function normalizeOAuthClientStatistics(record: UnknownRecord): OAuthClientStatistics {
+function normalizeOAuthClientTrendPoint(value: unknown): OAuthClientTrendPoint | null {
+    const record = asRecord(value)
+    if (!record) return null
+    const bucketStart = readOptionalString(record, ["bucketStart", "bucket_start"])
+    if (!bucketStart) return null
     return {
-        totalAuthorizations: readNumber(record, ["totalAuthorizations", "total_authorizations"]),
-        activeAuthorizations: readNumber(record, ["activeAuthorizations", "active_authorizations"]),
-        last30DaysAuthorizations: readNumber(record, [
-            "last30DaysAuthorizations",
-            "last_30_days_authorizations",
-        ]),
+        bucketStart,
+        authorizationCreated: readNumber(record, ["authorizationCreated", "authorization_created"]),
+        tokenIssued: readNumber(record, ["tokenIssued", "token_issued"]),
+    }
+}
+
+/**
+ * The statistics endpoint answers with a `summary` of counters and a `trend`
+ * of per-bucket points (see adminoauth `adminOAuthClientStatisticsResponse`).
+ * Older payloads carried the first two counters at the top level; those are
+ * read as a fallback so the tiles never show zeros for a known client.
+ */
+function normalizeOAuthClientStatistics(record: UnknownRecord): OAuthClientStatistics {
+    const summary = asRecord(record.summary) ?? {}
+    const trend = Array.isArray(record.trend)
+        ? record.trend.map(normalizeOAuthClientTrendPoint).filter((point): point is OAuthClientTrendPoint => point !== null)
+        : []
+    return {
+        from: readOptionalString(record, ["from"]),
+        to: readOptionalString(record, ["to"]),
+        bucket: readOptionalString(record, ["bucket"]) === "day" ? "day" : "hour",
+        summary: {
+            authorizationTotal: readNumber(summary, ["authorizationTotal"], readNumber(record, ["totalAuthorizations", "total_authorizations"])),
+            authorizationActive: readNumber(summary, ["authorizationActive"], readNumber(record, ["activeAuthorizations", "active_authorizations"])),
+            authorizationRevoked: readNumber(summary, ["authorizationRevoked"]),
+            authorizationCreatedInRange: readNumber(summary, ["authorizationCreatedInRange"]),
+            tokenTotal: readNumber(summary, ["tokenTotal"]),
+            tokenActive: readNumber(summary, ["tokenActive"]),
+            tokenRevoked: readNumber(summary, ["tokenRevoked"]),
+            tokenIssuedInRange: readNumber(summary, ["tokenIssuedInRange"]),
+        },
+        trend,
     }
 }
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
+import { useScrollEdges } from "@/composables/useScrollEdges"
 import { formatNumberCN } from "@/lib/number-format"
 import { getI18nLocale } from "@/shared/i18n"
 import { buildRankBorderTraceHeatmapBuckets } from "../lib/rank-border"
@@ -279,6 +280,11 @@ function mixHeatmapColor(
   const b = Math.round(from.b + (to.b - from.b) * clamped)
   return `rgb(${r} ${g} ${b})`
 }
+
+// The update log is wider than a phone; header and rows scroll together
+// and the fade marks the hidden side.
+const updateLogScroller = ref<HTMLElement | null>(null)
+const { edgeClass: updateLogEdgeClass } = useScrollEdges(updateLogScroller)
 </script>
 
 <template>
@@ -341,23 +347,28 @@ function mixHeatmapColor(
         <h3 class="text-sm font-semibold">{{ t("rankBorder.result.updateLog") }}</h3>
         <span class="text-xs text-muted-foreground">{{ scopeLabel }}</span>
       </div>
-      <div class="rank-border-update-log">
-        <div class="rank-border-update-log__header">
-          <span>{{ t("rankBorder.table.hourPoint") }}</span>
-          <span>{{ t("rankBorder.table.rank") }}</span>
-          <span>{{ t("rankBorder.table.growth") }}</span>
-          <span>{{ t("rankBorder.table.pt") }}</span>
-        </div>
-        <div class="rank-border-update-log__rows">
-          <div
-            v-for="record in updateRecords"
-            :key="record.key"
-            class="rank-border-update-log__row"
-          >
-            <span>{{ record.time }}</span>
-            <span>{{ record.rank }}</span>
-            <span>{{ record.growth }}</span>
-            <span>{{ record.score }}</span>
+      <!-- Wider than a phone: the whole table (header included) scrolls sideways, with an edge fade. -->
+      <div :class="['relative min-w-0', updateLogEdgeClass]">
+        <div ref="updateLogScroller" class="rank-border-update-log">
+          <div class="rank-border-update-log__table">
+            <div class="rank-border-update-log__header">
+              <span>{{ t("rankBorder.table.hourPoint") }}</span>
+              <span>{{ t("rankBorder.table.rank") }}</span>
+              <span>{{ t("rankBorder.table.growth") }}</span>
+              <span>{{ t("rankBorder.table.pt") }}</span>
+            </div>
+            <div class="rank-border-update-log__rows">
+              <div
+                v-for="record in updateRecords"
+                :key="record.key"
+                class="rank-border-update-log__row"
+              >
+                <span>{{ record.time }}</span>
+                <span>{{ record.rank }}</span>
+                <span>{{ record.growth }}</span>
+                <span>{{ record.score }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -567,17 +578,25 @@ function mixHeatmapColor(
 }
 
 .rank-border-update-log {
-  display: grid;
   align-self: stretch;
   max-height: 24rem;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid var(--border);
   border-radius: 0.375rem;
   background: color-mix(in oklab, var(--background) 74%, transparent);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
+}
+
+/* The column track sum; narrower screens scroll the whole table sideways. */
+.rank-border-update-log__table {
+  display: grid;
+  min-width: 23rem;
+  max-height: 24rem;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .rank-border-update-log__header,

@@ -38,6 +38,8 @@ const {
   submitting,
   categories,
   priorities,
+  fieldErrors,
+  clearFieldError,
   handleSubmit,
   goBackToTicketList,
 } = useTicketCreate()
@@ -58,8 +60,16 @@ const {
         <!-- Subject -->
         <div class="flex flex-col gap-2">
           <Label for="subject">{{ t("tickets.create.fields.subject") }}</Label>
-          <Input id="subject" v-model="subject" :placeholder="t('tickets.create.fields.subjectPlaceholder')" />
-          <p class="text-xs text-muted-foreground">{{ t("tickets.create.fields.subjectHint") }}</p>
+          <Input
+            id="subject"
+            v-model="subject"
+            :placeholder="t('tickets.create.fields.subjectPlaceholder')"
+            :aria-invalid="fieldErrors.subject ? 'true' : undefined"
+            :aria-describedby="fieldErrors.subject ? 'subject-error' : 'subject-hint'"
+            @input="clearFieldError('subject')"
+          />
+          <p v-if="fieldErrors.subject" id="subject-error" role="alert" class="text-xs text-destructive">{{ fieldErrors.subject }}</p>
+          <p v-else id="subject-hint" class="text-xs text-muted-foreground">{{ t("tickets.create.fields.subjectHint") }}</p>
         </div>
 
         <!-- Category and priority -->
@@ -105,9 +115,16 @@ const {
             v-model="message"
             :placeholder="t('tickets.create.fields.messagePlaceholder')"
             rows="6"
-            class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+            :aria-invalid="fieldErrors.message ? 'true' : undefined"
+            :aria-describedby="fieldErrors.message ? 'message-error' : 'message-hint'"
+            :class="[
+              'flex w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y',
+              fieldErrors.message ? 'border-destructive' : 'border-input',
+            ]"
+            @input="clearFieldError('message')"
           />
-          <p class="text-xs text-muted-foreground">{{ t("tickets.create.fields.messageHint") }}</p>
+          <p v-if="fieldErrors.message" id="message-error" role="alert" class="text-xs text-destructive">{{ fieldErrors.message }}</p>
+          <p v-else id="message-hint" class="text-xs text-muted-foreground">{{ t("tickets.create.fields.messageHint") }}</p>
         </div>
 
         <!-- Submit -->

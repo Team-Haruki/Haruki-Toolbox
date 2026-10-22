@@ -179,7 +179,7 @@ export default {
       "title": "Ranking rewards",
       "rangeCount": "{count} rank ranges",
       "empty": "No ranking reward data for this event.",
-      "unavailable": "Reward details are unavailable on this server; only the rank ranges are shown.",
+      "unavailable": "This server does not provide reward details yet; only the rank ranges are shown.",
       "rank": "Rank {rank}",
       "rankRange": "Rank {from}–{to}",
       "border": "Border",
@@ -242,6 +242,7 @@ export default {
     },
     "detail": {
       "pickupCards": "Pickup characters' cards",
+      "permanentHint": "Permanent gacha with no end date.",
       "lightbox": {
         "banner": "Banner",
         "logo": "Logo"
@@ -300,7 +301,7 @@ export default {
       "convertAt": "Converts to the generic sticker from {time}",
       "exchange": "Sticker exchange",
       "exchangeEmpty": "No exchange data for this gacha on the current server",
-      "rewardsUnavailable": "Reward details are not available on the current server; only box ids are shown.",
+      "rewardsUnavailable": "This server does not provide reward details yet; only the reward box ids are shown.",
       "reward": "Reward",
       "cost": "Stickers",
       "limit": "Limit",
@@ -352,7 +353,8 @@ export default {
       "appendOnly": "Only songs with an APPEND chart",
       "mvType": "MV type",
       "scope": "Relation",
-      "scopeHint": "Pick a character to narrow down by box song / vocal"
+      "scopeHint": "Pick a character to narrow down to their box (event) songs or vocals",
+      "aliasUnavailable": "Alias search is temporarily unavailable; only titles are matched."
     },
     "detail": {
       "jacket": "Jacket",

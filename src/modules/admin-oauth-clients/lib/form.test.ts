@@ -75,6 +75,7 @@ describe("admin oauth form helpers", () => {
   test("validateClientPayload validates required fields", () => {
     expect(errorCodeOf(validateClientPayload(params({ clientId: "", name: "", scopes: [], redirectUris: [] }))))
       .toBe("clientIdAndNameRequired")
+    expect(errorCodeOf(validateClientPayload(params({ clientId: " " })))).toBe("clientIdRequired")
     expect(errorCodeOf(validateClientPayload(params({ clientId: undefined, name: " " })))).toBe("nameRequired")
     expect(errorCodeOf(validateClientPayload(params({ scopes: [] })))).toBe("scopeRequired")
 
@@ -168,6 +169,59 @@ describe("grant type rules", () => {
       .toBe("deviceRequiresUserRead")
     // Without the device grant user:read is optional.
     expect(errorCodeOf(validateClientPayload(params({ scopes: ["game-data:read"] })))).toBeNull()
+  })
+})
+
+describe("inline field mapping", () => {
+  function fieldOf(result: ReturnType<typeof validateClientPayload>) {
+    return "field" in result ? result.field : null
+  }
+
+  test("required-field errors point at the field to fill in, before any rule", () => {
+    expect(fieldOf(validateClientPayload(params({ clientId: "", name: "" })))).toBe("clientId")
+    expect(fieldOf(validateClientPayload(params({ name: "" })))).toBe("name")
+    // Name is missing and the device client lacks user:read: the name comes first.
+    expect(errorCodeOf(validateClientPayload(deviceParams({ name: "", scopes: ["station:room:write"] }))))
+      .toBe("nameRequired")
+  })
+
+  test("rule errors point at the related control", () => {
+    expect(fieldOf(validateClientPayload(params({ grantTypes: [] })))).toBe("grantTypes")
+    expect(fieldOf(validateClientPayload(params({ redirectUris: [""] })))).toBe("redirectUris")
+    expect(fieldOf(validateClientPayload(params({ scopes: ["profile"] })))).toBe("scopes")
+    expect(fieldOf(validateClientPayload(deviceParams({ postLogoutRedirectUris: ["https://a.com/bye"] }))))
+      .toBe("postLogoutRedirectUris")
+    expect(fieldOf(validateClientPayload(deviceParams({
+      clientType: "confidential",
+      scopes: ["user:read", "game-data:write"],
+      devicePolicy: { ...DEFAULT_DEVICE_POLICY, allowWrite: true },
+    })))).toBe("deviceAllowWrite")
+    expect(fieldOf(validateClientPayload(deviceParams({ devicePolicy: { ...DEFAULT_DEVICE_POLICY, maxCodesPer10m: 0 } }))))
+      .toBe("deviceMaxCodes")
+  })
+
+  test("an unchanged registration of an existing client is not re-judged", () => {
+    const registered = { scopes: ["station:room:write"], grantTypes: [GRANT_TYPE_DEVICE_CODE] }
+    // Saved as is (e.g. only the name changed): passes although it lacks user:read.
+    expect(errorCodeOf(validateClientPayload(deviceParams({
+      ...registered,
+      initialScopes: registered.scopes,
+      initialGrantTypes: registered.grantTypes,
+    })))).toBeNull()
+    // Touching the scopes re-applies the rule.
+    expect(errorCodeOf(validateClientPayload(deviceParams({
+      scopes: ["station:room:write", "bindings:read"],
+      grantTypes: registered.grantTypes,
+      initialScopes: registered.scopes,
+      initialGrantTypes: registered.grantTypes,
+    })))).toBe("deviceRequiresUserRead")
+    // Touching the grant types does too.
+    expect(errorCodeOf(validateClientPayload(deviceParams({
+      scopes: registered.scopes,
+      grantTypes: [GRANT_TYPE_DEVICE_CODE, GRANT_TYPE_REFRESH_TOKEN],
+      initialScopes: registered.scopes,
+      initialGrantTypes: registered.grantTypes,
+    })))).toBe("deviceRequiresUserRead")
   })
 })
 

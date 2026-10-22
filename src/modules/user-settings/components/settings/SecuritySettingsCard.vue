@@ -2,8 +2,6 @@
 import { useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import type { Component } from "vue"
-import { redirectToKratosBrowserFlow } from "@/modules/auth/lib/kratos"
-import { resolveSettingsReturnTo } from "@/modules/user-settings/lib/settings-return"
 import {
   Card,
   CardTitle,
@@ -24,10 +22,11 @@ type SecurityRow = {
   onClick: () => void
 }
 
-function openKratosSection(section: string) {
-  redirectToKratosBrowserFlow("settings", {
-    returnTo: resolveSettingsReturnTo(section),
-  })
+// The identity-settings pages show an interstitial ("taking you to the
+// identity service…") and probe the host before leaving the toolbox, so the
+// rows navigate there instead of assigning location themselves.
+function openIdentitySection(routeName: string) {
+  void router.push({ name: routeName })
 }
 
 const rows: SecurityRow[] = [
@@ -36,21 +35,21 @@ const rows: SecurityRow[] = [
     icon: KeyRound,
     titleKey: "userSettings.password.title",
     descriptionKey: "userSettings.password.kratosManagedDescription",
-    onClick: () => openKratosSection("password"),
+    onClick: () => openIdentitySection("user.identityPasswordSettings"),
   },
   {
     key: "mfa",
     icon: ShieldCheck,
     titleKey: "userSettings.mfa.title",
     descriptionKey: "userSettings.mfa.description",
-    onClick: () => openKratosSection("mfa"),
+    onClick: () => openIdentitySection("user.identityMfaSettings"),
   },
   {
     key: "social",
     icon: Link2,
     titleKey: "userSettings.social.title",
     descriptionKey: "userSettings.social.description",
-    onClick: () => openKratosSection("oidc"),
+    onClick: () => openIdentitySection("user.identitySocialSettings"),
   },
   {
     key: "sessions",

@@ -20,6 +20,7 @@ import {
   LucideChevronLeft,
   LucideChevronRight,
 } from "lucide-vue-next"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import {
   ticketPriorityBadgeClass,
   ticketPriorityIcon,
@@ -39,11 +40,12 @@ function formatTicketDate(iso?: string) {
 }
 
 function formatCategory(category: string) {
-  return isTicketCategory(category) ? ticketCategoryLabel(category, t) : category
+  return isTicketCategory(category) ? ticketCategoryLabel(category, t) : t("tickets.common.unknownValue")
 }
 
 const {
   loading,
+  loadError,
   tickets,
   total,
   page,
@@ -53,6 +55,7 @@ const {
   statusOptions,
   prevPage,
   nextPage,
+  reload,
   openCreateTicket,
   openTicketDetail,
 } = useTicketList()
@@ -96,6 +99,17 @@ function handleTicketCardKeydown(event: KeyboardEvent, ticketId: string) {
     <template v-if="loading">
       <Skeleton v-for="i in 3" :key="i" class="h-24 w-full" />
     </template>
+    <Card v-else-if="loadError">
+      <CardContent>
+        <LoadErrorState
+          :title="t('tickets.list.toast.loadFailedTitle')"
+          :description="loadError.message"
+          :detail="loadError.detail"
+          :retrying="loading"
+          @retry="reload"
+        />
+      </CardContent>
+    </Card>
     <template v-else-if="tickets.length > 0">
       <Card
         v-for="ticket in tickets"
@@ -139,23 +153,37 @@ function handleTicketCardKeydown(event: KeyboardEvent, ticketId: string) {
     <template v-else>
       <Card>
         <CardContent class="py-12 text-center text-muted-foreground">
-          {{ t("tickets.list.empty") }}
+          {{ statusFilter === "all" ? t("tickets.list.empty") : t("tickets.list.emptyFiltered") }}
         </CardContent>
       </Card>
     </template>
 
     <!-- Pagination -->
-    <div v-if="total > pageSize" class="flex items-center justify-between px-2">
+    <nav v-if="total > pageSize" class="flex items-center justify-between px-2" :aria-label="t('tickets.list.pagination.label')">
       <span class="text-sm text-muted-foreground">{{ t("tickets.list.total", { total }) }}</span>
       <div class="flex items-center gap-2">
-        <Button variant="outline" size="sm" :disabled="page <= 1" @click="prevPage">
-          <LucideChevronLeft class="w-4 h-4" />
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="page <= 1"
+          :aria-label="t('tickets.list.pagination.prevPage')"
+          :title="t('tickets.list.pagination.prevPage')"
+          @click="prevPage"
+        >
+          <LucideChevronLeft class="w-4 h-4" aria-hidden="true" />
         </Button>
-        <span class="text-sm tabular-nums">{{ page }} / {{ totalPages }}</span>
-        <Button variant="outline" size="sm" :disabled="page >= totalPages" @click="nextPage">
-          <LucideChevronRight class="w-4 h-4" />
+        <span class="text-sm tabular-nums" aria-live="polite">{{ page }} / {{ totalPages }}</span>
+        <Button
+          variant="outline"
+          size="sm"
+          :disabled="page >= totalPages"
+          :aria-label="t('tickets.list.pagination.nextPage')"
+          :title="t('tickets.list.pagination.nextPage')"
+          @click="nextPage"
+        >
+          <LucideChevronRight class="w-4 h-4" aria-hidden="true" />
         </Button>
       </div>
-    </div>
+    </nav>
   </div>
 </template>

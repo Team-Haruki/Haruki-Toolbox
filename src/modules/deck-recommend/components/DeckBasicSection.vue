@@ -2,6 +2,7 @@
 import { computed } from "vue"
 import { LucideInfo, LucideSettings2 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import { RouterLink } from "vue-router"
 import type { AcceptableValue } from "reka-ui"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -154,6 +155,9 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
           </Select>
           <p v-if="accountOptions.length === 0" class="text-xs text-muted-foreground">
             {{ t("deckRecommend.form.noAccount") }}
+            <RouterLink :to="{ name: 'user.gameAccountBindings' }" class="text-primary underline-offset-4 hover:underline">
+              {{ t("deckRecommend.form.bindAccount") }}
+            </RouterLink>
           </p>
         </div>
 
@@ -289,6 +293,7 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
                 {{ option.label }}
               </ToggleGroupItem>
             </ToggleGroup>
+            <p class="text-xs text-muted-foreground">{{ t("deckRecommend.form.algorithmDefaultHint") }}</p>
           </div>
 
         </div>

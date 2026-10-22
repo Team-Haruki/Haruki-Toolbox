@@ -1,9 +1,9 @@
 import { computed, onMounted, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { toast } from "vue-sonner"
 import { runAsyncAction } from "@/composables/useAsyncAction"
 import { formatLocalizedDateTime } from "@/lib/date-time"
-import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
+import { describeError, type ErrorDescription } from "@/lib/error-utils"
+import { focusInvalidField } from "@/lib/form-focus"
 import {
   addAdminSponsorManualDuration,
   createAdminSponsor,
@@ -16,11 +16,10 @@ import {
 } from "@/modules/admin-sponsors/api/sponsors"
 import {
   emptyManualDurationForm,
-  fromDateTimeLocalValue,
   manualDurationFormFromEntry,
   manualDurationPayload,
-  toDateTimeLocalValue,
   type ManualDurationForm,
+  type ManualDurationFormError,
 } from "@/modules/admin-sponsors/lib/manual-duration"
 import type {
   AdminManualDuration,
@@ -36,7 +35,7 @@ type SponsorForm = {
   message: string
   source: string
   afdianSyncDisabled: boolean
-  paidAt: string
+  paidAt?: Date
 }
 
 type CreateSponsorForm = {
@@ -44,6 +43,21 @@ type CreateSponsorForm = {
   avatar: string
   planName: string
   message: string
+}
+
+export const SPONSOR_FIELD_IDS = {
+  editName: "admin-sponsor-name",
+  createName: "admin-sponsor-create-name",
+  manualAmount: "admin-sponsor-manual-amount",
+  manualNote: "admin-sponsor-manual-note",
+} as const
+
+export type ManualDurationFormErrors = Partial<Record<ManualDurationFormError, string>>
+
+function parseDate(value: string): Date | undefined {
+  if (!value) return undefined
+  const date = new Date(value)
+  return Number.isNaN(date.valueOf()) ? undefined : date
 }
 
 function formFromSponsor(sponsor: AdminSponsorProfile): SponsorForm {
@@ -54,7 +68,7 @@ function formFromSponsor(sponsor: AdminSponsorProfile): SponsorForm {
     message: sponsor.message,
     source: sponsor.source,
     afdianSyncDisabled: sponsor.afdianSyncDisabled,
-    paidAt: toDateTimeLocalValue(sponsor.paidAt),
+    paidAt: parseDate(sponsor.paidAt),
   }
 }
 
@@ -66,7 +80,7 @@ function createPayload(form: SponsorForm): AdminSponsorUpdatePayload {
     message: form.message.trim(),
     source: form.source.trim(),
     afdianSyncDisabled: form.afdianSyncDisabled,
-    paidAt: fromDateTimeLocalValue(form.paidAt),
+    paidAt: form.paidAt ? form.paidAt.toISOString() : "",
   }
 }
 
@@ -78,9 +92,11 @@ export function useAdminSponsorManagement() {
   const { t } = useI18n()
 
   const loading = ref(true)
+  const loadError = ref<ErrorDescription | null>(null)
   const refreshing = ref(false)
   const saving = ref(false)
   const syncing = ref(false)
+  const syncConfirmOpen = ref(false)
   const togglingIds = ref<Set<string>>(new Set())
   const sponsors = ref<AdminSponsorProfile[]>([])
   const generatedAt = ref("")
@@ -95,20 +111,32 @@ export function useAdminSponsorManagement() {
     message: "",
     source: "",
     afdianSyncDisabled: false,
-    paidAt: "",
+    paidAt: undefined,
   })
+  const editNameError = ref("")
 
   const detail = ref<AdminSponsorDetail | null>(null)
   const detailLoading = ref(false)
-  const manualFormOpen = ref(false)
+  const detailError = ref<ErrorDescription | null>(null)
+
+  // The manual-duration editor is its own dialog with its own submit, so it
+  // never shares buttons with the profile form around it.
+  const manualDialogOpen = ref(false)
   const editingEntryId = ref<number | null>(null)
   const manualForm = ref<ManualDurationForm>(emptyManualDurationForm())
+  const manualErrors = ref<ManualDurationFormErrors>({})
   const manualSaving = ref(false)
   const deletingEntry = ref(false)
+
+  // The row switch confirms before it PUTs: turning sync off detaches the
+  // profile from Afdian, turning it on lets the next sync overwrite edits.
+  const afdianToggleConfirmOpen = ref(false)
+  const afdianToggleTarget = ref<{ sponsor: AdminSponsorProfile; disabled: boolean } | null>(null)
 
   const createOpen = ref(false)
   const creating = ref(false)
   const createForm = ref<CreateSponsorForm>(emptyCreateForm())
+  const createNameError = ref("")
 
   const activeCount = computed(() => sponsors.value.filter((sponsor) => sponsor.category === "current").length)
   const manualProfileCount = computed(() => sponsors.value.filter((sponsor) => sponsor.afdianSyncDisabled).length)
@@ -134,17 +162,19 @@ export function useAdminSponsorManagement() {
   async function loadSponsors(options: { silent?: boolean } = {}) {
     const targetLoading = options.silent ? refreshing : loading
     targetLoading.value = true
+    if (!options.silent) {
+      loadError.value = null
+    }
     try {
       const response = await listAdminSponsors()
       sponsors.value = response.items
       generatedAt.value = response.generatedAt
       total.value = response.total
+      loadError.value = null
     } catch (error: unknown) {
-      toastErrorWithExtractedMessage(
-        t("adminSponsors.toast.loadFailedTitle"),
-        error,
-        t("adminSponsors.toast.actionFailedFallback")
-      )
+      // Shown inline in place of the list: an empty table with a "sync" call
+      // to action would read as "no sponsors yet".
+      loadError.value = describeError(error, t("adminSponsors.toast.actionFailedFallback"))
     } finally {
       targetLoading.value = false
     }
@@ -154,53 +184,66 @@ export function useAdminSponsorManagement() {
     return loadSponsors({ silent: true })
   }
 
+  function reloadSponsors() {
+    return loadSponsors()
+  }
+
   async function loadDetail(sponsorId: string) {
     detailLoading.value = true
+    detailError.value = null
     try {
       const next = await getAdminSponsorDetail(sponsorId)
       if (editingSponsor.value?.id === sponsorId) {
         applyDetail(next)
       }
     } catch (error: unknown) {
-      toastErrorWithExtractedMessage(
-        t("adminSponsors.toast.loadFailedTitle"),
-        error,
-        t("adminSponsors.toast.actionFailedFallback")
-      )
+      if (editingSponsor.value?.id === sponsorId) {
+        detailError.value = describeError(error, t("adminSponsors.toast.actionFailedFallback"))
+      }
     } finally {
       detailLoading.value = false
     }
   }
 
-  function closeManualForm() {
-    manualFormOpen.value = false
+  function retryDetail() {
+    const sponsor = editingSponsor.value
+    if (sponsor) void loadDetail(sponsor.id)
+  }
+
+  function closeManualDialog() {
+    manualDialogOpen.value = false
     editingEntryId.value = null
     manualForm.value = emptyManualDurationForm()
+    manualErrors.value = {}
   }
 
   function openEditDialog(sponsor: AdminSponsorProfile) {
     editingSponsor.value = sponsor
     form.value = formFromSponsor(sponsor)
+    editNameError.value = ""
     detail.value = null
-    closeManualForm()
+    detailError.value = null
+    closeManualDialog()
     editOpen.value = true
     void loadDetail(sponsor.id)
   }
 
-  function validateForm() {
-    if (!form.value.name.trim()) {
-      toast.error(t("adminSponsors.toast.validation.nameRequired"))
-      return false
-    }
-
-    return true
+  function updateEditName(value: string) {
+    form.value.name = value
+    editNameError.value = ""
   }
 
   async function saveSponsor() {
     const sponsor = editingSponsor.value
-    if (!sponsor || !validateForm()) {
+    if (!sponsor) {
       return
     }
+    if (!form.value.name.trim()) {
+      editNameError.value = t("adminSponsors.toast.validation.nameRequired")
+      focusInvalidField(SPONSOR_FIELD_IDS.editName)
+      return
+    }
+    editNameError.value = ""
 
     await runAsyncAction(saving, () => updateAdminSponsorProfile(sponsor.id, createPayload(form.value)), {
       successMessage: t("adminSponsors.toast.saved"),
@@ -221,13 +264,21 @@ export function useAdminSponsorManagement() {
   function startNewManualEntry() {
     editingEntryId.value = null
     manualForm.value = emptyManualDurationForm()
-    manualFormOpen.value = true
+    manualErrors.value = {}
+    manualDialogOpen.value = true
   }
 
   function startEditManualEntry(entry: AdminManualDuration) {
     editingEntryId.value = entry.id
     manualForm.value = manualDurationFormFromEntry(entry)
-    manualFormOpen.value = true
+    manualErrors.value = {}
+    manualDialogOpen.value = true
+  }
+
+  function updateManualForm(next: ManualDurationForm) {
+    manualForm.value = next
+    // A corrected field drops its own message right away.
+    manualErrors.value = {}
   }
 
   async function saveManualEntry() {
@@ -237,9 +288,11 @@ export function useAdminSponsorManagement() {
     }
     const result = manualDurationPayload(manualForm.value)
     if (!result.ok) {
-      toast.error(t(`adminSponsors.duration.validation.${result.error}`))
+      manualErrors.value = { [result.error]: t(`adminSponsors.duration.validation.${result.error}`) }
+      focusInvalidField(result.error === "amount" ? SPONSOR_FIELD_IDS.manualAmount : SPONSOR_FIELD_IDS.manualNote)
       return
     }
+    manualErrors.value = {}
     const entryId = editingEntryId.value
     await runAsyncAction(
       manualSaving,
@@ -258,12 +311,13 @@ export function useAdminSponsorManagement() {
             return
           }
           applyDetail(next)
-          closeManualForm()
+          closeManualDialog()
         },
       },
     )
   }
 
+  /** Runs from the panel's ConfirmDialog, which reports a failure inline. */
   async function deleteManualEntry(entry: AdminManualDuration) {
     const sponsor = editingSponsor.value
     if (!sponsor) {
@@ -274,6 +328,7 @@ export function useAdminSponsorManagement() {
       successAfterOnSuccess: true,
       errorTitle: t("adminSponsors.toast.manualDeleteFailedTitle"),
       fallbackError: t("adminSponsors.toast.actionFailedFallback"),
+      throwOnError: true,
       onSuccess: (next) => {
         if (editingSponsor.value?.id !== sponsor.id) {
           replaceSponsor(next.sponsor)
@@ -281,7 +336,7 @@ export function useAdminSponsorManagement() {
         }
         applyDetail(next)
         if (editingEntryId.value === entry.id) {
-          closeManualForm()
+          closeManualDialog()
         }
       },
     })
@@ -289,14 +344,22 @@ export function useAdminSponsorManagement() {
 
   function openCreateDialog() {
     createForm.value = emptyCreateForm()
+    createNameError.value = ""
     createOpen.value = true
+  }
+
+  function updateCreateName(value: string) {
+    createForm.value.name = value
+    createNameError.value = ""
   }
 
   async function createSponsor() {
     if (!createForm.value.name.trim()) {
-      toast.error(t("adminSponsors.toast.validation.nameRequired"))
+      createNameError.value = t("adminSponsors.toast.validation.nameRequired")
+      focusInvalidField(SPONSOR_FIELD_IDS.createName)
       return
     }
+    createNameError.value = ""
     await runAsyncAction(creating, () => createAdminSponsor({
       name: createForm.value.name.trim(),
       avatar: createForm.value.avatar.trim(),
@@ -320,10 +383,19 @@ export function useAdminSponsorManagement() {
     return togglingIds.value.has(sponsorId)
   }
 
-  async function toggleAfdianSync(sponsor: AdminSponsorProfile, disabled: boolean) {
+  function requestAfdianToggle(sponsor: AdminSponsorProfile, disabled: boolean) {
     if (togglingIds.value.has(sponsor.id)) {
       return
     }
+    afdianToggleTarget.value = { sponsor, disabled }
+    afdianToggleConfirmOpen.value = true
+  }
+
+  /** Runs from the toggle's ConfirmDialog, which reports a failure inline. */
+  async function executeAfdianToggle() {
+    const target = afdianToggleTarget.value
+    if (!target) return
+    const { sponsor, disabled } = target
 
     const rowLoading = {
       get value() {
@@ -347,6 +419,7 @@ export function useAdminSponsorManagement() {
       successAfterOnSuccess: true,
       errorTitle: t("adminSponsors.toast.saveFailedTitle"),
       fallbackError: t("adminSponsors.toast.actionFailedFallback"),
+      throwOnError: true,
       onSuccess: async (updatedSponsor) => {
         if (updatedSponsor) {
           replaceSponsor(updatedSponsor)
@@ -357,12 +430,18 @@ export function useAdminSponsorManagement() {
     })
   }
 
-  async function syncFromAfdian() {
+  function requestSyncFromAfdian() {
+    syncConfirmOpen.value = true
+  }
+
+  /** Runs from the sync ConfirmDialog, which reports a failure inline. */
+  async function executeSyncFromAfdian() {
     await runAsyncAction(syncing, syncAdminSponsorsFromAfdian, {
       successMessage: t("adminSponsors.toast.synced"),
       successAfterOnSuccess: true,
       errorTitle: t("adminSponsors.toast.syncFailedTitle"),
       fallbackError: t("adminSponsors.toast.actionFailedFallback"),
+      throwOnError: true,
       onSuccess: () => loadSponsors({ silent: true }),
     })
   }
@@ -377,9 +456,11 @@ export function useAdminSponsorManagement() {
 
   return {
     loading,
+    loadError,
     refreshing,
     saving,
     syncing,
+    syncConfirmOpen,
     sponsors,
     generatedAt,
     total,
@@ -388,29 +469,42 @@ export function useAdminSponsorManagement() {
     editOpen,
     editingSponsor,
     form,
+    editNameError,
     detail,
     detailLoading,
-    manualFormOpen,
+    detailError,
+    manualDialogOpen,
     editingEntryId,
     manualForm,
+    manualErrors,
     manualSaving,
     deletingEntry,
+    afdianToggleConfirmOpen,
+    afdianToggleTarget,
     createOpen,
     creating,
     createForm,
+    createNameError,
     refreshSponsors,
+    reloadSponsors,
+    retryDetail,
     openEditDialog,
+    updateEditName,
     saveSponsor,
     startNewManualEntry,
     startEditManualEntry,
-    closeManualForm,
+    updateManualForm,
+    closeManualDialog,
     saveManualEntry,
     deleteManualEntry,
     openCreateDialog,
+    updateCreateName,
     createSponsor,
     isToggling,
-    toggleAfdianSync,
-    syncFromAfdian,
+    requestAfdianToggle,
+    executeAfdianToggle,
+    requestSyncFromAfdian,
+    executeSyncFromAfdian,
     formatDate,
   }
 }

@@ -475,6 +475,20 @@ async function fetchRemoteBuildInfo(): Promise<AppBuildInfo> {
   return buildInfo
 }
 
+/** Phones: keep the prompt off the topbar; it docks at the bottom instead. */
+function isNarrowViewport() {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches
+}
+
+/**
+ * The prompt is dismissable ("later"): the build stays flagged in
+ * appUpdateState, so the settings App tab keeps offering the update, and
+ * the same commit is not prompted again this session.
+ */
+export function dismissAppUpdatePrompt() {
+  toast.dismiss(UPDATE_TOAST_ID)
+}
+
 function showAppUpdatePrompt(remote: AppBuildInfo | null) {
   if (remote?.gitCommit && updatePromptCommit === remote.gitCommit) {
     return
@@ -487,11 +501,19 @@ function showAppUpdatePrompt(remote: AppBuildInfo | null) {
       ? translate("core.pwa.updateAvailableDescriptionWithVersion", { version: remote.version })
       : translate("core.pwa.updateAvailableDescription"),
     duration: Number.POSITIVE_INFINITY,
+    closeButton: true,
+    position: isNarrowViewport() ? "bottom-center" : undefined,
     action: {
       label: translate("core.pwa.updateAction"),
       onClick(event) {
         event.preventDefault()
         void applyAppUpdate()
+      },
+    },
+    cancel: {
+      label: translate("core.pwa.laterAction"),
+      onClick() {
+        dismissAppUpdatePrompt()
       },
     },
   })

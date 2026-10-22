@@ -19,6 +19,8 @@ import {
 import { VisXYContainer, VisLine, VisArea, VisAxis, VisScatter, VisCrosshair, VisTooltip } from "@unovis/vue"
 import { LucideChartLine } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import { DashboardBreakdownCard } from "@/modules/admin-statistics/components"
 import { useDashboardStats } from "@/modules/admin-statistics/composables/useDashboardStats"
 import { formatNumberCN } from "@/lib/number-format"
 
@@ -27,8 +29,10 @@ const { t } = useI18n()
 const {
   loading,
   dashboard,
+  dashboardError,
   chartData,
   chartLoading,
+  chartError,
   rangeDays,
   bucket,
   rangeOptions,
@@ -36,6 +40,12 @@ const {
   onRangeChange,
   onBucketChange,
   statCards,
+  serverBreakdown,
+  methodBreakdown,
+  dataTypeBreakdown,
+  uploadWindowHours,
+  loadDashboard,
+  loadChart,
   x,
   yUploads,
   yRegistrations,
@@ -84,35 +94,82 @@ const uploadSummaryCards = computed(() => [
     color: "text-red-500",
   },
 ])
+
+const windowDescription = computed(() => t("adminStatistics.dashboard.breakdown.windowHint", { hours: uploadWindowHours.value }))
 </script>
 
 <template>
   <div class="w-full flex flex-col gap-4">
-    <!-- KPI section: primary totals + compact 24h summary row -->
-    <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
-      <Card v-for="card in statCards" :key="card.key" class="gap-2 py-5">
-        <CardHeader class="flex flex-row items-center justify-between space-y-0">
-          <CardTitle class="text-sm font-medium">{{ card.label }}</CardTitle>
-          <component :is="card.icon" :class="['h-4 w-4 shrink-0', card.color]" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton v-if="loading" class="h-8 w-20" />
-          <div v-else class="text-2xl font-bold tabular-nums">{{ formatNumberCN(card.getter(), "0") }}</div>
-        </CardContent>
-      </Card>
-    </div>
-
-    <Card class="py-4">
-      <CardContent class="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-4">
-        <div v-for="item in uploadSummaryCards" :key="item.key" class="flex min-w-0 flex-col gap-1">
-          <span class="truncate text-xs text-muted-foreground">{{ item.label }}</span>
-          <Skeleton v-if="loading" class="h-6 w-14" />
-          <span v-else :class="['text-lg font-bold leading-6 tabular-nums', item.color]">
-            {{ formatNumberCN(item.value, "0") }}
-          </span>
-        </div>
+    <!-- A failed dashboard load replaces the KPI cards: zeros would read as data. -->
+    <Card v-if="dashboardError">
+      <CardContent>
+        <LoadErrorState
+          :title="t('adminStatistics.dashboard.toast.loadFailedTitle')"
+          :description="dashboardError.message"
+          :detail="dashboardError.detail"
+          :retrying="loading"
+          @retry="loadDashboard"
+        />
       </CardContent>
     </Card>
+
+    <template v-else>
+      <!-- KPI section: primary totals + compact 24h summary row -->
+      <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <Card v-for="card in statCards" :key="card.key" class="gap-2 py-5">
+          <CardHeader class="flex flex-row items-center justify-between space-y-0">
+            <CardTitle class="text-sm font-medium">{{ card.label }}</CardTitle>
+            <component :is="card.icon" :class="['h-4 w-4 shrink-0', card.color]" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton v-if="loading" class="h-8 w-20" />
+            <template v-else>
+              <div class="text-2xl font-bold tabular-nums">{{ formatNumberCN(card.value, "0") }}</div>
+              <p v-if="card.secondary" class="mt-1 text-xs text-muted-foreground tabular-nums">
+                {{ card.secondary.label }} {{ formatNumberCN(card.secondary.value, "0") }}
+              </p>
+            </template>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card class="py-4">
+        <CardContent class="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-4">
+          <div v-for="item in uploadSummaryCards" :key="item.key" class="flex min-w-0 flex-col gap-1">
+            <span class="truncate text-xs text-muted-foreground">{{ item.label }}</span>
+            <Skeleton v-if="loading" class="h-6 w-14" />
+            <span v-else :class="['text-lg font-bold leading-6 tabular-nums', item.color]">
+              {{ formatNumberCN(item.value, "0") }}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Breakdowns the dashboard payload already carries -->
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <DashboardBreakdownCard
+          :title="t('adminStatistics.dashboard.breakdown.byServer')"
+          :description="t('adminStatistics.dashboard.breakdown.byServerHint')"
+          :items="serverBreakdown"
+          :loading="loading"
+          :empty-text="t('adminStatistics.dashboard.breakdown.empty')"
+        />
+        <DashboardBreakdownCard
+          :title="t('adminStatistics.dashboard.breakdown.byMethod')"
+          :description="windowDescription"
+          :items="methodBreakdown"
+          :loading="loading"
+          :empty-text="t('adminStatistics.dashboard.breakdown.empty')"
+        />
+        <DashboardBreakdownCard
+          :title="t('adminStatistics.dashboard.breakdown.byDataType')"
+          :description="windowDescription"
+          :items="dataTypeBreakdown"
+          :loading="loading"
+          :empty-text="t('adminStatistics.dashboard.breakdown.empty')"
+        />
+      </div>
+    </template>
 
     <Card>
       <CardHeader>
@@ -155,6 +212,15 @@ const uploadSummaryCards = computed(() => [
         <template v-if="chartLoading">
           <Skeleton class="h-64 w-full" />
         </template>
+        <template v-else-if="chartError">
+          <LoadErrorState
+            :title="t('adminStatistics.dashboard.toast.loadChartFailedTitle')"
+            :description="chartError.message"
+            :detail="chartError.detail"
+            :retrying="chartLoading"
+            @retry="loadChart"
+          />
+        </template>
         <template v-else-if="chartData.length > 0">
           <div class="h-64">
             <VisXYContainer :data="chartData" :height="256">
@@ -179,7 +245,7 @@ const uploadSummaryCards = computed(() => [
           </div>
         </template>
         <div
-          v-if="chartLoading || chartData.length > 0"
+          v-if="!chartError && (chartLoading || chartData.length > 0)"
           class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm"
         >
           <div v-for="item in legendItems" :key="item.key" class="flex items-center gap-1.5">

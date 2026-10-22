@@ -4,10 +4,6 @@ export default {
   "deckRecommend": {
     "title": "组卡推荐",
     "description": "选择账号、数据区服、模式与歌曲参数，获取（尽可能）最优活动卡组推荐。",
-    "notice": {
-      "testingPrefix": "该功能处于测试状态，",
-      "testingSuffix": "如果遇到任何问题请联系 Haruki Dev Team 进行反馈。"
-    },
     "select": {
       "loading": "正在准备数据..."
     },
@@ -27,11 +23,13 @@ export default {
       "account": "账号",
       "accountPlaceholder": "请选择已绑定账号",
       "noAccount": "当前账号还没有绑定游戏账号。",
-      "dataRegion": "数据服务器",
+      "bindAccount": "前往绑定游戏账号",
+      "dataRegion": "数据区服",
       "mode": "组卡模式",
       "target": "组卡目标",
       "liveType": "Live 类型",
       "algorithm": "搜索算法",
+      "algorithmDefaultHint": "一般保持默认即可。",
       "algorithmHint": "默认算法会随组卡场景自动选择：分数目标使用 DFS 精确搜索（可证明最优），World Bloom 等复杂场景使用 DFS-GA，烤森使用强化学习。手动勾选后将保持你的选择；同时启用多个算法可交叉验证结果，但整体耗时更长。",
       "executionMode": "执行方式",
       "event": "活动",
@@ -49,7 +47,6 @@ export default {
       "customBonusCharacters": "自定义加成角色",
       "customBonusCharactersPlaceholder": "例如 1 2 21",
       "customBonusSupportUnits": "VS 支援团体",
-      "customBonusSupportUnitsPlaceholder": "例如 21:light_sound 25:school_refusal",
       "customBonusSelectedCount": "已选择 {count} 个角色",
       "customBonusSupportUnitsEmpty": "选择 21-26 号 Virtual Singer 角色后可指定支援团体。",
       "filterOtherUnit": "过滤其他团体",
@@ -76,10 +73,6 @@ export default {
       "browseCount": "共 {count} 张卡牌"
     },
     "layers": {
-      "default": {
-        "title": "默认配置",
-        "description": "选择账号、活动、Live、歌曲与搜索方式；默认协力队友会跟随当前卡组。"
-      },
       "advanced": {
         "title": "进阶配置",
         "description": "调整卡牌养成、过滤条件、协力参数和卡组固定规则。"
@@ -159,7 +152,7 @@ export default {
       "idol": "MORE MORE JUMP!",
       "street": "Vivid BAD SQUAD",
       "theme_park": "Wonderlands×Showtime",
-      "school_refusal": "25時、ナイトコードで。",
+      "school_refusal": "25时，Nightcord见。",
       "piapro": "Virtual Singer"
     },
     "options": {
@@ -252,7 +245,7 @@ export default {
         "excludedGroupDescription": "从候选卡池里排除任意数量的卡牌，不影响固定卡牌上限。",
         "fixedCards": "固定卡牌",
         "useCurrentDeck": "使用当前主队",
-        "useCurrentDeckDescription": "启用后直接以 profile 当前主队作为固定卡组。",
+        "useCurrentDeckDescription": "启用后把你游戏里当前的队伍作为固定卡组。优先从游戏实时读取，读取不到时用你上传的数据。",
         "fixedCharacters": "固定角色",
         "excludedCards": "排除卡牌",
         "cardSelectPlaceholder": "搜索并选择卡牌",
@@ -272,7 +265,7 @@ export default {
         "characterListPlaceholder": "例如 1 2 21",
         "invalid": "角色 ID 需要填写正整数，可用空格或逗号分隔。",
         "challengeHint": "挑战 Live 已经由角色选择决定目标角色，不能再固定角色。",
-        "currentDeckHint": "会优先读取游戏 profile 的当前主队，失败时回落到已上传数据；使用当前主队时固定上场和排除条件不会参与推荐。"
+        "currentDeckHint": "启用后把你游戏里当前的队伍作为固定卡组。优先从游戏实时读取，读取不到时用你上传的数据；使用当前队伍时固定上场和排除条件不会参与推荐。"
       },
       "random": {
         "title": "技能与支援",
@@ -338,7 +331,7 @@ export default {
         "selectedCount": "已覆盖 {count} 个",
         "clear": "清空覆盖",
         "default": "不覆盖",
-        "empty": "当前数据还没有可覆盖的 MySekai 大门。",
+        "empty": "当前数据还没有可覆盖的烤森大门。",
         "searchPlaceholder": "搜索等级...",
         "emptySearch": "没有找到等级。",
         "maxLevel": "最高 Lv.{value}"
@@ -415,10 +408,15 @@ export default {
       "ready": "选择完整参数后即可开始推荐。",
       "run": "开始推荐",
       "running": "推荐中...",
+      "blocked": {
+        "noAccount": "还没有绑定游戏账号，绑定后才能开始推荐。",
+        "selectAccount": "请先选择一个游戏账号。",
+        "dataMissing": "所选账号还没有上传游戏数据，请先前往数据上传页上传。"
+      },
       "phases": {
-        "preparing-data": "正在准备 master 与 music metas...",
+        "preparing-data": "正在准备游戏数据…",
         "fetching-user-data": "正在读取用户数据...",
-        "initializing": "正在初始化组卡引擎...",
+        "initializing": "正在启动计算…",
         "loading-data": "正在加载推荐数据...",
         "recommending": "正在执行推荐..."
       }
@@ -436,16 +434,17 @@ export default {
         "copyFailed": "复制失败，请检查浏览器剪贴板权限。",
         "songRanking": "歌曲收益"
       },
-      "elapsed": "组卡引擎合计用时 {ms} ms",
-      "totalElapsed": "推荐总耗时 {ms} ms",
+      "elapsed": "组卡引擎合计用时 {seconds} 秒",
+      "totalElapsed": "推荐总用时 {seconds} 秒",
+      "secondsUnit": "秒",
       "dataElapsed": "获取数据",
       "engineDataElapsed": "组卡引擎数据准备",
       "sequentialRecommendElapsed": "顺序执行推荐（实际等待）",
       "parallelRecommendElapsed": "并行执行推荐（实际等待）",
-      "algorithmElapsed": "{algorithm} 搜索：{ms} ms",
+      "algorithmElapsed": "{algorithm} 搜索：{seconds} 秒",
       "empty": "暂无推荐结果。",
       "missingUserDataTitle": "还没有可用于组卡的游戏数据",
-      "missingUserDataDescription": "所选游戏账号尚未上传所需数据。请先前往数据上传页上传 Suite 数据；使用烤森模式时还需要上传 MySekai 数据，然后再回来重试。",
+      "missingUserDataDescription": "所选游戏账号尚未上传所需数据。请先前往数据上传页上传账号数据（Suite）；使用烤森模式时还需要上传烤森数据（MySekai），然后再回来重试。",
       "uploadDataAction": "前往上传数据",
       "deckTitle": "卡组 #{index}",
       "score": "Live分数 {score}",
@@ -473,8 +472,8 @@ export default {
         "areaItem": "区域道具",
         "character": "角色等级",
         "honor": "称号",
-        "fixture": "MySekai 玩偶",
-        "gate": "MySekai 大门"
+        "fixture": "烤森玩偶",
+        "gate": "烤森大门"
       },
       "eventBonus": "活动加成 {value}%",
       "bonusTag": "加成 {value}%",
@@ -486,12 +485,6 @@ export default {
       "challengeScoreDelta": "挑战分差 {value}",
       "challengeScoreDeltaLabel": "挑战分差",
       "unknownCard": "未知卡牌",
-      "cardGroups": {
-        "power": "综合力",
-        "training": "养成",
-        "skillBonus": "技能与加成",
-        "storyCanvas": "剧情与画布"
-      },
       "cardTotalPower": "综合力 {value}",
       "cardTotalPowerShort": "总综合力 {value}",
       "cardBasePower": "基础 {value}",
@@ -516,6 +509,21 @@ export default {
       "canvasBonus": "画布加成",
       "noCanvasBonus": "无画布"
     },
+    "errors": {
+      "unknown": "推荐失败，请稍后重试；如果持续失败，请提交工单反馈。",
+      "notEnoughCards": "卡牌不足：当前筛选后只剩 {count} 张卡，至少需要 5 张，请放宽稀有度/属性筛选。",
+      "currentDeckIncomplete": "读取到的当前队伍不足 5 张卡，请关闭「使用当前队伍」或在游戏里编成完整队伍后重新上传数据。",
+      "musicRequired": "请先选择歌曲和难度。",
+      "bonusTargetsRequired": "请至少填写一个目标加成。",
+      "skillOrderRequired": "请填写完整的技能顺序，或改用自动技能顺序。",
+      "worldBloomConfigInvalid": "连接世界活动的章节或团体设置不完整，请重新选择章节角色。",
+      "eventConditionRequired": "模拟活动需要同时指定活动属性和团体。",
+      "algorithmRequired": "请至少勾选一个搜索算法。",
+      "accountRequired": "请先登录并选择一个游戏账号。",
+      "masterNotReady": "游戏数据还没有准备好，请等待数据下载完成后重试。",
+      "timeout": "计算超时，请减少启用的算法或在高级设置里延长引擎超时后重试。",
+      "engineFailed": "组卡引擎运行出错，请刷新页面后重试；如果持续失败，请提交工单反馈。"
+    },
     "toast": {
       "runSuccessTitle": "推荐完成",
       "runFailedTitle": "推荐失败",
@@ -537,7 +545,7 @@ export default {
   },
   "eventPlanner": {
     "title": "活动规划",
-    "description": "用时速笔刷在活动日历上安排每小时的打歌计划，并实时对照目标 PT。",
+    "description": "用时速笔刷在活动日历上安排每小时的打歌计划，并实时对照目标 PT。「笔刷」= 一套卡组+歌曲的每小时 Pt；把它涂在日历上就能算出总 Pt。",
     "sections": {
       "setup": {
         "title": "账号与活动",
@@ -634,7 +642,7 @@ export default {
       "reached": "已规划 {planned} PT，目标已覆盖！"
     },
     "errors": {
-      "noResult": "组卡引擎没有返回可用卡组，无法计算单局 PT。"
+      "noResult": "没有算出可用卡组，无法估算单局 PT。请确认该账号已上传数据，并在组卡页检查过滤条件。"
     }
   }
 } as const

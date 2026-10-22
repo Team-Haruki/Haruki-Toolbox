@@ -1,11 +1,11 @@
-import { computed, ref } from "vue"
+import { computed, nextTick, ref } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
 import { unwrapUpdatedData } from "@/core/http/call-api"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { asRecord, normalizeEntityId, readString, readBoolean } from "@/lib/record-utils"
-import { DEFAULT_SOCIAL_PLATFORM, isSocialPlatform } from "@/lib/social-platform"
+import { DEFAULT_SOCIAL_PLATFORM, isSocialPlatform, isVerifiedQQBinding } from "@/lib/social-platform"
 import type { EntityId } from "@/types/common"
 import type { SocialPlatform as SocialPlatformType } from "@/types/social-platform"
 import { resolveRequiredUserId } from "@/modules/user-settings/lib/current-user"
@@ -25,6 +25,9 @@ export interface SocialAuth {
   comment: string
   allowFastVerification: boolean
 }
+
+/** DOM id of the account field in the authorization dialog; validation focuses it. */
+export const IM_AUTH_ACCOUNT_INPUT_ID = "im-auth-account"
 
 function normalizeSocialAuthList(value: unknown): SocialAuth[] {
   if (!Array.isArray(value)) return []
@@ -66,8 +69,12 @@ export function useIMAuthorizationSettings() {
   const deleteTarget = ref<SocialAuth | null>(null)
   const isSaving = ref(false)
   const isDeleting = ref(false)
+  /** Inline error under the account field; empty when valid. */
+  const accountError = ref("")
 
   const tableData = computed<SocialAuth[]>(() => normalizeSocialAuthList(userStore.authorizeSocialPlatformInfo))
+  /** The person's own QQ is bound and verified: the dialog's "bind first" hint is off. */
+  const hasVerifiedOwnBinding = computed(() => isVerifiedQQBinding(userStore.socialPlatformInfo))
 
   const platformLabels = computed<Record<SocialPlatform, string>>(() => ({
     qq: t("userSettings.imAuthorization.platforms.qq"),
@@ -95,6 +102,7 @@ export function useIMAuthorizationSettings() {
   function startEdit(row: SocialAuth) {
     editTarget.value = { ...row }
     isCreateMode.value = false
+    accountError.value = ""
     showEditDialog.value = true
   }
 
@@ -107,7 +115,38 @@ export function useIMAuthorizationSettings() {
       allowFastVerification: false,
     }
     isCreateMode.value = true
+    accountError.value = ""
     showEditDialog.value = true
+  }
+
+  function clearAccountError() {
+    accountError.value = ""
+  }
+
+  function focusAccountField() {
+    void nextTick(() => {
+      document.getElementById(IM_AUTH_ACCOUNT_INPUT_ID)?.focus()
+    })
+  }
+
+  /** Validates the account field inline; returns the trimmed id or null. */
+  function validateAccount(target: SocialAuth): string | null {
+    const normalizedUserId = target.userId.trim()
+    if (!normalizedUserId) {
+      accountError.value = t("userSettings.imAuthorization.toast.accountRequiredDescription")
+      focusAccountField()
+      return null
+    }
+    const validationError = validateSocialAccountId(target.platform, normalizedUserId)
+    if (validationError) {
+      accountError.value = validationError === "qq-not-numeric"
+        ? t("userSettings.imAuthorization.toast.accountQQNumericDescription")
+        : t("userSettings.imAuthorization.toast.accountQQBotLengthDescription")
+      focusAccountField()
+      return null
+    }
+    accountError.value = ""
+    return normalizedUserId
   }
 
   async function handleEditSave() {
@@ -117,23 +156,8 @@ export function useIMAuthorizationSettings() {
     const userId = requireUserId()
     if (!userId) return
 
-    const normalizedUserId = target.userId.trim()
-    if (!normalizedUserId) {
-      toast.error(t("userSettings.imAuthorization.toast.saveFailedTitle"), {
-        description: t("userSettings.imAuthorization.toast.accountRequiredDescription"),
-      })
-      return
-    }
-
-    const validationError = validateSocialAccountId(target.platform, normalizedUserId)
-    if (validationError) {
-      toast.error(t("userSettings.imAuthorization.toast.saveFailedTitle"), {
-        description: validationError === "qq-not-numeric"
-          ? t("userSettings.imAuthorization.toast.accountQQNumericDescription")
-          : t("userSettings.imAuthorization.toast.accountQQBotLengthDescription"),
-      })
-      return
-    }
+    const normalizedUserId = validateAccount(target)
+    if (!normalizedUserId) return
 
     isSaving.value = true
     try {
@@ -177,7 +201,7 @@ export function useIMAuthorizationSettings() {
       showEditDialog.value = false
     } catch (error: unknown) {
       toast.error(t("userSettings.imAuthorization.toast.saveFailedTitle"), {
-        description: extractErrorMessage(error, t("userSettings.imAuthorization.toast.saveFailedTitle")),
+        description: extractErrorMessage(error, t("userSettings.imAuthorization.toast.saveFailedFallback")),
       })
     } finally {
       isSaving.value = false
@@ -189,6 +213,10 @@ export function useIMAuthorizationSettings() {
     showDeleteDialog.value = true
   }
 
+  /**
+   * Removes the authorization the delete dialog is showing. Rejects on
+   * failure so the confirm dialog stays open with the reason.
+   */
   async function handleDelete() {
     if (!deleteTarget.value || isDeleting.value) return
 
@@ -197,10 +225,7 @@ export function useIMAuthorizationSettings() {
 
     const authId = resolveNumericId(deleteTarget.value.id)
     if (authId == null) {
-      toast.error(t("userSettings.imAuthorization.toast.deleteFailedTitle"), {
-        description: t("userSettings.imAuthorization.toast.deleteFailedTitle"),
-      })
-      return
+      throw new Error(t("userSettings.imAuthorization.toast.deleteFailedFallback"))
     }
 
     isDeleting.value = true
@@ -214,12 +239,7 @@ export function useIMAuthorizationSettings() {
       toast.success(t("userSettings.imAuthorization.toast.deleteSuccessTitle"), {
         description: t("userSettings.imAuthorization.toast.deleteSuccessDescription"),
       })
-      showDeleteDialog.value = false
       deleteTarget.value = null
-    } catch (error: unknown) {
-      toast.error(t("userSettings.imAuthorization.toast.deleteFailedTitle"), {
-        description: extractErrorMessage(error, t("userSettings.imAuthorization.toast.deleteFailedTitle")),
-      })
     } finally {
       isDeleting.value = false
     }
@@ -233,10 +253,13 @@ export function useIMAuthorizationSettings() {
     deleteTarget,
     isSaving,
     isDeleting,
+    accountError,
     tableData,
+    hasVerifiedOwnBinding,
     getPlatformLabel,
     startEdit,
     startAdd,
+    clearAccountError,
     handleEditSave,
     confirmDelete,
     handleDelete,

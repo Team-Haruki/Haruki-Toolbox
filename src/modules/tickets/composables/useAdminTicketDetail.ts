@@ -14,7 +14,7 @@ import type { TicketDetail, TicketMessage } from "@/types/ticket"
 import { ticketStatusLabel } from "@/modules/tickets/lib/display"
 import { getTicketStatusOptions, isTicketStatus } from "@/modules/tickets/lib/meta"
 import { bumpAdminTicketRefresh } from "@/modules/tickets/lib/admin-ticket-refresh"
-import { extractErrorMessage } from "@/lib/error-utils"
+import { describeError, extractErrorMessage, isNotFoundError, type ErrorDescription } from "@/lib/error-utils"
 
 function normalizeCreatorInfo(ticketDetail: TicketDetail) {
   if (ticketDetail.creatorUserId || !ticketDetail.messages?.length) return
@@ -46,6 +46,9 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
   const loading = ref(true)
   const refreshing = ref(false)
   const ticket = ref<TicketDetail | null>(null)
+  // A 404 is "no such ticket"; anything else is a retryable load failure shown inline.
+  const notFound = ref(false)
+  const loadError = ref<ErrorDescription | null>(null)
   const newMessage = ref("")
   const isInternal = ref(false)
   const sending = ref(false)
@@ -141,12 +144,16 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
       refreshing.value = true
     } else {
       loading.value = true
+      notFound.value = false
+      loadError.value = null
     }
     try {
       const detail = await getAdminTicketDetail(ticketIdValue)
       if (requestId !== latestLoadRequestId) return
       normalizeCreatorInfo(detail)
       ticket.value = detail
+      notFound.value = false
+      loadError.value = null
       assigneeId.value = detail.assigneeAdminId || "__none__"
       await nextTick()
       if (requestId !== latestLoadRequestId) return
@@ -154,9 +161,14 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     } catch (error: unknown) {
       if (requestId !== latestLoadRequestId) return
       if (!silent) {
-        toast.error(t("tickets.adminDetail.toast.loadFailedTitle"), {
-          description: extractErrorMessage(error, t("tickets.adminDetail.toast.loadFailedFallback")),
-        })
+        // Shown inline in place of the ticket (no toast): "not found" and
+        // "could not load" are different states with different next steps.
+        ticket.value = null
+        if (isNotFoundError(error)) {
+          notFound.value = true
+        } else {
+          loadError.value = describeError(error, t("tickets.adminDetail.toast.loadFailedFallback"))
+        }
       }
       if (options.throwOnError) {
         throw error
@@ -299,10 +311,17 @@ export function useAdminTicketDetail(ticketId: ValueOrGetter<string>) {
     invalidateActions()
   })
 
+  function retryLoad() {
+    void loadTicket()
+  }
+
   return {
     loading,
     refreshing,
     ticket,
+    notFound,
+    loadError,
+    retryLoad,
     newMessage,
     isInternal,
     sending,

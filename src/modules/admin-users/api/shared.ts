@@ -13,11 +13,19 @@ export const BASE = "/api/admin/users"
 
 export const userBase = (userId: string) => `${BASE}/${encodePathSegment(userId)}`
 
+/** One item of GET /api/admin/users/:id/oauth-authorizations (`createdAt` is the grant time). */
 export interface UserOAuthAuthorization {
+  authorizationId?: number
+  consentRequestId?: string
   clientId?: string
   clientName?: string
+  clientType?: string
+  clientActive?: boolean
   scopes?: string[]
+  createdAt?: string
+  /** Older payloads named the grant time this way. */
   authorizedAt?: string
+  revoked?: boolean
 }
 
 export function normalizeGameAccountBinding(item: UnknownRecord): AdminGameAccountBinding | null {

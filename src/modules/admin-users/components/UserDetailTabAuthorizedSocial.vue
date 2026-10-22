@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import {
     Card,
@@ -9,17 +9,6 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import {
     Table,
     TableBody,
@@ -33,26 +22,42 @@ import {
     LucidePlus,
     LucideTrash2,
 } from "lucide-vue-next"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import type { AuthorizedSocialPlatform } from "@/types/admin"
 import { getSocialPlatforms, isSocialPlatform } from "@/modules/admin-users/constants"
 
-defineProps<{
+const props = defineProps<{
     loading: boolean
     busy: boolean
     authorizedSocials: AuthorizedSocialPlatform[]
+    /** Confirmed in a dialog; rejects on failure so the dialog stays open with the error. */
+    deleteSocial: (platformId: AuthorizedSocialPlatform["id"]) => Promise<void>
 }>()
 
 const emit = defineEmits<{
     (e: "add"): void
     (e: "edit", social: AuthorizedSocialPlatform): void
-    (e: "delete", platformId: AuthorizedSocialPlatform["id"]): void
 }>()
 
 const { t } = useI18n()
 const socialPlatforms = computed(() => getSocialPlatforms(t))
 
+const deleteDialogOpen = ref(false)
+// Kept after the dialog closes so its text does not change mid fade-out.
+const pendingDelete = ref<AuthorizedSocialPlatform | null>(null)
+
 function platformMeta(platform: string) {
   return isSocialPlatform(platform) ? socialPlatforms.value[platform] : undefined
+}
+
+function requestDelete(social: AuthorizedSocialPlatform) {
+  pendingDelete.value = social
+  deleteDialogOpen.value = true
+}
+
+function executeDelete() {
+  const target = pendingDelete.value
+  return target ? props.deleteSocial(target.id) : Promise.resolve()
 }
 </script>
 
@@ -91,32 +96,17 @@ function platformMeta(platform: string) {
               <TableCell>
                 <div class="flex gap-1">
                   <Button variant="ghost" size="sm" :disabled="busy" @click="emit('edit', social)">{{ t("adminUsers.common.edit") }}</Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger as-child>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        class="text-destructive hover:text-destructive"
-                        :disabled="busy"
-                        :title="t('adminUsers.detail.info.delete')"
-                        :aria-label="t('adminUsers.detail.info.delete')"
-                      >
-                        <LucideTrash2 class="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{{ t("adminUsers.detail.authSocial.deleteDialogTitle") }}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {{ t("adminUsers.detail.authSocial.deleteDialogDescription") }}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
-                        <AlertDialogAction @click="emit('delete', social.id)">{{ t("adminUsers.common.confirm") }}</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="text-destructive hover:text-destructive"
+                    :disabled="busy"
+                    :title="t('adminUsers.detail.info.delete')"
+                    :aria-label="t('adminUsers.detail.info.delete')"
+                    @click="requestDelete(social)"
+                  >
+                    <LucideTrash2 class="w-4 h-4" />
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>
@@ -134,4 +124,14 @@ function platformMeta(platform: string) {
       </template>
     </CardContent>
   </Card>
+
+  <ConfirmDialog
+    v-model:open="deleteDialogOpen"
+    :title="t('adminUsers.detail.authSocial.deleteDialogTitle')"
+    :description="t('adminUsers.detail.authSocial.deleteDialogDescription')"
+    :cancel-label="t('adminUsers.common.cancel')"
+    :confirm-label="t('adminUsers.detail.info.delete')"
+    destructive
+    :on-confirm="executeDelete"
+  />
 </template>

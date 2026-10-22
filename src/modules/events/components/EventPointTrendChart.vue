@@ -267,7 +267,8 @@ function crosshairTemplate(point: EventPointTrendPoint) {
                 <VisLine :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" curve-type="monotoneX" />
                 <VisScatter :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :size="4" />
               </template>
-              <VisCrosshair :template="crosshairTemplate" />
+              <!-- Unovis derives the crosshair's snapping from its own y accessors, not from the sibling line/scatter. -->
+              <VisCrosshair :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :template="crosshairTemplate" />
               <VisTooltip />
               <VisAxis type="x" :tick-format="xTickFormat" :num-ticks="xNumTicks" />
               <VisAxis v-if="showPointSeries" type="y" :tick-format="yTickFormat" :tick-text-color="TREND_POINT_COLOR" />

@@ -21,6 +21,7 @@ const chipContext: MusicChipContext = {
   tagLabel: (tag) => `tag-${tag}`,
   categoryLabel: (category) => `cat-${category}`,
   characterName: (id) => (id === 1 ? "Ichika" : null),
+  charactersReady: true,
   scopeLabel: (scope) => `scope-${scope}`,
   hasCategories: true,
 }
@@ -214,6 +215,17 @@ describe("active chips", () => {
     )
     expect(chips.some((chip) => chip.key.startsWith("mv:"))).toBe(false)
     expect(chips.find((chip) => chip.key === "chars:9")?.label).toBe("#9")
+    // The index is loaded and does not know 9: a removable chip, not a skeleton.
+    expect(chips.find((chip) => chip.key === "chars:9")?.pending).toBe(false)
+  })
+
+  it("marks unresolved character chips pending only while the index loads", () => {
+    const chips = buildMusicActiveChips(
+      { ...createDefaultMusicQueryState(), chars: [9] },
+      { ...chipContext, characterName: () => null, charactersReady: false },
+      t,
+    )
+    expect(chips.find((chip) => chip.key === "chars:9")?.pending).toBe(true)
   })
 
   it("returns no chips for the default state", () => {

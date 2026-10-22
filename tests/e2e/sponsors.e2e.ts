@@ -186,18 +186,24 @@ test.describe("admin sponsor durations", () => {
     await expect(row).toContainText(/当前赞助|Current/, { timeout: 30_000 })
 
     await row.getByRole("button", { name: /编辑资料|Edit profile/ }).click()
-    const dialog = page.getByRole("dialog")
+    const dialog = page.getByRole("dialog", { name: /编辑赞助者资料|Edit sponsor profile/ })
     await expect(dialog).toContainText(/爱发电订单|Afdian orders/)
     await expect(dialog).toContainText(/自选方案|Custom plan/)
     await expect(dialog).toContainText(/不计时长|No time/)
     await expect(dialog).toContainText("迁移自旧版手动调整")
-    // The expiry is no longer an editable field.
+    // The expiry is no longer an editable field, and the manual-duration form
+    // no longer lives inside the profile form: it opens its own dialog.
     await expect(dialog.getByLabel(/赞助到期时间|Support expires at/)).toHaveCount(0)
+    await expect(dialog.getByLabel(/^(数量|Amount)$/)).toHaveCount(0)
 
     await dialog.getByRole("button", { name: /添加手动时长|Add manual time/ }).click()
-    await dialog.getByLabel(/^(数量|Amount)$/).fill("1")
-    await dialog.getByLabel(/备注|Note/).fill("  微信转账 30 元  ")
-    await dialog.locator("form").getByRole("button", { name: /添加手动时长|Add manual time/ }).click()
+    const manualDialog = page.getByRole("dialog", { name: /添加手动时长|Add manual time/ })
+    await expect(manualDialog).toBeVisible()
+    await manualDialog.getByLabel(/^(数量|Amount)$/).fill("1")
+    await manualDialog.getByLabel(/备注|Note/).fill("  微信转账 30 元  ")
+    await manualDialog.getByRole("button", { name: /添加手动时长|Add manual time/ }).click()
+    // The manual dialog closes on success and the profile dialog shows the new entry.
+    await expect(manualDialog).toBeHidden()
     await expect(dialog).toContainText("微信转账 30 元")
     await expect(dialog).toContainText(/2 条记录|2 entries/)
 

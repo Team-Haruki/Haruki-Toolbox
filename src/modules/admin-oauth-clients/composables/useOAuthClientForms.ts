@@ -8,6 +8,10 @@ import { describeOAuthClientActionError } from "@/modules/admin-oauth-clients/li
 import {
   DEFAULT_CLIENT_TYPE,
   DEFAULT_SCOPE,
+  OAUTH_CLIENT_FIELD_IDS,
+  type OAuthClientFormErrors,
+  type OAuthClientFormField,
+  type ValidatePayloadError,
   diffGrantFields,
   toggleGrantTypeSelection,
   toggleScopeSelection,
@@ -19,6 +23,7 @@ import {
   type ManagedGrantType,
   toManagedGrantTypes,
 } from "@/modules/admin-oauth-clients/lib/grant-types"
+import { focusInvalidField } from "@/lib/form-focus"
 
 type OAuthClientType = NonNullable<OAuthClient["clientType"]>
 type RedirectUriUpdatePayload = { index: number; value: string }
@@ -40,6 +45,8 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
   const newPostLogoutRedirectUris = ref<string[]>([""])
   const newGrantTypes = ref<ManagedGrantType[]>([...DEFAULT_GRANT_TYPES])
   const newDevicePolicy = ref<OAuthClientDevicePolicy>({ ...DEFAULT_DEVICE_POLICY })
+  // One inline message at a time: the first failing check, under its control.
+  const createFormErrors = ref<OAuthClientFormErrors>({})
   const creating = ref(false)
 
   const editOpen = ref(false)
@@ -51,9 +58,11 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
   const editPostLogoutRedirectUris = ref<string[]>([])
   const editGrantTypes = ref<ManagedGrantType[]>([...DEFAULT_GRANT_TYPES])
   const editDevicePolicy = ref<OAuthClientDevicePolicy>({ ...DEFAULT_DEVICE_POLICY })
+  const editFormErrors = ref<OAuthClientFormErrors>({})
   // What the edited client has registered: an edit sends only the grant members that differ.
   let editInitialGrantTypes: string[] = [...DEFAULT_GRANT_TYPES]
   let editInitialDevicePolicy: OAuthClientDevicePolicy = { ...DEFAULT_DEVICE_POLICY }
+  let editInitialScopes: string[] = []
   const saving = ref(false)
 
   function resetCreateForm() {
@@ -65,6 +74,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     newPostLogoutRedirectUris.value = [""]
     newGrantTypes.value = [...DEFAULT_GRANT_TYPES]
     newDevicePolicy.value = { ...DEFAULT_DEVICE_POLICY }
+    createFormErrors.value = {}
   }
 
   function resetEditForm() {
@@ -78,6 +88,8 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     editDevicePolicy.value = { ...DEFAULT_DEVICE_POLICY }
     editInitialGrantTypes = [...DEFAULT_GRANT_TYPES]
     editInitialDevicePolicy = { ...DEFAULT_DEVICE_POLICY }
+    editInitialScopes = []
+    editFormErrors.value = {}
   }
 
   function setCreateOpen(value: boolean) {
@@ -100,28 +112,53 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     }
   })
 
+  function clearCreateFormError(field: OAuthClientFormField) {
+    if (createFormErrors.value[field]) {
+      createFormErrors.value = {}
+    }
+  }
+
+  function clearEditFormError(field: OAuthClientFormField) {
+    if (editFormErrors.value[field]) {
+      editFormErrors.value = {}
+    }
+  }
+
+  /** Shows the failing check under its control and moves focus there. */
+  function reportValidationError(target: typeof createFormErrors, error: ValidatePayloadError) {
+    target.value = { [error.field]: t(`adminOAuthClients.toast.validation.${error.errorCode}`) }
+    focusInvalidField(OAUTH_CLIENT_FIELD_IDS[error.field])
+  }
+
   function updateNewClientId(value: string) {
     newClientId.value = value
+    clearCreateFormError("clientId")
   }
 
   function updateNewName(value: string) {
     newName.value = value
+    clearCreateFormError("name")
   }
 
   function updateEditName(value: string) {
     editName.value = value
+    clearEditFormError("name")
   }
 
   function updateNewClientType(value: OAuthClientType) {
     newClientType.value = value
+    clearCreateFormError("deviceAllowWrite")
   }
 
   function updateEditClientType(value: OAuthClientType) {
     editClientType.value = value
+    clearEditFormError("deviceAllowWrite")
   }
 
   function updateNewRedirectUri(payload: RedirectUriUpdatePayload) {
     newRedirectUris.value[payload.index] = payload.value
+    clearCreateFormError("redirectUris")
+    clearCreateFormError("postLogoutRedirectUris")
   }
 
   function addNewRedirectUri() {
@@ -135,6 +172,8 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
 
   function updateEditRedirectUri(payload: RedirectUriUpdatePayload) {
     editRedirectUris.value[payload.index] = payload.value
+    clearEditFormError("redirectUris")
+    clearEditFormError("postLogoutRedirectUris")
   }
 
   function addEditRedirectUri() {
@@ -148,6 +187,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
 
   function updateNewPostLogoutRedirectUri(payload: RedirectUriUpdatePayload) {
     newPostLogoutRedirectUris.value[payload.index] = payload.value
+    clearCreateFormError("postLogoutRedirectUris")
   }
 
   function addNewPostLogoutRedirectUri() {
@@ -161,6 +201,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
 
   function updateEditPostLogoutRedirectUri(payload: RedirectUriUpdatePayload) {
     editPostLogoutRedirectUris.value[payload.index] = payload.value
+    clearEditFormError("postLogoutRedirectUris")
   }
 
   function addEditPostLogoutRedirectUri() {
@@ -174,26 +215,36 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
 
   function toggleNewScope(scopeId: string, checked: boolean) {
     newScopes.value = toggleScopeSelection(newScopes.value, scopeId, checked)
+    clearCreateFormError("scopes")
+    clearCreateFormError("deviceAllowWrite")
   }
 
   function toggleEditScope(scopeId: string, checked: boolean) {
     editScopes.value = toggleScopeSelection(editScopes.value, scopeId, checked)
+    clearEditFormError("scopes")
+    clearEditFormError("deviceAllowWrite")
   }
 
   function toggleNewGrantType(grantType: ManagedGrantType, checked: boolean) {
     newGrantTypes.value = toggleGrantTypeSelection(newGrantTypes.value, grantType, checked)
+    createFormErrors.value = {}
   }
 
   function toggleEditGrantType(grantType: ManagedGrantType, checked: boolean) {
     editGrantTypes.value = toggleGrantTypeSelection(editGrantTypes.value, grantType, checked)
+    editFormErrors.value = {}
   }
 
   function updateNewDevicePolicy(update: DevicePolicyUpdate) {
     newDevicePolicy.value = { ...newDevicePolicy.value, ...update }
+    if ("allowWrite" in update) clearCreateFormError("deviceAllowWrite")
+    if ("maxCodesPer10m" in update) clearCreateFormError("deviceMaxCodes")
   }
 
   function updateEditDevicePolicy(update: DevicePolicyUpdate) {
     editDevicePolicy.value = { ...editDevicePolicy.value, ...update }
+    if ("allowWrite" in update) clearEditFormError("deviceAllowWrite")
+    if ("maxCodesPer10m" in update) clearEditFormError("deviceMaxCodes")
   }
 
   async function handleCreate() {
@@ -208,9 +259,10 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
       devicePolicy: newDevicePolicy.value,
     })
     if ("errorCode" in validation) {
-      toast.error(t(`adminOAuthClients.toast.validation.${validation.errorCode}`))
+      reportValidationError(createFormErrors, validation)
       return
     }
+    createFormErrors.value = {}
     const uris = validation.normalizedUris
     const postLogoutUris = validation.normalizedPostLogoutUris
     const errorTitle = t("adminOAuthClients.toast.createFailedTitle")
@@ -257,6 +309,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     editName.value = client.name ?? ""
     editClientType.value = client.clientType ?? DEFAULT_CLIENT_TYPE
     editScopes.value = [...(client.scopes ?? [])]
+    editInitialScopes = [...(client.scopes ?? [])]
     editRedirectUris.value = [...(client.redirectUris ?? (client.redirectUri ? [client.redirectUri] : []))]
     if (editRedirectUris.value.length === 0) {
       editRedirectUris.value = [""]
@@ -269,6 +322,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     editInitialDevicePolicy = { ...(client.devicePolicy ?? DEFAULT_DEVICE_POLICY) }
     editGrantTypes.value = toManagedGrantTypes(editInitialGrantTypes)
     editDevicePolicy.value = { ...editInitialDevicePolicy }
+    editFormErrors.value = {}
     editOpen.value = true
   }
 
@@ -282,11 +336,14 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
       postLogoutRedirectUris: editPostLogoutRedirectUris.value,
       devicePolicy: editDevicePolicy.value,
       initialDevicePolicy: editInitialDevicePolicy,
+      initialScopes: editInitialScopes,
+      initialGrantTypes: editInitialGrantTypes,
     })
     if ("errorCode" in validation) {
-      toast.error(t(`adminOAuthClients.toast.validation.${validation.errorCode}`))
+      reportValidationError(editFormErrors, validation)
       return
     }
+    editFormErrors.value = {}
     const uris = validation.normalizedUris
     const grantPatch = diffGrantFields(validation, {
       grantTypes: editInitialGrantTypes,
@@ -335,6 +392,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     newPostLogoutRedirectUris,
     newGrantTypes,
     newDevicePolicy,
+    createFormErrors,
     creating,
     editOpen,
     editClientId,
@@ -345,6 +403,7 @@ export function useOAuthClientForms(options: UseOAuthClientFormsOptions) {
     editPostLogoutRedirectUris,
     editGrantTypes,
     editDevicePolicy,
+    editFormErrors,
     saving,
     toggleNewScope,
     toggleEditScope,

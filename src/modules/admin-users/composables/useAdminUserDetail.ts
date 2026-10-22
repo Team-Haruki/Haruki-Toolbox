@@ -79,6 +79,9 @@ export function useAdminUserDetail(userId: ValueOrGetter<string>) {
   return {
     ...refs,
     onTabChange,
+    reloadUser: () => {
+      void loadUserForCurrentRoute()
+    },
     ...actions,
   }
 }

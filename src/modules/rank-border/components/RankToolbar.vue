@@ -150,7 +150,14 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
             {{ trackerStatusLabel }}
           </span>
           <TrackerFreshness :status-timestamp="tracker.status.value?.timestamp ?? null" :as-of="tracker.asOf.value" />
-          <Button type="button" size="sm" :disabled="!canRefresh || liveRefreshing" @click="refreshData()">
+          <!-- The label is visually hidden on phones, so the button names itself for assistive tech. -->
+          <Button
+            type="button"
+            size="sm"
+            :disabled="!canRefresh || liveRefreshing"
+            :aria-label="liveRefreshing ? t('rankBorder.actions.refreshing') : t('rankBorder.actions.refresh')"
+            @click="refreshData()"
+          >
             <RefreshCcw :class="['size-4', liveRefreshing ? 'animate-spin' : '']" />
             <span class="hidden sm:inline">{{ liveRefreshing ? t("rankBorder.actions.refreshing") : t("rankBorder.actions.refresh") }}</span>
           </Button>

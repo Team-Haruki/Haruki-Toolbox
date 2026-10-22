@@ -11,9 +11,11 @@ import type { MysekaiPermissionKey, SuitePermissionKey } from "@/lib/game-bindin
 
 const {
   loading,
+  loadError,
   bindings,
   total,
   page,
+  pageSize,
   totalPages,
   filterQ,
   filterServer,
@@ -42,8 +44,10 @@ const {
   serverLabel,
   applyFilters,
   resetFilters,
+  reload,
   prevPage,
   nextPage,
+  goToPage,
   toggleSelect,
   toggleSelectAll,
   openDeleteConfirm,
@@ -75,6 +79,7 @@ function updateMysekaiPermission(payload: { key: MysekaiPermissionKey; value: bo
       v-model:filter-sort="filterSort"
       :servers="servers"
       :sort-options="sortOptions"
+      :loading="loading"
       @apply="applyFilters"
       @reset="resetFilters"
       @add="openAddBinding"
@@ -82,23 +87,28 @@ function updateMysekaiPermission(payload: { key: MysekaiPermissionKey; value: bo
 
     <GameBindingsTable
       :loading="loading"
+      :error="loadError"
       :bindings="bindings"
       :selected="selected"
       :select-all="selectAll"
       :total="total"
       :page="page"
+      :page-size="pageSize"
       :total-pages="totalPages"
       :action-loading="actionLoading"
       :binding-key="bindingKey"
       :server-label="serverLabel"
+      :batch-delete="handleBatchDelete"
       @toggle-select="toggleSelect"
       @toggle-select-all="toggleSelectAll"
       @open-edit="openEditBinding"
       @open-reassign="openReassign"
       @open-delete="openDeleteConfirm"
-      @batch-delete="handleBatchDelete"
+      @retry="reload"
       @prev-page="prevPage"
       @next-page="nextPage"
+      @go-to-page="goToPage"
+      @update:page-size="pageSize = $event"
     />
 
     <GameBindingReassignDialog
@@ -128,9 +138,8 @@ function updateMysekaiPermission(payload: { key: MysekaiPermissionKey; value: bo
     <GameBindingDeleteDialog
       v-model:open="deleteDialogOpen"
       :target="deleteTarget"
-      :action-loading="actionLoading"
       :server-label="serverLabel"
-      @confirm="handleDelete"
+      :on-confirm="handleDelete"
     />
   </div>
 </template>

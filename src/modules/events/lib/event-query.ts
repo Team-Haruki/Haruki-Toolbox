@@ -115,7 +115,14 @@ export type EventsActiveChipContext = {
   statusLabel: (value: CatalogStatus) => string
   unitLabel: (value: SekaiUnit) => string
   attrLabel: (value: SekaiCardAttr) => string
-  characterName: (id: number) => string
+  /** Null until the characters index resolves the id. */
+  characterName: (id: number) => string | null
+  /**
+   * False while the characters index is still loading: an unresolved id makes
+   * the chip a skeleton. Once loaded, unknown ids print as `#id` on a plain
+   * removable chip.
+   */
+  charactersReady: boolean
 }
 
 type Translate = (key: string, params?: Record<string, unknown>) => string
@@ -147,7 +154,13 @@ export function buildEventsActiveChips(
     chips.push({ key: "attrs", label: t("eventCatalog.chips.attr", { value: state.attrs.map(ctx.attrLabel).join(" / ") }) })
   }
   if (state.chars.length > 0) {
-    chips.push({ key: "chars", label: t("eventCatalog.chips.characters", { value: state.chars.map(ctx.characterName).join(" / ") }) })
+    // One joined chip; a skeleton until every id has a name.
+    const names = state.chars.map((id) => ctx.characterName(id))
+    chips.push({
+      key: "chars",
+      label: t("eventCatalog.chips.characters", { value: names.map((name, index) => name ?? `#${state.chars[index]}`).join(" / ") }),
+      pending: !ctx.charactersReady && names.some((name) => name == null),
+    })
   }
   if (state.year != null) {
     chips.push({ key: "year", label: t("eventCatalog.chips.year", { value: state.year }) })

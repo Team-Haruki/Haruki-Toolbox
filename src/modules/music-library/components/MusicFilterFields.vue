@@ -4,12 +4,13 @@ import { useI18n } from "vue-i18n"
 import type { AcceptableValue } from "reka-ui"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import CatalogCharacterPicker from "@/shared/components/catalog/CatalogCharacterPicker.vue"
 import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
-import type { CatalogFieldOption } from "@/shared/components/catalog/types"
+import { CATALOG_YEAR_PLACEHOLDER_COUNT, type CatalogFieldOption } from "@/shared/components/catalog/types"
 import type { CatalogCharacter, SekaiUnit } from "@/shared/sekai/catalog"
 import { isMusicDifficulty } from "@/modules/music-library/lib/music-difficulties"
 import {
@@ -128,6 +129,9 @@ function updateNoteField(field: "exact" | "min" | "max", event: Event) {
 // --- Year -------------------------------------------------------------------
 
 const yearModel = computed(() => (props.state.year == null ? ANY_OPTION : String(props.state.year)))
+// Chip-sized placeholders hold the row's height until the dump arrives, so
+// the panel below does not jump when the years render.
+const yearPlaceholders = computed(() => (props.yearOptions.length === 0 ? CATALOG_YEAR_PLACEHOLDER_COUNT : 0))
 
 function updateYear(value: AcceptableValue | AcceptableValue[] | undefined) {
   // The "all" chip, and deselecting the active year, both clear the filter.
@@ -310,6 +314,7 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
           <ToggleGroupItem v-for="option in yearOptions" :key="option.value" :value="option.value">
             {{ option.label }}
           </ToggleGroupItem>
+          <Skeleton v-for="index in yearPlaceholders" :key="`placeholder-${index}`" class="h-7 w-12 rounded-full" aria-hidden="true" />
         </ToggleGroup>
       </div>
 

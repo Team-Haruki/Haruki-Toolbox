@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
 import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
 
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { Button } from "@/components/ui/button"
 import { useTrainingRefresh } from "@/modules/training/composables/training-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -38,11 +38,13 @@ const {
   reloadMaster,
 } = useTrainingPower()
 
-const { isLoading, hasError, isReady, suiteDataMissing, errorDetail } = useUserDataPageState({
+const { isLoading, hasError, isReady, suiteDataMissing, errorMessage, errorDetail } = useUserDataPageState({
   status: suiteStatus,
   error: suiteError,
   masterLoading: masterLoading,
   masterError: masterError,
+  account: selectedAccount,
+  fallback: () => t("training.power.loadError"),
 })
 
 
@@ -97,8 +99,8 @@ function formatPercent(value: number): string {
 }
 
 function refresh() {
-  void reloadSuite("check-remote")
   reloadMaster()
+  return reloadSuite("check-remote")
 }
 
 useTrainingRefresh(refresh)
@@ -131,14 +133,14 @@ function retry() {
 
     <!-- Error -->
     <Card v-else-if="hasError && !isLoading">
-      <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <p class="text-sm text-muted-foreground">{{ t("training.power.loadError") }}</p>
-        <p v-if="errorDetail" class="max-w-full truncate font-mono text-xs text-muted-foreground">
-          {{ errorDetail }}
-        </p>
-        <Button variant="outline" size="sm" @click="retry">
-          {{ t("training.power.retry") }}
-        </Button>
+      <CardContent>
+        <LoadErrorState
+          :description="errorMessage"
+          :detail="errorDetail"
+          :retry-label="t('training.power.retry')"
+          :retrying="isLoading"
+          @retry="retry"
+        />
       </CardContent>
     </Card>
 

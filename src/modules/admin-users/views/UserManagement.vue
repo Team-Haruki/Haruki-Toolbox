@@ -2,16 +2,19 @@
 import { useRouter } from "vue-router"
 import { useUserStore } from "@/shared/stores/user"
 import { Card, CardContent } from "@/components/ui/card"
+import AdminPagination from "@/modules/admin/components/AdminPagination.vue"
 import {
   UserManagementBatchActions,
   UserManagementFilters,
-  UserManagementPagination,
   UserManagementTable,
 } from "@/modules/admin-users/components"
+import type { UserBatchActions } from "@/modules/admin-users/components/UserManagementBatchActions.vue"
 import { useAdminUserManagement } from "@/modules/admin-users/composables/useAdminUserManagement"
+import { useI18n } from "vue-i18n"
 
 const router = useRouter()
 const userStore = useUserStore()
+const { t } = useI18n()
 
 const {
   loading,
@@ -26,6 +29,7 @@ const {
   sortFilter,
   createdFrom,
   createdTo,
+  hasActiveFilters,
   selectedIds,
   loadError,
   batchLoading,
@@ -33,6 +37,8 @@ const {
   batchAllowCNTarget,
   totalPages,
   reloadUsers,
+  applySearch,
+  resetFilters,
   prevPage,
   nextPage,
   goToPage,
@@ -48,6 +54,14 @@ const {
 function goToUser(userId: string) {
   void router.push({ name: "admin.userDetail", params: { userId } })
 }
+
+const batchActions: UserBatchActions = {
+  ban: doBatchBan,
+  unban: doBatchUnban,
+  forceLogout: doBatchForceLogout,
+  setRole: doBatchRole,
+  setAllowCN: doBatchAllowCNMysekai,
+}
 </script>
 
 <template>
@@ -62,6 +76,10 @@ function goToUser(userId: string) {
           v-model:sort-filter="sortFilter"
           v-model:created-from="createdFrom"
           v-model:created-to="createdTo"
+          :has-active-filters="hasActiveFilters"
+          :loading="loading"
+          @apply="applySearch"
+          @reset="resetFilters"
         />
       </CardContent>
     </Card>
@@ -73,11 +91,7 @@ function goToUser(userId: string) {
         :is-super-admin="userStore.isSuperAdmin"
         v-model:batch-role-target="batchRoleTarget"
         v-model:batch-allow-cn-target="batchAllowCNTarget"
-        @batch-ban="doBatchBan"
-        @batch-unban="doBatchUnban"
-        @batch-force-logout="doBatchForceLogout"
-        @batch-role="doBatchRole"
-        @batch-allow-cn="doBatchAllowCNMysekai"
+        :actions="batchActions"
       />
       <UserManagementTable
         :loading="loading"
@@ -89,12 +103,14 @@ function goToUser(userId: string) {
         @go-to-user="goToUser"
         @retry="reloadUsers"
       />
-      <div class="border-t px-4 py-3 sm:px-6">
-        <UserManagementPagination
+      <div v-if="!loadError" class="border-t px-4 py-3 sm:px-6">
+        <AdminPagination
           :total="total"
           :page="page"
           :page-size="pageSize"
           :total-pages="totalPages()"
+          :disabled="loading"
+          :total-label="t('adminUsers.management.pagination.totalUsers', { total })"
           @update:page-size="pageSize = $event"
           @prev-page="prevPage"
           @next-page="nextPage"

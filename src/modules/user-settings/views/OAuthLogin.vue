@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
+import { RouterLink, useRoute, useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
@@ -79,7 +79,12 @@ watch(
   { immediate: true }
 )
 
-async function continueAuthorization() {
+/**
+ * Accepts the login challenge. The automatic attempt on page load reports a
+ * failure only inline (the card with Continue / Cancel is what the person
+ * sees next); a failure of an explicit click gets a toast as well.
+ */
+async function continueAuthorization(options: { automatic?: boolean } = {}) {
   if (isSubmitting.value) return
   const challenge = loginRequest.value?.challenge?.trim() || loginChallenge.value
   if (!challenge) return
@@ -97,7 +102,9 @@ async function continueAuthorization() {
   } catch (error: unknown) {
     const description = extractErrorMessage(error, t("oauth.login.toast.retry"))
     actionError.value = description
-    toast.error(t("oauth.login.toast.failedTitle"), { description })
+    if (!options.automatic) {
+      toast.error(t("oauth.login.toast.failedTitle"), { description })
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -115,18 +122,18 @@ watch(
     }
 
     autoAcceptedChallenge.value = challenge
-    void continueAuthorization()
+    void continueAuthorization({ automatic: true })
   },
   { immediate: true }
 )
 
-function goToLogin() {
-  if (isSubmitting.value) return
-  void router.push({
-    name: "user.login",
-    query: { redirect: route.fullPath },
-  })
-}
+// A plain router link, not a click handler: the signed-out card is swapped
+// out while the challenge (re)loads, and a handler on a button that is being
+// replaced mid-click was dropped. The link target is computed once per route.
+const loginRoute = computed(() => ({
+  name: "user.login",
+  query: { redirect: route.fullPath },
+}))
 
 async function rejectAuthorization() {
   if (isSubmitting.value) return
@@ -190,9 +197,11 @@ async function rejectAuthorization() {
         </CardDescription>
       </CardHeader>
       <CardFooter class="flex gap-3">
-        <Button class="flex-1" @click="goToLogin">
-          <LogIn class="h-4 w-4 mr-2" />
-          {{ t("oauth.login.signInButton") }}
+        <Button as-child class="flex-1">
+          <RouterLink :to="loginRoute" data-testid="oauth-login-sign-in">
+            <LogIn class="h-4 w-4 mr-2" />
+            {{ t("oauth.login.signInButton") }}
+          </RouterLink>
         </Button>
         <Button variant="outline" class="flex-1" @click="router.push({ name: 'home' })">
           {{ t("oauth.login.backHome") }}
@@ -213,7 +222,7 @@ async function rejectAuthorization() {
         </CardDescription>
       </CardHeader>
       <CardContent v-if="actionError" class="pt-0">
-        <div class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+        <div role="alert" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {{ actionError }}
         </div>
       </CardContent>

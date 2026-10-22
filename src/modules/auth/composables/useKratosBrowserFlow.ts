@@ -1,6 +1,5 @@
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue"
 import { useRoute } from "vue-router"
-import { extractErrorMessage } from "@/lib/error-utils"
 import { createLogger } from "@/lib/logger"
 import {
   fetchKratosBrowserFlow,
@@ -10,11 +9,25 @@ import {
   type KratosUiMessage,
   type KratosUiNode,
 } from "@/modules/auth/lib/kratos"
+import { describeKratosFlowLoadError, localizeKratosMessage } from "@/modules/auth/lib/kratos-messages"
+import { resolveKratosInputLabelKeys, resolveKratosSubmitLabelKey } from "@/modules/auth/lib/kratos-labels"
+import {
+  resolveFieldsToValidate,
+  resolveValidationSubmitter,
+  type KratosSubmitterInfo,
+} from "@/modules/auth/lib/kratos-validation"
+import { translateIfExists } from "@/shared/i18n"
 
 const logger = createLogger("kratos-flow")
 
 interface UseKratosBrowserFlowOptions {
   getReturnTo?: () => string
+  /**
+   * Replaces the default hard navigation to Kratos when no flow id is in the
+   * URL (e.g. to show an interstitial or probe reachability first). Receives
+   * the resolved return_to, "" when none.
+   */
+  startFlow?: (returnTo: string) => void
 }
 
 export type KratosFlowMessageTone = "info" | "success" | "error" | "warning"
@@ -41,6 +54,7 @@ interface VisibleField {
   type: string
   autocomplete: string
   label: string
+  placeholder: string
   required: boolean
   disabled: boolean
   onClickTrigger: string
@@ -64,9 +78,14 @@ interface SubmitField {
   name: string
   value: string
   label: string
+  /** Kratos text id of the label, e.g. 1070008 for "Resend code". */
+  labelId: number | null
   disabled: boolean
   messages: KratosFlowMessage[]
 }
+
+/** Marks a rendered submit button so a submit event can be traced back to its Kratos node. */
+export const KRATOS_SUBMIT_KEY_ATTRIBUTE = "data-kratos-submit"
 
 interface ScriptField {
   key: string
@@ -166,7 +185,7 @@ function normalizeMessageTone(value: unknown): KratosFlowMessageTone {
 function readTypedMessages(messages: KratosUiMessage[] | undefined, prefix: string): KratosFlowMessage[] {
   return (messages ?? [])
     .map((message, index) => {
-      const text = message.text?.trim() ?? ""
+      const text = localizeKratosMessage(message)
       if (!text) {
         return null
       }
@@ -188,8 +207,24 @@ function prettifyFieldName(name: string): string {
     .join(" ")
 }
 
-function resolveFieldLabel(node: KratosUiNode, name: string): string {
-  return node.meta?.label?.text?.trim() || prettifyFieldName(name)
+function resolveFieldLabel(flowType: KratosFlowType, node: KratosUiNode, name: string): string {
+  const mapped = resolveKratosInputLabelKeys(flowType, name)
+  const localized = mapped ? translateIfExists(mapped.labelKey) : null
+  return localized || node.meta?.label?.text?.trim() || prettifyFieldName(name)
+}
+
+function resolveFieldPlaceholder(flowType: KratosFlowType, name: string): string {
+  const mapped = resolveKratosInputLabelKeys(flowType, name)
+  if (!mapped?.placeholderKey) {
+    return ""
+  }
+  return translateIfExists(mapped.placeholderKey) ?? ""
+}
+
+function resolveSubmitLabel(flowType: KratosFlowType, node: KratosUiNode, name: string, value: string, state: string): string {
+  const key = resolveKratosSubmitLabelKey(flowType, name, value, { state, labelId: node.meta?.label?.id })
+  const localized = key ? translateIfExists(key) : null
+  return localized || node.meta?.label?.text?.trim() || value || translateIfExists("auth.kratos.labels.submit") || "Submit"
 }
 
 function normalizeGroup(value: unknown): string {
@@ -313,6 +348,9 @@ export function useKratosBrowserFlow(
   const loadError = ref("")
   const flow = ref<KratosBrowserFlow | null>(null)
   const fieldValues = reactive<Record<string, string>>({})
+  // Client-side "required" errors keyed by node name; Kratos still validates
+  // server-side, this only saves the round-trip for an obviously empty form.
+  const fieldErrors = reactive<Record<string, string>>({})
   const injectedScripts = ref<HTMLScriptElement[]>([])
 
   const flowId = computed(() => {
@@ -320,11 +358,72 @@ export function useKratosBrowserFlow(
     return typeof rawFlow === "string" ? rawFlow.trim() : ""
   })
 
+  function resetFieldErrors() {
+    Object.keys(fieldErrors).forEach((key) => {
+      delete fieldErrors[key]
+    })
+  }
+
   function resetFieldValues() {
     Object.keys(fieldValues).forEach((key) => {
       delete fieldValues[key]
     })
+    resetFieldErrors()
   }
+
+  /**
+   * The Kratos submit node behind the button that fired a submit event. The
+   * button carries its node key as `data-kratos-submit`; a button without it
+   * is matched by name/value, or described from its own attributes.
+   */
+  function resolveEventSubmitter(event: Event | undefined): KratosSubmitterInfo | null {
+    const submitter = (event as SubmitEvent | undefined)?.submitter
+    if (!submitter) {
+      return null
+    }
+
+    const key = submitter.getAttribute(KRATOS_SUBMIT_KEY_ATTRIBUTE) ?? ""
+    const byKey = key ? submitFields.value.find((submit) => submit.key === key) : undefined
+    if (byKey) {
+      return byKey
+    }
+
+    const name = submitter.getAttribute("name") ?? ""
+    const value = submitter.getAttribute("value") ?? ""
+    const byName = submitFields.value.find((submit) => submit.name === name && submit.value === value)
+    return byName ?? { name, value, group: "default", labelId: null }
+  }
+
+  /**
+   * Marks empty required inputs and reports whether the form may be posted.
+   * The check covers only the fields of the method the clicked button names
+   * (see resolveFieldsToValidate); OIDC, passkey and "Resend code" buttons
+   * always pass. Kratos still validates server-side.
+   */
+  function validateVisibleFields(event?: Event): boolean {
+    resetFieldErrors()
+    const submitter = resolveValidationSubmitter(resolveEventSubmitter(event), submitFields.value)
+    const names = new Set(resolveFieldsToValidate(submitter, visibleFields.value))
+    for (const field of visibleFields.value) {
+      if (!names.has(field.name)) continue
+      if ((fieldValues[field.name] ?? "").trim() === "") {
+        fieldErrors[field.name] = translateIfExists("auth.validation.required") ?? "Required"
+      }
+    }
+    return Object.keys(fieldErrors).length === 0
+  }
+
+  // Typing into a flagged field clears its error.
+  watch(
+    () => ({ ...fieldValues }),
+    (next, prev) => {
+      for (const key of Object.keys(fieldErrors)) {
+        if (next[key] !== prev?.[key]) {
+          delete fieldErrors[key]
+        }
+      }
+    },
+  )
 
   function seedFieldValues(nextFlow: KratosBrowserFlow) {
     resetFieldValues()
@@ -347,6 +446,10 @@ export function useKratosBrowserFlow(
 
   function startFlow() {
     const returnTo = resolveReturnTo()
+    if (options.startFlow) {
+      options.startFlow(returnTo)
+      return
+    }
     redirectToKratosBrowserFlow(
       flowType,
       returnTo ? { returnTo } : {}
@@ -368,7 +471,7 @@ export function useKratosBrowserFlow(
     } catch (error: unknown) {
       flow.value = null
       resetFieldValues()
-      loadError.value = extractErrorMessage(error, "Failed to load identity flow.")
+      loadError.value = describeKratosFlowLoadError(flowType)
       logger.warn(`Failed to load ${flowType} flow`, error)
     } finally {
       loading.value = false
@@ -423,7 +526,8 @@ export function useKratosBrowserFlow(
           value: typeof node.attributes?.value === "string" ? node.attributes.value : "",
           type,
           autocomplete: readOptionalString(node.attributes?.autocomplete),
-          label: resolveFieldLabel(node, name),
+          label: resolveFieldLabel(flowType, node, name),
+          placeholder: resolveFieldPlaceholder(flowType, name),
           required: node.attributes?.required === true,
           disabled: node.attributes?.disabled === true,
           onClickTrigger: resolveWindowTrigger(
@@ -450,7 +554,7 @@ export function useKratosBrowserFlow(
           group: normalizeGroup(node.group),
           name,
           value: typeof node.attributes?.value === "string" ? node.attributes.value : "",
-          label: resolveFieldLabel(node, name),
+          label: resolveFieldLabel(flowType, node, name),
           disabled: node.attributes?.disabled === true,
           onClickTrigger: resolveWindowTrigger(
             node.attributes?.onclickTrigger,
@@ -471,7 +575,7 @@ export function useKratosBrowserFlow(
 
         const name = typeof node.attributes?.name === "string" ? node.attributes.name : ""
         const value = typeof node.attributes?.value === "string" ? node.attributes.value : ""
-        const label = node.meta?.label?.text?.trim() || value || "Submit"
+        const label = resolveSubmitLabel(flowType, node, name, value, typeof flow.value?.state === "string" ? flow.value.state : "")
 
         return {
           key: `${name || "submit"}-${index}`,
@@ -479,6 +583,7 @@ export function useKratosBrowserFlow(
           name,
           value,
           label,
+          labelId: typeof node.meta?.label?.id === "number" ? node.meta.label.id : null,
           disabled: node.attributes?.disabled === true,
           messages: readTypedMessages(node.messages, `${name || "submit"}-${index}`),
         }
@@ -730,6 +835,8 @@ export function useKratosBrowserFlow(
     loading,
     loadError,
     fieldValues,
+    fieldErrors,
+    validateVisibleFields,
     generalMessages,
     hiddenFields,
     visibleFields,

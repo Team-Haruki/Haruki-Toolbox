@@ -1,57 +1,55 @@
 <script setup lang="ts">
+import { ref } from "vue"
 import { useI18n } from "vue-i18n"
 import {
   LucideAlertTriangle,
-  LucideLoader2,
   LucidePencil,
   LucidePlus,
-  LucideSave,
   LucideTrash2,
 } from "lucide-vue-next"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { categoryBadgeVariant, type ManualDurationForm } from "@/modules/admin-sponsors/lib/manual-duration"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import { categoryBadgeVariant } from "@/modules/admin-sponsors/lib/manual-duration"
+import type { ErrorDescription } from "@/lib/error-utils"
 import type { AdminManualDuration, AdminSponsorDetail } from "@/types/admin"
 
-defineProps<{
+const props = defineProps<{
   detail: AdminSponsorDetail | null
   loading: boolean
-  formOpen: boolean
-  editingEntryId: number | null
-  saving: boolean
+  loadError: ErrorDescription | null
   deleting: boolean
   formatDate: (value?: string) => string
+  /** Confirmed in a dialog; rejects on failure so the dialog stays open with the error. */
+  deleteEntry: (entry: AdminManualDuration) => Promise<void>
 }>()
-
-const manualForm = defineModel<ManualDurationForm>("manualForm", { required: true })
 
 const emit = defineEmits<{
   new: []
   edit: [entry: AdminManualDuration]
-  cancel: []
-  save: []
-  delete: [entry: AdminManualDuration]
+  retry: []
 }>()
 
 const { t } = useI18n()
 
+const deleteConfirmOpen = ref(false)
+// Kept after the dialog closes so its text does not change mid fade-out.
+const entryToDelete = ref<AdminManualDuration | null>(null)
+
 function amountLabel(amount: number, unit: "day" | "month") {
   return t(`adminSponsors.duration.amount.${unit}`, { count: amount })
+}
+
+function requestDelete(entry: AdminManualDuration) {
+  entryToDelete.value = entry
+  deleteConfirmOpen.value = true
+}
+
+function executeDelete() {
+  const entry = entryToDelete.value
+  return entry ? props.deleteEntry(entry) : Promise.resolve()
 }
 </script>
 
@@ -68,6 +66,14 @@ function amountLabel(amount: number, unit: "day" | "month") {
       <Skeleton class="h-16 w-full" />
       <Skeleton class="h-24 w-full" />
     </div>
+
+    <LoadErrorState
+      v-else-if="loadError && !detail"
+      :description="loadError.message"
+      :detail="loadError.detail"
+      :retrying="loading"
+      @retry="emit('retry')"
+    />
 
     <template v-else-if="detail">
       <p
@@ -146,7 +152,7 @@ function amountLabel(amount: number, unit: "day" | "month") {
         </div>
       </div>
 
-      <!-- Manual entries (editable) -->
+      <!-- Manual entries: edited in their own dialog, never inside the profile form -->
       <div class="space-y-2">
         <div class="flex items-center justify-between gap-2">
           <h4 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -155,21 +161,21 @@ function amountLabel(amount: number, unit: "day" | "month") {
           <Button
             variant="outline"
             size="sm"
-            :disabled="detail.sponsor.durationMigrationPending || formOpen"
+            :disabled="detail.sponsor.durationMigrationPending"
             @click="emit('new')"
           >
             <LucidePlus class="mr-1.5 h-4 w-4" />
             {{ t("adminSponsors.duration.manual.add") }}
           </Button>
         </div>
-        <p v-if="detail.manualDurations.length === 0 && !formOpen" class="text-xs text-muted-foreground">
+        <p v-if="detail.manualDurations.length === 0" class="text-xs text-muted-foreground">
           {{ t("adminSponsors.duration.manual.empty") }}
         </p>
         <ul v-else class="divide-y rounded-lg border">
           <li
             v-for="entry in detail.manualDurations"
             :key="entry.id"
-            :class="['flex items-start gap-3 px-3 py-2', editingEntryId === entry.id ? 'bg-muted/40' : '']"
+            class="flex items-start gap-3 px-3 py-2"
           >
             <div class="min-w-0 flex-1 space-y-0.5">
               <p class="flex flex-wrap items-center gap-2 text-sm font-medium">
@@ -192,83 +198,34 @@ function amountLabel(amount: number, unit: "day" | "month") {
                 class="size-8"
                 :title="t('adminSponsors.duration.manual.edit')"
                 :aria-label="t('adminSponsors.duration.manual.edit')"
-                :disabled="formOpen"
                 @click="emit('edit', entry)"
               >
                 <LucidePencil class="h-4 w-4" />
               </Button>
-              <AlertDialog>
-                <AlertDialogTrigger as-child>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    class="size-8 text-destructive hover:text-destructive"
-                    :title="t('adminSponsors.duration.manual.delete')"
-                    :aria-label="t('adminSponsors.duration.manual.delete')"
-                    :disabled="deleting"
-                  >
-                    <LucideTrash2 class="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{{ t("adminSponsors.duration.manual.deleteTitle") }}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {{ t("adminSponsors.duration.manual.deleteDescription", { amount: amountLabel(entry.amount, entry.unit) }) }}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{{ t("common.cancel") }}</AlertDialogCancel>
-                    <AlertDialogAction @click="emit('delete', entry)">
-                      {{ t("adminSponsors.duration.manual.delete") }}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-8 text-destructive hover:text-destructive"
+                :title="t('adminSponsors.duration.manual.delete')"
+                :aria-label="t('adminSponsors.duration.manual.delete')"
+                :disabled="deleting"
+                @click="requestDelete(entry)"
+              >
+                <LucideTrash2 class="h-4 w-4" />
+              </Button>
             </div>
           </li>
         </ul>
-
-        <form v-if="formOpen" class="grid gap-3 rounded-lg border bg-muted/20 p-3" @submit.prevent="emit('save')">
-          <div class="grid gap-3 sm:grid-cols-[8rem_8rem_1fr]">
-            <div class="space-y-1.5">
-              <Label for="admin-sponsor-manual-amount">{{ t("adminSponsors.duration.form.amount") }}</Label>
-              <Input id="admin-sponsor-manual-amount" v-model="manualForm.amount" type="number" min="1" step="1" inputmode="numeric" />
-            </div>
-            <div class="space-y-1.5">
-              <Label for="admin-sponsor-manual-unit">{{ t("adminSponsors.duration.form.unit") }}</Label>
-              <NativeSelect id="admin-sponsor-manual-unit" v-model="manualForm.unit" class="w-full">
-                <NativeSelectOption value="month">{{ t("adminSponsors.duration.form.units.month") }}</NativeSelectOption>
-                <NativeSelectOption value="day">{{ t("adminSponsors.duration.form.units.day") }}</NativeSelectOption>
-              </NativeSelect>
-            </div>
-            <div class="space-y-1.5">
-              <Label for="admin-sponsor-manual-starts-at">{{ t("adminSponsors.duration.form.startsAt") }}</Label>
-              <Input id="admin-sponsor-manual-starts-at" v-model="manualForm.startsAt" type="datetime-local" />
-            </div>
-          </div>
-          <p class="text-xs text-muted-foreground">{{ t("adminSponsors.duration.form.startsAtHelp") }}</p>
-          <div class="space-y-1.5">
-            <Label for="admin-sponsor-manual-note">{{ t("adminSponsors.duration.form.note") }}</Label>
-            <Input
-              id="admin-sponsor-manual-note"
-              v-model="manualForm.note"
-              maxlength="500"
-              :placeholder="t('adminSponsors.duration.form.notePlaceholder')"
-            />
-          </div>
-          <div class="flex justify-end gap-2">
-            <Button type="button" variant="outline" size="sm" :disabled="saving" @click="emit('cancel')">
-              {{ t("common.cancel") }}
-            </Button>
-            <Button type="submit" size="sm" :disabled="saving">
-              <LucideLoader2 v-if="saving" class="mr-1.5 h-4 w-4 animate-spin" />
-              <LucideSave v-else class="mr-1.5 h-4 w-4" />
-              {{ editingEntryId === null ? t("adminSponsors.duration.manual.add") : t("common.save") }}
-            </Button>
-          </div>
-        </form>
       </div>
     </template>
+
+    <ConfirmDialog
+      v-model:open="deleteConfirmOpen"
+      :title="t('adminSponsors.duration.manual.deleteTitle')"
+      :description="t('adminSponsors.duration.manual.deleteDescription', { amount: entryToDelete ? amountLabel(entryToDelete.amount, entryToDelete.unit) : '' })"
+      :confirm-label="t('adminSponsors.duration.manual.delete')"
+      destructive
+      :on-confirm="executeDelete"
+    />
   </section>
 </template>

@@ -34,6 +34,8 @@ export type RouteQueryState<T extends object> = {
   /**
    * Applies a partial update. Filter-field components emit patches instead of
    * writing into `state` themselves, so the page stays the only writer.
+   * A patch that sets `pageKey` itself is an intended page jump: the
+   * filters-changed page reset is skipped for that write.
    */
   patch: (next: Partial<T>) => void
   /** Resets the given keys (default: `filterKeys`) to their defaults. */
@@ -74,6 +76,9 @@ export function useRouteQueryState<T extends object>(
   // Remembers that the change which triggered a page reset was debounced,
   // so the follow-up run (only `page` changed) keeps the debounce.
   let pendingDebounce = false
+  // Set by `patch` when the patch writes `pageKey` together with a filter:
+  // the page is the caller's intent, not a stale value to reset.
+  let explicitPage = false
   let leaving = false
 
   function isOwnedRoute(): boolean {
@@ -113,9 +118,12 @@ export function useRouteQueryState<T extends object>(
       const changedKeys = codec.keys.filter((key) => record[key] !== lastRecord[key])
       lastRecord = record
       const debounced = pendingDebounce || changedKeys.some((key) => debounceKeys.has(key))
+      const keepPage = explicitPage
+      explicitPage = false
 
       if (
         options.pageKey
+        && !keepPage
         && changedKeys.some((key) => !pageNeutral.has(key))
         && (state as Record<string, unknown>)[options.pageKey] !== 1
       ) {
@@ -206,6 +214,9 @@ export function useRouteQueryState<T extends object>(
   }
 
   function patch(next: Partial<T>) {
+    if (options.pageKey && options.pageKey in next) {
+      explicitPage = true
+    }
     Object.assign(state as object, next)
   }
 

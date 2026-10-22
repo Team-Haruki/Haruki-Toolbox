@@ -1,11 +1,17 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import { describeError } from "@/lib/error-utils"
 import { useFriendLinks } from "@/modules/navigation/composables/useFriendLinks"
 
-const { friendLinks, loading } = useFriendLinks()
+const { friendLinks, loading, error, reload } = useFriendLinks()
 const { t } = useI18n()
+
+const errorDescription = computed(() =>
+  error.value == null ? null : describeError(error.value, t("navigationPages.friendLinks.toast.loadFailedTitle")))
 </script>
 
 <template>
@@ -18,36 +24,50 @@ const { t } = useI18n()
       </p>
     </div>
 
-    <!-- Friend link card grid -->
     <div v-if="loading" class="text-center py-10 text-muted-foreground">
       {{ t("navigationPages.friendLinks.loading") }}
     </div>
-    
+
+    <!-- Backend failure: say so and offer a retry instead of a blank page -->
+    <div v-else-if="errorDescription" class="max-w-5xl mx-auto">
+      <LoadErrorState
+        :description="errorDescription.message"
+        :detail="errorDescription.detail"
+        :retrying="loading"
+        @retry="reload"
+      />
+    </div>
+
+    <div v-else-if="friendLinks.length === 0" class="max-w-5xl mx-auto text-center py-10 text-muted-foreground">
+      {{ t("navigationPages.friendLinks.empty") }}
+    </div>
+
+    <!-- Friend link card grid -->
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-      <a 
-        v-for="friend in friendLinks" 
+      <a
+        v-for="friend in friendLinks"
         :key="friend.id"
-        :href="friend.url" 
-        target="_blank" 
+        :href="friend.url"
+        target="_blank"
         rel="noopener noreferrer"
         class="block group outline-none"
       >
         <Card class="h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer bg-card/50 backdrop-blur-sm">
           <CardHeader class="flex flex-row items-center gap-4 pb-2">
-            
+
             <Avatar class="h-12 w-12 border-2 border-transparent transition-colors duration-300 group-hover:border-primary">
               <AvatarImage :src="friend.avatar" :alt="friend.name" />
               <AvatarFallback>{{ friend.name.charAt(0) }}</AvatarFallback>
             </Avatar>
-            
+
             <div class="flex flex-col">
               <CardTitle class="text-lg group-hover:text-primary transition-colors">
                 {{ friend.name }}
               </CardTitle>
               <!-- Optional tag display -->
               <div class="flex gap-1 mt-1">
-                <span 
-                  v-for="tag in friend.tags" 
+                <span
+                  v-for="tag in friend.tags"
                   :key="tag"
                   class="text-[10px] px-1.5 py-0.5 rounded-sm bg-secondary text-secondary-foreground"
                 >
@@ -55,7 +75,7 @@ const { t } = useI18n()
                 </span>
               </div>
             </div>
-            
+
           </CardHeader>
 
           <CardContent>

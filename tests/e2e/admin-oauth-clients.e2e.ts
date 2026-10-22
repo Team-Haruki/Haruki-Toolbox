@@ -184,6 +184,21 @@ const EDIT_BUTTON = /^(编辑|Edit)$/
 const CLOSE_BUTTON = /^(关闭|Close)$/
 const ROTATE_ITEM = /^(轮换 Secret|Rotate secret)$/
 const REVOKE_ALL_ITEM = /^(撤销全部授权|Revoke all authorizations)$/
+const DISABLE_ITEM = /^(禁用客户端|Disable client)$/
+
+/**
+ * Disabling revokes the client's grants, so it is confirmed in a ConfirmDialog
+ * first. Opens the row menu, picks "disable" and confirms; returns the dialog
+ * so the caller can assert it closed once the action resolved.
+ */
+async function disableClientThroughConfirm(page: Page, clientId: string) {
+  const menu = await openClientMenu(page, clientId)
+  await menu.getByRole("menuitem", { name: DISABLE_ITEM }).click()
+  const confirm = page.getByRole("alertdialog", { name: DISABLE_ITEM })
+  await expect(confirm).toContainText(clientId)
+  await confirm.getByRole("button", { name: /^(禁用|Disable)$/ }).click()
+  return confirm
+}
 
 test.describe("admin OAuth clients", () => {
   test.describe.configure({ timeout: 60_000 })
@@ -268,12 +283,14 @@ test.describe("admin OAuth clients", () => {
       return undefined
     })
 
-    const menu = await openClientMenu(page, CONFIDENTIAL_CLIENT.clientId)
-    await menu.getByRole("menuitem", { name: /^(禁用客户端|Disable client)$/ }).click()
+    const confirm = await disableClientThroughConfirm(page, CONFIDENTIAL_CLIENT.clientId)
 
+    // A partial revocation is not a failure: the client is disabled, so the
+    // dialog closes and the warning toast carries the leftover instead.
     const warning = toast(page, "warning", DISABLE_WARNING)
     await expect(warning).toBeVisible()
     await expect(warning).toContainText(/有 1 个用户标识（subject）撤销失败|1 subject \(user identity\) could not be revoked/)
+    await expect(confirm).toBeHidden()
     expect(calls.find((call) => call.method === "PUT")?.body).toEqual({ active: false })
 
     // The success toast would follow the list reload. Once the reload shows the
@@ -303,11 +320,11 @@ test.describe("admin OAuth clients", () => {
       return undefined
     })
 
-    const menu = await openClientMenu(page, CONFIDENTIAL_CLIENT.clientId)
-    await menu.getByRole("menuitem", { name: /^(禁用客户端|Disable client)$/ }).click()
+    const confirm = await disableClientThroughConfirm(page, CONFIDENTIAL_CLIENT.clientId)
 
     const success = toast(page, "success", DISABLED_TOAST)
     await expect(success).toBeVisible()
+    await expect(confirm).toBeHidden()
     expect(await raisedToasts(page, "warning", DISABLE_WARNING)).toEqual([])
 
     // Control for the warning tests: the same fast-forward removes a default toast.
@@ -457,9 +474,20 @@ test.describe("admin OAuth clients", () => {
     await dialog.getByRole("button", { name: /game-data:read/ }).click()
     await dialog.getByRole("button", { name: /^(创建|Create)$/ }).click()
 
-    await expect(toast(page, "error", /设备码客户端须登记 user:read|Device code clients must register user:read/)).toBeVisible()
+    // The rule is reported inline under the scopes group (not as a toast), the
+    // group is flagged invalid and focused, and nothing is sent.
+    const scopes = dialog.getByRole("group", { name: /^(授权范围 \(Scopes\)|Scopes)$/ })
+    await expect(scopes).toHaveAttribute("aria-invalid", "true")
+    await expect(scopes.getByRole("alert")).toHaveText(/设备码客户端须登记 user:read|Device code clients must register user:read/)
+    await expect(scopes).toBeFocused()
     await expect(dialog).toBeVisible()
+    expect(await raisedToasts(page, "error", /user:read/)).toEqual([])
     expect(calls.filter((call) => call.method === "POST")).toEqual([])
+
+    // Registering user:read clears the message and lets the create go ahead.
+    await dialog.getByRole("button", { name: /user:read/ }).click()
+    await expect(scopes.getByRole("alert")).toHaveCount(0)
+    await expect(scopes).not.toHaveAttribute("aria-invalid", "true")
   })
 
   test("keeps the grants of an untouched device-only client on edit", async ({ page }) => {

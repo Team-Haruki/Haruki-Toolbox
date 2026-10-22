@@ -30,7 +30,11 @@ import {
   FileSliders,
   RotateCcw,
 } from "lucide-vue-next"
-import { useBotNeoRegistration } from "@/modules/haruki-bot-neo/composables/useBotNeoRegistration"
+import {
+  BOT_NEO_CODE_INPUT_ID,
+  BOT_NEO_QQ_INPUT_ID,
+  useBotNeoRegistration,
+} from "@/modules/haruki-bot-neo/composables/useBotNeoRegistration"
 
 const { t } = useI18n()
 const {
@@ -39,18 +43,25 @@ const {
   step,
   qqNumber,
   verificationCode,
+  qqError,
+  codeError,
   sending,
   registering,
   result,
   isCooldown,
   cooldownSeconds,
   checkStatus,
+  clearQQError,
+  clearCodeError,
   handleSendCode,
   handleRegister,
   handleCopy,
   handleReset,
   handleBackToInput,
 } = useBotNeoRegistration()
+
+const QQ_ERROR_ID = "bot-neo-qq-error"
+const CODE_ERROR_ID = "bot-neo-code-error"
 
 const configGeneratorRoute = computed(() => {
   const data = result.value
@@ -117,24 +128,28 @@ function normalizeRouteValue(value: unknown): string {
           </Alert>
 
           <div class="flex flex-col gap-2">
-            <label for="bot-neo-qq" class="text-sm font-medium">{{ t("botNeo.input.qqLabel") }}</label>
+            <label :for="BOT_NEO_QQ_INPUT_ID" class="text-sm font-medium">{{ t("botNeo.input.qqLabel") }}</label>
             <div class="relative w-full items-center">
               <Input
-                id="bot-neo-qq"
+                :id="BOT_NEO_QQ_INPUT_ID"
                 v-model="qqNumber"
                 :placeholder="t('botNeo.input.qqPlaceholder')"
                 class="pl-10"
                 inputmode="numeric"
+                :aria-invalid="qqError ? 'true' : undefined"
+                :aria-describedby="qqError ? QQ_ERROR_ID : undefined"
+                @input="clearQQError"
                 @keydown.enter="handleSendCode"
               />
               <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                 <User class="size-4 text-muted-foreground" />
               </span>
             </div>
+            <p v-if="qqError" :id="QQ_ERROR_ID" role="alert" class="text-xs text-destructive">{{ qqError }}</p>
           </div>
 
           <p class="text-xs text-muted-foreground">
-            {{ t("botNeo.input.hint") }}
+            {{ t("botNeo.input.hint", { qq: qqNumber.trim() || t("botNeo.input.hintQqPlaceholder") }) }}
           </p>
 
           <Button
@@ -160,21 +175,26 @@ function normalizeRouteValue(value: unknown): string {
           </div>
 
           <div class="flex flex-col gap-2">
-            <label for="bot-neo-code" class="text-sm font-medium">{{ t("botNeo.verify.codeLabel") }}</label>
+            <label :for="BOT_NEO_CODE_INPUT_ID" class="text-sm font-medium">{{ t("botNeo.verify.codeLabel") }}</label>
             <div class="relative w-full items-center">
               <Input
-                id="bot-neo-code"
+                :id="BOT_NEO_CODE_INPUT_ID"
                 v-model="verificationCode"
                 :placeholder="t('botNeo.verify.codePlaceholder')"
                 class="pl-10"
                 maxlength="6"
                 inputmode="numeric"
+                autocomplete="one-time-code"
+                :aria-invalid="codeError ? 'true' : undefined"
+                :aria-describedby="codeError ? CODE_ERROR_ID : undefined"
+                @input="clearCodeError"
                 @keydown.enter="handleRegister"
               />
               <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                 <Key class="size-4 text-muted-foreground" />
               </span>
             </div>
+            <p v-if="codeError" :id="CODE_ERROR_ID" role="alert" class="text-xs text-destructive">{{ codeError }}</p>
           </div>
 
           <div class="flex gap-2">
@@ -231,9 +251,11 @@ function normalizeRouteValue(value: unknown): string {
                 <Button
                   variant="outline"
                   size="icon"
-                  @click="handleCopy(result!.bot_id, 'Bot ID')"
+                  :title="t('botNeo.result.copyAction', { label: t('botNeo.result.botIdLabel') })"
+                  :aria-label="t('botNeo.result.copyAction', { label: t('botNeo.result.botIdLabel') })"
+                  @click="handleCopy(result!.bot_id, t('botNeo.result.botIdLabel'))"
                 >
-                  <Copy class="h-4 w-4" />
+                  <Copy class="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -248,9 +270,11 @@ function normalizeRouteValue(value: unknown): string {
                   variant="outline"
                   size="icon"
                   class="flex-shrink-0"
-                  @click="handleCopy(result!.credential, 'Credential')"
+                  :title="t('botNeo.result.copyAction', { label: t('botNeo.result.credentialLabel') })"
+                  :aria-label="t('botNeo.result.copyAction', { label: t('botNeo.result.credentialLabel') })"
+                  @click="handleCopy(result!.credential, t('botNeo.result.credentialLabel'))"
                 >
-                  <Copy class="h-4 w-4" />
+                  <Copy class="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>

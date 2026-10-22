@@ -254,27 +254,27 @@ export default {
       }
     },
     "iosModules": {
-      "title": "iOS模块生成器",
-      "description": "生成自定义的iOS代理模块",
+      "title": "iOS 模块（iPhone / iPad）",
+      "description": "生成一个代理模块装进 Shadowrocket、Surge 等代理软件，之后进游戏时数据会自动上传。",
       "tutorialAlert": {
-        "textBefore": "本文教程可以",
-        "linkText": "点击这里",
-        "textAfter": "观看",
+        "label": "图文教程：",
+        "linkText": "点击查看",
         "nonZhWarning": "本教程仅有简体中文版本"
       },
       "qxScriptWarning": "Quantumult X 不支持脚本上传模式",
-      "cnRestriction": "由于相关法律法规限制，本站不提供国服的MySekai功能的安装。",
+      "cnRestriction": "由于相关法律法规限制，本站不提供国服的烤森（MySekai）功能的安装。",
       "installButton": "快速安装模块",
-      "installHint": "点击后将调用对应软件的安装协议",
+      "installHint": "点击后会自动打开你选的代理软件并导入模块",
+      "copyAction": "复制{label}",
       "copyLabel": {
         "uploadCode": "上传码",
-        "moduleUrl": "模块URL",
-        "scriptUrl": "脚本URL"
+        "moduleUrl": "模块 URL",
+        "scriptUrl": "脚本 URL"
       },
       "steps": {
         "configure": {
           "title": "配置",
-          "description": "选择代理软件、服务端域名与上传方式。"
+          "description": "选择代理软件、服务器线路与上传方式。"
         },
         "scope": {
           "title": "范围",
@@ -282,7 +282,9 @@ export default {
         },
         "install": {
           "title": "获取与安装",
-          "description": "生成上传码后，可复制 URL 手动安装或一键快速安装。"
+          "prerequisite": "需要先登录并绑定游戏账号。",
+          "description": "生成上传码后，可复制 URL 手动安装或一键快速安装。",
+          "after": "安装后打开游戏并进入主页一次，上传成功后首页「我的账号」会显示上传时间。"
         }
       },
       "sections": {
@@ -292,18 +294,18 @@ export default {
           "placeholder": "请选择软件"
         },
         "endpoint": {
-          "title": "选择工具箱域名",
-          "description": "选择要使用的工具箱服务端域名\n默认情况下使用直连即可\n如果你人不在中国大陆使用困难的话，选择CDN可能有改善",
-          "placeholder": "请选择域名"
+          "title": "服务器线路",
+          "description": "国内直连即可；人在海外可选 CDN。",
+          "placeholder": "请选择线路"
         },
         "mode": {
           "title": "选择上传数据方式",
-          "description": "脚本上传可以和其他Bot的模块共存，也不会受到工具箱服务端代理宕机的影响，但是不一定稳定\n如果使用脚本上传不稳定，可以切换为重定向代理法",
+          "description": "「脚本上传」可与其他 Bot 的模块同时使用，但偶尔不稳定；「代理上传」更稳定，但同一时间只能装一个工具箱模块。不确定选「代理上传」。",
           "placeholder": "请选择上传方式"
         },
         "chunk": {
           "title": "文件分片大小",
-          "description": "分片大小越大，进游戏速度越快，但是有可能软件顶不住\n除非你了解这个东西是做什么的，不然不需要更改",
+          "description": "一般保持默认即可。数值越大进游戏越快，但部分代理软件可能上传失败。",
           "unit": "MB"
         },
         "regions": {
@@ -317,10 +319,15 @@ export default {
       },
       "uploadCode": {
         "title": "上传码",
-        "description": "用于验证模块和脚本的访问权限",
+        "description": "模块用它来证明是你在上传；泄露后请重新生成。",
         "regenerate": "重新生成",
         "generate": "生成上传码",
-        "loginRequired": "请先登录"
+        "loginRequired": "请先登录",
+        "regenerateDialog": {
+          "title": "重新生成上传码？",
+          "description": "旧的上传码会立即失效，已安装的模块需要用新 URL 重新安装才能继续上传。",
+          "confirm": "重新生成"
+        }
       },
       "generatedUrls": {
         "title": "生成的 URL",
@@ -340,7 +347,7 @@ export default {
         "cdn": "CDN (加速)"
       },
       "modeOptions": {
-        "proxy": "重定向代理法",
+        "proxy": "代理上传",
         "script": "脚本上传"
       },
       "region": {
@@ -352,27 +359,27 @@ export default {
       },
       "dataTypes": {
         "suite": {
-          "label": "Suite",
+          "label": "账号数据（Suite）",
           "description": "上传你的游戏账号的完整数据"
         },
         "mysekai": {
-          "label": "MySekai",
-          "description": "上传你的游戏账号的MySekai数据"
+          "label": "烤森数据（MySekai）",
+          "description": "上传你的游戏账号的烤森数据"
         },
         "mysekai_force": {
-          "label": "MySekai (强制刷新)",
-          "description": "每次进入都强制刷新MySekai数据"
+          "label": "烤森数据（每次进入都上传）",
+          "description": "不管游戏里有没有变化，每次进入烤森都重新上传一次。"
         },
         "mysekai_birthday_party": {
-          "label": "MySekai生日派对",
-          "description": "上传MySekai生日派对双叶地图数据"
+          "label": "烤森生日派对",
+          "description": "上传烤森生日派对双叶地图数据"
         }
       },
       "toast": {
         "loginRequired": "请先登录",
         "generateCodeSuccess": "上传码生成成功",
         "generateCodeFailedTitle": "生成上传码失败",
-        "generateCodeFailedFallback": "未知错误",
+        "generateCodeFailedFallback": "请先确认已登录，稍后重试。",
         "copyEmpty": "复制内容为空",
         "clipboardUnsupported": "当前环境不支持剪贴板操作",
         "copySuccess": "{label}已复制到剪贴板",
@@ -388,21 +395,31 @@ export default {
       "groupTitle": "Haruki游乐园 QQ 群",
       "group1Label": "1 群",
       "group2Label": "2 群",
-      "tutorialNotice": {
-        "title": "其他上传方式",
-        "androidProxy": {
-          "platform": "Android / Windows",
-          "linkText": "HarukiProxy 教程"
-        },
-        "iosModule": {
-          "platform": "iOS / iPadOS",
-          "linkText": "使用 iOS 模块"
-        }
+      "intro": {
+        "title": "上传数据",
+        "description": "「上传数据」是把你的游戏账号数据同步到工具箱，供卡牌、活动记录、组卡等功能使用。推荐方式：iPhone/iPad 用「iOS 模块」，Android/Windows 用 HarukiProxy；两者都不行时再用「引继码」。",
+        "iosPlatform": "iPhone / iPad",
+        "iosMethod": "iOS 模块（推荐）",
+        "proxyPlatform": "Android / Windows",
+        "proxyMethod": "HarukiProxy 教程",
+        "fallbackPlatform": "两者都不行时",
+        "fallbackMethod": "引继码（备用）"
       },
       "tabs": {
-        "file": "文件上传",
-        "inherit": "继承码上传",
-        "ios": "iOS模块"
+        "ios": "iOS 模块（iPhone/iPad）",
+        "proxy": "HarukiProxy（Android/电脑）",
+        "inherit": "引继码（备用）",
+        "file": "文件上传（高级）"
+      },
+      "proxyTab": {
+        "title": "HarukiProxy（Android / 电脑）",
+        "description": "在 Android 手机或电脑上运行 HarukiProxy，进游戏时数据会自动上传到工具箱。",
+        "steps": {
+          "install": "按教程在手机或电脑上安装并配置 HarukiProxy。",
+          "bind": "先在「游戏账号管理」绑定并验证要上传的游戏账号。",
+          "run": "开启 HarukiProxy 后进入游戏主页一次，首页「我的账号」会显示上传时间。"
+        },
+        "tutorialButton": "查看 HarukiProxy 教程"
       },
       "region": {
         "jp": "日服",
@@ -412,13 +429,13 @@ export default {
         "cn": "国服"
       },
       "dataTypes": {
-        "suite": "Suite",
-        "mysekai": "MySekai"
+        "suite": "账号数据（Suite）",
+        "mysekai": "烤森数据（MySekai）"
       },
       "disabledReason": {
         "loginRequired": "请先登录再使用此功能",
         "noBoundAccount": "您还没有绑定任何账号，请先绑定账号",
-        "noWritableAccount": "当前没有可上传的账号：请先完成账号验证，或获取他人的写授权"
+        "noWritableAccount": "还没有可以上传的账号。请先在「游戏账号管理」完成账号验证；如果是帮别人上传，需要对方先授权你代传。"
       },
       "uploadStatus": {
         "uploading": "正在上传您的{dataType}数据...",
@@ -435,45 +452,53 @@ export default {
         "operationForbiddenDescription": "由于相关法律法规限制，不允许进行此操作",
         "uploadSuccessTitle": "上传成功",
         "uploadSuccessFileFallback": "文件已上传",
-        "uploadSuccessInheritFallback": "继承码已上传",
+        "uploadSuccessInheritFallback": "引继码已提交，账号数据已保存",
         "uploadFailedTitle": "上传失败",
-        "uploadFailedFallback": "上传失败",
-        "inheritIncompleteTitle": "请填写完整的继承信息",
-        "inheritIncompleteDescription": "继承ID和继承密码均为必填项",
-        "inheritIdInvalidTitle": "继承ID格式不正确",
-        "inheritIdInvalidDescription": "继承ID应为16位英文字母与数字的组合（区分大小写）"
+        "uploadFailedFallback": "上传没有成功，请检查文件和账号后重试；多次失败请提交工单。",
+        "inheritIdRequired": "请输入引继 ID",
+        "inheritPasswordRequired": "请输入引继密码",
+        "inheritIdInvalidDescription": "引继 ID 应为 16 位英文字母与数字的组合（区分大小写）"
       },
       "fileTab": {
         "title": "手动上传文件",
-        "description": "此选项可以手动上传你捕获的数据",
+        "description": "上传你用 HarukiProxy 或 iOS 模块保存下来的数据文件。不知道怎么获取文件？看上方「其他上传方式」。",
         "unavailableTitle": "无法使用",
         "forbiddenTitle": "操作已被禁止",
         "forbiddenDescription": "由于相关法律法规限制，不允许进行此操作",
         "fields": {
           "file": "上传文件",
+          "chooseFile": "选择文件",
+          "noFile": "未选择文件",
+          "fileHint": "选择 HarukiProxy 或 iOS 模块保存下来的数据文件，文件会原样上传。",
           "account": "选择账号（区服 / UID）",
           "accountPlaceholder": "请选择可上传的账号",
           "dataType": "选择数据类型",
           "dataTypePlaceholder": "请选择数据类型"
         },
+        "actions": {
+          "goLogin": "去登录",
+          "goBind": "去绑定账号"
+        },
         "refreshTargets": "刷新账号",
         "targetsLoading": "正在加载可上传账号...",
         "targetsFailedTitle": "无法获取可上传账号列表",
         "targetsFailedDescription": "已暂时显示你本人的已验证账号；他人授权的账号需刷新后才会出现。",
-        "accountNotWritable": "该账号暂无上传权限（未验证或授权不含写权限）",
+        "accountNotWritable": "这个账号还不能上传：账号未验证，或对方没有允许你代传。",
+        "unavailableChip": "不可用",
+        "someAccountsUnavailable": "灰色的账号暂时不能上传：账号未验证，或对方没有允许你代传。",
         "grantedTargetNotice": "这是他人授权给你的账号，上传会直接更新对方账号在工具箱中的数据。",
         "dataTypeLimited": "该账号仅允许上传部分数据类型。",
         "submit": "提交",
         "submitting": "提交中..."
       },
       "inheritTab": {
-        "title": "继承码上传数据",
-        "description": "此选项可以提交你的继承码到Haruki工具箱后端捕获你需要的数据",
+        "title": "引继码上传数据",
+        "description": "输入游戏里的引继 ID 和密码，工具箱会代你登录一次并保存账号数据。",
         "fields": {
-          "inheritId": "继承ID",
-          "inheritIdPlaceholder": "请输入继承ID",
-          "inheritPassword": "继承密码",
-          "inheritPasswordPlaceholder": "请输入继承密码",
+          "inheritId": "引继 ID",
+          "inheritIdPlaceholder": "请输入引继 ID",
+          "inheritPassword": "引继密码",
+          "inheritPasswordPlaceholder": "请输入引继密码",
           "server": "选择区服",
           "serverPlaceholder": "请选择区服",
           "dataType": "选择数据类型",
@@ -482,13 +507,12 @@ export default {
         "alerts": {
           "notesTitle": "使用须知",
           "warning1": {
-            "title": "警告",
-            "description": "请妥善保存您的引继ID与密码！Haruki工具箱服务器不会保存您的引继ID与密码！"
+            "title": "使用前请了解",
+            "description": "请妥善保存你的引继 ID 与密码；工具箱服务器不会保存它们。"
           },
           "warning2": {
-            "title": "警告",
-            "line1": "尽管开发者已经尽最大可能将 API 请求优化得尽可能像一个正常 app 请求，使用风险仍然需要自负。",
-            "line2": "如果你认为这个风险你负担不起，请不要使用本功能。"
+            "title": "风险说明",
+            "text": "本功能会用你的引继码模拟游戏客户端登录一次。官方理论上可能将其视为异常登录，请自行评估风险；不放心请改用 HarukiProxy 或 iOS 模块。"
           },
           "reminder1": {
             "title": "提醒",
@@ -497,21 +521,19 @@ export default {
           },
           "reminder2": {
             "title": "提醒",
-            "line1": "使用该功能虽然不需要登录Haruki工具箱账号",
-            "line2": "但是如果你没有在Haruki工具箱绑定你要获取数据的游戏账号",
-            "line3": "即使通知上传成功，也不会写入数据库",
-            "line4": "请务必先在Haruki工具箱绑定你要获取数据的游戏账号",
-            "bindLink": "绑定游戏账号"
+            "text": "使用前请先登录工具箱并在「游戏账号管理」绑定要上传的游戏账号。未绑定时，即使提示上传成功，数据也不会保存。",
+            "bindLink": "去绑定"
           }
         },
         "remember": {
           "label": "在当前设备短期记住引继信息",
-          "description": "仅保存在本地浏览器，24 小时后自动过期；取消勾选会立即清除。"
+          "description": "提交成功后记住 24 小时（仅保存在当前浏览器）；取消勾选会立即清除。"
         },
         "confirmDialog": {
           "title": "确认上传数据",
           "dataTypePrefix": "请再次确认您要上传的数据类型：",
-          "mysekaiNotice": "如果您要上传 MySekai 数据，请先登录 Haruki 工具箱，并确认已在 HarukiBot 数据授权中绑定了 QQ 号。",
+          "loginNotice": "你还没有登录工具箱。未在工具箱绑定游戏账号时，即使提示上传成功，数据也不会保存；建议先登录并绑定。",
+          "mysekaiNotice": "上传烤森（MySekai）数据需要先登录工具箱，并在「HarukiBot 数据授权」里绑定并验证 QQ 号，否则 Bot 无法为你查询烤森数据。",
           "cancel": "取消",
           "confirm": "确认上传"
         },
@@ -539,6 +561,7 @@ export default {
         "musicEmpty": "没有找到歌曲。",
         "targetPt": "目标活动 Pt",
         "targetPtPlaceholder": "请输入目标活动 Pt",
+        "targetPtInvalid": "目标活动 Pt 需要是大于 0 的整数。",
         "maxResults": "输出结果上限",
         "maxResultsPlaceholder": "默认 10",
         "bonusRange": "自定义加成范围",
@@ -562,7 +585,7 @@ export default {
         "music": "歌曲：{value}",
         "basicPoint": "基础 Pt：{value}",
         "bonusRange": "加成范围：{min}% ~ {max}%",
-        "missingBasicPoint": "当前歌曲缺少 music metas 基础 Pt，无法计算。"
+        "missingBasicPoint": "这首歌暂时没有基础 Pt 数据，请换一首歌或换个难度。"
       },
       "result": {
         "title": "计算结果",
@@ -592,6 +615,7 @@ export default {
       "qqLabel": "QQ 号",
       "qqPlaceholder": "请输入 QQ 号",
       "hint": "验证码将发送至您的 QQ 邮箱（{qq}{'@'}qq.com），有效期 10 分钟。",
+      "hintQqPlaceholder": "你的QQ号",
       "sendButton": "发送验证码",
       "cooldownButton": "{seconds} 秒后可重试"
     },
@@ -608,17 +632,21 @@ export default {
       "successTitle": "注册成功",
       "successDescription": "您的 HarukiBot NEO 实例已创建，请保存以下凭据信息。",
       "botIdLabel": "Bot ID",
-      "credentialLabel": "凭据（JWT）",
+      "credentialLabel": "凭据",
+      "copyAction": "复制{label}",
       "saveWarning": "凭据仅显示一次，请立即复制并安全保存，之后将无法再次获取。",
       "configGeneratorTitle": "继续生成 Client 配置",
-      "configGeneratorDescription": "打开配置生成器并自动带入 ownerId、Bot ID 和 Credential，后续只需补充端口、模块和名单配置。",
+      "configGeneratorDescription": "打开配置生成器并自动填入 Bot ID 与凭据，后续只需补充端口、模块和名单配置。",
       "configGeneratorButton": "打开配置生成器",
       "registerAnotherButton": "注册另一个"
     },
     "toast": {
       "statusCheckFailed": "检查注册状态失败",
+      "statusCheckFailedFallback": "请检查网络后点击「重试」；多次失败可能是服务暂时不可用。",
       "sendFailedTitle": "发送失败",
-      "invalidQQNumber": "请输入有效的 QQ 号",
+      "sendFailedFallback": "验证码没有发出去，请检查 QQ 号后重试；多次失败请稍后再试。",
+      "missingQQNumber": "请输入 QQ 号",
+      "invalidQQNumber": "请输入有效的 QQ 号（5–12 位数字）",
       "rateLimitedTitle": "请求过于频繁",
       "rateLimitedDescription": "请求次数过多，请在 {seconds} 秒后重试。",
       "alreadyRegisteredTitle": "已注册",
@@ -628,7 +656,9 @@ export default {
       "codeSentTitle": "验证码已发送",
       "codeSentDescription": "请前往 QQ {qq} 的邮箱查收。",
       "registerFailedTitle": "注册失败",
+      "registerFailedFallback": "注册没有完成，请确认验证码无误后重试；验证码过期请重新发送。",
       "missingVerificationCode": "请输入验证码",
+      "invalidVerificationCode": "验证码是 6 位数字，请检查后重新输入",
       "incompleteResponse": "返回数据不完整",
       "registerSuccessTitle": "注册成功",
       "clipboardUnsupported": "当前环境不支持剪贴板",
@@ -640,13 +670,14 @@ export default {
     "title": "协力车站",
     "description": "实时汇总社交平台上发布的国服协力房间号。",
     "viewOnSekaiStation": "在Sekai Station中查看",
-    "notConfigured": "当前构建没有配置 Sekai Station 的 API 地址，无法加载房间。",
+    "notConfigured": "协力车站暂不可用",
     "connection": {
       "connected": "已连接",
       "connecting": "连接中…",
       "disconnected": "已断开",
       "failed": "无法连接到服务器",
       "retryIn": "{n} 秒后重试",
+      "retryNow": "立即重试",
       "reconnecting": "正在重新连接…",
       "online": "{n} 人在线"
     },

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import {
     Card,
@@ -14,17 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import {
     LucideBan,
     LucideCheckCircle2,
@@ -43,31 +34,106 @@ import type { AdminUserDetail } from "@/types/admin"
 import type { UserRole } from "@/types/common"
 import { formatDateTime, isUserRole, roleLabel } from "@/modules/admin-users/constants"
 
-defineProps<{
+/**
+ * The actions this tab asks for confirmation before running. Each one rejects
+ * on failure so the confirm dialog can stay open and show the error inline.
+ */
+export interface UserDetailInfoActions {
+    ban: () => Promise<void>
+    delete: () => Promise<void>
+    forceLogout: () => Promise<void>
+    resetPassword: () => Promise<void>
+    changeRole: (role: UserRole) => Promise<void>
+}
+
+type PendingAction =
+    | { kind: "ban" }
+    | { kind: "delete" }
+    | { kind: "forceLogout" }
+    | { kind: "resetPassword" }
+    | { kind: "roleChange"; role: UserRole }
+
+const props = defineProps<{
     user: AdminUserDetail
     isSuperAdmin: boolean
     actionLoading: boolean
     busy: boolean
+    actions: UserDetailInfoActions
 }>()
 
 const emit = defineEmits<{
     (e: "open-email-edit"): void
-    (e: "role-change", role: UserRole): void
     (e: "toggle-cn-mysekai", value: boolean | "indeterminate"): void
     (e: "unban"): void
-    (e: "ban"): void
-    (e: "force-logout"): void
-    (e: "reset-password"): void
     (e: "restore"): void
-    (e: "delete"): void
 }>()
 
 const { t, locale } = useI18n()
 
-function handleRoleChange(value: unknown) {
-    if (!isUserRole(value)) return
-    emit("role-change", value)
+const confirmOpen = ref(false)
+// Kept after the dialog closes so its text does not change mid fade-out.
+const pending = ref<PendingAction | null>(null)
+
+function requestConfirm(action: PendingAction) {
+    pending.value = action
+    confirmOpen.value = true
 }
+
+function handleRoleChange(value: unknown) {
+    if (!isUserRole(value) || value === props.user.userData.role) return
+    requestConfirm({ kind: "roleChange", role: value })
+}
+
+const confirmDialog = computed(() => {
+    const action = pending.value
+    const name = props.user.userData.name
+    switch (action?.kind) {
+        case "ban":
+            return {
+                title: t("adminUsers.detail.info.banDialogTitle"),
+                description: t("adminUsers.detail.info.banDialogDescription", { name }),
+                confirmLabel: t("adminUsers.common.confirm"),
+                destructive: true,
+                run: () => props.actions.ban(),
+            }
+        case "delete":
+            return {
+                title: t("adminUsers.detail.info.deleteDialogTitle"),
+                description: t("adminUsers.detail.info.deleteDialogDescription", { name }),
+                confirmLabel: t("adminUsers.detail.info.deleteDialogConfirm"),
+                destructive: true,
+                run: () => props.actions.delete(),
+            }
+        case "forceLogout":
+            return {
+                title: t("adminUsers.detail.info.forceLogoutDialogTitle"),
+                description: t("adminUsers.detail.info.forceLogoutDialogDescription", { name }),
+                confirmLabel: t("adminUsers.detail.info.forceLogoutDialogConfirm"),
+                destructive: false,
+                run: () => props.actions.forceLogout(),
+            }
+        case "resetPassword":
+            return {
+                title: t("adminUsers.detail.info.resetPasswordDialogTitle"),
+                description: t("adminUsers.detail.info.resetPasswordDialogDescription", { name }),
+                confirmLabel: t("adminUsers.detail.info.resetPasswordDialogConfirm"),
+                destructive: true,
+                run: () => props.actions.resetPassword(),
+            }
+        case "roleChange": {
+            const role = action.role
+            return {
+                title: t("adminUsers.detail.info.roleDialogTitle"),
+                description: t("adminUsers.detail.info.roleDialogDescription", { name, role: roleLabel(role, t) }),
+                confirmLabel: t("adminUsers.detail.info.roleDialogConfirm"),
+                destructive: false,
+                run: () => props.actions.changeRole(role),
+            }
+        }
+        default:
+            return null
+    }
+})
 </script>
 
 <template>
@@ -128,7 +194,13 @@ function handleRoleChange(value: unknown) {
       <div class="rounded-lg border divide-y">
         <div v-if="isSuperAdmin" class="flex items-center justify-between gap-4 p-4">
           <Label id="admin-user-role-label" for="admin-user-role" class="text-sm font-medium">{{ t("adminUsers.detail.info.changeRole") }}</Label>
-          <Select id="admin-user-role" :key="locale" :model-value="user.userData.role" @update:model-value="handleRoleChange">
+          <Select
+            id="admin-user-role"
+            :key="locale"
+            :model-value="user.userData.role"
+            :disabled="actionLoading"
+            @update:model-value="handleRoleChange"
+          >
             <SelectTrigger aria-labelledby="admin-user-role-label" class="w-40">
               <SelectValue />
             </SelectTrigger>
@@ -168,69 +240,38 @@ function handleRoleChange(value: unknown) {
       </div>
 
       <div class="flex flex-wrap items-center gap-2 pt-4 mt-2 border-t text-sm text-muted-foreground">
-        <template v-if="user.banned">
-          <Button variant="outline" size="sm" :disabled="actionLoading" @click="emit('unban')">
-            <LucideShieldOff class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.unban") }}
-          </Button>
-        </template>
-        <template v-else>
-          <AlertDialog>
-            <AlertDialogTrigger as-child>
-              <Button variant="destructive" size="sm" :disabled="actionLoading">
-                <LucideBan class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.ban") }}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{{ t("adminUsers.detail.info.banDialogTitle") }}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {{ t("adminUsers.detail.info.banDialogDescription", { name: user.userData.name }) }}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
-                <AlertDialogAction @click="emit('ban')">{{ t("adminUsers.common.confirm") }}</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </template>
+        <Button v-if="user.banned" variant="outline" size="sm" :disabled="actionLoading" @click="emit('unban')">
+          <LucideShieldOff class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.unban") }}
+        </Button>
+        <Button v-else variant="destructive" size="sm" :disabled="actionLoading" @click="requestConfirm({ kind: 'ban' })">
+          <LucideBan class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.ban") }}
+        </Button>
 
-        <Button variant="outline" size="sm" :disabled="actionLoading" @click="emit('force-logout')">
+        <Button variant="outline" size="sm" :disabled="actionLoading" @click="requestConfirm({ kind: 'forceLogout' })">
           <LucideLogOut class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.forceLogout") }}
         </Button>
-        <Button variant="outline" size="sm" :disabled="actionLoading" @click="emit('reset-password')">
+        <Button variant="outline" size="sm" :disabled="actionLoading" @click="requestConfirm({ kind: 'resetPassword' })">
           <LucideRefreshCw class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.resetPassword") }}
         </Button>
 
-        <template v-if="user.deleted">
-          <Button variant="outline" size="sm" :disabled="actionLoading" @click="emit('restore')">
-            <LucideUndo2 class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.restore") }}
-          </Button>
-        </template>
-        <template v-else>
-          <AlertDialog>
-            <AlertDialogTrigger as-child>
-              <Button variant="destructive" size="sm" :disabled="actionLoading">
-                <LucideTrash2 class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.delete") }}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{{ t("adminUsers.detail.info.deleteDialogTitle") }}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {{ t("adminUsers.detail.info.deleteDialogDescription", { name: user.userData.name }) }}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
-                <AlertDialogAction @click="emit('delete')">{{ t("adminUsers.detail.info.deleteDialogConfirm") }}</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </template>
+        <Button v-if="user.deleted" variant="outline" size="sm" :disabled="actionLoading" @click="emit('restore')">
+          <LucideUndo2 class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.restore") }}
+        </Button>
+        <Button v-else variant="destructive" size="sm" :disabled="actionLoading" @click="requestConfirm({ kind: 'delete' })">
+          <LucideTrash2 class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.delete") }}
+        </Button>
 
         <LucideLoader2 v-if="actionLoading" class="w-4 h-4 animate-spin self-center" />
       </div>
     </CardContent>
+
+    <ConfirmDialog
+      v-model:open="confirmOpen"
+      :title="confirmDialog?.title ?? ''"
+      :description="confirmDialog?.description ?? ''"
+      :confirm-label="confirmDialog?.confirmLabel"
+      :destructive="confirmDialog?.destructive ?? false"
+      :on-confirm="confirmDialog?.run"
+    />
   </Card>
 </template>
