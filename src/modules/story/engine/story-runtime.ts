@@ -250,11 +250,13 @@ export class StoryRuntime {
     this.fitCredit();
   }
 
-  // The credit stays on one line: shrunk to the room between the corner buttons.
+  // The credit grows with the player (12-18px) and stays on one line: shrunk
+  // to the room between the corner buttons.
   private fitCredit() {
     const credit = this.creditEl;
-    credit.style.fontSize = "";
-    const room = this.player.root.clientWidth - (this.root.classList.contains("narrow") || this.player.fullscreen ? 76 : 120);
+    const width = this.player.root.clientWidth;
+    credit.style.fontSize = `${Math.min(18, Math.max(12, width * 0.016)).toFixed(2)}px`;
+    const room = width - (this.root.classList.contains("narrow") || this.player.fullscreen ? 76 : 120);
     const natural = credit.scrollWidth;
     if (natural > room && natural > 0)
       credit.style.fontSize = `${Math.max(5, (Number.parseFloat(getComputedStyle(credit).fontSize) * room) / natural).toFixed(2)}px`;
