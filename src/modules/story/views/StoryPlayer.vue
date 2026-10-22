@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { LucideLanguages } from "lucide-vue-next"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import {
   Select,
   SelectContent,
@@ -46,6 +47,10 @@ const langLabel = (lang: StoryTextLang) => t(`storyPlayer.lang.${LANG_KEYS[lang]
 
 /** "auto" follows the Toolbox language. */
 const pickedLang = useCatalogViewPreference<string>("story", "textLang", () => "auto", ["auto", ...STORY_TEXT_LANGS])
+/** Play the voices (remembered per device). */
+const voiceOn = useCatalogViewPreference<boolean>("story", "voice", () => true)
+const voiceSwitchId = useId()
+
 const langChain = computed(() => storyLangChain(
   String(locale.value),
   (STORY_TEXT_LANGS as readonly string[]).includes(pickedLang.value) ? (pickedLang.value as StoryTextLang) : null,
@@ -158,6 +163,7 @@ function mountRuntime() {
   runtime.value?.destroy()
   const rt = new runtimeModule.StoryRuntime(host.value, runtimeLabels(), pick)
   if (catalog.value) rt.setCatalog(catalog.value)
+  rt.setVoice(voiceOn.value)
   rt.setTitleScript(titleScript.value)
   runtime.value = rt
 }
@@ -174,6 +180,7 @@ onMounted(async () => {
 })
 
 watch(locale, () => mountRuntime())
+watch(voiceOn, (on) => runtime.value?.setVoice(on))
 
 onBeforeUnmount(() => {
   disposed = true
@@ -234,19 +241,25 @@ const langOptions = computed(() => [
         <h1 class="text-xl font-semibold tracking-tight">{{ t("storyPlayer.title") }}</h1>
         <p class="text-sm text-muted-foreground">{{ t("storyPlayer.description") }}</p>
       </div>
-      <div class="flex items-center gap-2">
-        <LucideLanguages class="size-4 text-muted-foreground" aria-hidden="true" />
-        <Label :id="`${langSelectId}-label`" :for="langSelectId" class="sr-only">{{ t("storyPlayer.textLang") }}</Label>
-        <Select :id="langSelectId" v-model="selectedLang">
-          <SelectTrigger class="w-52" :aria-labelledby="`${langSelectId}-label`">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="option in langOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div class="flex items-center gap-2">
+          <Switch :id="voiceSwitchId" v-model="voiceOn" />
+          <Label :for="voiceSwitchId" class="text-sm">{{ t("storyPlayer.voice") }}</Label>
+        </div>
+        <div class="flex items-center gap-2">
+          <LucideLanguages class="size-4 text-muted-foreground" aria-hidden="true" />
+          <Label :id="`${langSelectId}-label`" :for="langSelectId" class="sr-only">{{ t("storyPlayer.textLang") }}</Label>
+          <Select :id="langSelectId" v-model="selectedLang">
+            <SelectTrigger class="w-52" :aria-labelledby="`${langSelectId}-label`">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="option in langOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
 

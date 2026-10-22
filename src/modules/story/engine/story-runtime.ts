@@ -129,6 +129,7 @@ export class StoryRuntime {
   private loadingEl: HTMLElement;
   private statusEl: HTMLElement;
   private pickEl: HTMLElement;
+  private creditEl: HTMLElement;
   private startBtn: HTMLButtonElement;
   private app: PIXI.Application;
   private dialogue: DialogueBox;
@@ -152,7 +153,7 @@ export class StoryRuntime {
     this.fit();
   };
   // auto / 早送り / log visibility survive scenario switches
-  private modes = { auto: true, fast: false, log: true, mute: false };
+  private modes = { auto: true, fast: false, log: true, mute: false, voice: true };
 
   constructor(host: HTMLElement, labels: RuntimeLabels, onPick: (sid: string) => void) {
     this.labels = labels;
@@ -193,7 +194,8 @@ export class StoryRuntime {
     this.startBtn = $<HTMLButtonElement>(".sp-start");
     this.loadingEl.textContent = labels.loading;
     this.startBtn.textContent = labels.start;
-    $(".sp-credit").textContent = labels.credit;
+    this.creditEl = $(".sp-credit");
+    this.creditEl.textContent = labels.credit;
     $(".sp-pick .beside").textContent = labels.pickBeside;
     $(".sp-pick .below").textContent = labels.pickBelow;
     for (const tab of this.root.querySelectorAll<HTMLButtonElement>(".sp-tabs button")) {
@@ -277,6 +279,13 @@ export class StoryRuntime {
   }
 
   /** Font group of the dialogue text ("ja" | "zh" | "ko" | "latin"). */
+  /** Play the voices; takes effect from the next line. */
+  setVoice(on: boolean) {
+    this.modes.voice = on;
+    if (this.session) this.session.player.voiceEnabled = on;
+    if (!on) this.audio.stopVoice();
+  }
+
   setScript(script: string) {
     this.root.dataset.script = script;
   }
@@ -317,6 +326,17 @@ export class StoryRuntime {
     this.scaleStage(stageZoom);
     // keep the prompt / spinner / start button readable on a small stage
     this.overlay.style.zoom = String(stageZoom < 0.6 ? Math.min(2.6, 0.6 / stageZoom) : 1);
+    this.fitCredit();
+  }
+
+  // The credit stays on one line: shrunk to the room between the corner buttons.
+  private fitCredit() {
+    const credit = this.creditEl;
+    credit.style.fontSize = "";
+    const room = this.box.clientWidth - (this.root.classList.contains("narrow") ? 76 : 120);
+    const natural = credit.scrollWidth;
+    if (natural > room && natural > 0)
+      credit.style.fontSize = `${Math.max(5, (Number.parseFloat(getComputedStyle(credit).fontSize) * room) / natural).toFixed(2)}px`;
   }
 
   // Shrink the 1280x720 stage as a picture (transform), not with CSS zoom:
@@ -485,6 +505,7 @@ export class StoryRuntime {
     };
     this.session = { sid, player, stage, log, fx };
     player.auto = this.modes.auto;
+    player.voiceEnabled = this.modes.voice;
     player.setFast(this.modes.fast);
     player.onProgress = (i) => log.setProgress(i);
     player.onReady = () => {
