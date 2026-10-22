@@ -5,10 +5,12 @@
    (set by the runtime from the asset host). */
 
 .story-player {
-  /* Chinese UI labels: Rodin has no simplified hanzi, so use one CN bold face throughout */
-  --cn-bold: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", sans-serif;
-  --cn-text: "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", sans-serif;
-  --ko-text: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", "Noto Sans KR", sans-serif;
+  /* Chinese/Korean text: the CN/TW/KR clients' faces (Source Han Sans Bold for EB,
+     Medium for DB), self-hosted as StoryHanSans so every device renders the same;
+     system faces only for characters outside the served slices. */
+  --cn-bold: "StoryHanSans", "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  --cn-text: "StoryHanSans", "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  --ko-text: "StoryHanSans", "Source Han Sans K", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   /* the fixed-size stage must not widen the page; the runtime zooms it to fit */
   contain: inline-size;
   display: block;
@@ -343,16 +345,19 @@
 .story-player.narrow .sp-pick .beside { display: none; }
 .story-player.narrow .sp-pick .below { display: inline; }
 
-/* Dialogue in other scripts: Rodin covers kana, JIS kanji and Latin only, so
-   Chinese and Korean text switch to a system face of the same weight. */
+/* Dialogue in other scripts: Rodin covers kana, JIS kanji and Latin only;
+   Chinese and Korean text use the CN/TW/KR clients' Source Han Sans (Bold
+   names, Medium body). */
 .story-player[data-script="zh"] .dlg-name, .story-player[data-script="zh"] .sl-name { font-family: var(--cn-bold); font-weight: 700; }
 .story-player[data-script="zh"] .dlg-body, .story-player[data-script="zh"] .sl-body,
 .story-player[data-script="zh"] .fx-telop-text, .story-player[data-script="zh"] .fx-place-text,
-.story-player[data-script="zh"] .fst-text, .story-player[data-script="zh"] .fx-choice-btn { font-family: var(--cn-text); font-weight: 500; }
+.story-player[data-script="zh"] .fst-text, .story-player[data-script="zh"] .fx-choice-btn,
+.story-player[data-script="zh"] .sl-place { font-family: var(--cn-text); font-weight: 500; }
 .story-player[data-script="ko"] .dlg-name, .story-player[data-script="ko"] .sl-name { font-family: var(--ko-text); font-weight: 700; }
 .story-player[data-script="ko"] .dlg-body, .story-player[data-script="ko"] .sl-body,
 .story-player[data-script="ko"] .fx-telop-text, .story-player[data-script="ko"] .fx-place-text,
-.story-player[data-script="ko"] .fst-text, .story-player[data-script="ko"] .fx-choice-btn { font-family: var(--ko-text); font-weight: 500; }
+.story-player[data-script="ko"] .fst-text, .story-player[data-script="ko"] .fx-choice-btn,
+.story-player[data-script="ko"] .sl-place { font-family: var(--ko-text); font-weight: 500; }
 
 /* The stage box holds the stage and the fullscreen toggle (unzoomed). */
 .story-player .sp-stage-box { position: relative; flex: none; }
@@ -377,6 +382,13 @@
   .story-player.pseudo-fs .sp-stage-box { width: 100dvh; height: 100vw; transform-origin: 0 0; transform: translateX(100vw) rotate(90deg); }
 }
 :root.story-player-fs-lock, :root.story-player-fs-lock body { overflow: hidden; }
+
+/* Story browser titles in Chinese / Korean: the clients' Han Sans, not Rodin
+   with per-glyph fallback. */
+.story-player[data-titles="zh"] .sb-title b, .story-player[data-titles="zh"] .sb-ep-text small { font-family: var(--cn-bold); font-weight: 700; }
+.story-player[data-titles="zh"] .sb-ep-text span { font-family: var(--cn-text); font-weight: 500; }
+.story-player[data-titles="ko"] .sb-title b, .story-player[data-titles="ko"] .sb-ep-text small { font-family: var(--ko-text); font-weight: 700; }
+.story-player[data-titles="ko"] .sb-ep-text span { font-family: var(--ko-text); font-weight: 500; }
 
 /* Narrow hosts: the stage on top at full width, then tabs switching between
    the story browser and the talk log (game styling, not zoomed). */

@@ -66,6 +66,8 @@ const titleRegion = computed(() => {
   }
   return "jp"
 })
+const titleScript = computed(() => ({ cn: "zh", tw: "zh", kr: "ko", en: "latin" } as Record<string, string>)[titleRegion.value] ?? "ja")
+watch(titleScript, (script) => runtime.value?.setTitleScript(script))
 const jpCatalog = useStoryCatalog(jpRegion)
 const titleCatalog = useStoryCatalog(titleRegion, computed(() => titleRegion.value !== "jp"))
 const catalog = computed(() => {
@@ -155,6 +157,7 @@ function mountRuntime() {
   runtime.value?.destroy()
   const rt = new runtimeModule.StoryRuntime(host.value, runtimeLabels(), pick)
   if (catalog.value) rt.setCatalog(catalog.value)
+  rt.setTitleScript(titleScript.value)
   runtime.value = rt
 }
 
