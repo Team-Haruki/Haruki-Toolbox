@@ -1,5 +1,6 @@
 import { ref, shallowRef, watch, type Ref } from "vue"
-import { resolvePjsk3dRuntimeBaseUrl } from "@/shared/sekai/data-sources"
+import { resolvePjsk3dRuntimeBaseUrl, resolvePjsk3dRuntimeFallbackBaseUrl } from "@/shared/sekai/data-sources"
+import { loadWithAssetFallback } from "@/shared/sekai/asset-fallback"
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import {
@@ -102,8 +103,11 @@ export function useCostumeRoleData(
     loading.value = true
     error.value = null
     try {
-      const baseUrl = resolvePjsk3dRuntimeBaseUrl(region.value, preference.value)
-      const result = await fetchCostumeRoleData(baseUrl, targetCharacterId, targetUnit)
+      const { value: result } = await loadWithAssetFallback(
+        resolvePjsk3dRuntimeBaseUrl(region.value, preference.value),
+        resolvePjsk3dRuntimeFallbackBaseUrl(region.value, preference.value),
+        (baseUrl) => fetchCostumeRoleData(baseUrl, targetCharacterId, targetUnit),
+      )
       if (token !== loadToken) {
         return
       }

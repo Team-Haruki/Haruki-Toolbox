@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { isCachedSekaiImage } from "@/lib/sekai-image-cache"
 
-const CN = "https://sekai-assets.haruki.seiunx.com"
+const CN = "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com"
 const GLOBAL = "https://sekai-assets-haruki.seiunx.net"
 
 describe("isCachedSekaiImage", () => {
@@ -15,6 +15,8 @@ describe("isCachedSekaiImage", () => {
     expect(isCachedSekaiImage(`${CN}/asset-probe.png`)).toBe(false)
     expect(isCachedSekaiImage(`${CN}/asset-probe.png?_latency=1`)).toBe(false)
     expect(isCachedSekaiImage("https://example.com/jp-assets/startapp/thumbnail/a.png")).toBe(false)
+    // the retired China mirror host
+    expect(isCachedSekaiImage("https://sekai-assets.haruki.seiunx.com/jp-assets/startapp/thumbnail/a.png")).toBe(false)
     expect(isCachedSekaiImage(`${CN}/jp-assets/startapp/live2d/model/v1/main/10_an/10an_normal/10an_normal_3.0_t05.moc3`)).toBe(false)
   })
 

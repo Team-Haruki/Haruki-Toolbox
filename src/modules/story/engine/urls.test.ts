@@ -5,6 +5,7 @@ import {
   createStoryResolver,
   partVoiceDirs,
   storyClipUrl,
+  storyUrls,
   type StoryAssetIndex,
   type StoryEpisodeContext,
 } from "@/modules/story/engine/urls"
@@ -111,5 +112,57 @@ describe("createStoryResolver", () => {
   test("serves the player's own files from story-player/v1", () => {
     expect(r.ui("menu/btn.png")).toBe(`${ROOT}/story-player/v1/ui/menu/btn.png`)
     expect(r.fx("bg/index.json")).toBe(`${ROOT}/story-player/v1/fx/bg/index.json`)
+  })
+})
+
+describe("the fallback host", () => {
+  const FALLBACK = "https://global.example/jp-assets"
+  const r = createStoryResolver()
+
+  beforeEach(() => {
+    configureStoryRoot(`${ROOT}/`, `${FALLBACK}/`)
+  })
+
+  test("adds the fallback copy of the first candidate last", () => {
+    expect(r.bgm("01_an_02", eventCtx)).toEqual([
+      `${ROOT}/ondemand/sound/scenario/bgm/01_an_02/01_an_02.mp3`,
+      `${ROOT}/startapp/sound/scenario/bgm/01_an_02/01_an_02.mp3`,
+      `${FALLBACK}/ondemand/sound/scenario/bgm/01_an_02/01_an_02.mp3`,
+    ])
+    expect(r.se("se_door", eventCtx)).toEqual([
+      `${ROOT}/startapp/sound/scenario/se/se/se_door.mp3`,
+      `${FALLBACK}/startapp/sound/scenario/se/se/se_door.mp3`,
+    ])
+    expect(r.se("se_event_only", ctx({ index, kind: "unit" }))).toEqual([])
+    const area = r.voice("areatalk02_007", "areatalk_2_007_001", ctx({ index, kind: "area" }), {}) as string[]
+    expect(area).toHaveLength(5)
+    expect(area[4]).toBe(`${FALLBACK}/additionalvoice/sound/actionset/voice/areatalk02_007/areatalk_2_007_001.mp3`)
+    const bg = r.background("bg_a000301", eventCtx) as string[]
+    expect(bg).toHaveLength(4)
+    expect(bg[3]).toBe(`${FALLBACK}/ondemand/scenario/background/bg_a000301/bg_a000301.png`)
+  })
+
+  test("leaves single-URL assets on the chosen host", () => {
+    expect(r.model(anEntry, eventCtx)).toBe(`${ROOT}/${an.dir}/${an.model3}`)
+    expect(r.movie("op", eventCtx)).toBe(`${ROOT}/ondemand/movie/op/op.mp4`)
+  })
+
+  test("maps the host's own URLs to the fallback host", () => {
+    expect(storyUrls.fallback(storyUrls.fonts("SourceHanSansJP-Bold.otf"))).toBe(
+      `${FALLBACK}/story-player/v1/fonts/SourceHanSansJP-Bold.otf`,
+    )
+    expect(storyUrls.fallback(storyUrls.asset("startapp/story/episode_image/a.png"))).toBe(
+      `${FALLBACK}/startapp/story/episode_image/a.png`,
+    )
+    expect(storyUrls.fallback("https://elsewhere.example/a.png")).toBeNull()
+  })
+
+  test("has no fallback on the global host itself or without one", () => {
+    configureStoryRoot(FALLBACK, FALLBACK)
+    expect(storyUrls.fallback(storyUrls.asset("a.png"))).toBeNull()
+    expect(r.se("se_door", eventCtx)).toHaveLength(1)
+    configureStoryRoot(ROOT)
+    expect(storyUrls.fallback(storyUrls.asset("a.png"))).toBeNull()
+    expect(r.bgm("x", eventCtx)).toHaveLength(2)
   })
 })

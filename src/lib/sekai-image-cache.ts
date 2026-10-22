@@ -16,7 +16,7 @@
  * them, so the worker gains nothing there.
  */
 const SEKAI_IMAGE =
-  /^https:\/\/(sekai-assets\.haruki\.seiunx\.com|sekai-assets-haruki\.seiunx\.net|sekai-assets-cn03-she01-cdn\.haruki\.seiunx\.com|images\.haruki\.seiunx\.com)\/(?!asset-probe\.png(?:\?|$)).*\.(?:png|jpe?g|webp|avif)(?:\?.*)?$/i
+  /^https:\/\/(sekai-assets-haruki\.seiunx\.net|sekai-assets-cn03-she01-cdn\.haruki\.seiunx\.com|images\.haruki\.seiunx\.com)\/(?!asset-probe\.png(?:\?|$)).*\.(?:png|jpe?g|webp|avif)(?:\?.*)?$/i
 
 /** Live2D models and scenario backgrounds of any region tree, and the story player's own files. */
 const STORY_PLAYER_ASSET = /^https:\/\/[^/]+\/[a-z]+-assets\/(?:(?:startapp|ondemand)\/(?:live2d|scenario)\/|story-player\/)/i

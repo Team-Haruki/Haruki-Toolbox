@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useCatalogViewPreference } from "@/composables/useCatalogViewPreference"
-import { resolveSekaiAssetRootUrl } from "@/shared/sekai/data-sources"
+import { resolveSekaiAssetFallbackRootUrl, resolveSekaiAssetRootUrl } from "@/shared/sekai/data-sources"
 import { useSettingsStore } from "@/shared/stores/settings"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import { useStoryCatalog } from "@/modules/story/composables/useStoryCatalog"
@@ -83,20 +83,23 @@ const catalog = computed(() => {
   return hideUnreleased.value ? hideUnreleasedStories(titled, Date.now()) : titled
 })
 
-// Only the hosts in front of the full JP tree carry Live2D models, motions,
-// backgrounds and voices; the china_cdn host serves a filtered copy.
-const assetRoot = computed(() => {
-  const preference = settingsStore.currentAssetEndpoint
-  return resolveSekaiAssetRootUrl(preference === "china_cdn" ? "china" : preference)
-})
-watch(assetRoot, (root) => configureStoryRoot(`${root}/jp-assets`), { immediate: true })
+// Both asset hosts carry the player's whole JP tree; the China CDN falls back
+// to the global host when it fails.
+const assetRoot = computed(() => resolveSekaiAssetRootUrl(settingsStore.currentAssetEndpoint))
+const fallbackRoot = computed(() => resolveSekaiAssetFallbackRootUrl(settingsStore.currentAssetEndpoint))
 
-const { runtime, state, aiPending, available, markInteracted } = useStoryPlayback({
+const { runtime, state, aiPending, available, activeRoot, activeFallback, markInteracted } = useStoryPlayback({
   sid,
   catalog,
   langChain,
   assetRoot,
+  fallbackRoot,
 })
+watch(
+  [activeRoot, activeFallback],
+  ([root, fallback]) => configureStoryRoot(`${root}/jp-assets`, fallback ? `${fallback}/jp-assets` : null),
+  { immediate: true },
+)
 
 const host = useTemplateRef<HTMLElement>("host")
 const engineError = ref<string | null>(null)

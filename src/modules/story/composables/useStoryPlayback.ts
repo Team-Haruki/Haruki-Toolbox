@@ -1,4 +1,4 @@
-import { ref, shallowRef, watch, type Ref } from "vue"
+import { computed, ref, shallowRef, watch, type Ref } from "vue"
 import type { SekaiRegion } from "@/types"
 import { getStoryTranslation } from "@/modules/story/api/story"
 import type { StoryCatalog, StoryEpisode } from "@/modules/story/lib/story-catalog"
@@ -31,6 +31,8 @@ export type StoryPlaybackOptions = {
   langChain: Ref<StoryTextLang[]>
   /** "<asset host>" without the region suffix. */
   assetRoot: Ref<string>
+  /** The host to retry on when `assetRoot` fails (network, timeout, 5xx); null for none. */
+  fallbackRoot: Ref<string | null>
 }
 
 /**
@@ -51,17 +53,41 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
   let seq = 0
   let interacted = false
 
+  // When the chosen host fails the asset index, the session plays from the
+  // fallback host until the asset route changes.
+  const onFallback = ref(false)
+  watch([options.assetRoot, options.fallbackRoot], () => {
+    onFallback.value = false
+  })
+  const usableFallback = computed(() => {
+    const fallback = options.fallbackRoot.value
+    return fallback && fallback !== options.assetRoot.value ? fallback : null
+  })
+  /** The host this session plays from. */
+  const activeRoot = computed(() => (onFallback.value && usableFallback.value) || options.assetRoot.value)
+  /** The host to retry on from `activeRoot`; null once the session is on the fallback. */
+  const activeFallback = computed(() => (activeRoot.value === usableFallback.value ? null : usableFallback.value))
+
   const loadIndex = () => {
-    index ??= fetchStoryAssetIndex(`${options.assetRoot.value}/jp-assets`).catch((error: unknown) => {
-      index = null
-      throw error
-    })
+    const root = activeRoot.value
+    const fallback = activeFallback.value
+    index ??= fetchStoryAssetIndex(`${root}/jp-assets`, Date.now(), fallback && `${fallback}/jp-assets`)
+      .then((result) => {
+        if (fallback && result.jpRoot === `${fallback}/jp-assets` && options.assetRoot.value === root) {
+          onFallback.value = true
+        }
+        return result.index
+      })
+      .catch((error: unknown) => {
+        index = null
+        throw error
+      })
     return index
   }
 
   const scenarioOf = (region: SekaiRegion, episode: StoryEpisode) =>
     scenarios.get(`${region}:${episode.sid}`, () =>
-      fetchScenarioJson<ScenarioSceneData>(options.assetRoot.value, region, episode.paths))
+      fetchScenarioJson<ScenarioSceneData>(activeRoot.value, region, episode.paths, undefined, activeFallback.value))
 
   /**
    * Every text language this episode has: JP, each region whose file holds
@@ -153,5 +179,14 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
     () => void play(options.sid.value),
   )
 
-  return { runtime, state, aiPending, available, markInteracted, replay: () => play(options.sid.value) }
+  return {
+    runtime,
+    state,
+    aiPending,
+    available,
+    activeRoot,
+    activeFallback,
+    markInteracted,
+    replay: () => play(options.sid.value),
+  }
 }

@@ -2,7 +2,7 @@ import { computed, onMounted } from "vue"
 import type { Component } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
-import { CloudLightning, Globe2, Link, Monitor, Moon, Network, Sun } from "lucide-vue-next"
+import { CloudLightning, Globe2, Link, Monitor, Moon, Sun } from "lucide-vue-next"
 import {
   useSettingsStore,
   type AssetEndpointLatencyStatus,
@@ -108,9 +108,8 @@ export function useHomeSettings() {
   const endpointUnavailable = computed(() => endpointOptions.value.length === 0)
 
   const assetEndpointOptions = computed<ReadonlyArray<AssetEndpointOption>>(() => [
-    createAssetEndpointOption("china", t("homeSettings.assetEndpoint.china"), Network),
-    createAssetEndpointOption("global", t("homeSettings.assetEndpoint.global"), Globe2),
     createAssetEndpointOption("china_cdn", t("homeSettings.assetEndpoint.chinaCdn"), CloudLightning),
+    createAssetEndpointOption("global", t("homeSettings.assetEndpoint.global"), Globe2),
   ])
 
   const themeOptions = computed<ReadonlyArray<ThemeOption>>(() => [

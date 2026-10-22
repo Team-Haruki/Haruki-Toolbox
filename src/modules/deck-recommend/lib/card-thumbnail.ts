@@ -79,7 +79,7 @@ export function buildDeckResultViews(
   result: RecommendResult | TaggedRecommendResult | null,
   masterData: Record<string, unknown> | null,
   region: SekaiRegion,
-  assetEndpoint: SekaiAssetEndpointPreference = "china",
+  assetEndpoint: SekaiAssetEndpointPreference = "china_cdn",
 ): DeckResultDeckView[] {
   if (!result?.decks?.length) {
     return []
@@ -104,7 +104,7 @@ export function buildDeckSupportCardViews(
   cards: readonly DeckResultSupportCard[],
   masterData: Record<string, unknown> | null,
   region: SekaiRegion,
-  assetEndpoint: SekaiAssetEndpointPreference = "china",
+  assetEndpoint: SekaiAssetEndpointPreference = "china_cdn",
 ): DeckResultSupportCardView[] {
   const cardMap = buildMasterCardMap(masterData?.cards, masterData?.gameCharacters)
   return cards.map((card) => {
@@ -142,7 +142,7 @@ export function buildCardThumbnailView(
   card: RecommendCard,
   masterCard: DeckRecommendMasterCard | null,
   region: SekaiRegion,
-  assetEndpoint: SekaiAssetEndpointPreference = "china",
+  assetEndpoint: SekaiAssetEndpointPreference = "china_cdn",
 ): CardThumbnailView {
   const { displayAfterTraining, trainedArt } = resolveRecommendCardDisplayState(card)
   const rarity = masterCard?.cardRarityType ?? ""

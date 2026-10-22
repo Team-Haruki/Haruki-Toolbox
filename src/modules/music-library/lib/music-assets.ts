@@ -5,7 +5,7 @@ import { resolveSekaiGameAssetUrl } from "@/shared/sekai/data-sources"
 /**
  * Jacket asset path pattern, verified against the asset CDN:
  * `startapp/music/jacket/{assetbundleName}/{assetbundleName}.png`
- * e.g. https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/music/jacket/jacket_s_001/jacket_s_001.png
+ * e.g. https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/kr-assets/startapp/music/jacket/jacket_s_001/jacket_s_001.png
  */
 export function buildMusicJacketAssetPath(assetbundleName: string): string | null {
   const name = typeof assetbundleName === "string" ? assetbundleName.trim() : ""
@@ -19,7 +19,7 @@ export function buildMusicJacketAssetPath(assetbundleName: string): string | nul
 export function resolveMusicJacketUrl(
   region: SekaiRegion,
   assetbundleName: string,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string | null {
   const assetPath = buildMusicJacketAssetPath(assetbundleName)
   if (!assetPath) {
@@ -46,7 +46,7 @@ export function buildMusicLongAudioAssetPath(vocalAssetbundleName: string): stri
 export function resolveMusicLongAudioUrl(
   region: SekaiRegion,
   vocalAssetbundleName: string,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string | null {
   const assetPath = buildMusicLongAudioAssetPath(vocalAssetbundleName)
   if (!assetPath) {

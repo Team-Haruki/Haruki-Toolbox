@@ -287,7 +287,7 @@ export function resolveCardRareCount(cardRarityType: string): number {
 export function buildCatalogCardThumbnail(
   card: CatalogMasterCard,
   region: SekaiRegion,
-  assetEndpoint: SekaiAssetEndpointPreference = "china",
+  assetEndpoint: SekaiAssetEndpointPreference = "china_cdn",
 ): CatalogCardThumbnail {
   const hasTrainedArt = cardRarityHasTrainedArt(card.cardRarityType)
   // Trained-by-default cards (`initialSpecialTrainingStatus: done`) ship no

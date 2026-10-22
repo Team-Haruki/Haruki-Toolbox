@@ -25,7 +25,7 @@ const props = withDefaults(defineProps<{
   eager?: boolean
   blur?: boolean
 }>(), {
-  preference: "china",
+  preference: "china_cdn",
   variant: "banner",
   fit: "contain",
   eager: false,

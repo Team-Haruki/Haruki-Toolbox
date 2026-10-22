@@ -236,12 +236,14 @@ export class StoryBrowser {
       html += `</div>`;
     }
     this.listEl.innerHTML = html || `<div class="sb-empty">${esc(this.labels.empty)}</div>`;
-    // CDN images recover through the shared retry; one that is really gone
-    // (no logo / episode art for that story) just disappears
+    // CDN images recover through the shared retry (the fallback host's copy
+    // first); one that is really gone (no logo / episode art for that story)
+    // just disappears
     for (const el of this.listEl.querySelectorAll("img")) {
       const src = el.src;
+      const fallback = storyUrls.fallback(src);
       el.addEventListener("error", (ev) => {
-        if (!handleSekaiImageError(ev, src)) el.remove();
+        if (!handleSekaiImageError(ev, src, fallback)) el.remove();
       });
     }
     const cur = this.listEl.querySelector<HTMLElement>(".sb-ep.cur");

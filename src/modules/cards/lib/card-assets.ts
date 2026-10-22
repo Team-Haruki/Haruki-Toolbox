@@ -22,7 +22,7 @@ export function resolveCardFullArtUrl(
   region: SekaiRegion,
   assetbundleName: string,
   trained: boolean,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string | null {
   const path = resolveCardFullArtPath(assetbundleName, trained)
   return path ? resolveSekaiGameAssetUrl(region, path, preference) : null
@@ -37,7 +37,7 @@ export function resolveCardFullArtUrls(
   region: SekaiRegion,
   assetbundleName: string,
   trained: boolean,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string[] {
   const bundle = assetbundleName.trim()
   if (!bundle) {
