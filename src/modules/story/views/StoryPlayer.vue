@@ -139,6 +139,7 @@ function runtimeLabels(): RuntimeLabels {
     tabLog: t("storyPlayer.stage.tabLog"),
     fullscreen: t("storyPlayer.stage.fullscreen"),
     exitFullscreen: t("storyPlayer.stage.exitFullscreen"),
+    credit: t("storyPlayer.stage.credit"),
   }
 }
 

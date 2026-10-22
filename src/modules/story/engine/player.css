@@ -368,6 +368,13 @@
 .story-player .sp-fs-btn svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2.2;
   stroke-linecap: round; stroke-linejoin: round; }
 .story-player .sp-stage-wrap.ui-hidden ~ .sp-fs-btn { visibility: hidden; }
+/* credit line: top centre of the stage box (outside the scaled stage, so it
+   stays readable on phones), clear of the fullscreen button and the menu */
+.story-player .sp-credit { position: absolute; left: 50%; top: 6px; z-index: 11; transform: translateX(-50%);
+  width: max-content; max-width: calc(100% - 96px); text-align: center; pointer-events: none;
+  font: 500 12px/1.3 system-ui, -apple-system, "PingFang SC", "Hiragino Sans", sans-serif;
+  color: rgba(255,255,255,.6); text-shadow: 0 1px 2px rgba(0,0,0,.65); letter-spacing: .01em; }
+.story-player.narrow:not(.pseudo-fs) .sp-stage-box:not(:fullscreen) .sp-credit { top: 4px; font-size: 8px; max-width: calc(100% - 76px); color: rgba(255,255,255,.5); }
 .story-player .sp-tabs { display: none; }
 .story-player.narrow:not(.pseudo-fs) .sp-stage-box:not(:fullscreen) .sp-fs-btn { display: block; left: 6px; top: 6px; width: 28px; height: 28px; padding: 5px; }
 

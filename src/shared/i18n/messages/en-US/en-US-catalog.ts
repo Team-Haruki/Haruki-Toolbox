@@ -416,6 +416,7 @@ export default {
       "start": "Click to play",
       "pickBeside": "Pick a story on the left",
       "pickBelow": "Pick a story below",
+      "credit": "Developed by Deseer × 星雲希凪 (From Haruki Dev Team). Powered by Haruki Toolbox.",
       "tabBrowser": "Stories",
       "tabLog": "Lines",
       "fullscreen": "Fullscreen",
