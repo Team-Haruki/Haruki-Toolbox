@@ -30,6 +30,12 @@ export class AudioManager {
   private voice?: HTMLAudioElement;
   private voiceDone?: () => void; // settles the current playVoice() promise
   private muted = false;
+  // The voice of the current line plays straight from its <audio>, outside the
+  // analyser graph: the AudioContext was still suspended (no user gesture yet,
+  // while the browser already let <audio> autoplay). Lip-sync then follows a
+  // synthetic level instead of the waveform.
+  private direct = false;
+  private unlockBound = false;
   // after the analyser, so muting keeps the lip-sync input
   private gain?: GainNode;
 
@@ -57,11 +63,43 @@ export class AudioManager {
       this.timeBuf = new Uint8Array(analyser.fftSize);
     }
     if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
+    this.bindUnlock();
+  }
+
+  // The first tap or key press anywhere starts the AudioContext, so later
+  // voices go through the analyser again.
+  private bindUnlock() {
+    if (this.unlockBound) return;
+    this.unlockBound = true;
+    const events = ["pointerdown", "keydown", "touchend"] as const;
+    const unlock = () => {
+      const ctx = this.ctx;
+      if (!ctx) return;
+      void ctx.resume().then(
+        () => {
+          if (ctx.state === "running") for (const e of events) removeEventListener(e, unlock, true);
+        },
+        () => {},
+      );
+    };
+    for (const e of events) addEventListener(e, unlock, { capture: true, passive: true });
+  }
+
+  /** Can voices go through the analyser? Tries to start a suspended context briefly. */
+  private async graphRunning(): Promise<boolean> {
+    const ctx = this.ctx;
+    if (!ctx) return false;
+    if (ctx.state === "running") return true;
+    await Promise.race([ctx.resume().catch(() => {}), new Promise((r) => setTimeout(r, 80))]);
+    return (ctx.state as AudioContextState) === "running";
   }
 
   // Current voice amplitude (RMS, ~0-1) for lip-sync; 0 if no voice playing.
   getVoiceLevel(): number {
-    if (!this.analyser || !this.timeBuf || !this.voice || this.voice.paused) return 0;
+    if (!this.voice || this.voice.paused) return 0;
+    // outside the graph: a speech-like open/close instead of the waveform
+    if (this.direct) return 0.28 + 0.22 * Math.abs(Math.sin(performance.now() / 95));
+    if (!this.analyser || !this.timeBuf) return 0;
     this.analyser.getByteTimeDomainData(this.timeBuf);
     let sum = 0;
     for (let i = 0; i < this.timeBuf.length; i++) {
@@ -130,42 +168,50 @@ export class AudioManager {
   }
 
   // Resolves when the voice clip ends (or fails to load). Never rejects.
-  // Routed through an AnalyserNode so getVoiceLevel() can drive lip-sync.
+  // Routed through an AnalyserNode so getVoiceLevel() can drive lip-sync; played
+  // directly while the AudioContext can't run yet (see `direct`).
   playVoice(urls: string[], volume = 1): Promise<void> {
     this.stopVoice();
     return new Promise((resolve) => {
-      let finish = () => {};
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        resolve();
+      };
+      this.voiceDone = finish;
       const a = candidateAudio(urls, () => {
         console.warn("voice load failed", urls[0]);
         finish();
       });
       a.volume = volume;
       this.voice = a;
-      try {
-        this.ensureCtx();
-        let src = this.srcCache.get(a);
-        if (!src) {
-          src = this.ctx!.createMediaElementSource(a);
-          this.srcCache.set(a, src);
-        }
-        src.connect(this.analyser!);
-        this.voiceSrc = src;
-      } catch (e) {
-        console.warn("voice analyser setup failed", e);
-        a.muted = this.muted; // played directly, outside the graph
-      }
-      let done = false;
-      finish = () => {
-        if (done) return;
-        done = true;
-        resolve();
-      };
-      this.voiceDone = finish;
       a.addEventListener("ended", finish);
-      // a rejected play() on a missing file is followed by the error walk
-      a.play().catch((e: DOMException) => {
-        if (e.name === "NotAllowedError") finish();
-      });
+      void (async () => {
+        let routed = false;
+        try {
+          this.ensureCtx();
+          if (await this.graphRunning()) {
+            let src = this.srcCache.get(a);
+            if (!src) {
+              src = this.ctx!.createMediaElementSource(a);
+              this.srcCache.set(a, src);
+            }
+            src.connect(this.analyser!);
+            this.voiceSrc = src;
+            routed = true;
+          }
+        } catch (e) {
+          console.warn("voice analyser setup failed", e);
+        }
+        if (this.voice !== a || done) return; // stopped while the context was starting
+        this.direct = !routed;
+        if (!routed) a.muted = this.muted; // played directly, outside the graph
+        // a rejected play() on a missing file is followed by the error walk
+        a.play().catch((e: DOMException) => {
+          if (e.name === "NotAllowedError") finish();
+        });
+      })();
     });
   }
   stopVoice() {
@@ -181,6 +227,7 @@ export class AudioManager {
       stop(this.voice);
       this.voice = undefined;
     }
+    this.direct = false;
     // a stopped clip never fires "ended": settle its promise here
     const done = this.voiceDone;
     this.voiceDone = undefined;
