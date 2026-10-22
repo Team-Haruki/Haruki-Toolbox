@@ -65,6 +65,7 @@ describe("buildStoryCatalog", () => {
     expect(card.title).toBe("【Hello】初音ミク")
     expect(card.unit).toBe("street")
     expect(card.vsUnit).toBe("piapro")
+    expect(card.chars).toEqual([21])
     expect(card.episodes.map((e) => e.label)).toEqual([{ type: "part", part: "first" }, { type: "part", part: "second" }])
     expect(card.episodes[0].paths).toEqual(["startapp/character/member/res021_no009/card_9_a.json"])
   })
@@ -79,6 +80,7 @@ describe("buildStoryCatalog", () => {
     expect(area.episodes[0].paths).toEqual(["startapp/scenario/actionset/group12/areatalk_1234.json"])
     expect(area.episodes[0].title).toBe("初音ミク・白石杏")
     expect(cat.units[10]).toBe("street")
+    expect(cat.names[21]).toBe("初音ミク")
   })
 
   test("indexes every episode by scenario id", () => {

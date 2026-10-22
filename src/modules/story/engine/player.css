@@ -46,6 +46,14 @@
   font: 700 13px var(--cn-bold); color: rgb(223,223,234); white-space: nowrap; }
 .story-player .sb-tabs button.on { background: #fff; color: rgb(68,68,102); box-shadow: 0 1px 3px rgba(0,0,34,.3); }
 .story-player .sb-units { display: flex; justify-content: space-between; }
+/* card stories / area talks: character filter (talk-log icons), scrolls sideways */
+.story-player .sb-chars { display: flex; gap: 4px; overflow-x: auto; overscroll-behavior: contain; margin: -4px 0 0; padding: 2px 0 4px;
+  scrollbar-width: thin; }
+.story-player .sb-chars[hidden] { display: none; }
+.story-player .sb-chars button { flex: none; width: 36px; height: 36px; padding: 0; border: 2px solid transparent; border-radius: 50%;
+  background: none; cursor: pointer; opacity: .6; }
+.story-player .sb-chars button img { display: block; width: 100%; height: 100%; border-radius: 50%; }
+.story-player .sb-chars button.on { opacity: 1; border-color: rgb(255,119,170); }
 .story-player .sb-units button { width: 38px; height: 38px; padding: 3px; border: 2px solid transparent; border-radius: 10px;
   background: none; cursor: pointer; opacity: .55; }
 .story-player .sb-units button img { display: block; width: 100%; height: 100%; }
@@ -204,15 +212,15 @@
    rgba(68,68,102,.4) down to 72 below the last row (796 ref tall). Buttons
    btn_round_r16 (9-slice, 8px soft shadow inside the rect), labels RodinNTLG
    EB 32 rgb(68,68,102) (しおり rgb(85,85,119)); on = rgb(255,119,170). */
-.story-player .scn-menu-panel { position: absolute; right: 0; top: 0; width: 261.33px; height: 525.33px; z-index: 8; overflow: hidden;
+.story-player .scn-menu-panel { position: absolute; right: 0; top: 0; width: 261.33px; height: 455.53px; z-index: 8; overflow: hidden;
   background: rgba(68,68,102,.4); border-bottom-left-radius: 20px; cursor: default; }
 /* Open/Close clips: SizeDelta.y 0↔788 and Content alpha 0↔1 over 0.167s, flat tangents (smoothstep) */
 .story-player .scn-menu-panel.opening { animation: smp-grow .167s cubic-bezier(.333,0,.667,1) both; }
 .story-player .scn-menu-panel.closing { animation: smp-shrink .167s cubic-bezier(.333,0,.667,1) both; }
 .story-player .scn-menu-panel.opening > * { animation: smp-fade-in .167s cubic-bezier(.333,0,.667,1) both; }
 .story-player .scn-menu-panel.closing > * { animation: smp-fade-out .167s cubic-bezier(.333,0,.667,1) both; }
-@keyframes smp-grow { from { height: 0; } to { height: 525.33px; } }
-@keyframes smp-shrink { from { height: 525.33px; } to { height: 0; } }
+@keyframes smp-grow { from { height: 0; } to { height: 455.53px; } }
+@keyframes smp-shrink { from { height: 455.53px; } to { height: 0; } }
 @keyframes smp-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes smp-fade-out { from { opacity: 1; } to { opacity: 0; } }
 .story-player .smp-close { position: absolute; left: 219.93px; top: 12.33px; width: 29.33px; height: 29.33px; cursor: pointer;
@@ -220,12 +228,10 @@
 .story-player .smp-line { position: absolute; left: 42.67px; top: 117.2px; width: 176px; height: 2.67px; background: rgb(235,235,242); }
 .story-player .smp-btn { position: absolute; left: 37.33px; width: 186.67px; height: 64px; cursor: pointer; color: rgb(68,68,102);
   border-image: var(--sp-menu-btn) 27 fill / 18px stretch; }
-.story-player .smp-btn.small { top: 408px; width: 90.67px; height: 74.67px; }
+.story-player .smp-btn.small { top: 338.2px; width: 90.67px; height: 74.67px; }
 .story-player .smp-btn:active { filter: brightness(.92); }
-.story-player .smp-btn[data-k="bookmark"] { color: rgb(85,85,119); }
 .story-player .smp-btn.on { color: rgb(255,119,170); }
 .story-player .smp-ic { position: absolute; background: currentColor; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
-.story-player .smp-btn[data-k="bookmark"] .smp-ic { background: rgb(68,68,102); }
 .story-player .smp-btn span { position: absolute; top: 0; height: 64px; display: flex; align-items: center; justify-content: center;
   font-family: var(--cn-bold); font-weight: 700; font-size: 21.33px; line-height: 1; white-space: nowrap; }
 .story-player .smp-btn.small span { left: 0; right: 0; top: 40.2px; height: 18.67px; font-size: 18.67px; }
@@ -333,9 +339,9 @@
 /* nothing picked yet: the prompt in the middle of the stage */
 .story-player .sp-pick { font: 700 20px var(--cn-bold); color: rgb(223,223,234); letter-spacing: .06em; text-align: center; }
 .story-player .sp-pick[hidden] { display: none; }
-.story-player .sp-pick .above { display: none; }
+.story-player .sp-pick .below { display: none; }
 .story-player.narrow .sp-pick .beside { display: none; }
-.story-player.narrow .sp-pick .above { display: inline; }
+.story-player.narrow .sp-pick .below { display: inline; }
 
 /* Dialogue in other scripts: Rodin covers kana, JIS kanji and Latin only, so
    Chinese and Korean text switch to a system face of the same weight. */
@@ -348,9 +354,43 @@
 .story-player[data-script="ko"] .fx-telop-text, .story-player[data-script="ko"] .fx-place-text,
 .story-player[data-script="ko"] .fst-text, .story-player[data-script="ko"] .fx-choice-btn { font-family: var(--ko-text); font-weight: 500; }
 
-/* Narrow hosts: browser above, stage (zoomed to the width), log below. */
-.story-player.narrow .sp-row { flex-direction: column; align-items: stretch; }
-.story-player.narrow .story-browser { width: 100%; height: 420px; }
-.story-player.narrow .story-browser.collapsed { width: 100%; height: 44px; }
-.story-player.narrow .collapsed .sb-rail { top: 0; left: 52px; right: auto; width: auto; margin: 0; padding: 0; line-height: 44px; }
-.story-player.narrow .script-log { width: 100%; height: 420px; }
+/* The stage box holds the stage and the fullscreen toggle (unzoomed). */
+.story-player .sp-stage-box { position: relative; flex: none; }
+.story-player .sp-fs-btn { display: none; position: absolute; left: 10px; top: 10px; z-index: 11; width: 36px; height: 36px; padding: 7px;
+  border: 0; border-radius: 50%; background: rgba(68,68,102,.72); color: #fff; cursor: pointer; opacity: .85;
+  box-shadow: 0 1px 4px rgba(0,0,34,.35); }
+.story-player .sp-fs-btn:hover { opacity: 1; }
+.story-player .sp-fs-btn svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2.2;
+  stroke-linecap: round; stroke-linejoin: round; }
+.story-player .sp-stage-wrap.ui-hidden ~ .sp-fs-btn { visibility: hidden; }
+.story-player .sp-tabs { display: none; }
+.story-player.narrow:not(.pseudo-fs) .sp-stage-box:not(:fullscreen) .sp-fs-btn { display: block; left: 6px; top: 6px; width: 28px; height: 28px; padding: 5px; }
+
+/* Fullscreen: the box fills the screen, the stage is centred and zoomed to fit. */
+.story-player .sp-stage-box:fullscreen,
+.story-player.pseudo-fs .sp-stage-box { display: flex; align-items: center; justify-content: center; background: #000; }
+.story-player .sp-stage-box:fullscreen .sp-stage-wrap,
+.story-player.pseudo-fs .sp-stage-wrap { border: 0; border-radius: 0; }
+.story-player.pseudo-fs .sp-stage-box { position: fixed; z-index: 2147483000; left: 0; top: 0; width: 100vw; height: 100dvh; }
+/* a phone held upright: lay the stage sideways (iPhone Safari cannot lock the orientation) */
+@media (orientation: portrait) {
+  .story-player.pseudo-fs .sp-stage-box { width: 100dvh; height: 100vw; transform-origin: 0 0; transform: translateX(100vw) rotate(90deg); }
+}
+:root.story-player-fs-lock, :root.story-player-fs-lock body { overflow: hidden; }
+
+/* Narrow hosts: the stage on top at full width, then tabs switching between
+   the story browser and the talk log (game styling, not zoomed). */
+.story-player.narrow .sp-row { flex-direction: column; align-items: stretch; gap: 10px; }
+.story-player.narrow .sp-stage-box { order: 0; align-self: center; }
+.story-player.narrow .sp-tabs { order: 1; display: flex; padding: 3px; border-radius: 17px; background: rgb(58,58,88); }
+.story-player.narrow .sp-tabs button { flex: 1; height: 28px; border: 0; border-radius: 14px; background: none; cursor: pointer; padding: 0;
+  font: 700 13px var(--cn-bold); color: rgb(223,223,234); white-space: nowrap; }
+.story-player.narrow .sp-tabs button.on { background: #fff; color: rgb(68,68,102); box-shadow: 0 1px 3px rgba(0,0,34,.3); }
+.story-player.narrow .story-browser,
+.story-player.narrow .script-log { order: 2; width: 100%; height: min(68dvh, 620px); }
+.story-player.narrow[data-panel="log"] .story-browser,
+.story-player.narrow[data-panel="browser"] .script-log { display: none; }
+.story-player.narrow .sb-toggle,
+.story-player.narrow .sb-rail { display: none; }
+.story-player.narrow .story-browser.collapsed .sb-main { display: flex; }
+.story-player.narrow .sb-tabs { margin-right: 0; }

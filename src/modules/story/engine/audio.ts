@@ -29,6 +29,9 @@ export class AudioManager {
   private bgmUrl?: string;
   private voice?: HTMLAudioElement;
   private voiceDone?: () => void; // settles the current playVoice() promise
+  private muted = false;
+  // after the analyser, so muting keeps the lip-sync input
+  private gain?: GainNode;
 
   // Web Audio graph for voice lip-sync (amplitude analysis).
   private ctx?: AudioContext;
@@ -44,9 +47,13 @@ export class AudioManager {
       const ctx: AudioContext = new AC();
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
-      analyser.connect(ctx.destination);
+      const gain = ctx.createGain();
+      gain.gain.value = this.muted ? 0 : 1;
+      analyser.connect(gain);
+      gain.connect(ctx.destination);
       this.ctx = ctx;
       this.analyser = analyser;
+      this.gain = gain;
       this.timeBuf = new Uint8Array(analyser.fftSize);
     }
     if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
@@ -65,12 +72,21 @@ export class AudioManager {
     return Math.min(0.85, rms * 2.4); // gain for a natural open (not a gape)
   }
 
+  /** Silence BGM, SE and voice (the voice still drives lip-sync). */
+  setMuted(muted: boolean) {
+    this.muted = muted;
+    if (this.bgm) this.bgm.muted = muted;
+    if (this.gain) this.gain.gain.value = muted ? 0 : 1;
+    if (this.voice && !this.voiceSrc) this.voice.muted = muted;
+  }
+
   playBgm(urls: string[], volume = 1, fadeMs = 250) {
     const url = urls[0];
     if (this.bgm && this.bgmUrl === url) return; // same BGM already playing
     const old = this.bgm;
     this.bgmUrl = url;
     const a = candidateAudio(urls, () => console.warn("bgm load failed", url));
+    a.muted = this.muted;
     a.loop = true;
     a.volume = fadeMs > 0 ? 0 : volume;
     a.play().catch((e) => console.warn("bgm play blocked/failed", e));
@@ -108,6 +124,7 @@ export class AudioManager {
   playSe(urls: string[], volume = 1) {
     if (urls.length === 0) return;
     const a = candidateAudio(urls, () => console.warn("se load failed", urls[0]));
+    a.muted = this.muted;
     a.volume = volume;
     a.play().catch((e) => console.warn("se play failed", e));
   }
@@ -135,6 +152,7 @@ export class AudioManager {
         this.voiceSrc = src;
       } catch (e) {
         console.warn("voice analyser setup failed", e);
+        a.muted = this.muted; // played directly, outside the graph
       }
       let done = false;
       finish = () => {

@@ -389,6 +389,7 @@ export default {
     "title": "剧情播放",
     "description": "按游戏的演出播放主线、活动、卡面、特别剧情与区域对话。画面与语音来自日服，文本可选各服官方翻译，日服独有的剧情另有 AI 中文翻译。",
     "textLang": "文本语言",
+    "langAutoResolved": "跟随工具箱语言（{lang}）",
     "langAuto": "跟随工具箱语言",
     "lang": {
       "ja": "日本語",
@@ -398,7 +399,6 @@ export default {
       "ko": "한국어",
       "zhHansAi": "简体中文（AI翻译）"
     },
-    "fallback": "这一话没有{lang}文本，当前显示{shown}。",
     "aiPending": "这一话的 AI 翻译还在生成中，请稍后再来。",
     "aiNotice": "当前文本为 AI 翻译，可能与官方译文有出入。",
     "errors": {
@@ -412,7 +412,11 @@ export default {
       "loading": "加载中",
       "start": "点击开始播放",
       "pickBeside": "请在左侧选择要播放的剧情",
-      "pickAbove": "请在上方选择要播放的剧情"
+      "pickBelow": "请在下方选择要播放的剧情",
+      "tabBrowser": "剧情",
+      "tabLog": "台词",
+      "fullscreen": "全屏",
+      "exitFullscreen": "退出全屏"
     },
     "browser": {
       "tabs": {
@@ -433,10 +437,9 @@ export default {
       "secondPart": "后篇"
     },
     "menu": {
-      "bookmark": "书签",
+      "fullscreen": "全屏",
       "auto": "自动",
-      "consecutive": "连续播放",
-      "skip": "跳过",
+      "mute": "静音",
       "fast": "快进",
       "hide": "隐藏",
       "log": "记录"
