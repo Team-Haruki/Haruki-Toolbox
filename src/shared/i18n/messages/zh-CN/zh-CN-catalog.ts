@@ -412,6 +412,7 @@ export default {
     "aiNotice": "当前文本为 AI 翻译，可能与官方译文有出入。",
     "errors": {
       "notFound": "找不到这一话剧情。",
+      "unreleased": "这一话还没有上线。可以在设置里打开“展示未上线内容”后再看。",
       "missing": "日服素材里还没有这一话的剧本。",
       "failed": "剧情加载失败：{detail}",
       "catalog": "剧情目录加载失败，请刷新重试。",

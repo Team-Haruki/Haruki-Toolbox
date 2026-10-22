@@ -412,6 +412,7 @@ export default {
     "aiNotice": "This text is an AI translation and may differ from the official one.",
     "errors": {
       "notFound": "This episode could not be found.",
+      "unreleased": "This episode is not out yet. Turn on \"Show unreleased content\" in Settings to watch it.",
       "missing": "The JP assets do not have this episode's script yet.",
       "failed": "The story failed to load: {detail}",
       "catalog": "The story list failed to load. Refresh to try again.",

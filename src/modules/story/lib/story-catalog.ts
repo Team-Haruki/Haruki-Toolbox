@@ -37,6 +37,8 @@ export type StoryEpisode = {
   chars?: number[]
   /** Event stories: the event's story bundle (event-only SEs live there). */
   bundle?: string
+  /** Release time (ms) of this episode alone, when known (area talks). */
+  at?: number
 }
 
 export type StorySeries = {
@@ -66,6 +68,8 @@ export type StoryCatalog = {
   bySid: Map<string, { series: StorySeries; episode: StoryEpisode }>
   /** character2dId → model asset and unit (part voices are filed by them) */
   character2ds: ReadonlyMap<number, StoryCharacter2d>
+  /** ScenarioIds hidden by hideUnreleasedStories() */
+  unreleased?: ReadonlySet<string>
 }
 
 export type StoryCharacter2d = { assetName: string; unit: string }
@@ -234,6 +238,7 @@ export function buildStoryCatalog(src: StoryCatalogSources): StoryCatalog {
       title: chars.map(charName).join("・"),
       paths: [`startapp/scenario/actionset/group${Math.floor(id / 100)}/${sid}.json`],
       chars,
+      at: num(a.archivePublishedAt) || undefined,
     })
     byArea.set(areaId, list)
   }
@@ -296,9 +301,27 @@ export function overlayStoryTitles(base: StoryCatalog, other: StoryCatalog | nul
   return { tabs, units: base.units, names: { ...base.names, ...other.names }, bySid, character2ds: base.character2ds }
 }
 
-/** Drops stories that are not out yet (the catalog's unreleased setting). */
+/**
+ * Drops stories that are not out yet (the catalog's unreleased setting):
+ * series by their release time, episodes by their own. Direct links follow
+ * the list: a dropped episode is in `unreleased`, not in `bySid`.
+ */
 export function hideUnreleasedStories(catalog: StoryCatalog, now: number): StoryCatalog {
+  const out = (at?: number) => at == null || at <= now
   const tabs = {} as Record<StoryTab, StorySeries[]>
-  for (const t of STORY_TABS) tabs[t] = catalog.tabs[t].filter((s) => s.at == null || s.at <= now)
-  return { ...catalog, tabs }
+  const bySid = new Map<string, { series: StorySeries; episode: StoryEpisode }>()
+  const unreleased = new Set<string>()
+  for (const t of STORY_TABS) {
+    tabs[t] = []
+    for (const s of catalog.tabs[t]) {
+      const episodes = out(s.at) ? s.episodes.filter((e) => out(e.at)) : []
+      for (const e of s.episodes) if (!episodes.includes(e)) unreleased.add(e.sid)
+      if (!episodes.length) continue
+      const series = episodes.length === s.episodes.length ? s : { ...s, episodes }
+      tabs[t].push(series)
+      for (const episode of episodes) if (!bySid.has(episode.sid)) bySid.set(episode.sid, { series, episode })
+    }
+  }
+  for (const sid of bySid.keys()) unreleased.delete(sid) // listed elsewhere too
+  return { ...catalog, tabs, bySid, unreleased }
 }
