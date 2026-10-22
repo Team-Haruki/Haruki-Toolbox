@@ -32,6 +32,7 @@ export default {
       "algorithmDefaultHint": "一般保持默认即可。",
       "algorithmHint": "默认算法会随组卡场景自动选择：分数目标使用 DFS 精确搜索（可证明最优），World Bloom 等复杂场景使用 DFS-GA，烤森使用强化学习。手动勾选后将保持你的选择；同时启用多个算法可交叉验证结果，但整体耗时更长。",
       "executionMode": "执行方式",
+      "executionModeLimitedHint": "当前设备内存有限，多个算法会逐个运行，结果不变，只是耗时更长。",
       "event": "活动",
       "eventPlaceholder": "请选择活动",
       "eventSearchPlaceholder": "搜索活动名、#ID、类型、拼音或罗马音...",

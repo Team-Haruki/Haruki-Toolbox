@@ -1,38 +1,50 @@
-import type { ComputedRef, Ref } from "vue"
-import { readSekaiMasterFiles } from "@/shared/sekai/cache"
+import type { ComputedRef, Ref, ShallowRef } from "vue"
 import { SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES } from "@/shared/sekai/worker-protocol"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import type { SekaiRegion } from "@/types"
 import { mergeMasterFileNames } from "../lib/recommend-form-utils"
+import { DECK_RECOMMEND_MAIN_THREAD_MASTER_FILES, readDeckRecommendMainThreadMaster } from "../lib/main-thread-master"
 import type { DeckRecommendAlgorithm } from "../lib/recommend-options"
-import type { useDeckRecommendRunner, DeckRecommendExecutionMode } from "./useDeckRecommendRunner"
-
-export const DECK_RECOMMEND_CARD_OPTION_MASTER_FILES = ["cards", "cardRarities", "gameCharacters", "gameCharacterUnits", "unitProfiles", "areaItems", "areaItemLevels", "areas", "characterRanks", "mysekaiGates", "mysekaiGateLevels"] as const
+import {
+  getDeckRecommendDeviceProfile,
+  resolveDeckRecommendWorkerCount,
+  type DeckRecommendExecutionMode,
+} from "../lib/worker-pool-policy"
+import type { useDeckRecommendRunner } from "./useDeckRecommendRunner"
 
 /**
  * Owns the master-data preload orchestration for DeckRecommend: region data
- * checks, card-option master data loading and parallel engine warm-up. Pure
- * state + functions — the view keeps the triggering watchers and lifecycle
- * hooks so registration order stays unchanged.
+ * checks, page-side master loading and engine warm-up. Pure state +
+ * functions — the view keeps the triggering watchers and lifecycle hooks so
+ * registration order stays unchanged.
+ *
+ * The page never parses the engine's master set: the engine workers read it
+ * from IndexedDB themselves, and the page keeps only the lite tables it
+ * renders with (`main-thread-master`).
  */
 export function useDeckRecommendDataPreload(input: {
   runner: ReturnType<typeof useDeckRecommendRunner>
   dataRegion: Ref<SekaiRegion>
-  cardOptionMasterData: Ref<Record<string, unknown> | null>
+  cardOptionMasterData: ShallowRef<Record<string, unknown> | null>
   selectedAccountServer: ComputedRef<SekaiRegion | null>
   recommendDataReady: ComputedRef<boolean>
   executionMode: Ref<DeckRecommendExecutionMode>
   activeAlgorithms: ComputedRef<DeckRecommendAlgorithm[]>
 }) {
   const sekaiDataStore = useSekaiDataStore()
+  const deviceProfile = getDeckRecommendDeviceProfile()
   const { runner, dataRegion, cardOptionMasterData } = input
   let dataPreloadGeneration = 0
   let dataPreloadSignature = ""
   let cardOptionMasterDataSignature = ""
 
+  function workerCount(): number {
+    return resolveDeckRecommendWorkerCount(input.executionMode.value, input.activeAlgorithms.value.length, deviceProfile)
+  }
+
   function checkDeckRecommendRegionData(region: SekaiRegion) {
     void sekaiDataStore.ensureRegionData(region, {
-      files: mergeMasterFileNames(SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES, DECK_RECOMMEND_CARD_OPTION_MASTER_FILES),
+      files: mergeMasterFileNames(SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES, DECK_RECOMMEND_MAIN_THREAD_MASTER_FILES),
     })
     const accountRegion = input.selectedAccountServer.value
     if (accountRegion && accountRegion !== region) {
@@ -56,11 +68,8 @@ export function useDeckRecommendDataPreload(input: {
     const generation = dataPreloadGeneration
     const accountHonorRegion = input.selectedAccountServer.value ?? region
     void loadCardOptionMasterData(region, generation).catch(() => undefined)
-    void runner.preloadRegionData(region, accountHonorRegion, () => generation === dataPreloadGeneration).catch(() => undefined)
-    const parallelCount = input.executionMode.value === "parallel" ? input.activeAlgorithms.value.length : 0
-    if (parallelCount > 0) {
-      void runner.preloadParallelRegionData(region, parallelCount, accountHonorRegion, () => generation === dataPreloadGeneration).catch(() => undefined)
-    }
+    void runner.preloadRegionData(region, accountHonorRegion, () => generation === dataPreloadGeneration, workerCount())
+      .catch(() => undefined)
   }
 
   function invalidateDataPreload() {
@@ -81,8 +90,7 @@ export function useDeckRecommendDataPreload(input: {
       regionState.masterFetchVersion ?? "",
       regionState.musicMetasUpdatedAt ?? "",
       regionState.files.slice().sort((left, right) => left.localeCompare(right)).join(","),
-      input.executionMode.value,
-      input.activeAlgorithms.value.join(","),
+      String(workerCount()),
     ].join(":")
   }
 
@@ -95,7 +103,7 @@ export function useDeckRecommendDataPreload(input: {
     const signature = [
       region,
       masterVersion,
-      DECK_RECOMMEND_CARD_OPTION_MASTER_FILES
+      DECK_RECOMMEND_MAIN_THREAD_MASTER_FILES
         .map((fileName) => `${fileName}:${sekaiDataStore.regionStates[region].files.includes(fileName) ? "1" : "0"}`)
         .join(","),
     ].join(":")
@@ -103,7 +111,7 @@ export function useDeckRecommendDataPreload(input: {
       return
     }
 
-    const masterData = await readSekaiMasterFiles(region, DECK_RECOMMEND_CARD_OPTION_MASTER_FILES, masterVersion)
+    const masterData = await readDeckRecommendMainThreadMaster(region, masterVersion)
     if (generation !== dataPreloadGeneration || dataRegion.value !== region) {
       return
     }
@@ -115,15 +123,18 @@ export function useDeckRecommendDataPreload(input: {
     cardOptionMasterDataSignature = signature
   }
 
-  function syncParallelEngines() {
+  /**
+   * Sizes the engine pool to the current execution mode and algorithm
+   * selection, then fills any new engine with the region data.
+   */
+  function syncWorkerPool() {
     if (runner.running.value) {
       return
     }
 
-    const parallelCount = input.executionMode.value === "parallel" ? input.activeAlgorithms.value.length : 0
-    void runner.preloadParallelEngines(parallelCount)
+    void runner.preloadEngine(workerCount())
       .then(() => {
-        if (parallelCount > 0 && input.recommendDataReady.value) {
+        if (input.recommendDataReady.value) {
           preloadCurrentRegionData()
         }
       })
@@ -135,6 +146,6 @@ export function useDeckRecommendDataPreload(input: {
     preloadCurrentRegionData,
     invalidateDataPreload,
     resetCardOptionMasterData,
-    syncParallelEngines,
+    syncWorkerPool,
   }
 }

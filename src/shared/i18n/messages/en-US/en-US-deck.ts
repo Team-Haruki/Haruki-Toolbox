@@ -32,6 +32,7 @@ export default {
       "algorithmDefaultHint": "The default is usually fine.",
       "algorithmHint": "The default algorithm follows the current scenario: exact DFS (provably optimal) for score targets, DFS-GA for World Bloom and other complex scenarios, and reinforcement learning for MySekai. Manual selections are kept; enabling multiple algorithms cross-checks results but takes longer overall.",
       "executionMode": "Execution mode",
+      "executionModeLimitedHint": "This device has limited memory, so the algorithms run one after another. Results are the same; it just takes longer.",
       "event": "Event",
       "eventPlaceholder": "Select an event",
       "eventSearchPlaceholder": "Search event name, #ID, type, pinyin, or romaji...",

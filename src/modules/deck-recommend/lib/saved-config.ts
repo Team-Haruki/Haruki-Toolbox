@@ -1,6 +1,6 @@
 import { SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
 import type { SekaiRegion } from "@/types"
-import type { DeckRecommendExecutionMode } from "../composables/useDeckRecommendRunner"
+import type { DeckRecommendExecutionMode } from "./worker-pool-policy"
 import {
   type DeckRecommendAlgorithm,
   type DeckRecommendEventAttr,

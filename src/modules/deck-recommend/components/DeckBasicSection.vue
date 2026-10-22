@@ -60,6 +60,7 @@ const {
   executionMode,
   updateExecutionMode,
   executionModeOptions,
+  executionModeLimitedHint,
   selectedMusicId,
   selectedDifficulty,
   showEventConditionSection,
@@ -294,6 +295,9 @@ function setAlgorithms(value: AcceptableValue | AcceptableValue[] | undefined) {
               </ToggleGroupItem>
             </ToggleGroup>
             <p class="text-xs text-muted-foreground">{{ t("deckRecommend.form.algorithmDefaultHint") }}</p>
+            <p v-if="executionModeLimitedHint" id="deck-execution-mode-hint" class="text-xs text-muted-foreground">
+              {{ executionModeLimitedHint }}
+            </p>
           </div>
 
         </div>

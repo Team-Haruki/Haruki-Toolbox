@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue"
 import { describeDeckRecommendError } from "../lib/engine-errors"
 import { isDeckRecommendUserDataKnownMissing } from "../lib/user-data-availability"
 import { fetchDeckRecommendUserDataWithCache } from "../lib/user-data"
@@ -107,6 +107,7 @@ import {
 import { useCharacterOptions } from "../composables/useCharacterOptions"
 import { useDeckRecommendDataOverrides } from "../composables/useDeckRecommendDataOverrides"
 import { useDeckRecommendDataPreload } from "../composables/useDeckRecommendDataPreload"
+import { isDeckRecommendParallelLimited } from "../lib/worker-pool-policy"
 import { useDeckRecommendRouteQuery } from "../composables/useDeckRecommendRouteQuery"
 import { useWorldBloomCharacterOptions } from "../composables/useWorldBloomCharacterOptions"
 import {
@@ -139,7 +140,9 @@ const sekaiDataStore = useSekaiDataStore()
 const runner = useDeckRecommendRunner()
 const initialPreferences = readDeckRecommendPreferences()
 const initialSavedConfig = readDeckRecommendSavedConfig()
-const cardOptionMasterData = ref<Record<string, unknown> | null>(null)
+// Non-reactive lite master tables (see main-thread-master); the builders
+// below derive everything the form needs from them.
+const cardOptionMasterData = shallowRef<Record<string, unknown> | null>(null)
 
 const selectedAccountKey = ref(initialSavedConfig.selectedAccountKey ?? "")
 const dataRegion = ref<SekaiRegion>(initialSavedConfig.dataRegion ?? "jp")
@@ -666,6 +669,11 @@ const executionModeOptions = computed<Array<{ value: DeckRecommendExecutionMode;
   { value: "sequential", label: t("deckRecommend.executionModes.sequential") },
   { value: "parallel", label: t("deckRecommend.executionModes.parallel") },
 ])
+const executionModeLimitedHint = computed<string | null>(() =>
+  isDeckRecommendParallelLimited(executionMode.value, activeAlgorithms.value.length, runner.deviceProfile)
+    ? t("deckRecommend.form.executionModeLimitedHint")
+    : null,
+)
 
 const configSummaryItems = computed<string[]>(() => {
   const items: string[] = []
@@ -802,7 +810,7 @@ const {
   preloadCurrentRegionData,
   invalidateDataPreload,
   resetCardOptionMasterData,
-  syncParallelEngines,
+  syncWorkerPool,
 } = useDeckRecommendDataPreload({
   runner,
   dataRegion,
@@ -944,7 +952,7 @@ watch(
       algorithmsAuto: !algorithmSelectionIsManual.value,
       executionMode: executionMode.value,
     })
-    syncParallelEngines()
+    syncWorkerPool()
   },
   { immediate: true },
 )
@@ -994,7 +1002,7 @@ watch(
   () => runner.running.value,
   (running) => {
     if (!running) {
-      syncParallelEngines()
+      syncWorkerPool()
     }
   },
 )
@@ -1708,6 +1716,7 @@ provideDeckRecommendFormContext({
   executionMode,
   updateExecutionMode,
   executionModeOptions,
+  executionModeLimitedHint,
   selectedMusicId,
   selectedDifficulty,
   showEventConditionSection,

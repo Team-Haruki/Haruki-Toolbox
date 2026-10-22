@@ -168,6 +168,8 @@ export type DeckRecommendFormContext = {
   executionMode: Ref<string>
   updateExecutionMode: (value: AcceptableValue) => void
   executionModeOptions: ComputedRef<SelectOption[]>
+  /** Why the device will not run the chosen algorithms side by side (null when it will). */
+  executionModeLimitedHint: ComputedRef<string | null>
   selectedMusicId: Ref<string | null>
   selectedDifficulty: Ref<string | null>
   showEventConditionSection: ComputedRef<boolean>

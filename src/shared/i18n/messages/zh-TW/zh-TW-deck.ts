@@ -32,6 +32,7 @@ export default {
       "algorithmDefaultHint": "一般保持預設即可。",
       "algorithmHint": "預設演算法會隨組卡場景自動選擇：分數目標使用 DFS 精確搜尋（可證明最優），World Bloom 等複雜場景使用 DFS-GA，烤森使用強化學習。手動勾選後將保持你的選擇；同時啟用多個演算法可交叉驗證結果，但整體耗時更長。",
       "executionMode": "執行方式",
+      "executionModeLimitedHint": "當前裝置記憶體有限，多個演算法會逐個執行，結果不變，只是耗時更長。",
       "event": "活動",
       "eventPlaceholder": "請選擇活動",
       "eventSearchPlaceholder": "搜尋活動名、#ID、型別、拼音或羅馬音...",

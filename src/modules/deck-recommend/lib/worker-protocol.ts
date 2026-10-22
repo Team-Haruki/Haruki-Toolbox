@@ -7,39 +7,52 @@ import type {
 } from "haruki-sekai-deck-recommend-cpp"
 import type { SekaiRegion } from "@/types"
 
+/**
+ * Where an engine worker gets its master data from. Workers read the tables
+ * straight from the shared IndexedDB cache so the page never has to parse
+ * the ~50 MB master set or clone it into every worker; `masterData` /
+ * `musicMetas` are only for callers that already hold the tables (tests).
+ */
+export type DeckRecommendWorkerDataSource = {
+  region: SekaiRegion
+  masterVersion: string
+  masterFileNames: string[]
+  musicMetasKey: string | null
+  /** The honors table comes from the account's server, which may differ from the data region. */
+  honorRegion: SekaiRegion
+  honorMasterVersion: string | null
+  masterData?: Record<string, unknown>
+  musicMetas?: unknown
+}
+
+export function createDeckRecommendDataKey(source: DeckRecommendWorkerDataSource): string {
+  return [
+    source.region,
+    source.masterVersion,
+    `honors:${source.honorRegion}:${source.honorMasterVersion ?? "unknown-honors"}`,
+    source.musicMetasKey ?? "unknown-music-metas",
+    source.masterFileNames.slice().sort((left, right) => left.localeCompare(right)).join(","),
+  ].join(":")
+}
+
 export type DeckRecommendWorkerRecommendRequest = {
   type: "recommend"
   requestId: string
-  region: SekaiRegion
-  masterVersion: string
-  musicMetasKey: string | null
-  masterFileNames: string[]
-  masterData?: Record<string, unknown>
-  musicMetas?: unknown
+  data: DeckRecommendWorkerDataSource
   options: RecommendOptions
 }
 
 export type DeckRecommendWorkerRecommendBatchRequest = {
   type: "recommend-batch"
   requestId: string
-  region: SekaiRegion
-  masterVersion: string
-  musicMetasKey: string | null
-  masterFileNames: string[]
-  masterData?: Record<string, unknown>
-  musicMetas?: unknown
+  data: DeckRecommendWorkerDataSource
   optionsList: RecommendOptions[]
 }
 
 export type DeckRecommendWorkerMusicRequest = {
   type: "recommend-music"
   requestId: string
-  region: SekaiRegion
-  masterVersion: string
-  musicMetasKey: string | null
-  masterFileNames: string[]
-  masterData?: Record<string, unknown>
-  musicMetas?: unknown
+  data: DeckRecommendWorkerDataSource
   options: MusicRecommendOptions
   deck: RecommendDeck
 }
@@ -47,12 +60,7 @@ export type DeckRecommendWorkerMusicRequest = {
 export type DeckRecommendWorkerLoadDataRequest = {
   type: "load-data"
   requestId: string
-  region: SekaiRegion
-  masterVersion: string
-  musicMetasKey: string | null
-  masterFileNames: string[]
-  masterData: Record<string, unknown>
-  musicMetas: unknown
+  data: DeckRecommendWorkerDataSource
 }
 
 export type DeckRecommendWorkerPreloadRequest = {
@@ -81,11 +89,13 @@ export type DeckRecommendWorkerRequestWithoutId =
   | Omit<DeckRecommendWorkerPreloadRequest, "requestId">
   | Omit<DeckRecommendWorkerDisposeRequest, "requestId">
 
+export type DeckRecommendWorkerProgressPhase = "initializing" | "loading-data" | "recommending"
+
 export type DeckRecommendWorkerEvent =
   | {
     type: "progress"
     requestId: string
-    phase: "initializing" | "loading-data" | "recommending"
+    phase: DeckRecommendWorkerProgressPhase
   }
   | {
     type: "ready"
@@ -108,6 +118,7 @@ export type DeckRecommendWorkerEvent =
     type: "batch-done"
     requestId: string
     results: RecommendResult[]
+    elapsedMs: number
   }
   | {
     type: "music-done"
