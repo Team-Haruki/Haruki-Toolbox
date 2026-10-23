@@ -161,7 +161,6 @@ export class StoryRuntime {
 
   constructor(host: HTMLElement, labels: RuntimeLabels, onPick: (sid: string) => void) {
     this.labels = labels;
-    void addFonts();
     this.root = document.createElement("div");
     this.root.className = "story-player";
     this.root.dataset.panel = "browser";
