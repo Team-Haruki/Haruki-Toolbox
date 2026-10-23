@@ -7,6 +7,7 @@
 import type { StoryCatalog, StoryEpisodeLabel, StorySeries, StoryTab } from "../lib/story-catalog";
 import { STORY_TABS } from "../lib/story-catalog";
 import { handleSekaiImageError } from "@/shared/sekai/image-recovery";
+import { preferAssetHost, resolveAssetImageFallback } from "@/shared/sekai/asset-image-fallback";
 import { storyUrls } from "./urls";
 
 export interface BrowserLabels {
@@ -71,7 +72,7 @@ export class StoryBrowser {
     this.onPick = onPick;
     this.onResize = onResize;
     this.labels = labels;
-    const ui = (p: string) => storyUrls.ui(p);
+    const ui = (p: string) => preferAssetHost(storyUrls.ui(p));
     this.root = document.createElement("aside");
     this.root.className = "story-browser";
     if (store.get("collapsed") === "1") this.root.classList.add("collapsed");
@@ -89,17 +90,18 @@ export class StoryBrowser {
       </div>`;
     parent.prepend(this.root);
     this.listEl = this.root.querySelector(".sb-list")!;
-    // unit and character icons: the fallback host's copy once (the list's
-    // images recover through their own handlers below)
+    // unit and character icons: the fallback host's copy once, when this
+    // host is failing (the list's images recover through their own handlers below)
     this.root.addEventListener(
       "error",
       (e) => {
         const img = e.target;
         if (!(img instanceof HTMLImageElement) || this.listEl.contains(img) || img.dataset.fallback) return;
-        const fallback = storyUrls.fallback(img.src);
-        if (!fallback) return;
         img.dataset.fallback = "1";
-        img.src = fallback;
+        const failed = img.src;
+        void resolveAssetImageFallback(failed).then((twin) => {
+          if (twin && img.src === failed) img.src = twin;
+        });
       },
       true,
     );
@@ -187,7 +189,7 @@ export class StoryBrowser {
     this.charsEl.innerHTML = choices
       .map(
         (id) =>
-          `<button data-char="${id}" class="${id === this.char ? "on" : ""}" title="${esc(names[id] ?? "")}"><img src="${storyUrls.ui(`chr_ts/chr_ts_${id}_g2.png`)}" alt="${esc(names[id] ?? "")}" loading="lazy" /></button>`,
+          `<button data-char="${id}" class="${id === this.char ? "on" : ""}" title="${esc(names[id] ?? "")}"><img src="${preferAssetHost(storyUrls.ui(`chr_ts/chr_ts_${id}_g2.png`))}" alt="${esc(names[id] ?? "")}" loading="lazy" /></button>`,
       )
       .join("");
   }
@@ -212,7 +214,8 @@ export class StoryBrowser {
       b.classList.toggle("on", b.dataset.unit === this.unit);
     this.renderChars();
     if (!this.cat) return;
-    const img = (p: string) => storyUrls.asset(p);
+    // straight to the fallback host while this one is known to be failing
+    const img = (p: string) => preferAssetHost(storyUrls.asset(p));
     const q = this.input.value.trim().toLowerCase();
     let html = "";
     let n = 0;
@@ -233,7 +236,7 @@ export class StoryBrowser {
         : s.thumb
           ? `<img class="sb-thumb" src="${img(s.thumb)}" alt="" loading="lazy" />`
           : s.unit
-            ? `<img class="sb-uicon" src="${storyUrls.ui(`units/${UNITS.find((u) => u.key === s.unit)?.icon ?? "icon_unit"}.png`)}" alt="" />`
+            ? `<img class="sb-uicon" src="${preferAssetHost(storyUrls.ui(`units/${UNITS.find((u) => u.key === s.unit)?.icon ?? "icon_unit"}.png`))}" alt="" />`
             : "";
       const date = s.at ? new Date(s.at).toISOString().slice(0, 10) : "";
       html += `<div class="sb-story${open ? " open" : ""}${cur ? " cur" : ""}" data-key="${esc(s.key)}">
@@ -251,13 +254,12 @@ export class StoryBrowser {
     }
     this.listEl.innerHTML = html || `<div class="sb-empty">${esc(this.labels.empty)}</div>`;
     // CDN images recover through the shared retry (the fallback host's copy
-    // first); one that is really gone (no logo / episode art for that story)
-    // just disappears
+    // when this host fails); one that is really gone (no logo / episode art
+    // for that story) just disappears
     for (const el of this.listEl.querySelectorAll("img")) {
       const src = el.src;
-      const fallback = storyUrls.fallback(src);
       el.addEventListener("error", (ev) => {
-        if (!handleSekaiImageError(ev, src, fallback)) el.remove();
+        if (!handleSekaiImageError(ev, src)) el.remove();
       });
     }
     const cur = this.listEl.querySelector<HTMLElement>(".sb-ep.cur");

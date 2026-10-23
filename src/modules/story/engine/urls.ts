@@ -6,11 +6,13 @@
 // Game assets come from the JP tree of the asset host. The player's own
 // converted files (effects, UI sprites, fonts, the Cubism core) sit under
 // "jp-assets/story-player/v1/" on the same host. The fallback host (`global`
-// behind the China CDN) holds the same files at the same paths: list-valued
-// assets get its copy as a last candidate, and the host's own lookups can ask
-// for it (storyUrls.fallback).
+// behind the China CDN) holds the same files at the same paths: the player
+// asks the resolver's fallback() for a file's copy there whenever the host
+// fails (network, timeout, 5xx, cut short; never a 404), and the page's own
+// lookups use storyUrls.fallback.
 
 import type { AssetResolver, LoadContext, ModelManifestEntry, VoiceInfo } from "pjsk-scenario-player"
+import { resolveAssetHostTwinUrl } from "@/shared/sekai/asset-image-fallback"
 
 /** One Live2D costume of the JP tree (the backend's jp-index entry). */
 export interface StoryModelEntry {
@@ -64,20 +66,14 @@ export function configureStoryRoot(root: string, fallback: string | null = null)
 
 const jp = (path: string) => `${jpRoot}/${path}`
 
-/** `url` on the fallback host, or null (no fallback, or not a URL of the asset host). */
-function fallbackOf(url: string): string | null {
-  if (!jpFallbackRoot || !url.startsWith(`${jpRoot}/`)) return null
-  return `${jpFallbackRoot}${url.slice(jpRoot.length)}`
-}
-
 /**
- * The candidates, then the fallback host's copy of the first one. Only the
- * first is twinned: on the fallback host a true miss costs one request, and
- * the first candidate is the usual home of the file.
+ * `url` on the fallback host, or null (no fallback, or not a URL of an asset
+ * host). URLs made before the session moved to the fallback host (the
+ * player's UI sprites and fonts, the Cubism core) still map to it.
  */
-function withFallback(urls: string[]): string[] {
-  const twin = urls.length ? fallbackOf(urls[0]) : null
-  return twin ? [...urls, twin] : urls
+function fallbackOf(url: string): string | null {
+  if (jpFallbackRoot && url.startsWith(`${jpRoot}/`)) return `${jpFallbackRoot}${url.slice(jpRoot.length)}`
+  return resolveAssetHostTwinUrl(url)
 }
 
 /** The host's own lookups (story browser, talk log, fonts, Cubism core). */
@@ -151,13 +147,13 @@ export function createStoryResolver(): AssetResolver {
     // the model3 names "<stem>.physics3.json"; the export writes "<stem>.physics3"
     physics: (entry) => modelOf(entry).physics ?? null,
     motion: (entry, kind, name, ctx) => storyClipUrl(episodeOf(ctx).index, modelOf(entry), kind, name),
-    bgm: (id) => withFallback([jp(`ondemand/sound/scenario/bgm/${id}/${id}.mp3`), jp(`startapp/sound/scenario/bgm/${id}/${id}.mp3`)]),
+    bgm: (id) => [jp(`ondemand/sound/scenario/bgm/${id}/${id}.mp3`), jp(`startapp/sound/scenario/bgm/${id}/${id}.mp3`)],
     // shared SEs by name; a name the shared packs lack is an event-only SE
     se: (id, ctx) => {
       const ep = episodeOf(ctx)
       const shared = ep.index.se[id]
-      if (shared) return withFallback([jp(shared)])
-      return ep.eventBundle ? withFallback([jp(`ondemand/event_story/${ep.eventBundle}/scenario_se/${id}.mp3`)]) : []
+      if (shared) return [jp(shared)]
+      return ep.eventBundle ? [jp(`ondemand/event_story/${ep.eventBundle}/scenario_se/${id}.mp3`)] : []
     },
     voice: (scenarioId, voiceId, ctx, info) => {
       const ep = episodeOf(ctx)
@@ -167,14 +163,14 @@ export function createStoryResolver(): AssetResolver {
       // area talk voices sit in the additional voice pack
       if (ep.kind === "area") urls.unshift(jp(`additionalvoice/sound/actionset/voice/${scenarioId}/${voiceId}.mp3`))
       if (voiceId.startsWith("partvoice")) urls.unshift(...partVoiceDirs(ep, info).map((d) => jp(`${d}/${voiceId}.mp3`)))
-      return withFallback(urls)
+      return urls
     },
-    background: (id) => withFallback([
+    background: (id) => [
       jp(`ondemand/scenario/background/${id}/${id}.png`),
       jp(`startapp/scenario/background/${id}/${id}.png`),
       // prefab backgrounds (ScenarioBGData): the base image
       jp(`ondemand/scenario/background/${id}/scenariobgdata.assets/texture2d/${id}.png`),
-    ]),
+    ],
     movie: (name, ctx) => {
       const p = episodeOf(ctx).index.movies[name]
       return p ? jp(p) : null
@@ -182,5 +178,6 @@ export function createStoryResolver(): AssetResolver {
     fx: (path) => storyUrls.fx(path),
     ui: (path) => storyUrls.ui(path),
     font: (file) => storyUrls.fonts(file),
+    fallback: (url) => fallbackOf(url),
   }
 }

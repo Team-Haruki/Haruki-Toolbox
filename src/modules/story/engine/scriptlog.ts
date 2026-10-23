@@ -6,6 +6,7 @@
 
 import { Action, SpecialEffectType, type ScenarioSceneData } from "pjsk-scenario-player";
 import { storyUrls } from "./urls";
+import { resolveAssetImageFallback } from "@/shared/sekai/asset-image-fallback";
 
 const MOB_ICON = "chr_ts_mob.png";
 
@@ -58,6 +59,20 @@ export class ScriptLog {
       <div class="sl-bar"><i></i></div>
       <div class="sl-list"></div>`;
     parent.appendChild(this.root);
+    // talk-log icons: the fallback host's copy once, when this host is failing
+    this.root.addEventListener(
+      "error",
+      (e) => {
+        const img = e.target;
+        if (!(img instanceof HTMLImageElement) || img.dataset.fallback) return;
+        img.dataset.fallback = "1";
+        const failed = img.src;
+        void resolveAssetImageFallback(failed).then((twin) => {
+          if (twin && img.src === failed) img.src = twin;
+        });
+      },
+      true,
+    );
     this.list = this.root.querySelector(".sl-list")!;
     this.input = this.root.querySelector(".sl-search")!;
     this.countEl = this.root.querySelector(".sl-count")!;
