@@ -142,6 +142,11 @@ function runtimeLabels(): RuntimeLabels {
     },
     loading: t("storyPlayer.stage.loading"),
     models: t("storyPlayer.stage.models"),
+    preloading: t("storyPlayer.stage.preloading"),
+    // the player puts the number in for "{n}"
+    preloadFailed: t("storyPlayer.stage.preloadFailed", { n: "{n}" }),
+    retry: t("storyPlayer.stage.retry"),
+    continue: t("storyPlayer.stage.continue"),
     start: t("storyPlayer.stage.start"),
     pickBeside: t("storyPlayer.stage.pickBeside"),
     pickBelow: t("storyPlayer.stage.pickBelow"),

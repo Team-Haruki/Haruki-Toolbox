@@ -9,6 +9,7 @@ import {
   type StoryAssetIndex,
   type StoryEpisodeContext,
 } from "@/modules/story/engine/urls"
+import { SEKAI_ASSET_ENDPOINT_ROOTS } from "@/shared/sekai/data-sources"
 
 const index: StoryAssetIndex = {
   version: "v",
@@ -123,23 +124,24 @@ describe("the fallback host", () => {
     configureStoryRoot(`${ROOT}/`, `${FALLBACK}/`)
   })
 
-  test("adds the fallback copy of the first candidate last", () => {
+  test("keeps candidate lists on the chosen host (the player asks fallback() when a host fails)", () => {
     expect(r.bgm("01_an_02", eventCtx)).toEqual([
       `${ROOT}/ondemand/sound/scenario/bgm/01_an_02/01_an_02.mp3`,
       `${ROOT}/startapp/sound/scenario/bgm/01_an_02/01_an_02.mp3`,
-      `${FALLBACK}/ondemand/sound/scenario/bgm/01_an_02/01_an_02.mp3`,
     ])
-    expect(r.se("se_door", eventCtx)).toEqual([
-      `${ROOT}/startapp/sound/scenario/se/se/se_door.mp3`,
-      `${FALLBACK}/startapp/sound/scenario/se/se/se_door.mp3`,
-    ])
+    expect(r.se("se_door", eventCtx)).toEqual([`${ROOT}/startapp/sound/scenario/se/se/se_door.mp3`])
     expect(r.se("se_event_only", ctx({ index, kind: "unit" }))).toEqual([])
-    const area = r.voice("areatalk02_007", "areatalk_2_007_001", ctx({ index, kind: "area" }), {}) as string[]
-    expect(area).toHaveLength(5)
-    expect(area[4]).toBe(`${FALLBACK}/additionalvoice/sound/actionset/voice/areatalk02_007/areatalk_2_007_001.mp3`)
-    const bg = r.background("bg_a000301", eventCtx) as string[]
-    expect(bg).toHaveLength(4)
-    expect(bg[3]).toBe(`${FALLBACK}/ondemand/scenario/background/bg_a000301/bg_a000301.png`)
+    expect(r.voice("areatalk02_007", "areatalk_2_007_001", ctx({ index, kind: "area" }), {})).toHaveLength(4)
+    expect(r.background("bg_a000301", eventCtx)).toHaveLength(3)
+  })
+
+  test("names every file's copy on the fallback host through fallback()", () => {
+    const voice = `${ROOT}/additionalvoice/sound/actionset/voice/areatalk02_007/areatalk_2_007_001.mp3`
+    expect(r.fallback?.(voice)).toBe(`${FALLBACK}/additionalvoice/sound/actionset/voice/areatalk02_007/areatalk_2_007_001.mp3`)
+    // files a model3 names, relative to it
+    expect(r.fallback?.(`${ROOT}/${an.dir}/an.4096/texture_00.png`)).toBe(`${FALLBACK}/${an.dir}/an.4096/texture_00.png`)
+    expect(r.fallback?.(r.ui("menu/btn.png"))).toBe(`${FALLBACK}/story-player/v1/ui/menu/btn.png`)
+    expect(r.fallback?.("https://elsewhere.example/a.png")).toBeNull()
   })
 
   test("leaves single-URL assets on the chosen host", () => {
@@ -157,12 +159,20 @@ describe("the fallback host", () => {
     expect(storyUrls.fallback("https://elsewhere.example/a.png")).toBeNull()
   })
 
+  test("maps a China CDN URL made before the session moved to the global host", () => {
+    const cn = `${SEKAI_ASSET_ENDPOINT_ROOTS.china_cdn}/jp-assets`
+    const global = `${SEKAI_ASSET_ENDPOINT_ROOTS.global}/jp-assets`
+    configureStoryRoot(global) // the session plays from the fallback host now
+    expect(r.fallback?.(`${cn}/story-player/v1/lib/live2dcubismcore.min.js`)).toBe(`${global}/story-player/v1/lib/live2dcubismcore.min.js`)
+    expect(r.fallback?.(`${global}/story-player/v1/ui/menu/btn.png`)).toBeNull()
+  })
+
   test("has no fallback on the global host itself or without one", () => {
     configureStoryRoot(FALLBACK, FALLBACK)
     expect(storyUrls.fallback(storyUrls.asset("a.png"))).toBeNull()
-    expect(r.se("se_door", eventCtx)).toHaveLength(1)
+    expect(r.fallback?.(storyUrls.asset("a.png"))).toBeNull()
     configureStoryRoot(ROOT)
     expect(storyUrls.fallback(storyUrls.asset("a.png"))).toBeNull()
-    expect(r.bgm("x", eventCtx)).toHaveLength(2)
+    expect(r.fallback?.(storyUrls.asset("a.png"))).toBeNull()
   })
 })

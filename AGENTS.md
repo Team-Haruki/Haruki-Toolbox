@@ -204,7 +204,8 @@ Rules:
 - Do not add new business logic directly to route views if it belongs in a composable or `lib/` helper.
 - Do not update only some of the three locale bundles (zh-CN, zh-TW, en-US).
 - Do not bypass `request()` response handling unless you are working inside the auth/browser-flow integration layer.
-- Do not hand-roll `<img>` error handling for Sekai/CDN images: the Service Worker caches them CacheFirst with opaque responses (errors included), so recovery must go through `@/shared/sekai/image-recovery` (purge + cache-busted retry).
+- Do not hand-roll `<img>` error handling for Sekai/CDN images: the Service Worker caches them CacheFirst with opaque responses (errors included), so recovery must go through `@/shared/sekai/image-recovery` (purge + cache-busted retry). On the China CDN route, a failing host (network error, timeout or 5xx, found by a HEAD probe in `@/shared/sekai/asset-image-fallback`) moves an image to the same path on the global host first; a 404 never does.
+- The story player (`pjsk-scenario-player`) preloads every file of an episode into the HTTP cache before it plays, and its resolver's `fallback()` (`src/modules/story/engine/urls.ts`) moves any load to the global host when the China CDN fails; keep new story asset URLs on that resolver.
 - Do not commit generated artifacts like `dist/`, `coverage/` or Playwright `test-results/`.
 
 ## Recommended Change Checklist
