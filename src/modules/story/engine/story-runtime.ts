@@ -253,6 +253,11 @@ export class StoryRuntime {
     this.player.setVoice(on);
   }
 
+  /** Listener volume (0-1) for the BGM or the voices; applies at once. */
+  setVolume(kind: "bgm" | "voice", value: number) {
+    this.player.setVolume(kind, value);
+  }
+
   /** Font group of the dialogue text ("ja" | "zh" | "ko" | "latin"). */
   setScript(script: string) {
     this.root.dataset.script = script;

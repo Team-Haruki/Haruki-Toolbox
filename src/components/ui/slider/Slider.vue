@@ -42,6 +42,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       v-for="(_, index) in (props.modelValue ?? props.defaultValue ?? [0])"
       :key="index"
       data-slot="slider-thumb"
+      :aria-label="($attrs['aria-label'] as string | undefined)"
       class="block size-4 shrink-0 rounded-full border border-primary bg-background shadow-sm ring-ring/50 transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
     />
   </SliderRoot>

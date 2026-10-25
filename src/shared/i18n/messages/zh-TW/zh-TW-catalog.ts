@@ -376,6 +376,8 @@ export default {
     "description": "按遊戲的演出播放主線、活動、卡面、特別劇情與區域對話。畫面與語音來自日服，文本可選各服官方翻譯，日服獨有的劇情另有 AI 中文翻譯。",
     "textLang": "文本語言",
     "voice": "播放語音",
+    "voiceVolume": "語音音量",
+    "bgmVolume": "BGM 音量",
     "langAutoResolved": "跟隨工具箱語言 · {lang}",
     "langAuto": "跟隨工具箱語言",
     "lang": {
