@@ -398,6 +398,8 @@ export default {
     "description": "Plays main, event, card, special stories and area talks the way the game stages them. Visuals and voices come from the JP server; text can be any server's official translation, with an AI Chinese translation for JP-only stories.",
     "textLang": "Text language",
     "voice": "Voices",
+    "voiceVolume": "Voice volume",
+    "bgmVolume": "BGM volume",
     "langAutoResolved": "Toolbox language · {lang}",
     "langAuto": "Follow the Toolbox language",
     "lang": {

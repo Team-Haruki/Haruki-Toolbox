@@ -2,9 +2,10 @@
 import { computed, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { FlaskConical, LucideLanguages } from "lucide-vue-next"
+import { FlaskConical, LucideLanguages, LucideMic, LucideMusic } from "lucide-vue-next"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Label } from "@/components/ui/label"
+import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import {
   Select,
@@ -51,6 +52,23 @@ const pickedLang = useCatalogViewPreference<string>("story", "textLang", () => "
 /** Play the voices (remembered per device). */
 const voiceOn = useCatalogViewPreference<boolean>("story", "voice", () => true)
 const voiceSwitchId = useId()
+
+// Listener volumes (percent), remembered per device like the other player settings.
+const VOLUME_STEPS = Array.from({ length: 101 }, (_, i) => String(i))
+const voiceVolumePref = useCatalogViewPreference<string>("story", "voiceVolume", () => "100", VOLUME_STEPS)
+const bgmVolumePref = useCatalogViewPreference<string>("story", "bgmVolume", () => "100", VOLUME_STEPS)
+const voiceVolume = computed({
+  get: () => [Number(voiceVolumePref.value)],
+  set: (value: number[] | undefined) => {
+    voiceVolumePref.value = String(Math.round(value?.[0] ?? 100))
+  },
+})
+const bgmVolume = computed({
+  get: () => [Number(bgmVolumePref.value)],
+  set: (value: number[] | undefined) => {
+    bgmVolumePref.value = String(Math.round(value?.[0] ?? 100))
+  },
+})
 
 const langChain = computed(() => storyLangChain(
   String(locale.value),
@@ -174,6 +192,8 @@ function mountRuntime() {
   const rt = new runtimeModule.StoryRuntime(host.value, runtimeLabels(), pick)
   if (catalog.value) rt.setCatalog(catalog.value)
   rt.setVoice(voiceOn.value)
+  rt.setVolume("voice", Number(voiceVolumePref.value) / 100)
+  rt.setVolume("bgm", Number(bgmVolumePref.value) / 100)
   rt.setTitleScript(titleScript.value)
   runtime.value = rt
 }
@@ -189,6 +209,8 @@ onMounted(async () => {
 
 watch(locale, () => mountRuntime())
 watch(voiceOn, (on) => runtime.value?.setVoice(on))
+watch(voiceVolumePref, (v) => runtime.value?.setVolume("voice", Number(v) / 100))
+watch(bgmVolumePref, (v) => runtime.value?.setVolume("bgm", Number(v) / 100))
 
 onBeforeUnmount(() => {
   disposed = true
@@ -254,6 +276,29 @@ const langOptions = computed(() => [
         <div class="flex items-center gap-2">
           <Switch :id="voiceSwitchId" v-model="voiceOn" />
           <Label :for="voiceSwitchId" class="text-sm">{{ t("storyPlayer.voice") }}</Label>
+        </div>
+        <div class="flex items-center gap-2" :title="`${t('storyPlayer.voiceVolume')} ${voiceVolume[0]}%`">
+          <LucideMic class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <Slider
+            v-model="voiceVolume"
+            :min="0"
+            :max="100"
+            :step="1"
+            :disabled="!voiceOn"
+            class="w-24 sm:w-28"
+            :aria-label="t('storyPlayer.voiceVolume')"
+          />
+        </div>
+        <div class="flex items-center gap-2" :title="`${t('storyPlayer.bgmVolume')} ${bgmVolume[0]}%`">
+          <LucideMusic class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <Slider
+            v-model="bgmVolume"
+            :min="0"
+            :max="100"
+            :step="1"
+            class="w-24 sm:w-28"
+            :aria-label="t('storyPlayer.bgmVolume')"
+          />
         </div>
         <div class="flex items-center gap-2">
           <LucideLanguages class="size-4 text-muted-foreground" aria-hidden="true" />
