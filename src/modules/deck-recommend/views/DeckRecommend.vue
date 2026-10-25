@@ -1757,14 +1757,14 @@ provideDeckRecommendFormContext({
 
 <template>
   <div class="flex min-w-0 w-full flex-1 flex-col py-1 sm:px-2 sm:py-4">
-    <div class="mx-auto w-full max-w-[100rem] space-y-3 sm:space-y-4">
+    <div class="mx-auto min-w-0 w-full max-w-[100rem] space-y-3 sm:space-y-4">
       <!-- Wide screens: config pane on the left stays put while the results scroll on the right. -->
-      <div class="grid gap-3 sm:gap-4 xl:grid-cols-[minmax(22rem,27rem)_minmax(0,1fr)] xl:items-start">
+      <div class="grid min-w-0 grid-cols-1 gap-3 sm:gap-4 xl:grid-cols-[minmax(22rem,27rem)_minmax(0,1fr)] xl:items-start">
         <div class="min-w-0 xl:sticky xl:top-16 xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto xl:overscroll-contain xl:rounded-lg">
           <Card v-show="showConfigCard" class="gap-0 rounded-lg py-0">
             <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
               <Tabs :model-value="recommendMode" class="w-full min-w-0" @update:model-value="updateRecommendMode">
-                <TabsList class="grid h-auto w-full grid-cols-5 gap-1">
+                <TabsList class="grid h-auto w-full grid-cols-3 gap-1 @xs:grid-cols-5">
                   <TabsTrigger
                     v-for="option in modeOptions"
                     :key="option.value"
@@ -1776,7 +1776,7 @@ provideDeckRecommendFormContext({
                 </TabsList>
               </Tabs>
             </CardHeader>
-            <CardContent class="@container grid gap-5 px-3 py-4 sm:px-5 sm:py-5">
+            <CardContent class="@container grid min-w-0 grid-cols-1 gap-5 px-3 py-4 sm:px-5 sm:py-5">
               <DeckBasicSection />
 
               <DeckAdvancedSection v-model:open="advancedConfigOpen" />

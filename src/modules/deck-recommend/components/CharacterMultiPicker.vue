@@ -83,7 +83,7 @@ function createUnknownCharacterOption(characterId: number): CharacterOption {
 </script>
 
 <template>
-  <div class="grid gap-3">
+  <div class="@container grid min-w-0 grid-cols-1 gap-3">
     <Label :id="fieldLabelId" :for="fieldId" class="sr-only">
       {{ props.placeholder ?? t("deckRecommend.options.constraints.characterSelectPlaceholder") }}
     </Label>
@@ -107,7 +107,7 @@ function createUnknownCharacterOption(characterId: number): CharacterOption {
     <div v-if="selectedCharacters.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
       {{ t("deckRecommend.options.constraints.noSelectedCharacters") }}
     </div>
-    <div v-else class="grid gap-2 sm:grid-cols-2">
+    <div v-else class="grid min-w-0 grid-cols-1 gap-2 @lg:grid-cols-2">
       <div
         v-for="character in selectedCharacters"
         :key="character.id"

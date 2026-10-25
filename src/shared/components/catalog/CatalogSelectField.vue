@@ -43,7 +43,7 @@ function handleUpdate(value: AcceptableValue) {
 </script>
 
 <template>
-  <div :class="compact ? 'flex flex-wrap items-center gap-x-3 gap-y-2' : 'grid gap-2'">
+  <div :class="compact ? 'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2' : 'grid min-w-0 grid-cols-1 gap-2'">
     <Label
       :id="`${selectId}-label`"
       :for="selectId"

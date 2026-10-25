@@ -314,7 +314,7 @@ function normalizeBonusBound(value: unknown, fallback: number) {
         </AlertDescription>
       </Alert>
 
-      <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+      <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <Card class="self-start">
           <CardHeader>
             <CardTitle class="flex flex-wrap items-center gap-2 text-lg">
@@ -325,7 +325,7 @@ function normalizeBonusBound(value: unknown, fallback: number) {
           </CardHeader>
           <CardContent class="space-y-4">
             <!-- Primary inputs: region context + the song and target Pt that define the problem. -->
-            <div class="grid gap-2">
+            <div class="grid min-w-0 grid-cols-1 gap-2">
               <Label id="point-calculator-region-label" for="point-calculator-region">{{ t("tools.pointCalculator.fields.region") }}</Label>
               <Select id="point-calculator-region" :model-value="selectedRegion" :disabled="loading" @update:model-value="updateRegion">
                 <SelectTrigger class="w-full" aria-labelledby="point-calculator-region-label">
@@ -339,7 +339,7 @@ function normalizeBonusBound(value: unknown, fallback: number) {
               </Select>
             </div>
 
-            <div class="grid gap-2">
+            <div class="grid min-w-0 grid-cols-1 gap-2">
               <p class="text-sm font-medium">{{ t("tools.pointCalculator.fields.music") }}</p>
               <MusicSelect
                 :model-value="selectedMusicId"
@@ -358,11 +358,11 @@ function normalizeBonusBound(value: unknown, fallback: number) {
               </p>
             </div>
 
-            <div class="grid gap-2">
+            <div class="grid min-w-0 grid-cols-1 gap-2">
               <Label for="score-control-target-pt" class="text-sm font-medium">
                 {{ t("tools.pointCalculator.fields.targetPt") }}
               </Label>
-              <div class="relative w-full items-center">
+              <div class="relative min-w-0 w-full items-center">
                 <Input
                   id="score-control-target-pt"
                   v-model.number="inputPt"
@@ -398,11 +398,11 @@ function normalizeBonusBound(value: unknown, fallback: number) {
                 </span>
                 <ChevronDown class="size-4 text-muted-foreground transition-transform" :class="advancedOpen ? 'rotate-180' : ''" />
               </button>
-              <div v-show="advancedOpen" class="grid gap-4 border-t p-3">
-                <div class="grid gap-4 md:grid-cols-2">
-                  <div class="grid gap-2">
+              <div v-show="advancedOpen" class="grid min-w-0 grid-cols-1 gap-4 border-t p-3">
+                <div class="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
+                  <div class="grid min-w-0 grid-cols-1 gap-2">
                     <Label id="point-calculator-boost-label" for="point-calculator-boost">{{ t("tools.pointCalculator.fields.boostIndex") }}</Label>
-                    <div class="relative w-full items-center">
+                    <div class="relative min-w-0 w-full items-center">
                       <Select id="point-calculator-boost" :model-value="selectedBoost" @update:model-value="updateBoost">
                         <SelectTrigger class="w-full pl-10" aria-labelledby="point-calculator-boost-label">
                           <SelectValue />
@@ -419,9 +419,9 @@ function normalizeBonusBound(value: unknown, fallback: number) {
                     </div>
                   </div>
 
-                  <div class="grid gap-2">
+                  <div class="grid min-w-0 grid-cols-1 gap-2">
                     <Label for="point-calculator-max-results">{{ t("tools.pointCalculator.fields.maxResults") }}</Label>
-                    <div class="relative w-full items-center">
+                    <div class="relative min-w-0 w-full items-center">
                       <Input
                         id="point-calculator-max-results"
                         v-model.number="maxResults"
@@ -439,15 +439,15 @@ function normalizeBonusBound(value: unknown, fallback: number) {
                   </div>
                 </div>
 
-                <div class="grid gap-2">
+                <div class="grid min-w-0 grid-cols-1 gap-2">
                   <div class="space-y-0.5">
                     <p class="text-sm font-medium">{{ t("tools.pointCalculator.fields.bonusRange") }}</p>
                     <p class="text-xs leading-5 text-muted-foreground">
                       {{ t("tools.pointCalculator.fields.bonusRangeHelp") }}
                     </p>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <div class="relative w-full items-center">
+                  <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div class="relative min-w-0 w-full items-center">
                       <Input
                         v-model.number="customBonusFloor"
                         class="pl-10"
@@ -463,8 +463,8 @@ function normalizeBonusBound(value: unknown, fallback: number) {
                         <Percent class="size-4 text-muted-foreground" />
                       </span>
                     </div>
-                    <span class="shrink-0 text-muted-foreground">-</span>
-                    <div class="relative w-full items-center">
+                    <span class="hidden shrink-0 text-muted-foreground sm:inline">-</span>
+                    <div class="relative min-w-0 w-full items-center">
                       <Input
                         v-model.number="customBonusCap"
                         class="pl-10"

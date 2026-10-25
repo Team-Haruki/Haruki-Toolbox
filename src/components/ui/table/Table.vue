@@ -48,7 +48,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div data-slot="table-shell" class="relative w-full">
+  <div data-slot="table-shell" class="relative w-full min-w-0 max-w-full">
     <div
       ref="container"
       data-slot="table-container"

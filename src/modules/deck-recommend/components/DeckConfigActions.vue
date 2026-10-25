@@ -32,13 +32,13 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div class="grid gap-2 px-3 py-3 sm:px-4">
+  <div class="grid min-w-0 grid-cols-1 gap-2 px-3 py-3 sm:px-4">
     <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
-      <Button type="button" variant="outline" size="sm" class="min-w-0 px-1.5 text-xs sm:px-2.5" @click="emit('expert')">
+      <Button type="button" variant="outline" size="sm" class="h-auto min-h-8 min-w-0 gap-1 px-1.5 text-xs leading-tight whitespace-normal sm:px-2.5" @click="emit('expert')">
         <LucideSettings2 class="size-4" />
         {{ t("deckRecommend.layers.expert.title") }}
       </Button>
-      <Button type="button" variant="outline" size="sm" class="min-w-0 px-1.5 text-xs sm:px-2.5" :disabled="running" @click="emit('save')">
+      <Button type="button" variant="outline" size="sm" class="h-auto min-h-8 min-w-0 gap-1 px-1.5 text-xs leading-tight whitespace-normal sm:px-2.5" :disabled="running" @click="emit('save')">
         <LucideSave class="size-4" />
         {{ t("deckRecommend.configActions.save") }}
       </Button>
@@ -46,7 +46,7 @@ const { t } = useI18n()
         type="button"
         variant="ghost"
         size="sm"
-        class="min-w-0 px-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive sm:px-2.5"
+        class="h-auto min-h-8 min-w-0 gap-1 px-1.5 text-xs leading-tight whitespace-normal text-destructive hover:bg-destructive/10 hover:text-destructive sm:px-2.5"
         :disabled="running"
         @click="emit('clear')"
       >
