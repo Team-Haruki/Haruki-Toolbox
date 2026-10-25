@@ -308,76 +308,78 @@ function toNullableNumber(value: number | string | undefined | null): number | n
 </script>
 
 <template>
-  <div class="grid gap-3" :class="props.hideDifficulty ? '' : 'md:grid-cols-2'">
-    <Button
-      type="button"
-      variant="outline"
-      class="h-auto min-h-9 w-full justify-between gap-2 px-2.5 py-1.5 font-normal"
-      :disabled="props.disabled || loading"
-      @click="open = true"
-    >
-      <span v-if="selectedEntry" class="flex min-w-0 items-center gap-2">
-        <MusicJacket
-          :url="jacketUrl(selectedEntry)"
-          :alt="selectedEntry.title"
-          class="size-8 shrink-0 rounded"
-        />
-        <span class="min-w-0 text-left">
-          <span class="block truncate text-sm">{{ selectedEntry.title }}</span>
-          <span class="block text-xs text-muted-foreground">#{{ selectedEntry.id }}</span>
+  <div class="@container min-w-0">
+    <div class="grid min-w-0 grid-cols-1 gap-3" :class="props.hideDifficulty ? '' : '@sm:grid-cols-[minmax(0,1fr)_auto]'">
+      <Button
+        type="button"
+        variant="outline"
+        class="h-auto min-h-9 min-w-0 w-full justify-between gap-2 px-2.5 py-1.5 font-normal"
+        :disabled="props.disabled || loading"
+        @click="open = true"
+      >
+        <span v-if="selectedEntry" class="flex min-w-0 items-center gap-2">
+          <MusicJacket
+            :url="jacketUrl(selectedEntry)"
+            :alt="selectedEntry.title"
+            class="size-8 shrink-0 rounded"
+          />
+          <span class="min-w-0 text-left">
+            <span class="block truncate text-sm">{{ selectedEntry.title }}</span>
+            <span class="block text-xs text-muted-foreground">#{{ selectedEntry.id }}</span>
+          </span>
         </span>
-      </span>
-      <span v-else class="truncate text-sm text-muted-foreground">
-        {{ loading ? t("deckRecommend.select.loading") : t("deckRecommend.form.musicPlaceholder") }}
-      </span>
-      <ChevronsUpDown class="size-4 shrink-0 text-muted-foreground" />
-    </Button>
+        <span v-else class="truncate text-sm text-muted-foreground">
+          {{ loading ? t("deckRecommend.select.loading") : t("deckRecommend.form.musicPlaceholder") }}
+        </span>
+        <ChevronsUpDown class="size-4 shrink-0 text-muted-foreground" />
+      </Button>
 
-    <Label v-if="!props.hideDifficulty" :id="difficultyLabelId" :for="difficultyId" class="sr-only">
-      {{ t("deckRecommend.form.difficultyPlaceholder") }}
-    </Label>
-    <Select
-      v-if="!props.hideDifficulty"
-      :id="difficultyId"
-      :model-value="props.difficultyValue ?? ''"
-      :disabled="props.disabled || !props.modelValue || difficultyOptions.length === 0"
-      @update:model-value="handleDifficultyUpdate"
-    >
-      <SelectTrigger class="w-full py-1.5 md:!h-full md:min-h-9" :aria-labelledby="difficultyLabelId">
-        <span
-          v-if="selectedDifficultyOption"
-          class="flex flex-row items-center gap-1.5 md:flex-col md:items-start md:gap-1"
-        >
+      <Label v-if="!props.hideDifficulty" :id="difficultyLabelId" :for="difficultyId" class="sr-only">
+        {{ t("deckRecommend.form.difficultyPlaceholder") }}
+      </Label>
+      <Select
+        v-if="!props.hideDifficulty"
+        :id="difficultyId"
+        :model-value="props.difficultyValue ?? ''"
+        :disabled="props.disabled || !props.modelValue || difficultyOptions.length === 0"
+        @update:model-value="handleDifficultyUpdate"
+      >
+        <SelectTrigger class="w-full py-1.5 @sm:!h-full @sm:min-h-9" :aria-labelledby="difficultyLabelId">
           <span
-            class="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
-            :style="{ backgroundColor: selectedDifficultyOption.color }"
+            v-if="selectedDifficultyOption"
+            class="flex flex-row items-center gap-1.5 @sm:flex-col @sm:items-start @sm:gap-1"
           >
-            {{ selectedDifficultyOption.label }}
-          </span>
-          <span class="text-[11px] leading-none tabular-nums text-muted-foreground">
-            Lv.{{ selectedDifficultyOption.playLevel ?? "?" }}
-          </span>
-        </span>
-        <span v-else class="text-sm text-muted-foreground">
-          {{ t("deckRecommend.form.difficultyPlaceholder") }}
-        </span>
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem v-for="option in difficultyOptions" :key="option.value" :value="option.value">
-          <span class="flex items-center gap-2">
             <span
               class="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
-              :style="{ backgroundColor: option.color }"
+              :style="{ backgroundColor: selectedDifficultyOption.color }"
             >
-              {{ option.label }}
+              {{ selectedDifficultyOption.label }}
             </span>
-            <span class="text-xs tabular-nums text-muted-foreground">
-              Lv.{{ option.playLevel ?? "?" }}
+            <span class="text-[11px] leading-none tabular-nums text-muted-foreground">
+              Lv.{{ selectedDifficultyOption.playLevel ?? "?" }}
             </span>
           </span>
-        </SelectItem>
-      </SelectContent>
-    </Select>
+          <span v-else class="text-sm text-muted-foreground">
+            {{ t("deckRecommend.form.difficultyPlaceholder") }}
+          </span>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="option in difficultyOptions" :key="option.value" :value="option.value">
+            <span class="flex items-center gap-2">
+              <span
+                class="inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
+                :style="{ backgroundColor: option.color }"
+              >
+                {{ option.label }}
+              </span>
+              <span class="text-xs tabular-nums text-muted-foreground">
+                Lv.{{ option.playLevel ?? "?" }}
+              </span>
+            </span>
+          </SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
 
     <Dialog v-model:open="open">
       <DialogContent class="flex h-[85dvh] flex-col gap-3 overflow-hidden sm:max-w-4xl">
@@ -407,9 +409,9 @@ function toNullableNumber(value: number | string | undefined | null): number | n
               @update:model-value="updateFilterDifficulty"
             />
 
-            <div class="grid gap-2">
+            <div class="grid min-w-0 grid-cols-1 gap-2">
               <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.level") }}</p>
-              <div class="flex items-center gap-2">
+              <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
                 <Input
                   v-model.number="levelMin"
                   type="number"
@@ -430,9 +432,9 @@ function toNullableNumber(value: number | string | undefined | null): number | n
               </div>
             </div>
 
-            <div class="grid gap-2">
+            <div class="@container grid min-w-0 grid-cols-1 gap-2">
               <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.character") }}</p>
-              <div class="flex items-center gap-2">
+              <div class="grid min-w-0 grid-cols-1 items-center gap-2 @xs:grid-cols-[minmax(0,1fr)_8rem]">
                 <Label :id="characterLabelId" :for="characterId" class="sr-only">
                   {{ t("musicLibrary.list.filters.character") }}
                 </Label>
@@ -477,7 +479,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                   :disabled="filterCharacterId == null"
                   @update:model-value="updateCharacterScope"
                 >
-                  <SelectTrigger class="w-32 shrink-0" :aria-labelledby="characterScopeLabelId">
+                  <SelectTrigger class="w-full" :aria-labelledby="characterScopeLabelId">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -507,9 +509,9 @@ function toNullableNumber(value: number | string | undefined | null): number | n
               @update:model-value="updateYear"
             />
 
-            <div class="grid gap-2">
+            <div class="@container grid min-w-0 grid-cols-1 gap-2">
               <p class="text-sm font-medium">{{ t("musicLibrary.list.filters.sort") }}</p>
-              <div class="flex items-center gap-2">
+              <div class="grid min-w-0 grid-cols-1 items-center gap-2 @xs:grid-cols-[minmax(0,1fr)_6rem]">
                 <Label :id="sortLabelId" :for="sortId" class="sr-only">
                   {{ t("musicLibrary.list.filters.sort") }}
                 </Label>
@@ -531,7 +533,7 @@ function toNullableNumber(value: number | string | undefined | null): number | n
                   {{ t("musicLibrary.list.filters.sort") }}
                 </Label>
                 <Select :id="sortDirectionId" :model-value="sortDirection" @update:model-value="updateSortDirection">
-                  <SelectTrigger class="w-24 shrink-0" :aria-labelledby="sortDirectionLabelId">
+                  <SelectTrigger class="w-full" :aria-labelledby="sortDirectionLabelId">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

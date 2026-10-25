@@ -243,9 +243,9 @@ function openAppSettings() {
           class="sticky top-0 z-40 flex h-13 items-center px-4 gap-2 text-base-content overflow-hidden flex-nowrap border-b"
       >
         <SidebarTrigger class="flex-shrink-0 -ml-2 sm:ml-0"/>
-        <div class="flex items-center flex-shrink-0 whitespace-nowrap">
-          <router-link to="/" class="flex items-baseline gap-1.5 flex-shrink-0 whitespace-nowrap">
-            <span class="text-lg font-bold leading-none flex-shrink-0 whitespace-nowrap">
+        <div class="flex min-w-0 items-center">
+          <router-link to="/" class="flex min-w-0 items-baseline gap-1.5">
+            <span class="truncate text-lg font-bold leading-none">
               {{ t("app.name") }}
             </span>
             <span class="hidden md:inline text-[10px] font-medium text-muted-foreground">by Seiunx Network</span>

@@ -194,7 +194,7 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
          character picker; a wrapping flow rather than a grid, so hiding a
          control never leaves a hole. -->
     <div class="flex flex-wrap items-center gap-x-10 gap-y-3">
-      <div class="flex min-w-64 flex-wrap items-center gap-x-3 gap-y-2">
+      <div class="flex w-full min-w-0 flex-wrap items-center gap-x-3 gap-y-2 sm:w-auto sm:min-w-64">
         <p :id="`${id}-level-label`" class="mr-1 min-w-14 text-xs font-medium text-muted-foreground">
           {{ t("musicLibrary.list.filters.level") }}
         </p>

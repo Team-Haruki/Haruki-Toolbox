@@ -24,7 +24,7 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div :class="cn(compact ? 'min-w-0 flex-1' : 'grid gap-2', props.class)">
+  <div :class="cn(compact ? 'min-w-0 flex-1' : 'grid min-w-0 grid-cols-1 gap-2', props.class)">
     <Label :for="inputId" :class="compact ? 'sr-only' : undefined">{{ label }}</Label>
     <div class="relative w-full items-center">
       <!-- The native WebKit cancel button is hidden: the custom clear

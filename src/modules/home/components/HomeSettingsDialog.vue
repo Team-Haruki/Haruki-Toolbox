@@ -269,20 +269,20 @@ async function runUserUpdateCheck() {
             <p class="mt-0.5 text-sm text-muted-foreground">{{ activeSection.description }}</p>
           </header>
 
-          <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+          <div class="@container min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
             <div v-show="settingsTab === 'preferences'" class="space-y-5">
               <section>
                 <h3 class="px-1 pb-2 text-[13px] font-medium text-muted-foreground">
                   {{ t("homeSettings.groups.appearance") }}
                 </h3>
                 <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
                     <div class="min-w-0">
                       <Label id="dialog-theme-label" for="dialog-theme" class="text-sm font-medium">{{ t("homeSettings.theme.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.theme.help") }}</p>
                     </div>
                     <Select id="dialog-theme" v-model="selectedTheme">
-                      <SelectTrigger aria-labelledby="dialog-theme-label" class="w-36 shrink-0 sm:w-40">
+                      <SelectTrigger aria-labelledby="dialog-theme-label" class="w-full @min-[28rem]:w-40 @min-[28rem]:shrink-0">
                         <SelectValue :placeholder="t('homeSettings.theme.placeholder')">
                           <span class="truncate">{{ selectedThemeLabel }}</span>
                         </SelectValue>
@@ -298,13 +298,13 @@ async function runUserUpdateCheck() {
                     </Select>
                   </div>
 
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
                     <div class="min-w-0">
                       <Label id="dialog-locale-label" for="dialog-locale" class="text-sm font-medium">{{ t("homeSettings.locale.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.locale.help") }}</p>
                     </div>
                     <Select id="dialog-locale" v-model="selectedLocale">
-                      <SelectTrigger aria-labelledby="dialog-locale-label" class="w-36 shrink-0 sm:w-40">
+                      <SelectTrigger aria-labelledby="dialog-locale-label" class="w-full @min-[28rem]:w-40 @min-[28rem]:shrink-0">
                         <SelectValue :placeholder="t('homeSettings.locale.placeholder')">
                           <span class="truncate">{{ selectedLocaleLabel }}</span>
                         </SelectValue>
@@ -345,7 +345,7 @@ async function runUserUpdateCheck() {
                   </button>
                 </div>
                 <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
                     <div class="min-w-0">
                       <Label id="dialog-endpoint-label" for="dialog-endpoint" class="text-sm font-medium">{{ t("homeSettings.endpoint.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.endpoint.help") }}</p>
@@ -354,14 +354,14 @@ async function runUserUpdateCheck() {
                       </p>
                     </div>
                     <Select id="dialog-endpoint" v-model="selectedEndpoint" :disabled="endpointSelectionDisabled || endpointUnavailable">
-                      <SelectTrigger aria-labelledby="dialog-endpoint-label" class="w-40 shrink-0 sm:w-56">
+                      <SelectTrigger aria-labelledby="dialog-endpoint-label" class="w-full @min-[28rem]:w-56 @min-[28rem]:shrink-0">
                         <SelectValue :placeholder="t('homeSettings.endpoint.placeholder')">
                           <span class="truncate">{{ selectedEndpointLabel }}</span>
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem v-for="opt in endpointOptions" :key="opt.value" :value="opt.value">
-                          <div class="flex w-full min-w-64 items-center justify-between gap-3">
+                          <div class="flex w-full min-w-0 items-center justify-between gap-3">
                             <div class="flex min-w-0 items-center gap-2">
                               <component :is="opt.icon" class="size-4 shrink-0" />
                               <span class="truncate">{{ opt.label }}</span>
@@ -380,20 +380,20 @@ async function runUserUpdateCheck() {
                     </Select>
                   </div>
 
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
                     <div class="min-w-0">
                       <Label id="dialog-asset-endpoint-label" for="dialog-asset-endpoint" class="text-sm font-medium">{{ t("homeSettings.assetEndpoint.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.assetEndpoint.help") }}</p>
                     </div>
                     <Select id="dialog-asset-endpoint" v-model="selectedAssetEndpoint">
-                      <SelectTrigger aria-labelledby="dialog-asset-endpoint-label" class="w-40 shrink-0 sm:w-56">
+                      <SelectTrigger aria-labelledby="dialog-asset-endpoint-label" class="w-full @min-[28rem]:w-56 @min-[28rem]:shrink-0">
                         <SelectValue :placeholder="t('homeSettings.assetEndpoint.placeholder')">
                           <span class="truncate">{{ selectedAssetEndpointLabel }}</span>
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem v-for="opt in assetEndpointOptions" :key="opt.value" :value="opt.value">
-                          <div class="flex w-full min-w-64 items-center justify-between gap-3">
+                          <div class="flex w-full min-w-0 items-center justify-between gap-3">
                             <div class="flex min-w-0 items-center gap-2">
                               <component :is="opt.icon" class="size-4 shrink-0" />
                               <span class="truncate">{{ opt.label }}</span>

@@ -113,17 +113,17 @@ function setAttrFilters(values: string[]) {
 </script>
 
 <template>
-            <section class="grid min-w-0 gap-3 border-t pt-4">
+            <section class="grid min-w-0 grid-cols-1 gap-3 border-t pt-4">
               <button
                 type="button"
-                class="flex w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                class="flex min-w-0 w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 :aria-label="t('deckRecommend.layers.advanced.title')"
                 :aria-expanded="open"
                 @click="open = !open"
               >
-                    <span class="space-y-1">
-                      <span class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        <LucideSettings2 class="size-3.5" />
+                    <span class="min-w-0 space-y-1">
+                      <span class="flex min-w-0 items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <LucideSettings2 class="size-3.5 shrink-0" />
                         {{ t("deckRecommend.layers.advanced.title") }}
                       </span>
                       <span class="block text-xs font-normal text-muted-foreground">
@@ -138,8 +138,8 @@ function setAttrFilters(values: string[]) {
                     />
               </button>
 
-              <div v-show="open" class="grid min-w-0 gap-3 sm:gap-4">
-                    <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+              <div v-show="open" class="grid min-w-0 grid-cols-1 gap-3 sm:gap-4">
+                    <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.training.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.training.description") }}</p>
@@ -147,14 +147,14 @@ function setAttrFilters(values: string[]) {
                       <CardTrainingConfigTable v-model="trainingConfig" />
                     </section>
 
-                    <div class="grid gap-3 sm:gap-4 @5xl:grid-cols-2 @5xl:items-start">
-                      <div class="@container grid min-w-0 gap-3 sm:gap-4">
-                        <section class="grid h-full content-start gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                    <div class="grid min-w-0 grid-cols-1 gap-3 sm:gap-4 @5xl:grid-cols-2 @5xl:items-start">
+                      <div class="@container grid min-w-0 grid-cols-1 gap-3 sm:gap-4">
+                        <section class="grid min-w-0 grid-cols-1 h-full content-start gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                           <div class="space-y-1">
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.filters.title") }}</h3>
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.filters.description") }}</p>
                           </div>
-                          <div class="grid gap-3 sm:gap-4">
+                          <div class="grid min-w-0 grid-cols-1 gap-3 sm:gap-4">
                             <div :class="running ? 'pointer-events-none opacity-60' : ''">
                               <div class="flex flex-col gap-3">
                                 <CatalogChipsField
@@ -173,7 +173,7 @@ function setAttrFilters(values: string[]) {
                                 />
                               </div>
                             </div>
-                            <div class="grid gap-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <div class="flex items-center justify-between gap-2">
                                 <p class="text-sm font-medium">{{ t("deckRecommend.options.filters.character") }}</p>
                                 <span class="text-xs text-muted-foreground">{{ filterSelectionLabel(characterFilters.length) }}</span>
@@ -201,14 +201,14 @@ function setAttrFilters(values: string[]) {
                         </section>
                       </div>
 
-                      <div class="@container grid min-w-0 gap-3 sm:gap-4">
-                        <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                      <div class="@container grid min-w-0 grid-cols-1 gap-3 sm:gap-4">
+                        <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                           <div class="space-y-1">
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.dataOverrides.title") }}</h3>
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.dataOverrides.description") }}</p>
                           </div>
-                          <div class="grid gap-3 @sm:grid-cols-2">
-                            <div class="grid gap-2">
+                          <div class="grid min-w-0 grid-cols-1 gap-3 @sm:grid-cols-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <Label id="deck-area-item-level-label" for="deck-area-item-level">
                                 {{ t("deckRecommend.options.filters.areaItemLevel") }}
                               </Label>
@@ -228,7 +228,7 @@ function setAttrFilters(values: string[]) {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div class="grid gap-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <Label id="deck-character-rank-label" for="deck-character-rank">
                                 {{ t("deckRecommend.options.filters.characterRank") }}
                               </Label>
@@ -248,7 +248,7 @@ function setAttrFilters(values: string[]) {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div class="grid gap-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <Label id="deck-mysekai-gate-level-label" for="deck-mysekai-gate-level">
                                 {{ t("deckRecommend.options.filters.mysekaiGateLevel") }}
                               </Label>
@@ -268,7 +268,7 @@ function setAttrFilters(values: string[]) {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div class="grid gap-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <Label for="deck-mysekai-fixture-bonus-rate">
                                 {{ t("deckRecommend.options.filters.mysekaiFixtureBonusRate") }}
                               </Label>
@@ -290,12 +290,12 @@ function setAttrFilters(values: string[]) {
                             {{ t("deckRecommend.options.dataOverrides.invalid") }}
                           </p>
                         </section>
-                        <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                        <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                           <div class="space-y-1">
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.runParameters.title") }}</h3>
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.runParameters.description") }}</p>
                           </div>
-                          <div class="grid gap-2">
+                          <div class="grid min-w-0 grid-cols-1 gap-2">
                             <Label id="deck-boost-label" for="deck-boost">
                               {{ t("deckRecommend.options.filters.boost") }}
                             </Label>
@@ -315,13 +315,13 @@ function setAttrFilters(values: string[]) {
                           </p>
                         </section>
 
-                        <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                        <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                           <div class="space-y-1">
                             <h3 class="text-sm font-medium">{{ t("deckRecommend.options.multiLive.title") }}</h3>
                             <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.multiLive.description") }}</p>
                           </div>
-                          <div class="grid gap-3 @lg:grid-cols-3">
-                            <div class="grid gap-2">
+                          <div class="grid min-w-0 grid-cols-1 gap-3 @lg:grid-cols-3">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <Label for="deck-recommend-teammate-power">{{ t("deckRecommend.options.multiLive.teammatePower") }}</Label>
                               <Input
                                 id="deck-recommend-teammate-power"
@@ -333,7 +333,7 @@ function setAttrFilters(values: string[]) {
                                 :disabled="running || !isMultiLiveOptionsEnabled"
                               />
                             </div>
-                            <div class="grid gap-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <Label for="deck-recommend-teammate-score-up">{{ t("deckRecommend.options.multiLive.teammateScoreUp") }}</Label>
                               <Input
                                 id="deck-recommend-teammate-score-up"
@@ -345,7 +345,7 @@ function setAttrFilters(values: string[]) {
                                 :disabled="running || !isMultiLiveOptionsEnabled"
                               />
                             </div>
-                            <div class="grid gap-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <Label for="deck-recommend-score-up-lower-bound">{{ t("deckRecommend.options.multiLive.scoreUpLowerBound") }}</Label>
                               <Input
                                 id="deck-recommend-score-up-lower-bound"
@@ -371,12 +371,12 @@ function setAttrFilters(values: string[]) {
                       </div>
                     </div>
 
-                    <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                    <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.constraints.description") }}</p>
                       </div>
-                      <div class="grid gap-3">
+                      <div class="grid min-w-0 grid-cols-1 gap-3">
                         <label for="deck-use-current" class="flex items-center justify-between gap-3 rounded-md border bg-background/70 p-2.5 text-sm sm:p-3">
                           <span class="min-w-0 space-y-1">
                             <span class="block font-medium">{{ t("deckRecommend.options.constraints.useCurrentDeck") }}</span>
@@ -392,15 +392,15 @@ function setAttrFilters(values: string[]) {
                           />
                         </label>
 
-                        <div v-if="!isCurrentDeckEnabled" class="grid gap-3 @3xl:grid-cols-2">
-                          <div class="grid gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
+                        <div v-if="!isCurrentDeckEnabled" class="grid min-w-0 grid-cols-1 gap-3 @3xl:grid-cols-2">
+                          <div class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
                             <div class="space-y-1">
                               <h4 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.fixedGroup") }}</h4>
                               <p class="text-xs leading-5 text-muted-foreground">
                                 {{ t("deckRecommend.options.constraints.fixedGroupDescription") }}
                               </p>
                             </div>
-                            <div class="grid gap-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <p class="text-sm font-medium">{{ t("deckRecommend.options.constraints.fixedCards") }}</p>
                               <CardMultiPicker
                                 v-model="fixedCardIds"
@@ -411,7 +411,7 @@ function setAttrFilters(values: string[]) {
                                 :placeholder="t('deckRecommend.options.constraints.fixedCardSelectPlaceholder')"
                               />
                             </div>
-                            <div class="grid gap-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <p class="text-sm font-medium">{{ t("deckRecommend.options.constraints.fixedCharacters") }}</p>
                               <CharacterMultiPicker
                                 v-model="fixedCharacterIds"
@@ -422,14 +422,14 @@ function setAttrFilters(values: string[]) {
                               />
                             </div>
                           </div>
-                          <div class="grid content-start gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
+                          <div class="grid min-w-0 grid-cols-1 content-start gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
                             <div class="space-y-1">
                               <h4 class="text-sm font-medium">{{ t("deckRecommend.options.constraints.excludedGroup") }}</h4>
                               <p class="text-xs leading-5 text-muted-foreground">
                                 {{ t("deckRecommend.options.constraints.excludedGroupDescription") }}
                               </p>
                             </div>
-                            <div class="grid gap-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <p class="text-sm font-medium">{{ t("deckRecommend.options.constraints.excludedCards") }}</p>
                               <CardMultiPicker
                                 v-model="excludedCardIds"

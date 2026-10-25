@@ -64,7 +64,7 @@ const props = withDefaults(defineProps<{
   pageKey: null,
   activeCount: null,
   activeChips: () => [],
-  contentClass: "grid gap-4 sm:grid-cols-2 lg:grid-cols-3",
+  contentClass: "grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3",
   mobileSheet: null,
 })
 
@@ -136,7 +136,7 @@ defineExpose({ open, expanded })
 </script>
 
 <template>
-  <section class="grid gap-3 rounded-md border bg-muted/20 p-3" data-slot="catalog-filter-panel">
+  <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-3" data-slot="catalog-filter-panel">
     <button
       type="button"
       class="flex min-h-9 items-center gap-2 text-left text-sm font-medium"

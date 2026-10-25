@@ -121,10 +121,10 @@ const notesOpen = ref(false)
     </CardHeader>
     <CardContent>
       <form id="upload-data-inherit-form" novalidate @submit.prevent="emit('submit')">
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div class="flex flex-col space-y-1.5">
+        <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="flex min-w-0 flex-col space-y-1.5">
             <Label :for="FIELD_IDS.inheritId">{{ t("tools.uploadData.inheritTab.fields.inheritId") }}</Label>
-            <div class="relative w-full items-center">
+            <div class="relative min-w-0 w-full items-center">
               <Input
                 :id="FIELD_IDS.inheritId"
                 class="pl-10"
@@ -143,9 +143,9 @@ const notesOpen = ref(false)
             </div>
             <p v-if="fieldErrors.inheritId" :id="ERROR_IDS.inheritId" role="alert" class="text-xs text-destructive">{{ fieldErrors.inheritId }}</p>
           </div>
-          <div class="flex flex-col space-y-1.5">
+          <div class="flex min-w-0 flex-col space-y-1.5">
             <Label :for="FIELD_IDS.inheritPassword">{{ t("tools.uploadData.inheritTab.fields.inheritPassword") }}</Label>
-            <div class="relative w-full items-center">
+            <div class="relative min-w-0 w-full items-center">
               <InputWithToggle
                 :id="FIELD_IDS.inheritPassword"
                 type="password"
@@ -163,9 +163,9 @@ const notesOpen = ref(false)
             </div>
             <p v-if="fieldErrors.inheritPassword" :id="ERROR_IDS.inheritPassword" role="alert" class="text-xs text-destructive">{{ fieldErrors.inheritPassword }}</p>
           </div>
-          <div class="flex flex-col space-y-1.5">
+          <div class="flex min-w-0 flex-col space-y-1.5">
             <Label for="inherit-server-select">{{ t("tools.uploadData.inheritTab.fields.server") }}</Label>
-            <div class="relative w-full items-center">
+            <div class="relative min-w-0 w-full items-center">
               <Select :key="locale" id="inherit-server-select" :model-value="inheritServer" @update:model-value="handleServerChange">
                 <SelectTrigger class="w-full pl-10">
                   <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.serverPlaceholder')" />
@@ -180,9 +180,9 @@ const notesOpen = ref(false)
               </span>
             </div>
           </div>
-          <div class="flex flex-col space-y-1.5">
+          <div class="flex min-w-0 flex-col space-y-1.5">
             <Label for="inherit-data-type-select">{{ t("tools.uploadData.inheritTab.fields.dataType") }}</Label>
-            <div class="relative w-full items-center">
+            <div class="relative min-w-0 w-full items-center">
               <Select :key="locale" id="inherit-data-type-select" :model-value="dataType" @update:model-value="handleDataTypeChange">
                 <SelectTrigger class="w-full pl-10">
                   <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.dataTypePlaceholder')" />

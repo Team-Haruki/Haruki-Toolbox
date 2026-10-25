@@ -135,8 +135,8 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
         <AlertDescription>{{ t("tools.uploadData.fileTab.targetsFailedDescription") }}</AlertDescription>
       </Alert>
       <form id="upload-data-file-form" @submit.prevent="emit('submit')">
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div class="flex flex-col space-y-1.5 sm:col-span-2">
+        <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="flex min-w-0 flex-col space-y-1.5 sm:col-span-2">
             <Label :for="FILE_INPUT_ID">{{ t("tools.uploadData.fileTab.fields.file") }}</Label>
             <!-- Styled picker: the native control's label is browser-language, not ours.
                  A real button (not a label) so the disabled state is visible and announced. -->
@@ -164,8 +164,8 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
             </div>
             <p class="text-xs text-muted-foreground">{{ t("tools.uploadData.fileTab.fields.fileHint") }}</p>
           </div>
-          <div class="flex flex-col space-y-1.5">
-            <div class="flex items-center justify-between gap-2">
+          <div class="flex min-w-0 flex-col space-y-1.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
               <Label for="account-select">{{ t("tools.uploadData.fileTab.fields.account") }}</Label>
               <Button
                 type="button"
@@ -267,9 +267,9 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
               {{ t("tools.uploadData.fileTab.someAccountsUnavailable") }}
             </p>
           </div>
-          <div class="flex flex-col space-y-1.5">
+          <div class="flex min-w-0 flex-col space-y-1.5">
             <Label for="data-type-select">{{ t("tools.uploadData.fileTab.fields.dataType") }}</Label>
-            <div class="relative w-full items-center">
+            <div class="relative min-w-0 w-full items-center">
               <Select :key="locale"
                 id="data-type-select"
                 :model-value="dataType"
