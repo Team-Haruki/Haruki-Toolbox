@@ -31,5 +31,16 @@
     "thumbnail": "/sponsor-frames/gif_laughing_yellow_20261001-panel.png",
     "panelPreview": "/sponsor-frames/gif_laughing_yellow_20261001-panel.png",
     "profilePreview": "/sponsor-frames/gif_laughing_yellow_20261001-profile.jpg"
+  },
+  {
+    "id": "night_heron_20261026",
+    "name": {
+      "zh-CN": "夜鹭",
+      "zh-TW": "夜鷺",
+      "en-US": "Night Heron"
+    },
+    "thumbnail": "/sponsor-frames/night_heron_20261026-panel.png",
+    "panelPreview": "/sponsor-frames/night_heron_20261026-panel.png",
+    "profilePreview": "/sponsor-frames/night_heron_20261026-profile.jpg"
   }
 ]
