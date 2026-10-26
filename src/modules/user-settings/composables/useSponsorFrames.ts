@@ -1,5 +1,6 @@
 import { computed, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
+import { useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useUserStore } from "@/shared/stores/user"
 import { getSponsorFrames, saveSponsorFrame, type SponsorFrame, type SponsorFramesData } from "@/modules/user-settings/api/sponsor"
@@ -8,6 +9,7 @@ import { resolveRequiredUserId } from "@/modules/user-settings/lib/current-user"
 export function useSponsorFrames() {
   const { t, locale } = useI18n()
   const user = useUserStore()
+  const router = useRouter()
   const data = ref<SponsorFramesData | null>(null)
   const loading = ref(false)
   const failed = ref(false)
@@ -21,7 +23,7 @@ export function useSponsorFrames() {
   const selected = computed(() => data.value?.frames.find((f) => f.id === selectedId.value))
   const eligible = computed(() => data.value?.status.eligible === true)
   const dirty = computed(() => selectedId.value !== (account.value?.frameId ?? ""))
-  const canSave = computed(() => !!account.value?.verified && dirty.value && (eligible.value || !selectedId.value) && !saving.value)
+  const canSave = computed(() => !!account.value?.verified && dirty.value && eligible.value && !saving.value)
   const frameName = (frame: SponsorFrame) => frame.name[locale.value] ?? frame.name["zh-CN"] ?? frame.id
   const frames = computed(() => (data.value?.frames ?? []).filter((f) => frameName(f).toLowerCase().includes(search.value.trim().toLowerCase())))
   const previewURL = computed(() => selected.value
@@ -30,13 +32,23 @@ export function useSponsorFrames() {
 
   watch(accountKey, () => { selectedId.value = account.value?.frameId ?? "" })
 
+  async function acceptData(response: SponsorFramesData) {
+    if (!response.status.eligible) {
+      data.value = null
+      await router.replace({ name: "user.settings" })
+      return false
+    }
+    data.value = response
+    return true
+  }
+
   async function load() {
     const id = resolveRequiredUserId(user.userId)
     if (!id || loading.value) return
     loading.value = true
     failed.value = false
     try {
-      data.value = await getSponsorFrames(id)
+      if (!await acceptData(await getSponsorFrames(id))) return
       if (!account.value) {
         const first = accounts.value.find((a) => a.verified) ?? accounts.value[0]
         accountKey.value = first ? `${first.server}:${first.gameUserId}` : ""
@@ -53,7 +65,7 @@ export function useSponsorFrames() {
     saving.value = true
     const selection = selectedId.value
     try {
-      data.value = await saveSponsorFrame(id, target, selection)
+      if (!await acceptData(await saveSponsorFrame(id, target, selection))) return
       toast.success(t("userSettings.frames.saved"), { description: t("userSettings.frames.savedDescription") })
     } catch { toast.error(t("userSettings.frames.saveFailed")) }
     finally { saving.value = false }

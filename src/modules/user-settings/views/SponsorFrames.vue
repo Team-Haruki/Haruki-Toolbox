@@ -18,18 +18,14 @@ const { data, loading, failed, saving, accountKey, accounts, account, selectedId
 
 <template>
   <div class="mx-auto w-full max-w-6xl space-y-6 py-4">
-    <div class="space-y-3">
+    <div v-if="eligible" class="space-y-3">
       <Button as-child variant="ghost" size="sm"><RouterLink to="/user/settings"><ArrowLeft class="mr-2 size-4" />{{ t("userSettings.frames.back") }}</RouterLink></Button>
       <div class="flex flex-wrap items-center gap-3"><h1 class="text-2xl font-semibold tracking-tight">{{ t("userSettings.frames.title") }}</h1><Badge v-if="eligible"><HeartHandshake class="mr-1 size-3" />{{ t("userSettings.afdian.permanent") }}</Badge></div>
       <p class="max-w-3xl text-sm leading-relaxed text-muted-foreground">{{ t("userSettings.frames.description") }}</p>
     </div>
     <p v-if="loading" role="status" class="flex items-center gap-2 py-12"><Loader2 class="size-5 animate-spin" />{{ t("userSettings.afdian.loading") }}</p>
     <Card v-else-if="failed"><CardContent class="space-y-3 pt-6"><p role="alert">{{ t("userSettings.frames.loadFailed") }}</p><Button variant="outline" @click="load">{{ t("userSettings.afdian.retry") }}</Button></CardContent></Card>
-    <template v-else-if="data">
-      <div v-if="!eligible" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
-        <p class="text-sm leading-relaxed">{{ t(data.status.accessOverride === 'blocked' ? 'userSettings.afdian.accessBlocked' : data.status.afdianUserId ? 'userSettings.afdian.noSponsorship' : data.status.oauthEnabled ? 'userSettings.frames.locked' : 'userSettings.frames.lockedOrderOnly') }}</p>
-        <Button as-child variant="outline" size="sm"><RouterLink to="/user/settings">{{ t("userSettings.afdian.title") }}</RouterLink></Button>
-      </div>
+    <template v-else-if="data && eligible">
       <div class="grid items-start gap-6 lg:grid-cols-[1fr_1.15fr]">
         <div class="space-y-4">
           <Card>
@@ -76,6 +72,6 @@ const { data, loading, failed, saving, accountKey, accounts, account, selectedId
         </Card>
       </div>
     </template>
-    <ImageLightbox v-model:open="lightboxOpen" :title="t('userSettings.frames.previewTitle')" :description="t('userSettings.frames.sampleNotice')" :items="[{ label: t(preview === 'panel' ? 'userSettings.frames.panel' : 'userSettings.frames.profile'), sources: [previewURL] }]" />
+    <ImageLightbox v-if="eligible" v-model:open="lightboxOpen" :title="t('userSettings.frames.previewTitle')" :description="t('userSettings.frames.sampleNotice')" :items="[{ label: t(preview === 'panel' ? 'userSettings.frames.panel' : 'userSettings.frames.profile'), sources: [previewURL] }]" />
   </div>
 </template>
