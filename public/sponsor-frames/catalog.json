@@ -42,5 +42,16 @@
     "thumbnail": "/sponsor-frames/night_heron_20261026-panel.png",
     "panelPreview": "/sponsor-frames/night_heron_20261026-panel.png",
     "profilePreview": "/sponsor-frames/night_heron_20261026-profile.jpg"
+  },
+  {
+    "id": "dragon_bubble_20261027",
+    "name": {
+      "zh-CN": "龙泡泡",
+      "zh-TW": "龍泡泡",
+      "en-US": "Dragon Bubble"
+    },
+    "thumbnail": "/sponsor-frames/dragon_bubble_20261027-panel.png",
+    "panelPreview": "/sponsor-frames/dragon_bubble_20261027-panel.png",
+    "profilePreview": "/sponsor-frames/dragon_bubble_20261027-profile.jpg"
   }
 ]
