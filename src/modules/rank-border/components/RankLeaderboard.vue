@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { RefreshCcw } from "lucide-vue-next"
-import { Button } from "@/components/ui/button"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import { useRankBorderContext } from "../composables/rank-border-context"
 import {
   buildProfileHonorViews,
@@ -265,16 +264,16 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div v-if="tracker.error.value" class="flex flex-col gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="min-w-0 space-y-1">
-        <p class="text-sm font-medium text-destructive">{{ t("rankBorder.result.loadErrorTitle") }}</p>
-        <p class="text-xs text-muted-foreground">{{ t("rankBorder.result.loadErrorHint") }}</p>
-        <p class="break-all text-xs text-destructive/70">{{ tracker.error.value }}</p>
-      </div>
-      <Button variant="outline" size="sm" class="shrink-0" :disabled="!canRefresh || liveRefreshing" @click="refreshData()">
-        <RefreshCcw :class="['size-4', liveRefreshing ? 'animate-spin' : '']" />
-        {{ t("rankBorder.actions.retry") }}
-      </Button>
+    <div v-if="tracker.error.value" class="rounded-md border border-destructive/40 bg-destructive/5">
+      <LoadErrorState
+        :title="t('rankBorder.result.loadErrorTitle')"
+        :description="tracker.error.value"
+        :detail="tracker.errorDetail.value"
+        :retry-label="t('rankBorder.actions.retry')"
+        :retryable="canRefresh"
+        :retrying="liveRefreshing"
+        @retry="refreshData()"
+      />
     </div>
 
     <div v-if="!hasTop100Data" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">

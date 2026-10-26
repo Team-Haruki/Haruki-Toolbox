@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Check, Copy, KeyRound, Link2, LucideInfo, PackageCheck, RefreshCw } from "lucide-vue-next"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import { useIOSModuleGenerator } from "@/modules/tools/composables/useIOSModuleGenerator"
 
 const { t, locale } = useI18n()
@@ -32,11 +33,15 @@ const {
   scriptUrl,
   canInstall,
   generateCode,
+  regenerateCode,
   copyToClipboard,
   toggleRegion,
   toggleDataType,
   installModule,
 } = useIOSModuleGenerator()
+
+// Regenerating invalidates the installed module's code, so it asks first.
+const regenerateDialogOpen = ref(false)
 
 const modeOptionsWithDisabled = computed(() =>
   modeOptions.value.map((opt) => ({
@@ -76,7 +81,7 @@ function handleCopyScriptUrl() {
         <LucideInfo class="mt-0.5 size-4 shrink-0 text-primary" />
         <div class="min-w-0 space-y-0.5">
           <p class="leading-relaxed">
-            {{ t("tools.iosModules.tutorialAlert.textBefore") }}
+            {{ t("tools.iosModules.tutorialAlert.label") }}
             <a
               href="https://neo.haruki.seiunx.com/toolbox-tutorial/ios-module.html"
               target="_blank"
@@ -85,7 +90,6 @@ function handleCopyScriptUrl() {
             >
               {{ t("tools.iosModules.tutorialAlert.linkText") }}
             </a>
-            {{ t("tools.iosModules.tutorialAlert.textAfter") }}
           </p>
           <p v-if="!locale.startsWith('zh')" class="text-xs text-muted-foreground">
             {{ t("tools.iosModules.tutorialAlert.nonZhWarning") }}
@@ -260,6 +264,7 @@ function handleCopyScriptUrl() {
           <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">3</span>
           <div class="space-y-0.5">
             <h3 class="text-sm font-semibold leading-6">{{ t("tools.iosModules.steps.install.title") }}</h3>
+            <p class="text-xs font-medium text-amber-700 dark:text-amber-300">{{ t("tools.iosModules.steps.install.prerequisite") }}</p>
             <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.steps.install.description") }}</p>
           </div>
         </header>
@@ -278,15 +283,22 @@ function handleCopyScriptUrl() {
                 readonly
                 class="min-w-0 flex-1 border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0"
               />
-              <Button class="mr-1 shrink-0" variant="ghost" size="icon" @click="handleCopyUploadCode">
-                <Copy class="size-4" />
+              <Button
+                class="mr-1 shrink-0"
+                variant="ghost"
+                size="icon"
+                :title="t('tools.iosModules.copyAction', { label: t('tools.iosModules.copyLabel.uploadCode') })"
+                :aria-label="t('tools.iosModules.copyAction', { label: t('tools.iosModules.copyLabel.uploadCode') })"
+                @click="handleCopyUploadCode"
+              >
+                <Copy class="size-4" aria-hidden="true" />
               </Button>
             </div>
             <Button
               class="shrink-0"
               variant="outline"
               :disabled="isGeneratingCode || !userStore.isLoggedIn"
-              @click="generateCode"
+              @click="regenerateDialogOpen = true"
             >
               <RefreshCw class="mr-1 size-4" :class="{ 'animate-spin': isGeneratingCode }" />
               {{ t("tools.iosModules.uploadCode.regenerate") }}
@@ -320,8 +332,15 @@ function handleCopyScriptUrl() {
                   :aria-label="t('tools.iosModules.generatedUrls.moduleUrl')"
                   class="min-w-0 flex-1 border-0 bg-transparent font-mono text-xs shadow-none focus-visible:ring-0"
                 />
-                <Button class="mr-1 shrink-0" variant="ghost" size="icon" @click="handleCopyModuleUrl">
-                  <Copy class="size-4" />
+                <Button
+                  class="mr-1 shrink-0"
+                  variant="ghost"
+                  size="icon"
+                  :title="t('tools.iosModules.copyAction', { label: t('tools.iosModules.copyLabel.moduleUrl') })"
+                  :aria-label="t('tools.iosModules.copyAction', { label: t('tools.iosModules.copyLabel.moduleUrl') })"
+                  @click="handleCopyModuleUrl"
+                >
+                  <Copy class="size-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -334,8 +353,15 @@ function handleCopyScriptUrl() {
                   :aria-label="t('tools.iosModules.generatedUrls.scriptUrl')"
                   class="min-w-0 flex-1 border-0 bg-transparent font-mono text-xs shadow-none focus-visible:ring-0"
                 />
-                <Button class="mr-1 shrink-0" variant="ghost" size="icon" @click="handleCopyScriptUrl">
-                  <Copy class="size-4" />
+                <Button
+                  class="mr-1 shrink-0"
+                  variant="ghost"
+                  size="icon"
+                  :title="t('tools.iosModules.copyAction', { label: t('tools.iosModules.copyLabel.scriptUrl') })"
+                  :aria-label="t('tools.iosModules.copyAction', { label: t('tools.iosModules.copyLabel.scriptUrl') })"
+                  @click="handleCopyScriptUrl"
+                >
+                  <Copy class="size-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -350,8 +376,19 @@ function handleCopyScriptUrl() {
           <p class="text-center text-xs text-muted-foreground">
             {{ t("tools.iosModules.installHint") }}
           </p>
+          <p class="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            {{ t("tools.iosModules.steps.install.after") }}
+          </p>
         </div>
       </section>
     </CardContent>
   </Card>
+
+  <ConfirmDialog
+    v-model:open="regenerateDialogOpen"
+    :title="t('tools.iosModules.uploadCode.regenerateDialog.title')"
+    :description="t('tools.iosModules.uploadCode.regenerateDialog.description')"
+    :confirm-label="t('tools.iosModules.uploadCode.regenerateDialog.confirm')"
+    :on-confirm="regenerateCode"
+  />
 </template>

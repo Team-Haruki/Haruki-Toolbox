@@ -89,22 +89,22 @@ const {
                     {{ t("deckRecommend.layers.expert.description") }}
                   </DialogDescription>
                 </DialogHeader>
-                <div class="@container grid min-h-0 min-w-0 flex-1 content-start gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-4">
-                    <section class="grid min-w-0 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                <div class="@container grid min-h-0 min-w-0 grid-cols-1 flex-1 content-start gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-4">
+                    <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.random.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.random.description") }}</p>
                       </div>
-                      <div class="grid gap-3 @3xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.75fr)]">
-                        <div class="grid gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
+                      <div class="grid min-w-0 grid-cols-1 gap-3 @3xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.75fr)]">
+                        <div class="@container grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
                           <div class="space-y-1">
                             <h4 class="text-sm font-medium">{{ t("deckRecommend.options.random.skillGroup") }}</h4>
                             <p class="text-xs leading-5 text-muted-foreground">
                               {{ t("deckRecommend.options.random.skillGroupDescription") }}
                             </p>
                           </div>
-                          <div class="grid gap-3 @md:grid-cols-2">
-                            <div class="grid gap-2">
+                          <div class="grid min-w-0 grid-cols-1 gap-3 @md:grid-cols-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <Label id="deck-skill-order-label" for="deck-skill-order">
                                 {{ t("deckRecommend.options.random.skillOrder") }}
                               </Label>
@@ -119,7 +119,7 @@ const {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div class="grid gap-2">
+                            <div class="grid min-w-0 grid-cols-1 gap-2">
                               <Label id="deck-skill-reference-label" for="deck-skill-reference">
                                 {{ t("deckRecommend.options.random.skillReference") }}
                               </Label>
@@ -134,7 +134,7 @@ const {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div v-if="showSpecificSkillOrderInput" class="grid gap-2 md:col-span-2">
+                            <div v-if="showSpecificSkillOrderInput" class="grid min-w-0 grid-cols-1 gap-2 @md:col-span-2">
                               <Label for="deck-recommend-specific-skill-order">{{ t("deckRecommend.options.random.specificSkillOrder") }}</Label>
                               <Input
                                 id="deck-recommend-specific-skill-order"
@@ -163,7 +163,7 @@ const {
                           </label>
                         </div>
 
-                        <div class="grid content-start gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
+                        <div class="grid min-w-0 grid-cols-1 content-start gap-3 rounded-md border bg-background/50 p-2.5 sm:p-3">
                           <div class="space-y-1">
                             <h4 class="text-sm font-medium">{{ t("deckRecommend.options.random.supportGroup") }}</h4>
                             <p class="text-xs leading-5 text-muted-foreground">
@@ -269,13 +269,13 @@ const {
                       />
                     </TemporaryOverridePanel>
 
-                    <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                    <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.options.engine.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.options.engine.description") }}</p>
                       </div>
-                      <div class="grid gap-3 @md:grid-cols-2">
-                        <div class="grid gap-2">
+                      <div class="grid min-w-0 grid-cols-1 gap-3 @md:grid-cols-2">
+                        <div class="grid min-w-0 grid-cols-1 gap-2">
                           <Label for="deck-recommend-result-limit">{{ t("deckRecommend.options.engine.resultLimit") }}</Label>
                           <Input
                             id="deck-recommend-result-limit"
@@ -287,7 +287,7 @@ const {
                             :disabled="running"
                           />
                         </div>
-                        <div class="grid gap-2">
+                        <div class="grid min-w-0 grid-cols-1 gap-2">
                           <Label for="deck-recommend-engine-timeout">{{ t("deckRecommend.options.engine.timeoutMs") }}</Label>
                           <Input
                             id="deck-recommend-engine-timeout"
@@ -305,7 +305,7 @@ const {
                       </p>
                     </section>
 
-                    <section class="grid gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
+                    <section class="grid min-w-0 grid-cols-1 gap-3 rounded-md border bg-muted/20 p-2.5 sm:p-3">
                       <div class="space-y-1">
                         <h3 class="text-sm font-medium">{{ t("deckRecommend.singleCard.title") }}</h3>
                         <p class="text-xs leading-5 text-muted-foreground">{{ t("deckRecommend.singleCard.description") }}</p>

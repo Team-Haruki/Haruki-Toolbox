@@ -68,10 +68,17 @@ export function createDefaultMusicLibraryFilter(): MusicLibraryFilter {
   }
 }
 
+const MUSIC_ID_PREFIX_PATTERN = /^#\s*(\d+)$/
+const MUSIC_DIGITS_PATTERN = /^\d+$/
+
 /**
- * Title, pronunciation and `#id` go through the shared command-search matcher
- * (NFKC folding, kana → romaji, pinyin, `#123` / `123` ids); community
- * aliases resolved by the alias API are merged in by id.
+ * Title and pronunciation go through the shared command-search matcher
+ * (NFKC folding, kana → romaji, pinyin); community aliases resolved by the
+ * alias API are merged in by id.
+ *
+ * Ids never match as substrings — typing "1" must not return every song
+ * whose id contains a 1. A bare number matches the id exactly (and titles
+ * containing it); `#12` matches ids starting with 12.
  */
 export function matchesMusicSearch(
   entry: MusicLibraryEntry,
@@ -82,9 +89,19 @@ export function matchesMusicSearch(
   if (!query) {
     return true
   }
+  if (aliasMatchedIds?.has(entry.id)) {
+    return true
+  }
 
-  return (aliasMatchedIds?.has(entry.id) ?? false)
-    || matchesCommandSearch([`#${entry.id}`, entry.title, entry.pronunciation], query)
+  const idPrefix = MUSIC_ID_PREFIX_PATTERN.exec(query)
+  if (idPrefix) {
+    return String(entry.id).startsWith(idPrefix[1])
+  }
+  if (MUSIC_DIGITS_PATTERN.test(query) && String(entry.id) === query) {
+    return true
+  }
+
+  return matchesCommandSearch([entry.title, entry.pronunciation], query)
 }
 
 /** A music counts as unreleased while its publish timestamp is in the future. */

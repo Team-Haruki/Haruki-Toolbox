@@ -86,6 +86,20 @@ describe("matchesMusicSearch", () => {
     expect(matchesMusicSearch(ENTRIES[0], "teruyua")).toBe(true)
     expect(matchesMusicSearch(ENTRIES[0], "#3")).toBe(false)
   })
+
+  it("never matches ids as substrings: bare numbers are exact, #prefix is a prefix", () => {
+    const twelve = makeEntry({ id: 12, title: "Twelve" })
+    const hundredTwenty = makeEntry({ id: 120, title: "Hundred twenty" })
+    expect(matchesMusicSearch(twelve, "1")).toBe(false)
+    expect(matchesMusicSearch(twelve, "2")).toBe(false)
+    expect(matchesMusicSearch(twelve, "12")).toBe(true)
+    expect(matchesMusicSearch(hundredTwenty, "12")).toBe(false)
+    expect(matchesMusicSearch(twelve, "#1")).toBe(true)
+    expect(matchesMusicSearch(hundredTwenty, "#12")).toBe(true)
+    expect(matchesMusicSearch(hundredTwenty, "#2")).toBe(false)
+    // Digits still search titles.
+    expect(matchesMusicSearch(makeEntry({ id: 7, title: "1925" }), "19")).toBe(true)
+  })
 })
 
 describe("filterMusicEntries", () => {

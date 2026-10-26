@@ -31,17 +31,18 @@ import {
 } from "@/components/ui/dialog"
 import {
   LucideSearch,
-  LucideChevronLeft,
-  LucideChevronRight,
   LucideBell,
   LucideInbox,
   LucideLoader2,
   LucideMessageSquare,
   LucideRefreshCw,
+  LucideRotateCcw,
   LucideUsers,
   LucideShield,
   LucideShieldAlert,
 } from "lucide-vue-next"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import AdminPagination from "@/modules/admin/components/AdminPagination.vue"
 import { roleLabel } from "@/modules/admin-users/constants"
 import {
   ticketPriorityBadgeClass,
@@ -61,14 +62,17 @@ function formatTicketDate(iso?: string) {
 
 const {
   loading,
+  loadError,
   tickets,
   page,
+  pageSize,
   total,
   totalPages,
   search,
   quickFilter,
   statusFilter,
   priorityFilter,
+  hasActiveFilters,
   ticketNotificationsEnabled,
   ticketNotificationsLoading,
   ticketNotificationsSaving,
@@ -85,8 +89,11 @@ const {
   refreshTicketNotificationRecipients,
   setTicketNotificationRecipientEnabled,
   refreshTickets,
+  applySearch,
+  resetFilters,
   prevPage,
   nextPage,
+  goToPage,
   openTicket,
 } = useAdminTicketList()
 
@@ -150,14 +157,14 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
           </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <form class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_auto_auto_auto_auto] xl:items-center" novalidate @submit.prevent="applySearch">
           <div class="relative">
             <LucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input v-model="search" :placeholder="t('tickets.adminList.searchPlaceholder')" :aria-label="t('tickets.adminList.searchPlaceholder')" class="pl-9" />
           </div>
           <Label id="admin-ticket-quick-filter-label" for="admin-ticket-quick-filter" class="sr-only">{{ t("tickets.adminList.quickFilters.all") }}</Label>
           <Select id="admin-ticket-quick-filter" :key="locale" v-model="quickFilter">
-            <SelectTrigger class="w-full" aria-labelledby="admin-ticket-quick-filter-label">
+            <SelectTrigger class="w-full xl:w-44" aria-labelledby="admin-ticket-quick-filter-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -168,7 +175,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
           </Select>
           <Label id="admin-ticket-status-filter-label" for="admin-ticket-status-filter" class="sr-only">{{ t("tickets.filters.allStatus") }}</Label>
           <Select id="admin-ticket-status-filter" :key="locale" v-model="statusFilter">
-            <SelectTrigger class="w-full" aria-labelledby="admin-ticket-status-filter-label">
+            <SelectTrigger class="w-full xl:w-40" aria-labelledby="admin-ticket-status-filter-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -179,7 +186,7 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
           </Select>
           <Label id="admin-ticket-priority-filter-label" for="admin-ticket-priority-filter" class="sr-only">{{ t("tickets.filters.allPriorities") }}</Label>
           <Select id="admin-ticket-priority-filter" :key="locale" v-model="priorityFilter">
-            <SelectTrigger class="w-full" aria-labelledby="admin-ticket-priority-filter-label">
+            <SelectTrigger class="w-full xl:w-40" aria-labelledby="admin-ticket-priority-filter-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -188,7 +195,17 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
+          <div class="flex items-center gap-2">
+            <Button type="submit" size="sm" :disabled="loading">
+              <LucideSearch class="w-4 h-4 mr-1" />
+              {{ t("admin.filters.search") }}
+            </Button>
+            <Button type="button" variant="outline" size="sm" :disabled="!hasActiveFilters" @click="resetFilters">
+              <LucideRotateCcw class="w-4 h-4 mr-1" />
+              {{ t("admin.filters.reset") }}
+            </Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
 
@@ -292,6 +309,15 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
           <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
         </div>
       </template>
+      <template v-else-if="loadError">
+        <LoadErrorState
+          :title="t('tickets.adminList.toast.loadFailedTitle')"
+          :description="loadError.message"
+          :detail="loadError.detail"
+          :retrying="loading"
+          @retry="refreshTickets"
+        />
+      </template>
       <template v-else>
         <Table>
           <TableHeader>
@@ -363,31 +389,19 @@ function handleRowKeydown(event: KeyboardEvent, ticketId: string) {
       </template>
 
       <!-- Pagination footer -->
-      <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 sm:px-6">
-        <span class="text-sm text-muted-foreground tabular-nums">{{ t("tickets.adminList.total", { total }) }}</span>
-        <div class="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="page <= 1"
-            :title="t('tickets.adminList.pagination.prevPage')"
-            :aria-label="t('tickets.adminList.pagination.prevPage')"
-            @click="prevPage"
-          >
-            <LucideChevronLeft class="w-4 h-4" />
-          </Button>
-          <span class="text-sm tabular-nums">{{ page }} / {{ totalPages }}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="page >= totalPages"
-            :title="t('tickets.adminList.pagination.nextPage')"
-            :aria-label="t('tickets.adminList.pagination.nextPage')"
-            @click="nextPage"
-          >
-            <LucideChevronRight class="w-4 h-4" />
-          </Button>
-        </div>
+      <div v-if="!loadError" class="border-t px-4 py-3 sm:px-6">
+        <AdminPagination
+          :total="total"
+          :page="page"
+          :page-size="pageSize"
+          :total-pages="totalPages"
+          :disabled="loading"
+          :total-label="t('tickets.adminList.total', { total })"
+          @update:page-size="pageSize = $event"
+          @prev-page="prevPage"
+          @next-page="nextPage"
+          @go-to-page="goToPage"
+        />
       </div>
     </Card>
   </div>

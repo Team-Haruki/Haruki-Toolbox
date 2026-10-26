@@ -1,4 +1,4 @@
-import { computed, ref } from "vue"
+import { computed, nextTick, reactive, ref } from "vue"
 import { useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
@@ -10,6 +10,10 @@ import {
   getTicketCategoryOptions,
   getTicketPriorityOptions,
 } from "@/modules/tickets/lib/meta"
+
+export const TICKET_SUBJECT_MAX_LENGTH = 200
+
+type TicketCreateField = "subject" | "message"
 
 export function useTicketCreate() {
   const { t } = useI18n()
@@ -23,22 +27,45 @@ export function useTicketCreate() {
   const submitting = ref(false)
   const categories = computed(() => getTicketCategoryOptions(t))
   const priorities = computed(() => getTicketPriorityOptions(t))
+  /** Inline validation messages per field; empty when the field is valid. */
+  const fieldErrors = reactive<Record<TicketCreateField, string>>({ subject: "", message: "" })
+
+  function focusField(field: TicketCreateField) {
+    void nextTick(() => {
+      const element = document.getElementById(field)
+      if (element instanceof HTMLElement) {
+        element.focus()
+      }
+    })
+  }
+
+  function clearFieldError(field: TicketCreateField) {
+    fieldErrors[field] = ""
+  }
+
+  function validate(): boolean {
+    const normalizedSubject = subject.value.trim()
+    const normalizedMessage = message.value.trim()
+    fieldErrors.subject = !normalizedSubject
+      ? t("tickets.create.toast.subjectRequired")
+      : normalizedSubject.length > TICKET_SUBJECT_MAX_LENGTH
+        ? t("tickets.create.toast.subjectTooLong", { max: TICKET_SUBJECT_MAX_LENGTH })
+        : ""
+    fieldErrors.message = normalizedMessage ? "" : t("tickets.create.toast.messageRequired")
+
+    const firstInvalid = (["subject", "message"] as const).find((field) => fieldErrors[field])
+    if (firstInvalid) {
+      focusField(firstInvalid)
+      return false
+    }
+    return true
+  }
 
   async function handleSubmit() {
     if (submitting.value) return
+    if (!validate()) return
 
     const userId = userStore.userId
-    const normalizedSubject = subject.value.trim()
-    const normalizedMessage = message.value.trim()
-
-    if (!normalizedSubject) {
-      toast.error(t("tickets.create.toast.subjectRequired"))
-      return
-    }
-    if (!normalizedMessage) {
-      toast.error(t("tickets.create.toast.messageRequired"))
-      return
-    }
     if (!userId) {
       toast.error(t("tickets.create.toast.loginRequired"))
       return
@@ -47,10 +74,10 @@ export function useTicketCreate() {
     submitting.value = true
     try {
       await createTicket(userId, {
-        subject: normalizedSubject,
+        subject: subject.value.trim(),
         category: category.value,
         priority: priority.value,
-        message: normalizedMessage,
+        message: message.value.trim(),
       })
       toast.success(t("tickets.create.toast.createSuccess"))
       void router.push({ name: "tickets.list" })
@@ -75,6 +102,8 @@ export function useTicketCreate() {
     submitting,
     categories,
     priorities,
+    fieldErrors,
+    clearFieldError,
     handleSubmit,
     goBackToTicketList,
   }

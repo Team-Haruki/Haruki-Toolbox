@@ -145,6 +145,10 @@ export function useOAuthClientWebhooks() {
     webhookDeleteConfirmOpen.value = true
   }
 
+  /**
+   * Runs from the delete ConfirmDialog: rethrows so the dialog shows the
+   * failure inline and stays open; the dialog closes itself on success.
+   */
   async function deleteWebhook() {
     const webhook = webhookToDelete.value
     if (!webhook || !hasActiveClient() || webhookDeleting.value) return
@@ -154,13 +158,12 @@ export function useOAuthClientWebhooks() {
       {
         errorTitle: t("adminOAuthClients.toast.deleteWebhookFailedTitle"),
         fallbackError: t("adminOAuthClients.toast.deleteWebhookFailedTitle"),
+        throwOnError: true,
       }
     )
     if (!response) return
 
     webhooks.value = webhooks.value.filter((item) => item.id !== webhook.id)
-    webhookDeleteConfirmOpen.value = false
-    webhookToDelete.value = null
     toast.success(t("adminOAuthClients.toast.webhookDeleted"))
   }
 

@@ -21,7 +21,14 @@ const { open, password, submitting, inlineError, setOpen, submit } = useAdminRea
 
 <template>
   <Dialog :open="open" @update:open="setOpen">
-    <DialogContent class="sm:max-w-md">
+    <!--
+      z-[60]: the prompt opens from inside other dialogs (e.g. a ConfirmDialog
+      whose action answered "reauthentication required"). Its portal is
+      anchored where AdminLayout mounted it, i.e. before those dialogs in the
+      DOM, so at the shared z-50 it would sit under their overlay and clicks on
+      the password field would land on that overlay and dismiss the prompt.
+    -->
+    <DialogContent class="z-[60] sm:max-w-md" overlay-class="z-[60]">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <LucideShieldCheck class="h-4 w-4 shrink-0 text-primary" />

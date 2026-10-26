@@ -8,11 +8,13 @@ import {
   LucideGift,
   LucideTrophy,
 } from "lucide-vue-next"
-import { formatLocalizedDateTime } from "@/lib/date-time"
+import type { SekaiRegion } from "@/types"
 import CatalogCountdown from "@/shared/components/catalog/CatalogCountdown.vue"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import CatalogInfoList from "@/shared/components/catalog/CatalogInfoList.vue"
 import CatalogInfoRow from "@/shared/components/catalog/CatalogInfoRow.vue"
+import CatalogTimeZoneHint from "@/shared/components/catalog/CatalogTimeZoneHint.vue"
+import CatalogZonedTime from "@/shared/components/catalog/CatalogZonedTime.vue"
 import type { CatalogStatus } from "@/shared/components/catalog/types"
 import type { SekaiEventItem } from "@/modules/events/lib/event-filter"
 import {
@@ -25,6 +27,8 @@ const props = defineProps<{
   event: SekaiEventItem
   status: CatalogStatus
   nowMs: number
+  /** The server the event belongs to; its zone is shown next to local times. */
+  region: SekaiRegion
 }>()
 
 const { t } = useI18n()
@@ -55,14 +59,13 @@ const dateTimeFormat: Intl.DateTimeFormatOptions = {
   hour: "2-digit",
   minute: "2-digit",
 }
-
-function formatAt(value: number | null) {
-  return formatLocalizedDateTime(value, dateTimeFormat, t("events.common.dateFallback"))
-}
 </script>
 
 <template>
   <CatalogDetailSection :title="t('events.detail.timelineTitle')" :icon="LucideCalendarClock" content-class="flex flex-col gap-4">
+    <template #action>
+      <CatalogTimeZoneHint :region="region" />
+    </template>
     <CatalogCountdown
       v-if="countdown"
       :target-ms="countdown.targetMs"
@@ -77,7 +80,12 @@ function formatAt(value: number | null) {
         :icon="ICONS[row.key]"
         :value-class="row.reached ? 'text-muted-foreground' : ''"
       >
-        <span class="tabular-nums">{{ formatAt(row.at) }}</span>
+        <CatalogZonedTime
+          :value="row.at"
+          :region="region"
+          :options="dateTimeFormat"
+          :fallback="t('events.common.dateFallback')"
+        />
       </CatalogInfoRow>
     </CatalogInfoList>
   </CatalogDetailSection>

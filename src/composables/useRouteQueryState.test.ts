@@ -161,6 +161,22 @@ describe("useRouteQueryState", () => {
     ctx.scope.stop()
   })
 
+  test("a patch that sets the page together with a filter keeps that page", async () => {
+    const ctx = await setup("/cards?ids=1&page=2")
+    ctx.patch({ ids: [], page: 4 })
+    await settle()
+    expect(ctx.state.page).toBe(4)
+    expect(ctx.query().page).toBe("4")
+    expect(ctx.query().ids).toBeUndefined()
+
+    // The intent is consumed by that write: the next filter change resets again.
+    ctx.patch({ ids: [3] })
+    await settle()
+    expect(ctx.state.page).toBe(1)
+    expect(ctx.query().page).toBeUndefined()
+    ctx.scope.stop()
+  })
+
   test("does not reset the page for page-neutral keys and preserves foreign keys", async () => {
     const ctx = await setup("/cards?page=3&utm=abc")
     ctx.state.page = 5

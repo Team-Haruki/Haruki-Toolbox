@@ -25,7 +25,7 @@ function handleUpdate(value: AcceptableValue | AcceptableValue[] | undefined) {
 </script>
 
 <template>
-  <div :class="cn(compact ? 'flex flex-wrap items-center gap-1.5' : 'grid gap-2 sm:col-span-2 lg:col-span-3', props.class)">
+  <div :class="cn(compact ? 'flex min-w-0 flex-wrap items-center gap-1.5' : 'grid min-w-0 grid-cols-1 gap-2 sm:col-span-2 lg:col-span-3', props.class)">
     <!-- `min-w-14` lines the controls of stacked compact rows up into a column. -->
     <p :class="compact ? 'mr-1 min-w-14 text-xs font-medium text-muted-foreground' : 'text-sm font-medium'">
       {{ label }}
@@ -34,16 +34,22 @@ function handleUpdate(value: AcceptableValue | AcceptableValue[] | undefined) {
       type="multiple"
       variant="chip"
       size="sm"
+      class="min-w-0 max-w-full"
       :model-value="model"
       :aria-label="label"
       @update:model-value="handleUpdate"
     >
-      <ToggleGroupItem v-for="option in options" :key="option.value" :value="option.value">
+      <ToggleGroupItem
+        v-for="option in options"
+        :key="option.value"
+        :value="option.value"
+        class="h-auto min-h-7 min-w-0 max-w-full whitespace-normal py-1"
+      >
         <img
           v-if="option.iconUrl"
           :src="option.iconUrl"
           alt=""
-          class="h-4 w-auto max-w-9 object-contain"
+          class="h-4 w-auto max-w-9 shrink-0 object-contain"
           loading="lazy"
           decoding="async"
           @error="handleSekaiImageError($event, option.iconUrl)"
@@ -54,7 +60,7 @@ function handleUpdate(value: AcceptableValue | AcceptableValue[] | undefined) {
           :style="{ backgroundColor: option.color }"
           aria-hidden="true"
         />
-        {{ option.label }}
+        <span class="min-w-0 break-words">{{ option.label }}</span>
       </ToggleGroupItem>
     </ToggleGroup>
   </div>

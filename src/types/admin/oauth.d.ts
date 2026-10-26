@@ -32,10 +32,29 @@ export interface OAuthClient {
   deleted?: boolean
 }
 
+export interface OAuthClientStatisticsSummary {
+  authorizationTotal: number
+  authorizationActive: number
+  authorizationRevoked: number
+  authorizationCreatedInRange: number
+  tokenTotal: number
+  tokenActive: number
+  tokenRevoked: number
+  tokenIssuedInRange: number
+}
+
+export interface OAuthClientTrendPoint {
+  bucketStart: string
+  authorizationCreated: number
+  tokenIssued: number
+}
+
 export interface OAuthClientStatistics {
-  totalAuthorizations: number
-  activeAuthorizations: number
-  last30DaysAuthorizations: number
+  from?: string
+  to?: string
+  bucket: "hour" | "day"
+  summary: OAuthClientStatisticsSummary
+  trend: OAuthClientTrendPoint[]
 }
 
 export interface OAuthClientAuthorization {

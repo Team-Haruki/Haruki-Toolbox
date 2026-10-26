@@ -3,6 +3,7 @@ import { getGameAccountBindings } from "@/modules/admin-users/api/game-binding"
 import { getUserOAuthAuthorizations } from "@/modules/admin-users/api/oauth"
 import { getSocialPlatform } from "@/modules/admin-users/api/social"
 import { getUserActivity, getUserDetail } from "@/modules/admin-users/api/user"
+import { describeError, isNotFoundError } from "@/lib/error-utils"
 import { translate } from "@/shared/i18n"
 import type { LoaderRunOptions } from "./useAdminUserDetailActionTypes"
 import type { LoadOptions } from "./useAdminUserDetailAsync"
@@ -50,12 +51,31 @@ export function createAdminUserDetailLoaders({ userId, state, runLoad }: CreateL
   }
 
   async function loadUser(options?: LoaderRunOptions) {
+    // The initial load reports inline (not found vs. retryable failure) in
+    // place of the page; a strict refresh after an action keeps its own handling.
+    const inline = options?.notifyOnError === undefined
+    if (inline) {
+      refs.userNotFound.value = false
+      refs.userLoadError.value = null
+    }
     await runLoad(refs.loading, () => getUserDetail(userId()), {
       errorTitle: translate("adminUsers.detail.toast.loadUserFailedTitle"),
       ...toLoadOptions(options),
+      notifyOnError: inline ? false : options?.notifyOnError,
       onSuccess: (data) => {
         refs.user.value = data
+        refs.userNotFound.value = false
+        refs.userLoadError.value = null
         refs.iosUploadCode.value = data.userData?.iosUploadCode ?? null
+      },
+      onError: (error) => {
+        if (!inline) return
+        refs.user.value = null
+        if (isNotFoundError(error)) {
+          refs.userNotFound.value = true
+        } else {
+          refs.userLoadError.value = describeError(error, translate("adminUsers.detail.toast.actionFailedFallback"))
+        }
       },
     })
   }

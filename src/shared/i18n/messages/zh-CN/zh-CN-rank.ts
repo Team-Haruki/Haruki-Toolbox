@@ -3,13 +3,12 @@
 export default {
   "rankBorder": {
     "title": "榜线查询",
-    "description": "查询活动榜线、增长速度、Tracker 状态，并让进入采集范围的用户查看自己的实时排名与分数。",
+    "description": "查看活动榜线和涨速；进入前 100 名的玩家还能看到自己的实时排名。",
     "notice": {
       "title": "数据范围",
-      "description": "榜线数据来自 Haruki Event Tracker；个人定位依赖排行榜采集范围，当前通常只有前 100 名玩家能定位到实时排名。",
+      "description": "数据来自 Haruki 榜线采集服务，目前只能定位到前 100 名的玩家。",
       "betaTitle": "测试中",
-      "betaDescription": "该功能仍在测试中，可能出现数据延迟、接口变动或展示结果不符合预期的情况，请结合实际游戏内信息自行判断。",
-      "endpoint": "本地调试默认使用 /event-tracker 代理；如果使用线上或自定义 tracker，请在接口地址里填写可访问的完整地址。"
+      "betaDescription": "该功能仍在测试中，可能出现数据延迟、接口变动或展示结果不符合预期的情况，请结合实际游戏内信息自行判断。"
     },
     "badges": {
       "worldBloom": "WL",
@@ -22,10 +21,6 @@ export default {
     "intervals": {
       "minutes": "{value} 分钟",
       "hours": "{value} 小时"
-    },
-    "autoRefresh": {
-      "off": "关闭自动刷新",
-      "seconds": "每 {value} 秒刷新"
     },
     "comparison": {
       "label": "对比",
@@ -78,7 +73,7 @@ export default {
       "query": "查询条件",
       "queryDescription": "选择区服、活动、榜线模式和增长区间，榜线会自动实时刷新。",
       "lines": "当前榜线",
-      "linesDescription": "展示完整 T100 排行榜，按 Tracker 数据更新时间自动刷新。",
+      "linesDescription": "展示完整 T100 排行榜，按榜线数据的更新时间自动刷新。",
       "segmentLines": "档线点",
       "segmentLinesDescription": "展示 T100 以外的分段 pt，增长值使用当前 {interval} 区间。",
       "locate": "定位排名",
@@ -94,16 +89,10 @@ export default {
       "activityReplay": "活动回放",
       "source": "数据源"
     },
-    "detailPanel": {
-      "emptyTitle": "暂无选中榜位",
-      "emptyHint": "点击左侧榜位查看玩家/档线详情"
-    },
     "fields": {
       "gameUidHint": "按当前区服和活动查询游戏 UID，无需绑定该账号。",
       "gameUid": "游戏 UID",
       "gameUidPlaceholder": "输入游戏 UID",
-      "endpoint": "Tracker 接口地址",
-      "endpointPlaceholder": "/event-tracker 或 https://tracker.example.com",
       "region": "区服",
       "mode": "榜线模式",
       "event": "活动",
@@ -130,14 +119,14 @@ export default {
     },
     "meta": {
       "event": "当前活动",
-      "status": "Tracker 状态",
+      "status": "数据状态",
       "trackerLag": "数据延迟",
-      "refreshedAt": "Tracker 更新时间",
+      "refreshedAt": "数据更新时间",
       "dataAsOf": "数据截至 {time}",
       "interval": "增长区间：{value}",
       "topScore": "最高分",
       "coverage": "采集范围",
-      "trackerCadence": "跟随 Tracker"
+      "trackerCadence": "跟随数据更新"
     },
     "detailIssues": {
       "title": "部分数据暂时无法更新，页面显示的是最近一次成功的数据。",
@@ -169,17 +158,19 @@ export default {
       "target": "T 档",
       "pt": "pt 值",
       "growth": "增长",
-      "latest": "采集时间",
-      "rt": "RT",
-      "ptr": "PTR",
+      "latest": "采集时间（本地时间）",
+      "rt": "排名趋势",
+      "rtHint": "排名趋势：按增长区间统计的排名变化",
+      "ptr": "Pt 趋势",
+      "ptrHint": "Pt 趋势：按增长区间统计的活动 Pt 增长",
       "hourPoint": "小时点",
       "hourlySpeed": "时速"
     },
     "result": {
       "loadErrorTitle": "榜线数据加载失败",
-      "loadErrorHint": "请检查网络连接后重试；如果多次失败，可能是 Tracker 服务暂时不可用。",
+      "loadErrorHint": "请检查网络连接后重试；如果多次失败，可能是榜线采集服务暂时不可用。",
       "emptyLines": "实时连接准备好后会在这里显示榜线，也可以点击刷新数据立即拉取。",
-      "emptySegments": "当前 tracker 尚未返回 T100 以外的档线点。",
+      "emptySegments": "暂未采集到 T100 以外的档线点。",
       "emptyLiveCard": "点击榜线行，或选择绑定账号查询后显示实时卡片。",
       "waitingLiveData": "等待实时数据",
       "noPlayer": "等待玩家信息",
@@ -190,11 +181,15 @@ export default {
       "notRankedHint": "已离开追踪名次，以下为其历史记录。",
       "userNotFound": "没有找到你的数据，请确认是否进入前 100。",
       "noBoundAccount": "当前账号还没有绑定游戏账号。",
-      "accountOutOfRange": "不在可查询范围。",
+      "accountOutOfRange": "该账号当前不在前 100 名，暂时无法定位。",
       "privateLookupLoginRequired": "请先登录后再用绑定账号定位。",
       "invalidLocator": "请输入账号、T 档或排名。",
-      "privateIdUnsupported": "请输入账号、T 档或排名。",
-      "rankNotFound": "未找到该排名的数据，可能当前 tracker 尚未采集到。",
+      "privateIdUnsupported": "暂不支持直接按玩家 ID 定位，请选择绑定账号或输入排名。",
+      "rankNotFound": "暂未采集到该排名的数据。",
+      "invalidLink": "链接无效或已过期，请从榜线页重新进入。",
+      "goToRankBorder": "前往榜线页",
+      "localTime": "本地时间",
+      "localTimeHint": "图表与采集时间均按你所在时区显示。",
       "lineNotFound": "未找到该 T 档的实时档线点。",
       "rank": "排名",
       "score": "分数",
@@ -206,7 +201,7 @@ export default {
       "rankDetailDescription": "这里同时展示该榜位当前玩家的实时信息，以及该榜位本身的档线视角数据。",
       "rankPerspectiveSummary": "该榜位的档线视角",
       "rankPerspectiveBadge": "榜位详情",
-      "latest": "采集时间：{value}",
+      "latest": "采集时间：{value}（本地时间）",
       "intervalGrowth": "{interval} 增长",
       "playerIntervalGrowth": "玩家 {interval} 增长",
       "rankIntervalGrowth": "位线 {interval} 增长",
@@ -227,7 +222,7 @@ export default {
       "loopCount": "每小时周回数",
       "rankShift": "区间名次变化",
       "tracePoints": "历史点",
-      "latestPlain": "采集时间",
+      "latestPlain": "采集时间（本地时间）",
       "waitingTrace": "正在读取历史数据...",
       "emptyTrace": "当前历史数据不足，暂时无法绘制趋势。",
       "trendSection": "趋势点位",
@@ -246,7 +241,7 @@ export default {
       "heatmapCellSelected": "{time}：{value}，周回数 {rounds}/h，点击取消选择",
       "heatmapCellStatic": "{time}：{value}，周回数 {rounds}/h",
       "selectedHourWindow": "{time}",
-      "activityReplayLive": "实时模式，跟随 Tracker 最新采集时间。",
+      "activityReplayLive": "实时模式，跟随榜线数据的最新采集时间。",
       "activityReplayAt": "回放到 {time}"
     }
   }

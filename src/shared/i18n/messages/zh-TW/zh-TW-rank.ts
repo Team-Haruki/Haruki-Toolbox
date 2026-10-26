@@ -3,13 +3,12 @@
 export default {
   "rankBorder": {
     "title": "榜線查詢",
-    "description": "查詢活動榜線、增長速度、Tracker 狀態，並讓進入採集範圍的使用者檢視自己的即時排名與分數。",
+    "description": "檢視活動榜線和漲速；進入前 100 名的玩家還能看到自己的即時排名。",
     "notice": {
       "title": "資料範圍",
-      "description": "榜線資料來自 Haruki Event Tracker；個人定位依賴排行榜採集範圍，當前通常只有前 100 名玩家能定位到即時排名。",
+      "description": "資料來自 Haruki 榜線採集服務，目前只能定位到前 100 名的玩家。",
       "betaTitle": "測試中",
-      "betaDescription": "該功能仍在測試中，可能出現數據延遲、介面變動或展示結果不符合預期的情況，請結合實際遊戲內資訊自行判斷。",
-      "endpoint": "本地除錯預設使用 /event-tracker 代理；如果使用線上或自定義 tracker，請在介面地址裡填寫可訪問的完整地址。"
+      "betaDescription": "該功能仍在測試中，可能出現資料延遲、介面變動或展示結果不符合預期的情況，請結合實際遊戲內資訊自行判斷。"
     },
     "badges": {
       "worldBloom": "WL",
@@ -23,10 +22,6 @@ export default {
       "minutes": "{value} 分鐘",
       "hours": "{value} 小時"
     },
-    "autoRefresh": {
-      "off": "關閉自動重新整理",
-      "seconds": "每 {value} 秒重新整理"
-    },
     "comparison": {
       "label": "對比",
       "title": "對比中心",
@@ -34,7 +29,7 @@ export default {
       "none": "無對比",
       "customPlaceholder": "如 T500",
       "playerPlaceholder": "輸入玩家 ID",
-      "addRank": "對比 T 檔 / 排名",
+      "addRank": "對比 T100 / 檔線",
       "targetPickerPlaceholder": "選擇榜位或檔線",
       "targetPickerSearch": "搜尋排名 / 玩家名 / 檔線...",
       "targetPickerEmpty": "榜單資料載入後可選擇對比物件",
@@ -78,12 +73,12 @@ export default {
       "query": "查詢條件",
       "queryDescription": "選擇區服、活動、榜線模式和增長區間，榜線會自動即時重新整理。",
       "lines": "當前榜線",
-      "linesDescription": "展示完整 T100 排行榜，按 Tracker 資料更新時間自動重新整理。",
+      "linesDescription": "展示完整 T100 排行榜，按榜線資料的更新時間自動重新整理。",
       "segmentLines": "檔線點",
       "segmentLinesDescription": "展示 T100 以外的分段 pt，增長值使用當前 {interval} 區間。",
       "locate": "定位排名",
-      "locateDescription": "選擇已繫結的遊戲賬號後查詢當前活動是否進入可追蹤範圍。",
-      "locateIndicator": "追蹤賬號",
+      "locateDescription": "選擇已綁定的遊戲帳號後查詢當前活動是否進入可追蹤範圍。",
+      "locateIndicator": "追蹤帳號",
       "liveCard": "玩家即時資料",
       "liveCardDescription": "當前僅展示玩家自身的即時統計，暫不包含 T100 榜位本身的簡要或詳細資料。",
       "detailDialog": "即時詳情",
@@ -94,16 +89,10 @@ export default {
       "activityReplay": "活動回放",
       "source": "資料來源"
     },
-    "detailPanel": {
-      "emptyTitle": "暫無選中榜位",
-      "emptyHint": "點選左側榜位檢視玩家/檔線詳情"
-    },
     "fields": {
-      "gameUidHint": "依目前伺服器與活動查詢遊戲 UID，無需綁定該帳號。",
+      "gameUidHint": "按當前區服和活動查詢遊戲 UID，無需綁定該帳號。",
       "gameUid": "遊戲 UID",
       "gameUidPlaceholder": "輸入遊戲 UID",
-      "endpoint": "Tracker 介面地址",
-      "endpointPlaceholder": "/event-tracker 或 https://tracker.example.com",
       "region": "區服",
       "mode": "榜線模式",
       "event": "活動",
@@ -115,35 +104,35 @@ export default {
       "worldBloomCharacterPlaceholder": "請選擇章節角色",
       "interval": "增長區間",
       "autoRefresh": "自動重新整理",
-      "account": "繫結賬號",
-      "accountPlaceholder": "請選擇已繫結賬號",
+      "account": "綁定帳號",
+      "accountPlaceholder": "請選擇已綁定帳號",
       "manualAccount": "手動輸入",
-      "boundAccountOption": "繫結賬號 {index}",
+      "boundAccountOption": "綁定帳號 {index}",
       "hideProfileAssets": "隱藏頭像和牌子",
       "hideProfileAssetsHint": "低效能裝置或窄屏除錯時可關閉素材渲染，榜單仍可橫向滑動檢視玩家資訊。",
       "userId": "玩家 ID",
       "userIdPlaceholder": "輸入自己的玩家 ID",
       "rank": "指定排名",
       "rankPlaceholder": "例如 1000",
-      "locator": "賬號或排名",
-      "locatorPlaceholder": "輸入賬號，或輸入 T100 / #100 / 100"
+      "locator": "帳號或排名",
+      "locatorPlaceholder": "輸入帳號，或輸入 T100 / #100 / 100"
     },
     "meta": {
       "event": "當前活動",
-      "status": "Tracker 狀態",
+      "status": "資料狀態",
       "trackerLag": "資料延遲",
-      "refreshedAt": "Tracker 更新時間",
+      "refreshedAt": "資料更新時間",
       "dataAsOf": "資料截至 {time}",
       "interval": "增長區間：{value}",
       "topScore": "最高分",
       "coverage": "採集範圍",
-      "trackerCadence": "跟隨 Tracker"
+      "trackerCadence": "跟隨資料更新"
     },
     "detailIssues": {
       "title": "部分資料暫時無法更新，頁面顯示的是最近一次成功的資料。",
       "overview": "榜單概覽",
       "comparisons": "對比：{names}",
-      "realtime": "即時推送已中斷，正在重新連線",
+      "realtime": "即時推送已斷開，正在重連",
       "retry": "重試"
     },
     "status": {
@@ -169,18 +158,20 @@ export default {
       "target": "T 檔",
       "pt": "pt 值",
       "growth": "增長",
-      "latest": "採集時間",
-      "rt": "RT",
-      "ptr": "PTR",
+      "latest": "採集時間（本地時間）",
+      "rt": "排名趨勢",
+      "rtHint": "排名趨勢：按增長區間統計的排名變化",
+      "ptr": "Pt 趨勢",
+      "ptrHint": "Pt 趨勢：按增長區間統計的活動 Pt 增長",
       "hourPoint": "小時點",
       "hourlySpeed": "時速"
     },
     "result": {
       "loadErrorTitle": "榜線資料載入失敗",
-      "loadErrorHint": "請檢查網路連線後重試；如果多次失敗，可能是 Tracker 服務暫時不可用。",
+      "loadErrorHint": "請檢查網路連線後重試；如果多次失敗，可能是榜線採集服務暫時不可用。",
       "emptyLines": "即時連線準備好後會在這裡顯示榜線，也可以點選重新整理資料立即拉取。",
-      "emptySegments": "當前 tracker 尚未返回 T100 以外的檔線點。",
-      "emptyLiveCard": "點選榜線行，或選擇繫結賬號查詢後顯示即時卡片。",
+      "emptySegments": "暫未採集到 T100 以外的檔線點。",
+      "emptyLiveCard": "點選榜線行，或選擇綁定帳號查詢後顯示即時卡片。",
       "waitingLiveData": "等待即時資料",
       "noPlayer": "等待玩家資訊",
       "unknownPlayer": "未知玩家",
@@ -189,12 +180,16 @@ export default {
       "notRanked": "當前不在榜內",
       "notRankedHint": "已離開追蹤名次，以下為其歷史記錄。",
       "userNotFound": "沒有找到你的資料，請確認是否進入前 100。",
-      "noBoundAccount": "當前賬號還沒有繫結遊戲賬號。",
-      "accountOutOfRange": "不在可查詢範圍。",
-      "privateLookupLoginRequired": "請先登入後再用繫結賬號定位。",
-      "invalidLocator": "請輸入賬號、T 檔或排名。",
-      "privateIdUnsupported": "請輸入賬號、T 檔或排名。",
-      "rankNotFound": "未找到該排名的資料，可能當前 tracker 尚未採集到。",
+      "noBoundAccount": "當前帳號還沒有綁定遊戲帳號。",
+      "accountOutOfRange": "該帳號當前不在前 100 名，暫時無法定位。",
+      "privateLookupLoginRequired": "請先登入後再用綁定帳號定位。",
+      "invalidLocator": "請輸入帳號、T 檔或排名。",
+      "privateIdUnsupported": "暫不支援直接按玩家 ID 定位，請選擇綁定帳號或輸入排名。",
+      "rankNotFound": "暫未採集到該排名的資料。",
+      "invalidLink": "連結無效或已過期，請從榜線頁重新進入。",
+      "goToRankBorder": "前往榜線頁",
+      "localTime": "本地時間",
+      "localTimeHint": "圖表與採集時間均按你所在時區顯示。",
       "lineNotFound": "未找到該 T 檔的即時檔線點。",
       "rank": "排名",
       "score": "分數",
@@ -206,7 +201,7 @@ export default {
       "rankDetailDescription": "這裡同時展示該榜位當前玩家的即時資訊，以及該榜位本身的檔線視角資料。",
       "rankPerspectiveSummary": "該榜位的檔線視角",
       "rankPerspectiveBadge": "榜位詳情",
-      "latest": "採集時間：{value}",
+      "latest": "採集時間：{value}（本地時間）",
       "intervalGrowth": "{interval} 增長",
       "playerIntervalGrowth": "玩家 {interval} 增長",
       "rankIntervalGrowth": "位線 {interval} 增長",
@@ -227,7 +222,7 @@ export default {
       "loopCount": "每小時週迴數",
       "rankShift": "區間名次變化",
       "tracePoints": "歷史點",
-      "latestPlain": "採集時間",
+      "latestPlain": "採集時間（本地時間）",
       "waitingTrace": "正在讀取歷史資料...",
       "emptyTrace": "當前歷史資料不足，暫時無法繪製趨勢。",
       "trendSection": "趨勢點位",
@@ -246,7 +241,7 @@ export default {
       "heatmapCellSelected": "{time}：{value}，週迴數 {rounds}/h，點選取消選擇",
       "heatmapCellStatic": "{time}：{value}，週迴數 {rounds}/h",
       "selectedHourWindow": "{time}",
-      "activityReplayLive": "即時模式，跟隨 Tracker 最新採集時間。",
+      "activityReplayLive": "即時模式，跟隨榜線資料的最新採集時間。",
       "activityReplayAt": "回放到 {time}"
     }
   }

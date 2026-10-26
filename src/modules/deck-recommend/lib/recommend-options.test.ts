@@ -306,6 +306,49 @@ describe("deck recommend wasm option helpers", () => {
     expect(options.event_unit).toBe("idol")
   })
 
+  it("uses the official event when memory simulation is switched off", () => {
+    for (const mode of ["event", "bonus", "mysekai"] as const) {
+      const options = buildDeckRecommendOptions({
+        region: "jp", mode, liveType: "multi", algorithm: "ga",
+        musicId: "74", musicDifficulty: "expert", eventId: "221", characterId: null,
+        targetBonuses: [350],
+        eventSimulation: {
+          enabled: false, memoryEventUnit: "light_sound", eventType: "marathon",
+          attr: null, unit: null, worldBloomTurn: null,
+          worldBloomCharacterId: null, worldBloomCharacterUnit: null,
+        },
+        trainingConfig: createDefaultCardTrainingConfig(), userData: { userCards: [] },
+      })
+      expect(options.event_id).toBe(221)
+      expect(options.event_me_unit).toBeUndefined()
+      expect(options.event_unit).toBeUndefined()
+      expect(options.event_attr).toBeUndefined()
+    }
+  })
+
+  it("uses memory-event rules for every unit and event-based mode without stale selectors", () => {
+    for (const mode of ["event", "bonus", "mysekai"] as const) {
+      for (const unit of ["light_sound", "idol", "street", "theme_park", "school_refusal", "piapro"] as const) {
+        const options = buildDeckRecommendOptions({
+          region: "jp", mode, liveType: "multi", algorithm: "ga",
+          musicId: "74", musicDifficulty: "expert", eventId: "205", characterId: "13",
+          targetBonuses: [350],
+          customBonusAttr: "cool", customBonusCharacterIds: [13], filterOtherUnit: true,
+          eventSimulation: {
+            enabled: true, memoryEventUnit: unit, eventType: "marathon",
+            attr: "cool", unit: "idol", worldBloomTurn: 3,
+            worldBloomCharacterId: "13", worldBloomCharacterUnit: "theme_park",
+          },
+          trainingConfig: createDefaultCardTrainingConfig(), userData: { userCards: [] },
+        })
+        expect(options.event_me_unit).toBe(unit)
+        for (const key of ["event_id", "event_type", "event_attr", "event_unit", "world_bloom_event_turn", "world_bloom_character_id", "custom_bonus_character_ids", "custom_bonus_attr", "filter_other_unit"] as const) {
+          expect(options[key]).toBeUndefined()
+        }
+      }
+    }
+  })
+
   it("builds simulated world bloom options", () => {
     const options = buildDeckRecommendOptions({
       region: "jp",

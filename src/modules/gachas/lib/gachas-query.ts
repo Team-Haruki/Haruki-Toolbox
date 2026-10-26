@@ -98,6 +98,12 @@ export const gachasQueryCodec: QueryCodec<GachaListQuery> = {
 export type GachaActiveChipContext = {
   characterNames: ReadonlyMap<number, string>
   cardNames: ReadonlyMap<number, string>
+  /**
+   * False while the matching index is still loading: unresolved ids render
+   * as skeleton chips. Once loaded, an unknown id is a plain removable chip.
+   */
+  charactersReady: boolean
+  cardsReady: boolean
   typeLabel: (gachaType: string) => string
   statusLabel: (status: CatalogStatus) => string
 }
@@ -128,14 +134,17 @@ export function buildGachaActiveChips(
   if (state.year != null) {
     chips.push({ key: "year", label: t("gachaCatalog.list.chips.year", { year: state.year }) })
   }
+  // Skeleton chips until the indexes name the ids.
   for (const id of state.chars) {
-    chips.push({ key: `chars:${id}`, label: ctx.characterNames.get(id) ?? `#${id}` })
+    const name = ctx.characterNames.get(id)
+    chips.push({ key: `chars:${id}`, label: name ?? `#${id}`, pending: name == null && !ctx.charactersReady })
   }
   for (const id of state.cards) {
     const name = ctx.cardNames.get(id)
     chips.push({
       key: `cards:${id}`,
       label: name ? t("gachaCatalog.list.chips.card", { name }) : t("gachaCatalog.list.chips.cardId", { id }),
+      pending: name == null && !ctx.cardsReady,
     })
   }
   return chips

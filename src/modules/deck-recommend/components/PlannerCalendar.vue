@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
+import { useScrollEdges } from "@/composables/useScrollEdges"
 import { resolveSekaiLiveBoostMultiplier } from "@/shared/sekai/live-boost"
 import {
   buildPlannerRectangleHourKeys,
@@ -161,11 +162,18 @@ function finishStroke() {
 function isPreviewing(hourStartMs: number): boolean {
   return pendingPreview.value.has(String(hourStartMs))
 }
+
+// The 24-hour grid is wider than a phone: the day labels stay pinned on the
+// left while the hours scroll, and the fade marks the hidden side.
+const scroller = ref<HTMLElement | null>(null)
+const { edgeClass } = useScrollEdges(scroller)
 </script>
 
 <template>
-  <div class="overflow-x-auto">
+  <div>
     <p class="mb-2 text-xs text-muted-foreground">{{ t("eventPlanner.calendar.dragHint") }}</p>
+    <div :class="['relative', edgeClass]">
+    <div ref="scroller" class="overflow-x-auto">
     <div
       class="min-w-[58rem] select-none touch-none"
       @pointerdown="handlePointerDown"
@@ -176,7 +184,7 @@ function isPreviewing(hourStartMs: number): boolean {
     >
       <!-- Hour header -->
       <div class="mb-1 grid grid-cols-[5.5rem_repeat(24,minmax(2rem,1fr))] gap-x-px">
-        <span />
+        <span class="sticky left-0 z-10 bg-background" />
         <span
           v-for="hour in HOUR_COLUMNS"
           :key="hour"
@@ -191,7 +199,7 @@ function isPreviewing(hourStartMs: number): boolean {
         :key="day.dayStartMs"
         class="grid grid-cols-[5.5rem_repeat(24,minmax(2rem,1fr))] items-center gap-x-px py-0.5"
       >
-        <span class="pr-2 text-right text-xs tabular-nums text-muted-foreground">
+        <span class="sticky left-0 z-10 self-stretch bg-background pr-2 text-right text-xs leading-[2rem] tabular-nums text-muted-foreground">
           {{ dayFormatter.format(day.dayStartMs) }}
         </span>
         <button
@@ -225,6 +233,8 @@ function isPreviewing(hourStartMs: number): boolean {
           </span>
         </button>
       </div>
+    </div>
+    </div>
     </div>
   </div>
 </template>

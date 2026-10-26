@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { AxiosError, AxiosHeaders, type AxiosResponse } from "axios"
+import { i18n, setI18nLocale } from "@/shared/i18n"
+import zhCNCore from "@/shared/i18n/messages/zh-CN/zh-CN-core"
 import zhCNAdmin from "@/shared/i18n/messages/zh-CN/zh-CN-admin"
 import zhTWAdmin from "@/shared/i18n/messages/zh-TW/zh-TW-admin"
 import enUSAdmin from "@/shared/i18n/messages/en-US/en-US-admin"
@@ -133,19 +135,22 @@ describe("describeOAuthClientActionError", () => {
     })
   })
 
-  test("keeps the API message for other errors", () => {
+  test("hands other errors to the shared error funnel", async () => {
+    i18n.global.mergeLocaleMessage("zh-CN", zhCNCore)
+    await setI18nLocale("zh-CN")
+    // A 5xx is a transport failure; the unmapped backend text survives as a detail line.
     expect(describeOAuthClientActionError(
       apiError(500, { status: 500, message: "failed to rotate oauth client secret" }),
       fakeT,
       "Rotate failed"
-    )).toBe("failed to rotate oauth client secret")
+    )).toBe(`${zhCNCore.core.errors.serverUnavailable.replace("{status}", "500")}\n详情：failed to rotate oauth client secret`)
     expect(describeOAuthClientActionError(
       apiError(400, { status: 400, message: "unknown", updatedData: { code: "something_else" } }),
       fakeT,
       "Rotate failed"
-    )).toBe("unknown")
-    expect(describeOAuthClientActionError(new Error("Network Error"), fakeT, "Rotate failed")).toBe("Network Error")
-    expect(describeOAuthClientActionError("weird", fakeT, "Rotate failed")).toBe("Rotate failed")
+    )).toBe("Rotate failed\n详情：unknown")
+    expect(describeOAuthClientActionError(new Error("app text"), fakeT, "Rotate failed")).toBe("app text")
+    expect(describeOAuthClientActionError("weird", fakeT, "Rotate failed")).toBe("Rotate failed\n详情：weird")
   })
 })
 
@@ -191,6 +196,7 @@ describe("client payload error codes", () => {
     // A Record keyed by the union makes the type checker flag a code missing here.
     const codes: Record<ValidatePayloadErrorCode, true> = {
       clientIdAndNameRequired: true,
+      clientIdRequired: true,
       nameRequired: true,
       grantTypeRequired: true,
       redirectUriRequired: true,

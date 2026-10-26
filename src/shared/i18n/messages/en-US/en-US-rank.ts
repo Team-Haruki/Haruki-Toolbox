@@ -3,13 +3,12 @@
 export default {
   "rankBorder": {
     "title": "Rank Border",
-    "description": "Check event rank borders, growth speed, tracker status, and realtime rank/score for users inside the tracked range.",
+    "description": "Check event rank borders and growth speed; players inside the top 100 can also see their own realtime rank.",
     "notice": {
       "title": "Data range",
-      "description": "Rank border data comes from Haruki Event Tracker. Personal locating depends on the leaderboard collection range, so currently only top 100 players can usually be located in realtime.",
+      "description": "Data comes from the Haruki rank border collection service; currently only players inside the top 100 can be located.",
       "betaTitle": "In testing",
-      "betaDescription": "This feature is still in testing and may show delayed data, API changes, or unexpected results. Please verify against actual in-game information.",
-      "endpoint": "Local debugging defaults to the /event-tracker proxy. For production or custom tracker usage, enter a reachable full endpoint URL."
+      "betaDescription": "This feature is still in testing and may show delayed data, API changes, or unexpected results. Please verify against actual in-game information."
     },
     "badges": {
       "worldBloom": "WL",
@@ -22,10 +21,6 @@ export default {
     "intervals": {
       "minutes": "{value} minutes",
       "hours": "{value} hours"
-    },
-    "autoRefresh": {
-      "off": "Auto refresh off",
-      "seconds": "Refresh every {value}s"
     },
     "comparison": {
       "label": "Compare",
@@ -78,7 +73,7 @@ export default {
       "query": "Query settings",
       "queryDescription": "Choose region, event, ranking mode, and growth interval. Borders refresh live automatically.",
       "lines": "Current borders",
-      "linesDescription": "Shows the complete T100 leaderboard and refreshes with Tracker data updates.",
+      "linesDescription": "Shows the complete T100 leaderboard and refreshes whenever new rank border data arrives.",
       "segmentLines": "Border points",
       "segmentLinesDescription": "Shows segmented pt values beyond T100. Growth uses the current {interval} interval.",
       "locate": "Locate rank",
@@ -94,16 +89,10 @@ export default {
       "activityReplay": "Event replay",
       "source": "Data source"
     },
-    "detailPanel": {
-      "emptyTitle": "No rank selected",
-      "emptyHint": "Click a rank on the left to view player or border details"
-    },
     "fields": {
       "gameUidHint": "Look up a game UID in the selected server and event. No account binding is required.",
       "gameUid": "Game UID",
       "gameUidPlaceholder": "Enter a game UID",
-      "endpoint": "Tracker endpoint",
-      "endpointPlaceholder": "/event-tracker or https://tracker.example.com",
       "region": "Region",
       "mode": "Ranking mode",
       "event": "Event",
@@ -130,14 +119,14 @@ export default {
     },
     "meta": {
       "event": "Current event",
-      "status": "Tracker status",
+      "status": "Data status",
       "trackerLag": "Data lag",
-      "refreshedAt": "Tracker updated at",
+      "refreshedAt": "Data updated",
       "dataAsOf": "Data as of {time}",
       "interval": "Growth interval: {value}",
       "topScore": "Top score",
       "coverage": "Tracked range",
-      "trackerCadence": "Tracker cadence"
+      "trackerCadence": "Follow data updates"
     },
     "detailIssues": {
       "title": "Some data could not be updated; showing the last successful data.",
@@ -169,17 +158,19 @@ export default {
       "target": "T target",
       "pt": "pt",
       "growth": "Growth",
-      "latest": "Collected at",
-      "rt": "RT",
-      "ptr": "PTR",
+      "latest": "Collected at (local time)",
+      "rt": "Rank trend",
+      "rtHint": "Rank trend: rank change per growth interval",
+      "ptr": "Pt trend",
+      "ptrHint": "Pt trend: event Pt gained per growth interval",
       "hourPoint": "Hour",
       "hourlySpeed": "Speed"
     },
     "result": {
       "loadErrorTitle": "Couldn't load leaderboard data",
-      "loadErrorHint": "Check your connection and retry. If this keeps failing, the tracker service may be temporarily unavailable.",
+      "loadErrorHint": "Check your connection and retry. If this keeps failing, the rank border collection service may be temporarily unavailable.",
       "emptyLines": "Live borders appear here when the connection is ready. You can also refresh data immediately.",
-      "emptySegments": "The tracker has not returned border points beyond T100 yet.",
+      "emptySegments": "No border points beyond T100 have been collected yet.",
       "emptyLiveCard": "Click a border row or query a bound account to show the realtime card.",
       "waitingLiveData": "Waiting for live data",
       "noPlayer": "Waiting for player info",
@@ -190,11 +181,15 @@ export default {
       "notRankedHint": "Left the tracked ranks; showing their history.",
       "userNotFound": "Your data was not found. Please check whether you are in the top 100.",
       "noBoundAccount": "No bound game account is available.",
-      "accountOutOfRange": "Outside the queryable range.",
+      "accountOutOfRange": "This account is not inside the top 100 right now, so it cannot be located yet.",
       "privateLookupLoginRequired": "Log in before locating a bound account.",
       "invalidLocator": "Enter an account, T target, or rank.",
-      "privateIdUnsupported": "Enter an account, T target, or rank.",
-      "rankNotFound": "No data found for this rank. The tracker may not have collected it yet.",
+      "privateIdUnsupported": "Locating by raw player ID is not supported; pick a bound account or enter a rank.",
+      "rankNotFound": "No data has been collected for this rank yet.",
+      "invalidLink": "This link is invalid or has expired. Open the detail again from the rank border page.",
+      "goToRankBorder": "Go to rank borders",
+      "localTime": "local time",
+      "localTimeHint": "Charts and collection times are shown in your local time zone.",
       "lineNotFound": "No live border point found for this T target.",
       "rank": "Rank",
       "score": "Score",
@@ -206,7 +201,7 @@ export default {
       "rankDetailDescription": "This view combines the current player's realtime info with the border perspective for this rank itself.",
       "rankPerspectiveSummary": "Border perspective for this rank",
       "rankPerspectiveBadge": "Rank detail",
-      "latest": "Collected at: {value}",
+      "latest": "Collected at: {value} (local time)",
       "intervalGrowth": "{interval} growth",
       "playerIntervalGrowth": "Player {interval} growth",
       "rankIntervalGrowth": "Rank {interval} growth",
@@ -227,7 +222,7 @@ export default {
       "loopCount": "Runs per hour",
       "rankShift": "Interval rank change",
       "tracePoints": "Trace points",
-      "latestPlain": "Collected at",
+      "latestPlain": "Collected at (local time)",
       "waitingTrace": "Reading trace data...",
       "emptyTrace": "Not enough trace data to draw the trend yet.",
       "trendSection": "Trend points",
@@ -246,7 +241,7 @@ export default {
       "heatmapCellSelected": "{time}: {value}, rounds {rounds}/h. Click to clear.",
       "heatmapCellStatic": "{time}: {value}, rounds {rounds}/h.",
       "selectedHourWindow": "{time}",
-      "activityReplayLive": "Live mode, following the latest Tracker collection time.",
+      "activityReplayLive": "Live mode, following the latest rank border collection time.",
       "activityReplayAt": "Replaying {time}"
     }
   }

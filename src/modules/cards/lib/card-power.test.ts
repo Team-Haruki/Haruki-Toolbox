@@ -86,7 +86,7 @@ describe("level caps and max power", () => {
 describe("buildCardDetailExtras", () => {
   const extras = buildCardDetailExtras({
     cardEpisodes: [
-      { id: 2, seq: 2, cardId: 1, title: "後編", cardEpisodePartType: "second_part", power1BonusFixed: 200, power2BonusFixed: 200, power3BonusFixed: 200, costs: [{ resourceId: 2, resourceType: "material", quantity: 50 }] },
+      { id: 2, seq: 2, cardId: 1, title: "後編", scenarioId: "001001_ichika02", cardEpisodePartType: "second_part", power1BonusFixed: 200, power2BonusFixed: 200, power3BonusFixed: 200, costs: [{ resourceId: 2, resourceType: "material", quantity: 50 }] },
       { id: 1, seq: 1, cardId: 1, title: "前編", cardEpisodePartType: "first_part", power1BonusFixed: 100, power2BonusFixed: 100, power3BonusFixed: 100, costs: [{ resourceId: 2, resourceType: "material", quantity: 10 }, { quantity: 0 }] },
       { id: 3, seq: 1, cardId: null, title: "orphan" },
     ],
@@ -103,11 +103,24 @@ describe("buildCardDetailExtras", () => {
     cardMysekaiCanvasBonuses: [
       { id: 5, cardRarityType: "rarity_4", power1BonusFixed: 500, power2BonusFixed: 500, power3BonusFixed: 500 },
     ],
+    materials: [
+      { id: 2, name: "Wish piece" },
+      { id: 3, name: "" },
+      { name: "no id" },
+    ],
+  })
+
+  it("maps material ids to names and tolerates a missing dump", () => {
+    expect(extras.materialNameById.get(2)).toBe("Wish piece")
+    expect(extras.materialNameById.has(3)).toBe(false)
+    expect(extras.materialNameById.size).toBe(1)
+    expect(buildCardDetailExtras({}).materialNameById.size).toBe(0)
   })
 
   it("groups and orders episodes per card", () => {
     const rows = extras.episodesByCard.get(1) ?? []
     expect(rows.map((row) => row.partType)).toEqual(["first_part", "second_part"])
+    expect(rows.map((row) => row.scenarioId)).toEqual([null, "001001_ichika02"])
     expect(rows[0].bonus).toEqual({ p1: 100, p2: 100, p3: 100 })
     expect(rows[0].costs).toEqual([{ resourceType: "material", resourceId: 2, quantity: 10 }])
     expect(extras.episodesByCard.size).toBe(1)

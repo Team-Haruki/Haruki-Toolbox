@@ -3,7 +3,11 @@
 export default {
   "tickets": {
     "common": {
-      "dateFallback": "—"
+      "dateFallback": "—",
+      "unknownValue": "Unknown"
+    },
+    "systemMessage": {
+      "statusChanged": "Status changed to \"{status}\""
     },
     "status": {
       "open": "Open",
@@ -34,7 +38,7 @@ export default {
       "other": "Other"
     },
     "filters": {
-      "allStatus": "All status",
+      "allStatus": "All statuses",
       "allPriorities": "All priorities"
     },
     "list": {
@@ -42,11 +46,17 @@ export default {
       "description": "Check progress and add details when needed.",
       "createButton": "Create ticket",
       "empty": "No tickets yet. Click the button above to create one.",
+      "emptyFiltered": "No tickets with this status. Try another filter.",
       "total": "{total} tickets in total",
       "updatedAt": "Updated",
+      "pagination": {
+        "label": "Ticket pages",
+        "prevPage": "Previous page",
+        "nextPage": "Next page"
+      },
       "toast": {
         "loadFailedTitle": "Failed to load tickets",
-        "loadFailedFallback": "Load failed"
+        "loadFailedFallback": "Check your connection and retry; if it keeps failing the service may be temporarily unavailable."
       }
     },
     "create": {
@@ -58,7 +68,7 @@ export default {
       "fields": {
         "subject": "Subject",
         "subjectPlaceholder": "Briefly describe your issue",
-        "subjectHint": "For example: upload failed, cannot bind account, OAuth callback error.",
+        "subjectHint": "For example: upload failed, cannot bind account, cannot authorize a third-party app.",
         "category": "Category",
         "categoryHint": "Pick the closest category. Use Other when unsure.",
         "priority": "Priority",
@@ -70,10 +80,11 @@ export default {
       "toast": {
         "subjectRequired": "Please enter ticket subject",
         "messageRequired": "Please enter ticket description",
+        "subjectTooLong": "Subject must be at most {max} characters",
         "loginRequired": "Please sign in first",
         "createSuccess": "Ticket created",
         "createFailedTitle": "Failed to create ticket",
-        "createFailedFallback": "Create failed"
+        "createFailedFallback": "The ticket was not created. Check the subject and description and retry; if it keeps failing, try again later."
       }
     },
     "detail": {
@@ -87,8 +98,11 @@ export default {
         "updatedAt": "Updated"
       },
       "adminSender": "Admin",
+      "systemSender": "System",
       "noMessages": "No messages",
       "inputPlaceholder": "Add details or reply to the admin…",
+      "composeHint": "Enter to send, Shift+Enter for a new line",
+      "sentState": "Sent",
       "sendButton": "Send",
       "closedHint": "This ticket is closed and can no longer receive messages",
       "closeButton": "Close ticket",
@@ -98,22 +112,19 @@ export default {
         "cancel": "Cancel",
         "confirm": "Confirm close"
       },
-      "notFound": "Ticket not found or failed to load",
+      "notFound": "Ticket not found",
+      "notFoundDescription": "This ticket may have been deleted, or it belongs to another account.",
       "toast": {
         "loadFailedTitle": "Failed to load ticket detail",
-        "loadFailedFallback": "Load failed",
+        "loadFailedFallback": "Check your connection and retry; if it keeps failing the service may be temporarily unavailable.",
         "sendFailedTitle": "Send failed",
-        "sendFailedFallback": "Send failed",
+        "sendFailedFallback": "The message was not sent. Your text is kept; check your connection and press Send again.",
         "closeSuccess": "Ticket closed",
         "closeFailedTitle": "Close failed",
-        "closeFailedFallback": "Close failed"
+        "closeFailedFallback": "The ticket was not closed. Try again later; you can also leave it open if the issue is handled."
       }
     },
     "adminList": {
-      "pagination": {
-        "prevPage": "Previous page",
-        "nextPage": "Next page"
-      },
       "title": "Ticket management",
       "description": "Filter pending, unassigned, and high-priority tickets quickly.",
       "searchPlaceholder": "Search tickets…",
@@ -220,7 +231,7 @@ export default {
       "noteButton": "Note",
       "sendButton": "Send",
       "internalSwitchLabel": "Internal note (admins only)",
-      "notFound": "Ticket not found or failed to load",
+      "notFound": "Ticket not found; it may have been deleted or the link is wrong.",
       "toast": {
         "loadFailedTitle": "Failed to load ticket detail",
         "loadFailedFallback": "Load failed",

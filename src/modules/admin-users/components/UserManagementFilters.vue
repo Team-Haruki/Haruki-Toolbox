@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -13,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import {
   LucideBan,
   LucideCheckCircle2,
+  LucideRotateCcw,
   LucideSearch,
   LucideShield,
   LucideShieldAlert,
@@ -37,6 +39,8 @@ defineProps<{
   sortFilter: SortFilter
   createdFrom?: Date
   createdTo?: Date
+  hasActiveFilters?: boolean
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -47,6 +51,9 @@ const emit = defineEmits<{
   (e: "update:sortFilter", value: SortFilter): void
   (e: "update:createdFrom", value: Date | undefined): void
   (e: "update:createdTo", value: Date | undefined): void
+  /** Enter in the search box or the 查询 button: query now instead of after the debounce. */
+  (e: "apply"): void
+  (e: "reset"): void
 }>()
 
 const { t, locale } = useI18n()
@@ -57,7 +64,7 @@ function parseDate(value: unknown) {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+  <form class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4" novalidate @submit.prevent="emit('apply')">
     <div class="flex flex-col gap-1.5">
       <Label for="admin-user-filter-search" class="text-sm">{{ t("adminUsers.management.filters.searchLabel") }}</Label>
       <div class="relative">
@@ -193,5 +200,16 @@ function parseDate(value: unknown) {
         />
       </div>
     </div>
-  </div>
+
+    <div class="sm:col-span-2 xl:col-span-3 flex items-center gap-2">
+      <Button type="submit" size="sm" :disabled="loading">
+        <LucideSearch class="w-4 h-4 mr-1" />
+        {{ t("admin.filters.search") }}
+      </Button>
+      <Button type="button" variant="outline" size="sm" :disabled="!hasActiveFilters" @click="emit('reset')">
+        <LucideRotateCcw class="w-4 h-4 mr-1" />
+        {{ t("admin.filters.reset") }}
+      </Button>
+    </div>
+  </form>
 </template>

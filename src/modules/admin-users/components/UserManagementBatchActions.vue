@@ -1,19 +1,9 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import {
   Popover,
   PopoverContent,
@@ -41,32 +31,92 @@ import {
 import { roleLabel } from "@/modules/admin-users/constants"
 import type { UserRole } from "@/types/common"
 
-defineProps<{
+/**
+ * `ban`, `forceLogout` and `setRole` run from a ConfirmDialog and reject on
+ * failure so it can stay open with the error; `unban` and `setAllowCN` run
+ * directly and report failures themselves.
+ */
+export interface UserBatchActions {
+  ban: () => Promise<void>
+  unban: () => Promise<void>
+  forceLogout: () => Promise<void>
+  setRole: () => Promise<void>
+  setAllowCN: () => Promise<void>
+}
+
+type PendingAction = "ban" | "forceLogout" | "setRole"
+
+const props = defineProps<{
   selectedCount: number
   batchLoading: boolean
   isSuperAdmin: boolean
   batchRoleTarget: UserRole
   batchAllowCnTarget: "true" | "false"
+  actions: UserBatchActions
 }>()
 
 const emit = defineEmits<{
   (e: "update:batchRoleTarget", value: UserRole): void
   (e: "update:batchAllowCnTarget", value: "true" | "false"): void
-  (e: "batchBan"): void
-  (e: "batchUnban"): void
-  (e: "batchForceLogout"): void
-  (e: "batchRole"): void
-  (e: "batchAllowCN"): void
 }>()
 
 const { t, locale } = useI18n()
 
 const allowCNOpen = ref(false)
+const roleOpen = ref(false)
+const confirmOpen = ref(false)
+// Kept after the dialog closes so its text does not change mid fade-out.
+const pending = ref<PendingAction | null>(null)
+
+function requestConfirm(action: PendingAction) {
+  pending.value = action
+  confirmOpen.value = true
+}
+
+function requestRoleConfirm() {
+  roleOpen.value = false
+  requestConfirm("setRole")
+}
 
 function confirmAllowCN() {
   allowCNOpen.value = false
-  emit("batchAllowCN")
+  void props.actions.setAllowCN()
 }
+
+const confirmDialog = computed(() => {
+  const count = props.selectedCount
+  switch (pending.value) {
+    case "ban":
+      return {
+        title: t("adminUsers.management.batch.banDialogTitle"),
+        description: t("adminUsers.management.batch.banDialogDescription", { count }),
+        confirmLabel: t("adminUsers.management.batch.banDialogConfirm"),
+        destructive: true,
+        run: () => props.actions.ban(),
+      }
+    case "forceLogout":
+      return {
+        title: t("adminUsers.management.batch.forceLogoutDialogTitle"),
+        description: t("adminUsers.management.batch.forceLogoutDialogDescription", { count }),
+        confirmLabel: t("adminUsers.management.batch.forceLogoutDialogConfirm"),
+        destructive: false,
+        run: () => props.actions.forceLogout(),
+      }
+    case "setRole":
+      return {
+        title: t("adminUsers.management.batch.roleDialogTitle"),
+        description: t("adminUsers.management.batch.roleDialogDescription", {
+          count,
+          role: roleLabel(props.batchRoleTarget, t),
+        }),
+        confirmLabel: t("adminUsers.management.batch.roleDialogConfirm"),
+        destructive: false,
+        run: () => props.actions.setRole(),
+      }
+    default:
+      return null
+  }
+})
 </script>
 
 <template>
@@ -84,50 +134,19 @@ function confirmAllowCN() {
           {{ t("adminUsers.management.batch.selectedCount", { count: selectedCount }) }}
         </span>
 
-        <AlertDialog>
-          <AlertDialogTrigger as-child>
-            <Button variant="destructive" size="sm" :disabled="batchLoading">
-              <LucideBan class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.banButton") }}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{{ t("adminUsers.management.batch.banDialogTitle") }}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {{ t("adminUsers.management.batch.banDialogDescription", { count: selectedCount }) }}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
-              <AlertDialogAction @click="emit('batchBan')">{{ t("adminUsers.management.batch.banDialogConfirm") }}</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Button variant="destructive" size="sm" :disabled="batchLoading" @click="requestConfirm('ban')">
+          <LucideBan class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.banButton") }}
+        </Button>
 
-        <Button variant="outline" size="sm" :disabled="batchLoading" @click="emit('batchUnban')">
+        <Button variant="outline" size="sm" :disabled="batchLoading" @click="actions.unban()">
           <LucideShieldOff class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.unbanButton") }}
         </Button>
-        <AlertDialog>
-          <AlertDialogTrigger as-child>
-            <Button variant="outline" size="sm" :disabled="batchLoading">
-              <LucideLogOut class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.forceLogoutButton") }}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{{ t("adminUsers.management.batch.forceLogoutDialogTitle") }}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {{ t("adminUsers.management.batch.forceLogoutDialogDescription", { count: selectedCount }) }}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
-              <AlertDialogAction @click="emit('batchForceLogout')">{{ t("adminUsers.management.batch.forceLogoutDialogConfirm") }}</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
 
-        <Popover v-if="isSuperAdmin">
+        <Button variant="outline" size="sm" :disabled="batchLoading" @click="requestConfirm('forceLogout')">
+          <LucideLogOut class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.forceLogoutButton") }}
+        </Button>
+
+        <Popover v-if="isSuperAdmin" v-model:open="roleOpen">
           <PopoverTrigger as-child>
             <Button variant="outline" size="sm" :disabled="batchLoading">
               <LucideUserCog class="w-4 h-4 mr-1" />{{ t("adminUsers.management.batch.roleButton") }}
@@ -168,23 +187,7 @@ function confirmAllowCN() {
                 </SelectContent>
               </Select>
               <div class="flex justify-end gap-2 mt-4">
-                <AlertDialog>
-                  <AlertDialogTrigger as-child>
-                    <Button size="sm">{{ t("adminUsers.management.batch.roleConfirm") }}</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{{ t("adminUsers.management.batch.roleDialogTitle") }}</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {{ t("adminUsers.management.batch.roleDialogDescription", { count: selectedCount, role: roleLabel(batchRoleTarget, t) }) }}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{{ t("adminUsers.common.cancel") }}</AlertDialogCancel>
-                      <AlertDialogAction @click="emit('batchRole')">{{ t("adminUsers.management.batch.roleDialogConfirm") }}</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <Button size="sm" @click="requestRoleConfirm">{{ t("adminUsers.management.batch.roleConfirm") }}</Button>
               </div>
             </div>
           </PopoverContent>
@@ -234,5 +237,14 @@ function confirmAllowCN() {
         <LucideLoader2 v-if="batchLoading" class="w-4 h-4 animate-spin" />
       </div>
     </div>
+
+    <ConfirmDialog
+      v-model:open="confirmOpen"
+      :title="confirmDialog?.title ?? ''"
+      :description="confirmDialog?.description ?? ''"
+      :confirm-label="confirmDialog?.confirmLabel"
+      :destructive="confirmDialog?.destructive ?? false"
+      :on-confirm="confirmDialog?.run"
+    />
   </div>
 </template>

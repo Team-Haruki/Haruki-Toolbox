@@ -2,6 +2,19 @@
 // Namespaces: admin, adminConfig, adminRisk, adminBotSecurity, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
 export default {
   "admin": {
+    "pagination": {
+      "total": "共 {total} 条",
+      "pageSize": "每页显示",
+      "jumpToPage": "跳转到页",
+      "firstPage": "第一页",
+      "prevPage": "上一页",
+      "nextPage": "下一页",
+      "lastPage": "最后一页"
+    },
+    "filters": {
+      "search": "查询",
+      "reset": "重置筛选"
+    },
     "reauth": {
       "title": "验证管理员密码",
       "description": "敏感的管理操作需要再次确认你的账号密码。验证通过后会自动继续刚才的操作。",
@@ -86,7 +99,6 @@ export default {
     "toast": {
       "loadApiKeysFailedTitle": "加载 Public API Keys 失败",
       "loadRuntimeFailedTitle": "加载运行时配置失败",
-      "loadFailedFallback": "加载失败",
       "apiKeysUpdated": "Public API Keys 更新成功",
       "runtimeUpdated": "运行时配置更新成功",
       "invalidJson": "JSON 格式无效",
@@ -99,8 +111,14 @@ export default {
       "switchNotApplied": "后端没有应用该开关（可能尚不支持），当前仍显示后端返回的值。"
     },
     "loadError": "加载配置失败",
-    "retry": "重试",
-    "unsavedChanges": "有未保存的更改"
+    "unsavedChanges": "有未保存的更改",
+    "editor": {
+      "loading": "正在加载编辑器…",
+      "loadFailedTitle": "代码编辑器加载失败",
+      "loadFailedDescription": "编辑器组件需要从 CDN 加载，可能被网络环境拦截。可以改用纯文本编辑器继续修改配置，或刷新页面重新加载。",
+      "usePlainEditor": "改用纯文本编辑器",
+      "useCodeEditor": "切换回代码编辑器"
+    }
   },
   "adminRisk": {
     "tabs": {
@@ -121,15 +139,16 @@ export default {
       "resolved": "已解决"
     },
     "events": {
-      "pagination": {
-        "prev": "上一页",
-        "next": "下一页"
-      },
       "title": "风控事件",
       "createButton": "创建事件",
       "createDialogTitle": "创建风控事件",
       "create": "创建",
       "resolveAction": "标记为已解决",
+      "resolveDialog": {
+        "title": "标记为已解决",
+        "description": "确定要将事件「{action}」（ID {id}）标记为已解决吗？它将不再显示为待处理。",
+        "confirm": "标记为已解决"
+      },
       "empty": "暂无风控事件",
       "total": "共 {total} 个事件",
       "fields": {
@@ -144,6 +163,16 @@ export default {
         "action": "如: suspicious_login",
         "reason": "描述风控原因…",
         "targetUserId": "用户ID"
+      },
+      "sourceOptions": {
+        "dashboard": "管理后台（dashboard）",
+        "manual": "人工处理（manual）",
+        "automated": "自动检测（automated）",
+        "other": "其他（other）"
+      },
+      "validation": {
+        "actionRequired": "请填写事件动作",
+        "reasonRequired": "请填写风控原因"
       },
       "table": {
         "severity": "严重程度",
@@ -161,7 +190,22 @@ export default {
       "saveButton": "保存规则",
       "superAdminOnly": "风控规则仅超级管理员可见。",
       "loadError": "加载风控规则失败。",
-      "retry": "重试"
+      "retry": "重试",
+      "validation": {
+        "invalidJson": "JSON 格式错误，请检查括号、引号和逗号",
+        "notArray": "规则内容必须是 JSON 数组",
+        "invalidRule": "第 {index} 条规则格式不正确：需要 id、name、description（字符串）、enabled（布尔值），config 可选且须为对象"
+      },
+      "preview": {
+        "title": "规则预览",
+        "count": "{count} 条",
+        "invalid": "修正上方的 JSON 后会在这里显示解析结果。",
+        "empty": "规则数组为空，保存后将清空所有规则。",
+        "enabled": "已启用",
+        "disabled": "已停用",
+        "configKeys": "配置项：{keys}",
+        "noConfig": "无配置项"
+      }
     },
     "toast": {
       "loadEventsFailedTitle": "加载风控事件失败",
@@ -356,8 +400,19 @@ export default {
         "cancel": "取消",
         "confirm": "确认"
       },
+      "deleteItemDialog": {
+        "title": "确认删除项目",
+        "description": "确定删除项目 {name}？此操作无法撤销。",
+        "confirm": "删除"
+      },
       "emptyItems": "暂无群聊项目",
       "emptyGroups": "暂无群聊分组"
+    },
+    "validation": {
+      "nameRequired": "请填写名称",
+      "urlRequired": "请填写链接URL",
+      "invalidUrl": "请输入有效的 http(s) 链接",
+      "groupNameRequired": "请输入分组名称"
     },
     "linkDialog": {
       "createTitle": "添加友情链接",
@@ -401,19 +456,15 @@ export default {
       "loadLinksFailedTitle": "加载友链失败",
       "loadGroupsFailedTitle": "加载友链分组失败",
       "actionFailedFallback": "操作失败",
-      "nameUrlRequired": "请填写名称和URL",
-      "invalidLinkUrl": "请输入有效的 http(s) 链接",
       "saveFailedTitle": "保存失败",
       "createFailedTitle": "创建失败",
       "deleteFailedTitle": "删除失败",
       "linkUpdated": "友链已更新",
       "linkCreated": "友链已创建",
       "linkDeleted": "已删除友链",
-      "groupNameRequired": "请输入分组名称",
       "groupCreated": "分组已创建",
       "groupUpdated": "分组已更新",
       "groupDeleted": "分组已删除",
-      "itemNameRequired": "请填写名称",
       "itemUpdated": "项目已更新",
       "itemCreated": "项目已创建",
       "itemDeleted": "项目已删除"
@@ -527,9 +578,9 @@ export default {
     "deleteDialog": {
       "title": "确认删除",
       "descriptionPrefix": "确定要删除OAuth客户端",
-      "descriptionSuffix": "吗？",
+      "descriptionSuffix": "吗？其所有令牌将立即失效，使用它的应用将无法再访问。",
       "cancel": "取消",
-      "confirm": "确认"
+      "confirm": "删除"
     },
     "rotateDialog": {
       "title": "轮换客户端密钥",
@@ -543,6 +594,11 @@ export default {
       "cancel": "取消",
       "confirm": "全部撤销"
     },
+    "disableDialog": {
+      "title": "禁用客户端",
+      "description": "确定要禁用客户端 {clientId} 吗？禁用后它将无法再发起授权，其现有的用户授权和令牌也会被撤销。",
+      "confirm": "禁用"
+    },
     "statsDialog": {
       "title": "客户端统计",
       "filters": "筛选范围",
@@ -553,9 +609,23 @@ export default {
       "day": "按天",
       "apply": "应用筛选",
       "invalidTimeRange": "开始时间不能晚于结束时间",
-      "totalAuthorizations": "总授权",
-      "activeAuthorizations": "活跃授权",
-      "last30Days": "近30天"
+      "rangeLabel": "统计范围：{range}",
+      "authorizations": "用户授权",
+      "tokens": "令牌",
+      "summary": {
+        "authorizationTotal": "授权总数",
+        "authorizationActive": "有效授权",
+        "authorizationRevoked": "已撤销授权",
+        "authorizationCreatedInRange": "范围内新增授权",
+        "tokenTotal": "令牌总数",
+        "tokenActive": "有效令牌",
+        "tokenRevoked": "已撤销令牌",
+        "tokenIssuedInRange": "范围内签发令牌"
+      },
+      "trendTitle": "趋势",
+      "trendAuthorizations": "新增授权",
+      "trendTokens": "签发令牌",
+      "trendEmpty": "所选范围内没有授权或令牌活动"
     },
     "secretDialog": {
       "title": "凭证生成成功",
@@ -646,6 +716,7 @@ export default {
       "copied": "已复制到剪贴板",
       "validation": {
         "clientIdAndNameRequired": "客户端ID和名称不能为空",
+        "clientIdRequired": "客户端ID不能为空",
         "nameRequired": "客户端名称不能为空",
         "redirectUriRequired": "选择了授权码时请至少填写一个回调URI",
         "scopeRequired": "请至少选择一个Scope",
@@ -696,7 +767,13 @@ export default {
       "jwtSecretPlaceholder": "留空表示保持当前密钥不变",
       "jwtSecretHelp": "只有在您想替换当前密钥时才需要填写新值。",
       "readOnlyNoticeTitle": "只读视图",
-      "readOnlyNoticeDescription": "你可以查看 Webhook 设置和端点，但修改需要超级管理员权限。"
+      "readOnlyNoticeDescription": "你可以查看 Webhook 设置和端点，但修改需要超级管理员权限。",
+      "noChanges": "没有需要保存的更改",
+      "disableDialog": {
+        "title": "关闭全局 webhook 投递？",
+        "description": "关闭后所有 endpoint 都不会再收到回调，即使它们各自处于启用状态。已排队的投递将被丢弃。",
+        "confirm": "关闭投递"
+      }
     },
     "list": {
       "title": "Webhook endpoints",
@@ -743,7 +820,7 @@ export default {
       "headerNameLabel": "请求头名称",
       "tokenLabel": "Webhook Token",
       "tokenHelp": "调用 webhook subscriber 接口时需要使用这个 token，请妥善保管。",
-      "close": "关闭"
+      "confirmSaved": "我已保存"
     },
     "subscribers": {
       "title": "{id} 的订阅者",
@@ -843,10 +920,24 @@ export default {
       "planName": "赞助档位",
       "source": "来源",
       "paidAt": "最近赞助时间",
+      "paidAtPlaceholder": "未设置",
+      "saveProfile": "保存资料",
       "message": "留言",
       "afdianSyncDisabled": "不从爱发电更新这个资料",
       "afdianSyncHelp": "开启后，手动编辑的昵称、头像、档位和留言不会被后续爱发电同步覆盖；爱发电订单仍会计入时长。",
       "manualProfileHint": "此处只保存展示用资料和同步策略；爱发电 API key 与 webhook 配置仍应只存在后端。"
+    },
+    "syncDialog": {
+      "title": "从爱发电同步？",
+      "description": "将向爱发电拉取最新订单并更新所有未关闭同步的赞助者资料与时长。此操作会在后台执行，完成后列表自动刷新。"
+    },
+    "afdianToggleDialog": {
+      "disableTitle": "停止从爱发电更新？",
+      "disableDescription": "{name} 的昵称、头像、档位和留言将不再被爱发电同步覆盖；爱发电订单仍会计入时长。",
+      "confirmDisable": "停止更新",
+      "enableTitle": "恢复从爱发电更新？",
+      "enableDescription": "下一次同步会用爱发电的资料覆盖 {name} 手动编辑过的昵称、头像、档位和留言。",
+      "confirmEnable": "恢复更新"
     },
     "duration": {
       "title": "赞助时长",
@@ -880,6 +971,8 @@ export default {
       "manual": {
         "title": "手动时长",
         "add": "添加手动时长",
+        "addDialogTitle": "添加手动时长",
+        "editDialogTitle": "编辑手动时长",
         "empty": "还没有手动时长。",
         "migrated": "迁移",
         "startsAt": "最早开始：{date}",
@@ -898,6 +991,7 @@ export default {
           "day": "天"
         },
         "startsAt": "最早开始时间",
+        "startsAtPlaceholder": "现在",
         "startsAtHelp": "留空即为现在。实际从爱发电时长和之前的手动时长结束后才开始计算；只有赞助已中断时才从这里开始，此时不能晚于现在。",
         "note": "备注 / 原因",
         "notePlaceholder": "例如：微信转账 30 元"
@@ -941,8 +1035,18 @@ export default {
       "stat": {
         "totalUsers": "总用户数",
         "superAdmin": "超级管理员",
+        "admin": "管理员",
         "totalBindings": "游戏绑定",
+        "verifiedBindings": "已验证",
         "totalUploads": "总上传 (全部)"
+      },
+      "breakdown": {
+        "byServer": "绑定按区服",
+        "byServerHint": "全部游戏绑定",
+        "byMethod": "上传按方式",
+        "byDataType": "上传按数据类型",
+        "windowHint": "最近 {hours} 小时",
+        "empty": "暂无数据"
       },
       "upload24h": {
         "total": "24h 上传总量",
@@ -981,6 +1085,7 @@ export default {
         "total": "总日志"
       },
       "searchPlaceholder": "搜索日志…",
+      "resetSearch": "清除搜索",
       "exportButton": "导出",
       "table": {
         "result": "结果",
@@ -988,7 +1093,8 @@ export default {
         "request": "方法",
         "user": "用户",
         "time": "时间",
-        "empty": "暂无日志"
+        "empty": "暂无日志",
+        "openDetail": "查看详情"
       },
       "detail": {
         "title": "日志详情",
@@ -997,7 +1103,10 @@ export default {
         "action": "操作",
         "request": "请求",
         "user": "用户",
-        "detail": "详情"
+        "detail": "详情",
+        "copy": "复制详情",
+        "copied": "详情已复制",
+        "copyFailed": "复制失败"
       },
       "toast": {
         "loadFailedTitle": "加载日志失败",
@@ -1034,10 +1143,8 @@ export default {
         "allMethods": "全部方式",
         "allDataTypes": "全部类型",
         "allServers": "全部区服",
-        "allStatuses": "全部状态"
-      },
-      "actions": {
-        "search": "查询"
+        "allStatuses": "全部状态",
+        "selectedMore": "{first} +{count}"
       },
       "timeRangeLabel": "时间范围:",
       "table": {
@@ -1129,10 +1236,6 @@ export default {
     }
   },
   "adminGameBindings": {
-    "pagination": {
-      "prevPage": "上一页",
-      "nextPage": "下一页"
-    },
     "common": {
       "cancel": "取消",
       "create": "创建"
@@ -1250,7 +1353,8 @@ export default {
       "cancel": "取消",
       "confirm": "确认",
       "unbound": "未绑定",
-      "openMenu": "打开菜单"
+      "openMenu": "打开菜单",
+      "fallback": "—"
     },
     "management": {
       "title": "用户管理",
@@ -1344,7 +1448,7 @@ export default {
     },
     "detail": {
       "backToList": "返回用户列表",
-      "notFound": "用户不存在或加载失败",
+      "notFound": "用户不存在，可能已被删除或链接有误。",
       "tabs": {
         "info": "基本信息",
         "activity": "活动记录",
@@ -1372,12 +1476,22 @@ export default {
         "delete": "删除",
         "deleteDialogTitle": "确认删除",
         "deleteDialogDescription": "此操作是软删除，可以恢复。确定要删除用户 {name} 吗？",
-        "deleteDialogConfirm": "确认删除"
+        "deleteDialogConfirm": "确认删除",
+        "forceLogoutDialogTitle": "确认强制登出",
+        "forceLogoutDialogDescription": "确定要强制登出用户 {name} 吗？该用户的所有活跃会话都将被注销，需要重新登录。",
+        "forceLogoutDialogConfirm": "确认登出",
+        "resetPasswordDialogTitle": "确认重置密码",
+        "resetPasswordDialogDescription": "确定要重置用户 {name} 的密码吗？当前密码将立即失效，该用户需要重新设置密码后才能登录。",
+        "resetPasswordDialogConfirm": "确认重置",
+        "roleDialogTitle": "确认修改角色",
+        "roleDialogDescription": "确定要将用户 {name} 的角色修改为 {role} 吗？新的权限将立即生效。",
+        "roleDialogConfirm": "确认修改"
       },
       "activity": {
         "title": "活动记录",
         "uploadLogsTitle": "上传日志",
         "uploadLogsDescription": "该用户最近的上传记录，包括失败时后端返回的错误详情。",
+        "viewAllUploads": "在上传日志中查看全部",
         "columns": {
           "action": "操作",
           "result": "结果",
@@ -1392,7 +1506,18 @@ export default {
         "total": "共 {count} 个授权",
         "empty": "暂无 OAuth 授权",
         "revokeAllDialogTitle": "撤销全部授权",
-        "revokeAllDialogDescription": "此操作将撤销该用户的全部 OAuth 授权，并使其从所有已连接的第三方应用登出。是否继续？"
+        "revokeAllDialogDescription": "此操作将撤销该用户的全部 {count} 个 OAuth 授权，并使其从所有已连接的第三方应用登出。是否继续？",
+        "columns": {
+          "client": "应用",
+          "scopes": "权限范围",
+          "createdAt": "授权时间",
+          "status": "状态"
+        },
+        "status": {
+          "active": "有效",
+          "revoked": "已撤销",
+          "clientDisabled": "应用已禁用"
+        }
       },
       "game": {
         "title": "游戏账号绑定",
@@ -1432,7 +1557,10 @@ export default {
         "generate": "生成上传码",
         "empty": "暂无上传码",
         "deleteDialogTitle": "确认删除",
-        "deleteDialogDescription": "确定要删除当前的 iOS 上传码吗？之后可重新生成一个新的。"
+        "deleteDialogDescription": "确定要删除当前的 iOS 上传码吗？之后可重新生成一个新的。",
+        "regenerateDialogTitle": "确认重新生成上传码",
+        "regenerateDialogDescription": "确定要为用户 {name} 重新生成 iOS 上传码吗？当前上传码将立即失效，该用户需要在快捷指令中更新为新的上传码。",
+        "regenerateDialogConfirm": "重新生成"
       },
       "dialog": {
         "email": {
@@ -1440,6 +1568,7 @@ export default {
           "description": "修改用户 {name} 的邮箱地址。",
           "newEmail": "新邮箱地址",
           "placeholder": "请输入邮箱地址",
+          "invalid": "请输入有效的邮箱地址，例如 name@example.com",
           "confirm": "确认修改"
         },
         "gameBinding": {

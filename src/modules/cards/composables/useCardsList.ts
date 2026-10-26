@@ -22,8 +22,12 @@ export type UseCardsListResult = {
   /** Any load in flight, including background refreshes. */
   refreshing: ComputedRef<boolean>
   error: ComputedRef<string | null>
+  /** Data is on screen but the last remote refresh failed (offline notice). */
+  warning: ComputedRef<string | null>
   /** Cards and characters are available and not loading. */
   ready: ComputedRef<boolean>
+  /** The characters index has data (its ids can be resolved, or found missing). */
+  charactersReady: ComputedRef<boolean>
   cards: ComputedRef<CatalogMasterCard[]>
   characters: ComputedRef<CatalogCharacter[]>
   characterMap: ComputedRef<Map<number, CatalogCharacter>>
@@ -61,7 +65,9 @@ export function useCardsList(): UseCardsListResult {
     || skills.refreshing.value
   ))
   const error = computed(() => cardsIndex.error.value ?? charactersIndex.error.value)
+  const warning = computed(() => cardsIndex.warning.value ?? charactersIndex.warning.value)
   const ready = computed(() => !loading.value && cardsIndex.data.value != null && charactersIndex.data.value != null)
+  const charactersReady = computed(() => charactersIndex.data.value != null)
 
   const cards = computed(() => cardsIndex.data.value?.list ?? EMPTY_CARDS)
   const characters = computed(() => charactersIndex.data.value?.characters ?? EMPTY_CHARACTERS)
@@ -97,7 +103,9 @@ export function useCardsList(): UseCardsListResult {
     loading,
     refreshing,
     error,
+    warning,
     ready,
+    charactersReady,
     cards,
     characters,
     characterMap,

@@ -1,6 +1,6 @@
 import { toast } from "vue-sonner"
 import type { Ref } from "vue"
-import { extractErrorMessage } from "@/lib/error-utils"
+import { extractErrorMessage, shouldReportError } from "@/lib/error-utils"
 import { createLogger } from "@/lib/logger"
 import { translate } from "@/shared/i18n"
 
@@ -10,6 +10,11 @@ export interface ActionOptions<T = void> {
   successMessage?: string
   afterSuccess?: (result: T) => Promise<void> | void
   successAfterAfterSuccess?: boolean
+  /**
+   * Rethrow the task's error instead of showing the error toast. For actions a
+   * `ConfirmDialog` runs: it reports the failure inline and stays open.
+   */
+  throwOnError?: boolean
 }
 
 export interface LoadOptions<T> {
@@ -18,7 +23,7 @@ export interface LoadOptions<T> {
   throwOnError?: boolean
   notifyOnError?: boolean
   onSuccess?: (result: T) => void | Promise<void>
-  onError?: () => void | Promise<void>
+  onError?: (error: unknown) => void | Promise<void>
 }
 
 export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoading: Ref<boolean>) {
@@ -65,6 +70,8 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
       result = await task()
     } catch (error: unknown) {
       if (!isActiveActionGeneration(generation)) return
+      if (options.throwOnError) throw error
+      if (!shouldReportError(error)) return
       toast.error(errorTitle, {
         description: extractErrorMessage(error, translate("adminUsers.detail.toast.actionFailedFallback")),
       })
@@ -114,10 +121,10 @@ export function createAdminUserDetailAsync(actionLoading: Ref<boolean>, taskLoad
     } catch (error: unknown) {
       if (!isActiveLoadRequest(loadRef, requestId, generation)) return
       if (options.onError) {
-        await options.onError()
+        await options.onError(error)
       }
       const notifyOnError = options.notifyOnError ?? !options.silent
-      if (notifyOnError && options.errorTitle) {
+      if (notifyOnError && options.errorTitle && shouldReportError(error)) {
         toast.error(options.errorTitle, {
           description: extractErrorMessage(error, translate("adminUsers.detail.toast.actionFailedFallback")),
         })

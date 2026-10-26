@@ -158,11 +158,11 @@ function formatEventDate(value: number | null) {
 </script>
 
 <template>
-  <div>
+  <div class="min-w-0">
     <Button
       type="button"
       variant="outline"
-      class="h-auto min-h-9 w-full justify-between gap-2 px-2.5 py-1.5 font-normal"
+      class="h-auto min-h-9 min-w-0 w-full justify-between gap-2 px-2.5 py-1.5 font-normal"
       :disabled="props.disabled || loading"
       @click="open = true"
     >
@@ -224,14 +224,14 @@ function formatEventDate(value: number | null) {
           />
         </CatalogFilterPanel>
 
-        <div class="min-h-0 flex-1 overflow-y-auto">
-          <div v-if="displayEvents.length > 0" class="grid gap-2">
+        <div class="min-h-0 min-w-0 flex-1 overflow-y-auto">
+          <div v-if="displayEvents.length > 0" class="grid min-w-0 grid-cols-1 gap-2">
             <button
               v-for="event in displayEvents"
               :key="event.id"
               type="button"
               :class="[
-                'flex items-center gap-3 rounded-lg border bg-card p-2.5 text-left transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_104px] hover:bg-accent/50 dark:hover:bg-accent/30',
+                'flex min-w-0 flex-wrap items-center gap-3 rounded-lg border bg-card p-2.5 text-left transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_104px] hover:bg-accent/50 dark:hover:bg-accent/30',
                 selectedEvent?.id === event.id ? 'ring-2 ring-primary' : '',
               ]"
               @click="selectEvent(event)"
@@ -251,7 +251,7 @@ function formatEventDate(value: number | null) {
                   {{ t("sekaiUnreleased.badge") }}
                 </span>
               </span>
-              <span class="min-w-0 flex-1">
+              <span class="min-w-0 flex-1 basis-40">
                 <span class="block truncate text-sm font-medium">{{ event.name }}</span>
                 <span class="mt-0.5 block text-xs text-muted-foreground">
                   {{ t("events.common.idLabel", { id: event.id }) }}

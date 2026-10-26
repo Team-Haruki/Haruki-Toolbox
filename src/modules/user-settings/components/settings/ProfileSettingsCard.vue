@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
+import { useRouter } from "vue-router"
 import { Button } from "@/components/ui/button"
 import VerificationStatusBadge from "@/modules/user-settings/components/VerificationStatusBadge.vue"
 import { useAccountSettings } from "@/modules/user-settings/composables/useAccountSettings"
 import { redirectToKratosBrowserFlow } from "@/modules/auth/lib/kratos"
-import { resolveSettingsReturnTo } from "@/modules/user-settings/lib/settings-return"
 import {
   Card,
   CardTitle,
@@ -28,15 +28,16 @@ const {
   onAvatarChange,
 } = useAccountSettings()
 const { t } = useI18n()
+const router = useRouter()
 
 const currentEmail = computed(() => userStore.emailInfo?.email ?? t("userSettings.email.unbound"))
 const currentNickname = computed(() => userStore.name?.trim() || t("userSettings.email.unsetNickname"))
 const emailVerified = computed(() => userStore.emailInfo?.verified === true)
 
+// The profile page shows an interstitial and probes the identity host before
+// leaving the toolbox, so the card navigates there instead of assigning location.
 function openIdentitySettings() {
-  redirectToKratosBrowserFlow("settings", {
-    returnTo: resolveSettingsReturnTo("profile"),
-  })
+  void router.push({ name: "user.identityProfileSettings" })
 }
 
 function openVerification() {

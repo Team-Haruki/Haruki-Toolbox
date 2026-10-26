@@ -1,5 +1,6 @@
-// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog
-// Lazy bundle for the Sekai catalog pages (/cards, /events, /gachas, /music).
+// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog, storyPlayer
+// Lazy bundle for the Sekai catalog pages (/cards, /events, /gachas, /music)
+// and the story player (/story).
 // Shared shell strings live in the core bundle under `catalog.*`; enum labels
 // (units, attributes, rarities, event/gacha types, difficulties) stay in core too.
 export default {
@@ -46,6 +47,7 @@ export default {
     },
     "detail": {
       "viewCharacterCards": "All cards of this character",
+      "playStory": "Play story",
       "art": {
         "normal": "Normal",
         "trained": "Trained"
@@ -93,6 +95,7 @@ export default {
         "costs": "Unlock cost",
         "cost": "{resource} ×{quantity}",
         "material": "Material #{id}",
+        "play": "Play",
         "partType": {
           "first_part": "Part 1",
           "second_part": "Part 2"
@@ -179,7 +182,7 @@ export default {
       "title": "Ranking rewards",
       "rangeCount": "{count} rank ranges",
       "empty": "No ranking reward data for this event.",
-      "unavailable": "Reward details are unavailable on this server; only the rank ranges are shown.",
+      "unavailable": "This server does not provide reward details yet; only the rank ranges are shown.",
       "rank": "Rank {rank}",
       "rankRange": "Rank {from}–{to}",
       "border": "Border",
@@ -216,7 +219,8 @@ export default {
     "story": {
       "title": "Event story",
       "episodeCount": "{count} episodes",
-      "episode": "Episode {no}"
+      "episode": "Episode {no}",
+      "play": "Play"
     }
   },
 
@@ -242,6 +246,7 @@ export default {
     },
     "detail": {
       "pickupCards": "Pickup characters' cards",
+      "permanentHint": "Permanent gacha with no end date.",
       "lightbox": {
         "banner": "Banner",
         "logo": "Logo"
@@ -300,7 +305,7 @@ export default {
       "convertAt": "Converts to the generic sticker from {time}",
       "exchange": "Sticker exchange",
       "exchangeEmpty": "No exchange data for this gacha on the current server",
-      "rewardsUnavailable": "Reward details are not available on the current server; only box ids are shown.",
+      "rewardsUnavailable": "This server does not provide reward details yet; only the reward box ids are shown.",
       "reward": "Reward",
       "cost": "Stickers",
       "limit": "Limit",
@@ -352,7 +357,8 @@ export default {
       "appendOnly": "Only songs with an APPEND chart",
       "mvType": "MV type",
       "scope": "Relation",
-      "scopeHint": "Pick a character to narrow down by box song / vocal"
+      "scopeHint": "Pick a character to narrow down to their box (event) songs or vocals",
+      "aliasUnavailable": "Alias search is temporarily unavailable; only titles are matched."
     },
     "detail": {
       "jacket": "Jacket",
@@ -376,6 +382,89 @@ export default {
       "events": {
         "empty": "This song is not linked to any event."
       }
+    }
+  },
+
+  // ---------------------------------------------------------------------
+  // storyPlayer — owned by the story module (src/modules/story)
+  // ---------------------------------------------------------------------
+  "storyPlayer": {
+    "beta": {
+      "title": "In testing",
+      "body": "This page is still being tested and you may run into bugs. If something breaks or doesn't match the game, please report it in {tickets}.",
+      "tickets": "a ticket"
+    },
+    "title": "Story player",
+    "description": "Plays main, event, card, special stories and area talks the way the game stages them. Visuals and voices come from the JP server; text can be any server's official translation, with an AI Chinese translation for JP-only stories.",
+    "textLang": "Text language",
+    "voice": "Voices",
+    "voiceVolume": "Voice volume",
+    "bgmVolume": "BGM volume",
+    "langAutoResolved": "Toolbox language · {lang}",
+    "langAuto": "Follow the Toolbox language",
+    "lang": {
+      "ja": "日本語",
+      "zhHans": "简体中文",
+      "zhHant": "繁體中文",
+      "en": "English",
+      "ko": "한국어",
+      "zhHansAi": "简体中文（AI翻译）"
+    },
+    "aiPending": "The AI translation of this episode is still being made. Check back later.",
+    "aiNotice": "This text is an AI translation and may differ from the official one.",
+    "errors": {
+      "notFound": "This episode could not be found.",
+      "unreleased": "This episode is not out yet. Turn on \"Show unreleased content\" in Settings to watch it.",
+      "missing": "The JP assets do not have this episode's script yet.",
+      "failed": "The story failed to load: {detail}",
+      "catalog": "The story list failed to load. Refresh to try again.",
+      "engine": "The player failed to load: {detail}"
+    },
+    "stage": {
+      "loading": "Loading",
+      "start": "Click to play",
+      "pickBeside": "Pick a story on the left",
+      "pickBelow": "Pick a story below",
+      "models": "Characters",
+      "preloading": "Downloading",
+      "preloadFailed": "{n} files failed to download",
+      "retry": "Retry",
+      "continue": "Play anyway",
+      "credit": "Developed by Deseer × 星雲希凪 (From Haruki Dev Team). Powered by Haruki Toolbox.",
+      "tabBrowser": "Stories",
+      "tabLog": "Lines",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen"
+    },
+    "browser": {
+      "tabs": {
+        "unit": "Main",
+        "event": "Event",
+        "card": "Card",
+        "special": "Special",
+        "area": "Area"
+      },
+      "all": "All",
+      "rail": "Stories",
+      "toggle": "Collapse / expand",
+      "search": "Search titles / characters",
+      "loading": "Loading stories…",
+      "empty": "No matching stories",
+      "episode": "Ep. {no}",
+      "firstPart": "Part 1",
+      "secondPart": "Part 2"
+    },
+    "menu": {
+      "fullscreen": "Fullscreen",
+      "auto": "Auto",
+      "mute": "Mute",
+      "fast": "Fast",
+      "hide": "Hide",
+      "log": "Log"
+    },
+    "log": {
+      "search": "Search lines / characters",
+      "matches": "{count} matches"
     }
   }
 } as const

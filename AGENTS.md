@@ -151,6 +151,8 @@ Barrel rules:
 - Prefer `<script setup lang="ts">` for Vue components.
 - Use existing composables and UI patterns before creating new abstractions.
 - Keep forms, dialogs, and toasts consistent with surrounding modules.
+- Confirmations go through `@/shared/components/ConfirmDialog.vue`, not hand-rolled `AlertDialogAction` buttons (those close on click, so a failed request drops the user back with only a toast). Pass the action as `:on-confirm` (a function returning a promise); the dialog shows a spinner, blocks Escape/outside/cancel while pending, closes on success and stays open with the error inline on rejection. Give the action `throwOnError: true` (`runAsyncAction`, the admin user-detail `runAction`/`runTask`) so it rethrows instead of toasting. `non-dismissable` is for shown-once secrets/tokens: only its "I have saved it" button closes it.
+- A cancelled admin password prompt rejects with `AdminReauthCancelledError` (`@/lib/admin-reauth`): nothing ran, so it must not be reported. The toast helpers (`runAsyncAction`, `toastErrorWithExtractedMessage`, the admin user-detail runners) and `ConfirmDialog` already skip it through `shouldReportError` (`@/lib/error-utils`); check it before any hand-written error toast.
 - Use `vue-sonner` for toast feedback.
 - Reuse existing i18n keys/patterns where possible rather than embedding strings inline.
 - Maintain responsive behavior for both desktop and mobile.
@@ -202,7 +204,8 @@ Rules:
 - Do not add new business logic directly to route views if it belongs in a composable or `lib/` helper.
 - Do not update only some of the three locale bundles (zh-CN, zh-TW, en-US).
 - Do not bypass `request()` response handling unless you are working inside the auth/browser-flow integration layer.
-- Do not hand-roll `<img>` error handling for Sekai/CDN images: the Service Worker caches them CacheFirst with opaque responses (errors included), so recovery must go through `@/shared/sekai/image-recovery` (purge + cache-busted retry).
+- Do not hand-roll `<img>` error handling for Sekai/CDN images: the Service Worker caches them CacheFirst with opaque responses (errors included), so recovery must go through `@/shared/sekai/image-recovery` (purge + cache-busted retry). On the China CDN route, a failing host (network error, timeout or 5xx, found by a HEAD probe in `@/shared/sekai/asset-image-fallback`) moves an image to the same path on the global host first; a 404 never does.
+- The story player (`pjsk-scenario-player`) preloads every file of an episode into the HTTP cache before it plays, and its resolver's `fallback()` (`src/modules/story/engine/urls.ts`) moves any load to the global host when the China CDN fails; keep new story asset URLs on that resolver.
 - Do not commit generated artifacts like `dist/`, `coverage/` or Playwright `test-results/`.
 
 ## Recommended Change Checklist

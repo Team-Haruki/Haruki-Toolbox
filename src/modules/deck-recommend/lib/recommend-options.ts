@@ -47,6 +47,7 @@ export const DECK_RECOMMEND_SUPPORT_UNITS: DeckRecommendSupportUnitType[] = [
 
 export type DeckRecommendEventSimulationInput = {
   enabled: boolean
+  memoryEventUnit?: DeckRecommendUnitType | null
   eventType: DeckRecommendSimulatedEventType
   attr: DeckRecommendEventAttr | null
   unit: DeckRecommendUnitType | null
@@ -548,6 +549,10 @@ function buildSimulatedEventOptions(
     return null
   }
 
+  if (input.memoryEventUnit) {
+    return { event_me_unit: input.memoryEventUnit }
+  }
+
   const worldBloomTurn = normalizeWorldBloomTurn(input.worldBloomTurn)
   if (input.worldBloomTurn != null && !worldBloomTurn) {
     throw new Error("world_bloom_event_turn must be 1, 2, or 3")
@@ -589,6 +594,7 @@ function buildSimulatedEventOptions(
 
 function isCustomBonusSimulation(input: DeckRecommendEventSimulationInput | undefined): boolean {
   return input?.enabled === true
+    && !input.memoryEventUnit
     && input.worldBloomTurn == null
     && !input.attr
     && !input.unit

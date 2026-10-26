@@ -2,10 +2,11 @@
 import { computed, useId } from "vue"
 import { useI18n } from "vue-i18n"
 import type { AcceptableValue } from "reka-ui"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import CatalogCharacterPicker from "@/shared/components/catalog/CatalogCharacterPicker.vue"
 import CatalogChipsField from "@/shared/components/catalog/CatalogChipsField.vue"
-import type { CatalogFieldOption } from "@/shared/components/catalog/types"
+import { CATALOG_YEAR_PLACEHOLDER_COUNT, type CatalogFieldOption } from "@/shared/components/catalog/types"
 import SekaiRarityStars from "@/shared/components/SekaiRarityStars.vue"
 import {
   SEKAI_CARD_ATTRS,
@@ -83,6 +84,9 @@ const yearOptions = computed<CatalogFieldOption[]>(() => props.years.map((year) 
 const ANY_YEAR = "__any__"
 
 const yearModel = computed(() => (props.state.year == null ? ANY_YEAR : String(props.state.year)))
+// Chip-sized placeholders hold the row's height until the dump arrives, so
+// the grid below does not jump when the years render.
+const yearPlaceholders = computed(() => (props.years.length === 0 ? CATALOG_YEAR_PLACEHOLDER_COUNT : 0))
 
 function isSekaiUnit(value: string): value is SekaiUnit {
   return (SEKAI_UNITS as readonly string[]).includes(value)
@@ -125,8 +129,9 @@ function rarityLabel(rarity: CardRarityType): string {
 </script>
 
 <template>
+  <!-- Always mounted: without characters the picker draws its own
+       placeholder row, which keeps the panel height steady while loading. -->
   <CatalogCharacterPicker
-    v-if="characters.length > 0"
     :model-value="state.chars"
     :characters="characters"
     :unit-color-map="unitColorMap"
@@ -212,6 +217,7 @@ function rarityLabel(rarity: CardRarityType): string {
         <ToggleGroupItem v-for="option in yearOptions" :key="option.value" :value="option.value">
           {{ option.label }}
         </ToggleGroupItem>
+        <Skeleton v-for="index in yearPlaceholders" :key="`placeholder-${index}`" class="h-7 w-12 rounded-full" aria-hidden="true" />
       </ToggleGroup>
     </div>
   </div>

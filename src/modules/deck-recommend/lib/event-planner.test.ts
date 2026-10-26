@@ -19,6 +19,7 @@ describe("parseEventPlannerPointInput", () => {
     expect(parseEventPlannerPointInput("1.5亿")).toEqual({ value: 150_000_000, invalid: false })
     expect(parseEventPlannerPointInput("25k")).toEqual({ value: 25_000, invalid: false })
     expect(parseEventPlannerPointInput("2億")).toEqual({ value: 200_000_000, invalid: false })
+    expect(parseEventPlannerPointInput("120萬")).toEqual({ value: 1_200_000, invalid: false })
   })
 
   it("treats w/k suffixes case-insensitively", () => {

@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from "axios"
 import { request, unwrapUpdatedData } from "@/core/http/call-api"
 import { buildUserApiPath } from "@/core/http/path"
 import type { QueryParams } from "@/core/http/query"
@@ -13,10 +14,11 @@ import type {
 } from "@/types/ticket"
 import { normalizeMessage, normalizeTicket } from "./normalize"
 
-export async function getUserTickets(userId: string, params?: QueryParams) {
+export async function getUserTickets(userId: string, params?: QueryParams, options?: AxiosRequestConfig) {
   const res = await request<APIResponse<PaginatedResponse<Ticket>>>(buildUserApiPath(userId, "tickets"), {
     method: "GET",
     params,
+    ...options,
   })
   return unwrapUpdatedData(res, translate("tickets.list.toast.loadFailedTitle"))
 }

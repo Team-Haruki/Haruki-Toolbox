@@ -44,7 +44,11 @@ export type GenerateGameAccountCodeResponse = {
 export interface GameAccountDataGrant {
     id: number
     ownerUserId: string
+    /** Display name of the granting user when the list payload carries it. */
+    ownerUserName?: string
     granteeUserId: string
+    /** Display name of the grantee when the list payload carries it. */
+    granteeUserName?: string
     server: SekaiRegion
     gameUserId: string
     dataType: GameAccountGrantDataType

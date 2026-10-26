@@ -27,7 +27,9 @@ export const toggleGroupItemVariants = cva(
   {
     variants: {
       variant: {
-        chip: "rounded-full border border-border bg-transparent text-foreground hover:bg-muted data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground",
+        // Touch devices get a 36 px tall pill (`size="sm"` is 28 px): the
+        // filter rows are tapped far more often than they are clicked.
+        chip: "rounded-full border border-border bg-transparent text-foreground hover:bg-muted data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground [@media(pointer:coarse)]:min-h-9 [@media(pointer:coarse)]:px-3",
         segment: "rounded-[calc(var(--radius-md)-2px)] border border-transparent text-muted-foreground hover:text-foreground data-[state=on]:bg-muted data-[state=on]:text-foreground data-[state=on]:shadow-xs",
       },
       size: {

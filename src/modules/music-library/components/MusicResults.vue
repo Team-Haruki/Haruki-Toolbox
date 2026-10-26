@@ -20,11 +20,15 @@ defineProps<{
 
 <template>
   <template v-if="skeleton">
+    <!-- Sized like MusicTile: jacket, title, date line and the level pill row. -->
     <CatalogEntityGrid v-if="view === 'grid'" columns="wide">
-      <div v-for="index in 8" :key="index" class="space-y-2 rounded-lg border p-3">
+      <div v-for="index in 8" :key="index" class="flex flex-col gap-2 rounded-lg border p-2.5 sm:p-3">
         <Skeleton class="aspect-square w-full rounded-md" />
-        <Skeleton class="h-4 w-3/4" />
-        <Skeleton class="h-3 w-1/2" />
+        <div class="space-y-1">
+          <Skeleton class="h-5 w-3/4" />
+          <Skeleton class="h-4 w-1/2" />
+        </div>
+        <Skeleton class="h-7 w-full" />
       </div>
     </CatalogEntityGrid>
     <div v-else class="divide-y overflow-hidden rounded-lg border">

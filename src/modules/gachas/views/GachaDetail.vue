@@ -92,6 +92,7 @@ const pickupCardsRoute = computed(() => (pickupCharacterIds.value.length > 0
     :loading="loading"
     :error="error"
     :not-found="notFound"
+    :not-found-message="t('gachas.detail.notFound', { gachaId: props.gachaId })"
     :retrying="retrying"
     :unreleased="unreleased"
     @retry="reload"
@@ -141,6 +142,7 @@ const pickupCardsRoute = computed(() => (pickupCharacterIds.value.length > 0
             :start-at="summary.startAt"
             :end-at="summary.endAt"
             :status="status"
+            :region="region"
             :blur="blurArt"
             stacked
           />

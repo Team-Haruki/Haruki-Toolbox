@@ -13,6 +13,7 @@ import type { BotSecurityAlert } from "@/types/admin"
 const {
   filters,
   filtersExpanded,
+  timeRangeError,
   statusOptions,
   kindOptions,
   applyFilters,
@@ -24,9 +25,11 @@ const {
   alerts,
   total,
   page,
+  pageSize,
   totalPages,
   prevPage,
   nextPage,
+  goToPage,
   reload,
   summary,
   summaryLoading,
@@ -68,6 +71,7 @@ function openActionFromDetail(alert: BotSecurityAlert, action: BotSecurityAlertA
       :status-options="statusOptions"
       :kind-options="kindOptions"
       :loading="loading"
+      :time-range-error="timeRangeError"
       @apply="applyFilters"
       @reset="resetFilters"
     />
@@ -78,6 +82,7 @@ function openActionFromDetail(alert: BotSecurityAlert, action: BotSecurityAlertA
       :alerts="alerts"
       :total="total"
       :page="page"
+      :page-size="pageSize"
       :total-pages="totalPages"
       :action-saving="actionSaving"
       :kind-label="kindLabel"
@@ -90,6 +95,8 @@ function openActionFromDetail(alert: BotSecurityAlert, action: BotSecurityAlertA
       @retry="reload"
       @prev-page="prevPage"
       @next-page="nextPage"
+      @go-to-page="goToPage"
+      @update:page-size="pageSize = $event"
     />
 
     <BotSecurityAlertDetailDialog

@@ -8,6 +8,7 @@ const EVENT_PLANNER_NUMBER_SUFFIXES: Readonly<Record<string, number>> = {
   "亿": 1e8,
   "億": 1e8,
   "万": 1e4,
+  "萬": 1e4,
   "w": 1e4,
   "k": 1e3,
 }
@@ -18,7 +19,7 @@ export type EventPlannerPointParseResult = {
 }
 
 /**
- * Parses human-friendly point inputs such as "1000w", "120万", "1.5亿", "25k".
+ * Parses human-friendly point inputs such as "1000w", "120万", "120萬", "1.5亿", "25k".
  * Separators (`,` `_` `，` and spaces) are stripped; the result is rounded
  * half up to an integer. Empty input yields `{ value: null, invalid: false }`.
  */

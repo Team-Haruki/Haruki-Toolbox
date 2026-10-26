@@ -1,28 +1,40 @@
-import { ref } from "vue"
-import { toast } from "vue-sonner"
+import { ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import type { OAuthClientStatistics } from "@/types/admin"
-import { extractErrorMessage } from "@/lib/error-utils"
+import { describeError, type ErrorDescription } from "@/lib/error-utils"
 import { getOAuthClientStatistics } from "@/modules/admin-oauth-clients/api/client"
 import type { QueryParams } from "@/core/http/query"
 
 type StatsBucket = "hour" | "day"
 
+/**
+ * The client statistics dialog: summary counters and a per-bucket trend for
+ * an optional time range. A failed load renders inline in the dialog (with a
+ * retry) instead of toasting; an inverted time range is reported under the
+ * pickers and clears as soon as either picker changes.
+ */
 export function useOAuthClientStats() {
   const { t } = useI18n()
   const statsOpen = ref(false)
   const statsLoading = ref(false)
   const statsClientId = ref("")
   const stats = ref<OAuthClientStatistics | null>(null)
+  const statsError = ref<ErrorDescription | null>(null)
   const statsFrom = ref<Date>()
   const statsTo = ref<Date>()
   const statsBucket = ref<StatsBucket>("hour")
+  const statsTimeRangeError = ref<string | null>(null)
   let latestStatsRequestId = 0
+
+  watch([statsFrom, statsTo], () => {
+    statsTimeRangeError.value = null
+  })
 
   function resetFilters() {
     statsFrom.value = undefined
     statsTo.value = undefined
     statsBucket.value = "hour"
+    statsTimeRangeError.value = null
   }
 
   function hasInvalidTimeRange() {
@@ -41,6 +53,7 @@ export function useOAuthClientStats() {
     const requestId = ++latestStatsRequestId
     statsClientId.value = clientId
     statsLoading.value = true
+    statsError.value = null
     stats.value = null
 
     try {
@@ -49,12 +62,11 @@ export function useOAuthClientStats() {
       stats.value = response
     } catch (error: unknown) {
       if (requestId !== latestStatsRequestId) return
-      toast.error(t("adminOAuthClients.toast.loadStatsFailedTitle"), {
-        description: extractErrorMessage(error, t("adminOAuthClients.toast.actionFailedFallback")),
-      })
+      statsError.value = describeError(error, t("adminOAuthClients.toast.loadStatsFailedTitle"))
     } finally {
-      if (requestId !== latestStatsRequestId) return
-      statsLoading.value = false
+      if (requestId === latestStatsRequestId) {
+        statsLoading.value = false
+      }
     }
   }
 
@@ -66,10 +78,11 @@ export function useOAuthClientStats() {
     await loadStats(clientId)
   }
 
+  /** Also the dialog's retry: it reloads with the current filters. */
   async function applyStatsFilters() {
     if (!statsClientId.value) return
     if (hasInvalidTimeRange()) {
-      toast.error(t("adminOAuthClients.statsDialog.invalidTimeRange"))
+      statsTimeRangeError.value = t("adminOAuthClients.statsDialog.invalidTimeRange")
       return
     }
 
@@ -87,9 +100,11 @@ export function useOAuthClientStats() {
     statsLoading,
     statsClientId,
     stats,
+    statsError,
     statsFrom,
     statsTo,
     statsBucket,
+    statsTimeRangeError,
     showStats,
     applyStatsFilters,
     resetStatsFilters,

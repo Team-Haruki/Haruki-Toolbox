@@ -9,6 +9,7 @@ import { useCatalogViewPreference } from "@/composables/useCatalogViewPreference
 import { usePagedSlice } from "@/composables/usePagedSlice"
 import { useRouteQueryState } from "@/composables/useRouteQueryState"
 import { preloadSearchPinyin } from "@/lib/search-match"
+import CatalogDownloadProgress from "@/shared/components/catalog/CatalogDownloadProgress.vue"
 import CatalogEmptyState from "@/shared/components/catalog/CatalogEmptyState.vue"
 import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
 import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
@@ -107,7 +108,8 @@ const activeChips = computed(() => buildEventsActiveChips(state, {
   statusLabel: (value) => t(`catalog.status.${value}`),
   unitLabel: (value) => resolveSekaiUnitLabel({ t, te }, value),
   attrLabel: (value) => resolveSekaiAttrLabel({ t, te }, value),
-  characterName: (id) => list.charactersIndex.data.value?.characterMap.get(id)?.name ?? `#${id}`,
+  characterName: (id) => list.charactersIndex.data.value?.characterMap.get(id)?.name ?? null,
+  charactersReady: list.charactersIndex.data.value != null,
 }, t))
 
 function removeChip(key: string) {
@@ -123,7 +125,11 @@ function showUnreleased() {
   settingsStore.setShowUnreleasedContent(true)
 }
 
-const showSkeleton = computed(() => list.eventsIndex.loading.value && list.eventsIndex.data.value == null)
+// The error wins over the skeleton: a failed events index is final for the
+// list, however long the characters index (same region request) still runs.
+const showError = computed(() => list.eventsIndex.error.value != null && list.eventsIndex.data.value == null)
+const showSkeleton = computed(() => !showError.value && list.eventsIndex.loading.value && list.eventsIndex.data.value == null)
+const offline = computed(() => list.eventsIndex.warning.value != null)
 </script>
 
 <template>
@@ -137,7 +143,7 @@ const showSkeleton = computed(() => list.eventsIndex.loading.value && list.event
           compact
           class="min-w-0 flex-1"
         />
-        <CatalogRegionSelect class="w-32 shrink-0 sm:w-36" />
+        <CatalogRegionSelect />
       </div>
     </template>
 
@@ -170,37 +176,47 @@ const showSkeleton = computed(() => list.eventsIndex.loading.value && list.event
       :count-label="countLabel"
       :sort-options="sortOptions"
       :view-options="viewOptions"
+      :offline="offline"
+      sticky
     />
 
     <div ref="resultsEl" class="flex flex-col gap-3">
-      <template v-if="showSkeleton">
-        <div v-if="view === 'grid'" class="grid grid-cols-2 gap-3 md:grid-cols-3">
-          <div v-for="index in 6" :key="index" class="flex flex-col gap-2 overflow-hidden rounded-lg border">
-            <Skeleton class="aspect-[2/1] w-full rounded-none" />
-            <div class="flex flex-col gap-2 p-2.5">
-              <Skeleton class="h-4 w-3/4" />
-              <Skeleton class="h-3 w-1/2" />
-            </div>
-          </div>
-        </div>
-        <div v-else class="flex flex-col gap-2">
-          <div v-for="index in 8" :key="index" class="flex items-center gap-3 rounded-lg border p-2">
-            <Skeleton class="aspect-[2/1] w-24 shrink-0" />
-            <div class="flex flex-1 flex-col gap-2">
-              <Skeleton class="h-4 w-1/2" />
-              <Skeleton class="h-3 w-1/3" />
-            </div>
-          </div>
-        </div>
-      </template>
-
       <CatalogErrorState
-        v-else-if="list.eventsIndex.error.value && list.eventsIndex.data.value == null"
+        v-if="showError"
         :message="t('events.list.loadFailed')"
         :detail="list.eventsIndex.error.value"
         :retrying="list.eventsIndex.refreshing.value"
         @retry="list.eventsIndex.reload"
       />
+
+      <template v-else-if="showSkeleton">
+        <CatalogDownloadProgress :region="region" />
+        <!-- Sized like EventCatalogTile: banner, two-line title block, badge
+             row and the period line, so the grid does not jump on arrival. -->
+        <div v-if="view === 'grid'" class="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <div v-for="index in 6" :key="index" class="flex flex-col overflow-hidden rounded-lg border">
+            <Skeleton class="aspect-[2/1] w-full rounded-none" />
+            <div class="flex flex-col gap-1.5 p-2.5">
+              <div class="flex min-h-10 flex-col justify-center gap-1.5">
+                <Skeleton class="h-3.5 w-3/4" />
+                <Skeleton class="h-3.5 w-1/2" />
+              </div>
+              <Skeleton class="h-5 w-28 rounded-full" />
+              <Skeleton class="h-3.5 w-2/3" />
+            </div>
+          </div>
+        </div>
+        <div v-else class="flex flex-col gap-2">
+          <div v-for="index in 8" :key="index" class="flex items-center gap-3 rounded-lg border p-2">
+            <Skeleton class="aspect-[2/1] w-24 shrink-0 rounded-md" />
+            <div class="flex flex-1 flex-col gap-1">
+              <Skeleton class="h-5 w-1/2" />
+              <Skeleton class="h-5 w-28 rounded-full" />
+              <Skeleton class="h-3.5 w-1/3" />
+            </div>
+          </div>
+        </div>
+      </template>
 
       <CatalogEmptyState
         v-else-if="list.upcomingHidden.value"
@@ -217,7 +233,11 @@ const showSkeleton = computed(() => list.eventsIndex.loading.value && list.event
         v-else-if="pageItems.length === 0"
         :message="t('events.list.empty')"
         :hint="t('catalog.results.emptyHint')"
-      />
+      >
+        <template v-if="activeFilterCount > 0" #action>
+          <Button variant="outline" size="sm" @click="reset()">{{ t("catalog.filters.clearAll") }}</Button>
+        </template>
+      </CatalogEmptyState>
 
       <div v-else-if="view === 'grid'" class="grid grid-cols-2 gap-3 md:grid-cols-3">
         <EventCatalogTile

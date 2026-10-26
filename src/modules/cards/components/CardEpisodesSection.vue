@@ -1,19 +1,25 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
-import { LucideBookOpen } from "lucide-vue-next"
+import { LucideBookOpen, LucidePlay } from "lucide-vue-next"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import { resolveSekaiEnumLabel } from "@/shared/sekai/labels"
+import { buildStoryPlayerLink } from "@/modules/story"
 import type { CardEpisodeCost, CardEpisodeRow } from "@/modules/cards/lib/card-power"
 
 /**
  * Side stories (`cardEpisodes`): part, title, power bonus and unlock costs.
  * Rewards are not rendered — tw/kr/cn dumps ship no `rewardResourceBoxIds`.
  */
-defineProps<{
+const props = defineProps<{
   episodes: readonly CardEpisodeRow[]
+  /** Material id → name from the `materials` dump; ids fall back to "#id". */
+  materialNames: ReadonlyMap<number, string>
   loading: boolean
   defaultOpen: boolean
+  /** The card is released, so its episodes can open in the story player. */
+  playable: boolean
 }>()
 
 const { t, te } = useI18n()
@@ -28,7 +34,7 @@ function bonusTotal(episode: CardEpisodeRow): number {
 
 function costLabel(cost: CardEpisodeCost): string {
   const resource = cost.resourceType === "material" && cost.resourceId != null
-    ? t("cardCatalog.detail.episodes.material", { id: cost.resourceId })
+    ? props.materialNames.get(cost.resourceId) ?? t("cardCatalog.detail.episodes.material", { id: cost.resourceId })
     : `${cost.resourceType}${cost.resourceId != null ? ` #${cost.resourceId}` : ""}`
   return t("cardCatalog.detail.episodes.cost", { resource, quantity: cost.quantity })
 }
@@ -56,6 +62,12 @@ function costLabel(cost: CardEpisodeCost): string {
           <Badge variant="emerald" size="sm" class="tabular-nums">
             {{ t("cardCatalog.detail.episodes.powerBonus", { value: bonusTotal(episode).toLocaleString() }) }}
           </Badge>
+          <Button v-if="playable && episode.scenarioId" as-child variant="ghost" size="sm" class="h-7 px-2">
+            <RouterLink :to="buildStoryPlayerLink(episode.scenarioId)">
+              <LucidePlay class="size-3.5" />
+              {{ t("cardCatalog.detail.episodes.play") }}
+            </RouterLink>
+          </Button>
         </div>
         <div v-if="episode.costs.length > 0" class="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
           <span>{{ t("cardCatalog.detail.episodes.costs") }}</span>

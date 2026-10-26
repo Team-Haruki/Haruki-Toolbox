@@ -2,9 +2,6 @@
 // Namespaces: navigationPages, sponsor, legal
 export default {
   "navigationPages": {
-    "common": {
-      "retryLater": "Please try again later"
-    },
     "friendGroups": {
       "title": "Recommended groups",
       "description": "Recommended chat groups related to pjsk",
@@ -18,14 +15,10 @@ export default {
       "title": "Friend links",
       "description": "Recommended websites friendly to Haruki project",
       "loading": "Loading...",
+      "empty": "No friend links yet",
       "toast": {
         "loadFailedTitle": "Failed to load friend links"
       }
-    },
-    "maintenance": {
-      "title": "Page under construction",
-      "defaultMessage": "This page is under development. Please wait for Haruki Dev Team to finish it.",
-      "etaLabel": "Estimated end time: "
     },
     "about": {
       "title": "About Project Haruki",
@@ -82,7 +75,7 @@ export default {
             "name": "Aposetles",
             "role": "Documentation Maintainer",
             "desc": "",
-            "quote": "文档问题反馈喜欢您来"
+            "quote": "Documentation feedback is always welcome"
           },
           "tianshinling": {
             "name": "TY_Ling",
@@ -231,7 +224,7 @@ export default {
       "title": "No sponsor data yet",
       "description": "Once the backend publishes sponsor records, the list will appear here.",
       "unavailableTitle": "Sponsor list unavailable",
-      "unavailableDescription": "The page is ready, but the backend sponsor list API is not available yet."
+      "unavailableDescription": "The sponsor list cannot be loaded right now. Please check back later."
     }
   },
   "legal": {

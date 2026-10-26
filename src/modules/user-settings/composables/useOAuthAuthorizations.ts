@@ -2,7 +2,7 @@ import { computed, onMounted, ref } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { unwrapUpdatedData } from "@/core/http/call-api"
-import { extractErrorMessage, readApiErrorCode } from "@/lib/error-utils"
+import { describeError, readApiErrorCode, type ErrorDescription } from "@/lib/error-utils"
 import { useUserStore } from "@/shared/stores/user"
 import {
   AUTHORIZATION_NOT_FOUND,
@@ -23,6 +23,9 @@ import {
  * client, each device grant on its own row. Revoking an app removes all of
  * its grants, browser and device alike; revoking a device removes only that
  * consent session.
+ *
+ * The revoke actions are written for `ConfirmDialog`: they reject on failure
+ * (the dialog stays open and shows why) and never toast the failure.
  */
 export function useOAuthAuthorizations() {
   const { t } = useI18n()
@@ -31,6 +34,8 @@ export function useOAuthAuthorizations() {
   const authorizations = ref<OAuthAuthorization[]>([])
   const groups = computed(() => groupOAuthAuthorizations(authorizations.value))
   const isLoading = ref(false)
+  /** The last list-load failure; rendered inline with a retry button. */
+  const loadError = ref<ErrorDescription | null>(null)
   let latestFetchRequestId = 0
 
   const appRevokeTarget = ref<OAuthAuthorizationGroup | null>(null)
@@ -57,16 +62,22 @@ export function useOAuthAuthorizations() {
     }
     if (!options.silent) {
       isLoading.value = true
+      loadError.value = null
     }
     try {
       const resp = await listOAuthAuthorizations(userStore.userId, { skipErrorToast: true })
       if (requestId !== latestFetchRequestId) return
       authorizations.value = unwrapUpdatedData(resp, t("userSettings.oauthAuthorizations.title"))
+      loadError.value = null
     } catch (e: unknown) {
       if (requestId !== latestFetchRequestId) return
-      toast.error(t("userSettings.oauthAuthorizations.toast.fetchFailedTitle"), {
-        description: extractErrorMessage(e, t("userSettings.oauthAuthorizations.toast.fetchFailedFallback")),
-      })
+      if (options.silent) {
+        toast.error(t("userSettings.oauthAuthorizations.toast.fetchFailedTitle"), {
+          description: describeError(e, t("userSettings.oauthAuthorizations.toast.fetchFailedFallback")).message,
+        })
+      } else {
+        loadError.value = describeError(e, t("userSettings.oauthAuthorizations.toast.fetchFailedFallback"))
+      }
     } finally {
       if (requestId === latestFetchRequestId) {
         isLoading.value = false
@@ -79,6 +90,7 @@ export function useOAuthAuthorizations() {
     showAppRevokeDialog.value = true
   }
 
+  /** Revokes every grant of the selected app; rejects so the confirm dialog can report it. */
   async function handleAppRevoke() {
     const target = appRevokeTarget.value
     if (!target || !userStore.userId || isRevoking.value) return
@@ -90,13 +102,8 @@ export function useOAuthAuthorizations() {
           clientName: target.clientName,
         }),
       })
-      showAppRevokeDialog.value = false
       appRevokeTarget.value = null
-      await fetchAuthorizations()
-    } catch (e: unknown) {
-      toast.error(t("userSettings.oauthAuthorizations.toast.revokeFailedTitle"), {
-        description: extractErrorMessage(e, t("userSettings.oauthAuthorizations.toast.revokeFailedFallback")),
-      })
+      await fetchAuthorizations({ silent: true })
     } finally {
       isRevokingApp.value = false
     }
@@ -119,6 +126,7 @@ export function useOAuthAuthorizations() {
     )
   }
 
+  /** Revokes one device grant; a vanished grant counts as success, anything else rejects. */
   async function handleDeviceRevoke() {
     const target = deviceRevokeTarget.value
     const consentRequestId = target?.consentRequestId?.trim() ?? ""
@@ -130,7 +138,7 @@ export function useOAuthAuthorizations() {
       toast.success(t("userSettings.oauthAuthorizations.toast.deviceRevokeSuccessTitle"), {
         description: t("userSettings.oauthAuthorizations.toast.deviceRevokeSuccessDescription", { label: name }),
       })
-      closeDeviceDialog()
+      deviceRevokeTarget.value = null
       removeLocally(consentRequestId)
       await fetchAuthorizations({ silent: true })
     } catch (e: unknown) {
@@ -138,24 +146,18 @@ export function useOAuthAuthorizations() {
       if (code === AUTHORIZATION_NOT_FOUND) {
         // Already gone (revoked elsewhere, or with the whole app): just refresh.
         toast.info(t("userSettings.oauthAuthorizations.toast.deviceNotFound"))
-        closeDeviceDialog()
+        deviceRevokeTarget.value = null
         removeLocally(consentRequestId)
         await fetchAuthorizations({ silent: true })
         return
       }
-      toast.error(t("userSettings.oauthAuthorizations.toast.deviceRevokeFailedTitle"), {
-        description: code === REVOKE_FAILED
-          ? t("userSettings.oauthAuthorizations.toast.deviceRevokeRetry")
-          : extractErrorMessage(e, t("userSettings.oauthAuthorizations.toast.deviceRevokeRetry")),
-      })
+      if (code === REVOKE_FAILED) {
+        throw new Error(t("userSettings.oauthAuthorizations.toast.deviceRevokeRetry"), { cause: e })
+      }
+      throw e
     } finally {
       revokingDeviceId.value = ""
     }
-  }
-
-  function closeDeviceDialog() {
-    showDeviceRevokeDialog.value = false
-    deviceRevokeTarget.value = null
   }
 
   onMounted(() => {
@@ -168,6 +170,7 @@ export function useOAuthAuthorizations() {
     authorizations,
     groups,
     isLoading,
+    loadError,
     isRevoking,
     isRevokingApp,
     revokingDeviceId,

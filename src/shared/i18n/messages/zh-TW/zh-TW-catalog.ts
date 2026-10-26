@@ -1,5 +1,5 @@
 // AUTO-GENERATED zh-TW locale bundle (OpenCC s2twp from zh-CN).
-// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog
+// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog, storyPlayer
 export default {
   "cardCatalog": {
     "filters": {
@@ -41,6 +41,7 @@ export default {
     },
     "detail": {
       "viewCharacterCards": "該角色的全部卡牌",
+      "playStory": "播放劇情",
       "art": {
         "normal": "特訓前",
         "trained": "特訓後"
@@ -68,7 +69,7 @@ export default {
         "level": "等級",
         "trained": "特訓",
         "episodes": "劇情",
-        "canvas": "MySekai 畫布",
+        "canvas": "烤森（MySekai）畫布",
         "masterRank": "突破"
       },
       "skill": {
@@ -88,6 +89,7 @@ export default {
         "costs": "解鎖消耗",
         "cost": "{resource} ×{quantity}",
         "material": "素材 #{id}",
+        "play": "播放",
         "partType": {
           "first_part": "前篇",
           "second_part": "後篇"
@@ -130,7 +132,7 @@ export default {
     },
     "hero": {
       "banner": "橫幅",
-      "logo": "Logo",
+      "logo": "標誌",
       "background": "背景"
     },
     "timeline": {
@@ -170,7 +172,7 @@ export default {
       "title": "排名獎勵",
       "rangeCount": "{count} 個名次區間",
       "empty": "該活動暫無排名獎勵資料。",
-      "unavailable": "當前伺服器的資料不包含獎勵詳情，僅顯示名次區間。",
+      "unavailable": "該區服暫未提供獎勵明細，這裡只顯示名次區間。",
       "rank": "第 {rank} 名",
       "rankRange": "第 {from}–{to} 名",
       "border": "榜線",
@@ -197,7 +199,7 @@ export default {
         "avatar_motion": "虛擬動作",
         "event_item": "活動道具",
         "mysekai_item": "My SEKAI 道具",
-        "mysekai_fixture": "My SEKAI 傢俱",
+        "mysekai_fixture": "My SEKAI 家具",
         "custom_profile_collection_item": "檔案收藏品",
         "penlight": "熒光棒",
         "music": "歌曲",
@@ -207,7 +209,8 @@ export default {
     "story": {
       "title": "活動劇情",
       "episodeCount": "{count} 話",
-      "episode": "第 {no} 話"
+      "episode": "第 {no} 話",
+      "play": "播放"
     }
   },
   "gachaCatalog": {
@@ -229,9 +232,10 @@ export default {
     },
     "detail": {
       "pickupCards": "檢視 PICK UP 角色卡牌",
+      "permanentHint": "常駐卡池，沒有結束時間。",
       "lightbox": {
         "banner": "橫幅",
-        "logo": "Logo"
+        "logo": "標誌"
       }
     },
     "pickups": {
@@ -286,8 +290,8 @@ export default {
       "empty": "該卡池沒有兌換貼紙",
       "convertAt": "{time} 起轉換為通用貼紙",
       "exchange": "貼紙交換所",
-      "exchangeEmpty": "當前伺服器沒有該卡池的交換所資料",
-      "rewardsUnavailable": "當前伺服器未提供獎勵詳情，僅顯示獎勵箱編號。",
+      "exchangeEmpty": "該區服暫無這個卡池的交換所資料",
+      "rewardsUnavailable": "該區服暫未提供獎勵明細，這裡只顯示獎勵箱編號。",
       "reward": "獎勵",
       "cost": "所需貼紙",
       "limit": "限購",
@@ -335,7 +339,8 @@ export default {
       "appendOnly": "僅顯示有 APPEND 譜面的歌曲",
       "mvType": "MV 型別",
       "scope": "關聯方式",
-      "scopeHint": "選擇角色後可按箱曲 / Vocal 進一步篩選"
+      "scopeHint": "選擇角色後，可進一步只看該角色的箱曲（活動曲）或演唱曲（Vocal）",
+      "aliasUnavailable": "別名搜尋暫不可用，當前只按標題匹配。"
     },
     "detail": {
       "jacket": "封面",
@@ -359,6 +364,85 @@ export default {
       "events": {
         "empty": "這首歌曲沒有關聯的活動。"
       }
+    }
+  },
+  "storyPlayer": {
+    "beta": {
+      "title": "測試中",
+      "body": "本頁面功能正在測試中，可能會遇到各種各樣的 bug，如果遇到 bug 或者什麼地方與遊戲內不符，可以在{tickets}處反饋。",
+      "tickets": "工單"
+    },
+    "title": "劇情播放",
+    "description": "按遊戲的演出播放主線、活動、卡面、特別劇情與區域對話。畫面與語音來自日服，文本可選各服官方翻譯，日服獨有的劇情另有 AI 中文翻譯。",
+    "textLang": "文本語言",
+    "voice": "播放語音",
+    "voiceVolume": "語音音量",
+    "bgmVolume": "BGM 音量",
+    "langAutoResolved": "跟隨工具箱語言 · {lang}",
+    "langAuto": "跟隨工具箱語言",
+    "lang": {
+      "ja": "日本語",
+      "zhHans": "簡體中文",
+      "zhHant": "繁體中文",
+      "en": "English",
+      "ko": "한국어",
+      "zhHansAi": "簡體中文（AI翻譯）"
+    },
+    "aiPending": "這一話的 AI 翻譯還在生成中，請稍後再來。",
+    "aiNotice": "當前文本為 AI 翻譯，可能與官方譯文有出入。",
+    "errors": {
+      "notFound": "找不到這一話劇情。",
+      "unreleased": "這一話還沒有上線。可以在設定裡開啟“展示未上線內容”後再看。",
+      "missing": "日服素材裡還沒有這一話的劇本。",
+      "failed": "劇情載入失敗：{detail}",
+      "catalog": "劇情目錄載入失敗，請重新整理重試。",
+      "engine": "播放器載入失敗：{detail}"
+    },
+    "stage": {
+      "loading": "載入中",
+      "start": "點選開始播放",
+      "pickBeside": "請在左側選擇要播放的劇情",
+      "pickBelow": "請在下方選擇要播放的劇情",
+      "models": "角色",
+      "preloading": "下載素材",
+      "preloadFailed": "{n} 個檔案下載失敗",
+      "retry": "重試",
+      "continue": "仍然播放",
+      "credit": "Developed by Deseer × 星雲希凪 (From Haruki Dev Team). Powered by Haruki Toolbox.",
+      "tabBrowser": "劇情",
+      "tabLog": "台詞",
+      "fullscreen": "全螢幕",
+      "exitFullscreen": "退出全螢幕"
+    },
+    "browser": {
+      "tabs": {
+        "unit": "主線",
+        "event": "活動",
+        "card": "卡面",
+        "special": "特別",
+        "area": "區域"
+      },
+      "all": "全部",
+      "rail": "劇情選擇",
+      "toggle": "收起 / 展開",
+      "search": "搜尋標題 / 角色",
+      "loading": "載入劇情目錄…",
+      "empty": "沒有匹配的劇情",
+      "episode": "第{no}話",
+      "firstPart": "前篇",
+      "secondPart": "後篇"
+    },
+    "menu": {
+      "fullscreen": "全螢幕",
+      "auto": "自動",
+      "mute": "靜音",
+      "fast": "快進",
+      "hide": "隱藏",
+      "log": "記錄"
+    },
+    "log": {
+      "search": "搜尋台詞 / 角色",
+      "matches": "{count} 條匹配"
     }
   }
 } as const

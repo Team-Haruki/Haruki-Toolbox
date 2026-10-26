@@ -2,6 +2,19 @@
 // Namespaces: admin, adminConfig, adminRisk, adminBotSecurity, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
 export default {
   "admin": {
+    "pagination": {
+      "total": "{total} items",
+      "pageSize": "Per page",
+      "jumpToPage": "Jump to page",
+      "firstPage": "First page",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "lastPage": "Last page"
+    },
+    "filters": {
+      "search": "Search",
+      "reset": "Reset filters"
+    },
     "reauth": {
       "title": "Confirm your password",
       "description": "Sensitive admin actions need your account password again. Once confirmed, the action you started continues automatically.",
@@ -86,8 +99,7 @@ export default {
     "toast": {
       "loadApiKeysFailedTitle": "Failed to load Public API Keys",
       "loadRuntimeFailedTitle": "Failed to load runtime configuration",
-      "loadFailedFallback": "Load failed",
-      "apiKeysUpdated": "Public API Keys updated",
+      "apiKeysUpdated":"Public API Keys updated",
       "runtimeUpdated": "Runtime configuration updated",
       "invalidJson": "Invalid JSON format",
       "invalidApiKeysSchema": "Public API Keys must be a JSON object of string values",
@@ -99,8 +111,14 @@ export default {
       "switchNotApplied": "The backend did not apply the switch (it may not support it yet); the value it reports is shown."
     },
     "loadError": "Failed to load configuration",
-    "retry": "Retry",
-    "unsavedChanges": "Unsaved changes"
+    "unsavedChanges": "Unsaved changes",
+    "editor": {
+      "loading": "Loading editor…",
+      "loadFailedTitle": "Code editor failed to load",
+      "loadFailedDescription": "The editor is loaded from a CDN, which your network may block. Switch to the plain text editor to keep editing the configuration, or reload the page to try loading it again.",
+      "usePlainEditor": "Use plain text editor",
+      "useCodeEditor": "Back to code editor"
+    }
   },
   "adminRisk": {
     "tabs": {
@@ -121,15 +139,16 @@ export default {
       "resolved": "Resolved"
     },
     "events": {
-      "pagination": {
-        "prev": "Previous page",
-        "next": "Next page"
-      },
       "title": "Risk events",
       "createButton": "Create event",
       "createDialogTitle": "Create risk event",
       "create": "Create",
       "resolveAction": "Mark as resolved",
+      "resolveDialog": {
+        "title": "Mark as resolved",
+        "description": "Mark event \"{action}\" (ID {id}) as resolved? It will no longer show as open.",
+        "confirm": "Mark as resolved"
+      },
       "empty": "No risk events",
       "total": "{total} events in total",
       "fields": {
@@ -144,6 +163,16 @@ export default {
         "action": "e.g. suspicious_login",
         "reason": "Describe the risk reason…",
         "targetUserId": "User ID"
+      },
+      "sourceOptions": {
+        "dashboard": "Admin dashboard (dashboard)",
+        "manual": "Manual review (manual)",
+        "automated": "Automated detection (automated)",
+        "other": "Other (other)"
+      },
+      "validation": {
+        "actionRequired": "Please enter the event action",
+        "reasonRequired": "Please enter the risk reason"
       },
       "table": {
         "severity": "Severity",
@@ -161,7 +190,22 @@ export default {
       "saveButton": "Save rules",
       "superAdminOnly": "Risk rules are only available to super admins.",
       "loadError": "Failed to load risk rules.",
-      "retry": "Retry"
+      "retry": "Retry",
+      "validation": {
+        "invalidJson": "Invalid JSON: check brackets, quotes and commas",
+        "notArray": "Rules content must be a JSON array",
+        "invalidRule": "Rule #{index} is malformed: it needs id, name, description (strings) and enabled (boolean); config is optional and must be an object"
+      },
+      "preview": {
+        "title": "Rules preview",
+        "count": "{count} rules",
+        "invalid": "Fix the JSON above to see the parsed rules here.",
+        "empty": "The rule array is empty; saving will remove every rule.",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "configKeys": "Config keys: {keys}",
+        "noConfig": "No config"
+      }
     },
     "toast": {
       "loadEventsFailedTitle": "Failed to load risk events",
@@ -356,8 +400,19 @@ export default {
         "cancel": "Cancel",
         "confirm": "Confirm"
       },
+      "deleteItemDialog": {
+        "title": "Confirm item deletion",
+        "description": "Delete item {name}? This cannot be undone.",
+        "confirm": "Delete"
+      },
       "emptyItems": "No group items",
       "emptyGroups": "No groups"
+    },
+    "validation": {
+      "nameRequired": "Please enter a name",
+      "urlRequired": "Please enter the link URL",
+      "invalidUrl": "Please enter a valid http(s) URL",
+      "groupNameRequired": "Please enter a group name"
     },
     "linkDialog": {
       "createTitle": "Add friend link",
@@ -401,19 +456,15 @@ export default {
       "loadLinksFailedTitle": "Failed to load friend links",
       "loadGroupsFailedTitle": "Failed to load friend groups",
       "actionFailedFallback": "Action failed",
-      "nameUrlRequired": "Please enter name and URL",
-      "invalidLinkUrl": "Please enter a valid http(s) URL",
       "saveFailedTitle": "Save failed",
       "createFailedTitle": "Create failed",
       "deleteFailedTitle": "Delete failed",
       "linkUpdated": "Friend link updated",
       "linkCreated": "Friend link created",
       "linkDeleted": "Friend link deleted",
-      "groupNameRequired": "Please enter group name",
       "groupCreated": "Group created",
       "groupUpdated": "Group updated",
       "groupDeleted": "Group deleted",
-      "itemNameRequired": "Please enter name",
       "itemUpdated": "Item updated",
       "itemCreated": "Item created",
       "itemDeleted": "Item deleted"
@@ -527,9 +578,9 @@ export default {
     "deleteDialog": {
       "title": "Confirm delete",
       "descriptionPrefix": "Delete OAuth client",
-      "descriptionSuffix": "?",
+      "descriptionSuffix": "? All of its tokens are invalidated immediately and applications using it lose access.",
       "cancel": "Cancel",
-      "confirm": "Confirm"
+      "confirm": "Delete"
     },
     "rotateDialog": {
       "title": "Rotate client secret",
@@ -543,6 +594,11 @@ export default {
       "cancel": "Cancel",
       "confirm": "Revoke all"
     },
+    "disableDialog": {
+      "title": "Disable client",
+      "description": "Disable client {clientId}? It can no longer start authorizations, and its existing user authorizations and tokens are revoked.",
+      "confirm": "Disable"
+    },
     "statsDialog": {
       "title": "Client statistics",
       "filters": "Filter range",
@@ -553,9 +609,23 @@ export default {
       "day": "Day",
       "apply": "Apply",
       "invalidTimeRange": "Start time cannot be later than end time",
-      "totalAuthorizations": "Total authorizations",
-      "activeAuthorizations": "Active authorizations",
-      "last30Days": "Last 30 days"
+      "rangeLabel": "Range: {range}",
+      "authorizations": "User authorizations",
+      "tokens": "Tokens",
+      "summary": {
+        "authorizationTotal": "Total authorizations",
+        "authorizationActive": "Active authorizations",
+        "authorizationRevoked": "Revoked authorizations",
+        "authorizationCreatedInRange": "Created in range",
+        "tokenTotal": "Total tokens",
+        "tokenActive": "Active tokens",
+        "tokenRevoked": "Revoked tokens",
+        "tokenIssuedInRange": "Issued in range"
+      },
+      "trendTitle": "Trend",
+      "trendAuthorizations": "New authorizations",
+      "trendTokens": "Tokens issued",
+      "trendEmpty": "No authorization or token activity in the selected range"
     },
     "secretDialog": {
       "title": "Credential generated",
@@ -646,6 +716,7 @@ export default {
       "copied": "Copied to clipboard",
       "validation": {
         "clientIdAndNameRequired": "Client ID and name are required",
+        "clientIdRequired": "Client ID is required",
         "nameRequired": "Client name is required",
         "redirectUriRequired": "Provide at least one redirect URI when authorization code is selected",
         "scopeRequired": "Please select at least one scope",
@@ -696,7 +767,13 @@ export default {
       "jwtSecretPlaceholder": "Leave empty to keep the current secret",
       "jwtSecretHelp": "Only enter a value when you want to replace the current JWT secret.",
       "readOnlyNoticeTitle": "Read-only view",
-      "readOnlyNoticeDescription": "You can view webhook settings and endpoints, but modifying them requires super-admin permission."
+      "readOnlyNoticeDescription": "You can view webhook settings and endpoints, but modifying them requires super-admin permission.",
+      "noChanges": "No changes to save",
+      "disableDialog": {
+        "title": "Disable global webhook delivery?",
+        "description": "No endpoint will receive callbacks any more, even those that are enabled individually. Queued deliveries are dropped.",
+        "confirm": "Disable delivery"
+      }
     },
     "list": {
       "title": "Webhook endpoints",
@@ -743,7 +820,7 @@ export default {
       "headerNameLabel": "Header name",
       "tokenLabel": "Webhook token",
       "tokenHelp": "This token is used when calling webhook subscriber APIs. Store it securely.",
-      "close": "Close"
+      "confirmSaved": "I have saved it"
     },
     "subscribers": {
       "title": "Subscribers for {id}",
@@ -843,10 +920,24 @@ export default {
       "planName": "Sponsor tier",
       "source": "Source",
       "paidAt": "Last support time",
+      "paidAtPlaceholder": "Not set",
+      "saveProfile": "Save profile",
       "message": "Message",
       "afdianSyncDisabled": "Do not update this profile from Afdian",
       "afdianSyncHelp": "When enabled, the manually edited name, avatar, tier and message are not overwritten by later Afdian syncs; Afdian orders still count toward the time.",
       "manualProfileHint": "This only saves display profile data and sync policy. Afdian API keys and webhook configuration should remain backend-only."
+    },
+    "syncDialog": {
+      "title": "Sync from Afdian?",
+      "description": "Pulls the latest orders from Afdian and updates the profile and time of every sponsor whose sync is on. It runs in the background; the list refreshes when it finishes."
+    },
+    "afdianToggleDialog": {
+      "disableTitle": "Stop updating from Afdian?",
+      "disableDescription": "Afdian syncs will no longer overwrite the name, avatar, tier and message of {name}; Afdian orders still count towards their time.",
+      "confirmDisable": "Stop updating",
+      "enableTitle": "Resume updating from Afdian?",
+      "enableDescription": "The next sync will overwrite the manually edited name, avatar, tier and message of {name} with Afdian's data.",
+      "confirmEnable": "Resume updating"
     },
     "duration": {
       "title": "Sponsorship time",
@@ -880,6 +971,8 @@ export default {
       "manual": {
         "title": "Manual time",
         "add": "Add manual time",
+        "addDialogTitle": "Add manual time",
+        "editDialogTitle": "Edit manual time",
         "empty": "No manual time yet.",
         "migrated": "Migrated",
         "startsAt": "Earliest start: {date}",
@@ -898,6 +991,7 @@ export default {
           "day": "Days"
         },
         "startsAt": "Earliest start",
+        "startsAtPlaceholder": "Now",
         "startsAtHelp": "Leave empty for now. The time only starts after the Afdian time and earlier manual time end; it starts here only if the sponsorship had lapsed, and then it cannot be in the future.",
         "note": "Note / reason",
         "notePlaceholder": "e.g. WeChat transfer, 30 CNY"
@@ -941,8 +1035,18 @@ export default {
       "stat": {
         "totalUsers": "Total users",
         "superAdmin": "Super admins",
+        "admin": "Admins",
         "totalBindings": "Game bindings",
+        "verifiedBindings": "Verified",
         "totalUploads": "Total uploads (all time)"
+      },
+      "breakdown": {
+        "byServer": "Bindings by server",
+        "byServerHint": "All game bindings",
+        "byMethod": "Uploads by method",
+        "byDataType": "Uploads by data type",
+        "windowHint": "Last {hours} hours",
+        "empty": "No data"
       },
       "upload24h": {
         "total": "24h total uploads",
@@ -981,6 +1085,7 @@ export default {
         "total": "Total logs"
       },
       "searchPlaceholder": "Search logs…",
+      "resetSearch": "Clear search",
       "exportButton": "Export",
       "table": {
         "result": "Result",
@@ -988,7 +1093,8 @@ export default {
         "request": "Method",
         "user": "User",
         "time": "Time",
-        "empty": "No logs"
+        "empty": "No logs",
+        "openDetail": "View details"
       },
       "detail": {
         "title": "Log detail",
@@ -997,7 +1103,10 @@ export default {
         "action": "Action",
         "request": "Request",
         "user": "User",
-        "detail": "Detail"
+        "detail": "Detail",
+        "copy": "Copy details",
+        "copied": "Details copied",
+        "copyFailed": "Copy failed"
       },
       "toast": {
         "loadFailedTitle": "Failed to load logs",
@@ -1024,7 +1133,7 @@ export default {
         "to": "End time",
         "toPlaceholder": "Select end time",
         "gameUid": "Game UID",
-        "gameUidPlaceholder": "Separate multiple UIDs with commas",
+        "gameUidPlaceholder": "UIDs, comma-separated",
         "method": "Upload method",
         "dataType": "Data type",
         "server": "Server",
@@ -1034,10 +1143,8 @@ export default {
         "allMethods": "All methods",
         "allDataTypes": "All data types",
         "allServers": "All servers",
-        "allStatuses": "All statuses"
-      },
-      "actions": {
-        "search": "Search"
+        "allStatuses": "All statuses",
+        "selectedMore": "{first} +{count}"
       },
       "timeRangeLabel": "Time range:",
       "table": {
@@ -1129,10 +1236,6 @@ export default {
     }
   },
   "adminGameBindings": {
-    "pagination": {
-      "prevPage": "Previous page",
-      "nextPage": "Next page"
-    },
     "common": {
       "cancel": "Cancel",
       "create": "Create"
@@ -1250,7 +1353,8 @@ export default {
       "cancel": "Cancel",
       "confirm": "Confirm",
       "unbound": "Not bound",
-      "openMenu": "Open menu"
+      "openMenu": "Open menu",
+      "fallback": "—"
     },
     "management": {
       "title": "User management",
@@ -1344,7 +1448,7 @@ export default {
     },
     "detail": {
       "backToList": "Back to user list",
-      "notFound": "User not found or failed to load",
+      "notFound": "User not found; they may have been deleted or the link is wrong.",
       "tabs": {
         "info": "Basic info",
         "activity": "Activity logs",
@@ -1372,12 +1476,22 @@ export default {
         "delete": "Delete",
         "deleteDialogTitle": "Confirm delete",
         "deleteDialogDescription": "This is a soft delete and can be restored. Delete user {name}?",
-        "deleteDialogConfirm": "Confirm delete"
+        "deleteDialogConfirm": "Confirm delete",
+        "forceLogoutDialogTitle": "Confirm force logout",
+        "forceLogoutDialogDescription": "Force logout for user {name}? All of their active sessions will be invalidated and they will need to sign in again.",
+        "forceLogoutDialogConfirm": "Confirm logout",
+        "resetPasswordDialogTitle": "Confirm password reset",
+        "resetPasswordDialogDescription": "Reset the password of user {name}? Their current password stops working immediately and they must set a new one before signing in.",
+        "resetPasswordDialogConfirm": "Confirm reset",
+        "roleDialogTitle": "Confirm role change",
+        "roleDialogDescription": "Change the role of user {name} to {role}? The new permissions take effect immediately.",
+        "roleDialogConfirm": "Confirm change"
       },
       "activity": {
         "title": "Activity logs",
         "uploadLogsTitle": "Upload logs",
         "uploadLogsDescription": "Recent upload attempts for this user, including backend failure details.",
+        "viewAllUploads": "View all in upload logs",
         "columns": {
           "action": "Action",
           "result": "Result",
@@ -1392,7 +1506,18 @@ export default {
         "total": "{count} authorizations in total",
         "empty": "No OAuth authorizations",
         "revokeAllDialogTitle": "Revoke all authorizations",
-        "revokeAllDialogDescription": "This revokes every OAuth authorization for this user and logs them out of all connected third-party apps. Continue?"
+        "revokeAllDialogDescription": "This revokes all {count} OAuth authorizations for this user and logs them out of all connected third-party apps. Continue?",
+        "columns": {
+          "client": "App",
+          "scopes": "Scopes",
+          "createdAt": "Granted at",
+          "status": "Status"
+        },
+        "status": {
+          "active": "Active",
+          "revoked": "Revoked",
+          "clientDisabled": "App disabled"
+        }
       },
       "game": {
         "title": "Game account bindings",
@@ -1432,7 +1557,10 @@ export default {
         "generate": "Generate upload code",
         "empty": "No upload code",
         "deleteDialogTitle": "Confirm delete",
-        "deleteDialogDescription": "Delete the current iOS upload code? You can regenerate a new one afterward."
+        "deleteDialogDescription": "Delete the current iOS upload code? You can regenerate a new one afterward.",
+        "regenerateDialogTitle": "Confirm regenerate",
+        "regenerateDialogDescription": "Regenerate the iOS upload code of user {name}? The current code stops working immediately and the user must update it in their Shortcut.",
+        "regenerateDialogConfirm": "Regenerate"
       },
       "dialog": {
         "email": {
@@ -1440,6 +1568,7 @@ export default {
           "description": "Update email address for user {name}.",
           "newEmail": "New email address",
           "placeholder": "Enter email address",
+          "invalid": "Enter a valid email address, e.g. name@example.com",
           "confirm": "Confirm"
         },
         "gameBinding": {

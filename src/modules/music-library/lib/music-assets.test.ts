@@ -28,8 +28,8 @@ describe("buildMusicJacketAssetPath", () => {
 
 describe("resolveMusicJacketUrl", () => {
   it("resolves a full region asset URL", () => {
-    expect(resolveMusicJacketUrl("kr", "jacket_s_001", "china")).toBe(
-      "https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/music/jacket/jacket_s_001/jacket_s_001.png",
+    expect(resolveMusicJacketUrl("kr", "jacket_s_001", "china_cdn")).toBe(
+      "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/kr-assets/startapp/music/jacket/jacket_s_001/jacket_s_001.png",
     )
   })
 
@@ -47,8 +47,8 @@ describe("music long audio urls", () => {
   })
 
   it("resolves a full region asset URL and rejects blank names", () => {
-    expect(resolveMusicLongAudioUrl("jp", "0001_01", "china")).toBe(
-      "https://sekai-assets.haruki.seiunx.com/jp-assets/ondemand/music/long/0001_01/0001_01.mp3",
+    expect(resolveMusicLongAudioUrl("jp", "0001_01", "china_cdn")).toBe(
+      "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/jp-assets/ondemand/music/long/0001_01/0001_01.mp3",
     )
     expect(resolveMusicLongAudioUrl("jp", "")).toBeNull()
   })

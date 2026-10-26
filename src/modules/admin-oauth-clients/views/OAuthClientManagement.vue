@@ -13,10 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import {
-  OAuthClientConfirmActionDialog,
   OAuthClientCreateDialog,
-  OAuthClientDeleteDialog,
   OAuthClientEditDialog,
   OAuthClientList,
   OAuthClientSecretDialog,
@@ -67,6 +66,8 @@ const {
   editGrantTypes,
   editDevicePolicy,
   saving,
+  createFormErrors,
+  editFormErrors,
   statsOpen,
   statsLoading,
   statsClientId,
@@ -74,10 +75,14 @@ const {
   statsTo,
   statsBucket,
   stats,
+  statsError,
+  statsTimeRangeError,
   secretDisplayOpen,
   displayedSecret,
   deleteConfirmOpen,
   clientToDelete,
+  disableConfirmOpen,
+  clientToDisable,
   rotateConfirmOpen,
   clientToRotate,
   revokeConfirmOpen,
@@ -127,8 +132,10 @@ const {
   openEdit,
   handleSaveEdit,
   toggleActive,
+  executeDisable,
   confirmRotateSecret,
   handleRotateSecret,
+  describeActionError,
   handleRestore,
   confirmRevoke,
   handleRevoke,
@@ -219,6 +226,7 @@ function resetFilters() {
             :device-policy="newDevicePolicy"
             :available-scopes="AVAILABLE_SCOPES"
             :available-grant-types="AVAILABLE_GRANT_TYPE_OPTIONS"
+            :form-errors="createFormErrors"
             @update:client-id="updateNewClientId"
             @update:name="updateNewName"
             @update:client-type="updateNewClientType"
@@ -280,8 +288,11 @@ function resetFilters() {
       v-model:stats-to="statsTo"
       v-model:stats-bucket="statsBucket"
       :stats="stats"
+      :error="statsError"
+      :time-range-error="statsTimeRangeError"
       @apply="applyStatsFilters"
       @reset="resetStatsFilters"
+      @retry="applyStatsFilters"
     />
 
     <OAuthClientEditDialog
@@ -297,6 +308,7 @@ function resetFilters() {
       :device-policy="editDevicePolicy"
       :available-scopes="AVAILABLE_SCOPES"
       :available-grant-types="AVAILABLE_GRANT_TYPE_OPTIONS"
+      :form-errors="editFormErrors"
       @update:name="updateEditName"
       @update:client-type="updateEditClientType"
       @toggle-scope="toggleEditScope"
@@ -311,28 +323,52 @@ function resetFilters() {
       @submit="handleSaveEdit"
     />
 
-    <OAuthClientDeleteDialog
+    <ConfirmDialog
       v-model:open="deleteConfirmOpen"
-      :client-id="clientToDelete"
-      @confirm="executeDelete"
+      :title="t('adminOAuthClients.deleteDialog.title')"
+      :cancel-label="t('adminOAuthClients.deleteDialog.cancel')"
+      :confirm-label="t('adminOAuthClients.deleteDialog.confirm')"
+      destructive
+      :describe-error="describeActionError"
+      :on-confirm="executeDelete"
+    >
+      <template #description>
+        {{ t("adminOAuthClients.deleteDialog.descriptionPrefix") }}
+        <strong>{{ clientToDelete }}</strong>
+        {{ t("adminOAuthClients.deleteDialog.descriptionSuffix") }}
+      </template>
+    </ConfirmDialog>
+
+    <ConfirmDialog
+      v-model:open="disableConfirmOpen"
+      :title="t('adminOAuthClients.disableDialog.title')"
+      :description="t('adminOAuthClients.disableDialog.description', { clientId: clientToDisable })"
+      :confirm-label="t('adminOAuthClients.disableDialog.confirm')"
+      destructive
+      :describe-error="describeActionError"
+      :on-confirm="executeDisable"
     />
 
-    <OAuthClientConfirmActionDialog
+    <ConfirmDialog
       v-model:open="rotateConfirmOpen"
       :title="t('adminOAuthClients.rotateDialog.title')"
       :description="t('adminOAuthClients.rotateDialog.description', { clientId: clientToRotate })"
       :cancel-label="t('adminOAuthClients.rotateDialog.cancel')"
       :confirm-label="t('adminOAuthClients.rotateDialog.confirm')"
-      @confirm="handleRotateSecret"
+      destructive
+      :describe-error="describeActionError"
+      :on-confirm="handleRotateSecret"
     />
 
-    <OAuthClientConfirmActionDialog
+    <ConfirmDialog
       v-model:open="revokeConfirmOpen"
       :title="t('adminOAuthClients.revokeDialog.title')"
       :description="t('adminOAuthClients.revokeDialog.description', { clientId: clientToRevoke })"
       :cancel-label="t('adminOAuthClients.revokeDialog.cancel')"
       :confirm-label="t('adminOAuthClients.revokeDialog.confirm')"
-      @confirm="handleRevoke"
+      destructive
+      :describe-error="describeActionError"
+      :on-confirm="handleRevoke"
     />
 
     <OAuthClientSecretDialog
@@ -361,13 +397,14 @@ function resetFilters() {
       @save="saveWebhook"
     />
 
-    <OAuthClientConfirmActionDialog
+    <ConfirmDialog
       v-model:open="webhookDeleteConfirmOpen"
       :title="t('adminOAuthClients.webhooks.deleteDialog.title')"
       :description="t('adminOAuthClients.webhooks.deleteDialog.description', { callbackUrl: webhookToDelete?.callbackUrl ?? '' })"
       :cancel-label="t('adminOAuthClients.webhooks.deleteDialog.cancel')"
       :confirm-label="t('adminOAuthClients.webhooks.deleteDialog.confirm')"
-      @confirm="deleteWebhook"
+      destructive
+      :on-confirm="deleteWebhook"
     />
   </div>
 </template>

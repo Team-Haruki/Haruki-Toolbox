@@ -147,43 +147,70 @@ export function useIOSModuleGenerator() {
       !isQxScriptWarning.value
   })
 
-  async function generateCode() {
-    if (!userStore.userId) {
-      toast.warning(t("tools.iosModules.toast.loginRequired"))
-      return
+  /**
+   * Requests a fresh upload code. Rejects on failure (the regenerate confirm
+   * dialog shows why and stays open); the first-time button wraps it with a
+   * toast instead.
+   */
+  async function requestUploadCode() {
+    const userId = userStore.userId
+    if (!userId) {
+      throw new Error(t("tools.iosModules.toast.loginRequired"))
     }
 
     isGeneratingCode.value = true
     try {
-      const code = await generateIOSUploadCode(userStore.userId)
+      const code = await generateIOSUploadCode(userId)
       userStore.setIOSUploadCode(code)
-      toast.success(t("tools.iosModules.toast.generateCodeSuccess"))
-    } catch (error: unknown) {
-      toast.error(t("tools.iosModules.toast.generateCodeFailedTitle"), {
-        description: extractErrorMessage(error, t("tools.iosModules.toast.generateCodeFailedFallback")),
-      })
+      toast.success(t("tools.iosModules.toast.generateCodeSuccess"), { id: "ios-upload-code" })
     } finally {
       isGeneratingCode.value = false
     }
   }
 
+  async function generateCode() {
+    if (!userStore.userId) {
+      toast.warning(t("tools.iosModules.toast.loginRequired"))
+      return
+    }
+    if (isGeneratingCode.value) return
+
+    try {
+      await requestUploadCode()
+    } catch (error: unknown) {
+      toast.error(t("tools.iosModules.toast.generateCodeFailedTitle"), {
+        description: extractErrorMessage(error, t("tools.iosModules.toast.generateCodeFailedFallback")),
+      })
+    }
+  }
+
+  /** The confirmed regenerate: same request, but failures propagate to the dialog. */
+  async function regenerateCode() {
+    if (isGeneratingCode.value) return
+    await requestUploadCode()
+  }
+
+  // One toast slot for every copy button: repeated clicks replace the toast
+  // instead of stacking a column of identical "copied" messages.
+  const COPY_TOAST_ID = "ios-module-copy"
+
   async function copyToClipboard(text: string, label: string) {
     if (!text) {
-      toast.error(t("tools.iosModules.toast.copyEmpty"))
+      toast.error(t("tools.iosModules.toast.copyEmpty"), { id: COPY_TOAST_ID })
       return
     }
 
     if (!isClipboardSupported()) {
-      toast.error(t("tools.iosModules.toast.clipboardUnsupported"))
+      toast.error(t("tools.iosModules.toast.clipboardUnsupported"), { id: COPY_TOAST_ID })
       return
     }
 
     if (await copyTextToClipboard(text)) {
-      toast.success(t("tools.iosModules.toast.copySuccess", { label }))
+      toast.success(t("tools.iosModules.toast.copySuccess", { label }), { id: COPY_TOAST_ID })
       return
     }
 
-    toast.error(t("tools.iosModules.toast.copyFailed"))
+    toast.error(t("tools.iosModules.toast.copyFailed"), { id: COPY_TOAST_ID })
   }
 
   function toggleRegion(region: string) {
@@ -290,6 +317,7 @@ export function useIOSModuleGenerator() {
     scriptUrl,
     canInstall,
     generateCode,
+    regenerateCode,
     copyToClipboard,
     toggleRegion,
     toggleDataType,

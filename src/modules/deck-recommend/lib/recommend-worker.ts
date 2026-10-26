@@ -4,13 +4,13 @@ import {
 } from "haruki-sekai-deck-recommend-cpp"
 import wasmUrl from "haruki-sekai-deck-recommend-cpp/sekai_deck_recommend.wasm?url"
 import type { SekaiRegion } from "@/types"
-import type {
-  DeckRecommendWorkerEvent,
-  DeckRecommendWorkerLoadDataRequest,
-  DeckRecommendWorkerMusicRequest,
-  DeckRecommendWorkerRecommendBatchRequest,
-  DeckRecommendWorkerRecommendRequest,
-  DeckRecommendWorkerRequest,
+import { readSekaiMasterFile, readSekaiMasterFiles, readSekaiMusicMetas } from "@/shared/sekai/cache"
+import { SEKAI_DATA_RECOMMEND_MASTER_FILES } from "@/shared/sekai/worker-protocol"
+import {
+  createDeckRecommendDataKey,
+  type DeckRecommendWorkerDataSource,
+  type DeckRecommendWorkerEvent,
+  type DeckRecommendWorkerRequest,
 } from "./worker-protocol"
 import { normalizeDeckRecommendWorkerError } from "./worker-error"
 import type { DedicatedWorkerScope } from "@/lib/worker-scope"
@@ -18,6 +18,7 @@ import type { DedicatedWorkerScope } from "@/lib/worker-scope"
 const workerScope = globalThis as unknown as DedicatedWorkerScope<DeckRecommendWorkerRequest, DeckRecommendWorkerEvent>
 let enginePromise: Promise<SekaiDeckRecommendWasm> | null = null
 const loadedDataKeys = new Map<SekaiRegion, string>()
+const dataLoads = new Map<string, Promise<void>>()
 
 // The engine reads a few optional master tables that the toolbox intentionally
 // does not ship (ingameNotes/ingameCombos are huge; the mysekai fixture bonus
@@ -41,8 +42,8 @@ workerScope.onmessage = (event: MessageEvent<DeckRecommendWorkerRequest>) => {
 }
 
 // Fires when an incoming request cannot be deserialized (for example a large
-// master data payload under memory pressure); report it instead of silently
-// dropping the request and letting the caller wait for its timeout.
+// inline master data payload under memory pressure); report it instead of
+// silently dropping the request and letting the caller wait for its timeout.
 workerScope.onmessageerror = () => {
   postEvent({
     type: "error",
@@ -65,7 +66,7 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
     }
 
     if (request.type === "load-data") {
-      const result = await loadEngineData(request, request.requestId)
+      const result = await loadEngineData(request.data, request.requestId)
       postEvent({
         type: "data-loaded",
         requestId: request.requestId,
@@ -76,7 +77,7 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
     }
 
     postEvent({ type: "progress", requestId: request.requestId, phase: "initializing" })
-    const engine = await loadEngineData(request, request.requestId).then((result) => result.engine)
+    const engine = await loadEngineData(request.data, request.requestId).then((result) => result.engine)
 
     postEvent({ type: "progress", requestId: request.requestId, phase: "recommending" })
     const startedAt = performance.now()
@@ -97,6 +98,7 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
         type: "batch-done",
         requestId: request.requestId,
         results,
+        elapsedMs: Math.round(performance.now() - startedAt),
       })
       return
     }
@@ -119,26 +121,25 @@ async function handleRequest(request: DeckRecommendWorkerRequest) {
 }
 
 async function loadEngineData(
-  request:
-    | DeckRecommendWorkerLoadDataRequest
-    | DeckRecommendWorkerRecommendRequest
-    | DeckRecommendWorkerRecommendBatchRequest
-    | DeckRecommendWorkerMusicRequest,
+  source: DeckRecommendWorkerDataSource,
   requestId: string,
 ): Promise<{ engine: SekaiDeckRecommendWasm; elapsedMs: number; cacheHit: boolean }> {
   const startedAt = performance.now()
   const engine = await getEngine()
-  const dataKey = createDataKey(request)
-  const cacheHit = loadedDataKeys.get(request.region) === dataKey
+  const dataKey = createDeckRecommendDataKey(source)
+  const cacheHit = loadedDataKeys.get(source.region) === dataKey
   if (!cacheHit) {
-    if (!request.masterData || request.musicMetas == null) {
-      throw new Error("recommendation data is not preloaded")
-    }
-
     postEvent({ type: "progress", requestId, phase: "loading-data" })
-    engine.loadMasterData(request.region, request.masterData)
-    engine.loadMusicMetas(request.region, request.musicMetas)
-    loadedDataKeys.set(request.region, dataKey)
+    // Two requests racing for the same data (a preload and the run that
+    // followed it) must parse and load the tables only once.
+    let pending = dataLoads.get(dataKey)
+    if (!pending) {
+      pending = loadDataIntoEngine(engine, source, dataKey).finally(() => {
+        dataLoads.delete(dataKey)
+      })
+      dataLoads.set(dataKey, pending)
+    }
+    await pending
   }
 
   return {
@@ -146,6 +147,43 @@ async function loadEngineData(
     elapsedMs: Math.round(performance.now() - startedAt),
     cacheHit,
   }
+}
+
+async function loadDataIntoEngine(engine: SekaiDeckRecommendWasm, source: DeckRecommendWorkerDataSource, dataKey: string) {
+  const { masterData, musicMetas } = await resolveWorkerData(source)
+  engine.loadMasterData(source.region, masterData)
+  engine.loadMusicMetas(source.region, musicMetas)
+  loadedDataKeys.set(source.region, dataKey)
+  // The parsed tables are only needed until the engine has copied them into
+  // its own heap; nothing here keeps a reference afterwards.
+}
+
+async function resolveWorkerData(
+  source: DeckRecommendWorkerDataSource,
+): Promise<{ masterData: Record<string, unknown>; musicMetas: string | object }> {
+  if (source.masterData && source.musicMetas != null) {
+    return { masterData: source.masterData, musicMetas: source.musicMetas as string | object }
+  }
+
+  const [masterData, musicMetas] = await Promise.all([
+    readSekaiMasterFiles(source.region, source.masterFileNames, source.masterVersion),
+    readSekaiMusicMetas(source.region),
+  ])
+  if (musicMetas == null || (typeof musicMetas !== "object" && typeof musicMetas !== "string")) {
+    throw new Error("music metas are not ready")
+  }
+  const missingFiles = SEKAI_DATA_RECOMMEND_MASTER_FILES.filter((fileName) => masterData[fileName] == null)
+  if (missingFiles.length > 0) {
+    throw new Error(`master data is missing: ${missingFiles.join(", ")}`)
+  }
+  if (source.honorRegion !== source.region) {
+    const honors = await readSekaiMasterFile(source.honorRegion, "honors", source.honorMasterVersion ?? undefined)
+    if (!honors) {
+      throw new Error("account server honors master data is not ready")
+    }
+    masterData.honors = honors
+  }
+  return { masterData, musicMetas }
 }
 
 async function preloadEngine(requestId: string) {
@@ -172,20 +210,6 @@ function getEngine() {
     },
   })
   return enginePromise
-}
-
-function createDataKey(
-  request:
-    | DeckRecommendWorkerLoadDataRequest
-    | DeckRecommendWorkerRecommendRequest
-    | DeckRecommendWorkerRecommendBatchRequest
-    | DeckRecommendWorkerMusicRequest,
-) {
-  return [
-    request.masterVersion,
-    request.musicMetasKey ?? "unknown-music-metas",
-    request.masterFileNames.slice().sort((left, right) => left.localeCompare(right)).join(","),
-  ].join(":")
 }
 
 async function disposeEngine() {

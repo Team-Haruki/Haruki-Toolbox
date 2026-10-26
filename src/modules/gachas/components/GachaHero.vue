@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideCalendarDays, LucideZoomIn } from "lucide-vue-next"
-import { formatLocalizedDateTime } from "@/lib/date-time"
-import type { CatalogStatus } from "@/shared/components/catalog/types"
+import { LucideCalendarDays, LucideInfinity, LucideZoomIn } from "lucide-vue-next"
+import type { SekaiRegion } from "@/types"
+import { isCatalogPermanentEnd, type CatalogStatus } from "@/shared/components/catalog/types"
 import CatalogCountdown from "@/shared/components/catalog/CatalogCountdown.vue"
+import CatalogTimeZoneHint from "@/shared/components/catalog/CatalogTimeZoneHint.vue"
+import CatalogZonedTime from "@/shared/components/catalog/CatalogZonedTime.vue"
 import ImageLightbox, { type ImageLightboxItem } from "@/shared/components/ImageLightbox.vue"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 
@@ -17,6 +19,8 @@ const props = withDefaults(defineProps<{
   startAt: number | null
   endAt: number | null
   status: CatalogStatus | null
+  /** The server the gacha belongs to; its zone is shown next to local times. */
+  region: SekaiRegion
   blur?: boolean
   /** Sidebar layout: full-width banner, dates and countdown stacked. */
   stacked?: boolean
@@ -35,11 +39,14 @@ const lightboxItems = computed<ImageLightboxItem[]>(() => [
   { label: t("gachaCatalog.detail.lightbox.logo"), sources: props.logoSources, alt: props.name },
 ])
 
+/** Permanent pools (end in 2099): no countdown, a "permanent" line instead. */
+const permanent = computed(() => props.status === "ongoing" && isCatalogPermanentEnd(props.endAt, Date.now()))
+
 const countdownTarget = computed(() => {
   if (props.status === "upcoming") {
     return props.startAt
   }
-  if (props.status === "ongoing") {
+  if (props.status === "ongoing" && !permanent.value) {
     return props.endAt
   }
   return null
@@ -48,10 +55,6 @@ const countdownTarget = computed(() => {
 const countdownLabel = computed(() => (props.status === "upcoming"
   ? t("catalog.countdown.toStart")
   : t("catalog.countdown.toEnd")))
-
-function formatDate(value: number | null): string {
-  return formatLocalizedDateTime(value, undefined, t("gachas.common.dateFallback"))
-}
 
 function openLightbox() {
   if (props.blur) {
@@ -85,9 +88,17 @@ function openLightbox() {
     </button>
 
     <div :class="['flex flex-col gap-2 rounded-md border bg-card px-3 py-2.5', stacked ? '' : 'sm:flex-row sm:items-center sm:justify-between']">
-      <p class="flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums">
-        <LucideCalendarDays class="size-4 shrink-0" aria-hidden="true" />
-        <span>{{ formatDate(startAt) }} – {{ formatDate(endAt) }}</span>
+      <div class="flex flex-wrap items-start gap-x-1.5 gap-y-1 text-sm text-muted-foreground tabular-nums">
+        <LucideCalendarDays class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <CatalogZonedTime :value="startAt" :region="region" :fallback="t('gachas.common.dateFallback')" />
+        <span aria-hidden="true">–</span>
+        <span v-if="permanent">{{ t("catalog.status.permanent") }}</span>
+        <CatalogZonedTime v-else :value="endAt" :region="region" :fallback="t('gachas.common.dateFallback')" />
+        <CatalogTimeZoneHint :region="region" />
+      </div>
+      <p v-if="permanent" class="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <LucideInfinity class="size-4 shrink-0" aria-hidden="true" />
+        {{ t("gachaCatalog.detail.permanentHint") }}
       </p>
       <CatalogCountdown
         v-if="countdownTarget != null"

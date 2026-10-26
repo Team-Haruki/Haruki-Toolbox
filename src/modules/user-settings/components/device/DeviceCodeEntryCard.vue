@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { KeyRound, Loader2 } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,19 @@ const { t } = useI18n()
 
 const CODE_INPUT_ID = "device-user-code"
 const CODE_ERROR_ID = "device-user-code-error"
+// No maxlength on the input: the browser would cut a pasted code before the
+// formatter (useDeviceAuthorization) strips its spaces and separators and
+// caps the cleaned value itself.
+
+// The code field is the only thing to do on this card: focus it on mount
+// (the Input primitive forwards the element via its own template ref).
+const codeInputRef = ref<InstanceType<typeof Input> | null>(null)
+onMounted(() => {
+  const element: unknown = codeInputRef.value?.$el
+  if (element instanceof HTMLInputElement) {
+    element.focus()
+  }
+})
 </script>
 
 <template>
@@ -44,6 +58,7 @@ const CODE_ERROR_ID = "device-user-code-error"
         <Label :for="CODE_INPUT_ID">{{ t("oauth.device.entry.codeLabel") }}</Label>
         <Input
           :id="CODE_INPUT_ID"
+          ref="codeInputRef"
           v-model="code"
           class="h-12 text-center font-mono text-xl tracking-[0.3em] uppercase md:text-xl"
           autocomplete="off"

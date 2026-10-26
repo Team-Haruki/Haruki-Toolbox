@@ -10,12 +10,15 @@ type BundleRule = {
 // audit are encoded per rule (e.g. admin renders upload-type labels from the
 // tools namespace and permission meta from user-settings).
 const BUNDLE_RULES: readonly BundleRule[] = [
-  // Sekai catalog pages (list + detail). Player pages under the same
-  // prefixes (/cards/box, /events/records, /music/progress) load it too,
-  // which is harmless.
-  { prefixes: ["/cards", "/events", "/gachas", "/music"], bundles: ["catalog"] },
+  // Sekai catalog pages (list + detail) and the story player. Player pages
+  // under the same prefixes (/cards/box, /events/records, /music/progress)
+  // load it too, which is harmless.
+  { prefixes: ["/cards", "/events", "/gachas", "/music", "/story"], bundles: ["catalog"] },
   { prefixes: ["/deck-recommend", "/event-planner"], bundles: ["deck"] },
   { prefixes: ["/rank-border"], bundles: ["rank"] },
+  // The Pt calculator reuses the deck module's song picker (MusicSelect),
+  // whose placeholder and loading strings live in the deck bundle.
+  { prefixes: ["/pt-calculator", "/pt_calc"], bundles: ["deck"] },
   {
     prefixes: [
       "/pt-calculator",

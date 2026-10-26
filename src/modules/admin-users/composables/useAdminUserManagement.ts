@@ -1,6 +1,5 @@
-import { onMounted, ref, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
-import { toast } from "vue-sonner"
+import { computed, onMounted, ref, watch } from "vue"
+import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import {
   batchAllowCNMysekai,
@@ -15,83 +14,80 @@ import type { UserRole } from "@/types/common"
 import { runAsyncAction } from "@/composables/useAsyncAction"
 import { useDebouncedWatch } from "@/composables/useDebouncedWatch"
 import { usePagedList } from "@/composables/usePagedList"
+import { useRouteQuerySync } from "@/composables/useRouteQuerySync"
 import {
   createPageQuery,
   setQueryValue,
   setTrimmedQueryValue,
   type QueryParams,
 } from "@/core/http/query"
-import { extractErrorMessage } from "@/lib/error-utils"
+import { describeError, type ErrorDescription } from "@/lib/error-utils"
+import { readQueryDate, readQueryEnum, readQueryString, writeQueryValue } from "@/lib/query-codec"
+import { ADMIN_DEFAULT_PAGE_SIZE, readAdminPage, readAdminPageSize } from "@/modules/admin/lib/pagination"
 
 interface BatchActionConfig {
   action: () => Promise<unknown>
   successMessage: (count: number) => string
   errorTitle: string
   fallbackError: string
+  /** Rethrow instead of toasting: the confirm dialog reports the failure inline. */
+  throwOnError?: boolean
 }
 
-export function useAdminUserManagement() {
-  type RoleFilter = "all" | UserRole
-  type BooleanFilter = "all" | "true" | "false"
-  type SortFilter =
-    | "id_desc"
-    | "id_asc"
-    | "name_desc"
-    | "name_asc"
-    | "created_at_desc"
-    | "created_at_asc"
+type RoleFilter = "all" | UserRole
+type BooleanFilter = "all" | "true" | "false"
+type SortFilter =
+  | "id_desc"
+  | "id_asc"
+  | "name_desc"
+  | "name_asc"
+  | "created_at_desc"
+  | "created_at_asc"
 
+const ROLE_FILTERS: readonly RoleFilter[] = ["all", "user", "admin", "super_admin"]
+const BOOLEAN_FILTERS: readonly BooleanFilter[] = ["all", "true", "false"]
+const SORT_FILTERS: readonly SortFilter[] = [
+  "id_desc",
+  "id_asc",
+  "name_desc",
+  "name_asc",
+  "created_at_desc",
+  "created_at_asc",
+]
+const DEFAULT_SORT: SortFilter = "id_desc"
+const QUERY_KEYS = ["q", "role", "banned", "allowcn", "sort", "from", "to", "page", "size"] as const
+
+export function useAdminUserManagement() {
   const { t } = useI18n()
   const route = useRoute()
-  const router = useRouter()
-
-  const ROLE_FILTERS: readonly RoleFilter[] = ["all", "user", "admin", "super_admin"]
-  const BOOLEAN_FILTERS: readonly BooleanFilter[] = ["all", "true", "false"]
-  const SORT_FILTERS: readonly SortFilter[] = [
-    "id_desc",
-    "id_asc",
-    "name_desc",
-    "name_asc",
-    "created_at_desc",
-    "created_at_asc",
-  ]
-  const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
-  const DEFAULT_PAGE_SIZE = 20
-
-  function queryString(value: unknown): string {
-    if (typeof value === "string") return value
-    if (Array.isArray(value) && typeof value[0] === "string") return value[0]
-    return ""
-  }
-  function queryEnum<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
-    const raw = queryString(value)
-    return (allowed as readonly string[]).includes(raw) ? (raw as T) : fallback
-  }
-  function queryDate(value: unknown): Date | undefined {
-    const raw = queryString(value)
-    if (!raw) return undefined
-    const date = new Date(raw)
-    return Number.isNaN(date.getTime()) ? undefined : date
-  }
-  function queryInt(value: unknown, fallback: number): number {
-    const parsed = Number.parseInt(queryString(value), 10)
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
-  }
 
   const initialQuery = route.query
-  const search = ref(queryString(initialQuery.q))
-  const roleFilter = ref<RoleFilter>(queryEnum(initialQuery.role, ROLE_FILTERS, "all"))
-  const bannedFilter = ref<BooleanFilter>(queryEnum(initialQuery.banned, BOOLEAN_FILTERS, "all"))
-  const allowCNMysekaiFilter = ref<BooleanFilter>(queryEnum(initialQuery.allowcn, BOOLEAN_FILTERS, "all"))
-  const sortFilter = ref<SortFilter>(queryEnum(initialQuery.sort, SORT_FILTERS, "id_desc"))
-  const createdFrom = ref<Date | undefined>(queryDate(initialQuery.from))
-  const createdTo = ref<Date | undefined>(queryDate(initialQuery.to))
+  const search = ref(readQueryString(initialQuery.q) ?? "")
+  const roleFilter = ref<RoleFilter>(readQueryEnum(initialQuery.role, ROLE_FILTERS) ?? "all")
+  const bannedFilter = ref<BooleanFilter>(readQueryEnum(initialQuery.banned, BOOLEAN_FILTERS) ?? "all")
+  const allowCNMysekaiFilter = ref<BooleanFilter>(readQueryEnum(initialQuery.allowcn, BOOLEAN_FILTERS) ?? "all")
+  const sortFilter = ref<SortFilter>(readQueryEnum(initialQuery.sort, SORT_FILTERS) ?? DEFAULT_SORT)
+  const createdFrom = ref<Date | undefined>(readQueryDate(initialQuery.from) ?? undefined)
+  const createdTo = ref<Date | undefined>(readQueryDate(initialQuery.to) ?? undefined)
+  // The search the list was last loaded with: an Enter-triggered load must not
+  // be repeated by the debounce that follows it.
+  let loadedSearch = search.value.trim()
 
   const selectedIds = ref<string[]>([])
-  const loadError = ref(false)
+  const loadError = ref<ErrorDescription | null>(null)
   const batchLoading = ref(false)
   const batchRoleTarget = ref<UserRole>("user")
   const batchAllowCNTarget = ref<"true" | "false">("true")
+
+  const hasActiveFilters = computed(() =>
+    search.value.trim() !== ""
+    || roleFilter.value !== "all"
+    || bannedFilter.value !== "all"
+    || allowCNMysekaiFilter.value !== "all"
+    || sortFilter.value !== DEFAULT_SORT
+    || !!createdFrom.value
+    || !!createdTo.value
+  )
 
   const {
     loading,
@@ -106,29 +102,24 @@ export function useAdminUserManagement() {
     nextPage,
     goToPage,
   } = usePagedList<AdminUser>({
-    initialPage: queryInt(initialQuery.page, 1),
-    initialPageSize: (() => {
-      const size = queryInt(initialQuery.size, DEFAULT_PAGE_SIZE)
-      return PAGE_SIZE_OPTIONS.includes(size) ? size : DEFAULT_PAGE_SIZE
-    })(),
+    initialPage: readAdminPage(initialQuery.page),
+    initialPageSize: readAdminPageSize(initialQuery.size),
     fetchPage: ({ page, pageSize }) => getUsers(buildQueryParams(page, pageSize)),
     onBeforeLoad: () => {
       selectedIds.value = []
-      loadError.value = false
+      loadError.value = null
     },
     onSuccess: () => {
-      loadError.value = false
+      loadError.value = null
     },
     onError: (error) => {
-      loadError.value = true
-      toast.error(t("adminUsers.management.toast.loadFailedTitle"), {
-        description: extractErrorMessage(error, t("adminUsers.management.toast.loadFailedFallback")),
-      })
+      loadError.value = describeError(error, t("adminUsers.management.toast.loadFailedFallback"))
     },
   })
 
   function buildQueryParams(currentPage: number, currentPageSize: number) {
     const params: QueryParams = createPageQuery(currentPage, currentPageSize)
+    loadedSearch = search.value.trim()
     setQueryValue(params, "sort", sortFilter.value)
     setTrimmedQueryValue(params, "q", search.value)
 
@@ -143,43 +134,63 @@ export function useAdminUserManagement() {
     return params
   }
 
+  function reloadFromFirstPage() {
+    resetPage()
+    void loadUsers()
+  }
+
+  /** Enter in the search box: query now instead of waiting for the debounce. */
+  function applySearch() {
+    reloadFromFirstPage()
+  }
+
+  function resetFilters() {
+    const selectsChanged = roleFilter.value !== "all"
+      || bannedFilter.value !== "all"
+      || allowCNMysekaiFilter.value !== "all"
+      || sortFilter.value !== DEFAULT_SORT
+      || !!createdFrom.value
+      || !!createdTo.value
+    search.value = ""
+    roleFilter.value = "all"
+    bannedFilter.value = "all"
+    allowCNMysekaiFilter.value = "all"
+    sortFilter.value = DEFAULT_SORT
+    createdFrom.value = undefined
+    createdTo.value = undefined
+    // A changed select reloads through its watcher (one batched run); otherwise
+    // reload now so clearing the search does not wait for the debounce.
+    if (!selectsChanged) {
+      reloadFromFirstPage()
+    }
+  }
+
   useDebouncedWatch(
     search,
     () => {
-      resetPage()
-      void loadUsers()
+      if (search.value.trim() === loadedSearch) return
+      reloadFromFirstPage()
     },
     400
   )
 
   watch([roleFilter, bannedFilter, allowCNMysekaiFilter, sortFilter, createdFrom, createdTo, pageSize], () => {
-    resetPage()
-    void loadUsers()
+    reloadFromFirstPage()
   })
-
-  function buildRouteQuery(): Record<string, string> {
-    const query: Record<string, string> = {}
-    const trimmedSearch = search.value.trim()
-    if (trimmedSearch) query.q = trimmedSearch
-    if (roleFilter.value !== "all") query.role = roleFilter.value
-    if (bannedFilter.value !== "all") query.banned = bannedFilter.value
-    if (allowCNMysekaiFilter.value !== "all") query.allowcn = allowCNMysekaiFilter.value
-    if (sortFilter.value !== "id_desc") query.sort = sortFilter.value
-    if (createdFrom.value) query.from = createdFrom.value.toISOString()
-    if (createdTo.value) query.to = createdTo.value.toISOString()
-    if (page.value > 1) query.page = String(page.value)
-    if (pageSize.value !== DEFAULT_PAGE_SIZE) query.size = String(pageSize.value)
-    return query
-  }
 
   // Keep filters + page in the URL so navigating into a user's detail and back
   // (or refreshing / sharing the link) restores the exact list state.
-  watch(
-    [search, roleFilter, bannedFilter, allowCNMysekaiFilter, sortFilter, createdFrom, createdTo, page, pageSize],
-    () => {
-      void router.replace({ query: buildRouteQuery() }).catch(() => {})
-    }
-  )
+  useRouteQuerySync(QUERY_KEYS, () => ({
+    q: writeQueryValue(search.value.trim()),
+    role: writeQueryValue(roleFilter.value, "all"),
+    banned: writeQueryValue(bannedFilter.value, "all"),
+    allowcn: writeQueryValue(allowCNMysekaiFilter.value, "all"),
+    sort: writeQueryValue(sortFilter.value, DEFAULT_SORT),
+    from: writeQueryValue(createdFrom.value?.toISOString()),
+    to: writeQueryValue(createdTo.value?.toISOString()),
+    page: writeQueryValue(page.value, 1),
+    size: writeQueryValue(pageSize.value, ADMIN_DEFAULT_PAGE_SIZE),
+  }))
 
   onMounted(() => {
     void loadUsers()
@@ -213,6 +224,7 @@ export function useAdminUserManagement() {
       successAfterOnSuccess: true,
       errorTitle: config.errorTitle,
       fallbackError: config.fallbackError,
+      throwOnError: config.throwOnError,
       onSuccess: async () => {
         selectedIds.value = []
         await loadUsers({ throwOnError: true, notifyOnError: false })
@@ -220,8 +232,11 @@ export function useAdminUserManagement() {
     })
   }
 
+  // Batch ban, force-logout and role change are confirmed in a ConfirmDialog,
+  // which shows the failure inline and stays open, so they rethrow.
   async function doBatchBan() {
     await runBatchAction({
+      throwOnError: true,
       action: () => batchBan({ userIds: selectedIds.value }),
       successMessage: (count) => t("adminUsers.management.toast.batchBanSuccess", { count }),
       errorTitle: t("adminUsers.management.toast.batchBanFailedTitle"),
@@ -240,6 +255,7 @@ export function useAdminUserManagement() {
 
   async function doBatchForceLogout() {
     await runBatchAction({
+      throwOnError: true,
       action: () => batchForceLogout({ userIds: selectedIds.value }),
       successMessage: (count) => t("adminUsers.management.toast.batchForceLogoutSuccess", { count }),
       errorTitle: t("adminUsers.management.toast.batchForceLogoutFailedTitle"),
@@ -249,6 +265,7 @@ export function useAdminUserManagement() {
 
   async function doBatchRole() {
     await runBatchAction({
+      throwOnError: true,
       action: () => batchRole({ userIds: selectedIds.value, role: batchRoleTarget.value }),
       successMessage: (count) => t("adminUsers.management.toast.batchRoleSuccess", { count }),
       errorTitle: t("adminUsers.management.toast.batchRoleFailedTitle"),
@@ -282,6 +299,7 @@ export function useAdminUserManagement() {
     sortFilter,
     createdFrom,
     createdTo,
+    hasActiveFilters,
     selectedIds,
     loadError,
     batchLoading,
@@ -291,6 +309,8 @@ export function useAdminUserManagement() {
     reloadUsers: () => {
       void loadUsers()
     },
+    applySearch,
+    resetFilters,
     prevPage,
     nextPage,
     goToPage,

@@ -4,11 +4,16 @@ export default {
   "uploadedGameData": {
     "missingTitle": "Game data has not been uploaded",
     "missing": {
-      "suite": "This game account has no uploaded Suite data. Go to the data upload page, upload it, then return here and refresh.",
-      "mysekai": "This game account has no uploaded MySekai data. Go to the data upload page, upload it, then return here and refresh."
+      "suite": "This game account has never uploaded its game data (Suite, the full account data). Upload it on the \"Upload data\" page first, then come back and refresh.",
+      "mysekai": "This game account has never uploaded its MySekai data. Upload it on the \"Upload data\" page first, then come back and refresh.",
+      "profile": "There is no data for this game account yet, so the realtime profile cannot be read. Upload game data once on the \"Upload data\" page, then come back and refresh."
     },
-    "missingGranted": "The account owner has not uploaded the required game data. Ask them to upload it, or use the data upload page if you have permission to upload for this account.",
+    "missingGranted": "The owner of this account has not uploaded any game data yet. Ask them to upload it; if they allowed you to upload on their behalf, you can do so on the \"Upload data\" page.",
     "uploadAction": "Go to data upload",
+    "uploadedAt": "Data uploaded at {time}",
+    "grantLapsed": "Access to this account has expired or been revoked. Ask the owner to grant it again.",
+    "refreshUpToDate": "Data is already up to date",
+    "refreshUpdated": "Updated to {time}",
     "missingAccounts": "{count} bound accounts have no uploaded game data. Go to the data upload page to upload it.",
     "otherFailures": "Another {count} accounts could not be loaded. Try again later."
   },
@@ -19,16 +24,61 @@ export default {
     "save": "Save",
     "reset": "Reset",
     "cancel": "Cancel",
+    "confirm": "Confirm",
     "close": "Close",
     "back": "Back",
     "tip": "Tip",
-    "actionFailed": "Operation failed",
+    "actionFailed": "The action failed. Try again later.",
     "postSuccessWarningTitle": "Operation succeeded with warnings",
     "postSuccessWarningDescription": "Follow-up refresh failed. Please reload the page if data looks outdated.",
     "guest": "Guest",
     "accountIndex": "Account {index}",
-    "apiResponse": "API response",
-    "missingUpdatedData": "{context} is missing updatedData"
+    "apiResponse": "Request failed",
+    "missingUpdatedData": "{context}: the server returned incomplete data. Refresh the page and try again.",
+    "selectDateTime": "Pick a date and time"
+  },
+  "backendMessages": {
+    "notAuthenticated": "You are not signed in, or your session has expired. Sign in again and retry.",
+    "uploadNotAllowed": "Your account is not allowed to upload data for this game account. Use the account that owns the binding, or ask the owner to grant you upload access.",
+    "writeGrantExpired": "The upload access the owner granted you has expired or been revoked. Ask the owner to grant it again, or upload for a game account you own.",
+    "bindingAccessDenied": "You do not have access to this game account's data. If the account was shared with you, the grant may have expired or been revoked; ask the owner to grant it again.",
+    "invalidServer": "The selected game server is invalid. Pick a server again and retry.",
+    "uploadProcessFailed": "The uploaded data could not be processed. Make sure the file is complete, unmodified capture data, then upload it again.",
+    "mysekaiRetrieveFailed": "MySekai (home area) data could not be retrieved; this game account may not have finished the MySekai tutorial yet. Finish it in the game and try again.",
+    "suiteRetrieveFailed": "An unknown error occurred while retrieving game data. Try again later; if it keeps failing, open a support ticket.",
+    "gameDataRetrieveFailed": "Game data could not be retrieved from the game server. Check that the transfer ID and password are correct and not expired, then try again later.",
+    "verificationCodeMissing": "The verification code was not found in your in-game profile comment. Paste the whole code into the comment, save it, return to the game home screen and try again.",
+    "verificationCodeMismatch": "The code in your in-game profile comment does not match the one generated here. Paste the latest code into the comment, save it, return to the game home screen and try again.",
+    "verificationCodeExpired": "The verification code has expired or does not exist. Generate a new code and try again.",
+    "verificationTooManyAttempts": "Too many verification attempts. Generate a new code and try again.",
+    "gameAccountNotFound": "This game account was not found. Check the selected server and player ID.",
+    "gameServerUnavailable": "The game server is currently unreachable, possibly under maintenance. Try again later.",
+    "accountBoundByAnotherUser": "This game account is already bound to another user. If it is yours, open a support ticket.",
+    "accountBoundByBannedUser": "This game account is bound to a banned user. If it is yours, open a support ticket.",
+    "bindingNotVerified": "This game account binding has not been verified yet. Complete verification on the game account management page first.",
+    "bindingLocked": "This binding has been locked by an administrator and cannot be changed right now. Open a support ticket if you have questions.",
+    "granteeNotFound": "The user to grant access to was not found. Check their Toolbox user ID.",
+    "grantToSelf": "You cannot grant access to yourself. Enter another user's Toolbox user ID.",
+    "expiresAtNotFuture": "The expiry time must be in the future. Pick another time.",
+    "granteeBanned": "The user you are trying to grant access to is banned, so access cannot be granted.",
+    "qqBindingExists": "This account already has a QQ binding. Remove the existing binding first to change it.",
+    "emailVerificationRequired": "Verify your email address before binding a social platform account.",
+    "codeInvalidOrExpired": "The verification code is invalid or has expired. Request a new code and try again.",
+    "codeTooManyAttempts": "Too many verification attempts. Request a new code and try again.",
+    "ticketClosed": "This ticket is closed and cannot receive replies. Open a new ticket for a new issue.",
+    "ticketNotFound": "This ticket was not found; it may have been deleted. Go back to the ticket list and refresh.",
+    "ticketQuotaExceeded": "You have reached the ticket limit. Wait for your existing tickets to be resolved before opening a new one.",
+    "messageLength": "The message must be between 1 and 4000 characters. Adjust it and send again.",
+    "captchaFailed": "The CAPTCHA check failed. Complete it again and retry.",
+    "invalidVerificationCode": "The verification code is incorrect. Check it and enter it again.",
+    "reauthRequired": "Re-enter your password to continue.",
+    "consentChallengeExpired": "The authorization request has expired or is invalid. Go back to the app that started it and try again.",
+    "loginChallengeRequired": "The authorization parameters are missing. Go back to the app that started it and try again.",
+    "inheritFailed": "Transfer failed. Check that the transfer ID and password are correct, regenerate the transfer ID in the game and try again.",
+    "inheritFailedWithCode": "Transfer failed (game server replied: {code}). Check that the transfer ID and password are correct, regenerate the transfer ID in the game and try again.",
+    "suiteParseFailed": "The game data could not be parsed. Make sure you uploaded complete, unmodified capture data; if it keeps failing, open a support ticket.",
+    "playerDataNotFound": "No data was found for this player. Upload game data first and try again.",
+    "otpIncorrect": "The one-time password is incorrect. Check it and enter it again."
   },
   "turnstile": {
     "loading": "Loading CAPTCHA widget...",
@@ -38,8 +88,71 @@ export default {
   "auth": {
     "common": {
       "cancel": "Cancel",
-      "loadingFlow": "Loading identity flow...",
-      "restartFlow": "Restart flow"
+      "loadingFlow": "Loading sign-in page…",
+      "restartFlow": "Start again",
+      "loadFlowFailed": "The {flow} has expired or cannot be reached right now. Use the button below to start again.",
+      "serviceUnavailable": "The sign-in service cannot be reached right now. Try again later (code {status}).",
+      "flowNames": {
+        "login": "sign-in page",
+        "registration": "registration page",
+        "recovery": "password recovery page",
+        "verification": "email verification page",
+        "settings": "account security settings page"
+      }
+    },
+    "kratos": {
+      "labels": {
+        "code": "Verification code",
+        "codePlaceholder": "Enter the code from your email",
+        "totpCode": "Authenticator code",
+        "totpCodePlaceholder": "Enter the 6-digit code from your authenticator",
+        "lookupSecret": "Backup recovery code",
+        "savePassword": "Save password",
+        "continueWithCode": "Sign in with email code",
+        "sendLink": "Send link",
+        "verify": "Verify",
+        "submit": "Submit"
+      },
+      "messages": {
+        "reauthConfirm": "To protect your account, enter your password again to confirm it is you.",
+        "mfaRequired": "Complete the second verification step to continue.",
+        "settingsSaved": "Your settings have been saved.",
+        "recoverySucceeded": "Your account has been recovered. Set a new password now.",
+        "recoveryLinkSent": "A password recovery email has been sent to the address you entered. Open the link in it; if nothing arrives, check your spam folder and the spelling of the address.",
+        "recoveryCodeSent": "A password recovery code has been sent to the address you entered. Enter it below; if nothing arrives, check your spam folder and the spelling of the address.",
+        "verificationLinkSent": "A verification email has been sent to the address you entered. Open the link in it to finish; if nothing arrives, check your spam folder.",
+        "verificationSucceeded": "Your email address has been verified.",
+        "verificationCodeSent": "A verification code has been sent to the address you entered. Enter it below; if nothing arrives, check your spam folder.",
+        "invalidValue": "This value is invalid. Check it and enter it again.",
+        "requiredField": "This field is required.",
+        "tooShort": "Too short: enter at least {min_length} characters.",
+        "invalidFormat": "The format is not valid. Check it and enter it again.",
+        "passwordPolicy": "This password does not meet the security requirements. Choose a longer, more complex password that has not appeared in a data breach.",
+        "invalidCredentials": "The email or password is incorrect. Check them and try again, or recover your password below.",
+        "accountExists": "An account with this email already exists. Sign in instead, or use \"Forgot password\" to recover it.",
+        "totpInvalid": "The authenticator code is incorrect. Enter the latest code from your authenticator app.",
+        "identifierMissing": "Enter your email or username.",
+        "addressNotVerified": "This email address has not been verified yet. Open the verification email and finish verification first.",
+        "noTotpDevice": "No authenticator app is set up for this account.",
+        "lookupSecretUsed": "This backup recovery code has already been used. Use a different one.",
+        "noLookupSecret": "No backup recovery codes are set up for this account.",
+        "lookupSecretInvalid": "The backup recovery code is incorrect. Check it and enter it again.",
+        "tooLong": "Too long: enter at most {max_length} characters.",
+        "passwordBreached": "This password has appeared in a known data breach. Choose a different one.",
+        "passwordTooSimilar": "The password is too similar to your email or username. Choose a different one.",
+        "passwordTooShort": "The password is too short: enter at least {min_length} characters.",
+        "passwordTooLong": "The password is too long: enter at most {max_length} characters.",
+        "accountNotActive": "This account cannot be used right now. Contact an administrator if you have questions.",
+        "captchaFailed": "The CAPTCHA check failed. Complete it again.",
+        "flowExpired": "This page has expired. Use the button below to start again.",
+        "loginAlreadyCompleted": "This sign-in has already been completed. Refresh the page.",
+        "loginCodeInvalid": "The sign-in code is invalid or has already been used. Request a new one.",
+        "recoveryTokenInvalid": "The recovery link is invalid or has already been used. Start password recovery again.",
+        "recoveryCodeInvalid": "The recovery code is invalid or has already been used. Request a new one.",
+        "verificationTokenInvalid": "The verification link is invalid or has already been used. Send the verification email again.",
+        "verificationCodeInvalid": "The verification code is invalid or has already been used. Request a new one.",
+        "systemError": "The sign-in service hit an internal error. Try again later."
+      }
     },
     "toast": {
       "networkError": "Network error, please check your connection",
@@ -64,15 +177,15 @@ export default {
       "submit": "Sign in",
       "noAccount": "No account yet?",
       "registerLink": "Register",
-      "resetDialog": {
-        "title": "Reset password",
-        "description": "Enter your email address to reset your password",
-        "sendResetEmail": "Send reset email"
+      "reasons": {
+        "authRequired": "You need to sign in to view that page. You will be taken back to it after signing in.",
+        "adminRequired": "That page needs an administrator account. You will be taken back to it after signing in.",
+        "sessionExpired": "Your session has expired. Sign in again and you will be taken back to where you were."
       },
       "toast": {
         "enterEmail": "Please enter your email",
         "completeCaptcha": "Please complete CAPTCHA first",
-        "completeLoginCaptcha": "Please complete CAPTCHA verification first",
+        "completeLoginCaptcha": "Please complete CAPTCHA first",
         "resetEmailSentTitle": "Reset email sent",
         "resetEmailSentDescription": "Email has been sent to {email}",
         "resetFailedTitle": "Reset password failed",
@@ -95,28 +208,7 @@ export default {
       "sendCode": "Send code",
       "submit": "Register",
       "hasAccount": "Already have an account?",
-      "goLogin": "Sign in",
-      "sendCodeDialog": {
-        "title": "Complete CAPTCHA before sending email",
-        "description": "Please complete CAPTCHA to send your verification email",
-        "confirmSend": "Confirm send"
-      },
-      "toast": {
-        "invalidEmail": "Please enter a valid email address",
-        "completeCaptcha": "Please complete CAPTCHA first",
-        "completeRegisterCaptcha": "Please complete CAPTCHA verification first",
-        "codeSentTitle": "Email sent",
-        "codeSentDescription": "Email has been sent to {email}",
-        "sendCodeFailedTitle": "Failed to send verification code",
-        "sendCodeFailedDescription": "Send failed",
-        "registerFailedTitle": "Registration failed",
-        "registerFailedDescription": "Registration failed",
-        "incompleteInfo": "Please complete all registration fields",
-        "passwordMinLength": "Password must be at least {min} characters",
-        "emailVerificationRequired": "Please send a verification code for the current email address",
-        "registerSuccessTitle": "Registration successful",
-        "registerSuccessDescription": "Welcome to Haruki Toolbox"
-      }
+      "goLogin": "Sign in"
     },
     "resetPassword": {
       "title": "Reset password",
@@ -126,17 +218,7 @@ export default {
       "newPasswordPlaceholder": "Enter new password",
       "confirmPasswordLabel": "Confirm password",
       "confirmPasswordPlaceholder": "Enter new password again",
-      "submit": "Confirm reset",
-      "toast": {
-        "invalidLink": "Reset link is invalid. Please request password recovery again.",
-        "incompleteInfo": "Please complete all required fields",
-        "passwordMismatch": "Passwords do not match",
-        "passwordMinLength": "Password must be at least {min} characters",
-        "resetSuccessTitle": "Password reset successful",
-        "resetSuccessDescription": "Please sign in again",
-        "resetFailedTitle": "Reset failed",
-        "resetFailedDescription": "Reset failed"
-      }
+      "submit": "Confirm reset"
     },
     "verification": {
       "title": "Verify email",
@@ -144,27 +226,39 @@ export default {
       "submit": "Submit verification",
       "continue": "Continue"
     },
+    "validation": {
+      "required": "This field is required"
+    },
+    "password": {
+      "show": "Show password",
+      "hide": "Hide password"
+    },
     "error": {
-      "title": "Identity flow error",
-      "description": "The identity service returned an error. Review details below and restart the flow.",
+      "title": "Sign-in service problem",
+      "description": "The sign-in service returned an error. Go back to the sign-in page and start again; if it keeps happening, try again later.",
       "retry": "Reload",
       "backToLogin": "Back to sign in",
-      "missingIdDescription": "Missing error ID. Unable to query detailed identity error information.",
-      "loadFailedDescription": "Failed to load identity error details. Please try again later.",
-      "fallbackDescription": "The identity flow failed. Please restart the flow.",
+      "missingIdDescription": "The link has no error ID, so the cause cannot be looked up. Go back to the sign-in page and start again.",
+      "loadFailedDescription": "The error details could not be loaded. Check your connection and try again.",
+      "fallbackDescription": "The sign-in service could not complete this step. Go back to the sign-in page and start again.",
       "errorIdLabel": "Error ID",
       "statusCodeLabel": "Status code",
       "detailsLabel": "Details"
     }
   },
+  "sidebar": {
+    "toggle": "Toggle sidebar",
+    "title": "Navigation menu",
+    "description": "Site navigation menu."
+  },
   "sidebarUser": {
     "guestInitial": "?",
     "guestName": "Not signed in",
     "accountSettings": "Account settings",
-    "identitySettings": "Identity settings",
+    "identitySettings": "Sign-in & security",
     "gameAccountManagement": "Game account management",
     "harukiBotAuthorization": "HarukiBot data authorization",
-    "oauthAuthorizations": "OAuth authorizations",
+    "oauthAuthorizations": "Authorized apps",
     "logout": "Sign out",
     "register": "Register",
     "login": "Sign in",
@@ -190,7 +284,16 @@ export default {
       "title": "My account",
       "dataUpdatedAt": "Data uploaded at {time}",
       "noUploadData": "This account has not uploaded any data yet",
-      "guestDescription": "Sign in and bind a game account to upload data, view your profile and unlock personalized features."
+      "guestDescription": "Sign in and bind a game account to upload data, view your profile and unlock personalized features.",
+      "onboarding": {
+        "title": "Three steps to start",
+        "step1": "Register and sign in",
+        "step2": "Bind and verify your game account under \"{link}\"",
+        "step2Link": "Game account management",
+        "step3": "{link} your game data once with the iOS module / HarukiProxy",
+        "step3Link": "Upload",
+        "outro": "After that you can browse your cards, event records, deck recommendations and more."
+      }
     },
     "externalLinks": "External links",
     "harukiBotDocs": "HarukiBot NEO docs",
@@ -200,7 +303,7 @@ export default {
     "termsOfService": "Terms of Service",
     "currentEvent": {
       "title": "Current event ({region})",
-      "optInHint": "Load Sekai master data to show the ongoing event.",
+      "optInHint": "Load the game database to show the ongoing event.",
       "load": "Load current event",
       "none": "No event is currently running.",
       "error": "Failed to load event info.",
@@ -233,7 +336,6 @@ export default {
     "description": "View your game account's card collection progress",
     "entryLink": "My Cards",
     "noAccountHint": "Bind and select a game account to view your cards.",
-    "dataAsOf": "Data as of {time}",
     "refresh": "Refresh",
     "loadError": "Failed to load your card collection data",
     "retry": "Retry",
@@ -266,22 +368,11 @@ export default {
       "owned": "Owned",
       "missing": "Missing"
     },
-    "filter": {
-      "attrs": "Attribute",
-      "rarity": "Rarity"
-    },
     "stats": {
       "title": "Collection stats",
       "byUnit": "By unit",
       "byAttr": "By attribute",
       "byRarity": "By rarity",
-      "rarities": {
-        "rarity_1": "1 star",
-        "rarity_2": "2 stars",
-        "rarity_3": "3 stars",
-        "rarity_4": "4 stars",
-        "rarity_birthday": "Birthday"
-      },
       "ownedOfTotal": "{owned}/{total}",
       "percent": "{percent}%"
     },
@@ -293,15 +384,17 @@ export default {
     "title": "Event Records",
     "description": "View your game account's event participation records",
     "idle": "Select a game account to view your event records.",
-    "loading": "Loading account snapshot and event data...",
+    "loading": "Loading uploaded data and event data…",
     "missingUserData": "No game data has been uploaded for this account yet. Upload it first to view event records.",
     "missingGrantedData": "The account owner has not uploaded game data yet, so there is nothing to view for now.",
     "uploadData": "Upload game data",
-    "noData": "No event records found in this account's snapshot.",
+    "noData": "Your uploaded data has no event records yet.",
+    "noMatches": "No event records match the current filters.",
+    "hiddenByTime": "No event records in the last year; {count} older records are hidden",
+    "showAll": "Show all",
     "loadFailed": "Failed to load event records.",
     "retry": "Retry",
     "refresh": "Refresh",
-    "dataAsOf": "Data as of {time}",
     "summary": {
       "bestRank": "Best rank",
       "ranked": "Ranked events",
@@ -354,7 +447,7 @@ export default {
     "rewards": {
       "title": "Obtainable rewards",
       "hint": "Unclaimed song achievement rewards (score ranks + per-difficulty combo milestones); any live mode counts.",
-      "unavailable": "This snapshot has no achievement claim data (userMusicAchievements), so obtainable rewards cannot be computed.",
+      "unavailable": "Your uploaded data has no song achievement claim records, so obtainable rewards cannot be counted. Upload a complete data set again and retry.",
       "jewel": "Crystals",
       "coin": "Coins",
       "shard": "Shards",
@@ -363,7 +456,7 @@ export default {
     },
     "scoreRank": {
       "title": "Score rank rewards by song",
-      "description": "Score rank is progressive (C → B → A → S): each song has one current rank, and reaching a higher rank also pays the lower ones. Any live mode (solo, multi, ...) counts. The current rank follows the achievement records in the data snapshot.",
+      "description": "Score rank is progressive (C → B → A → S): each song has one current rank, and reaching a higher rank also pays the lower ones. Any live mode (solo, multi, ...) counts. The current rank follows the achievement records in your uploaded data.",
       "summary": "Obtained: {obtained} · Remaining: {remaining} · {complete} / {total} songs complete",
       "none": "none",
       "filter": {
@@ -387,18 +480,16 @@ export default {
       "empty": "No songs match.",
       "showMore": "Show more ({count} left)"
     },
-    "dataAsOf": "Data as of {time}",
     "refresh": "Refresh",
     "retry": "Retry",
     "noAccount": "Select or bind a game account to view your play progress.",
-    "loading": "Loading account snapshot and music data...",
+    "loading": "Loading uploaded data and music data…",
     "missingUserData": "No game data has been uploaded for this account yet. Upload it first to view music progress.",
     "missingGrantedData": "The account owner has not uploaded game data yet, so there is nothing to view for now.",
     "uploadData": "Upload game data",
-    "noResults": "This snapshot contains no music play results yet; all songs are shown as unplayed.",
-    "suiteError": "Failed to load the account snapshot data.",
-    "masterError": "Failed to load music data: {message}",
-    "downloading": "Downloading masterdata ({progress}%)...",
+    "noResults": "Your uploaded data has no music play results yet; all songs are shown as unplayed.",
+    "suiteError": "Failed to load music progress.",
+    "downloading": "Downloading game database ({progress}%)...",
     "overallTitle": "All difficulties",
     "levelsTitle": "Progress by level",
     "noSongs": "No songs exist for this difficulty on the selected server.",
@@ -420,12 +511,6 @@ export default {
     "noMatches": "No songs match in this level.",
     "rewardsRemaining": "Remaining: {list}",
     "detailSummary": "{total} songs · {cleared} cleared · {fullCombo} FC · {allPerfect} AP",
-    "summary": {
-      "total": "Songs",
-      "cleared": "Cleared",
-      "fullCombo": "Full combo",
-      "allPerfect": "All perfect"
-    },
     "legend": {
       "allPerfect": "All perfect",
       "fullCombo": "Full combo (no AP)",
@@ -441,10 +526,10 @@ export default {
   },
   "globalSearch": {
     "title": "Quick search",
-    "description": "Search music, cards, and events from local masterdata",
+    "description": "Search music, cards, and events from the local game database",
     "placeholder": "Search music, cards, events...",
     "typeToSearch": "Type to search music, cards, and events",
-    "error": "Failed to load masterdata",
+    "error": "Failed to load the game database",
     "retry": "Retry",
     "empty": "No results found",
     "groups": {
@@ -505,10 +590,6 @@ export default {
       "return": "Comeback",
       "unknown": "Other"
     },
-    "status": {
-      "ongoing": "Ongoing",
-      "ended": "Ended"
-    },
     "list": {
       "title": "Gacha catalog",
       "description": "Browse Project Sekai gacha banners and rates",
@@ -530,14 +611,9 @@ export default {
       "total": "{total} gachas",
       "empty": "No gachas match the current filters"
     },
-    "sort": {
-      "startDesc": "Newest first",
-      "startAsc": "Oldest first",
-      "idAsc": "ID ascending"
-    },
     "detail": {
       "back": "Back to gachas",
-      "notFound": "Gacha #{gachaId} was not found",
+      "notFound": "This gacha (#{gachaId}) is not in the current server's data. Try another server.",
       "pickups": "Pickup members",
       "poolCards": "All cards in pool",
       "rates": "Rates",
@@ -581,18 +657,18 @@ export default {
     "description": "View your game account's profile",
     "source": {
       "realtime": "Live data",
-      "snapshot": "Snapshot"
+      "snapshot": "Uploaded data"
     },
     "noAccountHint": "Bind and select a game account to view your profile.",
     "loadError": "Failed to load profile data.",
     "retry": "Retry",
     "refresh": "Refresh",
-    "dataAsOf": "Data as of {time}",
+    "realtimeAsOf": "Live data updated at {time}",
     "unknownCharacter": "Unknown character",
     "stats": {
       "title": "Play stats"
     },
-    "snapshotNote": "From snapshot · {time}",
+    "snapshotNote": "From uploaded data · uploaded at {time}",
     "unitAverage": "Unit averages",
     "header": {
       "title": "Basic Info",
@@ -642,7 +718,6 @@ export default {
     "layout": {
       "title": "Character training",
       "description": "View your game account's training progress",
-      "dataAsOf": "Data as of {time}",
       "refresh": "Refresh"
     },
     "tabs": {
@@ -833,6 +908,8 @@ export default {
   },
   "sekaiRegion": {
     "followAccount": "Follow current account",
+    "followAccountResolved": "Follow current account ({region})",
+    "followBadge": "Following",
     "labels": {
       "jp": "JP",
       "en": "Global",
@@ -875,6 +952,7 @@ export default {
       "musicProgress": "Music progress",
       "gachas": "Gacha catalog",
       "costumes": "Costume dressup",
+      "storyPlayer": "Story player",
       "playerProfile": "My profile",
       "training": "Character training"
     },
@@ -929,18 +1007,19 @@ export default {
     "botNeoRegistration": "HarukiBot NEO registration",
     "login": "Sign in",
     "register": "Register",
+    "verification": "Verify email",
     "resetPassword": "Reset password",
     "error": "Identity error",
     "userSettings": "Account settings",
-    "userIdentitySettings": "Identity settings",
+    "userIdentitySettings": "Sign-in & security",
     "userIdentityProfileSettings": "Profile settings",
     "userIdentityPasswordSettings": "Change password",
     "userIdentityMfaSettings": "MFA settings",
     "userIdentitySocialSettings": "Social login settings",
-    "userIdentitySessionSettings": "Identity sessions",
+    "userIdentitySessionSettings": "Signed-in devices",
     "gameAccountBindings": "Game account bindings",
     "harukiBotAuthorization": "HarukiBot data authorization",
-    "oauthAuthorizations": "OAuth authorization management",
+    "oauthAuthorizations": "Authorized apps",
     "oauthLogin": "Continue sign in",
     "oauthConsent": "Authorize app",
     "oauthLogout": "Confirm sign out",
@@ -971,6 +1050,9 @@ export default {
     },
     "costumes": {
       "dressup": "Costume Dressup"
+    },
+    "story": {
+      "player": "Story player"
     },
     "playerProfile": {
       "me": "My profile"
@@ -1016,6 +1098,7 @@ export default {
         "region": "Server",
         "search": "Search",
         "searchPlaceholder": "Search by title or alias...",
+        "searchPlaceholderNoAlias": "Search by title...",
         "title": "Filters",
         "difficulty": "Difficulty",
         "difficultyAll": "All difficulties",
@@ -1059,7 +1142,7 @@ export default {
         "empty": "No songs match the current filters.",
         "aliasSearching": "Matching aliases..."
       },
-      "downloading": "Downloading master data... {progress}%",
+      "downloading": "Downloading game database... {progress}%",
       "loadError": "Failed to load music data: {message}",
       "unknownDate": "Unknown"
     },
@@ -1098,7 +1181,7 @@ export default {
     },
     "detail": {
       "back": "Back to list",
-      "notFound": "This song does not exist on the selected server.",
+      "notFound": "This song (#{musicId}) is not in the current server's data. Try another server.",
       "loadError": "Failed to load music data: {message}",
       "unknownCharacter": "Unknown",
       "aliases": {
@@ -1198,12 +1281,12 @@ export default {
       "term_limited": "Limited",
       "colorful_festival_limited": "Colorful Fes limited",
       "bloom_festival_limited": "Bloom Fes limited",
-      "unit_event_limited": "WL event limited",
+      "unit_event_limited": "World Link event limited",
       "collaboration_limited": "Collab limited"
     },
     "detail": {
       "back": "Back to catalog",
-      "notFound": "Card #{cardId} was not found in this server's data",
+      "notFound": "This card (#{cardId}) is not in the current server's data. Try another server.",
       "artNormal": "Before training",
       "artTrained": "After training",
       "artLoadFailed": "Failed to load card art",
@@ -1249,10 +1332,6 @@ export default {
       "world_bloom": "World Link",
       "unknown": "Unknown type"
     },
-    "status": {
-      "ongoing": "Ongoing",
-      "ended": "Ended"
-    },
     "attr": {
       "cute": "Cute",
       "cool": "Cool",
@@ -1283,7 +1362,7 @@ export default {
       "back": "Back to event catalog",
       "loadFailed": "Failed to load event data.",
       "retry": "Retry",
-      "notFound": "Event not found on the selected server.",
+      "notFound": "This event (#{eventId}) is not in the current server's data. Try another server.",
       "timelineTitle": "Timeline",
       "timeline": {
         "start": "Starts",
@@ -1303,32 +1382,33 @@ export default {
       "cardsEmpty": "No cards for this event.",
       "links": {
         "rankBorder": "View rank border",
-        "deckRecommend": "Event deck recommend"
+        "deckRecommend": "Event deck recommend",
+        "story": "Play story"
       }
     }
   },
   "homeSettings": {
     "title": "Haruki Toolbox Settings",
-    "description": "Configure Toolbox server endpoint, game asset endpoint, appearance, language, and performance preferences",
+    "description": "Configure the server route, image loading route, appearance, language, and performance preferences",
     "trigger": "Settings",
     "tabs": {
       "preferences": "Preferences",
       "app": "App",
-      "sekaiData": "Master data",
+      "sekaiData": "Game database",
       "userData": "User data"
     },
     "resetDialog": {
       "title": "Reset preferences?",
-      "description": "This restores Toolbox server endpoint, game asset endpoint, appearance, language, low effects mode, and privacy preferences to their defaults.",
+      "description": "This restores the server route, image loading route, appearance, language, low effects mode, and privacy preferences to their defaults.",
       "confirm": "Reset preferences"
     },
     "endpoint": {
-      "label": "Toolbox server endpoint",
+      "label": "Server route",
       "help": "Direct is default. If international access is unstable, try CDN.",
-      "placeholder": "Select endpoint",
+      "placeholder": "Select a route",
       "direct": "Direct",
       "cdn": "CDN",
-      "unavailable": "No available endpoints are configured in this environment.",
+      "unavailable": "No server routes are configured in this environment.",
       "checking": "Checking",
       "unknown": "Not checked",
       "failed": "Unreachable",
@@ -1336,12 +1416,11 @@ export default {
       "refreshLatency": "Re-test latency"
     },
     "assetEndpoint": {
-      "label": "Game asset endpoint",
-      "help": "Used for game assets such as card thumbnails. The first visit picks the lower-latency endpoint, and opening settings re-checks both.",
-      "placeholder": "Select game asset endpoint",
-      "china": "China-accelerated overseas CDN",
-      "global": "Overseas-optimized CDN",
-      "chinaCdn": "China domestic CDN",
+      "label": "Image loading route",
+      "help": "Used for game assets such as card thumbnails. The first visit picks the lower-latency route, and opening settings re-checks them.",
+      "placeholder": "Select a route",
+      "global": "Recommended overseas",
+      "chinaCdn": "China - Tencent Cloud CDN",
       "checking": "Checking",
       "unknown": "Not checked",
       "failed": "Unreachable",
@@ -1387,20 +1466,21 @@ export default {
       "remoteBuildTime": "Remote build time",
       "checkedAt": "Last checked: {time}",
       "lastError": "The last update check failed. Please try again later.",
+      "notCheckedYet": "Updates have not been checked yet.",
       "check": "Check for updates",
       "checking": "Checking...",
       "update": "Update app",
       "updating": "Updating..."
     },
     "userData": {
-      "description": "Manage the local suite, mysekai, and profile caches for your bound game accounts, shared by features across the site. Suite/mysekai refresh checks remote upload time first; profile refresh fetches the latest profile directly.",
+      "description": "These are this browser's copies of the data your game accounts have uploaded. \"Refresh\" checks the server for a newer upload; \"Profile\" fetches the latest information straight from the game server.",
       "account": "Account",
       "accountPlaceholder": "Select a bound account",
       "noAccount": "No game account is bound to the current Toolbox account.",
       "dataType": "Data type",
       "types": {
-        "suite": "Suite",
-        "mysekai": "MySekai",
+        "suite": "Account data (Suite)",
+        "mysekai": "MySekai data",
         "profile": "Profile"
       },
       "cacheUpdatedAt": "Local cache",
@@ -1432,7 +1512,7 @@ export default {
     },
     "sections": {
       "preferences": "Appearance, language, network, and privacy preferences. Changes apply immediately.",
-      "sekaiData": "Manage per-region master data caches and background update jobs shared by pickers, recommendations, and other features."
+      "sekaiData": "Manage per-region game database caches and background update jobs shared by pickers, recommendations, and other features."
     },
     "groups": {
       "appearance": "Appearance",
@@ -1450,26 +1530,41 @@ export default {
       "loginRequiredDescription": "You need to sign in to access this page",
       "requireAdminDescription": "Admin permission required",
       "requireSuperAdminDescription": "Super admin permission required",
-      "apiRequestFailedTitle": "API request failed",
-      "apiRequestFailedDescription": "Status: {status}, message: {message}",
+      "apiRequestFailedTitle": "Request failed",
+      "apiRequestFailedDescription": "The server could not handle this request right now. Try again later.",
+      "permissionDeniedDescription": "You do not have permission to do this. If you think that is a mistake, contact an administrator.",
+      "accountBannedDescription": "Your account has been banned and can no longer be used. Contact an administrator if you have questions.",
+      "accountBannedWithReason": "Your account has been banned and can no longer be used. Reason: {reason}",
       "reauthRequired": "Password re-verification required"
+    },
+    "errors": {
+      "network": "Network connection failed. Check your connection and try again.",
+      "timeout": "The request timed out. Try again later.",
+      "rateLimited": "Too many requests. Wait a moment and try again.",
+      "serverUnavailable": "The server is temporarily unavailable. Try again later (code {status}).",
+      "detail": "Details: {detail}"
+    },
+    "loadError": {
+      "title": "Failed to load",
+      "description": "Check your connection and try again. If it keeps failing, the service may be temporarily unavailable.",
+      "retry": "Retry"
     },
     "sync": {
       "successTitle": "Settings synced",
       "successDescription": "Cloud settings are synced for current account",
       "failedTitle": "Settings sync unavailable",
       "failedDescription": "Cloud settings could not be synced. Try again later.",
-      "missingUpdatedDataDescription": "Cloud settings response is incomplete (missing updatedData).",
+      "missingUpdatedDataDescription": "The cloud settings response was incomplete. Refresh the page and try again.",
       "unexpectedStatusDescription": "Cloud settings request returned an unexpected status ({status})."
     },
     "suitePrefetch": {
-      "progressTitle": "Fetching account data",
+      "progressTitle": "Fetching game data",
       "progressDescription": "{completed}/{total} bound accounts done",
-      "successTitle": "Account data fetched",
-      "successDescription": "Downloaded new suite data for {updated}/{total} bound accounts",
-      "partialTitle": "Some account data failed to fetch",
+      "successTitle": "Game data updated",
+      "successDescription": "Updated game data for {updated}/{total} bound accounts",
+      "partialTitle": "Game data failed to fetch for some accounts",
       "partialDescription": "{failed}/{total} accounts failed. They will retry automatically on the related pages.",
-      "failedDescription": "Failed to fetch bound account data. It will retry automatically on the related pages."
+      "failedDescription": "Failed to fetch game data for bound accounts. It will retry automatically on the related pages."
     },
     "unsupportedBrowser": {
       "title": "Unsupported browser",
@@ -1485,6 +1580,7 @@ export default {
       "updateAvailableDescription": "A new app build is ready. You can update now.",
       "updateAvailableDescriptionWithVersion": "New version {version} is ready to install.",
       "updateAction": "Update app",
+      "laterAction": "Later",
       "applyingTitle": "Updating app",
       "applyingDescription": "The page will refresh after the update is applied.",
       "currentTitle": "App is up to date",
@@ -1492,7 +1588,7 @@ export default {
       "checkFailedTitle": "Update check failed",
       "checkFailedDescription": "Remote build information could not be loaded. Please try again later.",
       "offlineReadyTitle": "Offline cache ready",
-      "offlineReadyDescription": "The app shell is cached and can open faster next time.",
+      "offlineReadyDescription": "Common pages are cached, so the app opens faster next time.",
       "devTitle": "Development mode",
       "devDescription": "PWA updates are not registered in development mode.",
       "forcedUpdateTitle": "This version is no longer supported",
@@ -1515,6 +1611,8 @@ export default {
       "title": "Filters",
       "reset": "Reset filters",
       "clearAll": "Clear all",
+      "done": "Done",
+      "sheetDescription": "Adjust the filters; the results update immediately.",
     },
     "results": {
       "count": "{count} results",
@@ -1522,7 +1620,9 @@ export default {
       "emptyHint": "Try loosening the filters or switching server.",
       "loadError": "Failed to load data",
       "retry": "Retry",
-      "downloading": "Downloading master data… {progress}%"
+      "downloading": "Downloading game data… {progress}%",
+      "offline": "Offline data",
+      "offlineHint": "Showing the locally cached game database; the latest content may not be synced yet"
     },
     "sort": {
       "label": "Sort",
@@ -1554,7 +1654,8 @@ export default {
       "upcomingHidden": "Upcoming content is hidden. Enable “show unreleased content” to see it.",
       "showUnreleased": "Show unreleased content",
       "endsIn": "{time} left",
-      "startsIn": "Starts in {time}"
+      "startsIn": "Starts in {time}",
+      "permanent": "Permanent"
     },
     "countdown": {
       "toStart": "Starts in",
@@ -1569,22 +1670,30 @@ export default {
     "detail": {
       "backToList": "Back to {list}",
       "breadcrumb": "Breadcrumb",
-      "notFound": "This entry does not exist in the selected server's data.",
+      "notFound": "This entry is not in the current server's data. Try another server.",
       "loadError": "Failed to load details",
-      "assetName": "Asset name",
+      "assetName": "Internal name",
       "period": "Period",
       "viewAllCount": "View all ({count})",
       "zoom": "Click to enlarge",
       "showMore": "Show more",
       "showLess": "Show less",
-      "tryOtherRegion": "This entry may exist on another server; switch and retry."
+      "tryOtherRegion": "It may exist on another server; switching reloads the data."
     },
     "lightbox": {
       "description": "Image preview",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
       "openInNewTab": "Open in new tab",
-      "items": "Images"
+      "items": "Images",
+      "touchZoom": "Double-tap to zoom",
+      "touchSwipe": "Swipe to switch images"
+    },
+    "time": {
+      "localLabel": "Local time",
+      "serverTime": "{region} server time: {time}",
+      "hint": "Times are shown in your time zone ({zone}); where it differs, the {region} server time ({serverZone}) is noted next to each.",
+      "sameZone": "Your time zone ({zone}) matches the {region} server."
     },
     "character": {
       "label": "Characters",

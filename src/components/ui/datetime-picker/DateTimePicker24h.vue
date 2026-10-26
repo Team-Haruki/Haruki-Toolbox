@@ -19,13 +19,16 @@ const props = defineProps<{
   id?: string
   modelValue?: Date
   placeholder?: string
+  /** Marks the trigger as failing validation (aria-invalid + destructive border). */
+  invalid?: boolean
+  describedBy?: string
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', val?: Date): void
 }>()
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const isOpen = ref(false)
 const hours = Array.from({ length: 24 }, (_, i) => i)
 
@@ -93,14 +96,17 @@ const handleTimeChange = (type: "hour" | "minute", value: string) => {
       <Button
         :id="props.id"
         variant="outline"
+        :aria-invalid="props.invalid ? 'true' : undefined"
+        :aria-describedby="props.describedBy"
         :class="cn(
           'w-full justify-start text-left font-normal',
-          !modelValue && 'text-muted-foreground'
+          !modelValue && 'text-muted-foreground',
+          props.invalid && 'border-destructive ring-[3px] ring-destructive/20 dark:ring-destructive/40',
         )"
       >
         <CalendarIcon class="mr-2 h-4 w-4" />
         <span v-if="modelValue">{{ formatDateTime(modelValue) }}</span>
-        <span v-else>{{ placeholder || "请选择时间" }}</span>
+        <span v-else>{{ placeholder || t("common.selectDateTime") }}</span>
       </Button>
     </PopoverTrigger>
     <PopoverContent class="w-auto p-0">

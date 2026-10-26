@@ -21,24 +21,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePagedSlice } from "@/composables/usePagedSlice"
+import CatalogDownloadProgress from "@/shared/components/catalog/CatalogDownloadProgress.vue"
+import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
 import CatalogPagination from "@/shared/components/catalog/CatalogPagination.vue"
-import { SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
-import { readSekaiMasterFiles } from "@/shared/sekai/cache"
+import CatalogRegionSelect from "@/shared/components/catalog/CatalogRegionSelect.vue"
 import { buildCatalogCharacterMap, resolveSekaiCharacterColor, type CatalogCharacter } from "@/shared/sekai/catalog"
+import { loadMasterFilesCacheFirst } from "@/shared/sekai/master-loader"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 import SekaiCharacterAvatar from "@/shared/components/SekaiCharacterAvatar.vue"
 import { resolveCostumeThumbnailUrl } from "@/shared/sekai/data-sources"
-import { SEKAI_CATALOG_REGION_FOLLOW_VALUE, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
@@ -46,19 +40,14 @@ import CostumeViewer, { type CostumeViewerRecipe } from "../components/CostumeVi
 import { useCostumeRoleData } from "../composables/useCostumeRoleData"
 import { COSTUME_SLOTS, pickDefaultOptionId, type CostumeSlot, type RuntimeCostumeOption } from "../lib/costume-options"
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const settingsStore = useSettingsStore()
 const sekaiDataStore = useSekaiDataStore()
 
-const { region, selectorValue: regionSelectorValue, updateSelectorValue: updateRegionSelector } = useEffectiveCatalogRegion()
+const { region } = useEffectiveCatalogRegion()
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
-
-const selectedRegion = computed<string>({
-  get: () => regionSelectorValue.value,
-  set: (value) => updateRegionSelector(value),
-})
 
 // Only character names/units come from masterdata; the selectable parts and
 // per-role defaults come from the deployed 3D runtime registry instead.
@@ -75,13 +64,17 @@ async function loadMaster(targetRegion: SekaiRegion) {
   loading.value = true
   error.value = null
   try {
-    await sekaiDataStore.ensureRegionData(targetRegion, { files: DRESSUP_MASTER_FILES, musicMetas: false })
-    const files = await readSekaiMasterFiles(targetRegion, DRESSUP_MASTER_FILES)
-    if (token !== loadToken) {
-      return
-    }
-
-    characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+    // Cache first: a cached roster renders at once and a failed remote check
+    // keeps it, instead of the strip waiting out the retries on a dead CDN.
+    await loadMasterFilesCacheFirst({
+      region: targetRegion,
+      files: DRESSUP_MASTER_FILES,
+      ensure: () => sekaiDataStore.ensureRegionData(targetRegion, { files: DRESSUP_MASTER_FILES, musicMetas: false }),
+      isCurrent: () => token === loadToken,
+      apply: (files) => {
+        characterMap.value = buildCatalogCharacterMap(files.gameCharacters)
+      },
+    })
   } catch (loadError) {
     if (token === loadToken) {
       error.value = loadError instanceof Error ? loadError.message : String(loadError)
@@ -362,41 +355,31 @@ watch(() => route.query, () => {
         <h1 class="text-2xl font-bold">{{ t("costumes.dressup.title") }}</h1>
         <p class="text-sm text-muted-foreground">{{ t("costumes.dressup.description") }}</p>
       </div>
-      <Label id="costume-region-label" for="costume-region" class="sr-only">
-        {{ t("costumes.dressup.region") }}
-      </Label>
-      <Select id="costume-region" :key="locale" v-model="selectedRegion">
-        <SelectTrigger class="w-32" aria-labelledby="costume-region-label">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem :value="SEKAI_CATALOG_REGION_FOLLOW_VALUE">
-            {{ t("sekaiRegion.followAccount") }}
-          </SelectItem>
-          <SelectItem v-for="option in SEKAI_REGION_OPTIONS" :key="option.value" :value="option.value">
-            {{ t(option.labelKey) }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
+      <!-- The shared catalog selector: names the server in use and the
+           "following" state exactly like /cards, /events, /gachas, /music. -->
+      <CatalogRegionSelect />
     </div>
 
-    <template v-if="loading && characterOptions.length === 0">
+    <!-- Localized message with the raw error as a muted detail line, like
+         every catalog page; a cached roster keeps rendering through a failed
+         refresh, so this only shows on a cold cache. -->
+    <CatalogErrorState
+      v-if="error && characterOptions.length === 0"
+      :message="t('costumes.dressup.loadError')"
+      :detail="error"
+      :retry-label="t('costumes.dressup.retry')"
+      :retrying="loading"
+      @retry="loadMaster(region)"
+    />
+
+    <template v-else-if="loading && characterOptions.length === 0">
+      <CatalogDownloadProgress :region="region" />
       <Skeleton class="h-12 w-full rounded-lg" />
       <div class="grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
         <Skeleton class="aspect-[4/5] w-full rounded-lg sm:aspect-[7/5]" />
         <Skeleton class="h-96 w-full rounded-lg" />
       </div>
     </template>
-
-    <Card v-else-if="error">
-      <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <p class="text-sm text-muted-foreground">{{ t("costumes.dressup.loadError") }}</p>
-        <p class="max-w-full truncate font-mono text-xs text-muted-foreground">{{ error }}</p>
-        <Button variant="outline" size="sm" @click="loadMaster(region)">
-          <LucideRefreshCcw class="mr-1 size-4" /> {{ t("costumes.dressup.retry") }}
-        </Button>
-      </CardContent>
-    </Card>
 
     <template v-else>
       <!-- Who: every character in one strip, the current one ringed in their

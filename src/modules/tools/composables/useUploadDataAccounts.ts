@@ -14,6 +14,8 @@ import {
 
 export type { UploadTargetAccount } from "@/modules/tools/lib/upload-targets"
 
+export type UploadDisabledReasonKind = "loginRequired" | "noBoundAccount" | "noWritableAccount"
+
 const logger = createLogger("upload-targets")
 
 type UploadAccountStore = {
@@ -90,12 +92,18 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
 
   const hasUploadableAccount = computed(() => uploadAccounts.value.some((account) => account.canUpload))
 
-  const disabledReason = computed(() => {
-    if (!userStore.isLoggedIn) return t("tools.uploadData.disabledReason.loginRequired")
+  /** Why the tab is unusable, so the view can offer the matching next step (sign in / bind). */
+  const disabledReasonKind = computed<UploadDisabledReasonKind | null>(() => {
+    if (!userStore.isLoggedIn) return "loginRequired"
     if (targetsLoading.value) return null
-    if (uploadAccounts.value.length === 0) return t("tools.uploadData.disabledReason.noBoundAccount")
-    if (!hasUploadableAccount.value) return t("tools.uploadData.disabledReason.noWritableAccount")
+    if (uploadAccounts.value.length === 0) return "noBoundAccount"
+    if (!hasUploadableAccount.value) return "noWritableAccount"
     return null
+  })
+
+  const disabledReason = computed(() => {
+    const kind = disabledReasonKind.value
+    return kind ? t(`tools.uploadData.disabledReason.${kind}`) : null
   })
 
   // MySekai upload features require a verified QQ on the HarukiBot social
@@ -150,6 +158,7 @@ export function useUploadDataAccounts(userStore: UploadAccountStore, dataType: R
     targetsLoading,
     targetsFailed,
     disabledReason,
+    disabledReasonKind,
     hasVerifiedQQ,
     isCNMySekaiForbidden,
     canSelectSuiteDataType,

@@ -1,7 +1,7 @@
 {
   "name": "haruki-toolbox",
   "private": true,
-  "version": "9.12.0",
+  "version": "9.22.1",
   "type": "module",
   "harukiToolbox": {
     "minSupportedVersion": "9.5.1"
@@ -29,12 +29,14 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "fast-uri": "^4.2.1",
-    "haruki-sekai-deck-recommend-cpp": "0.4.2",
+    "haruki-sekai-deck-recommend-cpp": "0.5.1",
     "lucide-vue-next": "^1.0.0",
     "nanoid": "^6.0.2",
     "pinia": "^4.0.3",
     "pinia-plugin-persistedstate": "^4.7.1",
     "pinyin-pro": "^3.29.4",
+    "pixi.js": "7.4.3",
+    "pjsk-scenario-player": "https://github.com/Team-Haruki/sekai-scenario-player/releases/download/v0.6.0/pjsk-scenario-player-0.6.0.tgz",
     "postcss": "^8.5.29",
     "reka-ui": "^2.11.0",
     "tailwind-merge": "^3.7.0",

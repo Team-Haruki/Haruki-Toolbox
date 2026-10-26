@@ -1,5 +1,6 @@
-// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog
-// Lazy bundle for the Sekai catalog pages (/cards, /events, /gachas, /music).
+// Namespaces: cardCatalog, eventCatalog, gachaCatalog, musicCatalog, storyPlayer
+// Lazy bundle for the Sekai catalog pages (/cards, /events, /gachas, /music)
+// and the story player (/story).
 // Shared shell strings live in the core bundle under `catalog.*`; enum labels
 // (units, attributes, rarities, event/gacha types, difficulties) stay in core too.
 export default {
@@ -46,6 +47,7 @@ export default {
     },
     "detail": {
       "viewCharacterCards": "该角色的全部卡牌",
+      "playStory": "播放剧情",
       "art": {
         "normal": "特训前",
         "trained": "特训后"
@@ -73,7 +75,7 @@ export default {
         "level": "等级",
         "trained": "特训",
         "episodes": "剧情",
-        "canvas": "MySekai 画布",
+        "canvas": "烤森（MySekai）画布",
         "masterRank": "突破"
       },
       "skill": {
@@ -93,6 +95,7 @@ export default {
         "costs": "解锁消耗",
         "cost": "{resource} ×{quantity}",
         "material": "素材 #{id}",
+        "play": "播放",
         "partType": {
           "first_part": "前篇",
           "second_part": "后篇"
@@ -139,7 +142,7 @@ export default {
     },
     "hero": {
       "banner": "横幅",
-      "logo": "Logo",
+      "logo": "标志",
       "background": "背景"
     },
     "timeline": {
@@ -179,7 +182,7 @@ export default {
       "title": "排名奖励",
       "rangeCount": "{count} 个名次区间",
       "empty": "该活动暂无排名奖励数据。",
-      "unavailable": "当前服务器的数据不包含奖励详情，仅显示名次区间。",
+      "unavailable": "该区服暂未提供奖励明细，这里只显示名次区间。",
       "rank": "第 {rank} 名",
       "rankRange": "第 {from}–{to} 名",
       "border": "榜线",
@@ -216,7 +219,8 @@ export default {
     "story": {
       "title": "活动剧情",
       "episodeCount": "{count} 话",
-      "episode": "第 {no} 话"
+      "episode": "第 {no} 话",
+      "play": "播放"
     }
   },
 
@@ -242,9 +246,10 @@ export default {
     },
     "detail": {
       "pickupCards": "查看 PICK UP 角色卡牌",
+      "permanentHint": "常驻卡池，没有结束时间。",
       "lightbox": {
         "banner": "横幅",
-        "logo": "Logo"
+        "logo": "标志"
       }
     },
     "pickups": {
@@ -299,8 +304,8 @@ export default {
       "empty": "该卡池没有兑换贴纸",
       "convertAt": "{time} 起转换为通用贴纸",
       "exchange": "贴纸交换所",
-      "exchangeEmpty": "当前服务器没有该卡池的交换所数据",
-      "rewardsUnavailable": "当前服务器未提供奖励详情，仅显示奖励箱编号。",
+      "exchangeEmpty": "该区服暂无这个卡池的交换所数据",
+      "rewardsUnavailable": "该区服暂未提供奖励明细，这里只显示奖励箱编号。",
       "reward": "奖励",
       "cost": "所需贴纸",
       "limit": "限购",
@@ -352,7 +357,8 @@ export default {
       "appendOnly": "仅显示有 APPEND 谱面的歌曲",
       "mvType": "MV 类型",
       "scope": "关联方式",
-      "scopeHint": "选择角色后可按箱曲 / Vocal 进一步筛选"
+      "scopeHint": "选择角色后，可进一步只看该角色的箱曲（活动曲）或演唱曲（Vocal）",
+      "aliasUnavailable": "别名搜索暂不可用，当前只按标题匹配。"
     },
     "detail": {
       "jacket": "封面",
@@ -376,6 +382,89 @@ export default {
       "events": {
         "empty": "这首歌曲没有关联的活动。"
       }
+    }
+  },
+
+  // ---------------------------------------------------------------------
+  // storyPlayer — owned by the story module (src/modules/story)
+  // ---------------------------------------------------------------------
+  "storyPlayer": {
+    "beta": {
+      "title": "测试中",
+      "body": "本页面功能正在测试中，可能会遇到各种各样的 bug，如果遇到 bug 或者什么地方与游戏内不符，可以在{tickets}处反馈。",
+      "tickets": "工单"
+    },
+    "title": "剧情播放",
+    "description": "按游戏的演出播放主线、活动、卡面、特别剧情与区域对话。画面与语音来自日服，文本可选各服官方翻译，日服独有的剧情另有 AI 中文翻译。",
+    "textLang": "文本语言",
+    "voice": "播放语音",
+    "voiceVolume": "语音音量",
+    "bgmVolume": "BGM 音量",
+    "langAutoResolved": "跟随工具箱语言 · {lang}",
+    "langAuto": "跟随工具箱语言",
+    "lang": {
+      "ja": "日本語",
+      "zhHans": "简体中文",
+      "zhHant": "繁體中文",
+      "en": "English",
+      "ko": "한국어",
+      "zhHansAi": "简体中文（AI翻译）"
+    },
+    "aiPending": "这一话的 AI 翻译还在生成中，请稍后再来。",
+    "aiNotice": "当前文本为 AI 翻译，可能与官方译文有出入。",
+    "errors": {
+      "notFound": "找不到这一话剧情。",
+      "unreleased": "这一话还没有上线。可以在设置里打开“展示未上线内容”后再看。",
+      "missing": "日服素材里还没有这一话的剧本。",
+      "failed": "剧情加载失败：{detail}",
+      "catalog": "剧情目录加载失败，请刷新重试。",
+      "engine": "播放器加载失败：{detail}"
+    },
+    "stage": {
+      "loading": "加载中",
+      "start": "点击开始播放",
+      "pickBeside": "请在左侧选择要播放的剧情",
+      "pickBelow": "请在下方选择要播放的剧情",
+      "models": "角色",
+      "preloading": "下载素材",
+      "preloadFailed": "{n} 个文件下载失败",
+      "retry": "重试",
+      "continue": "仍然播放",
+      "credit": "Developed by Deseer × 星雲希凪 (From Haruki Dev Team). Powered by Haruki Toolbox.",
+      "tabBrowser": "剧情",
+      "tabLog": "台词",
+      "fullscreen": "全屏",
+      "exitFullscreen": "退出全屏"
+    },
+    "browser": {
+      "tabs": {
+        "unit": "主线",
+        "event": "活动",
+        "card": "卡面",
+        "special": "特别",
+        "area": "区域"
+      },
+      "all": "全部",
+      "rail": "剧情选择",
+      "toggle": "收起 / 展开",
+      "search": "搜索标题 / 角色",
+      "loading": "加载剧情目录…",
+      "empty": "没有匹配的剧情",
+      "episode": "第{no}话",
+      "firstPart": "前篇",
+      "secondPart": "后篇"
+    },
+    "menu": {
+      "fullscreen": "全屏",
+      "auto": "自动",
+      "mute": "静音",
+      "fast": "快进",
+      "hide": "隐藏",
+      "log": "记录"
+    },
+    "log": {
+      "search": "搜索台词 / 角色",
+      "matches": "{count} 条匹配"
     }
   }
 } as const

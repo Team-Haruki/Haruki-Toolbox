@@ -1,5 +1,4 @@
 import { ref, type Ref } from "vue"
-import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { runAsyncAction } from "@/composables/useAsyncAction"
 import {
@@ -35,6 +34,8 @@ type RunActionOptions = {
   successMessage?: string
   errorTitle: string
   onSuccess?: () => void | Promise<void>
+  /** Rethrow instead of toasting: the ConfirmDialog running it reports the failure inline. */
+  throwOnError?: boolean
 }
 
 export function useGameBindingActions(options: UseGameBindingActionsOptions) {
@@ -53,6 +54,7 @@ export function useGameBindingActions(options: UseGameBindingActionsOptions) {
       successAfterOnSuccess: true,
       errorTitle: actionOptions.errorTitle,
       fallbackError: actionOptions.errorTitle,
+      throwOnError: actionOptions.throwOnError,
       onSuccess: async () => {
         if (actionOptions.onSuccess) {
           await actionOptions.onSuccess()
@@ -66,6 +68,7 @@ export function useGameBindingActions(options: UseGameBindingActionsOptions) {
     deleteDialogOpen.value = true
   }
 
+  /** Runs from the delete ConfirmDialog, which closes itself on success and shows a failure inline. */
   async function handleDelete() {
     const target = deleteTarget.value
     if (!target) return
@@ -73,10 +76,10 @@ export function useGameBindingActions(options: UseGameBindingActionsOptions) {
     await runAction(
       () => deleteGlobalGameBinding(target.server, target.gameUserId),
       {
+        throwOnError: true,
         successMessage: t("adminGameBindings.toast.unbound"),
         errorTitle: t("adminGameBindings.toast.unbindFailedTitle"),
         onSuccess: async () => {
-          deleteDialogOpen.value = false
           deleteTarget.value = null
           await options.loadBindings()
         },
@@ -109,21 +112,20 @@ export function useGameBindingActions(options: UseGameBindingActionsOptions) {
     )
   }
 
+  /** Runs from the batch ConfirmDialog; an unusable selection is reported inline like a failure. */
   async function handleBatchDelete() {
     if (options.selected.value.size === 0) return
 
     const items = options.parseSelectedBindings()
 
     if (items.length === 0) {
-      toast.error(t("adminGameBindings.toast.batchUnbindFailedTitle"), {
-        description: t("adminGameBindings.toast.invalidSelectedRecords"),
-      })
-      return
+      throw new Error(t("adminGameBindings.toast.invalidSelectedRecords"))
     }
 
     await runAction(
       () => batchDeleteGameBindings(items),
       {
+        throwOnError: true,
         successMessage: t("adminGameBindings.toast.batchUnbound", { count: items.length }),
         errorTitle: t("adminGameBindings.toast.batchUnbindFailedTitle"),
         onSuccess: options.loadBindings,

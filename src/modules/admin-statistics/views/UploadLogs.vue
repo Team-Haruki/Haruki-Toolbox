@@ -29,27 +29,24 @@ import {
   LucideSearch,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import FieldError from "@/shared/components/FieldError.vue"
 import { UploadLogsSummary, UploadLogsTable } from "@/modules/admin-statistics/components"
-import { useUploadLogs } from "@/modules/admin-statistics/composables/useUploadLogs"
+import { UPLOAD_LOG_FILTER_IDS, useUploadLogs } from "@/modules/admin-statistics/composables/useUploadLogs"
 
 const { t, locale } = useI18n()
 
 const {
   loading,
+  loadError,
   logs,
   total,
   page,
+  pageSize,
   totalPages,
   summary,
   filtersExpanded,
-  filterFrom,
-  filterTo,
-  filterMethod,
-  filterDataType,
-  filterServer,
-  filterSuccess,
-  filterSort,
-  filterGameUserId,
+  filters,
+  timeRangeError,
   uploadMethods,
   dataTypeOptions,
   servers,
@@ -61,10 +58,15 @@ const {
   filterMethodLabel,
   filterDataTypeLabel,
   filterServerLabel,
+  filterMethodTitle,
+  filterDataTypeTitle,
+  filterServerTitle,
   applyFilters,
   resetFilters,
+  reload,
   prevPage,
   nextPage,
+  goToPage,
   methodLabel,
   serverLabel,
   formatTime,
@@ -107,24 +109,40 @@ const {
         </div>
       </CardHeader>
       <CardContent v-if="filtersExpanded" class="pt-0">
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <form class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4" @submit.prevent="applyFilters">
           <div class="flex flex-col gap-1.5">
-            <Label for="upload-log-filter-from" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.from") }}</Label>
-            <DateTimePicker24h id="upload-log-filter-from" v-model="filterFrom" :placeholder="t('adminStatistics.uploadLogs.filters.fromPlaceholder')" />
+            <Label :for="UPLOAD_LOG_FILTER_IDS.from" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.from") }}</Label>
+            <DateTimePicker24h
+              :id="UPLOAD_LOG_FILTER_IDS.from"
+              v-model="filters.from"
+              :invalid="!!timeRangeError"
+              :placeholder="t('adminStatistics.uploadLogs.filters.fromPlaceholder')"
+            />
           </div>
           <div class="flex flex-col gap-1.5">
-            <Label for="upload-log-filter-to" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.to") }}</Label>
-            <DateTimePicker24h id="upload-log-filter-to" v-model="filterTo" :placeholder="t('adminStatistics.uploadLogs.filters.toPlaceholder')" />
+            <Label :for="UPLOAD_LOG_FILTER_IDS.to" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.to") }}</Label>
+            <DateTimePicker24h
+              :id="UPLOAD_LOG_FILTER_IDS.to"
+              v-model="filters.to"
+              :invalid="!!timeRangeError"
+              :placeholder="t('adminStatistics.uploadLogs.filters.toPlaceholder')"
+            />
+            <FieldError id="upload-log-filter-time-range-error" :message="timeRangeError" />
           </div>
           <div class="flex flex-col gap-1.5">
-            <Label for="upload-log-filter-game-user" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.gameUid") }}</Label>
-            <Input id="upload-log-filter-game-user" v-model="filterGameUserId" :placeholder="t('adminStatistics.uploadLogs.filters.gameUidPlaceholder')" />
+            <Label :for="UPLOAD_LOG_FILTER_IDS.gameUser" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.gameUid") }}</Label>
+            <Input
+              :id="UPLOAD_LOG_FILTER_IDS.gameUser"
+              v-model="filters.gameUserId"
+              :placeholder="t('adminStatistics.uploadLogs.filters.gameUidPlaceholder')"
+              @keydown.enter.prevent="applyFilters"
+            />
           </div>
           <div class="flex flex-col gap-1.5">
             <Label for="upload-log-filter-method" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.method") }}</Label>
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
-                <Button id="upload-log-filter-method" variant="outline" class="w-full justify-between font-normal">
+                <Button id="upload-log-filter-method" type="button" variant="outline" class="w-full justify-between font-normal" :title="filterMethodTitle || undefined">
                   <span class="truncate">{{ filterMethodLabel }}</span>
                   <LucideChevronDown class="w-4 h-4 text-muted-foreground" />
                 </Button>
@@ -133,7 +151,7 @@ const {
                 <DropdownMenuCheckboxItem
                   v-for="opt in uploadMethods"
                   :key="opt.value"
-                  :model-value="filterMethod.includes(opt.value)"
+                  :model-value="filters.method.includes(opt.value)"
                   @update:model-value="toggleMethodFilter(opt.value, !!$event)"
                   @select.prevent
                 >
@@ -146,7 +164,7 @@ const {
             <Label for="upload-log-filter-data-type" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.dataType") }}</Label>
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
-                <Button id="upload-log-filter-data-type" variant="outline" class="w-full justify-between font-normal">
+                <Button id="upload-log-filter-data-type" type="button" variant="outline" class="w-full justify-between font-normal" :title="filterDataTypeTitle || undefined">
                   <span class="truncate">{{ filterDataTypeLabel }}</span>
                   <LucideChevronDown class="w-4 h-4 text-muted-foreground" />
                 </Button>
@@ -155,7 +173,7 @@ const {
                 <DropdownMenuCheckboxItem
                   v-for="opt in dataTypeOptions"
                   :key="opt.value"
-                  :model-value="filterDataType.includes(opt.value)"
+                  :model-value="filters.dataType.includes(opt.value)"
                   @update:model-value="toggleDataTypeFilter(opt.value, !!$event)"
                   @select.prevent
                 >
@@ -168,7 +186,7 @@ const {
             <Label for="upload-log-filter-server" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.server") }}</Label>
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
-                <Button id="upload-log-filter-server" variant="outline" class="w-full justify-between font-normal">
+                <Button id="upload-log-filter-server" type="button" variant="outline" class="w-full justify-between font-normal" :title="filterServerTitle || undefined">
                   <span class="truncate">{{ filterServerLabel }}</span>
                   <LucideChevronDown class="w-4 h-4 text-muted-foreground" />
                 </Button>
@@ -177,7 +195,7 @@ const {
                 <DropdownMenuCheckboxItem
                   v-for="opt in servers"
                   :key="opt.value"
-                  :model-value="filterServer.includes(opt.value)"
+                  :model-value="filters.server.includes(opt.value)"
                   @update:model-value="toggleServerFilter(opt.value, !!$event)"
                   @select.prevent
                 >
@@ -188,7 +206,7 @@ const {
           </div>
           <div class="flex flex-col gap-1.5">
             <Label id="upload-log-filter-status-label" for="upload-log-filter-status" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.status") }}</Label>
-            <Select id="upload-log-filter-status" :key="locale" v-model="filterSuccess">
+            <Select id="upload-log-filter-status" :key="locale" v-model="filters.success">
               <SelectTrigger aria-labelledby="upload-log-filter-status-label" class="w-full">
                 <SelectValue :placeholder="t('adminStatistics.uploadLogs.filters.allStatuses')" />
               </SelectTrigger>
@@ -201,7 +219,7 @@ const {
           </div>
           <div class="flex flex-col gap-1.5">
             <Label id="upload-log-filter-sort-label" for="upload-log-filter-sort" class="text-sm">{{ t("adminStatistics.uploadLogs.filters.sort") }}</Label>
-            <Select id="upload-log-filter-sort" :key="locale" v-model="filterSort">
+            <Select id="upload-log-filter-sort" :key="locale" v-model="filters.sort">
               <SelectTrigger aria-labelledby="upload-log-filter-sort-label" class="w-full">
                 <SelectValue :placeholder="t('adminStatistics.uploadLogs.filters.sortPlaceholder')" />
               </SelectTrigger>
@@ -212,27 +230,28 @@ const {
               </SelectContent>
             </Select>
           </div>
-        </div>
 
-        <div class="flex flex-wrap flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4">
-          <div class="flex items-center gap-2">
-            <Button size="sm" @click="applyFilters">
-              <LucideSearch class="w-4 h-4 mr-1" />
-              {{ t("adminStatistics.uploadLogs.actions.search") }}
-            </Button>
-            <Button variant="outline" size="sm" @click="resetFilters">
-              <LucideRefreshCw class="w-4 h-4 mr-1" />
-              {{ t("common.reset") }}
-            </Button>
+          <div class="sm:col-span-2 xl:col-span-3 flex flex-wrap flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+              <Button type="submit" size="sm" :disabled="loading">
+                <LucideSearch class="w-4 h-4 mr-1" />
+                {{ t("admin.filters.search") }}
+              </Button>
+              <Button type="button" variant="outline" size="sm" @click="resetFilters">
+                <LucideRefreshCw class="w-4 h-4 mr-1" />
+                {{ t("admin.filters.reset") }}
+              </Button>
+            </div>
+            <span v-if="timeRangeLabel" class="text-xs text-muted-foreground mr-1">
+              {{ t("adminStatistics.uploadLogs.timeRangeLabel") }} {{ timeRangeLabel }}
+            </span>
           </div>
-          <span v-if="timeRangeLabel" class="text-xs text-muted-foreground mr-1">
-            {{ t("adminStatistics.uploadLogs.timeRangeLabel") }} {{ timeRangeLabel }}
-          </span>
-        </div>
+        </form>
       </CardContent>
     </Card>
 
     <UploadLogsSummary
+      v-if="!loadError"
       :loading="loading"
       :total="total"
       :summary="summary"
@@ -247,16 +266,21 @@ const {
 
     <UploadLogsTable
       :loading="loading"
+      :error="loadError"
       :logs="logs"
       :total="total"
       :page="page"
+      :page-size="pageSize"
       :total-pages="totalPages"
       :method-label="methodLabel"
       :server-label="serverLabel"
       :data-type-label="dataTypeLabel"
       :format-time="formatTime"
+      @retry="reload"
+      @update:page-size="pageSize = $event"
       @prev-page="prevPage"
       @next-page="nextPage"
+      @go-to-page="goToPage"
     />
   </div>
 </template>

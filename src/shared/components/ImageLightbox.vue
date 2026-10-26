@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideExternalLink, LucideZoomIn, LucideZoomOut } from "lucide-vue-next"
+import { LucideExternalLink, LucideLoader2, LucideZoomIn, LucideZoomOut } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -21,9 +21,13 @@ export type ImageLightboxItem = {
 }
 
 /**
- * Full-size artwork viewer with optional item tabs. Pointer devices toggle a
- * 2× zoom on click; touch devices pinch-zoom natively (the image box opts
- * out of the dialog's touch handling with `touch-action: pinch-zoom`).
+ * Full-size artwork viewer with optional item tabs.
+ *
+ * The image box takes the artwork's own aspect ratio (known once it loads),
+ * capped by the viewport, so a wide banner on a phone is a short wide box
+ * rather than a fixed-height black letterbox. Pointer devices toggle a 2×
+ * zoom on click; touch devices double-tap to zoom, pinch natively, and
+ * swipe sideways between items. ← / → switch items from the keyboard.
  */
 const props = withDefaults(defineProps<{
   items: readonly ImageLightboxItem[]
@@ -39,8 +43,19 @@ const index = defineModel<number>("index", { default: 0 })
 
 const { t } = useI18n()
 
+/** Default box ratio before the artwork reports its own (card art is 7:4). */
+const DEFAULT_RATIO = 7 / 4
+const TAP_MOVE_PX = 10
+const TAP_MS = 300
+const DOUBLE_TAP_MS = 300
+const SWIPE_MIN_PX = 48
+const SWIPE_MAX_MS = 600
+
 const zoomed = ref(false)
 const loadedUrl = ref<string | null>(null)
+const failed = ref(false)
+const ratio = ref<number | null>(null)
+const viewerRef = ref<HTMLElement | null>(null)
 
 const current = computed(() => props.items[Math.min(Math.max(0, index.value), Math.max(0, props.items.length - 1))] ?? null)
 
@@ -52,6 +67,8 @@ watch(open, (value) => {
 
 watch(() => current.value?.sources.join("\n"), () => {
   loadedUrl.value = null
+  failed.value = false
+  ratio.value = null
   zoomed.value = false
 })
 
@@ -61,6 +78,24 @@ const openUrl = computed(() => (
   ?? null
 ))
 
+const loading = computed(() => current.value != null && loadedUrl.value == null && !failed.value)
+
+/**
+ * Unzoomed: as wide as the dialog allows, but never taller than the viewport
+ * minus the header, with the width following the height cap so the box
+ * hugs the artwork instead of letter-boxing it.
+ */
+const boxStyle = computed(() => {
+  const aspect = ratio.value ?? DEFAULT_RATIO
+  if (zoomed.value) {
+    return { aspectRatio: String(aspect) }
+  }
+  return {
+    aspectRatio: String(aspect),
+    width: `min(100%, calc(var(--lightbox-max-h) * ${aspect}))`,
+  }
+})
+
 function selectItem(value: unknown) {
   const parsed = Number(value)
   if (Number.isInteger(parsed) && parsed >= 0 && parsed < props.items.length) {
@@ -68,20 +103,95 @@ function selectItem(value: unknown) {
   }
 }
 
+function step(delta: number) {
+  selectItem(index.value + delta)
+}
+
+function handleLoad(url: string) {
+  loadedUrl.value = url
+  const image = viewerRef.value?.querySelector("img")
+  if (image && image.naturalWidth > 0 && image.naturalHeight > 0) {
+    ratio.value = image.naturalWidth / image.naturalHeight
+  }
+}
+
+function isCoarsePointer(): boolean {
+  return typeof window !== "undefined" && (window.matchMedia?.("(pointer: coarse)").matches ?? false)
+}
+
 function toggleZoom(event: MouseEvent) {
-  // Touch devices pinch-zoom natively; click-to-zoom is for pointers.
-  if (typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches) {
+  // Touch devices double-tap (below); click-to-zoom is for pointers.
+  if (isCoarsePointer()) {
     return
   }
   event.preventDefault()
   zoomed.value = !zoomed.value
+}
+
+// Touch: a quick double tap toggles the zoom; a horizontal flick (while not
+// zoomed, where a drag pans instead) moves to the previous / next item.
+let touchStart: { x: number; y: number; at: number } | null = null
+let lastTapAt = 0
+
+function handleTouchStart(event: TouchEvent) {
+  if (event.touches.length !== 1) {
+    touchStart = null
+    return
+  }
+  const touch = event.touches[0]
+  touchStart = { x: touch.clientX, y: touch.clientY, at: Date.now() }
+}
+
+function handleTouchEnd(event: TouchEvent) {
+  const start = touchStart
+  touchStart = null
+  if (!start || event.changedTouches.length !== 1) {
+    return
+  }
+  const touch = event.changedTouches[0]
+  const dx = touch.clientX - start.x
+  const dy = touch.clientY - start.y
+  const elapsed = Date.now() - start.at
+
+  if (Math.abs(dx) < TAP_MOVE_PX && Math.abs(dy) < TAP_MOVE_PX && elapsed < TAP_MS) {
+    const now = Date.now()
+    if (now - lastTapAt < DOUBLE_TAP_MS) {
+      lastTapAt = 0
+      event.preventDefault()
+      zoomed.value = !zoomed.value
+    } else {
+      lastTapAt = now
+    }
+    return
+  }
+
+  if (zoomed.value || props.items.length < 2) {
+    return
+  }
+  if (Math.abs(dx) >= SWIPE_MIN_PX && Math.abs(dx) > Math.abs(dy) * 1.5 && elapsed < SWIPE_MAX_MS) {
+    step(dx < 0 ? 1 : -1)
+  }
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if (props.items.length < 2) {
+    return
+  }
+  if (event.key === "ArrowRight") {
+    event.preventDefault()
+    step(1)
+  } else if (event.key === "ArrowLeft") {
+    event.preventDefault()
+    step(-1)
+  }
 }
 </script>
 
 <template>
   <Dialog v-model:open="open">
     <DialogContent
-      class="flex max-h-[100dvh] w-[100vw] max-w-[100vw] flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:max-w-[min(96vw,80rem)] sm:rounded-lg sm:border sm:p-0"
+      class="flex max-h-[100dvh] w-[100vw] max-w-[100vw] flex-col gap-0 overflow-hidden rounded-none border-0 p-0 [--lightbox-max-h:calc(100dvh-3.5rem)] sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:max-w-[min(96vw,80rem)] sm:rounded-lg sm:border sm:p-0 sm:[--lightbox-max-h:calc(100dvh-5.5rem)]"
+      @keydown="handleKeydown"
     >
       <div class="flex min-w-0 items-center gap-2 border-b py-2 pr-12 pl-3 sm:pl-4">
         <div class="min-w-0 flex-1">
@@ -130,12 +240,25 @@ function toggleZoom(event: MouseEvent) {
           </a>
         </Button>
       </div>
+      <!-- Touch devices have no hover hint for the gestures; one quiet line says them. -->
+      <p class="border-b px-3 py-1 text-[11px] text-muted-foreground [@media(pointer:fine)]:hidden">
+        {{ t("catalog.lightbox.touchZoom") }}<template v-if="items.length > 1"> · {{ t("catalog.lightbox.touchSwipe") }}</template>
+      </p>
       <div
-        class="relative min-h-0 flex-1 overflow-auto bg-black/90"
-        style="touch-action: pinch-zoom"
+        ref="viewerRef"
+        :class="[
+          'relative flex min-h-0 flex-1 overflow-auto bg-black/90',
+          // Centering an overflowing flex child hides its start; zoomed boxes anchor top-left.
+          zoomed ? 'items-start justify-start' : 'items-center justify-center',
+        ]"
+        :style="{ touchAction: zoomed ? 'pan-x pan-y pinch-zoom' : 'pinch-zoom' }"
+        @touchstart.passive="handleTouchStart"
+        @touchend="handleTouchEnd"
+        @touchcancel="touchStart = null"
       >
         <div
-          :class="zoomed ? 'relative aspect-[7/4] w-[200%] max-w-none' : 'relative h-[min(82dvh,60rem)] w-full'"
+          :class="zoomed ? 'relative w-[200%] max-w-none self-start' : 'relative mx-auto max-h-[var(--lightbox-max-h)]'"
+          :style="boxStyle"
           @click="toggleZoom"
         >
           <SekaiAssetImage
@@ -144,10 +267,19 @@ function toggleZoom(event: MouseEvent) {
             :alt="current.alt ?? current.label"
             fit="contain"
             eager
+            :shimmer="false"
             :img-class="zoomed ? 'cursor-zoom-out' : '[@media(pointer:fine)]:cursor-zoom-in'"
             placeholder-class="bg-transparent text-white/70"
-            @load="loadedUrl = $event"
+            @load="handleLoad"
+            @exhausted="failed = true"
           />
+          <div
+            v-if="loading"
+            class="pointer-events-none absolute inset-0 flex items-center justify-center text-white/70"
+            aria-hidden="true"
+          >
+            <LucideLoader2 class="size-8 animate-spin" />
+          </div>
         </div>
       </div>
     </DialogContent>

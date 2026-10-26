@@ -1,16 +1,21 @@
 // AUTO-GENERATED zh-TW locale bundle (OpenCC s2twp from zh-CN).
-// Namespaces: uploadedGameData, app, common, turnstile, auth, sidebarUser, home, gameAccountSelect, cardBox, eventRecords, musicProgress, globalSearch, costumes, gachas, playerProfile, training, searchAlias, sekaiRegion, sekaiUnreleased, navigation, webLayout, route, musicLibrary, cards, events, homeSettings, core, catalog
+// Namespaces: uploadedGameData, app, common, backendMessages, turnstile, auth, sidebar, sidebarUser, home, gameAccountSelect, cardBox, eventRecords, musicProgress, globalSearch, costumes, gachas, playerProfile, training, searchAlias, sekaiRegion, sekaiUnreleased, navigation, webLayout, route, musicLibrary, cards, events, homeSettings, core, catalog
 export default {
   "uploadedGameData": {
     "missingTitle": "尚未上傳遊戲資料",
     "missing": {
-      "suite": "該遊戲賬號尚未上傳 Suite 資料，請先前往資料上傳頁完成上傳，再回來重新整理。",
-      "mysekai": "該遊戲賬號尚未上傳 MySekai 資料，請先前往資料上傳頁完成上傳，再回來重新整理。"
+      "suite": "該遊戲帳號還沒有上傳過遊戲資料（Suite，即帳號完整資料），請先到「資料上傳」頁上傳，再回來點重新整理。",
+      "mysekai": "該遊戲帳號還沒有上傳過烤森資料（MySekai），請先到「資料上傳」頁上傳，再回來點重新整理。",
+      "profile": "還沒有這個遊戲帳號的資料，暫時無法讀取即時資料。請先到「資料上傳」頁上傳一次遊戲資料，再回來點重新整理。"
     },
-    "missingGranted": "該賬號的所有者尚未上傳所需遊戲資料，請聯絡所有者上傳；如已獲得資料上傳授權，也可以前往資料上傳頁上傳。",
+    "missingGranted": "該帳號的主人還沒有上傳遊戲資料。請聯絡對方上傳；如果對方已允許你代傳，你也可以在「資料上傳」頁上傳。",
     "uploadAction": "前往資料上傳頁",
-    "missingAccounts": "有 {count} 個繫結賬號尚未上傳遊戲資料，請先前往資料上傳頁完成上傳。",
-    "otherFailures": "另有 {count} 個賬號讀取失敗，請稍後重試。"
+    "uploadedAt": "資料上傳時間：{time}",
+    "grantLapsed": "該帳號的授權已過期或被撤銷，請聯絡授權方重新授權。",
+    "refreshUpToDate": "資料已是最新",
+    "refreshUpdated": "已更新到 {time}",
+    "missingAccounts": "有 {count} 個綁定帳號尚未上傳遊戲資料，請先前往資料上傳頁完成上傳。",
+    "otherFailures": "另有 {count} 個帳號讀取失敗，請稍後重試。"
   },
   "app": {
     "name": "Haruki工具箱"
@@ -19,16 +24,61 @@ export default {
     "save": "儲存",
     "reset": "重置",
     "cancel": "取消",
+    "confirm": "確認",
     "close": "關閉",
     "back": "返回",
     "tip": "提示",
-    "actionFailed": "操作失敗",
+    "actionFailed": "操作失敗，請稍後重試",
     "postSuccessWarningTitle": "操作成功，但有後續異常",
     "postSuccessWarningDescription": "後續重新整理失敗，如頁面資料未更新請手動重新整理。",
     "guest": "未登入",
-    "accountIndex": "賬號 {index}",
-    "apiResponse": "API響應",
-    "missingUpdatedData": "{context}缺少 updatedData"
+    "accountIndex": "帳號 {index}",
+    "apiResponse": "請求失敗",
+    "missingUpdatedData": "{context}：伺服器返回的資料不完整，請重新整理後重試。",
+    "selectDateTime": "請選擇時間"
+  },
+  "backendMessages": {
+    "notAuthenticated": "你還沒有登入，或登入狀態已過期。請重新登入後再試。",
+    "uploadNotAllowed": "當前帳號沒有向這個遊戲帳號上傳資料的權限。請使用綁定了該遊戲帳號的帳號上傳，或請帳號所有者授予你上傳權限。",
+    "writeGrantExpired": "帳號所有者授予你的上傳權限已過期或被撤銷。請聯絡所有者重新授權，或改為上傳自己綁定的遊戲帳號。",
+    "bindingAccessDenied": "你沒有訪問這個遊戲帳號資料的權限。如果是他人授權的帳號，授權可能已過期或被撤銷，請聯絡授權方重新授權。",
+    "invalidServer": "選擇的遊戲伺服器無效。請重新選擇伺服器後再試。",
+    "uploadProcessFailed": "上傳的資料無法處理。請確認檔案是完整、未修改的抓包資料，然後重新上傳。",
+    "mysekaiRetrieveFailed": "無法獲取烤森資料（MySekai），可能是這個遊戲帳號還沒有完成烤森（MySekai）教程。請在遊戲裡完成教程後再試。",
+    "suiteRetrieveFailed": "獲取遊戲資料時發生了未知錯誤。請稍後重試；如果持續失敗，請提交工單反饋。",
+    "gameDataRetrieveFailed": "無法從遊戲伺服器獲取資料。請確認引繼碼和引繼密碼正確且未過期，稍後再試。",
+    "verificationCodeMissing": "遊戲個性簽名裡沒有找到驗證碼。請確認已把整段驗證碼貼上進個性簽名並儲存，退回遊戲主頁後再試。",
+    "verificationCodeMismatch": "遊戲個性簽名裡的驗證碼與本次生成的不一致。請把最新生成的驗證碼完整貼上進個性簽名並儲存，退回遊戲主頁後再試。",
+    "verificationCodeExpired": "驗證碼已過期或不存在。請重新生成驗證碼後再試。",
+    "verificationTooManyAttempts": "驗證嘗試次數過多。請重新生成一個新的驗證碼後再試。",
+    "gameAccountNotFound": "沒有找到這個遊戲帳號。請檢查選擇的伺服器和玩家 ID 是否正確。",
+    "gameServerUnavailable": "遊戲伺服器暫時無法訪問，可能正在維護。請稍後再試。",
+    "accountBoundByAnotherUser": "這個遊戲帳號已被其他使用者綁定。如果這是你的帳號，請提交工單申請處理。",
+    "accountBoundByBannedUser": "這個遊戲帳號被一個已封禁的使用者綁定。如果這是你的帳號，請提交工單申請處理。",
+    "bindingNotVerified": "這個遊戲帳號的綁定還沒有完成驗證。請先在遊戲帳號管理頁完成驗證。",
+    "bindingLocked": "這個綁定已被管理員鎖定，暫時無法修改。如有疑問請提交工單。",
+    "granteeNotFound": "沒有找到要授權的使用者。請檢查對方的工具箱使用者 ID 是否正確。",
+    "grantToSelf": "不能給自己授權。請填寫其他使用者的工具箱使用者 ID。",
+    "expiresAtNotFuture": "到期時間必須晚於當前時間。請重新選擇到期時間。",
+    "granteeBanned": "要授權的使用者已被封禁，無法授權。",
+    "qqBindingExists": "當前帳號已經綁定了 QQ。如需更換，請先解除現有綁定。",
+    "emailVerificationRequired": "請先完成信箱驗證，再綁定社交平台帳號。",
+    "codeInvalidOrExpired": "驗證碼無效或已過期。請重新獲取驗證碼後再試。",
+    "codeTooManyAttempts": "驗證嘗試次數過多。請重新獲取驗證碼後再試。",
+    "ticketClosed": "這個工單已經關閉，無法繼續回覆。如有新問題請新建工單。",
+    "ticketNotFound": "沒有找到這個工單，可能已被刪除。請返回工單列表重新整理。",
+    "ticketQuotaExceeded": "你的工單數量已達上限。請等待現有工單處理完畢後再新建。",
+    "messageLength": "訊息內容需要在 1 到 4000 個字元之間。請調整後重新發送。",
+    "captchaFailed": "人機驗證未通過。請重新完成驗證後再試。",
+    "invalidVerificationCode": "驗證碼不正確。請檢查後重新輸入。",
+    "reauthRequired": "需要重新驗證密碼後才能繼續。",
+    "consentChallengeExpired": "授權請求已過期或無效。請回到發起授權的應用重新開始。",
+    "loginChallengeRequired": "缺少授權參數。請回到發起授權的應用重新開始。",
+    "inheritFailed": "引繼失敗。請確認引繼碼和引繼密碼正確，並在遊戲內重新生成引繼碼後再試。",
+    "inheritFailedWithCode": "引繼失敗（遊戲伺服器返回：{code}）。請確認引繼碼和引繼密碼正確，並在遊戲內重新生成引繼碼後再試。",
+    "suiteParseFailed": "遊戲資料解析失敗。請確認上傳的是完整、未修改的抓包資料；如果持續失敗，請提交工單反饋。",
+    "playerDataNotFound": "沒有找到這個玩家的資料。請先上傳遊戲資料後再試。",
+    "otpIncorrect": "一次性密碼不正確。請檢查後重新輸入。"
   },
   "turnstile": {
     "loading": "正在載入驗證碼元件...",
@@ -38,16 +88,79 @@ export default {
   "auth": {
     "common": {
       "cancel": "取消",
-      "loadingFlow": "正在載入身份流程...",
-      "restartFlow": "重新開始流程"
+      "loadingFlow": "正在載入登入頁面…",
+      "restartFlow": "重新開始",
+      "loadFlowFailed": "{flow}已過期或暫時無法連線，請點選下方按鈕重新開始。",
+      "serviceUnavailable": "登入服務暫時無法連線，請稍後重試（錯誤碼 {status}）。",
+      "flowNames": {
+        "login": "登入頁面",
+        "registration": "註冊頁面",
+        "recovery": "找回密碼頁面",
+        "verification": "信箱驗證頁面",
+        "settings": "帳號安全設定頁面"
+      }
+    },
+    "kratos": {
+      "labels": {
+        "code": "驗證碼",
+        "codePlaceholder": "請輸入收到的驗證碼",
+        "totpCode": "動態驗證碼",
+        "totpCodePlaceholder": "請輸入驗證器中的 6 位數字",
+        "lookupSecret": "備用恢復碼",
+        "savePassword": "儲存密碼",
+        "continueWithCode": "通過信箱驗證碼登入",
+        "sendLink": "傳送連結",
+        "verify": "驗證",
+        "submit": "提交"
+      },
+      "messages": {
+        "reauthConfirm": "為了保護帳號安全，請重新輸入密碼確認是你本人在操作。",
+        "mfaRequired": "請完成第二步驗證後繼續。",
+        "settingsSaved": "設定已儲存。",
+        "recoverySucceeded": "帳號已成功找回。請立即設定一個新密碼。",
+        "recoveryLinkSent": "找回密碼郵件已傳送到你填寫的信箱。請查收並點選郵件中的連結；如果沒有收到，請檢查垃圾郵件並確認信箱拼寫正確。",
+        "recoveryCodeSent": "找回密碼驗證碼已傳送到你填寫的信箱。請查收並在下方輸入；如果沒有收到，請檢查垃圾郵件並確認信箱拼寫正確。",
+        "verificationLinkSent": "驗證郵件已傳送到你填寫的信箱。請點選郵件中的連結完成驗證；如果沒有收到，請檢查垃圾郵件。",
+        "verificationSucceeded": "信箱驗證成功。",
+        "verificationCodeSent": "驗證碼已傳送到你填寫的信箱。請查收並在下方輸入；如果沒有收到，請檢查垃圾郵件。",
+        "invalidValue": "填寫的內容無效，請檢查後重新填寫。",
+        "requiredField": "請填寫這一項。",
+        "tooShort": "內容太短，請至少輸入 {min_length} 個字元。",
+        "invalidFormat": "格式不正確，請檢查後重新填寫。",
+        "passwordPolicy": "這個密碼不符合安全要求，請換一個更長、更復雜且沒有在資料洩露中出現過的密碼。",
+        "invalidCredentials": "信箱或密碼不正確。請檢查後重試；忘記密碼可以在下方找回。",
+        "accountExists": "這個信箱已經註冊過帳號。請直接登入，或使用“忘記密碼”找回。",
+        "totpInvalid": "驗證器中的驗證碼不正確，請輸入最新的驗證碼。",
+        "identifierMissing": "請填寫信箱或使用者名稱。",
+        "addressNotVerified": "這個信箱還沒有完成驗證。請先查收驗證郵件並完成驗證。",
+        "noTotpDevice": "當前帳號還沒有設定驗證器。",
+        "lookupSecretUsed": "這個備用恢復碼已經使用過了，請換一個。",
+        "noLookupSecret": "當前帳號還沒有設定備用恢復碼。",
+        "lookupSecretInvalid": "備用恢復碼不正確，請檢查後重新輸入。",
+        "tooLong": "內容太長，請不要超過 {max_length} 個字元。",
+        "passwordBreached": "這個密碼曾在已知的資料洩露中出現，請換一個密碼。",
+        "passwordTooSimilar": "密碼與信箱或使用者名稱過於相似，請換一個密碼。",
+        "passwordTooShort": "密碼太短，請至少輸入 {min_length} 個字元。",
+        "passwordTooLong": "密碼太長，請不要超過 {max_length} 個字元。",
+        "accountNotActive": "這個帳號目前無法使用。如有疑問請聯絡管理員。",
+        "captchaFailed": "人機驗證未通過，請重新完成驗證。",
+        "flowExpired": "頁面已過期，請點選下方按鈕重新開始。",
+        "loginAlreadyCompleted": "這次登入已經完成，請重新整理頁面。",
+        "loginCodeInvalid": "登入驗證碼無效或已使用，請重新獲取。",
+        "recoveryTokenInvalid": "找回密碼連結無效或已使用，請重新發起找回密碼。",
+        "recoveryCodeInvalid": "找回密碼驗證碼無效或已使用，請重新獲取。",
+        "verificationTokenInvalid": "驗證連結無效或已使用，請重新發送驗證郵件。",
+        "verificationCodeInvalid": "驗證碼無效或已使用，請重新獲取。",
+        "systemError": "登入服務發生了內部錯誤，請稍後重試。"
+      }
     },
     "toast": {
       "networkError": "網路錯誤，請檢查連線",
       "loginFailedTitle": "登入失敗",
-      "accountBannedTitle": "賬號已被封禁",
-      "permissionDenied": "許可權不足，請檢查賬號狀態",
+      "accountBannedTitle": "帳號已被封禁",
+      "permissionDenied": "權限不足，請檢查帳號狀態",
       "tryLater": "請稍後再試",
-      "logoutSuccessTitle": "登出成功",
+      "logoutSuccessTitle": "已退出登入",
       "invalidReturnToTitle": "登入流程已重置",
       "invalidReturnToDescription": "檢測到異常跳轉目標，已為您重新發起安全登入流程。",
       "invalidRegistrationReturnToTitle": "註冊流程已重置",
@@ -55,24 +168,24 @@ export default {
     },
     "login": {
       "title": "登入到 Haruki 工具箱",
-      "description": "使用您的郵箱和密碼登入",
-      "emailLabel": "郵箱",
-      "emailPlaceholder": "請輸入您的郵箱",
+      "description": "使用您的信箱和密碼登入",
+      "emailLabel": "信箱",
+      "emailPlaceholder": "請輸入您的信箱",
       "passwordLabel": "密碼",
       "passwordPlaceholder": "請輸入您的密碼",
       "forgotPassword": "忘記密碼？",
       "submit": "登入",
       "noAccount": "還沒有帳號？",
       "registerLink": "註冊",
-      "resetDialog": {
-        "title": "重置密碼",
-        "description": "請輸入您的郵箱地址以重置密碼",
-        "sendResetEmail": "傳送重置郵件"
+      "reasons": {
+        "authRequired": "需要登入後才能訪問該頁面，登入後會自動返回。",
+        "adminRequired": "該頁面需要管理員帳號登入，登入後會自動返回。",
+        "sessionExpired": "登入狀態已過期，請重新登入，登入後會自動返回。"
       },
       "toast": {
-        "enterEmail": "請輸入郵箱地址",
+        "enterEmail": "請輸入信箱地址",
         "completeCaptcha": "請先完成人機驗證",
-        "completeLoginCaptcha": "請先完成驗證碼驗證",
+        "completeLoginCaptcha": "請先完成人機驗證",
         "resetEmailSentTitle": "重置密碼郵件已傳送",
         "resetEmailSentDescription": "郵件已傳送到 {email}",
         "resetFailedTitle": "重置密碼失敗",
@@ -81,12 +194,12 @@ export default {
       }
     },
     "register": {
-      "title": "註冊賬號",
-      "description": "建立一個新的 Haruki 工具箱賬號",
+      "title": "註冊帳號",
+      "description": "建立一個新的 Haruki 工具箱帳號",
       "usernameLabel": "使用者名稱",
       "usernamePlaceholder": "請輸入使用者名稱",
-      "emailLabel": "郵箱",
-      "emailCodeLabel": "郵箱驗證碼",
+      "emailLabel": "信箱",
+      "emailCodeLabel": "信箱驗證碼",
       "emailCodePlaceholder": "請輸入收到的驗證碼",
       "passwordLabel": "密碼",
       "passwordPlaceholder": "請輸入密碼",
@@ -94,82 +207,63 @@ export default {
       "countdown": "{seconds} 秒後重試",
       "sendCode": "傳送驗證碼",
       "submit": "註冊",
-      "hasAccount": "已有賬號？",
-      "goLogin": "去登入",
-      "sendCodeDialog": {
-        "title": "傳送郵件前人機驗證",
-        "description": "請完成人機驗證以傳送您的註冊郵件",
-        "confirmSend": "確認傳送"
-      },
-      "toast": {
-        "invalidEmail": "請輸入有效的郵箱地址",
-        "completeCaptcha": "請先完成人機驗證",
-        "completeRegisterCaptcha": "請先完成驗證碼驗證",
-        "codeSentTitle": "郵件已傳送",
-        "codeSentDescription": "郵件已傳送到 {email}",
-        "sendCodeFailedTitle": "傳送驗證碼失敗",
-        "sendCodeFailedDescription": "傳送失敗",
-        "registerFailedTitle": "註冊失敗",
-        "registerFailedDescription": "註冊失敗",
-        "incompleteInfo": "請完整填寫註冊資訊",
-        "passwordMinLength": "密碼長度至少為{min}位", // NOSONAR -- translation key, not a credential
-        "emailVerificationRequired": "請先為當前郵箱傳送驗證碼",
-        "registerSuccessTitle": "註冊成功",
-        "registerSuccessDescription": "歡迎來到Haruki工具箱"
-      }
+      "hasAccount": "已有帳號？",
+      "goLogin": "去登入"
     },
     "resetPassword": {
       "title": "重置密碼",
-      "description": "重置您的Haruki工具箱賬號的密碼",
-      "emailLabel": "郵箱",
+      "description": "重置您的Haruki工具箱帳號的密碼",
+      "emailLabel": "信箱",
       "newPasswordLabel": "新密碼",
       "newPasswordPlaceholder": "請輸入新密碼",
       "confirmPasswordLabel": "確認密碼",
       "confirmPasswordPlaceholder": "請再次輸入新密碼",
-      "submit": "確認重置",
-      "toast": {
-        "invalidLink": "重置連結無效，請重新發起找回密碼流程",
-        "incompleteInfo": "請輸入完整資訊",
-        "passwordMismatch": "兩次密碼輸入不一致", // NOSONAR -- translation key, not a credential
-        "passwordMinLength": "密碼長度至少為{min}位", // NOSONAR -- translation key, not a credential
-        "resetSuccessTitle": "密碼重置成功",
-        "resetSuccessDescription": "請重新登入",
-        "resetFailedTitle": "重置失敗",
-        "resetFailedDescription": "重置失敗"
-      }
+      "submit": "確認重置"
     },
     "verification": {
-      "title": "驗證郵箱",
-      "description": "完成身份驗證流程以啟用當前郵箱地址。",
+      "title": "驗證信箱",
+      "description": "完成身份驗證流程以啟用當前信箱地址。",
       "submit": "提交驗證",
       "continue": "繼續"
     },
+    "validation": {
+      "required": "請填寫此項"
+    },
+    "password": {
+      "show": "顯示密碼",
+      "hide": "隱藏密碼"
+    },
     "error": {
-      "title": "身份流程異常",
-      "description": "身份服務返回了錯誤資訊，請根據提示重新發起登入或註冊流程。",
+      "title": "登入服務出現問題",
+      "description": "登入服務返回了錯誤，請返回登入頁重新開始；如果多次出現，請稍後再試。",
       "retry": "重新載入",
       "backToLogin": "返回登入",
-      "missingIdDescription": "缺少錯誤 ID，無法查詢身份服務的具體錯誤資訊。",
-      "loadFailedDescription": "載入身份錯誤詳情失敗，請稍後重試。",
-      "fallbackDescription": "身份流程發生異常，請重新開始流程。",
+      "missingIdDescription": "連結裡缺少錯誤編號，無法查詢具體原因。請返回登入頁重新開始。",
+      "loadFailedDescription": "無法讀取錯誤詳情，請檢查網路後重試。",
+      "fallbackDescription": "登入服務暫時無法完成這次操作，請返回登入頁重新開始。",
       "errorIdLabel": "錯誤 ID",
       "statusCodeLabel": "狀態碼",
       "detailsLabel": "詳細資訊"
     }
   },
+  "sidebar": {
+    "toggle": "切換側邊欄",
+    "title": "導航選單",
+    "description": "站點導航選單。"
+  },
   "sidebarUser": {
     "guestInitial": "未",
     "guestName": "未登入",
     "accountSettings": "帳號設定",
-    "identitySettings": "使用者身份設定",
-    "gameAccountManagement": "遊戲賬號管理",
+    "identitySettings": "登入與安全",
+    "gameAccountManagement": "遊戲帳號管理",
     "harukiBotAuthorization": "HarukiBot資料授權",
-    "oauthAuthorizations": "OAuth 授權管理",
-    "logout": "登出",
+    "oauthAuthorizations": "已授權的應用",
+    "logout": "退出登入",
     "register": "註冊",
     "login": "登入",
-    "copyToolboxId": "複製 Toolbox 使用者 ID",
-    "toolboxIdCopied": "已複製 Toolbox 使用者 ID",
+    "copyToolboxId": "複製工具箱使用者 ID",
+    "toolboxIdCopied": "已複製工具箱使用者 ID",
     "copyFailed": "複製失敗"
   },
   "home": {
@@ -180,17 +274,26 @@ export default {
       "title": "您的幫助是我們繼續下去的動力",
       "desc": "點選檢視關於 Project Haruki 以及如何贊助開發者團隊"
     },
-    "accountAndSettings": "賬號與設定",
+    "accountAndSettings": "帳號與設定",
     "register": "註冊",
     "login": "登入",
-    "accountSettings": "賬號設定",
-    "gameAccountManagement": "遊戲賬號管理",
+    "accountSettings": "帳號設定",
+    "gameAccountManagement": "遊戲帳號管理",
     "moreLinks": "更多",
     "accountCard": {
-      "title": "我的賬號",
+      "title": "我的帳號",
       "dataUpdatedAt": "資料上傳於 {time}",
-      "noUploadData": "該賬號還沒有上傳過資料",
-      "guestDescription": "登入後繫結遊戲賬號，即可上傳資料、檢視檔案與個性化功能。"
+      "noUploadData": "該帳號還沒有上傳過資料",
+      "guestDescription": "登入後綁定遊戲帳號，即可上傳資料、檢視檔案與個性化功能。",
+      "onboarding": {
+        "title": "三步開始",
+        "step1": "註冊並登入",
+        "step2": "在「{link}」綁定並驗證你的遊戲帳號",
+        "step2Link": "遊戲帳號管理",
+        "step3": "用 iOS 模組 / HarukiProxy {link}一次遊戲資料",
+        "step3Link": "上傳",
+        "outro": "之後就能看卡牌、活動記錄、組卡等。"
+      }
     },
     "externalLinks": "站外連結",
     "harukiBotDocs": "HarukiBot NEO幫助文件",
@@ -200,7 +303,7 @@ export default {
     "termsOfService": "服務條款",
     "currentEvent": {
       "title": "當前活動（{region}）",
-      "optInHint": "載入 Sekai 主資料後可展示當前進行中的活動。",
+      "optInHint": "載入遊戲資料庫後可展示當前進行中的活動。",
       "load": "載入當前活動",
       "none": "當前沒有進行中的活動。",
       "error": "活動資訊載入失敗。",
@@ -217,23 +320,22 @@ export default {
     }
   },
   "gameAccountSelect": {
-    "placeholder": "選擇遊戲賬號",
+    "placeholder": "選擇遊戲帳號",
     "verified": "已驗證",
     "default": "預設",
-    "none": "你還沒有繫結任何遊戲賬號。",
-    "manage": "管理繫結",
+    "none": "你還沒有綁定任何遊戲帳號。",
+    "manage": "管理綁定",
     "grantedBadge": "授權",
     "groups": {
-      "own": "我的繫結賬號",
-      "granted": "他人授權的賬號"
+      "own": "我的綁定帳號",
+      "granted": "他人授權的帳號"
     }
   },
   "cardBox": {
     "title": "我的卡牌",
-    "description": "檢視賬號的卡牌收集進度",
+    "description": "檢視帳號的卡牌收集進度",
     "entryLink": "我的卡牌",
-    "noAccountHint": "繫結並選擇一個遊戲賬號後即可檢視我的卡牌。",
-    "dataAsOf": "資料更新於 {time}",
+    "noAccountHint": "綁定並選擇一個遊戲帳號後即可檢視我的卡牌。",
     "refresh": "重新整理",
     "loadError": "卡牌資料載入失敗",
     "retry": "重試",
@@ -266,22 +368,11 @@ export default {
       "owned": "僅已擁有",
       "missing": "僅未擁有"
     },
-    "filter": {
-      "attrs": "屬性",
-      "rarity": "稀有度"
-    },
     "stats": {
       "title": "收集統計",
       "byUnit": "按團體",
       "byAttr": "按屬性",
       "byRarity": "按星級",
-      "rarities": {
-        "rarity_1": "1星",
-        "rarity_2": "2星",
-        "rarity_3": "3星",
-        "rarity_4": "4星",
-        "rarity_birthday": "生日"
-      },
       "ownedOfTotal": "{owned}/{total}",
       "percent": "{percent}%"
     },
@@ -291,17 +382,19 @@ export default {
   },
   "eventRecords": {
     "title": "活動記錄",
-    "description": "檢視賬號的活動參與記錄",
-    "idle": "請選擇一個遊戲賬號以檢視活動記錄。",
-    "loading": "正在載入賬號快照與活動資料...",
-    "missingUserData": "當前賬號尚未上傳遊戲資料，請先前往上傳資料頁面完成上傳。",
-    "missingGrantedData": "該賬號的所有者還沒有上傳遊戲資料，暫時無法檢視。",
+    "description": "檢視帳號的活動參與記錄",
+    "idle": "請選擇一個遊戲帳號以檢視活動記錄。",
+    "loading": "正在載入上傳的資料與活動資料…",
+    "missingUserData": "當前帳號還沒有上傳遊戲資料，請先前往上傳資料頁面完成上傳。",
+    "missingGrantedData": "該帳號的所有者還沒有上傳遊戲資料，暫時無法檢視。",
     "uploadData": "前往上傳資料",
-    "noData": "該賬號的快照中暫無活動記錄。",
+    "noData": "你上傳的資料裡還沒有活動記錄。",
+    "noMatches": "當前篩選條件下沒有活動記錄。",
+    "hiddenByTime": "最近一年沒有活動記錄，共 {count} 場更早的記錄",
+    "showAll": "檢視全部",
     "loadFailed": "活動記錄載入失敗。",
     "retry": "重試",
     "refresh": "重新整理",
-    "dataAsOf": "資料快照時間：{time}",
     "summary": {
       "bestRank": "最佳排名",
       "ranked": "有排名場次",
@@ -350,11 +443,11 @@ export default {
   },
   "musicProgress": {
     "title": "打歌進度",
-    "description": "檢視賬號的打歌進度與可獲取獎勵",
+    "description": "檢視帳號的打歌進度與可獲取獎勵",
     "rewards": {
       "title": "可獲取資源",
       "hint": "統計尚未領取的歌曲成就獎勵（評分達標 + 各難度連擊里程碑），任意模式達成均計入。",
-      "unavailable": "當前資料快照不包含成就領取記錄（userMusicAchievements），無法統計可獲取資源。",
+      "unavailable": "你上傳的資料裡沒有歌曲成就領取記錄，無法統計可領取獎勵。請重新上傳一次完整資料後再試。",
       "jewel": "水晶",
       "coin": "金幣",
       "shard": "碎片",
@@ -363,7 +456,7 @@ export default {
     },
     "scoreRank": {
       "title": "評分獎勵明細",
-      "description": "評分是遞進的（C → B → A → S），每首歌只有一個當前評分，達到更高評分即同時取得較低評分的獎勵；任意模式（單人、多人等）達成均計入。當前評分以資料快照中的成就記錄為準。",
+      "description": "評分是遞進的（C → B → A → S），每首歌只有一個當前評分，達到更高評分即同時取得較低評分的獎勵；任意模式（單人、多人等）達成均計入。當前評分以你上傳的資料中的成就記錄為準。",
       "summary": "已獲得：{obtained} · 可獲取：{remaining} · 已拿滿 {complete} / {total} 首",
       "none": "無",
       "filter": {
@@ -387,21 +480,19 @@ export default {
       "empty": "沒有符合條件的歌曲。",
       "showMore": "顯示更多（還有 {count} 首）"
     },
-    "dataAsOf": "資料快照時間：{time}",
     "refresh": "重新整理",
     "retry": "重試",
-    "noAccount": "請選擇或繫結遊戲賬號以檢視打歌進度。",
-    "loading": "正在載入賬號快照與樂曲資料...",
-    "missingUserData": "當前賬號尚未上傳遊戲資料，請先前往上傳資料頁面完成上傳。",
-    "missingGrantedData": "該賬號的所有者還沒有上傳遊戲資料，暫時無法檢視。",
+    "noAccount": "請選擇或綁定遊戲帳號以檢視打歌進度。",
+    "loading": "正在載入上傳的資料與樂曲資料…",
+    "missingUserData": "當前帳號還沒有上傳遊戲資料，請先前往上傳資料頁面完成上傳。",
+    "missingGrantedData": "該帳號的所有者還沒有上傳遊戲資料，暫時無法檢視。",
     "uploadData": "前往上傳資料",
-    "noResults": "該資料快照中暫無歌曲遊玩記錄，所有歌曲將顯示為未遊玩。",
-    "suiteError": "載入賬號快照資料失敗。",
-    "masterError": "載入樂曲資料失敗：{message}",
-    "downloading": "正在下載 Masterdata（{progress}%）...",
+    "noResults": "你上傳的資料裡還沒有歌曲遊玩記錄，所有歌曲將顯示為未遊玩。",
+    "suiteError": "打歌進度載入失敗。",
+    "downloading": "正在下載遊戲資料庫（{progress}%）...",
     "overallTitle": "全難度概覽",
     "levelsTitle": "按定數統計",
-    "noSongs": "所選伺服器在該難度下暫無歌曲。",
+    "noSongs": "所選區服在該難度下暫無歌曲。",
     "level": "Lv.{level}",
     "levelUnknown": "Lv.?",
     "songCount": "{count} 首",
@@ -420,12 +511,6 @@ export default {
     "noMatches": "該定數下沒有符合條件的歌曲。",
     "rewardsRemaining": "可獲取：{list}",
     "detailSummary": "共 {total} 首 · 已通關 {cleared} · FC {fullCombo} · AP {allPerfect}",
-    "summary": {
-      "total": "曲目數",
-      "cleared": "已通關",
-      "fullCombo": "Full Combo",
-      "allPerfect": "All Perfect"
-    },
     "legend": {
       "allPerfect": "All Perfect",
       "fullCombo": "Full Combo（非 AP）",
@@ -441,10 +526,10 @@ export default {
   },
   "globalSearch": {
     "title": "快速搜尋",
-    "description": "在本地 Master 資料中搜索歌曲、卡牌與活動",
+    "description": "在本地遊戲資料庫中搜索歌曲、卡牌與活動",
     "placeholder": "搜尋歌曲、卡牌、活動…",
     "typeToSearch": "輸入關鍵詞以搜尋歌曲、卡牌與活動",
-    "error": "Master 資料載入失敗",
+    "error": "遊戲資料庫載入失敗",
     "retry": "重試",
     "empty": "沒有找到匹配的結果",
     "groups": {
@@ -505,10 +590,6 @@ export default {
       "return": "迴歸卡池",
       "unknown": "其他"
     },
-    "status": {
-      "ongoing": "進行中",
-      "ended": "已結束"
-    },
     "list": {
       "title": "卡池圖鑑",
       "description": "瀏覽 Project Sekai 卡池及出率資訊",
@@ -528,16 +609,11 @@ export default {
       "filtersTitle": "篩選",
       "resetFilters": "重置篩選",
       "total": "共 {total} 個卡池",
-      "empty": "沒有符合當前篩選條件的卡池"
-    },
-    "sort": {
-      "startDesc": "最新優先",
-      "startAsc": "最早優先",
-      "idAsc": "ID 升序"
+      "empty": "沒有符合篩選條件的卡池"
     },
     "detail": {
       "back": "返回卡池一覽",
-      "notFound": "未找到卡池 #{gachaId}",
+      "notFound": "當前區服的資料裡沒有這個卡池（#{gachaId}）。可以切換區服再試。",
       "pickups": "PICK UP 成員",
       "poolCards": "卡池全部卡牌",
       "rates": "提供機率",
@@ -578,21 +654,21 @@ export default {
   },
   "playerProfile": {
     "title": "我的檔案",
-    "description": "檢視賬號的遊戲檔案",
+    "description": "檢視帳號的遊戲檔案",
     "source": {
       "realtime": "即時資料",
-      "snapshot": "快照資料"
+      "snapshot": "上傳的資料"
     },
-    "noAccountHint": "請先繫結並選擇一個遊戲賬號以檢視檔案。",
+    "noAccountHint": "請先綁定並選擇一個遊戲帳號以檢視檔案。",
     "loadError": "檔案資料載入失敗。",
     "retry": "重試",
     "refresh": "重新整理",
-    "dataAsOf": "資料更新於 {time}",
+    "realtimeAsOf": "即時資料更新時間：{time}",
     "unknownCharacter": "未知角色",
     "stats": {
       "title": "遊玩統計"
     },
-    "snapshotNote": "資料來自快照 · {time}",
+    "snapshotNote": "來自上傳的資料 · 上傳時間 {time}",
     "unitAverage": "各團均值",
     "header": {
       "title": "基本資訊",
@@ -641,8 +717,7 @@ export default {
   "training": {
     "layout": {
       "title": "角色養成",
-      "description": "檢視遊戲賬號的養成進度",
-      "dataAsOf": "資料時間：{time}",
+      "description": "檢視遊戲帳號的養成進度",
       "refresh": "重新整理"
     },
     "tabs": {
@@ -655,8 +730,8 @@ export default {
     },
     "challenge": {
       "title": "挑戰資訊",
-      "description": "檢視賬號角色的挑戰等級與最高分",
-      "noAccountHint": "繫結並選擇遊戲賬號後檢視挑戰資訊。",
+      "description": "檢視帳號角色的挑戰等級與最高分",
+      "noAccountHint": "綁定並選擇遊戲帳號後檢視挑戰資訊。",
       "loadError": "挑戰資料載入失敗。",
       "retry": "重試",
       "refresh": "重新整理",
@@ -675,8 +750,8 @@ export default {
     },
     "power": {
       "title": "加成資訊",
-      "description": "檢視賬號的各項加成資訊",
-      "noAccountHint": "繫結並選擇遊戲賬號後檢視加成資訊。",
+      "description": "檢視帳號的各項加成資訊",
+      "noAccountHint": "綁定並選擇遊戲帳號後檢視加成資訊。",
       "loadError": "加成資料載入失敗。",
       "retry": "重試",
       "refresh": "重新整理",
@@ -690,7 +765,7 @@ export default {
       "attrsTitle": "屬性加成",
       "rankBonus": "角色等級",
       "areaItemBonus": "區域道具",
-      "fixtureBonus": "MYSEKAI 傢俱",
+      "fixtureBonus": "MYSEKAI 家具",
       "gateBonus": "MYSEKAI 大門",
       "gateHint": "虛擬歌手的門加成按無支援團體計算，取已擁有門中的最高等級；帶支援團體的卡牌使用對應團體的門。",
       "units": {
@@ -711,8 +786,8 @@ export default {
     },
     "bonds": {
       "title": "牽絆",
-      "description": "檢視賬號的角色牽絆資訊",
-      "noAccountHint": "繫結並選擇遊戲賬號後檢視牽絆資訊。",
+      "description": "檢視帳號的角色牽絆資訊",
+      "noAccountHint": "綁定並選擇遊戲帳號後檢視牽絆資訊。",
       "loadError": "牽絆資料載入失敗。",
       "retry": "重試",
       "refresh": "重新整理",
@@ -742,11 +817,11 @@ export default {
     },
     "area": {
       "title": "區域道具",
-      "description": "檢視賬號區域道具的等級進度以及升級所需材料",
+      "description": "檢視帳號區域道具的等級進度以及升級所需材料",
       "refresh": "重新整理",
       "retry": "重試",
       "loadError": "區域道具資料載入失敗",
-      "noAccountHint": "繫結並選擇遊戲賬號後即可檢視區域道具",
+      "noAccountHint": "綁定並選擇遊戲帳號後即可檢視區域道具",
       "empty": "當前篩選條件下沒有區域道具",
       "filters": {
         "unit": "團體",
@@ -771,11 +846,11 @@ export default {
     },
     "leader": {
       "title": "隊長次數",
-      "description": "檢視賬號角色的隊長次數累計進度",
+      "description": "檢視帳號角色的隊長次數累計進度",
       "refresh": "重新整理",
       "retry": "重試",
       "loadError": "隊長統計資料載入失敗",
-      "noAccountHint": "繫結並選擇遊戲賬號後即可檢視隊長統計",
+      "noAccountHint": "綁定並選擇遊戲帳號後即可檢視隊長統計",
       "limit": "任務上限 {count}",
       "sortByTotal": "按次數",
       "sortByCharacter": "按角色",
@@ -785,11 +860,11 @@ export default {
     },
     "missions": {
       "title": "角色任務",
-      "description": "檢視賬號角色任務進度與角色等級預估",
+      "description": "檢視帳號角色任務進度與角色等級預估",
       "refresh": "重新整理",
       "retry": "重試",
       "loadError": "角色任務資料載入失敗",
-      "noAccountHint": "繫結並選擇遊戲賬號後即可檢視角色任務",
+      "noAccountHint": "綁定並選擇遊戲帳號後即可檢視角色任務",
       "empty": "暫無角色任務資料",
       "character": "角色",
       "unknownCharacter": "角色{id}",
@@ -813,16 +888,16 @@ export default {
         "read_card_episode_second": "卡面劇情後篇",
         "collect_another_vocal": "Another Vocal",
         "area_item_level_up_all_character": "提升全形色區域道具等級",
-        "area_item_level_up_character": "單人傢俱升級次數",
-        "area_item_level_up_unit": "團傢俱升級次數",
+        "area_item_level_up_character": "單人家具升級次數",
+        "area_item_level_up_unit": "團家具升級次數",
         "area_item_level_up_reality_world": "屬性道具（樹&花）升級次數",
         "collect_member": "卡面",
         "skill_level_up_rare": "技能等級升級次數（★4&生日卡）",
         "skill_level_up_standard": "技能等級升級次數（★1~★3）",
         "master_rank_up_rare": "專精等級升級次數（★4&生日卡）",
         "master_rank_up_standard": "專精等級升級次數（★1~★3）",
-        "collect_character_archive_voice": "臺詞",
-        "collect_mysekai_fixture": "MySekai傢俱數量",
+        "collect_character_archive_voice": "台詞",
+        "collect_mysekai_fixture": "MySekai家具數量",
         "collect_mysekai_canvas": "MySekai畫布數量",
         "read_mysekai_fixture_unique_character_talk": "MySekai對話"
       }
@@ -832,11 +907,13 @@ export default {
     "badge": "別名"
   },
   "sekaiRegion": {
-    "followAccount": "跟隨當前賬號",
+    "followAccount": "跟隨當前帳號",
+    "followAccountResolved": "跟隨當前帳號（{region}）",
+    "followBadge": "跟隨帳號",
     "labels": {
       "jp": "日服",
       "en": "國際服",
-      "tw": "臺服",
+      "tw": "台服",
       "kr": "韓服",
       "cn": "國服"
     }
@@ -850,7 +927,7 @@ export default {
       "friendshipRecommendation": "友情推薦",
       "eventRankingTools": "活動衝榜工具",
       "projectSekai": "Project SEKAI工具",
-      "accountManagement": "賬號與管理",
+      "accountManagement": "帳號與管理",
       "harukiBot": "HarukiBot相關",
       "sekaiCatalog": "Sekai 圖鑑",
       "sekaiPlayer": "我的遊戲資料"
@@ -875,6 +952,7 @@ export default {
       "musicProgress": "打歌進度",
       "gachas": "卡池圖鑑",
       "costumes": "服裝搭配",
+      "storyPlayer": "劇情播放",
       "playerProfile": "我的檔案",
       "training": "角色養成"
     },
@@ -889,7 +967,7 @@ export default {
     "nav": {
       "home": "首頁",
       "harukiBotGroup": "HarukiBot相關",
-      "admin": "管理後臺",
+      "admin": "管理後台",
       "myTickets": "我的工單",
       "pendingTicketReplies": "{total} 個工單等待你回覆",
       "settings": "設定"
@@ -928,22 +1006,23 @@ export default {
     "sekaiStation": "協力車站",
     "botNeoRegistration": "HarukiBot NEO 註冊",
     "login": "登入",
-    "register": "註冊賬號",
+    "register": "註冊帳號",
+    "verification": "驗證信箱",
     "resetPassword": "重置密碼",
     "error": "身份錯誤",
-    "userSettings": "賬號設定",
-    "userIdentitySettings": "使用者身份設定",
+    "userSettings": "帳號設定",
+    "userIdentitySettings": "登入與安全",
     "userIdentityProfileSettings": "使用者資料設定",
     "userIdentityPasswordSettings": "修改密碼",
     "userIdentityMfaSettings": "多因素認證",
     "userIdentitySocialSettings": "社交登入設定",
-    "userIdentitySessionSettings": "身份會話管理",
-    "gameAccountBindings": "繫結遊戲賬號",
+    "userIdentitySessionSettings": "登入裝置",
+    "gameAccountBindings": "綁定遊戲帳號",
     "harukiBotAuthorization": "HarukiBot資料授權",
-    "oauthAuthorizations": "OAuth 授權管理",
+    "oauthAuthorizations": "已授權的應用",
     "oauthLogin": "繼續登入授權",
     "oauthConsent": "授權第三方應用",
-    "oauthLogout": "登出確認",
+    "oauthLogout": "退出登入確認",
     "oauthDevice": "裝置授權",
     "tickets": {
       "mine": "我的工單",
@@ -972,6 +1051,9 @@ export default {
     "costumes": {
       "dressup": "服裝搭配"
     },
+    "story": {
+      "player": "劇情播放"
+    },
     "playerProfile": {
       "me": "我的檔案"
     },
@@ -987,7 +1069,7 @@ export default {
       "planner": "活動規劃"
     },
     "admin": {
-      "layout": "管理後臺",
+      "layout": "管理後台",
       "dashboard": "儀表盤",
       "users": "使用者管理",
       "userDetail": "使用者詳情",
@@ -998,7 +1080,7 @@ export default {
       "content": "內容運營",
       "sponsors": "贊助者管理",
       "config": "系統配置",
-      "gameBindings": "遊戲繫結管理",
+      "gameBindings": "遊戲綁定管理",
       "risk": "風控管理",
       "botSecurity": "Bot 安全告警",
       "tickets": "工單管理"
@@ -1013,9 +1095,10 @@ export default {
       "title": "曲庫",
       "description": "瀏覽 PJSK 曲庫：支援搜尋，並按難度、等級、物量、團體與年份篩選。",
       "filters": {
-        "region": "伺服器",
+        "region": "區服",
         "search": "搜尋",
         "searchPlaceholder": "按標題或別名搜尋...",
+        "searchPlaceholderNoAlias": "按標題搜尋...",
         "title": "篩選",
         "difficulty": "難度",
         "difficultyAll": "全部難度",
@@ -1049,7 +1132,7 @@ export default {
         "reset": "重置篩選"
       },
       "sort": {
-        "publishedAt": "釋出時間",
+        "publishedAt": "發布時間",
         "level": "難度等級",
         "noteCount": "物量",
         "title": "標題"
@@ -1059,7 +1142,7 @@ export default {
         "empty": "沒有符合當前篩選條件的歌曲。",
         "aliasSearching": "正在匹配別名..."
       },
-      "downloading": "正在下載 Master 資料... {progress}%",
+      "downloading": "正在下載遊戲資料庫... {progress}%",
       "loadError": "曲庫資料載入失敗：{message}",
       "unknownDate": "未知"
     },
@@ -1080,7 +1163,7 @@ export default {
       "school_refusal": "25時，Nightcord見。",
       "other": "其他",
       "event_box": "箱曲",
-      "world_link": "WL曲"
+      "world_link": "WL（World Link）曲"
     },
     "categories": {
       "mv": "3D MV",
@@ -1098,7 +1181,7 @@ export default {
     },
     "detail": {
       "back": "返回曲庫",
-      "notFound": "所選伺服器上不存在這首歌曲。",
+      "notFound": "當前區服的資料裡沒有這首歌曲（#{musicId}）。可以切換區服再試。",
       "loadError": "曲目資料載入失敗：{message}",
       "unknownCharacter": "未知",
       "aliases": {
@@ -1110,7 +1193,7 @@ export default {
         "composer": "作曲",
         "lyricist": "作詞",
         "arranger": "編曲",
-        "publishedAt": "釋出時間",
+        "publishedAt": "發布時間",
         "duration": "時長",
         "bpm": "BPM",
         "id": "ID"
@@ -1198,12 +1281,12 @@ export default {
       "term_limited": "期間限定",
       "colorful_festival_limited": "Colorful Fes 限定",
       "bloom_festival_limited": "Bloom Fes 限定",
-      "unit_event_limited": "WL活動限定",
+      "unit_event_limited": "WL（World Link）活動限定",
       "collaboration_limited": "聯動限定"
     },
     "detail": {
       "back": "返回圖鑑",
-      "notFound": "在當前區服資料中找不到卡牌 #{cardId}",
+      "notFound": "當前區服的資料裡沒有這張卡牌（#{cardId}）。可以切換區服再試。",
       "artNormal": "特訓前",
       "artTrained": "特訓後",
       "artLoadFailed": "卡面載入失敗",
@@ -1249,10 +1332,6 @@ export default {
       "world_bloom": "連線世界",
       "unknown": "未知型別"
     },
-    "status": {
-      "ongoing": "進行中",
-      "ended": "已結束"
-    },
     "attr": {
       "cute": "可愛",
       "cool": "帥氣",
@@ -1263,7 +1342,7 @@ export default {
     "list": {
       "title": "活動圖鑑",
       "description": "瀏覽 Project SEKAI 活動、加成資訊與活動卡片。",
-      "regionLabel": "伺服器",
+      "regionLabel": "區服",
       "searchLabel": "搜尋",
       "searchPlaceholder": "按活動名或 ID 搜尋",
       "typeLabel": "活動型別",
@@ -1283,7 +1362,7 @@ export default {
       "back": "返回活動圖鑑",
       "loadFailed": "活動資料載入失敗。",
       "retry": "重試",
-      "notFound": "當前伺服器上未找到該活動。",
+      "notFound": "當前區服的資料裡沒有這個活動（#{eventId}）。可以切換區服再試。",
       "timelineTitle": "時間線",
       "timeline": {
         "start": "開始",
@@ -1303,32 +1382,33 @@ export default {
       "cardsEmpty": "該活動暫無卡片。",
       "links": {
         "rankBorder": "檢視榜線",
-        "deckRecommend": "活動組卡"
+        "deckRecommend": "活動組卡",
+        "story": "播放劇情"
       }
     }
   },
   "homeSettings": {
     "title": "Haruki工具箱設定",
-    "description": "配置Haruki工具箱伺服器端點、遊戲資源端點、外觀、語言和效能偏好",
+    "description": "配置Haruki工具箱伺服器線路、圖片載入線路、外觀、語言和效能偏好",
     "trigger": "設定",
     "tabs": {
       "preferences": "偏好設定",
       "app": "應用",
-      "sekaiData": "Master資料",
+      "sekaiData": "遊戲資料庫",
       "userData": "使用者資料"
     },
     "resetDialog": {
       "title": "重置偏好設定？",
-      "description": "這會將工具箱伺服器端點、遊戲資源端點、外觀、語言、低特效模式和隱私偏好恢復為預設值。",
+      "description": "這會將伺服器線路、圖片載入線路、外觀、語言、低特效模式和隱私偏好恢復為預設值。",
       "confirm": "確認重置"
     },
     "endpoint": {
-      "label": "工具箱伺服器端點",
+      "label": "伺服器線路",
       "help": "選擇伺服器連線方式，預設使用直連。若在海外連線困難，可嘗試 CDN。",
-      "placeholder": "請選擇端點",
+      "placeholder": "請選擇線路",
       "direct": "直連",
       "cdn": "CDN",
-      "unavailable": "當前環境未配置可用端點。",
+      "unavailable": "當前環境沒有配置可用的伺服器線路。",
       "checking": "測速中",
       "unknown": "未測速",
       "failed": "無法連線",
@@ -1336,12 +1416,11 @@ export default {
       "refreshLatency": "重新測速"
     },
     "assetEndpoint": {
-      "label": "遊戲資源端點",
-      "help": "用於載入卡牌縮圖等遊戲資源。首次進入網站會自動選擇延遲最低的站點，開啟設定時會重新測速。",
-      "placeholder": "請選擇遊戲資源端點",
-      "china": "國內加速海外CDN",
-      "global": "海外最佳化CDN",
-      "chinaCdn": "國內CDN",
+      "label": "圖片載入線路",
+      "help": "用於載入卡牌縮圖等遊戲資源。首次進入網站會自動選擇延遲最低的線路，開啟設定時會重新測速。",
+      "placeholder": "請選擇線路",
+      "global": "海外使用者推薦",
+      "chinaCdn": "中國-騰訊雲加速",
       "checking": "測速中",
       "unknown": "未測速",
       "failed": "無法連線",
@@ -1359,7 +1438,7 @@ export default {
       "label": "介面語言",
       "help": "語言切換後會立即生效",
       "placeholder": "請選擇語言",
-      "zhCN": "简体中文",
+      "zhCN": "簡體中文",
       "enUS": "English",
       "zhTW": "繁體中文"
     },
@@ -1369,7 +1448,7 @@ export default {
     },
     "privacy": {
       "hideGameUserIdLabel": "隱藏遊戲 UID",
-      "hideGameUserIdHelp": "開啟後，組卡、上傳資料等賬號選擇器會保留 UID 前 2 位和後 4 位，中間用星號隱藏。"
+      "hideGameUserIdHelp": "開啟後，組卡、上傳資料等帳號選擇器會保留 UID 前 2 位和後 4 位，中間用星號隱藏。"
     },
     "unreleased": {
       "showLabel": "展示未上線內容",
@@ -1387,21 +1466,22 @@ export default {
       "remoteBuildTime": "遠端構建時間",
       "checkedAt": "最近檢查：{time}",
       "lastError": "最近一次檢查失敗，請稍後重試。",
+      "notCheckedYet": "尚未檢查更新。",
       "check": "檢查更新",
       "checking": "檢查中...",
       "update": "更新應用",
       "updating": "更新中..."
     },
     "userData": {
-      "description": "管理已綁定遊戲賬號的 suite、mysekai 與 profile 本地資料快取，供站內各項功能共用。suite/mysekai 重新整理會先檢查遠端上傳時間，profile 會直接拉取最新資料。",
-      "account": "賬號",
-      "accountPlaceholder": "請選擇已繫結賬號",
-      "noAccount": "當前賬號還沒有繫結遊戲賬號。",
-      "dataType": "資料型別",
+      "description": "這裡儲存的是你各遊戲帳號已上傳資料在本瀏覽器的副本。點「重新整理」會檢查伺服器上是否有更新的上傳；「個人檔案」會直接從遊戲伺服器獲取最新資訊。",
+      "account": "帳號",
+      "accountPlaceholder": "請選擇已綁定帳號",
+      "noAccount": "當前帳號還沒有綁定遊戲帳號。",
+      "dataType": "資料類型",
       "types": {
-        "suite": "Suite",
-        "mysekai": "MySekai",
-        "profile": "Profile"
+        "suite": "帳號資料（Suite）",
+        "mysekai": "烤森資料（MySekai）",
+        "profile": "個人檔案（Profile）"
       },
       "cacheUpdatedAt": "本地快取",
       "remoteUploadTime": "上傳時間",
@@ -1415,10 +1495,10 @@ export default {
       "clear": "清理使用者資料快取",
       "clearDialog": {
         "title": "清理使用者資料快取？",
-        "description": "這會清理當前工具箱賬號在本瀏覽器儲存的使用者資料快取，之後需要重新檢查或下載。",
+        "description": "這會清理當前工具箱帳號在本瀏覽器儲存的使用者資料快取，之後需要重新檢查或下載。",
         "confirm": "確認清理"
       },
-      "logoutCleanupHint": "退出登入時會自動清理當前工具箱賬號在本瀏覽器儲存的使用者資料快取。",
+      "logoutCleanupHint": "退出登入時會自動清理當前工具箱帳號在本瀏覽器儲存的使用者資料快取。",
       "toast": {
         "alreadyCurrent": "使用者資料已是最新",
         "refreshed": "使用者資料已重新整理",
@@ -1432,7 +1512,7 @@ export default {
     },
     "sections": {
       "preferences": "外觀、語言、網路與隱私偏好，修改後立即生效。",
-      "sekaiData": "管理各區服 Master 資料本地快取與後臺更新任務，供選擇器、推薦和其他功能複用。"
+      "sekaiData": "管理各區服遊戲資料庫本地快取與後台更新任務，供選擇器、推薦和其他功能複用。"
     },
     "groups": {
       "appearance": "外觀",
@@ -1444,38 +1524,53 @@ export default {
     "auth": {
       "sessionExpiredTitle": "會話已過期",
       "sessionExpiredDescription": "請重新登入",
-      "accountBannedTitle": "賬號已被封禁",
-      "permissionDeniedTitle": "許可權不足",
+      "accountBannedTitle": "帳號已被封禁",
+      "permissionDeniedTitle": "權限不足",
       "loginRequiredTitle": "請先登入",
       "loginRequiredDescription": "該頁面需要登入後訪問",
-      "requireAdminDescription": "需要管理員許可權",
-      "requireSuperAdminDescription": "需要超級管理員許可權",
-      "apiRequestFailedTitle": "API請求失敗",
-      "apiRequestFailedDescription": "狀態碼: {status}，資訊: {message}",
+      "requireAdminDescription": "需要管理員權限",
+      "requireSuperAdminDescription": "需要超級管理員權限",
+      "apiRequestFailedTitle": "請求失敗",
+      "apiRequestFailedDescription": "伺服器暫時無法處理這個請求，請稍後重試。",
+      "permissionDeniedDescription": "你沒有執行這個操作的權限。如果你認為這是誤判，請聯絡管理員。",
+      "accountBannedDescription": "你的帳號已被封禁，無法繼續使用。如有疑問請聯絡管理員。",
+      "accountBannedWithReason": "你的帳號已被封禁，無法繼續使用。封禁原因：{reason}",
       "reauthRequired": "需要重新驗證密碼"
+    },
+    "errors": {
+      "network": "網路連線失敗，請檢查網路後重試。",
+      "timeout": "請求超時，請稍後重試。",
+      "rateLimited": "操作太頻繁，請稍等片刻後再試。",
+      "serverUnavailable": "伺服器暫時不可用，請稍後重試（錯誤碼 {status}）。",
+      "detail": "詳情：{detail}"
+    },
+    "loadError": {
+      "title": "載入失敗",
+      "description": "請檢查網路後重試；如果多次失敗，可能是服務暫時不可用。",
+      "retry": "重試"
     },
     "sync": {
       "successTitle": "同步設定成功",
-      "successDescription": "已成功同步當前賬號的雲端設定",
+      "successDescription": "已成功同步當前帳號的雲端設定",
       "failedTitle": "同步設定不可用",
       "failedDescription": "雲端設定同步失敗，請稍後重試。",
-      "missingUpdatedDataDescription": "雲端設定返回資料不完整（缺少 updatedData）。",
+      "missingUpdatedDataDescription": "雲端設定返回的資料不完整，請重新整理後重試。",
       "unexpectedStatusDescription": "雲端設定請求返回了異常狀態（{status}）。"
     },
     "suitePrefetch": {
-      "progressTitle": "正在獲取賬號資料",
-      "progressDescription": "已完成 {completed}/{total} 個繫結賬號",
-      "successTitle": "賬號資料獲取完成",
-      "successDescription": "已更新 {updated}/{total} 個繫結賬號的抓包資料快取",
-      "partialTitle": "部分賬號資料獲取失敗",
-      "partialDescription": "{failed}/{total} 個賬號獲取失敗，進入相關頁面時會自動重試。",
-      "failedDescription": "獲取繫結賬號資料失敗，進入相關頁面時會自動重試。"
+      "progressTitle": "正在獲取遊戲資料",
+      "progressDescription": "已完成 {completed}/{total} 個綁定帳號",
+      "successTitle": "遊戲資料已更新",
+      "successDescription": "已更新 {updated}/{total} 個綁定帳號的遊戲資料",
+      "partialTitle": "部分帳號的遊戲資料獲取失敗",
+      "partialDescription": "{failed}/{total} 個帳號獲取失敗，進入相關頁面時會自動重試。",
+      "failedDescription": "獲取綁定帳號的遊戲資料失敗，進入相關頁面時會自動重試。"
     },
     "unsupportedBrowser": {
       "title": "不受支援的瀏覽器",
       "description": "您正在嘗試使用不受支援的瀏覽器訪問Haruki工具箱",
       "suggestion": "請改用Chrome、Safari、Firefox等瀏覽器再使用Haruki工具箱",
-      "deviceHint": "要授權裝置，請複製下面的頁面地址，在系統瀏覽器中開啟後再手動輸入裝置上顯示的代碼。",
+      "deviceHint": "要授權裝置，請複製下面的頁面地址，在系統瀏覽器中開啟後再手動輸入裝置上顯示的程式碼。",
       "copyDeviceLink": "複製頁面地址",
       "copied": "已複製",
       "copyFailed": "複製失敗，請手動輸入地址"
@@ -1485,6 +1580,7 @@ export default {
       "updateAvailableDescription": "新的應用版本已經準備好，可以立即更新。",
       "updateAvailableDescriptionWithVersion": "新版本 {version} 已經準備好，可以立即更新。",
       "updateAction": "更新應用",
+      "laterAction": "稍後",
       "applyingTitle": "正在更新應用",
       "applyingDescription": "更新完成後頁面會自動重新整理。",
       "currentTitle": "應用已是最新",
@@ -1492,10 +1588,10 @@ export default {
       "checkFailedTitle": "檢查更新失敗",
       "checkFailedDescription": "無法讀取遠端構建資訊，請稍後重試。",
       "offlineReadyTitle": "離線快取已準備好",
-      "offlineReadyDescription": "應用外殼已快取，之後可更快開啟。",
+      "offlineReadyDescription": "已快取常用頁面，下次開啟更快。",
       "devTitle": "開發模式",
       "devDescription": "開發模式下不會註冊 PWA 更新流程。",
-      "forcedUpdateTitle": "目前版本已停止支援",
+      "forcedUpdateTitle": "當前版本已停止支援",
       "forcedUpdateDescription": "正在更新到 {version}……",
       "forcedUpdateWithInputDescription": "頁面將在一分鐘後重新整理並更新到 {version}，請先複製需要保留的輸入內容。",
       "chunkErrorTitle": "部分頁面內容載入失敗",
@@ -1505,7 +1601,7 @@ export default {
   },
   "catalog": {
     "region": {
-      "label": "伺服器"
+      "label": "區服"
     },
     "search": {
       "label": "搜尋",
@@ -1514,15 +1610,19 @@ export default {
     "filters": {
       "title": "篩選",
       "reset": "重置篩選",
-      "clearAll": "清除全部"
+      "clearAll": "清除全部",
+      "done": "完成",
+      "sheetDescription": "調整篩選條件，結果會立即更新。"
     },
     "results": {
       "count": "共 {count} 項",
       "empty": "沒有符合當前篩選條件的內容",
-      "emptyHint": "試試放寬篩選條件，或切換伺服器。",
+      "emptyHint": "試試放寬篩選條件，或切換區服。",
       "loadError": "資料載入失敗",
       "retry": "重試",
-      "downloading": "正在下載 Master 資料… {progress}%"
+      "downloading": "正在下載遊戲資料… {progress}%",
+      "offline": "離線資料",
+      "offlineHint": "當前顯示的是本地快取的遊戲資料，最新內容可能尚未同步"
     },
     "sort": {
       "label": "排序",
@@ -1554,7 +1654,8 @@ export default {
       "upcomingHidden": "即將開始的內容已被隱藏。開啟「顯示未上線內容」後即可檢視。",
       "showUnreleased": "顯示未上線內容",
       "endsIn": "剩餘 {time}",
-      "startsIn": "{time} 後開始"
+      "startsIn": "{time} 後開始",
+      "permanent": "常駐"
     },
     "countdown": {
       "toStart": "距開始",
@@ -1569,22 +1670,30 @@ export default {
     "detail": {
       "backToList": "返回{list}",
       "breadcrumb": "頁面路徑",
-      "notFound": "在當前伺服器的資料中找不到該條目。",
+      "notFound": "當前區服的資料裡沒有這個條目。可以切換區服再試。",
       "loadError": "詳情資料載入失敗",
-      "assetName": "資源名",
+      "assetName": "內部名稱",
       "period": "期間",
       "viewAllCount": "檢視全部 ({count})",
       "zoom": "點選放大檢視",
       "showMore": "展開",
       "showLess": "收起",
-      "tryOtherRegion": "該條目可能存在於其他伺服器，可切換後重試。"
+      "tryOtherRegion": "可能存在於其他區服，切換後會自動重新載入。"
     },
     "lightbox": {
       "description": "圖片預覽",
       "zoomIn": "放大",
       "zoomOut": "縮小",
       "openInNewTab": "新標籤頁開啟",
-      "items": "圖片"
+      "items": "圖片",
+      "touchZoom": "雙擊放大 / 縮小",
+      "touchSwipe": "左右滑動切換圖片"
+    },
+    "time": {
+      "localLabel": "當地時間",
+      "serverTime": "{region}時間：{time}",
+      "hint": "時間按你所在的時區（{zone}）顯示；與{region}時間（{serverZone}）不同時，會在旁邊標出{region}時間。",
+      "sameZone": "你所在的時區（{zone}）與{region}時間一致。"
     },
     "character": {
       "label": "角色",
@@ -1604,7 +1713,7 @@ export default {
       "all": "全部年份"
     },
     "type": {
-      "label": "類型"
+      "label": "型別"
     },
     "statusFilter": {
       "label": "狀態"

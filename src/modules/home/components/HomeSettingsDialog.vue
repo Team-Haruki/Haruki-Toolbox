@@ -171,6 +171,15 @@ function formatBuildTime(value: string) {
 function hasVisitedSettingsTab(tab: string) {
   return visitedSettingsTabs.value.has(tab)
 }
+
+// The dialog is the surface: the check runs silently and its outcome shows
+// in the status badge / inline text instead of a duplicate toast.
+const userCheckFailed = ref(false)
+async function runUserUpdateCheck() {
+  userCheckFailed.value = false
+  await checkForAppUpdate({ silent: true })
+  userCheckFailed.value = appUpdateState.lastError !== null
+}
 </script>
 
 <template>
@@ -225,11 +234,11 @@ function hasVisitedSettingsTab(tab: string) {
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col">
-          <!-- mr-10 ends the scrollport before the absolute close button so
-               pills can never scroll underneath it. -->
-          <div class="shrink-0 border-b sm:hidden">
+          <!-- Phones: four equal icon+label tabs fit a 390px dialog without
+               clipping; the row stays clear of the close button above it. -->
+          <div class="shrink-0 border-b pt-10 sm:hidden">
           <nav
-            class="mr-10 flex gap-1.5 overflow-x-auto px-4 pt-4 pb-3"
+            class="grid grid-cols-4 gap-1 px-3 pb-2"
             :aria-label="t('homeSettings.title')"
           >
             <button
@@ -237,20 +246,19 @@ function hasVisitedSettingsTab(tab: string) {
               :key="section.value"
               type="button"
               :class="[
-                'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap transition-colors',
+                'relative flex min-w-0 flex-col items-center gap-1 rounded-md px-1 py-1.5 text-[11px] leading-tight transition-colors',
                 settingsTab === section.value
-                  ? 'border-primary bg-primary font-medium text-primary-foreground'
-                  : 'border-border text-muted-foreground',
+                  ? 'bg-primary/10 font-medium text-primary'
+                  : 'text-muted-foreground hover:bg-accent/60',
               ]"
               :aria-current="settingsTab === section.value ? 'true' : undefined"
               @click="settingsTab = section.value"
             >
-              <component :is="section.icon" class="size-3.5" />
-              {{ section.label }}
+              <component :is="section.icon" class="size-4" />
+              <span class="w-full truncate text-center">{{ section.label }}</span>
               <span
                 v-if="section.value === 'app' && appUpdateState.updateAvailable"
-                class="size-1.5 rounded-full"
-                :class="settingsTab === section.value ? 'bg-primary-foreground' : 'bg-amber-500'"
+                class="absolute top-1 right-2 size-1.5 rounded-full bg-amber-500"
               />
             </button>
           </nav>
@@ -261,20 +269,20 @@ function hasVisitedSettingsTab(tab: string) {
             <p class="mt-0.5 text-sm text-muted-foreground">{{ activeSection.description }}</p>
           </header>
 
-          <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+          <div class="@container min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
             <div v-show="settingsTab === 'preferences'" class="space-y-5">
               <section>
                 <h3 class="px-1 pb-2 text-[13px] font-medium text-muted-foreground">
                   {{ t("homeSettings.groups.appearance") }}
                 </h3>
                 <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
                     <div class="min-w-0">
                       <Label id="dialog-theme-label" for="dialog-theme" class="text-sm font-medium">{{ t("homeSettings.theme.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.theme.help") }}</p>
                     </div>
                     <Select id="dialog-theme" v-model="selectedTheme">
-                      <SelectTrigger aria-labelledby="dialog-theme-label" class="w-36 shrink-0 sm:w-40">
+                      <SelectTrigger aria-labelledby="dialog-theme-label" class="w-full @min-[28rem]:w-40 @min-[28rem]:shrink-0">
                         <SelectValue :placeholder="t('homeSettings.theme.placeholder')">
                           <span class="truncate">{{ selectedThemeLabel }}</span>
                         </SelectValue>
@@ -290,13 +298,13 @@ function hasVisitedSettingsTab(tab: string) {
                     </Select>
                   </div>
 
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
                     <div class="min-w-0">
                       <Label id="dialog-locale-label" for="dialog-locale" class="text-sm font-medium">{{ t("homeSettings.locale.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.locale.help") }}</p>
                     </div>
                     <Select id="dialog-locale" v-model="selectedLocale">
-                      <SelectTrigger aria-labelledby="dialog-locale-label" class="w-36 shrink-0 sm:w-40">
+                      <SelectTrigger aria-labelledby="dialog-locale-label" class="w-full @min-[28rem]:w-40 @min-[28rem]:shrink-0">
                         <SelectValue :placeholder="t('homeSettings.locale.placeholder')">
                           <span class="truncate">{{ selectedLocaleLabel }}</span>
                         </SelectValue>
@@ -337,7 +345,7 @@ function hasVisitedSettingsTab(tab: string) {
                   </button>
                 </div>
                 <div class="divide-y divide-border/60 rounded-lg border bg-muted/20">
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
                     <div class="min-w-0">
                       <Label id="dialog-endpoint-label" for="dialog-endpoint" class="text-sm font-medium">{{ t("homeSettings.endpoint.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.endpoint.help") }}</p>
@@ -346,14 +354,14 @@ function hasVisitedSettingsTab(tab: string) {
                       </p>
                     </div>
                     <Select id="dialog-endpoint" v-model="selectedEndpoint" :disabled="endpointSelectionDisabled || endpointUnavailable">
-                      <SelectTrigger aria-labelledby="dialog-endpoint-label" class="w-40 shrink-0 sm:w-56">
+                      <SelectTrigger aria-labelledby="dialog-endpoint-label" class="w-full @min-[28rem]:w-56 @min-[28rem]:shrink-0">
                         <SelectValue :placeholder="t('homeSettings.endpoint.placeholder')">
                           <span class="truncate">{{ selectedEndpointLabel }}</span>
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem v-for="opt in endpointOptions" :key="opt.value" :value="opt.value">
-                          <div class="flex w-full min-w-64 items-center justify-between gap-3">
+                          <div class="flex w-full min-w-0 items-center justify-between gap-3">
                             <div class="flex min-w-0 items-center gap-2">
                               <component :is="opt.icon" class="size-4 shrink-0" />
                               <span class="truncate">{{ opt.label }}</span>
@@ -372,20 +380,20 @@ function hasVisitedSettingsTab(tab: string) {
                     </Select>
                   </div>
 
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
+                  <div class="flex flex-col gap-3 px-4 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4">
                     <div class="min-w-0">
                       <Label id="dialog-asset-endpoint-label" for="dialog-asset-endpoint" class="text-sm font-medium">{{ t("homeSettings.assetEndpoint.label") }}</Label>
                       <p class="mt-0.5 text-xs text-muted-foreground">{{ t("homeSettings.assetEndpoint.help") }}</p>
                     </div>
                     <Select id="dialog-asset-endpoint" v-model="selectedAssetEndpoint">
-                      <SelectTrigger aria-labelledby="dialog-asset-endpoint-label" class="w-40 shrink-0 sm:w-56">
+                      <SelectTrigger aria-labelledby="dialog-asset-endpoint-label" class="w-full @min-[28rem]:w-56 @min-[28rem]:shrink-0">
                         <SelectValue :placeholder="t('homeSettings.assetEndpoint.placeholder')">
                           <span class="truncate">{{ selectedAssetEndpointLabel }}</span>
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem v-for="opt in assetEndpointOptions" :key="opt.value" :value="opt.value">
-                          <div class="flex w-full min-w-64 items-center justify-between gap-3">
+                          <div class="flex w-full min-w-0 items-center justify-between gap-3">
                             <div class="flex min-w-0 items-center gap-2">
                               <component :is="opt.icon" class="size-4 shrink-0" />
                               <span class="truncate">{{ opt.label }}</span>
@@ -523,12 +531,19 @@ function hasVisitedSettingsTab(tab: string) {
                   </div>
                 </div>
 
-                <p v-if="appUpdateState.lastError" class="text-xs text-destructive">
+                <!-- A failed boot-time background check is not the user's doing:
+                     say "not checked yet" in neutral tone; only a check they
+                     asked for reports its failure, and inline rather than as
+                     a second toast. -->
+                <p v-if="appUpdateState.lastError && userCheckFailed" class="text-xs text-destructive" role="alert">
                   {{ t("homeSettings.appUpdate.lastError") }}
+                </p>
+                <p v-else-if="!appUpdateState.checkedAt && !appUpdateState.checking" class="text-xs text-muted-foreground">
+                  {{ t("homeSettings.appUpdate.notCheckedYet") }}
                 </p>
 
                 <div class="grid gap-2 sm:grid-cols-2">
-                  <Button type="button" variant="outline" :disabled="appUpdateState.checking || appUpdateState.applying" @click="checkForAppUpdate()">
+                  <Button type="button" variant="outline" :disabled="appUpdateState.checking || appUpdateState.applying" @click="runUserUpdateCheck">
                     <RefreshCw :class="['size-4', appUpdateState.checking ? 'animate-spin' : '']" />
                     {{ appUpdateState.checking ? t("homeSettings.appUpdate.checking") : t("homeSettings.appUpdate.check") }}
                   </Button>

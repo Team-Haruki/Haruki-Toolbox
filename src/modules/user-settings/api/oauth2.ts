@@ -1,6 +1,5 @@
 import { request } from "@/core/http/call-api"
 import { buildUserApiPath } from "@/core/http/path"
-import { translate } from "@/shared/i18n"
 import type { APIResponse } from "@/types"
 import type { AxiosRequestConfig } from "axios"
 
@@ -118,36 +117,17 @@ export interface OAuthConsentRejectPayload {
     statusCode?: number
 }
 
-const scopeLabelKeys: Record<string, string> = {
-    "user:read": "oauth.scope.userRead",
-    "bindings:read": "oauth.scope.bindingsRead",
-    "game-data:read": "oauth.scope.gameDataRead",
-    "game-data:write": "oauth.scope.gameDataWrite",
-    "station:room:write": "oauth.scope.stationRoomWrite",
-    "openid": "oauth.scope.openid",
-    "profile": "oauth.scope.profile",
-    "email": "oauth.scope.email",
-    "offline_access": "oauth.scope.offlineAccess",
-}
-
-// Scopes whose consequences deserve a second line on the consent page.
-// read and write are explained separately: granting one never implies the other.
-const scopeDescriptionKeys: Record<string, string> = {
-    "game-data:read": "oauth.scopeDescription.gameDataRead",
-    "game-data:write": "oauth.scopeDescription.gameDataWrite",
-    "station:room:write": "oauth.scopeDescription.stationRoomWrite",
-    "offline_access": "oauth.scopeDescription.offlineAccess",
-}
-
-export function getScopeLabel(scope: string): string {
-    const key = scopeLabelKeys[scope]
-    return key ? translate(key) : scope
-}
-
-export function getScopeDescription(scope: string): string | null {
-    const key = scopeDescriptionKeys[scope]
-    return key ? translate(key) : null
-}
+// Scope labels, descriptions and consent-page grouping live in the lib so
+// they stay importable without the HTTP client (tests, pure helpers).
+export {
+    OAUTH_SCOPE_GROUP_ORDER,
+    getScopeDescription,
+    getScopeGroup,
+    getScopeLabel,
+    groupScopes,
+    isKnownScope,
+    type OAuthScopeGroup,
+} from "@/modules/user-settings/lib/oauth-scopes"
 
 function withChallenge(path: string, key: "login_challenge" | "consent_challenge" | "logout_challenge", challenge: string) {
     const params = new URLSearchParams()

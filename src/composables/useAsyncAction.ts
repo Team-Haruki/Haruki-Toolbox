@@ -1,6 +1,6 @@
 import type { Ref } from "vue"
 import { toast } from "vue-sonner"
-import { extractErrorMessage } from "@/lib/error-utils"
+import { extractErrorMessage, shouldReportError } from "@/lib/error-utils"
 import { createLogger } from "@/lib/logger"
 import { translate } from "@/shared/i18n"
 
@@ -16,6 +16,12 @@ type AsyncActionOptions<TResult> = {
   onSuccess?: (result: TResult) => void | Promise<void>
   onError?: (error: unknown) => void | Promise<void>
   onFinally?: () => void | Promise<void>
+  /**
+   * Rethrow the task's error (after `onError`) instead of showing the error
+   * toast. For actions a `ConfirmDialog` runs: the dialog reports the failure
+   * inline and stays open, so a toast would say it twice.
+   */
+  throwOnError?: boolean
 }
 
 function resolveSuccessMessage<TResult>(
@@ -39,13 +45,16 @@ export async function runAsyncAction<TResult>(
     try {
       result = await task()
     } catch (error: unknown) {
-      if (options.onError) {
+      // A cancelled admin password prompt means nothing ran: no toast, no handler.
+      const report = shouldReportError(error)
+      if (report && options.onError) {
         await options.onError(error)
-      } else {
+      } else if (report && !options.throwOnError) {
         toast.error(options.errorTitle, {
           description: extractErrorMessage(error, options.fallbackError ?? options.errorTitle),
         })
       }
+      if (options.throwOnError) throw error
       return null
     }
 

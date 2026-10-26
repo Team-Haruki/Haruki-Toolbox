@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
-import { LucideUsers } from "lucide-vue-next"
+import { LucideBookOpen, LucideUsers } from "lucide-vue-next"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -23,6 +23,7 @@ import CardSkillSection from "@/modules/cards/components/CardSkillSection.vue"
 import { useCardDetail } from "@/modules/cards/composables/useCardDetail"
 import { CARD_FULL_ART_ASPECT_CLASS } from "@/modules/cards/lib/card-assets"
 import { resolveCardSupplyBadgeVariant } from "@/modules/cards/lib/card-display"
+import { buildStoryPlayerLink, firstPlayableScenario } from "@/modules/story"
 
 const props = defineProps<{
   cardId: string
@@ -44,6 +45,13 @@ const notFound = computed(() => detail.notFound.value || (cardId.value == null &
 const blurArt = computed(() => detail.unreleased.value && blurUnreleased.value)
 const supplyLabel = computed(() => resolveSekaiSupplyLabel({ t, te }, detail.supplyType.value))
 const supplyVariant = computed(() => resolveCardSupplyBadgeVariant(detail.supplyType.value) ?? "muted")
+// side stories open in the player once the card is released
+const storyPlayable = computed(() => card.value != null && !detail.unreleased.value)
+const storyLink = computed(() => {
+  const scenarioId = storyPlayable.value ? firstPlayableScenario(detail.episodes.value, null, 0) : null
+  return scenarioId ? buildStoryPlayerLink(scenarioId) : null
+})
+
 const characterRoute = computed(() => (detail.character.value
   ? { name: "cards.list", query: { chars: String(detail.character.value.id) } }
   : null))
@@ -84,6 +92,12 @@ const sectionsOpen = !isNarrowViewport()
         <RouterLink :to="characterRoute">
           <LucideUsers class="size-4" />
           {{ t("cardCatalog.detail.viewCharacterCards") }}
+        </RouterLink>
+      </Button>
+      <Button v-if="storyLink" as-child variant="outline" size="sm">
+        <RouterLink :to="storyLink">
+          <LucideBookOpen class="size-4" />
+          {{ t("cardCatalog.detail.playStory") }}
         </RouterLink>
       </Button>
     </template>
@@ -129,8 +143,10 @@ const sectionsOpen = !isNarrowViewport()
           />
           <CardEpisodesSection
             :episodes="detail.episodes.value"
+            :material-names="detail.materialNames.value"
             :loading="detail.detailExtrasLoading.value"
             :default-open="sectionsOpen"
+            :playable="storyPlayable"
           />
           <CardRelatedEventsSection
             :events="detail.relatedEvents.value"

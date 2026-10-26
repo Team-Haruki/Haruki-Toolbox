@@ -1,5 +1,6 @@
 import { ref, shallowRef, watch, type Ref } from "vue"
-import { resolvePjsk3dRuntimeBaseUrl } from "@/shared/sekai/data-sources"
+import { resolvePjsk3dRuntimeBaseUrl, resolvePjsk3dRuntimeFallbackBaseUrl } from "@/shared/sekai/data-sources"
+import { loadWithAssetFallback } from "@/shared/sekai/asset-fallback"
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import {
@@ -87,6 +88,9 @@ export function useCostumeRoleData(
   const error = ref<string | null>(null)
 
   let loadToken = 0
+  // After a load succeeded on the fallback host, later loads start there
+  // (until the region or the asset route changes).
+  let onFallback = false
 
   async function load() {
     const targetCharacterId = characterId.value
@@ -102,8 +106,16 @@ export function useCostumeRoleData(
     loading.value = true
     error.value = null
     try {
-      const baseUrl = resolvePjsk3dRuntimeBaseUrl(region.value, preference.value)
-      const result = await fetchCostumeRoleData(baseUrl, targetCharacterId, targetUnit)
+      const primary = resolvePjsk3dRuntimeBaseUrl(region.value, preference.value)
+      const fallback = resolvePjsk3dRuntimeFallbackBaseUrl(region.value, preference.value)
+      const { value: result, usedFallback } = await loadWithAssetFallback(
+        onFallback && fallback ? fallback : primary,
+        onFallback ? null : fallback,
+        (baseUrl) => fetchCostumeRoleData(baseUrl, targetCharacterId, targetUnit),
+      )
+      if (usedFallback) {
+        onFallback = true
+      }
       if (token !== loadToken) {
         return
       }
@@ -120,6 +132,14 @@ export function useCostumeRoleData(
       }
     }
   }
+
+  watch(
+    () => [region.value, preference.value] as const,
+    () => {
+      onFallback = false
+    },
+    { flush: "sync" },
+  )
 
   watch(
     () => [region.value, preference.value, characterId.value, unit.value] as const,

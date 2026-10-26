@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { nextTick, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Bot, Clock, Globe, KeyRound, Loader2, MonitorSmartphone, RefreshCw, Trash2, X } from "lucide-vue-next"
+import { Bot, Clock, Globe, KeyRound, Loader2, MonitorSmartphone, RefreshCw, Trash2 } from "lucide-vue-next"
 import { formatLocalizedDateTime } from "@/lib/date-time"
-import { getScopeLabel } from "@/modules/user-settings/api/oauth2"
+import { getScopeLabel, isKnownScope } from "@/modules/user-settings/api/oauth2"
 import { useOAuthAuthorizations } from "@/modules/user-settings/composables/useOAuthAuthorizations"
+import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import {
   Card,
   CardContent,
@@ -13,23 +16,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  AlertDialog,
-  AlertDialogTitle,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogDescription,
-} from "@/components/ui/alert-dialog"
 
 const { t } = useI18n()
 const {
   groups,
   isLoading,
+  loadError,
   isRevoking,
-  isRevokingApp,
   revokingDeviceId,
   appRevokeTarget,
   showAppRevokeDialog,
@@ -42,6 +35,16 @@ const {
   handleDeviceRevoke,
   deviceName,
 } = useOAuthAuthorizations()
+
+// After a revoke the clicked button is gone with its row; focus returns to
+// the card heading so keyboard and screen-reader users do not land on <body>.
+const headingRef = ref<HTMLElement | null>(null)
+
+function restoreFocus() {
+  void nextTick(() => {
+    headingRef.value?.focus()
+  })
+}
 
 function formatDate(iso: string): string {
   return formatLocalizedDateTime(iso, {
@@ -58,7 +61,8 @@ function formatDate(iso: string): string {
   <Card class="w-full">
     <CardHeader>
       <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
+        <!-- Native wrapper so the focus target after a revoke is a real element. -->
+        <div ref="headingRef" tabindex="-1" class="min-w-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
           <CardTitle class="flex items-center gap-2">
             <KeyRound class="h-6 w-6" />
             {{ t("userSettings.oauthAuthorizations.title") }}
@@ -92,6 +96,15 @@ function formatDate(iso: string): string {
           </div>
         </div>
       </div>
+
+      <LoadErrorState
+        v-else-if="loadError"
+        :title="t('userSettings.oauthAuthorizations.toast.fetchFailedTitle')"
+        :description="loadError.message"
+        :detail="loadError.detail"
+        :retrying="isLoading"
+        @retry="fetchAuthorizations()"
+      />
 
       <div
         v-else-if="groups.length === 0"
@@ -139,7 +152,13 @@ function formatDate(iso: string): string {
                     <span
                       v-for="scope in row.authorization.scopes"
                       :key="scope"
-                      class="inline-flex items-center rounded-full bg-secondary text-secondary-foreground px-2 py-0.5 text-xs font-medium"
+                      :class="[
+                        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                        isKnownScope(scope)
+                          ? 'bg-secondary text-secondary-foreground'
+                          : 'border border-dashed text-muted-foreground',
+                      ]"
+                      :title="isKnownScope(scope) ? undefined : scope"
                     >
                       {{ getScopeLabel(scope) }}
                     </span>
@@ -209,55 +228,32 @@ function formatDate(iso: string): string {
     </CardContent>
   </Card>
 
-  <AlertDialog v-model:open="showAppRevokeDialog">
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>{{ t("userSettings.oauthAuthorizations.dialog.title") }}</AlertDialogTitle>
-        <AlertDialogDescription>
-          {{ t("userSettings.oauthAuthorizations.dialog.description", { clientName: appRevokeTarget?.clientName ?? '' }) }}
-          <template v-if="appRevokeTarget && appRevokeTarget.deviceGrants.length > 0">
-            {{ t("userSettings.oauthAuthorizations.dialog.devicesNote", { count: appRevokeTarget.deviceGrants.length }, appRevokeTarget.deviceGrants.length) }}
-          </template>
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>
-          <X class="h-4 w-4 mr-2" />
-          {{ t("userSettings.common.cancel") }}
-        </AlertDialogCancel>
-        <AlertDialogAction class="bg-destructive" :disabled="isRevoking" @click="handleAppRevoke">
-          <Loader2 v-if="isRevokingApp" class="h-4 w-4 mr-2 animate-spin" />
-          <Trash2 v-else class="h-4 w-4 mr-2" />
-          {{ isRevokingApp ? t("userSettings.oauthAuthorizations.dialog.revoking") : t("userSettings.oauthAuthorizations.dialog.revoke") }}
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+  <ConfirmDialog
+    v-model:open="showAppRevokeDialog"
+    :title="t('userSettings.oauthAuthorizations.dialog.title')"
+    :confirm-label="t('userSettings.oauthAuthorizations.dialog.revoke')"
+    destructive
+    :on-confirm="handleAppRevoke"
+    @success="restoreFocus"
+  >
+    <template #description>
+      {{ t("userSettings.oauthAuthorizations.dialog.description", { clientName: appRevokeTarget?.clientName ?? '' }) }}
+      <template v-if="appRevokeTarget && appRevokeTarget.deviceGrants.length > 0">
+        {{ t("userSettings.oauthAuthorizations.dialog.devicesNote", { count: appRevokeTarget.deviceGrants.length }, appRevokeTarget.deviceGrants.length) }}
+      </template>
+    </template>
+  </ConfirmDialog>
 
-  <AlertDialog v-model:open="showDeviceRevokeDialog">
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>{{ t("userSettings.oauthAuthorizations.deviceDialog.title") }}</AlertDialogTitle>
-        <AlertDialogDescription>
-          {{
-            t("userSettings.oauthAuthorizations.deviceDialog.description", {
-              label: deviceRevokeTarget ? deviceName(deviceRevokeTarget) : '',
-              clientName: deviceRevokeTarget?.clientName || deviceRevokeTarget?.clientId || '',
-            })
-          }}
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>
-          <X class="h-4 w-4 mr-2" />
-          {{ t("userSettings.common.cancel") }}
-        </AlertDialogCancel>
-        <AlertDialogAction class="bg-destructive" :disabled="isRevoking" @click="handleDeviceRevoke">
-          <Loader2 v-if="revokingDeviceId" class="h-4 w-4 mr-2 animate-spin" />
-          <Trash2 v-else class="h-4 w-4 mr-2" />
-          {{ revokingDeviceId ? t("userSettings.oauthAuthorizations.dialog.revoking") : t("userSettings.oauthAuthorizations.devices.revoke") }}
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+  <ConfirmDialog
+    v-model:open="showDeviceRevokeDialog"
+    :title="t('userSettings.oauthAuthorizations.deviceDialog.title')"
+    :description="t('userSettings.oauthAuthorizations.deviceDialog.description', {
+      label: deviceRevokeTarget ? deviceName(deviceRevokeTarget) : '',
+      clientName: deviceRevokeTarget?.clientName || deviceRevokeTarget?.clientId || '',
+    })"
+    :confirm-label="t('userSettings.oauthAuthorizations.devices.revoke')"
+    destructive
+    :on-confirm="handleDeviceRevoke"
+    @success="restoreFocus"
+  />
 </template>

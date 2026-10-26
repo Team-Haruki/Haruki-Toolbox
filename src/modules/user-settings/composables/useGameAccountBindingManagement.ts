@@ -1,4 +1,4 @@
-import { computed, ref, watch } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
@@ -15,6 +15,9 @@ import {
   removeGameAccount,
   updateGameAccount,
 } from "@/modules/user-settings/api/game-account"
+
+/** DOM id of the UID field in the edit dialog; validation focuses it. */
+export const BINDING_UID_INPUT_ID = "binding-user-id"
 
 function toEditableAccount(account?: GameAccountBinding | null): GameAccountBinding {
   return {
@@ -52,7 +55,14 @@ export function useGameAccountBindingManagement() {
   const suppressNextEditClose = ref(false)
   let suppressEditCloseTimer: ReturnType<typeof setTimeout> | null = null
   const userIdInput = ref("")
+  /** Inline error under the UID field; empty when the field is valid. */
+  const userIdError = ref("")
   const verificationTriggered = ref(false)
+  /**
+   * The UID or server changed after a verification code was generated, so the
+   * earlier verification no longer applies and Save is disabled again.
+   */
+  const verificationInvalidated = ref(false)
   const editTarget = ref<GameAccountBinding | null>(null)
   const deleteTarget = ref<GameAccountBinding | null>(null)
   const isSaving = ref(false)
@@ -117,6 +127,8 @@ export function useGameAccountBindingManagement() {
   function startAdd() {
     isCreating.value = true
     clearVerificationState()
+    verificationInvalidated.value = false
+    userIdError.value = ""
     suppressNextEditClose.value = false
     editIdentitySnapshot.value = null
     editTarget.value = toEditableAccount()
@@ -127,6 +139,8 @@ export function useGameAccountBindingManagement() {
   function startEdit(account: GameAccountBinding) {
     isCreating.value = false
     clearVerificationState()
+    verificationInvalidated.value = false
+    userIdError.value = ""
     suppressNextEditClose.value = false
     editIdentitySnapshot.value = {
       server: account.server,
@@ -142,6 +156,10 @@ export function useGameAccountBindingManagement() {
     showDeleteDialog.value = true
   }
 
+  /**
+   * Removes the binding the delete dialog is showing. Rejects on failure so
+   * the confirm dialog stays open with the reason; never toasts the failure.
+   */
   async function handleDelete() {
     if (!deleteTarget.value || isDeleting.value) return
 
@@ -162,15 +180,37 @@ export function useGameAccountBindingManagement() {
       toast.success(t("userSettings.gameBinding.toast.deleteSuccessTitle"), {
         description: t("userSettings.gameBinding.toast.deleteSuccessDescription"),
       })
-    } catch (error: unknown) {
-      toast.error(t("userSettings.gameBinding.toast.deleteFailedTitle"), {
-        description: extractErrorMessage(error, t("userSettings.gameBinding.toast.deleteFailedTitle")),
-      })
+      deleteTarget.value = null
     } finally {
       isDeleting.value = false
-      showDeleteDialog.value = false
-      deleteTarget.value = null
     }
+  }
+
+  function focusUidField() {
+    void nextTick(() => {
+      document.getElementById(BINDING_UID_INPUT_ID)?.focus()
+    })
+  }
+
+  /** Validates the UID field inline; returns the trimmed UID or null. */
+  function validateUid(): string | null {
+    const uid = userIdInput.value.trim()
+    if (!uid) {
+      userIdError.value = t("userSettings.gameBinding.validation.uidRequired")
+      focusUidField()
+      return null
+    }
+    if (!/^\d+$/.test(uid)) {
+      userIdError.value = t("userSettings.gameBinding.toast.uidMustBeNumericDescription")
+      focusUidField()
+      return null
+    }
+    userIdError.value = ""
+    return uid
+  }
+
+  function clearUidError() {
+    userIdError.value = ""
   }
 
   async function handleEditSave() {
@@ -178,7 +218,9 @@ export function useGameAccountBindingManagement() {
 
     if (isCreating.value && !verificationTriggered.value) {
       toast.error(t("userSettings.gameBinding.toast.saveFailedTitle"), {
-        description: t("userSettings.gameBinding.toast.verifyBeforeCreateDescription"),
+        description: verificationInvalidated.value
+          ? t("userSettings.gameBinding.validation.uidChangedReverify")
+          : t("userSettings.gameBinding.toast.verifyBeforeCreateDescription"),
       })
       return
     }
@@ -186,19 +228,15 @@ export function useGameAccountBindingManagement() {
     const currentUserId = requireCurrentUserId(t("userSettings.gameBinding.toast.saveFailedTitle"))
     if (!currentUserId) return
 
+    const currentGameUid = validateUid()
+    if (!currentGameUid) return
+
     isSaving.value = true
     try {
       const currentServer = editTarget.value.server
-      const currentGameUid = userIdInput.value.trim()
       const identity = !isCreating.value ? editIdentitySnapshot.value : null
       const server = identity?.server ?? currentServer
       const gameUid = identity?.userId ?? currentGameUid
-      if (!/^\d+$/.test(currentGameUid)) {
-        toast.error(t("userSettings.gameBinding.toast.saveFailedTitle"), {
-          description: t("userSettings.gameBinding.toast.uidMustBeNumericDescription"),
-        })
-        return
-      }
 
       const suitePayload = normalizeSuitePermissions(editTarget.value.suite)
       const mysekaiPayload =
@@ -226,7 +264,7 @@ export function useGameAccountBindingManagement() {
       showEditDialog.value = false
     } catch (error: unknown) {
       toast.error(t("userSettings.gameBinding.toast.saveFailedTitle"), {
-        description: extractErrorMessage(error, t("userSettings.gameBinding.toast.saveFailedTitle")),
+        description: extractErrorMessage(error, t("userSettings.gameBinding.toast.saveFailedFallback")),
       })
     } finally {
       isSaving.value = false
@@ -253,7 +291,7 @@ export function useGameAccountBindingManagement() {
       })
     } catch (error: unknown) {
       toast.error(t("userSettings.gameBinding.toast.setDefaultFailedTitle"), {
-        description: extractErrorMessage(error, t("userSettings.gameBinding.toast.setDefaultFailedTitle")),
+        description: extractErrorMessage(error, t("userSettings.gameBinding.toast.setDefaultFailedFallback")),
       })
     } finally {
       settingDefaultKey.value = null
@@ -262,13 +300,8 @@ export function useGameAccountBindingManagement() {
 
   async function handleVerify() {
     if (isVerifying.value) return
-    const uidStr = userIdInput.value.trim()
-    if (!/^\d+$/.test(uidStr)) {
-      toast.error(t("userSettings.gameBinding.toast.generateCodeFailedTitle"), {
-        description: t("userSettings.gameBinding.toast.uidMustBeNumericDescription"),
-      })
-      return
-    }
+    const uidStr = validateUid()
+    if (!uidStr) return
 
     if (!editTarget.value?.server) {
       toast.error(t("userSettings.gameBinding.toast.generateCodeFailedTitle"), {
@@ -299,9 +332,10 @@ export function useGameAccountBindingManagement() {
         userId: uidStr,
       }
       verificationTriggered.value = true
+      verificationInvalidated.value = false
     } catch (error: unknown) {
       toast.error(t("userSettings.gameBinding.toast.generateCodeFailedTitle"), {
-        description: extractErrorMessage(error, t("userSettings.gameBinding.toast.generateCodeFailedTitle")),
+        description: extractErrorMessage(error, t("userSettings.gameBinding.toast.generateCodeFailedFallback")),
       })
     } finally {
       isVerifying.value = false
@@ -340,6 +374,8 @@ export function useGameAccountBindingManagement() {
       const snapshot = verifiedBindingSnapshot.value
       if (snapshot.server !== server || snapshot.userId !== currentUserId.trim()) {
         clearVerificationState()
+        // Say why Save went grey instead of silently disabling it.
+        verificationInvalidated.value = true
       }
     }
   )
@@ -352,7 +388,9 @@ export function useGameAccountBindingManagement() {
     showVerifyDialog,
     showDeleteDialog,
     userIdInput,
+    userIdError,
     verificationTriggered,
+    verificationInvalidated,
     editTarget,
     deleteTarget,
     isSaving,
@@ -371,6 +409,7 @@ export function useGameAccountBindingManagement() {
     handleDelete,
     handleEditSave,
     handleVerify,
+    clearUidError,
     copyCodeToClipboard,
   }
 }

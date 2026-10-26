@@ -78,9 +78,10 @@ function handleTab(value: string | number) {
 
 <template>
   <div class="flex flex-col gap-2">
+    <!-- 44 px tall on phones: the art toggle is the most-tapped control on the page. -->
     <Tabs v-if="arts.length > 1" :model-value="art" @update:model-value="handleTab">
-      <TabsList>
-        <TabsTrigger v-for="kind in arts" :key="kind" :value="kind">
+      <TabsList class="h-11 sm:h-9">
+        <TabsTrigger v-for="kind in arts" :key="kind" :value="kind" class="min-w-20 px-4 sm:min-w-0 sm:px-3">
           {{ t(`cardCatalog.detail.art.${kind}`) }}
         </TabsTrigger>
       </TabsList>

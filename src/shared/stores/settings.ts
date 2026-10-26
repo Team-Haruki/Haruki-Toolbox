@@ -1,7 +1,7 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
 import { DEFAULT_LOCALE, type AppLocale } from "@/shared/i18n"
-import { SEKAI_ASSET_ENDPOINT_ROOTS } from "@/shared/sekai/data-sources"
+import { DEFAULT_SEKAI_ASSET_ENDPOINT, SEKAI_ASSET_ENDPOINT_ROOTS } from "@/shared/sekai/data-sources"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import type { SekaiRegion } from "@/types"
 import { normalizeSekaiRegion } from "@/lib/sekai-region"
@@ -25,7 +25,7 @@ const SERVER_ENDPOINT_HEALTH_PATH = '/api/health'
 const ENDPOINT_TYPES: EndpointType[] = ['direct', 'cdn']
 const ASSET_ENDPOINT_TIMEOUT_MS = 5000
 const ASSET_ENDPOINT_PROBE_PATH = '/asset-probe.png'
-const ASSET_ENDPOINT_TYPES: SekaiAssetEndpointPreference[] = ['china', 'global', 'china_cdn']
+const ASSET_ENDPOINT_TYPES: SekaiAssetEndpointPreference[] = ['china_cdn', 'global']
 
 function trimTrailingSlashes(value: string): string {
     let end = value.length
@@ -45,9 +45,8 @@ function normalizeEndpointUrl(value: unknown): string {
 
 function createEmptyAssetEndpointLatencyResults(): Record<SekaiAssetEndpointPreference, AssetEndpointLatencyResult> {
     return {
-        china: { status: 'pending', elapsedMs: null, checkedAt: null },
-        global: { status: 'pending', elapsedMs: null, checkedAt: null },
         china_cdn: { status: 'pending', elapsedMs: null, checkedAt: null },
+        global: { status: 'pending', elapsedMs: null, checkedAt: null },
     }
 }
 
@@ -58,8 +57,50 @@ function createEmptyEndpointLatencyResults(): Record<EndpointType, EndpointLaten
     }
 }
 
-function normalizeAssetEndpointPreference(value: unknown): SekaiAssetEndpointPreference {
-    return value === 'global' || value === 'china_cdn' ? value : 'china'
+/**
+ * `global` stays; anything else becomes the China CDN, including a saved
+ * `'china'` from the retired China mirror route (its users wanted the China
+ * route, so a manual choice keeps pointing at the China one).
+ */
+export function normalizeAssetEndpointPreference(value: unknown): SekaiAssetEndpointPreference {
+    return value === 'global' ? 'global' : DEFAULT_SEKAI_ASSET_ENDPOINT
+}
+
+function isAssetEndpointLatencyResult(value: unknown): value is AssetEndpointLatencyResult {
+    if (!value || typeof value !== 'object') {
+        return false
+    }
+    const { status, elapsedMs, checkedAt } = value as Record<string, unknown>
+    return (status === 'pending' || status === 'ok' || status === 'failed')
+        && (elapsedMs === null || typeof elapsedMs === 'number')
+        && (checkedAt === null || typeof checkedAt === 'number')
+}
+
+/** Saved latency results for today's routes only (drops a retired route's entry). */
+export function normalizeAssetEndpointLatencyResults(
+    value: unknown,
+): Record<SekaiAssetEndpointPreference, AssetEndpointLatencyResult> {
+    const results = createEmptyAssetEndpointLatencyResults()
+    if (!value || typeof value !== 'object') {
+        return results
+    }
+    const saved = value as Record<string, unknown>
+    for (const type of ASSET_ENDPOINT_TYPES) {
+        const entry = saved[type]
+        if (isAssetEndpointLatencyResult(entry)) {
+            results[type] = { status: entry.status, elapsedMs: entry.elapsedMs, checkedAt: entry.checkedAt }
+        }
+    }
+    return results
+}
+
+function hasOnlyAssetEndpointKeys(value: unknown): boolean {
+    if (!value || typeof value !== 'object') {
+        return false
+    }
+    const keys = Object.keys(value)
+    return keys.length === ASSET_ENDPOINT_TYPES.length
+        && keys.every((key) => (ASSET_ENDPOINT_TYPES as string[]).includes(key))
 }
 
 export const useSettingsStore = defineStore("settings", () => {
@@ -69,7 +110,7 @@ export const useSettingsStore = defineStore("settings", () => {
     const endpointLatencyMeasuredAt = ref<number | null>(null)
     const endpointLatencyChecking = ref(false)
     const endpointLatencyResults = ref<Record<EndpointType, EndpointLatencyResult>>(createEmptyEndpointLatencyResults())
-    const preferredAssetEndpoint = ref<SekaiAssetEndpointPreference>('china')
+    const preferredAssetEndpoint = ref<SekaiAssetEndpointPreference>(DEFAULT_SEKAI_ASSET_ENDPOINT)
     const assetEndpointManuallySelected = ref(false)
     const assetEndpointLatencyMeasuredAt = ref<number | null>(null)
     const assetEndpointLatencyChecking = ref(false)
@@ -136,7 +177,7 @@ export const useSettingsStore = defineStore("settings", () => {
         return SEKAI_ASSET_ENDPOINT_ROOTS[type]
     }
     function resetAssetEndpointPreference() {
-        preferredAssetEndpoint.value = 'china'
+        preferredAssetEndpoint.value = DEFAULT_SEKAI_ASSET_ENDPOINT
         assetEndpointManuallySelected.value = false
         assetEndpointLatencyMeasuredAt.value = null
         assetEndpointLatencyResults.value = createEmptyAssetEndpointLatencyResults()
@@ -224,9 +265,15 @@ export const useSettingsStore = defineStore("settings", () => {
         }
         assetEndpointPreferenceInitialized = true
 
+        // Saved settings may name a retired route (`'china'`): move them to
+        // today's routes. The manual-choice flag is kept as it is.
         const normalizedAssetEndpoint = normalizeAssetEndpointPreference(preferredAssetEndpoint.value)
         if (preferredAssetEndpoint.value !== normalizedAssetEndpoint) {
             preferredAssetEndpoint.value = normalizedAssetEndpoint
+            assetEndpointLatencyMeasuredAt.value = null
+        }
+        if (!hasOnlyAssetEndpointKeys(assetEndpointLatencyResults.value)) {
+            assetEndpointLatencyResults.value = normalizeAssetEndpointLatencyResults(assetEndpointLatencyResults.value)
             assetEndpointLatencyMeasuredAt.value = null
         }
 

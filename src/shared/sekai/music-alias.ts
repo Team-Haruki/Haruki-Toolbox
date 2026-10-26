@@ -8,7 +8,14 @@ const MUSIC_ALIAS_API_BASE = "https://neo-api.haruki.seiunx.com/api/bot/v2/pjsk"
 
 export const MUSIC_ALIAS_SEARCH_DEBOUNCE_MS = 250
 
-const aliasCache = new Map<string, Promise<readonly number[]>>()
+export type MusicAliasLookup = {
+  /** Music ids whose alias exactly matches the query (empty on a miss). */
+  ids: readonly number[]
+  /** False when the alias API could not be reached, so a miss means nothing. */
+  available: boolean
+}
+
+const aliasCache = new Map<string, Promise<MusicAliasLookup>>()
 
 export function parseMusicAliasMatchIds(payload: unknown): number[] {
   if (typeof payload !== "object" || payload === null) {
@@ -28,11 +35,11 @@ export function parseMusicAliasMatchIds(payload: unknown): number[] {
   return ids.filter((id): id is number => typeof id === "number" && Number.isFinite(id))
 }
 
-/** Music ids whose alias exactly matches the query; empty on miss or API failure. */
-export function resolveMusicIdsByAlias(alias: string): Promise<readonly number[]> {
+/** Alias lookup with its availability; a failed request is not cached. */
+export function lookupMusicIdsByAlias(alias: string): Promise<MusicAliasLookup> {
   const normalized = alias.trim()
   if (!normalized) {
-    return Promise.resolve([])
+    return Promise.resolve({ ids: [], available: true })
   }
 
   const cached = aliasCache.get(normalized)
@@ -45,23 +52,31 @@ export function resolveMusicIdsByAlias(alias: string): Promise<readonly number[]
   return promise
 }
 
-async function fetchMusicAliasMatchIds(alias: string): Promise<readonly number[]> {
+/** Music ids whose alias exactly matches the query; empty on miss or API failure. */
+export function resolveMusicIdsByAlias(alias: string): Promise<readonly number[]> {
+  return lookupMusicIdsByAlias(alias).then((lookup) => lookup.ids)
+}
+
+const ALIAS_UNAVAILABLE: MusicAliasLookup = { ids: [], available: false }
+
+async function fetchMusicAliasMatchIds(alias: string): Promise<MusicAliasLookup> {
   try {
     const response = await fetch(
       `${MUSIC_ALIAS_API_BASE}/alias/music/by-alias?alias=${encodeURIComponent(alias)}`,
     )
     if (!response.ok) {
       // Cache misses (404) but retry transient failures on the next lookup.
-      if (response.status !== 404) {
-        aliasCache.delete(alias)
+      if (response.status === 404) {
+        return { ids: [], available: true }
       }
-      return []
+      aliasCache.delete(alias)
+      return ALIAS_UNAVAILABLE
     }
 
-    return parseMusicAliasMatchIds(await response.json())
+    return { ids: parseMusicAliasMatchIds(await response.json()), available: true }
   } catch {
     aliasCache.delete(alias)
-    return []
+    return ALIAS_UNAVAILABLE
   }
 }
 
@@ -123,12 +138,18 @@ export type MusicAliasMatches = {
   matchedIds: Ref<ReadonlySet<number>>
   /** True from query change until the alias lookup for it has settled. */
   pending: Ref<boolean>
+  /**
+   * The last lookup could not reach the alias API, so alias search is off
+   * until one succeeds; callers say so instead of promising alias matches.
+   */
+  unavailable: Ref<boolean>
 }
 
 /** Debounced alias lookup bound to a search input. */
 export function useMusicAliasMatches(query: Ref<string>): MusicAliasMatches {
   const matchedIds = ref<ReadonlySet<number>>(new Set())
   const pending = ref(false)
+  const unavailable = ref(false)
   let timer: ReturnType<typeof setTimeout> | null = null
   let generation = 0
 
@@ -149,9 +170,10 @@ export function useMusicAliasMatches(query: Ref<string>): MusicAliasMatches {
     pending.value = true
     const current = generation
     timer = setTimeout(() => {
-      void resolveMusicIdsByAlias(trimmed).then((ids) => {
+      void lookupMusicIdsByAlias(trimmed).then((lookup) => {
         if (current === generation) {
-          matchedIds.value = new Set(ids)
+          matchedIds.value = new Set(lookup.ids)
+          unavailable.value = !lookup.available
           pending.value = false
         }
       })
@@ -164,5 +186,5 @@ export function useMusicAliasMatches(query: Ref<string>): MusicAliasMatches {
     }
   })
 
-  return { matchedIds, pending }
+  return { matchedIds, pending, unavailable }
 }

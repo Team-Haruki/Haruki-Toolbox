@@ -10,20 +10,26 @@ import {
   DialogPortal,
   useForwardPropsEmits,
 } from "reka-ui"
+import { useI18n } from "vue-i18n"
 import { cn } from "@/lib/utils"
 import DialogOverlay from "./DialogOverlay.vue"
 
-const props = defineProps<DialogContentProps & { class?: HTMLAttributes["class"] }>()
+const props = defineProps<DialogContentProps & {
+  class?: HTMLAttributes["class"]
+  /** Extra classes for the backdrop, e.g. a higher z-index for a dialog that must stack above another open dialog. */
+  overlayClass?: HTMLAttributes["class"]
+}>()
 const emits = defineEmits<DialogContentEmits>()
 
-const delegatedProps = reactiveOmit(props, "class")
+const delegatedProps = reactiveOmit(props, "class", "overlayClass")
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
+const { t } = useI18n()
 </script>
 
 <template>
   <DialogPortal>
-    <DialogOverlay />
+    <DialogOverlay :class="props.overlayClass" />
     <DialogContent
       data-slot="dialog-content"
       data-glass-surface="dialog"
@@ -36,11 +42,13 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     >
       <slot />
 
+      <!-- 32px square: a comfortable tap target that stays within the p-4 inset. -->
       <DialogClose
-        class="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+        class="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-2 right-2 inline-flex size-8 items-center justify-center rounded-md opacity-70 transition-opacity hover:bg-accent hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none sm:top-3 sm:right-3 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+        :aria-label="t('common.close')"
       >
         <X />
-        <span class="sr-only">Close</span>
+        <span class="sr-only">{{ t("common.close") }}</span>
       </DialogClose>
     </DialogContent>
   </DialogPortal>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import SekaiCharacterAvatar from "@/shared/components/SekaiCharacterAvatar.vue"
 import SekaiUnitLogo from "@/shared/components/SekaiUnitLogo.vue"
@@ -82,11 +83,29 @@ function unitLabel(unit: SekaiUnit): string {
 }
 
 const avatarClass = computed(() => (props.size === "sm" ? "size-7 ring-0" : "size-10 ring-0 md:size-8"))
+
+/**
+ * Until the characters index resolves the picker draws the roster's shape
+ * (five four-member units and the six-strong VIRTUAL SINGER group, each
+ * behind a unit logo) as placeholders, so the panel wraps to the same lines
+ * now as it will with data and nothing below it jumps.
+ */
+const PLACEHOLDER_GROUPS: readonly number[] = [4, 4, 4, 4, 4, 6]
+const placeholderGroups = computed(() => (props.characters.length === 0 ? PLACEHOLDER_GROUPS : []))
 </script>
 
 <template>
   <div :class="cn('flex flex-wrap items-center gap-1.5', props.class)" role="group" :aria-label="label ?? undefined">
     <span v-if="label" class="mr-1 text-xs font-medium text-muted-foreground">{{ label }}</span>
+    <template v-for="(count, groupIndex) in placeholderGroups" :key="`placeholder-${groupIndex}`">
+      <Skeleton class="ml-1 h-8 w-12 shrink-0 rounded-md" aria-hidden="true" />
+      <Skeleton
+        v-for="index in count"
+        :key="index"
+        :class="cn('shrink-0 rounded-full', avatarClass)"
+        aria-hidden="true"
+      />
+    </template>
     <template v-for="group in groups" :key="group.unit ?? 'other'">
       <button
         v-if="group.unit"

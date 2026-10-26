@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from "vue"
+import { RouterLink } from "vue-router"
 import { useI18n } from "vue-i18n"
 import {
   Card,
@@ -7,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { UploadLogsTable } from "@/modules/admin-statistics/components"
 import {
@@ -24,19 +27,37 @@ import {
 } from "@/components/ui/table"
 import {
   LucideActivity,
+  LucideArrowUpRight,
   LucideCheckCircle2,
   LucideXCircle,
 } from "lucide-vue-next"
-import type { UploadLog, UserActivity } from "@/types/admin"
+import type { AdminGameAccountBinding, UploadLog, UserActivity } from "@/types/admin"
 import { formatDateTime } from "@/modules/admin-users/constants"
 
-defineProps<{
+const props = defineProps<{
     loading: boolean
     activities: UserActivity[]
     uploadLogs: UploadLog[]
+    /** Loaded by the game tab; used to widen the upload-log link to every bound UID. */
+    gameBindings?: AdminGameAccountBinding[]
 }>()
 
 const { t } = useI18n()
+
+// The upload-logs page filters by game UID (the backend has no toolbox-user
+// filter), so the link carries every UID known for this user: the bound ones
+// plus any seen in the recent logs.
+const uploadLogsLink = computed(() => {
+  const uids = new Set<string>()
+  for (const binding of props.gameBindings ?? []) {
+    if (binding.gameUserId) uids.add(binding.gameUserId)
+  }
+  for (const log of props.uploadLogs) {
+    if (log.gameUserId) uids.add(log.gameUserId)
+  }
+  if (uids.size === 0) return null
+  return { name: "admin.uploadLogs", query: { uid: Array.from(uids).join(",") } }
+})
 
 function formatActivityTime(value: string) {
   return formatDateTime(value)
@@ -112,9 +133,17 @@ function dataTypeLabel(value?: string) {
     </Card>
 
     <Card>
-      <CardHeader>
-        <CardTitle>{{ t("adminUsers.detail.activity.uploadLogsTitle") }}</CardTitle>
-        <CardDescription>{{ t("adminUsers.detail.activity.uploadLogsDescription") }}</CardDescription>
+      <CardHeader class="flex flex-row flex-wrap items-start justify-between gap-2">
+        <div class="min-w-0 space-y-1.5">
+          <CardTitle>{{ t("adminUsers.detail.activity.uploadLogsTitle") }}</CardTitle>
+          <CardDescription>{{ t("adminUsers.detail.activity.uploadLogsDescription") }}</CardDescription>
+        </div>
+        <Button v-if="uploadLogsLink" variant="outline" size="sm" as-child>
+          <RouterLink :to="uploadLogsLink">
+            {{ t("adminUsers.detail.activity.viewAllUploads") }}
+            <LucideArrowUpRight class="w-4 h-4" />
+          </RouterLink>
+        </Button>
       </CardHeader>
       <CardContent class="p-0">
         <UploadLogsTable

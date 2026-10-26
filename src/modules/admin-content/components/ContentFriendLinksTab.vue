@@ -16,27 +16,20 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import {
   LucideLink,
   LucidePencil,
   LucidePlus,
   LucideTrash2,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import type { ErrorDescription } from "@/lib/error-utils"
 import type { AdminFriendLink } from "@/types/admin"
 
 defineProps<{
   loading: boolean
+  /** A failed load; the empty state below is only for a real empty list. */
+  loadError: ErrorDescription | null
   links: AdminFriendLink[]
 }>()
 const { t } = useI18n()
@@ -44,7 +37,9 @@ const { t } = useI18n()
 const emit = defineEmits<{
   (e: "create"): void
   (e: "edit", link: AdminFriendLink): void
-  (e: "delete", id: string): void
+  /** Asks the page to confirm and delete the link. */
+  (e: "delete", link: AdminFriendLink): void
+  (e: "retry"): void
 }>()
 </script>
 
@@ -62,6 +57,14 @@ const emit = defineEmits<{
           <Skeleton v-for="i in 3" :key="i" class="h-12 w-full" />
         </div>
       </template>
+      <LoadErrorState
+        v-else-if="loadError"
+        :title="t('adminContent.toast.loadLinksFailedTitle')"
+        :description="loadError.message"
+        :detail="loadError.detail"
+        :retrying="loading"
+        @retry="emit('retry')"
+      />
       <template v-else-if="links.length > 0">
         <Table>
           <TableHeader>
@@ -77,7 +80,7 @@ const emit = defineEmits<{
             <TableRow v-for="link in links" :key="link.id">
               <TableCell class="text-muted-foreground tabular-nums">{{ link.sortOrder }}</TableCell>
               <TableCell class="font-medium">{{ link.name }}</TableCell>
-              <TableCell class="hidden md:table-cell text-muted-foreground text-sm max-w-[200px] truncate">
+              <TableCell class="hidden md:table-cell text-muted-foreground text-sm max-w-[200px] truncate" :title="link.url">
                 {{ link.url }}
               </TableCell>
               <TableCell class="hidden lg:table-cell">
@@ -103,33 +106,16 @@ const emit = defineEmits<{
                   >
                     <LucidePencil class="w-4 h-4" />
                   </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger as-child>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="size-8 text-destructive hover:text-destructive"
-                        :title="t('adminContent.actions.delete')"
-                        :aria-label="t('adminContent.actions.delete')"
-                      >
-                        <LucideTrash2 class="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{{ t("adminContent.linksTab.deleteDialog.title") }}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {{ t("adminContent.linksTab.deleteDialog.description", { name: link.name }) }}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{{ t("adminContent.linksTab.deleteDialog.cancel") }}</AlertDialogCancel>
-                        <AlertDialogAction @click="emit('delete', link.id)">
-                          {{ t("adminContent.linksTab.deleteDialog.confirm") }}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="size-8 text-destructive hover:text-destructive"
+                    :title="t('adminContent.actions.delete')"
+                    :aria-label="t('adminContent.actions.delete')"
+                    @click="emit('delete', link)"
+                  >
+                    <LucideTrash2 class="w-4 h-4" />
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>

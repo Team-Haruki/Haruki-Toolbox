@@ -537,8 +537,8 @@ function formatInteger(value: number) {
 </script>
 
 <template>
-  <div class="flex w-full flex-1 flex-col items-center justify-center px-0 py-4">
-    <div class="mx-auto w-full max-w-7xl space-y-3 sm:space-y-4">
+  <div class="flex min-w-0 w-full flex-1 flex-col items-center justify-center px-0 py-4">
+    <div class="mx-auto min-w-0 w-full max-w-7xl space-y-3 sm:space-y-4">
       <div>
         <h1 class="text-2xl font-bold">{{ t("eventPlanner.title") }}</h1>
         <p class="text-sm text-muted-foreground">{{ t("eventPlanner.description") }}</p>
@@ -550,8 +550,8 @@ function formatInteger(value: number) {
           <CardTitle class="text-base">{{ t("eventPlanner.sections.setup.title") }}</CardTitle>
           <CardDescription>{{ t("eventPlanner.sections.setup.description") }}</CardDescription>
         </CardHeader>
-        <CardContent class="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div class="grid content-start gap-1.5">
+        <CardContent class="grid min-w-0 grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="grid min-w-0 grid-cols-1 content-start gap-1.5">
             <Label id="planner-account-label" for="planner-account" class="text-xs text-muted-foreground">{{ t("deckRecommend.form.account") }}</Label>
             <Select id="planner-account" :key="locale" :model-value="selectedAccountKey" @update:model-value="updateAccount">
               <SelectTrigger class="w-full" aria-labelledby="planner-account-label">
@@ -580,8 +580,14 @@ function formatInteger(value: number) {
                 </SelectItem>
               </SelectContent>
             </Select>
+            <p v-if="accountOptions.length === 0" class="text-xs text-muted-foreground">
+              {{ t("deckRecommend.form.noAccount") }}
+              <RouterLink :to="{ name: 'user.gameAccountBindings' }" class="text-primary underline-offset-4 hover:underline">
+                {{ t("deckRecommend.form.bindAccount") }}
+              </RouterLink>
+            </p>
           </div>
-          <div class="grid content-start gap-1.5">
+          <div class="grid min-w-0 grid-cols-1 content-start gap-1.5">
             <Label id="planner-region-label" for="planner-region" class="text-xs text-muted-foreground">{{ t("deckRecommend.form.dataRegion") }}</Label>
             <Select id="planner-region" :key="locale" :model-value="dataRegion" @update:model-value="updateDataRegion">
               <SelectTrigger class="w-full" aria-labelledby="planner-region-label">
@@ -594,7 +600,7 @@ function formatInteger(value: number) {
               </SelectContent>
             </Select>
           </div>
-          <div class="grid content-start gap-1.5">
+          <div class="grid min-w-0 grid-cols-1 content-start gap-1.5">
             <p class="text-xs font-medium text-muted-foreground">{{ t("deckRecommend.form.event") }}</p>
             <EventSelect
               v-model="selectedEventId"
@@ -602,7 +608,7 @@ function formatInteger(value: number) {
               @update:event-type="selectedEventType = $event"
             />
           </div>
-          <div v-if="showWorldBloomCharacterSelect" class="grid content-start gap-1.5">
+          <div v-if="showWorldBloomCharacterSelect" class="grid min-w-0 grid-cols-1 content-start gap-1.5">
             <p class="text-xs font-medium text-muted-foreground">{{ t("deckRecommend.form.character") }}</p>
             <CharacterSelect
               :model-value="activeCharacterId"
@@ -612,7 +618,7 @@ function formatInteger(value: number) {
               @update:model-value="selectedCharacterId = $event"
             />
           </div>
-          <div class="grid content-start gap-1.5">
+          <div class="grid min-w-0 grid-cols-1 content-start gap-1.5">
             <Label for="planner-target-point" class="text-xs text-muted-foreground">{{ t("eventPlanner.form.targetPoint") }}</Label>
             <Input
               id="planner-target-point"
@@ -626,7 +632,7 @@ function formatInteger(value: number) {
               {{ t("eventPlanner.form.parsedValue", { value: formatInteger(targetPoint.value) }) }}
             </p>
           </div>
-          <div class="grid content-start gap-1.5">
+          <div class="grid min-w-0 grid-cols-1 content-start gap-1.5">
             <Label for="planner-current-point" class="text-xs text-muted-foreground">{{ t("eventPlanner.form.currentPoint") }}</Label>
             <Input
               id="planner-current-point"
@@ -650,7 +656,7 @@ function formatInteger(value: number) {
             <div class="text-xs text-muted-foreground">{{ item.label }}</div>
             <div
               :class="[
-                'mt-0.5 text-lg font-bold tabular-nums',
+                'mt-0.5 break-all text-lg font-bold tabular-nums',
                 item.reached ? 'text-emerald-500' : item.highlight ? 'text-amber-500' : '',
               ]"
             >
@@ -707,7 +713,7 @@ function formatInteger(value: number) {
             v-for="brush in brushes"
             :key="brush.id"
             :class="[
-              'inline-flex flex-wrap items-center gap-1.5 rounded-full border py-1 pl-3 pr-1.5 text-xs transition-colors',
+              'inline-flex min-w-0 max-w-full flex-wrap items-center gap-1.5 rounded-full border py-1 pl-3 pr-1.5 text-xs transition-colors',
               activeTool === brush.id
                 ? 'border-primary ring-2 ring-primary/30'
                 : 'border-border hover:bg-muted/40',
@@ -715,11 +721,11 @@ function formatInteger(value: number) {
           >
             <button
               type="button"
-              class="inline-flex items-center gap-1.5"
+              class="inline-flex min-w-0 max-w-full flex-wrap items-center gap-1.5"
               :aria-pressed="activeTool === brush.id"
               @click="activeTool = brush.id"
             >
-              <LucideBrush class="size-3.5" :style="{ color: brush.color }" />
+              <LucideBrush class="size-3.5 shrink-0" :style="{ color: brush.color }" />
               <span class="max-w-40 truncate">{{ brush.name }}</span>
               <span class="tabular-nums text-muted-foreground">
                 {{ t("eventPlanner.brushes.perHour", { points: formatInteger(brush.pointsPerHour) }) }}

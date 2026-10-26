@@ -1,4 +1,5 @@
 import { computed, type ComputedRef, type Ref } from "vue"
+import type { SekaiRegion } from "@/types"
 import { useNowTick } from "@/composables/useNowTick"
 import { usePagedSlice } from "@/composables/usePagedSlice"
 import type { CatalogStatus } from "@/shared/components/catalog/types"
@@ -36,10 +37,11 @@ export type GachaListTile = {
 }
 
 export type GachaListModel = {
-  region: Ref<string>
+  region: ComputedRef<SekaiRegion>
   loading: Ref<boolean>
   error: Ref<string | null>
-  warning: Ref<string | null>
+  /** Data is on screen but the last remote refresh failed (offline notice). */
+  warning: ComputedRef<string | null>
   refreshing: Ref<boolean>
   ready: ComputedRef<boolean>
   reload: () => Promise<void>
@@ -47,6 +49,9 @@ export type GachaListModel = {
   characterMap: ComputedRef<ReadonlyMap<number, CatalogCharacter>>
   unitColorMap: ComputedRef<ReadonlyMap<SekaiUnit, string> | null>
   cardNames: ComputedRef<ReadonlyMap<number, string>>
+  /** The characters / cards index has data (ids resolve, or are found missing). */
+  charactersReady: ComputedRef<boolean>
+  cardsReady: ComputedRef<boolean>
   types: ComputedRef<string[]>
   years: ComputedRef<number[]>
   total: ComputedRef<number>
@@ -190,6 +195,8 @@ export function useGachaList(query: GachaListQuery): GachaListModel {
     characterMap,
     unitColorMap,
     cardNames,
+    charactersReady: computed(() => charactersIndex.data.value != null),
+    cardsReady: computed(() => cards.data.value != null),
     types,
     years,
     total: computed(() => filtered.value.length),

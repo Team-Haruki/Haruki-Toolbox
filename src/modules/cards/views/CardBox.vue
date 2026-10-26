@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
 import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
+import { useSuiteRefresh } from "@/shared/sekai/user-snapshot/use-suite-refresh"
+import { useUploadTimeText } from "@/shared/sekai/user-snapshot/upload-time"
 
-import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
+import { useMediaQuery } from "@vueuse/core"
 import { LucideChevronsDownUp, LucideChevronsUpDown, LucideRefreshCw } from "lucide-vue-next"
 import type { AcceptableValue } from "reka-ui"
 import { Button } from "@/components/ui/button"
@@ -13,7 +17,9 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
 import type { CatalogActiveChip } from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import CatalogPagination from "@/shared/components/catalog/CatalogPagination.vue"
 import { useCatalogViewPreference } from "@/composables/useCatalogViewPreference"
+import { useRouteQueryState } from "@/composables/useRouteQueryState"
 import { useGameAccountSelection, useUserSuite } from "@/shared/sekai/user-snapshot/use-user-suite"
 import {
   SEKAI_CARD_ATTR_COLORS,
@@ -40,7 +46,6 @@ import {
   buildRarityDistribution,
   buildUnitDistribution,
   countActiveCardBoxFilters,
-  createCardBoxFilters,
   type CardBoxFilters,
   filterReleasedCards,
   groupCardsByAttr,
@@ -55,15 +60,15 @@ import {
   type CardBoxGroupMode,
   type CardBoxSort,
 } from "@/modules/cards/lib/card-box"
+import { CARD_BOX_PAGE_SIZES, CARD_BOX_QUERY_CODEC } from "@/modules/cards/lib/card-box-query"
 import { useCardBoxCatalog } from "@/modules/cards/composables/useCardBoxCatalog"
 import CardBoxCardGrid from "@/modules/cards/components/CardBoxCardGrid.vue"
 import CardBoxCharacterStrip, { type CardBoxCharacterNavRow } from "@/modules/cards/components/CardBoxCharacterStrip.vue"
 import CardBoxFilterFields from "@/modules/cards/components/CardBoxFilterFields.vue"
 import CardBoxOverview, { type CardBoxOverviewGroup } from "@/modules/cards/components/CardBoxOverview.vue"
 import CardBoxSection from "@/modules/cards/components/CardBoxSection.vue"
-import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 
-const { t, te, locale } = useI18n()
+const { t, te } = useI18n()
 const labels = { t, te }
 
 const { selectedAccount } = useGameAccountSelection({ capability: "suite" })
@@ -88,12 +93,13 @@ const {
 } = useCardBoxCatalog(accountRegion)
 
 // --- View state ---------------------------------------------------------------
-// Filters are per visit; grouping and sort are remembered like the catalog's
-// view preferences.
-const filters = reactive(createCardBoxFilters())
+// Filters (and the phone pagination) live in the URL so a reload keeps them;
+// grouping and sort are remembered like the catalog's view preferences.
+const query = useRouteQueryState(CARD_BOX_QUERY_CODEC, { pageKey: "page" })
+const filters = query.state
 
 function patchFilters(next: Partial<CardBoxFilters>) {
-  Object.assign(filters, next)
+  query.patch(next)
 }
 const groupMode = useCatalogViewPreference<CardBoxGroupMode>("card-box", "group", () => "character", CARD_BOX_GROUP_MODES)
 const sort = useCatalogViewPreference<CardBoxSort>("card-box", "sort", () => "id", CARD_BOX_SORTS)
@@ -115,6 +121,20 @@ const filtered = computed(() => applyCardBoxFilters(releasedCards.value, ownedMa
 /** Every card the filters admit, owned or not: the denominator of all progress figures. */
 const scopedCards = computed(() => filtered.value.scoped)
 const visibleCards = computed(() => sortCardBoxCards(filtered.value.visible, ownedMap.value, sort.value))
+
+// Phones page the (up to ~1,500) tiles instead of rendering a 24,000px
+// document; wide screens keep the single page and rely on content-visibility.
+const isNarrow = useMediaQuery("(max-width: 767px)")
+const totalPages = computed(() => isNarrow.value ? Math.max(1, Math.ceil(visibleCards.value.length / filters.size)) : 1)
+const currentPage = computed(() => Math.min(Math.max(1, filters.page), totalPages.value))
+const pagedCards = computed(() => {
+  if (!isNarrow.value) {
+    return visibleCards.value
+  }
+  const start = (currentPage.value - 1) * filters.size
+  return visibleCards.value.slice(start, start + filters.size)
+})
+const showPagination = computed(() => isNarrow.value && visibleCards.value.length > filters.size)
 
 const overall = computed(() => summarizeCollection(scopedCards.value, ownedMap.value))
 const characterDistribution = computed(() => buildCharacterDistribution(scopedCards.value, ownedMap.value))
@@ -144,21 +164,16 @@ const rosterRows = computed<CardBoxCharacterNavRow[]>(() =>
     }),
 )
 
-const { isLoading, hasError, isReady, suiteDataMissing, errorDetail } = useUserDataPageState({
+const { isLoading, hasError, isReady, suiteDataMissing, errorMessage, errorDetail } = useUserDataPageState({
   status: suiteStatus,
   error: suiteError,
   masterLoading: catalogLoading,
   masterError: catalogError,
+  account: selectedAccount,
+  fallback: () => t("cardBox.loadError"),
 })
 
-const uploadTimeText = computed(() => {
-  if (uploadTime.value == null) {
-    return null
-  }
-
-  return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
-    .format(suiteUploadTimeToMillis(uploadTime.value))
-})
+const uploadTimeText = useUploadTimeText(uploadTime)
 
 // --- Tiles ---------------------------------------------------------------------------
 function makeCardView(card: CatalogMasterCard): CardBoxCardView {
@@ -180,7 +195,7 @@ function sectionKey(kind: "character" | "attr", key: number | string): string {
 
 const characterSections = computed(() => {
   const progressByCharacter = new Map(characterDistribution.value.map((row) => [row.characterId, row]))
-  return groupCardsByCharacter(visibleCards.value, ownedMap.value).map((group) => {
+  return groupCardsByCharacter(pagedCards.value, ownedMap.value).map((group) => {
     const character = characterMap.value.get(group.key) ?? null
     const progress = progressByCharacter.get(group.key) ?? null
     const unitColor = character?.unit != null ? unitColorMap.value.get(character.unit) ?? null : null
@@ -200,7 +215,7 @@ const characterSections = computed(() => {
 
 const attrSections = computed(() => {
   const progressByAttr = new Map(attrDistribution.value.map((row) => [row.attr, row]))
-  return groupCardsByAttr(visibleCards.value, ownedMap.value).map((group) => {
+  return groupCardsByAttr(pagedCards.value, ownedMap.value).map((group) => {
     const progress = progressByAttr.get(group.key) ?? null
     return {
       key: sectionKey("attr", group.key),
@@ -215,7 +230,7 @@ const attrSections = computed(() => {
   })
 })
 
-const flatViews = computed(() => visibleCards.value.map(makeCardView))
+const flatViews = computed(() => pagedCards.value.map(makeCardView))
 
 const visibleEmpty = computed(() => visibleCards.value.length === 0)
 
@@ -289,20 +304,20 @@ const activeChips = computed<CatalogActiveChip[]>(() => [
 function removeChip(key: string) {
   const [kind, value] = key.split(":")
   if (kind === "char") {
-    filters.characterIds = filters.characterIds.filter((id) => String(id) !== value)
+    query.patch({ characterIds: filters.characterIds.filter((id) => String(id) !== value) })
   } else if (kind === "unit") {
-    filters.units = filters.units.filter((unit) => unit !== value)
+    query.patch({ units: filters.units.filter((unit) => unit !== value) })
   } else if (kind === "attr") {
-    filters.attrs = filters.attrs.filter((attr) => attr !== value)
+    query.patch({ attrs: filters.attrs.filter((attr) => attr !== value) })
   } else if (kind === "rar") {
-    filters.rarities = filters.rarities.filter((rarity) => rarity !== value)
+    query.patch({ rarities: filters.rarities.filter((rarity) => rarity !== value) })
   } else if (kind === "own") {
-    filters.ownership = "all"
+    query.patch({ ownership: "all" })
   }
 }
 
 function resetFilters() {
-  Object.assign(filters, createCardBoxFilters())
+  query.reset()
 }
 
 const countLabel = computed(() => t("cardBox.total", { total: visibleCards.value.length }))
@@ -357,7 +372,9 @@ const rosterActiveId = computed(() => {
 
 function handleRosterSelect(characterId: number) {
   if (groupMode.value !== "character") {
-    filters.characterIds = filters.characterIds.length === 1 && filters.characterIds[0] === characterId ? [] : [characterId]
+    query.patch({
+      characterIds: filters.characterIds.length === 1 && filters.characterIds[0] === characterId ? [] : [characterId],
+    })
     return
   }
 
@@ -365,9 +382,31 @@ function handleRosterSelect(characterId: number) {
   if (collapsedKeys.value.has(key)) {
     toggleSection(key)
   }
-  if (filters.characterIds.length > 0 && !filters.characterIds.includes(characterId)) {
-    // The section is filtered away; widen the filter rather than scrolling nowhere.
-    filters.characterIds = []
+  // The section is filtered away: widen the filter rather than scrolling
+  // nowhere. The page jump below goes into the same patch, because a
+  // filter change on its own resets the page to 1 (`pageKey` rule).
+  const widen = filters.characterIds.length > 0 && !filters.characterIds.includes(characterId)
+  const patch: Parameters<typeof query.patch>[0] = widen ? { characterIds: [] } : {}
+  if (isNarrow.value) {
+    // On a paged phone view the character may sit on another page. Look it
+    // up in the list the widened filter will show.
+    const cards = widen
+      ? sortCardBoxCards(
+        applyCardBoxFilters(releasedCards.value, ownedMap.value, { ...filters, characterIds: [] }, unitOf).visible,
+        ownedMap.value,
+        sort.value,
+      )
+      : visibleCards.value
+    const index = cards.findIndex((card) => card.characterId === characterId)
+    if (index >= 0) {
+      const targetPage = Math.floor(index / filters.size) + 1
+      if (targetPage !== currentPage.value) {
+        patch.page = targetPage
+      }
+    }
+  }
+  if (Object.keys(patch).length > 0) {
+    query.patch(patch)
   }
   void nextTick(() => scrollToSection(key))
 }
@@ -444,10 +483,10 @@ onBeforeUnmount(() => {
   sectionObserver?.disconnect()
 })
 
-function refresh() {
-  void reloadSuite("check-remote")
-  reloadCatalog()
-}
+const { refreshing, refresh } = useSuiteRefresh([
+  () => reloadSuite("check-remote"),
+  () => reloadCatalog(),
+])
 
 function retry() {
   if (catalogError.value != null) {
@@ -458,6 +497,8 @@ function retry() {
     void reloadSuite("check-remote")
   }
 }
+
+const paginationAnchor = ref<HTMLElement | null>(null)
 </script>
 
 <template>
@@ -472,9 +513,9 @@ function retry() {
         <GameAccountSelect capability="suite" />
         <!-- Same placement as the profile page: the data time and its refresh sit together. -->
         <div v-if="suiteStatus !== 'idle'" class="flex items-center gap-1 text-xs text-muted-foreground">
-          <span v-if="uploadTimeText">{{ t("cardBox.dataAsOf", { time: uploadTimeText }) }}</span>
-          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="isLoading" @click="refresh">
-            <LucideRefreshCw class="size-3.5" />
+          <span v-if="uploadTimeText">{{ t("uploadedGameData.uploadedAt", { time: uploadTimeText }) }}</span>
+          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="isLoading || refreshing" @click="refresh">
+            <LucideRefreshCw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
             {{ t("cardBox.refresh") }}
           </Button>
         </div>
@@ -488,22 +529,23 @@ function retry() {
       </CardContent>
     </Card>
 
+    <!-- Missing upload: guidance, not an error -->
     <Card v-else-if="suiteDataMissing">
       <CardContent class="py-10">
         <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" />
       </CardContent>
     </Card>
 
-    <!-- Error -->
+    <!-- Backend / masterdata failure -->
     <Card v-else-if="hasError && !isLoading">
-      <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <p class="text-sm text-muted-foreground">{{ t("cardBox.loadError") }}</p>
-        <p v-if="errorDetail" class="max-w-full truncate font-mono text-xs text-muted-foreground">
-          {{ errorDetail }}
-        </p>
-        <Button variant="outline" size="sm" @click="retry">
-          {{ t("cardBox.retry") }}
-        </Button>
+      <CardContent>
+        <LoadErrorState
+          :description="errorMessage"
+          :detail="errorDetail"
+          :retry-label="t('cardBox.retry')"
+          :retrying="isLoading"
+          @retry="retry"
+        />
       </CardContent>
     </Card>
 
@@ -536,7 +578,7 @@ function retry() {
       <CardBoxOverview :summary="overall" :groups="overviewGroups" />
 
       <!-- View toolbar: grouping, sort, collapse -->
-      <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+      <div ref="paginationAnchor" class="flex flex-wrap items-center gap-x-6 gap-y-2">
         <div class="flex flex-wrap items-center gap-1.5">
           <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("cardBox.group.label") }}</span>
           <ToggleGroup type="single" variant="segment" size="sm" :model-value="groupMode" :aria-label="t('cardBox.group.label')" @update:model-value="setGroupMode">
@@ -574,44 +616,66 @@ function retry() {
         </CardContent>
       </Card>
 
-      <!-- Grouped by character -->
-      <template v-else-if="groupMode === 'character'">
-        <CardBoxSection
-          v-for="section in characterSections"
-          :id="section.key"
-          :key="section.key"
-          :name="section.name"
-          :icon-url="section.iconUrl"
-          :color="section.color"
-          :owned="section.owned"
-          :total="section.total"
-          :percent="section.percent"
-          :views="section.views"
-          :collapsed="collapsedKeys.has(section.key)"
-          @toggle="toggleSection(section.key)"
+      <template v-else>
+        <CatalogPagination
+          v-if="showPagination"
+          v-model:page="filters.page"
+          v-model:page-size="filters.size"
+          :total-pages="totalPages"
+          :total="visibleCards.length"
+          :page-size-options="CARD_BOX_PAGE_SIZES"
+          :anchor="paginationAnchor"
+        />
+
+        <!-- Grouped by character -->
+        <template v-if="groupMode === 'character'">
+          <CardBoxSection
+            v-for="section in characterSections"
+            :id="section.key"
+            :key="section.key"
+            :name="section.name"
+            :icon-url="section.iconUrl"
+            :color="section.color"
+            :owned="section.owned"
+            :total="section.total"
+            :percent="section.percent"
+            :views="section.views"
+            :collapsed="collapsedKeys.has(section.key)"
+            @toggle="toggleSection(section.key)"
+          />
+        </template>
+
+        <!-- Grouped by attribute -->
+        <template v-else-if="groupMode === 'attr'">
+          <CardBoxSection
+            v-for="section in attrSections"
+            :id="section.key"
+            :key="section.key"
+            :name="section.name"
+            :icon-url="section.iconUrl"
+            :color="section.color"
+            :owned="section.owned"
+            :total="section.total"
+            :percent="section.percent"
+            :views="section.views"
+            :collapsed="collapsedKeys.has(section.key)"
+            @toggle="toggleSection(section.key)"
+          />
+        </template>
+
+        <!-- Flat grid -->
+        <CardBoxCardGrid v-else :views="flatViews" />
+
+        <CatalogPagination
+          v-if="showPagination"
+          v-model:page="filters.page"
+          v-model:page-size="filters.size"
+          :total-pages="totalPages"
+          :total="visibleCards.length"
+          :page-size-options="CARD_BOX_PAGE_SIZES"
+          :anchor="paginationAnchor"
         />
       </template>
-
-      <!-- Grouped by attribute -->
-      <template v-else-if="groupMode === 'attr'">
-        <CardBoxSection
-          v-for="section in attrSections"
-          :id="section.key"
-          :key="section.key"
-          :name="section.name"
-          :icon-url="section.iconUrl"
-          :color="section.color"
-          :owned="section.owned"
-          :total="section.total"
-          :percent="section.percent"
-          :views="section.views"
-          :collapsed="collapsedKeys.has(section.key)"
-          @toggle="toggleSection(section.key)"
-        />
-      </template>
-
-      <!-- Flat grid -->
-      <CardBoxCardGrid v-else :views="flatViews" />
     </template>
   </div>
 </template>

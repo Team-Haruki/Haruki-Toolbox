@@ -3,6 +3,7 @@ import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { formatLocalizedDate } from "@/lib/date-time"
 import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
+import { isCatalogPermanentEnd } from "@/shared/components/catalog/types"
 import GachaAssetImage from "@/modules/gachas/components/GachaAssetImage.vue"
 import GachaPickupAvatars from "@/modules/gachas/components/GachaPickupAvatars.vue"
 import GachaTypeBadge from "@/modules/gachas/components/GachaTypeBadge.vue"
@@ -20,6 +21,13 @@ const blur = computed(() => props.tile.unreleased && props.blurUnreleased)
 function formatDate(value: number | null): string {
   return formatLocalizedDate(value, { year: "numeric", month: "2-digit", day: "2-digit" }, t("gachas.common.dateFallback"))
 }
+
+/** "2099/12/31" on a permanent pool reads as a typo; say "permanent" instead. */
+const endLabel = computed(() => (
+  isCatalogPermanentEnd(props.tile.gacha.endAt, Date.now())
+    ? t("catalog.status.permanent")
+    : formatDate(props.tile.gacha.endAt)
+))
 </script>
 
 <template>
@@ -45,7 +53,7 @@ function formatDate(value: number | null): string {
         <span class="font-mono text-[11px] text-muted-foreground">#{{ tile.gacha.id }}</span>
       </div>
       <p class="text-xs text-muted-foreground tabular-nums">
-        {{ formatDate(tile.gacha.startAt) }} – {{ formatDate(tile.gacha.endAt) }}
+        {{ formatDate(tile.gacha.startAt) }} – {{ endLabel }}
       </p>
     </div>
     <GachaPickupAvatars

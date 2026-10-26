@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
 import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+import { extractErrorMessage } from "@/lib/error-utils"
+import { describeDeckRecommendError } from "../lib/engine-errors"
 import { computed, ref, toRef, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import type { RecommendDeck } from "haruki-sekai-deck-recommend-cpp"
@@ -265,7 +267,10 @@ async function runDeck() {
   } catch (error) {
     missingDataType.value = getMissingUploadDataType(error)
     if (missingDataType.value) return
-    errorMessage.value = runner.error.value ?? (error instanceof Error ? error.message : String(error))
+    const described = runner.errorDescription.value ?? describeDeckRecommendError(error)
+    errorMessage.value = described.detail
+      ? `${described.message}\n${t("core.errors.detail", { detail: described.detail })}`
+      : described.message
   }
 }
 
@@ -304,7 +309,7 @@ async function loadRanking(deck: RecommendDeck, config: PlannerDeckConfig) {
     )
     selectedSong.value = rankingRows.value[0] ?? null
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error)
+    errorMessage.value = extractErrorMessage(error, t("deckRecommend.errors.unknown"))
   } finally {
     rankingLoading.value = false
   }
@@ -357,7 +362,7 @@ function save() {
         <DialogDescription>{{ t("eventPlanner.dialog.description") }}</DialogDescription>
       </DialogHeader>
 
-      <div class="flex flex-1 flex-col gap-4 overflow-y-auto pr-1">
+      <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
         <!-- Deck building against the selected event -->
         <div class="flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
           <div class="flex flex-wrap items-center gap-3">
@@ -388,7 +393,7 @@ function save() {
         </div>
 
         <MissingGameDataNotice v-if="missingDataType" :data-type="missingDataType" class="py-4" />
-        <p v-else-if="errorMessage" class="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+        <p v-else-if="errorMessage" class="whitespace-pre-line rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
           {{ errorMessage }}
         </p>
 
@@ -441,7 +446,7 @@ function save() {
           <p v-if="rankingLoading" class="py-4 text-center text-xs text-muted-foreground">
             {{ t("eventPlanner.dialog.rankingLoading") }}
           </p>
-          <div v-else class="max-h-64 overflow-y-auto rounded-md border">
+          <div v-else class="max-h-64 min-w-0 overflow-auto rounded-md border">
             <table class="w-full text-xs">
               <thead class="sticky top-0 bg-background">
                 <tr class="border-b text-muted-foreground">
@@ -492,16 +497,16 @@ function save() {
 
         <!-- Brush identity: loops per hour and boost are set on the brush list. -->
         <div v-if="selectedSong || editingBrush" class="flex flex-col gap-2 rounded-md border bg-muted/20 p-3">
-          <div class="grid items-start gap-3 sm:grid-cols-[1fr_auto]">
-            <div class="grid gap-1.5">
+          <div class="grid min-w-0 grid-cols-1 items-start gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <div class="grid min-w-0 grid-cols-1 gap-1.5">
               <Label for="planner-brush-name" class="text-xs text-muted-foreground">
                 {{ t("eventPlanner.dialog.brushName") }}
               </Label>
               <Input id="planner-brush-name" v-model="brushName" class="h-8" />
             </div>
-            <div class="grid gap-1.5">
+            <div class="grid min-w-0 grid-cols-1 gap-1.5">
               <p class="text-xs font-medium text-muted-foreground">{{ t("eventPlanner.dialog.brushColor") }}</p>
-              <div class="flex h-8 items-center gap-1.5">
+              <div class="flex min-h-8 flex-wrap items-center gap-1.5">
                 <button
                   v-for="color in PLANNER_BRUSH_COLORS"
                   :key="color"
@@ -521,7 +526,7 @@ function save() {
         </div>
       </div>
 
-      <div class="flex justify-end gap-2 border-t pt-3">
+      <div class="flex flex-wrap justify-end gap-2 border-t pt-3">
         <Button variant="outline" @click="emit('update:open', false)">
           {{ t("common.cancel") }}
         </Button>

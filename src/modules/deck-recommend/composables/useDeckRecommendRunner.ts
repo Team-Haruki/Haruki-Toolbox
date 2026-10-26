@@ -1,5 +1,8 @@
-import { computed, ref } from "vue"
+import { computed, ref, shallowRef } from "vue"
 import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+import type { ErrorDescription } from "@/lib/error-utils"
+import { describeDeckRecommendError } from "../lib/engine-errors"
+import { markDeckRecommendUserDataAvailable, markDeckRecommendUserDataMissing } from "../lib/user-data-availability"
 import type {
   MusicRecommendOptions,
   RecommendDeck,
@@ -7,8 +10,6 @@ import type {
   RecommendResult,
 } from "haruki-sekai-deck-recommend-cpp"
 import type { SekaiRegion } from "@/types"
-import { createRequestId } from "@/lib/request-id"
-import { readSekaiMasterFile, readSekaiMasterFiles, readSekaiMusicMetas } from "@/shared/sekai/cache"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useUserStore } from "@/shared/stores/user"
 import {
@@ -37,22 +38,28 @@ import {
 } from "../lib/recommend-results"
 import { mapRecommendBatchResults } from "../lib/recommend-batch"
 import {
-  createDeckRecommendWorker,
-  disposeDeckRecommendWorker,
-  loadDeckRecommendWorkerData,
-  postDeckRecommendWorkerRequest,
-  subscribeDeckRecommendWorker,
-  warmDeckRecommendWorker,
+  ensureDeckRecommendWorkerPool,
+  getDeckRecommendWorkerPoolSize,
+  growDeckRecommendWorkerPool,
+  preloadDeckRecommendWorkerData,
+  recommendBatchOnDeckRecommendWorker,
+  recommendMusicOnDeckRecommendWorker,
+  recommendOnDeckRecommendWorker,
+  scheduleDeckRecommendWorkerPoolDisposal,
 } from "../lib/recommend-worker-client"
 import type {
+  DeckRecommendWorkerDataSource,
   DeckRecommendWorkerEvent,
-  DeckRecommendWorkerLoadDataRequest,
-  DeckRecommendWorkerMusicRequest,
-  DeckRecommendWorkerRequest,
-  DeckRecommendWorkerRequestWithoutId,
-  DeckRecommendWorkerRecommendBatchRequest,
-  DeckRecommendWorkerRecommendRequest,
+  DeckRecommendWorkerProgressPhase,
 } from "../lib/worker-protocol"
+import {
+  getDeckRecommendDeviceProfile,
+  partitionDeckRecommendAlgorithms,
+  resolveDeckRecommendWorkerCount,
+  resolveDeckRecommendWorkerIdleDisposeMs,
+  type DeckRecommendExecutionMode,
+} from "../lib/worker-pool-policy"
+import { readDeckRecommendMainThreadMaster } from "../lib/main-thread-master"
 import type { CardTrainingConfig } from "../lib/training-config"
 import { normalizeDeckRecommendWorkerError } from "../lib/worker-error"
 import {
@@ -71,7 +78,7 @@ import {
 } from "../lib/user-data-preparation"
 import { prepareRecommendUserDataForWasm } from "../lib/wasm-user-data"
 
-export type DeckRecommendExecutionMode = "sequential" | "parallel"
+export type { DeckRecommendExecutionMode } from "../lib/worker-pool-policy"
 
 export type DeckRecommendRunnerAccount = {
   server: SekaiRegion
@@ -133,28 +140,60 @@ export type DeckRecommendAlgorithmTiming = {
   elapsedMs: number
 }
 
+export type DeckRecommendRunnerPhase = DeckRecommendWorkerProgressPhase | "fetching-user-data" | "preparing-data"
+
+/**
+ * The last successful run, kept at module level so leaving the page and
+ * coming back (same session) restores the result instead of forcing a
+ * re-run. Keyed by the serialized runner input, so any config change
+ * invalidates it.
+ */
+type DeckRecommendLastRun = {
+  key: string
+  result: TaggedRecommendResult
+  masterData: Record<string, unknown> | null
+  elapsedMs: number | null
+  dataElapsedMs: number | null
+  engineDataElapsedMs: number | null
+  recommendElapsedMs: number | null
+  resultExecutionMode: DeckRecommendExecutionMode | null
+  algorithmTimings: DeckRecommendAlgorithmTiming[]
+}
+
+let lastRun: DeckRecommendLastRun | null = null
+
+export function createDeckRecommendRunKey(input: DeckRecommendRunnerInput): string {
+  return JSON.stringify(input)
+}
+
 export function useDeckRecommendRunner() {
   const userStore = useUserStore()
   const sekaiDataStore = useSekaiDataStore()
+  const deviceProfile = getDeckRecommendDeviceProfile()
   const running = ref(false)
-  const phase = ref<Extract<DeckRecommendWorkerEvent, { type: "progress" }>["phase"] | "fetching-user-data" | "preparing-data" | null>(null)
+  const phase = ref<DeckRecommendRunnerPhase | null>(null)
+  /** Raw engine/transport message of the last failure (for support); render `errorDescription` instead. */
   const error = ref<string | null>(null)
+  /** The last failure in user language: what happened and what to try next. */
+  const errorDescription = shallowRef<ErrorDescription | null>(null)
   const userDataMissing = ref(false)
   const result = ref<TaggedRecommendResult | null>(null)
-  const masterData = ref<Record<string, unknown> | null>(null)
+  /**
+   * The page-side master tables of the last run (lite cards, characters,
+   * area items…). Non-reactive on purpose: it only feeds pure builders.
+   */
+  const masterData = shallowRef<Record<string, unknown> | null>(null)
   const elapsedMs = ref<number | null>(null)
   const dataElapsedMs = ref<number | null>(null)
   const engineDataElapsedMs = ref<number | null>(null)
   const recommendElapsedMs = ref<number | null>(null)
+  /** How the last run actually executed; the device may downgrade "parallel". */
   const resultExecutionMode = ref<DeckRecommendExecutionMode | null>(null)
   const algorithmTimings = ref<DeckRecommendAlgorithmTiming[]>([])
   const userDataRefreshing = ref(false)
   const userDataCacheHit = ref<boolean | null>(null)
   const userDataCacheUpdatedAt = ref<number | null>(null)
   const userDataRemoteUploadTime = ref<number | null>(null)
-  const preloadedDataKeys = new Set<string>()
-  const dataPreloadPromises = new Map<string, Promise<void>>()
-  const parallelWorkers: ParallelWorkerEntry[] = []
 
   const hasResult = computed(() => Boolean(result.value?.decks?.length))
 
@@ -168,6 +207,7 @@ export function useDeckRecommendRunner() {
     running.value = true
     phase.value = "preparing-data"
     error.value = null
+    errorDescription.value = null
     userDataMissing.value = false
     result.value = null
     masterData.value = null
@@ -175,23 +215,44 @@ export function useDeckRecommendRunner() {
     dataElapsedMs.value = null
     engineDataElapsedMs.value = null
     recommendElapsedMs.value = null
-    resultExecutionMode.value = input.executionMode
+    resultExecutionMode.value = null
     algorithmTimings.value = []
+    lastRun = null
 
     try {
       const runStartedAt = performance.now()
-      const dataStartedAt = performance.now()
-      const [recommendData, userDataResponse, profileData] = await Promise.all([
-        readRecommendCacheData(input.dataRegion, input.account.server),
-        fetchUserData(input),
-        input.useCurrentDeck ? fetchUserProfile(input) : Promise.resolve(null),
-      ])
-      dataElapsedMs.value = createElapsedMs(dataStartedAt)
-      masterData.value = recommendData.masterData
       const algorithms = normalizeAlgorithms(input.algorithms)
       if (algorithms.length === 0) {
         throw new Error("at least one algorithm is required")
       }
+      const workerCount = resolveDeckRecommendWorkerCount(input.executionMode, algorithms.length, deviceProfile)
+      resultExecutionMode.value = workerCount > 1 ? "parallel" : "sequential"
+
+      const source = await createWorkerDataSource(input.dataRegion, input.account.server)
+      // The engines read and parse the master set in their own threads while
+      // the page fetches user data, so neither waits for the other.
+      const engineDataStartedAt = performance.now()
+      let engineDataDone = false
+      const enginePreload = preloadDeckRecommendWorkerData(source, workerCount, {
+        onProgress: (progressPhase) => {
+          if (running.value && phase.value !== "recommending") {
+            phase.value = progressPhase
+          }
+        },
+      }).finally(() => {
+        engineDataDone = true
+      })
+      // A failure here surfaces when the run awaits it below.
+      enginePreload.catch(() => undefined)
+
+      const dataStartedAt = performance.now()
+      const [pageMaster, userDataResponse, profileData] = await Promise.all([
+        readDeckRecommendMainThreadMaster(input.dataRegion, source.masterVersion),
+        fetchUserData(input),
+        input.useCurrentDeck ? fetchUserProfile(input) : Promise.resolve(null),
+      ])
+      dataElapsedMs.value = createElapsedMs(dataStartedAt)
+      masterData.value = pageMaster
       const currentDeckCards = input.useCurrentDeck
         ? resolveCurrentDeckCardsWithProfile(userDataResponse.userData, profileData)
         : []
@@ -201,7 +262,7 @@ export function useDeckRecommendRunner() {
       const compactUserData = prepareRecommendUserDataForWasm(userDataResponse.userData)
       const preparedUserData = createPreparedDeckRecommendUserDataString({
         userData: compactUserData,
-        masterData: recommendData.masterData,
+        masterData: pageMaster,
         unitFilters: input.unitFilters,
         attrFilters: input.attrFilters,
         characterFilters: input.characterFilters,
@@ -217,73 +278,64 @@ export function useDeckRecommendRunner() {
         trainingConfig: input.trainingConfig,
       })
 
-      phase.value = "initializing"
-      const shouldRunInParallel = input.executionMode === "parallel"
-      const engineDataStartedAt = performance.now()
-      if (shouldRunInParallel) {
-        await ensureParallelRegionDataPreloaded(input.dataRegion, recommendData, algorithms.length)
-      } else {
-        await ensureRegionDataPreloaded(input.dataRegion, recommendData)
+      if (!engineDataDone) {
+        phase.value = "initializing"
       }
+      await enginePreload
       engineDataElapsedMs.value = createElapsedMs(engineDataStartedAt)
 
+      phase.value = "recommending"
       const recommendStartedAt = performance.now()
-      const workerInputs = algorithms.map((algorithm) => ({
+      const buildOptions = (algorithm: DeckRecommendAlgorithm) => buildDeckRecommendOptions({
+        region: input.dataRegion,
+        mode: input.mode,
+        target: input.target,
+        liveType: input.liveType,
         algorithm,
-        request: {
-          region: input.dataRegion,
-          masterVersion: recommendData.engineMasterVersion,
-          musicMetasKey: recommendData.musicMetasKey,
-          masterFileNames: recommendData.masterFileNames,
-          options: buildDeckRecommendOptions({
-            region: input.dataRegion,
-            mode: input.mode,
-            target: input.target,
-            liveType: input.liveType,
-            algorithm,
-            musicId: input.musicId,
-            musicDifficulty: input.difficulty,
-            eventId: input.eventId,
-            characterId: input.characterId,
-            forcedLeaderCharacterId: input.forcedLeaderCharacterId,
-            eventSimulation: input.eventSimulation,
-            targetBonuses: input.targetBonuses,
-            customBonusAttr: input.customBonusAttr,
-            customBonusCharacterIds: input.customBonusCharacterIds,
-            customBonusCharacterSupportUnits: input.customBonusCharacterSupportUnits,
-            filterOtherUnit: input.filterOtherUnit,
-            multiLiveTeammatePower: input.multiLiveTeammatePower,
-            multiLiveTeammateScoreUp: input.multiLiveTeammateScoreUp,
-            multiLiveScoreUpLowerBound: input.multiLiveScoreUpLowerBound,
-            boost: input.boost,
-            areaItemLevel: input.areaItemLevel,
-            limit: input.resultLimit ?? undefined,
-            timeoutMs: input.timeoutMs ?? undefined,
-            fixedCards: input.fixedCards,
-            currentDeckCards,
-            useCurrentDeck: input.useCurrentDeck,
-            fixedCharacters: input.fixedCharacters,
-            excludedCards: input.excludedCards,
-            singleCardConfigs: preparedUserData.singleCardConfigs,
-            skillOrderStrategy: input.skillOrderStrategy,
-            skillReferenceStrategy: input.skillReferenceStrategy,
-            specificSkillOrder: input.specificSkillOrder,
-            keepAfterTrainingState: input.keepAfterTrainingState,
-            supportMasterMax: input.supportMasterMax,
-            supportSkillMax: input.supportSkillMax,
-            trainingConfig: input.trainingConfig,
-            userData: preparedUserData.userDataString,
-          }),
-        },
-      }))
+        musicId: input.musicId,
+        musicDifficulty: input.difficulty,
+        eventId: input.eventId,
+        characterId: input.characterId,
+        forcedLeaderCharacterId: input.forcedLeaderCharacterId,
+        eventSimulation: input.eventSimulation,
+        targetBonuses: input.targetBonuses,
+        customBonusAttr: input.customBonusAttr,
+        customBonusCharacterIds: input.customBonusCharacterIds,
+        customBonusCharacterSupportUnits: input.customBonusCharacterSupportUnits,
+        filterOtherUnit: input.filterOtherUnit,
+        multiLiveTeammatePower: input.multiLiveTeammatePower,
+        multiLiveTeammateScoreUp: input.multiLiveTeammateScoreUp,
+        multiLiveScoreUpLowerBound: input.multiLiveScoreUpLowerBound,
+        boost: input.boost,
+        areaItemLevel: input.areaItemLevel,
+        limit: input.resultLimit ?? undefined,
+        timeoutMs: input.timeoutMs ?? undefined,
+        fixedCards: input.fixedCards,
+        currentDeckCards,
+        useCurrentDeck: input.useCurrentDeck,
+        fixedCharacters: input.fixedCharacters,
+        excludedCards: input.excludedCards,
+        singleCardConfigs: preparedUserData.singleCardConfigs,
+        skillOrderStrategy: input.skillOrderStrategy,
+        skillReferenceStrategy: input.skillReferenceStrategy,
+        specificSkillOrder: input.specificSkillOrder,
+        keepAfterTrainingState: input.keepAfterTrainingState,
+        supportMasterMax: input.supportMasterMax,
+        supportSkillMax: input.supportSkillMax,
+        trainingConfig: input.trainingConfig,
+        userData: preparedUserData.userDataString,
+      })
       const handleWorkerEvent = (event: DeckRecommendWorkerEvent) => {
-        if (event.type === "progress") {
+        if (event.type === "progress" && event.phase === "recommending") {
           phase.value = event.phase
         }
       }
-      const workerResults = shouldRunInParallel
-        ? await runAlgorithmsInParallel(workerInputs, handleWorkerEvent, parallelWorkers)
-        : await runAlgorithmsSequentially(workerInputs, handleWorkerEvent)
+      const workerResults = await runAlgorithmGroups(
+        partitionDeckRecommendAlgorithms(algorithms, workerCount),
+        source,
+        buildOptions,
+        handleWorkerEvent,
+      )
 
       const resultWithChallengeDelta = input.mode === "challenge"
         ? workerResults.map((workerResult) => ({
@@ -295,13 +347,26 @@ export function useDeckRecommendRunner() {
           }))
         : workerResults
       const resultWithLiveBoost = applyDeckRecommendLiveBoost(resultWithChallengeDelta, input.mode, input.boost)
-      result.value = mergeDeckRecommendResults(resultWithLiveBoost, input.mode, input.target)
-      algorithmTimings.value = workerResults.map(({ algorithm, elapsedMs }) => ({ algorithm, elapsedMs }))
+      const mergedResult = mergeDeckRecommendResults(resultWithLiveBoost, input.mode, input.target)
+      result.value = mergedResult
+      algorithmTimings.value = workerResults.map(({ algorithm, elapsedMs: algorithmElapsedMs }) => ({ algorithm, elapsedMs: algorithmElapsedMs }))
       recommendElapsedMs.value = createElapsedMs(recommendStartedAt)
       elapsedMs.value = createElapsedMs(runStartedAt)
+      lastRun = {
+        key: createDeckRecommendRunKey(input),
+        result: mergedResult,
+        masterData: masterData.value,
+        elapsedMs: elapsedMs.value,
+        dataElapsedMs: dataElapsedMs.value,
+        engineDataElapsedMs: engineDataElapsedMs.value,
+        recommendElapsedMs: recommendElapsedMs.value,
+        resultExecutionMode: resultExecutionMode.value,
+        algorithmTimings: algorithmTimings.value,
+      }
     } catch (runError) {
       const message = normalizeDeckRecommendWorkerError(runError)
       error.value = message
+      errorDescription.value = describeDeckRecommendError(runError)
       throw runError
     } finally {
       running.value = false
@@ -316,6 +381,7 @@ export function useDeckRecommendRunner() {
 
     phase.value = null
     error.value = null
+    errorDescription.value = null
     userDataMissing.value = false
     result.value = null
     masterData.value = null
@@ -327,31 +393,61 @@ export function useDeckRecommendRunner() {
     algorithmTimings.value = []
   }
 
+  /**
+   * Puts the last successful run back on screen when the current config
+   * matches the one it was computed with (e.g. after navigating away and
+   * back). Returns true when something was restored.
+   */
+  function restoreLastResult(input: DeckRecommendRunnerInput): boolean {
+    if (running.value || lastRun == null || lastRun.key !== createDeckRecommendRunKey(input)) {
+      return false
+    }
+    error.value = null
+    errorDescription.value = null
+    userDataMissing.value = false
+    result.value = lastRun.result
+    masterData.value = lastRun.masterData
+    elapsedMs.value = lastRun.elapsedMs
+    dataElapsedMs.value = lastRun.dataElapsedMs
+    engineDataElapsedMs.value = lastRun.engineDataElapsedMs
+    recommendElapsedMs.value = lastRun.recommendElapsedMs
+    resultExecutionMode.value = lastRun.resultExecutionMode
+    algorithmTimings.value = lastRun.algorithmTimings
+    return true
+  }
+
   async function fetchUserData(input: DeckRecommendRunnerInput) {
     phase.value = "fetching-user-data"
+    const server = input.account?.server ?? input.dataRegion
+    const uid = input.account?.uid ?? ""
+    const mode = resolveRecommendDataMode(input.mode)
     try {
-      const result = await fetchDeckRecommendUserDataWithCache({
+      const fetched = await fetchDeckRecommendUserDataWithCache({
         toolboxUserId: userStore.userId || "",
-        server: input.account?.server ?? input.dataRegion,
-        gameUserId: input.account?.uid ?? "",
-        mode: resolveRecommendDataMode(input.mode),
+        server,
+        gameUserId: uid,
+        mode,
       }, { strategy: "prefer-cache" })
-      applyUserDataCacheStatus(result)
-      return result.data
+      applyUserDataCacheStatus(fetched)
+      markDeckRecommendUserDataAvailable(server, uid, mode)
+      return fetched.data
     } catch (fetchError) {
       userDataMissing.value = getMissingUploadDataType(fetchError) != null
+      if (userDataMissing.value) {
+        markDeckRecommendUserDataMissing(server, uid, mode)
+      }
       throw fetchError
     }
   }
 
   async function fetchUserProfile(input: DeckRecommendRunnerInput): Promise<unknown | null> {
     try {
-      const result = await fetchDeckRecommendProfileWithCache({
+      const fetched = await fetchDeckRecommendProfileWithCache({
         toolboxUserId: userStore.userId || "",
         server: input.account?.server ?? input.dataRegion,
         gameUserId: input.account?.uid ?? "",
       })
-      return result.data
+      return fetched.data
     } catch {
       return null
     }
@@ -367,234 +463,60 @@ export function useDeckRecommendRunner() {
 
     userDataRefreshing.value = true
     try {
-      const result = await fetchDeckRecommendUserDataWithCache({
+      const fetched = await fetchDeckRecommendUserDataWithCache({
         toolboxUserId: userStore.userId,
         server: input.account.server,
         gameUserId: input.account.uid,
         mode: resolveRecommendDataMode(input.mode),
       })
-      applyUserDataCacheStatus(result)
-      return result
+      applyUserDataCacheStatus(fetched)
+      return fetched
     } finally {
       userDataRefreshing.value = false
     }
   }
 
+  /**
+   * Instantiates engine workers (WASM only, no data) so the first run does
+   * not pay the module start-up. With `count` the pool is resized to exactly
+   * that many engines; without it, one engine is guaranteed and any larger
+   * pool is left alone.
+   */
+  function preloadEngine(count?: number): Promise<void> {
+    return count == null ? growDeckRecommendWorkerPool(1) : ensureDeckRecommendWorkerPool(count)
+  }
+
+  /**
+   * Loads the region's master set into the first `workerCount` engines (the
+   * current pool when omitted). The workers read IndexedDB themselves, so
+   * this costs the page nothing but the descriptor.
+   */
   async function preloadRegionData(
     region: SekaiRegion,
     accountHonorRegion: SekaiRegion = region,
     isCurrent: () => boolean = () => true,
+    workerCount: number = Math.max(1, getDeckRecommendWorkerPoolSize()),
   ) {
     const regionState = sekaiDataStore.regionStates[region]
     if (!regionState.masterFetchVersion || !regionState.musicMetasUpdatedAt) {
       return
     }
 
-    const dataKey = createRecommendDataKey(
-      region,
-      regionState.masterFetchVersion,
-      accountHonorRegion,
-      sekaiDataStore.regionStates[accountHonorRegion].masterFetchVersion ?? "unknown-honors",
-      createMusicMetasKey(regionState.musicMetasUpdatedAt),
-      SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES,
-    )
-    if (preloadedDataKeys.has(dataKey)) {
-      return
-    }
-
-    const runningPreload = dataPreloadPromises.get(dataKey)
-    if (runningPreload) {
-      return runningPreload
-    }
-
-    const preloadPromise = (async () => {
-      const recommendData = await readRecommendCacheData(region, accountHonorRegion)
-      const loadedDataKey = createRecommendDataKey(
-        region,
-        recommendData.masterVersion,
-        recommendData.accountHonorRegion,
-        recommendData.accountHonorMasterVersion ?? "unknown-honors",
-        recommendData.musicMetasKey,
-        recommendData.masterFileNames,
-      )
-      if (loadedDataKey !== dataKey || !isCurrent()) {
-        return
-      }
-
-      await loadRecommendDataIntoWorker(region, recommendData, dataKey, isCurrent)
-    })().finally(() => {
-      dataPreloadPromises.delete(dataKey)
-    })
-
-    dataPreloadPromises.set(dataKey, preloadPromise)
-    return preloadPromise
-  }
-
-  async function preloadParallelEngines(count: number) {
-    await ensureParallelWorkerPool(count)
-  }
-
-  async function preloadParallelRegionData(
-    region: SekaiRegion,
-    count: number,
-    accountHonorRegion: SekaiRegion = region,
-    isCurrent: () => boolean = () => true,
-  ) {
-    const regionState = sekaiDataStore.regionStates[region]
-    if (!regionState.masterFetchVersion || !regionState.musicMetasUpdatedAt) {
-      await ensureParallelWorkerPool(count)
-      return
-    }
-
-    const recommendData = await readRecommendCacheData(region, accountHonorRegion)
-    await ensureParallelRegionDataPreloaded(region, recommendData, count, isCurrent)
-  }
-
-  async function ensureParallelRegionDataPreloaded(
-    region: SekaiRegion,
-    recommendData: RecommendCacheData,
-    count: number,
-    isCurrent: () => boolean = () => true,
-  ) {
-    await ensureParallelWorkerPool(count)
-    const dataKey = createRecommendDataKey(
-      region,
-      recommendData.masterVersion,
-      recommendData.accountHonorRegion,
-      recommendData.accountHonorMasterVersion ?? "unknown-honors",
-      recommendData.musicMetasKey,
-      recommendData.masterFileNames,
-    )
+    const source = await createWorkerDataSource(region, accountHonorRegion)
     if (!isCurrent()) {
       return
     }
-
-    await Promise.all(parallelWorkers.slice(0, normalizeParallelWorkerCount(count)).map((entry) =>
-      loadRecommendDataIntoParallelWorker(entry, region, recommendData, dataKey, isCurrent),
-    ))
+    await preloadDeckRecommendWorkerData(source, workerCount, { isCurrent })
   }
 
-  async function ensureRegionDataPreloaded(
-    region: SekaiRegion,
-    recommendData: RecommendCacheData,
-    isCurrent: () => boolean = () => true,
-  ) {
-    const dataKey = createRecommendDataKey(
-      region,
-      recommendData.masterVersion,
-      recommendData.accountHonorRegion,
-      recommendData.accountHonorMasterVersion ?? "unknown-honors",
-      recommendData.musicMetasKey,
-      recommendData.masterFileNames,
-    )
-    if (preloadedDataKeys.has(dataKey)) {
-      return
-    }
-
-    const runningPreload = dataPreloadPromises.get(dataKey)
-    if (runningPreload) {
-      await runningPreload
-      return
-    }
-
-    const preloadPromise = loadRecommendDataIntoWorker(region, recommendData, dataKey, isCurrent).finally(() => {
-      dataPreloadPromises.delete(dataKey)
-    })
-
-    dataPreloadPromises.set(dataKey, preloadPromise)
-    await preloadPromise
-  }
-
-  async function loadRecommendDataIntoWorker(
-    region: SekaiRegion,
-    recommendData: RecommendCacheData,
-    dataKey: string,
-    isCurrent: () => boolean,
-  ) {
-    if (!isCurrent()) {
-      return
-    }
-
-    await loadDeckRecommendWorkerData({
-      region,
-      masterVersion: recommendData.engineMasterVersion,
-      musicMetasKey: recommendData.musicMetasKey,
-      masterFileNames: recommendData.masterFileNames,
-      masterData: recommendData.masterData,
-      musicMetas: recommendData.musicMetas,
-    }, (progressPhase) => {
-      if (running.value) {
-        phase.value = progressPhase
-      }
-    })
-    if (isCurrent()) {
-      preloadedDataKeys.add(dataKey)
-    }
-  }
-
-  async function loadRecommendDataIntoParallelWorker(
-    entry: ParallelWorkerEntry,
-    region: SekaiRegion,
-    recommendData: RecommendCacheData,
-    dataKey: string,
-    isCurrent: () => boolean,
-  ) {
-    if (entry.loadedDataKeys.has(dataKey)) {
-      return
-    }
-
-    const runningPreload = entry.dataLoadPromises.get(dataKey)
-    if (runningPreload) {
-      await runningPreload
-      return
-    }
-
-    const preloadPromise = (async () => {
-      await entry.warmPromise
-      if (!isCurrent()) {
-        return
-      }
-
-      await loadDataOnDedicatedWorker(entry.worker, {
-        region,
-        masterVersion: recommendData.engineMasterVersion,
-        musicMetasKey: recommendData.musicMetasKey,
-        masterFileNames: recommendData.masterFileNames,
-        masterData: recommendData.masterData,
-        musicMetas: recommendData.musicMetas,
-      })
-      if (isCurrent()) {
-        entry.loadedDataKeys.add(dataKey)
-      }
-    })().finally(() => {
-      entry.dataLoadPromises.delete(dataKey)
-    })
-
-    entry.dataLoadPromises.set(dataKey, preloadPromise)
-    await preloadPromise
-  }
-
-  async function ensureParallelWorkerPool(count: number) {
-    const targetCount = normalizeParallelWorkerCount(count)
-    while (parallelWorkers.length < targetCount) {
-      parallelWorkers.push(createParallelWorkerEntry())
-    }
-
-    const extraWorkers = parallelWorkers.splice(targetCount)
-    await Promise.allSettled(extraWorkers.map(disposeParallelWorkerEntry))
-    await Promise.all(parallelWorkers.slice(0, targetCount).map((entry) => entry.warmPromise))
-  }
-
-  async function disposeParallelEngines() {
-    const workers = parallelWorkers.splice(0)
-    await Promise.allSettled(workers.map(disposeParallelWorkerEntry))
-  }
-
-  async function disposeEngines() {
-    await Promise.allSettled([
-      disposeDeckRecommendWorker(),
-      disposeParallelEngines(),
-    ])
+  /**
+   * Releases the engines once no page needs them: immediately on memory
+   * constrained devices, after an idle period elsewhere so a quick return to
+   * the page finds them still loaded.
+   */
+  function disposeEngine(): Promise<void> {
+    scheduleDeckRecommendWorkerPoolDisposal(resolveDeckRecommendWorkerIdleDisposeMs(deviceProfile))
+    return Promise.resolve()
   }
 
   /**
@@ -607,16 +529,10 @@ export function useDeckRecommendRunner() {
     deck: RecommendDeck
     options: MusicRecommendOptions
   }): Promise<RecommendMusic[]> {
-    const recommendData = await readRecommendCacheData(
-      input.dataRegion,
-      input.accountServer ?? input.dataRegion,
-    )
-    await ensureRegionDataPreloaded(input.dataRegion, recommendData)
-    return recommendMusicWithSharedWorker({
-      region: input.dataRegion,
-      masterVersion: recommendData.engineMasterVersion,
-      musicMetasKey: recommendData.musicMetasKey,
-      masterFileNames: recommendData.masterFileNames,
+    const source = await createWorkerDataSource(input.dataRegion, input.accountServer ?? input.dataRegion)
+    await preloadDeckRecommendWorkerData(source, 1)
+    return recommendMusicOnDeckRecommendWorker({
+      data: source,
       options: input.options,
       // Callers usually pass a deck read from the reactive result ref; Vue
       // proxies cannot be structured-cloned into the worker.
@@ -624,16 +540,57 @@ export function useDeckRecommendRunner() {
     })
   }
 
-  function applyUserDataCacheStatus(result: DeckRecommendUserDataFetchResult) {
-    userDataCacheHit.value = result.cacheable ? result.cacheHit : null
-    userDataCacheUpdatedAt.value = result.cacheUpdatedAt
-    userDataRemoteUploadTime.value = result.remoteUploadTime
+  /**
+   * Describes the region's current master set for the workers. Throws the
+   * same "not ready" messages the engine errors map to user copy.
+   */
+  async function createWorkerDataSource(
+    region: SekaiRegion,
+    accountHonorRegion: SekaiRegion = region,
+  ): Promise<DeckRecommendWorkerDataSource> {
+    if (sekaiDataStore.regionStates[region].checkedAt == null) {
+      await sekaiDataStore.loadRegionCacheState(region)
+    }
+    if (sekaiDataStore.regionStates[accountHonorRegion].checkedAt == null) {
+      await sekaiDataStore.loadRegionCacheState(accountHonorRegion)
+    }
+    const regionState = sekaiDataStore.regionStates[region]
+    if (!regionState.masterFetchVersion) {
+      throw new Error("master data is not ready")
+    }
+    if (regionState.musicMetasUpdatedAt == null) {
+      throw new Error("music metas are not ready")
+    }
+    const missingFiles = SEKAI_DATA_RECOMMEND_MASTER_FILES.filter((fileName) => !regionState.files.includes(fileName))
+    if (missingFiles.length > 0) {
+      throw new Error(`master data is missing: ${missingFiles.join(", ")}`)
+    }
+    const accountRegionState = sekaiDataStore.regionStates[accountHonorRegion]
+    if (!accountRegionState.masterFetchVersion) {
+      throw new Error("account server master data is not ready")
+    }
+
+    return {
+      region,
+      masterVersion: regionState.masterFetchVersion,
+      masterFileNames: SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES.filter((fileName) => regionState.files.includes(fileName)),
+      musicMetasKey: String(regionState.musicMetasUpdatedAt),
+      honorRegion: accountHonorRegion,
+      honorMasterVersion: accountRegionState.masterFetchVersion,
+    }
+  }
+
+  function applyUserDataCacheStatus(fetched: DeckRecommendUserDataFetchResult) {
+    userDataCacheHit.value = fetched.cacheable ? fetched.cacheHit : null
+    userDataCacheUpdatedAt.value = fetched.cacheUpdatedAt
+    userDataRemoteUploadTime.value = fetched.remoteUploadTime
   }
 
   return {
     running,
     phase,
     error,
+    errorDescription,
     userDataMissing,
     result,
     masterData,
@@ -648,120 +605,16 @@ export function useDeckRecommendRunner() {
     userDataCacheUpdatedAt,
     userDataRemoteUploadTime,
     hasResult,
-    preloadEngine: warmDeckRecommendWorker,
+    deviceProfile,
+    preloadEngine,
     preloadRegionData,
-    preloadParallelEngines,
-    preloadParallelRegionData,
-    disposeEngine: disposeEngines,
+    disposeEngine,
     run,
     reset,
+    restoreLastResult,
     refreshUserData,
     recommendMusicForDeck,
   }
-}
-
-type RecommendCacheData = {
-  masterVersion: string
-  engineMasterVersion: string
-  accountHonorRegion: SekaiRegion
-  accountHonorMasterVersion: string | null
-  musicMetasKey: string | null
-  masterFileNames: string[]
-  masterData: Record<string, unknown>
-  musicMetas: unknown
-}
-
-async function readRecommendCacheData(
-  region: SekaiRegion,
-  accountHonorRegion: SekaiRegion = region,
-): Promise<RecommendCacheData> {
-  const sekaiDataStore = useSekaiDataStore()
-  if (sekaiDataStore.regionStates[region].checkedAt == null) {
-    await sekaiDataStore.loadRegionCacheState(region)
-  }
-  if (sekaiDataStore.regionStates[accountHonorRegion].checkedAt == null) {
-    await sekaiDataStore.loadRegionCacheState(accountHonorRegion)
-  }
-  const regionState = sekaiDataStore.regionStates[region]
-  if (!regionState.masterFetchVersion) {
-    throw new Error("master data is not ready")
-  }
-  const accountRegionState = sekaiDataStore.regionStates[accountHonorRegion]
-  if (!accountRegionState.masterFetchVersion) {
-    throw new Error("account server master data is not ready")
-  }
-
-  const [masterData, musicMetas] = await Promise.all([
-    readSekaiMasterFiles(region, SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES, regionState.masterFetchVersion),
-    readSekaiMusicMetas(region),
-  ])
-  if (!musicMetas) {
-    throw new Error("music metas are not ready")
-  }
-
-  const missingFiles = SEKAI_DATA_RECOMMEND_MASTER_FILES.filter((fileName) => masterData[fileName] == null)
-  if (missingFiles.length > 0) {
-    throw new Error(`master data is missing: ${missingFiles.join(", ")}`)
-  }
-  if (accountHonorRegion !== region) {
-    const honors = await readSekaiMasterFile(accountHonorRegion, "honors", accountRegionState.masterFetchVersion)
-    if (!honors) {
-      throw new Error("account server honors master data is not ready")
-    }
-    masterData.honors = honors
-  }
-
-  return {
-    masterVersion: regionState.masterFetchVersion,
-    engineMasterVersion: createEngineMasterVersion(regionState.masterFetchVersion, accountHonorRegion, accountRegionState.masterFetchVersion),
-    accountHonorRegion,
-    accountHonorMasterVersion: accountRegionState.masterFetchVersion,
-    musicMetasKey: createMusicMetasKey(regionState.musicMetasUpdatedAt),
-    masterFileNames: [...SEKAI_DATA_RECOMMEND_FETCH_MASTER_FILES],
-    masterData,
-    musicMetas,
-  }
-}
-
-function createMusicMetasKey(updatedAt: number | null): string | null {
-  return updatedAt == null ? null : String(updatedAt)
-}
-
-function createEngineMasterVersion(
-  masterVersion: string,
-  accountHonorRegion: SekaiRegion,
-  accountHonorMasterVersion: string | null,
-): string {
-  return [
-    masterVersion,
-    `honors:${accountHonorRegion}:${accountHonorMasterVersion ?? "unknown-honors"}`,
-  ].join("|")
-}
-
-function createElapsedMs(startedAt: number): number {
-  return Math.round(performance.now() - startedAt)
-}
-
-function createRecommendDataKey(
-  region: SekaiRegion,
-  masterVersion: string,
-  accountHonorRegion: SekaiRegion,
-  accountHonorMasterVersion: string,
-  musicMetasKey: string | null,
-  masterFileNames: readonly string[],
-): string {
-  return [
-    region,
-    masterVersion,
-    `honors:${accountHonorRegion}:${accountHonorMasterVersion}`,
-    musicMetasKey ?? "unknown-music-metas",
-    masterFileNames.slice().sort((left, right) => left.localeCompare(right)).join(","),
-  ].join(":")
-}
-
-type AlgorithmWorkerInput = {
-  algorithm: DeckRecommendAlgorithm
-  request: Omit<DeckRecommendWorkerRecommendRequest, "type" | "requestId">
 }
 
 type AlgorithmWorkerResult = {
@@ -770,332 +623,39 @@ type AlgorithmWorkerResult = {
   elapsedMs: number
 }
 
-async function runAlgorithmsSequentially(
-  workerInputs: readonly AlgorithmWorkerInput[],
+/**
+ * Runs each algorithm group on its own engine; a group with several
+ * algorithms is one batch request so the engine shares its prepared state.
+ */
+async function runAlgorithmGroups(
+  groups: readonly (readonly DeckRecommendAlgorithm[])[],
+  source: DeckRecommendWorkerDataSource,
+  buildOptions: (algorithm: DeckRecommendAlgorithm) => ReturnType<typeof buildDeckRecommendOptions>,
   onEvent: (event: DeckRecommendWorkerEvent) => void,
 ): Promise<AlgorithmWorkerResult[]> {
-  if (workerInputs.length === 1) {
-    const { algorithm, request } = workerInputs[0]
-    const workerResult = await recommendWithSharedWorker(request, onEvent)
-    return [{
-      algorithm,
-      result: workerResult.result,
-      elapsedMs: workerResult.elapsedMs,
-    }]
-  }
-
-  const batchResults = await recommendBatchWithSharedWorker(workerInputs.map(({ request }) => request), onEvent)
-  return mapRecommendBatchResults(workerInputs.map(({ algorithm }) => algorithm), batchResults)
-}
-
-function runAlgorithmsInParallel(
-  workerInputs: readonly AlgorithmWorkerInput[],
-  onEvent: (event: DeckRecommendWorkerEvent) => void,
-  parallelWorkers: readonly ParallelWorkerEntry[],
-): Promise<AlgorithmWorkerResult[]> {
-  return Promise.all(workerInputs.map(async ({ algorithm, request }, index) => {
-    const worker = parallelWorkers[index]
-    if (!worker) {
-      throw new Error("parallel recommend worker is not ready")
+  const groupResults = await Promise.all(groups.map(async (group, index) => {
+    if (group.length === 1) {
+      const algorithm = group[0]
+      const { result, elapsedMs } = await recommendOnDeckRecommendWorker(index, {
+        data: source,
+        options: buildOptions(algorithm),
+      }, onEvent)
+      return [{ algorithm, result, elapsedMs }]
     }
 
-    const workerResult = await recommendWithPooledWorker(worker, request, onEvent)
-    return {
-      algorithm,
-      result: workerResult.result,
-      elapsedMs: workerResult.elapsedMs,
-    }
+    const { results } = await recommendBatchOnDeckRecommendWorker(index, {
+      data: source,
+      optionsList: group.map(buildOptions),
+    }, onEvent)
+    return mapRecommendBatchResults(group, results)
   }))
+  return groupResults.flat()
 }
 
 function normalizeAlgorithms(algorithms: readonly DeckRecommendAlgorithm[]): DeckRecommendAlgorithm[] {
   return [...new Set(algorithms)]
 }
 
-function recommendWithSharedWorker(
-  input: Omit<DeckRecommendWorkerRecommendRequest, "type" | "requestId">,
-  onEvent: (event: DeckRecommendWorkerEvent) => void,
-): Promise<{ result: RecommendResult; elapsedMs: number }> {
-  return new Promise((resolve, reject) => {
-    const requestId = createRequestId()
-
-    const unsubscribe = subscribeDeckRecommendWorker((event) => {
-      if (event.requestId !== requestId) {
-        if (event.requestId === "worker" && event.type === "error") {
-          unsubscribe?.()
-          reject(new Error(event.message))
-        }
-        return
-      }
-
-      onEvent(event)
-      if (event.type === "done") {
-        unsubscribe?.()
-        resolve({
-          result: event.result,
-          elapsedMs: event.elapsedMs,
-        })
-        return
-      }
-
-      if (event.type === "error") {
-        unsubscribe?.()
-        reject(new Error(event.message))
-      }
-    })
-
-    postDeckRecommendWorkerRequest({
-      type: "recommend",
-      requestId,
-      ...input,
-    })
-  })
-}
-
-function recommendMusicWithSharedWorker(
-  input: Omit<DeckRecommendWorkerMusicRequest, "type" | "requestId">,
-): Promise<RecommendMusic[]> {
-  return new Promise((resolve, reject) => {
-    const requestId = createRequestId()
-
-    const unsubscribe = subscribeDeckRecommendWorker((event) => {
-      if (event.requestId !== requestId) {
-        if (event.requestId === "worker" && event.type === "error") {
-          unsubscribe?.()
-          reject(new Error(event.message))
-        }
-        return
-      }
-
-      if (event.type === "music-done") {
-        unsubscribe?.()
-        resolve(event.results)
-        return
-      }
-
-      if (event.type === "error") {
-        unsubscribe?.()
-        reject(new Error(event.message))
-      }
-    })
-
-    postDeckRecommendWorkerRequest({
-      type: "recommend-music",
-      requestId,
-      ...input,
-    })
-  })
-}
-
-function recommendBatchWithSharedWorker(
-  inputs: readonly Omit<DeckRecommendWorkerRecommendRequest, "type" | "requestId">[],
-  onEvent: (event: DeckRecommendWorkerEvent) => void,
-): Promise<RecommendResult[]> {
-  const [firstInput] = inputs
-  if (!firstInput) {
-    return Promise.resolve([])
-  }
-
-  return new Promise((resolve, reject) => {
-    const requestId = createRequestId()
-
-    const unsubscribe = subscribeDeckRecommendWorker((event) => {
-      if (event.requestId !== requestId) {
-        if (event.requestId === "worker" && event.type === "error") {
-          unsubscribe?.()
-          reject(new Error(event.message))
-        }
-        return
-      }
-
-      onEvent(event)
-      if (event.type === "batch-done") {
-        unsubscribe?.()
-        resolve(event.results)
-        return
-      }
-
-      if (event.type === "error") {
-        unsubscribe?.()
-        reject(new Error(event.message))
-      }
-    })
-
-    postDeckRecommendWorkerRequest({
-      type: "recommend-batch",
-      requestId,
-      region: firstInput.region,
-      masterVersion: firstInput.masterVersion,
-      musicMetasKey: firstInput.musicMetasKey,
-      masterFileNames: firstInput.masterFileNames,
-      masterData: firstInput.masterData,
-      musicMetas: firstInput.musicMetas,
-      optionsList: inputs.map(({ options }) => options),
-    } satisfies DeckRecommendWorkerRecommendBatchRequest)
-  })
-}
-
-function recommendWithPooledWorker(
-  entry: ParallelWorkerEntry,
-  input: Omit<DeckRecommendWorkerRecommendRequest, "type" | "requestId">,
-  onEvent: (event: DeckRecommendWorkerEvent) => void,
-): Promise<{ result: RecommendResult; elapsedMs: number }> {
-  return new Promise((resolve, reject) => {
-    const requestId = createRequestId()
-    const worker = entry.worker
-
-    let cleanup = () => {}
-    const handleMessage = (messageEvent: MessageEvent<DeckRecommendWorkerEvent>) => {
-      const event = messageEvent.data
-      if (event.requestId !== requestId) {
-        return
-      }
-
-      onEvent(event)
-      if (event.type === "done") {
-        cleanup()
-        resolve({
-          result: event.result,
-          elapsedMs: event.elapsedMs,
-        })
-        return
-      }
-
-      if (event.type === "error") {
-        cleanup()
-        reject(new Error(event.message))
-      }
-    }
-
-    const handleError = (event: ErrorEvent) => {
-      cleanup()
-      reject(new Error(event.message || "Deck recommend worker failed"))
-    }
-
-    cleanup = () => {
-      worker.removeEventListener("message", handleMessage)
-      worker.removeEventListener("error", handleError)
-    }
-
-    worker.addEventListener("message", handleMessage)
-    worker.addEventListener("error", handleError)
-
-    entry.warmPromise
-      .then(() => {
-        worker.postMessage({
-          type: "recommend",
-          requestId,
-          ...input,
-        } satisfies DeckRecommendWorkerRecommendRequest)
-      })
-      .catch((error) => {
-        cleanup()
-        reject(error instanceof Error ? error : new Error(normalizeDeckRecommendWorkerError(error)))
-      })
-  })
-}
-
-type ParallelWorkerEntry = {
-  worker: Worker
-  warmPromise: Promise<void>
-  loadedDataKeys: Set<string>
-  dataLoadPromises: Map<string, Promise<void>>
-}
-
-function createParallelWorkerEntry(): ParallelWorkerEntry {
-  const worker = createDeckRecommendWorker()
-  return {
-    worker,
-    warmPromise: runDedicatedWorkerLifecycleRequest(worker, { type: "preload" }, "ready"),
-    loadedDataKeys: new Set<string>(),
-    dataLoadPromises: new Map<string, Promise<void>>(),
-  }
-}
-
-async function disposeParallelWorkerEntry(entry: ParallelWorkerEntry): Promise<void> {
-  try {
-    await runDedicatedWorkerLifecycleRequest(entry.worker, { type: "dispose" }, "disposed", 1000)
-  } finally {
-    entry.worker.terminate()
-  }
-}
-
-function loadDataOnDedicatedWorker(
-  worker: Worker,
-  input: Omit<DeckRecommendWorkerLoadDataRequest, "type" | "requestId">,
-) {
-  // Engine-side master data parsing can far exceed the default lifecycle timeout.
-  return runDedicatedWorkerLifecycleRequest(worker, { type: "load-data", ...input }, "data-loaded", 180000)
-}
-
-function runDedicatedWorkerLifecycleRequest(
-  worker: Worker,
-  request: DeckRecommendWorkerRequestWithoutId,
-  successType: Extract<DeckRecommendWorkerEvent["type"], "ready" | "data-loaded" | "disposed">,
-  timeoutMs = 30000,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const requestId = createRequestId()
-    let timeoutId: ReturnType<typeof setTimeout> | null = null
-    let finished = false
-
-    const cleanup = () => {
-      worker.removeEventListener("message", handleMessage)
-      worker.removeEventListener("error", handleError)
-      if (timeoutId != null) {
-        clearTimeout(timeoutId)
-      }
-    }
-    const finish = (error?: Error) => {
-      if (finished) {
-        return
-      }
-
-      finished = true
-      cleanup()
-      if (error) {
-        reject(error)
-        return
-      }
-
-      resolve()
-    }
-    const handleMessage = (messageEvent: MessageEvent<DeckRecommendWorkerEvent>) => {
-      const event = messageEvent.data
-      if (event.requestId !== requestId) {
-        return
-      }
-
-      if (event.type === successType) {
-        finish()
-        return
-      }
-
-      if (event.type === "error") {
-        finish(new Error(event.message))
-      }
-    }
-    const handleError = (event: ErrorEvent) => {
-      finish(new Error(event.message || "Deck recommend worker failed"))
-    }
-
-    worker.addEventListener("message", handleMessage)
-    worker.addEventListener("error", handleError)
-    timeoutId = setTimeout(() => {
-      if (successType === "disposed") {
-        finish()
-        return
-      }
-
-      finish(new Error(`Deck recommend worker ${request.type} timed out`))
-    }, timeoutMs)
-    worker.postMessage({
-      ...request,
-      requestId,
-    } satisfies DeckRecommendWorkerRequest)
-  })
-}
-
-function normalizeParallelWorkerCount(count: number): number {
-  return Math.max(0, Math.floor(count))
+function createElapsedMs(startedAt: number): number {
+  return Math.round(performance.now() - startedAt)
 }

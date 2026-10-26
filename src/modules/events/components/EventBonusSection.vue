@@ -92,7 +92,10 @@ function rarityLabel(rarity: string): string {
     </div>
     <div v-else-if="rarityTable.length > 0" class="flex flex-col gap-2">
       <p class="text-xs font-medium text-muted-foreground">{{ t("eventCatalog.bonus.rarityTable") }}</p>
-      <div class="overflow-x-auto rounded-md border">
+      <!-- No `overflow-x-auto` here: the shared Table owns the scroll
+           container, and with it the edge fades that show more columns hide
+           off-screen on phones. -->
+      <div class="overflow-hidden rounded-md border">
         <Table class="text-xs sm:text-sm">
           <TableHeader>
             <TableRow>

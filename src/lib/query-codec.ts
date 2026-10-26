@@ -138,6 +138,16 @@ export function mergeQuery(
   return merged
 }
 
+/** An ISO-8601 (or any `Date`-parsable) timestamp from the query, or null when absent or invalid. */
+export function readQueryDate(value: LocationQueryValue | LocationQueryValue[] | undefined): Date | null {
+  const raw = readQueryString(value)
+  if (raw == null) {
+    return null
+  }
+  const date = new Date(raw)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
 /** Stable string form of a write record, for change detection. */
 export function serializeQueryRecord(record: QueryWriteRecord): string {
   return Object.keys(record)

@@ -14,6 +14,7 @@ const chipContext = {
   unitLabel: (value: string) => `unit:${value}`,
   attrLabel: (value: string) => `attr:${value}`,
   characterName: (id: number) => `char${id}`,
+  charactersReady: true,
 }
 
 const t = (key: string, params?: Record<string, unknown>) => `${key}${params ? `:${params.value}` : ""}`
@@ -112,6 +113,18 @@ describe("buildEventsActiveChips", () => {
     expect(chips[0].label).toBe("eventCatalog.chips.search:wonder")
     expect(chips[2].label).toBe("eventCatalog.chips.status:status:upcoming / status:ongoing")
     expect(chips[5].label).toBe("eventCatalog.chips.characters:char9 / char10")
+    expect(chips[5].pending).toBe(false)
+    // Loading: skeleton. Loaded but unknown: a removable "#9" chip.
+    expect(buildEventsActiveChips(
+      { ...createDefaultEventsQuery(), chars: [9] },
+      { ...chipContext, characterName: () => null, charactersReady: false },
+      t,
+    )[0]).toEqual({ key: "chars", label: "eventCatalog.chips.characters:#9", pending: true })
+    expect(buildEventsActiveChips(
+      { ...createDefaultEventsQuery(), chars: [9] },
+      { ...chipContext, characterName: () => null },
+      t,
+    )[0]).toEqual({ key: "chars", label: "eventCatalog.chips.characters:#9", pending: false })
     expect(chips[6].label).toBe("eventCatalog.chips.year:2023")
   })
 })

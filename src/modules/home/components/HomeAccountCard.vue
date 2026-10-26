@@ -43,22 +43,22 @@ const uploadTimeText = computed(() => {
       </CardTitle>
     </CardHeader>
 
-    <CardContent v-if="userStore.isLoggedIn" class="flex flex-1 flex-col gap-3">
+    <CardContent v-if="userStore.isLoggedIn" class="@container flex min-w-0 flex-1 flex-col gap-3">
       <GameAccountSelect capability="suite" />
       <p class="flex items-center gap-1.5 text-xs text-muted-foreground">
         <LucideClock class="h-3.5 w-3.5 shrink-0" />
         <span v-if="uploadTimeText">{{ t("home.accountCard.dataUpdatedAt", { time: uploadTimeText }) }}</span>
         <span v-else>{{ t("home.accountCard.noUploadData") }}</span>
       </p>
-      <div class="mt-auto grid grid-cols-2 gap-2">
-        <router-link to="/upload-data" class="flex">
-          <Button class="w-full">
+      <div class="mt-auto grid min-w-0 grid-cols-1 gap-2 @sm:grid-cols-2">
+        <router-link to="/upload-data" class="flex min-w-0">
+          <Button class="h-auto min-h-9 min-w-0 w-full whitespace-normal">
             <LucideCloudUpload class="h-4 w-4" />
             {{ t("navigation.items.uploadData") }}
           </Button>
         </router-link>
-        <router-link to="/user/game-account-bindings" class="flex">
-          <Button variant="outline" class="w-full">
+        <router-link to="/user/game-account-bindings" class="flex min-w-0">
+          <Button variant="outline" class="h-auto min-h-9 min-w-0 w-full whitespace-normal">
             <Gamepad2 class="h-4 w-4" />
             {{ t("home.gameAccountManagement") }}
           </Button>
@@ -66,17 +66,43 @@ const uploadTimeText = computed(() => {
       </div>
     </CardContent>
 
-    <CardContent v-else class="flex flex-1 flex-col gap-3">
+    <CardContent v-else class="@container flex min-w-0 flex-1 flex-col gap-3">
       <p class="text-sm text-muted-foreground">{{ t("home.accountCard.guestDescription") }}</p>
-      <div class="mt-auto grid grid-cols-2 gap-2">
-        <router-link to="/user/login" class="flex">
-          <Button class="w-full">
+      <!-- Three-step onboarding: the links point at the pages each step needs. -->
+      <div class="rounded-md border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+        <p class="mb-1 font-medium text-foreground">{{ t("home.accountCard.onboarding.title") }}</p>
+        <ol class="list-decimal space-y-0.5 pl-4">
+          <li>{{ t("home.accountCard.onboarding.step1") }}</li>
+          <li>
+            <i18n-t keypath="home.accountCard.onboarding.step2" scope="global" tag="span">
+              <template #link>
+                <router-link to="/user/game-account-bindings" class="font-medium text-primary underline-offset-4 hover:underline">
+                  {{ t("home.accountCard.onboarding.step2Link") }}
+                </router-link>
+              </template>
+            </i18n-t>
+          </li>
+          <li>
+            <i18n-t keypath="home.accountCard.onboarding.step3" scope="global" tag="span">
+              <template #link>
+                <router-link to="/upload-data" class="font-medium text-primary underline-offset-4 hover:underline">
+                  {{ t("home.accountCard.onboarding.step3Link") }}
+                </router-link>
+              </template>
+            </i18n-t>
+          </li>
+        </ol>
+        <p class="mt-1">{{ t("home.accountCard.onboarding.outro") }}</p>
+      </div>
+      <div class="mt-auto grid min-w-0 grid-cols-1 gap-2 @sm:grid-cols-2">
+        <router-link to="/user/login" class="flex min-w-0">
+          <Button class="h-auto min-h-9 min-w-0 w-full whitespace-normal">
             <LogIn class="h-4 w-4" />
             {{ t("home.login") }}
           </Button>
         </router-link>
-        <router-link to="/user/register" class="flex">
-          <Button variant="outline" class="w-full">
+        <router-link to="/user/register" class="flex min-w-0">
+          <Button variant="outline" class="h-auto min-h-9 min-w-0 w-full whitespace-normal">
             <UserPlus class="h-4 w-4" />
             {{ t("home.register") }}
           </Button>

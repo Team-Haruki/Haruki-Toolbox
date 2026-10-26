@@ -47,6 +47,15 @@ describe("game account data grant helpers", () => {
     })
   })
 
+  test("keeps owner and grantee display names only when the payload carries them", () => {
+    const named = normalizeGameAccountDataGrant({ id: 1, server: "jp", gameUserId: "1", owner_user_name: " Alice ", granteeName: "Bob" })
+    expect(named.ownerUserName).toBe("Alice")
+    expect(named.granteeUserName).toBe("Bob")
+    const unnamed = normalizeGameAccountDataGrant({ id: 1, server: "jp", gameUserId: "1", owner_user_name: "  " })
+    expect("ownerUserName" in unnamed).toBe(false)
+    expect("granteeUserName" in unnamed).toBe(false)
+  })
+
   test("legacy grants without permissions are read-only", () => {
     expect(normalizeGameAccountDataGrant({ id: 1, server: "jp", gameUserId: "1" }).permissions).toEqual(["read"])
     expect(normalizeGrantPermissions(undefined)).toEqual(["read"])

@@ -117,11 +117,11 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
 </script>
 
 <template>
-  <div class="grid gap-3">
+  <div class="@container grid min-w-0 grid-cols-1 gap-3">
     <Button
       type="button"
       variant="outline"
-      class="w-full justify-between gap-2 font-normal"
+      class="min-w-0 w-full justify-between gap-2 font-normal"
       :disabled="props.disabled || props.cardOptions.length === 0"
       @click="browseOpen = true"
     >
@@ -135,7 +135,7 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
     <div v-if="selectedCards.length === 0" class="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
       {{ t("deckRecommend.options.constraints.noSelectedCards") }}
     </div>
-    <div v-else class="grid gap-2 sm:grid-cols-2">
+    <div v-else class="grid min-w-0 grid-cols-1 gap-2 @lg:grid-cols-2">
       <div
         v-for="card in selectedCards"
         :key="card.id"

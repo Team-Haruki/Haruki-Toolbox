@@ -58,6 +58,7 @@ function openLightbox(index: number) {
         :blur="blur"
         img-class="opacity-30 dark:opacity-20"
         placeholder-class="hidden"
+        :shimmer="false"
         @exhausted="backgroundFailed = true"
       />
     </div>

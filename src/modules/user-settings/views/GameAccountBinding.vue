@@ -23,11 +23,12 @@ const {
   showVerifyDialog,
   showDeleteDialog,
   userIdInput,
+  userIdError,
   verificationTriggered,
+  verificationInvalidated,
   editTarget,
   deleteTarget,
   isSaving,
-  isDeleting,
   isVerifying,
   setDefaultBinding,
   allowCNMysekai,
@@ -41,6 +42,7 @@ const {
   handleDelete,
   handleEditSave,
   handleVerify,
+  clearUidError,
   copyCodeToClipboard,
 } = useGameAccountBindingManagement()
 
@@ -49,6 +51,7 @@ const userStore = useUserStore()
 const {
   grantsOpen,
   grantsLoading,
+  grantsLoadError,
   grantSaving,
   grantDeleting,
   selectedAccount,
@@ -58,12 +61,19 @@ const {
   grantDataType,
   grantCanRead,
   grantCanWrite,
-  expiresAtLocal,
+  expiresAt,
+  editingGrant,
+  fieldErrors,
+  revokeTarget,
+  revokeDialogOpen,
+  clearFieldError,
   loadGrants,
   openGrantManager,
   openReceivedGrantManager,
   editGrant,
+  cancelEdit,
   saveGrant,
+  requestRevoke,
   revokeGrant,
 } = useGameAccountDataGrants(() => userStore.userId)
 </script>
@@ -75,7 +85,7 @@ const {
       <div class="space-y-1 w-full">
         <AlertTitle>{{ t("userSettings.gameBinding.alert.title") }}</AlertTitle>
         <AlertDescription class="space-y-1.5 leading-relaxed text-muted-foreground mt-2">
-          <p><span class="font-semibold text-foreground">{{ t("userSettings.gameBinding.alert.line1Server") }}</span>{{ t("userSettings.gameBinding.alert.line1Middle") }}<span class="font-semibold text-foreground">{{ t("userSettings.gameBinding.alert.line1GameId") }}</span>{{ t("userSettings.gameBinding.alert.line1After") }}</p>
+          <p>{{ t("userSettings.gameBinding.alert.line1") }}</p>
           <p>{{ t("userSettings.gameBinding.alert.line2") }}</p>
         </AlertDescription>
       </div>
@@ -111,14 +121,16 @@ const {
       :open="showEditDialog"
       :is-creating="isCreating"
       :verification-triggered="verificationTriggered"
+      :verification-invalidated="verificationInvalidated"
       :is-saving="isSaving"
       :is-verifying="isVerifying"
       :allow-c-n-mysekai="allowCNMysekai"
       :user-id-input="userIdInput"
+      :user-id-error="userIdError"
       :edit-target="editTarget"
       :region-options="regionOptions"
       @update:open="setEditDialogOpen"
-      @update:user-id-input="userIdInput = $event"
+      @update:user-id-input="userIdInput = $event; clearUidError()"
       @update:edit-target="editTarget = $event"
       @verify="handleVerify"
       @save="handleEditSave"
@@ -128,8 +140,7 @@ const {
       v-model:open="showDeleteDialog"
       :delete-target="deleteTarget"
       :region-labels="regionLabels"
-      :is-deleting="isDeleting"
-      @confirm="handleDelete"
+      :on-confirm="handleDelete"
     />
 
     <GameBindingVerifyDialog
@@ -145,19 +156,27 @@ const {
       v-model:data-type="grantDataType"
       v-model:can-read="grantCanRead"
       v-model:can-write="grantCanWrite"
-      v-model:expires-at-local="expiresAtLocal"
+      v-model:expires-at="expiresAt"
+      v-model:revoke-dialog-open="revokeDialogOpen"
       :loading="grantsLoading"
+      :load-error="grantsLoadError"
       :saving="grantSaving"
       :deleting="grantDeleting"
       :selected-account="selectedAccount"
       :selected-account-grants="selectedAccountGrants"
       :received-grants="receivedGrants"
+      :editing-grant="editingGrant"
+      :field-errors="fieldErrors"
+      :revoke-target="revokeTarget"
       :region-labels="regionLabels"
       :current-user-id="userStore.userId"
+      :on-revoke="revokeGrant"
+      @clear-field-error="clearFieldError"
       @refresh="loadGrants"
       @save="saveGrant"
       @edit="editGrant"
-      @revoke="revokeGrant"
+      @cancel-edit="cancelEdit"
+      @request-revoke="requestRevoke"
     />
   </div>
 </template>

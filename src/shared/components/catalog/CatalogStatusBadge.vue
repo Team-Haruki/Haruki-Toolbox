@@ -3,7 +3,7 @@ import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Badge, type BadgeVariants } from "@/components/ui/badge"
 import { useNowTick } from "@/composables/useNowTick"
-import type { CatalogStatus } from "./types"
+import { isCatalogPermanentEnd, type CatalogStatus } from "./types"
 
 /**
  * `upcoming | ongoing | ended` pill. With `untilMs` (start for upcoming, end
@@ -37,6 +37,10 @@ const variant = computed<BadgeVariants["variant"]>(() => {
 const hint = computed(() => {
   if (props.untilMs == null || props.status === "ended") {
     return null
+  }
+  // Permanent pools (end in 2099) say so instead of counting down.
+  if (props.status === "ongoing" && isCatalogPermanentEnd(props.untilMs, now.value)) {
+    return t("catalog.status.permanent")
   }
   const remaining = props.untilMs - now.value
   if (remaining <= 0) {

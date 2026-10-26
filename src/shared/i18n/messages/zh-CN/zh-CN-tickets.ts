@@ -3,7 +3,11 @@
 export default {
   "tickets": {
     "common": {
-      "dateFallback": "—"
+      "dateFallback": "—",
+      "unknownValue": "未知"
+    },
+    "systemMessage": {
+      "statusChanged": "状态已更新为「{status}」"
     },
     "status": {
       "open": "已开启",
@@ -42,11 +46,17 @@ export default {
       "description": "查看处理进度，并在需要时补充说明。",
       "createButton": "创建工单",
       "empty": "暂无工单，点击上方按钮创建",
+      "emptyFiltered": "该状态下暂无工单，试试切换筛选条件",
       "total": "共 {total} 个工单",
       "updatedAt": "更新",
+      "pagination": {
+        "label": "工单分页",
+        "prevPage": "上一页",
+        "nextPage": "下一页"
+      },
       "toast": {
         "loadFailedTitle": "加载工单列表失败",
-        "loadFailedFallback": "加载失败"
+        "loadFailedFallback": "请检查网络后重试；多次失败可能是服务暂时不可用，请稍后再试。"
       }
     },
     "create": {
@@ -58,7 +68,7 @@ export default {
       "fields": {
         "subject": "主题",
         "subjectPlaceholder": "请简要描述您的问题",
-        "subjectHint": "例如：上传数据失败、无法绑定账号、OAuth 回调异常。",
+        "subjectHint": "例如：上传数据失败、无法绑定账号、无法授权第三方应用。",
         "category": "分类",
         "categoryHint": "选择最接近的分类即可，不确定可以选其他。",
         "priority": "优先级",
@@ -70,10 +80,11 @@ export default {
       "toast": {
         "subjectRequired": "请输入工单主题",
         "messageRequired": "请输入工单描述",
+        "subjectTooLong": "主题最多 {max} 个字符",
         "loginRequired": "请先登录",
         "createSuccess": "工单已创建",
         "createFailedTitle": "创建工单失败",
-        "createFailedFallback": "创建失败"
+        "createFailedFallback": "工单未创建，请检查主题和描述后重试；多次失败请稍后再试。"
       }
     },
     "detail": {
@@ -87,8 +98,11 @@ export default {
         "updatedAt": "最近更新"
       },
       "adminSender": "管理员",
+      "systemSender": "系统",
       "noMessages": "暂无消息",
       "inputPlaceholder": "补充说明或回复管理员…",
+      "composeHint": "Enter 发送，Shift+Enter 换行",
+      "sentState": "已发送",
       "sendButton": "发送",
       "closedHint": "工单已关闭，无法发送消息",
       "closeButton": "关闭工单",
@@ -98,22 +112,19 @@ export default {
         "cancel": "取消",
         "confirm": "确认关闭"
       },
-      "notFound": "工单不存在或加载失败",
+      "notFound": "工单不存在",
+      "notFoundDescription": "这个工单可能已被删除，或不属于当前登录的账号。",
       "toast": {
         "loadFailedTitle": "加载工单详情失败",
-        "loadFailedFallback": "加载失败",
+        "loadFailedFallback": "请检查网络后重试；多次失败可能是服务暂时不可用，请稍后再试。",
         "sendFailedTitle": "发送失败",
-        "sendFailedFallback": "发送失败",
+        "sendFailedFallback": "消息没有发出去，内容已保留，请检查网络后重新点击发送。",
         "closeSuccess": "工单已关闭",
         "closeFailedTitle": "关闭失败",
-        "closeFailedFallback": "关闭失败"
+        "closeFailedFallback": "工单没有关闭，请稍后重试；如果工单已处理完毕也可以直接留着。"
       }
     },
     "adminList": {
-      "pagination": {
-        "prevPage": "上一页",
-        "nextPage": "下一页"
-      },
       "title": "工单管理",
       "description": "快速筛选待处理、未分配和高优先级工单。",
       "searchPlaceholder": "搜索工单…",
@@ -220,7 +231,7 @@ export default {
       "noteButton": "备注",
       "sendButton": "发送",
       "internalSwitchLabel": "内部备注（仅管理员可见）",
-      "notFound": "工单不存在或加载失败",
+      "notFound": "工单不存在，可能已被删除或链接有误。",
       "toast": {
         "loadFailedTitle": "加载工单详情失败",
         "loadFailedFallback": "加载失败",

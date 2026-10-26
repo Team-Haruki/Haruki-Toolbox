@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import FriendGroupCard from "@/modules/navigation/components/FriendGroupCard.vue"
 import {
@@ -7,10 +8,15 @@ import {
   AccordionTrigger,
   AccordionContent
 } from "@/components/ui/accordion"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import { describeError } from "@/lib/error-utils"
 import { useFriendGroups } from "@/modules/navigation/composables/useFriendGroups"
 
-const { groupData, openGroups, loading } = useFriendGroups()
+const { groupData, openGroups, loading, error, reload } = useFriendGroups()
 const { t } = useI18n()
+
+const errorDescription = computed(() =>
+  error.value == null ? null : describeError(error.value, t("navigationPages.friendGroups.toast.loadFailedTitle")))
 </script>
 
 <template>
@@ -25,6 +31,16 @@ const { t } = useI18n()
 
     <div v-if="loading" class="max-w-5xl mx-auto text-center py-10 text-muted-foreground">
       {{ t("navigationPages.friendGroups.loading") }}
+    </div>
+
+    <!-- Backend failure: distinct from a genuinely empty list -->
+    <div v-else-if="errorDescription" class="max-w-5xl mx-auto">
+      <LoadErrorState
+        :description="errorDescription.message"
+        :detail="errorDescription.detail"
+        :retrying="loading"
+        @retry="reload"
+      />
     </div>
 
     <div v-else-if="groupData.length === 0" class="max-w-5xl mx-auto text-center py-10 text-muted-foreground">

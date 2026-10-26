@@ -19,6 +19,10 @@ declare module 'vue-router' {
     }
 }
 
+// The page-fade transition is out-in with a 150ms enter; by then the new
+// view is mounted and tall enough for a saved position to apply.
+const PAGE_TRANSITION_SETTLE_MS = 200
+
 const router = createRouter({
     history: createWebHistory(),
     routes: webRoutes,
@@ -30,7 +34,12 @@ const router = createRouter({
             return savedPosition ? false : { top: 0 }
         }
         if (savedPosition) {
-            return savedPosition
+            // Back/forward: the outgoing view is still mounted (out-in page
+            // fade) when this hook runs, so an immediate restore clamps to
+            // that page's height. Wait for the new view to mount first.
+            return new Promise((resolve) => {
+                window.setTimeout(() => resolve({ ...savedPosition, behavior: "instant" }), PAGE_TRANSITION_SETTLE_MS)
+            })
         }
         if (to.meta.scrollMemory && to.path === from.path && !to.hash) {
             // Query-only navigation on catalog lists (filters, sort, page
@@ -47,7 +56,8 @@ const router = createRouter({
                 window.setTimeout(() => resolve({ el: to.hash, top: 96, behavior: "smooth" }), 250)
             })
         }
-        return { top: 0, behavior: "smooth" }
+        // Instant: a smooth scroll would visibly travel while the page fades.
+        return { top: 0, behavior: "instant" }
     },
 })
 

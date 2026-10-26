@@ -3,7 +3,11 @@
 export default {
   "tickets": {
     "common": {
-      "dateFallback": "—"
+      "dateFallback": "—",
+      "unknownValue": "未知"
+    },
+    "systemMessage": {
+      "statusChanged": "狀態已更新為「{status}」"
     },
     "status": {
       "open": "已開啟",
@@ -28,7 +32,7 @@ export default {
     },
     "category": {
       "upload": "上傳問題",
-      "account": "賬號問題",
+      "account": "帳號問題",
       "bug": "Bug反饋",
       "feature": "功能建議",
       "other": "其他"
@@ -42,11 +46,17 @@ export default {
       "description": "檢視處理進度，並在需要時補充說明。",
       "createButton": "建立工單",
       "empty": "暫無工單，點選上方按鈕建立",
+      "emptyFiltered": "該狀態下暫無工單，試試切換篩選條件",
       "total": "共 {total} 個工單",
       "updatedAt": "更新",
+      "pagination": {
+        "label": "工單分頁",
+        "prevPage": "上一頁",
+        "nextPage": "下一頁"
+      },
       "toast": {
         "loadFailedTitle": "載入工單列表失敗",
-        "loadFailedFallback": "載入失敗"
+        "loadFailedFallback": "請檢查網路後重試；多次失敗可能是服務暫時不可用，請稍後再試。"
       }
     },
     "create": {
@@ -58,28 +68,29 @@ export default {
       "fields": {
         "subject": "主題",
         "subjectPlaceholder": "請簡要描述您的問題",
-        "subjectHint": "例如：上傳資料失敗、無法繫結賬號、OAuth 回撥異常。",
+        "subjectHint": "例如：上傳資料失敗、無法綁定帳號、無法授權第三方應用。",
         "category": "分類",
         "categoryHint": "選擇最接近的分類即可，不確定可以選其他。",
         "priority": "優先順序",
         "priorityHint": "緊急優先順序請留給影響登入、資料或主要功能的問題。",
         "message": "描述",
         "messagePlaceholder": "請詳細描述您遇到的問題…",
-        "messageHint": "建議包含賬號 ID、伺服器、出現時間、操作步驟、錯誤提示或相關連結。"
+        "messageHint": "建議包含帳號 ID、伺服器、出現時間、操作步驟、錯誤提示或相關連結。"
       },
       "toast": {
         "subjectRequired": "請輸入工單主題",
         "messageRequired": "請輸入工單描述",
+        "subjectTooLong": "主題最多 {max} 個字元",
         "loginRequired": "請先登入",
         "createSuccess": "工單已建立",
         "createFailedTitle": "建立工單失敗",
-        "createFailedFallback": "建立失敗"
+        "createFailedFallback": "工單未建立，請檢查主題和描述後重試；多次失敗請稍後再試。"
       }
     },
     "detail": {
       "backButton": "返回工單列表",
       "prioritySuffix": "優先順序",
-      "createdAt": "創建於 {date}",
+      "createdAt": "建立於 {date}",
       "summary": {
         "category": "分類",
         "priority": "優先順序",
@@ -87,8 +98,11 @@ export default {
         "updatedAt": "最近更新"
       },
       "adminSender": "管理員",
+      "systemSender": "系統",
       "noMessages": "暫無訊息",
       "inputPlaceholder": "補充說明或回覆管理員…",
+      "composeHint": "Enter 傳送，Shift+Enter 換行",
+      "sentState": "已傳送",
       "sendButton": "傳送",
       "closedHint": "工單已關閉，無法傳送訊息",
       "closeButton": "關閉工單",
@@ -98,22 +112,19 @@ export default {
         "cancel": "取消",
         "confirm": "確認關閉"
       },
-      "notFound": "工單不存在或載入失敗",
+      "notFound": "工單不存在",
+      "notFoundDescription": "這個工單可能已被刪除，或不屬於當前登入的帳號。",
       "toast": {
         "loadFailedTitle": "載入工單詳情失敗",
-        "loadFailedFallback": "載入失敗",
+        "loadFailedFallback": "請檢查網路後重試；多次失敗可能是服務暫時不可用，請稍後再試。",
         "sendFailedTitle": "傳送失敗",
-        "sendFailedFallback": "傳送失敗",
+        "sendFailedFallback": "訊息沒有發出去，內容已保留，請檢查網路後重新點選發送。",
         "closeSuccess": "工單已關閉",
         "closeFailedTitle": "關閉失敗",
-        "closeFailedFallback": "關閉失敗"
+        "closeFailedFallback": "工單沒有關閉，請稍後重試；如果工單已處理完畢也可以直接留著。"
       }
     },
     "adminList": {
-      "pagination": {
-        "prevPage": "上一頁",
-        "nextPage": "下一頁"
-      },
       "title": "工單管理",
       "description": "快速篩選待處理、未分配和高優先順序工單。",
       "searchPlaceholder": "搜尋工單…",
@@ -151,15 +162,15 @@ export default {
         "manageButton": "管理接收者",
         "manageDialogTitle": "工單通知接收者",
         "manageDialogDescription": "選擇哪些管理員會收到使用者建立工單和使用者回覆工單的郵件提醒。使用者只會收到管理員公開回復提醒。",
-        "manageDialogSummary": "當前顯示 {total} 個管理員賬號",
+        "manageDialogSummary": "當前顯示 {total} 個管理員帳號",
         "manageRefresh": "重新整理",
         "manageLoading": "正在載入接收者…",
-        "manageEmpty": "暫無可管理的管理員賬號",
-        "manageBannedHint": "賬號已封禁，當前不會接收通知",
+        "manageEmpty": "暫無可管理的管理員帳號",
+        "manageBannedHint": "帳號已封禁，當前不會接收通知",
         "manageTable": {
           "name": "管理員",
           "role": "角色",
-          "email": "郵箱",
+          "email": "信箱",
           "enabled": "接收通知"
         },
         "loadFailedTitle": "載入通知設定失敗",
@@ -185,7 +196,7 @@ export default {
       "prioritySuffix": "優先順序",
       "creator": "使用者: {creator}",
       "unknownUser": "未知",
-      "createdAt": "創建於 {date}",
+      "createdAt": "建立於 {date}",
       "summary": {
         "category": "分類",
         "priority": "優先順序",
@@ -220,7 +231,7 @@ export default {
       "noteButton": "備註",
       "sendButton": "傳送",
       "internalSwitchLabel": "內部備註（僅管理員可見）",
-      "notFound": "工單不存在或載入失敗",
+      "notFound": "工單不存在，可能已被刪除或連結有誤。",
       "toast": {
         "loadFailedTitle": "載入工單詳情失敗",
         "loadFailedFallback": "載入失敗",

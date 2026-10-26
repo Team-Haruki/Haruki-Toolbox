@@ -25,11 +25,17 @@ export const SEKAI_MUSIC_METAS_URLS: Record<SekaiRegion, string> = {
   cn: `${SEKAI_REGISTRY_BASE_URL}/v1/metas/cn/music_metas.json`,
 }
 
+/**
+ * Game asset hosts: `china_cdn` (China, Tencent Cloud CDN; the default) and
+ * `global` (overseas). Both serve the same files at the same paths, so
+ * `global` doubles as the fallback when the China host fails.
+ */
 export const SEKAI_ASSET_ENDPOINT_ROOTS: Record<SekaiAssetEndpointPreference, string> = {
-  china: "https://sekai-assets.haruki.seiunx.com",
-  global: "https://sekai-assets-bdf29c81.seiunx.net",
+  global: "https://sekai-assets-haruki.seiunx.net",
   china_cdn: "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com",
 }
+/** The route used when a saved or missing preference names no known route. */
+export const DEFAULT_SEKAI_ASSET_ENDPOINT: SekaiAssetEndpointPreference = "china_cdn"
 const TOOLBOX_STATIC_IMAGE_BASE_URL = "https://images.haruki.seiunx.com/sekai-toolbox"
 /** Vite's base path; `import.meta.env.BASE_URL` is not defined under `bun test`. */
 const APP_BASE_URL: string = import.meta.env.BASE_URL ?? "/"
@@ -195,6 +201,14 @@ export function resolveSekaiAssetRootUrl(preference: SekaiAssetEndpointPreferenc
   return SEKAI_ASSET_ENDPOINT_ROOTS[preference]
 }
 
+/**
+ * The host to retry on when the chosen one fails (network error, timeout or
+ * 5xx): `global` for the China route, none for `global` itself.
+ */
+export function resolveSekaiAssetFallbackRootUrl(preference: SekaiAssetEndpointPreference): string | null {
+  return preference === "global" ? null : SEKAI_ASSET_ENDPOINT_ROOTS.global
+}
+
 export function resolveSekaiRegionAssetsUrl(
   region: SekaiRegion,
   preference: SekaiAssetEndpointPreference,
@@ -205,7 +219,7 @@ export function resolveSekaiRegionAssetsUrl(
 export function resolveSekaiGameAssetUrl(
   region: SekaiRegion,
   assetPath: string,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = DEFAULT_SEKAI_ASSET_ENDPOINT,
 ): string {
   return joinUrl(resolveSekaiRegionAssetsUrl(region, preference), assetPath)
 }
@@ -214,7 +228,7 @@ export function resolveSekaiCardThumbnailUrl(
   region: SekaiRegion,
   assetBundleName: string,
   trainedArt: boolean,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = DEFAULT_SEKAI_ASSET_ENDPOINT,
 ): string {
   const suffix = trainedArt ? "_after_training.png" : "_normal.png"
   return resolveSekaiGameAssetUrl(
@@ -227,7 +241,7 @@ export function resolveSekaiCardThumbnailUrl(
 export function resolveSekaiHonorImageUrl(
   region: SekaiRegion,
   assetBundleName: string,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = DEFAULT_SEKAI_ASSET_ENDPOINT,
 ): string {
   return resolveSekaiGameAssetUrl(
     region,
@@ -254,17 +268,22 @@ export function resolveRarityTrainingIconUrl(rarity: string): string {
 
 /**
  * Browser runtime root of the Haruki 3D exporter output for one region,
- * served from the public asset endpoints under `/pjsk-3d-output/`. The
- * china_cdn endpoint (a Garage asset-edge node) does not host the 3D tree at
- * all (exporter output is not synced there), so 3D loads fall back to the
- * china endpoint.
+ * served by both asset hosts under `/pjsk-3d-output/`.
  */
 export function resolvePjsk3dRuntimeBaseUrl(
   region: SekaiRegion,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = DEFAULT_SEKAI_ASSET_ENDPOINT,
 ): string {
-  const effective = preference === "china_cdn" ? "china" : preference
-  return `${SEKAI_ASSET_ENDPOINT_ROOTS[effective]}/pjsk-3d-output/${region}/`
+  return `${resolveSekaiAssetRootUrl(preference)}/pjsk-3d-output/${region}/`
+}
+
+/** The 3D runtime root on the fallback host (see resolveSekaiAssetFallbackRootUrl), or null. */
+export function resolvePjsk3dRuntimeFallbackBaseUrl(
+  region: SekaiRegion,
+  preference: SekaiAssetEndpointPreference = DEFAULT_SEKAI_ASSET_ENDPOINT,
+): string | null {
+  const root = resolveSekaiAssetFallbackRootUrl(preference)
+  return root ? `${root}/pjsk-3d-output/${region}/` : null
 }
 
 export function resolveCardFrameImageUrl(rarity: string): string {
@@ -291,7 +310,7 @@ export function resolveCardAttrRoundIconUrl(attribute: string): string {
 export function resolveCostumeThumbnailUrl(
   region: SekaiRegion,
   assetbundleName: string,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = DEFAULT_SEKAI_ASSET_ENDPOINT,
 ): string {
   return resolveSekaiGameAssetUrl(
     region,

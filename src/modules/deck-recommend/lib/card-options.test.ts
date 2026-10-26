@@ -36,7 +36,7 @@ describe("deck recommend card options", () => {
       unitProfiles: [
         { unit: "light_sound", unitName: "Leo/need", unitProfileName: "Leo/need", colorCode: "#4455dd" },
       ],
-    }, "jp", "china")
+    }, "jp", "china_cdn")
 
     const keywords = options[0]?.keywords ?? []
     expect(keywords).toContain("#1001")

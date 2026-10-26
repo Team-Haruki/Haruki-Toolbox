@@ -90,6 +90,8 @@ describe("buildGachaActiveChips", () => {
   const ctx = {
     characterNames: new Map([[1, "Ichika"]]),
     cardNames: new Map([[10, "Card Ten"]]),
+    charactersReady: true,
+    cardsReady: true,
     typeLabel: (type: string) => `type:${type}`,
     statusLabel: (status: string) => `status:${status}`,
   }
@@ -117,9 +119,30 @@ describe("buildGachaActiveChips", () => {
     ])
     expect(chips[1]?.label).toBe("type:ceil")
     expect(chips[4]?.label).toBe("Ichika")
+    expect(chips[4]?.pending).toBe(false)
+    // The indexes are loaded and do not know these ids: removable chips, not skeletons.
     expect(chips[5]?.label).toBe("#99")
+    expect(chips[5]?.pending).toBe(false)
     expect(chips[6]?.label).toContain("Card Ten")
+    expect(chips[6]?.pending).toBe(false)
     expect(chips[7]?.label).toContain("11")
+    expect(chips[7]?.pending).toBe(false)
+  })
+
+  it("shows skeleton chips for unresolved ids only while the indexes load", () => {
+    const chips = buildGachaActiveChips(
+      { ...gachasQueryCodec.defaults(), chars: [1, 99], cards: [10, 11] },
+      { ...ctx, characterNames: new Map(), cardNames: new Map(), charactersReady: false, cardsReady: false },
+      t,
+    )
+    expect(chips.map((chip) => chip.pending)).toEqual([true, true, true, true])
+    // Characters loaded, cards still loading: only the card chips stay skeletons.
+    const partial = buildGachaActiveChips(
+      { ...gachasQueryCodec.defaults(), chars: [99], cards: [11] },
+      { ...ctx, cardNames: new Map(), cardsReady: false },
+      t,
+    )
+    expect(partial.map((chip) => chip.pending)).toEqual([false, true])
   })
 
   it("returns nothing at defaults", () => {

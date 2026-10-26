@@ -162,4 +162,13 @@ export function translate(key: string, params?: Record<string, unknown>) {
   return (params ? i18n.global.t(key, params) : i18n.global.t(key)) as string
 }
 
+/** `translate`, or null when neither the active nor the fallback locale has the key. */
+export function translateIfExists(key: string, params?: Record<string, unknown>): string | null {
+  const locale = readGlobalLocale()
+  if (!i18n.global.te(key, locale) && !i18n.global.te(key, DEFAULT_LOCALE)) {
+    return null
+  }
+  return translate(key, params)
+}
+
 syncDocumentLanguage(DEFAULT_LOCALE)

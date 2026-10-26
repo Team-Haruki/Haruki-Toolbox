@@ -67,7 +67,7 @@ export default {
     },
     "officialBotGuide": {
       "title": "使用 QQ 官方 Bot",
-      "description": "如果你使用的是 QQ 官方 Bot（宵崎奏），还需要单独添加 QQ 官方 Bot 授权。请按教程获取 QID 并完成授权。",
+      "description": "如果你使用的是 QQ 官方 Bot（宵崎奏），还需要单独添加 QQ 官方 Bot 授权：请按教程在 Bot 里获取你的用户 ID（QID），并在下方「允许其他 QQ 查询我的数据」中添加。",
       "action": "查看 QQ 官方 Bot 授权流程"
     },
     "sections": {
@@ -80,9 +80,9 @@ export default {
     },
     "sekaiData": {
       "region": "区服",
-      "masterVersion": "Master 版本",
-      "displayVersion": "展示版本",
-      "fetchVersion": "拉取版本",
+      "masterVersion": "数据库版本",
+      "displayVersion": "当前",
+      "fetchVersion": "最新",
       "localVersion": "本地版本",
       "remoteVersion": "远程版本",
       "updatedAt": "更新时间",
@@ -99,8 +99,8 @@ export default {
       "refreshMasterData": "更新",
       "clear": "清理",
       "clearDialog": {
-        "title": "清理Master数据缓存？",
-        "description": "将清理{region}的本地Master数据与music metas缓存，需要重新下载后才能继续使用相关数据。",
+        "title": "清理游戏数据库缓存？",
+        "description": "将清理{region}的本地游戏数据库与歌曲定数数据，需要重新下载后才能继续使用相关数据。",
         "confirm": "确认清理"
       },
       "queueTitle": "更新队列",
@@ -124,8 +124,8 @@ export default {
       "phases": {
         "queued": "排队中",
         "checking": "检查版本",
-        "fetching-master": "下载 Master",
-        "fetching-music-metas": "下载 Music metas",
+        "fetching-master": "下载游戏数据库",
+        "fetching-music-metas": "下载歌曲定数数据",
         "writing-cache": "写入缓存",
         "ready": "完成",
         "clearing": "清理缓存"
@@ -138,8 +138,22 @@ export default {
       }
     },
     "kratosFlow": {
-      "title": "身份设置",
-      "description": "此页面用于修改邮箱、密码和个人资料。",
+      "title": "修改邮箱、昵称或密码",
+      "description": "点击下方按钮进入修改页面，完成后会自动返回。",
+      "redirect": {
+        "title": "即将前往登录服务页面{target}…",
+        "description": "修改在登录服务的页面上完成，完成后会自动返回工具箱。",
+        "destination": "目标：{host}",
+        "unreachableTitle": "暂时无法打开登录服务",
+        "unreachableDescription": "登录服务没有响应。请检查网络后重试；如果多次失败，可能是服务暂时不可用。",
+        "backToSettings": "返回账号设置",
+        "targets": {
+          "profile": "修改邮箱或昵称",
+          "password": "修改密码",
+          "mfa": "设置两步验证",
+          "oidc": "管理 Google 登录"
+        }
+      },
       "toast": {
         "savedTitle": "设置已更新",
         "profileSavedDescription": "邮箱或昵称更新成功",
@@ -189,79 +203,32 @@ export default {
       "unbound": "未绑定",
       "title": "邮箱设置",
       "description": "管理您的邮箱绑定信息",
-      "kratosManagedDescription": "邮箱变更与验证由身份中心统一处理。",
-      "kratosManagedHint": "邮箱与昵称修改都在身份中心处理，完成后返回工具箱即可同步最新状态。",
+      "kratosManagedDescription": "修改邮箱、昵称或密码",
+      "kratosManagedHint": "点击下方按钮进入修改页面，完成后会自动返回。",
       "currentEmailLabel": "当前邮箱",
       "currentNicknameLabel": "当前昵称",
       "unsetNickname": "未设置",
       "changeButton": "管理邮箱和昵称",
-      "verifyButton": "验证邮箱",
-      "dialog": {
-        "title": "更换邮箱",
-        "description": "输入新的邮箱，完成人机验证并发送验证码。",
-        "newEmailPlaceholder": "新的邮箱地址",
-        "codePlaceholder": "邮箱验证码",
-        "countdown": "{seconds}s",
-        "sendCodeButton": "发送验证码",
-        "confirmButton": "确认更换"
-      },
-      "toast": {
-        "invalidNewEmailTitle": "请输入有效的新邮箱",
-        "invalidNewEmailDescription": "请检查邮箱格式后重试",
-        "completeCaptchaTitle": "请先完成人机验证",
-        "completeCaptchaDescription": "通过下方验证码后再发送邮件",
-        "codeSentTitle": "验证码已发送",
-        "codeSentDescription": "已发送到 {email}，请注意查收",
-        "sendCodeFailedTitle": "发送验证码失败",
-        "sendCodeFailedDescription": "发送验证码失败",
-        "inputCodeTitle": "请输入验证码",
-        "inputCodeDescription": "请填写邮箱收到的验证码",
-        "changeSuccessTitle": "更换邮箱成功",
-        "changeSuccessDescription": "请重新登录以生效",
-        "changeFailedTitle": "更换邮箱失败",
-        "changeFailedDescription": "更换邮箱失败"
-      }
+      "verifyButton": "验证邮箱"
     },
     "password": {
       "title": "密码设置",
       "description": "管理您的Haruki工具箱账号的密码",
-      "kratosManagedDescription": "密码修改由身份中心统一处理。",
-      "kratosManagedHint": "点击下方按钮后会跳转到身份设置流程，完成密码修改后返回即可。",
-      "changeButton": "更换密码",
-      "dialog": {
-        "title": "更换密码",
-        "description": "请输入当前密码和新密码",
-        "oldPasswordLabel": "当前密码",
-        "oldPasswordPlaceholder": "请输入当前密码",
-        "newPasswordLabel": "新密码",
-        "newPasswordPlaceholder": "请输入新密码",
-        "confirmPasswordLabel": "确认密码",
-        "confirmPasswordPlaceholder": "请再次输入新密码",
-        "submit": "提交"
-      },
-      "toast": {
-        "validateFailedTitle": "验证失败",
-        "oldPasswordRequired": "请输入当前密码",
-        "newPasswordRequired": "请输入新密码",
-        "passwordMismatch": "两次输入的新密码不一致", // NOSONAR -- translation key, not a credential
-        "passwordMinLength": "新密码长度至少为8位", // NOSONAR -- translation key, not a credential
-        "changeSuccessTitle": "密码修改成功",
-        "changeSuccessDescription": "请重新登录",
-        "changeFailedTitle": "密码修改失败",
-        "changeFailedDescription": "密码修改失败"
-      }
+      "kratosManagedDescription": "修改登录密码",
+      "kratosManagedHint": "点击下方按钮进入修改页面，完成后会自动返回。",
+      "changeButton": "更换密码"
     },
     "mfa": {
-      "title": "多因素认证",
-      "description": "管理 TOTP、WebAuthn 与恢复码等安全认证方式。",
-      "hint": "你可以在此页面绑定或更新 MFA 方式，提升账号安全性。",
-      "manageButton": "管理 MFA"
+      "title": "两步验证",
+      "description": "两步验证：验证器 App、通行密钥与备用恢复码",
+      "hint": "点击后进入设置页面，完成后会自动返回。",
+      "manageButton": "管理两步验证"
     },
     "social": {
-      "title": "社交登录",
-      "description": "管理 Google 等 OIDC 身份提供商绑定。",
-      "hint": "你可以在此页面完成社交账号绑定或解绑。",
-      "manageButton": "管理社交登录"
+      "title": "用 Google 账号登录",
+      "description": "绑定或解绑 Google 账号，之后可以直接用它登录。",
+      "hint": "点击后进入设置页面，完成后会自动返回。",
+      "manageButton": "管理 Google 登录"
     },
     "sessions": {
       "title": "会话管理",
@@ -277,20 +244,35 @@ export default {
         "otherSessions": "其他活跃会话",
         "empty": "暂无其他活跃会话。",
         "unknownDevice": "未知设备",
-        "issuedAt": "签发时间",
-        "authenticatedAt": "认证时间",
+        "loginAt": "登录时间",
+        "lastVerified": "最近验证",
         "expiresAt": "过期时间",
-        "aal": "认证等级",
+        "securityLevel": {
+          "label": "安全等级",
+          "normal": "普通",
+          "twoFactor": "两步验证"
+        },
         "revokeOne": "下线该会话",
         "revokeOthers": "下线其他会话",
+        "revokeOneDialog": {
+          "title": "下线这台设备？",
+          "description": "将下线「{device}」（{meta}）。该设备需要重新登录才能继续使用；当前设备不受影响。"
+        },
+        "revokeOthersDialog": {
+          "title": "下线其他所有会话？",
+          "description": "将下线除当前设备外的 {count} 个会话，它们都需要重新登录。如果怀疑账号被他人登录，建议同时修改密码。"
+        },
+        "sessionExpired": "登录状态已失效，请重新登录",
+        "sessionExpiredDescription": "当前会话已过期或已在别处下线，重新登录后即可查看和管理会话。",
+        "goLogin": "去登录",
         "loadFailed": "加载会话失败。",
         "revokeFailed": "下线该会话失败。",
         "revokeOthersFailed": "下线其他会话失败。"
       }
     },
     "imBinding": {
-      "title": "社交平台账号绑定设置",
-      "description": "管理您的Haruki工具箱账号的社交平台账号绑定信息",
+      "title": "绑定我的 QQ（验证本人）",
+      "description": "绑定并验证你本人的 QQ 号，HarukiBot 才能确认是你在查询自己的数据。",
       "fields": {
         "platform": "平台",
         "account": "账号",
@@ -310,7 +292,7 @@ export default {
       "selectPlatformPlaceholder": "选择平台",
       "accountPlaceholder": "请输入账号 ID",
       "emailVerifyRequiredHint": "请先完成邮箱验证，再进行社交平台账号绑定操作。",
-      "captchaHint": "为防止滥用，请先通过下方验证码再发送邮件验证码。",
+      "captchaHint": "为防止滥用，请先完成人机验证，再发送邮件验证码。",
       "actions": {
         "sendEmailCode": "发送邮件验证码",
         "generateCode": "生成验证码"
@@ -318,7 +300,7 @@ export default {
       "dialog": {
         "title": "绑定社交平台验证",
         "qqDescription": "请输入邮件中的验证码完成绑定。",
-        "otherDescription": "请在对应平台使用下方验证码完成绑定，然后点击“验证”刷新状态。",
+        "otherDescription": "在对应平台私聊 HarukiBot 发送下方验证码，然后回来点「验证」。",
         "qqCodePlaceholder": "请输入邮件验证码",
         "verifyButton": "验证"
       },
@@ -326,21 +308,24 @@ export default {
         "emailNotVerifiedTitle": "邮箱未验证",
         "emailNotVerifiedDescription": "请先验证邮箱后再进行社交平台账号绑定操作",
         "sendFailedTitle": "发送失败",
-        "completeCaptchaDescription": "请先完成验证码验证",
+        "sendFailedFallback": "验证码没有发出去，请检查 QQ 号后重试；多次失败请稍后再试。",
+        "completeCaptchaDescription": "请先完成人机验证",
         "verificationCodeSentTitle": "验证码已发送",
         "verificationCodeSentDescription": "请前往QQ {account} 的邮箱查收",
         "generateFailedTitle": "生成失败",
-        "incompleteResponseDescription": "返回数据不完整",
+        "generateFailedFallback": "验证码没有生成，请稍后重试。",
+        "incompleteResponseDescription": "返回数据不完整，请重新生成验证码",
         "codeGeneratedTitle": "验证码已生成",
         "missingQQAccountDescription": "请先填写 QQ 号",
         "invalidQQAccountDescription": "QQ 号必须为纯数字",
-        "invalidQQBotAccountDescription": "QQ 官方 Bot 的用户 OpenID 长度不正确，请检查是否完整复制",
+        "invalidQQBotAccountDescription": "QQ 官方 Bot 的用户 ID（QID）长度不对，请从 Bot 返回的消息完整复制",
         "missingAccountDescription": "请填写需要绑定的账号 ID",
         "verifyFailedTitle": "验证失败",
+        "verifyFailedFallback": "验证没有通过，请确认验证码无误后重试；验证码过期请重新发送。",
         "inputQQCodeDescription": "请输入邮件中的验证码",
         "verifySuccessTitle": "验证成功",
         "verifySuccessDefaultDescription": "已完成绑定",
-        "missingStatusTokenDescription": "缺少状态令牌，请重新生成验证码",
+        "missingStatusTokenDescription": "验证已超时，请重新生成验证码",
         "notVerifiedTitle": "未完成验证",
         "notVerifiedDescription": "您还没有完成验证",
         "notVerifiedFallbackDescription": "请在社交平台完成验证后再试",
@@ -349,8 +334,8 @@ export default {
       }
     },
     "imAuthorization": {
-      "title": "授权社交平台查询",
-      "description": "管理您的Haruki工具箱账号授权可查询游戏账号信息的社交平台",
+      "title": "允许其他 QQ 查询我的数据",
+      "description": "添加后，这些 QQ 号或 Bot 用户可以在 HarukiBot 里查询你的游戏数据。",
       "addButton": "新增授权",
       "emptyTitle": "暂无授权的社交平台",
       "emptyDescription": "添加授权后，对应平台的账号即可查询你的游戏账号信息。",
@@ -366,7 +351,8 @@ export default {
         "account": "账号",
         "remark": "备注",
         "allowFastVerification": "允许快速验证",
-        "allowFastVerificationHint": "开启后，该用户可以在HarukiBot中快速通过账号验证"
+        "allowFastVerificationHint": "开启后，该用户可以在HarukiBot中快速通过账号验证",
+        "qqbotAccountHint": "QQ 官方 Bot 的用户 ID（QID）：在 Bot 里按教程获取，从返回的消息完整复制。"
       },
       "fastVerificationBadge": "快速验证",
       "actions": {
@@ -374,10 +360,11 @@ export default {
         "delete": "删除"
       },
       "dialog": {
-        "createTitle": "新增社交平台授权",
-        "editTitle": "编辑社交平台授权",
-        "descriptionMain": "修改授权可查询信息的社交平台账号",
-        "descriptionHint": "你需要先完成账号绑定设置才能使用此功能"
+        "createTitle": "新增查询授权",
+        "editTitle": "编辑查询授权",
+        "createDescription": "填写允许查询你游戏数据的 QQ 号或 Discord 账号。",
+        "editDescription": "修改这条授权对应的账号、备注或快速验证设置。",
+        "bindFirstHint": "需先完成上方本人 QQ 绑定。"
       },
       "deleteDialog": {
         "title": "确认删除",
@@ -386,14 +373,16 @@ export default {
       },
       "toast": {
         "saveFailedTitle": "保存失败",
+        "saveFailedFallback": "授权没有保存，请检查账号后重试；多次失败请稍后再试。",
         "accountRequiredDescription": "请输入账号",
         "accountQQNumericDescription": "QQ 号必须为纯数字",
-        "accountQQBotLengthDescription": "QQ 官方 Bot 的用户 OpenID 长度不正确，请检查是否完整复制",
+        "accountQQBotLengthDescription": "QQ 官方 Bot 的用户 ID（QID）长度不对，请从 Bot 返回的消息完整复制",
         "saveSuccessTitle": "已保存授权",
         "saveSuccessDescription": "社交平台账号授权信息已更新",
         "deleteSuccessTitle": "已删除授权",
         "deleteSuccessDescription": "该社交平台账号授权已移除",
-        "deleteFailedTitle": "删除失败"
+        "deleteFailedTitle": "删除失败",
+        "deleteFailedFallback": "授权没有删除，请稍后重试。"
       }
     },
     "oauthAuthorizations": {
@@ -426,11 +415,11 @@ export default {
       },
       "toast": {
         "fetchFailedTitle": "获取授权列表失败",
-        "fetchFailedFallback": "获取失败",
+        "fetchFailedFallback": "请检查网络后重试；多次失败可能是服务暂时不可用。",
         "revokeSuccessTitle": "已撤销授权",
         "revokeSuccessDescription": "已撤销 {clientName} 的访问权限",
         "revokeFailedTitle": "撤销失败",
-        "revokeFailedFallback": "撤销失败",
+        "revokeFailedFallback": "授权还在，请稍后重试；如果多次失败，可以刷新列表确认状态。",
         "deviceRevokeSuccessTitle": "已撤销设备",
         "deviceRevokeSuccessDescription": "「{label}」已无法再访问你的账号",
         "deviceNotFound": "该设备的授权已不存在，列表已刷新",
@@ -448,11 +437,8 @@ export default {
       "description": "管理您的 Haruki 工具箱账号绑定的《世界计划: 缤纷舞台 feat. 初音未来》游戏账号",
       "alert": {
         "title": "注意",
-        "line1Server": "同一个区服",
-        "line1Middle": "的",
-        "line1GameId": "同一个游戏ID",
-        "line1After": "在Haruki工具箱中仅限一个Haruki工具箱用户绑定",
-        "line2": "Haruki工具箱的账号绑定信息与HarukiBot NEO不共享，如果需要在HarukiBot NEO上查询数据，请先按照Bot使用帮助在Bot上绑定对应的游戏账号"
+        "line1": "同一区服的同一个游戏账号只能被一个工具箱用户绑定。",
+        "line2": "这里的绑定不会同步到 HarukiBot NEO；要在 Bot 里查询，请按 Bot 帮助在群里单独绑定。"
       },
       "addButton": "绑定新账号",
       "empty": "暂无数据",
@@ -485,7 +471,8 @@ export default {
         "createTitle": "新增账号",
         "editTitle": "编辑账号",
         "subtitle": "绑定你的游戏账号并配置数据权限。",
-        "verifyHint": "完成验证后才能保存绑定。",
+        "verifyHint": "验证方式：把一段验证码写进游戏「个性签名」，工具箱会读取你的公开资料来确认账号是你的。验证通过后可改回签名。",
+        "uidHint": "游戏内「个人资料」ID 下方的数字。",
         "basicInfoTitle": "账号基本信息",
         "serverPlaceholder": "选择区服",
         "verifyButton": "验证",
@@ -495,13 +482,17 @@ export default {
           "verificationStatus": "验证状态"
         },
         "suite": {
-          "title": "Suite数据设置",
-          "description": "管理您上传的游戏账号的Suite数据设置"
+          "title": "账号数据（Suite）",
+          "description": "账号数据（Suite）的共享设置：决定哪些 Bot 可以读取你上传的数据。"
         },
         "mysekai": {
-          "title": "MySekai数据设置",
-          "description": "管理您上传的游戏账号的MySekai数据设置"
+          "title": "烤森数据（MySekai）",
+          "description": "烤森数据（MySekai）的共享设置：决定哪些 Bot 可以读取你上传的数据。"
         }
+      },
+      "validation": {
+        "uidRequired": "请输入游戏UID",
+        "uidChangedReverify": "游戏UID已更改，请重新验证"
       },
       "deleteDialog": {
         "title": "确认删除",
@@ -509,102 +500,117 @@ export default {
       },
       "verifyDialog": {
         "title": "验证码生成成功",
-        "description": "请在游戏内的个性签名中输入以下验证码完成验证",
-        "copyHint": "点击下方验证码即可一键复制到剪切板",
-        "confirmButton": "我已输入，关闭此窗口",
-        "notice": {
-          "keepFullCode": "请务必完整输入进个性签名，不要移除斜杠",
-          "returnHome": "在游戏中完成验证码输入之后，请务必退回到主页确保验证码成功保存，再继续添加账号",
-          "saveAfterClose": "输入验证码之后，直接关闭此窗口，点击保存按钮，即可进行账号验证"
-        }
+        "description": "按下面的步骤把验证码写进游戏个性签名，工具箱会读取你的公开资料来确认账号是你的。",
+        "codeLabel": "验证码",
+        "copyButton": "复制验证码",
+        "steps": {
+          "copy": "点击上方「复制验证码」。",
+          "paste": "打开游戏 → 个人资料 → 编辑「个性签名」，粘贴整段验证码（含斜杠）并保存。",
+          "returnHome": "退回游戏主页，确认签名已保存。",
+          "save": "回到本页关闭此窗口，点「保存」完成验证。"
+        },
+        "afterwards": "验证通过后可以把签名改回去。",
+        "confirmButton": "我已输入，关闭此窗口"
       },
       "permissions": {
+        "sharedHint": "只在你使用对应 Bot 时需要开启。",
         "suite": {
           "allowPublicApi": {
-            "title": "允许公开API访问",
-            "description": "允许Suite数据通过Haruki工具箱公开API访问"
+            "title": "允许其他网站/Bot 公开查询",
+            "description": "开启后，任何知道你 UID 的人都能通过工具箱接口查看你上传的账号数据。"
           },
           "allowSakura": {
-            "title": "允许上传至SakuraBot",
-            "description": "允许Suite数据上传至SakuraBot"
+            "title": "同步给 SakuraBot（QQ 群 Bot）",
+            "description": "把账号数据同步给 SakuraBot。只在你使用对应 Bot 时需要开启。"
           },
           "allow8823": {
-            "title": "允许上传至烤森Bot",
-            "description": "允许Suite数据上传至烤森Bot"
+            "title": "同步给烤森Bot（QQ 群 Bot）",
+            "description": "把账号数据同步给烤森Bot。只在你使用对应 Bot 时需要开启。"
           },
           "allowResona": {
-            "title": "允许上传至ResonaBot",
-            "description": "允许Suite数据上传至ResonaBot"
+            "title": "同步给 ResonaBot（QQ 群 Bot）",
+            "description": "把账号数据同步给 ResonaBot。只在你使用对应 Bot 时需要开启。"
           },
           "allowLuna": {
-            "title": "允许上传至LunaBot",
-            "description": "允许Suite数据上传至LunaBot"
+            "title": "同步给 LunaBot（QQ 群 Bot）",
+            "description": "把账号数据同步给 LunaBot。只在你使用对应 Bot 时需要开启。"
           }
         },
         "mysekai": {
           "allowPublicApi": {
-            "title": "允许公开API访问",
-            "description": "允许MySekai数据通过Haruki工具箱公开API访问"
+            "title": "允许其他网站/Bot 公开查询",
+            "description": "开启后，任何知道你 UID 的人都能通过工具箱接口查看你上传的烤森数据。"
           },
           "allowFixtureApi": {
-            "title": "允许家具共享API",
-            "description": "允许MySekai账号UID出现在家具共享API"
+            "title": "参与家具互助",
+            "description": "开启后，你的 UID 会出现在烤森家具互助列表，其他玩家可以来你的烤森。"
           },
           "allow8823": {
-            "title": "允许上传至烤森Bot",
-            "description": "允许MySekai数据上传至烤森Bot"
+            "title": "同步给烤森Bot（QQ 群 Bot）",
+            "description": "把烤森数据同步给烤森Bot。只在你使用对应 Bot 时需要开启。"
           },
           "allowResona": {
-            "title": "允许上传至ResonaBot",
-            "description": "允许MySekai数据上传至ResonaBot"
+            "title": "同步给 ResonaBot（QQ 群 Bot）",
+            "description": "把烤森数据同步给 ResonaBot。只在你使用对应 Bot 时需要开启。"
           },
           "allowLuna": {
-            "title": "允许上传至LunaBot",
-            "description": "允许MySekai数据上传至LunaBot"
+            "title": "同步给 LunaBot（QQ 群 Bot）",
+            "description": "把烤森数据同步给 LunaBot。只在你使用对应 Bot 时需要开启。"
           }
         }
       },
       "grants": {
         "title": "游戏账号数据授权",
-        "description": "把已验证账号的 suite / mysekai / profile 数据临时授权给其他 Toolbox 用户读取，或允许对方代为上传 suite / mysekai 数据。",
-        "receivedDescription": "查看其他 Toolbox 用户授权给你的游戏账号数据。",
+        "description": "让另一位工具箱用户在限定时间内查看这个账号的数据，或帮你上传数据。",
+        "dataTypesExplainer": "数据类型：账号数据（Suite）/ 烤森数据（MySekai）/ 个人档案（Profile）。",
+        "receivedDescription": "查看其他工具箱用户授权给你的游戏账号数据。",
         "selectedAccount": "当前账号：{account}",
         "noSelectedAccount": "未选择账号",
         "ownedTitle": "此账号授权出去的数据",
         "receivedTitle": "别人授权给我的数据",
         "receivedHint": "收到的授权只能使用，不能转授或修改；如需变更请联系授权方。",
+        "receivedUseHint": "可在各功能页的账号选择器中使用。",
+        "ownerFallback": "工具箱用户 {id}",
         "emptyOwned": "该账号暂无授权",
         "emptyReceived": "暂无收到的授权",
+        "editingBadge": "编辑中",
         "fallback": "—",
-        "yourUserId": "你的 Toolbox 用户 ID：",
+        "yourUserId": "你的工具箱用户 ID：",
         "dataType": {
-          "suite": "Suite",
-          "mysekai": "MySekai",
-          "profile": "Profile"
+          "suite": "账号数据",
+          "mysekai": "烤森数据",
+          "profile": "个人档案"
         },
         "permission": {
-          "read": "只读",
-          "write": "只写（允许代传）",
+          "read": "允许读取",
+          "write": "允许上传（代传）",
           "readOnly": "只读",
           "writeOnly": "只写",
           "readWrite": "读写"
         },
         "actions": {
           "refresh": "刷新",
-          "save": "保存授权"
+          "save": "保存授权",
+          "saveChanges": "保存修改",
+          "cancelEdit": "取消编辑",
+          "edit": "编辑授权",
+          "revoke": "撤销授权"
         },
         "form": {
-          "title": "新增或更新授权",
-          "granteeUserId": "被授权 Toolbox 用户 ID",
+          "title": "新增授权",
+          "editTitle": "编辑授权：{grantee} / {dataType}",
+          "targetAccount": "授权对象：{account}（对方读取或上传的都是这个账号的数据）",
+          "lockedWhileEditing": "编辑时不能更改被授权用户和数据类型；要换人或换类型，请取消编辑后新增一条授权。",
+          "granteeUserId": "被授权工具箱用户 ID",
           "granteeUserIdPlaceholder": "例如 1234567890",
           "dataType": "数据类型",
           "expiresAt": "过期时间",
           "expiresAtHelp": "必须是未来时间，不提供永久授权。",
-          "profileHint": "Profile 是实时数据：被授权用户每次查看都会经由你的账号向游戏服务器发起请求。",
+          "profileHint": "「个人档案」是实时查询：对方每次查看都会以你的账号向游戏服务器拉取一次。",
           "permissions": "权限",
-          "writeHint": "只写允许对方上传并更新该游戏账号的数据，不允许读取已有数据，也不允许修改绑定、隐私设置或转授。",
-          "profileReadOnlyHint": "Profile 仅支持只读授权。",
-          "writeTargetNotice": "对方上传的数据将直接更新 {account} 的 {dataType} 数据，请确认区服和游戏账号无误。",
+          "writeHint": "「允许上传」让对方可以上传并更新这个账号的数据；不包含读取已有数据，也不允许修改绑定、隐私设置或转授。",
+          "profileReadOnlyHint": "「个人档案」只支持读取授权。",
+          "writeTargetNotice": "对方上传的数据将直接更新 {account} 的{dataType}，请确认区服和游戏账号无误。",
           "writeOnlyNotice": "未勾选读取：对方只能上传，不能查看该账号已有的数据。"
         },
         "table": {
@@ -615,20 +621,28 @@ export default {
           "expiresAt": "过期时间",
           "actions": "操作"
         },
+        "revokeDialog": {
+          "title": "撤销数据授权",
+          "description": "将撤销 {grantee} 对 {account} 的「{dataType}」授权（{permissions}）。撤销后对方立即无法访问；之后可以重新授权。",
+          "confirm": "撤销授权"
+        },
         "validation": {
           "verifiedOnly": "只有已验证绑定账号可以创建数据授权",
           "granteeRequired": "请填写被授权用户 ID",
           "selfGrant": "不能授权给自己",
-          "dataType": "只支持 suite、mysekai 或 profile",
-          "permissionRequired": "请至少选择一种权限；撤销授权请使用删除按钮",
-          "profileReadOnly": "Profile 不支持写权限",
+          "dataType": "只支持账号数据、烤森数据或个人档案",
+          "permissionRequired": "请至少勾选一种权限；要撤销授权请用列表里的「撤销授权」",
+          "profileReadOnly": "「个人档案」不支持上传权限",
+          "expiryRequired": "请选择过期时间",
           "futureExpiry": "过期时间必须是未来时间"
         },
         "toast": {
           "loadFailedTitle": "加载数据授权失败",
           "saveFailedTitle": "保存数据授权失败",
+          "saveFailedFallback": "授权没有保存，请检查被授权用户 ID 和过期时间后重试。",
           "deleteFailedTitle": "撤销数据授权失败",
           "saved": "数据授权已保存",
+          "updated": "数据授权已更新",
           "deleted": "数据授权已撤销"
         }
       },
@@ -636,15 +650,18 @@ export default {
         "setDefaultSuccessTitle": "已设为默认账号",
         "setDefaultSuccessDescription": "各功能页面将默认选中该账号",
         "setDefaultFailedTitle": "设置默认账号失败",
+        "setDefaultFailedFallback": "默认账号没有更改，请稍后重试。",
         "deleteSuccessTitle": "删除成功",
         "deleteSuccessDescription": "账号已解除绑定",
         "deleteFailedTitle": "删除失败",
         "saveSuccessTitle": "保存成功",
         "saveSuccessDescription": "账号设置已更新",
         "saveFailedTitle": "保存失败",
+        "saveFailedFallback": "账号设置没有保存，请稍后重试；新增账号时请确认已在游戏内写入验证码。",
         "verifyBeforeCreateDescription": "新增账号前请先点击“验证”生成验证码，并在游戏内完成设置。",
         "uidMustBeNumericDescription": "游戏UID必须是纯数字",
         "generateCodeFailedTitle": "无法生成验证码",
+        "generateCodeFailedFallback": "请确认区服和游戏UID无误后重试；多次失败请稍后再试。",
         "selectServerAndUidDescription": "请先选择区服并填写游戏UID",
         "missingCodeDescription": "未返回验证码",
         "copySuccessTitle": "复制成功",
@@ -665,7 +682,8 @@ export default {
       "openid": "确认您的身份并使用 Haruki 账号登录",
       "profile": "获取您的昵称",
       "email": "获取您的邮箱地址",
-      "offlineAccess": "保持离线访问并获取刷新令牌"
+      "offlineAccess": "在你不在线时也能继续使用上述权限",
+      "unknown": "其他权限（{scope}）"
     },
     "scopeDescription": {
       "gameDataRead": "读取你拥有或获读授权的游戏账号数据。不包含上传权限。",
@@ -677,7 +695,7 @@ export default {
       "unknownApp": "未知应用",
       "title": "登录以继续",
       "signInDescriptionPrefix": "要继续访问 ",
-      "signInDescriptionSuffix": "，请先登录您的 Haruki Toolbox 账号。",
+      "signInDescriptionSuffix": "，请先登录您的 Haruki 工具箱账号。",
       "readyDescriptionPrefix": "您已登录，继续前往 ",
       "readyDescriptionSuffix": " 完成授权流程。",
       "continuingTitle": "正在继续登录",
@@ -688,7 +706,7 @@ export default {
       "cancel": "取消授权",
       "rejectDescription": "该授权请求已在登录前被取消。",
       "invalidTitle": "无效的登录请求",
-      "invalidDescription": "缺少必要的登录 challenge，或 challenge 已无效。请从客户端应用重新发起授权。",
+      "invalidDescription": "这个授权链接已失效或不完整。请回到发起授权的应用重新点击「登录」。",
       "backHome": "返回首页",
       "toast": {
         "failedTitle": "继续登录失败",
@@ -700,18 +718,31 @@ export default {
       "unknownApp": "未知应用",
       "title": "授权请求",
       "descriptionPrefix": "",
-      "descriptionSuffix": " 请求访问您的 Haruki Toolbox 账号",
+      "descriptionSuffix": " 请求访问您的 Haruki 工具箱账号",
       "continuingDescriptionPrefix": "正在为 ",
       "continuingDescriptionSuffix": " 准备授权流程。",
       "scopeIntro": "该应用将能够：",
+      "groups": {
+        "read": "读取",
+        "write": "上传 / 提交",
+        "other": "其他"
+      },
+      "writeWarning": "此授权包含上传或提交权限：应用将能以你的身份提交数据。只有在你信任此应用时才允许。",
+      "accountLine": "以 {name} 的身份授权",
+      "switchAccount": "切换账号",
+      "switchAccountHint": "切换账号会退出当前登录，并从应用重新发起本次授权。",
+      "switchAccountRejectDescription": "用户选择切换账号，请重新发起登录。",
+      "subjectMismatchTitle": "该授权请求属于另一个账号",
+      "subjectMismatchDescription": "该授权请求属于另一个账号，请重新从应用发起登录，或切换到发起请求的账号。",
+      "returnHint": "授权后将返回 {app}。",
       "noScopesRequested": "该应用未请求额外权限范围。",
-      "revokeHint": "授权后，您可以随时在「OAuth 授权管理」页面撤销。",
+      "revokeHint": "可随时在「账号设置 → 已授权的应用」撤销。",
       "reject": "拒绝",
       "authorize": "授权",
       "authorizing": "授权中...",
-      "rejectDescription": "资源所有者已拒绝本次授权请求。",
+      "rejectDescription": "你已拒绝本次授权。",
       "invalidTitle": "无效的授权请求",
-      "invalidDescription": "缺少必要授权参数，或 challenge 已无效。请从客户端应用重新发起授权。",
+      "invalidDescription": "这个授权链接已失效或不完整。请回到发起授权的应用重新点击「登录」。",
       "backHome": "返回首页",
       "toast": {
         "failedTitle": "授权失败",
@@ -723,14 +754,16 @@ export default {
       "loadingTitle": "正在读取退出请求",
       "title": "退出登录",
       "descriptionPrefix": "",
-      "descriptionSuffix": " 请求退出您的 Haruki Toolbox 登录。",
-      "genericDescription": "一个第三方应用请求退出您的 Haruki Toolbox 登录。",
+      "descriptionSuffix": " 请求退出您的 Haruki 工具箱登录。",
+      "genericDescription": "一个第三方应用请求退出您的 Haruki 工具箱登录。",
       "confirmHint": "确认后将同时退出本站与已连接第三方应用的登录状态。",
       "cancel": "取消",
       "confirm": "退出登录",
       "loggingOut": "正在退出...",
       "invalidTitle": "无效的退出请求",
-      "invalidDescription": "缺少必要的 logout challenge，或 challenge 已无效。",
+      "invalidDescription": "这个退出链接已失效或不完整。请回到发起退出的应用重新操作。",
+      "localDescription": "确认后将退出当前账号在本站的登录。",
+      "localSignedOutDescription": "你当前没有登录。",
       "backHome": "返回首页",
       "toast": {
         "failedTitle": "退出登录失败",
@@ -746,7 +779,7 @@ export default {
       },
       "signedOut": {
         "title": "登录以授权设备",
-        "description": "必须先登录 Haruki Toolbox 账号才能输入设备代码。登录后会回到这里，代码会保留在输入框中。",
+        "description": "必须先登录 Haruki 工具箱账号才能输入设备代码。登录后会回到这里，代码会保留在输入框中。",
         "signIn": "去登录"
       },
       "unavailable": {
@@ -770,7 +803,7 @@ export default {
       },
       "review": {
         "title": "设备授权请求",
-        "description": "{client} 请求以你的身份访问 Haruki Toolbox",
+        "description": "{client} 请求以你的身份访问 Haruki 工具箱",
         "clientId": "客户端 ID",
         "badge": {
           "official": "官方",
@@ -822,7 +855,7 @@ export default {
       "error": {
         "feature_disabled": "设备登录暂未开放",
         "unsupported_media_type": "请求格式不受支持，请刷新页面后重试",
-        "origin_rejected": "请求来源未被允许，请从 Haruki Toolbox 网站打开此页面",
+        "origin_rejected": "请求来源未被允许，请从 Haruki 工具箱网站打开此页面",
         "invalid_request": "请求无效，请检查输入后重试",
         "malformed_code": "代码格式不正确，请核对设备上显示的代码",
         "invalid_code": "代码无效、已过期或已被其他账号使用；请在设备上重新获取",

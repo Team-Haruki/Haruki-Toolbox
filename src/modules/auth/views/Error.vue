@@ -11,8 +11,8 @@ import {
   CardContent,
   CardDescription,
 } from "@/components/ui/card"
-import { extractErrorMessage } from "@/lib/error-utils"
 import { fetchKratosFlowError, type KratosFlowError } from "@/modules/auth/lib/kratos"
+import { describeKratosError } from "@/modules/auth/lib/kratos-messages"
 
 const route = useRoute()
 const router = useRouter()
@@ -27,10 +27,12 @@ const errorId = computed(() => {
   return typeof rawId === "string" ? rawId.trim() : ""
 })
 
-const resolvedMessage = computed(() =>
+// Kratos reasons are developer English ("upstream failure"); the page explains
+// in the user's language and keeps the raw reason as a smaller detail line.
+const rawReason = computed(() =>
   flowError.value?.reason?.trim()
   || flowError.value?.message?.trim()
-  || t("auth.error.fallbackDescription")
+  || ""
 )
 
 const detailsText = computed(() => {
@@ -67,7 +69,7 @@ async function loadKratosError() {
     flowError.value = await fetchKratosFlowError(errorId.value)
   } catch (error: unknown) {
     flowError.value = null
-    loadError.value = extractErrorMessage(error, t("auth.error.loadFailedDescription"))
+    loadError.value = describeKratosError(error, t("auth.error.loadFailedDescription"))
   } finally {
     loading.value = false
   }
@@ -133,8 +135,11 @@ watch(
         </div>
 
         <div v-else-if="showResolvedError" class="space-y-4">
-          <div class="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-            {{ resolvedMessage }}
+          <div class="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            <p>{{ t("auth.error.fallbackDescription") }}</p>
+            <p v-if="rawReason" class="break-words text-xs text-muted-foreground">
+              {{ t("core.errors.detail", { detail: rawReason }) }}
+            </p>
           </div>
 
           <div class="grid gap-2 text-sm text-muted-foreground">

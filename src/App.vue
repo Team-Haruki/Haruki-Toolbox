@@ -12,6 +12,7 @@ import { getSettings } from "@/modules/user-settings/api/get-settings"
 import { useI18n } from "vue-i18n"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { createLogger } from "@/lib/logger"
+import { claimSessionOnce } from "@/lib/session-once"
 import { useRoute, useRouter } from "vue-router"
 import {
   refreshDeckRecommendProfilesForBoundAccounts,
@@ -40,6 +41,7 @@ const syncRetryUserId = ref<string | null>(null)
 const syncRetryCount = ref(0)
 const profileRefreshSignature = ref("")
 const MAX_SYNC_RETRIES = 3
+const BOUND_ACCOUNT_PREFETCH_TTL_MS = 5 * 60_000
 const { t } = useI18n()
 const logger = createLogger("app-settings-sync")
 const hasLoginSuccessFlag = ref(false)
@@ -224,78 +226,58 @@ watch(
     }
 
     profileRefreshSignature.value = signature
+    // The boot refresh is a cache warm-up: pages re-check on demand, so a
+    // reload within a few minutes need not hit /profile and /suite again.
+    if (!claimSessionOnce(`bound-account-prefetch:${signature}`, { ttlMs: BOUND_ACCOUNT_PREFETCH_TTL_MS })) {
+      return
+    }
     const accounts = Array.isArray(userStore.gameAccountBindings) ? userStore.gameAccountBindings : []
     void refreshDeckRecommendProfilesForBoundAccounts({
       toolboxUserId: userId,
       accounts,
     })
-    void prefetchBoundAccountSuites(userId, accounts)
+    void prefetchBoundAccountSuites(userId, accounts, signature)
   },
   { immediate: true },
 )
 
+/**
+ * Warms the suite cache for every bound account. Silent by design: a
+ * loading/success toast on every page load is noise, and the "no uploaded
+ * data" case is already explained inline by the pages that need the data.
+ * Only a genuine failure surfaces, once per session per account set.
+ */
 async function prefetchBoundAccountSuites(
   toolboxUserId: string,
   accounts: readonly { server: SekaiRegion; userId: string | number }[],
+  signature: string,
 ) {
   if (accounts.length === 0) {
     return
   }
 
-  const toastId = toast.loading(t("core.suitePrefetch.progressTitle"), {
-    description: t("core.suitePrefetch.progressDescription", { completed: 0, total: accounts.length }),
-  })
-
+  let failed: number
   try {
     const result = await refreshDeckRecommendSuitesForBoundAccounts({
       toolboxUserId,
       accounts,
-      onProgress: (progress) => {
-        toast.loading(t("core.suitePrefetch.progressTitle"), {
-          id: toastId,
-          description: t("core.suitePrefetch.progressDescription", progress),
-        })
-      },
     })
+    failed = result.failed
 
-    if (result.missing > 0) {
-      toast.info(t("uploadedGameData.missingTitle"), {
-        id: toastId,
-        description: [
-          t("uploadedGameData.missingAccounts", { count: result.missing }),
-          ...(result.failed > 0 ? [t("uploadedGameData.otherFailures", { count: result.failed })] : []),
-        ].join(" "),
-        action: {
-          label: t("uploadedGameData.uploadAction"),
-          onClick: () => { void router.push("/upload-data") },
-        },
+    if (failed === 0 && result.updated > 0 && route.path === "/") {
+      toast.success(t("core.suitePrefetch.successTitle"), {
+        description: t("core.suitePrefetch.successDescription", { updated: result.updated, total: result.total }),
+        duration: 3000,
       })
-      return
     }
-
-    if (result.failed > 0) {
-      toast.warning(t("core.suitePrefetch.partialTitle"), {
-        id: toastId,
-        description: t("core.suitePrefetch.partialDescription", { failed: result.failed, total: result.total }),
-      })
-      return
-    }
-
-    if (result.updated === 0) {
-      // Everything came back 304/cache-hit — nothing new to announce.
-      toast.dismiss(toastId)
-      return
-    }
-
-    toast.success(t("core.suitePrefetch.successTitle"), {
-      id: toastId,
-      description: t("core.suitePrefetch.successDescription", { updated: result.updated, total: result.total }),
-    })
   } catch (e) {
     logger.error("Failed to prefetch bound account suites", e)
+    failed = accounts.length
+  }
+
+  if (failed > 0 && claimSessionOnce(`bound-account-prefetch-failed:${signature}`)) {
     toast.warning(t("core.suitePrefetch.partialTitle"), {
-      id: toastId,
-      description: t("core.suitePrefetch.failedDescription"),
+      description: t("core.suitePrefetch.partialDescription", { failed, total: accounts.length }),
     })
   }
 }

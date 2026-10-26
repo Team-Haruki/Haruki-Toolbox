@@ -4,10 +4,6 @@ export default {
   "deckRecommend": {
     "title": "Deck Recommendation",
     "description": "Choose account, data region, mode, and song parameters to get the best possible event deck recommendation.",
-    "notice": {
-      "testingPrefix": "This feature is still being tested.",
-      "testingSuffix": " If you run into any issue, please contact Haruki Dev Team."
-    },
     "select": {
       "loading": "Preparing data..."
     },
@@ -27,13 +23,16 @@ export default {
       "account": "Account",
       "accountPlaceholder": "Select a bound account",
       "noAccount": "No game account is bound to the current Toolbox account.",
-      "dataRegion": "Data server",
+      "bindAccount": "Bind a game account",
+      "dataRegion": "Data region",
       "mode": "Recommendation mode",
       "target": "Recommendation target",
       "liveType": "Live type",
       "algorithm": "Search algorithms",
+      "algorithmDefaultHint": "The default is usually fine.",
       "algorithmHint": "The default algorithm follows the current scenario: exact DFS (provably optimal) for score targets, DFS-GA for World Bloom and other complex scenarios, and reinforcement learning for MySekai. Manual selections are kept; enabling multiple algorithms cross-checks results but takes longer overall.",
       "executionMode": "Execution mode",
+      "executionModeLimitedHint": "This device has limited memory, so the algorithms run one after another. Results are the same; it just takes longer.",
       "event": "Event",
       "eventPlaceholder": "Select an event",
       "eventSearchPlaceholder": "Search event name, #ID, type, pinyin, or romaji...",
@@ -49,7 +48,6 @@ export default {
       "customBonusCharacters": "Custom bonus characters",
       "customBonusCharactersPlaceholder": "e.g. 1 2 21",
       "customBonusSupportUnits": "VS support units",
-      "customBonusSupportUnitsPlaceholder": "e.g. 21:light_sound 25:school_refusal",
       "customBonusSelectedCount": "{count} characters selected",
       "customBonusSupportUnitsEmpty": "Select Virtual Singer characters 21-26 to assign support units.",
       "filterOtherUnit": "Filter other units",
@@ -76,10 +74,6 @@ export default {
       "browseCount": "{count} cards"
     },
     "layers": {
-      "default": {
-        "title": "Default Settings",
-        "description": "Choose account, event, live, music, and search mode. Multi-live teammates follow the current deck by default."
-      },
       "advanced": {
         "title": "Advanced Settings",
         "description": "Tune card training, filters, multi-live parameters, and deck constraints."
@@ -132,6 +126,7 @@ export default {
       "specific": "Specific order"
     },
     "eventTypes": {
+      "memoryEvent": "Memory Event",
       "marathon": "Marathon",
       "cheerfulCarnival": "Cheerful Carnival",
       "worldBloom": "World Link",
@@ -164,13 +159,14 @@ export default {
     "options": {
       "eventCondition": {
         "title": "Event Conditions",
-        "description": "Select a published event, or enable simulated event to customize event type, attribute, unit, and chapter."
+        "description": "The current official event is selected by default, using its published bonus rules. Official Memory Events do not require simulation. Enable simulation to plan for other units or events."
       },
       "bonus": {
         "title": "Bonus Conditions",
         "description": "Set one or more target bonuses and generate matching Solo Live decks."
       },
       "eventSimulation": {
+        "memoryEventHint": "All attributes receive a 25% base bonus; native unit characters receive 75% in total. Human units exclude Virtual Singers; Virtual Singer includes all six singers. Master rank bonuses apply, without featured-card bonuses.",
         "title": "Simulated Event",
         "description": "Recommend against a custom event type, attribute, and unit without relying on a published event.",
         "unavailable": "The current mode does not use event data, so simulated events are unavailable.",
@@ -250,7 +246,7 @@ export default {
         "excludedGroupDescription": "Remove any number of cards from the candidate pool without affecting the fixed-card limit.",
         "fixedCards": "Fixed cards",
         "useCurrentDeck": "Use current main deck",
-        "useCurrentDeckDescription": "Use the current profile main deck as the fixed deck.",
+        "useCurrentDeckDescription": "Use the team you currently have in the game as the fixed deck. It is read live from the game first, falling back to your uploaded data.",
         "fixedCharacters": "Fixed characters",
         "excludedCards": "Excluded cards",
         "cardSelectPlaceholder": "Search and select cards",
@@ -270,7 +266,7 @@ export default {
         "characterListPlaceholder": "e.g. 1 2 21",
         "invalid": "Character IDs must be positive integers separated by spaces or commas.",
         "challengeHint": "Challenge Live already uses the selected character, so fixed characters are unavailable.",
-        "currentDeckHint": "Prefers the current main deck from the game profile and falls back to uploaded data. Forced members and exclusion rules are ignored while the current main deck is enabled."
+        "currentDeckHint": "Uses the team you currently have in the game as the fixed deck: read live from the game first, falling back to your uploaded data. Forced members and exclusion rules are ignored while it is enabled."
       },
       "random": {
         "title": "Skills and Support",
@@ -413,10 +409,15 @@ export default {
       "ready": "Complete the required options to start recommendation.",
       "run": "Run recommendation",
       "running": "Running...",
+      "blocked": {
+        "noAccount": "No game account is bound yet; bind one to run a recommendation.",
+        "selectAccount": "Select a game account first.",
+        "dataMissing": "The selected account has no uploaded game data. Upload it from the data upload page first."
+      },
       "phases": {
-        "preparing-data": "Preparing master data and music metas...",
+        "preparing-data": "Preparing game data…",
         "fetching-user-data": "Loading user data...",
-        "initializing": "Initializing deck engine...",
+        "initializing": "Starting the calculation…",
         "loading-data": "Loading recommendation data...",
         "recommending": "Running recommendation..."
       }
@@ -434,16 +435,17 @@ export default {
         "copyFailed": "Copy failed — check the browser clipboard permission.",
         "songRanking": "Song ranking"
       },
-      "elapsed": "Deck engine total elapsed {ms} ms",
-      "totalElapsed": "Recommendation total elapsed {ms} ms",
+      "elapsed": "Deck engine total time {seconds} s",
+      "totalElapsed": "Total time {seconds} s",
+      "secondsUnit": "s",
       "dataElapsed": "Data fetch",
       "engineDataElapsed": "Deck engine data preparation",
       "sequentialRecommendElapsed": "Sequential recommendation (wall time)",
       "parallelRecommendElapsed": "Parallel recommendation (wall time)",
-      "algorithmElapsed": "{algorithm} search: {ms} ms",
+      "algorithmElapsed": "{algorithm} search: {seconds} s",
       "empty": "No recommendation result yet.",
       "missingUserDataTitle": "No game data is available for deck building",
-      "missingUserDataDescription": "The selected game account has not uploaded the required data. Upload Suite data first; MySekai mode also requires MySekai data, then return here and try again.",
+      "missingUserDataDescription": "The selected game account has not uploaded the required data. Upload its account data (Suite) first; MySekai mode also needs MySekai (home area) data. Then return here and try again.",
       "uploadDataAction": "Upload data",
       "deckTitle": "Deck #{index}",
       "score": "score {score}",
@@ -484,12 +486,6 @@ export default {
       "challengeScoreDelta": "Challenge score delta {value}",
       "challengeScoreDeltaLabel": "Challenge score delta",
       "unknownCard": "Unknown card",
-      "cardGroups": {
-        "power": "Power",
-        "training": "Training",
-        "skillBonus": "Skill & bonus",
-        "storyCanvas": "Stories & canvas"
-      },
       "cardTotalPower": "Power {value}",
       "cardTotalPowerShort": "Total power {value}",
       "cardBasePower": "Base {value}",
@@ -514,6 +510,21 @@ export default {
       "canvasBonus": "Canvas bonus",
       "noCanvasBonus": "No canvas"
     },
+    "errors": {
+      "unknown": "Recommendation failed. Try again later; if it keeps failing, open a ticket.",
+      "notEnoughCards": "Not enough cards: only {count} cards remain after filtering, but at least 5 are needed. Relax the rarity/attribute filters.",
+      "currentDeckIncomplete": "The current team read from the game has fewer than 5 cards. Turn off \"use current team\", or build a full team in the game and upload your data again.",
+      "musicRequired": "Select a song and a difficulty first.",
+      "bonusTargetsRequired": "Enter at least one target bonus.",
+      "skillOrderRequired": "Fill in the complete skill order, or switch back to automatic skill order.",
+      "worldBloomConfigInvalid": "The World Link chapter or unit settings are incomplete. Pick the chapter character again.",
+      "eventConditionRequired": "A simulated event needs both an event attribute and a unit.",
+      "algorithmRequired": "Select at least one search algorithm.",
+      "accountRequired": "Sign in and select a game account first.",
+      "masterNotReady": "Game data is not ready yet. Wait for the download to finish and try again.",
+      "timeout": "The calculation timed out. Enable fewer algorithms or raise the engine timeout in advanced settings, then try again.",
+      "engineFailed": "The deck engine hit an error. Reload the page and try again; if it keeps failing, open a ticket."
+    },
     "toast": {
       "runSuccessTitle": "Recommendation complete",
       "runFailedTitle": "Recommendation failed",
@@ -535,7 +546,7 @@ export default {
   },
   "eventPlanner": {
     "title": "Event Planner",
-    "description": "Paint the event calendar with points-per-hour brushes and track the gap to your target PT in real time.",
+    "description": "Paint the event calendar with points-per-hour brushes and track the gap to your target PT in real time. A \"brush\" is one deck + song and its Pt per hour; painting it onto the calendar adds up the total Pt.",
     "sections": {
       "setup": {
         "title": "Account & Event",
@@ -632,7 +643,7 @@ export default {
       "reached": "{planned} PT planned — target covered!"
     },
     "errors": {
-      "noResult": "The recommend engine returned no usable deck, so PT per play cannot be computed."
+      "noResult": "No usable deck was found, so PT per play cannot be estimated. Make sure the account has uploaded data and check the filters on the deck page."
     }
   }
 } as const

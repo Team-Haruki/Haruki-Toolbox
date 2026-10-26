@@ -2,8 +2,10 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { useRouter } from "vue-router"
+import { useMediaQuery } from "@vueuse/core"
 import { LucideCalendarDays, LucideMusic, LucideSquareUserRound } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
+import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
 import {
   Command,
   CommandEmpty,
@@ -39,6 +41,9 @@ const activeIndex = ref(0)
 
 const isMac = typeof navigator !== "undefined" && /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent)
 const shortcutLabel = isMac ? "⌘K" : "Ctrl+K"
+// A keyboard hint is noise on touch devices: no ⌘ to press.
+const hasFinePointer = useMediaQuery("(pointer: fine)")
+const regionLabel = computed(() => resolveSekaiRegionLabel(region.value, t))
 
 const hasQuery = computed(() => query.value.trim() !== "")
 const activeEntry = computed<SearchResultEntry | null>(() => results.value[activeIndex.value] ?? null)
@@ -208,8 +213,8 @@ function selectEntry(entry: SearchIndexEntry) {
         </CommandList>
 
         <div class="flex items-center justify-between gap-2 border-t px-3 py-2 text-xs text-muted-foreground">
-          <span>{{ t("globalSearch.footerRegion", { region: region.toUpperCase() }) }}</span>
-          <span>{{ t("globalSearch.footerHint", { shortcut: shortcutLabel }) }}</span>
+          <span>{{ t("globalSearch.footerRegion", { region: regionLabel }) }}</span>
+          <span v-if="hasFinePointer">{{ t("globalSearch.footerHint", { shortcut: shortcutLabel }) }}</span>
         </div>
       </Command>
     </DialogContent>

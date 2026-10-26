@@ -1,4 +1,5 @@
 import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-data"
+import { markDeckRecommendUserDataAvailable, markDeckRecommendUserDataMissing } from "./user-data-availability"
 import {
   getUserProfile,
   fetchDeckRecommendMysekaiUserData,
@@ -90,6 +91,24 @@ export async function fetchDeckRecommendUserDataWithCache(
   params: FetchDeckRecommendUserDataParams,
   options: { strategy?: DeckRecommendUserDataCacheStrategy } = {},
 ): Promise<DeckRecommendUserDataFetchResult> {
+  // Every fetch (the deck page, the home data panel's refresh, the session
+  // prefetch) keeps the "no data uploaded" flag current for this account.
+  try {
+    const result = await fetchDeckRecommendUserDataWithCacheUnmarked(params, options)
+    markDeckRecommendUserDataAvailable(params.server, params.gameUserId, params.mode)
+    return result
+  } catch (error) {
+    if (getMissingUploadDataType(error)) {
+      markDeckRecommendUserDataMissing(params.server, params.gameUserId, params.mode)
+    }
+    throw error
+  }
+}
+
+async function fetchDeckRecommendUserDataWithCacheUnmarked(
+  params: FetchDeckRecommendUserDataParams,
+  options: { strategy?: DeckRecommendUserDataCacheStrategy },
+): Promise<DeckRecommendUserDataFetchResult> {
   if (params.mode === "mysekai") {
     const [suiteResult, mysekaiResult] = await Promise.all([
       fetchDeckRecommendSingleUserDataWithCache({ ...params, mode: "suite" }, options.strategy ?? "check-remote"),
@@ -168,9 +187,14 @@ export async function refreshDeckRecommendSuitesForBoundAccounts(input: {
       if (!fetchResult.cacheHit) {
         result.updated += 1
       }
+      markDeckRecommendUserDataAvailable(account.server, account.userId, "suite")
     } catch (error) {
-      if (getMissingUploadDataType(error)) result.missing += 1
-      else result.failed += 1
+      if (getMissingUploadDataType(error)) {
+        result.missing += 1
+        markDeckRecommendUserDataMissing(account.server, account.userId, "suite")
+      } else {
+        result.failed += 1
+      }
     }
     completed += 1
     input.onProgress?.({ completed, total: result.total })

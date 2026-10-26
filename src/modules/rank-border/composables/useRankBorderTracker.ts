@@ -1,4 +1,6 @@
 import { computed, ref } from "vue"
+import { translate } from "@/shared/i18n"
+import { describeTrackerError } from "../lib/tracker-error"
 import {
   fetchRankBorderOverview,
   fetchRankBorderWebRankDetailV2,
@@ -30,7 +32,10 @@ export function useRankBorderTracker() {
   const userResult = ref<RankBorderLatest | null>(null)
   const rankResult = ref<RankBorderLatest | null>(null)
   const loading = ref(false)
+  /** User-language text of the last overview failure (see `describeError`). */
   const error = ref<string | null>(null)
+  /** Raw backend text behind `error`, for a muted detail line. */
+  const errorDetail = ref<string | null>(null)
   const userError = ref<string | null>(null)
   const rankError = ref<string | null>(null)
   const refreshedAt = ref<number | null>(null)
@@ -50,6 +55,7 @@ export function useRankBorderTracker() {
     const signal = input.signal
     loading.value = true
     error.value = null
+    errorDetail.value = null
     userError.value = null
     rankError.value = null
 
@@ -93,7 +99,11 @@ export function useRankBorderTracker() {
       if (signal?.aborted) {
         return
       }
-      error.value = refreshError instanceof Error ? refreshError.message : String(refreshError)
+      // Tracker errors carry raw English text: keep the localized hint as
+      // the headline and show that text as the detail line.
+      const described = describeTrackerError(refreshError, translate("rankBorder.result.loadErrorHint"))
+      error.value = described.message
+      errorDetail.value = described.detail ?? null
     } finally {
       loading.value = false
     }
@@ -150,6 +160,7 @@ export function useRankBorderTracker() {
     growthIntervalSeconds,
     growthByRank,
     status,
+    errorDetail,
     topRankings,
     topPlayerGrowths,
     topRankGrowths,

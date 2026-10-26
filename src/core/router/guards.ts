@@ -4,6 +4,7 @@ import { useUserStore } from "@/shared/stores/user"
 import { ensureI18nBundles, translate } from "@/shared/i18n"
 import { resolveI18nBundlesForPath } from "@/shared/i18n/bundles"
 import { resolveSafeRedirectTarget } from "@/core/router/navigation"
+import { clearLoginReason, isLoginReason, rememberLoginReason } from "@/modules/auth/lib/login-reason"
 
 export function setupRouteGuards(router: Router) {
     router.beforeEach((to) => {
@@ -12,6 +13,16 @@ export function setupRouteGuards(router: Router) {
 
         const hasKratosFlow = typeof to.query.flow === "string" && to.query.flow.trim() !== ""
         const allowGuestRouteForStepUp = to.name === "user.login" && hasKratosFlow
+
+        if (to.name === "user.login") {
+            // A reason arriving in the query (redirectToLogin, the guard below)
+            // is kept for the document that comes back from Kratos.
+            if (isLoginReason(to.query.reason)) {
+                rememberLoginReason(to.query.reason)
+            }
+        } else {
+            clearLoginReason()
+        }
 
         if (to.meta.guestOnly && userStore.isLoggedIn && !allowGuestRouteForStepUp) {
             return resolveSafeRedirectTarget(to.query.redirect) ?? "/"
@@ -22,14 +33,14 @@ export function setupRouteGuards(router: Router) {
         )
 
         if (requiresAuth && !userStore.isLoggedIn) {
-            if (to.path !== "/user/login" && to.query.reason !== "session-expired") {
-                toast.error(translate("core.auth.loginRequiredTitle"), {
-                    description: translate("core.auth.loginRequiredDescription"),
-                })
-            }
+            const requiresRole = to.matched.some((record) => record.meta.requiresAdmin || record.meta.requiresSuperAdmin)
+            const reason = requiresRole ? "admin-required" : "auth-required"
+            // The login page hands the browser to Kratos right away, so a
+            // toast here is lost; the page renders the reason inline instead.
+            rememberLoginReason(reason)
             return {
                 path: "/user/login",
-                query: { redirect: to.fullPath },
+                query: { redirect: to.fullPath, reason },
             }
         }
 
@@ -42,7 +53,9 @@ export function setupRouteGuards(router: Router) {
             toast.error(translate("core.auth.permissionDeniedTitle"), {
                 description: translate("core.auth.requireSuperAdminDescription"),
             })
-            return "/"
+            // An admin who opens a super-admin page stays in the admin area;
+            // only a normal user is sent back to the home page.
+            return userStore.isAdmin ? "/admin/dashboard" : "/"
         }
 
         if (to.meta.requiresAdmin && !userStore.isAdmin) {

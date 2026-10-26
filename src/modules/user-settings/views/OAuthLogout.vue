@@ -14,7 +14,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { extractErrorMessage } from "@/lib/error-utils"
-import { logoutInPlace } from "@/modules/auth/api/logout"
+import { logout, logoutInPlace } from "@/modules/auth/api/logout"
+import { useUserStore } from "@/shared/stores/user"
 import {
   acceptOAuthLogoutChallenge,
   getOAuthLogoutChallenge,
@@ -26,10 +27,14 @@ import {
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const userStore = useUserStore()
 
 const logoutChallenge = computed(() =>
   typeof route.query.logout_challenge === "string" ? route.query.logout_challenge.trim() : ""
 )
+// `/logout` typed by hand (no Hydra challenge) is just a sign-out request:
+// offer the ordinary confirmation instead of a "missing challenge" error.
+const isPlainLogout = computed(() => logoutChallenge.value === "")
 const logoutRequest = ref<OAuthLogoutChallenge | null>(null)
 const isLoading = ref(false)
 const isSubmitting = ref(false)
@@ -101,6 +106,18 @@ async function confirmLogout() {
   }
 }
 
+async function confirmPlainLogout() {
+  if (isSubmitting.value) return
+  actionError.value = ""
+  isSubmitting.value = true
+  try {
+    await logout()
+  } catch (error: unknown) {
+    actionError.value = extractErrorMessage(error, t("oauth.logout.toast.retry"))
+    isSubmitting.value = false
+  }
+}
+
 async function cancelLogout() {
   if (isSubmitting.value) return
   const challenge = logoutRequest.value?.challenge?.trim() || logoutChallenge.value
@@ -153,6 +170,33 @@ async function cancelLogout() {
           {{ t("oauth.logout.cancel") }}
         </Button>
         <Button class="flex-1" :disabled="isSubmitting" @click="confirmLogout">
+          <Loader2 v-if="isSubmitting" class="h-4 w-4 mr-2 animate-spin" />
+          <LogOut v-else class="h-4 w-4 mr-2" />
+          {{ isSubmitting ? t("oauth.logout.loggingOut") : t("oauth.logout.confirm") }}
+        </Button>
+      </CardFooter>
+    </Card>
+
+    <Card class="w-full max-w-md" v-else-if="isPlainLogout">
+      <CardHeader class="text-center">
+        <div class="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <LogOut class="h-6 w-6 text-primary" />
+        </div>
+        <CardTitle class="text-xl">{{ t("oauth.logout.title") }}</CardTitle>
+        <CardDescription>
+          {{ userStore.isLoggedIn ? t("oauth.logout.localDescription") : t("oauth.logout.localSignedOutDescription") }}
+        </CardDescription>
+      </CardHeader>
+      <CardContent v-if="actionError" class="pt-0">
+        <div class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {{ actionError }}
+        </div>
+      </CardContent>
+      <CardFooter class="flex gap-3">
+        <Button variant="outline" class="flex-1" :disabled="isSubmitting" @click="router.push({ name: 'home' })">
+          {{ userStore.isLoggedIn ? t("oauth.logout.cancel") : t("oauth.logout.backHome") }}
+        </Button>
+        <Button v-if="userStore.isLoggedIn" class="flex-1" :disabled="isSubmitting" @click="confirmPlainLogout">
           <Loader2 v-if="isSubmitting" class="h-4 w-4 mr-2 animate-spin" />
           <LogOut v-else class="h-4 w-4 mr-2" />
           {{ isSubmitting ? t("oauth.logout.loggingOut") : t("oauth.logout.confirm") }}

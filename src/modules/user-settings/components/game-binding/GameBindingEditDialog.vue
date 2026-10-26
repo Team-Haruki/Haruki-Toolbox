@@ -44,13 +44,21 @@ const props = defineProps<{
   open: boolean
   isCreating: boolean
   verificationTriggered: boolean
+  /** The UID/server changed after verifying: Save is disabled until re-verified. */
+  verificationInvalidated: boolean
   isSaving: boolean
   isVerifying: boolean
   allowCNMysekai: boolean
   userIdInput: string
+  /** Inline error under the UID field; empty when valid. */
+  userIdError: string
   editTarget: GameAccountBinding | null
   regionOptions: ReadonlyArray<{ value: SekaiRegion; label: string }>
 }>()
+
+const UID_INPUT_ID = "binding-user-id"
+const UID_ERROR_ID = "binding-user-id-error"
+const UID_HINT_ID = "binding-user-id-hint"
 
 const emit = defineEmits<{
   (e: "update:open", value: boolean): void
@@ -152,17 +160,21 @@ const mysekaiPermissionOptions = computed(() =>
               </Select>
             </div>
             <div class="grid gap-1.5">
-              <Label for="binding-user-id">{{ t("userSettings.gameBinding.editDialog.fields.userId") }}</Label>
+              <Label :for="UID_INPUT_ID">{{ t("userSettings.gameBinding.editDialog.fields.userId") }}</Label>
               <Input
-                id="binding-user-id"
+                :id="UID_INPUT_ID"
                 :model-value="userIdInput"
                 :disabled="!isCreating || editTarget?.verified"
                 class="w-full"
                 type="text"
                 inputmode="numeric"
                 pattern="\\d*"
+                :aria-invalid="userIdError ? 'true' : undefined"
+                :aria-describedby="userIdError ? UID_ERROR_ID : UID_HINT_ID"
                 @update:model-value="emit('update:userIdInput', String($event ?? ''))"
               />
+              <p v-if="userIdError" :id="UID_ERROR_ID" role="alert" class="text-xs text-destructive">{{ userIdError }}</p>
+              <p v-else :id="UID_HINT_ID" class="text-xs text-muted-foreground">{{ t("userSettings.gameBinding.editDialog.uidHint") }}</p>
             </div>
           </div>
 
@@ -173,7 +185,14 @@ const mysekaiPermissionOptions = computed(() =>
               :verified-label="t('userSettings.gameBinding.status.verified')"
               :unverified-label="t('userSettings.gameBinding.status.unverified')"
             />
-            <p v-if="isCreating && !verificationTriggered" class="min-w-0 flex-1 text-xs text-muted-foreground">
+            <p
+              v-if="isCreating && verificationInvalidated && !verificationTriggered"
+              role="status"
+              class="min-w-0 flex-1 text-xs font-medium text-amber-700 dark:text-amber-300"
+            >
+              {{ t("userSettings.gameBinding.validation.uidChangedReverify") }}
+            </p>
+            <p v-else-if="isCreating && !verificationTriggered" class="min-w-0 flex-1 text-xs text-muted-foreground">
               {{ t("userSettings.gameBinding.editDialog.verifyHint") }}
             </p>
             <Button

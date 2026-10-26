@@ -1,8 +1,13 @@
 <script setup lang="ts">
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
 import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
+import { useSuiteRefresh } from "@/shared/sekai/user-snapshot/use-suite-refresh"
+import { formatUploadTime, useUploadTimeText } from "@/shared/sekai/user-snapshot/upload-time"
+import { useRouteQueryState, type QueryCodec } from "@/composables/useRouteQueryState"
+import { readQueryEnum, writeQueryValue } from "@/lib/query-codec"
 
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
 import { LucideArrowUpRight, LucideCopy, LucideRefreshCw, LucideTrophy } from "lucide-vue-next"
@@ -13,7 +18,12 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
 import { resolveSekaiCharacterColor } from "@/shared/sekai/catalog"
 import { copyTextToClipboard } from "@/lib/clipboard"
-import { PLAYER_PROFILE_CAPABILITIES, usePlayerProfile } from "@/modules/player-profile/composables/usePlayerProfile"
+import {
+  PLAYER_PROFILE_CAPABILITIES,
+  PLAYER_PROFILE_SOURCES,
+  usePlayerProfile,
+  type PlayerProfileSource,
+} from "@/modules/player-profile/composables/usePlayerProfile"
 import ProfileRadarChart from "@/modules/player-profile/components/ProfileRadarChart.vue"
 import ProfileUnitLegend from "@/modules/player-profile/components/ProfileUnitLegend.vue"
 import { useProfileHonors } from "@/modules/player-profile/composables/useProfileHonors"
@@ -57,9 +67,20 @@ import { CARD_RARITY_TYPES, type CardRarityType } from "@/modules/cards/lib/card
 import { MUSIC_DIFFICULTIES, MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
 import { MUSIC_PROGRESS_STATUS_COLORS, buildMusicProgress } from "@/modules/music-library/lib/music-progress"
 import { useMusicProgressMasterData } from "@/modules/music-library/composables/useMusicProgressMasterData"
-import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 
 const { t, locale } = useI18n()
+
+// The 实时/上传的数据 choice lives in the URL so a reload or a shared link
+// opens the same source.
+type ProfileSourceQuery = { source: PlayerProfileSource }
+const SOURCE_QUERY_CODEC: QueryCodec<ProfileSourceQuery> = {
+  keys: ["source"],
+  filterKeys: [],
+  defaults: () => ({ source: "realtime" }),
+  parse: (query) => ({ source: readQueryEnum(query.source, PLAYER_PROFILE_SOURCES) ?? "realtime" }),
+  serialize: (state) => ({ source: writeQueryValue(state.source, "realtime") }),
+}
+const sourceQuery = useRouteQueryState(SOURCE_QUERY_CODEC)
 
 const {
   selectedAccount,
@@ -97,7 +118,18 @@ const {
   characterMap,
   unitColorMap,
   reloadMaster,
-} = usePlayerProfile()
+} = usePlayerProfile({ initialSource: sourceQuery.state.source })
+
+// Keep the URL and the composable's source in step in both directions (the
+// composable may correct the source for an account that lacks a capability).
+watch(dataSource, (value) => {
+  sourceQuery.patch({ source: value })
+})
+watch(() => sourceQuery.state.source, (value) => {
+  if (dataSource.value !== value) {
+    dataSource.value = value
+  }
+})
 
 const musicMaster = useMusicProgressMasterData(accountRegion)
 
@@ -112,22 +144,34 @@ const snapshotData = computed(() =>
   isRealtime.value ? normalizeProfileSnapshot(profileData.value) : suiteData.value,
 )
 
-const { isLoading, hasError, isReady, suiteDataMissing, errorDetail } = useUserDataPageState({
+const {
+  isLoading,
+  hasError,
+  isReady,
+  suiteDataMissing,
+  missingDataType,
+  errorMessage,
+  errorDetail,
+} = useUserDataPageState({
   status: sourceStatus,
   error: sourceError,
   masterLoading: masterLoading,
   masterError: masterError,
+  account: selectedAccount,
+  fallback: () => t("playerProfile.loadError"),
 })
 
-const dateTimeFormatter = computed(() => new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" }))
-
-const uploadTimeText = computed(() => {
-  const millis = isRealtime.value
-    ? profileUpdatedAt.value
-    : uploadTime.value != null
-      ? suiteUploadTimeToMillis(uploadTime.value)
-      : null
-  return millis == null ? null : dateTimeFormatter.value.format(millis)
+// Realtime shows when the profile was fetched; the uploaded source shows the
+// shared "data uploaded at" line like every other snapshot page.
+const sourceTime = computed(() => isRealtime.value ? profileUpdatedAt.value : uploadTime.value)
+const uploadTimeText = useUploadTimeText(sourceTime)
+const dataTimeLabel = computed(() => {
+  if (uploadTimeText.value == null) {
+    return null
+  }
+  return isRealtime.value
+    ? t("playerProfile.realtimeAsOf", { time: uploadTimeText.value })
+    : t("uploadedGameData.uploadedAt", { time: uploadTimeText.value })
 })
 
 /**
@@ -140,7 +184,7 @@ function snapshotNote(snapshotUploadTime: number | null): string | null {
     return null
   }
 
-  return t("playerProfile.snapshotNote", { time: dateTimeFormatter.value.format(suiteUploadTimeToMillis(snapshotUploadTime)) })
+  return t("playerProfile.snapshotNote", { time: formatUploadTime(snapshotUploadTime) })
 }
 
 const extrasNote = computed(() => snapshotNote(extrasUploadTime.value))
@@ -406,18 +450,20 @@ async function copyGameId() {
   }
 }
 
-function refresh() {
-  if (isRealtime.value) {
-    void reloadProfile("refresh")
-    void reloadExtras("check-remote")
-  } else {
-    void reloadSuite("check-remote")
-    void reloadMultiLive("check-remote")
-    void reloadHonors("check-remote")
-  }
-  void reloadEvents("check-remote")
-  reloadMaster()
-}
+// The primary source's reload drives the "up to date / updated to …" toast;
+// the ancillary subsets and master data refresh alongside it.
+const { refreshing, refresh } = useSuiteRefresh([
+  () => isRealtime.value ? reloadProfile("refresh") : reloadSuite("check-remote"),
+  async () => {
+    if (isRealtime.value) {
+      await reloadExtras("check-remote")
+    } else {
+      await Promise.all([reloadMultiLive("check-remote"), reloadHonors("check-remote")])
+    }
+    await reloadEvents("check-remote")
+    reloadMaster()
+  },
+])
 
 function retry() {
   if (masterError.value != null) {
@@ -459,9 +505,9 @@ function retry() {
         </div>
         <!-- Refresh reloads every module, so it lives with the page-level data time. -->
         <div v-if="sourceStatus !== 'idle'" class="flex items-center gap-1 text-xs text-muted-foreground">
-          <span v-if="uploadTimeText">{{ t("playerProfile.dataAsOf", { time: uploadTimeText }) }}</span>
-          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="isLoading" @click="refresh">
-            <LucideRefreshCw class="size-3.5" />
+          <span v-if="dataTimeLabel">{{ dataTimeLabel }}</span>
+          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="isLoading || refreshing" @click="refresh">
+            <LucideRefreshCw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
             {{ t("playerProfile.refresh") }}
           </Button>
         </div>
@@ -475,22 +521,23 @@ function retry() {
       </CardContent>
     </Card>
 
+    <!-- Missing game data (uploaded snapshot or realtime profile): guidance, not an error -->
     <Card v-else-if="suiteDataMissing">
       <CardContent class="py-10">
-        <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" />
+        <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" :data-type="missingDataType ?? 'suite'" />
       </CardContent>
     </Card>
 
-    <!-- Error -->
+    <!-- Backend / masterdata failure -->
     <Card v-else-if="hasError && !isLoading">
-      <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <p class="text-sm text-muted-foreground">{{ t("playerProfile.loadError") }}</p>
-        <p v-if="errorDetail" class="max-w-full truncate font-mono text-xs text-muted-foreground">
-          {{ errorDetail }}
-        </p>
-        <Button variant="outline" size="sm" @click="retry">
-          {{ t("playerProfile.retry") }}
-        </Button>
+      <CardContent>
+        <LoadErrorState
+          :description="errorMessage"
+          :detail="errorDetail"
+          :retry-label="t('playerProfile.retry')"
+          :retrying="isLoading"
+          @retry="retry"
+        />
       </CardContent>
     </Card>
 

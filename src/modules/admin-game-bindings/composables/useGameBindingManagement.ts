@@ -1,8 +1,11 @@
-import { onMounted } from "vue"
-import { toast } from "vue-sonner"
+import { onMounted, ref, watch } from "vue"
+import { useRoute } from "vue-router"
 import { useI18n } from "vue-i18n"
 import { usePagedList } from "@/composables/usePagedList"
-import { extractErrorMessage } from "@/lib/error-utils"
+import { useRouteQuerySync } from "@/composables/useRouteQuerySync"
+import { describeError, type ErrorDescription } from "@/lib/error-utils"
+import { writeQueryValue } from "@/lib/query-codec"
+import { ADMIN_DEFAULT_PAGE_SIZE, readAdminPage, readAdminPageSize } from "@/modules/admin/lib/pagination"
 import {
   getGlobalGameBindings,
   type GlobalGameBinding,
@@ -12,22 +15,31 @@ import {
   resolveServerLabel,
   toBindingKey,
 } from "@/modules/admin-game-bindings/lib/management-meta"
-import { useGameBindingFilters } from "@/modules/admin-game-bindings/composables/useGameBindingFilters"
+import {
+  GAME_BINDING_FILTER_QUERY_KEYS,
+  useGameBindingFilters,
+  writeGameBindingFiltersQuery,
+} from "@/modules/admin-game-bindings/composables/useGameBindingFilters"
 import { useGameBindingSelection } from "@/modules/admin-game-bindings/composables/useGameBindingSelection"
 import { useGameBindingEditor } from "@/modules/admin-game-bindings/composables/useGameBindingEditor"
 import { useGameBindingActions } from "@/modules/admin-game-bindings/composables/useGameBindingActions"
 
+const QUERY_KEYS = [...GAME_BINDING_FILTER_QUERY_KEYS, "page", "size"] as const
+
 export function useGameBindingManagement() {
   const { t } = useI18n()
+  const route = useRoute()
   const {
     filterQ,
     filterServer,
     filterUserId,
     filterGameUserId,
     filterSort,
+    appliedFilters,
     servers,
     editServers,
     sortOptions,
+    applyFilterValues,
     buildQueryParams,
     resetFilterValues,
   } = useGameBindingFilters()
@@ -46,27 +58,30 @@ export function useGameBindingManagement() {
     openEditBinding,
   } = useGameBindingEditor()
 
+  const loadError = ref<ErrorDescription | null>(null)
+
   const {
     loading,
     items: bindings,
     total,
     page,
+    pageSize,
     totalPages,
     resetPage,
     load: loadBindings,
     prevPage,
     nextPage,
+    goToPage,
   } = usePagedList<GlobalGameBinding>({
-    initialPage: 1,
-    initialPageSize: 50,
+    initialPage: readAdminPage(route.query.page),
+    initialPageSize: readAdminPageSize(route.query.size),
     fetchPage: ({ page, pageSize }) => getGlobalGameBindings(buildQueryParams(page, pageSize)),
     onBeforeLoad: () => {
       resetSelection()
+      loadError.value = null
     },
     onError: (error) => {
-      toast.error(t("adminGameBindings.toast.loadFailedTitle"), {
-        description: extractErrorMessage(error, t("adminGameBindings.toast.loadFailedFallback")),
-      })
+      loadError.value = describeError(error, t("adminGameBindings.toast.loadFailedFallback"))
     },
   })
 
@@ -120,15 +135,30 @@ export function useGameBindingManagement() {
   })
 
   function applyFilters() {
+    applyFilterValues()
     resetPage()
     void loadBindings()
   }
 
   function resetFilters() {
     resetFilterValues()
-    resetPage()
+    applyFilters()
+  }
+
+  function reload() {
     void loadBindings()
   }
+
+  watch(pageSize, () => {
+    resetPage()
+    void loadBindings()
+  })
+
+  useRouteQuerySync(QUERY_KEYS, () => ({
+    ...writeGameBindingFiltersQuery(appliedFilters.value),
+    page: writeQueryValue(page.value, 1),
+    size: writeQueryValue(pageSize.value, ADMIN_DEFAULT_PAGE_SIZE),
+  }))
 
   onMounted(() => {
     void loadBindings()
@@ -136,9 +166,11 @@ export function useGameBindingManagement() {
 
   return {
     loading,
+    loadError,
     bindings,
     total,
     page,
+    pageSize,
     totalPages,
     filterQ,
     filterServer,
@@ -167,8 +199,10 @@ export function useGameBindingManagement() {
     serverLabel,
     applyFilters,
     resetFilters,
+    reload,
     prevPage,
     nextPage,
+    goToPage,
     toggleSelect,
     toggleSelectAll,
     openDeleteConfirm,

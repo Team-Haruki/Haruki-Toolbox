@@ -2,8 +2,9 @@
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { useIntervalFn } from "@vueuse/core"
-import { LucideFilterX, LucideInbox, LucideInfo, LucideWifiOff } from "lucide-vue-next"
+import { LucideFilterX, LucideInbox, LucideInfo, LucideRefreshCcw, LucideWifiOff } from "lucide-vue-next"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import StationActiveFilters from "@/modules/sekai-station/components/StationActiveFilters.vue"
@@ -71,6 +72,11 @@ const retryText = computed(() => {
           <LucideWifiOff class="size-8 text-destructive/70" aria-hidden="true" />
           <p class="text-sm text-muted-foreground" role="alert">{{ t("sekaiStation.connection.failed") }}</p>
           <p class="text-xs text-muted-foreground tabular-nums">{{ retryText }}</p>
+          <!-- Manual retry skips the remaining backoff instead of making the user wait it out. -->
+          <Button variant="outline" size="sm" class="mt-1" :disabled="feed.retryAt === null" @click="feed.retryImmediately()">
+            <LucideRefreshCcw class="size-4" aria-hidden="true" />
+            {{ t("sekaiStation.connection.retryNow") }}
+          </Button>
         </CardContent>
       </Card>
 
@@ -106,6 +112,16 @@ const retryText = computed(() => {
           <span class="font-medium" role="status">{{ t("sekaiStation.connection.disconnected") }}</span>
           <span aria-hidden="true">·</span>
           <span class="tabular-nums">{{ retryText }}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="ml-auto h-6 gap-1 px-1.5 text-xs text-destructive hover:text-destructive"
+            :disabled="feed.retryAt === null"
+            @click="feed.retryImmediately()"
+          >
+            <LucideRefreshCcw class="size-3.5" aria-hidden="true" />
+            {{ t("sekaiStation.connection.retryNow") }}
+          </Button>
         </div>
 
         <Card v-if="empty">

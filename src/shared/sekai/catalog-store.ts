@@ -235,6 +235,57 @@ export const useSekaiCatalogStore = defineStore("sekai-catalog", () => {
     }
   }
 
+  /** Kicks off (or joins) the region's remote check without waiting for it. */
+  function revalidateInBackground(
+    region: SekaiRegion,
+    files: readonly string[],
+    options: CatalogResourceOptions,
+  ) {
+    // A failure lands in `regionStates[region].error`, which consumers show
+    // as the offline notice; a new version bumps `masterFetchVersion` and
+    // the resource watchers reload from it.
+    sekaiDataStore.ensureRegionData(region, {
+      files,
+      optionalFiles: (options.optional ?? []).map(normalizeSekaiMasterFileName),
+      musicMetas: options.musicMetas ?? false,
+    }).catch(() => {})
+  }
+
+  /**
+   * Cache-first read: when IndexedDB already holds every requested file for
+   * a known version, returns it at once and revalidates in the background. A
+   * dead CDN then costs nothing on screen instead of a full retry run.
+   *
+   * Every requested file, optional ones included: an optional file the cache
+   * listing lacks has not been tried for this version yet (a known miss is
+   * recorded as `[]` and listed), and serving `[]` for it now would stick
+   * until the next mount because a later fetch changes no version.
+   */
+  async function readCachedFileMap(
+    region: SekaiRegion,
+    files: readonly string[],
+    required: readonly string[],
+    options: CatalogResourceOptions,
+  ): Promise<{ version: string; files: Record<string, unknown> } | null> {
+    await sekaiDataStore.ensureRegionCacheStateLoaded(region)
+    const state = sekaiDataStore.regionStates[region]
+    const version = state?.masterFetchVersion
+    if (!version) {
+      return null
+    }
+    const cachedFiles = new Set(state.files)
+    if (!files.every((fileName) => cachedFiles.has(fileName))) {
+      return null
+    }
+    const fileMap = await readRawFiles(region, version, files)
+    if (required.some((fileName) => fileMap[fileName] == null)) {
+      // Meta lists the file but the record is gone: the full path repairs it.
+      return null
+    }
+    revalidateInBackground(region, files, options)
+    return { version, files: fileMap }
+  }
+
   async function loadFileMap(
     region: SekaiRegion,
     files: readonly string[],
@@ -242,6 +293,18 @@ export const useSekaiCatalogStore = defineStore("sekai-catalog", () => {
   ): Promise<{ version: string; files: Record<string, unknown>; warning: string | null }> {
     const optional = new Set((options.optional ?? []).map(normalizeSekaiMasterFileName))
     const required = files.filter((fileName) => !isOptional(fileName, optional))
+
+    if (!options.force) {
+      const cached = await readCachedFileMap(region, files, required, options)
+      if (cached) {
+        for (const fileName of files) {
+          if (cached.files[fileName] == null) {
+            cached.files[fileName] = []
+          }
+        }
+        return { ...cached, warning: null }
+      }
+    }
 
     let warning = await ensureFiles(region, files, required, options)
     let version = currentVersion(region)
@@ -278,37 +341,26 @@ export const useSekaiCatalogStore = defineStore("sekai-catalog", () => {
   }
 
   /**
-   * Serves the cached build when it is still current after a cheap freshness
-   * check (rate limited inside the data store). A failed check keeps serving
-   * the cached value; a newer master version returns null so the caller
-   * rebuilds.
+   * Serves the cached build when it matches the region's current master
+   * version and starts a freshness check in the background (rate limited
+   * inside the data store). A newer version bumps `masterFetchVersion`, on
+   * which resource consumers reload; a failed check surfaces through the
+   * region state's `error`.
    */
-  async function serveCachedResource<T>(
+  function serveCachedResource<T>(
     region: SekaiRegion,
     key: string,
     requestedFiles: readonly string[],
     options: CatalogResourceOptions,
-  ): Promise<CatalogResourceResult<T> | null> {
+  ): CatalogResourceResult<T> | null {
     const entries = regionCache(region)
     const cached = entries.get(key)
     if (!cached?.version || cached.version !== currentVersion(region)) {
       return null
     }
-    let warning: string | null = null
-    try {
-      await sekaiDataStore.ensureRegionData(region, {
-        files: requestedFiles,
-        optionalFiles: (options.optional ?? []).map(normalizeSekaiMasterFileName),
-        musicMetas: options.musicMetas ?? false,
-      })
-    } catch (ensureError) {
-      warning = ensureError instanceof Error ? ensureError.message : String(ensureError)
-    }
-    if (cached.version !== currentVersion(region) || entries.get(key) !== cached) {
-      return null
-    }
+    revalidateInBackground(region, requestedFiles, options)
     cached.touchedAt = tick()
-    return { value: cached.value as T, warning }
+    return { value: cached.value as T, warning: null }
   }
 
   async function getResource<T>(
@@ -322,7 +374,7 @@ export const useSekaiCatalogStore = defineStore("sekai-catalog", () => {
     const entries = regionCache(region)
 
     if (!options.force) {
-      const served = await serveCachedResource<T>(region, key, requestedFiles, options)
+      const served = serveCachedResource<T>(region, key, requestedFiles, options)
       if (served) {
         return served
       }

@@ -199,6 +199,9 @@ test.describe("admin re-authentication", () => {
   })
 
   test("cancelling the password prompt leaves the switch unchanged", async ({ page }) => {
+    // Giving up on the password prompt is the admin's own choice, not a
+    // failure: nothing ran, so there is no toast and no inline error. The
+    // switch confirmation stays open and idle, ready to retry or cancel.
     const runtime = { current: { oauth2DeviceFlowEnabled: false } as Record<string, unknown> }
     const calls = await openSystemConfig(page, runtime, (body) => {
       runtime.current = { ...runtime.current, ...body }
@@ -207,18 +210,34 @@ test.describe("admin re-authentication", () => {
     const toggle = deviceFlowSwitch(page)
     await expect(toggle).toBeVisible({ timeout: 30_000 })
     await toggle.click()
-    await page.getByRole("alertdialog").getByRole("button", { name: /^(开启|Turn on)$/ }).click()
+    const confirm = page.getByRole("alertdialog", { name: /开启 OAuth2 设备授权|Turn on OAuth2 device authorization/ })
+    const confirmButton = confirm.getByRole("button", { name: /^(开启|Turn on)$/ })
+    await confirmButton.click()
 
+    // While the modal password prompt is on top, the confirmation underneath
+    // is hidden from the accessibility tree, so it is only checked afterwards.
     const dialog = reauthDialog(page)
     await expect(dialog).toBeVisible()
     await dialog.getByLabel(/当前密码|Current password/).fill("typed then abandoned")
     await dialog.getByRole("button", { name: /^(取消|Cancel)$/ }).click()
     await expect(dialog).toBeHidden()
 
-    await expect(page.locator("[data-sonner-toast][data-type=\"error\"]").filter({ hasText: /需要重新验证密码|Password re-verification required/ })).toBeVisible()
-    await expect(deviceFlowSwitch(page)).toHaveAttribute("aria-checked", "false")
+    // The pending state ends without a report: the confirm button is usable
+    // again, no alert line appears and no toast of any kind fires.
+    await expect(confirm).toBeVisible()
+    await expect(confirmButton).toBeEnabled()
+    await expect(confirmButton).not.toHaveAttribute("aria-busy", /.*/)
+    await expect(confirm.getByRole("alert")).toHaveCount(0)
+    await expect(page.locator("[data-sonner-toast]")).toHaveCount(0)
     expect(calls.filter((call) => call.method !== "GET")).toEqual([
       { method: "PUT", path: `${CONFIG_PATH}/runtime`, body: { oauth2DeviceFlowEnabled: true } },
     ])
+
+    // Backing out of the confirmation closes it and still changes nothing.
+    await confirm.getByRole("button", { name: /^(取消|Cancel)$/ }).click()
+    await expect(confirm).toBeHidden()
+    await expect(deviceFlowSwitch(page)).toHaveAttribute("aria-checked", "false")
+    await expect(page.locator("[data-sonner-toast]")).toHaveCount(0)
+    expect(calls.filter((call) => call.method !== "GET")).toHaveLength(1)
   })
 })

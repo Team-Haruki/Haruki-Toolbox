@@ -124,14 +124,16 @@ describe("realtime refresh gate", () => {
 })
 
 describe("jitterReconnectDelay", () => {
-  it("spreads a delay over [0.5, 1.5) of its value", () => {
+  it("keeps rounded delays within inclusive half and one-and-a-half bounds", () => {
     expect(jitterReconnectDelay(1_000, () => 0)).toBe(500)
     expect(jitterReconnectDelay(1_000, () => 0.5)).toBe(1_000)
     expect(jitterReconnectDelay(1_000, () => 0.999)).toBe(1_499)
-    for (let index = 0; index < 50; index += 1) {
-      const delay = jitterReconnectDelay(8_000)
+    // Rounding can reach the upper bound even when the random value is below 1.
+    expect(jitterReconnectDelay(8_000, () => 1 - Number.EPSILON)).toBe(12_000)
+    for (const sample of [0, 0.25, 0.5, 0.75, 0.999, 1 - Number.EPSILON]) {
+      const delay = jitterReconnectDelay(8_000, () => sample)
       expect(delay).toBeGreaterThanOrEqual(4_000)
-      expect(delay).toBeLessThan(12_000)
+      expect(delay).toBeLessThanOrEqual(12_000)
     }
   })
 })

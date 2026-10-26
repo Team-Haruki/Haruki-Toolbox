@@ -1,60 +1,146 @@
-import {computed, onMounted, ref} from "vue"
-import {toast} from "vue-sonner"
-import {useI18n} from "vue-i18n"
-import {usePagedList} from "@/composables/usePagedList"
-import {createPageQuery, type QueryParams, setQueryValue, setTrimmedQueryValue,} from "@/core/http/query"
-import {formatLocalizedDateTime} from "@/lib/date-time"
-import {getUploadLogs} from "@/modules/admin-statistics/api/upload-log"
+import { computed, onMounted, ref, watch } from "vue"
+import { useRoute, type LocationQuery } from "vue-router"
+import { useI18n } from "vue-i18n"
+import { usePagedList } from "@/composables/usePagedList"
+import { useRouteQuerySync } from "@/composables/useRouteQuerySync"
+import { createPageQuery, type QueryParams, setQueryValue, setTrimmedQueryValue } from "@/core/http/query"
+import { formatLocalizedDateTime } from "@/lib/date-time"
+import { describeError, type ErrorDescription } from "@/lib/error-utils"
+import { focusInvalidField } from "@/lib/form-focus"
+import {
+  readQueryDate,
+  readQueryEnum,
+  readQueryEnumList,
+  readQueryString,
+  writeQueryList,
+  writeQueryValue,
+} from "@/lib/query-codec"
+import { ADMIN_DEFAULT_PAGE_SIZE, readAdminPage, readAdminPageSize } from "@/modules/admin/lib/pagination"
+import { getUploadLogs } from "@/modules/admin-statistics/api/upload-log"
 import {
   CHART_COLORS,
   DEFAULT_UPLOAD_LOG_SORT,
+  UPLOAD_DATA_TYPE_FILTER_VALUES,
+  UPLOAD_METHOD_FILTER_VALUES,
+  UPLOAD_SERVER_FILTER_VALUES,
+  UPLOAD_SORT_FILTER_VALUES,
+  describeMultiFilterSelection,
   getUploadDataTypeOptions,
   getUploadMethodOptions,
   getUploadServerOptions,
   getUploadSortOptions,
   getUploadSuccessOptions,
+  resolveMultiFilterLabel,
   resolveUploadDataTypeLabel,
   resolveUploadMethodLabel,
   resolveUploadServerLabel,
 } from "@/modules/admin-statistics/lib/upload-log-meta"
-import type {UploadLog, UploadLogsResponse, UploadLogsSummary} from "@/types/admin"
-import {toastErrorWithExtractedMessage} from "@/lib/toast-utils"
+import type { UploadLog, UploadLogsResponse, UploadLogsSummary } from "@/types/admin"
+
+export interface UploadLogFilters {
+  from?: Date
+  to?: Date
+  gameUserId: string
+  method: string[]
+  dataType: string[]
+  server: string[]
+  success: string
+  sort: string
+}
+
+const SUCCESS_FILTER_VALUES = ["true", "false"] as const
+const QUERY_KEYS = ["from", "to", "uid", "method", "type", "server", "success", "sort", "page", "size"] as const
+export const UPLOAD_LOG_FILTER_IDS = {
+  from: "upload-log-filter-from",
+  to: "upload-log-filter-to",
+  gameUser: "upload-log-filter-game-user",
+} as const
+
+export function createDefaultUploadLogFilters(): UploadLogFilters {
+  return {
+    from: undefined,
+    to: undefined,
+    gameUserId: "",
+    method: [],
+    dataType: [],
+    server: [],
+    success: "all",
+    sort: DEFAULT_UPLOAD_LOG_SORT,
+  }
+}
+
+/** Filters from a shared or restored URL; unknown values fall back to the defaults. */
+export function parseUploadLogFiltersQuery(query: LocationQuery): UploadLogFilters {
+  return {
+    from: readQueryDate(query.from) ?? undefined,
+    to: readQueryDate(query.to) ?? undefined,
+    gameUserId: readQueryString(query.uid) ?? "",
+    method: readQueryEnumList(query.method, UPLOAD_METHOD_FILTER_VALUES),
+    dataType: readQueryEnumList(query.type, UPLOAD_DATA_TYPE_FILTER_VALUES),
+    server: readQueryEnumList(query.server, UPLOAD_SERVER_FILTER_VALUES),
+    success: readQueryEnum(query.success, SUCCESS_FILTER_VALUES) ?? "all",
+    sort: readQueryEnum(query.sort, UPLOAD_SORT_FILTER_VALUES) ?? DEFAULT_UPLOAD_LOG_SORT,
+  }
+}
+
+export function hasInvalidUploadLogTimeRange(filters: Pick<UploadLogFilters, "from" | "to">): boolean {
+  return !!filters.from && !!filters.to && filters.from.getTime() > filters.to.getTime()
+}
+
+function cloneFilters(filters: UploadLogFilters): UploadLogFilters {
+  return {
+    ...filters,
+    method: [...filters.method],
+    dataType: [...filters.dataType],
+    server: [...filters.server],
+  }
+}
 
 export function useUploadLogs() {
   const { t } = useI18n()
-  type FilterOption = { value: string; label: string }
+  const route = useRoute()
 
   const summary = ref<UploadLogsSummary | null>(null)
   const responseFrom = ref("")
   const responseTo = ref("")
   const filtersExpanded = ref(true)
+  const loadError = ref<ErrorDescription | null>(null)
 
-  const filterFrom = ref<Date>()
-  const filterTo = ref<Date>()
-  const filterMethod = ref<string[]>([])
-  const filterDataType = ref<string[]>([])
-  const filterServer = ref<string[]>([])
-  const filterSuccess = ref("all")
-  const filterSort = ref(DEFAULT_UPLOAD_LOG_SORT)
-  const filterGameUserId = ref("")
+  // `filters` is what the form shows; `applied` is what the list was loaded
+  // with (and what the URL mirrors), so paging never picks up half-edited filters.
+  const filters = ref<UploadLogFilters>(parseUploadLogFiltersQuery(route.query))
+  const applied = ref<UploadLogFilters>(cloneFilters(filters.value))
+  // The range error only shows after a query was attempted with it, and clears
+  // itself as soon as the pickers are fixed, so later queries are never blocked.
+  const timeRangeAttempted = ref(false)
+  const timeRangeInvalid = computed(() => hasInvalidUploadLogTimeRange(filters.value))
+  const timeRangeError = computed(() =>
+    timeRangeAttempted.value && timeRangeInvalid.value ? t("adminStatistics.uploadLogs.toast.invalidTimeRange") : null
+  )
+
   const {
     loading,
     items: logs,
     total,
     page,
+    pageSize,
     totalPages,
     resetPage,
     load: loadLogs,
     prevPage,
     nextPage,
+    goToPage,
   } = usePagedList<UploadLog, UploadLogsResponse>({
-    initialPage: 1,
-    initialPageSize: 20,
+    initialPage: readAdminPage(route.query.page),
+    initialPageSize: readAdminPageSize(route.query.size),
     fetchPage: ({ page, pageSize }) => getUploadLogs(buildParams(page, pageSize)),
     mapResponse: (response) => ({
       items: response.items ?? [],
       total: response.total ?? 0,
     }),
+    onBeforeLoad: () => {
+      loadError.value = null
+    },
     onSuccess: (response) => {
       summary.value = response.summary ?? null
       responseFrom.value = response.from ?? ""
@@ -64,11 +150,7 @@ export function useUploadLogs() {
       summary.value = null
       responseFrom.value = ""
       responseTo.value = ""
-      toastErrorWithExtractedMessage(
-        t("adminStatistics.uploadLogs.toast.loadFailedTitle"),
-        error,
-        t("adminStatistics.uploadLogs.toast.loadFailedFallback")
-      )
+      loadError.value = describeError(error, t("adminStatistics.uploadLogs.toast.loadFailedFallback"))
     },
   })
 
@@ -78,31 +160,15 @@ export function useUploadLogs() {
   const sortOptions = computed(() => getUploadSortOptions(t))
   const successOptions = computed(() => getUploadSuccessOptions(t))
 
-  function toggleMultiFilter(target: typeof filterMethod | typeof filterDataType | typeof filterServer, value: string, checked: boolean) {
-    target.value = checked
-        ? Array.from(new Set([...target.value, value]))
-        : target.value.filter((item) => item !== value)
+  function toggleMultiFilter(key: "method" | "dataType" | "server", value: string, checked: boolean) {
+    const current = filters.value[key]
+    filters.value[key] = checked
+      ? Array.from(new Set([...current, value]))
+      : current.filter((item) => item !== value)
   }
 
-  function resolveMultiFilterLabel(values: string[], options: readonly FilterOption[], fallback: string) {
-    if (values.length === 0) {
-      return fallback
-    }
-
-    const selected = options.filter((option) => values.includes(option.value))
-    if (selected.length === 0) {
-      return fallback
-    }
-
-    if (selected.length === 1) {
-      return selected[0]!.label
-    }
-
-    if (selected.length === 2) {
-      return `${selected[0]!.label}, ${selected[1]!.label}`
-    }
-
-    return `${selected[0]!.label} +${selected.length - 1}`
+  function moreLabel(first: string, count: number) {
+    return t("adminStatistics.uploadLogs.filters.selectedMore", { first, count })
   }
 
   function methodLabel(method?: string) {
@@ -122,48 +188,63 @@ export function useUploadLogs() {
   }
 
   function buildParams(currentPage: number, currentPageSize: number) {
+    const current = applied.value
     const params: QueryParams = createPageQuery(currentPage, currentPageSize)
-    setQueryValue(params, "sort", filterSort.value)
-    setQueryValue(params, "from", filterFrom.value?.toISOString())
-    setQueryValue(params, "to", filterTo.value?.toISOString())
+    setQueryValue(params, "sort", current.sort)
+    setQueryValue(params, "from", current.from?.toISOString())
+    setQueryValue(params, "to", current.to?.toISOString())
 
-    if (filterMethod.value.length > 0) setQueryValue(params, "upload_method", filterMethod.value.join(","))
-    if (filterDataType.value.length > 0) setQueryValue(params, "data_type", filterDataType.value.join(","))
-    if (filterServer.value.length > 0) setQueryValue(params, "server", filterServer.value.join(","))
-    if (filterSuccess.value !== "all") setQueryValue(params, "success", filterSuccess.value)
+    if (current.method.length > 0) setQueryValue(params, "upload_method", current.method.join(","))
+    if (current.dataType.length > 0) setQueryValue(params, "data_type", current.dataType.join(","))
+    if (current.server.length > 0) setQueryValue(params, "server", current.server.join(","))
+    if (current.success !== "all") setQueryValue(params, "success", current.success)
 
-    setTrimmedQueryValue(params, "game_user_id", filterGameUserId.value)
+    setTrimmedQueryValue(params, "game_user_id", current.gameUserId)
     return params
   }
 
-  function hasInvalidTimeRange() {
-    return !!filterFrom.value && !!filterTo.value && filterFrom.value.getTime() > filterTo.value.getTime()
-  }
-
   function applyFilters() {
-    if (hasInvalidTimeRange()) {
-      toast.error(t("adminStatistics.uploadLogs.toast.filterFailedTitle"), {
-        description: t("adminStatistics.uploadLogs.toast.invalidTimeRange"),
-      })
+    if (timeRangeInvalid.value) {
+      timeRangeAttempted.value = true
+      focusInvalidField(UPLOAD_LOG_FILTER_IDS.from)
       return
     }
-
+    timeRangeAttempted.value = false
+    applied.value = cloneFilters(filters.value)
     resetPage()
     void loadLogs()
   }
 
   function resetFilters() {
-    filterFrom.value = undefined
-    filterTo.value = undefined
-    filterMethod.value = []
-    filterDataType.value = []
-    filterServer.value = []
-    filterSuccess.value = "all"
-    filterSort.value = DEFAULT_UPLOAD_LOG_SORT
-    filterGameUserId.value = ""
-    resetPage()
+    filters.value = createDefaultUploadLogFilters()
+    timeRangeAttempted.value = false
+    applyFilters()
+  }
+
+  function reload() {
     void loadLogs()
   }
+
+  watch(pageSize, () => {
+    resetPage()
+    void loadLogs()
+  })
+
+  useRouteQuerySync(QUERY_KEYS, () => {
+    const current = applied.value
+    return {
+      from: writeQueryValue(current.from?.toISOString()),
+      to: writeQueryValue(current.to?.toISOString()),
+      uid: writeQueryValue(current.gameUserId.trim()),
+      method: writeQueryList(current.method),
+      type: writeQueryList(current.dataType),
+      server: writeQueryList(current.server),
+      success: writeQueryValue(current.success, "all"),
+      sort: writeQueryValue(current.sort, DEFAULT_UPLOAD_LOG_SORT),
+      page: writeQueryValue(page.value, 1),
+      size: writeQueryValue(pageSize.value, ADMIN_DEFAULT_PAGE_SIZE),
+    }
+  })
 
   const successRateValue = computed(() => {
     if (!summary.value) return null
@@ -232,35 +313,36 @@ export function useUploadLogs() {
 
   return {
     loading,
+    loadError,
     logs,
     total,
     page,
+    pageSize,
     totalPages,
     summary,
     filtersExpanded,
-    filterFrom,
-    filterTo,
-    filterMethod,
-    filterDataType,
-    filterServer,
-    filterSuccess,
-    filterSort,
-    filterGameUserId,
+    filters,
+    timeRangeError,
     uploadMethods,
     dataTypeOptions,
     servers,
     sortOptions,
     successOptions,
-    toggleMethodFilter: (value: string, checked: boolean) => toggleMultiFilter(filterMethod, value, checked),
-    toggleDataTypeFilter: (value: string, checked: boolean) => toggleMultiFilter(filterDataType, value, checked),
-    toggleServerFilter: (value: string, checked: boolean) => toggleMultiFilter(filterServer, value, checked),
-    filterMethodLabel: computed(() => resolveMultiFilterLabel(filterMethod.value, uploadMethods.value, t("adminStatistics.uploadLogs.filters.allMethods"))),
-    filterDataTypeLabel: computed(() => resolveMultiFilterLabel(filterDataType.value, dataTypeOptions.value, t("adminStatistics.uploadLogs.filters.allDataTypes"))),
-    filterServerLabel: computed(() => resolveMultiFilterLabel(filterServer.value, servers.value, t("adminStatistics.uploadLogs.filters.allServers"))),
+    toggleMethodFilter: (value: string, checked: boolean) => toggleMultiFilter("method", value, checked),
+    toggleDataTypeFilter: (value: string, checked: boolean) => toggleMultiFilter("dataType", value, checked),
+    toggleServerFilter: (value: string, checked: boolean) => toggleMultiFilter("server", value, checked),
+    filterMethodLabel: computed(() => resolveMultiFilterLabel(filters.value.method, uploadMethods.value, t("adminStatistics.uploadLogs.filters.allMethods"), moreLabel)),
+    filterDataTypeLabel: computed(() => resolveMultiFilterLabel(filters.value.dataType, dataTypeOptions.value, t("adminStatistics.uploadLogs.filters.allDataTypes"), moreLabel)),
+    filterServerLabel: computed(() => resolveMultiFilterLabel(filters.value.server, servers.value, t("adminStatistics.uploadLogs.filters.allServers"), moreLabel)),
+    filterMethodTitle: computed(() => describeMultiFilterSelection(filters.value.method, uploadMethods.value)),
+    filterDataTypeTitle: computed(() => describeMultiFilterSelection(filters.value.dataType, dataTypeOptions.value)),
+    filterServerTitle: computed(() => describeMultiFilterSelection(filters.value.server, servers.value)),
     applyFilters,
     resetFilters,
+    reload,
     prevPage,
     nextPage,
+    goToPage,
     methodLabel,
     serverLabel,
     formatTime,

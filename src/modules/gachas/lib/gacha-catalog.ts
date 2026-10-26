@@ -572,7 +572,7 @@ export function resolveGachaAssetKey(assetbundleName: string): string | null {
 export function buildGachaLogoCandidates(
   gacha: Pick<CatalogGacha, "id" | "seq" | "assetbundleName">,
   region: SekaiRegion,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string[] {
   const assetbundleName = gacha.assetbundleName.trim() || `ab_gacha_${gacha.id}`
   return [resolveSekaiGameAssetUrl(region, `ondemand/gacha/${assetbundleName}/logo/logo.png`, preference)]
@@ -588,7 +588,7 @@ export function buildGachaLogoCandidates(
 export function buildGachaBannerCandidates(
   gacha: Pick<CatalogGacha, "id" | "assetbundleName">,
   region: SekaiRegion,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string[] {
   const homeBanner = (key: string) => `startapp/home/banner/banner_${key}/banner_${key}.png`
   const paths = [homeBanner(`gacha${gacha.id}`)]
@@ -652,7 +652,7 @@ export function buildGachaBannerAliasMap(
 export function buildGachaImageCandidates(
   gacha: Pick<CatalogGacha, "id" | "seq" | "assetbundleName">,
   region: SekaiRegion,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
   aliasGachaId?: number | null,
 ): string[] {
   const aliasBanners = aliasGachaId != null && aliasGachaId !== gacha.id
@@ -669,7 +669,7 @@ export function buildGachaImageCandidates(
 export function buildGachaCeilItemIconCandidates(
   assetbundleName: string,
   region: SekaiRegion,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string[] {
   const name = assetbundleName.trim()
   if (!name) {

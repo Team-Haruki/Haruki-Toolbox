@@ -23,9 +23,9 @@ const { t } = useI18n()
   >
     <template v-for="(item, index) in items" :key="`${index}-${item}`">
       <span v-if="index > 0" class="text-muted-foreground/50" aria-hidden="true">·</span>
-      <span class="text-sm text-foreground/90">{{ item }}</span>
+      <span class="min-w-0 break-words [overflow-wrap:anywhere] text-sm text-foreground/90">{{ item }}</span>
     </template>
-    <div class="ml-auto flex shrink-0 items-center gap-2">
+    <div class="ml-auto flex max-w-full flex-wrap items-center gap-2">
       <Button type="button" variant="outline" size="sm" @click="emit('edit')">
         <LucideSettings2 class="size-4" />
         {{ t("deckRecommend.summaryBar.edit") }}

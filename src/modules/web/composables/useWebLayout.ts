@@ -5,12 +5,16 @@ import { useUserStore } from "@/shared/stores/user"
 import { WEB_NAV_SECTIONS, type NavItem } from "@/config/navigation"
 import { documentTitleOverride } from "@/composables/useDocumentTitle"
 import { getUserTickets } from "@/modules/tickets/api/user"
+import { collectNavUrls, navGroupContainsUrl, resolveActiveNavUrl } from "@/modules/web/lib/nav-active"
 
 const APP_TITLE_KEY = "app.name"
 const DEFAULT_PAGE_TITLE_KEY = "route.home"
 const COPYRIGHT_START_YEAR = 2024
 const HARUKI_LOGO = `${import.meta.env.BASE_URL}assets/haruki.ico`
 const TICKET_REMINDER_REFRESH_MS = 60_000
+// Links rendered outside WEB_NAV_SECTIONS (header, account group).
+const STATIC_NAV_URLS = ["/", "/about", "/admin", "/tickets"] as const
+const NAV_URLS = collectNavUrls(WEB_NAV_SECTIONS, STATIC_NAV_URLS)
 
 export function useWebLayout() {
   const route = useRoute()
@@ -58,21 +62,26 @@ export function useWebLayout() {
     document.title = currentPageTitle ? `${currentPageTitle} | ${appTitle}` : appTitle
   })
 
-  function isRouteInNavGroup(item: NavItem) {
-    return (item.items ?? []).some((subItem) => {
-      if (!subItem.url) return false
-      return route.path.startsWith(subItem.url)
-    })
+  // The active link is the longest nav url covering the current path, so
+  // `/cards/box` lights the card-box entry and not the catalog `/cards` one.
+  const activeNavUrl = computed(() => resolveActiveNavUrl(route.path, NAV_URLS))
+
+  function isNavLinkActive(url: string) {
+    return activeNavUrl.value === url
+  }
+
+  function isNavGroupActive(item: NavItem) {
+    return navGroupContainsUrl(item, activeNavUrl.value)
   }
 
   watch(
-    () => route.path,
+    activeNavUrl,
     () => {
       const nextState = { ...navGroupOpenState.value }
       WEB_NAV_SECTIONS.forEach((section) => {
         section.items.forEach((item) => {
           if (!item.items) return
-          if (isRouteInNavGroup(item)) {
+          if (isNavGroupActive(item)) {
             nextState[item.titleKey] = true
           } else if (nextState[item.titleKey] === undefined) {
             nextState[item.titleKey] = false
@@ -108,11 +117,13 @@ export function useWebLayout() {
 
     pendingUserTicketCountLoading = true
     try {
+      // Background badge count: a failure must stay silent (the tickets page
+      // reports its own load failure inline; two toasts for one outage is noise).
       const response = await getUserTickets(userId, {
         page: 1,
         page_size: 1,
         status: "pending_user",
-      })
+      }, { skipErrorToast: true })
       pendingUserTicketCount.value = response.total
     } catch {
       pendingUserTicketCount.value = null
@@ -164,5 +175,7 @@ export function useWebLayout() {
     pendingUserTicketCount,
     isNavGroupOpen,
     setNavGroupOpen,
+    isNavLinkActive,
+    isNavGroupActive,
   }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
 import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
 
@@ -67,11 +68,13 @@ const dialogItemId = ref<number | null>(null)
 
 const nowMs = Date.now()
 
-const { isLoading, hasError, isReady, suiteDataMissing, errorDetail } = useUserDataPageState({
+const { isLoading, hasError, isReady, suiteDataMissing, errorMessage, errorDetail } = useUserDataPageState({
   status: suiteStatus,
   error: suiteError,
   masterLoading: masterLoading,
   masterError: masterError,
+  account: selectedAccount,
+  fallback: () => t("training.area.loadError"),
 })
 
 
@@ -319,8 +322,8 @@ function formatQuantity(value: number): string {
 }
 
 function refresh() {
-  void reloadSuite("check-remote")
   reloadMaster()
+  return reloadSuite("check-remote")
 }
 
 useTrainingRefresh(refresh)
@@ -353,14 +356,14 @@ function retry() {
 
     <!-- Error -->
     <Card v-else-if="hasError && !isLoading">
-      <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
-        <p class="text-sm text-muted-foreground">{{ t("training.area.loadError") }}</p>
-        <p v-if="errorDetail" class="max-w-full truncate font-mono text-xs text-muted-foreground">
-          {{ errorDetail }}
-        </p>
-        <Button variant="outline" size="sm" @click="retry">
-          {{ t("training.area.retry") }}
-        </Button>
+      <CardContent>
+        <LoadErrorState
+          :description="errorMessage"
+          :detail="errorDetail"
+          :retry-label="t('training.area.retry')"
+          :retrying="isLoading"
+          @retry="retry"
+        />
       </CardContent>
     </Card>
 

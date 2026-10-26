@@ -51,6 +51,7 @@ import {
   deckSummaryMetrics as buildDeckSummaryMetrics,
   formatDeckInteger,
   formatDeckPercent,
+  formatElapsedSeconds,
   recommendElapsedTimingLabel,
   type DeckResultMetricsContext,
 } from "../lib/deck-result-metrics"
@@ -293,7 +294,7 @@ function formatPercentValue(value: number) {
             <CardTitle class="text-base">{{ t("deckRecommend.result.title") }}</CardTitle>
             <CardDescription>
               <template v-if="runner.elapsedMs.value != null">
-                {{ t("deckRecommend.result.totalElapsed", { ms: runner.elapsedMs.value }) }}
+                {{ t("deckRecommend.result.totalElapsed", { seconds: formatElapsedSeconds(runner.elapsedMs.value) }) }}
               </template>
               <template v-else>
                 {{ t("deckRecommend.result.description") }}
@@ -321,8 +322,8 @@ function formatPercentValue(value: number) {
                 class="inline-flex items-baseline gap-1"
               >
                 {{ item.label }}
-                <span class="font-mono font-medium text-foreground/80">{{ item.elapsedMs }}</span>
-                ms
+                <span class="font-mono font-medium text-foreground/80">{{ formatElapsedSeconds(item.elapsedMs) }}</span>
+                {{ t("deckRecommend.result.secondsUnit") }}
               </span>
               <span
                 v-for="item in runner.algorithmTimings.value"
@@ -330,8 +331,8 @@ function formatPercentValue(value: number) {
                 class="inline-flex items-baseline gap-1"
               >
                 {{ algorithmLabel(item.algorithm) }}
-                <span class="font-mono font-medium text-foreground/80">{{ item.elapsedMs }}</span>
-                ms
+                <span class="font-mono font-medium text-foreground/80">{{ formatElapsedSeconds(item.elapsedMs) }}</span>
+                {{ t("deckRecommend.result.secondsUnit") }}
               </span>
             </div>
             <div
@@ -352,8 +353,11 @@ function formatPercentValue(value: number) {
                 </RouterLink>
               </Button>
             </div>
-            <div v-else-if="runner.error.value" class="break-words rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-              {{ runner.error.value }}
+            <div v-else-if="runner.errorDescription.value" class="break-words rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+              <p>{{ runner.errorDescription.value.message }}</p>
+              <p v-if="runner.errorDescription.value.detail" class="mt-1 text-xs text-destructive/70">
+                {{ t("core.errors.detail", { detail: runner.errorDescription.value.detail }) }}
+              </p>
             </div>
             <div v-else-if="resultDecks.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
               {{ t("deckRecommend.result.empty") }}

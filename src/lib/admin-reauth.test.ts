@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test"
 import { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from "axios"
 import {
   ADMIN_REAUTH_ENDPOINT,
+  AdminReauthCancelledError,
   classifyAdminReauthFailure,
   createAdminReauthGate,
+  isAdminReauthCancelledError,
   isAdminReauthRequiredError,
   withAdminReauthRetry,
 } from "./admin-reauth"
@@ -84,17 +86,30 @@ describe("withAdminReauthRetry", () => {
     expect(prompts).toBe(1)
   })
 
-  test("a cancelled or failing prompt rethrows the original error without re-sending", async () => {
+  test("a cancelled or failing prompt throws a cancellation carrying the original error, without re-sending", async () => {
     for (const prompt of [async () => false, async () => { throw new Error("dialog failed") }]) {
       let sends = 0
       const original = reauthRequired()
-      const outcome = withAdminReauthRetry(async () => {
-        sends += 1
-        throw original
-      }, prompt)
-      await expect(outcome).rejects.toBe(original)
+      let thrown: unknown
+      try {
+        await withAdminReauthRetry(async () => {
+          sends += 1
+          throw original
+        }, prompt)
+      } catch (error) {
+        thrown = error
+      }
+      expect(thrown).toBeInstanceOf(AdminReauthCancelledError)
+      expect(isAdminReauthCancelledError(thrown)).toBe(true)
+      expect((thrown as AdminReauthCancelledError).cause).toBe(original)
       expect(sends).toBe(1)
     }
+  })
+
+  test("the cancellation marker only matches its own class", () => {
+    expect(isAdminReauthCancelledError(reauthRequired())).toBe(false)
+    expect(isAdminReauthCancelledError(new Error("admin reauthentication cancelled"))).toBe(false)
+    expect(isAdminReauthCancelledError(undefined)).toBe(false)
   })
 
   test("other errors pass through without prompting", async () => {

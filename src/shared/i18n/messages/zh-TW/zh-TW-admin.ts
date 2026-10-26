@@ -2,14 +2,27 @@
 // Namespaces: admin, adminConfig, adminRisk, adminBotSecurity, adminContent, adminOAuthClients, adminWebhooks, adminSponsors, adminStatistics, adminGameBindings, adminUsers
 export default {
   "admin": {
+    "pagination": {
+      "total": "共 {total} 條",
+      "pageSize": "每頁顯示",
+      "jumpToPage": "跳轉到頁",
+      "firstPage": "第一頁",
+      "prevPage": "上一頁",
+      "nextPage": "下一頁",
+      "lastPage": "最後一頁"
+    },
+    "filters": {
+      "search": "查詢",
+      "reset": "重置篩選"
+    },
     "reauth": {
       "title": "驗證管理員密碼",
-      "description": "敏感的管理操作需要再次確認你的賬號密碼。驗證通過後會自動繼續剛才的操作。",
+      "description": "敏感的管理操作需要再次確認你的帳號密碼。驗證通過後會自動繼續剛才的操作。",
       "passwordLabel": "當前密碼",
       "submit": "驗證並繼續",
       "passwordRequired": "請輸入密碼",
       "passwordMismatch": "密碼不正確，請重試", // NOSONAR -- translation key, not a credential
-      "rejected": "無法通過密碼驗證此賬號",
+      "rejected": "無法通過密碼驗證此帳號",
       "invalidInput": "輸入無效，請重新輸入密碼",
       "failedTitle": "無法驗證密碼",
       "failedDescription": "驗證服務暫時不可用，請稍後重試",
@@ -26,9 +39,9 @@ export default {
         "system": "系統與整合"
       },
       "descriptions": {
-        "dashboard": "平臺關鍵指標與上傳趨勢總覽。",
+        "dashboard": "平台關鍵指標與上傳趨勢總覽。",
         "users": "檢視、搜尋與管理工具箱使用者。",
-        "gameBindings": "查詢與調整使用者的遊戲賬號繫結。",
+        "gameBindings": "查詢與調整使用者的遊戲帳號綁定。",
         "risk": "維護風控規則並處置風險事件。",
         "botSecurity": "檢視 Haruki Cloud 上報的 Bot 客戶端安全告警並標記處理結果。",
         "tickets": "處理使用者提交的工單與回覆。",
@@ -37,7 +50,7 @@ export default {
         "uploadLogs": "追蹤玩家資料上傳記錄與失敗原因。",
         "logs": "檢視系統執行日誌。",
         "oauthClients": "管理 OAuth 客戶端、金鑰與回撥。",
-        "webhooks": "管理平臺 Webhook 推送。",
+        "webhooks": "管理平台 Webhook 推送。",
         "config": "調整系統級配置（僅超級管理員可見）。"
       },
       "dashboard": "儀表盤",
@@ -49,7 +62,7 @@ export default {
       "content": "內容運營",
       "sponsors": "贊助者管理",
       "config": "系統配置",
-      "gameBindings": "遊戲繫結",
+      "gameBindings": "遊戲綁定",
       "risk": "風控管理",
       "botSecurity": "Bot 安全告警",
       "tickets": "工單管理",
@@ -86,7 +99,6 @@ export default {
     "toast": {
       "loadApiKeysFailedTitle": "載入 Public API Keys 失敗",
       "loadRuntimeFailedTitle": "載入執行時配置失敗",
-      "loadFailedFallback": "載入失敗",
       "apiKeysUpdated": "Public API Keys 更新成功",
       "runtimeUpdated": "執行時配置更新成功",
       "invalidJson": "JSON 格式無效",
@@ -96,11 +108,17 @@ export default {
       "saveFailedFallback": "儲存失敗",
       "deviceFlowEnabled": "OAuth2 裝置授權已開啟",
       "deviceFlowDisabled": "OAuth2 裝置授權已關閉",
-      "switchNotApplied": "後端沒有應用該開關（可能尚不支援），目前仍顯示後端返回的值。"
+      "switchNotApplied": "後端沒有應用該開關（可能尚不支援），當前仍顯示後端返回的值。"
     },
     "loadError": "載入配置失敗",
-    "retry": "重試",
-    "unsavedChanges": "有未儲存的更改"
+    "unsavedChanges": "有未儲存的更改",
+    "editor": {
+      "loading": "正在載入編輯器…",
+      "loadFailedTitle": "程式碼編輯器載入失敗",
+      "loadFailedDescription": "編輯器元件需要從 CDN 載入，可能被網路環境攔截。可以改用純文本編輯器繼續修改配置，或重新整理頁面重新載入。",
+      "usePlainEditor": "改用純文本編輯器",
+      "useCodeEditor": "切換回程式碼編輯器"
+    }
   },
   "adminRisk": {
     "tabs": {
@@ -121,15 +139,16 @@ export default {
       "resolved": "已解決"
     },
     "events": {
-      "pagination": {
-        "prev": "上一頁",
-        "next": "下一頁"
-      },
       "title": "風控事件",
       "createButton": "建立事件",
       "createDialogTitle": "建立風控事件",
       "create": "建立",
       "resolveAction": "標記為已解決",
+      "resolveDialog": {
+        "title": "標記為已解決",
+        "description": "確定要將事件「{action}」（ID {id}）標記為已解決嗎？它將不再顯示為待處理。",
+        "confirm": "標記為已解決"
+      },
       "empty": "暫無風控事件",
       "total": "共 {total} 個事件",
       "fields": {
@@ -144,6 +163,16 @@ export default {
         "action": "如: suspicious_login",
         "reason": "描述風控原因…",
         "targetUserId": "使用者ID"
+      },
+      "sourceOptions": {
+        "dashboard": "管理後台（dashboard）",
+        "manual": "人工處理（manual）",
+        "automated": "自動檢測（automated）",
+        "other": "其他（other）"
+      },
+      "validation": {
+        "actionRequired": "請填寫事件動作",
+        "reasonRequired": "請填寫風控原因"
       },
       "table": {
         "severity": "嚴重程度",
@@ -161,7 +190,22 @@ export default {
       "saveButton": "儲存規則",
       "superAdminOnly": "風控規則僅超級管理員可見。",
       "loadError": "載入風控規則失敗。",
-      "retry": "重試"
+      "retry": "重試",
+      "validation": {
+        "invalidJson": "JSON 格式錯誤，請檢查括號、引號和逗號",
+        "notArray": "規則內容必須是 JSON 陣列",
+        "invalidRule": "第 {index} 條規則格式不正確：需要 id、name、description（字串）、enabled（布林值），config 可選且須為物件"
+      },
+      "preview": {
+        "title": "規則預覽",
+        "count": "{count} 條",
+        "invalid": "修正上方的 JSON 後會在這裡顯示解析結果。",
+        "empty": "規則陣列為空，儲存後將清空所有規則。",
+        "enabled": "已啟用",
+        "disabled": "已停用",
+        "configKeys": "配置項：{keys}",
+        "noConfig": "無配置項"
+      }
     },
     "toast": {
       "loadEventsFailedTitle": "載入風控事件失敗",
@@ -349,15 +393,26 @@ export default {
         "groupNamePlaceholder": "分組名稱",
         "create": "儲存"
       },
-      "addItemButton": "新增專案",
+      "addItemButton": "新增項目",
       "deleteGroupDialog": {
         "title": "確認刪除分組",
-        "description": "確定刪除群聊分組 {group}？分組內的所有專案也會被刪除。",
+        "description": "確定刪除群聊分組 {group}？分組內的所有項目也會被刪除。",
         "cancel": "取消",
         "confirm": "確認"
       },
-      "emptyItems": "暫無群聊專案",
+      "deleteItemDialog": {
+        "title": "確認刪除項目",
+        "description": "確定刪除項目 {name}？此操作無法撤銷。",
+        "confirm": "刪除"
+      },
+      "emptyItems": "暫無群聊項目",
       "emptyGroups": "暫無群聊分組"
+    },
+    "validation": {
+      "nameRequired": "請填寫名稱",
+      "urlRequired": "請填寫連結URL",
+      "invalidUrl": "請輸入有效的 http(s) 連結",
+      "groupNameRequired": "請輸入分組名稱"
     },
     "linkDialog": {
       "createTitle": "新增友情連結",
@@ -381,8 +436,8 @@ export default {
       }
     },
     "itemDialog": {
-      "createTitle": "新增專案",
-      "editTitle": "編輯專案",
+      "createTitle": "新增項目",
+      "editTitle": "編輯項目",
       "fields": {
         "name": "名稱",
         "avatarUrl": "頭像URL",
@@ -391,7 +446,7 @@ export default {
         "detail": "詳情"
       },
       "placeholders": {
-        "name": "專案名稱",
+        "name": "項目名稱",
         "avatarUrl": "https://example.com/avatar.png",
         "backgroundUrl": "https://example.com/background.jpg",
         "optional": "可選"
@@ -401,29 +456,25 @@ export default {
       "loadLinksFailedTitle": "載入友鏈失敗",
       "loadGroupsFailedTitle": "載入友鏈分組失敗",
       "actionFailedFallback": "操作失敗",
-      "nameUrlRequired": "請填寫名稱和URL",
-      "invalidLinkUrl": "請輸入有效的 http(s) 連結",
       "saveFailedTitle": "儲存失敗",
       "createFailedTitle": "建立失敗",
       "deleteFailedTitle": "刪除失敗",
       "linkUpdated": "友鏈已更新",
       "linkCreated": "友鏈已建立",
       "linkDeleted": "已刪除友鏈",
-      "groupNameRequired": "請輸入分組名稱",
       "groupCreated": "分組已建立",
       "groupUpdated": "分組已更新",
       "groupDeleted": "分組已刪除",
-      "itemNameRequired": "請填寫名稱",
-      "itemUpdated": "專案已更新",
-      "itemCreated": "專案已建立",
-      "itemDeleted": "專案已刪除"
+      "itemUpdated": "項目已更新",
+      "itemCreated": "項目已建立",
+      "itemDeleted": "項目已刪除"
     }
   },
   "adminOAuthClients": {
     "title": "OAuth客戶端管理",
     "scope": {
       "userRead": "基礎資訊 (user:read)",
-      "bindingsRead": "遊戲繫結 (bindings:read)",
+      "bindingsRead": "遊戲綁定 (bindings:read)",
       "gameDataRead": "遊戲資料 (game-data:read)",
       "gameDataWrite": "遊戲上傳 (game-data:write)",
       "stationRoomWrite": "提交車牌 Sekai Station (station:room:write)",
@@ -477,7 +528,7 @@ export default {
         "deviceCode": "裝置碼 (device_code)",
         "refreshToken": "重新整理令牌 (refresh_token)"
       },
-      "redirectUrisOptionalHelp": "未選擇授權碼時不需要回撥URI，僅裝置碼客戶端可以留空。",
+      "redirectUrisOptionalHelp": "未選擇授權碼時不需要回調URI，僅裝置碼客戶端可以留空。",
       "writeScopeHint": "寫入權限：允許客戶端以使用者身份提交或上傳資料",
       "devicePolicy": {
         "title": "裝置碼策略",
@@ -527,9 +578,9 @@ export default {
     "deleteDialog": {
       "title": "確認刪除",
       "descriptionPrefix": "確定要刪除OAuth客戶端",
-      "descriptionSuffix": "嗎？",
+      "descriptionSuffix": "嗎？其所有令牌將立即失效，使用它的應用將無法再訪問。",
       "cancel": "取消",
-      "confirm": "確認"
+      "confirm": "刪除"
     },
     "rotateDialog": {
       "title": "輪換客戶端金鑰",
@@ -543,6 +594,11 @@ export default {
       "cancel": "取消",
       "confirm": "全部撤銷"
     },
+    "disableDialog": {
+      "title": "停用客戶端",
+      "description": "確定要停用客戶端 {clientId} 嗎？停用後它將無法再發起授權，其現有的使用者授權和令牌也會被撤銷。",
+      "confirm": "停用"
+    },
     "statsDialog": {
       "title": "客戶端統計",
       "filters": "篩選範圍",
@@ -553,9 +609,23 @@ export default {
       "day": "按天",
       "apply": "應用篩選",
       "invalidTimeRange": "開始時間不能晚於結束時間",
-      "totalAuthorizations": "總授權",
-      "activeAuthorizations": "活躍授權",
-      "last30Days": "近30天"
+      "rangeLabel": "統計範圍：{range}",
+      "authorizations": "使用者授權",
+      "tokens": "令牌",
+      "summary": {
+        "authorizationTotal": "授權總數",
+        "authorizationActive": "有效授權",
+        "authorizationRevoked": "已撤銷授權",
+        "authorizationCreatedInRange": "範圍內新增授權",
+        "tokenTotal": "令牌總數",
+        "tokenActive": "有效令牌",
+        "tokenRevoked": "已撤銷令牌",
+        "tokenIssuedInRange": "範圍內簽發令牌"
+      },
+      "trendTitle": "趨勢",
+      "trendAuthorizations": "新增授權",
+      "trendTokens": "簽發令牌",
+      "trendEmpty": "所選範圍內沒有授權或令牌活動"
     },
     "secretDialog": {
       "title": "憑證生成成功",
@@ -646,6 +716,7 @@ export default {
       "copied": "已複製到剪貼簿",
       "validation": {
         "clientIdAndNameRequired": "客戶端ID和名稱不能為空",
+        "clientIdRequired": "客戶端ID不能為空",
         "nameRequired": "客戶端名稱不能為空",
         "redirectUriRequired": "選擇了授權碼時請至少填寫一個回撥URI",
         "scopeRequired": "請至少選擇一個Scope",
@@ -653,7 +724,7 @@ export default {
         "grantTypeRequired": "請至少選擇授權碼或裝置碼（重新整理令牌不能單獨使用）",
         "postLogoutRequiresRedirectUris": "沒有回撥URI的客戶端不能登記登出回撥URI，請清空登出回撥URI",
         "offlineAccessRequiresRefreshToken": "登記 offline_access 時須同時選擇重新整理令牌",
-        "deviceRequiresUserRead": "裝置碼客戶端須登記 user:read（裝置頁要顯示授權的賬號）",
+        "deviceRequiresUserRead": "裝置碼客戶端須登記 user:read（裝置頁要顯示授權的帳號）",
         "deviceWriteRequiresPublicClient": "“允許經裝置碼申請 game-data:write”只適用於選擇了裝置碼並登記了 game-data:write 的 Public 客戶端",
         "invalidDevicePolicy": "每 10 分鐘裝置碼上限須為 1–600 之間的整數"
       },
@@ -696,7 +767,13 @@ export default {
       "jwtSecretPlaceholder": "留空表示保持當前金鑰不變",
       "jwtSecretHelp": "只有在您想替換當前金鑰時才需要填寫新值。",
       "readOnlyNoticeTitle": "只讀檢視",
-      "readOnlyNoticeDescription": "你可以檢視 Webhook 設定和端點，但修改需要超級管理員許可權。"
+      "readOnlyNoticeDescription": "你可以檢視 Webhook 設定和端點，但修改需要超級管理員權限。",
+      "noChanges": "沒有需要儲存的更改",
+      "disableDialog": {
+        "title": "關閉全域性 webhook 投遞？",
+        "description": "關閉後所有 endpoint 都不會再收到回撥，即使它們各自處於啟用狀態。已排隊的投遞將被丟棄。",
+        "confirm": "關閉投遞"
+      }
     },
     "list": {
       "title": "Webhook endpoints",
@@ -743,7 +820,7 @@ export default {
       "headerNameLabel": "請求頭名稱",
       "tokenLabel": "Webhook Token",
       "tokenHelp": "呼叫 webhook subscriber 介面時需要使用這個 token，請妥善保管。",
-      "close": "關閉"
+      "confirmSaved": "我已儲存"
     },
     "subscribers": {
       "title": "{id} 的訂閱者",
@@ -751,7 +828,7 @@ export default {
       "generatedAt": "生成時間：{date}",
       "userId": "使用者 ID",
       "server": "區服",
-      "dataType": "資料型別",
+      "dataType": "資料類型",
       "createdAt": "建立時間",
       "empty": "當前 endpoint 暫無訂閱者"
     },
@@ -843,10 +920,24 @@ export default {
       "planName": "贊助檔位",
       "source": "來源",
       "paidAt": "最近贊助時間",
+      "paidAtPlaceholder": "未設定",
+      "saveProfile": "儲存資料",
       "message": "留言",
       "afdianSyncDisabled": "不從愛發電更新這個資料",
       "afdianSyncHelp": "開啟後，手動編輯的暱稱、頭像、檔位和留言不會被後續愛發電同步覆蓋；愛發電訂單仍會計入時長。",
       "manualProfileHint": "此處只儲存展示用資料和同步策略；愛發電 API key 與 webhook 配置仍應只存在後端。"
+    },
+    "syncDialog": {
+      "title": "從愛發電同步？",
+      "description": "將向愛發電拉取最新訂單並更新所有未關閉同步的贊助者資料與時長。此操作會在後台執行，完成後列表自動重新整理。"
+    },
+    "afdianToggleDialog": {
+      "disableTitle": "停止從愛發電更新？",
+      "disableDescription": "{name} 的暱稱、頭像、檔位和留言將不再被愛發電同步覆蓋；愛發電訂單仍會計入時長。",
+      "confirmDisable": "停止更新",
+      "enableTitle": "恢復從愛發電更新？",
+      "enableDescription": "下一次同步會用愛發電的資料覆蓋 {name} 手動編輯過的暱稱、頭像、檔位和留言。",
+      "confirmEnable": "恢復更新"
     },
     "duration": {
       "title": "贊助時長",
@@ -880,6 +971,8 @@ export default {
       "manual": {
         "title": "手動時長",
         "add": "新增手動時長",
+        "addDialogTitle": "新增手動時長",
+        "editDialogTitle": "編輯手動時長",
         "empty": "還沒有手動時長。",
         "migrated": "遷移",
         "startsAt": "最早開始：{date}",
@@ -898,6 +991,7 @@ export default {
           "day": "天"
         },
         "startsAt": "最早開始時間",
+        "startsAtPlaceholder": "現在",
         "startsAtHelp": "留空即為現在。實際從愛發電時長和之前的手動時長結束後才開始計算；只有贊助已中斷時才從這裡開始，此時不能晚於現在。",
         "note": "備註 / 原因",
         "notePlaceholder": "例如：微信轉賬 30 元"
@@ -941,8 +1035,18 @@ export default {
       "stat": {
         "totalUsers": "總使用者數",
         "superAdmin": "超級管理員",
-        "totalBindings": "遊戲繫結",
+        "admin": "管理員",
+        "totalBindings": "遊戲綁定",
+        "verifiedBindings": "已驗證",
         "totalUploads": "總上傳 (全部)"
+      },
+      "breakdown": {
+        "byServer": "綁定按區服",
+        "byServerHint": "全部遊戲綁定",
+        "byMethod": "上傳按方式",
+        "byDataType": "上傳按資料類型",
+        "windowHint": "最近 {hours} 小時",
+        "empty": "暫無資料"
       },
       "upload24h": {
         "total": "24h 上傳總量",
@@ -981,6 +1085,7 @@ export default {
         "total": "總日誌"
       },
       "searchPlaceholder": "搜尋日誌…",
+      "resetSearch": "清除搜尋",
       "exportButton": "匯出",
       "table": {
         "result": "結果",
@@ -988,7 +1093,8 @@ export default {
         "request": "方法",
         "user": "使用者",
         "time": "時間",
-        "empty": "暫無日誌"
+        "empty": "暫無日誌",
+        "openDetail": "檢視詳情"
       },
       "detail": {
         "title": "日誌詳情",
@@ -997,7 +1103,10 @@ export default {
         "action": "操作",
         "request": "請求",
         "user": "使用者",
-        "detail": "詳情"
+        "detail": "詳情",
+        "copy": "複製詳情",
+        "copied": "詳情已複製",
+        "copyFailed": "複製失敗"
       },
       "toast": {
         "loadFailedTitle": "載入日誌失敗",
@@ -1026,7 +1135,7 @@ export default {
         "gameUid": "遊戲UID",
         "gameUidPlaceholder": "多個UID用逗號分隔",
         "method": "上傳方式",
-        "dataType": "資料型別",
+        "dataType": "資料類型",
         "server": "區服",
         "status": "上傳狀態",
         "sort": "排序",
@@ -1034,10 +1143,8 @@ export default {
         "allMethods": "全部方式",
         "allDataTypes": "全部型別",
         "allServers": "全部區服",
-        "allStatuses": "全部狀態"
-      },
-      "actions": {
-        "search": "查詢"
+        "allStatuses": "全部狀態",
+        "selectedMore": "{first} +{count}"
       },
       "timeRangeLabel": "時間範圍:",
       "table": {
@@ -1048,7 +1155,7 @@ export default {
         "noOwner": "未關聯使用者",
         "server": "區服",
         "method": "方式",
-        "dataType": "資料型別",
+        "dataType": "資料類型",
         "error": "錯誤資訊",
         "details": "詳情",
         "viewDetails": "檢視詳情",
@@ -1068,7 +1175,7 @@ export default {
         "gameSessionProxy": "遊戲會話代理"
       },
       "authorizationSource": {
-        "owner": "賬號所有者",
+        "owner": "帳號所有者",
         "grant": "寫授權"
       },
       "detail": {
@@ -1082,7 +1189,7 @@ export default {
         "actorKind": "上傳者關係",
         "oauthClientId": "OAuth 客戶端",
         "client": "客戶端 / 版本",
-        "platform": "平臺",
+        "platform": "平台",
         "requestId": "請求 ID",
         "claimedGameUserId": "載荷宣告 UID",
         "failureStage": "失敗階段",
@@ -1100,7 +1207,7 @@ export default {
       "charts": {
         "successRateDistribution": "成功率分佈",
         "byMethod": "按上傳方式",
-        "byDataType": "按資料型別",
+        "byDataType": "按資料類型",
         "total": "總計"
       },
       "method": {
@@ -1129,19 +1236,15 @@ export default {
     }
   },
   "adminGameBindings": {
-    "pagination": {
-      "prevPage": "上一頁",
-      "nextPage": "下一頁"
-    },
     "common": {
       "cancel": "取消",
       "create": "建立"
     },
     "filters": {
       "title": "搜尋與篩選",
-      "addButton": "新增繫結",
+      "addButton": "新增綁定",
       "fuzzySearch": "模糊搜尋",
-      "fuzzySearchPlaceholder": "遊戲ID / 使用者名稱 / 郵箱",
+      "fuzzySearchPlaceholder": "遊戲ID / 使用者名稱 / 信箱",
       "exactGameId": "精確遊戲ID",
       "exactGameIdPlaceholder": "遊戲使用者ID",
       "toolboxUserId": "工具箱使用者ID",
@@ -1167,7 +1270,7 @@ export default {
       "batchUnbind": "批次解綁",
       "openMenu": "開啟選單",
       "total": "共 {total} 條記錄",
-      "empty": "暫無遊戲賬號繫結記錄",
+      "empty": "暫無遊戲帳號綁定記錄",
       "columns": {
         "server": "區服",
         "gameId": "遊戲ID",
@@ -1176,21 +1279,21 @@ export default {
       },
       "menu": {
         "edit": "編輯",
-        "reassign": "轉移繫結",
+        "reassign": "轉移綁定",
         "unbind": "解綁"
       },
       "batchDialog": {
         "title": "確認批次解綁",
-        "description": "將解綁選中的 {count} 條遊戲賬號繫結，此操作不可撤銷。",
+        "description": "將解綁選中的 {count} 條遊戲帳號綁定，此操作不可撤銷。",
         "cancel": "取消",
         "confirm": "確認解綁"
       }
     },
     "editDialog": {
-      "createTitle": "新增遊戲繫結",
-      "createDescription": "為使用者新增新的遊戲賬號繫結。",
-      "editTitle": "編輯遊戲繫結",
-      "editDescription": "修改遊戲賬號繫結的資料設定。",
+      "createTitle": "新增遊戲綁定",
+      "createDescription": "為使用者新增新的遊戲帳號綁定。",
+      "editTitle": "編輯遊戲綁定",
+      "editDescription": "修改遊戲帳號綁定的資料設定。",
       "toolboxUserId": "工具箱使用者ID",
       "toolboxUserIdPlaceholder": "輸入工具箱使用者ID",
       "server": "伺服器",
@@ -1200,7 +1303,7 @@ export default {
       "mysekaiSettingsTitle": "MySekai 資料設定"
     },
     "reassignDialog": {
-      "title": "轉移遊戲賬號",
+      "title": "轉移遊戲帳號",
       "description": "將 {server} 遊戲 ID {gameId} 從 {fromUser} 轉移到目標使用者。",
       "targetUserIdLabel": "目標使用者ID",
       "targetUserIdPlaceholder": "請輸入目標工具箱使用者ID",
@@ -1208,11 +1311,11 @@ export default {
     },
     "deleteDialog": {
       "title": "確認解綁",
-      "description": "此操作將解除 {server} 遊戲賬號 {gameUserId} 的繫結關係。",
+      "description": "此操作將解除 {server} 遊戲帳號 {gameUserId} 的綁定關係。",
       "confirm": "確認解綁"
     },
     "toast": {
-      "loadFailedTitle": "載入遊戲繫結失敗",
+      "loadFailedTitle": "載入遊戲綁定失敗",
       "loadFailedFallback": "載入失敗",
       "unbound": "已解綁",
       "unbindFailedTitle": "解綁失敗",
@@ -1221,8 +1324,8 @@ export default {
       "batchUnbindFailedTitle": "批次解綁失敗",
       "invalidSelectedRecords": "選中的記錄格式無效",
       "batchUnbound": "已批次解綁 {count} 條",
-      "bindingUpdated": "繫結已更新",
-      "bindingCreated": "繫結已建立",
+      "bindingUpdated": "綁定已更新",
+      "bindingCreated": "綁定已建立",
       "saveFailedTitle": "儲存失敗"
     }
   },
@@ -1249,19 +1352,20 @@ export default {
       "save": "儲存",
       "cancel": "取消",
       "confirm": "確認",
-      "unbound": "未繫結",
-      "openMenu": "開啟選單"
+      "unbound": "未綁定",
+      "openMenu": "開啟選單",
+      "fallback": "—"
     },
     "management": {
       "title": "使用者管理",
       "filters": {
         "searchLabel": "搜尋",
-        "searchPlaceholder": "搜尋使用者名稱、郵箱或 ID…",
+        "searchPlaceholder": "搜尋使用者名稱、信箱或 ID…",
         "roleLabel": "角色",
         "roleAll": "全部",
-        "statusLabel": "賬號狀態",
+        "statusLabel": "帳號狀態",
         "statusAll": "全部",
-        "allowCNLabel": "國服 MySekai 許可權",
+        "allowCNLabel": "國服 MySekai 權限",
         "allowCNAll": "全部",
         "sortLabel": "排序",
         "sortIdDesc": "ID ↓",
@@ -1287,9 +1391,9 @@ export default {
         "roleTitle": "修改選中使用者的角色",
         "rolePlaceholder": "選擇目標角色",
         "roleConfirm": "確認修改",
-        "allowCNButton": "批次國服 MySekai 許可權",
-        "allowCNTitle": "修改選中使用者的國服 MySekai 許可權",
-        "allowCNPlaceholder": "修改許可權狀態",
+        "allowCNButton": "批次國服 MySekai 權限",
+        "allowCNTitle": "修改選中使用者的國服 MySekai 權限",
+        "allowCNPlaceholder": "修改權限狀態",
         "allowCNEnable": "允許國服功能",
         "allowCNDisable": "禁止國服功能",
         "allowCNConfirm": "確認修改",
@@ -1312,10 +1416,10 @@ export default {
       "table": {
         "columns": {
           "username": "使用者名稱",
-          "email": "郵箱",
+          "email": "信箱",
           "role": "角色",
-          "allowCN": "國服 MySekai 許可權",
-          "status": "賬號狀態",
+          "allowCN": "國服 MySekai 權限",
+          "status": "帳號狀態",
           "createdAt": "註冊時間"
         },
         "empty": "暫無使用者資料",
@@ -1337,27 +1441,27 @@ export default {
         "batchRoleSuccess": "已批次修改 {count} 個使用者的角色",
         "batchRoleFailedTitle": "批次修改角色失敗",
         "batchRoleFailedFallback": "批次修改角色失敗",
-        "batchAllowCNSuccess": "已批次修改 {count} 個國服功能許可權",
-        "batchAllowCNFailedTitle": "批次功能許可權失敗",
-        "batchAllowCNFailedFallback": "批次功能許可權失敗"
+        "batchAllowCNSuccess": "已批次修改 {count} 個國服功能權限",
+        "batchAllowCNFailedTitle": "批次功能權限失敗",
+        "batchAllowCNFailedFallback": "批次功能權限失敗"
       }
     },
     "detail": {
       "backToList": "返回使用者列表",
-      "notFound": "使用者不存在或載入失敗",
+      "notFound": "使用者不存在，可能已被刪除或連結有誤。",
       "tabs": {
         "info": "基本資訊",
         "activity": "活動記錄",
         "oauth": "OAuth 授權",
-        "game": "遊戲繫結",
-        "social": "社交平臺",
+        "game": "遊戲綁定",
+        "social": "社交平台",
         "authSocial": "授權社交",
         "ios": "iOS 上傳碼"
       },
       "info": {
         "role": "角色",
-        "accountStatus": "賬號狀態",
-        "email": "郵箱",
+        "accountStatus": "帳號狀態",
+        "email": "信箱",
         "registeredAt": "註冊時間",
         "comingSoon": "開發中...",
         "changeRole": "修改角色：",
@@ -1365,19 +1469,29 @@ export default {
         "unban": "解封",
         "ban": "封禁",
         "banDialogTitle": "確認封禁",
-        "banDialogDescription": "確定要封停用戶 {name} 嗎？",
+        "banDialogDescription": "確定要封停使用者 {name} 嗎？",
         "forceLogout": "強制登出",
         "resetPassword": "重置密碼",
         "restore": "恢復",
         "delete": "刪除",
         "deleteDialogTitle": "確認刪除",
         "deleteDialogDescription": "此操作是軟刪除，可以恢復。確定要刪除使用者 {name} 嗎？",
-        "deleteDialogConfirm": "確認刪除"
+        "deleteDialogConfirm": "確認刪除",
+        "forceLogoutDialogTitle": "確認強制登出",
+        "forceLogoutDialogDescription": "確定要強制登出使用者 {name} 嗎？該使用者的所有活躍會話都將被登出，需要重新登入。",
+        "forceLogoutDialogConfirm": "確認登出",
+        "resetPasswordDialogTitle": "確認重置密碼",
+        "resetPasswordDialogDescription": "確定要重置使用者 {name} 的密碼嗎？當前密碼將立即失效，該使用者需要重新設定密碼後才能登入。",
+        "resetPasswordDialogConfirm": "確認重置",
+        "roleDialogTitle": "確認修改角色",
+        "roleDialogDescription": "確定要將使用者 {name} 的角色修改為 {role} 嗎？新的權限將立即生效。",
+        "roleDialogConfirm": "確認修改"
       },
       "activity": {
         "title": "活動記錄",
         "uploadLogsTitle": "上傳日誌",
         "uploadLogsDescription": "該使用者最近的上傳記錄，包括失敗時後端返回的錯誤詳情。",
+        "viewAllUploads": "在上傳日誌中檢視全部",
         "columns": {
           "action": "操作",
           "result": "結果",
@@ -1392,39 +1506,50 @@ export default {
         "total": "共 {count} 個授權",
         "empty": "暫無 OAuth 授權",
         "revokeAllDialogTitle": "撤銷全部授權",
-        "revokeAllDialogDescription": "此操作將撤銷該使用者的全部 OAuth 授權，並使其從所有已連線的第三方應用登出。是否繼續？"
+        "revokeAllDialogDescription": "此操作將撤銷該使用者的全部 {count} 個 OAuth 授權，並使其從所有已連線的第三方應用登出。是否繼續？",
+        "columns": {
+          "client": "應用",
+          "scopes": "權限範圍",
+          "createdAt": "授權時間",
+          "status": "狀態"
+        },
+        "status": {
+          "active": "有效",
+          "revoked": "已撤銷",
+          "clientDisabled": "應用已停用"
+        }
       },
       "game": {
-        "title": "遊戲賬號繫結",
-        "add": "新增繫結",
+        "title": "遊戲帳號綁定",
+        "add": "新增綁定",
         "columns": {
           "server": "伺服器",
           "gameId": "遊戲 ID"
         },
-        "edit": "編輯遊戲繫結",
-        "unbind": "解綁遊戲賬號",
-        "empty": "暫無遊戲繫結",
+        "edit": "編輯遊戲綁定",
+        "unbind": "解綁遊戲帳號",
+        "empty": "暫無遊戲綁定",
         "unbindDialogTitle": "確認解綁",
-        "unbindDialogDescription": "此操作將解綁遊戲賬號 {gameUserId}，之後可重新新增。"
+        "unbindDialogDescription": "此操作將解綁遊戲帳號 {gameUserId}，之後可重新新增。"
       },
       "social": {
-        "title": "社交平臺繫結",
-        "add": "新增繫結",
-        "empty": "暫無社交平臺繫結",
+        "title": "社交平台綁定",
+        "add": "新增綁定",
+        "empty": "暫無社交平台綁定",
         "deleteDialogTitle": "確認刪除",
-        "deleteDialogDescription": "確定要刪除此主社交平臺繫結嗎？之後可重新新增。"
+        "deleteDialogDescription": "確定要刪除此主社交平台綁定嗎？之後可重新新增。"
       },
       "authSocial": {
-        "title": "授權社交平臺",
+        "title": "授權社交平台",
         "add": "新增授權",
         "columns": {
-          "platform": "平臺",
+          "platform": "平台",
           "userId": "使用者 ID",
           "comment": "備註"
         },
-        "empty": "暫無授權社交平臺",
+        "empty": "暫無授權社交平台",
         "deleteDialogTitle": "確認刪除",
-        "deleteDialogDescription": "確定要刪除此授權社交平臺嗎？之後可重新新增。"
+        "deleteDialogDescription": "確定要刪除此授權社交平台嗎？之後可重新新增。"
       },
       "ios": {
         "title": "iOS 上傳碼",
@@ -1432,19 +1557,23 @@ export default {
         "generate": "生成上傳碼",
         "empty": "暫無上傳碼",
         "deleteDialogTitle": "確認刪除",
-        "deleteDialogDescription": "確定要刪除當前的 iOS 上傳碼嗎？之後可重新生成一個新的。"
+        "deleteDialogDescription": "確定要刪除當前的 iOS 上傳碼嗎？之後可重新生成一個新的。",
+        "regenerateDialogTitle": "確認重新生成上傳碼",
+        "regenerateDialogDescription": "確定要為使用者 {name} 重新生成 iOS 上傳碼嗎？當前上傳碼將立即失效，該使用者需要在快捷指令中更新為新的上傳碼。",
+        "regenerateDialogConfirm": "重新生成"
       },
       "dialog": {
         "email": {
-          "title": "修改郵箱",
-          "description": "修改使用者 {name} 的郵箱地址。",
-          "newEmail": "新郵箱地址",
-          "placeholder": "請輸入郵箱地址",
+          "title": "修改信箱",
+          "description": "修改使用者 {name} 的信箱地址。",
+          "newEmail": "新信箱地址",
+          "placeholder": "請輸入信箱地址",
+          "invalid": "請輸入有效的信箱地址，例如 name@example.com",
           "confirm": "確認修改"
         },
         "gameBinding": {
-          "title": "新增遊戲繫結",
-          "description": "為使用者 {name} 新增或更新遊戲賬號繫結。",
+          "title": "新增遊戲綁定",
+          "description": "為使用者 {name} 新增或更新遊戲帳號綁定。",
           "server": "伺服器",
           "gameUserId": "遊戲使用者 ID",
           "gameUserIdPlaceholder": "輸入遊戲內使用者 ID",
@@ -1452,22 +1581,22 @@ export default {
           "mysekaiSettings": "MySekai 資料設定"
         },
         "social": {
-          "addTitle": "新增社交平臺繫結",
-          "editTitle": "編輯社交平臺繫結",
-          "description": "管理使用者 {name} 的社交平臺主繫結資訊。",
-          "platform": "平臺",
-          "platformPlaceholder": "選擇平臺",
+          "addTitle": "新增社交平台綁定",
+          "editTitle": "編輯社交平台綁定",
+          "description": "管理使用者 {name} 的社交平台主綁定資訊。",
+          "platform": "平台",
+          "platformPlaceholder": "選擇平台",
           "userId": "使用者 ID",
-          "userIdPlaceholder": "平臺上的使用者 ID"
+          "userIdPlaceholder": "平台上的使用者 ID"
         },
         "authSocial": {
-          "addTitle": "新增授權社交平臺",
-          "editTitle": "編輯授權社交平臺",
-          "description": "管理使用者 {name} 的授權社交平臺賬號。",
-          "platform": "平臺",
-          "platformPlaceholder": "選擇平臺",
+          "addTitle": "新增授權社交平台",
+          "editTitle": "編輯授權社交平台",
+          "description": "管理使用者 {name} 的授權社交平台帳號。",
+          "platform": "平台",
+          "platformPlaceholder": "選擇平台",
           "userId": "使用者 ID",
-          "userIdPlaceholder": "平臺上的使用者 ID",
+          "userIdPlaceholder": "平台上的使用者 ID",
           "comment": "備註",
           "commentPlaceholder": "備註（可選）"
         }
@@ -1477,11 +1606,11 @@ export default {
         "loadUserFailedTitle": "載入使用者詳情失敗",
         "loadActivityFailedTitle": "載入活動記錄失敗",
         "loadOAuthFailedTitle": "載入 OAuth 授權失敗",
-        "loadGameBindingsFailedTitle": "載入遊戲繫結失敗",
-        "loadSocialFailedTitle": "載入社交平臺繫結失敗",
-        "loadAuthSocialFailedTitle": "載入授權社交平臺失敗",
+        "loadGameBindingsFailedTitle": "載入遊戲綁定失敗",
+        "loadSocialFailedTitle": "載入社交平台綁定失敗",
+        "loadAuthSocialFailedTitle": "載入授權社交平台失敗",
         "banFailedTitle": "封禁失敗",
-        "banSuccess": "已封停用戶",
+        "banSuccess": "已封停使用者",
         "unbanFailedTitle": "解封失敗",
         "unbanSuccess": "已解封使用者",
         "forceLogoutFailedTitle": "強制登出失敗",
@@ -1494,30 +1623,30 @@ export default {
         "resetPasswordSuccess": "已重置密碼",
         "updateRoleFailedTitle": "更新角色失敗",
         "updateRoleSuccess": "已更新角色為 {role}",
-        "updateEmailFailedTitle": "更新郵箱失敗",
-        "updateEmailSuccess": "郵箱已更新",
+        "updateEmailFailedTitle": "更新信箱失敗",
+        "updateEmailSuccess": "信箱已更新",
         "revokeOAuthFailedTitle": "撤銷失敗",
         "revokeOAuthSuccess": "已撤銷 OAuth 授權",
         "deleteGameBindingFailedTitle": "刪除失敗",
-        "deleteGameBindingSuccess": "已刪除遊戲繫結",
+        "deleteGameBindingSuccess": "已刪除遊戲綁定",
         "toggleCNFailedTitle": "更新失敗",
         "cnEnabled": "已開啟國服 MySekai",
         "cnDisabled": "已關閉國服 MySekai",
         "saveGameBindingFailedTitle": "儲存失敗",
-        "saveGameBindingSuccess": "遊戲繫結已儲存",
+        "saveGameBindingSuccess": "遊戲綁定已儲存",
         "regenerateIOSFailedTitle": "生成失敗",
         "missingIOSCode": "介面未返回上傳碼",
         "regenerateIOSSuccess": "已重新生成 iOS 上傳碼",
         "deleteIOSFailedTitle": "刪除失敗",
         "deleteIOSSuccess": "已刪除 iOS 上傳碼",
         "deleteSocialFailedTitle": "刪除失敗",
-        "deleteSocialSuccess": "已刪除社交平臺繫結",
+        "deleteSocialSuccess": "已刪除社交平台綁定",
         "saveSocialFailedTitle": "更新失敗",
-        "saveSocialSuccess": "社交平臺資訊已更新",
+        "saveSocialSuccess": "社交平台資訊已更新",
         "deleteAuthSocialFailedTitle": "刪除失敗",
-        "deleteAuthSocialSuccess": "已刪除授權社交平臺",
+        "deleteAuthSocialSuccess": "已刪除授權社交平台",
         "saveAuthSocialFailedTitle": "儲存失敗",
-        "saveAuthSocialSuccess": "授權社交平臺已儲存"
+        "saveAuthSocialSuccess": "授權社交平台已儲存"
       }
     }
   }

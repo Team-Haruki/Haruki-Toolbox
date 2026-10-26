@@ -70,18 +70,22 @@ const showContent = computed(() => !props.loading && !props.error && !props.notF
         <LucideArrowLeft class="size-4" />
         {{ canGoBack ? t("common.back") : t("catalog.detail.backToList", { list: listTitle }) }}
       </Button>
-      <nav class="flex min-w-0 flex-1 items-center gap-1 truncate text-sm text-muted-foreground" :aria-label="t('catalog.detail.breadcrumb')">
+      <!-- The title clamps to two lines on phones instead of vanishing
+           behind the actions; the actions wrap onto their own row there. -->
+      <nav class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-sm text-muted-foreground" :aria-label="t('catalog.detail.breadcrumb')">
         <RouterLink :to="listRoute" class="shrink-0 transition-colors hover:text-foreground">{{ listTitle }}</RouterLink>
         <LucideChevronRight class="size-3.5 shrink-0" aria-hidden="true" />
-        <span class="truncate font-medium text-foreground">{{ title ?? (entityId != null ? `#${entityId}` : "…") }}</span>
+        <span class="line-clamp-2 min-w-0 font-medium break-words text-foreground sm:line-clamp-1">{{ title ?? (entityId != null ? `#${entityId}` : "…") }}</span>
       </nav>
-      <div v-if="$slots.actions" class="ml-auto flex shrink-0 flex-wrap items-center gap-2">
+      <div v-if="$slots.actions" class="flex basis-full flex-wrap items-center gap-2 sm:ml-auto sm:basis-auto sm:shrink-0">
         <slot name="actions" />
       </div>
     </div>
 
+    <!-- The error wins over the skeleton: a failed index is final for the
+         page, however long a sibling resource keeps loading. -->
     <CatalogErrorState
-      v-if="error && !loading"
+      v-if="error"
       :message="errorMessage ?? t('catalog.detail.loadError')"
       :detail="error"
       :retrying="retrying"

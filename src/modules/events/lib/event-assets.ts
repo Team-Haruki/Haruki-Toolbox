@@ -4,7 +4,7 @@ import { resolveSekaiGameAssetUrl } from "@/shared/sekai/data-sources"
 
 /**
  * Event asset URL patterns verified against the Haruki asset mirror
- * (e.g. https://sekai-assets.haruki.seiunx.com/kr-assets/...):
+ * (e.g. https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/kr-assets/...):
  *
  * - logo:   ondemand/event/{assetbundleName}/logo/logo.png
  * - banner: ondemand/event_story/{assetbundleName}/screen_image/banner_event_story.png
@@ -29,7 +29,7 @@ function normalizeAssetbundleName(assetbundleName: string | null | undefined): s
 export function resolveEventLogoUrl(
   region: SekaiRegion,
   assetbundleName: string | null | undefined,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string | null {
   const name = normalizeAssetbundleName(assetbundleName)
   if (!name) {
@@ -42,7 +42,7 @@ export function resolveEventLogoUrl(
 export function resolveEventBannerUrl(
   region: SekaiRegion,
   assetbundleName: string | null | undefined,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string | null {
   const name = normalizeAssetbundleName(assetbundleName)
   if (!name) {
@@ -59,7 +59,7 @@ export function resolveEventBannerUrl(
 export function resolveEventBackgroundUrl(
   region: SekaiRegion,
   assetbundleName: string | null | undefined,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string | null {
   const name = normalizeAssetbundleName(assetbundleName)
   if (!name) {
@@ -73,7 +73,7 @@ export function resolveEventTeamImageUrl(
   region: SekaiRegion,
   eventAssetbundleName: string | null | undefined,
   teamAssetbundleName: string | null | undefined,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string | null {
   const eventName = normalizeAssetbundleName(eventAssetbundleName)
   const teamName = normalizeAssetbundleName(teamAssetbundleName)
@@ -92,7 +92,7 @@ export function resolveEventTeamImageUrl(
 export function resolveEventHonorRankOverlayUrl(
   region: SekaiRegion,
   honorAssetbundleName: string | null | undefined,
-  preference: SekaiAssetEndpointPreference = "china",
+  preference: SekaiAssetEndpointPreference = "china_cdn",
 ): string | null {
   const name = normalizeAssetbundleName(honorAssetbundleName)
   if (!name) {

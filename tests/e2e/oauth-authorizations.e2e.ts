@@ -223,19 +223,36 @@ test.describe("Authorized apps with device grants", () => {
     await expect(nas).toBeVisible({ timeout: 30_000 })
 
     // Revoked elsewhere in the meantime: the backend no longer lists it either.
+    // A 404 counts as done: the dialog closes, an info toast says so and the
+    // list is refreshed.
     state.list = [HARUKI_UNNAMED]
     await nas.getByRole("button", { name: DEVICE_REVOKE }).click()
-    await page.getByRole("alertdialog").getByRole("button", { name: DEVICE_REVOKE }).click()
+    const dialog = page.getByRole("alertdialog")
+    await dialog.getByRole("button", { name: DEVICE_REVOKE }).click()
+    await expect(dialog).toHaveCount(0)
     await expect(page.getByText(/该设备的授权已不存在|no longer exists/)).toBeVisible()
     await expect(page.getByTestId("oauth-device-grant")).toHaveCount(1)
+    await expect.poll(() => calls.filter((call) => call.method === "GET").length).toBe(2)
 
+    // A failed revoke keeps the confirmation open with the error inline (no
+    // toast) so the user can retry or cancel; the row stays.
     const unnamed = deviceRow(page, /^(未命名设备|Unnamed device)$/)
     await unnamed.getByRole("button", { name: DEVICE_REVOKE }).click()
-    await page.getByRole("alertdialog").getByRole("button", { name: DEVICE_REVOKE }).click()
-    await expect(page.getByText(/撤销设备失败|Could not revoke the device/)).toBeVisible()
-    await expect(page.getByText(/暂时无法撤销，请稍后重试|could not be revoked right now/)).toBeVisible()
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole("button", { name: DEVICE_REVOKE }).click()
+    const inlineError = dialog.getByRole("alert")
+    await expect(inlineError).toHaveText(/暂时无法撤销，请稍后重试|could not be revoked right now/)
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole("button", { name: DEVICE_REVOKE })).toBeEnabled()
+    await expect(page.getByText(/撤销设备失败|Could not revoke the device/)).toHaveCount(0)
+    expect(deletes(calls)).toEqual([nasPath, unnamedPath])
+
+    // Cancelling after the failure closes the dialog and leaves the row alone.
+    await dialog.getByRole("button", { name: /^(取消|Cancel)$/ }).click()
+    await expect(dialog).toHaveCount(0)
     await expect(unnamed).toBeVisible()
     await expect(unnamed.getByRole("button", { name: DEVICE_REVOKE })).toBeEnabled()
+    await expect(page.getByTestId("oauth-device-grant")).toHaveCount(1)
     expect(deletes(calls)).toEqual([nasPath, unnamedPath])
   })
 

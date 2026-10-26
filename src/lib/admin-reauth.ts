@@ -38,11 +38,33 @@ export function isAdminReauthRequiredError(error: unknown): boolean {
 export type AdminReauthPrompt = () => Promise<boolean>
 
 /**
+ * Thrown in place of the "reauthentication required" 403 when the admin
+ * dismissed the password prompt (or the prompt could not run). The guarded
+ * action never ran and the admin chose not to continue, so it is a no-op the
+ * UI must not report as a failure: the toast helpers and `ConfirmDialog`
+ * swallow it (see `shouldReportError`). `cause` keeps the original 403.
+ */
+export class AdminReauthCancelledError extends Error {
+    override readonly cause: unknown
+
+    constructor(cause: unknown) {
+        super("admin reauthentication cancelled")
+        this.name = "AdminReauthCancelledError"
+        this.cause = cause
+    }
+}
+
+/** True when a request was abandoned because the admin cancelled the password prompt. */
+export function isAdminReauthCancelledError(error: unknown): error is AdminReauthCancelledError {
+    return error instanceof AdminReauthCancelledError
+}
+
+/**
  * Sends a request and, when it fails because the admin session needs a fresh
  * password check, asks `prompt` for one and sends it again exactly once. A
- * cancelled prompt rethrows the original error; a second reauth-required
- * failure after a successful prompt goes back to the caller instead of
- * reopening the prompt.
+ * cancelled prompt throws `AdminReauthCancelledError` (with the original 403
+ * as `cause`); a second reauth-required failure after a successful prompt
+ * goes back to the caller instead of reopening the prompt.
  */
 export async function withAdminReauthRetry<T>(send: () => Promise<T>, prompt: AdminReauthPrompt): Promise<T> {
     try {
@@ -50,7 +72,7 @@ export async function withAdminReauthRetry<T>(send: () => Promise<T>, prompt: Ad
     } catch (error) {
         if (!isAdminReauthRequiredError(error)) throw error
         const reauthenticated = await prompt().catch(() => false)
-        if (!reauthenticated) throw error
+        if (!reauthenticated) throw new AdminReauthCancelledError(error)
         return await send()
     }
 }

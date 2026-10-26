@@ -2,10 +2,7 @@
 import { RouterLink } from "vue-router"
 import { useI18n } from "vue-i18n"
 import {
-  LucideAlertCircle,
   LucideCheckCircle2,
-  LucideChevronLeft,
-  LucideChevronRight,
   LucideEyeOff,
   LucideInfo,
   LucideLoader2,
@@ -32,7 +29,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import type { ErrorDescription } from "@/lib/error-utils"
 import { formatNumberCN } from "@/lib/number-format"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import AdminPagination from "@/modules/admin/components/AdminPagination.vue"
 import BotSecurityEnforcementBadge from "@/modules/admin-bot-security/components/BotSecurityEnforcementBadge.vue"
 import BotSecurityStatusBadge from "@/modules/admin-bot-security/components/BotSecurityStatusBadge.vue"
 import {
@@ -45,10 +45,12 @@ import type { BotSecurityAlert } from "@/types/admin"
 
 const props = defineProps<{
   loading: boolean
-  error: boolean
+  /** A failed load; shown in place of the (empty) table with a retry. */
+  error: ErrorDescription | null
   alerts: BotSecurityAlert[]
   total: number
   page: number
+  pageSize: number
   totalPages: number
   actionSaving: boolean
   kindLabel: (kind: string) => string
@@ -64,6 +66,8 @@ const emit = defineEmits<{
   (event: "retry"): void
   (event: "prev-page"): void
   (event: "next-page"): void
+  (event: "go-to-page", page: number): void
+  (event: "update:pageSize", pageSize: number): void
 }>()
 
 const { t } = useI18n()
@@ -110,15 +114,15 @@ function hasClientInfo(alert: BotSecurityAlert) {
           <Skeleton v-for="i in 5" :key="i" class="h-12 w-full" />
         </div>
       </template>
-      <template v-else-if="props.error && props.alerts.length === 0">
-        <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
-          <LucideAlertCircle class="h-8 w-8 text-muted-foreground/60" />
-          <p class="text-sm text-muted-foreground">{{ t("adminBotSecurity.table.loadError") }}</p>
-          <Button variant="outline" size="sm" @click="emit('retry')">
-            <LucideRotateCcw class="w-3.5 h-3.5" />
-            {{ t("adminBotSecurity.actions.retry") }}
-          </Button>
-        </div>
+      <template v-else-if="props.error">
+        <LoadErrorState
+          :title="t('adminBotSecurity.table.loadError')"
+          :description="props.error.message"
+          :detail="props.error.detail"
+          :retry-label="t('adminBotSecurity.actions.retry')"
+          :retrying="props.loading"
+          @retry="emit('retry')"
+        />
       </template>
       <template v-else-if="props.alerts.length === 0">
         <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
@@ -250,36 +254,19 @@ function hasClientInfo(alert: BotSecurityAlert) {
         </Table>
       </template>
     </CardContent>
-    <div
-      v-if="props.total > 0"
-      class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 sm:px-6"
-    >
-      <span class="text-sm text-muted-foreground">
-        {{ t("adminBotSecurity.pagination.total", { total: formatNumberCN(props.total, "0") }) }}
-      </span>
-      <div class="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="props.loading || props.page <= 1"
-          :title="t('adminBotSecurity.pagination.prev')"
-          :aria-label="t('adminBotSecurity.pagination.prev')"
-          @click="emit('prev-page')"
-        >
-          <LucideChevronLeft class="w-4 h-4" />
-        </Button>
-        <span class="text-sm tabular-nums">{{ props.page }} / {{ props.totalPages }}</span>
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="props.loading || props.page >= props.totalPages"
-          :title="t('adminBotSecurity.pagination.next')"
-          :aria-label="t('adminBotSecurity.pagination.next')"
-          @click="emit('next-page')"
-        >
-          <LucideChevronRight class="w-4 h-4" />
-        </Button>
-      </div>
+    <div v-if="!props.error" class="border-t px-4 py-3 sm:px-6">
+      <AdminPagination
+        :total="props.total"
+        :page="props.page"
+        :page-size="props.pageSize"
+        :total-pages="props.totalPages"
+        :disabled="props.loading"
+        :total-label="t('adminBotSecurity.pagination.total', { total: formatNumberCN(props.total, '0') })"
+        @update:page-size="emit('update:pageSize', $event)"
+        @prev-page="emit('prev-page')"
+        @next-page="emit('next-page')"
+        @go-to-page="emit('go-to-page', $event)"
+      />
     </div>
   </Card>
 </template>

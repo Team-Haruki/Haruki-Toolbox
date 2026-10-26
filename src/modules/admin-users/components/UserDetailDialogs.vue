@@ -12,6 +12,7 @@ interface Props {
   actionLoading: boolean
   emailDialogOpen: boolean
   editEmail: string
+  editEmailError?: string
   gameBindingDialogOpen: boolean
   editGameIsEditMode: boolean
   editGameServer: SekaiRegion
@@ -60,6 +61,7 @@ const emit = defineEmits<{
     :open="props.emailDialogOpen"
     :user-name="props.userName"
     :email="props.editEmail"
+    :email-error="props.editEmailError"
     :action-loading="props.actionLoading"
     @update:open="emit('update:emailDialogOpen', $event)"
     @update:email="emit('update:editEmail', $event)"

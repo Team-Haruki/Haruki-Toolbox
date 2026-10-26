@@ -8,16 +8,90 @@ test("settings dialog renders i18n controls", async ({ page }) => {
 
   await expect(settingsDialog.getByRole("heading", { name: /Haruki工具箱设置|Haruki Toolbox Settings/ })).toBeVisible()
   await expect(
-    settingsDialog.getByText("工具箱服务器端点", { exact: true }).or(settingsDialog.getByText("Toolbox server endpoint", { exact: true })),
+    settingsDialog.getByText("服务器线路", { exact: true }).or(settingsDialog.getByText("Server route", { exact: true })),
   ).toBeVisible()
   await expect(settingsDialog.getByText("界面语言", { exact: true }).or(settingsDialog.getByText("Language", { exact: true }))).toBeVisible()
 })
 
 test("oidc logout route renders the invalid-challenge fallback", async ({ page }) => {
+  // Hydra does not know the challenge: the backend relays its 404.
+  await page.route((url) => url.pathname.endsWith("/api/oauth2/logout"), (route) =>
+    route.fulfill({
+      status: 404,
+      contentType: "application/json",
+      body: JSON.stringify({ status: 404, message: "logout request not found", updatedData: null }),
+    }),
+  )
+
+  await page.goto("/logout?logout_challenge=bad")
+
+  await expect(page.getByRole("heading", { name: /无效的退出请求|Invalid sign-out request/ })).toBeVisible()
+  await expect(page.getByText(/这个退出链接已失效或不完整|This sign-out link has expired or is incomplete/)).toBeVisible()
+  await expect(page.getByRole("button", { name: /^(退出登录|Sign out)$/ })).toHaveCount(0)
+  await expect(page.getByRole("button", { name: /返回首页|Back to home/ })).toBeVisible()
+})
+
+test("logout route without a challenge offers a plain sign-out, not an error", async ({ page }) => {
   await page.goto("/logout")
 
-  await expect(page.getByText(/无效的退出请求|Invalid sign-out request/)).toBeVisible()
-  await expect(page.getByRole("button", { name: /返回首页|Back to home/ })).toBeVisible()
+  // Signed out: nothing to end, so only the way back.
+  await expect(page.getByRole("heading", { name: /^(退出登录|Sign out)$/ })).toBeVisible()
+  await expect(page.getByText(/你当前没有登录|You are not signed in right now/)).toBeVisible()
+  await expect(page.getByText(/无效的退出请求|Invalid sign-out request/)).toHaveCount(0)
+  await expect(page.getByRole("button", { name: /^(退出登录|Sign out)$/ })).toHaveCount(0)
+
+  await page.getByRole("button", { name: /返回首页|Back to home/ }).click()
+  await expect(page.getByRole("heading", { name: /欢迎使用 Haruki 工具箱|Welcome to Haruki Toolbox/ })).toBeVisible()
+})
+
+test("logout route without a challenge signs a local session out through Kratos", async ({ page }) => {
+  // Seed the session once: the init script runs again on the post-logout
+  // load, where the store must stay empty.
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("e2e-logout-seeded")) return
+    sessionStorage.setItem("e2e-logout-seeded", "1")
+    sessionStorage.setItem("user", JSON.stringify({
+      name: "Logout test",
+      userId: "toolbox-test",
+      gameAccountBindings: [],
+      sessionToken: "test-token",
+      tokenExpiration: 4_102_444_800,
+    }))
+  })
+  const kratosLogoutUrl = `http://${KRATOS_HOST}/self-service/logout?token=e2e-logout-token`
+  const kratosCalls: string[] = []
+  await page.route("**/*", (route) => {
+    const url = new URL(route.request().url())
+    if (url.host === APP_HOST) {
+      return route.continue()
+    }
+    if (url.host === KRATOS_HOST) {
+      kratosCalls.push(`${url.pathname}${url.search}`)
+      if (url.pathname === "/self-service/logout/browser") {
+        return route.fulfill(kratosJsonResponse(JSON.stringify({ logout_token: "e2e-logout-token", logout_url: kratosLogoutUrl })))
+      }
+      if (url.pathname === "/self-service/logout") {
+        return route.fulfill({ status: 303, headers: { location: `http://${APP_HOST}/?_e2e_signed_out=1` } })
+      }
+    }
+    return route.abort()
+  })
+
+  await page.goto("/logout")
+
+  await expect(page.getByRole("heading", { name: /^(退出登录|Sign out)$/ })).toBeVisible()
+  await expect(page.getByText(/确认后将退出当前账号在本站的登录|Confirming signs the current account out of this site/)).toBeVisible()
+  await expect(page.getByRole("button", { name: /^(取消|Cancel)$/ })).toBeVisible()
+
+  await page.getByRole("button", { name: /^(退出登录|Sign out)$/ }).click()
+
+  // The local session is dropped and the browser follows Kratos' logout URL.
+  await page.waitForURL(/\/\?_e2e_signed_out=1/)
+  expect(kratosCalls).toContain("/self-service/logout?token=e2e-logout-token")
+  // The persisted store is the empty user, not the seeded session.
+  const persistedUser = await page.evaluate(() => JSON.parse(sessionStorage.getItem("user") ?? "{}") as Record<string, unknown>)
+  expect(persistedUser.sessionToken ?? null).toBeNull()
+  expect(persistedUser.userId ?? null).toBeNull()
 })
 
 test("app mounts while the session bootstrap is still pending", async ({ page }) => {
@@ -291,7 +365,9 @@ test("verification page continues to the sign-up target once the code is accepte
 
   await page.goto("/user/verification?flow=e2e-verification-flow")
 
-  await expect(page.getByText("You successfully verified your email address.")).toBeVisible()
+  // Kratos message 1080002 is rendered in the UI language, not as Kratos' English text.
+  await expect(page.getByText(/^(邮箱验证成功。|Your email address has been verified\.)$/)).toBeVisible()
+  await expect(page.getByText("You successfully verified your email address.")).toHaveCount(0)
   const continueLink = page.getByRole("link", { name: /^(继续|Continue)$/ })
   await expect(continueLink).toBeVisible()
   expect(await continueLink.getAttribute("href")).toBe(DEVICE_REDIRECT)
@@ -321,8 +397,11 @@ test("verification page keeps the code form until the flow has passed", async ({
 
   await page.goto("/user/verification?flow=e2e-verification-flow")
 
-  await expect(page.getByRole("textbox", { name: "Verification code" })).toBeVisible()
-  await expect(page.getByRole("button", { name: "Submit" })).toBeVisible()
+  // The code node (name=code) and its method=code submit are labelled from the
+  // auth bundle; in the sent_email state the submit verifies the entered code.
+  await expect(page.getByRole("textbox", { name: /^(验证码|Verification code)$/ })).toBeVisible()
+  await expect(page.getByRole("button", { name: /^(提交验证|Submit verification)$/ })).toBeVisible()
+  await expect(page.getByRole("button", { name: /^(发送验证码|Send code|Submit)$/ })).toHaveCount(0)
   await expect(page.getByRole("link", { name: /^(继续|Continue)$/ })).toHaveCount(0)
 })
 

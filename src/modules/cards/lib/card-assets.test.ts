@@ -19,19 +19,19 @@ describe("card assets", () => {
 
   it("builds region-scoped asset URLs", () => {
     expect(resolveCardFullArtUrl("kr", "res001_no001", false))
-      .toBe("https://sekai-assets.haruki.seiunx.com/kr-assets/startapp/character/member/res001_no001/card_normal.png")
+      .toBe("https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/kr-assets/startapp/character/member/res001_no001/card_normal.png")
     expect(resolveCardFullArtUrl("jp", "res001_no001", true, "global"))
-      .toBe("https://sekai-assets-bdf29c81.seiunx.net/jp-assets/startapp/character/member/res001_no001/card_after_training.png")
+      .toBe("https://sekai-assets-haruki.seiunx.net/jp-assets/startapp/character/member/res001_no001/card_after_training.png")
   })
 
   it("prefers ondemand for en and startapp elsewhere in candidate order", () => {
     expect(resolveCardFullArtUrls("en", "res001_no001", false)).toEqual([
-      "https://sekai-assets.haruki.seiunx.com/en-assets/ondemand/character/member/res001_no001/card_normal.png",
-      "https://sekai-assets.haruki.seiunx.com/en-assets/startapp/character/member/res001_no001/card_normal.png",
+      "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/en-assets/ondemand/character/member/res001_no001/card_normal.png",
+      "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/en-assets/startapp/character/member/res001_no001/card_normal.png",
     ])
     expect(resolveCardFullArtUrls("jp", "res001_no001", true)).toEqual([
-      "https://sekai-assets.haruki.seiunx.com/jp-assets/startapp/character/member/res001_no001/card_after_training.png",
-      "https://sekai-assets.haruki.seiunx.com/jp-assets/ondemand/character/member/res001_no001/card_after_training.png",
+      "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/jp-assets/startapp/character/member/res001_no001/card_after_training.png",
+      "https://sekai-assets-cn03-she01-cdn.haruki.seiunx.com/jp-assets/ondemand/character/member/res001_no001/card_after_training.png",
     ])
     expect(resolveCardFullArtUrls("en", "  ", false)).toEqual([])
   })

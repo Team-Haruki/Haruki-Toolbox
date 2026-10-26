@@ -9,6 +9,7 @@ import type {
 } from "@/types/admin"
 import type { SocialPlatform } from "@/types/social-platform"
 import type { SekaiRegion } from "@/types/store"
+import type { ErrorDescription } from "@/lib/error-utils"
 import type { UserOAuthAuthorization } from "@/modules/admin-users/api/oauth"
 import {
   normalizeMysekaiPermissions,
@@ -36,6 +37,9 @@ export function createAdminUserDetailState() {
     actionLoading: ref(false),
     taskLoading: ref(false),
     user: ref<AdminUserDetail | null>(null),
+    // A 404 is "no such user"; anything else is a retryable load failure shown inline.
+    userNotFound: ref(false),
+    userLoadError: ref<ErrorDescription | null>(null),
 
     activities: ref<UserActivity[]>([]),
     uploadLogs: ref<UploadLog[]>([]),
@@ -57,6 +61,7 @@ export function createAdminUserDetailState() {
 
     emailDialogOpen: ref(false),
     editEmail: ref(""),
+    editEmailError: ref(""),
 
     gameBindingDialogOpen: ref(false),
     editGameIsEditMode: ref(false),
@@ -119,6 +124,9 @@ export function createAdminUserDetailState() {
   function resetForUserChange() {
     refs.loading.value = true
     refs.user.value = null
+    refs.userNotFound.value = false
+    refs.userLoadError.value = null
+    refs.editEmailError.value = ""
     refs.activities.value = []
     refs.uploadLogs.value = []
     refs.activityLoading.value = false

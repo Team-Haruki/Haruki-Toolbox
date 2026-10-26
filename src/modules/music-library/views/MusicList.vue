@@ -2,13 +2,14 @@
 import { computed, onMounted, ref, toRef } from "vue"
 import { useI18n } from "vue-i18n"
 import { LayoutGrid, List } from "lucide-vue-next"
-import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button"
 import { useCatalogScrollMemory } from "@/composables/useCatalogScrollMemory"
 import { useCatalogViewPreference } from "@/composables/useCatalogViewPreference"
 import { useNowTick } from "@/composables/useNowTick"
 import { usePagedSlice } from "@/composables/usePagedSlice"
 import { useRouteQueryState } from "@/composables/useRouteQueryState"
 import { preloadSearchPinyin } from "@/lib/search-match"
+import CatalogDownloadProgress from "@/shared/components/catalog/CatalogDownloadProgress.vue"
 import CatalogEmptyState from "@/shared/components/catalog/CatalogEmptyState.vue"
 import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
 import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
@@ -75,11 +76,12 @@ const {
   yearOptions: yearValues,
   levelBounds,
   hasCategories,
+  charactersReady,
   loading,
   refreshing,
   error,
+  warning,
   ready: listReady,
-  regionState,
   reload,
 } = useMusicCatalogList(region)
 
@@ -92,7 +94,14 @@ const { state, patch, reset, activeFilterCount } = useRouteQueryState(musicQuery
 const view = useCatalogViewPreference<MusicView>("music", "view", () => "grid", MUSIC_VIEWS)
 const now = useNowTick(30_000)
 const dateFormatter = useMusicDateFormatter()
-const { matchedIds: aliasMatchedIds, pending: aliasPending } = useMusicAliasMatches(toRef(state, "q"))
+const { matchedIds: aliasMatchedIds, pending: aliasPending, unavailable: aliasUnavailable } = useMusicAliasMatches(toRef(state, "q"))
+
+// The placeholder promises alias search only while the alias API answers.
+const searchPlaceholder = computed(() => (
+  aliasUnavailable.value
+    ? t("musicLibrary.list.filters.searchPlaceholderNoAlias")
+    : t("musicLibrary.list.filters.searchPlaceholder")
+))
 
 const difficultyOptions = computed<CatalogFieldOption[]>(() => MUSIC_DIFFICULTIES.map((difficulty) => ({
   value: difficulty,
@@ -148,14 +157,14 @@ const activeChips = computed(() => buildMusicActiveChips(state, {
   tagLabel: (tag) => resolveSekaiMusicTagLabel(labels, tag),
   categoryLabel: (category) => resolveSekaiMusicCategoryLabel(labels, category),
   characterName: (characterId) => characterMap.value.get(characterId)?.name ?? null,
+  charactersReady: charactersReady.value,
   scopeLabel: (scope) => t(`musicLibrary.list.filters.characterScope.${scope}`),
   hasCategories: hasCategories.value,
 }, (key, params) => t(key, params ?? {})))
 
 const countLabel = computed(() => t("musicLibrary.list.results.count", { count: visibleEntries.value.length }))
-const showSkeleton = computed(() => loading.value && entries.value.length === 0)
 const showError = computed(() => error.value != null && entries.value.length === 0)
-const showDownloadProgress = computed(() => regionState.value.refreshing && entries.value.length === 0)
+const showSkeleton = computed(() => !showError.value && loading.value && entries.value.length === 0)
 const emptyMessage = computed(() => (
   aliasPending.value ? t("musicLibrary.list.results.aliasSearching") : t("musicLibrary.list.results.empty")
 ))
@@ -184,12 +193,17 @@ function handleViewUpdate(value: string) {
 <template>
   <CatalogPageShell :title="t('musicLibrary.list.title')" :description="t('musicLibrary.list.description')" class="py-4">
     <template #toolbar>
-      <CatalogSearchField
-        v-model="state.q"
-        compact
-        :label="t('musicLibrary.list.filters.search')"
-        :placeholder="t('musicLibrary.list.filters.searchPlaceholder')"
-      />
+      <div class="flex min-w-0 flex-1 flex-col gap-1">
+        <CatalogSearchField
+          v-model="state.q"
+          compact
+          :label="t('musicLibrary.list.filters.search')"
+          :placeholder="searchPlaceholder"
+        />
+        <p v-if="aliasUnavailable" class="text-xs text-muted-foreground" role="status">
+          {{ t("musicCatalog.filters.aliasUnavailable") }}
+        </p>
+      </div>
       <CatalogRegionSelect />
     </template>
 
@@ -220,13 +234,6 @@ function handleViewUpdate(value: string) {
       </CatalogFilterPanel>
     </template>
 
-    <div v-if="showDownloadProgress" class="grid gap-2 rounded-md border bg-muted/20 p-3">
-      <p class="text-xs text-muted-foreground">
-        {{ t("catalog.results.downloading", { progress: Math.round(regionState.progress) }) }}
-      </p>
-      <Progress :model-value="regionState.progress" />
-    </div>
-
     <CatalogErrorState
       v-if="showError"
       :message="t('catalog.results.loadError')"
@@ -242,9 +249,13 @@ function handleViewUpdate(value: string) {
         :count-label="ready ? countLabel : null"
         :sort-options="sortOptions"
         :view-options="viewOptions"
+        :offline="warning != null"
+        sticky
         @update:sort="handleSortUpdate"
         @update:view="handleViewUpdate"
       />
+
+      <CatalogDownloadProgress v-if="showSkeleton" :region="region" />
 
       <div ref="resultsEl">
         <MusicResults
@@ -254,7 +265,11 @@ function handleViewUpdate(value: string) {
           :skeleton="showSkeleton"
           :blur="blurUnreleased"
         />
-        <CatalogEmptyState v-else :message="emptyMessage" :hint="t('catalog.results.emptyHint')" />
+        <CatalogEmptyState v-else :message="emptyMessage" :hint="t('catalog.results.emptyHint')">
+          <template v-if="activeFilterCount > 0 && !aliasPending" #action>
+            <Button variant="outline" size="sm" @click="reset()">{{ t("catalog.filters.clearAll") }}</Button>
+          </template>
+        </CatalogEmptyState>
       </div>
     </template>
 

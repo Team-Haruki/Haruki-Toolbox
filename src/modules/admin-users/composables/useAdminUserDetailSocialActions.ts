@@ -20,8 +20,10 @@ export function createAdminUserDetailSocialActions({
   const { refs } = state
   const strictRefreshOptions = { throwOnError: true, notifyOnError: false } as const
 
+  /** Runs from the social tab's ConfirmDialog, which reports a failure inline. */
   async function handleDeleteSocial() {
     await runTask(translate("adminUsers.detail.toast.deleteSocialFailedTitle"), () => deleteSocialPlatform(userId()), {
+      throwOnError: true,
       successMessage: translate("adminUsers.detail.toast.deleteSocialSuccess"),
       afterSuccess: () => {
         refs.socialPlatform.value = null
@@ -65,9 +67,11 @@ export function createAdminUserDetailSocialActions({
     )
   }
 
+  /** Runs from the authorized-social tab's ConfirmDialog, which reports a failure inline. */
   async function handleDeleteAuthSocial(platformId: EntityId) {
     await runTask(translate("adminUsers.detail.toast.deleteAuthSocialFailedTitle"), () =>
       deleteAuthorizedSocialPlatform(userId(), platformId), {
+      throwOnError: true,
       successMessage: translate("adminUsers.detail.toast.deleteAuthSocialSuccess"),
       afterSuccess: () => loaders.loadAuthorizedSocials(strictRefreshOptions),
     })

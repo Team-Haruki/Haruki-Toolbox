@@ -12,6 +12,7 @@ import { useNowTick } from "@/composables/useNowTick"
 import { usePagedSlice } from "@/composables/usePagedSlice"
 import { useRouteQueryState } from "@/composables/useRouteQueryState"
 import { preloadSearchPinyin } from "@/lib/search-match"
+import CatalogDownloadProgress from "@/shared/components/catalog/CatalogDownloadProgress.vue"
 import CatalogEmptyState from "@/shared/components/catalog/CatalogEmptyState.vue"
 import CatalogEntityGrid from "@/shared/components/catalog/CatalogEntityGrid.vue"
 import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue"
@@ -92,7 +93,11 @@ const tiles = computed(() => pageItems.value.map((card) => ({
 const characterNames = computed(() => new Map(
   [...list.characterMap.value.values()].map((character) => [character.id, character.name] as const),
 ))
-const activeChips = computed(() => buildCardsActiveChips(state, { characterNames: characterNames.value, labels: { t, te } }))
+const activeChips = computed(() => buildCardsActiveChips(state, {
+  characterNames: characterNames.value,
+  charactersReady: list.charactersReady.value,
+  labels: { t, te },
+}))
 const countLabel = computed(() => t("cards.list.total", { total: sortedCards.value.length }))
 const sortOptions = computed<CatalogSortOption[]>(() => CARD_SORTS.map((sort) => ({
   value: sort,
@@ -108,6 +113,10 @@ const gridClass = computed(() => (artMode.value === "both"
 const skeletonArtClass = computed(() => (artMode.value === "both" ? "aspect-[2/1] w-full" : "aspect-square w-full"))
 
 const ready = computed(() => list.ready.value && !list.error.value)
+// The error wins over the skeleton: the indexes load through one region
+// request chain, and a failure in any of them is final for the grid.
+const showError = computed(() => list.error.value != null)
+const showSkeleton = computed(() => !showError.value && list.loading.value)
 const resultsRef = ref<HTMLElement | null>(null)
 
 useCatalogScrollMemory(ready)
@@ -178,6 +187,7 @@ function setArtMode(value: AcceptableValue | AcceptableValue[] | undefined) {
         :sort-options="sortOptions"
         :sort="state.sort"
         v-model:direction="state.dir"
+        :offline="list.warning.value != null"
         sticky
         @update:sort="setSort"
       >
@@ -204,20 +214,25 @@ function setArtMode(value: AcceptableValue | AcceptableValue[] | undefined) {
       </CatalogResultsBar>
 
       <CatalogErrorState
-        v-if="list.error.value && !list.loading.value"
+        v-if="showError"
         :message="t('cards.common.loadError')"
         :detail="list.error.value"
         :retrying="list.refreshing.value"
         @retry="list.reload"
       />
 
-      <CatalogEntityGrid v-else-if="list.loading.value" columns="cards" :class="gridClass">
-        <div v-for="index in 18" :key="index" class="flex flex-col gap-1.5">
-          <Skeleton :class="[skeletonArtClass, 'rounded-md']" />
-          <Skeleton class="h-3 w-4/5" />
-          <Skeleton class="h-3 w-1/2" />
-        </div>
-      </CatalogEntityGrid>
+      <template v-else-if="showSkeleton">
+        <CatalogDownloadProgress :region="list.region.value" />
+        <!-- Same height as a CardTile (art box, two-line title, character
+             name) so the grid does not shift when the real tiles land. -->
+        <CatalogEntityGrid columns="cards" :class="gridClass">
+          <div v-for="index in 18" :key="index" class="flex flex-col gap-1.5">
+            <Skeleton :class="[skeletonArtClass, 'rounded-md']" />
+            <Skeleton class="h-4 w-4/5" />
+            <Skeleton class="h-3.5 w-1/2" />
+          </div>
+        </CatalogEntityGrid>
+      </template>
 
       <CatalogEmptyState
         v-else-if="tiles.length === 0"

@@ -23,11 +23,20 @@ type UseOAuthClientRowActionsOptions = {
   onSecretGenerated: (secret: string) => void
 }
 
+/**
+ * Row actions of the client list. Delete, disable, rotate and revoke are
+ * confirmed in a `ConfirmDialog` that runs the `execute*` / `handle*` function
+ * itself: those rethrow (`throwOnError`) so the dialog shows the failure
+ * inline and stays open, and the dialog closes itself on success through its
+ * `open` model. Enable and restore run directly and toast.
+ */
 export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOptions) {
   const { t } = useI18n()
   const actionLoading = ref(false)
   const deleteConfirmOpen = ref(false)
   const clientToDelete = ref<string | null>(null)
+  const disableConfirmOpen = ref(false)
+  const clientToDisable = ref<string | null>(null)
   const rotateConfirmOpen = ref(false)
   const clientToRotate = ref<string | null>(null)
   const revokeConfirmOpen = ref(false)
@@ -46,11 +55,8 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
       successMessage: t("adminOAuthClients.toast.deleted"),
       successAfterOnSuccess: true,
       errorTitle: t("adminOAuthClients.toast.deleteFailedTitle"),
-      onSuccess: async () => {
-        await options.loadClients()
-        deleteConfirmOpen.value = false
-        clientToDelete.value = null
-      },
+      throwOnError: true,
+      onSuccess: options.loadClients,
     })
   }
 
@@ -70,14 +76,30 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
     }
   }
 
+  /** Enabling is harmless and runs at once; disabling revokes grants, so it is confirmed first. */
   async function toggleActive(client: OAuthClient) {
-    const successMessage = client.active
-      ? t("adminOAuthClients.toast.disabled")
-      : t("adminOAuthClients.toast.enabled")
-    await runAsyncAction(actionLoading, () => setOAuthClientActive(client.clientId, !client.active), {
-      successMessage: (outcome) => (outcome.complete ? successMessage : null),
+    if (client.active) {
+      clientToDisable.value = client.clientId
+      disableConfirmOpen.value = true
+      return
+    }
+    await runAsyncAction(actionLoading, () => setOAuthClientActive(client.clientId, true), {
+      successMessage: t("adminOAuthClients.toast.enabled"),
       successAfterOnSuccess: true,
       errorTitle: t("adminOAuthClients.toast.actionFailedTitle"),
+      onSuccess: options.loadClients,
+    })
+  }
+
+  async function executeDisable() {
+    const targetClientId = clientToDisable.value
+    if (!targetClientId) return
+
+    await runAsyncAction(actionLoading, () => setOAuthClientActive(targetClientId, false), {
+      successMessage: (outcome) => (outcome.complete ? t("adminOAuthClients.toast.disabled") : null),
+      successAfterOnSuccess: true,
+      errorTitle: t("adminOAuthClients.toast.actionFailedTitle"),
+      throwOnError: true,
       onSuccess: async (outcome) => {
         // The client is disabled either way; the warning must not depend on the refresh.
         warnIfRevocationIncomplete(outcome, t("adminOAuthClients.toast.disabledRevocationIncompleteTitle"))
@@ -91,28 +113,29 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
     rotateConfirmOpen.value = true
   }
 
+  /** The confirm dialog's inline error text for a failed rotate / revoke / delete. */
+  function describeActionError(error: unknown): string {
+    return describeOAuthClientActionError(error, t, t("adminOAuthClients.toast.actionFailedTitle"))
+  }
+
   async function handleRotateSecret() {
     const targetClientId = clientToRotate.value
     if (!targetClientId) return
 
-    const errorTitle = t("adminOAuthClients.toast.rotateFailedTitle")
     await runAsyncAction(actionLoading, () => rotateClientSecret(targetClientId), {
-      errorTitle,
+      errorTitle: t("adminOAuthClients.toast.rotateFailedTitle"),
+      throwOnError: true,
       onError: async (error) => {
-        toast.error(errorTitle, { description: describeOAuthClientActionError(error, t, errorTitle) })
         if (readApiErrorCode(error) === PUBLIC_CLIENT_HAS_NO_SECRET) {
-          // The list still showed this client as confidential: refresh it so the
-          // rotate action disappears for the public client.
+          // The list still showed this client as confidential: close the
+          // dialog and refresh so the rotate action disappears for the public
+          // client; the toast carries the explanation instead.
           rotateConfirmOpen.value = false
-          clientToRotate.value = null
+          toast.error(t("adminOAuthClients.toast.rotateFailedTitle"), { description: describeActionError(error) })
           await options.loadClients().catch(() => undefined)
         }
       },
-      onSuccess: (rotatedSecret) => {
-        options.onSecretGenerated(rotatedSecret)
-        rotateConfirmOpen.value = false
-        clientToRotate.value = null
-      },
+      onSuccess: options.onSecretGenerated,
     })
   }
 
@@ -138,9 +161,8 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
       successMessage: (outcome) => (outcome.complete ? t("adminOAuthClients.toast.revokedAll") : null),
       successAfterOnSuccess: true,
       errorTitle: t("adminOAuthClients.toast.revokeFailedTitle"),
+      throwOnError: true,
       onSuccess: (outcome) => {
-        revokeConfirmOpen.value = false
-        clientToRevoke.value = null
         warnIfRevocationIncomplete(outcome, t("adminOAuthClients.toast.revokedPartiallyTitle"))
       },
     })
@@ -150,6 +172,8 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
     actionLoading,
     deleteConfirmOpen,
     clientToDelete,
+    disableConfirmOpen,
+    clientToDisable,
     rotateConfirmOpen,
     clientToRotate,
     revokeConfirmOpen,
@@ -157,8 +181,10 @@ export function useOAuthClientRowActions(options: UseOAuthClientRowActionsOption
     confirmDelete,
     executeDelete,
     toggleActive,
+    executeDisable,
     confirmRotateSecret,
     handleRotateSecret,
+    describeActionError,
     handleRestore,
     confirmRevoke,
     handleRevoke,
