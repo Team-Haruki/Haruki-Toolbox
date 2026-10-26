@@ -30,7 +30,7 @@ onMounted(async () => {
     <CardContent class="space-y-4" role="status">
       <Loader2 v-if="result === 'loading'" class="size-8 animate-spin text-primary" /><CheckCircle2 v-else-if="result === 'success'" class="size-8 text-primary" /><CircleAlert v-else class="size-8 text-destructive" />
       <p>{{ t(`userSettings.afdian.callback_${result}`) }}</p>
-      <div v-if="result !== 'loading'" class="flex flex-wrap gap-2"><Button v-if="result === 'success'" as-child><RouterLink :to="{ name: 'user.sponsorFrames' }">{{ t("userSettings.frames.title") }}</RouterLink></Button><Button as-child variant="outline"><RouterLink to="/user/settings">{{ t("userSettings.frames.back") }}</RouterLink></Button></div>
+      <Button v-if="result !== 'loading'" as-child variant="outline"><RouterLink to="/user/settings">{{ t("userSettings.frames.back") }}</RouterLink></Button>
     </CardContent>
   </Card>
 </template>

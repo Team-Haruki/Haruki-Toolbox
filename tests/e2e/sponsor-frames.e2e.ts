@@ -62,7 +62,7 @@ test.describe("Sponsor game profile frames", () => {
   test.describe.configure({ timeout: 60_000 })
 
   test("all catalog examples are shipped with the frontend", () => {
-    expect(frames).toHaveLength(31)
+    expect(frames.map((frame) => frame.id)).toEqual(["rgb_coiled_dragon", "rgb_thunder", "gif_laughing_yellow_20261001"])
     for (const f of frames) for (const asset of [f.thumbnail, f.panelPreview, f.profilePreview]) expect(existsSync(path.resolve(`public${asset}`))).toBe(true)
   })
 
@@ -92,12 +92,19 @@ test.describe("Sponsor game profile frames", () => {
     expect(env.writes[1]?.data).toEqual({ frameId: "" })
   })
 
-  test("unverified accounts and non-sponsors can preview but cannot save", async ({ page }) => {
-    await setup(page, { eligible: false })
+  test("unbound users see binding settings without any frame selection", async ({ page }) => {
+    const env = await setup(page, { eligible: false, configured: false })
     await page.goto("/user/sponsor-frames")
-    await page.getByRole("button", { name: FRAME.name["zh-CN"], exact: true }).click()
-    await expect(page.getByTestId("save-frame")).toBeDisabled()
-    await expect(page.getByText(/先在账号设置通过/)).toBeVisible()
+    await expect(page).toHaveURL(/\/user\/settings$/)
+    await expect(page.getByLabel("爱发电订单号", { exact: true })).toBeVisible()
+    await expect(page.getByRole("link", { name: "赞助头像框", exact: true })).toHaveCount(0)
+    await expect(page.locator("[data-frame-id]")).toHaveCount(0)
+    expect(env.writes).toHaveLength(0)
+  })
+
+  test("eligible sponsors with unverified game accounts can preview but cannot save", async ({ page }) => {
+    await setup(page)
+    await page.goto("/user/sponsor-frames")
     await page.locator("#frame-account").selectOption("jp:9876543210")
     await page.getByRole("button", { name: FRAME.name["zh-CN"], exact: true }).click()
     await expect(page.getByText(/请先验证这个游戏账号/)).toBeVisible()
@@ -132,8 +139,10 @@ test.describe("Sponsor game profile frames", () => {
     await expect(page.getByLabel("爱发电订单号", { exact: true })).toBeVisible()
     await expect(page.getByRole("button", { name: "授权绑定爱发电" })).toHaveCount(0)
     await expect(page.getByRole("tab", { name: "OAuth2 授权" })).toHaveCount(0)
-    await page.getByRole("link", { name: "赞助头像框", exact: true }).click()
-    await expect(page.getByRole("heading", { name: "赞助头像框", exact: true })).toBeVisible()
+    await expect(page.getByRole("link", { name: "赞助头像框", exact: true })).toHaveCount(0)
+    await page.getByRole("button", { name: /赞助用户/ }).click()
+    await expect(page.getByRole("menuitem", { name: "账号设置" })).toBeVisible()
+    await expect(page.getByRole("menuitem", { name: "赞助头像框" })).toHaveCount(0)
   })
 
   test("authorization uses the backend URL and callback clears secrets from history", async ({ page }) => {
@@ -144,6 +153,8 @@ test.describe("Sponsor game profile frames", () => {
     await page.goto("/user/afdian/callback?code=single-use-code&state=bound-state")
     await expect(page.getByText("爱发电账号已绑定，赞助记录会自动匹配。")).toBeVisible()
     expect(page.url()).not.toContain("code=")
+    await expect(page.getByRole("link", { name: "赞助头像框", exact: true })).toHaveCount(0)
+    await expect(page.getByRole("link", { name: "返回账号设置" })).toBeVisible()
     expect(env.writes).toEqual([{ path: `/api/user/${USER}/afdian/callback`, data: { code: "single-use-code", state: "bound-state" } }])
     await page.reload()
     await expect(page.getByText(/绑定未完成/)).toBeVisible()
@@ -165,8 +176,10 @@ test.describe("Afdian order verification", () => {
   test("order-only verification unlocks past sponsor frames and survives reload", async ({ page }, testInfo) => {
     const env = await setup(page, { eligible: false, configured: false })
     await page.goto("/user/settings")
+    await expect(page.getByRole("link", { name: "赞助头像框", exact: true })).toHaveCount(0)
     await page.getByLabel("爱发电订单号", { exact: true }).fill(orderNumber)
     await page.getByRole("button", { name: "验证订单并绑定" }).click()
+    await expect(page.getByRole("link", { name: "赞助头像框", exact: true })).toBeVisible()
     await expect(page.getByText("订单验证成功，头像框已解锁", { exact: true })).toBeVisible()
     await expect(page.getByText("验证方式：订单号验证", { exact: true })).toBeVisible()
     expect(env.writes).toEqual([{ path: `/api/user/${USER}/afdian/verify-order`, data: { orderNumber } }])
@@ -239,6 +252,7 @@ test.describe("Afdian order verification", () => {
     env.recoverUnlink()
     await dialog.getByRole("button", { name: "解除绑定", exact: true }).click()
     await expect(dialog).toHaveCount(0)
+    await expect(page.getByRole("link", { name: "赞助头像框", exact: true })).toHaveCount(0)
     await expect(page.getByLabel("爱发电订单号", { exact: true })).toBeVisible()
   })
 })
@@ -251,6 +265,8 @@ test("manually verified sponsors need no order and can select frames", async ({ 
   env.status.accessOverride = "granted"
   await page.goto("/user/settings")
   await expect(page.getByText("已由管理员认证赞助资格，无需再次提供订单。")).toBeVisible()
+  await expect(page.getByText("已绑定", { exact: true })).toBeVisible()
+  await expect(page.getByText("未绑定", { exact: true })).toHaveCount(0)
   await expect(page.getByLabel("爱发电订单号", { exact: true })).toHaveCount(0)
   await page.getByRole("link", { name: "赞助头像框", exact: true }).click()
   await expect(page.getByText("头像框已永久解锁")).toBeVisible()
@@ -265,8 +281,23 @@ test("blocked sponsors see a recovery explanation and cannot apply a frame", asy
   env.status.accessOverride = "blocked"
   await page.goto("/user/settings")
   await expect(page.getByText("赞助资格已由管理员停用。如需恢复，请联系管理员。")).toBeVisible()
-  await page.getByRole("link", { name: "赞助头像框", exact: true }).click()
+  await expect(page.getByRole("link", { name: "赞助头像框", exact: true })).toHaveCount(0)
+  await page.goto("/user/sponsor-frames")
+  await expect(page).toHaveURL(/\/user\/settings$/)
   await expect(page.getByText("赞助资格已由管理员停用。如需恢复，请联系管理员。")).toBeVisible()
+  await expect(page.locator("[data-frame-id]")).toHaveCount(0)
+  expect(env.writes).toHaveLength(0)
+})
+
+
+test("losing eligibility in a save response returns to account settings", async ({ page }) => {
+  const env = await setup(page)
+  await page.goto("/user/sponsor-frames")
   await page.getByRole("button", { name: FRAME.name["zh-CN"], exact: true }).click()
-  await expect(page.getByTestId("save-frame")).toBeDisabled()
+  env.status.eligible = false
+  env.status.accessOverride = "blocked"
+  await page.getByTestId("save-frame").click()
+  await expect(page).toHaveURL(/\/user\/settings$/)
+  await expect(page.locator("[data-frame-id]")).toHaveCount(0)
+  await expect(page.getByText("头像框已保存", { exact: true })).toHaveCount(0)
 })
