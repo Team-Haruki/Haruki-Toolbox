@@ -6,7 +6,6 @@ export default {
       "manualGranted": "已由管理员认证赞助资格，无需再次提供订单。",
       "accessBlocked": "赞助资格已由管理员停用。如需恢复，请联系管理员。",
       "unlinkManualConfirm": "解除爱发电绑定后，管理员授予的赞助资格仍然有效，已有头像框选择会保留。",
-      "orderOnlyDescription": "使用爱发电订单号关联赞助记录。曾经赞助过即可永久使用专属头像框。",
       "oauthTab": "OAuth2 授权",
       "oauthDescription": "前往爱发电授权，关联账号并自动匹配历史赞助。",
       "methodOAuth": "验证方式：OAuth2 授权",

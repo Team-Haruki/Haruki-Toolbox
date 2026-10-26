@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import { useAfdianBinding } from "@/modules/user-settings/composables/useAfdianBinding"
 
@@ -20,7 +20,6 @@ const isBound = computed(() => !!status.value?.afdianUserId || status.value?.acc
   <Card>
     <CardHeader>
       <CardTitle class="flex items-center gap-2"><HeartHandshake class="size-5" />{{ t("userSettings.afdian.title") }}</CardTitle>
-      <CardDescription>{{ t(status?.oauthEnabled ? 'userSettings.afdian.description' : 'userSettings.afdian.orderOnlyDescription') }}</CardDescription>
     </CardHeader>
     <CardContent class="space-y-4">
       <p v-if="loading" role="status" class="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 class="size-4 animate-spin" />{{ t("userSettings.afdian.loading") }}</p>
