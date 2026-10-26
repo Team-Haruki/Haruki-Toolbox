@@ -3,8 +3,29 @@
 export default {
   "userSettings": {
     "afdian": {
+      "orderOnlyDescription": "使用爱发电订单号关联赞助记录。曾经赞助过即可永久使用专属头像框。",
+      "oauthTab": "OAuth2 授权",
+      "oauthDescription": "前往爱发电授权，关联账号并自动匹配历史赞助。",
+      "methodOAuth": "验证方式：OAuth2 授权",
+      "methodOrder": "验证方式：订单号验证",
+      "upgradeOAuth": "改用 OAuth2 授权确认",
+      "order": {
+        "tab": "订单号验证",
+        "label": "爱发电订单号",
+        "placeholder": "粘贴完整的爱发电订单号",
+        "description": "使用你赞助 Haruki 的爱发电订单号验证，历史订单也可以使用。",
+        "help": "在爱发电「我的订单」中打开赞助订单，复制订单号；不要填写支付宝或微信交易号，也不要将订单号分享给他人。",
+        "unavailable": "订单号验证暂未开放，请稍后再试。",
+        "verifyEmail": "请先在账号设置中完成邮箱验证，再验证订单号。",
+        "submit": "验证订单并绑定",
+        "invalid": "请复制完整的爱发电订单号，订单号应仅包含数字。",
+        "verified": "订单验证成功，头像框已解锁",
+        "rejected": "订单未能通过验证，或对应的爱发电账号已绑定其他工具箱账号。请核对订单后重试。",
+        "rateLimited": "验证次数过多，请稍后再试。",
+        "failed": "暂时无法核验订单，请稍后重试。"
+      },
       "title": "爱发电绑定",
-      "description": "授权关联你的爱发电账号，自动识别赞助记录。曾经赞助过即可永久使用专属头像框。",
+      "description": "通过 OAuth2 授权或订单号验证关联赞助记录。曾经赞助过即可永久使用专属头像框。",
       "loading": "正在加载…",
       "retry": "重试",
       "loadFailed": "暂时无法读取绑定信息，请重试。",
@@ -28,12 +49,13 @@ export default {
       "callback_failed": "绑定未完成。授权可能已过期、登录会话已改变，或爱发电账号已被绑定。请返回账号设置重新授权。"
     },
     "frames": {
+      "lockedOrderOnly": "先在账号设置使用爱发电订单号验证赞助资格。你也可以先浏览全部头像框和示例。",
       "enlarge": "放大查看示例",
       "previewOnly": "仅预览",
       "title": "赞助头像框",
       "back": "返回账号设置",
       "description": "为 HarukiBot 的游戏个人信息图片选择头像框。曾经赞助过即可永久使用，为每个已验证的游戏账号分别设置。",
-      "locked": "先在账号设置绑定你的爱发电账号，即可识别赞助资格。你也可以先浏览全部头像框和示例。",
+      "locked": "先在账号设置通过 OAuth2 授权或订单号验证赞助资格。你也可以先浏览全部头像框和示例。",
       "accountTitle": "应用到游戏账号",
       "accountDescription": "保存后，HarukiBot 查询该游戏账号时会使用所选头像框。",
       "account": "游戏账号",

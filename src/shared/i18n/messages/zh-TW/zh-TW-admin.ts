@@ -861,10 +861,10 @@ export default {
   },
   "adminSponsors": {
     "binding": {
-      "count": "已繫結工具箱的贊助使用者",
-      "title": "工具箱繫結",
-      "bound": "已繫結",
-      "unbound": "未繫結"
+      "count": "已綁定工具箱的贊助使用者",
+      "title": "工具箱綁定",
+      "bound": "已綁定",
+      "unbound": "未綁定"
     },
     "title": "贊助者管理",
     "description": "維護贊助者名單展示資料與贊助時長：愛發電時長由訂單自動計算，其他渠道的贊助在這裡手動錄入。",

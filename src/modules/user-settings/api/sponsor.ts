@@ -4,6 +4,8 @@ import type { APIResponse } from "@/types/response"
 
 export interface AfdianBinding {
   oauthEnabled: boolean
+  orderVerificationEnabled: boolean
+  verificationMethod: "" | "oauth2" | "order"
   afdianUserId: string | null
   boundAt: string | null
   eligible: boolean
@@ -49,6 +51,13 @@ export async function completeAfdianBinding(userId: string, code: string, state:
 
 export async function unlinkAfdianBinding(userId: string): Promise<AfdianBinding> {
   return unwrapUpdatedData(await request<APIResponse<AfdianBinding>>(buildUserApiPath(userId, "afdian"), { method: "DELETE" }))
+}
+
+export async function verifyAfdianOrder(userId: string, orderNumber: string): Promise<AfdianBinding> {
+  return unwrapUpdatedData(await request<APIResponse<AfdianBinding>>(
+    buildUserApiPath(userId, "afdian", "verify-order"),
+    { method: "POST", data: { orderNumber }, retry: 0 },
+  ))
 }
 
 export async function getSponsorFrames(userId: string): Promise<SponsorFramesData> {

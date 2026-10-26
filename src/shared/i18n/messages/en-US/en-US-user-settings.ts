@@ -3,8 +3,29 @@
 export default {
   "userSettings": {
     "afdian": {
+      "orderOnlyDescription": "Link your sponsorship with an Afdian order number. Any past sponsorship unlocks supporter frames permanently.",
+      "oauthTab": "OAuth2 authorization",
+      "oauthDescription": "Authorize with Afdian to link your account and match your sponsorship history.",
+      "methodOAuth": "Verified with OAuth2",
+      "methodOrder": "Verified with an order number",
+      "upgradeOAuth": "Confirm with OAuth2",
+      "order": {
+        "tab": "Order number",
+        "label": "Afdian order number",
+        "placeholder": "Paste the complete Afdian order number",
+        "description": "Verify an Afdian order supporting Haruki. Past orders are accepted too.",
+        "help": "Open your sponsorship in Afdian’s My Orders and copy its order number. Do not use an Alipay or WeChat transaction number, or share the order number with others.",
+        "unavailable": "Order verification is not available yet. Please check back later.",
+        "verifyEmail": "Verify your email address in account settings before verifying an order.",
+        "submit": "Verify order and link",
+        "invalid": "Copy the complete Afdian order number. It must contain digits only.",
+        "verified": "Order verified. Supporter frames unlocked.",
+        "rejected": "The order could not be verified, or its Afdian account is already linked to another Toolbox account. Check the order and try again.",
+        "rateLimited": "Too many verification attempts. Please try again later.",
+        "failed": "Could not verify the order right now. Please try again later."
+      },
       "title": "Afdian account",
-      "description": "Link your Afdian account to match your sponsorship history. Any past sponsorship unlocks supporter frames permanently.",
+      "description": "Verify with OAuth2 or an order number to link your sponsorship history. Any past sponsorship unlocks supporter frames permanently.",
       "loading": "Loading…",
       "retry": "Retry",
       "loadFailed": "Could not load your binding. Please retry.",
@@ -28,12 +49,13 @@ export default {
       "callback_failed": "Linking failed. Authorization may have expired, your session may have changed, or the Afdian account may already be linked. Return to settings and authorize again."
     },
     "frames": {
+      "lockedOrderOnly": "Verify your sponsorship with an Afdian order number in account settings. You can browse all frames and previews first.",
       "enlarge": "Enlarge example",
       "previewOnly": "Preview only",
       "title": "Supporter frames",
       "back": "Account settings",
       "description": "Choose frames for your HarukiBot game profile images. Any past sponsorship grants permanent access. Set a frame for each verified game account.",
-      "locked": "Link your Afdian account in settings to verify sponsorship. You can browse all frames and previews first.",
+      "locked": "Verify sponsorship in settings using OAuth2 or an order number. You can browse all frames and previews first.",
       "accountTitle": "Apply to a game account",
       "accountDescription": "HarukiBot will use the saved frame when displaying this game account.",
       "account": "Game account",
