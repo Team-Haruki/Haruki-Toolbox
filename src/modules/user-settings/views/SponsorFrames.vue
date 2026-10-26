@@ -27,7 +27,7 @@ const { data, loading, failed, saving, accountKey, accounts, account, selectedId
     <Card v-else-if="failed"><CardContent class="space-y-3 pt-6"><p role="alert">{{ t("userSettings.frames.loadFailed") }}</p><Button variant="outline" @click="load">{{ t("userSettings.afdian.retry") }}</Button></CardContent></Card>
     <template v-else-if="data">
       <div v-if="!eligible" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
-        <p class="text-sm leading-relaxed">{{ t(data.status.afdianUserId ? 'userSettings.afdian.noSponsorship' : data.status.oauthEnabled ? 'userSettings.frames.locked' : 'userSettings.frames.lockedOrderOnly') }}</p>
+        <p class="text-sm leading-relaxed">{{ t(data.status.accessOverride === 'blocked' ? 'userSettings.afdian.accessBlocked' : data.status.afdianUserId ? 'userSettings.afdian.noSponsorship' : data.status.oauthEnabled ? 'userSettings.frames.locked' : 'userSettings.frames.lockedOrderOnly') }}</p>
         <Button as-child variant="outline" size="sm"><RouterLink to="/user/settings">{{ t("userSettings.afdian.title") }}</RouterLink></Button>
       </div>
       <div class="grid items-start gap-6 lg:grid-cols-[1fr_1.15fr]">

@@ -3,6 +3,9 @@
 export default {
   "userSettings": {
     "afdian": {
+      "manualGranted": "An administrator has verified your sponsorship. No additional order is needed.",
+      "accessBlocked": "An administrator has disabled your sponsor access. Contact an administrator to restore it.",
+      "unlinkManualConfirm": "Unlinking Afdian preserves your manually granted sponsor access and saved frame choices.",
       "orderOnlyDescription": "Link your sponsorship with an Afdian order number. Any past sponsorship unlocks supporter frames permanently.",
       "oauthTab": "OAuth2 authorization",
       "oauthDescription": "Authorize with Afdian to link your account and match your sponsorship history.",

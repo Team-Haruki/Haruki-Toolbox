@@ -6,6 +6,7 @@ export interface AfdianBinding {
   oauthEnabled: boolean
   orderVerificationEnabled: boolean
   verificationMethod: "" | "oauth2" | "order"
+  accessOverride?: "" | "granted" | "blocked"
   afdianUserId: string | null
   boundAt: string | null
   eligible: boolean

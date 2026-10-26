@@ -5,7 +5,7 @@ import path from "node:path"
 const frames = JSON.parse(readFileSync(path.resolve("public/sponsor-frames/catalog.json"), "utf8")) as { id: string; name: Record<string, string>; thumbnail: string; panelPreview: string; profilePreview: string }[]
 const FRAME = frames.find((f) => f.id === "rgb_coiled_dragon")!
 const USER = "sponsor-test"
-type Status = { orderVerificationEnabled: boolean; verificationMethod: string; oauthEnabled: boolean; afdianUserId: string | null; boundAt: string | null; eligible: boolean; category: string; expiresAt: string | null }
+type Status = { accessOverride?: "" | "granted" | "blocked"; orderVerificationEnabled: boolean; verificationMethod: string; oauthEnabled: boolean; afdianUserId: string | null; boundAt: string | null; eligible: boolean; category: string; expiresAt: string | null }
 
 async function setup(page: Page, options: { eligible?: boolean; configured?: boolean; orderConfigured?: boolean; emailVerified?: boolean; orderStatus?: number; unlinkStatus?: number; empty?: boolean; fail?: boolean; callbackStatus?: number } = {}) {
   const status: Status = { orderVerificationEnabled: options.orderConfigured ?? true, verificationMethod: options.eligible === false ? "" : "oauth2", oauthEnabled: options.configured ?? true, afdianUserId: options.eligible === false ? null : "afdian-test", boundAt: null, eligible: options.eligible ?? true, category: options.eligible === false ? "none" : "former", expiresAt: "2025-01-01T00:00:00Z" }
@@ -241,4 +241,32 @@ test.describe("Afdian order verification", () => {
     await expect(dialog).toHaveCount(0)
     await expect(page.getByLabel("爱发电订单号", { exact: true })).toBeVisible()
   })
+})
+
+
+test("manually verified sponsors need no order and can select frames", async ({ page }) => {
+  const env = await setup(page, { eligible: false, configured: false })
+  env.status.eligible = true
+  env.status.category = "former"
+  env.status.accessOverride = "granted"
+  await page.goto("/user/settings")
+  await expect(page.getByText("已由管理员认证赞助资格，无需再次提供订单。")).toBeVisible()
+  await expect(page.getByLabel("爱发电订单号", { exact: true })).toHaveCount(0)
+  await page.getByRole("link", { name: "赞助头像框", exact: true }).click()
+  await expect(page.getByText("头像框已永久解锁")).toBeVisible()
+  await page.getByRole("button", { name: FRAME.name["zh-CN"], exact: true }).click()
+  await page.getByTestId("save-frame").click()
+  expect(env.writes[0]?.data).toEqual({ frameId: FRAME.id })
+})
+
+test("blocked sponsors see a recovery explanation and cannot apply a frame", async ({ page }) => {
+  const env = await setup(page, { configured: false })
+  env.status.eligible = false
+  env.status.accessOverride = "blocked"
+  await page.goto("/user/settings")
+  await expect(page.getByText("赞助资格已由管理员停用。如需恢复，请联系管理员。")).toBeVisible()
+  await page.getByRole("link", { name: "赞助头像框", exact: true }).click()
+  await expect(page.getByText("赞助资格已由管理员停用。如需恢复，请联系管理员。")).toBeVisible()
+  await page.getByRole("button", { name: FRAME.name["zh-CN"], exact: true }).click()
+  await expect(page.getByTestId("save-frame")).toBeDisabled()
 })

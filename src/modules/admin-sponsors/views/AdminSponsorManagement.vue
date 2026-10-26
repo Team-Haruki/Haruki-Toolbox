@@ -45,6 +45,7 @@ import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import FieldError from "@/shared/components/FieldError.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import SponsorDurationPanel from "@/modules/admin-sponsors/components/SponsorDurationPanel.vue"
+import ToolboxSponsorPanel from "@/modules/admin-sponsors/components/ToolboxSponsorPanel.vue"
 import SponsorManualDurationDialog from "@/modules/admin-sponsors/components/SponsorManualDurationDialog.vue"
 import {
   SPONSOR_FIELD_IDS,
@@ -157,6 +158,7 @@ function handleManualDialogOpen(open: boolean) {
 
 <template>
   <div class="w-full flex flex-col gap-4">
+    <ToolboxSponsorPanel />
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <div class="rounded-xl border bg-card p-4 shadow-sm">
         <p class="text-sm text-muted-foreground">{{ t("adminSponsors.binding.count") }}</p>

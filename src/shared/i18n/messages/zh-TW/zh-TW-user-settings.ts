@@ -3,6 +3,9 @@
 export default {
   "userSettings": {
     "afdian": {
+      "manualGranted": "已由管理員認證贊助資格，無需再次提供訂單。",
+      "accessBlocked": "贊助資格已由管理員停用。如需恢復，請聯絡管理員。",
+      "unlinkManualConfirm": "解除愛發電綁定後，管理員授予的贊助資格仍然有效，已有頭像框選擇會保留。",
       "orderOnlyDescription": "使用愛發電訂單號關聯贊助記錄。曾經贊助過即可永久使用專屬頭像框。",
       "oauthTab": "OAuth2 授權",
       "oauthDescription": "前往愛發電授權，關聯帳號並自動匹配歷史贊助。",

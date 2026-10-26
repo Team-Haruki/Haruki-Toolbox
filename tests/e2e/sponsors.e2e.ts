@@ -151,6 +151,7 @@ async function openAdminSponsors(page: Page) {
     if (url.pathname === "/api/admin/tickets") {
       return reply(route, { items: [], total: 0 })
     }
+    if (url.pathname === "/api/admin/sponsors/toolbox-users") return reply(route, { items: [], total: 0, page: 1, pageSize: 20 })
     if (!url.pathname.startsWith("/api/admin/sponsors")) return route.abort()
     const call = { method: request.method(), path: url.pathname, body: request.postDataJSON() }
     calls.push(call)

@@ -34,8 +34,10 @@ const { status, loading, busy, failed, unlinkOpen, verificationMethod, orderNumb
         </div>
         <p v-if="status.afdianUserId" class="break-all text-xs text-muted-foreground">{{ t("userSettings.afdian.account", { id: status.afdianUserId }) }}</p>
         <p v-if="status.afdianUserId" class="text-xs text-muted-foreground">{{ t(status.verificationMethod === 'order' ? 'userSettings.afdian.methodOrder' : 'userSettings.afdian.methodOAuth') }}</p>
-        <p v-if="status.afdianUserId && !status.eligible" class="text-sm text-muted-foreground">{{ t("userSettings.afdian.noSponsorship") }}</p>
-        <Tabs v-if="!status.afdianUserId" v-model="verificationMethod" class="space-y-3">
+        <p v-if="status.accessOverride === 'granted'" class="text-sm text-muted-foreground">{{ t("userSettings.afdian.manualGranted") }}</p>
+        <p v-if="status.accessOverride === 'blocked'" role="status" class="text-sm text-destructive">{{ t("userSettings.afdian.accessBlocked") }}</p>
+        <p v-else-if="status.afdianUserId && !status.eligible" class="text-sm text-muted-foreground">{{ t("userSettings.afdian.noSponsorship") }}</p>
+        <Tabs v-if="!status.afdianUserId && !status.accessOverride" v-model="verificationMethod" class="space-y-3">
           <TabsList v-if="status.oauthEnabled && status.orderVerificationEnabled" class="grid w-full grid-cols-2">
             <TabsTrigger value="oauth2" :disabled="busy">{{ t("userSettings.afdian.oauthTab") }}</TabsTrigger>
             <TabsTrigger value="order" :disabled="busy">{{ t("userSettings.afdian.order.tab") }}</TabsTrigger>
@@ -67,6 +69,6 @@ const { status, loading, busy, failed, unlinkOpen, verificationMethod, orderNumb
         </div>
       </template>
     </CardContent>
-    <ConfirmDialog v-model:open="unlinkOpen" :title="t('userSettings.afdian.unlink')" :description="t('userSettings.afdian.unlinkConfirm')" :confirm-label="t('userSettings.afdian.unlink')" :on-confirm="unlink" :describe-error="() => t('userSettings.afdian.actionFailed')" destructive />
+    <ConfirmDialog v-model:open="unlinkOpen" :title="t('userSettings.afdian.unlink')" :description="t(status?.accessOverride === 'granted' ? 'userSettings.afdian.unlinkManualConfirm' : 'userSettings.afdian.unlinkConfirm')" :confirm-label="t('userSettings.afdian.unlink')" :on-confirm="unlink" :describe-error="() => t('userSettings.afdian.actionFailed')" destructive />
   </Card>
 </template>
