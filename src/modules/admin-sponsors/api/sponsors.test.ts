@@ -56,6 +56,7 @@ describe("admin sponsor api normalizers", () => {
       items: [
         {
           id: "afdian-user",
+          toolboxBound: false,
           name: "Miku",
           avatar: "https://example.com/miku.png",
           planName: "Spark tier",

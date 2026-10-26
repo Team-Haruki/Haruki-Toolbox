@@ -2,6 +2,18 @@ import type { RouteRecordRaw } from "vue-router"
 
 export const userSettingsChildRoutes: RouteRecordRaw[] = [
     {
+        path: "sponsor-frames",
+        name: "user.sponsorFrames",
+        component: () => import("@/modules/user-settings/views/SponsorFrames.vue"),
+        meta: { titleKey: "route.sponsorFrames", requiresAuth: true },
+    },
+    {
+        path: "afdian/callback",
+        name: "user.afdianCallback",
+        component: () => import("@/modules/user-settings/views/AfdianCallback.vue"),
+        meta: { titleKey: "route.afdianCallback", requiresAuth: true },
+    },
+    {
         path: "settings",
         name: "user.settings",
         component: () => import("@/modules/user-settings/views/Settings.vue"),

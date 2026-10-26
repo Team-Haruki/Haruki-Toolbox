@@ -45,6 +45,7 @@ import ConfirmDialog from "@/shared/components/ConfirmDialog.vue"
 import FieldError from "@/shared/components/FieldError.vue"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import SponsorDurationPanel from "@/modules/admin-sponsors/components/SponsorDurationPanel.vue"
+import ToolboxSponsorPanel from "@/modules/admin-sponsors/components/ToolboxSponsorPanel.vue"
 import SponsorManualDurationDialog from "@/modules/admin-sponsors/components/SponsorManualDurationDialog.vue"
 import {
   SPONSOR_FIELD_IDS,
@@ -109,6 +110,8 @@ const {
   formatDate,
 } = useAdminSponsorManagement()
 
+const boundCount = computed(() => sponsors.value.filter((sponsor) => sponsor.toolboxBound).length)
+
 function fallbackName(sponsor: AdminSponsorProfile | null) {
   return sponsor?.name || t("adminSponsors.common.anonymous")
 }
@@ -155,7 +158,13 @@ function handleManualDialogOpen(open: boolean) {
 
 <template>
   <div class="w-full flex flex-col gap-4">
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <ToolboxSponsorPanel />
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="rounded-xl border bg-card p-4 shadow-sm">
+        <p class="text-sm text-muted-foreground">{{ t("adminSponsors.binding.count") }}</p>
+        <Skeleton v-if="loading" class="mt-1 h-8 w-14" />
+        <p v-else class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{{ boundCount }}</p>
+      </div>
       <div class="rounded-xl border bg-card p-4 shadow-sm">
         <p class="text-sm text-muted-foreground">{{ t("adminSponsors.stats.total") }}</p>
         <Skeleton v-if="loading" class="mt-1 h-8 w-14" />
@@ -218,6 +227,7 @@ function handleManualDialogOpen(open: boolean) {
               <TableHead>{{ t("adminSponsors.table.supporter") }}</TableHead>
               <TableHead class="hidden md:table-cell">{{ t("adminSponsors.table.tier") }}</TableHead>
               <TableHead>{{ t("adminSponsors.table.status") }}</TableHead>
+              <TableHead>{{ t("adminSponsors.binding.title") }}</TableHead>
               <TableHead>{{ t("adminSponsors.table.afdianSync") }}</TableHead>
               <TableHead class="text-right">{{ t("adminSponsors.table.actions") }}</TableHead>
             </TableRow>
@@ -225,7 +235,7 @@ function handleManualDialogOpen(open: boolean) {
           <TableBody>
             <template v-if="loading">
               <TableRow v-for="row in 6" :key="row">
-                <TableCell colspan="5">
+                <TableCell colspan="6">
                   <Skeleton class="h-9 w-full" />
                 </TableCell>
               </TableRow>
@@ -268,6 +278,7 @@ function handleManualDialogOpen(open: boolean) {
                     </span>
                   </div>
                 </TableCell>
+                <TableCell><Badge :variant="sponsor.toolboxBound ? 'default' : 'secondary'">{{ t(sponsor.toolboxBound ? "adminSponsors.binding.bound" : "adminSponsors.binding.unbound") }}</Badge></TableCell>
                 <TableCell>
                   <div
                     class="flex items-center gap-2"

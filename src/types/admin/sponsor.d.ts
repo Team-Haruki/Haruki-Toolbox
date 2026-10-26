@@ -2,6 +2,7 @@
 export type AdminSponsorCategory = "current" | "former"
 
 export interface AdminSponsorProfile {
+	toolboxBound: boolean
   id: string
   name: string
   avatar: string

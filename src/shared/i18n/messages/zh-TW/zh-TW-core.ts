@@ -986,6 +986,8 @@ export default {
     }
   },
   "route": {
+    "sponsorFrames": "贊助頭像框",
+    "afdianCallback": "愛發電授權結果",
     "home": "主頁",
     "notFound": "頁面不存在",
     "settings": "設定",
