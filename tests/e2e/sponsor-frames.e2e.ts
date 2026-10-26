@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from "node:fs"
 import path from "node:path"
 
 const frames = JSON.parse(readFileSync(path.resolve("public/sponsor-frames/catalog.json"), "utf8")) as { id: string; name: Record<string, string>; thumbnail: string; panelPreview: string; profilePreview: string }[]
-const FRAME = frames.find((f) => f.id === "rgb_coiled_dragon")!
+const FRAME = frames.find((f) => f.id === "night_heron_20261026")!
 const USER = "sponsor-test"
 type Status = { accessOverride?: "" | "granted" | "blocked"; orderVerificationEnabled: boolean; verificationMethod: string; oauthEnabled: boolean; afdianUserId: string | null; boundAt: string | null; eligible: boolean; category: string; expiresAt: string | null }
 
@@ -62,7 +62,7 @@ test.describe("Sponsor game profile frames", () => {
   test.describe.configure({ timeout: 60_000 })
 
   test("all catalog examples are shipped with the frontend", () => {
-    expect(frames.map((frame) => frame.id)).toEqual(["rgb_coiled_dragon", "rgb_thunder", "gif_laughing_yellow_20261001"])
+    expect(frames.map((frame) => frame.id)).toEqual(["rgb_coiled_dragon", "rgb_thunder", "gif_laughing_yellow_20261001", "night_heron_20261026"])
     for (const f of frames) for (const asset of [f.thumbnail, f.panelPreview, f.profilePreview]) expect(existsSync(path.resolve(`public${asset}`))).toBe(true)
   })
 
