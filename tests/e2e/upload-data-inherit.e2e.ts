@@ -111,6 +111,8 @@ type ApiHandler = (route: Route, url: URL, method: string) => Promise<void> | vo
 interface VaultMock {
   entries: Record<string, unknown>[]
   initialized: boolean
+  /** What the account opens the vault with; "password" when left out. */
+  kind?: "password" | "pin"
 }
 
 /** Routes the job and vault endpoints; `extra` answers first and returns true when it handled the call. */
@@ -137,7 +139,10 @@ async function mockApi(page: Page, options: { snapshot?: () => unknown; vault?: 
       return
     }
     if (path === "/api/inherit/vault/key") {
-      return route.fulfill(envelope({ initialized: vault.initialized, kind: "password", key_version: 1 }))
+      const kind = vault.kind ?? "password"
+      return route.fulfill(envelope(vault.initialized
+        ? { initialized: true, kind, key_version: 1 }
+        : { initialized: false, kind, identity_has_password: kind === "password" }))
     }
     if (path === "/api/inherit/vault/entries" && method === "GET") {
       return route.fulfill(envelope(vault.entries))
@@ -181,6 +186,16 @@ test.describe("transfer-code upload", () => {
     await page.goto("/upload-data?tab=inherit")
     await expect(page.locator("#inherit-id")).toBeVisible()
     expect(await page.evaluate(() => localStorage.getItem("haruki_inherit"))).toBeNull()
+
+    // One prominent notice; the rest are short notes or under "learn more".
+    await expect(page.getByTestId("inherit-form-warning")).toBeVisible()
+    await expect(page.getByTestId("inherit-platform-link-tip")).toContainText(/Game Center/)
+    await expect(page.getByTestId("inherit-platform-link-tip")).toContainText(/Google Play/)
+    await expect(page.getByTestId("inherit-mysekai-qq-note")).toBeVisible()
+    const learnMore = page.getByTestId("inherit-learn-more")
+    await expect(learnMore.getByText(/风险说明|^Risk$/)).toBeHidden()
+    await learnMore.getByRole("button").click()
+    await expect(learnMore.getByText(/风险说明|^Risk$/)).toBeVisible()
 
     // No "remember" option and no JP-disabled notice any more.
     await expect(page.getByText(/记住引继信息|remember transfer info/i)).toHaveCount(0)
@@ -248,7 +263,17 @@ test.describe("transfer-code upload", () => {
     await expect(page.getByTestId("inherit-job-connection")).toHaveAttribute("data-state", "live")
     await expect(page.locator('[data-step="bootstrap"] [data-substep="cookies"]')).toHaveAttribute("data-status", "done")
 
-    // The Toolbox password is required…
+    // It is the website sign-in password, said so next to the field, with a way out when it is forgotten…
+    const unlockFields = page.getByTestId("inherit-confirm").getByTestId("inherit-unlock")
+    await expect(unlockFields).toHaveAttribute("data-kind", "password")
+    await expect(page.getByText(/^(Haruki 工具箱登录密码|Haruki Toolbox sign-in password)$/)).toBeVisible()
+    await expect(unlockFields).toContainText(/不是游戏的引继密码|Not the game's transfer password/)
+    const forgot = unlockFields.getByTestId("inherit-unlock-forgot-password")
+    await expect(forgot).toHaveAttribute("href", /\/user\/identity-settings\/password$/)
+    await expect(forgot).toHaveAttribute("target", "_blank")
+    await expect(unlockFields).toContainText(/只能重置保险库|resetting the vault/)
+
+    // …and it is required…
     await page.getByRole("button", { name: /确认并执行引继|Confirm and transfer/ }).click()
     await expect(page.locator("#inherit-confirm-secret-error")).toBeVisible()
 
@@ -263,6 +288,8 @@ test.describe("transfer-code upload", () => {
     await expect(code).toBeVisible()
     await expect(page.getByTestId("inherit-job-code-id")).toHaveText(NEW_CODE.inherit_id)
     await expect(page.getByTestId("inherit-job-code-password")).toHaveText(NEW_CODE.password)
+    // What to do next, including linking a platform login so a code is never the only way back.
+    await expect(code.getByTestId("inherit-next-platform-link")).toContainText(/Game Center/)
     expect(confirmFrames).toEqual([
       { type: "confirm", password: "new-password" },
       { type: "confirm", password: "new-password", previous_password: "old-password" },
@@ -271,6 +298,8 @@ test.describe("transfer-code upload", () => {
     // The fetch fails afterwards: the code stays, with the failure next to it.
     await expect(panel).toHaveAttribute("data-job-status", "failed")
     await expect(page.getByTestId("inherit-job-error")).toHaveAttribute("data-code", "fetch_failed")
+    // A failed fetch after the code was issued is a warning, not a danger.
+    await expect(page.getByTestId("inherit-job-error")).toHaveAttribute("data-tone", "warning")
     await expect(page.getByTestId("inherit-code-validity")).toHaveAttribute("data-validity", "used")
     await expect(page.getByTestId("inherit-job-code-id")).toHaveText(NEW_CODE.inherit_id)
     await expect(page.locator('[data-step="fetch_suite"]')).toHaveAttribute("data-status", "failed")
@@ -309,7 +338,7 @@ test.describe("transfer-code upload", () => {
 
       await expect(page.getByTestId("inherit-job")).toBeVisible()
       await expect(page.getByTestId(scenario.visible)).toBeVisible()
-      await expect(page.getByText(/你已有一个进行中的引继任务，已为你恢复|You already have a transfer upload in progress; it has been resumed/)).toBeVisible()
+      await expect(page.getByText(/你有一个正在进行的引继，已为你恢复|You already have a transfer in progress; it has been resumed/)).toBeVisible()
       await expect(page.getByTestId("inherit-job-connection")).toHaveAttribute("data-state", "live")
       expect(calls.some((call) => call.method === "GET" && call.path === `/api/inherit/jobs/${JOB_ID}`)).toBe(true)
       // The resumed job is remembered like a created one: its id only.
@@ -369,6 +398,80 @@ test.describe("transfer-code upload", () => {
     expect(calls.some((call) => call.path.endsWith("/cancel") && call.method === "POST")).toBe(true)
   })
 
+  test("asks an account without a password for a vault PIN, set twice the first time", async ({ page }) => {
+    await signIn(page, { activeJob: true })
+    const pinJob = () => ({ ...AWAITING(), unlock: { kind: "pin", initialized: false } })
+    await mockApi(page, { snapshot: pinJob, vault: { initialized: false, kind: "pin", entries: [] } })
+    const confirmFrames: unknown[] = []
+    await page.routeWebSocket(/\/api\/inherit\/jobs\/.+\/ws/, (ws: WebSocketRoute) => {
+      ws.send(JSON.stringify({ type: "snapshot", job: pinJob() }))
+      ws.onMessage((raw) => {
+        const frame = JSON.parse(String(raw)) as Record<string, unknown>
+        if (frame.type === "confirm") confirmFrames.push(frame)
+      })
+    })
+
+    await page.goto("/upload-data?tab=inherit")
+    const fields = page.getByTestId("inherit-confirm").getByTestId("inherit-unlock")
+    await expect(fields).toHaveAttribute("data-kind", "pin")
+    await expect(fields).toHaveAttribute("data-creating", "true")
+    // No password wording or password recovery for an account that has no password.
+    await expect(fields.getByText(/^(Haruki 工具箱登录密码|Haruki Toolbox sign-in password)$/)).toHaveCount(0)
+    await expect(fields.getByText(/^(设置保险库 PIN|Set a vault PIN)$/)).toBeVisible()
+    await expect(fields.getByTestId("inherit-unlock-forgot-password")).toHaveCount(0)
+    await expect(fields).toContainText(/Google、Apple 或通行密钥|Google, Apple or a passkey/)
+    await expect(fields).toContainText(/PIN 无法找回|cannot be recovered/)
+
+    await page.locator("#inherit-confirm-secret").fill("my-vault-pin")
+    await page.locator("#inherit-confirm-repeat").fill("my-vault-pim")
+    await page.getByRole("button", { name: /确认并执行引继|Confirm and transfer/ }).click()
+    await expect(page.locator("#inherit-confirm-repeat-error")).toBeVisible()
+    expect(confirmFrames).toEqual([])
+
+    await page.locator("#inherit-confirm-repeat").fill("my-vault-pin")
+    await page.getByRole("button", { name: /确认并执行引继|Confirm and transfer/ }).click()
+    await expect.poll(() => confirmFrames).toEqual([{ type: "confirm", vault_pin: "my-vault-pin" }])
+  })
+
+  test("sets a new PIN after a forgotten one is reset in the confirm step", async ({ page }) => {
+    await signIn(page, { activeJob: true })
+    // The job was created while the PIN vault existed; its hint stays "initialized".
+    const pinJob = () => ({ ...AWAITING(), unlock: { kind: "pin", initialized: true } })
+    const vault: VaultMock = { initialized: true, kind: "pin", entries: [] }
+    const calls = await mockApi(page, {
+      snapshot: pinJob,
+      vault,
+      extra: (route, url, method) => {
+        if (url.pathname === "/api/inherit/vault/key/reset" && method === "POST") {
+          vault.initialized = false
+          return route.fulfill(envelope({ destroyed_entries: 1 }))
+        }
+      },
+    })
+    await page.routeWebSocket(/\/api\/inherit\/jobs\/.+\/ws/, (ws) => {
+      ws.send(JSON.stringify({ type: "snapshot", job: pinJob() }))
+    })
+
+    await page.goto("/upload-data?tab=inherit")
+    const fields = page.getByTestId("inherit-confirm").getByTestId("inherit-unlock")
+    await expect(fields).toHaveAttribute("data-kind", "pin")
+    await expect(fields).toHaveAttribute("data-creating", "false")
+    await expect(page.locator("#inherit-confirm-repeat")).toHaveCount(0)
+
+    await fields.getByTestId("inherit-unlock-forgot-pin").getByRole("button").click()
+    const dialog = page.getByRole("alertdialog")
+    // A PIN account confirms the reset without a password.
+    await expect(dialog.locator("#inherit-vault-reset-password")).toHaveCount(0)
+    await dialog.getByRole("checkbox").click()
+    await dialog.getByRole("button", { name: /重置并删除全部记录|Reset and delete all records/ }).click()
+    await expect(dialog).toBeHidden()
+    expect(calls.find((call) => call.path === "/api/inherit/vault/key/reset")?.body).toEqual({ confirm: true })
+
+    // The vault is gone: the confirm step now sets a new PIN, typed twice.
+    await expect(fields).toHaveAttribute("data-creating", "true")
+    await expect(page.locator("#inherit-confirm-repeat")).toBeVisible()
+  })
+
   test("shows, re-issues and destroys vault entries", async ({ page }) => {
     await signIn(page)
     const entry = {
@@ -415,10 +518,11 @@ test.describe("transfer-code upload", () => {
     await row.getByRole("button", { name: /查看引继码|Show code/ }).click()
     const dialog = page.getByRole("alertdialog")
     await dialog.locator("#inherit-vault-unlock-secret").fill("wrong")
-    await dialog.getByRole("button", { name: /解锁|Unlock/ }).click()
+    await dialog.getByRole("button", { name: /显示引继码|Show code/ }).click()
     await expect(dialog.locator("#inherit-vault-unlock-secret-error")).toBeVisible()
+    await expect(dialog.locator("#inherit-vault-unlock-secret-error")).toHaveText(/不是游戏的引继密码|not the game's transfer password/)
     await dialog.locator("#inherit-vault-unlock-secret").fill("toolbox-pw")
-    await dialog.getByRole("button", { name: /解锁|Unlock/ }).click()
+    await dialog.getByRole("button", { name: /显示引继码|Show code/ }).click()
     await expect(dialog).toBeHidden()
     await expect(page.getByTestId("inherit-vault-code-entry-1-id")).toHaveText("VAULTCODE1234567")
 
@@ -432,7 +536,7 @@ test.describe("transfer-code upload", () => {
     expect(reissue?.body).toEqual({ password: "toolbox-pw", new_password_mode: "random" })
 
     await row.getByRole("button", { name: /我已在手机上恢复|I recovered it on my phone/ }).click()
-    await page.getByRole("alertdialog").getByRole("button", { name: /确认销毁|Destroy/ }).click()
+    await page.getByRole("alertdialog").getByRole("button", { name: /确认删除|Delete/ }).click()
     await expect(page.getByTestId("inherit-vault-entry")).toHaveCount(0)
     expect(calls.some((call) => call.method === "DELETE" && call.path === "/api/inherit/vault/entries/entry-1")).toBe(true)
   })

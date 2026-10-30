@@ -8,15 +8,17 @@ import {
   Database,
   Dices,
   Globe,
+  Info,
+  Link2,
   Loader2,
   Lock,
   LogIn,
-  LucideAlertTriangle,
   LucideChevronDown,
-  LucideFileKey,
   Repeat,
   ScanSearch,
   ServerCog,
+  ShieldCheck,
+  Smartphone,
   User,
 } from "lucide-vue-next"
 import { Label } from "@/components/ui/label"
@@ -156,6 +158,7 @@ watch(
       :command-pending="inheritJob.commandPending.value"
       :expired="inheritJob.expired.value"
       :can-dismiss="inheritJob.canDismiss.value"
+      :key-status="vault.keyStatus.value"
       :on-confirm="inheritJob.confirm"
       :on-cancel="inheritJob.cancel"
       @acknowledge="inheritJob.acknowledgeCode"
@@ -166,50 +169,12 @@ watch(
     />
 
     <template v-else>
-      <Alert class="mb-2 border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-100">
-        <LucideAlertTriangle class="h-5 w-5" />
+      <!-- The one prominent notice of this step; everything else is a short note or under "learn more". -->
+      <Alert class="mb-2 border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-100" data-testid="inherit-form-warning">
+        <Smartphone class="h-5 w-5" />
         <AlertTitle>{{ t("tools.uploadData.inheritTab.alerts.warning1.title") }}</AlertTitle>
-        <AlertDescription class="space-y-1 text-current">
-          <p>{{ t("tools.uploadData.inheritTab.alerts.warning1.description") }}</p>
-          <p>{{ t("tools.uploadData.inheritTab.alerts.warning2.text") }}</p>
-        </AlertDescription>
+        <AlertDescription class="text-current">{{ t("tools.uploadData.inheritTab.alerts.warning1.description") }}</AlertDescription>
       </Alert>
-
-      <Collapsible v-model:open="notesOpen" class="mb-2 rounded-lg border bg-muted/20">
-        <CollapsibleTrigger class="flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium">
-          <span class="flex items-center gap-2">
-            <LucideFileKey class="size-4 text-muted-foreground" />
-            {{ t("tools.uploadData.inheritTab.alerts.notesTitle") }}
-          </span>
-          <LucideChevronDown :class="['size-4 text-muted-foreground transition-transform duration-200', notesOpen ? 'rotate-180' : '']" />
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div class="space-y-4 border-t px-4 py-3 text-sm text-muted-foreground">
-            <div class="space-y-1">
-              <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.flow.title") }}</p>
-              <ol class="list-decimal space-y-1 ps-5">
-                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step1") }}</li>
-                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step2") }}</li>
-                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step3") }}</li>
-                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step4") }}</li>
-              </ol>
-            </div>
-            <div class="space-y-1">
-              <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.storage.title") }}</p>
-              <p>{{ t("tools.uploadData.inheritTab.alerts.storage.text") }}</p>
-            </div>
-            <div class="space-y-2">
-              <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.reminder2.title") }}</p>
-              <p>{{ t("tools.uploadData.inheritTab.alerts.reminder2.text") }}</p>
-              <Button as-child variant="outline" size="sm">
-                <RouterLink to="/user/game-account-bindings">
-                  {{ t("tools.uploadData.inheritTab.alerts.reminder2.bindLink") }}
-                </RouterLink>
-              </Button>
-            </div>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
 
       <Card>
         <CardHeader>
@@ -219,7 +184,22 @@ watch(
           </CardTitle>
           <CardDescription>{{ t("tools.uploadData.inheritTab.description") }}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent class="space-y-4">
+          <ul class="space-y-2 rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground" data-testid="inherit-prep-notes">
+            <li class="flex items-start gap-2">
+              <Link2 class="mt-px size-3.5 shrink-0" aria-hidden="true" />
+              <span class="min-w-0">
+                {{ t("tools.uploadData.inheritTab.prep.bind") }}
+                <RouterLink :to="{ name: 'user.gameAccountBindings' }" class="ms-1 font-medium text-primary underline-offset-4 hover:underline">
+                  {{ t("tools.uploadData.inheritTab.prep.bindLink") }}
+                </RouterLink>
+              </span>
+            </li>
+            <li class="flex items-start gap-2" data-testid="inherit-platform-link-tip">
+              <ShieldCheck class="mt-px size-3.5 shrink-0" aria-hidden="true" />
+              <span class="min-w-0">{{ t("tools.uploadData.inheritTab.prep.platformLink") }}</span>
+            </li>
+          </ul>
           <form id="upload-data-inherit-form" novalidate @submit.prevent="submit">
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
               <div class="flex min-w-0 flex-col space-y-1.5">
@@ -298,6 +278,12 @@ watch(
                     <Database class="size-4 text-muted-foreground" />
                   </span>
                 </div>
+                <p v-if="!canShowMySekaiDataType" class="text-xs text-muted-foreground" data-testid="inherit-mysekai-qq-note">
+                  {{ t("tools.uploadData.inheritTab.prep.mysekaiQQ") }}
+                  <RouterLink :to="{ name: 'user.harukiBotAuthorization' }" class="ms-1 font-medium text-primary underline-offset-4 hover:underline">
+                    {{ t("tools.uploadData.inheritTab.prep.mysekaiQQLink") }}
+                  </RouterLink>
+                </p>
               </div>
 
               <fieldset class="min-w-0 space-y-2 sm:col-span-2" data-testid="inherit-new-password-mode">
@@ -347,6 +333,37 @@ watch(
           </Button>
         </CardFooter>
       </Card>
+
+      <Collapsible v-model:open="notesOpen" class="mt-2 rounded-lg border bg-muted/20" data-testid="inherit-learn-more">
+        <CollapsibleTrigger class="flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium">
+          <span class="flex items-center gap-2">
+            <Info class="size-4 text-muted-foreground" />
+            {{ t("tools.uploadData.inheritTab.alerts.notesTitle") }}
+          </span>
+          <LucideChevronDown :class="['size-4 text-muted-foreground transition-transform duration-200', notesOpen ? 'rotate-180' : '']" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div class="space-y-4 border-t px-4 py-3 text-sm text-muted-foreground">
+            <div class="space-y-1">
+              <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.flow.title") }}</p>
+              <ol class="list-decimal space-y-1 ps-5">
+                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step1") }}</li>
+                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step2") }}</li>
+                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step3") }}</li>
+                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step4") }}</li>
+              </ol>
+            </div>
+            <div class="space-y-1">
+              <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.storage.title") }}</p>
+              <p>{{ t("tools.uploadData.inheritTab.alerts.storage.text") }}</p>
+            </div>
+            <div class="space-y-1">
+              <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.risk.title") }}</p>
+              <p>{{ t("tools.uploadData.inheritTab.alerts.risk.text") }}</p>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </template>
 
     <div class="mt-3">
