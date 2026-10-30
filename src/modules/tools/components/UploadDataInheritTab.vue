@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import type { InheritServer, UploadDataType } from "@/types"
 import { useI18n } from "vue-i18n"
@@ -68,9 +68,20 @@ function handleServerChange(value: AcceptableValue) {
 
 const { t, locale } = useI18n()
 const notesOpen = ref(false)
+
+// Temporary: JP inherit login is disabled while the changed JP inherit flow is verified.
+const JP_INHERIT_DISABLED_NOTICE = "由于日服继承登录发生变更，我们正在进行验证，因此临时禁用日服的继承登录功能"
+const isJPInheritDisabled = computed(() => props.inheritServer === "jp")
 </script>
 
 <template>
+  <Alert v-if="isJPInheritDisabled" variant="destructive" class="mb-2">
+    <LucideAlertTriangle class="h-5 w-5" />
+    <AlertDescription class="text-current">
+      <p>{{ JP_INHERIT_DISABLED_NOTICE }}</p>
+    </AlertDescription>
+  </Alert>
+
   <!-- One calm notice that still states the real risk in plain words. -->
   <Alert class="mb-2 border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-100">
     <LucideAlertTriangle class="h-5 w-5" />
@@ -120,7 +131,7 @@ const notesOpen = ref(false)
       <CardDescription>{{ t("tools.uploadData.inheritTab.description") }}</CardDescription>
     </CardHeader>
     <CardContent>
-      <form id="upload-data-inherit-form" novalidate @submit.prevent="emit('submit')">
+      <form id="upload-data-inherit-form" novalidate @submit.prevent="!isJPInheritDisabled && emit('submit')">
         <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="flex min-w-0 flex-col space-y-1.5">
             <Label :for="FIELD_IDS.inheritId">{{ t("tools.uploadData.inheritTab.fields.inheritId") }}</Label>
@@ -215,7 +226,7 @@ const notesOpen = ref(false)
       </form>
     </CardContent>
     <CardFooter class="flex items-center justify-end">
-      <Button type="submit" form="upload-data-inherit-form" :disabled="isSubmittingInherit">
+      <Button type="submit" form="upload-data-inherit-form" :disabled="isSubmittingInherit || isJPInheritDisabled">
         <Loader2 v-if="isSubmittingInherit" class="mr-2 h-4 w-4 animate-spin" />
         <UploadCloud v-else class="mr-2 h-4 w-4" />
         {{ isSubmittingInherit ? t("tools.uploadData.inheritTab.submitting") : t("tools.uploadData.inheritTab.submit") }}
