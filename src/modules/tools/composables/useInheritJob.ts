@@ -142,6 +142,8 @@ export function useInheritJob(userId: () => string | null | undefined) {
     resuming.value = true
     try {
       const snapshot = await fetchInheritJob(stored.jobId)
+      // Signed out or switched account while the request was out.
+      if (userId() !== owner || job.value) return
       storedCreatedAt = stored.createdAt
       codeAcknowledged.value = stored.codeAcknowledged
       // A finished job whose new code was acknowledged has nothing left to show.

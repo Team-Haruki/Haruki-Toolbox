@@ -35,11 +35,17 @@ export function useInheritVault(userId: () => string | null | undefined) {
   const loadError = shallowRef<InheritApiError | null>(null)
   const revealed = ref<Record<string, InheritRevealedEntryCode>>({})
   let generation = 0
+  // Bumped on every owner change, so a step-up answer that arrives after
+  // sign-out or an account switch is never stored for the next owner.
+  let ownerGeneration = 0
 
   async function refresh() {
     if (!userId()) {
+      generation++
       keyStatus.value = null
       entries.value = []
+      revealed.value = {}
+      loading.value = false
       return
     }
     const run = ++generation
@@ -62,8 +68,10 @@ export function useInheritVault(userId: () => string | null | undefined) {
   }
 
   async function reveal(entryId: string, unlock: InheritUnlockInput): Promise<InheritRevealedEntryCode> {
+    const ownerRun = ownerGeneration
     try {
       const code = { ...(await revealInheritVaultCode(entryId, unlock)), source: "reveal" as const }
+      if (ownerRun !== ownerGeneration || !userId()) return code
       revealed.value = { ...revealed.value, [entryId]: code }
       // A password change was just carried over: the key status moved on.
       if (unlock.previousPassword) void refresh()
@@ -74,8 +82,10 @@ export function useInheritVault(userId: () => string | null | undefined) {
   }
 
   async function reissue(entryId: string, unlock: InheritUnlockInput, mode: InheritNewPasswordMode): Promise<InheritRevealedEntryCode> {
+    const ownerRun = ownerGeneration
     try {
       const code = { ...(await reissueInheritVaultCode(entryId, unlock, mode)), source: "reissue" as const }
+      if (ownerRun !== ownerGeneration || !userId()) return code
       revealed.value = { ...revealed.value, [entryId]: code }
       void refresh()
       return code
@@ -116,6 +126,7 @@ export function useInheritVault(userId: () => string | null | undefined) {
     () => userId() ?? null,
     (owner, previous) => {
       if (owner !== previous) {
+        ownerGeneration++
         revealed.value = {}
         entries.value = []
         keyStatus.value = null

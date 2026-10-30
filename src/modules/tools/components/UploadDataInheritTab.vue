@@ -113,9 +113,9 @@ function openVaultReset() {
 // changes when the new one is: keep its list in step with the job.
 watch(
   () => [inheritJob.job.value?.vaultEntryId ?? "", inheritJob.job.value?.status ?? "", inheritJob.newCode.value?.inheritId ?? ""] as const,
-  ([entryId, status], previous) => {
+  ([entryId, status, codeId], previous) => {
     if (!previous) return
-    if (entryId !== previous[0] || status !== previous[1]) void vault.refresh()
+    if (entryId !== previous[0] || status !== previous[1] || codeId !== previous[2]) void vault.refresh()
   },
 )
 </script>

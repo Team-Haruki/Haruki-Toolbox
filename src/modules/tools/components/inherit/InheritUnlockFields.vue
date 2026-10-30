@@ -62,10 +62,18 @@ const ids = computed(() => ({
 function update(field: "secret" | "repeat" | "previousPassword", value: string | number) {
   emit("update", field, String(value))
 }
+
+// Enter submits from the inputs only; a focused button (the vault reset)
+// keeps its native activation.
+function onEnter(event: KeyboardEvent) {
+  if (!(event.target instanceof HTMLInputElement)) return
+  event.preventDefault()
+  if (!props.disabled) emit("submit")
+}
 </script>
 
 <template>
-  <div class="space-y-3" @keydown.enter.prevent="!disabled && emit('submit')">
+  <div class="space-y-3" @keydown.enter="onEnter">
     <div class="space-y-1.5">
       <Label :for="ids.secret">{{ secretLabel }}</Label>
       <Input
