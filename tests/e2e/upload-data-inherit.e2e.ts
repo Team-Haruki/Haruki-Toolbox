@@ -285,6 +285,62 @@ test.describe("transfer-code upload", () => {
     expect(await page.evaluate(() => localStorage.getItem("haruki_inherit_job"))).toBeNull()
   })
 
+  for (const scenario of [
+    { name: "at the confirm step", snapshot: AWAITING, visible: "inherit-confirm" },
+    { name: "with its new code", snapshot: AFTER_CODE, visible: "inherit-new-code" },
+  ] as const) {
+    test(`resumes the running job named by job_already_running ${scenario.name}`, async ({ page }) => {
+      await signIn(page)
+      const calls = await mockApi(page, {
+        snapshot: scenario.snapshot,
+        extra: (route, url, method) => {
+          if (url.pathname === "/api/inherit/jobs" && method === "POST") {
+            return route.fulfill(envelope({ code: "job_already_running", job_id: JOB_ID }, 409, "你已有一个进行中的引继任务"))
+          }
+        },
+      })
+      await page.routeWebSocket(/\/api\/inherit\/jobs\/.+\/ws/, (ws) => {
+        ws.send(JSON.stringify({ type: "snapshot", job: scenario.snapshot() }))
+      })
+
+      await page.goto("/upload-data?tab=inherit")
+      await fillForm(page, "Passw0rd12")
+      await page.locator('button[form="upload-data-inherit-form"]').click()
+
+      await expect(page.getByTestId("inherit-job")).toBeVisible()
+      await expect(page.getByTestId(scenario.visible)).toBeVisible()
+      await expect(page.getByText(/你已有一个进行中的引继任务，已为你恢复|You already have a transfer upload in progress; it has been resumed/)).toBeVisible()
+      await expect(page.getByTestId("inherit-job-connection")).toHaveAttribute("data-state", "live")
+      expect(calls.some((call) => call.method === "GET" && call.path === `/api/inherit/jobs/${JOB_ID}`)).toBe(true)
+      // The resumed job is remembered like a created one: its id only.
+      const stored = await page.evaluate(() => localStorage.getItem("haruki_inherit_job"))
+      expect(stored).toContain(JOB_ID)
+      expect(stored).not.toContain("ABCDEFGH12345678")
+      expect(stored).not.toContain("Passw0rd12")
+    })
+  }
+
+  test("keeps the refusal when an older backend does not name the running job", async ({ page }) => {
+    await signIn(page)
+    const calls = await mockApi(page, {
+      extra: (route, url, method) => {
+        if (url.pathname === "/api/inherit/jobs" && method === "POST") {
+          return route.fulfill(problem(409, "job_already_running", "你已有一个进行中的引继任务"))
+        }
+      },
+    })
+
+    await page.goto("/upload-data?tab=inherit")
+    await fillForm(page, "Passw0rd12")
+    await page.locator('button[form="upload-data-inherit-form"]').click()
+
+    await expect(page.getByText(/请先完成或取消它|finish or cancel it/i)).toBeVisible()
+    await expect(page.getByTestId("inherit-job")).toHaveCount(0)
+    await expect(page.locator("#inherit-id")).toHaveValue("ABCDEFGH12345678")
+    expect(calls.some((call) => call.path.startsWith(`/api/inherit/jobs/${JOB_ID}`))).toBe(false)
+    expect(await page.evaluate(() => localStorage.getItem("haruki_inherit_job"))).toBeNull()
+  })
+
   test("cancels over HTTP when the socket is unavailable", async ({ page }) => {
     await signIn(page, { activeJob: true })
     let cancelled = false

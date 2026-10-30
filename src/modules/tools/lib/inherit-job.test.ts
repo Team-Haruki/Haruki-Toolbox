@@ -9,6 +9,7 @@ import {
   isReusableInheritPassword,
   isValidVaultPin,
   normalizeInheritJob,
+  readRunningJobId,
   remainingParts,
   stepDurationMs,
   type InheritJob,
@@ -152,5 +153,25 @@ describe("durations", () => {
   it("splits a remaining time", () => {
     expect(remainingParts(0, 1)).toBeNull()
     expect(remainingParts(90_061_000, 0)).toEqual({ days: 1, hours: 1, minutes: 1, seconds: 1 })
+  })
+})
+
+describe("readRunningJobId", () => {
+  it("names the caller's running job from a job_already_running refusal", () => {
+    expect(readRunningJobId("job_already_running", { code: "job_already_running", job_id: "job-7" })).toBe("job-7")
+    expect(readRunningJobId("job_already_running", { code: "job_already_running", job_id: "  job-7 " })).toBe("job-7")
+  })
+
+  it("is empty when an older backend sends no id, or the id is unusable", () => {
+    expect(readRunningJobId("job_already_running", { code: "job_already_running" })).toBe("")
+    expect(readRunningJobId("job_already_running", { job_id: "" })).toBe("")
+    expect(readRunningJobId("job_already_running", { job_id: 42 })).toBe("")
+    expect(readRunningJobId("job_already_running", { job_id: "x".repeat(129) })).toBe("")
+    expect(readRunningJobId("job_already_running", null)).toBe("")
+  })
+
+  it("ignores a job id on any other refusal", () => {
+    expect(readRunningJobId("rate_limited", { code: "rate_limited", job_id: "job-7" })).toBe("")
+    expect(readRunningJobId("", { job_id: "job-7" })).toBe("")
   })
 })

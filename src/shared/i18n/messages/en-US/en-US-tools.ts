@@ -647,7 +647,8 @@ export default {
         "ackRequired": "Confirm that you have written down the new code first",
         "toast": {
           "succeeded": "Transfer upload complete; the account data has been saved",
-          "cancelled": "Cancelled; the code was not used"
+          "cancelled": "Cancelled; the code was not used",
+          "resumedRunning": "You already have a transfer upload in progress; it has been resumed"
         },
         "confirm": {
           "title": "Confirm the account to transfer",

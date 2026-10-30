@@ -238,6 +238,19 @@ export function normalizeInheritJob(value: unknown): InheritJob | null {
   }
 }
 
+/**
+ * The caller's own running job named by a `job_already_running` refusal
+ * (`updatedData.job_id`), so the page can reattach to it; "" for any other
+ * code, or when the backend (older ones never send it) could not name it.
+ */
+export function readRunningJobId(code: string, updatedData: unknown): string {
+  if (code !== "job_already_running") return ""
+  const raw = asRecord(updatedData)?.job_id
+  if (typeof raw !== "string") return ""
+  const id = raw.trim()
+  return id.length > 0 && id.length <= 128 ? id : ""
+}
+
 export function isTerminalJobStatus(status: InheritJobStatus): boolean {
   return status === "succeeded" || status === "failed" || status === "cancelled"
 }

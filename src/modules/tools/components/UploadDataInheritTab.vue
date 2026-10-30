@@ -86,8 +86,9 @@ const FIELD_ERROR_CODES: Record<string, "inheritId" | "inheritPassword"> = {
 async function submit() {
   if (inheritJob.creating.value || !form.validate()) return
   try {
-    await inheritJob.create(form.toCreateInput())
+    const started = await inheritJob.create(form.toCreateInput())
     form.clearSecrets()
+    if (started.resumed) toast.info(t("tools.uploadData.inheritJob.toast.resumedRunning"))
   } catch (error) {
     const problem = toInheritApiError(error)
     const message = describeInheritApiError(t, problem)

@@ -647,7 +647,8 @@ export default {
         "ackRequired": "请先确认你已记下新引继码",
         "toast": {
           "succeeded": "引继上传完成，账号数据已保存",
-          "cancelled": "已取消，引继码未被使用"
+          "cancelled": "已取消，引继码未被使用",
+          "resumedRunning": "你已有一个进行中的引继任务，已为你恢复"
         },
         "confirm": {
           "title": "确认要引继的账号",
