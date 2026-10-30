@@ -1,0 +1,126 @@
+import type { InheritServer } from "@/types"
+import { asRecord } from "@/lib/record-utils"
+import type { InheritProblem, InheritUnlockKind } from "@/modules/tools/lib/inherit-job"
+
+/**
+ * The inherit vault keeps, per transferred account, the game login credential
+ * (7 days) and the latest transfer code issued for it (24 hours), both sealed
+ * to a key only the owner's Toolbox password (or vault PIN) opens.
+ */
+
+export interface InheritVaultKeyStatus {
+  initialized: boolean
+  kind: InheritUnlockKind
+  /** Only reported before the key exists. */
+  identityHasPassword: boolean | null
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+export interface InheritVaultEntry {
+  id: string
+  server: InheritServer
+  gameUserIdMasked: string
+  jobId: string
+  createdAt: string | null
+  credentialExpiresAt: string | null
+  hasCode: boolean
+  codeIssuedAt: string | null
+  codeExpiresAt: string | null
+  /** False for entries sealed to a key that was reset since. */
+  readable: boolean
+  /** Parked in the fallback store until the database is back; still opens normally. */
+  pending: boolean
+}
+
+export interface InheritRevealedCode {
+  inheritId: string
+  password: string
+  expiresAt: string | null
+  warnings: InheritProblem[]
+}
+
+/** The step-up secret a vault operation (and the job confirmation) carries. */
+export interface InheritUnlockInput {
+  password?: string
+  previousPassword?: string
+  vaultPin?: string
+}
+
+function str(value: unknown): string {
+  return typeof value === "string" ? value : ""
+}
+
+function strOrNull(value: unknown): string | null {
+  return typeof value === "string" && value !== "" ? value : null
+}
+
+export function normalizeVaultKeyStatus(value: unknown): InheritVaultKeyStatus {
+  const record = asRecord(value) ?? {}
+  return {
+    initialized: record.initialized === true,
+    kind: record.kind === "pin" ? "pin" : "password",
+    identityHasPassword: typeof record.identity_has_password === "boolean" ? record.identity_has_password : null,
+    createdAt: strOrNull(record.created_at),
+    updatedAt: strOrNull(record.updated_at),
+  }
+}
+
+export function normalizeVaultEntry(value: unknown): InheritVaultEntry | null {
+  const record = asRecord(value)
+  if (!record || !str(record.id)) return null
+  return {
+    id: str(record.id),
+    server: record.server === "en" ? "en" : "jp",
+    gameUserIdMasked: str(record.game_user_id_masked),
+    jobId: str(record.job_id),
+    createdAt: strOrNull(record.created_at),
+    credentialExpiresAt: strOrNull(record.credential_expires_at),
+    hasCode: record.has_code === true,
+    codeIssuedAt: strOrNull(record.code_issued_at),
+    codeExpiresAt: strOrNull(record.code_expires_at),
+    readable: record.readable !== false,
+    pending: record.pending === true,
+  }
+}
+
+export function normalizeVaultEntries(value: unknown): InheritVaultEntry[] {
+  const list = Array.isArray(value) ? value : (asRecord(value)?.items as unknown)
+  if (!Array.isArray(list)) return []
+  return list.map(normalizeVaultEntry).filter((entry): entry is InheritVaultEntry => entry !== null)
+}
+
+export function normalizeRevealedCode(value: unknown): InheritRevealedCode | null {
+  const record = asRecord(value)
+  if (!record) return null
+  const inheritId = str(record.inherit_id)
+  const password = str(record.password)
+  if (!inheritId || !password) return null
+  const warnings = Array.isArray(record.warnings)
+    ? record.warnings
+        .map((item) => {
+          const warning = asRecord(item)
+          const code = warning ? str(warning.code) : ""
+          return code ? { code, message: str(warning?.message) } : null
+        })
+        .filter((item): item is InheritProblem => item !== null)
+    : []
+  return { inheritId, password, expiresAt: strOrNull(record.code_expires_at), warnings }
+}
+
+/** The wire body of an unlock: only the fields that carry something. */
+export function toUnlockBody(input: InheritUnlockInput): Record<string, string> {
+  const body: Record<string, string> = {}
+  if (input.password) body.password = input.password
+  if (input.previousPassword) body.previous_password = input.previousPassword
+  if (input.vaultPin) body.vault_pin = input.vaultPin
+  return body
+}
+
+/** A vault code is shown or kept only while it still works. */
+export function isVaultCodeLive(entry: Pick<InheritVaultEntry, "hasCode" | "codeExpiresAt">, now: number): boolean {
+  if (!entry.hasCode) return false
+  if (!entry.codeExpiresAt) return true
+  const expires = Date.parse(entry.codeExpiresAt)
+  return Number.isNaN(expires) || expires > now
+}

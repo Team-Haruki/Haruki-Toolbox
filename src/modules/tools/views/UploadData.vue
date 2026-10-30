@@ -2,43 +2,25 @@
 import { ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ExternalLink, FileUp, KeyRound, LucideInfo, MonitorSmartphone, Smartphone } from "lucide-vue-next"
 import { UploadDataFileTab, UploadDataInheritTab, UploadDataIOSTab } from "@/modules/tools/components"
 import { useUploadDataTool } from "@/modules/tools/composables/useUploadDataTool"
+import { loadActiveInheritJob } from "@/modules/tools/lib/inherit-job-storage"
 import { useUserStore } from "@/shared/stores/user"
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const userStore = useUserStore()
 
 const HARUKI_PROXY_TUTORIAL_URL = "https://neo.haruki.seiunx.com/haruki-proxy/"
 
 const {
   fileDataType,
-  inheritDataType,
-  inheritServer,
-  inheritId,
-  inheritPassword,
-  inheritFieldErrors,
-  rememberInherit,
   isSubmittingFile,
-  isSubmittingInherit,
-  isInheritConfirmOpen,
   uploadProgress,
   uploadStatus,
   selectedFileName,
@@ -55,11 +37,7 @@ const {
   canSelectMySekaiDataType,
   loadUploadTargets,
   onFileChange,
-  clearInheritFieldError,
-  setRememberInherit,
   submitFileUpload,
-  requestInheritUpload,
-  confirmInheritUpload,
 } = useUploadDataTool()
 
 // Tabs are deep-linkable (`?tab=`): the old /ios-modules route and external
@@ -89,15 +67,28 @@ watch(
   },
 )
 
+// An inherit job this browser is following (it may be waiting for the
+// owner's confirmation, or showing their new transfer code) takes precedence
+// over the default tab.
+const userStore = useUserStore()
+let jobTabChecked = false
+watch(
+  () => (userStore.isLoggedIn ? userStore.userId : null),
+  (userId) => {
+    if (!userId || jobTabChecked) return
+    jobTabChecked = true
+    if (route.query.tab == null && loadActiveInheritJob(userId)) {
+      activeTab.value = "inherit"
+    }
+  },
+  { immediate: true },
+)
+
 const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
 </script>
 
 <template>
   <div class="w-full flex-1 flex flex-col items-center justify-center gap-3 px-0 py-4">
-    <Alert variant="destructive" class="w-full max-w-2xl" role="alert">
-      <AlertTitle>{{ t("tools.uploadData.inheritTab.jpSuspended.title") }}</AlertTitle>
-      <AlertDescription>{{ t("tools.uploadData.inheritTab.jpSuspended.description") }}</AlertDescription>
-    </Alert>
     <!-- What this page is for, before any tab-specific warnings. -->
     <Card class="w-full max-w-2xl">
       <CardHeader class="pb-0">
@@ -175,19 +166,7 @@ const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
       </TabsContent>
 
       <TabsContent value="inherit">
-        <UploadDataInheritTab
-          v-model:data-type="inheritDataType"
-          v-model:inherit-server="inheritServer"
-          v-model:inherit-id="inheritId"
-          v-model:inherit-password="inheritPassword"
-          :field-errors="inheritFieldErrors"
-          :remember-inherit="rememberInherit"
-          :is-submitting-inherit="isSubmittingInherit"
-          :can-show-my-sekai-data-type="hasVerifiedQQ"
-          @clear-field-error="clearInheritFieldError"
-          @update:remember-inherit="setRememberInherit"
-          @submit="requestInheritUpload"
-        />
+        <UploadDataInheritTab :can-show-my-sekai-data-type="hasVerifiedQQ" />
       </TabsContent>
 
       <TabsContent value="file">
@@ -235,33 +214,5 @@ const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
       </AlertDescription>
     </Alert>
 
-    <AlertDialog v-model:open="isInheritConfirmOpen">
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{{ t("tools.uploadData.inheritTab.confirmDialog.title") }}</AlertDialogTitle>
-          <AlertDialogDescription as-child>
-            <div class="space-y-3">
-              <p>
-                {{ t("tools.uploadData.inheritTab.confirmDialog.dataTypePrefix") }}
-                <strong class="font-semibold text-foreground">{{ t(`tools.uploadData.dataTypes.${inheritDataType}`) }}</strong>
-              </p>
-              <!-- Only when the prerequisites are actually missing. -->
-              <p v-if="!userStore.isLoggedIn" class="rounded-md border bg-muted/40 p-3 text-foreground">
-                {{ t("tools.uploadData.inheritTab.confirmDialog.loginNotice") }}
-              </p>
-              <p v-else-if="inheritDataType === 'mysekai' && !hasVerifiedQQ" class="rounded-md border bg-muted/40 p-3 text-foreground">
-                {{ t("tools.uploadData.inheritTab.confirmDialog.mysekaiNotice") }}
-              </p>
-            </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{{ t("tools.uploadData.inheritTab.confirmDialog.cancel") }}</AlertDialogCancel>
-          <AlertDialogAction @click="confirmInheritUpload">
-            {{ t("tools.uploadData.inheritTab.confirmDialog.confirm") }}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   </div>
 </template>

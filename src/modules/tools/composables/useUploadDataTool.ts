@@ -1,51 +1,25 @@
-import { nextTick, reactive, ref, watch } from "vue"
+import { ref, watch } from "vue"
 import { isAxiosError } from "axios"
 import { toast } from "vue-sonner"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
-import type { InheritServer, UploadDataType } from "@/types"
+import type { UploadDataType } from "@/types"
 import { extractErrorMessage } from "@/lib/error-utils"
 import { uploadManualData } from "@/modules/user-settings/api/file-upload"
-import {
-  markDeckRecommendUserDataAvailable,
-  resetDeckRecommendUserDataAvailability,
-} from "@/modules/deck-recommend/lib/user-data-availability"
-import { submitInherit } from "@/modules/user-settings/api/inherit"
+import { markDeckRecommendUserDataAvailable } from "@/modules/deck-recommend/lib/user-data-availability"
 import { useUploadDataAccounts } from "@/modules/tools/composables/useUploadDataAccounts"
-import {
-  clearInheritStorage,
-  loadInheritFromStorage,
-  saveInheritToStorage,
-} from "@/modules/tools/lib/inherit-storage"
-
-export type InheritField = "inheritId" | "inheritPassword"
-
-/** DOM ids of the inherit form fields; validation focuses the first invalid one. */
-export const INHERIT_FIELD_IDS: Record<InheritField, string> = {
-  inheritId: "inherit-id",
-  inheritPassword: "inherit-password",
-}
 
 export function useUploadDataTool() {
   const { t } = useI18n()
   const userStore = useUserStore()
 
   const fileDataType = ref<UploadDataType>("mysekai")
-  const inheritDataType = ref<UploadDataType>("mysekai")
   const selectedFile = ref<File | null>(null)
   const selectedFileName = ref("")
-  const inheritServer = ref<InheritServer>("jp")
-  const inheritId = ref("")
-  const inheritPassword = ref("")
-  const rememberInherit = ref(false)
   const isSubmittingFile = ref(false)
-  const isSubmittingInherit = ref(false)
-  const isInheritConfirmOpen = ref(false)
   const uploadProgress = ref(0)
   const uploadStatus = ref("")
   const fileInputElement = ref<HTMLInputElement | null>(null)
-  /** Inline validation messages for the inherit form; empty when valid. */
-  const inheritFieldErrors = reactive<Record<InheritField, string>>({ inheritId: "", inheritPassword: "" })
 
   const {
     selectedAccountKey,
@@ -62,27 +36,13 @@ export function useUploadDataTool() {
     loadUploadTargets,
   } = useUploadDataAccounts(userStore, fileDataType)
 
-  const savedInherit = loadInheritFromStorage()
-  if (savedInherit?.server === "jp") {
-    clearInheritStorage()
-  } else if (savedInherit) {
-    inheritId.value = savedInherit.inherit_id || ""
-    inheritPassword.value = savedInherit.inherit_password || ""
-    inheritServer.value = savedInherit.server
-    inheritDataType.value = savedInherit.type
-    rememberInherit.value = true
-  }
-
-  // Without a verified QQ binding every mysekai option is hidden — force any
-  // (defaulted or restored) mysekai selection back to suite.
+  // Without a verified QQ binding every mysekai option is hidden — force a
+  // defaulted mysekai selection back to suite.
   watch(
-    [hasVerifiedQQ, inheritDataType, fileDataType],
+    [hasVerifiedQQ, fileDataType],
     () => {
       if (hasVerifiedQQ.value) {
         return
-      }
-      if (inheritDataType.value === "mysekai") {
-        inheritDataType.value = "suite"
       }
       if (fileDataType.value === "mysekai") {
         fileDataType.value = "suite"
@@ -90,13 +50,6 @@ export function useUploadDataTool() {
     },
     { immediate: true },
   )
-
-  function setRememberInherit(value: boolean) {
-    rememberInherit.value = value
-    if (!value) {
-      clearInheritStorage()
-    }
-  }
 
   function onFileChange(event: Event) {
     const target = event.target
@@ -204,110 +157,9 @@ export function useUploadDataTool() {
     }
   }
 
-  function clearInheritFieldError(field: InheritField) {
-    inheritFieldErrors[field] = ""
-  }
-
-  function focusInheritField(field: InheritField) {
-    void nextTick(() => {
-      document.getElementById(INHERIT_FIELD_IDS[field])?.focus()
-    })
-  }
-
-  /** Validates the inherit form inline; focuses the first invalid field. */
-  function validateInheritForm(): boolean {
-    const normalizedInheritId = inheritId.value.trim()
-    const normalizedInheritPassword = inheritPassword.value.trim()
-
-    inheritFieldErrors.inheritId = !normalizedInheritId
-      ? t("tools.uploadData.toast.inheritIdRequired")
-      : !/^[a-zA-Z0-9]{16}$/.test(normalizedInheritId)
-        ? t("tools.uploadData.toast.inheritIdInvalidDescription")
-        : ""
-    inheritFieldErrors.inheritPassword = normalizedInheritPassword ? "" : t("tools.uploadData.toast.inheritPasswordRequired")
-
-    const firstInvalid = (["inheritId", "inheritPassword"] as const).find((field) => inheritFieldErrors[field])
-    if (firstInvalid) {
-      focusInheritField(firstInvalid)
-      return false
-    }
-    return true
-  }
-
-  function requestInheritUpload() {
-    if (inheritServer.value === "jp") {
-      isInheritConfirmOpen.value = false
-      toast.warning(t("tools.uploadData.inheritTab.jpSuspended.title"), {
-        description: t("tools.uploadData.inheritTab.jpSuspended.description"),
-      })
-      return
-    }
-    if (isSubmittingInherit.value) return
-    if (!validateInheritForm()) return
-    isInheritConfirmOpen.value = true
-  }
-
-  async function confirmInheritUpload() {
-    if (inheritServer.value === "jp") {
-      isInheritConfirmOpen.value = false
-      toast.warning(t("tools.uploadData.inheritTab.jpSuspended.title"), {
-        description: t("tools.uploadData.inheritTab.jpSuspended.description"),
-      })
-      return
-    }
-    if (isSubmittingInherit.value) return
-    const normalizedInheritId = inheritId.value.trim()
-    const normalizedInheritPassword = inheritPassword.value.trim()
-
-    isInheritConfirmOpen.value = false
-    isSubmittingInherit.value = true
-    try {
-      await submitInherit(
-        inheritServer.value,
-        inheritDataType.value,
-        normalizedInheritId,
-        normalizedInheritPassword,
-        { skipErrorToast: true }
-      )
-
-      toast.success(t("tools.uploadData.toast.uploadSuccessTitle"), {
-        description: t("tools.uploadData.toast.uploadSuccessInheritFallback"),
-      })
-      // The uid is resolved server-side: drop the deck page's "no data
-      // uploaded" flags for this server so its next run re-probes.
-      resetDeckRecommendUserDataAvailability(inheritServer.value)
-
-      // Only a successful submission is worth remembering (the hint says so).
-      if (rememberInherit.value) {
-        saveInheritToStorage({
-          inherit_id: normalizedInheritId,
-          inherit_password: normalizedInheritPassword,
-          server: inheritServer.value,
-          type: inheritDataType.value,
-        })
-      } else {
-        clearInheritStorage()
-      }
-    } catch (error: unknown) {
-      toast.error(t("tools.uploadData.toast.uploadFailedTitle"), {
-        description: extractErrorMessage(error, t("tools.uploadData.toast.uploadFailedFallback")),
-      })
-    } finally {
-      isSubmittingInherit.value = false
-    }
-  }
-
   return {
     fileDataType,
-    inheritDataType,
-    inheritServer,
-    inheritId,
-    inheritPassword,
-    inheritFieldErrors,
-    rememberInherit,
     isSubmittingFile,
-    isSubmittingInherit,
-    isInheritConfirmOpen,
     uploadProgress,
     uploadStatus,
     selectedFileName,
@@ -324,10 +176,6 @@ export function useUploadDataTool() {
     canSelectMySekaiDataType,
     loadUploadTargets,
     onFileChange,
-    clearInheritFieldError,
-    setRememberInherit,
     submitFileUpload,
-    requestInheritUpload,
-    confirmInheritUpload,
   }
 }
