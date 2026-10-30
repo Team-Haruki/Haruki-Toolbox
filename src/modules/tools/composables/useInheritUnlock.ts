@@ -52,6 +52,12 @@ export function createInheritUnlock(t: Translate) {
   })
 
   function configure(kind: InheritUnlockKind, initialized: boolean) {
+    // A password typed for a PIN field (or the reverse) must not be sent as
+    // the other secret: a kind change starts the input over.
+    if (kind !== state.kind) {
+      state.secret = ""
+      state.repeat = ""
+    }
     state.kind = kind
     state.initialized = initialized
     state.creating = kind === "pin" && !initialized

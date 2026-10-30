@@ -39,9 +39,12 @@ describe("inherit unlock fields", () => {
   it("switches to the secret the backend asked for when the hint was stale", () => {
     const unlock = createInheritUnlock(t)
     unlock.configure("password", false)
+    unlock.state.secret = "my-site-password"
     unlock.absorb(refusal("vault_pin_required", 400))
     expect(unlock.state.kind).toBe("pin")
     expect(unlock.state.creating).toBe(true)
+    // The password typed for the old field is never sent as the PIN.
+    expect(unlock.state.secret).toBe("")
     expect(unlock.state.secretError).toBe("tools.uploadData.inheritErrors.vault_pin_required")
 
     unlock.absorb(refusal("password_required", 400))
