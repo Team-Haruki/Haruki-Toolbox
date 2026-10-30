@@ -492,21 +492,28 @@ export default {
       },
       "inheritTab": {
         "title": "引继码上传数据",
-        "description": "输入游戏里的引继 ID 和密码。工具箱会先读取账号信息给你确认，确认后才执行引继，并立刻为你签发新的引继码。",
+        "description": "输入游戏里的引继 ID 和引继密码。工具箱会先读取账号信息让你核对，你确认后才会执行引继，并马上为你签发新的引继码。",
         "loginRequired": {
-          "title": "请先登录工具箱",
-          "description": "引继码上传需要登录 Haruki 工具箱：执行引继后，账号凭据和新引继码会加密保存在你的保险库中，只有你本人能查看。",
+          "title": "请先登录 Haruki 工具箱",
+          "description": "引继码上传需要先登录本网站。引继后，新引继码会加密保存在你的引继码保险库中，只有你本人能查看。",
           "action": "去登录"
         },
         "fields": {
           "inheritId": "引继 ID",
           "inheritIdPlaceholder": "请输入引继 ID",
           "inheritPassword": "引继密码",
-          "inheritPasswordPlaceholder": "请输入引继密码",
+          "inheritPasswordPlaceholder": "在游戏中设置的引继密码",
           "server": "选择区服",
           "serverPlaceholder": "请选择区服",
           "dataType": "选择数据类型",
           "dataTypePlaceholder": "请选择数据类型"
+        },
+        "prep": {
+          "bind": "先在「游戏账号管理」绑定这个游戏账号，否则即使提示上传成功，数据也不会保存。",
+          "bindLink": "去绑定",
+          "platformLink": "建议先在游戏内的引继菜单里把账号绑定到 Game Center（iOS）或 Google Play 游戏（Android），日服还可以绑定 Apple 账号或 Google 账号。这样即使引继码过期或用掉，账号也不会丢。",
+          "mysekaiQQ": "上传烤森数据需要先在「HarukiBot 数据授权」绑定并验证 QQ。",
+          "mysekaiQQLink": "去验证"
         },
         "newPassword": {
           "label": "新引继码密码",
@@ -519,34 +526,29 @@ export default {
           "tooLong": "引继密码过长"
         },
         "alerts": {
-          "notesTitle": "引继流程与使用须知",
+          "notesTitle": "了解更多：引继流程、保存的内容和风险",
           "warning1": {
-            "title": "执行引继后，原手机将无法再登录",
-            "description": "日服引继码 24 小时内有效且只能使用一次。工具箱执行引继后，生成引继码的那台设备将无法再登录该账号，工具箱签发的新引继码就是你回到账号的方式，请务必记下。"
-          },
-          "warning2": {
-            "title": "风险说明",
-            "text": "本功能会用你的引继码模拟游戏客户端登录。官方理论上可能将其视为异常登录，请自行评估风险；不放心请改用 HarukiProxy 或 iOS 模块。"
+            "title": "执行引继后，原手机会被登出",
+            "description": "之后要用工具箱签发的新引继码把账号恢复到手机。你会先看到账号信息，确认后才会执行。"
           },
           "flow": {
             "title": "流程",
-            "step1": "先只读取账号信息（不会使用引继码），请核对昵称和等级。",
-            "step2": "你输入 Toolbox 密码（或保险库 PIN）确认后，才会执行引继。确认前随时可以取消，引继码仍然有效。",
-            "step3": "执行后立刻签发新的引继码并显示在本页，同时加密保存到你的保险库，24 小时内可再次查看。",
+            "step1": "先只读取账号信息（不会使用引继码），请核对昵称和等级。日服引继码 24 小时内有效，只能使用一次。",
+            "step2": "核对无误后，输入 Haruki 工具箱登录密码确认（用 Google、Apple 或通行密钥登录的账号改用保险库 PIN），才会执行引继。确认前随时可以取消，引继码仍然有效。",
+            "step3": "执行后立即签发新的引继码并显示在本页，同时加密保存到下方的引继码保险库，24 小时内可以再次查看。",
             "step4": "最后获取并保存游戏数据。即使这一步失败，新引继码也会保留。"
           },
           "storage": {
             "title": "我们保存什么",
-            "text": "你输入的引继码只在任务进行中使用，不会保存。执行引继后，账号的登录凭据（最多 7 天）和新签发的引继码（24 小时）会用只有你的 Toolbox 密码或保险库 PIN 才能解开的密钥加密保存，管理员也无法查看；你可以随时在下方保险库中销毁。"
+            "text": "你输入的引继码只在本次引继中使用，不会保存。引继后，游戏账号的登录信息（最多 7 天，用于重新签发引继码）和新引继码（24 小时）会加密保存，只有用你的 Haruki 工具箱登录密码或保险库 PIN 才能打开，管理员也看不到。你可以随时在下方保险库中删除。"
           },
-          "reminder2": {
-            "title": "提醒",
-            "text": "使用前请先在「游戏账号管理」绑定要上传的游戏账号。未绑定时，即使提示上传成功，数据也不会保存。",
-            "bindLink": "去绑定"
+          "risk": {
+            "title": "风险说明",
+            "text": "本功能会用你的引继码模拟游戏客户端登录。官方理论上可能将其视为异常登录，请自行评估风险；不放心请改用 HarukiProxy 或 iOS 模块。"
           }
         },
         "submit": "读取账号信息",
-        "submitting": "提交中..."
+        "submitting": "正在读取账号信息…"
       },
       "inheritJob": {
         "title": "引继进度",
@@ -560,20 +562,20 @@ export default {
         },
         "connection": {
           "connecting": "正在连接",
-          "live": "实时",
+          "live": "实时更新",
           "reconnecting": "正在重连",
           "polling": "定时刷新",
           "closed": "已结束"
         },
         "steps": {
-          "bootstrap": "准备连接",
+          "bootstrap": "连接游戏服务器",
           "preview": "读取账号信息",
           "awaiting_confirm": "等待你确认",
           "execute": "执行引继",
-          "vault_store_credential": "保存账号凭据到保险库",
+          "vault_store_credential": "把登录信息存入保险库",
           "login": "登录游戏",
           "issue_new_code": "签发新引继码",
-          "vault_store_code": "保存新引继码到保险库",
+          "vault_store_code": "把新引继码存入保险库",
           "fetch_suite": "获取账号数据",
           "fetch_mysekai": "获取烤森数据",
           "upload": "保存数据",
@@ -584,7 +586,7 @@ export default {
           "version": "获取游戏版本",
           "inherit_check": "查询账号（不使用引继码）",
           "inherit_execute": "执行引继",
-          "auth": "登录认证",
+          "auth": "登录",
           "issue_code": "签发引继码",
           "suite": "账号数据",
           "suite_followup": "后续请求",
@@ -606,38 +608,38 @@ export default {
         "codeValidity": {
           "valid": "你输入的引继码没有被使用，仍然有效。",
           "used": "你输入的引继码已被使用，不能再用。",
-          "unknown": "无法确定你输入的引继码是否已被使用。请不要在其他设备上重试它，并查看下方保险库是否已保存账号凭据。"
+          "unknown": "无法确定你输入的引继码是否已被使用。请先不要在其他设备上使用它，并查看下方保险库。"
         },
         "errorTitle": "引继未完成",
         "issueFailedTitle": "未能签发新引继码",
         "cancelledTitle": "已取消",
         "succeededTitle": "上传完成",
         "succeededDescription": "账号数据已保存。",
-        "expired": "这个任务的记录已过期（任务记录保留 1 小时）。新引继码仍可在下方保险库中查看。",
+        "expired": "这次引继的进度记录已过期（只保留 1 小时）。新引继码仍可在下方保险库中查看。",
         "errors": {
           "inherit_invalid": "引继码无效、已使用或已过期。请在游戏中重新生成引继码后再试。",
-          "inherit_restricted": "游戏目前不允许这个账号引继。",
-          "transfer_restricted": "活动期间该账号的引继次数已用完，未执行引继。",
-          "confirm_timeout": "5 分钟内没有确认，任务已自动取消，未执行引继。",
-          "cancelled": "已取消，未执行引继。",
-          "game_degraded": "游戏服务器暂时不稳定，未执行引继，请稍后再试。",
-          "server_busy": "当前引继请求过多，未执行引继，请稍后再试。",
-          "game_maintenance": "游戏服务器维护中。",
-          "game_unavailable": "游戏服务器暂时无法访问。",
-          "game_error": "游戏服务器返回了错误。",
-          "execute_uncertain": "执行引继时连接中断，引继码可能已被使用。请不要在其他设备上重试这个引继码，并查看下方保险库是否已保存账号凭据。",
-          "login_failed": "账号凭据已保存到保险库，但登录失败。请稍后在下方保险库中重新签发引继码。",
-          "fetch_failed": "获取游戏数据失败。新引继码（如已签发）显示在本页并保存在保险库中。",
-          "mysekai_unavailable": "获取烤森数据失败，可能尚未完成烤森教程。新引继码（如已签发）显示在本页并保存在保险库中。",
-          "upload_failed": "数据保存失败。新引继码（如已签发）显示在本页并保存在保险库中。",
-          "upload_forbidden": "该游戏账号已被其他 Toolbox 用户绑定，无法上传。新引继码（如已签发）显示在本页并保存在保险库中。",
-          "job_interrupted": "服务重启，任务已中断。",
-          "internal_error": "服务器内部错误。"
+          "inherit_restricted": "游戏目前不允许这个账号引继。没有执行引继，引继码仍然有效。",
+          "transfer_restricted": "活动期间这个账号的引继次数已用完。没有执行引继，引继码仍然有效。",
+          "confirm_timeout": "5 分钟内没有确认，已自动取消。没有执行引继，引继码仍然有效，可以重新提交。",
+          "cancelled": "已取消，没有执行引继。",
+          "game_degraded": "游戏服务器暂时不稳定，没有执行引继，请稍后再试。",
+          "server_busy": "现在使用的人太多，没有执行引继，请稍后再试。",
+          "game_maintenance": "游戏服务器正在维护，请维护结束后再试。",
+          "game_unavailable": "暂时无法连接游戏服务器，请稍后再试。",
+          "game_error": "游戏服务器返回了错误，请稍后再试。",
+          "execute_uncertain": "执行引继时网络中断，无法确定引继码是否已被使用。请先不要在其他设备上使用这组引继码，并查看下方保险库：如果里面出现了这个账号，说明引继已完成，可以在那里查看或重新签发引继码。",
+          "login_failed": "引继已完成，登录信息已存入保险库，但登录游戏失败。请稍后在下方保险库中点「重新签发」，获取新的引继码。",
+          "fetch_failed": "获取游戏数据失败。新引继码（如已签发）显示在本页，并已保存在保险库中。",
+          "mysekai_unavailable": "获取烤森数据失败，可能还没有完成烤森教程。新引继码（如已签发）显示在本页，并已保存在保险库中。",
+          "upload_failed": "数据保存失败。新引继码（如已签发）显示在本页，并已保存在保险库中。",
+          "upload_forbidden": "这个游戏账号已被其他 Haruki 工具箱用户绑定，无法上传。新引继码（如已签发）显示在本页，并已保存在保险库中。",
+          "job_interrupted": "服务器重启，这次引继中断了。",
+          "internal_error": "服务器出了点问题，这次引继没有完成。"
         },
         "warnings": {
-          "issue_code_failed": "未能签发新引继码。账号凭据已保存在保险库中，请立即在下方保险库中重新签发：这是你回到账号的唯一方式。",
-          "vault_db_unavailable": "数据库暂时不可用，账号凭据已临时保存，稍后会自动转存。",
-          "vault_store_failed": "账号凭据或新引继码没能保存到保险库。请务必立即记下本页显示的新引继码。"
+          "issue_code_failed": "没能签发新的引继码。登录信息已存入保险库，请马上在下方保险库中点「重新签发」：这是你回到账号的唯一方式。",
+          "vault_db_unavailable": "数据库暂时不可用，登录信息已临时保存，稍后会自动转存，不影响使用。",
+          "vault_store_failed": "登录信息或新引继码没能存入保险库。请务必现在就记下本页显示的新引继码。"
         },
         "actions": {
           "startNew": "开始新的上传",
@@ -647,12 +649,12 @@ export default {
         "ackRequired": "请先确认你已记下新引继码",
         "toast": {
           "succeeded": "引继上传完成，账号数据已保存",
-          "cancelled": "已取消，引继码未被使用",
-          "resumedRunning": "你已有一个进行中的引继任务，已为你恢复"
+          "cancelled": "已取消，引继码没有被使用",
+          "resumedRunning": "你有一个正在进行的引继，已为你恢复"
         },
         "confirm": {
           "title": "确认要引继的账号",
-          "description": "请核对账号信息。到目前为止还没有使用你的引继码。",
+          "description": "请核对账号信息。现在还没有使用你的引继码，取消也不会有任何影响。",
           "nickname": "昵称",
           "rank": "等级",
           "userId": "游戏 ID",
@@ -664,21 +666,28 @@ export default {
             "worldBloom": "World Link 章节进行中",
             "none": "当前没有引继限制。"
           },
-          "warningTitle": "执行后原手机将无法再登录",
-          "warningBody": "确认后工具箱会执行引继，账号会从你的手机转移出来，原设备将无法再登录这个账号。工具箱随后会签发新的引继码并显示在本页，请用它在手机上把账号引继回来。",
-          "deadline": "剩余确认时间 {time}，超时会自动取消（引继码仍然有效）。",
-          "password": "Toolbox 账号密码",
-          "passwordHint": "用于加密保存账号凭据和新引继码，只有你本人能解开。",
-          "passwordFirstUse": "这是你第一次使用保险库，你的 Toolbox 密码将用来保护它。",
+          "warningTitle": "确认后，你的手机将无法再登录这个账号",
+          "warningBody": "账号会转移到工具箱。随后本页会显示新的引继码，请用它在手机上把账号引继回来。",
+          "deadline": "请在 {time} 内确认，超时会自动取消（引继码仍然有效）。",
+          "password": "Haruki 工具箱登录密码",
+          "passwordHelp": "登录本网站时用的密码，不是游戏的引继密码，也不是 QQ 或 Google 的密码。",
+          "passwordWhy": "用来给保存的登录信息上锁，只有你能打开。",
+          "passwordFirstUse": "用来给保存的登录信息上锁，只有你能打开。第一次确认时会自动创建你的引继码保险库。",
+          "forgotPassword": "忘记密码？",
+          "forgotPasswordNote": "如果忘记密码并设置了新密码，保险库里已保存的内容将无法打开，只能重置保险库（这些内容会被删除）。",
           "pin": "保险库 PIN",
-          "pinHint": "你的 Toolbox 账号没有密码（通过 Google、Apple 或通行密钥登录），请输入保险库 PIN。",
+          "pinHint": "你用 Google、Apple 或通行密钥登录本网站，没有登录密码，所以这里用你之前设置的保险库 PIN 代替。",
           "pinCreate": "设置保险库 PIN",
-          "pinCreateHint": "你的 Toolbox 账号没有密码，请设置一个保险库 PIN（8–128 个字符）。PIN 无法找回，忘记后只能重置保险库，已保存的记录会被销毁。",
-          "pinRepeat": "再次输入 PIN",
-          "pinMismatch": "两次输入的 PIN 不一致",
-          "pinFormat": "PIN 需为 8–128 个字符",
-          "passwordRequired": "请输入 Toolbox 账号密码",
-          "previousPassword": "修改前的旧密码",
+          "pinCreateHint": "你用 Google、Apple 或通行密钥登录本网站，没有登录密码，所以需要单独设置一个 PIN。",
+          "pinCreateWhy": "PIN 用来给保存的登录信息上锁，以后查看或重新签发引继码时都要输入。至少 8 个字符。",
+          "pinCreateWarning": "PIN 无法找回。忘记后只能重置保险库，已保存的内容会被删除。",
+          "pinRepeat": "再输入一次 PIN",
+          "pinMismatch": "两次输入的 PIN 不一致，请重新输入",
+          "pinFormat": "PIN 至少 8 个字符，最多 128 个字符",
+          "forgotPin": "忘记 PIN？PIN 无法找回，只能重置保险库（已保存的内容会被删除）。",
+          "passwordRequired": "请输入 Haruki 工具箱登录密码",
+          "previousPassword": "修改前的旧登录密码",
+          "previousPasswordRequired": "请输入修改前的旧登录密码",
           "submit": "确认并执行引继",
           "submitting": "正在验证…",
           "cancel": "取消，不执行引继",
@@ -695,32 +704,38 @@ export default {
           "expiresIn": "剩余有效期 {time}",
           "expiresAt": "有效期至 {time}",
           "expired": "这组引继码已过期，请在保险库中重新签发。",
-          "singleUse": "新引继码 24 小时内有效，且只能使用一次。原手机已无法登录，这是你回到账号的方式。",
-          "savedToVault": "已加密保存到你的保险库，24 小时内可在下方保险库再次查看。",
+          "singleUse": "24 小时内有效，只能使用一次。",
+          "savedToVault": "已加密保存到下方保险库，24 小时内可以再次查看。",
+          "nextSteps": {
+            "title": "接下来",
+            "restore": "在手机上用这组引继码把账号引继回来。",
+            "platformLink": "恢复后，建议在游戏内的引继菜单里把账号绑定到 Game Center（iOS）或 Google Play 游戏（Android；日服还可以绑定 Apple 或 Google 账号），以后就不用再依赖引继码。",
+            "cleanup": "确认恢复后，在下方保险库点「我已在手机上恢复」，删除保存的记录。"
+          },
           "unsavedTitle": "立即记下这组引继码",
-          "unsavedBody": "这组引继码没能保存到保险库，离开本页后将无法再次查看。请现在就抄下来或截图保存。",
+          "unsavedBody": "这组引继码没能存入保险库，离开本页后就无法再查看。请现在就抄下来或截图保存。",
           "ack": "我已记下",
           "acked": "已确认记下"
         }
       },
       "inheritVault": {
-        "title": "引继保险库",
-        "description": "通过引继码上传时，工具箱会把账号凭据（7 天）和新签发的引继码（24 小时）加密保存在这里，只有你本人能用 Toolbox 密码或保险库 PIN 解开。每次查看或重新签发都会记录并发送邮件通知。",
-        "empty": "保险库中没有记录。",
+        "title": "引继码保险库",
+        "description": "新引继码（保存 24 小时）和用于重新签发的游戏登录信息（保存 7 天）加密保存在这里。查看时需要验证身份（{secret}）。",
+        "empty": "保险库里还没有记录。",
         "notInitialized": "你还没有使用过保险库，第一次确认引继时会自动创建。",
         "loadFailed": "无法加载保险库",
         "refresh": "刷新",
         "entry": {
           "title": "{server} · {uid}",
           "createdAt": "引继于 {time}",
-          "credential": "账号凭据",
+          "credential": "登录信息",
           "code": "引继码",
           "expiresIn": "剩余 {time}",
           "expired": "已过期",
-          "noCode": "无可用引继码",
+          "noCode": "无可查看的引继码",
           "currentCode": "当前引继码",
-          "unreadable": "这条记录属于已重置的保险库，无法读取。",
-          "pending": "暂存中，数据库恢复后会自动转存"
+          "unreadable": "这条记录在保险库重置前保存，已无法打开。",
+          "pending": "暂存中，稍后自动转存，可正常使用"
         },
         "actions": {
           "reveal": "查看引继码",
@@ -731,41 +746,39 @@ export default {
         },
         "reveal": {
           "title": "查看引继码",
-          "description": "输入密码以解开保险库。查看会被记录，并向你已验证的邮箱发送通知。"
+          "description": "验证身份后显示这条记录的引继码。每次查看都会向你已验证的邮箱发送通知。"
         },
         "reissue": {
           "title": "重新签发引继码",
-          "description": "工具箱会用保存的账号凭据登录并签发新的引继码，之前的引继码会立即失效。需要几秒钟。",
+          "description": "工具箱会用保存的登录信息登录游戏，签发一组新的引继码，之前的引继码会立即失效。需要几秒钟。",
           "modeLabel": "新引继码密码",
           "reuse": "沿用上一个引继码的密码",
           "random": "随机生成"
         },
         "destroy": {
-          "title": "销毁这条记录？",
-          "description": "请确认你已经在手机上把账号引继回来。记录会立即变为不可读取，并在几分钟内删除，之后无法再查看或重新签发引继码。",
-          "confirm": "确认销毁"
+          "title": "删除这条记录？",
+          "description": "请先确认你已经在手机上把账号引继回来。删除后，就无法再查看或重新签发这个账号的引继码。",
+          "confirm": "确认删除"
         },
         "reset": {
-          "title": "重置保险库",
-          "description": "重置会丢弃你的保险库密钥，并销毁全部 {count} 条记录，无法撤销。只在忘记了旧密码（例如通过找回密码重置过 Toolbox 密码）或忘记保险库 PIN 时使用。",
-          "password": "当前 Toolbox 账号密码",
-          "ack": "我明白全部记录都会被销毁",
-          "confirm": "重置并销毁全部记录",
-          "done": "保险库已重置，销毁了 {count} 条记录"
+          "title": "重置保险库？",
+          "description": "会删除保险库里全部 {count} 条记录，无法撤销。只在想不起旧登录密码（例如忘记密码后设置过新密码）或忘记保险库 PIN 时使用。",
+          "password": "当前的 Haruki 工具箱登录密码",
+          "ack": "我明白全部记录都会被删除",
+          "confirm": "重置并删除全部记录",
+          "done": "保险库已重置，删除了 {count} 条记录"
         },
         "passwordChanged": {
-          "title": "需要修改前的旧密码",
-          "description": "你的 Toolbox 密码在保险库创建后改过。请输入修改之前的旧密码，之后保险库会改由新密码保护。",
-          "forgot": "忘记了旧密码（例如通过找回密码重置过）？只能重置保险库，已保存的记录会被销毁。",
+          "title": "请输入修改前的旧登录密码",
+          "description": "你修改过 Haruki 工具箱登录密码，但保险库还是用旧密码上锁的。输入一次旧密码后，保险库会改用现在的密码。",
+          "forgot": "想不起旧密码？只能重置保险库，里面已保存的内容会被删除。",
           "resetAction": "重置保险库"
         },
         "unlock": {
-          "password": "Toolbox 账号密码",
-          "pin": "保险库 PIN",
-          "submit": "解锁"
+          "submit": "显示引继码"
         },
         "toast": {
-          "destroyed": "记录已销毁",
+          "destroyed": "记录已删除",
           "reissued": "已签发新的引继码"
         }
       },
@@ -778,36 +791,36 @@ export default {
         "new_password_mode_invalid": "请选择新引继码密码的方式。",
         "reuse_password_invalid": "这个密码不能沿用（需为 8–16 个半角字符、不含空格），请改选「随机生成」。",
         "mysekai_requires_qq": "上传烤森（MySekai）数据需要先在「HarukiBot 数据授权」绑定并验证 QQ。",
-        "job_already_running": "你已有一个进行中的引继任务，请先完成或取消它。",
-        "rate_limited": "提交过于频繁（每小时最多 10 次），请稍后再试。",
-        "server_busy": "当前引继请求过多，请稍后再试。",
+        "job_already_running": "你有一个正在进行的引继，请先完成或取消它。",
+        "rate_limited": "提交太频繁了（每小时最多 10 次），请稍后再试。",
+        "server_busy": "现在使用的人太多，请稍后再试。",
         "game_degraded": "游戏服务器暂时不稳定，请稍后再试。",
-        "vault_unavailable": "引继功能暂不可用，请稍后再试。",
-        "identity_unavailable": "暂时无法验证你的身份，请稍后再试。",
+        "vault_unavailable": "引继码上传暂时不可用，请稍后再试。",
+        "identity_unavailable": "暂时无法核对你的账号信息，请稍后再试。",
         "store_unavailable": "服务暂时不可用，请稍后再试。",
-        "job_not_found": "任务不存在或已过期。",
-        "job_not_awaiting_confirm": "任务当前不在等待确认（可能已确认、已取消或已超时）。",
-        "cannot_cancel": "引继已开始执行，无法取消。",
-        "unauthenticated": "请先登录工具箱。",
-        "ws_ticket_invalid": "实时连接凭证已失效，正在重新连接。",
-        "internal_error": "服务器内部错误，请稍后再试。",
-        "password_required": "请输入 Toolbox 账号密码。",
+        "job_not_found": "这次引继的记录不存在或已过期。",
+        "job_not_awaiting_confirm": "这次引继已不在等待确认（可能已确认、已取消或已超时），请查看上方的进度。",
+        "cannot_cancel": "引继已经开始执行，无法再取消。",
+        "unauthenticated": "登录已失效，请重新登录 Haruki 工具箱。",
+        "ws_ticket_invalid": "连接已断开，正在重新连接…",
+        "internal_error": "服务器出了点问题，请稍后再试。",
+        "password_required": "请输入 Haruki 工具箱登录密码。",
         "vault_pin_required": "请输入保险库 PIN。",
-        "vault_pin_invalid_format": "保险库 PIN 需为 8–128 个字符。",
-        "password_invalid": "Toolbox 账号密码错误。",
-        "vault_pin_invalid": "保险库 PIN 错误。",
-        "previous_password_invalid": "旧密码无法解开保险库，请再试一次，或重置保险库。",
-        "vault_password_changed": "你的 Toolbox 密码在保险库创建后改过，需要输入修改前的旧密码。",
-        "vault_not_initialized": "保险库尚未创建。",
-        "unlock_rate_limited": "尝试次数过多，请 15 分钟后再试。",
-        "entry_not_found": "记录不存在或已过期。",
-        "entry_stale": "这条记录属于已重置的保险库，无法读取。",
-        "code_not_available": "这条记录没有可用的引继码（已过期或未签发），请重新签发。",
-        "no_previous_password": "没有可沿用的旧密码，请改选「随机生成」。",
-        "reset_confirmation_required": "请确认重置保险库。",
+        "vault_pin_invalid_format": "保险库 PIN 至少 8 个字符，最多 128 个字符。",
+        "password_invalid": "登录密码不正确。请输入登录本网站时用的密码，不是游戏的引继密码。",
+        "vault_pin_invalid": "保险库 PIN 不正确，请再试一次。",
+        "previous_password_invalid": "旧登录密码不正确，请再试一次。想不起来的话，只能重置保险库。",
+        "vault_password_changed": "你修改过登录密码，需要再输入一次修改前的旧密码。",
+        "vault_not_initialized": "你还没有使用过保险库，第一次确认引继时会自动创建。",
+        "unlock_rate_limited": "输错次数太多，为了保护你的账号，请 15 分钟后再试。",
+        "entry_not_found": "这条记录不存在或已过期。",
+        "entry_stale": "这条记录在保险库重置前保存，已无法打开。",
+        "code_not_available": "这条记录目前没有可查看的引继码（已超过 24 小时或未签发），请点「重新签发」。",
+        "no_previous_password": "没有可沿用的旧引继密码，请改选「随机生成」。",
+        "reset_confirmation_required": "请先勾选确认。",
         "reissue_failed": "重新签发引继码失败，请稍后再试。",
-        "reissue_login_failed": "使用保存的凭据登录失败，凭据可能已失效。",
-        "reissue_rejected": "游戏服务器拒绝了请求。",
+        "reissue_login_failed": "保存的登录信息已无法登录游戏，可能已经失效。",
+        "reissue_rejected": "游戏服务器拒绝了这次请求，请稍后再试。",
         "client_update_required": "页面版本过旧，请刷新页面。",
         "retryAfter": "请在 {seconds} 秒后重试。",
         "network": "无法连接到服务器，请检查网络后重试。",

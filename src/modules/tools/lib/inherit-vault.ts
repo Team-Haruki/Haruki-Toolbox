@@ -1,6 +1,6 @@
 import type { InheritServer } from "@/types"
 import { asRecord } from "@/lib/record-utils"
-import type { InheritProblem, InheritUnlockKind } from "@/modules/tools/lib/inherit-job"
+import type { InheritJobUnlock, InheritProblem, InheritUnlockKind } from "@/modules/tools/lib/inherit-job"
 
 /**
  * The inherit vault keeps, per transferred account, the game login credential
@@ -115,6 +115,30 @@ export function toUnlockBody(input: InheritUnlockInput): Record<string, string> 
   if (input.previousPassword) body.previous_password = input.previousPassword
   if (input.vaultPin) body.vault_pin = input.vaultPin
   return body
+}
+
+/** What a step-up asks for: the sign-in password or a vault PIN, and whether the vault exists yet. */
+export interface InheritUnlockMode {
+  kind: InheritUnlockKind
+  initialized: boolean
+}
+
+/**
+ * Picks the secret a step-up asks for. The vault key status is the live
+ * answer: the backend reports the key's own kind once the key exists and the
+ * identity's (password or not) before, and the page reloads it after a reset
+ * and whenever a job moves on. The job's `unlock` hint is what the backend
+ * knew when the job was created, so it is only the fallback: after a vault
+ * reset in the confirm step it still says "initialized", and for an account
+ * whose PIN vault was reset after it added a password it still says "pin".
+ */
+export function resolveUnlockMode(
+  keyStatus: Pick<InheritVaultKeyStatus, "kind" | "initialized"> | null | undefined,
+  jobHint?: InheritJobUnlock | null,
+): InheritUnlockMode {
+  if (keyStatus) return { kind: keyStatus.kind, initialized: keyStatus.initialized }
+  if (jobHint) return { kind: jobHint.kind, initialized: jobHint.initialized }
+  return { kind: "password", initialized: true }
 }
 
 /** A vault code is shown or kept only while it still works. */

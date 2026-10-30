@@ -31,7 +31,7 @@ import {
   type InheritNewCode,
 } from "@/modules/tools/lib/inherit-job"
 import type { InheritConnectionState } from "@/modules/tools/lib/inherit-job-connection"
-import type { InheritUnlockInput } from "@/modules/tools/lib/inherit-vault"
+import type { InheritUnlockInput, InheritVaultKeyStatus } from "@/modules/tools/lib/inherit-vault"
 import { describeInheritApiError, describeJobError, describeJobWarning } from "@/modules/tools/lib/inherit-messages"
 import InheritJobConfirm from "@/modules/tools/components/inherit/InheritJobConfirm.vue"
 import InheritJobSteps from "@/modules/tools/components/inherit/InheritJobSteps.vue"
@@ -45,6 +45,8 @@ const props = defineProps<{
   commandPending: "confirm" | "cancel" | null
   expired: boolean
   canDismiss: boolean
+  /** The live vault key status, for the confirm step's password-or-PIN choice. */
+  keyStatus: InheritVaultKeyStatus | null
   onConfirm: (unlock: InheritUnlockInput) => Promise<void>
   onCancel: () => Promise<void>
 }>()
@@ -76,6 +78,16 @@ const otherWarnings = computed(() => props.job.warnings.filter((warning) =>
   warning.code !== "issue_code_failed" && !(warning.code === "vault_store_failed" && props.newCode)))
 const validity = computed(() => enteredCodeValidity(props.job))
 const connectionLive = computed(() => props.connectionState === "live")
+
+/**
+ * How loud a stopped job is: danger only when the entered code may be gone
+ * with nothing to show for it (the transfer may have happened unseen), a
+ * warning for other failures, plain for a cancellation.
+ */
+const failureTone = computed<"danger" | "warning" | "info">(() => {
+  if (props.job.status !== "failed") return "info"
+  return props.job.error?.code === "execute_uncertain" ? "danger" : "warning"
+})
 
 const summary = computed(() => t("tools.uploadData.inheritJob.summary", {
   server: t(`tools.uploadData.region.${props.job.server}`),
@@ -143,6 +155,7 @@ function dismiss() {
         :unsaved="codeUnsaved"
         :saved-to-vault="codeInVault"
         :acknowledged="codeAcknowledged"
+        next-steps
         id-prefix="inherit-job-code"
         @acknowledge="emit('acknowledge')"
       />
@@ -174,6 +187,7 @@ function dismiss() {
       <InheritJobConfirm
         v-if="job.status === 'awaiting_confirm' && !expired"
         :job="job"
+        :key-status="keyStatus"
         :pending="commandPending"
         :on-confirm="onConfirm"
         :on-cancel="cancelFromConfirm"
@@ -188,16 +202,19 @@ function dismiss() {
 
       <Alert
         v-else-if="(job.status === 'failed' || job.status === 'cancelled') && job.error"
-        :variant="job.status === 'failed' ? 'destructive' : 'default'"
+        :variant="failureTone === 'danger' ? 'destructive' : 'default'"
+        :class="failureTone === 'danger' ? 'border-destructive/50 bg-destructive/5' : failureTone === 'warning' ? 'border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-100' : ''"
+        :data-tone="failureTone"
         data-testid="inherit-job-error"
         :data-code="job.error.code"
       >
-        <CircleX v-if="job.status === 'failed'" />
+        <CircleX v-if="failureTone === 'danger'" />
+        <LucideAlertTriangle v-else-if="failureTone === 'warning'" />
         <Info v-else />
         <AlertTitle>
           {{ job.status === "failed" ? t("tools.uploadData.inheritJob.errorTitle") : t("tools.uploadData.inheritJob.cancelledTitle") }}
         </AlertTitle>
-        <AlertDescription class="space-y-1">
+        <AlertDescription :class="['space-y-1', failureTone === 'warning' ? 'text-current' : '']">
           <p>{{ describeJobError(t, job.error) }}</p>
           <p v-if="validity" class="font-medium" data-testid="inherit-code-validity" :data-validity="validity">
             {{ t(`tools.uploadData.inheritJob.codeValidity.${validity}`) }}

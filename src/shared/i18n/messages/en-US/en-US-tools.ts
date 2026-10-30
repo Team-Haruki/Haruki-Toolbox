@@ -492,21 +492,28 @@ export default {
       },
       "inheritTab": {
         "title": "Transfer-code data upload",
-        "description": "Enter the in-game transfer ID and password. The toolbox first shows you the account to confirm, executes the transfer only after you confirm, and right away issues you a new transfer code.",
+        "description": "Enter the transfer ID and transfer password from the game. The toolbox first shows you the account to check, runs the transfer only after you confirm, and right away issues you a new transfer code.",
         "loginRequired": {
-          "title": "Sign in to the toolbox first",
-          "description": "Transfer-code uploads need a Haruki Toolbox account: after the transfer, the account credential and the new transfer code are kept encrypted in your vault, readable only by you.",
+          "title": "Sign in to Haruki Toolbox first",
+          "description": "Transfer-code uploads need you to be signed in to this website. After the transfer, the new transfer code is kept encrypted in your transfer code vault, readable only by you.",
           "action": "Sign in"
         },
         "fields": {
           "inheritId": "Transfer ID",
           "inheritIdPlaceholder": "Enter transfer ID",
           "inheritPassword": "Transfer password",
-          "inheritPasswordPlaceholder": "Enter transfer password",
+          "inheritPasswordPlaceholder": "The transfer password you set in the game",
           "server": "Select region",
           "serverPlaceholder": "Select region",
           "dataType": "Select data type",
           "dataTypePlaceholder": "Select data type"
+        },
+        "prep": {
+          "bind": "Bind this game account under Game account bindings first; otherwise the data is not saved, even if the upload reports success.",
+          "bindLink": "Bind account",
+          "platformLink": "We recommend linking the account to Game Center (iOS) or Google Play Games (Android) in the game's transfer menu first; JP can also link an Apple or Google account. Then the account is not lost if a transfer code expires or is used up.",
+          "mysekaiQQ": "Uploading MySekai data requires binding and verifying a QQ account under HarukiBot data authorization.",
+          "mysekaiQQLink": "Verify QQ"
         },
         "newPassword": {
           "label": "Password of the new transfer code",
@@ -519,34 +526,29 @@ export default {
           "tooLong": "The transfer password is too long"
         },
         "alerts": {
-          "notesTitle": "How it works and what to know",
+          "notesTitle": "Learn more: how it works, what is stored, and the risk",
           "warning1": {
-            "title": "After the transfer, your phone can no longer sign in",
-            "description": "JP transfer codes are valid for 24 hours and work once. Once the toolbox executes the transfer, the device that generated the code can no longer sign in to the account; the new transfer code the toolbox issues is your way back, so be sure to write it down."
-          },
-          "warning2": {
-            "title": "Risk",
-            "text": "This feature signs in by imitating the game client with your transfer code. The publisher could in theory treat that as an unusual login; judge the risk yourself, and prefer HarukiProxy or the iOS module if unsure."
+            "title": "After the transfer, your phone is signed out",
+            "description": "You then restore the account to your phone with the new transfer code the toolbox issues. You see the account first, and nothing runs until you confirm."
           },
           "flow": {
             "title": "Steps",
-            "step1": "First the account is only looked up (the code is not used); check the nickname and rank.",
-            "step2": "The transfer runs only after you confirm with your Toolbox password (or vault PIN). Until then you can cancel and the code stays valid.",
-            "step3": "Right after the transfer a new transfer code is issued and shown on this page, and stored encrypted in your vault, where you can see it again for 24 hours.",
+            "step1": "First the account is only looked up (the code is not used); check the nickname and rank. JP transfer codes are valid for 24 hours and work once.",
+            "step2": "Once the details look right, confirm with your Haruki Toolbox sign-in password (accounts that sign in with Google, Apple or a passkey use a vault PIN instead). Only then does the transfer run. Until then you can cancel and the code stays valid.",
+            "step3": "Right after the transfer a new transfer code is issued and shown on this page, and stored encrypted in the transfer code vault below, where you can see it again for 24 hours.",
             "step4": "Finally the game data is fetched and saved. Even if this step fails, the new code is kept."
           },
           "storage": {
             "title": "What we store",
-            "text": "The code you enter is only used while the job runs and is not stored. After the transfer, the account's login credential (at most 7 days) and the newly issued code (24 hours) are stored encrypted with a key that only your Toolbox password or vault PIN opens; staff cannot read them. You can destroy them at any time in the vault below."
+            "text": "The code you enter is only used for this transfer and is not stored. After the transfer, the game account's sign-in info (at most 7 days, used to re-issue codes) and the new code (24 hours) are stored encrypted; only your Haruki Toolbox sign-in password or vault PIN opens them, and staff cannot read them. You can delete them at any time in the vault below."
           },
-          "reminder2": {
-            "title": "Reminder",
-            "text": "Bind the game account under Game account bindings first. Without a binding, the data is not saved even if the upload reports success.",
-            "bindLink": "Bind account"
+          "risk": {
+            "title": "Risk",
+            "text": "This feature signs in by imitating the game client with your transfer code. The publisher could in theory treat that as an unusual login; judge the risk yourself, and prefer HarukiProxy or the iOS module if unsure."
           }
         },
         "submit": "Look up account",
-        "submitting": "Submitting..."
+        "submitting": "Reading account info…"
       },
       "inheritJob": {
         "title": "Transfer progress",
@@ -566,11 +568,11 @@ export default {
           "closed": "Ended"
         },
         "steps": {
-          "bootstrap": "Prepare connection",
+          "bootstrap": "Connect to the game server",
           "preview": "Read account info",
           "awaiting_confirm": "Wait for your confirmation",
           "execute": "Execute transfer",
-          "vault_store_credential": "Store the account credential in the vault",
+          "vault_store_credential": "Store the sign-in info in the vault",
           "login": "Sign in to the game",
           "issue_new_code": "Issue a new transfer code",
           "vault_store_code": "Store the new code in the vault",
@@ -584,7 +586,7 @@ export default {
           "version": "Get game version",
           "inherit_check": "Look up the account (code not used)",
           "inherit_execute": "Execute transfer",
-          "auth": "Authenticate",
+          "auth": "Sign in",
           "issue_code": "Issue transfer code",
           "suite": "Account data",
           "suite_followup": "Follow-up requests",
@@ -606,38 +608,38 @@ export default {
         "codeValidity": {
           "valid": "The code you entered was not used and is still valid.",
           "used": "The code you entered has been used and cannot be used again.",
-          "unknown": "It is unclear whether the code you entered was used. Do not retry it on another device, and check the vault below for a stored credential."
+          "unknown": "It is unclear whether the code you entered was used. Do not use it on another device for now, and check the vault below."
         },
         "errorTitle": "Transfer not completed",
         "issueFailedTitle": "No new transfer code was issued",
         "cancelledTitle": "Cancelled",
         "succeededTitle": "Upload complete",
         "succeededDescription": "The account data has been saved.",
-        "expired": "This job's record has expired (job records are kept for 1 hour). The new code can still be viewed in the vault below.",
+        "expired": "The progress record of this transfer has expired (it is kept for 1 hour). The new code can still be viewed in the vault below.",
         "errors": {
           "inherit_invalid": "The transfer code is invalid, already used or expired. Generate a new code in the game and try again.",
-          "inherit_restricted": "The game does not allow transfers for this account right now.",
-          "transfer_restricted": "This account has no transfers left during the current event; nothing was executed.",
-          "confirm_timeout": "Not confirmed within 5 minutes; the job was cancelled and nothing was executed.",
-          "cancelled": "Cancelled; nothing was executed.",
-          "game_degraded": "The game server is unstable at the moment; nothing was executed. Please try again later.",
-          "server_busy": "Too many transfers are running; nothing was executed. Please try again later.",
-          "game_maintenance": "The game server is under maintenance.",
-          "game_unavailable": "The game server cannot be reached right now.",
-          "game_error": "The game server returned an error.",
-          "execute_uncertain": "The connection dropped while executing the transfer, so the code may have been used. Do not retry it on another device, and check the vault below for a stored credential.",
-          "login_failed": "The account credential is in the vault, but signing in failed. Re-issue a transfer code from the vault below later.",
+          "inherit_restricted": "The game does not allow transfers for this account right now. Nothing was transferred and your code is still valid.",
+          "transfer_restricted": "This account has no transfers left during the current event. Nothing was transferred and your code is still valid.",
+          "confirm_timeout": "Not confirmed within 5 minutes, so it was cancelled. Nothing was transferred; your code is still valid and you can submit it again.",
+          "cancelled": "Cancelled; nothing was transferred.",
+          "game_degraded": "The game server is unstable at the moment; nothing was transferred. Please try again later.",
+          "server_busy": "Too many people are using this right now; nothing was transferred. Please try again later.",
+          "game_maintenance": "The game server is under maintenance. Please try again after it ends.",
+          "game_unavailable": "The game server cannot be reached right now. Please try again later.",
+          "game_error": "The game server returned an error. Please try again later.",
+          "execute_uncertain": "The connection dropped during the transfer, so it is unclear whether your code was used. Do not use this code on another device for now, and check the vault below: if this account shows up there, the transfer went through and you can view or re-issue the code there.",
+          "login_failed": "The transfer went through and the sign-in info is in the vault, but signing in to the game failed. Later, press \"Re-issue\" in the vault below to get a new transfer code.",
           "fetch_failed": "Fetching the game data failed. The new code (if one was issued) is shown on this page and kept in the vault.",
           "mysekai_unavailable": "Fetching MySekai data failed; the MySekai tutorial may not be finished. The new code (if one was issued) is shown on this page and kept in the vault.",
           "upload_failed": "Saving the data failed. The new code (if one was issued) is shown on this page and kept in the vault.",
-          "upload_forbidden": "This game account is bound to another Toolbox user, so it cannot be uploaded. The new code (if one was issued) is shown on this page and kept in the vault.",
-          "job_interrupted": "The service restarted and the job was interrupted.",
-          "internal_error": "Internal server error."
+          "upload_forbidden": "This game account is bound to another Haruki Toolbox user, so it cannot be uploaded. The new code (if one was issued) is shown on this page and kept in the vault.",
+          "job_interrupted": "The server restarted and this transfer was interrupted.",
+          "internal_error": "Something went wrong on the server and this transfer did not finish."
         },
         "warnings": {
-          "issue_code_failed": "No new transfer code was issued. The account credential is in the vault: re-issue a code from the vault below now, it is your only way back into the account.",
-          "vault_db_unavailable": "The database was unavailable; the credential is stored temporarily and will be moved over automatically.",
-          "vault_store_failed": "The credential or the new code could not be stored in the vault. Write down the new code shown on this page now."
+          "issue_code_failed": "No new transfer code was issued. The sign-in info is in the vault: press \"Re-issue\" in the vault below now, it is your only way back into the account.",
+          "vault_db_unavailable": "The database was unavailable; the sign-in info is stored temporarily and will be moved over automatically. Nothing changes for you.",
+          "vault_store_failed": "The sign-in info or the new code could not be stored in the vault. Write down the new code shown on this page now."
         },
         "actions": {
           "startNew": "Start a new upload",
@@ -647,12 +649,12 @@ export default {
         "ackRequired": "Confirm that you have written down the new code first",
         "toast": {
           "succeeded": "Transfer upload complete; the account data has been saved",
-          "cancelled": "Cancelled; the code was not used",
-          "resumedRunning": "You already have a transfer upload in progress; it has been resumed"
+          "cancelled": "Cancelled; your code was not used",
+          "resumedRunning": "You already have a transfer in progress; it has been resumed"
         },
         "confirm": {
           "title": "Confirm the account to transfer",
-          "description": "Check the account details. Your transfer code has not been used yet.",
+          "description": "Check the account details. Your transfer code has not been used yet, so cancelling changes nothing.",
           "nickname": "Nickname",
           "rank": "Rank",
           "userId": "Game ID",
@@ -664,21 +666,28 @@ export default {
             "worldBloom": "A World Link chapter is running",
             "none": "No transfer restriction right now."
           },
-          "warningTitle": "Your phone will no longer be able to sign in",
-          "warningBody": "Once you confirm, the toolbox executes the transfer: the account moves off your phone and the original device can no longer sign in to it. The toolbox then issues a new transfer code and shows it on this page; use it to transfer the account back to your phone.",
-          "deadline": "{time} left to confirm; after that the job is cancelled (your code stays valid).",
-          "password": "Toolbox password",
-          "passwordHint": "Used to encrypt the stored credential and new code so that only you can open them.",
-          "passwordFirstUse": "This is your first use of the vault; your Toolbox password will protect it.",
+          "warningTitle": "Once you confirm, your phone can no longer sign in to this account",
+          "warningBody": "The account moves to the toolbox. This page then shows a new transfer code; use it to transfer the account back to your phone.",
+          "deadline": "Confirm within {time}; after that it is cancelled (your code stays valid).",
+          "password": "Haruki Toolbox sign-in password",
+          "passwordHelp": "The password you sign in to this website with. Not the game's transfer password, and not your QQ or Google password.",
+          "passwordWhy": "It locks the saved sign-in info so that only you can open it.",
+          "passwordFirstUse": "It locks the saved sign-in info so that only you can open it. Your transfer code vault is created when you first confirm.",
+          "forgotPassword": "Forgot your password?",
+          "forgotPasswordNote": "If you forget your password and set a new one, what is saved in the vault can no longer be opened; the only way forward is resetting the vault, which deletes it.",
           "pin": "Vault PIN",
-          "pinHint": "Your Toolbox account has no password (Google, Apple or passkey sign-in); enter your vault PIN.",
+          "pinHint": "You sign in to this website with Google, Apple or a passkey and have no password, so you use the vault PIN you set earlier instead.",
           "pinCreate": "Set a vault PIN",
-          "pinCreateHint": "Your Toolbox account has no password, so choose a vault PIN (8–128 characters). It cannot be recovered: if you forget it, the only way forward is resetting the vault, which destroys its records.",
-          "pinRepeat": "Repeat the PIN",
-          "pinMismatch": "The PINs do not match",
-          "pinFormat": "The PIN must be 8–128 characters",
-          "passwordRequired": "Enter your Toolbox password",
-          "previousPassword": "Previous password",
+          "pinCreateHint": "You sign in to this website with Google, Apple or a passkey and have no password, so set a separate PIN.",
+          "pinCreateWhy": "The PIN locks the saved sign-in info; you enter it whenever you view or re-issue a code. At least 8 characters.",
+          "pinCreateWarning": "The PIN cannot be recovered. If you forget it, the only way forward is resetting the vault, which deletes what is saved.",
+          "pinRepeat": "Enter the PIN again",
+          "pinMismatch": "The PINs do not match; enter them again",
+          "pinFormat": "The PIN must be 8 to 128 characters",
+          "forgotPin": "Forgot your PIN? It cannot be recovered; the only way forward is resetting the vault (what is saved is deleted).",
+          "passwordRequired": "Enter your Haruki Toolbox sign-in password",
+          "previousPassword": "Previous sign-in password",
+          "previousPasswordRequired": "Enter the sign-in password you had before the change",
           "submit": "Confirm and transfer",
           "submitting": "Verifying…",
           "cancel": "Cancel, do not transfer",
@@ -695,8 +704,14 @@ export default {
           "expiresIn": "Valid for {time}",
           "expiresAt": "until {time}",
           "expired": "This code has expired; re-issue one from the vault.",
-          "singleUse": "The new code is valid for 24 hours and works once. Your phone can no longer sign in; this code is your way back.",
-          "savedToVault": "Stored encrypted in your vault; you can view it again in the vault below for 24 hours.",
+          "singleUse": "Valid for 24 hours and works once.",
+          "savedToVault": "Stored encrypted in the vault below; you can view it again for 24 hours.",
+          "nextSteps": {
+            "title": "Next",
+            "restore": "Transfer the account back to your phone with this code.",
+            "platformLink": "Once it is back, we recommend linking it to Game Center (iOS) or Google Play Games (Android) in the game's transfer menu (JP can also link an Apple or Google account), so you no longer depend on transfer codes.",
+            "cleanup": "After that, press \"I recovered it on my phone\" in the vault below to delete the saved record."
+          },
           "unsavedTitle": "Write this code down now",
           "unsavedBody": "This code could not be stored in the vault and cannot be shown again once you leave this page. Copy it or take a screenshot now.",
           "ack": "I have written it down",
@@ -704,23 +719,23 @@ export default {
         }
       },
       "inheritVault": {
-        "title": "Transfer vault",
-        "description": "When you upload with a transfer code, the toolbox keeps the account credential (7 days) and the newly issued code (24 hours) here, encrypted so that only your Toolbox password or vault PIN opens them. Every view or re-issue is logged and emailed to you.",
-        "empty": "The vault is empty.",
+        "title": "Transfer code vault",
+        "description": "The new code (kept 24 hours) and the game sign-in info used to re-issue codes (kept 7 days) are stored here, encrypted. Viewing them asks you to verify ({secret}).",
+        "empty": "Nothing is saved in the vault yet.",
         "notInitialized": "You have not used the vault yet; it is created when you first confirm a transfer.",
         "loadFailed": "Could not load the vault",
         "refresh": "Refresh",
         "entry": {
           "title": "{server} · {uid}",
           "createdAt": "Transferred {time}",
-          "credential": "Credential",
+          "credential": "Sign-in info",
           "code": "Transfer code",
           "expiresIn": "{time} left",
           "expired": "Expired",
-          "noCode": "No usable code",
+          "noCode": "No code to show",
           "currentCode": "Current transfer code",
-          "unreadable": "This record belongs to a vault that was reset and cannot be read.",
-          "pending": "Parked until the database is back"
+          "unreadable": "This record was saved before the vault was reset and can no longer be opened.",
+          "pending": "Stored temporarily, moved over soon; works normally"
         },
         "actions": {
           "reveal": "Show code",
@@ -731,41 +746,39 @@ export default {
         },
         "reveal": {
           "title": "Show transfer code",
-          "description": "Enter your secret to open the vault. Every view is logged and emailed to your verified address."
+          "description": "Verify it is you to show this record's transfer code. Every view is emailed to your verified address."
         },
         "reissue": {
           "title": "Re-issue transfer code",
-          "description": "The toolbox signs in with the stored credential and issues a new transfer code; the previous code stops working at once. This takes a few seconds.",
+          "description": "The toolbox signs in to the game with the saved sign-in info and issues a new transfer code; the previous code stops working at once. This takes a few seconds.",
           "modeLabel": "Password of the new code",
           "reuse": "Keep the previous code's password",
           "random": "Generate a random one"
         },
         "destroy": {
-          "title": "Destroy this record?",
-          "description": "Confirm that you have transferred the account back to your phone. The record becomes unreadable at once and is deleted within minutes; its code can no longer be shown or re-issued.",
-          "confirm": "Destroy"
+          "title": "Delete this record?",
+          "description": "Make sure you have transferred the account back to your phone. After deleting, this account's code can no longer be shown or re-issued.",
+          "confirm": "Delete"
         },
         "reset": {
-          "title": "Reset vault",
-          "description": "Resetting discards your vault key and destroys all {count} record(s). This cannot be undone. Use it only if you forgot the previous password (for example after resetting your Toolbox password through account recovery) or your vault PIN.",
-          "password": "Current Toolbox password",
-          "ack": "I understand that every record will be destroyed",
-          "confirm": "Reset and destroy all records",
-          "done": "Vault reset; {count} record(s) destroyed"
+          "title": "Reset the vault?",
+          "description": "This deletes all {count} record(s) in the vault and cannot be undone. Use it only if you cannot remember your previous sign-in password (for example after setting a new one because you forgot it) or forgot your vault PIN.",
+          "password": "Current Haruki Toolbox sign-in password",
+          "ack": "I understand that every record will be deleted",
+          "confirm": "Reset and delete all records",
+          "done": "Vault reset; {count} record(s) deleted"
         },
         "passwordChanged": {
-          "title": "Your previous password is needed",
-          "description": "Your Toolbox password changed after the vault was created. Enter the password you had before; from then on the vault is protected by the new one.",
-          "forgot": "Forgot the previous password (for example after an account recovery)? The only way forward is resetting the vault, which destroys its records.",
+          "title": "Enter your previous sign-in password",
+          "description": "You changed your Haruki Toolbox sign-in password, but the vault is still locked with the old one. Enter the old password once and the vault switches to your current password.",
+          "forgot": "Cannot remember the old password? The only way forward is resetting the vault, which deletes what is saved in it.",
           "resetAction": "Reset vault"
         },
         "unlock": {
-          "password": "Toolbox password",
-          "pin": "Vault PIN",
-          "submit": "Unlock"
+          "submit": "Show code"
         },
         "toast": {
-          "destroyed": "Record destroyed",
+          "destroyed": "Record deleted",
           "reissued": "New transfer code issued"
         }
       },
@@ -778,36 +791,36 @@ export default {
         "new_password_mode_invalid": "Choose how to set the new code's password.",
         "reuse_password_invalid": "This password cannot be kept (8–16 half-width characters, no spaces); choose \"Generate a random one\".",
         "mysekai_requires_qq": "Uploading MySekai data requires binding and verifying a QQ account under HarukiBot data authorization.",
-        "job_already_running": "You already have a transfer job running; finish or cancel it first.",
+        "job_already_running": "You already have a transfer in progress; finish or cancel it first.",
         "rate_limited": "Too many submissions (at most 10 per hour); please try again later.",
-        "server_busy": "Too many transfers are running; please try again later.",
+        "server_busy": "Too many people are using this right now; please try again later.",
         "game_degraded": "The game server is unstable at the moment; please try again later.",
-        "vault_unavailable": "Transfer uploads are unavailable right now; please try again later.",
-        "identity_unavailable": "Your identity cannot be verified right now; please try again later.",
+        "vault_unavailable": "Transfer-code uploads are unavailable right now; please try again later.",
+        "identity_unavailable": "Your account details cannot be checked right now; please try again later.",
         "store_unavailable": "The service is unavailable right now; please try again later.",
-        "job_not_found": "The job does not exist or has expired.",
-        "job_not_awaiting_confirm": "The job is not waiting for confirmation (it may already be confirmed, cancelled or timed out).",
-        "cannot_cancel": "The transfer is already running and can no longer be cancelled.",
-        "unauthenticated": "Sign in to the toolbox first.",
-        "ws_ticket_invalid": "The live connection ticket expired; reconnecting.",
-        "internal_error": "Internal server error; please try again later.",
-        "password_required": "Enter your Toolbox password.",
+        "job_not_found": "The record of this transfer does not exist or has expired.",
+        "job_not_awaiting_confirm": "This transfer is no longer waiting for confirmation (it may already be confirmed, cancelled or timed out); check the progress above.",
+        "cannot_cancel": "The transfer has already started and can no longer be cancelled.",
+        "unauthenticated": "Your session has ended; sign in to Haruki Toolbox again.",
+        "ws_ticket_invalid": "The connection dropped; reconnecting…",
+        "internal_error": "Something went wrong on the server; please try again later.",
+        "password_required": "Enter your Haruki Toolbox sign-in password.",
         "vault_pin_required": "Enter your vault PIN.",
-        "vault_pin_invalid_format": "The vault PIN must be 8–128 characters.",
-        "password_invalid": "Wrong Toolbox password.",
-        "vault_pin_invalid": "Wrong vault PIN.",
-        "previous_password_invalid": "The previous password does not open the vault; try again, or reset the vault.",
-        "vault_password_changed": "Your Toolbox password changed after the vault was created; enter the previous password.",
-        "vault_not_initialized": "The vault has not been created yet.",
-        "unlock_rate_limited": "Too many attempts; try again in 15 minutes.",
-        "entry_not_found": "The record does not exist or has expired.",
-        "entry_stale": "This record belongs to a vault that was reset and cannot be read.",
-        "code_not_available": "This record has no usable code (expired or never issued); re-issue one.",
-        "no_previous_password": "There is no previous password to keep; choose \"Generate a random one\".",
-        "reset_confirmation_required": "Confirm the vault reset.",
+        "vault_pin_invalid_format": "The vault PIN must be 8 to 128 characters.",
+        "password_invalid": "Wrong sign-in password. Enter the password you sign in to this website with, not the game's transfer password.",
+        "vault_pin_invalid": "Wrong vault PIN; please try again.",
+        "previous_password_invalid": "That is not the previous sign-in password; please try again. If you cannot remember it, the only way forward is resetting the vault.",
+        "vault_password_changed": "You changed your sign-in password; enter the password you had before the change once.",
+        "vault_not_initialized": "You have not used the vault yet; it is created when you first confirm a transfer.",
+        "unlock_rate_limited": "Too many wrong attempts; to protect your account, please try again in 15 minutes.",
+        "entry_not_found": "This record does not exist or has expired.",
+        "entry_stale": "This record was saved before the vault was reset and can no longer be opened.",
+        "code_not_available": "This record has no code to show right now (older than 24 hours or never issued); press \"Re-issue\".",
+        "no_previous_password": "There is no previous transfer password to keep; choose \"Generate a random one\".",
+        "reset_confirmation_required": "Tick the confirmation first.",
         "reissue_failed": "Re-issuing the transfer code failed; please try again later.",
-        "reissue_login_failed": "Signing in with the stored credential failed; it may no longer be valid.",
-        "reissue_rejected": "The game server refused the request.",
+        "reissue_login_failed": "The saved sign-in info no longer signs in to the game; it may have expired.",
+        "reissue_rejected": "The game server refused the request; please try again later.",
         "client_update_required": "This page is out of date; please reload it.",
         "retryAfter": "Try again in {seconds} s.",
         "network": "Cannot reach the server; check your connection and try again.",

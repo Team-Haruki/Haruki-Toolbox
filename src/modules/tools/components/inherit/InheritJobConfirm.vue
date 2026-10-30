@@ -8,7 +8,7 @@ import { formatLocalizedDateTime } from "@/lib/date-time"
 import { useNowTick } from "@/composables/useNowTick"
 import { toInheritApiError } from "@/modules/tools/api/inherit"
 import type { InheritJob } from "@/modules/tools/lib/inherit-job"
-import type { InheritUnlockInput } from "@/modules/tools/lib/inherit-vault"
+import { resolveUnlockMode, type InheritUnlockInput, type InheritVaultKeyStatus } from "@/modules/tools/lib/inherit-vault"
 import { formatInheritRemaining } from "@/modules/tools/lib/inherit-messages"
 import { useInheritUnlock } from "@/modules/tools/composables/useInheritUnlock"
 import InheritUnlockFields from "@/modules/tools/components/inherit/InheritUnlockFields.vue"
@@ -20,6 +20,8 @@ import InheritUnlockFields from "@/modules/tools/components/inherit/InheritUnloc
  */
 const props = defineProps<{
   job: InheritJob
+  /** The live vault key status; it decides password vs PIN over the job's creation-time hint. */
+  keyStatus: InheritVaultKeyStatus | null
   pending: "confirm" | "cancel" | null
   onConfirm: (unlock: InheritUnlockInput) => Promise<void>
   onCancel: () => Promise<void>
@@ -33,9 +35,11 @@ const { t } = useI18n()
 const now = useNowTick(1000)
 const unlock = useInheritUnlock()
 
+const unlockMode = computed(() => resolveUnlockMode(props.keyStatus, props.job.unlock))
+
 watch(
-  () => [props.job.unlock?.kind, props.job.unlock?.initialized] as const,
-  ([kind, initialized]) => unlock.configure(kind ?? "password", initialized ?? true),
+  () => [unlockMode.value.kind, unlockMode.value.initialized] as const,
+  ([kind, initialized]) => unlock.configure(kind, initialized),
   { immediate: true },
 )
 
@@ -129,7 +133,6 @@ function updateField(field: "secret" | "repeat" | "previousPassword", value: str
         :state="unlock.state"
         id-prefix="inherit-confirm"
         :disabled="busy"
-        :first-use="job.unlock?.initialized === false"
         @update="updateField"
         @submit="submit"
         @reset-vault="emit('reset-vault')"

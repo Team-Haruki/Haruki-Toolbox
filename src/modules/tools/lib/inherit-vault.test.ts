@@ -4,6 +4,7 @@ import {
   normalizeRevealedCode,
   normalizeVaultEntries,
   normalizeVaultKeyStatus,
+  resolveUnlockMode,
   toUnlockBody,
 } from "@/modules/tools/lib/inherit-vault"
 import { describeInheritApiError, describeJobError, formatInheritRemaining } from "@/modules/tools/lib/inherit-messages"
@@ -54,6 +55,40 @@ describe("vault payloads", () => {
     expect(isVaultCodeLive(entry, Date.parse("2026-10-30T23:59:59Z"))).toBe(true)
     expect(isVaultCodeLive(entry, Date.parse("2026-10-31T00:00:01Z"))).toBe(false)
     expect(isVaultCodeLive({ hasCode: false, codeExpiresAt: null }, 0)).toBe(false)
+  })
+})
+
+describe("password or PIN", () => {
+  it("follows the key status the backend reports for each kind of account", () => {
+    // A password account before and after its vault exists.
+    expect(resolveUnlockMode(normalizeVaultKeyStatus({ initialized: false, kind: "password", identity_has_password: true })))
+      .toEqual({ kind: "password", initialized: false })
+    expect(resolveUnlockMode(normalizeVaultKeyStatus({ initialized: true, kind: "password", key_version: 1 })))
+      .toEqual({ kind: "password", initialized: true })
+    // A Google / Apple / passkey account: never a password field.
+    expect(resolveUnlockMode(normalizeVaultKeyStatus({ initialized: false, kind: "pin", identity_has_password: false })))
+      .toEqual({ kind: "pin", initialized: false })
+    expect(resolveUnlockMode(normalizeVaultKeyStatus({ initialized: true, kind: "pin", key_version: 1 })))
+      .toEqual({ kind: "pin", initialized: true })
+  })
+
+  it("prefers the live key status over the job's creation-time hint", () => {
+    // The PIN vault was reset in the confirm step: a new PIN is set, typed twice.
+    expect(resolveUnlockMode({ kind: "pin", initialized: false }, { kind: "pin", initialized: true }))
+      .toEqual({ kind: "pin", initialized: false })
+    // A PIN vault reset after the account added a password: the password is asked now.
+    expect(resolveUnlockMode({ kind: "password", initialized: false }, { kind: "pin", initialized: true }))
+      .toEqual({ kind: "password", initialized: false })
+  })
+
+  it("falls back to the job hint, then to the password, when the key status is unknown", () => {
+    expect(resolveUnlockMode(null, { kind: "pin", initialized: false })).toEqual({ kind: "pin", initialized: false })
+    expect(resolveUnlockMode(undefined, null)).toEqual({ kind: "password", initialized: true })
+  })
+
+  it("reads an unknown or missing kind as the password", () => {
+    expect(normalizeVaultKeyStatus({ initialized: true }).kind).toBe("password")
+    expect(normalizeVaultKeyStatus({ initialized: true, kind: "passkey" }).kind).toBe("password")
   })
 })
 

@@ -22,6 +22,8 @@ const props = withDefaults(defineProps<{
   unsaved?: boolean
   /** The code is in the vault and can be shown again for 24 hours. */
   savedToVault?: boolean
+  /** Shows what to do with the code next (restore, link a platform login, clean up). */
+  nextSteps?: boolean
   /** Shows the "I have written it down" acknowledgement when set. */
   acknowledged?: boolean | null
   title?: string
@@ -31,6 +33,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   unsaved: false,
   savedToVault: false,
+  nextSteps: false,
   acknowledged: null,
   title: "",
   description: "",
@@ -133,6 +136,15 @@ const fields = computed(() => [
         <ShieldCheck class="mt-0.5 size-4 shrink-0" />
         {{ t("tools.uploadData.inheritJob.newCode.savedToVault") }}
       </p>
+    </div>
+
+    <div v-if="nextSteps" class="mt-4 space-y-1.5 border-t pt-3 text-sm" data-testid="inherit-next-steps">
+      <p class="font-medium">{{ t("tools.uploadData.inheritJob.newCode.nextSteps.title") }}</p>
+      <ol class="list-decimal space-y-1 ps-5 text-muted-foreground">
+        <li>{{ t("tools.uploadData.inheritJob.newCode.nextSteps.restore") }}</li>
+        <li data-testid="inherit-next-platform-link">{{ t("tools.uploadData.inheritJob.newCode.nextSteps.platformLink") }}</li>
+        <li>{{ t("tools.uploadData.inheritJob.newCode.nextSteps.cleanup") }}</li>
+      </ol>
     </div>
 
     <div v-if="acknowledged !== null" class="mt-4 border-t pt-3">

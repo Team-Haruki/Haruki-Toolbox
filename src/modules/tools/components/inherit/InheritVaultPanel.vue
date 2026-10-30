@@ -26,7 +26,7 @@ import { formatLocalizedDateTime } from "@/lib/date-time"
 import { useNowTick } from "@/composables/useNowTick"
 import { toInheritApiError } from "@/modules/tools/api/inherit"
 import type { InheritNewPasswordMode } from "@/modules/tools/lib/inherit-job"
-import { isVaultCodeLive, type InheritVaultEntry } from "@/modules/tools/lib/inherit-vault"
+import { isVaultCodeLive, resolveUnlockMode, type InheritVaultEntry } from "@/modules/tools/lib/inherit-vault"
 import { describeInheritApiError, describeJobWarning, formatInheritRemaining } from "@/modules/tools/lib/inherit-messages"
 import { useInheritUnlock } from "@/modules/tools/composables/useInheritUnlock"
 import type { InheritVaultController } from "@/modules/tools/composables/useInheritVault"
@@ -82,7 +82,8 @@ function credentialLive(entry: InheritVaultEntry): boolean {
 
 function openUnlock(kind: UnlockAction, entry: InheritVaultEntry) {
   unlock.reset()
-  unlock.configure(keyStatus.value?.kind ?? "password", true)
+  const mode = resolveUnlockMode(keyStatus.value)
+  unlock.configure(mode.kind, mode.initialized)
   action.kind = kind
   action.entryId = entry.id
   action.mode = "random"
@@ -174,6 +175,11 @@ function updateUnlockField(field: "secret" | "repeat" | "previousPassword", valu
   unlock.state[field] = value
 }
 
+/** The secret this owner opens the vault with, named the way the fields name it. */
+const vaultSecretName = computed(() => keyStatus.value?.kind === "pin"
+  ? t("tools.uploadData.inheritJob.confirm.pin")
+  : t("tools.uploadData.inheritJob.confirm.password"))
+
 const unlockTitle = computed(() => action.kind === "reveal"
   ? t("tools.uploadData.inheritVault.reveal.title")
   : t("tools.uploadData.inheritVault.reissue.title"))
@@ -203,7 +209,7 @@ defineExpose({ openReset })
           <RefreshCw :class="['size-4', loading ? 'animate-spin' : '']" />
         </Button>
       </div>
-      <CardDescription class="leading-relaxed">{{ t("tools.uploadData.inheritVault.description") }}</CardDescription>
+      <CardDescription class="leading-relaxed">{{ t("tools.uploadData.inheritVault.description", { secret: vaultSecretName }) }}</CardDescription>
     </CardHeader>
 
     <CardContent class="space-y-3">
@@ -374,14 +380,17 @@ defineExpose({ openReset })
   >
     <div class="space-y-3">
       <div v-if="reset.needsPassword" class="space-y-1.5">
-        <Label for="inherit-vault-reset-password">{{ t("tools.uploadData.inheritVault.reset.password") }}</Label>
+        <div class="space-y-0.5">
+          <Label for="inherit-vault-reset-password">{{ t("tools.uploadData.inheritVault.reset.password") }}</Label>
+          <p id="inherit-vault-reset-password-hint" class="text-xs text-muted-foreground">{{ t("tools.uploadData.inheritJob.confirm.passwordHelp") }}</p>
+        </div>
         <Input
           id="inherit-vault-reset-password"
           v-model="reset.password"
           type="password"
           autocomplete="current-password"
           :aria-invalid="reset.passwordError ? 'true' : undefined"
-          aria-describedby="inherit-vault-reset-password-error"
+          :aria-describedby="reset.passwordError ? 'inherit-vault-reset-password-error inherit-vault-reset-password-hint' : 'inherit-vault-reset-password-hint'"
         />
         <FieldError id="inherit-vault-reset-password-error" :message="reset.passwordError" />
       </div>
