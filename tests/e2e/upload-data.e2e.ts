@@ -70,16 +70,3 @@ test("manual upload selector offers write grants and disables unwritable account
   await expect(trigger).toContainText(/授权|Granted/)
   await expect(page.getByText(/他人授权给你的账号|granted to you by another user/)).toBeVisible()
 })
-
-test("JP inherit is suspended with rotation notice while EN remains available", async ({ page }) => {
-  await page.route("**/*", (route) => new URL(route.request().url()).host === "127.0.0.1:4173" ? route.continue() : route.abort())
-  await page.goto("/upload-data?tab=inherit")
-  await expect(page.getByText(/日服引继码功能已临时禁用|JP transfer-code uploads are temporarily disabled/)).toBeVisible()
-  await expect(page.getByText(/请立即进入日服游戏|Please open the JP game immediately/)).toBeVisible()
-  await expect(page.locator("#inherit-id")).toBeDisabled()
-  await expect(page.locator('button[form="upload-data-inherit-form"]')).toBeDisabled()
-  await page.getByRole("combobox").first().click()
-  await page.getByRole("option", { name: /国际服|Global|EN|International/ }).click()
-  await expect(page.locator("#inherit-id")).toBeEnabled()
-  await expect(page.locator('button[form="upload-data-inherit-form"]')).toBeEnabled()
-})

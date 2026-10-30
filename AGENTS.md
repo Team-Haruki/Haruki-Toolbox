@@ -206,6 +206,7 @@ Rules:
 - Do not bypass `request()` response handling unless you are working inside the auth/browser-flow integration layer.
 - Do not hand-roll `<img>` error handling for Sekai/CDN images: the Service Worker caches them CacheFirst with opaque responses (errors included), so recovery must go through `@/shared/sekai/image-recovery` (purge + cache-busted retry). On the China CDN route, a failing host (network error, timeout or 5xx, found by a HEAD probe in `@/shared/sekai/asset-image-fallback`) moves an image to the same path on the global host first; a 404 never does.
 - The story player (`pjsk-scenario-player`) preloads every file of an episode into the HTTP cache before it plays, and its resolver's `fallback()` (`src/modules/story/engine/urls.ts`) moves any load to the global host when the China CDN fails; keep new story asset URLs on that resolver.
+- Transfer-code (inherit) uploads are backend jobs (`src/modules/tools/api/inherit.ts`): followed over a ticketed WebSocket with HTTP polling as fallback (`lib/inherit-job-connection.ts`), confirmed with the Toolbox password or vault PIN, and their new transfer code lives in the owner's encrypted vault. Never put a transfer code, its password or an unlock secret in browser storage; only the followed job id is kept (`lib/inherit-job-storage.ts`).
 - Do not commit generated artifacts like `dist/`, `coverage/` or Playwright `test-results/`.
 
 ## Recommended Change Checklist

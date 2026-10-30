@@ -1,10 +1,10 @@
 {
   "name": "haruki-toolbox",
   "private": true,
-  "version": "9.25.1",
+  "version": "9.26.0",
   "type": "module",
   "harukiToolbox": {
-    "minSupportedVersion": "9.5.1"
+    "minSupportedVersion": "9.26.0"
   },
   "scripts": {
     "dev": "bunx --bun vite",

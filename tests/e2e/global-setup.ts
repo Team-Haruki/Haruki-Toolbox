@@ -32,6 +32,7 @@ const WARM_ROUTES = [
   "/user/register",
   "/user/verification",
   "/sekai-station",
+  "/upload-data?tab=inherit",
 ]
 
 export default async function globalSetup(config: FullConfig) {

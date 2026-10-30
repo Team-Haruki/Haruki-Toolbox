@@ -1,239 +1,355 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, toRef, useTemplateRef, watch } from "vue"
 import type { AcceptableValue } from "reka-ui"
-import type { InheritServer, UploadDataType } from "@/types"
 import { useI18n } from "vue-i18n"
+import { toast } from "vue-sonner"
+import { RouterLink, useRoute } from "vue-router"
+import {
+  Database,
+  Dices,
+  Globe,
+  Loader2,
+  Lock,
+  LogIn,
+  LucideAlertTriangle,
+  LucideChevronDown,
+  LucideFileKey,
+  Repeat,
+  ScanSearch,
+  ServerCog,
+  User,
+} from "lucide-vue-next"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input, InputWithToggle } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { RouterLink } from "vue-router"
-import {
-  Database,
-  Globe,
-  Loader2,
-  Lock,
-  LucideChevronDown,
-  LucideFileKey,
-  LucideAlertTriangle,
-  ServerCog,
-  UploadCloud,
-  User,
-} from "lucide-vue-next"
-import { INHERIT_FIELD_IDS, type InheritField } from "@/modules/tools/composables/useUploadDataTool"
+import FieldError from "@/shared/components/FieldError.vue"
+import { useUserStore } from "@/shared/stores/user"
+import { toInheritApiError } from "@/modules/tools/api/inherit"
+import type { InheritNewPasswordMode } from "@/modules/tools/lib/inherit-job"
+import { describeInheritApiError } from "@/modules/tools/lib/inherit-messages"
+import { INHERIT_FIELD_IDS, useInheritUploadForm } from "@/modules/tools/composables/useInheritUploadForm"
+import { useInheritJob } from "@/modules/tools/composables/useInheritJob"
+import { useInheritVault } from "@/modules/tools/composables/useInheritVault"
+import InheritJobPanel from "@/modules/tools/components/inherit/InheritJobPanel.vue"
+import InheritVaultPanel from "@/modules/tools/components/inherit/InheritVaultPanel.vue"
 
 const props = defineProps<{
-  dataType: UploadDataType
-  inheritServer: InheritServer
-  inheritId: string
-  inheritPassword: string
-  fieldErrors: Record<InheritField, string>
-  rememberInherit: boolean
-  isSubmittingInherit: boolean
   /** MySekai uploads require a verified QQ binding; hidden otherwise. */
   canShowMySekaiDataType: boolean
 }>()
 
-const emit = defineEmits<{
-  (event: "update:dataType", value: UploadDataType): void
-  (event: "update:inheritServer", value: InheritServer): void
-  (event: "update:inheritId", value: string): void
-  (event: "update:inheritPassword", value: string): void
-  (event: "update:rememberInherit", value: boolean): void
-  (event: "clear-field-error", field: InheritField): void
-  (event: "submit"): void
-}>()
+const { t, locale } = useI18n()
+const route = useRoute()
+const userStore = useUserStore()
+const currentUserId = () => (userStore.isLoggedIn ? userStore.userId : null)
 
-const FIELD_IDS = INHERIT_FIELD_IDS
-const ERROR_IDS: Record<InheritField, string> = {
+const form = useInheritUploadForm(toRef(props, "canShowMySekaiDataType"))
+const inheritJob = useInheritJob(currentUserId)
+const vault = useInheritVault(currentUserId)
+const vaultPanel = useTemplateRef<InstanceType<typeof InheritVaultPanel>>("vaultPanel")
+
+const notesOpen = ref(false)
+const loginRoute = computed(() => ({ name: "user.login", query: { redirect: route.fullPath } }))
+
+const ERROR_IDS = {
   inheritId: "inherit-id-error",
   inheritPassword: "inherit-password-error",
-}
+} as const
+
+const PASSWORD_MODES: { value: InheritNewPasswordMode; icon: typeof Repeat }[] = [
+  { value: "reuse", icon: Repeat },
+  { value: "random", icon: Dices },
+]
 
 function handleDataTypeChange(value: AcceptableValue) {
   if (value === "suite" || (value === "mysekai" && props.canShowMySekaiDataType)) {
-    emit("update:dataType", value)
+    form.dataType.value = value
   }
 }
 
 function handleServerChange(value: AcceptableValue) {
   if (value === "jp" || value === "en") {
-    emit("update:inheritServer", value)
+    form.server.value = value
   }
 }
 
-const { t, locale } = useI18n()
-const notesOpen = ref(false)
+const FIELD_ERROR_CODES: Record<string, "inheritId" | "inheritPassword"> = {
+  inherit_id_invalid: "inheritId",
+  inherit_password_invalid: "inheritPassword",
+  reuse_password_invalid: "inheritPassword",
+}
 
-// Temporary: JP inherit login is disabled while the changed JP inherit flow is verified.
-const JP_INHERIT_DISABLED_NOTICE = "由于日服继承登录发生变更，我们正在进行验证，因此临时禁用日服的继承登录功能"
-const isJPInheritDisabled = computed(() => props.inheritServer === "jp")
+async function submit() {
+  if (inheritJob.creating.value || !form.validate()) return
+  try {
+    await inheritJob.create(form.toCreateInput())
+    form.clearSecrets()
+  } catch (error) {
+    const problem = toInheritApiError(error)
+    const message = describeInheritApiError(t, problem)
+    const field = FIELD_ERROR_CODES[problem.code]
+    if (field) {
+      form.fieldErrors[field] = message
+      document.getElementById(INHERIT_FIELD_IDS[field])?.focus()
+      return
+    }
+    toast.error(t("tools.uploadData.toast.uploadFailedTitle"), { description: message })
+  }
+}
+
+function goToVault() {
+  document.getElementById("inherit-vault")?.scrollIntoView({ behavior: "smooth", block: "start" })
+}
+
+function openVaultReset() {
+  vaultPanel.value?.openReset()
+}
+
+// The vault gains an entry once the credential is stored, and its code
+// changes when the new one is: keep its list in step with the job.
+watch(
+  () => [inheritJob.job.value?.vaultEntryId ?? "", inheritJob.job.value?.status ?? "", inheritJob.newCode.value?.inheritId ?? ""] as const,
+  ([entryId, status, codeId], previous) => {
+    if (!previous) return
+    if (entryId !== previous[0] || status !== previous[1] || codeId !== previous[2]) void vault.refresh()
+  },
+)
 </script>
 
 <template>
-  <Alert v-if="isJPInheritDisabled" variant="destructive" class="mb-2">
-    <LucideAlertTriangle class="h-5 w-5" />
-    <AlertDescription class="text-current">
-      <p>{{ JP_INHERIT_DISABLED_NOTICE }}</p>
-    </AlertDescription>
-  </Alert>
+  <template v-if="!userStore.isLoggedIn">
+    <Card data-testid="inherit-login-required">
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2">
+          <ServerCog class="h-6 w-6" />
+          {{ t("tools.uploadData.inheritTab.title") }}
+        </CardTitle>
+        <CardDescription>{{ t("tools.uploadData.inheritTab.loginRequired.description") }}</CardDescription>
+      </CardHeader>
+      <CardFooter class="justify-end">
+        <Button as-child>
+          <RouterLink :to="loginRoute">
+            <LogIn class="size-4" />
+            {{ t("tools.uploadData.inheritTab.loginRequired.action") }}
+          </RouterLink>
+        </Button>
+      </CardFooter>
+    </Card>
+  </template>
 
-  <!-- One calm notice that still states the real risk in plain words. -->
-  <Alert class="mb-2 border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-100">
-    <LucideAlertTriangle class="h-5 w-5" />
-    <AlertTitle>{{ t("tools.uploadData.inheritTab.alerts.warning1.title") }}</AlertTitle>
-    <AlertDescription class="space-y-1 text-current">
-      <p>{{ t("tools.uploadData.inheritTab.alerts.warning2.text") }}</p>
-      <p>{{ t("tools.uploadData.inheritTab.alerts.warning1.description") }}</p>
-    </AlertDescription>
-  </Alert>
+  <template v-else>
+    <div v-if="inheritJob.resuming.value && !inheritJob.job.value" class="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+      <Loader2 class="size-4 animate-spin" />
+    </div>
 
-  <Collapsible v-model:open="notesOpen" class="mb-2 rounded-lg border bg-muted/20">
-    <CollapsibleTrigger
-      class="flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium"
-    >
-      <span class="flex items-center gap-2">
-        <LucideFileKey class="size-4 text-muted-foreground" />
-        {{ t("tools.uploadData.inheritTab.alerts.notesTitle") }}
-      </span>
-      <LucideChevronDown :class="['size-4 text-muted-foreground transition-transform duration-200', notesOpen ? 'rotate-180' : '']" />
-    </CollapsibleTrigger>
-    <CollapsibleContent>
-      <div class="space-y-4 border-t px-4 py-3 text-sm text-muted-foreground">
-        <div class="space-y-1">
-          <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.reminder1.title") }}</p>
-          <p>{{ t("tools.uploadData.inheritTab.alerts.reminder1.line1") }}</p>
-          <p>{{ t("tools.uploadData.inheritTab.alerts.reminder1.line2") }}</p>
-        </div>
-        <div class="space-y-2">
-          <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.reminder2.title") }}</p>
-          <p>{{ t("tools.uploadData.inheritTab.alerts.reminder2.text") }}</p>
-          <Button as-child variant="outline" size="sm">
-            <RouterLink to="/user/game-account-bindings">
-              {{ t("tools.uploadData.inheritTab.alerts.reminder2.bindLink") }}
-            </RouterLink>
+    <InheritJobPanel
+      v-else-if="inheritJob.job.value"
+      :job="inheritJob.job.value"
+      :new-code="inheritJob.newCode.value"
+      :code-acknowledged="inheritJob.codeAcknowledged.value"
+      :connection-state="inheritJob.connectionState.value"
+      :command-pending="inheritJob.commandPending.value"
+      :expired="inheritJob.expired.value"
+      :can-dismiss="inheritJob.canDismiss.value"
+      :on-confirm="inheritJob.confirm"
+      :on-cancel="inheritJob.cancel"
+      @acknowledge="inheritJob.acknowledgeCode"
+      @dismiss="inheritJob.dismiss"
+      @refresh="inheritJob.refresh"
+      @go-vault="goToVault"
+      @reset-vault="openVaultReset"
+    />
+
+    <template v-else>
+      <Alert class="mb-2 border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-100">
+        <LucideAlertTriangle class="h-5 w-5" />
+        <AlertTitle>{{ t("tools.uploadData.inheritTab.alerts.warning1.title") }}</AlertTitle>
+        <AlertDescription class="space-y-1 text-current">
+          <p>{{ t("tools.uploadData.inheritTab.alerts.warning1.description") }}</p>
+          <p>{{ t("tools.uploadData.inheritTab.alerts.warning2.text") }}</p>
+        </AlertDescription>
+      </Alert>
+
+      <Collapsible v-model:open="notesOpen" class="mb-2 rounded-lg border bg-muted/20">
+        <CollapsibleTrigger class="flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium">
+          <span class="flex items-center gap-2">
+            <LucideFileKey class="size-4 text-muted-foreground" />
+            {{ t("tools.uploadData.inheritTab.alerts.notesTitle") }}
+          </span>
+          <LucideChevronDown :class="['size-4 text-muted-foreground transition-transform duration-200', notesOpen ? 'rotate-180' : '']" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div class="space-y-4 border-t px-4 py-3 text-sm text-muted-foreground">
+            <div class="space-y-1">
+              <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.flow.title") }}</p>
+              <ol class="list-decimal space-y-1 ps-5">
+                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step1") }}</li>
+                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step2") }}</li>
+                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step3") }}</li>
+                <li>{{ t("tools.uploadData.inheritTab.alerts.flow.step4") }}</li>
+              </ol>
+            </div>
+            <div class="space-y-1">
+              <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.storage.title") }}</p>
+              <p>{{ t("tools.uploadData.inheritTab.alerts.storage.text") }}</p>
+            </div>
+            <div class="space-y-2">
+              <p class="font-medium text-foreground">{{ t("tools.uploadData.inheritTab.alerts.reminder2.title") }}</p>
+              <p>{{ t("tools.uploadData.inheritTab.alerts.reminder2.text") }}</p>
+              <Button as-child variant="outline" size="sm">
+                <RouterLink to="/user/game-account-bindings">
+                  {{ t("tools.uploadData.inheritTab.alerts.reminder2.bindLink") }}
+                </RouterLink>
+              </Button>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            <ServerCog class="h-6 w-6" />
+            {{ t("tools.uploadData.inheritTab.title") }}
+          </CardTitle>
+          <CardDescription>{{ t("tools.uploadData.inheritTab.description") }}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form id="upload-data-inherit-form" novalidate @submit.prevent="submit">
+            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="flex min-w-0 flex-col space-y-1.5">
+                <Label :for="INHERIT_FIELD_IDS.inheritId">{{ t("tools.uploadData.inheritTab.fields.inheritId") }}</Label>
+                <div class="relative min-w-0 w-full items-center">
+                  <Input
+                    :id="INHERIT_FIELD_IDS.inheritId"
+                    v-model="form.inheritId.value"
+                    class="pl-10"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    :placeholder="t('tools.uploadData.inheritTab.fields.inheritIdPlaceholder')"
+                    :aria-invalid="form.fieldErrors.inheritId ? 'true' : undefined"
+                    :aria-describedby="form.fieldErrors.inheritId ? ERROR_IDS.inheritId : undefined"
+                    @update:model-value="form.clearFieldError('inheritId')"
+                  />
+                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                    <User class="size-4 text-muted-foreground" />
+                  </span>
+                </div>
+                <FieldError :id="ERROR_IDS.inheritId" :message="form.fieldErrors.inheritId" />
+              </div>
+              <div class="flex min-w-0 flex-col space-y-1.5">
+                <Label :for="INHERIT_FIELD_IDS.inheritPassword">{{ t("tools.uploadData.inheritTab.fields.inheritPassword") }}</Label>
+                <div class="relative min-w-0 w-full items-center">
+                  <InputWithToggle
+                    :id="INHERIT_FIELD_IDS.inheritPassword"
+                    v-model="form.inheritPassword.value"
+                    type="password"
+                    class="w-full pl-10"
+                    autocomplete="off"
+                    :placeholder="t('tools.uploadData.inheritTab.fields.inheritPasswordPlaceholder')"
+                    :aria-invalid="form.fieldErrors.inheritPassword ? 'true' : undefined"
+                    :aria-describedby="form.fieldErrors.inheritPassword ? ERROR_IDS.inheritPassword : undefined"
+                    @update:model-value="form.clearFieldError('inheritPassword')"
+                  />
+                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                    <Lock class="size-4 text-muted-foreground" />
+                  </span>
+                </div>
+                <FieldError :id="ERROR_IDS.inheritPassword" :message="form.fieldErrors.inheritPassword" />
+              </div>
+              <div class="flex min-w-0 flex-col space-y-1.5">
+                <Label for="inherit-server-select">{{ t("tools.uploadData.inheritTab.fields.server") }}</Label>
+                <div class="relative min-w-0 w-full items-center">
+                  <Select :key="locale" id="inherit-server-select" :model-value="form.server.value" @update:model-value="handleServerChange">
+                    <SelectTrigger class="w-full pl-10">
+                      <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.serverPlaceholder')" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="jp">{{ t("tools.uploadData.region.jp") }}</SelectItem>
+                      <SelectItem value="en">{{ t("tools.uploadData.region.en") }}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
+                    <Globe class="size-4 text-muted-foreground" />
+                  </span>
+                </div>
+              </div>
+              <div class="flex min-w-0 flex-col space-y-1.5">
+                <Label for="inherit-data-type-select">{{ t("tools.uploadData.inheritTab.fields.dataType") }}</Label>
+                <div class="relative min-w-0 w-full items-center">
+                  <Select :key="locale" id="inherit-data-type-select" :model-value="form.dataType.value" @update:model-value="handleDataTypeChange">
+                    <SelectTrigger class="w-full pl-10">
+                      <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.dataTypePlaceholder')" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="suite">{{ t("tools.uploadData.dataTypes.suite") }}</SelectItem>
+                      <SelectItem v-if="canShowMySekaiDataType" value="mysekai">
+                        {{ t("tools.uploadData.dataTypes.mysekai") }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
+                    <Database class="size-4 text-muted-foreground" />
+                  </span>
+                </div>
+              </div>
+
+              <fieldset class="min-w-0 space-y-2 sm:col-span-2" data-testid="inherit-new-password-mode">
+                <legend class="mb-1.5 text-sm font-medium">{{ t("tools.uploadData.inheritTab.newPassword.label") }}</legend>
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <label
+                    v-for="mode in PASSWORD_MODES"
+                    :key="mode.value"
+                    :class="[
+                      'flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors',
+                      form.newPasswordMode.value === mode.value ? 'border-primary bg-primary/5' : 'hover:bg-muted/40',
+                    ]"
+                  >
+                    <input
+                      v-model="form.newPasswordMode.value"
+                      type="radio"
+                      name="inherit-new-password-mode"
+                      :value="mode.value"
+                      class="mt-1 accent-primary"
+                      @change="form.clearFieldError('inheritPassword')"
+                    >
+                    <span class="min-w-0 space-y-0.5">
+                      <span class="flex items-center gap-1.5 text-sm font-medium">
+                        <component :is="mode.icon" class="size-4 text-muted-foreground" />
+                        {{ t(`tools.uploadData.inheritTab.newPassword.${mode.value}`) }}
+                      </span>
+                      <span class="block text-xs text-muted-foreground">{{ t(`tools.uploadData.inheritTab.newPassword.${mode.value}Hint`) }}</span>
+                    </span>
+                  </label>
+                </div>
+                <p
+                  v-if="form.newPasswordMode.value === 'reuse' && form.reuseBlocked.value"
+                  class="text-xs text-amber-700 dark:text-amber-300"
+                  data-testid="inherit-reuse-blocked"
+                >
+                  {{ t("tools.uploadData.inheritTab.newPassword.reuseBlocked") }}
+                </p>
+              </fieldset>
+            </div>
+          </form>
+        </CardContent>
+        <CardFooter class="flex items-center justify-end">
+          <Button type="submit" form="upload-data-inherit-form" :disabled="inheritJob.creating.value">
+            <Loader2 v-if="inheritJob.creating.value" class="mr-2 h-4 w-4 animate-spin" />
+            <ScanSearch v-else class="mr-2 h-4 w-4" />
+            {{ inheritJob.creating.value ? t("tools.uploadData.inheritTab.submitting") : t("tools.uploadData.inheritTab.submit") }}
           </Button>
-        </div>
-      </div>
-    </CollapsibleContent>
-  </Collapsible>
+        </CardFooter>
+      </Card>
+    </template>
 
-  <Card>
-    <CardHeader>
-      <CardTitle class="flex items-center gap-2">
-        <ServerCog class="h-6 w-6" />
-        {{ t("tools.uploadData.inheritTab.title") }}
-      </CardTitle>
-      <CardDescription>{{ t("tools.uploadData.inheritTab.description") }}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <form id="upload-data-inherit-form" novalidate @submit.prevent="!isJPInheritDisabled && emit('submit')">
-        <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
-          <div class="flex min-w-0 flex-col space-y-1.5">
-            <Label :for="FIELD_IDS.inheritId">{{ t("tools.uploadData.inheritTab.fields.inheritId") }}</Label>
-            <div class="relative min-w-0 w-full items-center">
-              <Input
-                :id="FIELD_IDS.inheritId"
-                class="pl-10"
-                autocomplete="off"
-                autocapitalize="off"
-                spellcheck="false"
-                :placeholder="t('tools.uploadData.inheritTab.fields.inheritIdPlaceholder')"
-                :disabled="inheritServer === 'jp'"
-                :model-value="inheritId"
-                :aria-invalid="fieldErrors.inheritId ? 'true' : undefined"
-                :aria-describedby="fieldErrors.inheritId ? ERROR_IDS.inheritId : undefined"
-                @update:model-value="emit('update:inheritId', String($event)); emit('clear-field-error', 'inheritId')"
-              />
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <User class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-            <p v-if="fieldErrors.inheritId" :id="ERROR_IDS.inheritId" role="alert" class="text-xs text-destructive">{{ fieldErrors.inheritId }}</p>
-          </div>
-          <div class="flex min-w-0 flex-col space-y-1.5">
-            <Label :for="FIELD_IDS.inheritPassword">{{ t("tools.uploadData.inheritTab.fields.inheritPassword") }}</Label>
-            <div class="relative min-w-0 w-full items-center">
-              <InputWithToggle
-                :id="FIELD_IDS.inheritPassword"
-                type="password"
-                class="w-full pl-10"
-                autocomplete="off"
-                :placeholder="t('tools.uploadData.inheritTab.fields.inheritPasswordPlaceholder')"
-                :disabled="inheritServer === 'jp'"
-                :model-value="inheritPassword"
-                :aria-invalid="fieldErrors.inheritPassword ? 'true' : undefined"
-                :aria-describedby="fieldErrors.inheritPassword ? ERROR_IDS.inheritPassword : undefined"
-                @update:model-value="emit('update:inheritPassword', String($event)); emit('clear-field-error', 'inheritPassword')"
-              />
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <Lock class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-            <p v-if="fieldErrors.inheritPassword" :id="ERROR_IDS.inheritPassword" role="alert" class="text-xs text-destructive">{{ fieldErrors.inheritPassword }}</p>
-          </div>
-          <div class="flex min-w-0 flex-col space-y-1.5">
-            <Label for="inherit-server-select">{{ t("tools.uploadData.inheritTab.fields.server") }}</Label>
-            <div class="relative min-w-0 w-full items-center">
-              <Select :key="locale" id="inherit-server-select" :model-value="inheritServer" @update:model-value="handleServerChange">
-                <SelectTrigger class="w-full pl-10">
-                  <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.serverPlaceholder')" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="jp">{{ t("tools.uploadData.region.jp") }}</SelectItem>
-                  <SelectItem value="en">{{ t("tools.uploadData.region.en") }}</SelectItem>
-                </SelectContent>
-              </Select>
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
-                <Globe class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-          </div>
-          <div class="flex min-w-0 flex-col space-y-1.5">
-            <Label for="inherit-data-type-select">{{ t("tools.uploadData.inheritTab.fields.dataType") }}</Label>
-            <div class="relative min-w-0 w-full items-center">
-              <Select :key="locale" id="inherit-data-type-select" :model-value="dataType" @update:model-value="handleDataTypeChange">
-                <SelectTrigger class="w-full pl-10">
-                  <SelectValue :placeholder="t('tools.uploadData.inheritTab.fields.dataTypePlaceholder')" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="suite">{{ t("tools.uploadData.dataTypes.suite") }}</SelectItem>
-                  <SelectItem v-if="canShowMySekaiDataType" value="mysekai">
-                    {{ t("tools.uploadData.dataTypes.mysekai") }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2 pointer-events-none">
-                <Database class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-          </div>
-          <div class="flex items-start gap-3 rounded-md border p-3 sm:col-span-2">
-            <Checkbox
-              id="remember-inherit"
-              :disabled="inheritServer === 'jp'"
-              class="mt-0.5"
-              :model-value="rememberInherit"
-              @update:model-value="value => emit('update:rememberInherit', value === true)"
-            />
-            <label for="remember-inherit" class="flex min-w-0 flex-1 cursor-pointer flex-col gap-1">
-              <span class="text-sm font-medium">{{ t("tools.uploadData.inheritTab.remember.label") }}</span>
-              <span class="text-xs text-muted-foreground">{{ t("tools.uploadData.inheritTab.remember.description") }}</span>
-            </label>
-          </div>
-        </div>
-      </form>
-    </CardContent>
-    <CardFooter class="flex items-center justify-end">
-      <Button type="submit" form="upload-data-inherit-form" :disabled="isSubmittingInherit || isJPInheritDisabled">
-        <Loader2 v-if="isSubmittingInherit" class="mr-2 h-4 w-4 animate-spin" />
-        <UploadCloud v-else class="mr-2 h-4 w-4" />
-        {{ isSubmittingInherit ? t("tools.uploadData.inheritTab.submitting") : t("tools.uploadData.inheritTab.submit") }}
-      </Button>
-    </CardFooter>
-  </Card>
+    <div class="mt-3">
+      <InheritVaultPanel ref="vaultPanel" :vault="vault" />
+    </div>
+  </template>
 </template>

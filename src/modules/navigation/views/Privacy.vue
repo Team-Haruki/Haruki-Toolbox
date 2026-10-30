@@ -24,6 +24,11 @@ const sections = [
     bulletKeys: ["server", "local", "requests"],
   },
   {
+    key: "inheritVault",
+    paragraphKeys: ["summary"],
+    bulletKeys: ["stored", "purpose", "encryption", "retention", "access", "audit", "delete", "local"],
+  },
+  {
     key: "sharing",
     paragraphKeys: ["summary"],
     bulletKeys: ["noSale", "harukiServices", "google", "cdn", "email"],

@@ -234,7 +234,7 @@ export default {
     },
     "privacy": {
       "title": "Privacy Policy",
-      "lastUpdated": "Last updated: 2026-05-25",
+      "lastUpdated": "Last updated: 2026-10-30",
       "intro": "This Privacy Policy explains how Haruki Toolbox collects, uses, stores, shares, and protects your information. Haruki Dev Team is a fan-run volunteer development and maintenance group, and we aim to handle data in a clear, limited, and necessary way.",
       "contactLead": "For privacy questions, contact: ",
       "sections": {
@@ -282,13 +282,29 @@ export default {
             "summary": "Unless we actively clean up data, change service policy, or are required by law, server-side data may be retained long term to maintain account bindings, upload history, risk-control auditing, and service continuity."
           },
           "bullets": {
-            "server": "Server-side data, including game account bindings, upload records, suite/MySekai data, logs, and admin operation records, currently has no fixed retention period.",
+            "server": "Server-side data, including game account bindings, upload records, suite/MySekai data, logs, and admin operation records, currently has no fixed retention period, except the transfer-code vault (see section 5).",
             "local": "Logging out clears some local cached user data in your browser, but it does not automatically delete data already stored on the server.",
             "requests": "Deletion, export, and account closure are not currently self-service. Please contact Haruki Dev Team by email if you need these actions."
           }
         },
+        "inheritVault": {
+          "title": "5. Transfer-code vault",
+          "paragraphs": {
+            "summary": "When you upload data with a transfer code, the toolbox executes the transfer only after you confirm. After that, the device that generated the code can no longer sign in to the game account, so we issue you a new transfer code and keep the account credential and the new code encrypted in your transfer vault, so that you can get back into your account."
+          },
+          "bullets": {
+            "stored": "What is stored: the game account's login credential, the transfer code newly issued for it (transfer ID and password), the region, the game UID, and creation and expiry times. The code you entered is only used while the job runs and is discarded after the transfer; it is not stored.",
+            "purpose": "Why: only so that you can view the new code, or, if it is lost or no longer valid, have a new one issued from the stored credential and move the account back to your device. It is not used for anything else.",
+            "encryption": "Encryption: the credential and the code are encrypted with a key derived from your Toolbox password (or, for accounts without a password, the vault PIN you set), and then with a server key. The database, the server key or your password alone cannot open them.",
+            "retention": "Retention: the code is deleted 24 hours after it was issued and the credential after at most 7 days; when you choose \"I recovered it on my phone\" the record becomes unreadable at once and is deleted within minutes; resetting the vault deletes every record.",
+            "access": "Who can read it: only you, after entering your Toolbox password or vault PIN; Haruki Dev Team admins and operators cannot. The one exception: while an upload job runs (at most 1 hour), the server keeps a copy of the newest code under the server key alone so it can show it to you on the page, and deletes it when the job record expires; the credential is never kept that way.",
+            "audit": "Audit and notices: creating, confirming and cancelling jobs, storing credentials, viewing, re-issuing and destroying records, and creating, re-wrapping and resetting vault keys are recorded in the system log (without codes, passwords or full game UIDs); viewing or re-issuing a code sends a notice to your verified email address.",
+            "delete": "How to delete: you can destroy a single record, or reset the whole vault, at any time in the vault on the Upload data → Transfer code page. If you reset your Toolbox password through account recovery, the old records can no longer be opened and the only option is resetting the vault.",
+            "local": "Local data: the browser only remembers the id of a running job (at most 1 hour), never the transfer code or any password. The former \"remember transfer info on this device\" option has been removed, and transfer info it saved in your browser is cleared automatically."
+          }
+        },
         "sharing": {
-          "title": "5. Sharing and third-party services",
+          "title": "6. Sharing and third-party services",
           "paragraphs": {
             "summary": "We do not sell your personal information or use it for advertising profiles. We do not disclose your information to unrelated third parties except where necessary to provide the service, where you authorize it, or where required by law."
           },
@@ -301,7 +317,7 @@ export default {
           }
         },
         "security": {
-          "title": "6. Data security",
+          "title": "7. Data security",
           "paragraphs": {
             "summary": "We take reasonable technical and administrative measures to protect data, but no internet service can guarantee absolute security."
           },
@@ -311,7 +327,7 @@ export default {
           }
         },
         "rights": {
-          "title": "7. Your rights",
+          "title": "8. Your rights",
           "paragraphs": {
             "summary": "Where permitted by applicable law, you may request access, correction, export, deletion of certain personal information, or account closure."
           },
@@ -322,14 +338,14 @@ export default {
           }
         },
         "changes": {
-          "title": "8. Policy updates",
+          "title": "9. Policy updates",
           "paragraphs": {
             "summary": "We may update this Privacy Policy as features, services, or compliance needs change. The updated policy will be posted on this page and becomes effective when published."
           },
           "bullets": {}
         },
         "contact": {
-          "title": "9. Contact",
+          "title": "10. Contact",
           "paragraphs": {
             "summary": "If you have questions about this policy, personal information processing, or account data, contact Haruki Dev Team through the email address shown above."
           },
@@ -339,7 +355,7 @@ export default {
     },
     "tos": {
       "title": "Terms of Service",
-      "lastUpdated": "Last updated: 2026-05-25",
+      "lastUpdated": "Last updated: 2026-10-30",
       "intro": "By using Haruki Toolbox, you agree to these terms. If you do not agree, please stop using the service.",
       "contactLead": "For questions about these terms, contact: ",
       "sections": {
@@ -362,7 +378,7 @@ export default {
           "bullets": {
             "credentials": "If you notice account abnormality, credential leakage, or unauthorized use, update your password, revoke authorization, and contact us promptly.",
             "dataAccuracy": "You should ensure that submitted, bound, or uploaded data comes from accounts you are authorized to use and is as accurate and complete as possible.",
-            "adminSupport": "To handle feedback, tickets, risk control, security, or service support, admins may review user data, upload records, logs, and ticket content related to the issue."
+            "adminSupport": "To handle feedback, tickets, risk control, security, or service support, admins may review user data, upload records, logs, and ticket content related to the issue; the account credentials and transfer codes kept encrypted in the transfer-code vault are excluded, and admins cannot read them."
           }
         },
         "acceptableUse": {
