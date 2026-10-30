@@ -1,7 +1,7 @@
 {
   "name": "haruki-toolbox",
   "private": true,
-  "version": "9.26.0",
+  "version": "9.26.1",
   "type": "module",
   "harukiToolbox": {
     "minSupportedVersion": "9.26.0"

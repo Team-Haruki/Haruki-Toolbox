@@ -36,6 +36,18 @@ import {
 } from "@/modules/tools/lib/inherit-job-storage"
 import type { InheritUnlockInput } from "@/modules/tools/lib/inherit-vault"
 
+export interface InheritJobStart {
+  job: InheritJob
+  /** The backend already had a running job for this user and the page reattached to it. */
+  resumed: boolean
+}
+
+/** When the job was created, for the one-hour local record; now if the snapshot does not say. */
+function jobCreatedAtMs(job: InheritJob, now = Date.now()): number {
+  const parsed = job.createdAt ? Date.parse(job.createdAt) : Number.NaN
+  return Number.isFinite(parsed) && parsed <= now ? parsed : now
+}
+
 function createBrowserSocket(url: string): InheritSocketLike | null {
   if (typeof WebSocket === "undefined") return null
   return new WebSocket(url) as unknown as InheritSocketLike
@@ -162,23 +174,49 @@ export function useInheritJob(userId: () => string | null | undefined) {
     }
   }
 
-  async function create(input: CreateInheritJobInput): Promise<InheritJob> {
+  /** Starts following `next` from a clean slate: the job this page just created, or the one it reattached to. */
+  function follow(next: InheritJob, createdAt: number) {
+    connection?.stop()
+    connection = null
+    job.value = null
+    newCode.value = null
+    codeAcknowledged.value = false
+    expired.value = false
+    celebratedJobId = ""
+    storedCreatedAt = createdAt
+    applyJob(next)
+    persist()
+    if (!isTerminalJobStatus(next.status)) connect(next.id)
+  }
+
+  /**
+   * Creates a job. When the backend refuses because this user already has
+   * one running and names it (`job_already_running` with a job id: another
+   * tab, or a page that lost the id), the page reattaches to that job
+   * instead, whatever state it is in; `resumed` tells the caller so.
+   */
+  async function create(input: CreateInheritJobInput): Promise<InheritJobStart> {
     if (creating.value) throw new InheritApiError("busy", "")
     creating.value = true
     try {
-      const created = await createInheritJob(input)
-      connection?.stop()
-      connection = null
-      job.value = null
-      newCode.value = null
-      codeAcknowledged.value = false
-      expired.value = false
-      celebratedJobId = ""
-      storedCreatedAt = Date.now()
-      applyJob(created)
-      persist()
-      if (!isTerminalJobStatus(created.status)) connect(created.id)
-      return created
+      let created: InheritJob
+      try {
+        created = await createInheritJob(input)
+      } catch (error) {
+        const problem = toInheritApiError(error)
+        if (!problem.runningJobId) throw problem
+        let running: InheritJob
+        try {
+          running = await fetchInheritJob(problem.runningJobId)
+        } catch {
+          // Gone in the meantime, or unreachable: report the original refusal.
+          throw problem
+        }
+        follow(running, jobCreatedAtMs(running))
+        return { job: running, resumed: true }
+      }
+      follow(created, Date.now())
+      return { job: created, resumed: false }
     } finally {
       creating.value = false
     }

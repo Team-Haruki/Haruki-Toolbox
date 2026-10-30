@@ -5,6 +5,7 @@ import { asRecord } from "@/lib/record-utils"
 import type { APIResponse, InheritServer, UploadDataType } from "@/types"
 import {
   normalizeInheritJob,
+  readRunningJobId,
   type InheritJob,
   type InheritNewPasswordMode,
 } from "@/modules/tools/lib/inherit-job"
@@ -28,13 +29,16 @@ export class InheritApiError extends Error {
   readonly status: number
   /** Seconds from a `Retry-After` header, when the backend sent one. */
   readonly retryAfter: number | null
+  /** For `job_already_running`: the caller's own running job, "" when the backend did not name it. */
+  readonly runningJobId: string
 
-  constructor(code: string, message: string, status = 0, retryAfter: number | null = null) {
+  constructor(code: string, message: string, status = 0, retryAfter: number | null = null, runningJobId = "") {
     super(message || code)
     this.name = "InheritApiError"
     this.code = code
     this.status = status
     this.retryAfter = retryAfter
+    this.runningJobId = runningJobId
   }
 }
 
@@ -50,7 +54,7 @@ export function toInheritApiError(error: unknown): InheritApiError {
     const message = typeof body?.message === "string" ? body.message : ""
     const header = response.headers?.["retry-after"]
     const retryAfter = header != null && Number.isFinite(Number(header)) ? Number(header) : null
-    return new InheritApiError(code, message, response.status, retryAfter)
+    return new InheritApiError(code, message, response.status, retryAfter, readRunningJobId(code, data))
   }
   return new InheritApiError("", error instanceof Error ? error.message : String(error), 0)
 }
