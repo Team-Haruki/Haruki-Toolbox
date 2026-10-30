@@ -132,6 +132,7 @@ const notesOpen = ref(false)
                 autocapitalize="off"
                 spellcheck="false"
                 :placeholder="t('tools.uploadData.inheritTab.fields.inheritIdPlaceholder')"
+                :disabled="inheritServer === 'jp'"
                 :model-value="inheritId"
                 :aria-invalid="fieldErrors.inheritId ? 'true' : undefined"
                 :aria-describedby="fieldErrors.inheritId ? ERROR_IDS.inheritId : undefined"
@@ -152,6 +153,7 @@ const notesOpen = ref(false)
                 class="w-full pl-10"
                 autocomplete="off"
                 :placeholder="t('tools.uploadData.inheritTab.fields.inheritPasswordPlaceholder')"
+                :disabled="inheritServer === 'jp'"
                 :model-value="inheritPassword"
                 :aria-invalid="fieldErrors.inheritPassword ? 'true' : undefined"
                 :aria-describedby="fieldErrors.inheritPassword ? ERROR_IDS.inheritPassword : undefined"
@@ -202,6 +204,7 @@ const notesOpen = ref(false)
           <div class="flex items-start gap-3 rounded-md border p-3 sm:col-span-2">
             <Checkbox
               id="remember-inherit"
+              :disabled="inheritServer === 'jp'"
               class="mt-0.5"
               :model-value="rememberInherit"
               @update:model-value="value => emit('update:rememberInherit', value === true)"
@@ -215,7 +218,7 @@ const notesOpen = ref(false)
       </form>
     </CardContent>
     <CardFooter class="flex items-center justify-end">
-      <Button type="submit" form="upload-data-inherit-form" :disabled="isSubmittingInherit">
+      <Button type="submit" form="upload-data-inherit-form" :disabled="isSubmittingInherit || inheritServer === 'jp'">
         <Loader2 v-if="isSubmittingInherit" class="mr-2 h-4 w-4 animate-spin" />
         <UploadCloud v-else class="mr-2 h-4 w-4" />
         {{ isSubmittingInherit ? t("tools.uploadData.inheritTab.submitting") : t("tools.uploadData.inheritTab.submit") }}

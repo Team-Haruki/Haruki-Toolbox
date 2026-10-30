@@ -2,7 +2,7 @@
 import { ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -94,6 +94,10 @@ const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
 
 <template>
   <div class="w-full flex-1 flex flex-col items-center justify-center gap-3 px-0 py-4">
+    <Alert variant="destructive" class="w-full max-w-2xl" role="alert">
+      <AlertTitle>{{ t("tools.uploadData.inheritTab.jpSuspended.title") }}</AlertTitle>
+      <AlertDescription>{{ t("tools.uploadData.inheritTab.jpSuspended.description") }}</AlertDescription>
+    </Alert>
     <!-- What this page is for, before any tab-specific warnings. -->
     <Card class="w-full max-w-2xl">
       <CardHeader class="pb-0">

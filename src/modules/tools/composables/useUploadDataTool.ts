@@ -63,7 +63,9 @@ export function useUploadDataTool() {
   } = useUploadDataAccounts(userStore, fileDataType)
 
   const savedInherit = loadInheritFromStorage()
-  if (savedInherit) {
+  if (savedInherit?.server === "jp") {
+    clearInheritStorage()
+  } else if (savedInherit) {
     inheritId.value = savedInherit.inherit_id || ""
     inheritPassword.value = savedInherit.inherit_password || ""
     inheritServer.value = savedInherit.server
@@ -233,12 +235,26 @@ export function useUploadDataTool() {
   }
 
   function requestInheritUpload() {
+    if (inheritServer.value === "jp") {
+      isInheritConfirmOpen.value = false
+      toast.warning(t("tools.uploadData.inheritTab.jpSuspended.title"), {
+        description: t("tools.uploadData.inheritTab.jpSuspended.description"),
+      })
+      return
+    }
     if (isSubmittingInherit.value) return
     if (!validateInheritForm()) return
     isInheritConfirmOpen.value = true
   }
 
   async function confirmInheritUpload() {
+    if (inheritServer.value === "jp") {
+      isInheritConfirmOpen.value = false
+      toast.warning(t("tools.uploadData.inheritTab.jpSuspended.title"), {
+        description: t("tools.uploadData.inheritTab.jpSuspended.description"),
+      })
+      return
+    }
     if (isSubmittingInherit.value) return
     const normalizedInheritId = inheritId.value.trim()
     const normalizedInheritPassword = inheritPassword.value.trim()
