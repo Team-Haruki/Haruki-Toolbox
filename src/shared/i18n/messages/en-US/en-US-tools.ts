@@ -492,6 +492,7 @@ export default {
         "submitting": "Submitting..."
       },
       "inheritTab": {
+        "jpSuspended": {"title": "JP transfer-code uploads are temporarily disabled", "description": "Please open the JP game immediately and generate a new transfer code to invalidate the previously used code. Keep the new code safe and do not submit it to Toolbox while this feature is suspended."},
         "title": "Transfer-code data upload",
         "description": "Enter the in-game transfer ID and password; the toolbox signs in once on your behalf and saves the account data.",
         "fields": {

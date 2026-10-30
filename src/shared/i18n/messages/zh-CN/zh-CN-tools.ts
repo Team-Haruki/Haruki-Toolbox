@@ -492,6 +492,7 @@ export default {
         "submitting": "提交中..."
       },
       "inheritTab": {
+        "jpSuspended": {"title": "日服引继码功能已临时禁用", "description": "请立即进入日服游戏，重新生成新的引继码，使之前使用的引继码失效，并妥善保存新引继码。暂停期间请勿向工具箱提交新引继码。"},
         "title": "引继码上传数据",
         "description": "输入游戏里的引继 ID 和密码，工具箱会代你登录一次并保存账号数据。",
         "fields": {

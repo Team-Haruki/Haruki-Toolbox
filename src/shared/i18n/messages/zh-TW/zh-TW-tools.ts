@@ -492,6 +492,10 @@ export default {
         "submitting": "提交中..."
       },
       "inheritTab": {
+        "jpSuspended": {
+          "title": "日服引繼碼功能已臨時停用",
+          "description": "請立即進入日服遊戲，重新生成新的引繼碼，使之前使用的引繼碼失效，並妥善儲存新引繼碼。暫停期間請勿向工具箱提交新引繼碼。"
+        },
         "title": "引繼碼上傳資料",
         "description": "輸入遊戲裡的引繼 ID 和密碼，工具箱會代你登入一次並儲存帳號資料。",
         "fields": {
