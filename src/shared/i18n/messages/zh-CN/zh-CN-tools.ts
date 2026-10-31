@@ -401,7 +401,7 @@ export default {
         "iosPlatform": "iPhone / iPad",
         "iosMethod": "iOS 模块（推荐）",
         "proxyPlatform": "Android / Windows",
-        "proxyMethod": "HarukiProxy 教程",
+        "proxyMethod": "HarukiProxy（下载 / 教程）",
         "fallbackPlatform": "两者都不行时",
         "fallbackMethod": "引继码（备用）"
       },
@@ -412,14 +412,23 @@ export default {
         "file": "文件上传（高级）"
       },
       "proxyTab": {
+        "upgradeWarning": {
+          "title": "旧版 HarukiProxy 上传停用提醒",
+          "deadline": "旧版 HarukiProxy（v1/v2）自北京时间 2026/11/01 00:00:00（UTC+8）起将无法上传数据到工具箱。",
+          "upgrade": "请务必及时更换到 v3 版本。",
+          "release": "本公告发布时的最新版本：HarukiProxy {version}",
+          "windowsDownload": "Windows x64 下载（暂无教程）",
+          "androidDownload": "Android arm64 下载（有光速虚拟机教程）",
+          "feedback": "v3 版本可能仍然存在一些 bug。如果遇到问题，请及时反馈，以便修复。"
+        },
         "title": "HarukiProxy（Android / 电脑）",
         "description": "在 Android 手机或电脑上运行 HarukiProxy，进游戏时数据会自动上传到工具箱。",
         "steps": {
-          "install": "按教程在手机或电脑上安装并配置 HarukiProxy。",
+          "install": "下载并安装 v3 版本；Android 用户可参考下方光速虚拟机教程。",
           "bind": "先在「游戏账号管理」绑定并验证要上传的游戏账号。",
           "run": "开启 HarukiProxy 后进入游戏主页一次，首页「我的账号」会显示上传时间。"
         },
-        "tutorialButton": "查看 HarukiProxy 教程"
+        "tutorialButton": "查看 Android v3 光速虚拟机教程"
       },
       "region": {
         "jp": "日服",
