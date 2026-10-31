@@ -401,7 +401,7 @@ export default {
         "iosPlatform": "iPhone / iPad",
         "iosMethod": "iOS module (recommended)",
         "proxyPlatform": "Android / Windows",
-        "proxyMethod": "HarukiProxy guide",
+        "proxyMethod": "HarukiProxy downloads / guide",
         "fallbackPlatform": "When neither works",
         "fallbackMethod": "Transfer code (fallback)"
       },
@@ -412,14 +412,23 @@ export default {
         "file": "File upload (advanced)"
       },
       "proxyTab": {
+        "upgradeWarning": {
+          "title": "Legacy HarukiProxy upload cutoff",
+          "deadline": "HarukiProxy v1/v2 will no longer be able to upload data to the Toolbox starting at 2026/11/01 00:00:00 Beijing time (UTC+8).",
+          "upgrade": "Please upgrade to v3 before the cutoff.",
+          "release": "Latest version when this notice was published: HarukiProxy {version}",
+          "windowsDownload": "Windows x64 download (no guide yet)",
+          "androidDownload": "Android arm64 download (VPhoneOS guide available)",
+          "feedback": "v3 may still contain bugs. Please report any issues promptly so we can fix them."
+        },
         "title": "HarukiProxy (Android / PC)",
         "description": "Run HarukiProxy on an Android phone or a PC; your data uploads to the toolbox automatically when you open the game.",
         "steps": {
-          "install": "Install and configure HarukiProxy on your phone or PC by following the guide.",
+          "install": "Download and install v3. Android users can follow the VPhoneOS guide below.",
           "bind": "Bind and verify the game account to upload under Game account bindings first.",
           "run": "With HarukiProxy on, reach the game's home screen once; \"My account\" on the toolbox home page shows the upload time."
         },
-        "tutorialButton": "Open the HarukiProxy guide"
+        "tutorialButton": "Android v3 guide (VPhoneOS)"
       },
       "region": {
         "jp": "JP",

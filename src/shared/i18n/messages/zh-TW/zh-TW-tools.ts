@@ -401,7 +401,7 @@ export default {
         "iosPlatform": "iPhone / iPad",
         "iosMethod": "iOS 模組（推薦）",
         "proxyPlatform": "Android / Windows",
-        "proxyMethod": "HarukiProxy 教程",
+        "proxyMethod": "HarukiProxy（下載 / 教程）",
         "fallbackPlatform": "兩者都不行時",
         "fallbackMethod": "引繼碼（備用）"
       },
@@ -412,14 +412,23 @@ export default {
         "file": "檔案上傳（高階）"
       },
       "proxyTab": {
+        "upgradeWarning": {
+          "title": "舊版 HarukiProxy 上傳停用提醒",
+          "deadline": "舊版 HarukiProxy（v1/v2）自北京時間 2026/11/01 00:00:00（UTC+8）起將無法上傳資料到工具箱。",
+          "upgrade": "請務必及時更換到 v3 版本。",
+          "release": "本公告發布時的最新版本：HarukiProxy {version}",
+          "windowsDownload": "Windows x64 下載（暫無教程）",
+          "androidDownload": "Android arm64 下載（有光速虛擬機器教程）",
+          "feedback": "v3 版本可能仍然存在一些 bug。如果遇到問題，請及時反饋，以便修復。"
+        },
         "title": "HarukiProxy（Android / 電腦）",
         "description": "在 Android 手機或電腦上執行 HarukiProxy，進遊戲時資料會自動上傳到工具箱。",
         "steps": {
-          "install": "按教程在手機或電腦上安裝並配置 HarukiProxy。",
+          "install": "下載並安裝 v3 版本；Android 使用者可參考下方光速虛擬機器教程。",
           "bind": "先在「遊戲帳號管理」綁定並驗證要上傳的遊戲帳號。",
           "run": "開啟 HarukiProxy 後進入遊戲主頁一次，首頁「我的帳號」會顯示上傳時間。"
         },
-        "tutorialButton": "檢視 HarukiProxy 教程"
+        "tutorialButton": "檢視 Android v3 光速虛擬機器教程"
       },
       "region": {
         "jp": "日服",

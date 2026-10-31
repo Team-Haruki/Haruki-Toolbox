@@ -2,11 +2,11 @@
 import { ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useI18n } from "vue-i18n"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ExternalLink, FileUp, KeyRound, LucideInfo, MonitorSmartphone, Smartphone } from "lucide-vue-next"
+import { ExternalLink, FileUp, KeyRound, LucideAlertTriangle, LucideInfo, MonitorSmartphone, Smartphone } from "lucide-vue-next"
 import { UploadDataFileTab, UploadDataInheritTab, UploadDataIOSTab } from "@/modules/tools/components"
 import { useUploadDataTool } from "@/modules/tools/composables/useUploadDataTool"
 import { loadActiveInheritJob } from "@/modules/tools/lib/inherit-job-storage"
@@ -16,7 +16,10 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const HARUKI_PROXY_TUTORIAL_URL = "https://neo.haruki.seiunx.com/haruki-proxy/"
+const HARUKI_PROXY_VERSION = "v3.0.0-beta.7"
+const HARUKI_PROXY_WINDOWS_URL = "https://haruki-dl-esa-cn.seiunx.com/HarukiProxy/v3.0.0-beta.7/HarukiProxy-v3.0.0-beta.7-windows-x64.zip"
+const HARUKI_PROXY_ANDROID_URL = "https://haruki-dl-esa-cn.seiunx.com/HarukiProxy/v3.0.0-beta.7/HarukiProxy-v3.0.0-beta.7-android-arm64.apk"
+const HARUKI_PROXY_TUTORIAL_URL = "https://neo.haruki.seiunx.com/haruki-proxy/android.v3.html"
 
 const {
   fileDataType,
@@ -101,13 +104,10 @@ const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
             <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.intro.iosPlatform") }}</span>
             <span class="mt-0.5 block text-sm font-semibold">{{ t("tools.uploadData.intro.iosMethod") }}</span>
           </button>
-          <a :href="HARUKI_PROXY_TUTORIAL_URL" target="_blank" rel="noopener noreferrer" :class="[noticeTileClass, 'transition-colors hover:bg-muted/40']">
+          <button type="button" :class="[noticeTileClass, 'transition-colors hover:bg-muted/40']" @click="activeTab = 'proxy'">
             <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.intro.proxyPlatform") }}</span>
-            <span class="mt-0.5 flex items-center justify-center gap-1 text-sm font-semibold">
-              {{ t("tools.uploadData.intro.proxyMethod") }}
-              <ExternalLink class="h-3.5 w-3.5" aria-hidden="true" />
-            </span>
-          </a>
+            <span class="mt-0.5 block text-sm font-semibold">{{ t("tools.uploadData.intro.proxyMethod") }}</span>
+          </button>
           <button type="button" :class="[noticeTileClass, 'transition-colors hover:bg-muted/40']" @click="activeTab = 'inherit'">
             <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.intro.fallbackPlatform") }}</span>
             <span class="mt-0.5 block text-sm font-semibold">{{ t("tools.uploadData.intro.fallbackMethod") }}</span>
@@ -150,6 +150,28 @@ const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
             <CardDescription>{{ t("tools.uploadData.proxyTab.description") }}</CardDescription>
           </CardHeader>
           <CardContent class="space-y-3">
+            <Alert variant="destructive" class="border-destructive/50 bg-destructive/5" data-testid="harukiproxy-upgrade-warning">
+              <LucideAlertTriangle aria-hidden="true" />
+              <AlertTitle>{{ t("tools.uploadData.proxyTab.upgradeWarning.title") }}</AlertTitle>
+              <AlertDescription class="space-y-3 leading-relaxed">
+                <p class="font-semibold">{{ t("tools.uploadData.proxyTab.upgradeWarning.deadline") }}</p>
+                <p>{{ t("tools.uploadData.proxyTab.upgradeWarning.upgrade") }}</p>
+                <p>{{ t("tools.uploadData.proxyTab.upgradeWarning.release", { version: HARUKI_PROXY_VERSION }) }}</p>
+                <ul class="list-disc space-y-2 pl-5">
+                  <li>
+                    <a :href="HARUKI_PROXY_WINDOWS_URL" target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-4">
+                      {{ t("tools.uploadData.proxyTab.upgradeWarning.windowsDownload") }}
+                    </a>
+                  </li>
+                  <li>
+                    <a :href="HARUKI_PROXY_ANDROID_URL" target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-4">
+                      {{ t("tools.uploadData.proxyTab.upgradeWarning.androidDownload") }}
+                    </a>
+                  </li>
+                </ul>
+                <p>{{ t("tools.uploadData.proxyTab.upgradeWarning.feedback") }}</p>
+              </AlertDescription>
+            </Alert>
             <ol class="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
               <li>{{ t("tools.uploadData.proxyTab.steps.install") }}</li>
               <li>{{ t("tools.uploadData.proxyTab.steps.bind") }}</li>
