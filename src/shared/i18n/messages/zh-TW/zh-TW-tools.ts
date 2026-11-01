@@ -413,8 +413,8 @@ export default {
       },
       "proxyTab": {
         "upgradeWarning": {
-          "title": "舊版 HarukiProxy 上傳停用提醒",
-          "deadline": "舊版 HarukiProxy（v1/v2）自北京時間 2026/11/01 00:00:00（UTC+8）起將無法上傳資料到工具箱。",
+          "title": "舊版 HarukiProxy 上傳已下線",
+          "deadline": "舊版 HarukiProxy（v1/v2）上傳功能已於北京時間 2026/11/01 00:00:00（UTC+8）下線，現已無法上傳資料到工具箱。",
           "upgrade": "請務必及時更換到 v3 版本。",
           "release": "本公告發布時的最新版本：HarukiProxy {version}",
           "windowsDownload": "Windows x64 下載（暫無教程）",
