@@ -413,9 +413,9 @@ export default {
       },
       "proxyTab": {
         "upgradeWarning": {
-          "title": "Legacy HarukiProxy upload cutoff",
-          "deadline": "HarukiProxy v1/v2 will no longer be able to upload data to the Toolbox starting at 2026/11/01 00:00:00 Beijing time (UTC+8).",
-          "upgrade": "Please upgrade to v3 before the cutoff.",
+          "title": "Legacy HarukiProxy uploads are disabled",
+          "deadline": "HarukiProxy v1/v2 uploads were disabled at 2026/11/01 00:00:00 Beijing time (UTC+8). These versions can no longer upload data to the Toolbox.",
+          "upgrade": "Please upgrade to v3.",
           "release": "Latest version when this notice was published: HarukiProxy {version}",
           "windowsDownload": "Windows x64 download (no guide yet)",
           "androidDownload": "Android arm64 download (VPhoneOS guide available)",

@@ -19,7 +19,7 @@ const router = useRouter()
 const HARUKI_PROXY_VERSION = "v3.0.0-beta.7"
 const HARUKI_PROXY_WINDOWS_URL = "https://haruki-dl-esa-cn.seiunx.com/HarukiProxy/v3.0.0-beta.7/HarukiProxy-v3.0.0-beta.7-windows-x64.zip"
 const HARUKI_PROXY_ANDROID_URL = "https://haruki-dl-esa-cn.seiunx.com/HarukiProxy/v3.0.0-beta.7/HarukiProxy-v3.0.0-beta.7-android-arm64.apk"
-const HARUKI_PROXY_TUTORIAL_URL = "https://neo.haruki.seiunx.com/haruki-proxy/android.v3.html"
+const HARUKI_PROXY_TUTORIAL_URL = "https://neo.haruki.seiunx.com/haruki-proxy/android"
 
 const {
   fileDataType,
