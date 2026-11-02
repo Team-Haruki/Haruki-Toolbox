@@ -308,6 +308,10 @@ export default {
           "description": "一般保持預設即可。數值越大進遊戲越快，但部分代理軟體可能上傳失敗。",
           "unit": "MB"
         },
+        "notify": {
+          "title": "上傳通知",
+          "description": "每次上傳後手機彈出通知，告訴你上傳成功還是失敗。裝好後也可以在代理軟體的模組參數裡隨時開關。"
+        },
         "regions": {
           "title": "選擇區服",
           "description": "選擇需要上傳資料的遊戲伺服器（可多選）"

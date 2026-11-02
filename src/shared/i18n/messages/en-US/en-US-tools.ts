@@ -308,6 +308,10 @@ export default {
           "description": "The default is fine for most people. Larger values enter the game faster, but some proxy apps may fail to upload.",
           "unit": "MB"
         },
+        "notify": {
+          "title": "Upload notifications",
+          "description": "After each upload your phone shows a notification saying whether it worked. You can also switch it later in the module's arguments in the proxy app."
+        },
         "regions": {
           "title": "Select regions",
           "description": "Select game servers to upload data for (multi-select)"

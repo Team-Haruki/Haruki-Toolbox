@@ -308,6 +308,10 @@ export default {
           "description": "一般保持默认即可。数值越大进游戏越快，但部分代理软件可能上传失败。",
           "unit": "MB"
         },
+        "notify": {
+          "title": "上传通知",
+          "description": "每次上传后手机弹出通知，告诉你上传成功还是失败。装好后也可以在代理软件的模块参数里随时开关。"
+        },
         "regions": {
           "title": "选择区服",
           "description": "选择需要上传数据的游戏服务器（可多选）"
