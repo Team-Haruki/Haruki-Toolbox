@@ -6,7 +6,6 @@ import {
   parseDeckCustomBonusSupportUnitsInput,
   parseDeckIntegerListInput,
   parseDeckSkillOrderInput,
-  resolveRecommendDataMode,
   resolveCurrentDeckCards,
   resolveCurrentDeckCardsWithProfile,
   resolveWasmLiveType,
@@ -216,11 +215,6 @@ describe("deck recommend wasm option helpers", () => {
       trainingConfig: createDefaultCardTrainingConfig(),
       userData: { userCards: [] },
     })).toThrow("specific_skill_order")
-  })
-
-  it("uses mysekai user data mode only for mysekai deck mode", () => {
-    expect(resolveRecommendDataMode("mysekai")).toBe("mysekai")
-    expect(resolveRecommendDataMode("event")).toBe("suite")
   })
 
   it("passes world bloom character id for event-like modes", () => {

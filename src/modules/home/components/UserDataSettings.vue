@@ -26,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { isVerifiedQQBinding } from "@/lib/social-platform"
 import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import {
   fetchDeckRecommendProfileWithCache,
@@ -35,7 +34,6 @@ import {
 import {
   clearDeckRecommendUserDataCache,
   readDeckRecommendProfileCache,
-  readDeckRecommendUserDataCache,
 } from "@/modules/deck-recommend/lib/user-data-cache"
 import { suiteUploadTimeToMillis } from "@/shared/sekai/user-snapshot/api"
 import { clearUserSuiteSubsetCache, summarizeUserSuiteSubsetCache } from "@/shared/sekai/user-snapshot/cache"
@@ -46,9 +44,10 @@ import {
 } from "@/shared/sekai/user-snapshot/accessible-accounts"
 import { buildSelectableGameAccounts } from "@/shared/sekai/user-snapshot/selectable-accounts"
 import type { SekaiRegion } from "@/types"
-import type { DeckRecommendUserDataMode } from "@/modules/deck-recommend/api/recommend-data"
 
-type DeckRecommendUserCacheDataType = DeckRecommendUserDataMode | "profile"
+// No MySekai entry: nothing in the toolbox reads a local copy of the MySekai
+// upload (the deck engine's MySekai inputs are Suite tables).
+type DeckRecommendUserCacheDataType = "suite" | "profile"
 
 type BoundAccountOption = {
   key: string
@@ -86,8 +85,7 @@ watch(
 const accountOptions = computed<BoundAccountOption[]>(() => {
   // Hold until the post-login sync hydrates bindings (see selector race),
   // and only offer granted accounts holding at least one data type this
-  // panel can manage a cache for (suite or profile; a mysekai-only grant is
-  // unusable here — its refresh also reads the suite subset).
+  // panel can manage a cache for (suite or profile).
   if (!Array.isArray(userStore.gameAccountBindings)) {
     return []
   }
@@ -118,22 +116,13 @@ const canClear = computed(() =>
   Boolean(userStore.userId) && !refreshing.value && !clearing.value,
 )
 
-// MySekai data requires a verified QQ social binding on the toolbox account,
-// so the option is hidden entirely without one.
-const hasVerifiedQQ = computed(() => isVerifiedQQBinding(userStore.socialPlatformInfo))
-
 const dataModeOptions = computed<Array<{ value: DeckRecommendUserCacheDataType; label: string }>>(() => {
   const account = selectedAccount.value
   if (account?.ownership === "granted") {
-    // A granted account exposes exactly the granted data types; the viewer's
-    // own QQ binding is irrelevant here. The mysekai refresh also fetches the
-    // suite subset, so it additionally needs the suite capability.
+    // A granted account exposes exactly the granted data types.
     return [
       ...(account.capabilities.has("suite")
         ? [{ value: "suite" as const, label: t("homeSettings.userData.types.suite") }]
-        : []),
-      ...(account.capabilities.has("mysekai") && account.capabilities.has("suite")
-        ? [{ value: "mysekai" as const, label: t("homeSettings.userData.types.mysekai") }]
         : []),
       ...(account.capabilities.has("profile")
         ? [{ value: "profile" as const, label: t("homeSettings.userData.types.profile") }]
@@ -142,15 +131,12 @@ const dataModeOptions = computed<Array<{ value: DeckRecommendUserCacheDataType; 
   }
   return [
     { value: "suite", label: t("homeSettings.userData.types.suite") },
-    ...(hasVerifiedQQ.value
-      ? [{ value: "mysekai" as const, label: t("homeSettings.userData.types.mysekai") }]
-      : []),
     { value: "profile", label: t("homeSettings.userData.types.profile") },
   ]
 })
 
 watch(
-  [hasVerifiedQQ, dataModeOptions],
+  dataModeOptions,
   () => {
     if (!dataModeOptions.value.some((option) => option.value === selectedDataMode.value)) {
       selectedDataMode.value = dataModeOptions.value[0]?.value ?? "suite"
@@ -272,28 +258,14 @@ async function loadCacheStatus() {
       return
     }
 
-    if (selectedDataMode.value === "suite") {
-      // Suite data lives in the shared snapshot cache since the deck-recommend
-      // fetch migration; the module-local cache only stores mysekai records.
-      // Records are keyed per fetched key subset, so scan every subset for
-      // this account — pages fetch different subsets (deck-recommend vs the
-      // profile page's snapshot source) and all of them count as cached.
-      const record = await summarizeUserSuiteSubsetCache({
-        toolboxUserId: userStore.userId,
-        server: account.server,
-        gameUserId: account.uid,
-      })
-      cacheUpdatedAt.value = record?.updatedAt ?? null
-      cacheUploadTime.value = record?.uploadTime ?? null
-      lastCacheHit.value = null
-      return
-    }
-
-    const record = await readDeckRecommendUserDataCache({
+    // Suite data lives in the shared snapshot cache. Records are keyed per
+    // fetched key subset, so scan every subset for this account — pages
+    // fetch different subsets (deck-recommend vs the profile page's snapshot
+    // source) and all of them count as cached.
+    const record = await summarizeUserSuiteSubsetCache({
       toolboxUserId: userStore.userId,
       server: account.server,
       gameUserId: account.uid,
-      mode: selectedDataMode.value,
     })
     cacheUpdatedAt.value = record?.updatedAt ?? null
     cacheUploadTime.value = record?.uploadTime ?? null

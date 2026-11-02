@@ -1,21 +1,20 @@
 import { buildUserApiPath } from "@/core/http/path"
-import { requestWithResponse } from "@/core/http/call-api"
+import { request } from "@/core/http/call-api"
 import type { SekaiRegion } from "@/types"
-import type { AxiosRequestConfig, AxiosResponse } from "axios"
 
-export type DeckRecommendUserDataMode = "suite" | "mysekai"
-export type DeckRecommendGameAccountDataType = DeckRecommendUserDataMode | "profile"
+/**
+ * The upload the deck engine reads. Every deck mode, MySekai included, runs
+ * on the account data (Suite) upload alone; see `DECK_RECOMMEND_SUITE_KEYS`.
+ */
+export type DeckRecommendUserDataMode = "suite"
+export type DeckRecommendGameAccountDataType = "suite" | "mysekai" | "profile"
 
 export type FetchDeckRecommendUserDataParams = {
   toolboxUserId: string | number
   server: SekaiRegion
   gameUserId: string | number
   mode: DeckRecommendUserDataMode
-  cacheBust?: boolean
-  knownUploadTime?: number
 }
-
-export type FetchDeckRecommendMysekaiUserDataParams = Omit<FetchDeckRecommendUserDataParams, "mode">
 
 export type FetchDeckRecommendGameAccountDataParams = {
   toolboxUserId: string | number
@@ -23,7 +22,6 @@ export type FetchDeckRecommendGameAccountDataParams = {
   gameUserId: string | number
   dataType: DeckRecommendGameAccountDataType
   cacheBust?: boolean
-  knownUploadTime?: number
 }
 
 export type DeckRecommendUserDataResponse = {
@@ -32,22 +30,6 @@ export type DeckRecommendUserDataResponse = {
   mode: DeckRecommendUserDataMode
   userData: Record<string, unknown>
 }
-
-export type DeckRecommendUserDataReadResult =
-  | {
-      kind: "not-modified"
-      uploadTime: number
-    }
-  | {
-      kind: "data"
-      data: DeckRecommendUserDataResponse
-      uploadTime: number | null
-    }
-
-export type DeckRecommendResponseRequester = <T = unknown>(
-  url: string,
-  options?: AxiosRequestConfig,
-) => Promise<AxiosResponse<T>>
 
 export type GetUserProfileResponse = Record<string, unknown> & {
   user?: Record<string, unknown>
@@ -70,48 +52,10 @@ export type GetUserProfileResponse = Record<string, unknown> & {
   isMysekaiOwnerAcceptVisit?: boolean
 }
 
-export async function fetchDeckRecommendMysekaiUserData(
-  params: FetchDeckRecommendMysekaiUserDataParams,
-  requester: DeckRecommendResponseRequester = requestWithResponse,
-): Promise<DeckRecommendUserDataReadResult> {
-  const response = await fetchDeckRecommendGameAccountDataResponse({
-    toolboxUserId: params.toolboxUserId,
-    server: params.server,
-    gameUserId: params.gameUserId,
-    dataType: "mysekai",
-    cacheBust: params.cacheBust,
-    knownUploadTime: params.knownUploadTime,
-  }, requester)
-  if (response.status === 304) {
-    return {
-      kind: "not-modified",
-      uploadTime: requireKnownUploadTime(params.knownUploadTime),
-    }
-  }
-
-  return {
-    kind: "data",
-    data: {
-      server: params.server,
-      gameUserId: String(params.gameUserId),
-      mode: "mysekai",
-      userData: unwrapGameAccountDataResponse(response.data),
-    },
-    uploadTime: readUploadTimeFromGameAccountData(response.data),
-  }
-}
-
 export function fetchDeckRecommendGameAccountData<T = unknown>(
   params: FetchDeckRecommendGameAccountDataParams,
 ): Promise<T> {
-  return fetchDeckRecommendGameAccountDataResponse<T>(params).then((response) => response.data)
-}
-
-function fetchDeckRecommendGameAccountDataResponse<T = unknown>(
-  params: FetchDeckRecommendGameAccountDataParams,
-  requester: DeckRecommendResponseRequester = requestWithResponse,
-) {
-  return requester<T>(
+  return request<T>(
     buildUserApiPath(
       params.toolboxUserId,
       "game-account",
@@ -120,11 +64,7 @@ function fetchDeckRecommendGameAccountDataResponse<T = unknown>(
       params.dataType,
     ),
     {
-      params: {
-        ...(isValidUploadTime(params.knownUploadTime) ? { known_upload_time: params.knownUploadTime } : {}),
-        ...(params.cacheBust ? { t: Date.now() } : {}),
-      },
-      validateStatus: (status) => (status >= 200 && status < 300) || status === 304,
+      params: params.cacheBust ? { t: Date.now() } : {},
     },
   )
 }
@@ -179,31 +119,6 @@ export function unwrapGameAccountDataResponse(value: unknown): Record<string, un
   }
 
   return data
-}
-
-export function normalizeDeckRecommendUserDataResponse(
-  value: DeckRecommendUserDataResponse,
-): DeckRecommendUserDataResponse {
-  return {
-    ...value,
-    userData: unwrapGameAccountDataResponse(value.userData),
-  }
-}
-
-function readUploadTimeFromGameAccountData(value: unknown): number | null {
-  const data = unwrapGameAccountDataResponse(value)
-  return normalizeDeckRecommendUploadTime(data.upload_time)
-}
-
-function isValidUploadTime(value: number | undefined): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0
-}
-
-function requireKnownUploadTime(value: number | undefined): number {
-  if (!isValidUploadTime(value)) {
-    throw new Error("received 304 without a valid known upload time")
-  }
-  return value
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

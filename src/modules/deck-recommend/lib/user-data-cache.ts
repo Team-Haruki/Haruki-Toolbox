@@ -1,7 +1,6 @@
 import type { SekaiRegion } from "@/types"
 import type {
   DeckRecommendUserDataMode,
-  DeckRecommendUserDataResponse,
   GetUserProfileResponse,
 } from "../api/recommend-data"
 
@@ -23,17 +22,6 @@ export type DeckRecommendProfileCacheKeyParams = {
   toolboxUserId: string | number
   server: SekaiRegion
   gameUserId: string | number
-}
-
-export type DeckRecommendUserDataCacheRecord = {
-  key: string
-  toolboxUserId: string
-  server: SekaiRegion
-  gameUserId: string
-  mode: DeckRecommendUserDataMode
-  uploadTime: number
-  data: DeckRecommendUserDataResponse
-  updatedAt: number
 }
 
 export type DeckRecommendProfileCacheRecord = {
@@ -63,16 +51,6 @@ export function makeDeckRecommendProfileCacheKey(params: DeckRecommendProfileCac
   ].join(":")
 }
 
-export async function readDeckRecommendUserDataCache(
-  params: DeckRecommendUserDataCacheKeyParams,
-): Promise<DeckRecommendUserDataCacheRecord | null> {
-  const record = await readStoreRecord<DeckRecommendUserDataCacheRecord>(
-    USER_DATA_STORE,
-    makeDeckRecommendUserDataCacheKey(params),
-  )
-  return record ?? null
-}
-
 export async function readDeckRecommendProfileCache(
   params: DeckRecommendProfileCacheKeyParams,
 ): Promise<DeckRecommendProfileCacheRecord | null> {
@@ -81,25 +59,6 @@ export async function readDeckRecommendProfileCache(
     makeDeckRecommendProfileCacheKey(params),
   )
   return record ?? null
-}
-
-export async function writeDeckRecommendUserDataCache(
-  params: DeckRecommendUserDataCacheKeyParams,
-  data: DeckRecommendUserDataResponse,
-  uploadTime: number,
-): Promise<DeckRecommendUserDataCacheRecord> {
-  const record: DeckRecommendUserDataCacheRecord = {
-    key: makeDeckRecommendUserDataCacheKey(params),
-    toolboxUserId: String(params.toolboxUserId).trim(),
-    server: params.server,
-    gameUserId: String(params.gameUserId).trim(),
-    mode: params.mode,
-    uploadTime,
-    data,
-    updatedAt: Date.now(),
-  }
-  await writeStoreRecord(USER_DATA_STORE, record)
-  return record
 }
 
 export async function writeDeckRecommendProfileCache(
