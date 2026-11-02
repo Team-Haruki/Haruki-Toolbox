@@ -300,6 +300,43 @@ html.dark [data-glass-surface="compose-bar"] {
         inset 0 1px 0 rgb(255 255 255 / 0.08);
 }
 
+/* Touch devices (iOS Safari above all) and engines without backdrop-filter:
+ * modal surfaces become near-opaque. There the blur does not reliably hide what
+ * is behind (a full-screen expert dialog with the card picker on top of it let
+ * the deck page show through), and phones show one modal at a time anyway.
+ * Desktop keeps the translucent glass. */
+@media (pointer: coarse) {
+    [data-glass-surface="dialog"],
+    [data-glass-surface="alert-dialog"],
+    [data-glass-surface="sheet-content"],
+    html.dark [data-glass-surface="dialog"],
+    html.dark [data-glass-surface="alert-dialog"],
+    html.dark [data-glass-surface="sheet-content"] {
+        --glass-bg: color-mix(in oklab, var(--background) 98%, transparent);
+    }
+
+    [data-glass-surface="popover"],
+    html.dark [data-glass-surface="popover"] {
+        --glass-bg: color-mix(in oklab, var(--popover) 98%, transparent);
+    }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    [data-glass-surface="dialog"],
+    [data-glass-surface="alert-dialog"],
+    [data-glass-surface="sheet-content"],
+    html.dark [data-glass-surface="dialog"],
+    html.dark [data-glass-surface="alert-dialog"],
+    html.dark [data-glass-surface="sheet-content"] {
+        --glass-bg: color-mix(in oklab, var(--background) 98%, transparent);
+    }
+
+    [data-glass-surface="popover"],
+    html.dark [data-glass-surface="popover"] {
+        --glass-bg: color-mix(in oklab, var(--popover) 98%, transparent);
+    }
+}
+
 /* Chart tooltips repaint on every crosshair frame — no backdrop blur. */
 [data-glass-surface="chart-tooltip"] {
     --glass-blur: 0px;
@@ -319,6 +356,19 @@ html.dark [data-glass-surface="chart-tooltip"] {
 [data-slot="alert-dialog-overlay"] {
     -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
+}
+
+/* A modal opened on top of another one (overlays and contents are portaled as
+ * body siblings, in opening order) gets a darker scrim, so the dialog beneath
+ * clearly recedes instead of competing with the one in front. */
+:is([data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"])
+    ~ :is([data-slot="dialog-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="sheet-overlay"]) {
+    background-color: rgb(0 0 0 / 0.45);
+}
+
+html.dark :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"])
+    ~ :is([data-slot="dialog-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="sheet-overlay"]) {
+    background-color: rgb(0 0 0 / 0.80);
 }
 
 /* Toast: same language, sonner needs !important to beat its inline theme. */
