@@ -603,7 +603,8 @@ export default {
           "home_refresh_final": "最终刷新",
           "maintenance_check": "检查维护状态",
           "mysekai": "烤森数据",
-          "mysekai_followup": "后续请求"
+          "mysekai_followup": "后续请求",
+          "version_refresh": "重新获取游戏版本"
         },
         "stepStatus": {
           "pending": "等待中",
@@ -636,6 +637,8 @@ export default {
           "game_maintenance": "游戏服务器正在维护，请维护结束后再试。",
           "game_unavailable": "暂时无法连接游戏服务器，请稍后再试。",
           "game_error": "游戏服务器返回了错误，请稍后再试。",
+          "game_version_outdated": "游戏刚更新了数据版本，Toolbox 还没同步上，请稍后再试。",
+          "game_version_outdated_after_transfer": "游戏刚更新了数据版本，Toolbox 还没同步上，没能获取游戏数据。新引继码（如已签发）显示在本页，稍后可以用新引继码重新上传。",
           "execute_uncertain": "执行引继时网络中断，无法确定引继码是否已被使用。请先不要在其他设备上使用这组引继码，并查看下方保险库：如果里面出现了这个账号，说明引继已完成，可以在那里查看或重新签发引继码。",
           "login_failed": "引继已完成，登录信息已存入保险库，但登录游戏失败。请稍后在下方保险库中点「重新签发」，获取新的引继码。",
           "fetch_failed": "获取游戏数据失败。新引继码（如已签发）显示在本页，并已保存在保险库中。",
@@ -648,7 +651,8 @@ export default {
         "warnings": {
           "issue_code_failed": "没能签发新的引继码。登录信息已存入保险库，请马上在下方保险库中点「重新签发」：这是你回到账号的唯一方式。",
           "vault_db_unavailable": "数据库暂时不可用，登录信息已临时保存，稍后会自动转存，不影响使用。",
-          "vault_store_failed": "登录信息或新引继码没能存入保险库。请务必现在就记下本页显示的新引继码。"
+          "vault_store_failed": "登录信息或新引继码没能存入保险库。请务必现在就记下本页显示的新引继码。",
+          "game_version_outdated": "游戏刚更新了数据版本，Toolbox 还没同步上，所以这一步没有成功。"
         },
         "actions": {
           "startNew": "开始新的上传",

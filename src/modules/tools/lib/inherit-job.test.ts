@@ -109,6 +109,11 @@ describe("job state questions", () => {
     // Game errors depend on how far the job got.
     expect(enteredCodeValidity(job({ status: "failed", error: { code: "game_error" }, steps: withSteps({ preview: "failed" }) }))).toBe("valid")
     expect(enteredCodeValidity(job({ status: "failed", error: { code: "game_error" }, steps: withSteps({ execute: "done", fetch_suite: "failed" }) }))).toBe("used")
+    // game_version_outdated is a 426, the game's definite answer: the code is
+    // used only once the executing call went through, even when execute failed.
+    expect(enteredCodeValidity(job({ status: "failed", error: { code: "game_version_outdated" }, steps: withSteps({ preview: "failed" }) }))).toBe("valid")
+    expect(enteredCodeValidity(job({ status: "failed", error: { code: "game_version_outdated" }, steps: withSteps({ preview: "done", execute: "failed" }) }))).toBe("valid")
+    expect(enteredCodeValidity(job({ status: "failed", error: { code: "game_version_outdated" }, steps: withSteps({ execute: "done", fetch_suite: "failed" }) }))).toBe("used")
     expect(enteredCodeValidity(job({ status: "failed", error: { code: "inherit_invalid" } }))).toBeNull()
     expect(enteredCodeValidity(job({ status: "running" }))).toBeNull()
   })

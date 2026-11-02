@@ -7,7 +7,8 @@ import {
   resolveUnlockMode,
   toUnlockBody,
 } from "@/modules/tools/lib/inherit-vault"
-import { describeInheritApiError, describeJobError, formatInheritRemaining } from "@/modules/tools/lib/inherit-messages"
+import { describeInheritApiError, describeJobError, describeJobWarning, formatInheritRemaining } from "@/modules/tools/lib/inherit-messages"
+import { INHERIT_JOB_STEPS, normalizeInheritJob, type InheritJob } from "@/modules/tools/lib/inherit-job"
 
 const t = (key: string, params?: Record<string, unknown>) => (params ? `${key} ${JSON.stringify(params)}` : key)
 
@@ -92,6 +93,22 @@ describe("password or PIN", () => {
   })
 })
 
+function inheritJobWithSteps(statuses: Partial<Record<(typeof INHERIT_JOB_STEPS)[number], string>>): InheritJob {
+  const job = normalizeInheritJob({
+    id: "job-1",
+    server: "jp",
+    upload_type: "suite",
+    new_password_mode: "reuse",
+    status: "failed",
+    current_step: "preview",
+    steps: INHERIT_JOB_STEPS.map((name) => ({ name, status: statuses[name] ?? "pending" })),
+    created_at: "2026-11-02T00:00:00Z",
+    updated_at: "2026-11-02T00:00:00Z",
+  })
+  if (!job) throw new Error("fixture did not parse")
+  return job
+}
+
 describe("inherit messages", () => {
   it("translates known codes, adds Retry-After, and falls back to the backend message", () => {
     expect(describeInheritApiError(t, { code: "password_invalid", message: "密码错误", status: 403 })).toBe("tools.uploadData.inheritErrors.password_invalid")
@@ -103,6 +120,12 @@ describe("inherit messages", () => {
   it("translates job errors", () => {
     expect(describeJobError(t, { code: "execute_uncertain", message: "" })).toBe("tools.uploadData.inheritJob.errors.execute_uncertain")
     expect(describeJobError(t, { code: "unknown_future", message: "后端" })).toBe("后端")
+    const outdated = { code: "game_version_outdated", message: "后端" }
+    expect(describeJobError(t, outdated)).toBe("tools.uploadData.inheritJob.errors.game_version_outdated")
+    expect(describeJobError(t, outdated, inheritJobWithSteps({ preview: "failed" }))).toBe("tools.uploadData.inheritJob.errors.game_version_outdated")
+    expect(describeJobError(t, outdated, inheritJobWithSteps({ execute: "done", fetch_suite: "failed" })))
+      .toBe("tools.uploadData.inheritJob.errors.game_version_outdated_after_transfer")
+    expect(describeJobWarning(t, { code: "game_version_outdated", message: "后端" })).toBe("tools.uploadData.inheritJob.warnings.game_version_outdated")
   })
 
   it("formats a countdown from the catalog strings", () => {

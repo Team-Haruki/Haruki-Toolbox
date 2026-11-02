@@ -215,7 +215,7 @@ function dismiss() {
           {{ job.status === "failed" ? t("tools.uploadData.inheritJob.errorTitle") : t("tools.uploadData.inheritJob.cancelledTitle") }}
         </AlertTitle>
         <AlertDescription :class="['space-y-1', failureTone === 'warning' ? 'text-current' : '']">
-          <p>{{ describeJobError(t, job.error) }}</p>
+          <p>{{ describeJobError(t, job.error, job) }}</p>
           <p v-if="validity" class="font-medium" data-testid="inherit-code-validity" :data-validity="validity">
             {{ t(`tools.uploadData.inheritJob.codeValidity.${validity}`) }}
           </p>

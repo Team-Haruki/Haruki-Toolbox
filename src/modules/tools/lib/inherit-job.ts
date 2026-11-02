@@ -268,6 +268,11 @@ export function hasJobStartedExecuting(job: InheritJob): boolean {
   return execute != null && execute.status !== "pending"
 }
 
+/** Whether the executing call went through: the entered code is used up and a credential exists. */
+export function hasJobTransferred(job: InheritJob): boolean {
+  return findJobStep(job, "execute")?.status === "done"
+}
+
 /** Cancel is allowed until the owner confirms (the backend answers `cannot_cancel` after). */
 export function canCancelJob(job: InheritJob): boolean {
   return !isTerminalJobStatus(job.status) && !hasJobStartedExecuting(job)
@@ -301,6 +306,9 @@ export function enteredCodeValidity(job: InheritJob): EnteredCodeValidity | null
   if (CODE_STILL_VALID.has(code)) return "valid"
   if (CODE_USED.has(code)) return "used"
   if (code === "execute_uncertain") return "unknown"
+  // A 426 is the game's definite answer, also on the executing call: the
+  // code is used only once that call went through.
+  if (code === "game_version_outdated") return hasJobTransferred(job) ? "used" : "valid"
   // game_* errors, job_interrupted and internal_error depend on how far it got.
   return hasJobStartedExecuting(job) ? "used" : "valid"
 }
@@ -377,6 +385,7 @@ export const KNOWN_JOB_ERROR_CODES = [
   "game_maintenance",
   "game_unavailable",
   "game_error",
+  "game_version_outdated",
   "execute_uncertain",
   "login_failed",
   "fetch_failed",
@@ -387,7 +396,7 @@ export const KNOWN_JOB_ERROR_CODES = [
   "internal_error",
 ] as const
 
-export const KNOWN_JOB_WARNING_CODES = ["issue_code_failed", "vault_db_unavailable", "vault_store_failed"] as const
+export const KNOWN_JOB_WARNING_CODES = ["issue_code_failed", "vault_db_unavailable", "vault_store_failed", "game_version_outdated"] as const
 
 /** Request and unlock error codes of the job and vault endpoints the UI translates. */
 export const KNOWN_API_ERROR_CODES = [
