@@ -486,10 +486,6 @@ export function resolveCurrentDeckCardsWithProfile(userData: unknown, profileDat
   return resolveCurrentDeckCards(userData)
 }
 
-export function resolveRecommendDataMode(mode: DeckRecommendMode): "suite" | "mysekai" {
-  return mode === "mysekai" ? "mysekai" : "suite"
-}
-
 function resolveRecommendTarget(
   mode: DeckRecommendMode,
   target: DeckRecommendTarget | null | undefined,
