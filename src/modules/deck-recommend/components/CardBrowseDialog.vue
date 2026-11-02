@@ -157,61 +157,68 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="flex max-h-[85vh] flex-col gap-3 overflow-hidden sm:max-w-4xl">
-      <DialogHeader>
+    <!--
+      Phones: the filters alone are taller than the dialog, so they scroll
+      together with the results in one container (as in MusicSelect) instead
+      of squeezing the list to zero height. That container must be the
+      element that actually overflows: on iOS the modal scroll lock cancels
+      every touchmove that has no scrollable ancestor. `dvh` keeps the dialog
+      inside the visible viewport while Safari's toolbars are shown.
+    -->
+    <DialogContent class="flex h-[85dvh] flex-col gap-3 overflow-hidden sm:max-w-4xl">
+      <DialogHeader class="shrink-0">
         <DialogTitle>{{ t("deckRecommend.picker.cardDialogTitle") }}</DialogTitle>
       </DialogHeader>
 
-      <div class="grid gap-3 rounded-md border bg-muted/20 p-3">
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div class="grid gap-2">
-            <Label for="deck-card-browse-search">{{ t("deckRecommend.picker.cardSearchLabel") }}</Label>
-            <div class="relative w-full items-center">
-              <Input
-                id="deck-card-browse-search"
-                v-model="browseSearch"
-                class="pl-10"
-                type="text"
-                :placeholder="t('deckRecommend.options.constraints.cardSearchPlaceholder')"
-              />
-              <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <Search class="size-4 text-muted-foreground" />
-              </span>
-            </div>
-          </div>
+      <div class="grid shrink-0 gap-2">
+        <Label for="deck-card-browse-search">{{ t("deckRecommend.picker.cardSearchLabel") }}</Label>
+        <div class="relative w-full items-center">
+          <Input
+            id="deck-card-browse-search"
+            v-model="browseSearch"
+            class="pl-10"
+            type="text"
+            :placeholder="t('deckRecommend.options.constraints.cardSearchPlaceholder')"
+          />
+          <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+            <Search class="size-4 text-muted-foreground" />
+          </span>
+        </div>
+      </div>
+
+      <div data-slot="card-browse-scroll" class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain">
+        <div class="grid gap-3 rounded-md border bg-muted/20 p-3">
           <CatalogSelectField
             v-model="browseCharacterId"
             :label="t('deckRecommend.form.character')"
             :all-label="t('deckRecommend.picker.filterAll')"
             :options="characterFieldOptions"
           />
+          <CatalogChipsField
+            v-model="browseUnits"
+            :label="t('deckRecommend.picker.unitLabel')"
+            :options="unitFieldOptions"
+          />
+          <CatalogChipsField
+            v-model="browseAttrs"
+            :label="t('deckRecommend.picker.attrLabel')"
+            :options="attrFieldOptions"
+          />
+          <CatalogChipsField
+            v-model="browseRarities"
+            :label="t('deckRecommend.picker.rarityLabel')"
+            :options="rarityFieldOptions"
+          />
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs text-muted-foreground">
+              {{ t("deckRecommend.picker.browseCount", { count: browseResults.length }) }}
+            </p>
+            <Button type="button" variant="ghost" size="sm" @click="resetBrowseFilters">
+              {{ t("musicLibrary.list.filters.reset") }}
+            </Button>
+          </div>
         </div>
-        <CatalogChipsField
-          v-model="browseUnits"
-          :label="t('deckRecommend.picker.unitLabel')"
-          :options="unitFieldOptions"
-        />
-        <CatalogChipsField
-          v-model="browseAttrs"
-          :label="t('deckRecommend.picker.attrLabel')"
-          :options="attrFieldOptions"
-        />
-        <CatalogChipsField
-          v-model="browseRarities"
-          :label="t('deckRecommend.picker.rarityLabel')"
-          :options="rarityFieldOptions"
-        />
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <p class="text-xs text-muted-foreground">
-            {{ t("deckRecommend.picker.browseCount", { count: browseResults.length }) }}
-          </p>
-          <Button type="button" variant="ghost" size="sm" @click="resetBrowseFilters">
-            {{ t("musicLibrary.list.filters.reset") }}
-          </Button>
-        </div>
-      </div>
 
-      <div class="min-h-0 flex-1 overflow-y-auto">
         <div
           v-if="browseResults.length > 0"
           class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"
@@ -266,7 +273,7 @@ function createCardTags(option: DeckRecommendMasterCardOption) {
         </div>
       </div>
 
-      <DialogFooter class="flex-row items-center justify-between gap-2 sm:justify-between">
+      <DialogFooter class="shrink-0 flex-row items-center justify-between gap-2 sm:justify-between">
         <p class="text-xs text-muted-foreground">{{ footerText }}</p>
         <Button type="button" @click="emit('update:open', false)">
           {{ t("deckRecommend.picker.done") }}
