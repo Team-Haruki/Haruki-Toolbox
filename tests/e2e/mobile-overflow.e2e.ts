@@ -173,6 +173,16 @@ async function expectControlsToFit(scope: Locator) {
   })).toEqual([])
 }
 
+/**
+ * Keeps the glass effects on: the app turns on reduced visual effects (opaque
+ * surfaces) by itself on low-core machines such as CI runners.
+ */
+async function keepFullVisualEffects(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem("settings", JSON.stringify({ reducedVisualEffects: false, reducedVisualEffectsUserSet: true }))
+  })
+}
+
 /** Alpha of the element's computed background colour (any CSS colour syntax). */
 function backgroundAlpha(locator: Locator): Promise<number> {
   return locator.evaluate((element) => {
@@ -354,6 +364,7 @@ test.describe("iPhone", () => {
     test(`nested dialogs are opaque on a phone (${colorScheme})`, { tag: "@webkit" }, async ({ page }, testInfo) => {
       await page.emulateMedia({ colorScheme })
       await page.setViewportSize({ width: 390, height: 664 })
+      await keepFullVisualEffects(page)
       await mockMobileData(page, false, true)
       await page.goto("/deck-recommend")
       await expect(page.getByRole("combobox", { name: /^(账号|Account)$/ })).toContainText(OWN_UID)
@@ -388,6 +399,7 @@ test.describe("desktop", () => {
 
   test("dialogs keep the glass surface on desktop", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
+    await keepFullVisualEffects(page)
     await mockMobileData(page, false, true)
     await page.goto("/deck-recommend")
     await expect(page.getByRole("combobox", { name: /^(账号|Account)$/ })).toContainText(OWN_UID)
