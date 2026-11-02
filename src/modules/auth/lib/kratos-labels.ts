@@ -97,9 +97,12 @@ export function resolveKratosSubmitLabelKey(
       // 1010010 "Use backup recovery code") tell the two buttons apart.
       return flowType === "settings" ? "auth.kratos.labels.verify" : null
     case "profile":
-      // Settings saves the profile; on registration the same method is the
-      // first step of signing up, whose Kratos label (1040001) says so.
-      return flowType === "settings" ? "common.save" : null
+      // Settings saves the profile. On registration the same method is the
+      // first of two steps (traits, then credentials): Kratos labels it
+      // "Sign up", but the account is only created by the second step.
+      if (flowType === "settings") return "common.save"
+      if (flowType === "registration") return "auth.kratos.labels.next"
+      return null
     default:
       return null
   }

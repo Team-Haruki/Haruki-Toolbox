@@ -242,6 +242,18 @@ test("the recovery resend button posts the address it was issued for", async ({ 
   await expect(resend).toHaveAttribute("value", "kanade@example.com")
 })
 
+test("registration asks for the profile first (下一步) and signs up on the credential step (注册)", async ({ page }) => {
+  await openState(page, flowState("registration", "registration-initial", /使用 Google 注册/))
+  await expect(page.getByRole("button", { name: "下一步" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "注册", exact: true })).toHaveCount(0)
+})
+
+test("the credential step of registration submits with 注册", async ({ page }) => {
+  await openState(page, flowState("registration", "registration-choose-credentials", /使用通行密钥注册/))
+  await expect(page.getByRole("button", { name: "注册", exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: "下一步" })).toHaveCount(0)
+})
+
 test("Kratos webauthn.js alerts show as localized toasts while its script is on the page", async ({ page }) => {
   await openState(page, flowState("settings", "settings-initial", /添加通行密钥/, "section=mfa"))
   await page.evaluate(() => window.alert("This browser does not support WebAuthn!"))
@@ -251,7 +263,7 @@ test("Kratos webauthn.js alerts show as localized toasts while its script is on 
 // Screenshots for review: KRATOS_I18N_SCREENSHOT_DIR=<dir> bunx playwright test tests/e2e/kratos-i18n.e2e.ts -g screenshot
 const screenshotDir = process.env.KRATOS_I18N_SCREENSHOT_DIR
 const SCREENSHOT_STATES = [
-  "login-initial", "login-wrong-password", "registration-choose-credentials", "registration-password-too-short",
+  "login-initial", "login-wrong-password", "registration-initial", "registration-choose-credentials", "registration-password-too-short",
   "recovery-sent-email", "recovery-too-many-attempts", "settings-initial#section-mfa", "settings-keys-registered#section-mfa",
   "settings-initial#section-oidc", "error-csrf",
 ]

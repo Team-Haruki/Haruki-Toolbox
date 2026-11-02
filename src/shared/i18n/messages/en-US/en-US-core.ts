@@ -115,6 +115,7 @@ export default {
         "sendLink": "Send link",
         "verify": "Verify",
         "submit": "Submit",
+        "next": "Next",
         "imageAlt": "Authenticator app QR code"
       },
       "text": {

@@ -46,9 +46,11 @@ describe("resolveKratosSubmitLabelKey", () => {
     expect(resolveKratosSubmitLabelKey("recovery", "method", "code", { state: "sent_email", labelId: 1070008 })).toBe("auth.register.sendCode")
   })
 
-  it("saves the profile only in settings; registration keeps the Kratos sign-up label", () => {
+  it("saves the profile in settings and moves on to the credential step in registration", () => {
     expect(resolveKratosSubmitLabelKey("settings", "method", "profile")).toBe("common.save")
-    expect(resolveKratosSubmitLabelKey("registration", "method", "profile")).toBeNull()
+    expect(resolveKratosSubmitLabelKey("registration", "method", "profile")).toBe("auth.kratos.labels.next")
+    // The final sign-up submit stays "Sign up".
+    expect(resolveKratosSubmitLabelKey("registration", "method", "password")).toBe("auth.register.submit")
   })
 
   it("ignores non-method submits and unknown methods", () => {

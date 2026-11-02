@@ -115,6 +115,7 @@ export default {
         "sendLink": "发送链接",
         "verify": "验证",
         "submit": "提交",
+        "next": "下一步",
         "imageAlt": "验证器 App 二维码"
       },
       "text": {
