@@ -42,6 +42,24 @@ describe("buildEventMusicsIndex", () => {
 
   it("tolerates a missing file", () => {
     expect(buildEventMusicsIndex({}).eventIdsByMusic.size).toBe(0)
+    expect(index.bannerCharacterUnitIdByEvent.size).toBe(0)
+  })
+
+  it("indexes explicit story banners independently of song links and skips invalid references", () => {
+    const index = buildEventMusicsIndex({
+      eventStories: [
+        { eventId: 162, bannerGameCharacterUnitId: 4 },
+        { eventId: "173", bannerGameCharacterUnitId: "3" },
+        { eventId: 195 },
+        { eventId: 0, bannerGameCharacterUnitId: 4 },
+        { eventId: 196, bannerGameCharacterUnitId: -1 },
+        { eventId: "bad", bannerGameCharacterUnitId: 3 },
+        null,
+      ],
+    })
+    expect([...index.bannerCharacterUnitIdByEvent]).toEqual([[162, 4], [173, 3]])
+    expect(index.eventIdsByMusic.size).toBe(0)
+    expect(buildEventMusicsIndex({ eventStories: "bad" }).bannerCharacterUnitIdByEvent.size).toBe(0)
   })
 })
 

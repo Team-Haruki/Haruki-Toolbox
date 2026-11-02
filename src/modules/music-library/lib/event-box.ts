@@ -17,6 +17,9 @@ export type EventBoxCatalogInput = {
   cardsById: ReadonlyMap<number, { characterId: number | null; cardRarityType: string }>
   /** characterId → unit (null for unknown). */
   unitByCharacter: ReadonlyMap<number, string | null>
+  /** Explicit story banner references, resolved through gameCharacterUnits. */
+  bannerCharacterUnitIdByEvent: ReadonlyMap<number, number>
+  characterUnitsById: ReadonlyMap<number, { gameCharacterId: number }>
 }
 
 function addEventCardUnit(
@@ -58,9 +61,8 @@ function collectEventCardInfo(
 
 function assignEventBoxes(
   events: readonly EventBoxCandidate[],
-  bannerCardByEvent: ReadonlyMap<number, number>,
+  bannerCharacterByEvent: ReadonlyMap<number, number>,
   unitsByEvent: ReadonlyMap<number, Set<string>>,
-  cardById: ReadonlyMap<number, EventBoxCard>,
 ): Map<number, EventBoxInfo> {
   const counters = new Map<number, number>()
   const map = new Map<number, EventBoxInfo>()
@@ -69,8 +71,7 @@ function assignEventBoxes(
       continue
     }
 
-    const bannerCardId = bannerCardByEvent.get(event.id)
-    const characterId = bannerCardId != null ? cardById.get(bannerCardId)?.characterId ?? null : null
+    const characterId = bannerCharacterByEvent.get(event.id)
     if (characterId == null) {
       continue
     }
@@ -84,8 +85,10 @@ function assignEventBoxes(
 }
 
 /**
- * Community "N箱" (box) counting: a unit event's banner character is the
- * character of its lowest-id 4★ event card, and the box number is the ordinal
+ * Community "N箱" (box) counting: prefer the explicit event story banner,
+ * falling back to the lowest-id 4★ event card when story metadata is absent.
+ * Additional festival cards can precede the banner card (e.g. event 162), so
+ * card ids must not override the story banner. The box number is the ordinal
  * of that event among the character's banner events, ordered by startAt.
  * Mixed events (event cards spanning multiple non-VS units) and World Link
  * (world_bloom) events count as nobody's box.
@@ -105,11 +108,24 @@ export function buildEventBoxMapFromCatalog(input: EventBoxCatalogInput): Map<nu
     cardById,
     input.unitByCharacter,
   )
+  const bannerCharacterByEvent = new Map<number, number>()
+  for (const [eventId, cardId] of bannerCardByEvent) {
+    const characterId = cardById.get(cardId)?.characterId
+    if (characterId != null) {
+      bannerCharacterByEvent.set(eventId, characterId)
+    }
+  }
+  for (const [eventId, characterUnitId] of input.bannerCharacterUnitIdByEvent) {
+    const characterId = input.characterUnitsById.get(characterUnitId)?.gameCharacterId
+    if (bannerCharacterByEvent.has(eventId) && characterId != null && input.unitByCharacter.has(characterId)) {
+      bannerCharacterByEvent.set(eventId, characterId)
+    }
+  }
   const events = input.events
     .filter((event) => event.eventType !== "world_bloom")
     .map((event) => ({ id: event.id, startAt: event.startAt ?? 0 }))
     .sort((a, b) => (a.startAt - b.startAt) || (a.id - b.id))
-  return assignEventBoxes(events, bannerCardByEvent, unitsByEvent, cardById)
+  return assignEventBoxes(events, bannerCharacterByEvent, unitsByEvent)
 }
 
 /** musicId -> box info of its earliest linked event. */
