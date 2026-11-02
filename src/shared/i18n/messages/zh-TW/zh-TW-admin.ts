@@ -1374,7 +1374,7 @@ export default {
     "status": {
       "normal": "正常",
       "banned": "已封禁",
-      "deleted": "已刪除"
+      "deleted": "歷史軟刪除"
     },
     "common": {
       "actions": "操作",
@@ -1396,7 +1396,7 @@ export default {
       "title": "使用者管理",
       "filters": {
         "searchLabel": "搜尋",
-        "searchPlaceholder": "搜尋使用者名稱、信箱或 ID…",
+        "searchPlaceholder": "搜尋使用者名稱、信箱、使用者 ID 或社交帳號…",
         "roleLabel": "角色",
         "roleAll": "全部",
         "statusLabel": "帳號狀態",
@@ -1509,10 +1509,12 @@ export default {
         "forceLogout": "強制登出",
         "resetPassword": "重置密碼",
         "restore": "恢復",
-        "delete": "刪除",
-        "deleteDialogTitle": "確認刪除",
-        "deleteDialogDescription": "此操作是軟刪除，可以恢復。確定要刪除使用者 {name} 嗎？",
-        "deleteDialogConfirm": "確認刪除",
+        "delete": "永久刪除",
+        "deleteDialogTitle": "永久刪除帳號",
+        "deleteDialogDescription": "將永久刪除使用者 {name}（{userId}）及其登入身份、社交和遊戲綁定、資料授權、上傳碼與引繼碼保險庫。此操作無法恢復；審計和上傳歷史會保留。",
+        "deleteConfirmationLabel": "輸入使用者 ID {userId} 以確認",
+        "deleteConfirmationMismatch": "輸入的使用者 ID 不匹配。",
+        "deleteDialogConfirm": "永久刪除",
         "forceLogoutDialogTitle": "確認強制登出",
         "forceLogoutDialogDescription": "確定要強制登出使用者 {name} 嗎？該使用者的所有活躍會話都將被登出，需要重新登入。",
         "forceLogoutDialogConfirm": "確認登出",
@@ -1652,7 +1654,7 @@ export default {
         "forceLogoutFailedTitle": "強制登出失敗",
         "forceLogoutSuccess": "已強制登出",
         "deleteFailedTitle": "刪除失敗",
-        "deleteSuccess": "已軟刪除使用者",
+        "deleteSuccess": "帳號及其綁定已永久刪除",
         "restoreFailedTitle": "恢復失敗",
         "restoreSuccess": "已恢復使用者",
         "resetPasswordFailedTitle": "重置密碼失敗",

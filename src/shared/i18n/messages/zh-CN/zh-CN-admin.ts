@@ -1374,7 +1374,7 @@ export default {
     "status": {
       "normal": "正常",
       "banned": "已封禁",
-      "deleted": "已删除"
+      "deleted": "历史软删除"
     },
     "common": {
       "actions": "操作",
@@ -1396,7 +1396,7 @@ export default {
       "title": "用户管理",
       "filters": {
         "searchLabel": "搜索",
-        "searchPlaceholder": "搜索用户名、邮箱或 ID…",
+        "searchPlaceholder": "搜索用户名、邮箱、用户 ID 或社交账号…",
         "roleLabel": "角色",
         "roleAll": "全部",
         "statusLabel": "账号状态",
@@ -1509,10 +1509,12 @@ export default {
         "forceLogout": "强制登出",
         "resetPassword": "重置密码",
         "restore": "恢复",
-        "delete": "删除",
-        "deleteDialogTitle": "确认删除",
-        "deleteDialogDescription": "此操作是软删除，可以恢复。确定要删除用户 {name} 吗？",
-        "deleteDialogConfirm": "确认删除",
+        "delete": "永久删除",
+        "deleteDialogTitle": "永久删除账号",
+        "deleteDialogDescription": "将永久删除用户 {name}（{userId}）及其登录身份、社交和游戏绑定、数据授权、上传码与引继码保险库。此操作无法恢复；审计和上传历史会保留。",
+        "deleteConfirmationLabel": "输入用户 ID {userId} 以确认",
+        "deleteConfirmationMismatch": "输入的用户 ID 不匹配。",
+        "deleteDialogConfirm": "永久删除",
         "forceLogoutDialogTitle": "确认强制登出",
         "forceLogoutDialogDescription": "确定要强制登出用户 {name} 吗？该用户的所有活跃会话都将被注销，需要重新登录。",
         "forceLogoutDialogConfirm": "确认登出",
@@ -1652,7 +1654,7 @@ export default {
         "forceLogoutFailedTitle": "强制登出失败",
         "forceLogoutSuccess": "已强制登出",
         "deleteFailedTitle": "删除失败",
-        "deleteSuccess": "已软删除用户",
+        "deleteSuccess": "账号及其绑定已永久删除",
         "restoreFailedTitle": "恢复失败",
         "restoreSuccess": "已恢复用户",
         "resetPasswordFailedTitle": "重置密码失败",

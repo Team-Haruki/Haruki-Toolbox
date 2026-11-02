@@ -19,11 +19,9 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    // Deliberately NOT `bunx --bun vite` (the dev script): vite under the bun
-    // runtime hangs before listening on linux-x64 CI runners (seen with both
-    // bun 1.4.0 + vite 8.2.1 and bun 1.3.14 + vite 8.2.2). Plain bunx runs
-    // vite's CLI under node, which is immune.
-    command: "bunx vite --mode e2e --host 127.0.0.1 --port 4173 --strictPort",
+    // Invoke the installed CLI under Node directly, avoiding a nested Bun
+    // launcher that can stall before Vite starts listening in CI.
+    command: "./node_modules/.bin/vite --mode e2e --host 127.0.0.1 --port 4173 --strictPort",
     url: "http://127.0.0.1:4173",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

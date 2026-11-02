@@ -1374,7 +1374,7 @@ export default {
     "status": {
       "normal": "Normal",
       "banned": "Banned",
-      "deleted": "Deleted"
+      "deleted": "Legacy soft deletion"
     },
     "common": {
       "actions": "Actions",
@@ -1396,7 +1396,7 @@ export default {
       "title": "User management",
       "filters": {
         "searchLabel": "Search",
-        "searchPlaceholder": "Search username, email, or ID…",
+        "searchPlaceholder": "Search name, email, user ID or social account…",
         "roleLabel": "Role",
         "roleAll": "All",
         "statusLabel": "Account status",
@@ -1509,10 +1509,12 @@ export default {
         "forceLogout": "Force logout",
         "resetPassword": "Reset password",
         "restore": "Restore",
-        "delete": "Delete",
-        "deleteDialogTitle": "Confirm delete",
-        "deleteDialogDescription": "This is a soft delete and can be restored. Delete user {name}?",
-        "deleteDialogConfirm": "Confirm delete",
+        "delete": "Permanently delete",
+        "deleteDialogTitle": "Permanently delete account",
+        "deleteDialogDescription": "Permanently delete {name} ({userId}), including their login identity, social and game bindings, data grants, upload code and transfer-code vault. This cannot be undone. Audit and upload history will be retained.",
+        "deleteConfirmationLabel": "Enter user ID {userId} to confirm",
+        "deleteConfirmationMismatch": "The user ID does not match.",
+        "deleteDialogConfirm": "Permanently delete",
         "forceLogoutDialogTitle": "Confirm force logout",
         "forceLogoutDialogDescription": "Force logout for user {name}? All of their active sessions will be invalidated and they will need to sign in again.",
         "forceLogoutDialogConfirm": "Confirm logout",
@@ -1652,7 +1654,7 @@ export default {
         "forceLogoutFailedTitle": "Force logout failed",
         "forceLogoutSuccess": "Forced logout completed",
         "deleteFailedTitle": "Delete failed",
-        "deleteSuccess": "User soft-deleted",
+        "deleteSuccess": "Account and bindings permanently deleted",
         "restoreFailedTitle": "Restore failed",
         "restoreSuccess": "User restored",
         "resetPasswordFailedTitle": "Password reset failed",

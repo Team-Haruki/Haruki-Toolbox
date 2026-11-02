@@ -41,6 +41,25 @@ async function respondWith(updatedData: unknown) {
 }
 
 describe("admin user api", () => {
+  it("sends the administrator's explicit deletion confirmation", async () => {
+    const { apiClient } = await import("@/core/http/call-api")
+    let sent: unknown
+    apiClient.defaults.adapter = async (config) => {
+      sent = typeof config.data === "string" ? JSON.parse(config.data) : config.data
+      expect(config.url).toBe("/api/admin/users/target/permanent")
+      return { data: { status: 200, message: "deleted", updatedData: { userId: "target", deleted: true } }, status: 200, statusText: "OK", headers: {}, config }
+    }
+    const { deleteUser } = await import("./user")
+    await deleteUser("target", "typed-confirmation")
+    expect(sent).toEqual({ confirmUserId: "typed-confirmation" })
+  })
+
+  it("does not report a ban response as permanent deletion", async () => {
+    await respondWith({ userId: "target", banned: true })
+    const { deleteUser } = await import("./user")
+    await expect(deleteUser("target", "target")).rejects.toThrow()
+  })
+
   it("flags soft-deleted users in the list", async () => {
     await respondWith({
       page: 1,
