@@ -1,0 +1,107 @@
+{
+  "id": "61a190c5-40e9-4ff7-b79f-89eb38473509",
+  "type": "browser",
+  "expires_at": "2026-11-02T21:15:10.513528334Z",
+  "issued_at": "2026-11-02T20:15:10.513528334Z",
+  "request_url": "http://127.0.0.1:9/self-service/registration/browser",
+  "active": "code",
+  "ui": {
+    "action": "http://127.0.0.1:9/self-service/verification?flow=61a190c5-40e9-4ff7-b79f-89eb38473509",
+    "method": "POST",
+    "nodes": [
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "method",
+          "type": "hidden",
+          "value": "code",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "code",
+          "type": "text",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070011,
+            "text": "Verification code",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "method",
+          "type": "submit",
+          "value": "code",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070009,
+            "text": "Continue",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "csrf_token",
+          "type": "hidden",
+          "value": "e2e-csrf",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "email",
+          "type": "submit",
+          "value": "kanade@example.com",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070008,
+            "text": "Resend code",
+            "type": "info"
+          }
+        }
+      }
+    ],
+    "messages": [
+      {
+        "id": 4070006,
+        "text": "The verification code is invalid or has already been used. Please try again.",
+        "type": "error"
+      }
+    ]
+  },
+  "state": "sent_email",
+  "transient_payload": {}
+}

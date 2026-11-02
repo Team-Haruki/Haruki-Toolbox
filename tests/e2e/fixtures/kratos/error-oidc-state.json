@@ -1,0 +1,10 @@
+{
+  "_note": "captured from an OIDC callback without state, id normalised",
+  "id": "e2e-error",
+  "error": {
+    "code": 400,
+    "status": "Bad Request",
+    "reason": "Unable to complete OpenID Connect flow because the OpenID Provider did not return the state query parameter.",
+    "message": "The request was malformed or contained invalid parameters"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "id": "0a1a4b41-7b2f-4910-8f0f-64535bb8a597",
+  "type": "browser",
+  "expires_at": "2026-11-02T21:15:10.641102665Z",
+  "issued_at": "2026-11-02T20:15:10.641102665Z",
+  "request_url": "http://127.0.0.1:9/self-service/recovery/browser",
+  "active": "code",
+  "ui": {
+    "action": "http://127.0.0.1:9/self-service/recovery?flow=0a1a4b41-7b2f-4910-8f0f-64535bb8a597",
+    "method": "POST",
+    "nodes": [
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "csrf_token",
+          "type": "hidden",
+          "value": "e2e-csrf",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "email",
+          "type": "email",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070007,
+            "text": "Email",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "method",
+          "type": "submit",
+          "value": "code",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070009,
+            "text": "Continue",
+            "type": "info"
+          }
+        }
+      }
+    ]
+  },
+  "state": "choose_method"
+}

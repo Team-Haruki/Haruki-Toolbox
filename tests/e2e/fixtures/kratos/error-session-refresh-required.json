@@ -1,0 +1,11 @@
+{
+  "_note": "synthesized: settings ErrRequestNeedsReAuthentication",
+  "id": "e2e-error",
+  "error": {
+    "id": "session_refresh_required",
+    "code": 403,
+    "status": "Forbidden",
+    "reason": "The login session is too old and thus not allowed to update these fields. Please re-authenticate.",
+    "message": "The requested action was forbidden"
+  }
+}
