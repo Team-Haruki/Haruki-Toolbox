@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { devices, expect, test, type Locator, type Page } from "@playwright/test"
 
 test.use({ hasTouch: true })
 
@@ -8,7 +8,37 @@ const OWNER_NAME = "A very long account owner name that must fit on a phone"
 const EVENT_NAME = "A very long official event title with an unbroken suffix ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const MUSIC_NAME = "A very long song title with an unbroken suffix ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-async function mockMobileData(page: Page, enlargedText = false) {
+const UNITS = ["light_sound", "idol", "street", "theme_park", "school_refusal", "piapro"] as const
+const ATTRS = ["cute", "cool", "pure", "happy", "mysterious"] as const
+const RARITIES = ["rarity_1", "rarity_2", "rarity_3", "rarity_4", "rarity_birthday"] as const
+
+// Enough cards, characters, units, attributes and rarities for the card
+// picker to show every filter row and a result list taller than a phone.
+function cardPickerMasterFiles(): Record<string, unknown> {
+  const gameCharacters = Array.from({ length: 26 }, (_, index) => ({
+    id: index + 1,
+    unit: UNITS[Math.min(Math.floor(index / 4), UNITS.length - 1)],
+    firstName: "Character",
+    givenName: String(index + 1),
+  }))
+  return {
+    cards: Array.from({ length: 120 }, (_, index) => ({
+      id: index + 1,
+      seq: index + 1,
+      characterId: (index % 26) + 1,
+      cardRarityType: RARITIES[index % RARITIES.length],
+      attr: ATTRS[index % ATTRS.length],
+      prefix: `Card ${index + 1}`,
+      assetbundleName: `res${String(index + 1).padStart(3, "0")}_no001`,
+    })),
+    cardRarities: RARITIES.map((cardRarityType, index) => ({ cardRarityType, maxLevel: 20 + index * 10, maxSkillLevel: 4 })),
+    gameCharacters,
+    gameCharacterUnits: gameCharacters.map((character) => ({ gameCharacterId: character.id, unit: character.unit, colorCode: "#33aaee" })),
+    unitProfiles: UNITS.map((unit) => ({ unit, unitName: unit, unitProfileName: `Unit ${unit}`, colorCode: "#33aaee" })),
+  }
+}
+
+async function mockMobileData(page: Page, enlargedText = false, withCards = false) {
   await page.clock.setFixedTime(new Date("2026-10-21T08:00:00Z"))
   await page.addInitScript(({ uid, enlarged }) => {
     sessionStorage.setItem("user", JSON.stringify({
@@ -31,6 +61,7 @@ async function mockMobileData(page: Page, enlargedText = false) {
     events: [{ id: 221, eventType: "marathon", name: EVENT_NAME, startAt: 1792562400000, aggregateAt: 1792929599000 }],
     musics: [{ id: 1, title: MUSIC_NAME, publishedAt: 1601028000000, assetbundleName: "jacket_s_001" }],
     musicDifficulties: [{ musicId: 1, musicDifficulty: "expert", playLevel: 28, totalNoteCount: 1000 }],
+    ...(withCards ? cardPickerMasterFiles() : {}),
   }
   const hashes = Object.fromEntries(Object.keys(files).map((name, index) => [String(index + 1).repeat(64), name]))
   await page.route("**/*", (route) => {
@@ -57,7 +88,9 @@ async function mockMobileData(page: Page, enlargedText = false) {
     if (url.pathname.includes("/game-account/") && url.pathname.endsWith("/suite")) {
       return route.fulfill({ status: 404, contentType: "application/json", headers: apiHeaders, body: JSON.stringify({ status: 404, message: "Player data not found." }) })
     }
-    if (url.host !== "sekai-api-cdn.haruki.seiunx.com") return route.abort()
+    if (url.host !== "sekai-api-cdn.haruki.seiunx.com") {
+      return route.request().resourceType() === "image" ? route.fulfill({ status: 404 }) : route.abort()
+    }
     const name = hashes[url.pathname.split("/").at(-1) ?? ""]
     const body = url.pathname.endsWith("/current")
       ? { dataVersion: "7.1.0.12", contentHash: "mobile-layout", files: Object.entries(hashes).map(([sha256, key]) => ({ name: `${key}.json`, sha256 })) }
@@ -219,3 +252,86 @@ for (const { width, enlargedText } of [
     })
   }
 }
+
+// iPhone Safari (390 x 664 visible with the toolbars shown): the card picker
+// opens on top of the full-screen expert dialog and must keep its own list
+// scrollable, its filters reachable, and stay inside the visible viewport.
+// The iPhone user agent matters on every engine: reka-ui only installs its
+// iOS touchmove scroll lock when the user agent says iOS. Run it on WebKit
+// too with `E2E_WEBKIT=1 bunx playwright test --project webkit`.
+test.describe("iPhone", () => {
+  const { userAgent, deviceScaleFactor, isMobile } = devices["iPhone 13"]
+  test.use({ userAgent, deviceScaleFactor, isMobile, hasTouch: true })
+
+  test("card picker nested in the expert dialog scrolls on a phone", { tag: "@webkit" }, async ({ page, browserName }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 664 })
+    await mockMobileData(page, false, true)
+    await page.goto("/deck-recommend")
+    await expect(page.getByRole("combobox", { name: /^(账号|Account)$/ })).toContainText(OWN_UID)
+    await page.getByRole("button", { name: /^(专家配置|Expert Settings)$/ }).click()
+    const expert = page.getByRole("dialog", { name: /专家配置|Expert Settings/ })
+    await expect(expert).toBeVisible()
+    const browse = expert.getByRole("button", { name: /选择卡牌|Select cards?/ })
+    await expect(browse).toBeEnabled()
+    await browse.click()
+
+    const picker = page.getByRole("dialog", { name: /^(浏览卡牌|Browse Cards)$/ })
+    await expect(picker).toBeVisible()
+    await expect(picker.getByRole("button", { name: /Card 120/ })).toBeAttached()
+    const screenshotDir = process.env.E2E_SCREENSHOT_DIR
+    if (screenshotDir) {
+      await page.waitForTimeout(400)
+      await page.screenshot({ path: `${screenshotDir}/card-picker-${testInfo.project.name}.png` })
+    }
+
+    // The dialog stays inside the visible viewport.
+    const box = await picker.boundingBox()
+    expect(box).not.toBeNull()
+    expect(box!.y).toBeGreaterThanOrEqual(0)
+    expect(box!.y + box!.height).toBeLessThanOrEqual(664 + 1)
+
+    // On iOS the modal scroll lock cancels any touchmove without a scrollable
+    // ancestor. A swipe over the filters or the results must not be cancelled.
+    for (const target of [picker.getByRole("group", { name: /^(稀有度|Rarity)$/ }), picker.getByRole("button", { name: /Card 1 \(#1\)/ })]) {
+      expect(await target.evaluate((element) => {
+        const event = new Event("touchmove", { bubbles: true, cancelable: true })
+        Object.defineProperty(event, "touches", { value: [{ clientX: 0, clientY: 0 }] })
+        element.dispatchEvent(event)
+        return event.defaultPrevented
+      })).toBe(false)
+    }
+
+    // Its body is a real scroll container whose content is taller than it.
+    const scroller = picker.locator("[data-slot=card-browse-scroll]")
+    const metrics = await scroller.evaluate((element) => ({
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+      overflowY: getComputedStyle(element).overflowY,
+    }))
+    expect(metrics.overflowY).toBe("auto")
+    expect(metrics.clientHeight).toBeGreaterThan(150)
+    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight)
+
+    // Scrolling moves the list (real wheel input where the engine has one;
+    // Playwright's mobile WebKit has no wheel or swipe), and the last card and
+    // the footer become reachable.
+    const before = await scroller.evaluate((element) => element.scrollTop)
+    const scrollerBox = await scroller.boundingBox()
+    if (browserName === "chromium") {
+      await page.mouse.move(scrollerBox!.x + scrollerBox!.width / 2, scrollerBox!.y + scrollerBox!.height / 2)
+      await page.mouse.wheel(0, 600)
+    } else {
+      await scroller.evaluate((element) => element.scrollBy(0, 600))
+    }
+    await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(before)
+    if (screenshotDir) {
+      await page.screenshot({ path: `${screenshotDir}/card-picker-scrolled-${testInfo.project.name}.png` })
+    }
+    await scroller.evaluate((element) => { element.scrollTop = element.scrollHeight })
+    const last = picker.getByRole("button", { name: /Card 120/ })
+    const lastBox = await last.boundingBox()
+    const scrollerBottom = scrollerBox!.y + scrollerBox!.height
+    expect(lastBox!.y + lastBox!.height).toBeLessThanOrEqual(scrollerBottom + 1)
+    await expect(picker.getByRole("button", { name: /^(完成|Done)$/ })).toBeInViewport()
+  })
+})

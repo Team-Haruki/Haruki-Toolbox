@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test"
+import { defineConfig, devices } from "@playwright/test"
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -18,6 +18,14 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:4173",
     trace: "on-first-retry",
   },
+  projects: [
+    { name: "chromium", use: { browserName: "chromium" } },
+    // Opt-in mobile Safari pass for the tests tagged @webkit (iOS-only
+    // layout and scroll-lock behaviour). CI installs Chromium only.
+    ...(process.env.E2E_WEBKIT
+      ? [{ name: "webkit", use: { ...devices["iPhone 13"] }, grep: /@webkit/ }]
+      : []),
+  ],
   webServer: {
     // Invoke the installed CLI under Node directly, avoiding a nested Bun
     // launcher that can stall before Vite starts listening in CI.
