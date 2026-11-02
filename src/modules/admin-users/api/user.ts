@@ -63,8 +63,14 @@ export function updateUserRole(userId: string, role: UserRole) {
   })
 }
 
-export function deleteUser(userId: string) {
-  return request(`${userBase(userId)}`, { method: "DELETE" })
+export async function deleteUser(userId: string, confirmUserId: string) {
+  const response = await request<APIResponse<{ userId: string; deleted: boolean }>>(`${userBase(userId)}/permanent`, {
+    method: "DELETE", data: { confirmUserId },
+  })
+  const message = translate("adminUsers.detail.toast.deleteFailedTitle")
+  const result = unwrapUpdatedData(response, message)
+  if (result.deleted !== true || result.userId !== userId) throw new Error(message)
+  return result
 }
 
 export function restoreUser(userId: string) {

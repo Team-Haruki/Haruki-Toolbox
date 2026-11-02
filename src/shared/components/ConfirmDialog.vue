@@ -44,6 +44,8 @@ const props = withDefaults(
     cancelLabel?: string
     /** Styles the confirm button as destructive. */
     destructive?: boolean
+    /** Disable confirmation until an action-specific confirmation is complete. */
+    confirmDisabled?: boolean
     /** No cancel, no Escape, no outside click: only the confirm button closes it. */
     nonDismissable?: boolean
     /** The confirmed action; a rejection keeps the dialog open with its message. */
@@ -56,6 +58,7 @@ const props = withDefaults(
     confirmLabel: "",
     cancelLabel: "",
     destructive: false,
+    confirmDisabled: false,
     nonDismissable: false,
     onConfirm: undefined,
     describeError: undefined,
@@ -100,7 +103,7 @@ function handleEscapeKeyDown(event: Event) {
 }
 
 async function handleConfirm() {
-  if (loading.value) return
+  if (loading.value || props.confirmDisabled) return
   if (!props.onConfirm) {
     emit("success", undefined)
     emit("update:open", false)
@@ -146,7 +149,7 @@ async function handleConfirm() {
         <Button
           type="button"
           :variant="destructive ? 'destructive' : 'default'"
-          :disabled="loading"
+          :disabled="loading || confirmDisabled"
           :aria-busy="loading || undefined"
           @click="handleConfirm"
         >

@@ -2,7 +2,7 @@ import type { SekaiEventItem } from "@/modules/events"
 import { normalizeCatalogNumber, normalizeCatalogRecords } from "@/shared/sekai/catalog"
 
 /**
- * `eventMusics` re-shaped both ways. Built once per master version by the
+ * Song/event links and story banner metadata. Built once per master version by the
  * `music-library/event-musics` resource and shared by the list (box / World
  * Link tags) and the detail page (related events).
  */
@@ -11,6 +11,8 @@ export type EventMusicsIndex = {
   eventIdsByMusic: Map<number, number[]>
   /** eventId → music ids (ascending). */
   musicIdsByEvent: Map<number, number[]>
+  /** eventId → explicit story banner's gameCharacterUnits id (not a character id). */
+  bannerCharacterUnitIdByEvent: Map<number, number>
 }
 
 function append(map: Map<number, number[]>, key: number, value: number): void {
@@ -40,7 +42,15 @@ export function buildEventMusicsIndex(files: Record<string, unknown>): EventMusi
   for (const list of musicIdsByEvent.values()) {
     list.sort((a, b) => a - b)
   }
-  return { eventIdsByMusic, musicIdsByEvent }
+  const bannerCharacterUnitIdByEvent = new Map<number, number>()
+  for (const record of normalizeCatalogRecords(files.eventStories)) {
+    const eventId = normalizeCatalogNumber(record.eventId)
+    const characterUnitId = normalizeCatalogNumber(record.bannerGameCharacterUnitId)
+    if (eventId != null && eventId > 0 && characterUnitId != null && characterUnitId > 0) {
+      bannerCharacterUnitIdByEvent.set(eventId, characterUnitId)
+    }
+  }
+  return { eventIdsByMusic, musicIdsByEvent, bannerCharacterUnitIdByEvent }
 }
 
 /** Music ids linked to a World Link (world_bloom) event. */

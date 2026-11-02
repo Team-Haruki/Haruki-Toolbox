@@ -125,7 +125,10 @@ const {
 // stays in the dialog instead of dropping the admin back with a toast.
 const infoActions: UserDetailInfoActions = {
   ban: handleBan,
-  delete: handleDelete,
+  delete: async (confirmUserId) => {
+    await handleDelete(confirmUserId)
+    await router.push({ name: "admin.users" })
+  },
   forceLogout: handleForceLogout,
   resetPassword: handleResetPassword,
   changeRole: handleRoleChange,

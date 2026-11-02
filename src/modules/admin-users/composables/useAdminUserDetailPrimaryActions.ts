@@ -53,11 +53,10 @@ export function createAdminUserDetailPrimaryActions({
     })
   }
 
-  async function handleDelete() {
-    await runAction(translate("adminUsers.detail.toast.deleteFailedTitle"), () => deleteUser(userId()), {
+  async function handleDelete(confirmUserId: string) {
+    await runAction(translate("adminUsers.detail.toast.deleteFailedTitle"), () => deleteUser(userId(), confirmUserId), {
       ...confirmedActionOptions,
       successMessage: translate("adminUsers.detail.toast.deleteSuccess"),
-      afterSuccess: () => loaders.loadUser(strictRefreshOptions),
     })
   }
 

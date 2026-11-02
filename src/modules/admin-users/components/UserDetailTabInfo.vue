@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import {
     Select,
     SelectContent,
@@ -40,7 +41,7 @@ import { formatDateTime, isUserRole, roleLabel } from "@/modules/admin-users/con
  */
 export interface UserDetailInfoActions {
     ban: () => Promise<void>
-    delete: () => Promise<void>
+    delete: (confirmUserId: string) => Promise<void>
     forceLogout: () => Promise<void>
     resetPassword: () => Promise<void>
     changeRole: (role: UserRole) => Promise<void>
@@ -71,11 +72,13 @@ const emit = defineEmits<{
 const { t, locale } = useI18n()
 
 const confirmOpen = ref(false)
+const deleteConfirmation = ref("")
 // Kept after the dialog closes so its text does not change mid fade-out.
 const pending = ref<PendingAction | null>(null)
 
 function requestConfirm(action: PendingAction) {
     pending.value = action
+    deleteConfirmation.value = ""
     confirmOpen.value = true
 }
 
@@ -99,10 +102,15 @@ const confirmDialog = computed(() => {
         case "delete":
             return {
                 title: t("adminUsers.detail.info.deleteDialogTitle"),
-                description: t("adminUsers.detail.info.deleteDialogDescription", { name }),
+                description: t("adminUsers.detail.info.deleteDialogDescription", { name, userId: props.user.userData.userId }),
                 confirmLabel: t("adminUsers.detail.info.deleteDialogConfirm"),
                 destructive: true,
-                run: () => props.actions.delete(),
+                run: () => {
+                    if (deleteConfirmation.value.trim() !== props.user.userData.userId) {
+                        throw new Error(t("adminUsers.detail.info.deleteConfirmationMismatch"))
+                    }
+                    return props.actions.delete(deleteConfirmation.value.trim())
+                },
             }
         case "forceLogout":
             return {
@@ -161,7 +169,7 @@ const confirmDialog = computed(() => {
             <span :class="user.banned ? 'text-red-500 flex items-center gap-1.5' : 'text-green-500 flex items-center gap-1.5'">
               <LucideBan v-if="user.banned" class="w-4 h-4" />
               <LucideCheckCircle2 v-else class="w-4 h-4" />
-              {{ user.banned ? t("adminUsers.status.banned") : t("adminUsers.status.normal") }}
+              {{ user.deleted ? t("adminUsers.status.deleted") : user.banned ? t("adminUsers.status.banned") : t("adminUsers.status.normal") }}
             </span>
           </div>
         </div>
@@ -257,7 +265,7 @@ const confirmDialog = computed(() => {
         <Button v-if="user.deleted" variant="outline" size="sm" :disabled="actionLoading" @click="emit('restore')">
           <LucideUndo2 class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.restore") }}
         </Button>
-        <Button v-else variant="destructive" size="sm" :disabled="actionLoading" @click="requestConfirm({ kind: 'delete' })">
+        <Button variant="destructive" size="sm" :disabled="actionLoading" @click="requestConfirm({ kind: 'delete' })">
           <LucideTrash2 class="w-4 h-4 mr-1" /> {{ t("adminUsers.detail.info.delete") }}
         </Button>
 
@@ -272,6 +280,14 @@ const confirmDialog = computed(() => {
       :confirm-label="confirmDialog?.confirmLabel"
       :destructive="confirmDialog?.destructive ?? false"
       :on-confirm="confirmDialog?.run"
-    />
+      :confirm-disabled="pending?.kind === 'delete' && deleteConfirmation.trim() !== user.userData.userId"
+    >
+      <div v-if="pending?.kind === 'delete'" class="space-y-2">
+        <Label for="admin-delete-user-confirmation">
+          {{ t("adminUsers.detail.info.deleteConfirmationLabel", { userId: user.userData.userId }) }}
+        </Label>
+        <Input id="admin-delete-user-confirmation" v-model="deleteConfirmation" autocomplete="off" />
+      </div>
+    </ConfirmDialog>
   </Card>
 </template>

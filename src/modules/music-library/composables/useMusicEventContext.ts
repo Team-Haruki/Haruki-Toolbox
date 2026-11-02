@@ -48,7 +48,8 @@ export function useMusicEventContext(region: Ref<SekaiRegion>): MusicEventContex
     const eventsIndex = events.data.value
     const cardsIndex = cards.data.value
     const charactersIndex = characters.data.value
-    if (!eventsIndex || !cardsIndex || !charactersIndex) {
+    const eventMusicsIndex = eventMusics.data.value
+    if (!eventsIndex || !cardsIndex || !charactersIndex || !eventMusicsIndex) {
       return new Map<number, EventBoxInfo>()
     }
     const unitByCharacter = new Map<number, string | null>()
@@ -60,6 +61,8 @@ export function useMusicEventContext(region: Ref<SekaiRegion>): MusicEventContex
       cardLinksByEvent: eventsIndex.cardLinksByEvent,
       cardsById: cardsIndex.byId,
       unitByCharacter,
+      bannerCharacterUnitIdByEvent: eventMusicsIndex.bannerCharacterUnitIdByEvent,
+      characterUnitsById: charactersIndex.characterUnitById,
     })
   })
 

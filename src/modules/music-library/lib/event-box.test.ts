@@ -79,13 +79,15 @@ function buildInput(): EventBoxCatalogInput {
     cardLinksByEvent,
     cardsById: new Map(cards.map((card) => [card.id, { characterId: card.characterId, cardRarityType: card.cardRarityType }])),
     unitByCharacter: new Map(characters.map((character) => [character.id, character.unit])),
+    bannerCharacterUnitIdByEvent: new Map(),
+    characterUnitsById: new Map(),
   }
 }
 
 describe("buildEventBoxMapFromCatalog", () => {
   const map = buildEventBoxMapFromCatalog(buildInput())
 
-  it("uses the lowest-id 4-star event card as the banner character", () => {
+  it("falls back to the lowest-id 4-star event card without story metadata", () => {
     expect(map.get(1)).toEqual({ eventId: 1, characterId: 2, boxNumber: 1 })
   })
 
@@ -110,12 +112,72 @@ describe("buildEventBoxMapFromCatalog", () => {
     expect(map.has(7)).toBe(false)
   })
 
+  it("resolves the story's character-unit id instead of treating it as a character id", () => {
+    const input = buildInput()
+    input.bannerCharacterUnitIdByEvent = new Map([[1, 99]])
+    input.characterUnitsById = new Map([[99, { gameCharacterId: 4 }]])
+    const boxes = buildEventBoxMapFromCatalog(input)
+    expect(boxes.get(1)).toEqual({ eventId: 1, characterId: 4, boxNumber: 1 })
+    expect(boxes.get(2)).toEqual({ eventId: 2, characterId: 2, boxNumber: 1 })
+  })
+
+  it("keeps the card fallback for unresolved story banners", () => {
+    const input = buildInput()
+    input.bannerCharacterUnitIdByEvent = new Map([[1, 999], [2, 998]])
+    input.characterUnitsById = new Map([[998, { gameCharacterId: 9999 }]])
+    expect(buildEventBoxMapFromCatalog(input)).toEqual(map)
+  })
+
+  it("does not count World Link, mixed or missing-card events even with story banners", () => {
+    const input = buildInput()
+    input.bannerCharacterUnitIdByEvent = new Map([[3, 5], [5, 5], [7, 5]])
+    input.characterUnitsById = new Map([[5, { gameCharacterId: 5 }]])
+    expect(buildEventBoxMapFromCatalog(input)).toEqual(map)
+  })
+
+  it("keeps Sympathy as Shiho's fifth box without inflating Honami's later boxes", () => {
+    // Reduced JP master records. Event 162 includes festival cards 1144/1145
+    // before the actual event banner card 1146 (Shiho).
+    const rows: [eventId: number, bannerCharacter: number, cards: [number, number][]][] = [
+      [10, 3, [[155, 3]]],
+      [20, 4, [[207, 4]]],
+      [40, 3, [[313, 3]]],
+      [50, 4, [[380, 4]]],
+      [69, 4, [[493, 4]]],
+      [83, 3, [[576, 3]]],
+      [110, 4, [[773, 4]]],
+      [121, 3, [[867, 3]]],
+      [162, 4, [[1144, 3], [1145, 24], [1146, 4], [1147, 1], [1148, 21]]],
+      [173, 3, [[1201, 3]]],
+      [195, 4, [[1333, 4]]],
+      [203, 3, [[1380, 3]]],
+      [220, 3, [[1483, 3]]],
+    ]
+    const input = buildInput()
+    input.events = rows.map(([id]) => ({ id, eventType: "marathon", startAt: id }))
+    input.cardLinksByEvent = new Map(rows.map(([id, , cards]) => [id, cards.map(([cardId]) => ({ cardId }))]))
+    input.cardsById = new Map(rows.flatMap(([, , cards]) => cards.map(([id, characterId]) => [
+      id, { characterId, cardRarityType: "rarity_4" },
+    ] as const)))
+    input.bannerCharacterUnitIdByEvent = new Map(rows.map(([id, characterId]) => [id, characterId]))
+    input.characterUnitsById = new Map([[3, { gameCharacterId: 3 }], [4, { gameCharacterId: 4 }]])
+
+    const boxes = buildEventBoxMapFromCatalog(input)
+    expect(boxes.get(162)).toEqual({ eventId: 162, characterId: 4, boxNumber: 5 })
+    expect(boxes.get(195)).toEqual({ eventId: 195, characterId: 4, boxNumber: 6 })
+    expect(boxes.get(173)).toEqual({ eventId: 173, characterId: 3, boxNumber: 5 })
+    expect(boxes.get(203)).toEqual({ eventId: 203, characterId: 3, boxNumber: 6 })
+    expect(boxes.get(220)).toEqual({ eventId: 220, characterId: 3, boxNumber: 7 })
+  })
+
   it("handles empty indexes", () => {
     expect(buildEventBoxMapFromCatalog({
       events: [],
       cardLinksByEvent: new Map(),
       cardsById: new Map(),
       unitByCharacter: new Map(),
+      bannerCharacterUnitIdByEvent: new Map(),
+      characterUnitsById: new Map(),
     }).size).toBe(0)
   })
 })
