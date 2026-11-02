@@ -445,7 +445,7 @@ export default {
       "algorithmElapsed": "{algorithm} 搜尋：{seconds} 秒",
       "empty": "暫無推薦結果。",
       "missingUserDataTitle": "還沒有可用於組卡的遊戲資料",
-      "missingUserDataDescription": "所選遊戲帳號尚未上傳所需資料。請先前往資料上傳頁上傳帳號資料（Suite）；使用烤森模式時還需要上傳烤森資料（MySekai），然後再回來重試。",
+      "missingUserDataDescription": "所選遊戲帳號尚未上傳帳號資料（Suite）。請先前往資料上傳頁上傳，然後再回來重試。所有組卡模式都只需要 Suite：烤森組卡用到的烤森門、畫布和玩偶加成也來自 Suite，不需要上傳烤森資料（MySekai）。",
       "uploadDataAction": "前往上傳資料",
       "deckTitle": "卡組 #{index}",
       "score": "Live分數 {score}",

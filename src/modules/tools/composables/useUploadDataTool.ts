@@ -125,8 +125,11 @@ export function useUploadDataTool() {
 
       uploadStatus.value = t("tools.uploadData.uploadStatus.success")
       uploadProgress.value = 100
-      // The deck page may have this account flagged "no data uploaded".
-      markDeckRecommendUserDataAvailable(account.server, account.uid, fileDataType.value)
+      // The deck page may have this account flagged "no data uploaded"; it
+      // reads only the Suite upload, whatever the deck mode.
+      if (fileDataType.value === "suite") {
+        markDeckRecommendUserDataAvailable(account.server, account.uid, "suite")
+      }
       selectedFile.value = null
       selectedFileName.value = ""
       if (fileInputElement.value) {

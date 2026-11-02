@@ -3,7 +3,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch 
 import { describeDeckRecommendError } from "../lib/engine-errors"
 import { isDeckRecommendUserDataKnownMissing } from "../lib/user-data-availability"
 import { fetchDeckRecommendUserDataWithCache } from "../lib/user-data"
-import type { DeckRecommendUserDataMode } from "../api/recommend-data"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
 import { useMediaQuery } from "@vueuse/core"
@@ -272,13 +271,9 @@ const accountOptions = computed<BoundAccountOption[]>(() => {
   if (!Array.isArray(userStore.gameAccountBindings)) {
     return []
   }
+  // Every mode reads only the Suite upload (MySekai mode included), which the
+  // "recommend" capability already requires.
   return buildSelectableGameAccounts(userStore.gameAccountBindings, accessibleAccounts.value, "recommend")
-    // The mysekai deck mode additionally reads mysekai data, which a
-    // suite-only grant does not cover.
-    .filter((account) =>
-      account.ownership === "own"
-      || recommendMode.value !== "mysekai"
-      || account.capabilities.has("mysekai"))
     .map((account) => createAccountOption(account))
 })
 
@@ -561,28 +556,27 @@ const invalidOptionalFields = computed(() => [
   hasSpecificSkillOrderError.value,
   hasEventSimulationError.value,
 ].some(Boolean))
-const selectedAccountDataMode = computed<DeckRecommendUserDataMode>(() => (recommendMode.value === "mysekai" ? "mysekai" : "suite"))
-// Known (from this session's fetches) to have no uploaded data for the
-// mode: the run would only 404 again, so the button stays off with a hint.
+// Known (from this session's fetches) to have no Suite upload, the only
+// data any deck mode reads: the run would only 404 again, so the button
+// stays off with a hint.
 const selectedAccountDataMissing = computed(() => isDeckRecommendUserDataKnownMissing(
   selectedAccount.value?.server,
   selectedAccount.value?.uid,
-  selectedAccountDataMode.value,
+  "suite",
 ))
 
 // That flag is only as fresh as the last fetch: the upload page in this tab
 // clears it, but an upload from another device or the bot cannot. Re-probe a
-// flagged account once per page visit (and once per account / mode switch):
-// a success clears the flag through the fetch itself and leaves the data in
+// flagged account once per page visit (and once per account switch): a
+// success clears the flag through the fetch itself and leaves the data in
 // the cache for the run; another 404 keeps the hint, correctly.
 const revalidatedAvailabilityKeys = new Set<string>()
 function revalidateSelectedAccountAvailability() {
   const account = selectedAccount.value
-  const mode = selectedAccountDataMode.value
-  if (!account || !userStore.userId || !isDeckRecommendUserDataKnownMissing(account.server, account.uid, mode)) {
+  if (!account || !userStore.userId || !isDeckRecommendUserDataKnownMissing(account.server, account.uid, "suite")) {
     return
   }
-  const key = `${account.server}:${account.uid}:${mode}`
+  const key = `${account.server}:${account.uid}`
   if (revalidatedAvailabilityKeys.has(key)) {
     return
   }
@@ -591,10 +585,10 @@ function revalidateSelectedAccountAvailability() {
     toolboxUserId: userStore.userId,
     server: account.server,
     gameUserId: account.uid,
-    mode,
+    mode: "suite",
   }, { strategy: "check-remote" }).catch(() => undefined)
 }
-watch([() => selectedAccount.value?.key ?? null, selectedAccountDataMode], revalidateSelectedAccountAvailability, { immediate: true })
+watch(() => selectedAccount.value?.key ?? null, revalidateSelectedAccountAvailability, { immediate: true })
 
 /** Why "开始推荐" is disabled, when the reason is something the user can fix. */
 const runBlockedHint = computed<string | null>(() => {
