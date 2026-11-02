@@ -1,0 +1,109 @@
+{
+  "id": "0a1a4b41-7b2f-4910-8f0f-64535bb8a597",
+  "type": "browser",
+  "expires_at": "2026-11-02T21:15:10.641102665Z",
+  "issued_at": "2026-11-02T20:15:10.641102665Z",
+  "request_url": "http://127.0.0.1:9/self-service/recovery/browser",
+  "active": "code",
+  "ui": {
+    "action": "http://127.0.0.1:9/self-service/recovery?flow=0a1a4b41-7b2f-4910-8f0f-64535bb8a597",
+    "method": "POST",
+    "nodes": [
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "csrf_token",
+          "type": "hidden",
+          "value": "e2e-csrf",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "code",
+          "type": "text",
+          "required": true,
+          "pattern": "[0-9]+",
+          "disabled": false,
+          "maxlength": 6,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070010,
+            "text": "Recovery code",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "method",
+          "type": "hidden",
+          "value": "code",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "method",
+          "type": "submit",
+          "value": "code",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070009,
+            "text": "Continue",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "email",
+          "type": "submit",
+          "value": "kanade@example.com",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070008,
+            "text": "Resend code",
+            "type": "info"
+          }
+        }
+      }
+    ],
+    "messages": [
+      {
+        "id": 4060006,
+        "text": "The recovery code is invalid or has already been used. Please try again.",
+        "type": "error"
+      }
+    ]
+  },
+  "state": "sent_email",
+  "transient_payload": {}
+}

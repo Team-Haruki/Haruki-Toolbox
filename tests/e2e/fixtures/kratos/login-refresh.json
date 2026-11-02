@@ -1,0 +1,92 @@
+{
+  "id": "aa7b5792-0994-42b6-a01a-c924e2d70b32",
+  "organization_id": null,
+  "type": "browser",
+  "expires_at": "2026-11-02T20:25:10.61497663Z",
+  "issued_at": "2026-11-02T20:15:10.61497663Z",
+  "request_url": "http://127.0.0.1:9/self-service/login/browser?refresh=true",
+  "ui": {
+    "action": "http://127.0.0.1:9/self-service/login?flow=aa7b5792-0994-42b6-a01a-c924e2d70b32",
+    "method": "POST",
+    "nodes": [
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "csrf_token",
+          "type": "hidden",
+          "value": "e2e-csrf",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "identifier",
+          "type": "hidden",
+          "value": "kanade@example.com",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "password",
+        "attributes": {
+          "name": "password",
+          "type": "password",
+          "required": true,
+          "autocomplete": "current-password",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070001,
+            "text": "Password",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "password",
+        "attributes": {
+          "name": "method",
+          "type": "submit",
+          "value": "password",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1010001,
+            "text": "Sign in",
+            "type": "info"
+          }
+        }
+      }
+    ],
+    "messages": [
+      {
+        "id": 1010003,
+        "text": "Please confirm this action by verifying that it is you.",
+        "type": "info"
+      }
+    ]
+  },
+  "created_at": "2026-11-02T20:15:10.618794Z",
+  "updated_at": "2026-11-02T20:15:10.618794Z",
+  "refresh": true,
+  "requested_aal": "aal1",
+  "state": "choose_method"
+}

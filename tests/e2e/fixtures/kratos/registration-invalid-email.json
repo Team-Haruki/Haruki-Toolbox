@@ -1,0 +1,151 @@
+{
+  "id": "26e32ae5-dd33-4e5b-89b1-c7b0afdc88ea",
+  "type": "browser",
+  "expires_at": "2026-11-02T20:25:10.455949082Z",
+  "issued_at": "2026-11-02T20:15:10.455949082Z",
+  "request_url": "http://127.0.0.1:9/self-service/registration/browser",
+  "ui": {
+    "action": "http://127.0.0.1:9/self-service/registration?flow=26e32ae5-dd33-4e5b-89b1-c7b0afdc88ea",
+    "method": "POST",
+    "nodes": [
+      {
+        "type": "input",
+        "group": "oidc",
+        "attributes": {
+          "name": "provider",
+          "type": "submit",
+          "value": "apple",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1040002,
+            "text": "Sign up with apple",
+            "type": "info",
+            "context": {
+              "provider": "apple",
+              "provider_id": "apple"
+            }
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "oidc",
+        "attributes": {
+          "name": "provider",
+          "type": "submit",
+          "value": "google",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1040002,
+            "text": "Sign up with google",
+            "type": "info",
+            "context": {
+              "provider": "google",
+              "provider_id": "google"
+            }
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "csrf_token",
+          "type": "hidden",
+          "value": "e2e-csrf",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "traits.email",
+          "type": "email",
+          "value": "not-an-email",
+          "required": true,
+          "autocomplete": "email",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [
+          {
+            "id": 4000001,
+            "text": "\"not-an-email\" is not valid \"email\"",
+            "type": "error",
+            "context": {
+              "reason": "\"not-an-email\" is not valid \"email\""
+            }
+          }
+        ],
+        "meta": {
+          "label": {
+            "id": 1070002,
+            "text": "E-Mail",
+            "type": "info",
+            "context": {
+              "name": "traits.email",
+              "title": "E-Mail"
+            }
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "traits.name",
+          "type": "text",
+          "value": "Kanade",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070002,
+            "text": "Display Name",
+            "type": "info",
+            "context": {
+              "name": "traits.name",
+              "title": "Display Name"
+            }
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "profile",
+        "attributes": {
+          "name": "method",
+          "type": "submit",
+          "value": "profile",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1040001,
+            "text": "Sign up",
+            "type": "info"
+          }
+        }
+      }
+    ]
+  },
+  "organization_id": null,
+  "state": "choose_method"
+}

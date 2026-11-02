@@ -1,0 +1,117 @@
+{
+  "id": "9adba250-aa80-4b8d-a602-901fd3a3190d",
+  "organization_id": null,
+  "type": "browser",
+  "expires_at": "2026-11-02T20:25:10.780149863Z",
+  "issued_at": "2026-11-02T20:15:10.780149863Z",
+  "request_url": "http://127.0.0.1:9/self-service/login/browser?aal=aal2",
+  "ui": {
+    "action": "http://127.0.0.1:9/self-service/login?flow=9adba250-aa80-4b8d-a602-901fd3a3190d",
+    "method": "POST",
+    "nodes": [
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "csrf_token",
+          "type": "hidden",
+          "value": "e2e-csrf",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "totp",
+        "attributes": {
+          "name": "totp_code",
+          "type": "text",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1010006,
+            "text": "Authentication code",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "totp",
+        "attributes": {
+          "name": "method",
+          "type": "submit",
+          "value": "totp",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1010009,
+            "text": "Use Authenticator",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "lookup_secret",
+        "attributes": {
+          "name": "lookup_secret",
+          "type": "text",
+          "value": "",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1010007,
+            "text": "Backup recovery code",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "lookup_secret",
+        "attributes": {
+          "name": "method",
+          "type": "submit",
+          "value": "lookup_secret",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1010010,
+            "text": "Use backup recovery code",
+            "type": "info"
+          }
+        }
+      }
+    ],
+    "messages": [
+      {
+        "id": 4000008,
+        "text": "The provided authentication code is invalid, please try again.",
+        "type": "error"
+      }
+    ]
+  },
+  "created_at": "2026-11-02T20:15:10.781606Z",
+  "updated_at": "2026-11-02T20:15:10.781606Z",
+  "refresh": false,
+  "requested_aal": "aal2",
+  "state": "choose_method"
+}

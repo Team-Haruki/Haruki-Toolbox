@@ -1,0 +1,9 @@
+{
+  "error": {
+    "id": "session_already_available",
+    "code": 400,
+    "status": "Bad Request",
+    "reason": "A valid session was detected and thus login is not possible. Did you forget to set `?refresh=true`?",
+    "message": "you are already logged in"
+  }
+}

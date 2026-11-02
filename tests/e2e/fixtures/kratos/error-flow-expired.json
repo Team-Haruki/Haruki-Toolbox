@@ -1,0 +1,11 @@
+{
+  "_note": "synthesized: flow.ExpiredError (selfservice/flow/error.go)",
+  "id": "e2e-error",
+  "error": {
+    "id": "self_service_flow_expired",
+    "code": 410,
+    "status": "Gone",
+    "reason": "The self-service flow expired 12.34 minutes ago, initialize a new one.",
+    "message": "The requested resource is no longer available because it has expired or is otherwise invalid."
+  }
+}

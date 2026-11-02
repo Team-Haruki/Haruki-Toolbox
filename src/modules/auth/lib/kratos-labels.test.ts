@@ -29,7 +29,10 @@ describe("resolveKratosSubmitLabelKey", () => {
     expect(resolveKratosSubmitLabelKey("registration", "method", "password")).toBe("auth.register.submit")
     expect(resolveKratosSubmitLabelKey("recovery", "method", "code")).toBe("auth.register.sendCode")
     expect(resolveKratosSubmitLabelKey("verification", "method", "code")).toBe("auth.register.sendCode")
-    expect(resolveKratosSubmitLabelKey("login", "method", "totp")).toBe("auth.kratos.labels.verify")
+    expect(resolveKratosSubmitLabelKey("settings", "method", "totp")).toBe("auth.kratos.labels.verify")
+    // The second-factor step keeps the Kratos labels, which tell totp from backup codes.
+    expect(resolveKratosSubmitLabelKey("login", "method", "totp")).toBeNull()
+    expect(resolveKratosSubmitLabelKey("login", "method", "lookup_secret")).toBeNull()
   })
 
   it("tells the code submit from the (re)send buttons once the code was sent", () => {
@@ -41,6 +44,11 @@ describe("resolveKratosSubmitLabelKey", () => {
     expect(resolveKratosSubmitLabelKey("verification", "method", "code", { state: "sent_email", labelId: 1070008 })).toBe("auth.register.sendCode")
     expect(resolveKratosSubmitLabelKey("recovery", "method", "code", { state: "sent_email", labelId: 1070005 })).toBe("auth.kratos.labels.verify")
     expect(resolveKratosSubmitLabelKey("recovery", "method", "code", { state: "sent_email", labelId: 1070008 })).toBe("auth.register.sendCode")
+  })
+
+  it("saves the profile only in settings; registration keeps the Kratos sign-up label", () => {
+    expect(resolveKratosSubmitLabelKey("settings", "method", "profile")).toBe("common.save")
+    expect(resolveKratosSubmitLabelKey("registration", "method", "profile")).toBeNull()
   })
 
   it("ignores non-method submits and unknown methods", () => {

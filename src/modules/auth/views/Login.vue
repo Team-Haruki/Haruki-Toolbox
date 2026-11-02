@@ -12,7 +12,7 @@ import {
   CardContent,
   CardDescription
 } from "@/components/ui/card"
-import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
+import { useKratosBrowserFlow, type KratosFlowMessage } from "@/modules/auth/composables/useKratosBrowserFlow"
 import { useFlowReturnToGuard } from "@/modules/auth/composables/useFlowReturnToGuard"
 import { markLoginSuccessPending } from "@/modules/auth/lib/login-success"
 import {
@@ -80,11 +80,7 @@ interface LoginAction {
   label: string
   disabled: boolean
   kind: LoginActionKind
-  messages: {
-    key: string
-    text: string
-    tone: "info" | "success" | "error" | "warning"
-  }[]
+  messages: KratosFlowMessage[]
   onClickTrigger: string
 }
 
