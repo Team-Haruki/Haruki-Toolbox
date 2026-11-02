@@ -93,6 +93,9 @@ describe("localizeKratosMessage", () => {
     expect(formatKratosProviderName("Google Workspace", "google")).toBe("Google Workspace")
     expect(formatKratosProviderName("github", "github")).toBe("GitHub")
     expect(formatKratosProviderName("acme", "acme")).toBe("Acme")
+    // The settings link/unlink messages carry only the configured label.
+    expect(formatKratosProviderName("Google Workspace")).toBe("Google Workspace")
+    expect(formatKratosProviderName("GOOGLE")).toBe("Google")
     expect(formatKratosProviderName("", "")).toBe("")
   })
 

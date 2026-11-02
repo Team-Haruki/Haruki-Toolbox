@@ -59,9 +59,11 @@ export function formatKratosProviderName(provider: unknown, providerId?: unknown
   const name = typeof provider === "string" ? provider.trim() : ""
   const id = typeof providerId === "string" ? providerId.trim() : ""
   if (name && id && name !== id) return name
-  const key = (id || name).toLowerCase()
-  if (!key) return ""
-  return PROVIDER_DISPLAY_NAMES[key] ?? key.charAt(0).toUpperCase() + key.slice(1)
+  // Only the lookup is case-insensitive: a label that reaches us without its
+  // id (the settings link/unlink messages) keeps its own casing.
+  const raw = id || name
+  if (!raw) return ""
+  return PROVIDER_DISPLAY_NAMES[raw.toLowerCase()] ?? raw.charAt(0).toUpperCase() + raw.slice(1)
 }
 
 function readString(context: Record<string, unknown> | undefined, key: string): string {
