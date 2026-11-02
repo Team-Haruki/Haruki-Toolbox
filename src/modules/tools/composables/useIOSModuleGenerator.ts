@@ -40,11 +40,18 @@ export function useIOSModuleGenerator() {
   // Script uploads post a phone notification after each upload. On unless
   // turned off here; the module also exposes it as an argument in the app.
   const uploadNotifications = ref(true)
-  // Script mode notifies in every app; proxy mode only in Loon, whose plugin
-  // adds a small script that reads the upload result from the response.
+  // Script mode notifies in every app. In proxy mode each module adds a small
+  // script that reads the upload result from the toolbox's response.
+  // Stash's override carries that script too (it posts nothing if it never
+  // runs), but the switch stays hidden for Stash until the script is verified
+  // on a device: Stash's docs do not say which URL a script sees after a
+  // transparent rewrite.
   const supportsUploadNotifications = computed(() =>
-    selectedMode.value === "script" || selectedSoftware.value === "loon"
+    selectedMode.value === "script" || selectedSoftware.value !== "stash"
   )
+  // Quantumult X has no module arguments: the switch can only be changed by
+  // installing the module again from a new URL.
+  const uploadNotificationsNeedReinstall = computed(() => selectedSoftware.value === "qx")
   const isGeneratingCode = ref(false)
 
   const softwareOptions = computed(() =>
@@ -319,6 +326,7 @@ export function useIOSModuleGenerator() {
     chunkSize,
     uploadNotifications,
     supportsUploadNotifications,
+    uploadNotificationsNeedReinstall,
     isGeneratingCode,
     softwareOptions,
     endpointOptions,
