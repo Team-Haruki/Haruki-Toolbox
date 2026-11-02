@@ -88,7 +88,7 @@ export async function fetchDeckRecommendUserDataWithCache(
   // Every fetch (the deck page, the home data panel's refresh, the session
   // prefetch) keeps the "no data uploaded" flag current for this account.
   try {
-    const result = await fetchDeckRecommendUserDataWithCacheUnmarked(params, options)
+    const result = await fetchDeckRecommendSingleUserDataWithCache(params, options.strategy ?? "check-remote")
     markDeckRecommendUserDataAvailable(params.server, params.gameUserId, params.mode)
     return result
   } catch (error) {
@@ -97,13 +97,6 @@ export async function fetchDeckRecommendUserDataWithCache(
     }
     throw error
   }
-}
-
-function fetchDeckRecommendUserDataWithCacheUnmarked(
-  params: FetchDeckRecommendUserDataParams,
-  options: { strategy?: DeckRecommendUserDataCacheStrategy },
-): Promise<DeckRecommendUserDataFetchResult> {
-  return fetchDeckRecommendSingleUserDataWithCache(params, options.strategy ?? "check-remote")
 }
 
 export async function fetchDeckRecommendProfileWithCache(
