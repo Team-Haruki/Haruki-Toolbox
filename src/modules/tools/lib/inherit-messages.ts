@@ -1,8 +1,10 @@
 import {
+  hasJobTransferred,
   isKnownApiErrorCode,
   isKnownJobErrorCode,
   isKnownJobWarningCode,
   remainingParts,
+  type InheritJob,
   type InheritProblem,
 } from "@/modules/tools/lib/inherit-job"
 
@@ -33,8 +35,14 @@ export function describeInheritApiError(t: Translate, error: InheritErrorLike): 
   return t("tools.uploadData.inheritErrors.unknown", { status: error.status })
 }
 
-/** Why the job stopped. */
-export function describeJobError(t: Translate, problem: InheritProblem): string {
+/**
+ * Why the job stopped. Pass the job when it is known: game_version_outdated
+ * reads differently once the transfer went through.
+ */
+export function describeJobError(t: Translate, problem: InheritProblem, job?: InheritJob): string {
+  if (problem.code === "game_version_outdated" && job && hasJobTransferred(job)) {
+    return t("tools.uploadData.inheritJob.errors.game_version_outdated_after_transfer")
+  }
   if (isKnownJobErrorCode(problem.code)) return t(`tools.uploadData.inheritJob.errors.${problem.code}`)
   return problem.message || t("tools.uploadData.inheritJob.errors.internal_error")
 }

@@ -603,7 +603,8 @@ export default {
           "home_refresh_final": "最終重新整理",
           "maintenance_check": "檢查維護狀態",
           "mysekai": "烤森資料",
-          "mysekai_followup": "後續請求"
+          "mysekai_followup": "後續請求",
+          "version_refresh": "重新獲取遊戲版本"
         },
         "stepStatus": {
           "pending": "等待中",
@@ -636,6 +637,8 @@ export default {
           "game_maintenance": "遊戲伺服器正在維護，請維護結束後再試。",
           "game_unavailable": "暫時無法連線遊戲伺服器，請稍後再試。",
           "game_error": "遊戲伺服器返回了錯誤，請稍後再試。",
+          "game_version_outdated": "遊戲剛更新了資料版本，Toolbox 還沒同步上，請稍後再試。",
+          "game_version_outdated_after_transfer": "遊戲剛更新了資料版本，Toolbox 還沒同步上，沒能獲取遊戲資料。新引繼碼（如已簽發）顯示在本頁，並已儲存在保險庫中；稍後可以用新引繼碼重新上傳。",
           "execute_uncertain": "執行引繼時網路中斷，無法確定引繼碼是否已被使用。請先不要在其他裝置上使用這組引繼碼，並檢視下方保險庫：如果裡面出現了這個帳號，說明引繼已完成，可以在那裡檢視或重新簽發引繼碼。",
           "login_failed": "引繼已完成，登入資訊已存入保險庫，但登入遊戲失敗。請稍後在下方保險庫中點「重新簽發」，獲取新的引繼碼。",
           "fetch_failed": "獲取遊戲資料失敗。新引繼碼（如已簽發）顯示在本頁，並已儲存在保險庫中。",
@@ -648,7 +651,8 @@ export default {
         "warnings": {
           "issue_code_failed": "沒能簽發新的引繼碼。登入資訊已存入保險庫，請馬上在下方保險庫中點「重新簽發」：這是你回到帳號的唯一方式。",
           "vault_db_unavailable": "資料庫暫時不可用，登入資訊已臨時儲存，稍後會自動轉存，不影響使用。",
-          "vault_store_failed": "登入資訊或新引繼碼沒能存入保險庫。請務必現在就記下本頁顯示的新引繼碼。"
+          "vault_store_failed": "登入資訊或新引繼碼沒能存入保險庫。請務必現在就記下本頁顯示的新引繼碼。",
+          "game_version_outdated": "遊戲剛更新了資料版本，Toolbox 還沒同步上，所以這一步沒有成功。"
         },
         "actions": {
           "startNew": "開始新的上傳",
