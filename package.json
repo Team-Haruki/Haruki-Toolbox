@@ -4,7 +4,7 @@
   "version": "9.29.0",
   "type": "module",
   "harukiToolbox": {
-    "minSupportedVersion": "9.28.0"
+    "minSupportedVersion": "9.29.0"
   },
   "scripts": {
     "dev": "bunx --bun vite",

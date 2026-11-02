@@ -638,7 +638,7 @@ export default {
           "game_unavailable": "The game server cannot be reached right now. Please try again later.",
           "game_error": "The game server returned an error. Please try again later.",
           "game_version_outdated": "The game just updated its data version and Toolbox has not caught up yet. Please try again later.",
-          "game_version_outdated_after_transfer": "The game just updated its data version and Toolbox has not caught up yet, so the game data could not be fetched. The new code (if one was issued) is shown on this page and kept in the vault; you can upload again later with the new code.",
+          "game_version_outdated_after_transfer": "The game just updated its data version and Toolbox has not caught up yet, so the game data could not be fetched. The new code (if one was issued) is shown on this page; you can upload again later with it.",
           "execute_uncertain": "The connection dropped during the transfer, so it is unclear whether your code was used. Do not use this code on another device for now, and check the vault below: if this account shows up there, the transfer went through and you can view or re-issue the code there.",
           "login_failed": "The transfer went through and the sign-in info is in the vault, but signing in to the game failed. Later, press \"Re-issue\" in the vault below to get a new transfer code.",
           "fetch_failed": "Fetching the game data failed. The new code (if one was issued) is shown on this page and kept in the vault.",
