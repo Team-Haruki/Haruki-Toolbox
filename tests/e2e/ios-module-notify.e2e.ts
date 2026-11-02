@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test"
 
 // The iOS module generator's upload notification switch: on by default, and
 // turning it off adds notify=false to the module and script URLs (the module
-// then declares its notify argument as off). Proxy mode runs no script, so the
-// switch is not offered there.
+// then declares its notify argument as off). In proxy mode only the Loon
+// plugin can notify, so only Loon offers the switch there.
 async function setup(page: Page) {
   await page.addInitScript(() => {
     sessionStorage.setItem("user", JSON.stringify({
@@ -41,7 +41,22 @@ test.describe("iOS module upload notifications", () => {
     await expect(scriptUrl(page)).toHaveValue(/&notify=false$/)
   })
 
-  test("are not offered in proxy mode", async ({ page }) => {
+  test("are offered for Loon in proxy mode", async ({ page }) => {
+    await setup(page)
+    await page.goto("/upload-data?tab=ios")
+    await expect(notifySwitch(page)).toBeVisible({ timeout: 30_000 })
+    await page.getByRole("combobox", { name: "选择软件" }).click()
+    await page.getByRole("option", { name: "Loon" }).click()
+    await page.getByRole("combobox", { name: "选择上传数据方式" }).click()
+    await page.getByRole("option", { name: "代理上传" }).click()
+    await expect(notifySwitch(page)).toHaveAttribute("aria-checked", "true")
+    await expect(moduleUrl(page)).toHaveValue(/\.lnplugin\?mode=proxy&endpoint=\w+$/)
+
+    await notifySwitch(page).click()
+    await expect(moduleUrl(page)).toHaveValue(/\.lnplugin\?mode=proxy&endpoint=\w+&notify=false$/)
+  })
+
+  test("are not offered for other apps in proxy mode", async ({ page }) => {
     await setup(page)
     await page.goto("/upload-data?tab=ios")
     await expect(notifySwitch(page)).toBeVisible({ timeout: 30_000 })
@@ -51,20 +66,25 @@ test.describe("iOS module upload notifications", () => {
     await expect(moduleUrl(page)).not.toHaveValue(/notify=/)
   })
 
-  // Screenshots for review (in the test output directory).
+  // Screenshots for review (in the test output directory): Loon in proxy mode,
+  // the setting this change adds.
   for (const colorScheme of ["light", "dark"] as const) {
     for (const width of [390, 1440]) {
-      test(`renders at ${width}px in ${colorScheme} mode`, async ({ page }, testInfo) => {
+      test(`renders Loon proxy mode at ${width}px in ${colorScheme} mode`, async ({ page }, testInfo) => {
         await page.emulateMedia({ colorScheme })
         await page.setViewportSize({ width, height: width < 800 ? 844 : 1000 })
         await setup(page)
         await page.goto("/upload-data?tab=ios")
         await expect(notifySwitch(page)).toBeVisible({ timeout: 30_000 })
+        await page.getByRole("combobox", { name: "选择软件" }).click()
+        await page.getByRole("option", { name: "Loon" }).click()
+        await page.getByRole("combobox", { name: "选择上传数据方式" }).click()
+        await page.getByRole("option", { name: "代理上传" }).click()
+        await expect(notifySwitch(page)).toBeVisible()
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
         expect(overflow).toBeLessThanOrEqual(0)
-        await notifySwitch(page).scrollIntoViewIfNeeded()
-        await page.evaluate(() => window.scrollBy(0, -200))
-        await page.screenshot({ path: testInfo.outputPath(`ios-module-notify-${width}-${colorScheme}.png`) })
+        await notifySwitch(page).evaluate((element) => element.scrollIntoView({ block: "center" }))
+        await page.screenshot({ path: testInfo.outputPath(`ios-module-notify-loon-proxy-${width}-${colorScheme}.png`) })
       })
     }
   }

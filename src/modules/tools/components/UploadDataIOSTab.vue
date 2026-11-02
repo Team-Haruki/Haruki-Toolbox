@@ -23,6 +23,7 @@ const {
   selectedDataTypes,
   chunkSize,
   uploadNotifications,
+  supportsUploadNotifications,
   isGeneratingCode,
   softwareOptions,
   endpointOptions,
@@ -185,7 +186,7 @@ function handleCopyScriptUrl() {
             </div>
           </div>
 
-          <div v-if="selectedMode === 'script'" class="flex items-start justify-between gap-3 rounded-md border bg-muted/20 p-3 sm:col-span-2">
+          <div v-if="supportsUploadNotifications" class="flex items-start justify-between gap-3 rounded-md border bg-muted/20 p-3 sm:col-span-2">
             <div class="min-w-0 space-y-0.5">
               <Label for="ios-upload-notifications">{{ t("tools.iosModules.sections.notify.title") }}</Label>
               <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.sections.notify.description") }}</p>
