@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Check, Copy, KeyRound, Link2, LucideInfo, PackageCheck, RefreshCw } from "lucide-vue-next"
@@ -21,6 +22,7 @@ const {
   selectedRegions,
   selectedDataTypes,
   chunkSize,
+  uploadNotifications,
   isGeneratingCode,
   softwareOptions,
   endpointOptions,
@@ -181,6 +183,14 @@ function handleCopyScriptUrl() {
               <Input id="ios-chunk-size" v-model.number="chunkSize" type="number" min="1" max="10" class="min-w-0 flex-1" />
               <span class="whitespace-nowrap text-sm text-muted-foreground">{{ t("tools.iosModules.sections.chunk.unit") }}</span>
             </div>
+          </div>
+
+          <div v-if="selectedMode === 'script'" class="flex items-start justify-between gap-3 rounded-md border bg-muted/20 p-3 sm:col-span-2">
+            <div class="min-w-0 space-y-0.5">
+              <Label for="ios-upload-notifications">{{ t("tools.iosModules.sections.notify.title") }}</Label>
+              <p class="text-xs text-muted-foreground">{{ t("tools.iosModules.sections.notify.description") }}</p>
+            </div>
+            <Switch id="ios-upload-notifications" v-model="uploadNotifications" class="shrink-0" />
           </div>
         </div>
       </section>

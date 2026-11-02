@@ -37,6 +37,9 @@ export function useIOSModuleGenerator() {
   const selectedRegions = ref<RegionType[]>(["jp"])
   const selectedDataTypes = ref<IOSUploadDataType[]>(["suite"])
   const chunkSize = ref<number>(CHUNK_SIZE_MIN)
+  // Script uploads post a phone notification after each upload. On unless
+  // turned off here; the module also exposes it as an argument in the app.
+  const uploadNotifications = ref(true)
   const isGeneratingCode = ref(false)
 
   const softwareOptions = computed(() =>
@@ -126,6 +129,9 @@ export function useIOSModuleGenerator() {
 
     if (selectedMode.value === "script") {
       url += `&chunk=${chunkSize.value}`
+      if (!uploadNotifications.value) {
+        url += "&notify=false"
+      }
     }
 
     return url
@@ -136,7 +142,8 @@ export function useIOSModuleGenerator() {
 
     const baseUrl = settingsStore.getEndpointUrl(selectedEndpoint.value)
     if (!baseUrl) return null
-    return `${baseUrl}/ios/script/${userStore.iosUploadCode}/haruki-toolbox.js?chunk=${chunkSize.value}&endpoint=${selectedEndpoint.value}`
+    const notify = uploadNotifications.value ? "" : "&notify=false"
+    return `${baseUrl}/ios/script/${userStore.iosUploadCode}/haruki-toolbox.js?chunk=${chunkSize.value}&endpoint=${selectedEndpoint.value}${notify}`
   })
 
   const canInstall = computed(() => {
@@ -305,6 +312,7 @@ export function useIOSModuleGenerator() {
     selectedRegions,
     selectedDataTypes,
     chunkSize,
+    uploadNotifications,
     isGeneratingCode,
     softwareOptions,
     endpointOptions,
