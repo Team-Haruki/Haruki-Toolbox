@@ -204,6 +204,19 @@ export default {
       "title": "安全与登录",
       "description": "密码、多因素认证、社交登录与会话管理。"
     },
+    "moduleNotifications": {
+      "cardTitle": "通知",
+      "cardDescription": "选择工具箱给你发哪些提醒。账号安全相关的邮件（如引继码保险库的访问提醒）始终会发送，不能关闭。",
+      "label": "iOS 模块上传通知",
+      "description": "使用 iOS 模块的「脚本上传」方式时，每次上传后手机会弹出通知，告诉你上传成功还是失败，以及失败的原因。",
+      "scope": "「代理上传」方式不会弹出通知。改动对之后的上传生效，不需要重新安装模块。",
+      "toast": {
+        "enabled": "已开启 iOS 模块上传通知",
+        "disabled": "已关闭 iOS 模块上传通知",
+        "saveFailedTitle": "通知设置保存失败",
+        "saveFailedDescription": "请稍后重试"
+      }
+    },
     "account": {
       "title": "头像设置",
       "description": "管理您的 Haruki 工具箱头像",

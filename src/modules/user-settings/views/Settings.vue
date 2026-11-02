@@ -8,6 +8,7 @@ import {
   ProfileSettingsCard,
   SecuritySettingsCard,
   KratosSettingsFlow,
+  ModuleNotificationSettingsCard,
 } from "@/modules/user-settings/components/settings"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
 import { getSettings } from "@/modules/user-settings/api/get-settings"
@@ -133,6 +134,7 @@ onMounted(() => {
       <ProfileSettingsCard />
       <AfdianBindingCard />
       <SecuritySettingsCard />
+      <ModuleNotificationSettingsCard />
     </div>
   </div>
 </template>

@@ -284,7 +284,8 @@ export default {
           "title": "Get & Install",
           "prerequisite": "You need to be signed in with a bound game account first.",
           "description": "Generate an upload code, then copy the URLs or quick install the module.",
-          "after": "After installing, open the game and reach the home screen once; once the upload succeeds, \"My account\" on the toolbox home page shows the upload time."
+          "after": "After installing, open the game and reach the home screen once; once the upload succeeds, \"My account\" on the toolbox home page shows the upload time.",
+          "notification": "With \"script upload\", your phone shows a notification after each upload saying whether it worked; you can turn it off in account settings."
         }
       },
       "sections": {

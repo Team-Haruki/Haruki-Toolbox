@@ -379,6 +379,9 @@ function handleCopyScriptUrl() {
           <p class="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
             {{ t("tools.iosModules.steps.install.after") }}
           </p>
+          <p v-if="selectedMode === 'script'" class="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            {{ t("tools.iosModules.steps.install.notification") }}
+          </p>
         </div>
       </section>
     </CardContent>

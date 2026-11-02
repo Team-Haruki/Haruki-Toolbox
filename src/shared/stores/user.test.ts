@@ -58,4 +58,20 @@ describe("user store", () => {
     expect(store.sessionToken).toBe("token")
     expect(store.tokenExpiration).toBe(2_100_000_000)
   })
+
+  it("keeps module notifications on until the backend says they are off", () => {
+    const store = useUserStore()
+    expect(store.iosModuleNotificationsEnabled).toBe(true)
+
+    // A settings payload from a backend that does not send the field.
+    store.setUser({ userId: "42" })
+    expect(store.iosModuleNotificationsEnabled).toBe(true)
+
+    store.setUser({ iosModuleNotificationsEnabled: false })
+    store.setUser({ avatarPath: "/avatar.png" })
+    expect(store.iosModuleNotificationsEnabled).toBe(false)
+
+    store.clearUser()
+    expect(store.iosModuleNotificationsEnabled).toBe(true)
+  })
 })

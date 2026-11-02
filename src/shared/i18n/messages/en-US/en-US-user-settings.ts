@@ -204,6 +204,19 @@ export default {
       "title": "Security & sign-in",
       "description": "Password, multi-factor auth, social sign-in and sessions."
     },
+    "moduleNotifications": {
+      "cardTitle": "Notifications",
+      "cardDescription": "Choose which reminders the toolbox sends you. Account security emails, such as transfer code vault access alerts, are always sent and cannot be turned off.",
+      "label": "iOS module upload notifications",
+      "description": "With the iOS module's \"script upload\" mode, your phone shows a notification after each upload saying whether it worked and, if not, why.",
+      "scope": "\"Proxy upload\" mode shows no notifications. Changes apply to the next upload; no need to reinstall the module.",
+      "toast": {
+        "enabled": "iOS module upload notifications turned on",
+        "disabled": "iOS module upload notifications turned off",
+        "saveFailedTitle": "Couldn't save the notification setting",
+        "saveFailedDescription": "Please try again later"
+      }
+    },
     "account": {
       "title": "Avatar settings",
       "description": "Manage your Haruki Toolbox avatar",

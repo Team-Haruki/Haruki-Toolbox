@@ -204,6 +204,19 @@ export default {
       "title": "安全與登入",
       "description": "密碼、多因素認證、社交登入與會話管理。"
     },
+    "moduleNotifications": {
+      "cardTitle": "通知",
+      "cardDescription": "選擇工具箱給你發哪些提醒。帳號安全相關的郵件（如引繼碼保險庫的訪問提醒）始終會發送，不能關閉。",
+      "label": "iOS 模組上傳通知",
+      "description": "使用 iOS 模組的「指令碼上傳」方式時，每次上傳後手機會彈出通知，告訴你上傳成功還是失敗，以及失敗的原因。",
+      "scope": "「代理上傳」方式不會彈出通知。改動對之後的上傳生效，不需要重新安裝模組。",
+      "toast": {
+        "enabled": "已開啟 iOS 模組上傳通知",
+        "disabled": "已關閉 iOS 模組上傳通知",
+        "saveFailedTitle": "通知設定儲存失敗",
+        "saveFailedDescription": "請稍後重試"
+      }
+    },
     "account": {
       "title": "頭像設定",
       "description": "管理您的 Haruki 工具箱頭像",

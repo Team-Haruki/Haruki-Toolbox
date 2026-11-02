@@ -1,6 +1,7 @@
 export { default as IMAuthorization } from "./IMAuthorization.vue"
 export { default as IMBindingSettings } from "./IMBindingSettings.vue"
 export { default as KratosSettingsFlow } from "./KratosSettingsFlow.vue"
+export { default as ModuleNotificationSettingsCard } from "./ModuleNotificationSettingsCard.vue"
 export { default as OAuth2Authorizations } from "./OAuth2Authorizations.vue"
 export { default as ProfileSettingsCard } from "./ProfileSettingsCard.vue"
 export { default as SecuritySettingsCard } from "./SecuritySettingsCard.vue"

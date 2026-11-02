@@ -56,6 +56,8 @@ export const useUserStore = defineStore("user", () => {
     const authorizeSocialPlatformInfo = ref<AuthorizeSocialPlatformInfo[] | null>(null)
     const gameAccountBindings = ref<GameAccountBinding[] | null>(null)
     const iosUploadCode = ref<string | null>(null)
+    // Missing from the backend means on, so the store starts on too.
+    const iosModuleNotificationsEnabled = ref(true)
     const sessionToken = ref<string | null>(null)
     const tokenExpiration = ref<number | null>(null)
     const hasActiveSession = ref(false)
@@ -76,6 +78,7 @@ export const useUserStore = defineStore("user", () => {
         authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null
         gameAccountBindings?: GameAccountBinding[] | null
         iosUploadCode?: string | null
+        iosModuleNotificationsEnabled?: boolean
         sessionToken?: string
         sessionExpiresAt?: string | number | null
     }, options: Readonly<SetUserOptions> = DEFAULT_SET_USER_OPTIONS) {
@@ -90,6 +93,7 @@ export const useUserStore = defineStore("user", () => {
         setRefIfDefined(authorizeSocialPlatformInfo, payload.authorizeSocialPlatformInfo)
         setRefIfDefined(gameAccountBindings, payload.gameAccountBindings)
         setRefIfDefined(iosUploadCode, payload.iosUploadCode)
+        setRefIfDefined(iosModuleNotificationsEnabled, payload.iosModuleNotificationsEnabled)
 
         if (payload.sessionToken !== undefined) {
             sessionToken.value = payload.sessionToken
@@ -123,6 +127,7 @@ export const useUserStore = defineStore("user", () => {
         authorizeSocialPlatformInfo.value = null
         gameAccountBindings.value = null
         iosUploadCode.value = null
+        iosModuleNotificationsEnabled.value = true
         sessionToken.value = null
         tokenExpiration.value = null
         hasActiveSession.value = false
@@ -151,6 +156,7 @@ export const useUserStore = defineStore("user", () => {
         authorizeSocialPlatformInfo,
         gameAccountBindings,
         iosUploadCode,
+        iosModuleNotificationsEnabled,
         sessionToken,
         tokenExpiration,
         hasActiveSession,
@@ -185,6 +191,7 @@ export const useUserStore = defineStore("user", () => {
             'authorizeSocialPlatformInfo',
             'gameAccountBindings',
             'iosUploadCode',
+            'iosModuleNotificationsEnabled',
             'sessionToken',
             'tokenExpiration'
         ]

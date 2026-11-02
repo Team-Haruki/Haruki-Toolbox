@@ -22,3 +22,20 @@ export async function updateUserProfile(
         }
     )
 }
+
+export async function updateIOSModuleNotifications(
+    userId: string,
+    enabled: boolean,
+    options?: AxiosRequestConfig
+): Promise<APIResponse<{ iosModuleNotificationsEnabled?: boolean }>> {
+    const payload: UpdateUserProfilePayload = { iosModuleNotificationsEnabled: enabled }
+
+    return await request<APIResponse<{ iosModuleNotificationsEnabled?: boolean }>>(
+        buildUserApiPath(userId, "profile"),
+        {
+            method: "PUT",
+            data: payload,
+            ...options
+        }
+    )
+}

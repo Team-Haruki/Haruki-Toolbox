@@ -8,6 +8,8 @@ export interface UserSettings {
     avatarPath?: string
     allowCNMysekai?: boolean
     iosUploadCode?: string
+    /** Phone notifications from the iOS module's upload script; the backend reports true unless the user turned them off. */
+    iosModuleNotificationsEnabled?: boolean
     emailInfo?: EmailInfo
     socialPlatformInfo?: SocialPlatformInfo | null
     authorizeSocialPlatformInfo?: AuthorizeSocialPlatformInfo[] | null

@@ -1,5 +1,6 @@
 export interface UpdateUserProfilePayload {
     avatarBase64?: string
+    iosModuleNotificationsEnabled?: boolean
 }
 
 export interface ChangePasswordPayload {
