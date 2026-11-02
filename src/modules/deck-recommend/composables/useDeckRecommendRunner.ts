@@ -18,7 +18,6 @@ import {
 } from "@/shared/sekai/worker-protocol"
 import {
   buildDeckRecommendOptions,
-  resolveRecommendDataMode,
   resolveCurrentDeckCardsWithProfile,
   type DeckRecommendAlgorithm,
   type DeckRecommendEventAttr,
@@ -420,7 +419,10 @@ export function useDeckRecommendRunner() {
     phase.value = "fetching-user-data"
     const server = input.account?.server ?? input.dataRegion
     const uid = input.account?.uid ?? ""
-    const mode = resolveRecommendDataMode(input.mode)
+    // Every mode, MySekai included, runs on the Suite upload: the engine's
+    // MySekai inputs (gates, canvases, fixture character bonuses) are Suite
+    // tables, and nothing it reads comes from the MySekai upload.
+    const mode = "suite"
     try {
       const fetched = await fetchDeckRecommendUserDataWithCache({
         toolboxUserId: userStore.userId || "",
@@ -453,7 +455,7 @@ export function useDeckRecommendRunner() {
     }
   }
 
-  async function refreshUserData(input: { account: DeckRecommendRunnerAccount | null; mode: DeckRecommendMode }) {
+  async function refreshUserData(input: { account: DeckRecommendRunnerAccount | null }) {
     if (!userStore.userId) {
       throw new Error("toolbox user is required")
     }
@@ -467,7 +469,7 @@ export function useDeckRecommendRunner() {
         toolboxUserId: userStore.userId,
         server: input.account.server,
         gameUserId: input.account.uid,
-        mode: resolveRecommendDataMode(input.mode),
+        mode: "suite",
       })
       applyUserDataCacheStatus(fetched)
       return fetched

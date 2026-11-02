@@ -445,7 +445,7 @@ export default {
       "algorithmElapsed": "{algorithm} search: {seconds} s",
       "empty": "No recommendation result yet.",
       "missingUserDataTitle": "No game data is available for deck building",
-      "missingUserDataDescription": "The selected game account has not uploaded the required data. Upload its account data (Suite) first; MySekai mode also needs MySekai (home area) data. Then return here and try again.",
+      "missingUserDataDescription": "The selected game account has not uploaded its account data (Suite) yet. Upload it on the data upload page, then return here and try again. Every deck mode needs only Suite: the gate, canvas and fixture bonuses MySekai mode uses come from Suite too, so no MySekai upload is needed.",
       "uploadDataAction": "Upload data",
       "deckTitle": "Deck #{index}",
       "score": "score {score}",

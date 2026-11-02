@@ -2,23 +2,17 @@ import { getMissingUploadDataType } from "@/shared/sekai/user-snapshot/missing-d
 import { markDeckRecommendUserDataAvailable, markDeckRecommendUserDataMissing } from "./user-data-availability"
 import {
   getUserProfile,
-  fetchDeckRecommendMysekaiUserData,
-  normalizeDeckRecommendUserDataResponse,
   type DeckRecommendUserDataResponse,
   type FetchDeckRecommendUserDataParams,
   type GetUserProfileResponse,
-  unwrapGameAccountDataResponse,
 } from "../api/recommend-data"
 import { fetchUserSuiteWithCache } from "@/shared/sekai/user-snapshot/fetch"
 import type { SekaiRegion } from "@/types/store"
 import {
   makeDeckRecommendUserDataCacheKey,
   readDeckRecommendProfileCache,
-  readDeckRecommendUserDataCache,
   writeDeckRecommendProfileCache,
-  writeDeckRecommendUserDataCache,
   type DeckRecommendProfileCacheRecord,
-  type DeckRecommendUserDataCacheRecord,
   type DeckRecommendProfileCacheKeyParams,
 } from "./user-data-cache"
 
@@ -60,6 +54,12 @@ export type RefreshDeckRecommendSuitesProgress = {
 const userDataRequests = new Map<string, Promise<DeckRecommendUserDataFetchResult>>()
 const profileRequests = new Map<string, Promise<DeckRecommendProfileFetchResult>>()
 
+/**
+ * Everything the deck engine reads from a player, for every mode. The MySekai
+ * mode's inputs are Suite tables too: the canvas, fixture-character and gate
+ * bonuses below come from the account data (Suite) upload, and the engine
+ * reads nothing from the MySekai upload, so that upload is never required.
+ */
 export const DECK_RECOMMEND_SUITE_KEYS = [
   "userAreas",
   "userCards",
@@ -75,16 +75,10 @@ export const DECK_RECOMMEND_SUITE_KEYS = [
 
 export type DeckRecommendUserDataCacheDependencies = {
   fetchSuite: typeof fetchUserSuiteWithCache
-  fetchMysekaiUserData: typeof fetchDeckRecommendMysekaiUserData
-  readUserDataCache: typeof readDeckRecommendUserDataCache
-  writeUserDataCache: typeof writeDeckRecommendUserDataCache
 }
 
 const defaultUserDataCacheDependencies: DeckRecommendUserDataCacheDependencies = {
   fetchSuite: fetchUserSuiteWithCache,
-  fetchMysekaiUserData: fetchDeckRecommendMysekaiUserData,
-  readUserDataCache: readDeckRecommendUserDataCache,
-  writeUserDataCache: writeDeckRecommendUserDataCache,
 }
 
 export async function fetchDeckRecommendUserDataWithCache(
@@ -105,18 +99,10 @@ export async function fetchDeckRecommendUserDataWithCache(
   }
 }
 
-async function fetchDeckRecommendUserDataWithCacheUnmarked(
+function fetchDeckRecommendUserDataWithCacheUnmarked(
   params: FetchDeckRecommendUserDataParams,
   options: { strategy?: DeckRecommendUserDataCacheStrategy },
 ): Promise<DeckRecommendUserDataFetchResult> {
-  if (params.mode === "mysekai") {
-    const [suiteResult, mysekaiResult] = await Promise.all([
-      fetchDeckRecommendSingleUserDataWithCache({ ...params, mode: "suite" }, options.strategy ?? "check-remote"),
-      fetchDeckRecommendSingleUserDataWithCache(params, options.strategy ?? "check-remote"),
-    ])
-    return mergeDeckRecommendUserDataFetchResults(params, suiteResult, mysekaiResult)
-  }
-
   return fetchDeckRecommendSingleUserDataWithCache(params, options.strategy ?? "check-remote")
 }
 
@@ -252,56 +238,7 @@ export async function fetchDeckRecommendCachedUserData(
   strategy: DeckRecommendUserDataCacheStrategy,
   dependencies: DeckRecommendUserDataCacheDependencies = defaultUserDataCacheDependencies,
 ): Promise<DeckRecommendUserDataFetchResult> {
-  if (params.mode === "suite") {
-    return fetchDeckRecommendSuiteUserDataFromSnapshot(params, strategy, dependencies)
-  }
-
-  const cachedRecord = await safeReadUserDataCache(params, dependencies.readUserDataCache)
-  const cachedRecordComplete = cachedRecord
-    ? isDeckRecommendUserDataResponseComplete(cachedRecord.data, params.mode)
-    : false
-  if (strategy === "prefer-cache" && cachedRecord && cachedRecordComplete) {
-    return {
-      data: cachedRecord.data,
-      cacheHit: true,
-      cacheable: true,
-      remoteUploadTime: cachedRecord.uploadTime,
-      cacheUpdatedAt: cachedRecord.updatedAt,
-    }
-  }
-
-  const readResult = await dependencies.fetchMysekaiUserData({
-    ...params,
-    knownUploadTime: cachedRecord && cachedRecordComplete ? cachedRecord.uploadTime : undefined,
-  })
-  if (readResult.kind === "not-modified" && cachedRecord && cachedRecordComplete) {
-    return {
-      data: cachedRecord.data,
-      cacheHit: true,
-      cacheable: true,
-      remoteUploadTime: readResult.uploadTime,
-      cacheUpdatedAt: cachedRecord.updatedAt,
-    }
-  }
-
-  if (readResult.kind === "not-modified") {
-    throw new Error("received not-modified response without a complete local cache")
-  }
-
-  const data = readResult.data
-  const remoteUploadTime = readResult.uploadTime
-  const cacheable = remoteUploadTime != null && isDeckRecommendUserDataResponseComplete(data, params.mode)
-  const writtenRecord = remoteUploadTime == null || !isDeckRecommendUserDataResponseComplete(data, params.mode)
-    ? null
-    : await safeWriteUserDataCache(params, data, remoteUploadTime, dependencies.writeUserDataCache)
-
-  return {
-    data,
-    cacheHit: false,
-    cacheable,
-    remoteUploadTime,
-    cacheUpdatedAt: writtenRecord?.updatedAt ?? cachedRecord?.updatedAt ?? null,
-  }
+  return fetchDeckRecommendSuiteUserDataFromSnapshot(params, strategy, dependencies)
 }
 
 async function fetchDeckRecommendSuiteUserDataFromSnapshot(
@@ -324,50 +261,9 @@ async function fetchDeckRecommendSuiteUserDataFromSnapshot(
   return {
     data,
     cacheHit: result.cacheHit,
-    cacheable: result.cacheable && isDeckRecommendUserDataResponseComplete(data, "suite"),
+    cacheable: result.cacheable && isDeckRecommendUserDataResponseComplete(data),
     remoteUploadTime: result.remoteUploadTime,
     cacheUpdatedAt: result.cacheUpdatedAt,
-  }
-}
-
-function mergeDeckRecommendUserDataFetchResults(
-  params: FetchDeckRecommendUserDataParams,
-  suiteResult: DeckRecommendUserDataFetchResult,
-  mysekaiResult: DeckRecommendUserDataFetchResult,
-): DeckRecommendUserDataFetchResult {
-  return {
-    data: {
-      server: params.server,
-      gameUserId: String(params.gameUserId),
-      mode: "mysekai",
-      userData: {
-        ...suiteResult.data.userData,
-        ...mysekaiResult.data.userData,
-      },
-    },
-    cacheHit: suiteResult.cacheHit && mysekaiResult.cacheHit,
-    cacheable: suiteResult.cacheable && mysekaiResult.cacheable,
-    remoteUploadTime: mysekaiResult.remoteUploadTime ?? suiteResult.remoteUploadTime,
-    cacheUpdatedAt: maxNullableNumber(suiteResult.cacheUpdatedAt, mysekaiResult.cacheUpdatedAt),
-  }
-}
-
-async function safeReadUserDataCache(
-  params: FetchDeckRecommendUserDataParams,
-  readCache: typeof readDeckRecommendUserDataCache = readDeckRecommendUserDataCache,
-): Promise<DeckRecommendUserDataCacheRecord | null> {
-  try {
-    const record = await readCache(params)
-    if (!record) {
-      return null
-    }
-
-    return {
-      ...record,
-      data: normalizeCachedUserDataResponse(params, record.data),
-    }
-  } catch {
-    return null
   }
 }
 
@@ -381,53 +277,8 @@ async function safeReadProfileCache(
   }
 }
 
-function normalizeCachedUserDataResponse(
-  params: FetchDeckRecommendUserDataParams,
-  value: unknown,
-): DeckRecommendUserDataResponse {
-  if (isDeckRecommendUserDataResponse(value)) {
-    return normalizeDeckRecommendUserDataResponse(value)
-  }
-
-  return {
-    server: params.server,
-    gameUserId: String(params.gameUserId),
-    mode: params.mode,
-    userData: unwrapGameAccountDataResponse(value),
-  }
-}
-
-function isDeckRecommendUserDataResponse(value: unknown): value is DeckRecommendUserDataResponse {
-  return (
-    typeof value === "object"
-    && value !== null
-    && !Array.isArray(value)
-    && "userData" in value
-  )
-}
-
-export function isDeckRecommendUserDataResponseComplete(
-  value: DeckRecommendUserDataResponse,
-  mode: FetchDeckRecommendUserDataParams["mode"],
-): boolean {
-  if (mode !== "suite") {
-    return true
-  }
-
+export function isDeckRecommendUserDataResponseComplete(value: DeckRecommendUserDataResponse): boolean {
   return isCompleteSuiteUserData(value.userData)
-}
-
-async function safeWriteUserDataCache(
-  params: FetchDeckRecommendUserDataParams,
-  data: DeckRecommendUserDataResponse,
-  uploadTime: number,
-  writeCache: typeof writeDeckRecommendUserDataCache = writeDeckRecommendUserDataCache,
-): Promise<DeckRecommendUserDataCacheRecord | null> {
-  try {
-    return await writeCache(params, data, uploadTime)
-  } catch {
-    return null
-  }
 }
 
 async function safeWriteProfileCache(
@@ -439,17 +290,6 @@ async function safeWriteProfileCache(
   } catch {
     return null
   }
-}
-
-function maxNullableNumber(left: number | null, right: number | null): number | null {
-  if (left == null) {
-    return right
-  }
-  if (right == null) {
-    return left
-  }
-
-  return Math.max(left, right)
 }
 
 function isCompleteSuiteUserData(value: unknown): boolean {
