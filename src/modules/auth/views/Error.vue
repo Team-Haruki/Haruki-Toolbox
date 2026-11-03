@@ -12,7 +12,7 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { fetchKratosFlowError, type KratosFlowError } from "@/modules/auth/lib/kratos"
-import { describeKratosError } from "@/modules/auth/lib/kratos-messages"
+import { describeKratosError, describeKratosFlowError } from "@/modules/auth/lib/kratos-messages"
 
 const route = useRoute()
 const router = useRouter()
@@ -28,7 +28,10 @@ const errorId = computed(() => {
 })
 
 // Kratos reasons are developer English ("upstream failure"); the page explains
-// in the user's language and keeps the raw reason as a smaller detail line.
+// in the user's language (by error id, known reason or status) and keeps the
+// raw reason in the collapsed technical details for bug reports.
+const explanation = computed(() => describeKratosFlowError(flowError.value) ?? t("auth.error.fallbackDescription"))
+
 const rawReason = computed(() =>
   flowError.value?.reason?.trim()
   || flowError.value?.message?.trim()
@@ -135,26 +138,30 @@ watch(
         </div>
 
         <div v-else-if="showResolvedError" class="space-y-4">
-          <div class="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-            <p>{{ t("auth.error.fallbackDescription") }}</p>
-            <p v-if="rawReason" class="break-words text-xs text-muted-foreground">
-              {{ t("core.errors.detail", { detail: rawReason }) }}
-            </p>
+          <div class="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            <p data-testid="kratos-error-explanation">{{ explanation }}</p>
           </div>
 
-          <div class="grid gap-2 text-sm text-muted-foreground">
-            <div class="break-all">
-              {{ t("auth.error.errorIdLabel") }}: {{ flowError?.id || errorId }}
+          <details class="group rounded-md border px-4 py-3 text-sm text-muted-foreground">
+            <summary class="cursor-pointer select-none font-medium text-foreground/80">
+              {{ t("auth.kratos.errorPage.technicalDetails") }}
+            </summary>
+            <div class="mt-3 grid gap-2">
+              <div class="break-all">
+                {{ t("auth.error.errorIdLabel") }}: {{ flowError?.id || errorId }}
+              </div>
+              <div v-if="flowError?.code !== undefined">
+                {{ t("auth.error.statusCodeLabel") }}: {{ flowError.code }}
+              </div>
+              <div v-if="rawReason" class="break-words">
+                {{ t("auth.kratos.errorPage.reasonLabel") }}: {{ rawReason }}
+              </div>
+              <div v-if="detailsText" class="space-y-2">
+                <div class="font-medium">{{ t("auth.error.detailsLabel") }}</div>
+                <pre class="max-h-80 overflow-auto rounded-md border bg-muted p-3 text-xs">{{ detailsText }}</pre>
+              </div>
             </div>
-            <div v-if="flowError?.code !== undefined">
-              {{ t("auth.error.statusCodeLabel") }}: {{ flowError.code }}
-            </div>
-          </div>
-
-          <div v-if="detailsText" class="space-y-2">
-            <div class="text-sm font-medium">{{ t("auth.error.detailsLabel") }}</div>
-            <pre class="max-h-80 overflow-auto rounded-md border bg-muted p-3 text-xs">{{ detailsText }}</pre>
-          </div>
+          </details>
 
           <div class="flex flex-col gap-2 sm:flex-row">
             <Button class="flex-1" @click="goLogin">

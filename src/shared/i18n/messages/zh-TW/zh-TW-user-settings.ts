@@ -190,8 +190,8 @@ export default {
         "profile": "個人資料",
         "password": "密碼",
         "oidc": "社交登入",
-        "passkey": "通行金鑰",
-        "webauthn": "安全金鑰",
+        "passkey": "通行密鑰",
+        "webauthn": "安全密鑰",
         "totp": "身份驗證器",
         "lookupSecret": "恢復碼"
       }
@@ -244,7 +244,7 @@ export default {
     },
     "mfa": {
       "title": "兩步驗證",
-      "description": "兩步驗證：驗證器 App、通行金鑰與備用恢復碼",
+      "description": "兩步驗證：驗證器 App、通行密鑰與備用恢復碼",
       "hint": "點選後進入設定頁面，完成後會自動返回。",
       "manageButton": "管理兩步驗證"
     },

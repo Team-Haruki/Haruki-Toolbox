@@ -1,5 +1,6 @@
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue"
 import { useRoute } from "vue-router"
+import { toast } from "vue-sonner"
 import { createLogger } from "@/lib/logger"
 import {
   fetchKratosBrowserFlow,
@@ -9,14 +10,19 @@ import {
   type KratosUiMessage,
   type KratosUiNode,
 } from "@/modules/auth/lib/kratos"
-import { describeKratosFlowLoadError, localizeKratosMessage } from "@/modules/auth/lib/kratos-messages"
+import {
+  describeKratosFlowLoadError,
+  formatKratosLookupSecretList,
+  localizeKratosMessage,
+} from "@/modules/auth/lib/kratos-messages"
 import { resolveKratosInputLabelKeys, resolveKratosSubmitLabelKey } from "@/modules/auth/lib/kratos-labels"
 import {
   resolveFieldsToValidate,
   resolveValidationSubmitter,
   type KratosSubmitterInfo,
 } from "@/modules/auth/lib/kratos-validation"
-import { translateIfExists } from "@/shared/i18n"
+import { translate, translateIfExists } from "@/shared/i18n"
+import { interceptKratosWebAuthnAlerts } from "@/modules/auth/lib/kratos-webauthn-alerts"
 
 const logger = createLogger("kratos-flow")
 
@@ -34,6 +40,8 @@ export type KratosFlowMessageTone = "info" | "success" | "error" | "warning"
 
 export interface KratosFlowMessage {
   key: string
+  /** Kratos text id (text/id.go), null when Kratos sent none. */
+  id: number | null
   text: string
   tone: KratosFlowMessageTone
 }
@@ -67,6 +75,8 @@ interface ActionButtonField {
   name: string
   value: string
   label: string
+  /** Kratos text id of the label, e.g. 1050019 for "Add passkey". */
+  labelId: number | null
   disabled: boolean
   onClickTrigger: string
   messages: KratosFlowMessage[]
@@ -138,6 +148,9 @@ function resolveEffectiveInputType(node: KratosUiNode): string {
   return normalized
 }
 
+/** Kratos text id of the backup recovery code list (text/message_settings.go). */
+const KRATOS_LOOKUP_SECRET_LIST_ID = 1050015
+
 const WINDOW_TRIGGER_PATTERN = /^window\.([A-Za-z_$][\w$]*)\(\)\s*;?$/
 
 function normalizeInputType(value: unknown): string {
@@ -193,6 +206,7 @@ function readTypedMessages(messages: KratosUiMessage[] | undefined, prefix: stri
       const idValue = typeof message.id === "number" ? String(message.id) : String(index)
       return {
         key: `${prefix}-${idValue}-${index}`,
+        id: typeof message.id === "number" ? message.id : null,
         text,
         tone: normalizeMessageTone(message.type),
       }
@@ -207,10 +221,21 @@ function prettifyFieldName(name: string): string {
     .join(" ")
 }
 
+/** A node label in the user's language: by Kratos text id, else Kratos' own text. */
+function localizeNodeLabel(node: KratosUiNode): string {
+  const label = node.meta?.label
+  return label ? localizeKratosMessage(label) : ""
+}
+
+function readLabelId(node: KratosUiNode): number | null {
+  const id = node.meta?.label?.id
+  return typeof id === "number" ? id : null
+}
+
 function resolveFieldLabel(flowType: KratosFlowType, node: KratosUiNode, name: string): string {
   const mapped = resolveKratosInputLabelKeys(flowType, name)
   const localized = mapped ? translateIfExists(mapped.labelKey) : null
-  return localized || node.meta?.label?.text?.trim() || prettifyFieldName(name)
+  return localized || localizeNodeLabel(node) || prettifyFieldName(name)
 }
 
 function resolveFieldPlaceholder(flowType: KratosFlowType, name: string): string {
@@ -224,7 +249,7 @@ function resolveFieldPlaceholder(flowType: KratosFlowType, name: string): string
 function resolveSubmitLabel(flowType: KratosFlowType, node: KratosUiNode, name: string, value: string, state: string): string {
   const key = resolveKratosSubmitLabelKey(flowType, name, value, { state, labelId: node.meta?.label?.id })
   const localized = key ? translateIfExists(key) : null
-  return localized || node.meta?.label?.text?.trim() || value || translateIfExists("auth.kratos.labels.submit") || "Submit"
+  return localized || localizeNodeLabel(node) || value || translate("auth.kratos.labels.submit")
 }
 
 function normalizeGroup(value: unknown): string {
@@ -304,6 +329,19 @@ function readTextAttribute(value: unknown): string {
   }
 
   const record = value as Record<string, unknown>
+  // A Kratos text message: the backup code list (1050015) is rebuilt from its
+  // entries so used codes read in the user's language; other ids (the TOTP
+  // secret 1050006) go through the id lookup, which keeps secrets verbatim.
+  if (typeof record.id === "number") {
+    const message = record as KratosUiMessage
+    const localized = message.id === KRATOS_LOOKUP_SECRET_LIST_ID
+      ? formatKratosLookupSecretList(message)
+      : localizeKratosMessage(message)
+    if (localized) {
+      return localized
+    }
+  }
+
   const textValue = record.text
   if (typeof textValue === "string" && textValue.trim() !== "") {
     return textValue.trim()
@@ -407,7 +445,7 @@ export function useKratosBrowserFlow(
     for (const field of visibleFields.value) {
       if (!names.has(field.name)) continue
       if ((fieldValues[field.name] ?? "").trim() === "") {
-        fieldErrors[field.name] = translateIfExists("auth.validation.required") ?? "Required"
+        fieldErrors[field.name] = translate("auth.validation.required")
       }
     }
     return Object.keys(fieldErrors).length === 0
@@ -555,6 +593,7 @@ export function useKratosBrowserFlow(
           name,
           value: typeof node.attributes?.value === "string" ? node.attributes.value : "",
           label: resolveFieldLabel(flowType, node, name),
+          labelId: readLabelId(node),
           disabled: node.attributes?.disabled === true,
           onClickTrigger: resolveWindowTrigger(
             node.attributes?.onclickTrigger,
@@ -583,7 +622,7 @@ export function useKratosBrowserFlow(
           name,
           value,
           label,
-          labelId: typeof node.meta?.label?.id === "number" ? node.meta.label.id : null,
+          labelId: readLabelId(node),
           disabled: node.attributes?.disabled === true,
           messages: readTypedMessages(node.messages, `${name || "submit"}-${index}`),
         }
@@ -632,7 +671,7 @@ export function useKratosBrowserFlow(
             key: `text-${index}`,
             group: normalizeGroup(node.group),
             kind: "text",
-            label: readOptionalString(node.meta?.label?.text),
+            label: localizeNodeLabel(node),
             text,
             src: "",
             width: 0,
@@ -651,7 +690,7 @@ export function useKratosBrowserFlow(
             key: `img-${index}`,
             group: normalizeGroup(node.group),
             kind: "image",
-            label: readOptionalString(node.meta?.label?.text),
+            label: localizeNodeLabel(node),
             text: "",
             src,
             width: readNumber(node.attributes?.width),
@@ -689,11 +728,17 @@ export function useKratosBrowserFlow(
       .filter((field): field is AnchorField => field !== null)
   )
 
+  // Kratos' webauthn.js reports failures with English window.alert()s; while
+  // its scripts are on the page they become localized toasts.
+  let restoreAlert: (() => void) | null = null
+
   function clearInjectedScripts() {
     injectedScripts.value.forEach((script) => {
       script.remove()
     })
     injectedScripts.value = []
+    restoreAlert?.()
+    restoreAlert = null
   }
 
   function applyScriptFields(fields: ScriptField[]) {
@@ -702,6 +747,11 @@ export function useKratosBrowserFlow(
     }
 
     clearInjectedScripts()
+    if (fields.length > 0) {
+      restoreAlert = interceptKratosWebAuthnAlerts((message) => {
+        toast.error(message)
+      })
+    }
     fields.forEach((field) => {
       const script = document.createElement("script")
       script.src = field.src
@@ -811,7 +861,7 @@ export function useKratosBrowserFlow(
     clearInjectedScripts()
   })
 
-  const submitLabel = computed(() => submitFields.value[0]?.label ?? "Submit")
+  const submitLabel = computed(() => submitFields.value[0]?.label ?? translate("auth.kratos.labels.submit"))
   const submitName = computed(() => submitFields.value[0]?.name ?? "")
   const submitValue = computed(() => submitFields.value[0]?.value ?? "")
 

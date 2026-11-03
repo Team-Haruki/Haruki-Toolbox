@@ -1,0 +1,79 @@
+{
+  "_note": "synthesized: text.NewErrorValidationVerificationFlowExpired",
+  "id": "7b21fec3-3c8c-44d5-b9e4-97724001a5d9",
+  "type": "browser",
+  "expires_at": "2026-11-02T21:15:10.538919866Z",
+  "issued_at": "2026-11-02T20:15:10.538919866Z",
+  "request_url": "http://127.0.0.1:9/self-service/verification/browser",
+  "active": "code",
+  "ui": {
+    "action": "http://127.0.0.1:9/self-service/verification?flow=7b21fec3-3c8c-44d5-b9e4-97724001a5d9",
+    "method": "POST",
+    "nodes": [
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "email",
+          "type": "email",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070007,
+            "text": "Email",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "code",
+        "attributes": {
+          "name": "method",
+          "type": "submit",
+          "value": "code",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070009,
+            "text": "Continue",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "csrf_token",
+          "type": "hidden",
+          "value": "e2e-csrf",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      }
+    ],
+    "messages": [
+      {
+        "id": 4070005,
+        "text": "The verification flow expired 12.34 minutes ago, please try again.",
+        "type": "error",
+        "context": {
+          "expired_at": "2026-11-02T20:00:00Z",
+          "expired_at_unix": 1793649600
+        }
+      }
+    ]
+  },
+  "state": "choose_method"
+}

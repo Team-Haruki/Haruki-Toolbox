@@ -92,11 +92,17 @@ export function resolveKratosSubmitLabelKey(
     case "link":
       return "auth.kratos.labels.sendLink"
     case "totp":
-      return "auth.kratos.labels.verify"
-    case "lookup_secret":
-      return "auth.kratos.labels.verify"
+      // Pairing an authenticator in settings verifies its first code. On the
+      // second-factor login step the Kratos labels (1010009 "Use authenticator",
+      // 1010010 "Use backup recovery code") tell the two buttons apart.
+      return flowType === "settings" ? "auth.kratos.labels.verify" : null
     case "profile":
-      return "common.save"
+      // Settings saves the profile. On registration the same method is the
+      // first of two steps (traits, then credentials): Kratos labels it
+      // "Sign up", but the account is only created by the second step.
+      if (flowType === "settings") return "common.save"
+      if (flowType === "registration") return "auth.kratos.labels.next"
+      return null
     default:
       return null
   }

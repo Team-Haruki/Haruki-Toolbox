@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test"
 
 // The iOS module generator's upload notification switch: on by default, and
 // turning it off adds notify=false to the module and script URLs (the module
-// then declares its notify argument as off). In proxy mode only the Loon
-// plugin can notify, so only Loon offers the switch there.
+// then declares its notify argument as off). In proxy mode every app but
+// Stash offers it.
 async function setup(page: Page) {
   await page.addInitScript(() => {
     sessionStorage.setItem("user", JSON.stringify({
@@ -41,50 +41,75 @@ test.describe("iOS module upload notifications", () => {
     await expect(scriptUrl(page)).toHaveValue(/&notify=false$/)
   })
 
-  test("are offered for Loon in proxy mode", async ({ page }) => {
+  // Proxy mode: every module but Stash's offers the switch (Stash's override
+  // carries the script, but it is not verified on a device yet).
+  const proxyApps = [
+    { name: "Surge", ext: "sgmodule" },
+    { name: "Shadowrocket", ext: "sgmodule" },
+    { name: "Loon", ext: "lnplugin" },
+    { name: "Quantumult X", ext: "conf" },
+  ]
+  for (const app of proxyApps) {
+    test(`are offered for ${app.name} in proxy mode`, async ({ page }) => {
+      await setup(page)
+      await page.goto("/upload-data?tab=ios")
+      await expect(notifySwitch(page)).toBeVisible({ timeout: 30_000 })
+      await page.getByRole("combobox", { name: "选择软件" }).click()
+      await page.getByRole("option", { name: app.name, exact: true }).click()
+      await page.getByRole("combobox", { name: "选择上传数据方式" }).click()
+      await page.getByRole("option", { name: "代理上传" }).click()
+      await expect(notifySwitch(page)).toHaveAttribute("aria-checked", "true")
+      await expect(moduleUrl(page)).toHaveValue(new RegExp(`\\.${app.ext}\\?mode=proxy&endpoint=\\w+$`))
+
+      await notifySwitch(page).click()
+      await expect(moduleUrl(page)).toHaveValue(new RegExp(`\\.${app.ext}\\?mode=proxy&endpoint=\\w+&notify=false$`))
+    })
+  }
+
+  test("tell Quantumult X users to reinstall to change them", async ({ page }) => {
     await setup(page)
     await page.goto("/upload-data?tab=ios")
     await expect(notifySwitch(page)).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByText("模块参数里随时开关")).toBeVisible()
     await page.getByRole("combobox", { name: "选择软件" }).click()
-    await page.getByRole("option", { name: "Loon" }).click()
-    await page.getByRole("combobox", { name: "选择上传数据方式" }).click()
-    await page.getByRole("option", { name: "代理上传" }).click()
-    await expect(notifySwitch(page)).toHaveAttribute("aria-checked", "true")
-    await expect(moduleUrl(page)).toHaveValue(/\.lnplugin\?mode=proxy&endpoint=\w+$/)
-
-    await notifySwitch(page).click()
-    await expect(moduleUrl(page)).toHaveValue(/\.lnplugin\?mode=proxy&endpoint=\w+&notify=false$/)
+    await page.getByRole("option", { name: "Quantumult X" }).click()
+    await expect(page.getByText("Quantumult X 没有模块参数")).toBeVisible()
   })
 
-  test("are not offered for other apps in proxy mode", async ({ page }) => {
+  test("are not offered for Stash in proxy mode", async ({ page }) => {
     await setup(page)
     await page.goto("/upload-data?tab=ios")
     await expect(notifySwitch(page)).toBeVisible({ timeout: 30_000 })
+    await notifySwitch(page).click()
+    await page.getByRole("combobox", { name: "选择软件" }).click()
+    await page.getByRole("option", { name: "Stash" }).click()
+    await expect(notifySwitch(page)).toBeVisible()
     await page.getByRole("combobox", { name: "选择上传数据方式" }).click()
     await page.getByRole("option", { name: "代理上传" }).click()
     await expect(notifySwitch(page)).toHaveCount(0)
-    await expect(moduleUrl(page)).not.toHaveValue(/notify=/)
+    // A switch turned off earlier does not carry over to the hidden one.
+    await expect(moduleUrl(page)).toHaveValue(/\.stoverride\?mode=proxy&endpoint=\w+$/)
   })
 
-  // Screenshots for review (in the test output directory): Loon in proxy mode,
-  // the setting this change adds.
+  // Screenshots for review (in the test output directory): Quantumult X in
+  // proxy mode, the setting this change adds.
   for (const colorScheme of ["light", "dark"] as const) {
     for (const width of [390, 1440]) {
-      test(`renders Loon proxy mode at ${width}px in ${colorScheme} mode`, async ({ page }, testInfo) => {
+      test(`renders Quantumult X proxy mode at ${width}px in ${colorScheme} mode`, async ({ page }, testInfo) => {
         await page.emulateMedia({ colorScheme })
         await page.setViewportSize({ width, height: width < 800 ? 844 : 1000 })
         await setup(page)
         await page.goto("/upload-data?tab=ios")
         await expect(notifySwitch(page)).toBeVisible({ timeout: 30_000 })
         await page.getByRole("combobox", { name: "选择软件" }).click()
-        await page.getByRole("option", { name: "Loon" }).click()
-        await page.getByRole("combobox", { name: "选择上传数据方式" }).click()
-        await page.getByRole("option", { name: "代理上传" }).click()
+        // Quantumult X has no script mode; choosing it switches to proxy mode.
+        await page.getByRole("option", { name: "Quantumult X" }).click()
+        await expect(moduleUrl(page)).toHaveValue(/\.conf\?mode=proxy&/)
         await expect(notifySwitch(page)).toBeVisible()
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
         expect(overflow).toBeLessThanOrEqual(0)
         await notifySwitch(page).evaluate((element) => element.scrollIntoView({ block: "center" }))
-        await page.screenshot({ path: testInfo.outputPath(`ios-module-notify-loon-proxy-${width}-${colorScheme}.png`) })
+        await page.screenshot({ path: testInfo.outputPath(`ios-module-notify-qx-proxy-${width}-${colorScheme}.png`) })
       })
     }
   }

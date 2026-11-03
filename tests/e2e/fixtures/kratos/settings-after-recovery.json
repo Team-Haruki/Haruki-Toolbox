@@ -1,0 +1,442 @@
+{
+  "id": "1b98cca2-e788-4f5b-b57f-9a9cbcc99107",
+  "type": "browser",
+  "expires_at": "2026-11-02T21:15:10.65492933Z",
+  "issued_at": "2026-11-02T20:15:10.65492933Z",
+  "request_url": "http://127.0.0.1:9/self-service/recovery?flow=0a1a4b41-7b2f-4910-8f0f-64535bb8a597",
+  "ui": {
+    "action": "http://127.0.0.1:9/self-service/settings?flow=1b98cca2-e788-4f5b-b57f-9a9cbcc99107",
+    "method": "POST",
+    "nodes": [
+      {
+        "type": "input",
+        "group": "default",
+        "attributes": {
+          "name": "csrf_token",
+          "type": "hidden",
+          "value": "e2e-csrf",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "profile",
+        "attributes": {
+          "name": "traits.email",
+          "type": "email",
+          "value": "kanade@example.com",
+          "required": true,
+          "autocomplete": "email",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070002,
+            "text": "E-Mail",
+            "type": "info",
+            "context": {
+              "name": "traits.email",
+              "title": "E-Mail"
+            }
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "profile",
+        "attributes": {
+          "name": "traits.name",
+          "type": "text",
+          "value": "Kanade",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070002,
+            "text": "Display Name",
+            "type": "info",
+            "context": {
+              "name": "traits.name",
+              "title": "Display Name"
+            }
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "profile",
+        "attributes": {
+          "name": "method",
+          "type": "submit",
+          "value": "profile",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070003,
+            "text": "Save",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "password",
+        "attributes": {
+          "name": "password",
+          "type": "password",
+          "required": true,
+          "autocomplete": "new-password",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070001,
+            "text": "Password",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "password",
+        "attributes": {
+          "name": "method",
+          "type": "submit",
+          "value": "password",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070003,
+            "text": "Save",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "oidc",
+        "attributes": {
+          "name": "link",
+          "type": "submit",
+          "value": "apple",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1050002,
+            "text": "Link apple",
+            "type": "info",
+            "context": {
+              "provider": "apple"
+            }
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "oidc",
+        "attributes": {
+          "name": "link",
+          "type": "submit",
+          "value": "google",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1050002,
+            "text": "Link google",
+            "type": "info",
+            "context": {
+              "provider": "google"
+            }
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "lookup_secret",
+        "attributes": {
+          "name": "lookup_secret_regenerate",
+          "type": "submit",
+          "value": "true",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1050008,
+            "text": "Generate new backup recovery codes",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "webauthn",
+        "attributes": {
+          "name": "webauthn_register_displayname",
+          "type": "text",
+          "value": "",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1050013,
+            "text": "Name of the security key",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "webauthn",
+        "attributes": {
+          "name": "webauthn_register",
+          "type": "hidden",
+          "value": "",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "webauthn",
+        "attributes": {
+          "name": "webauthn_register_trigger",
+          "type": "button",
+          "value": "{\"publicKey\":{\"rp\":{\"name\":\"Haruki Toolbox\",\"id\":\"localhost\"},\"user\":{\"name\":\"Haruki Toolbox\",\"displayName\":\"Haruki Toolbox\",\"id\":\"Z3O4JH3VTdaLFDVdXDCP4g\"},\"challenge\":\"ygCfZOBmeRkyGPYgxpwhd_zdDEU2yhuk0wXFuwjEDy0\",\"pubKeyCredParams\":[{\"type\":\"public-key\",\"alg\":-7},{\"type\":\"public-key\",\"alg\":-35},{\"type\":\"public-key\",\"alg\":-36},{\"type\":\"public-key\",\"alg\":-257},{\"type\":\"public-key\",\"alg\":-258},{\"type\":\"public-key\",\"alg\":-259},{\"type\":\"public-key\",\"alg\":-37},{\"type\":\"public-key\",\"alg\":-38},{\"type\":\"public-key\",\"alg\":-39},{\"type\":\"public-key\",\"alg\":-8}],\"timeout\":120000,\"authenticatorSelection\":{\"userVerification\":\"discouraged\"}}}",
+          "disabled": false,
+          "onclick": "window.oryWebAuthnRegistration({\"publicKey\":{\"rp\":{\"name\":\"Haruki Toolbox\",\"id\":\"localhost\"},\"user\":{\"name\":\"Haruki Toolbox\",\"displayName\":\"Haruki Toolbox\",\"id\":\"Z3O4JH3VTdaLFDVdXDCP4g\"},\"challenge\":\"ygCfZOBmeRkyGPYgxpwhd_zdDEU2yhuk0wXFuwjEDy0\",\"pubKeyCredParams\":[{\"type\":\"public-key\",\"alg\":-7},{\"type\":\"public-key\",\"alg\":-35},{\"type\":\"public-key\",\"alg\":-36},{\"type\":\"public-key\",\"alg\":-257},{\"type\":\"public-key\",\"alg\":-258},{\"type\":\"public-key\",\"alg\":-259},{\"type\":\"public-key\",\"alg\":-37},{\"type\":\"public-key\",\"alg\":-38},{\"type\":\"public-key\",\"alg\":-39},{\"type\":\"public-key\",\"alg\":-8}],\"timeout\":120000,\"authenticatorSelection\":{\"userVerification\":\"discouraged\"}}})",
+          "onclickTrigger": "oryWebAuthnRegistration",
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1050012,
+            "text": "Add security key",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "script",
+        "group": "webauthn",
+        "attributes": {
+          "src": "http://127.0.0.1:9/.well-known/ory/webauthn.js",
+          "async": true,
+          "referrerpolicy": "no-referrer",
+          "crossorigin": "anonymous",
+          "integrity": "sha512-Dg0gN3fy+JoKxRp9Zda/4KYn3SlMdaKjs3fK5g6nDVQ/CVakD1dfMQyvRtJeiAtzSMEFviJbBLcVSrsBPGsFBA==",
+          "type": "text/javascript",
+          "id": "webauthn_script",
+          "nonce": "75e0539d-64ab-4146-8b94-8d308fabf302",
+          "node_type": "script"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "passkey",
+        "attributes": {
+          "name": "passkey_register_trigger",
+          "type": "button",
+          "value": "",
+          "disabled": false,
+          "onclick": "window.oryPasskeySettingsRegistration()",
+          "onclickTrigger": "oryPasskeySettingsRegistration",
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1050019,
+            "text": "Add passkey",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "passkey",
+        "attributes": {
+          "name": "passkey_settings_register",
+          "type": "hidden",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "input",
+        "group": "passkey",
+        "attributes": {
+          "name": "passkey_create_data",
+          "type": "hidden",
+          "value": "{\"publicKey\":{\"rp\":{\"name\":\"Haruki Toolbox\",\"id\":\"localhost\"},\"user\":{\"name\":\"kanade@example.com\",\"displayName\":\"kanade@example.com\",\"id\":\"RzU0NDRLU0txeEtpR0pDRGFzcmgweVRDRXFxT094WlBMbU9HY3dJa01ocThtNGdScDd5OXIwZGFZU3hUY1BnOA\"},\"challenge\":\"BTttwm479zR0Fa640Uix4fgcQmYCQWWcflXL0vycBUc\",\"pubKeyCredParams\":[{\"type\":\"public-key\",\"alg\":-7},{\"type\":\"public-key\",\"alg\":-35},{\"type\":\"public-key\",\"alg\":-36},{\"type\":\"public-key\",\"alg\":-257},{\"type\":\"public-key\",\"alg\":-258},{\"type\":\"public-key\",\"alg\":-259},{\"type\":\"public-key\",\"alg\":-37},{\"type\":\"public-key\",\"alg\":-38},{\"type\":\"public-key\",\"alg\":-39},{\"type\":\"public-key\",\"alg\":-8}],\"timeout\":300000,\"authenticatorSelection\":{\"authenticatorAttachment\":\"platform\",\"requireResidentKey\":true,\"residentKey\":\"required\",\"userVerification\":\"preferred\"}}}",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {}
+      },
+      {
+        "type": "img",
+        "group": "totp",
+        "attributes": {
+          "src": "data:image/png;base64,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",
+          "id": "totp_qr",
+          "width": 256,
+          "height": 256,
+          "node_type": "img"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1050005,
+            "text": "Authenticator app QR code",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "text",
+        "group": "totp",
+        "attributes": {
+          "text": {
+            "id": 1050006,
+            "text": "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+            "type": "info",
+            "context": {
+              "secret": "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP"
+            }
+          },
+          "id": "totp_secret_key",
+          "node_type": "text"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1050017,
+            "text": "This is your authenticator app secret. Use it if you can not scan the QR code.",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "totp",
+        "attributes": {
+          "name": "totp_code",
+          "type": "text",
+          "required": true,
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070006,
+            "text": "Verify code",
+            "type": "info"
+          }
+        }
+      },
+      {
+        "type": "input",
+        "group": "totp",
+        "attributes": {
+          "name": "method",
+          "type": "submit",
+          "value": "totp",
+          "disabled": false,
+          "node_type": "input"
+        },
+        "messages": [],
+        "meta": {
+          "label": {
+            "id": 1070003,
+            "text": "Save",
+            "type": "info"
+          }
+        }
+      }
+    ],
+    "messages": [
+      {
+        "id": 1060001,
+        "text": "You successfully recovered your account. Please change your password or set up an alternative login method (e.g. social sign in) within the next 15.00 minutes.",
+        "type": "success",
+        "context": {
+          "privilegedSessionExpiresAt": "2026-11-02T20:30:10.665138693Z",
+          "privileged_session_expires_at": "2026-11-02T20:30:10.665138693Z",
+          "privileged_session_expires_at_unix": 1793651410
+        }
+      }
+    ]
+  },
+  "identity": {
+    "id": "6773b824-7dd5-4dd6-8b14-355d5c308fe2",
+    "schema_id": "default",
+    "schema_url": "http://127.0.0.1:9/schemas/ZGVmYXVsdA",
+    "state": "active",
+    "state_changed_at": "2026-11-02T20:15:10.511519286Z",
+    "traits": {
+      "email": "kanade@example.com",
+      "name": "Kanade"
+    },
+    "verifiable_addresses": [
+      {
+        "id": "fbc7dfa1-5fe5-40a7-a776-f1d02d215034",
+        "value": "kanade@example.com",
+        "verified": true,
+        "via": "email",
+        "status": "completed",
+        "verified_at": "2026-11-02T20:15:10.654527829Z",
+        "created_at": "2026-11-02T20:15:10.512529Z",
+        "updated_at": "2026-11-02T20:15:10.512529Z"
+      }
+    ],
+    "recovery_addresses": [
+      {
+        "id": "6b2906c2-4029-4324-bb61-9b5adfd044df",
+        "value": "kanade@example.com",
+        "via": "email",
+        "created_at": "2026-11-02T20:15:10.512695Z",
+        "updated_at": "2026-11-02T20:15:10.512695Z"
+      }
+    ],
+    "metadata_public": null,
+    "created_at": "2026-11-02T20:15:10.512272Z",
+    "updated_at": "2026-11-02T20:15:10.512272Z",
+    "organization_id": null
+  },
+  "state": "show_form"
+}

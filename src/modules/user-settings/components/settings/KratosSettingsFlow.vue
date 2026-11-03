@@ -454,53 +454,56 @@ const groupedSections = computed(() => {
 
 const showGroupTitle = computed(() => isMfaSection.value || groupedSections.value.length > 1)
 
-function isDangerousAction(text: string): boolean {
-  const normalized = text.trim().toLowerCase()
-  return (
-    normalized.includes("disable")
-    || normalized.includes("remove")
-    || normalized.includes("unlink")
-    || normalized.includes("删除")
-    || normalized.includes("移除")
-    || normalized.includes("禁用")
-    || normalized.includes("解绑")
-  )
+// Kratos labels are translated, so actions are told apart by their Kratos
+// text id (text/message_settings.go) or node name, never by label wording.
+const DANGEROUS_LABEL_IDS = new Set([
+  1050003, // Unlink {provider}
+  1050004, // Unlink TOTP authenticator app
+  1050016, // Disable backup recovery codes
+  1050018, // Remove security key
+  1050020, // Remove passkey
+])
+const DANGEROUS_NODE_NAMES = new Set(["unlink", "totp_unlink", "lookup_secret_disable", "webauthn_remove", "passkey_remove"])
+const PRIMARY_LABEL_IDS = new Set([
+  1050002, // Link {provider}
+  1050008, // Generate new backup recovery codes
+  1050011, // Confirm backup recovery codes
+  1050012, // Add security key
+  1050019, // Add passkey
+])
+const PRIMARY_NODE_NAMES = new Set(["link", "lookup_secret_regenerate", "lookup_secret_confirm", "webauthn_register_trigger", "passkey_register_trigger"])
+
+interface SettingsAction {
+  name: string
+  labelId: number | null
 }
 
-function submitVariant(submit: { label: string; name: string; value: string }) {
+function isDangerousAction(action: SettingsAction): boolean {
+  return (action.labelId !== null && DANGEROUS_LABEL_IDS.has(action.labelId)) || DANGEROUS_NODE_NAMES.has(action.name)
+}
+
+function isPrimaryAction(action: SettingsAction): boolean {
+  return (action.labelId !== null && PRIMARY_LABEL_IDS.has(action.labelId)) || PRIMARY_NODE_NAMES.has(action.name)
+}
+
+function submitVariant(submit: SettingsAction) {
   if (!isMfaSection.value) {
     return "default"
   }
 
-  const signature = `${submit.label} ${submit.name} ${submit.value}`
-  return isDangerousAction(signature) ? "destructive" : "outline"
+  return isDangerousAction(submit) ? "destructive" : "outline"
 }
 
-function isPrimaryAction(text: string): boolean {
-  const normalized = text.trim().toLowerCase()
-  return (
-    normalized.includes("add")
-    || normalized.includes("register")
-    || normalized.includes("enable")
-    || normalized.includes("bind")
-    || normalized.includes("link")
-    || normalized.includes("添加")
-    || normalized.includes("启用")
-    || normalized.includes("绑定")
-  )
-}
-
-function buttonFieldVariant(field: { label: string; name: string; value: string }) {
+function buttonFieldVariant(field: SettingsAction) {
   if (!isMfaSection.value) {
     return "outline"
   }
 
-  const signature = `${field.label} ${field.name} ${field.value}`
-  if (isDangerousAction(signature)) {
+  if (isDangerousAction(field)) {
     return "destructive"
   }
 
-  return isPrimaryAction(signature) ? "default" : "outline"
+  return isPrimaryAction(field) ? "default" : "outline"
 }
 
 function iconForField(name: string) {
@@ -537,30 +540,11 @@ const kratosHost = computed(() => {
   }
 })
 
+/** Kratos success texts: settings saved (1050001), account recovered (1060001), email verified (1080002). */
+const SUCCESS_MESSAGE_IDS = new Set([1050001, 1060001, 1080002])
+
 function isSuccessLikeMessage(message: KratosFlowMessage): boolean {
-  if (message.tone === "success") {
-    return true
-  }
-
-  if (message.tone !== "info") {
-    return false
-  }
-
-  const normalized = message.text.trim().toLowerCase()
-  if (!normalized) {
-    return false
-  }
-
-  return (
-    normalized.includes("success")
-    || normalized.includes("saved")
-    || normalized.includes("updated")
-    || normalized.includes("changed")
-    || normalized.includes("成功")
-    || normalized.includes("已更新")
-    || normalized.includes("已保存")
-    || normalized.includes("已修改")
-  )
+  return message.tone === "success" || (message.id !== null && SUCCESS_MESSAGE_IDS.has(message.id))
 }
 
 const successToastMessages = computed(() => {
@@ -682,7 +666,7 @@ watch(
                   <div v-if="field.kind === 'image'" class="rounded-md border bg-muted/30 p-3">
                     <img
                       :src="field.src"
-                      :alt="field.label || 'Identity image'"
+                      :alt="field.label || t('auth.kratos.labels.imageAlt')"
                       class="mx-auto block h-auto w-full max-w-[256px]"
                       :width="field.width || undefined"
                       :height="field.height || undefined"

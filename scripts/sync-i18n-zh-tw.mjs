@@ -39,6 +39,15 @@ const TERM_FIXES = [
   [/數據/g, "資料"],
   // 全屏 (fullscreen) stays as-is through OpenCC; Taiwan says 全螢幕.
   [/全屏/g, "全螢幕"],
+  // 密钥 becomes 金鑰, but passkeys are 通行密鑰 in Taiwan (Apple's term), and
+  // security keys follow suit. Other 金鑰 (TOTP secret, device key) stay.
+  [/通行金鑰/g, "通行密鑰"],
+  [/安全金鑰/g, "安全密鑰"],
+  // 二维码 -> 二維碼 is mainland usage; Taiwan says QR Code, spaced from CJK text.
+  [/二維碼/g, (match, offset, text) => {
+    const cjk = /[\u3400-\u9fff]/
+    return `${cjk.test(text[offset - 1] ?? "") ? " " : ""}QR Code${cjk.test(text[offset + match.length] ?? "") ? " " : ""}`
+  }],
 ]
 
 // Fixes that are only right inside one top-level namespace. OpenCC renders

@@ -1,0 +1,17 @@
+{
+  "id": "b7229aab-2c48-407b-ade8-633dc13a0735",
+  "error": {
+    "id": "security_csrf_violation",
+    "code": 403,
+    "status": "Forbidden",
+    "reason": "Please retry the flow and optionally clear your cookies. The request was rejected to protect you from Cross-Site-Request-Forgery (CSRF) which could cause account takeover, leaking personal information, and other serious security issues.",
+    "details": {
+      "docs": "https://www.ory.sh/kratos/docs/debug/csrf",
+      "hint": "The anti-CSRF cookie was found but the CSRF token was not included in the HTTP request body (csrf_token) nor in the HTTP Header (X-CSRF-Token).",
+      "reject_reason": "The HTTP Cookie Header was set and a CSRF token was sent but they do not match. We recommend deleting all cookies for this domain and retrying the flow."
+    },
+    "message": "the request was rejected to protect you from Cross-Site-Request-Forgery"
+  },
+  "created_at": "2026-11-02T20:15:10.632088Z",
+  "updated_at": "2026-11-02T20:15:10.632088Z"
+}
