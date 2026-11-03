@@ -173,6 +173,28 @@ async function expectControlsToFit(scope: Locator) {
   })).toEqual([])
 }
 
+/**
+ * Keeps the glass effects on: the app turns on reduced visual effects (opaque
+ * surfaces) by itself on low-core machines such as CI runners.
+ */
+async function keepFullVisualEffects(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem("settings", JSON.stringify({ reducedVisualEffects: false, reducedVisualEffectsUserSet: true }))
+  })
+}
+
+/** Alpha of the element's computed background colour (any CSS colour syntax). */
+function backgroundAlpha(locator: Locator): Promise<number> {
+  return locator.evaluate((element) => {
+    const value = getComputedStyle(element).backgroundColor
+    const slash = /\/\s*([\d.]+)(%?)\s*\)$/.exec(value)
+    if (slash) return Number(slash[1]) / (slash[2] ? 100 : 1)
+    const rgba = /^rgba\([^)]*,\s*([\d.]+)\)$/.exec(value)
+    if (rgba) return Number(rgba[1])
+    return value === "transparent" ? 0 : 1
+  })
+}
+
 async function expectPageToFit(page: Page) {
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1)
 }
@@ -333,5 +355,57 @@ test.describe("iPhone", () => {
     const scrollerBottom = scrollerBox!.y + scrollerBox!.height
     expect(lastBox!.y + lastBox!.height).toBeLessThanOrEqual(scrollerBottom + 1)
     await expect(picker.getByRole("button", { name: /^(完成|Done)$/ })).toBeInViewport()
+  })
+  // iOS Safari: translucent glass let the deck page show through the full-screen
+  // expert dialog and the card picker on top of it. On touch devices dialog
+  // surfaces are near-opaque, and a dialog opened over another one gets a
+  // darker scrim.
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`nested dialogs are opaque on a phone (${colorScheme})`, { tag: "@webkit" }, async ({ page }, testInfo) => {
+      await page.emulateMedia({ colorScheme })
+      await page.setViewportSize({ width: 390, height: 664 })
+      await keepFullVisualEffects(page)
+      await mockMobileData(page, false, true)
+      await page.goto("/deck-recommend")
+      await expect(page.getByRole("combobox", { name: /^(账号|Account)$/ })).toContainText(OWN_UID)
+      await page.getByRole("button", { name: /^(专家配置|Expert Settings)$/ }).click()
+      const expert = page.getByRole("dialog", { name: /专家配置|Expert Settings/ })
+      await expert.getByRole("button", { name: /选择卡牌|Select cards?/ }).click()
+      const picker = page.getByRole("dialog", { name: /^(浏览卡牌|Browse Cards)$/ })
+      await expect(picker.getByRole("button", { name: /Card 120/ })).toBeAttached()
+      await page.waitForTimeout(400)
+      const screenshotDir = process.env.E2E_SCREENSHOT_DIR
+      if (screenshotDir) {
+        await page.screenshot({ path: `${screenshotDir}/nested-picker-${testInfo.project.name}-${colorScheme}.png` })
+      }
+
+      // The expert dialog is aria-hidden behind the picker, so find both surfaces by slot.
+      const surfaces = page.locator("[data-slot=dialog-content]")
+      await expect(surfaces).toHaveCount(2)
+      for (const index of [0, 1]) {
+        expect(await backgroundAlpha(surfaces.nth(index))).toBeGreaterThanOrEqual(0.94)
+      }
+      const overlays = page.locator("[data-slot=dialog-overlay]")
+      await expect(overlays).toHaveCount(2)
+      expect(await backgroundAlpha(overlays.nth(1))).toBeGreaterThanOrEqual(0.4)
+    })
+  }
+})
+
+// The opaque surface is for touch devices only: a mouse-driven desktop keeps
+// the translucent glass dialog.
+test.describe("desktop", () => {
+  test.use({ hasTouch: false, isMobile: false })
+
+  test("dialogs keep the glass surface on desktop", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await keepFullVisualEffects(page)
+    await mockMobileData(page, false, true)
+    await page.goto("/deck-recommend")
+    await expect(page.getByRole("combobox", { name: /^(账号|Account)$/ })).toContainText(OWN_UID)
+    await page.getByRole("button", { name: /^(专家配置|Expert Settings)$/ }).click()
+    const surface = page.locator("[data-slot=dialog-content]")
+    await expect(surface).toHaveCount(1)
+    expect(await backgroundAlpha(surface)).toBeLessThan(0.9)
   })
 })
