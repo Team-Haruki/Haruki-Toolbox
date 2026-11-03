@@ -310,7 +310,8 @@ export default {
         },
         "notify": {
           "title": "Upload notifications",
-          "description": "After each upload your phone shows a notification saying whether it worked. You can also switch it later in the module's arguments in the proxy app."
+          "description": "After each upload your phone shows a notification saying whether it worked. You can also switch it later in the module's arguments in the proxy app.",
+          "descriptionQx": "After each upload your phone shows a notification saying whether it worked. Quantumult X has no module arguments: to change this later, change it here and install the module again."
         },
         "regions": {
           "title": "Select regions",
