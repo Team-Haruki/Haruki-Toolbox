@@ -129,6 +129,7 @@ export type DeckRecommendFormContext = {
   useCurrentDeck: Ref<boolean>
   isCurrentDeckEnabled: ComputedRef<boolean>
   fixedCardIds: Ref<number[]>
+  fixedCardOptions: ComputedRef<DeckRecommendMasterCardOption[]>
   fixedCharacterIds: Ref<number[]>
   excludedCardIds: Ref<number[]>
 

@@ -242,6 +242,7 @@ export default {
         "description": "Force or exclude cards. Current main deck, fixed cards, and fixed characters are mutually exclusive.",
         "fixedGroup": "Forced members",
         "fixedGroupDescription": "Fixed cards are capped at 5 with only 1 card per character; fixed characters are capped at 5.",
+        "challengeFixedGroupDescription": "Select a Challenge Live character first, then fix up to 5 cards of that character.",
         "excludedGroup": "Exclusion rules",
         "excludedGroupDescription": "Remove any number of cards from the candidate pool without affecting the fixed-card limit.",
         "fixedCards": "Fixed cards",

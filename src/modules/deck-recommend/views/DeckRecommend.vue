@@ -98,6 +98,7 @@ import {
   type DeckRecommendSimulatedEventUnitValue,
 } from "../lib/saved-config"
 import { provideDeckRecommendFormContext } from "../composables/deck-recommend-form-context"
+import { useDeckRecommendFixedCards } from "../composables/useDeckRecommendFixedCards"
 import {
   useDeckRecommendRunner,
   type DeckRecommendExecutionMode,
@@ -296,6 +297,12 @@ const resultDecks = computed(() =>
 const cardOptions = computed(() =>
   buildMasterCardOptions(cardOptionMasterData.value ?? runner.masterData.value, dataRegion.value, settingsStore.currentAssetEndpoint),
 )
+const { fixedCardOptions } = useDeckRecommendFixedCards({
+  recommendMode,
+  selectedCharacterId,
+  cardOptions,
+  fixedCardIds,
+})
 const isEventLikeMode = computed(() =>
   recommendMode.value === "event" || recommendMode.value === "bonus" || recommendMode.value === "mysekai",
 )
@@ -1601,6 +1608,7 @@ provideDeckRecommendFormContext({
   running: computed(() => runner.running.value),
   dataReady,
   cardOptions,
+  fixedCardOptions,
   skillOrderStrategy,
   skillOrderStrategyOptions,
   updateSkillOrderStrategy,

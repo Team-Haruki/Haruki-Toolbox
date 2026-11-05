@@ -9,9 +9,7 @@ Object.defineProperty(globalThis, "sessionStorage", { value: storage, configurab
 
 // mock.module patches the real modules in place, so keep them to restore.
 const callApi = await import("@/core/http/call-api")
-const snapshotFetch = await import("@/shared/sekai/user-snapshot/fetch")
 const realRequest = callApi.request
-const realFetchSuite = snapshotFetch.fetchUserSuiteWithCache
 
 const requestMock = mock(async (url: string) => ({ updatedData: { url, userDeck: { leader: 1 } } }))
 const fetchSuiteMock = mock(async () => ({
@@ -19,20 +17,20 @@ const fetchSuiteMock = mock(async () => ({
   cacheHit: false, cacheable: true, remoteUploadTime: 1, cacheUpdatedAt: 2,
 }))
 mock.module("@/core/http/call-api", () => ({ ...callApi, request: requestMock }))
-mock.module("@/shared/sekai/user-snapshot/fetch", () => ({ ...snapshotFetch, fetchUserSuiteWithCache: fetchSuiteMock }))
 
 afterAll(() => {
   mock.module("@/core/http/call-api", () => ({ ...callApi, request: realRequest }))
-  mock.module("@/shared/sekai/user-snapshot/fetch", () => ({ ...snapshotFetch, fetchUserSuiteWithCache: realFetchSuite }))
 })
 
-const { fetchDeckRecommendUserDataWithCache, DECK_RECOMMEND_SUITE_KEYS } = await import("./user-data")
+const { fetchDeckRecommendCachedUserData, DECK_RECOMMEND_SUITE_KEYS } = await import("./user-data")
 const { getUserProfile } = await import("../api/recommend-data")
 
 test("deck user data is one Suite subset read, with no MySekai request", async () => {
-  const result = await fetchDeckRecommendUserDataWithCache({
+  // The cached-data helper accepts dependencies directly, even if another test
+  // has already loaded user-data and captured its default fetchSuite reference.
+  const result = await fetchDeckRecommendCachedUserData({
     toolboxUserId: "u", server: "cn", gameUserId: "1", mode: "suite",
-  })
+  }, "check-remote", { fetchSuite: fetchSuiteMock })
   expect(fetchSuiteMock).toHaveBeenCalledTimes(1)
   expect(fetchSuiteMock).toHaveBeenLastCalledWith({
     toolboxUserId: "u", server: "cn", gameUserId: "1", keys: DECK_RECOMMEND_SUITE_KEYS,
