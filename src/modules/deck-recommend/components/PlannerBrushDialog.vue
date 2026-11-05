@@ -30,7 +30,7 @@ import { useMusicAliasMatches } from "@/shared/sekai/music-alias"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
 import CardThumbnail from "@/shared/components/SekaiCardThumbnail.vue"
-import { MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
+import { isMusicDifficulty, resolveMusicDifficultyChipClass } from "@/modules/music-library/lib/music-difficulties"
 import { buildDeckResultViews, type DeckResultDeckView } from "../lib/card-thumbnail"
 import {
   buildPlannerMusicDurations,
@@ -166,8 +166,10 @@ function difficultyLabel(value: string): string {
   return t(`musicLibrary.difficulty.${value}`)
 }
 
-function difficultyColor(value: string): string {
-  return MUSIC_DIFFICULTY_COLORS[value as keyof typeof MUSIC_DIFFICULTY_COLORS] ?? "#64748b"
+function difficultyChipClass(value: string): string {
+  return isMusicDifficulty(value)
+    ? resolveMusicDifficultyChipClass(value)
+    : "inline-flex items-center rounded bg-muted text-xs font-semibold text-muted-foreground"
 }
 
 function formatInteger(value: number): string {
@@ -471,10 +473,7 @@ function save() {
                 >
                   <td class="max-w-52 truncate px-2 py-1.5">{{ row.title }}</td>
                   <td class="px-2 py-1.5">
-                    <span
-                      class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold text-white"
-                      :style="{ backgroundColor: difficultyColor(row.difficulty) }"
-                    >
+                    <span :class="[difficultyChipClass(row.difficulty), 'px-1.5 py-0.5']">
                       {{ difficultyLabel(row.difficulty) }}
                     </span>
                   </td>

@@ -6,7 +6,7 @@ import { X } from "lucide-vue-next"
 import {
   DialogClose,
   DialogContent,
-
+  DialogDescription,
   DialogPortal,
   useForwardPropsEmits,
 } from "reka-ui"
@@ -18,10 +18,16 @@ const props = defineProps<DialogContentProps & {
   class?: HTMLAttributes["class"]
   /** Extra classes for the backdrop, e.g. a higher z-index for a dialog that must stack above another open dialog. */
   overlayClass?: HTMLAttributes["class"]
+  /**
+   * Screen-reader-only description, for dialogs with no visible
+   * `DialogDescription` (reka-ui warns without one). Omit it when the dialog
+   * renders its own `DialogDescription`.
+   */
+  description?: string
 }>()
 const emits = defineEmits<DialogContentEmits>()
 
-const delegatedProps = reactiveOmit(props, "class", "overlayClass")
+const delegatedProps = reactiveOmit(props, "class", "overlayClass", "description")
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 const { t } = useI18n()
@@ -40,11 +46,16 @@ const { t } = useI18n()
           props.class,
         )"
     >
+      <DialogDescription v-if="props.description" class="sr-only">
+        {{ props.description }}
+      </DialogDescription>
+
       <slot />
 
-      <!-- 32px square: a comfortable tap target that stays within the p-4 inset. -->
+      <!-- 32px square that stays within the p-4 inset; on touch an invisible
+           ::after grows the hit box to 40px without moving the icon. -->
       <DialogClose
-        class="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-2 right-2 inline-flex size-8 items-center justify-center rounded-md opacity-70 transition-opacity hover:bg-accent hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none sm:top-3 sm:right-3 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+        class="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-2 right-2 inline-flex size-8 items-center justify-center rounded-md opacity-70 transition-opacity hover:bg-accent hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none sm:top-3 sm:right-3 pointer-coarse:after:absolute pointer-coarse:after:-top-2 pointer-coarse:after:-left-2 pointer-coarse:after:right-0 pointer-coarse:after:bottom-0 pointer-coarse:after:content-[''] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
         :aria-label="t('common.close')"
       >
         <X />

@@ -102,6 +102,24 @@ describe("describeError", () => {
     expect(describeError(backend(400, ""), "fallback")).toEqual({ message: "fallback" })
   })
 
+  test("maps a 403 to the permission text and keeps only an informative body as detail", () => {
+    expect(describeError(backend(403, "forbidden"), "fallback")).toEqual({ message: zhCNCore.core.errors.forbidden })
+    expect(describeError(backend(403, "Permission Denied"), "fallback")).toEqual({ message: zhCNCore.backendMessages.forbidden })
+    expect(describeError(backend(403, "insufficient permissions"), "fallback")).toEqual({ message: zhCNCore.backendMessages.forbidden })
+    expect(describeError(backend(403, "you do not own this room"), "fallback")).toEqual({
+      message: zhCNCore.core.errors.forbidden,
+      detail: "you do not own this room",
+    })
+    expect(describeError(backend(403, ""), "fallback")).toEqual({ message: zhCNCore.core.errors.forbidden })
+    // The admin re-auth 403 keeps its own message.
+    expect(describeError(backend(403, "reauthentication required"), "fallback")).toEqual({ message: zhCNCore.backendMessages.reauthRequired })
+    expect(describeError(backend(403, "not authorized to access this binding"), "fallback")).toEqual({ message: zhCNCore.backendMessages.bindingAccessDenied })
+    // A 403 error page from a proxy (no JSON envelope) is still a transport failure.
+    expect(describeError(axiosError({ status: 403, data: "<html>403</html>" }), "fallback")).toEqual({
+      message: zhCNCore.core.errors.serverUnavailable.replace("{status}", "403"),
+    })
+  })
+
   test("passes app-authored Error text through and maps known strings", () => {
     expect(describeError(new Error("已翻译的提示"), "fallback")).toEqual({ message: "已翻译的提示" })
     expect(describeError(new Error("ticket is closed"), "fallback").message).toBe(zhCNCore.backendMessages.ticketClosed)

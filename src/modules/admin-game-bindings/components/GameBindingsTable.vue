@@ -162,9 +162,9 @@ function isSelected(binding: GlobalGameBinding): boolean {
               </TableCell>
               <TableCell class="font-mono text-sm tabular-nums">{{ binding.gameUserId }}</TableCell>
               <TableCell>
-                <div class="flex flex-col">
-                  <span class="text-sm font-medium">{{ binding.userName || binding.userId }}</span>
-                  <span v-if="binding.userName" class="text-xs text-muted-foreground">ID: {{ binding.userId }}</span>
+                <div class="flex min-w-0 max-w-[14rem] flex-col xl:max-w-xs">
+                  <span class="truncate text-sm font-medium" :title="binding.userName || String(binding.userId)">{{ binding.userName || binding.userId }}</span>
+                  <span v-if="binding.userName" class="truncate text-xs text-muted-foreground">ID: {{ binding.userId }}</span>
                 </div>
               </TableCell>
               <TableCell>

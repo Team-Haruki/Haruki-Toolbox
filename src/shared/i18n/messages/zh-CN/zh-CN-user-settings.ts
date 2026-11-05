@@ -6,11 +6,11 @@ export default {
       "manualGranted": "已由管理员认证赞助资格，无需再次提供订单。",
       "accessBlocked": "赞助资格已由管理员停用。如需恢复，请联系管理员。",
       "unlinkManualConfirm": "解除爱发电绑定后，管理员授予的赞助资格仍然有效，已有头像框选择会保留。",
-      "oauthTab": "OAuth2 授权",
+      "oauthTab": "爱发电授权",
       "oauthDescription": "前往爱发电授权，关联账号并自动匹配历史赞助。",
-      "methodOAuth": "验证方式：OAuth2 授权",
+      "methodOAuth": "验证方式：爱发电授权",
       "methodOrder": "验证方式：订单号验证",
-      "upgradeOAuth": "改用 OAuth2 授权确认",
+      "upgradeOAuth": "改用爱发电授权确认",
       "order": {
         "tab": "订单号验证",
         "label": "爱发电订单号",
@@ -27,7 +27,7 @@ export default {
         "failed": "暂时无法核验订单，请稍后重试。"
       },
       "title": "爱发电绑定",
-      "description": "通过 OAuth2 授权或订单号验证关联赞助记录。曾经赞助过即可永久使用专属头像框。",
+      "description": "通过爱发电授权或订单号验证关联赞助记录。曾经赞助过即可永久使用专属头像框。",
       "loading": "正在加载…",
       "retry": "重试",
       "loadFailed": "暂时无法读取绑定信息，请重试。",
@@ -44,11 +44,14 @@ export default {
       "unlink": "解除绑定",
       "unlinked": "已解除爱发电绑定",
       "refresh": "刷新赞助状态",
-      "unlinkConfirm": "解除后，机器人暂时恢复默认头像框。重新绑定曾经赞助过的爱发电账号即可继续使用；已有选框会保留。",
+      "unlinkConfirm": "解除后，HarukiBot 暂时恢复默认头像框。重新绑定曾经赞助过的爱发电账号即可继续使用；已有选框会保留。",
       "callbackTitle": "爱发电授权结果",
       "callback_loading": "正在确认授权并关联账号…",
       "callback_success": "爱发电账号已绑定，赞助记录会自动匹配。",
-      "callback_failed": "绑定未完成。授权可能已过期、登录会话已改变，或爱发电账号已被绑定。请返回账号设置重新授权。"
+      "callback_failed": "绑定未完成：暂时无法连接服务，请稍后再试。",
+      "callback_conflict": "绑定未完成：该爱发电账号已绑定其他工具箱账号，不能再绑定到当前账号。",
+      "callback_expired": "绑定未完成：授权已过期或登录会话已改变。请返回账号设置重新授权。",
+      "callback_invalid": "绑定未完成：缺少授权信息。请返回账号设置重新授权。"
     },
     "frames": {
       "lockedOrderOnly": "先在账号设置使用爱发电订单号验证赞助资格。你也可以先浏览全部头像框和示例。",
@@ -57,14 +60,16 @@ export default {
       "title": "赞助头像框",
       "back": "返回账号设置",
       "description": "为 HarukiBot 的游戏个人信息图片选择头像框。曾经赞助过即可永久使用，为每个已验证的游戏账号分别设置。",
-      "locked": "先在账号设置通过 OAuth2 授权或订单号验证赞助资格。你也可以先浏览全部头像框和示例。",
+      "locked": "先在账号设置通过爱发电授权或订单号验证赞助资格。你也可以先浏览全部头像框和示例。",
+      "lockedTitle": "需要赞助资格",
+      "eligibilityLost": "赞助资格已失效，头像框未保存。",
       "accountTitle": "应用到游戏账号",
       "accountDescription": "保存后，HarukiBot 查询该游戏账号时会使用所选头像框。",
       "account": "游戏账号",
       "unverified": "未验证",
       "verifyFirst": "请先验证这个游戏账号的归属，再保存头像框。",
       "noAccounts": "你还没有绑定游戏账号。可以先浏览示例，再前往绑定。",
-      "manageAccounts": "绑定与验证游戏账号",
+      "manageAccounts": "前往游戏账号管理",
       "choose": "选择头像框",
       "search": "搜索头像框",
       "default": "默认头像框",
@@ -98,9 +103,7 @@ export default {
       "accountTitle": "账号设置",
       "accountDescription": "管理你的身份、登录与安全相关设置。",
       "harukiBotTitle": "HarukiBot数据授权",
-      "harukiBotDescription": "管理社交平台绑定与授权，供 HarukiBot 查询你的游戏数据。",
-      "oauthTitle": "OAuth 授权管理",
-      "oauthDescription": "管理通过 OAuth 授权访问你账号数据的第三方应用。"
+      "harukiBotDescription": "管理社交平台绑定与授权，供 HarukiBot 查询你的游戏数据。"
     },
     "sekaiData": {
       "region": "区服",
@@ -129,6 +132,10 @@ export default {
       },
       "queueTitle": "更新队列",
       "queueEmpty": "暂无更新任务。",
+      "errors": {
+        "network": "无法连接游戏数据服务器，请检查网络；若仍然失败，可在「偏好设置」中切换图片加载线路后重试。",
+        "timeout": "连接游戏数据服务器超时，请稍后重试或切换图片加载线路。"
+      },
       "queueDetails": {
         "cacheHit": "缓存已是最新，没有下载新文件。",
         "updated": "已下载并写入新的缓存数据。",
@@ -162,8 +169,13 @@ export default {
       }
     },
     "kratosFlow": {
-      "title": "修改邮箱、昵称或密码",
-      "description": "点击下方按钮进入修改页面，完成后会自动返回。",
+      "description": "在这里完成修改，保存后会返回账号设置。",
+      "titles": {
+        "profile": "修改邮箱或昵称",
+        "password": "修改密码",
+        "mfa": "设置两步验证",
+        "oidc": "管理 Google 登录"
+      },
       "redirect": {
         "title": "即将前往登录服务页面{target}…",
         "description": "修改在登录服务的页面上完成，完成后会自动返回工具箱。",
@@ -182,7 +194,7 @@ export default {
         "savedTitle": "设置已更新",
         "profileSavedDescription": "邮箱或昵称更新成功",
         "passwordSavedDescription": "密码设置已更新",
-        "mfaSavedDescription": "多因素认证设置已更新",
+        "mfaSavedDescription": "两步验证设置已更新",
         "socialSavedDescription": "社交登录设置已更新",
         "genericSavedDescription": "身份设置已更新"
       },
@@ -192,7 +204,7 @@ export default {
         "oidc": "社交登录",
         "passkey": "通行密钥",
         "webauthn": "安全密钥",
-        "totp": "身份验证器",
+        "totp": "验证器 App",
         "lookupSecret": "恢复码"
       }
     },
@@ -201,8 +213,8 @@ export default {
       "description": "头像、昵称与邮箱绑定。"
     },
     "securityCard": {
-      "title": "安全与登录",
-      "description": "密码、多因素认证、社交登录与会话管理。"
+      "title": "登录与安全",
+      "description": "密码、两步验证、Google 登录与登录设备。"
     },
     "account": {
       "title": "头像设置",
@@ -232,6 +244,8 @@ export default {
       "currentEmailLabel": "当前邮箱",
       "currentNicknameLabel": "当前昵称",
       "unsetNickname": "未设置",
+      "nicknameLabel": "昵称",
+      "nicknamePlaceholder": "请输入昵称",
       "changeButton": "管理邮箱和昵称",
       "verifyButton": "验证邮箱"
     },
@@ -255,13 +269,11 @@ export default {
       "manageButton": "管理 Google 登录"
     },
     "sessions": {
-      "title": "会话管理",
-      "description": "查看当前登录会话，并撤销不可信设备。",
-      "hint": "你可以单独踢下线某台设备，也可以一次性下线其他会话。",
-      "manageButton": "管理会话",
+      "title": "登录设备",
+      "description": "查看已登录的设备，并下线不可信的设备。",
       "page": {
-        "title": "会话管理",
-        "description": "管理当前身份下的活跃会话。",
+        "title": "登录设备",
+        "description": "查看当前账号已登录的设备，可以单独下线某台设备，也可以一次下线其他所有设备。",
         "refresh": "刷新",
         "currentSession": "当前会话",
         "currentTag": "当前",
@@ -452,17 +464,13 @@ export default {
       }
     },
     "gameBinding": {
-      "harukiBotGuide": {
-        "title": "使用 HarukiBot",
-        "description": "如果需要在 HarukiBot 中使用游戏账号数据，请前往「HarukiBot 数据授权」绑定并验证你的 QQ 号。",
-        "action": "前往绑定 QQ"
-      },
-      "title": "游戏账号绑定",
+      "title": "游戏账号管理",
       "description": "管理您的 Haruki 工具箱账号绑定的《世界计划: 缤纷舞台 feat. 初音未来》游戏账号",
       "alert": {
         "title": "注意",
         "line1": "同一区服的同一个游戏账号只能被一个工具箱用户绑定。",
-        "line2": "这里的绑定不会同步到 HarukiBot NEO；要在 Bot 里查询，请按 Bot 帮助在群里单独绑定。"
+        "line2": "HarukiBot 查询你的游戏数据时使用的就是这里的绑定；要让 Bot 认出你，请先在「HarukiBot 数据授权」绑定并验证你的 QQ 号。",
+        "action": "前往 HarukiBot 数据授权"
       },
       "addButton": "绑定新账号",
       "empty": "暂无数据",
@@ -497,6 +505,7 @@ export default {
         "subtitle": "绑定你的游戏账号并配置数据权限。",
         "verifyHint": "验证方式：把一段验证码写进游戏「个性签名」，工具箱会读取你的公开资料来确认账号是你的。验证通过后可改回签名。",
         "uidHint": "游戏内「个人资料」ID 下方的数字。",
+        "identityLockedHint": "区服和游戏UID 绑定后不能修改；填错了请删除这条绑定，再重新绑定。",
         "basicInfoTitle": "账号基本信息",
         "serverPlaceholder": "选择区服",
         "verifyButton": "验证",
@@ -682,7 +691,7 @@ export default {
         "saveSuccessDescription": "账号设置已更新",
         "saveFailedTitle": "保存失败",
         "saveFailedFallback": "账号设置没有保存，请稍后重试；新增账号时请确认已在游戏内写入验证码。",
-        "verifyBeforeCreateDescription": "新增账号前请先点击“验证”生成验证码，并在游戏内完成设置。",
+        "verifyBeforeCreateDescription": "新增账号前请先点击「验证」生成验证码，并在游戏内完成设置。",
         "uidMustBeNumericDescription": "游戏UID必须是纯数字",
         "generateCodeFailedTitle": "无法生成验证码",
         "generateCodeFailedFallback": "请确认区服和游戏UID无误后重试；多次失败请稍后再试。",

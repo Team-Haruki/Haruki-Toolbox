@@ -1,4 +1,5 @@
 import { computed, onBeforeUnmount, shallowRef, watch, type ComputedRef, type Ref } from "vue"
+import { resolveTrackerFreshness, type TrackerFreshness } from "../lib/tracker-freshness"
 import { useI18n } from "vue-i18n"
 import { useUserStore } from "@/shared/stores/user"
 import type { SekaiRegion } from "@/types"
@@ -66,6 +67,10 @@ export interface UseRankBorderLiveDeps {
   trackerEndpointReady: ComputedRef<boolean>
   playbackAt: Ref<number | null>
   isLocalMockTrackerEndpoint: (endpoint: string) => boolean
+  /** Shared low-frequency clock (unix seconds) the freshness check reads. */
+  nowSecond: Readonly<Ref<number>>
+  /** Unix seconds the ranked activity ends; after that stale data is expected. */
+  selectedActivityEndAt: ComputedRef<number | null>
 }
 
 type Top100MemoryCacheEntry = {
@@ -92,6 +97,8 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     trackerEndpointReady,
     playbackAt,
     isLocalMockTrackerEndpoint,
+    nowSecond,
+    selectedActivityEndAt,
   } = deps
 
   const { t } = useI18n()
@@ -180,8 +187,34 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
   const canUseRealtimeAutoRefresh = computed(() =>
     canRefresh.value && isPlaybackLive.value && userStore.hasActiveSession,
   )
-  const trackerStatusTone = computed(() => {
+  // Freshness of the data itself (age of the tracker's latest sample), as
+  // opposed to the state of our socket: a collector that stopped keeps
+  // answering with its last snapshot, so the pill must turn amber/red on the
+  // sample age no matter how healthy the connection looks.
+  const trackerFreshness = computed<TrackerFreshness>(() => resolveTrackerFreshness({
+    statusTimestamp: tracker.status.value?.timestamp ?? null,
+    now: nowSecond.value,
+    activityEndAt: selectedActivityEndAt.value,
+  }))
+  const trackerAgeLabel = computed(() => {
+    const seconds = trackerFreshness.value.ageSeconds ?? 0
+    const minutes = Math.max(1, Math.round(seconds / 60))
+    return minutes < 60
+      ? t("rankBorder.intervals.minutes", { value: minutes })
+      : t("rankBorder.intervals.hours", { value: Math.round(minutes / 60) })
+  })
+  const trackerStatusTone = computed<"live" | "amber" | "red" | "muted">(() => {
     if (!isPlaybackLive.value) {
+      return "muted"
+    }
+    const freshness = trackerFreshness.value.state
+    if (freshness === "outdated") {
+      return "red"
+    }
+    if (freshness === "stale") {
+      return "amber"
+    }
+    if (freshness === "ended") {
       return "muted"
     }
     if (!userStore.hasActiveSession) {
@@ -199,6 +232,16 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     if (!isPlaybackLive.value) {
       return t("rankBorder.status.replaying")
     }
+    const freshness = trackerFreshness.value.state
+    if (freshness === "outdated") {
+      return t("rankBorder.status.outdated", { age: trackerAgeLabel.value })
+    }
+    if (freshness === "stale") {
+      return t("rankBorder.status.stale", { age: trackerAgeLabel.value })
+    }
+    if (freshness === "ended") {
+      return t("rankBorder.status.ended")
+    }
     if (!userStore.hasActiveSession) {
       return t("rankBorder.status.pollingLoginForLive")
     }
@@ -209,6 +252,14 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
       return t("rankBorder.status.connecting")
     }
     return t("rankBorder.status.waitingWs")
+  })
+  /** Explicit warning line under the toolbar while the data is stale or outdated (live view only). */
+  const trackerStaleWarning = computed(() => {
+    const freshness = trackerFreshness.value.state
+    if (!isPlaybackLive.value || (freshness !== "stale" && freshness !== "outdated")) {
+      return null
+    }
+    return t("rankBorder.meta.staleWarning", { age: trackerAgeLabel.value })
   })
 
   watch(
@@ -973,6 +1024,8 @@ export function useRankBorderLive(deps: UseRankBorderLiveDeps) {
     canUseRealtimeAutoRefresh,
     trackerStatusTone,
     trackerStatusLabel,
+    trackerFreshness,
+    trackerStaleWarning,
     resetRankBorderData,
     refreshData,
     refreshTop100GrowthsFromCachedTraces,

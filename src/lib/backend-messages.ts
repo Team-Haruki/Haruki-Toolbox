@@ -19,6 +19,10 @@ const KEY_PREFIX = "backendMessages."
 
 const EXACT_MESSAGES: Record<string, string> = {
   "user not authenticated": "notAuthenticated",
+  // Generic 403 bodies; `describeError` also maps any other 403 to the same text.
+  "forbidden": "forbidden",
+  "permission denied": "forbidden",
+  "insufficient permissions": "forbidden",
   "upload not allowed": "uploadNotAllowed",
   "write grant expired or revoked for this account": "writeGrantExpired",
   // The read path's 403: the binding is someone else's and no (unexpired) grant covers it.

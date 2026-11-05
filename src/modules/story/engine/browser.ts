@@ -1,8 +1,8 @@
-// Story browser (left of the stage), laid out like the game's ストーリー
-// screens: category tabs, a unit filter row with the game's unit icons, a
-// search box, and story cells that expand into their episodes (number + title
-// + episode image). Collapsible to a thin rail. Picking an episode calls
-// onPick; the page decides what plays.
+// Story browser (beside or under the stage), laid out like the game's
+// ストーリー screens: category tabs, a unit filter row with the game's unit
+// icons, a search box, and story cells that expand into their episodes
+// (number + title + episode image). Collapsible to a thin rail beside the
+// stage. Picking an episode calls onPick; the page decides what plays.
 
 import type { StoryCatalog, StoryEpisodeLabel, StorySeries, StoryTab } from "../lib/story-catalog";
 import { STORY_TABS } from "../lib/story-catalog";
@@ -12,23 +12,31 @@ import { storyUrls } from "./urls";
 
 export interface BrowserLabels {
   tabs: Record<StoryTab, string>;
+  /** unit filter: the "every unit" button */
   all: string;
+  /** unit names by unit key (light_sound …), for the filter and the search */
+  units: Record<string, string>;
   rail: string;
   toggle: string;
-  search: string;
+  /** search placeholders: what the current tab can match */
+  search: { title: string; titleUnit: string; titleChar: string };
   loading: string;
   empty: string;
   episode: (label: StoryEpisodeLabel) => string;
+  /** main story chapter the title region does not name: "{unit} chapter {no}" */
+  chapter: (unit: string, no: number) => string;
+  /** tag on rows whose title is only available in Japanese */
+  jpOnly: string;
 }
 
-const UNITS: { key: string; icon: string; name: string }[] = [
-  { key: "", icon: "icon_unit", name: "" },
-  { key: "light_sound", icon: "icon_unit_ln", name: "Leo/need" },
-  { key: "idol", icon: "icon_unit_mj", name: "MORE MORE JUMP！" },
-  { key: "street", icon: "icon_unit_vb", name: "Vivid BAD SQUAD" },
-  { key: "theme_park", icon: "icon_unit_ws", name: "ワンダーランズ×ショウタイム" },
-  { key: "school_refusal", icon: "icon_unit_25", name: "25時、ナイトコードで。" },
-  { key: "piapro", icon: "icon_unit_vs_wh", name: "バーチャル・シンガー" },
+const UNITS: { key: string; icon: string; short: string; jp: string }[] = [
+  { key: "", icon: "icon_unit", short: "ALL", jp: "" },
+  { key: "light_sound", icon: "icon_unit_ln", short: "L/n", jp: "Leo/need" },
+  { key: "idol", icon: "icon_unit_mj", short: "MMJ", jp: "MORE MORE JUMP！" },
+  { key: "street", icon: "icon_unit_vb", short: "VBS", jp: "Vivid BAD SQUAD" },
+  { key: "theme_park", icon: "icon_unit_ws", short: "WxS", jp: "ワンダーランズ×ショウタイム" },
+  { key: "school_refusal", icon: "icon_unit_25", short: "N25", jp: "25時、ナイトコードで。" },
+  { key: "piapro", icon: "icon_unit_vs_wh", short: "VS", jp: "バーチャル・シンガー" },
 ];
 
 const esc = (s: string) =>
@@ -56,6 +64,7 @@ export class StoryBrowser {
   private root: HTMLElement;
   private listEl: HTMLElement;
   private input: HTMLInputElement;
+  private unitNameEl: HTMLElement;
   private cat?: StoryCatalog;
   private tab: StoryTab = (STORY_TABS as readonly string[]).includes(store.get("tab") ?? "") ? (store.get("tab") as StoryTab) : "event";
   private unit = store.get("unit") || "";
@@ -75,32 +84,41 @@ export class StoryBrowser {
     const ui = (p: string) => preferAssetHost(storyUrls.ui(p));
     this.root = document.createElement("aside");
     this.root.className = "story-browser";
+    this.root.setAttribute("aria-label", labels.rail);
     if (store.get("collapsed") === "1") this.root.classList.add("collapsed");
-    this.root.innerHTML = `<button class="sb-toggle" title="${esc(labels.toggle)}" aria-label="${esc(labels.toggle)}"></button>
+    this.root.innerHTML = `<button type="button" class="sb-toggle" title="${esc(labels.toggle)}" aria-label="${esc(labels.toggle)}"></button>
       <div class="sb-rail">${esc(labels.rail)}</div>
       <div class="sb-main">
-        <div class="sb-tabs">${STORY_TABS.map((t) => `<button data-tab="${t}">${esc(labels.tabs[t])}</button>`).join("")}</div>
-        <div class="sb-units">${UNITS.map(
-          (u) =>
-            `<button data-unit="${u.key}" title="${esc(u.name || labels.all)}" class="${u.key === "piapro" ? "vs" : ""}"><img src="${ui(`units/${u.icon}.png`)}" alt="" /></button>`,
-        ).join("")}</div>
-        <div class="sb-chars"></div>
-        <input class="sb-search" type="search" placeholder="${esc(labels.search)}" spellcheck="false" />
+        <div class="sb-tabs" role="tablist">${STORY_TABS.map((t) => `<button type="button" role="tab" data-tab="${t}">${esc(labels.tabs[t])}</button>`).join("")}</div>
+        <div class="sb-units" role="group" aria-label="${esc(labels.all)}">${UNITS.map((u) => {
+          const name = this.unitName(u.key);
+          return `<button type="button" data-unit="${u.key}" data-short="${esc(u.short)}" title="${esc(name)}" aria-label="${esc(name)}" class="${u.key === "piapro" ? "vs" : ""}"><img src="${ui(`units/${u.icon}.png`)}" alt="" /></button>`;
+        }).join("")}</div>
+        <div class="sb-unit-name" aria-live="polite"></div>
+        <div class="sb-chars" role="group"></div>
+        <input class="sb-search" type="search" placeholder="${esc(labels.search.title)}" aria-label="${esc(labels.search.title)}" spellcheck="false" />
         <div class="sb-list"><div class="sb-empty">${esc(labels.loading)}</div></div>
       </div>`;
     parent.prepend(this.root);
     this.listEl = this.root.querySelector(".sb-list")!;
+    this.unitNameEl = this.root.querySelector(".sb-unit-name")!;
     // unit and character icons: the fallback host's copy once, when this
-    // host is failing (the list's images recover through their own handlers below)
+    // host is failing; gone on both hosts, a short text stands in (the list's
+    // images recover through their own handlers below)
     this.root.addEventListener(
       "error",
       (e) => {
         const img = e.target;
-        if (!(img instanceof HTMLImageElement) || this.listEl.contains(img) || img.dataset.fallback) return;
+        if (!(img instanceof HTMLImageElement) || this.listEl.contains(img)) return;
+        if (img.dataset.fallback) {
+          img.closest("button")?.classList.add("noimg");
+          return;
+        }
         img.dataset.fallback = "1";
         const failed = img.src;
         void resolveAssetImageFallback(failed).then((twin) => {
           if (twin && img.src === failed) img.src = twin;
+          else if (!twin) img.closest("button")?.classList.add("noimg");
         });
       },
       true,
@@ -143,6 +161,11 @@ export class StoryBrowser {
     this.render();
   }
 
+  /** Collapsed to its rail (only honoured beside the stage). */
+  get collapsed() {
+    return this.root.classList.contains("collapsed");
+  }
+
   setCatalog(cat: StoryCatalog) {
     const first = !this.cat;
     this.cat = cat;
@@ -150,8 +173,15 @@ export class StoryBrowser {
     this.render();
   }
 
-  setError(message: string) {
-    this.listEl.innerHTML = `<div class="sb-empty">${esc(message)}</div>`;
+  /** The list could not be loaded: the message in its place, with a retry when offered. */
+  setError(message: string, retry?: { label: string; onRetry: () => void }) {
+    this.listEl.innerHTML = `<div class="sb-empty">${esc(message)}${retry ? `<br /><button type="button" class="sb-retry">${esc(retry.label)}</button>` : ""}</div>`;
+    if (retry) {
+      this.listEl.querySelector(".sb-retry")!.addEventListener("click", () => {
+        this.listEl.innerHTML = `<div class="sb-empty">${esc(this.labels.loading)}</div>`;
+        retry.onRetry();
+      });
+    }
   }
 
   // The player switched scenario: move the highlight (and open its story).
@@ -168,6 +198,10 @@ export class StoryBrowser {
     if (!hit) return;
     this.tab = hit.series.kind;
     this.open.add(hit.series.key);
+  }
+
+  private unitName(key: string) {
+    return key ? this.labels.units[key] || UNITS.find((u) => u.key === key)?.jp || key : this.labels.all;
   }
 
   // Characters offered by the filter: the selected unit's members (all 26 without one).
@@ -189,7 +223,7 @@ export class StoryBrowser {
     this.charsEl.innerHTML = choices
       .map(
         (id) =>
-          `<button data-char="${id}" class="${id === this.char ? "on" : ""}" title="${esc(names[id] ?? "")}"><img src="${preferAssetHost(storyUrls.ui(`chr_ts/chr_ts_${id}_g2.png`))}" alt="${esc(names[id] ?? "")}" loading="lazy" /></button>`,
+          `<button type="button" data-char="${id}" class="${id === this.char ? "on" : ""}" aria-pressed="${id === this.char}" title="${esc(names[id] ?? "")}" aria-label="${esc(names[id] ?? "")}"><img src="${preferAssetHost(storyUrls.ui(`chr_ts/chr_ts_${id}_g2.png`))}" alt="" loading="lazy" /></button>`,
       )
       .join("");
   }
@@ -207,16 +241,42 @@ export class StoryBrowser {
     return s.episodes.some((e) => e.chars?.some((id) => this.cat!.units[id] === this.unit));
   }
 
+  // Search: titles, the story's unit name, and the characters where the
+  // catalog knows them (card stories, area talks).
+  private searchText(s: StorySeries, chars: number[] | undefined) {
+    const names = this.cat!.names;
+    const parts = [s.title];
+    if (s.unit && s.unit !== "none") parts.push(this.unitName(s.unit), UNITS.find((u) => u.key === s.unit)?.jp ?? "");
+    for (const id of chars ?? []) parts.push(names[id] ?? "");
+    return parts.join("\n").toLowerCase();
+  }
+
+  private seriesTitle(s: StorySeries) {
+    if (s.kind === "unit" && s.jpOnly && s.unit && s.chapterNo) return this.labels.chapter(this.unitName(s.unit), s.chapterNo);
+    return s.title;
+  }
+
   private render() {
-    for (const b of this.root.querySelectorAll<HTMLElement>(".sb-tabs button"))
-      b.classList.toggle("on", b.dataset.tab === this.tab);
-    for (const b of this.root.querySelectorAll<HTMLElement>(".sb-units button"))
-      b.classList.toggle("on", b.dataset.unit === this.unit);
+    for (const b of this.root.querySelectorAll<HTMLElement>(".sb-tabs button")) {
+      const on = b.dataset.tab === this.tab;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-selected", String(on));
+    }
+    for (const b of this.root.querySelectorAll<HTMLElement>(".sb-units button")) {
+      const on = b.dataset.unit === this.unit;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    }
+    this.unitNameEl.textContent = this.unitName(this.unit);
+    const search = this.labels.search;
+    this.input.placeholder = this.tab === "card" || this.tab === "area" ? search.titleChar : this.tab === "special" ? search.title : search.titleUnit;
+    this.input.setAttribute("aria-label", this.input.placeholder);
     this.renderChars();
     if (!this.cat) return;
     // straight to the fallback host while this one is known to be failing
     const img = (p: string) => preferAssetHost(storyUrls.asset(p));
     const q = this.input.value.trim().toLowerCase();
+    const jpTag = `<i class="sb-jp">${esc(this.labels.jpOnly)}</i>`;
     let html = "";
     let n = 0;
     for (const s of this.cat.tabs[this.tab]) {
@@ -225,8 +285,9 @@ export class StoryBrowser {
       if (this.tab === "area" && this.unit)
         eps = eps.filter((e) => e.chars?.some((id) => this.cat!.units[id] === this.unit));
       if (this.tab === "area" && this.char) eps = eps.filter((e) => e.chars?.includes(this.char));
-      const titleHit = !q || s.title.toLowerCase().includes(q);
-      if (q && !titleHit) eps = eps.filter((e) => e.title.toLowerCase().includes(q));
+      const title = this.seriesTitle(s);
+      const titleHit = !q || this.searchText({ ...s, title }, s.chars).includes(q);
+      if (q && !titleHit) eps = eps.filter((e) => this.searchText({ ...s, title: e.title, unit: undefined }, e.chars).includes(q));
       if (!eps.length) continue;
       if (++n > 400) break; // keep the DOM light; search narrows further
       const open = this.open.has(s.key) || (q && !titleHit);
@@ -239,16 +300,20 @@ export class StoryBrowser {
             ? `<img class="sb-uicon" src="${preferAssetHost(storyUrls.ui(`units/${UNITS.find((u) => u.key === s.unit)?.icon ?? "icon_unit"}.png`))}" alt="" />`
             : "";
       const date = s.at ? new Date(s.at).toISOString().slice(0, 10) : "";
+      // a main chapter gets a localized label instead; other JP-only stories are tagged
+      const tagged = s.jpOnly && !(s.kind === "unit" && title !== s.title);
       html += `<div class="sb-story${open ? " open" : ""}${cur ? " cur" : ""}" data-key="${esc(s.key)}">
-        <div class="sb-head">${pic}<div class="sb-title"><b>${esc(s.title)}</b>${date ? `<small>${date}</small>` : ""}</div><i class="sb-caret"></i></div>`;
+        <button type="button" class="sb-head" aria-expanded="${open ? "true" : "false"}">${pic}<div class="sb-title"><b>${esc(title)}${tagged ? jpTag : ""}</b>${date ? `<small>${date}</small>` : ""}</div><i class="sb-caret"></i></button>`;
       if (open)
         html += `<div class="sb-eps">${eps
-          .map(
-            (e) => `<div class="sb-ep${e.sid === this.current ? " cur" : ""}" data-sid="${esc(e.sid)}" title="${esc(e.sid)}">
-              <div class="sb-ep-text"><small>${esc(this.labels.episode(e.label))}</small><span>${esc(e.title)}</span></div>
+          .map((e) => {
+            const label = this.labels.episode(e.label);
+            const isCur = e.sid === this.current;
+            return `<button type="button" class="sb-ep${isCur ? " cur" : ""}" data-sid="${esc(e.sid)}" title="${esc(`${label} ${e.title}`.trim())}"${isCur ? ` aria-current="true"` : ""}>
+              <div class="sb-ep-text"><small>${esc(label)}${e.jpOnly ? jpTag : ""}</small><span>${esc(e.title)}</span></div>
               ${e.thumb ? `<img src="${img(e.thumb)}" alt="" loading="lazy" />` : ""}
-            </div>`,
-          )
+            </button>`;
+          })
           .join("")}</div>`;
       html += `</div>`;
     }
@@ -267,14 +332,12 @@ export class StoryBrowser {
   }
 
   // Scroll only the list to the episode: scrollIntoView() also scrolls the
-  // page, which on the narrow layout pushed the stage off screen.
+  // page, which on the stacked layout pushed the stage off screen.
   private revealInList(el: HTMLElement) {
     const list = this.listEl.getBoundingClientRect();
     const r = el.getBoundingClientRect();
-    // rects include the row's CSS zoom, scrollTop doesn't
-    const zoom = list.height / this.listEl.offsetHeight || 1;
-    if (r.top < list.top) this.listEl.scrollTop += (r.top - list.top) / zoom;
-    else if (r.bottom > list.bottom) this.listEl.scrollTop += (r.bottom - list.bottom) / zoom;
+    if (r.top < list.top) this.listEl.scrollTop += r.top - list.top;
+    else if (r.bottom > list.bottom) this.listEl.scrollTop += r.bottom - list.bottom;
   }
 
   private onListClick(e: Event) {
@@ -284,7 +347,8 @@ export class StoryBrowser {
       this.onPick(ep.dataset.sid!);
       return;
     }
-    const story = t.closest<HTMLElement>(".sb-story");
+    const head = t.closest<HTMLElement>(".sb-head");
+    const story = head?.closest<HTMLElement>(".sb-story");
     if (!story) return;
     const key = story.dataset.key!;
     if (this.open.has(key)) this.open.delete(key);
@@ -292,6 +356,8 @@ export class StoryBrowser {
     const top = this.listEl.scrollTop;
     this.render();
     this.listEl.scrollTop = top;
+    // keep the keyboard on the row that was toggled
+    this.listEl.querySelector<HTMLElement>(`.sb-story[data-key="${CSS.escape(key)}"] .sb-head`)?.focus({ preventScroll: true });
   }
 
   destroy() {

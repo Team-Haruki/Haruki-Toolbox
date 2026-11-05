@@ -3,7 +3,8 @@ import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, Lock, Mail, Check, KeyRound } from "lucide-vue-next"
+import { Loader2, Lock, Mail, Check, KeyRound, RotateCcw } from "lucide-vue-next"
+import { useKratosActionList } from "@/modules/auth/composables/useKratosActionList"
 import {
   Card,
   CardTitle,
@@ -47,6 +48,13 @@ function iconForField(name: string) {
 }
 
 const isReady = computed(() => !loading.value && !loadError.value && action.value !== "")
+
+// "验证" is the one primary; "重新发送验证码" renders as a link under it.
+const orderedActions = useKratosActionList(submitFields, buttonFields)
+
+function actionIcon(role: string) {
+  return role === "resend" ? RotateCcw : Check
+}
 
 function handleSubmit(event: Event) {
   if (!validateVisibleFields(event)) {
@@ -114,38 +122,23 @@ function handleSubmit(event: Event) {
             <KratosFlowMessages :messages="field.messages" />
           </div>
 
-          <div v-if="buttonFields.length > 0" class="space-y-2">
-            <div v-for="field in buttonFields" :key="field.key" class="space-y-1">
+          <div v-if="orderedActions.length > 0" class="space-y-2">
+            <div v-for="item in orderedActions" :key="item.key" class="space-y-1">
               <Button
-                type="button"
-                variant="outline"
-                class="w-full justify-start"
-                :name="field.name"
-                :value="field.value || undefined"
-                :disabled="field.disabled"
-                @click="invokeVisibleFieldAction(field)"
-              >
-                <component :is="iconForField(field.name)" class="size-4 mr-2" />
-                {{ field.label }}
-              </Button>
-              <KratosFlowMessages :messages="field.messages" />
-            </div>
-          </div>
-
-          <div v-if="submitFields.length > 0" class="space-y-2">
-            <div v-for="submit in submitFields" :key="submit.key" class="space-y-1">
-              <Button
-                type="submit"
+                :type="item.kind === 'submit' ? 'submit' : 'button'"
                 class="w-full"
-                :name="submit.name || undefined"
-                :value="submit.value || undefined"
-                :data-kratos-submit="submit.key"
-                :disabled="!isReady || submit.disabled"
+                :variant="item.variant"
+                :data-kratos-role="item.role"
+                :name="item.name || undefined"
+                :value="item.value || undefined"
+                :data-kratos-submit="item.kind === 'submit' ? item.key : undefined"
+                :disabled="!isReady || item.disabled"
+                @click="item.kind === 'trigger' ? invokeVisibleFieldAction(item) : undefined"
               >
-                <Check class="mr-2 h-4 w-4" />
-                {{ submit.label }}
+                <component :is="actionIcon(item.role)" class="size-4" />
+                {{ item.label }}
               </Button>
-              <KratosFlowMessages :messages="submit.messages" />
+              <KratosFlowMessages :messages="item.messages" />
             </div>
           </div>
           <Button v-else type="submit" class="w-full" :disabled="!isReady">

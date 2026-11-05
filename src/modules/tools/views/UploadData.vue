@@ -6,7 +6,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ExternalLink, FileUp, KeyRound, LucideAlertTriangle, LucideInfo, MonitorSmartphone, Smartphone } from "lucide-vue-next"
+import { Download, ExternalLink, FileUp, KeyRound, LucideAlertTriangle, LucideInfo, MonitorSmartphone, Smartphone } from "lucide-vue-next"
+import PageHeader from "@/shared/components/PageHeader.vue"
 import { UploadDataFileTab, UploadDataInheritTab, UploadDataIOSTab } from "@/modules/tools/components"
 import { useUploadDataTool } from "@/modules/tools/composables/useUploadDataTool"
 import { loadActiveInheritJob } from "@/modules/tools/lib/inherit-job-storage"
@@ -40,6 +41,7 @@ const {
   canSelectMySekaiDataType,
   loadUploadTargets,
   onFileChange,
+  resetUploadOutcome,
   submitFileUpload,
 } = useUploadDataTool()
 
@@ -55,7 +57,15 @@ function normalizeTab(value: unknown): TabValue {
 
 const activeTab = ref<TabValue>(normalizeTab(route.query.tab))
 
-watch(activeTab, (tab) => {
+// The legacy /upload_suite and /upload_mysekai pages land here with the data
+// type they were about (`?type=`); it is read once, the selector takes over.
+if (route.query.type === "suite" || route.query.type === "mysekai") {
+  fileDataType.value = route.query.type
+}
+
+watch(activeTab, (tab, previous) => {
+  // The file tab's last outcome is about a target the user has now left.
+  if (previous === "file") resetUploadOutcome()
   const nextTab = tab === DEFAULT_TAB ? undefined : tab
   if (route.query.tab === nextTab || (route.query.tab == null && nextTab == null)) {
     return
@@ -88,17 +98,19 @@ watch(
 )
 
 const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
+const tabTriggerClass = "flex min-h-9 items-center gap-1.5 whitespace-normal py-1.5 text-xs sm:text-sm pointer-coarse:min-h-10"
 </script>
 
 <template>
   <div class="w-full flex-1 flex flex-col items-center justify-center gap-3 px-0 py-4">
     <!-- What this page is for, before any tab-specific warnings. -->
+    <PageHeader
+      :title="t('tools.uploadData.intro.title')"
+      :description="t('tools.uploadData.intro.description')"
+      class="w-full max-w-2xl"
+    />
     <Card class="w-full max-w-2xl">
-      <CardHeader class="pb-0">
-        <CardTitle class="text-base">{{ t("tools.uploadData.intro.title") }}</CardTitle>
-        <CardDescription class="leading-relaxed">{{ t("tools.uploadData.intro.description") }}</CardDescription>
-      </CardHeader>
-      <CardContent class="pt-3">
+      <CardContent class="pt-4 sm:pt-6">
         <div class="grid gap-2 sm:grid-cols-3">
           <button type="button" :class="[noticeTileClass, 'transition-colors hover:bg-muted/40']" @click="activeTab = 'ios'">
             <span class="block text-[11px] font-medium text-muted-foreground">{{ t("tools.uploadData.intro.iosPlatform") }}</span>
@@ -118,19 +130,19 @@ const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
 
     <Tabs v-model="activeTab" class="w-full max-w-2xl">
       <TabsList class="grid h-auto w-full grid-cols-2 sm:grid-cols-4">
-        <TabsTrigger value="ios" class="flex min-h-9 items-center gap-1.5 whitespace-normal py-1.5 text-xs sm:text-sm">
+        <TabsTrigger value="ios" :class="tabTriggerClass">
           <Smartphone class="h-4 w-4 shrink-0" />
           {{ t("tools.uploadData.tabs.ios") }}
         </TabsTrigger>
-        <TabsTrigger value="proxy" class="flex min-h-9 items-center gap-1.5 whitespace-normal py-1.5 text-xs sm:text-sm">
+        <TabsTrigger value="proxy" :class="tabTriggerClass">
           <MonitorSmartphone class="h-4 w-4 shrink-0" />
           {{ t("tools.uploadData.tabs.proxy") }}
         </TabsTrigger>
-        <TabsTrigger value="inherit" class="flex min-h-9 items-center gap-1.5 whitespace-normal py-1.5 text-xs sm:text-sm">
+        <TabsTrigger value="inherit" :class="tabTriggerClass">
           <KeyRound class="h-4 w-4 shrink-0" />
           {{ t("tools.uploadData.tabs.inherit") }}
         </TabsTrigger>
-        <TabsTrigger value="file" class="flex min-h-9 items-center gap-1.5 whitespace-normal py-1.5 text-xs sm:text-sm">
+        <TabsTrigger value="file" :class="tabTriggerClass">
           <FileUp class="h-4 w-4 shrink-0" />
           {{ t("tools.uploadData.tabs.file") }}
         </TabsTrigger>
@@ -149,27 +161,14 @@ const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
             </CardTitle>
             <CardDescription>{{ t("tools.uploadData.proxyTab.description") }}</CardDescription>
           </CardHeader>
-          <CardContent class="space-y-3">
-            <Alert variant="destructive" class="border-destructive/50 bg-destructive/5" data-testid="harukiproxy-upgrade-warning">
+          <CardContent class="space-y-4">
+            <!-- The v1/v2 cutoff is in the past: background for a new user, a nudge for an old one. -->
+            <Alert class="border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-100" data-testid="harukiproxy-upgrade-warning">
               <LucideAlertTriangle aria-hidden="true" />
               <AlertTitle>{{ t("tools.uploadData.proxyTab.upgradeWarning.title") }}</AlertTitle>
-              <AlertDescription class="space-y-3 leading-relaxed">
-                <p class="font-semibold">{{ t("tools.uploadData.proxyTab.upgradeWarning.deadline") }}</p>
-                <p>{{ t("tools.uploadData.proxyTab.upgradeWarning.upgrade") }}</p>
-                <p>{{ t("tools.uploadData.proxyTab.upgradeWarning.release", { version: HARUKI_PROXY_VERSION }) }}</p>
-                <ul class="list-disc space-y-2 pl-5">
-                  <li>
-                    <a :href="HARUKI_PROXY_WINDOWS_URL" target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-4">
-                      {{ t("tools.uploadData.proxyTab.upgradeWarning.windowsDownload") }}
-                    </a>
-                  </li>
-                  <li>
-                    <a :href="HARUKI_PROXY_ANDROID_URL" target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-4">
-                      {{ t("tools.uploadData.proxyTab.upgradeWarning.androidDownload") }}
-                    </a>
-                  </li>
-                </ul>
-                <p>{{ t("tools.uploadData.proxyTab.upgradeWarning.feedback") }}</p>
+              <AlertDescription class="text-current">
+                {{ t("tools.uploadData.proxyTab.upgradeWarning.deadline") }}
+                {{ t("tools.uploadData.proxyTab.upgradeWarning.upgrade") }}
               </AlertDescription>
             </Alert>
             <ol class="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
@@ -177,6 +176,27 @@ const noticeTileClass = "rounded-md border bg-muted/20 px-3 py-2 text-center"
               <li>{{ t("tools.uploadData.proxyTab.steps.bind") }}</li>
               <li>{{ t("tools.uploadData.proxyTab.steps.run") }}</li>
             </ol>
+            <div class="space-y-2 rounded-lg border bg-muted/20 p-3" data-testid="harukiproxy-downloads">
+              <p class="text-sm font-medium">{{ t("tools.uploadData.proxyTab.downloads.title") }}</p>
+              <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Button as-child variant="outline" size="sm" class="justify-start sm:justify-center">
+                  <a :href="HARUKI_PROXY_WINDOWS_URL" target="_blank" rel="noopener noreferrer">
+                    <Download class="size-4" aria-hidden="true" />
+                    {{ t("tools.uploadData.proxyTab.upgradeWarning.windowsDownload") }}
+                  </a>
+                </Button>
+                <Button as-child variant="outline" size="sm" class="justify-start sm:justify-center">
+                  <a :href="HARUKI_PROXY_ANDROID_URL" target="_blank" rel="noopener noreferrer">
+                    <Download class="size-4" aria-hidden="true" />
+                    {{ t("tools.uploadData.proxyTab.upgradeWarning.androidDownload") }}
+                  </a>
+                </Button>
+              </div>
+              <p class="text-xs text-muted-foreground">
+                {{ t("tools.uploadData.proxyTab.upgradeWarning.release", { version: HARUKI_PROXY_VERSION }) }}
+                {{ t("tools.uploadData.proxyTab.upgradeWarning.feedback") }}
+              </p>
+            </div>
             <Button as-child class="w-full sm:w-auto">
               <a :href="HARUKI_PROXY_TUTORIAL_URL" target="_blank" rel="noopener noreferrer">
                 {{ t("tools.uploadData.proxyTab.tutorialButton") }}

@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
 import { describeError } from "@/lib/error-utils"
 import { useFriendLinks } from "@/modules/navigation/composables/useFriendLinks"
 
@@ -15,42 +16,35 @@ const errorDescription = computed(() =>
 </script>
 
 <template>
-  <div class="w-full flex-1 px-0 py-4 space-y-6">
-    <!-- Header intro -->
-    <div class="space-y-2 max-w-5xl mx-auto">
-      <h1 class="text-3xl font-bold tracking-tight">{{ t("navigationPages.friendLinks.title") }}</h1>
-      <p class="text-muted-foreground">
-        {{ t("navigationPages.friendLinks.description") }}
-      </p>
-    </div>
+  <div class="mx-auto w-full max-w-6xl flex-1 space-y-6 px-0 py-4">
+    <PageHeader :title="t('navigationPages.friendLinks.title')" :description="t('navigationPages.friendLinks.description')" />
 
     <div v-if="loading" class="text-center py-10 text-muted-foreground">
       {{ t("navigationPages.friendLinks.loading") }}
     </div>
 
     <!-- Backend failure: say so and offer a retry instead of a blank page -->
-    <div v-else-if="errorDescription" class="max-w-5xl mx-auto">
-      <LoadErrorState
-        :description="errorDescription.message"
-        :detail="errorDescription.detail"
-        :retrying="loading"
-        @retry="reload"
-      />
-    </div>
+    <LoadErrorState
+      v-else-if="errorDescription"
+      :description="errorDescription.message"
+      :detail="errorDescription.detail"
+      :retrying="loading"
+      @retry="reload"
+    />
 
-    <div v-else-if="friendLinks.length === 0" class="max-w-5xl mx-auto text-center py-10 text-muted-foreground">
+    <div v-else-if="friendLinks.length === 0" class="text-center py-10 text-muted-foreground">
       {{ t("navigationPages.friendLinks.empty") }}
     </div>
 
     <!-- Friend link card grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <a
         v-for="friend in friendLinks"
         :key="friend.id"
         :href="friend.url"
         target="_blank"
         rel="noopener noreferrer"
-        class="block group outline-none"
+        class="block group rounded-xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
         <Card class="h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/50 cursor-pointer bg-card/50 backdrop-blur-sm">
           <CardHeader class="flex flex-row items-center gap-4 pb-2">

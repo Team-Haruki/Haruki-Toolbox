@@ -3,7 +3,7 @@ import { computed, ref } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideCalendarDays, LucideInfinity, LucideZoomIn } from "lucide-vue-next"
 import type { SekaiRegion } from "@/types"
-import { isCatalogPermanentEnd, type CatalogStatus } from "@/shared/components/catalog/types"
+import { isCatalogPlaceholderDate, type CatalogStatus } from "@/shared/components/catalog/types"
 import CatalogCountdown from "@/shared/components/catalog/CatalogCountdown.vue"
 import CatalogTimeZoneHint from "@/shared/components/catalog/CatalogTimeZoneHint.vue"
 import CatalogZonedTime from "@/shared/components/catalog/CatalogZonedTime.vue"
@@ -39,12 +39,14 @@ const lightboxItems = computed<ImageLightboxItem[]>(() => [
   { label: t("gachaCatalog.detail.lightbox.logo"), sources: props.logoSources, alt: props.name },
 ])
 
-/** Permanent pools (end in 2099): no countdown, a "permanent" line instead. */
-const permanent = computed(() => props.status === "ongoing" && isCatalogPermanentEnd(props.endAt, Date.now()))
+/** Permanent pools (end in 2099, whatever the status): no end date or countdown, a "permanent" line instead. */
+const permanent = computed(() => isCatalogPlaceholderDate(props.endAt, Date.now()))
+/** An undecided start (2099 sentinel on unreleased pools): "TBD", and nothing to count down to. */
+const startUndecided = computed(() => isCatalogPlaceholderDate(props.startAt, Date.now()))
 
 const countdownTarget = computed(() => {
   if (props.status === "upcoming") {
-    return props.startAt
+    return startUndecided.value ? null : props.startAt
   }
   if (props.status === "ongoing" && !permanent.value) {
     return props.endAt
@@ -90,7 +92,8 @@ function openLightbox() {
     <div :class="['flex flex-col gap-2 rounded-md border bg-card px-3 py-2.5', stacked ? '' : 'sm:flex-row sm:items-center sm:justify-between']">
       <div class="flex flex-wrap items-start gap-x-1.5 gap-y-1 text-sm text-muted-foreground tabular-nums">
         <LucideCalendarDays class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-        <CatalogZonedTime :value="startAt" :region="region" :fallback="t('gachas.common.dateFallback')" />
+        <span v-if="startUndecided">{{ t("catalog.status.tbd") }}</span>
+        <CatalogZonedTime v-else :value="startAt" :region="region" :fallback="t('gachas.common.dateFallback')" />
         <span aria-hidden="true">–</span>
         <span v-if="permanent">{{ t("catalog.status.permanent") }}</span>
         <CatalogZonedTime v-else :value="endAt" :region="region" :fallback="t('gachas.common.dateFallback')" />

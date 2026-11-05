@@ -152,7 +152,9 @@ export default {
     "bonus": {
       "rarityTable": "稀有度 × 突破等级加成",
       "rarity": "稀有度",
-      "masterRank": "突破 {rank}"
+      "masterRank": "突破 {rank}",
+      "attrAndCharacters": "以下角色的{attr}卡牌",
+      "charactersOnly": "以下角色的全部卡牌"
     },
     "cards": {
       "cardBonus": "卡牌 {rate}",
@@ -391,13 +393,15 @@ export default {
   "storyPlayer": {
     "beta": {
       "title": "测试中",
-      "body": "本页面功能正在测试中，可能会遇到各种各样的 bug，如果遇到 bug 或者什么地方与游戏内不符，可以在{tickets}处反馈。",
-      "tickets": "工单"
+      "body": "本页面功能正在测试中，可能会遇到各种问题，如果遇到问题或者什么地方与游戏内不符，可以在{tickets}处反馈。",
+      "tickets": "工单",
+      "ticketsLogin": "登录后提交工单"
     },
     "title": "剧情播放",
     "description": "按游戏的演出播放主线、活动、卡面、特别剧情与区域对话。画面与语音来自日服，文本可选各服官方翻译，日服独有的剧情另有 AI 中文翻译。",
     "textLang": "文本语言",
     "voice": "播放语音",
+    "volume": "音量",
     "voiceVolume": "语音音量",
     "bgmVolume": "BGM 音量",
     "langAutoResolved": "跟随工具箱语言 · {lang}",
@@ -408,15 +412,21 @@ export default {
       "zhHant": "繁體中文",
       "en": "English",
       "ko": "한국어",
-      "zhHansAi": "简体中文（AI翻译）"
+      "zhHansAi": "简体中文（AI 翻译）"
     },
     "aiPending": "这一话的 AI 翻译还在生成中，请稍后再来。",
     "aiNotice": "当前文本为 AI 翻译，可能与官方译文有出入。",
+    "aiFailed": "AI 翻译暂时不可用，已显示日文原文。",
+    "resume": {
+      "lastWatched": "上次看到：{title} · {episode}",
+      "continue": "继续播放",
+      "dismiss": "忽略"
+    },
     "errors": {
       "notFound": "找不到这一话剧情。",
-      "unreleased": "这一话还没有上线。可以在设置里打开“展示未上线内容”后再看。",
+      "unreleased": "这一话还没有上线。可以在设置里打开「展示未上线内容」后再看。",
       "missing": "日服素材里还没有这一话的剧本。",
-      "failed": "剧情加载失败：{detail}",
+      "failed": "剧情加载失败。",
       "catalog": "剧情目录加载失败，请刷新重试。",
       "engine": "播放器加载失败：{detail}"
     },
@@ -434,7 +444,10 @@ export default {
       "tabBrowser": "剧情",
       "tabLog": "台词",
       "fullscreen": "全屏",
-      "exitFullscreen": "退出全屏"
+      "exitFullscreen": "退出全屏",
+      "showUi": "显示",
+      "keyboard": "剧情舞台：按空格或回车继续",
+      "rotateHint": "点击「全屏」横屏观看，文字更清晰；轻点这里也可以继续。"
     },
     "browser": {
       "tabs": {
@@ -447,12 +460,16 @@ export default {
       "all": "全部",
       "rail": "剧情选择",
       "toggle": "收起 / 展开",
-      "search": "搜索标题 / 角色",
+      "searchTitle": "搜索标题",
+      "searchTitleUnit": "搜索标题 / 团体",
+      "searchTitleChar": "搜索标题 / 角色",
       "loading": "加载剧情目录…",
       "empty": "没有匹配的剧情",
-      "episode": "第{no}话",
+      "episode": "第 {no} 话",
       "firstPart": "前篇",
-      "secondPart": "后篇"
+      "secondPart": "后篇",
+      "chapter": "{unit} 第{no}章",
+      "jpOnly": "日文"
     },
     "menu": {
       "fullscreen": "全屏",

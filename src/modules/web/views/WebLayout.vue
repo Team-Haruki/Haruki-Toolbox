@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import {Separator} from '@/components/ui/separator'
 import type {SidebarProps} from '@/components/ui/sidebar'
 import { useI18n } from "vue-i18n"
 import { defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import SidebarUser from "@/modules/user/components/SidebarUser.vue";
 import { useWebLayout } from "@/modules/web/composables/useWebLayout"
 import { WEB_NAV_SECTIONS } from "@/config/navigation"
 import SidebarRouteSync from "@/modules/web/components/SidebarRouteSync.vue"
+import TopBarBrand from "@/modules/web/components/TopBarBrand.vue"
 
 import HomeSettingsDialog from "@/modules/home/components/HomeSettingsDialog.vue"
 
@@ -107,6 +108,20 @@ function openAppSettings() {
   homeSettingsDialogTab.value = "app"
   homeSettingsDialogOpen.value = true
 }
+
+// /settings opens the dialog over the home page (see modules/home/routes.ts).
+const route = useRoute()
+const router = useRouter()
+watch(
+  () => route.meta.openSettings === true,
+  (open) => {
+    if (!open) return
+    homeSettingsDialogTab.value = "preferences"
+    homeSettingsDialogOpen.value = true
+    void router.replace({ path: "/", query: route.query, hash: route.hash })
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -117,7 +132,7 @@ function openAppSettings() {
       <SidebarHeader
         class="border-b border-slate-950/[0.06] px-3 py-2 h-13 justify-center items-center bg-transparent shadow-[inset_0_-1px_0_rgba(15,23,42,0.035)] dark:border-white/10 dark:shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]"
       >
-        <router-link to="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+        <router-link to="/" class="flex min-h-10 items-center gap-3 hover:opacity-80 transition-opacity">
           <Avatar class="w-9 h-9 ring-2 ring-muted">
             <AvatarImage :src="harukiLogo" alt="@haruki"/>
             <AvatarFallback>HT</AvatarFallback>
@@ -240,21 +255,10 @@ function openAppSettings() {
     <SidebarInset>
       <header
           data-glass-surface="topbar"
-          class="sticky top-0 z-40 flex h-13 items-center px-4 gap-2 text-base-content overflow-hidden flex-nowrap border-b"
+          class="@container sticky top-0 z-40 flex h-13 items-center px-4 gap-2 text-base-content overflow-hidden flex-nowrap border-b"
       >
         <SidebarTrigger class="flex-shrink-0 -ml-2 sm:ml-0"/>
-        <div class="flex min-w-0 items-center">
-          <router-link to="/" class="flex min-w-0 items-baseline gap-1.5">
-            <span class="truncate text-lg font-bold leading-none">
-              {{ t("app.name") }}
-            </span>
-            <span class="hidden md:inline text-[10px] font-medium text-muted-foreground">by Seiunx Network</span>
-          </router-link>
-        </div>
-        <Separator
-            orientation="vertical"
-            class="mx-1 !h-6 bg-slate-300/70 dark:bg-cyan-400/25"
-        />
+        <TopBarBrand />
         <!-- Compact on phones so the current section stays visible next to the brand. -->
         <div
             class="text-sm sm:text-lg font-medium sm:font-semibold truncate whitespace-nowrap overflow-hidden min-w-0 pl-0.5 sm:pl-1"
@@ -264,7 +268,7 @@ function openAppSettings() {
         <div class="ml-auto flex shrink-0 items-center">
           <button
             type="button"
-            class="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            class="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground pointer-coarse:size-10"
             :aria-label="t('globalSearch.title')"
             :title="t('globalSearch.title')"
             @click="openGlobalSearch"
@@ -305,17 +309,17 @@ function openAppSettings() {
               :aria-label="t('webLayout.footer.legalLinks')"
               class="flex items-center gap-1 text-xs"
             >
-              <router-link to="/privacy" class="inline-flex items-center px-1.5 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline">
+              <router-link to="/privacy" class="inline-flex min-h-10 items-center px-2 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline">
                 {{ t("webLayout.footer.privacyPolicy") }}
               </router-link>
               <span class="h-3 w-px bg-border" aria-hidden="true"></span>
-              <router-link to="/tos" class="inline-flex items-center px-1.5 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline">
+              <router-link to="/tos" class="inline-flex min-h-10 items-center px-2 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline">
                 {{ t("webLayout.footer.termsOfService") }}
               </router-link>
               <span class="h-3 w-px bg-border" aria-hidden="true"></span>
               <button
                 type="button"
-                class="inline-flex items-center px-1.5 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline"
+                class="inline-flex min-h-10 items-center px-2 py-2 transition-colors underline-offset-4 hover:text-foreground hover:underline"
                 @click="openAppSettings"
               >
                 {{ t("webLayout.footer.appVersion") }}

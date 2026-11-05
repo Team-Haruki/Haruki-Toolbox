@@ -3,8 +3,8 @@
 export default {
   "cardCatalog": {
     "filters": {
-      "supply": "供給型別",
-      "skillType": "技能型別"
+      "supply": "供給類型",
+      "skillType": "技能類型"
     },
     "sort": {
       "release": "上線時間",
@@ -53,7 +53,7 @@ export default {
         "supportUnit": "支援團體",
         "attr": "屬性",
         "rarity": "稀有度",
-        "supply": "供給型別",
+        "supply": "供給類型",
         "releaseAt": "上線時間",
         "gachaPhrase": "招募語音",
         "flavorText": "卡牌文案"
@@ -123,7 +123,7 @@ export default {
     },
     "chips": {
       "search": "搜尋：{value}",
-      "type": "型別：{value}",
+      "type": "類型：{value}",
       "status": "狀態：{value}",
       "unit": "團體：{value}",
       "attr": "加成屬性：{value}",
@@ -142,7 +142,9 @@ export default {
     "bonus": {
       "rarityTable": "稀有度 × 突破等級加成",
       "rarity": "稀有度",
-      "masterRank": "突破 {rank}"
+      "masterRank": "突破 {rank}",
+      "attrAndCharacters": "以下角色的{attr}卡牌",
+      "charactersOnly": "以下角色的全部卡牌"
     },
     "cards": {
       "cardBonus": "卡牌 {rate}",
@@ -243,7 +245,7 @@ export default {
       "wishHint": "本卡池可選擇最多 {count} 張許願卡牌"
     },
     "rates": {
-      "description": "單次招募中各稀有度的提供機率，按卡池資料中的抽選型別分列",
+      "description": "單次招募中各稀有度的提供機率，按卡池資料中的抽選類型分列",
       "bar": "稀有度機率分佈",
       "perCard": "單卡機率",
       "empty": "暫無提供機率資料",
@@ -337,7 +339,7 @@ export default {
       "songGroup": "歌曲",
       "levelAny": "不限",
       "appendOnly": "僅顯示有 APPEND 譜面的歌曲",
-      "mvType": "MV 型別",
+      "mvType": "MV 類型",
       "scope": "關聯方式",
       "scopeHint": "選擇角色後，可進一步只看該角色的箱曲（活動曲）或演唱曲（Vocal）",
       "aliasUnavailable": "別名搜尋暫不可用，當前只按標題匹配。"
@@ -369,13 +371,15 @@ export default {
   "storyPlayer": {
     "beta": {
       "title": "測試中",
-      "body": "本頁面功能正在測試中，可能會遇到各種各樣的 bug，如果遇到 bug 或者什麼地方與遊戲內不符，可以在{tickets}處反饋。",
-      "tickets": "工單"
+      "body": "本頁面功能正在測試中，可能會遇到各種問題，如果遇到問題或者什麼地方與遊戲內不符，可以在{tickets}處反饋。",
+      "tickets": "工單",
+      "ticketsLogin": "登入後提交工單"
     },
     "title": "劇情播放",
     "description": "按遊戲的演出播放主線、活動、卡面、特別劇情與區域對話。畫面與語音來自日服，文本可選各服官方翻譯，日服獨有的劇情另有 AI 中文翻譯。",
     "textLang": "文本語言",
     "voice": "播放語音",
+    "volume": "音量",
     "voiceVolume": "語音音量",
     "bgmVolume": "BGM 音量",
     "langAutoResolved": "跟隨工具箱語言 · {lang}",
@@ -386,15 +390,21 @@ export default {
       "zhHant": "繁體中文",
       "en": "English",
       "ko": "한국어",
-      "zhHansAi": "簡體中文（AI翻譯）"
+      "zhHansAi": "簡體中文（AI 翻譯）"
     },
     "aiPending": "這一話的 AI 翻譯還在生成中，請稍後再來。",
     "aiNotice": "當前文本為 AI 翻譯，可能與官方譯文有出入。",
+    "aiFailed": "AI 翻譯暫時不可用，已顯示日文原文。",
+    "resume": {
+      "lastWatched": "上次看到：{title} · {episode}",
+      "continue": "繼續播放",
+      "dismiss": "忽略"
+    },
     "errors": {
       "notFound": "找不到這一話劇情。",
-      "unreleased": "這一話還沒有上線。可以在設定裡開啟“展示未上線內容”後再看。",
+      "unreleased": "這一話還沒有上線。可以在設定裡開啟「展示未上線內容」後再看。",
       "missing": "日服素材裡還沒有這一話的劇本。",
-      "failed": "劇情載入失敗：{detail}",
+      "failed": "劇情載入失敗。",
       "catalog": "劇情目錄載入失敗，請重新整理重試。",
       "engine": "播放器載入失敗：{detail}"
     },
@@ -412,7 +422,10 @@ export default {
       "tabBrowser": "劇情",
       "tabLog": "台詞",
       "fullscreen": "全螢幕",
-      "exitFullscreen": "退出全螢幕"
+      "exitFullscreen": "退出全螢幕",
+      "showUi": "顯示",
+      "keyboard": "劇情舞台：按空格或回車繼續",
+      "rotateHint": "點選「全螢幕」橫屏觀看，文字更清晰；輕點這裡也可以繼續。"
     },
     "browser": {
       "tabs": {
@@ -425,12 +438,16 @@ export default {
       "all": "全部",
       "rail": "劇情選擇",
       "toggle": "收起 / 展開",
-      "search": "搜尋標題 / 角色",
+      "searchTitle": "搜尋標題",
+      "searchTitleUnit": "搜尋標題 / 團體",
+      "searchTitleChar": "搜尋標題 / 角色",
       "loading": "載入劇情目錄…",
       "empty": "沒有匹配的劇情",
-      "episode": "第{no}話",
+      "episode": "第 {no} 話",
       "firstPart": "前篇",
-      "secondPart": "後篇"
+      "secondPart": "後篇",
+      "chapter": "{unit} 第{no}章",
+      "jpOnly": "日文"
     },
     "menu": {
       "fullscreen": "全螢幕",

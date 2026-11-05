@@ -71,7 +71,7 @@ export default {
   },
   "adminConfig": {
     "publicApiKeys": {
-      "title": "Public API Keys",
+      "title": "公共 API 密钥",
       "description": "管理公共 API 密钥配置（仅超级管理员可操作）"
     },
     "runtime": {
@@ -97,9 +97,9 @@ export default {
       }
     },
     "toast": {
-      "loadApiKeysFailedTitle": "加载 Public API Keys 失败",
+      "loadApiKeysFailedTitle": "加载公共 API 密钥失败",
       "loadRuntimeFailedTitle": "加载运行时配置失败",
-      "apiKeysUpdated": "Public API Keys 更新成功",
+      "apiKeysUpdated": "公共 API 密钥更新成功",
       "runtimeUpdated": "运行时配置更新成功",
       "invalidJson": "JSON 格式无效",
       "invalidApiKeysSchema": "公共 API 密钥必须是字符串值组成的 JSON 对象",
@@ -706,8 +706,8 @@ export default {
       "revokedAll": "已撤销所有授权",
       "disabledRevocationIncompleteTitle": "客户端已禁用，但部分授权未能撤销",
       "revokedPartiallyTitle": "授权仅部分撤销",
-      "revocationFailedSubjects": "有 {count} 个用户标识（subject）撤销失败，可执行“撤销全部授权”重试。",
-      "revocationIncomplete": "部分授权未能撤销，可执行“撤销全部授权”重试。",
+      "revocationFailedSubjects": "有 {count} 个用户标识（subject）撤销失败，可执行「撤销全部授权」重试。",
+      "revocationIncomplete": "部分授权未能撤销，可执行「撤销全部授权」重试。",
       "webhookSaved": "Webhook endpoint 已保存",
       "webhookDeleted": "Webhook endpoint 已删除",
       "copyFailedTitle": "复制失败",
@@ -725,7 +725,7 @@ export default {
         "postLogoutRequiresRedirectUris": "没有回调URI的客户端不能登记登出回调URI，请清空登出回调URI",
         "offlineAccessRequiresRefreshToken": "登记 offline_access 时须同时选择刷新令牌",
         "deviceRequiresUserRead": "设备码客户端须登记 user:read（设备页要显示授权的账号）",
-        "deviceWriteRequiresPublicClient": "“允许经设备码申请 game-data:write”只适用于选择了设备码并登记了 game-data:write 的 Public 客户端",
+        "deviceWriteRequiresPublicClient": "「允许经设备码申请 game-data:write」只适用于选择了设备码并登记了 game-data:write 的 Public 客户端",
         "invalidDevicePolicy": "每 10 分钟设备码上限须为 1–600 之间的整数"
       },
       "apiErrors": {
@@ -891,7 +891,7 @@ export default {
       "automaticHelp": "清除人工设置，重新按已绑定账号的历史赞助记录判断资格。",
       "note": "操作备注（必填）",
       "noteHint": "填写赞助来源、认证依据或调整原因，仅管理员可见。",
-      "noteRequired": "请填写操作备注，最多 1000 字节（约 330 个汉字）。",
+      "noteRequired": "请填写操作备注，最多约 330 个汉字。",
       "save": "保存资格",
       "saved": "赞助资格已更新",
       "loadFailed": "赞助用户加载失败，请重试。"
@@ -1251,7 +1251,7 @@ export default {
         "iosProxy": "iOS代理",
         "iosScript": "iOS脚本",
         "harukiProxy": "HarukiProxy",
-        "inherit": "继承码"
+        "inherit": "引继码"
       },
       "dataType": {
         "suite": "Suite",
@@ -1374,7 +1374,7 @@ export default {
     "status": {
       "normal": "正常",
       "banned": "已封禁",
-      "deleted": "历史软删除"
+      "deleted": "已删除（旧版）"
     },
     "common": {
       "actions": "操作",

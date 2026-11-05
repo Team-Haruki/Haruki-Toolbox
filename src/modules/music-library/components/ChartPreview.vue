@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
-import { MUSIC_DIFFICULTIES, MUSIC_DIFFICULTY_COLORS, type MusicDifficulty } from "../lib/music-difficulties"
+import { MUSIC_DIFFICULTIES, resolveMusicDifficultyChipClass, type MusicDifficulty } from "../lib/music-difficulties"
 import { resolveMusicScoreUrl } from "../lib/music-bpm"
 import { renderChartSvg } from "../lib/chart-preview"
 import { parseDynamicChart, type DynamicChart } from "../lib/chart-dynamic"
@@ -207,15 +207,16 @@ watch([staticZoom, zoomPercent], () => {
   <div class="flex flex-col gap-3">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex flex-wrap items-center gap-1.5">
+        <!-- The shared tinted chip; the active one carries a ring in its hue. -->
         <button
           v-for="difficulty in availableDifficulties"
           :key="difficulty"
           type="button"
           :class="[
-            'rounded px-2 py-0.5 text-xs font-semibold text-white transition-opacity',
-            selectedDifficulty === difficulty ? '' : 'opacity-40 hover:opacity-70',
+            resolveMusicDifficultyChipClass(difficulty),
+            'min-h-7 px-2.5 transition-opacity pointer-coarse:min-h-10 pointer-coarse:px-3',
+            selectedDifficulty === difficulty ? 'ring-2 ring-current' : 'opacity-50 hover:opacity-80',
           ]"
-          :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[difficulty] }"
           :aria-pressed="selectedDifficulty === difficulty"
           @click="selectedDifficulty = difficulty"
         >

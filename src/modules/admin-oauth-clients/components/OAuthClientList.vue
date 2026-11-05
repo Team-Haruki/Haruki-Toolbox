@@ -49,7 +49,7 @@ const emit = defineEmits<{
 }>()
 
 function formatCreatedDate(value: string) {
-  return formatLocalizedDate(value, { year: "numeric", month: "2-digit", day: "2-digit" }, t("adminOAuthClients.common.fallback"))
+  return formatLocalizedDate(value, "date", t("adminOAuthClients.common.fallback"))
 }
 
 function resolveClientStatus(client: OAuthClient) {

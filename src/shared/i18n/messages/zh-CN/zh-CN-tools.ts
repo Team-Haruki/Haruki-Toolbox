@@ -328,6 +328,7 @@ export default {
         "regenerate": "重新生成",
         "generate": "生成上传码",
         "loginRequired": "请先登录",
+        "loginAction": "去登录",
         "regenerateDialog": {
           "title": "重新生成上传码？",
           "description": "旧的上传码会立即失效，已安装的模块需要用新 URL 重新安装才能继续上传。",
@@ -391,7 +392,8 @@ export default {
         "copyFailed": "复制到剪贴板失败，请检查浏览器权限设置",
         "qxScriptFallback": "Quantumult X 不支持脚本上传模式，已切换为代理模式",
         "unsupportedClient": "不支持的客户端",
-        "installUnsupported": "当前环境不支持快速安装"
+        "installUnsupported": "当前环境不支持快速安装",
+        "installNeedsIos": "快速安装需要在 iPhone / iPad 上打开本页。电脑上请复制模块 URL，在代理软件里手动添加。"
       }
     },
     "uploadData": {
@@ -418,13 +420,13 @@ export default {
       },
       "proxyTab": {
         "upgradeWarning": {
-          "title": "旧版 HarukiProxy 上传已下线",
-          "deadline": "旧版 HarukiProxy（v1/v2）上传功能已于北京时间 2026/11/01 00:00:00（UTC+8）下线，现已无法上传数据到工具箱。",
-          "upgrade": "请务必及时更换到 v3 版本。",
+          "title": "旧版 HarukiProxy（v1/v2）已停止上传",
+          "deadline": "旧版上传功能已于 2026 年 11 月 1 日 0 点（北京时间）下线，现已无法上传数据到工具箱。",
+          "upgrade": "请更换到 v3 版本。",
           "release": "本公告发布时的最新版本：HarukiProxy {version}",
           "windowsDownload": "Windows x64 下载（暂无教程）",
           "androidDownload": "Android arm64 下载（有光速虚拟机教程）",
-          "feedback": "v3 版本可能仍然存在一些 bug。如果遇到问题，请及时反馈，以便修复。"
+          "feedback": "v3 版本可能仍有一些问题。如果遇到问题，请及时反馈，以便修复。"
         },
         "title": "HarukiProxy（Android / 电脑）",
         "description": "在 Android 手机或电脑上运行 HarukiProxy，进游戏时数据会自动上传到工具箱。",
@@ -432,6 +434,9 @@ export default {
           "install": "下载并安装 v3 版本；Android 用户可参考下方光速虚拟机教程。",
           "bind": "先在「游戏账号管理」绑定并验证要上传的游戏账号。",
           "run": "开启 HarukiProxy 后进入游戏主页一次，首页「我的账号」会显示上传时间。"
+        },
+        "downloads": {
+          "title": "下载 HarukiProxy v3"
         },
         "tutorialButton": "查看 Android v3 光速虚拟机教程"
       },
@@ -474,8 +479,9 @@ export default {
       },
       "fileTab": {
         "title": "手动上传文件",
-        "description": "上传你用 HarukiProxy 或 iOS 模块保存下来的数据文件。不知道怎么获取文件？看上方「其他上传方式」。",
+        "description": "上传你用 HarukiProxy 或 iOS 模块保存下来的数据文件。一般不需要手动上传：「iOS 模块」和「HarukiProxy」标签页里的方式会自动上传。",
         "unavailableTitle": "无法使用",
+        "loginRequiredTitle": "需要登录",
         "forbiddenTitle": "操作已被禁止",
         "forbiddenDescription": "由于相关法律法规限制，不允许进行此操作",
         "fields": {
@@ -535,8 +541,7 @@ export default {
           "reuseHint": "新引继码使用你刚输入的密码，方便记忆。",
           "random": "随机生成",
           "randomHint": "生成 12 位字母与数字组成的随机密码。",
-          "reuseBlocked": "这个密码不能沿用：需为 8–16 个半角字母、数字或符号，且不含空格。请选择「随机生成」。",
-          "reuseInvalid": "沿用的密码需为 8–16 个半角字母、数字或符号（不含空格），请改选「随机生成」",
+          "reuseBlocked": "这个密码不能沿用：需为 8–16 个半角字母、数字或符号，且不含空格，请改选「随机生成」",
           "tooLong": "引继密码过长"
         },
         "alerts": {
@@ -547,7 +552,7 @@ export default {
           },
           "flow": {
             "title": "流程",
-            "step1": "先只读取账号信息（不会使用引继码），请核对昵称和等级。日服引继码 24 小时内有效，只能使用一次。",
+            "step1": "先只读取账号信息（不会使用引继码），请核对昵称和等级。引继码 24 小时内有效，只能使用一次。",
             "step2": "核对无误后，输入 Haruki 工具箱登录密码确认（用 Google、Apple 或通行密钥登录的账号改用保险库 PIN），才会执行引继。确认前随时可以取消，引继码仍然有效。",
             "step3": "执行后立即签发新的引继码并显示在本页，同时加密保存到下方的引继码保险库，24 小时内可以再次查看。",
             "step4": "最后获取并保存游戏数据。即使这一步失败，新引继码也会保留。"
@@ -562,7 +567,10 @@ export default {
           }
         },
         "submit": "读取账号信息",
-        "submitting": "正在读取账号信息…"
+        "submitting": "正在读取账号信息…",
+        "toast": {
+          "readFailedTitle": "无法读取账号信息"
+        }
       },
       "inheritJob": {
         "title": "引继进度",
@@ -572,7 +580,8 @@ export default {
           "awaiting_confirm": "等待确认",
           "succeeded": "已完成",
           "failed": "失败",
-          "cancelled": "已取消"
+          "cancelled": "已取消",
+          "expired": "已过期"
         },
         "connection": {
           "connecting": "正在连接",
@@ -596,19 +605,19 @@ export default {
           "done": "完成"
         },
         "substeps": {
-          "cookies": "获取访问凭证",
+          "cookies": "准备连接",
           "version": "获取游戏版本",
           "inherit_check": "查询账号（不使用引继码）",
           "inherit_execute": "执行引继",
           "auth": "登录",
           "issue_code": "签发引继码",
           "suite": "账号数据",
-          "suite_followup": "后续请求",
-          "home_refresh": "刷新主页",
-          "home_refresh_final": "最终刷新",
-          "maintenance_check": "检查维护状态",
+          "suite_followup": "同步剩余数据",
+          "home_refresh": "同步主页数据",
+          "home_refresh_final": "完成同步",
+          "maintenance_check": "确认游戏可用",
           "mysekai": "烤森数据",
-          "mysekai_followup": "后续请求",
+          "mysekai_followup": "同步剩余烤森数据",
           "version_refresh": "重新获取游戏版本"
         },
         "stepStatus": {
@@ -617,9 +626,24 @@ export default {
           "done": "完成",
           "failed": "失败",
           "skipped": "跳过",
-          "warning": "部分失败"
+          "warning": "部分失败",
+          "unknown": "结果未知"
         },
         "consumesCode": "从这一步起会使用引继码",
+        "unreached": {
+          "show": "还有 {count} 步没有执行，展开查看",
+          "hide": "收起没有执行的 {count} 步"
+        },
+        "announce": {
+          "created": "已开始读取账号信息，进度显示在下方。",
+          "awaiting_confirm": "账号信息已读取，请核对并确认。",
+          "new_code": "新的引继码已签发，请记下。"
+        },
+        "resumeFailed": {
+          "title": "有一次引继可能正在进行，但暂时无法连接",
+          "description": "{reason}连接恢复后会继续显示它的进度；也可以直接重新提交，工具箱会接回正在进行的引继。",
+          "retry": "重试连接"
+        },
         "codeValidity": {
           "valid": "你输入的引继码没有被使用，仍然有效。",
           "used": "你输入的引继码已被使用，不能再用。",
@@ -642,8 +666,8 @@ export default {
           "game_maintenance": "游戏服务器正在维护，请维护结束后再试。",
           "game_unavailable": "暂时无法连接游戏服务器，请稍后再试。",
           "game_error": "游戏服务器返回了错误，请稍后再试。",
-          "game_version_outdated": "游戏刚更新了数据版本，Toolbox 还没同步上，请稍后再试。",
-          "game_version_outdated_after_transfer": "游戏刚更新了数据版本，Toolbox 还没同步上，没能获取游戏数据。新引继码（如已签发）显示在本页，稍后可以用新引继码重新上传。",
+          "game_version_outdated": "游戏刚更新了数据版本，工具箱还没同步上，请稍后再试。",
+          "game_version_outdated_after_transfer": "游戏刚更新了数据版本，工具箱还没同步上，没能获取游戏数据。新引继码（如已签发）显示在本页，稍后可以用新引继码重新上传。",
           "execute_uncertain": "执行引继时网络中断，无法确定引继码是否已被使用。请先不要在其他设备上使用这组引继码，并查看下方保险库：如果里面出现了这个账号，说明引继已完成，可以在那里查看或重新签发引继码。",
           "login_failed": "引继已完成，登录信息已存入保险库，但登录游戏失败。请稍后在下方保险库中点「重新签发」，获取新的引继码。",
           "fetch_failed": "获取游戏数据失败。新引继码（如已签发）显示在本页，并已保存在保险库中。",
@@ -657,7 +681,7 @@ export default {
           "issue_code_failed": "没能签发新的引继码。登录信息已存入保险库，请马上在下方保险库中点「重新签发」：这是你回到账号的唯一方式。",
           "vault_db_unavailable": "数据库暂时不可用，登录信息已临时保存，稍后会自动转存，不影响使用。",
           "vault_store_failed": "登录信息或新引继码没能存入保险库。请务必现在就记下本页显示的新引继码。",
-          "game_version_outdated": "游戏刚更新了数据版本，Toolbox 还没同步上，所以这一步没有成功。"
+          "game_version_outdated": "游戏刚更新了数据版本，工具箱还没同步上，所以这一步没有成功。"
         },
         "actions": {
           "startNew": "开始新的上传",
@@ -680,6 +704,7 @@ export default {
             "title": "活动期间的引继限制",
             "active": "该账号正处于活动期间的引继限制中",
             "remaining": "剩余可引继次数：{count}",
+            "consumes": "在工具箱执行引继会用掉 1 次；用完后游戏不再允许引继。",
             "endsAt": "限制结束时间：{time}",
             "worldBloom": "World Link 章节进行中",
             "none": "当前没有引继限制。"
@@ -780,7 +805,8 @@ export default {
         },
         "reset": {
           "title": "重置保险库？",
-          "description": "会删除保险库里全部 {count} 条记录，无法撤销。只在想不起旧登录密码（例如忘记密码后设置过新密码）或忘记保险库 PIN 时使用。",
+          "description": "会删除保险库里的全部记录（{records}），无法撤销。只在想不起旧登录密码（例如忘记密码后设置过新密码）或忘记保险库 PIN 时使用。",
+          "records": "{count} 条记录",
           "password": "当前的 Haruki 工具箱登录密码",
           "ack": "我明白全部记录都会被删除",
           "confirm": "重置并删除全部记录",
@@ -854,10 +880,10 @@ export default {
         "boostConfig": "控分之前请务必确保您的体力消耗（Live Boost）配置正确，谨防控分失败。",
         "testingPrefix": "该功能处于测试状态，",
         "testingSuffix": "如果遇到任何问题请联系 Haruki Dev Team 进行反馈。",
-        "deckRecommend": "控分结果会有“加成组卡”按钮，方便快速跳转组卡。"
+        "deckRecommend": "控分结果会有「加成组卡」按钮，方便快速跳转组卡。"
       },
       "fields": {
-        "region": "数据服务器",
+        "region": "区服",
         "music": "歌曲",
         "loadingMusic": "正在准备歌曲...",
         "musicPlaceholder": "请选择歌曲",
@@ -1012,10 +1038,16 @@ export default {
       "whitelist": "白名单",
       "whitelistDesc": "只显示包含以下关键词的房间",
       "presetTags": "预设标签",
+      "presetTagLabel": "{tag}（{name}）",
+      "tagNames": {
+        "shrimp": "虾",
+        "dragon": "龙",
+        "pizza": "披萨"
+      },
       "keywordPlaceholder": "添加关键词",
       "add": "添加",
       "clear": "清空",
-      "removeFilter": "移除过滤词“{name}”",
+      "removeFilter": "移除过滤词「{name}」",
       "display": "显示",
       "expireTime": "房间显示时长",
       "durationSeconds": "{n} 秒",

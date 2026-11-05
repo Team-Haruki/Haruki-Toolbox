@@ -1,5 +1,6 @@
 import { computed, ref, shallowRef, watch, type Ref } from "vue"
 import type { SekaiRegion } from "@/types"
+import { describeError } from "@/lib/error-utils"
 import { getStoryTranslation } from "@/modules/story/api/story"
 import type { StoryCatalog, StoryEpisode } from "@/modules/story/lib/story-catalog"
 import { ScenarioCache, fetchScenarioJson, fetchStoryAssetIndex } from "@/modules/story/lib/story-fetch"
@@ -20,19 +21,34 @@ export type StoryPlaybackState =
   | { phase: "idle" }
   | { phase: "loading"; sid: string }
   | { phase: "playing"; sid: string; lang: StoryTextLang; episode: StoryEpisode }
-  | { phase: "error"; sid: string; reason: "notFound" | "unreleased" | "missing" | "failed"; detail?: string }
+  | {
+      phase: "error"
+      sid: string
+      /** `catalog`: the story list itself could not be loaded; `failed`: this episode's files */
+      reason: "notFound" | "unreleased" | "missing" | "catalog" | "failed"
+      /** what went wrong, in the user's language (failed) */
+      message?: string
+      /** the raw error text for support (failed) */
+      detail?: string
+    }
 
 export type StoryPlaybackOptions = {
   /** Selected scenario id (null = nothing picked). */
   sid: Ref<string | null>
   /** JP catalog (paths); null while loading. */
   catalog: Ref<StoryCatalog | null>
+  /** The catalog failed to load (its message); a pick cannot be resolved then. */
+  catalogError: Ref<string | null>
   /** Languages to try in order. */
   langChain: Ref<StoryTextLang[]>
   /** "<asset host>" without the region suffix. */
   assetRoot: Ref<string>
   /** The host to retry on when `assetRoot` fails (network, timeout, 5xx); null for none. */
   fallbackRoot: Ref<string | null>
+  /** Snippet to continue the next episode from (consumed by the next load). */
+  resumeAt: Ref<number | null>
+  /** Fallback wording when an episode's load fails for no translatable reason. */
+  failedMessage: () => string
 }
 
 /**
@@ -46,6 +62,8 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
   const state = ref<StoryPlaybackState>({ phase: "idle" })
   /** The AI translation of the current episode is still being made. */
   const aiPending = ref(false)
+  /** The AI translation could not be fetched for the current episode (JP shown instead). */
+  const aiFailed = ref(false)
   /** Text languages the current episode has, in selector order. */
   const available = ref<StoryTextLang[]>([])
   const scenarios = new ScenarioCache<ScenarioSceneData>()
@@ -112,6 +130,7 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
       }
     }))
     aiPending.value = false
+    aiFailed.value = false
     if (!texts.has("zh-Hans")) {
       try {
         const result = await getStoryTranslation(episode.sid)
@@ -120,6 +139,7 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
         if (scn) texts.set("zh-Hans-ai", scn)
       } catch (error) {
         console.warn("story AI translation unavailable", error)
+        aiFailed.value = true
       }
     }
     return texts
@@ -137,6 +157,10 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
       return
     }
     if (!catalog) {
+      if (options.catalogError.value) {
+        state.value = { phase: "error", sid, reason: "catalog" }
+        return
+      }
       state.value = { phase: "loading", sid }
       rt.showLoading()
       return // played once the catalog arrives
@@ -146,8 +170,10 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
       state.value = { phase: "error", sid, reason: catalog.unreleased?.has(sid) ? "unreleased" : "notFound" }
       return
     }
+    const startAt = options.resumeAt.value ?? 0
+    options.resumeAt.value = null
     state.value = { phase: "loading", sid }
-    rt.showLoading()
+    rt.beginLoad(sid)
     try {
       const scenarioRoot = activeRoot.value
       const [idx, first] = await Promise.all([loadIndex(), scenarioOf("jp", hit.episode)])
@@ -170,10 +196,18 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
       const autoplay = interacted || (await canAutoplay())
       if (mine !== seq) return
       const context = { index: idx, kind: hit.episode.kind, eventBundle: hit.episode.bundle, character2ds: catalog.character2ds }
-      await rt.load(sid, scn, context, autoplay)
+      await rt.load(sid, scn, context, autoplay, startAt)
     } catch (error) {
       if (mine !== seq) return
-      state.value = { phase: "error", sid, reason: "failed", detail: error instanceof Error ? error.message : String(error) }
+      const described = describeError(error, options.failedMessage())
+      const raw = error instanceof Error ? error.message : String(error)
+      state.value = {
+        phase: "error",
+        sid,
+        reason: "failed",
+        message: described.message,
+        detail: described.detail ?? (raw && raw !== described.message ? raw : undefined),
+      }
     }
   }
 
@@ -183,7 +217,7 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
   }
 
   watch(
-    [runtime, options.sid, () => options.catalog.value != null, options.langChain],
+    [runtime, options.sid, () => options.catalog.value != null, () => options.catalogError.value, options.langChain],
     () => void play(options.sid.value),
   )
 
@@ -191,6 +225,7 @@ export function useStoryPlayback(options: StoryPlaybackOptions) {
     runtime,
     state,
     aiPending,
+    aiFailed,
     available,
     activeRoot,
     activeFallback,

@@ -2,8 +2,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { useRouter } from "vue-router"
+import { DATE_FORMAT_PRESETS, formatLocalizedDateTime } from "@/lib/date-time"
 import { formatNumberCN } from "@/lib/number-format"
-import { getI18nLocale } from "@/shared/i18n"
+import { EXPANSION_MEMORY_STORAGE_KEY, matchExpansionMemory, serializeExpansionMemory } from "../lib/expansion-memory"
 import RankJumpRail from "../components/RankJumpRail.vue"
 import RankLeaderboard from "../components/RankLeaderboard.vue"
 import RankReplayRail from "../components/RankReplayRail.vue"
@@ -99,6 +100,8 @@ const live = useRankBorderLive({
   trackerEndpointReady,
   playbackAt,
   isLocalMockTrackerEndpoint,
+  nowSecond,
+  selectedActivityEndAt,
 })
 const {
   top100Details,
@@ -146,7 +149,43 @@ function toggleRowExpansion(rank: number) {
   expandedRowKey.value = expandedRank.value === rank ? null : resolveRowExpansionKey(rank, top100Rows.value)
 }
 
+// Coming back from the detail page restores the scroll position (router scroll
+// memory) and, through sessionStorage, the row that was expanded when leaving.
+const expansionScope = computed(() => ({
+  region: selectedRegion.value,
+  eventId: selectedEventId.value,
+  mode: mode.value,
+  worldBloomCharacterId: selectedWorldBloomCharacterId.value,
+}))
+
+function rememberExpandedRow() {
+  try {
+    if (expandedRowKey.value) {
+      sessionStorage.setItem(EXPANSION_MEMORY_STORAGE_KEY, serializeExpansionMemory(expansionScope.value, expandedRowKey.value))
+    } else {
+      sessionStorage.removeItem(EXPANSION_MEMORY_STORAGE_KEY)
+    }
+  } catch {
+    // Private mode or a full store: the row simply starts collapsed.
+  }
+}
+
+function restoreExpandedRow() {
+  try {
+    const key = matchExpansionMemory(sessionStorage.getItem(EXPANSION_MEMORY_STORAGE_KEY), expansionScope.value)
+    sessionStorage.removeItem(EXPANSION_MEMORY_STORAGE_KEY)
+    if (key) {
+      expandedRowKey.value = key
+    }
+  } catch {
+    // Same as above.
+  }
+}
+
+restoreExpandedRow()
+
 function openDetailPage(target: RankBorderDetailTargetInput) {
+  rememberExpandedRow()
   void router.push({
     path: "/rank-border/detail",
     query: buildRankBorderDetailQuery({
@@ -306,25 +345,27 @@ function formatTargetRank(value: number | null | undefined) {
   return typeof value === "number" ? `T${value}` : "-"
 }
 
+// Tracker samples are 10 s apart, so the second matters here.
 function formatTimestamp(timestamp: number | null | undefined) {
   if (!timestamp) {
     return "-"
   }
 
-  return new Date(timestamp * 1000).toLocaleString()
+  return formatLocalizedDateTime(timestamp * 1000, "dateTimeSeconds", "-")
 }
 
+// Slider endpoints: the year is known, the hour is what the replay is about.
 function formatReplayTick(timestamp: number | null | undefined) {
   if (!timestamp) {
     return "-"
   }
 
-  return new Date(timestamp * 1000).toLocaleString(getI18nLocale(), {
-    month: "numeric",
-    day: "numeric",
+  return formatLocalizedDateTime(timestamp * 1000, {
+    ...DATE_FORMAT_PRESETS.monthDay,
     hour: "2-digit",
     minute: "2-digit",
-  })
+    hourCycle: "h23",
+  }, "-")
 }
 
 function formatGrowth(value: number | null | undefined) {

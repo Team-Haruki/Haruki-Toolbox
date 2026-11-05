@@ -6,11 +6,11 @@ export default {
       "manualGranted": "已由管理員認證贊助資格，無需再次提供訂單。",
       "accessBlocked": "贊助資格已由管理員停用。如需恢復，請聯絡管理員。",
       "unlinkManualConfirm": "解除愛發電綁定後，管理員授予的贊助資格仍然有效，已有頭像框選擇會保留。",
-      "oauthTab": "OAuth2 授權",
+      "oauthTab": "愛發電授權",
       "oauthDescription": "前往愛發電授權，關聯帳號並自動匹配歷史贊助。",
-      "methodOAuth": "驗證方式：OAuth2 授權",
+      "methodOAuth": "驗證方式：愛發電授權",
       "methodOrder": "驗證方式：訂單號驗證",
-      "upgradeOAuth": "改用 OAuth2 授權確認",
+      "upgradeOAuth": "改用愛發電授權確認",
       "order": {
         "tab": "訂單號驗證",
         "label": "愛發電訂單號",
@@ -27,7 +27,7 @@ export default {
         "failed": "暫時無法核驗訂單，請稍後重試。"
       },
       "title": "愛發電綁定",
-      "description": "通過 OAuth2 授權或訂單號驗證關聯贊助記錄。曾經贊助過即可永久使用專屬頭像框。",
+      "description": "通過愛發電授權或訂單號驗證關聯贊助記錄。曾經贊助過即可永久使用專屬頭像框。",
       "loading": "正在載入…",
       "retry": "重試",
       "loadFailed": "暫時無法讀取綁定資訊，請重試。",
@@ -44,11 +44,14 @@ export default {
       "unlink": "解除綁定",
       "unlinked": "已解除愛發電綁定",
       "refresh": "重新整理贊助狀態",
-      "unlinkConfirm": "解除後，機器人暫時恢復預設頭像框。重新綁定曾經贊助過的愛發電帳號即可繼續使用；已有選框會保留。",
+      "unlinkConfirm": "解除後，HarukiBot 暫時恢復預設頭像框。重新綁定曾經贊助過的愛發電帳號即可繼續使用；已有選框會保留。",
       "callbackTitle": "愛發電授權結果",
       "callback_loading": "正在確認授權並關聯帳號…",
       "callback_success": "愛發電帳號已綁定，贊助記錄會自動匹配。",
-      "callback_failed": "綁定未完成。授權可能已過期、登入會話已改變，或愛發電帳號已被綁定。請返回帳號設定重新授權。"
+      "callback_failed": "綁定未完成：暫時無法連線服務，請稍後再試。",
+      "callback_conflict": "綁定未完成：該愛發電帳號已綁定其他工具箱帳號，不能再綁定到當前帳號。",
+      "callback_expired": "綁定未完成：授權已過期或登入會話已改變。請返回帳號設定重新授權。",
+      "callback_invalid": "綁定未完成：缺少授權資訊。請返回帳號設定重新授權。"
     },
     "frames": {
       "lockedOrderOnly": "先在帳號設定使用愛發電訂單號驗證贊助資格。你也可以先瀏覽全部頭像框和示例。",
@@ -57,14 +60,16 @@ export default {
       "title": "贊助頭像框",
       "back": "返回帳號設定",
       "description": "為 HarukiBot 的遊戲個人資訊圖片選擇頭像框。曾經贊助過即可永久使用，為每個已驗證的遊戲帳號分別設定。",
-      "locked": "先在帳號設定通過 OAuth2 授權或訂單號驗證贊助資格。你也可以先瀏覽全部頭像框和示例。",
+      "locked": "先在帳號設定通過愛發電授權或訂單號驗證贊助資格。你也可以先瀏覽全部頭像框和示例。",
+      "lockedTitle": "需要贊助資格",
+      "eligibilityLost": "贊助資格已失效，頭像框未儲存。",
       "accountTitle": "應用到遊戲帳號",
       "accountDescription": "儲存後，HarukiBot 查詢該遊戲帳號時會使用所選頭像框。",
       "account": "遊戲帳號",
       "unverified": "未驗證",
       "verifyFirst": "請先驗證這個遊戲帳號的歸屬，再儲存頭像框。",
       "noAccounts": "你還沒有綁定遊戲帳號。可以先瀏覽示例，再前往綁定。",
-      "manageAccounts": "綁定與驗證遊戲帳號",
+      "manageAccounts": "前往遊戲帳號管理",
       "choose": "選擇頭像框",
       "search": "搜尋頭像框",
       "default": "預設頭像框",
@@ -98,9 +103,7 @@ export default {
       "accountTitle": "帳號設定",
       "accountDescription": "管理你的身份、登入與安全相關設定。",
       "harukiBotTitle": "HarukiBot資料授權",
-      "harukiBotDescription": "管理社交平台綁定與授權，供 HarukiBot 查詢你的遊戲資料。",
-      "oauthTitle": "OAuth 授權管理",
-      "oauthDescription": "管理通過 OAuth 授權訪問你帳號資料的第三方應用。"
+      "harukiBotDescription": "管理社交平台綁定與授權，供 HarukiBot 查詢你的遊戲資料。"
     },
     "sekaiData": {
       "region": "區服",
@@ -129,6 +132,10 @@ export default {
       },
       "queueTitle": "更新佇列",
       "queueEmpty": "暫無更新任務。",
+      "errors": {
+        "network": "無法連線遊戲資料伺服器，請檢查網路；若仍然失敗，可在「偏好設定」中切換圖片載入線路後重試。",
+        "timeout": "連線遊戲資料伺服器超時，請稍後重試或切換圖片載入線路。"
+      },
       "queueDetails": {
         "cacheHit": "快取已是最新，沒有下載新檔案。",
         "updated": "已下載並寫入新的快取資料。",
@@ -162,8 +169,13 @@ export default {
       }
     },
     "kratosFlow": {
-      "title": "修改信箱、暱稱或密碼",
-      "description": "點選下方按鈕進入修改頁面，完成後會自動返回。",
+      "description": "在這裡完成修改，儲存後會返回帳號設定。",
+      "titles": {
+        "profile": "修改信箱或暱稱",
+        "password": "修改密碼",
+        "mfa": "設定兩步驗證",
+        "oidc": "管理 Google 登入"
+      },
       "redirect": {
         "title": "即將前往登入服務頁面{target}…",
         "description": "修改在登入服務的頁面上完成，完成後會自動返回工具箱。",
@@ -182,7 +194,7 @@ export default {
         "savedTitle": "設定已更新",
         "profileSavedDescription": "信箱或暱稱更新成功",
         "passwordSavedDescription": "密碼設定已更新",
-        "mfaSavedDescription": "多因素認證設定已更新",
+        "mfaSavedDescription": "兩步驗證設定已更新",
         "socialSavedDescription": "社交登入設定已更新",
         "genericSavedDescription": "身份設定已更新"
       },
@@ -192,7 +204,7 @@ export default {
         "oidc": "社交登入",
         "passkey": "通行密鑰",
         "webauthn": "安全密鑰",
-        "totp": "身份驗證器",
+        "totp": "驗證器 App",
         "lookupSecret": "恢復碼"
       }
     },
@@ -201,8 +213,8 @@ export default {
       "description": "頭像、暱稱與信箱綁定。"
     },
     "securityCard": {
-      "title": "安全與登入",
-      "description": "密碼、多因素認證、社交登入與會話管理。"
+      "title": "登入與安全",
+      "description": "密碼、兩步驗證、Google 登入與登入裝置。"
     },
     "account": {
       "title": "頭像設定",
@@ -232,6 +244,8 @@ export default {
       "currentEmailLabel": "當前信箱",
       "currentNicknameLabel": "當前暱稱",
       "unsetNickname": "未設定",
+      "nicknameLabel": "暱稱",
+      "nicknamePlaceholder": "請輸入暱稱",
       "changeButton": "管理信箱和暱稱",
       "verifyButton": "驗證信箱"
     },
@@ -255,13 +269,11 @@ export default {
       "manageButton": "管理 Google 登入"
     },
     "sessions": {
-      "title": "會話管理",
-      "description": "檢視當前登入會話，並撤銷不可信裝置。",
-      "hint": "你可以單獨踢下線某台裝置，也可以一次性下線其他會話。",
-      "manageButton": "管理會話",
+      "title": "登入裝置",
+      "description": "檢視已登入的裝置，並下線不可信的裝置。",
       "page": {
-        "title": "會話管理",
-        "description": "管理當前身份下的活躍會話。",
+        "title": "登入裝置",
+        "description": "檢視當前帳號已登入的裝置，可以單獨下線某台裝置，也可以一次下線其他所有裝置。",
         "refresh": "重新整理",
         "currentSession": "當前會話",
         "currentTag": "當前",
@@ -452,17 +464,13 @@ export default {
       }
     },
     "gameBinding": {
-      "harukiBotGuide": {
-        "title": "使用 HarukiBot",
-        "description": "如果需要在 HarukiBot 中使用遊戲帳號資料，請前往「HarukiBot 資料授權」綁定並驗證你的 QQ 號。",
-        "action": "前往綁定 QQ"
-      },
-      "title": "遊戲帳號綁定",
+      "title": "遊戲帳號管理",
       "description": "管理您的 Haruki 工具箱帳號綁定的《世界計畫: 繽紛舞台 feat. 初音未來》遊戲帳號",
       "alert": {
         "title": "注意",
         "line1": "同一區服的同一個遊戲帳號只能被一個工具箱使用者綁定。",
-        "line2": "這裡的綁定不會同步到 HarukiBot NEO；要在 Bot 裡查詢，請按 Bot 幫助在群裡單獨綁定。"
+        "line2": "HarukiBot 查詢你的遊戲資料時使用的就是這裡的綁定；要讓 Bot 認出你，請先在「HarukiBot 資料授權」綁定並驗證你的 QQ 號。",
+        "action": "前往 HarukiBot 資料授權"
       },
       "addButton": "綁定新帳號",
       "empty": "暫無資料",
@@ -497,6 +505,7 @@ export default {
         "subtitle": "綁定你的遊戲帳號並配置資料權限。",
         "verifyHint": "驗證方式：把一段驗證碼寫進遊戲「個性簽名」，工具箱會讀取你的公開資料來確認帳號是你的。驗證通過後可改回簽名。",
         "uidHint": "遊戲內「個人資料」ID 下方的數字。",
+        "identityLockedHint": "區服和遊戲UID 綁定後不能修改；填錯了請刪除這條綁定，再重新綁定。",
         "basicInfoTitle": "帳號基本資訊",
         "serverPlaceholder": "選擇區服",
         "verifyButton": "驗證",
@@ -623,8 +632,8 @@ export default {
         "form": {
           "title": "新增授權",
           "editTitle": "編輯授權：{grantee} / {dataType}",
-          "targetAccount": "授權物件：{account}（對方讀取或上傳的都是這個帳號的資料）",
-          "lockedWhileEditing": "編輯時不能更改被授權使用者和資料類型；要換人或換型別，請取消編輯後新增一條授權。",
+          "targetAccount": "授權對象：{account}（對方讀取或上傳的都是這個帳號的資料）",
+          "lockedWhileEditing": "編輯時不能更改被授權使用者和資料類型；要換人或換類型，請取消編輯後新增一條授權。",
           "granteeUserId": "被授權工具箱使用者 ID",
           "granteeUserIdPlaceholder": "例如 1234567890",
           "dataType": "資料類型",
@@ -682,7 +691,7 @@ export default {
         "saveSuccessDescription": "帳號設定已更新",
         "saveFailedTitle": "儲存失敗",
         "saveFailedFallback": "帳號設定沒有儲存，請稍後重試；新增帳號時請確認已在遊戲內寫入驗證碼。",
-        "verifyBeforeCreateDescription": "新增帳號前請先點選“驗證”生成驗證碼，並在遊戲內完成設定。",
+        "verifyBeforeCreateDescription": "新增帳號前請先點選「驗證」生成驗證碼，並在遊戲內完成設定。",
         "uidMustBeNumericDescription": "遊戲UID必須是純數字",
         "generateCodeFailedTitle": "無法生成驗證碼",
         "generateCodeFailedFallback": "請確認區服和遊戲UID無誤後重試；多次失敗請稍後再試。",

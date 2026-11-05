@@ -336,7 +336,7 @@ async function runUserUpdateCheck() {
                   </h3>
                   <button
                     type="button"
-                    class="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+                    class="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-50 pointer-coarse:min-h-10 pointer-coarse:px-2.5"
                     :disabled="latencyChecking"
                     @click="refreshEndpointLatencies"
                   >

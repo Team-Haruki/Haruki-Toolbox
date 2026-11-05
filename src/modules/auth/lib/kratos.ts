@@ -283,7 +283,13 @@ export async function fetchKratosFlowError(errorId: string): Promise<KratosFlowE
   }
 }
 
-export async function fetchKratosWhoAmI(): Promise<KratosWhoAmIResponse | null> {
+/**
+ * `GET /sessions/whoami`. A 401 means there is no Kratos session: the session
+ * probes (`request()` on a 401, the bootstrap fallback) read that as `null`,
+ * while the devices page needs it as an error to tell "signed out" apart from
+ * "no other devices", so `unauthorized: "throw"` raises `KratosRequestError(401)`.
+ */
+export async function fetchKratosWhoAmI(options: { unauthorized?: "null" | "throw" } = {}): Promise<KratosWhoAmIResponse | null> {
   const response = await fetch(buildKratosUrl("/sessions/whoami"), {
     credentials: "include",
     headers: {
@@ -291,7 +297,7 @@ export async function fetchKratosWhoAmI(): Promise<KratosWhoAmIResponse | null> 
     },
   })
 
-  if (response.status === 401) {
+  if (response.status === 401 && options.unauthorized !== "throw") {
     return null
   }
 
@@ -352,8 +358,9 @@ function normalizeKratosSession(value: unknown, options: { currentId?: string; c
   }
 }
 
+/** The current session for the devices page; a signed-out browser rejects with `KratosRequestError(401)`. */
 export async function fetchKratosCurrentSession(): Promise<KratosSessionInfo | null> {
-  const session = await fetchKratosWhoAmI()
+  const session = await fetchKratosWhoAmI({ unauthorized: "throw" })
   if (!session) {
     return null
   }
@@ -361,6 +368,7 @@ export async function fetchKratosCurrentSession(): Promise<KratosSessionInfo | n
   return normalizeKratosSession(session, { current: true })
 }
 
+/** Every session of the identity; a signed-out browser rejects with `KratosRequestError(401)`. */
 export async function fetchKratosMySessions(): Promise<KratosSessionInfo[]> {
   const response = await fetch(buildKratosUrl("/sessions"), {
     credentials: "include",
@@ -368,10 +376,6 @@ export async function fetchKratosMySessions(): Promise<KratosSessionInfo[]> {
       Accept: "application/json",
     },
   })
-
-  if (response.status === 401) {
-    return []
-  }
 
   if (!response.ok) {
     throw new KratosRequestError("sessions", response.status)

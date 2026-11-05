@@ -105,7 +105,7 @@ const renderedSections = computed<RenderedSection[]>(() =>
           v-for="section in renderedSections"
           :key="section.key"
           :href="`#${section.anchorId}`"
-          class="flex items-baseline gap-2.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+          class="flex items-baseline gap-2.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground pointer-coarse:min-h-10 pointer-coarse:items-center"
         >
           <span class="text-xs font-semibold tabular-nums text-primary/60">
             {{ section.number }}

@@ -180,7 +180,7 @@ export function useUploadLogs() {
   }
 
   function formatTime(iso?: string) {
-    return formatLocalizedDateTime(iso, undefined, t("adminStatistics.common.fallback"))
+    return formatLocalizedDateTime(iso, "dateTimeSeconds", t("adminStatistics.common.fallback"))
   }
 
   function dataTypeLabel(type?: string) {

@@ -16,7 +16,9 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { formatLocalizedDate } from "@/lib/date-time"
 import { formatNumberCN } from "@/lib/number-format"
 import GameAccountSelect from "@/shared/components/GameAccountSelect.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
 import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.vue"
+import CatalogTimeZoneHint from "@/shared/components/catalog/CatalogTimeZoneHint.vue"
 import type { CatalogActiveChip } from "@/shared/components/catalog/CatalogFilterPanel.vue"
 import { useRouteQueryState } from "@/composables/useRouteQueryState"
 import { resolveCharacterIconUrl } from "@/shared/sekai/data-sources"
@@ -129,8 +131,13 @@ const timeWindow = computed<{ from: number | null; to: number | null }>(() => {
   return { from: filters.from, to: filters.to }
 })
 
+// The default one-year window is a filter too: it shows as a chip whenever
+// it actually hides records (`hiddenByWindow`), so "3 events" is never read
+// as the whole history; removing that chip widens to "all".
 const activeChips = computed<CatalogActiveChip[]>(() => [
-  ...(filters.time === "year" ? [] : [{ key: "time", label: t(`eventRecords.filters.${filters.time}`) }]),
+  ...(filters.time === "year"
+    ? (hiddenByWindow.value > 0 ? [{ key: "time", label: t("eventRecords.filters.lastYear") }] : [])
+    : [{ key: "time", label: t(`eventRecords.filters.${filters.time}`) }]),
   ...filters.types.map((type) => ({ key: `type:${type}`, label: t(`events.type.${type}`) })),
   ...filters.units.map((unit) => ({ key: `unit:${unit}`, label: resolveSekaiUnitLabel(labels, unit) })),
 ])
@@ -138,7 +145,7 @@ const activeChips = computed<CatalogActiveChip[]>(() => [
 function removeChip(key: string) {
   const [kind, value] = key.split(":")
   if (kind === "time") {
-    query.patch({ time: "year", from: null, to: null })
+    query.patch(filters.time === "year" ? { time: "all", from: null, to: null } : { time: "year", from: null, to: null })
   } else if (kind === "type") {
     query.patch({ types: filters.types.filter((type) => type !== value) })
   } else if (kind === "unit") {
@@ -187,6 +194,15 @@ const filteredRows = computed(() => filterEventRecordTableRows(mergedRows.value,
   units: filters.units,
 }))
 
+/** Records the default one-year window alone hides (the other filters applied). */
+const hiddenByWindow = computed(() => {
+  if (filters.time !== "year") {
+    return 0
+  }
+  const unwindowed = filterEventRecordTableRows(mergedRows.value, { from: null, to: null, types: filters.types, units: filters.units })
+  return unwindowed.length - filteredRows.value.length
+})
+
 /**
  * Why the list is empty: no records at all, everything older than the
  * default one-year window, or hidden by other filters. Each gets its own
@@ -228,7 +244,12 @@ const summaryItems = computed<EventRecordsSummaryItem[]>(() => [
     : []),
 ])
 
-const countLabel = computed(() => t("eventRecords.table.count", { count: filteredRows.value.length }))
+// "3 events · past year" while the default window hides older records, so
+// the count is never mistaken for the whole history.
+const countLabel = computed(() => {
+  const count = t("eventRecords.table.count", { count: filteredRows.value.length })
+  return hiddenByWindow.value > 0 ? `${count} · ${t("eventRecords.filters.lastYear")}` : count
+})
 
 // --- Row presentation ------------------------------------------------------------------
 function eventRankText(row: EventRecordTableRow): { text: string; fromHonor: boolean } {
@@ -258,7 +279,7 @@ function chapterViews(row: EventRecordTableRow): EventRecordChapterView[] {
 }
 
 function formatRecordDate(value: number | null) {
-  return formatLocalizedDate(value, { year: "numeric", month: "2-digit", day: "2-digit" }, t("events.common.dateFallback"))
+  return formatLocalizedDate(value, "date", t("events.common.dateFallback"))
 }
 
 const uploadTimeText = useUploadTimeText(suite.uploadTime)
@@ -270,23 +291,25 @@ const { refreshing, refresh: reloadAll } = useSuiteRefresh([
 </script>
 
 <template>
-  <div class="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col justify-center gap-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">{{ t("eventRecords.title") }}</h1>
-        <p class="text-sm text-muted-foreground">{{ t("eventRecords.description") }}</p>
-      </div>
-      <div class="flex flex-col items-start gap-1.5 sm:items-end">
-        <GameAccountSelect capability="suite" />
-        <div v-if="state !== 'idle'" class="flex items-center gap-1 text-xs text-muted-foreground">
-          <span v-if="state === 'ready' && uploadTimeText">{{ t("uploadedGameData.uploadedAt", { time: uploadTimeText }) }}</span>
-          <Button variant="ghost" size="sm" class="h-6 gap-1 px-1.5 text-xs text-muted-foreground" :disabled="state === 'loading' || refreshing" @click="reloadAll">
-            <LucideRefreshCcw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
-            {{ t("eventRecords.refresh") }}
-          </Button>
+  <div class="mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col gap-4">
+    <!-- Top-aligned like every other page: a short state (error, empty) must
+    not float the title to the middle of the viewport. -->
+    <PageHeader :title="t('eventRecords.title')" :description="t('eventRecords.description')">
+      <template #actions>
+        <div class="flex flex-col items-start gap-1.5 sm:items-end">
+          <GameAccountSelect capability="suite" />
+          <!-- The data time is local time: the zone tag says so, like the catalog pages. -->
+          <div v-if="state !== 'idle'" class="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            <span v-if="state === 'ready' && uploadTimeText">{{ t("uploadedGameData.uploadedAt", { time: uploadTimeText }) }}</span>
+            <CatalogTimeZoneHint v-if="state === 'ready' && uploadTimeText && selectedAccount" :region="selectedAccount.server" />
+            <Button variant="ghost" size="sm" class="h-7 gap-1 px-2 text-xs text-muted-foreground" :disabled="state === 'loading' || refreshing" @click="reloadAll">
+              <LucideRefreshCcw :class="['size-3.5', refreshing ? 'animate-spin' : '']" />
+              {{ t("eventRecords.refresh") }}
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- No account selected / none bound -->
     <Card v-if="state === 'idle'">

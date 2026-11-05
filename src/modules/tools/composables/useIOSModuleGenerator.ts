@@ -15,6 +15,7 @@ import {
   REGION_OPTIONS,
   SOFTWARE_OPTIONS,
   UPLOAD_MODE_OPTIONS,
+  isApplePlatform,
   isIOSUploadDataType,
   isMySekaiUploadType,
   isRegionType,
@@ -284,6 +285,11 @@ export function useIOSModuleGenerator() {
     }
 
     window.location.href = schemeFn(moduleUrl.value)
+    // Off an iPhone/iPad the scheme usually opens nothing (a Mac with the
+    // same app is the exception): say what to do instead of staying silent.
+    if (!isApplePlatform(window.navigator.userAgent)) {
+      toast.info(t("tools.iosModules.toast.installNeedsIos"))
+    }
   }
 
   watch(chunkSize, (value) => {

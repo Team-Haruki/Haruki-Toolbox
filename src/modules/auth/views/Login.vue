@@ -6,6 +6,12 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Loader2, LogIn, Mail, Lock, KeyRound, Info } from "lucide-vue-next"
 import {
+  isPasskeyAction,
+  orderKratosActions,
+  type KratosActionRole,
+  type KratosActionVariant,
+} from "@/modules/auth/lib/action-hierarchy"
+import {
   Card,
   CardTitle,
   CardHeader,
@@ -78,68 +84,25 @@ interface LoginAction {
   name: string
   value: string
   label: string
+  labelId: number | null
   disabled: boolean
   kind: LoginActionKind
   messages: KratosFlowMessage[]
   onClickTrigger: string
+  role: KratosActionRole
+  variant: KratosActionVariant
 }
 
-function isSocialAction(action: { group: string; name: string }): boolean {
-  const group = action.group.trim().toLowerCase()
-  const name = action.name.trim().toLowerCase()
-  return group === "oidc" || group === "saml" || name === "provider"
-}
-
-function isPasskeyAction(action: { group: string; name: string; value: string }): boolean {
-  const signature = `${action.group} ${action.name} ${action.value}`.trim().toLowerCase()
-  return signature.includes("passkey") || signature.includes("webauthn")
-}
-
-function actionPriority(action: { group: string; name: string; value: string }): number {
-  if (isSocialAction(action)) {
-    return 30
-  }
-
-  if (isPasskeyAction(action)) {
-    return 8
-  }
-
-  const value = action.value.trim().toLowerCase()
-  if (
-    value === "password"
-    || value === "code"
-    || value === "totp"
-    || value === "lookup_secret"
-    || value === "passkey"
-    || value === "webauthn"
-  ) {
-    return 10
-  }
-
-  return 20
-}
-
-const orderedSubmitFields = computed(() =>
-  submitFields.value
-    .map((submit, index) => ({ submit, index }))
-    .sort((left, right) => {
-      const priorityDiff = actionPriority(left.submit) - actionPriority(right.submit)
-      if (priorityDiff !== 0) {
-        return priorityDiff
-      }
-
-      return left.index - right.index
-    })
-    .map((entry) => entry.submit)
-)
-
+// One primary per form: the password/code submit; passkey and social
+// providers are outline alternatives below it (same order as registration).
 const orderedLoginActions = computed<LoginAction[]>(() => {
-  const submitActions = orderedSubmitFields.value.map((submit) => ({
+  const submitActions = submitFields.value.map((submit) => ({
     key: submit.key,
     group: submit.group,
     name: submit.name,
     value: submit.value,
     label: submit.label,
+    labelId: submit.labelId,
     disabled: submit.disabled,
     kind: "submit" as const,
     messages: submit.messages,
@@ -152,27 +115,16 @@ const orderedLoginActions = computed<LoginAction[]>(() => {
     name: field.name,
     value: field.value,
     label: field.label,
+    labelId: field.labelId,
     disabled: field.disabled,
     kind: "trigger" as const,
     messages: field.messages,
     onClickTrigger: field.onClickTrigger,
   }))
 
-  return [...submitActions, ...triggerActions]
-    .map((action, index) => ({ action, index }))
-    .sort((left, right) => {
-      const priorityDiff = actionPriority(left.action) - actionPriority(right.action)
-      if (priorityDiff !== 0) {
-        return priorityDiff
-      }
-      return left.index - right.index
-    })
-    .map((entry) => entry.action)
+  return orderKratosActions([...submitActions, ...triggerActions])
+    .map(({ action, role, variant }) => ({ ...action, role, variant }))
 })
-
-function actionVariant(action: LoginAction): "default" | "outline" {
-  return isSocialAction(action) ? "outline" : "default"
-}
 
 function actionIcon(action: LoginAction) {
   if (isPasskeyAction(action)) {
@@ -180,6 +132,28 @@ function actionIcon(action: LoginAction) {
   }
   return LogIn
 }
+
+// The subtitle names the step: email + password, the second factor, or a
+// re-authentication where only the password is asked again.
+const loginStep = computed<"password" | "mfa" | "refresh">(() => {
+  const names = visibleFields.value.map((field) => field.name.toLowerCase())
+  if (names.some((name) => name === "totp_code" || name === "lookup_secret")) {
+    return "mfa"
+  }
+  const hasIdentifier = names.some((name) => name === "identifier" || name.endsWith("email"))
+  const hasPassword = names.some((name) => name.includes("password"))
+  return hasPassword && !hasIdentifier ? "refresh" : "password"
+})
+const loginDescription = computed(() => {
+  switch (loginStep.value) {
+    case "mfa":
+      return t("auth.login.descriptionMfa")
+    case "refresh":
+      return t("auth.login.descriptionRefresh")
+    default:
+      return t("auth.login.description")
+  }
+})
 
 function handleActionClick(action: LoginAction) {
   if (action.kind !== "trigger") {
@@ -238,7 +212,7 @@ const loginReasonText = computed(() => {
           {{ t("auth.login.title") }}
         </CardTitle>
         <CardDescription>
-          {{ t("auth.login.description") }}
+          {{ loginDescription }}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -313,7 +287,8 @@ const loginReasonText = computed(() => {
                 <Button
                   :type="actionItem.kind === 'submit' ? 'submit' : 'button'"
                   class="w-full"
-                  :variant="actionVariant(actionItem)"
+                  :variant="actionItem.variant"
+                  :data-kratos-role="actionItem.role"
                   :name="actionItem.name || undefined"
                   :value="actionItem.value || undefined"
                   :data-kratos-submit="actionItem.kind === 'submit' ? actionItem.key : undefined"

@@ -2,11 +2,14 @@
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { LucideArrowUpRight, LucideCalendarDays, LucideInfo } from "lucide-vue-next"
+import type { SekaiRegion } from "@/types"
 import { Badge } from "@/components/ui/badge"
-import { formatLocalizedDateTime } from "@/lib/date-time"
+import CatalogAssetName from "@/shared/components/catalog/CatalogAssetName.vue"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import CatalogInfoList from "@/shared/components/catalog/CatalogInfoList.vue"
 import CatalogInfoRow from "@/shared/components/catalog/CatalogInfoRow.vue"
+import CatalogTimeZoneHint from "@/shared/components/catalog/CatalogTimeZoneHint.vue"
+import CatalogZonedTime from "@/shared/components/catalog/CatalogZonedTime.vue"
 import SekaiAttrIcon from "@/shared/components/SekaiAttrIcon.vue"
 import SekaiCharacterAvatar from "@/shared/components/SekaiCharacterAvatar.vue"
 import SekaiRarityStars from "@/shared/components/SekaiRarityStars.vue"
@@ -18,6 +21,8 @@ import { resolveCardSupplyBadgeVariant } from "@/modules/cards/lib/card-display"
 
 const props = defineProps<{
   card: CatalogMasterCard
+  /** The server the card belongs to; its zone is shown next to the release time. */
+  region: SekaiRegion
   character: CatalogCharacter | null
   unit: SekaiUnit | null
   supportUnit: SekaiUnit | null
@@ -39,12 +44,15 @@ const characterRoute = computed(() => (props.character
 
 <template>
   <CatalogDetailSection :title="t('cardCatalog.detail.info.title')" :icon="LucideInfo">
+    <template #action>
+      <CatalogTimeZoneHint :region="region" />
+    </template>
     <CatalogInfoList>
       <CatalogInfoRow :label="t('cardCatalog.detail.info.character')">
         <RouterLink
           v-if="character && characterRoute"
           :to="characterRoute"
-          class="inline-flex min-w-0 items-center gap-2 rounded-md transition-colors hover:text-primary"
+          class="inline-flex min-w-0 items-center gap-2 rounded-md transition-colors hover:text-primary pointer-coarse:min-h-10"
           :title="t('cardCatalog.detail.viewCharacterCards')"
         >
           <SekaiCharacterAvatar :character-id="character.id" :name="character.name" size="sm" />
@@ -74,8 +82,10 @@ const characterRoute = computed(() => (props.character
         <Badge v-if="supplyType" :variant="supplyVariant">{{ supplyLabel }}</Badge>
       </CatalogInfoRow>
 
+      <!-- Local time with the server time one hover (or one line) away, like
+           the event timeline: a JST midnight release is not "yesterday 23:00". -->
       <CatalogInfoRow :label="t('cardCatalog.detail.info.releaseAt')" :icon="LucideCalendarDays">
-        <span v-if="card.releaseAt != null" class="tabular-nums">{{ formatLocalizedDateTime(card.releaseAt) }}</span>
+        <CatalogZonedTime v-if="card.releaseAt != null" :value="card.releaseAt" :region="region" options="dateTime" />
       </CatalogInfoRow>
 
       <CatalogInfoRow v-if="extras?.gachaPhrase" :label="t('cardCatalog.detail.info.gachaPhrase')">
@@ -86,10 +96,8 @@ const characterRoute = computed(() => (props.character
         <span>{{ extras.flavorText }}</span>
       </CatalogInfoRow>
 
-      <!-- Internal name: stays last and dimmed, it is for the curious only. -->
-      <CatalogInfoRow :label="t('catalog.detail.assetName')" muted>
-        <span v-if="card.assetbundleName" class="font-mono break-all">{{ card.assetbundleName }}</span>
-      </CatalogInfoRow>
+      <!-- Internal name: last, dimmed, behind a copy affordance. -->
+      <CatalogAssetName :name="card.assetbundleName" />
     </CatalogInfoList>
   </CatalogDetailSection>
 </template>

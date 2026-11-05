@@ -8,8 +8,12 @@ export const homeRoutes: RouteRecordRaw[] = [
         meta: { titleKey: "route.home" },
     },
     {
+        // A link or bookmark to /settings lands on the home page with the
+        // settings dialog open (WebLayout reads `openSettings`), then the
+        // address is replaced with "/" so closing the dialog does not reopen it.
         path: "/settings",
-        redirect: "/",
-        meta: { titleKey: "route.settings" },
+        name: "settings",
+        component: () => import("@/modules/home/views/Home.vue"),
+        meta: { titleKey: "route.settings", openSettings: true },
     },
 ]

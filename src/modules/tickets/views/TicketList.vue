@@ -36,7 +36,7 @@ import { useTicketList } from "@/modules/tickets/composables/useTicketList"
 const { t, locale } = useI18n()
 
 function formatTicketDate(iso?: string) {
-  return formatLocalizedDate(iso, { year: "numeric", month: "2-digit", day: "2-digit" }, t("tickets.common.dateFallback"))
+  return formatLocalizedDate(iso, "date", t("tickets.common.dateFallback"))
 }
 
 function formatCategory(category: string) {

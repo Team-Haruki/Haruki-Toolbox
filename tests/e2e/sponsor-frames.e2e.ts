@@ -31,7 +31,8 @@ async function setup(page: Page, options: { eligible?: boolean; configured?: boo
     if (url.pathname.startsWith(`${base}/sponsor-frames/`) && req.method() === "PUT") {
       const data = req.postDataJSON()
       writes.push({ path: url.pathname, data })
-      accounts[0]!.frameId = data.frameId || null
+      // The backend keeps the stored frame when the user is no longer eligible.
+      if (status.eligible) accounts[0]!.frameId = data.frameId || null
       return reply({ status, frames, accounts })
     }
     if (url.pathname === `${base}/afdian`) {
@@ -92,14 +93,28 @@ test.describe("Sponsor game profile frames", () => {
     expect(env.writes[1]?.data).toEqual({ frameId: "" })
   })
 
-  test("unbound users see binding settings without any frame selection", async ({ page }) => {
+  test("unbound users get the locked page: the reason, the way in, and every example to browse", async ({ page }) => {
     const env = await setup(page, { eligible: false, configured: false })
     await page.goto("/user/sponsor-frames")
-    await expect(page).toHaveURL(/\/user\/settings$/)
-    await expect(page.getByLabel("爱发电订单号", { exact: true })).toBeVisible()
-    await expect(page.getByRole("link", { name: "赞助头像框", exact: true })).toHaveCount(0)
-    await expect(page.locator("[data-frame-id]")).toHaveCount(0)
+    await expect(page).toHaveURL(/\/user\/sponsor-frames$/)
+    const locked = page.getByTestId("frames-locked")
+    await expect(locked).toContainText("需要赞助资格")
+    // Afdian sign-in is not configured, so only the order number is offered.
+    await expect(locked).toContainText("先在账号设置使用爱发电订单号验证赞助资格")
+    await expect(locked.getByRole("link", { name: "返回账号设置" })).toHaveAttribute("href", "/user/settings")
+    await expect(page.getByText("头像框已永久解锁")).toHaveCount(0)
+    await expect(page.locator("[data-frame-id]")).toHaveCount(frames.length)
+    await page.getByRole("button", { name: FRAME.name["zh-CN"], exact: true }).click()
+    await expect(page.locator(`img[src="${FRAME.panelPreview}"]`).last()).toBeVisible()
+    await expect(page.getByTestId("save-frame")).toBeDisabled()
+    await expect(page.getByText("仅预览", { exact: true }).first()).toBeVisible()
     expect(env.writes).toHaveLength(0)
+  })
+
+  test("the locked page names Afdian sign-in when it is configured", async ({ page }) => {
+    await setup(page, { eligible: false })
+    await page.goto("/user/sponsor-frames")
+    await expect(page.getByTestId("frames-locked")).toContainText("先在账号设置通过爱发电授权或订单号验证赞助资格")
   })
 
   test("eligible sponsors with unverified game accounts can preview but cannot save", async ({ page }) => {
@@ -117,7 +132,11 @@ test.describe("Sponsor game profile frames", () => {
     await page.goto("/user/sponsor-frames")
     await expect(page.getByText(/你还没有绑定游戏账号/)).toBeVisible()
     await page.getByRole("button", { name: FRAME.name["zh-CN"], exact: true }).click()
-    await expect(page.getByTestId("save-frame")).toBeDisabled()
+    // The desktop save row is hidden on phones; the sticky bar carries the button.
+    await expect(page.getByTestId("save-frame")).toBeHidden()
+    const saveBar = page.getByTestId("save-frame-mobile")
+    await expect(saveBar).toBeDisabled()
+    await expect(saveBar).toBeInViewport()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     await page.locator(`img[src="${FRAME.panelPreview}"]`).last().evaluate(async (image: HTMLImageElement) => { await image.decode() })
     await page.evaluate(() => window.scrollTo(0, 0))
@@ -138,7 +157,7 @@ test.describe("Sponsor game profile frames", () => {
     await page.goto("/user/settings")
     await expect(page.getByLabel("爱发电订单号", { exact: true })).toBeVisible()
     await expect(page.getByRole("button", { name: "授权绑定爱发电" })).toHaveCount(0)
-    await expect(page.getByRole("tab", { name: "OAuth2 授权" })).toHaveCount(0)
+    await expect(page.getByRole("tab", { name: "爱发电授权" })).toHaveCount(0)
     await expect(page.getByRole("link", { name: "赞助头像框", exact: true })).toHaveCount(0)
     await page.getByRole("button", { name: /赞助用户/ }).click()
     await expect(page.getByRole("menuitem", { name: "账号设置" })).toBeVisible()
@@ -161,12 +180,28 @@ test.describe("Sponsor game profile frames", () => {
     expect(env.writes).toHaveLength(1)
   })
 
-  test("rejected OAuth callbacks show a recovery link", async ({ page }) => {
+  test("rejected OAuth callbacks say why and show a recovery link", async ({ page }) => {
     await setup(page, { callbackStatus: 409 })
     await page.goto("/user/afdian/callback?code=code&state=state")
-    await expect(page.getByText(/绑定未完成/)).toBeVisible()
+    await expect(page.getByText(/绑定未完成：该爱发电账号已绑定其他工具箱账号/)).toBeVisible()
     await expect(page.getByRole("link", { name: "返回账号设置" })).toBeVisible()
     expect(page.url()).not.toContain("code=")
+  })
+
+  test("a transient callback failure asks for a retry, a stale authorization for a fresh one", async ({ page }) => {
+    await setup(page, { callbackStatus: 503 })
+    await page.goto("/user/afdian/callback?code=code&state=state")
+    await expect(page.getByText(/绑定未完成：暂时无法连接服务/)).toBeVisible()
+    await page.goto("/user/afdian/callback?code=code&state=state")
+    await expect(page.getByText(/绑定未完成：暂时无法连接服务/)).toBeVisible()
+  })
+
+  test("an expired authorization and a missing code each get their own sentence", async ({ page }) => {
+    await setup(page, { callbackStatus: 400 })
+    await page.goto("/user/afdian/callback?code=code&state=state")
+    await expect(page.getByText(/绑定未完成：授权已过期或登录会话已改变/)).toBeVisible()
+    await page.goto("/user/afdian/callback")
+    await expect(page.getByText(/绑定未完成：缺少授权信息/)).toBeVisible()
   })
 })
 
@@ -186,7 +221,7 @@ test.describe("Afdian order verification", () => {
     expect(page.url()).not.toContain(orderNumber)
     await page.reload()
     await expect(page.getByText("验证方式：订单号验证", { exact: true })).toBeVisible()
-    await expect(page.getByRole("button", { name: "改用 OAuth2 授权确认" })).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "改用爱发电授权确认" })).toHaveCount(0)
     await page.getByRole("link", { name: "赞助头像框", exact: true }).click()
     await expect(page.getByText("头像框已永久解锁")).toBeVisible()
     await page.getByRole("button", { name: FRAME.name["zh-CN"], exact: true }).click()
@@ -237,7 +272,7 @@ test.describe("Afdian order verification", () => {
     await setup(page, { eligible: false, configured: false })
     await page.goto("/user/settings")
     await expect(page.getByLabel("爱发电订单号", { exact: true })).toBeVisible()
-    await expect(page.getByRole("tab", { name: "OAuth2 授权" })).toHaveCount(0)
+    await expect(page.getByRole("tab", { name: "爱发电授权" })).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: testInfo.outputPath("order-verification-mobile.png"), fullPage: true })
   })
@@ -282,22 +317,28 @@ test("blocked sponsors see a recovery explanation and cannot apply a frame", asy
   await page.goto("/user/settings")
   await expect(page.getByText("赞助资格已由管理员停用。如需恢复，请联系管理员。")).toBeVisible()
   await expect(page.getByRole("link", { name: "赞助头像框", exact: true })).toHaveCount(0)
+  // A deep link to the frames page explains the block instead of bouncing away.
   await page.goto("/user/sponsor-frames")
-  await expect(page).toHaveURL(/\/user\/settings$/)
-  await expect(page.getByText("赞助资格已由管理员停用。如需恢复，请联系管理员。")).toBeVisible()
-  await expect(page.locator("[data-frame-id]")).toHaveCount(0)
+  await expect(page).toHaveURL(/\/user\/sponsor-frames$/)
+  await expect(page.getByTestId("frames-locked")).toContainText("赞助资格已由管理员停用。如需恢复，请联系管理员。")
+  await page.getByRole("button", { name: FRAME.name["zh-CN"], exact: true }).click()
+  await expect(page.getByTestId("save-frame")).toBeDisabled()
   expect(env.writes).toHaveLength(0)
 })
 
 
-test("losing eligibility in a save response returns to account settings", async ({ page }) => {
+test("losing eligibility in a save response says so and locks the page", async ({ page }) => {
   const env = await setup(page)
   await page.goto("/user/sponsor-frames")
   await page.getByRole("button", { name: FRAME.name["zh-CN"], exact: true }).click()
   env.status.eligible = false
   env.status.accessOverride = "blocked"
   await page.getByTestId("save-frame").click()
-  await expect(page).toHaveURL(/\/user\/settings$/)
-  await expect(page.locator("[data-frame-id]")).toHaveCount(0)
+  await expect(page.getByText("赞助资格已失效，头像框未保存。")).toBeVisible()
+  await expect(page).toHaveURL(/\/user\/sponsor-frames$/)
+  await expect(page.getByTestId("frames-locked")).toContainText("赞助资格已由管理员停用")
+  await expect(page.getByTestId("save-frame")).toBeDisabled()
+  // The dropped selection is not shown as chosen.
+  await expect(page.getByRole("button", { name: "默认头像框", exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(page.getByText("头像框已保存", { exact: true })).toHaveCount(0)
 })

@@ -70,8 +70,10 @@ const fields = computed(() => [
 
 <template>
   <section
+    :id="idPrefix"
+    tabindex="-1"
     :class="[
-      'rounded-xl border-2 p-4 sm:p-5',
+      'scroll-mt-20 rounded-xl border-2 p-4 outline-none sm:p-5',
       unsaved ? 'border-destructive bg-destructive/5' : 'border-emerald-500/60 bg-emerald-500/5',
     ]"
     :aria-labelledby="`${idPrefix}-title`"
@@ -121,11 +123,9 @@ const fields = computed(() => [
       </p>
       <p v-else-if="expiresAt" class="flex items-start gap-2 text-foreground">
         <Timer class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-        <span>
-          {{ remaining ? t("tools.uploadData.inheritJob.newCode.expiresIn", { time: remaining }) : "" }}
-          <span class="text-muted-foreground">
-            · {{ t("tools.uploadData.inheritJob.newCode.expiresAt", { time: formatLocalizedDateTime(expiresAt) }) }}
-          </span>
+        <span class="flex flex-wrap gap-x-2">
+          <span v-if="remaining">{{ t("tools.uploadData.inheritJob.newCode.expiresIn", { time: remaining }) }}</span>
+          <span class="text-muted-foreground">{{ t("tools.uploadData.inheritJob.newCode.expiresAt", { time: formatLocalizedDateTime(expiresAt) }) }}</span>
         </span>
       </p>
       <p class="flex items-start gap-2 font-medium text-amber-700 dark:text-amber-300">

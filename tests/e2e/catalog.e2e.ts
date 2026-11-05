@@ -32,7 +32,8 @@ test("home navigation links into the sekai catalog", async ({ page }) => {
   await page.goto("/")
 
   await page.getByRole("link", { name: /^(歌曲一览|Music catalog)$/ }).first().click()
-  await expect(page).toHaveURL(/\/music$/)
+  // Catalog pages name their server in the URL so the link is shareable.
+  await expect(page).toHaveURL(/\/music(\?region=[a-z]{2})?$/)
 })
 
 test("story player route renders with nothing picked", async ({ page }) => {

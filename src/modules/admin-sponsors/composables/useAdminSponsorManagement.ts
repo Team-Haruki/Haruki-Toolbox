@@ -447,7 +447,7 @@ export function useAdminSponsorManagement() {
   }
 
   function formatDate(value?: string) {
-    return formatLocalizedDateTime(value, undefined, t("adminSponsors.common.fallback"))
+    return formatLocalizedDateTime(value, "dateTime", t("adminSponsors.common.fallback"))
   }
 
   onMounted(() => {

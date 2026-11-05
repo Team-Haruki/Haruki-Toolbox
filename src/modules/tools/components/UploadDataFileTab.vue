@@ -25,6 +25,7 @@ import {
   Database,
   FolderOpen,
   Loader2,
+  LogIn,
   LucideAlertTriangle,
   LucideRefreshCw,
   LucideShieldAlert,
@@ -110,9 +111,17 @@ function accountOptionTitle(account: UploadTargetAccount): string | undefined {
       <CardDescription>{{ t("tools.uploadData.fileTab.description") }}</CardDescription>
     </CardHeader>
     <CardContent>
-      <Alert v-if="disabledReason" variant="destructive" class="mb-3">
-        <LucideAlertTriangle class="h-5 w-5" />
-        <AlertTitle>{{ t("tools.uploadData.fileTab.unavailableTitle") }}</AlertTitle>
+      <!-- "Sign in first" is a plain next step, not a failure: it stays neutral. -->
+      <Alert
+        v-if="disabledReason"
+        :variant="disabledReasonKind === 'loginRequired' ? 'default' : 'destructive'"
+        :class="['mb-3', disabledReasonKind === 'loginRequired' ? 'bg-muted/20' : '']"
+        data-testid="file-tab-unavailable"
+        :data-kind="disabledReasonKind ?? undefined"
+      >
+        <LogIn v-if="disabledReasonKind === 'loginRequired'" class="h-5 w-5" />
+        <LucideAlertTriangle v-else class="h-5 w-5" />
+        <AlertTitle>{{ disabledReasonKind === 'loginRequired' ? t("tools.uploadData.fileTab.loginRequiredTitle") : t("tools.uploadData.fileTab.unavailableTitle") }}</AlertTitle>
         <AlertDescription class="space-y-2">
           <p>{{ disabledReason }}</p>
           <!-- The next step, not just the reason. -->

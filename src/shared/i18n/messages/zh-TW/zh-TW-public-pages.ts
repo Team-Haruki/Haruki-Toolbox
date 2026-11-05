@@ -52,7 +52,7 @@ export default {
             "name": "星雲希凪",
             "role": "創始人 / 核心開發",
             "desc": "",
-            "quote": "“有限的生命裡追求無限的可能”"
+            "quote": "「有限的生命裡追求無限的可能」"
           },
           "lingqian": {
             "name": "靈潛",
@@ -69,7 +69,7 @@ export default {
             "name": "storyxy3",
             "role": "核心開發",
             "desc": "",
-            "quote": "“Beyond Light”"
+            "quote": "「Beyond Light」"
           },
           "aposetles": {
             "name": "Aposetles",
@@ -193,7 +193,6 @@ export default {
     },
     "summary": {
       "supporters": "贊助者",
-      "pending": "待同步",
       "current": "當前贊助"
     },
     "sections": {
@@ -266,13 +265,13 @@ export default {
         "usage": {
           "title": "3. 資訊用途",
           "paragraphs": {
-            "summary": "我們僅在提供和維護 Haruki 工具箱及 HarukiBot NEO 相關高階功能所需的範圍內使用您的資訊。"
+            "summary": "我們僅在提供和維護 Haruki 工具箱及 HarukiBot NEO 相關進階功能所需的範圍內使用您的資訊。"
           },
           "bullets": {
             "service": "提供帳號登入、遊戲帳號綁定、資料上傳、組卡推薦、控分計算、工單處理和偏好設定同步等功能。",
             "security": "進行身份驗證、帳號安全保護、介面限流、濫用檢測、風控審計和異常排查。",
             "support": "定位故障、回覆反饋、處理工單、改進產品體驗和維護服務穩定性。",
-            "advanced": "在 Haruki 工具箱與 HarukiBot NEO 中提供與您授權或上傳資料相關的高階功能。",
+            "advanced": "在 Haruki 工具箱與 HarukiBot NEO 中提供與您授權或上傳資料相關的進階功能。",
             "compliance": "在法律法規、監管要求或保護使用者與服務安全所必要的範圍內處理相關資訊。"
           }
         },
@@ -282,7 +281,7 @@ export default {
             "summary": "除非我們主動清理、服務策略調整或法律要求另有規定，伺服器端資料理論上會長期儲存，以便維持帳號綁定、歷史上傳、風控審計和服務連續性。"
           },
           "bullets": {
-            "server": "伺服器端資料：遊戲帳號綁定、上傳記錄、suite/MySekai 資料、日誌和管理員操作記錄目前沒有固定儲存期限（引繼碼保險庫除外，見第 5 節）。",
+            "server": "伺服器端資料：遊戲帳號綁定、上傳記錄、帳號資料（Suite）、烤森資料（MySekai）、日誌和管理員操作記錄目前沒有固定儲存期限（引繼碼保險庫除外，見第 5 節）。",
             "local": "本地資料：登出會清理瀏覽器中的部分本地快取使用者資料，但不會自動刪除伺服器端已儲存的資料。",
             "requests": "刪除、匯出或登出帳號目前不能由使用者自助完成；如需處理，請通過聯絡信箱向 Haruki Dev Team 提出請求。"
           }
@@ -310,7 +309,7 @@ export default {
           },
           "bullets": {
             "noSale": "不會出售、出租或以廣告畫像為目的共享您的個人資訊。",
-            "harukiServices": "您上傳或綁定的資料預設僅用於 Haruki 工具箱與 HarukiBot NEO 提供高階功能服務；除非您開啟公開 API 查詢或自行進行 OAuth 授權，第三方服務無法訪問這些資料。",
+            "harukiServices": "您上傳或綁定的資料預設僅用於 Haruki 工具箱與 HarukiBot NEO 提供進階功能服務；除非您開啟公開 API 查詢或自行進行 OAuth 授權，第三方服務無法訪問這些資料。",
             "google": "如果您使用 Google 登入，Google 會按照其自身政策處理相關第三方登入資訊。",
             "cdn": "我們使用 Cloudflare、EdgeOne 和 CDN 服務分發靜態資源、改善訪問速度和可用性。",
             "email": "我們使用郵件服務傳送帳號、安全或服務相關郵件。Ory Kratos/Hydra 為自建認證與授權服務。"
@@ -373,7 +372,7 @@ export default {
         "account": {
           "title": "2. 帳號責任",
           "paragraphs": {
-            "summary": "您應妥善保管帳號、密碼、MFA、OAuth 授權、遊戲繼承碼及其他憑證，並對帳號下的操作負責。"
+            "summary": "您應妥善保管帳號、密碼、MFA、OAuth 授權、遊戲引繼碼及其他憑證，並對帳號下的操作負責。"
           },
           "bullets": {
             "credentials": "如發現帳號異常、憑證洩露或未經授權的使用，應及時修改密碼、撤銷授權並聯系我們。",
@@ -396,7 +395,7 @@ export default {
         "dataUse": {
           "title": "4. 使用者資料與授權",
           "paragraphs": {
-            "summary": "您上傳、綁定或授權的資料預設僅用於 Haruki 工具箱與 HarukiBot NEO 提供高階功能服務。"
+            "summary": "您上傳、綁定或授權的資料預設僅用於 Haruki 工具箱與 HarukiBot NEO 提供進階功能服務。"
           },
           "bullets": {
             "harukiServices": "除非您允許公開 API 查詢或自行進行 OAuth 授權，第三方服務無法訪問您在 Haruki 工具箱中的綁定和上傳資料。",
@@ -416,13 +415,13 @@ export default {
           }
         },
         "gameAccountRisk": {
-          "title": "6. 遊戲帳號與繼承碼風險",
+          "title": "6. 遊戲帳號與引繼碼風險",
           "paragraphs": {
-            "summary": "Haruki 工具箱可能提供與遊戲資料更新、上傳或繼承碼相關的輔助功能。您應理解這些操作可能存在帳號安全和遊戲服務條款風險。"
+            "summary": "Haruki 工具箱可能提供與遊戲資料更新、上傳或引繼碼相關的輔助功能。您應理解這些操作可能存在帳號安全和遊戲服務條款風險。"
           },
           "bullets": {
-            "transferCode": "因使用繼承碼更新資料、同步資料或相關操作產生的遊戲帳號封禁、限制、異常或其他風險，由您自行承擔。",
-            "accountLoss": "因您未妥善儲存繼承碼、密碼、登入憑證或其他帳號恢復資訊導致的遊戲帳號丟失，我們不承擔責任。"
+            "transferCode": "因使用引繼碼更新資料、同步資料或相關操作產生的遊戲帳號封禁、限制、異常或其他風險，由您自行承擔。",
+            "accountLoss": "因您未妥善儲存引繼碼、密碼、登入憑證或其他帳號恢復資訊導致的遊戲帳號丟失，我們不承擔責任。"
           }
         },
         "availability": {

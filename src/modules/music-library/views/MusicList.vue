@@ -19,7 +19,7 @@ import CatalogRegionSelect from "@/shared/components/catalog/CatalogRegionSelect
 import CatalogResultsBar from "@/shared/components/catalog/CatalogResultsBar.vue"
 import CatalogSearchField from "@/shared/components/catalog/CatalogSearchField.vue"
 import type { CatalogFieldOption, CatalogSortOption, CatalogViewOption } from "@/shared/components/catalog/types"
-import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { applyCatalogRegionQuery, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import {
   resolveSekaiDifficultyLabel,
   resolveSekaiMusicCategoryLabel,
@@ -62,6 +62,8 @@ type MusicView = (typeof MUSIC_VIEWS)[number]
 const { t, te } = useI18n()
 const labels = { t, te }
 const settingsStore = useSettingsStore()
+// A shared link names its server (`?region=`): apply it before the region is read.
+applyCatalogRegionQuery()
 const { region } = useEffectiveCatalogRegion()
 const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
 const {

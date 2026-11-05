@@ -71,7 +71,7 @@ export default {
   },
   "adminConfig": {
     "publicApiKeys": {
-      "title": "Public API Keys",
+      "title": "公共 API 金鑰",
       "description": "管理公共 API 金鑰配置（僅超級管理員可操作）"
     },
     "runtime": {
@@ -87,9 +87,9 @@ export default {
       "dirtyHint": "下方執行時配置有未儲存的修改，請先儲存或重新整理後再切換開關。",
       "oauth2DeviceFlow": {
         "label": "OAuth2 裝置授權",
-        "description": "開啟後，開通了裝置碼授權型別的客戶端可以申請裝置碼，由使用者在 /device 頁批准。關閉後立即停止簽發裝置碼和受理批准；已簽發的令牌仍然有效，需要時按客戶端撤銷授權。後端沒有返回該項時顯示為關閉。",
+        "description": "開啟後，開通了裝置碼授權類型的客戶端可以申請裝置碼，由使用者在 /device 頁批准。關閉後立即停止簽發裝置碼和受理批准；已簽發的令牌仍然有效，需要時按客戶端撤銷授權。後端沒有返回該項時顯示為關閉。",
         "enableTitle": "開啟 OAuth2 裝置授權？",
-        "enableDescription": "開通了裝置碼授權型別的客戶端將可以申請裝置碼。此更改立即應用於整個系統。",
+        "enableDescription": "開通了裝置碼授權類型的客戶端將可以申請裝置碼。此更改立即應用於整個系統。",
         "disableTitle": "關閉 OAuth2 裝置授權？",
         "disableDescription": "將立即停止簽發裝置碼和受理 /device 頁的批准。已簽發的令牌不受影響，需要時請按客戶端撤銷授權。",
         "confirmEnable": "開啟",
@@ -97,9 +97,9 @@ export default {
       }
     },
     "toast": {
-      "loadApiKeysFailedTitle": "載入 Public API Keys 失敗",
+      "loadApiKeysFailedTitle": "載入公共 API 金鑰失敗",
       "loadRuntimeFailedTitle": "載入執行時配置失敗",
-      "apiKeysUpdated": "Public API Keys 更新成功",
+      "apiKeysUpdated": "公共 API 金鑰更新成功",
       "runtimeUpdated": "執行時配置更新成功",
       "invalidJson": "JSON 格式無效",
       "invalidApiKeysSchema": "公共 API 金鑰必須是字串值組成的 JSON 物件",
@@ -260,7 +260,7 @@ export default {
       "open": "待處理",
       "last24h": "近 24 小時告警",
       "last7d": "近 7 天告警",
-      "byKind": "待處理告警（按型別）",
+      "byKind": "待處理告警（按類型）",
       "noOpen": "暫無待處理的告警",
       "unavailable": "統計暫不可用",
       "filterByKind": "只看待處理的「{kind}」告警"
@@ -270,7 +270,7 @@ export default {
       "expand": "展開",
       "collapse": "收起",
       "status": "狀態",
-      "kind": "型別",
+      "kind": "類型",
       "botId": "Bot ID",
       "botIdPlaceholder": "精確匹配 Bot ID",
       "from": "開始時間",
@@ -278,7 +278,7 @@ export default {
       "to": "結束時間",
       "toPlaceholder": "不限",
       "allStatuses": "全部狀態",
-      "allKinds": "全部型別"
+      "allKinds": "全部類型"
     },
     "actions": {
       "search": "查詢",
@@ -292,7 +292,7 @@ export default {
     "table": {
       "title": "告警列表",
       "alertTime": "告警時間",
-      "kind": "型別",
+      "kind": "類型",
       "bot": "Bot / 所有者 / 來源",
       "sourceIp": "來源 IP",
       "client": "客戶端版本 / 構建",
@@ -510,8 +510,8 @@ export default {
       "removeRedirectUri": "刪除此URI",
       "nameLabel": "客戶端名稱",
       "namePlaceholder": "顯示名稱",
-      "clientTypeLabel": "客戶端型別",
-      "clientTypePlaceholder": "選擇型別",
+      "clientTypeLabel": "客戶端類型",
+      "clientTypePlaceholder": "選擇類型",
       "clientTypeConfidential": "Confidential (含Secret)",
       "clientTypePublic": "Public (無Secret)",
       "scopesLabel": "授權範圍 (Scopes)",
@@ -521,7 +521,7 @@ export default {
       "postLogoutRedirectUrisLabel": "登出回撥URI (Post-Logout Redirect URIs)",
       "postLogoutRedirectUrisHelp": "OIDC RP-Initiated Logout 後允許跳回的地址，精確匹配。僅登入類客戶端需要，可留空。",
       "postLogoutRedirectUriPlaceholder": "https://example.com/logged-out",
-      "grantTypesLabel": "授權型別 (Grant types)",
+      "grantTypesLabel": "授權類型 (Grant types)",
       "grantTypesHelp": "授權碼用於有瀏覽器回撥的應用；裝置碼用於沒有瀏覽器的程式（RFC 8628），由使用者在 /device 頁批准；重新整理令牌須與其中之一同時選擇，登記 offline_access 時必選。",
       "grantType": {
         "authorizationCode": "授權碼 (authorization_code)",
@@ -556,7 +556,7 @@ export default {
       "typePublic": "Public",
       "typeConfidential": "Confidential",
       "deviceBadge": "裝置碼",
-      "deviceBadgeTitle": "已開通裝置碼授權型別"
+      "deviceBadgeTitle": "已開通裝置碼授權類型"
     },
     "table": {
       "actions": "操作",
@@ -706,8 +706,8 @@ export default {
       "revokedAll": "已撤銷所有授權",
       "disabledRevocationIncompleteTitle": "客戶端已停用，但部分授權未能撤銷",
       "revokedPartiallyTitle": "授權僅部分撤銷",
-      "revocationFailedSubjects": "有 {count} 個使用者標識（subject）撤銷失敗，可執行“撤銷全部授權”重試。",
-      "revocationIncomplete": "部分授權未能撤銷，可執行“撤銷全部授權”重試。",
+      "revocationFailedSubjects": "有 {count} 個使用者標識（subject）撤銷失敗，可執行「撤銷全部授權」重試。",
+      "revocationIncomplete": "部分授權未能撤銷，可執行「撤銷全部授權」重試。",
       "webhookSaved": "Webhook endpoint 已儲存",
       "webhookDeleted": "Webhook endpoint 已刪除",
       "copyFailedTitle": "複製失敗",
@@ -725,12 +725,12 @@ export default {
         "postLogoutRequiresRedirectUris": "沒有回撥URI的客戶端不能登記登出回撥URI，請清空登出回撥URI",
         "offlineAccessRequiresRefreshToken": "登記 offline_access 時須同時選擇重新整理令牌",
         "deviceRequiresUserRead": "裝置碼客戶端須登記 user:read（裝置頁要顯示授權的帳號）",
-        "deviceWriteRequiresPublicClient": "“允許經裝置碼申請 game-data:write”只適用於選擇了裝置碼並登記了 game-data:write 的 Public 客戶端",
+        "deviceWriteRequiresPublicClient": "「允許經裝置碼申請 game-data:write」只適用於選擇了裝置碼並登記了 game-data:write 的 Public 客戶端",
         "invalidDevicePolicy": "每 10 分鐘裝置碼上限須為 1–600 之間的整數"
       },
       "apiErrors": {
-        "publicClientHasNoSecret": "Public 客戶端沒有可輪換的 Secret。如需 Secret，請把客戶端型別改為 Confidential，儲存時會生成一次。",
-        "unsupportedGrantType": "授權型別只能是授權碼、裝置碼和重新整理令牌"
+        "publicClientHasNoSecret": "Public 客戶端沒有可輪換的 Secret。如需 Secret，請把客戶端類型改為 Confidential，儲存時會生成一次。",
+        "unsupportedGrantType": "授權類型只能是授權碼、裝置碼和重新整理令牌"
       }
     }
   },
@@ -891,7 +891,7 @@ export default {
       "automaticHelp": "清除人工設定，重新按已綁定帳號的歷史贊助記錄判斷資格。",
       "note": "操作備註（必填）",
       "noteHint": "填寫贊助來源、認證依據或調整原因，僅管理員可見。",
-      "noteRequired": "請填寫操作備註，最多 1000 位元組（約 330 個漢字）。",
+      "noteRequired": "請填寫操作備註，最多約 330 個漢字。",
       "save": "儲存資格",
       "saved": "贊助資格已更新",
       "loadFailed": "贊助使用者載入失敗，請重試。"
@@ -1177,7 +1177,7 @@ export default {
         "sort": "排序",
         "sortPlaceholder": "排序方式",
         "allMethods": "全部方式",
-        "allDataTypes": "全部型別",
+        "allDataTypes": "全部類型",
         "allServers": "全部區服",
         "allStatuses": "全部狀態",
         "selectedMore": "{first} +{count}"
@@ -1249,9 +1249,9 @@ export default {
       "method": {
         "manual": "手動上傳",
         "iosProxy": "iOS代理",
-        "iosScript": "iOS指令碼",
+        "iosScript": "iOS腳本",
         "harukiProxy": "HarukiProxy",
-        "inherit": "繼承碼"
+        "inherit": "引繼碼"
       },
       "dataType": {
         "suite": "Suite",
@@ -1374,7 +1374,7 @@ export default {
     "status": {
       "normal": "正常",
       "banned": "已封禁",
-      "deleted": "歷史軟刪除"
+      "deleted": "已刪除（舊版）"
     },
     "common": {
       "actions": "操作",

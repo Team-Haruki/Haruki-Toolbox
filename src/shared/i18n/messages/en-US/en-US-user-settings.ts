@@ -6,11 +6,11 @@ export default {
       "manualGranted": "An administrator has verified your sponsorship. No additional order is needed.",
       "accessBlocked": "An administrator has disabled your sponsor access. Contact an administrator to restore it.",
       "unlinkManualConfirm": "Unlinking Afdian preserves your manually granted sponsor access and saved frame choices.",
-      "oauthTab": "OAuth2 authorization",
+      "oauthTab": "Afdian sign-in",
       "oauthDescription": "Authorize with Afdian to link your account and match your sponsorship history.",
-      "methodOAuth": "Verified with OAuth2",
+      "methodOAuth": "Verified with Afdian sign-in",
       "methodOrder": "Verified with an order number",
-      "upgradeOAuth": "Confirm with OAuth2",
+      "upgradeOAuth": "Confirm with Afdian sign-in",
       "order": {
         "tab": "Order number",
         "label": "Afdian order number",
@@ -27,7 +27,7 @@ export default {
         "failed": "Could not verify the order right now. Please try again later."
       },
       "title": "Afdian account",
-      "description": "Verify with OAuth2 or an order number to link your sponsorship history. Any past sponsorship unlocks supporter frames permanently.",
+      "description": "Verify with Afdian sign-in or an order number to link your sponsorship history. Any past sponsorship unlocks supporter frames permanently.",
       "loading": "Loading…",
       "retry": "Retry",
       "loadFailed": "Could not load your binding. Please retry.",
@@ -44,11 +44,14 @@ export default {
       "unlink": "Unlink account",
       "unlinked": "Afdian account unlinked",
       "refresh": "Refresh sponsorship",
-      "unlinkConfirm": "The bot will temporarily use the default frame. Relink an Afdian account with sponsorship history to use supporter frames again. Your frame selections are kept.",
+      "unlinkConfirm": "HarukiBot will temporarily use the default frame. Relink an Afdian account with sponsorship history to use supporter frames again. Your frame selections are kept.",
       "callbackTitle": "Afdian authorization",
       "callback_loading": "Confirming authorization and linking your account…",
       "callback_success": "Your Afdian account is linked. Sponsorship records are matched automatically.",
-      "callback_failed": "Linking failed. Authorization may have expired, your session may have changed, or the Afdian account may already be linked. Return to settings and authorize again."
+      "callback_failed": "Linking did not complete: the service could not be reached. Please try again later.",
+      "callback_conflict": "Linking did not complete: this Afdian account is already linked to another Toolbox account and cannot be linked to this one.",
+      "callback_expired": "Linking did not complete: the authorization expired or your session changed. Return to account settings and authorize again.",
+      "callback_invalid": "Linking did not complete: the authorization details are missing. Return to account settings and authorize again."
     },
     "frames": {
       "lockedOrderOnly": "Verify your sponsorship with an Afdian order number in account settings. You can browse all frames and previews first.",
@@ -57,14 +60,16 @@ export default {
       "title": "Supporter frames",
       "back": "Account settings",
       "description": "Choose frames for your HarukiBot game profile images. Any past sponsorship grants permanent access. Set a frame for each verified game account.",
-      "locked": "Verify sponsorship in settings using OAuth2 or an order number. You can browse all frames and previews first.",
+      "locked": "Verify your sponsorship in account settings with Afdian sign-in or an order number. You can browse all frames and previews first.",
+      "lockedTitle": "Sponsorship required",
+      "eligibilityLost": "Your sponsor access has lapsed; the frame was not saved.",
       "accountTitle": "Apply to a game account",
       "accountDescription": "HarukiBot will use the saved frame when displaying this game account.",
       "account": "Game account",
       "unverified": "Unverified",
       "verifyFirst": "Verify that you own this game account before saving a frame.",
       "noAccounts": "No game accounts linked yet. Browse the previews, then link an account.",
-      "manageAccounts": "Link and verify game accounts",
+      "manageAccounts": "Go to game account management",
       "choose": "Choose a frame",
       "search": "Search frames",
       "default": "Default frame",
@@ -91,16 +96,14 @@ export default {
     },
     "officialBotGuide": {
       "title": "Use the official QQ bot",
-      "description": "If you use the official QQ bot (the Kanade bot), you also need a separate official-bot authorization: follow the guide to get your user ID (QID) from the bot, then add it under \"Allow other QQ accounts to query my data\" below.",
+      "description": "If you use the official QQ bot (the Kanade bot), you also need a separate official-bot authorization: follow the guide to get your user ID (QID) from the bot, then add it under “Allow other QQ accounts to query my data” below.",
       "action": "View the official QQ bot authorization guide"
     },
     "sections": {
       "accountTitle": "Account settings",
       "accountDescription": "Identity and login security settings for your account.",
       "harukiBotTitle": "HarukiBot data authorization",
-      "harukiBotDescription": "Manage social platform bindings and authorizations that let HarukiBot query your game data.",
-      "oauthTitle": "OAuth authorization management",
-      "oauthDescription": "Manage third-party applications that access your account data via OAuth."
+      "harukiBotDescription": "Manage social platform bindings and authorizations that let HarukiBot query your game data."
     },
     "sekaiData": {
       "region": "Region",
@@ -129,6 +132,10 @@ export default {
       },
       "queueTitle": "Update queue",
       "queueEmpty": "No update tasks.",
+      "errors": {
+        "network": "The game data server could not be reached. Check your connection; if it keeps failing, switch the asset route under Preferences and try again.",
+        "timeout": "The game data server took too long to respond. Try again later or switch the asset route."
+      },
       "queueDetails": {
         "cacheHit": "Cache is already current; no new files were downloaded.",
         "updated": "New cache data was downloaded and written.",
@@ -162,8 +169,13 @@ export default {
       }
     },
     "kratosFlow": {
-      "title": "Change email, nickname or password",
-      "description": "Use the button below to open the edit page; you will be brought back automatically when done.",
+      "titles": {
+        "profile": "Change email or nickname",
+        "password": "Change password",
+        "mfa": "Set up two-step verification",
+        "oidc": "Manage Google sign-in"
+      },
+      "description": "Make the change here; you return to account settings after saving.",
       "redirect": {
         "title": "Taking you to the sign-in service to {target}…",
         "description": "The change is made on the sign-in service's page; you will return to the toolbox automatically afterwards.",
@@ -182,7 +194,7 @@ export default {
         "savedTitle": "Settings updated",
         "profileSavedDescription": "Email or nickname updated successfully",
         "passwordSavedDescription": "Password settings updated successfully",
-        "mfaSavedDescription": "Multi-factor authentication settings updated successfully",
+        "mfaSavedDescription": "Two-step verification settings updated successfully",
         "socialSavedDescription": "Social sign-in settings updated successfully",
         "genericSavedDescription": "Identity settings updated successfully"
       },
@@ -201,8 +213,8 @@ export default {
       "description": "Avatar, nickname and email binding."
     },
     "securityCard": {
-      "title": "Security & sign-in",
-      "description": "Password, multi-factor auth, social sign-in and sessions."
+      "title": "Sign-in & security",
+      "description": "Password, two-step verification, Google sign-in and signed-in devices."
     },
     "account": {
       "title": "Avatar settings",
@@ -232,6 +244,8 @@ export default {
       "currentEmailLabel": "Current email",
       "currentNicknameLabel": "Current nickname",
       "unsetNickname": "Not set",
+      "nicknameLabel": "Nickname",
+      "nicknamePlaceholder": "Enter a nickname",
       "changeButton": "Manage email & nickname",
       "verifyButton": "Verify email"
     },
@@ -255,13 +269,11 @@ export default {
       "manageButton": "Manage Google sign-in"
     },
     "sessions": {
-      "title": "Session management",
-      "description": "Review active sign-ins and revoke sessions you do not trust.",
-      "hint": "You can sign out specific devices or sign out all other sessions at once.",
-      "manageButton": "Manage sessions",
+      "title": "Signed-in devices",
+      "description": "Review the devices signed in to your account and sign out any you do not trust.",
       "page": {
-        "title": "Session management",
-        "description": "Manage active sessions for your current identity.",
+        "title": "Signed-in devices",
+        "description": "The devices signed in to this account. Sign out one device, or every other device at once.",
         "refresh": "Refresh",
         "currentSession": "Current session",
         "currentTag": "Current",
@@ -280,7 +292,7 @@ export default {
         "revokeOthers": "Sign out other sessions",
         "revokeOneDialog": {
           "title": "Sign out this device?",
-          "description": "This signs out \"{device}\" ({meta}). That device must sign in again; this device is not affected."
+          "description": "This signs out “{device}” ({meta}). That device must sign in again; this device is not affected."
         },
         "revokeOthersDialog": {
           "title": "Sign out all other sessions?",
@@ -452,17 +464,13 @@ export default {
       }
     },
     "gameBinding": {
-      "harukiBotGuide": {
-        "title": "Use HarukiBot",
-        "description": "To use your game account data with HarukiBot, go to HarukiBot Data Authorization to bind and verify your QQ account.",
-        "action": "Bind QQ account"
-      },
-      "title": "Game account bindings",
+      "title": "Game account management",
       "description": "Manage Project SEKAI accounts bound to your Haruki Toolbox account",
       "alert": {
         "title": "Notice",
         "line1": "A game account on a given server can be bound by only one toolbox user.",
-        "line2": "Bindings here are not synced to HarukiBot NEO; to query in the bot, bind separately in your group by following the bot's help."
+        "line2": "HarukiBot reads these bindings when it looks up your game data; for the bot to recognise you, bind and verify your QQ account under HarukiBot Data Authorization first.",
+        "action": "Go to HarukiBot Data Authorization"
       },
       "addButton": "Bind new account",
       "empty": "No data",
@@ -497,6 +505,7 @@ export default {
         "subtitle": "Bind your game account and configure data permissions.",
         "verifyHint": "How verification works: you put a short code into your in-game profile signature, and the toolbox reads your public profile to confirm the account is yours. You can change the signature back afterwards.",
         "uidHint": "The number under your ID in the in-game Profile screen.",
+        "identityLockedHint": "The server and game UID cannot be changed once bound; if they are wrong, delete this binding and bind the account again.",
         "basicInfoTitle": "Basic account info",
         "serverPlaceholder": "Select server",
         "verifyButton": "Verify",
@@ -528,7 +537,7 @@ export default {
         "codeLabel": "Verification code",
         "copyButton": "Copy code",
         "steps": {
-          "copy": "Click \"Copy code\" above.",
+          "copy": "Click “Copy code” above.",
           "paste": "Open the game → Profile → edit the signature, paste the whole code (including the slashes) and save.",
           "returnHome": "Go back to the game's home screen and make sure the signature was saved.",
           "save": "Return here, close this window and click Save to finish verification."
@@ -632,7 +641,7 @@ export default {
           "expiresAtHelp": "Must be a future time. Permanent grants are not available.",
           "profileHint": "Profile is a live lookup: every view by the grantee fetches from the game server through your account.",
           "permissions": "Permissions",
-          "writeHint": "\"Allow uploads\" lets the grantee upload and update this account's data. It does not include reading existing data, changing bindings or privacy settings, or re-granting.",
+          "writeHint": "“Allow uploads” lets the grantee upload and update this account's data. It does not include reading existing data, changing bindings or privacy settings, or re-granting.",
           "profileReadOnlyHint": "Profile grants are read-only.",
           "writeTargetNotice": "Uploads by the grantee will directly update {dataType} for {account}. Double-check the server and game account.",
           "writeOnlyNotice": "Read is unchecked: the grantee can upload but cannot view this account's existing data."
@@ -647,7 +656,7 @@ export default {
         },
         "revokeDialog": {
           "title": "Revoke data grant",
-          "description": "This revokes {grantee}'s \"{dataType}\" grant ({permissions}) for {account}. They lose access immediately; you can grant it again later.",
+          "description": "This revokes {grantee}'s “{dataType}” grant ({permissions}) for {account}. They lose access immediately; you can grant it again later.",
           "confirm": "Revoke grant"
         },
         "validation": {
@@ -655,7 +664,7 @@ export default {
           "granteeRequired": "Enter a grantee user ID",
           "selfGrant": "You cannot grant access to yourself",
           "dataType": "Only account data, MySekai data and profile are supported",
-          "permissionRequired": "Tick at least one permission; use \"Revoke grant\" in the list to remove a grant",
+          "permissionRequired": "Tick at least one permission; use “Revoke grant” in the list to remove a grant",
           "profileReadOnly": "Profile does not support upload permission",
           "expiryRequired": "Pick an expiry time",
           "futureExpiry": "Expiry must be a future time"
@@ -730,7 +739,7 @@ export default {
       "cancel": "Cancel",
       "rejectDescription": "The authorization request was cancelled before login.",
       "invalidTitle": "Invalid sign-in request",
-      "invalidDescription": "This authorization link has expired or is incomplete. Go back to the app that started it and click \"Sign in\" again.",
+      "invalidDescription": "This authorization link has expired or is incomplete. Go back to the app that started it and click “Sign in” again.",
       "backHome": "Back to home",
       "toast": {
         "failedTitle": "Unable to continue sign-in",
@@ -766,7 +775,7 @@ export default {
       "authorizing": "Authorizing...",
       "rejectDescription": "You declined this authorization.",
       "invalidTitle": "Invalid authorization request",
-      "invalidDescription": "This authorization link has expired or is incomplete. Go back to the app that started it and click \"Sign in\" again.",
+      "invalidDescription": "This authorization link has expired or is incomplete. Go back to the app that started it and click “Sign in” again.",
       "backHome": "Back to home",
       "toast": {
         "failedTitle": "Authorization failed",

@@ -9,7 +9,8 @@ import CatalogErrorState from "@/shared/components/catalog/CatalogErrorState.vue
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import { resolveSekaiDifficultyLabel } from "@/shared/sekai/labels"
-import { MUSIC_DIFFICULTIES, MUSIC_DIFFICULTY_COLORS, resolveMusicJacketUrl } from "@/modules/music-library"
+import { MUSIC_DIFFICULTIES, resolveMusicJacketUrl } from "@/modules/music-library"
+import { resolveMusicDifficultyChipClass } from "@/modules/music-library/lib/music-difficulties"
 import type { EventDetailMusic } from "@/modules/events/composables/useEventDetail"
 
 const props = withDefaults(defineProps<{
@@ -78,11 +79,11 @@ const rows = computed(() => props.musics.map(({ seq, entry }) => ({
         <div class="flex min-w-0 flex-1 flex-col gap-1">
           <p class="truncate text-sm font-medium group-hover:text-primary">{{ row.entry.title }}</p>
           <div class="flex flex-wrap items-center gap-1">
+            <!-- The shared tinted chip (readable text on the hue), as on the music list. -->
             <span
               v-for="item in row.difficulties"
               :key="item.difficulty"
-              class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white tabular-nums"
-              :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[item.difficulty] }"
+              :class="[resolveMusicDifficultyChipClass(item.difficulty), 'min-w-7 px-1.5 py-1']"
               :title="resolveSekaiDifficultyLabel({ t, te }, item.difficulty)"
             >
               {{ item.level }}

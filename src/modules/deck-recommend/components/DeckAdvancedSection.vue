@@ -118,7 +118,7 @@ function setAttrFilters(values: string[]) {
             <section class="grid min-w-0 grid-cols-1 gap-3 border-t pt-4">
               <button
                 type="button"
-                class="flex min-w-0 w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                class="flex min-w-0 w-full items-start justify-between gap-3 rounded-md text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-10"
                 :aria-label="t('deckRecommend.layers.advanced.title')"
                 :aria-expanded="open"
                 @click="open = !open"

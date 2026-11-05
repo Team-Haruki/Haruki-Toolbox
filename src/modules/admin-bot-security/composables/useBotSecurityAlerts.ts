@@ -9,7 +9,6 @@ import { formatLocalizedDateTime } from "@/lib/date-time"
 import { describeError, type ErrorDescription } from "@/lib/error-utils"
 import { focusInvalidField } from "@/lib/form-focus"
 import { writeQueryValue } from "@/lib/query-codec"
-import { toastErrorWithExtractedMessage } from "@/lib/toast-utils"
 import { ADMIN_DEFAULT_PAGE_SIZE, readAdminPage, readAdminPageSize } from "@/modules/admin/lib/pagination"
 import {
   getBotSecurityAlerts,
@@ -34,13 +33,6 @@ import {
 } from "@/modules/admin-bot-security/lib/alert-meta"
 import type { BotSecurityAlert, BotSecurityAlertListResponse, BotSecuritySummary } from "@/types/admin"
 
-const SHORT_DATE_TIME: Intl.DateTimeFormatOptions = {
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-}
 
 export const BOT_SECURITY_FILTER_IDS = {
   from: "bot-security-filter-from",
@@ -92,18 +84,17 @@ export function useBotSecurityAlerts() {
 
   const summary = ref<BotSecuritySummary | null>(null)
   const summaryLoading = ref(true)
+  // Shown inline in the summary strip (with a retry) instead of a toast.
+  const summaryError = ref<ErrorDescription | null>(null)
 
   async function loadSummary() {
     summaryLoading.value = true
+    summaryError.value = null
     try {
       summary.value = await getBotSecuritySummary()
     } catch (error: unknown) {
       summary.value = null
-      toastErrorWithExtractedMessage(
-        t("adminBotSecurity.toast.loadSummaryFailedTitle"),
-        error,
-        t("adminBotSecurity.toast.loadFailedFallback"),
-      )
+      summaryError.value = describeError(error, t("adminBotSecurity.toast.loadFailedFallback"))
     } finally {
       summaryLoading.value = false
     }
@@ -209,12 +200,12 @@ export function useBotSecurityAlerts() {
   }
 
   function formatTime(value?: string | null) {
-    return formatLocalizedDateTime(value, undefined, t("adminBotSecurity.common.fallback"))
+    return formatLocalizedDateTime(value, "dateTimeSeconds", t("adminBotSecurity.common.fallback"))
   }
 
   /** Table cells: minutes precision; the full time is in the cell title and the detail dialog. */
   function formatShortTime(value?: string | null) {
-    return formatLocalizedDateTime(value, SHORT_DATE_TIME, t("adminBotSecurity.common.fallback"))
+    return formatLocalizedDateTime(value, "dateTime", t("adminBotSecurity.common.fallback"))
   }
 
   watch(pageSize, () => {
@@ -256,6 +247,8 @@ export function useBotSecurityAlerts() {
     reload: () => void loadAlerts(),
     summary,
     summaryLoading,
+    summaryError,
+    loadSummary,
     detailOpen,
     detailAlert,
     openDetail,

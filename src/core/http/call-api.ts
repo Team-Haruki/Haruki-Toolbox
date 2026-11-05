@@ -271,9 +271,18 @@ async function sendWithTransientRetry<T>(
     }
 }
 
-export function unwrapUpdatedData<T>(response: APIResponse<T>, context = translate("common.apiResponse")): T {
+/**
+ * `response.updatedData`, or a translated "incomplete response" error naming
+ * `context`. Pass the context as a thunk when its string lives in a lazily
+ * loaded bundle: it is then only resolved on failure, so a background call
+ * made before that bundle loads neither warns nor renders a raw key.
+ */
+export function unwrapUpdatedData<T>(
+    response: APIResponse<T>,
+    context: string | (() => string) = () => translate("common.apiResponse")
+): T {
     if (response.updatedData == null) {
-        throw new Error(translate("common.missingUpdatedData", { context }))
+        throw new Error(translate("common.missingUpdatedData", { context: typeof context === "function" ? context() : context }))
     }
     return response.updatedData
 }

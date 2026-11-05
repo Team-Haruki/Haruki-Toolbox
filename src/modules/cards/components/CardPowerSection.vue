@@ -38,12 +38,8 @@ const props = defineProps<{
 const { t, te } = useI18n()
 const id = useId()
 
-/**
- * The switch keeps its 32×18 visual, but on touch devices an invisible
- * pseudo-element pads its hit area to ~56×42; the row's label is also a
- * full-width target (its `for` toggles the switch).
- */
-const SWITCH_TOUCH_CLASS = "relative [@media(pointer:coarse)]:after:absolute [@media(pointer:coarse)]:after:-inset-3 [@media(pointer:coarse)]:after:content-['']"
+// The shared Switch pads its own hit area on touch devices; the row's label
+// is also a full-width target (its `for` toggles the switch).
 const SWITCH_ROW_CLASS = "flex min-h-11 items-center justify-between gap-3 sm:min-h-9"
 const SWITCH_LABEL_CLASS = "min-h-11 flex-1 cursor-pointer items-center py-2 text-sm sm:min-h-0 sm:py-0"
 
@@ -188,7 +184,6 @@ function episodeLabel(episode: CardEpisodeRow): string {
             :id="`${id}-trained`"
             :model-value="effectiveTrained"
             :disabled="trainedByDefault"
-            :class="SWITCH_TOUCH_CLASS"
             @update:model-value="trained = $event"
           />
         </div>
@@ -204,14 +199,13 @@ function episodeLabel(episode: CardEpisodeRow): string {
           <Switch
             :id="`${id}-episode-${index}`"
             :model-value="episodeFlags[index] ?? false"
-            :class="SWITCH_TOUCH_CLASS"
             @update:model-value="toggleEpisode(index, $event)"
           />
         </div>
 
         <div v-if="canvasBonus" :class="SWITCH_ROW_CLASS">
           <Label :for="`${id}-canvas`" :class="SWITCH_LABEL_CLASS">{{ t("cardCatalog.detail.power.canvas") }}</Label>
-          <Switch :id="`${id}-canvas`" :model-value="canvas" :class="SWITCH_TOUCH_CLASS" @update:model-value="canvas = $event" />
+          <Switch :id="`${id}-canvas`" :model-value="canvas" @update:model-value="canvas = $event" />
         </div>
 
         <div v-if="maxMasterRank > 0" class="flex min-h-9 items-center justify-between gap-3">

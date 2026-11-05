@@ -53,6 +53,13 @@ function attrLabel(attr: string): string {
 function rarityLabel(rarity: string): string {
   return resolveSekaiRarityLabel({ t, te }, rarity)
 }
+
+/** What a character row applies to: the attribute's cards of these characters, or all of their cards. */
+function groupLabel(group: EventBonusGroup): string {
+  return group.cardAttr
+    ? t("eventCatalog.bonus.attrAndCharacters", { attr: attrLabel(group.cardAttr) })
+    : t("eventCatalog.bonus.charactersOnly")
+}
 </script>
 
 <template>
@@ -64,16 +71,23 @@ function rarityLabel(rarity: string): string {
     content-class="flex flex-col gap-4"
   >
     <div v-if="groups.length > 0" class="flex flex-col gap-2">
+      <!-- Every row says in words what it applies to: the avatars alone did
+           not tell "unit + attribute" from "unit only". -->
       <div
         v-for="(group, index) in groups"
         :key="index"
-        class="flex flex-wrap items-center gap-2 rounded-md border border-border/60 px-3 py-2"
+        class="flex flex-col gap-1.5 rounded-md border border-border/60 px-3 py-2"
       >
-        <SekaiAttrIcon v-if="group.cardAttr" :attr="group.cardAttr" size="md" />
-        <span v-if="group.characters.length === 0" class="text-sm text-muted-foreground">
-          {{ t("events.detail.bonusAttrOnly", { attr: group.cardAttr ? attrLabel(group.cardAttr) : "" }) }}
-        </span>
-        <div v-else class="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+        <div class="flex items-center gap-2">
+          <SekaiAttrIcon v-if="group.cardAttr" :attr="group.cardAttr" size="sm" />
+          <span class="min-w-0 flex-1 text-xs text-muted-foreground">
+            {{ group.characters.length === 0
+              ? t("events.detail.bonusAttrOnly", { attr: group.cardAttr ? attrLabel(group.cardAttr) : "" })
+              : groupLabel(group) }}
+          </span>
+          <Badge variant="emerald" class="ml-auto shrink-0 text-sm tabular-nums">{{ formatBonusRate(group.bonusRate) }}</Badge>
+        </div>
+        <div v-if="group.characters.length > 0" class="flex min-w-0 flex-wrap items-center gap-1">
           <SekaiCharacterAvatar
             v-for="character in group.characters"
             :key="character.gameCharacterId"
@@ -82,7 +96,6 @@ function rarityLabel(rarity: string): string {
             size="md"
           />
         </div>
-        <Badge variant="emerald" class="ml-auto text-sm tabular-nums">{{ formatBonusRate(group.bonusRate) }}</Badge>
       </div>
     </div>
 

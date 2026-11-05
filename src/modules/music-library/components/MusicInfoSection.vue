@@ -7,9 +7,9 @@ import {
   Clock3,
   Disc3,
   LucideInfo,
-  Package,
 } from "lucide-vue-next"
 import { Badge } from "@/components/ui/badge"
+import CatalogAssetName from "@/shared/components/catalog/CatalogAssetName.vue"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import CatalogInfoList from "@/shared/components/catalog/CatalogInfoList.vue"
 import CatalogInfoRow from "@/shared/components/catalog/CatalogInfoRow.vue"
@@ -65,10 +65,8 @@ const hiddenAliasCount = computed(() => Math.max(props.aliases.length - visibleA
       <CatalogInfoRow :label="t('musicLibrary.detail.info.id')" :icon="Disc3">
         <span class="font-mono">#{{ entry.id }}</span>
       </CatalogInfoRow>
-      <!-- Internal name: stays last and dimmed, it is for the curious only. -->
-      <CatalogInfoRow :label="t('catalog.detail.assetName')" :icon="Package" muted>
-        <span v-if="entry.assetbundleName" class="font-mono break-all">{{ entry.assetbundleName }}</span>
-      </CatalogInfoRow>
+      <!-- Internal name: last, dimmed, behind a copy affordance. -->
+      <CatalogAssetName :name="entry.assetbundleName" />
     </CatalogInfoList>
 
     <div v-if="aliases.length > 0" class="space-y-1.5">

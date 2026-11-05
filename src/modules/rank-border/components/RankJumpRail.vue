@@ -296,6 +296,8 @@ function handleQuickJumpPointerLeave() {
     class="rank-border-jump-rail"
   >
     <span class="shrink-0 text-xs font-medium text-muted-foreground">{{ t("rankBorder.sections.quickJump") }}</span>
+    <!-- The rank the rail currently points at, so the track reads as a position even where the hover label cannot show (touch). -->
+    <span class="rank-border-jump-rail__value">{{ activeQuickJumpTarget?.label ?? quickJumpTargets[activeQuickJumpIndex]?.label }}</span>
     <div
       class="rank-border-jump-rail__bars"
       role="slider"
@@ -344,16 +346,25 @@ function handleQuickJumpPointerLeave() {
   z-index: 24;
   display: grid;
   min-width: 0;
-  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-columns: max-content max-content minmax(0, 1fr);
   align-items: center;
   gap: 0.875rem;
   overflow: visible;
   border: 1px solid color-mix(in oklab, var(--border) 78%, transparent);
-  border-radius: 0.5rem;
+  border-radius: var(--radius);
   background: color-mix(in oklab, var(--background) 88%, transparent);
   padding: 0.875rem 0.875rem;
   box-shadow: 0 12px 30px rgb(15 23 42 / 0.1);
   backdrop-filter: blur(14px);
+}
+
+.rank-border-jump-rail__value {
+  min-width: 3rem;
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
 }
 
 .rank-border-jump-rail__bars {
@@ -466,15 +477,17 @@ function handleQuickJumpPointerLeave() {
 }
 
 @media (max-width: 767px) {
+  /* Phones: title and current rank share the first row, the bar takes the second. */
   .rank-border-jump-rail {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    align-items: center;
     gap: 0.5rem;
     overflow: hidden;
     padding: 0.5rem 0.625rem;
   }
 
   .rank-border-jump-rail__bars {
+    grid-column: 1 / -1;
     height: 2.25rem;
     touch-action: none;
     cursor: ew-resize;

@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatLocalizedDate } from "@/lib/date-time"
 import { formatNumberCN } from "@/lib/number-format"
+import { selectTrendMonthTicks } from "../lib/trend-ticks"
 import {
   clampTrendWindow,
   defaultTrendWindow,
@@ -67,10 +68,13 @@ const isNarrow = computed(() => containerWidth.value > 0 && containerWidth.value
 const COLLAPSED_SIDE_MARGIN = 12
 
 const chartMargin = computed(() => {
-  const side = isNarrow.value ? 40 : 56
-  // Rank labels ("3,000") sit outside the plot on the right; the narrow-width
-  // margin needs a few extra px or they clip at the container edge.
-  const rightSide = isNarrow.value ? 48 : 56
+  // Point labels ("10.0M") sit outside the plot on the left: five characters
+  // plus the tick padding need ~52 px, or the leading digit is cut off at the
+  // card edge on a phone (seen as "0.0M" at 390 px).
+  const side = isNarrow.value ? 52 : 56
+  // Rank labels ("20,000") sit outside the plot on the right: six digits plus
+  // the tick padding need ~56 px or the last digits clip at the card edge.
+  const rightSide = isNarrow.value ? 56 : 64
   return {
     left: showPointSeries.value ? side : COLLAPSED_SIDE_MARGIN,
     right: showRankOverlay.value ? rightSide : COLLAPSED_SIDE_MARGIN,
@@ -155,14 +159,21 @@ const trendRankY = (point: EventPointTrendPoint) => {
   return rank == null ? undefined : -rank
 }
 
-/** X ticks index into the SLICED series rendered by the main chart. */
+/**
+ * X ticks index into the SLICED series rendered by the main chart. They sit
+ * on the first event of each month (thinned to the width budget), labelled
+ * with the full year and month: "26/10 · 26/10" read as day/month and
+ * repeated for same-month events.
+ */
+const xTickValues = computed(() => selectTrendMonthTicks(visibleTrend.value.map((point) => point.startAt), xNumTicks.value))
+
 function xTickFormat(index: number) {
   if (!Number.isInteger(index)) {
     return ""
   }
 
   const point = visibleTrend.value[index]
-  return point ? formatLocalizedDate(point.startAt, { year: "2-digit", month: "numeric" }, "") : ""
+  return point ? formatLocalizedDate(point.startAt, { year: "numeric", month: "2-digit" }, "") : ""
 }
 
 function yTickFormat(value: number) {
@@ -190,11 +201,7 @@ function escapeHtml(value: string) {
 }
 
 function formatPointDate(value: number) {
-  return formatLocalizedDate(
-    value,
-    { year: "numeric", month: "2-digit", day: "2-digit" },
-    t("events.common.dateFallback"),
-  )
+  return formatLocalizedDate(value, "date", t("events.common.dateFallback"))
 }
 
 function crosshairTemplate(point: EventPointTrendPoint) {
@@ -270,7 +277,7 @@ function crosshairTemplate(point: EventPointTrendPoint) {
               <!-- Unovis derives the crosshair's snapping from its own y accessors, not from the sibling line/scatter. -->
               <VisCrosshair :x="trendX" :y="trendY" :color="TREND_POINT_COLOR" :template="crosshairTemplate" />
               <VisTooltip />
-              <VisAxis type="x" :tick-format="xTickFormat" :num-ticks="xNumTicks" />
+              <VisAxis type="x" :tick-format="xTickFormat" :tick-values="xTickValues" />
               <VisAxis v-if="showPointSeries" type="y" :tick-format="yTickFormat" :tick-text-color="TREND_POINT_COLOR" />
             </VisXYContainer>
             <div v-if="showRankOverlay" class="pointer-events-none absolute inset-0">

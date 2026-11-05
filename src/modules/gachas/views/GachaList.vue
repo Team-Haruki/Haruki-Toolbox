@@ -22,6 +22,7 @@ import {
   type CatalogSortOption,
   type CatalogViewOption,
 } from "@/shared/components/catalog/types"
+import { applyCatalogRegionQuery } from "@/shared/sekai/catalog-region"
 import { useSettingsStore } from "@/shared/stores/settings"
 import GachaListFilters from "@/modules/gachas/components/GachaListFilters.vue"
 import GachaListRow from "@/modules/gachas/components/GachaListRow.vue"
@@ -41,6 +42,8 @@ type GachaListView = "grid" | "list"
 const { t, te } = useI18n()
 const ctx = { t, te }
 const settingsStore = useSettingsStore()
+// A shared link names its server (`?region=`): apply it before the list reads the region.
+applyCatalogRegionQuery()
 
 const { state, patch, reset, activeFilterCount } = useRouteQueryState(gachasQueryCodec, {
   debounceKeys: ["q"],
@@ -107,7 +110,7 @@ const activeChips = computed(() => buildGachaActiveChips(state, {
 
 // Null until the index resolves so the panel header and the live-region
 // results bar never announce "0 results" next to a skeleton grid.
-const countLabel = computed(() => (ready.value ? t("catalog.results.count", { count: total.value }) : null))
+const countLabel = computed(() => (ready.value ? t("gachas.list.total", { total: total.value }) : null))
 
 function updateSort(value: string) {
   if ((GACHA_LIST_SORT_KEYS as readonly string[]).includes(value)) {

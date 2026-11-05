@@ -28,6 +28,7 @@ import {
   type SekaiDataUpdatePhase,
 } from "@/shared/sekai/worker-protocol"
 import { useSekaiDataStore, type SekaiDataQueueItem } from "@/shared/stores/sekai-data"
+import { describeSekaiDataError } from "@/modules/home/lib/sekai-data-error"
 import type { SekaiRegion } from "@/types"
 
 const { t, locale } = useI18n()
@@ -70,7 +71,7 @@ function queueStatusLabel(item: Pick<SekaiDataQueueItem, "status">) {
 
 function queueItemDetail(item: SekaiDataQueueItem) {
   if (item.status === "error") {
-    return item.error ?? t("userSettings.sekaiData.queueDetails.failed")
+    return describeSekaiDataError(item.error) ?? t("userSettings.sekaiData.queueDetails.failed")
   }
   if (item.status === "done") {
     if (item.cacheHit === true) {
@@ -236,8 +237,8 @@ function formatTime(value: number | null) {
             </div>
             <Progress :model-value="row.progress" />
           </div>
-          <p v-if="row.error" class="text-xs text-destructive">
-            {{ row.error }}
+          <p v-if="row.error" class="text-xs text-destructive" role="alert">
+            {{ describeSekaiDataError(row.error) }}
           </p>
         </div>
       </div>

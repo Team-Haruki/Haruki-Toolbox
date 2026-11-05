@@ -11,7 +11,7 @@ import {
   type GameAccountCapabilityName,
 } from "./accessible-accounts"
 import { buildSelectableGameAccounts, type SelectableGameAccount } from "./selectable-accounts"
-import { fetchUserSuiteWithCache, type UserSuiteFetchStrategy } from "./fetch"
+import { fetchUserSuiteWithCache, resolveSuiteReloadChanged, type UserSuiteFetchStrategy } from "./fetch"
 
 export { buildSelectableGameAccounts, makeGameAccountKey, makeGrantedGameAccountKey, type SelectableGameAccount } from "./selectable-accounts"
 
@@ -208,10 +208,7 @@ export function useUserSuite(
       cacheHit.value = result.cacheHit
       status.value = "ready"
       error.value = null
-      // Newer data than what was on screen: a fresh download, a cache
-      // revalidation that moved the upload time, or a recovery from an error.
-      const changed = !result.cacheHit || result.remoteUploadTime !== previousUploadTime
-      return snapshot(changed)
+      return snapshot(resolveSuiteReloadChanged(previousUploadTime, result.remoteUploadTime, result.cacheHit))
     } catch (loadError) {
       if (currentGeneration !== generation || silent) {
         return snapshot()

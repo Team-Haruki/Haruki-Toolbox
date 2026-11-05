@@ -34,12 +34,16 @@ import {
   LucideWebhook,
 } from "lucide-vue-next"
 import { useI18n } from "vue-i18n"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import AdminWebhookStatusBadge from "./AdminWebhookStatusBadge.vue"
+import type { ErrorDescription } from "@/lib/error-utils"
 import type { AdminWebhookEndpoint } from "@/types/admin"
 
 const props = defineProps<{
   canMutate: boolean
   endpointsLoading: boolean
+  /** A failed list load; shown in place of the (empty) list with a retry. */
+  error?: ErrorDescription | null
   endpoints: AdminWebhookEndpoint[]
   endpointsGeneratedAt: string
   endpointsTotal: number
@@ -48,6 +52,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "create"): void
+  (event: "retry"): void
   (event: "open-subscribers", webhook: AdminWebhookEndpoint): void
   (event: "open-edit", webhook: AdminWebhookEndpoint): void
   (event: "confirm-delete", webhook: AdminWebhookEndpoint): void
@@ -69,7 +74,17 @@ const { t } = useI18n()
       </Button>
     </CardHeader>
     <CardContent class="p-0">
-      <template v-if="props.endpointsLoading || props.endpoints.length > 0">
+      <!-- A failed load is not an empty list: inline error with a retry. -->
+      <div v-if="props.error && !props.endpointsLoading" class="px-6">
+        <LoadErrorState
+          :title="t('adminWebhooks.toast.loadEndpointsFailedTitle')"
+          :description="props.error.message"
+          :detail="props.error.detail"
+          :retrying="props.endpointsLoading"
+          @retry="emit('retry')"
+        />
+      </div>
+      <template v-else-if="props.endpointsLoading || props.endpoints.length > 0">
         <Table>
           <TableHeader>
             <TableRow>

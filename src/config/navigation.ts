@@ -54,20 +54,9 @@ export interface NavSection {
   items: NavItem[]
 }
 
+// The player tools lead; community links (groups, friend sites, sponsors)
+// sit in a labelled section at the bottom.
 export const WEB_NAV_SECTIONS: NavSection[] = [
-  {
-    items: [
-      {
-        titleKey: "navigation.groups.friendshipRecommendation",
-        icon: LucideNavigation,
-        items: [
-          { titleKey: "navigation.items.friendGroups", icon: LucideUsers, url: "/friend-groups" },
-          { titleKey: "navigation.items.friendLinks", icon: LucideUsers, url: "/friend-links" },
-          { titleKey: "navigation.items.sponsors", icon: LucideHeartHandshake, url: "/sponsors" },
-        ],
-      },
-    ],
-  },
   {
     titleKey: "navigation.groups.projectSekai",
     items: [
@@ -106,6 +95,14 @@ export const WEB_NAV_SECTIONS: NavSection[] = [
       },
       { titleKey: "navigation.items.uploadData", icon: LucideCloudUpload, url: "/upload-data" },
       { titleKey: "navigation.items.sekaiStation", icon: LucideSend, url: "/sekai-station" },
+    ],
+  },
+  {
+    titleKey: "navigation.groups.friendshipRecommendation",
+    items: [
+      { titleKey: "navigation.items.friendGroups", icon: LucideUsers, url: "/friend-groups" },
+      { titleKey: "navigation.items.friendLinks", icon: LucideNavigation, url: "/friend-links" },
+      { titleKey: "navigation.items.sponsors", icon: LucideHeartHandshake, url: "/sponsors" },
     ],
   },
 ]

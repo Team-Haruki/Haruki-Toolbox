@@ -147,8 +147,8 @@ function languageDotClass(project: Project): string {
         </Button>
         <Button
           as-child
-          variant="outline"
-          class="h-10 px-5 font-semibold border-pink-500/30 text-pink-600 hover:bg-pink-500/10 hover:text-pink-600 dark:text-pink-300 dark:hover:text-pink-300"
+          variant="brand"
+          class="h-10 px-5 font-semibold"
         >
           <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
             <Heart class="h-4 w-4 fill-current" />
@@ -299,7 +299,8 @@ function languageDotClass(project: Project): string {
         <div class="flex shrink-0 flex-col gap-3 sm:flex-row">
           <Button
             as-child
-            class="h-10 bg-pink-600 px-5 font-semibold text-white transition-colors hover:bg-pink-700"
+            variant="brand"
+            class="h-10 px-5 font-semibold"
           >
             <a :href="AFDIAN_URL" target="_blank" rel="noopener noreferrer">
               <Heart class="h-4 w-4 fill-current" />

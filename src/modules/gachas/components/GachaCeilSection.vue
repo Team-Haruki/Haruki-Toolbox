@@ -5,7 +5,7 @@ import { LucideSticker } from "lucide-vue-next"
 import type { SekaiRegion } from "@/types"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatLocalizedDate, formatLocalizedDateTime } from "@/lib/date-time"
+import { formatLocalizedDateRange, formatLocalizedDateTime } from "@/lib/date-time"
 import type { CatalogMasterCard } from "@/shared/sekai/catalog"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
@@ -77,8 +77,7 @@ function formatPeriod(startAt: number | null, endAt: number | null): string | nu
   if (startAt == null && endAt == null) {
     return null
   }
-  const options: Intl.DateTimeFormatOptions = { year: "numeric", month: "2-digit", day: "2-digit" }
-  return `${formatLocalizedDate(startAt, options, t("gachas.common.dateFallback"))} – ${formatLocalizedDate(endAt, options, t("gachas.common.dateFallback"))}`
+  return formatLocalizedDateRange(startAt, endAt, "date", t("gachas.common.dateFallback"))
 }
 </script>
 
@@ -107,7 +106,7 @@ function formatPeriod(startAt: number | null, endAt: number | null): string | nu
         <p class="text-xs text-muted-foreground">
           <span class="font-mono">#{{ ceilItem.id }}</span>
           <span v-if="ceilItem.convertStartAt != null">
-            · {{ t("gachaCatalog.ceil.convertAt", { time: formatLocalizedDateTime(ceilItem.convertStartAt, undefined, t("gachas.common.dateFallback")) }) }}
+            · {{ t("gachaCatalog.ceil.convertAt", { time: formatLocalizedDateTime(ceilItem.convertStartAt, "dateTime", t("gachas.common.dateFallback")) }) }}
           </span>
         </p>
       </div>

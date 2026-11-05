@@ -7,6 +7,7 @@ import {
   REGION_OPTIONS,
   SOFTWARE_OPTIONS,
   UPLOAD_MODE_OPTIONS,
+  isApplePlatform,
   isIOSUploadDataType,
   isMySekaiUploadType,
 } from "./ios-module-meta"
@@ -41,5 +42,18 @@ describe("Stash install link", () => {
     expect(parsed.protocol).toBe("stash:")
     expect(parsed.searchParams.get("url")).toBe(moduleUrl)
     expect(Array.from(parsed.searchParams.keys())).toEqual(["url"])
+  })
+})
+
+describe("isApplePlatform", () => {
+  it("recognises iPhone, iPad and Mac user agents", () => {
+    expect(isApplePlatform("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15")).toBe(true)
+    expect(isApplePlatform("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15")).toBe(true)
+  })
+
+  it("rejects Windows, Android and Linux browsers", () => {
+    expect(isApplePlatform("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0")).toBe(false)
+    expect(isApplePlatform("Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/130.0 Mobile")).toBe(false)
+    expect(isApplePlatform("")).toBe(false)
   })
 })

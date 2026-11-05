@@ -1,7 +1,51 @@
+/**
+ * Date and time formatting in the active UI locale.
+ *
+ * Pass a named preset instead of an `Intl.DateTimeFormatOptions` object so
+ * every page prints dates the same way (zh-CN / en-US samples):
+ *
+ * - `date`            2026/10/01 · 10/01/2026 — day precision: releases, bindings, "since".
+ * - `dateTime`        2026/10/01 16:00 · 10/01/2026, 16:00 — minute precision, 24 h clock:
+ *                     event and gacha periods, upload times, last seen.
+ * - `dateTimeSeconds` 2026/10/01 16:00:05 — only where the second matters (audit
+ *                     and job logs, tracker samples); never for periods.
+ * - `monthDay`        10/01 · 10/01 — compact labels where the year is known (charts,
+ *                     chapter rows, countdown captions).
+ * - range             `formatLocalizedDateRange(start, end, "date")` → "2026/10/31 – 2026/11/08"
+ *                     (same preset on both ends, " – " between them).
+ *
+ * `formatLocalizedDate(value, "date")`, `formatLocalizedDateTime(value, "dateTime")`
+ * and `formatWithZone(value, region, "dateTime")` all accept the presets; the
+ * raw options object still works for one-off shapes (`{ dateStyle: "medium" }`).
+ */
 import type { SekaiRegion } from "@/types"
 import { getI18nLocale } from "@/shared/i18n"
 
 export type DateInput = string | number | Date | null | undefined
+
+export const DATE_FORMAT_PRESETS = {
+    date: { year: "numeric", month: "2-digit", day: "2-digit" },
+    dateTime: { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" },
+    dateTimeSeconds: {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+    },
+    monthDay: { month: "2-digit", day: "2-digit" },
+} as const satisfies Record<string, Intl.DateTimeFormatOptions>
+
+export type DateFormatPreset = keyof typeof DATE_FORMAT_PRESETS
+
+/** A preset name or a raw `Intl.DateTimeFormatOptions` object. */
+export type DateFormatOptions = Intl.DateTimeFormatOptions | DateFormatPreset
+
+export function resolveDateFormatOptions(options: DateFormatOptions | undefined): Intl.DateTimeFormatOptions | undefined {
+    return typeof options === "string" ? DATE_FORMAT_PRESETS[options] : options
+}
 
 export function toValidDate(value: DateInput): Date | null {
     if (value == null) {
@@ -14,7 +58,7 @@ export function toValidDate(value: DateInput): Date | null {
 
 export function formatLocalizedDateTime(
     value: DateInput,
-    options?: Intl.DateTimeFormatOptions,
+    options?: DateFormatOptions,
     fallback = "—"
 ): string {
     const date = toValidDate(value)
@@ -22,12 +66,12 @@ export function formatLocalizedDateTime(
         return fallback
     }
 
-    return date.toLocaleString(getI18nLocale(), options)
+    return date.toLocaleString(getI18nLocale(), resolveDateFormatOptions(options))
 }
 
 export function formatLocalizedDate(
     value: DateInput,
-    options?: Intl.DateTimeFormatOptions,
+    options?: DateFormatOptions,
     fallback = "—"
 ): string {
     const date = toValidDate(value)
@@ -35,7 +79,25 @@ export function formatLocalizedDate(
         return fallback
     }
 
-    return date.toLocaleDateString(getI18nLocale(), options)
+    return date.toLocaleDateString(getI18nLocale(), resolveDateFormatOptions(options))
+}
+
+/** Separator between the two ends of a period. */
+export const DATE_RANGE_SEPARATOR = " – "
+
+/**
+ * "start – end" with both ends in the same preset (default `date`); an
+ * unknown end shows the fallback in its place, so "2026/10/31 – —" reads as
+ * an open period rather than an error.
+ */
+export function formatLocalizedDateRange(
+    start: DateInput,
+    end: DateInput,
+    options: DateFormatOptions = "date",
+    fallback = "—"
+): string {
+    // With explicit fields, toLocaleString and toLocaleDateString agree, so one call serves every preset.
+    return `${formatLocalizedDateTime(start, options, fallback)}${DATE_RANGE_SEPARATOR}${formatLocalizedDateTime(end, options, fallback)}`
 }
 
 export function formatDateTimeCN(value: DateInput, fallback = "—"): string {
@@ -119,7 +181,7 @@ function formatInZone(date: Date, locale: string, options: Intl.DateTimeFormatOp
 export function formatWithZone(
     value: DateInput,
     region: SekaiRegion,
-    options?: Intl.DateTimeFormatOptions,
+    options?: DateFormatOptions,
     zoneOptions: FormatWithZoneOptions = {},
 ): ZonedDateTimeLabel {
     const localZone = zoneOptions.localZone ?? resolveBrowserTimeZone()
@@ -130,10 +192,11 @@ export function formatWithZone(
     }
 
     const locale = zoneOptions.locale ?? getI18nLocale()
-    const local = formatInZone(date, locale, options, localZone)
+    const resolved = resolveDateFormatOptions(options)
+    const local = formatInZone(date, locale, resolved, localZone)
     if (localZone === serverZone) {
         return { local, server: null, localZone, serverZone }
     }
-    const server = formatInZone(date, locale, options, serverZone)
+    const server = formatInZone(date, locale, resolved, serverZone)
     return { local, server: server === local ? null : server, localZone, serverZone }
 }

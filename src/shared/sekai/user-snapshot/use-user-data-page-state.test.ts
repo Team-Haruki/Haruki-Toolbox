@@ -76,5 +76,6 @@ test("a 403 on a granted account is reported as a lapsed grant", () => {
   expect(state.errorMessage.value).toBe(zhCNCore.uploadedGameData.grantLapsed)
   account.value = { ownership: "own" }
   expect(state.grantLapsed.value).toBe(false)
-  expect(state.errorMessage.value).toBe("加载失败")
+  // Not a grant issue, so the shared 403 wording applies instead of the raw fallback.
+  expect(state.errorMessage.value).toBe(zhCNCore.backendMessages.forbidden)
 })

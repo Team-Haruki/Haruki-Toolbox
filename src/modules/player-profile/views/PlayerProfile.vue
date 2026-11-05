@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import MissingGameDataNotice from "@/shared/components/MissingGameDataNotice.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
 import { useUserDataPageState } from "@/shared/sekai/user-snapshot/use-user-data-page-state"
 import { useSuiteRefresh } from "@/shared/sekai/user-snapshot/use-suite-refresh"
 import { formatUploadTime, useUploadTimeText } from "@/shared/sekai/user-snapshot/upload-time"
@@ -10,7 +11,7 @@ import { readQueryEnum, writeQueryValue } from "@/lib/query-codec"
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
-import { LucideArrowUpRight, LucideCopy, LucideRefreshCw, LucideTrophy } from "lucide-vue-next"
+import { LucideArrowUpRight, LucideCloudUpload, LucideCopy, LucideRefreshCw, LucideTrophy } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -64,7 +65,7 @@ import {
   summarizeCollection,
 } from "@/modules/cards/lib/card-box"
 import { CARD_RARITY_TYPES, type CardRarityType } from "@/modules/cards/lib/card-filter"
-import { MUSIC_DIFFICULTIES, MUSIC_DIFFICULTY_COLORS } from "@/modules/music-library/lib/music-difficulties"
+import { MUSIC_DIFFICULTIES, resolveMusicDifficultyChipClass } from "@/modules/music-library/lib/music-difficulties"
 import { MUSIC_PROGRESS_STATUS_COLORS, buildMusicProgress } from "@/modules/music-library/lib/music-progress"
 import { useMusicProgressMasterData } from "@/modules/music-library/composables/useMusicProgressMasterData"
 
@@ -481,13 +482,9 @@ function retry() {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-4">
-    <!-- Header -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">{{ t("playerProfile.title") }}</h1>
-        <p class="text-sm text-muted-foreground">{{ t("playerProfile.description") }}</p>
-      </div>
+  <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
+    <PageHeader :title="t('playerProfile.title')" :description="t('playerProfile.description')">
+      <template #actions>
       <div class="flex flex-col items-start gap-1.5 sm:items-end">
         <div class="flex flex-wrap items-center gap-2">
           <Tabs :model-value="dataSource" @update:model-value="handleSourceChange">
@@ -512,7 +509,8 @@ function retry() {
           </Button>
         </div>
       </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- No account selected -->
     <Card v-if="sourceStatus === 'idle'">
@@ -553,11 +551,6 @@ function retry() {
     </template>
 
     <template v-else-if="isReady">
-      <Card v-if="ancillaryDataMissing">
-        <CardContent class="py-6">
-          <MissingGameDataNotice :granted="selectedAccount?.ownership === 'granted'" />
-        </CardContent>
-      </Card>
       <!-- Identity: the in-game profile card (name, honors, bio, id) next to the shown deck -->
       <Card>
         <CardContent class="flex flex-col gap-5 py-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
@@ -594,7 +587,7 @@ function retry() {
                 <span class="font-mono tabular-nums">{{ gamedata.userId }}</span>
                 <button
                   type="button"
-                  class="inline-flex items-center rounded p-1 transition-colors hover:bg-muted hover:text-foreground"
+                  class="inline-flex items-center justify-center rounded p-1 transition-colors hover:bg-muted hover:text-foreground pointer-coarse:min-h-10 pointer-coarse:min-w-10"
                   :aria-label="t('playerProfile.header.copy')"
                   @click="copyGameId"
                 >
@@ -653,10 +646,7 @@ function retry() {
               :key="row.difficulty"
               class="flex flex-wrap items-center gap-x-2 gap-y-1"
             >
-              <span
-                class="inline-flex w-16 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
-                :style="{ backgroundColor: MUSIC_DIFFICULTY_COLORS[row.difficulty] }"
-              >
+              <span :class="[resolveMusicDifficultyChipClass(row.difficulty), 'w-16 px-1 py-1']">
                 {{ t(`musicLibrary.difficulty.${row.difficulty}`) }}
               </span>
               <span class="flex h-2.5 min-w-24 flex-1 gap-px overflow-hidden rounded-full bg-muted">
@@ -676,6 +666,29 @@ function retry() {
         </CardContent>
       </Card>
 
+      <!-- The sections from here down read the uploaded Suite; with a live profile
+           but no upload they are empty, so the notice sits right above them and
+           names them instead of calling the whole page "no data". -->
+      <Card v-if="ancillaryDataMissing" size="compact">
+        <CardContent class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex min-w-0 items-start gap-3">
+            <LucideCloudUpload class="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            <div class="min-w-0 space-y-0.5">
+              <p class="text-sm font-medium">{{ t("playerProfile.partialUpload.title") }}</p>
+              <p class="text-sm text-muted-foreground">
+                {{ t(selectedAccount?.ownership === 'granted' ? "uploadedGameData.missingGranted" : "playerProfile.partialUpload.description") }}
+              </p>
+            </div>
+          </div>
+          <Button as-child size="sm" variant="outline" class="shrink-0">
+            <RouterLink to="/upload-data">
+              <LucideCloudUpload class="size-4" aria-hidden="true" />
+              {{ t("uploadedGameData.uploadAction") }}
+            </RouterLink>
+          </Button>
+        </CardContent>
+      </Card>
+
       <!-- Card collection by character -->
       <Card>
         <CardHeader class="pb-2">
@@ -690,7 +703,7 @@ function retry() {
                 :key="rarity"
                 type="button"
                 :class="[
-                  'rounded-full border px-2 py-0.5 text-xs font-normal transition-colors',
+                  'rounded-full border px-2 py-0.5 text-xs font-normal transition-colors pointer-coarse:min-h-10 pointer-coarse:px-3',
                   collectionRarities.includes(rarity)
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border text-muted-foreground hover:bg-muted',

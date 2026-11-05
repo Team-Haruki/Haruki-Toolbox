@@ -807,7 +807,10 @@ export function useKratosBrowserFlow(
 
     const invoked = invokeWindowTrigger(field.onClickTrigger)
     if (!invoked) {
+      // webauthn.js never loaded (blocked, offline): the click would
+      // otherwise do nothing at all.
       logger.warn(`Kratos trigger ${field.onClickTrigger} is not ready`)
+      toast.error(translate("auth.common.triggerUnavailable"))
     }
   }
 

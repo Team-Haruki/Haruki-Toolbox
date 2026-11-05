@@ -24,7 +24,7 @@ import {
   type CatalogViewOption,
 } from "@/shared/components/catalog/types"
 import { SEKAI_CARD_ATTRS, type CatalogCharacter } from "@/shared/sekai/catalog"
-import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { applyCatalogRegionQuery, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { resolveSekaiAttrLabel, resolveSekaiEventTypeLabel, resolveSekaiUnitLabel } from "@/shared/sekai/labels"
 import { useSettingsStore } from "@/shared/stores/settings"
 import EventCatalogTile from "@/modules/events/components/EventCatalogTile.vue"
@@ -37,6 +37,8 @@ const NO_CHARACTERS: readonly CatalogCharacter[] = []
 
 const { t, te } = useI18n()
 const settingsStore = useSettingsStore()
+// A shared link names its server (`?region=`): apply it before the region is read.
+applyCatalogRegionQuery()
 const { region } = useEffectiveCatalogRegion()
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 

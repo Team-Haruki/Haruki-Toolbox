@@ -353,7 +353,9 @@ function updateScope(value: AcceptableValue | AcceptableValue[] | undefined) {
           </ToggleGroupItem>
         </ToggleGroup>
       </template>
-      <p v-else class="ml-3 text-xs text-muted-foreground">{{ t("musicCatalog.filters.scopeHint") }}</p>
+      <!-- A sentence, so it takes its own line under the avatars instead of
+           wrapping into the row. -->
+      <p v-else class="basis-full text-xs text-muted-foreground">{{ t("musicCatalog.filters.scopeHint") }}</p>
     </CatalogCharacterPicker>
   </div>
 </template>

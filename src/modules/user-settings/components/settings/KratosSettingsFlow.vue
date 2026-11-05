@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed, watch } from "vue"
+import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { RouterLink, useRoute } from "vue-router"
-import { toast } from "vue-sonner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, ExternalLink, Loader2, Lock, Mail, Save, UserRound, KeyRound, ShieldCheck } from "lucide-vue-next"
+import { ArrowLeft, Check, ExternalLink, Link2, Loader2, Lock, Mail, Plus, Save, UserRound, KeyRound, ShieldCheck, X, type LucideIcon } from "lucide-vue-next"
 import {
   Card,
   CardTitle,
@@ -15,14 +14,16 @@ import {
   CardDescription
 } from "@/components/ui/card"
 import LoadErrorState from "@/shared/components/LoadErrorState.vue"
-import {
-  useKratosBrowserFlow,
-  type KratosFlowMessage,
-} from "@/modules/auth/composables/useKratosBrowserFlow"
+import { useKratosBrowserFlow } from "@/modules/auth/composables/useKratosBrowserFlow"
 import KratosFlowMessages from "@/modules/auth/components/KratosFlowMessages.vue"
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
 import { createAllowedReturnToOrigins } from "@/modules/auth/lib/return-to"
 import { useKratosSettingsRedirect } from "@/modules/user-settings/composables/useKratosSettingsRedirect"
+import {
+  normalizeKratosSettingsSection as normalizeSection,
+  resolveKnownKratosSettingsSection,
+  type KratosSettingsSection,
+} from "@/modules/user-settings/lib/kratos-settings-section"
 
 const props = defineProps<{
   section?: string
@@ -162,36 +163,18 @@ const {
 
 const { t } = useI18n()
 
-const redirectTargetLabel = computed(() => {
-  const section = requestedSection.value || "profile"
-  const known = ["profile", "password", "mfa", "oidc"].includes(section) ? section : "profile"
-  return t(`userSettings.kratosFlow.redirect.targets.${known}`)
-})
-
-function normalizeSection(value: unknown): string {
-  if (typeof value !== "string") {
-    return ""
-  }
-
-  const section = value.trim().toLowerCase()
-  if (section === "email" || section === "profile") {
-    return "profile"
-  }
-
-  if (section === "password") {
-    return "password"
-  }
-
-  if (section === "mfa" || section === "security") {
-    return "mfa"
-  }
-
-  if (section === "oidc" || section === "social") {
-    return "oidc"
-  }
-
-  return section
+// The card is titled after the section it edits (email/nickname, password,
+// two-step verification, Google sign-in); unknown sections read as the profile.
+const knownSection = computed<KratosSettingsSection>(() => resolveKnownKratosSettingsSection(requestedSection.value))
+const redirectTargetLabel = computed(() => t(`userSettings.kratosFlow.redirect.targets.${knownSection.value}`))
+const cardTitle = computed(() => t(`userSettings.kratosFlow.titles.${knownSection.value}`))
+const SECTION_ICONS: Record<KratosSettingsSection, LucideIcon> = {
+  profile: UserRound,
+  password: Lock,
+  mfa: ShieldCheck,
+  oidc: Link2,
 }
+const cardIcon = computed(() => SECTION_ICONS[knownSection.value])
 
 function resolveSectionGroups(section: string): string[] {
   if (section === "profile") {
@@ -506,6 +489,21 @@ function buttonFieldVariant(field: SettingsAction) {
   return isPrimaryAction(field) ? "default" : "outline"
 }
 
+/**
+ * Submit buttons: the floppy disk only where something is saved; MFA actions
+ * add (passkey, security key, recovery codes) or remove/disable, so they get
+ * a plus or a cross, and confirmations a check.
+ */
+function iconForSubmit(submit: SettingsAction): LucideIcon {
+  if (!isMfaSection.value) {
+    return Save
+  }
+  if (isDangerousAction(submit)) {
+    return X
+  }
+  return isPrimaryAction(submit) ? Plus : Check
+}
+
 function iconForField(name: string) {
   const normalized = name.toLowerCase()
 
@@ -540,66 +538,19 @@ const kratosHost = computed(() => {
   }
 })
 
-/** Kratos success texts: settings saved (1050001), account recovered (1060001), email verified (1080002). */
-const SUCCESS_MESSAGE_IDS = new Set([1050001, 1060001, 1080002])
-
-function isSuccessLikeMessage(message: KratosFlowMessage): boolean {
-  return message.tone === "success" || (message.id !== null && SUCCESS_MESSAGE_IDS.has(message.id))
-}
-
-const successToastMessages = computed(() => {
-  const merged: KratosFlowMessage[] = []
-
-  merged.push(...generalMessages.value)
-  displayedVisibleFields.value.forEach((field) => merged.push(...field.messages))
-  displayedButtonFields.value.forEach((field) => merged.push(...field.messages))
-  displayedSubmitFields.value.forEach((field) => merged.push(...field.messages))
-  displayedDisplayFields.value.forEach((field) => merged.push(...field.messages))
-
-  return merged.filter((message) => isSuccessLikeMessage(message))
-})
-
-const shownSuccessMessageKeys = new Set<string>()
-
-watch(
-  successToastMessages,
-  (messages) => {
-    if (loading.value || loadError.value) {
-      return
-    }
-
-    messages.forEach((message) => {
-      const uniqueKey = `${message.key}:${message.text}`
-      if (shownSuccessMessageKeys.has(uniqueKey)) {
-        return
-      }
-
-      shownSuccessMessageKeys.add(uniqueKey)
-      toast.success(message.text)
-    })
-  },
-  { immediate: true }
-)
-
-watch(
-  () => route.fullPath,
-  () => {
-    shownSuccessMessageKeys.clear()
-  }
-)
 </script>
 
 <template>
-  <div class="w-full flex-1 flex flex-col items-center justify-center gap-6 px-0 py-4">
-    <Card class="w-full max-w-md">
+  <div class="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-0 py-4">
+    <Card class="w-full">
       <CardHeader>
         <CardTitle class="flex items-center gap-2">
-          <Save class="h-6 w-6" />
-          {{ t("userSettings.kratosFlow.title") }}
+          <component :is="cardIcon" class="h-6 w-6" aria-hidden="true" />
+          {{ cardTitle }}
         </CardTitle>
         <CardDescription>{{ t("userSettings.kratosFlow.description") }}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent class="space-y-4">
         <div v-if="redirect.status.value === 'unreachable'" class="space-y-3" data-testid="kratos-redirect-unreachable">
           <LoadErrorState
             :title="t('userSettings.kratosFlow.redirect.unreachableTitle')"
@@ -608,12 +559,6 @@ watch(
             :retrying="false"
             @retry="redirect.retry"
           />
-          <Button as-child variant="ghost" class="w-full">
-            <RouterLink :to="{ name: 'user.settings' }">
-              <ArrowLeft class="mr-2 h-4 w-4" />
-              {{ t("userSettings.kratosFlow.redirect.backToSettings") }}
-            </RouterLink>
-          </Button>
         </div>
         <div
           v-else-if="redirect.status.value === 'probing' || redirect.status.value === 'redirecting'"
@@ -747,7 +692,7 @@ watch(
                     :value="submit.value || undefined"
                     :disabled="!isReady || submit.disabled"
                   >
-                    <Save class="mr-2 h-4 w-4 shrink-0" />
+                    <component :is="iconForSubmit(submit)" class="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />
                     <span class="break-words">{{ submit.label }}</span>
                   </Button>
                   <KratosFlowMessages :messages="submit.messages" />
@@ -763,6 +708,18 @@ watch(
             </Button>
           </div>
         </form>
+        <!-- A way back in every state (the interstitial is about to leave the page). -->
+        <Button
+          v-if="redirect.status.value !== 'probing' && redirect.status.value !== 'redirecting'"
+          as-child
+          variant="ghost"
+          class="w-full"
+        >
+          <RouterLink :to="{ name: 'user.settings' }">
+            <ArrowLeft class="mr-2 h-4 w-4" />
+            {{ t("userSettings.kratosFlow.redirect.backToSettings") }}
+          </RouterLink>
+        </Button>
       </CardContent>
     </Card>
   </div>

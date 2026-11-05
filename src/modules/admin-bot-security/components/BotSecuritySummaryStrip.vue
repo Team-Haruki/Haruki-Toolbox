@@ -2,17 +2,22 @@
 import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Skeleton } from "@/components/ui/skeleton"
+import LoadErrorState from "@/shared/components/LoadErrorState.vue"
 import { formatNumberCN } from "@/lib/number-format"
+import type { ErrorDescription } from "@/lib/error-utils"
 import type { BotSecuritySummary } from "@/types/admin"
 
 const props = defineProps<{
   loading: boolean
   summary: BotSecuritySummary | null
+  /** A failed summary load; the strip shows it inline with a retry. */
+  error?: ErrorDescription | null
   kindLabel: (kind: string) => string
 }>()
 
 const emit = defineEmits<{
   (event: "select-kind", kind: string): void
+  (event: "retry"): void
 }>()
 
 const { t } = useI18n()
@@ -30,7 +35,16 @@ const tiles = computed(() => [
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
+  <div v-if="props.error && !props.loading" class="rounded-xl border bg-card shadow-sm">
+    <LoadErrorState
+      :title="t('adminBotSecurity.toast.loadSummaryFailedTitle')"
+      :description="props.error.message"
+      :detail="props.error.detail"
+      :retrying="props.loading"
+      @retry="emit('retry')"
+    />
+  </div>
+  <div v-else class="flex flex-col gap-3">
     <div class="grid grid-cols-3 gap-3">
       <div v-for="tile in tiles" :key="tile.key" class="min-w-0 rounded-xl border bg-card p-3 shadow-sm sm:p-4">
         <p class="truncate text-xs text-muted-foreground sm:text-sm" :title="tile.label">{{ tile.label }}</p>

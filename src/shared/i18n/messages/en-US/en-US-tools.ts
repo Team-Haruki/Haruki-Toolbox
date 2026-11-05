@@ -284,7 +284,7 @@ export default {
           "title": "Get & Install",
           "prerequisite": "You need to be signed in with a bound game account first.",
           "description": "Generate an upload code, then copy the URLs or quick install the module.",
-          "after": "After installing, open the game and reach the home screen once; once the upload succeeds, \"My account\" on the toolbox home page shows the upload time."
+          "after": "After installing, open the game and reach the home screen once; once the upload succeeds, “My account” on the Toolbox home page shows the upload time."
         }
       },
       "sections": {
@@ -300,7 +300,7 @@ export default {
         },
         "mode": {
           "title": "Select upload mode",
-          "description": "\"Script upload\" can run alongside other bots' modules but is occasionally unstable; \"Proxy upload\" is more stable but only one toolbox module can be installed at a time. If unsure, pick \"Proxy upload\".",
+          "description": "“Script upload” can run alongside other bots' modules but is occasionally unstable; “Proxy upload” is more stable but only one Toolbox module can be installed at a time. If unsure, pick “Proxy upload”.",
           "placeholder": "Select upload mode"
         },
         "chunk": {
@@ -328,6 +328,7 @@ export default {
         "regenerate": "Regenerate",
         "generate": "Generate Upload Code",
         "loginRequired": "Sign in required",
+        "loginAction": "Sign in",
         "regenerateDialog": {
           "title": "Regenerate the upload code?",
           "description": "The old code stops working immediately; any installed module must be reinstalled with the new URL to keep uploading.",
@@ -391,7 +392,8 @@ export default {
         "copyFailed": "Failed to copy to clipboard. Check browser permissions.",
         "qxScriptFallback": "Quantumult X does not support script mode. Switched to proxy mode.",
         "unsupportedClient": "Unsupported client",
-        "installUnsupported": "Quick install is not supported in this environment"
+        "installUnsupported": "Quick install is not supported in this environment",
+        "installNeedsIos": "Quick install needs this page open on an iPhone or iPad. On a computer, copy the module URL and add it in the proxy app by hand."
       }
     },
     "uploadData": {
@@ -402,7 +404,7 @@ export default {
       "group2Label": "Group 2",
       "intro": {
         "title": "Upload data",
-        "description": "\"Upload data\" syncs your game account data to the toolbox for cards, event records, deck building and more. Recommended: the iOS module on iPhone/iPad, HarukiProxy on Android/Windows; use the transfer code only when neither works.",
+        "description": "“Upload data” syncs your game account data to the Toolbox for cards, event records, deck building and more. Recommended: the iOS module on iPhone/iPad, HarukiProxy on Android/Windows; use the transfer code only when neither works.",
         "iosPlatform": "iPhone / iPad",
         "iosMethod": "iOS module (recommended)",
         "proxyPlatform": "Android / Windows",
@@ -418,20 +420,23 @@ export default {
       },
       "proxyTab": {
         "upgradeWarning": {
-          "title": "Legacy HarukiProxy uploads are disabled",
-          "deadline": "HarukiProxy v1/v2 uploads were disabled at 2026/11/01 00:00:00 Beijing time (UTC+8). These versions can no longer upload data to the Toolbox.",
-          "upgrade": "Please upgrade to v3.",
+          "title": "HarukiProxy v1/v2 no longer upload",
+          "deadline": "Uploads from the old versions were disabled on 1 Nov 2026 at 00:00 (UTC+8); they can no longer send data to the Toolbox.",
+          "upgrade": "Please update to v3.",
           "release": "Latest version when this notice was published: HarukiProxy {version}",
           "windowsDownload": "Windows x64 download (no guide yet)",
           "androidDownload": "Android arm64 download (VPhoneOS guide available)",
           "feedback": "v3 may still contain bugs. Please report any issues promptly so we can fix them."
         },
         "title": "HarukiProxy (Android / PC)",
-        "description": "Run HarukiProxy on an Android phone or a PC; your data uploads to the toolbox automatically when you open the game.",
+        "description": "Run HarukiProxy on an Android phone or a PC; your data uploads to the Toolbox automatically when you open the game.",
         "steps": {
           "install": "Download and install v3. Android users can follow the VPhoneOS guide below.",
           "bind": "Bind and verify the game account to upload under Game account bindings first.",
-          "run": "With HarukiProxy on, reach the game's home screen once; \"My account\" on the toolbox home page shows the upload time."
+          "run": "With HarukiProxy on, reach the game's home screen once; “My account” on the Toolbox home page shows the upload time."
+        },
+        "downloads": {
+          "title": "Download HarukiProxy v3"
         },
         "tutorialButton": "Android v3 guide (VPhoneOS)"
       },
@@ -474,8 +479,9 @@ export default {
       },
       "fileTab": {
         "title": "Manual file upload",
-        "description": "Upload a data file saved by HarukiProxy or the iOS module. Not sure how to get one? See \"Other upload methods\" above.",
+        "description": "Upload a data file saved by HarukiProxy or the iOS module. You normally do not need this: the methods on the “iOS module” and “HarukiProxy” tabs upload automatically.",
         "unavailableTitle": "Unavailable",
+        "loginRequiredTitle": "Sign in required",
         "forbiddenTitle": "Operation forbidden",
         "forbiddenDescription": "This action is not allowed due to legal restrictions",
         "fields": {
@@ -499,24 +505,24 @@ export default {
         "accountNotWritable": "This account cannot be uploaded to yet: it is unverified, or its owner has not allowed you to upload for them.",
         "unavailableChip": "Unavailable",
         "someAccountsUnavailable": "Greyed-out accounts cannot be uploaded to yet: unverified, or the owner has not allowed you to upload for them.",
-        "grantedTargetNotice": "This account was granted to you by another user. Uploads directly update their data in the toolbox.",
+        "grantedTargetNotice": "This account was granted to you by another user. Uploads directly update their data in the Toolbox.",
         "dataTypeLimited": "Only some data types can be uploaded to this account.",
         "submit": "Submit",
         "submitting": "Submitting..."
       },
       "inheritTab": {
         "title": "Transfer-code data upload",
-        "description": "Enter the transfer ID and transfer password from the game. The toolbox first shows you the account to check, runs the transfer only after you confirm, and right away issues you a new transfer code.",
+        "description": "Enter the transfer ID and transfer password from the game. The Toolbox first shows you the account to check, runs the transfer only after you confirm, and right away issues you a new transfer code.",
         "loginRequired": {
           "title": "Sign in to Haruki Toolbox first",
-          "description": "Transfer-code uploads need you to be signed in to this website. After the transfer, the new transfer code is kept encrypted in your transfer code vault, readable only by you.",
+          "description": "Transfer-code uploads need you to be signed in to this website. After the transfer, the new transfer code is kept encrypted in your transfer-code vault, readable only by you.",
           "action": "Sign in"
         },
         "fields": {
           "inheritId": "Transfer ID",
           "inheritIdPlaceholder": "Enter transfer ID",
           "inheritPassword": "Transfer password",
-          "inheritPasswordPlaceholder": "The transfer password you set in the game",
+          "inheritPasswordPlaceholder": "Transfer password from the game",
           "server": "Select region",
           "serverPlaceholder": "Select region",
           "dataType": "Select data type",
@@ -535,21 +541,20 @@ export default {
           "reuseHint": "The new code uses the password you just entered, so it is easy to remember.",
           "random": "Generate a random one",
           "randomHint": "A random password of 12 letters and digits.",
-          "reuseBlocked": "This password cannot be kept: it must be 8–16 half-width letters, digits or symbols without spaces. Choose \"Generate a random one\".",
-          "reuseInvalid": "A kept password must be 8–16 half-width letters, digits or symbols without spaces; choose \"Generate a random one\" instead",
+          "reuseBlocked": "This password cannot be kept: it must be 8–16 half-width letters, digits or symbols without spaces; choose “Generate a random one”",
           "tooLong": "The transfer password is too long"
         },
         "alerts": {
           "notesTitle": "Learn more: how it works, what is stored, and the risk",
           "warning1": {
             "title": "After the transfer, your phone is signed out",
-            "description": "You then restore the account to your phone with the new transfer code the toolbox issues. You see the account first, and nothing runs until you confirm."
+            "description": "You then restore the account to your phone with the new transfer code the Toolbox issues. You see the account first, and nothing runs until you confirm."
           },
           "flow": {
             "title": "Steps",
-            "step1": "First the account is only looked up (the code is not used); check the nickname and rank. JP transfer codes are valid for 24 hours and work once.",
+            "step1": "First the account is only looked up (the code is not used); check the nickname and rank. Transfer codes are valid for 24 hours and work once.",
             "step2": "Once the details look right, confirm with your Haruki Toolbox sign-in password (accounts that sign in with Google, Apple or a passkey use a vault PIN instead). Only then does the transfer run. Until then you can cancel and the code stays valid.",
-            "step3": "Right after the transfer a new transfer code is issued and shown on this page, and stored encrypted in the transfer code vault below, where you can see it again for 24 hours.",
+            "step3": "Right after the transfer a new transfer code is issued and shown on this page, and stored encrypted in the transfer-code vault below, where you can see it again for 24 hours.",
             "step4": "Finally the game data is fetched and saved. Even if this step fails, the new code is kept."
           },
           "storage": {
@@ -562,7 +567,10 @@ export default {
           }
         },
         "submit": "Look up account",
-        "submitting": "Reading account info…"
+        "submitting": "Reading account info…",
+        "toast": {
+          "readFailedTitle": "Could not read the account"
+        }
       },
       "inheritJob": {
         "title": "Transfer progress",
@@ -572,7 +580,8 @@ export default {
           "awaiting_confirm": "Waiting for you",
           "succeeded": "Done",
           "failed": "Failed",
-          "cancelled": "Cancelled"
+          "cancelled": "Cancelled",
+          "expired": "Expired"
         },
         "connection": {
           "connecting": "Connecting",
@@ -596,19 +605,19 @@ export default {
           "done": "Done"
         },
         "substeps": {
-          "cookies": "Get access cookies",
+          "cookies": "Preparing the connection",
           "version": "Get game version",
           "inherit_check": "Look up the account (code not used)",
           "inherit_execute": "Execute transfer",
           "auth": "Sign in",
           "issue_code": "Issue transfer code",
           "suite": "Account data",
-          "suite_followup": "Follow-up requests",
-          "home_refresh": "Refresh home",
-          "home_refresh_final": "Final refresh",
-          "maintenance_check": "Check maintenance",
+          "suite_followup": "Syncing remaining data",
+          "home_refresh": "Syncing the home screen",
+          "home_refresh_final": "Finishing the sync",
+          "maintenance_check": "Checking the game is available",
           "mysekai": "MySekai data",
-          "mysekai_followup": "Follow-up requests",
+          "mysekai_followup": "Syncing remaining MySekai data",
           "version_refresh": "Refresh game version"
         },
         "stepStatus": {
@@ -617,9 +626,24 @@ export default {
           "done": "Done",
           "failed": "Failed",
           "skipped": "Skipped",
-          "warning": "Partly failed"
+          "warning": "Partly failed",
+          "unknown": "Outcome unknown"
         },
         "consumesCode": "The transfer code is used from here on",
+        "unreached": {
+          "show": "{count} more step did not run; show it | {count} more steps did not run; show them",
+          "hide": "Hide the {count} step that did not run | Hide the {count} steps that did not run"
+        },
+        "announce": {
+          "created": "Reading the account; progress is shown below.",
+          "awaiting_confirm": "Account details loaded; check them and confirm.",
+          "new_code": "Your new transfer code is ready; write it down."
+        },
+        "resumeFailed": {
+          "title": "A transfer may be in progress, but it cannot be reached right now",
+          "description": "{reason} Its progress shows again once the connection is back; you can also submit again and the Toolbox reattaches to the running transfer.",
+          "retry": "Retry"
+        },
         "codeValidity": {
           "valid": "The code you entered was not used and is still valid.",
           "used": "The code you entered has been used and cannot be used again.",
@@ -645,7 +669,7 @@ export default {
           "game_version_outdated": "The game just updated its data version and Toolbox has not caught up yet. Please try again later.",
           "game_version_outdated_after_transfer": "The game just updated its data version and Toolbox has not caught up yet, so the game data could not be fetched. The new code (if one was issued) is shown on this page; you can upload again later with it.",
           "execute_uncertain": "The connection dropped during the transfer, so it is unclear whether your code was used. Do not use this code on another device for now, and check the vault below: if this account shows up there, the transfer went through and you can view or re-issue the code there.",
-          "login_failed": "The transfer went through and the sign-in info is in the vault, but signing in to the game failed. Later, press \"Re-issue\" in the vault below to get a new transfer code.",
+          "login_failed": "The transfer went through and the sign-in info is in the vault, but signing in to the game failed. Later, press “Re-issue” in the vault below to get a new transfer code.",
           "fetch_failed": "Fetching the game data failed. The new code (if one was issued) is shown on this page and kept in the vault.",
           "mysekai_unavailable": "Fetching MySekai data failed; the MySekai tutorial may not be finished. The new code (if one was issued) is shown on this page and kept in the vault.",
           "upload_failed": "Saving the data failed. The new code (if one was issued) is shown on this page and kept in the vault.",
@@ -654,7 +678,7 @@ export default {
           "internal_error": "Something went wrong on the server and this transfer did not finish."
         },
         "warnings": {
-          "issue_code_failed": "No new transfer code was issued. The sign-in info is in the vault: press \"Re-issue\" in the vault below now, it is your only way back into the account.",
+          "issue_code_failed": "No new transfer code was issued. The sign-in info is in the vault: press “Re-issue” in the vault below now: it is your only way back into the account.",
           "vault_db_unavailable": "The database was unavailable; the sign-in info is stored temporarily and will be moved over automatically. Nothing changes for you.",
           "vault_store_failed": "The sign-in info or the new code could not be stored in the vault. Write down the new code shown on this page now.",
           "game_version_outdated": "The game just updated its data version and Toolbox has not caught up yet, so this step did not succeed."
@@ -680,17 +704,18 @@ export default {
             "title": "Event transfer restriction",
             "active": "This account is under the event transfer restriction",
             "remaining": "Transfers left: {count}",
+            "consumes": "Transferring here uses 1 of them; at 0 the game refuses to transfer.",
             "endsAt": "Restriction ends: {time}",
             "worldBloom": "A World Link chapter is running",
             "none": "No transfer restriction right now."
           },
           "warningTitle": "Once you confirm, your phone can no longer sign in to this account",
-          "warningBody": "The account moves to the toolbox. This page then shows a new transfer code; use it to transfer the account back to your phone.",
+          "warningBody": "The account moves to the Toolbox. This page then shows a new transfer code; use it to transfer the account back to your phone.",
           "deadline": "Confirm within {time}; after that it is cancelled (your code stays valid).",
           "password": "Haruki Toolbox sign-in password",
           "passwordHelp": "The password you sign in to this website with. Not the game's transfer password, and not your QQ or Google password.",
           "passwordWhy": "It locks the saved sign-in info so that only you can open it.",
-          "passwordFirstUse": "It locks the saved sign-in info so that only you can open it. Your transfer code vault is created when you first confirm.",
+          "passwordFirstUse": "It locks the saved sign-in info so that only you can open it. Your transfer-code vault is created when you first confirm.",
           "forgotPassword": "Forgot your password?",
           "forgotPasswordNote": "If you forget your password and set a new one, what is saved in the vault can no longer be opened; the only way forward is resetting the vault, which deletes it.",
           "pin": "Vault PIN",
@@ -720,7 +745,7 @@ export default {
           "copied": "{label} copied",
           "copyFailed": "Copy failed; please write it down by hand",
           "expiresIn": "Valid for {time}",
-          "expiresAt": "until {time}",
+          "expiresAt": "Valid until {time}",
           "expired": "This code has expired; re-issue one from the vault.",
           "singleUse": "Valid for 24 hours and works once.",
           "savedToVault": "Stored encrypted in the vault below; you can view it again for 24 hours.",
@@ -728,7 +753,7 @@ export default {
             "title": "Next",
             "restore": "Transfer the account back to your phone with this code.",
             "platformLink": "Once it is back, we recommend linking it to Game Center (iOS) or Google Play Games (Android) in the game's transfer menu (JP can also link an Apple or Google account), so you no longer depend on transfer codes.",
-            "cleanup": "After that, press \"I recovered it on my phone\" in the vault below to delete the saved record."
+            "cleanup": "After that, press “I recovered it on my phone” in the vault below to delete the saved record."
           },
           "unsavedTitle": "Write this code down now",
           "unsavedBody": "This code could not be stored in the vault and cannot be shown again once you leave this page. Copy it or take a screenshot now.",
@@ -768,7 +793,7 @@ export default {
         },
         "reissue": {
           "title": "Re-issue transfer code",
-          "description": "The toolbox signs in to the game with the saved sign-in info and issues a new transfer code; the previous code stops working at once. This takes a few seconds.",
+          "description": "The Toolbox signs in to the game with the saved sign-in info and issues a new transfer code; the previous code stops working at once. This takes a few seconds.",
           "modeLabel": "Password of the new code",
           "reuse": "Keep the previous code's password",
           "random": "Generate a random one"
@@ -780,11 +805,12 @@ export default {
         },
         "reset": {
           "title": "Reset the vault?",
-          "description": "This deletes all {count} record(s) in the vault and cannot be undone. Use it only if you cannot remember your previous sign-in password (for example after setting a new one because you forgot it) or forgot your vault PIN.",
+          "description": "This deletes every record in the vault ({records}) and cannot be undone. Use it only if you cannot remember your previous sign-in password (for example after setting a new one because you forgot it) or forgot your vault PIN.",
+          "records": "no records | 1 record | {count} records",
           "password": "Current Haruki Toolbox sign-in password",
           "ack": "I understand that every record will be deleted",
           "confirm": "Reset and delete all records",
-          "done": "Vault reset; {count} record(s) deleted"
+          "done": "Vault reset; no records deleted | Vault reset; 1 record deleted | Vault reset; {count} records deleted"
         },
         "passwordChanged": {
           "title": "Enter your previous sign-in password",
@@ -807,7 +833,7 @@ export default {
         "inherit_id_invalid": "The transfer ID must be 16 letters or digits.",
         "inherit_password_invalid": "Enter the transfer password (at most 64 characters).",
         "new_password_mode_invalid": "Choose how to set the new code's password.",
-        "reuse_password_invalid": "This password cannot be kept (8–16 half-width characters, no spaces); choose \"Generate a random one\".",
+        "reuse_password_invalid": "This password cannot be kept (8–16 half-width characters, no spaces); choose “Generate a random one”.",
         "mysekai_requires_qq": "Uploading MySekai data requires binding and verifying a QQ account under HarukiBot data authorization.",
         "job_already_running": "You already have a transfer in progress; finish or cancel it first.",
         "rate_limited": "Too many submissions (at most 10 per hour); please try again later.",
@@ -833,14 +859,14 @@ export default {
         "unlock_rate_limited": "Too many wrong attempts; to protect your account, please try again in 15 minutes.",
         "entry_not_found": "This record does not exist or has expired.",
         "entry_stale": "This record was saved before the vault was reset and can no longer be opened.",
-        "code_not_available": "This record has no code to show right now (older than 24 hours or never issued); press \"Re-issue\".",
-        "no_previous_password": "There is no previous transfer password to keep; choose \"Generate a random one\".",
+        "code_not_available": "This record has no code to show right now (older than 24 hours or never issued); press “Re-issue”.",
+        "no_previous_password": "There is no previous transfer password to keep; choose “Generate a random one”.",
         "reset_confirmation_required": "Tick the confirmation first.",
         "reissue_failed": "Re-issuing the transfer code failed; please try again later.",
         "reissue_login_failed": "The saved sign-in info no longer signs in to the game; it may have expired.",
         "reissue_rejected": "The game server refused the request; please try again later.",
         "client_update_required": "This page is out of date; please reload it.",
-        "retryAfter": "Try again in {seconds} s.",
+        "retryAfter": "Try again in {seconds} seconds.",
         "network": "Cannot reach the server; check your connection and try again.",
         "unknown": "The request failed (HTTP {status}); please try again later."
       }
@@ -1012,10 +1038,16 @@ export default {
       "whitelist": "Whitelist",
       "whitelistDesc": "Only show rooms containing these keywords",
       "presetTags": "Presets",
+      "presetTagLabel": "{tag} ({name})",
+      "tagNames": {
+        "shrimp": "shrimp",
+        "dragon": "dragon",
+        "pizza": "pizza"
+      },
       "keywordPlaceholder": "Add keyword",
       "add": "Add",
       "clear": "Clear",
-      "removeFilter": "Remove filter \"{name}\"",
+      "removeFilter": "Remove filter “{name}”",
       "display": "Display",
       "expireTime": "Keep rooms for",
       "durationSeconds": "{n} s",

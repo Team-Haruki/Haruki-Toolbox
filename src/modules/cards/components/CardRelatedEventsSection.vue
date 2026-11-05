@@ -4,7 +4,7 @@ import { LucideCalendarRange, LucideChevronRight } from "lucide-vue-next"
 import type { SekaiRegion } from "@/types"
 import type { SekaiAssetEndpointPreference } from "@/shared/sekai/types"
 import { Badge } from "@/components/ui/badge"
-import { formatLocalizedDate } from "@/lib/date-time"
+import { formatLocalizedDateRange } from "@/lib/date-time"
 import CatalogDetailSection from "@/shared/components/catalog/CatalogDetailSection.vue"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 import { resolveSekaiEventTypeLabel } from "@/shared/sekai/labels"
@@ -36,8 +36,7 @@ function typeLabel(row: CardRelatedEvent): string | null {
 }
 
 function period(row: CardRelatedEvent): string {
-  const format = (value: number | null) => formatLocalizedDate(value, { dateStyle: "medium" }, "?")
-  return `${format(row.event.startAt)} – ${format(row.event.aggregateAt)}`
+  return formatLocalizedDateRange(row.event.startAt, row.event.aggregateAt, "date", "?")
 }
 </script>
 

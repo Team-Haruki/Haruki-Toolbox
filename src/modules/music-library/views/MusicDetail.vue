@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import CatalogDetailShell from "@/shared/components/catalog/CatalogDetailShell.vue"
 import ImageLightbox from "@/shared/components/ImageLightbox.vue"
 import type { ImageLightboxItem } from "@/shared/components/ImageLightbox.vue"
-import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { applyCatalogRegionQuery, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { resolveSekaiMusicCategoryLabel, resolveSekaiMusicTagLabel } from "@/shared/sekai/labels"
 import { useUnreleasedContentDisplay } from "@/shared/sekai/unreleased"
 import { useSettingsStore } from "@/shared/stores/settings"
@@ -32,6 +32,8 @@ const props = defineProps<{
 
 const { t, te } = useI18n()
 const settingsStore = useSettingsStore()
+// A shared link names its server (`?region=`): apply it before the region is read.
+applyCatalogRegionQuery()
 const { region } = useEffectiveCatalogRegion()
 const { blurUnreleased } = useUnreleasedContentDisplay()
 const preference = computed(() => settingsStore.currentAssetEndpoint)

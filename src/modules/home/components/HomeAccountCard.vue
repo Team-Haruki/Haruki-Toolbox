@@ -32,6 +32,11 @@ const uploadTimeText = computed(() => {
   return new Intl.DateTimeFormat(locale.value, { dateStyle: "medium", timeStyle: "short" })
     .format(suiteUploadTimeToMillis(uploadTime.value))
 })
+
+// The next step is the primary action: bind an account first, then upload.
+const hasBinding = computed(() =>
+  Array.isArray(userStore.gameAccountBindings) && userStore.gameAccountBindings.length > 0
+)
 </script>
 
 <template>
@@ -51,14 +56,14 @@ const uploadTimeText = computed(() => {
         <span v-else>{{ t("home.accountCard.noUploadData") }}</span>
       </p>
       <div class="mt-auto grid min-w-0 grid-cols-1 gap-2 @sm:grid-cols-2">
-        <router-link to="/upload-data" class="flex min-w-0">
-          <Button class="h-auto min-h-9 min-w-0 w-full whitespace-normal">
+        <router-link to="/upload-data" :class="['flex min-w-0', hasBinding ? 'order-1' : 'order-2']">
+          <Button :variant="hasBinding ? 'default' : 'outline'" class="h-auto min-h-9 min-w-0 w-full whitespace-normal">
             <LucideCloudUpload class="h-4 w-4" />
             {{ t("navigation.items.uploadData") }}
           </Button>
         </router-link>
-        <router-link to="/user/game-account-bindings" class="flex min-w-0">
-          <Button variant="outline" class="h-auto min-h-9 min-w-0 w-full whitespace-normal">
+        <router-link to="/user/game-account-bindings" :class="['flex min-w-0', hasBinding ? 'order-2' : 'order-1']">
+          <Button :variant="hasBinding ? 'outline' : 'default'" class="h-auto min-h-9 min-w-0 w-full whitespace-normal">
             <Gamepad2 class="h-4 w-4" />
             {{ t("home.gameAccountManagement") }}
           </Button>
@@ -76,7 +81,7 @@ const uploadTimeText = computed(() => {
           <li>
             <i18n-t keypath="home.accountCard.onboarding.step2" scope="global" tag="span">
               <template #link>
-                <router-link to="/user/game-account-bindings" class="font-medium text-primary underline-offset-4 hover:underline">
+                <router-link to="/user/game-account-bindings" class="-my-3 -mx-1 inline-flex min-h-10 items-center px-1 font-medium text-primary underline-offset-4 hover:underline">
                   {{ t("home.accountCard.onboarding.step2Link") }}
                 </router-link>
               </template>
@@ -85,7 +90,7 @@ const uploadTimeText = computed(() => {
           <li>
             <i18n-t keypath="home.accountCard.onboarding.step3" scope="global" tag="span">
               <template #link>
-                <router-link to="/upload-data" class="font-medium text-primary underline-offset-4 hover:underline">
+                <router-link to="/upload-data" class="-my-3 -mx-1.5 inline-flex min-h-10 min-w-10 items-center justify-center px-1.5 font-medium text-primary underline-offset-4 hover:underline">
                   {{ t("home.accountCard.onboarding.step3Link") }}
                 </router-link>
               </template>

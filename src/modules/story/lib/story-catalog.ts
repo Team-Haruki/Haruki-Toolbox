@@ -39,6 +39,8 @@ export type StoryEpisode = {
   bundle?: string
   /** Release time (ms) of this episode alone, when known (area talks). */
   at?: number
+  /** The title region has no text for this episode: its title is the JP one. */
+  jpOnly?: boolean
 }
 
 export type StorySeries = {
@@ -56,6 +58,10 @@ export type StorySeries = {
   /** Event logo / card thumbnail path inside "jp-assets/". */
   logo?: string
   thumb?: string
+  /** Main stories: the chapter number (the browser labels chapters the title region does not name). */
+  chapterNo?: number
+  /** overlayStoryTitles found no title in the title region: `title` is the JP one. */
+  jpOnly?: boolean
   episodes: StoryEpisode[]
 }
 
@@ -107,6 +113,7 @@ export function buildStoryCatalog(src: StoryCatalogSources): StoryCatalog {
         kind: "unit",
         title: str(ch.title),
         unit,
+        chapterNo,
         episodes: records(ch.episodes).flatMap((e): StoryEpisode[] => {
           const sid = str(e.scenarioId)
           if (!sid) return []
@@ -276,7 +283,9 @@ export function buildStoryCatalog(src: StoryCatalogSources): StoryCatalog {
 
 /**
  * Titles from another region's catalog where it has the same story, so the
- * browser follows the text language; paths and images stay JP.
+ * browser follows the text language; paths and images stay JP. Stories and
+ * episodes the other region does not have keep the JP title and are marked
+ * `jpOnly`.
  */
 export function overlayStoryTitles(base: StoryCatalog, other: StoryCatalog | null): StoryCatalog {
   if (!other) return base
@@ -289,9 +298,10 @@ export function overlayStoryTitles(base: StoryCatalog, other: StoryCatalog | nul
       const series: StorySeries = {
         ...s,
         title: seriesTitles.get(s.key) || s.title,
+        jpOnly: !seriesTitles.has(s.key),
         episodes: s.episodes.map((e) => {
           const hit = other.bySid.get(e.sid)?.episode
-          return hit?.title ? { ...e, title: hit.title } : e
+          return hit?.title ? { ...e, title: hit.title } : { ...e, jpOnly: true }
         }),
       }
       for (const episode of series.episodes) if (!bySid.has(episode.sid)) bySid.set(episode.sid, { series, episode })

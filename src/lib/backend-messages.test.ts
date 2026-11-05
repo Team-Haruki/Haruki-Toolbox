@@ -23,6 +23,15 @@ describe("resolveBackendMessage", () => {
     expect(resolveBackendMessage("this game account is already bound by another user")).toEqual({ key: "backendMessages.accountBoundByAnotherUser" })
   })
 
+  test("maps the generic permission bodies to one forbidden text", () => {
+    expect(resolveBackendMessage("forbidden")).toEqual({ key: "backendMessages.forbidden" })
+    expect(resolveBackendMessage("Permission denied")).toEqual({ key: "backendMessages.forbidden" })
+    expect(resolveBackendMessage("insufficient permissions")).toEqual({ key: "backendMessages.forbidden" })
+    // Specific 403 bodies keep their own, more helpful text.
+    expect(resolveBackendMessage("forbidden: binding is locked by administrator")).toEqual({ key: "backendMessages.bindingLocked" })
+    expect(resolveBackendMessage("reauthentication required")).toEqual({ key: "backendMessages.reauthRequired" })
+  })
+
   test("matches prefixes and captures the inherit code", () => {
     expect(resolveBackendMessage("ticket quota exceeded (3/3)")).toEqual({ key: "backendMessages.ticketQuotaExceeded" })
     expect(resolveBackendMessage("failed to parse suite data: unexpected end of JSON")).toEqual({ key: "backendMessages.suiteParseFailed" })

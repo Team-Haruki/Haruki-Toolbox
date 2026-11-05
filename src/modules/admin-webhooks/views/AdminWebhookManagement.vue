@@ -20,6 +20,7 @@ const {
   canMutate,
   settingsLoading,
   settingsSaving,
+  settingsError,
   settings,
   settingsEnabled,
   settingsDirty,
@@ -27,6 +28,9 @@ const {
   jwtSecretError,
   disableConfirmOpen,
   endpointsLoading,
+  endpointsError,
+  loadSettings,
+  loadEndpoints,
   endpoints,
   endpointsGeneratedAt,
   endpointsTotal,
@@ -86,12 +90,14 @@ const refreshing = computed(() => settingsLoading.value || endpointsLoading.valu
       :can-mutate="canMutate"
       :settings-loading="settingsLoading"
       :settings-saving="settingsSaving"
+      :error="settingsError"
       :settings="settings"
       :settings-enabled="settingsEnabled"
       :settings-dirty="settingsDirty"
       :jwt-secret-input="jwtSecretInput"
       :jwt-secret-error="jwtSecretError"
       @save-settings="saveSettings"
+      @retry="loadSettings"
       @update:settings-enabled="settingsEnabled = $event"
       @update:jwt-secret-input="updateJwtSecretInput"
     />
@@ -99,10 +105,12 @@ const refreshing = computed(() => settingsLoading.value || endpointsLoading.valu
     <AdminWebhookTable
       :can-mutate="canMutate"
       :endpoints-loading="endpointsLoading"
+      :error="endpointsError"
       :endpoints="endpoints"
       :endpoints-generated-at="endpointsGeneratedAt"
       :endpoints-total="endpointsTotal"
       :format-date="formatDate"
+      @retry="loadEndpoints"
       @create="openCreateDialog"
       @open-subscribers="openSubscribers"
       @open-edit="openEditDialog"

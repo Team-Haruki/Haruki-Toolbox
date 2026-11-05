@@ -20,6 +20,7 @@ import CatalogFilterPanel from "@/shared/components/catalog/CatalogFilterPanel.v
 import CatalogPageShell from "@/shared/components/catalog/CatalogPageShell.vue"
 import CatalogPagination from "@/shared/components/catalog/CatalogPagination.vue"
 import CatalogRegionSelect from "@/shared/components/catalog/CatalogRegionSelect.vue"
+import { applyCatalogRegionQuery } from "@/shared/sekai/catalog-region"
 import CatalogResultsBar from "@/shared/components/catalog/CatalogResultsBar.vue"
 import CatalogSearchField from "@/shared/components/catalog/CatalogSearchField.vue"
 import type { CatalogSortOption } from "@/shared/components/catalog/types"
@@ -48,6 +49,8 @@ import {
 } from "@/modules/cards/lib/card-query"
 
 const { t, te } = useI18n()
+// A shared link names its server (`?region=`): apply it before the list reads the region.
+applyCatalogRegionQuery()
 const list = useCardsList()
 const { hideUnreleased, blurUnreleased } = useUnreleasedContentDisplay()
 const now = useNowTick(60_000)

@@ -52,7 +52,7 @@ export default {
             "name": "星雲希凪",
             "role": "创始人 / 核心开发",
             "desc": "",
-            "quote": "“有限的生命里追求无限的可能”"
+            "quote": "「有限的生命里追求无限的可能」"
           },
           "lingqian": {
             "name": "灵潜",
@@ -69,7 +69,7 @@ export default {
             "name": "storyxy3",
             "role": "核心开发",
             "desc": "",
-            "quote": "“Beyond Light”"
+            "quote": "「Beyond Light」"
           },
           "aposetles": {
             "name": "Aposetles",
@@ -193,7 +193,6 @@ export default {
     },
     "summary": {
       "supporters": "赞助者",
-      "pending": "待同步",
       "current": "当前赞助"
     },
     "sections": {
@@ -282,7 +281,7 @@ export default {
             "summary": "除非我们主动清理、服务策略调整或法律要求另有规定，服务器端数据理论上会长期保存，以便维持账号绑定、历史上传、风控审计和服务连续性。"
           },
           "bullets": {
-            "server": "服务器端数据：游戏账号绑定、上传记录、suite/MySekai 数据、日志和管理员操作记录目前没有固定保存期限（引继码保险库除外，见第 5 节）。",
+            "server": "服务器端数据：游戏账号绑定、上传记录、账号数据（Suite）、烤森数据（MySekai）、日志和管理员操作记录目前没有固定保存期限（引继码保险库除外，见第 5 节）。",
             "local": "本地数据：登出会清理浏览器中的部分本地缓存用户数据，但不会自动删除服务器端已保存的数据。",
             "requests": "删除、导出或注销账号目前不能由用户自助完成；如需处理，请通过联系邮箱向 Haruki Dev Team 提出请求。"
           }
@@ -373,7 +372,7 @@ export default {
         "account": {
           "title": "2. 账号责任",
           "paragraphs": {
-            "summary": "您应妥善保管账号、密码、MFA、OAuth 授权、游戏继承码及其他凭证，并对账号下的操作负责。"
+            "summary": "您应妥善保管账号、密码、MFA、OAuth 授权、游戏引继码及其他凭证，并对账号下的操作负责。"
           },
           "bullets": {
             "credentials": "如发现账号异常、凭证泄露或未经授权的使用，应及时修改密码、撤销授权并联系我们。",
@@ -416,13 +415,13 @@ export default {
           }
         },
         "gameAccountRisk": {
-          "title": "6. 游戏账号与继承码风险",
+          "title": "6. 游戏账号与引继码风险",
           "paragraphs": {
-            "summary": "Haruki 工具箱可能提供与游戏数据更新、上传或继承码相关的辅助功能。您应理解这些操作可能存在账号安全和游戏服务条款风险。"
+            "summary": "Haruki 工具箱可能提供与游戏数据更新、上传或引继码相关的辅助功能。您应理解这些操作可能存在账号安全和游戏服务条款风险。"
           },
           "bullets": {
-            "transferCode": "因使用继承码更新数据、同步数据或相关操作产生的游戏账号封禁、限制、异常或其他风险，由您自行承担。",
-            "accountLoss": "因您未妥善保存继承码、密码、登录凭证或其他账号恢复信息导致的游戏账号丢失，我们不承担责任。"
+            "transferCode": "因使用引继码更新数据、同步数据或相关操作产生的游戏账号封禁、限制、异常或其他风险，由您自行承担。",
+            "accountLoss": "因您未妥善保存引继码、密码、登录凭证或其他账号恢复信息导致的游戏账号丢失，我们不承担责任。"
           }
         },
         "availability": {

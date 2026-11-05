@@ -12,6 +12,8 @@ import {
 import { getKratosPublicUrl } from "@/modules/auth/lib/kratos"
 import { getSettings } from "@/modules/user-settings/api/get-settings"
 import AfdianBindingCard from "@/modules/user-settings/components/settings/AfdianBindingCard.vue"
+import PageHeader from "@/shared/components/PageHeader.vue"
+import { normalizeKratosSettingsSection as normalizeSection } from "@/modules/user-settings/lib/kratos-settings-section"
 
 const route = useRoute()
 const router = useRouter()
@@ -19,31 +21,6 @@ const userStore = useUserStore()
 const { t } = useI18n()
 const hasKratosFlow = computed(() => typeof route.query.flow === "string" && route.query.flow.trim() !== "")
 const hasIdentitySavedFlag = computed(() => route.query._identity_saved === "1")
-
-function normalizeSection(value: unknown): string {
-  if (typeof value !== "string") {
-    return ""
-  }
-
-  const section = value.trim().toLowerCase()
-  if (section === "email" || section === "profile") {
-    return "profile"
-  }
-
-  if (section === "password") {
-    return "password"
-  }
-
-  if (section === "mfa" || section === "security") {
-    return "mfa"
-  }
-
-  if (section === "oidc" || section === "social") {
-    return "oidc"
-  }
-
-  return section
-}
 
 const activeSection = computed(() => normalizeSection(route.query.section) || "profile")
 
@@ -120,16 +97,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="hasKratosFlow" class="w-full flex-1 flex flex-col items-center justify-center px-0 py-4">
+  <div v-if="hasKratosFlow" class="flex w-full flex-1 flex-col px-0 py-4">
     <KratosSettingsFlow :section="activeSection" />
   </div>
-  <div v-else class="w-full flex-1 flex flex-col items-center justify-center gap-4 px-0 py-4">
-    <div class="w-full max-w-2xl space-y-1">
-      <h2 class="text-lg font-semibold">{{ t("userSettings.sections.accountTitle") }}</h2>
-      <p class="text-sm text-muted-foreground">{{ t("userSettings.sections.accountDescription") }}</p>
-    </div>
+  <div v-else class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-0 py-4">
+    <PageHeader
+      size="compact"
+      :title="t('userSettings.sections.accountTitle')"
+      :description="t('userSettings.sections.accountDescription')"
+    />
 
-    <div class="w-full max-w-2xl flex flex-col gap-4">
+    <div class="flex w-full flex-col gap-4">
       <ProfileSettingsCard />
       <AfdianBindingCard />
       <SecuritySettingsCard />

@@ -325,6 +325,37 @@ export function isNewCodeUnsaved(job: InheritJob): boolean {
   return hasJobWarning(job, "vault_store_failed")
 }
 
+/**
+ * The turns of a followed job the page brings into view: it just started,
+ * the account preview is in and waits for the owner, or a new code arrived.
+ */
+export type InheritJobMoment = "created" | "awaiting_confirm" | "new_code"
+
+/**
+ * Which of those turns `next` is, seen after `previous` (null for a job the
+ * page only just picked up: a reload shows the page from the top instead).
+ */
+export function jobMomentBetween(previous: InheritJob | null, next: InheritJob): Exclude<InheritJobMoment, "created"> | null {
+  if (!previous || previous.id !== next.id) return null
+  if (next.status === "awaiting_confirm" && previous.status !== "awaiting_confirm") return "awaiting_confirm"
+  if (next.newCode && !previous.newCode) return "new_code"
+  return null
+}
+
+/**
+ * Steps a stopped job never reached, in one fold: `shown` is every step up
+ * to the last one that ran, `hidden` the untouched tail. A job still running
+ * (or one that ran every step) hides nothing.
+ */
+export function splitUnreachedSteps(job: InheritJob): { shown: InheritJobStep[]; hidden: InheritJobStep[] } {
+  if (!isTerminalJobStatus(job.status)) return { shown: job.steps, hidden: [] }
+  let last = -1
+  job.steps.forEach((step, index) => {
+    if (step.status !== "pending") last = index
+  })
+  return { shown: job.steps.slice(0, last + 1), hidden: job.steps.slice(last + 1) }
+}
+
 /** Milliseconds a step took (or has been running); null when it has not started. */
 export function stepDurationMs(step: Pick<InheritJobStep, "startedAt" | "finishedAt" | "status">, now: number): number | null {
   if (!step.startedAt) return null

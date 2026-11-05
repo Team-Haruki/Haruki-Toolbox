@@ -48,6 +48,7 @@ export function useAdminTicketList() {
   const loadError = ref<ErrorDescription | null>(null)
   const ticketNotificationsEnabled = ref(false)
   const ticketNotificationsLoading = ref(false)
+  const ticketNotificationsError = ref<ErrorDescription | null>(null)
   const ticketNotificationsSaving = ref(false)
   const ticketNotificationRecipients = ref<AdminTicketNotificationRecipient[]>([])
   const ticketNotificationRecipientsLoading = ref(false)
@@ -156,6 +157,7 @@ export function useAdminTicketList() {
 
   async function loadTicketNotificationPreference() {
     ticketNotificationsLoading.value = true
+    ticketNotificationsError.value = null
     try {
       const preference = await getAdminTicketNotificationPreference()
       ticketNotificationsEnabled.value = preference.ticketEmailNotificationsEnabled
@@ -163,9 +165,9 @@ export function useAdminTicketList() {
         syncTicketNotificationRecipient(userStore.userId, preference.ticketEmailNotificationsEnabled)
       }
     } catch (error: unknown) {
-      toast.error(t("tickets.adminList.notifications.loadFailedTitle"), {
-        description: extractErrorMessage(error, t("tickets.adminList.notifications.loadFailedFallback")),
-      })
+      // A secondary widget: reported inline next to the switch (no toast),
+      // so a backend outage does not stack toasts over the list's own error.
+      ticketNotificationsError.value = describeError(error, t("tickets.adminList.notifications.loadFailedFallback"))
     } finally {
       ticketNotificationsLoading.value = false
     }
@@ -285,7 +287,9 @@ export function useAdminTicketList() {
     hasActiveFilters,
     ticketNotificationsEnabled,
     ticketNotificationsLoading,
+    ticketNotificationsError,
     ticketNotificationsSaving,
+    loadTicketNotificationPreference,
     ticketNotificationRecipients,
     ticketNotificationRecipientsLoading,
     ticketNotificationRecipientsSavingUserId,

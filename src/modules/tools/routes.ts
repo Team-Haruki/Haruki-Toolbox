@@ -7,13 +7,15 @@ export const toolRoutes: RouteRecordRaw[] = [
         path: "/pt_calc",
         redirect: "/pt-calculator",
     },
+    // The old per-type upload pages were the manual file upload; land on that
+    // tab with the matching data type preselected, not on the iOS default.
     {
         path: "/upload_suite",
-        redirect: "/upload-data",
+        redirect: { path: "/upload-data", query: { tab: "file", type: "suite" } },
     },
     {
         path: "/upload_mysekai",
-        redirect: "/upload-data",
+        redirect: { path: "/upload-data", query: { tab: "file", type: "mysekai" } },
     },
     {
         path: "/pt-calculator",

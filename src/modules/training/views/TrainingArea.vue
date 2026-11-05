@@ -425,7 +425,8 @@ function retry() {
                 loading="lazy"
               >
               <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-medium" :title="view.name">{{ view.name }}</p>
+                <!-- Two lines rather than an ellipsis: a `title` tooltip is unreachable on touch. -->
+                <p class="line-clamp-2 text-sm font-medium break-words" :title="view.name">{{ view.name }}</p>
                 <div class="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                   <span v-if="targetLabel(view)" class="inline-flex items-center gap-1">
                     <img
@@ -528,6 +529,8 @@ function retry() {
                 <span v-if="row.materials.length === 0" class="text-xs text-muted-foreground">
                   {{ t("training.area.notInShop") }}
                 </span>
+                <!-- A legend for the icon-only pairs: "3,000/1,400" is have/need. -->
+                <span v-else class="text-[11px] text-muted-foreground">{{ t("training.area.materialsLegend") }}</span>
                 <span
                   v-for="material in row.materials"
                   :key="material.materialId"
@@ -556,9 +559,10 @@ function retry() {
 
       <!-- All upgrade levels dialog -->
       <Dialog :open="dialogView != null" @update:open="handleDialogOpenChange">
-        <DialogContent class="max-h-[85vh] gap-3 overflow-y-auto sm:max-w-xl">
+        <DialogContent class="max-h-[85vh] gap-3 overflow-y-auto sm:max-w-xl" :description="t('training.area.description')">
+          <!-- `pr-8` keeps the level out from under the close button. -->
           <DialogHeader v-if="dialogView">
-            <DialogTitle class="flex items-center gap-2 text-base">
+            <DialogTitle class="flex items-center gap-2 pr-8 text-base">
               <img
                 v-if="itemIconUrl(dialogView)"
                 :src="itemIconUrl(dialogView)!"
@@ -573,6 +577,7 @@ function retry() {
             </DialogTitle>
           </DialogHeader>
           <div v-if="dialogView" class="flex flex-col gap-1.5">
+            <p class="text-[11px] text-muted-foreground">{{ t("training.area.materialsLegend") }}</p>
             <div
               v-for="row in upgradeRows(dialogView)"
               :key="row.level"

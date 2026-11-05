@@ -4,13 +4,7 @@ import type { GameAccountBinding, SekaiRegion } from "@/types/store"
 import { Button } from "@/components/ui/button"
 import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import VerificationStatusBadge from "@/modules/user-settings/components/VerificationStatusBadge.vue"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Inbox, KeyRound, Pencil, Plus, Star, Trash2 } from "lucide-vue-next"
 
 defineProps<{
@@ -31,14 +25,9 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <Card class="w-full max-w-2xl">
-    <CardHeader class="space-y-4">
-      <div>
-        <CardTitle>{{ t("userSettings.gameBinding.title") }}</CardTitle>
-        <CardDescription>
-          {{ t("userSettings.gameBinding.description") }}
-        </CardDescription>
-      </div>
+  <Card class="w-full">
+    <!-- The page header above names the page; the card holds the list and its actions. -->
+    <CardHeader>
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="outline" class="w-full sm:w-auto" @click="emit('received-grants')">
           <Inbox class="h-4 w-4 mr-2" />

@@ -2,18 +2,23 @@
 import { useI18n } from "vue-i18n"
 
 const { t } = useI18n()
+
+// Inline credit links inside running text: on touch devices an invisible
+// vertical padding (cancelled by the negative margin, so the line box does not
+// grow) lifts the hit area to 40 px without changing how the paragraph reads.
+const linkClass = "font-medium text-foreground underline underline-offset-2 hover:text-primary pointer-coarse:-my-2 pointer-coarse:inline-block pointer-coarse:py-2"
 </script>
 
 <template>
   <div class="space-y-1.5 rounded-md border bg-muted/20 p-2.5 text-xs leading-6 text-muted-foreground sm:p-3 xl:p-4">
     <p>
       {{ t("deckRecommend.attribution.originalPrefix") }}<a
-        class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+        :class="linkClass"
         href="https://github.com/xfl03"
         target="_blank"
         rel="noreferrer noopener"
       >xfl03(33)</a>{{ t("deckRecommend.attribution.originalMiddle") }}<a
-        class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+        :class="linkClass"
         href="https://github.com/xfl03/sekai-calculator"
         target="_blank"
         rel="noreferrer noopener"
@@ -21,12 +26,12 @@ const { t } = useI18n()
     </p>
     <p>
       {{ t("deckRecommend.attribution.optimizationPrefix") }}<a
-        class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+        :class="linkClass"
         href="https://github.com/NeuraXmy"
         target="_blank"
         rel="noreferrer noopener"
       >{{ t("deckRecommend.attribution.neuraxmyName") }}</a>{{ t("deckRecommend.attribution.optimizationMiddle") }}<a
-        class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+        :class="linkClass"
         href="https://github.com/NeuraXmy/sekai-deck-recommend-cpp"
         target="_blank"
         rel="noreferrer noopener"
@@ -34,7 +39,7 @@ const { t } = useI18n()
     </p>
     <p>
       {{ t("deckRecommend.attribution.enginePrefix") }}<router-link
-        class="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+        :class="linkClass"
         to="/about"
       >{{ t("deckRecommend.attribution.aboutLink") }}</router-link>{{ t("deckRecommend.attribution.engineSuffix") }}
     </p>

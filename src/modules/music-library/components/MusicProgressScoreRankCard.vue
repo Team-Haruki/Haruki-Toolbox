@@ -159,7 +159,8 @@ function styleOf(row: MusicProgressScoreRankRow) {
         <CardTitle class="text-base">{{ t("musicProgress.scoreRank.title") }}</CardTitle>
         <span class="basis-full text-xs tabular-nums text-muted-foreground sm:ml-auto sm:basis-auto sm:text-right">{{ summaryText }}</span>
       </button>
-      <CardDescription class="text-xs">{{ t("musicProgress.scoreRank.description") }}</CardDescription>
+      <!-- The total here (every song) differs from the per-difficulty totals; say why. -->
+      <CardDescription class="text-xs">{{ t("musicProgress.scoreRank.description") }} {{ t("musicProgress.scoreRank.totalHint") }}</CardDescription>
       <div v-if="expanded" class="mt-2 flex flex-col gap-2">
         <div class="flex flex-wrap items-center gap-1.5">
           <span class="mr-1 text-xs font-medium text-muted-foreground">{{ t("musicProgress.scoreRank.filter.label") }}</span>

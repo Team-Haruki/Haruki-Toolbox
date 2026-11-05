@@ -16,7 +16,9 @@ const TERM_FIXES = [
   [/賬號/g, "帳號"],
   [/賬戶/g, "帳戶"],
   [/繫結/g, "綁定"],
-  [/資料型別/g, "資料類型"],
+  // 类型 -> 型別 is the programming data-type term (TypeScript 型別); every
+  // 类型 in this UI (活動類型, 授權類型, Live 類型) is the plain 類型.
+  [/型別/g, "類型"],
   [/許可權/g, "權限"],
   [/傢俱/g, "家具"],
   // 发布 -> 釋出 is software-release wording; UI dates/events use 發布.
@@ -43,6 +45,17 @@ const TERM_FIXES = [
   // security keys follow suit. Other 金鑰 (TOTP secret, device key) stay.
   [/通行金鑰/g, "通行密鑰"],
   [/安全金鑰/g, "安全密鑰"],
+  // 对象 (the person/thing an action targets: 對比對象, 授權對象) -> 物件 is the
+  // programming "object". zh-CN never writes 物件 itself; the only programming
+  // 对象 in the copy are the admin JSON-schema errors (JSON 物件 / 須為物件),
+  // which keep 物件.
+  [/(?<!JSON |須為)物件/g, "對象"],
+  // 实例 -> 例項 is programming jargon; Taiwan UI says 實例 (HarukiBot NEO 實例).
+  [/例項/g, "實例"],
+  // 脚本 -> 指令碼; Surge/Shadowrocket's own zh-TW UI and players say 腳本.
+  [/指令碼/g, "腳本"],
+  // 高级 -> 高階 is "high-end"; advanced settings/features are 進階 in Taiwan.
+  [/高階/g, "進階"],
   // 二维码 -> 二維碼 is mainland usage; Taiwan says QR Code, spaced from CJK text.
   [/二維碼/g, (match, offset, text) => {
     const cjk = /[\u3400-\u9fff]/

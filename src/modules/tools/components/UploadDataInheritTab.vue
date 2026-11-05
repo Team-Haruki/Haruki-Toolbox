@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, toRef, useTemplateRef, watch } from "vue"
+import { computed, nextTick, ref, toRef, useTemplateRef, watch } from "vue"
 import type { AcceptableValue } from "reka-ui"
 import { useI18n } from "vue-i18n"
 import { toast } from "vue-sonner"
-import { RouterLink, useRoute } from "vue-router"
+import { RouterLink, useRoute, useRouter } from "vue-router"
 import {
   Database,
   Dices,
@@ -14,6 +14,8 @@ import {
   Lock,
   LogIn,
   LucideChevronDown,
+  LucideAlertTriangle,
+  RefreshCw,
   Repeat,
   ScanSearch,
   ServerCog,
@@ -29,10 +31,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import FieldError from "@/shared/components/FieldError.vue"
+import { redirectToLogin } from "@/core/router/navigation"
 import { useUserStore } from "@/shared/stores/user"
 import { toInheritApiError } from "@/modules/tools/api/inherit"
 import type { InheritNewPasswordMode } from "@/modules/tools/lib/inherit-job"
 import { describeInheritApiError } from "@/modules/tools/lib/inherit-messages"
+import type { InheritJobMoment } from "@/modules/tools/lib/inherit-job"
+import { revealElement } from "@/modules/tools/lib/reveal-element"
 import { INHERIT_FIELD_IDS, useInheritUploadForm } from "@/modules/tools/composables/useInheritUploadForm"
 import { useInheritJob } from "@/modules/tools/composables/useInheritJob"
 import { useInheritVault } from "@/modules/tools/composables/useInheritVault"
@@ -46,6 +51,7 @@ const props = defineProps<{
 
 const { t, locale } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 const currentUserId = () => (userStore.isLoggedIn ? userStore.userId : null)
 
@@ -100,13 +106,46 @@ async function submit() {
       document.getElementById(INHERIT_FIELD_IDS[field])?.focus()
       return
     }
-    toast.error(t("tools.uploadData.toast.uploadFailedTitle"), { description: message })
+    // Nothing was uploaded yet: the refused action is reading the account.
+    toast.error(t("tools.uploadData.inheritTab.toast.readFailedTitle"), {
+      description: message,
+      ...(problem.code === "unauthenticated" ? { action: { label: t("tools.uploadData.inheritTab.loginRequired.action"), onClick: goSignInAgain } } : {}),
+    })
   }
+}
+
+// The backend refused the session; the request layer only signs out when
+// Kratos confirms it is gone, so here the owner chooses to: the stale
+// session is dropped (the login page would bounce a "logged-in" user).
+function goSignInAgain() {
+  userStore.clearUser()
+  void redirectToLogin(router, { redirect: route.fullPath, reason: "session-expired" })
 }
 
 function goToVault() {
   document.getElementById("inherit-vault")?.scrollIntoView({ behavior: "smooth", block: "start" })
 }
+
+// A turn of the job the page made on its own (the panel replacing the form,
+// the preview waiting to be confirmed, the new code) is scrolled into view
+// and focused, and read out through the live region below.
+const liveMessage = ref("")
+const MOMENT_TARGETS: Record<InheritJobMoment, string> = {
+  created: "inherit-job",
+  awaiting_confirm: "inherit-confirm",
+  new_code: "inherit-job-code",
+}
+watch(inheritJob.moment, async (moment) => {
+  if (!moment) return
+  await nextTick()
+  revealElement(MOMENT_TARGETS[moment.kind])
+  liveMessage.value = ""
+  await nextTick()
+  liveMessage.value = t(`tools.uploadData.inheritJob.announce.${moment.kind}`)
+}, { flush: "post" })
+
+// Inline links in the prep notes: a 40 px hit box on touch without growing the line.
+const touchLinkClass = "pointer-coarse:inline-block pointer-coarse:-my-3 pointer-coarse:-mx-1.5 pointer-coarse:px-1.5 pointer-coarse:py-3"
 
 function openVaultReset() {
   vaultPanel.value?.openReset()
@@ -145,6 +184,26 @@ watch(
   </template>
 
   <template v-else>
+    <p class="sr-only" role="status" aria-live="polite" data-testid="inherit-live">{{ liveMessage }}</p>
+
+    <!-- A job this browser was following could not be fetched: it may still be
+         running, so the form below comes with this notice rather than alone. -->
+    <Alert
+      v-if="!inheritJob.job.value && !inheritJob.resuming.value && inheritJob.resumeError.value"
+      class="mb-2 border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-100"
+      data-testid="inherit-resume-failed"
+    >
+      <LucideAlertTriangle class="h-5 w-5" />
+      <AlertTitle>{{ t("tools.uploadData.inheritJob.resumeFailed.title") }}</AlertTitle>
+      <AlertDescription class="space-y-2 text-current">
+        <p>{{ t("tools.uploadData.inheritJob.resumeFailed.description", { reason: describeInheritApiError(t, inheritJob.resumeError.value) }) }}</p>
+        <Button type="button" variant="outline" size="sm" @click="inheritJob.retryResume">
+          <RefreshCw class="size-4" />
+          {{ t("tools.uploadData.inheritJob.resumeFailed.retry") }}
+        </Button>
+      </AlertDescription>
+    </Alert>
+
     <div v-if="inheritJob.resuming.value && !inheritJob.job.value" class="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
       <Loader2 class="size-4 animate-spin" />
     </div>
@@ -190,7 +249,7 @@ watch(
               <Link2 class="mt-px size-3.5 shrink-0" aria-hidden="true" />
               <span class="min-w-0">
                 {{ t("tools.uploadData.inheritTab.prep.bind") }}
-                <RouterLink :to="{ name: 'user.gameAccountBindings' }" class="ms-1 font-medium text-primary underline-offset-4 hover:underline">
+                <RouterLink :to="{ name: 'user.gameAccountBindings' }" :class="['ms-1 font-medium text-primary underline-offset-4 hover:underline', touchLinkClass]">
                   {{ t("tools.uploadData.inheritTab.prep.bindLink") }}
                 </RouterLink>
               </span>
@@ -280,7 +339,7 @@ watch(
                 </div>
                 <p v-if="!canShowMySekaiDataType" class="text-xs text-muted-foreground" data-testid="inherit-mysekai-qq-note">
                   {{ t("tools.uploadData.inheritTab.prep.mysekaiQQ") }}
-                  <RouterLink :to="{ name: 'user.harukiBotAuthorization' }" class="ms-1 font-medium text-primary underline-offset-4 hover:underline">
+                  <RouterLink :to="{ name: 'user.harukiBotAuthorization' }" :class="['ms-1 font-medium text-primary underline-offset-4 hover:underline', touchLinkClass]">
                     {{ t("tools.uploadData.inheritTab.prep.mysekaiQQLink") }}
                   </RouterLink>
                 </p>

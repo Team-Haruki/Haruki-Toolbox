@@ -30,8 +30,9 @@ function openFullDetail() {
         <span>{{ t("rankBorder.result.score") }}</span>
         <strong>{{ facts.scoreLabel }}</strong>
       </div>
-      <div>
-        <span>{{ t("rankBorder.result.latestPlain") }}</span>
+      <!-- The value is relative ("50 s ago"), so the label says "updated" rather than naming a clock. -->
+      <div :title="facts.timestamp ? t('rankBorder.result.latest', { value: ui.formatTimestamp(facts.timestamp) }) : undefined">
+        <span>{{ t("rankBorder.result.updatedAgo") }}</span>
         <strong><RelativeTime :timestamp="facts.timestamp" /></strong>
       </div>
       <div v-if="facts.hourlySpeedLabel">

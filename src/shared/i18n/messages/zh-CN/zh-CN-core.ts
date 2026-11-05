@@ -4,17 +4,17 @@ export default {
   "uploadedGameData": {
     "missingTitle": "尚未上传游戏数据",
     "missing": {
-      "suite": "该游戏账号还没有上传过游戏数据（Suite，即账号完整数据），请先到「数据上传」页上传，再回来点刷新。",
-      "mysekai": "该游戏账号还没有上传过烤森数据（MySekai），请先到「数据上传」页上传，再回来点刷新。",
-      "profile": "还没有这个游戏账号的数据，暂时无法读取实时资料。请先到「数据上传」页上传一次游戏数据，再回来点刷新。"
+      "suite": "该游戏账号还没有上传过游戏数据（Suite，即账号完整数据），请先到「上传数据」页上传，再回来点刷新。",
+      "mysekai": "该游戏账号还没有上传过烤森数据（MySekai），请先到「上传数据」页上传，再回来点刷新。",
+      "profile": "还没有这个游戏账号的数据，暂时无法读取实时资料。请先到「上传数据」页上传一次游戏数据，再回来点刷新。"
     },
-    "missingGranted": "该账号的主人还没有上传游戏数据。请联系对方上传；如果对方已允许你代传，你也可以在「数据上传」页上传。",
-    "uploadAction": "前往数据上传页",
+    "missingGranted": "该账号的主人还没有上传游戏数据。请联系对方上传；如果对方已允许你代传，你也可以在「上传数据」页上传。",
+    "uploadAction": "前往上传数据页",
     "uploadedAt": "数据上传时间：{time}",
     "grantLapsed": "该账号的授权已过期或被撤销，请联系授权方重新授权。",
     "refreshUpToDate": "数据已是最新",
     "refreshUpdated": "已更新到 {time}",
-    "missingAccounts": "有 {count} 个绑定账号尚未上传游戏数据，请先前往数据上传页完成上传。",
+    "missingAccounts": "有 {count} 个绑定账号尚未上传游戏数据，请先前往上传数据页完成上传。",
     "otherFailures": "另有 {count} 个账号读取失败，请稍后重试。"
   },
   "app": {
@@ -27,6 +27,8 @@ export default {
     "confirm": "确认",
     "close": "关闭",
     "back": "返回",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
     "tip": "提示",
     "actionFailed": "操作失败，请稍后重试",
     "postSuccessWarningTitle": "操作成功，但有后续异常",
@@ -39,6 +41,7 @@ export default {
   },
   "backendMessages": {
     "notAuthenticated": "你还没有登录，或登录状态已过期。请重新登录后再试。",
+    "forbidden": "没有权限访问此内容。如果你认为这是误判，请联系管理员。",
     "uploadNotAllowed": "当前账号没有向这个游戏账号上传数据的权限。请使用绑定了该游戏账号的账号上传，或请账号所有者授予你上传权限。",
     "writeGrantExpired": "账号所有者授予你的上传权限已过期或被撤销。请联系所有者重新授权，或改为上传自己绑定的游戏账号。",
     "bindingAccessDenied": "你没有访问这个游戏账号数据的权限。如果是他人授权的账号，授权可能已过期或被撤销，请联系授权方重新授权。",
@@ -93,6 +96,7 @@ export default {
       "cancel": "取消",
       "loadingFlow": "正在加载登录页面…",
       "restartFlow": "重新开始",
+      "triggerUnavailable": "通行密钥暂时不可用，请使用其他方式继续。",
       "loadFlowFailed": "{flow}已过期或暂时无法连接，请点击下方按钮重新开始。",
       "serviceUnavailable": "登录服务暂时无法连接，请稍后重试（错误码 {status}）。",
       "flowNames": {
@@ -130,7 +134,7 @@ export default {
         "1010009": "使用验证器 App 验证",
         "1010010": "使用备用恢复码验证",
         "1010011": "使用安全密钥登录",
-        "1010012": "请准备好你的安全密钥（如 USB 密钥或指纹识别设备），然后点击“继续”。",
+        "1010012": "请准备好你的安全密钥（如 USB 密钥或指纹识别设备），然后点击「继续」。",
         "1010013": "继续",
         "1010014": "验证码已发送到你填写的地址。如果没有收到，请检查地址是否填写正确后重试。",
         "1010015": "发送登录验证码",
@@ -171,9 +175,9 @@ export default {
         "1050015": "{secrets}",
         "1050016": "停用备用恢复码",
         "1050017": "这是验证器 App 的密钥。无法扫描二维码时，可以在验证器中手动输入它。",
-        "1050018": "移除安全密钥“{display_name}”",
+        "1050018": "移除安全密钥「{display_name}」",
         "1050019": "添加通行密钥",
-        "1050020": "移除通行密钥“{display_name}”",
+        "1050020": "移除通行密钥「{display_name}」",
         "1050023": "你的账号由所属组织管理。如需修改这些设置，请联系组织管理员。",
         "1050024": "请先设置第二步验证方式，然后继续。",
         "1060001": "账号已成功找回。请尽快修改密码，或设置其他登录方式。",
@@ -211,8 +215,8 @@ export default {
         "4000003": "内容太短，至少需要 {min_length} 个字符。",
         "4000004": "格式不正确，请检查后重新填写。",
         "4000005": "这个密码不能使用，请换一个密码。",
-        "4000006": "邮箱或密码不正确，请检查后重试。忘记密码可以点击“忘记密码？”找回。",
-        "4000007": "这个邮箱已经注册过账号。请直接登录，或使用“忘记密码”找回。",
+        "4000006": "邮箱或密码不正确，请检查后重试。忘记密码可以点击「忘记密码？」找回。",
+        "4000007": "这个邮箱已经注册过账号。请直接登录，或使用「忘记密码」找回。",
         "4000008": "动态验证码不正确，请输入验证器中最新的验证码。",
         "4000009": "没有找到可用于登录的账号标识，请填写邮箱后重试。",
         "4000010": "这个账号的邮箱还没有完成验证。请先查收验证邮件并完成验证。",
@@ -385,6 +389,8 @@ export default {
     "login": {
       "title": "登录到 Haruki 工具箱",
       "description": "使用您的邮箱和密码登录",
+      "descriptionMfa": "请完成第二步验证以继续登录",
+      "descriptionRefresh": "为确认身份，请再次输入密码",
       "emailLabel": "邮箱",
       "emailPlaceholder": "请输入您的邮箱",
       "passwordLabel": "密码",
@@ -454,6 +460,9 @@ export default {
       "description": "登录服务返回了错误，请返回登录页重新开始；如果多次出现，请稍后再试。",
       "retry": "重新加载",
       "backToLogin": "返回登录",
+      "backToHome": "返回首页",
+      "alreadySignedInTitle": "你已经登录了",
+      "alreadySignedInDescription": "当前账号已处于登录状态，无需再次登录，可以直接继续使用。",
       "missingIdDescription": "链接里缺少错误编号，无法查询具体原因。请返回登录页重新开始。",
       "loadFailedDescription": "无法读取错误详情，请检查网络后重试。",
       "fallbackDescription": "登录服务暂时无法完成这次操作，请返回登录页重新开始。",
@@ -508,7 +517,7 @@ export default {
         "step2Link": "游戏账号管理",
         "step3": "用 iOS 模块 / HarukiProxy {link}一次游戏数据",
         "step3Link": "上传",
-        "outro": "之后就能看卡牌、活动记录、组卡等。"
+        "outro": "之后就能看卡牌、活动记录、组卡推荐等。"
       }
     },
     "externalLinks": "站外链接",
@@ -530,7 +539,7 @@ export default {
       "badge": "进行中",
       "links": {
         "rankBorder": "榜线",
-        "deckRecommend": "组卡",
+        "deckRecommend": "组卡推荐",
         "detail": "详情"
       }
     }
@@ -674,6 +683,7 @@ export default {
       "title": "评分奖励明细",
       "description": "评分是递进的（C → B → A → S），每首歌只有一个当前评分，达到更高评分即同时取得较低评分的奖励；任意模式（单人、多人等）达成均计入。当前评分以你上传的数据中的成就记录为准。",
       "summary": "已获得：{obtained} · 可获取：{remaining} · 已拿满 {complete} / {total} 首",
+      "totalHint": "这里的总数包含曲库中的全部歌曲；上方各难度的总数只计有该难度谱面的歌曲。",
       "none": "无",
       "filter": {
         "label": "只看",
@@ -825,7 +835,7 @@ export default {
       "filtersTitle": "筛选",
       "resetFilters": "重置筛选",
       "total": "共 {total} 个卡池",
-      "empty": "没有符合筛选条件的卡池"
+      "empty": "没有符合当前筛选条件的卡池"
     },
     "detail": {
       "back": "返回卡池一览",
@@ -928,6 +938,10 @@ export default {
       "title": "角色卡牌收集",
       "summary": "已收集 {owned}/{total} · {percent}%",
       "empty": "暂无卡牌数据"
+    },
+    "partialUpload": {
+      "title": "以下模块需要上传的游戏数据",
+      "description": "卡牌收集、挑战 Live 与活动 Pt 走势来自你上传的账号数据（Suite）。到「数据上传」页上传一次后，这些模块就会显示。"
     }
   },
   "training": {
@@ -1058,7 +1072,8 @@ export default {
       "canUpgrade": "可升级",
       "nextLevel": "下一级",
       "nextBonus": "下级加成",
-      "showAll": "全部等级"
+      "showAll": "全部等级",
+      "materialsLegend": "材料：拥有 / 所需"
     },
     "leader": {
       "title": "队长次数",
@@ -1157,7 +1172,7 @@ export default {
       "rankBorder": "榜线查询",
       "about": "关于",
       "ptCalculator": "控分计算",
-      "uploadData": "数据上传",
+      "uploadData": "上传数据",
       "sekaiStation": "协力车站",
       "botNeoRegistration": "HarukiBot NEO 注册",
       "musicLibrary": "歌曲一览",
@@ -1230,10 +1245,10 @@ export default {
     "userIdentitySettings": "登录与安全",
     "userIdentityProfileSettings": "用户资料设置",
     "userIdentityPasswordSettings": "修改密码",
-    "userIdentityMfaSettings": "多因素认证",
+    "userIdentityMfaSettings": "两步验证",
     "userIdentitySocialSettings": "社交登录设置",
     "userIdentitySessionSettings": "登录设备",
-    "gameAccountBindings": "绑定游戏账号",
+    "gameAccountBindings": "游戏账号管理",
     "harukiBotAuthorization": "HarukiBot数据授权",
     "oauthAuthorizations": "已授权的应用",
     "oauthLogin": "继续登录授权",
@@ -1354,8 +1369,8 @@ export default {
         "title": "标题"
       },
       "results": {
-        "count": "共 {count} 首",
-        "empty": "没有符合当前筛选条件的歌曲。",
+        "count": "共 {count} 首歌曲",
+        "empty": "没有符合当前筛选条件的歌曲",
         "aliasSearching": "正在匹配别名..."
       },
       "downloading": "正在下载游戏数据库... {progress}%",
@@ -1572,7 +1587,7 @@ export default {
       "resetFilters": "重置筛选",
       "loadFailed": "活动数据加载失败。",
       "retry": "重试",
-      "empty": "没有符合当前筛选条件的活动。"
+      "empty": "没有符合当前筛选条件的活动"
     },
     "detail": {
       "back": "返回活动图鉴",
@@ -1598,7 +1613,7 @@ export default {
       "cardsEmpty": "该活动暂无卡片。",
       "links": {
         "rankBorder": "查看榜线",
-        "deckRecommend": "活动组卡",
+        "deckRecommend": "查看组卡推荐",
         "story": "播放剧情"
       }
     }
@@ -1635,8 +1650,8 @@ export default {
       "label": "图片加载线路",
       "help": "用于加载卡牌缩略图等游戏资源。首次进入网站会自动选择延迟最低的线路，打开设置时会重新测速。",
       "placeholder": "请选择线路",
-      "global": "海外用户推荐",
-      "chinaCdn": "中国-腾讯云加速",
+      "global": "海外推荐",
+      "chinaCdn": "中国大陆推荐（腾讯云）",
       "checking": "测速中",
       "unknown": "未测速",
       "failed": "无法连接",
@@ -1758,6 +1773,8 @@ export default {
       "timeout": "请求超时，请稍后重试。",
       "rateLimited": "操作太频繁，请稍等片刻后再试。",
       "serverUnavailable": "服务器暂时不可用，请稍后重试（错误码 {status}）。",
+      "forbidden": "没有权限访问此内容。如果你认为这是误判，请联系管理员。",
+      "unexpectedPayload": "服务器返回的数据格式不符合预期，请刷新重试；如果持续出现，请联系管理员。",
       "detail": "详情：{detail}"
     },
     "loadError": {
@@ -1871,7 +1888,8 @@ export default {
       "showUnreleased": "显示未上线内容",
       "endsIn": "剩余 {time}",
       "startsIn": "{time} 后开始",
-      "permanent": "常驻"
+      "permanent": "常驻",
+      "tbd": "未定"
     },
     "countdown": {
       "toStart": "距开始",
@@ -1889,6 +1907,8 @@ export default {
       "notFound": "当前区服的数据里没有这个条目。可以切换区服再试。",
       "loadError": "详情数据加载失败",
       "assetName": "内部名称",
+      "copyAssetName": "复制内部名称",
+      "assetNameCopied": "已复制内部名称",
       "period": "期间",
       "viewAllCount": "查看全部 ({count})",
       "zoom": "点击放大查看",

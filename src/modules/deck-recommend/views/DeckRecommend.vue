@@ -13,6 +13,7 @@ import {
   CardHeader,
 } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import PageHeader from "@/shared/components/PageHeader.vue"
 import { resolveSekaiRegionLabel } from "@/lib/sekai-region"
 import { formatGameAccountLabel } from "@/lib/game-account-display"
 import {
@@ -464,7 +465,8 @@ const scenarioDefaultAlgorithms = computed<DeckRecommendAlgorithm[]>(() => {
   return activeRecommendTarget.value === "score" ? ["dfs"] : ["dfs_ga"]
 })
 const showLiveTypeSelect = computed(() => recommendMode.value !== "mysekai")
-const isLiveTypeLocked = computed(() => recommendMode.value === "bonus" || recommendMode.value === "challenge")
+const isLiveTypeLockedMode = (mode: DeckRecommendMode) => mode === "bonus" || mode === "challenge"
+const isLiveTypeLocked = computed(() => isLiveTypeLockedMode(recommendMode.value))
 const isMultiLiveOptionsEnabled = computed(() =>
   showLiveTypeSelect.value
   && recommendMode.value !== "bonus"
@@ -1008,11 +1010,25 @@ watch(
   },
 )
 
+// Bonus and challenge decks only run as solo live, so those modes lock the
+// live type. The choice made before the lock comes back when the mode unlocks
+// again; without this, one visit to the challenge tab silently turned every
+// later event recommendation into a solo-live run.
+let liveTypeBeforeLock: DeckRecommendLiveType | null = null
+
 watch(
   recommendMode,
-  () => {
+  (_mode, previousMode) => {
     if (isLiveTypeLocked.value) {
+      if (previousMode != null && !isLiveTypeLockedMode(previousMode)) {
+        liveTypeBeforeLock = liveType.value
+      }
       liveType.value = "solo"
+      return
+    }
+    if (previousMode != null && isLiveTypeLockedMode(previousMode)) {
+      liveType.value = liveTypeBeforeLock ?? "multi"
+      liveTypeBeforeLock = null
     }
   },
   { immediate: true },
@@ -1198,9 +1214,6 @@ function updateDataRegion(value: AcceptableValue) {
 function updateRecommendMode(value: AcceptableValue) {
   if (typeof value === "string" && isDeckRecommendMode(value)) {
     recommendMode.value = value
-    if (value === "bonus" || value === "challenge") {
-      liveType.value = "solo"
-    }
   }
 }
 
@@ -1483,6 +1496,7 @@ function resetDeckRecommendConfig() {
   dataRegion.value = selectedAccount.value?.server ?? "jp"
   recommendMode.value = "event"
   recommendTarget.value = "score"
+  liveTypeBeforeLock = null
   liveType.value = "multi"
   algorithmSelectionIsManual.value = false
   selectedAlgorithms.value = [...scenarioDefaultAlgorithms.value]
@@ -1760,10 +1774,12 @@ provideDeckRecommendFormContext({
 <template>
   <div class="flex min-w-0 w-full flex-1 flex-col py-1 sm:px-2 sm:py-4">
     <div class="mx-auto min-w-0 w-full max-w-[100rem] space-y-3 sm:space-y-4">
+      <PageHeader :title="t('deckRecommend.title')" :description="t('deckRecommend.description')" class="px-3 sm:px-0" />
       <!-- Wide screens: config pane on the left stays put while the results scroll on the right. -->
       <div class="grid min-w-0 grid-cols-1 gap-3 sm:gap-4 xl:grid-cols-[minmax(22rem,27rem)_minmax(0,1fr)] xl:items-start">
         <div class="min-w-0 xl:sticky xl:top-16 xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto xl:overscroll-contain xl:rounded-lg">
-          <Card v-show="showConfigCard" class="gap-0 rounded-lg py-0">
+          <!-- Compact card with its own header/footer paddings: the vertical padding and gap are owned by the sections. -->
+          <Card v-show="showConfigCard" size="compact" class="gap-0 py-0">
             <CardHeader class="@container gap-2 border-b px-3 py-3 sm:px-4 [.border-b]:pb-3">
               <Tabs :model-value="recommendMode" class="w-full min-w-0" @update:model-value="updateRecommendMode">
                 <TabsList class="grid h-auto w-full grid-cols-3 gap-1 @xs:grid-cols-5">
@@ -1771,7 +1787,7 @@ provideDeckRecommendFormContext({
                     v-for="option in modeOptions"
                     :key="option.value"
                     :value="option.value"
-                    class="h-auto min-h-7 min-w-0 px-1 text-xs leading-tight whitespace-normal @2xl:text-sm"
+                    class="h-auto min-h-8 min-w-0 px-1 text-xs leading-tight whitespace-normal @2xl:text-sm"
                   >
                     {{ option.label }}
                   </TabsTrigger>

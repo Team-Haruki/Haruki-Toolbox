@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
+import { useEventListener } from "@vueuse/core"
 import { useI18n } from "vue-i18n"
 import { LucideExternalLink, LucideLoader2, LucideZoomIn, LucideZoomOut } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
@@ -27,7 +28,8 @@ export type ImageLightboxItem = {
  * capped by the viewport, so a wide banner on a phone is a short wide box
  * rather than a fixed-height black letterbox. Pointer devices toggle a 2×
  * zoom on click; touch devices double-tap to zoom, pinch natively, and
- * swipe sideways between items. ← / → switch items from the keyboard.
+ * swipe sideways between items. ← / → switch items from the keyboard
+ * (wrapping at either end), Escape closes.
  */
 const props = withDefaults(defineProps<{
   items: readonly ImageLightboxItem[]
@@ -103,8 +105,23 @@ function selectItem(value: unknown) {
   }
 }
 
-function step(delta: number) {
-  selectItem(index.value + delta)
+function step(delta: number, wrap = false) {
+  const count = props.items.length
+  if (count === 0) {
+    return
+  }
+  const next = index.value + delta
+  selectItem(wrap ? (next + count) % count : next)
+}
+
+/**
+ * Reka would focus the first item tab on open; the viewer takes focus instead
+ * so the arrow keys page images at once and the tab strip keeps its own
+ * roving focus for people who Tab into it.
+ */
+function focusViewer(event: Event) {
+  event.preventDefault()
+  viewerRef.value?.focus({ preventScroll: true })
 }
 
 function handleLoad(url: string) {
@@ -173,25 +190,31 @@ function handleTouchEnd(event: TouchEvent) {
   }
 }
 
+// The dialog content is portalled (its wrapper renders a fragment, so a
+// `@keydown` on it is dropped); a window listener while open catches the
+// arrows wherever focus sits inside the modal. The item tabs' roving focus
+// also moves on arrows and loops, so stepping wraps to stay in step with it.
 function handleKeydown(event: KeyboardEvent) {
-  if (props.items.length < 2) {
+  if (!open.value || props.items.length < 2 || event.altKey || event.ctrlKey || event.metaKey) {
     return
   }
   if (event.key === "ArrowRight") {
     event.preventDefault()
-    step(1)
+    step(1, true)
   } else if (event.key === "ArrowLeft") {
     event.preventDefault()
-    step(-1)
+    step(-1, true)
   }
 }
+
+useEventListener(window, "keydown", handleKeydown)
 </script>
 
 <template>
   <Dialog v-model:open="open">
     <DialogContent
       class="flex max-h-[100dvh] w-[100vw] max-w-[100vw] flex-col gap-0 overflow-hidden rounded-none border-0 p-0 [--lightbox-max-h:calc(100dvh-3.5rem)] sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:max-w-[min(96vw,80rem)] sm:rounded-lg sm:border sm:p-0 sm:[--lightbox-max-h:calc(100dvh-5.5rem)]"
-      @keydown="handleKeydown"
+      @open-auto-focus="focusViewer"
     >
       <div class="flex min-w-0 items-center gap-2 border-b py-2 pr-12 pl-3 sm:pl-4">
         <div class="min-w-0 flex-1">
@@ -246,8 +269,9 @@ function handleKeydown(event: KeyboardEvent) {
       </p>
       <div
         ref="viewerRef"
+        tabindex="-1"
         :class="[
-          'relative flex min-h-0 flex-1 overflow-auto bg-black/90',
+          'relative flex min-h-0 flex-1 overflow-auto bg-black/90 outline-none',
           // Centering an overflowing flex child hides its start; zoomed boxes anchor top-left.
           zoomed ? 'items-start justify-start' : 'items-center justify-center',
         ]"

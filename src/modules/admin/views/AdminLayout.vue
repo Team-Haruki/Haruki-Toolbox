@@ -115,7 +115,7 @@ onBeforeUnmount(() => {
           :to="{ name: item.routeName }"
           :data-nav-item="item.value"
           :aria-current="activeItem?.value === item.value ? 'page' : undefined"
-          class="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+          class="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors pointer-coarse:min-h-10 pointer-coarse:px-3.5"
           :class="activeItem?.value === item.value
             ? 'border-primary/40 bg-primary/10 text-primary'
             : 'border-border bg-card text-muted-foreground hover:text-foreground'"

@@ -3,7 +3,7 @@ import { computed } from "vue"
 import { useI18n } from "vue-i18n"
 import { Badge, type BadgeVariants } from "@/components/ui/badge"
 import { useNowTick } from "@/composables/useNowTick"
-import { isCatalogPermanentEnd, type CatalogStatus } from "./types"
+import { isCatalogPlaceholderDate, type CatalogStatus } from "./types"
 
 /**
  * `upcoming | ongoing | ended` pill. With `untilMs` (start for upcoming, end
@@ -38,9 +38,10 @@ const hint = computed(() => {
   if (props.untilMs == null || props.status === "ended") {
     return null
   }
-  // Permanent pools (end in 2099) say so instead of counting down.
-  if (props.status === "ongoing" && isCatalogPermanentEnd(props.untilMs, now.value)) {
-    return t("catalog.status.permanent")
+  // A year-2099 sentinel is a placeholder, never a countdown: permanent
+  // pools (ongoing) say so, and an undecided start (upcoming) says "TBD".
+  if (isCatalogPlaceholderDate(props.untilMs, now.value)) {
+    return t(props.status === "ongoing" ? "catalog.status.permanent" : "catalog.status.tbd")
   }
   const remaining = props.untilMs - now.value
   if (remaining <= 0) {

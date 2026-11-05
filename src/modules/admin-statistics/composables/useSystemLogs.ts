@@ -173,7 +173,7 @@ export function useSystemLogs() {
   }
 
   function formatTime(iso?: string) {
-    return formatLocalizedDateTime(iso, undefined, t("adminStatistics.common.fallback"))
+    return formatLocalizedDateTime(iso, "dateTimeSeconds", t("adminStatistics.common.fallback"))
   }
 
   function reloadFromFirstPage() {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { MusicDifficulty } from "@/modules/music-library/lib/music-difficulties"
+import { resolveMusicDifficultyChipClass, type MusicDifficulty } from "@/modules/music-library/lib/music-difficulties"
 
 export type MusicProgressOverviewSegment = {
   key: string
@@ -66,10 +66,7 @@ const { t } = useI18n()
         :class="row.difficulty === active ? 'bg-muted/60 ring-1 ring-border' : ''"
         @click="emit('select', row.difficulty)"
       >
-        <span
-          class="inline-flex w-16 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
-          :style="{ backgroundColor: row.color }"
-        >
+        <span :class="[resolveMusicDifficultyChipClass(row.difficulty), 'w-16 px-1 py-1']">
           {{ row.label }}
         </span>
         <span class="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground sm:order-3 sm:ml-0 sm:w-44 sm:text-right">
@@ -95,7 +92,7 @@ const { t } = useI18n()
         </span>
       </button>
       <p v-if="scoreRankText" class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 px-2 text-xs">
-        <span class="inline-flex w-16 shrink-0 items-center justify-center rounded border px-1 py-0.5 text-[11px] font-semibold">
+        <span class="inline-flex w-16 shrink-0 items-center justify-center rounded border px-1 py-1 text-xs font-semibold leading-none">
           {{ t("musicProgress.rewards.scoreRank") }}
         </span>
         <span :class="scoreRankHasRemaining ? 'tabular-nums text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground/70'">

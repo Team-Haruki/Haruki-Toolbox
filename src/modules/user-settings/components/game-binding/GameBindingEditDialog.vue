@@ -174,6 +174,8 @@ const mysekaiPermissionOptions = computed(() =>
                 @update:model-value="emit('update:userIdInput', String($event ?? ''))"
               />
               <p v-if="userIdError" :id="UID_ERROR_ID" role="alert" class="text-xs text-destructive">{{ userIdError }}</p>
+              <!-- Existing bindings keep their identity: say so instead of silently greying the fields. -->
+              <p v-else-if="!isCreating" :id="UID_HINT_ID" class="text-xs text-muted-foreground">{{ t("userSettings.gameBinding.editDialog.identityLockedHint") }}</p>
               <p v-else :id="UID_HINT_ID" class="text-xs text-muted-foreground">{{ t("userSettings.gameBinding.editDialog.uidHint") }}</p>
             </div>
           </div>

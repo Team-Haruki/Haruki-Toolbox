@@ -317,7 +317,7 @@ function normalizeBonusBound(value: unknown, fallback: number) {
       <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <Card class="self-start">
           <CardHeader>
-            <CardTitle class="flex flex-wrap items-center gap-2 text-lg">
+            <CardTitle as="h1" class="flex flex-wrap items-center gap-2 text-lg">
               <LucideCalculator class="size-5" />
               {{ t("tools.pointCalculator.title") }}
             </CardTitle>

@@ -100,9 +100,18 @@ test("overlayStoryTitles takes another region's titles where it has the story", 
   const ev = out.bySid.get("event_150_01")!
   expect(ev.episode.title).toBe("第一话")
   expect(ev.episode.paths).toEqual(jp.bySid.get("event_150_01")!.episode.paths)
-  // CN lacks episode 2 and event 151: JP titles stay
+  expect(ev.episode.jpOnly).toBeUndefined()
+  expect(ev.series.jpOnly).toBe(false)
+  // CN lacks episode 2 and event 151: JP titles stay, marked as such
   expect(out.bySid.get("event_150_02")!.episode.title).toBe("Two")
+  expect(out.bySid.get("event_150_02")!.episode.jpOnly).toBe(true)
   expect(out.bySid.get("event_151_01")!.episode.title).toBe("Next")
+  expect(out.bySid.get("event_151_01")!.series.jpOnly).toBe(true)
+})
+
+test("unit chapters carry their number for a localized label", () => {
+  const cat = buildStoryCatalog(sources())
+  expect(cat.tabs.unit[0]?.chapterNo).toBe(1)
 })
 
 test("hideUnreleasedStories drops stories that are not out yet", () => {

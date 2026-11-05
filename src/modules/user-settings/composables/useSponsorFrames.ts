@@ -1,15 +1,14 @@
 import { computed, onMounted, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { useRouter } from "vue-router"
 import { toast } from "vue-sonner"
 import { useUserStore } from "@/shared/stores/user"
 import { getSponsorFrames, saveSponsorFrame, type SponsorFrame, type SponsorFramesData } from "@/modules/user-settings/api/sponsor"
 import { resolveRequiredUserId } from "@/modules/user-settings/lib/current-user"
+import { resolveSponsorFramesLockReason } from "@/modules/user-settings/lib/sponsor-frames-access"
 
 export function useSponsorFrames() {
   const { t, locale } = useI18n()
   const user = useUserStore()
-  const router = useRouter()
   const data = ref<SponsorFramesData | null>(null)
   const loading = ref(false)
   const failed = ref(false)
@@ -22,6 +21,8 @@ export function useSponsorFrames() {
   const account = computed(() => accounts.value.find((a) => `${a.server}:${a.gameUserId}` === accountKey.value))
   const selected = computed(() => data.value?.frames.find((f) => f.id === selectedId.value))
   const eligible = computed(() => data.value?.status.eligible === true)
+  /** Why saving is off for this person (the page still shows every frame and example), or null. */
+  const lockReason = computed(() => (data.value ? resolveSponsorFramesLockReason(data.value.status) : null))
   const dirty = computed(() => selectedId.value !== (account.value?.frameId ?? ""))
   const canSave = computed(() => !!account.value?.verified && dirty.value && eligible.value && !saving.value)
   const frameName = (frame: SponsorFrame) => frame.name[locale.value] ?? frame.name["zh-CN"] ?? frame.id
@@ -32,23 +33,13 @@ export function useSponsorFrames() {
 
   watch(accountKey, () => { selectedId.value = account.value?.frameId ?? "" })
 
-  async function acceptData(response: SponsorFramesData) {
-    if (!response.status.eligible) {
-      data.value = null
-      await router.replace({ name: "user.settings" })
-      return false
-    }
-    data.value = response
-    return true
-  }
-
   async function load() {
     const id = resolveRequiredUserId(user.userId)
     if (!id || loading.value) return
     loading.value = true
     failed.value = false
     try {
-      if (!await acceptData(await getSponsorFrames(id))) return
+      data.value = await getSponsorFrames(id)
       if (!account.value) {
         const first = accounts.value.find((a) => a.verified) ?? accounts.value[0]
         accountKey.value = first ? `${first.server}:${first.gameUserId}` : ""
@@ -65,12 +56,21 @@ export function useSponsorFrames() {
     saving.value = true
     const selection = selectedId.value
     try {
-      if (!await acceptData(await saveSponsorFrame(id, target, selection))) return
+      const response = await saveSponsorFrame(id, target, selection)
+      data.value = response
+      // The backend answers with the current status: sponsor access revoked
+      // between load and save drops the selection, and the page says so
+      // instead of bouncing to settings.
+      if (!response.status.eligible) {
+        selectedId.value = account.value?.frameId ?? ""
+        toast.error(t("userSettings.frames.eligibilityLost"))
+        return
+      }
       toast.success(t("userSettings.frames.saved"), { description: t("userSettings.frames.savedDescription") })
     } catch { toast.error(t("userSettings.frames.saveFailed")) }
     finally { saving.value = false }
   }
 
   onMounted(load)
-  return { data, loading, failed, saving, accountKey, accounts, account, selectedId, selected, search, preview, previewURL, eligible, dirty, canSave, frameName, frames, load, save }
+  return { data, loading, failed, saving, accountKey, accounts, account, selectedId, selected, search, preview, previewURL, eligible, lockReason, dirty, canSave, frameName, frames, load, save }
 }

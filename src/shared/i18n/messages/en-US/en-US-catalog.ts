@@ -152,7 +152,9 @@ export default {
     "bonus": {
       "rarityTable": "Rarity × master rank bonus",
       "rarity": "Rarity",
-      "masterRank": "MR {rank}"
+      "masterRank": "MR {rank}",
+      "attrAndCharacters": "{attr} cards of these characters",
+      "charactersOnly": "All cards of these characters"
     },
     "cards": {
       "cardBonus": "Card {rate}",
@@ -392,12 +394,14 @@ export default {
     "beta": {
       "title": "In testing",
       "body": "This page is still being tested and you may run into bugs. If something breaks or doesn't match the game, please report it in {tickets}.",
-      "tickets": "a ticket"
+      "tickets": "a ticket",
+      "ticketsLogin": "a ticket (sign in first)"
     },
     "title": "Story player",
     "description": "Plays main, event, card, special stories and area talks the way the game stages them. Visuals and voices come from the JP server; text can be any server's official translation, with an AI Chinese translation for JP-only stories.",
     "textLang": "Text language",
     "voice": "Voices",
+    "volume": "Volume",
     "voiceVolume": "Voice volume",
     "bgmVolume": "BGM volume",
     "langAutoResolved": "Toolbox language · {lang}",
@@ -408,15 +412,21 @@ export default {
       "zhHant": "繁體中文",
       "en": "English",
       "ko": "한국어",
-      "zhHansAi": "简体中文（AI翻译）"
+      "zhHansAi": "简体中文（AI 翻译）"
     },
     "aiPending": "The AI translation of this episode is still being made. Check back later.",
     "aiNotice": "This text is an AI translation and may differ from the official one.",
+    "aiFailed": "The AI translation is unavailable right now; the Japanese text is shown instead.",
+    "resume": {
+      "lastWatched": "Last watched: {title} · {episode}",
+      "continue": "Continue",
+      "dismiss": "Dismiss"
+    },
     "errors": {
       "notFound": "This episode could not be found.",
-      "unreleased": "This episode is not out yet. Turn on \"Show unreleased content\" in Settings to watch it.",
+      "unreleased": "This episode is not out yet. Turn on “Show unreleased content” in Settings to watch it.",
       "missing": "The JP assets do not have this episode's script yet.",
-      "failed": "The story failed to load: {detail}",
+      "failed": "The story failed to load.",
       "catalog": "The story list failed to load. Refresh to try again.",
       "engine": "The player failed to load: {detail}"
     },
@@ -434,7 +444,10 @@ export default {
       "tabBrowser": "Stories",
       "tabLog": "Lines",
       "fullscreen": "Fullscreen",
-      "exitFullscreen": "Exit fullscreen"
+      "exitFullscreen": "Exit fullscreen",
+      "showUi": "Show",
+      "keyboard": "Story stage: press Space or Enter to continue",
+      "rotateHint": "Tap \"Fullscreen\" to watch sideways with readable text; tapping here also continues."
     },
     "browser": {
       "tabs": {
@@ -447,15 +460,19 @@ export default {
       "all": "All",
       "rail": "Stories",
       "toggle": "Collapse / expand",
-      "search": "Search titles / characters",
+      "searchTitle": "Search titles",
+      "searchTitleUnit": "Search titles / units",
+      "searchTitleChar": "Search titles / characters",
       "loading": "Loading stories…",
       "empty": "No matching stories",
       "episode": "Ep. {no}",
       "firstPart": "Part 1",
-      "secondPart": "Part 2"
+      "secondPart": "Part 2",
+      "chapter": "{unit} chapter {no}",
+      "jpOnly": "JP"
     },
     "menu": {
-      "fullscreen": "Fullscreen",
+      "fullscreen": "Full",
       "auto": "Auto",
       "mute": "Mute",
       "fast": "Fast",

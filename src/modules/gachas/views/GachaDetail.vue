@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import CatalogDetailShell from "@/shared/components/catalog/CatalogDetailShell.vue"
 import CatalogStatusBadge from "@/shared/components/catalog/CatalogStatusBadge.vue"
+import { applyCatalogRegionQuery } from "@/shared/sekai/catalog-region"
 import GachaBehaviorsSection from "@/modules/gachas/components/GachaBehaviorsSection.vue"
 import GachaCeilSection from "@/modules/gachas/components/GachaCeilSection.vue"
 import GachaHero from "@/modules/gachas/components/GachaHero.vue"
@@ -23,6 +24,8 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+// A shared link names its server (`?region=`): apply it before the detail reads the region.
+applyCatalogRegionQuery()
 
 const gachaId = computed(() => {
   const parsed = Number(props.gachaId)

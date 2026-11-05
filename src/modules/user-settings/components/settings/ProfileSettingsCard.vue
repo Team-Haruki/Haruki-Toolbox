@@ -55,25 +55,28 @@ function openVerification() {
       <CardDescription>{{ t("userSettings.profileCard.description") }}</CardDescription>
     </CardHeader>
     <CardContent class="space-y-4">
-      <!-- Identity summary tile -->
-      <div class="flex flex-wrap items-center gap-4 rounded-lg border bg-muted/20 p-4">
-        <Avatar class="h-16 w-16 shrink-0">
-          <AvatarImage :src="previewAvatar || `${userStore.avatarPath}`" />
-          <AvatarFallback>{{ userStore.name.charAt(0) }}</AvatarFallback>
-        </Avatar>
-        <div class="min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-base font-semibold break-all">{{ currentNickname }}</span>
-            <VerificationStatusBadge
-              :verified="emailVerified"
-              :verified-label="t('userSettings.imBinding.status.verified')"
-              :unverified-label="t('userSettings.imBinding.status.unverified')"
-            />
+      <!-- Identity summary tile: avatar + text on one row, the button below on phones. -->
+      <div class="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center">
+        <div class="flex min-w-0 flex-1 items-center gap-4">
+          <Avatar class="h-16 w-16 shrink-0">
+            <AvatarImage :src="previewAvatar || `${userStore.avatarPath}`" />
+            <AvatarFallback>{{ userStore.name.charAt(0) }}</AvatarFallback>
+          </Avatar>
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-base font-semibold break-words">{{ currentNickname }}</span>
+              <VerificationStatusBadge
+                class="whitespace-nowrap"
+                :verified="emailVerified"
+                :verified-label="t('userSettings.imBinding.status.verified')"
+                :unverified-label="t('userSettings.imBinding.status.unverified')"
+              />
+            </div>
+            <p class="mt-0.5 text-sm text-muted-foreground break-words">{{ currentEmail }}</p>
           </div>
-          <p class="mt-0.5 text-sm text-muted-foreground break-all">{{ currentEmail }}</p>
         </div>
         <input ref="fileInputRef" type="file" accept="image/*" class="hidden" :aria-label="t('userSettings.account.changeAvatar')" @change="onAvatarChange" />
-        <Button variant="outline" size="sm" class="shrink-0" :disabled="isSaving" @click="triggerFileInput">
+        <Button variant="outline" size="sm" class="w-full shrink-0 sm:w-auto" :disabled="isSaving" @click="triggerFileInput">
           <Loader2 v-if="isSaving" class="mr-2 h-4 w-4 animate-spin" />
           <Upload v-else class="mr-2 h-4 w-4" />
           {{ isSaving ? t("userSettings.account.uploading") : t("userSettings.account.changeAvatar") }}
@@ -81,7 +84,7 @@ function openVerification() {
       </div>
 
       <div class="grid gap-2" :class="emailVerified ? '' : 'sm:grid-cols-2'">
-        <Button @click="openIdentitySettings">
+        <Button variant="outline" @click="openIdentitySettings">
           <ArrowRightLeft class="mr-2 h-4 w-4" />
           {{ t("userSettings.email.changeButton") }}
         </Button>

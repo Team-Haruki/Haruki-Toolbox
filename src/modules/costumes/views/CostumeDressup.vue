@@ -32,7 +32,7 @@ import { loadMasterFilesCacheFirst } from "@/shared/sekai/master-loader"
 import SekaiAssetImage from "@/shared/components/SekaiAssetImage.vue"
 import SekaiCharacterAvatar from "@/shared/components/SekaiCharacterAvatar.vue"
 import { resolveCostumeThumbnailUrl } from "@/shared/sekai/data-sources"
-import { useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
+import { applyCatalogRegionQuery, useCatalogRegionQuerySync, useEffectiveCatalogRegion } from "@/shared/sekai/catalog-region"
 import { useSekaiDataStore } from "@/shared/stores/sekai-data"
 import { useSettingsStore } from "@/shared/stores/settings"
 import type { SekaiRegion } from "@/types"
@@ -46,7 +46,11 @@ const router = useRouter()
 const settingsStore = useSettingsStore()
 const sekaiDataStore = useSekaiDataStore()
 
+// A shared link names its server (`?region=`): apply it before the region is
+// read, and keep the address bar naming the server in use.
+applyCatalogRegionQuery()
 const { region } = useEffectiveCatalogRegion()
+useCatalogRegionQuerySync(region)
 const assetEndpoint = computed(() => settingsStore.currentAssetEndpoint)
 
 // Only character names/units come from masterdata; the selectable parts and
@@ -397,7 +401,7 @@ watch(() => route.query, () => {
           :aria-checked="character.id === characterId"
           :title="character.name"
           :class="[
-            'shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-card transition',
+            'flex shrink-0 items-center justify-center rounded-full ring-2 ring-offset-2 ring-offset-card transition pointer-coarse:min-h-10 pointer-coarse:min-w-10',
             character.id === characterId ? 'ring-current' : 'ring-transparent opacity-70 hover:opacity-100 hover:ring-border',
           ]"
           :style="character.id === characterId ? { color: resolveSekaiCharacterColor(character.id) ?? undefined } : undefined"

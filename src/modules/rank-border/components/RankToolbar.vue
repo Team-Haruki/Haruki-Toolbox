@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { useI18n } from "vue-i18n"
-import { Activity, RefreshCcw, Trophy, UserSearch } from "lucide-vue-next"
+import { RouterLink } from "vue-router"
+import { Activity, LogIn, RefreshCcw, Trophy, UserSearch } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Combobox } from "@/components/ui/combobox"
@@ -22,10 +23,12 @@ import {
 import { Switch } from "@/components/ui/switch"
 import GameAccountOption from "@/shared/components/GameAccountOption.vue"
 import { resolveSekaiRegionLabel, SEKAI_REGION_OPTIONS } from "@/lib/sekai-region"
+import { useUserStore } from "@/shared/stores/user"
 import { useRankBorderContext } from "../composables/rank-border-context"
 import TrackerFreshness from "./TrackerFreshness.vue"
 
 const { t } = useI18n()
+const userStore = useUserStore()
 
 const { query, live, ui } = useRankBorderContext()
 const {
@@ -57,6 +60,7 @@ const {
   canRefresh,
   trackerStatusTone,
   trackerStatusLabel,
+  trackerStaleWarning,
   tracker,
   refreshData,
 } = live
@@ -125,44 +129,65 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
 </script>
 
 <template>
-  <Card class="gap-0 rounded-lg py-0 xl:rounded-xl">
+  <Card size="compact" class="gap-0 py-0">
     <CardContent class="grid gap-2.5 p-2.5 sm:p-3 xl:px-4 xl:py-3.5">
+      <!-- Title row: the status group may wrap onto its own line on phones (and wrap inside
+           itself), so a long en-US pill never pushes the refresh button off-screen. -->
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 class="flex min-w-0 items-center gap-2 text-base font-semibold sm:text-lg">
           <Trophy class="size-5 shrink-0" />
           <span class="truncate">{{ t("rankBorder.title") }}</span>
         </h1>
-        <p class="hidden min-w-0 flex-1 truncate text-xs text-muted-foreground lg:block">
+        <p class="hidden min-w-0 flex-1 basis-40 text-xs leading-5 text-muted-foreground lg:block">
           {{ t("rankBorder.notice.description") }}
         </p>
-        <div class="ml-auto flex shrink-0 items-center gap-2">
+        <!-- Phones: the refresh button stays beside the title (order-1) and the status group
+             takes the next line; from sm the group precedes the button on the right. -->
+        <div class="order-2 flex min-w-0 basis-full flex-wrap items-center gap-2 sm:order-none sm:ml-auto sm:basis-auto sm:justify-end">
           <span
             :class="[
-              'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium',
+              'inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-left text-xs font-medium leading-4',
               trackerStatusTone === 'live'
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
                 : trackerStatusTone === 'amber'
                   ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
-                  : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/10 dark:text-slate-200',
+                  : trackerStatusTone === 'red'
+                    ? 'border-destructive/40 bg-destructive/10 text-destructive-tint-foreground'
+                    : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/10 dark:text-slate-200',
             ]"
+            role="status"
           >
-            <span class="rank-border-live-dot" />
-            {{ trackerStatusLabel }}
+            <span :class="['rank-border-live-dot', trackerStatusTone === 'live' ? 'rank-border-live-dot--pulse' : '']" />
+            <span class="min-w-0">{{ trackerStatusLabel }}</span>
           </span>
           <TrackerFreshness :status-timestamp="tracker.status.value?.timestamp ?? null" :as-of="tracker.asOf.value" />
-          <!-- The label is visually hidden on phones, so the button names itself for assistive tech. -->
-          <Button
-            type="button"
-            size="sm"
-            :disabled="!canRefresh || liveRefreshing"
-            :aria-label="liveRefreshing ? t('rankBorder.actions.refreshing') : t('rankBorder.actions.refresh')"
-            @click="refreshData()"
-          >
-            <RefreshCcw :class="['size-4', liveRefreshing ? 'animate-spin' : '']" />
-            <span class="hidden sm:inline">{{ liveRefreshing ? t("rankBorder.actions.refreshing") : t("rankBorder.actions.refresh") }}</span>
-          </Button>
         </div>
+        <!-- The label is visually hidden on phones, so the button names itself for assistive tech. -->
+        <Button
+          type="button"
+          size="sm"
+          class="order-1 ml-auto shrink-0 sm:order-none sm:ml-0"
+          :disabled="!canRefresh || liveRefreshing"
+          :aria-label="liveRefreshing ? t('rankBorder.actions.refreshing') : t('rankBorder.actions.refresh')"
+          @click="refreshData()"
+        >
+          <RefreshCcw :class="['size-4', liveRefreshing ? 'animate-spin' : '']" />
+          <span class="hidden sm:inline">{{ liveRefreshing ? t("rankBorder.actions.refreshing") : t("rankBorder.actions.refresh") }}</span>
+        </Button>
       </div>
+
+      <p
+        v-if="trackerStaleWarning"
+        role="status"
+        :class="[
+          'rounded-md border px-3 py-2 text-xs leading-5',
+          trackerStatusTone === 'red'
+            ? 'border-destructive/40 bg-destructive/5 text-destructive-tint-foreground'
+            : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100',
+        ]"
+      >
+        {{ trackerStaleWarning }}
+      </p>
 
       <div class="rank-border-toolbar-controls">
         <div class="rank-border-toolbar-field rank-border-toolbar-field--event">
@@ -281,18 +306,30 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <p
-                  :class="[
-                    'text-xs leading-5',
-                    accountOptions.length === 0 ? 'text-destructive' : 'text-muted-foreground',
-                  ]"
-                >
-                  {{ accountOptions.length === 0 ? t("rankBorder.result.noBoundAccount") : t("rankBorder.sections.locateDescription") }}
-                </p>
-                <Button type="button" :disabled="locateDisabled" @click="locateSelectedAccount">
-                  <UserSearch :class="['size-4', locating ? 'animate-pulse' : '']" />
-                  {{ t("rankBorder.actions.locate") }}
-                </Button>
+                <!-- Signed out: there is no account to pick, so say "log in" rather than "nothing bound". -->
+                <template v-if="!userStore.isLoggedIn">
+                  <p class="text-xs leading-5 text-muted-foreground">{{ t("rankBorder.result.privateLookupLoginRequired") }}</p>
+                  <Button as-child variant="outline">
+                    <RouterLink :to="{ path: '/user/login', query: { redirect: '/rank-border' } }">
+                      <LogIn class="size-4" />
+                      {{ t("rankBorder.actions.login") }}
+                    </RouterLink>
+                  </Button>
+                </template>
+                <template v-else>
+                  <p
+                    :class="[
+                      'text-xs leading-5',
+                      accountOptions.length === 0 ? 'text-destructive-tint-foreground' : 'text-muted-foreground',
+                    ]"
+                  >
+                    {{ accountOptions.length === 0 ? t("rankBorder.result.noBoundAccount") : t("rankBorder.sections.locateDescription") }}
+                  </p>
+                  <Button type="button" :disabled="locateDisabled" @click="locateSelectedAccount">
+                    <UserSearch :class="['size-4', locating ? 'animate-pulse' : '']" />
+                    {{ t("rankBorder.actions.locate") }}
+                  </Button>
+                </template>
               </div>
 
               <form class="grid gap-1.5 border-t pt-3" @submit.prevent="locateManualUser">
@@ -378,27 +415,32 @@ function waitForEventSelection(timeoutMs = 12_000): Promise<boolean> {
   font-weight: 700;
 }
 
+/* The dot takes the pill's text colour, so amber/red states are not announced by a green light. */
 .rank-border-live-dot {
   display: inline-block;
   width: 0.5rem;
   height: 0.5rem;
+  flex: 0 0 auto;
   border-radius: 9999px;
-  background: rgb(16 185 129);
-  box-shadow: 0 0 0 0 rgb(16 185 129 / 0.34);
+  background: currentColor;
+}
+
+.rank-border-live-dot--pulse {
+  box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 34%, transparent);
   animation: rank-border-live-pulse 1.6s ease-out infinite;
 }
 
 @keyframes rank-border-live-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgb(16 185 129 / 0.34);
+    box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 34%, transparent);
   }
 
   70% {
-    box-shadow: 0 0 0 0.45rem rgb(16 185 129 / 0);
+    box-shadow: 0 0 0 0.45rem transparent;
   }
 
   100% {
-    box-shadow: 0 0 0 0 rgb(16 185 129 / 0);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 </style>

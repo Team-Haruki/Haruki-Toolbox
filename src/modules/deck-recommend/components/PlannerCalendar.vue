@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onBeforeUnmount, ref, useTemplateRef } from "vue"
 import { useI18n } from "vue-i18n"
 import { useScrollEdges } from "@/composables/useScrollEdges"
 import { resolveSekaiLiveBoostMultiplier } from "@/shared/sekai/live-boost"
@@ -120,13 +120,7 @@ function updatePreview(target: PlannerCellCoordinate) {
   }
 }
 
-function handlePointerDown(event: PointerEvent) {
-  const hit = cellHitFromEvent(event)
-  if (hit == null) {
-    return
-  }
-
-  event.preventDefault()
+function beginStroke(hit: PlannerCellHit) {
   const currentBrushId = props.cells[hit.hourKey] ?? null
   strokeMode.value = props.activeTool === "eraser" || currentBrushId === props.activeTool
     ? "erase"
@@ -135,7 +129,67 @@ function handlePointerDown(event: PointerEvent) {
   updatePreview(hit)
 }
 
+// Touch: the grid is wider than a phone, so a finger must still be able to
+// scroll it. A touch therefore paints only on a tap (press and release
+// without moving) or after a long press, which claims the gesture for drag
+// painting; moving before the timer fires is a scroll and is left alone.
+const LONG_PRESS_MS = 350
+const TOUCH_SLOP_PX = 8
+
+const grid = useTemplateRef<HTMLElement>("grid")
+let pressTimer: ReturnType<typeof setTimeout> | null = null
+let pendingTouch: { hit: PlannerCellHit; x: number; y: number; pointerId: number } | null = null
+/** True while a long-press stroke owns the touch; touchmove is then prevented so no scroll starts. */
+let touchStrokeActive = false
+
+function cancelPendingTouch() {
+  if (pressTimer != null) {
+    clearTimeout(pressTimer)
+    pressTimer = null
+  }
+  pendingTouch = null
+}
+
+function handlePointerDown(event: PointerEvent) {
+  const hit = cellHitFromEvent(event)
+  if (hit == null) {
+    return
+  }
+
+  if (event.pointerType === "touch") {
+    cancelPendingTouch()
+    pendingTouch = { hit, x: event.clientX, y: event.clientY, pointerId: event.pointerId }
+    pressTimer = setTimeout(() => {
+      pressTimer = null
+      const pressed = pendingTouch
+      pendingTouch = null
+      if (pressed == null) {
+        return
+      }
+      touchStrokeActive = true
+      try {
+        grid.value?.setPointerCapture(pressed.pointerId)
+        navigator.vibrate?.(10)
+      } catch {
+        // Capture and haptics are best-effort.
+      }
+      beginStroke(pressed.hit)
+    }, LONG_PRESS_MS)
+    return
+  }
+
+  event.preventDefault()
+  beginStroke(hit)
+}
+
 function handlePointerMove(event: PointerEvent) {
+  if (pendingTouch != null) {
+    if (Math.hypot(event.clientX - pendingTouch.x, event.clientY - pendingTouch.y) > TOUCH_SLOP_PX) {
+      cancelPendingTouch()
+    }
+    return
+  }
+
   if (strokeMode.value == null) {
     return
   }
@@ -146,11 +200,43 @@ function handlePointerMove(event: PointerEvent) {
   }
 }
 
+function handlePointerUp() {
+  if (pendingTouch != null) {
+    // A tap: paint exactly the touched cell.
+    const { hit } = pendingTouch
+    cancelPendingTouch()
+    beginStroke(hit)
+  }
+  finishStroke()
+}
+
+function handlePointerCancel() {
+  cancelPendingTouch()
+  finishStroke()
+}
+
+function handlePointerLeave(event: PointerEvent) {
+  if (event.pointerType === "touch") {
+    // A finger leaving the grid while scrolling is not a tap; a captured
+    // long-press stroke keeps its pointer and ends on release instead.
+    cancelPendingTouch()
+    return
+  }
+  finishStroke()
+}
+
+function handleTouchMove(event: TouchEvent) {
+  if (touchStrokeActive && event.cancelable) {
+    event.preventDefault()
+  }
+}
+
 function finishStroke() {
   const mode = strokeMode.value
   const hourKeys = [...pendingPreview.value]
   strokeMode.value = null
   anchorCell = null
+  touchStrokeActive = false
   pendingPreview.value = new Set()
   if (mode == null || hourKeys.length === 0) {
     return
@@ -158,6 +244,8 @@ function finishStroke() {
 
   emit("stroke", { hourKeys, brushId: mode === "erase" ? null : props.activeTool })
 }
+
+onBeforeUnmount(cancelPendingTouch)
 
 function isPreviewing(hourStartMs: number): boolean {
   return pendingPreview.value.has(String(hourStartMs))
@@ -171,16 +259,20 @@ const { edgeClass } = useScrollEdges(scroller)
 
 <template>
   <div>
-    <p class="mb-2 text-xs text-muted-foreground">{{ t("eventPlanner.calendar.dragHint") }}</p>
+    <p class="mb-2 text-xs text-muted-foreground pointer-coarse:hidden">{{ t("eventPlanner.calendar.dragHint") }}</p>
+    <p class="mb-2 hidden text-xs text-muted-foreground pointer-coarse:block">{{ t("eventPlanner.calendar.touchHint") }}</p>
     <div :class="['relative', edgeClass]">
     <div ref="scroller" class="overflow-x-auto">
     <div
-      class="min-w-[58rem] select-none touch-none"
+      ref="grid"
+      class="min-w-[58rem] select-none touch-pan-x touch-pan-y [-webkit-touch-callout:none]"
       @pointerdown="handlePointerDown"
       @pointermove="handlePointerMove"
-      @pointerup="finishStroke"
-      @pointercancel="finishStroke"
-      @pointerleave="finishStroke"
+      @pointerup="handlePointerUp"
+      @pointercancel="handlePointerCancel"
+      @pointerleave="handlePointerLeave"
+      @touchmove="handleTouchMove"
+      @contextmenu.prevent
     >
       <!-- Hour header -->
       <div class="mb-1 grid grid-cols-[5.5rem_repeat(24,minmax(2rem,1fr))] gap-x-px">

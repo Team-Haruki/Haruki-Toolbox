@@ -11,6 +11,7 @@ import {
   EXPIRE_OPTIONS_SECONDS,
   FONT_SIZE,
   LINE_HEIGHT,
+  PRESET_TAG_NAME_KEYS,
   PRESET_TAGS,
 } from "@/modules/sekai-station/lib/sekai-station-constants"
 import type { StationFilterMode } from "@/modules/sekai-station/lib/station-types"
@@ -120,7 +121,13 @@ const steppers = computed(() => [
   },
 ])
 
-const chipClass = "inline-flex h-7 max-w-full items-center gap-1 rounded-full border border-primary bg-primary/10 pr-2 pl-2.5 text-xs font-medium text-primary transition-colors outline-none hover:bg-primary/15 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+// An emoji-only preset gets a spoken name and a tooltip; the text presets name themselves
+function presetTagLabel(tag: string): string | undefined {
+  const nameKey = PRESET_TAG_NAME_KEYS[tag]
+  return nameKey ? t("sekaiStation.settings.presetTagLabel", { tag, name: t(`sekaiStation.settings.tagNames.${nameKey}`) }) : undefined
+}
+
+const chipClass = "inline-flex h-7 max-w-full items-center gap-1 rounded-full border border-primary bg-primary/10 pr-2 pl-2.5 text-xs font-medium text-primary transition-colors outline-none hover:bg-primary/15 focus-visible:ring-[3px] focus-visible:ring-ring/50 pointer-coarse:min-h-10 pointer-coarse:pr-3 pointer-coarse:pl-3.5"
 </script>
 
 <template>
@@ -173,7 +180,13 @@ const chipClass = "inline-flex h-7 max-w-full items-center gap-1 rounded-full bo
           :aria-labelledby="`${id}-tags`"
           @update:model-value="onTagsChange"
         >
-          <ToggleGroupItem v-for="tag in PRESET_TAGS" :key="tag" :value="tag">
+          <ToggleGroupItem
+            v-for="tag in PRESET_TAGS"
+            :key="tag"
+            :value="tag"
+            :aria-label="presetTagLabel(tag)"
+            :title="presetTagLabel(tag)"
+          >
             {{ tag }}
           </ToggleGroupItem>
         </ToggleGroup>

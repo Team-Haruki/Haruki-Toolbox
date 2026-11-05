@@ -1,10 +1,12 @@
 import { beforeAll, describe, expect, test } from "bun:test"
 import { i18n, setI18nLocale } from "@/shared/i18n"
 import zhCNCore from "@/shared/i18n/messages/zh-CN/zh-CN-core"
+import zhCNRank from "@/shared/i18n/messages/zh-CN/zh-CN-rank"
 import { describeTrackerError, isTrackerError } from "./tracker-error"
 
 beforeAll(async () => {
   i18n.global.mergeLocaleMessage("zh-CN", zhCNCore)
+  i18n.global.mergeLocaleMessage("zh-CN", zhCNRank)
   await setI18nLocale("zh-CN")
 })
 
@@ -15,10 +17,17 @@ function trackerError(message: string, status?: number): Error & { status?: numb
 }
 
 describe("describeTrackerError", () => {
+  test("a 404 means the event is not tracked, with no network advice", () => {
+    expect(describeTrackerError(trackerError("Event not tracked", 404), "hint")).toEqual({
+      message: zhCNRank.rankBorder.result.notTracked,
+      detail: "Event not tracked",
+    })
+  })
+
   test("keeps the localized hint as the headline and the raw tracker text as detail", () => {
-    expect(describeTrackerError(trackerError("Tracker request failed: HTTP 404", 404), "hint")).toEqual({
+    expect(describeTrackerError(trackerError("Tracker request failed: HTTP 400", 400), "hint")).toEqual({
       message: "hint",
-      detail: "Tracker request failed: HTTP 404",
+      detail: "Tracker request failed: HTTP 400",
     })
     // WebSocket / endpoint errors are plain Errors without a status.
     expect(describeTrackerError(new Error("Tracker WebSocket is unavailable"), "hint")).toEqual({

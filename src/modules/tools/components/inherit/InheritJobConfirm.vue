@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from "vue"
+import { computed, nextTick, watch } from "vue"
 import { useI18n } from "vue-i18n"
 import { Loader2, ShieldCheck, Smartphone, Timer, UserRound, X } from "lucide-vue-next"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -10,7 +10,8 @@ import { toInheritApiError } from "@/modules/tools/api/inherit"
 import type { InheritJob } from "@/modules/tools/lib/inherit-job"
 import { resolveUnlockMode, type InheritUnlockInput, type InheritVaultKeyStatus } from "@/modules/tools/lib/inherit-vault"
 import { formatInheritRemaining } from "@/modules/tools/lib/inherit-messages"
-import { useInheritUnlock } from "@/modules/tools/composables/useInheritUnlock"
+import { focusInvalidField } from "@/lib/form-focus"
+import { unlockFieldId, useInheritUnlock } from "@/modules/tools/composables/useInheritUnlock"
 import InheritUnlockFields from "@/modules/tools/components/inherit/InheritUnlockFields.vue"
 
 /**
@@ -51,14 +52,27 @@ const restrictionEnd = computed(() => {
   return end > 0 ? formatLocalizedDateTime(end) : ""
 })
 const busy = computed(() => props.pending !== null)
+const UNLOCK_ID_PREFIX = "inherit-confirm"
+
+/** The inline message is next to a field the owner may have scrolled past: go there. */
+function focusInvalidUnlockField() {
+  const field = unlock.firstInvalidField()
+  if (field) focusInvalidField(unlockFieldId(UNLOCK_ID_PREFIX, field))
+}
 
 async function submit() {
-  if (busy.value || !unlock.validate()) return
+  if (busy.value) return
+  if (!unlock.validate()) {
+    focusInvalidUnlockField()
+    return
+  }
   try {
     await props.onConfirm(unlock.toInput())
     unlock.reset()
   } catch (error) {
     unlock.absorb(toInheritApiError(error))
+    await nextTick()
+    focusInvalidUnlockField()
   }
 }
 
@@ -77,7 +91,7 @@ function updateField(field: "secret" | "repeat" | "previousPassword", value: str
 </script>
 
 <template>
-  <section class="space-y-4" aria-labelledby="inherit-confirm-title" data-testid="inherit-confirm">
+  <section id="inherit-confirm" tabindex="-1" class="scroll-mt-20 space-y-4 outline-none" aria-labelledby="inherit-confirm-title" data-testid="inherit-confirm">
     <div class="space-y-1">
       <h3 id="inherit-confirm-title" class="text-base font-semibold">{{ t("tools.uploadData.inheritJob.confirm.title") }}</h3>
       <p class="text-sm text-muted-foreground">{{ t("tools.uploadData.inheritJob.confirm.description") }}</p>
@@ -110,6 +124,9 @@ function updateField(field: "secret" | "repeat" | "previousPassword", value: str
           <li v-if="restriction.isRestrictDeviceTransfer">
             {{ t("tools.uploadData.inheritJob.confirm.restriction.remaining", { count: restriction.restTransferCount }) }}
           </li>
+          <li v-if="restriction.isRestrictDeviceTransfer">
+            {{ t("tools.uploadData.inheritJob.confirm.restriction.consumes") }}
+          </li>
           <li v-if="restrictionEnd">{{ t("tools.uploadData.inheritJob.confirm.restriction.endsAt", { time: restrictionEnd }) }}</li>
           <li v-if="restriction.isWorldBloomChapter">{{ t("tools.uploadData.inheritJob.confirm.restriction.worldBloom") }}</li>
         </ul>
@@ -131,7 +148,7 @@ function updateField(field: "secret" | "repeat" | "previousPassword", value: str
     <form class="space-y-4" novalidate @submit.prevent="submit">
       <InheritUnlockFields
         :state="unlock.state"
-        id-prefix="inherit-confirm"
+        :id-prefix="UNLOCK_ID_PREFIX"
         :disabled="busy"
         @update="updateField"
         @submit="submit"

@@ -7,7 +7,7 @@ export default {
       "unknownValue": "Unknown"
     },
     "systemMessage": {
-      "statusChanged": "Status changed to \"{status}\""
+      "statusChanged": "Status changed to “{status}”"
     },
     "status": {
       "open": "Open",

@@ -49,16 +49,8 @@ const rows = computed<ChapterRow[]>(() => props.chapters.map((chapter) => {
   }
 }))
 
-const dateTimeFormat: Intl.DateTimeFormatOptions = {
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-}
-
 function formatAt(value: number | null) {
-  return formatLocalizedDateTime(value, dateTimeFormat, t("events.common.dateFallback"))
+  return formatLocalizedDateTime(value, "dateTime", t("events.common.dateFallback"))
 }
 </script>
 
